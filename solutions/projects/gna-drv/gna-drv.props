@@ -1,0 +1,106 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<!--
+//*****************************************************************************
+// 
+// INTEL CONFIDENTIAL
+// Copyright 2012-2015 Intel Corporation
+// 
+// The source code contained or described herein and all documents related 
+// to the source code ("Material") are owned by Intel Corporation or its suppliers 
+// or licensors. Title to the Material remains with Intel Corporation or its suppliers 
+// and licensors. The Material contains trade secrets and proprietary 
+// and confidential information of Intel or its suppliers and licensors.
+// The Material is protected by worldwide copyright and trade secret laws and treaty
+// provisions. No part of the Material may be used, copied, reproduced, modified, 
+// published, uploaded, posted, transmitted, distributed, or disclosed in any way 
+// without Intel's prior express written permission.
+// 
+// No license under any patent, copyright, trade secret or other intellectual 
+// property right is granted to or conferred upon you by disclosure or delivery 
+// of the Materials, either expressly, by implication, inducement, estoppel 
+// or otherwise. Any license under such intellectual property rights must 
+// be express and approved by Intel in writing.
+//*****************************************************************************
+-->
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <ItemGroup Label="ProjectConfigurations">
+        <!-- Windows 8.1 / 8.2 -->
+        <ProjectConfiguration Include="WIN8-DEBUG|Win32">
+            <Configuration>WIN8-DEBUG</Configuration>
+            <Platform>Win32</Platform>
+        </ProjectConfiguration>
+        <ProjectConfiguration Include="WIN8-DEBUG|x64">
+            <Configuration>WIN8-DEBUG</Configuration>
+            <Platform>x64</Platform>
+        </ProjectConfiguration>
+        <ProjectConfiguration Include="WIN8-RELEASE|Win32">
+            <Configuration>WIN8-RELEASE</Configuration>
+            <Platform>Win32</Platform>
+        </ProjectConfiguration>
+        <ProjectConfiguration Include="WIN8-RELEASE|x64">
+            <Configuration>WIN8-RELEASE</Configuration>
+            <Platform>x64</Platform>
+        </ProjectConfiguration>
+        <!-- Windows 10 -->
+        <ProjectConfiguration Include="WIN10-DEBUG|Win32">
+            <Configuration>WIN10-DEBUG</Configuration>
+            <Platform>Win32</Platform>
+        </ProjectConfiguration>
+        <ProjectConfiguration Include="WIN10-DEBUG|x64">
+            <Configuration>WIN10-DEBUG</Configuration>
+            <Platform>x64</Platform>
+        </ProjectConfiguration>
+        <ProjectConfiguration Include="WIN10-RELEASE|Win32">
+            <Configuration>WIN10-RELEASE</Configuration>
+            <Platform>Win32</Platform>
+        </ProjectConfiguration>
+        <ProjectConfiguration Include="WIN10-RELEASE|x64">
+            <Configuration>WIN10-RELEASE</Configuration>
+            <Platform>x64</Platform>
+        </ProjectConfiguration>
+    </ItemGroup>
+    <ImportGroup Label="PropertySheets">
+        <Import Project="..\common\version-consts.props" />
+    </ImportGroup>
+    <PropertyGroup>
+        <PRODUCT>gna</PRODUCT>
+        <DRV_NAME Condition="('$(DRV_NAME)' == '')">gna</DRV_NAME>
+        <DRV_PATH_NAME>gna-drv</DRV_PATH_NAME>
+    </PropertyGroup>
+    <PropertyGroup Label="Configuration">
+        <CharacterSet>Unicode</CharacterSet>
+        <TargetVersion Condition="('$(TARGET_WIN_VER)' == '$(TARGET_WIN81_ID)')">WindowsV6.3</TargetVersion>
+        <TargetVersion Condition="('$(TARGET_WIN_VER)' == '$(TARGET_WIN10_ID)')">Windows10</TargetVersion>
+        <PlatformToolset Condition="('$(TARGET_WIN_VER)' == '$(TARGET_WIN81_ID)')">WindowsKernelModeDriver10.0</PlatformToolset>
+        <PlatformToolset Condition="('$(TARGET_WIN_VER)' == '$(TARGET_WIN10_ID)')">WindowsKernelModeDriver10.0</PlatformToolset>
+        <DriverTargetPlatform>ERROR</DriverTargetPlatform>
+        <DriverTargetPlatform Condition="('$(TARGET_WIN_VER)' == '$(TARGET_WIN10_ID)')">Universal</DriverTargetPlatform>
+        <DriverTargetPlatform Condition="('$(TARGET_WIN_VER)' == '$(TARGET_WIN81_ID)')">Desktop</DriverTargetPlatform>
+    </PropertyGroup>
+    <PropertyGroup Label="Globals">
+        <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+        <MinimumVisualStudioVersion>12.0</MinimumVisualStudioVersion>
+        <RootNamespace>$(DRV_NAME)</RootNamespace>
+        <ProjectDir Condition=" '$(ProjectDir)' == '' ">$(MSBuildProjectDirectory)\</ProjectDir>
+        <SolutionDir Condition="'$(SolutionDir)'==''">$(ProjectDir)</SolutionDir>
+    </PropertyGroup>
+    <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+    <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+    <ImportGroup Label="PropertySheets">
+        <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    </ImportGroup>
+    <PropertyGroup>
+        <ROOT_DIR>..\..\..\</ROOT_DIR>
+        <SRC_DIR>$(ROOT_DIR)src</SRC_DIR>
+        <OUTPUT_DIR>$(ROOT_DIR)bin\$(DRV_PATH_NAME)\$(Configuration)\gna-$(MSBuildProjectName)\$(PLATFORM_NAME)\</OUTPUT_DIR>
+        <OutDir>$(OUTPUT_DIR)out\</OutDir>
+        <IntDir>$(OUTPUT_DIR)obj/</IntDir>
+        <SignMode Condition="('$(DISABLE_TEST_SIGN)' != 'TRUE')">TestSign</SignMode>
+        <SignMode Condition="('$(DISABLE_TEST_SIGN)' == 'TRUE')">Off</SignMode>
+        <TRACE_MAN_FILE>$(SRC_DIR)\gna-drv\gna-etw-manifest.man</TRACE_MAN_FILE>
+        <TRACE_RC_FILE>$(IntDir)gna-etw-manifest.rc</TRACE_RC_FILE>
+    </PropertyGroup>
+    <ItemGroup>
+        <None Include="..\common\projects.licenseheader" />
+    </ItemGroup>
+</Project>

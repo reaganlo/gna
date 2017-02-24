@@ -1,0 +1,112 @@
+; INTEL CONFIDENTIAL
+; Copyright 2017 Intel Corporation.
+;
+; The source code contained or described herein and all documents related
+; to the source code ("Material") are owned by Intel Corporation or its suppliers
+; or licensors. Title to the Material remains with Intel Corporation or its suppliers
+; and licensors. The Material may contain trade secrets and proprietary
+; and confidential information of Intel Corporation and its suppliers and licensors,
+; and is protected by worldwide copyright and trade secret laws and treaty provisions.
+; No part of the Material may be used, copied, reproduced, modified, published,
+; uploaded, posted, transmitted, distributed, or disclosed in any way without Intel's
+; prior express written permission.
+;
+; No license under any patent, copyright, trade secret or other intellectual
+; property right is granted to or conferred upon you by disclosure or delivery
+; of the Materials, either expressly, by implication, inducement, estoppel
+; or otherwise. Any license under such intellectual property rights must
+; be express and approved by Intel in writing.
+;
+; Unless otherwise agreed by Intel in writing, you may not remove or alter this notice
+; or any other notice embedded in Materials by Intel or Intel's suppliers or licensors
+; in any way.
+
+;
+; gnalegacy.inf (debug)
+;
+
+[Version]
+Signature="$WINDOWS NT$"
+Class=System
+ClassGuid={4D36E97D-E325-11CE-BFC1-08002BE10318}
+Provider=%Intel%
+CatalogFile=gna.cat
+DriverVer= 
+
+;==============================================================================
+; Manufacturer and Models Sections 
+;==============================================================================
+
+[Manufacturer]
+%Intel%=Intel, NT$ARCH$, NTx86.6.2, NTamd64.6.2, NTx86.10.0, NTamd64.10.0
+
+[Intel.NT$ARCH$]
+%IntelGNA.DeviceDesc%=IntelGNA_Install, PCI\VEN_8086&DEV_5A11   ;GNA CNL
+%IntelGNA.DeviceDesc%=IntelGNA_Install, PCI\VEN_8086&DEV_3190   ;GNA GLK
+
+[Intel.NTx86.6.2]
+; Prevent install on Win8.0+ (x86)
+
+[Intel.NTamd64.6.2]
+; Prevent install on Win8.0+ (amd64)
+
+[Intel.NTx86.10.0]
+; Prevent install on Win10.0+ (x86)
+
+[Intel.NTamd64.10.0]
+; Prevent install on Win10.0+ (amd64)
+
+;==============================================================================
+; Class section
+;==============================================================================
+
+[DestinationDirs]
+DefaultDestDir = 12
+
+[SourceDisksNames]
+1 = %DiskName%,,,""
+
+[SourceDisksFiles]
+gnalegacy.sys  = 1,,
+
+;==============================================================================
+; Installer Sections
+;==============================================================================
+
+[IntelGNA_Install.NT]
+CopyFiles=@gnalegacy.sys
+
+[IntelGNA_Install.NT.HW]
+DelReg      = IntelGNA_Install_Legacy_Reg
+
+[IntelGNA_Install_Legacy_Reg]
+HKR, "Interrupt Management\MessageSignaledInterruptProperties", MessageNumberLimit, 0x00002000
+HKR, "Interrupt Management\MessageSignaledInterruptProperties", MSISupported, 0x00002000
+HKR, "Interrupt Management\MessageSignaledInterruptProperties", 0x00002000
+HKR, "Interrupt Management", 0x00002000
+
+;==============================================================================
+; Service installation
+;==============================================================================
+
+[IntelGNA_Install.NT.Services]
+AddService = IntelGNA,%SPSVCINST_ASSOCSERVICE%, IntelGNA_Install_Serv
+
+[IntelGNA_Install_Serv]
+DisplayName    = %IntelGNA.SVCDESC%
+ServiceType    = 1               ; SERVICE_KERNEL_DRIVER
+StartType      = 3               ; SERVICE_DEMAND_START
+ErrorControl   = 1               ; SERVICE_ERROR_NORMAL
+ServiceBinary  = %12%\gnalegacy.sys
+LoadOrderGroup = Extended Base
+
+;==============================================================================
+; Strings section
+;==============================================================================
+
+[Strings]
+Intel               = "Intel Corporation"
+IntelGNA.DeviceDesc = "Intel(R) GNA Scoring Accelerator (legacy)(debug) module"
+IntelGNA.SVCDESC    = "Intel(R) GNA Scoring Accelerator (legacy)(debug) service"
+DiskName            = "Intel(R) GNA Scoring Accelerator (legacy)(debug) installation disk"
+SPSVCINST_ASSOCSERVICE = 0x00000002

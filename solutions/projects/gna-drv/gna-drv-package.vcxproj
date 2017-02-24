@@ -1,0 +1,65 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<!--
+//*****************************************************************************
+// 
+// INTEL CONFIDENTIAL
+// Copyright 2012-2015 Intel Corporation
+// 
+// The source code contained or described herein and all documents related 
+// to the source code ("Material") are owned by Intel Corporation or its suppliers 
+// or licensors. Title to the Material remains with Intel Corporation or its suppliers 
+// and licensors. The Material contains trade secrets and proprietary 
+// and confidential information of Intel or its suppliers and licensors.
+// The Material is protected by worldwide copyright and trade secret laws and treaty
+// provisions. No part of the Material may be used, copied, reproduced, modified, 
+// published, uploaded, posted, transmitted, distributed, or disclosed in any way 
+// without Intel's prior express written permission.
+// 
+// No license under any patent, copyright, trade secret or other intellectual 
+// property right is granted to or conferred upon you by disclosure or delivery 
+// of the Materials, either expressly, by implication, inducement, estoppel 
+// or otherwise. Any license under such intellectual property rights must 
+// be express and approved by Intel in writing.
+//*****************************************************************************
+-->
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <PropertyGroup Label="PropertySheets">
+        <ConfigurationType>Utility</ConfigurationType>
+        <DriverType>Package</DriverType>
+        <DisableFastUpToDateCheck>true</DisableFastUpToDateCheck>
+    </PropertyGroup>
+    <PropertyGroup Label="Globals">
+        <ProjectGuid>{7C0DF08A-69C1-4828-B2F3-123B2669BED7}</ProjectGuid>
+        <TemplateGuid>{4605da2c-74a5-4865-98e1-152ef136825f}</TemplateGuid>
+    </PropertyGroup>
+    <ImportGroup Label="PropertySheets">
+        <Import Project="gna-drv.props" />
+    </ImportGroup>
+    <PropertyGroup Label="UserMacros" />
+    <PropertyGroup>
+        <DebuggerFlavor>DbgengKernelDebugger</DebuggerFlavor>
+        <EnableDeployment>False</EnableDeployment>
+        <RemoveDriver>true</RemoveDriver>
+        <HardwareIdString />
+        <CommandLine />
+        <DeployFiles />
+        <EnableVerifier>False</EnableVerifier>
+        <AllDrivers>False</AllDrivers>
+        <VerifyProjectOutput>true</VerifyProjectOutput>
+        <VerifyDrivers />
+        <VerifyFlags>133563</VerifyFlags>
+        <PackageDir>$(OutDir)</PackageDir>
+    </PropertyGroup>
+    <ItemGroup>
+        <FilesToPackage Include="@(Inf->'%(CopyOutput)')" Condition="'@(Inf)'!=''" />
+        <ProjectReference Include="gna-drv-legacy.vcxproj">
+            <Project>{93e2d41c-6dac-49e8-a3cd-18d35b529fd2}</Project>
+        </ProjectReference>
+        <ProjectReference Include="gna-drv.vcxproj">
+            <Project>{4933913D-4FCE-4DC1-B275-5A0FF780B25D}</Project>
+        </ProjectReference>
+    </ItemGroup>
+    <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+    <ImportGroup Label="ExtensionTargets">
+    </ImportGroup>
+</Project>

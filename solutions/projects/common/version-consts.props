@@ -1,0 +1,84 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<!--
+//*****************************************************************************
+// 
+// INTEL CONFIDENTIAL
+// Copyright 2012-2015 Intel Corporation
+// 
+// The source code contained or described herein and all documents related 
+// to the source code ("Material") are owned by Intel Corporation or its suppliers 
+// or licensors. Title to the Material remains with Intel Corporation or its suppliers 
+// and licensors. The Material contains trade secrets and proprietary 
+// and confidential information of Intel or its suppliers and licensors.
+// The Material is protected by worldwide copyright and trade secret laws and treaty
+// provisions. No part of the Material may be used, copied, reproduced, modified, 
+// published, uploaded, posted, transmitted, distributed, or disclosed in any way 
+// without Intel's prior express written permission.
+// 
+// No license under any patent, copyright, trade secret or other intellectual 
+// property right is granted to or conferred upon you by disclosure or delivery 
+// of the Materials, either expressly, by implication, inducement, estoppel 
+// or otherwise. Any license under such intellectual property rights must 
+// be express and approved by Intel in writing.
+//*****************************************************************************
+-->
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+   <PropertyGroup>
+        <TARGET_WIN80_ID>62</TARGET_WIN80_ID><!-- Windows 8.0 numeric version id -->
+        <TARGET_WIN80_INF>6.1</TARGET_WIN80_INF><!-- Windows 8.0 numeric version id -->
+        <TARGET_WIN81_ID>63</TARGET_WIN81_ID><!-- Windows 8.1 numeric version id -->
+        <TARGET_WIN81_INF>6.2</TARGET_WIN81_INF><!-- Windows 8.1 numeric version id -->
+        <TARGET_WIN10_ID>10</TARGET_WIN10_ID><!-- Windows 10.0 numeric version id -->
+        <TARGET_WIN10_INF>10.0</TARGET_WIN10_INF><!-- Windows 10.0 numeric version id -->
+        <TARGET_DEBUG_ID>1</TARGET_DEBUG_ID><!-- Debug configuration numeric version id -->
+        <TARGET_RELEASE_ID>2</TARGET_RELEASE_ID><!-- Release configuration numeric version id -->
+        <TARGET_RELEASE_INT_ID>3</TARGET_RELEASE_INT_ID><!-- Release interleaved configuration numeric version id -->
+        <TARGET_X64_ID>64</TARGET_X64_ID><!-- amd64/Win4 platform numeric version id -->
+        <TARGET_X86_ID>86</TARGET_X86_ID><!-- ia86/Win32 platform numeric version id -->
+        <TARGET_WDK80_ID>8400</TARGET_WDK80_ID><!-- Windwos 8.0 Driver Kit/model numeric version id -->
+        <TARGET_WDK81_ID>9200</TARGET_WDK81_ID><!-- Windwos 8.1 Driver Kit/model numeric version id -->
+        <TARGET_WDK10_ID Condition="('$(THRESHOLD_VER)' == '')">10</TARGET_WDK10_ID><!-- Windwos 10.0 Driver Kit/model numeric version id if not present-->
+        <TARGET_WDK10_ID Condition="('$(THRESHOLD_VER)' != '')">$(THRESHOLD_VER)</TARGET_WDK10_ID><!-- Windwos 10.0 Driver Kit/model numeric version id -->
+        <TARGET_WDK10_ID Condition="('$(THRESHOLD_VER)' == 'RTM')">10</TARGET_WDK10_ID><!-- Windwos 10.0 Driver Kit/model numeric version id if not present-->
+        <TARGET_XE_ID>15</TARGET_XE_ID><!-- Intel XE studio 15 toolset numeric version id -->
+        <TARGET_VS110_ID>110</TARGET_VS110_ID><!-- Visual Studio 2012 toolset numeric version id -->
+        <TARGET_VS120_ID>120</TARGET_VS120_ID><!-- Visual Studio 2013 toolset numeric version id -->
+        <TARGET_VS130_ID>130</TARGET_VS130_ID><!-- Visual Studio 2015 pre release toolset numeric version id -->
+        <TARGET_VS140_ID>140</TARGET_VS140_ID><!-- Visual Studio 2015 toolset numeric version id -->
+    </PropertyGroup>
+    <PropertyGroup>
+        <TARGET_WIN_VER>0</TARGET_WIN_VER>
+        <TARGET_WIN_VER Condition="('$(Configuration)' == 'WIN8-DEBUG')">$(TARGET_WIN81_ID)</TARGET_WIN_VER>
+        <TARGET_WIN_INF Condition="('$(Configuration)' == 'WIN8-DEBUG')">$(TARGET_WIN81_INF)</TARGET_WIN_INF>
+        <TARGET_WIN_VER Condition="('$(Configuration)' == 'WIN8-RELEASE')">$(TARGET_WIN81_ID)</TARGET_WIN_VER>
+        <TARGET_WIN_INF Condition="('$(Configuration)' == 'WIN8-RELEASE')">$(TARGET_WIN81_INF)</TARGET_WIN_INF>
+        <TARGET_WIN_VER Condition="('$(Configuration)' == 'WIN8-RELEASE-INTERLEAVED')">$(TARGET_WIN81_ID)</TARGET_WIN_VER>
+        <TARGET_WIN_VER Condition="('$(Configuration)' == 'WIN10-DEBUG')">$(TARGET_WIN10_ID)</TARGET_WIN_VER>
+        <TARGET_WIN_INF Condition="('$(Configuration)' == 'WIN10-DEBUG')">$(TARGET_WIN10_INF)</TARGET_WIN_INF>
+        <TARGET_WIN_VER Condition="('$(Configuration)' == 'WIN10-RELEASE')">$(TARGET_WIN10_ID)</TARGET_WIN_VER>
+        <TARGET_WIN_INF Condition="('$(Configuration)' == 'WIN10-RELEASE')">$(TARGET_WIN10_INF)</TARGET_WIN_INF>
+        <TARGET_WIN_VER Condition="('$(Configuration)' == 'WIN-DEBUG')">$(TARGET_WIN81_ID)</TARGET_WIN_VER>
+        <TARGET_WIN_VER Condition="('$(Configuration)' == 'WIN-RELEASE')">$(TARGET_WIN81_ID)</TARGET_WIN_VER>
+        <TARGET_WIN_VER Condition="('$(Configuration)' == 'WIN-RELEASE-INTERLEAVED')">$(TARGET_WIN81_ID)</TARGET_WIN_VER>
+        
+        <PLATFORM_NAME>$(Platform)</PLATFORM_NAME>
+        <INF_PLATFORM>amd64</INF_PLATFORM>
+        <PLATFORM_NAME Condition="$(Platform) == Win32">x86</PLATFORM_NAME>
+        <INF_PLATFORM Condition="$(Platform) == Win32">$(PLATFORM_NAME)</INF_PLATFORM>
+        <PLATFORM_ID>0</PLATFORM_ID>
+        <PLATFORM_ID Condition="'$(PLATFORM_NAME)' == 'x86'">$(TARGET_X86_ID)</PLATFORM_ID>
+        <PLATFORM_ID Condition="'$(PLATFORM_NAME)' == 'x64'">$(TARGET_X64_ID)</PLATFORM_ID>
+        <IS_DEBUG Condition="('$(Configuration)' == 'WIN8-DEBUG')">true</IS_DEBUG>
+        <IS_DEBUG Condition="('$(Configuration)' == 'WIN10-DEBUG')">true</IS_DEBUG>
+        <IS_DEBUG   Condition="('$(Configuration)' == 'WIN-DEBUG')">true</IS_DEBUG>
+        <IS_RELEASE Condition="('$(Configuration)' == 'WIN-RELEASE')">true</IS_RELEASE>
+        <IS_RELEASE Condition="('$(Configuration)' == 'WIN-RELEASE-INTERLEAVED')">true</IS_RELEASE>
+        <IS_RELEASE Condition="('$(IS_DEBUG)' != 'true')">true</IS_RELEASE>
+        <CONFIG_TYPE>0</CONFIG_TYPE>
+        <CONFIG_TYPE Condition="$(IS_DEBUG) == true">$(TARGET_DEBUG_ID)</CONFIG_TYPE>
+        <CONFIG_TYPE Condition="$(IS_RELEASE) == true">$(TARGET_RELEASE_ID)</CONFIG_TYPE>
+        <CONFIG_TYPE Condition="('$(Configuration)' == 'WIN-RELEASE-INTERLEAVED')">$(TARGET_RELEASE_INT_ID)</CONFIG_TYPE>
+        
+        <TARGET_TOOLSET_ID>0</TARGET_TOOLSET_ID>
+    </PropertyGroup>
+</Project>
