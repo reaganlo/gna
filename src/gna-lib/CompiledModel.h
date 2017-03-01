@@ -29,7 +29,7 @@
 #include "SoftwareModel.h"
 #include "SubModel.h"
 #include "RequestConfiguration.h"
-#include "KernelDispatcher.h"
+#include "AccelerationDetector.h"
 
 #include <vector>
 
@@ -55,11 +55,11 @@ public:
 
     void CompileHardwareModel();
 
-    void CreateSubmodels(KernelDispatcher& dispatcher);
+    void CreateSubmodels(AccelerationDetector& detector);
 
     void ClearSubmodels();
 
-    const auto& CompiledModel::GetSubmodels() const 
+    decltype(auto) CompiledModel::GetSubmodels() const 
     {
         return (submodels);
     }

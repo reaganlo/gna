@@ -39,8 +39,6 @@ namespace GNA
 class AcceleratorHwVerbose: public AcceleratorHw
 {
 public:	
-    AcceleratorHwVerbose(acceleration nProcessorType) :AcceleratorHw(nProcessorType){};
-
     virtual ~AcceleratorHwVerbose() {};
 
     /**
@@ -52,7 +50,6 @@ public:
     AcceleratorHwVerbose& operator=(const AcceleratorHwVerbose&) = delete;
 
 	uint32_t ReadReg(uint32_t regOffset);
-
 	void WriteReg(uint32_t regOffset, uint32_t regVal);
 
 protected:

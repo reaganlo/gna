@@ -106,13 +106,16 @@ AffineFunctionMulti1B::AffineFunctionMulti1B(const nn_func_affine_multi *affine)
 }
 
 ActivationFunction::ActivationFunction(const nn_func_pwl *pwl) :
-    Enabled((NULL != pwl->pSegments) && (pwl->nSegments > 0)),
     SegmentCount(static_cast<bool>(pwl->nSegments)),
     Segments(static_cast<nn_pwl_seg*>(pwl->pSegments)),
+    Enabled((NULL != pwl->pSegments) && (pwl->nSegments > 0)),
     sourcePwl(static_cast<const nn_func_pwl*>(pwl))
 {
-    Validate::IsTrue(NULL == Segments, XNN_ERR_PWL_DATA);
-    Validate::IsAlignedTo64(Segments);
-    Validate::IsInRange(SegmentCount, SegmentCountMin, SegmentCountMax, XNN_ERR_PWL_SEGMENTS);
+    if(Enabled)
+    {
+        Validate::IsTrue(NULL == Segments, XNN_ERR_PWL_DATA);
+        Validate::IsAlignedTo64(Segments);
+        Validate::IsInRange(SegmentCount, SegmentCountMin, SegmentCountMax, XNN_ERR_PWL_SEGMENTS);
+    }
 }
 

@@ -24,7 +24,7 @@
 */
 
 //*****************************************************************************
-// KernelDispatcher.h - declarations for acceleration modes dispatcher 
+// AccelerationDetector.h - declarations for acceleration modes dispatcher 
 //                 (currently CPU instruction set extensions only)
 // Note:   CPU instruction set extensions detection code based on 
 //          "Intel® Architecture Instruction Set Extensions Programming reference"
@@ -37,8 +37,6 @@
 
 #include "IoctlSender.h"
 #include "common.h"
-#include "XnnKernelApi.h"
-#include "gmm.h"
 
 #include <array>
 #include <map>
@@ -48,7 +46,8 @@ namespace GNA
 
 enum GnaFeature
 {
-    BaseFunctionality = 0, // DNN, DNN_AL, DIAGONAL, CNN, RNN, COPY, TRANSPOSE, PWL
+    BaseFunctionality = 0, // DNN, DNN_AL, DIAGONAL, RNN, COPY, TRANSPOSE, PWL
+    CNN,
     LegacyGMM,
     GMMLayer,
     MultiBias,
@@ -63,47 +62,27 @@ enum GnaFeature
  * Manages runtime acceleration modes
  * and configures execution kernels for given acceleration
  */
-class KernelDispatcher : protected IoctlSender
+class AccelerationDetector : protected IoctlSender
 {
 public:    
     /**
      * Creates empty kernel dispatcher
      */
-    KernelDispatcher();
+    AccelerationDetector();
 
     /*
      * Creates empty destructor 
      */
-    ~KernelDispatcher() {}
-
-    /**
-     * Gmm Kernel container for currently selected optimization
-     */
-    GmmKernel*  gmms;
-
-    /**
-     * Xnn Kernel container for currently selected optimization
-     */
-    XnnKernel*  xnns;
-
-    /**
-     * configures GMM API Library to use most suitable acceleration mode
-     * * sets effective acceleration
-     *
-     * @nProcessorType  requested acceleration mode
-     * @return          status of mode selection
-     */
-    status_t Init(
-        acceleration         nProcessorType);
+    ~AccelerationDetector() {}
 
     /**
     * Configuration map of available acceleration modes
     */
     std::map<acceleration, uint8_t> accelerationModes;
 
-    acceleration KernelDispatcher::GetFastestAcceleration() const;
+    acceleration AccelerationDetector::GetFastestAcceleration() const;
 
-    bool IsHardwarePresent();
+    bool IsHardwarePresent() const;
 
     /**
     * performs available acceleration modes detection
@@ -112,28 +91,18 @@ public:
     */
     void DetectAccelerations();
 
-    bool IsLayerSupported(intel_layer_kind_t layerType);
+    bool IsLayerSupported(intel_layer_kind_t layerType) const;
 
 private:
     acceleration fastestAcceleration;
     GNA_CPBLTS deviceCapabilities;
-    std::map<GnaDeviceType, std::array<bool, GnaFeatureCount>> gnaFeatureMap;
-
-    /**
-     * configures GMM kernels to use given acceleration mode
-     *
-     * @accelMode requested acceleration mode
-     *
-     * @return error status code
-     */
-    status_t select(
-        acceleration         accelMode);
+    static const std::map<GnaDeviceType, std::array<bool, GnaFeatureCount>> gnaFeatureMap;
 
     void discoverHardwareExistence();
     void discoverHardwareCapabilities();
 
-    KernelDispatcher(const KernelDispatcher &) = delete;
-    KernelDispatcher& operator=(const KernelDispatcher&) = delete;
+    AccelerationDetector(const AccelerationDetector &) = delete;
+    AccelerationDetector& operator=(const AccelerationDetector&) = delete;
 };
 
 }

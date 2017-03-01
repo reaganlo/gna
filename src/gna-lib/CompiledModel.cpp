@@ -25,7 +25,6 @@
 
 #include "CompiledModel.h"
 #include "SubModel.h"
-#include "KernelDispatcher.h"
 
 using namespace GNA;
 
@@ -43,14 +42,14 @@ void CompiledModel::CompileHardwareModel()
     hwModel = make_unique<HardwareModel>();
 }
 
-void CompiledModel::CreateSubmodels(KernelDispatcher& dispatcher)
+void CompiledModel::CreateSubmodels(AccelerationDetector& dispatcher)
 {
     auto layerType = userModel->pLayers->nLayerKind;
     auto submodelCount = 0;
     auto smType = dispatcher.IsLayerSupported(layerType) ? Hardware : Software;
-    submodels[submodelCount] = make_unique<SubModel>(smType, 0);
+    submodels.emplace_back(make_unique<SubModel>(smType, 0));
 
-    for(uint16_t layerIx = 0; layerIx < layerCount; ++layerIx)
+    for(uint16_t layerIx = 1; layerIx < layerCount; ++layerIx)
     {
         layerType = userModel->pLayers[layerIx].nLayerKind;
         smType = dispatcher.IsLayerSupported(layerType) ? Hardware : Software;
@@ -61,7 +60,8 @@ void CompiledModel::CreateSubmodels(KernelDispatcher& dispatcher)
         }
         else
         {
-            submodels[++submodelCount] = make_unique<SubModel>(smType, layerIx);
+            submodels.emplace_back(make_unique<SubModel>(smType, layerIx));
+            submodelCount++;
         }
     }
 }

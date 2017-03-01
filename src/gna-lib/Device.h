@@ -27,7 +27,6 @@
 #define _DEVICE_H
 
 #include "AcceleratorController.h"
-#include "KernelDispatcher.h"
 #include "ModelContainer.h"
 #include "ModelCompiler.h"
 #include "RequestHandler.h"
@@ -141,7 +140,7 @@ private:
 
     RequestHandler requestHandler;
     AcceleratorController acceleratorController;
-    KernelDispatcher kernelDispatcher;
+    AccelerationDetector accelerationDetector;
     ModelContainer modelContainer;
     ModelCompiler modelCompiler;
     RequestBuilder requestBuilder;

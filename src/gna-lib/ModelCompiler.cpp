@@ -34,9 +34,9 @@ uint32_t ModelCompiler::CalculateModelSize(size_t requestedSize, uint16_t nLayer
     return requestedSize + layerDescriptorsSize;
 }
 
-void ModelCompiler::CascadeCompile(CompiledModel &model, KernelDispatcher& dispatcher)
+void ModelCompiler::CascadeCompile(CompiledModel &model, AccelerationDetector& detector)
 {
     model.CompileSoftwareModel();
     model.CompileHardwareModel();
-    model.CreateSubmodels(dispatcher);
+    model.CreateSubmodels(detector);
 }

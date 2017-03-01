@@ -71,13 +71,13 @@ LayerConfig::LayerConfig(const nn_layer_type type) :
 LayerMatrix::LayerMatrix(const nn_layer &layer, const Orientations orientation) :
     ColumnCount(layer.nInputColumns),
     RowCount(layer.nInputRows),
-    ElementCount((FLAT == orientation) ? RowCount : ColumnCount),
+    ElementCount((FLAT == orientation) ? ColumnCount : RowCount),
     Buffer(static_cast<void const * const>(layer.pInputs))
 {
     Validate::IsInRange(orientation, INTERLEAVED, FLAT, XNN_ERR_LYR_CFG);
     Validate::IsInRange(ElementCount, XNN_N_IN_ELEMS_MPLY, XNN_N_IN_ELEMS_MAX, XNN_ERR_LYR_CFG);
     Validate::IsMultiplicityOf(ElementCount, XNN_N_IN_ELEMS_MPLY);
-    auto secondDimension = (FLAT == orientation) ? ColumnCount : RowCount;
+    auto secondDimension = (FLAT == orientation) ? RowCount : ColumnCount;
     Validate::IsInRange(secondDimension, 1, XNN_N_GROUP_MAX, XNN_ERR_GROUPING);
     Validate::IsNull(Buffer);
     Validate::IsAlignedTo64(Buffer);  
@@ -152,10 +152,10 @@ unique_ptr<Layer> Layer::Create(const nn_layer* layer, const uint32_t inputVecto
 }
 
 Layer::Layer(const nn_layer *layer, const uint32_t inputVectorCount) :
+    Config(layer->nLayerKind),
     sourceLayer(validate(layer)),
     Input(sourceLayer, Config.Orientation, inputVectorCount),
-    Output(sourceLayer, Config.Orientation),
-    Config(sourceLayer.nLayerKind)
+    Output(sourceLayer, Config.Orientation)
 {
 }
 

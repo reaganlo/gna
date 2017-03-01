@@ -115,7 +115,6 @@
     <ClInclude Include="$(SRC_DIR)\gna-lib\HardwareModel.h" />
     <ClInclude Include="$(SRC_DIR)\gna-lib\ModelHwTranslator.h" />
     <ClInclude Include="$(SRC_DIR)\gna-lib\AcceleratorController.h" />
-    <ClInclude Include="$(SRC_DIR)\gna-lib\Accelerator.h" />
     <ClInclude Include="$(SRC_DIR)\gna-lib\Device.h" />
     <ClInclude Include="$(SRC_DIR)\gna-lib\AcceleratorHw.h" />
     <ClInclude Include="$(SRC_DIR)\gna-lib\AcceleratorHwVerbose.h" />
@@ -133,7 +132,7 @@
     <ClInclude Include="$(SRC_DIR)\gna-lib\SwHw.h" />
     <ClInclude Include="$(SRC_DIR)\gna-lib\kernels\XnnKernelApi.h" />
     <ClInclude Include="$(SRC_DIR)\gna-lib\common.h" />
-    <ClInclude Include="$(SRC_DIR)\gna-lib\KernelDispatcher.h" />
+    <ClInclude Include="$(SRC_DIR)\gna-lib\AccelerationDetector.h" />
     <ClCompile Include="$(SRC_DIR)\common\profiler.c" />
     <ClCompile Include="$(SRC_DIR)\gna-lib\CompiledModel.cpp" />
     <ClCompile Include="$(SRC_DIR)\gna-lib\SubModel.cpp" />
@@ -142,7 +141,6 @@
     <ClCompile Include="$(SRC_DIR)\gna-lib\HardwareModel.cpp" />
     <ClCompile Include="$(SRC_DIR)\gna-lib\ModelHwTranslator.cpp" />
     <ClCompile Include="$(SRC_DIR)\gna-lib\AcceleratorController.cpp" />
-    <ClCompile Include="$(SRC_DIR)\gna-lib\Accelerator.cpp" />
     <ClCompile Include="$(SRC_DIR)\gna-lib\Device.cpp" />
     <ClCompile Include="$(SRC_DIR)\gna-lib\AcceleratorHw.cpp" />
     <ClCompile Include="$(SRC_DIR)\gna-lib\AcceleratorHwVerbose.cpp" />
@@ -152,7 +150,7 @@
     <ClCompile Include="$(SRC_DIR)\gna-lib\SoftwareModel.cpp" />
 	<ClCompile Include="$(SRC_DIR)\gna-lib\ActiveList.cpp" />
     <ClCompile Include="$(SRC_DIR)\gna-lib\SwHw.cpp" />
-    <ClCompile Include="$(SRC_DIR)\gna-lib\KernelDispatcher.cpp" />
+    <ClCompile Include="$(SRC_DIR)\gna-lib\AccelerationDetector.cpp" />
     <ClCompile Include="$(SRC_DIR)\gna-lib\api.cpp" />
 	<ClInclude Include="$(SRC_DIR)\gna-lib\Layer.h" />
 	<ClCompile Include="$(SRC_DIR)\gna-lib\Layer.cpp" />

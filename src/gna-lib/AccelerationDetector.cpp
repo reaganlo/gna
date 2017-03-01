@@ -28,14 +28,12 @@
 #ifdef _WIN32
 #include <intrin.h>
 #endif
-#include "Accelerator.h"
-#include "KernelDispatcher.h"
-#include "ThreadPool.h"
-#include "XnnKernelApi.h"
+#include "AccelerationDetector.h"
 
 using std::shared_ptr;
 using std::make_shared;
 using std::array;
+using std::map;
 
 using namespace GNA;
 
@@ -57,7 +55,17 @@ using namespace GNA;
 #define _XCR_XFEATURE_ENABLED_MASK 0
 #endif
 
-KernelDispatcher::KernelDispatcher(): gmms(nullptr), xnns(nullptr), fastestAcceleration(GNA_GEN_FAST)
+const map<GnaDeviceType, array<bool, GnaFeatureCount>>
+AccelerationDetector::gnaFeatureMap = {
+                        // Basic, CNN,   GMM,  GMMLayer, MultiBias, L1Dist, L2Dist, ComputerVision   
+        { GNA_DEV_CNL,     {true, false, true, false,    false,     false,  false,  false} },
+        { GNA_DEV_GLK,     {true, true,  true, false,    false,     false,  false,  false} },
+        { GNA_DEV_LKF,     {true, true,  true, true,     true,      false,  false,  false} },
+        { GNA_DEV_TGL,     {true, true,  true, true,     true,      false,  false,  false} },
+        { GNA_DEV_UNKNOWN, {true, true,  true, true,     true,      false,  false,  false} },
+    };
+
+AccelerationDetector::AccelerationDetector(): fastestAcceleration(GNA_GEN_FAST)
 {
     for (auto& acc : accelerationModes)
     {
@@ -66,16 +74,9 @@ KernelDispatcher::KernelDispatcher(): gmms(nullptr), xnns(nullptr), fastestAccel
 
     accelerationModes[GNA_GEN_SAT] = ACC_SUPPORTED;
     accelerationModes[GNA_GEN_FAST] = ACC_SUPPORTED;
-
-    gnaFeatureMap = {
-        { GNA_DEV_GLK,     array<bool, GnaFeatureCount>{true, true, false, false, false, false, false} },
-        { GNA_DEV_LKF,     array<bool, GnaFeatureCount>{true, true, true,  true,  false, false, false} },
-        { GNA_DEV_TGL,     array<bool, GnaFeatureCount>{true, true, true,  true,  false, false, false} },
-        { GNA_DEV_UNKNOWN, array<bool, GnaFeatureCount>{true, true, true,  true,  false, false, false} },
-    };
 }
 
-void KernelDispatcher::discoverHardwareExistence()
+void AccelerationDetector::discoverHardwareExistence()
 {
     try
     {
@@ -84,13 +85,16 @@ void KernelDispatcher::discoverHardwareExistence()
     }
     catch (GnaException e)
     {
+        accelerationModes[GNA_HW] = ACC_NOTSUPPORTED;
         LOG("Hardware not detected.");
     }
 }
 
-void KernelDispatcher::discoverHardwareCapabilities()
+void AccelerationDetector::discoverHardwareCapabilities()
 {
-    status_t status = GNA_SUCCESS;
+    if (!IsHardwarePresent()) return;
+
+    auto status = GNA_SUCCESS;
     status = IoctlSend(GNA_IOCTL_CPBLTS, nullptr, 0, &deviceCapabilities, sizeof(GNA_CPBLTS));
 
     if(GNA_SUCCESS != status)
@@ -99,14 +103,15 @@ void KernelDispatcher::discoverHardwareCapabilities()
     }
 }
 
-bool KernelDispatcher::IsHardwarePresent()
+bool AccelerationDetector::IsHardwarePresent() const
 {
-    return ACC_SUPPORTED == accelerationModes[GNA_HW];
+    return ACC_SUPPORTED == accelerationModes.at(GNA_HW);
 }
 
-bool KernelDispatcher::IsLayerSupported(intel_layer_kind_t layerType)
+bool AccelerationDetector::IsLayerSupported(intel_layer_kind_t layerType) const
 {
-    auto& deviceFeatureMap = gnaFeatureMap[deviceCapabilities.device_type];
+    if (!IsHardwarePresent()) return false;
+    const auto& deviceFeatureMap = gnaFeatureMap.at(deviceCapabilities.device_type);
     switch(layerType)
     {    
         case INTEL_AFFINE:
@@ -133,8 +138,11 @@ bool KernelDispatcher::IsLayerSupported(intel_layer_kind_t layerType)
     
 }
 
-void KernelDispatcher::DetectAccelerations()
+void AccelerationDetector::DetectAccelerations()
 {
+    discoverHardwareExistence();
+    discoverHardwareCapabilities();
+
     int cpuId[4];           // cpu id string
     int sse4 = ACC_NOTSUPPORTED; // is Intel SSE4 Extensions support available
     int avx1 = ACC_NOTSUPPORTED; // Intel ACX1 Extensions support available
@@ -204,52 +212,7 @@ void KernelDispatcher::DetectAccelerations()
     LOG("GNA_GEN_SAT   %d\n", accelerationModes[GNA_GEN_SAT]);
 }
 
-acceleration KernelDispatcher::GetFastestAcceleration() const
+acceleration AccelerationDetector::GetFastestAcceleration() const
 {
     return fastestAcceleration;
-}
-
-status_t KernelDispatcher::select(acceleration accelMode)
-{
-    gmms = nullptr;
-    xnns = nullptr;
-
-    switch(accelMode){
-        case GNA_HW:
-        return GNA_CPUTYPENOTSUPPORTED;
-    case GNA_AVX2_FAST:
-        gmms = &gmmKernel_avx2;
-        xnns = &xnnKernel_avx2;
-        return GNA_SUCCESS;
-    case GNA_AVX2_SAT:
-        gmms = &gmmKernel_avx2;
-        xnns = &xnnKernel_avx2_sat;
-        return GNA_SUCCESS;
-    case GNA_AVX1_FAST:
-        gmms = &gmmKernel_avx1;
-        xnns = &xnnKernel_avx1;
-        return GNA_SUCCESS;
-    case GNA_AVX1_SAT:
-        gmms = &gmmKernel_avx1;
-        xnns = &xnnKernel_avx1_sat;
-        return GNA_SUCCESS;
-    case GNA_SSE4_2_FAST:
-        gmms = &gmmKernel_sse4;
-        xnns = &xnnKernel_sse4;
-        return GNA_SUCCESS;
-    case GNA_SSE4_2_SAT:
-        gmms = &gmmKernel_sse4;
-        xnns = &xnnKernel_sse4_sat;
-        return GNA_SUCCESS;
-    case GNA_GEN_FAST:
-        gmms = &gmmKernel_generic;
-        xnns = &xnnKernel_generic;
-        return GNA_SUCCESS;
-    case GNA_GEN_SAT:
-        gmms = &gmmKernel_generic;
-        xnns = &xnnKernel_generic_sat;
-        return GNA_SUCCESS;
-    default:
-        return GNA_CPUTYPENOTSUPPORTED;
-    }
 }

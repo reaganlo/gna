@@ -104,10 +104,10 @@ public:
 
     virtual ~Layer() {};
     
+    const LayerConfig Config;
     const nn_layer sourceLayer;
     const LayerInput Input;
     const LayerOutput Output;
-    const LayerConfig Config;
 
 protected:
     Layer(const nn_layer *layer, const uint32_t inputVectorCount);

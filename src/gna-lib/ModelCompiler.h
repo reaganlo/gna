@@ -27,7 +27,6 @@
 
 #include "common.h"
 #include "CompiledModel.h"
-#include "KernelDispatcher.h"
 
 namespace GNA
 {
@@ -41,7 +40,7 @@ public:
 
     uint32_t CalculateModelSize(size_t requestedSize, uint16_t nLayers, uint16_t nGMMs);
 
-    void CascadeCompile(CompiledModel& model, KernelDispatcher& dispatcher);
+    void CascadeCompile(CompiledModel& model, AccelerationDetector& detector);
 };
 
 }

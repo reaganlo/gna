@@ -39,7 +39,7 @@ gna_request_cfg_id RequestBuilder::assignConfigId()
 void RequestBuilder::CreateConfiguration(gna_model_id modelId, gna_request_cfg_id *configId)
 {
     *configId = assignConfigId();
-    configurationVector[*configId] = make_unique<RequestConfiguration>(modelId, *configId);
+    configurationVector.emplace_back(make_unique<RequestConfiguration>(modelId, *configId));
 }
 
 void RequestBuilder::AttachBuffer(gna_request_cfg_id configId, gna_buffer_type type, uint16_t layerIndex, void * address)

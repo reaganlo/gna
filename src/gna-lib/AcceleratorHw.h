@@ -27,51 +27,37 @@
 
 #include <string>
 
-#include "Accelerator.h"
 #include "IoctlSender.h"
+#include "Request.h"
+#include "IAccelerator.h"
 
 namespace GNA
 {
 
-class AcceleratorHw : public Accelerator, protected IoctlSender
+class AcceleratorHw : public IAccelerator, protected IoctlSender
 {
-    friend class Device;
 public:
-    /** @See IAccelerator */
-    status_t init() override;
-
-    /** @See IAccelerator */
-	status_t Wait(
-        Request*    r,
-        uint32_t    timeout,
-        perf_t*     perfResults)
-        override;
-
-    /**
-     * Initializes processing device if available
-     *
-     * @nProcessorType      acceleration mode
-     * @status      (out)   status of opening device
-     */
-    AcceleratorHw(
-        acceleration     nProcessorType);
+    using IAccelerator::IAccelerator;
 
     ~AcceleratorHw() {};
 
+    /**
+     * Deleted functions to prevent from being defined or called
+     * @see: https://msdn.microsoft.com/en-us/library/dn457344.aspx
+     */
+    AcceleratorHw() = delete;
+    AcceleratorHw(const AcceleratorHw &) = delete;
+    AcceleratorHw& operator=(const AcceleratorHw&) = delete;
+
+    void Score(const CompiledModel& model, const RequestConfiguration& requestConfiguration) override;
+    void Score(const CompiledModel& model, const SubModel& submodel, const RequestConfiguration& requestConfiguration) override;
 
 protected:
-    bool driverDebug;
+    bool driverDebug = false;
     /**
      * Internal hw input buffer size in KB
      */
-    uint8_t    hwInBuffSize;
-
-    /** @See Accelerator */
-    status_t submit(
-         Request*   r)
-         override;
-
-    status_t Score(Hw *hw, req_profiler* p);
+    uint8_t    hwInBuffSize = 0;
 
     /**
      * virtual hw verification methods implemented in HW VERBOSE version only
@@ -92,16 +78,9 @@ protected:
     virtual bool SetDescriptor(std::string path, XNN_LYR* buff, hw_calc_in_t* inData);
 
     virtual void HwVerifier(Request* r);
+
     // TODO: replace SoftwareModel with compiled model
     virtual void HwVerifier(SoftwareModel* model, status_t scoring_status);
-
-    /**
-     * Deleted functions to prevent from being defined or called
-     * @see: https://msdn.microsoft.com/en-us/library/dn457344.aspx
-     */
-    AcceleratorHw() = delete;
-    AcceleratorHw(const AcceleratorHw &) = delete;
-    AcceleratorHw& operator=(const AcceleratorHw&) = delete;
 };
 
 }

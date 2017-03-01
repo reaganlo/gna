@@ -24,7 +24,6 @@
 */
 
 #include "AcceleratorController.h"
-#include "Accelerator.h"
 #include "AcceleratorSw.h"
 #include "AcceleratorHw.h"
 #include "AcceleratorHwVerbose.h"
@@ -139,14 +138,14 @@ ScoreMethod AcceleratorController::getScoreMethod(CompiledModel &model, accelera
 status_t AcceleratorController::ScoreModel(CompiledModel& model, RequestConfiguration& config, acceleration accel)
 {
     auto scoreMethod = getScoreMethod(model, accel);
-    status_t status = GNA_SUCCESS;
-
     switch(scoreMethod)
     {
     case SoftwareOnly:
-        accelerators[accel]->Score(model, config, 0, model.GetLayerCount());
+        accelerators[accel]->Score(model, config);
+        break;
     case HardwareOnly:
-        accelerators[GNA_HW]->Score(model, config, 0, model.GetLayerCount());
+        accelerators[GNA_HW]->Score(model, config);
+        break;
     case Mixed:
     {
         auto& acceleratorHw = accelerators[GNA_HW];
@@ -158,12 +157,10 @@ status_t AcceleratorController::ScoreModel(CompiledModel& model, RequestConfigur
             switch (submodel->Type)
             {
             case Software:
-                status = acceleratorSw->Score(model, config, layerIndex, layerCount);
-                ERRCHECKR(GNA_SUCCESS != status, status);
+                acceleratorSw->Score(model, *submodel.get(), config);
                 break;
             case Hardware:
-                status = acceleratorHw->Score(model, config, layerIndex, layerCount);
-                ERRCHECKR(GNA_SUCCESS != status, status);
+                acceleratorHw->Score(model, *submodel.get(), config);
                 break;
             case GMMHardware:
             default:
@@ -177,5 +174,5 @@ status_t AcceleratorController::ScoreModel(CompiledModel& model, RequestConfigur
         return GNA_ERR_UNKNOWN;
     }
 
-    return status;
+    return GNA_SUCCESS;
 }

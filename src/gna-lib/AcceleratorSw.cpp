@@ -24,81 +24,28 @@
 */
 
 #include "AcceleratorSw.h"
-#include "ActiveList.h"
-#include "RequestHandler.h"
-#include "ThreadPool.h"
 
 using namespace GNA;
 
-AcceleratorSw::AcceleratorSw(acceleration nProcessorType)
-    :Accelerator(nProcessorType)
+AcceleratorSw::AcceleratorSw(acceleration acceleration_mode) 
+    : IAccelerator(acceleration_mode)
 {
-    status_t sts = init();
-    if (GNA_SUCCESS != sts)
-    {
-        throw GnaException(sts);
-    }
+    selectKernels();
 }
 
-status_t AcceleratorSw::init()
+void AcceleratorSw::Score(
+    const CompiledModel& model, 
+    const SubModel& submodel, 
+    const RequestConfiguration& requestConfiguration)
 {
-    //return kd.Init(accMode);
-    return GNA_SUCCESS;
+    
 }
 
-status_t AcceleratorSw::submit(Request* r)
+void AcceleratorSw::Score(
+    const CompiledModel& model,
+    const RequestConfiguration& requestConfiguration)
 {
-    Sw* sw  = nullptr;
-
-    //r->handle = new Sw();
-    //if (nullptr == r->handle)
-    //{
-    //    return GNA_ERR_RESOURCES;
-    //}
-    //sw  = r->handle;
-
-    return GNA_SUCCESS;
-}
-
-status_t AcceleratorSw::Wait(Request *r, uint32_t timeout, perf_t* perfResults)
-{
-    status_t    status = GNA_SUCCESS;
-    status_t    status2 = GNA_SUCCESS;
-    // FIXME: do sth about the handle
-    Sw*         sw = nullptr; // r->handle;
-
-    // wait for threaded request r to finish with timeout
-    auto future_status = sw->handle.wait_for(std::chrono::milliseconds(timeout));
-    if (future_status == std::future_status::deferred || future_status == std::future_status::timeout)
-    {
-        status = GNA_DEVICEBUSY;
-    }
-    else if (future_status == std::future_status::ready)
-    {
-        status = sw->handle.get();
-        // finish profiling
-        profilerDTscStop(&r->profiler.process);
-        // save profiling results to app provided space
-#ifdef PROFILE
-        if (nullptr != perfResults)
-        {
-            perfResults->lib.preprocess = r->profiler.preprocess.passed;
-            perfResults->lib.process = r->profiler.process.passed;
-            perfResults->lib.submit = r->profiler.submit.passed;
-            perfResults->lib.scoring = r->profiler.scoring.passed;
-            perfResults->lib.total = r->profiler.total.passed;
-            perfResults->total.start = r->profiler.submit.start;
-            perfResults->total.stop = r->profiler.process.stop;
-        }
-#endif // PROFILE
-
-        // TODO: should be done by Device upon status return
-        // remove request from queue
-        //status2 = requestHandler.removeRequest(r);
-        //if (GNA_SUCCESS != status2) status = status2; // notify if dequeue error occurred
-    }
-
-    return status;
+    
 }
 
 status_t AcceleratorSw::checkScoresSaturation(uint32_t nGMMs, uint32_t nVectors, uint32_t *pS, uint32_t maxScore)
@@ -165,7 +112,7 @@ status_t AcceleratorSw::gmmSoftwareKernel(GmmLayer* gmm, req_profiler* profiler)
 
                     for(i = 0; i < fvCount; i++)
                     {
-                        *scores = kd.gmms->GMM8(fv, means, vars, consts, maxScore, fvLength, mixCount);
+                        *scores = gmmKernel->GMM8(fv, means, vars, consts, maxScore, fvLength, mixCount);
                         scores++;
                         fv += fvLength;
                     }
@@ -206,7 +153,7 @@ status_t AcceleratorSw::gmmSoftwareKernel(GmmLayer* gmm, req_profiler* profiler)
                         consts = data->gaussianConstants + j*gConstOffset;
                         scores = output + j*fvCount;
 
-                        kd.gmms->GMM8_MAXMIX_G1(fv, means, vars, consts, maxScore, fvLength, mixCount, scores);
+                        gmmKernel->GMM8_MAXMIX_G1(fv, means, vars, consts, maxScore, fvLength, mixCount, scores);
                     }
                     break;
                 case 2:
@@ -217,7 +164,7 @@ status_t AcceleratorSw::gmmSoftwareKernel(GmmLayer* gmm, req_profiler* profiler)
                         consts = data->gaussianConstants + j*gConstOffset;
                         scores = output + j*fvCount;
 
-                        kd.gmms->GMM8_MAXMIX_G2(fv, means, vars, consts, maxScore, fvLength, mixCount, scores);
+                        gmmKernel->GMM8_MAXMIX_G2(fv, means, vars, consts, maxScore, fvLength, mixCount, scores);
                     }            
                     break;
                 case 3:
@@ -229,7 +176,7 @@ status_t AcceleratorSw::gmmSoftwareKernel(GmmLayer* gmm, req_profiler* profiler)
                         consts = data->gaussianConstants + j*gConstOffset;
                         scores = output + j*fvCount;
 
-                        kd.gmms->GMM8_MAXMIX_G3(fv, means, vars, consts, maxScore, fvLength, mixCount, scores);
+                        gmmKernel->GMM8_MAXMIX_G3(fv, means, vars, consts, maxScore, fvLength, mixCount, scores);
                         scores += fvCount;
 
                         means += meanOffset;
@@ -246,7 +193,7 @@ status_t AcceleratorSw::gmmSoftwareKernel(GmmLayer* gmm, req_profiler* profiler)
                         consts = data->gaussianConstants + j*gConstOffset;
                         scores = output + j*fvCount;
 
-                        kd.gmms->GMM8_MAXMIX_G4(fv, means, vars, consts, maxScore, fvLength, mixCount, scores);
+                        gmmKernel->GMM8_MAXMIX_G4(fv, means, vars, consts, maxScore, fvLength, mixCount, scores);
                         scores += fvCount;
 
                         means += meanOffset;
@@ -263,7 +210,7 @@ status_t AcceleratorSw::gmmSoftwareKernel(GmmLayer* gmm, req_profiler* profiler)
                         consts = data->gaussianConstants + j*gConstOffset;
                         scores = output + j*fvCount;
 
-                        kd.gmms->GMM8_MAXMIX_G5(fv, means, vars, consts, maxScore, fvLength, mixCount, scores);
+                        gmmKernel->GMM8_MAXMIX_G5(fv, means, vars, consts, maxScore, fvLength, mixCount, scores);
                     }            
                     break;
                 case 6:
@@ -275,7 +222,7 @@ status_t AcceleratorSw::gmmSoftwareKernel(GmmLayer* gmm, req_profiler* profiler)
                         consts = data->gaussianConstants + j*gConstOffset;
                         scores = output + j*fvCount;
 
-                        kd.gmms->GMM8_MAXMIX_G6(fv, means, vars, consts, maxScore, fvLength, mixCount, scores);
+                        gmmKernel->GMM8_MAXMIX_G6(fv, means, vars, consts, maxScore, fvLength, mixCount, scores);
                     }            
                     break;
                 case 7:
@@ -287,7 +234,7 @@ status_t AcceleratorSw::gmmSoftwareKernel(GmmLayer* gmm, req_profiler* profiler)
                         consts = data->gaussianConstants + j*gConstOffset;
                         scores = output + j*fvCount;
 
-                        kd.gmms->GMM8_MAXMIX_G7(fv, means, vars, consts, maxScore, fvLength, mixCount, scores);
+                        gmmKernel->GMM8_MAXMIX_G7(fv, means, vars, consts, maxScore, fvLength, mixCount, scores);
                     }            
                     break;
                 case 8:
@@ -299,7 +246,7 @@ status_t AcceleratorSw::gmmSoftwareKernel(GmmLayer* gmm, req_profiler* profiler)
                         consts = data->gaussianConstants + j*gConstOffset;
                         scores = output + j*fvCount;
 
-                        kd.gmms->GMM8_MAXMIX_G8(fv, means, vars, consts, maxScore, fvLength, mixCount, scores);
+                        gmmKernel->GMM8_MAXMIX_G8(fv, means, vars, consts, maxScore, fvLength, mixCount, scores);
                     }            
                     break;                
                 }                    
@@ -320,7 +267,7 @@ status_t AcceleratorSw::gmmSoftwareKernel(GmmLayer* gmm, req_profiler* profiler)
 
                 for(i = 0; i < fvCount; i++)
                 {
-                    *scores = kd.gmms->GMM16(fv, means, vars, consts, maxScore, fvLength, mixCount);
+                    *scores = gmmKernel->GMM16(fv, means, vars, consts, maxScore, fvLength, mixCount);
                     scores++;
                     fv += fvLength;
                 }
@@ -351,7 +298,7 @@ status_t AcceleratorSw::gmmSoftwareKernel(GmmLayer* gmm, req_profiler* profiler)
 
                     for(i = 0; i < fvCount; i++)
                     {
-                        *scores = kd.gmms->GMM8(fv, means, vars, consts, maxScore, fvLength, mixCount);
+                        *scores = gmmKernel->GMM8(fv, means, vars, consts, maxScore, fvLength, mixCount);
                         scores++;
                         fv += fvLength;
                     }
@@ -395,7 +342,7 @@ status_t AcceleratorSw::gmmSoftwareKernel(GmmLayer* gmm, req_profiler* profiler)
                         consts = (uint32_t*)((uint8_t*)data->gaussianConstants + k * gConstSetOffsetSize);
                         scores = output + j*fvCount;
 
-                        kd.gmms->GMM8_MAXMIX_G1(fv, means, vars, consts, maxScore, fvLength, mixCount, scores);
+                        gmmKernel->GMM8_MAXMIX_G1(fv, means, vars, consts, maxScore, fvLength, mixCount, scores);
                     }
                     break;
                 case 2:
@@ -408,7 +355,7 @@ status_t AcceleratorSw::gmmSoftwareKernel(GmmLayer* gmm, req_profiler* profiler)
                         consts = (uint32_t*)((uint8_t*)data->gaussianConstants + k * gConstSetOffsetSize);
                         scores = output + j*fvCount;
 
-                        kd.gmms->GMM8_MAXMIX_G2(fv, means, vars, consts, maxScore, fvLength, mixCount, scores);
+                        gmmKernel->GMM8_MAXMIX_G2(fv, means, vars, consts, maxScore, fvLength, mixCount, scores);
                     }
                     break;
                 case 3:
@@ -421,7 +368,7 @@ status_t AcceleratorSw::gmmSoftwareKernel(GmmLayer* gmm, req_profiler* profiler)
                         consts = (uint32_t*)((uint8_t*)data->gaussianConstants + k * gConstSetOffsetSize);
                         scores = output + j*fvCount;
 
-                        kd.gmms->GMM8_MAXMIX_G3(fv, means, vars, consts, maxScore, fvLength, mixCount, scores);
+                        gmmKernel->GMM8_MAXMIX_G3(fv, means, vars, consts, maxScore, fvLength, mixCount, scores);
                     }
                     break;
                 case 4:
@@ -434,7 +381,7 @@ status_t AcceleratorSw::gmmSoftwareKernel(GmmLayer* gmm, req_profiler* profiler)
                         consts = (uint32_t*)((uint8_t*)data->gaussianConstants + k * gConstSetOffsetSize);
                         scores = (uint32_t*)output + j*fvCount;
 
-                        kd.gmms->GMM8_MAXMIX_G4(fv, means, vars, consts, maxScore, fvLength, mixCount, scores);
+                        gmmKernel->GMM8_MAXMIX_G4(fv, means, vars, consts, maxScore, fvLength, mixCount, scores);
                     }
                     break;
                 case 5:
@@ -447,7 +394,7 @@ status_t AcceleratorSw::gmmSoftwareKernel(GmmLayer* gmm, req_profiler* profiler)
                         consts = (uint32_t*)((uint8_t*)data->gaussianConstants + k * gConstSetOffsetSize);
                         scores = output + j*fvCount;
 
-                        kd.gmms->GMM8_MAXMIX_G5(fv, means, vars, consts, maxScore, fvLength, mixCount, scores);
+                        gmmKernel->GMM8_MAXMIX_G5(fv, means, vars, consts, maxScore, fvLength, mixCount, scores);
                     }
                     break;
                 case 6:
@@ -460,7 +407,7 @@ status_t AcceleratorSw::gmmSoftwareKernel(GmmLayer* gmm, req_profiler* profiler)
                         consts = (uint32_t*)((uint8_t*)data->gaussianConstants + k * gConstSetOffsetSize);
                         scores = output + j*fvCount;
 
-                        kd.gmms->GMM8_MAXMIX_G6(fv, means, vars, consts, maxScore, fvLength, mixCount, scores);
+                        gmmKernel->GMM8_MAXMIX_G6(fv, means, vars, consts, maxScore, fvLength, mixCount, scores);
                     }
                     break;
                 case 7:
@@ -473,7 +420,7 @@ status_t AcceleratorSw::gmmSoftwareKernel(GmmLayer* gmm, req_profiler* profiler)
                         consts = (uint32_t*)((uint8_t*)data->gaussianConstants + k * gConstSetOffsetSize);
                         scores = output + j*fvCount;
 
-                        kd.gmms->GMM8_MAXMIX_G7(fv, means, vars, consts, maxScore, fvLength, mixCount, scores);
+                        gmmKernel->GMM8_MAXMIX_G7(fv, means, vars, consts, maxScore, fvLength, mixCount, scores);
                     }
                     break;
                 case 8:
@@ -486,7 +433,7 @@ status_t AcceleratorSw::gmmSoftwareKernel(GmmLayer* gmm, req_profiler* profiler)
                         consts = (uint32_t*)((uint8_t*)data->gaussianConstants + k * gConstSetOffsetSize);
                         scores = output + j*fvCount;
 
-                        kd.gmms->GMM8_MAXMIX_G8(fv, means, vars, consts, maxScore, fvLength, mixCount, scores);
+                        gmmKernel->GMM8_MAXMIX_G8(fv, means, vars, consts, maxScore, fvLength, mixCount, scores);
                     }
                     break;                    
                 }
@@ -507,7 +454,7 @@ status_t AcceleratorSw::gmmSoftwareKernel(GmmLayer* gmm, req_profiler* profiler)
 
                 for(i = 0; i < fvCount; i++)
                 {
-                    *scores = kd.gmms->GMM16(fv, means, vars, consts, maxScore, fvLength, mixCount);
+                    *scores = gmmKernel->GMM16(fv, means, vars, consts, maxScore, fvLength, mixCount);
                     scores++;
                     fv += fvLength;
                 }
@@ -552,47 +499,47 @@ status_t AcceleratorSw::xnnSoftwareKernel(SoftwareModel* model, req_profiler* pr
                 nOuts   = lyr->nOutputRows;
                 al      = nullptr;
             //}
-            sts = kd.xnns->affine(lyr, al, nOuts, &sat, fvBuffers);
+            sts = xnnKernel->affine(lyr, al, nOuts, &sat, fvBuffers);
             if (GNA_SUCCESS != sts) return sts;
             if (0 != (&((nn_layer_affine*)lyr->pLayerStruct)->pwl)->nSegments)
             {
-                kd.xnns->pwl(lyr, 0, nOuts - 1, 0, lyr->nInputColumns - 1, &sat, fvBuffers->pwl);
+                xnnKernel->pwl(lyr, 0, nOuts - 1, 0, lyr->nInputColumns - 1, &sat, fvBuffers->pwl);
             }
         }
         else if (INTEL_AFFINE_MULTIBIAS == lyr->nLayerKind)
         {
-            sts = kd.xnns->affineMbias(lyr, al, nOuts, &sat, fvBuffers);
+            sts = xnnKernel->affineMbias(lyr, al, nOuts, &sat, fvBuffers);
             if (GNA_SUCCESS != sts) return sts;
             if (0 != (&((nn_layer_affine*)lyr->pLayerStruct)->pwl)->nSegments)
             {
-                kd.xnns->pwl(lyr, 0, lyr->nOutputRows - 1, 0, lyr->nInputColumns - 1, &sat, fvBuffers->pwl);
+                xnnKernel->pwl(lyr, 0, lyr->nOutputRows - 1, 0, lyr->nInputColumns - 1, &sat, fvBuffers->pwl);
             }
         }
         else if (lyr->nLayerKind == INTEL_AFFINE_DIAGONAL)
         {
-            sts = kd.xnns->diagonal(lyr, &sat);
+            sts = xnnKernel->diagonal(lyr, &sat);
             if (GNA_SUCCESS != sts) return sts;
             if (0 != (&((nn_layer_affine*)lyr->pLayerStruct)->pwl)->nSegments)
             {
-                kd.xnns->pwl(lyr, 0, lyr->nOutputRows - 1, 0, lyr->nInputColumns - 1, &sat, fvBuffers->pwl);
+                xnnKernel->pwl(lyr, 0, lyr->nOutputRows - 1, 0, lyr->nInputColumns - 1, &sat, fvBuffers->pwl);
             }
         }
         else if (lyr->nLayerKind == INTEL_RECURRENT)
         {
-            sts = kd.xnns->recurrent(lyr, &sat, fvBuffers->pwl);
+            sts = xnnKernel->recurrent(lyr, &sat, fvBuffers->pwl);
         }
         else if (INTEL_INTERLEAVE   == lyr->nLayerKind || 
                  INTEL_DEINTERLEAVE == lyr->nLayerKind)
         {
-            sts = kd.xnns->transpose(lyr);
+            sts = xnnKernel->transpose(lyr);
         }
         else if (lyr->nLayerKind == INTEL_COPY)
         {
-            sts = kd.xnns->copy(lyr);
+            sts = xnnKernel->copy(lyr);
         }
         else if (lyr->nLayerKind == INTEL_CONVOLUTIONAL)
         {
-            sts = kd.xnns->conv(lyr, &sat, fvBuffers->pwl, fvBuffers->pool);
+            sts = xnnKernel->conv(lyr, &sat, fvBuffers->pwl, fvBuffers->pool);
             if (sts != GNA_SUCCESS)return sts;
         }
         else
@@ -611,4 +558,44 @@ status_t AcceleratorSw::xnnSoftwareKernel(SoftwareModel* model, req_profiler* pr
         return GNA_SSATURATE;
     }
     return sts;
+}
+
+void AcceleratorSw::selectKernels()
+{
+    switch(accel){
+    case GNA_AVX2_FAST:
+        gmmKernel = &gmmKernel_avx2;
+        xnnKernel = &xnnKernel_avx2;
+        break;
+    case GNA_AVX2_SAT:
+        gmmKernel = &gmmKernel_avx2;
+        xnnKernel = &xnnKernel_avx2_sat;
+        break;
+    case GNA_AVX1_FAST:
+        gmmKernel = &gmmKernel_avx1;
+        xnnKernel = &xnnKernel_avx1;
+        break;
+    case GNA_AVX1_SAT:
+        gmmKernel = &gmmKernel_avx1;
+        xnnKernel = &xnnKernel_avx1_sat;
+        break;
+    case GNA_SSE4_2_FAST:
+        gmmKernel = &gmmKernel_sse4;
+        xnnKernel = &xnnKernel_sse4;
+        break;
+    case GNA_SSE4_2_SAT:
+        gmmKernel = &gmmKernel_sse4;
+        xnnKernel = &xnnKernel_sse4_sat;
+        break;
+    case GNA_GEN_FAST:
+        gmmKernel = &gmmKernel_generic;
+        xnnKernel = &xnnKernel_generic;
+        break;
+    case GNA_GEN_SAT:
+        gmmKernel = &gmmKernel_generic;
+        xnnKernel = &xnnKernel_generic_sat;
+        break;
+    default:
+        throw GnaException(GNA_CPUTYPENOTSUPPORTED);
+    }
 }

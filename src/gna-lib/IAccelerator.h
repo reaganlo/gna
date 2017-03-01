@@ -25,18 +25,12 @@
 
 #pragma once
 
-#include <map>
-
-#include "common.h"
-#include "Request.h"
+#include "CompiledModel.h"
+#include "SubModel.h"
 #include "RequestConfiguration.h"
 
 namespace GNA
 {
-    class CompiledModel;
-
-    class Request;
-class IAccelerator;
 
 /**
  * Accelerator Interface
@@ -45,38 +39,26 @@ class IAccelerator
 {
 public:
 
+    IAccelerator(acceleration acceleration_mode) : accel(acceleration_mode) {}
     /**
-     * Submits Xnn request for calculation
-     *
-     * @network     Neural network model or nullptr
-     * @actIndices  active indices data
-     * @nActIndices active indices number
-     * @reqId       (out)(optional) id of submitted request
-     * @return  status submission
+     * Scores the whole xNN model
      */
-    virtual status_t Score(
+    virtual void Score(
         const CompiledModel&        model,
-        const RequestConfiguration& config,
-        const uint32_t              layerIndex,
-        const uint32_t              layerCount) = 0;
+        const RequestConfiguration& config) = 0;
 
     /**
-     * Waits for completion of Scoring IOCTL by GMM device driver
-     * retrieves results and profiling info
-     * dequeues and releases request if not in processing anymore
-     *
-     * @r       scoring request to complete
-     * @timeout time [ms] after that wait fails if not completed
-     * @perfResults buffer to save performance results to, or nullptr
-     * @return  status of request processing, not scoring status
+     * Scores part of xNN model described by submodel
      */
-    virtual status_t Wait(
-        Request*        r,
-        uint32_t        timeout,
-        perf_t*         perfResults) = 0;
+    virtual void Score(
+        const CompiledModel&        model,
+        const SubModel&             submodel,
+        const RequestConfiguration& config) = 0;
 
-
-    virtual ~IAccelerator() {};
+    virtual ~IAccelerator() = default;
+    
+protected:
+    acceleration accel;
 };
 
 }

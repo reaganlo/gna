@@ -151,6 +151,8 @@ public:
     ActivationFunction(const nn_func_pwl *pwl);
     virtual ~ActivationFunction() = default;
 
+    ActivationFunction() = delete;
+
     const uint32_t SegmentCount;
     const nn_pwl_seg *Segments;
     const bool Enabled;

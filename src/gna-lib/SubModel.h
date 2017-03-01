@@ -51,6 +51,7 @@ private:
     const uint32_t layerIndex;
     uint32_t layerCount;
 
+    SubModel(SubModel&& rhs) = default;
     SubModel(const SubModel &) = delete;
     SubModel& operator=(const SubModel&) = delete;
 };

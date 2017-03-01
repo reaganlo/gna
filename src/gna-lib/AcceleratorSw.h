@@ -25,45 +25,34 @@
 
 #pragma once
 
-#include "Accelerator.h"
-#include "KernelDispatcher.h"
+#include "IAccelerator.h"
 #include "GmmLayer.h"
+#include "Request.h"
+#include "XnnKernelApi.h"
+#include "gmm.h"
 
 namespace GNA
 {
 
-class AcceleratorSw : public Accelerator
+class AcceleratorSw : public IAccelerator
 {
-friend class AcceleratorCnl;
 public:    
-    /** @See IAccelerator */
-    status_t Wait(
-        Request*        r,
-        uint32_t        timeout,
-        perf_t*         perfResults)
-        override;
+    AcceleratorSw(acceleration accel);
 
     /**
-     * Initializes processing device if available
-     *
-     * @nProcessorType      acceleration mode
-     * @status      (out)   status of opening device
+     * Deleted functions to prevent from being defined or called
+     * @see: https://msdn.microsoft.com/en-us/library/dn457344.aspx
      */
-    AcceleratorSw(acceleration nProcessorType);
+    AcceleratorSw() = delete;
+    AcceleratorSw(const AcceleratorSw &) = delete;
+    AcceleratorSw& operator=(const AcceleratorSw&) = delete;
 
-    status_t init()
-        override;
+    void Score(const CompiledModel& model, const SubModel& submodel, const RequestConfiguration& requestConfiguration) override;
+    void Score(const CompiledModel& model, const RequestConfiguration& requestConfiguration) override;
 
 protected:
-    /**
-     * software calculation kernels dispatcher
-     */
-    KernelDispatcher    kd;
-
-    /** @See Accelerator */
-    status_t submit(
-         Request*   r)
-         override;
+    XnnKernel *xnnKernel;
+    GmmKernel *gmmKernel;
 
 private:
     status_t gmmSoftwareKernel(
@@ -80,13 +69,7 @@ private:
         uint32_t *pS,
         uint32_t maxScore);
 
-    /**
-     * Deleted functions to prevent from being defined or called
-     * @see: https://msdn.microsoft.com/en-us/library/dn457344.aspx
-     */
-    AcceleratorSw() = delete;
-    AcceleratorSw(const AcceleratorSw &) = delete;
-    AcceleratorSw& operator=(const AcceleratorSw&) = delete;
+    void selectKernels();
 };
 
 }

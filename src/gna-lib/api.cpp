@@ -165,7 +165,7 @@ intel_gna_status_t GnaModelRequestConfigAdd(
 intel_gna_status_t GnaRequestConfigBufferAdd(
     gna_request_cfg_id  configId,
     gna_buffer_type     type,
-    uint16_t            layerIndex,
+    uint32_t            layerIndex,
     void*               address)
 {
     Gna2Ultimate.AttachBuffer(configId, type, layerIndex, address);
@@ -174,7 +174,7 @@ intel_gna_status_t GnaRequestConfigBufferAdd(
 
 intel_gna_status_t GnaRequestConfigActiveListAdd(
     gna_request_cfg_id  configId,
-    uint16_t            layerIndex,
+    uint32_t            layerIndex,
     uint32_t            indicesCount,
     uint32_t*           indices)
 {

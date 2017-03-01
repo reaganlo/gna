@@ -38,6 +38,7 @@ void RequestConfiguration::AddBuffer(gna_buffer_type type, uint32_t layerIndex, 
     case GNA_IN:
     case GNA_OUT:
         RequestBuffers[type].emplace_back(type, layerIndex, address);
+        break;
     default:
         throw GnaException(GNA_ERR_UNKNOWN);
     }

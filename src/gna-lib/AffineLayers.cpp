@@ -31,11 +31,11 @@ using namespace GNA;
 
 AffineLayer::AffineLayer(const nn_layer *layer, const uint32_t inputVectorCount) :
     Layer(layer, inputVectorCount),
-    sourceAffineLayer(static_cast<const nn_layer_affine*>(layer->pLayerStruct)),
-    Activation(make_unique<ActivationFunction>(&sourceAffineLayer->pwl))
+    Activation(&static_cast<const nn_layer_affine*>(layer->pLayerStruct)->pwl),
+    sourceAffineLayer(static_cast<const nn_layer_affine*>(layer->pLayerStruct))
 {
-    Validate::IsTrue(INTEL_AFFINE == layer->nLayerKind, XNN_ERR_LYR_CFG);
-    Output.Validate(Activation->Enabled, layer->nBytesPerOutput);
+    //Validate::IsTrue(INTEL_AFFINE == layer->nLayerKind, XNN_ERR_LYR_CFG);
+    Output.Validate(Activation.Enabled, layer->nBytesPerOutput);
 
     auto affine = &sourceAffineLayer->affine;
     if (GNA_WEIGHT_2B == affine->nBytesPerWeight)
@@ -51,11 +51,11 @@ AffineLayer::AffineLayer(const nn_layer *layer, const uint32_t inputVectorCount)
 
 AffineMultiBiasLayer::AffineMultiBiasLayer(const nn_layer *layer, const uint32_t inputVectorCount) :
     Layer(layer, inputVectorCount),
-    sourceAffineLayer(static_cast<const nn_layer_affine_multi*>(layer->pLayerStruct)),
-    Activation(make_unique<ActivationFunction>(&sourceAffineLayer->pwl))
+    Activation(&static_cast<const nn_layer_affine_multi*>(layer->pLayerStruct)->pwl),
+    sourceAffineLayer(static_cast<const nn_layer_affine_multi*>(layer->pLayerStruct))
 {
-    Validate::IsTrue(INTEL_AFFINE == layer->nLayerKind, XNN_ERR_LYR_CFG);
-    Output.Validate(Activation->Enabled, layer->nBytesPerOutput);
+    //Validate::IsTrue(INTEL_AFFINE == layer->nLayerKind, XNN_ERR_LYR_CFG);
+    Output.Validate(Activation.Enabled, layer->nBytesPerOutput);
 
     auto affine = &sourceAffineLayer->affine;
     if (GNA_WEIGHT_2B == affine->nBytesPerWeight)

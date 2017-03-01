@@ -58,10 +58,10 @@ status_t Device::Open(gna_device_id *deviceId, uint8_t threadCount)
     }
 
     // detect available cpu accelerations
-    kernelDispatcher.DetectAccelerations();
+    accelerationDetector.DetectAccelerations();
 
-    acceleration fastestMode = kernelDispatcher.GetFastestAcceleration();
-    acceleratorController.CreateAccelerators(kernelDispatcher.IsHardwarePresent(), fastestMode);
+    acceleration fastestMode = accelerationDetector.GetFastestAcceleration();
+    acceleratorController.CreateAccelerators(accelerationDetector.IsHardwarePresent(), fastestMode);
 
     requestHandler.Init(threadCount);
 
@@ -105,7 +105,7 @@ size_t Device::AllocateMemory(size_t requestedSize, void **buffer)
 
 void Device::FreeMemory()
 {
-    free(userMemory);
+    _gna_free(userMemory);
     userMemory = nullptr;
 }
 
@@ -119,14 +119,14 @@ void Device::LoadModel(gna_model_id *modelId, const gna_model *raw_model)
     modelContainer.AllocateModel(modelId, raw_model);
 
     auto &model = modelContainer.GetModel(*modelId);
-    modelCompiler.CascadeCompile(model, kernelDispatcher);
+    modelCompiler.CascadeCompile(model, accelerationDetector);
 }
 
 void Device::PropagateRequest(gna_request_cfg_id configId, acceleration accel, gna_request_id *requestId)
 {
     auto& configuration = requestBuilder.GetConfiguration(configId);
     auto& model = modelContainer.GetModel(configuration.ModelId);
-    auto callback = [&](){ return acceleratorController.ScoreModel(model, configuration, accel); };
+    auto callback = [&, accel](){ return acceleratorController.ScoreModel(model, configuration, accel); };
 
     requestHandler.Enqueue(requestId, callback);
 }
