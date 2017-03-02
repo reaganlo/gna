@@ -23,10 +23,10 @@
  in any way.
 */
 
+#include <fstream>
+
 #include "AcceleratorHwVerbose.h"
 #include "Device.h"
-
-#include <fstream>
 
 using std::ifstream;
 using std::string;

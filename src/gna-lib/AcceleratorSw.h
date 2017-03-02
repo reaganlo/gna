@@ -26,10 +26,10 @@
 #pragma once
 
 #include "IAccelerator.h"
+#include "gmm.h"
 #include "GmmLayer.h"
 #include "Request.h"
 #include "XnnKernelApi.h"
-#include "gmm.h"
 
 namespace GNA
 {
@@ -47,8 +47,18 @@ public:
     AcceleratorSw(const AcceleratorSw &) = delete;
     AcceleratorSw& operator=(const AcceleratorSw&) = delete;
 
-    void Score(const CompiledModel& model, const SubModel& submodel, const RequestConfiguration& requestConfiguration) override;
-    void Score(const CompiledModel& model, const RequestConfiguration& requestConfiguration) override;
+    status_t Score(
+        const CompiledModel& model,
+        const RequestConfiguration& requestConfiguration,
+              req_profiler *profiler,
+              aligned_fv_bufs *buffers) override;
+
+    status_t Score(
+        const CompiledModel& model,
+        const SubModel& submodel,
+        const RequestConfiguration& requestConfiguration,
+              req_profiler *profiler,
+              aligned_fv_bufs *buffers) override;
 
 protected:
     XnnKernel *xnnKernel;
@@ -59,17 +69,11 @@ private:
         GmmLayer* gmm,
         req_profiler* profiler);
 
-    status_t xnnSoftwareKernel(
-        SoftwareModel* model,
-        req_profiler* profiler);
-
     static inline status_t checkScoresSaturation(
         uint32_t nGMMs,
         uint32_t nVectors,
         uint32_t *pS,
         uint32_t maxScore);
-
-    void selectKernels();
 };
 
 }

@@ -25,12 +25,11 @@
 
 #pragma once
 
-#include <memory>
 #include <array>
 #include <vector>
 
-#include "common.h"
 #include "ActiveList.h"
+#include "common.h"
 
 namespace GNA
 {

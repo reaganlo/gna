@@ -32,7 +32,7 @@ namespace GNA
 
 enum SubmodelType
 {
-    Software = 0,
+    Software,
     Hardware,
     GMMHardware
 };

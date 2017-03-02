@@ -24,6 +24,7 @@
 */
 
 #include "LayerFunctions.h"
+#include "Validator.h"
 
 using namespace GNA;
 

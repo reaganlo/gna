@@ -25,13 +25,18 @@
 
 #include "Request.h"
 
+using std::function;
+using std::future;
+using std::move;
+using std::unique_ptr;
+
 using namespace GNA;
 
-#include <future>
-using std::future;
-
-Request::Request(gna_request_id requestId, std::function<status_t()> callback)
-    : id(requestId), scoreTask(callback)
+Request::Request(
+    gna_request_id requestId,
+    function<status_t(aligned_fv_bufs*)> callback,
+    unique_ptr<req_profiler> profiler)
+        : id(requestId), profiler(move(profiler)), scoreTask(callback)
 {
     memset(&profiler, 0, sizeof(req_profiler));
 }

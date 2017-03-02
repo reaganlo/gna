@@ -25,11 +25,11 @@
 
 #pragma once
 
+#include "AccelerationDetector.h"
 #include "HardwareModel.h"
 #include "SoftwareModel.h"
 #include "SubModel.h"
 #include "RequestConfiguration.h"
-#include "AccelerationDetector.h"
 
 #include <vector>
 

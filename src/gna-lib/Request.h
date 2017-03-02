@@ -25,10 +25,11 @@
 
 #pragma once
 
-#include "CompiledModel.h"
-#include "SwHw.h"
-
 #include <functional>
+#include <future>
+
+#include "GnaException.h"
+#include "SwHw.h"
 
 namespace GNA
 {
@@ -54,22 +55,25 @@ typedef struct _request_profiler
 /**
  * Calculation request for single scoring or propagate forward operation
  */
-class Request : public std::future<status_t>
+class Request
 {
 public:
     /**
      * Creates empty request
      */
-    Request(gna_request_id requestId, std::function<status_t()> callback);
+    Request(
+        gna_request_id requestId,
+        std::function<status_t(aligned_fv_bufs*)> callback,
+        std::unique_ptr<req_profiler> profiler);
 
     /**
      * Destroys request resources if any
      */
     ~Request() {}
 
-    void operator()()
+    void operator()(aligned_fv_bufs *buffers)
     {
-        scoreTask();
+        scoreTask(buffers);
     }
 
     /**************************************************************************
@@ -86,7 +90,7 @@ public:
     /**
      * performance profiler
      */
-    req_profiler    profiler;
+    unique_ptr<req_profiler> profiler;
 
 #endif
 
@@ -94,7 +98,9 @@ public:
 
 private:
 
-    std::packaged_task<status_t()> scoreTask;
+    std::packaged_task<status_t(aligned_fv_bufs *buffers)> scoreTask;
+
+    status_t scoreStatus = GNA_DEVICEBUSY;
 
     /**
      * Deleted functions to prevent from being defined or called

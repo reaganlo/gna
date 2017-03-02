@@ -23,9 +23,9 @@
  in any way.
 */
 
-#include "HardwareModel.h"
 #include "GnaDrvApi.h"
 #include "GnaException.h"
+#include "HardwareModel.h"
 
 using namespace GNA;
 

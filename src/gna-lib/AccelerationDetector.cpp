@@ -28,7 +28,9 @@
 #ifdef _WIN32
 #include <intrin.h>
 #endif
+
 #include "AccelerationDetector.h"
+#include "GnaException.h"
 
 using std::shared_ptr;
 using std::make_shared;

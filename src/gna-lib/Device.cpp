@@ -23,10 +23,13 @@
  in any way.
 */
 
-#include "Device.h"
-
 #include <memory>
+
+#include "Device.h"
+#include "GnaException.h"
+
 using std::make_shared;
+
 using namespace GNA;
 
 void Device::AttachBuffer(gna_request_cfg_id configId, gna_buffer_type type, uint16_t layerIndex, void *address)
@@ -124,11 +127,12 @@ void Device::LoadModel(gna_model_id *modelId, const gna_model *raw_model)
 
 void Device::PropagateRequest(gna_request_cfg_id configId, acceleration accel, gna_request_id *requestId)
 {
+    auto profiler = std::make_unique<req_profiler>();
     auto& configuration = requestBuilder.GetConfiguration(configId);
     auto& model = modelContainer.GetModel(configuration.ModelId);
-    auto callback = [&, accel](){ return acceleratorController.ScoreModel(model, configuration, accel); };
+    auto callback = [&, accel](aligned_fv_bufs *buffers){ return acceleratorController.ScoreModel(model, configuration, accel, profiler.get(), buffers); };
 
-    requestHandler.Enqueue(requestId, callback);
+    requestHandler.Enqueue(requestId, callback, std::move(profiler));
 }
 
 status_t Device::WaitForRequest(gna_request_id requestId, gna_timeout milliseconds)

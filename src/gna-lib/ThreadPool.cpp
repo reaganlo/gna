@@ -23,22 +23,22 @@
  in any way.
 */
 
-#include "ThreadPool.h"
 #include "common.h"
-#include "pwl-types.h"
 #include "GnaException.h"
+#include "pwl-types.h"
+#include "ThreadPool.h"
 
-using std::unique_lock;
-using std::packaged_task;
-using std::make_shared;
 using std::condition_variable;
 using std::function;
 using std::future;
+using std::make_shared;
 using std::map;
 using std::mutex;
-using std::thread;
-using std::vector;
+using std::packaged_task;
 using std::queue;
+using std::thread;
+using std::unique_lock;
+using std::vector;
 
 using namespace GNA;
 
@@ -56,6 +56,85 @@ ThreadPool::~ThreadPool()
     Stop();
 }
 
+void allocateFvBuffers(aligned_fv_bufs * buffers)
+{
+    buffers->d0 = (int16_t*)_gna_malloc(8 * (UINT16_MAX + 1) * sizeof(int16_t));
+    if (nullptr == buffers->d0)
+    {
+        throw GnaException(GNA_ERR_RESOURCES);
+    }
+    buffers->d1 = buffers->d0 + UINT16_MAX + 1;
+    buffers->d2 = buffers->d1 + UINT16_MAX + 1;
+    buffers->d3 = buffers->d2 + UINT16_MAX + 1;
+    buffers->d4 = buffers->d3 + UINT16_MAX + 1;
+    buffers->d5 = buffers->d4 + UINT16_MAX + 1;
+    buffers->d6 = buffers->d5 + UINT16_MAX + 1;
+    buffers->d7 = buffers->d6 + UINT16_MAX + 1;
+
+    buffers->pool = (int64_t*)_kernel_malloc(CNN_POOL_SIZE_MAX * CNN_N_FLT_MAX * sizeof(int64_t));
+    if (nullptr == buffers->pool)
+    {
+        throw GnaException(GNA_ERR_RESOURCES);
+    }
+
+    buffers->lookup = _gna_malloc(PWL_LOOKUP_SIZE);
+    if (nullptr == buffers->lookup)
+    {
+        throw GnaException(GNA_ERR_RESOURCES);
+    }
+
+    buffers->xBase = _gna_malloc(PWL_X_BUFFER_SIZE + PWL_Y_BUFFER_SIZE);
+    if (nullptr == buffers->xBase)
+    {
+        throw GnaException(GNA_ERR_RESOURCES);
+    }
+
+    buffers->ySeg = ((int8_t*)(buffers->xBase) + PWL_X_BUFFER_SIZE);
+
+    buffers->pwl = _kernel_malloc(PWL_PARAMS_BUFFER_SIZE);
+    if (nullptr == buffers->pwl)
+    {
+        throw GnaException(GNA_ERR_RESOURCES);
+    }
+
+    memset(buffers->pwl,    0,      PWL_PARAMS_BUFFER_SIZE);
+    memset(buffers->lookup, 0xff,   PWL_LOOKUP_SIZE);
+    memset(buffers->xBase,  0,      PWL_X_BUFFER_SIZE);
+    memset(buffers->ySeg,   0,      PWL_Y_BUFFER_SIZE);
+
+    ((pwl_params*)buffers->pwl)->lookup = (pwl_u_t*)buffers->lookup;
+    ((pwl_params*)buffers->pwl)->xBase  = (pwl_x_t*)buffers->xBase;
+    ((pwl_params*)buffers->pwl)->ySeg   = (pwl_y_t*)buffers->ySeg;
+}
+
+void deallocateFvBuffers(aligned_fv_bufs *buffers)
+{
+    if (nullptr != buffers->d0)
+    {
+        _gna_free(buffers->d0);
+        buffers->d0 = nullptr;
+    }
+    if (nullptr != buffers->pool)
+    {
+        _gna_free(buffers->pool);
+        buffers->pool = nullptr;
+    }
+    if (nullptr != buffers->pwl)
+    {
+        _gna_free(buffers->pwl);
+        buffers->pwl = nullptr;
+    }
+    if (nullptr != buffers->lookup)
+    {
+        _gna_free(buffers->lookup);
+        buffers->lookup = nullptr;
+    }
+    if (nullptr != buffers->xBase)
+    {
+        _gna_free(buffers->xBase);
+        buffers->xBase = nullptr;
+    }
+}
 
 void ThreadPool::Init(uint8_t n_threads) 
 {
@@ -71,21 +150,26 @@ void ThreadPool::Init(uint8_t n_threads)
     for (uint8_t i = 0; i < n_threads; i++)
     {
         this->workers.emplace_back([&]() {
-            while (true) 
+            thread_local aligned_fv_bufs buffers;
+            allocateFvBuffers(&buffers);
+            while (true)
             {
                 {
                     unique_lock<mutex> lock(tp_mutex);
                     condition.wait(lock, [&]() { return stopped || !tasks.empty(); });
-                    if (true == stopped) return;
+                    if (true == stopped)
+                    {
+                        deallocateFvBuffers(&buffers);
+                        return;
+                    }
                     if (false == tasks.empty()) {
                         auto& request_task = tasks.front();
                         tasks.pop();
-                        (*request_task)();
+                        (*request_task)(&buffers);
                     } 
                 }
             }
         });
-        threadMap[workers.at(i).get_id()] = i;
     }
 }
 
@@ -114,116 +198,10 @@ void ThreadPool::Stop()
     }
 
     condition.notify_all();
-    for (thread &worker : workers) 
+    for (auto &worker : workers) 
     {
         worker.join();
     }
     // release resources if any left
     this->workers.erase(workers.begin(), workers.end());
-    this->threadMap.erase(threadMap.begin(), threadMap.end());
-    for (size_t i = 0; i < tasks.size(); i++)
-    {
-        tasks.pop();
-    }
-
-    auto iterator = threadBuffers.begin();
-    for (; iterator != threadBuffers.end(); iterator++)
-    {
-        aligned_fv_bufs buffers = iterator->second;
-        if (nullptr != buffers.d0)
-        {
-            _gna_free(buffers.d0);
-            buffers.d0 = nullptr;
-        }
-        if (nullptr != buffers.pool)
-        {
-            _gna_free(buffers.pool);
-            buffers.pool = nullptr;
-        }
-        if (nullptr != buffers.pwl)
-        {
-            _gna_free(buffers.pwl);
-            buffers.pwl = nullptr;
-        }
-        if (nullptr != buffers.lookup)
-        {
-            _gna_free(buffers.lookup);
-            buffers.lookup = nullptr;
-        }
-        if (nullptr != buffers.xBase)
-        {
-            _gna_free(buffers.xBase);
-            buffers.xBase = nullptr;
-        }
-    }
-    threadBuffers.clear();
-}
-
-uint8_t ThreadPool::GetThreadNumber()
-{
-    thread::id threadId = std::this_thread::get_id();
-    uint8_t threadNumber = threadMap[threadId];
-    return threadNumber;
-}
-
-aligned_fv_bufs* ThreadPool::GetThreadBuffer()
-{
-    uint8_t threadNumber = GetThreadNumber();
-    return &threadBuffers[threadNumber];
-}
-
-status_t ThreadPool::AllocThreadBuffers(uint32_t n_threads)
-{
-    for (uint8_t i = 0; i < n_threads; i++)
-    {
-        threadBuffers[i].d0 = (int16_t*)_gna_malloc(8 * (UINT16_MAX + 1) * sizeof(int16_t));
-        if (nullptr == threadBuffers[i].d0)
-        {
-            return GNA_ERR_RESOURCES;
-        }
-        threadBuffers[i].d1 = threadBuffers[i].d0 + UINT16_MAX + 1;
-        threadBuffers[i].d2 = threadBuffers[i].d1 + UINT16_MAX + 1;
-        threadBuffers[i].d3 = threadBuffers[i].d2 + UINT16_MAX + 1;
-        threadBuffers[i].d4 = threadBuffers[i].d3 + UINT16_MAX + 1;
-        threadBuffers[i].d5 = threadBuffers[i].d4 + UINT16_MAX + 1;
-        threadBuffers[i].d6 = threadBuffers[i].d5 + UINT16_MAX + 1;
-        threadBuffers[i].d7 = threadBuffers[i].d6 + UINT16_MAX + 1;
-
-        threadBuffers[i].pool = (int64_t*)_kernel_malloc(CNN_POOL_SIZE_MAX * CNN_N_FLT_MAX * sizeof(int64_t));
-        if (nullptr == threadBuffers[i].pool)
-        {
-            return GNA_ERR_RESOURCES;
-        }
-
-        threadBuffers[i].lookup = _gna_malloc(PWL_LOOKUP_SIZE);
-        if (nullptr == threadBuffers[i].lookup)
-        {
-            return GNA_ERR_RESOURCES;
-        }
-
-        threadBuffers[i].xBase = _gna_malloc(PWL_X_BUFFER_SIZE + PWL_Y_BUFFER_SIZE);
-        if (nullptr == threadBuffers[i].xBase)
-        {
-            return GNA_ERR_RESOURCES;
-        }
-
-        threadBuffers[i].ySeg = ((int8_t*)(threadBuffers[i].xBase) + PWL_X_BUFFER_SIZE);
-
-        threadBuffers[i].pwl = _kernel_malloc(PWL_PARAMS_BUFFER_SIZE);
-        if (nullptr == threadBuffers[i].pwl)
-        {
-            return GNA_ERR_RESOURCES;
-        }
-
-        memset(threadBuffers[i].pwl,    0,      PWL_PARAMS_BUFFER_SIZE);
-        memset(threadBuffers[i].lookup, 0xff,   PWL_LOOKUP_SIZE);
-        memset(threadBuffers[i].xBase,  0,      PWL_X_BUFFER_SIZE);
-        memset(threadBuffers[i].ySeg,   0,      PWL_Y_BUFFER_SIZE);
-
-        ((pwl_params*)threadBuffers[i].pwl)->lookup = (pwl_u_t*)threadBuffers[i].lookup;
-        ((pwl_params*)threadBuffers[i].pwl)->xBase  = (pwl_x_t*)threadBuffers[i].xBase;
-        ((pwl_params*)threadBuffers[i].pwl)->ySeg   = (pwl_y_t*)threadBuffers[i].ySeg;
-    }
-
-    return GNA_SUCCESS;
 }

@@ -24,6 +24,7 @@
 */
 
 #include "GmmLayer.h"
+#include "Validator.h"
 
 using namespace GNA;
 

@@ -25,8 +25,8 @@
 
 #pragma once
 
-#include "Layer.h"
 #include "ActiveList.h"
+#include "Layer.h"
 
 namespace GNA
 {

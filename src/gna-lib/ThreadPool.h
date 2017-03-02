@@ -30,12 +30,12 @@
 #include <future>
 #include <map>
 #include <mutex>
+#include <queue>
 #include <thread>
 #include <vector>
-#include <queue>
 
-#include "Request.h"
 #include "common.h"
+#include "Request.h"
 
 namespace GNA
 {
@@ -65,17 +65,6 @@ public:
     void Enqueue(Request *request);
 
     /**
-     * Gets number of current thread from thread map
-     *
-     * @return thread number - value of thread map
-     */
-    uint8_t GetThreadNumber();
-
-    status_t ThreadPool::AllocThreadBuffers(uint32_t n_threads);
-
-    aligned_fv_bufs* ThreadPool::GetThreadBuffer();
-
-    /**
      * Constructor
      */
     ThreadPool();
@@ -97,16 +86,6 @@ private:
     std::condition_variable condition;
 
     bool stopped;
-
-    /**
-     * Maps thread id to thread number
-     */
-    std::map<std::thread::id, uint8_t> threadMap;
-
-    /**
-     * Auxilliary thread buffers for kernel threads
-     **/
-    std::map<uint8_t, aligned_fv_bufs> threadBuffers;
 
     /**
      * Deleted functions to prevent from being defined or called

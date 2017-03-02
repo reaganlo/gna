@@ -25,14 +25,14 @@
 
 #pragma once
 
-#include "Layer.h"
+#include "ActiveList.h"
 #include "AffineLayers.h"
 #include "ConvolutionalLayer.h"
 #include "GmmLayer.h"
+#include "Layer.h"
 #include "RecurrentLayer.h"
 #include "SimpleLayers.h"
 #include "SwHw.h"
-#include "ActiveList.h"
 
 namespace GNA
 {

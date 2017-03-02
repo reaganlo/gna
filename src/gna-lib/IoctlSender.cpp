@@ -24,9 +24,10 @@
 */
 
 #include "IoctlSender.h"
-#include <SetupApi.h>
 #include "GnaException.h"
 #include "Validator.h"
+
+#include <SetupApi.h>
 
 using namespace GNA;
 

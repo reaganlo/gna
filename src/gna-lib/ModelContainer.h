@@ -25,10 +25,10 @@
 
 #pragma once
 
+#include <map>
+
 #include "common.h"
 #include "CompiledModel.h"
-
-#include <map>
 
 namespace GNA
 {

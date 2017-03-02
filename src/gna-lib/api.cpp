@@ -28,6 +28,7 @@
 #include <thread>
 
 #include "Device.h"
+#include "GnaException.h"
 
 using std::thread;
 using namespace GNA;

@@ -23,8 +23,9 @@
  in any way.
 */
 
-#include "ModelContainer.h"
 #include <cassert>
+
+#include "ModelContainer.h"
 
 using std::map;
 using std::make_unique;

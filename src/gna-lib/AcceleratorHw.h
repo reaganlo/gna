@@ -27,9 +27,9 @@
 
 #include <string>
 
+#include "IAccelerator.h"
 #include "IoctlSender.h"
 #include "Request.h"
-#include "IAccelerator.h"
 
 namespace GNA
 {
@@ -49,8 +49,18 @@ public:
     AcceleratorHw(const AcceleratorHw &) = delete;
     AcceleratorHw& operator=(const AcceleratorHw&) = delete;
 
-    void Score(const CompiledModel& model, const RequestConfiguration& requestConfiguration) override;
-    void Score(const CompiledModel& model, const SubModel& submodel, const RequestConfiguration& requestConfiguration) override;
+    status_t Score(
+        const CompiledModel& model,
+        const RequestConfiguration& requestConfiguration,
+              req_profiler *profiler,
+              aligned_fv_bufs *buffers) override;
+
+    status_t Score(
+        const CompiledModel& model,
+        const SubModel& submodel,
+        const RequestConfiguration& requestConfiguration,
+              req_profiler *profiler,
+              aligned_fv_bufs *buffers) override;
 
 protected:
     bool driverDebug = false;

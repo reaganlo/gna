@@ -25,11 +25,11 @@
 
 #pragma once
 
-#include "Request.h"
-
 #include <mutex>
 #include <map>
 #include "ThreadPool.h"
+
+#include "Request.h"
 
 namespace GNA 
 {
@@ -42,7 +42,10 @@ public:
      *
      * @reqId   (out)(optional) id of submitted request
      */
-    void Enqueue(gna_request_id * requestId, std::function<status_t()> callback);
+    void Enqueue(
+        gna_request_id *requestId, 
+        std::function<status_t(aligned_fv_bufs *buffers)> callback,
+        unique_ptr<req_profiler> profiler);
 
     status_t WaitFor(const gna_request_id requestId, const gna_timeout milliseconds);
 
@@ -64,7 +67,7 @@ private:
     /**
      * mutex for synchronizing request map operations
      */
-    std::mutex*  lock;
+    std::mutex*  lock = nullptr;
 
     ThreadPool threadPool;
 

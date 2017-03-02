@@ -28,6 +28,7 @@
 #include <cstdint>
 #include "common.h"
 #include "IAccelerator.h"
+#include "Request.h"
 
 #include <map>
 
@@ -42,8 +43,7 @@ typedef enum _ScoreMethod
 {
     SoftwareOnly,
     HardwareOnly,
-    Mixed,
-    None // there is no method to score model AKA hardware requested but no hardware exists
+    Mixed
 } ScoreMethod;
 
 class AcceleratorController
@@ -54,7 +54,12 @@ public:
     void CreateAccelerators(bool isHardwarePresent, acceleration fastestMode);
     void ClearAccelerators();
 
-    status_t ScoreModel(CompiledModel& model, RequestConfiguration& config, acceleration accel);
+    status_t ScoreModel(
+        CompiledModel& model, 
+        RequestConfiguration& config,
+        acceleration accel,
+        req_profiler *profiler,
+        aligned_fv_bufs *buffers);
 
 private:
     std::map<acceleration, std::shared_ptr<IAccelerator>> accelerators;

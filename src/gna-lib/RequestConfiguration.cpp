@@ -23,11 +23,9 @@
  in any way.
 */
 
-#include "RequestConfiguration.h"
 #include "GnaException.h"
+#include "RequestConfiguration.h"
 #include "Validator.h"
-
-using std::make_unique;
 
 using namespace GNA;
 

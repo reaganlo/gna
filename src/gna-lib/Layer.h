@@ -29,7 +29,6 @@
 #include <memory>
 
 #include "common.h"
-#include "Validator.h"
 #include "GnaConfig.h"
 
 using std::unique_ptr;

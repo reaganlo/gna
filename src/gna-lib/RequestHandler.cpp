@@ -23,8 +23,9 @@
  in any way.
 */
 
-#include "RequestHandler.h"
 #include "Device.h"
+#include "GnaException.h"
+#include "RequestHandler.h"
 
 using std::unique_ptr;
 using std::pair;
@@ -32,7 +33,10 @@ using std::mutex;
 
 using namespace GNA;
 
-void RequestHandler::Enqueue(gna_request_id * requestId, std::function<status_t()> callback)
+void RequestHandler::Enqueue(
+    gna_request_id *requestId,
+    std::function<status_t(aligned_fv_bufs *buffers)> callback,
+    unique_ptr<req_profiler> profiler)
 {
     // store request
     lock->lock();
@@ -46,7 +50,7 @@ void RequestHandler::Enqueue(gna_request_id * requestId, std::function<status_t(
 
     *requestId = nRequests;
     nRequests = (++(nRequests)) % GNA_REQUEST_WAIT_ANY; // increment id counter
-    auto insert = requests.try_emplace(*requestId, std::make_unique<Request>(*requestId, callback));
+    auto insert = requests.try_emplace(*requestId, std::make_unique<Request>(*requestId, callback, std::move(profiler)));
 
     if (true != insert.second)
     {

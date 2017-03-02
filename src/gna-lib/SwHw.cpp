@@ -23,8 +23,10 @@
  in any way.
 */
 
-#include "SwHw.h"
 #include "HwLayer.h"
+#include "SwHw.h"
+#include "GnaException.h"
+#include "Validator.h"
 
 using namespace GNA;
 

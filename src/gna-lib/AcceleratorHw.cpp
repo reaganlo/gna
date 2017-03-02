@@ -32,8 +32,24 @@
 using std::string;
 using namespace GNA;
 
-void AcceleratorHw::Score(const CompiledModel& model, const RequestConfiguration& requestConfiguration) {}
-void AcceleratorHw::Score(const CompiledModel& model, const SubModel& submodel, const RequestConfiguration& requestConfiguration) {}
+status_t AcceleratorHw::Score(
+    const CompiledModel& model,
+    const RequestConfiguration& requestConfiguration,
+          req_profiler *profiler,
+          aligned_fv_bufs *buffers)
+{
+    return GNA_SUCCESS;
+}
+
+status_t AcceleratorHw::Score(
+    const CompiledModel& model,
+    const SubModel& submodel,
+    const RequestConfiguration& requestConfiguration,
+          req_profiler *profiler,
+          aligned_fv_bufs *buffers)
+{
+    return GNA_SUCCESS;
+}
 //status_t AcceleratorHw::Score(Hw *hw, req_profiler* p)
 //{
 //    // TODO: with already compiled model, this won't be necessary

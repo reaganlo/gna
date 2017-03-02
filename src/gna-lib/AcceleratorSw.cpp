@@ -24,28 +24,157 @@
 */
 
 #include "AcceleratorSw.h"
+#include "GnaException.h"
+#include "Validator.h"
 
 using namespace GNA;
 
 AcceleratorSw::AcceleratorSw(acceleration acceleration_mode) 
     : IAccelerator(acceleration_mode)
 {
-    selectKernels();
+    switch(accel){
+    case GNA_AVX2_FAST:
+        gmmKernel = &gmmKernel_avx2;
+        xnnKernel = &xnnKernel_avx2;
+        break;
+    case GNA_AVX2_SAT:
+        gmmKernel = &gmmKernel_avx2;
+        xnnKernel = &xnnKernel_avx2_sat;
+        break;
+    case GNA_AVX1_FAST:
+        gmmKernel = &gmmKernel_avx1;
+        xnnKernel = &xnnKernel_avx1;
+        break;
+    case GNA_AVX1_SAT:
+        gmmKernel = &gmmKernel_avx1;
+        xnnKernel = &xnnKernel_avx1_sat;
+        break;
+    case GNA_SSE4_2_FAST:
+        gmmKernel = &gmmKernel_sse4;
+        xnnKernel = &xnnKernel_sse4;
+        break;
+    case GNA_SSE4_2_SAT:
+        gmmKernel = &gmmKernel_sse4;
+        xnnKernel = &xnnKernel_sse4_sat;
+        break;
+    case GNA_GEN_FAST:
+        gmmKernel = &gmmKernel_generic;
+        xnnKernel = &xnnKernel_generic;
+        break;
+    case GNA_GEN_SAT:
+        gmmKernel = &gmmKernel_generic;
+        xnnKernel = &xnnKernel_generic_sat;
+        break;
+    default:
+        throw GnaException(GNA_CPUTYPENOTSUPPORTED);
+    }
 }
 
-void AcceleratorSw::Score(
+status_t AcceleratorSw::Score(
     const CompiledModel& model, 
     const SubModel& submodel, 
-    const RequestConfiguration& requestConfiguration)
+    const RequestConfiguration& requestConfiguration,
+          req_profiler *profiler,
+          aligned_fv_bufs *buffers)
 {
-    
+    return GNA_SUCCESS;
 }
 
-void AcceleratorSw::Score(
+status_t AcceleratorSw::Score(
     const CompiledModel& model,
-    const RequestConfiguration& requestConfiguration)
+    const RequestConfiguration& requestConfiguration,
+          req_profiler *profiler,
+          aligned_fv_bufs *fvBuffers)
 {
-    
+    profilerDTscAStart(&profiler->scoring);
+
+    auto status = GNA_SUCCESS;
+
+    uint32_t i = 0;
+    uint32_t nOuts = 0;        // # of outputs (all or active list indices)
+    uint32_t sat = 0;        // scoring saturation counter
+    uint32_t* al = nullptr;        // active list indices data
+
+    // TODO: add thread buffer as input to calculation function
+
+    auto& softwareModel = model.GetSoftwareModel();
+    nn_layer* lyr = nullptr;
+    for (; i < softwareModel.layerCount; i++)
+    {
+        lyr = const_cast<nn_layer*>(&softwareModel.Layers[i]->sourceLayer);
+        Validate::IsNull(lyr);
+        if (INTEL_AFFINE == lyr->nLayerKind)
+        {
+            //// use active list in last layer if available
+            //if ((i == softwareModel.layerCount - 1) && model->activeList.enabled)
+            //{
+            //    nOuts   = softwareModel.activeList.indicesCount;
+            //    al      = (uint32_t*)softwareModel.activeList.indices;
+            //}
+            //else // regular outputs
+            //{
+                nOuts   = lyr->nOutputRows;
+                al      = nullptr;
+            //}
+            status = xnnKernel->affine(lyr, al, nOuts, &sat, fvBuffers);
+            if (GNA_SUCCESS != status) return status;
+            if (0 != (&((nn_layer_affine*)lyr->pLayerStruct)->pwl)->nSegments)
+            {
+                xnnKernel->pwl(lyr, 0, nOuts - 1, 0, lyr->nInputColumns - 1, &sat, fvBuffers->pwl);
+            }
+        }
+        else if (INTEL_AFFINE_MULTIBIAS == lyr->nLayerKind)
+        {
+            status = xnnKernel->affineMbias(lyr, al, nOuts, &sat, fvBuffers);
+            if (GNA_SUCCESS != status) return status;
+            if (0 != (&((nn_layer_affine*)lyr->pLayerStruct)->pwl)->nSegments)
+            {
+                xnnKernel->pwl(lyr, 0, lyr->nOutputRows - 1, 0, lyr->nInputColumns - 1, &sat, fvBuffers->pwl);
+            }
+        }
+        else if (lyr->nLayerKind == INTEL_AFFINE_DIAGONAL)
+        {
+            status = xnnKernel->diagonal(lyr, &sat);
+            if (GNA_SUCCESS != status) return status;
+            if (0 != (&((nn_layer_affine*)lyr->pLayerStruct)->pwl)->nSegments)
+            {
+                xnnKernel->pwl(lyr, 0, lyr->nOutputRows - 1, 0, lyr->nInputColumns - 1, &sat, fvBuffers->pwl);
+            }
+        }
+        else if (lyr->nLayerKind == INTEL_RECURRENT)
+        {
+            status = xnnKernel->recurrent(lyr, &sat, fvBuffers->pwl);
+        }
+        else if (INTEL_INTERLEAVE   == lyr->nLayerKind || 
+                 INTEL_DEINTERLEAVE == lyr->nLayerKind)
+        {
+            status = xnnKernel->transpose(lyr);
+        }
+        else if (lyr->nLayerKind == INTEL_COPY)
+        {
+            status = xnnKernel->copy(lyr);
+        }
+        else if (lyr->nLayerKind == INTEL_CONVOLUTIONAL)
+        {
+            status = xnnKernel->conv(lyr, &sat, fvBuffers->pwl, fvBuffers->pool);
+            if (status != GNA_SUCCESS)return status;
+        }
+        else
+        {
+            status = XNN_ERR_LYR_TYPE;
+        }
+
+        if (GNA_SUCCESS != status) return status;
+    }
+
+    profilerDTscAStop(&profiler->scoring);
+    profilerDTscAStop(&profiler->total);
+
+    if (sat > 0)
+    {
+        return GNA_SSATURATE;
+    }
+    return status;
 }
 
 status_t AcceleratorSw::checkScoresSaturation(uint32_t nGMMs, uint32_t nVectors, uint32_t *pS, uint32_t maxScore)
@@ -466,136 +595,4 @@ status_t AcceleratorSw::gmmSoftwareKernel(GmmLayer* gmm, req_profiler* profiler)
     profilerDTscAStop(&profiler->scoring);
     profilerDTscAStop(&profiler->total);
     return s;
-}
-
-status_t AcceleratorSw::xnnSoftwareKernel(SoftwareModel* model, req_profiler* profiler)
-{
-    status_t    sts     = GNA_SUCCESS;
-    uint32_t    i       = 0;
-    nn_layer* lyr     = nullptr;
-    uint32_t    nOuts   = 0;        // # of outputs (all or active list indices)
-    uint32_t*   al      = 0;        // active list indices data
-    uint32_t    sat     = 0;        // scoring saturation counter
-
-    profilerDTscAStart(&profiler->scoring);
-
-    // TODO: add thread buffer as input to calculation function
-    aligned_fv_bufs* fvBuffers = nullptr; // threadPool.getThreadBuffer();
-
-    for (; i < model->layerCount; i++)
-    {
-        lyr = const_cast<nn_layer*>(&model->Layers[i]->sourceLayer);
-        Validate::IsNull(lyr);
-        if (INTEL_AFFINE == lyr->nLayerKind)
-        {
-            //// use active list in last layer if available
-            //if ((i == model->layerCount - 1) && model->activeList.enabled)
-            //{
-            //    nOuts   = model->activeList.indicesCount;
-            //    al      = (uint32_t*)model->activeList.indices;
-            //}
-            //else // regular outputs
-            //{
-                nOuts   = lyr->nOutputRows;
-                al      = nullptr;
-            //}
-            sts = xnnKernel->affine(lyr, al, nOuts, &sat, fvBuffers);
-            if (GNA_SUCCESS != sts) return sts;
-            if (0 != (&((nn_layer_affine*)lyr->pLayerStruct)->pwl)->nSegments)
-            {
-                xnnKernel->pwl(lyr, 0, nOuts - 1, 0, lyr->nInputColumns - 1, &sat, fvBuffers->pwl);
-            }
-        }
-        else if (INTEL_AFFINE_MULTIBIAS == lyr->nLayerKind)
-        {
-            sts = xnnKernel->affineMbias(lyr, al, nOuts, &sat, fvBuffers);
-            if (GNA_SUCCESS != sts) return sts;
-            if (0 != (&((nn_layer_affine*)lyr->pLayerStruct)->pwl)->nSegments)
-            {
-                xnnKernel->pwl(lyr, 0, lyr->nOutputRows - 1, 0, lyr->nInputColumns - 1, &sat, fvBuffers->pwl);
-            }
-        }
-        else if (lyr->nLayerKind == INTEL_AFFINE_DIAGONAL)
-        {
-            sts = xnnKernel->diagonal(lyr, &sat);
-            if (GNA_SUCCESS != sts) return sts;
-            if (0 != (&((nn_layer_affine*)lyr->pLayerStruct)->pwl)->nSegments)
-            {
-                xnnKernel->pwl(lyr, 0, lyr->nOutputRows - 1, 0, lyr->nInputColumns - 1, &sat, fvBuffers->pwl);
-            }
-        }
-        else if (lyr->nLayerKind == INTEL_RECURRENT)
-        {
-            sts = xnnKernel->recurrent(lyr, &sat, fvBuffers->pwl);
-        }
-        else if (INTEL_INTERLEAVE   == lyr->nLayerKind || 
-                 INTEL_DEINTERLEAVE == lyr->nLayerKind)
-        {
-            sts = xnnKernel->transpose(lyr);
-        }
-        else if (lyr->nLayerKind == INTEL_COPY)
-        {
-            sts = xnnKernel->copy(lyr);
-        }
-        else if (lyr->nLayerKind == INTEL_CONVOLUTIONAL)
-        {
-            sts = xnnKernel->conv(lyr, &sat, fvBuffers->pwl, fvBuffers->pool);
-            if (sts != GNA_SUCCESS)return sts;
-        }
-        else
-        {
-            sts = XNN_ERR_LYR_TYPE;
-        }
-
-        if (GNA_SUCCESS != sts) return sts;
-    }
-
-    profilerDTscAStop(&profiler->scoring);
-    profilerDTscAStop(&profiler->total);
-
-    if (sat > 0)
-    {
-        return GNA_SSATURATE;
-    }
-    return sts;
-}
-
-void AcceleratorSw::selectKernels()
-{
-    switch(accel){
-    case GNA_AVX2_FAST:
-        gmmKernel = &gmmKernel_avx2;
-        xnnKernel = &xnnKernel_avx2;
-        break;
-    case GNA_AVX2_SAT:
-        gmmKernel = &gmmKernel_avx2;
-        xnnKernel = &xnnKernel_avx2_sat;
-        break;
-    case GNA_AVX1_FAST:
-        gmmKernel = &gmmKernel_avx1;
-        xnnKernel = &xnnKernel_avx1;
-        break;
-    case GNA_AVX1_SAT:
-        gmmKernel = &gmmKernel_avx1;
-        xnnKernel = &xnnKernel_avx1_sat;
-        break;
-    case GNA_SSE4_2_FAST:
-        gmmKernel = &gmmKernel_sse4;
-        xnnKernel = &xnnKernel_sse4;
-        break;
-    case GNA_SSE4_2_SAT:
-        gmmKernel = &gmmKernel_sse4;
-        xnnKernel = &xnnKernel_sse4_sat;
-        break;
-    case GNA_GEN_FAST:
-        gmmKernel = &gmmKernel_generic;
-        xnnKernel = &xnnKernel_generic;
-        break;
-    case GNA_GEN_SAT:
-        gmmKernel = &gmmKernel_generic;
-        xnnKernel = &xnnKernel_generic_sat;
-        break;
-    default:
-        throw GnaException(GNA_CPUTYPENOTSUPPORTED);
-    }
 }

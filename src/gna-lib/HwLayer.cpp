@@ -24,6 +24,7 @@
 */
 
 #include "HwLayer.h"
+#include "Validator.h"
 
 using namespace GNA;
 

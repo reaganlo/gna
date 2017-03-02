@@ -24,11 +24,12 @@
 */
 
 #include "AcceleratorController.h"
-#include "AcceleratorSw.h"
 #include "AcceleratorHw.h"
 #include "AcceleratorHwVerbose.h"
-#include "RequestConfiguration.h"
+#include "AcceleratorSw.h"
 #include "CompiledModel.h"
+#include "GnaException.h"
+#include "RequestConfiguration.h"
 
 using std::make_shared;
 using std::shared_ptr;
@@ -98,12 +99,12 @@ ScoreMethod AcceleratorController::getScoreMethod(CompiledModel &model, accelera
     // acceleration mode validation
     if ((accel >= NUM_GNA_ACCEL_MODES || accel < 2) && accel != GNA_HW)
     {
-        throw GnaException(XNN_ERR_LYR_TYPE);
+        throw GnaException(GNA_CPUTYPENOTSUPPORTED);
     }
 
     // hardware requested, but no hardware exists
     if (GNA_HW == accel && !hardwarePresent)
-        return None;
+        throw GnaException(GNA_DEVNOTFOUND);
 
     // software acceleration
     if (accel != GNA_AUTO_FAST && accel != GNA_AUTO_SAT && accel != GNA_HW)
@@ -135,17 +136,20 @@ ScoreMethod AcceleratorController::getScoreMethod(CompiledModel &model, accelera
     return Mixed;
 }
 
-status_t AcceleratorController::ScoreModel(CompiledModel& model, RequestConfiguration& config, acceleration accel)
+status_t AcceleratorController::ScoreModel(
+    CompiledModel& model, 
+    RequestConfiguration& config,
+    acceleration accel,
+    req_profiler *profiler,
+    aligned_fv_bufs *buffers)
 {
+    auto status = GNA_SUCCESS;
     auto scoreMethod = getScoreMethod(model, accel);
-    switch(scoreMethod)
+    switch (scoreMethod)
     {
     case SoftwareOnly:
-        accelerators[accel]->Score(model, config);
-        break;
     case HardwareOnly:
-        accelerators[GNA_HW]->Score(model, config);
-        break;
+        return accelerators[accel]->Score(model, config, profiler, buffers);
     case Mixed:
     {
         auto& acceleratorHw = accelerators[GNA_HW];
@@ -157,22 +161,22 @@ status_t AcceleratorController::ScoreModel(CompiledModel& model, RequestConfigur
             switch (submodel->Type)
             {
             case Software:
-                acceleratorSw->Score(model, *submodel.get(), config);
+                status = acceleratorSw->Score(model, *submodel.get(), config, profiler, buffers);
+                if (status != GNA_SUCCESS && status != GNA_SSATURATE)
+                    return status;
                 break;
             case Hardware:
-                acceleratorHw->Score(model, *submodel.get(), config);
+                status = acceleratorHw->Score(model, *submodel.get(), config, profiler, buffers);
+                if (status != GNA_SUCCESS && status != GNA_SSATURATE)
+                    return status;
                 break;
             case GMMHardware:
-            default:
-                return GNA_ERR_UNKNOWN;
+                throw GnaException(GNA_CPUTYPENOTSUPPORTED);
             }
         }
         break;
     }
-    case None:
-    default:
-        return GNA_ERR_UNKNOWN;
     }
 
-    return GNA_SUCCESS;
+    return status;
 }

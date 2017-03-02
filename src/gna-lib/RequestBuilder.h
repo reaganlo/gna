@@ -25,11 +25,11 @@
 
 #pragma once
 
-#include "common.h"
-#include "RequestConfiguration.h"
-
 #include <memory>
 #include <vector>
+
+#include "common.h"
+#include "RequestConfiguration.h"
 
 namespace GNA
 {

@@ -27,10 +27,10 @@
 #define _DEVICE_H
 
 #include "AcceleratorController.h"
-#include "ModelContainer.h"
 #include "ModelCompiler.h"
-#include "RequestHandler.h"
+#include "ModelContainer.h"
 #include "RequestBuilder.h"
+#include "RequestHandler.h"
 
 namespace GNA
 {

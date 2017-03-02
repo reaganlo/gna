@@ -26,8 +26,9 @@
 #pragma once
 
 #include "CompiledModel.h"
-#include "SubModel.h"
+#include "Request.h"
 #include "RequestConfiguration.h"
+#include "SubModel.h"
 
 namespace GNA
 {
@@ -43,17 +44,21 @@ public:
     /**
      * Scores the whole xNN model
      */
-    virtual void Score(
+    virtual status_t Score(
         const CompiledModel&        model,
-        const RequestConfiguration& config) = 0;
+        const RequestConfiguration& config,
+              req_profiler *profiler,
+              aligned_fv_bufs *buffers) = 0;
 
     /**
      * Scores part of xNN model described by submodel
      */
-    virtual void Score(
+    virtual status_t Score(
         const CompiledModel&        model,
         const SubModel&             submodel,
-        const RequestConfiguration& config) = 0;
+        const RequestConfiguration& config,
+              req_profiler *profiler,
+              aligned_fv_bufs *buffers) = 0;
 
     virtual ~IAccelerator() = default;
     

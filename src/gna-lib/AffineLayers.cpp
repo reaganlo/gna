@@ -24,6 +24,7 @@
 */
 
 #include "AffineLayers.h"
+#include "Validator.h"
 
 using std::make_unique;
 
