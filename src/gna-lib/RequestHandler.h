@@ -67,7 +67,7 @@ private:
     /**
      * mutex for synchronizing request map operations
      */
-    std::mutex*  lock = nullptr;
+    std::mutex lock;
 
     ThreadPool threadPool;
 

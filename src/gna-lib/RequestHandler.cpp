@@ -38,58 +38,49 @@ void RequestHandler::Enqueue(
     std::function<status_t(aligned_fv_bufs *buffers)> callback,
     unique_ptr<req_profiler> profiler)
 {
-    // store request
-    lock->lock();
-    // check if container is full
-    if (requests.size() >= GNA_REQUEST_QUEUE_LENGTH)
     {
-        lock->unlock();
-        throw GnaException(GNA_ERR_QUEUE);
-    }
-    // add to container
+        std::lock_guard<std::mutex> lockGuard(lock);
 
-    *requestId = nRequests;
-    nRequests = (++(nRequests)) % GNA_REQUEST_WAIT_ANY; // increment id counter
-    auto insert = requests.try_emplace(*requestId, std::make_unique<Request>(*requestId, callback, std::move(profiler)));
+        if (requests.size() >= GNA_REQUEST_QUEUE_LENGTH)
+        {
+            throw GnaException(GNA_ERR_QUEUE);
+        }
 
-    if (true != insert.second)
-    {
-        nRequests--;
-        lock->unlock();
-        throw GnaException(GNA_ERR_RESOURCES);
+        *requestId = nRequests;
+        auto insert = requests.try_emplace(*requestId, std::make_unique<Request>(*requestId, callback, std::move(profiler)));
+
+        if (!insert.second)
+        {
+            throw GnaException(GNA_ERR_RESOURCES);
+        }
+
+        nRequests = (++nRequests) % GNA_REQUEST_WAIT_ANY;
     }
-    lock->unlock();
+
     threadPool.Enqueue(requests.at(*requestId).get());
 }
 
 status_t RequestHandler::removeRequest(gna_request_id requestId)
 {
-    lock->lock();
+    std::lock_guard<std::mutex> lockGuard(lock);
     auto r = requests.find(requestId);
     if (requests.end() != r)
     {
         requests.erase(requestId);
-        lock->unlock();
         return GNA_SUCCESS;
     }
-    lock->unlock();
     return GNA_BADREQID;
 }
 
-void RequestHandler::initRequestMap() 
+void RequestHandler::initRequestMap()
 {
     nRequests = 0;
-    lock = new mutex();
 }
 
-void RequestHandler::clearRequestMap() 
+void RequestHandler::clearRequestMap()
 {
-    lock->lock();
+    std::lock_guard<std::mutex> lockGuard(lock);
     requests.clear();
-    lock->unlock();
-
-    delete lock;
-    lock = nullptr;
 }
 
 void RequestHandler::Init(uint8_t threadCount)
