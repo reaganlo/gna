@@ -64,3 +64,43 @@ igemm8_subset(
         }
     }
 }
+
+void
+igemm8_subset_mb(
+    const   uint32_t    M,
+    const   uint32_t    N,
+    const   uint32_t    K,
+    const   int16_t*    I,
+    const   int8_t*     W,
+    const   nn_bias_s*  B,
+    const   uint32_t    BG,
+    const   nn_bias_c*  CB,
+    int32_t*    O,
+    const   uint32_t*   AL,
+    const   uint32_t    L,
+    uint32_t*   nSat,
+    aligned_fv_bufs*    fvBuffers)
+{
+    uint32_t i, j, k, l;
+    const int16_t *ptr_in;
+    const int8_t *ptr_w;
+
+    transpose16(K, N, I, fvBuffers->d0);
+
+    for (l = 0; l < L; ++l)
+    {
+        i = AL[l];
+        ptr_in = fvBuffers->d0;
+        ptr_w = W + i*K;
+        for (j = 0; j < N; ++j)
+        {
+            O[l*N + j] = 0;
+            for (k = 0; k < K; ++k)
+            {
+                O[l*N + j] += ptr_w[k] * *ptr_in++;
+            }
+            O[l*N + j] *= CB[i].multiplier;
+            O[l*N + j] += B[i*BG];
+        }
+    }
+}

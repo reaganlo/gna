@@ -36,19 +36,18 @@ igemm16(
     const   nn_bias_s*  B,
             int32_t*    O,
             uint32_t*   nSat,
-    aligned_fv_bufs* fvBuffers,
-    const int biasShift)
+    aligned_fv_bufs* fvBuffers)
 {
     uint32_t i, j, k;
-    const int16_t *ptr_in, *ptr_w = W;
+    int16_t *ptr_in, *ptr_w = const_cast<int16_t*>(W);
 
-    int32_t *ptr_out = nullptr;
-    const int32_t *ptr_b = B,
-                  *b_end = ptr_b + M*biasShift;
+    int32_t *ptr_out = O,
+            *ptr_b = const_cast<nn_bias_s*>(B),
+            *b_end = ptr_b + M;
 
     transpose16(K, N, I, fvBuffers->d0);
 
-    for (; ptr_b < b_end; ptr_b += biasShift)
+    for (; ptr_b < b_end;)
     {
         ptr_in = fvBuffers->d0;
         for (j = 0; j < N; j++)
@@ -62,5 +61,43 @@ igemm16(
             ptr_out++;
         }
         ptr_w += K;
+        ptr_b++;
+    }
+}
+
+void
+igemm16_mb(
+    const   uint32_t    M,
+    const   uint32_t    N,
+    const   uint32_t    K,
+    const   int16_t*    I,
+    const   int16_t*    W,
+    const   nn_bias_s*  B,
+    const   uint32_t    BG,
+    int32_t*    O,
+    uint32_t*   nSat,
+    aligned_fv_bufs* fvBuffers)
+{
+    uint32_t j, k;
+    const int16_t *ptr_in;
+    const int32_t * const b_end = B + M;
+
+    transpose16(K, N, I, fvBuffers->d0);
+
+    for (; B < b_end;)
+    {
+        ptr_in = fvBuffers->d0;
+        for (j = 0; j < N; j++)
+        {
+            *O = *B;
+            for (k = 0; k < K; k++)
+            {
+                *O += W[k] * *ptr_in++;
+            }
+
+            O++;
+        }
+        W += K;
+        B += BG;
     }
 }

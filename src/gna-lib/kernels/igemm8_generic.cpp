@@ -65,3 +65,42 @@ igemm8(
         ptr_b++;
     }
 }
+
+void
+igemm8_mb(
+    const   uint32_t    M,
+    const   uint32_t    N,
+    const   uint32_t    K,
+    const   int16_t*    I,
+    const   int8_t*     W,
+    const   nn_bias_s*  B,
+    const   uint32_t    BG,
+    const   nn_bias_c*  CB,
+    int32_t*    O,
+    uint32_t*   nSat,
+    aligned_fv_bufs*    fvBuffers)
+{
+    uint32_t j, k;
+    int16_t *ptr_in;
+    const nn_bias_c * const end_b = CB + M;
+
+    transpose16(K, N, I, fvBuffers->d0);
+
+    for (; CB < end_b;)
+    {
+        ptr_in = fvBuffers->d0;
+        for (j = 0; j < N; ++j)
+        {
+            *O = 0;
+            for (k = 0; k < K; ++k)
+            {
+                *O += W[k] * *ptr_in++;
+            }
+            *O *= CB->multiplier;
+            *O++ += *B;
+        }
+        W += K;
+        B += BG;
+        CB++;
+    }
+}

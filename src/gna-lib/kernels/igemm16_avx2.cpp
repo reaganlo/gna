@@ -36,8 +36,7 @@ const int16_t *W,
 const nn_bias_s *B,
       int32_t *Y,
       uint32_t *nSat,
-      aligned_fv_bufs* fvBuffers,
-      const int biasShift)
+      aligned_fv_bufs* fvBuffers)
 {
     int32_t *y = Y;
     int16_t *weight = const_cast<int16_t*>(W);
@@ -492,3 +491,16 @@ const nn_bias_s *B,
         return;
     }
 }
+
+void igemm16_mb(
+    const uint32_t M,
+    const uint32_t N,
+    const uint32_t K,
+    const int16_t *I,
+    const int16_t *W,
+    const nn_bias_s *B,
+    const uint32_t BG,
+    int32_t *Y,
+    uint32_t *nSat,
+    aligned_fv_bufs *bufs)
+{}

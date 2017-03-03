@@ -30,6 +30,8 @@
 
 #define igemm16                 KERNEL(igemm16)
 #define igemm16_subset          KERNEL(igemm16_subset)
+#define igemm16_mb              KERNEL(igemm16_mb)
+#define igemm16_subset_mb       KERNEL(igemm16_subset_mb)
 #define igemv16                 KERNEL(igemv16)
 #define isbmm16                 KERNEL(isbmm16)
 #define transpose16             KERNEL(transpose16)
@@ -62,8 +64,7 @@ igemm16(
     const   nn_bias_s*  B,
             int32_t*    O,
             uint32_t*   nSat,
-    aligned_fv_bufs*    fvBuffers,
-    const int biasShift = 1);
+    aligned_fv_bufs*    fvBuffers);
 
 /**
  * Calculates affine transform on interleaved input vectors
@@ -92,8 +93,68 @@ igemm16_subset(
     const   uint32_t*   AL,
     const   uint32_t    L,
             uint32_t*   nSat,
-    aligned_fv_bufs*    fvBuffers,
-    const int biasShift = 1);
+    aligned_fv_bufs*    fvBuffers);
+
+/**
+ * Calculates affine transform on interleaved input vectors
+ *  (input vectors in N columns, vector elements in K rows)
+ *  handles multi bias
+ *
+ * @M       number of output elements (out rows)
+ * @N       number of input vectors (columns)
+ * @K       number of input vector elements (rows)
+ * @I       input vectors pointer (interleaved) [K,N]
+ * @W       weights [M,K]
+ * @B       multi bias matrix
+ * @BG      multi bias grouping (number of bias vectors)
+ * @O       output matrix [M,N]
+ * @nSat    number of saturations found
+ */
+void
+igemm16_mb(
+    const   uint32_t    M,
+    const   uint32_t    N,
+    const   uint32_t    K,
+    const   int16_t*    I,
+    const   int16_t*    W,
+    const   nn_bias_s*  B,
+    const   uint32_t    BG,
+            int32_t*    O,
+            uint32_t*   nSat,
+    aligned_fv_bufs*    fvBuffers);
+
+/**
+ * Calculates affine transform on interleaved input vectors
+ *  (input vectors in N columns, vector elements in K rows)
+ *  uses active outputs list
+ *  handles multi bias
+ *
+ * @M       number of output elements (out rows)
+ * @N       number of input vectors (columns)
+ * @K       number of input vector elements (rows)
+ * @I       input vectors pointer (interleaved) [K,N]
+ * @W       weights [M,K]
+ * @B       multi bias matrix
+ * @BG      multi bias grouping (number of bias vectors)
+ * @O       output matrix [M,N]
+ * @AL      active indices list [L]
+ * @L       number of active indices
+ * @nSat    number of saturations found
+ */
+void
+igemm16_subset_mb(
+    const   uint32_t    M,
+    const   uint32_t    N,
+    const   uint32_t    K,
+    const   int16_t*    I,
+    const   int16_t*    W,
+    const   nn_bias_s*  B,
+    const   uint32_t    BG,
+    int32_t*    O,
+    const   uint32_t*   AL,
+    const   uint32_t    L,
+            uint32_t*   nSat,
+    aligned_fv_bufs*    fvBuffers);
 
 /**
  * Calculates recurrent transform on flat input vectors

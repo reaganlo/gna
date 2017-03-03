@@ -91,3 +91,72 @@ igemm8_subset(
         }
     }
 }
+
+void
+igemm8_subset_mb(
+    const   uint32_t    M,
+    const   uint32_t    N,
+    const   uint32_t    K,
+    const   int16_t*    I,
+    const   int8_t*     W,
+    const   nn_bias_s*  B,
+    const   uint32_t    BG,
+    const   nn_bias_c*  CB,
+    int32_t*    O,
+    const   uint32_t*   AL,
+    const   uint32_t    L,
+    uint32_t*   nSat,
+    aligned_fv_bufs*    fvBuffers)
+{
+    uint32_t niters, acc_iters, rem_iters;
+    uint32_t i, j, k, l, m;
+    int64_t sum;
+    int32_t acc;
+    uint32_t kk;
+    const uint32_t kpartial = hw_buf_size[N - 1] / N;
+    const uint32_t nKpartial = K / kpartial;
+
+    const int16_t *ptr_in;
+    const int8_t  *ptr_w;
+
+    transpose16(K, N, I, fvBuffers->d0);
+
+    for (l = 0; l < L; ++l) 
+    {
+        i = AL[l];
+        for (j = 0; j < N; ++j) 
+        {
+            sum = B[i*BG];
+            for (kk = 0; kk < nKpartial + 1; ++kk) 
+            {
+                niters = kpartial < K - kk * kpartial ? kpartial : K - kk * kpartial;
+
+                acc_iters = niters / 512;
+                rem_iters = niters % 512;
+                acc = 0;
+                for (k = 0; k < acc_iters; ++k)
+                {
+                    ptr_in = fvBuffers->d0 + j*K + kk * kpartial + k * 512;
+                    ptr_w = W + i*K + kk * kpartial + k * 512;
+                    for (m = 0; m < 512; ++m)
+                    {
+                        acc += ptr_w[m] * ptr_in[m];
+                    }
+                    sum += acc * CB[i].multiplier;
+                    acc = 0;
+                }
+
+                ptr_in = fvBuffers->d0 + j*K + kk * kpartial + acc_iters * 512;
+                ptr_w = W + i*K + kk * kpartial + acc_iters * 512;
+                for (k = 0; k < rem_iters; ++k)
+                {
+                    acc += ptr_w[k] * ptr_in[k];
+                }
+                sum += acc * CB[i].multiplier;
+
+                saturate_store_out(&sum, &O[l*N + j], nSat);
+                sum = O[l*N + j];
+            }
+        }
+    }
+}

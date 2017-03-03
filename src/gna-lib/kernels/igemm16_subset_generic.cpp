@@ -38,11 +38,47 @@ igemm16_subset(
     const   uint32_t*   AL,
     const   uint32_t    L,
             uint32_t*   nSat,
-    aligned_fv_bufs* fvBuffers,
-    const int biasShift)
+    aligned_fv_bufs* fvBuffers)
+{
+    uint32_t i, j, k, l;
+    int16_t *ptr_in, *ptr_w;
+    transpose16(K, N, const_cast<int16_t*>(I), fvBuffers->d0);
+
+    for (l = 0; l < L; l++)
+    {
+        i = AL[l];
+
+        ptr_in = fvBuffers->d0;
+        ptr_w = const_cast<int16_t*>(W)+i*K;
+        for (j = 0; j < N; j++)
+        {
+            O[l*N + j] = B[i];
+            for (k = 0; k < K; k++)
+            {
+                O[l*N + j] += ptr_w[k] * *ptr_in++;
+            }
+        }
+    }
+}
+
+void
+igemm16_subset_mb(
+    const   uint32_t    M,
+    const   uint32_t    N,
+    const   uint32_t    K,
+    const   int16_t*    I,
+    const   int16_t*    W,
+    const   nn_bias_s*  B,
+    const   uint32_t    BG,
+    int32_t*    O,
+    const   uint32_t*   AL,
+    const   uint32_t    L,
+    uint32_t*   nSat,
+    aligned_fv_bufs* fvBuffers)
 {
     uint32_t i, j, k, l;
     const int16_t *ptr_in, *ptr_w;
+
     transpose16(K, N, I, fvBuffers->d0);
 
     for (l = 0; l < L; l++)
@@ -53,7 +89,7 @@ igemm16_subset(
         ptr_w = W + i*K;
         for (j = 0; j < N; j++)
         {
-            O[l*N + j] = B[i*biasShift];
+            O[l*N + j] = B[i*BG];
             for (k = 0; k < K; k++)
             {
                 O[l*N + j] += ptr_w[k] * *ptr_in++;

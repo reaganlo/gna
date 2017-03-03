@@ -657,3 +657,19 @@ void igemm8(
         return;
     }
 }
+
+void
+igemm8_mb(
+    const   uint32_t    M,
+    const   uint32_t    N,
+    const   uint32_t    K,
+    const   int16_t*    I,
+    const   int8_t*     W,
+    const   nn_bias_s*  B,
+    const   uint32_t    BG,
+    const   nn_bias_c*  CB,
+    int32_t*    O,
+    uint32_t*   nSat,
+    aligned_fv_bufs*    fvBuffers)
+{}
+

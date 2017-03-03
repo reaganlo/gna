@@ -38,8 +38,7 @@ igemm16_subset(
     const   uint32_t*   AL,
     const   uint32_t    L,
             uint32_t*   nSat,
-    aligned_fv_bufs* fvBuffers,
-    const int biasShift)
+    aligned_fv_bufs* fvBuffers)
 {
     uint32_t i, j, k, l;
     int64_t sum;
@@ -64,6 +63,50 @@ igemm16_subset(
                 }
                 saturate_store_out(&sum, &O[l*N + j], nSat);
                 sum = (int64_t)O[l*N + j]; // load the temp sum
+            }
+        }
+    }
+}
+
+void igemm16_subset_mb(
+    const uint32_t M,
+    const uint32_t N,
+    const uint32_t K,
+    const int16_t *I,
+    const int16_t *W,
+    const nn_bias_s *B,
+    const uint32_t BG,
+    int32_t *O,
+    const uint32_t *AL,
+    const uint32_t L,
+    uint32_t *nSat,
+    aligned_fv_bufs *fvBuffers)
+{
+    uint32_t i, j, k, l;
+    int64_t sum;
+    uint32_t kk;
+    const uint32_t kpartial = (hw_buf_size[N - 1]) / N;
+    const uint32_t nKpartial = K / kpartial;
+
+    transpose16(K, N, I, fvBuffers->d0);
+    const int16_t *ptr_in, *ptr_w;
+
+    for (l = 0; l < L; l++)
+    {
+        i = AL[l];
+        for (j = 0; j < N; j++)
+        {
+            sum = B[i*BG];
+            for (kk = 0; kk < nKpartial + 1; kk++)
+            {
+                ptr_in = fvBuffers->d0 + j*K + kk * kpartial;
+                ptr_w = W + i*K + kk * kpartial;
+                for (k = 0; (k < kpartial) && (kk*kpartial + k < K); k++)
+                {
+                    sum += ptr_w[k] * ptr_in[k];
+                }
+                saturate_store_out(&sum, &O[l*N + j], nSat);
+                sum = O[l*N + j]; // load the temp sum
             }
         }
     }
