@@ -33,10 +33,9 @@ using std::unique_ptr;
 using namespace GNA;
 
 Request::Request(
-    gna_request_id requestId,
-    function<status_t(aligned_fv_bufs*)> callback,
-    unique_ptr<req_profiler> profiler)
-        : id(requestId), profiler(move(profiler)), scoreTask(callback)
+    RequestFunctor callback,
+    unique_ptr<req_profiler>&& profilerPtr)
+        : profiler(move(profilerPtr)), scoreTask(callback)
 {
     memset(profiler.get(), 0, sizeof(req_profiler));
 }
@@ -44,4 +43,9 @@ Request::Request(
 future<status_t> Request::GetFuture()
 {
     return scoreTask.get_future();
+}
+
+void Request::SetId(gna_request_id requestId)
+{
+    id = requestId;
 }

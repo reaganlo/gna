@@ -44,8 +44,7 @@ public:
      */
     void Enqueue(
         gna_request_id *requestId, 
-        std::function<status_t(aligned_fv_bufs *buffers)> callback,
-        unique_ptr<req_profiler> profiler);
+        unique_ptr<Request>&& request);
 
     status_t WaitFor(const gna_request_id requestId, const gna_timeout milliseconds);
 

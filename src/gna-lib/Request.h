@@ -52,6 +52,8 @@ typedef struct _request_profiler
 
 #endif // PROFILE
 
+using RequestFunctor = std::function<status_t(aligned_fv_bufs*, req_profiler*)>;
+
 /**
  * Calculation request for single scoring or propagate forward operation
  */
@@ -62,9 +64,8 @@ public:
      * Creates empty request
      */
     Request(
-        gna_request_id requestId,
-        std::function<status_t(aligned_fv_bufs*)> callback,
-        std::unique_ptr<req_profiler> profiler);
+        RequestFunctor callback,
+        std::unique_ptr<req_profiler>&& profiler);
 
     /**
      * Destroys request resources if any
@@ -73,7 +74,7 @@ public:
 
     void operator()(aligned_fv_bufs *buffers)
     {
-        scoreTask(buffers);
+        scoreTask(buffers, profiler.get());
     }
 
     /**************************************************************************
@@ -83,7 +84,7 @@ public:
     /**
      * External id (0-GNA_REQUEST_WAIT_ANY)
      */
-    uint32_t        id;
+    gna_request_id id = 0;
 
 #ifdef PROFILE
     
@@ -96,9 +97,11 @@ public:
 
     std::future<status_t> GetFuture();
 
-private:
+    // should be used only by RequestHandler
+    void SetId(gna_request_id requestId);
 
-    std::packaged_task<status_t(aligned_fv_bufs *buffers)> scoreTask;
+private:
+    std::packaged_task<status_t(aligned_fv_bufs *buffers, req_profiler *profiler)> scoreTask;
 
     status_t scoreStatus = GNA_DEVICEBUSY;
 

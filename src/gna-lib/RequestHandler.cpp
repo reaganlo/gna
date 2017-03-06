@@ -35,8 +35,7 @@ using namespace GNA;
 
 void RequestHandler::Enqueue(
     gna_request_id *requestId,
-    std::function<status_t(aligned_fv_bufs *buffers)> callback,
-    unique_ptr<req_profiler> profiler)
+    unique_ptr<Request>&& request)
 {
     {
         std::lock_guard<std::mutex> lockGuard(lock);
@@ -47,12 +46,14 @@ void RequestHandler::Enqueue(
         }
 
         *requestId = nRequests;
-        auto insert = requests.try_emplace(*requestId, std::make_unique<Request>(*requestId, callback, std::move(profiler)));
+        auto insert = requests.try_emplace(*requestId, std::move(request));
 
         if (!insert.second)
         {
             throw GnaException(GNA_ERR_RESOURCES);
         }
+
+        requests.at(*requestId)->SetId(*requestId);
 
         nRequests = (++nRequests) % GNA_REQUEST_WAIT_ANY;
     }
