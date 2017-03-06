@@ -39,6 +39,7 @@ using namespace GNA;
  *
  *****************************************************************************/
 
+ // TODO: use unique pointer instead
 Device Gna2Ultimate;
 
 const char *GNAStatusName[] =
@@ -238,6 +239,7 @@ status_t GnaFree(gna_device_id deviceId)
     return GNA_SUCCESS;
 }
 
+// TODO: instantiate unique pointer 
 intel_gna_status_t GnaDeviceOpen(
     uint8_t             threadCount,
     gna_device_id*      deviceId)
@@ -248,6 +250,7 @@ intel_gna_status_t GnaDeviceOpen(
     return status;
 }
 
+// TODO: delete unique pointer 
 intel_gna_status_t GnaDeviceClose(
     gna_device_id deviceId)
 {

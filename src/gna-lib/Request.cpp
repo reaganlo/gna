@@ -38,7 +38,7 @@ Request::Request(
     unique_ptr<req_profiler> profiler)
         : id(requestId), profiler(move(profiler)), scoreTask(callback)
 {
-    memset(&profiler, 0, sizeof(req_profiler));
+    memset(profiler.get(), 0, sizeof(req_profiler));
 }
 
 future<status_t> Request::GetFuture()

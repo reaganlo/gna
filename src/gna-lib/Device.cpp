@@ -29,6 +29,7 @@
 #include "GnaException.h"
 
 using std::make_shared;
+using std::move;
 
 using namespace GNA;
 
@@ -52,6 +53,7 @@ bool Device::ValidateSession(gna_device_id deviceId) const
     return id == deviceId && opened;
 }
 
+// TODO: implement as c-tor and propagate for members
 status_t Device::Open(gna_device_id *deviceId, uint8_t threadCount)
 {
     if(nHandles > GNA_DEVICE_LIMIT || opened)
@@ -79,6 +81,7 @@ status_t Device::Open(gna_device_id *deviceId, uint8_t threadCount)
     return GNA_SUCCESS;
 }
 
+// TODO: implement as d-tor and propagate for members
 void Device::Close()
 {
     if (!opened)
