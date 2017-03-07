@@ -62,7 +62,7 @@ igemm8(
     const   nn_bias_c*  B,
             int32_t*    O,
             uint32_t*   nSat,
-    aligned_fv_bufs*    fvBuffers);
+    KernelBuffers*    fvBuffers);
 
 /**
  * Calculates affine transform on interleaved input vectors
@@ -92,7 +92,7 @@ igemm8_subset(
     const   uint32_t*   AL,
     const   uint32_t    L,
             uint32_t*   nSat,
-    aligned_fv_bufs*    fvBuffers);
+    KernelBuffers*    fvBuffers);
 
 /**
  * Calculates affine transform on interleaved input vectors
@@ -121,7 +121,7 @@ igemm8_mb(
     const   nn_bias_c*  CB,
             int32_t*    O,
             uint32_t*   nSat,
-    aligned_fv_bufs*    fvBuffers);
+    KernelBuffers*    fvBuffers);
 
 /**
  * Calculates affine transform on interleaved input vectors
@@ -155,7 +155,7 @@ igemm8_subset_mb(
     const   uint32_t*   AL,
     const   uint32_t    L,
             uint32_t*   nSat,
-    aligned_fv_bufs*    fvBuffers);
+    KernelBuffers*    fvBuffers);
 
 /**
  * Calculates recurrent transform on flat input vectors

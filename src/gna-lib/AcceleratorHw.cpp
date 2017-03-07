@@ -35,8 +35,8 @@ using namespace GNA;
 status_t AcceleratorHw::Score(
     const CompiledModel& model,
     const RequestConfiguration& requestConfiguration,
-          req_profiler *profiler,
-          aligned_fv_bufs *buffers)
+          RequestProfiler *profiler,
+          KernelBuffers *buffers)
 {
     return GNA_SUCCESS;
 }
@@ -45,12 +45,12 @@ status_t AcceleratorHw::Score(
     const CompiledModel& model,
     const SubModel& submodel,
     const RequestConfiguration& requestConfiguration,
-          req_profiler *profiler,
-          aligned_fv_bufs *buffers)
+          RequestProfiler *profiler,
+          KernelBuffers *buffers)
 {
     return GNA_SUCCESS;
 }
-//status_t AcceleratorHw::Score(Hw *hw, req_profiler* p)
+//status_t AcceleratorHw::Score(Hw *hw, RequestProfiler* p)
 //{
 //    // TODO: with already compiled model, this won't be necessary
 //    //r->handle = (Sw*)new Hw(Device::buffer, hwInBuffSize);

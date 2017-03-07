@@ -36,7 +36,7 @@ void igemm8(
     const nn_bias_c *B,
           int32_t *O,
           uint32_t *nSat,
-          aligned_fv_bufs *bufs)
+          KernelBuffers *bufs)
 {
     uint32_t acc_iters;
     uint32_t rem_iters;
@@ -954,6 +954,6 @@ igemm8_mb(
     const   nn_bias_c*  CB,
     int32_t*    O,
     uint32_t*   nSat,
-    aligned_fv_bufs*    fvBuffers)
+    KernelBuffers*    fvBuffers)
 {}
 

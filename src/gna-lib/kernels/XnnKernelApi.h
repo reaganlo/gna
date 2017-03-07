@@ -37,7 +37,7 @@ status_t
     uint32_t*           pActiveIndices,
     uint32_t            nActiveIndices,
     uint32_t*           nSaturated,
-    aligned_fv_bufs*    fvBuffers);
+    KernelBuffers*    fvBuffers);
 
 typedef
 status_t
@@ -46,7 +46,7 @@ status_t
     uint32_t*           pActiveIndices,
     uint32_t            nActiveIndices,
     uint32_t*           nSaturated,
-    aligned_fv_bufs*    fvBuffers);
+    KernelBuffers*    fvBuffers);
 
 typedef
 status_t

@@ -130,13 +130,13 @@ void Device::LoadModel(gna_model_id *modelId, const gna_model *raw_model)
 
 void Device::PropagateRequest(gna_request_cfg_id configId, acceleration accel, gna_request_id *requestId)
 {
-    auto&& profiler = std::make_unique<req_profiler>();
+    auto profiler = std::make_unique<RequestProfiler>();
 
     auto& configuration = requestBuilder.GetConfiguration(configId);
     auto& model = modelContainer.GetModel(configuration.ModelId);
-    auto callback = [&, accel](aligned_fv_bufs *buffers, req_profiler *profilerPtr){ return acceleratorController.ScoreModel(model, configuration, accel, profilerPtr, buffers); };
+    auto callback = [&, accel](KernelBuffers *buffers, RequestProfiler *profilerPtr){ return acceleratorController.ScoreModel(model, configuration, accel, profilerPtr, buffers); };
 
-    auto&& request = std::make_unique<Request>(callback, std::move(profiler));
+    auto request = std::make_unique<Request>(callback, move(profiler));
     requestHandler.Enqueue(requestId, std::move(request));
 }
 

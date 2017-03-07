@@ -36,7 +36,7 @@ void igemm16(
     const nn_bias_s *B,
           int32_t *Y,
           uint32_t *nSat,
-          aligned_fv_bufs *bufs)
+          KernelBuffers *bufs)
 {
     uint32_t i, j, k, ix, ix_end;
 
@@ -664,5 +664,5 @@ void igemm16_mb(
     const uint32_t BG,
     int32_t *Y,
     uint32_t *nSat,
-    aligned_fv_bufs *bufs)
+    KernelBuffers *bufs)
 {}

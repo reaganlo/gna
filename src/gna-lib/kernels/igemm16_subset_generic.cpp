@@ -38,7 +38,7 @@ igemm16_subset(
     const   uint32_t*   AL,
     const   uint32_t    L,
             uint32_t*   nSat,
-    aligned_fv_bufs* fvBuffers)
+    KernelBuffers* fvBuffers)
 {
     uint32_t i, j, k, l;
     int16_t *ptr_in, *ptr_w;
@@ -74,7 +74,7 @@ igemm16_subset_mb(
     const   uint32_t*   AL,
     const   uint32_t    L,
     uint32_t*   nSat,
-    aligned_fv_bufs* fvBuffers)
+    KernelBuffers* fvBuffers)
 {
     uint32_t i, j, k, l;
     const int16_t *ptr_in, *ptr_w;

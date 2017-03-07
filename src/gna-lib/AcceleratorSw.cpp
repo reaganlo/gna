@@ -74,8 +74,8 @@ status_t AcceleratorSw::Score(
     const CompiledModel& model, 
     const SubModel& submodel, 
     const RequestConfiguration& requestConfiguration,
-          req_profiler *profiler,
-          aligned_fv_bufs *buffers)
+          RequestProfiler *profiler,
+          KernelBuffers *buffers)
 {
     return GNA_SUCCESS;
 }
@@ -83,8 +83,8 @@ status_t AcceleratorSw::Score(
 status_t AcceleratorSw::Score(
     const CompiledModel& model,
     const RequestConfiguration& requestConfiguration,
-          req_profiler *profiler,
-          aligned_fv_bufs *fvBuffers)
+          RequestProfiler *profiler,
+          KernelBuffers *fvBuffers)
 {
     profilerDTscAStart(&profiler->scoring);
 
@@ -193,7 +193,7 @@ status_t AcceleratorSw::checkScoresSaturation(uint32_t nGMMs, uint32_t nVectors,
     return GNA_SUCCESS;
 }
 
-status_t AcceleratorSw::gmmSoftwareKernel(GmmLayer* gmm, req_profiler* profiler)
+status_t AcceleratorSw::gmmSoftwareKernel(GmmLayer* gmm, RequestProfiler* profiler)
 {
     const uint8_t * const input = static_cast<const uint8_t * const>(gmm->Input.Buffer); // TODO:KJ:use request config outputs (only if defined for current layer)
     uint32_t *output = (uint32_t*)(gmm->Output.Buffer); // TODO:KJ:use request config outputs (only if defined for current layer)

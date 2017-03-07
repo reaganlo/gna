@@ -56,7 +56,7 @@ ThreadPool::~ThreadPool()
     Stop();
 }
 
-void allocateFvBuffers(aligned_fv_bufs * buffers)
+void allocateFvBuffers(KernelBuffers * buffers)
 {
     buffers->d0 = (int16_t*)_gna_malloc(8 * (UINT16_MAX + 1) * sizeof(int16_t));
     if (nullptr == buffers->d0)
@@ -107,7 +107,7 @@ void allocateFvBuffers(aligned_fv_bufs * buffers)
     ((pwl_params*)buffers->pwl)->ySeg   = (pwl_y_t*)buffers->ySeg;
 }
 
-void deallocateFvBuffers(aligned_fv_bufs *buffers)
+void deallocateFvBuffers(KernelBuffers *buffers)
 {
     if (nullptr != buffers->d0)
     {
@@ -150,7 +150,7 @@ void ThreadPool::Init(uint8_t n_threads)
     for (uint8_t i = 0; i < n_threads; i++)
     {
         this->workers.emplace_back([&]() {
-            thread_local aligned_fv_bufs buffers;
+            thread_local KernelBuffers buffers;
             allocateFvBuffers(&buffers);
             while (true)
             {

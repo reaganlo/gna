@@ -64,7 +64,7 @@ igemm16(
     const   nn_bias_s*  B,
             int32_t*    O,
             uint32_t*   nSat,
-    aligned_fv_bufs*    fvBuffers);
+    KernelBuffers*    fvBuffers);
 
 /**
  * Calculates affine transform on interleaved input vectors
@@ -93,7 +93,7 @@ igemm16_subset(
     const   uint32_t*   AL,
     const   uint32_t    L,
             uint32_t*   nSat,
-    aligned_fv_bufs*    fvBuffers);
+    KernelBuffers*    fvBuffers);
 
 /**
  * Calculates affine transform on interleaved input vectors
@@ -121,7 +121,7 @@ igemm16_mb(
     const   uint32_t    BG,
             int32_t*    O,
             uint32_t*   nSat,
-    aligned_fv_bufs*    fvBuffers);
+    KernelBuffers*    fvBuffers);
 
 /**
  * Calculates affine transform on interleaved input vectors
@@ -154,7 +154,7 @@ igemm16_subset_mb(
     const   uint32_t*   AL,
     const   uint32_t    L,
             uint32_t*   nSat,
-    aligned_fv_bufs*    fvBuffers);
+    KernelBuffers*    fvBuffers);
 
 /**
  * Calculates recurrent transform on flat input vectors

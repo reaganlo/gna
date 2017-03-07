@@ -35,7 +35,7 @@ using namespace GNA;
 
 void RequestHandler::Enqueue(
     gna_request_id *requestId,
-    unique_ptr<Request>&& request)
+    unique_ptr<Request> request)
 {
     {
         std::lock_guard<std::mutex> lockGuard(lock);
@@ -46,7 +46,7 @@ void RequestHandler::Enqueue(
         }
 
         *requestId = nRequests;
-        auto insert = requests.try_emplace(*requestId, std::move(request));
+        auto insert = requests.try_emplace(*requestId, move(request));
 
         if (!insert.second)
         {

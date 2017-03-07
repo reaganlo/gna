@@ -35,7 +35,7 @@ void igemm8(
     const nn_bias_c *B,
     int32_t *O,
     uint32_t *nSat,
-    aligned_fv_bufs *bufs)
+    KernelBuffers *bufs)
 {
     __m256i in0, in1, in2, in3, in4, in5, in6, in7;
     __m256i acc0, acc1, acc2, acc3, acc4, acc5, acc6, acc7;
@@ -808,6 +808,6 @@ igemm8_mb(
     const   nn_bias_c*  CB,
     int32_t*    O,
     uint32_t*   nSat,
-    aligned_fv_bufs*    fvBuffers)
+    KernelBuffers*    fvBuffers)
 {}
 

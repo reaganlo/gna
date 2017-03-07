@@ -151,7 +151,7 @@ typedef struct
     void    *lookup;
     void    *xBase;
     void    *ySeg;
-} aligned_fv_bufs;
+} KernelBuffers;
 
 /**
  * shorter aliases for official GMM API types

@@ -38,7 +38,7 @@ namespace GNA
 /**
  * Library level request processing profiler
  */
-typedef struct _request_profiler
+struct RequestProfiler
 {
     prof_tsc_t      submit;         // score request submit profiler
     prof_tsc_t      preprocess;     // preprocessing score request profiler
@@ -48,11 +48,11 @@ typedef struct _request_profiler
     prof_tsc_t      ioctlSubmit;    // profiler for issuing "start scoring IOCTL"
     prof_tsc_t      ioctlWaitOn;    // profiler for waiting for "start scoring IOCTL" completion
 
-} req_profiler;                     // Library level request processing profiler
+};                     // Library level request processing profiler
 
 #endif // PROFILE
 
-using RequestFunctor = std::function<status_t(aligned_fv_bufs*, req_profiler*)>;
+using RequestFunctor = std::function<status_t(KernelBuffers*, RequestProfiler*)>;
 
 /**
  * Calculation request for single scoring or propagate forward operation
@@ -65,14 +65,14 @@ public:
      */
     Request(
         RequestFunctor callback,
-        std::unique_ptr<req_profiler>&& profiler);
+        std::unique_ptr<RequestProfiler> profiler);
 
     /**
      * Destroys request resources if any
      */
     ~Request() {}
 
-    void operator()(aligned_fv_bufs *buffers)
+    void operator()(KernelBuffers *buffers)
     {
         scoreTask(buffers, profiler.get());
     }
@@ -91,7 +91,7 @@ public:
     /**
      * performance profiler
      */
-    unique_ptr<req_profiler> profiler;
+    unique_ptr<RequestProfiler> profiler;
 
 #endif
 
@@ -101,7 +101,7 @@ public:
     void SetId(gna_request_id requestId);
 
 private:
-    std::packaged_task<status_t(aligned_fv_bufs *buffers, req_profiler *profiler)> scoreTask;
+    std::packaged_task<status_t(KernelBuffers *buffers, RequestProfiler *profiler)> scoreTask;
 
     status_t scoreStatus = GNA_DEVICEBUSY;
 

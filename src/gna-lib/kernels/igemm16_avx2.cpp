@@ -36,7 +36,7 @@ const int16_t *W,
 const nn_bias_s *B,
       int32_t *Y,
       uint32_t *nSat,
-      aligned_fv_bufs* fvBuffers)
+      KernelBuffers* fvBuffers)
 {
     int32_t *y = Y;
     int16_t *weight = const_cast<int16_t*>(W);
@@ -502,5 +502,5 @@ void igemm16_mb(
     const uint32_t BG,
     int32_t *Y,
     uint32_t *nSat,
-    aligned_fv_bufs *bufs)
+    KernelBuffers *bufs)
 {}

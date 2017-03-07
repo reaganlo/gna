@@ -34,10 +34,10 @@ using namespace GNA;
 
 Request::Request(
     RequestFunctor callback,
-    unique_ptr<req_profiler>&& profilerPtr)
+    unique_ptr<RequestProfiler> profilerPtr)
         : profiler(move(profilerPtr)), scoreTask(callback)
 {
-    memset(profiler.get(), 0, sizeof(req_profiler));
+    memset(profiler.get(), 0, sizeof(RequestProfiler));
 }
 
 future<status_t> Request::GetFuture()

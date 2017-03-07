@@ -52,15 +52,15 @@ public:
     status_t Score(
         const CompiledModel& model,
         const RequestConfiguration& requestConfiguration,
-              req_profiler *profiler,
-              aligned_fv_bufs *buffers) override;
+              RequestProfiler *profiler,
+              KernelBuffers *buffers) override;
 
     status_t Score(
         const CompiledModel& model,
         const SubModel& submodel,
         const RequestConfiguration& requestConfiguration,
-              req_profiler *profiler,
-              aligned_fv_bufs *buffers) override;
+              RequestProfiler *profiler,
+              KernelBuffers *buffers) override;
 
 protected:
     bool driverDebug = false;

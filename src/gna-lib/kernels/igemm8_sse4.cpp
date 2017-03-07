@@ -36,7 +36,7 @@ void igemm8(
     const nn_bias_c *B,
     int32_t *Y,
     uint32_t *nSat,
-    aligned_fv_bufs *bufs)
+    KernelBuffers *bufs)
 {
     uint32_t i, j, ix, ix_end;
     uint32_t KT = K % SSE_16CAP;
@@ -517,6 +517,6 @@ igemm8_mb(
     const   nn_bias_c*  CB,
     int32_t*    O,
     uint32_t*   nSat,
-    aligned_fv_bufs*    fvBuffers)
+    KernelBuffers*    fvBuffers)
 {}
 

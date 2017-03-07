@@ -50,15 +50,15 @@ public:
     status_t Score(
         const CompiledModel& model,
         const RequestConfiguration& requestConfiguration,
-              req_profiler *profiler,
-              aligned_fv_bufs *buffers) override;
+              RequestProfiler *profiler,
+              KernelBuffers *buffers) override;
 
     status_t Score(
         const CompiledModel& model,
         const SubModel& submodel,
         const RequestConfiguration& requestConfiguration,
-              req_profiler *profiler,
-              aligned_fv_bufs *buffers) override;
+              RequestProfiler *profiler,
+              KernelBuffers *buffers) override;
 
 protected:
     XnnKernel *xnnKernel;
@@ -67,7 +67,7 @@ protected:
 private:
     status_t gmmSoftwareKernel(
         GmmLayer* gmm,
-        req_profiler* profiler);
+        RequestProfiler* profiler);
 
     static inline status_t checkScoresSaturation(
         uint32_t nGMMs,

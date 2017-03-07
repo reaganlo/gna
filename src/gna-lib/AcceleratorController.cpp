@@ -140,8 +140,8 @@ status_t AcceleratorController::ScoreModel(
     CompiledModel& model, 
     RequestConfiguration& config,
     acceleration accel,
-    req_profiler *profiler,
-    aligned_fv_bufs *buffers)
+    RequestProfiler *profiler,
+    KernelBuffers *buffers)
 {
     auto status = GNA_SUCCESS;
     auto scoreMethod = getScoreMethod(model, accel);

@@ -47,8 +47,8 @@ public:
     virtual status_t Score(
         const CompiledModel&        model,
         const RequestConfiguration& config,
-              req_profiler *profiler,
-              aligned_fv_bufs *buffers) = 0;
+              RequestProfiler *profiler,
+              KernelBuffers *buffers) = 0;
 
     /**
      * Scores part of xNN model described by submodel
@@ -57,8 +57,8 @@ public:
         const CompiledModel&        model,
         const SubModel&             submodel,
         const RequestConfiguration& config,
-              req_profiler *profiler,
-              aligned_fv_bufs *buffers) = 0;
+              RequestProfiler *profiler,
+              KernelBuffers *buffers) = 0;
 
     virtual ~IAccelerator() = default;
     

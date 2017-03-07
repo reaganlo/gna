@@ -58,8 +58,8 @@ public:
         CompiledModel& model, 
         RequestConfiguration& config,
         acceleration accel,
-        req_profiler *profiler,
-        aligned_fv_bufs *buffers);
+        RequestProfiler *profiler,
+        KernelBuffers *buffers);
 
 private:
     std::map<acceleration, std::shared_ptr<IAccelerator>> accelerators;

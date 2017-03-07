@@ -38,7 +38,7 @@ void igemm8_subset(
     const uint32_t* AL,
     const uint32_t L,
           uint32_t *nSat,
-          aligned_fv_bufs *bufs)
+          KernelBuffers *bufs)
 {
     __m256i *in_ptr, *in_ptr0, *in_ptr1, *in_ptr2, *in_ptr3, *in_ptr4, *in_ptr5, *in_ptr6, *in_ptr7;
     __m256i in0, in1, in2, in3, in4, in5, in6, in7;
@@ -839,5 +839,5 @@ igemm8_subset_mb(
     const   uint32_t*   AL,
     const   uint32_t    L,
     uint32_t*   nSat,
-    aligned_fv_bufs*    fvBuffers)
+    KernelBuffers*    fvBuffers)
 {}

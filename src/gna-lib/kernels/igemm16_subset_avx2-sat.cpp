@@ -37,7 +37,7 @@ void igemm16_subset(
     const uint32_t *AL,
     const uint32_t L,
           uint32_t *nSat,
-          aligned_fv_bufs *fvBuffers)
+          KernelBuffers *fvBuffers)
 {
     uint32_t i, ix, ix_end, j, k, l, kk, kpartial, nKpartial, niters;
     kpartial = (hw_buf_size[N - 1]) / N;
@@ -837,5 +837,5 @@ void igemm16_subset_mb(
     const uint32_t *AL,
     const uint32_t L,
     uint32_t *nSat,
-    aligned_fv_bufs *bufs)
+    KernelBuffers *bufs)
 {}

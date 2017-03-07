@@ -88,7 +88,7 @@ GNAApplyAffineTransform(
     uint32_t*           pActiveIndices,
     uint32_t            nActiveIndices,
     uint32_t*           nSaturated,
-    aligned_fv_bufs*    fvBuffers)
+    KernelBuffers*    fvBuffers)
 {
     nn_layer_affine*   aff = (nn_layer_affine*)pLayer->pLayerStruct;
     uint32_t        m = pLayer->nOutputRows;
@@ -140,7 +140,7 @@ GNAApplyAffineMBiasTransform(
     uint32_t*           pActiveIndices,
     uint32_t            nActiveIndices,
     uint32_t*           nSaturated,
-    aligned_fv_bufs*    fvBuffers)
+    KernelBuffers*    fvBuffers)
 {
     nn_layer_affine_multi* aff = static_cast<nn_layer_affine_multi*>(pLayer->pLayerStruct);
     uint32_t        m = pLayer->nOutputRows;

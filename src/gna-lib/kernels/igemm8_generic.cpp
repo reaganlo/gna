@@ -37,7 +37,7 @@ igemm8(
     const   nn_bias_c*  B,
             int32_t*    O,
             uint32_t*   nSat,
-    aligned_fv_bufs* fvBuffers)
+    KernelBuffers* fvBuffers)
 {
 	uint32_t i,j,k;
     int8_t *ptr_w = const_cast<int8_t*>(W);
@@ -78,7 +78,7 @@ igemm8_mb(
     const   nn_bias_c*  CB,
     int32_t*    O,
     uint32_t*   nSat,
-    aligned_fv_bufs*    fvBuffers)
+    KernelBuffers*    fvBuffers)
 {
     uint32_t j, k;
     int16_t *ptr_in;
