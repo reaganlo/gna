@@ -28,7 +28,7 @@
 #include <thread>
 
 #include "Device.h"
-#include "GnaException.h"
+#include "Validator.h"
 
 using std::thread;
 using namespace GNA;
@@ -140,28 +140,57 @@ intel_gna_status_t GnaModelCreate(
     gna_model*          model,
     gna_model_id*       modelId)
 {
-    if (!Gna2Ultimate.ValidateSession(deviceId))
-        return GNA_INVALIDHANDLE;
-
-    Gna2Ultimate.LoadModel(modelId, model);
-
-    return GNA_SUCCESS;
+    try
+    {
+        Gna2Ultimate.ValidateSession(deviceId);
+        Gna2Ultimate.LoadModel(modelId, model);
+        return GNA_SUCCESS;
+    }
+    catch (const GnaException &e)
+    {
+        return e.getStatus();
+    }
+    catch (...)
+    {
+        return GNA_UNKNOWN_ERROR;
+    }
 }
 
 intel_gna_status_t GnaModelRelease(
     gna_model_id        modelId)
 {
-    Gna2Ultimate.ReleaseModel(modelId);
-
-    return GNA_SUCCESS;
+    try
+    {
+        Gna2Ultimate.ReleaseModel(modelId);
+        return GNA_SUCCESS;
+    }
+    catch (const GnaException &e)
+    {
+        return e.getStatus();
+    }
+    catch (...)
+    {
+        return GNA_UNKNOWN_ERROR;
+    }
 }
 
 intel_gna_status_t GnaModelRequestConfigAdd(
     gna_model_id        modelId,
     gna_request_cfg_id* configId)
 {
-    Gna2Ultimate.CreateConfiguration(modelId, configId);
-    return GNA_SUCCESS;
+    try
+    {
+        Gna2Ultimate.CreateConfiguration(modelId, configId);
+        return GNA_SUCCESS;
+    }
+    catch (const GnaException &e)
+    {
+        return e.getStatus();
+    }
+    catch (...)
+    {
+        return GNA_UNKNOWN_ERROR;
+    }
 }
 
 intel_gna_status_t GnaRequestConfigBufferAdd(
@@ -170,8 +199,19 @@ intel_gna_status_t GnaRequestConfigBufferAdd(
     uint32_t            layerIndex,
     void*               address)
 {
-    Gna2Ultimate.AttachBuffer(configId, type, layerIndex, address);
-    return GNA_SUCCESS;
+    try
+    {
+        Gna2Ultimate.AttachBuffer(configId, type, layerIndex, address);
+        return GNA_SUCCESS;
+    }
+    catch (const GnaException &e)
+    {
+        return e.getStatus();
+    }
+    catch (...)
+    {
+        return GNA_UNKNOWN_ERROR;
+    }
 }
 
 intel_gna_status_t GnaRequestConfigActiveListAdd(
@@ -180,8 +220,19 @@ intel_gna_status_t GnaRequestConfigActiveListAdd(
     uint32_t            indicesCount,
     uint32_t*           indices)
 {
-    Gna2Ultimate.AttachActiveList(configId, layerIndex, indicesCount, indices);
-    return GNA_SUCCESS;
+    try
+    {
+        Gna2Ultimate.AttachActiveList(configId, layerIndex, indicesCount, indices);
+        return GNA_SUCCESS;
+    }
+    catch (const GnaException &e)
+    {
+        return e.getStatus();
+    }
+    catch (...)
+    {
+        return GNA_UNKNOWN_ERROR;
+    }
 }
 
 intel_gna_status_t GnaRequestEnqueue(
@@ -189,17 +240,38 @@ intel_gna_status_t GnaRequestEnqueue(
     gna_acceleration    accel,
     gna_request_id*     requestId)
 {
-    acceleration internal_acceleration = static_cast<acceleration>(accel);
-    Gna2Ultimate.PropagateRequest(configId, internal_acceleration, requestId);
-
-    return GNA_SUCCESS;
+    try
+    {
+        acceleration internal_acceleration = static_cast<acceleration>(accel);
+        Gna2Ultimate.PropagateRequest(configId, internal_acceleration, requestId);
+        return GNA_SUCCESS;
+    }
+    catch (const GnaException &e)
+    {
+        return e.getStatus();
+    }
+    catch (...)
+    {
+        return GNA_UNKNOWN_ERROR;
+    }
 }
 
 intel_gna_status_t GnaRequestWait(
     gna_request_id      requestId,
     gna_timeout         milliseconds)
 {
-    return Gna2Ultimate.WaitForRequest(requestId, milliseconds);
+    try
+    {
+        return Gna2Ultimate.WaitForRequest(requestId, milliseconds);
+    }
+    catch (const GnaException &e)
+    {
+        return e.getStatus();
+    }
+    catch (...)
+    {
+        return GNA_UNKNOWN_ERROR;
+    }
 }
 
 const char* GnaStatusToString(
@@ -210,33 +282,44 @@ const char* GnaStatusToString(
 
 void *GnaAlloc(gna_device_id deviceId, uint32_t requestedSize, uint32_t *grantedSize)
 {
-    void* buffer = nullptr;
-    
-    if (!Gna2Ultimate.ValidateSession(deviceId)) return nullptr;
-
-    if (nullptr == grantedSize)
+    try
     {
-        ERRS("grantedSize is nullptr", GNA_NULLARGNOTALLOWED);
+        //TODO: refactor - to much logic in wrapper
+        Gna2Ultimate.ValidateSession(deviceId);
+        Validate::IsNull(grantedSize);
+
+        void* buffer = nullptr;
+        *grantedSize = Gna2Ultimate.AllocateMemory(requestedSize, &buffer);
+        Validate::IsTrue(nullptr == buffer || *grantedSize < requestedSize, GNA_ERR_RESOURCES);
+        return buffer;
+    }
+    catch (const GnaException &e)
+    {
+        ERRS("Memory allocation failed", e.getStatus());
         return nullptr;
     }
-
-    *grantedSize = Gna2Ultimate.AllocateMemory(requestedSize, &buffer);
-    if (nullptr == buffer || *grantedSize < requestedSize)
+    catch (...)
     {
-        ERRS("Memory allocation failed", GNA_ERR_RESOURCES);
-    }
-
-    return buffer;
+        return nullptr;
+    }   
 }
 
-status_t GnaFree(gna_device_id deviceId)
+intel_gna_status_t GnaFree(gna_device_id deviceId)
 {
-    if (!Gna2Ultimate.ValidateSession(deviceId))
-        return GNA_INVALIDHANDLE;
-
-    Gna2Ultimate.FreeMemory();
-
-    return GNA_SUCCESS;
+    try
+    {
+        Gna2Ultimate.ValidateSession(deviceId);
+        Gna2Ultimate.FreeMemory();
+        return GNA_SUCCESS;
+    }
+    catch (const GnaException &e)
+    {
+        return e.getStatus();
+    }
+    catch (...)
+    {
+        return GNA_UNKNOWN_ERROR;
+    }
 }
 
 // TODO: instantiate unique pointer 
@@ -244,28 +327,36 @@ intel_gna_status_t GnaDeviceOpen(
     uint8_t             threadCount,
     gna_device_id*      deviceId)
 {
-    ERRCHECKR(nullptr == deviceId, GNA_NULLARGNOTALLOWED);
-
-    auto status = Gna2Ultimate.Open(deviceId, threadCount);
-    return status;
+    try
+    {
+        return Gna2Ultimate.Open(deviceId, threadCount);
+    }
+    catch (const GnaException &e)
+    {
+        return e.getStatus();
+    }
+    catch (...)
+    {
+        return GNA_UNKNOWN_ERROR;
+    }
 }
 
 // TODO: delete unique pointer 
 intel_gna_status_t GnaDeviceClose(
     gna_device_id deviceId)
 {
-    if (!Gna2Ultimate.ValidateSession(deviceId))
-        return GNA_INVALIDHANDLE;
-    
-    // clear device state to prevent usage
     try
     {
+        Gna2Ultimate.ValidateSession(deviceId);
         Gna2Ultimate.Close();
+        return GNA_SUCCESS;
     }
-    catch(GnaException ex)
+    catch (const GnaException &e)
     {
-        return ex.getStatus();
+        return e.getStatus();
     }
-
-    return GNA_SUCCESS;
+    catch (...)
+    {
+        return GNA_UNKNOWN_ERROR;
+    }
 }

@@ -26,7 +26,7 @@
 #include <memory>
 
 #include "Device.h"
-#include "GnaException.h"
+#include "Validator.h"
 
 using std::make_shared;
 using std::move;
@@ -48,14 +48,15 @@ void Device::AttachActiveList(gna_request_cfg_id configId, uint16_t layerIndex, 
     requestBuilder.AttachActiveList(configId, layerIndex, indicesCount, indices);
 }
 
-bool Device::ValidateSession(gna_device_id deviceId) const
+void Device::ValidateSession(gna_device_id deviceId) const
 {
-    return id == deviceId && opened;
+    Validate::IsTrue(!(id == deviceId && opened), GNA_INVALIDHANDLE);
 }
 
 // TODO: implement as c-tor and propagate for members
 status_t Device::Open(gna_device_id *deviceId, uint8_t threadCount)
 {
+    Validate::IsNull(deviceId);
     if(nHandles > GNA_DEVICE_LIMIT || opened)
     {
         ERR("GNA Device already opened. Close Device first.\n");

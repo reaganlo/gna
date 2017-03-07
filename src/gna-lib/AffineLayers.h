@@ -42,7 +42,7 @@ public:
     unique_ptr<AffineFunctionSingle> Affine;
     ActivationFunction Activation;
 
-private:
+protected:
     const nn_layer_affine *sourceAffineLayer;
 };
 
@@ -59,18 +59,13 @@ private:
     const nn_layer_affine_multi *sourceAffineLayer;
 };
 
-//class AffineDiagonalLayer : public AffineLayer
-//{
-//public:
-//    friend class HwLayerAffDiag;
-//
-//    AffineDiagonalLayer(const nn_layer *layer, const uint32_t inputVectorCount);
-//    virtual ~AffineDiagonalLayer() {};
-//
-//    //void convert() override;
-//
-//protected:
-//    //void validate() override;
-//};
+class AffineDiagonalLayer : public AffineLayer
+{
+public:
+ //   friend class HwLayerAffDiag;
+
+    AffineDiagonalLayer(const nn_layer *layer, const uint32_t inputVectorCount);
+    virtual ~AffineDiagonalLayer()  = default;
+};
 
 }

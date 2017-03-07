@@ -59,7 +59,7 @@ public:
      */
     void Close();
 
-    bool ValidateSession(gna_device_id deviceId) const;
+    void ValidateSession(gna_device_id deviceId) const;
 
     /** 
      ** Allocates memory for user buffers

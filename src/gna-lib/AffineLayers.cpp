@@ -71,22 +71,10 @@ AffineMultiBiasLayer::AffineMultiBiasLayer(const nn_layer *layer, const uint32_t
 };
 
 
-//AffineDiagonalLayer::AffineDiagonalLayer(const nn_layer *lyrIn, const uint32_t nGroupIn)
-//    : AffineLayer(lyrIn, nGroupIn)
-//{
-//    Validate::IsTrue(NN_DIAG == kind && lyr->RowCount != lyr->RowCount, XNN_ERR_LYR_CFG);
-//    Validate::IsTrue(nGroup != lyr->ColumnCount, XNN_ERR_LYR_CFG);
-//    Validate::IsTrue(nGroup != lyr->ColumnCount, XNN_ERR_LYR_CFG);
-//    Validate::IsNull(lyr->BufferIntermediate); // intermediate output buffer must be set always
-//}
-
-
-//void AffineDiagonalLayer::validate()
-//{
-//    BaseLayerExt::validate();
-//
-//    Validate::IsTrue(NN_DIAG == kind && lyr->RowCount != lyr->RowCount, XNN_ERR_LYR_CFG);
-//    Validate::IsTrue(nGroup != lyr->ColumnCount, XNN_ERR_LYR_CFG);
-//    Validate::IsTrue(nGroup != lyr->ColumnCount, XNN_ERR_LYR_CFG);
-//    Validate::IsNull(lyr->BufferIntermediate); // intermediate output buffer must be set always
-//}
+AffineDiagonalLayer::AffineDiagonalLayer(const nn_layer *layer, const uint32_t inputVectorCount)
+    : AffineLayer(layer, inputVectorCount)
+{
+    Validate::IsTrue(Output.RowCount != Input.RowCount, XNN_ERR_LYR_CFG);
+    Validate::IsTrue(Input.VectorCount != Input.ColumnCount, XNN_ERR_LYR_CFG);
+    Validate::IsTrue(Input.VectorCount != Output.ColumnCount, XNN_ERR_LYR_CFG);
+}

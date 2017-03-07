@@ -131,8 +131,8 @@ unique_ptr<Layer> Layer::Create(const nn_layer* layer, const uint32_t inputVecto
     {
     case INTEL_AFFINE:          
         return make_unique<AffineLayer>(layer, inputVectorCount);
-    /*case INTEL_AFFINE_DIAGONAL:
-        return new AffineDiagonalLayer(NN_DIAG);*/
+    case INTEL_AFFINE_DIAGONAL:
+        return make_unique<AffineDiagonalLayer>(layer, inputVectorCount);
     case INTEL_AFFINE_MULTIBIAS:
         return make_unique<AffineMultiBiasLayer>(layer, inputVectorCount);
     /*case INTEL_CONVOLUTIONAL:
