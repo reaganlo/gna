@@ -136,10 +136,10 @@ unique_ptr<Layer> Layer::Create(const nn_layer* layer, const uint32_t inputVecto
     case INTEL_AFFINE_MULTIBIAS:
         return make_unique<AffineMultiBiasLayer>(layer, inputVectorCount);
     /*case INTEL_CONVOLUTIONAL:
-        return new CnnLayer();
+        return new CnnLayer();*/
     case INTEL_COPY:
-        return new CopyLayer();
-    case INTEL_DEINTERLEAVE:
+        return make_unique<CopyLayer>(layer);
+    /*case INTEL_DEINTERLEAVE:
         return new TransposeLayer(NN_DEINT);*/
     case INTEL_GMM:
         return make_unique<GmmLayer>(layer, inputVectorCount);

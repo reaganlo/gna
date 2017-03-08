@@ -61,9 +61,9 @@ HwLayer* HwLayer::create(NN_OP_TYPE kind)
  /*   case NN_RNN:
         return new HwLayerRnn();
     case NN_CNN:
-        return new HwLayerCnn();
+        return new HwLayerCnn();*/
     case NN_COPY:
-        return new HwLayerCopy();*/
+        return new HwLayerCopy();
     default:
         return new HwLayerAffDiagTrans();
     }
@@ -110,18 +110,19 @@ void HwLayerAffDiagTrans::init(
 
     HwLayerExt::init(lyr, hwLyr, buffer, hwInBuffSize, bLayerIn);
 }
-//
-//void HwLayerCopy::init(
-//    nn_layer*		lyr,
-//    XNN_LYR*        hwLyr,
-//    const void*     buffer,
-//    uint32_t        hwInBuffSize,
-//    Layer*		bLayerIn) {
-//
-//    HwLayer::init(lyr, hwLyr, buffer, hwInBuffSize, bLayerIn);
-//    copyLayer = (CopyLayer*)baseLayer;
-//}
-//
+
+void HwLayerCopy::init(
+    nn_layer*		lyr,
+    XNN_LYR*        hwLyr,
+    const void*     buffer,
+    uint32_t        hwInBuffSize,
+    Layer*		bLayerIn)
+{
+
+    HwLayer::init(lyr, hwLyr, buffer, hwInBuffSize, bLayerIn);
+    copyLayer = static_cast<CopyLayer*>(baseLayer);
+}
+
 //void HwLayerRnn::init(
 //    nn_layer*		lyr,
 //    XNN_LYR*        hwLyr,
@@ -154,14 +155,14 @@ void HwLayerAffDiagTrans::convert()
     HwLayerExt::convert();
     save();
 }
-//
-//void HwLayerCopy::convert()
-//{
-//    HwLayer::convert();
-//    validate();
-//    save();
-//}
-//
+
+void HwLayerCopy::convert()
+{
+    HwLayer::convert();
+    validate();
+    save();
+}
+
 //void HwLayerRnn::convert()
 //{
 //    HwLayerExt::convert();
@@ -275,11 +276,11 @@ void HwLayerExt::validate()
     Validate::IsTrue(nLast > nBuffElems[nGr - 1], XNN_ERR_LYR_CFG);
     Validate::IsMultiplicityOf(nLast, XNN_N_IN_ELEMS_MPLY);
 }
-//
-//void HwLayerCopy::validate()
-//{
-//}
-//
+
+void HwLayerCopy::validate()
+{
+}
+
 //void HwLayerRnn::validate()
 //{
 //    HwLayerExt::validate();
@@ -322,8 +323,8 @@ void HwLayerExt::save()
 {
     HwLayer::save();
     //hwLyr->flags.act_fn_en = baseLayerExt->pwl ? 1 : 0;
-    //hwLyr->n_iters = (uint8_t)nIters;
-    //hwLyr->n_elems_last = (uint16_t)nLast;
+    hwLyr->n_iters = (uint8_t)nIters;
+    hwLyr->n_elems_last = (uint16_t)nLast;
     //if (baseLayerExt->aff)    // affine layers
     //{
     //    hwLyr->flags.weight_size = (baseLayerExt->aff->nBytesPerWeight == 2) ? 0 : 1;
@@ -341,13 +342,13 @@ void HwLayerAffDiagTrans::save()
 {
     HwLayerExt::save();
 }
-//
-//void HwLayerCopy::save()
-//{
-//    HwLayer::save();
-//    hwLyr->cpy_n_elems = (uint16_t)copyLayer->cpy->nCopyCols;
-//}
-//
+
+void HwLayerCopy::save()
+{
+    HwLayer::save();
+    hwLyr->cpy_n_elems = static_cast<uint16_t>(copyLayer->CopyElementsCount);
+}
+
 //void HwLayerRnn::save()
 //{
 //    HwLayerExt::save();

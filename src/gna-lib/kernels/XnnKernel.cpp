@@ -284,12 +284,6 @@ status_t GNAApplyCopy(nn_layer* pLayer)
     uint32_t    nBytesCp = ((nn_layer_copy*)pLayer->pLayerStruct)->nCopyCols
         * sizeof(int16_t);
 
-    if (nRows > 8)
-    {
-        ERR("Attempt to copy columns from matrix with more than 8 rows!\n");
-        return GNA_ERR_NOT_MULTIPLY;
-    }
-
     for (r = 0; r < nRows; r++)
     {
         memcpy_s(

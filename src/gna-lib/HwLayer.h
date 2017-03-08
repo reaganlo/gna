@@ -191,42 +191,42 @@ public:
 protected:
     void save() override final;
 };
-//
-///**
-//* Hardware Copy Layer descriptor converter
-//*/
-//class HwLayerCopy : public HwLayer
-//{
-//public:
-//    void convert() override final;
-//
-//    HwLayerCopy() : HwLayer(), copyLayer(nullptr) {};
-//
-//    /**
-//     * Deleted functions to prevent from being defined or called
-//     * @see: https://msdn.microsoft.com/en-us/library/dn457344.aspx
-//     */
-//    HwLayerCopy(const HwLayerCopy &) = delete;
-//    HwLayerCopy& operator=(const HwLayerCopy&) = delete;
-//
-//    void init(
-//        nn_layer*		lyr,
-//        XNN_LYR*        hwLyr,
-//        const void*     buffer,
-//        uint32_t        hwInBuffSize,
-//        Layer*		bLayerIn) override;
-//
-//    virtual ~HwLayerCopy() {};
-//
-//protected:
-//    void validate() override final;
-//
-//    void save() override final;
-//
-//private:
-//    CopyLayer* copyLayer;
-//};
-//
+
+/**
+* Hardware Copy Layer descriptor converter
+*/
+class HwLayerCopy : public HwLayer
+{
+public:
+    void convert() override final;
+
+    HwLayerCopy() : HwLayer(), copyLayer(nullptr) {};
+
+    /**
+     * Deleted functions to prevent from being defined or called
+     * @see: https://msdn.microsoft.com/en-us/library/dn457344.aspx
+     */
+    HwLayerCopy(const HwLayerCopy &) = delete;
+    HwLayerCopy& operator=(const HwLayerCopy&) = delete;
+
+    void init(
+        nn_layer*		lyr,
+        XNN_LYR*        hwLyr,
+        const void*     buffer,
+        uint32_t        hwInBuffSize,
+        Layer*		bLayerIn) override;
+
+    virtual ~HwLayerCopy() {};
+
+protected:
+    void validate() override final;
+
+    void save() override final;
+
+private:
+    CopyLayer* copyLayer;
+};
+
 ///**
 //* Recurrent Layer descriptor converter
 //*/

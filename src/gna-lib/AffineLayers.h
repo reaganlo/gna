@@ -37,7 +37,7 @@ public:
     friend class HwLayerAffDiag;
 
     AffineLayer(const nn_layer *layer, const uint32_t inputVectorCount);
-    virtual ~AffineLayer() {};
+    virtual ~AffineLayer() = default;
 
     unique_ptr<AffineFunctionSingle> Affine;
     ActivationFunction Activation;
@@ -50,7 +50,7 @@ class AffineMultiBiasLayer : public Layer
 {
 public:
     AffineMultiBiasLayer(const nn_layer *layer, const uint32_t inputVectorCount);
-    virtual ~AffineMultiBiasLayer() {};
+    virtual ~AffineMultiBiasLayer() = default;
 
     unique_ptr<AffineFunctionMutli> Affine;
     ActivationFunction Activation;
