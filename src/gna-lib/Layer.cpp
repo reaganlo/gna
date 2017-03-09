@@ -34,18 +34,7 @@
 using namespace GNA;
 using std::make_unique;
 
-const std::map<const nn_layer_type, const NN_OP_TYPE> LayerConfig::OperationsMap =
-{
-    {INTEL_AFFINE, NN_AFFINE},
-    {INTEL_AFFINE_DIAGONAL, NN_DIAG},
-    {INTEL_AFFINE_MULTIBIAS, NN_AFF_MB},
-    {INTEL_CONVOLUTIONAL, NN_CNN},
-    {INTEL_COPY, NN_COPY},
-    {INTEL_DEINTERLEAVE, NN_DEINT},
-    {INTEL_GMM, NN_GMM},
-    {INTEL_INTERLEAVE, NN_INTER},
-    {INTEL_RECURRENT, NN_RNN}
-};
+
 
 const std::map<const nn_layer_type, const Orientations> LayerConfig::OrientationsMap =
 {
@@ -62,30 +51,26 @@ const std::map<const nn_layer_type, const Orientations> LayerConfig::Orientation
 
 LayerConfig::LayerConfig(const nn_layer_type type) :
     Type(type),
-    Operation(OperationsMap.at(type)),
     Orientation(OrientationsMap.at(type))
 {
     Validate::IsInRange(type, 0, NUM_LAYER_KINDS, XNN_ERR_LYR_TYPE);
 };
 
 
-LayerMatrix::LayerMatrix(const nn_layer &layer, const Orientations orientation) :
-    ColumnCount(layer.nInputColumns),
-    RowCount(layer.nInputRows),
+LayerMatrix::LayerMatrix(const uint32_t rowCount, const uint32_t columnCount, void const * buffer,
+    const Orientations orientation) :
+    ColumnCount(columnCount),
+    RowCount(rowCount),
     ElementCount((FLAT == orientation) ? ColumnCount : RowCount),
-    Buffer(static_cast<void const * const>(layer.pInputs))
+    Buffer(static_cast<void const * const>(buffer))
 {
     Validate::IsInRange(orientation, INTERLEAVED, FLAT, XNN_ERR_LYR_CFG);
-    Validate::IsInRange(ElementCount, XNN_N_IN_ELEMS_MPLY, XNN_N_IN_ELEMS_MAX, XNN_ERR_LYR_CFG);
-    Validate::IsMultiplicityOf(ElementCount, XNN_N_IN_ELEMS_MPLY);
-    auto secondDimension = (FLAT == orientation) ? RowCount : ColumnCount;
-    Validate::IsInRange(secondDimension, 1, XNN_N_GROUP_MAX, XNN_ERR_GROUPING);
     Validate::IsNull(Buffer);
     Validate::IsAlignedTo64(Buffer);  
 };
 
 LayerInput::LayerInput(const nn_layer &layer, const Orientations orientation, const uint32_t vectorCount) :
-    LayerMatrix(layer, orientation),
+    LayerMatrix(layer.nInputRows, layer.nInputColumns, layer.pInputs, orientation),
     VectorCount(vectorCount)
 {
     if (INTEL_GMM == layer.nLayerKind)
@@ -97,17 +82,22 @@ LayerInput::LayerInput(const nn_layer &layer, const Orientations orientation, co
         Validate::IsTrue(layer.nBytesPerInput != 2, XNN_ERR_INPUT_BYTES);
     }
     Validate::IsInRange(VectorCount, 1, XNN_N_GROUP_MAX, XNN_ERR_GROUPING);
+    Validate::IsInRange(ElementCount, XNN_N_IN_ELEMS_MPLY, XNN_N_IN_ELEMS_MAX, XNN_ERR_LYR_CFG);
+    Validate::IsMultiplicityOf(ElementCount, XNN_N_IN_ELEMS_MPLY);
+    auto secondDimension = (FLAT == orientation) ? RowCount : ColumnCount;
+    Validate::IsInRange(secondDimension, 1, XNN_N_GROUP_MAX, XNN_ERR_GROUPING);
 };
 
 
 LayerOutput::LayerOutput(const nn_layer &layer, const Orientations orientation) :
-    LayerMatrix(layer, orientation),
-    BufferIntermediate(static_cast<uint32_t const * const>(layer.pOutputsIntermediate))
+    LayerMatrix(layer.nOutputRows, layer.nOutputColumns, layer.pOutputs, orientation),
+    ScratchPad(static_cast<uint32_t const * const>(layer.pOutputsIntermediate))
 {
+    Validate::IsInRange(ElementCount, 1, XNN_N_IN_ELEMS_MAX, XNN_ERR_LYR_CFG);
     Validate::IsInRange(layer.nBytesPerOutput, ActivatedOutputSize, NonActivatedOutputSize, XNN_ERR_INPUT_BYTES);
     Validate::IsTrue(NonActivatedOutputSize != layer.nBytesPerIntermediateOutput, XNN_ERR_INT_OUTPUT_BYTES);
-    Validate::IsNull(BufferIntermediate);
-    Validate::IsAlignedTo64(BufferIntermediate);
+    //Validate::IsNull(ScratchPad); // TODO: review when scratch-pad is allocated by gna-lib
+    Validate::IsAlignedTo64(ScratchPad);
 };
 
 void LayerOutput::Validate(const bool ActivationEnabled, const uint32_t outputSize) const
@@ -126,7 +116,6 @@ void LayerOutput::Validate(const bool ActivationEnabled, const uint32_t outputSi
 
 unique_ptr<Layer> Layer::Create(const nn_layer* layer, const uint32_t inputVectorCount)
 {
-    //return make_unique<layerClass>(layer, inputVectorCount);
     switch (layer->nLayerKind)
     {
     case INTEL_AFFINE:          
@@ -135,18 +124,18 @@ unique_ptr<Layer> Layer::Create(const nn_layer* layer, const uint32_t inputVecto
         return make_unique<AffineDiagonalLayer>(layer, inputVectorCount);
     case INTEL_AFFINE_MULTIBIAS:
         return make_unique<AffineMultiBiasLayer>(layer, inputVectorCount);
-    /*case INTEL_CONVOLUTIONAL:
-        return new CnnLayer();*/
+    //case INTEL_CONVOLUTIONAL:
+        //return new CnnLayer();
     case INTEL_COPY:
         return make_unique<CopyLayer>(layer);
-    /*case INTEL_DEINTERLEAVE:
-        return new TransposeLayer(NN_DEINT);*/
+    case INTEL_DEINTERLEAVE:
+        return make_unique<TransposeLayer>(layer, inputVectorCount);
     case INTEL_GMM:
         return make_unique<GmmLayer>(layer, inputVectorCount);
-    /*case INTEL_INTERLEAVE:
-        return new TransposeLayer(NN_INTER);
-    case INTEL_RECURRENT:       
-        return new RnnLayer();*/
+    case INTEL_INTERLEAVE:
+        return make_unique<TransposeLayer>(layer, inputVectorCount);
+    //case INTEL_RECURRENT:       
+        //return new RnnLayer();
     default:                    
         return nullptr;
     }
@@ -163,6 +152,9 @@ Layer::Layer(const nn_layer *layer, const uint32_t inputVectorCount) :
 const nn_layer Layer::validate(const nn_layer *layer)
 {
     Validate::IsNull(layer);
-    Validate::IsNull(layer->pLayerStruct);
+    if (INTEL_INTERLEAVE != layer->nLayerKind && INTEL_DEINTERLEAVE != layer->nLayerKind)
+    {
+        Validate::IsNull(layer->pLayerStruct);
+    }
     return *layer;
 }

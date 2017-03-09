@@ -180,7 +180,7 @@ void Hw::Fill(SoftwareModel* model)
     {
         try
         {
-            hwLayer = HwLayer::create(model->Layers[i]->Config.Operation);
+            hwLayer = HwLayer::create(model->Layers[i]->Config.Type);
             hwLayer->init(const_cast<nn_layer*>(&model->Layers[i]->sourceLayer), &xnnLayerDescriptors[i], base,
                 inBuffSize, const_cast<Layer*>(model->Layers[i].get()));
             hwLayer->convert();

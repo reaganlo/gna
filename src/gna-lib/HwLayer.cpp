@@ -28,6 +28,19 @@
 
 using namespace GNA;
 
+const std::map<const nn_layer_type, const NN_OP_TYPE> HwLayer::OperationsMap =
+{
+    { INTEL_AFFINE, NN_AFFINE },
+    { INTEL_AFFINE_DIAGONAL, NN_DIAG },
+    { INTEL_AFFINE_MULTIBIAS, NN_AFF_MB },
+    { INTEL_CONVOLUTIONAL, NN_CNN },
+    { INTEL_COPY, NN_COPY },
+    { INTEL_DEINTERLEAVE, NN_DEINT },
+    { INTEL_GMM, NN_GMM },
+    { INTEL_INTERLEAVE, NN_INTER },
+    { INTEL_RECURRENT, NN_RNN }
+};
+
 const uint32_t HwLayer::nBuffElems24K[8] =
 {
     12288,
@@ -52,9 +65,9 @@ const uint32_t HwLayer::nBuffElems12K[8] =
     6144
 };
 
-HwLayer* HwLayer::create(NN_OP_TYPE kind)
+HwLayer* HwLayer::create(const nn_layer_type type)
 {
-    switch (kind)
+    switch (OperationsMap.at(type))
     {
     case NN_RESERVED:
         throw GnaException(XNN_ERR_LYR_CFG);
@@ -237,8 +250,6 @@ void HwLayerExt::convert()
 void HwLayerExt::calcIterations(uint32_t nGrIn)
 {
     nGr = nGrIn;
-    Validate::IsTrue(nGr < 1, XNN_ERR_GROUPING);
-    Validate::IsTrue(nGr > XNN_N_GROUP_MAX, XNN_ERR_GROUPING);
     nIters = ((baseLayer->Input.ElementCount * nGr - 1) / nBuffElems[nGr - 1]) + 1;
     nLast = ((baseLayer->Input.ElementCount * nGr) - ((nIters - 1) * nBuffElems[nGr - 1])) / nGr;
 }
@@ -302,7 +313,7 @@ void HwLayerCopy::validate()
 
 void HwLayer::save()
 {
-    hwLyr->op = (NN_OP_TYPE)baseLayer->Config.Operation;
+    hwLyr->op = OperationsMap.at(baseLayer->Config.Type);
     hwLyr->n_in_elems = (uint16_t)baseLayer->Input.ElementCount;
     hwLyr->n_out_elems = (uint16_t)baseLayer->Output.ElementCount;
     hwLyr->n_groups = (uint8_t)baseLayer->Input.VectorCount;
@@ -316,7 +327,7 @@ void HwLayer::save()
         hwLyr->in_buffer = Hw::getAddrOffset(baseLayer->Input.Buffer, buffer);
     }
     hwLyr->out_act_fn_buffer = Hw::getAddrOffset(baseLayer->Output.Buffer, buffer);
-    hwLyr->out_sum_buffer = Hw::getAddrOffset(baseLayer->Output.BufferIntermediate, buffer);
+    hwLyr->out_sum_buffer = Hw::getAddrOffset(baseLayer->Output.ScratchPad, buffer);
 }
 
 void HwLayerExt::save()

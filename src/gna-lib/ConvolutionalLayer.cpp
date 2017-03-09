@@ -66,7 +66,7 @@
 //    Validate::IsTrue(nGroup != lyr->RowCount, XNN_ERR_GROUPING);
 //
 //    Validate::IsNull(lyr->Buffer);
-//    Validate::IsNull(lyr->BufferIntermediate);
+//    Validate::IsNull(lyr->ScratchPad);
 //
 //    Validate::IsNull(cnn->pFilters);
 //    Validate::IsAlignedTo64(cnn->pFilters);

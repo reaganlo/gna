@@ -29,25 +29,14 @@
 
 using namespace GNA;
 
-//void TransposeLayer::convert()
-//{
-//    BaseLayerExt::convert();
-//
-//    ElementCount = lyr->RowCount;  // INTERLEAVED input matrix
-//    ElementCount = lyr->RowCount; // - || -
-//    if (NN_DEINT == kind)
-//    {
-//        ElementCount = ElementCount;
-//    }
-//    if (NN_INTER == kind)           // FLAT input matrix
-//    {
-//        ElementCount = lyr->ColumnCount;
-//        ElementCount = ElementCount;
-//    }
-//
-//    validate();
-//}
-
+TransposeLayer::TransposeLayer(nn_layer const * const layer, const uint32_t inputVectorCount) :
+    Layer(layer, inputVectorCount)
+{
+    Validate::IsTrue(Input.RowCount != Output.ColumnCount, XNN_ERR_LYR_CFG);
+    Validate::IsTrue(Input.ColumnCount != Output.RowCount, XNN_ERR_LYR_CFG);
+    Validate::IsNotNull(layer->pLayerStruct); // transpose layers do not have layer details
+    Validate::IsNotNull(Output.ScratchPad); // in transpose layer no 4B output array is allowed
+}
 
 CopyLayer::CopyLayer(const nn_layer *layer) :
     Layer(layer, static_cast<const nn_layer_copy*>(layer->pLayerStruct)->nCopyRows),
@@ -58,18 +47,3 @@ CopyLayer::CopyLayer(const nn_layer *layer) :
     Validate::IsInRange(CopyElementsCount, XNN_N_IN_ELEMS_MPLY, XNN_N_IN_ELEMS_MAX, XNN_ERR_LYR_CFG);
     Validate::IsTrue(Input.VectorCount > Input.RowCount, XNN_ERR_LYR_CFG);
 }
-
-
-//void TransposeLayer::validate()
-//{
-//    Layer::validate();
-//    
-//    Validate::IsTrue(NN_INTER == kind && nGroup != lyr->RowCount, XNN_ERR_LYR_CFG);
-//    Validate::IsTrue(NN_DEINT == kind && nGroup != lyr->ColumnCount, XNN_ERR_LYR_CFG);
-//    Validate::IsTrue(lyr->RowCount != lyr->ColumnCount, XNN_ERR_LYR_CFG);
-//    Validate::IsTrue(lyr->ColumnCount != lyr->RowCount, XNN_ERR_LYR_CFG);
-//    Validate::IsNotNull(lyr->pLayerStruct);
-//    Validate::IsNotNull(lyr->BufferIntermediate); // in transpose layer no 4B output array is allowed
-//    Validate::IsNull(lyr->Buffer);
-//}
-

@@ -50,7 +50,7 @@
 //    Validate::IsTrue(ElementCount < RNN_N_OUT_ELEMS_MPLY, XNN_ERR_LYR_CFG);
 //    Validate::IsTrue(ElementCount > XNN_N_IN_ELEMS_MAX, XNN_ERR_LYR_CFG);
 //
-//    Validate::IsNull(lyr->BufferIntermediate); // intermediate output buffer must be set always
+//    Validate::IsNull(lyr->ScratchPad); // intermediate output buffer must be set always
 //
 //    Validate::IsTrue(nGroup != lyr->RowCount, XNN_ERR_LYR_CFG);
 //    Validate::IsTrue(nGroup != lyr->RowCount, XNN_ERR_LYR_CFG);

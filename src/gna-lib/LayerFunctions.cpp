@@ -87,7 +87,7 @@ AffineFunctionMutli::AffineFunctionMutli(const nn_func_affine_multi *affine) :
     BiasVectorIndex(affine->biasVectorIndex),
     sourceAffineFunction(affine)
 {
-    Validate::IsInRange(BiasVectorIndex, 1, XNN_N_GROUP_MAX, XNN_ERR_GROUPING);
+    Validate::IsInRange(BiasVectorIndex, 0, XNN_N_GROUP_MAX - 1, XNN_ERR_GROUPING);
     Validate::IsNull(sourceAffineFunction);
 }
 

@@ -30,27 +30,18 @@
 namespace GNA
 {
 
-//// Transpose Layer descriptor converter
-//class TransposeLayer : public BaseLayerExt
-//{
-//public:
-//    friend class HwLayerAffDiag;
-//    void convert() override;
-//
-//    TransposeLayer(NN_OP_TYPE hwLyrKind) : BaseLayerExt(hwLyrKind) {};
-//
-//    virtual ~TransposeLayer() {};
-//
-//protected:
-//    void validate() override;
-//
-//};
+// Transpose Layer descriptor converter
+class TransposeLayer : public Layer
+{
+public:
+    friend class HwLayerAffDiag;
+
+    TransposeLayer(nn_layer const * const layer, const uint32_t inputVectorCount);
+    virtual ~TransposeLayer() = default;
+};
 
 class CopyLayer : public Layer
 {
-public:
-
-
 public:
     friend class HwLayerCopy;
 

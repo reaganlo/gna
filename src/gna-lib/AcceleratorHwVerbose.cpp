@@ -340,11 +340,11 @@ void AcceleratorHwVerbose::HwVerifier(SoftwareModel *model, status_t scoring_sta
     if (SetRegister("setregister.txt"))
     {
         // reset all scores
-       /* if (model && model->Layers != nullptr && model->layers[model->layerCount - 1].BufferIntermediate != nullptr)
+       /* if (model && model->Layers != nullptr && model->layers[model->layerCount - 1].ScratchPad != nullptr)
         {
             LOGF("Clean outputs in DNN\n");
             memset(model->layers[model->layerCount - 1].pOutputs, 0, model->layers[model->layerCount - 1].RowCount * 2);
-            memset(model->layers[model->layerCount - 1].BufferIntermediate, 0, model->layers[model->layerCount - 1].RowCount * 4);
+            memset(model->layers[model->layerCount - 1].ScratchPad, 0, model->layers[model->layerCount - 1].RowCount * 4);
         }*/
 
         LOGF("DUMP B, before scoring\n");

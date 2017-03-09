@@ -32,6 +32,7 @@
 #include "GnaConfig.h"
 
 using std::unique_ptr;
+using std::map;
 
 namespace GNA
 {
@@ -45,13 +46,11 @@ typedef enum _Orientations
 struct LayerConfig
 {
 public:
-    static const std::map<const nn_layer_type, const NN_OP_TYPE> OperationsMap;
     static const std::map<const nn_layer_type, const Orientations> OrientationsMap;
 
     LayerConfig(const nn_layer_type type);
 
     const nn_layer_type Type;
-    const NN_OP_TYPE Operation;
     const Orientations Orientation;
 
     LayerConfig()= delete;
@@ -61,7 +60,8 @@ public:
 struct LayerMatrix
 {
 public:
-    LayerMatrix(const nn_layer &layer, const Orientations orientation);
+    LayerMatrix(const uint32_t rowCount, const uint32_t columnCount, void const * buffer,
+        const Orientations orientation);
     ~LayerMatrix() = default;
 
     const uint32_t ColumnCount;
@@ -90,7 +90,7 @@ public:
 
     void Validate(const bool ActivationEnabled, const uint32_t outputSize) const;
 
-    uint32_t const * const BufferIntermediate;
+    uint32_t const * const ScratchPad;
 };
 
 

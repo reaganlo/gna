@@ -25,6 +25,8 @@
 
 #pragma once
 
+#include <map>
+
 #include "ActiveList.h"
 #include "AffineLayers.h"
 #include "ConvolutionalLayer.h"
@@ -33,6 +35,8 @@
 #include "RecurrentLayer.h"
 #include "SimpleLayers.h"
 #include "SwHw.h"
+
+using std::map;
 
 namespace GNA
 {
@@ -46,13 +50,15 @@ namespace GNA
 class HwLayer
 {
 public:
+    static const map<const nn_layer_type, const NN_OP_TYPE> OperationsMap;
+
     /**
     * Creates HwLayer converter based on layer kind
     *
-    * @kind        (in)    API layer kind
+    * @type        (in)    API layer kind
     * @return      layer specific converter instance
     */
-    static HwLayer* create(NN_OP_TYPE kind);
+    static HwLayer* create(const nn_layer_type type);
 
     /**
     * Initializes converter
