@@ -80,7 +80,7 @@ const char *GNAStatusName[] =
 	"GNA_ERR_UNKNOWN - Error: Unknown internal error occurred",
     "GNA_ERR_MEM_ALLOC1 - Error: Memory: Already allocated, only single allocation per device is allowed",
     "GNA_ERR_RESOURCES - Error: Unable to create new resources",
-    "GNA_ERR_NOT_MULTIPLY - Error: Value is not multiply of required value",
+    "GNA_ERR_NOT_MULTIPLE - Error: Value is not multiple of required value",
     "GNA_ERR_DEV_FAILURE - Error: Critical device error occurred, device has been reset",
 
     "GMM_BADMEANWIDTH - Error: Mean vector: width not supported",

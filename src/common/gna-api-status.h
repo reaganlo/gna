@@ -43,7 +43,7 @@ typedef enum _gna_status_t
     GNA_SUCCESS,             // Success: Operation successful, no errors or warnings
     GNA_DEVICEBUSY,          // Warning: Device busy - accelerator is still running, can not enqueue more requests
     GNA_SSATURATE,           // Warning: Scoring saturation - an arithmetic operation has resulted in saturation
-    GNA_UNKNOWN_ERROR,      // Error: Unknown error occurred
+    GNA_UNKNOWN_ERROR,       // Error: Unknown error occurred
     GNA_ERR_QUEUE,           // Error: Queue can not create or enqueue more requests
     GNA_READFAULT,           // Error: Scoring data: invalid input
     GNA_WRITEFAULT,          // Error: Scoring data: invalid output buffer
@@ -52,8 +52,8 @@ typedef enum _gna_status_t
     GNA_BADFEATOFFSET,       // Error: Feature vector: offset not supported
     GNA_BADFEATALIGN,        // Error: Feature vector: invalid memory alignment
 
-    GNA_BADFEATNUM,          // Error: Feature vector: Number of feature vectors not supported
-    GNA_INVALIDINDICES,      // Error: Scoring data: number of active indices  not supported
+    GNA_BADFEATNUM,          // Error: Feature vector: number of feature vectors not supported
+    GNA_INVALIDINDICES,      // Error: Scoring data: number of active indices not supported
     GNA_DEVNOTFOUND,         // Error: Device: not available
     GNA_OPENFAILURE,         // Error: Device: failed to open
     GNA_INVALIDHANDLE,       // Error: Device: invalid handle
@@ -78,7 +78,7 @@ typedef enum _gna_status_t
     GNA_ERR_UNKNOWN,         // Error: Unknown internal error occurred
     GNA_ERR_MEM_ALLOC1,      // Error: Memory: Already allocated, only single allocation per device is allowed
     GNA_ERR_RESOURCES,       // Error: Unable to create new resources
-    GNA_ERR_NOT_MULTIPLY,    // Error: Value is not multiply of required value
+    GNA_ERR_NOT_MULTIPLE,    // Error: Value is not multiple of required value
     GNA_ERR_DEV_FAILURE,     // Error: Critical device error occurred, device has been reset
     GMM_BADMEANWIDTH,        // Error: Mean vector: width not supported
     GMM_BADMEANOFFSET,       // Error: Mean vector: offset not supported
@@ -94,7 +94,7 @@ typedef enum _gna_status_t
     GMM_BADMIXCNUM,          // Error: Scoring data: number of mixture components not supported
     GMM_BADNUMGMM,           // Error: Scoring data: number of GMMs not supported
     GMM_BADMODE,             // Error: Scoring data: GMM scoring mode not supported
-    GMM_CFG_INVALID_LAYOUT, // Error: GMM Data layout is invalid
+    GMM_CFG_INVALID_LAYOUT,  // Error: GMM Data layout is invalid
     XNN_ERR_NET_LYR_NO,      // Error: XNN: Not supported number of layers
 
     XNN_ERR_LYR_TYPE,        // Error: XNN: Not supported layer type

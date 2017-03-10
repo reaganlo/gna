@@ -72,7 +72,7 @@ public:
     // If parameter is not multiplicity of multiplicity prints error status code and throws exception.
     inline static void IsMultiplicityOf(const uint32_t parameter, const uint32_t multiplicity)
     {
-        IsTrue(0 != (parameter % multiplicity), GNA_ERR_NOT_MULTIPLY);
+        IsTrue(0 != (parameter % multiplicity), GNA_ERR_NOT_MULTIPLE);
     }
 
     // If parameter is not in range of <a, b> prints error status code and throws exception.

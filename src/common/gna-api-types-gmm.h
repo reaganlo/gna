@@ -123,13 +123,13 @@ const uint32_t GMM_FV_ELEMENT_SIZE = 1;
 /** Maximum number of feature vectors */
 const uint32_t GMM_FV_COUNT_MAX = 8;
 
-/** Minimum length of vector */
+/** Minimum length of a vector */
 const uint32_t GMM_FV_ELEMENT_COUNT_MIN = 24;
 
-/** Maximum length of vector */
+/** Maximum length of a vector */
 const uint32_t GMM_FV_ELEMENT_COUNT_MAX = 96;
 
-/** Allowed align of vector lengths */
+/** The allowed alignment of vector lengths */
 const uint32_t GMM_FV_ELEMENT_COUNT_MULTIPLE_OF = 8;
 
 #ifdef __cplusplus

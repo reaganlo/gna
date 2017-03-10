@@ -57,7 +57,7 @@ extern "C" {
 
 /******************  GNA Device API ******************/
 
-/** GNA Device identification **/
+/** GNA Device identificator **/
 typedef uint32_t gna_device_id;
 
 
@@ -70,22 +70,20 @@ const gna_device_id GNA_DEVICE_INVALID = 0;
 /**
  * Opens and initializes GNA device for processing.
  * NOTE:
- * - Device have to be closed after user finished using GNA
- *   to prevent resource leakage.
- * - Only GNA_DEVICE_LIMIT number of devices can stay opened at one time.
+ * - The device has to be closed after usage to prevent resource leakage.
+ * - Only GNA_DEVICE_LIMIT number of devices can stay opened at a time.
  *
  * @param threadCount   Number of software worker threads <1,127>. Currently only 1 thread is supported.
- * @param deviceId      (out) Device opened by GNA.
- * @return New device Id or GNA_DEVICE_INVALID in case device cannot be opened.
+ * @param deviceId      (out) Id of the device that got opened or GNA_DEVICE_INVALID in case the device can not be opened.
  */
 GNAAPI intel_gna_status_t GnaDeviceOpen(
     uint8_t             threadCount,
     gna_device_id*      deviceId);
 
 /**
- * Closes GNA device and releases corresponding resources.
+ * Closes GNA device and releases the corresponding resources.
  *
- * @param deviceId      Device to be closed.
+ * @param deviceId      The device to be closed.
  */
 GNAAPI intel_gna_status_t GnaDeviceClose(
     gna_device_id       deviceId);
@@ -96,12 +94,12 @@ GNAAPI intel_gna_status_t GnaDeviceClose(
 /**
  * Allocates memory buffer, that can be used with GNA device.
  * NOTE:
- * - only 1 allocation at time is supported
+ * - only 1 allocation at a time is supported
  *
- * @param deviceId      Device, that buffer will be used with.
- * @param sizeRequested Buffer size desired by caller.
+ * @param deviceId      The device which will utilize the allocated buffer.
+ * @param sizeRequested Buffer size desired by the caller.
  * @param sizeGranted   (out) Buffer size granted by GNA,
- *                      size can differ to meet device requirements.
+ *                      can be less then requested due to HW constraints.
  * @deprecated          Will be removed in next release.
  */
 GNAAPI void* GnaAlloc(
@@ -110,9 +108,9 @@ GNAAPI void* GnaAlloc(
     uint32_t*           sizeGranted);
 
 /**
- * Releases memory buffer.
+ * Releases the memory buffer.
  *
- * @param deviceId      Device, that buffer was assigned to.
+ * @param deviceId      The device which was paired with the buffer.
  * @deprecated          Will be removed in next release.
  */
 GNAAPI intel_gna_status_t GnaFree(
@@ -121,22 +119,22 @@ GNAAPI intel_gna_status_t GnaFree(
 
 /******************  GNA Model API ******************/
 
-/** GNA Model identification **/
+/** GNA Model identificator **/
 typedef uint32_t gna_model_id;
 
 /** GNA Model type **/
 typedef intel_nnet_type_t gna_model;
 
 /**
- * Creates and compiles model for use with given device.
+ * Creates and compiles the model for use with a given device.
  * NOTE:
- * - Only 1 model supported in first phase.
- * - Model data have to be placed in memory allocated previously by GNAAlloc.
- * - Descriptor have to be placed user memory, not allocated by GNAAlloc.
+ * - Only 1 model supported in the first phase.
+ * - Model's data has to be placed in memory allocated previously by GNAAlloc.
+ * - The descriptor has to be placed in user's memory, not allocated by GNAAlloc.
  *
- * @param deviceId      GNA device, that model will be used with.
- * @param model         Model descriptor that which model will be created from.
- * @param modelId       (out) Model created by GNA.
+ * @param deviceId      GNA device that will utilize the model.
+ * @param model         Model descriptor which will govern the model creation.
+ * @param modelId       (out) The model created by GNA.
  */
 GNAAPI intel_gna_status_t GnaModelCreate(
     gna_device_id       deviceId,
@@ -144,12 +142,12 @@ GNAAPI intel_gna_status_t GnaModelCreate(
     gna_model_id*       modelId);
 
 /**
- * Removes model and releases resources.
+ * Removes the model and releases the resources.
  * NOTE:
- * - In first phase memory for model data have to be released by GNAFree.
- * - Unreleased models are released by GNA with device close.
+ * - In the first phase the memory for model's data has to be released by GNAFree.
+ * - Unreleased models are released by GNA during device closing.
  *
- * @param modelId       Model to be released.
+ * @param modelId       The model to be released.
  */
 GNAAPI intel_gna_status_t GnaModelRelease(
     gna_model_id        modelId);
@@ -157,35 +155,35 @@ GNAAPI intel_gna_status_t GnaModelRelease(
 
 /******************  GNA Request Configuration API ******************/
 
-/** GNA Request configuration identification **/
+/** GNA Request configuration identificator **/
 typedef uint32_t gna_request_cfg_id;
 
-/** Type of buffer for request configuration. */
+/** Buffer type for request configuration. */
 typedef enum _buffer_type {
     GNA_IN,             // Input buffer read by GNA device
-    GNA_OUT,            // Output buffer GNA will write to
+    GNA_OUT,            // Output buffer that GNA will write to
 
     GNA_BUFFER_TYPES
 
 } gna_buffer_type;
 
 /**
- * Adds single request configuration for use with model.
- * Request configurations have to be declared a priori to minimize the time
- * of preparation of request and reduce processing latency.
+ * Adds single request configuration for use with the model.
+ * Request configurations have to be declared a priori to minimize the
+ * request preparation time and reduce processing latency.
  * This configuration holds buffers that can be used with consecutive requests
  * to handle asynchronous processing.
- * When request are processed asynchronously each need to have individual
+ * When requests are processed asynchronously each one needs to have individual
  * Input and output buffers set by this configuration.
- * Configurations can be reused with another request when request
- * with current configuration has been completed and retrieved by GnaRequestWait.
- * I.e. User can create e.g. 8 unique configurations and reuse them
+ * Configurations can be reused with another request when the request
+ * with the current configuration has been completed and retrieved by GnaRequestWait.
+ * Eg. The user can create 8 unique configurations and reuse them
  * with consecutive batches of 8 requests, when batches are enqueued sequentially.
  * NOTE:
- * - Unreleased configurations are released by GNA with corresponding model release.
+ * - Unreleased configurations are released by GNA during corresponding model release.
  *
- * @param modelId       Model, that request configuration will be used with.
- *                      Configuration cannot be shared with other models.
+ * @param modelId       The model that utilizes the request configuration.
+ *                      Request configuration cannot be shared with other models.
  * @param configId      (out) Request configuration created by GNA.
  */
 GNAAPI intel_gna_status_t GnaModelRequestConfigAdd(
@@ -193,23 +191,23 @@ GNAAPI intel_gna_status_t GnaModelRequestConfigAdd(
     gna_request_cfg_id* configId);
 
 /**
- * Adds single buffer to request configuration.
- * Subsequent calls add consecutive buffers to list.
- * Each request configuration have to have at least
- * - 1 input buffer for first layer
- * - and 1 output buffer for last layer.
- * More buffers can be added to provide additional customization for requests.
+ * Adds a single buffer to the request configuration.
+ * Subsequent calls add consecutive buffers to the list.
+ * Each request configuration needs to have at least
+ * - 1 input buffer for the first layer
+ * - and 1 output buffer for the last layer.
+ * More buffers can be added to provide additional customization of requests.
  *
- * @see GnaRequestConfigActiveListAdd Can be used to add Active list to model output.
+ * @see GnaRequestConfigActiveListAdd Can be used to add Active list to the model's output.
  *
  * NOTE:
- * - Buffer addresses have to be within memory allocated previously by GNAAlloc.
- * - Buffers are deleted by GNA with corresponding request configuration release.
+ * - Buffer addresses need to be within the memory allocated previously by GNAAlloc.
+ * - Buffers are deleted by GNA during corresponding request configuration release.
  *
- * @param configId      Request configuration, that buffer will be added to.
- * @param type          Type of buffer being added.
- * @param layerIndex    Index of layer that buffer is specified for.
- * @param address       Address of buffer, that will be used by request.
+ * @param configId      Request configuration to pair with the buffer.
+ * @param type          Type of the buffer being added.
+ * @param layerIndex    Index of the layer that hosts the buffer.
+ * @param address       Address of the buffer.
  */
 GNAAPI intel_gna_status_t GnaRequestConfigBufferAdd(
     gna_request_cfg_id  configId,
@@ -218,23 +216,23 @@ GNAAPI intel_gna_status_t GnaRequestConfigBufferAdd(
     void*               address);
 
 /**
- * Adds active outputs list to request configuration.
- * Active output list can be specified only for output (usually last) layer(s).
+ * Adds active outputs list to the request configuration.
+ * Active output list can be specified only for the output (usually last) layer(s).
  * Only one active list can be added to each output layer.
  * To modify indices for consecutive requests during sequential processing
- * user can modify indices buffer contents.
+ * user can modify the content of the indices buffer.
  * To modify indices for consecutive requests during parallel processing
  * user can create additional configurations with appropriate parameters.
  * NOTE:
- * - Active lists are deleted by GNA with corresponding configuration release.
- * - Buffer addresses have to be within memory allocated previously by GNAAlloc.
+ * - Active lists are deleted by GNA during corresponding request configuration release.
+ * - Buffer addresses need to be within the memory allocated previously by GNAAlloc.
  *
- * @param configId      Request configuration, that active list will be added to.
- * @param layerIndex    Index of layer that active list is specified for.
- *                      Layer has to have buffer of type GNA_OUT
- *                      already assigned in request configuration.
- * @param indicesCount  Number of active list indices.
- * @param indices       Address of array with active output indices.
+ * @param configId      Request configuration which will utilize the active list.
+ * @param layerIndex    Index of the layer that active list is specified for.
+ *                      The layer needs to have a GNA_OUT type buffer
+ *                      already assigned in the request configuration.
+ * @param indicesCount  The number of indices in the active list.
+ * @param indices       The address of the array with active output indices.
  * @see GnaModelRequestConfigAdd and GnaRequestConfigBufferAdd for details.
  */
 GNAAPI intel_gna_status_t GnaRequestConfigActiveListAdd(
@@ -247,12 +245,12 @@ GNAAPI intel_gna_status_t GnaRequestConfigActiveListAdd(
 /******************  GNA Request Calculation API ******************/
 
 /**
- * List of processing acceleration modes.
- * GNA supports a bunch of acceleration modes which availability depends on CPU type.
- * Modes supported by current system are detected by GNA.
- * Use GNA_AUTO mode to let GNA select best available acceleration.
+ * The list of processing acceleration modes.
+ * GNA supports a bunch of acceleration modes. Their availability depends on the CPU type.
+ * The modes supported by the current system are detected by GNA.
+ * Use GNA_AUTO mode to let GNA select the best available acceleration.
  * NOTE:
- * - GNA_HARDWARE: in some GNA hardware generations model components unsupported
+ * - GNA_HARDWARE: in some GNA hardware generations, model components unsupported
  *   by hardware will be processed using software acceleration.
  * By default fast acceleration mode, which does not detect saturation will be used.
  * @see GnaSetSaturationDetection to enable saturation detection.
@@ -260,23 +258,23 @@ GNAAPI intel_gna_status_t GnaRequestConfigActiveListAdd(
 typedef enum  _acceleration
 {
     GNA_HARDWARE = 0xFFFFFFFE,   // GNA Hardware acceleration enforcement
-    GNA_AUTO     = 0x3,          // GNA selects best available acceleration
-    GNA_SOFTWARE = 0x5,          // GNA selects best available software acceleration
-    GNA_GENERIC  = 0x7,          // Enforce use of generic software mode
-    GNA_SSE4_2   = 0x9,          // Enforce use of SSE 4.2 CPU instruction set
-    GNA_AVX1     = 0xB,          // Enforce use of AVX1 CPU instruction set
-    GNA_AVX2     = 0xD           // Enforce use of AVX2 CPU instruction set
+    GNA_AUTO     = 0x3,          // GNA selects the best available acceleration
+    GNA_SOFTWARE = 0x5,          // GNA selects the best available software acceleration
+    GNA_GENERIC  = 0x7,          // Enforce the usage of generic software mode
+    GNA_SSE4_2   = 0x9,          // Enforce the usage of SSE 4.2 CPU instruction set
+    GNA_AVX1     = 0xB,          // Enforce the usage of AVX1 CPU instruction set
+    GNA_AVX2     = 0xD           // Enforce the usage of AVX2 CPU instruction set
 } gna_acceleration;
 
 static_assert(4 == sizeof(gna_acceleration), "Invalid size of gna_acceleration");
 
 /**
- * Sets saturation detection for given acceleration mode.
+ * Sets saturation detection for a given acceleration mode.
  * Use only for GnaRequestEnqueue acceleration argument.
  * Hardware acceleration has saturation detection always enabled.
  * GMM layers have saturation detection always enabled.
  *
- * @param acceleration  Desired acceleration mode.
+ * @param acceleration  The desired acceleration mode.
  * @return Acceleration mode with enabled saturation detection.
  */
 inline gna_acceleration GnaSetSaturationDetection(
@@ -285,23 +283,23 @@ inline gna_acceleration GnaSetSaturationDetection(
     return (gna_acceleration)(acceleration & GNA_HARDWARE);
 }
 
-/** GNA Request identification **/
+/** GNA Request identificator **/
 typedef uint32_t gna_request_id;
 
 /** GNA Wait Timeout type **/
 typedef uint32_t gna_timeout;
 
 /**
- * Creates and enqueues request for asynchronous processing.
+ * Creates and enqueues a request for asynchronous processing.
  * NOTE:
- * - Request life cycle and memory is managed by GNA.
- * - Model, that request will be calculated against is provided by configuration.
+ * - Request's life cycle and memory is managed by GNA.
+ * - The model, that the request will be calculated against is provided by configuration.
  *
- * @param configId      Request configuration.
+ * @param configId      The request configuration.
  * @param acceleration  Acceleration mode used for processing.
  * @param requestId     (out) Request created by GNA.
  * @return              Status of request preparation and queuing only.
- *                      To retrieve results and processing status call GnaRequestWait.
+ *                      To retrieve the results and processing status call GnaRequestWait.
  */
 GNAAPI intel_gna_status_t GnaRequestEnqueue(
     gna_request_cfg_id  configId,
@@ -309,13 +307,13 @@ GNAAPI intel_gna_status_t GnaRequestEnqueue(
     gna_request_id*     requestId);
 
 /**
- * Waits for request processing to be completed.
+ * Waits for the request processing to be completed.
  * NOTE:
- * - If processing is completed before timeout, request object is released.
+ * - If processing is completed before the timeout expires, the request object is released.
  *   Otherwise processing status is returned.
- * - Unretrieved request are released by GNA with corresponding model release.
+ * - Unretrieved requests are released by GNA during corresponding model release.
  *
- * @param requestId     Request to wait for.
+ * @param requestId     The request to wait for.
  * @param milliseconds  timeout duration in milliseconds.
  */
 GNAAPI intel_gna_status_t GnaRequestWait(
@@ -328,27 +326,28 @@ const uint32_t GNA_REQUEST_QUEUE_LENGTH = 64;
 /** Request Id indicating that GnaRequestWait should wait until any request completes. */
 const gna_request_id GNA_REQUEST_WAIT_ANY = 0xffffffff;
 
-/** Maximum supported time of waiting for request */
+/** Maximum supported time of waiting for a request */
 const gna_timeout GNA_REQUEST_TIMEOUT_MAX = 180000;
 
 
 /******************  GNA Utilities API ******************/
 
 /**
- * Gets printable status name with description as c-string
+ * Gets printable status name with the description as a c-string
  *
- * @param status        Status name to retrieve.
- * @return C-string status with description.
+ * @param status        A status to translate.
+ * @return A c-string status with the description.
  */
 GNAAPI const char* GnaStatusToString(
     intel_gna_status_t        status);
 
 /**
  * Rounds a number up, to the nearest multiple of significance
- * Used for calculating memory sizes of GNA data buffers
+ * Used for calculating the memory sizes of GNA data buffers
  *
- * @param number        Memory size or number to round up.
- * @param significance  The multiple to which number will be rounded.
+ * @param number        Memory size or a number to round up.
+ * @param significance  Informs the function how to round up. The function "ceils"
+ *                      the number to the lowest possible value divisible by "significance".
  * @return Rounded integer value.
  * @deprecated          Will be removed in next release.
  */
@@ -362,10 +361,10 @@ GNAAPI const char* GnaStatusToString(
 #define ALIGN64(number)   ALIGN(number, 64)
 
 /**
- * Verifies data sizes used in API and hardware
+ * Verifies data sizes used in the API and GNA hardware
  *
- * NOTE: If data sizes in application using API differ from data sizes
- *       in API library implementation scoring will not work properly
+ * NOTE: If data sizes in an application using API differ from data sizes
+ *       in the API library implementation, scoring will not work properly
  */
 static_assert(1 == sizeof(int8_t), "Invalid size of int8_t");
 static_assert(2 == sizeof(int16_t), "Invalid size of int16_t");

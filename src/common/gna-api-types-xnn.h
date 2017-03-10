@@ -42,7 +42,7 @@ extern "C" {
 /** Bias data type */
 typedef int32_t intel_bias_t;
 
-/** Compound bias - as read directly by accelerator */
+/** Compound bias - as read directly by the accelerator */
 typedef struct _compound_bias_t
 {
     intel_bias_t bias;              // Bias value.  Not used for intel_affine_multibias_func_t.
@@ -70,12 +70,12 @@ typedef struct _affine_multibias_func_t
     uint32_t nBytesPerWeight;       // Number of bytes per weight element, set to 1B or 2B.
     void* pWeights;                 // Weights data buffer.
     intel_compound_bias_t* weightScaleFactors; // Scaling factors for 1B weights or NULL for 2B weights.
-    uint32_t biasVectorIndex;       // Index of bias group for current layer.
+    uint32_t biasVectorIndex;       // Index of the bias group for the current layer.
     intel_bias_t* pBiases;          // 2D array with grouped biases.
 
 } intel_affine_multibias_func_t;
 
-/** PWL Segment - as read directly by accelerator */
+/** PWL Segment - as read directly by the accelerator */
 typedef struct _pwl_segment_t
 {
     int32_t xBase;                  // X Component of segment starting point, with scaling encoded if needed.
@@ -148,7 +148,7 @@ typedef struct _copy_layer_t
 
 } intel_copy_layer_t;
 
-/** Copying Layer detailed descriptor */
+/** Recurrent Layer detailed descriptor */
 typedef struct _recurrent_layer_t
 {
     intel_affine_func_t affine;     // Affine function details.
@@ -186,7 +186,7 @@ typedef struct _nnet_layer_t
     uint32_t nBytesPerIntermediateOutput;// Number of bytes per intermediate output node, always set to 4.
     void* pLayerStruct;             // Layer detailed configuration, cast to intel_[LAYER_KIND]_layer_t.
     void* pInputs;                  // NN or GMM input buffer.
-    void* pOutputsIntermediate;     // Auxiliary output buffer. (Used for reading outputs before activation.)
+    void* pOutputsIntermediate;     // Auxiliary output buffer.
     void* pOutputs;                 // Output buffer.
 
 } intel_nnet_layer_t;
@@ -194,7 +194,7 @@ typedef struct _nnet_layer_t
 /** GNA Network descriptor */
 typedef struct _nnet_type_t
 {
-    uint32_t nLayers;               // Number of layers in network.
+    uint32_t nLayers;               // The number of layers in the network.
     uint32_t nGroup;                // Input vector grouping level.
     intel_nnet_layer_t *pLayers;    // Layer configurations.
 
