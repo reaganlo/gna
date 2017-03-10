@@ -80,7 +80,7 @@ igemm16_mb(
 {
     uint32_t j, k;
     const int16_t *ptr_in;
-    const int32_t * const b_end = B + M;
+    const int32_t * const b_end = B + M*BG;
 
     transpose16(K, N, I, fvBuffers->d0);
 

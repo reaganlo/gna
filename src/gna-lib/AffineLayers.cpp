@@ -45,10 +45,9 @@ AffineLayer::AffineLayer(const nn_layer *layer, const uint32_t inputVectorCount)
     }
     else
     {
-        Affine = make_unique<AffineFunctionSingle2B>(affine);
+        Affine = make_unique<AffineFunctionSingle1B>(affine);
     }
 };
-
 
 AffineMultiBiasLayer::AffineMultiBiasLayer(const nn_layer *layer, const uint32_t inputVectorCount) :
     Layer(layer, inputVectorCount),
@@ -67,9 +66,8 @@ AffineMultiBiasLayer::AffineMultiBiasLayer(const nn_layer *layer, const uint32_t
     {
         Affine = make_unique<AffineFunctionMulti1B>(affine);
     }
-    Validate::IsTrue(Affine->BiasVectorIndex <= Input.VectorCount, XNN_ERR_BIAS_INDEX);
+    Validate::IsTrue(Affine->BiasVectorIndex >= Input.VectorCount, XNN_ERR_BIAS_INDEX);
 };
-
 
 AffineDiagonalLayer::AffineDiagonalLayer(const nn_layer *layer, const uint32_t inputVectorCount)
     : AffineLayer(layer, inputVectorCount)

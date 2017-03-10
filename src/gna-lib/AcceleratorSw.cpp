@@ -127,7 +127,7 @@ status_t AcceleratorSw::Score(
         {
             status = xnnKernel->affineMbias(lyr, al, nOuts, &sat, fvBuffers);
             if (GNA_SUCCESS != status) return status;
-            if (0 != (&((nn_layer_affine*)lyr->pLayerStruct)->pwl)->nSegments)
+            if (0 != (&((intel_affine_multibias_layer_t*)lyr->pLayerStruct)->pwl)->nSegments)
             {
                 xnnKernel->pwl(lyr, 0, lyr->nOutputRows - 1, 0, lyr->nInputColumns - 1, &sat, fvBuffers->pwl);
             }
