@@ -29,6 +29,7 @@
 #include <vector>
 
 #include "Layer.h"
+#include "RequestConfiguration.h"
 
 namespace GNA
 {
@@ -39,7 +40,9 @@ class SoftwareModel
 public:
     SoftwareModel(const gna_model* network);
 
-    std::vector<std::unique_ptr<const Layer>> Layers;
+    void ValidateConfiguration(const RequestConfiguration& configuration);
+
+    std::vector<unique_ptr<Layer>> Layers;
 
     const uint32_t layerCount;
 
@@ -57,6 +60,10 @@ protected:
      */
     SoftwareModel(const SoftwareModel &) = delete;
     SoftwareModel& operator=(const SoftwareModel&) = delete;
+
+private:
+    uint32_t inputLayerCount = 0;
+    uint32_t outputLayerCount = 0;
 };
 
 }

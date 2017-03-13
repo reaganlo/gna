@@ -46,10 +46,11 @@ typedef enum _Orientations
 struct LayerConfig
 {
 public:
-    static const std::map<const nn_layer_type, const Orientations> OrientationsMap;
+    static const std::map<const nn_layer_kind, const Orientations> OrientationsMap;
 
-    LayerConfig(const nn_layer_type type);
+    LayerConfig(const nn_layer_kind kind, const nn_layer_type type);
 
+    const nn_layer_kind Kind;
     const nn_layer_type Type;
     const Orientations Orientation;
 
@@ -60,8 +61,7 @@ public:
 struct LayerMatrix
 {
 public:
-    LayerMatrix(const uint32_t rowCount, const uint32_t columnCount, void const * buffer,
-        const Orientations orientation);
+    LayerMatrix(const uint32_t rowCount, const uint32_t columnCount, void const * buffer, const LayerConfig& config);
     ~LayerMatrix() = default;
 
     const uint32_t ColumnCount;
@@ -73,7 +73,7 @@ public:
 struct LayerInput : public LayerMatrix
 {
 public:
-    LayerInput(const nn_layer &layer, const Orientations orientation, const uint32_t vectorCount);
+    LayerInput(const nn_layer &layer, const LayerConfig& config, const uint32_t vectorCount);
     ~LayerInput() = default;
 
     const uint32_t VectorCount;
@@ -84,8 +84,8 @@ struct LayerOutput : public LayerMatrix
 public:
     static const uint32_t NonActivatedOutputSize = 4;
     static const uint32_t ActivatedOutputSize = 2;
-    
-    LayerOutput(const nn_layer &layer, const Orientations orientation);
+
+    LayerOutput(const nn_layer &layer, const LayerConfig& config);
     ~LayerOutput() = default;
 
     void Validate(const bool ActivationEnabled, const uint32_t outputSize) const;
@@ -102,7 +102,7 @@ public:
     static unique_ptr<Layer> Create(const nn_layer *layer, const uint32_t inputVectorCount);
 
     virtual ~Layer() {};
-    
+
     const LayerConfig Config;
     const nn_layer sourceLayer;
     const LayerInput Input;

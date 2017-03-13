@@ -24,12 +24,15 @@
 */
 
 #include "AcceleratorSw.h"
+
+#include "common.h"
+#include "AffineLayers.h"
 #include "GnaException.h"
 #include "Validator.h"
 
 using namespace GNA;
 
-AcceleratorSw::AcceleratorSw(acceleration acceleration_mode) 
+AcceleratorSw::AcceleratorSw(acceleration acceleration_mode)
     : IAccelerator(acceleration_mode)
 {
     switch(accel){
@@ -71,8 +74,8 @@ AcceleratorSw::AcceleratorSw(acceleration acceleration_mode)
 }
 
 status_t AcceleratorSw::Score(
-    const CompiledModel& model, 
-    const SubModel& submodel, 
+    const CompiledModel& model,
+    const SubModel& submodel,
     const RequestConfiguration& requestConfiguration,
           RequestProfiler *profiler,
           KernelBuffers *buffers)
@@ -90,73 +93,112 @@ status_t AcceleratorSw::Score(
 
     auto status = GNA_SUCCESS;
 
-    uint32_t i = 0;
-    uint32_t nOuts = 0;        // # of outputs (all or active list indices)
-    uint32_t sat = 0;        // scoring saturation counter
-    uint32_t* al = nullptr;        // active list indices data
-
-    // TODO: add thread buffer as input to calculation function
-
     auto& softwareModel = model.GetSoftwareModel();
-    nn_layer* lyr = nullptr;
-    for (; i < softwareModel.layerCount; i++)
+    softwareModel.ValidateConfiguration(requestConfiguration);
+
+    auto i = uint32_t(0);
+    auto nOuts = uint32_t(0); // number of outputs
+    auto sat = uint32_t(0);   // scoring saturation counter
+
+    const uint32_t* al = nullptr; // active list pointer
+
+    auto layerIndex = uint32_t(0);
+    for (auto& layer : softwareModel.Layers)
     {
-        lyr = const_cast<nn_layer*>(&softwareModel.Layers[i]->sourceLayer);
-        Validate::IsNull(lyr);
-        if (INTEL_AFFINE == lyr->nLayerKind)
+        auto* sourceLayer = const_cast<nn_layer*>(&layer->sourceLayer);
+        auto layerKind = layer->Config.Kind;
+        if (INTEL_HIDDEN != sourceLayer->type)
         {
-            //// use active list in last layer if available
-            //if ((i == softwareModel.layerCount - 1) && model->activeList.enabled)
-            //{
-            //    nOuts   = softwareModel.activeList.indicesCount;
-            //    al      = (uint32_t*)softwareModel.activeList.indices;
-            //}
-            //else // regular outputs
-            //{
-                nOuts   = lyr->nOutputRows;
-                al      = nullptr;
-            //}
-            status = xnnKernel->affine(lyr, al, nOuts, &sat, fvBuffers);
-            if (GNA_SUCCESS != status) return status;
-            if (0 != (&((nn_layer_affine*)lyr->pLayerStruct)->pwl)->nSegments)
+            auto found = requestConfiguration.LayerConfigurations.find(layerIndex);
+            if (found != requestConfiguration.LayerConfigurations.end())
             {
-                xnnKernel->pwl(lyr, 0, nOuts - 1, 0, lyr->nInputColumns - 1, &sat, fvBuffers->pwl);
+                auto layerConfiguration = found->second.get();
+                if (layerConfiguration->InputBuffer)
+                    sourceLayer->pInputs = layerConfiguration->InputBuffer->address;
+
+                if (layerConfiguration->OutputBuffer)
+                    sourceLayer->pOutputs = layerConfiguration->OutputBuffer->address;
+
+                if (layerConfiguration->ActiveList
+                    && layerConfiguration->ActiveList->Enabled)
+                {
+                    if (INTEL_AFFINE == layerKind
+                        || INTEL_GMM == layerKind)
+                    {
+                        nOuts = layerConfiguration->ActiveList->IndicesCount;
+                        al = layerConfiguration->ActiveList->Indices;
+                    }
+                }
+                else // regular outputs
+                {
+                    nOuts = layer->Output.ElementCount;
+                }
             }
         }
-        else if (INTEL_AFFINE_MULTIBIAS == lyr->nLayerKind)
+
+        if (INTEL_AFFINE == layerKind)
         {
-            status = xnnKernel->affineMbias(lyr, al, nOuts, &sat, fvBuffers);
+            auto& affineLayer = static_cast<AffineLayer&>(*layer);
+            auto& activation = affineLayer.Activation;
+
+            status = xnnKernel->affine(sourceLayer, al, nOuts, &sat, fvBuffers);
             if (GNA_SUCCESS != status) return status;
-            if (0 != (&((intel_affine_multibias_layer_t*)lyr->pLayerStruct)->pwl)->nSegments)
+
+            // apply piecewise linear function if enabled
+            if(activation.Enabled)
             {
-                xnnKernel->pwl(lyr, 0, lyr->nOutputRows - 1, 0, lyr->nInputColumns - 1, &sat, fvBuffers->pwl);
+                xnnKernel->pwl(sourceLayer, 0, nOuts - 1, 0,
+                    sourceLayer->nInputColumns - 1, &sat, fvBuffers->pwl);
             }
         }
-        else if (lyr->nLayerKind == INTEL_AFFINE_DIAGONAL)
+        else if (INTEL_AFFINE_MULTIBIAS == layerKind)
         {
-            status = xnnKernel->diagonal(lyr, &sat);
+            auto& affineLayer = static_cast<AffineMultiBiasLayer&>(*layer);
+            auto& activation = affineLayer.Activation;
+
+            status = xnnKernel->affineMbias(sourceLayer, al, nOuts, &sat, fvBuffers);
             if (GNA_SUCCESS != status) return status;
-            if (0 != (&((nn_layer_affine*)lyr->pLayerStruct)->pwl)->nSegments)
+
+            if(activation.Enabled)
             {
-                xnnKernel->pwl(lyr, 0, lyr->nOutputRows - 1, 0, lyr->nInputColumns - 1, &sat, fvBuffers->pwl);
+                xnnKernel->pwl(sourceLayer, 0, sourceLayer->nOutputRows - 1, 0,
+                   sourceLayer->nInputColumns - 1, &sat, fvBuffers->pwl);
             }
         }
-        else if (lyr->nLayerKind == INTEL_RECURRENT)
+        else if (INTEL_AFFINE_DIAGONAL == layerKind)
         {
-            status = xnnKernel->recurrent(lyr, &sat, fvBuffers->pwl);
+            status = xnnKernel->diagonal(sourceLayer, &sat);
+            if (GNA_SUCCESS != status) return status;
+
+            auto& affineLayer = static_cast<AffineDiagonalLayer&>(*layer);
+            xnnKernel->diagonal(sourceLayer, &sat);
+
+            auto& activation = affineLayer.Activation;
+            if(activation.Enabled)
+            {
+                xnnKernel->pwl(sourceLayer, 0, sourceLayer->nOutputRows - 1, 0,
+                    sourceLayer->nInputColumns - 1, &sat, fvBuffers->pwl);
+            }
         }
-        else if (INTEL_INTERLEAVE   == lyr->nLayerKind || 
-                 INTEL_DEINTERLEAVE == lyr->nLayerKind)
+        else if (INTEL_RECURRENT == layerKind)
         {
-            status = xnnKernel->transpose(lyr);
+            status = xnnKernel->recurrent(sourceLayer, &sat, fvBuffers->pwl);
         }
-        else if (lyr->nLayerKind == INTEL_COPY)
+        else if (INTEL_INTERLEAVE   == layerKind ||
+                 INTEL_DEINTERLEAVE == layerKind)
         {
-            status = xnnKernel->copy(lyr);
+            status = xnnKernel->transpose(sourceLayer);
         }
-        else if (lyr->nLayerKind == INTEL_CONVOLUTIONAL)
+        else if (INTEL_COPY == layerKind)
         {
-            status = xnnKernel->conv(lyr, &sat, fvBuffers->pwl, fvBuffers->pool);
+            status = xnnKernel->copy(sourceLayer);
+        }
+        else if (INTEL_CONVOLUTIONAL == layerKind)
+        {
+            // TODO: enable convolutional layer
+            //       handle output buffer from request configuration
+
+            status = xnnKernel->conv(sourceLayer, &sat, fvBuffers->pwl, fvBuffers->pool);
             if (status != GNA_SUCCESS)return status;
         }
         else
@@ -165,6 +207,7 @@ status_t AcceleratorSw::Score(
         }
 
         if (GNA_SUCCESS != status) return status;
+        ++layerIndex;
     }
 
     profilerDTscAStop(&profiler->scoring);
@@ -197,7 +240,7 @@ status_t AcceleratorSw::gmmSoftwareKernel(GmmLayer* gmm, RequestProfiler* profil
 {
     const uint8_t * const input = static_cast<const uint8_t * const>(gmm->Input.Buffer); // TODO:KJ:use request config outputs (only if defined for current layer)
     uint32_t *output = (uint32_t*)(gmm->Output.Buffer); // TODO:KJ:use request config outputs (only if defined for current layer)
-    ActiveList activeList(0, 0, nullptr);// TODO:KJ:use request active list (only if defined for current layer)
+    ActiveList activeList(0, nullptr);// TODO:KJ:use request active list (only if defined for current layer)
     const gna_gmm_data* data = &gmm->Data;
     const uint32_t fvCount = gmm->Input.VectorCount;
     const uint32_t fvLength = gmm->Input.ElementCount;
@@ -206,7 +249,7 @@ status_t AcceleratorSw::gmmSoftwareKernel(GmmLayer* gmm, RequestProfiler* profil
     const uint32_t varSetOffsetSize = gmm->Params.VarSetOffsetSize;
     const uint32_t gConstSetOffsetSize = gmm->Params.GaussConstSetOffsetSize;
     const uint32_t maxScore = gmm->Config.maximumScore;
-    
+
     uint32_t stateCount = 0; // no of GMM states or active indices when applicable
     uint32_t i, j, k;
     status_t s = GNA_SUCCESS;
@@ -218,7 +261,7 @@ status_t AcceleratorSw::gmmSoftwareKernel(GmmLayer* gmm, RequestProfiler* profil
 
     profilerDTscAStart(&profiler->scoring);
 
-    if (false == activeList.enabled)
+    if (!activeList.Enabled)
     {
         const uint32_t meanOffset = meanSetOffsetSize / GMM_MEAN_VALUE_SIZE;;
         const uint32_t varOffset = varSetOffsetSize / (gmm->Config.mode + 1);;
@@ -254,19 +297,19 @@ status_t AcceleratorSw::gmmSoftwareKernel(GmmLayer* gmm, RequestProfiler* profil
                 uint32_t n;
                 uint32_t g;
 
-                // pack feature vectors by 8 features 
+                // pack feature vectors by 8 features
                 // v0[0..7]v1[0..7]vj[0..7]v0[8..15]v1[8..15]...
                 if (fvCount > 1)
                 {
                     for (n = 0; n < fvLength; n += GMM_FV_COUNT_MAX)
-                    {    
+                    {
                         for (g = 0; g < fvCount; g++)
                         {
                             *((uint64_t*)fv) = *((uint64_t*)((input) + g * fvLength + n));
                             fv += GMM_FV_COUNT_MAX;
                         }
                     }
-                    fv = (uint8_t*)(((unsigned long long)pFeatureBuffer+GMM_FV_MEM_ALIGN) & 0xffffffffffffffc0ull);        
+                    fv = (uint8_t*)(((unsigned long long)pFeatureBuffer+GMM_FV_MEM_ALIGN) & 0xffffffffffffffc0ull);
                 }
                 else
                 {
@@ -276,7 +319,7 @@ status_t AcceleratorSw::gmmSoftwareKernel(GmmLayer* gmm, RequestProfiler* profil
                 {
                 case 1:
                     for(j = 0; j < stateCount; j++)
-                    {                    
+                    {
                         means = data->meanValues + j*meanOffset;
                         vars = data->inverseCovariancesForMaxMix8 + j*varOffset;
                         consts = data->gaussianConstants + j*gConstOffset;
@@ -294,7 +337,7 @@ status_t AcceleratorSw::gmmSoftwareKernel(GmmLayer* gmm, RequestProfiler* profil
                         scores = output + j*fvCount;
 
                         gmmKernel->GMM8_MAXMIX_G2(fv, means, vars, consts, maxScore, fvLength, mixCount, scores);
-                    }            
+                    }
                     break;
                 case 3:
 
@@ -311,7 +354,7 @@ status_t AcceleratorSw::gmmSoftwareKernel(GmmLayer* gmm, RequestProfiler* profil
                         means += meanOffset;
                         vars += varOffset;
                         consts += gConstOffset;
-                    }            
+                    }
                     break;
                 case 4:
 
@@ -328,7 +371,7 @@ status_t AcceleratorSw::gmmSoftwareKernel(GmmLayer* gmm, RequestProfiler* profil
                         means += meanOffset;
                         vars += varOffset;
                         consts += gConstOffset;
-                    }            
+                    }
                     break;
                 case 5:
 
@@ -340,7 +383,7 @@ status_t AcceleratorSw::gmmSoftwareKernel(GmmLayer* gmm, RequestProfiler* profil
                         scores = output + j*fvCount;
 
                         gmmKernel->GMM8_MAXMIX_G5(fv, means, vars, consts, maxScore, fvLength, mixCount, scores);
-                    }            
+                    }
                     break;
                 case 6:
 
@@ -352,7 +395,7 @@ status_t AcceleratorSw::gmmSoftwareKernel(GmmLayer* gmm, RequestProfiler* profil
                         scores = output + j*fvCount;
 
                         gmmKernel->GMM8_MAXMIX_G6(fv, means, vars, consts, maxScore, fvLength, mixCount, scores);
-                    }            
+                    }
                     break;
                 case 7:
 
@@ -364,7 +407,7 @@ status_t AcceleratorSw::gmmSoftwareKernel(GmmLayer* gmm, RequestProfiler* profil
                         scores = output + j*fvCount;
 
                         gmmKernel->GMM8_MAXMIX_G7(fv, means, vars, consts, maxScore, fvLength, mixCount, scores);
-                    }            
+                    }
                     break;
                 case 8:
 
@@ -376,9 +419,9 @@ status_t AcceleratorSw::gmmSoftwareKernel(GmmLayer* gmm, RequestProfiler* profil
                         scores = output + j*fvCount;
 
                         gmmKernel->GMM8_MAXMIX_G8(fv, means, vars, consts, maxScore, fvLength, mixCount, scores);
-                    }            
-                    break;                
-                }                    
+                    }
+                    break;
+                }
             } //else //if(GNA_SW_SSE4_2 == kd.accel || GNA_SW_AVX1 == kd.accel || GNA_SW_AVX2 == kd.accel)
         }//else if (gmm->mode == GNA_MAXMIX8)
         else if (gmm->Config.mode == GNA_MAXMIX16)
@@ -409,7 +452,7 @@ status_t AcceleratorSw::gmmSoftwareKernel(GmmLayer* gmm, RequestProfiler* profil
     }
     else // has active list
     {
-        stateCount = activeList.indicesCount;
+        stateCount = activeList.IndicesCount;
 
         if (gmm->Config.mode == GNA_MAXMIX8)
         {
@@ -418,7 +461,7 @@ status_t AcceleratorSw::gmmSoftwareKernel(GmmLayer* gmm, RequestProfiler* profil
             {
                 for(j = 0; j < stateCount; j++)
                 {
-                    k = activeList.indices[j];
+                    k = activeList.Indices[j];
                     means = data->meanValues + k * meanSetOffsetSize;
                     vars = data->inverseCovariancesForMaxMix8 + k * varSetOffsetSize;
                     consts = (uint32_t*)((uint8_t*)data->gaussianConstants + k * gConstSetOffsetSize);
@@ -440,12 +483,12 @@ status_t AcceleratorSw::gmmSoftwareKernel(GmmLayer* gmm, RequestProfiler* profil
                 uint32_t n = 0;
                 uint32_t g = 0;
 
-                // pack feature vectors by 8 features 
+                // pack feature vectors by 8 features
                 // v0[0..7]v1[0..7]vj[0..7]v0[8..15]v1[8..15]...
                 if (fvCount > 1)
                 {
                     for (n = 0; n < fvLength; n += GMM_FV_COUNT_MAX)
-                    {    
+                    {
                         for (g = 0; g < fvCount; g++)
                         {
                             *((uint64_t*)fv) = *((uint64_t*)((input) + g * fvLength + n));
@@ -465,7 +508,7 @@ status_t AcceleratorSw::gmmSoftwareKernel(GmmLayer* gmm, RequestProfiler* profil
 
                     for(j = 0; j < stateCount; j++)
                     {
-                        k = activeList.indices[j];
+                        k = activeList.Indices[j];
                         means = data->meanValues + k * meanSetOffsetSize;
                         vars = data->inverseCovariancesForMaxMix8 + k * varSetOffsetSize;
                         consts = (uint32_t*)((uint8_t*)data->gaussianConstants + k * gConstSetOffsetSize);
@@ -478,7 +521,7 @@ status_t AcceleratorSw::gmmSoftwareKernel(GmmLayer* gmm, RequestProfiler* profil
 
                     for(j = 0; j < stateCount; j++)
                     {
-                        k = activeList.indices[j];
+                        k = activeList.Indices[j];
                         means = data->meanValues + k * meanSetOffsetSize;
                         vars = data->inverseCovariancesForMaxMix8 + k * varSetOffsetSize;
                         consts = (uint32_t*)((uint8_t*)data->gaussianConstants + k * gConstSetOffsetSize);
@@ -491,7 +534,7 @@ status_t AcceleratorSw::gmmSoftwareKernel(GmmLayer* gmm, RequestProfiler* profil
 
                     for(j = 0; j < stateCount; j++)
                     {
-                        k = activeList.indices[j];
+                        k = activeList.Indices[j];
                         means = data->meanValues + k * meanSetOffsetSize;
                         vars = data->inverseCovariancesForMaxMix8 + k * varSetOffsetSize;
                         consts = (uint32_t*)((uint8_t*)data->gaussianConstants + k * gConstSetOffsetSize);
@@ -504,7 +547,7 @@ status_t AcceleratorSw::gmmSoftwareKernel(GmmLayer* gmm, RequestProfiler* profil
 
                     for(j = 0; j < stateCount; j++)
                     {
-                        k = activeList.indices[j];
+                        k = activeList.Indices[j];
                         means = data->meanValues + k * meanSetOffsetSize;
                         vars = data->inverseCovariancesForMaxMix8 + k * varSetOffsetSize;
                         consts = (uint32_t*)((uint8_t*)data->gaussianConstants + k * gConstSetOffsetSize);
@@ -517,7 +560,7 @@ status_t AcceleratorSw::gmmSoftwareKernel(GmmLayer* gmm, RequestProfiler* profil
 
                     for(j = 0; j < stateCount; j++)
                     {
-                        k = activeList.indices[j];
+                        k = activeList.Indices[j];
                         means = data->meanValues + k * meanSetOffsetSize;
                         vars = data->inverseCovariancesForMaxMix8 + k * varSetOffsetSize;
                         consts = (uint32_t*)((uint8_t*)data->gaussianConstants + k * gConstSetOffsetSize);
@@ -530,7 +573,7 @@ status_t AcceleratorSw::gmmSoftwareKernel(GmmLayer* gmm, RequestProfiler* profil
 
                     for(j = 0; j < stateCount; j++)
                     {
-                        k = activeList.indices[j];
+                        k = activeList.Indices[j];
                         means = data->meanValues + k * meanSetOffsetSize;
                         vars = data->inverseCovariancesForMaxMix8 + k * varSetOffsetSize;
                         consts = (uint32_t*)((uint8_t*)data->gaussianConstants + k * gConstSetOffsetSize);
@@ -543,7 +586,7 @@ status_t AcceleratorSw::gmmSoftwareKernel(GmmLayer* gmm, RequestProfiler* profil
 
                     for(j = 0; j < stateCount; j++)
                     {
-                        k = activeList.indices[j];
+                        k = activeList.Indices[j];
                         means = data->meanValues + k * meanSetOffsetSize;
                         vars = data->inverseCovariancesForMaxMix8 + k * varSetOffsetSize;
                         consts = (uint32_t*)((uint8_t*)data->gaussianConstants + k * gConstSetOffsetSize);
@@ -556,7 +599,7 @@ status_t AcceleratorSw::gmmSoftwareKernel(GmmLayer* gmm, RequestProfiler* profil
 
                     for(j = 0; j < stateCount; j++)
                     {
-                        k = activeList.indices[j];
+                        k = activeList.Indices[j];
                         means = data->meanValues + k * meanSetOffsetSize;
                         vars = data->inverseCovariancesForMaxMix8 + k * varSetOffsetSize;
                         consts = (uint32_t*)((uint8_t*)data->gaussianConstants + k * gConstSetOffsetSize);
@@ -564,7 +607,7 @@ status_t AcceleratorSw::gmmSoftwareKernel(GmmLayer* gmm, RequestProfiler* profil
 
                         gmmKernel->GMM8_MAXMIX_G8(fv, means, vars, consts, maxScore, fvLength, mixCount, scores);
                     }
-                    break;                    
+                    break;
                 }
             } // else //if(GNA_SW_SSE4_2 == kd.accel || GNA_SW_AVX1 == kd.accel || GNA_SW_AVX2 == kd.accel)
         }//else if (gmm->mode == GNA_MAXMIX8)
@@ -572,10 +615,10 @@ status_t AcceleratorSw::gmmSoftwareKernel(GmmLayer* gmm, RequestProfiler* profil
         {
             uint16_t *vars; // auxiliary pointer
             scores = output;
-      
+
             for(j = 0; j < stateCount; j++)
             {
-                k = activeList.indices[j];
+                k = activeList.Indices[j];
                 means = data->meanValues + k * meanSetOffsetSize;
                 vars = data->inverseCovariancesForMaxMix16 + k * varSetOffsetSize / GMM_COVARIANCE_SIZE_MAX;
                 consts = (uint32_t*)((uint8_t*)data->gaussianConstants + k * gConstSetOffsetSize);

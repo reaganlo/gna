@@ -48,7 +48,7 @@ ThreadPool::~ThreadPool()
 {
     {
         unique_lock<mutex> lock(tp_mutex);
-        if (true == stopped)
+        if (stopped)
         {
             return;
         }
@@ -140,7 +140,7 @@ void ThreadPool::Init(uint8_t n_threads)
 {
     {
         unique_lock<mutex> lock(tp_mutex);
-        if (false == stopped)
+        if (!stopped)
         {
             throw GnaException(GNA_ERR_QUEUE);
         }
@@ -157,12 +157,12 @@ void ThreadPool::Init(uint8_t n_threads)
                 {
                     unique_lock<mutex> lock(tp_mutex);
                     condition.wait(lock, [&]() { return stopped || !tasks.empty(); });
-                    if (true == stopped)
+                    if (stopped)
                     {
                         deallocateFvBuffers(&buffers);
                         return;
                     }
-                    if (false == tasks.empty()) {
+                    if (!tasks.empty()) {
                         auto& request_task = tasks.front();
                         tasks.pop();
                         (*request_task)(&buffers);
@@ -177,7 +177,7 @@ void ThreadPool::Enqueue(Request *request)
 {
     {
         unique_lock<mutex> lock(tp_mutex);
-        if (true == stopped) 
+        if (stopped) 
         {
             throw GnaException(GNA_ERR_UNKNOWN);
         }
@@ -190,7 +190,7 @@ void ThreadPool::Stop()
 {
     {
         unique_lock<mutex> lock(tp_mutex);
-        if (true == stopped)
+        if (stopped)
         {
             throw GnaException(GNA_ERR_QUEUE);
         }

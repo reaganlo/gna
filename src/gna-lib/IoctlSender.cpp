@@ -111,7 +111,7 @@ status_t IoctlSender::IoctlSend(
 
     Validate::IsTrue(ioResult == 0 && ERROR_IO_PENDING != lastError, GNA_IOCTLSENDERR);
 
-    if (ERROR_IO_PENDING == lastError && TRUE == async)
+    if (ERROR_IO_PENDING == lastError && async)
         return GNA_SUCCESS;
 
     return IoctlWait(&overlapped_, (DRV_RECOVERY_TIMEOUT + 15) * 1000); 

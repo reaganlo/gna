@@ -36,7 +36,7 @@ using std::make_unique;
 
 
 
-const std::map<const nn_layer_type, const Orientations> LayerConfig::OrientationsMap =
+const std::map<const nn_layer_kind, const Orientations> LayerConfig::OrientationsMap =
 {
     { INTEL_AFFINE, INTERLEAVED },
     { INTEL_AFFINE_DIAGONAL, INTERLEAVED },
@@ -49,28 +49,32 @@ const std::map<const nn_layer_type, const Orientations> LayerConfig::Orientation
     { INTEL_RECURRENT, FLAT }
 };
 
-LayerConfig::LayerConfig(const nn_layer_type type) :
+LayerConfig::LayerConfig(const nn_layer_kind kind, const nn_layer_type type) :
+    Kind(kind),
     Type(type),
-    Orientation(OrientationsMap.at(type))
+    Orientation(OrientationsMap.at(kind))
 {
-    Validate::IsInRange(type, 0, NUM_LAYER_KINDS, XNN_ERR_LYR_TYPE);
+    Validate::IsInRange(kind, 0, NUM_LAYER_KINDS, XNN_ERR_LYR_KIND);
+    Validate::IsInRange(type, 0, NUM_LAYER_TYPES, XNN_ERR_LYR_TYPE);
 };
 
 
-LayerMatrix::LayerMatrix(const uint32_t rowCount, const uint32_t columnCount, void const * buffer,
-    const Orientations orientation) :
+LayerMatrix::LayerMatrix(const uint32_t rowCount, const uint32_t columnCount, void const * buffer, const LayerConfig& config) :
     ColumnCount(columnCount),
     RowCount(rowCount),
-    ElementCount((FLAT == orientation) ? ColumnCount : RowCount),
+    ElementCount((FLAT == config.Orientation) ? ColumnCount : RowCount),
     Buffer(static_cast<void const * const>(buffer))
 {
-    Validate::IsInRange(orientation, INTERLEAVED, FLAT, XNN_ERR_LYR_CFG);
-    Validate::IsNull(Buffer);
-    Validate::IsAlignedTo64(Buffer);  
+    Validate::IsInRange(config.Orientation, INTERLEAVED, FLAT, XNN_ERR_LYR_CFG);
+    if (INTEL_HIDDEN == config.Type)
+    {
+        Validate::IsNull(Buffer);
+        Validate::IsAlignedTo64(Buffer);
+    }
 };
 
-LayerInput::LayerInput(const nn_layer &layer, const Orientations orientation, const uint32_t vectorCount) :
-    LayerMatrix(layer.nInputRows, layer.nInputColumns, layer.pInputs, orientation),
+LayerInput::LayerInput(const nn_layer &layer, const LayerConfig& config, const uint32_t vectorCount) :
+    LayerMatrix(layer.nInputRows, layer.nInputColumns, layer.pInputs, config),
     VectorCount(vectorCount)
 {
     if (INTEL_GMM == layer.nLayerKind)
@@ -84,13 +88,13 @@ LayerInput::LayerInput(const nn_layer &layer, const Orientations orientation, co
     Validate::IsInRange(VectorCount, 1, XNN_N_GROUP_MAX, XNN_ERR_GROUPING);
     Validate::IsInRange(ElementCount, XNN_N_IN_ELEMS_MPLY, XNN_N_IN_ELEMS_MAX, XNN_ERR_LYR_CFG);
     Validate::IsMultiplicityOf(ElementCount, XNN_N_IN_ELEMS_MPLY);
-    auto secondDimension = (FLAT == orientation) ? RowCount : ColumnCount;
+    auto secondDimension = (FLAT == config.Orientation) ? RowCount : ColumnCount;
     Validate::IsInRange(secondDimension, 1, XNN_N_GROUP_MAX, XNN_ERR_GROUPING);
 };
 
 
-LayerOutput::LayerOutput(const nn_layer &layer, const Orientations orientation) :
-    LayerMatrix(layer.nOutputRows, layer.nOutputColumns, layer.pOutputs, orientation),
+LayerOutput::LayerOutput(const nn_layer &layer, const LayerConfig& config) :
+    LayerMatrix(layer.nOutputRows, layer.nOutputColumns, layer.pOutputs, config),
     ScratchPad(static_cast<uint32_t const * const>(layer.pOutputsIntermediate))
 {
     Validate::IsInRange(ElementCount, 1, XNN_N_IN_ELEMS_MAX, XNN_ERR_LYR_CFG);
@@ -118,7 +122,7 @@ unique_ptr<Layer> Layer::Create(const nn_layer* layer, const uint32_t inputVecto
 {
     switch (layer->nLayerKind)
     {
-    case INTEL_AFFINE:          
+    case INTEL_AFFINE:
         return make_unique<AffineLayer>(layer, inputVectorCount);
     case INTEL_AFFINE_DIAGONAL:
         return make_unique<AffineDiagonalLayer>(layer, inputVectorCount);
@@ -134,18 +138,18 @@ unique_ptr<Layer> Layer::Create(const nn_layer* layer, const uint32_t inputVecto
         return make_unique<GmmLayer>(layer, inputVectorCount);
     case INTEL_INTERLEAVE:
         return make_unique<TransposeLayer>(layer, inputVectorCount);
-    //case INTEL_RECURRENT:       
+    //case INTEL_RECURRENT:
         //return new RnnLayer();
-    default:                    
+    default:
         return nullptr;
     }
 }
 
 Layer::Layer(const nn_layer *layer, const uint32_t inputVectorCount) :
-    Config(layer->nLayerKind),
+    Config(layer->nLayerKind, layer->type),
     sourceLayer(validate(layer)),
-    Input(sourceLayer, Config.Orientation, inputVectorCount),
-    Output(sourceLayer, Config.Orientation)
+    Input(sourceLayer, Config, inputVectorCount),
+    Output(sourceLayer, Config)
 {
 }
 

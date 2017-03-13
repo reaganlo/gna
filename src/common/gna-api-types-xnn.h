@@ -173,10 +173,23 @@ typedef enum _layer_kind_t
 
 } intel_layer_kind_t;
 
+/** Layer type list */
+typedef enum _layer_type_t
+{
+    INTEL_INPUT,
+    INTEL_OUTPUT,
+    INTEL_INPUT_OUTPUT,
+    INTEL_HIDDEN,
+
+    NUM_LAYER_TYPES        // Number of Layer types.
+
+} intel_layer_type_t;
+
 /** Layer configuration descriptor */
 typedef struct _nnet_layer_t
 {
     intel_layer_kind_t nLayerKind;  // Layer kind.
+    intel_layer_type_t type;        // Layer type
     uint32_t nInputColumns;         // Number of input columns.
     uint32_t nInputRows;            // Number of input rows.
     uint32_t nOutputColumns;        // Number of output columns.

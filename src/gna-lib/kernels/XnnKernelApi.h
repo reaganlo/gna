@@ -33,62 +33,62 @@ namespace GNA
 typedef
 status_t
 (*AffineTransformFn)(
-    nn_layer*         pLayer,
-    uint32_t*           pActiveIndices,
-    uint32_t            nActiveIndices,
-    uint32_t*           nSaturated,
-    KernelBuffers*    fvBuffers);
+    const nn_layer*          pLayer,
+    const uint32_t*          pActiveIndices,
+          uint32_t           nActiveIndices,
+          uint32_t*          nSaturated,
+          KernelBuffers*     fvBuffers);
 
 typedef
 status_t
 (*AffMBiasTransformFn)(
-    nn_layer*         pLayer,
-    uint32_t*           pActiveIndices,
-    uint32_t            nActiveIndices,
-    uint32_t*           nSaturated,
-    KernelBuffers*    fvBuffers);
+    const nn_layer*          pLayer,
+    const uint32_t*          pActiveIndices,
+          uint32_t           nActiveIndices,
+          uint32_t*          nSaturated,
+          KernelBuffers*     fvBuffers);
 
 typedef
 status_t
 (*DiagonalTransformFn)(
-    nn_layer*         pLayer,
-    uint32_t*           nSaturated);
+    const nn_layer* pLayer,
+          uint32_t* nSaturated);
 
 typedef
 void
 (*PWLTransformFn)(
-    nn_layer*         pLayer,
-    uint32_t            nRowBegin,
-    uint32_t            nRowEnd,
-    uint32_t            nColBegin,
-    uint32_t            nColEnd,
-    uint32_t*           nSaturated,
-    void*               pwlBuff);
+    const nn_layer*     pLayer,
+          uint32_t      nRowBegin,
+          uint32_t      nRowEnd,
+          uint32_t      nColBegin,
+          uint32_t      nColEnd,
+          uint32_t*     nSaturated,
+          void*         pwlBuff);
 
 typedef
 status_t
 (*RecurrentTransformFn)(
-    nn_layer*         pLayer,
-    uint32_t*           nSaturated,
-    void*               pwlBuff);
+    const nn_layer*     pLayer,
+          uint32_t*     nSaturated,
+          void*         pwlBuff);
 
 typedef
 status_t
 (*TransposeFn)(
-    nn_layer*         pLayer);
+    const nn_layer*     pLayer);
 
 typedef
 status_t
 (*CopyFn)(
-    nn_layer*         pLayer);
+    const nn_layer*     pLayer);
 
 typedef
 status_t
 (*ConvTransformFn)(
-    nn_layer*         pLayer,
-    uint32_t*           nSaturated,
-    void*               pwlBuff,
-    int64_t*            pool);
+    const nn_layer*     pLayer,
+          uint32_t*     nSaturated,
+          void*         pwlBuff,
+          int64_t*      pool);
 
 /**
  * Xnn kernel provider

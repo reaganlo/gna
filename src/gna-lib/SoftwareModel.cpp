@@ -24,6 +24,7 @@
 */
 
 #include "SoftwareModel.h"
+#include "AffineLayers.h"
 #include "Validator.h"
 
 using std::make_unique;
@@ -34,14 +35,23 @@ SoftwareModel::SoftwareModel(const gna_model* network)
     :layerCount(network->nLayers),
     inputVectorCount(network->nGroup)
 {
-#ifndef NO_ERRCHECK	
+#ifndef NO_ERRCHECK
     Validate::IsTrue(inputVectorCount  < 1, XNN_ERR_LYR_CFG);
     Validate::IsTrue(inputVectorCount  > XNN_N_GROUP_MAX, XNN_ERR_LYR_CFG);
     Validate::IsTrue(layerCount < 1, XNN_ERR_NET_LYR_NO);
     Validate::IsTrue(layerCount > XNN_LAYERS_MAX_COUNT, XNN_ERR_NET_LYR_NO);
     Validate::IsNull(network->pLayers);
-#endif 
+#endif
     build(network->pLayers);
+}
+
+void SoftwareModel::ValidateConfiguration(const RequestConfiguration& configuration)
+{
+    if (inputLayerCount != configuration.InputBuffersCount
+        || outputLayerCount != configuration.OutputBuffersCount)
+    {
+        throw GnaException(XNN_ERR_LYR_CFG);
+    }
 }
 
 void SoftwareModel::build(const nn_layer* layers)
@@ -50,12 +60,30 @@ void SoftwareModel::build(const nn_layer* layers)
     {
         for (int i = 0; i < layerCount; i++)
         {
-            Layers.push_back(Layer::Create(const_cast<const nn_layer*>(layers + i), inputVectorCount));
+            auto layer = layers + i;
+            switch (layer->type)
+            {
+            case INTEL_INPUT:
+                ++inputLayerCount;
+                break;
+            case INTEL_OUTPUT:
+                ++outputLayerCount;
+                break;
+            case INTEL_INPUT_OUTPUT:
+                ++inputLayerCount;
+                ++outputLayerCount;
+                break;
+            case INTEL_HIDDEN:
+                break;
+            default:
+                throw GnaException(XNN_ERR_LYR_TYPE);
+            }
+            Layers.push_back(Layer::Create(const_cast<const nn_layer*>(layer), inputVectorCount));
         }
     }
     catch (const GnaException& e)
     {
-        // re-throws internal exceptions 
+        // re-throws internal exceptions
         throw e;
     }
     catch (...)
@@ -63,6 +91,5 @@ void SoftwareModel::build(const nn_layer* layers)
         // catch null dereference // TODO:review
         throw GnaException(GNA_NULLARGNOTALLOWED);
     }
-    
-}
 
+}

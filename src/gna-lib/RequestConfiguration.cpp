@@ -23,6 +23,8 @@
  in any way.
 */
 
+#include <memory>
+
 #include "GnaException.h"
 #include "RequestConfiguration.h"
 #include "Validator.h"
@@ -31,11 +33,26 @@ using namespace GNA;
 
 void RequestConfiguration::AddBuffer(gna_buffer_type type, uint32_t layerIndex, void *address)
 {
+    auto found = LayerConfigurations.find(layerIndex);
+    if(found == LayerConfigurations.end())
+    {
+        LayerConfigurations.emplace(layerIndex, std::make_unique<LayerConfiguration>());
+    }
+
+    auto& layerConfiguration = LayerConfigurations.at(layerIndex);
     switch(type)
     {
     case GNA_IN:
+        if (layerConfiguration->InputBuffer)
+            throw GnaException(GNA_ERR_UNKNOWN);
+        layerConfiguration->InputBuffer = std::make_unique<ConfigurationBuffer>(GNA_IN, address);
+        ++InputBuffersCount;
+        break;
     case GNA_OUT:
-        RequestBuffers[type].emplace_back(type, layerIndex, address);
+        if (layerConfiguration->OutputBuffer)
+            throw GnaException(GNA_ERR_UNKNOWN);
+        layerConfiguration->OutputBuffer = std::make_unique<ConfigurationBuffer>(GNA_OUT, address);
+        ++OutputBuffersCount;
         break;
     default:
         throw GnaException(GNA_ERR_UNKNOWN);
@@ -44,7 +61,14 @@ void RequestConfiguration::AddBuffer(gna_buffer_type type, uint32_t layerIndex, 
 
 void RequestConfiguration::AddActiveList(uint32_t layerIndex, uint32_t indicesCount, uint32_t *indices)
 {
-    ActiveLists.emplace_back(layerIndex, indicesCount, indices);
+    auto found = LayerConfigurations.find(layerIndex);
+    if(found == LayerConfigurations.end())
+    {
+        LayerConfigurations.emplace(layerIndex, std::make_unique<LayerConfiguration>());
+    }
+
+    auto& layerConfiguration = LayerConfigurations.at(layerIndex);
+    layerConfiguration->ActiveList = std::make_unique<ActiveList>(indicesCount, indices);
 }
 
 void ConfigurationBuffer::validate() const
@@ -52,8 +76,8 @@ void ConfigurationBuffer::validate() const
     Validate::IsNull(address);
 }
 
-ConfigurationBuffer::ConfigurationBuffer(gna_buffer_type type, uint32_t layerIndex, void* address)
-    : type(type), layerIndex(layerIndex), address(address)
+ConfigurationBuffer::ConfigurationBuffer(gna_buffer_type type, void* address)
+    : type(type), address(address)
 {
     validate();
 }

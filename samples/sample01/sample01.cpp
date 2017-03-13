@@ -1,7 +1,25 @@
 #include <cstring>
 #include <cstdlib>
+#include <cstdio>
 #include "gna-api.h"
 
+void print_outputs(
+    int32_t *outputs,
+    uint32_t nRows,
+    uint32_t nColumns
+)
+{
+    printf("\nOutputs:\n");
+    for(int i = 0; i < nRows; ++i)
+    {
+        for(int j = 0; j < nColumns; ++j)
+        {
+            printf("%d\t", outputs[i*nColumns + j]);
+        }
+        putchar('\n');
+    }
+    putchar('\n');
+}
 
 int wmain(int argc, wchar_t *argv[])
 {
@@ -110,11 +128,12 @@ int wmain(int argc, wchar_t *argv[])
     nnet_layer.nBytesPerInput = 2;
     nnet_layer.nBytesPerOutput = 4;             // 4 bytes since we are not using PWL (would be 2 bytes otherwise)
     nnet_layer.nBytesPerIntermediateOutput = 4; // this is always 4 bytes
+    nnet_layer.type = INTEL_INPUT_OUTPUT;
     nnet_layer.nLayerKind = INTEL_AFFINE;
     nnet_layer.pLayerStruct = &affine_layer;
-    nnet_layer.pInputs = pinned_inputs;
-    nnet_layer.pOutputsIntermediate = pinned_tmp_outputs;
-    nnet_layer.pOutputs = pinned_outputs;
+    nnet_layer.pInputs = nullptr;
+    nnet_layer.pOutputsIntermediate = nullptr;
+    nnet_layer.pOutputs = nullptr;
 
     memcpy(nnet.pLayers, &nnet_layer, sizeof(nnet_layer));   // puts the layer into the main network container
                                                              // if there was another layer to add, it would get copied to nnet.pLayers + 1
@@ -124,8 +143,8 @@ int wmain(int argc, wchar_t *argv[])
 
     gna_request_cfg_id config_id;
     GnaModelRequestConfigAdd(model_id, &config_id);
-    GnaRequestConfigBufferAdd(config_id, GNA_IN, 0, nnet_layer.pInputs);
-    GnaRequestConfigBufferAdd(config_id, GNA_OUT, 0, nnet_layer.pOutputs);
+    GnaRequestConfigBufferAdd(config_id, GNA_IN, 0, pinned_inputs);
+    GnaRequestConfigBufferAdd(config_id, GNA_OUT, 0, pinned_outputs);
 
     // calculate on GNA HW (non-blocking call)
     gna_request_id request_id;     // this gets filled with the actual id later on
@@ -138,6 +157,9 @@ int wmain(int argc, wchar_t *argv[])
     // wait for HW calculations (blocks until the results are ready)
     gna_timeout timeout = 1000;
     status = GnaRequestWait(request_id, timeout);     // after this call, outputs can be inspected under nnet.pLayers->pOutputs
+
+    print_outputs((int32_t*)pinned_outputs, nnet.pLayers->nOutputRows, nnet.pLayers->nOutputColumns);
+
     // release model                                  // -177  -85   29   28
     status = GnaModelRelease(model_id);
     // free the pinned memory                         //   96 -173   25  252

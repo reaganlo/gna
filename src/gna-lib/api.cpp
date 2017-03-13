@@ -56,7 +56,7 @@ const char *GNAStatusName[] =
     "GNA_BADFEATOFFSET - Error: Feature vector: offset not supported",
     "GNA_BADFEATALIGN - Error: Feature vector: invalid memory alignment",
     "GNA_BADFEATNUM - Error: Feature vector: Number of feature vectors not supported",
-    
+
     "GNA_INVALIDINDICES - Error: Scoring data: number of active indices  not supported",
     "GNA_DEVNOTFOUND - Error: Device: device not available",
     "GNA_OPENFAILURE - Error: Device: internal error occurred during opening device",
@@ -64,7 +64,7 @@ const char *GNAStatusName[] =
     "GNA_CPUTYPENOTSUPPORTED - Error: Device: processor type not supported",
     "GNA_PARAMETEROUTOFRANGE - Error: Device: GMM Parameter out of Range error occurred",
     "GNA_VAOUTOFRANGE - Error: Device: Virtual Address out of range on DMA ch.",
-    "GNA_UNEXPCOMPL - Error: Device: Unexpected completion during PCIe operation",    
+    "GNA_UNEXPCOMPL - Error: Device: Unexpected completion during PCIe operation",
     "GNA_DMAREQERR - Error: Device: DMA error during PCIe operation",
     "GNA_MMUREQERR - Error: Device: MMU error during PCIe operation",
     "GNA_BREAKPOINTPAUSE - Error: Device: GMM accelerator paused on breakpoint",
@@ -99,6 +99,7 @@ const char *GNAStatusName[] =
     "GMM_CFG_INVALID_LAYOUT - Error: GMM Data layout is invalid",
 
     "XNN_ERR_NET_LYR_NO - Error: XNN: Not supported number of layers",
+    "XNN_ERR_LYR_KIND - Error: XNN: Not supported layer kind",
     "XNN_ERR_LYR_TYPE - Error: XNN: Not supported layer type",
     "XNN_ERR_LYR_CFG - Error: XNN: Invalid layer configuration",
     "XNN_ERR_NO_FEEDBACK - Error: XNN: No RNN feedback buffer specified",
@@ -301,7 +302,7 @@ void *GnaAlloc(gna_device_id deviceId, uint32_t requestedSize, uint32_t *granted
     catch (...)
     {
         return nullptr;
-    }   
+    }
 }
 
 intel_gna_status_t GnaFree(gna_device_id deviceId)
@@ -322,7 +323,7 @@ intel_gna_status_t GnaFree(gna_device_id deviceId)
     }
 }
 
-// TODO: instantiate unique pointer 
+// TODO: instantiate unique pointer
 intel_gna_status_t GnaDeviceOpen(
     uint8_t             threadCount,
     gna_device_id*      deviceId)
@@ -341,7 +342,7 @@ intel_gna_status_t GnaDeviceOpen(
     }
 }
 
-// TODO: delete unique pointer 
+// TODO: delete unique pointer
 intel_gna_status_t GnaDeviceClose(
     gna_device_id deviceId)
 {

@@ -28,7 +28,7 @@
 
 using namespace GNA;
 
-const std::map<const nn_layer_type, const NN_OP_TYPE> HwLayer::OperationsMap =
+const std::map<const nn_layer_kind, const NN_OP_TYPE> HwLayer::OperationsMap =
 {
     { INTEL_AFFINE, NN_AFFINE },
     { INTEL_AFFINE_DIAGONAL, NN_DIAG },
@@ -65,7 +65,7 @@ const uint32_t HwLayer::nBuffElems12K[8] =
     6144
 };
 
-HwLayer* HwLayer::create(const nn_layer_type type)
+HwLayer* HwLayer::create(const nn_layer_kind type)
 {
     switch (OperationsMap.at(type))
     {
@@ -180,7 +180,7 @@ void HwLayerCopy::convert()
 //{
 //    HwLayerExt::convert();
 //    calcIterations(1);
-//    
+//
 //    nFbFirst = min((nBuffElems[0] - nLast), rnnLayer->ElementCount);
 //    Validate::IsTrue(nFbFirst > nBuffElems[0], XNN_ERR_LYR_CFG);
 //
@@ -258,12 +258,12 @@ void HwLayer::convertAL(ActiveList* al)
 {
     Validate::IsNull(hwLyr);
     Validate::IsNull(al);
-    if (al->enabled)
+    if (al->Enabled)
     {
-        Validate::IsAlignedTo64(al->indices);
-        Validate::IsTrue(al->indicesCount > XNN_N_IN_ELEMS_MAX, XNN_ERR_LYR_CFG);
-        hwLyr->act_list_n_elems = (uint16_t)al->indicesCount;
-        hwLyr->act_list_buffer = Hw::getAddrOffset(al->indices, buffer);
+        Validate::IsAlignedTo64(al->Indices);
+        Validate::IsTrue(al->IndicesCount > XNN_N_IN_ELEMS_MAX, XNN_ERR_LYR_CFG);
+        hwLyr->act_list_n_elems = (uint16_t)al->IndicesCount;
+        hwLyr->act_list_buffer = Hw::getAddrOffset(al->Indices, buffer);
         if (NN_AFFINE == hwLyr->op)
         {
             hwLyr->op = NN_AFF_AL;
@@ -313,11 +313,11 @@ void HwLayerCopy::validate()
 
 void HwLayer::save()
 {
-    hwLyr->op = OperationsMap.at(baseLayer->Config.Type);
+    hwLyr->op = OperationsMap.at(baseLayer->Config.Kind);
     hwLyr->n_in_elems = (uint16_t)baseLayer->Input.ElementCount;
     hwLyr->n_out_elems = (uint16_t)baseLayer->Output.ElementCount;
     hwLyr->n_groups = (uint8_t)baseLayer->Input.VectorCount;
-    if (INTEL_GMM == baseLayer->Config.Type)
+    if (INTEL_GMM == baseLayer->Config.Kind)
     {
         hwLyr->gmm_descriptor = 0; // TODO:KJ: set actual gmm descriptor address
     }

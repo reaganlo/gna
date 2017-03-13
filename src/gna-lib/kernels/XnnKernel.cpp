@@ -51,16 +51,16 @@ namespace GNA
 
 void
 GNAApplyPiecewiseLinearTransform(
-    nn_layer*         pLayer,
-    uint32_t            nRowBegin,
-    uint32_t            nRowEnd,
-    uint32_t            nColBegin,
-    uint32_t            nColEnd,
-    uint32_t*           nSaturated,
-    void*               pwlBuff)
+    const nn_layer*     pLayer,
+          uint32_t      nRowBegin,
+          uint32_t      nRowEnd,
+          uint32_t      nColBegin,
+          uint32_t      nColEnd,
+          uint32_t*     nSaturated,
+          void*         pwlBuff)
 {
-    nn_pwl_seg*   segments = NULL;
-    pwl_params*     params;
+    nn_pwl_seg* segments = NULL;
+    pwl_params* params;
 
     params = (pwl_params*)pwlBuff;
 
@@ -84,25 +84,26 @@ GNAApplyPiecewiseLinearTransform(
 
 status_t
 GNAApplyAffineTransform(
-    nn_layer*         pLayer,
-    uint32_t*           pActiveIndices,
-    uint32_t            nActiveIndices,
-    uint32_t*           nSaturated,
-    KernelBuffers*    fvBuffers)
+    const nn_layer*          pLayer,
+    const uint32_t*          pActiveIndices,
+          uint32_t           nActiveIndices,
+          uint32_t*          nSaturated,
+          KernelBuffers*     fvBuffers)
 {
-    nn_layer_affine*   aff = (nn_layer_affine*)pLayer->pLayerStruct;
-    uint32_t        m = pLayer->nOutputRows;
-    uint32_t        n = pLayer->nInputColumns;
-    uint32_t        k = pLayer->nInputRows;
-    void*           w = aff->affine.pWeights;
-    int16_t*        in = (int16_t*)pLayer->pInputs;
-    int32_t*        out = (int32_t*)((aff->pwl.pSegments == NULL) ?
-        pLayer->pOutputs : pLayer->pOutputsIntermediate);
+    nn_layer_affine* aff = (nn_layer_affine*)pLayer->pLayerStruct;
+    uint32_t         m = pLayer->nOutputRows;
+    uint32_t         n = pLayer->nInputColumns;
+    uint32_t         k = pLayer->nInputRows;
+    void*            w = aff->affine.pWeights;
+    int16_t*         in = (int16_t*)pLayer->pInputs;
+    int32_t*         out = (int32_t*)((aff->pwl.pSegments == NULL)
+                           ? pLayer->pOutputs 
+                           : pLayer->pOutputsIntermediate);
 
     if (aff->affine.nBytesPerWeight == 1)
     {
         nn_bias_c *bias = (nn_bias_c*)aff->affine.pBiases;
-        if (pActiveIndices == NULL)
+        if (NULL == pActiveIndices)
         {
             igemm8(m, n, k, in, (int8_t*)w, bias, out, nSaturated, fvBuffers);
         }
@@ -136,11 +137,11 @@ GNAApplyAffineTransform(
 
 status_t
 GNAApplyAffineMBiasTransform(
-    nn_layer*         pLayer,
-    uint32_t*           pActiveIndices,
-    uint32_t            nActiveIndices,
-    uint32_t*           nSaturated,
-    KernelBuffers*    fvBuffers)
+    const nn_layer*          pLayer,
+    const uint32_t*          pActiveIndices,
+          uint32_t           nActiveIndices,
+          uint32_t*          nSaturated,
+          KernelBuffers*     fvBuffers)
 {
     nn_layer_affine_multi* aff = static_cast<nn_layer_affine_multi*>(pLayer->pLayerStruct);
     uint32_t        m = pLayer->nOutputRows;
@@ -149,7 +150,8 @@ GNAApplyAffineMBiasTransform(
     void*           w = aff->affine.pWeights;
     int16_t* in = static_cast<int16_t*>(pLayer->pInputs);
     int32_t* out = static_cast<int32_t*>(aff->pwl.pSegments == nullptr
-        ? pLayer->pOutputs : pLayer->pOutputsIntermediate);
+                   ? pLayer->pOutputs 
+                   : pLayer->pOutputsIntermediate);
 
     if (aff->affine.nBytesPerWeight == 1)
     {
@@ -191,17 +193,18 @@ GNAApplyAffineMBiasTransform(
 
 status_t
 GNAApplyDiagonalTransform(
-    nn_layer*         pLayer,
-    uint32_t*           nSaturated)
+    const nn_layer*     pLayer,
+          uint32_t*     nSaturated)
 {
-    nn_layer_affine*   aff = (nn_layer_affine*)pLayer->pLayerStruct;
-    uint32_t        m = pLayer->nOutputRows;
-    uint32_t        n = pLayer->nInputColumns;
-    uint32_t        k = pLayer->nInputRows;
-    void*           w = aff->affine.pWeights;
-    int16_t*        in = (int16_t*)pLayer->pInputs;
-    int32_t*        out = (int32_t*)((aff->pwl.pSegments == NULL) ?
-        pLayer->pOutputs : pLayer->pOutputsIntermediate);
+    nn_layer_affine* aff = (nn_layer_affine*)pLayer->pLayerStruct;
+    uint32_t         m = pLayer->nOutputRows;
+    uint32_t         n = pLayer->nInputColumns;
+    uint32_t         k = pLayer->nInputRows;
+    void*            w = aff->affine.pWeights;
+    int16_t*         in = (int16_t*)pLayer->pInputs;
+    int32_t*         out = (int32_t*)((aff->pwl.pSegments == NULL)
+                           ? pLayer->pOutputs 
+                           : pLayer->pOutputsIntermediate);
 
     if (1 != aff->affine.nBytesPerWeight &&
         2 != aff->affine.nBytesPerWeight)
@@ -225,9 +228,9 @@ GNAApplyDiagonalTransform(
 
 status_t
 GNAApplyRecurrentTransform(
-    nn_layer*         pLayer,
-    uint32_t*           nSaturated,
-    void*               pwlBuff)
+    const nn_layer*     pLayer,
+          uint32_t*     nSaturated,
+          void*         pwlBuff)
 {
     nn_layer_reccurent*   rnn = (nn_layer_reccurent*)pLayer->pLayerStruct;
     uint32_t        k = pLayer->nInputColumns;
@@ -263,7 +266,7 @@ GNAApplyRecurrentTransform(
 }
 
 status_t GNAApplyTranspose(
-    nn_layer* pLayer)
+    const nn_layer* pLayer)
 {
     uint32_t m = pLayer->nInputRows;
     uint32_t n = pLayer->nInputColumns;
@@ -275,7 +278,8 @@ status_t GNAApplyTranspose(
     return GNA_SUCCESS;
 }
 
-status_t GNAApplyCopy(nn_layer* pLayer)
+status_t GNAApplyCopy(
+    const nn_layer* pLayer)
 {
     uint32_t    r;                  // row iterator
     int16_t*    in = (int16_t*)pLayer->pInputs;
@@ -298,10 +302,10 @@ status_t GNAApplyCopy(nn_layer* pLayer)
 
 status_t
 GNAApplyConvolutionalTransform(
-    nn_layer*         pLayer,
-    uint32_t*           nSaturated,
-    void*               pwlBuff,
-    int64_t*            pool)
+    const nn_layer*     pLayer,
+          uint32_t*     nSaturated,
+          void*         pwlBuff,
+          int64_t*      pool)
 {
     nn_layer_conv* conv = (nn_layer_conv*)pLayer->pLayerStruct;
 
@@ -323,7 +327,9 @@ GNAApplyConvolutionalTransform(
             (int16_t*)pLayer->pInputs,
             (int16_t*)conv->pFilters,
             (nn_bias_s*)conv->pBiases,
-            (int32_t*)(conv->pwl.pSegments == NULL ? pLayer->pOutputs : pLayer->pOutputsIntermediate),
+            (int32_t*)(conv->pwl.pSegments == NULL 
+                       ? pLayer->pOutputs 
+                       : pLayer->pOutputsIntermediate),
             nSaturated);
         if (0 != conv->pwl.nSegments)
         {

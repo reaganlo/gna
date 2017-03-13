@@ -75,7 +75,7 @@ void Hw::GmmLayerDescriptorSetup(const GmmLayer *layer, GMM_CONFIG* descriptor)
     // GMM Model configuration, will be constant over time for model
     descriptor->gmmscrlen   = GMM_SCORE_SIZE * layer->Input.VectorCount * layer->Config.stateCount;; // will be updated when ActiveList is used
     descriptor->fvoffset    = layer->Input.ElementCount;
-    
+
     descriptor->numfv       = layer->Input.VectorCount;
     descriptor->vlength     = layer->Input.ElementCount;
 
@@ -98,11 +98,11 @@ void Hw::GmmLayerDescriptorSetup(const GmmLayer *layer, GMM_CONFIG* descriptor)
     descriptor->gmmscrwdth  = GMM_SCORE_SIZE;
     descriptor->maxlswidth  = GMM_SCORE_SIZE;
     descriptor->mvwidth     = GMM_MEAN_VALUE_SIZE;
-    // other fields left zeroed intentionally  
+    // other fields left zeroed intentionally
 }
 
 // TODO:KJ:move to converter
-void GNA::Hw::GmmLayerDescriptorUpdateRequestConfig(const uint32_t layerIndex, const GmmLayer *gmm, 
+void GNA::Hw::GmmLayerDescriptorUpdateRequestConfig(const uint32_t layerIndex, const GmmLayer *gmm,
     const RequestConfiguration &configuration, GMM_CONFIG* descriptor)
 {
     // TODO:KJ: consider caching reusable RequestConfigurations data after conversion to reduce latency of update during scoring
@@ -144,13 +144,13 @@ void Hw::GmmLayerDescriptorUpdateActiveList(const GmmLayer *gmm, const ActiveLis
     uint32_t scoreElementsCount = GMM_SCORE_SIZE * gmm->Input.VectorCount * gmm->Config.stateCount;
     uint32_t activeListIndices = 0;
     uint32_t activeListIndicesCount = 0;
-    if (true == activeList.enabled)
+    if (activeList.Enabled)
     {
-        scoreElementsCount = GMM_SCORE_SIZE * gmm->Input.VectorCount * activeList.indicesCount;
-        activeListIndices = getAddrOffset(activeList.indices);
-        activeListIndicesCount = activeList.indicesCount;
+        scoreElementsCount = GMM_SCORE_SIZE * gmm->Input.VectorCount * activeList.IndicesCount;
+        activeListIndices = getAddrOffset(activeList.Indices);
+        activeListIndicesCount = activeList.IndicesCount;
     }
-    inData->ctrlFlags.activeListOn = static_cast<uint32_t>(activeList.enabled);
+    inData->ctrlFlags.activeListOn = static_cast<uint32_t>(activeList.Enabled);
     descriptor->gmmscrlen = scoreElementsCount;
     descriptor->asladdr = activeListIndices;
     descriptor->astlistlen = activeListIndicesCount;
@@ -174,24 +174,24 @@ void Hw::Fill(SoftwareModel* model)
 
     // initial layer descriptor at the beginning of model buffer
     xnnLayerDescriptors = (XNN_LYR*) base;
-    
+
     // set descriptor for all layers
     for (i = 0; i < model->layerCount; i++)
     {
         try
         {
-            hwLayer = HwLayer::create(model->Layers[i]->Config.Type);
+            hwLayer = HwLayer::create(model->Layers[i]->Config.Kind);
             hwLayer->init(const_cast<nn_layer*>(&model->Layers[i]->sourceLayer), &xnnLayerDescriptors[i], base,
                 inBuffSize, const_cast<Layer*>(model->Layers[i].get()));
             hwLayer->convert();
 
             // TODO:KJ: add GmmHwLayer and handle XNN layer common part of GMM layer
-            if (INTEL_GMM == model->Layers[i]->Config.Type)
+            if (INTEL_GMM == model->Layers[i]->Config.Kind)
             {
                 GmmLayerDescriptorSetup(static_cast<const GmmLayer*>(model->Layers[i].get()), &gmmLayerDescriptors[i]);
             }
-            
-            
+
+
            /* if (i == model->layerCount - 1)
             {
                 hwLayer->convertAL(&model->activeList);
@@ -204,7 +204,7 @@ void Hw::Fill(SoftwareModel* model)
             if (hwLayer) delete hwLayer;
             ERR("Layer descriptor conversion error: LYR[%u]: %s\n", i, GnaStatusToString(e.getStatus()));
             throw e;
-        }  
+        }
     }
 }
 
@@ -217,5 +217,5 @@ void Hw::init()
     inData = (hw_calc_in_t*)calloc(1, sizeof(hw_calc_in_t));
     Validate::IsTrue(nullptr == inData, GNA_ERR_RESOURCES);
     inData->status = GNA_NULLARGNOTALLOWED;
-    
+
 }

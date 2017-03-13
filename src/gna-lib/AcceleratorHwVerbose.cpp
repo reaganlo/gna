@@ -118,7 +118,7 @@ void AcceleratorHwVerbose::GMMDumpPage(uint8_t* ph_addr, uint8_t* v_addr, size_t
 
 void AcceleratorHwVerbose::dumpPageDir()
 {
-	if (false == driverDebug)
+	if (!driverDebug)
 	{
 		LOG("\nPage directory DUMP unavailable: driver in release mode\n");
 		return;
@@ -143,7 +143,7 @@ void AcceleratorHwVerbose::dumpPageDir()
 
 void AcceleratorHwVerbose::dumpPageData()
 {
-	if (false == driverDebug)
+	if (!driverDebug)
 	{
 		LOG("\nGMM Data DUMP unavailable: driver in release mode\n");
 		return;
@@ -191,7 +191,7 @@ bool AcceleratorHwVerbose::SetRegister(string path)
 	uint32_t   old_value = 0;     // previous register value
 
 	infile.open(path);
-	if (false == infile.is_open()) return false;
+	if (!infile.is_open()) return false;
 
 	LOGF("%s\n", path.c_str());
 	while (!infile.eof())
@@ -238,7 +238,7 @@ bool AcceleratorHwVerbose::SetDescriptor(string path, XNN_LYR* buff, hw_calc_in_
     if (nullptr == inData) return false;
 
 	infile.open(path);
-	if (false == infile.is_open()) return false;
+	if (!infile.is_open()) return false;
 
     if (nullptr == buff)   return false;
 
@@ -459,7 +459,7 @@ bool AcceleratorHwVerbose::SetConfig(string path, hw_calc_in_t* inData)
 	HwVerifierMemDump("dump-before.bin");
 
 	infile.open(path);
-	if (false == infile.is_open()) return false;
+	if (!infile.is_open()) return false;
 
 	LOGF("%s\n", path.c_str());
 	//while (!infile.eof())

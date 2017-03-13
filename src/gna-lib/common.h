@@ -158,7 +158,8 @@ typedef struct
  */
 typedef gna_acceleration_all        acceleration;
 typedef gna_device_id               device_id;
-typedef intel_layer_kind_t          nn_layer_type;
+typedef intel_layer_kind_t          nn_layer_kind;
+typedef intel_layer_type_t          nn_layer_type;
 typedef intel_compound_bias_t       nn_bias_c;
 typedef intel_bias_t                nn_bias_s;
 typedef intel_affine_func_t         nn_func_affine;

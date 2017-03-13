@@ -26,6 +26,8 @@
 #pragma once
 
 #include <array>
+#include <map>
+#include <memory>
 #include <vector>
 
 #include "ActiveList.h"
@@ -36,7 +38,7 @@ namespace GNA
 
 struct ConfigurationBuffer
 {
-    ConfigurationBuffer(gna_buffer_type type, uint32_t layerIndex, void *address);
+    ConfigurationBuffer(gna_buffer_type type, void *address);
 
     ConfigurationBuffer(ConfigurationBuffer &&) = default;
 
@@ -47,29 +49,36 @@ struct ConfigurationBuffer
     void validate() const;
 
     gna_buffer_type type;
-    uint32_t layerIndex;
     void *address;
 
 };
 
+struct LayerConfiguration
+{
+    std::unique_ptr<ActiveList> ActiveList = nullptr;
+    std::unique_ptr<ConfigurationBuffer> InputBuffer = nullptr;
+    std::unique_ptr<ConfigurationBuffer> OutputBuffer = nullptr;
+};
+
 /*
-** RequestConfiguration is a bunch of request buffers 
+** RequestConfiguration is a bunch of request buffers
 ** sent to GNA kernel driver as part of WRITE request
-** 
+**
  */
 class RequestConfiguration
 {
 public:
     RequestConfiguration(gna_model_id modelId, gna_request_cfg_id configId) : ModelId(modelId), ConfigId(configId) {}
 
+    void AddBuffer(gna_buffer_type type, uint32_t layerIndex, void *address);
+    void AddActiveList(uint32_t layerIndex, uint32_t indicesCount, uint32_t *indices);
+
     gna_model_id ModelId;
     gna_request_cfg_id ConfigId;
 
-    std::array<std::vector<ConfigurationBuffer>, GNA_BUFFER_TYPES> RequestBuffers;
-    std::vector<ActiveList> ActiveLists;
-
-    void AddBuffer(gna_buffer_type type, uint32_t layerIndex, void *address);
-    void AddActiveList(uint32_t layerIndex, uint32_t indicesCount, uint32_t *indices);
+    std::map<uint32_t, std::unique_ptr<LayerConfiguration>> LayerConfigurations;
+    uint32_t InputBuffersCount = 0;
+    uint32_t OutputBuffersCount = 0;
 
 };
 

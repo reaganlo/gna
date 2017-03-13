@@ -57,9 +57,9 @@ GmmLayer::GmmLayer(const nn_layer *layer, const uint32_t inputVectorCount) :
 void GmmLayer::ValidateActiveList(ActiveList const * const activeList)
 {
     // TODO:KJ:implement active list for GMM
-    if (activeList->enabled)
+    if (activeList->Enabled)
     {
-        Validate::IsInRange(activeList->indicesCount, 1, Config.stateCount, GNA_INVALIDINDICES);
+        Validate::IsInRange(activeList->IndicesCount, 1, Config.stateCount, GNA_INVALIDINDICES);
     }
 }
 

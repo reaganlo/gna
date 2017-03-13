@@ -50,7 +50,7 @@ namespace GNA
 class HwLayer
 {
 public:
-    static const map<const nn_layer_type, const NN_OP_TYPE> OperationsMap;
+    static const map<const nn_layer_kind, const NN_OP_TYPE> OperationsMap;
 
     /**
     * Creates HwLayer converter based on layer kind
@@ -58,7 +58,7 @@ public:
     * @type        (in)    API layer kind
     * @return      layer specific converter instance
     */
-    static HwLayer* create(const nn_layer_type type);
+    static HwLayer* create(const nn_layer_kind type);
 
     /**
     * Initializes converter

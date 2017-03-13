@@ -40,7 +40,7 @@ class CompiledModel
 {
 public:
     CompiledModel(gna_model_id modelId, const gna_model *rawModel)
-        : modelId(modelId), userModel(rawModel)
+        : modelId(modelId), userModel(rawModel), submodels()
     {
         layerCount = rawModel->nLayers;
     }

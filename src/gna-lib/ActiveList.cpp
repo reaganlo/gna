@@ -28,23 +28,23 @@
 
 using namespace GNA;
 
-ActiveList::ActiveList(const uint32_t layerIndex, 
-    const uint32_t indicesCountIn, const uint32_t* indicesIn)
-    : layerIndex(layerIndex), indicesCount(indicesCountIn), 
-      indices(indicesIn), enabled(false)
+ActiveList::ActiveList(const uint32_t indicesCountIn, const uint32_t* indicesIn)
+    : IndicesCount(indicesCountIn),
+      Indices(indicesIn),
+      Enabled(false)
 {
     validate();
-    if (nullptr != indices && indicesCount > 0)
+    if (nullptr != Indices && IndicesCount > 0)
     {
-        enabled = true;
+        Enabled = true;
     }
 }
 
 void ActiveList::validate()
 {
-    Validate::IsTrue(nullptr == indices && indicesCount > 0, GNA_INVALIDINDICES);
-    Validate::IsTrue(nullptr != indices && 0 == indicesCount, GNA_INVALIDINDICES);
-    Validate::IsTrue(nullptr != indices && indicesCount <= XNN_N_IN_ELEMS_MAX, GNA_INVALIDINDICES);
-    Validate::IsAlignedTo64(indices);    
+    Validate::IsTrue(nullptr == Indices && IndicesCount > 0, GNA_INVALIDINDICES);
+    Validate::IsTrue(nullptr != Indices && 0 == IndicesCount, GNA_INVALIDINDICES);
+    Validate::IsTrue(nullptr != Indices && IndicesCount <= XNN_N_IN_ELEMS_MAX, GNA_INVALIDINDICES);
+    Validate::IsAlignedTo64(Indices);    
 }
 

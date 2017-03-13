@@ -34,7 +34,7 @@ namespace GNA
 class ActiveList
 {
 public:
-    ActiveList(const uint32_t layerIndex, const uint32_t indicesCount, const uint32_t* indices);
+    ActiveList(const uint32_t indicesCount, const uint32_t* indices);
 
     // needed for std vector's emplace_back (MoveInsertable concept)
     ActiveList(ActiveList &&) = default;
@@ -46,13 +46,11 @@ public:
     ActiveList(const ActiveList&) = delete;
     ActiveList& operator=(const ActiveList&) = delete;
 
-    const uint32_t layerIndex;
+    const uint32_t IndicesCount;
 
-    const uint32_t indicesCount;
+    const uint32_t* Indices;
 
-    const uint32_t* indices;
-
-    bool enabled;
+    bool Enabled;
 
 protected:
     inline void validate();

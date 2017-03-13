@@ -97,6 +97,7 @@ typedef enum _gna_status_t
     GMM_CFG_INVALID_LAYOUT,  // Error: GMM Data layout is invalid
     XNN_ERR_NET_LYR_NO,      // Error: XNN: Not supported number of layers
 
+    XNN_ERR_LYR_KIND,        // Error: XNN: Not supported layer kind
     XNN_ERR_LYR_TYPE,        // Error: XNN: Not supported layer type
     XNN_ERR_LYR_CFG,         // Error: XNN: Invalid layer configuration
     XNN_ERR_NO_FEEDBACK,     // Error: XNN: No RNN feedback buffer specified
