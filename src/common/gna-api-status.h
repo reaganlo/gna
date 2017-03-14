@@ -95,8 +95,10 @@ typedef enum _gna_status_t
     GMM_BADNUMGMM,           // Error: Scoring data: number of GMMs not supported
     GMM_BADMODE,             // Error: Scoring data: GMM scoring mode not supported
     GMM_CFG_INVALID_LAYOUT,  // Error: GMM Data layout is invalid
-    XNN_ERR_NET_LYR_NO,      // Error: XNN: Not supported number of layers
 
+    XNN_ERR_NET_LYR_NO,      // Error: XNN: Not supported number of layers
+    XNN_ERR_NETWORK_INPUTS,  // Error: XNN: Network is invalid - input buffers number differs from input layers number
+    XNN_ERR_NETWORK_OUTPUTS, // Error: XNN: Network is invalid - output buffers number differs from output layers number
     XNN_ERR_LYR_KIND,        // Error: XNN: Not supported layer kind
     XNN_ERR_LYR_TYPE,        // Error: XNN: Not supported layer type
     XNN_ERR_LYR_CFG,         // Error: XNN: Invalid layer configuration

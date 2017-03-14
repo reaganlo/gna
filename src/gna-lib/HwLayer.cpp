@@ -84,11 +84,11 @@ HwLayer* HwLayer::create(const nn_layer_kind type)
 
 void HwLayer::init(nn_layer* lyrIn, XNN_LYR* hwLyrIn, const void* bufferIn, uint32_t hwInBuffSize, Layer* bLayerIn)
 {
-    Validate::IsNull(bLayerIn);
+    Expect::NotNull(bLayerIn);
     baseLayer = bLayerIn;
 
-    Validate::IsNull(bufferIn);
-    Validate::IsNull(hwLyrIn);
+    Expect::NotNull(bufferIn);
+    Expect::NotNull(hwLyrIn);
 
     buffer = (void*)bufferIn;
     hwLyr = hwLyrIn;
@@ -182,7 +182,7 @@ void HwLayerCopy::convert()
 //    calcIterations(1);
 //
 //    nFbFirst = min((nBuffElems[0] - nLast), rnnLayer->ElementCount);
-//    Validate::IsTrue(nFbFirst > nBuffElems[0], XNN_ERR_LYR_CFG);
+//    Expect::False(nFbFirst > nBuffElems[0], XNN_ERR_LYR_CFG);
 //
 //    nFbIters = (rnnLayer->ElementCount - nFbFirst) / nBuffElems[0];
 //    if ((rnnLayer->ElementCount - nFbFirst) % nBuffElems[0])
@@ -193,8 +193,8 @@ void HwLayerCopy::convert()
 //    {
 //        nFbIters++;
 //    }
-//    Validate::IsTrue(nFbIters < 1, XNN_ERR_LYR_CFG);
-//    Validate::IsTrue(nFbIters > UINT8_MAX, XNN_ERR_LYR_CFG);
+//    Expect::False(nFbIters < 1, XNN_ERR_LYR_CFG);
+//    Expect::False(nFbIters > UINT8_MAX, XNN_ERR_LYR_CFG);
 //
 //    if (nFbFirst && 1 == nFbIters)
 //    {
@@ -208,8 +208,8 @@ void HwLayerCopy::convert()
 //    {
 //        nFbLast = rnnLayer->ElementCount - nFbFirst - (nFbIters - 2) * nBuffElems[0];
 //    }
-//    Validate::IsTrue(nFbLast < 1, XNN_ERR_LYR_CFG);
-//    Validate::IsTrue(nFbLast > nBuffElems[0], XNN_ERR_LYR_CFG);
+//    Expect::False(nFbLast < 1, XNN_ERR_LYR_CFG);
+//    Expect::False(nFbLast > nBuffElems[0], XNN_ERR_LYR_CFG);
 //
 //    validate();
 //    save();
@@ -232,7 +232,7 @@ void HwLayerCopy::convert()
 //        (nFltSize <= nBuffElems[0] / 6) ?
 //        4 :
 //        0);
-//    Validate::IsTrue(0 == nFltsPerIter, CNN_ERR_FLT_COUNT);
+//    Expect::True(0 != nFltsPerIter, CNN_ERR_FLT_COUNT);
 //    nFltIters = (nFlts - 1) / nFltsPerIter + 1;
 //    nFltsLast = nFlts - ((nFltIters - 1) * nFltsPerIter);
 //    fltBuffSz = nFltsPerIter * nFltSize;
@@ -256,12 +256,10 @@ void HwLayerExt::calcIterations(uint32_t nGrIn)
 
 void HwLayer::convertAL(ActiveList* al)
 {
-    Validate::IsNull(hwLyr);
-    Validate::IsNull(al);
+    Expect::NotNull(hwLyr);
+    Expect::NotNull(al);
     if (al->Enabled)
     {
-        Validate::IsAlignedTo64(al->Indices);
-        Validate::IsTrue(al->IndicesCount > XNN_N_IN_ELEMS_MAX, XNN_ERR_LYR_CFG);
         hwLyr->act_list_n_elems = (uint16_t)al->IndicesCount;
         hwLyr->act_list_buffer = Hw::getAddrOffset(al->Indices, buffer);
         if (NN_AFFINE == hwLyr->op)
@@ -281,11 +279,9 @@ void HwLayer::validate()
 
 void HwLayerExt::validate()
 {
-    Validate::IsTrue(nIters < 1, XNN_ERR_LYR_CFG);
-    Validate::IsTrue(nIters > UINT8_MAX, XNN_ERR_LYR_CFG);
-    Validate::IsTrue(nLast < 1, XNN_ERR_LYR_CFG);
-    Validate::IsTrue(nLast > nBuffElems[nGr - 1], XNN_ERR_LYR_CFG);
-    Validate::IsMultiplicityOf(nLast, XNN_N_IN_ELEMS_MPLY);
+    Expect::InRange(nIters, 1, UINT8_MAX,  XNN_ERR_LYR_CFG);
+    Expect::InRange(nLast, 1, nBuffElems[nGr - 1], XNN_ERR_LYR_CFG);
+    Expect::MultiplicityOf(nLast, XNN_N_IN_ELEMS_MPLY);
 }
 
 void HwLayerCopy::validate()
@@ -299,16 +295,16 @@ void HwLayerCopy::validate()
 //
 //void HwLayerCnn::validate()
 //{
-//    Validate::IsTrue(nFltsPerIter      < CNN_N_FLT_COEFF_MPLY, XNN_ERR_LYR_CFG);
-//    Validate::IsTrue(nFltsPerIter      > CNN_N_FLT_ITER_MAX, XNN_ERR_LYR_CFG);
-//    Validate::IsMultiplicityOf(nFltsPerIter, CNN_N_FLT_COEFF_MPLY);
-//    Validate::IsTrue(nFltsLast         < CNN_N_FLT_COEFF_MPLY, XNN_ERR_LYR_CFG);
-//    Validate::IsTrue(nFltsLast         > CNN_N_FLT_ITER_MAX, XNN_ERR_LYR_CFG);
-//    Validate::IsMultiplicityOf(nFltsLast, CNN_N_FLT_COEFF_MPLY);
-//    Validate::IsTrue(fltBuffSz         < 1, XNN_ERR_LYR_CFG);
-//    Validate::IsTrue(fltBuffSz         > nBuffElems[0], XNN_ERR_LYR_CFG);
-//    Validate::IsTrue(fltBuffSzLast     < 1, XNN_ERR_LYR_CFG);
-//    Validate::IsTrue(fltBuffSzLast     > nBuffElems[0], XNN_ERR_LYR_CFG);
+//    Expect::False(nFltsPerIter      < CNN_N_FLT_COEFF_MPLY, XNN_ERR_LYR_CFG);
+//    Expect::False(nFltsPerIter      > CNN_N_FLT_ITER_MAX, XNN_ERR_LYR_CFG);
+//    Expect::MultiplicityOf(nFltsPerIter, CNN_N_FLT_COEFF_MPLY);
+//    Expect::False(nFltsLast         < CNN_N_FLT_COEFF_MPLY, XNN_ERR_LYR_CFG);
+//    Expect::False(nFltsLast         > CNN_N_FLT_ITER_MAX, XNN_ERR_LYR_CFG);
+//    Expect::MultiplicityOf(nFltsLast, CNN_N_FLT_COEFF_MPLY);
+//    Expect::False(fltBuffSz         < 1, XNN_ERR_LYR_CFG);
+//    Expect::False(fltBuffSz         > nBuffElems[0], XNN_ERR_LYR_CFG);
+//    Expect::False(fltBuffSzLast     < 1, XNN_ERR_LYR_CFG);
+//    Expect::False(fltBuffSzLast     > nBuffElems[0], XNN_ERR_LYR_CFG);
 //}
 
 void HwLayer::save()

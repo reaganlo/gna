@@ -54,8 +54,8 @@ LayerConfig::LayerConfig(const nn_layer_kind kind, const nn_layer_type type) :
     Type(type),
     Orientation(OrientationsMap.at(kind))
 {
-    Validate::IsInRange(kind, 0, NUM_LAYER_KINDS, XNN_ERR_LYR_KIND);
-    Validate::IsInRange(type, 0, NUM_LAYER_TYPES, XNN_ERR_LYR_TYPE);
+    Expect::InRange(kind, 0, NUM_LAYER_KINDS-1, XNN_ERR_LYR_TYPE);
+    Expect::InRange(type, 0, NUM_LAYER_TYPES-1, XNN_ERR_LYR_TYPE);
 };
 
 
@@ -65,11 +65,10 @@ LayerMatrix::LayerMatrix(const uint32_t rowCount, const uint32_t columnCount, vo
     ElementCount((FLAT == config.Orientation) ? ColumnCount : RowCount),
     Buffer(static_cast<void const * const>(buffer))
 {
-    Validate::IsInRange(config.Orientation, INTERLEAVED, FLAT, XNN_ERR_LYR_CFG);
+    Expect::InRange(config.Orientation, INTERLEAVED, FLAT, XNN_ERR_LYR_CFG);
     if (INTEL_HIDDEN == config.Type)
     {
-        Validate::IsNull(Buffer);
-        Validate::IsAlignedTo64(Buffer);
+        Expect::ValidBuffer(Buffer);
     }
 };
 
@@ -79,17 +78,17 @@ LayerInput::LayerInput(const nn_layer &layer, const LayerConfig& config, const u
 {
     if (INTEL_GMM == layer.nLayerKind)
     {
-        Validate::IsTrue(layer.nBytesPerInput != GMM_FV_ELEMENT_SIZE, XNN_ERR_INPUT_BYTES);
+        Expect::True(layer.nBytesPerInput == GMM_FV_ELEMENT_SIZE, XNN_ERR_INPUT_BYTES);
     }
     else
     {
-        Validate::IsTrue(layer.nBytesPerInput != 2, XNN_ERR_INPUT_BYTES);
+        Expect::True(layer.nBytesPerInput == 2, XNN_ERR_INPUT_BYTES);
     }
-    Validate::IsInRange(VectorCount, 1, XNN_N_GROUP_MAX, XNN_ERR_GROUPING);
-    Validate::IsInRange(ElementCount, XNN_N_IN_ELEMS_MPLY, XNN_N_IN_ELEMS_MAX, XNN_ERR_LYR_CFG);
-    Validate::IsMultiplicityOf(ElementCount, XNN_N_IN_ELEMS_MPLY);
+    Expect::InRange(VectorCount, 1, XNN_N_GROUP_MAX, XNN_ERR_GROUPING);
+    Expect::InRange(ElementCount, XNN_N_IN_ELEMS_MPLY, XNN_N_IN_ELEMS_MAX, XNN_ERR_LYR_CFG);
+    Expect::MultiplicityOf(ElementCount, XNN_N_IN_ELEMS_MPLY);
     auto secondDimension = (FLAT == config.Orientation) ? RowCount : ColumnCount;
-    Validate::IsInRange(secondDimension, 1, XNN_N_GROUP_MAX, XNN_ERR_GROUPING);
+    Expect::InRange(secondDimension, 1, XNN_N_GROUP_MAX, XNN_ERR_GROUPING);
 };
 
 
@@ -97,11 +96,10 @@ LayerOutput::LayerOutput(const nn_layer &layer, const LayerConfig& config) :
     LayerMatrix(layer.nOutputRows, layer.nOutputColumns, layer.pOutputs, config),
     ScratchPad(static_cast<uint32_t const * const>(layer.pOutputsIntermediate))
 {
-    Validate::IsInRange(ElementCount, 1, XNN_N_IN_ELEMS_MAX, XNN_ERR_LYR_CFG);
-    Validate::IsInRange(layer.nBytesPerOutput, ActivatedOutputSize, NonActivatedOutputSize, XNN_ERR_INPUT_BYTES);
-    Validate::IsTrue(NonActivatedOutputSize != layer.nBytesPerIntermediateOutput, XNN_ERR_INT_OUTPUT_BYTES);
-    //Validate::IsNull(ScratchPad); // TODO: review when scratch-pad is allocated by gna-lib
-    Validate::IsAlignedTo64(ScratchPad);
+    Expect::InRange(ElementCount, 1, XNN_N_IN_ELEMS_MAX, XNN_ERR_LYR_CFG);
+    Expect::InRange(layer.nBytesPerOutput, ActivatedOutputSize, NonActivatedOutputSize, XNN_ERR_INPUT_BYTES);
+    Expect::True(NonActivatedOutputSize == layer.nBytesPerIntermediateOutput, XNN_ERR_INT_OUTPUT_BYTES);
+    //Expect::ValidBuffer(ScratchPad); // TODO: review when scratch-pad is allocated by gna-lib
 };
 
 void LayerOutput::Validate(const bool ActivationEnabled, const uint32_t outputSize) const
@@ -109,12 +107,12 @@ void LayerOutput::Validate(const bool ActivationEnabled, const uint32_t outputSi
     if (ActivationEnabled)
     {
         // if pwl is used 2B output buffer must be set
-        Validate::IsNull(Buffer);
-        Validate::IsTrue(ActivatedOutputSize != outputSize, XNN_ERR_INT_OUTPUT_BYTES);
+        Expect::NotNull(Buffer);
+        Expect::True(ActivatedOutputSize == outputSize, XNN_ERR_INT_OUTPUT_BYTES);
     }
     else
     {
-        Validate::IsTrue(NonActivatedOutputSize != outputSize, XNN_ERR_INT_OUTPUT_BYTES);
+        Expect::True(NonActivatedOutputSize == outputSize, XNN_ERR_INT_OUTPUT_BYTES);
     }
 }
 
@@ -155,10 +153,10 @@ Layer::Layer(const nn_layer *layer, const uint32_t inputVectorCount) :
 
 const nn_layer Layer::validate(const nn_layer *layer)
 {
-    Validate::IsNull(layer);
+    Expect::NotNull(layer);
     if (INTEL_INTERLEAVE != layer->nLayerKind && INTEL_DEINTERLEAVE != layer->nLayerKind)
     {
-        Validate::IsNull(layer->pLayerStruct);
+        Expect::NotNull(layer->pLayerStruct);
     }
     return *layer;
 }

@@ -31,56 +31,88 @@ namespace GNA
 {
 
 // Validator utility
-class Validate
+class Expect
 {
 public:
-    // TODO: rename - misleading name
-    // If condition is satisfied prints error status code and throws exception .
-    inline static void IsTrue(const bool condition, const status_t status)
+    // If condition is NOT satisfied prints error status code and throws exception .
+    inline static void True(const bool condition, const status_t status)
     {
-        if (condition)
+        if (!condition)
         {
+
             ERR("FAILED with status: [%d]=%s\n", (int)status, GnaStatusToString(status));
             throw GnaException(status);
         }
     }
 
-    // If pointer is nullptr prints error status code and throws exception.
-    inline static void IsNull(const void* pointer)
+    // If condition is satisfied prints error status code and throws exception .
+    inline static void False(const bool condition, const status_t status)
     {
-        IsTrue(nullptr == pointer, GNA_NULLARGNOTALLOWED);
+        True(!condition, status);
     }
 
-    // If pointer is not nullptr prints error status code and throws exception.
-    inline static void IsNotNull(const void* pointer)
+    // If pointer is nullptr prints error status code and throws exception.
+    inline static void NotNull(const void* pointer, const status_t status)
     {
-        IsTrue(nullptr != pointer, GNA_NULLARGREQUIRED);
+        True(nullptr != pointer, status);
+    }
+
+    // If pointer is nullptr prints error status code and throws exception.
+    inline static void NotNull(const void* pointer)
+    {
+        NotNull(pointer, GNA_NULLARGNOTALLOWED);
+    }
+
+    // If pointer is NOT nullptr prints error status code and throws exception.
+    inline static void Null(const void* pointer)
+    {
+        True(nullptr == pointer, GNA_NULLARGREQUIRED);
     }
 
     // If pointer is not aligned to alignment prints error status code and throws exception.
-    inline static void IsAlignedTo(const void* pointer, const uint32_t alignment)
+    inline static void AlignedTo(const void* pointer, const uint32_t alignment, const status_t status)
     {
-        IsTrue(0 != (((uintptr_t)pointer) % alignment), GNA_BADMEMALIGN);
+        True(0 == (((uintptr_t)pointer) % alignment), status);
+    }
+
+    // If pointer is not aligned to alignment prints error status code and throws exception.
+    inline static void AlignedTo(const void* pointer, const uint32_t alignment)
+    {
+        AlignedTo(pointer, alignment, GNA_BADMEMALIGN);
     }
 
     // If pointer is not 64 B aligned prints error status code and throws exception.
-    inline static void IsAlignedTo64(const void* pointer)
+    inline static void AlignedTo64(const void* pointer)
     {
-        IsAlignedTo(pointer, 64);
+        AlignedTo(pointer, 64);
+    }
+
+    // If pointer is not 64 B aligned prints error status code and throws exception.
+    inline static void ValidBuffer(const void* pointer)
+    {
+        NotNull(pointer);
+        AlignedTo64(pointer);
+    }
+
+    // If pointer is not 64 B aligned prints error status code and throws exception.
+    inline static void ValidBuffer(const void* pointer, const status_t status)
+    {
+        NotNull(pointer, status);
+        AlignedTo(pointer, 64, status);
     }
 
     // If parameter is not multiplicity of multiplicity prints error status code and throws exception.
-    inline static void IsMultiplicityOf(const uint32_t parameter, const uint32_t multiplicity)
+    inline static void MultiplicityOf(const uint32_t parameter, const uint32_t multiplicity)
     {
-        IsTrue(0 != (parameter % multiplicity), GNA_ERR_NOT_MULTIPLE);
+        True(0 == (parameter % multiplicity), GNA_ERR_NOT_MULTIPLE);
     }
 
     // If parameter is not in range of <a, b> prints error status code and throws exception.
-    inline static void IsInRange(const uint32_t parameter, const uint32_t a, const uint32_t b,
+    inline static void InRange(const uint32_t parameter, const uint32_t a, const uint32_t b,
         const status_t status)
     {
-        IsTrue(parameter < a, status);
-        IsTrue(parameter > b, status);
+        False(parameter < a, status);
+        False(parameter > b, status);
     }
 
 protected:
@@ -88,9 +120,9 @@ protected:
      * Deleted functions to prevent from being defined or called
      * @see: https://msdn.microsoft.com/en-us/library/dn457344.aspx
      */
-    Validate() = delete;
-    Validate(const Validate &) = delete;
-    Validate& operator=(const Validate&) = delete;
+    Expect() = delete;
+    Expect(const Expect &) = delete;
+    Expect& operator=(const Expect&) = delete;
 };
 
 }

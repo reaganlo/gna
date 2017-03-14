@@ -86,8 +86,8 @@ status_t AcceleratorSw::Score(
 status_t AcceleratorSw::Score(
     const CompiledModel& model,
     const RequestConfiguration& requestConfiguration,
-          RequestProfiler *profiler,
-          KernelBuffers *fvBuffers)
+    RequestProfiler *profiler,
+    KernelBuffers *fvBuffers)
 {
     profilerDTscAStart(&profiler->scoring);
 
@@ -96,17 +96,17 @@ status_t AcceleratorSw::Score(
     auto& softwareModel = model.GetSoftwareModel();
     softwareModel.ValidateConfiguration(requestConfiguration);
 
-    auto i = uint32_t(0);
-    auto nOuts = uint32_t(0); // number of outputs
-    auto sat = uint32_t(0);   // scoring saturation counter
+    auto nOuts = uint32_t{ 0 }; // number of outputs
+    auto sat = uint32_t{ 0 };   // scoring saturation counter
 
     const uint32_t* al = nullptr; // active list pointer
 
-    auto layerIndex = uint32_t(0);
+    auto layerIndex = uint32_t{ 0 };
     for (auto& layer : softwareModel.Layers)
     {
         auto* sourceLayer = const_cast<nn_layer*>(&layer->sourceLayer);
         auto layerKind = layer->Config.Kind;
+        nOuts = layer->Output.ElementCount; // regular output (all)
         if (INTEL_HIDDEN != sourceLayer->type)
         {
             auto found = requestConfiguration.LayerConfigurations.find(layerIndex);
@@ -125,13 +125,9 @@ status_t AcceleratorSw::Score(
                     if (INTEL_AFFINE == layerKind
                         || INTEL_GMM == layerKind)
                     {
-                        nOuts = layerConfiguration->ActiveList->IndicesCount;
+                        nOuts = layerConfiguration->ActiveList->IndicesCount; // active list outputs
                         al = layerConfiguration->ActiveList->Indices;
                     }
-                }
-                else // regular outputs
-                {
-                    nOuts = layer->Output.ElementCount;
                 }
             }
         }

@@ -73,7 +73,7 @@ void RequestConfiguration::AddActiveList(uint32_t layerIndex, uint32_t indicesCo
 
 void ConfigurationBuffer::validate() const
 {
-    Validate::IsNull(address);
+    Expect::NotNull(address);
 }
 
 ConfigurationBuffer::ConfigurationBuffer(gna_buffer_type type, void* address)

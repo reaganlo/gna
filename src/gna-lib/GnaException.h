@@ -39,20 +39,20 @@ class GnaException : public std::exception
 {
 public:
 
-    GnaException(status_t status) throw() : std::exception(GnaStatusToString(status))
-    {
-        status = status;
-    }
+    GnaException(status_t status) throw() : 
+        std::exception{ GnaStatusToString(status) },
+        Status{ status }
+    {}
 
     inline status_t getStatus() const
     {
-        return status;
+        return Status;
     }
 
     virtual ~GnaException() throw() {};
 
 protected:
-    status_t status;
+    status_t Status;
 };
 
 }

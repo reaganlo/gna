@@ -109,7 +109,7 @@ status_t IoctlSender::IoctlSend(
     ioResult = DeviceIoControl(h_, code, inbuf, inlen, outbuf, outlen, &bytesRead, &overlapped_);
     DWORD lastError = GetLastError();
 
-    Validate::IsTrue(ioResult == 0 && ERROR_IO_PENDING != lastError, GNA_IOCTLSENDERR);
+    Expect::False(ioResult == 0 && ERROR_IO_PENDING != lastError, GNA_IOCTLSENDERR);
 
     if (ERROR_IO_PENDING == lastError && async)
         return GNA_SUCCESS;

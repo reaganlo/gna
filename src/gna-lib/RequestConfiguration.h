@@ -33,6 +33,8 @@
 #include "ActiveList.h"
 #include "common.h"
 
+using std::unique_ptr;
+
 namespace GNA
 {
 
@@ -55,9 +57,9 @@ struct ConfigurationBuffer
 
 struct LayerConfiguration
 {
-    std::unique_ptr<ActiveList> ActiveList = nullptr;
-    std::unique_ptr<ConfigurationBuffer> InputBuffer = nullptr;
-    std::unique_ptr<ConfigurationBuffer> OutputBuffer = nullptr;
+    unique_ptr<ActiveList> ActiveList;
+    unique_ptr<ConfigurationBuffer> InputBuffer;
+    unique_ptr<ConfigurationBuffer> OutputBuffer;
 };
 
 /*

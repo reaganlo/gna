@@ -32,10 +32,10 @@ using namespace GNA;
 TransposeLayer::TransposeLayer(nn_layer const * const layer, const uint32_t inputVectorCount) :
     Layer(layer, inputVectorCount)
 {
-    Validate::IsTrue(Input.RowCount != Output.ColumnCount, XNN_ERR_LYR_CFG);
-    Validate::IsTrue(Input.ColumnCount != Output.RowCount, XNN_ERR_LYR_CFG);
-    Validate::IsNotNull(layer->pLayerStruct); // transpose layers do not have layer details
-    Validate::IsNotNull(Output.ScratchPad); // in transpose layer no 4B output array is allowed
+    Expect::True(Input.RowCount == Output.ColumnCount, XNN_ERR_LYR_CFG);
+    Expect::True(Input.ColumnCount == Output.RowCount, XNN_ERR_LYR_CFG);
+    Expect::Null(layer->pLayerStruct); // transpose layers do not have layer details
+    Expect::Null(Output.ScratchPad); // in transpose layer no 4B output array is allowed
 }
 
 CopyLayer::CopyLayer(const nn_layer *layer) :
@@ -43,7 +43,7 @@ CopyLayer::CopyLayer(const nn_layer *layer) :
     CopyElementsCount(static_cast<const nn_layer_copy*>(layer->pLayerStruct)->nCopyCols),
     sourceLayer(static_cast<const nn_layer_copy*>(layer->pLayerStruct))
 {
-    Validate::IsMultiplicityOf(CopyElementsCount, XNN_N_IN_ELEMS_MPLY);
-    Validate::IsInRange(CopyElementsCount, XNN_N_IN_ELEMS_MPLY, XNN_N_IN_ELEMS_MAX, XNN_ERR_LYR_CFG);
-    Validate::IsTrue(Input.VectorCount > Input.RowCount, XNN_ERR_LYR_CFG);
+    Expect::MultiplicityOf(CopyElementsCount, XNN_N_IN_ELEMS_MPLY);
+    Expect::InRange(CopyElementsCount, XNN_N_IN_ELEMS_MPLY, XNN_N_IN_ELEMS_MAX, XNN_ERR_LYR_CFG);
+    Expect::True(Input.VectorCount <= Input.RowCount, XNN_ERR_LYR_CFG);
 }

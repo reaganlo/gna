@@ -24,6 +24,7 @@
 */
 
 #include "SoftwareModel.h"
+
 #include "AffineLayers.h"
 #include "Validator.h"
 
@@ -36,22 +37,17 @@ SoftwareModel::SoftwareModel(const gna_model* network)
     inputVectorCount(network->nGroup)
 {
 #ifndef NO_ERRCHECK
-    Validate::IsTrue(inputVectorCount  < 1, XNN_ERR_LYR_CFG);
-    Validate::IsTrue(inputVectorCount  > XNN_N_GROUP_MAX, XNN_ERR_LYR_CFG);
-    Validate::IsTrue(layerCount < 1, XNN_ERR_NET_LYR_NO);
-    Validate::IsTrue(layerCount > XNN_LAYERS_MAX_COUNT, XNN_ERR_NET_LYR_NO);
-    Validate::IsNull(network->pLayers);
+    Expect::InRange(inputVectorCount, 1, XNN_N_GROUP_MAX, XNN_ERR_LYR_CFG);
+    Expect::InRange(layerCount, 1, XNN_LAYERS_MAX_COUNT, XNN_ERR_NET_LYR_NO);
+    Expect::NotNull(network->pLayers);
 #endif
     build(network->pLayers);
 }
 
 void SoftwareModel::ValidateConfiguration(const RequestConfiguration& configuration)
 {
-    if (inputLayerCount != configuration.InputBuffersCount
-        || outputLayerCount != configuration.OutputBuffersCount)
-    {
-        throw GnaException(XNN_ERR_LYR_CFG);
-    }
+    Expect::True(inputLayerCount == configuration.InputBuffersCount, XNN_ERR_NETWORK_INPUTS);
+    Expect::True(outputLayerCount == configuration.OutputBuffersCount, XNN_ERR_NETWORK_OUTPUTS);
 }
 
 void SoftwareModel::build(const nn_layer* layers)

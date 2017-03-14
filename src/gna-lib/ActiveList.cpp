@@ -42,9 +42,14 @@ ActiveList::ActiveList(const uint32_t indicesCountIn, const uint32_t* indicesIn)
 
 void ActiveList::validate()
 {
-    Validate::IsTrue(nullptr == Indices && IndicesCount > 0, GNA_INVALIDINDICES);
-    Validate::IsTrue(nullptr != Indices && 0 == IndicesCount, GNA_INVALIDINDICES);
-    Validate::IsTrue(nullptr != Indices && IndicesCount <= XNN_N_IN_ELEMS_MAX, GNA_INVALIDINDICES);
-    Validate::IsAlignedTo64(Indices);    
+    if (nullptr != Indices)
+    {
+        Expect::ValidBuffer(Indices);
+        Expect::InRange(IndicesCount, 1, XNN_N_IN_ELEMS_MAX, GNA_INVALIDINDICES);
+    }
+    else
+    {
+        Expect::True(IndicesCount == 0, GNA_INVALIDINDICES);
+    } 
 }
 

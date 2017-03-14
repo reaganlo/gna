@@ -31,7 +31,7 @@
 //{
 //    BaseLayerExt::convert();
 //
-//    Validate::IsNull(lyr->pLayerStruct);
+//    Expect::NotNull(lyr->pLayerStruct);
 //    ElementCount = lyr->ColumnCount;      // FLAT input matrix
 //    ElementCount = lyr->ColumnCount;     // - || -
 //
@@ -46,25 +46,24 @@
 //    BaseLayerExt::validate();
 //
 //    // must be multiple 32 to keep 64B output buffer alignment
-//    Validate::IsMultiplicityOf(ElementCount, RNN_N_OUT_ELEMS_MPLY);
-//    Validate::IsTrue(ElementCount < RNN_N_OUT_ELEMS_MPLY, XNN_ERR_LYR_CFG);
-//    Validate::IsTrue(ElementCount > XNN_N_IN_ELEMS_MAX, XNN_ERR_LYR_CFG);
+//    Expect::MultiplicityOf(ElementCount, RNN_N_OUT_ELEMS_MPLY);
+//    Expect::False(ElementCount < RNN_N_OUT_ELEMS_MPLY, XNN_ERR_LYR_CFG);
+//    Expect::False(ElementCount > XNN_N_IN_ELEMS_MAX, XNN_ERR_LYR_CFG);
 //
-//    Validate::IsNull(lyr->ScratchPad); // intermediate output buffer must be set always
+//    Expect::NotNull(lyr->ScratchPad); // intermediate output buffer must be set always
 //
-//    Validate::IsTrue(nGroup != lyr->RowCount, XNN_ERR_LYR_CFG);
-//    Validate::IsTrue(nGroup != lyr->RowCount, XNN_ERR_LYR_CFG);
+//    Expect::True(nGroup == lyr->RowCount, XNN_ERR_LYR_CFG);
+//    Expect::True(nGroup == lyr->RowCount, XNN_ERR_LYR_CFG);
 //
 //    int32_t  delay = 0;            // helper delay counter
 //
-//    Validate::IsNull(pwl); // RNN must have pwl enabled
-//    Validate::IsTrue(NULL == rnn->pFeedbackBuffer, XNN_ERR_NO_FEEDBACK);
-//    Validate::IsAlignedTo64(rnn->pFeedbackBuffer);
+//    Expect::NotNull(pwl); // RNN must have pwl enabled
+//    Expect::ValidBuffer(rnn->pFeedbackBuffer, XNN_ERR_NO_FEEDBACK);
 //    // pFeedbackBuffer K-delay offset check
 //    delay = (int32_t)((uint8_t*)lyr->pOutputs - (uint8_t*)rnn->pFeedbackBuffer);
-//    Validate::IsTrue(delay < 2 * ElementCount, XNN_ERR_NO_FEEDBACK); // FB must be before output buffer
-//    Validate::IsMultiplicityOf(delay, 2 * ElementCount);
+//    Expect::False(delay < 2 * ElementCount, XNN_ERR_NO_FEEDBACK); // FB must be before output buffer
+//    Expect::MultiplicityOf(delay, 2 * ElementCount);
 //    delay /= 2 * ElementCount; // delay in terms of FV
-//    Validate::IsTrue(delay < 1, XNN_ERR_NO_FEEDBACK);
-//    Validate::IsTrue(delay > XNN_N_GROUP_MAX, XNN_ERR_NO_FEEDBACK);
+//    Expect::False(delay < 1, XNN_ERR_NO_FEEDBACK);
+//    Expect::False(delay > XNN_N_GROUP_MAX, XNN_ERR_NO_FEEDBACK);
 //}

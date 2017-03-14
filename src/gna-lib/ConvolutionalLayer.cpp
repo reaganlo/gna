@@ -35,12 +35,12 @@
 //
 //    BaseLayerExt::convert();
 //    
-//    Validate::IsNull(lyr->pLayerStruct);
+//    Expect::NotNull(lyr->pLayerStruct);
 //    cnn = (nn_layer_conv*)lyr->pLayerStruct;
 //    pwl = (cnn->pwl.nSegments > 0) ? &cnn->pwl : nullptr;
 //    ElementCount = lyr->ColumnCount;// FLAT input matrix
 //    fltStrideSz = cnn->nFeatureMaps * cnn->nFeatureMapColumns; // always move 1 "row"
-//    Validate::IsTrue(0 == fltStrideSz, CNN_ERR_FLT_STRIDE);
+//    Expect::True(0 != fltStrideSz, CNN_ERR_FLT_STRIDE);
 //
 //    nFltSize = cnn->nFilterCoefficients;
 //    maxNCOE = (ElementCount - nFltSize) / fltStrideSz + 1;
@@ -51,7 +51,7 @@
 //    }
 //    else // FLAT input matrix, pooled outputs per filter
 //    {
-//        Validate::IsTrue(0 == fltStrideSz, CNN_ERR_POOL_STRIDE);
+//        Expect::True(0 != fltStrideSz, CNN_ERR_POOL_STRIDE);
 //        ElementCount = ((maxNCOE - 1) / cnn->nPoolStride + 1);
 //    }
 //    validate();
@@ -61,48 +61,46 @@
 //{
 //    BaseLayerExt::validate();
 //    
-//    Validate::IsTrue(nGroup != 1, XNN_ERR_GROUPING);
-//    Validate::IsTrue(nGroup != lyr->RowCount, XNN_ERR_GROUPING);
-//    Validate::IsTrue(nGroup != lyr->RowCount, XNN_ERR_GROUPING);
+//    Expect::True(nGroup == 1, XNN_ERR_GROUPING);
+//    Expect::True(nGroup == lyr->RowCount, XNN_ERR_GROUPING);
+//    Expect::True(nGroup == lyr->RowCount, XNN_ERR_GROUPING);
 //
-//    Validate::IsNull(lyr->Buffer);
-//    Validate::IsNull(lyr->ScratchPad);
+//    Expect::NotNull(lyr->Buffer);
+//    Expect::NotNull(lyr->ScratchPad);
 //
-//    Validate::IsNull(cnn->pFilters);
-//    Validate::IsAlignedTo64(cnn->pFilters);
+//    Expect::ValidBuffer(cnn->pFilters);
 //
-//    Validate::IsNull(cnn->pBiases);
-//    Validate::IsAlignedTo64(cnn->pBiases);
+//    Expect::ValidBuffer(cnn->pBiases);
 //
-//    Validate::IsTrue(cnn->nFilterCoefficients < CNN_N_FLT_COEFF_MIN, XNN_ERR_LYR_CFG);
-//    Validate::IsTrue(cnn->nFilterCoefficients > CNN_N_FLT_COEFF_MAX, XNN_ERR_LYR_CFG);
-//    Validate::IsTrue(cnn->nFilterCoefficients > ElementCount, XNN_ERR_LYR_CFG);
-//    Validate::IsMultiplicityOf(cnn->nFilterCoefficients, XNN_N_IN_ELEMS_MPLY);
+//    Expect::False(cnn->nFilterCoefficients < CNN_N_FLT_COEFF_MIN, XNN_ERR_LYR_CFG);
+//    Expect::False(cnn->nFilterCoefficients > CNN_N_FLT_COEFF_MAX, XNN_ERR_LYR_CFG);
+//    Expect::False(cnn->nFilterCoefficients > ElementCount, XNN_ERR_LYR_CFG);
+//    Expect::MultiplicityOf(cnn->nFilterCoefficients, XNN_N_IN_ELEMS_MPLY);
 //
-//    Validate::IsTrue(cnn->nFilters     < CNN_N_FLT_COEFF_MPLY, XNN_ERR_LYR_CFG);
-//    Validate::IsTrue(cnn->nFilters     > CNN_N_FLT_MAX, XNN_ERR_LYR_CFG);
-//    Validate::IsMultiplicityOf(cnn->nFilters, CNN_N_FLT_COEFF_MPLY);
+//    Expect::False(cnn->nFilters     < CNN_N_FLT_COEFF_MPLY, XNN_ERR_LYR_CFG);
+//    Expect::False(cnn->nFilters     > CNN_N_FLT_MAX, XNN_ERR_LYR_CFG);
+//    Expect::MultiplicityOf(cnn->nFilters, CNN_N_FLT_COEFF_MPLY);
 //
-//    Validate::IsTrue(cnn->nFilterRows > CNN_N_FLT_COEFF_MAX, XNN_ERR_LYR_CFG);
-//    Validate::IsTrue(cnn->nFilterRows < 1, XNN_ERR_LYR_CFG);
+//    Expect::False(cnn->nFilterRows > CNN_N_FLT_COEFF_MAX, XNN_ERR_LYR_CFG);
+//    Expect::False(cnn->nFilterRows < 1, XNN_ERR_LYR_CFG);
 //
 //    uint32_t nFeatures = cnn->nFeatureMapRows * fltStrideSz;
-//    Validate::IsTrue(nFeatures < CNN_N_FLT_COEFF_MIN, XNN_ERR_LYR_CFG);
+//    Expect::False(nFeatures < CNN_N_FLT_COEFF_MIN, XNN_ERR_LYR_CFG);
 //
-//    Validate::IsTrue(lyr->ColumnCount != cnn->nFilters * ElementCount, XNN_ERR_LYR_CFG);
+//    Expect::True(lyr->ColumnCount == cnn->nFilters * ElementCount, XNN_ERR_LYR_CFG);
 //
-//    Validate::IsTrue(fltStrideSz       < 1, XNN_ERR_LYR_CFG);
-//    Validate::IsTrue(fltStrideSz       > CNN_N_FLT_COEFF_MAX, XNN_ERR_LYR_CFG);
-//    Validate::IsTrue(cnn->poolType >= NUM_POOLING_TYPES, XNN_ERR_LYR_CFG);
+//    Expect::False(fltStrideSz       < 1, XNN_ERR_LYR_CFG);
+//    Expect::False(fltStrideSz       > CNN_N_FLT_COEFF_MAX, XNN_ERR_LYR_CFG);
+//    Expect::True(cnn->poolType < NUM_POOLING_TYPES, XNN_ERR_LYR_CFG);
 //    if (INTEL_NO_POOLING != cnn->poolType)
 //    {
-//        Validate::IsTrue(cnn->nPoolSize    < CNN_POOL_SIZE_MIN, XNN_ERR_LYR_CFG);
-//        Validate::IsTrue(cnn->nPoolSize    > CNN_POOL_SIZE_MAX, XNN_ERR_LYR_CFG);
+//        Expect::False(cnn->nPoolSize    < CNN_POOL_SIZE_MIN, XNN_ERR_LYR_CFG);
+//        Expect::False(cnn->nPoolSize    > CNN_POOL_SIZE_MAX, XNN_ERR_LYR_CFG);
 //
-//        Validate::IsTrue(cnn->nPoolStride  < CNN_POOL_SIZE_MIN, XNN_ERR_LYR_CFG);
-//        Validate::IsTrue(cnn->nPoolStride  > CNN_POOL_SIZE_MAX, XNN_ERR_LYR_CFG); 
+//        Expect::False(cnn->nPoolStride  < CNN_POOL_SIZE_MIN, XNN_ERR_LYR_CFG);
+//        Expect::False(cnn->nPoolStride  > CNN_POOL_SIZE_MAX, XNN_ERR_LYR_CFG); 
 //    }
 //
-//    Validate::IsTrue(cnn->nBytesFilterCoefficient != 2, XNN_ERR_WEIGHT_BYTES);
-//    Validate::IsTrue(cnn->nBytesBias != 4, XNN_ERR_BIAS_BYTES);
+//    Expect::True(cnn->nBytesFilterCoefficient == 2, XNN_ERR_WEIGHT_BYTES);
+//    Expect::True(cnn->nBytesBias == 4, XNN_ERR_BIAS_BYTES);
 //}

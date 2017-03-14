@@ -99,6 +99,8 @@ const char *GNAStatusName[] =
     "GMM_CFG_INVALID_LAYOUT - Error: GMM Data layout is invalid",
 
     "XNN_ERR_NET_LYR_NO - Error: XNN: Not supported number of layers",
+    "XNN_ERR_NETWORK_INPUTS - Error: XNN: Network is invalid - input buffers number differs from input layers number",
+    "XNN_ERR_NETWORK_OUTPUTS - Error: XNN: Network is invalid - output buffers number differs from output layers number",
     "XNN_ERR_LYR_KIND - Error: XNN: Not supported layer kind",
     "XNN_ERR_LYR_TYPE - Error: XNN: Not supported layer type",
     "XNN_ERR_LYR_CFG - Error: XNN: Invalid layer configuration",
@@ -287,11 +289,11 @@ void *GnaAlloc(gna_device_id deviceId, uint32_t requestedSize, uint32_t *granted
     {
         //TODO: refactor - to much logic in wrapper
         Gna2Ultimate.ValidateSession(deviceId);
-        Validate::IsNull(grantedSize);
+        Expect::NotNull(grantedSize);
 
         void* buffer = nullptr;
         *grantedSize = Gna2Ultimate.AllocateMemory(requestedSize, &buffer);
-        Validate::IsTrue(nullptr == buffer || *grantedSize < requestedSize, GNA_ERR_RESOURCES);
+        Expect::False(nullptr == buffer || *grantedSize < requestedSize, GNA_ERR_RESOURCES);
         return buffer;
     }
     catch (const GnaException &e)

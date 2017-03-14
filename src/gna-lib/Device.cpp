@@ -50,13 +50,13 @@ void Device::AttachActiveList(gna_request_cfg_id configId, uint16_t layerIndex, 
 
 void Device::ValidateSession(gna_device_id deviceId) const
 {
-    Validate::IsTrue(!(id == deviceId && opened), GNA_INVALIDHANDLE);
+    Expect::True(id == deviceId && opened, GNA_INVALIDHANDLE);
 }
 
 // TODO: implement as c-tor and propagate for members
 status_t Device::Open(gna_device_id *deviceId, uint8_t threadCount)
 {
-    Validate::IsNull(deviceId);
+    Expect::NotNull(deviceId);
     if(nHandles > GNA_DEVICE_LIMIT || opened)
     {
         ERR("GNA Device already opened. Close Device first.\n");

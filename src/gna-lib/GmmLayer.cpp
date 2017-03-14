@@ -59,22 +59,21 @@ void GmmLayer::ValidateActiveList(ActiveList const * const activeList)
     // TODO:KJ:implement active list for GMM
     if (activeList->Enabled)
     {
-        Validate::IsInRange(activeList->IndicesCount, 1, Config.stateCount, GNA_INVALIDINDICES);
+        Expect::InRange(activeList->IndicesCount, 1, Config.stateCount, GNA_INVALIDINDICES);
     }
 }
 
 void GmmLayer::validate()
 {
-    Validate::IsInRange(Input.RowCount, GMM_FV_ELEMENT_COUNT_MIN, GMM_FV_ELEMENT_COUNT_MAX, GNA_BADFEATLENGTH);
-    Validate::IsInRange(Config.stateCount, 1, GMM_STATES_COUNT_MAX, GMM_BADNUMGMM);
-    Validate::IsTrue(Config.mixtureComponentCount < 1, GMM_BADMIXCNUM);
-    Validate::IsTrue(Config.mixtureComponentCount > GMM_MIXTURE_COMP_COUNT_MAX, GMM_BADMIXCNUM);
-    Validate::IsTrue(Config.mode > GNA_MAXMIX16, GMM_BADMODE);
-    Validate::IsTrue(NULL == Data.gaussianConstants, GNA_READFAULT);
-    Validate::IsTrue((0 != ((uintptr_t)Data.gaussianConstants) % GMM_MEM_ALIGNMENT), GMM_BADGCONSTALIGN);
-    Validate::IsTrue(NULL == Data.meanValues, GNA_READFAULT);
-    Validate::IsTrue(0 != ((uintptr_t)(Data.meanValues) % GMM_MEM_ALIGNMENT), GMM_BADMEANALIGN);
-    Validate::IsTrue(NULL == Data.inverseCovariancesForMaxMix16, GNA_READFAULT);
-    Validate::IsTrue(0 != ((uintptr_t)(Data.inverseCovariancesForMaxMix16) % GMM_MEM_ALIGNMENT), GMM_BADVARSALIGN);
-    Validate::IsInRange(Config.layout, GMM_LAYOUT_FLAT, GMM_LAYOUT_INTERLEAVED, GMM_CFG_INVALID_LAYOUT);    
+    Expect::InRange(Input.RowCount, GMM_FV_ELEMENT_COUNT_MIN, GMM_FV_ELEMENT_COUNT_MAX, GNA_BADFEATLENGTH);
+    Expect::InRange(Config.stateCount, 1, GMM_STATES_COUNT_MAX, GMM_BADNUMGMM);
+    Expect::InRange(Config.mixtureComponentCount, 1, GMM_MIXTURE_COMP_COUNT_MAX, GMM_BADMIXCNUM);
+    Expect::InRange(Config.mode, 0, GNA_MAXMIX16, GMM_BADMODE);
+    Expect::NotNull(Data.gaussianConstants);
+    Expect::AlignedTo(Data.gaussianConstants, GMM_MEM_ALIGNMENT, GMM_BADGCONSTALIGN);
+    Expect::NotNull(Data.meanValues);
+    Expect::AlignedTo(Data.meanValues, GMM_MEM_ALIGNMENT, GMM_BADMEANALIGN);
+    Expect::NotNull(Data.inverseCovariancesForMaxMix16);
+    Expect::AlignedTo(Data.inverseCovariancesForMaxMix16, GMM_MEM_ALIGNMENT, GMM_BADVARSALIGN);
+    Expect::InRange(Config.layout, GMM_LAYOUT_FLAT, GMM_LAYOUT_INTERLEAVED, GMM_CFG_INVALID_LAYOUT);    
 }

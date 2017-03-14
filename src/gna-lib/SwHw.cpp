@@ -212,10 +212,10 @@ void Hw::init()
 {
 #ifdef _WIN32
     io_handle.hEvent = CreateEvent(nullptr, false, false, nullptr);
-    Validate::IsTrue(nullptr == io_handle.hEvent, GNA_ERR_RESOURCES);
+    Expect::NotNull(io_handle.hEvent, GNA_ERR_RESOURCES);
 #endif
     inData = (hw_calc_in_t*)calloc(1, sizeof(hw_calc_in_t));
-    Validate::IsTrue(nullptr == inData, GNA_ERR_RESOURCES);
+    Expect::NotNull(inData, GNA_ERR_RESOURCES);
     inData->status = GNA_NULLARGNOTALLOWED;
 
 }

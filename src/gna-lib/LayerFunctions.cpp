@@ -31,40 +31,36 @@ using namespace GNA;
 Weight1B::Weight1B(uint32_t size, const void *weights) :
     Weights(static_cast<const uint8_t*>(weights))
 {
-    Validate::IsNull(Weights);
-    Validate::IsAlignedTo64(Weights);
-    Validate::IsTrue(sizeof(uint8_t) != size, XNN_ERR_WEIGHT_BYTES);
+    Expect::ValidBuffer(Weights);
+    Expect::True(sizeof(uint8_t) == size, XNN_ERR_WEIGHT_BYTES);
 }
 
 Weight2B::Weight2B(uint32_t size, const void *weights) :
     Weights(static_cast<const uint16_t*>(weights))
 {
-    Validate::IsNull(Weights);
-    Validate::IsAlignedTo64(Weights);
-    Validate::IsTrue(sizeof(uint16_t) != size, XNN_ERR_WEIGHT_BYTES);
+    Expect::ValidBuffer(Weights);
+    Expect::True(sizeof(uint16_t) == size, XNN_ERR_WEIGHT_BYTES);
 }
 
 BiasSimple::BiasSimple(uint32_t size, const void *biases) :
     Biases(static_cast<const nn_bias_s*>(biases))
 {
-    Validate::IsNull(Biases);
-    Validate::IsAlignedTo64(Biases);
-    Validate::IsTrue(sizeof(nn_bias_s) != size, XNN_ERR_BIAS_BYTES);
+    Expect::ValidBuffer(Biases);
+    Expect::True(sizeof(nn_bias_s) == size, XNN_ERR_BIAS_BYTES);
 }
 
 BiasCompound::BiasCompound(uint32_t size, const void *biases) :
     Biases(static_cast<const nn_bias_c*>(biases))
 {
-    Validate::IsNull(Biases);
-    Validate::IsAlignedTo64(Biases);
-    Validate::IsTrue(sizeof(nn_bias_c) != size, XNN_ERR_BIAS_BYTES);
+    Expect::ValidBuffer(Biases);
+    Expect::True(sizeof(nn_bias_c) == size, XNN_ERR_BIAS_BYTES);
 }
 
 
 AffineFunctionSingle::AffineFunctionSingle(const nn_func_affine * affine) :
     sourceAffineFunction(static_cast<const nn_func_affine *>(affine))
 {
-    Validate::IsNull(sourceAffineFunction);
+    Expect::NotNull(sourceAffineFunction);
 }
 
 AffineFunctionSingle2B::AffineFunctionSingle2B(const nn_func_affine *affine) :
@@ -87,8 +83,8 @@ AffineFunctionMutli::AffineFunctionMutli(const nn_func_affine_multi *affine) :
     BiasVectorIndex(affine->biasVectorIndex),
     sourceAffineFunction(affine)
 {
-    Validate::IsInRange(BiasVectorIndex, 0, XNN_N_GROUP_MAX - 1, XNN_ERR_GROUPING);
-    Validate::IsNull(sourceAffineFunction);
+    Expect::InRange(BiasVectorIndex, 0, XNN_N_GROUP_MAX - 1, XNN_ERR_GROUPING);
+    Expect::NotNull(sourceAffineFunction);
 }
 
 AffineFunctionMulti2B::AffineFunctionMulti2B(const nn_func_affine_multi *affine) :
@@ -102,21 +98,19 @@ AffineFunctionMulti1B::AffineFunctionMulti1B(const nn_func_affine_multi *affine)
     Weight1B(affine->nBytesPerWeight, affine->pWeights),
     WeightScaleFactors(affine->weightScaleFactors)
 {
-    Validate::IsNull(WeightScaleFactors);
-    Validate::IsAlignedTo64(WeightScaleFactors);
+    Expect::ValidBuffer(WeightScaleFactors);
 }
 
 ActivationFunction::ActivationFunction(const nn_func_pwl *pwl) :
     SegmentCount(static_cast<bool>(pwl->nSegments)),
     Segments(static_cast<nn_pwl_seg*>(pwl->pSegments)),
-    Enabled((NULL != pwl->pSegments) && (pwl->nSegments > 0)),
+    Enabled((nullptr != pwl->pSegments) && (pwl->nSegments > 0)),
     sourcePwl(static_cast<const nn_func_pwl*>(pwl))
 {
     if(Enabled)
     {
-        Validate::IsTrue(NULL == Segments, XNN_ERR_PWL_DATA);
-        Validate::IsAlignedTo64(Segments);
-        Validate::IsInRange(SegmentCount, SegmentCountMin, SegmentCountMax, XNN_ERR_PWL_SEGMENTS);
+        Expect::ValidBuffer(Segments, XNN_ERR_PWL_DATA);
+        Expect::InRange(SegmentCount, SegmentCountMin, SegmentCountMax, XNN_ERR_PWL_SEGMENTS);
     }
 }
 
