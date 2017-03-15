@@ -57,9 +57,9 @@ class IoctlSender
 protected:
     IoctlSender();
 
-    void Open(const GUID& guid);
+    static void Open(const GUID& guid);
 
-    void Close();
+    //static void Close();
 
     status_t IoctlSend(DWORD code,
         LPVOID inbuf,
@@ -80,7 +80,7 @@ protected:
 
     DWORD Cancel();
 
-    WinHandle h_;
+    static WinHandle h_;
     WinHandle evt_;
     OVERLAPPED overlapped_;
 

@@ -47,7 +47,7 @@ CheckMapConfigParameters(
 #define     DIV_CEIL(x, y)          (((x)+(y)-1)/(y))
 
 //NOTE: This is just a "dummy" subroutine, but it is necessary to initialize the fake DMA operation
-DRIVER_LIST_CONTROL 
+DRIVER_LIST_CONTROL
 ProcessSGList;
 
 #ifdef ALLOC_PRAGMA
@@ -87,6 +87,7 @@ MemoryMap(
 
     dmaVA = MmGetMdlVirtualAddress(pMdl);
     usrBuffer = MmGetSystemAddressForMdlSafe(pMdl, NormalPagePriority | MdlMappingNoExecute);
+    Trace(TLI, T_MEM, "User buffer address: %p", usrBuffer);
     if (NULL == usrBuffer)
     {
         status = STATUS_UNSUCCESSFUL;
@@ -94,8 +95,8 @@ MemoryMap(
         goto mem_map_error;
     }
 
-    UINT32 modelId = *(UINT32*)usrBuffer;
-    Trace(TLI, T_MEM, "Model id saved in user buffer: %d", modelId);
+    UINT64 modelId = *(UINT64*)usrBuffer;
+    Trace(TLI, T_MEM, "Model id saved in user buffer: %lld", modelId);
 
     // bad model id
     if (modelId >= APP_MODELS_LIMIT)
@@ -188,7 +189,7 @@ MemoryMap(
     }
     SglBuildDone = TRUE;
 
-    // padd number of entries to 64B and add additional 32entries (128B) 
+    // padd number of entries to 64B and add additional 32entries (128B)
     // for prefetching mechanism in HW to work properly
     nPTentries = 32 +
         (((int)(((DIV_CEIL(length, PAGE_SIZE)) - 1) / 16) + 1) * 16);
@@ -219,12 +220,12 @@ MemoryMap(
         RtlZeroMemory(pageTable->commBuffVa, PAGE_SIZE);
     }
     Trace(TLI, T_MEM, "%!FUNC!: L1 Table pages allocated: %d", modelCtx->pageTableCount);
-    
+
     //copy L2 addresses to L1 area
     {
         PSCATTER_GATHER_LIST pSgList = (PSCATTER_GATHER_LIST) pSglBuffer;
         PSCATTER_GATHER_ELEMENT pSgListElement = pSgList->Elements;
-        
+
         P_PT_DIR pageTable = modelCtx->ptDir;
         ULONG32 *pageTableEntry = (ULONG32*) pageTable->commBuffVa;
         ULONG32* pageTableEntriesEnd = pageTableEntry + PT_ENTRY_NO;
@@ -243,7 +244,7 @@ MemoryMap(
                 Trace(TLV, T_MEM, "%!FUNC!: App page address / 4KB %llX stored @ %p", address, pageTableEntry);
                 *pageTableEntry++ = (ULONG32) address;
 
-                // check if need to switch to next page 
+                // check if need to switch to next page
                 if (pageTableEntry == pageTableEntriesEnd)
                 {
                     pageTableEntry = (ULONG32*) (++pageTable)->commBuffVa;
@@ -373,7 +374,7 @@ ModelDescInit(
     modelCtx->desc.la.QuadPart /= PAGE_SIZE;
     ASSERTMSG("DeviceDescInit Logical Descriptor address > 32bits",
         (LONG64)(modelCtx->desc.la.QuadPart) < MAXUINT32 );
-    
+
     return status;
 }
 

@@ -47,57 +47,29 @@ namespace GNA
 /**
 * Auxiliary Hardware Layer descriptor converter
 */
-class HwLayer
+class HardwareLayer
 {
 public:
     static const map<const nn_layer_kind, const NN_OP_TYPE> OperationsMap;
 
     /**
-    * Creates HwLayer converter based on layer kind
+    * Creates HardwareLayer converter based on layer kind
     *
     * @type        (in)    API layer kind
     * @return      layer specific converter instance
     */
-    static HwLayer* create(const nn_layer_kind type);
-
-    /**
-    * Initializes converter
-    *
-    * @lyr         (in)    input API layer descriptor pointer
-    * @hwLyr       (out)   converted HW single layer descriptor
-    * @buffer      (in)    Accelerator memory buffer base address
-    * @hwInBuffSize(in)    hw input buffer size in KB
-    * @bLayer	   (in)	   common converter and validator
-    */
-    virtual void init(
-        nn_layer*		lyr,
-        XNN_LYR*        hwLyr,
-        const void*     buffer,
-        uint32_t        hwInBuffSize,
-        Layer*		bLayerIn);
-
-    /**
-    * Converts API layer to hardware layer and stores to hwLyr
-    */
-    virtual void convert();
-
-    /**
-    * Converts API layer active list to hardware layer and stores to hwLyr
-    *
-    * @NOTE:   Convert must be called earlier
-    * @al          (in)    active list parameters
-    */
-    void convertAL(ActiveList* al);
+    static std::unique_ptr<HardwareLayer> Create(const Layer& softwareLayer, XNN_LYR *layerDescriptor, void *descriptorBuffer, uint32_t hwInBufferSize);
 
     /**
     * Empty virtual destructor enables derived classes destructor calls
     */
-    virtual ~HwLayer() {};
+    virtual ~HardwareLayer() {};
 
 protected:
-    XNN_LYR*            hwLyr;      // converted HW single layer descriptor
-    void*               buffer;     // Accelerator memory buffer base address
-    Layer*			baseLayer;	// common sw/hw converter and validator
+    const Layer&        softwareLayer;
+    XNN_LYR*            layerDescriptor;    // single layer descriptor
+    void*               descriptorBuffer;   // hardware descriptor buffer
+
     /**
     * Number of data elements that may be stored in hw with 12KB buffer
     */
@@ -109,14 +81,24 @@ protected:
     const static uint32_t nBuffElems24K[8];
 
     /**
+    * Converts API layer active list to hardware layer and stores to hwLyr
+    *
+    * @NOTE:   Convert must be called earlier
+    * @al          (in)    active list parameters
+    */
+    void convertAL(ActiveList &activeList);
+
+    /**
     * Effective number of data elements that may be stored in hw
     */
-    uint32_t* nBuffElems;
+    const uint32_t* nBuffElems;
+
+    virtual void convert() = 0;
 
     /**
     * Validates layer parameters
     */
-    virtual void validate();
+    virtual void validate() = 0;
 
     /**
     * Stores hardware layer parameters
@@ -126,30 +108,26 @@ protected:
     /**
     * Creates uninitialized converter
     */
-    HwLayer() : hwLyr(nullptr), buffer(nullptr), baseLayer(nullptr), nBuffElems((uint32_t*)nBuffElems24K) {};
+    HardwareLayer(const Layer& swLayer, XNN_LYR *layerDesc, void *descBuffer, uint32_t hwInBufferSize);
 };
 
 /**
 * Extended Hardware Layer descriptor converter
 */
-class HwLayerExt : public HwLayer
+class HardwareLayerExt : public HardwareLayer
 {
 public:
-    void convert() override;
-
-    ~HwLayerExt() {};
+    ~HardwareLayerExt() {};
 
     /**
      * Deleted functions to prevent from being defined or called
      * @see: https://msdn.microsoft.com/en-us/library/dn457344.aspx
      */
-    HwLayerExt(const HwLayerExt &) = delete;
-    HwLayerExt& operator=(const HwLayerExt&) = delete;
+    HardwareLayerExt(const HardwareLayerExt &) = delete;
+    HardwareLayerExt& operator=(const HardwareLayerExt&) = delete;
 
 protected:
-    uint32_t            nGr;        // grouping for iteration calculation
-    uint32_t            nIters;     // number of iterations = data chunks/parts
-    uint32_t            nLast;      // number of elements in last iteration
+    HardwareLayerExt(const Layer& swLayer, XNN_LYR *layerDesc, void *descBuffer, uint32_t hwInBuffSize);
 
     /**
     * Calculates number of iterations and elements in last iteration
@@ -162,94 +140,73 @@ protected:
 
     void save() override;
 
-    HwLayerExt() : HwLayer(), nGr(0), nIters(0), nLast(0), baseLayerExt(nullptr) {};
-
-    void init(
-        nn_layer*		lyr,
-        XNN_LYR*        hwLyr,
-        const void*     buffer,
-        uint32_t        hwInBuffSize,
-        Layer*		bLayerIn) override;
-
-private:
-    Layer* baseLayerExt;
+    uint32_t nGr;    // grouping for iteration calculation
+    uint32_t nIters; // number of iterations = data chunks/parts
+    uint32_t nLast;  // number of elements in last iteration
 };
 
 /**
 * Affine, Diagonal and transpose layers Layer descriptor converter
 */
-class HwLayerAffDiagTrans : public HwLayerExt
+class HardwareLayerAffDiagTrans : public HardwareLayerExt
 {
 public:
-    void convert() override final;
+    HardwareLayerAffDiagTrans(const Layer& swLayer, XNN_LYR *layerDesc, void *descBuffer, uint32_t hwInBuffSize);
 
-    HwLayerAffDiagTrans() : HwLayerExt() {};
-
-    virtual ~HwLayerAffDiagTrans() {};
-
-    void init(
-        nn_layer*		lyr,
-        XNN_LYR*        hwLyr,
-        const void*     buffer,
-        uint32_t        hwInBuffSize,
-        Layer*		bLayerIn) override;
+    virtual ~HardwareLayerAffDiagTrans() {};
 
 protected:
-    void save() override final;
+    void convert() override final;
+
+private:
+    const AffineLayer& affineLayer;
 };
 
 /**
 * Hardware Copy Layer descriptor converter
 */
-class HwLayerCopy : public HwLayer
+class HardwareLayerCopy : public HardwareLayer
 {
 public:
-    void convert() override final;
-
-    HwLayerCopy() : HwLayer(), copyLayer(nullptr) {};
+    HardwareLayerCopy(const Layer& swLayer, XNN_LYR *layerDesc, void *descBuffer, uint32_t hwInBuffSize);
 
     /**
      * Deleted functions to prevent from being defined or called
      * @see: https://msdn.microsoft.com/en-us/library/dn457344.aspx
      */
-    HwLayerCopy(const HwLayerCopy &) = delete;
-    HwLayerCopy& operator=(const HwLayerCopy&) = delete;
+    HardwareLayerCopy(const HardwareLayerCopy &) = delete;
+    HardwareLayerCopy& operator=(const HardwareLayerCopy&) = delete;
 
-    void init(
-        nn_layer*		lyr,
-        XNN_LYR*        hwLyr,
-        const void*     buffer,
-        uint32_t        hwInBuffSize,
-        Layer*		bLayerIn) override;
-
-    virtual ~HwLayerCopy() {};
+    virtual ~HardwareLayerCopy() {};
 
 protected:
+    void convert() override final;
+
     void validate() override final;
 
     void save() override final;
 
 private:
-    CopyLayer* copyLayer;
+    const CopyLayer& copyLayer;
 };
 
 ///**
 //* Recurrent Layer descriptor converter
 //*/
-//class HwLayerRnn : public HwLayerExt
+//class HardwareLayerRnn : public HardwareLayerExt
 //{
 //public:
 //    void convert() override final;
 //
-//    HwLayerRnn() : HwLayerExt(),
+//    HardwareLayerRnn() : HardwareLayerExt(),
 //        nFbIters(0), nFbFirst(0), nFbLast(0), rnnLayer(nullptr) {};
 //
 //    /**
 //     * Deleted functions to prevent from being defined or called
 //     * @see: https://msdn.microsoft.com/en-us/library/dn457344.aspx
 //     */
-//    HwLayerRnn(const HwLayerRnn &) = delete;
-//    HwLayerRnn& operator=(const HwLayerRnn&) = delete;
+//    HardwareLayerRnn(const HardwareLayerRnn &) = delete;
+//    HardwareLayerRnn& operator=(const HardwareLayerRnn&) = delete;
 //
 //    void init(
 //        nn_layer*		lyr,
@@ -258,7 +215,7 @@ private:
 //        uint32_t        hwInBuffSize,
 //        Layer*		bLayerIn) override;
 //
-//    virtual ~HwLayerRnn() {};
+//    virtual ~HardwareLayerRnn() {};
 //
 //protected:
 //    void validate() override final;
@@ -275,20 +232,20 @@ private:
 ///**
 //* Convolutional Layer descriptor converter
 //*/
-//class HwLayerCnn : public HwLayerExt
+//class HardwareLayerCnn : public HardwareLayerExt
 //{
 //public:
 //    void convert() override final;
 //
-//    HwLayerCnn() : HwLayerExt(),
+//    HardwareLayerCnn() : HardwareLayerExt(),
 //        nFltIters(0), nFltsLast(0), nFltsPerIter(0), fltBuffSz(0), fltBuffSzLast(0), cnnLayer(nullptr) {};
 //
 //    /**
 //     * Deleted functions to prevent from being defined or called
 //     * @see: https://msdn.microsoft.com/en-us/library/dn457344.aspx
 //     */
-//    HwLayerCnn(const HwLayerCnn &) = delete;
-//    HwLayerCnn& operator=(const HwLayerCnn&) = delete;
+//    HardwareLayerCnn(const HardwareLayerCnn &) = delete;
+//    HardwareLayerCnn& operator=(const HardwareLayerCnn&) = delete;
 //
 //    void init(
 //        nn_layer*		lyr,
@@ -297,7 +254,7 @@ private:
 //        uint32_t        hwInBuffSize,
 //        Layer*		bLayerIn) override;
 //
-//    virtual ~HwLayerCnn() {};
+//    virtual ~HardwareLayerCnn() {};
 //
 //protected:
 //    void validate() override final;

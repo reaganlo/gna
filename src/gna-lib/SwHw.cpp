@@ -23,7 +23,7 @@
  in any way.
 */
 
-#include "HwLayer.h"
+#include "HardwareLayer.h"
 #include "SwHw.h"
 #include "GnaException.h"
 #include "Validator.h"
@@ -156,57 +156,57 @@ void Hw::GmmLayerDescriptorUpdateActiveList(const GmmLayer *gmm, const ActiveLis
     descriptor->astlistlen = activeListIndicesCount;
 }
 
-void Hw::Fill(SoftwareModel* model)
-{
-    uint32_t i = 0;
-    HwLayer *hwLayer = nullptr;     // hw layer converter
-    uint32_t xnnSize = 0;
-    xnnSize = XNN_LYR_DSC_SIZE * model->layerCount;
-    dataSize= REQUEST_SIZE;
-    init();
-
-    // fill data structure that will be sent to kernel
-    inData->ctrlFlags.gnaMode       = 1; // GNA2 default mode of operation
-    //inData->ctrlFlags.activeListOn  = (uint32_t)model->activeList.enabled; // TODO: RequestConfig handler for ioctls
-    inData->ctrlFlags.layerCount = model->layerCount;
-    inData->ctrlFlags.layerNo = 0;
-    inData->modelId = 0;
-
-    // initial layer descriptor at the beginning of model buffer
-    xnnLayerDescriptors = (XNN_LYR*) base;
-
-    // set descriptor for all layers
-    for (i = 0; i < model->layerCount; i++)
-    {
-        try
-        {
-            hwLayer = HwLayer::create(model->Layers[i]->Config.Kind);
-            hwLayer->init(const_cast<nn_layer*>(&model->Layers[i]->sourceLayer), &xnnLayerDescriptors[i], base,
-                inBuffSize, const_cast<Layer*>(model->Layers[i].get()));
-            hwLayer->convert();
-
-            // TODO:KJ: add GmmHwLayer and handle XNN layer common part of GMM layer
-            if (INTEL_GMM == model->Layers[i]->Config.Kind)
-            {
-                GmmLayerDescriptorSetup(static_cast<const GmmLayer*>(model->Layers[i].get()), &gmmLayerDescriptors[i]);
-            }
-
-
-           /* if (i == model->layerCount - 1)
-            {
-                hwLayer->convertAL(&model->activeList);
-            }*/
-            delete hwLayer;
-            hwLayer = nullptr;
-        }
-        catch (GnaException& e)
-        {
-            if (hwLayer) delete hwLayer;
-            ERR("Layer descriptor conversion error: LYR[%u]: %s\n", i, GnaStatusToString(e.getStatus()));
-            throw e;
-        }
-    }
-}
+//void Hw::Fill(SoftwareModel* model)
+//{
+//    uint32_t i = 0;
+//    HardwareLayer *HardwareLayer = nullptr;     // hw layer converter
+//    uint32_t xnnSize = 0;
+//    xnnSize = XNN_LYR_DSC_SIZE * model->layerCount;
+//    dataSize= REQUEST_SIZE;
+//    init();
+//
+//    // fill data structure that will be sent to kernel
+//    inData->ctrlFlags.gnaMode       = 1; // GNA2 default mode of operation
+//    //inData->ctrlFlags.activeListOn  = (uint32_t)model->activeList.enabled; // TODO: RequestConfig handler for ioctls
+//    inData->ctrlFlags.layerCount = model->layerCount;
+//    inData->ctrlFlags.layerNo = 0;
+//    inData->modelId = 0;
+//
+//    // initial layer descriptor at the beginning of model buffer
+//    xnnLayerDescriptors = (XNN_LYR*) base;
+//
+//    // set descriptor for all layers
+//    for (i = 0; i < model->layerCount; i++)
+//    {
+//        try
+//        {
+//            HardwareLayer = HardwareLayer::create(model->Layers[i]->Config.Type);
+//            HardwareLayer->init(const_cast<nn_layer*>(&model->Layers[i]->sourceLayer), &xnnLayerDescriptors[i], base,
+//                inBuffSize, const_cast<Layer*>(model->Layers[i].get()));
+//            HardwareLayer->convert();
+//
+//            // TODO:KJ: add GmmHardwareLayer and handle XNN layer common part of GMM layer
+//            if (INTEL_GMM == model->Layers[i]->Config.Type)
+//            {
+//                GmmLayerDescriptorSetup(static_cast<const GmmLayer*>(model->Layers[i].get()), &gmmLayerDescriptors[i]);
+//            }
+//
+//
+//           /* if (i == model->layerCount - 1)
+//            {
+//                HardwareLayer->convertAL(&model->activeList);
+//            }*/
+//            delete HardwareLayer;
+//            HardwareLayer = nullptr;
+//        }
+//        catch (GnaException& e)
+//        {
+//            if (HardwareLayer) delete HardwareLayer;
+//            ERR("Layer descriptor conversion error: LYR[%u]: %s\n", i, GnaStatusToString(e.getStatus()));
+//            throw e;
+//        }
+//    }
+//}
 
 void Hw::init()
 {

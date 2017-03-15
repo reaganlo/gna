@@ -100,11 +100,11 @@ void Device::Close()
 
 size_t Device::AllocateMemory(size_t requestedSize, void **buffer)
 {
-    size_t modelSize = modelCompiler.CalculateModelSize(requestedSize, XNN_LAYERS_MAX_COUNT, GMM_LAYERS_MAX_COUNT);
-    userMemory = _gna_malloc(modelSize);
-    //TODO:KJ: verify if memory is zeroed before use.
+    userMemorySize = modelCompiler.CalculateModelSize(requestedSize, XNN_LAYERS_MAX_COUNT, GMM_LAYERS_MAX_COUNT);
+    userMemory = _gna_malloc(userMemorySize);
+    memset(userMemory, 0, userMemorySize);
 
-    size_t internalSize = modelSize - requestedSize;
+    size_t internalSize = userMemorySize - requestedSize;
     *buffer = reinterpret_cast<uint8_t*>(userMemory) + internalSize;
 
     return requestedSize;
@@ -114,6 +114,7 @@ void Device::FreeMemory()
 {
     _gna_free(userMemory);
     userMemory = nullptr;
+    userMemorySize = 0;
 }
 
 void Device::ReleaseModel(gna_model_id modelId)
@@ -126,7 +127,7 @@ void Device::LoadModel(gna_model_id *modelId, const gna_model *raw_model)
     modelContainer.AllocateModel(modelId, raw_model);
 
     auto &model = modelContainer.GetModel(*modelId);
-    modelCompiler.CascadeCompile(model, accelerationDetector);
+    modelCompiler.CascadeCompile(model, userMemory, userMemorySize, accelerationDetector);
 }
 
 void Device::PropagateRequest(gna_request_cfg_id configId, acceleration accel, gna_request_id *requestId)

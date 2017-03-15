@@ -34,6 +34,8 @@ using namespace GNA;
 #define MAX_D0_STATE_PROBES 10
 #define WAIT_PERIOD			200		// in miliseconds
 
+WinHandle IoctlSender::h_;
+
 IoctlSender::IoctlSender()
 :evt_(CreateEvent(nullptr, false, false, nullptr))
 {
@@ -51,7 +53,7 @@ void IoctlSender::Open(const GUID& guid)
 
     SP_DEVICE_INTERFACE_DATA interfaceData;
     interfaceData.cbSize = sizeof(interfaceData);
-    for (LONG i = 0; 
+    for (LONG i = 0;
          SetupDiEnumDeviceInterfaces(hDeviceInfo, nullptr, &guid, i, &interfaceData);
          ++i)
     {
@@ -80,7 +82,7 @@ void IoctlSender::Open(const GUID& guid)
     h_.Set(CreateFile(deviceDetail->DevicePath,
         GENERIC_READ | GENERIC_WRITE,
         0,
-        nullptr, 
+        nullptr,
         CREATE_ALWAYS,
         FILE_ATTRIBUTE_NORMAL | FILE_FLAG_OVERLAPPED,
         nullptr));
@@ -102,9 +104,6 @@ status_t IoctlSender::IoctlSend(
     BOOL devOn = false;
     DWORD waitResult = WAIT_OBJECT_0;
     BOOL ioResult = true;
-    
-    overlapped_.hEvent = evt_;
-    bytesRead = 0;
 
     ioResult = DeviceIoControl(h_, code, inbuf, inlen, outbuf, outlen, &bytesRead, &overlapped_);
     DWORD lastError = GetLastError();
@@ -114,7 +113,7 @@ status_t IoctlSender::IoctlSend(
     if (ERROR_IO_PENDING == lastError && async)
         return GNA_SUCCESS;
 
-    return IoctlWait(&overlapped_, (DRV_RECOVERY_TIMEOUT + 15) * 1000); 
+    return IoctlWait(&overlapped_, (DRV_RECOVERY_TIMEOUT + 15) * 1000);
 }
 
 status_t IoctlSender::Submit(
@@ -153,7 +152,7 @@ status_t IoctlSender::IoctlWait(
     {
         error = GetLastError();
         if ((ERROR_IO_INCOMPLETE == error && 0 == timeout )||
-             WAIT_IO_COMPLETION  == error || 
+             WAIT_IO_COMPLETION  == error ||
              WAIT_TIMEOUT        == error)
         {
             return GNA_DEVICEBUSY; // not completed yet
@@ -174,7 +173,7 @@ DWORD IoctlSender::Cancel()
 {
     if (CancelIoEx(h_, &overlapped_))
     {
-        ZeroMemory(&overlapped_, sizeof(overlapped_));		
+        ZeroMemory(&overlapped_, sizeof(overlapped_));
         return true;
     }
     return false;

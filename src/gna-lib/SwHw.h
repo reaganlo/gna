@@ -93,9 +93,9 @@ public:
     io_handle_t      io_handle;
 
    /**
-    *  hardware request input data buffer, 
+    *  hardware request input data buffer,
     *   NOTE: pointer used for whole data buffer including:
-    *       - configuration data (hw_calc_in_t) at the beginning of the buffer 
+    *       - configuration data (hw_calc_in_t) at the beginning of the buffer
     *       - xnn layer descriptor (varying size) data (in xNN mode) after hw_calc_in_t
     */
     hw_calc_in_t*   inData;
@@ -113,7 +113,7 @@ public:
      * Fills SoftwareModel configuration data based on request parameters
      * @model     SoftwareModel configuration
      */
-    void Fill(SoftwareModel* model);
+    //void Fill(SoftwareModel* model);
 
     /**
      * Gets integer offset of address from the beginning of memory buffer

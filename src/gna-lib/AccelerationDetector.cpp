@@ -49,17 +49,17 @@ using namespace GNA;
 #define AVX2_MASK_ASM 000000020H  // mask for AVX2 feature flag, 5 bit
 
 /**
- * If _XCR_XFEATURE_ENABLED_MASK is not defined set it to 0 
- * intrin.h header file containing this flag is MS-specific 
+ * If _XCR_XFEATURE_ENABLED_MASK is not defined set it to 0
+ * intrin.h header file containing this flag is MS-specific
  * and not available on linux platforms
- */ 
+ */
 #ifndef _XCR_XFEATURE_ENABLED_MASK
 #define _XCR_XFEATURE_ENABLED_MASK 0
 #endif
 
 const map<GnaDeviceType, array<bool, GnaFeatureCount>>
 AccelerationDetector::gnaFeatureMap = {
-                        // Basic, CNN,   GMM,  GMMLayer, MultiBias, L1Dist, L2Dist, ComputerVision   
+                        // Basic, CNN,   GMM,  GMMLayer, MultiBias, L1Dist, L2Dist, ComputerVision
         { GNA_DEV_CNL,     {true, false, true, false,    false,     false,  false,  false} },
         { GNA_DEV_GLK,     {true, true,  true, false,    false,     false,  false,  false} },
         { GNA_DEV_LKF,     {true, true,  true, true,     true,      false,  false,  false} },
@@ -82,7 +82,7 @@ void AccelerationDetector::discoverHardwareExistence()
 {
     try
     {
-        Open(GUID_DEVINTERFACE_GNA_DRV);
+        IoctlSender::Open(GUID_DEVINTERFACE_GNA_DRV);
         accelerationModes[GNA_HW] = ACC_SUPPORTED;
     }
     catch (GnaException e)
@@ -105,6 +105,18 @@ void AccelerationDetector::discoverHardwareCapabilities()
     }
 }
 
+uint32_t AccelerationDetector::GetHardwareBufferSize()
+{
+    if (IsHardwarePresent())
+    {
+        return deviceCapabilities.hwInBuffSize;
+    }
+    else
+    {
+        throw GnaException(GNA_DEVNOTFOUND);
+    }
+}
+
 bool AccelerationDetector::IsHardwarePresent() const
 {
     return ACC_SUPPORTED == accelerationModes.at(GNA_HW);
@@ -115,12 +127,12 @@ bool AccelerationDetector::IsLayerSupported(intel_layer_kind_t layerType) const
     if (!IsHardwarePresent()) return false;
     const auto& deviceFeatureMap = gnaFeatureMap.at(deviceCapabilities.device_type);
     switch(layerType)
-    {    
+    {
         case INTEL_AFFINE:
             return deviceFeatureMap[BaseFunctionality];
         case INTEL_AFFINE_DIAGONAL:
             return deviceFeatureMap[BaseFunctionality];
-        case INTEL_AFFINE_MULTIBIAS: 
+        case INTEL_AFFINE_MULTIBIAS:
             return deviceFeatureMap[MultiBias];
         case INTEL_CONVOLUTIONAL:
             return deviceFeatureMap[BaseFunctionality];
@@ -130,14 +142,14 @@ bool AccelerationDetector::IsLayerSupported(intel_layer_kind_t layerType) const
             return deviceFeatureMap[BaseFunctionality];
         case INTEL_INTERLEAVE:
             return deviceFeatureMap[BaseFunctionality];
-        case INTEL_RECURRENT: 
+        case INTEL_RECURRENT:
             return deviceFeatureMap[BaseFunctionality];
-        case INTEL_GMM: 
+        case INTEL_GMM:
             return deviceFeatureMap[GMMLayer];
         default:
             return false;
     }
-    
+
 }
 
 void AccelerationDetector::DetectAccelerations()

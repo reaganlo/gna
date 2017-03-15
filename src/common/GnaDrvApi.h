@@ -61,7 +61,7 @@ typedef UINT8           __1B_RES;   // 1 B of reserved memory
 
 
 /**
- * Time in seconds after which driver will try to auto recover 
+ * Time in seconds after which driver will try to auto recover
  *  from hardware hang
  */
 #define     DRV_RECOVERY_TIMEOUT    60
@@ -120,7 +120,7 @@ static_assert(8 == sizeof(GNA_MM_IN), "Invalid size of GNA_MM_IN");
  * Size:    266 776 B
  */
 typedef struct _GNA_MM_OUT
-{   
+{
     UINT64              ptCount;    // Number of L1 pages allocated by the driver
     UINT64              l1PhysAddr[PT_DIR_SIZE+1];// physical addresses of allocated pages
     UINT32              l2PhysAddr[PT_SIZE];// physical addresses of page entries
@@ -137,7 +137,7 @@ static_assert(266776 == sizeof(GNA_MM_OUT), "Invalid size of GNA_MM_OUT");
 typedef enum _GnaDeviceType {
     GNA_DEV_CNL,
     GNA_DEV_GLK, // also ICL
-    GNA_DEV_LKF, 
+    GNA_DEV_LKF,
     GNA_DEV_TGL,
     GNA_DEV_UNKNOWN,
 } GnaDeviceType;
@@ -177,7 +177,7 @@ static_assert(4 == sizeof(CTRL_FLAGS), "Invalid size of CTRL_FLAGS");
 /**
  * CALCULATE request data with output information.
  * Size:    52 B
- * NOTE: always include performance results 
+ * NOTE: always include performance results
  * this allow to use PROFILED library with NON-PROFILED driver and vice versa
  */
 typedef struct _GNA_CALC_IN
@@ -187,7 +187,7 @@ typedef struct _GNA_CALC_IN
     perf_drv_t          drvPerf;    // driver level performance profiling results
     perf_hw_t           hwPerf;     // hardware level performance results
     status_t            status;     // status of scoring
-  
+
 } GNA_CALC_IN, *PGNA_CALC_IN;       // CALCULATE IOCTL - Input data
 
 static_assert(56 == sizeof(GNA_CALC_IN), "Invalid size of GNA_CALC_IN");

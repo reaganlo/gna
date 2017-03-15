@@ -118,7 +118,7 @@
     <ClInclude Include="$(SRC_DIR)\gna-lib\Device.h" />
     <ClInclude Include="$(SRC_DIR)\gna-lib\AcceleratorHw.h" />
     <ClInclude Include="$(SRC_DIR)\gna-lib\AcceleratorHwVerbose.h" />
-    <ClInclude Include="$(SRC_DIR)\gna-lib\HwLayer.h" />
+    <ClInclude Include="$(SRC_DIR)\gna-lib\HardwareLayer.h" />
     <ClInclude Include="$(SRC_DIR)\gna-lib\AcceleratorSw.h" />
     <ClInclude Include="$(SRC_DIR)\gna-lib\GnaConfig.h" />
     <ClInclude Include="$(SRC_DIR)\gna-lib\GnaTypes.h" />
@@ -145,7 +145,7 @@
     <ClCompile Include="$(SRC_DIR)\gna-lib\AcceleratorHw.cpp" />
     <ClCompile Include="$(SRC_DIR)\gna-lib\AcceleratorHwVerbose.cpp" />
     <ClCompile Include="$(SRC_DIR)\gna-lib\AcceleratorSw.cpp" />
-    <ClCompile Include="$(SRC_DIR)\gna-lib\HwLayer.cpp" />
+    <ClCompile Include="$(SRC_DIR)\gna-lib\HardwareLayer.cpp" />
     <ClCompile Include="$(SRC_DIR)\gna-lib\IoctlSender.cpp" />
     <ClCompile Include="$(SRC_DIR)\gna-lib\SoftwareModel.cpp" />
 	<ClCompile Include="$(SRC_DIR)\gna-lib\ActiveList.cpp" />

@@ -73,7 +73,7 @@ GNAScoreDebug(
  * Public Methods
  ******************************************************************************/
 
-VOID 
+VOID
 ScoreSubmitEvnt(
     WDFQUEUE            queue,
     WDFREQUEST          request,
@@ -87,7 +87,7 @@ ScoreSubmitEvnt(
 
     devCtx = DeviceGetContext(WdfIoQueueGetDevice(queue));
 
-    // verify length is sufficient 
+    // verify length is sufficient
     if (length < REQUEST_SIZE)
     {
         status = STATUS_BUFFER_TOO_SMALL;
@@ -138,7 +138,7 @@ ScoreComplete(
     _In_opt_    PAPP_CTX    appCancel)
 {
     TraceEntry(TLI, T_ENT);
-    
+
     WdfSpinLockAcquire(devCtx->app.appLock);
     // if canceling app req. do not complete if appCancel is not active app
     if (NULL != appCancel && appCancel != devCtx->app.app)
@@ -160,7 +160,7 @@ ScoreComplete(
     if (WDF_NO_HANDLE == request)
     {
         request = devCtx->req.req;
-    }    
+    }
     // reset request state
     devCtx->req.req         = WDF_NO_HANDLE;
     devCtx->req.data        = NULL;
@@ -247,13 +247,13 @@ InterruptDpcEvnt(
     EventWriteDriverApiBegin(NULL, __FUNCTION__);
 
     devCtx = DeviceGetContext((WDFDEVICE)dev);
-    
+
     // check active request to complete
     WdfSpinLockAcquire(devCtx->req.reqLock);
     if (WDF_NO_HANDLE == devCtx->req.req) status = STATUS_REQUEST_OUT_OF_SEQUENCE;
     WdfSpinLockRelease(devCtx->req.reqLock);
     if (!NT_SUCCESS(status))  // no active request?
-    {    
+    {
         TraceFailMsg(TLE, T_EXIT, "Active request not set.", status);
         EventWriteDriverApiEnd(NULL, __FUNCTION__);
         return; // nothing to do, unknown state
@@ -376,7 +376,7 @@ ScoreStart(
     PVOID       lyrDscBuffer= NULL; // layer descriptor buffer address to save config to
 
     TraceEntry(TLI, T_ENT);
- 
+
     profilerDTscStart(&devCtx->profiler.startHW);
     // get app context and verify if has mem mapped
     appCtx = GetFileContext(WdfRequestGetFileObject(request));
@@ -410,10 +410,7 @@ ScoreStart(
     isAppCurrent        = devCtx->app.app == appCtx;
     devCtx->app.app     = appCtx;
     WdfSpinLockRelease(devCtx->app.appLock);
-    if (FALSE == isAppCurrent)
-    {
-        HwMapMemory(&modelCtx->desc.va->mmu_config, &modelCtx->desc.va->mmu_config);
-    }
+
     // setup timer for recovery after DRV_RECOVERY_TIMEOUT seconds from now
     if (WdfTrue == WdfTimerStart(devCtx->timeout, -10000000 * DRV_RECOVERY_TIMEOUT))
     {
@@ -433,7 +430,7 @@ ScoreStart(
     profilerTscStart(&devCtx->profiler.scoreHW);
     Trace(TLV, T_QUE, "%!FUNC!: Scoring started, startHW time %llu", devCtx->profiler.startHW.passed);
     return status; // SUCCESS - request will be completed by interrupt
- 
+
 cleanup: // ERROR - complete request
     if (!NT_SUCCESS(status))
     {
@@ -468,9 +465,9 @@ ScoreFinalize(
     TraceEntry(TLI, T_ENT);
 
     profilerDTscStart(&devCtx->profiler.intProc);
-    // stop HW scoring profiler on completion note, when scoring is not completed 
+    // stop HW scoring profiler on completion note, when scoring is not completed
     // (breakpoint/error interrupt) profiler time is invalid
-    profilerTscStop(&devCtx->profiler.scoreHW); 
+    profilerTscStop(&devCtx->profiler.scoreHW);
     hwSts = HwGetIntStatus(devCtx, devCtx->hw.regs);
     // if no status change -> warning or unsupported int return, do not complete request
     if (GNA_DEVICEBUSY == hwSts) return STATUS_MORE_PROCESSING_REQUIRED;
@@ -528,7 +525,7 @@ ScoreDeferredUnmap(
     NTSTATUS status = STATUS_SUCCESS;
     WDFFILEOBJECT app   = NULL;     // file object of calling application
     PAPP_CTX      appCtx= NULL;     // file context of calling application
-    
+
     TraceEntry(TLI, T_ENT);
     // cancel all request from current application
     app = WdfRequestGetFileObject(unmapReq);

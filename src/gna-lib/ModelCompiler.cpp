@@ -28,15 +28,29 @@
 
 using namespace GNA;
 
-uint32_t ModelCompiler::CalculateModelSize(size_t requestedSize, uint16_t nLayers, uint16_t nGMMs)
+size_t ModelCompiler::CalculateModelSize(size_t requestedSize, uint16_t nLayers, uint16_t nGMMs)
 {
     size_t layerDescriptorsSize = nLayers * sizeof(XNN_LYR) + nGMMs * sizeof(GMM_CONFIG);
     return requestedSize + layerDescriptorsSize;
 }
 
-void ModelCompiler::CascadeCompile(CompiledModel &model, AccelerationDetector& detector)
+void ModelCompiler::CascadeCompile(CompiledModel &model, void *userMemory, size_t userMemorySize, AccelerationDetector& detector)
 {
     model.CompileSoftwareModel();
-    model.CompileHardwareModel();
+
+    // use default value for dry compile if device not present
+    uint32_t hwInBufferSize;
+    try
+    {
+        hwInBufferSize = detector.GetHardwareBufferSize();
+    }
+    catch (GnaException ex)
+    {
+        // device not found, use default value for dry compile
+        hwInBufferSize = 12;
+    }
+
+    model.CompileHardwareModel(userMemory, userMemorySize, hwInBufferSize);
+
     model.CreateSubmodels(detector);
 }

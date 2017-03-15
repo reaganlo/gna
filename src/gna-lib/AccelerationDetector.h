@@ -24,9 +24,9 @@
 */
 
 //*****************************************************************************
-// AccelerationDetector.h - declarations for acceleration modes dispatcher 
+// AccelerationDetector.h - declarations for acceleration modes dispatcher
 //                 (currently CPU instruction set extensions only)
-// Note:   CPU instruction set extensions detection code based on 
+// Note:   CPU instruction set extensions detection code based on
 //          "Intel® Architecture Instruction Set Extensions Programming reference"
 //
 
@@ -64,14 +64,14 @@ enum GnaFeature
  */
 class AccelerationDetector : protected IoctlSender
 {
-public:    
+public:
     /**
      * Creates empty kernel dispatcher
      */
     AccelerationDetector();
 
     /*
-     * Creates empty destructor 
+     * Creates empty destructor
      */
     ~AccelerationDetector() {}
 
@@ -92,6 +92,8 @@ public:
     void DetectAccelerations();
 
     bool IsLayerSupported(intel_layer_kind_t layerType) const;
+
+    uint32_t GetHardwareBufferSize();
 
 private:
     acceleration fastestAcceleration;

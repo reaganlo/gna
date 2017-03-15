@@ -70,6 +70,21 @@ AffineFunctionSingle2B::AffineFunctionSingle2B(const nn_func_affine *affine) :
 {
 }
 
+WeightMode AffineFunctionSingle2B::GetWeightMode()
+{
+    return GNA_WEIGHT_2B;
+}
+
+const void* AffineFunctionSingle2B::GetWeights()
+{
+    return static_cast<const void*>(Weights);
+}
+
+const void* AffineFunctionSingle2B::GetBiases()
+{
+    return static_cast<const void*>(Biases);
+}
+
 AffineFunctionSingle1B::AffineFunctionSingle1B(const nn_func_affine *affine) :
     AffineFunctionSingle(affine),
     Weight1B(affine->nBytesPerWeight, affine->pWeights),
@@ -77,8 +92,22 @@ AffineFunctionSingle1B::AffineFunctionSingle1B(const nn_func_affine *affine) :
 {
 }
 
+WeightMode AffineFunctionSingle1B::GetWeightMode()
+{
+    return GNA_WEIGHT_1B;
+}
 
-AffineFunctionMutli::AffineFunctionMutli(const nn_func_affine_multi *affine) :
+const void* AffineFunctionSingle1B::GetWeights()
+{
+    return static_cast<const void*>(Weights);
+}
+
+const void* AffineFunctionSingle1B::GetBiases()
+{
+    return static_cast<const void*>(Biases);
+}
+
+AffineFunctionMulti::AffineFunctionMulti(const nn_func_affine_multi *affine) :
     BiasSimple(sizeof(nn_bias_s), affine->pBiases),
     BiasVectorIndex(affine->biasVectorIndex),
     sourceAffineFunction(affine)
@@ -88,17 +117,47 @@ AffineFunctionMutli::AffineFunctionMutli(const nn_func_affine_multi *affine) :
 }
 
 AffineFunctionMulti2B::AffineFunctionMulti2B(const nn_func_affine_multi *affine) :
-    AffineFunctionMutli(affine),
-    Weight2B(affine->nBytesPerWeight, affine->pWeights)   
+    AffineFunctionMulti(affine),
+    Weight2B(affine->nBytesPerWeight, affine->pWeights)
 {
 }
 
+WeightMode AffineFunctionMulti2B::GetWeightMode()
+{
+    return GNA_WEIGHT_2B;
+}
+
+const void* AffineFunctionMulti2B::GetWeights()
+{
+    return static_cast<const void*>(Weights);
+}
+
+const void* AffineFunctionMulti2B::GetBiases()
+{
+    return static_cast<const void*>(Biases);
+}
+
 AffineFunctionMulti1B::AffineFunctionMulti1B(const nn_func_affine_multi *affine) :
-    AffineFunctionMutli(affine),
+    AffineFunctionMulti(affine),
     Weight1B(affine->nBytesPerWeight, affine->pWeights),
     WeightScaleFactors(affine->weightScaleFactors)
 {
     Expect::ValidBuffer(WeightScaleFactors);
+}
+
+WeightMode AffineFunctionMulti1B::GetWeightMode()
+{
+    return GNA_WEIGHT_1B;
+}
+
+const void* AffineFunctionMulti1B::GetWeights()
+{
+    return static_cast<const void*>(Weights);
+}
+
+const void* AffineFunctionMulti1B::GetBiases()
+{
+    return static_cast<const void*>(Biases);
 }
 
 ActivationFunction::ActivationFunction(const nn_func_pwl *pwl) :
@@ -113,4 +172,3 @@ ActivationFunction::ActivationFunction(const nn_func_pwl *pwl) :
         Expect::InRange(SegmentCount, SegmentCountMin, SegmentCountMax, XNN_ERR_PWL_SEGMENTS);
     }
 }
-

@@ -57,9 +57,9 @@ struct ConfigurationBuffer
 
 struct LayerConfiguration
 {
-    unique_ptr<ActiveList> ActiveList;
-    unique_ptr<ConfigurationBuffer> InputBuffer;
-    unique_ptr<ConfigurationBuffer> OutputBuffer;
+    std::unique_ptr<ActiveList> ActiveList;
+    std::unique_ptr<ConfigurationBuffer> InputBuffer;
+    std::unique_ptr<ConfigurationBuffer> OutputBuffer;
 };
 
 /*

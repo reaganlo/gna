@@ -61,27 +61,27 @@ public:
 
     void ValidateSession(gna_device_id deviceId) const;
 
-    /** 
+    /**
      ** Allocates memory for user buffers
-     ** 
+     **
      ** @requestedSize      (in)
-     ** 
+     **
      ** Returns number of bytes allocated
      */
     size_t AllocateMemory(size_t requestedSize, void **buffer);
 
     void FreeMemory();
 
-    /** 
+    /**
      ** Allocated and compiles raw model
-     ** 
+     **
      ** @intelNnet      (in)
      */
     void LoadModel(gna_model_id *modelId, const gna_model *model);
 
-    /** 
+    /**
      ** Deallocates model
-     ** 
+     **
      ** @modelId      (in)
      */
     void ReleaseModel(gna_model_id modelId);
@@ -95,15 +95,15 @@ public:
     /**
      ** Propagates request for execution
      *
-     * @modelId         (in)    
-     * @requestId       (in)    
+     * @modelId         (in)
+     * @requestId       (in)
      */
     void PropagateRequest(gna_request_cfg_id configId, acceleration accel, gna_request_id *requestId);
 
     /**
      ** Propagates request for execution
      *
-     * @requestId       (in)    
+     * @requestId       (in)
      */
     status_t WaitForRequest(gna_request_id requestId, gna_timeout milliseconds);
 
@@ -137,6 +137,7 @@ private:
     bool isGNAHardwarePresent = false;
 
     void* userMemory = nullptr;
+    size_t userMemorySize = 0;
 
     RequestHandler requestHandler;
     AcceleratorController acceleratorController;

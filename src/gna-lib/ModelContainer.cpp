@@ -40,10 +40,7 @@ void ModelContainer::AllocateModel(gna_model_id *modelId, const gna_model *rawMo
 
 void ModelContainer::DeallocateModel(gna_model_id modelId)
 {
-    auto modelPtr = models[modelId].release();
-    assert(models[modelId].get() == nullptr);
-
-    delete(modelPtr);
+    models[modelId].reset();
 }
 
 CompiledModel& ModelContainer::GetModel(gna_model_id modelId)

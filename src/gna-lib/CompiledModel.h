@@ -33,7 +33,7 @@
 
 #include <vector>
 
-namespace GNA 
+namespace GNA
 {
 
 class CompiledModel
@@ -53,15 +53,17 @@ public:
 
     SoftwareModel& GetSoftwareModel() const;
 
+    gna_model_id GetModelId() const;
+
     void CompileSoftwareModel();
 
-    void CompileHardwareModel();
+    void CompileHardwareModel(void *userMemory, size_t userMemorySize, uint32_t hwInBufferSize);
 
     void CreateSubmodels(AccelerationDetector& detector);
 
     void ClearSubmodels();
 
-    decltype(auto) CompiledModel::GetSubmodels() const 
+    decltype(auto) CompiledModel::GetSubmodels() const
     {
         return (submodels);
     }
@@ -75,8 +77,8 @@ private:
     uint32_t bufferSize = 0;
     const gna_model *userModel;
 
-    std::unique_ptr<HardwareModel> hwModel;
-    std::unique_ptr<SoftwareModel> swModel;
+    std::unique_ptr<HardwareModel> hardwareModel;
+    std::unique_ptr<SoftwareModel> softwareModel;
 
     std::vector<std::unique_ptr<SubModel>> submodels;
     std::vector<std::unique_ptr<RequestConfiguration>> configurations;

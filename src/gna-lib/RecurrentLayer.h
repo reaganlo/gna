@@ -34,7 +34,7 @@
 //class RnnLayer : public BaseLayerExt
 //{
 //public:
-//    friend class HwLayerRnn;
+//    friend class HardwareLayerRnn;
 //    void convert() override;
 //
 //    RnnLayer() : BaseLayerExt(NN_RNN), rnn(nullptr) {};

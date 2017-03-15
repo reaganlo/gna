@@ -29,15 +29,33 @@
 
 using namespace GNA;
 
-void HardwareModel::mapMemory(gna_model_id modelId, void * buffer, size_t bufferSize)
+HardwareModel::HardwareModel(gna_model_id modId, const SoftwareModel& model, void *userMemory, size_t userMemorySize, uint32_t hwInBuffSize)
+    : modelId(modId),
+      hwInBufferSize(hwInBuffSize),
+      hwDescriptor(userMemory)
+{
+    mapMemory(userMemory, userMemorySize);
+    build(model.Layers);
+}
+
+HardwareModel::~HardwareModel()
+{
+    unmapMemory();
+}
+
+void HardwareModel::mapMemory(void *buffer, size_t bufferSize)
 {
     if (memoryMapped)
         throw GnaException(GNA_ERR_UNKNOWN);
 
+    // write model id in user buffer
+    // driver will retrieve it
+    *reinterpret_cast<uint64_t*>(buffer) = static_cast<uint64_t>(modelId);
+
     status_t status = GNA_SUCCESS;
     status = IoctlSend(
         GNA_IOCTL_MEM_MAP,
-        nullptr, 
+        nullptr,
         0,
         buffer,
         bufferSize,
@@ -49,13 +67,27 @@ void HardwareModel::mapMemory(gna_model_id modelId, void * buffer, size_t buffer
     memoryMapped = true;
 }
 
-void HardwareModel::unmapMemory(gna_model_id modelId)
+void HardwareModel::unmapMemory()
 {
+    uint64_t mId = static_cast<uint64_t>(modelId);
     status_t status = GNA_SUCCESS;
-    status = IoctlSend(GNA_IOCTL_MEM_UNMAP, &modelId, sizeof(modelId), nullptr, 0);
+    status = IoctlSend(GNA_IOCTL_MEM_UNMAP, &mId, sizeof(mId), nullptr, 0);
 
     if (GNA_SUCCESS != status)
         throw GnaException(status);
 
     memoryMapped = false;
+}
+
+void HardwareModel::build(const std::vector<std::unique_ptr<Layer>>& layers)
+{
+    auto layerIndex = 0ui32;
+    for (auto& layer : layers)
+    {
+        XNN_LYR *layerDescriptor = reinterpret_cast<XNN_LYR*>(
+            reinterpret_cast<uintptr_t>(hwDescriptor) + (layerIndex * sizeof(XNN_LYR)));
+
+        Layers.push_back(HardwareLayer::Create(*layer, layerDescriptor, hwDescriptor, hwInBufferSize));
+        ++layerIndex;
+    }
 }

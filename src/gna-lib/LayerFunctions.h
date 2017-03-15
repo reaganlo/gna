@@ -85,6 +85,12 @@ class AffineFunctionSingle
 public:
     ~AffineFunctionSingle() = default;
 
+    virtual WeightMode GetWeightMode() = 0;
+
+    virtual const void* GetWeights() = 0;
+
+    virtual const void* GetBiases() = 0;
+
 protected:
     AffineFunctionSingle(const nn_func_affine *affine);
 
@@ -97,6 +103,12 @@ class AffineFunctionSingle2B : public AffineFunctionSingle, public Weight2B, pub
 public:
     AffineFunctionSingle2B(const nn_func_affine *affine);
     ~AffineFunctionSingle2B() = default;
+
+    virtual WeightMode GetWeightMode() override;
+
+    virtual const void* GetWeights() override;
+
+    virtual const void* GetBiases() override;
 };
 
 // 1B Weights AffineFunction
@@ -105,39 +117,62 @@ class AffineFunctionSingle1B : public AffineFunctionSingle, public Weight1B, pub
 public:
     AffineFunctionSingle1B(const nn_func_affine *affine);
     ~AffineFunctionSingle1B() = default;
+
+    virtual WeightMode GetWeightMode() override;
+
+    virtual const void* GetWeights() override;
+
+    virtual const void* GetBiases() override;
 };
 
 
-class AffineFunctionMutli : public BiasSimple
+class AffineFunctionMulti : public BiasSimple
 {
 public:
-    ~AffineFunctionMutli() = default;
+    ~AffineFunctionMulti() = default;
 
     const uint32_t BiasVectorIndex;
 
 protected:
-    AffineFunctionMutli(const nn_func_affine_multi *affine);
+    AffineFunctionMulti(const nn_func_affine_multi *affine);
+
+    virtual WeightMode GetWeightMode() = 0;
+
+    virtual const void* GetWeights() = 0;
+
+    virtual const void* GetBiases() = 0;
 
     const nn_func_affine_multi *sourceAffineFunction; // TODO:KJ: remove when SW will use SoftwareModel classes only
 };
 
 // 2B Weights AffineFunction for Multi Bias
-class AffineFunctionMulti2B : public AffineFunctionMutli, public Weight2B
+class AffineFunctionMulti2B : public AffineFunctionMulti, public Weight2B
 {
 public:
     AffineFunctionMulti2B(const nn_func_affine_multi *affine);
     ~AffineFunctionMulti2B() = default;
 
+    virtual WeightMode GetWeightMode() override;
+
+    virtual const void* GetWeights() override;
+
+    virtual const void* GetBiases() override;
 };
 
 // 1B Weights AffineFunction for Multi Bias
-class AffineFunctionMulti1B : public AffineFunctionMutli, public Weight1B
+class AffineFunctionMulti1B : public AffineFunctionMulti, public Weight1B
 {
 public:
     AffineFunctionMulti1B(const nn_func_affine_multi *affine);
     ~AffineFunctionMulti1B() = default;
 
     const nn_bias_c *WeightScaleFactors;
+
+    virtual WeightMode GetWeightMode() override;
+
+    virtual const void* GetWeights() override;
+
+    virtual const void* GetBiases() override;
 };
 
 

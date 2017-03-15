@@ -26,7 +26,10 @@
 #pragma once
 
 #include "common.h"
+#include "GnaException.h"
+#include "HardwareLayer.h"
 #include "IoctlSender.h"
+#include "SoftwareModel.h"
 
 namespace GNA
 {
@@ -35,16 +38,28 @@ namespace GNA
 class HardwareModel : protected IoctlSender
 {
 public:
-    HardwareModel() {}
+    HardwareModel(gna_model_id modId, const SoftwareModel& model, void *userMemory, size_t userMemorySize, uint32_t hwInBuffSize);
+
+    ~HardwareModel();
+
+    std::vector<std::unique_ptr<const HardwareLayer>> Layers;
+
 private:
-    void * hwDescriptor = nullptr;
+    void build(const std::vector<std::unique_ptr<Layer>>& layers);
+
+    void mapMemory(void * buffer, size_t bufferSize);
+    void unmapMemory();
+
+    // needed for driver communication
+    gna_model_id modelId;
+
+    void * hwDescriptor;
     size_t hwDescriptorSize = 0;
+    uint32_t hwInBufferSize;
 
     uint16_t gmmConfigsCount = 0;
 
     bool memoryMapped = false;
-    void mapMemory(gna_model_id modelId, void * buffer, size_t bufferSize);
-    void unmapMemory(gna_model_id modelId);
 };
 
 }

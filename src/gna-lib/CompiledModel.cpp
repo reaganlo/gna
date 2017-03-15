@@ -34,12 +34,12 @@ using std::make_unique;
 
 void CompiledModel::CompileSoftwareModel()
 {
-    swModel = make_unique<SoftwareModel>(userModel);
+    softwareModel = make_unique<SoftwareModel>(userModel);
 }
 
-void CompiledModel::CompileHardwareModel()
+void CompiledModel::CompileHardwareModel(void *userMemory, size_t userMemorySize, uint32_t hwInBufferSize)
 {
-    hwModel = make_unique<HardwareModel>();
+    hardwareModel = make_unique<HardwareModel>(modelId, *softwareModel, userMemory, userMemorySize, hwInBufferSize);
 }
 
 void CompiledModel::CreateSubmodels(AccelerationDetector& dispatcher)
@@ -75,13 +75,18 @@ uint16_t CompiledModel::GetLayerCount() const
 {
     return layerCount;
 }
-    
+
 SoftwareModel& CompiledModel::GetSoftwareModel() const
 {
-    return *swModel.get();
+    return *softwareModel.get();
 }
 
 HardwareModel& CompiledModel:: GetHardwareModel() const
 {
-    return *hwModel.get();
+    return *hardwareModel.get();
+}
+
+gna_model_id CompiledModel::GetModelId() const
+{
+    return modelId;
 }

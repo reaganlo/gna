@@ -38,6 +38,33 @@ status_t AcceleratorHw::Score(
           RequestProfiler *profiler,
           KernelBuffers *buffers)
 {
+    UNREFERENCED_PARAMETER(buffers);
+    auto status = GNA_SUCCESS;
+
+    io_handle_t ioHandle;
+    memset(&ioHandle, 0, sizeof(ioHandle));
+    ioHandle.hEvent = CreateEvent(nullptr, false, false, nullptr);
+
+    GNA_CALC_IN calculationData;
+    auto found = std::find_if(
+        requestConfiguration.LayerConfigurations.cbegin(),
+        requestConfiguration.LayerConfigurations.cend(),
+        [](const auto& iter) { return nullptr != iter.second->ActiveList; });
+
+    calculationData.ctrlFlags.activeListOn = found != requestConfiguration.LayerConfigurations.cend();
+    calculationData.ctrlFlags.gnaMode = 1; // xnn by default
+    calculationData.ctrlFlags.layerCount = model.GetLayerCount(); // xnn by default
+    calculationData.ctrlFlags.layerNo = 0;
+    calculationData.modelId = model.GetModelId();
+
+    status = Submit(&calculationData, sizeof(calculationData), &profiler->ioctlSubmit, &ioHandle);
+    ERRCHECKR(GNA_SUCCESS != status, status);
+
+    profilerDTscStart(&profiler->ioctlWaitOn);
+    status = IoctlWait(&ioHandle, GNA_REQUEST_TIMEOUT_MAX);
+    ERRCHECKR(GNA_SUCCESS != status, status);
+    profilerDTscStop(&profiler->ioctlWaitOn);
+
     return GNA_SUCCESS;
 }
 
@@ -66,7 +93,7 @@ status_t AcceleratorHw::Score(
 //    //    status = hw->Fill(r->gmm);
 //    //}
 //    // TODO: use GnaException
-//    
+//
 //    SetRegister("setregister0.txt");
 //    SetDescriptor("setdescriptor.txt", hw->xnnLayerDescriptors, hw->inData);
 //    SetConfig("setconfig.txt", hw->inData);

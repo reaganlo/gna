@@ -97,7 +97,7 @@ public:
 class Layer
 {
 public:
-    friend class HwLayer;
+    friend class HardwareLayer;
 
     static unique_ptr<Layer> Create(const nn_layer *layer, const uint32_t inputVectorCount);
 

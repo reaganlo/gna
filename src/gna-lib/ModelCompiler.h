@@ -38,9 +38,9 @@ class ModelCompiler
 public:
     ModelCompiler() {}
 
-    uint32_t CalculateModelSize(size_t requestedSize, uint16_t nLayers, uint16_t nGMMs);
+    size_t CalculateModelSize(size_t requestedSize, uint16_t nLayers, uint16_t nGMMs);
 
-    void CascadeCompile(CompiledModel& model, AccelerationDetector& detector);
+    void CascadeCompile(CompiledModel& model, void *userMemory, size_t userMemorySize, AccelerationDetector& detector);
 };
 
 }
