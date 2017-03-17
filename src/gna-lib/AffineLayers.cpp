@@ -37,15 +37,7 @@ AffineLayer::AffineLayer(const nn_layer *layer, const uint32_t inputVectorCount)
 {
     Output.Validate(Activation.Enabled, layer->nBytesPerOutput);
 
-    auto affine = &sourceAffineLayer->affine;
-    if (GNA_WEIGHT_2B == affine->nBytesPerWeight)
-    {
-        Affine = make_unique<AffineFunctionSingle2B>(affine);
-    }
-    else
-    {
-        Affine = make_unique<AffineFunctionSingle1B>(affine);
-    }
+    Affine = AffineFunction::Create(&sourceAffineLayer->affine);
 };
 
 AffineMultiBiasLayer::AffineMultiBiasLayer(const nn_layer *layer, const uint32_t inputVectorCount) :
@@ -55,15 +47,8 @@ AffineMultiBiasLayer::AffineMultiBiasLayer(const nn_layer *layer, const uint32_t
 {
     Output.Validate(Activation.Enabled, layer->nBytesPerOutput);
 
-    auto affine = &sourceAffineLayer->affine;
-    if (GNA_WEIGHT_2B == affine->nBytesPerWeight)
-    {
-        Affine = make_unique<AffineFunctionMulti2B>(affine);
-    }
-    else
-    {
-        Affine = make_unique<AffineFunctionMulti1B>(affine);
-    }
+    Affine = AffineFunction::Create(&sourceAffineLayer->affine);
+
     Expect::True(Affine->BiasVectorIndex < Input.VectorCount, XNN_ERR_BIAS_INDEX);
 };
 

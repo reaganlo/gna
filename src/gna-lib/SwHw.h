@@ -122,7 +122,7 @@ public:
      * @buffer    (in) pointer to memory buffer start
      * @return  integer address offset
      */
-    inline static uint32_t getAddrOffset(
+    inline static const uint32_t getAddrOffset(
         const void* address,
         const void* buffer)
     {

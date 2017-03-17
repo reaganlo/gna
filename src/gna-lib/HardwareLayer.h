@@ -37,48 +37,29 @@
 #include "SwHw.h"
 
 using std::map;
+using std::unique_ptr;
 
 namespace GNA
 {
 
-/** CNN maximum number of filters per iteration */
-#define CNN_N_FLT_ITER_MAX          16
+    // TODO: all converters probably should be static classes as only output is layer descriptor that is stored in hardware model
+    // the only exception is active list converter that should produce some hardware consumable data which is then passed to driver and placed into actual descriptor
 
-/**
-* Auxiliary Hardware Layer descriptor converter
-*/
+// CNN maximum number of filters per iteration
+//const uint32_t CNN_N_FLT_ITER_MAX = 16;
+
+// Hardware Layer descriptor converter
 class HardwareLayer
 {
 public:
     static const map<const nn_layer_kind, const NN_OP_TYPE> OperationsMap;
 
-    /**
-    * Creates HardwareLayer converter based on layer kind
-    *
-    * @type        (in)    API layer kind
-    * @return      layer specific converter instance
-    */
-    static std::unique_ptr<HardwareLayer> Create(const Layer& softwareLayer, XNN_LYR *layerDescriptor, void *descriptorBuffer, uint32_t hwInBufferSize);
+    static unique_ptr<HardwareLayer> Create(const Layer& softwareLayer, XNN_LYR *layerDescriptor, void *descriptorBuffer, uint32_t hwInBufferSize);
 
-    /**
-    * Empty virtual destructor enables derived classes destructor calls
-    */
-    virtual ~HardwareLayer() {};
+    virtual ~HardwareLayer() = default;
 
 protected:
-    const Layer&        softwareLayer;
-    XNN_LYR*            layerDescriptor;    // single layer descriptor
-    void*               descriptorBuffer;   // hardware descriptor buffer
-
-    /**
-    * Number of data elements that may be stored in hw with 12KB buffer
-    */
-    const static uint32_t nBuffElems12K[8];
-
-    /**
-    * Number of data elements that may be stored in hw with 24KB buffer
-    */
-    const static uint32_t nBuffElems24K[8];
+    HardwareLayer(const Layer& swLayer, XNN_LYR *layerDesc, void *descBuffer, uint32_t hwInBufferSize);
 
     /**
     * Converts API layer active list to hardware layer and stores to hwLyr
@@ -88,147 +69,107 @@ protected:
     */
     void convertAL(ActiveList &activeList);
 
-    /**
-    * Effective number of data elements that may be stored in hw
-    */
-    const uint32_t* nBuffElems;
-
-    virtual void convert() = 0;
-
-    /**
-    * Validates layer parameters
-    */
     virtual void validate() = 0;
 
-    /**
-    * Stores hardware layer parameters
-    */
     virtual void save();
 
+    inline const uint32_t getOffset(const void* address) const
+    {
+        return Hw::getAddrOffset(address, descriptorBuffer);
+    }
+
+    const Layer&        softwareLayer;
+    XNN_LYR*            layerDescriptor;    // single layer descriptor
+    void*               descriptorBuffer;   // hardware descriptor buffer
+
+    // Effective number of data elements that may be stored in hw
+    const uint32_t* nBuffElems;
+
+private:
+    // TODO: refactor ->put into map<bufferSize, elements>
     /**
-    * Creates uninitialized converter
+    * Number of data elements that may be stored in hw with 12KB buffer
     */
-    HardwareLayer(const Layer& swLayer, XNN_LYR *layerDesc, void *descBuffer, uint32_t hwInBufferSize);
+    const static uint32_t nBuffElems12K[8];
+
+    /**
+    * Number of data elements that may be stored in hw with 24KB buffer
+    */
+    const static uint32_t nBuffElems24K[8];
 };
 
-/**
-* Extended Hardware Layer descriptor converter
-*/
+// Extended Hardware Layer descriptor converter
 class HardwareLayerExt : public HardwareLayer
 {
 public:
-    ~HardwareLayerExt() {};
-
-    /**
-     * Deleted functions to prevent from being defined or called
-     * @see: https://msdn.microsoft.com/en-us/library/dn457344.aspx
-     */
+    ~HardwareLayerExt() = default;
     HardwareLayerExt(const HardwareLayerExt &) = delete;
     HardwareLayerExt& operator=(const HardwareLayerExt&) = delete;
 
 protected:
-    HardwareLayerExt(const Layer& swLayer, XNN_LYR *layerDesc, void *descBuffer, uint32_t hwInBuffSize);
-
-    /**
-    * Calculates number of iterations and elements in last iteration
-    *
-    * @nGr #groups for calculation (can be different than network grouping)
-    */
-    void calcIterations(uint32_t nGr);
+    HardwareLayerExt(const Layer& swLayer, XNN_LYR *layerDesc, void *descBuffer, uint32_t hwInBufferSize,
+        uint32_t effectiveGrouping);
 
     void validate() override;
-
     void save() override;
 
-    uint32_t nGr;    // grouping for iteration calculation
+    const uint32_t iterationGrouping; // grouping for iteration calculation
+    const uint32_t bufferElementCount;
     uint32_t nIters; // number of iterations = data chunks/parts
     uint32_t nLast;  // number of elements in last iteration
+
+    AffineFunction* affine = nullptr;
+    ActivationFunction* activation = nullptr;
 };
 
-/**
-* Affine, Diagonal and transpose layers Layer descriptor converter
-*/
+// Affine, Diagonal and transpose layers Layer descriptor converter
 class HardwareLayerAffDiagTrans : public HardwareLayerExt
 {
 public:
     HardwareLayerAffDiagTrans(const Layer& swLayer, XNN_LYR *layerDesc, void *descBuffer, uint32_t hwInBuffSize);
 
-    virtual ~HardwareLayerAffDiagTrans() {};
-
-protected:
-    void convert() override final;
-
-private:
-    const AffineLayer& affineLayer;
+    virtual ~HardwareLayerAffDiagTrans() = default;
 };
 
-/**
-* Hardware Copy Layer descriptor converter
-*/
+// Hardware Copy Layer descriptor converter
 class HardwareLayerCopy : public HardwareLayer
 {
 public:
     HardwareLayerCopy(const Layer& swLayer, XNN_LYR *layerDesc, void *descBuffer, uint32_t hwInBuffSize);
-
-    /**
-     * Deleted functions to prevent from being defined or called
-     * @see: https://msdn.microsoft.com/en-us/library/dn457344.aspx
-     */
     HardwareLayerCopy(const HardwareLayerCopy &) = delete;
     HardwareLayerCopy& operator=(const HardwareLayerCopy&) = delete;
-
-    virtual ~HardwareLayerCopy() {};
+    virtual ~HardwareLayerCopy() = default;
 
 protected:
-    void convert() override final;
-
     void validate() override final;
+    void save() override final;
+};
 
+/**
+* Recurrent Layer descriptor converter
+*/
+class HardwareLayerRnn : public HardwareLayerExt
+{
+public:
+    HardwareLayerRnn(const Layer& swLayer, XNN_LYR *layerDesc, void *descBuffer, uint32_t hwInBuffSize);
+    HardwareLayerRnn(const HardwareLayerRnn &) = delete;
+    HardwareLayerRnn& operator=(const HardwareLayerRnn&) = delete;
+    virtual ~HardwareLayerRnn() = default;
+
+    // calculates feedback buffer offset for per RequestConfiguration output buffer
+    const uint32_t calculateFeedbackBuffer(const void * const outputBuffer) const;
+
+protected:
+    void convert();
+    void validate() override final;
     void save() override final;
 
 private:
-    const CopyLayer& copyLayer;
+    uint32_t        nFbIters;       // number of iterations for feedback data
+    uint32_t        nFbFirst;       // number of el. in first feedback data iter.
+    uint32_t        nFbLast;        // number of el. in last feedback data iter.
 };
 
-///**
-//* Recurrent Layer descriptor converter
-//*/
-//class HardwareLayerRnn : public HardwareLayerExt
-//{
-//public:
-//    void convert() override final;
-//
-//    HardwareLayerRnn() : HardwareLayerExt(),
-//        nFbIters(0), nFbFirst(0), nFbLast(0), rnnLayer(nullptr) {};
-//
-//    /**
-//     * Deleted functions to prevent from being defined or called
-//     * @see: https://msdn.microsoft.com/en-us/library/dn457344.aspx
-//     */
-//    HardwareLayerRnn(const HardwareLayerRnn &) = delete;
-//    HardwareLayerRnn& operator=(const HardwareLayerRnn&) = delete;
-//
-//    void init(
-//        nn_layer*		lyr,
-//        XNN_LYR*        hwLyr,
-//        const void*     buffer,
-//        uint32_t        hwInBuffSize,
-//        Layer*		bLayerIn) override;
-//
-//    virtual ~HardwareLayerRnn() {};
-//
-//protected:
-//    void validate() override final;
-//
-//    void save() override final;
-//
-//private:
-//    uint32_t        nFbIters;       // number of iterations for feedback data
-//    uint32_t        nFbFirst;       // number of el. in first feedback data iter.
-//    uint32_t        nFbLast;        // number of el. in last feedback data iter.
-//    RnnLayer*       rnnLayer;
-//};
-//
 ///**
 //* Convolutional Layer descriptor converter
 //*/

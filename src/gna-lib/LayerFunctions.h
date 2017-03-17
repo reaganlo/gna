@@ -78,18 +78,32 @@ public:
     const nn_bias_c *Biases;
 };
 
+class AffineFunctionSingle;
+class AffineFunctionSingle1B;
+class AffineFunctionSingle2B;
+class AffineFunctionMulti;
+class AffineFunctionMulti1B;
+class AffineFunctionMulti2B;
 
-// 2B Weights AffineFunction
-class AffineFunctionSingle
+// AffineFunction interface
+struct AffineFunction
 {
 public:
-    ~AffineFunctionSingle() = default;
+    static unique_ptr<AffineFunctionSingle> Create(const intel_affine_func_t * affine);
+    static unique_ptr<AffineFunctionMulti> Create(const intel_affine_multibias_func_t * affine);
 
     virtual WeightMode GetWeightMode() = 0;
 
     virtual const void* GetWeights() = 0;
 
     virtual const void* GetBiases() = 0;
+};
+
+// 2B Weights AffineFunction
+class AffineFunctionSingle : public AffineFunction
+{
+public:
+    ~AffineFunctionSingle() = default;
 
 protected:
     AffineFunctionSingle(const nn_func_affine *affine);
@@ -126,7 +140,7 @@ public:
 };
 
 
-class AffineFunctionMulti : public BiasSimple
+class AffineFunctionMulti : public BiasSimple, public AffineFunction
 {
 public:
     ~AffineFunctionMulti() = default;
@@ -135,12 +149,6 @@ public:
 
 protected:
     AffineFunctionMulti(const nn_func_affine_multi *affine);
-
-    virtual WeightMode GetWeightMode() = 0;
-
-    virtual const void* GetWeights() = 0;
-
-    virtual const void* GetBiases() = 0;
 
     const nn_func_affine_multi *sourceAffineFunction; // TODO:KJ: remove when SW will use SoftwareModel classes only
 };
@@ -174,7 +182,6 @@ public:
 
     virtual const void* GetBiases() override;
 };
-
 
 class ActivationFunction
 {

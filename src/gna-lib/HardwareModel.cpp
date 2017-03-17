@@ -29,10 +29,11 @@
 
 using namespace GNA;
 
-HardwareModel::HardwareModel(gna_model_id modId, const SoftwareModel& model, void *userMemory, size_t userMemorySize, uint32_t hwInBuffSize)
-    : modelId(modId),
-      hwInBufferSize(hwInBuffSize),
-      hwDescriptor(userMemory)
+HardwareModel::HardwareModel(gna_model_id modId, const SoftwareModel& model, void *userMemory,
+    size_t userMemorySize, uint32_t hwInBuffSize) :
+    modelId(modId),
+    hwInBufferSize(hwInBuffSize),
+    hwDescriptor(userMemory)
 {
     mapMemory(userMemory, userMemorySize);
     build(model.Layers);

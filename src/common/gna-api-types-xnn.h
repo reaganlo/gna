@@ -153,7 +153,8 @@ typedef struct _recurrent_layer_t
 {
     intel_affine_func_t affine;     // Affine function details.
     intel_pwl_func_t pwl;           // Activation function details.
-    void* pFeedbackBuffer;          // Feedback input buffer. Size same as in the output buffer.
+    uint32_t feedbackFrameDelay;    // Feedback input Delay in term of number of frames (feature vectors) in request.
+    void* pFeedbackBuffer;// TODO: remove when kernels use new layers
 
 } intel_recurrent_layer_t;
 

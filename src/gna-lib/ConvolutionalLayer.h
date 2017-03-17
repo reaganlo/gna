@@ -34,9 +34,6 @@
 //class CnnLayer : public BaseLayerExt
 //{
 //public:
-//    // CNN maximum number of filters per iteration
-//    const uint32_t CNN_N_FLT_ITER_MAX = 16;
-//
 //    friend class HardwareLayerCnn;
 //    void convert() override;
 //

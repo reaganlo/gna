@@ -114,10 +114,20 @@ status_t AcceleratorSw::Score(
             {
                 auto layerConfiguration = found->second.get();
                 if (layerConfiguration->InputBuffer)
+                {
                     sourceLayer->pInputs = layerConfiguration->InputBuffer->address;
+                }
 
                 if (layerConfiguration->OutputBuffer)
+                {
                     sourceLayer->pOutputs = layerConfiguration->OutputBuffer->address;
+                    if (INTEL_RECURRENT == layer->Config.Kind)
+                    {
+                        auto rnn = static_cast<RnnLayer*>(layer.get());
+                        rnn->SetFeedbackBuffer(layerConfiguration->OutputBuffer->address);
+                        // TODO: move to XnnKernel when kernels are refactored
+                    }
+                }
 
                 if (layerConfiguration->ActiveList
                     && layerConfiguration->ActiveList->Enabled)

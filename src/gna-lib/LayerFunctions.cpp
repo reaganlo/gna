@@ -56,6 +56,30 @@ BiasCompound::BiasCompound(uint32_t size, const void *biases) :
     Expect::True(sizeof(nn_bias_c) == size, XNN_ERR_BIAS_BYTES);
 }
 
+unique_ptr<AffineFunctionSingle> AffineFunction::Create(const intel_affine_func_t * affine)
+{
+    if (GNA_WEIGHT_2B == affine->nBytesPerWeight)
+    {
+        return make_unique<AffineFunctionSingle2B>(affine);
+    }
+    else
+    {
+        return make_unique<AffineFunctionSingle1B>(affine);
+    }
+}
+
+unique_ptr<AffineFunctionMulti> AffineFunction::Create(const intel_affine_multibias_func_t * affine)
+{
+    if (GNA_WEIGHT_2B == affine->nBytesPerWeight)
+    {
+        return make_unique<AffineFunctionMulti2B>(affine);
+    }
+    else
+    {
+        return make_unique<AffineFunctionMulti1B>(affine);
+    }
+}
+
 
 AffineFunctionSingle::AffineFunctionSingle(const nn_func_affine * affine) :
     sourceAffineFunction(static_cast<const nn_func_affine *>(affine))
