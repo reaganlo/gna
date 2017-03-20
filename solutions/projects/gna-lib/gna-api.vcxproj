@@ -133,6 +133,7 @@
     <ClInclude Include="$(SRC_DIR)\gna-lib\kernels\XnnKernelApi.h" />
     <ClInclude Include="$(SRC_DIR)\gna-lib\common.h" />
     <ClInclude Include="$(SRC_DIR)\gna-lib\AccelerationDetector.h" />
+	<ClInclude Include="$(SRC_DIR)\gna-lib\Memory.h" />
     <ClCompile Include="$(SRC_DIR)\common\profiler.c" />
     <ClCompile Include="$(SRC_DIR)\gna-lib\CompiledModel.cpp" />
     <ClCompile Include="$(SRC_DIR)\gna-lib\SubModel.cpp" />
@@ -166,6 +167,7 @@
 	<ClCompile Include="$(SRC_DIR)\gna-lib\AffineLayers.cpp" />
 	<ClInclude Include="$(SRC_DIR)\gna-lib\ConvolutionalLayer.h" />
 	<ClCompile Include="$(SRC_DIR)\gna-lib\ConvolutionalLayer.cpp" />
+	<ClCompile Include="$(SRC_DIR)\gna-lib\Memory.cpp" />
     <ResourceCompile Include="$(SRC_DIR)\common\version.rc" />
   </ItemGroup>
   <ItemGroup>

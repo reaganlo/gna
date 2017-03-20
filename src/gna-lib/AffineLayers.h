@@ -60,8 +60,6 @@ private:
 class AffineDiagonalLayer : public AffineLayer
 {
 public:
- //   friend class HardwareLayerAffDiag;
-
     AffineDiagonalLayer(const nn_layer *layer, const uint32_t inputVectorCount);
     virtual ~AffineDiagonalLayer()  = default;
 };

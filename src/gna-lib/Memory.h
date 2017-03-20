@@ -26,25 +26,38 @@
 #pragma once
 
 #include "common.h"
-#include "CompiledModel.h"
 
 namespace GNA
 {
 
-/* ModelCompiler is a processing static class that should not own any resources
-*/
-class ModelCompiler
+class Memory // TODO: consider using smart pointer
 {
 public:
-    ModelCompiler() {}
+    Memory() = default;
 
-    static const size_t CalculateModelSize(const size_t requestedSize, const uint16_t layerCount,
-        const uint16_t gmmCount);
+    // just makes object from arguments
+    Memory(void * buffer, const size_t size);
 
-    static const size_t CalculateInternalModelSize(const uint16_t layerCount,
-        const uint16_t gmmCount);
+    // allocates and zeros memory
+    Memory(const size_t size);
 
-    void CascadeCompile(CompiledModel& model, const Memory& memory, const AccelerationDetector& detector);
+    ~Memory();
+
+    void Free();
+
+    size_t GetSize() const
+    {
+        return Size;
+    }
+
+    void * const GetBuffer() const
+    {
+        return Buffer;
+    }
+
+private:
+    void * Buffer = nullptr;
+    size_t Size = 0;
 };
 
 }

@@ -34,7 +34,6 @@
 //class CnnLayer : public BaseLayerExt
 //{
 //public:
-//    friend class HardwareLayerCnn;
 //    void convert() override;
 //
 //    CnnLayer() : BaseLayerExt(NN_CNN),

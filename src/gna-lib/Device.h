@@ -68,7 +68,7 @@ public:
      **
      ** Returns number of bytes allocated
      */
-    size_t AllocateMemory(size_t requestedSize, void **buffer);
+    const size_t AllocateMemory(const size_t requestedSize, void **buffer);
 
     void FreeMemory();
 
@@ -136,9 +136,7 @@ private:
     */
     bool isGNAHardwarePresent = false;
 
-    void* userMemory = nullptr;
-    size_t userMemorySize = 0;
-
+    unique_ptr<Memory> totalMemory;
     RequestHandler requestHandler;
     AcceleratorController acceleratorController;
     AccelerationDetector accelerationDetector;

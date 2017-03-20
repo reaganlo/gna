@@ -102,12 +102,16 @@ LayerOutput::LayerOutput(const nn_layer &layer, const LayerConfig& config) :
     //Expect::ValidBuffer(ScratchPad); // TODO: review when scratch-pad is allocated by gna-lib
 };
 
-void LayerOutput::Validate(const bool ActivationEnabled, const uint32_t outputSize) const
+void LayerOutput::Validate(const bool ActivationEnabled, const uint32_t outputSize,
+    const nn_layer_type type) const
 {
     if (ActivationEnabled)
     {
         // if pwl is used 2B output buffer must be set
-        Expect::NotNull(Buffer);
+        if (INTEL_INPUT == type || INTEL_HIDDEN == type)
+        {
+            Expect::ValidBuffer(Buffer);
+        }
         Expect::True(ActivatedOutputSize == outputSize, XNN_ERR_INT_OUTPUT_BYTES);
     }
     else
@@ -136,22 +140,22 @@ unique_ptr<Layer> Layer::Create(const nn_layer* layer, const uint32_t inputVecto
         return make_unique<GmmLayer>(layer, inputVectorCount);
     case INTEL_INTERLEAVE:
         return make_unique<TransposeLayer>(layer, inputVectorCount);
-    //case INTEL_RECURRENT:
-        //return new RnnLayer();
+    case INTEL_RECURRENT:
+        return make_unique<RnnLayer>(layer, inputVectorCount);
     default:
         return nullptr;
     }
 }
 
 Layer::Layer(const nn_layer *layer, const uint32_t inputVectorCount) :
-    Config(layer->nLayerKind, layer->type),
-    sourceLayer(validate(layer)),
+    sourceLayer(getSafeCopy(layer)),
+    Config(sourceLayer.nLayerKind, sourceLayer.type),
     Input(sourceLayer, Config, inputVectorCount),
     Output(sourceLayer, Config)
 {
 }
 
-const nn_layer Layer::validate(const nn_layer *layer)
+const nn_layer Layer::getSafeCopy(const nn_layer *layer)
 {
     Expect::NotNull(layer);
     if (INTEL_INTERLEAVE != layer->nLayerKind && INTEL_DEINTERLEAVE != layer->nLayerKind)

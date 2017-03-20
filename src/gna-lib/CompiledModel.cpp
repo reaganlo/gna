@@ -37,12 +37,12 @@ void CompiledModel::CompileSoftwareModel()
     softwareModel = make_unique<SoftwareModel>(userModel);
 }
 
-void CompiledModel::CompileHardwareModel(void *userMemory, size_t userMemorySize, uint32_t hwInBufferSize)
+void CompiledModel::CompileHardwareModel(const Memory& memory, const AccelerationDetector& detector)
 {
-    hardwareModel = make_unique<HardwareModel>(modelId, *softwareModel, userMemory, userMemorySize, hwInBufferSize);
+    hardwareModel = make_unique<HardwareModel>(modelId, *softwareModel, memory, detector);
 }
 
-void CompiledModel::CreateSubmodels(AccelerationDetector& dispatcher)
+void CompiledModel::CreateSubmodels(const AccelerationDetector& dispatcher)
 {
     auto layerType = userModel->pLayers->nLayerKind;
     auto submodelCount = 0;

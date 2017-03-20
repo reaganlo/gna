@@ -81,7 +81,6 @@ public:
     std::map<uint32_t, std::unique_ptr<LayerConfiguration>> LayerConfigurations;
     uint32_t InputBuffersCount = 0;
     uint32_t OutputBuffersCount = 0;
-
 };
 
 }

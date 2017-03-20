@@ -88,7 +88,7 @@ public:
     LayerOutput(const nn_layer &layer, const LayerConfig& config);
     ~LayerOutput() = default;
 
-    void Validate(const bool ActivationEnabled, const uint32_t outputSize) const;
+    void Validate(const bool ActivationEnabled, const uint32_t, const nn_layer_type type) const;
 
     uint32_t const * const ScratchPad;
 };
@@ -97,14 +97,12 @@ public:
 class Layer
 {
 public:
-    friend class HardwareLayer;
-
     static unique_ptr<Layer> Create(const nn_layer *layer, const uint32_t inputVectorCount);
 
     virtual ~Layer() {};
 
+    const nn_layer sourceLayer;// TODO: move to private when integration completed
     const LayerConfig Config;
-    const nn_layer sourceLayer;
     const LayerInput Input;
     const LayerOutput Output;
 
@@ -112,7 +110,7 @@ protected:
     Layer(const nn_layer *layer, const uint32_t inputVectorCount);
 
 private:
-    static const nn_layer validate(const nn_layer *layer);
+    static const nn_layer getSafeCopy(const nn_layer *layer);
 };
 
 }

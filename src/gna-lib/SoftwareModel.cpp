@@ -52,40 +52,22 @@ void SoftwareModel::ValidateConfiguration(const RequestConfiguration& configurat
 
 void SoftwareModel::build(const nn_layer* layers)
 {
-    try
+    for (int i = 0; i < layerCount; i++)
     {
-        for (int i = 0; i < layerCount; i++)
+        auto layer = layers + i;
+        Layers.push_back(Layer::Create(const_cast<const nn_layer*>(layer), inputVectorCount));
+        switch (layer->type)
         {
-            auto layer = layers + i;
-            switch (layer->type)
-            {
-            case INTEL_INPUT:
-                ++inputLayerCount;
-                break;
-            case INTEL_OUTPUT:
-                ++outputLayerCount;
-                break;
-            case INTEL_INPUT_OUTPUT:
-                ++inputLayerCount;
-                ++outputLayerCount;
-                break;
-            case INTEL_HIDDEN:
-                break;
-            default:
-                throw GnaException(XNN_ERR_LYR_TYPE);
-            }
-            Layers.push_back(Layer::Create(const_cast<const nn_layer*>(layer), inputVectorCount));
+        case INTEL_INPUT:
+            ++inputLayerCount;
+            break;
+        case INTEL_OUTPUT:
+            ++outputLayerCount;
+            break;
+        case INTEL_INPUT_OUTPUT:
+            ++inputLayerCount;
+            ++outputLayerCount;
+            break;
         }
     }
-    catch (const GnaException& e)
-    {
-        // re-throws internal exceptions
-        throw e;
-    }
-    catch (...)
-    {
-        // catch null dereference // TODO:review
-        throw GnaException(GNA_NULLARGNOTALLOWED);
-    }
-
 }

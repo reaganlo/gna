@@ -185,7 +185,7 @@ const void* AffineFunctionMulti1B::GetBiases()
 }
 
 ActivationFunction::ActivationFunction(const nn_func_pwl *pwl) :
-    SegmentCount(static_cast<bool>(pwl->nSegments)),
+    SegmentCount(pwl->nSegments),
     Segments(static_cast<nn_pwl_seg*>(pwl->pSegments)),
     Enabled((nullptr != pwl->pSegments) && (pwl->nSegments > 0)),
     sourcePwl(static_cast<const nn_func_pwl*>(pwl))

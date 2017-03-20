@@ -93,7 +93,7 @@ public:
 
     bool IsLayerSupported(intel_layer_kind_t layerType) const;
 
-    uint32_t GetHardwareBufferSize();
+    const uint32_t GetHardwareBufferSize() const;
 
 private:
     acceleration fastestAcceleration;

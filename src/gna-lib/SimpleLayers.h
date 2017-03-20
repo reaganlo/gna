@@ -34,8 +34,6 @@ namespace GNA
 class TransposeLayer : public Layer
 {
 public:
-    friend class HardwareLayerAffDiag;
-
     TransposeLayer(nn_layer const * const layer, const uint32_t inputVectorCount);
     virtual ~TransposeLayer() = default;
 };
@@ -43,8 +41,6 @@ public:
 class CopyLayer : public Layer
 {
 public:
-    friend class HardwareLayerCopy;
-
     CopyLayer(const nn_layer *layer);
     virtual ~CopyLayer() = default;
 

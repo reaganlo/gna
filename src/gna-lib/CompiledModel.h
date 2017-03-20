@@ -57,9 +57,9 @@ public:
 
     void CompileSoftwareModel();
 
-    void CompileHardwareModel(void *userMemory, size_t userMemorySize, uint32_t hwInBufferSize);
+    void CompileHardwareModel(const Memory& memory, const AccelerationDetector& detector);
 
-    void CreateSubmodels(AccelerationDetector& detector);
+    void CreateSubmodels(const AccelerationDetector& detector);
 
     void ClearSubmodels();
 

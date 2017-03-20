@@ -24,33 +24,36 @@
 */
 
 #include "ModelCompiler.h"
-#include "GnaConfig.h"
+
+#include "gna-api.h"
+#include "Validator.h"
 
 using namespace GNA;
 
-size_t ModelCompiler::CalculateModelSize(size_t requestedSize, uint16_t nLayers, uint16_t nGMMs)
+const size_t ModelCompiler::CalculateModelSize(const size_t requestedSize, const uint16_t layerCount,
+    const uint16_t gmmCount)
 {
-    size_t layerDescriptorsSize = nLayers * sizeof(XNN_LYR) + nGMMs * sizeof(GMM_CONFIG);
-    return requestedSize + layerDescriptorsSize;
+    auto internalSize = CalculateInternalModelSize(layerCount, gmmCount);
+    auto totalSize = requestedSize + internalSize;
+    Expect::InRange(totalSize, 1, 256*1024*1024, GNA_INVALIDMEMSIZE);
+    return totalSize;
 }
 
-void ModelCompiler::CascadeCompile(CompiledModel &model, void *userMemory, size_t userMemorySize, AccelerationDetector& detector)
+const size_t ModelCompiler::CalculateInternalModelSize(const uint16_t layerCount,
+    const uint16_t gmmCount)
+{
+    // TODO:KJ: add detector reference to c-tor and calculate hardware size if applicable
+    // for model dumper use fake detector in device
+    return HardwareModel::CalculateDescriptorSize(layerCount, gmmCount);
+}
+
+void ModelCompiler::CascadeCompile(CompiledModel &model, const Memory& memory, const AccelerationDetector& detector)
 {
     model.CompileSoftwareModel();
-
-    // use default value for dry compile if device not present
-    uint32_t hwInBufferSize;
-    try
+    if (detector.IsHardwarePresent())
     {
-        hwInBufferSize = detector.GetHardwareBufferSize();
+        model.CompileHardwareModel(memory, detector);
     }
-    catch (GnaException ex)
-    {
-        // device not found, use default value for dry compile
-        hwInBufferSize = 12;
-    }
-
-    model.CompileHardwareModel(userMemory, userMemorySize, hwInBufferSize);
 
     model.CreateSubmodels(detector);
 }

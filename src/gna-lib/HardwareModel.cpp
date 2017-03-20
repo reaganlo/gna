@@ -23,20 +23,33 @@
  in any way.
 */
 
+#include "HardwareModel.h"
+
+#include "AccelerationDetector.h"
 #include "GnaDrvApi.h"
 #include "GnaException.h"
-#include "HardwareModel.h"
+#include "Validator.h"
 
 using namespace GNA;
 
-HardwareModel::HardwareModel(gna_model_id modId, const SoftwareModel& model, void *userMemory,
-    size_t userMemorySize, uint32_t hwInBuffSize) :
-    modelId(modId),
-    hwInBufferSize(hwInBuffSize),
-    hwDescriptor(userMemory)
+const size_t HardwareModel::CalculateDescriptorSize(const uint16_t layerCount, const uint16_t gmmLayersCount)
 {
-    mapMemory(userMemory, userMemorySize);
-    build(model.Layers);
+    Expect::InRange(layerCount, 1, XNN_LAYERS_MAX_COUNT, XNN_ERR_NET_LYR_NO);
+    auto layerDescriptorsSize = size_t{ layerCount * sizeof(XNN_LYR) };
+
+    Expect::InRange(gmmLayersCount, 0, XNN_LAYERS_MAX_COUNT, XNN_ERR_NET_LYR_NO);
+    auto gmmDescriptorsSize = size_t{ gmmLayersCount * sizeof(GMM_CONFIG) };
+
+    return layerDescriptorsSize + gmmDescriptorsSize;
+}
+
+HardwareModel::HardwareModel(const gna_model_id modId, const SoftwareModel& model, const Memory& wholeMemory,
+    const AccelerationDetector& detector) :
+    modelId(modId),
+    memoryBaseAddress(wholeMemory.GetBuffer())
+{
+    mapMemory(wholeMemory);
+    build(model.Layers, detector.GetHardwareBufferSize());
 }
 
 HardwareModel::~HardwareModel()
@@ -44,22 +57,22 @@ HardwareModel::~HardwareModel()
     unmapMemory();
 }
 
-void HardwareModel::mapMemory(void *buffer, size_t bufferSize)
+void HardwareModel::mapMemory(const Memory& memory)
 {
     if (memoryMapped)
         throw GnaException(GNA_ERR_UNKNOWN);
 
     // write model id in user buffer
     // driver will retrieve it
-    *reinterpret_cast<uint64_t*>(buffer) = static_cast<uint64_t>(modelId);
+    *reinterpret_cast<uint64_t*>(memory.GetBuffer()) = static_cast<uint64_t>(modelId);
 
     status_t status = GNA_SUCCESS;
     status = IoctlSend(
         GNA_IOCTL_MEM_MAP,
         nullptr,
         0,
-        buffer,
-        bufferSize,
+        memory.GetBuffer(),
+        memory.GetSize(),
         TRUE);
 
     if (GNA_SUCCESS != status)
@@ -80,15 +93,11 @@ void HardwareModel::unmapMemory()
     memoryMapped = false;
 }
 
-void HardwareModel::build(const std::vector<std::unique_ptr<Layer>>& layers)
+void HardwareModel::build(const std::vector<std::unique_ptr<Layer>>& layers, const uint32_t hardwareInternalBufferSize)
 {
-    auto layerIndex = 0ui32;
+    auto layerDescriptor = static_cast<XNN_LYR*>(memoryBaseAddress);
     for (auto& layer : layers)
     {
-        XNN_LYR *layerDescriptor = reinterpret_cast<XNN_LYR*>(
-            reinterpret_cast<uintptr_t>(hwDescriptor) + (layerIndex * sizeof(XNN_LYR)));
-
-        Layers.push_back(HardwareLayer::Create(*layer, layerDescriptor, hwDescriptor, hwInBufferSize));
-        ++layerIndex;
+        *layerDescriptor++ = HardwareLayer::Convert(*layer, memoryBaseAddress, hardwareInternalBufferSize);
     }
 }

@@ -31,11 +31,6 @@
 #include "gna-api-dev.h"
 
 /**
- * Maximum available hw device memory
- */
-#define HW_MEM_MAX 256*1024*1024
-
-/**
  * Data alignment for intrinsics
  */
 #define INTRIN_ALIGN 0x40

@@ -25,6 +25,7 @@
 
 #pragma once
 
+#include "AccelerationDetector.h"
 #include "common.h"
 #include "GnaException.h"
 #include "HardwareLayer.h"
@@ -38,24 +39,23 @@ namespace GNA
 class HardwareModel : protected IoctlSender
 {
 public:
-    HardwareModel(gna_model_id modId, const SoftwareModel& model, void *userMemory, size_t userMemorySize, uint32_t hwInBuffSize);
+    static const size_t CalculateDescriptorSize(const uint16_t layerCount, const uint16_t gmmLayersCount);
+
+    HardwareModel(const gna_model_id modId, const SoftwareModel& model, const Memory& wholeMemory,
+        const AccelerationDetector& detector);
 
     ~HardwareModel();
 
-    std::vector<std::unique_ptr<const HardwareLayer>> Layers;
-
 private:
-    void build(const std::vector<std::unique_ptr<Layer>>& layers);
+    void build(const std::vector<std::unique_ptr<Layer>>& layers, const uint32_t hardwareInternalBufferSize);
 
-    void mapMemory(void * buffer, size_t bufferSize);
+    void mapMemory(const Memory& memory);
     void unmapMemory();
 
     // needed for driver communication
     gna_model_id modelId;
 
-    void * hwDescriptor;
-    size_t hwDescriptorSize = 0;
-    uint32_t hwInBufferSize;
+    void * const memoryBaseAddress;
 
     uint16_t gmmConfigsCount = 0;
 

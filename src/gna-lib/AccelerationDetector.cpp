@@ -105,7 +105,7 @@ void AccelerationDetector::discoverHardwareCapabilities()
     }
 }
 
-uint32_t AccelerationDetector::GetHardwareBufferSize()
+const uint32_t AccelerationDetector::GetHardwareBufferSize() const
 {
     if (IsHardwarePresent())
     {
