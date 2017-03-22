@@ -126,11 +126,6 @@ GNAApplyAffineTransform(
                 pActiveIndices, nActiveIndices, nSaturated, fvBuffers);
         }
     }
-    else
-    {
-        ERR("Weight width not supported in ApplyAffineTransform!\n");
-        return XNN_ERR_WEIGHT_BYTES;
-    }
 
     return GNA_SUCCESS;
 }
@@ -182,11 +177,6 @@ GNAApplyAffineMBiasTransform(
                 pActiveIndices, nActiveIndices, nSaturated, fvBuffers);
         }
     }
-    else
-    {
-        ERR("Weight width not supported in ApplyAffineTransform!\n");
-        return XNN_ERR_WEIGHT_BYTES;
-    }
 
     return GNA_SUCCESS;
 }
@@ -206,12 +196,6 @@ GNAApplyDiagonalTransform(
                            ? pLayer->pOutputs 
                            : pLayer->pOutputsIntermediate);
 
-    if (1 != aff->affine.nBytesPerWeight &&
-        2 != aff->affine.nBytesPerWeight)
-    {
-        ERR("Weight width not supported in ApplyDiagonalTransform!\n");
-        return XNN_ERR_WEIGHT_BYTES;
-    }
     if (aff->affine.nBytesPerWeight == 1)
     {
         nn_bias_c *bias = (nn_bias_c*)aff->affine.pBiases;
@@ -311,13 +295,6 @@ GNAApplyConvolutionalTransform(
 
     if (conv->poolType == INTEL_NO_POOLING)
     {
-        // TODO: move error handling to model creation
-        if ((pLayer->nInputRows != 1) || (pLayer->nOutputRows != 1))
-        {
-            ERR("Bad problem dimensions in CNNApplyFilter!\n");
-            return XNN_ERR_LYR_CFG;
-        }
-
         CNNFilter16(
             pLayer->nInputColumns,
             conv->nFeatureMaps,
@@ -347,12 +324,6 @@ GNAApplyConvolutionalTransform(
     {
         if (0 != conv->pwl.nSegments)
         {
-            if ((pLayer->nInputRows != 1) || (pLayer->nOutputRows != 1))
-            {
-                ERR("Grouping not supported in CNNFilterPool16!\n Number of rows in is %d; number of rows out is %d.  Should be 1!\n", pLayer->nInputRows, pLayer->nOutputRows);
-                return XNN_ERR_LYR_CFG;
-            }
-
             CNNFilterPool16(pLayer->nInputColumns,
                 conv->nFeatureMaps,
                 conv->nFeatureMapColumns,

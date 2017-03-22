@@ -89,7 +89,7 @@ public:
 
 protected:
     HardwareLayerExt(const Layer& swLayer, void * const memoryBase, const uint32_t bufferSize,
-        uint32_t effectiveGrouping);
+        const uint32_t effectiveGrouping);
 
     void save();
 
@@ -102,17 +102,15 @@ private:
     // Number of data elements that may be stored in hw buffer
     const static map<const uint32_t, std::array<const uint32_t, XNN_N_GROUP_MAX>> bufferElementsMap;
 
-    void validate();
-
     const uint32_t iterationGrouping; // grouping for iteration calculation
-    uint32_t nIters; // number of iterations = data chunks/parts
+    uint32_t iterationCount; // number of iterations = data chunks/parts
 };
 
 // Affine, Diagonal and transpose layers Layer descriptor converter
 class HardwareLayerAffDiagTrans : public HardwareLayerExt
 {
 public:
-    HardwareLayerAffDiagTrans(const Layer& swLayer, void * const memoryBase, uint32_t hwInBuffSize);
+    HardwareLayerAffDiagTrans(const Layer& swLayer, void * const memoryBase, const uint32_t hwInBuffSize);
 
     virtual ~HardwareLayerAffDiagTrans() = default;
 };
@@ -130,13 +128,11 @@ protected:
     void save();
 };
 
-/**
-* Recurrent Layer descriptor converter
-*/
+// Recurrent Layer descriptor converter
 class HardwareLayerRnn : public HardwareLayerExt
 {
 public:
-    HardwareLayerRnn(const Layer& swLayer, void * const memoryBase, uint32_t hwInBuffSize);
+    HardwareLayerRnn(const Layer& swLayer, void * const memoryBase, const uint32_t hwInBuffSize);
     HardwareLayerRnn(const HardwareLayerRnn &) = delete;
     HardwareLayerRnn& operator=(const HardwareLayerRnn&) = delete;
     virtual ~HardwareLayerRnn() = default;
@@ -154,56 +150,26 @@ private:
     uint32_t feedbackLastIterElementCount; // number of el. in last feedback data iter.
 };
 
-///**
-//* Convolutional Layer descriptor converter
-//*/
-//class HardwareLayerCnn : public HardwareLayerExt
-//{
-//public:
-//    void convert() override final;
-//
-//    HardwareLayerCnn() : HardwareLayerExt(),
-//        nFltIters(0), nFltsLast(0), nFltsPerIter(0), fltBuffSz(0), fltBuffSzLast(0), cnnLayer(nullptr) {};
-//
-//    /**
-//     * Deleted functions to prevent from being defined or called
-//     * @see: https://msdn.microsoft.com/en-us/library/dn457344.aspx
-//     */
-//    HardwareLayerCnn(const HardwareLayerCnn &) = delete;
-//    HardwareLayerCnn& operator=(const HardwareLayerCnn&) = delete;
-//
-//    void init(
-//        nn_layer*		lyr,
-//        XNN_LYR*        hwLyr,
-//        const void*     buffer,
-//        uint32_t        hwInBuffSize,
-//        Layer*		bLayerIn) override;
-//
-//    virtual ~HardwareLayerCnn() {};
-//
-//protected:
-//    void validate();
-//
-//    void save() override final;
-//
-//private:
-//    uint32_t        nFltIters;      // number of iterations  to process all flts.
-//    uint32_t        nFltsLast;      // number of filters in last iter.
-//    uint32_t        nFltsPerIter;   // number of filters in buffer in full iterations
-//    uint32_t        fltBuffSz;      // size of filter in non-last iter. (elems)
-//    uint32_t        fltBuffSzLast;  // size of filter in last iter. (elems)
-//    CnnLayer*		cnnLayer;
-//};
-//
-}
+// Convolutional Layer descriptor converter
+class HardwareLayerCnn : public HardwareLayerExt
+{
+public:
+    HardwareLayerCnn(const Layer& swLayer, void * const memoryBase, const uint32_t hwInBuffSize);
+    HardwareLayerCnn(const HardwareLayerRnn &) = delete;
+    HardwareLayerCnn& operator=(const HardwareLayerRnn&) = delete;
+    virtual ~HardwareLayerCnn() = default;
 
-//class Converter
-//{
-//public:
-//    static XNN_LYR Convert(const Layer& softwareLayer, void *descriptorBase, uint32_t bufferSize);
-//
-//    Converter() = delete;
-//    ~Converter() = delete;
-//    Converter(const Converter &) = delete;
-//    Converter& operator=(const Converter&) = delete;
-//};
+protected:
+    void save();
+
+private:
+    static const uint32_t CNN_N_FLT_ITER_MAX = 16; // CNN maximum number of filters per iteration
+
+    uint32_t filtersIterationCount;                // Number of iterations  to process all filters.
+    uint32_t filtersCountInLastIteration;          // Number of filters in last iteration.
+    uint32_t filtersCountInFullIteration;          // Number of filters in buffer in full iterations.
+    uint32_t filtersElementCountInFullIteration;   // Size of filter in non-last iterations (elements).
+    uint32_t filtersElementCountInLastIteration;   // Size of filter in last iterations (elements).
+};
+
+}

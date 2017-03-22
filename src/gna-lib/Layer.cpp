@@ -59,7 +59,8 @@ LayerConfig::LayerConfig(const nn_layer_kind kind, const nn_layer_type type) :
 };
 
 
-LayerMatrix::LayerMatrix(const uint32_t rowCount, const uint32_t columnCount, void const * buffer, const LayerConfig& config) :
+LayerMatrix::LayerMatrix(const uint32_t rowCount, const uint32_t columnCount, void const * buffer,
+    const LayerConfig& config) :
     ColumnCount(columnCount),
     RowCount(rowCount),
     ElementCount((FLAT == config.Orientation) ? ColumnCount : RowCount),
@@ -89,6 +90,10 @@ LayerInput::LayerInput(const nn_layer &layer, const LayerConfig& config, const u
     Expect::MultiplicityOf(ElementCount, XNN_N_IN_ELEMS_MPLY);
     auto secondDimension = (FLAT == config.Orientation) ? RowCount : ColumnCount;
     Expect::InRange(secondDimension, 1, XNN_N_GROUP_MAX, XNN_ERR_GROUPING);
+    if (INTEL_OUTPUT == config.Type)
+    {
+        Expect::ValidBuffer(Buffer);
+    }
 };
 
 
@@ -100,6 +105,10 @@ LayerOutput::LayerOutput(const nn_layer &layer, const LayerConfig& config) :
     Expect::InRange(layer.nBytesPerOutput, ActivatedOutputSize, NonActivatedOutputSize, XNN_ERR_INPUT_BYTES);
     Expect::True(NonActivatedOutputSize == layer.nBytesPerIntermediateOutput, XNN_ERR_INT_OUTPUT_BYTES);
     //Expect::ValidBuffer(ScratchPad); // TODO: review when scratch-pad is allocated by gna-lib
+    if (INTEL_INPUT == config.Type)
+    {
+        Expect::ValidBuffer(Buffer);
+    }
 };
 
 void LayerOutput::Validate(const bool ActivationEnabled, const uint32_t outputSize,
@@ -107,11 +116,6 @@ void LayerOutput::Validate(const bool ActivationEnabled, const uint32_t outputSi
 {
     if (ActivationEnabled)
     {
-        // if pwl is used 2B output buffer must be set
-        if (INTEL_INPUT == type || INTEL_HIDDEN == type)
-        {
-            Expect::ValidBuffer(Buffer);
-        }
         Expect::True(ActivatedOutputSize == outputSize, XNN_ERR_INT_OUTPUT_BYTES);
     }
     else
@@ -130,8 +134,8 @@ unique_ptr<Layer> Layer::Create(const nn_layer* layer, const uint32_t inputVecto
         return make_unique<AffineDiagonalLayer>(layer, inputVectorCount);
     case INTEL_AFFINE_MULTIBIAS:
         return make_unique<AffineMultiBiasLayer>(layer, inputVectorCount);
-    //case INTEL_CONVOLUTIONAL:
-        //return new CnnLayer();
+    case INTEL_CONVOLUTIONAL:
+        return make_unique<CnnLayer>(layer, inputVectorCount);
     case INTEL_COPY:
         return make_unique<CopyLayer>(layer);
     case INTEL_DEINTERLEAVE:

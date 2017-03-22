@@ -49,8 +49,8 @@ XNN_LYR HardwareLayer::Convert(const Layer& softwareLayer, void * const memoryBa
     auto converter = unique_ptr<HardwareLayer>();
     switch (OperationsMap.at(softwareLayer.Config.Kind))
     {
-    //case NN_CNN:
-        //converter = make_unique<HardwareLayerCnn>();
+    case NN_CNN:
+        converter = make_unique<HardwareLayerCnn>(softwareLayer, memoryBase, hardwareInternalBufferSize);
         break;
     case NN_COPY:
         converter = make_unique<HardwareLayerCopy>(softwareLayer, memoryBase);
@@ -119,7 +119,7 @@ const map<const uint32_t, std::array<const uint32_t, XNN_N_GROUP_MAX>> HardwareL
 };
 
 HardwareLayerExt::HardwareLayerExt(const Layer& swLayer, void * const memoryBase,
-    const uint32_t bufferSize, uint32_t effectiveGrouping) :
+    const uint32_t bufferSize, const uint32_t effectiveGrouping) :
     HardwareLayer(swLayer, memoryBase),
     iterationGrouping(effectiveGrouping),
     bufferElementCount(bufferElementsMap.at(bufferSize).at(effectiveGrouping - 1))
@@ -128,14 +128,10 @@ HardwareLayerExt::HardwareLayerExt(const Layer& swLayer, void * const memoryBase
     // Calculates number of iterations and elements in last iteration
      //#groups for calculation(can be different than network grouping)
     auto elementsTimesGrouping = softwareLayer.Input.ElementCount * iterationGrouping;
-    nIters = ((elementsTimesGrouping - 1) / bufferElementCount) + 1;
-    lastIterationElementCount = ((elementsTimesGrouping) - ((nIters - 1) * bufferElementCount)) / iterationGrouping;
-    validate();
-}
+    iterationCount = ((elementsTimesGrouping - 1) / bufferElementCount) + 1;
+    Expect::InRange(iterationCount, 1, UINT8_MAX, XNN_ERR_LYR_CFG);
 
-void HardwareLayerExt::validate()
-{
-    Expect::InRange(nIters, 1, UINT8_MAX, XNN_ERR_LYR_CFG);
+    lastIterationElementCount = ((elementsTimesGrouping) - ((iterationCount - 1) * bufferElementCount)) / iterationGrouping;
     Expect::InRange(lastIterationElementCount, 1, bufferElementCount, XNN_ERR_LYR_CFG);
     Expect::MultiplicityOf(lastIterationElementCount, XNN_N_IN_ELEMS_MPLY);
 }
@@ -143,7 +139,7 @@ void HardwareLayerExt::validate()
 void HardwareLayerExt::save()
 {
     HardwareLayer::save();
-    layerDescriptor.n_iters = static_cast<uint8_t>(nIters);
+    layerDescriptor.n_iters = static_cast<uint8_t>(iterationCount);
     layerDescriptor.n_elems_last = static_cast<uint16_t>(lastIterationElementCount);
 
     if (affine)
@@ -194,7 +190,7 @@ void HardwareLayerCopy::save()
     layerDescriptor.cpy_n_elems = static_cast<uint16_t>(copy.CopyElementsCount);
 }
 
-HardwareLayerRnn::HardwareLayerRnn(const Layer& swLayer, void * const memoryBase, uint32_t hwInBuffSize) :
+HardwareLayerRnn::HardwareLayerRnn(const Layer& swLayer, void * const memoryBase, const uint32_t hwInBuffSize) :
     HardwareLayerExt(swLayer, memoryBase, hwInBuffSize, 1),
     feedbackIterationsCount(0),
     feedbackFirstIterElementCount(0),
@@ -261,73 +257,59 @@ const uint32_t HardwareLayerRnn::CalculateFeedbackBuffer(const void * const outp
     return getOffset(rnn.CalculateFeedbackBuffer(outputBuffer));
 }
 
-//void HardwareLayerCnn::init(
-//    nn_layer*		lyr,
-//    XNN_LYR*        layerDescriptor,
-//    const void*     buffer,
-//    uint32_t        hwInBuffSize,
-//    Layer*		bLayerIn) {
-//
-//    cnnLayer = (CnnLayer*)baseLayer;
-//}
+HardwareLayerCnn::HardwareLayerCnn(const Layer & swLayer, void * const memoryBase, uint32_t hwInBuffSize) :
+    HardwareLayerExt(swLayer, memoryBase, hwInBuffSize, 1)
+{
+    auto& cnn = static_cast<const CnnLayer&>(softwareLayer);
+    auto fitlerCount = cnn.Convolution.Filters.Count;
+    auto fitlerSize = cnn.Convolution.Filters.CoefficientCount;
+    filtersCountInFullIteration =
+        min(
+            fitlerCount,
+            (fitlerSize <= bufferElementCount / 6 / 3) ?
+                16 :
+                (fitlerSize <= bufferElementCount / 6 / 2) ?
+                    12 :
+                    (fitlerSize <= bufferElementCount / 6) ?
+                        4 :
+                        0);
+    Expect::InRange(filtersCountInFullIteration, CNN_N_FLT_COEFF_MPLY, CNN_N_FLT_ITER_MAX, XNN_ERR_LYR_CFG);
+    Expect::MultiplicityOf(filtersCountInFullIteration, CNN_N_FLT_COEFF_MPLY);
 
-//void HardwareLayerCnn::convert()
-//{
-//
-//    uint32_t nFlts = cnnLayer->cnn->nFilters;
-//    uint32_t nFltSize = cnnLayer->cnn->nFilterCoefficients;
-//    uint32_t maxNCOE = (cnnLayer->ElementCount - nFltSize) / cnnLayer->fltStrideSz + 1;
-//    nFltsPerIter =
-//        min(
-//        nFlts,
-//        (nFltSize <= bufferElementCount / 6 / 3) ?
-//        16 :
-//        (nFltSize <= bufferElementCount / 6 / 2) ?
-//        12 :
-//        (nFltSize <= bufferElementCount / 6) ?
-//        4 :
-//        0);
-//    Validate::IsTrue(0 == nFltsPerIter, CNN_ERR_FLT_COUNT);
-//    nFltIters = (nFlts - 1) / nFltsPerIter + 1;
-//    nFltsLast = nFlts - ((nFltIters - 1) * nFltsPerIter);
-//    fltBuffSz = nFltsPerIter * nFltSize;
-//    fltBuffSzLast = nFltsLast * nFltSize;
-//
-//    validate();
-//    save();
-//}
+    filtersIterationCount = (fitlerCount - 1) / filtersCountInFullIteration + 1;
 
-//void HardwareLayerCnn::validate()
-//{
-//    Expect::True(nFltsPerIter      < CNN_N_FLT_COEFF_MPLY, XNN_ERR_LYR_CFG);
-//    Expect::True(nFltsPerIter      > CNN_N_FLT_ITER_MAX, XNN_ERR_LYR_CFG);
-//    Expect::MultiplicityOf(nFltsPerIter, CNN_N_FLT_COEFF_MPLY);
-//    Expect::True(nFltsLast         < CNN_N_FLT_COEFF_MPLY, XNN_ERR_LYR_CFG);
-//    Expect::True(nFltsLast         > CNN_N_FLT_ITER_MAX, XNN_ERR_LYR_CFG);
-//    Expect::MultiplicityOf(nFltsLast, CNN_N_FLT_COEFF_MPLY);
-//    Expect::True(fltBuffSz         < 1, XNN_ERR_LYR_CFG);
-//    Expect::True(fltBuffSz         > bufferElementCount, XNN_ERR_LYR_CFG);
-//    Expect::True(fltBuffSzLast     < 1, XNN_ERR_LYR_CFG);
-//    Expect::True(fltBuffSzLast     > bufferElementCount, XNN_ERR_LYR_CFG);
-//}
+    filtersCountInLastIteration = fitlerCount - ((filtersIterationCount - 1) * filtersCountInFullIteration);
+    Expect::InRange(filtersCountInLastIteration, CNN_N_FLT_COEFF_MPLY, CNN_N_FLT_ITER_MAX, XNN_ERR_LYR_CFG);
+    Expect::MultiplicityOf(filtersCountInLastIteration, CNN_N_FLT_COEFF_MPLY);
 
-//void HardwareLayerCnn::save()
-//{
-//    HardwareLayerExt::save();
-//    // some fields saved by HardwareLayerExt will be overwritten
-//    layerDescriptor.flags.pool_param = static_cast<uint8_t>(cnnLayer->cnn->poolType);
-//    layerDescriptor.cnn_flt_bf_sz_iter = fltBuffSz;
-//    layerDescriptor.cnn_flt_bf_sz_last = fltBuffSzLast;
-//    layerDescriptor.cnn_flt_buffer = getOffset(cnnLayer->cnn->pFilters);;
-//    layerDescriptor.cnn_flt_size = cnnLayer->cnn->nFilterCoefficients;
-//    layerDescriptor.cnn_n_flts = cnnLayer->cnn->nFilters;
-//    layerDescriptor.cnn_n_flts_iter = nFltsPerIter;
-//    layerDescriptor.cnn_n_flt_iters = nFltIters;
-//    layerDescriptor.cnn_n_flt_last = nFltsLast;
-//    layerDescriptor.cnn_n_flt_outs = cnnLayer->nFltOutElems;
-//    layerDescriptor.cnn_n_flt_stride = cnnLayer->fltStrideSz;
-//    layerDescriptor.cnn_n_out_p_flt = cnnLayer->ElementCount;
-//    layerDescriptor.cnn_pool_size = cnnLayer->cnn->nPoolSize;
-//    layerDescriptor.cnn_pool_stride = cnnLayer->cnn->nPoolStride;
-//    layerDescriptor.aff_const_buffer = getOffset(cnnLayer->cnn->pBiases);
-//}
+
+    filtersElementCountInFullIteration = filtersCountInFullIteration * fitlerSize;
+    Expect::InRange(filtersElementCountInFullIteration, 1, bufferElementCount, XNN_ERR_LYR_CFG);
+
+    filtersElementCountInLastIteration = filtersCountInLastIteration * fitlerSize;
+    Expect::InRange(filtersElementCountInLastIteration, 1, bufferElementCount, XNN_ERR_LYR_CFG);
+
+    save();
+}
+
+void HardwareLayerCnn::save()
+{
+    HardwareLayerExt::save();
+    // some fields saved by HardwareLayerExt will be overwritten
+    auto& cnn = static_cast<const CnnLayer&>(softwareLayer);
+    layerDescriptor.flags.pool_param = static_cast<uint8_t>(cnn.Pooling.Type);
+    layerDescriptor.cnn_flt_bf_sz_iter = filtersElementCountInFullIteration;
+    layerDescriptor.cnn_flt_bf_sz_last = filtersElementCountInLastIteration;
+    layerDescriptor.cnn_flt_buffer = getOffset(cnn.Convolution.Filters.Data);;
+    layerDescriptor.cnn_flt_size = cnn.Convolution.Filters.CoefficientCount;
+    layerDescriptor.cnn_n_flts = cnn.Convolution.Filters.Count;
+    layerDescriptor.cnn_n_flts_iter = filtersCountInFullIteration;
+    layerDescriptor.cnn_n_flt_iters = filtersIterationCount;
+    layerDescriptor.cnn_n_flt_last = filtersCountInLastIteration;
+    layerDescriptor.cnn_n_flt_outs = cnn.Convolution.OutputElementsCount;
+    layerDescriptor.cnn_n_flt_stride = cnn.Pooling.Stride;
+    layerDescriptor.cnn_n_out_p_flt = softwareLayer.Output.ElementCount;
+    layerDescriptor.cnn_pool_size = cnn.Pooling.Size;
+    layerDescriptor.cnn_pool_stride = cnn.Pooling.Stride;
+    layerDescriptor.aff_const_buffer = getOffset(cnn.Convolution.Filters.Biases);
+}
