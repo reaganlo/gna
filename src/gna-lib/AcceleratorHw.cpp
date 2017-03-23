@@ -169,7 +169,7 @@ void AcceleratorHw::prepareDataToSend(const CompiledModel &model, const RequestC
     calculationData.ctrlFlags.activeListOn = found != requestConfiguration.LayerConfigurations.cend();
     calculationData.ctrlFlags.gnaMode = 1; // xnn by default
     calculationData.ctrlFlags.layerCount = model.GetLayerCount(); // xnn by default
-    calculationData.ctrlFlags.layerNo = 0;
+    calculationData.ctrlFlags.layerIndex = 0;
     calculationData.modelId = model.GetModelId();
     calculationData.ctrlFlags.bufferConfigsCount = requestConfiguration.InputBuffersCount + requestConfiguration.OutputBuffersCount;
 

@@ -169,7 +169,7 @@ void Hw::GmmLayerDescriptorUpdateActiveList(const GmmLayer *gmm, const ActiveLis
 //    inData->ctrlFlags.gnaMode       = 1; // GNA2 default mode of operation
 //    //inData->ctrlFlags.activeListOn  = (uint32_t)model->activeList.enabled; // TODO: RequestConfig handler for ioctls
 //    inData->ctrlFlags.layerCount = model->layerCount;
-//    inData->ctrlFlags.layerNo = 0;
+//    inData->ctrlFlags.layerIndex = 0;
 //    inData->modelId = 0;
 //
 //    // initial layer descriptor at the beginning of model buffer

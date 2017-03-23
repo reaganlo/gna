@@ -100,6 +100,7 @@ typedef struct _MODEL_CTX
     PT_DIR        ptDir[PT_DIR_SIZE + 1];   // page table directory
     ULONG         pageTableCount;           // Number of actually used entries in page Tables.
     HW_DESC       desc;                     // hardware descriptor context
+    PVOID         userMemoryBaseVA;         // User memmory model buffer virtual address
 
 } MODEL_CTX, *PMODEL_CTX;               // Client/application context
 

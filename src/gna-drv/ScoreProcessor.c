@@ -387,6 +387,11 @@ ScoreStart(
         TraceFailMsg(TLE, T_EXIT, "WdfRequestRetrieveInputBuffer", status);
         goto cleanup;
     }
+    if (sizeof(GNA_CALC_IN) + sizeof(GNA_BUFFER_DESCR)*input->ctrlFlags.bufferConfigsCount != inputLength)
+    {
+        TraceFailMsg(TLE, T_EXIT, "Score input buffer wrong size", STATUS_INVALID_BUFFER_SIZE);
+        goto cleanup;
+    }
     status = ScoreValidateParams(input);
     if (!NT_SUCCESS(status))
     {
@@ -398,6 +403,18 @@ ScoreStart(
     {
         TraceFailMsg(TLI, T_MEM, "Application has NOT mapped memory!", status);
         goto cleanup;
+    }
+
+    // set buffers according to request config
+    if (0 < input->ctrlFlags.bufferConfigsCount)
+    {
+        PGNA_BUFFER_DESCR bufferDescr = (PGNA_BUFFER_DESCR)((PUCHAR)input + sizeof(GNA_CALC_IN));
+
+        for (UINT32 i = 0; i < input->ctrlFlags.bufferConfigsCount; ++i)
+        {
+            *(PUINT32)((PUCHAR)modelCtx->userMemoryBaseVA + bufferDescr->offset) = bufferDescr->value;
+            ++bufferDescr;
+        }
     }
 
     // check and remember application from which req. is being processed now

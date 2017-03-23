@@ -75,14 +75,11 @@ typedef     UINT32      PAGDIR_N;
  * See:     HAS Section 5.4.3.8
  * Note:    Specifies xnn configuration
  */
-typedef union _XNN_CONFIG
+typedef struct _XNN_CONFIG
 {
-    struct 
-    {
-        UINT32 labase;
-        UINT32 lacount;
-    };
-    UINT8   _byte[256];
+    UINT32 labase;
+    UINT16 lacount;
+    UINT16 _rsvd;
 } XNN_CONFIG, *PXNN_CONFIG;
 
 /**
@@ -115,16 +112,12 @@ static_assert(272 == sizeof(MMU_CONFIG), "Invalid size of MMU_CONFIG");
  * Note:    Specifies base accelerator parameters
  *          Read-only for GNA hardware
  */
-typedef union _DESCRIPTOR
+typedef struct _DESCRIPTOR
 {
-    struct
-    {
     __1B_RES    __res_0000[256];    // 0000 - 00FF - (256B reserved)
-    XNN_CONFIG  xnn_config;      // 0100 - 01FF - Whole GNA Configuration, 256B
+    XNN_CONFIG  xnn_config;         // 0100 - 0107 - GNA Configuration, 8B
+    UINT8       _unused[248];       // 0108 - 01FF - unused
     MMU_CONFIG  mmu_config;         // 0200 - 030F - MMU setup and directory
-    };
-    UINT8      _byte[784];          // value of whole register
-
 } DESCRIPTOR, *PDESCRIPTOR;         // GNA Base Descriptor
 
 static_assert(784 == sizeof(DESCRIPTOR), "Invalid size of DESCRIPTOR");

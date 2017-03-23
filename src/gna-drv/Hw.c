@@ -191,8 +191,8 @@ HwInitExecution(
     }
 
     // copy user provided XNN configuration
-    xnnConfig->labase = ctrlFlags.layerNo * XNN_LYR_DSC_SIZE;
-    xnnConfig->lacount = ctrlFlags.layerCount;
+    xnnConfig->labase = ctrlFlags.layerIndex * XNN_LYR_DSC_SIZE;
+    xnnConfig->lacount = (UINT16)ctrlFlags.layerCount;
 
     // start scoring
     _WRITE(regs->desc_base, baseDescriptorLA);
