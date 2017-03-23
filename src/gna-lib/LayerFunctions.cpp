@@ -56,7 +56,7 @@ BiasCompound::BiasCompound(uint32_t size, const void *biases) :
     Expect::True(sizeof(nn_bias_c) == size, XNN_ERR_BIAS_BYTES);
 }
 
-unique_ptr<AffineFunctionSingle> AffineFunction::Create(const intel_affine_func_t * affine)
+unique_ptr<const AffineFunctionSingle> AffineFunction::Create(const intel_affine_func_t * affine)
 {
     if (GNA_WEIGHT_2B == affine->nBytesPerWeight)
     {
@@ -68,7 +68,7 @@ unique_ptr<AffineFunctionSingle> AffineFunction::Create(const intel_affine_func_
     }
 }
 
-unique_ptr<AffineFunctionMulti> AffineFunction::Create(const intel_affine_multibias_func_t * affine)
+unique_ptr<const AffineFunctionMulti> AffineFunction::Create(const intel_affine_multibias_func_t * affine)
 {
     if (GNA_WEIGHT_2B == affine->nBytesPerWeight)
     {
@@ -94,17 +94,17 @@ AffineFunctionSingle2B::AffineFunctionSingle2B(const nn_func_affine *affine) :
 {
 }
 
-WeightMode AffineFunctionSingle2B::GetWeightMode()
+WeightMode AffineFunctionSingle2B::GetWeightMode() const
 {
     return GNA_WEIGHT_2B;
 }
 
-const void* AffineFunctionSingle2B::GetWeights()
+const void* AffineFunctionSingle2B::GetWeights() const
 {
     return static_cast<const void*>(Weights);
 }
 
-const void* AffineFunctionSingle2B::GetBiases()
+const void* AffineFunctionSingle2B::GetBiases() const
 {
     return static_cast<const void*>(Biases);
 }
@@ -116,17 +116,17 @@ AffineFunctionSingle1B::AffineFunctionSingle1B(const nn_func_affine *affine) :
 {
 }
 
-WeightMode AffineFunctionSingle1B::GetWeightMode()
+WeightMode AffineFunctionSingle1B::GetWeightMode() const
 {
     return GNA_WEIGHT_1B;
 }
 
-const void* AffineFunctionSingle1B::GetWeights()
+const void* AffineFunctionSingle1B::GetWeights() const
 {
     return static_cast<const void*>(Weights);
 }
 
-const void* AffineFunctionSingle1B::GetBiases()
+const void* AffineFunctionSingle1B::GetBiases() const
 {
     return static_cast<const void*>(Biases);
 }
@@ -146,17 +146,17 @@ AffineFunctionMulti2B::AffineFunctionMulti2B(const nn_func_affine_multi *affine)
 {
 }
 
-WeightMode AffineFunctionMulti2B::GetWeightMode()
+WeightMode AffineFunctionMulti2B::GetWeightMode() const
 {
     return GNA_WEIGHT_2B;
 }
 
-const void* AffineFunctionMulti2B::GetWeights()
+const void* AffineFunctionMulti2B::GetWeights() const
 {
     return static_cast<const void*>(Weights);
 }
 
-const void* AffineFunctionMulti2B::GetBiases()
+const void* AffineFunctionMulti2B::GetBiases() const
 {
     return static_cast<const void*>(Biases);
 }
@@ -169,19 +169,32 @@ AffineFunctionMulti1B::AffineFunctionMulti1B(const nn_func_affine_multi *affine)
     Expect::ValidBuffer(WeightScaleFactors);
 }
 
-WeightMode AffineFunctionMulti1B::GetWeightMode()
+WeightMode AffineFunctionMulti1B::GetWeightMode() const
 {
     return GNA_WEIGHT_1B;
 }
 
-const void* AffineFunctionMulti1B::GetWeights()
+const void* AffineFunctionMulti1B::GetWeights() const
 {
     return static_cast<const void*>(Weights);
 }
 
-const void* AffineFunctionMulti1B::GetBiases()
+const void* AffineFunctionMulti1B::GetBiases() const
 {
     return static_cast<const void*>(Biases);
+}
+
+const unique_ptr<const ActivationFunction> ActivationFunction::Create(const nn_func_pwl * const pwl,
+    const bool mandatory)
+{
+    if (mandatory || /*Enabled*/ (nullptr != pwl->pSegments) && (pwl->nSegments > 0))
+    {
+        return make_unique<ActivationFunction>(pwl, mandatory);
+    }
+    else
+    {
+        return unique_ptr<const ActivationFunction>();
+    }
 }
 
 ActivationFunction::ActivationFunction(const nn_func_pwl *pwl) :
@@ -194,5 +207,15 @@ ActivationFunction::ActivationFunction(const nn_func_pwl *pwl) :
     {
         Expect::ValidBuffer(Segments, XNN_ERR_PWL_DATA);
         Expect::InRange(SegmentCount, SegmentCountMin, SegmentCountMax, XNN_ERR_PWL_SEGMENTS);
+    }
+}
+
+ActivationFunction::ActivationFunction(const nn_func_pwl *pwl, const bool mandatory) :
+    ActivationFunction(pwl)
+{
+    if (mandatory)
+    {
+        // TODO: add ACTIVATION MANDATORY error code
+        Expect::True(Enabled, XNN_ERR_LYR_CFG);
     }
 }

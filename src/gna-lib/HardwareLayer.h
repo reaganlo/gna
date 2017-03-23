@@ -95,8 +95,8 @@ protected:
 
     const uint32_t bufferElementCount;
     uint32_t lastIterationElementCount;
-    AffineFunction* affine = nullptr;
-    ActivationFunction* activation = nullptr;
+    const AffineFunction* affine = nullptr;
+    const ActivationFunction* activation = nullptr;
 
 private:
     // Number of data elements that may be stored in hw buffer

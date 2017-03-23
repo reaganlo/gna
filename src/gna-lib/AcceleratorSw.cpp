@@ -151,7 +151,7 @@ status_t AcceleratorSw::Score(
             if (GNA_SUCCESS != status) return status;
 
             // apply piecewise linear function if enabled
-            if(activation.Enabled)
+            if(activation)
             {
                 xnnKernel->pwl(sourceLayer, 0, nOuts - 1, 0,
                     sourceLayer->nInputColumns - 1, &sat, fvBuffers->pwl);
@@ -165,7 +165,7 @@ status_t AcceleratorSw::Score(
             status = xnnKernel->affineMbias(sourceLayer, al, nOuts, &sat, fvBuffers);
             if (GNA_SUCCESS != status) return status;
 
-            if(activation.Enabled)
+            if(activation)
             {
                 xnnKernel->pwl(sourceLayer, 0, sourceLayer->nOutputRows - 1, 0,
                    sourceLayer->nInputColumns - 1, &sat, fvBuffers->pwl);
@@ -180,7 +180,7 @@ status_t AcceleratorSw::Score(
             xnnKernel->diagonal(sourceLayer, &sat);
 
             auto& activation = affineLayer.Activation;
-            if(activation.Enabled)
+            if(activation)
             {
                 xnnKernel->pwl(sourceLayer, 0, sourceLayer->nOutputRows - 1, 0,
                     sourceLayer->nInputColumns - 1, &sat, fvBuffers->pwl);

@@ -33,24 +33,18 @@ using namespace GNA;
 
 void RequestConfiguration::AddBuffer(gna_buffer_type type, uint32_t layerIndex, void *address)
 {
-    auto found = LayerConfigurations.find(layerIndex);
-    if(found == LayerConfigurations.end())
-    {
-        LayerConfigurations.emplace(layerIndex, std::make_unique<LayerConfiguration>());
-    }
-
-    auto& layerConfiguration = LayerConfigurations.at(layerIndex);
+    auto found = LayerConfigurations.emplace(layerIndex, std::make_unique<LayerConfiguration>());
+    auto layerConfiguration = found.first->second.get();
+    // TODO: add model validation - verify if RequestConfiguration is  valid for given layer
     switch(type)
     {
     case GNA_IN:
-        if (layerConfiguration->InputBuffer)
-            throw GnaException(GNA_ERR_UNKNOWN);
+        Expect::Null(layerConfiguration->InputBuffer.get());
         layerConfiguration->InputBuffer = std::make_unique<ConfigurationBuffer>(GNA_IN, address);
         ++InputBuffersCount;
         break;
     case GNA_OUT:
-        if (layerConfiguration->OutputBuffer)
-            throw GnaException(GNA_ERR_UNKNOWN);
+        Expect::Null(layerConfiguration->OutputBuffer.get());
         layerConfiguration->OutputBuffer = std::make_unique<ConfigurationBuffer>(GNA_OUT, address);
         ++OutputBuffersCount;
         break;
@@ -61,14 +55,12 @@ void RequestConfiguration::AddBuffer(gna_buffer_type type, uint32_t layerIndex, 
 
 void RequestConfiguration::AddActiveList(uint32_t layerIndex, uint32_t indicesCount, uint32_t *indices)
 {
-    auto found = LayerConfigurations.find(layerIndex);
-    if(found == LayerConfigurations.end())
-    {
-        LayerConfigurations.emplace(layerIndex, std::make_unique<LayerConfiguration>());
-    }
-
-    auto& layerConfiguration = LayerConfigurations.at(layerIndex);
+    // TODO: add model validation - verify if RequestConfiguration is  valid for given layer
+    auto found = LayerConfigurations.emplace(layerIndex, std::make_unique<LayerConfiguration>());
+    auto layerConfiguration = found.first->second.get();
+    Expect::Null(layerConfiguration->ActiveList.get());
     layerConfiguration->ActiveList = std::make_unique<ActiveList>(indicesCount, indices);
+    ++ActiveListCount;
 }
 
 void ConfigurationBuffer::validate() const

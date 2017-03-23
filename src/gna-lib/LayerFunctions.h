@@ -89,14 +89,14 @@ class AffineFunctionMulti2B;
 struct AffineFunction
 {
 public:
-    static unique_ptr<AffineFunctionSingle> Create(const intel_affine_func_t * affine);
-    static unique_ptr<AffineFunctionMulti> Create(const intel_affine_multibias_func_t * affine);
+    static unique_ptr<const AffineFunctionSingle> Create(const intel_affine_func_t * affine);
+    static unique_ptr<const AffineFunctionMulti> Create(const intel_affine_multibias_func_t * affine);
 
-    virtual WeightMode GetWeightMode() = 0;
+    virtual WeightMode GetWeightMode() const  = 0;
 
-    virtual const void* GetWeights() = 0;
+    virtual const void* GetWeights() const  = 0;
 
-    virtual const void* GetBiases() = 0;
+    virtual const void* GetBiases() const  = 0;
 };
 
 // 2B Weights AffineFunction
@@ -118,11 +118,11 @@ public:
     AffineFunctionSingle2B(const nn_func_affine *affine);
     ~AffineFunctionSingle2B() = default;
 
-    virtual WeightMode GetWeightMode() override;
+    virtual WeightMode GetWeightMode() const override;
 
-    virtual const void* GetWeights() override;
+    virtual const void* GetWeights() const override;
 
-    virtual const void* GetBiases() override;
+    virtual const void* GetBiases() const override;
 };
 
 // 1B Weights AffineFunction
@@ -132,11 +132,11 @@ public:
     AffineFunctionSingle1B(const nn_func_affine *affine);
     ~AffineFunctionSingle1B() = default;
 
-    virtual WeightMode GetWeightMode() override;
+    virtual WeightMode GetWeightMode() const override;
 
-    virtual const void* GetWeights() override;
+    virtual const void* GetWeights() const override;
 
-    virtual const void* GetBiases() override;
+    virtual const void* GetBiases() const override;
 };
 
 
@@ -160,11 +160,11 @@ public:
     AffineFunctionMulti2B(const nn_func_affine_multi *affine);
     ~AffineFunctionMulti2B() = default;
 
-    virtual WeightMode GetWeightMode() override;
+    virtual WeightMode GetWeightMode() const override;
 
-    virtual const void* GetWeights() override;
+    virtual const void* GetWeights() const override;
 
-    virtual const void* GetBiases() override;
+    virtual const void* GetBiases() const override;
 };
 
 // 1B Weights AffineFunction for Multi Bias
@@ -176,22 +176,23 @@ public:
 
     const nn_bias_c *WeightScaleFactors;
 
-    virtual WeightMode GetWeightMode() override;
+    virtual WeightMode GetWeightMode() const override;
 
-    virtual const void* GetWeights() override;
+    virtual const void* GetWeights() const override;
 
-    virtual const void* GetBiases() override;
+    virtual const void* GetBiases() const override;
 };
 
 class ActivationFunction
 {
 public:
+    static const unique_ptr<const ActivationFunction> Create(const nn_func_pwl * const pwl, const bool mandatory);
+
     static const uint32_t SegmentCountMax = XNN_N_PWL_SEGS_MAX;
     static const uint32_t SegmentCountMin = XNN_N_PWL_SEGS_MIN;
 
-    ActivationFunction(const nn_func_pwl *pwl);
+    ActivationFunction(const nn_func_pwl * const pwl, const bool mandatory);
     virtual ~ActivationFunction() = default;
-
     ActivationFunction() = delete;
 
     const uint32_t SegmentCount;
@@ -199,6 +200,7 @@ public:
     const bool Enabled;
 
 protected:
+    ActivationFunction(const nn_func_pwl * const pwl);
     const nn_func_pwl *sourcePwl;  // TODO:KJ: remove when SW will use SoftwareModel classes only
 };
 

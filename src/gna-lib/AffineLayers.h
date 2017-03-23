@@ -37,8 +37,8 @@ public:
     AffineLayer(const nn_layer *layer, const uint32_t inputVectorCount);
     virtual ~AffineLayer() = default;
 
-    unique_ptr<AffineFunctionSingle> Affine;
-    const ActivationFunction Activation;
+    const unique_ptr<const AffineFunctionSingle> Affine;
+    const unique_ptr<const ActivationFunction> Activation;
 
 protected:
     const nn_layer_affine *sourceAffineLayer;
@@ -50,8 +50,8 @@ public:
     AffineMultiBiasLayer(const nn_layer *layer, const uint32_t inputVectorCount);
     virtual ~AffineMultiBiasLayer() = default;
 
-    unique_ptr<AffineFunctionMulti> Affine;
-    const ActivationFunction Activation;
+    const unique_ptr<const AffineFunctionMulti> Affine;
+    const unique_ptr<const ActivationFunction> Activation;
 
 private:
     const nn_layer_affine_multi *sourceAffineLayer;

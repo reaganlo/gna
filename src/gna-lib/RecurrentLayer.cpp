@@ -31,19 +31,18 @@ using namespace GNA;
 
 RnnLayer::RnnLayer(nn_layer const * const layer, const uint32_t inputVectorCount) :
     Layer(layer, inputVectorCount),
-    Activation(&static_cast<const nn_layer_reccurent*>(layer->pLayerStruct)->pwl),
+    Affine(AffineFunction::Create(&static_cast<const nn_layer_reccurent*>(layer->pLayerStruct)->affine)),
+    // RNN has only 2B output with Activation always enabled
+    Activation(ActivationFunction::Create(&static_cast<const nn_layer_reccurent*>(layer->pLayerStruct)->pwl, true)),
     FeedbackDelay{static_cast<const nn_layer_reccurent * const>(layer->pLayerStruct)->feedbackFrameDelay},
     sourceLayer{static_cast<const nn_layer_reccurent * const>(layer->pLayerStruct)}
 {
     Expect::InRange(FeedbackDelay, 1, Input.VectorCount-1, XNN_ERR_NO_FEEDBACK);
+
     // must be multiple 32 to keep 64B output buffer alignment
     Expect::MultiplicityOf(Output.ElementCount, RNN_N_OUT_ELEMS_MPLY);
     Expect::ValidBuffer(Output.ScratchPad); // intermediate output buffer must be set always
-
-    Affine = AffineFunction::Create(&sourceLayer->affine);
-    
-    Expect::True(Activation.Enabled, XNN_ERR_LYR_CFG);// RNN has only 2B output with Activation always enabled
-    Output.SetOutputMode(Activation.Enabled, layer->nBytesPerOutput);
+    Output.SetOutputMode(Activation ? true : false, layer->nBytesPerOutput);
 
     Expect::True(Input.VectorCount == Input.RowCount, XNN_ERR_LYR_CFG);
     Expect::True(Input.VectorCount == Output.RowCount, XNN_ERR_LYR_CFG);

@@ -171,7 +171,7 @@ HardwareLayerAffDiagTrans::HardwareLayerAffDiagTrans(const Layer& swLayer,
     case INTEL_AFFINE_MULTIBIAS:
         auto& aff = static_cast<const AffineLayer&>(softwareLayer);
         affine = aff.Affine.get();
-        activation = const_cast<ActivationFunction*>(&aff.Activation);
+        activation = aff.Activation.get();
         break;
     }
     save();
@@ -198,7 +198,7 @@ HardwareLayerRnn::HardwareLayerRnn(const Layer& swLayer, void * const memoryBase
 {
     auto& rnn = static_cast<const RnnLayer&>(softwareLayer);
     affine = rnn.Affine.get();
-    activation = const_cast<ActivationFunction*>(&rnn.Activation);
+    activation = rnn.Activation.get();
     convert();
     save();
 };

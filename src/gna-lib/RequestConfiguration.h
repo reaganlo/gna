@@ -33,6 +33,7 @@
 #include "ActiveList.h"
 #include "common.h"
 
+using std::map;
 using std::unique_ptr;
 
 namespace GNA
@@ -56,9 +57,9 @@ struct ConfigurationBuffer
 
 struct LayerConfiguration
 {
-    std::unique_ptr<ActiveList> ActiveList;
-    std::unique_ptr<ConfigurationBuffer> InputBuffer;
-    std::unique_ptr<ConfigurationBuffer> OutputBuffer;
+    unique_ptr<ActiveList> ActiveList;
+    unique_ptr<ConfigurationBuffer> InputBuffer;
+    unique_ptr<ConfigurationBuffer> OutputBuffer;
 };
 
 /*
@@ -69,7 +70,10 @@ struct LayerConfiguration
 class RequestConfiguration
 {
 public:
-    RequestConfiguration(gna_model_id modelId, gna_request_cfg_id configId) : ModelId(modelId), ConfigId(configId) {}
+    RequestConfiguration(gna_model_id modelId, gna_request_cfg_id configId) :
+        ModelId(modelId),
+        ConfigId(configId)
+    {};
 
     void AddBuffer(gna_buffer_type type, uint32_t layerIndex, void *address);
     void AddActiveList(uint32_t layerIndex, uint32_t indicesCount, uint32_t *indices);
@@ -77,9 +81,10 @@ public:
     gna_model_id ModelId;
     gna_request_cfg_id ConfigId;
 
-    std::map<uint32_t, std::unique_ptr<LayerConfiguration>> LayerConfigurations;
+    map<uint32_t, unique_ptr<LayerConfiguration>> LayerConfigurations;
     uint32_t InputBuffersCount = 0;
     uint32_t OutputBuffersCount = 0;
+    uint32_t ActiveListCount = 0;
 };
 
 }

@@ -81,7 +81,8 @@ PoolingFunction::PoolingFunction(const nn_layer_conv * sourceLayer) :
 
 CnnLayer::CnnLayer(nn_layer const * const layer, const uint32_t inputVectorCount) :
     Layer(layer, inputVectorCount),
-    Activation(&static_cast<const nn_layer_conv*>(layer->pLayerStruct)->pwl),
+    // CNN has only 2B output with Activation always enabled
+    Activation(ActivationFunction::Create(&static_cast<const nn_layer_conv*>(layer->pLayerStruct)->pwl, true)),
     Convolution(static_cast<const nn_layer_conv*>(layer->pLayerStruct), Input.ElementCount),
     Pooling(static_cast<const nn_layer_conv*>(layer->pLayerStruct)),
     sourceLayer{ static_cast<const nn_layer_conv * const>(layer->pLayerStruct) }
@@ -89,10 +90,9 @@ CnnLayer::CnnLayer(nn_layer const * const layer, const uint32_t inputVectorCount
     Expect::True(Input.VectorCount == 1, XNN_ERR_GROUPING);
     Expect::True(Input.VectorCount == Input.RowCount, XNN_ERR_GROUPING);
     Expect::True(Input.VectorCount == Output.RowCount, XNN_ERR_GROUPING);
-    Expect::ValidBuffer(Output.ScratchPad); // intermediate output buffer must be set always
 
-    Expect::True(Activation.Enabled, XNN_ERR_LYR_CFG);// CNN has only 2B output with Activation always enabled
-    Output.SetOutputMode(Activation.Enabled, layer->nBytesPerOutput);
+    Expect::ValidBuffer(Output.ScratchPad); // intermediate output buffer must be set always
+    Output.SetOutputMode(Activation ? true : false, layer->nBytesPerOutput);
 
     // NOTE: intentional const override for Output.ElementCount // TODO: consider refactoring
     auto& outputElementCount = const_cast<uint32_t&>(static_cast<const uint32_t&>((Output.ElementCount)));
