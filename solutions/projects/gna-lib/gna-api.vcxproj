@@ -98,6 +98,7 @@
     <ClCompile Include="$(SRC_DIR)\gna-lib\RequestConfiguration.cpp" />
     <ClInclude Include="$(SRC_DIR)\common\profiler.h" />
     <ClInclude Include="$(SRC_DIR)\common\gna-api-dev.h" />
+    <ClInclude Include="$(SRC_DIR)\common\gna-api-extra.h" />
     <ClInclude Include="$(SRC_DIR)\common\gna-api-status.h" />
     <ClInclude Include="$(SRC_DIR)\common\gna-api-types-gmm.h" />
     <ClInclude Include="$(SRC_DIR)\common\gna-api-types-xnn.h" />
