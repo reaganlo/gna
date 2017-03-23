@@ -167,12 +167,23 @@ typedef union _CTRL_FLAGS
     UINT32      layerCount      :14;
     UINT32      layerNo         :14;
     UINT32      _rsvd           :1;
+    UINT32      bufferConfigsCount;
     };
-    UINT32      _dword;          // value of whole register
+    UINT64      _dword;          // value of whole register
 
 } CTRL_FLAGS;                       // Control flag
 
-static_assert(4 == sizeof(CTRL_FLAGS), "Invalid size of CTRL_FLAGS");
+static_assert(8 == sizeof(CTRL_FLAGS), "Invalid size of CTRL_FLAGS");
+
+/**
+ */
+typedef struct _GNA_BUFFER_DESCR
+{
+    UINT32 offset;
+    UINT32 value;
+} GNA_BUFFER_DESCR, *PGNA_BUFFER_DESCR;
+
+static_assert(8 == sizeof(GNA_BUFFER_DESCR), "Invalid size of GNA_BUFFER_DESCR");
 
 /**
  * CALCULATE request data with output information.
@@ -187,10 +198,11 @@ typedef struct _GNA_CALC_IN
     perf_drv_t          drvPerf;    // driver level performance profiling results
     perf_hw_t           hwPerf;     // hardware level performance results
     status_t            status;     // status of scoring
+    UINT32              _rsvd;
 
 } GNA_CALC_IN, *PGNA_CALC_IN;       // CALCULATE IOCTL - Input data
 
-static_assert(56 == sizeof(GNA_CALC_IN), "Invalid size of GNA_CALC_IN");
+static_assert(64 == sizeof(GNA_CALC_IN), "Invalid size of GNA_CALC_IN");
 
 /**
  * Minimum Size of GNA (GMM/xNN) request in bytes

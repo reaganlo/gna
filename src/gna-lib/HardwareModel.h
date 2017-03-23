@@ -46,6 +46,8 @@ public:
 
     ~HardwareModel();
 
+    uint32_t GetOffsetToBase(void* address);
+
 private:
     void build(const std::vector<std::unique_ptr<Layer>>& layers, const uint32_t hardwareInternalBufferSize);
 

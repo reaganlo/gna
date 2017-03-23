@@ -76,8 +76,9 @@ void ConfigurationBuffer::validate() const
     Expect::NotNull(address);
 }
 
-ConfigurationBuffer::ConfigurationBuffer(gna_buffer_type type, void* address)
-    : type(type), address(address)
+ConfigurationBuffer::ConfigurationBuffer(gna_buffer_type type, void* address) : 
+    type(type), 
+    address(address)
 {
     validate();
 }

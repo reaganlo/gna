@@ -93,6 +93,11 @@ void HardwareModel::unmapMemory()
     memoryMapped = false;
 }
 
+uint32_t HardwareModel::GetOffsetToBase(void* address)
+{
+    return Hw::getAddrOffset(address, memoryBaseAddress);
+}
+
 void HardwareModel::build(const std::vector<std::unique_ptr<Layer>>& layers, const uint32_t hardwareInternalBufferSize)
 {
     auto layerDescriptor = static_cast<XNN_LYR*>(memoryBaseAddress);

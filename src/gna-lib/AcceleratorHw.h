@@ -25,6 +25,7 @@
 
 #pragma once
 
+#include <memory>
 #include <string>
 
 #include "IAccelerator.h"
@@ -41,10 +42,6 @@ public:
 
     ~AcceleratorHw() {};
 
-    /**
-     * Deleted functions to prevent from being defined or called
-     * @see: https://msdn.microsoft.com/en-us/library/dn457344.aspx
-     */
     AcceleratorHw() = delete;
     AcceleratorHw(const AcceleratorHw &) = delete;
     AcceleratorHw& operator=(const AcceleratorHw&) = delete;
@@ -91,6 +88,10 @@ protected:
 
     // TODO: replace SoftwareModel with compiled model
     virtual void HwVerifier(SoftwareModel* model, status_t scoring_status);
+
+private:
+    void prepareDataToSend(const CompiledModel &model, const RequestConfiguration &requestConfiguration,
+        std::unique_ptr<char[]> &data, size_t &dataSize) const;
 };
 
 }

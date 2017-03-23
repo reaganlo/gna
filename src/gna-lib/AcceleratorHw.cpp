@@ -35,8 +35,8 @@ using namespace GNA;
 status_t AcceleratorHw::Score(
     const CompiledModel& model,
     const RequestConfiguration& requestConfiguration,
-          RequestProfiler *profiler,
-          KernelBuffers *buffers)
+    RequestProfiler *profiler,
+    KernelBuffers *buffers)
 {
     UNREFERENCED_PARAMETER(buffers);
     auto status = GNA_SUCCESS;
@@ -45,19 +45,11 @@ status_t AcceleratorHw::Score(
     memset(&ioHandle, 0, sizeof(ioHandle));
     ioHandle.hEvent = CreateEvent(nullptr, false, false, nullptr);
 
-    GNA_CALC_IN calculationData;
-    auto found = std::find_if(
-        requestConfiguration.LayerConfigurations.cbegin(),
-        requestConfiguration.LayerConfigurations.cend(),
-        [](const auto& iter) { return nullptr != iter.second->ActiveList; });
+    std::unique_ptr<char[]> data;
+    size_t size;
+    prepareDataToSend(model, requestConfiguration, data, size);
 
-    calculationData.ctrlFlags.activeListOn = found != requestConfiguration.LayerConfigurations.cend();
-    calculationData.ctrlFlags.gnaMode = 1; // xnn by default
-    calculationData.ctrlFlags.layerCount = model.GetLayerCount(); // xnn by default
-    calculationData.ctrlFlags.layerNo = 0;
-    calculationData.modelId = model.GetModelId();
-
-    status = Submit(&calculationData, sizeof(calculationData), &profiler->ioctlSubmit, &ioHandle);
+    status = Submit(data.get(), size, &profiler->ioctlSubmit, &ioHandle);
     ERRCHECKR(GNA_SUCCESS != status, status);
 
     profilerDTscStart(&profiler->ioctlWaitOn);
@@ -72,11 +64,12 @@ status_t AcceleratorHw::Score(
     const CompiledModel& model,
     const SubModel& submodel,
     const RequestConfiguration& requestConfiguration,
-          RequestProfiler *profiler,
-          KernelBuffers *buffers)
+    RequestProfiler *profiler,
+    KernelBuffers *buffers)
 {
     return GNA_SUCCESS;
 }
+
 //status_t AcceleratorHw::Score(Hw *hw, RequestProfiler* p)
 //{
 //    // TODO: with already compiled model, this won't be necessary
@@ -164,11 +157,60 @@ status_t AcceleratorHw::Score(
 //    return status;
 //}
 
+void AcceleratorHw::prepareDataToSend(const CompiledModel &model, const RequestConfiguration &requestConfiguration
+    , std::unique_ptr<char[]> &data, size_t &dataSize) const
+{
+    GNA_CALC_IN calculationData;
+    auto found = std::find_if(
+        requestConfiguration.LayerConfigurations.cbegin(),
+        requestConfiguration.LayerConfigurations.cend(),
+        [](const auto& iter) { return nullptr != iter.second->ActiveList; });
+
+    calculationData.ctrlFlags.activeListOn = found != requestConfiguration.LayerConfigurations.cend();
+    calculationData.ctrlFlags.gnaMode = 1; // xnn by default
+    calculationData.ctrlFlags.layerCount = model.GetLayerCount(); // xnn by default
+    calculationData.ctrlFlags.layerNo = 0;
+    calculationData.modelId = model.GetModelId();
+    calculationData.ctrlFlags.bufferConfigsCount = requestConfiguration.InputBuffersCount + requestConfiguration.OutputBuffersCount;
+
+    dataSize = sizeof(calculationData) + calculationData.ctrlFlags.bufferConfigsCount * sizeof(GNA_BUFFER_DESCR);
+    data.reset(new char[dataSize]);
+    std::memcpy(data.get(), &calculationData, sizeof(calculationData));
+
+    auto *lyrsCfg = reinterpret_cast<PGNA_BUFFER_DESCR>(data.get() + sizeof(calculationData));
+    for (auto it = requestConfiguration.LayerConfigurations.begin();
+        it != requestConfiguration.LayerConfigurations.end(); ++it)
+    {
+        auto& hwModel = model.GetHardwareModel();
+
+        if (it->second->InputBuffer)
+        {
+            lyrsCfg->offset = it->first * sizeof(XNN_LYR) + offsetof(XNN_LYR, in_buffer);
+            lyrsCfg->value = hwModel.GetOffsetToBase(it->second->InputBuffer->address);
+            ++lyrsCfg;
+        }
+
+        if (it->second->OutputBuffer)
+        {
+            if (LayerOutput::ActivatedOutput == model.GetSoftwareModel().Layers[it->first]->Output.GetOutputMode() )
+            { 
+                lyrsCfg->offset = it->first * sizeof(XNN_LYR) + offsetof(XNN_LYR, out_act_fn_buffer);
+            }
+            else
+            {
+                lyrsCfg->offset = it->first * sizeof(XNN_LYR) + offsetof(XNN_LYR, out_sum_buffer);
+            }
+            lyrsCfg->value = hwModel.GetOffsetToBase(it->second->OutputBuffer->address);
+            ++lyrsCfg;
+        }
+    }
+}
+
 /**
  * Empty virtual hw verification methods implemented in HW VERBOSE version only
  */
-void AcceleratorHw::HwVerifier(Request* r){};
-void AcceleratorHw::HwVerifier(SoftwareModel *model, status_t scoring_status){};
-bool AcceleratorHw::SetConfig(string path, hw_calc_in_t* inData){ return true; };
-bool AcceleratorHw::SetDescriptor(string path, XNN_LYR* buff, hw_calc_in_t* inData){ return true; };
-bool AcceleratorHw::SetRegister(string path){ return true; };
+void AcceleratorHw::HwVerifier(Request* r) {};
+void AcceleratorHw::HwVerifier(SoftwareModel *model, status_t scoring_status) {};
+bool AcceleratorHw::SetConfig(string path, hw_calc_in_t* inData) { return true; };
+bool AcceleratorHw::SetDescriptor(string path, XNN_LYR* buff, hw_calc_in_t* inData) { return true; };
+bool AcceleratorHw::SetRegister(string path) { return true; };

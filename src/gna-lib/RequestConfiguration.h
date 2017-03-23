@@ -52,7 +52,6 @@ struct ConfigurationBuffer
 
     gna_buffer_type type;
     void *address;
-
 };
 
 struct LayerConfiguration
