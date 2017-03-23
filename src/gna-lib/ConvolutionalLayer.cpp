@@ -92,18 +92,17 @@ CnnLayer::CnnLayer(nn_layer const * const layer, const uint32_t inputVectorCount
     Expect::ValidBuffer(Output.ScratchPad); // intermediate output buffer must be set always
 
     Expect::True(Activation.Enabled, XNN_ERR_LYR_CFG);// CNN has only 2B output with Activation always enabled
-    Output.Validate(Activation.Enabled, layer->nBytesPerOutput, Config.Type);
-
-    
+    Output.SetOutputMode(Activation.Enabled, layer->nBytesPerOutput);
 
     // NOTE: intentional const override for Output.ElementCount // TODO: consider refactoring
+    auto& outputElementCount = const_cast<uint32_t&>(static_cast<const uint32_t&>((Output.ElementCount)));
     if (INTEL_NO_POOLING == Pooling.Type)// use convolution outputs per filter
     {
-        (uint32_t)(Output.ElementCount) = Convolution.OutputElementsCount;
+        outputElementCount = Convolution.OutputElementsCount;
     }
     else // use pooled outputs per filter
     {
-        (uint32_t)(Output.ElementCount) = ((Convolution.OutputElementsCount - 1) / Pooling.Stride + 1);
+        outputElementCount = ((Convolution.OutputElementsCount - 1) / Pooling.Stride + 1);
     }
 
     Expect::True(Output.ColumnCount == Convolution.Filters.Count * Output.ElementCount, XNN_ERR_LYR_CFG);

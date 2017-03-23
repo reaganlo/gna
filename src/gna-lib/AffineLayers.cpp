@@ -35,7 +35,7 @@ AffineLayer::AffineLayer(const nn_layer *layer, const uint32_t inputVectorCount)
     Activation(&static_cast<const nn_layer_affine*>(layer->pLayerStruct)->pwl),
     sourceAffineLayer(static_cast<const nn_layer_affine*>(layer->pLayerStruct))
 {
-    Output.Validate(Activation.Enabled, layer->nBytesPerOutput, Config.Type);
+    Output.SetOutputMode(Activation.Enabled, layer->nBytesPerOutput);
 
     Affine = AffineFunction::Create(&sourceAffineLayer->affine);
 };
@@ -45,7 +45,7 @@ AffineMultiBiasLayer::AffineMultiBiasLayer(const nn_layer *layer, const uint32_t
     Activation(&static_cast<const nn_layer_affine_multi*>(layer->pLayerStruct)->pwl),
     sourceAffineLayer(static_cast<const nn_layer_affine_multi*>(layer->pLayerStruct))
 {
-    Output.Validate(Activation.Enabled, layer->nBytesPerOutput, Config.Type);
+    Output.SetOutputMode(Activation.Enabled, layer->nBytesPerOutput);
 
     Affine = AffineFunction::Create(&sourceAffineLayer->affine);
 

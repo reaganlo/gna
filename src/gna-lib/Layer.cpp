@@ -99,7 +99,8 @@ LayerInput::LayerInput(const nn_layer &layer, const LayerConfig& config, const u
 
 LayerOutput::LayerOutput(const nn_layer &layer, const LayerConfig& config) :
     LayerMatrix(layer.nOutputRows, layer.nOutputColumns, layer.pOutputs, config),
-    ScratchPad(static_cast<uint32_t const * const>(layer.pOutputsIntermediate))
+    ScratchPad(static_cast<uint32_t const * const>(layer.pOutputsIntermediate)),
+    mode(NonActivatedOutput)
 {
     Expect::InRange(ElementCount, 1, XNN_N_IN_ELEMS_MAX, XNN_ERR_LYR_CFG);
     Expect::InRange(layer.nBytesPerOutput, ActivatedOutputSize, NonActivatedOutputSize, XNN_ERR_INPUT_BYTES);
@@ -111,16 +112,17 @@ LayerOutput::LayerOutput(const nn_layer &layer, const LayerConfig& config) :
     }
 };
 
-void LayerOutput::Validate(const bool ActivationEnabled, const uint32_t outputSize,
-    const nn_layer_type type) const
+void LayerOutput::SetOutputMode(const bool activationEnabled, const uint32_t outputSize)
 {
-    if (ActivationEnabled)
+    if (activationEnabled)
     {
         Expect::True(ActivatedOutputSize == outputSize, XNN_ERR_INT_OUTPUT_BYTES);
+        mode = ActivatedOutput;
     }
     else
     {
         Expect::True(NonActivatedOutputSize == outputSize, XNN_ERR_INT_OUTPUT_BYTES);
+        mode = NonActivatedOutput;
     }
 }
 

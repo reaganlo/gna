@@ -38,7 +38,7 @@ public:
     virtual ~AffineLayer() = default;
 
     unique_ptr<AffineFunctionSingle> Affine;
-    ActivationFunction Activation;
+    const ActivationFunction Activation;
 
 protected:
     const nn_layer_affine *sourceAffineLayer;
@@ -51,7 +51,7 @@ public:
     virtual ~AffineMultiBiasLayer() = default;
 
     unique_ptr<AffineFunctionMulti> Affine;
-    ActivationFunction Activation;
+    const ActivationFunction Activation;
 
 private:
     const nn_layer_affine_multi *sourceAffineLayer;

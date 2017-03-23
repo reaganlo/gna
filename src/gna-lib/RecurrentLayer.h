@@ -41,7 +41,7 @@ public:
     void SetFeedbackBuffer(const void * outputBuffer);// TODO: not multi-thread safe
 
     unique_ptr<AffineFunctionSingle> Affine;
-    ActivationFunction Activation;
+    const ActivationFunction Activation;
     const uint32_t FeedbackDelay;
 
 private:

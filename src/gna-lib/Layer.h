@@ -82,15 +82,28 @@ public:
 struct LayerOutput : public LayerMatrix
 {
 public:
+    typedef enum _OutputMode
+    {
+        NonActivatedOutput,
+        ActivatedOutput,
+    } OutputMode;
+
     static const uint32_t NonActivatedOutputSize = 4;
     static const uint32_t ActivatedOutputSize = 2;
 
     LayerOutput(const nn_layer &layer, const LayerConfig& config);
     ~LayerOutput() = default;
 
-    void Validate(const bool ActivationEnabled, const uint32_t, const nn_layer_type type) const;
+    void SetOutputMode(const bool activationEnabled, const uint32_t outputSize);
+    const OutputMode GetOutputMode() const
+    {
+        return mode;
+    };
 
     uint32_t const * const ScratchPad;
+
+private:
+    OutputMode mode;
 };
 
 
@@ -104,7 +117,7 @@ public:
     const nn_layer sourceLayer;// TODO: move to private when integration completed
     const LayerConfig Config;
     const LayerInput Input;
-    const LayerOutput Output;
+    LayerOutput Output;
 
 protected:
     Layer(const nn_layer *layer, const uint32_t inputVectorCount);

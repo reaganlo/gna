@@ -43,7 +43,7 @@ RnnLayer::RnnLayer(nn_layer const * const layer, const uint32_t inputVectorCount
     Affine = AffineFunction::Create(&sourceLayer->affine);
     
     Expect::True(Activation.Enabled, XNN_ERR_LYR_CFG);// RNN has only 2B output with Activation always enabled
-    Output.Validate(Activation.Enabled, layer->nBytesPerOutput, Config.Type);
+    Output.SetOutputMode(Activation.Enabled, layer->nBytesPerOutput);
 
     Expect::True(Input.VectorCount == Input.RowCount, XNN_ERR_LYR_CFG);
     Expect::True(Input.VectorCount == Output.RowCount, XNN_ERR_LYR_CFG);
