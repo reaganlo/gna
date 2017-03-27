@@ -127,7 +127,7 @@ ScoreMethod AcceleratorController::getScoreMethod(CompiledModel &model, accelera
         case Hardware:
             return HardwareOnly;
         default:
-            throw GnaException(GNA_ERR_UNKNOWN);
+            throw GnaException(GNA_UNKNOWN_ERROR);
         }
     }
 

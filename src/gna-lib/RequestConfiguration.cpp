@@ -49,7 +49,7 @@ void RequestConfiguration::AddBuffer(gna_buffer_type type, uint32_t layerIndex, 
         ++OutputBuffersCount;
         break;
     default:
-        throw GnaException(GNA_ERR_UNKNOWN);
+        throw GnaException(GNA_UNKNOWN_ERROR);
     }
 }
 

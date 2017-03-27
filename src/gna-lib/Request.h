@@ -40,13 +40,13 @@ namespace GNA
  */
 struct RequestProfiler
 {
-    prof_tsc_t      submit;         // score request submit profiler
-    prof_tsc_t      preprocess;     // preprocessing score request profiler
-    prof_tsc_t      process;        // processing score request profiler (includes GNAWait)
-    prof_tsc_t      scoring;        // profiler for computing scores in software mode
-    prof_tsc_t      total;          // profiler for total processing time (does not include GNAWait)
-    prof_tsc_t      ioctlSubmit;    // profiler for issuing "start scoring IOCTL"
-    prof_tsc_t      ioctlWaitOn;    // profiler for waiting for "start scoring IOCTL" completion
+    profiler_tsc submit;         // score request submit profiler
+    profiler_tsc preprocess;     // preprocessing score request profiler
+    profiler_tsc process;        // processing score request profiler (includes GNAWait)
+    profiler_tsc scoring;        // profiler for computing scores in software mode
+    profiler_tsc total;          // profiler for total processing time (does not include GNAWait)
+    profiler_tsc ioctlSubmit;    // profiler for issuing "start scoring IOCTL"
+    profiler_tsc ioctlWaitOn;    // profiler for waiting for "start scoring IOCTL" completion
 
 };                     // Library level request processing profiler
 

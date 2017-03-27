@@ -77,7 +77,6 @@ const char *GNAStatusName[] =
     "GNA_IOCTLSENDERR - Error: Device: sending IOCTL failed",
     "GNA_NULLARGNOTALLOWED - Error: NULL argument not allowed",
     "GNA_NULLARGREQUIRED - Error: NULL argument is required",
-	"GNA_ERR_UNKNOWN - Error: Unknown internal error occurred",
     "GNA_ERR_MEM_ALLOC1 - Error: Memory: Already allocated, only single allocation per device is allowed",
     "GNA_ERR_RESOURCES - Error: Unable to create new resources",
     "GNA_ERR_NOT_MULTIPLE - Error: Value is not multiple of required value",

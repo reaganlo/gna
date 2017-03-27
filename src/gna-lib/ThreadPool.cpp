@@ -179,7 +179,7 @@ void ThreadPool::Enqueue(Request *request)
         unique_lock<mutex> lock(tp_mutex);
         if (stopped) 
         {
-            throw GnaException(GNA_ERR_UNKNOWN);
+            throw GnaException(GNA_UNKNOWN_ERROR);
         }
         tasks.emplace(request);
     }

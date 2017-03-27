@@ -46,55 +46,55 @@
 
 #if defined(PROFILE) || defined(PROFILE_DETAILED)
 
-void profilerTscStart(gna_profiler_tsc* p)
+void profilerTscStart(gna_profiler_tsc * const profiler)
 {
     int tmp[4];
 
-    if(NULL == p) return;
+    if(NULL == profiler) return;
 
-    p->passed = 0;
-    p->stop   = 0;
+    profiler->passed = 0;
+    profiler->stop   = 0;
 
     __cpuid(tmp, 0);
 
-    p->start  = (time_tsc)__rdtsc();
+    profiler->start  = (time_tsc)__rdtsc();
 }
 
-void profilerTscStop(gna_profiler_tsc* p)
+void profilerTscStop(gna_profiler_tsc * const profiler)
 {
     int tmp[4];
 
-    if(NULL == p) return;
+    if(NULL == profiler) return;
 
     __cpuid(tmp, 0);
 
-    p->stop   = (time_tsc)__rdtsc();
-    p->passed = p->stop - p->start;
+    profiler->stop   = (time_tsc)__rdtsc();
+    profiler->passed = profiler->stop - profiler->start;
 }
 
-void profilerTscStartAccumulate(gna_profiler_tsc* p)
+void profilerTscStartAccumulate(gna_profiler_tsc * const profiler)
 {
     int tmp[4];
 
-    if (NULL == p) return;
+    if (NULL == profiler) return;
 
-    p->stop = 0;
+    profiler->stop = 0;
 
     __cpuid(tmp, 0);
 
-    p->start = (time_tsc)__rdtsc();
+    profiler->start = (time_tsc)__rdtsc();
 }
 
-void profilerTscStopAccumulate(gna_profiler_tsc* p)
+void profilerTscStopAccumulate(gna_profiler_tsc * const profiler)
 {
     int tmp[4];
 
-    if (NULL == p) return;
+    if (NULL == profiler) return;
 
     __cpuid(tmp, 0);
 
-    p->stop = (time_tsc)__rdtsc();
-    p->passed += p->stop - p->start;
+    profiler->stop = (time_tsc)__rdtsc();
+    profiler->passed += profiler->stop - profiler->start;
 }
 
 #if !defined(DRIVER)
@@ -124,39 +124,39 @@ time_rtc rtcGetTimeDiff(time_rtc* start, time_rtc* stop)
     return diff;
 }
 
-void profilerRtcStart(gna_profiler_rtc* p)
+void profilerRtcStart(gna_profiler_rtc * const profiler)
 {
-    if(NULL == p) return;
+    if(NULL == profiler) return;
 
-    p->passed.PROFILER_TSEC  = 0;
-    p->passed.PROFILER_TFRAC = 0;
-    p->stop.PROFILER_TSEC    = 0;
-    p->stop.PROFILER_TFRAC   = 0;
-    rtcGetTime(&p->start);
+    profiler->passed.PROFILER_TSEC  = 0;
+    profiler->passed.PROFILER_TFRAC = 0;
+    profiler->stop.PROFILER_TSEC    = 0;
+    profiler->stop.PROFILER_TFRAC   = 0;
+    rtcGetTime(&profiler->start);
 }
 
-void profilerRtcStop(gna_profiler_rtc* p)
+void profilerRtcStop(gna_profiler_rtc * const profiler)
 {
-    if(NULL == p) return;
+    if(NULL == profiler) return;
 
-    rtcGetTime(&p->stop);
-    p->passed = rtcGetTimeDiff(&p->start, &p->stop);
+    rtcGetTime(&profiler->stop);
+    profiler->passed = rtcGetTimeDiff(&profiler->start, &profiler->stop);
 }
 
-time_tsc profilerRtcGetMilis(gna_profiler_rtc* p)
+time_tsc profilerRtcGetMilis(gna_profiler_rtc * const profiler)
 {
     time_tsc milis = TIME_TSC_MAX;
 
-    if(NULL != p)
+    if(NULL != profiler)
     {
         // check for milis overflow
-        if(TIME_TSC_MAX < (p->passed.PROFILER_TFRAC / (PROFILER_TFRAC_RES / 1000)) ) 
+        if(TIME_TSC_MAX < (profiler->passed.PROFILER_TFRAC / (PROFILER_TFRAC_RES / 1000)) ) 
             return TIME_TSC_MAX;
-        milis = p->passed.PROFILER_TFRAC / (PROFILER_TFRAC_RES / 1000);
+        milis = profiler->passed.PROFILER_TFRAC / (PROFILER_TFRAC_RES / 1000);
         // check for milis overflow (simplyfied equation!)
-        if((TIME_TSC_MAX / 1000) < (p->passed.PROFILER_TSEC))
+        if((TIME_TSC_MAX / 1000) < (profiler->passed.PROFILER_TSEC))
             return TIME_TSC_MAX;
-        milis += 1000 * p->passed.PROFILER_TSEC;   
+        milis += 1000 * profiler->passed.PROFILER_TSEC;   
     }
     return milis;
 }

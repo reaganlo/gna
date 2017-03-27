@@ -108,7 +108,7 @@ status_t RequestHandler::WaitFor(const gna_request_id requestId, const gna_timeo
     {
         auto score_status = future.get();
         auto status = removeRequest(requestId);
-        ERRCHECKR(GNA_SUCCESS != status, status);
+        Expect::True(GNA_SUCCESS == status, status);
         return score_status;
     }
     default:

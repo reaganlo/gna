@@ -26,7 +26,9 @@
 #pragma once
 
 #include "common.h"
+#include "Request.h"
 #include "SwHw.h"
+#include "Validator.h"
 
 namespace GNA
 {
@@ -34,22 +36,38 @@ namespace GNA
 class WinHandle
 {
 public:
-    WinHandle() :h_(INVALID_HANDLE_VALUE) {}
-    /**
-     * Deleted functions to prevent from being defined or called
-     * @see: https://msdn.microsoft.com/en-us/library/dn457344.aspx
-     */
+    WinHandle() :
+        deviceHandle(INVALID_HANDLE_VALUE)
+    {};
+        
+    explicit WinHandle(HANDLE const handle) :
+        deviceHandle(handle)
+    {};
+
+    ~WinHandle() 
+    {
+        if (INVALID_HANDLE_VALUE != deviceHandle)
+        {
+            CloseHandle(deviceHandle);
+            deviceHandle = INVALID_HANDLE_VALUE;
+        }
+    }
+
     WinHandle(const WinHandle &) = delete;
     WinHandle& operator=(const WinHandle&) = delete;
 
-    explicit WinHandle(HANDLE h) :h_(h) {}
-    ~WinHandle() { Close(); }
+    void Set(HANDLE const handle)
+    {
+        Expect::True(INVALID_HANDLE_VALUE == deviceHandle, GNA_UNKNOWN_ERROR);
+        deviceHandle = handle;
+    }
 
-    void Set(HANDLE h) { Close(); h_ = h; }
-    void Close() { if (INVALID_HANDLE_VALUE != h_) { CloseHandle(h_); h_ = INVALID_HANDLE_VALUE; } }
-    operator HANDLE() { return h_; }
+    operator HANDLE() {
+        return deviceHandle;
+    }
+
 private:
-    HANDLE h_;
+    HANDLE deviceHandle;
 };
 
 class IoctlSender
@@ -59,59 +77,23 @@ protected:
 
     static void Open(const GUID& guid);
 
-    //static void Close();
+    void IoctlSend(const DWORD code, LPVOID const inbuf, const DWORD inlen, LPVOID const outbuf, const DWORD outlen);
 
-    status_t IoctlSend(DWORD code,
-        LPVOID inbuf,
-        DWORD inlen,
-        LPVOID outbuf,
-        DWORD outlen,
-        BOOLEAN async = FALSE);
-
-    status_t Submit(
-        LPVOID      inbuf,
-        DWORD       inlen,
-        prof_tsc_t* ioctlSubmit,
-        io_handle_t*  handle);
-
-    status_t IoctlWait(
-        LPOVERLAPPED ioctl,
-        DWORD        timeout);
-
-    DWORD Cancel();
-
-    static WinHandle h_;
-    WinHandle evt_;
-    OVERLAPPED overlapped_;
-
-    /**
-     * Prints WinAPI last error info to console
-     *
-     * @error error code from GetLastError()
-     */
-    inline static void printLastError(DWORD error)
-    {
-        LPVOID lpMsgBuf;
-        FormatMessage(
-            FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-            nullptr,
-            error,
-            MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-            (LPTSTR)&lpMsgBuf,
-            0,
-            nullptr);
-
-        // Display the error message
-        if (nullptr != lpMsgBuf)
-        {
-            wprintf(L"%s\n", (wchar_t*)lpMsgBuf);
-            LocalFree(lpMsgBuf);
-        }
-    }
+    void IoctlSender::Submit(LPVOID const inbuf, const DWORD inlen, RequestProfiler * const profiler);
 
 private:
     IoctlSender(const IoctlSender &) = delete;
     IoctlSender& operator=(const IoctlSender&) = delete;
+
+    inline static void printLastError(DWORD error);
+    
+    void wait(LPOVERLAPPED const ioctl, const DWORD timeout);
+
+    static void checkStatus(BOOL ioResult);
+
+    static WinHandle deviceHandle;
+    WinHandle deviceEvent;
+    OVERLAPPED overlapped;
 };
 
 }

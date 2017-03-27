@@ -35,11 +35,6 @@
 
 namespace GNA
 {
-#ifdef _WIN32
-typedef OVERLAPPED  io_handle_t;    // ioctl handle type for Windows
-#else
-typedef uint32_t    io_handle_t;    // ioctl handle type for Linux and android
-#endif
 
 /**
  * Software request handle
@@ -90,7 +85,7 @@ public:
     /**
      * hardware processing event handle
      */
-    io_handle_t      io_handle;
+    OVERLAPPED io_handle;
 
    /**
     *  hardware request input data buffer,

@@ -60,23 +60,18 @@ HardwareModel::~HardwareModel()
 void HardwareModel::mapMemory(const Memory& memory)
 {
     if (memoryMapped)
-        throw GnaException(GNA_ERR_UNKNOWN);
+        throw GnaException(GNA_UNKNOWN_ERROR);
 
     // write model id in user buffer
     // driver will retrieve it
     *reinterpret_cast<uint64_t*>(memory.GetBuffer()) = static_cast<uint64_t>(modelId);
 
-    status_t status = GNA_SUCCESS;
-    status = IoctlSend(
+    IoctlSend(
         GNA_IOCTL_MEM_MAP,
         nullptr,
         0,
         memory.GetBuffer(),
-        memory.GetSize(),
-        TRUE);
-
-    if (GNA_SUCCESS != status)
-        throw GnaException(status);
+        memory.GetSize());
 
     memoryMapped = true;
 }
@@ -84,11 +79,7 @@ void HardwareModel::mapMemory(const Memory& memory)
 void HardwareModel::unmapMemory()
 {
     uint64_t mId = static_cast<uint64_t>(modelId);
-    status_t status = GNA_SUCCESS;
-    status = IoctlSend(GNA_IOCTL_MEM_UNMAP, &mId, sizeof(mId), nullptr, 0);
-
-    if (GNA_SUCCESS != status)
-        throw GnaException(status);
+    IoctlSend(GNA_IOCTL_MEM_UNMAP, &mId, sizeof(mId), nullptr, 0);
 
     memoryMapped = false;
 }

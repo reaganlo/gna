@@ -49,9 +49,9 @@ Hw::Hw(const void*   baseIn, uint32_t inBuffSizeIn) :
     inData(nullptr),
     xnnLayerDescriptors(nullptr),
     dataSize(0),
-    inBuffSize(inBuffSizeIn)
+    inBuffSize(inBuffSizeIn),
+    io_handle{0}
 {
-    memset(&io_handle, 0, sizeof(io_handle_t));
 }
 
 Hw::~Hw()

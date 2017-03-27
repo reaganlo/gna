@@ -171,26 +171,9 @@ typedef intel_convolutional_layer_t nn_layer_conv;
 typedef gna_perf_t                  perf_t;
 typedef gna_perf_drv_t              perf_drv_t;
 typedef gna_perf_hw_t               perf_hw_t;
-typedef gna_profiler_tsc            prof_tsc_t;
 
 #ifndef STATUS_T_ALIAS
 #define STATUS_T_ALIAS
 typedef intel_gna_status_t      status_t;
 #endif
 
-/******************************************************************************
-*
-* GMM library internal helper routines
-*
-*****************************************************************************/
-
-/**
-* Error check snippet for routines returning status code
-*  checks error condition, Prints standard message and returns calling function
-*
-* @condition condition to check, error if satisfied
-* @status    status to return
-* @return    status
-*/
-#define ERRCHECKR(condition, status) if(condition) { ERR("FAILED with status: %d\n", (int)status); return status; }
-// TODO: remove when switched to exceptions

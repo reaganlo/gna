@@ -42,7 +42,7 @@ RnnLayer::RnnLayer(nn_layer const * const layer, const uint32_t inputVectorCount
     // must be multiple 32 to keep 64B output buffer alignment
     Expect::MultiplicityOf(Output.ElementCount, RNN_N_OUT_ELEMS_MPLY);
     Expect::ValidBuffer(Output.ScratchPad); // intermediate output buffer must be set always
-    Output.SetOutputMode(Activation ? true : false, layer->nBytesPerOutput);
+    Output.SetOutputMode(Activation.operator bool(), layer->nBytesPerOutput);
 
     Expect::True(Input.VectorCount == Input.RowCount, XNN_ERR_LYR_CFG);
     Expect::True(Input.VectorCount == Output.RowCount, XNN_ERR_LYR_CFG);

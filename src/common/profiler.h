@@ -212,28 +212,28 @@ typedef struct
  *
  * @p profiler object to start
  */
-void profilerTscStart(gna_profiler_tsc* p);
+void profilerTscStart(gna_profiler_tsc * const profiler);
 
 /**
  * Stop TSC profiler, accumulate passed
  *
  * @p   profiler object to stop
  */
-void profilerTscStopAccumulate(gna_profiler_tsc* p);
+void profilerTscStopAccumulate(gna_profiler_tsc * const profiler);
 
 /**
 * Start TSC profiler, does not reset passed time
 *
 * @p profiler object to start
 */
-void profilerTscStartAccumulate(gna_profiler_tsc* p);
+void profilerTscStartAccumulate(gna_profiler_tsc * const profiler);
 
 /**
 * Stop TSC profiler
 *
 * @p   profiler object to stop
 */
-void profilerTscStop(gna_profiler_tsc* p);
+void profilerTscStop(gna_profiler_tsc * const profiler);
 
 #if !defined(DRIVER)
 /**
@@ -243,7 +243,7 @@ void profilerTscStop(gna_profiler_tsc* p);
  *
  * @p profiler object to start
  */
-void profilerRtcStart(gna_profiler_rtc* p);
+void profilerRtcStart(gna_profiler_rtc * const profiler);
 
 /**
  * Stop RTC profiler
@@ -252,7 +252,7 @@ void profilerRtcStart(gna_profiler_rtc* p);
  *
  * @p   profiler object to stop
  */
-void profilerRtcStop(gna_profiler_rtc* p);
+void profilerRtcStop(gna_profiler_rtc * const profiler);
 
 /**
  * Get passed miliseconds
@@ -262,7 +262,7 @@ void profilerRtcStop(gna_profiler_rtc* p);
  * @p       stopped profiler object
  * @return  passed time in miliseconds (or TIME_TSC_MAX if p is invalid)
  */
-time_tsc profilerRtcGetMilis(gna_profiler_rtc* p);
+time_tsc profilerRtcGetMilis(gna_profiler_rtc * const profiler);
 #endif //DRIVER
 
 #endif //#if defined(PROFILE) || defined(PROFILE_DETAILED)

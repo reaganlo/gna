@@ -53,10 +53,9 @@ UINT32 AcceleratorHwVerbose::ReadReg(UINT32 regOffset)
     hw_read_out_t readRegOut;
     ZeroMemory(&readRegOut, sizeof(readRegOut));
 
-    status = IoctlSend(GNA_IOCTL_READ_REG,
+    IoctlSend(GNA_IOCTL_READ_REG,
         &readRegIn, sizeof(readRegIn),
         &readRegOut, sizeof(readRegOut));
-    if (GNA_SUCCESS != status) ERR("IOCTL Failed\n");
 
     return readRegOut.regValue;
 }
@@ -69,10 +68,9 @@ void AcceleratorHwVerbose::WriteReg(UINT32 regOffset, UINT32 regVal)
     writeRegIn.regOffset = regOffset;
     writeRegIn.regValue = regVal;
 
-    status = IoctlSend(GNA_IOCTL_WRITE_REG,
+    IoctlSend(GNA_IOCTL_WRITE_REG,
         &writeRegIn, sizeof(writeRegIn),
         nullptr, 0);
-    if (GNA_SUCCESS != status) ERR("IOCTL Failed\n");
 }
 
 void AcceleratorHwVerbose::dumpMMIO()

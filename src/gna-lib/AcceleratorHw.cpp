@@ -25,9 +25,11 @@
 
 #include "AcceleratorHw.h"
 
-#define PHDUMP
-
 #include <string>
+
+#include "Validator.h"
+
+#define PHDUMP
 
 using std::string;
 using namespace GNA;
@@ -39,25 +41,18 @@ status_t AcceleratorHw::Score(
     KernelBuffers *buffers)
 {
     UNREFERENCED_PARAMETER(buffers);
-    auto status = GNA_SUCCESS;
 
-    io_handle_t ioHandle;
-    memset(&ioHandle, 0, sizeof(ioHandle));
-    ioHandle.hEvent = CreateEvent(nullptr, false, false, nullptr);
-
-    std::unique_ptr<char[]> data;
-    size_t size;
+    auto data = std::unique_ptr<char[]>();
+    auto size = size_t{0};
     prepareDataToSend(model, requestConfiguration, data, size);
 
-    status = Submit(data.get(), size, &profiler->ioctlSubmit, &ioHandle);
-    ERRCHECKR(GNA_SUCCESS != status, status);
+    Submit(data.get(), size, profiler);
 
-    profilerDTscStart(&profiler->ioctlWaitOn);
-    status = IoctlWait(&ioHandle, GNA_REQUEST_TIMEOUT_MAX);
-    ERRCHECKR(GNA_SUCCESS != status, status);
-    profilerDTscStop(&profiler->ioctlWaitOn);
+    auto response = reinterpret_cast<PGNA_CALC_IN>(data.get());
+    auto status = response->status;
+    Expect::True(status != GNA_SUCCESS && status != GNA_SSATURATE, status);
 
-    return GNA_SUCCESS;
+    return status;
 }
 
 status_t AcceleratorHw::Score(
@@ -95,7 +90,7 @@ status_t AcceleratorHw::Score(
 //
 //    // wait for
 //    profilerDTscStart(&p->ioctlWaitOn);
-//    status = IoctlWait(&hw->io_handle, GNA_REQUEST_TIMEOUT_MAX);
+//    status = wait(&hw->io_handle, GNA_REQUEST_TIMEOUT_MAX);
 //    profilerDTscStop(&p->ioctlWaitOn);
 //
 //    profilerDTscAStop(&p->total);

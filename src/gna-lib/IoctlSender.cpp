@@ -24,138 +24,106 @@
 */
 
 #include "IoctlSender.h"
-#include "GnaException.h"
-#include "Validator.h"
 
 #include <SetupApi.h>
+
+#include "GnaException.h"
 
 using namespace GNA;
 
 #define MAX_D0_STATE_PROBES 10
 #define WAIT_PERIOD			200		// in miliseconds
 
-WinHandle IoctlSender::h_;
+WinHandle IoctlSender::deviceHandle;
 
-IoctlSender::IoctlSender()
-:evt_(CreateEvent(nullptr, false, false, nullptr))
+IoctlSender::IoctlSender() :
+    deviceEvent(CreateEvent(nullptr, false, false, nullptr))
 {
-    ZeroMemory(&overlapped_, sizeof(overlapped_));
+    ZeroMemory(&overlapped, sizeof(overlapped));
 }
 
 void IoctlSender::Open(const GUID& guid)
 {
-    HDEVINFO hDeviceInfo = SetupDiGetClassDevs(&guid,
-        nullptr, nullptr, DIGCF_PRESENT | DIGCF_DEVICEINTERFACE);
-    if (INVALID_HANDLE_VALUE == hDeviceInfo)
-        throw GnaException(GNA_DEVNOTFOUND);
+    auto deviceInfo = SetupDiGetClassDevs(&guid, nullptr, nullptr, DIGCF_PRESENT | DIGCF_DEVICEINTERFACE);
+    Expect::False(INVALID_HANDLE_VALUE == deviceInfo, GNA_DEVNOTFOUND);
 
-    PSP_DEVICE_INTERFACE_DETAIL_DATA deviceDetail = nullptr;
-
-    SP_DEVICE_INTERFACE_DATA interfaceData;
+    auto deviceDetailsData = unique_ptr<char[]>();
+    auto deviceDetails = PSP_DEVICE_INTERFACE_DETAIL_DATA{nullptr};
+    auto interfaceData = SP_DEVICE_INTERFACE_DATA{0};
     interfaceData.cbSize = sizeof(interfaceData);
-    for (LONG i = 0;
-         SetupDiEnumDeviceInterfaces(hDeviceInfo, nullptr, &guid, i, &interfaceData);
-         ++i)
+
+    for (auto i = 0; SetupDiEnumDeviceInterfaces(deviceInfo, nullptr, &guid, i, &interfaceData); ++i)
     {
-        DWORD bufferSize;
-        if (!SetupDiGetDeviceInterfaceDetail(hDeviceInfo, &interfaceData, nullptr, 0, &bufferSize, nullptr))
+        auto bufferSize = DWORD{0};
+        if (!SetupDiGetDeviceInterfaceDetail(deviceInfo, &interfaceData, nullptr, 0, &bufferSize, nullptr))
         {
-            DWORD err = GetLastError();
+            auto err = GetLastError();
             if (ERROR_INSUFFICIENT_BUFFER != err)
                 continue; // proceed to the next device
         }
-        deviceDetail = (PSP_DEVICE_INTERFACE_DETAIL_DATA) new unsigned char[bufferSize];
-        deviceDetail->cbSize = sizeof(SP_DEVICE_INTERFACE_DETAIL_DATA);
-        if (!SetupDiGetDeviceInterfaceDetail(hDeviceInfo,
-            &interfaceData, deviceDetail, bufferSize, nullptr, nullptr))
+        deviceDetailsData.reset(new char[bufferSize]);
+        deviceDetails = reinterpret_cast<PSP_DEVICE_INTERFACE_DETAIL_DATA>(deviceDetailsData.get());
+        deviceDetails->cbSize = sizeof(SP_DEVICE_INTERFACE_DETAIL_DATA);
+        if (!SetupDiGetDeviceInterfaceDetail(deviceInfo, &interfaceData, deviceDetails, bufferSize, nullptr, nullptr))
         {
-            delete [] deviceDetail;
-            deviceDetail = nullptr;
+            //deviceDetailsData.release(); // TODO verify if data is freed
             continue;
         }
         break;
     }
-    SetupDiDestroyDeviceInfoList(hDeviceInfo);
-    if (nullptr == deviceDetail)
-        throw GnaException(GNA_DEVNOTFOUND);
+    SetupDiDestroyDeviceInfoList(deviceInfo);
+    Expect::NotNull(deviceDetails, GNA_DEVNOTFOUND);
 
-    h_.Set(CreateFile(deviceDetail->DevicePath,
+    deviceHandle.Set(CreateFile(deviceDetails->DevicePath,
         GENERIC_READ | GENERIC_WRITE,
         0,
         nullptr,
         CREATE_ALWAYS,
         FILE_ATTRIBUTE_NORMAL | FILE_FLAG_OVERLAPPED,
         nullptr));
-
-    if (INVALID_HANDLE_VALUE == h_)
-        throw GnaException(GNA_DEVNOTFOUND);
+    Expect::False(INVALID_HANDLE_VALUE == deviceHandle, GNA_DEVNOTFOUND);
 }
 
-status_t IoctlSender::IoctlSend(
-    DWORD code,
-    LPVOID inbuf,
-    DWORD inlen,
-    LPVOID outbuf,
-    DWORD outlen,
-    BOOLEAN async)
+void IoctlSender::IoctlSend(const DWORD code, LPVOID const inbuf, const DWORD inlen, LPVOID const outbuf, 
+    const DWORD outlen)
 {
-    overlapped_.hEvent = evt_;
-    DWORD bytesRead = 0;
-    BOOL devOn = false;
-    DWORD waitResult = WAIT_OBJECT_0;
-    BOOL ioResult = true;
+    overlapped.hEvent = deviceEvent;
+    auto bytesRead = DWORD{0};
 
-    ioResult = DeviceIoControl(h_, code, inbuf, inlen, outbuf, outlen, &bytesRead, &overlapped_);
-    DWORD lastError = GetLastError();
+    auto ioResult = DeviceIoControl(deviceHandle, code, inbuf, inlen, outbuf, outlen, &bytesRead, &overlapped);
+    checkStatus(ioResult);
 
-    Expect::False(ioResult == 0 && ERROR_IO_PENDING != lastError, GNA_IOCTLSENDERR);
-
-    if (ERROR_IO_PENDING == lastError && async)
-        return GNA_SUCCESS;
-
-    return IoctlWait(&overlapped_, (DRV_RECOVERY_TIMEOUT + 15) * 1000);
+    wait(&overlapped, (DRV_RECOVERY_TIMEOUT + 15) * 1000);
 }
 
-status_t IoctlSender::Submit(
-    LPVOID      inbuf,
-    DWORD       inlen,
-    prof_tsc_t* ioctlSubmit,
-    io_handle_t*  handle)
+void IoctlSender::Submit(LPVOID const inbuf, const DWORD inlen, RequestProfiler * const profiler)
 {
-    BOOL ioResult = true;
+    auto ioHandle = OVERLAPPED{0};
+    ioHandle.hEvent = CreateEvent(nullptr, false, false, nullptr);
 
-    profilerDTscStart(ioctlSubmit);
-    ioResult = WriteFile(h_, inbuf, inlen, nullptr, handle);
-    profilerDTscStop(ioctlSubmit);
+    profilerDTscStart(&profiler->ioctlSubmit);
+    auto ioResult = WriteFile(deviceHandle, inbuf, inlen, nullptr, &ioHandle);
+    checkStatus(ioResult);
+    profilerDTscStop(&profiler->ioctlSubmit);
 
-    if (ioResult == 0 && ERROR_IO_PENDING != GetLastError())
-    {
-#if DEBUG == 1
-            printLastError(GetLastError());
-#endif
-        return GNA_IOCTLSENDERR;
-    }
-
-    return GNA_SUCCESS;
+    profilerDTscStart(&profiler->ioctlWaitOn);
+    wait(&ioHandle, GNA_REQUEST_TIMEOUT_MAX);
+    profilerDTscStop(&profiler->ioctlWaitOn);
 }
 
-status_t IoctlSender::IoctlWait(
-    LPOVERLAPPED ioctl,
-    DWORD        timeout)
+void IoctlSender::wait(LPOVERLAPPED const ioctl, const DWORD timeout)
 {
-    BOOL  ioResult  = true;
-    DWORD bytesRead = 0;
-    DWORD error     = WAIT_OBJECT_0;
+    auto bytesRead = DWORD{0};
 
-    ioResult = GetOverlappedResultEx(h_, ioctl, &bytesRead, timeout, false);
+    auto ioResult = GetOverlappedResultEx(deviceHandle, ioctl, &bytesRead, timeout, false);
     if (ioResult == 0) // io not completed
     {
-        error = GetLastError();
+        auto error = GetLastError();
         if ((ERROR_IO_INCOMPLETE == error && 0 == timeout )||
              WAIT_IO_COMPLETION  == error ||
              WAIT_TIMEOUT        == error)
         {
-            return GNA_DEVICEBUSY; // not completed yet
+            throw GnaException(GNA_DEVICEBUSY); // not completed yet
         }
         else // other wait error
         {
@@ -163,18 +131,40 @@ status_t IoctlSender::IoctlWait(
 #if DEBUG == 1
             printLastError(error);
 #endif
-            return GNA_IOCTLRESERR;
+            throw GnaException(GNA_IOCTLRESERR);
         }
     }
-    return GNA_SUCCESS; // io completed successfully
+    // io completed successfully
 }
 
-DWORD IoctlSender::Cancel()
+void IoctlSender::checkStatus(BOOL ioResult)
 {
-    if (CancelIoEx(h_, &overlapped_))
+    auto lastError = GetLastError();
+    if (ioResult == 0 && ERROR_IO_PENDING != lastError)
     {
-        ZeroMemory(&overlapped_, sizeof(overlapped_));
-        return true;
+#if DEBUG == 1
+            printLastError(lastError);
+#endif
+        throw GnaException(GNA_IOCTLSENDERR);
     }
-    return false;
+}
+
+void IoctlSender::printLastError(DWORD error)
+{
+    LPVOID lpMsgBuf;
+    FormatMessage(
+        FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+        nullptr,
+        error,
+        MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+        (LPTSTR)&lpMsgBuf,
+        0,
+        nullptr);
+
+    // Display the error message
+    if (nullptr != lpMsgBuf)
+    {
+        wprintf(L"%s\n", (wchar_t*)lpMsgBuf);
+        LocalFree(lpMsgBuf);
+    }
 }

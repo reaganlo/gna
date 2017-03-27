@@ -96,13 +96,7 @@ void AccelerationDetector::discoverHardwareCapabilities()
 {
     if (!IsHardwarePresent()) return;
 
-    auto status = GNA_SUCCESS;
-    status = IoctlSend(GNA_IOCTL_CPBLTS, nullptr, 0, &deviceCapabilities, sizeof(GNA_CPBLTS));
-
-    if(GNA_SUCCESS != status)
-    {
-        throw GnaException(status);
-    }
+    IoctlSend(GNA_IOCTL_CPBLTS, nullptr, 0, &deviceCapabilities, sizeof(GNA_CPBLTS));
 }
 
 const uint32_t AccelerationDetector::GetHardwareBufferSize() const
