@@ -387,7 +387,8 @@ ScoreStart(
         TraceFailMsg(TLE, T_EXIT, "WdfRequestRetrieveInputBuffer", status);
         goto cleanup;
     }
-    if (sizeof(GNA_CALC_IN) + sizeof(GNA_BUFFER_DESCR)*input->ctrlFlags.bufferConfigsCount != inputLength)
+    if (sizeof(GNA_CALC_IN) + sizeof(GNA_BUFFER_DESCR)*input->ctrlFlags.bufferConfigsCount + 
+        sizeof(GNA_ACTIVE_LIST_DESCR)*input->ctrlFlags.actListConfigsCount != inputLength)
     {
         TraceFailMsg(TLE, T_EXIT, "Score input buffer wrong size", STATUS_INVALID_BUFFER_SIZE);
         goto cleanup;
@@ -405,15 +406,26 @@ ScoreStart(
         goto cleanup;
     }
 
+    PUCHAR const memBase = (PUCHAR)modelCtx->userMemoryBaseVA;
+    PGNA_BUFFER_DESCR bufferDescr = (PGNA_BUFFER_DESCR)((PUCHAR)input + sizeof(GNA_CALC_IN));
     // set buffers according to request config
     if (0 < input->ctrlFlags.bufferConfigsCount)
     {
-        PGNA_BUFFER_DESCR bufferDescr = (PGNA_BUFFER_DESCR)((PUCHAR)input + sizeof(GNA_CALC_IN));
-
         for (UINT32 i = 0; i < input->ctrlFlags.bufferConfigsCount; ++i)
         {
-            *(PUINT32)((PUCHAR)modelCtx->userMemoryBaseVA + bufferDescr->offset) = bufferDescr->value;
+            *(PUINT32)(memBase + bufferDescr->offset) = bufferDescr->value;
             ++bufferDescr;
+        }
+    }
+    // set active list params according to request config
+    if (0 < input->ctrlFlags.actListConfigsCount)
+    {
+        PGNA_ACTIVE_LIST_DESCR actLstDescr = (PGNA_ACTIVE_LIST_DESCR)bufferDescr;
+        for (UINT32 i = 0; i < input->ctrlFlags.actListConfigsCount; ++i)
+        {
+            *(PUINT32)(memBase + actLstDescr->act_list_buffer_offset) = actLstDescr->act_list_buffer_value;
+            *(PUINT16)(memBase + actLstDescr->act_list_n_elems_offset) = actLstDescr->act_list_n_elems_value;
+            ++actLstDescr;
         }
     }
 

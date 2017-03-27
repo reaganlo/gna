@@ -160,48 +160,60 @@ status_t AcceleratorHw::Score(
 void AcceleratorHw::prepareDataToSend(const CompiledModel &model, const RequestConfiguration &requestConfiguration
     , std::unique_ptr<char[]> &data, size_t &dataSize) const
 {
-    GNA_CALC_IN calculationData;
-    auto found = std::find_if(
-        requestConfiguration.LayerConfigurations.cbegin(),
-        requestConfiguration.LayerConfigurations.cend(),
-        [](const auto& iter) { return nullptr != iter.second->ActiveList; });
+    auto bufCnfgCnt = requestConfiguration.InputBuffersCount + requestConfiguration.OutputBuffersCount;
 
-    calculationData.ctrlFlags.activeListOn = found != requestConfiguration.LayerConfigurations.cend();
-    calculationData.ctrlFlags.gnaMode = 1; // xnn by default
-    calculationData.ctrlFlags.layerCount = model.GetLayerCount(); // xnn by default
-    calculationData.ctrlFlags.layerIndex = 0;
-    calculationData.modelId = model.GetModelId();
-    calculationData.ctrlFlags.bufferConfigsCount = requestConfiguration.InputBuffersCount + requestConfiguration.OutputBuffersCount;
-
-    dataSize = sizeof(calculationData) + calculationData.ctrlFlags.bufferConfigsCount * sizeof(GNA_BUFFER_DESCR);
+    dataSize = sizeof(GNA_CALC_IN);
+    dataSize += bufCnfgCnt * sizeof(GNA_BUFFER_DESCR);
+    dataSize += requestConfiguration.ActiveListCount * sizeof(GNA_ACTIVE_LIST_DESCR);
     data.reset(new char[dataSize]);
-    std::memcpy(data.get(), &calculationData, sizeof(calculationData));
 
-    auto *lyrsCfg = reinterpret_cast<PGNA_BUFFER_DESCR>(data.get() + sizeof(calculationData));
-    for (auto it = requestConfiguration.LayerConfigurations.begin();
-        it != requestConfiguration.LayerConfigurations.end(); ++it)
+    auto calculationData = reinterpret_cast<PGNA_CALC_IN>(data.get());
+
+    calculationData->ctrlFlags.activeListOn = requestConfiguration.ActiveListCount > 0;
+    calculationData->ctrlFlags.gnaMode = 1; // xnn by default
+    calculationData->ctrlFlags.layerCount = model.GetLayerCount(); // xnn by default
+    calculationData->ctrlFlags.layerIndex = 0;
+    calculationData->modelId = model.GetModelId();
+    calculationData->ctrlFlags.bufferConfigsCount = bufCnfgCnt;
+    calculationData->ctrlFlags.actListConfigsCount = requestConfiguration.ActiveListCount;
+
+    auto& hwModel = model.GetHardwareModel();
+
+    auto lyrsCfg = reinterpret_cast<PGNA_BUFFER_DESCR>(data.get() + sizeof(GNA_CALC_IN));
+    for (const auto& lc : requestConfiguration.LayerConfigurations)
     {
-        auto& hwModel = model.GetHardwareModel();
-
-        if (it->second->InputBuffer)
+        if (lc.second->InputBuffer)
         {
-            lyrsCfg->offset = it->first * sizeof(XNN_LYR) + offsetof(XNN_LYR, in_buffer);
-            lyrsCfg->value = hwModel.GetOffsetToBase(it->second->InputBuffer->address);
+            lyrsCfg->offset = lc.first * sizeof(XNN_LYR) + offsetof(XNN_LYR, in_buffer);
+            lyrsCfg->value = hwModel.GetOffsetToBase(lc.second->InputBuffer->address);
             ++lyrsCfg;
         }
 
-        if (it->second->OutputBuffer)
+        if (lc.second->OutputBuffer)
         {
-            if (LayerOutput::ActivatedOutput == model.GetSoftwareModel().Layers[it->first]->Output.GetOutputMode() )
-            { 
-                lyrsCfg->offset = it->first * sizeof(XNN_LYR) + offsetof(XNN_LYR, out_act_fn_buffer);
+            if (LayerOutput::ActivatedOutput == model.GetSoftwareModel().Layers[lc.first]->Output.GetOutputMode())
+            {
+                lyrsCfg->offset = lc.first * sizeof(XNN_LYR) + offsetof(XNN_LYR, out_act_fn_buffer);
             }
             else
             {
-                lyrsCfg->offset = it->first * sizeof(XNN_LYR) + offsetof(XNN_LYR, out_sum_buffer);
+                lyrsCfg->offset = lc.first * sizeof(XNN_LYR) + offsetof(XNN_LYR, out_sum_buffer);
             }
-            lyrsCfg->value = hwModel.GetOffsetToBase(it->second->OutputBuffer->address);
+            lyrsCfg->value = hwModel.GetOffsetToBase(lc.second->OutputBuffer->address);
             ++lyrsCfg;
+        }
+    }
+
+    auto actLstCfg = reinterpret_cast<PGNA_ACTIVE_LIST_DESCR>(lyrsCfg);
+    for (const auto& lc : requestConfiguration.LayerConfigurations)
+    {
+        if (lc.second->ActiveList)
+        {
+            actLstCfg->act_list_buffer_offset = lc.first * sizeof(XNN_LYR) + offsetof(XNN_LYR, act_list_buffer);
+            actLstCfg->act_list_buffer_value = hwModel.GetOffsetToBase((void*)lc.second->ActiveList->Indices);
+            actLstCfg->act_list_n_elems_offset = lc.first * sizeof(XNN_LYR) + offsetof(XNN_LYR, act_list_n_elems);
+            actLstCfg->act_list_buffer_value = lc.second->ActiveList->IndicesCount;
+            ++actLstCfg;
         }
     }
 }

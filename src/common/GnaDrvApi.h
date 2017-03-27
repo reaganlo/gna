@@ -167,7 +167,8 @@ typedef union _CTRL_FLAGS
     UINT32      layerCount      :14;
     UINT32      layerIndex      :14;
     UINT32      _rsvd           :1;
-    UINT32      bufferConfigsCount;
+    UINT32      bufferConfigsCount  : 16;
+    UINT32      actListConfigsCount : 16;
     };
     UINT64      _dword;          // value of whole register
 
@@ -176,14 +177,27 @@ typedef union _CTRL_FLAGS
 static_assert(8 == sizeof(CTRL_FLAGS), "Invalid size of CTRL_FLAGS");
 
 /**
+ * Structure used to send to driver which buffer addresses to overwrite according to 
+ * score request configuration
  */
 typedef struct _GNA_BUFFER_DESCR
 {
-    UINT32 offset;
-    UINT32 value;
+    UINT32 offset; // points where to write the value (refers to user memory base address)
+    UINT32 value; // address offset of the buffer (refers to user memory base address)
 } GNA_BUFFER_DESCR, *PGNA_BUFFER_DESCR;
 
 static_assert(8 == sizeof(GNA_BUFFER_DESCR), "Invalid size of GNA_BUFFER_DESCR");
+
+typedef struct _GNA_ACTIVE_LIST_DESCR
+{
+    UINT32 act_list_buffer_offset; // points where to write the value (refers to user memory base address)
+    UINT32 act_list_buffer_value; // address offset of the buffer (refers to user memory base address)
+    UINT32 act_list_n_elems_offset; // points where to write the value (refers to user memory base address)
+    UINT16 act_list_n_elems_value;
+    UINT16 _unused;
+} GNA_ACTIVE_LIST_DESCR, *PGNA_ACTIVE_LIST_DESCR;
+
+static_assert(16 == sizeof(GNA_ACTIVE_LIST_DESCR), "Invalid size of GNA_ACTIVE_LIST_DESCR");
 
 /**
  * CALCULATE request data with output information.
