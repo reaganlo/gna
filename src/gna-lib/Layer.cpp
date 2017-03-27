@@ -31,10 +31,10 @@
 #include "SimpleLayers.h"
 #include "Validator.h"
 
-using namespace GNA;
 using std::make_unique;
+using std::unique_ptr;
 
-
+using namespace GNA;
 
 const std::map<const nn_layer_kind, const Orientations> LayerConfig::OrientationsMap =
 {

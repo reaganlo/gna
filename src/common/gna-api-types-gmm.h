@@ -66,7 +66,7 @@ typedef struct _gmm_config
     gna_gmm_layout  layout;         // Data layout.
     uint32_t        mixtureComponentCount;// Number of mixture components.
     uint32_t        stateCount;     // Number of states.
-    uint32_t        maximumScore;   // Maximum Score value above which scores are saturated. TODO:KJ: Open to clarify if can be set per GMM layer or per request
+    uint32_t        maximumScore;   // Maximum Score value above which scores are saturated.
 
 } gna_gmm_config;
 

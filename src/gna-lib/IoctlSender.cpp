@@ -29,6 +29,8 @@
 
 #include "GnaException.h"
 
+using std::unique_ptr;
+
 using namespace GNA;
 
 #define MAX_D0_STATE_PROBES 10

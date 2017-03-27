@@ -32,6 +32,7 @@
 #define PHDUMP
 
 using std::string;
+
 using namespace GNA;
 
 status_t AcceleratorHw::Score(
@@ -65,95 +66,8 @@ status_t AcceleratorHw::Score(
     return GNA_SUCCESS;
 }
 
-//status_t AcceleratorHw::Score(Hw *hw, RequestProfiler* p)
-//{
-//    // TODO: with already compiled model, this won't be necessary
-//    //r->handle = (Sw*)new Hw(Device::buffer, hwInBuffSize);
-//    // TODO: use GnaException
-//    //
-//    //hw = (Hw*)r->handle;
-//    //if (r->xnn)
-//    //{
-//    //    status = hw->Fill(r->xnn);
-//    //}
-//    //else
-//    //{
-//    //    status = hw->Fill(r->gmm);
-//    //}
-//    // TODO: use GnaException
-//
-//    SetRegister("setregister0.txt");
-//    SetDescriptor("setdescriptor.txt", hw->xnnLayerDescriptors, hw->inData);
-//    SetConfig("setconfig.txt", hw->inData);
-//    status_t status = Submit(hw->inData, hw->dataSize, &p->ioctlSubmit, &hw->io_handle);
-//    // TODO: use GnaException
-//
-//    // wait for
-//    profilerDTscStart(&p->ioctlWaitOn);
-//    status = wait(&hw->io_handle, GNA_REQUEST_TIMEOUT_MAX);
-//    profilerDTscStop(&p->ioctlWaitOn);
-//
-//    profilerDTscAStop(&p->total);
-//    return status;
-//}
-
-//status_t AcceleratorHw::Wait(Request *r, uint32_t timeout, perf_t* perfResults)
-//{
-//    auto    status  = GNA_SUCCESS;
-//    //status_t    status2 = GNA_SUCCESS;
-//    // FIXME: do something about the handle
-//    Hw* hw = nullptr; // (Hw*)r->handle;
-//
-//    // get submit status
-//    auto future_status = hw->handle.wait_for(std::chrono::milliseconds(timeout));
-//    if (future_status == std::future_status::deferred || future_status == std::future_status::timeout)
-//    {
-//        status = GNA_DEVICEBUSY;
-//    }
-//    else if (future_status == std::future_status::ready)
-//    {
-//        status = hw->handle.get();
-//    }
-//
-//    if(GNA_SUCCESS == status)
-//    {
-//        // finish profiling
-//        profilerDTscStop(&r->profiler.process);
-//        // save profiling results to app provided space
-//#ifdef PROFILE
-//        if (nullptr != perfResults)
-//        {
-//            memcpy_s(&perfResults->drv, sizeof(perf_drv_t), &hw->inData->drvPerf, sizeof(perf_drv_t));
-//            memcpy_s(&perfResults->hw, sizeof(perf_hw_t), &hw->inData->hwPerf, sizeof(perf_hw_t));
-//            perfResults->lib.preprocess  = r->profiler.preprocess.passed;
-//            perfResults->lib.process     = r->profiler.process.passed;
-//            perfResults->lib.submit      = r->profiler.submit.passed;
-//            perfResults->lib.total       = r->profiler.total.passed;
-//            perfResults->lib.ioctlSubmit = r->profiler.ioctlSubmit.passed;
-//            perfResults->lib.ioctlWaitOn = r->profiler.ioctlWaitOn.passed;
-//            perfResults->total.start     = r->profiler.submit.start;
-//            perfResults->total.stop      = r->profiler.process.stop;
-//        }
-//#endif // PROFILE
-//
-//        //HwVerifier(r);
-//        // return scoring status
-//        status = hw->inData->status;
-//        // remove request from queue
-//        //status2 = RequestHandler::RemoveRequest(r->id);
-//        //if(GNA_SUCCESS != status2) status = status2; // notify if dequeue error occurred
-//    }
-//    else if(GNA_DEVICEBUSY != status) // GNA_IOCTLRESERR
-//    {
-//        return status;
-//        //RequestHandler::RemoveRequest(r->id);          // ignore error, as already in error state
-//    }
-//
-//    return status;
-//}
-
-void AcceleratorHw::prepareDataToSend(const CompiledModel &model, const RequestConfiguration &requestConfiguration
-    , std::unique_ptr<char[]> &data, size_t &dataSize) const
+void AcceleratorHw::prepareDataToSend(const CompiledModel &model, const RequestConfiguration &requestConfiguration,
+    std::unique_ptr<char[]> &data, size_t &dataSize) const
 {
     auto bufCnfgCnt = requestConfiguration.InputBuffersCount + requestConfiguration.OutputBuffersCount;
 

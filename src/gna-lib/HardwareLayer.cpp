@@ -26,6 +26,10 @@
 #include "HardwareLayer.h"
 #include "Validator.h"
 
+using std::make_unique;
+using std::map;
+using std::unique_ptr;
+
 using namespace GNA;
 
 const map<const nn_layer_kind, const NN_OP_TYPE> HardwareLayer::OperationsMap =

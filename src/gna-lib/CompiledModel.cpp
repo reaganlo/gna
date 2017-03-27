@@ -28,9 +28,9 @@
 
 using namespace GNA;
 
-using std::vector;
-using std::unique_ptr;
 using std::make_unique;
+using std::unique_ptr;
+using std::vector;
 
 void CompiledModel::CompileSoftwareModel()
 {

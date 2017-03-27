@@ -136,7 +136,7 @@ private:
     */
     bool isGNAHardwarePresent = false;
 
-    unique_ptr<Memory> totalMemory;
+    std::unique_ptr<Memory> totalMemory;
     RequestHandler requestHandler;
     AcceleratorController acceleratorController;
     AccelerationDetector accelerationDetector;

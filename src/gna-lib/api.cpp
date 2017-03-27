@@ -31,6 +31,7 @@
 #include "Validator.h"
 
 using std::thread;
+
 using namespace GNA;
 
 /******************************************************************************

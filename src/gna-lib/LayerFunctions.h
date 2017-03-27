@@ -29,9 +29,6 @@
 
 #include "common.h"
 
-using std::unique_ptr;
-using std::make_unique;
-
 namespace GNA
 {
 
@@ -89,8 +86,8 @@ class AffineFunctionMulti2B;
 struct AffineFunction
 {
 public:
-    static unique_ptr<const AffineFunctionSingle> Create(const intel_affine_func_t * affine);
-    static unique_ptr<const AffineFunctionMulti> Create(const intel_affine_multibias_func_t * affine);
+    static std::unique_ptr<const AffineFunctionSingle> Create(const intel_affine_func_t * affine);
+    static std::unique_ptr<const AffineFunctionMulti> Create(const intel_affine_multibias_func_t * affine);
 
     virtual WeightMode GetWeightMode() const  = 0;
 
@@ -186,7 +183,7 @@ public:
 class ActivationFunction
 {
 public:
-    static const unique_ptr<const ActivationFunction> Create(const nn_func_pwl * const pwl, const bool mandatory);
+    static const std::unique_ptr<const ActivationFunction> Create(const nn_func_pwl * const pwl, const bool mandatory);
 
     static const uint32_t SegmentCountMax = XNN_N_PWL_SEGS_MAX;
     static const uint32_t SegmentCountMin = XNN_N_PWL_SEGS_MIN;

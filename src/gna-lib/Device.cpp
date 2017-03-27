@@ -29,6 +29,7 @@
 #include "Validator.h"
 
 using std::make_shared;
+using std::make_unique;
 using std::move;
 
 using namespace GNA;

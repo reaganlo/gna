@@ -40,8 +40,8 @@ public:
     const uint16_t* CalculateFeedbackBuffer(const void * outputBuffer) const;
     void SetFeedbackBuffer(const void * outputBuffer);// TODO: not multi-thread safe
 
-    const unique_ptr<const AffineFunctionSingle> Affine;
-    const unique_ptr<const ActivationFunction> Activation;
+    const std::unique_ptr<const AffineFunctionSingle> Affine;
+    const std::unique_ptr<const ActivationFunction> Activation;
     const uint32_t FeedbackDelay;
 
 private:

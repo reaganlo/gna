@@ -31,9 +31,6 @@
 #include "common.h"
 #include "GnaConfig.h"
 
-using std::unique_ptr;
-using std::map;
-
 namespace GNA
 {
 
@@ -110,7 +107,7 @@ private:
 class Layer
 {
 public:
-    static unique_ptr<Layer> Create(const nn_layer *layer, const uint32_t inputVectorCount);
+    static std::unique_ptr<Layer> Create(const nn_layer *layer, const uint32_t inputVectorCount);
 
     virtual ~Layer() {};
 

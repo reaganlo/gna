@@ -44,7 +44,7 @@ public:
      */
     void Enqueue(
         gna_request_id *requestId, 
-        unique_ptr<Request> request);
+        std::unique_ptr<Request> request);
 
     status_t WaitFor(const gna_request_id requestId, const gna_timeout milliseconds);
 

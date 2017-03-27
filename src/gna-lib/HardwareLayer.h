@@ -37,9 +37,6 @@
 #include "SimpleLayers.h"
 #include "SwHw.h"
 
-using std::map;
-using std::unique_ptr;
-
 namespace GNA
 {
 
@@ -74,7 +71,7 @@ protected:
     const Layer& softwareLayer;
 
 private:
-    static const map<const nn_layer_kind, const NN_OP_TYPE> OperationsMap;
+    static const std::map<const nn_layer_kind, const NN_OP_TYPE> OperationsMap;
 
     void * const memoryBaseAddress;
 };
@@ -100,7 +97,7 @@ protected:
 
 private:
     // Number of data elements that may be stored in hw buffer
-    const static map<const uint32_t, std::array<const uint32_t, XNN_N_GROUP_MAX>> bufferElementsMap;
+    const static std::map<const uint32_t, std::array<const uint32_t, XNN_N_GROUP_MAX>> bufferElementsMap;
 
     const uint32_t iterationGrouping; // grouping for iteration calculation
     uint32_t iterationCount; // number of iterations = data chunks/parts

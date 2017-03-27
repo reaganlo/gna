@@ -52,6 +52,7 @@ struct RequestProfiler
 
 #endif // PROFILE
 
+
 using RequestFunctor = std::function<status_t(KernelBuffers*, RequestProfiler*)>;
 
 /**
@@ -91,7 +92,7 @@ public:
     /**
      * performance profiler
      */
-    unique_ptr<RequestProfiler> profiler;
+    std::unique_ptr<RequestProfiler> profiler;
 
 #endif
 

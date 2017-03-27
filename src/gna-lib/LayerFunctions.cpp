@@ -26,6 +26,9 @@
 #include "LayerFunctions.h"
 #include "Validator.h"
 
+using std::make_unique;
+using std::unique_ptr;
+
 using namespace GNA;
 
 Weight1B::Weight1B(uint32_t size, const void *weights) :

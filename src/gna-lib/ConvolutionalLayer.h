@@ -80,10 +80,7 @@ public:
     CnnLayer(nn_layer const * const layer, const uint32_t inputVectorCount);
     virtual ~CnnLayer() = default;
 
-    //const uint16_t* CalculateFeedbackBuffer(const void * outputBuffer) const;
-    //void SetFeedbackBuffer(const void * outputBuffer);// TODO: not multi-thread safe
-
-    const unique_ptr<const ActivationFunction> Activation;
+    const std::unique_ptr<const ActivationFunction> Activation;
     const ConvolutionFunction Convolution;
     const PoolingFunction Pooling;
 private:

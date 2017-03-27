@@ -32,10 +32,10 @@
 #include "AccelerationDetector.h"
 #include "GnaException.h"
 
-using std::shared_ptr;
-using std::make_shared;
 using std::array;
+using std::make_shared;
 using std::map;
+using std::shared_ptr;
 
 using namespace GNA;
 

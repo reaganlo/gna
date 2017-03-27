@@ -27,8 +27,8 @@
 
 #include "ModelContainer.h"
 
-using std::map;
 using std::make_unique;
+using std::map;
 
 using namespace GNA;
 

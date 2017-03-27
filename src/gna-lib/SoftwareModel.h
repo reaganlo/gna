@@ -42,7 +42,7 @@ public:
 
     void ValidateConfiguration(const RequestConfiguration& configuration);
 
-    std::vector<unique_ptr<Layer>> Layers;
+    std::vector<std::unique_ptr<Layer>> Layers;
 
     const uint32_t layerCount;
 

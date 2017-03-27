@@ -27,9 +27,9 @@
 #include "GnaException.h"
 #include "RequestHandler.h"
 
-using std::unique_ptr;
-using std::pair;
 using std::mutex;
+using std::pair;
+using std::unique_ptr;
 
 using namespace GNA;
 
