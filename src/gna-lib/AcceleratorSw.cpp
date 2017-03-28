@@ -91,128 +91,101 @@ status_t AcceleratorSw::Score(
 {
     profilerDTscAStart(&profiler->scoring);
 
-    auto status = GNA_SUCCESS;
-
     auto& softwareModel = model.GetSoftwareModel();
     softwareModel.ValidateConfiguration(requestConfiguration);
 
     auto nOuts = uint32_t{ 0 }; // number of outputs
     auto sat = uint32_t{ 0 };   // scoring saturation counter
-
-    const uint32_t* al = nullptr; // active list pointer
+    const uint32_t* activeIndices = nullptr; // active list pointer
 
     auto layerIndex = uint32_t{ 0 };
     for (auto& layer : softwareModel.Layers)
     {
         auto* sourceLayer = const_cast<nn_layer*>(&layer->sourceLayer);
-        auto layerKind = layer->Config.Kind;
         nOuts = layer->Output.ElementCount; // regular output (all)
-        if (INTEL_HIDDEN != sourceLayer->type)
+        if (INTEL_HIDDEN != layer->Config.Type)
         {
             auto found = requestConfiguration.LayerConfigurations.find(layerIndex);
             if (found != requestConfiguration.LayerConfigurations.end())
             {
                 auto layerConfiguration = found->second.get();
-                if (layerConfiguration->InputBuffer)
-                {
-                    sourceLayer->pInputs = layerConfiguration->InputBuffer->address;
-                }
-
-                if (layerConfiguration->OutputBuffer)
-                {
-                    sourceLayer->pOutputs = layerConfiguration->OutputBuffer->address;
-                    if (INTEL_RECURRENT == layer->Config.Kind)
-                    {
-                        auto rnn = static_cast<RnnLayer*>(layer.get());
-                        rnn->SetFeedbackBuffer(layerConfiguration->OutputBuffer->address);
-                        // TODO: move to XnnKernel when kernels are refactored
-                    }
-                }
-
-                if (layerConfiguration->ActiveList
-                    && layerConfiguration->ActiveList->Enabled)
-                {
-                    if (INTEL_AFFINE == layerKind
-                        || INTEL_GMM == layerKind)
-                    {
-                        nOuts = layerConfiguration->ActiveList->IndicesCount; // active list outputs
-                        al = layerConfiguration->ActiveList->Indices;
-                    }
-                }
+                applyRequestBuffersToLayer(layerConfiguration, layer.get(), sourceLayer, nOuts, activeIndices);
             }
         }
 
-        if (INTEL_AFFINE == layerKind)
+        switch (layer->Config.Kind)
+        {
+        case INTEL_AFFINE:
         {
             auto& affineLayer = static_cast<AffineLayer&>(*layer);
             auto& activation = affineLayer.Activation;
 
-            status = xnnKernel->affine(sourceLayer, al, nOuts, &sat, fvBuffers);
-            if (GNA_SUCCESS != status) return status;
+            xnnKernel->affine(sourceLayer, activeIndices, nOuts, &sat, fvBuffers);
 
             // apply piecewise linear function if enabled
-            if(activation)
+            if (activation)
             {
                 xnnKernel->pwl(sourceLayer, 0, nOuts - 1, 0,
                     sourceLayer->nInputColumns - 1, &sat, fvBuffers->pwl);
             }
+            break;
         }
-        else if (INTEL_AFFINE_MULTIBIAS == layerKind)
+        case INTEL_AFFINE_MULTIBIAS:
         {
             auto& affineLayer = static_cast<AffineMultiBiasLayer&>(*layer);
             auto& activation = affineLayer.Activation;
 
-            status = xnnKernel->affineMbias(sourceLayer, al, nOuts, &sat, fvBuffers);
-            if (GNA_SUCCESS != status) return status;
+            xnnKernel->affineMbias(sourceLayer, activeIndices, nOuts, &sat, fvBuffers);
 
-            if(activation)
+            if (activation)
             {
                 xnnKernel->pwl(sourceLayer, 0, sourceLayer->nOutputRows - 1, 0,
-                   sourceLayer->nInputColumns - 1, &sat, fvBuffers->pwl);
+                    sourceLayer->nInputColumns - 1, &sat, fvBuffers->pwl);
             }
+            break;
         }
-        else if (INTEL_AFFINE_DIAGONAL == layerKind)
+        case INTEL_AFFINE_DIAGONAL:
         {
-            status = xnnKernel->diagonal(sourceLayer, &sat);
-            if (GNA_SUCCESS != status) return status;
+            xnnKernel->diagonal(sourceLayer, &sat);
 
             auto& affineLayer = static_cast<AffineDiagonalLayer&>(*layer);
             xnnKernel->diagonal(sourceLayer, &sat);
 
             auto& activation = affineLayer.Activation;
-            if(activation)
+            if (activation)
             {
                 xnnKernel->pwl(sourceLayer, 0, sourceLayer->nOutputRows - 1, 0,
                     sourceLayer->nInputColumns - 1, &sat, fvBuffers->pwl);
             }
+            break;
         }
-        else if (INTEL_RECURRENT == layerKind)
+        case INTEL_RECURRENT:
         {
-            status = xnnKernel->recurrent(sourceLayer, &sat, fvBuffers->pwl);
+            xnnKernel->recurrent(sourceLayer, &sat, fvBuffers->pwl);
+            break;
         }
-        else if (INTEL_INTERLEAVE   == layerKind ||
-                 INTEL_DEINTERLEAVE == layerKind)
+        case INTEL_INTERLEAVE:
+        case INTEL_DEINTERLEAVE:
         {
-            status = xnnKernel->transpose(sourceLayer);
+            xnnKernel->transpose(sourceLayer);
+            break;
         }
-        else if (INTEL_COPY == layerKind)
+        case INTEL_COPY:
         {
-            status = xnnKernel->copy(sourceLayer);
+            xnnKernel->copy(sourceLayer);
+            break;
         }
-        else if (INTEL_CONVOLUTIONAL == layerKind)
+        case INTEL_CONVOLUTIONAL:
         {
-            // TODO: enable convolutional layer
-            //       handle output buffer from request configuration
+            xnnKernel->conv(sourceLayer, &sat, fvBuffers->pwl, fvBuffers->pool);
+            break;
+        }
+        default:
+        {
+            return XNN_ERR_LYR_TYPE;
+        }
+        }
 
-            status = xnnKernel->conv(sourceLayer, &sat, fvBuffers->pwl, fvBuffers->pool);
-            if (status != GNA_SUCCESS)return status;
-        }
-        else
-        {
-            status = XNN_ERR_LYR_TYPE;
-        }
-
-        if (GNA_SUCCESS != status) return status;
         ++layerIndex;
     }
 
@@ -223,7 +196,43 @@ status_t AcceleratorSw::Score(
     {
         return GNA_SSATURATE;
     }
-    return status;
+    return GNA_SUCCESS;
+}
+
+void AcceleratorSw::applyRequestBuffersToLayer(
+    const LayerConfiguration * const layerConfiguration,
+    const Layer * const layer,
+    nn_layer * const sourceLayer,
+    uint32_t &nOuts,
+    const uint32_t * &activeIndices)
+{
+    if (layerConfiguration->InputBuffer)
+    {
+        sourceLayer->pInputs = layerConfiguration->InputBuffer->address;
+    }
+
+    if (layerConfiguration->OutputBuffer)
+    {
+        sourceLayer->pOutputs = layerConfiguration->OutputBuffer->address;
+        if (INTEL_RECURRENT == layer->Config.Kind)
+        {
+            auto const_rnn = static_cast<const RnnLayer* const>(layer);
+            auto rnn = const_cast<RnnLayer* const>(const_rnn);
+            rnn->SetFeedbackBuffer(layerConfiguration->OutputBuffer->address);
+            // TODO: move to XnnKernel when kernels are refactored
+        }
+    }
+
+    if (layerConfiguration->ActiveList
+        && layerConfiguration->ActiveList->Enabled)
+    {
+        if (INTEL_AFFINE == layer->Config.Kind
+            || INTEL_GMM == layer->Config.Kind)
+        {
+            nOuts = layerConfiguration->ActiveList->IndicesCount; // active list outputs
+            activeIndices = layerConfiguration->ActiveList->Indices;
+        }
+    }
 }
 
 status_t AcceleratorSw::checkScoresSaturation(uint32_t nGMMs, uint32_t nVectors, uint32_t *pS, uint32_t maxScore)

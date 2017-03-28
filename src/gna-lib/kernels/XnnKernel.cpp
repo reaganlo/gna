@@ -29,16 +29,16 @@
 
 #include <string.h>
 
-#include "KernelMacros.h"
+#include "convnet.h"
 #include "igemv16.h"
 #include "igemv8.h"
-#include "convnet.h"
+#include "KernelMacros.h"
 #include "pwl.h"
 
 namespace GNA
 { 
 
-#define     CONVOLUTIONAL_ROW_STRIDE 1
+#define CONVOLUTIONAL_ROW_STRIDE 1
 
 #define GNAApplyPiecewiseLinearTransform    KERNEL(GNAApplyPiecewiseLinearTransform)
 #define GNAApplyAffineTransform             KERNEL(GNAApplyAffineTransform)
@@ -49,8 +49,7 @@ namespace GNA
 #define GNAApplyCopy                        KERNEL(GNAApplyCopy)
 #define GNAApplyConvolutionalTransform      KERNEL(GNAApplyConvolutionalTransform)
 
-void
-GNAApplyPiecewiseLinearTransform(
+void GNAApplyPiecewiseLinearTransform(
     const nn_layer*     pLayer,
           uint32_t      nRowBegin,
           uint32_t      nRowEnd,
@@ -82,8 +81,7 @@ GNAApplyPiecewiseLinearTransform(
     params->pwlAll(params);
 }
 
-status_t
-GNAApplyAffineTransform(
+void GNAApplyAffineTransform(
     const nn_layer*          pLayer,
     const uint32_t*          pActiveIndices,
           uint32_t           nActiveIndices,
@@ -126,12 +124,9 @@ GNAApplyAffineTransform(
                 pActiveIndices, nActiveIndices, nSaturated, fvBuffers);
         }
     }
-
-    return GNA_SUCCESS;
 }
 
-status_t
-GNAApplyAffineMBiasTransform(
+void GNAApplyAffineMBiasTransform(
     const nn_layer*          pLayer,
     const uint32_t*          pActiveIndices,
           uint32_t           nActiveIndices,
@@ -177,12 +172,9 @@ GNAApplyAffineMBiasTransform(
                 pActiveIndices, nActiveIndices, nSaturated, fvBuffers);
         }
     }
-
-    return GNA_SUCCESS;
 }
 
-status_t
-GNAApplyDiagonalTransform(
+void GNAApplyDiagonalTransform(
     const nn_layer*     pLayer,
           uint32_t*     nSaturated)
 {
@@ -206,12 +198,9 @@ GNAApplyDiagonalTransform(
         nn_bias_s *bias = (int32_t*)aff->affine.pBiases;
         isbmm16(m, n, (int16_t*)w, in, bias, out, nSaturated);
     }
-
-    return GNA_SUCCESS;
 }
 
-status_t
-GNAApplyRecurrentTransform(
+void GNAApplyRecurrentTransform(
     const nn_layer*     pLayer,
           uint32_t*     nSaturated,
           void*         pwlBuff)
@@ -246,10 +235,9 @@ GNAApplyRecurrentTransform(
             GNAApplyPiecewiseLinearTransform(pLayer, i, i, 0, m, nSaturated, pwlBuff);
         }
     }
-    return GNA_SUCCESS;
 }
 
-status_t GNAApplyTranspose(
+void GNAApplyTranspose(
     const nn_layer* pLayer)
 {
     uint32_t m = pLayer->nInputRows;
@@ -258,11 +246,9 @@ status_t GNAApplyTranspose(
     int16_t *out = (int16_t*)pLayer->pOutputs;
 
     transpose16(m, n, in, out);
-
-    return GNA_SUCCESS;
 }
 
-status_t GNAApplyCopy(
+void GNAApplyCopy(
     const nn_layer* pLayer)
 {
     uint32_t    r;                  // row iterator
@@ -280,12 +266,9 @@ status_t GNAApplyCopy(
             in + (pLayer->nInputColumns * r),
             nBytesCp);
     }
-
-    return GNA_SUCCESS;
 }
 
-status_t
-GNAApplyConvolutionalTransform(
+void GNAApplyConvolutionalTransform(
     const nn_layer*     pLayer,
           uint32_t*     nSaturated,
           void*         pwlBuff,
@@ -343,7 +326,6 @@ GNAApplyConvolutionalTransform(
                 pool);
         }
     }
-    return GNA_SUCCESS;
 }
 
 XnnKernel KERNEL(xnnKernel) =

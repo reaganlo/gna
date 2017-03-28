@@ -65,6 +65,13 @@ protected:
     GmmKernel *gmmKernel;
 
 private:
+    void applyRequestBuffersToLayer(
+        const LayerConfiguration * const layerConfiguration,
+        const Layer * const layer,
+        nn_layer * const sourceLayer,
+        uint32_t &nOuts,
+        const uint32_t * &activeIndices);
+
     status_t gmmSoftwareKernel(
         GmmLayer* gmm,
         RequestProfiler* profiler);

@@ -30,33 +30,25 @@
 namespace GNA
 {
 
-typedef
-status_t
-(*AffineTransformFn)(
+typedef void (*AffineTransformFn)(
     const nn_layer*          pLayer,
     const uint32_t*          pActiveIndices,
           uint32_t           nActiveIndices,
           uint32_t*          nSaturated,
           KernelBuffers*     fvBuffers);
 
-typedef
-status_t
-(*AffMBiasTransformFn)(
+typedef void (*AffMBiasTransformFn)(
     const nn_layer*          pLayer,
     const uint32_t*          pActiveIndices,
           uint32_t           nActiveIndices,
           uint32_t*          nSaturated,
           KernelBuffers*     fvBuffers);
 
-typedef
-status_t
-(*DiagonalTransformFn)(
+typedef void (*DiagonalTransformFn)(
     const nn_layer* pLayer,
           uint32_t* nSaturated);
 
-typedef
-void
-(*PWLTransformFn)(
+typedef void (*PWLTransformFn)(
     const nn_layer*     pLayer,
           uint32_t      nRowBegin,
           uint32_t      nRowEnd,
@@ -65,26 +57,18 @@ void
           uint32_t*     nSaturated,
           void*         pwlBuff);
 
-typedef
-status_t
-(*RecurrentTransformFn)(
+typedef void (*RecurrentTransformFn)(
     const nn_layer*     pLayer,
           uint32_t*     nSaturated,
           void*         pwlBuff);
 
-typedef
-status_t
-(*TransposeFn)(
+typedef void (*TransposeFn)(
     const nn_layer*     pLayer);
 
-typedef
-status_t
-(*CopyFn)(
+typedef void (*CopyFn)(
     const nn_layer*     pLayer);
 
-typedef
-status_t
-(*ConvTransformFn)(
+typedef void (*ConvTransformFn)(
     const nn_layer*     pLayer,
           uint32_t*     nSaturated,
           void*         pwlBuff,
