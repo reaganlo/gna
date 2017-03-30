@@ -112,6 +112,12 @@ public:
     virtual ~HardwareLayerAffDiagTrans() = default;
 };
 
+class HardwareLayerAffineMBias : public HardwareLayerExt
+{
+public:
+    HardwareLayerAffineMBias(const Layer& swLayer, void* memoryBase, uint32_t hwInBuffSize);
+};
+
 // Hardware Copy Layer descriptor converter
 class HardwareLayerCopy : public HardwareLayer
 {

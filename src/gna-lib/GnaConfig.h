@@ -218,16 +218,20 @@ typedef union _XNN_LYR
     uint16_t    act_list_n_elems;   // 0x12 : 0x13 Number of output elements in output active list enabled mode
     uint16_t    cpy_n_elems;        // 0x12 : 0x13 Number of elements copied in copy OP operation [8 - (2^16 - 8)], %8
     uint16_t    cnn_flt_size;       // 0x12 : 0x13 CNN convolution filter size (elements per filter) [48 - 768], %8
+    uint16_t    bias_grp_cnt;       // 0x12 : 0x13 Grouping of the bias array [1-8]
     };                              //
+    union{                          //
     uint16_t    cnn_n_flts_iter;    // 0x14 : 0x15 CNN Number of filters in input buffer in full iterations [4,8,12,16]
+    uint16_t    bias_grp_value;     // 0x14 : 0x15 Current column selected [0-7]
+    };                              //
     uint16_t    cnn_n_flt_outs;     // 0x16 : 0x17 CNN Number of output elements per Filter after conv., before pooling 
     uint16_t    cnn_flt_bf_sz_iter; // 0x18 : 0x19 CNN filter buffer size per (non-last) iteration (B) [1-InBufSize/2]
     uint16_t    cnn_flt_bf_sz_last; // 0x1A : 0x1B CNN filter buffer size in last iteration (B) [1-InBufSize/2]
     __1B_RES    __res_1c[4];        // 0x1C : 0x1F Reserved
-    union {
+    union{                          //
     uint32_t    in_buffer;          // 0x20 : 0x23 Pointer to input array [2B elements]
     uint32_t    gmm_descriptor;     // 0x20 : 0x23 Pointer GMM layer descriptor
-    };
+    };                              //
     uint32_t    out_act_fn_buffer;  // 0x24 : 0x27 Pointer to 2B output array after pwl act. fn. [2B elements]
     uint32_t    out_sum_buffer;     // 0x28 : 0x2B Pointer to 4B intermediate output sum array. [4B elements]
     uint32_t    rnn_out_fb_buffer;  // 0x2C : 0x2f Pointer to output FB array
@@ -236,7 +240,10 @@ typedef union _XNN_LYR
     uint32_t    cnn_flt_buffer;     // 0x30 : 0x33 CNN Pointer to Filter array [2B elements]
     };                              //
     uint32_t    aff_const_buffer;   // 0x34 : 0x37 Pointer to const and weight scale array. [4B elements or 1B scale +3B res.]
+    union{                          // 
     uint32_t    act_list_buffer;    // 0x38 : 0x3b Active outputs list pointer [4B elements]
+    uint32_t    bias_grp_ptr;       // 0x38 : 0x3b Bias grouping array pointer [4B elements]
+    };                              //
     uint32_t    pwl_seg_def_buffer; // 0x3c : 0x3f Pointer to array that holds the activation function section definition [8B elements]
     __1B_RES    __res_40[64];       // 0x40 : 0x7f Reserved
     };

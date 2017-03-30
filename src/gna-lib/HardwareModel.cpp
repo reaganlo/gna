@@ -37,7 +37,7 @@ const size_t HardwareModel::CalculateDescriptorSize(const uint16_t layerCount, c
     Expect::InRange(layerCount, 1, XNN_LAYERS_MAX_COUNT, XNN_ERR_NET_LYR_NO);
     auto layerDescriptorsSize = size_t{ layerCount * sizeof(XNN_LYR) };
 
-    Expect::InRange(gmmLayersCount, 0, XNN_LAYERS_MAX_COUNT, XNN_ERR_NET_LYR_NO);
+    Expect::InRange(gmmLayersCount, 0, GMM_LAYERS_MAX_COUNT, XNN_ERR_NET_LYR_NO);
     auto gmmDescriptorsSize = size_t{ gmmLayersCount * sizeof(GMM_CONFIG) };
 
     return layerDescriptorsSize + gmmDescriptorsSize;

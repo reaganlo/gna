@@ -87,7 +87,7 @@ struct AffineFunction
 {
 public:
     static std::unique_ptr<const AffineFunctionSingle> Create(const intel_affine_func_t * affine);
-    static std::unique_ptr<const AffineFunctionMulti> Create(const intel_affine_multibias_func_t * affine);
+    static std::unique_ptr<const AffineFunctionMulti> Create(const nn_func_affine_multi * affine);
 
     virtual WeightMode GetWeightMode() const  = 0;
 

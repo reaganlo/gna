@@ -118,12 +118,14 @@ void AcceleratorHw::prepareDataToSend(const CompiledModel &model, const RequestC
     {
         if (lc.second->ActiveList)
         {
+            // TODO: XNN_LYR.NN_OP_TYPE needs to be set to Active List type
             actLstCfg->act_list_buffer_offset = lc.first * sizeof(XNN_LYR) + offsetof(XNN_LYR, act_list_buffer);
             actLstCfg->act_list_buffer_value = hwModel.GetOffsetToBase((void*)lc.second->ActiveList->Indices);
             actLstCfg->act_list_n_elems_offset = lc.first * sizeof(XNN_LYR) + offsetof(XNN_LYR, act_list_n_elems);
             actLstCfg->act_list_buffer_value = lc.second->ActiveList->IndicesCount;
             ++actLstCfg;
         }
+        // TODO: else: XNN_LYR.NN_OP_TYPE needs to be set to Non Active List type
     }
 }
 

@@ -65,6 +65,9 @@ XNN_LYR HardwareLayer::Convert(const Layer& softwareLayer, void * const memoryBa
     case NN_RNN:
         converter = make_unique<HardwareLayerRnn>(softwareLayer, memoryBase, hardwareInternalBufferSize);
         break;
+    case NN_AFF_MB:
+        converter = make_unique<HardwareLayerAffineMBias>(softwareLayer, memoryBase, hardwareInternalBufferSize);
+        break;        
     default:
         converter = make_unique<HardwareLayerAffDiagTrans>(softwareLayer, memoryBase, hardwareInternalBufferSize);
         break;
@@ -172,7 +175,6 @@ HardwareLayerAffDiagTrans::HardwareLayerAffDiagTrans(const Layer& swLayer,
     {
     case INTEL_AFFINE:
     case INTEL_AFFINE_DIAGONAL:
-    case INTEL_AFFINE_MULTIBIAS:
         auto& aff = static_cast<const AffineLayer&>(softwareLayer);
         affine = aff.Affine.get();
         activation = aff.Activation.get();
@@ -316,4 +318,25 @@ void HardwareLayerCnn::save()
     layerDescriptor.cnn_pool_size = cnn.Pooling.Size;
     layerDescriptor.cnn_pool_stride = cnn.Pooling.Stride;
     layerDescriptor.aff_const_buffer = getOffset(cnn.Convolution.Filters.Biases);
+}
+
+HardwareLayerAffineMBias::HardwareLayerAffineMBias(const Layer & swLayer, void * const memoryBase, 
+    uint32_t const hwInBuffSize)
+    : HardwareLayerExt(swLayer, memoryBase, hwInBuffSize, softwareLayer.Input.VectorCount)
+{
+    auto& mbiasLayer = static_cast<const AffineMultiBiasLayer&>(softwareLayer);
+    affine = mbiasLayer.Affine.get();
+    activation = mbiasLayer.Activation.get();
+
+    save();
+
+    layerDescriptor.bias_grp_cnt = layerDescriptor.n_groups;
+    layerDescriptor.bias_grp_ptr = getOffset(mbiasLayer.Affine->GetBiases());
+    layerDescriptor.bias_grp_value = mbiasLayer.Affine->BiasVectorIndex;
+
+    if (affine->GetWeightMode() == GNA_WEIGHT_1B)
+    {
+        layerDescriptor.aff_const_buffer = 
+            getOffset((static_cast<const AffineFunctionMulti1B*>(affine)->WeightScaleFactors));
+    }
 }

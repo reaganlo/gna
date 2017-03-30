@@ -71,7 +71,7 @@ unique_ptr<const AffineFunctionSingle> AffineFunction::Create(const intel_affine
     }
 }
 
-unique_ptr<const AffineFunctionMulti> AffineFunction::Create(const intel_affine_multibias_func_t * affine)
+unique_ptr<const AffineFunctionMulti> AffineFunction::Create(const nn_func_affine_multi * affine)
 {
     if (GNA_WEIGHT_2B == affine->nBytesPerWeight)
     {

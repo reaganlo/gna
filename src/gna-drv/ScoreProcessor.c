@@ -362,6 +362,26 @@ GNAScoreDebug(
     Trace(TLI, T_MEM, "GNA actFuncSectDefPtr: %#x:", read32);
 }
 
+static void setLayersDescriptorParameters(const PGNA_CALC_IN input, PUCHAR const memoryBase)
+{
+    // set buffers according to request config
+    PGNA_BUFFER_DESCR bufferDescr = (PGNA_BUFFER_DESCR)((PUCHAR)input + sizeof(GNA_CALC_IN));
+    for (UINT32 i = 0; i < input->ctrlFlags.bufferConfigsCount; ++i)
+    {
+        *(PUINT32)(memoryBase + bufferDescr->offset) = bufferDescr->value;
+        ++bufferDescr;
+    }
+
+    // set active list params according to request config
+    PGNA_ACTIVE_LIST_DESCR actLstDescr = (PGNA_ACTIVE_LIST_DESCR)bufferDescr;
+    for (UINT32 i = 0; i < input->ctrlFlags.actListConfigsCount; ++i)
+    {
+        *(PUINT32)(memoryBase + actLstDescr->act_list_buffer_offset) = actLstDescr->act_list_buffer_value;
+        *(PUINT16)(memoryBase + actLstDescr->act_list_n_elems_offset) = actLstDescr->act_list_n_elems_value;
+        ++actLstDescr;
+    }
+}
+
 NTSTATUS
 ScoreStart(
     _In_    PDEV_CTX    devCtx,
@@ -406,28 +426,7 @@ ScoreStart(
         goto cleanup;
     }
 
-    PUCHAR const memBase = (PUCHAR)modelCtx->userMemoryBaseVA;
-    PGNA_BUFFER_DESCR bufferDescr = (PGNA_BUFFER_DESCR)((PUCHAR)input + sizeof(GNA_CALC_IN));
-    // set buffers according to request config
-    if (0 < input->ctrlFlags.bufferConfigsCount)
-    {
-        for (UINT32 i = 0; i < input->ctrlFlags.bufferConfigsCount; ++i)
-        {
-            *(PUINT32)(memBase + bufferDescr->offset) = bufferDescr->value;
-            ++bufferDescr;
-        }
-    }
-    // set active list params according to request config
-    if (0 < input->ctrlFlags.actListConfigsCount)
-    {
-        PGNA_ACTIVE_LIST_DESCR actLstDescr = (PGNA_ACTIVE_LIST_DESCR)bufferDescr;
-        for (UINT32 i = 0; i < input->ctrlFlags.actListConfigsCount; ++i)
-        {
-            *(PUINT32)(memBase + actLstDescr->act_list_buffer_offset) = actLstDescr->act_list_buffer_value;
-            *(PUINT16)(memBase + actLstDescr->act_list_n_elems_offset) = actLstDescr->act_list_n_elems_value;
-            ++actLstDescr;
-        }
-    }
+    setLayersDescriptorParameters(input, modelCtx->userMemoryBaseVA);
 
     // check and remember application from which req. is being processed now
     WdfSpinLockAcquire(devCtx->req.reqLock);
