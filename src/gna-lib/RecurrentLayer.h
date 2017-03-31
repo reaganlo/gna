@@ -26,7 +26,9 @@
 #pragma once
 
 #include "Layer.h"
+
 #include "LayerFunctions.h"
+#include "Address.h"
 
 namespace GNA
 {
@@ -37,8 +39,8 @@ public:
     RnnLayer(nn_layer const * const layer, const uint32_t inputVectorCount);
     virtual ~RnnLayer() = default;
 
-    const uint16_t* CalculateFeedbackBuffer(const void * outputBuffer) const;
-    void SetFeedbackBuffer(const void * outputBuffer);// TODO: not multi-thread safe
+    const AddressU16C CalculateFeedbackBuffer(const AddressU16C& outputBuffer) const;
+    void SetFeedbackBuffer(const AddressU16C& outputBuffer);// TODO: not multi-thread safe
 
     const std::unique_ptr<const AffineFunctionSingle> Affine;
     const std::unique_ptr<const ActivationFunction> Activation;
@@ -50,7 +52,7 @@ private:
         SetFeedbackBuffer(Output.Buffer);
     }
     const nn_layer_reccurent *sourceLayer;
-    const uint16_t * feedbackBuffer;// TODO: not multi-thread safe
+    AddressU16 feedbackBuffer;// TODO: not multi-thread safe
 };
 
 }

@@ -28,8 +28,8 @@
 #include "AccelerationDetector.h"
 #include "common.h"
 #include "GnaException.h"
-#include "HardwareLayer.h"
 #include "IoctlSender.h"
+#include "Memory.h"
 #include "SoftwareModel.h"
 
 namespace GNA
@@ -51,15 +51,29 @@ public:
 private:
     void build(const std::vector<std::unique_ptr<Layer>>& layers, const uint32_t hardwareInternalBufferSize);
 
+    static uint32_t getLayerDescriptorsSize(const uint16_t layerCount)
+    {
+        Expect::InRange(layerCount, 1, XNN_LAYERS_MAX_COUNT, XNN_ERR_NET_LYR_NO);
+        auto layerDescriptorsSize = size_t{ layerCount * sizeof(XNN_LYR) };
+        return layerDescriptorsSize;
+    }
+    
+    static uint32_t getGmmDescriptorsSize(const uint16_t gmmLayersCount)
+    {
+        Expect::InRange(gmmLayersCount, 0, XNN_LAYERS_MAX_COUNT, XNN_ERR_NET_LYR_NO);
+        auto gmmDescriptorsSize = size_t{ gmmLayersCount * sizeof(GMM_CONFIG) };
+        return gmmDescriptorsSize;
+    }
+
     void mapMemory(const Memory& memory);
     void unmapMemory();
 
     // needed for driver communication
     gna_model_id modelId;
 
-    void * const memoryBaseAddress;
-
-    uint16_t gmmConfigsCount = 0;
+    const BaseAddressC memoryBaseAddress;
+    const uint32_t layerDescriptorsSize;
+    const uint32_t gmmDescriptorsSize;
 
     bool memoryMapped = false;
 };

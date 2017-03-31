@@ -26,8 +26,8 @@
 #pragma once
 
 #include "common.h"
+#include "GnaDrvApi.h"
 #include "Request.h"
-#include "SwHw.h"
 #include "Validator.h"
 
 namespace GNA

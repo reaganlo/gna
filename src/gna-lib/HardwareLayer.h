@@ -25,6 +25,7 @@
 
 #pragma once
 
+#include <array>
 #include <map>
 
 #include "ActiveList.h"
@@ -32,10 +33,9 @@
 #include "ConvolutionalLayer.h"
 #include "GmmLayer.h"
 #include "Layer.h"
-#include "Memory.h"
+#include "Address.h"
 #include "RecurrentLayer.h"
 #include "SimpleLayers.h"
-#include "SwHw.h"
 
 namespace GNA
 {
@@ -44,8 +44,8 @@ namespace GNA
 class HardwareLayer
 {
 public:
-    static XNN_LYR Convert(const Layer& softwareLayer, void * const memoryBase, 
-        const uint32_t hardwareInternalBufferSize);
+    static XNN_LYR Convert(const Layer& softwareLayer, const BaseAddressC& memoryBase, 
+        const AddrGmmCfg& gmmDescriptor, const uint32_t hardwareInternalBufferSize);
 
     virtual ~HardwareLayer() = default;
 
@@ -58,13 +58,15 @@ public:
     void convertAL(ActiveList &activeList);
 
 protected:
-    HardwareLayer(const Layer& swLayer, void * const memoryBase);
+    HardwareLayer(const Layer& swLayer, const BaseAddressC& memoryBase);
 
     void save();
 
     inline const uint32_t getOffset(const void* address) const
     {
-        return Hw::getAddrOffset(address, memoryBaseAddress);
+        // TODO: move to Address class
+        if (nullptr == address) return 0;
+        return PtrToUint((void*)((uint8_t*)address - memoryBaseAddress));
     }
 
     static XNN_LYR layerDescriptor; // single layer descriptor
@@ -73,7 +75,7 @@ protected:
 private:
     static const std::map<const nn_layer_kind, const NN_OP_TYPE> OperationsMap;
 
-    void * const memoryBaseAddress;
+    const BaseAddressC memoryBaseAddress;
 };
 
 // Extended Hardware Layer descriptor converter
@@ -85,7 +87,7 @@ public:
     HardwareLayerExt& operator=(const HardwareLayerExt&) = delete;
 
 protected:
-    HardwareLayerExt(const Layer& swLayer, void * const memoryBase, const uint32_t bufferSize,
+    HardwareLayerExt(const Layer& swLayer, const BaseAddressC& memoryBase, const uint32_t bufferSize,
         const uint32_t effectiveGrouping);
 
     void save();
@@ -97,7 +99,7 @@ protected:
 
 private:
     // Number of data elements that may be stored in hw buffer
-    const static std::map<const uint32_t, std::array<const uint32_t, XNN_N_GROUP_MAX>> bufferElementsMap;
+    const static std::map<const uint32_t, const std::array<const uint32_t, XNN_N_GROUP_MAX>> bufferElementsMap;
 
     const uint32_t iterationGrouping; // grouping for iteration calculation
     uint32_t iterationCount; // number of iterations = data chunks/parts
@@ -107,7 +109,7 @@ private:
 class HardwareLayerAffDiagTrans : public HardwareLayerExt
 {
 public:
-    HardwareLayerAffDiagTrans(const Layer& swLayer, void * const memoryBase, const uint32_t hwInBuffSize);
+    HardwareLayerAffDiagTrans(const Layer& swLayer, const BaseAddressC& memoryBase, const uint32_t hwInBuffSize);
 
     virtual ~HardwareLayerAffDiagTrans() = default;
 };
@@ -122,7 +124,7 @@ public:
 class HardwareLayerCopy : public HardwareLayer
 {
 public:
-    HardwareLayerCopy(const Layer& swLayer, void * const memoryBase);
+    HardwareLayerCopy(const Layer& swLayer, const BaseAddressC& memoryBase);
     HardwareLayerCopy(const HardwareLayerCopy &) = delete;
     HardwareLayerCopy& operator=(const HardwareLayerCopy&) = delete;
     virtual ~HardwareLayerCopy() = default;
@@ -135,13 +137,13 @@ protected:
 class HardwareLayerRnn : public HardwareLayerExt
 {
 public:
-    HardwareLayerRnn(const Layer& swLayer, void * const memoryBase, const uint32_t hwInBuffSize);
+    HardwareLayerRnn(const Layer& swLayer, const BaseAddressC& memoryBase, const uint32_t hwInBuffSize);
     HardwareLayerRnn(const HardwareLayerRnn &) = delete;
     HardwareLayerRnn& operator=(const HardwareLayerRnn&) = delete;
     virtual ~HardwareLayerRnn() = default;
 
     // calculates feedback buffer offset for per RequestConfiguration output buffer
-    const uint32_t CalculateFeedbackBuffer(const void * const outputBuffer) const;
+    const uint32_t CalculateFeedbackBuffer(const AddressU16C& outputBuffer) const;
 
 protected:
     void convert();
@@ -157,7 +159,7 @@ private:
 class HardwareLayerCnn : public HardwareLayerExt
 {
 public:
-    HardwareLayerCnn(const Layer& swLayer, void * const memoryBase, const uint32_t hwInBuffSize);
+    HardwareLayerCnn(const Layer& swLayer, const BaseAddressC& memoryBase, const uint32_t hwInBuffSize);
     HardwareLayerCnn(const HardwareLayerRnn &) = delete;
     HardwareLayerCnn& operator=(const HardwareLayerRnn&) = delete;
     virtual ~HardwareLayerCnn() = default;
@@ -173,6 +175,20 @@ private:
     uint32_t filtersCountInFullIteration;          // Number of filters in buffer in full iterations.
     uint32_t filtersElementCountInFullIteration;   // Size of filter in non-last iterations (elements).
     uint32_t filtersElementCountInLastIteration;   // Size of filter in last iterations (elements).
+};
+
+// Hardware GMM Layer descriptor converter
+class HardwareLayerGmm : public HardwareLayer
+{
+public:
+    HardwareLayerGmm(const Layer& swLayer, const BaseAddressC& memoryBase, const AddrGmmCfg& gmmDescriptor);
+    HardwareLayerGmm(const HardwareLayerGmm &) = delete;
+    HardwareLayerGmm& operator=(const HardwareLayerGmm&) = delete;
+    virtual ~HardwareLayerGmm() = default;
+
+protected:
+    void save();
+    const AddrGmmCfg gmmDescriptor;
 };
 
 }

@@ -30,19 +30,19 @@ in any way.
 using namespace GNA;
 
 // just makes object from arguments
-Memory::Memory(void * buffer, const size_t size) :
-    Buffer(buffer),
-    Size(size)
+Memory::Memory(void * bufferIn, const size_t sizeIn) :
+    Address(bufferIn),
+    size(sizeIn)
 {};
 
 // allocates and zeros memory
-Memory::Memory(const size_t size)
+Memory::Memory(const size_t sizeIn) : 
+    size(sizeIn)
 {
     Expect::True(size > 0, GNA_INVALIDMEMSIZE);
-    Buffer = _gna_malloc(size);
-    Expect::ValidBuffer(Buffer);
-    Size = size;
-    memset(Buffer, 0, Size);
+    buffer = _gna_malloc(size);
+    Expect::ValidBuffer(buffer);
+    memset(buffer, 0, size);
 };
 
 Memory::~Memory()
@@ -52,10 +52,10 @@ Memory::~Memory()
 
 void Memory::Free()
 {
-    if (Buffer)
+    if (buffer)
     {
-        _gna_free(Buffer);
-        Buffer = nullptr;
-        Size = 0;
+        _gna_free(buffer);
+        buffer = nullptr;
+        size = 0;
     }
 }

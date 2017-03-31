@@ -29,7 +29,6 @@
 #include <future>
 
 #include "GnaException.h"
-#include "SwHw.h"
 
 namespace GNA
 {

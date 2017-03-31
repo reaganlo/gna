@@ -28,17 +28,15 @@
 #include "AccelerationDetector.h"
 #include "GnaDrvApi.h"
 #include "GnaException.h"
+#include "HardwareLayer.h"
 #include "Validator.h"
 
 using namespace GNA;
 
 const size_t HardwareModel::CalculateDescriptorSize(const uint16_t layerCount, const uint16_t gmmLayersCount)
 {
-    Expect::InRange(layerCount, 1, XNN_LAYERS_MAX_COUNT, XNN_ERR_NET_LYR_NO);
-    auto layerDescriptorsSize = size_t{ layerCount * sizeof(XNN_LYR) };
-
-    Expect::InRange(gmmLayersCount, 0, GMM_LAYERS_MAX_COUNT, XNN_ERR_NET_LYR_NO);
-    auto gmmDescriptorsSize = size_t{ gmmLayersCount * sizeof(GMM_CONFIG) };
+    auto layerDescriptorsSize = getLayerDescriptorsSize(layerCount);
+    auto gmmDescriptorsSize = getGmmDescriptorsSize(gmmLayersCount);
 
     return layerDescriptorsSize + gmmDescriptorsSize;
 }
@@ -46,7 +44,9 @@ const size_t HardwareModel::CalculateDescriptorSize(const uint16_t layerCount, c
 HardwareModel::HardwareModel(const gna_model_id modId, const SoftwareModel& model, const Memory& wholeMemory,
     const AccelerationDetector& detector) :
     modelId(modId),
-    memoryBaseAddress(wholeMemory.GetBuffer())
+    memoryBaseAddress(wholeMemory),
+    layerDescriptorsSize(getLayerDescriptorsSize(XNN_LAYERS_MAX_COUNT)), // TODO: change to support variable number of layers
+    gmmDescriptorsSize(getGmmDescriptorsSize(XNN_LAYERS_MAX_COUNT)) // TODO: change to support variable number of gmms
 {
     mapMemory(wholeMemory);
     build(model.Layers, detector.GetHardwareBufferSize());
@@ -64,13 +64,13 @@ void HardwareModel::mapMemory(const Memory& memory)
 
     // write model id in user buffer
     // driver will retrieve it
-    *reinterpret_cast<uint64_t*>(memory.GetBuffer()) = static_cast<uint64_t>(modelId);
+    *reinterpret_cast<uint64_t*>(memory.Get()) = static_cast<uint64_t>(modelId);
 
     IoctlSend(
         GNA_IOCTL_MEM_MAP,
         nullptr,
         0,
-        memory.GetBuffer(),
+        memory.Get(),
         memory.GetSize());
 
     memoryMapped = true;
@@ -86,14 +86,23 @@ void HardwareModel::unmapMemory()
 
 uint32_t HardwareModel::GetOffsetToBase(void* address)
 {
-    return Hw::getAddrOffset(address, memoryBaseAddress);
+    // TODO:move to Address class
+    if (nullptr == address) return 0;
+    return PtrToUint((void*)((uint8_t*)address - memoryBaseAddress));
 }
 
 void HardwareModel::build(const std::vector<std::unique_ptr<Layer>>& layers, const uint32_t hardwareInternalBufferSize)
 {
-    auto layerDescriptor = static_cast<XNN_LYR*>(memoryBaseAddress);
+    auto layerDescriptor = AddrXnnLyr(memoryBaseAddress);
+    auto gmmDescriptor = AddrGmmCfg(layerDescriptor.Get<uint8_t>() + layerDescriptorsSize);
+
     for (auto& layer : layers)
     {
-        *layerDescriptor++ = HardwareLayer::Convert(*layer, memoryBaseAddress, hardwareInternalBufferSize);
+        *layerDescriptor = HardwareLayer::Convert(*layer, memoryBaseAddress, gmmDescriptor, hardwareInternalBufferSize);
+        layerDescriptor++;
+        if (INTEL_GMM == layer->Config.Kind)
+        {
+            gmmDescriptor++;
+        }
     }
 }

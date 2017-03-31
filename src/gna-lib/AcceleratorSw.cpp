@@ -27,6 +27,7 @@
 
 #include "common.h"
 #include "AffineLayers.h"
+#include "RecurrentLayer.h"
 #include "GnaException.h"
 #include "Validator.h"
 

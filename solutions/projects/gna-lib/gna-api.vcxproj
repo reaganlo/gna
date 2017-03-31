@@ -1,212 +1,211 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <!--
 //*****************************************************************************
-// 
+//
 // INTEL CONFIDENTIAL
 // Copyright 2012-2015 Intel Corporation
-// 
-// The source code contained or described herein and all documents related 
-// to the source code ("Material") are owned by Intel Corporation or its suppliers 
-// or licensors. Title to the Material remains with Intel Corporation or its suppliers 
-// and licensors. The Material contains trade secrets and proprietary 
+//
+// The source code contained or described herein and all documents related
+// to the source code ("Material") are owned by Intel Corporation or its suppliers
+// or licensors. Title to the Material remains with Intel Corporation or its suppliers
+// and licensors. The Material contains trade secrets and proprietary
 // and confidential information of Intel or its suppliers and licensors.
 // The Material is protected by worldwide copyright and trade secret laws and treaty
-// provisions. No part of the Material may be used, copied, reproduced, modified, 
-// published, uploaded, posted, transmitted, distributed, or disclosed in any way 
+// provisions. No part of the Material may be used, copied, reproduced, modified,
+// published, uploaded, posted, transmitted, distributed, or disclosed in any way
 // without Intel's prior express written permission.
-// 
-// No license under any patent, copyright, trade secret or other intellectual 
-// property right is granted to or conferred upon you by disclosure or delivery 
-// of the Materials, either expressly, by implication, inducement, estoppel 
-// or otherwise. Any license under such intellectual property rights must 
+//
+// No license under any patent, copyright, trade secret or other intellectual
+// property right is granted to or conferred upon you by disclosure or delivery
+// of the Materials, either expressly, by implication, inducement, estoppel
+// or otherwise. Any license under such intellectual property rights must
 // be express and approved by Intel in writing.
 //*****************************************************************************
 -->
 <Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <PropertyGroup Label="Globals">
-    <ProjectGuid>{604EE608-306B-4EEB-8D12-7681599E48F5}</ProjectGuid>
-    <Keyword>Win32Proj</Keyword>
-    <RootNamespace>api</RootNamespace>
-  </PropertyGroup>
-  <!-- import configurations -->
-  <ImportGroup Label="PropertySheets">
-    <Import Project="gna-common-lib.props" />
-  </ImportGroup>
-  <PropertyGroup Label="Configuration">
-    <ConfigurationType>DynamicLibrary</ConfigurationType>
-  </PropertyGroup>
-  <PropertyGroup>
-    <TargetName>$(API_DLL)</TargetName>
-  </PropertyGroup>
-  <PropertyGroup>
-	<ROOT_DIR>..\..\..\</ROOT_DIR>
-	<SRC_DIR>$(ROOT_DIR)src</SRC_DIR>
-    <BIN_DIR>$(ROOT_DIR)bin</BIN_DIR>
-    <OUTPUT_DIR>$(BIN_DIR)\$(LIB_OUT_PATH)\$(Configuration)\$(API_NAME)\$(PLATFORM_NAME)</OUTPUT_DIR>
-    <KERNELS_DIR>$(BIN_DIR)\$(LIB_OUT_PATH)\$(Configuration)\kernels\$(PLATFORM_NAME)</KERNELS_DIR>
-    <OutDir>$(OUTPUT_DIR)\out\</OutDir>
-    <IntDir>$(OUTPUT_DIR)\obj\</IntDir>
-  </PropertyGroup>
-  <ImportGroup Label="PropertySheets">
-    <Import Project="gna-common-api.props" />
-  </ImportGroup>
-  <PropertyGroup>
-    <TargetName>$(API_DLL)</TargetName>
-  </PropertyGroup>
-  <ItemDefinitionGroup>
-    <ClCompile>
-      <PreprocessorDefinitions>
+    <PropertyGroup Label="Globals">
+        <ProjectGuid>{604EE608-306B-4EEB-8D12-7681599E48F5}</ProjectGuid>
+        <Keyword>Win32Proj</Keyword>
+        <RootNamespace>api</RootNamespace>
+    </PropertyGroup>
+    <!-- import configurations -->
+    <ImportGroup Label="PropertySheets">
+        <Import Project="gna-common-lib.props" />
+    </ImportGroup>
+    <PropertyGroup Label="Configuration">
+        <ConfigurationType>DynamicLibrary</ConfigurationType>
+    </PropertyGroup>
+    <PropertyGroup>
+        <TargetName>$(API_DLL)</TargetName>
+    </PropertyGroup>
+    <PropertyGroup>
+        <ROOT_DIR>..\..\..\</ROOT_DIR>
+        <SRC_DIR>$(ROOT_DIR)src</SRC_DIR>
+        <BIN_DIR>$(ROOT_DIR)bin</BIN_DIR>
+        <OUTPUT_DIR>$(BIN_DIR)\$(LIB_OUT_PATH)\$(Configuration)\$(API_NAME)\$(PLATFORM_NAME)</OUTPUT_DIR>
+        <KERNELS_DIR>$(BIN_DIR)\$(LIB_OUT_PATH)\$(Configuration)\kernels\$(PLATFORM_NAME)</KERNELS_DIR>
+        <OutDir>$(OUTPUT_DIR)\out\</OutDir>
+        <IntDir>$(OUTPUT_DIR)\obj\</IntDir>
+    </PropertyGroup>
+    <ImportGroup Label="PropertySheets">
+        <Import Project="gna-common-api.props" />
+    </ImportGroup>
+    <PropertyGroup>
+        <TargetName>$(API_DLL)</TargetName>
+    </PropertyGroup>
+    <ItemDefinitionGroup>
+        <ClCompile>
+            <PreprocessorDefinitions>
                 HW_VERBOSE=$(HW_VERBOSE);
                 INTEL_GNA_DLLEXPORT=1;
                 %(PreprocessorDefinitions);
             </PreprocessorDefinitions>
             <AdditionalOptions Condition="$(IS_RELEASE) == true">%(AdditionalOptions) /Qipo</AdditionalOptions>
-    </ClCompile>
-    <Link>
-      <AdditionalDependencies>
-        setupapi.lib;
-        $(KERNELS_DIR)\gmm-generic.lib;
-        $(KERNELS_DIR)\gmm-sse4.lib;
-        $(KERNELS_DIR)\gmm-avx1.lib;
-        $(KERNELS_DIR)\gmm-avx2.lib;
-        $(KERNELS_DIR)\xnn-generic.lib;
-        $(KERNELS_DIR)\xnn-sse4.lib;
-        $(KERNELS_DIR)\xnn-avx1.lib;
-        $(KERNELS_DIR)\xnn-avx2.lib;
-        $(KERNELS_DIR)\xnn-generic-sat.lib;
-        $(KERNELS_DIR)\xnn-sse4-sat.lib;
-        $(KERNELS_DIR)\xnn-avx1-sat.lib;
-        $(KERNELS_DIR)\xnn-avx2-sat.lib;
-        %(AdditionalDependencies)
-      </AdditionalDependencies>
-      <BaseAddress>0x13000000</BaseAddress>
-      <ImageHasSafeExceptionHandlers Condition="$(IS_RELEASE) == true and $(Platform) == Win32">true</ImageHasSafeExceptionHandlers>
-    </Link>
-    <ResourceCompile>
-      <PreprocessorDefinitions>
+        </ClCompile>
+        <Link>
+            <AdditionalDependencies>
+                setupapi.lib;
+                $(KERNELS_DIR)\gmm-avx1.lib;
+                $(KERNELS_DIR)\gmm-avx2.lib;
+                $(KERNELS_DIR)\gmm-generic.lib;
+                $(KERNELS_DIR)\gmm-sse4.lib;
+                $(KERNELS_DIR)\xnn-avx1-sat.lib;
+                $(KERNELS_DIR)\xnn-avx1.lib;
+                $(KERNELS_DIR)\xnn-avx2-sat.lib;
+                $(KERNELS_DIR)\xnn-avx2.lib;
+                $(KERNELS_DIR)\xnn-generic-sat.lib;
+                $(KERNELS_DIR)\xnn-generic.lib;
+                $(KERNELS_DIR)\xnn-sse4-sat.lib;
+                $(KERNELS_DIR)\xnn-sse4.lib;
+                %(AdditionalDependencies)
+            </AdditionalDependencies>
+            <BaseAddress>0x13000000</BaseAddress>
+            <ImageHasSafeExceptionHandlers Condition="$(IS_RELEASE) == true and $(Platform) == Win32">true</ImageHasSafeExceptionHandlers>
+        </Link>
+        <ResourceCompile>
+            <PreprocessorDefinitions>
                 $(DEBUG_DEFS);
                 API_DLL=\"$(API_DLL)\";
                 %(PreprocessorDefinitions)
             </PreprocessorDefinitions>
-    </ResourceCompile>
-  </ItemDefinitionGroup>
-  <ItemGroup>
-    <ClCompile Include="$(SRC_DIR)\gna-lib\ThreadPool.cpp" />
-    <ClCompile Include="$(SRC_DIR)\gna-lib\Request.cpp" />
-    <ClCompile Include="$(SRC_DIR)\gna-lib\RequestHandler.cpp" />
-    <ClCompile Include="$(SRC_DIR)\gna-lib\RequestBuilder.cpp" />
-    <ClCompile Include="$(SRC_DIR)\gna-lib\RequestConfiguration.cpp" />
-    <ClInclude Include="$(SRC_DIR)\common\profiler.h" />
-    <ClInclude Include="$(SRC_DIR)\common\gna-api-dev.h" />
-    <ClInclude Include="$(SRC_DIR)\common\gna-api-extra.h" />
-    <ClInclude Include="$(SRC_DIR)\common\gna-api-status.h" />
-    <ClInclude Include="$(SRC_DIR)\common\gna-api-types-gmm.h" />
-    <ClInclude Include="$(SRC_DIR)\common\gna-api-types-xnn.h" />
-    <ClInclude Include="$(SRC_DIR)\common\gna-api.h" />
-    <ClInclude Include="$(SRC_DIR)\common\resource.h" />
-    <ClInclude Include="$(SRC_DIR)\common\GnaDrvApi.h" />
-    <ClInclude Include="$(SRC_DIR)\gna-lib\ThreadPool.h" />
-    <ClInclude Include="$(SRC_DIR)\gna-lib\RequestHandler.h" />
-    <ClInclude Include="$(SRC_DIR)\gna-lib\RequestBuilder.h" />
-    <ClInclude Include="$(SRC_DIR)\gna-lib\RequestConfiguration.h" />
-    <ClInclude Include="$(SRC_DIR)\gna-lib\CompiledModel.h" />
-    <ClInclude Include="$(SRC_DIR)\gna-lib\SubModel.h" />
-    <ClInclude Include="$(SRC_DIR)\gna-lib\ModelCompiler.h" />
-    <ClInclude Include="$(SRC_DIR)\gna-lib\ModelContainer.h" />
-    <ClInclude Include="$(SRC_DIR)\gna-lib\HardwareModel.h" />
-    <ClInclude Include="$(SRC_DIR)\gna-lib\ModelHwTranslator.h" />
-    <ClInclude Include="$(SRC_DIR)\gna-lib\AcceleratorController.h" />
-    <ClInclude Include="$(SRC_DIR)\gna-lib\Device.h" />
-    <ClInclude Include="$(SRC_DIR)\gna-lib\AcceleratorHw.h" />
-    <ClInclude Include="$(SRC_DIR)\gna-lib\AcceleratorHwVerbose.h" />
-    <ClInclude Include="$(SRC_DIR)\gna-lib\HardwareLayer.h" />
-    <ClInclude Include="$(SRC_DIR)\gna-lib\AcceleratorSw.h" />
-    <ClInclude Include="$(SRC_DIR)\gna-lib\GnaConfig.h" />
-    <ClInclude Include="$(SRC_DIR)\gna-lib\GnaTypes.h" />
-    <ClInclude Include="$(SRC_DIR)\gna-lib\IAccelerator.h" />
-    <ClInclude Include="$(SRC_DIR)\gna-lib\IoctlSender.h" />
-    <ClInclude Include="$(SRC_DIR)\gna-lib\Request.h" />
-    <ClInclude Include="$(SRC_DIR)\gna-lib\SoftwareModel.h" />
-	<ClInclude Include="$(SRC_DIR)\gna-lib\ActiveList.h" />
-	<ClInclude Include="$(SRC_DIR)\gna-lib\GnaException.h" />
-	<ClInclude Include="$(SRC_DIR)\gna-lib\Validator.h" />
-    <ClInclude Include="$(SRC_DIR)\gna-lib\SwHw.h" />
-    <ClInclude Include="$(SRC_DIR)\gna-lib\kernels\XnnKernelApi.h" />
-    <ClInclude Include="$(SRC_DIR)\gna-lib\common.h" />
-    <ClInclude Include="$(SRC_DIR)\gna-lib\AccelerationDetector.h" />
-	<ClInclude Include="$(SRC_DIR)\gna-lib\Memory.h" />
-    <ClCompile Include="$(SRC_DIR)\common\profiler.c" />
-    <ClCompile Include="$(SRC_DIR)\gna-lib\CompiledModel.cpp" />
-    <ClCompile Include="$(SRC_DIR)\gna-lib\SubModel.cpp" />
-    <ClCompile Include="$(SRC_DIR)\gna-lib\ModelContainer.cpp" />
-    <ClCompile Include="$(SRC_DIR)\gna-lib\ModelCompiler.cpp" />
-    <ClCompile Include="$(SRC_DIR)\gna-lib\HardwareModel.cpp" />
-    <ClCompile Include="$(SRC_DIR)\gna-lib\ModelHwTranslator.cpp" />
-    <ClCompile Include="$(SRC_DIR)\gna-lib\AcceleratorController.cpp" />
-    <ClCompile Include="$(SRC_DIR)\gna-lib\Device.cpp" />
-    <ClCompile Include="$(SRC_DIR)\gna-lib\AcceleratorHw.cpp" />
-    <ClCompile Include="$(SRC_DIR)\gna-lib\AcceleratorHwVerbose.cpp" />
-    <ClCompile Include="$(SRC_DIR)\gna-lib\AcceleratorSw.cpp" />
-    <ClCompile Include="$(SRC_DIR)\gna-lib\HardwareLayer.cpp" />
-    <ClCompile Include="$(SRC_DIR)\gna-lib\IoctlSender.cpp" />
-    <ClCompile Include="$(SRC_DIR)\gna-lib\SoftwareModel.cpp" />
-	<ClCompile Include="$(SRC_DIR)\gna-lib\ActiveList.cpp" />
-    <ClCompile Include="$(SRC_DIR)\gna-lib\SwHw.cpp" />
-    <ClCompile Include="$(SRC_DIR)\gna-lib\AccelerationDetector.cpp" />
-    <ClCompile Include="$(SRC_DIR)\gna-lib\api.cpp" />
-	<ClInclude Include="$(SRC_DIR)\gna-lib\Layer.h" />
-	<ClCompile Include="$(SRC_DIR)\gna-lib\Layer.cpp" />
-	<ClInclude Include="$(SRC_DIR)\gna-lib\LayerFunctions.h" />
-	<ClCompile Include="$(SRC_DIR)\gna-lib\LayerFunctions.cpp" />
-	<ClInclude Include="$(SRC_DIR)\gna-lib\SimpleLayers.h" />
-	<ClCompile Include="$(SRC_DIR)\gna-lib\SimpleLayers.cpp" />
-	<ClInclude Include="$(SRC_DIR)\gna-lib\RecurrentLayer.h" />
-	<ClCompile Include="$(SRC_DIR)\gna-lib\RecurrentLayer.cpp" />
-	<ClInclude Include="$(SRC_DIR)\gna-lib\GmmLayer.h" />
-	<ClCompile Include="$(SRC_DIR)\gna-lib\GmmLayer.cpp" />
-	<ClInclude Include="$(SRC_DIR)\gna-lib\AffineLayers.h" />
-	<ClCompile Include="$(SRC_DIR)\gna-lib\AffineLayers.cpp" />
-	<ClInclude Include="$(SRC_DIR)\gna-lib\ConvolutionalLayer.h" />
-	<ClCompile Include="$(SRC_DIR)\gna-lib\ConvolutionalLayer.cpp" />
-	<ClCompile Include="$(SRC_DIR)\gna-lib\Memory.cpp" />
-    <ResourceCompile Include="$(SRC_DIR)\common\version.rc" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="kernel-gmm-avx1.vcxproj">
-      <Project>{713c9c15-5d56-40da-a65a-e33fe42506ef}</Project>
-    </ProjectReference>
-    <ProjectReference Include="kernel-gmm-avx2.vcxproj">
-      <Project>{6c66f110-545e-4f86-9797-7204fa3dfd8b}</Project>
-    </ProjectReference>
-    <ProjectReference Include="kernel-gmm-generic.vcxproj">
-      <Project>{14d7c8fc-c0f3-475c-b89f-07c6c785f18c}</Project>
-    </ProjectReference>
-    <ProjectReference Include="kernel-gmm-sse4.vcxproj">
-      <Project>{b51267e0-54de-4a32-bfbd-631e2b50aec3}</Project>
-    </ProjectReference>
-    <ProjectReference Include="kernel-xnn-avx1-sat.vcxproj">
-      <Project>{a9157f63-b07e-4b00-acfc-a0faeab38d43}</Project>
-    </ProjectReference>
-    <ProjectReference Include="kernel-xnn-avx1.vcxproj">
-      <Project>{c34919b6-8fbc-430d-af34-f05073108be5}</Project>
-    </ProjectReference>
-    <ProjectReference Include="kernel-xnn-avx2-sat.vcxproj">
-      <Project>{024d23c4-eb05-45a3-bcd7-83f80a904503}</Project>
-    </ProjectReference>
-    <ProjectReference Include="kernel-xnn-avx2.vcxproj">
-      <Project>{2ebcbcf2-4900-44d2-b98c-d4d0f93219b9}</Project>
-    </ProjectReference>
-    <ProjectReference Include="kernel-xnn-generic-sat.vcxproj">
-      <Project>{a9ff544e-6eb9-4065-87f9-5ecff5e478e8}</Project>
-    </ProjectReference>
-    <ProjectReference Include="kernel-xnn-generic.vcxproj">
-      <Project>{96c10845-25a7-4677-bc18-2ec248d301d2}</Project>
-    </ProjectReference>
-    <ProjectReference Include="kernel-xnn-sse4-sat.vcxproj">
-      <Project>{7ba29e84-f093-4ff7-a26a-71aa1da18a3e}</Project>
-    </ProjectReference>
-    <ProjectReference Include="kernel-xnn-sse4.vcxproj">
-      <Project>{91096c09-7776-4402-8762-3cfcbc9e9aba}</Project>
-    </ProjectReference>
-  </ItemGroup>
+        </ResourceCompile>
+    </ItemDefinitionGroup>
+    <ItemGroup>
+        <ClInclude Include="$(SRC_DIR)\common\GnaDrvApi.h" />
+        <ClInclude Include="$(SRC_DIR)\common\gna-api-dev.h" />
+        <ClInclude Include="$(SRC_DIR)\common\gna-api-extra.h" />
+        <ClInclude Include="$(SRC_DIR)\common\gna-api-status.h" />
+        <ClInclude Include="$(SRC_DIR)\common\gna-api-types-gmm.h" />
+        <ClInclude Include="$(SRC_DIR)\common\gna-api-types-xnn.h" />
+        <ClInclude Include="$(SRC_DIR)\common\gna-api.h" />
+        <ClInclude Include="$(SRC_DIR)\common\profiler.h" />
+        <ClInclude Include="$(SRC_DIR)\common\resource.h" />
+        <ClInclude Include="$(SRC_DIR)\gna-lib\AccelerationDetector.h" />
+        <ClInclude Include="$(SRC_DIR)\gna-lib\AcceleratorController.h" />
+        <ClInclude Include="$(SRC_DIR)\gna-lib\AcceleratorHw.h" />
+        <ClInclude Include="$(SRC_DIR)\gna-lib\AcceleratorHwVerbose.h" />
+        <ClInclude Include="$(SRC_DIR)\gna-lib\AcceleratorSw.h" />
+        <ClInclude Include="$(SRC_DIR)\gna-lib\ActiveList.h" />
+        <ClInclude Include="$(SRC_DIR)\gna-lib\Address.h" />
+        <ClInclude Include="$(SRC_DIR)\gna-lib\AffineLayers.h" />
+        <ClInclude Include="$(SRC_DIR)\gna-lib\CompiledModel.h" />
+        <ClInclude Include="$(SRC_DIR)\gna-lib\ConvolutionalLayer.h" />
+        <ClInclude Include="$(SRC_DIR)\gna-lib\Device.h" />
+        <ClInclude Include="$(SRC_DIR)\gna-lib\GmmLayer.h" />
+        <ClInclude Include="$(SRC_DIR)\gna-lib\GnaConfig.h" />
+        <ClInclude Include="$(SRC_DIR)\gna-lib\GnaException.h" />
+        <ClInclude Include="$(SRC_DIR)\gna-lib\GnaTypes.h" />
+        <ClInclude Include="$(SRC_DIR)\gna-lib\HardwareLayer.h" />
+        <ClInclude Include="$(SRC_DIR)\gna-lib\HardwareModel.h" />
+        <ClInclude Include="$(SRC_DIR)\gna-lib\IAccelerator.h" />
+        <ClInclude Include="$(SRC_DIR)\gna-lib\IoctlSender.h" />
+        <ClInclude Include="$(SRC_DIR)\gna-lib\Layer.h" />
+        <ClInclude Include="$(SRC_DIR)\gna-lib\LayerFunctions.h" />
+        <ClInclude Include="$(SRC_DIR)\gna-lib\Memory.h" />
+        <ClInclude Include="$(SRC_DIR)\gna-lib\ModelCompiler.h" />
+        <ClInclude Include="$(SRC_DIR)\gna-lib\ModelContainer.h" />
+        <ClInclude Include="$(SRC_DIR)\gna-lib\ModelHwTranslator.h" />
+        <ClInclude Include="$(SRC_DIR)\gna-lib\RecurrentLayer.h" />
+        <ClInclude Include="$(SRC_DIR)\gna-lib\Request.h" />
+        <ClInclude Include="$(SRC_DIR)\gna-lib\RequestBuilder.h" />
+        <ClInclude Include="$(SRC_DIR)\gna-lib\RequestConfiguration.h" />
+        <ClInclude Include="$(SRC_DIR)\gna-lib\RequestHandler.h" />
+        <ClInclude Include="$(SRC_DIR)\gna-lib\SimpleLayers.h" />
+        <ClInclude Include="$(SRC_DIR)\gna-lib\SoftwareModel.h" />
+        <ClInclude Include="$(SRC_DIR)\gna-lib\SubModel.h" />
+        <ClInclude Include="$(SRC_DIR)\gna-lib\ThreadPool.h" />
+        <ClInclude Include="$(SRC_DIR)\gna-lib\Validator.h" />
+        <ClInclude Include="$(SRC_DIR)\gna-lib\common.h" />
+        <ClInclude Include="$(SRC_DIR)\gna-lib\kernels\XnnKernelApi.h" />
+        <ClCompile Include="$(SRC_DIR)\common\profiler.c" />
+        <ClCompile Include="$(SRC_DIR)\gna-lib\AccelerationDetector.cpp" />
+        <ClCompile Include="$(SRC_DIR)\gna-lib\AcceleratorController.cpp" />
+        <ClCompile Include="$(SRC_DIR)\gna-lib\AcceleratorHw.cpp" />
+        <ClCompile Include="$(SRC_DIR)\gna-lib\AcceleratorHwVerbose.cpp" />
+        <ClCompile Include="$(SRC_DIR)\gna-lib\AcceleratorSw.cpp" />
+        <ClCompile Include="$(SRC_DIR)\gna-lib\ActiveList.cpp" />
+        <ClCompile Include="$(SRC_DIR)\gna-lib\AffineLayers.cpp" />
+        <ClCompile Include="$(SRC_DIR)\gna-lib\CompiledModel.cpp" />
+        <ClCompile Include="$(SRC_DIR)\gna-lib\ConvolutionalLayer.cpp" />
+        <ClCompile Include="$(SRC_DIR)\gna-lib\Device.cpp" />
+        <ClCompile Include="$(SRC_DIR)\gna-lib\GmmLayer.cpp" />
+        <ClCompile Include="$(SRC_DIR)\gna-lib\HardwareLayer.cpp" />
+        <ClCompile Include="$(SRC_DIR)\gna-lib\HardwareModel.cpp" />
+        <ClCompile Include="$(SRC_DIR)\gna-lib\IoctlSender.cpp" />
+        <ClCompile Include="$(SRC_DIR)\gna-lib\Layer.cpp" />
+        <ClCompile Include="$(SRC_DIR)\gna-lib\LayerFunctions.cpp" />
+        <ClCompile Include="$(SRC_DIR)\gna-lib\Memory.cpp" />
+        <ClCompile Include="$(SRC_DIR)\gna-lib\ModelCompiler.cpp" />
+        <ClCompile Include="$(SRC_DIR)\gna-lib\ModelContainer.cpp" />
+        <ClCompile Include="$(SRC_DIR)\gna-lib\ModelHwTranslator.cpp" />
+        <ClCompile Include="$(SRC_DIR)\gna-lib\RecurrentLayer.cpp" />
+        <ClCompile Include="$(SRC_DIR)\gna-lib\Request.cpp" />
+        <ClCompile Include="$(SRC_DIR)\gna-lib\RequestBuilder.cpp" />
+        <ClCompile Include="$(SRC_DIR)\gna-lib\RequestConfiguration.cpp" />
+        <ClCompile Include="$(SRC_DIR)\gna-lib\RequestHandler.cpp" />
+        <ClCompile Include="$(SRC_DIR)\gna-lib\SimpleLayers.cpp" />
+        <ClCompile Include="$(SRC_DIR)\gna-lib\SoftwareModel.cpp" />
+        <ClCompile Include="$(SRC_DIR)\gna-lib\SubModel.cpp" />
+        <ClCompile Include="$(SRC_DIR)\gna-lib\ThreadPool.cpp" />
+        <ClCompile Include="$(SRC_DIR)\gna-lib\api.cpp" />
+        <ResourceCompile Include="$(SRC_DIR)\common\version.rc" />
+    </ItemGroup>
+    <ItemGroup>
+        <ProjectReference Include="kernel-gmm-avx1.vcxproj">
+            <Project>{713c9c15-5d56-40da-a65a-e33fe42506ef}</Project>
+        </ProjectReference>
+        <ProjectReference Include="kernel-gmm-avx2.vcxproj">
+            <Project>{6c66f110-545e-4f86-9797-7204fa3dfd8b}</Project>
+        </ProjectReference>
+        <ProjectReference Include="kernel-gmm-generic.vcxproj">
+            <Project>{14d7c8fc-c0f3-475c-b89f-07c6c785f18c}</Project>
+        </ProjectReference>
+        <ProjectReference Include="kernel-gmm-sse4.vcxproj">
+            <Project>{b51267e0-54de-4a32-bfbd-631e2b50aec3}</Project>
+        </ProjectReference>
+        <ProjectReference Include="kernel-xnn-avx1-sat.vcxproj">
+            <Project>{a9157f63-b07e-4b00-acfc-a0faeab38d43}</Project>
+        </ProjectReference>
+        <ProjectReference Include="kernel-xnn-avx1.vcxproj">
+            <Project>{c34919b6-8fbc-430d-af34-f05073108be5}</Project>
+        </ProjectReference>
+        <ProjectReference Include="kernel-xnn-avx2-sat.vcxproj">
+            <Project>{024d23c4-eb05-45a3-bcd7-83f80a904503}</Project>
+        </ProjectReference>
+        <ProjectReference Include="kernel-xnn-avx2.vcxproj">
+            <Project>{2ebcbcf2-4900-44d2-b98c-d4d0f93219b9}</Project>
+        </ProjectReference>
+        <ProjectReference Include="kernel-xnn-generic-sat.vcxproj">
+            <Project>{a9ff544e-6eb9-4065-87f9-5ecff5e478e8}</Project>
+        </ProjectReference>
+        <ProjectReference Include="kernel-xnn-generic.vcxproj">
+            <Project>{96c10845-25a7-4677-bc18-2ec248d301d2}</Project>
+        </ProjectReference>
+        <ProjectReference Include="kernel-xnn-sse4-sat.vcxproj">
+            <Project>{7ba29e84-f093-4ff7-a26a-71aa1da18a3e}</Project>
+        </ProjectReference>
+        <ProjectReference Include="kernel-xnn-sse4.vcxproj">
+            <Project>{91096c09-7776-4402-8762-3cfcbc9e9aba}</Project>
+        </ProjectReference>
+    </ItemGroup>
 </Project>

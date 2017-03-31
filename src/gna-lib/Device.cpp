@@ -106,7 +106,7 @@ const size_t Device::AllocateMemory(const size_t requestedSize, void **buffer)
     totalMemory = make_unique<Memory>(size);
 
     size_t internalSize = ModelCompiler::CalculateInternalModelSize(XNN_LAYERS_MAX_COUNT, GMM_LAYERS_MAX_COUNT);
-    *buffer = reinterpret_cast<uint8_t*>(totalMemory->GetBuffer()) + internalSize;
+    *buffer = totalMemory->Get() + internalSize;
 
     return requestedSize;
 }

@@ -27,10 +27,13 @@
 
 #include "common.h"
 
+#include "Address.h"
+
 namespace GNA
 {
 
-class Memory // TODO: consider using smart pointer
+// TODO: add buffer class
+class Memory : public BaseAddressC // TODO: consider using smart pointer
 {
 public:
     Memory() = default;
@@ -47,17 +50,12 @@ public:
 
     size_t GetSize() const
     {
-        return Size;
+        return size;
     }
 
-    void * const GetBuffer() const
-    {
-        return Buffer;
-    }
 
 private:
-    void * Buffer = nullptr;
-    size_t Size = 0;
+    size_t size = 0;
 };
 
 }

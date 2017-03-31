@@ -24,8 +24,10 @@
 */
 
 #include "HardwareLayer.h"
+
 #include "Validator.h"
 
+using std::array;
 using std::make_unique;
 using std::map;
 using std::unique_ptr;
@@ -47,8 +49,8 @@ const map<const nn_layer_kind, const NN_OP_TYPE> HardwareLayer::OperationsMap =
 
 XNN_LYR HardwareLayer::layerDescriptor;
 
-XNN_LYR HardwareLayer::Convert(const Layer& softwareLayer, void * const memoryBase, 
-    const uint32_t hardwareInternalBufferSize)
+XNN_LYR HardwareLayer::Convert(const Layer& softwareLayer, const BaseAddressC& memoryBase,
+const AddrGmmCfg& gmmDescriptor, const uint32_t hardwareInternalBufferSize)
 {
     auto converter = unique_ptr<HardwareLayer>();
     switch (OperationsMap.at(softwareLayer.Config.Kind))
@@ -59,8 +61,8 @@ XNN_LYR HardwareLayer::Convert(const Layer& softwareLayer, void * const memoryBa
     case NN_COPY:
         converter = make_unique<HardwareLayerCopy>(softwareLayer, memoryBase);
         break;
-    //case NN_GMM:
-        //converter = make_unique<HwGmmLayer>();
+    case NN_GMM:
+        converter = make_unique<HardwareLayerGmm>(softwareLayer, memoryBase, gmmDescriptor);
         break;
     case NN_RNN:
         converter = make_unique<HardwareLayerRnn>(softwareLayer, memoryBase, hardwareInternalBufferSize);
@@ -75,7 +77,7 @@ XNN_LYR HardwareLayer::Convert(const Layer& softwareLayer, void * const memoryBa
     return converter->layerDescriptor;
 }
 
-HardwareLayer::HardwareLayer(const Layer &swLayer, void * const memoryBase) :
+HardwareLayer::HardwareLayer(const Layer &swLayer, const BaseAddressC& memoryBase) :
     softwareLayer(swLayer),
     memoryBaseAddress(memoryBase)
 {
@@ -110,7 +112,6 @@ void HardwareLayer::save()
     {
         layerDescriptor.gmm_descriptor = 0; // TODO:KJ: set actual gmm descriptor address
     }
-    // TODO:KJ: add I/O configuration conversion to Request config
     else
     {
         layerDescriptor.in_buffer = getOffset(softwareLayer.Input.Buffer);
@@ -119,13 +120,13 @@ void HardwareLayer::save()
     layerDescriptor.out_sum_buffer = getOffset(softwareLayer.Output.ScratchPad);
 }
 
-const map<const uint32_t, std::array<const uint32_t, XNN_N_GROUP_MAX>> HardwareLayerExt::bufferElementsMap
+const map<const uint32_t, const array<const uint32_t, XNN_N_GROUP_MAX>> HardwareLayerExt::bufferElementsMap
 {
     { 12,{ 12288, 12288, 12096, 12288, 12000, 12096, 12096, 12288 } },
     { 24,{ 6144, 6144, 6048, 6144, 5760, 6048, 6048, 6144 } }
 };
 
-HardwareLayerExt::HardwareLayerExt(const Layer& swLayer, void * const memoryBase,
+HardwareLayerExt::HardwareLayerExt(const Layer& swLayer, const BaseAddressC& memoryBase,
     const uint32_t bufferSize, const uint32_t effectiveGrouping) :
     HardwareLayer(swLayer, memoryBase),
     iterationGrouping(effectiveGrouping),
@@ -168,7 +169,7 @@ void HardwareLayerExt::save()
 }
 
 HardwareLayerAffDiagTrans::HardwareLayerAffDiagTrans(const Layer& swLayer,
-    void * const memoryBase, uint32_t hwInBuffSize) :
+    const BaseAddressC& memoryBase, uint32_t hwInBuffSize) :
     HardwareLayerExt(swLayer, memoryBase, hwInBuffSize, softwareLayer.Input.VectorCount)
 {
     switch (softwareLayer.Config.Kind)
@@ -183,7 +184,7 @@ HardwareLayerAffDiagTrans::HardwareLayerAffDiagTrans(const Layer& swLayer,
     save();
 }
 
-HardwareLayerCopy::HardwareLayerCopy(const Layer& swLayer, void * const memoryBase) :
+HardwareLayerCopy::HardwareLayerCopy(const Layer& swLayer, const BaseAddressC& memoryBase) :
     HardwareLayer(swLayer, memoryBase)
 {
     save();
@@ -196,7 +197,7 @@ void HardwareLayerCopy::save()
     layerDescriptor.cpy_n_elems = static_cast<uint16_t>(copy.CopyElementsCount);
 }
 
-HardwareLayerRnn::HardwareLayerRnn(const Layer& swLayer, void * const memoryBase, const uint32_t hwInBuffSize) :
+HardwareLayerRnn::HardwareLayerRnn(const Layer& swLayer, const BaseAddressC& memoryBase, const uint32_t hwInBuffSize) :
     HardwareLayerExt(swLayer, memoryBase, hwInBuffSize, 1),
     feedbackIterationsCount(0),
     feedbackFirstIterElementCount(0),
@@ -253,17 +254,17 @@ void HardwareLayerRnn::save()
     // will be 0 for hidden layers
     if (INTEL_INPUT == softwareLayer.Config.Type || INTEL_HIDDEN == softwareLayer.Config.Type)
     {
-        layerDescriptor.rnn_out_fb_buffer = CalculateFeedbackBuffer(softwareLayer.Output.Buffer);
+        layerDescriptor.rnn_out_fb_buffer = CalculateFeedbackBuffer(AddressU16C(softwareLayer.Output.Buffer));
     }
 }
 
-const uint32_t HardwareLayerRnn::CalculateFeedbackBuffer(const void * const outputBuffer) const
+const uint32_t HardwareLayerRnn::CalculateFeedbackBuffer(const AddressU16C& outputBuffer) const
 {
     auto& rnn = static_cast<const RnnLayer&>(softwareLayer);
     return getOffset(rnn.CalculateFeedbackBuffer(outputBuffer));
 }
 
-HardwareLayerCnn::HardwareLayerCnn(const Layer & swLayer, void * const memoryBase, uint32_t hwInBuffSize) :
+HardwareLayerCnn::HardwareLayerCnn(const Layer & swLayer, const BaseAddressC& memoryBase, uint32_t hwInBuffSize) :
     HardwareLayerExt(swLayer, memoryBase, hwInBuffSize, 1)
 {
     auto& cnn = static_cast<const CnnLayer&>(softwareLayer);
@@ -339,4 +340,18 @@ HardwareLayerAffineMBias::HardwareLayerAffineMBias(const Layer & swLayer, void *
         layerDescriptor.aff_const_buffer = 
             getOffset((static_cast<const AffineFunctionMulti1B*>(affine)->WeightScaleFactors));
     }
+}
+
+HardwareLayerGmm::HardwareLayerGmm(const Layer& swLayer, const BaseAddressC& memoryBase,
+    const AddrGmmCfg& gmmDescriptor) :
+    HardwareLayer(swLayer, memoryBase)
+{
+    save();
+}
+
+void HardwareLayerGmm::save()
+{
+    HardwareLayer::save();
+    auto& gmm = static_cast<const GmmLayer&>(softwareLayer);
+    //layerDescriptor.gmm_descriptor = static_cast<uint16_t>(copy.CopyElementsCount);
 }
