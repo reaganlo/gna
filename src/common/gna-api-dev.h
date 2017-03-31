@@ -63,6 +63,24 @@ typedef enum _acceleration_all
 static_assert(4 == sizeof(gna_acceleration_all), "Invalid size of gna_acceleration_all");
 
 /**
+ * GNA HW Scoring Acceleration performance counters.
+ * When performance counting is enabled, the total scoring cycles counter is always on.
+ * In addition one of several reasons for stall may be measured to allow 
+ * identifying the bottlenecks in the scoring operation.
+ */
+typedef enum _gna_hw_perf_stats
+{
+    PERF_COUNT_DISABLED,
+    COUNT_TOTAL_STALL_CYCLE,
+    WAIT_FOR_DMA_COMPLETION,
+    WAIT_FOR_MMU_TRANSLATION,
+    DESCRIPTOR_FETCH_TIME,
+    INPUT_BUFFER_FILL_FROM_MEMORY,
+    OUTPUT_BUFFER_FULL_STALL_CYCLES,
+    OUTPUT_BUFFER_WAIT_FOR_IOSF_STALL_CYCLES
+} gna_hw_perf_stats;
+
+/**
  * Adds single request configuration for use with model.
  * Request configurations have to be declared a priori to minimize the time
  * of preparation of request and reduce processing latency.
@@ -80,11 +98,12 @@ static_assert(4 == sizeof(gna_acceleration_all), "Invalid size of gna_accelerati
  * @param modelId       Model, that request configuration will be used with.
  *                      Configuration cannot be shared with other models.
  * @param configId      (out) Request configuration created by GNA.
+ * @param perfStat      Type of performance statistic.
  * @param perfResults   Buffer to save performance measurements to or NULL to ignore.
  */
-GNAAPI intel_gna_status_t GnaModelRequestConfigAddWithPerf(
-    gna_model_id        modelId,
-    gna_request_cfg_id* configId,
+GNAAPI intel_gna_status_t GnaRequestConfigEnablePerf(
+    gna_request_cfg_id  configId,
+    gna_hw_perf_stats   perfStat,
     gna_perf_t*         perfResults);
 
 #ifdef __cplusplus

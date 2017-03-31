@@ -363,3 +363,9 @@ intel_gna_status_t GnaDeviceClose(
         return GNA_UNKNOWN_ERROR;
     }
 }
+
+intel_gna_status_t GnaRequestConfigEnablePerf( gna_request_cfg_id configId, gna_hw_perf_stats perfStat,
+    gna_perf_t* perfResults)
+{
+    return GNA_SUCCESS;
+}
