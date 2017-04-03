@@ -53,12 +53,21 @@ void RequestHandler::Enqueue(
             throw GnaException(GNA_ERR_RESOURCES);
         }
 
-        requests.at(*requestId)->SetId(*requestId);
+        requests.at(*requestId)->Id = *requestId;
 
         nRequests = (++nRequests) % GNA_REQUEST_WAIT_ANY;
     }
 
-    threadPool.Enqueue(requests.at(*requestId).get());
+    auto r = requests.at(*requestId).get();
+
+    profilerDTscStart(&r->Profiler->total);
+    profilerDTscStart(&r->Profiler->process);
+    profilerDTscStart(&r->Profiler->submit);
+
+    threadPool.Enqueue(r);
+
+    profilerDTscStop(&r->Profiler->submit);
+    profilerDTscStop(&r->Profiler->preprocess);
 }
 
 status_t RequestHandler::removeRequest(gna_request_id requestId)
@@ -107,6 +116,21 @@ status_t RequestHandler::WaitFor(const gna_request_id requestId, const gna_timeo
     case std::future_status::ready:
     {
         auto score_status = future.get();
+
+        profilerDTscStop(&request->Profiler->process);
+        auto perfResults = request->PerfResults;
+        auto profiler = request->Profiler.get();
+        if (perfResults)
+        {
+            perfResults->lib.preprocess = profiler->preprocess.passed;
+            perfResults->lib.process    = profiler->process.passed;
+            perfResults->lib.submit     = profiler->submit.passed;
+            perfResults->lib.scoring    = profiler->scoring.passed;
+            perfResults->lib.total      = profiler->total.passed;
+            perfResults->total.start    = profiler->submit.start;
+            perfResults->total.stop     = profiler->process.stop;
+        }
+
         auto status = removeRequest(requestId);
         Expect::True(GNA_SUCCESS == status, status);
         return score_status;

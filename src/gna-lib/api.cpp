@@ -367,5 +367,17 @@ intel_gna_status_t GnaDeviceClose(
 intel_gna_status_t GnaRequestConfigEnablePerf( gna_request_cfg_id configId, gna_hw_perf_stats perfStat,
     gna_perf_t* perfResults)
 {
-    return GNA_SUCCESS;
+    try
+    {
+        Gna2Ultimate.EnableProfiling(configId, perfStat, perfResults);
+        return GNA_SUCCESS;
+    }
+    catch (const GnaException &e)
+    {
+        return e.getStatus();
+    }
+    catch (...)
+    {
+        return GNA_UNKNOWN_ERROR;
+    }
 }

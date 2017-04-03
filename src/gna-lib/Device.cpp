@@ -44,6 +44,13 @@ void Device::CreateConfiguration(gna_model_id modelId, gna_request_cfg_id *confi
     requestBuilder.CreateConfiguration(modelId, configId);
 }
 
+void Device::EnableProfiling(gna_request_cfg_id configId, gna_hw_perf_stats perfStat, gna_perf_t *perfResults)
+{
+    auto& requestConfiguration = requestBuilder.GetConfiguration(configId);
+    // TODO: add profiling input info to request configuration
+    //requestConfiguration.EnableProfiling();
+}
+
 void Device::AttachActiveList(gna_request_cfg_id configId, uint16_t layerIndex, uint32_t indicesCount, uint32_t *indices)
 {
     requestBuilder.AttachActiveList(configId, layerIndex, indicesCount, indices);
@@ -132,12 +139,14 @@ void Device::LoadModel(gna_model_id *modelId, const gna_model *raw_model)
 void Device::PropagateRequest(gna_request_cfg_id configId, acceleration accel, gna_request_id *requestId)
 {
     auto profiler = std::make_unique<RequestProfiler>();
+    profilerDTscStart(&profiler->preprocess);
 
     auto& configuration = requestBuilder.GetConfiguration(configId);
     auto& model = modelContainer.GetModel(configuration.ModelId);
-    auto callback = [&, accel](KernelBuffers *buffers, RequestProfiler *profilerPtr){ return acceleratorController.ScoreModel(model, configuration, accel, profilerPtr, buffers); };
+    auto callback = [&, accel](KernelBuffers *buffers, RequestProfiler *profilerPtr)
+        { return acceleratorController.ScoreModel(model, configuration, accel, profilerPtr, buffers); };
 
-    auto request = std::make_unique<Request>(callback, move(profiler));
+    auto request = std::make_unique<Request>(callback, move(profiler), configuration.PerfResults);
     requestHandler.Enqueue(requestId, std::move(request));
 }
 

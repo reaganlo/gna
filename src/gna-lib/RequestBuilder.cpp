@@ -58,4 +58,3 @@ RequestConfiguration& RequestBuilder::GetConfiguration(gna_request_cfg_id config
 {
     return *configurationVector[configId].get();
 }
-

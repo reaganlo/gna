@@ -46,8 +46,7 @@ struct RequestProfiler
     profiler_tsc total;          // profiler for total processing time (does not include GNAWait)
     profiler_tsc ioctlSubmit;    // profiler for issuing "start scoring IOCTL"
     profiler_tsc ioctlWaitOn;    // profiler for waiting for "start scoring IOCTL" completion
-
-};                     // Library level request processing profiler
+}; // Library level request processing profiler
 
 #endif // PROFILE
 
@@ -65,7 +64,8 @@ public:
      */
     Request(
         RequestFunctor callback,
-        std::unique_ptr<RequestProfiler> profiler);
+        std::unique_ptr<RequestProfiler> profiler,
+        gna_perf_t *perfResults);
 
     /**
      * Destroys request resources if any
@@ -74,7 +74,7 @@ public:
 
     void operator()(KernelBuffers *buffers)
     {
-        scoreTask(buffers, profiler.get());
+        scoreTask(buffers, Profiler.get());
     }
 
     /**************************************************************************
@@ -84,21 +84,19 @@ public:
     /**
      * External id (0-GNA_REQUEST_WAIT_ANY)
      */
-    gna_request_id id = 0;
+    gna_request_id Id = 0;
 
 #ifdef PROFILE
-    
+
     /**
      * performance profiler
      */
-    std::unique_ptr<RequestProfiler> profiler;
+    std::unique_ptr<RequestProfiler> Profiler;
+    gna_perf_t *PerfResults;
 
 #endif
 
     std::future<status_t> GetFuture();
-
-    // should be used only by RequestHandler
-    void SetId(gna_request_id requestId);
 
 private:
     std::packaged_task<status_t(KernelBuffers *buffers, RequestProfiler *profiler)> scoreTask;

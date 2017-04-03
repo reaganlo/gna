@@ -190,14 +190,10 @@ status_t AcceleratorSw::Score(
         ++layerIndex;
     }
 
-    profilerDTscAStop(&profiler->scoring);
-    profilerDTscAStop(&profiler->total);
+    profilerDTscStop(&profiler->scoring);
+    profilerDTscStop(&profiler->total);
 
-    if (sat > 0)
-    {
-        return GNA_SSATURATE;
-    }
-    return GNA_SUCCESS;
+    return (sat > 0) ? GNA_SSATURATE : GNA_SUCCESS;
 }
 
 void AcceleratorSw::applyRequestBuffersToLayer(

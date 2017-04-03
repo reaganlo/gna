@@ -92,6 +92,8 @@ public:
 
     void AttachActiveList(gna_request_cfg_id configId, uint16_t layerIndex, uint32_t indicesCount, uint32_t *indices);
 
+    void EnableProfiling(gna_request_cfg_id configId, gna_hw_perf_stats perfStat, gna_perf_t *perfResults);
+
     /**
      ** Propagates request for execution
      *

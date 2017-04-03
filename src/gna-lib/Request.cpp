@@ -32,20 +32,16 @@ using std::unique_ptr;
 
 using namespace GNA;
 
-Request::Request(
-    RequestFunctor callback,
-    unique_ptr<RequestProfiler> profilerPtr)
-        : profiler(move(profilerPtr)), scoreTask(callback)
+Request::Request(RequestFunctor callback, unique_ptr<RequestProfiler> profiler, gna_perf_t *perfResults)
+        : Profiler(move(profiler)),
+          PerfResults(perfResults),
+          scoreTask(callback)
 {
-    memset(profiler.get(), 0, sizeof(RequestProfiler));
+    memset(Profiler.get(), 0, sizeof(RequestProfiler));
+    memset(PerfResults, 0, sizeof(gna_perf_t));
 }
 
 future<status_t> Request::GetFuture()
 {
     return scoreTask.get_future();
-}
-
-void Request::SetId(gna_request_id requestId)
-{
-    id = requestId;
 }

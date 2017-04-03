@@ -31,10 +31,10 @@
 
 #include "Request.h"
 
-namespace GNA 
+namespace GNA
 {
 
-class RequestHandler 
+class RequestHandler
 {
 public:
     /**
@@ -53,6 +53,19 @@ public:
     void ClearRequests();
 
 private:
+
+    void initRequestMap();
+
+    void clearRequestMap();
+
+    /**
+     * Removes request from map
+     *
+     * @requestId    id of request to be removed
+     * @return       status of removal
+     */
+    status_t removeRequest(const gna_request_id requestId);
+
     /**
      * Requests map container
      */
@@ -70,17 +83,6 @@ private:
 
     ThreadPool threadPool;
 
-    void initRequestMap();
-
-    void clearRequestMap();
-
-    /**
-     * Removes request from map
-     *
-     * @requestId    id of request to be removed
-     * @return       status of removal
-     */
-    status_t removeRequest(const gna_request_id requestId);
 };
 
 }

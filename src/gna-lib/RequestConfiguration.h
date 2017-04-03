@@ -67,16 +67,16 @@ struct LayerConfiguration
 class RequestConfiguration
 {
 public:
-    RequestConfiguration(gna_model_id modelId, gna_request_cfg_id configId) :
-        ModelId(modelId),
-        ConfigId(configId)
-    {};
+    RequestConfiguration(gna_model_id modelId, gna_request_cfg_id configId)
+        : ModelId(modelId),
+          ConfigId(configId) {}
 
     void AddBuffer(gna_buffer_type type, uint32_t layerIndex, void *address);
     void AddActiveList(uint32_t layerIndex, uint32_t indicesCount, uint32_t *indices);
 
-    gna_model_id ModelId;
-    gna_request_cfg_id ConfigId;
+    const gna_model_id ModelId;
+    const gna_request_cfg_id ConfigId;
+    gna_perf_t *PerfResults = nullptr;
 
     std::map<uint32_t, std::unique_ptr<LayerConfiguration>> LayerConfigurations;
     uint32_t InputBuffersCount = 0;
