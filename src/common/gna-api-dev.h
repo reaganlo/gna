@@ -68,7 +68,7 @@ static_assert(4 == sizeof(gna_acceleration_all), "Invalid size of gna_accelerati
  * In addition one of several reasons for stall may be measured to allow 
  * identifying the bottlenecks in the scoring operation.
  */
-typedef enum _gna_hw_perf_stats
+typedef enum _gna_hw_perf_encoding
 {
     PERF_COUNT_DISABLED,
     COUNT_TOTAL_STALL_CYCLE,
@@ -78,7 +78,7 @@ typedef enum _gna_hw_perf_stats
     INPUT_BUFFER_FILL_FROM_MEMORY,
     OUTPUT_BUFFER_FULL_STALL_CYCLES,
     OUTPUT_BUFFER_WAIT_FOR_IOSF_STALL_CYCLES
-} gna_hw_perf_stats;
+} gna_hw_perf_encoding;
 
 /**
  * Adds single request configuration for use with model.
@@ -95,16 +95,16 @@ typedef enum _gna_hw_perf_stats
  * NOTE:
  * - Unreleased configurations are released by GNA with corresponding model release.
  *
- * @param modelId       Model, that request configuration will be used with.
- *                      Configuration cannot be shared with other models.
- * @param configId      (out) Request configuration created by GNA.
- * @param perfStat      Type of performance statistic.
- * @param perfResults   Buffer to save performance measurements to or NULL to ignore.
+ * @param modelId           Model, that request configuration will be used with.
+ *                          Configuration cannot be shared with other models.
+ * @param configId          (out) Request configuration created by GNA.
+ * @param hwPerfEncoding    Type of performance statistic.
+ * @param perfResults       Buffer to save performance measurements to or NULL to ignore.
  */
 GNAAPI intel_gna_status_t GnaRequestConfigEnablePerf(
-    gna_request_cfg_id  configId,
-    gna_hw_perf_stats   perfStat,
-    gna_perf_t*         perfResults);
+    gna_request_cfg_id      configId,
+    gna_hw_perf_encoding    hwPerfEncoding,
+    gna_perf_t*             perfResults);
 
 #ifdef __cplusplus
 }

@@ -86,6 +86,9 @@ void AcceleratorHw::prepareDataToSend(const CompiledModel &model, const RequestC
     calculationData->ctrlFlags.bufferConfigsCount = bufCnfgCnt;
     calculationData->ctrlFlags.actListConfigsCount = requestConfiguration.ActiveListCount;
 
+    calculationData->hwPerf = requestConfiguration.PerfResults->hw;
+    calculationData->hwPerfEncoding = requestConfiguration.HwPerfEncoding;
+
     auto& hwModel = model.GetHardwareModel();
 
     auto lyrsCfg = reinterpret_cast<PGNA_BUFFER_DESCR>(data.get() + sizeof(GNA_CALC_IN));

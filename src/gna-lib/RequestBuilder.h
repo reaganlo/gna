@@ -33,7 +33,6 @@
 
 namespace GNA
 {
-
 class RequestBuilder
 {
 public:
@@ -51,5 +50,4 @@ private:
     RequestBuilder(const RequestBuilder &) = delete;
     RequestBuilder& operator=(const RequestBuilder&) = delete;
 };
-
 }

@@ -35,7 +35,6 @@
 
 namespace GNA
 {
-
 struct ConfigurationBuffer
 {
     ConfigurationBuffer(gna_buffer_type type, void *address);
@@ -76,12 +75,13 @@ public:
 
     const gna_model_id ModelId;
     const gna_request_cfg_id ConfigId;
-    gna_perf_t *PerfResults = nullptr;
+
+    gna_hw_perf_encoding HwPerfEncoding;
+    gna_perf_t * PerfResults = nullptr;
 
     std::map<uint32_t, std::unique_ptr<LayerConfiguration>> LayerConfigurations;
     uint32_t InputBuffersCount = 0;
     uint32_t OutputBuffersCount = 0;
     uint32_t ActiveListCount = 0;
 };
-
 }

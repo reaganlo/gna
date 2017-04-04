@@ -211,8 +211,9 @@ typedef struct _GNA_CALC_IN
     CTRL_FLAGS          ctrlFlags;  // scoring mode
     perf_drv_t          drvPerf;    // driver level performance profiling results
     perf_hw_t           hwPerf;     // hardware level performance results
+    UINT8               hwPerfEncoding; // hardware level performance encoding type
     status_t            status;     // status of scoring
-    UINT32              _rsvd;
+    UINT8               _rsvd[3];
 
 } GNA_CALC_IN, *PGNA_CALC_IN;       // CALCULATE IOCTL - Input data
 

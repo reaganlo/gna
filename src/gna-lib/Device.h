@@ -34,7 +34,6 @@
 
 namespace GNA
 {
-
 /**
  * Accelerator Manager for opening and closing accelerator device
  */
@@ -70,7 +69,7 @@ public:
 
     void AttachActiveList(gna_request_cfg_id configId, uint16_t layerIndex, uint32_t indicesCount, uint32_t *indices);
 
-    void EnableProfiling(gna_request_cfg_id configId, gna_hw_perf_stats perfStat, gna_perf_t *perfResults);
+    void EnableProfiling(gna_request_cfg_id configId, gna_hw_perf_encoding hwPerfEncoding, gna_perf_t * perfResults);
 
     /**
      ** Propagates request for execution
@@ -86,6 +85,7 @@ public:
      * @requestId       (in)
      */
     status_t WaitForRequest(gna_request_id requestId, gna_timeout milliseconds);
+
 
     /**
      * Deleted functions to prevent from being defined or called
@@ -113,6 +113,5 @@ private:
     ModelCompiler modelCompiler;
     RequestBuilder requestBuilder;
 };
-
 }
 #endif

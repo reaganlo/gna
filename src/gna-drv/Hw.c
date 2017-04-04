@@ -123,9 +123,9 @@ HwPrepareMmuConfig(
     PMMU_CONFIG mmu;    // mmu config link
     P_PT_DIR    ptDir;  // page table directory
     ULONG       i;      // page table iterator
-    
+
     TraceEntry(TLI, T_ENT);
-    
+
     PDESCRIPTOR descVA = modelCtx->desc.va;
     mmu = &descVA->mmu_config;
     // mark descriptor mmu config data 'dirty'
@@ -168,12 +168,50 @@ HwUnmapMemory(
     RtlFillMemory(mmuConfig, sizeof(MMU_CONFIG), 0xff);
 }
 
+static
+CTRL_REG
+HwGetCtrlReg(
+    P_HW_REGS           regs)
+{
+    CTRL_REG ctrl;
+
+    ctrl._dword = _READ(regs->ctrl);
+#ifdef _DEBUG
+    Trace(TLV, T_REG, "%!FUNC!: CTRL Reg entry-value %08X", ctrl._dword);
+#endif
+    EventWriteHwRegisterRead(NULL, __FUNCTION__);
+    return ctrl;
+}
+
+static
+VOID
+HwStart(
+    _In_    P_HW_REGS       regs,
+    _In_    PGNA_CALC_IN    input)
+{
+    CTRL_REG ctrl;                  // control register value
+
+    TraceEntry(TLI, T_ENT);
+    EventWriteHwRegisterWrite(NULL, __FUNCTION__);
+
+    ctrl = HwGetCtrlReg(regs);
+    ctrl.start_accel = 1;
+    ctrl.compl_int_en = 1;
+    ctrl.err_int_en = 1;
+    ctrl.comp_stats_en = input->hwPerfEncoding & 0xF;
+    ctrl.active_list_en = input->ctrlFlags.activeListOn;
+    ctrl.gna_mode = input->ctrlFlags.gnaMode;
+    _WRITE(regs->ctrl, ctrl._dword);
+
+    getRegs(regs); // debug register dump, necessary to satisfy verbose test timing conditions (e.g. breakpoint tests)
+}
+
 VOID
 HwInitExecution(
     _In_    P_HW_REGS       regs,
     _In_    ULONG           baseDescriptorLA,
     _In_    PXNN_CONFIG     xnnConfig,
-    _In_    CTRL_FLAGS      ctrlFlags,
+    _In_    PGNA_CALC_IN    input,
     _In_    PDEV_CONFIG     devCfg)
 {
     //NTSTATUS sts = STATUS_SUCCESS;
@@ -191,50 +229,13 @@ HwInitExecution(
     }
 
     // copy user provided XNN configuration
-    xnnConfig->labase = ctrlFlags.layerIndex * XNN_LYR_DSC_SIZE;
-    xnnConfig->lacount = (UINT16)ctrlFlags.layerCount;
+    xnnConfig->labase = input->ctrlFlags.layerIndex * XNN_LYR_DSC_SIZE;
+    xnnConfig->lacount = (UINT16)input->ctrlFlags.layerCount;
 
     // start scoring
     _WRITE(regs->desc_base, baseDescriptorLA);
     HwSetInterruptible(devCfg, TRUE);
-    HwStart(regs, ctrlFlags.activeListOn, ctrlFlags.gnaMode);
-}
-
-CTRL_REG
-HwGetCtrlReg(
-    P_HW_REGS           regs)
-{
-    CTRL_REG ctrl;
-
-    ctrl._dword = _READ(regs->ctrl);
-#ifdef _DEBUG
-    Trace(TLV, T_REG, "%!FUNC!: CTRL Reg entry-value %08X", ctrl._dword);
-#endif
-    EventWriteHwRegisterRead(NULL, __FUNCTION__);
-    return ctrl;
-}
-
-VOID
-HwStart(
-    _In_    P_HW_REGS   regs,
-    _In_    UINT32      activeList,
-    _In_    UINT32      mode)
-{
-    CTRL_REG ctrl;                  // control register value
-
-    TraceEntry(TLI, T_ENT);
-    EventWriteHwRegisterWrite(NULL, __FUNCTION__);
-
-    ctrl = HwGetCtrlReg(regs);
-    ctrl.start_accel    = 1;
-    ctrl.compl_int_en   = 1;
-    ctrl.err_int_en     = 1;
-    ctrl.comp_stats_en  = 1;
-    ctrl.active_list_en = activeList;
-    ctrl.gna_mode       = mode;
-    _WRITE(regs->ctrl, ctrl._dword);
-
-    getRegs(regs); // debug register dump, necessary to satisfy verbose test timing conditions (e.g. breakpoint tests)
+    HwStart(regs, input);
 }
 
 VOID
@@ -244,7 +245,7 @@ HwPause(
     CTRL_REG ctrl;                  // control register value
 
     TraceEntry(TLI, T_ENT);
-    EventWriteHwRegisterWrite(NULL, __FUNCTION__); 
+    EventWriteHwRegisterWrite(NULL, __FUNCTION__);
 
     ctrl = HwGetCtrlReg(regs);
     ctrl.pause_accel = 1;
@@ -272,7 +273,7 @@ HwAbort(
     _In_    P_HW_REGS   regs)
 {
     CTRL_REG ctrl;                  // control register value
-    ULONG    i    = 0;
+    ULONG    i = 0;
     ULONG    sts;
 
     TraceEntry(TLI, T_ENT);
@@ -423,7 +424,7 @@ getRegs(
     UINT32  i;
 
     RtlZeroMemory(&dump, sizeof(dump));
-    for (i = 0x80; i < 0x118; i+= 0x04)
+    for (i = 0x80; i < 0x118; i += 0x04)
     {
         dump._dword[i / 0x04] = _READ(regs->_dword[i / 0x04]);
     }
@@ -442,8 +443,7 @@ HwPowerTransition(
     _In_    P_HW_REGS   regs,
     _In_    BOOLEAN     powerOff)
 {
-    
-    D0I3_CTRL   d0i3    = { 0 };
+    D0I3_CTRL   d0i3 = {0};
 
     TraceEntry(TLI, T_ENT);
     EventWriteHwRegisterWrite(NULL, __FUNCTION__);
@@ -458,9 +458,9 @@ HwPowerTransition(
         HwAbort(regs);
     }
     // set d0i3 transition
-    d0i3.d0i3               = (UINT32)powerOff;
-    d0i3.interrupt_req      = 0;
-    d0i3.restore_required   = 0;
+    d0i3.d0i3 = (UINT32)powerOff;
+    d0i3.interrupt_req = 0;
+    d0i3.restore_required = 0;
     _WRITE(regs->doi3, d0i3._dword);
     // wait for transition completion
     if (FALSE == HwPowerTransitionVerify(regs, &d0i3))
@@ -474,8 +474,8 @@ HwPowerTransition(
         return STATUS_ACPI_POWER_REQUEST_FAILED;
     }
     // transition complete, clear flags
-    d0i3.interrupt_req      = 0;
-    d0i3.restore_required   = 0;
+    d0i3.interrupt_req = 0;
+    d0i3.restore_required = 0;
     _WRITE(regs->doi3, d0i3._dword);
     return STATUS_SUCCESS;
 }

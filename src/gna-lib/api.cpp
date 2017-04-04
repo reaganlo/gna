@@ -123,7 +123,7 @@ const char *GNAStatusName[] =
     "CNN_ERR_FLT_STRIDE - Error: CNN Layer: invalid filter stride",
     "CNN_ERR_POOL_STRIDE - Error: CNN Layer: invalid pool stride",
 
-	"UNKNOWN STATUS"          // Status code is invalid"
+    "UNKNOWN STATUS"          // Status code is invalid"
 };
 
 static_assert((NUMGNASTATUS+1) == (sizeof(GNAStatusName)/sizeof(char*)), "Invalid size of GNAStatusName");
@@ -372,12 +372,12 @@ intel_gna_status_t GnaDeviceClose(
     }
 }
 
-intel_gna_status_t GnaRequestConfigEnablePerf( gna_request_cfg_id configId, gna_hw_perf_stats perfStat,
+intel_gna_status_t GnaRequestConfigEnablePerf(gna_request_cfg_id configId, gna_hw_perf_encoding hwPerfEncoding,
     gna_perf_t* perfResults)
 {
     try
     {
-        GnaDevice->EnableProfiling(configId, perfStat, perfResults);
+        GnaDevice->EnableProfiling(configId, hwPerfEncoding, perfResults);
         return GNA_SUCCESS;
     }
     catch (const GnaException &e)

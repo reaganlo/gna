@@ -64,7 +64,6 @@ NTSTATUS
 ScoreFinalize(
     _In_    PDEV_CTX    devCtx);
 
-
 VOID
 GNAScoreDebug(
     _In_ PDEV_CTX devCtx);
@@ -79,8 +78,8 @@ ScoreSubmitEvnt(
     WDFREQUEST          request,
     size_t              length)
 {
-    PDEV_CTX devCtx     = WDF_NO_HANDLE;
-    NTSTATUS status     = STATUS_SUCCESS;
+    PDEV_CTX devCtx = WDF_NO_HANDLE;
+    NTSTATUS status = STATUS_SUCCESS;
 
     TraceEntry(TLI, T_ENT);
     EventWriteDriverApiBegin(NULL, __FUNCTION__);
@@ -162,9 +161,9 @@ ScoreComplete(
         request = devCtx->req.req;
     }
     // reset request state
-    devCtx->req.req         = WDF_NO_HANDLE;
-    devCtx->req.data        = NULL;
-    devCtx->req.timeouted   = FALSE;
+    devCtx->req.req = WDF_NO_HANDLE;
+    devCtx->req.data = NULL;
+    devCtx->req.timeouted = FALSE;
     WdfSpinLockRelease(devCtx->req.reqLock);
     // complete request
     if (WDF_NO_HANDLE != request)
@@ -179,8 +178,8 @@ ScoreCancelReqByApp(
     _In_    WDFQUEUE        queue,
     _In_    WDFFILEOBJECT   app)
 {
-    NTSTATUS   status   = STATUS_SUCCESS;
-    WDFREQUEST cancelReq= WDF_NO_HANDLE;   // handle of retrieved request
+    NTSTATUS   status = STATUS_SUCCESS;
+    WDFREQUEST cancelReq = WDF_NO_HANDLE;   // handle of retrieved request
 
     Trace(TLI, T_QUE, "%!FUNC! Cancel requests from app: (%p)", app);
     // cancel pending requests first
@@ -387,13 +386,13 @@ ScoreStart(
     _In_    PDEV_CTX    devCtx,
     _In_    WDFREQUEST  request)
 {
-    NTSTATUS    status      = STATUS_INVALID_DEVICE_REQUEST;
-    PAPP_CTX    appCtx      = NULL; // file context of device for calling application
-    PMODEL_CTX  modelCtx    = NULL; // current model context
-    BOOLEAN     isAppCurrent= FALSE;// deterimenes if current app is saved as recent
+    NTSTATUS    status = STATUS_INVALID_DEVICE_REQUEST;
+    PAPP_CTX    appCtx = NULL; // file context of device for calling application
+    PMODEL_CTX  modelCtx = NULL; // current model context
+    BOOLEAN     isAppCurrent = FALSE;// deterimenes if current app is saved as recent
     size_t      inputLength = 0;    // tmp in request buffer length
-    PGNA_CALC_IN input     = NULL; // input parameters
-    PVOID       lyrDscBuffer= NULL; // layer descriptor buffer address to save config to
+    PGNA_CALC_IN input = NULL; // input parameters
+    PVOID       lyrDscBuffer = NULL; // layer descriptor buffer address to save config to
 
     TraceEntry(TLI, T_ENT);
 
@@ -407,7 +406,7 @@ ScoreStart(
         TraceFailMsg(TLE, T_EXIT, "WdfRequestRetrieveInputBuffer", status);
         goto cleanup;
     }
-    if (sizeof(GNA_CALC_IN) + sizeof(GNA_BUFFER_DESCR)*input->ctrlFlags.bufferConfigsCount + 
+    if (sizeof(GNA_CALC_IN) + sizeof(GNA_BUFFER_DESCR)*input->ctrlFlags.bufferConfigsCount +
         sizeof(GNA_ACTIVE_LIST_DESCR)*input->ctrlFlags.actListConfigsCount != inputLength)
     {
         TraceFailMsg(TLE, T_EXIT, "Score input buffer wrong size", STATUS_INVALID_BUFFER_SIZE);
@@ -430,13 +429,13 @@ ScoreStart(
 
     // check and remember application from which req. is being processed now
     WdfSpinLockAcquire(devCtx->req.reqLock);
-    devCtx->req.req      = request;
-    devCtx->req.data     = input;
-    devCtx->req.timeouted= FALSE;
+    devCtx->req.req = request;
+    devCtx->req.data = input;
+    devCtx->req.timeouted = FALSE;
     WdfSpinLockRelease(devCtx->req.reqLock);
     WdfSpinLockAcquire(devCtx->app.appLock);
-    isAppCurrent        = devCtx->app.app == appCtx;
-    devCtx->app.app     = appCtx;
+    isAppCurrent = devCtx->app.app == appCtx;
+    devCtx->app.app = appCtx;
     WdfSpinLockRelease(devCtx->app.appLock);
 
     // setup timer for recovery after DRV_RECOVERY_TIMEOUT seconds from now
@@ -452,7 +451,7 @@ ScoreStart(
         status = STATUS_INVALID_ADDRESS;
         goto cleanup;
     }
-    HwInitExecution(devCtx->hw.regs, (ULONG)modelCtx->desc.la.QuadPart, &modelCtx->desc.va->xnn_config, input->ctrlFlags, &devCtx->cfg);
+    HwInitExecution(devCtx->hw.regs, (ULONG)modelCtx->desc.la.QuadPart, &modelCtx->desc.va->xnn_config, input, &devCtx->cfg);
 
     profilerDTscStop(&devCtx->profiler.startHW);
     profilerTscStart(&devCtx->profiler.scoreHW);
@@ -509,19 +508,19 @@ ScoreFinalize(
     // read and save performance counters
 #if defined(PROFILE)
     output->drvPerf.scoreHW = devCtx->profiler.scoreHW.passed;
-    Trace(TLI, T_QUE, "%!FUNC!: scoreHW time %llu", output->drvPerf.scoreHW );
+    Trace(TLI, T_QUE, "%!FUNC!: scoreHW time %llu", output->drvPerf.scoreHW);
     EventWriteScoreCycles(NULL, output->drvPerf.scoreHW);
 #if defined(PROFILE_DETAILED)
     EventWriteHwRegisterRead(NULL, __FUNCTION__);
     ptcReg = HwReadReg(&devCtx->hw.regs->ptc, 0);
     pscReg = HwReadReg(&devCtx->hw.regs->psc, 0);
     output->hwPerf.stall = (time_tsc)pscReg;
-    if(PC_REG_SATURATED == pscReg)
+    if (PC_REG_SATURATED == pscReg)
     {
         output->hwPerf.stall = TIME_TSC_MAX;
     }
     output->hwPerf.total = (time_tsc)ptcReg;
-    if(PC_REG_SATURATED == ptcReg)
+    if (PC_REG_SATURATED == ptcReg)
     {
         output->hwPerf.total = TIME_TSC_MAX;
     }
@@ -551,8 +550,8 @@ ScoreDeferredUnmap(
     _In_    WDFREQUEST  unmapReq)
 {
     NTSTATUS status = STATUS_SUCCESS;
-    WDFFILEOBJECT app   = NULL;     // file object of calling application
-    PAPP_CTX      appCtx= NULL;     // file context of calling application
+    WDFFILEOBJECT app = NULL;     // file object of calling application
+    PAPP_CTX      appCtx = NULL;     // file context of calling application
 
     TraceEntry(TLI, T_ENT);
     // cancel all request from current application

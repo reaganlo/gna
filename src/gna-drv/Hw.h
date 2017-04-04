@@ -101,7 +101,7 @@ HwMapMemory(
  * @mmuConfigDst        hardware descriptor mmu config buffer
  */
 
-VOID     
+VOID
 HwUnmapMemory(
     _In_    PMMU_CONFIG mmuConfig);
 
@@ -119,21 +119,8 @@ HwInitExecution(
     _In_    P_HW_REGS   regs,
     _In_    ULONG       baseDescLa,
     _In_    PXNN_CONFIG xnnConfig,
-    _In_    CTRL_FLAGS  ctrlFlags,
+    _In_    PGNA_CALC_IN    input,
     _In_    PDEV_CONFIG devCfg);
-
-/**
- * Start execution hardware device command
- *
- * @regs                Address of Registers in MMIO space
- * @activeList          active list mode enabled
- * @mode                scoring mode
- */
-VOID
-HwStart(
-    _In_    P_HW_REGS   regs,
-    _In_    UINT32      activeList,
-    _In_    UINT32      mode);
 
 /**
  * Pause execution hardware device command
@@ -197,7 +184,7 @@ HwSetInterruptible(
  *
  * @regs                Address of Registers in MMIO space
  * @devCfg              Device config
- * @powerOff            flag indicating transition direction 
+ * @powerOff            flag indicating transition direction
  *                      * TRUE  -> to power off
  *                      * FALSE -> to power on)
  */

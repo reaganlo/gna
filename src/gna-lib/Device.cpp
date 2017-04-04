@@ -60,11 +60,11 @@ void Device::CreateConfiguration(gna_model_id modelId, gna_request_cfg_id *confi
     requestBuilder.CreateConfiguration(modelId, configId);
 }
 
-void Device::EnableProfiling(gna_request_cfg_id configId, gna_hw_perf_stats perfStat, gna_perf_t *perfResults)
+void Device::EnableProfiling(gna_request_cfg_id configId, gna_hw_perf_encoding hwPerfEncoding, gna_perf_t * perfResults)
 {
-    auto& requestConfiguration = requestBuilder.GetConfiguration(configId);
-    // TODO: add profiling input info to request configuration
-    //requestConfiguration.EnableProfiling();
+    auto& requestConfiguration = requestBuilder.GetConfiguration(configId);    
+    requestConfiguration.HwPerfEncoding = hwPerfEncoding;
+    requestConfiguration.PerfResults = perfResults;
 }
 
 void Device::AttachActiveList(gna_request_cfg_id configId, uint16_t layerIndex, uint32_t indicesCount, uint32_t *indices)
