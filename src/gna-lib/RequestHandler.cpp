@@ -33,6 +33,18 @@ using std::unique_ptr;
 
 using namespace GNA;
 
+RequestHandler::RequestHandler(uint8_t threadCount)
+{
+    initRequestMap();
+    threadPool.Init(threadCount);
+}
+
+RequestHandler::~RequestHandler()
+{
+    threadPool.Stop();
+    clearRequestMap();
+}
+
 void RequestHandler::Enqueue(
     gna_request_id *requestId,
     unique_ptr<Request> request)
@@ -70,41 +82,6 @@ void RequestHandler::Enqueue(
     profilerDTscStop(&r->Profiler->preprocess);
 }
 
-status_t RequestHandler::removeRequest(gna_request_id requestId)
-{
-    std::lock_guard<std::mutex> lockGuard(lock);
-    auto r = requests.find(requestId);
-    if (requests.end() != r)
-    {
-        requests.erase(requestId);
-        return GNA_SUCCESS;
-    }
-    return GNA_BADREQID;
-}
-
-void RequestHandler::initRequestMap()
-{
-    nRequests = 0;
-}
-
-void RequestHandler::clearRequestMap()
-{
-    std::lock_guard<std::mutex> lockGuard(lock);
-    requests.clear();
-}
-
-void RequestHandler::Init(uint8_t threadCount)
-{
-    initRequestMap();
-    threadPool.Init(threadCount);
-}
-
-void RequestHandler::ClearRequests()
-{
-    threadPool.Stop();
-    clearRequestMap();
-}
-
 status_t RequestHandler::WaitFor(const gna_request_id requestId, const gna_timeout milliseconds)
 {
     auto request = requests.at(requestId).get();
@@ -138,4 +115,27 @@ status_t RequestHandler::WaitFor(const gna_request_id requestId, const gna_timeo
     default:
         return GNA_DEVICEBUSY;
     }
+}
+
+status_t RequestHandler::removeRequest(gna_request_id requestId)
+{
+    std::lock_guard<std::mutex> lockGuard(lock);
+    auto r = requests.find(requestId);
+    if (requests.end() != r)
+    {
+        requests.erase(requestId);
+        return GNA_SUCCESS;
+    }
+    return GNA_BADREQID;
+}
+
+void RequestHandler::initRequestMap()
+{
+    nRequests = 0;
+}
+
+void RequestHandler::clearRequestMap()
+{
+    std::lock_guard<std::mutex> lockGuard(lock);
+    requests.clear();
 }

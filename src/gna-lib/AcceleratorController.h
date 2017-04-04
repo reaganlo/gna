@@ -29,16 +29,12 @@
 #include "common.h"
 #include "IAccelerator.h"
 #include "Request.h"
+#include "RequestConfiguration.h"
 
 #include <map>
 
 namespace GNA
 {
-    class RequestConfiguration;
-
-    /* Alias for Accelerator map iterator type */
-typedef std::map<acceleration, std::shared_ptr<IAccelerator>>::const_iterator AccMapIter;
-
 typedef enum _ScoreMethod
 {
     SoftwareOnly,
@@ -49,13 +45,11 @@ typedef enum _ScoreMethod
 class AcceleratorController
 {
 public:
-    AcceleratorController() {}
-
-    void CreateAccelerators(bool isHardwarePresent, acceleration fastestMode);
-    void ClearAccelerators();
+    AcceleratorController(AccelerationDetector &detector);
+    ~AcceleratorController() = default;
 
     status_t ScoreModel(
-        CompiledModel& model, 
+        CompiledModel& model,
         RequestConfiguration& config,
         acceleration accel,
         RequestProfiler *profiler,
@@ -63,7 +57,7 @@ public:
 
 private:
     std::map<acceleration, std::shared_ptr<IAccelerator>> accelerators;
-    bool hardwarePresent = false;
+    bool isHardwarePresent;
 
     ScoreMethod getScoreMethod(CompiledModel& model, acceleration accel) const;
 

@@ -65,31 +65,14 @@ enum GnaFeature
 class AccelerationDetector : protected IoctlSender
 {
 public:
-    /**
-     * Creates empty kernel dispatcher
-     */
     AccelerationDetector();
+    ~AccelerationDetector() = default;
 
-    /*
-     * Creates empty destructor
-     */
-    ~AccelerationDetector() {}
-
-    /**
-    * Configuration map of available acceleration modes
-    */
     std::map<acceleration, uint8_t> accelerationModes;
 
     acceleration AccelerationDetector::GetFastestAcceleration() const;
 
     bool IsHardwarePresent() const;
-
-    /**
-    * performs available acceleration modes detection
-    *
-    * @return configuration of available acceleration modes
-    */
-    void DetectAccelerations();
 
     bool IsLayerSupported(intel_layer_kind_t layerType) const;
 

@@ -67,16 +67,6 @@ AccelerationDetector::gnaFeatureMap = {
         { GNA_DEV_UNKNOWN, {true, true,  true, true,     true,      false,  false,  false} },
     };
 
-AccelerationDetector::AccelerationDetector(): fastestAcceleration(GNA_GEN_FAST)
-{
-    for (auto& acc : accelerationModes)
-    {
-        acc.second = ACC_NOTSUPPORTED;
-    }
-
-    accelerationModes[GNA_GEN_SAT] = ACC_SUPPORTED;
-    accelerationModes[GNA_GEN_FAST] = ACC_SUPPORTED;
-}
 
 void AccelerationDetector::discoverHardwareExistence()
 {
@@ -143,11 +133,18 @@ bool AccelerationDetector::IsLayerSupported(intel_layer_kind_t layerType) const
         default:
             return false;
     }
-
 }
 
-void AccelerationDetector::DetectAccelerations()
+AccelerationDetector::AccelerationDetector() : fastestAcceleration(GNA_GEN_FAST)
 {
+    // generic, fastest software and auto always supported
+    accelerationModes[GNA_GEN_SAT] = ACC_SUPPORTED;
+    accelerationModes[GNA_GEN_FAST] = ACC_SUPPORTED;
+    accelerationModes[GNA_SW_SAT] = ACC_SUPPORTED;
+    accelerationModes[GNA_SW_FAST] = ACC_SUPPORTED;
+    accelerationModes[GNA_AUTO_SAT] = ACC_SUPPORTED;
+    accelerationModes[GNA_AUTO_FAST] = ACC_SUPPORTED;
+
     discoverHardwareExistence();
     discoverHardwareCapabilities();
 
@@ -218,6 +215,8 @@ void AccelerationDetector::DetectAccelerations()
     LOG("GNA_SSE4_SAT  %d\n", accelerationModes[GNA_SSE4_2_SAT]);
     LOG("GNA_GEN_FAST  %d\n", accelerationModes[GNA_GEN_FAST]);
     LOG("GNA_GEN_SAT   %d\n", accelerationModes[GNA_GEN_SAT]);
+    LOG("GNA_GEN_FAST  %d\n", accelerationModes[GNA_SW_FAST]);
+    LOG("GNA_GEN_SAT   %d\n", accelerationModes[GNA_SW_SAT]);
 }
 
 acceleration AccelerationDetector::GetFastestAcceleration() const

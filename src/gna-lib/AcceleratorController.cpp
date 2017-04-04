@@ -24,24 +24,24 @@
 */
 
 #include "AcceleratorController.h"
+
+#include "AccelerationDetector.h"
 #include "AcceleratorHw.h"
 #include "AcceleratorHwVerbose.h"
 #include "AcceleratorSw.h"
 #include "CompiledModel.h"
 #include "GnaException.h"
-#include "RequestConfiguration.h"
 
 using std::make_shared;
 using std::shared_ptr;
 
 using namespace GNA;
 
-void AcceleratorController::CreateAccelerators(bool isHardwarePresent, acceleration fastestMode)
+AcceleratorController::AcceleratorController(AccelerationDetector& detector) :
+    isHardwarePresent(detector.IsHardwarePresent())
 {
-    hardwarePresent = isHardwarePresent;
-
     // attempt to create Hardware Accelerator
-    if(hardwarePresent)
+    if(isHardwarePresent)
         accelerators[GNA_HW] = make_shared<AcceleratorHw>(GNA_HW);
 
     for (uint32_t mode = GNA_AUTO_SAT; mode < NUM_GNA_ACCEL_MODES; mode++)
@@ -57,6 +57,7 @@ void AcceleratorController::CreateAccelerators(bool isHardwarePresent, accelerat
     accelerators[GNA_CNL_SAT] = nullptr;
     accelerators[GNA_CNL_FAST] = nullptr;
 
+    auto fastestMode = detector.GetFastestAcceleration();
     for (uint32_t mode = fastestMode; mode >= GNA_GEN_SAT; mode--)
     {
         acceleration gnaAcc = static_cast<acceleration>(mode);
@@ -78,22 +79,6 @@ void AcceleratorController::CreateAccelerators(bool isHardwarePresent, accelerat
     accelerators[GNA_SW_SAT] = accelerators[static_cast<acceleration>(fastestMode - 1)];
 }
 
-void AcceleratorController::ClearAccelerators()
-{
-    uint32_t i;
-    AccMapIter a;
-    uint32_t accMapSize = accelerators.size();
-    for (i = 0; i < accMapSize; i++)
-    {
-        a = accelerators.begin();
-        if (accelerators.end() != a)
-        {
-            accelerators.erase(a);
-        }
-    }
-    accelerators.clear();
-}
-
 ScoreMethod AcceleratorController::getScoreMethod(CompiledModel &model, acceleration accel) const
 {
     // acceleration mode validation
@@ -103,7 +88,7 @@ ScoreMethod AcceleratorController::getScoreMethod(CompiledModel &model, accelera
     }
 
     // hardware requested, but no hardware exists
-    if (GNA_HW == accel && !hardwarePresent)
+    if (GNA_HW == accel && !isHardwarePresent)
         throw GnaException(GNA_DEVNOTFOUND);
 
     // software acceleration
@@ -115,7 +100,7 @@ ScoreMethod AcceleratorController::getScoreMethod(CompiledModel &model, accelera
     // hardware or auto acceleration
     const auto& submodels = model.GetSubmodels();
 
-    // there is only one submodel, which means 
+    // there is only one submodel, which means
     if (submodels.size() == 1)
     {
         switch(submodels.front()->Type)
@@ -137,7 +122,7 @@ ScoreMethod AcceleratorController::getScoreMethod(CompiledModel &model, accelera
 }
 
 status_t AcceleratorController::ScoreModel(
-    CompiledModel& model, 
+    CompiledModel& model,
     RequestConfiguration& config,
     acceleration accel,
     RequestProfiler *profiler,

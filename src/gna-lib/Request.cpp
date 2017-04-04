@@ -38,7 +38,10 @@ Request::Request(RequestFunctor callback, unique_ptr<RequestProfiler> profiler, 
           scoreTask(callback)
 {
     memset(Profiler.get(), 0, sizeof(RequestProfiler));
-    memset(PerfResults, 0, sizeof(gna_perf_t));
+    if (PerfResults)
+    {
+        memset(PerfResults, 0, sizeof(gna_perf_t));
+    }
 }
 
 future<status_t> Request::GetFuture()

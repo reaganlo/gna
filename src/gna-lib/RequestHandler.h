@@ -37,20 +37,16 @@ namespace GNA
 class RequestHandler
 {
 public:
-    /**
-     * Inserts and submits request for calculation
-     *
-     * @reqId   (out)(optional) id of submitted request
-     */
+
+    RequestHandler(uint8_t threadCount);
+
+    ~RequestHandler();
+
     void Enqueue(
-        gna_request_id *requestId, 
+        gna_request_id *requestId,
         std::unique_ptr<Request> request);
 
     status_t WaitFor(const gna_request_id requestId, const gna_timeout milliseconds);
-
-    void Init(uint8_t threadCount);
-
-    void ClearRequests();
 
 private:
 
@@ -58,22 +54,10 @@ private:
 
     void clearRequestMap();
 
-    /**
-     * Removes request from map
-     *
-     * @requestId    id of request to be removed
-     * @return       status of removal
-     */
     status_t removeRequest(const gna_request_id requestId);
 
-    /**
-     * Requests map container
-     */
     std::map<uint32_t, std::unique_ptr<Request>> requests;
 
-    /**
-     * iterator of submitted requests (during session life [open-close])
-     */
     uint32_t nRequests;
 
     /**

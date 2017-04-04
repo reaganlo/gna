@@ -34,6 +34,22 @@ using std::move;
 
 using namespace GNA;
 
+Device::Device(gna_device_id* deviceId, uint8_t threadCount)
+    : requestHandler(threadCount),
+      acceleratorController(accelerationDetector)
+{
+    Expect::NotNull(deviceId);
+
+    id = static_cast<gna_device_id>(std::hash<std::thread::id>()(std::this_thread::get_id()));
+
+    *deviceId = id;
+}
+
+Device::~Device()
+{
+    FreeMemory();
+}
+
 void Device::AttachBuffer(gna_request_cfg_id configId, gna_buffer_type type, uint16_t layerIndex, void *address)
 {
     requestBuilder.AttachBuffer(configId, type, layerIndex, address);
@@ -58,53 +74,7 @@ void Device::AttachActiveList(gna_request_cfg_id configId, uint16_t layerIndex, 
 
 void Device::ValidateSession(gna_device_id deviceId) const
 {
-    Expect::True(id == deviceId && opened, GNA_INVALIDHANDLE);
-}
-
-// TODO: implement as c-tor and propagate for members
-status_t Device::Open(gna_device_id *deviceId, uint8_t threadCount)
-{
-    Expect::NotNull(deviceId);
-    if(nHandles > GNA_DEVICE_LIMIT || opened)
-    {
-        ERR("GNA Device already opened. Close Device first.\n");
-        throw GnaException(GNA_INVALIDHANDLE);
-    }
-
-    // detect available cpu accelerations
-    accelerationDetector.DetectAccelerations();
-
-    acceleration fastestMode = accelerationDetector.GetFastestAcceleration();
-    acceleratorController.CreateAccelerators(accelerationDetector.IsHardwarePresent(), fastestMode);
-
-    requestHandler.Init(threadCount);
-
-    nHandles++;
-    id = static_cast<gna_device_id>(
-        std::hash<std::thread::id>()(std::this_thread::get_id()));
-
-    opened = true;
-
-    *deviceId = id;
-
-    return GNA_SUCCESS;
-}
-
-// TODO: implement as d-tor and propagate for members
-void Device::Close()
-{
-    if (!opened)
-    {
-        throw GnaException(GNA_INVALIDHANDLE);
-    }
-
-    acceleratorController.ClearAccelerators();
-    requestHandler.ClearRequests();
-
-    nHandles--;
-    id = GNA_DEVICE_INVALID;
-    opened = false;
-    FreeMemory();
+    Expect::True(id == deviceId, GNA_INVALIDHANDLE);
 }
 
 const size_t Device::AllocateMemory(const size_t requestedSize, void **buffer)
@@ -120,6 +90,7 @@ const size_t Device::AllocateMemory(const size_t requestedSize, void **buffer)
 
 void Device::FreeMemory()
 {
+    // TODO: Release model(s) if not released by user?
     totalMemory.reset();
 }
 

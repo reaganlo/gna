@@ -25,12 +25,14 @@
 
 #define _COMPONENT_ "GnaApi::"
 
+#include <memory>
 #include <thread>
 
 #include "Device.h"
 #include "Validator.h"
 
 using std::thread;
+using std::unique_ptr;
 
 using namespace GNA;
 
@@ -41,7 +43,7 @@ using namespace GNA;
  *****************************************************************************/
 
  // TODO: use unique pointer instead
-Device Gna2Ultimate;
+unique_ptr<Device> GnaDevice;
 
 const char *GNAStatusName[] =
 {
@@ -145,8 +147,8 @@ intel_gna_status_t GnaModelCreate(
 {
     try
     {
-        Gna2Ultimate.ValidateSession(deviceId);
-        Gna2Ultimate.LoadModel(modelId, model);
+        GnaDevice->ValidateSession(deviceId);
+        GnaDevice->LoadModel(modelId, model);
         return GNA_SUCCESS;
     }
     catch (const GnaException &e)
@@ -164,7 +166,7 @@ intel_gna_status_t GnaModelRelease(
 {
     try
     {
-        Gna2Ultimate.ReleaseModel(modelId);
+        GnaDevice->ReleaseModel(modelId);
         return GNA_SUCCESS;
     }
     catch (const GnaException &e)
@@ -183,7 +185,7 @@ intel_gna_status_t GnaModelRequestConfigAdd(
 {
     try
     {
-        Gna2Ultimate.CreateConfiguration(modelId, configId);
+        GnaDevice->CreateConfiguration(modelId, configId);
         return GNA_SUCCESS;
     }
     catch (const GnaException &e)
@@ -204,7 +206,7 @@ intel_gna_status_t GnaRequestConfigBufferAdd(
 {
     try
     {
-        Gna2Ultimate.AttachBuffer(configId, type, layerIndex, address);
+        GnaDevice->AttachBuffer(configId, type, layerIndex, address);
         return GNA_SUCCESS;
     }
     catch (const GnaException &e)
@@ -225,7 +227,7 @@ intel_gna_status_t GnaRequestConfigActiveListAdd(
 {
     try
     {
-        Gna2Ultimate.AttachActiveList(configId, layerIndex, indicesCount, indices);
+        GnaDevice->AttachActiveList(configId, layerIndex, indicesCount, indices);
         return GNA_SUCCESS;
     }
     catch (const GnaException &e)
@@ -246,7 +248,7 @@ intel_gna_status_t GnaRequestEnqueue(
     try
     {
         acceleration internal_acceleration = static_cast<acceleration>(accel);
-        Gna2Ultimate.PropagateRequest(configId, internal_acceleration, requestId);
+        GnaDevice->PropagateRequest(configId, internal_acceleration, requestId);
         return GNA_SUCCESS;
     }
     catch (const GnaException &e)
@@ -265,7 +267,7 @@ intel_gna_status_t GnaRequestWait(
 {
     try
     {
-        return Gna2Ultimate.WaitForRequest(requestId, milliseconds);
+        return GnaDevice->WaitForRequest(requestId, milliseconds);
     }
     catch (const GnaException &e)
     {
@@ -288,11 +290,11 @@ void *GnaAlloc(gna_device_id deviceId, uint32_t requestedSize, uint32_t *granted
     try
     {
         //TODO: refactor - to much logic in wrapper
-        Gna2Ultimate.ValidateSession(deviceId);
+        GnaDevice->ValidateSession(deviceId);
         Expect::NotNull(grantedSize);
 
         void* buffer = nullptr;
-        *grantedSize = Gna2Ultimate.AllocateMemory(requestedSize, &buffer);
+        *grantedSize = GnaDevice->AllocateMemory(requestedSize, &buffer);
         Expect::False(nullptr == buffer || *grantedSize < requestedSize, GNA_ERR_RESOURCES);
         return buffer;
     }
@@ -311,8 +313,8 @@ intel_gna_status_t GnaFree(gna_device_id deviceId)
 {
     try
     {
-        Gna2Ultimate.ValidateSession(deviceId);
-        Gna2Ultimate.FreeMemory();
+        GnaDevice->ValidateSession(deviceId);
+        GnaDevice->FreeMemory();
         return GNA_SUCCESS;
     }
     catch (const GnaException &e)
@@ -330,9 +332,15 @@ intel_gna_status_t GnaDeviceOpen(
     uint8_t             threadCount,
     gna_device_id*      deviceId)
 {
+    if(GnaDevice)
+    {
+        ERR("GNA Device already opened. Close Device first.\n");
+        return GNA_INVALIDHANDLE;
+    }
     try
     {
-        return Gna2Ultimate.Open(deviceId, threadCount);
+        GnaDevice = std::make_unique<Device>(deviceId, threadCount);
+        return GNA_SUCCESS;
     }
     catch (const GnaException &e)
     {
@@ -350,8 +358,8 @@ intel_gna_status_t GnaDeviceClose(
 {
     try
     {
-        Gna2Ultimate.ValidateSession(deviceId);
-        Gna2Ultimate.Close();
+        GnaDevice->ValidateSession(deviceId);
+        GnaDevice.reset();
         return GNA_SUCCESS;
     }
     catch (const GnaException &e)
@@ -369,7 +377,7 @@ intel_gna_status_t GnaRequestConfigEnablePerf( gna_request_cfg_id configId, gna_
 {
     try
     {
-        Gna2Ultimate.EnableProfiling(configId, perfStat, perfResults);
+        GnaDevice->EnableProfiling(configId, perfStat, perfResults);
         return GNA_SUCCESS;
     }
     catch (const GnaException &e)

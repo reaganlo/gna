@@ -41,33 +41,11 @@ namespace GNA
 class Device
 {
 public:
-    /*
-     ** Default constructor
-     */
-    Device() = default;
-
-    /**
-     * Opens processing device if available
-     *
-     * @threadCount         (in)  number of worker threads to initialize
-     * @deviceId            (out) status of opening device
-     */
-    status_t Open(gna_device_id *deviceId, uint8_t threadCount = 1);
-
-    /**
-     * Closes and releases device resources
-     */
-    void Close();
+    Device(gna_device_id *deviceId, uint8_t threadCount = 1);
+    ~Device();
 
     void ValidateSession(gna_device_id deviceId) const;
 
-    /**
-     ** Allocates memory for user buffers
-     **
-     ** @requestedSize      (in)
-     **
-     ** Returns number of bytes allocated
-     */
     const size_t AllocateMemory(const size_t requestedSize, void **buffer);
 
     void FreeMemory();
@@ -113,7 +91,7 @@ public:
      * Deleted functions to prevent from being defined or called
      * @see: https://msdn.microsoft.com/en-us/library/dn457344.aspx
      */
-    //Device() = delete;
+    Device() = delete;
     Device(const Device &) = delete;
     Device& operator=(const Device&) = delete;
 
@@ -123,25 +101,14 @@ private:
     */
     gna_device_id id = GNA_DEVICE_INVALID;
 
-    /**
-     ** Handles count
-     */
-    uint32_t nHandles = 0;
-
-    /*
-    * Indicates whether accelerators where opened
-    */
-    bool opened = false;
-
-    /*
-    * Indicates whether GNA hardware is present
-    */
-    bool isGNAHardwarePresent = false;
-
     std::unique_ptr<Memory> totalMemory;
     RequestHandler requestHandler;
-    AcceleratorController acceleratorController;
+
+    // !!! ORDER_DEPENDENCY !!!
+    // accelerationController depends on accelerationDetector
     AccelerationDetector accelerationDetector;
+    AcceleratorController acceleratorController;
+
     ModelContainer modelContainer;
     ModelCompiler modelCompiler;
     RequestBuilder requestBuilder;

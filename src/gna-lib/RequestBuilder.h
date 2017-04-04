@@ -45,7 +45,7 @@ public:
 
 private:
     std::vector<std::unique_ptr<RequestConfiguration>> configurationVector;
-    gna_request_cfg_id configIdSequence;
+    gna_request_cfg_id configIdSequence = 0;
     gna_request_cfg_id assignConfigId();
 
     RequestBuilder(const RequestBuilder &) = delete;
