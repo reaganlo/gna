@@ -35,6 +35,7 @@
 #include "Layer.h"
 #include "Address.h"
 #include "RecurrentLayer.h"
+#include "RequestConfiguration.h"
 #include "SimpleLayers.h"
 
 namespace GNA
@@ -187,7 +188,13 @@ public:
     virtual ~HardwareLayerGmm() = default;
 
 protected:
+    static const std::map<const gna_gmm_mode, const GMM_MODE_CTRL> GmmModes;
+
     void save();
+    void updateInput(const ConfigurationBuffer &inputBuffer, const AddrGmmCfg& gmmDescriptor);
+    void updateOutput(const ConfigurationBuffer &outputBuffer, const AddrGmmCfg& gmmDescriptor);
+    void updateActiveList(const GmmLayer *gmm, const ActiveList &activeList, const AddrGmmCfg& gmmDescriptor);
+    
     const AddrGmmCfg gmmDescriptor;
 };
 

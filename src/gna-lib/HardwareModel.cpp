@@ -94,7 +94,11 @@ uint32_t HardwareModel::GetOffsetToBase(void* address)
 void HardwareModel::build(const std::vector<std::unique_ptr<Layer>>& layers, const uint32_t hardwareInternalBufferSize)
 {
     auto layerDescriptor = AddrXnnLyr(memoryBaseAddress);
-    auto gmmDescriptor = AddrGmmCfg(layerDescriptor.Get<uint8_t>() + layerDescriptorsSize);
+    auto gmmDescriptor = AddrGmmCfg();
+    if (0 != gmmDescriptorsSize)
+    {
+        gmmDescriptor = AddrGmmCfg(layerDescriptor.Get<uint8_t>() + layerDescriptorsSize);
+    }
 
     for (auto& layer : layers)
     {

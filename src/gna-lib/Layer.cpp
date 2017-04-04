@@ -44,7 +44,7 @@ const std::map<const nn_layer_kind, const Orientations> LayerConfig::Orientation
     { INTEL_CONVOLUTIONAL, FLAT },
     { INTEL_COPY, FLAT },
     { INTEL_DEINTERLEAVE, INTERLEAVED },
-    { INTEL_GMM, INTERLEAVED },
+    { INTEL_GMM, FLAT },
     { INTEL_INTERLEAVE, FLAT },
     { INTEL_RECURRENT, FLAT }
 };

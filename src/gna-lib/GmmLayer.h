@@ -47,6 +47,7 @@ class GmmLayer : public Layer
 {
 public:
     GmmLayer(const nn_layer *layer, const uint32_t inputVectorCount);
+    virtual ~GmmLayer() = default;
 
     const gna_gmm_config Config;
     const gna_gmm_data Data;

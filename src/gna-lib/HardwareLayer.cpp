@@ -49,6 +49,7 @@ const map<const nn_layer_kind, const NN_OP_TYPE> HardwareLayer::OperationsMap =
 
 XNN_LYR HardwareLayer::layerDescriptor;
 
+// TODO: replace memoryBase with lyr address
 XNN_LYR HardwareLayer::Convert(const Layer& softwareLayer, const BaseAddressC& memoryBase,
 const AddrGmmCfg& gmmDescriptor, const uint32_t hardwareInternalBufferSize)
 {
@@ -108,14 +109,7 @@ void HardwareLayer::save()
     layerDescriptor.n_in_elems = static_cast<uint16_t>(softwareLayer.Input.ElementCount);
     layerDescriptor.n_out_elems = static_cast<uint16_t>(softwareLayer.Output.ElementCount);
     layerDescriptor.n_groups = static_cast<uint8_t>(softwareLayer.Input.VectorCount);
-    if (INTEL_GMM == softwareLayer.Config.Type)
-    {
-        layerDescriptor.gmm_descriptor = 0; // TODO:KJ: set actual gmm descriptor address
-    }
-    else
-    {
-        layerDescriptor.in_buffer = getOffset(softwareLayer.Input.Buffer);
-    }
+    layerDescriptor.in_buffer = getOffset(softwareLayer.Input.Buffer);
     layerDescriptor.out_act_fn_buffer = getOffset(softwareLayer.Output.Buffer);
     layerDescriptor.out_sum_buffer = getOffset(softwareLayer.Output.ScratchPad);
 }
@@ -342,9 +336,19 @@ HardwareLayerAffineMBias::HardwareLayerAffineMBias(const Layer & swLayer, void *
     }
 }
 
+const std::map<const gna_gmm_mode, const GMM_MODE_CTRL> HardwareLayerGmm::GmmModes = {
+    //{ gna_gmm_mode, { read_elimination, calculation_mode, __res_03} },
+    { GNA_MAXMIX8, { 0, 0, 0 } },
+    { GNA_MAXMIX16,{ 0, 0, 0 } },
+    { GNA_LINF, { 0, 2, 0 } },
+    { GNA_L1, { 0, 1, 0 } },
+    { GNA_L2, { 0, 0, 0 } },
+};
+
 HardwareLayerGmm::HardwareLayerGmm(const Layer& swLayer, const BaseAddressC& memoryBase,
-    const AddrGmmCfg& gmmDescriptor) :
-    HardwareLayer(swLayer, memoryBase)
+    const AddrGmmCfg& gmmDescriptorIn) :
+    HardwareLayer(swLayer, memoryBase),
+    gmmDescriptor(gmmDescriptorIn)
 {
     save();
 }
@@ -352,6 +356,63 @@ HardwareLayerGmm::HardwareLayerGmm(const Layer& swLayer, const BaseAddressC& mem
 void HardwareLayerGmm::save()
 {
     HardwareLayer::save();
+    layerDescriptor.gmm_descriptor = getOffset(gmmDescriptor);
+    auto const gmmConfig = gmmDescriptor.Get();
     auto& gmm = static_cast<const GmmLayer&>(softwareLayer);
-    //layerDescriptor.gmm_descriptor = static_cast<uint16_t>(copy.CopyElementsCount);
+    // can be updated per request
+    gmmConfig->fvaddr      = getOffset(gmm.Input.Buffer);
+    gmmConfig->gmmscradd   = getOffset(gmm.Output.Buffer);
+
+    // GMM Model configuration, will be constant over time for model
+    gmmConfig->gmmscrlen   = GMM_SCORE_SIZE * gmm.Input.VectorCount * gmm.Config.stateCount;; // will be updated when ActiveList is used
+    gmmConfig->fvoffset    = gmm.Input.ElementCount;
+
+    gmmConfig->numfv       = gmm.Input.VectorCount;
+    gmmConfig->vlength     = gmm.Input.ElementCount;
+
+    gmmConfig->mode        = GmmModes.at(gmm.Config.mode);
+    gmmConfig->gcaddr      = getOffset(gmm.Data.gaussianConstants);
+    gmmConfig->mvaddr      = getOffset(gmm.Data.meanValues);
+    gmmConfig->vvaddr      = getOffset(gmm.Data.inverseCovariancesForMaxMix16);
+
+    gmmConfig->gcsoffset   = gmm.Params.GaussConstSetOffsetSize;
+    gmmConfig->mvsoffset   = gmm.Params.MeanSetOffsetSize;
+    gmmConfig->vvsoffset   = gmm.Params.VarSetOffsetSize;
+    gmmConfig->vvwidth     = gmm.Params.VarianceSize;
+    gmmConfig->gmmtelst    = gmm.Config.mixtureComponentCount * gmm.Input.ElementCount;
+    gmmConfig->maxlsscore  = gmm.Config.maximumScore;
+    gmmConfig->numgmms     = gmm.Config.stateCount;
+    gmmConfig->nummcpg     = gmm.Config.mixtureComponentCount;
+
+    gmmConfig->fvwidth     = GMM_FV_ELEMENT_SIZE;
+    gmmConfig->gcwidth     = GMM_CONSTANTS_SIZE;
+    gmmConfig->gmmscrwdth  = GMM_SCORE_SIZE;
+    gmmConfig->maxlswidth  = GMM_SCORE_SIZE;
+    gmmConfig->mvwidth     = GMM_MEAN_VALUE_SIZE;
+}
+
+void HardwareLayerGmm::updateInput(const ConfigurationBuffer &inputBuffer, const AddrGmmCfg& gmmDescriptor)
+{
+    (*gmmDescriptor).fvaddr = getOffset(inputBuffer.address);
+}
+
+void HardwareLayerGmm::updateOutput(const ConfigurationBuffer &outputBuffer, const AddrGmmCfg& gmmDescriptor)
+{
+    (*gmmDescriptor).gmmscradd = getOffset(outputBuffer.address);
+}
+
+void HardwareLayerGmm::updateActiveList(const GmmLayer *gmm, const ActiveList &activeList, const AddrGmmCfg& gmmDescriptor)
+{
+    auto scoreElementsCount = GMM_SCORE_SIZE * gmm->Input.VectorCount * gmm->Config.stateCount;
+    auto activeListIndices = 0ui32;
+    auto activeListIndicesCount = 0ui32;
+    if (activeList.Enabled)
+    {
+        scoreElementsCount = GMM_SCORE_SIZE * gmm->Input.VectorCount * activeList.IndicesCount;
+        activeListIndices = getOffset(activeList.Indices);
+        activeListIndicesCount = activeList.IndicesCount;
+    }
+    (*gmmDescriptor).gmmscrlen = scoreElementsCount;
+    (*gmmDescriptor).asladdr = activeListIndices;
+    (*gmmDescriptor).astlistlen = activeListIndicesCount;
 }

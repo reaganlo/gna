@@ -109,7 +109,7 @@ class Layer
 public:
     static std::unique_ptr<Layer> Create(const nn_layer *layer, const uint32_t inputVectorCount);
 
-    virtual ~Layer() {};
+    virtual ~Layer() = default;
 
     const nn_layer sourceLayer;// TODO: move to private when integration completed
     const LayerConfig Config;

@@ -72,15 +72,17 @@ private:
         uint32_t &nOuts,
         const uint32_t * &activeIndices);
 
-    status_t gmmSoftwareKernel(
+    void gmmSoftwareKernel(
         GmmLayer* gmm,
-        RequestProfiler* profiler);
+        const LayerConfiguration * const layerConfiguration,
+        uint32_t* const nSaturated);
 
-    static inline status_t checkScoresSaturation(
+    static inline void checkScoresSaturation(
         uint32_t nGMMs,
         uint32_t nVectors,
-        uint32_t *pS,
-        uint32_t maxScore);
+        const uint32_t * pS,
+        uint32_t maxScore,
+        uint32_t* const nSaturated);
 };
 
 }
