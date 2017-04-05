@@ -26,6 +26,8 @@
 #pragma once
 
 #include "IAccelerator.h"
+
+#include "ActiveList.h"
 #include "gmm.h"
 #include "GmmLayer.h"
 #include "Request.h"
@@ -34,55 +36,48 @@
 namespace GNA
 {
 
+struct GmmScoreContext
+{
+    GmmScoreContext(const GmmLayer& gmm, const LayerConfiguration * const layerConfiguration);
+
+    uint8_t * Input = nullptr;
+    uint32_t * Output = nullptr;
+    const ActiveList * ActiveList = nullptr;
+    uint32_t StateCount = 0;    // number of GMM states or active indices when applicable
+};
+
 class AcceleratorSw : public IAccelerator
 {
-public:    
+public:
     AcceleratorSw(acceleration accel);
-
-    /**
-     * Deleted functions to prevent from being defined or called
-     * @see: https://msdn.microsoft.com/en-us/library/dn457344.aspx
-     */
     AcceleratorSw() = delete;
     AcceleratorSw(const AcceleratorSw &) = delete;
     AcceleratorSw& operator=(const AcceleratorSw&) = delete;
 
     status_t Score(
-        const CompiledModel& model,
         const RequestConfiguration& requestConfiguration,
-              RequestProfiler *profiler,
-              KernelBuffers *buffers) override;
+        RequestProfiler *profiler,
+        KernelBuffers *buffers) override;
 
     status_t Score(
-        const CompiledModel& model,
         const SubModel& submodel,
         const RequestConfiguration& requestConfiguration,
-              RequestProfiler *profiler,
-              KernelBuffers *buffers) override;
+        RequestProfiler *profiler,
+        KernelBuffers *buffers) override;
 
 protected:
     XnnKernel *xnnKernel;
     GmmKernel *gmmKernel;
 
 private:
-    void applyRequestBuffersToLayer(
-        const LayerConfiguration * const layerConfiguration,
-        const Layer * const layer,
-        nn_layer * const sourceLayer,
-        uint32_t &nOuts,
-        const uint32_t * &activeIndices);
+    void applyRequestBuffersToLayer(const LayerConfiguration& layerConfiguration, const Layer& layer,
+        nn_layer& sourceLayer, uint32_t &nOuts, const uint32_t * &activeIndices);
 
-    void gmmSoftwareKernel(
-        GmmLayer* gmm,
-        const LayerConfiguration * const layerConfiguration,
-        uint32_t* const nSaturated);
+    void gmmSoftwareKernel(const GmmLayer& gmm, const LayerConfiguration * const layerConfiguration,
+        uint32_t& nSaturated);
 
-    static inline void checkScoresSaturation(
-        uint32_t nGMMs,
-        uint32_t nVectors,
-        const uint32_t * pS,
-        uint32_t maxScore,
-        uint32_t* const nSaturated);
+    static inline void checkScoresSaturation(const uint32_t& nGMMs, const uint32_t& nVectors, const uint32_t * pS,
+        const uint32_t& maxScore, uint32_t& nSaturated);
 };
 
 }

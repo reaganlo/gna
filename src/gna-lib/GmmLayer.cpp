@@ -54,7 +54,7 @@ GmmLayer::GmmLayer(const nn_layer *layer, const uint32_t inputVectorCount) :
     validate();
 }
 
-void GmmLayer::ValidateActiveList(ActiveList const * const activeList)
+void GmmLayer::ValidateActiveList(ActiveList const * const activeList) const
 {
     // TODO:KJ:implement active list for GMM
     if (activeList->Enabled)

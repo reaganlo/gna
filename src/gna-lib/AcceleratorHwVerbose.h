@@ -39,12 +39,7 @@ namespace GNA
 class AcceleratorHwVerbose: public AcceleratorHw
 {
 public:	
-    virtual ~AcceleratorHwVerbose() {};
-
-    /**
-     * Deleted functions to prevent from being defined or called
-     * @see: https://msdn.microsoft.com/en-us/library/dn457344.aspx
-     */
+    virtual ~AcceleratorHwVerbose() = default;
     AcceleratorHwVerbose() = delete;
     AcceleratorHwVerbose(const AcceleratorHwVerbose &) = delete;
     AcceleratorHwVerbose& operator=(const AcceleratorHwVerbose&) = delete;

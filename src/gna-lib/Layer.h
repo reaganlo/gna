@@ -27,6 +27,8 @@
 
 #include <map>
 #include <memory>
+#include <typeindex>
+#include <typeinfo>
 
 #include "common.h"
 #include "GnaConfig.h"
@@ -108,6 +110,16 @@ class Layer
 {
 public:
     static std::unique_ptr<Layer> Create(const nn_layer *layer, const uint32_t inputVectorCount);
+
+    template<typename X = Layer> X& Get() const
+    {
+        return static_cast<X &>(*this);
+    }
+
+    template<typename X = Layer> operator X& () const
+    {
+        return Get<X>();
+    }
 
     virtual ~Layer() = default;
 

@@ -53,7 +53,7 @@ public:
     const gna_gmm_data Data;
     const GmmParams Params;
 
-    void ValidateActiveList(ActiveList const * const activeList);
+    void ValidateActiveList(ActiveList const * const activeList) const;
 
 protected:
     inline void validate();

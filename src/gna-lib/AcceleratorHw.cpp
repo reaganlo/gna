@@ -36,7 +36,6 @@ using std::string;
 using namespace GNA;
 
 status_t AcceleratorHw::Score(
-    const CompiledModel& model,
     const RequestConfiguration& requestConfiguration,
     RequestProfiler *profiler,
     KernelBuffers *buffers)
@@ -45,7 +44,7 @@ status_t AcceleratorHw::Score(
 
     auto data = std::unique_ptr<char[]>();
     auto size = size_t{0};
-    prepareDataToSend(model, requestConfiguration, data, size);
+    prepareDataToSend(requestConfiguration, data, size);
 
     Submit(data.get(), size, profiler);
 
@@ -57,7 +56,6 @@ status_t AcceleratorHw::Score(
 }
 
 status_t AcceleratorHw::Score(
-    const CompiledModel& model,
     const SubModel& submodel,
     const RequestConfiguration& requestConfiguration,
     RequestProfiler *profiler,
@@ -66,7 +64,7 @@ status_t AcceleratorHw::Score(
     return GNA_SUCCESS;
 }
 
-void AcceleratorHw::prepareDataToSend(const CompiledModel &model, const RequestConfiguration &requestConfiguration,
+void AcceleratorHw::prepareDataToSend(const RequestConfiguration &requestConfiguration,
     std::unique_ptr<char[]> &data, size_t &dataSize) const
 {
     auto bufCnfgCnt = requestConfiguration.InputBuffersCount + requestConfiguration.OutputBuffersCount;
@@ -78,6 +76,7 @@ void AcceleratorHw::prepareDataToSend(const CompiledModel &model, const RequestC
 
     auto calculationData = reinterpret_cast<PGNA_CALC_IN>(data.get());
 
+    auto& model = requestConfiguration.Model;
     calculationData->ctrlFlags.activeListOn = requestConfiguration.ActiveListCount > 0;
     calculationData->ctrlFlags.gnaMode = 1; // xnn by default
     calculationData->ctrlFlags.layerCount = model.GetLayerCount(); // xnn by default

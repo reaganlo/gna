@@ -25,13 +25,12 @@
 
 #pragma once
 
+#include <vector>
+
 #include "AccelerationDetector.h"
 #include "HardwareModel.h"
 #include "SoftwareModel.h"
 #include "SubModel.h"
-#include "RequestConfiguration.h"
-
-#include <vector>
 
 namespace GNA
 {
@@ -39,13 +38,10 @@ namespace GNA
 class CompiledModel
 {
 public:
-    CompiledModel(gna_model_id modelId, const gna_model *rawModel) :
-        modelId{ modelId },
-        userModel{ rawModel },
-        submodels{}
-    {
-        layerCount = rawModel->nLayers;
-    }
+    CompiledModel(gna_model_id modelId, const gna_model *rawModel);
+    ~CompiledModel() = default;
+    CompiledModel(const CompiledModel &) = delete;
+    CompiledModel& operator=(const CompiledModel&) = delete;
 
     uint16_t GetLayerCount() const;
 
@@ -69,9 +65,8 @@ public:
     }
 
 private:
-    gna_model_id modelId;
-
-    uint16_t layerCount;
+    const gna_model_id modelId;
+    const uint16_t layerCount;
     uint16_t gmmCount = 0;
 
     uint32_t bufferSize = 0;
@@ -81,10 +76,6 @@ private:
     std::unique_ptr<SoftwareModel> softwareModel;
 
     std::vector<std::unique_ptr<SubModel>> submodels;
-    std::vector<std::unique_ptr<RequestConfiguration>> configurations;
-
-    CompiledModel(const CompiledModel &) = delete;
-    CompiledModel& operator=(const CompiledModel&) = delete;
 };
 
 }

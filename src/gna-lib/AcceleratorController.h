@@ -49,7 +49,6 @@ public:
     ~AcceleratorController() = default;
 
     status_t ScoreModel(
-        CompiledModel& model,
         RequestConfiguration& config,
         acceleration accel,
         RequestProfiler *profiler,
@@ -59,7 +58,7 @@ private:
     std::map<acceleration, std::shared_ptr<IAccelerator>> accelerators;
     bool isHardwarePresent;
 
-    ScoreMethod getScoreMethod(CompiledModel& model, acceleration accel) const;
+    ScoreMethod getScoreMethod(const std::vector<std::unique_ptr<SubModel>>& subModels, acceleration accel) const;
 
     AcceleratorController(const AcceleratorController&) = delete;
     AcceleratorController& operator=(const AcceleratorController&) = delete;

@@ -87,10 +87,6 @@ public:
     status_t WaitForRequest(gna_request_id requestId, gna_timeout milliseconds);
 
 
-    /**
-     * Deleted functions to prevent from being defined or called
-     * @see: https://msdn.microsoft.com/en-us/library/dn457344.aspx
-     */
     Device() = delete;
     Device(const Device &) = delete;
     Device& operator=(const Device&) = delete;

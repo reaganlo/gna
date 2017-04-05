@@ -25,6 +25,7 @@
 
 #include "SoftwareModel.h"
 
+#include "RequestConfiguration.h"
 #include "Validator.h"
 
 using std::make_unique;

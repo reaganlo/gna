@@ -30,24 +30,28 @@
 
 #include "common.h"
 #include "RequestConfiguration.h"
+#include "CompiledModel.h"
 
 namespace GNA
 {
 class RequestBuilder
 {
 public:
-    RequestBuilder();
-    void CreateConfiguration(gna_model_id modelId, gna_request_cfg_id *configId);
-    void AttachBuffer(gna_request_cfg_id configId, gna_buffer_type type, uint16_t layerIndex, void * address);
-    void AttachActiveList(gna_request_cfg_id configId, uint16_t layerIndex, uint32_t indicesCount, uint32_t * indices);
-    RequestConfiguration& GetConfiguration(gna_request_cfg_id configId);
+    RequestBuilder() = default;
+    RequestBuilder(const RequestBuilder &) = delete;
+    RequestBuilder& operator=(const RequestBuilder&) = delete;
+
+    void CreateConfiguration(const CompiledModel& model, gna_request_cfg_id *configId);
+    void AttachBuffer(gna_request_cfg_id configId, gna_buffer_type type, uint16_t layerIndex, void * address) const;
+    void AttachActiveList(gna_request_cfg_id configId, uint16_t layerIndex, uint32_t indicesCount,
+        uint32_t * indices) const;
+    RequestConfiguration& GetConfiguration(gna_request_cfg_id configId) const;
 
 private:
     std::vector<std::unique_ptr<RequestConfiguration>> configurationVector;
-    gna_request_cfg_id configIdSequence = 0;
     gna_request_cfg_id assignConfigId();
-
-    RequestBuilder(const RequestBuilder &) = delete;
-    RequestBuilder& operator=(const RequestBuilder&) = delete;
+ 
+    gna_request_cfg_id configIdSequence = 0;
 };
+
 }

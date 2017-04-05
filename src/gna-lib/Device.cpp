@@ -57,7 +57,9 @@ void Device::AttachBuffer(gna_request_cfg_id configId, gna_buffer_type type, uin
 
 void Device::CreateConfiguration(gna_model_id modelId, gna_request_cfg_id *configId)
 {
-    requestBuilder.CreateConfiguration(modelId, configId);
+    const auto &model = modelContainer.GetModel(modelId);
+    requestBuilder.CreateConfiguration(model, configId);
+
 }
 
 void Device::EnableProfiling(gna_request_cfg_id configId, gna_hw_perf_encoding hwPerfEncoding, gna_perf_t * perfResults)
@@ -101,22 +103,30 @@ void Device::ReleaseModel(gna_model_id modelId)
 
 void Device::LoadModel(gna_model_id *modelId, const gna_model *raw_model)
 {
-    modelContainer.AllocateModel(modelId, raw_model);
+    try
+    {
+        modelContainer.AllocateModel(modelId, raw_model);
 
-    auto &model = modelContainer.GetModel(*modelId);
-    modelCompiler.CascadeCompile(model, *totalMemory, accelerationDetector);
+        auto &model = modelContainer.GetModel(*modelId);
+        modelCompiler.CascadeCompile(model, *totalMemory, accelerationDetector);
+    }
+    catch (...)
+    {
+        modelContainer.DeallocateModel(*modelId);
+        throw;
+    }
 }
 
 void Device::PropagateRequest(gna_request_cfg_id configId, acceleration accel, gna_request_id *requestId)
 {
     auto profiler = std::make_unique<RequestProfiler>();
     profilerDTscStart(&profiler->preprocess);
-
     auto& configuration = requestBuilder.GetConfiguration(configId);
-    auto& model = modelContainer.GetModel(configuration.ModelId);
     auto callback = [&, accel](KernelBuffers *buffers, RequestProfiler *profilerPtr)
-        { return acceleratorController.ScoreModel(model, configuration, accel, profilerPtr, buffers); };
-
+    {
+        return acceleratorController.ScoreModel(configuration, accel, profilerPtr, buffers);
+    };
+    // TODO: pass configuration reference to Request 
     auto request = std::make_unique<Request>(callback, move(profiler), configuration.PerfResults);
     requestHandler.Enqueue(requestId, std::move(request));
 }

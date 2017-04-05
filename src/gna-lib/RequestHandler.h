@@ -55,6 +55,18 @@ private:
     void clearRequestMap();
 
     status_t removeRequest(const gna_request_id requestId);
+    Request * const get(const uint32_t requestId)
+    {
+        try
+        {
+            auto& request = requests.at(requestId);
+            return request.get();
+        }
+        catch (const std::out_of_range& e)
+        {
+            throw GnaException(GNA_BADREQID);
+        }
+    }
 
     std::map<uint32_t, std::unique_ptr<Request>> requests;
 

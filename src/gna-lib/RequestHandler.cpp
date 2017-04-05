@@ -49,6 +49,7 @@ void RequestHandler::Enqueue(
     gna_request_id *requestId,
     unique_ptr<Request> request)
 {
+    auto r = request.get();
     {
         std::lock_guard<std::mutex> lockGuard(lock);
 
@@ -58,20 +59,14 @@ void RequestHandler::Enqueue(
         }
 
         *requestId = nRequests;
+        r->Id = *requestId;
         auto insert = requests.try_emplace(*requestId, move(request));
-
         if (!insert.second)
         {
             throw GnaException(GNA_ERR_RESOURCES);
         }
-
-        requests.at(*requestId)->Id = *requestId;
-
         nRequests = (++nRequests) % GNA_REQUEST_WAIT_ANY;
     }
-
-    auto r = requests.at(*requestId).get();
-
     profilerDTscStart(&r->Profiler->total);
     profilerDTscStart(&r->Profiler->process);
     profilerDTscStart(&r->Profiler->submit);
@@ -84,7 +79,7 @@ void RequestHandler::Enqueue(
 
 status_t RequestHandler::WaitFor(const gna_request_id requestId, const gna_timeout milliseconds)
 {
-    auto request = requests.at(requestId).get();
+    auto request = get(requestId);
     auto future = request->GetFuture();
 
     auto future_status = future.wait_for(std::chrono::milliseconds(milliseconds));

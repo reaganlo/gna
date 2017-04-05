@@ -59,18 +59,12 @@ using RequestFunctor = std::function<status_t(KernelBuffers*, RequestProfiler*)>
 class Request
 {
 public:
-    /**
-     * Creates empty request
-     */
     Request(
         RequestFunctor callback,
         std::unique_ptr<RequestProfiler> profiler,
         gna_perf_t *perfResults);
 
-    /**
-     * Destroys request resources if any
-     */
-    ~Request() {}
+    ~Request() = default;
 
     void operator()(KernelBuffers *buffers)
     {
@@ -103,10 +97,6 @@ private:
 
     status_t scoreStatus = GNA_DEVICEBUSY;
 
-    /**
-     * Deleted functions to prevent from being defined or called
-     * @see: https://msdn.microsoft.com/en-us/library/dn457344.aspx
-     */
     Request() = delete;
     Request(const Request &) = delete;
     Request& operator=(const Request&) = delete;

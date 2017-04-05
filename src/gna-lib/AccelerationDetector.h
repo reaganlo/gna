@@ -35,11 +35,11 @@
 #define ACC_SUPPORTED 1
 #define ACC_NOTSUPPORTED 0
 
-#include "IoctlSender.h"
-#include "common.h"
-
 #include <array>
 #include <map>
+
+#include "common.h"
+#include "IoctlSender.h"
 
 namespace GNA
 {
@@ -68,8 +68,6 @@ public:
     AccelerationDetector();
     ~AccelerationDetector() = default;
 
-    std::map<acceleration, uint8_t> accelerationModes;
-
     acceleration AccelerationDetector::GetFastestAcceleration() const;
 
     bool IsHardwarePresent() const;
@@ -79,15 +77,16 @@ public:
     const uint32_t GetHardwareBufferSize() const;
 
 private:
-    acceleration fastestAcceleration;
-    GNA_CPBLTS deviceCapabilities;
     static const std::map<GnaDeviceType, std::array<bool, GnaFeatureCount>> gnaFeatureMap;
 
     void discoverHardwareExistence();
     void discoverHardwareCapabilities();
 
-    AccelerationDetector(const AccelerationDetector &) = delete;
-    AccelerationDetector& operator=(const AccelerationDetector&) = delete;
+    // Configuration map of available acceleration modes
+    std::map<acceleration, uint8_t> accelerationModes;
+
+    acceleration fastestAcceleration;
+    GNA_CPBLTS deviceCapabilities;
 };
 
 }

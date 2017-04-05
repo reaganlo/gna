@@ -32,6 +32,7 @@
 
 #include "ActiveList.h"
 #include "common.h"
+#include "CompiledModel.h"
 
 namespace GNA
 {
@@ -66,14 +67,12 @@ struct LayerConfiguration
 class RequestConfiguration
 {
 public:
-    RequestConfiguration(gna_model_id modelId, gna_request_cfg_id configId)
-        : ModelId(modelId),
-          ConfigId(configId) {}
+    RequestConfiguration(const CompiledModel& model, gna_request_cfg_id configId);
 
     void AddBuffer(gna_buffer_type type, uint32_t layerIndex, void *address);
     void AddActiveList(uint32_t layerIndex, uint32_t indicesCount, uint32_t *indices);
 
-    const gna_model_id ModelId;
+    const CompiledModel& Model;
     const gna_request_cfg_id ConfigId;
 
     gna_hw_perf_encoding HwPerfEncoding;

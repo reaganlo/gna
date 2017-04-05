@@ -40,20 +40,18 @@ class AcceleratorHw : public IAccelerator, protected IoctlSender
 public:
     using IAccelerator::IAccelerator;
 
-    ~AcceleratorHw() {};
+    ~AcceleratorHw() = default;
 
     AcceleratorHw() = delete;
     AcceleratorHw(const AcceleratorHw &) = delete;
     AcceleratorHw& operator=(const AcceleratorHw&) = delete;
 
     status_t Score(
-        const CompiledModel& model,
         const RequestConfiguration& requestConfiguration,
               RequestProfiler *profiler,
               KernelBuffers *buffers) override;
 
     status_t Score(
-        const CompiledModel& model,
         const SubModel& submodel,
         const RequestConfiguration& requestConfiguration,
               RequestProfiler *profiler,
@@ -90,8 +88,8 @@ protected:
     virtual void HwVerifier(SoftwareModel* model, status_t scoring_status);
 
 private:
-    void prepareDataToSend(const CompiledModel &model, const RequestConfiguration &requestConfiguration,
-        std::unique_ptr<char[]> &data, size_t &dataSize) const;
+    void prepareDataToSend(const RequestConfiguration &requestConfiguration, std::unique_ptr<char[]> &data,
+        size_t &dataSize) const;
 };
 
 }

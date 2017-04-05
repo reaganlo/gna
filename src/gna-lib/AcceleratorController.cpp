@@ -29,7 +29,6 @@
 #include "AcceleratorHw.h"
 #include "AcceleratorHwVerbose.h"
 #include "AcceleratorSw.h"
-#include "CompiledModel.h"
 #include "GnaException.h"
 
 using std::make_shared;
@@ -79,7 +78,8 @@ AcceleratorController::AcceleratorController(AccelerationDetector& detector) :
     accelerators[GNA_SW_SAT] = accelerators[static_cast<acceleration>(fastestMode - 1)];
 }
 
-ScoreMethod AcceleratorController::getScoreMethod(CompiledModel &model, acceleration accel) const
+ScoreMethod AcceleratorController::getScoreMethod(const std::vector<std::unique_ptr<SubModel>>& subModels,
+    acceleration accel) const
 {
     // acceleration mode validation
     if ((accel >= NUM_GNA_ACCEL_MODES || accel < 2) && accel != GNA_HW)
@@ -98,12 +98,10 @@ ScoreMethod AcceleratorController::getScoreMethod(CompiledModel &model, accelera
     }
 
     // hardware or auto acceleration
-    const auto& submodels = model.GetSubmodels();
-
     // there is only one submodel, which means
-    if (submodels.size() == 1)
+    if (subModels.size() == 1)
     {
-        switch(submodels.front()->Type)
+        switch(subModels.front()->Type)
         {
         // hardware does not support model
         case Software:
@@ -122,36 +120,36 @@ ScoreMethod AcceleratorController::getScoreMethod(CompiledModel &model, accelera
 }
 
 status_t AcceleratorController::ScoreModel(
-    CompiledModel& model,
     RequestConfiguration& config,
     acceleration accel,
     RequestProfiler *profiler,
     KernelBuffers *buffers)
 {
     auto status = GNA_SUCCESS;
-    auto scoreMethod = getScoreMethod(model, accel);
+    auto& subModels = config.Model.GetSubmodels();
+    auto scoreMethod = getScoreMethod(subModels, accel);
     switch (scoreMethod)
     {
     case SoftwareOnly:
     case HardwareOnly:
-        return accelerators[accel]->Score(model, config, profiler, buffers);
+        return accelerators[accel]->Score(config, profiler, buffers);
     case Mixed:
     {
         auto& acceleratorHw = accelerators[GNA_HW];
         auto& acceleratorSw = accelerators[accel];
-        for (const auto& submodel : model.GetSubmodels())
+        for (const auto& submodel : subModels)
         {
             uint32_t layerIndex = submodel->GetLayerIndex();
             uint32_t layerCount = submodel->GetLayerCount();
             switch (submodel->Type)
             {
             case Software:
-                status = acceleratorSw->Score(model, *submodel.get(), config, profiler, buffers);
+                status = acceleratorSw->Score(*submodel.get(), config, profiler, buffers);
                 if (status != GNA_SUCCESS && status != GNA_SSATURATE)
                     return status;
                 break;
             case Hardware:
-                status = acceleratorHw->Score(model, *submodel.get(), config, profiler, buffers);
+                status = acceleratorHw->Score(*submodel.get(), config, profiler, buffers);
                 if (status != GNA_SUCCESS && status != GNA_SSATURATE)
                     return status;
                 break;

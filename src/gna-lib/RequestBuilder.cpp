@@ -29,32 +29,40 @@ using std::make_unique;
 
 using namespace GNA;
 
-RequestBuilder::RequestBuilder() {};
-
 gna_request_cfg_id RequestBuilder::assignConfigId()
 {
     return configIdSequence++;
 }
 
-void RequestBuilder::CreateConfiguration(gna_model_id modelId, gna_request_cfg_id *configId)
+void RequestBuilder::CreateConfiguration(const CompiledModel& model, gna_request_cfg_id *configId)
 {
     *configId = assignConfigId();
-    configurationVector.emplace_back(make_unique<RequestConfiguration>(modelId, *configId));
+    configurationVector.emplace_back(make_unique<RequestConfiguration>(model, *configId));
 }
 
-void RequestBuilder::AttachBuffer(gna_request_cfg_id configId, gna_buffer_type type, uint16_t layerIndex, void * address)
+void RequestBuilder::AttachBuffer(gna_request_cfg_id configId, gna_buffer_type type, uint16_t layerIndex, 
+    void * address) const
 {
     auto& configuration = GetConfiguration(configId);
     configuration.AddBuffer(type, layerIndex, address);
 }
 
-void RequestBuilder::AttachActiveList(gna_request_cfg_id configId, uint16_t layerIndex, uint32_t indicesCount, uint32_t * indices)
+void RequestBuilder::AttachActiveList(gna_request_cfg_id configId, uint16_t layerIndex, uint32_t indicesCount,
+    uint32_t * indices) const
 {
     auto& configuration = GetConfiguration(configId);
     configuration.AddActiveList(layerIndex, indicesCount, indices);
 }
 
-RequestConfiguration& RequestBuilder::GetConfiguration(gna_request_cfg_id configId)
+RequestConfiguration& RequestBuilder::GetConfiguration(gna_request_cfg_id configId) const
 {
-    return *configurationVector[configId].get();
+    try
+    {
+        auto& config = configurationVector.at(configId);
+        return *config.get();
+    }
+    catch (const std::out_of_range& e)
+    {
+        throw GnaException(GNA_INVALID_REQUEST_CONFIGURATION);
+    }
 }

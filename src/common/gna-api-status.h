@@ -73,6 +73,8 @@ typedef enum _gna_status_t
     GNA_IOCTLRESERR,         // Error: Device: IOCTL result retrieval failed
     GNA_IOCTLSENDERR,        // Error: Device: sending IOCTL failed
     GNA_NULLARGNOTALLOWED,   // Error: NULL argument not allowed
+    GNA_INVALID_MODEL,       // Error: Given model is invalid
+    GNA_INVALID_REQUEST_CONFIGURATION,       // Error: Given request configuration is invalid
 
     GNA_NULLARGREQUIRED,     // Error: NULL argument is required
     GNA_ERR_MEM_ALLOC1,      // Error: Memory: Already allocated, only single allocation per device is allowed

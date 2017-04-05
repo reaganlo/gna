@@ -36,8 +36,6 @@ namespace GNA
 class ModelCompiler
 {
 public:
-    ModelCompiler() {}
-
     static const size_t CalculateModelSize(const size_t requestedSize, const uint16_t layerCount,
         const uint16_t gmmCount);
 

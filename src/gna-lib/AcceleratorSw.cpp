@@ -33,8 +33,42 @@
 
 using namespace GNA;
 
-AcceleratorSw::AcceleratorSw(acceleration acceleration_mode)
-    : IAccelerator(acceleration_mode)
+GmmScoreContext::GmmScoreContext(const GmmLayer& gmm, const LayerConfiguration * const layerConfiguration)
+{
+    if (nullptr != layerConfiguration && layerConfiguration->InputBuffer)
+    {
+        Input = static_cast<uint8_t *>(layerConfiguration->InputBuffer->address);
+    }
+    else
+    {
+        Input = static_cast<uint8_t *>(const_cast<void*>(gmm.Input.Buffer));
+    }
+
+    if (nullptr != layerConfiguration && layerConfiguration->OutputBuffer)
+    {
+        Output = static_cast<uint32_t * const>(layerConfiguration->OutputBuffer->address);
+    }
+    else
+    {
+        Output = static_cast<uint32_t *>(const_cast<void*>(gmm.Output.Buffer));
+
+    }
+
+    if (nullptr != layerConfiguration && layerConfiguration->ActiveList)
+    {
+        ActiveList = layerConfiguration->ActiveList.get();
+        gmm.ValidateActiveList(ActiveList);
+        StateCount = ActiveList->IndicesCount;
+    }
+    else
+    {
+        ActiveList = nullptr;
+        StateCount = gmm.Config.stateCount;
+    }
+}
+
+AcceleratorSw::AcceleratorSw(acceleration acceleration_mode) :
+    IAccelerator(acceleration_mode)
 {
     switch(accel){
     case GNA_AVX2_FAST:
@@ -75,7 +109,6 @@ AcceleratorSw::AcceleratorSw(acceleration acceleration_mode)
 }
 
 status_t AcceleratorSw::Score(
-    const CompiledModel& model,
     const SubModel& submodel,
     const RequestConfiguration& requestConfiguration,
           RequestProfiler *profiler,
@@ -85,22 +118,21 @@ status_t AcceleratorSw::Score(
 }
 
 status_t AcceleratorSw::Score(
-    const CompiledModel& model,
     const RequestConfiguration& requestConfiguration,
     RequestProfiler *profiler,
     KernelBuffers *fvBuffers)
 {
     profilerDTscAStart(&profiler->scoring);
 
-    auto& softwareModel = model.GetSoftwareModel();
+    auto& softwareModel = requestConfiguration.Model.GetSoftwareModel();
     softwareModel.ValidateConfiguration(requestConfiguration);
 
     auto nOuts = uint32_t{ 0 }; // number of outputs
-    auto sat = uint32_t{ 0 };   // scoring saturation counter
     const uint32_t* activeIndices = nullptr; // active list pointer
-
+    auto sat = uint32_t{ 0 };   // scoring saturation counter
+    
     auto layerIndex = uint32_t{ 0 };
-    for (auto& layer : softwareModel.Layers)
+    for (const auto& layer : softwareModel.Layers)
     {
         auto* sourceLayer = const_cast<nn_layer*>(&layer->sourceLayer);
         nOuts = layer->Output.ElementCount; // regular output (all)
@@ -112,7 +144,10 @@ status_t AcceleratorSw::Score(
             if (found != requestConfiguration.LayerConfigurations.end())
             {
                 layerConfiguration = found->second.get();
-                applyRequestBuffersToLayer(layerConfiguration, layer.get(), sourceLayer, nOuts, activeIndices);
+                if (INTEL_GMM != layer->Config.Kind)
+                {
+                    applyRequestBuffersToLayer(*layerConfiguration, *layer, *sourceLayer, nOuts, activeIndices);
+                }
             }
         }
 
@@ -120,7 +155,7 @@ status_t AcceleratorSw::Score(
         {
         case INTEL_AFFINE:
         {
-            auto& affineLayer = static_cast<AffineLayer&>(*layer);
+            auto& affineLayer = layer->Get<const AffineLayer>();
             auto& activation = affineLayer.Activation;
 
             xnnKernel->affine(sourceLayer, activeIndices, nOuts, &sat, fvBuffers);
@@ -135,7 +170,7 @@ status_t AcceleratorSw::Score(
         }
         case INTEL_AFFINE_MULTIBIAS:
         {
-            auto& affineLayer = static_cast<AffineMultiBiasLayer&>(*layer);
+            auto& affineLayer = layer->Get<const AffineMultiBiasLayer>();
             auto& activation = affineLayer.Activation;
 
             xnnKernel->affineMbias(sourceLayer, activeIndices, nOuts, &sat, fvBuffers);
@@ -151,7 +186,7 @@ status_t AcceleratorSw::Score(
         {
             xnnKernel->diagonal(sourceLayer, &sat);
 
-            auto& affineLayer = static_cast<AffineDiagonalLayer&>(*layer);
+            auto& affineLayer = layer->Get<const AffineDiagonalLayer>();
             xnnKernel->diagonal(sourceLayer, &sat);
 
             auto& activation = affineLayer.Activation;
@@ -185,7 +220,7 @@ status_t AcceleratorSw::Score(
         }
         case INTEL_GMM:
         {
-            gmmSoftwareKernel(static_cast<GmmLayer*>(layer.get()), layerConfiguration, &sat);
+            gmmSoftwareKernel(*layer, layerConfiguration, sat);
             break;
         }
         default:
@@ -204,86 +239,67 @@ status_t AcceleratorSw::Score(
 }
 
 void AcceleratorSw::applyRequestBuffersToLayer(
-    const LayerConfiguration * const layerConfiguration,
-    const Layer * const layer,
-    nn_layer * const sourceLayer,
+    const LayerConfiguration& layerConfiguration,
+    const Layer& layer,
+    nn_layer& sourceLayer,
     uint32_t &nOuts,
     const uint32_t * &activeIndices)
 {
-    if (layerConfiguration->InputBuffer)
+    if (layerConfiguration.InputBuffer)
     {
-        sourceLayer->pInputs = layerConfiguration->InputBuffer->address;
+        sourceLayer.pInputs = layerConfiguration.InputBuffer->address;
     }
 
-    if (layerConfiguration->OutputBuffer)
+    if (layerConfiguration.OutputBuffer)
     {
-        sourceLayer->pOutputs = layerConfiguration->OutputBuffer->address;
-        if (INTEL_RECURRENT == layer->Config.Kind)
+        sourceLayer.pOutputs = layerConfiguration.OutputBuffer->address;
+        if (INTEL_RECURRENT == layer.Config.Kind)
         {
-            auto const_rnn = static_cast<const RnnLayer* const>(layer);
-            auto rnn = const_cast<RnnLayer* const>(const_rnn);
-            rnn->SetFeedbackBuffer(layerConfiguration->OutputBuffer->address);
+            auto& rnn = layer.Get<RnnLayer>();
+            rnn.SetFeedbackBuffer(layerConfiguration.OutputBuffer->address);
             // TODO: move to XnnKernel when kernels are refactored
         }
     }
 
-    if (layerConfiguration->ActiveList
-        && layerConfiguration->ActiveList->Enabled)
+    if (layerConfiguration.ActiveList
+        && layerConfiguration.ActiveList->Enabled)
     {
-        if (INTEL_AFFINE == layer->Config.Kind
-            || INTEL_GMM == layer->Config.Kind)
+        if (INTEL_AFFINE == layer.Config.Kind
+            || INTEL_GMM == layer.Config.Kind)
         {
-            nOuts = layerConfiguration->ActiveList->IndicesCount; // active list outputs
-            activeIndices = layerConfiguration->ActiveList->Indices;
+            nOuts = layerConfiguration.ActiveList->IndicesCount; // active list outputs
+            activeIndices = layerConfiguration.ActiveList->Indices;
         }
     }
 }
 
-void AcceleratorSw::checkScoresSaturation(uint32_t nGMMs, uint32_t nVectors, const uint32_t * pS, uint32_t maxScore,
-    uint32_t* const nSaturated)
+void AcceleratorSw::checkScoresSaturation(const uint32_t& nGMMs, const uint32_t& nVectors, const uint32_t * pS,
+    const uint32_t& maxScore, uint32_t& nSaturated)
 {
-    uint32_t i = 0;
-
-    for(i = 0; i < nGMMs * nVectors; i++)
+    for(auto i = 0; i < nGMMs * nVectors; i++)
     {
         if (maxScore == *pS)
         {
-            (*nSaturated)++;
+            nSaturated++;
             return;
         }
         pS++;
     }
 }
 
-void AcceleratorSw::gmmSoftwareKernel(GmmLayer* gmm, const LayerConfiguration * const layerConfiguration,
-    uint32_t* const nSaturated)
+void AcceleratorSw::gmmSoftwareKernel(const GmmLayer& gmm, const LayerConfiguration * const layerConfiguration,
+    uint32_t& nSaturated)
 {
-    auto tmpInput = gmm->Input.Buffer;
-    if (layerConfiguration->InputBuffer)
-    {
-        tmpInput = static_cast<const void * const>(layerConfiguration->InputBuffer->address);
-    }
+    const auto context = GmmScoreContext(gmm, layerConfiguration); // TODO: extend context with all gmmSoftwareKernel arguments to reduce argument passing
+    const gna_gmm_data* data = &gmm.Data;
+    const uint32_t fvCount = gmm.Input.VectorCount;
+    const uint32_t fvLength = gmm.Input.ElementCount;
+    const uint32_t mixCount = gmm.Config.mixtureComponentCount;
+    const uint32_t meanSetOffsetSize = gmm.Params.MeanSetOffsetSize;
+    const uint32_t varSetOffsetSize = gmm.Params.VarSetOffsetSize;
+    const uint32_t gConstSetOffsetSize = gmm.Params.GaussConstSetOffsetSize;
+    const uint32_t maxScore = gmm.Config.maximumScore;
 
-    auto tmpOutput = const_cast<void *>(gmm->Output.Buffer);
-    if (layerConfiguration->OutputBuffer)
-    {
-        tmpOutput = const_cast<void *>(layerConfiguration->OutputBuffer->address);
-    }
-
-    const auto*const activeList = layerConfiguration->ActiveList.get();
-
-    auto* const input = static_cast<const uint8_t * const>(tmpInput);
-    auto* const output = static_cast<uint32_t * const>(tmpOutput);
-    const gna_gmm_data* data = &gmm->Data;
-    const uint32_t fvCount = gmm->Input.VectorCount;
-    const uint32_t fvLength = gmm->Input.ElementCount;
-    const uint32_t mixCount = gmm->Config.mixtureComponentCount;
-    const uint32_t meanSetOffsetSize = gmm->Params.MeanSetOffsetSize;
-    const uint32_t varSetOffsetSize = gmm->Params.VarSetOffsetSize;
-    const uint32_t gConstSetOffsetSize = gmm->Params.GaussConstSetOffsetSize;
-    const uint32_t maxScore = gmm->Config.maximumScore;
-
-    uint32_t stateCount = 0; // no of GMM states or active indices when applicable
     uint32_t i, j, k;
     // auxiliary pointers
     uint8_t const *fv;
@@ -291,26 +307,24 @@ void AcceleratorSw::gmmSoftwareKernel(GmmLayer* gmm, const LayerConfiguration * 
     uint32_t *consts;
     uint32_t *scores;
 
-    if (!activeList->Enabled)
+    if (!context.ActiveList)
     {
         const uint32_t meanOffset = meanSetOffsetSize / GMM_MEAN_VALUE_SIZE;;
-        const uint32_t varOffset = varSetOffsetSize / (gmm->Config.mode + 1);;
+        const uint32_t varOffset = varSetOffsetSize / (gmm.Config.mode + 1);;
         const uint32_t gConstOffset = gConstSetOffsetSize / GMM_CONSTANTS_SIZE;
-        stateCount = gmm->Config.stateCount;
 
-        if (gmm->Config.mode == GNA_MAXMIX8)
+        if (gmm.Config.mode == GNA_MAXMIX8)
         {
             uint8_t *vars; // auxiliary pointer
             //if(GNA_GEN_FAST == kd.accel || GNA_GEN_SAT == kd.accel)
             {
-
-                for(j = 0; j < stateCount; j++)
+                for(j = 0; j < context.StateCount; j++)
                 {
-                    fv = input;
+                    fv = context.Input;
                     means = data->meanValues + j*meanOffset;
                     vars = data->inverseCovariancesForMaxMix8 + j*varOffset;
                     consts = data->gaussianConstants + j*gConstOffset;
-                    scores = output + j*fvCount;
+                    scores = context.Output + j*fvCount;
 
                     for(i = 0; i < fvCount; i++)
                     {
@@ -335,7 +349,7 @@ void AcceleratorSw::gmmSoftwareKernel(GmmLayer* gmm, const LayerConfiguration * 
                     {
                         for (g = 0; g < fvCount; g++)
                         {
-                            *((uint64_t*)fv) = *((uint64_t*)((input) + g * fvLength + n));
+                            *((uint64_t*)fv) = *((uint64_t*)((context.Input) + g * fvLength + n));
                             fv += GMM_FV_COUNT_MAX;
                         }
                     }
@@ -343,40 +357,40 @@ void AcceleratorSw::gmmSoftwareKernel(GmmLayer* gmm, const LayerConfiguration * 
                 }
                 else
                 {
-                    fv = input;
+                    fv = context.Input;
                 }
                 switch (fvCount)
                 {
                 case 1:
-                    for(j = 0; j < stateCount; j++)
+                    for(j = 0; j < context.StateCount; j++)
                     {
                         means = data->meanValues + j*meanOffset;
                         vars = data->inverseCovariancesForMaxMix8 + j*varOffset;
                         consts = data->gaussianConstants + j*gConstOffset;
-                        scores = output + j*fvCount;
+                        scores = context.Output + j*fvCount;
 
                         gmmKernel->GMM8_MAXMIX_G1(fv, means, vars, consts, maxScore, fvLength, mixCount, scores);
                     }
                     break;
                 case 2:
-                    for(j = 0; j < stateCount; j++)
+                    for(j = 0; j < context.StateCount; j++)
                     {
                         means = data->meanValues + j*meanOffset;
                         vars = data->inverseCovariancesForMaxMix8 + j*varOffset;
                         consts = data->gaussianConstants + j*gConstOffset;
-                        scores = output + j*fvCount;
+                        scores = context.Output + j*fvCount;
 
                         gmmKernel->GMM8_MAXMIX_G2(fv, means, vars, consts, maxScore, fvLength, mixCount, scores);
                     }
                     break;
                 case 3:
 
-                    for(j = 0; j < stateCount; j++)
+                    for(j = 0; j < context.StateCount; j++)
                     {
                         means = data->meanValues + j*meanOffset;
                         vars = data->inverseCovariancesForMaxMix8 + j*varOffset;
                         consts = data->gaussianConstants + j*gConstOffset;
-                        scores = output + j*fvCount;
+                        scores = context.Output + j*fvCount;
 
                         gmmKernel->GMM8_MAXMIX_G3(fv, means, vars, consts, maxScore, fvLength, mixCount, scores);
                         scores += fvCount;
@@ -388,12 +402,12 @@ void AcceleratorSw::gmmSoftwareKernel(GmmLayer* gmm, const LayerConfiguration * 
                     break;
                 case 4:
 
-                    for(j = 0; j < stateCount; j++)
+                    for(j = 0; j < context.StateCount; j++)
                     {
                         means = data->meanValues + j*meanOffset;
                         vars = data->inverseCovariancesForMaxMix8 + j*varOffset;
                         consts = data->gaussianConstants + j*gConstOffset;
-                        scores = output + j*fvCount;
+                        scores = context.Output + j*fvCount;
 
                         gmmKernel->GMM8_MAXMIX_G4(fv, means, vars, consts, maxScore, fvLength, mixCount, scores);
                         scores += fvCount;
@@ -405,67 +419,67 @@ void AcceleratorSw::gmmSoftwareKernel(GmmLayer* gmm, const LayerConfiguration * 
                     break;
                 case 5:
 
-                    for(j = 0; j < stateCount; j++)
+                    for(j = 0; j < context.StateCount; j++)
                     {
                         means = data->meanValues + j*meanOffset;
                         vars = data->inverseCovariancesForMaxMix8 + j*varOffset;
                         consts = data->gaussianConstants + j*gConstOffset;
-                        scores = output + j*fvCount;
+                        scores = context.Output + j*fvCount;
 
                         gmmKernel->GMM8_MAXMIX_G5(fv, means, vars, consts, maxScore, fvLength, mixCount, scores);
                     }
                     break;
                 case 6:
 
-                    for(j = 0; j < stateCount; j++)
+                    for(j = 0; j < context.StateCount; j++)
                     {
                         means = data->meanValues + j*meanOffset;
                         vars = data->inverseCovariancesForMaxMix8 + j*varOffset;
                         consts = data->gaussianConstants + j*gConstOffset;
-                        scores = output + j*fvCount;
+                        scores = context.Output + j*fvCount;
 
                         gmmKernel->GMM8_MAXMIX_G6(fv, means, vars, consts, maxScore, fvLength, mixCount, scores);
                     }
                     break;
                 case 7:
 
-                    for(j = 0; j < stateCount; j++)
+                    for(j = 0; j < context.StateCount; j++)
                     {
                         means = data->meanValues + j*meanOffset;
                         vars = data->inverseCovariancesForMaxMix8 + j*varOffset;
                         consts = data->gaussianConstants + j*gConstOffset;
-                        scores = output + j*fvCount;
+                        scores = context.Output + j*fvCount;
 
                         gmmKernel->GMM8_MAXMIX_G7(fv, means, vars, consts, maxScore, fvLength, mixCount, scores);
                     }
                     break;
                 case 8:
 
-                    for(j = 0; j < stateCount; j++)
+                    for(j = 0; j < context.StateCount; j++)
                     {
                         means = data->meanValues + j*meanOffset;
                         vars = data->inverseCovariancesForMaxMix8 + j*varOffset;
                         consts = data->gaussianConstants + j*gConstOffset;
-                        scores = output + j*fvCount;
+                        scores = context.Output + j*fvCount;
 
                         gmmKernel->GMM8_MAXMIX_G8(fv, means, vars, consts, maxScore, fvLength, mixCount, scores);
                     }
                     break;
                 }
             } //else //if(GNA_SW_SSE4_2 == kd.accel || GNA_SW_AVX1 == kd.accel || GNA_SW_AVX2 == kd.accel)
-        }//else if (gmm->mode == GNA_MAXMIX8)
-        else if (gmm->Config.mode == GNA_MAXMIX16)
+        }//else if (gmm.mode == GNA_MAXMIX8)
+        else if (gmm.Config.mode == GNA_MAXMIX16)
         {
             // auxiliary pointers
             uint16_t *vars;
 
-            for(j = 0; j < stateCount; j++)
+            for(j = 0; j < context.StateCount; j++)
             {
-                fv = input;
+                fv = context.Input;
                 means = data->meanValues + j*meanOffset;
                 vars = data->inverseCovariancesForMaxMix16 + j*varOffset;
                 consts = data->gaussianConstants + j*gConstOffset;
-                scores = output + j*fvCount;
+                scores = context.Output + j*fvCount;
 
                 for(i = 0; i < fvCount; i++)
                 {
@@ -478,26 +492,23 @@ void AcceleratorSw::gmmSoftwareKernel(GmmLayer* gmm, const LayerConfiguration * 
                 vars += varOffset;
                 consts += gConstOffset;
             }
-        }//else if (gmm->mode == MAXMIX16)
+        }//else if (gmm.mode == MAXMIX16)
     }
     else // has active list
     {
-        gmm->ValidateActiveList(activeList);
-        stateCount = activeList->IndicesCount;
-
-        if (gmm->Config.mode == GNA_MAXMIX8)
+        if (gmm.Config.mode == GNA_MAXMIX8)
         {
             uint8_t *vars; // auxiliary pointer
             //if(GNA_GEN_FAST == kd.accel || GNA_GEN_SAT == kd.accel)
             {
-                for(j = 0; j < stateCount; j++)
+                for(j = 0; j < context.StateCount; j++)
                 {
-                    k = activeList->Indices[j];
+                    k = context.ActiveList->Indices[j];
                     means = data->meanValues + k * meanSetOffsetSize;
                     vars = data->inverseCovariancesForMaxMix8 + k * varSetOffsetSize;
                     consts = (uint32_t*)((uint8_t*)data->gaussianConstants + k * gConstSetOffsetSize);
-                    fv = input;
-                    scores = output + j*fvCount;
+                    fv = context.Input;
+                    scores = context.Output + j*fvCount;
 
                     for(i = 0; i < fvCount; i++)
                     {
@@ -522,7 +533,7 @@ void AcceleratorSw::gmmSoftwareKernel(GmmLayer* gmm, const LayerConfiguration * 
                     {
                         for (g = 0; g < fvCount; g++)
                         {
-                            *((uint64_t*)fv) = *((uint64_t*)((input) + g * fvLength + n));
+                            *((uint64_t*)fv) = *((uint64_t*)((context.Input) + g * fvLength + n));
                             fv += GMM_FV_COUNT_MAX;
                         }
                     }
@@ -530,130 +541,130 @@ void AcceleratorSw::gmmSoftwareKernel(GmmLayer* gmm, const LayerConfiguration * 
                 }
                 else
                 {
-                    fv = input;
+                    fv = context.Input;
                 }
 
                 switch(fvCount)
                 {
                 case 1:
 
-                    for(j = 0; j < stateCount; j++)
+                    for(j = 0; j < context.StateCount; j++)
                     {
-                        k = activeList->Indices[j];
+                        k = context.ActiveList->Indices[j];
                         means = data->meanValues + k * meanSetOffsetSize;
                         vars = data->inverseCovariancesForMaxMix8 + k * varSetOffsetSize;
                         consts = (uint32_t*)((uint8_t*)data->gaussianConstants + k * gConstSetOffsetSize);
-                        scores = output + j*fvCount;
+                        scores = context.Output + j*fvCount;
 
                         gmmKernel->GMM8_MAXMIX_G1(fv, means, vars, consts, maxScore, fvLength, mixCount, scores);
                     }
                     break;
                 case 2:
 
-                    for(j = 0; j < stateCount; j++)
+                    for(j = 0; j < context.StateCount; j++)
                     {
-                        k = activeList->Indices[j];
+                        k = context.ActiveList->Indices[j];
                         means = data->meanValues + k * meanSetOffsetSize;
                         vars = data->inverseCovariancesForMaxMix8 + k * varSetOffsetSize;
                         consts = (uint32_t*)((uint8_t*)data->gaussianConstants + k * gConstSetOffsetSize);
-                        scores = output + j*fvCount;
+                        scores = context.Output + j*fvCount;
 
                         gmmKernel->GMM8_MAXMIX_G2(fv, means, vars, consts, maxScore, fvLength, mixCount, scores);
                     }
                     break;
                 case 3:
 
-                    for(j = 0; j < stateCount; j++)
+                    for(j = 0; j < context.StateCount; j++)
                     {
-                        k = activeList->Indices[j];
+                        k = context.ActiveList->Indices[j];
                         means = data->meanValues + k * meanSetOffsetSize;
                         vars = data->inverseCovariancesForMaxMix8 + k * varSetOffsetSize;
                         consts = (uint32_t*)((uint8_t*)data->gaussianConstants + k * gConstSetOffsetSize);
-                        scores = output + j*fvCount;
+                        scores = context.Output + j*fvCount;
 
                         gmmKernel->GMM8_MAXMIX_G3(fv, means, vars, consts, maxScore, fvLength, mixCount, scores);
                     }
                     break;
                 case 4:
 
-                    for(j = 0; j < stateCount; j++)
+                    for(j = 0; j < context.StateCount; j++)
                     {
-                        k = activeList->Indices[j];
+                        k = context.ActiveList->Indices[j];
                         means = data->meanValues + k * meanSetOffsetSize;
                         vars = data->inverseCovariancesForMaxMix8 + k * varSetOffsetSize;
                         consts = (uint32_t*)((uint8_t*)data->gaussianConstants + k * gConstSetOffsetSize);
-                        scores = (uint32_t*)output + j*fvCount;
+                        scores = (uint32_t*)context.Output + j*fvCount;
 
                         gmmKernel->GMM8_MAXMIX_G4(fv, means, vars, consts, maxScore, fvLength, mixCount, scores);
                     }
                     break;
                 case 5:
 
-                    for(j = 0; j < stateCount; j++)
+                    for(j = 0; j < context.StateCount; j++)
                     {
-                        k = activeList->Indices[j];
+                        k = context.ActiveList->Indices[j];
                         means = data->meanValues + k * meanSetOffsetSize;
                         vars = data->inverseCovariancesForMaxMix8 + k * varSetOffsetSize;
                         consts = (uint32_t*)((uint8_t*)data->gaussianConstants + k * gConstSetOffsetSize);
-                        scores = output + j*fvCount;
+                        scores = context.Output + j*fvCount;
 
                         gmmKernel->GMM8_MAXMIX_G5(fv, means, vars, consts, maxScore, fvLength, mixCount, scores);
                     }
                     break;
                 case 6:
 
-                    for(j = 0; j < stateCount; j++)
+                    for(j = 0; j < context.StateCount; j++)
                     {
-                        k = activeList->Indices[j];
+                        k = context.ActiveList->Indices[j];
                         means = data->meanValues + k * meanSetOffsetSize;
                         vars = data->inverseCovariancesForMaxMix8 + k * varSetOffsetSize;
                         consts = (uint32_t*)((uint8_t*)data->gaussianConstants + k * gConstSetOffsetSize);
-                        scores = output + j*fvCount;
+                        scores = context.Output + j*fvCount;
 
                         gmmKernel->GMM8_MAXMIX_G6(fv, means, vars, consts, maxScore, fvLength, mixCount, scores);
                     }
                     break;
                 case 7:
 
-                    for(j = 0; j < stateCount; j++)
+                    for(j = 0; j < context.StateCount; j++)
                     {
-                        k = activeList->Indices[j];
+                        k = context.ActiveList->Indices[j];
                         means = data->meanValues + k * meanSetOffsetSize;
                         vars = data->inverseCovariancesForMaxMix8 + k * varSetOffsetSize;
                         consts = (uint32_t*)((uint8_t*)data->gaussianConstants + k * gConstSetOffsetSize);
-                        scores = output + j*fvCount;
+                        scores = context.Output + j*fvCount;
 
                         gmmKernel->GMM8_MAXMIX_G7(fv, means, vars, consts, maxScore, fvLength, mixCount, scores);
                     }
                     break;
                 case 8:
 
-                    for(j = 0; j < stateCount; j++)
+                    for(j = 0; j < context.StateCount; j++)
                     {
-                        k = activeList->Indices[j];
+                        k = context.ActiveList->Indices[j];
                         means = data->meanValues + k * meanSetOffsetSize;
                         vars = data->inverseCovariancesForMaxMix8 + k * varSetOffsetSize;
                         consts = (uint32_t*)((uint8_t*)data->gaussianConstants + k * gConstSetOffsetSize);
-                        scores = output + j*fvCount;
+                        scores = context.Output + j*fvCount;
 
                         gmmKernel->GMM8_MAXMIX_G8(fv, means, vars, consts, maxScore, fvLength, mixCount, scores);
                     }
                     break;
                 }
             } // else //if(GNA_SW_SSE4_2 == kd.accel || GNA_SW_AVX1 == kd.accel || GNA_SW_AVX2 == kd.accel)
-        }//else if (gmm->mode == GNA_MAXMIX8)
-        else if (gmm->Config.mode == GNA_MAXMIX16)
+        }//else if (gmm.mode == GNA_MAXMIX8)
+        else if (gmm.Config.mode == GNA_MAXMIX16)
         {
             uint16_t *vars; // auxiliary pointer
-            scores = output;
+            scores = context.Output;
 
-            for(j = 0; j < stateCount; j++)
+            for(j = 0; j < context.StateCount; j++)
             {
-                k = activeList->Indices[j];
+                k = context.ActiveList->Indices[j];
                 means = data->meanValues + k * meanSetOffsetSize;
                 vars = data->inverseCovariancesForMaxMix16 + k * varSetOffsetSize / GMM_COVARIANCE_SIZE_MAX;
                 consts = (uint32_t*)((uint8_t*)data->gaussianConstants + k * gConstSetOffsetSize);
-                fv = input;
+                fv = context.Input;
 
                 for(i = 0; i < fvCount; i++)
                 {
@@ -662,7 +673,7 @@ void AcceleratorSw::gmmSoftwareKernel(GmmLayer* gmm, const LayerConfiguration * 
                     fv += fvLength;
                 }
             }
-        }//else if (gmm->mode == MAXMIX16)
+        }//else if (gmm.mode == MAXMIX16)
     }// has active list
-    checkScoresSaturation(stateCount, fvCount, output, maxScore, nSaturated);
+    checkScoresSaturation(context.StateCount, fvCount, context.Output, maxScore, nSaturated);
 }

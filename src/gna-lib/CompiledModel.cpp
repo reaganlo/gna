@@ -32,6 +32,13 @@ using std::make_unique;
 using std::unique_ptr;
 using std::vector;
 
+CompiledModel::CompiledModel(gna_model_id modelId, const gna_model *rawModel) :
+    modelId{modelId},
+    userModel{rawModel},
+    submodels{},
+    layerCount{static_cast<uint16_t>(rawModel->nLayers)}
+{};
+
 void CompiledModel::CompileSoftwareModel()
 {
     softwareModel = make_unique<SoftwareModel>(userModel);

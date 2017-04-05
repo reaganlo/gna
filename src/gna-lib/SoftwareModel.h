@@ -29,37 +29,30 @@
 #include <vector>
 
 #include "Layer.h"
-#include "RequestConfiguration.h"
 
 namespace GNA
 {
+
+class RequestConfiguration;
 
 // Model image for software accelerators
 class SoftwareModel
 {
 public:
     SoftwareModel(const gna_model* network);
-
+    SoftwareModel(const SoftwareModel &) = delete;
+    SoftwareModel& operator=(const SoftwareModel&) = delete;
+    ~SoftwareModel() = default;
+    
     void ValidateConfiguration(const RequestConfiguration& configuration);
 
     std::vector<std::unique_ptr<Layer>> Layers;
 
-    const uint32_t layerCount;
-
-    const uint32_t inputVectorCount;
-
-    ~SoftwareModel() = default;
-
 protected:
-
     inline void build(const nn_layer* layers);
 
-    /**
-     * Deleted functions to prevent from being defined or called
-     * @see: https://msdn.microsoft.com/en-us/library/dn457344.aspx
-     */
-    SoftwareModel(const SoftwareModel &) = delete;
-    SoftwareModel& operator=(const SoftwareModel&) = delete;
+    const uint32_t layerCount;
+    const uint32_t inputVectorCount;
 
 private:
     uint32_t inputLayerCount = 0;

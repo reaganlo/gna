@@ -40,11 +40,18 @@ void ModelContainer::AllocateModel(gna_model_id *modelId, const gna_model *rawMo
 
 void ModelContainer::DeallocateModel(gna_model_id modelId)
 {
-    models[modelId].reset();
+    models.erase(modelId);
 }
 
 CompiledModel& ModelContainer::GetModel(gna_model_id modelId)
 {
-    auto& model = models[modelId];
-    return *model.get();
+    try
+    {
+        auto& model = models.at(modelId);
+        return *model.get();
+    }
+    catch (const std::out_of_range& e)
+    {
+        throw GnaException(GNA_INVALID_MODEL);
+    }
 }

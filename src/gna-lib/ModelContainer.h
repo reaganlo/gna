@@ -36,13 +36,19 @@ namespace GNA
 class ModelContainer
 {
 public:
-    ModelContainer::ModelContainer() {}
-
+    ModelContainer::ModelContainer() = default;
+    ~ModelContainer() = default;
+    ModelContainer(const ModelContainer &) = delete;
+    ModelContainer& operator=(const ModelContainer&) = delete;
+    
     /**
     * Assigns model id based on model sequence
     * !!! Not thread-safe !!!
     */
-    inline gna_model_id assignModelId();
+    inline gna_model_id ModelContainer::assignModelId()
+    {
+        return modelSequence++;
+    }
 
     void AllocateModel(gna_model_id *modelId, const gna_model * model);
     void DeallocateModel(gna_model_id modelId);
@@ -52,15 +58,6 @@ public:
 private:
     gna_model_id modelSequence = 0;
     std::map<gna_model_id, std::unique_ptr<CompiledModel>> models;
-
-    ModelContainer(const ModelContainer &) = delete;
-    ModelContainer& operator=(const ModelContainer&) = delete;
-
 };
-
-inline gna_model_id ModelContainer::assignModelId()
-{
-    return modelSequence++;
-}
 
 }

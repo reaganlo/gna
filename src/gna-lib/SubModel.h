@@ -40,20 +40,23 @@ enum SubmodelType
 class SubModel
 {
 public:
-    SubmodelType Type;
-    SubModel(SubmodelType type, uint16_t layerIx) : Type(type), layerIndex(layerIx), layerCount(1) {}
+    
+    SubModel(SubmodelType type, uint16_t layerIx);
+    SubModel(SubModel&& rhs) = default;
+    SubModel(const SubModel &) = delete;
+    SubModel& operator=(const SubModel&) = delete;
 
     uint32_t GetLayerIndex() const;
     uint32_t GetLayerCount() const;
     void AddLayer();
 
+    SubmodelType Type;
+
 private:
     const uint32_t layerIndex;
     uint32_t layerCount;
 
-    SubModel(SubModel&& rhs) = default;
-    SubModel(const SubModel &) = delete;
-    SubModel& operator=(const SubModel&) = delete;
+    
 };
 
 }
