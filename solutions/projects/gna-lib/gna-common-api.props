@@ -24,7 +24,7 @@
 -->
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
     <PropertyGroup Label="Configuration">
-        <PlatformToolset>Intel C++ Compiler 16.0</PlatformToolset>
+        <PlatformToolset>Intel C++ Compiler 17.0</PlatformToolset>
     </PropertyGroup>
     <PropertyGroup>
         <CharacterSet>Unicode</CharacterSet>
@@ -74,14 +74,14 @@
         </Link>
         <PostBuildEvent>
             <Command>
-				copy $(SRC_DIR)\common\gna-api.h $(OutDir)\gna-api.h
-                copy $(SRC_DIR)\common\gna-api-types-gmm.h $(OutDir)\gna-api-types-gmm.h
-                copy $(SRC_DIR)\common\gna-api-types-xnn.h $(OutDir)\gna-api-types-xnn.h
-				copy $(SRC_DIR)\common\gna-api-status.h $(OutDir)\gna-api-status.h
-				copy $(OutDir)*.h $(ROOT_DIR)\samples\GNA\include\*
-				copy $(OutDir)*.dll $(ROOT_DIR)\samples\GNA\$(Platform)\*
-				copy $(OutDir)*.lib $(ROOT_DIR)\samples\GNA\$(Platform)\*
-				copy $(OutDir)*.pdb $(ROOT_DIR)\samples\GNA\$(Platform)\*
+                copy $(SRC_DIR)\common\gna-api.h $(OutDir)gna-api.h
+                copy $(SRC_DIR)\common\gna-api-types-gmm.h $(OutDir)gna-api-types-gmm.h
+                copy $(SRC_DIR)\common\gna-api-types-xnn.h $(OutDir)gna-api-types-xnn.h
+                copy $(SRC_DIR)\common\gna-api-status.h $(OutDir)gna-api-status.h
+                copy $(OutDir)*.h $(ROOT_DIR)samples\GNA\include\*
+                copy $(OutDir)*.dll $(ROOT_DIR)samples\GNA\$(Platform)\*
+                copy $(OutDir)*.lib $(ROOT_DIR)samples\GNA\$(Platform)\*
+                copy $(OutDir)*.pdb $(ROOT_DIR)samples\GNA\$(Platform)\*
             </Command>
             <Message>
 				Copying API definiton headers to library output and sample inputs
