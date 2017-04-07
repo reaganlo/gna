@@ -64,7 +64,7 @@ LayerMatrix::LayerMatrix(const uint32_t rowCount, const uint32_t columnCount, vo
     ColumnCount(columnCount),
     RowCount(rowCount),
     ElementCount((FLAT == config.Orientation) ? ColumnCount : RowCount),
-    Buffer(static_cast<void const * const>(buffer))
+    Buffer(buffer)
 {
     Expect::InRange(config.Orientation, INTERLEAVED, FLAT, XNN_ERR_LYR_CFG);
     if (INTEL_HIDDEN == config.Type)

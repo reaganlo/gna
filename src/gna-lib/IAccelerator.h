@@ -40,7 +40,7 @@ class IAccelerator
 {
 public:
 
-    // TODO: refactor, it is no longer interface
+    // TODO:INTEGRATION refactor, it is no longer interface
     IAccelerator(acceleration acceleration_mode) : accel(acceleration_mode) {}
     /**
      * Scores the whole xNN model

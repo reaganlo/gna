@@ -32,10 +32,10 @@ using std::map;
 
 using namespace GNA;
 
-void ModelContainer::AllocateModel(gna_model_id *modelId, const gna_model *rawModel)
+void ModelContainer::AllocateModel(gna_model_id *modelId, const gna_model *rawModel, const Memory& memory)
 {
     *modelId = assignModelId();
-    models[*modelId] = make_unique<CompiledModel>(*modelId, rawModel);
+    models[*modelId] = make_unique<CompiledModel>(*modelId, rawModel, memory);
 }
 
 void ModelContainer::DeallocateModel(gna_model_id modelId)

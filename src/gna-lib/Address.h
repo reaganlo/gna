@@ -52,6 +52,9 @@ public:
     template<class C> Address(const Address<C*>& address) :
         buffer(address.Get())
     {}
+    template<class C> Address(const Address<C*const>& address) :
+        buffer(address.Get())
+    {}
     ~Address() = default;
 
     Address operator+(const uint32_t& right) const
@@ -65,6 +68,21 @@ public:
         Address left(*this);
         left.buffer = left.Get<T>() - right;
         return left;
+    }
+
+    bool operator ==(const std::nullptr_t &right) const
+    {
+        return right == buffer;
+    }
+
+    explicit operator bool() const
+    {
+        return (nullptr != buffer);
+    }
+
+    bool operator!() const
+    {
+        return (nullptr == buffer);
     }
 
     template<class X> operator X* const() const
@@ -85,6 +103,19 @@ public:
     T& operator*() const
     {
         return *(static_cast<T*>(buffer));
+    }
+
+    template<class X> uint32_t GetOffset(const Address<X*const>& base) const
+    {
+        if (!this) return 0;
+        return PtrToUint((uint8_t*)(this->Get<uint8_t>() - base.Get<uint8_t>()));
+    }
+
+    //TODO:INTEGRATION:remove when all buffers switched to Address
+    template<class X> static uint32_t GetOffset(const void * const address, const Address<X*const>& base)
+    {
+        if (nullptr == address) return 0;
+        return PtrToUint((uint8_t*)address - base.Get<uint8_t>());
     }
 
 protected:
@@ -139,19 +170,25 @@ public:
 // Address Aliases
 
 using BaseAddressC = Address<uint8_t * const>;
-using AddressU8C = Address<uint8_t * const>;
-using AddressU16C = Address<uint16_t * const>;
-using AddressU32C = Address<uint32_t * const>;
-using AddressU64C = Address<uint64_t * const>;
+//using AddressU8C = Address<uint8_t * const>;
+//using AddressU16C = Address<uint16_t * const>;
+//using AddressU32C = Address<uint32_t * const>;
+//using AddressU64C = Address<uint64_t * const>;
 
 using BaseAddress = Address<uint8_t *>;
-using AddressU8 = Address<uint8_t *>;
-using AddressU16 = Address<uint16_t *>;
-using AddressU32 = Address<uint32_t *>;
-using AddressU64 = Address<uint64_t *>;
+//using AddressU8 = Address<uint8_t *>;
+//using AddressU16 = Address<uint16_t *>;
+//using AddressU32 = Address<uint32_t *>;
+//using AddressU64 = Address<uint64_t *>;
 using AddrGmmCfg = Address<GMM_CONFIG *>;
 using AddrXnnLyr = Address<XNN_LYR *>;
 using AddrGmmCfgC = Address<GMM_CONFIG * const>;
-using AddrXnnLyrC = Address<XNN_LYR * const>;
+//using AddrXnnLyrC = Address<XNN_LYR * const>;
+
+using InOutBuffer = Address<uint8_t * const>;
+using GmmInputBuffer = Address<uint8_t * const>; // Input Buffer for GMM layer
+using XnnInputBuffer = Address<uint16_t * const>; // Input Buffer for Neural layer
+using OutputBuffer = Address<uint16_t * const>; // Activated Output Buffer
+using BareOutputBuffer = Address<uint32_t * const>;  // Non-Activated Output Buffer
 
 }

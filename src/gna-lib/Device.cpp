@@ -105,10 +105,10 @@ void Device::LoadModel(gna_model_id *modelId, const gna_model *raw_model)
 {
     try
     {
-        modelContainer.AllocateModel(modelId, raw_model);
+        modelContainer.AllocateModel(modelId, raw_model, *totalMemory);
 
         auto &model = modelContainer.GetModel(*modelId);
-        modelCompiler.CascadeCompile(model, *totalMemory, accelerationDetector);
+        modelCompiler.CascadeCompile(model, accelerationDetector);
     }
     catch (...)
     {
@@ -126,7 +126,7 @@ void Device::PropagateRequest(gna_request_cfg_id configId, acceleration accel, g
     {
         return acceleratorController.ScoreModel(configuration, accel, profilerPtr, buffers);
     };
-    // TODO: pass configuration reference to Request 
+    // TODO:INTEGRATION pass configuration reference to Request 
     auto request = std::make_unique<Request>(callback, move(profiler), configuration.PerfResults);
     requestHandler.Enqueue(requestId, std::move(request));
 }

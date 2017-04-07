@@ -92,9 +92,6 @@ public:
     Device& operator=(const Device&) = delete;
 
 private:
-    /*
-    * Unique device id
-    */
     gna_device_id id = GNA_DEVICE_INVALID;
 
     std::unique_ptr<Memory> totalMemory;

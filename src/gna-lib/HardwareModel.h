@@ -26,6 +26,7 @@
 #pragma once
 
 #include "AccelerationDetector.h"
+#include "Address.h"
 #include "common.h"
 #include "GnaException.h"
 #include "IoctlSender.h"
@@ -46,7 +47,10 @@ public:
 
     ~HardwareModel();
 
-    uint32_t GetOffsetToBase(void* address);
+    inline uint32_t GetOffset(const BaseAddressC& address) const
+    {
+        return address.GetOffset(memoryBaseAddress);
+    }
 
 private:
     void build(const std::vector<std::unique_ptr<Layer>>& layers, const uint32_t hardwareInternalBufferSize);

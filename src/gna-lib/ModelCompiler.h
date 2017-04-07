@@ -42,7 +42,7 @@ public:
     static const size_t CalculateInternalModelSize(const uint16_t layerCount,
         const uint16_t gmmCount);
 
-    void CascadeCompile(CompiledModel& model, const Memory& memory, const AccelerationDetector& detector);
+    void CascadeCompile(CompiledModel& model, const AccelerationDetector& detector);
 };
 
 }

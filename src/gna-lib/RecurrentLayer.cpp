@@ -53,14 +53,14 @@ RnnLayer::RnnLayer(nn_layer const * const layer, const uint32_t inputVectorCount
     }
 }
 
-const AddressU16C RnnLayer::CalculateFeedbackBuffer(const AddressU16C& outputBuffer) const
+const OutputBuffer RnnLayer::CalculateFeedbackBuffer(const OutputBuffer& outputBuffer) const
 {
     const auto buffer = outputBuffer - (FeedbackDelay * Output.ElementCount);
     Expect::ValidBuffer(buffer, XNN_ERR_NO_FEEDBACK);
     return buffer;
 }
 
-void RnnLayer::SetFeedbackBuffer(const AddressU16C& outputBuffer)
+void RnnLayer::SetFeedbackBuffer(const OutputBuffer& outputBuffer)
 {
     feedbackBuffer = CalculateFeedbackBuffer(outputBuffer);
     // TODO: remove when kernels use new layers

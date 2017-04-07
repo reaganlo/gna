@@ -50,7 +50,7 @@ public:
         return modelSequence++;
     }
 
-    void AllocateModel(gna_model_id *modelId, const gna_model * model);
+    void AllocateModel(gna_model_id *modelId, const gna_model * model, const Memory& memory);
     void DeallocateModel(gna_model_id modelId);
 
     CompiledModel& GetModel(gna_model_id modelId);

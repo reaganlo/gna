@@ -48,7 +48,7 @@ HardwareModel::HardwareModel(const gna_model_id modId, const SoftwareModel& mode
     layerDescriptorsSize(getLayerDescriptorsSize(XNN_LAYERS_MAX_COUNT)), // TODO: change to support variable number of layers
     gmmDescriptorsSize(getGmmDescriptorsSize(XNN_LAYERS_MAX_COUNT)) // TODO: change to support variable number of gmms
 {
-    mapMemory(wholeMemory);
+    mapMemory(wholeMemory);//TODO:INTEGRATION: move to higher level and map after models are compiled
     build(model.Layers, detector.GetHardwareBufferSize());
 }
 
@@ -82,13 +82,6 @@ void HardwareModel::unmapMemory()
     IoctlSend(GNA_IOCTL_MEM_UNMAP, &mId, sizeof(mId), nullptr, 0);
 
     memoryMapped = false;
-}
-
-uint32_t HardwareModel::GetOffsetToBase(void* address)
-{
-    // TODO:move to Address class
-    if (nullptr == address) return 0;
-    return PtrToUint((void*)((uint8_t*)address - memoryBaseAddress));
 }
 
 void HardwareModel::build(const std::vector<std::unique_ptr<Layer>>& layers, const uint32_t hardwareInternalBufferSize)

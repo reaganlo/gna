@@ -30,13 +30,14 @@
 #include <memory>
 #include <vector>
 
+#include "Address.h"
 #include "ActiveList.h"
 #include "common.h"
 #include "CompiledModel.h"
 
 namespace GNA
 {
-struct ConfigurationBuffer
+struct ConfigurationBuffer : public InOutBuffer
 {
     ConfigurationBuffer(gna_buffer_type type, void *address);
 
@@ -46,10 +47,7 @@ struct ConfigurationBuffer
     ConfigurationBuffer(const ConfigurationBuffer &) = delete;
     ConfigurationBuffer& operator=(const ConfigurationBuffer&) = delete;
 
-    void validate() const;
-
     gna_buffer_type type;
-    void *address;
 };
 
 struct LayerConfiguration

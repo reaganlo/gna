@@ -37,20 +37,20 @@ GmmScoreContext::GmmScoreContext(const GmmLayer& gmm, const LayerConfiguration *
 {
     if (nullptr != layerConfiguration && layerConfiguration->InputBuffer)
     {
-        Input = static_cast<uint8_t *>(layerConfiguration->InputBuffer->address);
+        Input = *layerConfiguration->InputBuffer;
     }
     else
     {
-        Input = static_cast<uint8_t *>(const_cast<void*>(gmm.Input.Buffer));
+        Input = gmm.Input.Buffer;
     }
 
     if (nullptr != layerConfiguration && layerConfiguration->OutputBuffer)
     {
-        Output = static_cast<uint32_t * const>(layerConfiguration->OutputBuffer->address);
+        Output = *layerConfiguration->OutputBuffer;
     }
     else
     {
-        Output = static_cast<uint32_t *>(const_cast<void*>(gmm.Output.Buffer));
+        Output = gmm.Output.Buffer;
 
     }
 
@@ -247,16 +247,16 @@ void AcceleratorSw::applyRequestBuffersToLayer(
 {
     if (layerConfiguration.InputBuffer)
     {
-        sourceLayer.pInputs = layerConfiguration.InputBuffer->address;
+        sourceLayer.pInputs = *layerConfiguration.InputBuffer;
     }
 
     if (layerConfiguration.OutputBuffer)
     {
-        sourceLayer.pOutputs = layerConfiguration.OutputBuffer->address;
+        sourceLayer.pOutputs = *layerConfiguration.OutputBuffer;
         if (INTEL_RECURRENT == layer.Config.Kind)
         {
             auto& rnn = layer.Get<RnnLayer>();
-            rnn.SetFeedbackBuffer(layerConfiguration.OutputBuffer->address);
+            rnn.SetFeedbackBuffer(*layerConfiguration.OutputBuffer);
             // TODO: move to XnnKernel when kernels are refactored
         }
     }
@@ -290,7 +290,7 @@ void AcceleratorSw::checkScoresSaturation(const uint32_t& nGMMs, const uint32_t&
 void AcceleratorSw::gmmSoftwareKernel(const GmmLayer& gmm, const LayerConfiguration * const layerConfiguration,
     uint32_t& nSaturated)
 {
-    const auto context = GmmScoreContext(gmm, layerConfiguration); // TODO: extend context with all gmmSoftwareKernel arguments to reduce argument passing
+    const auto context = GmmScoreContext(gmm, layerConfiguration); // TODO:INTEGRATION extend context with all gmmSoftwareKernel arguments to reduce argument passing
     const gna_gmm_data* data = &gmm.Data;
     const uint32_t fvCount = gmm.Input.VectorCount;
     const uint32_t fvLength = gmm.Input.ElementCount;

@@ -49,9 +49,9 @@ const map<const nn_layer_kind, const NN_OP_TYPE> HardwareLayer::OperationsMap =
 
 XNN_LYR HardwareLayer::layerDescriptor;
 
-// TODO: replace memoryBase with lyr address
+// TODO:INTEGRATION replace memoryBase with lyr address
 XNN_LYR HardwareLayer::Convert(const Layer& softwareLayer, const BaseAddressC& memoryBase,
-const AddrGmmCfg& gmmDescriptor, const uint32_t hardwareInternalBufferSize)
+const AddrGmmCfgC& gmmDescriptor, const uint32_t hardwareInternalBufferSize)
 {
     auto converter = unique_ptr<HardwareLayer>();
     switch (OperationsMap.at(softwareLayer.Config.Kind))
@@ -248,11 +248,11 @@ void HardwareLayerRnn::save()
     // will be 0 for hidden layers
     if (INTEL_INPUT == softwareLayer.Config.Type || INTEL_HIDDEN == softwareLayer.Config.Type)
     {
-        layerDescriptor.rnn_out_fb_buffer = CalculateFeedbackBuffer(AddressU16C(softwareLayer.Output.Buffer));
+        layerDescriptor.rnn_out_fb_buffer = CalculateFeedbackBuffer(softwareLayer.Output.Buffer);
     }
 }
 
-const uint32_t HardwareLayerRnn::CalculateFeedbackBuffer(const AddressU16C& outputBuffer) const
+const uint32_t HardwareLayerRnn::CalculateFeedbackBuffer(const OutputBuffer& outputBuffer) const
 {
     auto& rnn = static_cast<const RnnLayer&>(softwareLayer);
     return getOffset(rnn.CalculateFeedbackBuffer(outputBuffer));
@@ -346,7 +346,7 @@ const std::map<const gna_gmm_mode, const GMM_MODE_CTRL> HardwareLayerGmm::GmmMod
 };
 
 HardwareLayerGmm::HardwareLayerGmm(const Layer& swLayer, const BaseAddressC& memoryBase,
-    const AddrGmmCfg& gmmDescriptorIn) :
+    const AddrGmmCfgC& gmmDescriptorIn) :
     HardwareLayer(swLayer, memoryBase),
     gmmDescriptor(gmmDescriptorIn)
 {
@@ -391,17 +391,17 @@ void HardwareLayerGmm::save()
     gmmConfig->mvwidth     = GMM_MEAN_VALUE_SIZE;
 }
 
-void HardwareLayerGmm::updateInput(const ConfigurationBuffer &inputBuffer, const AddrGmmCfg& gmmDescriptor)
+void HardwareLayerGmm::updateInput(const ConfigurationBuffer &inputBuffer, const AddrGmmCfgC& gmmDescriptor)
 {
-    (*gmmDescriptor).fvaddr = getOffset(inputBuffer.address);
+    (*gmmDescriptor).fvaddr = getOffset(inputBuffer);
 }
 
-void HardwareLayerGmm::updateOutput(const ConfigurationBuffer &outputBuffer, const AddrGmmCfg& gmmDescriptor)
+void HardwareLayerGmm::updateOutput(const ConfigurationBuffer &outputBuffer, const AddrGmmCfgC& gmmDescriptor)
 {
-    (*gmmDescriptor).gmmscradd = getOffset(outputBuffer.address);
+    (*gmmDescriptor).gmmscradd = getOffset(outputBuffer);
 }
 
-void HardwareLayerGmm::updateActiveList(const GmmLayer *gmm, const ActiveList &activeList, const AddrGmmCfg& gmmDescriptor)
+void HardwareLayerGmm::updateActiveList(const GmmLayer *gmm, const ActiveList &activeList, const AddrGmmCfgC& gmmDescriptor)
 {
     auto scoreElementsCount = GMM_SCORE_SIZE * gmm->Input.VectorCount * gmm->Config.stateCount;
     auto activeListIndices = 0ui32;

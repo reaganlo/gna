@@ -27,9 +27,8 @@
 
 #include <map>
 #include <memory>
-#include <typeindex>
-#include <typeinfo>
 
+#include "Address.h"
 #include "common.h"
 #include "GnaConfig.h"
 
@@ -66,7 +65,7 @@ public:
     const uint32_t ColumnCount;
     const uint32_t RowCount;
     const uint32_t ElementCount;
-    void const * const Buffer;
+    const InOutBuffer Buffer;
 };
 
 struct LayerInput : public LayerMatrix
@@ -123,7 +122,7 @@ public:
 
     virtual ~Layer() = default;
 
-    const nn_layer sourceLayer;// TODO: move to private when integration completed
+    const nn_layer sourceLayer;// TODO:INTEGRATION move to private when integration completed
     const LayerConfig Config;
     const LayerInput Input;
     LayerOutput Output;

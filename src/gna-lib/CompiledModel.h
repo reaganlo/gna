@@ -38,7 +38,7 @@ namespace GNA
 class CompiledModel
 {
 public:
-    CompiledModel(gna_model_id modelId, const gna_model *rawModel);
+    CompiledModel(gna_model_id modelId, const gna_model *rawModel, const Memory& memory);
     ~CompiledModel() = default;
     CompiledModel(const CompiledModel &) = delete;
     CompiledModel& operator=(const CompiledModel&) = delete;
@@ -53,7 +53,7 @@ public:
 
     void CompileSoftwareModel();
 
-    void CompileHardwareModel(const Memory& memory, const AccelerationDetector& detector);
+    void CompileHardwareModel(const AccelerationDetector& detector);
 
     void CreateSubmodels(const AccelerationDetector& detector);
 
@@ -66,6 +66,7 @@ public:
 
 private:
     const gna_model_id modelId;
+    const Memory& memory;
     const uint16_t layerCount;
     uint16_t gmmCount = 0;
 

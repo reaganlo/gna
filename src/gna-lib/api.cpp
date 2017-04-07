@@ -42,7 +42,6 @@ using namespace GNA;
  *
  *****************************************************************************/
 
- // TODO: use unique pointer instead
 unique_ptr<Device> GnaDevice;
 
 const char *GNAStatusName[] =
@@ -291,7 +290,7 @@ void *GnaAlloc(gna_device_id deviceId, uint32_t requestedSize, uint32_t *granted
 {
     try
     {
-        //TODO: refactor - to much logic in wrapper
+        //TODO:INTEGRATION refactor - to much logic in wrapper
         GnaDevice->ValidateSession(deviceId);
         Expect::NotNull(grantedSize);
 
@@ -329,7 +328,6 @@ intel_gna_status_t GnaFree(gna_device_id deviceId)
     }
 }
 
-// TODO: instantiate unique pointer
 intel_gna_status_t GnaDeviceOpen(
     uint8_t             threadCount,
     gna_device_id*      deviceId)
@@ -354,7 +352,6 @@ intel_gna_status_t GnaDeviceOpen(
     }
 }
 
-// TODO: delete unique pointer
 intel_gna_status_t GnaDeviceClose(
     gna_device_id deviceId)
 {

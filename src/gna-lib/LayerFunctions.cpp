@@ -218,7 +218,7 @@ ActivationFunction::ActivationFunction(const nn_func_pwl *pwl, const bool mandat
 {
     if (mandatory)
     {
-        // TODO: add ACTIVATION MANDATORY error code
+        // TODO:INTEGRATION add ACTIVATION MANDATORY error code
         Expect::True(Enabled, XNN_ERR_LYR_CFG);
     }
 }

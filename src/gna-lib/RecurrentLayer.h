@@ -39,8 +39,8 @@ public:
     RnnLayer(nn_layer const * const layer, const uint32_t inputVectorCount);
     virtual ~RnnLayer() = default;
 
-    const AddressU16C CalculateFeedbackBuffer(const AddressU16C& outputBuffer) const;
-    void SetFeedbackBuffer(const AddressU16C& outputBuffer);// TODO: not multi-thread safe
+    const OutputBuffer CalculateFeedbackBuffer(const OutputBuffer& outputBuffer) const;
+    void SetFeedbackBuffer(const OutputBuffer& outputBuffer);// TODO: not multi-thread safe
 
     const std::unique_ptr<const AffineFunctionSingle> Affine;
     const std::unique_ptr<const ActivationFunction> Activation;
@@ -52,7 +52,7 @@ private:
         SetFeedbackBuffer(Output.Buffer);
     }
     const nn_layer_reccurent *sourceLayer;
-    AddressU16 feedbackBuffer;// TODO: not multi-thread safe
+    OutputBuffer feedbackBuffer;// TODO: not multi-thread safe
 };
 
 }

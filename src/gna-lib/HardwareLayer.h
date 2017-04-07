@@ -46,7 +46,7 @@ class HardwareLayer
 {
 public:
     static XNN_LYR Convert(const Layer& softwareLayer, const BaseAddressC& memoryBase, 
-        const AddrGmmCfg& gmmDescriptor, const uint32_t hardwareInternalBufferSize);
+        const AddrGmmCfgC& gmmDescriptor, const uint32_t hardwareInternalBufferSize);
 
     virtual ~HardwareLayer() = default;
 
@@ -63,11 +63,9 @@ protected:
 
     void save();
 
-    inline const uint32_t getOffset(const void* address) const
+    inline uint32_t getOffset(const BaseAddressC& address) const
     {
-        // TODO: move to Address class
-        if (nullptr == address) return 0;
-        return PtrToUint((void*)((uint8_t*)address - memoryBaseAddress));
+        return address.GetOffset(memoryBaseAddress);
     }
 
     static XNN_LYR layerDescriptor; // single layer descriptor
@@ -144,7 +142,7 @@ public:
     virtual ~HardwareLayerRnn() = default;
 
     // calculates feedback buffer offset for per RequestConfiguration output buffer
-    const uint32_t CalculateFeedbackBuffer(const AddressU16C& outputBuffer) const;
+    const uint32_t CalculateFeedbackBuffer(const OutputBuffer& outputBuffer) const;
 
 protected:
     void convert();
@@ -182,7 +180,7 @@ private:
 class HardwareLayerGmm : public HardwareLayer
 {
 public:
-    HardwareLayerGmm(const Layer& swLayer, const BaseAddressC& memoryBase, const AddrGmmCfg& gmmDescriptor);
+    HardwareLayerGmm(const Layer& swLayer, const BaseAddressC& memoryBase, const AddrGmmCfgC& gmmDescriptor);
     HardwareLayerGmm(const HardwareLayerGmm &) = delete;
     HardwareLayerGmm& operator=(const HardwareLayerGmm&) = delete;
     virtual ~HardwareLayerGmm() = default;
@@ -191,11 +189,11 @@ protected:
     static const std::map<const gna_gmm_mode, const GMM_MODE_CTRL> GmmModes;
 
     void save();
-    void updateInput(const ConfigurationBuffer &inputBuffer, const AddrGmmCfg& gmmDescriptor);
-    void updateOutput(const ConfigurationBuffer &outputBuffer, const AddrGmmCfg& gmmDescriptor);
-    void updateActiveList(const GmmLayer *gmm, const ActiveList &activeList, const AddrGmmCfg& gmmDescriptor);
+    void updateInput(const ConfigurationBuffer &inputBuffer, const AddrGmmCfgC& gmmDescriptor);
+    void updateOutput(const ConfigurationBuffer &outputBuffer, const AddrGmmCfgC& gmmDescriptor);
+    void updateActiveList(const GmmLayer *gmm, const ActiveList &activeList, const AddrGmmCfgC& gmmDescriptor);
     
-    const AddrGmmCfg gmmDescriptor;
+    const AddrGmmCfgC gmmDescriptor;
 };
 
 }

@@ -42,17 +42,17 @@ const size_t ModelCompiler::CalculateModelSize(const size_t requestedSize, const
 const size_t ModelCompiler::CalculateInternalModelSize(const uint16_t layerCount,
     const uint16_t gmmCount)
 {
-    // TODO:KJ: add detector reference to c-tor and calculate hardware size if applicable
+    // TODO:INTEGRATION: add detector reference to c-tor and calculate hardware size if applicable
     // for model dumper use fake detector in device
     return HardwareModel::CalculateDescriptorSize(layerCount, gmmCount);
 }
 
-void ModelCompiler::CascadeCompile(CompiledModel &model, const Memory& memory, const AccelerationDetector& detector)
+void ModelCompiler::CascadeCompile(CompiledModel &model, const AccelerationDetector& detector)
 {
     model.CompileSoftwareModel();
     if (detector.IsHardwarePresent())
     {
-        model.CompileHardwareModel(memory, detector);
+        model.CompileHardwareModel(detector);
     }
 
     model.CreateSubmodels(detector);

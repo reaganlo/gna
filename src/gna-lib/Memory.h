@@ -32,7 +32,7 @@
 namespace GNA
 {
 
-// TODO: add buffer class
+// TODO:INTEGRATION add buffer class
 class Memory : public BaseAddressC // TODO: consider using smart pointer
 {
 public:
@@ -52,7 +52,6 @@ public:
     {
         return size;
     }
-
 
 private:
     size_t size = 0;

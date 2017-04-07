@@ -32,8 +32,9 @@ using std::make_unique;
 using std::unique_ptr;
 using std::vector;
 
-CompiledModel::CompiledModel(gna_model_id modelId, const gna_model *rawModel) :
+CompiledModel::CompiledModel(gna_model_id modelId, const gna_model *rawModel, const Memory& memoryIn) :
     modelId{modelId},
+    memory{memoryIn},
     userModel{rawModel},
     submodels{},
     layerCount{static_cast<uint16_t>(rawModel->nLayers)}
@@ -44,7 +45,7 @@ void CompiledModel::CompileSoftwareModel()
     softwareModel = make_unique<SoftwareModel>(userModel);
 }
 
-void CompiledModel::CompileHardwareModel(const Memory& memory, const AccelerationDetector& detector)
+void CompiledModel::CompileHardwareModel(const AccelerationDetector& detector)
 {
     hardwareModel = make_unique<HardwareModel>(modelId, *softwareModel, memory, detector);
 }
