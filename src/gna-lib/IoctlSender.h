@@ -25,8 +25,11 @@
 
 #pragma once
 
-#include "common.h"
+#include <Windows.h>
+#include <SetupApi.h>
+
 #include "GnaDrvApi.h"
+#include "common.h"
 #include "Request.h"
 #include "Validator.h"
 
@@ -39,12 +42,12 @@ public:
     WinHandle() :
         deviceHandle(INVALID_HANDLE_VALUE)
     {};
-        
+
     explicit WinHandle(HANDLE const handle) :
         deviceHandle(handle)
     {};
 
-    ~WinHandle() 
+    ~WinHandle()
     {
         if (INVALID_HANDLE_VALUE != deviceHandle)
         {
@@ -72,12 +75,12 @@ private:
 
 class IoctlSender
 {
-protected:
+public:
     IoctlSender();
 
     static void Open(const GUID& guid);
 
-    void IoctlSend(const DWORD code, LPVOID const inbuf, const DWORD inlen, LPVOID const outbuf, const DWORD outlen);
+    void IoctlSend(const DWORD code, LPVOID const inbuf, const DWORD inlen, LPVOID const outbuf, const DWORD outlen, BOOLEAN async = FALSE);
 
     void IoctlSender::Submit(LPVOID const inbuf, const DWORD inlen, RequestProfiler * const profiler);
 
@@ -86,7 +89,7 @@ private:
     IoctlSender& operator=(const IoctlSender&) = delete;
 
     inline static void printLastError(DWORD error);
-    
+
     void wait(LPOVERLAPPED const ioctl, const DWORD timeout);
 
     static void checkStatus(BOOL ioResult);

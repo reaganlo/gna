@@ -23,40 +23,23 @@
  in any way.
 */
 
-#pragma once
+#include "FakeDetector.h"
 
-#include <memory>
-#include <vector>
+using namespace GNA;
 
-#include "Layer.h"
-
-namespace GNA
+const std::map<GnaDeviceType, uint32_t> FakeDetector::DeviceHardwareBuffers =
 {
-
-class RequestConfiguration;
-
-// Model image for software accelerators
-class SoftwareModel
-{
-public:
-    SoftwareModel(const gna_model *const network);
-    SoftwareModel(const SoftwareModel &) = delete;
-    SoftwareModel& operator=(const SoftwareModel&) = delete;
-    ~SoftwareModel() = default;
-    
-    void ValidateConfiguration(const RequestConfiguration& configuration);
-
-    std::vector<std::unique_ptr<Layer>> Layers;
-
-protected:
-    inline void build(const nn_layer* layers);
-
-    const uint32_t layerCount;
-    const uint32_t inputVectorCount;
-
-private:
-    uint32_t inputLayerCount = 0;
-    uint32_t outputLayerCount = 0;
+    { GNA_CANNONLAKE,   24 },
+    { GNA_GEMINILAKE,   24 },
+    { GNA_ICELAKE,      24 },
+    { GNA_TIGERLAKE,    24 },
+    { GNA_LAKEFIELD,    24 },
+    { GNA_SUE_CREEK,    12 },
+    { GNA_SUE_CREEK_2,  24 }
 };
 
+FakeDetector::FakeDetector(GnaDeviceType deviceType)
+{
+    accelerationModes[GNA_HW] = ACC_SUPPORTED;
+    deviceCapabilities = { DeviceHardwareBuffers.at(deviceType), deviceType };
 }

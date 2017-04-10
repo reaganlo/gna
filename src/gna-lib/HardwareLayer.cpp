@@ -113,7 +113,6 @@ void HardwareLayer::save()
     layerDescriptor.out_act_fn_buffer = getOffset(softwareLayer.Output.Buffer);
     layerDescriptor.out_sum_buffer = getOffset(softwareLayer.Output.ScratchPad);
 }
-
 const map<const uint32_t, const array<const uint32_t, XNN_N_GROUP_MAX>> HardwareLayerExt::bufferElementsMap
 {
     { 12,{ 12288, 12288, 12096, 12288, 12000, 12096, 12096, 12288 } },
@@ -164,7 +163,7 @@ void HardwareLayerExt::save()
 
 HardwareLayerAffDiagTrans::HardwareLayerAffDiagTrans(const Layer& swLayer,
     const BaseAddressC& memoryBase, uint32_t hwInBuffSize) :
-    HardwareLayerExt(swLayer, memoryBase, hwInBuffSize, softwareLayer.Input.VectorCount)
+    HardwareLayerExt(swLayer, memoryBase, hwInBuffSize, swLayer.Input.VectorCount)
 {
     switch (softwareLayer.Config.Kind)
     {
@@ -228,12 +227,12 @@ void HardwareLayerRnn::convert()
     }
     else if (0 == feedbackFirstIterElementCount)
     {
-        feedbackLastIterElementCount = 
+        feedbackLastIterElementCount =
             elementCount - feedbackFirstIterElementCount - (feedbackIterationsCount - 1) * bufferElementCount;
     }
     else
     {
-        feedbackLastIterElementCount = 
+        feedbackLastIterElementCount =
             elementCount - feedbackFirstIterElementCount - (feedbackIterationsCount - 2) * bufferElementCount;
     }
     Expect::InRange(feedbackLastIterElementCount, 1, bufferElementCount, XNN_ERR_LYR_CFG);

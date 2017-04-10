@@ -42,6 +42,8 @@ public:
     static const size_t CalculateInternalModelSize(const uint16_t layerCount,
         const uint16_t gmmCount);
 
+    static const size_t MaximumInternalModelSize;
+
     void CascadeCompile(CompiledModel& model, const AccelerationDetector& detector);
 };
 

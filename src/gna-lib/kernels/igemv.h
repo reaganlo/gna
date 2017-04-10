@@ -39,6 +39,13 @@ const uint32_t hw_buf_size[8] =
 //{
 //    6144, 6144, 6048, 6144, 5760, 6048, 6048, 6144
 //};
+
+// buffer 6K
+//const uint32_t hw_buf_size[8] =
+//{
+//    3072, 3072, 2880, 3072, 2880, 2880, 3024, 3072
+//};
+
 inline void
 saturate(
     int64_t*            sum,

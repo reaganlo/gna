@@ -53,7 +53,7 @@ UINT32 AcceleratorHwVerbose::ReadReg(UINT32 regOffset)
     hw_read_out_t readRegOut;
     ZeroMemory(&readRegOut, sizeof(readRegOut));
 
-    IoctlSend(GNA_IOCTL_READ_REG,
+    sender.IoctlSend(GNA_IOCTL_READ_REG,
         &readRegIn, sizeof(readRegIn),
         &readRegOut, sizeof(readRegOut));
 
@@ -68,7 +68,7 @@ void AcceleratorHwVerbose::WriteReg(UINT32 regOffset, UINT32 regVal)
     writeRegIn.regOffset = regOffset;
     writeRegIn.regValue = regVal;
 
-    IoctlSend(GNA_IOCTL_WRITE_REG,
+    sender.IoctlSend(GNA_IOCTL_WRITE_REG,
         &writeRegIn, sizeof(writeRegIn),
         nullptr, 0);
 }
@@ -178,7 +178,7 @@ void AcceleratorHwVerbose::dumpPageData()
 }
 
 #endif //DUMP_ENABLED
-// TODO: generalize and cleanup modification functions 
+// TODO: generalize and cleanup modification functions
 bool AcceleratorHwVerbose::SetRegister(string path)
 {
 	ifstream infile;            // set register file
@@ -223,7 +223,7 @@ bool AcceleratorHwVerbose::SetRegister(string path)
 	return true;
 }
 
-// TODO: generalize and cleanup modification functions 
+// TODO: generalize and cleanup modification functions
 bool AcceleratorHwVerbose::SetDescriptor(string path, XNN_LYR* buff, hw_calc_in_t* inData)
 {
 	ifstream infile;            // set register file
@@ -323,7 +323,7 @@ void AcceleratorHwVerbose::HwVerifier(SoftwareModel *model, status_t scoring_sta
 
     HwVerifierMemDump("dump-after.bin");
 
-#ifdef DUMP_ENABLED		
+#ifdef DUMP_ENABLED
     LOGF("GMM state after scoring\n");
     LOG("===================================================================\n");
     dumpPageDir();
@@ -442,7 +442,7 @@ void AcceleratorHwVerbose::dumpCfg(uint32_t* config)
 		LOG("%04x %08x\n", i * 4, config[i]);
 	}
 }
-// TODO: generalize and cleanup modification functions 
+// TODO: generalize and cleanup modification functions
 bool AcceleratorHwVerbose::SetConfig(string path, hw_calc_in_t* inData)
 {
 	ifstream infile;            // set register file

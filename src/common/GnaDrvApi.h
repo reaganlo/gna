@@ -132,14 +132,19 @@ typedef struct _GNA_MM_OUT
 static_assert(266776 == sizeof(GNA_MM_OUT), "Invalid size of GNA_MM_OUT");
 
 /**
-*  Enumeration of device flavors
-*/
+ *  Enumeration of device flavors
+ *  Hides gna_device_kind
+ */
 typedef enum _GnaDeviceType {
-    GNA_DEV_CNL,
-    GNA_DEV_GLK, // also ICL
-    GNA_DEV_LKF,
-    GNA_DEV_TGL,
-    GNA_DEV_UNKNOWN,
+    GNA_SUE_CREEK,
+    GNA_SUE_CREEK_2,
+    GNA_CANNONLAKE,
+    GNA_GEMINILAKE,
+    GNA_ICELAKE,
+    GNA_LAKEFIELD,
+    GNA_TIGERLAKE,
+
+    GNA_NUM_DEVICE_TYPES,
 } GnaDeviceType;
 
 /**
@@ -177,7 +182,7 @@ typedef union _CTRL_FLAGS
 static_assert(8 == sizeof(CTRL_FLAGS), "Invalid size of CTRL_FLAGS");
 
 /**
- * Structure used to send to driver which buffer addresses to overwrite according to 
+ * Structure used to send to driver which buffer addresses to overwrite according to
  * score request configuration
  */
 typedef struct _GNA_BUFFER_DESCR

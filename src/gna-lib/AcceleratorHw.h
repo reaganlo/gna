@@ -35,7 +35,7 @@
 namespace GNA
 {
 
-class AcceleratorHw : public IAccelerator, protected IoctlSender
+class AcceleratorHw : public IAccelerator
 {
 public:
     using IAccelerator::IAccelerator;
@@ -58,6 +58,7 @@ public:
               KernelBuffers *buffers) override;
 
 protected:
+    IoctlSender sender;
     bool driverDebug = false;
     /**
      * Internal hw input buffer size in KB

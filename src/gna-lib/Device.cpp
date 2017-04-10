@@ -23,11 +23,16 @@
  in any way.
 */
 
+#include "Device.h"
+
+#include <iostream>
+#include <fstream>
 #include <memory>
 
-#include "Device.h"
+#include "FakeDetector.h"
 #include "Validator.h"
 
+using std::ofstream;
 using std::make_shared;
 using std::make_unique;
 using std::move;
@@ -84,7 +89,7 @@ const size_t Device::AllocateMemory(const size_t requestedSize, void **buffer)
     auto size = ModelCompiler::CalculateModelSize(requestedSize, XNN_LAYERS_MAX_COUNT, GMM_LAYERS_MAX_COUNT);
     totalMemory = make_unique<Memory>(size);
 
-    size_t internalSize = ModelCompiler::CalculateInternalModelSize(XNN_LAYERS_MAX_COUNT, GMM_LAYERS_MAX_COUNT);
+    auto internalSize = ModelCompiler::MaximumInternalModelSize;
     *buffer = totalMemory->Get() + internalSize;
 
     return requestedSize;
@@ -99,6 +104,10 @@ void Device::FreeMemory()
 void Device::ReleaseModel(gna_model_id modelId)
 {
     modelContainer.DeallocateModel(modelId);
+    if (accelerationDetector.IsHardwarePresent())
+    {
+        totalMemory->Unmap();
+    }
 }
 
 void Device::LoadModel(gna_model_id *modelId, const gna_model *raw_model)
@@ -106,9 +115,12 @@ void Device::LoadModel(gna_model_id *modelId, const gna_model *raw_model)
     try
     {
         modelContainer.AllocateModel(modelId, raw_model, *totalMemory);
-
         auto &model = modelContainer.GetModel(*modelId);
         modelCompiler.CascadeCompile(model, accelerationDetector);
+        if (accelerationDetector.IsHardwarePresent())
+        {
+            totalMemory->Map(model.GetModelId());
+        }
     }
     catch (...)
     {

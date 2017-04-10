@@ -34,15 +34,15 @@ using std::vector;
 
 CompiledModel::CompiledModel(gna_model_id modelId, const gna_model *rawModel, const Memory& memoryIn) :
     modelId{modelId},
+    UserModel{rawModel},
     memory{memoryIn},
-    userModel{rawModel},
     submodels{},
     layerCount{static_cast<uint16_t>(rawModel->nLayers)}
 {};
 
 void CompiledModel::CompileSoftwareModel()
 {
-    softwareModel = make_unique<SoftwareModel>(userModel);
+    softwareModel = make_unique<SoftwareModel>(UserModel);
 }
 
 void CompiledModel::CompileHardwareModel(const AccelerationDetector& detector)
@@ -52,14 +52,14 @@ void CompiledModel::CompileHardwareModel(const AccelerationDetector& detector)
 
 void CompiledModel::CreateSubmodels(const AccelerationDetector& dispatcher)
 {
-    auto layerType = userModel->pLayers->nLayerKind;
+    auto layerType = UserModel->pLayers->nLayerKind;
     auto submodelCount = 0;
     auto smType = dispatcher.IsLayerSupported(layerType) ? Hardware : Software;
     submodels.emplace_back(make_unique<SubModel>(smType, 0));
 
     for(uint16_t layerIx = 1; layerIx < layerCount; ++layerIx)
     {
-        layerType = userModel->pLayers[layerIx].nLayerKind;
+        layerType = UserModel->pLayers[layerIx].nLayerKind;
         smType = dispatcher.IsLayerSupported(layerType) ? Hardware : Software;
 
         if(smType == submodels[submodelCount]->Type)
@@ -79,9 +79,14 @@ void CompiledModel::ClearSubmodels()
     submodels.clear();
 }
 
-uint16_t CompiledModel::GetLayerCount() const
+uint32_t CompiledModel::GetLayerCount() const
 {
     return layerCount;
+}
+
+uint32_t CompiledModel::GetGmmCount() const
+{
+    return gmmCount;
 }
 
 SoftwareModel& CompiledModel::GetSoftwareModel() const

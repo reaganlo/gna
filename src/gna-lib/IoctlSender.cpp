@@ -25,13 +25,11 @@
 
 #include "IoctlSender.h"
 
-#include <SetupApi.h>
-
 #include "GnaException.h"
 
-using std::unique_ptr;
-
 using namespace GNA;
+
+using std::unique_ptr;
 
 #define MAX_D0_STATE_PROBES 10
 #define WAIT_PERIOD			200		// in miliseconds
@@ -86,8 +84,8 @@ void IoctlSender::Open(const GUID& guid)
     Expect::False(INVALID_HANDLE_VALUE == deviceHandle, GNA_DEVNOTFOUND);
 }
 
-void IoctlSender::IoctlSend(const DWORD code, LPVOID const inbuf, const DWORD inlen, LPVOID const outbuf, 
-    const DWORD outlen)
+void IoctlSender::IoctlSend(const DWORD code, LPVOID const inbuf, const DWORD inlen, LPVOID const outbuf,
+    const DWORD outlen, BOOLEAN async)
 {
     overlapped.hEvent = deviceEvent;
     auto bytesRead = DWORD{0};
@@ -95,7 +93,10 @@ void IoctlSender::IoctlSend(const DWORD code, LPVOID const inbuf, const DWORD in
     auto ioResult = DeviceIoControl(deviceHandle, code, inbuf, inlen, outbuf, outlen, &bytesRead, &overlapped);
     checkStatus(ioResult);
 
-    wait(&overlapped, (DRV_RECOVERY_TIMEOUT + 15) * 1000);
+    if (!async)
+    {
+        wait(&overlapped, (DRV_RECOVERY_TIMEOUT + 15) * 1000);
+    }
 }
 
 void IoctlSender::Submit(LPVOID const inbuf, const DWORD inlen, RequestProfiler * const profiler)

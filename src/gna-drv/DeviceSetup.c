@@ -134,9 +134,9 @@ DeviceInit(
     PDEV_CTX    devCtx;
     WDFDEVICE   dev;
     NTSTATUS    status;
-    
+
     PAGED_CODE();
- 
+
     TraceEntry(TLI, T_ENT);
 
     WdfDeviceInitSetIoType(devInit, WdfDeviceIoDirect);
@@ -157,7 +157,7 @@ DeviceInit(
     WdfDeviceInitSetFileObjectConfig(devInit,
         &fileConfig,
         &fileAttributes);
-    
+
     WDF_OBJECT_ATTRIBUTES_INIT_CONTEXT_TYPE(&deviceAttributes, DEV_CTX);
     deviceAttributes.EvtCleanupCallback = DeviceCleanupCallback;
 
@@ -169,7 +169,7 @@ DeviceInit(
     }
 
     devCtx = DeviceGetContext(dev);
-    
+
     // initialize states
     RtlZeroMemory(&devCtx->app, sizeof(APP_STATE));
     RtlZeroMemory(&devCtx->req, sizeof(REQ_STATE));
@@ -236,7 +236,7 @@ cleanup:
  * Private Methods
  ******************************************************************************/
 
-GNA_CPBLTS 
+GNA_CPBLTS
 GetDeviceCapabilities(
     _In_ WDFDEVICE dev,
     _In_ PDEV_CTX  devCtx)
@@ -256,17 +256,17 @@ GetDeviceCapabilities(
     WDF_OBJECT_ATTRIBUTES_INIT(&attributes);
     attributes.ParentObject = dev;
     NTSTATUS status = WdfDeviceAllocAndQueryProperty(dev, DevicePropertyHardwareID, NonPagedPoolNx, &attributes, &memory);
-    if (!NT_SUCCESS(status)) 
+    if (!NT_SUCCESS(status))
     {
         TraceFailMsg(TLE, T_EXIT, "WdfDeviceAllocAndQueryProperty", status);
     }
-    else 
+    else
     {
         hwid_buf = WdfMemoryGetBuffer(memory, &hwid_memory);
         if (hwid_buf == NULL) {
             TraceFailMsg(TLE, T_EXIT, "WdfMemoryGetBuffer returned NULL", status);
         }
-        else 
+        else
         {
             UNICODE_STRING hwid, hwid2;
             RtlInitUnicodeString(&hwid, hwid_buf);
@@ -285,18 +285,18 @@ GetDeviceCapabilities(
                 if (cmp_res > -23)
                 {
                     Trace(TLI, T_MEM, "Unknown device found");
-                    cpblts.device_type = GNA_DEV_UNKNOWN;
-                } 
+                    cpblts.device_type = GNA_NUM_DEVICE_TYPES;
+                }
                 else
                 {
                     Trace(TLI, T_MEM, "CNL found");
-                    cpblts.device_type = GNA_DEV_CNL;
+                    cpblts.device_type = GNA_CANNONLAKE;
                 }
-            } 
+            }
             else
             {
                 Trace(TLI, T_MEM, "GLK found");
-                cpblts.device_type = GNA_DEV_GLK;
+                cpblts.device_type = GNA_GEMINILAKE;
             }
         }
     }
@@ -323,12 +323,12 @@ DevicePrepareHardwareEvnt(
     EventWriteGenericFunctionEntry(NULL, __FUNCTION__);
 
     devCtx = DeviceGetContext(dev);
-    
+
     //Get BusInterface to PCI-CFG space
     status = WdfFdoQueryForInterface( dev, &GUID_BUS_INTERFACE_STANDARD,
          (PINTERFACE)&devCtx->hw.busInterface, sizeof(BUS_INTERFACE_STANDARD), 1, NULL );
 
-     if(!NT_SUCCESS(status)) 
+     if(!NT_SUCCESS(status))
     {
         TraceFailMsg(TLE, T_EXIT, "WdfFdoQueryForInterface: Getting BusInterface", status);
         EventWriteDevicePrepareHWfail(NULL, "WdfFdoQueryForInterface: Getting BusInterface", status);
@@ -404,7 +404,7 @@ DeviceReleaseHardwareEvnt(
     // release HW config
     if (devCtx->hw.regs)
     {
-        MmUnmapIoSpace(devCtx->hw.regs, devCtx->hw.regsLength);    
+        MmUnmapIoSpace(devCtx->hw.regs, devCtx->hw.regsLength);
     }
     RtlZeroMemory(&devCtx->hw, sizeof(DEV_HW));
 
@@ -467,7 +467,7 @@ SpinlockInit(
 {
     NTSTATUS              status;
     WDF_OBJECT_ATTRIBUTES attributes;
-    
+
     PAGED_CODE();
 
     TraceEntry(TLI, T_ENT);
@@ -527,7 +527,7 @@ QueueInit(
     PAGED_CODE();
 
     TraceEntry(TLI, T_ENT);
-    
+
     //
     // Configure a default queue so that requests that are not
     // configure-forwarded using WdfDeviceConfigureRequestDispatching to goto
@@ -558,7 +558,7 @@ QueueInit(
     queueConfig.EvtIoWrite = ScoreSubmitEvnt;
     // TODO: add EvtIoStop callback to cancel current requests on d3
     //queueConfig.EvtIoStop
-    
+
     WDF_OBJECT_ATTRIBUTES_INIT(&attributes);
     attributes.ParentObject = dev;
     attributes.SynchronizationScope = WdfSynchronizationScopeQueue;
@@ -576,8 +576,8 @@ QueueInit(
     }
 
     status = WdfDeviceConfigureRequestDispatching(
-                dev, 
-                devCtx->queue, 
+                dev,
+                devCtx->queue,
                 WdfRequestTypeWrite);
     if (!NT_SUCCESS(status))
     {

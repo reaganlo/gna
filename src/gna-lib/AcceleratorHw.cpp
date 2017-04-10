@@ -46,7 +46,7 @@ status_t AcceleratorHw::Score(
     auto size = size_t{0};
     prepareDataToSend(requestConfiguration, data, size);
 
-    Submit(data.get(), size, profiler);
+    sender.Submit(data.get(), size, profiler);
 
     auto response = reinterpret_cast<PGNA_CALC_IN>(data.get());
     auto status = response->status;

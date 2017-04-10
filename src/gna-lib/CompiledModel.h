@@ -43,7 +43,11 @@ public:
     CompiledModel(const CompiledModel &) = delete;
     CompiledModel& operator=(const CompiledModel&) = delete;
 
-    uint16_t GetLayerCount() const;
+    const gna_model *const UserModel;
+
+    uint32_t GetLayerCount() const;
+
+    uint32_t GetGmmCount() const;
 
     HardwareModel& GetHardwareModel() const;
 
@@ -71,7 +75,6 @@ private:
     uint16_t gmmCount = 0;
 
     uint32_t bufferSize = 0;
-    const gna_model *userModel;
 
     std::unique_ptr<HardwareModel> hardwareModel;
     std::unique_ptr<SoftwareModel> softwareModel;

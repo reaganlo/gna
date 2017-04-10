@@ -49,18 +49,8 @@ public:
 
     void FreeMemory();
 
-    /**
-     ** Allocated and compiles raw model
-     **
-     ** @intelNnet      (in)
-     */
     void LoadModel(gna_model_id *modelId, const gna_model *model);
 
-    /**
-     ** Deallocates model
-     **
-     ** @modelId      (in)
-     */
     void ReleaseModel(gna_model_id modelId);
 
     void AttachBuffer(gna_request_cfg_id configId, gna_buffer_type type, uint16_t layerIndex, void *address);
@@ -71,21 +61,11 @@ public:
 
     void EnableProfiling(gna_request_cfg_id configId, gna_hw_perf_encoding hwPerfEncoding, gna_perf_t * perfResults);
 
-    /**
-     ** Propagates request for execution
-     *
-     * @modelId         (in)
-     * @requestId       (in)
-     */
     void PropagateRequest(gna_request_cfg_id configId, acceleration accel, gna_request_id *requestId);
 
-    /**
-     ** Propagates request for execution
-     *
-     * @requestId       (in)
-     */
     status_t WaitForRequest(gna_request_id requestId, gna_timeout milliseconds);
 
+    void DumpModel(gna_model_id modelId, gna_device_kind deviceKind, const char * filepath);
 
     Device() = delete;
     Device(const Device &) = delete;

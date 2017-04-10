@@ -76,17 +76,19 @@ public:
 
     const uint32_t GetHardwareBufferSize() const;
 
-private:
+protected:
     static const std::map<GnaDeviceType, std::array<bool, GnaFeatureCount>> gnaFeatureMap;
 
-    void discoverHardwareExistence();
-    void discoverHardwareCapabilities();
-
-    // Configuration map of available acceleration modes
     std::map<acceleration, uint8_t> accelerationModes;
 
-    acceleration fastestAcceleration;
     GNA_CPBLTS deviceCapabilities;
+
+    acceleration fastestAcceleration;
+
+private:
+    void discoverHardwareExistence();
+
+    void discoverHardwareCapabilities();
 };
 
 }

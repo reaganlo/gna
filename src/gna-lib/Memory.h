@@ -26,6 +26,7 @@
 #pragma once
 
 #include "common.h"
+#include "IoctlSender.h"
 
 #include "Address.h"
 
@@ -53,8 +54,18 @@ public:
         return size;
     }
 
+    void Map(gna_model_id model_id);
+
+    void Unmap();
+
 private:
     size_t size = 0;
+
+    IoctlSender sender;
+
+    bool mapped = false;
+
+    gna_model_id modelId;
 };
 
 }

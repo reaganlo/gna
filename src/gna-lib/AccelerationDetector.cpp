@@ -59,13 +59,15 @@ using namespace GNA;
 
 const map<GnaDeviceType, array<bool, GnaFeatureCount>>
 AccelerationDetector::gnaFeatureMap = {
-                        // Basic, CNN,   GMM,  GMMLayer, MultiBias, L1Dist, L2Dist, ComputerVision
-        { GNA_DEV_CNL,     {true, false, true, false,    false,     false,  false,  false} },
-        { GNA_DEV_GLK,     {true, true,  true, false,    false,     false,  false,  false} },
-        { GNA_DEV_LKF,     {true, true,  true, true,     true,      false,  false,  false} },
-        { GNA_DEV_TGL,     {true, true,  true, true,     true,      false,  false,  false} },
-        { GNA_DEV_UNKNOWN, {true, true,  true, true,     true,      false,  false,  false} },
-    };
+                    // Basic, CNN,   GMM,  GMMLayer, MultiBias, L1Dist, L2Dist, ComputerVision
+    { GNA_CANNONLAKE,    {true, false, true, false,    false,     false,  false,  false} },
+    { GNA_GEMINILAKE,    {true, true,  true, false,    false,     false,  false,  false} },
+    { GNA_ICELAKE,       {true, true,  true, false,    false,     false,  false,  false} },
+    { GNA_TIGERLAKE,     {true, true,  true, true,     true,      false,  false,  false} },
+    { GNA_LAKEFIELD,     {true, true,  true, true,     true,      false,  false,  false} },
+    { GNA_SUE_CREEK,     {true, true,  true, false,    false,     false,  false,  false} },
+    { GNA_SUE_CREEK_2,   {true, true,  true, true,     true,      false,  false,  false} }
+};
 
 
 void AccelerationDetector::discoverHardwareExistence()

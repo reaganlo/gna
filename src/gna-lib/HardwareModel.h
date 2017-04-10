@@ -37,7 +37,7 @@ namespace GNA
 {
 
 
-class HardwareModel : protected IoctlSender
+class HardwareModel
 {
 public:
     static const size_t CalculateDescriptorSize(const uint16_t layerCount, const uint16_t gmmLayersCount);
@@ -45,7 +45,7 @@ public:
     HardwareModel(const gna_model_id modId, const SoftwareModel& model, const Memory& wholeMemory,
         const AccelerationDetector& detector);
 
-    ~HardwareModel();
+    ~HardwareModel() = default;
 
     inline uint32_t GetOffset(const BaseAddressC& address) const
     {
@@ -68,9 +68,6 @@ private:
         auto gmmDescriptorsSize = size_t{ gmmLayersCount * sizeof(GMM_CONFIG) };
         return gmmDescriptorsSize;
     }
-
-    void mapMemory(const Memory& memory);
-    void unmapMemory();
 
     // needed for driver communication
     gna_model_id modelId;

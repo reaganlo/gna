@@ -32,7 +32,7 @@ using std::make_unique;
 
 using namespace GNA;
 
-SoftwareModel::SoftwareModel(const gna_model* network)
+SoftwareModel::SoftwareModel(const gna_model *const network)
     : layerCount(network->nLayers),
       inputVectorCount(network->nGroup)
 {

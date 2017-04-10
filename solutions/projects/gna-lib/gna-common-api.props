@@ -78,6 +78,7 @@
                 copy $(SRC_DIR)\common\gna-api-types-gmm.h $(OutDir)gna-api-types-gmm.h
                 copy $(SRC_DIR)\common\gna-api-types-xnn.h $(OutDir)gna-api-types-xnn.h
                 copy $(SRC_DIR)\common\gna-api-status.h $(OutDir)gna-api-status.h
+                copy $(SRC_DIR)\common\gna-api-extra.h $(OutDir)gna-api-extra.h
                 copy $(OutDir)*.h $(ROOT_DIR)samples\GNA\include\*
                 copy $(OutDir)*.dll $(ROOT_DIR)samples\GNA\$(Platform)\*
                 copy $(OutDir)*.lib $(ROOT_DIR)samples\GNA\$(Platform)\*

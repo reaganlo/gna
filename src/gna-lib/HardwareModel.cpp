@@ -48,41 +48,9 @@ HardwareModel::HardwareModel(const gna_model_id modId, const SoftwareModel& mode
     layerDescriptorsSize(getLayerDescriptorsSize(XNN_LAYERS_MAX_COUNT)), // TODO: change to support variable number of layers
     gmmDescriptorsSize(getGmmDescriptorsSize(XNN_LAYERS_MAX_COUNT)) // TODO: change to support variable number of gmms
 {
-    mapMemory(wholeMemory);//TODO:INTEGRATION: move to higher level and map after models are compiled
     build(model.Layers, detector.GetHardwareBufferSize());
 }
 
-HardwareModel::~HardwareModel()
-{
-    unmapMemory();
-}
-
-void HardwareModel::mapMemory(const Memory& memory)
-{
-    if (memoryMapped)
-        throw GnaException(GNA_UNKNOWN_ERROR);
-
-    // write model id in user buffer
-    // driver will retrieve it
-    *reinterpret_cast<uint64_t*>(memory.Get()) = static_cast<uint64_t>(modelId);
-
-    IoctlSend(
-        GNA_IOCTL_MEM_MAP,
-        nullptr,
-        0,
-        memory.Get(),
-        memory.GetSize());
-
-    memoryMapped = true;
-}
-
-void HardwareModel::unmapMemory()
-{
-    uint64_t mId = static_cast<uint64_t>(modelId);
-    IoctlSend(GNA_IOCTL_MEM_UNMAP, &mId, sizeof(mId), nullptr, 0);
-
-    memoryMapped = false;
-}
 
 void HardwareModel::build(const std::vector<std::unique_ptr<Layer>>& layers, const uint32_t hardwareInternalBufferSize)
 {
@@ -95,8 +63,7 @@ void HardwareModel::build(const std::vector<std::unique_ptr<Layer>>& layers, con
 
     for (auto& layer : layers)
     {
-        *layerDescriptor = HardwareLayer::Convert(*layer, memoryBaseAddress, gmmDescriptor, hardwareInternalBufferSize);
-        layerDescriptor++;
+        *layerDescriptor++ = HardwareLayer::Convert(*layer, memoryBaseAddress, gmmDescriptor, hardwareInternalBufferSize);
         if (INTEL_GMM == layer->Config.Kind)
         {
             gmmDescriptor++;

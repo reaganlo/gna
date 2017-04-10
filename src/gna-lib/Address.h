@@ -140,10 +140,11 @@ public:
         Address<T*const>(address.Get())
     {}
 
-    const Address& operator++(int)
+    const Address operator++(int)
     {
-        this->buffer = this->Get<T>() + sizeof(T);
-        return *this;
+        Address tmp{ *this };
+        this->buffer = this->Get<T>() + 1;
+        return tmp;
     }
     const Address& operator-=(const uint32_t& right)
     {

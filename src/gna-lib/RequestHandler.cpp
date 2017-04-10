@@ -23,9 +23,10 @@
  in any way.
 */
 
+#include "RequestHandler.h"
+
 #include "Device.h"
 #include "GnaException.h"
-#include "RequestHandler.h"
 
 using std::mutex;
 using std::pair;

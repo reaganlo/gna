@@ -29,6 +29,7 @@
 #include <stdlib.h>
 
 #include "gna-api-dev.h"
+#include "gna-api-extra.h"
 
 /**
  * Data alignment for intrinsics

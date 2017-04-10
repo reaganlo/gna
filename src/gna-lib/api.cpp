@@ -371,6 +371,26 @@ intel_gna_status_t GnaDeviceClose(
     }
 }
 
+intel_gna_status_t GnaModelDump(
+    gna_model_id        modelId,
+    gna_device_kind     deviceKind,
+    const char*         filepath)
+{
+    try
+    {
+        GnaDevice->DumpModel(modelId, deviceKind, filepath);
+        return GNA_SUCCESS;
+    }
+    catch (const GnaException &e)
+    {
+        return e.getStatus();
+    }
+    catch (...)
+    {
+        return GNA_UNKNOWN_ERROR;
+    }
+}
+
 intel_gna_status_t GnaRequestConfigEnablePerf(gna_request_cfg_id configId, gna_hw_perf_encoding hwPerfEncoding,
     gna_perf_t* perfResults)
 {

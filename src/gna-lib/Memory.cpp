@@ -59,3 +59,35 @@ void Memory::Free()
         size = 0;
     }
 }
+
+void Memory::Map(gna_model_id model_id)
+{
+    if (mapped)
+        throw GnaException(GNA_UNKNOWN_ERROR);
+
+    modelId = model_id;
+
+    // write model id in user buffer
+    // driver will retrieve it
+    *reinterpret_cast<uint64_t*>(buffer) = static_cast<uint64_t>(modelId);
+
+    sender.IoctlSend(
+        GNA_IOCTL_MEM_MAP,
+        nullptr,
+        0,
+        buffer,
+        size,
+        TRUE);
+
+    mapped = true;
+}
+
+void Memory::Unmap()
+{
+    if (!mapped)
+        throw GnaException(GNA_UNKNOWN_ERROR);
+
+    sender.IoctlSend(GNA_IOCTL_MEM_UNMAP, &modelId, sizeof(modelId), nullptr, 0);
+
+    mapped = false;
+}

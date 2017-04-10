@@ -26,9 +26,14 @@
 #include "ModelCompiler.h"
 
 #include "gna-api.h"
+#include "FakeDetector.h"
 #include "Validator.h"
 
+using std::make_unique;
+
 using namespace GNA;
+
+const size_t ModelCompiler::MaximumInternalModelSize = CalculateInternalModelSize(XNN_LAYERS_MAX_COUNT, GMM_LAYERS_MAX_COUNT);
 
 const size_t ModelCompiler::CalculateModelSize(const size_t requestedSize, const uint16_t layerCount,
     const uint16_t gmmCount)

@@ -25,38 +25,19 @@
 
 #pragma once
 
-#include <memory>
-#include <vector>
+#include "AccelerationDetector.h"
 
-#include "Layer.h"
+#include <array>
 
 namespace GNA
 {
 
-class RequestConfiguration;
-
-// Model image for software accelerators
-class SoftwareModel
+class FakeDetector : public AccelerationDetector
 {
 public:
-    SoftwareModel(const gna_model *const network);
-    SoftwareModel(const SoftwareModel &) = delete;
-    SoftwareModel& operator=(const SoftwareModel&) = delete;
-    ~SoftwareModel() = default;
-    
-    void ValidateConfiguration(const RequestConfiguration& configuration);
+    FakeDetector(GnaDeviceType deviceType);
 
-    std::vector<std::unique_ptr<Layer>> Layers;
-
-protected:
-    inline void build(const nn_layer* layers);
-
-    const uint32_t layerCount;
-    const uint32_t inputVectorCount;
-
-private:
-    uint32_t inputLayerCount = 0;
-    uint32_t outputLayerCount = 0;
+    static const std::map<GnaDeviceType, uint32_t> DeviceHardwareBuffers;
 };
 
 }
