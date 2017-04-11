@@ -66,8 +66,6 @@ public:
     status_t WaitForRequest(gna_request_id requestId, gna_timeout milliseconds);
 
     void DumpModel(gna_model_id modelId, gna_device_kind deviceKind, const char * filepath);
-
-    Device() = delete;
     Device(const Device &) = delete;
     Device& operator=(const Device&) = delete;
 

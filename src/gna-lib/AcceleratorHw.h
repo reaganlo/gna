@@ -34,7 +34,6 @@
 
 namespace GNA
 {
-
 class AcceleratorHw : public IAccelerator
 {
 public:
@@ -48,14 +47,14 @@ public:
 
     status_t Score(
         const RequestConfiguration& requestConfiguration,
-              RequestProfiler *profiler,
-              KernelBuffers *buffers) override;
+        RequestProfiler *profiler,
+        KernelBuffers *buffers) override;
 
     status_t Score(
         const SubModel& submodel,
         const RequestConfiguration& requestConfiguration,
-              RequestProfiler *profiler,
-              KernelBuffers *buffers) override;
+        RequestProfiler *profiler,
+        KernelBuffers *buffers) override;
 
 protected:
     IoctlSender sender;
@@ -87,10 +86,5 @@ protected:
 
     // TODO: replace SoftwareModel with compiled model
     virtual void HwVerifier(SoftwareModel* model, status_t scoring_status);
-
-private:
-    void prepareDataToSend(const RequestConfiguration &requestConfiguration, std::unique_ptr<char[]> &data,
-        size_t &dataSize) const;
 };
-
 }

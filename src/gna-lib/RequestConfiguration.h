@@ -70,15 +70,26 @@ public:
     void AddBuffer(gna_buffer_type type, uint32_t layerIndex, void *address);
     void AddActiveList(uint32_t layerIndex, uint32_t indicesCount, uint32_t *indices);
 
+    void GetHwConfigData(void* &buffer, size_t &size) const;
+
     const CompiledModel& Model;
+
     const gna_request_cfg_id ConfigId;
 
-    gna_hw_perf_encoding HwPerfEncoding;
+    gna_hw_perf_encoding HwPerfEncoding = PERF_COUNT_DISABLED;
     gna_perf_t * PerfResults = nullptr;
 
     std::map<uint32_t, std::unique_ptr<LayerConfiguration>> LayerConfigurations;
     uint32_t InputBuffersCount = 0;
     uint32_t OutputBuffersCount = 0;
     uint32_t ActiveListCount = 0;
+
+private:
+    void invalidateHwConfigCache();
+    void writeLayerConfigBuffersIntoHwConfigCache(PGNA_BUFFER_DESCR &lyrsCfg) const;
+    void writeLayerConfigActiveListsIntoHwConfigCache(PGNA_ACTIVE_LIST_DESCR &actLstCfg) const;
+
+    mutable std::unique_ptr<uint8_t[]> hwConfigCache;
+    mutable size_t hwConfigSize = 0;
 };
 }

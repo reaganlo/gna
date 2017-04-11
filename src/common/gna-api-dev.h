@@ -39,7 +39,7 @@
 extern "C" {
 #endif
 
-typedef enum _acceleration_all 
+typedef enum _acceleration_all
 {
     GNA_HW = GNA_HARDWARE,
     GNA_AUTO_SAT = GNA_AUTO & GNA_HW,
@@ -54,7 +54,7 @@ typedef enum _acceleration_all
     GNA_AVX1_FAST = GNA_AVX1,
     GNA_AVX2_SAT = GNA_AVX2 & GNA_HW,
     GNA_AVX2_FAST = GNA_AVX2,
-    NUM_GNA_ACCEL_MODES = 0xE,      
+    NUM_GNA_ACCEL_MODES = 0xE,
     // DLL internal modes, do not use from API
     GNA_CNL_SAT = 0x100 & GNA_HW,
     GNA_CNL_FAST = 0x101,
@@ -65,19 +65,19 @@ static_assert(4 == sizeof(gna_acceleration_all), "Invalid size of gna_accelerati
 /**
  * GNA HW Scoring Acceleration performance counters.
  * When performance counting is enabled, the total scoring cycles counter is always on.
- * In addition one of several reasons for stall may be measured to allow 
+ * In addition one of several reasons for stall may be measured to allow
  * identifying the bottlenecks in the scoring operation.
  */
 typedef enum _gna_hw_perf_encoding
 {
-    PERF_COUNT_DISABLED,
-    COUNT_TOTAL_STALL_CYCLE,
-    WAIT_FOR_DMA_COMPLETION,
-    WAIT_FOR_MMU_TRANSLATION,
-    DESCRIPTOR_FETCH_TIME,
-    INPUT_BUFFER_FILL_FROM_MEMORY,
-    OUTPUT_BUFFER_FULL_STALL_CYCLES,
-    OUTPUT_BUFFER_WAIT_FOR_IOSF_STALL_CYCLES
+    PERF_COUNT_DISABLED = 0,
+    COUNT_TOTAL_STALL_CYCLE = 1,
+    WAIT_FOR_DMA_COMPLETION = 2,
+    WAIT_FOR_MMU_TRANSLATION = 3,
+    DESCRIPTOR_FETCH_TIME = 4,
+    INPUT_BUFFER_FILL_FROM_MEMORY = 5,
+    OUTPUT_BUFFER_FULL_STALL_CYCLES = 6,
+    OUTPUT_BUFFER_WAIT_FOR_IOSF_STALL_CYCLES = 7
 } gna_hw_perf_encoding;
 
 /**
