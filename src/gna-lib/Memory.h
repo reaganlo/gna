@@ -65,7 +65,7 @@ private:
 
     bool mapped = false;
 
-    gna_model_id modelId;
+    uint64_t modelId;
 };
 
 }

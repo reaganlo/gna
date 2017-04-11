@@ -116,11 +116,11 @@ void Device::LoadModel(gna_model_id *modelId, const gna_model *raw_model)
     {
         modelContainer.AllocateModel(modelId, raw_model, *totalMemory);
         auto &model = modelContainer.GetModel(*modelId);
-        modelCompiler.CascadeCompile(model, accelerationDetector);
         if (accelerationDetector.IsHardwarePresent())
         {
             totalMemory->Map(model.GetModelId());
         }
+        modelCompiler.CascadeCompile(model, accelerationDetector);
     }
     catch (...)
     {

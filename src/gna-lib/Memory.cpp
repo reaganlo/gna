@@ -65,7 +65,7 @@ void Memory::Map(gna_model_id model_id)
     if (mapped)
         throw GnaException(GNA_UNKNOWN_ERROR);
 
-    modelId = model_id;
+    modelId = static_cast<uint64_t>(model_id);
 
     // write model id in user buffer
     // driver will retrieve it
