@@ -59,14 +59,14 @@ using namespace GNA;
 
 const map<GnaDeviceType, array<bool, GnaFeatureCount>>
 AccelerationDetector::gnaFeatureMap = {
-                    // Basic, CNN,   GMM,  GMMLayer, MultiBias, L1Dist, L2Dist, ComputerVision
-    { GNA_CANNONLAKE,    {true, false, true, false,    false,     false,  false,  false} },
-    { GNA_GEMINILAKE,    {true, true,  true, false,    false,     false,  false,  false} },
-    { GNA_ICELAKE,       {true, true,  true, false,    false,     false,  false,  false} },
-    { GNA_TIGERLAKE,     {true, true,  true, true,     true,      false,  false,  false} },
-    { GNA_LAKEFIELD,     {true, true,  true, true,     true,      false,  false,  false} },
-    { GNA_SUE_CREEK,     {true, true,  true, false,    false,     false,  false,  false} },
-    { GNA_SUE_CREEK_2,   {true, true,  true, true,     true,      false,  false,  false} }
+                    // Basic, CNN,   GMM,  GMMLayer, MultiBias, L1Dist, L2Dist, ComputerVision, Layer8K
+    { GNA_CANNONLAKE,    {true, false, true, false,    false,     false,  false,  false, false} },
+    { GNA_GEMINILAKE,    {true, true,  true, false,    false,     false,  false,  false, false} },
+    { GNA_ICELAKE,       {true, true,  true, false,    false,     false,  false,  false, false} },
+    { GNA_TIGERLAKE,     {true, true,  true, true,     true,      false,  false,  false, true } },
+    { GNA_LAKEFIELD,     {true, true,  true, true,     true,      false,  false,  false, true } },
+    { GNA_SUE_CREEK,     {true, true,  true, false,    false,     false,  false,  false, false} },
+    { GNA_SUE_CREEK_2,   {true, true,  true, true,     true,      false,  false,  false, true } }
 };
 
 
@@ -135,6 +135,12 @@ bool AccelerationDetector::IsLayerSupported(intel_layer_kind_t layerType) const
         default:
             return false;
     }
+}
+
+bool AccelerationDetector::HasFeature(GnaFeature feature) const
+{
+    const auto& deviceFeatureMap = gnaFeatureMap.at(deviceCapabilities.device_type);
+    return deviceFeatureMap[feature];
 }
 
 AccelerationDetector::AccelerationDetector() : fastestAcceleration(GNA_GEN_FAST)

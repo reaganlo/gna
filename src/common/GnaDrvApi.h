@@ -169,8 +169,8 @@ typedef union _CTRL_FLAGS
     {
     UINT32      activeListOn    :1; // 00:00 - active list mode (0:disabled, 1:enabled)
     UINT32      gnaMode         :2; // 01:02 - GNA operation mode (0:GMM, 1:xNN)
-    UINT32      layerCount      :14;
     UINT32      layerIndex      :14;
+    UINT32      layerCount      :14;
     UINT32      _rsvd           :1;
     UINT32      bufferConfigsCount  : 16;
     UINT32      actListConfigsCount : 16;

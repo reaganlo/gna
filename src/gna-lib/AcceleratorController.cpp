@@ -132,7 +132,7 @@ status_t AcceleratorController::ScoreModel(
     {
     case SoftwareOnly:
     case HardwareOnly:
-        return accelerators[accel]->Score(config, profiler, buffers);
+        return accelerators[accel]->Score(0, config.Model.LayerCount, config, profiler, buffers);
     case Mixed:
     {
         auto& acceleratorHw = accelerators[GNA_HW];
@@ -144,12 +144,12 @@ status_t AcceleratorController::ScoreModel(
             switch (submodel->Type)
             {
             case Software:
-                status = acceleratorSw->Score(*submodel.get(), config, profiler, buffers);
+                status = acceleratorSw->Score(layerIndex, layerCount, config, profiler, buffers);
                 if (status != GNA_SUCCESS && status != GNA_SSATURATE)
                     return status;
                 break;
             case Hardware:
-                status = acceleratorHw->Score(*submodel.get(), config, profiler, buffers);
+                status = acceleratorHw->Score(layerIndex, layerCount, config, profiler, buffers);
                 if (status != GNA_SUCCESS && status != GNA_SSATURATE)
                     return status;
                 break;

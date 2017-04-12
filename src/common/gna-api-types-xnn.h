@@ -235,11 +235,17 @@ const uint32_t XNN_N_PWL_SEGS_MIN = 2;
 /** Weight elements size constraint - max size B */
 const uint32_t XNN_W_ELEM_SZ_MAX = 2;
 
-/** xNN maximum number of Layers  */
+/** GMM maximum number of Layers  */
 const uint32_t GMM_LAYERS_MAX_COUNT = 8192;
 
 /** xNN maximum number of Layers  */
 const uint32_t XNN_LAYERS_MAX_COUNT = 8192;
+
+/** GMM maximum number of Layers  */
+const uint32_t GMM_LAYERS_MAX_COUNT_OLD = 4096;
+
+/** xNN maximum number of Layers  */
+const uint32_t XNN_LAYERS_MAX_COUNT_OLD = 4096;
 
 /** CNN minimum number of filter coefficients */
 const uint32_t CNN_N_FLT_COEFF_MIN = 48;

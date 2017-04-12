@@ -46,12 +46,8 @@ public:
     AcceleratorHw& operator=(const AcceleratorHw&) = delete;
 
     status_t Score(
-        const RequestConfiguration& requestConfiguration,
-        RequestProfiler *profiler,
-        KernelBuffers *buffers) override;
-
-    status_t Score(
-        const SubModel& submodel,
+        uint32_t layerIndex,
+        uint32_t layerCount,
         const RequestConfiguration& requestConfiguration,
         RequestProfiler *profiler,
         KernelBuffers *buffers) override;

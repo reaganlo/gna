@@ -55,12 +55,8 @@ public:
     AcceleratorSw& operator=(const AcceleratorSw&) = delete;
 
     status_t Score(
-        const RequestConfiguration& requestConfiguration,
-        RequestProfiler *profiler,
-        KernelBuffers *buffers) override;
-
-    status_t Score(
-        const SubModel& submodel,
+        uint32_t layerIndex,
+        uint32_t layerCount,
         const RequestConfiguration& requestConfiguration,
         RequestProfiler *profiler,
         KernelBuffers *buffers) override;
@@ -70,14 +66,14 @@ protected:
     GmmKernel *gmmKernel;
 
 private:
+    static inline void checkScoresSaturation(const uint32_t& nGMMs, const uint32_t& nVectors, const uint32_t * pS,
+        const uint32_t& maxScore, uint32_t& nSaturated);
+
     void applyRequestBuffersToLayer(const LayerConfiguration& layerConfiguration, const Layer& layer,
         nn_layer& sourceLayer, uint32_t &nOuts, const uint32_t * &activeIndices);
 
     void gmmSoftwareKernel(const GmmLayer& gmm, const LayerConfiguration * const layerConfiguration,
         uint32_t& nSaturated);
-
-    static inline void checkScoresSaturation(const uint32_t& nGMMs, const uint32_t& nVectors, const uint32_t * pS,
-        const uint32_t& maxScore, uint32_t& nSaturated);
 };
 
 }

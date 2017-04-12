@@ -64,7 +64,14 @@ void CompiledModel::CreateSubmodels(const AccelerationDetector& dispatcher)
 
         if(smType == submodels[submodelCount]->Type)
         {
-            submodels[submodelCount]->AddLayer();
+            // exceeded supported number of layers
+            if (Hardware == smType && !dispatcher.HasFeature(Layer8K)
+                && XNN_LAYERS_MAX_COUNT_OLD == submodels[submodelCount]->GetLayerCount())
+            {
+                submodels.emplace_back(make_unique<SubModel>(smType, layerIx));
+                submodelCount++;
+            }
+            else submodels[submodelCount]->AddLayer();
         }
         else
         {

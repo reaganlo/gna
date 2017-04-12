@@ -109,15 +109,8 @@ AcceleratorSw::AcceleratorSw(acceleration acceleration_mode) :
 }
 
 status_t AcceleratorSw::Score(
-    const SubModel& submodel,
-    const RequestConfiguration& requestConfiguration,
-          RequestProfiler *profiler,
-          KernelBuffers *buffers)
-{
-    return GNA_SUCCESS;
-}
-
-status_t AcceleratorSw::Score(
+    uint32_t layerIndex,
+    uint32_t layerCount,
     const RequestConfiguration& requestConfiguration,
     RequestProfiler *profiler,
     KernelBuffers *fvBuffers)
@@ -130,10 +123,12 @@ status_t AcceleratorSw::Score(
     const uint32_t* activeIndices = nullptr; // active list pointer
     auto sat = uint32_t{ 0 };   // scoring saturation counter
     
-    auto layerIndex = uint32_t{ 0 };
     // TODO: refactor to remove dependency on software model
-    for (const auto& layer : requestConfiguration.Model.GetLayers())
+    auto iter = requestConfiguration.Model.GetLayers().begin() + layerIndex;
+    auto end = iter + layerCount;
+    for (; iter < end; ++iter)
     {
+        const auto& layer = *iter;
         auto* sourceLayer = const_cast<nn_layer*>(&layer->sourceLayer);
         nOuts = layer->Output.ElementCount; // regular output (all)
         const LayerConfiguration* layerConfiguration = nullptr;

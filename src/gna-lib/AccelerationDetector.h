@@ -54,6 +54,7 @@ enum GnaFeature
     L1Distance,
     L2Distance,
     ComputerVision,
+    Layer8K,
 
     GnaFeatureCount
 };
@@ -73,6 +74,8 @@ public:
     bool IsHardwarePresent() const;
 
     bool IsLayerSupported(intel_layer_kind_t layerType) const;
+
+    bool HasFeature(GnaFeature feature) const;
 
     const uint32_t GetHardwareBufferSize() const;
 

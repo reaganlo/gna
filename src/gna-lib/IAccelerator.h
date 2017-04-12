@@ -42,22 +42,13 @@ public:
 
     // TODO:INTEGRATION refactor, it is no longer interface
     IAccelerator(acceleration acceleration_mode) : accel(acceleration_mode) {}
-    /**
-     * Scores the whole xNN model
-     */
+
     virtual status_t Score(
+        uint32_t layerIndex,
+        uint32_t layerCount,
         const RequestConfiguration& config,
         RequestProfiler *profiler,
         KernelBuffers *buffers) = 0;
-
-    /**
-     * Scores part of xNN model described by submodel
-     */
-    virtual status_t Score(
-        const SubModel& submodel,
-        const RequestConfiguration& config,
-              RequestProfiler *profiler,
-              KernelBuffers *buffers) = 0;
 
     virtual ~IAccelerator() = default;
     

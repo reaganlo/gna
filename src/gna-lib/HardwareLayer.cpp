@@ -96,7 +96,7 @@ HardwareLayer::HardwareLayer(const DescriptorParameters& parameters) :
 void HardwareLayer::WriteInputBuffer(PGNA_BUFFER_DESCR &lyrsCfg, const ConfigurationBuffer * const buffer) const
 {
     lyrsCfg->offset = getOffset(XnnDescriptor) + offsetof(XNN_LYR, in_buffer);
-    lyrsCfg->value = getOffset(buffer);
+    lyrsCfg->value = getOffset(buffer->Get());
 }
 
 void HardwareLayer::WriteOutputBuffer(PGNA_BUFFER_DESCR &lyrsCfg, const ConfigurationBuffer * const buffer) const
@@ -109,7 +109,7 @@ void HardwareLayer::WriteOutputBuffer(PGNA_BUFFER_DESCR &lyrsCfg, const Configur
     {
         lyrsCfg->offset = getOffset(XnnDescriptor) + offsetof(XNN_LYR, out_sum_buffer);
     }
-    lyrsCfg->value = getOffset(buffer);
+    lyrsCfg->value = getOffset(buffer->Get());
 }
 
 void HardwareLayer::WriteActiveList(PGNA_ACTIVE_LIST_DESCR &actLstCfg, const ActiveList * const activeList) const

@@ -71,7 +71,7 @@ public:
     void AddBuffer(gna_buffer_type type, uint32_t layerIndex, void *address);
     void AddActiveList(uint32_t layerIndex, uint32_t indicesCount, uint32_t *indices);
 
-    void GetHwConfigData(void* &buffer, size_t &size) const;
+    void GetHwConfigData(void* &buffer, size_t &size, uint32_t layerIndex, uint32_t layerCount) const;
 
     const CompiledModel& Model;
 
@@ -87,10 +87,12 @@ public:
 
 private:
     void invalidateHwConfigCache();
-    void writeLayerConfigBuffersIntoHwConfigCache(PGNA_BUFFER_DESCR &lyrsCfg) const;
-    void writeLayerConfigActiveListsIntoHwConfigCache(PGNA_ACTIVE_LIST_DESCR &actLstCfg) const;
+    void writeLayerConfigBuffersIntoHwConfigCache(
+        PGNA_BUFFER_DESCR &lyrsCfg, uint32_t layerIndex, uint32_t layerCount) const;
+    void writeLayerConfigActiveListsIntoHwConfigCache(
+        PGNA_ACTIVE_LIST_DESCR &actLstCfg, uint32_t layerIndex, uint32_t layerCount) const;
 
-    mutable std::unique_ptr<uint8_t[]> hwConfigCache;
-    mutable size_t hwConfigSize = 0;
+    mutable std::map<uint32_t, std::unique_ptr<uint8_t[]>> hwConfigCaches;
+    mutable std::map<uint32_t, size_t> hwConfigSizes;
 };
 }

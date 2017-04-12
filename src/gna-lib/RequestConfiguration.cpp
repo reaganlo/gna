@@ -37,7 +37,7 @@ using namespace GNA;
 RequestConfiguration::RequestConfiguration(const CompiledModel& model, gna_request_cfg_id configId) :
     Model(model),
     ConfigId(configId)
-{}
+{ }
 
 void RequestConfiguration::AddBuffer(gna_buffer_type type, uint32_t layerIndex, void *address)
 {
@@ -77,49 +77,61 @@ void RequestConfiguration::AddActiveList(uint32_t layerIndex, uint32_t indicesCo
 
 // TODO: below methods are hardware related only thus should be somewhere closer to hardware classes
 // then deep delegating calls chain will disappear
-void RequestConfiguration::GetHwConfigData(void* &buffer, size_t &size) const
+void RequestConfiguration::GetHwConfigData(void* &buffer, size_t &size, uint32_t layerIndex, uint32_t layerCount) const
 {
-    if (!hwConfigCache)
+    auto& hwConfigSize = hwConfigSizes[layerIndex];
+    if (!hwConfigCaches[layerIndex].get())
     {
         auto bufCnfgCnt = InputBuffersCount + OutputBuffersCount;
 
         hwConfigSize = sizeof(GNA_CALC_IN);
         hwConfigSize += bufCnfgCnt * sizeof(GNA_BUFFER_DESCR);
         hwConfigSize += ActiveListCount * sizeof(GNA_ACTIVE_LIST_DESCR);
-        hwConfigCache.reset(new uint8_t[hwConfigSize]);
+        hwConfigCaches[layerIndex].reset(new uint8_t[hwConfigSize]);
+        auto submodelConfigCache = hwConfigCaches[layerIndex].get();
 
-        auto calculationData = reinterpret_cast<PGNA_CALC_IN>(hwConfigCache.get());
+        auto calculationData = reinterpret_cast<PGNA_CALC_IN>(submodelConfigCache);
 
         calculationData->ctrlFlags.activeListOn = ActiveListCount > 0;
         calculationData->ctrlFlags.gnaMode = 1; // xnn by default
-        calculationData->ctrlFlags.layerCount = Model.LayerCount;
-        calculationData->ctrlFlags.layerIndex = 0;
+        calculationData->ctrlFlags.layerIndex = layerIndex;
+        calculationData->ctrlFlags.layerCount = layerCount;
         calculationData->modelId = Model.Id;
         calculationData->ctrlFlags.bufferConfigsCount = bufCnfgCnt;
         calculationData->ctrlFlags.actListConfigsCount = ActiveListCount;
         calculationData->hwPerfEncoding = HwPerfEncoding;
 
-        auto lyrsCfg = reinterpret_cast<PGNA_BUFFER_DESCR>(hwConfigCache.get() + sizeof(GNA_CALC_IN));
-        writeLayerConfigBuffersIntoHwConfigCache(lyrsCfg);
+        auto lyrsCfg = reinterpret_cast<PGNA_BUFFER_DESCR>(submodelConfigCache + sizeof(GNA_CALC_IN));
+        writeLayerConfigBuffersIntoHwConfigCache(lyrsCfg, layerIndex, layerCount);
 
-        auto actLstCfg = reinterpret_cast<PGNA_ACTIVE_LIST_DESCR>(lyrsCfg);
-        writeLayerConfigActiveListsIntoHwConfigCache(actLstCfg);
+        auto actLstCfg = reinterpret_cast<PGNA_ACTIVE_LIST_DESCR>(lyrsCfg, layerIndex, layerCount);
+        writeLayerConfigActiveListsIntoHwConfigCache(actLstCfg, layerIndex, layerCount);
     }
 
-    buffer = hwConfigCache.get();
+    buffer = hwConfigCaches.at(layerIndex).get();
     size = hwConfigSize;
 }
 
 void RequestConfiguration::invalidateHwConfigCache()
 {
-    hwConfigSize = 0;
-    hwConfigCache.reset();
+    for (auto& it : hwConfigCaches)
+    {
+        it.second.reset();
+    }
+    for (auto& it : hwConfigSizes)
+    {
+        it.second = 0;
+    }
 }
 
-void RequestConfiguration::writeLayerConfigBuffersIntoHwConfigCache(PGNA_BUFFER_DESCR &lyrsCfg) const
+void RequestConfiguration::writeLayerConfigBuffersIntoHwConfigCache(
+    PGNA_BUFFER_DESCR &lyrsCfg, uint32_t layerIndex, uint32_t layerCount) const
 {
-    for (const auto& lc : LayerConfigurations)
+    auto lowerBound = LayerConfigurations.lower_bound(layerIndex);
+    auto upperBound = LayerConfigurations.upper_bound(layerIndex + layerCount);
+    for (auto it = lowerBound; it != upperBound; ++it)
     {
+        const auto& lc = *it;
         if (lc.second->InputBuffer)
         {
             Model.WriteHardwareLayerInputBuffer(lc.first, lyrsCfg, lc.second->InputBuffer.get());
@@ -134,10 +146,14 @@ void RequestConfiguration::writeLayerConfigBuffersIntoHwConfigCache(PGNA_BUFFER_
     }
 }
 
-void RequestConfiguration::writeLayerConfigActiveListsIntoHwConfigCache(PGNA_ACTIVE_LIST_DESCR &actLstCfg) const
+void RequestConfiguration::writeLayerConfigActiveListsIntoHwConfigCache(
+    PGNA_ACTIVE_LIST_DESCR &actLstCfg, uint32_t layerIndex, uint32_t layerCount) const
 {
-    for (const auto& lc : LayerConfigurations)
+    auto lowerBound = LayerConfigurations.lower_bound(layerIndex);
+    auto upperBound = LayerConfigurations.upper_bound(layerIndex + layerCount);
+    for (auto it = lowerBound; it != upperBound; ++it)
     {
+        const auto& lc = *it;
         if (lc.second->ActiveList)
         {
             // TODO: XNN_LYR.NN_OP_TYPE needs to be set to Active List type

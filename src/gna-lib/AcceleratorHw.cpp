@@ -36,6 +36,8 @@ using std::string;
 using namespace GNA;
 
 status_t AcceleratorHw::Score(
+    uint32_t layerIndex,
+    uint32_t layerCount,
     const RequestConfiguration& requestConfiguration,
     RequestProfiler *profiler,
     KernelBuffers *buffers)
@@ -44,7 +46,7 @@ status_t AcceleratorHw::Score(
 
     void* data;
     size_t size;
-    requestConfiguration.GetHwConfigData(data, size);
+    requestConfiguration.GetHwConfigData(data, size, layerIndex, layerCount);
 
     sender.Submit(data, size, profiler);
 
@@ -53,15 +55,6 @@ status_t AcceleratorHw::Score(
     Expect::True(GNA_SUCCESS == status || GNA_SSATURATE == status, status);
 
     return status;
-}
-
-status_t AcceleratorHw::Score(
-    const SubModel& submodel,
-    const RequestConfiguration& requestConfiguration,
-    RequestProfiler *profiler,
-    KernelBuffers *buffers)
-{
-    return GNA_SUCCESS;
 }
 
 /**
