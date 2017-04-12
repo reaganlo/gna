@@ -25,52 +25,61 @@
 
 #pragma once
 
-#include "AccelerationDetector.h"
-#include "Address.h"
-#include "common.h"
-#include "GnaException.h"
-#include "IoctlSender.h"
-#include "Memory.h"
-#include "SoftwareModel.h"
+#include <vector>
+
+#include "HardwareLayer.h"
 
 namespace GNA
 {
 
+class SoftwareModel;
+class Memory;
+class AccelerationDetector;
+class Layer;
 
 class HardwareModel
 {
 public:
     static const size_t CalculateDescriptorSize(const uint16_t layerCount, const uint16_t gmmLayersCount);
 
-    HardwareModel(const gna_model_id modId, const SoftwareModel& model, const Memory& wholeMemory,
+    HardwareModel(const gna_model_id modId, const std::vector<std::unique_ptr<Layer>>& layers, const Memory& wholeMemory,
         const AccelerationDetector& detector);
-
     ~HardwareModel() = default;
+    HardwareModel(const HardwareModel &) = delete;
+    HardwareModel& operator=(const HardwareModel&) = delete;
 
     inline uint32_t GetOffset(const BaseAddressC& address) const
     {
         return address.GetOffset(memoryBaseAddress);
     }
 
+    void WriteLayerInputBuffer(const uint32_t layerIndex, PGNA_BUFFER_DESCR &lyrsCfg,
+        const ConfigurationBuffer * const buffer) const
+    {
+        hardwareLayers.at(layerIndex)->WriteInputBuffer(lyrsCfg, buffer);
+    }
+    void WriteLayerOutputBuffer(const uint32_t layerIndex, PGNA_BUFFER_DESCR &lyrsCfg,
+        const ConfigurationBuffer * const buffer) const
+    {
+        hardwareLayers.at(layerIndex)->WriteOutputBuffer(lyrsCfg, buffer);
+    }
+    void WriteLayerActiveList(const uint32_t layerIndex, PGNA_ACTIVE_LIST_DESCR &actLstCfg,
+        const ActiveList * const activeList) const
+    {
+        hardwareLayers.at(layerIndex)->WriteActiveList(actLstCfg, activeList);
+    }
+
 private:
     void build(const std::vector<std::unique_ptr<Layer>>& layers, const uint32_t hardwareInternalBufferSize);
 
-    static uint32_t getLayerDescriptorsSize(const uint16_t layerCount)
-    {
-        Expect::InRange(layerCount, 1, XNN_LAYERS_MAX_COUNT, XNN_ERR_NET_LYR_NO);
-        auto layerDescriptorsSize = size_t{ layerCount * sizeof(XNN_LYR) };
-        return layerDescriptorsSize;
-    }
-    
-    static uint32_t getGmmDescriptorsSize(const uint16_t gmmLayersCount)
-    {
-        Expect::InRange(gmmLayersCount, 0, XNN_LAYERS_MAX_COUNT, XNN_ERR_NET_LYR_NO);
-        auto gmmDescriptorsSize = size_t{ gmmLayersCount * sizeof(GMM_CONFIG) };
-        return gmmDescriptorsSize;
-    }
+    static uint32_t getLayerDescriptorsSize(const uint16_t layerCount);
+
+    static uint32_t getGmmDescriptorsSize(const uint16_t gmmLayersCount);
 
     // needed for driver communication
     gna_model_id modelId;
+
+    std::vector<std::unique_ptr<HardwareLayer>> hardwareLayers;
 
     const BaseAddressC memoryBaseAddress;
     const uint32_t layerDescriptorsSize;

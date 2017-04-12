@@ -25,8 +25,7 @@
 
 #include "ModelCompiler.h"
 
-#include "gna-api.h"
-#include "FakeDetector.h"
+#include "CompiledModel.h"
 #include "Validator.h"
 
 using std::make_unique;

@@ -46,17 +46,14 @@ public:
     SubModel(const SubModel &) = delete;
     SubModel& operator=(const SubModel&) = delete;
 
-    uint32_t GetLayerIndex() const;
     uint32_t GetLayerCount() const;
     void AddLayer();
 
-    SubmodelType Type;
+    const SubmodelType Type;
+    const uint32_t LayerIndex;
 
 private:
-    const uint32_t layerIndex;
     uint32_t layerCount;
-
-    
 };
 
 }

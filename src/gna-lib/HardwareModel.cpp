@@ -26,10 +26,9 @@
 #include "HardwareModel.h"
 
 #include "AccelerationDetector.h"
-#include "GnaDrvApi.h"
-#include "GnaException.h"
 #include "HardwareLayer.h"
-#include "Validator.h"
+#include "Memory.h"
+#include "SoftwareModel.h"
 
 using namespace GNA;
 
@@ -41,16 +40,15 @@ const size_t HardwareModel::CalculateDescriptorSize(const uint16_t layerCount, c
     return layerDescriptorsSize + gmmDescriptorsSize;
 }
 
-HardwareModel::HardwareModel(const gna_model_id modId, const SoftwareModel& model, const Memory& wholeMemory,
+HardwareModel::HardwareModel(const gna_model_id modId, const std::vector<std::unique_ptr<Layer>>& layers, const Memory& wholeMemory,
     const AccelerationDetector& detector) :
     modelId(modId),
     memoryBaseAddress(wholeMemory),
     layerDescriptorsSize(getLayerDescriptorsSize(XNN_LAYERS_MAX_COUNT)), // TODO: change to support variable number of layers
     gmmDescriptorsSize(getGmmDescriptorsSize(XNN_LAYERS_MAX_COUNT)) // TODO: change to support variable number of gmms
 {
-    build(model.Layers, detector.GetHardwareBufferSize());
+    build(layers, detector.GetHardwareBufferSize());
 }
-
 
 void HardwareModel::build(const std::vector<std::unique_ptr<Layer>>& layers, const uint32_t hardwareInternalBufferSize)
 {
@@ -63,10 +61,27 @@ void HardwareModel::build(const std::vector<std::unique_ptr<Layer>>& layers, con
 
     for (auto& layer : layers)
     {
-        *layerDescriptor++ = HardwareLayer::Convert(*layer, memoryBaseAddress, gmmDescriptor, hardwareInternalBufferSize);
+        const auto parameters = DescriptorParameters{*layer, memoryBaseAddress, layerDescriptor, gmmDescriptor,
+            hardwareInternalBufferSize};
+        hardwareLayers.push_back(HardwareLayer::Create(parameters));
+        layerDescriptor++;
         if (INTEL_GMM == layer->Config.Kind)
         {
             gmmDescriptor++;
         }
     }
+}
+
+uint32_t HardwareModel::getLayerDescriptorsSize(const uint16_t layerCount)
+{
+    Expect::InRange(layerCount, 1, XNN_LAYERS_MAX_COUNT, XNN_ERR_NET_LYR_NO);
+    auto layerDescriptorsSize = size_t{layerCount * sizeof(XNN_LYR)};
+    return layerDescriptorsSize;
+}
+
+uint32_t HardwareModel::getGmmDescriptorsSize(const uint16_t gmmLayersCount)
+{
+    Expect::InRange(gmmLayersCount, 0, XNN_LAYERS_MAX_COUNT, XNN_ERR_NET_LYR_NO);
+    auto gmmDescriptorsSize = size_t{gmmLayersCount * sizeof(GMM_CONFIG)};
+    return gmmDescriptorsSize;
 }

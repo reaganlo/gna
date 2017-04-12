@@ -124,15 +124,15 @@ status_t AcceleratorSw::Score(
 {
     profilerDTscAStart(&profiler->scoring);
 
-    auto& softwareModel = requestConfiguration.Model.GetSoftwareModel();
-    softwareModel.ValidateConfiguration(requestConfiguration);
+    requestConfiguration.Model.ValidateConfiguration(requestConfiguration);
 
     auto nOuts = uint32_t{ 0 }; // number of outputs
     const uint32_t* activeIndices = nullptr; // active list pointer
     auto sat = uint32_t{ 0 };   // scoring saturation counter
     
     auto layerIndex = uint32_t{ 0 };
-    for (const auto& layer : softwareModel.Layers)
+    // TODO: refactor to remove dependency on software model
+    for (const auto& layer : requestConfiguration.Model.GetLayers())
     {
         auto* sourceLayer = const_cast<nn_layer*>(&layer->sourceLayer);
         nOuts = layer->Output.ElementCount; // regular output (all)

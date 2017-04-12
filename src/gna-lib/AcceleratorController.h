@@ -26,12 +26,12 @@
 #pragma once
 
 #include <cstdint>
+#include <map>
+
 #include "common.h"
 #include "IAccelerator.h"
 #include "Request.h"
-#include "RequestConfiguration.h"
 
-#include <map>
 
 namespace GNA
 {

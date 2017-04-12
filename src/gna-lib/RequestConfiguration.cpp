@@ -75,7 +75,9 @@ void RequestConfiguration::AddActiveList(uint32_t layerIndex, uint32_t indicesCo
     ++ActiveListCount;
 }
 
-void GNA::RequestConfiguration::GetHwConfigData(void* &buffer, size_t &size) const
+// TODO: below methods are hardware related only thus should be somewhere closer to hardware classes
+// then deep delegating calls chain will disappear
+void RequestConfiguration::GetHwConfigData(void* &buffer, size_t &size) const
 {
     if (!hwConfigCache)
     {
@@ -90,9 +92,9 @@ void GNA::RequestConfiguration::GetHwConfigData(void* &buffer, size_t &size) con
 
         calculationData->ctrlFlags.activeListOn = ActiveListCount > 0;
         calculationData->ctrlFlags.gnaMode = 1; // xnn by default
-        calculationData->ctrlFlags.layerCount = Model.GetLayerCount();
+        calculationData->ctrlFlags.layerCount = Model.LayerCount;
         calculationData->ctrlFlags.layerIndex = 0;
-        calculationData->modelId = Model.GetModelId();
+        calculationData->modelId = Model.Id;
         calculationData->ctrlFlags.bufferConfigsCount = bufCnfgCnt;
         calculationData->ctrlFlags.actListConfigsCount = ActiveListCount;
         calculationData->hwPerfEncoding = HwPerfEncoding;
@@ -108,55 +110,40 @@ void GNA::RequestConfiguration::GetHwConfigData(void* &buffer, size_t &size) con
     size = hwConfigSize;
 }
 
-void GNA::RequestConfiguration::invalidateHwConfigCache()
+void RequestConfiguration::invalidateHwConfigCache()
 {
     hwConfigSize = 0;
     hwConfigCache.reset();
 }
 
-void GNA::RequestConfiguration::writeLayerConfigBuffersIntoHwConfigCache(PGNA_BUFFER_DESCR &lyrsCfg) const
+void RequestConfiguration::writeLayerConfigBuffersIntoHwConfigCache(PGNA_BUFFER_DESCR &lyrsCfg) const
 {
-    auto& hwModel = Model.GetHardwareModel();
-
     for (const auto& lc : LayerConfigurations)
     {
         if (lc.second->InputBuffer)
         {
-            lyrsCfg->offset = lc.first * sizeof(XNN_LYR) + offsetof(XNN_LYR, in_buffer);
-            lyrsCfg->value = hwModel.GetOffset(*lc.second->InputBuffer);
+            Model.WriteHardwareLayerInputBuffer(lc.first, lyrsCfg, lc.second->InputBuffer.get());
             ++lyrsCfg;
         }
 
         if (lc.second->OutputBuffer)
         {
-            if (LayerOutput::ActivatedOutput == Model.GetSoftwareModel().Layers[lc.first]->Output.GetOutputMode())
-            {
-                lyrsCfg->offset = lc.first * sizeof(XNN_LYR) + offsetof(XNN_LYR, out_act_fn_buffer);
-            }
-            else
-            {
-                lyrsCfg->offset = lc.first * sizeof(XNN_LYR) + offsetof(XNN_LYR, out_sum_buffer);
-            }
-            lyrsCfg->value = hwModel.GetOffset(*lc.second->OutputBuffer);
+            Model.WriteHardwareLayerOutputBuffer(lc.first, lyrsCfg, lc.second->OutputBuffer.get());
             ++lyrsCfg;
         }
     }
 }
 
-void GNA::RequestConfiguration::writeLayerConfigActiveListsIntoHwConfigCache(PGNA_ACTIVE_LIST_DESCR &actLstCfg) const
+void RequestConfiguration::writeLayerConfigActiveListsIntoHwConfigCache(PGNA_ACTIVE_LIST_DESCR &actLstCfg) const
 {
-    auto& hwModel = Model.GetHardwareModel();
-
     for (const auto& lc : LayerConfigurations)
     {
         if (lc.second->ActiveList)
         {
             // TODO: XNN_LYR.NN_OP_TYPE needs to be set to Active List type
-            actLstCfg->act_list_buffer_offset = lc.first * sizeof(XNN_LYR) + offsetof(XNN_LYR, act_list_buffer);
-            actLstCfg->act_list_buffer_value = hwModel.GetOffset((void*)lc.second->ActiveList->Indices);
-            actLstCfg->act_list_n_elems_offset = lc.first * sizeof(XNN_LYR) + offsetof(XNN_LYR, act_list_n_elems);
-            actLstCfg->act_list_buffer_value = lc.second->ActiveList->IndicesCount;
+            Model.WriteHardwareLayerActiveList(lc.first, actLstCfg, lc.second->ActiveList.get());
             ++actLstCfg;
+            //TODO:else GMM Layer active list: see HardwareLayerGmm::updateActiveList
         }
         // TODO: else: XNN_LYR.NN_OP_TYPE needs to be set to Non Active List type
     }

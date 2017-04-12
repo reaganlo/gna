@@ -43,8 +43,8 @@ public:
     SoftwareModel(const SoftwareModel &) = delete;
     SoftwareModel& operator=(const SoftwareModel&) = delete;
     ~SoftwareModel() = default;
-    
-    void ValidateConfiguration(const RequestConfiguration& configuration);
+
+    void ValidateConfiguration(const RequestConfiguration& configuration) const;
 
     std::vector<std::unique_ptr<Layer>> Layers;
 

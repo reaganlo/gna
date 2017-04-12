@@ -33,11 +33,11 @@ using std::unique_ptr;
 using std::vector;
 
 CompiledModel::CompiledModel(gna_model_id modelId, const gna_model *rawModel, const Memory& memoryIn) :
-    modelId{modelId},
+    Id{modelId},
     UserModel{rawModel},
     memory{memoryIn},
     submodels{},
-    layerCount{static_cast<uint16_t>(rawModel->nLayers)}
+    LayerCount{static_cast<uint16_t>(rawModel->nLayers)}
 {};
 
 void CompiledModel::CompileSoftwareModel()
@@ -47,7 +47,7 @@ void CompiledModel::CompileSoftwareModel()
 
 void CompiledModel::CompileHardwareModel(const AccelerationDetector& detector)
 {
-    hardwareModel = make_unique<HardwareModel>(modelId, *softwareModel, memory, detector);
+    hardwareModel = make_unique<HardwareModel>(Id, softwareModel->Layers, memory, detector);
 }
 
 void CompiledModel::CreateSubmodels(const AccelerationDetector& dispatcher)
@@ -57,7 +57,7 @@ void CompiledModel::CreateSubmodels(const AccelerationDetector& dispatcher)
     auto smType = dispatcher.IsLayerSupported(layerType) ? Hardware : Software;
     submodels.emplace_back(make_unique<SubModel>(smType, 0));
 
-    for(uint16_t layerIx = 1; layerIx < layerCount; ++layerIx)
+    for(uint16_t layerIx = 1; layerIx < LayerCount; ++layerIx)
     {
         layerType = UserModel->pLayers[layerIx].nLayerKind;
         smType = dispatcher.IsLayerSupported(layerType) ? Hardware : Software;
@@ -74,32 +74,39 @@ void CompiledModel::CreateSubmodels(const AccelerationDetector& dispatcher)
     }
 }
 
-void CompiledModel::ClearSubmodels()
-{
-    submodels.clear();
-}
-
-uint32_t CompiledModel::GetLayerCount() const
-{
-    return layerCount;
-}
-
 uint32_t CompiledModel::GetGmmCount() const
 {
     return gmmCount;
 }
 
-SoftwareModel& CompiledModel::GetSoftwareModel() const
+const std::vector<std::unique_ptr<Layer>>& CompiledModel::GetLayers() const
 {
-    return *softwareModel.get();
+    return softwareModel->Layers;
 }
 
-HardwareModel& CompiledModel:: GetHardwareModel() const
+uint32_t CompiledModel::GetHardwareOffset(const BaseAddressC& address) const
 {
-    return *hardwareModel.get();
+    return hardwareModel->GetOffset(address);
 }
 
-gna_model_id CompiledModel::GetModelId() const
+void CompiledModel::WriteHardwareLayerInputBuffer(const uint32_t layerIndex, PGNA_BUFFER_DESCR &lyrsCfg,
+    const ConfigurationBuffer * const buffer) const
 {
-    return modelId;
+    hardwareModel->WriteLayerInputBuffer(layerIndex, lyrsCfg, buffer);
 }
+void CompiledModel::WriteHardwareLayerOutputBuffer(const uint32_t layerIndex, PGNA_BUFFER_DESCR &lyrsCfg,
+    const ConfigurationBuffer * const buffer) const
+{
+    hardwareModel->WriteLayerOutputBuffer(layerIndex, lyrsCfg, buffer);
+}
+void CompiledModel::WriteHardwareLayerActiveList(const uint32_t layerIndex, PGNA_ACTIVE_LIST_DESCR &actLstCfg,
+    const ActiveList * const activeList) const
+{
+    hardwareModel->WriteLayerActiveList(layerIndex, actLstCfg, activeList);
+}
+
+void CompiledModel::ValidateConfiguration(const RequestConfiguration& configuration) const
+{
+    softwareModel->ValidateConfiguration(configuration);
+}
+

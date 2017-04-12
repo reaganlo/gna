@@ -139,7 +139,7 @@ status_t AcceleratorController::ScoreModel(
         auto& acceleratorSw = accelerators[accel];
         for (const auto& submodel : subModels)
         {
-            uint32_t layerIndex = submodel->GetLayerIndex();
+            uint32_t layerIndex = submodel->LayerIndex;
             uint32_t layerCount = submodel->GetLayerCount();
             switch (submodel->Type)
             {

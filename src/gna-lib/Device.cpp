@@ -30,6 +30,7 @@
 #include <memory>
 
 #include "FakeDetector.h"
+#include "Memory.h"
 #include "Validator.h"
 
 using std::ofstream;
@@ -118,7 +119,7 @@ void Device::LoadModel(gna_model_id *modelId, const gna_model *raw_model)
         auto &model = modelContainer.GetModel(*modelId);
         if (accelerationDetector.IsHardwarePresent())
         {
-            totalMemory->Map(model.GetModelId());
+            totalMemory->Map(model.Id);
         }
         modelCompiler.CascadeCompile(model, accelerationDetector);
     }

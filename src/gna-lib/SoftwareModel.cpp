@@ -44,7 +44,7 @@ SoftwareModel::SoftwareModel(const gna_model *const network)
     build(network->pLayers);
 }
 
-void SoftwareModel::ValidateConfiguration(const RequestConfiguration& configuration)
+void SoftwareModel::ValidateConfiguration(const RequestConfiguration& configuration) const
 {
     Expect::True(inputLayerCount == configuration.InputBuffersCount, XNN_ERR_NETWORK_INPUTS);
     Expect::True(outputLayerCount == configuration.OutputBuffersCount, XNN_ERR_NETWORK_OUTPUTS);

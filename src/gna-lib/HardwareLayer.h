@@ -28,65 +28,65 @@
 #include <array>
 #include <map>
 
-#include "ActiveList.h"
 #include "AffineLayers.h"
-#include "ConvolutionalLayer.h"
-#include "GmmLayer.h"
 #include "Layer.h"
-#include "Address.h"
-#include "RecurrentLayer.h"
-#include "RequestConfiguration.h"
-#include "SimpleLayers.h"
 
 namespace GNA
 {
 
+class ActiveList;
+struct ConfigurationBuffer;
+
+struct DescriptorParameters
+{
+    DescriptorParameters(const Layer& softwareLayer, const BaseAddressC& memoryBase, const AddrXnnLyr& xnnDescriptor,
+        const AddrGmmCfgC& gmmDescriptor, const uint32_t hardwareInternalBufferSize);
+    virtual ~DescriptorParameters() = default;
+
+
+    const Layer& SoftwareLayer;
+    const BaseAddressC& MemoryBase;
+    XNN_LYR * const XnnDescriptor;
+    GMM_CONFIG * const GmmDescriptor;
+    const uint32_t HardwareInternalBufferSize;
+};
+
 // Hardware Layer descriptor converter
-class HardwareLayer
+class HardwareLayer : public DescriptorParameters
 {
 public:
-    static XNN_LYR Convert(const Layer& softwareLayer, const BaseAddressC& memoryBase, 
-        const AddrGmmCfgC& gmmDescriptor, const uint32_t hardwareInternalBufferSize);
-
+    static std::unique_ptr<HardwareLayer> Create(const DescriptorParameters& parameters);
     virtual ~HardwareLayer() = default;
 
-    /**
-    * Converts API layer active list to hardware layer and stores to hwLyr
-    *
-    * @NOTE:   Convert must be called earlier
-    * @al          (in)    active list parameters
-    */
-    void convertAL(ActiveList &activeList);
+    virtual void WriteInputBuffer(PGNA_BUFFER_DESCR &lyrsCfg, const ConfigurationBuffer * const buffer) const;
+    virtual void WriteOutputBuffer(PGNA_BUFFER_DESCR &lyrsCfg, const ConfigurationBuffer * const buffer) const;
+    virtual void WriteActiveList(PGNA_ACTIVE_LIST_DESCR &actLstCfg, const ActiveList * const activeList) const;
 
 protected:
-    HardwareLayer(const Layer& swLayer, const BaseAddressC& memoryBase);
+    HardwareLayer(const DescriptorParameters& parameters);
 
     void save();
 
     inline uint32_t getOffset(const BaseAddressC& address) const
     {
-        return address.GetOffset(memoryBaseAddress);
+        return address.GetOffset(MemoryBase);
     }
-
-    static XNN_LYR layerDescriptor; // single layer descriptor
-    const Layer& softwareLayer;
 
 private:
     static const std::map<const nn_layer_kind, const NN_OP_TYPE> OperationsMap;
 
-    const BaseAddressC memoryBaseAddress;
 };
 
 // Extended Hardware Layer descriptor converter
 class HardwareLayerExt : public HardwareLayer
 {
 public:
-    ~HardwareLayerExt() = default;
     HardwareLayerExt(const HardwareLayerExt &) = delete;
     HardwareLayerExt& operator=(const HardwareLayerExt&) = delete;
+    virtual ~HardwareLayerExt() = default;
 
 protected:
-    HardwareLayerExt(const Layer& swLayer, const BaseAddressC& memoryBase, const uint32_t bufferSize,
+    HardwareLayerExt(const DescriptorParameters& parameters,
         const uint32_t effectiveGrouping);
 
     void save();
@@ -108,7 +108,7 @@ private:
 class HardwareLayerAffDiagTrans : public HardwareLayerExt
 {
 public:
-    HardwareLayerAffDiagTrans(const Layer& swLayer, const BaseAddressC& memoryBase, const uint32_t hwInBuffSize);
+    HardwareLayerAffDiagTrans(const DescriptorParameters& parameters);
 
     virtual ~HardwareLayerAffDiagTrans() = default;
 };
@@ -116,16 +116,17 @@ public:
 class HardwareLayerAffineMBias : public HardwareLayerExt
 {
 public:
-    HardwareLayerAffineMBias(const Layer& swLayer, void* memoryBase, uint32_t hwInBuffSize);
+    HardwareLayerAffineMBias(const DescriptorParameters& parameters);
+    virtual ~HardwareLayerAffineMBias() = default;
 };
 
 // Hardware Copy Layer descriptor converter
 class HardwareLayerCopy : public HardwareLayer
 {
 public:
-    HardwareLayerCopy(const Layer& swLayer, const BaseAddressC& memoryBase);
     HardwareLayerCopy(const HardwareLayerCopy &) = delete;
     HardwareLayerCopy& operator=(const HardwareLayerCopy&) = delete;
+    HardwareLayerCopy(const DescriptorParameters& parameters);
     virtual ~HardwareLayerCopy() = default;
 
 protected:
@@ -136,9 +137,9 @@ protected:
 class HardwareLayerRnn : public HardwareLayerExt
 {
 public:
-    HardwareLayerRnn(const Layer& swLayer, const BaseAddressC& memoryBase, const uint32_t hwInBuffSize);
     HardwareLayerRnn(const HardwareLayerRnn &) = delete;
     HardwareLayerRnn& operator=(const HardwareLayerRnn&) = delete;
+    HardwareLayerRnn(const DescriptorParameters& parameters);
     virtual ~HardwareLayerRnn() = default;
 
     // calculates feedback buffer offset for per RequestConfiguration output buffer
@@ -158,9 +159,9 @@ private:
 class HardwareLayerCnn : public HardwareLayerExt
 {
 public:
-    HardwareLayerCnn(const Layer& swLayer, const BaseAddressC& memoryBase, const uint32_t hwInBuffSize);
     HardwareLayerCnn(const HardwareLayerRnn &) = delete;
     HardwareLayerCnn& operator=(const HardwareLayerRnn&) = delete;
+    HardwareLayerCnn(const DescriptorParameters& parameters);
     virtual ~HardwareLayerCnn() = default;
 
 protected:
@@ -180,20 +181,19 @@ private:
 class HardwareLayerGmm : public HardwareLayer
 {
 public:
-    HardwareLayerGmm(const Layer& swLayer, const BaseAddressC& memoryBase, const AddrGmmCfgC& gmmDescriptor);
     HardwareLayerGmm(const HardwareLayerGmm &) = delete;
     HardwareLayerGmm& operator=(const HardwareLayerGmm&) = delete;
+    HardwareLayerGmm(const DescriptorParameters& parameters);
     virtual ~HardwareLayerGmm() = default;
+
+    virtual void WriteInputBuffer(PGNA_BUFFER_DESCR &lyrsCfg, const ConfigurationBuffer * const buffer) const override;
+    virtual void WriteOutputBuffer(PGNA_BUFFER_DESCR &lyrsCfg, const ConfigurationBuffer * const buffer) const override;
+    virtual void WriteActiveList(PGNA_ACTIVE_LIST_DESCR &actLstCfg, const ActiveList * const activeList) const override;
 
 protected:
     static const std::map<const gna_gmm_mode, const GMM_MODE_CTRL> GmmModes;
 
     void save();
-    void updateInput(const ConfigurationBuffer &inputBuffer, const AddrGmmCfgC& gmmDescriptor);
-    void updateOutput(const ConfigurationBuffer &outputBuffer, const AddrGmmCfgC& gmmDescriptor);
-    void updateActiveList(const GmmLayer *gmm, const ActiveList &activeList, const AddrGmmCfgC& gmmDescriptor);
-    
-    const AddrGmmCfgC gmmDescriptor;
 };
 
 }

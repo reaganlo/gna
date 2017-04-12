@@ -25,6 +25,13 @@
 
 #include "HardwareLayer.h"
 
+#include "ActiveList.h"
+#include "ConvolutionalLayer.h"
+#include "GmmLayer.h"
+#include "GnaDrvApi.h"
+#include "RecurrentLayer.h"
+#include "RequestConfiguration.h"
+#include "SimpleLayers.h"
 #include "Validator.h"
 
 using std::array;
@@ -33,6 +40,21 @@ using std::map;
 using std::unique_ptr;
 
 using namespace GNA;
+
+DescriptorParameters::DescriptorParameters(const Layer& softwareLayer, const BaseAddressC& memoryBase,
+    const AddrXnnLyr& xnnDescriptor, const AddrGmmCfgC& gmmDescriptor, const uint32_t hardwareInternalBufferSize) :
+        SoftwareLayer{softwareLayer},
+        MemoryBase{memoryBase},
+        XnnDescriptor{xnnDescriptor},
+        GmmDescriptor{gmmDescriptor},
+        HardwareInternalBufferSize{hardwareInternalBufferSize}
+{
+    Expect::ValidBuffer(MemoryBase);
+    Expect::ValidBuffer(XnnDescriptor);
+    Expect::AlignedTo(XnnDescriptor, sizeof(XNN_LYR));
+    Expect::ValidBuffer(GmmDescriptor);
+    Expect::AlignedTo(GmmDescriptor, sizeof(GMM_CONFIG));
+};
 
 const map<const nn_layer_kind, const NN_OP_TYPE> HardwareLayer::OperationsMap =
 {
@@ -47,88 +69,83 @@ const map<const nn_layer_kind, const NN_OP_TYPE> HardwareLayer::OperationsMap =
     { INTEL_RECURRENT, NN_RNN }
 };
 
-XNN_LYR HardwareLayer::layerDescriptor;
-
-// TODO:INTEGRATION replace memoryBase with lyr address
-XNN_LYR HardwareLayer::Convert(const Layer& softwareLayer, const BaseAddressC& memoryBase,
-const AddrGmmCfgC& gmmDescriptor, const uint32_t hardwareInternalBufferSize)
+unique_ptr<HardwareLayer> HardwareLayer::Create(const DescriptorParameters& parameters)
 {
-    auto converter = unique_ptr<HardwareLayer>();
-    switch (OperationsMap.at(softwareLayer.Config.Kind))
+    switch (OperationsMap.at(parameters.SoftwareLayer.Config.Kind))
     {
     case NN_CNN:
-        converter = make_unique<HardwareLayerCnn>(softwareLayer, memoryBase, hardwareInternalBufferSize);
-        break;
+        return make_unique<HardwareLayerCnn>(parameters);
     case NN_COPY:
-        converter = make_unique<HardwareLayerCopy>(softwareLayer, memoryBase);
-        break;
+        return make_unique<HardwareLayerCopy>(parameters);
     case NN_GMM:
-        converter = make_unique<HardwareLayerGmm>(softwareLayer, memoryBase, gmmDescriptor);
-        break;
+        return make_unique<HardwareLayerGmm>(parameters);
     case NN_RNN:
-        converter = make_unique<HardwareLayerRnn>(softwareLayer, memoryBase, hardwareInternalBufferSize);
-        break;
+        return make_unique<HardwareLayerRnn>(parameters);
     case NN_AFF_MB:
-        converter = make_unique<HardwareLayerAffineMBias>(softwareLayer, memoryBase, hardwareInternalBufferSize);
-        break;        
+        return make_unique<HardwareLayerAffineMBias>(parameters);
     default:
-        converter = make_unique<HardwareLayerAffDiagTrans>(softwareLayer, memoryBase, hardwareInternalBufferSize);
-        break;
+        return make_unique<HardwareLayerAffDiagTrans>(parameters);
     }
-    return converter->layerDescriptor;
 }
 
-HardwareLayer::HardwareLayer(const Layer &swLayer, const BaseAddressC& memoryBase) :
-    softwareLayer(swLayer),
-    memoryBaseAddress(memoryBase)
+HardwareLayer::HardwareLayer(const DescriptorParameters& parameters) :
+    DescriptorParameters{parameters}
 {
-    layerDescriptor = {};
-    Expect::ValidBuffer(memoryBaseAddress);
 }
 
-void HardwareLayer::convertAL(ActiveList& activeList)
+void HardwareLayer::WriteInputBuffer(PGNA_BUFFER_DESCR &lyrsCfg, const ConfigurationBuffer * const buffer) const
 {
-    if (activeList.Enabled)
+    lyrsCfg->offset = getOffset(XnnDescriptor) + offsetof(XNN_LYR, in_buffer);
+    lyrsCfg->value = getOffset(buffer);
+}
+
+void HardwareLayer::WriteOutputBuffer(PGNA_BUFFER_DESCR &lyrsCfg, const ConfigurationBuffer * const buffer) const
+{
+    if (LayerOutput::ActivatedOutput == SoftwareLayer.Output.GetOutputMode())
     {
-        layerDescriptor.act_list_n_elems = static_cast<uint16_t>(activeList.IndicesCount);
-        layerDescriptor.act_list_buffer = getOffset(activeList.Indices);
-        if (NN_AFFINE == layerDescriptor.op)
-        {
-            layerDescriptor.op = NN_AFF_AL;
-        }
-        else if (NN_GMM == layerDescriptor.op)
-        {
-            layerDescriptor.op = NN_GMM_ACTIVE_LIST;
-        }
+        lyrsCfg->offset = getOffset(XnnDescriptor) + offsetof(XNN_LYR, out_act_fn_buffer);
     }
+    else
+    {
+        lyrsCfg->offset = getOffset(XnnDescriptor) + offsetof(XNN_LYR, out_sum_buffer);
+    }
+    lyrsCfg->value = getOffset(buffer);
+}
+
+void HardwareLayer::WriteActiveList(PGNA_ACTIVE_LIST_DESCR &actLstCfg, const ActiveList * const activeList) const
+{
+    actLstCfg->act_list_buffer_offset = getOffset(XnnDescriptor) + offsetof(XNN_LYR, act_list_buffer);
+    actLstCfg->act_list_buffer_value = getOffset(activeList->Indices);
+    actLstCfg->act_list_n_elems_offset = getOffset(XnnDescriptor) + offsetof(XNN_LYR, act_list_n_elems);
+    actLstCfg->act_list_n_elems_value = activeList->IndicesCount;
 }
 
 void HardwareLayer::save()
 {
-    layerDescriptor.op = OperationsMap.at(softwareLayer.Config.Kind);
-    layerDescriptor.n_in_elems = static_cast<uint16_t>(softwareLayer.Input.ElementCount);
-    layerDescriptor.n_out_elems = static_cast<uint16_t>(softwareLayer.Output.ElementCount);
-    layerDescriptor.n_groups = static_cast<uint8_t>(softwareLayer.Input.VectorCount);
-    layerDescriptor.in_buffer = getOffset(softwareLayer.Input.Buffer);
-    layerDescriptor.out_act_fn_buffer = getOffset(softwareLayer.Output.Buffer);
-    layerDescriptor.out_sum_buffer = getOffset(softwareLayer.Output.ScratchPad);
+    XnnDescriptor->op = OperationsMap.at(SoftwareLayer.Config.Kind);
+    XnnDescriptor->n_in_elems = static_cast<uint16_t>(SoftwareLayer.Input.ElementCount);
+    XnnDescriptor->n_out_elems = static_cast<uint16_t>(SoftwareLayer.Output.ElementCount);
+    XnnDescriptor->n_groups = static_cast<uint8_t>(SoftwareLayer.Input.VectorCount);
+    XnnDescriptor->in_buffer = getOffset(SoftwareLayer.Input.Buffer);
+    XnnDescriptor->out_act_fn_buffer = getOffset(SoftwareLayer.Output.Buffer);
+    XnnDescriptor->out_sum_buffer = getOffset(SoftwareLayer.Output.ScratchPad);
 }
+
 const map<const uint32_t, const array<const uint32_t, XNN_N_GROUP_MAX>> HardwareLayerExt::bufferElementsMap
 {
     { 12,{ 12288, 12288, 12096, 12288, 12000, 12096, 12096, 12288 } },
     { 24,{ 6144, 6144, 6048, 6144, 5760, 6048, 6048, 6144 } }
 };
 
-HardwareLayerExt::HardwareLayerExt(const Layer& swLayer, const BaseAddressC& memoryBase,
-    const uint32_t bufferSize, const uint32_t effectiveGrouping) :
-    HardwareLayer(swLayer, memoryBase),
+HardwareLayerExt::HardwareLayerExt(const DescriptorParameters& parameters, const uint32_t effectiveGrouping) :
+    HardwareLayer(parameters),
     iterationGrouping(effectiveGrouping),
-    bufferElementCount(bufferElementsMap.at(bufferSize).at(effectiveGrouping - 1))
+    bufferElementCount(bufferElementsMap.at(HardwareInternalBufferSize).at(effectiveGrouping - 1))
 {
     Expect::InRange(iterationGrouping, 1, XNN_N_GROUP_MAX, XNN_ERR_GROUPING);
     // Calculates number of iterations and elements in last iteration
      //#groups for calculation(can be different than network grouping)
-    auto elementsTimesGrouping = softwareLayer.Input.ElementCount * iterationGrouping;
+    auto elementsTimesGrouping = SoftwareLayer.Input.ElementCount * iterationGrouping;
     iterationCount = ((elementsTimesGrouping - 1) / bufferElementCount) + 1;
     Expect::InRange(iterationCount, 1, UINT8_MAX, XNN_ERR_LYR_CFG);
 
@@ -140,36 +157,35 @@ HardwareLayerExt::HardwareLayerExt(const Layer& swLayer, const BaseAddressC& mem
 void HardwareLayerExt::save()
 {
     HardwareLayer::save();
-    layerDescriptor.n_iters = static_cast<uint8_t>(iterationCount);
-    layerDescriptor.n_elems_last = static_cast<uint16_t>(lastIterationElementCount);
+    XnnDescriptor->n_iters = static_cast<uint8_t>(iterationCount);
+    XnnDescriptor->n_elems_last = static_cast<uint16_t>(lastIterationElementCount);
 
     if (affine)
     {
-        layerDescriptor.flags.weight_size = (affine->GetWeightMode() == GNA_WEIGHT_2B) ? 0 : 1;
-        layerDescriptor.aff_weight_buffer = getOffset(affine->GetWeights());
-        layerDescriptor.aff_const_buffer = getOffset(affine->GetBiases());
+        XnnDescriptor->flags.weight_size = (affine->GetWeightMode() == GNA_WEIGHT_2B) ? 0 : 1;
+        XnnDescriptor->aff_weight_buffer = getOffset(affine->GetWeights());
+        XnnDescriptor->aff_const_buffer = getOffset(affine->GetBiases());
     }
     if (activation && activation->Enabled)
     {
-        layerDescriptor.flags.act_fn_en = 1;
-        layerDescriptor.pwl_n_segs = static_cast<uint8_t>(activation->SegmentCount);
-        layerDescriptor.pwl_seg_def_buffer = getOffset(activation->Segments);
+        XnnDescriptor->flags.act_fn_en = 1;
+        XnnDescriptor->pwl_n_segs = static_cast<uint8_t>(activation->SegmentCount);
+        XnnDescriptor->pwl_seg_def_buffer = getOffset(activation->Segments);
     }
     else
     {
-        layerDescriptor.flags.act_fn_en = 0;
+        XnnDescriptor->flags.act_fn_en = 0;
     }
 }
 
-HardwareLayerAffDiagTrans::HardwareLayerAffDiagTrans(const Layer& swLayer,
-    const BaseAddressC& memoryBase, uint32_t hwInBuffSize) :
-    HardwareLayerExt(swLayer, memoryBase, hwInBuffSize, swLayer.Input.VectorCount)
+HardwareLayerAffDiagTrans::HardwareLayerAffDiagTrans(const DescriptorParameters& parameters) :
+    HardwareLayerExt(parameters, parameters.SoftwareLayer.Input.VectorCount)
 {
-    switch (softwareLayer.Config.Kind)
+    switch (SoftwareLayer.Config.Kind)
     {
     case INTEL_AFFINE:
     case INTEL_AFFINE_DIAGONAL:
-        auto& aff = static_cast<const AffineLayer&>(softwareLayer);
+        auto& aff = static_cast<const AffineLayer&>(SoftwareLayer);
         affine = aff.Affine.get();
         activation = aff.Activation.get();
         break;
@@ -177,8 +193,8 @@ HardwareLayerAffDiagTrans::HardwareLayerAffDiagTrans(const Layer& swLayer,
     save();
 }
 
-HardwareLayerCopy::HardwareLayerCopy(const Layer& swLayer, const BaseAddressC& memoryBase) :
-    HardwareLayer(swLayer, memoryBase)
+HardwareLayerCopy::HardwareLayerCopy(const DescriptorParameters& parameters) :
+    HardwareLayer(parameters)
 {
     save();
 }
@@ -186,17 +202,17 @@ HardwareLayerCopy::HardwareLayerCopy(const Layer& swLayer, const BaseAddressC& m
 void HardwareLayerCopy::save()
 {
     HardwareLayer::save();
-    auto& copy = static_cast<const CopyLayer&>(softwareLayer);
-    layerDescriptor.cpy_n_elems = static_cast<uint16_t>(copy.CopyElementsCount);
+    auto& copy = static_cast<const CopyLayer&>(SoftwareLayer);
+    XnnDescriptor->cpy_n_elems = static_cast<uint16_t>(copy.CopyElementsCount);
 }
 
-HardwareLayerRnn::HardwareLayerRnn(const Layer& swLayer, const BaseAddressC& memoryBase, const uint32_t hwInBuffSize) :
-    HardwareLayerExt(swLayer, memoryBase, hwInBuffSize, 1),
+HardwareLayerRnn::HardwareLayerRnn(const DescriptorParameters& parameters) :
+    HardwareLayerExt(parameters, 1),
     feedbackIterationsCount(0),
     feedbackFirstIterElementCount(0),
     feedbackLastIterElementCount(0)
 {
-    auto& rnn = static_cast<const RnnLayer&>(softwareLayer);
+    auto& rnn = static_cast<const RnnLayer&>(SoftwareLayer);
     affine = rnn.Affine.get();
     activation = rnn.Activation.get();
     convert();
@@ -205,7 +221,7 @@ HardwareLayerRnn::HardwareLayerRnn(const Layer& swLayer, const BaseAddressC& mem
 
 void HardwareLayerRnn::convert()
 {
-    auto elementCount = softwareLayer.Input.ElementCount;
+    auto elementCount = SoftwareLayer.Input.ElementCount;
 
     feedbackFirstIterElementCount = min((bufferElementCount - lastIterationElementCount), elementCount);
     Expect::True(feedbackFirstIterElementCount <= bufferElementCount, XNN_ERR_LYR_CFG);
@@ -241,26 +257,26 @@ void HardwareLayerRnn::convert()
 void HardwareLayerRnn::save()
 {
     HardwareLayerExt::save();
-    layerDescriptor.rnn_n_fb_iters = feedbackIterationsCount;
-    layerDescriptor.rnn_n_elems_first = feedbackFirstIterElementCount;
-    layerDescriptor.rnn_n_elems_last = feedbackLastIterElementCount;
+    XnnDescriptor->rnn_n_fb_iters = feedbackIterationsCount;
+    XnnDescriptor->rnn_n_elems_first = feedbackFirstIterElementCount;
+    XnnDescriptor->rnn_n_elems_last = feedbackLastIterElementCount;
     // will be 0 for hidden layers
-    if (INTEL_INPUT == softwareLayer.Config.Type || INTEL_HIDDEN == softwareLayer.Config.Type)
+    if (INTEL_INPUT == SoftwareLayer.Config.Type || INTEL_HIDDEN == SoftwareLayer.Config.Type)
     {
-        layerDescriptor.rnn_out_fb_buffer = CalculateFeedbackBuffer(softwareLayer.Output.Buffer);
+        XnnDescriptor->rnn_out_fb_buffer = CalculateFeedbackBuffer(SoftwareLayer.Output.Buffer);
     }
 }
 
 const uint32_t HardwareLayerRnn::CalculateFeedbackBuffer(const OutputBuffer& outputBuffer) const
 {
-    auto& rnn = static_cast<const RnnLayer&>(softwareLayer);
+    auto& rnn = static_cast<const RnnLayer&>(SoftwareLayer);
     return getOffset(rnn.CalculateFeedbackBuffer(outputBuffer));
 }
 
-HardwareLayerCnn::HardwareLayerCnn(const Layer & swLayer, const BaseAddressC& memoryBase, uint32_t hwInBuffSize) :
-    HardwareLayerExt(swLayer, memoryBase, hwInBuffSize, 1)
+HardwareLayerCnn::HardwareLayerCnn(const DescriptorParameters& parameters) :
+    HardwareLayerExt(parameters, 1)
 {
-    auto& cnn = static_cast<const CnnLayer&>(softwareLayer);
+    auto& cnn = static_cast<const CnnLayer&>(SoftwareLayer);
     auto fitlerCount = cnn.Convolution.Filters.Count;
     auto fitlerSize = cnn.Convolution.Filters.CoefficientCount;
     filtersCountInFullIteration =
@@ -296,46 +312,46 @@ void HardwareLayerCnn::save()
 {
     HardwareLayerExt::save();
     // some fields saved by HardwareLayerExt will be overwritten
-    auto& cnn = static_cast<const CnnLayer&>(softwareLayer);
-    layerDescriptor.flags.pool_param = static_cast<uint8_t>(cnn.Pooling.Type);
-    layerDescriptor.cnn_flt_bf_sz_iter = filtersElementCountInFullIteration;
-    layerDescriptor.cnn_flt_bf_sz_last = filtersElementCountInLastIteration;
-    layerDescriptor.cnn_flt_buffer = getOffset(cnn.Convolution.Filters.Data);;
-    layerDescriptor.cnn_flt_size = cnn.Convolution.Filters.CoefficientCount;
-    layerDescriptor.cnn_n_flts = cnn.Convolution.Filters.Count;
-    layerDescriptor.cnn_n_flts_iter = filtersCountInFullIteration;
-    layerDescriptor.cnn_n_flt_iters = filtersIterationCount;
-    layerDescriptor.cnn_n_flt_last = filtersCountInLastIteration;
-    layerDescriptor.cnn_n_flt_outs = cnn.Convolution.OutputElementsCount;
-    layerDescriptor.cnn_n_flt_stride = cnn.Pooling.Stride;
-    layerDescriptor.cnn_n_out_p_flt = softwareLayer.Output.ElementCount;
-    layerDescriptor.cnn_pool_size = cnn.Pooling.Size;
-    layerDescriptor.cnn_pool_stride = cnn.Pooling.Stride;
-    layerDescriptor.aff_const_buffer = getOffset(cnn.Convolution.Filters.Biases);
+    auto& cnn = static_cast<const CnnLayer&>(SoftwareLayer);
+    XnnDescriptor->flags.pool_param = static_cast<uint8_t>(cnn.Pooling.Type);
+    XnnDescriptor->cnn_flt_bf_sz_iter = filtersElementCountInFullIteration;
+    XnnDescriptor->cnn_flt_bf_sz_last = filtersElementCountInLastIteration;
+    XnnDescriptor->cnn_flt_buffer = getOffset(cnn.Convolution.Filters.Data);;
+    XnnDescriptor->cnn_flt_size = cnn.Convolution.Filters.CoefficientCount;
+    XnnDescriptor->cnn_n_flts = cnn.Convolution.Filters.Count;
+    XnnDescriptor->cnn_n_flts_iter = filtersCountInFullIteration;
+    XnnDescriptor->cnn_n_flt_iters = filtersIterationCount;
+    XnnDescriptor->cnn_n_flt_last = filtersCountInLastIteration;
+    XnnDescriptor->cnn_n_flt_outs = cnn.Convolution.OutputElementsCount;
+    XnnDescriptor->cnn_n_flt_stride = cnn.Pooling.Stride;
+    XnnDescriptor->cnn_n_out_p_flt = SoftwareLayer.Output.ElementCount;
+    XnnDescriptor->cnn_pool_size = cnn.Pooling.Size;
+    XnnDescriptor->cnn_pool_stride = cnn.Pooling.Stride;
+    XnnDescriptor->aff_const_buffer = getOffset(cnn.Convolution.Filters.Biases);
 }
 
-HardwareLayerAffineMBias::HardwareLayerAffineMBias(const Layer & swLayer, void * const memoryBase, 
-    uint32_t const hwInBuffSize)
-    : HardwareLayerExt(swLayer, memoryBase, hwInBuffSize, softwareLayer.Input.VectorCount)
+HardwareLayerAffineMBias::HardwareLayerAffineMBias(const DescriptorParameters& parameters) :
+    HardwareLayerExt(parameters, parameters.SoftwareLayer.Input.VectorCount)
 {
-    auto& mbiasLayer = static_cast<const AffineMultiBiasLayer&>(softwareLayer);
+    auto& mbiasLayer = static_cast<const AffineMultiBiasLayer&>(SoftwareLayer);
     affine = mbiasLayer.Affine.get();
     activation = mbiasLayer.Activation.get();
 
     save();
 
-    layerDescriptor.bias_grp_cnt = layerDescriptor.n_groups;
-    layerDescriptor.bias_grp_ptr = getOffset(mbiasLayer.Affine->GetBiases());
-    layerDescriptor.bias_grp_value = mbiasLayer.Affine->BiasVectorIndex;
+    XnnDescriptor->bias_grp_cnt = XnnDescriptor->n_groups;
+    XnnDescriptor->bias_grp_ptr = getOffset(mbiasLayer.Affine->GetBiases());
+    XnnDescriptor->bias_grp_value = mbiasLayer.Affine->BiasVectorIndex;
 
     if (affine->GetWeightMode() == GNA_WEIGHT_1B)
     {
-        layerDescriptor.aff_const_buffer = 
+        XnnDescriptor->aff_const_buffer = 
             getOffset((static_cast<const AffineFunctionMulti1B*>(affine)->WeightScaleFactors));
     }
 }
 
-const std::map<const gna_gmm_mode, const GMM_MODE_CTRL> HardwareLayerGmm::GmmModes = {
+const std::map<const gna_gmm_mode, const GMM_MODE_CTRL> HardwareLayerGmm::GmmModes =
+{
     //{ gna_gmm_mode, { read_elimination, calculation_mode, __res_03} },
     { GNA_MAXMIX8, { 0, 0, 0 } },
     { GNA_MAXMIX16,{ 0, 0, 0 } },
@@ -344,10 +360,8 @@ const std::map<const gna_gmm_mode, const GMM_MODE_CTRL> HardwareLayerGmm::GmmMod
     { GNA_L2, { 0, 0, 0 } },
 };
 
-HardwareLayerGmm::HardwareLayerGmm(const Layer& swLayer, const BaseAddressC& memoryBase,
-    const AddrGmmCfgC& gmmDescriptorIn) :
-    HardwareLayer(swLayer, memoryBase),
-    gmmDescriptor(gmmDescriptorIn)
+HardwareLayerGmm::HardwareLayerGmm(const DescriptorParameters& parameters) :
+    HardwareLayer(parameters)
 {
     save();
 }
@@ -355,63 +369,68 @@ HardwareLayerGmm::HardwareLayerGmm(const Layer& swLayer, const BaseAddressC& mem
 void HardwareLayerGmm::save()
 {
     HardwareLayer::save();
-    layerDescriptor.gmm_descriptor = getOffset(gmmDescriptor);
-    auto const gmmConfig = gmmDescriptor.Get();
-    auto& gmm = static_cast<const GmmLayer&>(softwareLayer);
+    XnnDescriptor->gmm_descriptor = getOffset(GmmDescriptor);
+    auto& gmm = static_cast<const GmmLayer&>(SoftwareLayer);
     // can be updated per request
-    gmmConfig->fvaddr      = getOffset(gmm.Input.Buffer);
-    gmmConfig->gmmscradd   = getOffset(gmm.Output.Buffer);
+    GmmDescriptor->fvaddr      = getOffset(gmm.Input.Buffer);
+    GmmDescriptor->gmmscradd   = getOffset(gmm.Output.Buffer);
 
     // GMM Model configuration, will be constant over time for model
-    gmmConfig->gmmscrlen   = GMM_SCORE_SIZE * gmm.Input.VectorCount * gmm.Config.stateCount;; // will be updated when ActiveList is used
-    gmmConfig->fvoffset    = gmm.Input.ElementCount;
+    GmmDescriptor->gmmscrlen   = GMM_SCORE_SIZE * gmm.Input.VectorCount * gmm.Config.stateCount;; // will be updated when ActiveList is used
+    GmmDescriptor->fvoffset    = gmm.Input.ElementCount;
 
-    gmmConfig->numfv       = gmm.Input.VectorCount;
-    gmmConfig->vlength     = gmm.Input.ElementCount;
+    GmmDescriptor->numfv       = gmm.Input.VectorCount;
+    GmmDescriptor->vlength     = gmm.Input.ElementCount;
 
-    gmmConfig->mode        = GmmModes.at(gmm.Config.mode);
-    gmmConfig->gcaddr      = getOffset(gmm.Data.gaussianConstants);
-    gmmConfig->mvaddr      = getOffset(gmm.Data.meanValues);
-    gmmConfig->vvaddr      = getOffset(gmm.Data.inverseCovariancesForMaxMix16);
+    GmmDescriptor->mode        = GmmModes.at(gmm.Config.mode);
+    GmmDescriptor->gcaddr      = getOffset(gmm.Data.gaussianConstants);
+    GmmDescriptor->mvaddr      = getOffset(gmm.Data.meanValues);
+    GmmDescriptor->vvaddr      = getOffset(gmm.Data.inverseCovariancesForMaxMix16);
 
-    gmmConfig->gcsoffset   = gmm.Params.GaussConstSetOffsetSize;
-    gmmConfig->mvsoffset   = gmm.Params.MeanSetOffsetSize;
-    gmmConfig->vvsoffset   = gmm.Params.VarSetOffsetSize;
-    gmmConfig->vvwidth     = gmm.Params.VarianceSize;
-    gmmConfig->gmmtelst    = gmm.Config.mixtureComponentCount * gmm.Input.ElementCount;
-    gmmConfig->maxlsscore  = gmm.Config.maximumScore;
-    gmmConfig->numgmms     = gmm.Config.stateCount;
-    gmmConfig->nummcpg     = gmm.Config.mixtureComponentCount;
+    GmmDescriptor->gcsoffset   = gmm.Params.GaussConstSetOffsetSize;
+    GmmDescriptor->mvsoffset   = gmm.Params.MeanSetOffsetSize;
+    GmmDescriptor->vvsoffset   = gmm.Params.VarSetOffsetSize;
+    GmmDescriptor->vvwidth     = gmm.Params.VarianceSize;
+    GmmDescriptor->gmmtelst    = gmm.Config.mixtureComponentCount * gmm.Input.ElementCount;
+    GmmDescriptor->maxlsscore  = gmm.Config.maximumScore;
+    GmmDescriptor->numgmms     = gmm.Config.stateCount;
+    GmmDescriptor->nummcpg     = gmm.Config.mixtureComponentCount;
 
-    gmmConfig->fvwidth     = GMM_FV_ELEMENT_SIZE;
-    gmmConfig->gcwidth     = GMM_CONSTANTS_SIZE;
-    gmmConfig->gmmscrwdth  = GMM_SCORE_SIZE;
-    gmmConfig->maxlswidth  = GMM_SCORE_SIZE;
-    gmmConfig->mvwidth     = GMM_MEAN_VALUE_SIZE;
+    GmmDescriptor->fvwidth     = GMM_FV_ELEMENT_SIZE;
+    GmmDescriptor->gcwidth     = GMM_CONSTANTS_SIZE;
+    GmmDescriptor->gmmscrwdth  = GMM_SCORE_SIZE;
+    GmmDescriptor->maxlswidth  = GMM_SCORE_SIZE;
+    GmmDescriptor->mvwidth     = GMM_MEAN_VALUE_SIZE;
 }
 
-void HardwareLayerGmm::updateInput(const ConfigurationBuffer &inputBuffer, const AddrGmmCfgC& gmmDescriptor)
+void HardwareLayerGmm::WriteInputBuffer(PGNA_BUFFER_DESCR &lyrsCfg, const ConfigurationBuffer * const buffer) const
 {
-    (*gmmDescriptor).fvaddr = getOffset(inputBuffer);
+    GmmDescriptor->fvaddr = getOffset(buffer);
+    // TODO: add PGNA_BUFFER_DESCR for gmm or extent current structure
 }
 
-void HardwareLayerGmm::updateOutput(const ConfigurationBuffer &outputBuffer, const AddrGmmCfgC& gmmDescriptor)
+void HardwareLayerGmm::WriteOutputBuffer(PGNA_BUFFER_DESCR &lyrsCfg, const ConfigurationBuffer * const buffer) const
 {
-    (*gmmDescriptor).gmmscradd = getOffset(outputBuffer);
+    GmmDescriptor->gmmscradd = getOffset(buffer);
+    // TODO: add PGNA_BUFFER_DESCR for gmm or extent current structure
 }
 
-void HardwareLayerGmm::updateActiveList(const GmmLayer *gmm, const ActiveList &activeList, const AddrGmmCfgC& gmmDescriptor)
+void HardwareLayerGmm::WriteActiveList(PGNA_ACTIVE_LIST_DESCR &actLstCfg, const ActiveList * const activeList) const
 {
-    auto scoreElementsCount = GMM_SCORE_SIZE * gmm->Input.VectorCount * gmm->Config.stateCount;
+    HardwareLayerGmm::WriteActiveList(actLstCfg, activeList);
+    auto& gmm = static_cast<const GmmLayer&>(SoftwareLayer);
+
+    auto scoreElementsCount = GMM_SCORE_SIZE * gmm.Input.VectorCount * gmm.Config.stateCount;
     auto activeListIndices = 0ui32;
     auto activeListIndicesCount = 0ui32;
-    if (activeList.Enabled)
+    if (activeList->Enabled)
     {
-        scoreElementsCount = GMM_SCORE_SIZE * gmm->Input.VectorCount * activeList.IndicesCount;
-        activeListIndices = getOffset(activeList.Indices);
-        activeListIndicesCount = activeList.IndicesCount;
+        scoreElementsCount = GMM_SCORE_SIZE * gmm.Input.VectorCount * activeList->IndicesCount;
+        activeListIndices = getOffset(activeList->Indices);
+        activeListIndicesCount = activeList->IndicesCount;
     }
-    (*gmmDescriptor).gmmscrlen = scoreElementsCount;
-    (*gmmDescriptor).asladdr = activeListIndices;
-    (*gmmDescriptor).astlistlen = activeListIndicesCount;
+    GmmDescriptor->gmmscrlen = scoreElementsCount;
+    GmmDescriptor->asladdr = activeListIndices;
+    GmmDescriptor->astlistlen = activeListIndicesCount;
+    // TODO: add PGNA_ACTIVE_LIST_DESCR for gmm or extent current structure
 }

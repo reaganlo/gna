@@ -37,6 +37,7 @@
 
 namespace GNA
 {
+
 struct ConfigurationBuffer : public InOutBuffer
 {
     ConfigurationBuffer(gna_buffer_type type, void *address);

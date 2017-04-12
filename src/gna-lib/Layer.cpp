@@ -23,10 +23,11 @@
  in any way.
 */
 
+#include "Layer.h"
+
 #include "AffineLayers.h"
 #include "ConvolutionalLayer.h"
 #include "GmmLayer.h"
-#include "Layer.h"
 #include "RecurrentLayer.h"
 #include "SimpleLayers.h"
 #include "Validator.h"

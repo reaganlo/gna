@@ -26,10 +26,12 @@
 #pragma once
 
 #include "common.h"
-#include "CompiledModel.h"
 
 namespace GNA
 {
+
+class AccelerationDetector;
+class CompiledModel;
 
 /* ModelCompiler is a processing static class that should not own any resources
 */

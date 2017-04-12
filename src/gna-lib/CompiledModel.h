@@ -35,6 +35,8 @@
 namespace GNA
 {
 
+struct ConfigurationBuffer;
+
 class CompiledModel
 {
 public:
@@ -43,42 +45,40 @@ public:
     CompiledModel(const CompiledModel &) = delete;
     CompiledModel& operator=(const CompiledModel&) = delete;
 
-    const gna_model *const UserModel;
-
-    uint32_t GetLayerCount() const;
+    // TODO: most of these methods are here due to invalid object design, need to refactor to get rid of
 
     uint32_t GetGmmCount() const;
-
-    HardwareModel& GetHardwareModel() const;
-
-    SoftwareModel& GetSoftwareModel() const;
-
-    gna_model_id GetModelId() const;
-
-    void CompileSoftwareModel();
-
-    void CompileHardwareModel(const AccelerationDetector& detector);
-
-    void CreateSubmodels(const AccelerationDetector& detector);
-
-    void ClearSubmodels();
-
+    uint32_t GetHardwareOffset(const BaseAddressC& address) const;
+    const std::vector<std::unique_ptr<Layer>>& GetLayers() const;
     decltype(auto) CompiledModel::GetSubmodels() const
     {
         return (submodels);
     }
 
-private:
-    const gna_model_id modelId;
-    const Memory& memory;
-    const uint16_t layerCount;
-    uint16_t gmmCount = 0;
+    void WriteHardwareLayerInputBuffer(const uint32_t layerIndex, PGNA_BUFFER_DESCR &lyrsCfg,
+        const ConfigurationBuffer * const buffer) const;
+    void WriteHardwareLayerOutputBuffer(const uint32_t layerIndex, PGNA_BUFFER_DESCR &lyrsCfg,
+        const ConfigurationBuffer * const buffer) const;
+    void WriteHardwareLayerActiveList(const uint32_t layerIndex, PGNA_ACTIVE_LIST_DESCR &actLstCfg,
+        const ActiveList * const activeList) const;
 
+    void CompileSoftwareModel();
+    void CompileHardwareModel(const AccelerationDetector& detector);
+    void CreateSubmodels(const AccelerationDetector& detector);
+
+    void ValidateConfiguration(const RequestConfiguration& configuration) const;
+
+    const gna_model_id Id;
+    const uint16_t LayerCount;
+    const gna_model* const UserModel;
+
+private:
+    const Memory& memory;
+    uint16_t gmmCount = 0;
     uint32_t bufferSize = 0;
 
     std::unique_ptr<HardwareModel> hardwareModel;
     std::unique_ptr<SoftwareModel> softwareModel;
-
     std::vector<std::unique_ptr<SubModel>> submodels;
 };
 
