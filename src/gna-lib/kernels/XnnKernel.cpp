@@ -181,7 +181,6 @@ void GNAApplyDiagonalTransform(
     nn_layer_affine* aff = (nn_layer_affine*)pLayer->pLayerStruct;
     uint32_t         m = pLayer->nOutputRows;
     uint32_t         n = pLayer->nInputColumns;
-    uint32_t         k = pLayer->nInputRows;
     void*            w = aff->affine.pWeights;
     int16_t*         in = (int16_t*)pLayer->pInputs;
     int32_t*         out = (int32_t*)((aff->pwl.pSegments == NULL)

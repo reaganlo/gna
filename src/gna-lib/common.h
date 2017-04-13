@@ -113,7 +113,7 @@ inline int32_t GnaRoundUpMultipleOf64(uint32_t number)
 // error status logger decorated with prefix
 #define ERRSTS(status)  ERR("FAILED with status: %d\n", (int)status)
 // error message logger decorated with prefix with status name print
-#define ERRS(msg, sts, ...)  fprintf(stderr, "ERROR:" _PREFIX_ msg " APISTATUS: %s [%u]\n", __VA_ARGS__, GnaStatusToString(sts), sts )
+#define ERRS(msg, sts, ...)  fprintf(stderr, "ERROR:" _PREFIX_ msg " APISTATUS: %s [%d]\n", __VA_ARGS__, GnaStatusToString(sts), sts )
 // log message logger
 #define LOG(...)  fprintf(stderr, __VA_ARGS__ )
 // log message logger decorated with prefix

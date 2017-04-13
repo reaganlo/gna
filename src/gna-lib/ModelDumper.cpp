@@ -100,7 +100,8 @@ void Device::DumpModel(gna_model_id modelId, gna_device_kind deviceKind, const c
 
     // dump SUE model header needed for internal model handling
     // TBD: considering universal model header for all platforms
-    if (GNA_SUE_CREEK == deviceKind || GNA_SUE_CREEK_2 == deviceKind)
+    if (GNA_SUE_CREEK == static_cast<GnaDeviceType>(deviceKind)
+        || GNA_SUE_CREEK_2 == static_cast<GnaDeviceType>(deviceKind))
     {
         uint32_t input_elements = dumpDsc->n_in_elems;
         if (NN_CNN != dumpDsc->op) input_elements *= dumpDsc->n_groups;

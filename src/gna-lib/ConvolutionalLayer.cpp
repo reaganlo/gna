@@ -30,10 +30,10 @@
 using namespace GNA;
 
 FiltersConfig::FiltersConfig(const nn_layer_conv * sourceLayer, const uint32_t inputElementCount) :
+    BiasSimple(sourceLayer->nBytesBias, sourceLayer->pBiases),
     Count(sourceLayer->nFilters),
     CoefficientCount(sourceLayer->nFilterCoefficients),
-    Data(static_cast<uint16_t*>(sourceLayer->pFilters)),
-    BiasSimple(sourceLayer->nBytesBias, sourceLayer->pBiases)
+    Data(static_cast<uint16_t*>(sourceLayer->pFilters))
 {
     Expect::InRange(sourceLayer->nFilterRows, 1, CNN_N_FLT_COEFF_MAX, XNN_ERR_LYR_CFG);
     Expect::True(sourceLayer->nBytesFilterCoefficient == 2, XNN_ERR_WEIGHT_BYTES);

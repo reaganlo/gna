@@ -111,13 +111,6 @@ public:
         return PtrToUint((uint8_t*)(this->Get<uint8_t>() - base.Get<uint8_t>()));
     }
 
-    //TODO:INTEGRATION:remove when all buffers switched to Address
-    template<class X> static uint32_t GetOffset(const void * const address, const Address<X*const>& base)
-    {
-        if (nullptr == address) return 0;
-        return PtrToUint((uint8_t*)address - base.Get<uint8_t>());
-    }
-
 protected:
     void * buffer = nullptr;
 };

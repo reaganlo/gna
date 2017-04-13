@@ -46,6 +46,10 @@
         <Import Project="gna-common-api.props" />
     </ImportGroup>
     <ItemDefinitionGroup>
+        <ClCompile>
+            <WarningLevel>Level3</WarningLevel>
+            <TreatWarningAsError>false</TreatWarningAsError>
+        </ClCompile>
         <PostBuildEvent>
             <Command>echo </Command>
             <Message>disabling common postbuild event</Message>

@@ -48,7 +48,6 @@
     </ImportGroup>
     <ItemDefinitionGroup>
         <ClCompile>
-            <WarningLevel>Level3</WarningLevel>
             <PreprocessorDefinitions>
                 PROFILE;
 		PROFILE_DETAILED;

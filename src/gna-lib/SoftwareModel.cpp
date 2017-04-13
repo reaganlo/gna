@@ -52,7 +52,7 @@ void SoftwareModel::ValidateConfiguration(const RequestConfiguration& configurat
 
 void SoftwareModel::build(const nn_layer* layers)
 {
-    for (int i = 0; i < layerCount; i++)
+    for (auto i = 0ui32; i < layerCount; i++)
     {
         auto layer = layers + i;
         Layers.push_back(Layer::Create(const_cast<const nn_layer*>(layer), inputVectorCount));

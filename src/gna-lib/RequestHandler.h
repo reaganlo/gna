@@ -62,7 +62,7 @@ private:
             auto& request = requests.at(requestId);
             return request.get();
         }
-        catch (const std::out_of_range& e)
+        catch (const std::out_of_range)
         {
             throw GnaException(GNA_BADREQID);
         }

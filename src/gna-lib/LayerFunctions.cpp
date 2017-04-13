@@ -196,16 +196,20 @@ const unique_ptr<const ActivationFunction> ActivationFunction::Create(const nn_f
     }
     else
     {
-        return unique_ptr<const ActivationFunction>();
+        return unique_ptr<const ActivationFunction>(nullptr);
     }
 }
 
-ActivationFunction::ActivationFunction(const nn_func_pwl *pwl) :
+ActivationFunction::ActivationFunction(const nn_func_pwl *pwl, const bool mandatory) :
     SegmentCount(pwl->nSegments),
     Segments(static_cast<nn_pwl_seg*>(pwl->pSegments)),
     Enabled((nullptr != pwl->pSegments) && (pwl->nSegments > 0)),
     sourcePwl(static_cast<const nn_func_pwl*>(pwl))
 {
+    if (mandatory)
+    {
+        Expect::True(Enabled, XNN_ERR_LYR_CFG);
+    }
     if(Enabled)
     {
         Expect::ValidBuffer(Segments, XNN_ERR_PWL_DATA);
@@ -213,12 +217,3 @@ ActivationFunction::ActivationFunction(const nn_func_pwl *pwl) :
     }
 }
 
-ActivationFunction::ActivationFunction(const nn_func_pwl *pwl, const bool mandatory) :
-    ActivationFunction(pwl)
-{
-    if (mandatory)
-    {
-        // TODO:INTEGRATION add ACTIVATION MANDATORY error code
-        Expect::True(Enabled, XNN_ERR_LYR_CFG);
-    }
-}

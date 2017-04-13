@@ -81,7 +81,7 @@ typedef uint32_t FVWIDTH;
  * See:      HAS Section 5.4.2.7.4
  * Note:     Controls mode of operation of GMM module
  */
-typedef union GMM_MODE_CTRL
+typedef union _GMM_MODE_CTRL
 {
     struct
     {
@@ -96,7 +96,7 @@ typedef union GMM_MODE_CTRL
     uint32_t __res_03 : 29;         // 03:31 Reserved
     };
     uint32_t     _value;            // value of whole register
-};
+} GMM_MODE_CTRL;
 
 /**
  * Number of Feature Vector Configuration

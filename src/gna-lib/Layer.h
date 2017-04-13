@@ -122,7 +122,7 @@ public:
 
     virtual ~Layer() = default;
 
-    const nn_layer sourceLayer;// TODO:INTEGRATION move to private when integration completed
+    const nn_layer sourceLayer;// TODO:REFACTOR move to private when integration completed
     const LayerConfig Config;
     const LayerInput Input;
     LayerOutput Output;

@@ -139,7 +139,7 @@ void Device::PropagateRequest(gna_request_cfg_id configId, acceleration accel, g
     {
         return acceleratorController.ScoreModel(configuration, accel, profilerPtr, buffers);
     };
-    // TODO:INTEGRATION pass configuration reference to Request 
+    // TODO:REFACTOR pass configuration reference to Request 
     auto request = std::make_unique<Request>(callback, move(profiler), configuration.PerfResults);
     requestHandler.Enqueue(requestId, std::move(request));
 }

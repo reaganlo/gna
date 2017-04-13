@@ -36,15 +36,7 @@ using std::unique_ptr;
 
 using namespace GNA;
 
-/******************************************************************************
- *
- * API objects
- *
- *****************************************************************************/
-
-unique_ptr<Device> GnaDevice;
-
-const char *GNAStatusName[] =
+const char * const GNAStatusName[] =
 {
     "GNA_SUCCESS - Success: Operation successful, no errors or warnings",
     "GNA_DEVICEBUSY - Warning: Device busy - accelerator is still running, can not enqueue more requests",
@@ -134,6 +126,8 @@ static_assert((NUMGNASTATUS+1) == (sizeof(GNAStatusName)/sizeof(char*)), "Invali
  * Library internal objects
  *
  *****************************************************************************/
+
+unique_ptr<Device> GnaDevice;
 
 /******************************************************************************
  *
@@ -248,7 +242,7 @@ intel_gna_status_t GnaRequestEnqueue(
 {
     try
     {
-        acceleration internal_acceleration = static_cast<acceleration>(accel);
+        auto internal_acceleration = static_cast<acceleration>(accel);
         GnaDevice->PropagateRequest(configId, internal_acceleration, requestId);
         return GNA_SUCCESS;
     }
@@ -281,9 +275,10 @@ intel_gna_status_t GnaRequestWait(
 }
 
 const char* GnaStatusToString(
-    intel_gna_status_t status)
+    const intel_gna_status_t status)
 {
-    return "gna status";
+    const auto statusMax = max(status, NUMGNASTATUS);
+    return GNAStatusName[statusMax];
 }
 
 void *GnaAlloc(gna_device_id deviceId, uint32_t requestedSize, uint32_t *grantedSize)

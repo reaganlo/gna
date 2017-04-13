@@ -45,7 +45,7 @@ void RequestConfiguration::AddBuffer(gna_buffer_type type, uint32_t layerIndex, 
 
     auto found = LayerConfigurations.emplace(layerIndex, std::make_unique<LayerConfiguration>());
     auto layerConfiguration = found.first->second.get();
-    // TODO:INTEGRATION add model validation - verify if RequestConfiguration is  valid for given layer
+    // TODO:REFACTOR add model validation - verify if RequestConfiguration is  valid for given layer
     switch (type)
     {
     case GNA_IN:
@@ -67,7 +67,7 @@ void RequestConfiguration::AddActiveList(uint32_t layerIndex, uint32_t indicesCo
 {
     invalidateHwConfigCache();
 
-    // TODO:INTEGRATION add model validation - verify if RequestConfiguration is  valid for given layer
+    // TODO:REFACTOR add model validation - verify if RequestConfiguration is  valid for given layer
     auto found = LayerConfigurations.emplace(layerIndex, std::make_unique<LayerConfiguration>());
     auto layerConfiguration = found.first->second.get();
     Expect::Null(layerConfiguration->ActiveList.get());
@@ -165,9 +165,9 @@ void RequestConfiguration::writeLayerConfigActiveListsIntoHwConfigCache(
     }
 }
 
-ConfigurationBuffer::ConfigurationBuffer(gna_buffer_type type, void* address) :
+ConfigurationBuffer::ConfigurationBuffer(gna_buffer_type typeIn, void* address) :
     InOutBuffer{address},
-    type{type}
+    type{typeIn}
 {
     Expect::NotNull(buffer);
 }

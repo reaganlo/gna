@@ -34,10 +34,10 @@ using std::vector;
 
 CompiledModel::CompiledModel(gna_model_id modelId, const gna_model *rawModel, const Memory& memoryIn) :
     Id{modelId},
+    LayerCount{static_cast<uint16_t>(rawModel->nLayers)},
     UserModel{rawModel},
     memory{memoryIn},
-    submodels{},
-    LayerCount{static_cast<uint16_t>(rawModel->nLayers)}
+    submodels{}
 {};
 
 void CompiledModel::CompileSoftwareModel()

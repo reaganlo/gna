@@ -197,7 +197,6 @@ public:
     const bool Enabled;
 
 protected:
-    ActivationFunction(const nn_func_pwl * const pwl);
     const nn_func_pwl *sourcePwl;  // TODO:KJ: remove when SW will use SoftwareModel classes only
 };
 

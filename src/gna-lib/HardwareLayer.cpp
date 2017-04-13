@@ -139,8 +139,8 @@ const map<const uint32_t, const array<const uint32_t, XNN_N_GROUP_MAX>> Hardware
 
 HardwareLayerExt::HardwareLayerExt(const DescriptorParameters& parameters, const uint32_t effectiveGrouping) :
     HardwareLayer(parameters),
-    iterationGrouping(effectiveGrouping),
-    bufferElementCount(bufferElementsMap.at(HardwareInternalBufferSize).at(effectiveGrouping - 1))
+    bufferElementCount(bufferElementsMap.at(HardwareInternalBufferSize).at(effectiveGrouping - 1)),
+    iterationGrouping(effectiveGrouping)
 {
     Expect::InRange(iterationGrouping, 1, XNN_N_GROUP_MAX, XNN_ERR_GROUPING);
     // Calculates number of iterations and elements in last iteration
@@ -283,12 +283,12 @@ HardwareLayerCnn::HardwareLayerCnn(const DescriptorParameters& parameters) :
         min(
             fitlerCount,
             (fitlerSize <= bufferElementCount / 6 / 3) ?
-                16 :
+                16ui32 :
                 (fitlerSize <= bufferElementCount / 6 / 2) ?
-                    12 :
+                    12ui32 :
                     (fitlerSize <= bufferElementCount / 6) ?
-                        4 :
-                        0);
+                        4ui32 :
+                        0ui32);
     Expect::InRange(filtersCountInFullIteration, CNN_N_FLT_COEFF_MPLY, CNN_N_FLT_ITER_MAX, XNN_ERR_LYR_CFG);
     Expect::MultiplicityOf(filtersCountInFullIteration, CNN_N_FLT_COEFF_MPLY);
 

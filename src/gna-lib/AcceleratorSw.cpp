@@ -271,7 +271,7 @@ void AcceleratorSw::applyRequestBuffersToLayer(
 void AcceleratorSw::checkScoresSaturation(const uint32_t& nGMMs, const uint32_t& nVectors, const uint32_t * pS,
     const uint32_t& maxScore, uint32_t& nSaturated)
 {
-    for(auto i = 0; i < nGMMs * nVectors; i++)
+    for(auto i = 0ui32; i < nGMMs * nVectors; i++)
     {
         if (maxScore == *pS)
         {
@@ -285,7 +285,7 @@ void AcceleratorSw::checkScoresSaturation(const uint32_t& nGMMs, const uint32_t&
 void AcceleratorSw::gmmSoftwareKernel(const GmmLayer& gmm, const LayerConfiguration * const layerConfiguration,
     uint32_t& nSaturated)
 {
-    const auto context = GmmScoreContext(gmm, layerConfiguration); // TODO:INTEGRATION extend context with all gmmSoftwareKernel arguments to reduce argument passing
+    const auto context = GmmScoreContext(gmm, layerConfiguration);
     const gna_gmm_data* data = &gmm.Data;
     const uint32_t fvCount = gmm.Input.VectorCount;
     const uint32_t fvLength = gmm.Input.ElementCount;

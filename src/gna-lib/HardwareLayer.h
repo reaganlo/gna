@@ -98,7 +98,7 @@ protected:
 
 private:
     // Number of data elements that may be stored in hw buffer
-    const static std::map<const uint32_t, const std::array<const uint32_t, XNN_N_GROUP_MAX>> bufferElementsMap;
+    static const std::map<const uint32_t, const std::array<const uint32_t, XNN_N_GROUP_MAX>> bufferElementsMap;
 
     const uint32_t iterationGrouping; // grouping for iteration calculation
     uint32_t iterationCount; // number of iterations = data chunks/parts

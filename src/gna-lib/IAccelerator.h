@@ -40,7 +40,7 @@ class IAccelerator
 {
 public:
 
-    // TODO:INTEGRATION refactor, it is no longer interface
+    // TODO:REFACTOR refactor, it is no longer interface
     IAccelerator(acceleration acceleration_mode) : accel(acceleration_mode) {}
 
     virtual status_t Score(

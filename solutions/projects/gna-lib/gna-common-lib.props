@@ -71,9 +71,11 @@
     </PropertyGroup>
     <ItemDefinitionGroup>
         <ClCompile>
-          <Optimization Condition="$(IS_RELEASE) == true">MaxSpeedHighLevel</Optimization>
-          <Optimization Condition="$(IS_DEBUG) == true">Disabled</Optimization>
-		  <ExceptionHandling>Async</ExceptionHandling>
+            <WarningLevel>EnableAllWarnings</WarningLevel>
+            <TreatWarningAsError>true</TreatWarningAsError>
+            <Optimization Condition="$(IS_RELEASE) == true">MaxSpeedHighLevel</Optimization>
+            <Optimization Condition="$(IS_DEBUG) == true">Disabled</Optimization>
+            <ExceptionHandling>Async</ExceptionHandling>
         </ClCompile>
     </ItemDefinitionGroup>
     <ItemGroup>

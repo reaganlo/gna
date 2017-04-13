@@ -34,10 +34,10 @@ using namespace GNA;
 
 const size_t HardwareModel::CalculateDescriptorSize(const uint16_t layerCount, const uint16_t gmmLayersCount)
 {
-    auto layerDescriptorsSize = getLayerDescriptorsSize(layerCount);
-    auto gmmDescriptorsSize = getGmmDescriptorsSize(gmmLayersCount);
+    auto layerDescriptorsSizeTmp = getLayerDescriptorsSize(layerCount);
+    auto gmmDescriptorsSizeTmp = getGmmDescriptorsSize(gmmLayersCount);
 
-    return layerDescriptorsSize + gmmDescriptorsSize;
+    return layerDescriptorsSizeTmp + gmmDescriptorsSizeTmp;
 }
 
 HardwareModel::HardwareModel(const gna_model_id modId, const std::vector<std::unique_ptr<Layer>>& layers, const Memory& wholeMemory,
@@ -75,13 +75,13 @@ void HardwareModel::build(const std::vector<std::unique_ptr<Layer>>& layers, con
 uint32_t HardwareModel::getLayerDescriptorsSize(const uint16_t layerCount)
 {
     Expect::InRange(layerCount, 1, XNN_LAYERS_MAX_COUNT, XNN_ERR_NET_LYR_NO);
-    auto layerDescriptorsSize = size_t{layerCount * sizeof(XNN_LYR)};
-    return layerDescriptorsSize;
+    auto layerDescriptorsSizeTmp = size_t{layerCount * sizeof(XNN_LYR)};
+    return layerDescriptorsSizeTmp;
 }
 
 uint32_t HardwareModel::getGmmDescriptorsSize(const uint16_t gmmLayersCount)
 {
     Expect::InRange(gmmLayersCount, 0, XNN_LAYERS_MAX_COUNT, XNN_ERR_NET_LYR_NO);
-    auto gmmDescriptorsSize = size_t{gmmLayersCount * sizeof(GMM_CONFIG)};
-    return gmmDescriptorsSize;
+    auto gmmDescriptorsSizeTmp = size_t{gmmLayersCount * sizeof(GMM_CONFIG)};
+    return gmmDescriptorsSizeTmp;
 }
