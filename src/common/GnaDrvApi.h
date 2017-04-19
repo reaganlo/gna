@@ -163,23 +163,16 @@ static_assert(8 == sizeof(GNA_CPBLTS), "Invalid size of GNA_CPBLTS");
  * Calculate Control flags
  * Size:    8 B
  */
-typedef union _CTRL_FLAGS
+typedef struct _CTRL_FLAGS
 {
-    struct
-    {
     UINT32      activeListOn    :1; // 00:00 - active list mode (0:disabled, 1:enabled)
     UINT32      gnaMode         :2; // 01:02 - GNA operation mode (0:GMM, 1:xNN)
     UINT32      layerIndex      :14;
     UINT32      layerCount      :14;
     UINT32      _rsvd           :1;
-    UINT32      bufferConfigsCount  : 16;
-    UINT32      actListConfigsCount : 16;
-    };
-    UINT64      _dword;          // value of whole register
-
 } CTRL_FLAGS;                       // Control flag
 
-static_assert(8 == sizeof(CTRL_FLAGS), "Invalid size of CTRL_FLAGS");
+static_assert(4 == sizeof(CTRL_FLAGS), "Invalid size of CTRL_FLAGS");
 
 /**
  * Structure used to send to driver which buffer addresses to overwrite according to
@@ -193,16 +186,37 @@ typedef struct _GNA_BUFFER_DESCR
 
 static_assert(8 == sizeof(GNA_BUFFER_DESCR), "Invalid size of GNA_BUFFER_DESCR");
 
-typedef struct _GNA_ACTIVE_LIST_DESCR
+typedef struct _XNN_ACTIVE_LIST_DESCR
 {
     UINT32 act_list_buffer_offset; // points where to write the value (refers to user memory base address)
     UINT32 act_list_buffer_value; // address offset of the buffer (refers to user memory base address)
     UINT32 act_list_n_elems_offset; // points where to write the value (refers to user memory base address)
-    UINT16 act_list_n_elems_value;
-    UINT16 _unused;
-} GNA_ACTIVE_LIST_DESCR, *PGNA_ACTIVE_LIST_DESCR;
+    UINT16 act_list_n_elems_value; // active list elements number
+} XNN_ACTIVE_LIST_DESCR, *PXNN_ACTIVE_LIST_DESCR;
 
-static_assert(16 == sizeof(GNA_ACTIVE_LIST_DESCR), "Invalid size of GNA_ACTIVE_LIST_DESCR");
+static_assert(14 == sizeof(XNN_ACTIVE_LIST_DESCR), "Invalid size of XNN_ACTIVE_LIST_DESCR");
+
+typedef struct _GMM_ACTIVE_LIST_DESCR
+{
+    UINT32 asladdr_offset; // points where to write the value (refers to user memory base address)
+    UINT32 asladdr_value; // address offset of the buffer (refers to user memory base address)
+    UINT32 astlistlen_offset; // points where to write the value (refers to user memory base address)
+    UINT32 astlistlen_value; // active list elements number
+    UINT32 gmmscrlen_offset; // points where to write the value (refers to user memory base address)
+    UINT32 gmmscrlen_value; // address offset of the buffer (refers to user memory base address)
+} GMM_ACTIVE_LIST_DESCR, *PGMM_ACTIVE_LIST_DESCR;
+
+static_assert(24 == sizeof(GMM_ACTIVE_LIST_DESCR), "Invalid size of GMM_ACTIVE_LIST_DESCR");
+
+typedef struct _REQ_CONFIG_DESCR
+{
+    UINT32      buffersCount;
+    UINT32      xnnActiveListsCount;
+    UINT32      gmmActiveListsCount;
+
+} REQ_CONFIG_DESCR;
+
+static_assert(12 == sizeof(REQ_CONFIG_DESCR), "Invalid size of REQ_CONFIG_DESCR");
 
 /**
  * CALCULATE request data with output information.
@@ -212,17 +226,16 @@ static_assert(16 == sizeof(GNA_ACTIVE_LIST_DESCR), "Invalid size of GNA_ACTIVE_L
  */
 typedef struct _GNA_CALC_IN
 {
-    UINT64              modelId;    // model identifier
-    CTRL_FLAGS          ctrlFlags;  // scoring mode
-    perf_drv_t          drvPerf;    // driver level performance profiling results
-    perf_hw_t           hwPerf;     // hardware level performance results
+    UINT64              modelId;        // model identifier
+    CTRL_FLAGS          ctrlFlags;      // scoring mode
+    perf_drv_t          drvPerf;        // driver level performance profiling results
+    perf_hw_t           hwPerf;         // hardware level performance results
     UINT8               hwPerfEncoding; // hardware level performance encoding type
-    status_t            status;     // status of scoring
-    UINT8               _rsvd[3];
-
+    status_t            status;         // status of scoring
+    REQ_CONFIG_DESCR    reqCfgDescr;
 } GNA_CALC_IN, *PGNA_CALC_IN;       // CALCULATE IOCTL - Input data
 
-static_assert(64 == sizeof(GNA_CALC_IN), "Invalid size of GNA_CALC_IN");
+static_assert(69 == sizeof(GNA_CALC_IN), "Invalid size of GNA_CALC_IN");
 
 /**
  * Minimum Size of GNA (GMM/xNN) request in bytes

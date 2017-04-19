@@ -106,10 +106,9 @@ void CompiledModel::WriteHardwareLayerOutputBuffer(const uint32_t layerIndex, PG
 {
     hardwareModel->WriteLayerOutputBuffer(layerIndex, lyrsCfg, buffer);
 }
-void CompiledModel::WriteHardwareLayerActiveList(const uint32_t layerIndex, PGNA_ACTIVE_LIST_DESCR &actLstCfg,
-    const ActiveList * const activeList) const
+void CompiledModel::WriteHardwareLayerActiveList(const uint32_t layerIndex, HardwareActiveListDescriptor & descriptor) const
 {
-    hardwareModel->WriteLayerActiveList(layerIndex, actLstCfg, activeList);
+    hardwareModel->WriteLayerActiveList(layerIndex, descriptor);
 }
 
 void CompiledModel::ValidateConfiguration(const RequestConfiguration& configuration) const

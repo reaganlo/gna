@@ -87,10 +87,10 @@ public:
 
 private:
     void invalidateHwConfigCache();
-    void writeLayerConfigBuffersIntoHwConfigCache(
-        PGNA_BUFFER_DESCR &lyrsCfg, uint32_t layerIndex, uint32_t layerCount) const;
-    void writeLayerConfigActiveListsIntoHwConfigCache(
-        PGNA_ACTIVE_LIST_DESCR &actLstCfg, uint32_t layerIndex, uint32_t layerCount) const;
+    void calculateCacheSize(uint32_t layerIndex) const;
+    void writeBuffersIntoCache(uint32_t layerIndex, uint32_t layerCount, void* &lyrsCfg) const;
+    void writeXnnActiveListsIntoCache(uint32_t layerIndex, uint32_t layerCount, void* &buffer, UINT32 &count) const;
+    void writeGmmActiveListsIntoCache(uint32_t layerIndex, uint32_t layerCount, void* &buffer, UINT32 &count) const;
 
     mutable std::map<uint32_t, std::unique_ptr<uint8_t[]>> hwConfigCaches;
     mutable std::map<uint32_t, size_t> hwConfigSizes;

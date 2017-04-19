@@ -43,12 +43,30 @@ struct DescriptorParameters
         const AddrGmmCfgC& gmmDescriptor, const uint32_t hardwareInternalBufferSize);
     virtual ~DescriptorParameters() = default;
 
-
     const Layer& SoftwareLayer;
     const BaseAddressC& MemoryBase;
     XNN_LYR * const XnnDescriptor;
     GMM_CONFIG * const GmmDescriptor;
     const uint32_t HardwareInternalBufferSize;
+};
+
+struct HardwareActiveListDescriptor
+{
+    const ActiveList * const List;
+    union Config
+    {
+        // ctors needed for initialization of constant Config's fields
+        Config(PXNN_ACTIVE_LIST_DESCR xnnConfig)
+            : Xnn{xnnConfig}
+        {}
+
+        Config(PGMM_ACTIVE_LIST_DESCR gmmConfig)
+            : Gmm{gmmConfig}
+        {}
+
+        PXNN_ACTIVE_LIST_DESCR const Xnn;
+        PGMM_ACTIVE_LIST_DESCR const Gmm;
+    } Config;
 };
 
 // Hardware Layer descriptor converter
@@ -60,7 +78,7 @@ public:
 
     virtual void WriteInputBuffer(PGNA_BUFFER_DESCR &lyrsCfg, const ConfigurationBuffer * const buffer) const;
     virtual void WriteOutputBuffer(PGNA_BUFFER_DESCR &lyrsCfg, const ConfigurationBuffer * const buffer) const;
-    virtual void WriteActiveList(PGNA_ACTIVE_LIST_DESCR &actLstCfg, const ActiveList * const activeList) const;
+    virtual void WriteActiveList(HardwareActiveListDescriptor & descriptor) const;
 
 protected:
     HardwareLayer(const DescriptorParameters& parameters);
@@ -74,7 +92,6 @@ protected:
 
 private:
     static const std::map<const nn_layer_kind, const NN_OP_TYPE> OperationsMap;
-
 };
 
 // Extended Hardware Layer descriptor converter
@@ -186,9 +203,9 @@ public:
     HardwareLayerGmm(const DescriptorParameters& parameters);
     virtual ~HardwareLayerGmm() = default;
 
-    virtual void WriteInputBuffer(PGNA_BUFFER_DESCR &lyrsCfg, const ConfigurationBuffer * const buffer) const override;
-    virtual void WriteOutputBuffer(PGNA_BUFFER_DESCR &lyrsCfg, const ConfigurationBuffer * const buffer) const override;
-    virtual void WriteActiveList(PGNA_ACTIVE_LIST_DESCR &actLstCfg, const ActiveList * const activeList) const override;
+    virtual void WriteInputBuffer(PGNA_BUFFER_DESCR &lyrsCfg, const ConfigurationBuffer *buffer) const override;
+    virtual void WriteOutputBuffer(PGNA_BUFFER_DESCR &lyrsCfg, const ConfigurationBuffer *buffer) const override;
+    virtual void WriteActiveList(HardwareActiveListDescriptor & descriptor) const override;
 
 protected:
     static const std::map<const gna_gmm_mode, const GMM_MODE_CTRL> GmmModes;

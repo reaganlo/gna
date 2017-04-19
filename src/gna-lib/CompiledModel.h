@@ -59,8 +59,7 @@ public:
         const ConfigurationBuffer * const buffer) const;
     void WriteHardwareLayerOutputBuffer(const uint32_t layerIndex, PGNA_BUFFER_DESCR &lyrsCfg,
         const ConfigurationBuffer * const buffer) const;
-    void WriteHardwareLayerActiveList(const uint32_t layerIndex, PGNA_ACTIVE_LIST_DESCR &actLstCfg,
-        const ActiveList * const activeList) const;
+    void WriteHardwareLayerActiveList(const uint32_t layerIndex, HardwareActiveListDescriptor & descriptor) const;
 
     void CompileSoftwareModel();
     void CompileHardwareModel(const AccelerationDetector& detector);

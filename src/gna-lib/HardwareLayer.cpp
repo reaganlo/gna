@@ -112,12 +112,13 @@ void HardwareLayer::WriteOutputBuffer(PGNA_BUFFER_DESCR &lyrsCfg, const Configur
     lyrsCfg->value = getOffset(buffer->Get());
 }
 
-void HardwareLayer::WriteActiveList(PGNA_ACTIVE_LIST_DESCR &actLstCfg, const ActiveList * const activeList) const
+void HardwareLayer::WriteActiveList(HardwareActiveListDescriptor & descriptor) const
 {
-    actLstCfg->act_list_buffer_offset = getOffset(XnnDescriptor) + offsetof(XNN_LYR, act_list_buffer);
-    actLstCfg->act_list_buffer_value = getOffset(activeList->Indices);
-    actLstCfg->act_list_n_elems_offset = getOffset(XnnDescriptor) + offsetof(XNN_LYR, act_list_n_elems);
-    actLstCfg->act_list_n_elems_value = activeList->IndicesCount;
+    auto& config = descriptor.Config.Xnn;
+    config->act_list_buffer_offset = getOffset(XnnDescriptor) + offsetof(XNN_LYR, act_list_buffer);
+    config->act_list_buffer_value = getOffset(descriptor.List->Indices);
+    config->act_list_n_elems_offset = getOffset(XnnDescriptor) + offsetof(XNN_LYR, act_list_n_elems);
+    config->act_list_n_elems_value = descriptor.List->IndicesCount;
 }
 
 void HardwareLayer::save()
@@ -415,22 +416,28 @@ void HardwareLayerGmm::WriteOutputBuffer(PGNA_BUFFER_DESCR &lyrsCfg, const Confi
     // TODO: add PGNA_BUFFER_DESCR for gmm or extent current structure
 }
 
-void HardwareLayerGmm::WriteActiveList(PGNA_ACTIVE_LIST_DESCR &actLstCfg, const ActiveList * const activeList) const
+void HardwareLayerGmm::WriteActiveList(HardwareActiveListDescriptor & descriptor) const
 {
-    HardwareLayerGmm::WriteActiveList(actLstCfg, activeList);
     auto& gmm = static_cast<const GmmLayer&>(SoftwareLayer);
 
     auto scoreElementsCount = GMM_SCORE_SIZE * gmm.Input.VectorCount * gmm.Config.stateCount;
     auto activeListIndices = 0ui32;
     auto activeListIndicesCount = 0ui32;
-    if (activeList->Enabled)
+    if (descriptor.List->Enabled)
     {
-        scoreElementsCount = GMM_SCORE_SIZE * gmm.Input.VectorCount * activeList->IndicesCount;
-        activeListIndices = getOffset(activeList->Indices);
-        activeListIndicesCount = activeList->IndicesCount;
+        scoreElementsCount = GMM_SCORE_SIZE * gmm.Input.VectorCount * descriptor.List->IndicesCount;
+        activeListIndices = getOffset(descriptor.List->Indices);
+        activeListIndicesCount = descriptor.List->IndicesCount;
     }
     GmmDescriptor->gmmscrlen = scoreElementsCount;
     GmmDescriptor->asladdr = activeListIndices;
     GmmDescriptor->astlistlen = activeListIndicesCount;
-    // TODO: add PGNA_ACTIVE_LIST_DESCR for gmm or extent current structure
+
+    auto& config = descriptor.Config.Gmm;
+    config->asladdr_offset = getOffset(GmmDescriptor) + offsetof(GMM_CONFIG, asladdr);
+    config->asladdr_value = activeListIndices;
+    config->astlistlen_offset = getOffset(GmmDescriptor) + offsetof(GMM_CONFIG, astlistlen);
+    config->astlistlen_value = activeListIndicesCount;
+    config->gmmscrlen_offset = getOffset(GmmDescriptor) + offsetof(GMM_CONFIG, gmmscrlen);
+    config->gmmscrlen_value = scoreElementsCount;
 }

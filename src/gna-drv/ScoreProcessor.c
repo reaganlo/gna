@@ -365,19 +365,29 @@ static void setLayersDescriptorParameters(const PGNA_CALC_IN input, PUCHAR const
 {
     // set buffers according to request config
     PGNA_BUFFER_DESCR bufferDescr = (PGNA_BUFFER_DESCR)((PUCHAR)input + sizeof(GNA_CALC_IN));
-    for (UINT32 i = 0; i < input->ctrlFlags.bufferConfigsCount; ++i)
+    for (UINT32 i = 0; i < input->reqCfgDescr.buffersCount; ++i)
     {
         *(PUINT32)(memoryBase + bufferDescr->offset) = bufferDescr->value;
         ++bufferDescr;
     }
 
-    // set active list params according to request config
-    PGNA_ACTIVE_LIST_DESCR actLstDescr = (PGNA_ACTIVE_LIST_DESCR)bufferDescr;
-    for (UINT32 i = 0; i < input->ctrlFlags.actListConfigsCount; ++i)
+    // set xnn active list params according to request config
+    PXNN_ACTIVE_LIST_DESCR xnnActLstDescr = (PXNN_ACTIVE_LIST_DESCR)bufferDescr;
+    for (UINT32 i = 0; i < input->reqCfgDescr.xnnActiveListsCount; ++i)
     {
-        *(PUINT32)(memoryBase + actLstDescr->act_list_buffer_offset) = actLstDescr->act_list_buffer_value;
-        *(PUINT16)(memoryBase + actLstDescr->act_list_n_elems_offset) = actLstDescr->act_list_n_elems_value;
-        ++actLstDescr;
+        *(PUINT32)(memoryBase + xnnActLstDescr->act_list_buffer_offset) = xnnActLstDescr->act_list_buffer_value;
+        *(PUINT16)(memoryBase + xnnActLstDescr->act_list_n_elems_offset) = xnnActLstDescr->act_list_n_elems_value;
+        ++xnnActLstDescr;
+    }
+
+    // set gmm active list params according to request config
+    PGMM_ACTIVE_LIST_DESCR gmmActLstDescr = (PGMM_ACTIVE_LIST_DESCR)xnnActLstDescr;
+    for (UINT32 i = 0; i < input->reqCfgDescr.gmmActiveListsCount; ++i)
+    {
+        *(PUINT32)(memoryBase + gmmActLstDescr->asladdr_offset) = gmmActLstDescr->asladdr_value;
+        *(PUINT32)(memoryBase + gmmActLstDescr->astlistlen_offset) = gmmActLstDescr->astlistlen_value;
+        *(PUINT32)(memoryBase + gmmActLstDescr->gmmscrlen_offset) = gmmActLstDescr->gmmscrlen_value;
+        ++gmmActLstDescr;
     }
 }
 
@@ -406,8 +416,9 @@ ScoreStart(
         TraceFailMsg(TLE, T_EXIT, "WdfRequestRetrieveInputBuffer", status);
         goto cleanup;
     }
-    if (sizeof(GNA_CALC_IN) + sizeof(GNA_BUFFER_DESCR)*input->ctrlFlags.bufferConfigsCount +
-        sizeof(GNA_ACTIVE_LIST_DESCR)*input->ctrlFlags.actListConfigsCount != inputLength)
+    if (sizeof(GNA_CALC_IN) + sizeof(GNA_BUFFER_DESCR)*input->reqCfgDescr.buffersCount +
+        //TODO expand this calculation to cover XNN types as well - refer dll RequestConfiguration::calculateCacheSize()
+        sizeof(GMM_ACTIVE_LIST_DESCR)*input->reqCfgDescr.xnnActiveListsCount != inputLength)
     {
         TraceFailMsg(TLE, T_EXIT, "Score input buffer wrong size", STATUS_INVALID_BUFFER_SIZE);
         goto cleanup;

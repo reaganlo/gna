@@ -63,10 +63,9 @@ public:
     {
         hardwareLayers.at(layerIndex)->WriteOutputBuffer(lyrsCfg, buffer);
     }
-    void WriteLayerActiveList(const uint32_t layerIndex, PGNA_ACTIVE_LIST_DESCR &actLstCfg,
-        const ActiveList * const activeList) const
+    void WriteLayerActiveList(const uint32_t layerIndex, HardwareActiveListDescriptor & descriptor) const
     {
-        hardwareLayers.at(layerIndex)->WriteActiveList(actLstCfg, activeList);
+        hardwareLayers.at(layerIndex)->WriteActiveList(descriptor);
     }
 
 private:
