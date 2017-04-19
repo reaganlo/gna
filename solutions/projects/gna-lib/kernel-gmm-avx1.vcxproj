@@ -37,7 +37,7 @@
 				OPTAVX1;
 				%(PreprocessorDefinitions)
             </PreprocessorDefinitions>
-            <AdditionalOptions>%(AdditionalOptions) /QaxAVX /Qvec_report2</AdditionalOptions>
+            <AdditionalOptions>%(AdditionalOptions) /QaxAVX</AdditionalOptions>
             <EnableEnhancedInstructionSet>AVX</EnableEnhancedInstructionSet>
         </ClCompile>
     </ItemDefinitionGroup>

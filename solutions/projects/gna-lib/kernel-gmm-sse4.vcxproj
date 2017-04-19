@@ -37,7 +37,7 @@
 				OPTSSE4;
 				%(PreprocessorDefinitions)
             </PreprocessorDefinitions>
-            <AdditionalOptions>%(AdditionalOptions) /QaxSSE4.2 /Qvec_report2</AdditionalOptions>
+            <AdditionalOptions>%(AdditionalOptions) /QaxSSE4.2</AdditionalOptions>
         </ClCompile>
     </ItemDefinitionGroup>
 </Project>

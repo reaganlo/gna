@@ -282,7 +282,7 @@ bool AcceleratorHwVerbose::SetDescriptor(string path, XNN_LYR* buff, hw_calc_in_
 	return true;
 }
 
-void AcceleratorHwVerbose::HwVerifierMemDump(const char* fname)
+void AcceleratorHwVerbose::HwVerifierMemDump(const char* /*fname*/)
 {
 // TODO: model buffer as input
 //#if DEBUG==1
@@ -311,13 +311,13 @@ void AcceleratorHwVerbose::HwVerifierMemDump(const char* fname)
 //#endif
 }
 
-void AcceleratorHwVerbose::HwVerifier(Request* r)
+void AcceleratorHwVerbose::HwVerifier(Request* /*r*/)
 {
     //SoftwareModel* model = r->model;
     //HwVerifier(model, ((Hw*)r->handle)->inData->status);
 }
 
-void AcceleratorHwVerbose::HwVerifier(SoftwareModel *model, status_t scoring_status) {
+void AcceleratorHwVerbose::HwVerifier(SoftwareModel */*model*/, status_t scoring_status) {
     // retrieve output
     PrintDrvStatus(scoring_status, _PREFIX_ "wait ioctl");
 

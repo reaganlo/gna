@@ -404,13 +404,13 @@ void HardwareLayerGmm::save()
     GmmDescriptor->mvwidth     = GMM_MEAN_VALUE_SIZE;
 }
 
-void HardwareLayerGmm::WriteInputBuffer(PGNA_BUFFER_DESCR &lyrsCfg, const ConfigurationBuffer * const buffer) const
+void HardwareLayerGmm::WriteInputBuffer(PGNA_BUFFER_DESCR &, const ConfigurationBuffer * const buffer) const
 {
     GmmDescriptor->fvaddr = getOffset(buffer);
     // TODO: add PGNA_BUFFER_DESCR for gmm or extent current structure
 }
 
-void HardwareLayerGmm::WriteOutputBuffer(PGNA_BUFFER_DESCR &lyrsCfg, const ConfigurationBuffer * const buffer) const
+void HardwareLayerGmm::WriteOutputBuffer(PGNA_BUFFER_DESCR &, const ConfigurationBuffer * const buffer) const
 {
     GmmDescriptor->gmmscradd = getOffset(buffer);
     // TODO: add PGNA_BUFFER_DESCR for gmm or extent current structure

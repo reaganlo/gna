@@ -39,7 +39,7 @@ class GnaException : public std::exception
 {
 public:
 
-    GnaException(status_t status) throw() : 
+    GnaException(status_t status) : 
         std::exception{ GnaStatusToString(status) },
         Status{ status }
     {}
@@ -49,7 +49,7 @@ public:
         return Status;
     }
 
-    virtual ~GnaException() throw() {};
+    virtual ~GnaException() {};
 
 protected:
     status_t Status;

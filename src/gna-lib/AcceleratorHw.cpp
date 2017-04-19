@@ -60,8 +60,8 @@ status_t AcceleratorHw::Score(
 /**
  * Empty virtual hw verification methods implemented in HW VERBOSE version only
  */
-void AcceleratorHw::HwVerifier(Request* r) {};
-void AcceleratorHw::HwVerifier(SoftwareModel *model, status_t scoring_status) {};
-bool AcceleratorHw::SetConfig(string path, hw_calc_in_t* inData) { return true; };
-bool AcceleratorHw::SetDescriptor(string path, XNN_LYR* buff, hw_calc_in_t* inData) { return true; };
-bool AcceleratorHw::SetRegister(string path) { return true; };
+void AcceleratorHw::HwVerifier(Request*) {};
+void AcceleratorHw::HwVerifier(SoftwareModel*, status_t) {};
+bool AcceleratorHw::SetConfig(string, hw_calc_in_t*) { return true; };
+bool AcceleratorHw::SetDescriptor(string, XNN_LYR*, hw_calc_in_t*) { return true; };
+bool AcceleratorHw::SetRegister(string) { return true; };

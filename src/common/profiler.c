@@ -23,12 +23,14 @@
  in any way.
 */
 
-#include "profiler.h"
 
 #ifndef DRIVER
 #include <limits.h>
 #include <stdlib.h>
+#include <stdint.h>
 #endif // DRIVER
+
+#include "profiler.h"
 
 /** 
  * OS time abstraction macros
@@ -41,7 +43,7 @@
 // time_rtc seconds fraction macro
 #define PROFILER_TFRAC millitm
 // time_rtc seconds fraction resolution
-#define PROFILER_TFRAC_RES 1000
+#define PROFILER_TFRAC_RES 1000ui32
 #endif // os
 
 #if defined(PROFILE) || defined(PROFILE_DETAILED)
@@ -147,16 +149,21 @@ time_tsc profilerRtcGetMilis(gna_profiler_rtc * const profiler)
 {
     time_tsc milis = TIME_TSC_MAX;
 
-    if(NULL != profiler)
+    if (NULL != profiler)
     {
         // check for milis overflow
-        if(TIME_TSC_MAX < (profiler->passed.PROFILER_TFRAC / (PROFILER_TFRAC_RES / 1000)) ) 
+        if (TIME_TSC_MAX < (profiler->passed.PROFILER_TFRAC / (PROFILER_TFRAC_RES / 1000)))
+        {
             return TIME_TSC_MAX;
+        }
         milis = profiler->passed.PROFILER_TFRAC / (PROFILER_TFRAC_RES / 1000);
+
         // check for milis overflow (simplyfied equation!)
-        if((TIME_TSC_MAX / 1000) < (profiler->passed.PROFILER_TSEC))
+        if (TIME_TSC_MAX/1000 < uint64_t(profiler->passed.PROFILER_TSEC))
+        {
             return TIME_TSC_MAX;
-        milis += 1000 * profiler->passed.PROFILER_TSEC;   
+        }
+        milis += 1000 * profiler->passed.PROFILER_TSEC;
     }
     return milis;
 }

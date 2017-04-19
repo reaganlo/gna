@@ -33,7 +33,6 @@
 
 namespace GNA
 {
-
 class ActiveList;
 struct ConfigurationBuffer;
 
@@ -55,6 +54,9 @@ struct HardwareActiveListDescriptor
     const ActiveList * const List;
     union Config
     {
+        PXNN_ACTIVE_LIST_DESCR const Xnn;
+        PGMM_ACTIVE_LIST_DESCR const Gmm;
+
         // ctors needed for initialization of constant Config's fields
         Config(PXNN_ACTIVE_LIST_DESCR xnnConfig)
             : Xnn{xnnConfig}
@@ -63,10 +65,17 @@ struct HardwareActiveListDescriptor
         Config(PGMM_ACTIVE_LIST_DESCR gmmConfig)
             : Gmm{gmmConfig}
         {}
-
-        PXNN_ACTIVE_LIST_DESCR const Xnn;
-        PGMM_ACTIVE_LIST_DESCR const Gmm;
     } Config;
+
+    HardwareActiveListDescriptor(const ActiveList * list, PXNN_ACTIVE_LIST_DESCR xnnConfig) :
+        List(list),
+        Config(xnnConfig)
+    {}
+
+    HardwareActiveListDescriptor(const ActiveList * list, PGMM_ACTIVE_LIST_DESCR gmmConfig) :
+        List(list),
+        Config(gmmConfig)
+    {}
 };
 
 // Hardware Layer descriptor converter
@@ -212,5 +221,4 @@ protected:
 
     void save();
 };
-
 }
