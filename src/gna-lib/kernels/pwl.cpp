@@ -36,7 +36,7 @@ static const uint64_t XBASE_ADDRESS_RESET = 0xFFFFFFFFFFFFF000;
 */
 static const uint64_t BIT_SHIFT_SIZE = 3;
 
-//#if 1 == GNA_SAT
+#if 1 == GNA_SAT
 /**
  * Maximum value of 2B output, used for saturation handling
  */
@@ -46,7 +46,7 @@ static const int64_t OUTPUT_2B_MAX = 32767;
  * Minimum value of 2B output, used for saturation handling
  */
 static const int64_t OUTPUT_2B_MIN = -32768;
-//#endif // GNA_SAT
+#endif // GNA_SAT
 
 __forceinline
 static const void PwlSaturateStoreOutSingle(
@@ -54,13 +54,13 @@ static const void PwlSaturateStoreOutSingle(
     int16_t*        O,
     pwl_params*     params)
 {
-//#if 1 == GNA_SAT
+#if 1 == GNA_SAT
     if (sum >= OUTPUT_2B_MIN && sum <= OUTPUT_2B_MAX)
-//#endif
+#endif
     {
         *O = (int16_t)sum;
     }
-//#if 1 == GNA_SAT
+#if 1 == GNA_SAT
     else if (sum > OUTPUT_2B_MAX)
     {
         *O = (int16_t)OUTPUT_2B_MAX;
@@ -71,7 +71,7 @@ static const void PwlSaturateStoreOutSingle(
         *O = (int16_t)OUTPUT_2B_MIN;
         (*params->nSaturated)++;
     }
-//#endif
+#endif
 }
 
 __forceinline
@@ -81,13 +81,13 @@ static const void PwlSaturateStoreOutAll(
     int16_t*        output,
     pwl_params*     params)
 {
-//#if 1 == GNA_SAT
+#if 1 == GNA_SAT
     if (sum >= OUTPUT_2B_MIN && sum <= OUTPUT_2B_MAX)
-//#endif
+#endif
     {
         output[j] = (int16_t)sum;
     }
-//#if 1 == GNA_SAT
+#if 1 == GNA_SAT
     else if (sum > OUTPUT_2B_MAX)
     {
         output[j] = (int16_t)OUTPUT_2B_MAX;
@@ -98,7 +98,7 @@ static const void PwlSaturateStoreOutAll(
         output[j] = (int16_t)OUTPUT_2B_MIN;
         (*params->nSaturated)++;
     }
-//#endif
+#endif
 }
 
 void
