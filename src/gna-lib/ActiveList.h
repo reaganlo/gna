@@ -35,21 +35,13 @@ class ActiveList
 {
 public:
     ActiveList(const uint32_t indicesCount, const uint32_t* indices);
-
+    ActiveList(const ActiveList& activeList);
     // needed for std vector's emplace_back (MoveInsertable concept)
     ActiveList(ActiveList &&) = default;
-
-    /**
-     * Deleted functions to prevent from being defined or called
-     * @see: https://msdn.microsoft.com/en-us/library/dn457344.aspx
-     */
-    ActiveList(const ActiveList&) = delete;
     ActiveList& operator=(const ActiveList&) = delete;
 
     const uint32_t IndicesCount;
-
     const uint32_t* Indices;
-
     bool Enabled;
 
 protected:

@@ -28,16 +28,23 @@
 
 using namespace GNA;
 
-ActiveList::ActiveList(const uint32_t indicesCountIn, const uint32_t* indicesIn)
-    : IndicesCount(indicesCountIn),
-      Indices(indicesIn),
-      Enabled(false)
+ActiveList::ActiveList(const uint32_t indicesCountIn, const uint32_t* indicesIn) :
+    IndicesCount{indicesCountIn},
+    Indices{indicesIn},
+    Enabled{false}
 {
     validate();
     if (nullptr != Indices && IndicesCount > 0)
     {
         Enabled = true;
     }
+}
+
+ActiveList::ActiveList(const ActiveList& activeList) :
+    IndicesCount{activeList.IndicesCount},
+    Indices{activeList.Indices},
+    Enabled{activeList.Enabled}
+{
 }
 
 void ActiveList::validate()

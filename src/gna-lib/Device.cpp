@@ -29,6 +29,7 @@
 #include <fstream>
 #include <memory>
 
+#include "ActiveList.h"
 #include "FakeDetector.h"
 #include "Memory.h"
 #include "Validator.h"
@@ -75,9 +76,10 @@ void Device::EnableProfiling(gna_request_cfg_id configId, gna_hw_perf_encoding h
     requestConfiguration.PerfResults = perfResults;
 }
 
-void Device::AttachActiveList(gna_request_cfg_id configId, uint16_t layerIndex, uint32_t indicesCount, uint32_t *indices)
+void Device::AttachActiveList(gna_request_cfg_id configId, uint16_t layerIndex, uint32_t indicesCount, const uint32_t* const indices)
 {
-    requestBuilder.AttachActiveList(configId, layerIndex, indicesCount, indices);
+    auto activeList = ActiveList{indicesCount, indices};
+    requestBuilder.AttachActiveList(configId, layerIndex, activeList);
 }
 
 void Device::ValidateSession(gna_device_id deviceId) const

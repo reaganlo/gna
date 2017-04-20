@@ -47,11 +47,11 @@ void RequestBuilder::AttachBuffer(gna_request_cfg_id configId, gna_buffer_type t
     configuration.AddBuffer(type, layerIndex, address);
 }
 
-void RequestBuilder::AttachActiveList(gna_request_cfg_id configId, uint16_t layerIndex, uint32_t indicesCount,
-    uint32_t * indices) const
+void RequestBuilder::AttachActiveList(gna_request_cfg_id configId, uint16_t layerIndex,
+    const ActiveList& activeList) const
 {
     auto& configuration = GetConfiguration(configId);
-    configuration.AddActiveList(layerIndex, indicesCount, indices);
+    configuration.AddActiveList(layerIndex, activeList);
 }
 
 RequestConfiguration& RequestBuilder::GetConfiguration(gna_request_cfg_id configId) const

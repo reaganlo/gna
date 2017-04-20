@@ -65,6 +65,7 @@ void GmmLayer::ValidateActiveList(ActiveList const * const activeList) const
 
 void GmmLayer::validate()
 {
+    Output.SetOutputMode(LayerOutput::NonActivatedOutput, sourceLayer.nBytesPerOutput);
     Expect::InRange(Input.ElementCount, GMM_FV_ELEMENT_COUNT_MIN, GMM_FV_ELEMENT_COUNT_MAX, GNA_BADFEATLENGTH);
     Expect::InRange(Config.stateCount, 1, GMM_STATES_COUNT_MAX, GMM_BADNUMGMM);
     Expect::InRange(Config.mixtureComponentCount, 1, GMM_MIXTURE_COMP_COUNT_MAX, GMM_BADMIXCNUM);

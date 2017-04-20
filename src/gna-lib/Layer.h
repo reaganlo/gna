@@ -82,8 +82,8 @@ struct LayerOutput : public LayerMatrix
 public:
     typedef enum _OutputMode
     {
-        NonActivatedOutput,
-        ActivatedOutput,
+        NonActivatedOutput = false,
+        ActivatedOutput = true,
     } OutputMode;
 
     static const uint32_t NonActivatedOutputSize = 4;

@@ -60,7 +60,6 @@ extern "C" {
 /** GNA Device identificator **/
 typedef uint32_t gna_device_id;
 
-
 /** Maximum number of opened devices */
 const gna_device_id GNA_DEVICE_LIMIT = 1;
 
@@ -77,8 +76,8 @@ const gna_device_id GNA_DEVICE_INVALID = 0;
  * @param deviceId      (out) Id of the device that got opened or GNA_DEVICE_INVALID in case the device can not be opened.
  */
 GNAAPI intel_gna_status_t GnaDeviceOpen(
-    uint8_t             threadCount,
-    gna_device_id*      deviceId);
+    uint8_t threadCount,
+    gna_device_id * deviceId);
 
 /**
  * Closes GNA device and releases the corresponding resources.
@@ -86,7 +85,7 @@ GNAAPI intel_gna_status_t GnaDeviceOpen(
  * @param deviceId      The device to be closed.
  */
 GNAAPI intel_gna_status_t GnaDeviceClose(
-    gna_device_id       deviceId);
+    gna_device_id deviceId);
 
 /******************  GNA Memory API ******************/
 /***** @deprecated Will be removed in next release. **/
@@ -103,9 +102,9 @@ GNAAPI intel_gna_status_t GnaDeviceClose(
  * @deprecated          Will be removed in next release.
  */
 GNAAPI void* GnaAlloc(
-    gna_device_id       deviceId,
-    uint32_t            sizeRequested,
-    uint32_t*           sizeGranted);
+    gna_device_id deviceId,
+    uint32_t sizeRequested,
+    uint32_t * sizeGranted);
 
 /**
  * Releases the memory buffer.
@@ -114,7 +113,7 @@ GNAAPI void* GnaAlloc(
  * @deprecated          Will be removed in next release.
  */
 GNAAPI intel_gna_status_t GnaFree(
-    gna_device_id       deviceId);
+    gna_device_id deviceId);
 
 
 /******************  GNA Model API ******************/
@@ -137,9 +136,9 @@ typedef intel_nnet_type_t gna_model;
  * @param modelId       (out) The model created by GNA.
  */
 GNAAPI intel_gna_status_t GnaModelCreate(
-    gna_device_id       deviceId,
-    gna_model*          model,
-    gna_model_id*       modelId);
+    gna_device_id deviceId,
+    gna_model const * model,
+    gna_model_id * modelId);
 
 /**
  * Removes the model and releases the resources.
@@ -150,7 +149,7 @@ GNAAPI intel_gna_status_t GnaModelCreate(
  * @param modelId       The model to be released.
  */
 GNAAPI intel_gna_status_t GnaModelRelease(
-    gna_model_id        modelId);
+    gna_model_id modelId);
 
 
 /******************  GNA Request Configuration API ******************/
@@ -162,9 +161,7 @@ typedef uint32_t gna_request_cfg_id;
 typedef enum _buffer_type {
     GNA_IN,             // Input buffer read by GNA device
     GNA_OUT,            // Output buffer that GNA will write to
-
     GNA_BUFFER_TYPES
-
 } gna_buffer_type;
 
 /**
@@ -187,8 +184,8 @@ typedef enum _buffer_type {
  * @param configId      (out) Request configuration created by GNA.
  */
 GNAAPI intel_gna_status_t GnaModelRequestConfigAdd(
-    gna_model_id        modelId,
-    gna_request_cfg_id* configId);
+    gna_model_id modelId,
+    gna_request_cfg_id * configId);
 
 /**
  * Adds a single buffer to the request configuration.
@@ -210,10 +207,10 @@ GNAAPI intel_gna_status_t GnaModelRequestConfigAdd(
  * @param address       Address of the buffer.
  */
 GNAAPI intel_gna_status_t GnaRequestConfigBufferAdd(
-    gna_request_cfg_id  configId,
-    gna_buffer_type     type,
-    uint32_t            layerIndex,
-    void*               address);
+    gna_request_cfg_id configId,
+    gna_buffer_type type,
+    uint32_t layerIndex,
+    void * address);
 
 /**
  * Adds active outputs list to the request configuration.
@@ -236,10 +233,10 @@ GNAAPI intel_gna_status_t GnaRequestConfigBufferAdd(
  * @see GnaModelRequestConfigAdd and GnaRequestConfigBufferAdd for details.
  */
 GNAAPI intel_gna_status_t GnaRequestConfigActiveListAdd(
-    gna_request_cfg_id  configId,
-    uint32_t            layerIndex,
-    uint32_t            indicesCount,
-    uint32_t*           indices);
+    gna_request_cfg_id configId,
+    uint32_t layerIndex,
+    uint32_t indicesCount,
+    uint32_t const * indices);
 
 
 /******************  GNA Request Calculation API ******************/
@@ -278,7 +275,7 @@ static_assert(4 == sizeof(gna_acceleration), "Invalid size of gna_acceleration")
  * @return Acceleration mode with enabled saturation detection.
  */
 inline gna_acceleration GnaSetSaturationDetection(
-    gna_acceleration    acceleration)
+    const gna_acceleration acceleration)
 {
     return (gna_acceleration)(acceleration & GNA_HARDWARE);
 }
@@ -302,9 +299,9 @@ typedef uint32_t gna_timeout;
  *                      To retrieve the results and processing status call GnaRequestWait.
  */
 GNAAPI intel_gna_status_t GnaRequestEnqueue(
-    gna_request_cfg_id  configId,
-    gna_acceleration    acceleration,
-    gna_request_id*     requestId);
+    gna_request_cfg_id configId,
+    gna_acceleration acceleration,
+    gna_request_id * requestId);
 
 /**
  * Waits for the request processing to be completed.
@@ -317,8 +314,8 @@ GNAAPI intel_gna_status_t GnaRequestEnqueue(
  * @param milliseconds  timeout duration in milliseconds.
  */
 GNAAPI intel_gna_status_t GnaRequestWait(
-    gna_request_id      requestId,
-    gna_timeout         milliseconds);
+    gna_request_id requestId,
+    gna_timeout milliseconds);
 
 /** Maximum number of requests that can be enqueued before retrieval */
 const uint32_t GNA_REQUEST_QUEUE_LENGTH = 64;
@@ -338,8 +335,8 @@ const gna_timeout GNA_REQUEST_TIMEOUT_MAX = 180000;
  * @param status        A status to translate.
  * @return A c-string status with the description.
  */
-GNAAPI const char* GnaStatusToString(
-    intel_gna_status_t        status);
+GNAAPI char const * GnaStatusToString(
+    intel_gna_status_t status);
 
 /**
  * Rounds a number up, to the nearest multiple of significance

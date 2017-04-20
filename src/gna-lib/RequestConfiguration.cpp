@@ -63,7 +63,7 @@ void RequestConfiguration::AddBuffer(gna_buffer_type type, uint32_t layerIndex, 
     }
 }
 
-void RequestConfiguration::AddActiveList(uint32_t layerIndex, uint32_t indicesCount, uint32_t *indices)
+void RequestConfiguration::AddActiveList(uint32_t layerIndex, const ActiveList& activeList)
 {
     invalidateHwConfigCache();
 
@@ -71,7 +71,7 @@ void RequestConfiguration::AddActiveList(uint32_t layerIndex, uint32_t indicesCo
     auto found = LayerConfigurations.emplace(layerIndex, std::make_unique<LayerConfiguration>());
     auto layerConfiguration = found.first->second.get();
     Expect::Null(layerConfiguration->ActiveList.get());
-    layerConfiguration->ActiveList = std::make_unique<ActiveList>(indicesCount, indices);
+    layerConfiguration->ActiveList = std::make_unique<ActiveList>(activeList);
     ++ActiveListCount;
 }
 

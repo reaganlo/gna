@@ -69,7 +69,7 @@ public:
     RequestConfiguration(const CompiledModel& model, gna_request_cfg_id configId);
 
     void AddBuffer(gna_buffer_type type, uint32_t layerIndex, void *address);
-    void AddActiveList(uint32_t layerIndex, uint32_t indicesCount, uint32_t *indices);
+    void AddActiveList(uint32_t layerIndex, const ActiveList& activeList);
 
     void GetHwConfigData(void* &buffer, size_t &size, uint32_t layerIndex, uint32_t layerCount) const;
 

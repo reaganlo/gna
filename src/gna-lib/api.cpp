@@ -36,7 +36,7 @@ using std::unique_ptr;
 
 using namespace GNA;
 
-const char * const GNAStatusName[] =
+const char* const GNAStatusName[] =
 {
     "GNA_SUCCESS - Success: Operation successful, no errors or warnings",
     "GNA_DEVICEBUSY - Warning: Device busy - accelerator is still running, can not enqueue more requests",
@@ -135,10 +135,10 @@ unique_ptr<Device> GnaDevice;
  *
  *****************************************************************************/
 
-intel_gna_status_t GnaModelCreate(
-    gna_device_id       deviceId,
-    gna_model*          model,
-    gna_model_id*       modelId)
+GNAAPI intel_gna_status_t GnaModelCreate(
+    const gna_device_id deviceId,
+    const gna_model* const model,
+    gna_model_id* const modelId)
 {
     try
     {
@@ -156,8 +156,8 @@ intel_gna_status_t GnaModelCreate(
     }
 }
 
-intel_gna_status_t GnaModelRelease(
-    gna_model_id        modelId)
+GNAAPI intel_gna_status_t GnaModelRelease(
+    const gna_model_id modelId)
 {
     try
     {
@@ -174,9 +174,9 @@ intel_gna_status_t GnaModelRelease(
     }
 }
 
-intel_gna_status_t GnaModelRequestConfigAdd(
-    gna_model_id        modelId,
-    gna_request_cfg_id* configId)
+GNAAPI intel_gna_status_t GnaModelRequestConfigAdd(
+    const gna_model_id modelId,
+    gna_request_cfg_id* const configId)
 {
     try
     {
@@ -193,11 +193,11 @@ intel_gna_status_t GnaModelRequestConfigAdd(
     }
 }
 
-intel_gna_status_t GnaRequestConfigBufferAdd(
-    gna_request_cfg_id  configId,
-    gna_buffer_type     type,
-    uint32_t            layerIndex,
-    void*               address)
+GNAAPI intel_gna_status_t GnaRequestConfigBufferAdd(
+    const gna_request_cfg_id configId,
+    const gna_buffer_type type,
+    const uint32_t layerIndex,
+    void* const address)
 {
     try
     {
@@ -214,11 +214,11 @@ intel_gna_status_t GnaRequestConfigBufferAdd(
     }
 }
 
-intel_gna_status_t GnaRequestConfigActiveListAdd(
-    gna_request_cfg_id  configId,
-    uint32_t            layerIndex,
-    uint32_t            indicesCount,
-    uint32_t*           indices)
+GNAAPI intel_gna_status_t GnaRequestConfigActiveListAdd(
+    const gna_request_cfg_id configId,
+    const uint32_t layerIndex,
+    const uint32_t indicesCount,
+    const uint32_t* const indices)
 {
     try
     {
@@ -235,14 +235,14 @@ intel_gna_status_t GnaRequestConfigActiveListAdd(
     }
 }
 
-intel_gna_status_t GnaRequestEnqueue(
-    gna_request_cfg_id  configId,
-    gna_acceleration    accel,
-    gna_request_id*     requestId)
+GNAAPI intel_gna_status_t GnaRequestEnqueue(
+    const gna_request_cfg_id configId,
+    const gna_acceleration  accelerationIn,
+    gna_request_id* const requestId)
 {
     try
     {
-        auto internal_acceleration = static_cast<acceleration>(accel);
+        auto internal_acceleration = static_cast<acceleration>(accelerationIn);
         GnaDevice->PropagateRequest(configId, internal_acceleration, requestId);
         return GNA_SUCCESS;
     }
@@ -256,9 +256,9 @@ intel_gna_status_t GnaRequestEnqueue(
     }
 }
 
-intel_gna_status_t GnaRequestWait(
-    gna_request_id      requestId,
-    gna_timeout         milliseconds)
+GNAAPI intel_gna_status_t GnaRequestWait(
+    const gna_request_id requestId,
+    const gna_timeout milliseconds)
 {
     try
     {
@@ -274,24 +274,27 @@ intel_gna_status_t GnaRequestWait(
     }
 }
 
-const char* GnaStatusToString(
+GNAAPI char const * GnaStatusToString(
     const intel_gna_status_t status)
 {
     const auto statusMax = max(status, NUMGNASTATUS);
     return GNAStatusName[statusMax];
 }
 
-void *GnaAlloc(gna_device_id deviceId, uint32_t requestedSize, uint32_t *grantedSize)
+GNAAPI void* GnaAlloc(
+    const gna_device_id deviceId,
+    const uint32_t sizeRequested,
+    uint32_t* const sizeGranted)
 {
     try
     {
         //TODO:INTEGRATION refactor - to much logic in wrapper
         GnaDevice->ValidateSession(deviceId);
-        Expect::NotNull(grantedSize);
+        Expect::NotNull(sizeGranted);
 
         void* buffer = nullptr;
-        *grantedSize = GnaDevice->AllocateMemory(requestedSize, &buffer);
-        Expect::False(nullptr == buffer || *grantedSize < requestedSize, GNA_ERR_RESOURCES);
+        *sizeGranted = GnaDevice->AllocateMemory(sizeRequested, &buffer);
+        Expect::False(nullptr == buffer || *sizeGranted < sizeRequested, GNA_ERR_RESOURCES);
         return buffer;
     }
     catch (const GnaException &e)
@@ -305,7 +308,8 @@ void *GnaAlloc(gna_device_id deviceId, uint32_t requestedSize, uint32_t *granted
     }
 }
 
-intel_gna_status_t GnaFree(gna_device_id deviceId)
+GNAAPI intel_gna_status_t GnaFree(
+    const gna_device_id deviceId)
 {
     try
     {
@@ -323,9 +327,9 @@ intel_gna_status_t GnaFree(gna_device_id deviceId)
     }
 }
 
-intel_gna_status_t GnaDeviceOpen(
-    uint8_t             threadCount,
-    gna_device_id*      deviceId)
+GNAAPI intel_gna_status_t GnaDeviceOpen(
+    const uint8_t threadCount,
+    gna_device_id* const deviceId)
 {
     if(GnaDevice)
     {
@@ -347,8 +351,8 @@ intel_gna_status_t GnaDeviceOpen(
     }
 }
 
-intel_gna_status_t GnaDeviceClose(
-    gna_device_id deviceId)
+GNAAPI intel_gna_status_t GnaDeviceClose(
+    const gna_device_id deviceId)
 {
     try
     {
