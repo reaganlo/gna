@@ -85,8 +85,9 @@ public:
     static std::unique_ptr<HardwareLayer> Create(const DescriptorParameters& parameters);
     virtual ~HardwareLayer() = default;
 
-    virtual void WriteInputBuffer(PGNA_BUFFER_DESCR &lyrsCfg, const ConfigurationBuffer * const buffer) const;
-    virtual void WriteOutputBuffer(PGNA_BUFFER_DESCR &lyrsCfg, const ConfigurationBuffer * const buffer) const;
+    virtual void WriteInputBuffer(PGNA_BUFFER_DESCR lyrsCfg, const ConfigurationBuffer * buffer) const;
+    virtual void WriteOutputBuffer(PGNA_BUFFER_DESCR lyrsCfg, const ConfigurationBuffer * buffer) const;
+    virtual void WriteNnopType(PNNOP_TYPE_DESCR nnopCfg, bool actListEnabled) const;
     virtual void WriteActiveList(HardwareActiveListDescriptor & descriptor) const;
 
 protected:
@@ -135,8 +136,9 @@ class HardwareLayerAffDiagTrans : public HardwareLayerExt
 {
 public:
     HardwareLayerAffDiagTrans(const DescriptorParameters& parameters);
-
     virtual ~HardwareLayerAffDiagTrans() = default;
+
+    virtual void WriteNnopType(PNNOP_TYPE_DESCR nnopCfg, bool actListEnabled) const override;
 };
 
 class HardwareLayerAffineMBias : public HardwareLayerExt
@@ -212,8 +214,9 @@ public:
     HardwareLayerGmm(const DescriptorParameters& parameters);
     virtual ~HardwareLayerGmm() = default;
 
-    virtual void WriteInputBuffer(PGNA_BUFFER_DESCR &lyrsCfg, const ConfigurationBuffer *buffer) const override;
-    virtual void WriteOutputBuffer(PGNA_BUFFER_DESCR &lyrsCfg, const ConfigurationBuffer *buffer) const override;
+    virtual void WriteInputBuffer(PGNA_BUFFER_DESCR lyrsCfg, const ConfigurationBuffer * buffer) const override;
+    virtual void WriteOutputBuffer(PGNA_BUFFER_DESCR lyrsCfg, const ConfigurationBuffer * buffer) const override;
+    virtual void WriteNnopType(PNNOP_TYPE_DESCR nnopCfg, bool actListEnabled) const override;
     virtual void WriteActiveList(HardwareActiveListDescriptor & descriptor) const override;
 
 protected:

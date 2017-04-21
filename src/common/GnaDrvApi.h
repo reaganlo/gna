@@ -186,37 +186,52 @@ typedef struct _GNA_BUFFER_DESCR
 
 static_assert(8 == sizeof(GNA_BUFFER_DESCR), "Invalid size of GNA_BUFFER_DESCR");
 
+typedef struct _NNOP_TYPE_DESCR
+{
+    UINT32 offset;
+    UINT8  value;
+} NNOP_TYPE_DESCR, *PNNOP_TYPE_DESCR;
+
+static_assert(5 == sizeof(NNOP_TYPE_DESCR), "Invalid size of NNOP_TYPE_DESCR");
+
+/**
+ * _offset member points where to write the _value (refers to user memory base address)
+ */
 typedef struct _XNN_ACTIVE_LIST_DESCR
 {
-    UINT32 act_list_buffer_offset; // points where to write the value (refers to user memory base address)
-    UINT32 act_list_buffer_value; // address offset of the buffer (refers to user memory base address)
-    UINT32 act_list_n_elems_offset; // points where to write the value (refers to user memory base address)
-    UINT16 act_list_n_elems_value; // active list elements number
+    UINT32 act_list_buffer_offset;
+    UINT32 act_list_buffer_value;
+    UINT32 act_list_n_elems_offset;
+    UINT16 act_list_n_elems_value;
 } XNN_ACTIVE_LIST_DESCR, *PXNN_ACTIVE_LIST_DESCR;
 
 static_assert(14 == sizeof(XNN_ACTIVE_LIST_DESCR), "Invalid size of XNN_ACTIVE_LIST_DESCR");
 
+/**
+* _offset member points where to write the _value (refers to user memory base address)
+*/
 typedef struct _GMM_ACTIVE_LIST_DESCR
 {
-    UINT32 asladdr_offset; // points where to write the value (refers to user memory base address)
-    UINT32 asladdr_value; // address offset of the buffer (refers to user memory base address)
-    UINT32 astlistlen_offset; // points where to write the value (refers to user memory base address)
-    UINT32 astlistlen_value; // active list elements number
-    UINT32 gmmscrlen_offset; // points where to write the value (refers to user memory base address)
-    UINT32 gmmscrlen_value; // address offset of the buffer (refers to user memory base address)
+    UINT32 asladdr_offset;
+    UINT32 asladdr_value;
+    UINT32 astlistlen_offset;
+    UINT32 astlistlen_value;
+    UINT32 gmmscrlen_offset;
+    UINT32 gmmscrlen_value;
 } GMM_ACTIVE_LIST_DESCR, *PGMM_ACTIVE_LIST_DESCR;
 
 static_assert(24 == sizeof(GMM_ACTIVE_LIST_DESCR), "Invalid size of GMM_ACTIVE_LIST_DESCR");
 
 typedef struct _REQ_CONFIG_DESCR
 {
-    UINT32      buffersCount;
-    UINT32      xnnActiveListsCount;
-    UINT32      gmmActiveListsCount;
+    UINT32  buffersCount;
+    UINT32  nnopTypesCount;
+    UINT32  xnnActiveListsCount;
+    UINT32  gmmActiveListsCount;
 
-} REQ_CONFIG_DESCR;
+} REQ_CONFIG_DESCR, *PREQ_CONFIG_DESCR;
 
-static_assert(12 == sizeof(REQ_CONFIG_DESCR), "Invalid size of REQ_CONFIG_DESCR");
+static_assert(16 == sizeof(REQ_CONFIG_DESCR), "Invalid size of REQ_CONFIG_DESCR");
 
 /**
  * CALCULATE request data with output information.
@@ -235,7 +250,7 @@ typedef struct _GNA_CALC_IN
     REQ_CONFIG_DESCR    reqCfgDescr;
 } GNA_CALC_IN, *PGNA_CALC_IN;       // CALCULATE IOCTL - Input data
 
-static_assert(69 == sizeof(GNA_CALC_IN), "Invalid size of GNA_CALC_IN");
+static_assert(73 == sizeof(GNA_CALC_IN), "Invalid size of GNA_CALC_IN");
 
 /**
  * Minimum Size of GNA (GMM/xNN) request in bytes

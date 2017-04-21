@@ -63,6 +63,10 @@ public:
     {
         hardwareLayers.at(layerIndex)->WriteOutputBuffer(lyrsCfg, buffer);
     }
+    void WriteLayerNnopType(const uint32_t layerIndex, PNNOP_TYPE_DESCR nnopCfg, bool actListEnabled) const
+    {
+        hardwareLayers.at(layerIndex)->WriteNnopType(nnopCfg, actListEnabled);
+    }
     void WriteLayerActiveList(const uint32_t layerIndex, HardwareActiveListDescriptor & descriptor) const
     {
         hardwareLayers.at(layerIndex)->WriteActiveList(descriptor);

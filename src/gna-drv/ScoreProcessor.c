@@ -361,6 +361,18 @@ GNAScoreDebug(
     Trace(TLI, T_MEM, "GNA actFuncSectDefPtr: %#x:", read32);
 }
 
+static size_t calculateLayersDescriptorBufferSize(const PGNA_CALC_IN input)
+{
+    const max_ = max(sizeof(XNN_ACTIVE_LIST_DESCR), sizeof(GMM_ACTIVE_LIST_DESCR));
+
+    size_t sz = sizeof(GNA_CALC_IN);
+    sz += sizeof(GNA_BUFFER_DESCR)*input->reqCfgDescr.buffersCount;        
+    sz += max_*input->reqCfgDescr.xnnActiveListsCount;
+    sz += max_*input->reqCfgDescr.gmmActiveListsCount;
+
+    return sz;
+}
+
 static void setLayersDescriptorParameters(const PGNA_CALC_IN input, PUCHAR const memoryBase)
 {
     // set buffers according to request config
@@ -371,8 +383,16 @@ static void setLayersDescriptorParameters(const PGNA_CALC_IN input, PUCHAR const
         ++bufferDescr;
     }
 
+    // set nnop type
+    PNNOP_TYPE_DESCR nnopTypeDescr = (PNNOP_TYPE_DESCR)bufferDescr;
+    for (UINT32 i = 0; i < input->reqCfgDescr.nnopTypesCount; ++i)
+    {
+        *(PUINT32)(memoryBase + nnopTypeDescr->offset) = nnopTypeDescr->value;
+        ++nnopTypeDescr;
+    }
+
     // set xnn active list params according to request config
-    PXNN_ACTIVE_LIST_DESCR xnnActLstDescr = (PXNN_ACTIVE_LIST_DESCR)bufferDescr;
+    PXNN_ACTIVE_LIST_DESCR xnnActLstDescr = (PXNN_ACTIVE_LIST_DESCR)nnopTypeDescr;
     for (UINT32 i = 0; i < input->reqCfgDescr.xnnActiveListsCount; ++i)
     {
         *(PUINT32)(memoryBase + xnnActLstDescr->act_list_buffer_offset) = xnnActLstDescr->act_list_buffer_value;
@@ -416,13 +436,13 @@ ScoreStart(
         TraceFailMsg(TLE, T_EXIT, "WdfRequestRetrieveInputBuffer", status);
         goto cleanup;
     }
-    if (sizeof(GNA_CALC_IN) + sizeof(GNA_BUFFER_DESCR)*input->reqCfgDescr.buffersCount +
-        //TODO expand this calculation to cover XNN types as well - refer dll RequestConfiguration::calculateCacheSize()
-        sizeof(GMM_ACTIVE_LIST_DESCR)*input->reqCfgDescr.xnnActiveListsCount != inputLength)
+
+    if (calculateLayersDescriptorBufferSize(input) != inputLength)
     {
         TraceFailMsg(TLE, T_EXIT, "Score input buffer wrong size", STATUS_INVALID_BUFFER_SIZE);
         goto cleanup;
     }
+
     status = ScoreValidateParams(input);
     if (!NT_SUCCESS(status))
     {

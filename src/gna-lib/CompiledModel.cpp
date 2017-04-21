@@ -106,6 +106,10 @@ void CompiledModel::WriteHardwareLayerOutputBuffer(const uint32_t layerIndex, PG
 {
     hardwareModel->WriteLayerOutputBuffer(layerIndex, lyrsCfg, buffer);
 }
+void CompiledModel::WriteHardwareLayerNnopType(const uint32_t layerIndex, PNNOP_TYPE_DESCR nnopCfg, bool actListEnabled) const
+{
+    hardwareModel->WriteLayerNnopType(layerIndex, nnopCfg, actListEnabled);
+}
 void CompiledModel::WriteHardwareLayerActiveList(const uint32_t layerIndex, HardwareActiveListDescriptor & descriptor) const
 {
     hardwareModel->WriteLayerActiveList(layerIndex, descriptor);

@@ -93,13 +93,13 @@ HardwareLayer::HardwareLayer(const DescriptorParameters& parameters) :
 {
 }
 
-void HardwareLayer::WriteInputBuffer(PGNA_BUFFER_DESCR &lyrsCfg, const ConfigurationBuffer * const buffer) const
+void HardwareLayer::WriteInputBuffer(PGNA_BUFFER_DESCR lyrsCfg, const ConfigurationBuffer * const buffer) const
 {
     lyrsCfg->offset = getOffset(XnnDescriptor) + offsetof(XNN_LYR, in_buffer);
     lyrsCfg->value = getOffset(buffer->Get());
 }
 
-void HardwareLayer::WriteOutputBuffer(PGNA_BUFFER_DESCR &lyrsCfg, const ConfigurationBuffer * const buffer) const
+void HardwareLayer::WriteOutputBuffer(PGNA_BUFFER_DESCR lyrsCfg, const ConfigurationBuffer * const buffer) const
 {
     if (LayerOutput::ActivatedOutput == SoftwareLayer.Output.GetOutputMode())
     {
@@ -110,6 +110,11 @@ void HardwareLayer::WriteOutputBuffer(PGNA_BUFFER_DESCR &lyrsCfg, const Configur
         lyrsCfg->offset = getOffset(XnnDescriptor) + offsetof(XNN_LYR, out_sum_buffer);
     }
     lyrsCfg->value = getOffset(buffer->Get());
+}
+
+void HardwareLayer::WriteNnopType(PNNOP_TYPE_DESCR, bool) const
+{
+    throw GnaException(XNN_ERR_LYR_CFG);
 }
 
 void HardwareLayer::WriteActiveList(HardwareActiveListDescriptor & descriptor) const
@@ -192,6 +197,19 @@ HardwareLayerAffDiagTrans::HardwareLayerAffDiagTrans(const DescriptorParameters&
         break;
     }
     save();
+}
+
+void HardwareLayerAffDiagTrans::WriteNnopType(PNNOP_TYPE_DESCR nnopCfg, bool actListEnabled) const
+{
+    if (INTEL_AFFINE == SoftwareLayer.Config.Kind)
+    {
+        nnopCfg->offset = getOffset(XnnDescriptor) + offsetof(XNN_LYR, op);
+        nnopCfg->value = actListEnabled ? NN_AFF_AL : NN_AFFINE;
+    }
+    else
+    {
+        throw GnaException(XNN_ERR_LYR_CFG);
+    }
 }
 
 HardwareLayerCopy::HardwareLayerCopy(const DescriptorParameters& parameters) :
@@ -404,16 +422,22 @@ void HardwareLayerGmm::save()
     GmmDescriptor->mvwidth     = GMM_MEAN_VALUE_SIZE;
 }
 
-void HardwareLayerGmm::WriteInputBuffer(PGNA_BUFFER_DESCR &, const ConfigurationBuffer * const buffer) const
+void HardwareLayerGmm::WriteInputBuffer(PGNA_BUFFER_DESCR, const ConfigurationBuffer * const buffer) const
 {
     GmmDescriptor->fvaddr = getOffset(buffer);
     // TODO: add PGNA_BUFFER_DESCR for gmm or extent current structure
 }
 
-void HardwareLayerGmm::WriteOutputBuffer(PGNA_BUFFER_DESCR &, const ConfigurationBuffer * const buffer) const
+void HardwareLayerGmm::WriteOutputBuffer(PGNA_BUFFER_DESCR, const ConfigurationBuffer * const buffer) const
 {
     GmmDescriptor->gmmscradd = getOffset(buffer);
     // TODO: add PGNA_BUFFER_DESCR for gmm or extent current structure
+}
+
+void HardwareLayerGmm::WriteNnopType(PNNOP_TYPE_DESCR nnopCfg, bool actListEnabled) const
+{
+    nnopCfg->offset = getOffset(XnnDescriptor) + offsetof(XNN_LYR, op);
+    nnopCfg->value = actListEnabled ? NN_GMM_ACTIVE_LIST : NN_GMM;
 }
 
 void HardwareLayerGmm::WriteActiveList(HardwareActiveListDescriptor & descriptor) const
