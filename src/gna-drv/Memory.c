@@ -114,6 +114,7 @@ MemoryMap(
         modelCtx->pMdl = pMdl;
         modelCtx->mmapRequest = mapRequest;
         modelCtx->userMemoryBaseVA = usrBuffer;
+        modelCtx->requestConfigId = -1;
         appCtx->models[modelId] = modelCtx;
 
         Trace(TLI, T_MEM, "Memory mapping model with modelId = %lld", modelId);

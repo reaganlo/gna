@@ -96,7 +96,7 @@ HardwareLayer::HardwareLayer(const DescriptorParameters& parameters) :
 void HardwareLayer::WriteInputBuffer(PGNA_BUFFER_DESCR lyrsCfg, const ConfigurationBuffer * const buffer) const
 {
     lyrsCfg->offset = getOffset(XnnDescriptor) + offsetof(XNN_LYR, in_buffer);
-    lyrsCfg->value = getOffset(buffer->Get());
+    lyrsCfg->value = getOffset(buffer);
 }
 
 void HardwareLayer::WriteOutputBuffer(PGNA_BUFFER_DESCR lyrsCfg, const ConfigurationBuffer * const buffer) const
@@ -109,7 +109,7 @@ void HardwareLayer::WriteOutputBuffer(PGNA_BUFFER_DESCR lyrsCfg, const Configura
     {
         lyrsCfg->offset = getOffset(XnnDescriptor) + offsetof(XNN_LYR, out_sum_buffer);
     }
-    lyrsCfg->value = getOffset(buffer->Get());
+    lyrsCfg->value = getOffset(buffer);
 }
 
 void HardwareLayer::WriteNnopType(PNNOP_TYPE_DESCR, bool) const
@@ -422,16 +422,16 @@ void HardwareLayerGmm::save()
     GmmDescriptor->mvwidth     = GMM_MEAN_VALUE_SIZE;
 }
 
-void HardwareLayerGmm::WriteInputBuffer(PGNA_BUFFER_DESCR, const ConfigurationBuffer * const buffer) const
+void HardwareLayerGmm::WriteInputBuffer(PGNA_BUFFER_DESCR lyrsCfg, const ConfigurationBuffer * const buffer) const
 {
-    GmmDescriptor->fvaddr = getOffset(buffer);
-    // TODO: add PGNA_BUFFER_DESCR for gmm or extent current structure
+    lyrsCfg->offset = getOffset(GmmDescriptor) + offsetof(GMM_CONFIG, fvaddr);
+    lyrsCfg->value = getOffset(buffer);
 }
 
-void HardwareLayerGmm::WriteOutputBuffer(PGNA_BUFFER_DESCR, const ConfigurationBuffer * const buffer) const
+void HardwareLayerGmm::WriteOutputBuffer(PGNA_BUFFER_DESCR lyrsCfg, const ConfigurationBuffer * const buffer) const
 {
-    GmmDescriptor->gmmscradd = getOffset(buffer);
-    // TODO: add PGNA_BUFFER_DESCR for gmm or extent current structure
+    lyrsCfg->offset = getOffset(GmmDescriptor) + offsetof(GMM_CONFIG, gmmscradd);
+    lyrsCfg->value = getOffset(buffer);
 }
 
 void HardwareLayerGmm::WriteNnopType(PNNOP_TYPE_DESCR nnopCfg, bool actListEnabled) const
@@ -453,9 +453,6 @@ void HardwareLayerGmm::WriteActiveList(HardwareActiveListDescriptor & descriptor
         activeListIndices = getOffset(descriptor.List->Indices);
         activeListIndicesCount = descriptor.List->IndicesCount;
     }
-    GmmDescriptor->gmmscrlen = scoreElementsCount;
-    GmmDescriptor->asladdr = activeListIndices;
-    GmmDescriptor->astlistlen = activeListIndicesCount;
 
     auto& config = descriptor.Config.Gmm;
     config->asladdr_offset = getOffset(GmmDescriptor) + offsetof(GMM_CONFIG, asladdr);

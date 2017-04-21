@@ -95,6 +95,7 @@ typedef struct _HW_DESC
 typedef struct _MODEL_CTX
 {
     UINT64        modelId;                  // Back-reference model id
+    INT64         requestConfigId;          // request config that currently written into model memory
     PMDL          pMdl;                     // Pointer to MDL object used with MmLock/MmUnlock
     WDFREQUEST    mmapRequest;              // Memory map request to be completed on memory release
     PT_DIR        ptDir[PT_DIR_SIZE + 1];   // page table directory

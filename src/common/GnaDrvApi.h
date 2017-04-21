@@ -224,14 +224,14 @@ static_assert(24 == sizeof(GMM_ACTIVE_LIST_DESCR), "Invalid size of GMM_ACTIVE_L
 
 typedef struct _REQ_CONFIG_DESCR
 {
+    UINT32  requestConfigId;
     UINT32  buffersCount;
     UINT32  nnopTypesCount;
     UINT32  xnnActiveListsCount;
     UINT32  gmmActiveListsCount;
-
 } REQ_CONFIG_DESCR, *PREQ_CONFIG_DESCR;
 
-static_assert(16 == sizeof(REQ_CONFIG_DESCR), "Invalid size of REQ_CONFIG_DESCR");
+static_assert(20 == sizeof(REQ_CONFIG_DESCR), "Invalid size of REQ_CONFIG_DESCR");
 
 /**
  * CALCULATE request data with output information.
@@ -250,7 +250,7 @@ typedef struct _GNA_CALC_IN
     REQ_CONFIG_DESCR    reqCfgDescr;
 } GNA_CALC_IN, *PGNA_CALC_IN;       // CALCULATE IOCTL - Input data
 
-static_assert(73 == sizeof(GNA_CALC_IN), "Invalid size of GNA_CALC_IN");
+static_assert(77 == sizeof(GNA_CALC_IN), "Invalid size of GNA_CALC_IN");
 
 /**
  * Minimum Size of GNA (GMM/xNN) request in bytes

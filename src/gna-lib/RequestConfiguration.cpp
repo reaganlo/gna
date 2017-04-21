@@ -94,8 +94,9 @@ void RequestConfiguration::GetHwConfigData(void* &buffer, size_t &size, uint32_t
         calculationData->ctrlFlags.layerIndex = layerIndex;
         calculationData->ctrlFlags.layerCount = layerCount;
         calculationData->modelId = Model.Id;
-        calculationData->reqCfgDescr.buffersCount = InputBuffersCount + OutputBuffersCount;
         calculationData->hwPerfEncoding = HwPerfEncoding;
+        calculationData->reqCfgDescr.buffersCount = InputBuffersCount + OutputBuffersCount;
+        calculationData->reqCfgDescr.requestConfigId = ConfigId;
 
         void* shifted = submodelConfigCache + sizeof(GNA_CALC_IN);
         writeBuffersIntoCache(layerIndex, layerCount, shifted);
@@ -173,9 +174,10 @@ void RequestConfiguration::writeNnopTypesIntoCache(uint32_t layerIndex, uint32_t
     auto upperBound = LayerConfigurations.upper_bound(layerIndex + layerCount);
     for (auto it = lowerBound; it != upperBound; ++it)
     {
-        if (it->second->ActiveList)
+        if (it->second->OutputBuffer || it->second->ActiveList)
         {
-            Model.WriteHardwareLayerNnopType(it->first, nnopCfg, it->second->ActiveList->Enabled);
+            bool enabled = it->second->ActiveList ? it->second->ActiveList->Enabled : false;
+            Model.WriteHardwareLayerNnopType(it->first, nnopCfg, enabled);
 
             ++nnopCfg;
             ++count;

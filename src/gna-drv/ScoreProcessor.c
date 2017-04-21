@@ -373,8 +373,16 @@ static size_t calculateLayersDescriptorBufferSize(const PGNA_CALC_IN input)
     return sz;
 }
 
-static void setLayersDescriptorParameters(const PGNA_CALC_IN input, PUCHAR const memoryBase)
+static void setLayersDescriptorParameters(const PGNA_CALC_IN input, PMODEL_CTX modelCtx)
 {
+    if (input->reqCfgDescr.requestConfigId == modelCtx->requestConfigId)
+    {
+        return;
+    }
+    modelCtx->requestConfigId = input->reqCfgDescr.requestConfigId;
+
+    PUCHAR const memoryBase = modelCtx->userMemoryBaseVA;
+
     // set buffers according to request config
     PGNA_BUFFER_DESCR bufferDescr = (PGNA_BUFFER_DESCR)((PUCHAR)input + sizeof(GNA_CALC_IN));
     for (UINT32 i = 0; i < input->reqCfgDescr.buffersCount; ++i)
@@ -456,7 +464,7 @@ ScoreStart(
         goto cleanup;
     }
 
-    setLayersDescriptorParameters(input, modelCtx->userMemoryBaseVA);
+    setLayersDescriptorParameters(input, modelCtx);
 
     // check and remember application from which req. is being processed now
     WdfSpinLockAcquire(devCtx->req.reqLock);
