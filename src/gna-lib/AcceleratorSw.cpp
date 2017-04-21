@@ -68,7 +68,7 @@ GmmScoreContext::GmmScoreContext(const GmmLayer& gmm, const LayerConfiguration *
 }
 
 AcceleratorSw::AcceleratorSw(acceleration acceleration_mode) :
-    IAccelerator(acceleration_mode)
+    IAccelerator{acceleration_mode}
 {
     switch(accel){
     case GNA_AVX2_FAST:

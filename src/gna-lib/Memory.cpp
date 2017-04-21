@@ -31,13 +31,13 @@ using namespace GNA;
 
 // just makes object from arguments
 Memory::Memory(void * bufferIn, const size_t sizeIn) :
-    Address(bufferIn),
-    size(sizeIn)
+    Address{bufferIn},
+    size{sizeIn}
 {};
 
 // allocates and zeros memory
-Memory::Memory(const size_t sizeIn) : 
-    size(sizeIn)
+Memory::Memory(const size_t sizeIn) :
+    size{sizeIn}
 {
     Expect::True(size > 0, GNA_INVALIDMEMSIZE);
     buffer = _gna_malloc(size);

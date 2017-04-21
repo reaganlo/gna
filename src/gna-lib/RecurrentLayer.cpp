@@ -31,7 +31,7 @@ using namespace GNA;
 
 RnnLayer::RnnLayer(nn_layer const * const layer, const uint32_t inputVectorCount) :
     Layer(layer, inputVectorCount),
-    Affine(AffineFunction::Create(&static_cast<const nn_layer_reccurent*>(layer->pLayerStruct)->affine)),
+    Affine{AffineFunction::Create(&static_cast<const nn_layer_reccurent*>(layer->pLayerStruct)->affine)},
     // RNN has only 2B output with Activation always enabled
     Activation(ActivationFunction::Create(&static_cast<const nn_layer_reccurent*>(layer->pLayerStruct)->pwl, true)),
     FeedbackDelay{static_cast<const nn_layer_reccurent * const>(layer->pLayerStruct)->feedbackFrameDelay},

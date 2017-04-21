@@ -143,7 +143,8 @@ bool AccelerationDetector::HasFeature(GnaFeature feature) const
     return deviceFeatureMap[feature];
 }
 
-AccelerationDetector::AccelerationDetector() : fastestAcceleration(GNA_GEN_FAST)
+AccelerationDetector::AccelerationDetector() :
+    fastestAcceleration{GNA_GEN_FAST}
 {
     // generic, fastest software and auto always supported
     accelerationModes[GNA_GEN_SAT] = ACC_SUPPORTED;

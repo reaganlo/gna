@@ -49,7 +49,7 @@ GmmLayer::GmmLayer(const nn_layer *layer, const uint32_t inputVectorCount) :
     Layer(layer, inputVectorCount),
     Config((static_cast<gna_gmm_layer*>(layer->pLayerStruct))->config),
     Data((static_cast<gna_gmm_layer*>(layer->pLayerStruct))->data),
-    Params(Config, Input.RowCount)
+    Params{Config, Input.RowCount}
 {
     validate();
 }

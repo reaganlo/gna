@@ -41,9 +41,9 @@ using std::move;
 
 using namespace GNA;
 
-Device::Device(gna_device_id* deviceId, uint8_t threadCount)
-    : requestHandler(threadCount),
-      acceleratorController(accelerationDetector)
+Device::Device(gna_device_id* deviceId, uint8_t threadCount) :
+    requestHandler{threadCount},
+    acceleratorController{accelerationDetector}
 {
     Expect::NotNull(deviceId);
 

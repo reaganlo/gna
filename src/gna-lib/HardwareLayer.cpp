@@ -140,8 +140,8 @@ const map<const uint32_t, const array<const uint32_t, XNN_N_GROUP_MAX>> Hardware
 
 HardwareLayerExt::HardwareLayerExt(const DescriptorParameters& parameters, const uint32_t effectiveGrouping) :
     HardwareLayer(parameters),
-    bufferElementCount(bufferElementsMap.at(HardwareInternalBufferSize).at(effectiveGrouping - 1)),
-    iterationGrouping(effectiveGrouping)
+    bufferElementCount{bufferElementsMap.at(HardwareInternalBufferSize).at(effectiveGrouping - 1)},
+    iterationGrouping{effectiveGrouping}
 {
     Expect::InRange(iterationGrouping, 1, XNN_N_GROUP_MAX, XNN_ERR_GROUPING);
     // Calculates number of iterations and elements in last iteration
@@ -209,9 +209,9 @@ void HardwareLayerCopy::save()
 
 HardwareLayerRnn::HardwareLayerRnn(const DescriptorParameters& parameters) :
     HardwareLayerExt(parameters, 1),
-    feedbackIterationsCount(0),
-    feedbackFirstIterElementCount(0),
-    feedbackLastIterElementCount(0)
+    feedbackIterationsCount{0},
+    feedbackFirstIterElementCount{0},
+    feedbackLastIterElementCount{0}
 {
     auto& rnn = static_cast<const RnnLayer&>(SoftwareLayer);
     affine = rnn.Affine.get();

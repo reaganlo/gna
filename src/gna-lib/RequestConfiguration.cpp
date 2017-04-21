@@ -35,8 +35,8 @@
 using namespace GNA;
 
 RequestConfiguration::RequestConfiguration(const CompiledModel& model, gna_request_cfg_id configId) :
-    Model(model),
-    ConfigId(configId)
+    Model{model},
+    ConfigId{configId}
 { }
 
 void RequestConfiguration::AddBuffer(gna_buffer_type type, uint32_t layerIndex, void *address)

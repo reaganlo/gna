@@ -42,7 +42,9 @@ using std::vector;
 
 using namespace GNA;
 
-ThreadPool::ThreadPool() : stopped(true) {}
+ThreadPool::ThreadPool() :
+    stopped{true}
+{}
 
 ThreadPool::~ThreadPool()
 {

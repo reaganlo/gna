@@ -37,7 +37,7 @@ using std::unique_ptr;
 WinHandle IoctlSender::deviceHandle;
 
 IoctlSender::IoctlSender() :
-    deviceEvent(CreateEvent(nullptr, false, false, nullptr))
+    deviceEvent{CreateEvent(nullptr, false, false, nullptr)}
 {
     ZeroMemory(&overlapped, sizeof(overlapped));
 }

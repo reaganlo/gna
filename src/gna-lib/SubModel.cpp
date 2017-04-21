@@ -28,9 +28,9 @@
 using namespace GNA;
 
 SubModel::SubModel(SubmodelType type, uint16_t layerIx) :
-    Type(type),
-    LayerIndex(layerIx),
-    layerCount(1)
+    Type{type},
+    LayerIndex{layerIx},
+    layerCount{1}
 {};
 
 void SubModel::AddLayer()

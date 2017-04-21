@@ -32,9 +32,9 @@ using std::make_unique;
 
 using namespace GNA;
 
-SoftwareModel::SoftwareModel(const gna_model *const network)
-    : layerCount(network->nLayers),
-      inputVectorCount(network->nGroup)
+SoftwareModel::SoftwareModel(const gna_model *const network) :
+    layerCount{network->nLayers},
+    inputVectorCount{network->nGroup}
 {
 #ifndef NO_ERRCHECK
     Expect::InRange(inputVectorCount, 1, XNN_N_GROUP_MAX, XNN_ERR_LYR_CFG);

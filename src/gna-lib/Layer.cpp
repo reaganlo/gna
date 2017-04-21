@@ -51,9 +51,9 @@ const std::map<const nn_layer_kind, const Orientations> LayerConfig::Orientation
 };
 
 LayerConfig::LayerConfig(const nn_layer_kind kind, const nn_layer_type type) :
-    Kind(kind),
-    Type(type),
-    Orientation(OrientationsMap.at(kind))
+    Kind{kind},
+    Type{type},
+    Orientation{OrientationsMap.at(kind)}
 {
     Expect::InRange(kind, 0, NUM_LAYER_KINDS-1, XNN_ERR_LYR_TYPE);
     Expect::InRange(type, 0, NUM_LAYER_TYPES-1, XNN_ERR_LYR_TYPE);
@@ -62,10 +62,10 @@ LayerConfig::LayerConfig(const nn_layer_kind kind, const nn_layer_type type) :
 
 LayerMatrix::LayerMatrix(const uint32_t rowCount, const uint32_t columnCount, void const * buffer,
     const LayerConfig& config) :
-    ColumnCount(columnCount),
-    RowCount(rowCount),
-    ElementCount((FLAT == config.Orientation) ? ColumnCount : RowCount),
-    Buffer(buffer)
+    ColumnCount{columnCount},
+    RowCount{rowCount},
+    ElementCount{(FLAT == config.Orientation) ? ColumnCount : RowCount},
+    Buffer{buffer}
 {
     Expect::InRange(config.Orientation, INTERLEAVED, FLAT, XNN_ERR_LYR_CFG);
     if (INTEL_HIDDEN == config.Type)
@@ -75,8 +75,8 @@ LayerMatrix::LayerMatrix(const uint32_t rowCount, const uint32_t columnCount, vo
 };
 
 LayerInput::LayerInput(const nn_layer &layer, const LayerConfig& config, const uint32_t vectorCount) :
-    LayerMatrix(layer.nInputRows, layer.nInputColumns, layer.pInputs, config),
-    VectorCount(vectorCount)
+    LayerMatrix{layer.nInputRows, layer.nInputColumns, layer.pInputs, config},
+    VectorCount{vectorCount}
 {
     if (INTEL_GMM == layer.nLayerKind)
     {
@@ -99,9 +99,9 @@ LayerInput::LayerInput(const nn_layer &layer, const LayerConfig& config, const u
 
 
 LayerOutput::LayerOutput(const nn_layer &layer, const LayerConfig& config) :
-    LayerMatrix(layer.nOutputRows, layer.nOutputColumns, layer.pOutputs, config),
-    ScratchPad(static_cast<uint32_t const * const>(layer.pOutputsIntermediate)),
-    mode(NonActivatedOutput)
+    LayerMatrix{layer.nOutputRows, layer.nOutputColumns, layer.pOutputs, config},
+    ScratchPad{static_cast<uint32_t const * const>(layer.pOutputsIntermediate)},
+    mode{NonActivatedOutput}
 {
     Expect::InRange(ElementCount, 1, XNN_N_IN_ELEMS_MAX, XNN_ERR_LYR_CFG);
     Expect::InRange(layer.nBytesPerOutput, ActivatedOutputSize, NonActivatedOutputSize, XNN_ERR_INPUT_BYTES);
@@ -156,9 +156,9 @@ unique_ptr<Layer> Layer::Create(const nn_layer* layer, const uint32_t inputVecto
 
 Layer::Layer(const nn_layer *layer, const uint32_t inputVectorCount) :
     sourceLayer(getSafeCopy(layer)),
-    Config(sourceLayer.nLayerKind, sourceLayer.type),
-    Input(sourceLayer, Config, inputVectorCount),
-    Output(sourceLayer, Config)
+    Config{sourceLayer.nLayerKind, sourceLayer.type},
+    Input{sourceLayer, Config, inputVectorCount},
+    Output{sourceLayer, Config}
 {
 }
 

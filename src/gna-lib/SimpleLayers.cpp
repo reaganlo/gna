@@ -41,8 +41,8 @@ TransposeLayer::TransposeLayer(nn_layer const * const layer, const uint32_t inpu
 
 CopyLayer::CopyLayer(const nn_layer *layer) :
     Layer(layer, static_cast<const nn_layer_copy*>(layer->pLayerStruct)->nCopyRows),
-    CopyElementsCount(static_cast<const nn_layer_copy*>(layer->pLayerStruct)->nCopyCols),
-    sourceLayer(static_cast<const nn_layer_copy*>(layer->pLayerStruct))
+    CopyElementsCount{static_cast<const nn_layer_copy*>(layer->pLayerStruct)->nCopyCols},
+    sourceLayer{static_cast<const nn_layer_copy*>(layer->pLayerStruct)}
 {
     Output.SetOutputMode(LayerOutput::NonActivatedOutput, Layer::sourceLayer.nBytesPerOutput);
     Expect::MultiplicityOf(CopyElementsCount, XNN_N_IN_ELEMS_MPLY);

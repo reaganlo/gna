@@ -34,7 +34,7 @@ AffineLayer::AffineLayer(const nn_layer *layer, const uint32_t inputVectorCount)
     Layer(layer, inputVectorCount),
     Affine(AffineFunction::Create(&static_cast<const nn_layer_affine*>(layer->pLayerStruct)->affine)),
     Activation(ActivationFunction::Create(&static_cast<const nn_layer_affine*>(layer->pLayerStruct)->pwl, false)),
-    sourceAffineLayer(static_cast<const nn_layer_affine*>(layer->pLayerStruct))
+    sourceAffineLayer{static_cast<const nn_layer_affine*>(layer->pLayerStruct)}
 {
     Output.SetOutputMode(Activation.operator bool(), layer->nBytesPerOutput);
 };
@@ -43,15 +43,15 @@ AffineMultiBiasLayer::AffineMultiBiasLayer(const nn_layer *layer, const uint32_t
     Layer(layer, inputVectorCount),
     Affine(AffineFunction::Create(&static_cast<const nn_layer_affine_multi*>(layer->pLayerStruct)->affine)),
     Activation(ActivationFunction::Create(&static_cast<const nn_layer_affine_multi*>(layer->pLayerStruct)->pwl, false)),
-    sourceAffineLayer(static_cast<const nn_layer_affine_multi*>(layer->pLayerStruct))
+    sourceAffineLayer{static_cast<const nn_layer_affine_multi*>(layer->pLayerStruct)}
 {
     Output.SetOutputMode(Activation.operator bool(), layer->nBytesPerOutput);
 
     Expect::True(Affine->BiasVectorIndex < Input.VectorCount, XNN_ERR_BIAS_INDEX);
 };
 
-AffineDiagonalLayer::AffineDiagonalLayer(const nn_layer *layer, const uint32_t inputVectorCount)
-    : AffineLayer(layer, inputVectorCount)
+AffineDiagonalLayer::AffineDiagonalLayer(const nn_layer *layer, const uint32_t inputVectorCount) :
+    AffineLayer{layer, inputVectorCount}
 {
     Expect::True(Output.RowCount == Input.RowCount, XNN_ERR_LYR_CFG);
     Expect::True(Input.VectorCount == Input.ColumnCount, XNN_ERR_LYR_CFG);

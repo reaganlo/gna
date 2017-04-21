@@ -37,7 +37,7 @@ using std::shared_ptr;
 using namespace GNA;
 
 AcceleratorController::AcceleratorController(AccelerationDetector& detector) :
-    isHardwarePresent(detector.IsHardwarePresent())
+    isHardwarePresent{detector.IsHardwarePresent()}
 {
     // attempt to create Hardware Accelerator
     if(isHardwarePresent)

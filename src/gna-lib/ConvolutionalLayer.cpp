@@ -30,10 +30,10 @@
 using namespace GNA;
 
 FiltersConfig::FiltersConfig(const nn_layer_conv * sourceLayer, const uint32_t inputElementCount) :
-    BiasSimple(sourceLayer->nBytesBias, sourceLayer->pBiases),
-    Count(sourceLayer->nFilters),
-    CoefficientCount(sourceLayer->nFilterCoefficients),
-    Data(static_cast<uint16_t*>(sourceLayer->pFilters))
+    BiasSimple{sourceLayer->nBytesBias, sourceLayer->pBiases},
+    Count{sourceLayer->nFilters},
+    CoefficientCount{sourceLayer->nFilterCoefficients},
+    Data{static_cast<uint16_t*>(sourceLayer->pFilters)}
 {
     Expect::InRange(sourceLayer->nFilterRows, 1, CNN_N_FLT_COEFF_MAX, XNN_ERR_LYR_CFG);
     Expect::True(sourceLayer->nBytesFilterCoefficient == 2, XNN_ERR_WEIGHT_BYTES);
@@ -49,27 +49,27 @@ FiltersConfig::FiltersConfig(const nn_layer_conv * sourceLayer, const uint32_t i
 }
 
 FeatureMaps::FeatureMaps(const nn_layer_conv * sourceLayer) :
-    Count(sourceLayer->nFeatureMaps),
-    RowCount(sourceLayer->nFeatureMapRows),
-    ColumnCount(sourceLayer->nFeatureMapColumns),
-    Stride(Count * ColumnCount) // always move 1 "row"
+    Count{sourceLayer->nFeatureMaps},
+    RowCount{sourceLayer->nFeatureMapRows},
+    ColumnCount{sourceLayer->nFeatureMapColumns},
+    Stride{Count * ColumnCount} // always move 1 "row"
 {
     Expect::InRange(Stride, 1, CNN_N_FLT_COEFF_MAX, CNN_ERR_FLT_STRIDE);
 }
 
 ConvolutionFunction::ConvolutionFunction(const nn_layer_conv * sourceLayer, const uint32_t inputElementCount) :
-    Filters(sourceLayer, inputElementCount),
-    FeatureMaps(sourceLayer),
-    OutputElementsCount((inputElementCount - Filters.CoefficientCount) / FeatureMaps.Stride + 1)
+    Filters{sourceLayer, inputElementCount},
+    FeatureMaps{sourceLayer},
+    OutputElementsCount{(inputElementCount - Filters.CoefficientCount) / FeatureMaps.Stride + 1}
 {
     auto featureCount = FeatureMaps.RowCount * FeatureMaps.Stride;
     Expect::True(featureCount >= CNN_N_FLT_COEFF_MIN, XNN_ERR_LYR_CFG);
 }
 
 PoolingFunction::PoolingFunction(const nn_layer_conv * sourceLayer) :
-    Type(sourceLayer->poolType),
-    Size(sourceLayer->nPoolSize),
-    Stride(sourceLayer->nPoolStride)
+    Type{sourceLayer->poolType},
+    Size{sourceLayer->nPoolSize},
+    Stride{sourceLayer->nPoolStride}
 {
     Expect::InRange(Type, INTEL_NO_POOLING, NUM_POOLING_TYPES - 1, XNN_ERR_LYR_CFG);
     if (INTEL_NO_POOLING != Type)
@@ -83,9 +83,9 @@ CnnLayer::CnnLayer(nn_layer const * const layer, const uint32_t inputVectorCount
     Layer(layer, inputVectorCount),
     // CNN has only 2B output with Activation always enabled
     Activation(ActivationFunction::Create(&static_cast<const nn_layer_conv*>(layer->pLayerStruct)->pwl, true)),
-    Convolution(static_cast<const nn_layer_conv*>(layer->pLayerStruct), Input.ElementCount),
-    Pooling(static_cast<const nn_layer_conv*>(layer->pLayerStruct)),
-    sourceLayer{ static_cast<const nn_layer_conv * const>(layer->pLayerStruct) }
+    Convolution{static_cast<const nn_layer_conv*>(layer->pLayerStruct), Input.ElementCount},
+    Pooling{static_cast<const nn_layer_conv*>(layer->pLayerStruct)},
+    sourceLayer{ static_cast<const nn_layer_conv * const>(layer->pLayerStruct)}
 {
     Expect::True(Input.VectorCount == 1, XNN_ERR_GROUPING);
     Expect::True(Input.VectorCount == Input.RowCount, XNN_ERR_GROUPING);
