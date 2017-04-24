@@ -222,7 +222,8 @@ void HardwareLayerCopy::save()
 {
     HardwareLayer::save();
     auto& copy = static_cast<const CopyLayer&>(SoftwareLayer);
-    XnnDescriptor->cpy_n_elems = static_cast<uint16_t>(copy.CopyElementsCount);
+    XnnDescriptor->cpy_n_elems = static_cast<uint16_t>(copy.ColumnCount);
+    XnnDescriptor->n_groups = static_cast<uint8_t>(copy.RowCount);
 }
 
 HardwareLayerRnn::HardwareLayerRnn(const DescriptorParameters& parameters) :

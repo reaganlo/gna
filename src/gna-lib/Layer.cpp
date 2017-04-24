@@ -37,6 +37,10 @@ using std::unique_ptr;
 
 using namespace GNA;
 
+// FLAT -> ElementCount = columnCount
+// FLAT -> VectorCount = rowCount
+// INTERLEAVED -> ElementCount = rowCount
+// INTERLEAVED -> VectorCount = columnCount 
 const std::map<const nn_layer_kind, const Orientations> LayerConfig::OrientationsMap =
 {
     { INTEL_AFFINE, INTERLEAVED },
@@ -62,21 +66,20 @@ LayerConfig::LayerConfig(const nn_layer_kind kind, const nn_layer_type type) :
 
 LayerMatrix::LayerMatrix(const uint32_t rowCount, const uint32_t columnCount, void const * buffer,
     const LayerConfig& config) :
-    ColumnCount{columnCount},
-    RowCount{rowCount},
-    ElementCount{(FLAT == config.Orientation) ? ColumnCount : RowCount},
+    ElementCount{(FLAT == config.Orientation) ? columnCount : rowCount},
+    VectorCount{(FLAT == config.Orientation) ? rowCount : columnCount},
     Buffer{buffer}
 {
     Expect::InRange(config.Orientation, INTERLEAVED, FLAT, XNN_ERR_LYR_CFG);
+    Expect::InRange(VectorCount, 1, XNN_N_GROUP_MAX, XNN_ERR_GROUPING);
     if (INTEL_HIDDEN == config.Type)
     {
         Expect::ValidBuffer(Buffer);
     }
 };
 
-LayerInput::LayerInput(const nn_layer &layer, const LayerConfig& config, const uint32_t vectorCount) :
-    LayerMatrix{layer.nInputRows, layer.nInputColumns, layer.pInputs, config},
-    VectorCount{vectorCount}
+LayerInput::LayerInput(const nn_layer &layer, const LayerConfig& config) :
+    LayerMatrix{layer.nInputRows, layer.nInputColumns, layer.pInputs, config}
 {
     if (INTEL_GMM == layer.nLayerKind)
     {
@@ -86,11 +89,8 @@ LayerInput::LayerInput(const nn_layer &layer, const LayerConfig& config, const u
     {
         Expect::True(layer.nBytesPerInput == 2, XNN_ERR_INPUT_BYTES);
     }
-    Expect::InRange(VectorCount, 1, XNN_N_GROUP_MAX, XNN_ERR_GROUPING);
     Expect::InRange(ElementCount, XNN_N_IN_ELEMS_MPLY, XNN_N_IN_ELEMS_MAX, XNN_ERR_LYR_CFG);
     Expect::MultiplicityOf(ElementCount, XNN_N_IN_ELEMS_MPLY);
-    auto secondDimension = (FLAT == config.Orientation) ? RowCount : ColumnCount;
-    Expect::InRange(secondDimension, 1, XNN_N_GROUP_MAX, XNN_ERR_GROUPING);
     if (INTEL_OUTPUT == config.Type)
     {
         Expect::ValidBuffer(Buffer);
@@ -127,37 +127,37 @@ void LayerOutput::SetOutputMode(const bool activationEnabled, const uint32_t out
     }
 }
 
-unique_ptr<Layer> Layer::Create(const nn_layer* layer, const uint32_t inputVectorCount)
+unique_ptr<Layer> Layer::Create(const nn_layer* layer)
 {
     switch (layer->nLayerKind)
     {
     case INTEL_AFFINE:
-        return make_unique<AffineLayer>(layer, inputVectorCount);
+        return make_unique<AffineLayer>(layer);
     case INTEL_AFFINE_DIAGONAL:
-        return make_unique<AffineDiagonalLayer>(layer, inputVectorCount);
+        return make_unique<AffineDiagonalLayer>(layer);
     case INTEL_AFFINE_MULTIBIAS:
-        return make_unique<AffineMultiBiasLayer>(layer, inputVectorCount);
+        return make_unique<AffineMultiBiasLayer>(layer);
     case INTEL_CONVOLUTIONAL:
-        return make_unique<CnnLayer>(layer, inputVectorCount);
+        return make_unique<CnnLayer>(layer);
     case INTEL_COPY:
         return make_unique<CopyLayer>(layer);
     case INTEL_DEINTERLEAVE:
-        return make_unique<TransposeLayer>(layer, inputVectorCount);
+        return make_unique<TransposeLayer>(layer);
     case INTEL_GMM:
-        return make_unique<GmmLayer>(layer, inputVectorCount);
+        return make_unique<GmmLayer>(layer);
     case INTEL_INTERLEAVE:
-        return make_unique<TransposeLayer>(layer, inputVectorCount);
+        return make_unique<TransposeLayer>(layer);
     case INTEL_RECURRENT:
-        return make_unique<RnnLayer>(layer, inputVectorCount);
+        return make_unique<RnnLayer>(layer);
     default:
         return nullptr;
     }
 }
 
-Layer::Layer(const nn_layer *layer, const uint32_t inputVectorCount) :
+Layer::Layer(const nn_layer *layer) :
     sourceLayer(getSafeCopy(layer)),
     Config{sourceLayer.nLayerKind, sourceLayer.type},
-    Input{sourceLayer, Config, inputVectorCount},
+    Input{sourceLayer, Config},
     Output{sourceLayer, Config}
 {
 }

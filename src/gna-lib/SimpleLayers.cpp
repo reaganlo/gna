@@ -29,23 +29,24 @@
 
 using namespace GNA;
 
-TransposeLayer::TransposeLayer(nn_layer const * const layer, const uint32_t inputVectorCount) :
-    Layer(layer, inputVectorCount)
+TransposeLayer::TransposeLayer(nn_layer const * const layer) :
+    Layer(layer)
 {
     Output.SetOutputMode(LayerOutput::NonActivatedOutput, sourceLayer.nBytesPerOutput);
-    Expect::True(Input.RowCount == Output.ColumnCount, XNN_ERR_LYR_CFG);
-    Expect::True(Input.ColumnCount == Output.RowCount, XNN_ERR_LYR_CFG);
+    Expect::True(Input.ElementCount == Output.VectorCount, XNN_ERR_LYR_CFG);
+    Expect::True(Input.VectorCount == Output.ElementCount, XNN_ERR_LYR_CFG);
     Expect::Null(layer->pLayerStruct); // transpose layers do not have layer details
     Expect::Null(Output.ScratchPad); // in transpose layer no 4B output array is allowed
 }
 
 CopyLayer::CopyLayer(const nn_layer *layer) :
-    Layer(layer, static_cast<const nn_layer_copy*>(layer->pLayerStruct)->nCopyRows),
-    CopyElementsCount{static_cast<const nn_layer_copy*>(layer->pLayerStruct)->nCopyCols},
+    Layer(layer),
+    ColumnCount{static_cast<const nn_layer_copy*>(layer->pLayerStruct)->nCopyCols},
+    RowCount{static_cast<const nn_layer_copy*>(layer->pLayerStruct)->nCopyRows},
     sourceLayer{static_cast<const nn_layer_copy*>(layer->pLayerStruct)}
 {
     Output.SetOutputMode(LayerOutput::NonActivatedOutput, Layer::sourceLayer.nBytesPerOutput);
-    Expect::MultiplicityOf(CopyElementsCount, XNN_N_IN_ELEMS_MPLY);
-    Expect::InRange(CopyElementsCount, XNN_N_IN_ELEMS_MPLY, XNN_N_IN_ELEMS_MAX, XNN_ERR_LYR_CFG);
-    Expect::True(Input.VectorCount <= Input.RowCount, XNN_ERR_LYR_CFG);
+    Expect::MultiplicityOf(ColumnCount, XNN_N_IN_ELEMS_MPLY);
+    Expect::InRange(ColumnCount, XNN_N_IN_ELEMS_MPLY, XNN_N_IN_ELEMS_MAX, XNN_ERR_LYR_CFG);
+    Expect::True(RowCount <= Input.VectorCount, XNN_ERR_LYR_CFG);
 }

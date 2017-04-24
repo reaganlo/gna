@@ -43,43 +43,35 @@ typedef enum _Orientations
 
 struct LayerConfig
 {
-public:
     static const std::map<const nn_layer_kind, const Orientations> OrientationsMap;
 
     LayerConfig(const nn_layer_kind kind, const nn_layer_type type);
+    LayerConfig()= delete;
+    ~LayerConfig() = default;
 
     const nn_layer_kind Kind;
     const nn_layer_type Type;
     const Orientations Orientation;
-
-    LayerConfig()= delete;
-    ~LayerConfig() = default;
 };
 
 struct LayerMatrix
 {
-public:
     LayerMatrix(const uint32_t rowCount, const uint32_t columnCount, void const * buffer, const LayerConfig& config);
     ~LayerMatrix() = default;
 
-    const uint32_t ColumnCount;
-    const uint32_t RowCount;
     const uint32_t ElementCount;
+    const uint32_t VectorCount;
     const InOutBuffer Buffer;
 };
 
 struct LayerInput : public LayerMatrix
 {
-public:
-    LayerInput(const nn_layer &layer, const LayerConfig& config, const uint32_t vectorCount);
+    LayerInput(const nn_layer &layer, const LayerConfig& config);
     ~LayerInput() = default;
-
-    const uint32_t VectorCount;
 };
 
 struct LayerOutput : public LayerMatrix
 {
-public:
     typedef enum _OutputMode
     {
         NonActivatedOutput = false,
@@ -108,7 +100,7 @@ private:
 class Layer
 {
 public:
-    static std::unique_ptr<Layer> Create(const nn_layer *layer, const uint32_t inputVectorCount);
+    static std::unique_ptr<Layer> Create(const nn_layer *layer);
 
     template<typename X = Layer> X& Get() const
     {
@@ -128,7 +120,7 @@ public:
     LayerOutput Output;
 
 protected:
-    Layer(const nn_layer *layer, const uint32_t inputVectorCount);
+    Layer(const nn_layer *layer);
 
 private:
     static const nn_layer getSafeCopy(const nn_layer *layer);

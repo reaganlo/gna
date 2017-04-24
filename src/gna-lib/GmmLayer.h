@@ -46,7 +46,7 @@ struct GmmParams
 class GmmLayer : public Layer
 {
 public:
-    GmmLayer(const nn_layer *layer, const uint32_t inputVectorCount);
+    GmmLayer(const nn_layer *layer);
     virtual ~GmmLayer() = default;
 
     const gna_gmm_config Config;

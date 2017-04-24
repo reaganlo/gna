@@ -482,10 +482,6 @@ void AcceleratorSw::gmmSoftwareKernel(const GmmLayer& gmm, const LayerConfigurat
                     scores++;
                     fv += fvLength;
                 }
-
-                means += meanOffset;
-                vars += varOffset;
-                consts += gConstOffset;
             }
         }//else if (gmm.mode == MAXMIX16)
     }

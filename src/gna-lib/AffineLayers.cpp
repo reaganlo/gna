@@ -30,8 +30,8 @@ using std::make_unique;
 
 using namespace GNA;
 
-AffineLayer::AffineLayer(const nn_layer *layer, const uint32_t inputVectorCount) :
-    Layer(layer, inputVectorCount),
+AffineLayer::AffineLayer(const nn_layer *layer) :
+    Layer(layer),
     Affine(AffineFunction::Create(&static_cast<const nn_layer_affine*>(layer->pLayerStruct)->affine)),
     Activation(ActivationFunction::Create(&static_cast<const nn_layer_affine*>(layer->pLayerStruct)->pwl, false)),
     sourceAffineLayer{static_cast<const nn_layer_affine*>(layer->pLayerStruct)}
@@ -39,8 +39,8 @@ AffineLayer::AffineLayer(const nn_layer *layer, const uint32_t inputVectorCount)
     Output.SetOutputMode(Activation.operator bool(), layer->nBytesPerOutput);
 };
 
-AffineMultiBiasLayer::AffineMultiBiasLayer(const nn_layer *layer, const uint32_t inputVectorCount) :
-    Layer(layer, inputVectorCount),
+AffineMultiBiasLayer::AffineMultiBiasLayer(const nn_layer *layer) :
+    Layer(layer),
     Affine(AffineFunction::Create(&static_cast<const nn_layer_affine_multi*>(layer->pLayerStruct)->affine)),
     Activation(ActivationFunction::Create(&static_cast<const nn_layer_affine_multi*>(layer->pLayerStruct)->pwl, false)),
     sourceAffineLayer{static_cast<const nn_layer_affine_multi*>(layer->pLayerStruct)}
@@ -50,10 +50,9 @@ AffineMultiBiasLayer::AffineMultiBiasLayer(const nn_layer *layer, const uint32_t
     Expect::True(Affine->BiasVectorIndex < Input.VectorCount, XNN_ERR_BIAS_INDEX);
 };
 
-AffineDiagonalLayer::AffineDiagonalLayer(const nn_layer *layer, const uint32_t inputVectorCount) :
-    AffineLayer{layer, inputVectorCount}
+AffineDiagonalLayer::AffineDiagonalLayer(const nn_layer *layer) :
+    AffineLayer{layer}
 {
-    Expect::True(Output.RowCount == Input.RowCount, XNN_ERR_LYR_CFG);
-    Expect::True(Input.VectorCount == Input.ColumnCount, XNN_ERR_LYR_CFG);
-    Expect::True(Input.VectorCount == Output.ColumnCount, XNN_ERR_LYR_CFG);
+    Expect::True(Input.ElementCount == Output.ElementCount, XNN_ERR_LYR_CFG);
+    Expect::True(Input.VectorCount == Output.VectorCount, XNN_ERR_LYR_CFG);
 }

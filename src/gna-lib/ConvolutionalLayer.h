@@ -77,7 +77,7 @@ struct PoolingFunction
 class CnnLayer : public Layer
 {
 public:
-    CnnLayer(nn_layer const * const layer, const uint32_t inputVectorCount);
+    CnnLayer(nn_layer const * const layer);
     virtual ~CnnLayer() = default;
 
     const std::unique_ptr<const ActivationFunction> Activation;

@@ -29,8 +29,8 @@
 
 using namespace GNA;
 
-RnnLayer::RnnLayer(nn_layer const * const layer, const uint32_t inputVectorCount) :
-    Layer(layer, inputVectorCount),
+RnnLayer::RnnLayer(nn_layer const * const layer) :
+    Layer(layer),
     Affine{AffineFunction::Create(&static_cast<const nn_layer_reccurent*>(layer->pLayerStruct)->affine)},
     // RNN has only 2B output with Activation always enabled
     Activation(ActivationFunction::Create(&static_cast<const nn_layer_reccurent*>(layer->pLayerStruct)->pwl, true)),
@@ -44,8 +44,7 @@ RnnLayer::RnnLayer(nn_layer const * const layer, const uint32_t inputVectorCount
     Expect::ValidBuffer(Output.ScratchPad); // intermediate output buffer must be set always
     Output.SetOutputMode(Activation.operator bool(), layer->nBytesPerOutput);
 
-    Expect::True(Input.VectorCount == Input.RowCount, XNN_ERR_LYR_CFG);
-    Expect::True(Input.VectorCount == Output.RowCount, XNN_ERR_LYR_CFG);
+    Expect::True(Input.VectorCount == Output.VectorCount, XNN_ERR_LYR_CFG);
 
     if (INTEL_INPUT == Config.Type || INTEL_HIDDEN == Config.Type)
     {

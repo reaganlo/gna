@@ -36,7 +36,7 @@ namespace GNA
 class RnnLayer : public Layer
 {
 public:
-    RnnLayer(nn_layer const * const layer, const uint32_t inputVectorCount);
+    RnnLayer(nn_layer const * const layer);
     virtual ~RnnLayer() = default;
 
     const OutputBuffer CalculateFeedbackBuffer(const OutputBuffer& outputBuffer) const;

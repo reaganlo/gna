@@ -55,7 +55,7 @@ void SoftwareModel::build(const nn_layer* layers)
     for (auto i = 0ui32; i < layerCount; i++)
     {
         auto layer = layers + i;
-        Layers.push_back(Layer::Create(const_cast<const nn_layer*>(layer), inputVectorCount));
+        Layers.push_back(Layer::Create(const_cast<const nn_layer*>(layer)));
         switch (layer->type)
         {
         case INTEL_INPUT:

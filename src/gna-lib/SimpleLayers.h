@@ -34,7 +34,7 @@ namespace GNA
 class TransposeLayer : public Layer
 {
 public:
-    TransposeLayer(nn_layer const * const layer, const uint32_t inputVectorCount);
+    TransposeLayer(nn_layer const * const layer);
     virtual ~TransposeLayer() = default;
 };
 
@@ -44,7 +44,8 @@ public:
     CopyLayer(const nn_layer *layer);
     virtual ~CopyLayer() = default;
 
-    const uint32_t CopyElementsCount;
+    const uint32_t ColumnCount;
+    const uint32_t RowCount;
 
 protected:
     const nn_layer_copy* const sourceLayer;

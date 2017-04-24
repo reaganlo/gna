@@ -30,14 +30,10 @@ using namespace GNA;
 
 ActiveList::ActiveList(const uint32_t indicesCountIn, const uint32_t* indicesIn) :
     IndicesCount{indicesCountIn},
-    Indices{indicesIn},
-    Enabled{false}
+    Indices{indicesIn}
 {
     validate();
-    if (nullptr != Indices && IndicesCount > 0)
-    {
-        Enabled = true;
-    }
+    Enabled = nullptr != Indices && IndicesCount > 0;
 }
 
 ActiveList::ActiveList(const ActiveList& activeList) :

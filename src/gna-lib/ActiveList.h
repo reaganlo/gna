@@ -42,7 +42,7 @@ public:
 
     const uint32_t IndicesCount;
     const uint32_t* Indices;
-    bool Enabled;
+    bool Enabled = false;
 
 protected:
     inline void validate();

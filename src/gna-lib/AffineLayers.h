@@ -34,7 +34,7 @@ namespace GNA
 class AffineLayer : public Layer
 {
 public:
-    AffineLayer(const nn_layer *layer, const uint32_t inputVectorCount);
+    AffineLayer(const nn_layer *layer);
     virtual ~AffineLayer() = default;
 
     const std::unique_ptr<const AffineFunctionSingle> Affine;
@@ -47,7 +47,7 @@ protected:
 class AffineMultiBiasLayer : public Layer
 {
 public:
-    AffineMultiBiasLayer(const nn_layer *layer, const uint32_t inputVectorCount);
+    AffineMultiBiasLayer(const nn_layer *layer);
     virtual ~AffineMultiBiasLayer() = default;
 
     const std::unique_ptr<const AffineFunctionMulti> Affine;
@@ -60,7 +60,7 @@ private:
 class AffineDiagonalLayer : public AffineLayer
 {
 public:
-    AffineDiagonalLayer(const nn_layer *layer, const uint32_t inputVectorCount);
+    AffineDiagonalLayer(const nn_layer *layer);
     virtual ~AffineDiagonalLayer()  = default;
 };
 
