@@ -150,11 +150,11 @@ void GNAApplyAffineMBiasTransform(
         int8_t* w_8 = static_cast<int8_t*>(w);
         if (pActiveIndices == NULL)
         {
-            igemm8_mb(m, n, k, in, w_8, bias, n, cbias, out, nSaturated, fvBuffers);
+            igemm8_mb(m, n, k, in, w_8, bias, aff->affine.biasVectorCount, cbias, out, nSaturated, fvBuffers);
         }
         else
         {
-            igemm8_subset_mb(m, n, k, in, w_8, bias, n, cbias, out,
+            igemm8_subset_mb(m, n, k, in, w_8, bias, aff->affine.biasVectorCount, cbias, out,
                 pActiveIndices, nActiveIndices, nSaturated, fvBuffers);
         }
     }
@@ -164,11 +164,11 @@ void GNAApplyAffineMBiasTransform(
         int16_t* w_16 = static_cast<int16_t*>(w);
         if (pActiveIndices == NULL)
         {
-            igemm16_mb(m, n, k, in, w_16, bias, n, out, nSaturated, fvBuffers);
+            igemm16_mb(m, n, k, in, w_16, bias, aff->affine.biasVectorCount, out, nSaturated, fvBuffers);
         }
         else
         {
-            igemm16_subset_mb(m, n, k, in, w_16, bias, n, out,
+            igemm16_subset_mb(m, n, k, in, w_16, bias, aff->affine.biasVectorCount, out,
                 pActiveIndices, nActiveIndices, nSaturated, fvBuffers);
         }
     }

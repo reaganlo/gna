@@ -359,7 +359,7 @@ HardwareLayerAffineMBias::HardwareLayerAffineMBias(const DescriptorParameters& p
 
     save();
 
-    XnnDescriptor->bias_grp_cnt = XnnDescriptor->n_groups;
+    XnnDescriptor->bias_grp_cnt = mbiasLayer.Affine->BiasVectorCount;
     XnnDescriptor->bias_grp_ptr = getOffset(mbiasLayer.Affine->GetBiases());
     XnnDescriptor->bias_grp_value = mbiasLayer.Affine->BiasVectorIndex;
 

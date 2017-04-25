@@ -136,10 +136,12 @@ const void* AffineFunctionSingle1B::GetBiases() const
 
 AffineFunctionMulti::AffineFunctionMulti(const nn_func_affine_multi *affine) :
     BiasSimple{sizeof(nn_bias_s), affine->pBiases},
+    BiasVectorCount{affine->biasVectorCount},
     BiasVectorIndex{affine->biasVectorIndex},
     sourceAffineFunction{affine}
 {
-    Expect::InRange(BiasVectorIndex, 0, XNN_N_GROUP_MAX - 1, XNN_ERR_GROUPING);
+    Expect::InRange(BiasVectorCount, 1, XNN_N_GROUP_MAX, XNN_ERR_GROUPING);
+    Expect::InRange(BiasVectorIndex, 0, BiasVectorCount - 1, XNN_ERR_GROUPING);
     Expect::NotNull(sourceAffineFunction);
 }
 

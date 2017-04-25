@@ -46,8 +46,6 @@ AffineMultiBiasLayer::AffineMultiBiasLayer(const nn_layer *layer) :
     sourceAffineLayer{static_cast<const nn_layer_affine_multi*>(layer->pLayerStruct)}
 {
     Output.SetOutputMode(Activation.operator bool(), layer->nBytesPerOutput);
-
-    Expect::True(Affine->BiasVectorIndex < Input.VectorCount, XNN_ERR_BIAS_INDEX);
 };
 
 AffineDiagonalLayer::AffineDiagonalLayer(const nn_layer *layer) :

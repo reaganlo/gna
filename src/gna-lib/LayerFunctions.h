@@ -142,6 +142,7 @@ class AffineFunctionMulti : public BiasSimple, public AffineFunction
 public:
     ~AffineFunctionMulti() = default;
 
+    const uint32_t BiasVectorCount;
     const uint32_t BiasVectorIndex;
 
 protected:
