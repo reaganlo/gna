@@ -1,0 +1,44 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<!--
+//*****************************************************************************
+// 
+// INTEL CONFIDENTIAL
+// Copyright 2013 Intel Corporation All Rights Reserved.
+// 
+// The source code contained or described herein and all documents related 
+// to the source code ("Material") are owned by Intel Corporation or its suppliers 
+// or licensors. Title to the Material remains with Intel Corporation or its suppliers 
+// and licensors. The Material contains trade secrets and proprietary 
+// and confidential information of Intel or its suppliers and licensors. 
+// The Material is protected by worldwide copyright and trade secret laws and treaty 
+// provisions. No part of the Material may be used, copied, reproduced, modified, 
+// published, uploaded, posted, transmitted, distributed, or disclosed in any way 
+// without Intel's prior express written permission.
+// 
+// No license under any patent, copyright, trade secret or other intellectual 
+// property right is granted to or conferred upon you by disclosure or delivery 
+// of the Materials, either expressly, by implication, inducement, estoppel 
+// or otherwise. Any license under such intellectual property rights must 
+// be express and approved by Intel in writing.
+//*****************************************************************************
+-->
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <ItemGroup>
+        <Filter Include="Source Files">
+            <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+            <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+        </Filter>
+        <Filter Include="Header Files">
+            <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+            <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
+        </Filter>
+        <Filter Include="Resource Files">
+            <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+            <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms;man</Extensions>
+        </Filter>
+        <Filter Include="Driver Files">
+            <UniqueIdentifier>{8E41214B-6785-4CFE-B992-037D68949A14}</UniqueIdentifier>
+            <Extensions>inf;inv;inx;mof;mc;</Extensions>
+        </Filter>
+    </ItemGroup>
+</Project>
