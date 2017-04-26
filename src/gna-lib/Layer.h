@@ -102,14 +102,14 @@ class Layer
 public:
     static std::unique_ptr<Layer> Create(const nn_layer *layer);
 
-    template<typename X = Layer> X& Get() const
+    template<typename X = Layer> X* Get() const
     {
-        return static_cast<X &>(*this);
+        return static_cast<X*>(this);
     }
 
-    template<typename X = Layer> operator X& () const
+    template<typename X = Layer> X* Get()
     {
-        return Get<X>();
+        return static_cast<X*>(this);
     }
 
     virtual ~Layer() = default;

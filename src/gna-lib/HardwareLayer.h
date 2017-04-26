@@ -38,11 +38,11 @@ struct ConfigurationBuffer;
 
 struct DescriptorParameters
 {
-    DescriptorParameters(const Layer& softwareLayer, const BaseAddressC& memoryBase, const AddrXnnLyr& xnnDescriptor,
+    DescriptorParameters(const Layer* softwareLayer, const BaseAddressC& memoryBase, const AddrXnnLyr& xnnDescriptor,
         const AddrGmmCfgC& gmmDescriptor, const uint32_t hardwareInternalBufferSize);
     virtual ~DescriptorParameters() = default;
 
-    const Layer& SoftwareLayer;
+    const Layer* SoftwareLayer;
     const BaseAddressC& MemoryBase;
     XNN_LYR * const XnnDescriptor;
     GMM_CONFIG * const GmmDescriptor;

@@ -81,7 +81,7 @@ void RequestConfiguration::GetHwConfigData(void* &buffer, size_t &size, uint32_t
 {
     auto submodelConfigCache = hwConfigCaches[layerIndex].get();
 
-    if (nullptr != submodelConfigCache)
+    if (!submodelConfigCache)
     {
         calculateCacheSize(layerIndex);
 

@@ -38,7 +38,7 @@ namespace GNA
 
 struct GmmScoreContext
 {
-    GmmScoreContext(const GmmLayer& gmm, const LayerConfiguration * const layerConfiguration);
+    GmmScoreContext(const GmmLayer* gmm, const LayerConfiguration * const layerConfiguration);
 
     uint8_t * Input = nullptr;
     uint32_t * Output = nullptr;
@@ -69,10 +69,10 @@ private:
     static inline void checkScoresSaturation(const uint32_t& nGMMs, const uint32_t& nVectors, const uint32_t * pS,
         const uint32_t& maxScore, uint32_t& nSaturated);
 
-    void applyRequestBuffersToLayer(const LayerConfiguration& layerConfiguration, const Layer& layer,
+    void applyRequestBuffersToLayer(const LayerConfiguration& layerConfiguration, Layer* layer,
         nn_layer& sourceLayer, uint32_t &nOuts, const uint32_t * &activeIndices);
 
-    void gmmSoftwareKernel(const GmmLayer& gmm, const LayerConfiguration * const layerConfiguration,
+    void gmmSoftwareKernel(const GmmLayer* gmm, const LayerConfiguration * const layerConfiguration,
         uint32_t& nSaturated);
 };
 

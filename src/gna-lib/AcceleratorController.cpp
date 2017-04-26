@@ -40,8 +40,10 @@ AcceleratorController::AcceleratorController(AccelerationDetector& detector) :
     isHardwarePresent{detector.IsHardwarePresent()}
 {
     // attempt to create Hardware Accelerator
-    if(isHardwarePresent)
+    if (isHardwarePresent)
+    {
         accelerators[GNA_HW] = make_shared<AcceleratorHw>(GNA_HW);
+    }
 
     for (uint32_t mode = GNA_AUTO_SAT; mode < NUM_GNA_ACCEL_MODES; mode++)
     {
@@ -71,11 +73,19 @@ AcceleratorController::AcceleratorController(AccelerationDetector& detector) :
         }
     }
 
-    accelerators[GNA_AUTO_FAST] = accelerators[fastestMode];
     accelerators[GNA_SW_FAST] = accelerators[fastestMode];
-
-    accelerators[GNA_AUTO_SAT] = accelerators[static_cast<acceleration>(fastestMode - 1)];
     accelerators[GNA_SW_SAT] = accelerators[static_cast<acceleration>(fastestMode - 1)];
+
+    if (isHardwarePresent)
+    {
+        accelerators[GNA_AUTO_FAST] = accelerators[GNA_HW];
+        accelerators[GNA_AUTO_SAT] = accelerators[GNA_HW];
+    }
+    else
+    {
+        accelerators[GNA_AUTO_FAST] = accelerators[fastestMode];
+        accelerators[GNA_AUTO_SAT] = accelerators[static_cast<acceleration>(fastestMode - 1)];
+    }
 }
 
 ScoreMethod AcceleratorController::getScoreMethod(const std::vector<std::unique_ptr<SubModel>>& subModels,

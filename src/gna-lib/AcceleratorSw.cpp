@@ -33,7 +33,7 @@
 
 using namespace GNA;
 
-GmmScoreContext::GmmScoreContext(const GmmLayer& gmm, const LayerConfiguration * const layerConfiguration)
+GmmScoreContext::GmmScoreContext(const GmmLayer* gmm, const LayerConfiguration * const layerConfiguration)
 {
     if (nullptr != layerConfiguration && layerConfiguration->InputBuffer)
     {
@@ -41,7 +41,7 @@ GmmScoreContext::GmmScoreContext(const GmmLayer& gmm, const LayerConfiguration *
     }
     else
     {
-        Input = gmm.Input.Buffer;
+        Input = gmm->Input.Buffer;
     }
 
     if (nullptr != layerConfiguration && layerConfiguration->OutputBuffer)
@@ -50,20 +50,20 @@ GmmScoreContext::GmmScoreContext(const GmmLayer& gmm, const LayerConfiguration *
     }
     else
     {
-        Output = gmm.Output.Buffer;
+        Output = gmm->Output.Buffer;
 
     }
 
     if (nullptr != layerConfiguration && layerConfiguration->ActiveList)
     {
         ActiveList = layerConfiguration->ActiveList.get();
-        gmm.ValidateActiveList(ActiveList);
+        gmm->ValidateActiveList(ActiveList);
         StateCount = ActiveList->IndicesCount;
     }
     else
     {
         ActiveList = nullptr;
-        StateCount = gmm.Config.stateCount;
+        StateCount = gmm->Config.stateCount;
     }
 }
 
@@ -141,7 +141,7 @@ status_t AcceleratorSw::Score(
                 layerConfiguration = found->second.get();
                 if (INTEL_GMM != layer->Config.Kind)
                 {
-                    applyRequestBuffersToLayer(*layerConfiguration, *layer, *sourceLayer, nOuts, activeIndices);
+                    applyRequestBuffersToLayer(*layerConfiguration, layer.get(), *sourceLayer, nOuts, activeIndices);
                 }
             }
         }
@@ -150,8 +150,8 @@ status_t AcceleratorSw::Score(
         {
         case INTEL_AFFINE:
         {
-            auto& affineLayer = layer->Get<const AffineLayer>();
-            auto& activation = affineLayer.Activation;
+            auto affineLayer = layer->Get<const AffineLayer>();
+            auto& activation = affineLayer->Activation;
 
             xnnKernel->affine(sourceLayer, activeIndices, nOuts, &sat, fvBuffers);
 
@@ -165,8 +165,8 @@ status_t AcceleratorSw::Score(
         }
         case INTEL_AFFINE_MULTIBIAS:
         {
-            auto& affineLayer = layer->Get<const AffineMultiBiasLayer>();
-            auto& activation = affineLayer.Activation;
+            auto affineLayer = layer->Get<const AffineMultiBiasLayer>();
+            auto& activation = affineLayer->Activation;
 
             xnnKernel->affineMbias(sourceLayer, activeIndices, nOuts, &sat, fvBuffers);
 
@@ -181,10 +181,10 @@ status_t AcceleratorSw::Score(
         {
             xnnKernel->diagonal(sourceLayer, &sat);
 
-            auto& affineLayer = layer->Get<const AffineDiagonalLayer>();
+            auto affineLayer = layer->Get<const AffineDiagonalLayer>();
             xnnKernel->diagonal(sourceLayer, &sat);
 
-            auto& activation = affineLayer.Activation;
+            auto& activation = affineLayer->Activation;
             if (activation)
             {
                 xnnKernel->pwl(sourceLayer, 0, sourceLayer->nOutputRows - 1, 0,
@@ -215,7 +215,7 @@ status_t AcceleratorSw::Score(
         }
         case INTEL_GMM:
         {
-            gmmSoftwareKernel(*layer, layerConfiguration, sat);
+            gmmSoftwareKernel(layer->Get<const GmmLayer>(), layerConfiguration, sat);
             break;
         }
         default:
@@ -235,7 +235,7 @@ status_t AcceleratorSw::Score(
 
 void AcceleratorSw::applyRequestBuffersToLayer(
     const LayerConfiguration& layerConfiguration,
-    const Layer& layer,
+    Layer* layer,
     nn_layer& sourceLayer,
     uint32_t &nOuts,
     const uint32_t * &activeIndices)
@@ -248,10 +248,10 @@ void AcceleratorSw::applyRequestBuffersToLayer(
     if (layerConfiguration.OutputBuffer)
     {
         sourceLayer.pOutputs = *layerConfiguration.OutputBuffer;
-        if (INTEL_RECURRENT == layer.Config.Kind)
+        if (INTEL_RECURRENT == layer->Config.Kind)
         {
-            auto& rnn = layer.Get<RnnLayer>();
-            rnn.SetFeedbackBuffer(*layerConfiguration.OutputBuffer);
+            auto rnn = layer->Get<RnnLayer>();
+            rnn->SetFeedbackBuffer(*layerConfiguration.OutputBuffer);
             // TODO: move to XnnKernel when kernels are refactored
         }
     }
@@ -259,8 +259,8 @@ void AcceleratorSw::applyRequestBuffersToLayer(
     if (layerConfiguration.ActiveList
         && layerConfiguration.ActiveList->Enabled)
     {
-        if (INTEL_AFFINE == layer.Config.Kind
-            || INTEL_GMM == layer.Config.Kind)
+        if (INTEL_AFFINE == layer->Config.Kind
+            || INTEL_GMM == layer->Config.Kind)
         {
             nOuts = layerConfiguration.ActiveList->IndicesCount; // active list outputs
             activeIndices = layerConfiguration.ActiveList->Indices;
@@ -282,18 +282,18 @@ void AcceleratorSw::checkScoresSaturation(const uint32_t& nGMMs, const uint32_t&
     }
 }
 
-void AcceleratorSw::gmmSoftwareKernel(const GmmLayer& gmm, const LayerConfiguration * const layerConfiguration,
+void AcceleratorSw::gmmSoftwareKernel(const GmmLayer* gmm, const LayerConfiguration * const layerConfiguration,
     uint32_t& nSaturated)
 {
     const auto context = GmmScoreContext(gmm, layerConfiguration);
-    const gna_gmm_data* data = &gmm.Data;
-    const uint32_t fvCount = gmm.Input.VectorCount;
-    const uint32_t fvLength = gmm.Input.ElementCount;
-    const uint32_t mixCount = gmm.Config.mixtureComponentCount;
-    const uint32_t meanSetOffsetSize = gmm.Params.MeanSetOffsetSize;
-    const uint32_t varSetOffsetSize = gmm.Params.VarSetOffsetSize;
-    const uint32_t gConstSetOffsetSize = gmm.Params.GaussConstSetOffsetSize;
-    const uint32_t maxScore = gmm.Config.maximumScore;
+    const gna_gmm_data* data = &gmm->Data;
+    const uint32_t fvCount = gmm->Input.VectorCount;
+    const uint32_t fvLength = gmm->Input.ElementCount;
+    const uint32_t mixCount = gmm->Config.mixtureComponentCount;
+    const uint32_t meanSetOffsetSize = gmm->Params.MeanSetOffsetSize;
+    const uint32_t varSetOffsetSize = gmm->Params.VarSetOffsetSize;
+    const uint32_t gConstSetOffsetSize = gmm->Params.GaussConstSetOffsetSize;
+    const uint32_t maxScore = gmm->Config.maximumScore;
 
     uint32_t i, j, k;
     // auxiliary pointers
@@ -305,10 +305,10 @@ void AcceleratorSw::gmmSoftwareKernel(const GmmLayer& gmm, const LayerConfigurat
     if (!context.ActiveList)
     {
         const uint32_t meanOffset = meanSetOffsetSize / GMM_MEAN_VALUE_SIZE;;
-        const uint32_t varOffset = varSetOffsetSize / (gmm.Config.mode + 1);;
+        const uint32_t varOffset = varSetOffsetSize / (gmm->Config.mode + 1);;
         const uint32_t gConstOffset = gConstSetOffsetSize / GMM_CONSTANTS_SIZE;
 
-        if (gmm.Config.mode == GNA_MAXMIX8)
+        if (gmm->Config.mode == GNA_MAXMIX8)
         {
             uint8_t *vars; // auxiliary pointer
             //if(GNA_GEN_FAST == kd.accel || GNA_GEN_SAT == kd.accel)
@@ -463,7 +463,7 @@ void AcceleratorSw::gmmSoftwareKernel(const GmmLayer& gmm, const LayerConfigurat
                 }
             } //else //if(GNA_SW_SSE4_2 == kd.accel || GNA_SW_AVX1 == kd.accel || GNA_SW_AVX2 == kd.accel)
         }//else if (gmm.mode == GNA_MAXMIX8)
-        else if (gmm.Config.mode == GNA_MAXMIX16)
+        else if (gmm->Config.mode == GNA_MAXMIX16)
         {
             // auxiliary pointers
             uint16_t *vars;
@@ -487,7 +487,7 @@ void AcceleratorSw::gmmSoftwareKernel(const GmmLayer& gmm, const LayerConfigurat
     }
     else // has active list
     {
-        if (gmm.Config.mode == GNA_MAXMIX8)
+        if (gmm->Config.mode == GNA_MAXMIX8)
         {
             uint8_t *vars; // auxiliary pointer
             //if(GNA_GEN_FAST == kd.accel || GNA_GEN_SAT == kd.accel)
@@ -644,7 +644,7 @@ void AcceleratorSw::gmmSoftwareKernel(const GmmLayer& gmm, const LayerConfigurat
                 }
             } // else //if(GNA_SW_SSE4_2 == kd.accel || GNA_SW_AVX1 == kd.accel || GNA_SW_AVX2 == kd.accel)
         }//else if (gmm.mode == GNA_MAXMIX8)
-        else if (gmm.Config.mode == GNA_MAXMIX16)
+        else if (gmm->Config.mode == GNA_MAXMIX16)
         {
             uint16_t *vars; // auxiliary pointer
             scores = context.Output;

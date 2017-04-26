@@ -61,7 +61,7 @@ void HardwareModel::build(const std::vector<std::unique_ptr<Layer>>& layers, con
 
     for (auto& layer : layers)
     {
-        const auto parameters = DescriptorParameters{*layer, memoryBaseAddress, layerDescriptor, gmmDescriptor,
+        const auto parameters = DescriptorParameters{layer.get(), memoryBaseAddress, layerDescriptor, gmmDescriptor,
             hardwareInternalBufferSize};
         hardwareLayers.push_back(HardwareLayer::Create(parameters));
         layerDescriptor++;
