@@ -45,7 +45,7 @@ public:
 
     void ValidateSession(gna_device_id deviceId) const;
 
-    const size_t AllocateMemory(const size_t requestedSize, void **buffer);
+    void * AllocateMemory(uint32_t requestedSize, uint32_t * sizeGranted);
 
     void FreeMemory();
 

@@ -25,6 +25,7 @@ in any way.
 
 #include "Memory.h"
 
+#include "ModelCompiler.h"
 #include "Validator.h"
 
 using namespace GNA;
@@ -32,12 +33,16 @@ using namespace GNA;
 // just makes object from arguments
 Memory::Memory(void * bufferIn, const size_t sizeIn) :
     Address{bufferIn},
+    InternalSize{0},
+    ModelSize{0},
     size{sizeIn}
 {};
 
 // allocates and zeros memory
-Memory::Memory(const size_t sizeIn) :
-    size{sizeIn}
+Memory::Memory(const size_t userSize, const uint16_t layerCount, const uint16_t gmmCount) :
+    InternalSize{ModelCompiler::CalculateInternalModelSize(layerCount, gmmCount)},
+    ModelSize{ALIGN64(userSize)},
+    size{ModelCompiler::CalculateModelSize(userSize, layerCount, gmmCount)}
 {
     Expect::True(size > 0, GNA_INVALIDMEMSIZE);
     buffer = _gna_malloc(size);
@@ -46,11 +51,6 @@ Memory::Memory(const size_t sizeIn) :
 };
 
 Memory::~Memory()
-{
-    Free();
-}
-
-void Memory::Free()
 {
     if (buffer)
     {

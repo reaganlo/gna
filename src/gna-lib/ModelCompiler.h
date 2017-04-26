@@ -38,7 +38,7 @@ class CompiledModel;
 class ModelCompiler
 {
 public:
-    static const size_t CalculateModelSize(const size_t requestedSize, const uint16_t layerCount,
+    static const size_t CalculateModelSize(const size_t userSize, const uint16_t layerCount,
         const uint16_t gmmCount);
 
     static const size_t CalculateInternalModelSize(const uint16_t layerCount,

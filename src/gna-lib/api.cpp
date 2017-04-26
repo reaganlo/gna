@@ -288,18 +288,12 @@ GNAAPI void* GnaAlloc(
 {
     try
     {
-        //TODO:INTEGRATION refactor - to much logic in wrapper
         GnaDevice->ValidateSession(deviceId);
-        Expect::NotNull(sizeGranted);
-
-        void* buffer = nullptr;
-        *sizeGranted = GnaDevice->AllocateMemory(sizeRequested, &buffer);
-        Expect::False(nullptr == buffer || *sizeGranted < sizeRequested, GNA_ERR_RESOURCES);
-        return buffer;
+        return GnaDevice->AllocateMemory(sizeRequested, sizeGranted);
     }
-    catch (const GnaException &e)
+    catch (const GnaException& e)
     {
-        ERRS("Memory allocation failed", e.getStatus());
+        ERRS("Memory allocation failed", e.getStatus());// TODO: remove ERR macros and move to Validator
         return nullptr;
     }
     catch (...)

@@ -50,13 +50,10 @@ void Device::DumpModel(gna_model_id modelId, gna_device_kind deviceKind, const c
     model.CompileHardwareModel(detector);
 
     auto layerCount = model.LayerCount;
-    auto internalSize = ModelCompiler::CalculateInternalModelSize(layerCount, model.GetGmmCount());
-    auto modelSize = totalMemory->GetSize() - ModelCompiler::MaximumInternalModelSize;
 
     auto hwLyrDsc = totalMemory->Get<XNN_LYR>();
-    auto modelBuffers = totalMemory->Get() + ModelCompiler::MaximumInternalModelSize;
 
-    auto dumpMemory = make_unique<Memory>(internalSize + modelSize);
+    auto dumpMemory = make_unique<Memory>(totalMemory->ModelSize, layerCount, model.GetGmmCount());
     auto dumpModel = make_unique<CompiledModel>(model.Id, model.UserModel, *dumpMemory);
     dumpModel->CompileSoftwareModel();
     dumpModel->CompileHardwareModel(detector);
@@ -65,7 +62,7 @@ void Device::DumpModel(gna_model_id modelId, gna_device_kind deviceKind, const c
     auto dumpDsc = reinterpret_cast<XNN_LYR*>(userBuffer);
 
     // TODO: after having model built from XML, this should go away
-    uint32_t patch_offset = ModelCompiler::MaximumInternalModelSize - internalSize;
+    uint32_t patch_offset = ModelCompiler::MaximumInternalModelSize - dumpMemory->InternalSize;
     for (int i = 0; i < layerCount; i++)
     {
         if (dumpDsc[i].act_list_buffer != 0)
@@ -164,6 +161,6 @@ void Device::DumpModel(gna_model_id modelId, gna_device_kind deviceKind, const c
         dumpStream.write(reinterpret_cast<const char*>(params), sizeof(params));
     }
 
-    dumpStream.write(reinterpret_cast<const char*>(dumpMemory->Get()), internalSize);
-    dumpStream.write(reinterpret_cast<const char*>(modelBuffers), modelSize);
+    dumpStream.write(dumpMemory->Get<const char>(), dumpMemory->InternalSize);
+    dumpStream.write(totalMemory->GetUserBuffer<const char>(), dumpMemory->ModelSize);
 }

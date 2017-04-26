@@ -43,20 +43,30 @@ public:
     Memory(void * buffer, const size_t size);
 
     // allocates and zeros memory
-    Memory(const size_t size);
+    Memory(const size_t userSize, const uint16_t layerCount, const uint16_t gmmCount);
 
     ~Memory();
-
-    void Free();
 
     size_t GetSize() const
     {
         return size;
     }
 
+    template<class T> T * const GetUserBuffer() const
+    {
+        auto address = BaseAddressC(this->Get() + InternalSize);
+        return address.Get<T>();
+    }
+
     void Map(gna_model_id model_id);
 
     void Unmap();
+
+    // Internal GNA library auxiliary memory size.
+    const size_t InternalSize;
+
+    // Size of memory requested for model by user.
+    const size_t ModelSize;
 
 private:
     size_t size = 0;

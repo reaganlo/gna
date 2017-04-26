@@ -34,11 +34,11 @@ using namespace GNA;
 
 const size_t ModelCompiler::MaximumInternalModelSize = CalculateInternalModelSize(XNN_LAYERS_MAX_COUNT, GMM_LAYERS_MAX_COUNT);
 
-const size_t ModelCompiler::CalculateModelSize(const size_t requestedSize, const uint16_t layerCount,
+const size_t ModelCompiler::CalculateModelSize(const size_t userSize, const uint16_t layerCount,
     const uint16_t gmmCount)
 {
     auto internalSize = CalculateInternalModelSize(layerCount, gmmCount);
-    auto totalSize = requestedSize + internalSize;
+    auto totalSize = userSize + internalSize;
     Expect::InRange(totalSize, 1, 256*1024*1024, GNA_INVALIDMEMSIZE);
     return totalSize;
 }

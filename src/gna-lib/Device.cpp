@@ -87,15 +87,16 @@ void Device::ValidateSession(gna_device_id deviceId) const
     Expect::True(id == deviceId, GNA_INVALIDHANDLE);
 }
 
-const size_t Device::AllocateMemory(const size_t requestedSize, void **buffer)
+void * Device::AllocateMemory(const uint32_t requestedSize, uint32_t * const sizeGranted)
 {
-    auto size = ModelCompiler::CalculateModelSize(requestedSize, XNN_LAYERS_MAX_COUNT, GMM_LAYERS_MAX_COUNT);
-    totalMemory = make_unique<Memory>(size);
+    Expect::NotNull(sizeGranted);
+    *sizeGranted = 0;
 
-    auto internalSize = ModelCompiler::MaximumInternalModelSize;
-    *buffer = totalMemory->Get() + internalSize;
+    totalMemory = make_unique<Memory>(requestedSize, XNN_LAYERS_MAX_COUNT, GMM_LAYERS_MAX_COUNT);
+    *sizeGranted = static_cast<uint32_t>(totalMemory->ModelSize);
+    Expect::True(*sizeGranted >= requestedSize, GNA_ERR_RESOURCES);
 
-    return requestedSize;
+    return totalMemory->GetUserBuffer<void>();
 }
 
 void Device::FreeMemory()
