@@ -28,11 +28,12 @@
 #include <stdexcept>
 
 #include "common.h"
+#include "Logger.h"
 
 namespace GNA
 {
 
- /**
+/**
  * Custom exception with device open error support
  */
 class GnaException : public std::exception
@@ -46,6 +47,7 @@ public:
 
     inline status_t getStatus() const
     {
+        Log->Error(Status);
         return Status;
     }
 

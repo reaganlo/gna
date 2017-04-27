@@ -103,30 +103,6 @@ inline int32_t GnaRoundUpMultipleOf64(uint32_t number)
 #define __FUNCTION__ ""
 #endif
 
-// message prefix
-#define _PREFIX_    "[IntelGna] " _COMPONENT_ __FUNCTION__ ":" VAL(__LINE__) ": "
-#if defined(DUMP_ENABLED) || HW_VERBOSE >= 1 || DEBUG >= 1
-// warn message logger decorated with prefix
-#define WARN(...)        fprintf(stdout, "WARNING:" _PREFIX_ __VA_ARGS__)
-// error message logger decorated with prefix
-#define ERR(...)  fprintf(stderr, "ERROR:" _PREFIX_ __VA_ARGS__ )
-// error status logger decorated with prefix
-#define ERRSTS(status)  ERR("FAILED with status: %d\n", (int)status)
-// error message logger decorated with prefix with status name print
-#define ERRS(msg, sts, ...)  fprintf(stderr, "ERROR:" _PREFIX_ msg " APISTATUS: %s [%d]\n", __VA_ARGS__, GnaStatusToString(sts), sts )
-// log message logger
-#define LOG(...)  fprintf(stderr, __VA_ARGS__ )
-// log message logger decorated with prefix
-#define LOGF(...) fprintf(stderr, _PREFIX_ __VA_ARGS__ )
-#else // !LOG_ENABLE
-#define WARN(...)
-#define ERR(...)
-#define ERRSTS(status)
-#define ERRS(msg, sts, ...)
-#define LOG(...)
-#define LOGF(...)
-#endif //LOG_ENABLE
-
 /**
  * Structure will hold aligned deinterleaved feature vectors
  * and PWL activation function auxiliary buffers used for performance improvements

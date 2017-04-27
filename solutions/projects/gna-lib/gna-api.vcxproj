@@ -124,6 +124,7 @@
     <ClInclude Include="$(SRC_DIR)\gna-lib\kernels\XnnKernelApi.h" />
     <ClInclude Include="$(SRC_DIR)\gna-lib\Layer.h" />
     <ClInclude Include="$(SRC_DIR)\gna-lib\LayerFunctions.h" />
+    <ClInclude Include="$(SRC_DIR)\gna-lib\Logger.h" />
     <ClInclude Include="$(SRC_DIR)\gna-lib\Memory.h" />
     <ClInclude Include="$(SRC_DIR)\gna-lib\ModelCompiler.h" />
     <ClInclude Include="$(SRC_DIR)\gna-lib\ModelContainer.h" />
@@ -156,6 +157,7 @@
     <ClCompile Include="$(SRC_DIR)\gna-lib\IoctlSender.cpp" />
     <ClCompile Include="$(SRC_DIR)\gna-lib\Layer.cpp" />
     <ClCompile Include="$(SRC_DIR)\gna-lib\LayerFunctions.cpp" />
+    <ClCompile Include="$(SRC_DIR)\gna-lib\Logger.cpp" />
     <ClCompile Include="$(SRC_DIR)\gna-lib\Memory.cpp" />
     <ClCompile Include="$(SRC_DIR)\gna-lib\ModelCompiler.cpp" />
     <ClCompile Include="$(SRC_DIR)\gna-lib\ModelContainer.cpp" />

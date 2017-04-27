@@ -39,8 +39,6 @@ public:
     {
         if (!condition)
         {
-
-            ERR("FAILED with status: [%d]=%s\n", (int)status, GnaStatusToString(status));
             throw GnaException(status);
         }
     }

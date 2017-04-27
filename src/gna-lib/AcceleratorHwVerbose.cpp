@@ -27,6 +27,7 @@
 
 #include "AcceleratorHwVerbose.h"
 #include "Device.h"
+#include "Logger.h"
 
 using std::ifstream;
 using std::string;
@@ -75,14 +76,15 @@ void AcceleratorHwVerbose::WriteReg(UINT32 regOffset, UINT32 regVal)
 
 void AcceleratorHwVerbose::dumpMMIO()
 {
-	LOG("\nMMIO space\n");
-	LOG("-----------------------------------------------------------------\n");
-	LOG("---                   values (dwords  MSB->LSB)               ---  \n");
+	Log->HorizontalSpacer();
+    Log->Message("MMIO space\n");
+	Log->HorizontalSpacer();
+	Log->Message("---                   values (dwords  MSB->LSB)               ---  \n");
 	for (int i = 0; i <= 0x118; i += 4)
 	{
-		LOG("%04x %08x\n", i, ReadReg(i));
+		Log->Message("%04x %08x\n", i, ReadReg(i));
 	}
-	LOG("\n");
+	Log->LineBreak();
 }
 
 
@@ -90,66 +92,71 @@ void AcceleratorHwVerbose::dumpMMIO()
 
 void AcceleratorHwVerbose::GMMDumpPage(uint8_t* ph_addr, uint8_t* v_addr, size_t size)
 {
-	LOG("\n-----------------------------------------------------------------\n");
+	Log->HorizontalSpacer();
 	for (size_t i = 0; i < size; i += 16)
 	{
-		LOG("%016x    ", (uint64_t)(ph_addr + i));
-		LOG("%02x", (unsigned int)v_addr[i + 0x03]);
-		LOG("%02x", (unsigned int)v_addr[i + 0x01]);
-		LOG("%02x", (unsigned int)v_addr[i + 0x02]);
-		LOG("%02x ", (unsigned int)v_addr[i + 0x00]);
-		LOG("%02x", (unsigned int)v_addr[i + 0x07]);
-		LOG("%02x", (unsigned int)v_addr[i + 0x06]);
-		LOG("%02x", (unsigned int)v_addr[i + 0x05]);
-		LOG("%02x ", (unsigned int)v_addr[i + 0x04]);
-		LOG("%02x", (unsigned int)v_addr[i + 0x0b]);
-		LOG("%02x", (unsigned int)v_addr[i + 0x0a]);
-		LOG("%02x", (unsigned int)v_addr[i + 0x09]);
-		LOG("%02x ", (unsigned int)v_addr[i + 0x08]);
-		LOG("%02x", (unsigned int)v_addr[i + 0x0f]);
-		LOG("%02x", (unsigned int)v_addr[i + 0x0e]);
-		LOG("%02x", (unsigned int)v_addr[i + 0x0d]);
-		LOG("%02x\n", (unsigned int)v_addr[i + 0x0c]);
+		Log->Message("%016x    ", (uint64_t)(ph_addr + i));
+		Log->Message("%02x", (unsigned int)v_addr[i + 0x03]);
+		Log->Message("%02x", (unsigned int)v_addr[i + 0x01]);
+		Log->Message("%02x", (unsigned int)v_addr[i + 0x02]);
+		Log->Message("%02x ", (unsigned int)v_addr[i + 0x00]);
+		Log->Message("%02x", (unsigned int)v_addr[i + 0x07]);
+		Log->Message("%02x", (unsigned int)v_addr[i + 0x06]);
+		Log->Message("%02x", (unsigned int)v_addr[i + 0x05]);
+		Log->Message("%02x ", (unsigned int)v_addr[i + 0x04]);
+		Log->Message("%02x", (unsigned int)v_addr[i + 0x0b]);
+		Log->Message("%02x", (unsigned int)v_addr[i + 0x0a]);
+		Log->Message("%02x", (unsigned int)v_addr[i + 0x09]);
+		Log->Message("%02x ", (unsigned int)v_addr[i + 0x08]);
+		Log->Message("%02x", (unsigned int)v_addr[i + 0x0f]);
+		Log->Message("%02x", (unsigned int)v_addr[i + 0x0e]);
+		Log->Message("%02x", (unsigned int)v_addr[i + 0x0d]);
+		Log->Message("%02x\n", (unsigned int)v_addr[i + 0x0c]);
 	}
-	LOG("\n");
+	Log->LineBreak();
 }
 
 void AcceleratorHwVerbose::dumpPageDir()
 {
 	if (!driverDebug)
 	{
-		LOG("\nPage directory DUMP unavailable: driver in release mode\n");
+	    Log->HorizontalSpacer();
+        Log->Message("Page directory DUMP unavailable: driver in release mode.\n");
 		return;
 	}
 
-	LOG("\nPage directory\n");
-	LOG("-----------------------------------------------------------------\n");
-	LOG("---                  values (dwords MSB->LSB)                 ---  \n");
+	Log->HorizontalSpacer();
+    Log->Message("Page directory\n");
+	Log->HorizontalSpacer();
+	Log->Message("---                  values (dwords MSB->LSB)                 ---  \n");
 	for (uint32_t i = 0; i < l1_page_addr.size(); i++)
 	{
-		LOG("entry  %02x %016x\n", i, (l1_page_addr[i] / PAGE_SIZE));
+		Log->Message("entry  %02x %016x\n", i, (l1_page_addr[i] / PAGE_SIZE));
 	}
-	LOG("\nPage entries\n");
-	LOG("-----------------------------------------------------------------\n");
-	LOG("---           memory dump as dwords(MSB->LSB)        ---  \n");
+	Log->HorizontalSpacer();
+	Log->Message("Page entries\n");
+	Log->HorizontalSpacer();
+	Log->Message("---           memory dump as dwords(MSB->LSB)        ---  \n");
 	for (uint32_t i = 0; i< l1_page_addr.size(); i++)
 	{
 		GMMDumpPage((uint8_t*)(l1_page_addr[i]), pagedirBuffer + i*PAGE_SIZE, PAGE_SIZE);
 	}
-	LOG("\n");
+	Log->LineBreak();
 }
 
 void AcceleratorHwVerbose::dumpPageData()
 {
 	if (!driverDebug)
 	{
-		LOG("\nGMM Data DUMP unavailable: driver in release mode\n");
+	    Log->HorizontalSpacer();
+		Log->Message("GMM Data DUMP unavailable: driver in release mode.\n");
 		return;
 	}
 
-	LOG("\nGMM Data\n");
-	LOG("-----------------------------------------------------------------\n");
-	LOG("---           memory dump as dwords (MSB->LSB)        ---  \n");
+	Log->HorizontalSpacer();
+	Log->Message("GMM Data\n");
+	Log->HorizontalSpacer();
+	Log->Message("---           memory dump as dwords (MSB->LSB)        ---  \n");
 	uint32_t i = 0;
 	unsigned int* pPhAddr32 = (unsigned int*)pagedirBuffer;
 	for (; i < Device::bufferSize / PAGE_SIZE; i++)
@@ -191,7 +198,7 @@ bool AcceleratorHwVerbose::SetRegister(string path)
 	infile.open(path);
 	if (!infile.is_open()) return false;
 
-	LOGF("%s\n", path.c_str());
+	Log->Message("%s\n", path.c_str());
 	while (!infile.eof())
 	{
 		// parse and verify command from line
@@ -202,7 +209,7 @@ bool AcceleratorHwVerbose::SetRegister(string path)
 		}
 		if ('S' != operation && 'A' != operation && 'O' != operation)
 		{
-			ERR("invalid operation in command string\n");
+			Log->Error("Invalid operation in command string.\n");
 			continue;
 		}
 		// perform register operation
@@ -216,7 +223,7 @@ bool AcceleratorHwVerbose::SetRegister(string path)
 			value = old_value | value;
 		}
 		WriteReg(address, value);
-		LOGF("REG: 0x%x changed[%c] from: 0x%x to: 0x%x\n",
+		Log->Message("REG: 0x%x changed[%c] from: 0x%x to: 0x%x\n",
 			address, operation, old_value, value);
 	}
 	infile.close();
@@ -240,7 +247,7 @@ bool AcceleratorHwVerbose::SetDescriptor(string path, XNN_LYR* buff, hw_calc_in_
 
     if (nullptr == buff)   return false;
 
-	LOGF("%s\n", path.c_str());
+	Log->Message("%s\n", path.c_str());
 	while (!infile.eof())
 	{
 		// parse and verify command from line
@@ -253,7 +260,7 @@ bool AcceleratorHwVerbose::SetDescriptor(string path, XNN_LYR* buff, hw_calc_in_
 		if ('S' != operation && 'A' != operation && 'O' != operation
             || XNN_LYR_DSC_SIZE-1 < address )
 		{
-			ERR("invalid operation in command string\n");
+			Log->Error("Invalid operation in command string.\n");
 			continue;
 		}
 
@@ -272,7 +279,7 @@ bool AcceleratorHwVerbose::SetDescriptor(string path, XNN_LYR* buff, hw_calc_in_
 
 		buff->_char[address] = value;
 
-		LOGF("DESCRIPTOR: 0x%x changed[%c] from: 0x%x to: 0x%x\n",
+		Log->Message("DESCRIPTOR: 0x%x changed[%c] from: 0x%x to: 0x%x.\n",
 			address, operation, old_value, value);
 
 		dumpDescriptor(buff);
@@ -293,21 +300,21 @@ void AcceleratorHwVerbose::HwVerifierMemDump(const char* /*fname*/)
 //    dump = fopen(fname, "wb");
 //    if (nullptr == dump)
 //    {
-//        ERR("Failed to open file\n");
+//        Log->Error("Failed to open file.\n");
 //        return;
 //    }
 //
-//    LOG("Pinned memory dump after scoring...\n");
+//    Log->Message("Pinned memory dump after scoring.\n");
 //    i = fwrite(mem, 1, Device::bufferSize, dump);
 //
 //    if (i != Device::bufferSize)
 //    {
-//        ERR("Memory dump save failed to write all data (%u/%u)\n", i, Device::bufferSize);
+//        Log->Error("Memory dump save failed to write all data (%u/%u).\n", i, Device::bufferSize);
 //    }
 //
 //    fclose(dump);
 //    dump = nullptr;
-//    LOG("Dump complete\n");
+//    Log->Message("Dump complete.\n");
 //#endif
 }
 
@@ -319,20 +326,20 @@ void AcceleratorHwVerbose::HwVerifier(Request* /*r*/)
 
 void AcceleratorHwVerbose::HwVerifier(SoftwareModel */*model*/, status_t scoring_status) {
     // retrieve output
-    PrintDrvStatus(scoring_status, _PREFIX_ "wait ioctl");
+    Log->Message(scoring_status, "Returned by Ioctl Wait.\n");
 
     HwVerifierMemDump("dump-after.bin");
 
 #ifdef DUMP_ENABLED
-    LOGF("GMM state after scoring\n");
-    LOG("===================================================================\n");
+    Log->Message("GMM state after scoring.\n");
+    Log->HorizontalSpacer();
     dumpPageDir();
     dumpPageData();
 #endif // DUMP_ENABLED
 
     if (hasTestCmdFile())
     {
-        LOGF("DUMP A, state after regular scoring\n");
+        Log->Message("DUMP A, state after regular scoring.\n");
         dumpMMIO();
     }
     if (SetRegister("setregister.txt"))
@@ -340,44 +347,44 @@ void AcceleratorHwVerbose::HwVerifier(SoftwareModel */*model*/, status_t scoring
         // reset all scores
        /* if (model && model->Layers != nullptr && model->layers[model->layerCount - 1].ScratchPad != nullptr)
         {
-            LOGF("Clean outputs in DNN\n");
+            Log->Message("Clean outputs in DNN.\n");
             memset(model->layers[model->layerCount - 1].pOutputs, 0, model->layers[model->layerCount - 1].RowCount * 2);
             memset(model->layers[model->layerCount - 1].ScratchPad, 0, model->layers[model->layerCount - 1].RowCount * 4);
         }*/
 
-        LOGF("DUMP B, before scoring\n");
+        Log->Message("DUMP B, before scoring.\n");
         dumpMMIO();
         uint32_t ctr = ReadReg(0x84);
         WriteReg(0x84, ctr | 1);
-        LOGF("scoring started, waiting 2ms...\n");
+        Log->Message("scoring started, waiting 2ms...\n");
         Sleep(2);
 
         if (SetRegister("setregister2.txt"))
         {
-            LOGF("waiting 200ms...\n");
+            Log->Message("waiting 200ms...\n");
             Sleep(200);
-            LOGF("DUMP C, after 200ms\n");
+            Log->Message("DUMP C, after 200ms.\n");
             dumpMMIO();
             SetRegister("setregister3.txt");
         }
 
-        LOGF("checking completion status\n");
+        Log->Message("checking completion status.\n");
         for (uint8_t i = 0; i < 30; ++i)
         {
             if (0x1 & ReadReg(0x80))
             {
-                LOG("\n");
-                LOGF("Operation complete!\n");
+                Log->LineBreak();
+                Log->Message("Operation complete.\n");
                 break;
             }
-            LOG("#");
+            Log->Message("#");
             Sleep(100);
         }
-        LOG("\n");
-        LOGF("DUMP D, scoring completed\n");
+        Log->LineBreak();
+        Log->Message("DUMP D, scoring completed.\n");
         dumpMMIO();
 
-        LOGF("Done, Reset state\n");
+        Log->Message("Done, Reset state.\n");
         WriteReg(0xa0, 0);
         WriteReg(0xa4, 0);
         WriteReg(0x80, 0x20000);
@@ -385,14 +392,15 @@ void AcceleratorHwVerbose::HwVerifier(SoftwareModel */*model*/, status_t scoring
     }
 }
 
-#define DUMP_CFG(field) LOG("%02p %08x\n", &(field), (uint32_t)field)
-#define DUMP_CFG_ADDR(pointer) LOG("%02p %08x\n", &(pointer), pointer)
+#define DUMP_CFG(field) Log->Message("%02p %08x\n", &(field), (uint32_t)field)
+#define DUMP_CFG_ADDR(pointer) Log->Message("%02p %08x\n", &(pointer), pointer)
 
 void AcceleratorHwVerbose::dumpDescriptor(XNN_LYR* buff)
 {
-	LOG("\nDescriptor space\n");
-	LOG("-----------------------------------------------------------------\n");
-	LOG("---                   values (dwords  MSB->LSB)               ---\n");
+	Log->HorizontalSpacer();
+	Log->Message("Descriptor space\n");
+	Log->HorizontalSpacer();
+	Log->Message("---                   values (dwords  MSB->LSB)               ---\n");
     DUMP_CFG(buff->op);
     DUMP_CFG(buff->flags._char);
     DUMP_CFG(buff->n_in_elems);
@@ -433,13 +441,14 @@ void AcceleratorHwVerbose::dumpDescriptor(XNN_LYR* buff)
 
 void AcceleratorHwVerbose::dumpCfg(uint32_t* config)
 {
-	LOG("\nConfig space\n");
-	LOG("-----------------------------------------------------------------\n");
-	LOG("---                   values (dwords  MSB->LSB)               ---  \n");
+	Log->HorizontalSpacer();
+	Log->Message("Config space\n");
+	Log->HorizontalSpacer();
+	Log->Message("---                   values (dwords  MSB->LSB)               ---  \n");
 
 	for (int i = 0; i < 32; i++)
 	{
-		LOG("%04x %08x\n", i * 4, config[i]);
+		Log->Message("%04x %08x\n", i * 4, config[i]);
 	}
 }
 // TODO: generalize and cleanup modification functions
@@ -459,7 +468,7 @@ bool AcceleratorHwVerbose::SetConfig(string path, hw_calc_in_t* inData)
 	infile.open(path);
 	if (!infile.is_open()) return false;
 
-	LOGF("%s\n", path.c_str());
+	Log->Message("%s\n", path.c_str());
 	//while (!infile.eof())
 	//{
 	//	// parse and verify command from line
@@ -471,7 +480,7 @@ bool AcceleratorHwVerbose::SetConfig(string path, hw_calc_in_t* inData)
 	//	if ('S' != operation && 'A' != operation && 'O' != operation
  //           || CFG_SIZE - 1 < address)
 	//	{
-	//		ERR("invalid operation in command string\n");
+	//		Log->Error("Invalid operation in command string.\n");
 	//		continue;
 	//	}
  //       address /= sizeof(uint32_t);
@@ -488,7 +497,7 @@ bool AcceleratorHwVerbose::SetConfig(string path, hw_calc_in_t* inData)
 
 	//	dumpCfg((uint32_t*)inData->config);
 	//	((uint32_t*)inData->config)[address] = value;
-	//	LOGF("CFG: 0x%x changed[%c] from: 0x%x to: 0x%x\n",
+	//	Log->Message("CFG: 0x%x changed[%c] from: 0x%x to: 0x%x.\n",
 	//		address, operation, old_value, value);
 
 	//	dumpCfg((uint32_t*)inData->config);

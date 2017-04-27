@@ -26,6 +26,7 @@
 #include "IoctlSender.h"
 
 #include "GnaException.h"
+#include "Logger.h"
 
 using namespace GNA;
 
@@ -130,7 +131,7 @@ void IoctlSender::wait(LPOVERLAPPED const ioctl, const DWORD timeout)
         }
         else // other wait error
         {
-            ERR("GetOverlappedResult failed, error:\n");
+            Log->Error("GetOverlappedResult failed, error: \n");
 #if DEBUG == 1
             printLastError(error);
 #endif

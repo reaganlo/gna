@@ -31,6 +31,7 @@
 
 #include "AccelerationDetector.h"
 #include "GnaException.h"
+#include "Logger.h"
 
 using std::array;
 using std::make_shared;
@@ -80,7 +81,7 @@ void AccelerationDetector::discoverHardwareExistence()
     catch (GnaException e)
     {
         accelerationModes[GNA_HW] = ACC_NOTSUPPORTED;
-        LOG("Hardware not detected.");
+        Log->Message("Hardware not detected.\n");
     }
 }
 
@@ -213,19 +214,19 @@ AccelerationDetector::AccelerationDetector() :
         }
     }
 
-    LOG("GNA_HW        %d\n", accelerationModes[GNA_HW]);
-    LOG("GNA_AUTO_FAST %d\n", accelerationModes[GNA_AUTO_FAST]);
-    LOG("GNA_AUTO_SAT  %d\n", accelerationModes[GNA_AUTO_SAT]);
-    LOG("GNA_AVX2_FAST %d\n", accelerationModes[GNA_AVX2_FAST]);
-    LOG("GNA_AVX2_SAT  %d\n", accelerationModes[GNA_AVX2_SAT]);
-    LOG("GNA_AVX1_FAST %d\n", accelerationModes[GNA_AVX1_FAST]);
-    LOG("GNA_AVX1_SAT  %d\n", accelerationModes[GNA_AVX1_SAT]);
-    LOG("GNA_SSE4_FAST %d\n", accelerationModes[GNA_SSE4_2_FAST]);
-    LOG("GNA_SSE4_SAT  %d\n", accelerationModes[GNA_SSE4_2_SAT]);
-    LOG("GNA_GEN_FAST  %d\n", accelerationModes[GNA_GEN_FAST]);
-    LOG("GNA_GEN_SAT   %d\n", accelerationModes[GNA_GEN_SAT]);
-    LOG("GNA_GEN_FAST  %d\n", accelerationModes[GNA_SW_FAST]);
-    LOG("GNA_GEN_SAT   %d\n", accelerationModes[GNA_SW_SAT]);
+    Log->Message("GNA_HW        %d\n", accelerationModes[GNA_HW]);
+    Log->Message("GNA_AUTO_FAST %d\n", accelerationModes[GNA_AUTO_FAST]);
+    Log->Message("GNA_AUTO_SAT  %d\n", accelerationModes[GNA_AUTO_SAT]);
+    Log->Message("GNA_AVX2_FAST %d\n", accelerationModes[GNA_AVX2_FAST]);
+    Log->Message("GNA_AVX2_SAT  %d\n", accelerationModes[GNA_AVX2_SAT]);
+    Log->Message("GNA_AVX1_FAST %d\n", accelerationModes[GNA_AVX1_FAST]);
+    Log->Message("GNA_AVX1_SAT  %d\n", accelerationModes[GNA_AVX1_SAT]);
+    Log->Message("GNA_SSE4_FAST %d\n", accelerationModes[GNA_SSE4_2_FAST]);
+    Log->Message("GNA_SSE4_SAT  %d\n", accelerationModes[GNA_SSE4_2_SAT]);
+    Log->Message("GNA_GEN_FAST  %d\n", accelerationModes[GNA_GEN_FAST]);
+    Log->Message("GNA_GEN_SAT   %d\n", accelerationModes[GNA_GEN_SAT]);
+    Log->Message("GNA_GEN_FAST  %d\n", accelerationModes[GNA_SW_FAST]);
+    Log->Message("GNA_GEN_SAT   %d\n", accelerationModes[GNA_SW_SAT]);
 }
 
 acceleration AccelerationDetector::GetFastestAcceleration() const

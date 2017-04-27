@@ -87,17 +87,6 @@ private:
       */
     bool    hasTestCmdFile();
 
-	/**
-	 * Prints driver status code name to console error
-	 *
-	 * @status  drv status code to be printed
-	 * @msg     prefix message to print before status
-	 */
-	inline static void PrintDrvStatus(status_t status, const char* msg)
-    {
-	    LOG("%s: DRVSTATUS: %s\n", msg, GnaStatusToString(status));
-    }
-
     void dumpMMIO();
 
     void dumpCfg(uint32_t* config);

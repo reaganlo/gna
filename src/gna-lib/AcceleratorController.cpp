@@ -30,6 +30,7 @@
 #include "AcceleratorHwVerbose.h"
 #include "AcceleratorSw.h"
 #include "GnaException.h"
+#include "Logger.h"
 
 using std::make_shared;
 using std::shared_ptr;
@@ -69,7 +70,7 @@ AcceleratorController::AcceleratorController(AccelerationDetector& detector) :
         catch (GnaException &e)
         {
             accelerators[gnaAcc] = nullptr;
-            ERR("Creating accelerator with acc mode %d failed with status: %d", GNA_GEN_FAST, e.getStatus());
+            Log->Error(e.getStatus(), "Creating accelerator with acc mode %d failed.\n", GNA_GEN_FAST);
         }
     }
 
