@@ -28,31 +28,28 @@
 
 using namespace GNA;
 
+std::unique_ptr<ActiveList> ActiveList::Create(const ActiveList& activeList)
+{
+    if (nullptr != activeList.Indices && activeList.IndicesCount > 0)
+    {
+        return std::make_unique<ActiveList>(activeList);
+    }
+    else
+    {
+        return std::unique_ptr<ActiveList>();
+    }
+}
+
 ActiveList::ActiveList(const uint32_t indicesCountIn, const uint32_t* indicesIn) :
     IndicesCount{indicesCountIn},
     Indices{indicesIn}
 {
-    validate();
-    Enabled = nullptr != Indices && IndicesCount > 0;
+    Expect::ValidBuffer(Indices);
+    Expect::InRange(IndicesCount, 1, XNN_N_IN_ELEMS_MAX, GNA_INVALIDINDICES);
 }
 
 ActiveList::ActiveList(const ActiveList& activeList) :
     IndicesCount{activeList.IndicesCount},
-    Indices{activeList.Indices},
-    Enabled{activeList.Enabled}
+    Indices{activeList.Indices}
 {
 }
-
-void ActiveList::validate()
-{
-    if (nullptr != Indices)
-    {
-        Expect::ValidBuffer(Indices);
-        Expect::InRange(IndicesCount, 1, XNN_N_IN_ELEMS_MAX, GNA_INVALIDINDICES);
-    }
-    else
-    {
-        Expect::True(IndicesCount == 0, GNA_INVALIDINDICES);
-    } 
-}
-

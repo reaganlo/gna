@@ -194,7 +194,7 @@ const unique_ptr<const ActivationFunction> ActivationFunction::Create(const nn_f
 {
     if (mandatory || /*Enabled*/ (nullptr != pwl->pSegments) && (pwl->nSegments > 0))
     {
-        return make_unique<ActivationFunction>(pwl, mandatory);
+        return make_unique<ActivationFunction>(pwl);
     }
     else
     {
@@ -202,20 +202,12 @@ const unique_ptr<const ActivationFunction> ActivationFunction::Create(const nn_f
     }
 }
 
-ActivationFunction::ActivationFunction(const nn_func_pwl *pwl, const bool mandatory) :
+ActivationFunction::ActivationFunction(const nn_func_pwl *pwl) :
     SegmentCount{pwl->nSegments},
     Segments{static_cast<nn_pwl_seg*>(pwl->pSegments)},
-    Enabled{(nullptr != pwl->pSegments) && (pwl->nSegments > 0)},
     sourcePwl{static_cast<const nn_func_pwl*>(pwl)}
 {
-    if (mandatory)
-    {
-        Expect::True(Enabled, XNN_ERR_LYR_CFG);
-    }
-    if(Enabled)
-    {
-        Expect::ValidBuffer(Segments, XNN_ERR_PWL_DATA);
-        Expect::InRange(SegmentCount, SegmentCountMin, SegmentCountMax, XNN_ERR_PWL_SEGMENTS);
-    }
+    Expect::ValidBuffer(Segments, XNN_ERR_PWL_DATA);
+    Expect::InRange(SegmentCount, SegmentCountMin, SegmentCountMax, XNN_ERR_PWL_SEGMENTS);
 }
 

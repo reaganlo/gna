@@ -171,7 +171,7 @@ void HardwareLayerExt::save()
         XnnDescriptor->aff_weight_buffer = getOffset(affine->GetWeights());
         XnnDescriptor->aff_const_buffer = getOffset(affine->GetBiases());
     }
-    if (activation && activation->Enabled)
+    if (activation)
     {
         XnnDescriptor->flags.act_fn_en = 1;
         XnnDescriptor->pwl_n_segs = static_cast<uint8_t>(activation->SegmentCount);
@@ -443,7 +443,7 @@ void HardwareLayerGmm::WriteActiveList(HardwareActiveListDescriptor & descriptor
     auto scoreElementsCount = GMM_SCORE_SIZE * gmm->Input.VectorCount * gmm->Config.stateCount;
     auto activeListIndices = 0ui32;
     auto activeListIndicesCount = 0ui32;
-    if (descriptor.List->Enabled)
+    if (descriptor.List)
     {
         scoreElementsCount = GMM_SCORE_SIZE * gmm->Input.VectorCount * descriptor.List->IndicesCount;
         activeListIndices = getOffset(descriptor.List->Indices);

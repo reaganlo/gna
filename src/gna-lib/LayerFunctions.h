@@ -189,13 +189,12 @@ public:
     static const uint32_t SegmentCountMax = XNN_N_PWL_SEGS_MAX;
     static const uint32_t SegmentCountMin = XNN_N_PWL_SEGS_MIN;
 
-    ActivationFunction(const nn_func_pwl * const pwl, const bool mandatory);
-    virtual ~ActivationFunction() = default;
+    ActivationFunction(const nn_func_pwl * const pwl);
     ActivationFunction() = delete;
+    virtual ~ActivationFunction() = default;
 
     const uint32_t SegmentCount;
     const nn_pwl_seg *Segments;
-    const bool Enabled;
 
 protected:
     const nn_func_pwl *sourcePwl;  // TODO:KJ: remove when SW will use SoftwareModel classes only

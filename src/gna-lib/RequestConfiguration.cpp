@@ -71,7 +71,8 @@ void RequestConfiguration::AddActiveList(uint32_t layerIndex, const ActiveList& 
     auto found = LayerConfigurations.emplace(layerIndex, std::make_unique<LayerConfiguration>());
     auto layerConfiguration = found.first->second.get();
     Expect::Null(layerConfiguration->ActiveList.get());
-    layerConfiguration->ActiveList = std::make_unique<ActiveList>(activeList);
+    auto activeListPtr = ActiveList::Create(activeList);
+    layerConfiguration->ActiveList.swap(activeListPtr);
     ++ActiveListCount;
 }
 
@@ -176,7 +177,7 @@ void RequestConfiguration::writeNnopTypesIntoCache(uint32_t layerIndex, uint32_t
     {
         if (it->second->OutputBuffer || it->second->ActiveList)
         {
-            bool enabled = it->second->ActiveList ? it->second->ActiveList->Enabled : false;
+            auto enabled = it->second->ActiveList.operator bool();
             Model.WriteHardwareLayerNnopType(it->first, nnopCfg, enabled);
 
             ++nnopCfg;

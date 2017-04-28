@@ -256,8 +256,7 @@ void AcceleratorSw::applyRequestBuffersToLayer(
         }
     }
 
-    if (layerConfiguration.ActiveList
-        && layerConfiguration.ActiveList->Enabled)
+    if (layerConfiguration.ActiveList)
     {
         if (INTEL_AFFINE == layer->Config.Kind
             || INTEL_GMM == layer->Config.Kind)

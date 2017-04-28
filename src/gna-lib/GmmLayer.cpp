@@ -56,8 +56,7 @@ GmmLayer::GmmLayer(const nn_layer *layer) :
 
 void GmmLayer::ValidateActiveList(ActiveList const * const activeList) const
 {
-    // TODO:KJ:implement active list for GMM
-    if (activeList->Enabled)
+    if (activeList)
     {
         Expect::InRange(activeList->IndicesCount, 1, Config.stateCount, GNA_INVALIDINDICES);
     }
