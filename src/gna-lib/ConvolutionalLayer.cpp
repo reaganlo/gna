@@ -93,17 +93,13 @@ CnnLayer::CnnLayer(nn_layer const * const layer) :
     Expect::ValidBuffer(Output.ScratchPad); // intermediate output buffer must be set always
     Output.SetOutputMode(Activation.operator bool(), layer->nBytesPerOutput);
 
-    // NOTE: intentional const override for Output.ElementCount // TODO: consider refactoring
-    auto& outputElementCount = const_cast<uint32_t&>(static_cast<const uint32_t&>((Output.ElementCount)));
-    if (INTEL_NO_POOLING == Pooling.Type)// use convolution outputs per filter
-    {
-        outputElementCount = Convolution.OutputElementsCount;
-    }
-    else // use pooled outputs per filter
+    auto outputElementCount = Convolution.OutputElementsCount; // INTEL_NO_POOLING use convolution outputs per filter
+    if (INTEL_NO_POOLING != Pooling.Type) // use pooled outputs per filter
     {
         outputElementCount = ((Convolution.OutputElementsCount - 1) / Pooling.Stride + 1);
     }
-
-    Expect::True(Output.ElementCount == Convolution.Filters.Count * Output.ElementCount, XNN_ERR_LYR_CFG);
+    Expect::True(Output.ElementCount == Convolution.Filters.Count * outputElementCount, XNN_ERR_LYR_CFG);
+    // NOTE: intentional const override for Output.ElementCount // TODO: consider refactoring
+    (uint32_t)Output.ElementCount = outputElementCount;
 }
 
