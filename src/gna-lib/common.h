@@ -66,41 +66,16 @@ inline int32_t GnaRoundUpMultipleOf64(uint32_t number)
     return GnaRoundUpMultipleOf(number, 64);
 }
 
-#if defined(_WIN32)
-#   define INLINE               __inline
-#   define sleep(s)             { clock_t m=s*1000; clock_t t1=clock(); while(clock()-t1<m); }
-#   define _kernel_malloc(a)    _aligned_malloc(a, INTRIN_ALIGN)
-#   define _gna_malloc(a)       _aligned_malloc(a, PAGE_SIZE)
-#   define _gna_free(a)         _aligned_free(a)
-#else
-#   define INLINE               inline
-#   if defined(USING_GCC)
-#       define _gna_malloc(a)   memalign(PAGE_SIZE, a)
-#       define _gna_free(a)     free(a)
-#   else
-#       define _gna_malloc(a)   _mm_malloc(a, PAGE_SIZE)
-#       define _gna_free(a)     _mm_free(a)
-#   endif // USING_GCC
-#endif
+inline bool IsActivationFunctionEnabled(const intel_pwl_func_t * const pwl)
+{
+    return (nullptr != pwl->pSegments) && (pwl->nSegments > 0);
+}
+
+#define _gna_malloc(a) _aligned_malloc(a, PAGE_SIZE)
+#define _gna_free(a)   _aligned_free(a)
 
 #if !defined(UNREFERENCED_PARAMETER)
 #define UNREFERENCED_PARAMETER(P) (P)
-#endif
-
-// stringify macro
-#define STR(X) #X
-// stringify macro value
-#define VAL(Y) STR(Y)
-
-// TODO: define separate logger class/component
-
-// log message class/component name prefix
-#ifndef _COMPONENT_
-#define _COMPONENT_
-#endif
-
-#if defined(USING_GCC ) && !defined(__FUNCTION__)
-#define __FUNCTION__ ""
 #endif
 
 /**
@@ -129,7 +104,6 @@ typedef struct
  * shorter aliases for official GMM API types
  */
 typedef gna_acceleration_all        acceleration;
-typedef gna_device_id               device_id;
 typedef intel_layer_kind_t          nn_layer_kind;
 typedef intel_layer_type_t          nn_layer_type;
 typedef intel_compound_bias_t       nn_bias_c;

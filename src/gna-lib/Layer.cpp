@@ -117,6 +117,7 @@ void LayerOutput::SetOutputMode(const bool activationEnabled, const uint32_t out
 {
     if (activationEnabled)
     {
+        Expect::ValidBuffer(ScratchPad); // intermediate output buffer must be set always
         Expect::True(ActivatedOutputSize == outputSize, XNN_ERR_INT_OUTPUT_BYTES);
         mode = ActivatedOutput;
     }

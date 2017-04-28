@@ -192,7 +192,7 @@ const void* AffineFunctionMulti1B::GetBiases() const
 const unique_ptr<const ActivationFunction> ActivationFunction::Create(const nn_func_pwl * const pwl,
     const bool mandatory)
 {
-    if (mandatory || /*Enabled*/ (nullptr != pwl->pSegments) && (pwl->nSegments > 0))
+    if (mandatory || IsActivationFunctionEnabled(pwl))
     {
         return make_unique<ActivationFunction>(pwl);
     }

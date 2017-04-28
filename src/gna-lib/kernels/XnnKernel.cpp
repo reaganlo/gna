@@ -23,8 +23,6 @@
  in any way.
 */
 
-#define _COMPONENT_ "XnnKernel::"
-
 #include "XnnKernelApi.h"
 
 #include <string.h>
@@ -36,7 +34,19 @@
 #include "pwl.h"
 
 namespace GNA
-{ 
+{
+
+inline int32_t* getOutputBuffer(const intel_pwl_func_t * const pwl, const nn_layer* const layer)
+{
+    if (IsActivationFunctionEnabled(pwl))
+    {
+        return static_cast<int32_t*>(layer->pOutputsIntermediate);
+    }
+    else
+    {
+         return static_cast<int32_t*>(layer->pOutputs);
+    }
+}
 
 #define CONVOLUTIONAL_ROW_STRIDE 1
 
@@ -94,9 +104,7 @@ void GNAApplyAffineTransform(
     uint32_t         k = pLayer->nInputRows;
     void*            w = aff->affine.pWeights;
     int16_t*         in = (int16_t*)pLayer->pInputs;
-    int32_t*         out = (int32_t*)((aff->pwl.pSegments == NULL)
-                           ? pLayer->pOutputs 
-                           : pLayer->pOutputsIntermediate);
+    int32_t*         out = getOutputBuffer(&aff->pwl, pLayer);
 
     if (aff->affine.nBytesPerWeight == 1)
     {
@@ -139,9 +147,7 @@ void GNAApplyAffineMBiasTransform(
     uint32_t        k = pLayer->nInputRows;
     void*           w = aff->affine.pWeights;
     int16_t* in = static_cast<int16_t*>(pLayer->pInputs);
-    int32_t* out = static_cast<int32_t*>(aff->pwl.pSegments == nullptr
-                   ? pLayer->pOutputs 
-                   : pLayer->pOutputsIntermediate);
+    int32_t* out = getOutputBuffer(&aff->pwl, pLayer);
 
     if (aff->affine.nBytesPerWeight == 1)
     {
@@ -183,9 +189,7 @@ void GNAApplyDiagonalTransform(
     uint32_t         n = pLayer->nInputColumns;
     void*            w = aff->affine.pWeights;
     int16_t*         in = (int16_t*)pLayer->pInputs;
-    int32_t*         out = (int32_t*)((aff->pwl.pSegments == NULL)
-                           ? pLayer->pOutputs 
-                           : pLayer->pOutputsIntermediate);
+    int32_t*         out = getOutputBuffer(&aff->pwl, pLayer);
 
     if (aff->affine.nBytesPerWeight == 1)
     {
@@ -229,10 +233,7 @@ void GNAApplyRecurrentTransform(
             nn_bias_s *B = (nn_bias_s*)rnn->affine.pBiases;
             igemv16(m, k, in, fb, (int16_t*)w, B, out, nSaturated);
         }
-        if (0 != rnn->pwl.nSegments)
-        {
-            GNAApplyPiecewiseLinearTransform(pLayer, i, i, 0, m, nSaturated, pwlBuff);
-        }
+        GNAApplyPiecewiseLinearTransform(pLayer, i, i, 0, m, nSaturated, pwlBuff);
     }
 }
 
@@ -274,6 +275,8 @@ void GNAApplyConvolutionalTransform(
           int64_t*      pool)
 {
     nn_layer_conv* conv = (nn_layer_conv*)pLayer->pLayerStruct;
+    auto pwl = &conv->pwl;
+    auto isPwlEnabled = IsActivationFunctionEnabled(pwl);
 
     if (conv->poolType == INTEL_NO_POOLING)
     {
@@ -286,11 +289,9 @@ void GNAApplyConvolutionalTransform(
             (int16_t*)pLayer->pInputs,
             (int16_t*)conv->pFilters,
             (nn_bias_s*)conv->pBiases,
-            (int32_t*)(conv->pwl.pSegments == NULL 
-                       ? pLayer->pOutputs 
-                       : pLayer->pOutputsIntermediate),
+            getOutputBuffer(pwl, pLayer),
             nSaturated);
-        if (0 != conv->pwl.nSegments)
+        if (isPwlEnabled)
         {
             GNAApplyPiecewiseLinearTransform(
                 pLayer,
@@ -304,7 +305,7 @@ void GNAApplyConvolutionalTransform(
     }
     else
     {
-        if (0 != conv->pwl.nSegments)
+        if (isPwlEnabled)
         {
             CNNFilterPool16(pLayer->nInputColumns,
                 conv->nFeatureMaps,

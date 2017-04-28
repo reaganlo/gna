@@ -134,7 +134,14 @@ void HardwareLayer::save()
     XnnDescriptor->n_groups = static_cast<uint8_t>(SoftwareLayer->Input.VectorCount);
     XnnDescriptor->in_buffer = getOffset(SoftwareLayer->Input.Buffer);
     XnnDescriptor->out_act_fn_buffer = getOffset(SoftwareLayer->Output.Buffer);
-    XnnDescriptor->out_sum_buffer = getOffset(SoftwareLayer->Output.ScratchPad);
+    if (LayerOutput::OutputMode::NonActivatedOutput == SoftwareLayer->Output.GetOutputMode())
+    {
+        XnnDescriptor->out_sum_buffer = getOffset(SoftwareLayer->Output.Buffer);
+    }
+    else
+    {
+        XnnDescriptor->out_sum_buffer = getOffset(SoftwareLayer->Output.ScratchPad);
+    }
 }
 
 const map<const uint32_t, const array<const uint32_t, XNN_N_GROUP_MAX>> HardwareLayerExt::bufferElementsMap

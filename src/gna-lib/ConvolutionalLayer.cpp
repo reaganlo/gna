@@ -82,7 +82,7 @@ PoolingFunction::PoolingFunction(const nn_layer_conv * sourceLayer) :
 CnnLayer::CnnLayer(nn_layer const * const layer) :
     Layer(layer),
     // CNN has only 2B output with Activation always enabled
-    Activation(ActivationFunction::Create(&static_cast<const nn_layer_conv*>(layer->pLayerStruct)->pwl, true)),
+    Activation(ActivationFunction::Create(&static_cast<const nn_layer_conv*>(layer->pLayerStruct)->pwl, false)),
     Convolution{static_cast<const nn_layer_conv*>(layer->pLayerStruct), Input.ElementCount},
     Pooling{static_cast<const nn_layer_conv*>(layer->pLayerStruct)},
     sourceLayer{ static_cast<const nn_layer_conv * const>(layer->pLayerStruct)}
@@ -90,7 +90,6 @@ CnnLayer::CnnLayer(nn_layer const * const layer) :
     Expect::True(Input.VectorCount == 1, XNN_ERR_GROUPING);
     Expect::True(Input.VectorCount == Output.VectorCount, XNN_ERR_GROUPING);
 
-    Expect::ValidBuffer(Output.ScratchPad); // intermediate output buffer must be set always
     Output.SetOutputMode(Activation.operator bool(), layer->nBytesPerOutput);
 
     auto outputElementCount = Convolution.OutputElementsCount; // INTEL_NO_POOLING use convolution outputs per filter

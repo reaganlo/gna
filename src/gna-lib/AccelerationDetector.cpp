@@ -23,8 +23,6 @@
  in any way.
 */
 
-#define _COMPONENT_ "GmmDispatcher::"
-
 #ifdef _WIN32
 #include <intrin.h>
 #endif

@@ -23,8 +23,6 @@
  in any way.
 */
 
-#define _COMPONENT_ "GnaApi::"
-
 #include <memory>
 #include <thread>
 

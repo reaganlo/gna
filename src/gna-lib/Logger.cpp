@@ -102,7 +102,7 @@ const char* const Logger::StatusStrings[] =
     "XNN_ERR_BIAS_BYTES", " - XNN: Invalid number of bytes per bias",
     "XNN_ERR_BIAS_MULTIPLIER", " - XNN: Multiplier larger than 255",
     "XNN_ERR_BIAS_INDEX", " - XNN: Bias Vector index larger than grouping factor",
-    "XNN_ERR_PWL_SEGMENTS", " - XNN: Activation function segment count larger than 128",
+    "XNN_ERR_PWL_SEGMENTS", " - XNN: Activation function segment number is invalid",
     "XNN_ERR_PWL_DATA", " - XNN: Activation function enabled but segment data not set",
     "XNN_ERR_MM_INVALID_IN", " - XNN: Invalid input data or configuration in matrix mul. op.",
     "CNN_ERR_FLT_COUNT", " - CNN Layer: invalid number of filters",
