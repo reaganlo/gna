@@ -84,7 +84,7 @@ void RequestConfiguration::GetHwConfigData(void* &buffer, size_t &size, uint32_t
 
     if (!submodelConfigCache)
     {
-        calculateCacheSize(layerIndex);
+        calculateCacheSize(layerIndex, layerCount);
 
         hwConfigCaches[layerIndex].reset(new uint8_t[hwConfigSizes[layerIndex]]);
         submodelConfigCache = hwConfigCaches[layerIndex].get();
@@ -99,11 +99,11 @@ void RequestConfiguration::GetHwConfigData(void* &buffer, size_t &size, uint32_t
         calculationData->reqCfgDescr.buffersCount = InputBuffersCount + OutputBuffersCount;
         calculationData->reqCfgDescr.requestConfigId = ConfigId;
 
-        void* shifted = submodelConfigCache + sizeof(GNA_CALC_IN);
-        writeBuffersIntoCache(layerIndex, layerCount, shifted);
-        writeNnopTypesIntoCache(layerIndex, layerCount, shifted, calculationData->reqCfgDescr.nnopTypesCount);
-        writeXnnActiveListsIntoCache(layerIndex, layerCount, shifted, calculationData->reqCfgDescr.xnnActiveListsCount);
-        writeGmmActiveListsIntoCache(layerIndex, layerCount, shifted, calculationData->reqCfgDescr.gmmActiveListsCount);
+        void* bufferShifted = submodelConfigCache + sizeof(GNA_CALC_IN);
+        writeBuffersIntoCache(layerIndex, layerCount, bufferShifted);
+        writeNnopTypesIntoCache(layerIndex, layerCount, bufferShifted, calculationData->reqCfgDescr.nnopTypesCount);
+        writeXnnActiveListsIntoCache(layerIndex, layerCount, bufferShifted, calculationData->reqCfgDescr.xnnActiveListsCount);
+        writeGmmActiveListsIntoCache(layerIndex, layerCount, bufferShifted, calculationData->reqCfgDescr.gmmActiveListsCount);
     }
 
     buffer = submodelConfigCache;
@@ -122,7 +122,7 @@ void RequestConfiguration::invalidateHwConfigCache()
     }
 }
 
-void RequestConfiguration::calculateCacheSize(uint32_t layerIndex) const
+void RequestConfiguration::calculateCacheSize(uint32_t layerIndex, uint32_t layerCount) const
 {
     auto& hwConfigSize = hwConfigSizes[layerIndex];
     hwConfigSize = 0;
@@ -132,7 +132,22 @@ void RequestConfiguration::calculateCacheSize(uint32_t layerIndex) const
         hwConfigSize = sizeof(GNA_CALC_IN);
         hwConfigSize += InputBuffersCount * sizeof(GNA_BUFFER_DESCR);
         hwConfigSize += OutputBuffersCount * sizeof(GNA_BUFFER_DESCR);
-        hwConfigSize += ActiveListCount * sizeof(NNOP_TYPE_DESCR);
+
+        // it's possible that AFFINE and GMM layers will need nnop change
+        auto nnopLayersCount = 0ui32;
+        const auto& layers = Model.GetLayers();
+        auto lowerBound = LayerConfigurations.lower_bound(layerIndex);
+        auto upperBound = LayerConfigurations.upper_bound(layerIndex + layerCount);
+        for (auto it = lowerBound; it != upperBound; ++it)
+        {
+            auto layer = layers.at(it->first).get();
+            if(it->second->OutputBuffer
+                && (layer->Config.Kind == INTEL_AFFINE || layer->Config.Kind == INTEL_GMM))
+            {
+                ++nnopLayersCount;
+            }
+        }
+        hwConfigSize += nnopLayersCount * sizeof(NNOP_TYPE_DESCR);
 
         // TODO: different counts shell be used, instead buffer might be bigger than needed, but still safe
         hwConfigSize += ActiveListCount * max(sizeof(XNN_ACTIVE_LIST_DESCR), sizeof(GMM_ACTIVE_LIST_DESCR));
@@ -175,10 +190,11 @@ void RequestConfiguration::writeNnopTypesIntoCache(uint32_t layerIndex, uint32_t
     auto upperBound = LayerConfigurations.upper_bound(layerIndex + layerCount);
     for (auto it = lowerBound; it != upperBound; ++it)
     {
-        if (it->second->OutputBuffer || it->second->ActiveList)
+        auto layer = layers.at(it->first).get();
+        if(it->second->OutputBuffer
+            && (layer->Config.Kind == INTEL_AFFINE || layer->Config.Kind == INTEL_GMM))
         {
-            auto enabled = it->second->ActiveList.operator bool();
-            Model.WriteHardwareLayerNnopType(it->first, nnopCfg, enabled);
+            Model.WriteHardwareLayerNnopType(it->first, nnopCfg, nullptr != it->second->ActiveList);
 
             ++nnopCfg;
             ++count;

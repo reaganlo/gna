@@ -96,7 +96,7 @@ HardwareLayer::HardwareLayer(const DescriptorParameters& parameters) :
 void HardwareLayer::WriteInputBuffer(PGNA_BUFFER_DESCR lyrsCfg, const ConfigurationBuffer * const buffer) const
 {
     lyrsCfg->offset = getOffset(XnnDescriptor) + offsetof(XNN_LYR, in_buffer);
-    lyrsCfg->value = getOffset(buffer);
+    lyrsCfg->value = getOffset(buffer->Get());
 }
 
 void HardwareLayer::WriteOutputBuffer(PGNA_BUFFER_DESCR lyrsCfg, const ConfigurationBuffer * const buffer) const
@@ -109,11 +109,12 @@ void HardwareLayer::WriteOutputBuffer(PGNA_BUFFER_DESCR lyrsCfg, const Configura
     {
         lyrsCfg->offset = getOffset(XnnDescriptor) + offsetof(XNN_LYR, out_sum_buffer);
     }
-    lyrsCfg->value = getOffset(buffer);
+    lyrsCfg->value = getOffset(buffer->Get());
 }
 
 void HardwareLayer::WriteNnopType(PNNOP_TYPE_DESCR, bool) const
 {
+    throw GnaException(XNN_ERR_LYR_CFG);
 }
 
 void HardwareLayer::WriteActiveList(HardwareActiveListDescriptor & descriptor) const
@@ -421,13 +422,13 @@ void HardwareLayerGmm::save()
 void HardwareLayerGmm::WriteInputBuffer(PGNA_BUFFER_DESCR lyrsCfg, const ConfigurationBuffer * const buffer) const
 {
     lyrsCfg->offset = getOffset(GmmDescriptor) + offsetof(GMM_CONFIG, fvaddr);
-    lyrsCfg->value = getOffset(buffer);
+    lyrsCfg->value = getOffset(buffer->Get());
 }
 
 void HardwareLayerGmm::WriteOutputBuffer(PGNA_BUFFER_DESCR lyrsCfg, const ConfigurationBuffer * const buffer) const
 {
     lyrsCfg->offset = getOffset(GmmDescriptor) + offsetof(GMM_CONFIG, gmmscradd);
-    lyrsCfg->value = getOffset(buffer);
+    lyrsCfg->value = getOffset(buffer->Get());
 }
 
 void HardwareLayerGmm::WriteNnopType(PNNOP_TYPE_DESCR nnopCfg, bool actListEnabled) const

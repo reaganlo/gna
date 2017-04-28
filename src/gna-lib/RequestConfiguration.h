@@ -87,7 +87,7 @@ public:
 
 private:
     void invalidateHwConfigCache();
-    void calculateCacheSize(uint32_t layerIndex) const;
+    void calculateCacheSize(uint32_t layerIndex, uint32_t layerCount) const;
     void writeBuffersIntoCache(uint32_t layerIndex, uint32_t layerCount, void* &lyrsCfg) const;
     void writeNnopTypesIntoCache(uint32_t layerIndex, uint32_t layerCount, void* &buffer, UINT32 &count) const;
     void writeXnnActiveListsIntoCache(uint32_t layerIndex, uint32_t layerCount, void* &buffer, UINT32 &count) const;

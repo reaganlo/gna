@@ -367,6 +367,7 @@ static size_t calculateLayersDescriptorBufferSize(const PGNA_CALC_IN input)
 
     size_t sz = sizeof(GNA_CALC_IN);
     sz += sizeof(GNA_BUFFER_DESCR)*input->reqCfgDescr.buffersCount;        
+    sz += sizeof(NNOP_TYPE_DESCR)*input->reqCfgDescr.nnopTypesCount;
     sz += max_*input->reqCfgDescr.xnnActiveListsCount;
     sz += max_*input->reqCfgDescr.gmmActiveListsCount;
 
@@ -395,7 +396,7 @@ static void setLayersDescriptorParameters(const PGNA_CALC_IN input, PMODEL_CTX m
     PNNOP_TYPE_DESCR nnopTypeDescr = (PNNOP_TYPE_DESCR)bufferDescr;
     for (UINT32 i = 0; i < input->reqCfgDescr.nnopTypesCount; ++i)
     {
-        *(PUINT32)(memoryBase + nnopTypeDescr->offset) = nnopTypeDescr->value;
+        *(PUINT8)(memoryBase + nnopTypeDescr->offset) = nnopTypeDescr->value;
         ++nnopTypeDescr;
     }
 
