@@ -134,7 +134,7 @@ status_t AcceleratorController::ScoreModel(
     RequestConfiguration& config,
     acceleration accel,
     RequestProfiler *profiler,
-    KernelBuffers *buffers)
+    KernelBuffers *buffers) const
 {
     auto status = GNA_SUCCESS;
     auto& subModels = config.Model.GetSubmodels();
@@ -143,11 +143,11 @@ status_t AcceleratorController::ScoreModel(
     {
     case SoftwareOnly:
     case HardwareOnly:
-        return accelerators[accel]->Score(0, config.Model.LayerCount, config, profiler, buffers);
+        return accelerators.at(accel)->Score(0, config.Model.LayerCount, config, profiler, buffers);
     case Mixed:
     {
-        auto& acceleratorHw = accelerators[GNA_HW];
-        auto& acceleratorSw = accelerators[accel];
+        auto& acceleratorHw = accelerators.at(GNA_HW);
+        auto& acceleratorSw = accelerators.at(accel);
         for (const auto& submodel : subModels)
         {
             uint32_t layerIndex = submodel->LayerIndex;

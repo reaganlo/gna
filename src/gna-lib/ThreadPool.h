@@ -41,58 +41,22 @@ namespace GNA
 {
 class ThreadPool {
 public:
-
-    /**
-    * Creates worker threads
-    * Fills thread map based on thread ids
-    * 
-    * @n_threads - number of threads to spawn
-    */
-    void Init(uint8_t n_threads);
-
-    /**
-     * Stops thread pool and joins worker threads
-     */
-    void Stop();
-
-    /**
-     * Adds request (as Accelerator function call) to the queue
-     * and notifies one thread
-     *
-     * @requestFn   request function call wrapper
-     * @return      future 
-     */
-    void Enqueue(Request *request);
-
-    /**
-     * Constructor
-     */
     ThreadPool();
-
-    /**
-     * Destructor, calls stop method
-     */
     ~ThreadPool();
-
-private:
-
-    std::vector<std::thread> workers;
-
-    // calculation function queue
-    std::queue<Request*> tasks;
-
-    std::mutex tp_mutex;
-
-    std::condition_variable condition;
-
-    bool stopped;
-
-    /**
-     * Deleted functions to prevent from being defined or called
-     * @see: https://msdn.microsoft.com/en-us/library/dn457344.aspx
-     */
     ThreadPool(const ThreadPool &) = delete;
     ThreadPool& operator=(const ThreadPool&) = delete;
+
+    void Init(uint8_t n_threads);
+    void Stop();
+    void Enqueue(Request *request);
+
+private:
+    std::vector<std::thread> workers;
+    // calculation function queue
+    std::queue<Request*> tasks;
+    std::mutex tp_mutex;
+    std::condition_variable condition;
+    bool stopped;
 };
 
 }

@@ -63,6 +63,7 @@ ThreadPool::~ThreadPool()
 
 void allocateFvBuffers(KernelBuffers * buffers)
 {
+    // TODO: move to model creation to minimize memory footprint
     buffers->d0 = (int16_t*)_gna_malloc(8 * (UINT16_MAX + 1) * sizeof(int16_t));
     if (nullptr == buffers->d0)
     {

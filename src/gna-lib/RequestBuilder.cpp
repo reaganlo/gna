@@ -25,6 +25,8 @@
 
 #include "RequestBuilder.h"
 
+#include "AcceleratorController.h"
+
 using std::make_unique;
 
 using namespace GNA;
@@ -65,4 +67,13 @@ RequestConfiguration& RequestBuilder::GetConfiguration(gna_request_cfg_id config
     {
         throw GnaException(GNA_INVALID_REQUEST_CONFIGURATION);
     }
+}
+
+std::unique_ptr<Request> RequestBuilder::CreateRequest(gna_request_cfg_id configId, acceleration accel,
+    const AcceleratorController& acceleratorController)
+{
+    auto profiler = std::make_unique<RequestProfiler>();
+    profilerDTscStart(&profiler->preprocess);
+    auto& configuration = GetConfiguration(configId);
+    return std::make_unique<Request>(configuration, move(profiler), accel, acceleratorController);
 }

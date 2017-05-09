@@ -29,8 +29,8 @@
 #include <vector>
 
 #include "common.h"
-#include "RequestConfiguration.h"
 #include "CompiledModel.h"
+#include "RequestConfiguration.h"
 
 namespace GNA
 {
@@ -45,6 +45,8 @@ public:
     void AttachBuffer(gna_request_cfg_id configId, gna_buffer_type type, uint16_t layerIndex, void * address) const;
     void AttachActiveList(gna_request_cfg_id configId, uint16_t layerIndex, const ActiveList& activeList) const;
     RequestConfiguration& GetConfiguration(gna_request_cfg_id configId) const;
+    std::unique_ptr<Request> CreateRequest(gna_request_cfg_id configId, acceleration accel,
+        const AcceleratorController& acceleratorController);
 
 private:
     std::vector<std::unique_ptr<RequestConfiguration>> configurationVector;

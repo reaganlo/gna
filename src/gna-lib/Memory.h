@@ -33,8 +33,7 @@
 namespace GNA
 {
 
-// TODO:INTEGRATION add buffer class
-class Memory : public BaseAddressC // TODO: consider using smart pointer
+class Memory : public BaseAddressC
 {
 public:
     Memory() = default;

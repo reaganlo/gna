@@ -274,9 +274,8 @@ void GNAApplyConvolutionalTransform(
           void*         pwlBuff,
           int64_t*      pool)
 {
-    nn_layer_conv* conv = (nn_layer_conv*)pLayer->pLayerStruct;
+    auto conv = (nn_layer_conv*)pLayer->pLayerStruct;
     auto pwl = &conv->pwl;
-    auto isPwlEnabled = IsActivationFunctionEnabled(pwl);
 
     if (conv->poolType == INTEL_NO_POOLING)
     {
@@ -291,7 +290,7 @@ void GNAApplyConvolutionalTransform(
             (nn_bias_s*)conv->pBiases,
             getOutputBuffer(pwl, pLayer),
             nSaturated);
-        if (isPwlEnabled)
+        if (IsActivationFunctionEnabled(pwl))
         {
             GNAApplyPiecewiseLinearTransform(
                 pLayer,
@@ -305,26 +304,23 @@ void GNAApplyConvolutionalTransform(
     }
     else
     {
-        if (isPwlEnabled)
-        {
-            CNNFilterPool16(pLayer->nInputColumns,
-                conv->nFeatureMaps,
-                conv->nFeatureMapColumns,
-                conv->nFilters,
-                conv->nFilterCoefficients,
-                conv->nPoolSize,
-                conv->nPoolStride,
-                conv->pwl.nSegments,
-                conv->pwl.pSegments,
-                (nn_bias_s*)conv->pBiases,
-                (int16_t*)conv->pFilters,
-                (int16_t*)pLayer->pInputs,
-                (int16_t*)pLayer->pOutputs,
-                nSaturated,
-                conv->poolType,
-                pwlBuff,
-                pool);
-        }
+        CNNFilterPool16(pLayer->nInputColumns,
+            conv->nFeatureMaps,
+            conv->nFeatureMapColumns,
+            conv->nFilters,
+            conv->nFilterCoefficients,
+            conv->nPoolSize,
+            conv->nPoolStride,
+            conv->pwl.nSegments,
+            conv->pwl.pSegments,
+            (nn_bias_s*)conv->pBiases,
+            (int16_t*)conv->pFilters,
+            (int16_t*)pLayer->pInputs,
+            (int16_t*)pLayer->pOutputs,
+            nSaturated,
+            conv->poolType,
+            pwlBuff,
+            pool);
     }
 }
 

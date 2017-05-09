@@ -32,7 +32,9 @@
 
 namespace GNA
 {
-#ifdef PROFILE
+
+class AcceleratorController;
+class RequestConfiguration;
 
 /**
  * Library level request processing profiler
@@ -48,58 +50,37 @@ struct RequestProfiler
     profiler_tsc ioctlWaitOn;    // profiler for waiting for "start scoring IOCTL" completion
 }; // Library level request processing profiler
 
-#endif // PROFILE
-
-
-using RequestFunctor = std::function<status_t(KernelBuffers*, RequestProfiler*)>;
-
 /**
  * Calculation request for single scoring or propagate forward operation
  */
 class Request
 {
 public:
-    Request(
-        RequestFunctor callback,
-        std::unique_ptr<RequestProfiler> profiler,
-        gna_perf_t *perfResults);
-
+    Request(RequestConfiguration& config, std::unique_ptr<RequestProfiler> profiler, acceleration accel,
+        const AcceleratorController& acceleratorController);
     ~Request() = default;
+    Request() = delete;
+    Request(const Request &) = delete;
+    Request& operator=(const Request&) = delete;
+
+    std::future<status_t> GetFuture();
 
     void operator()(KernelBuffers *buffers)
     {
         scoreTask(buffers, Profiler.get());
     }
 
-    /**************************************************************************
-     * Properties
-     *************************************************************************/
-
-    /**
-     * External id (0-GNA_REQUEST_WAIT_ANY)
-     */
+    // External id (0-GNA_REQUEST_WAIT_ANY)
     gna_request_id Id = 0;
-
-#ifdef PROFILE
-
-    /**
-     * performance profiler
-     */
+    RequestConfiguration& Configuration;
+    acceleration Accel;
     std::unique_ptr<RequestProfiler> Profiler;
     gna_perf_t *PerfResults;
-
-#endif
-
-    std::future<status_t> GetFuture();
 
 private:
     std::packaged_task<status_t(KernelBuffers *buffers, RequestProfiler *profiler)> scoreTask;
 
     status_t scoreStatus = GNA_DEVICEBUSY;
-
-    Request() = delete;
-    Request(const Request &) = delete;
-    Request& operator=(const Request&) = delete;
 };
 
 }

@@ -55,6 +55,7 @@ private:
     void clearRequestMap();
 
     status_t removeRequest(const gna_request_id requestId);
+
     Request * const get(const uint32_t requestId)
     {
         try
@@ -69,16 +70,9 @@ private:
     }
 
     std::map<uint32_t, std::unique_ptr<Request>> requests;
-
     uint32_t nRequests;
-
-    /**
-     * mutex for synchronizing request map operations
-     */
     std::mutex lock;
-
     ThreadPool threadPool;
-
 };
 
 }

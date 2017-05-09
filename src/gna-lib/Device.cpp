@@ -66,7 +66,6 @@ void Device::CreateConfiguration(gna_model_id modelId, gna_request_cfg_id *confi
 {
     const auto &model = modelContainer.GetModel(modelId);
     requestBuilder.CreateConfiguration(model, configId);
-
 }
 
 void Device::EnableProfiling(gna_request_cfg_id configId, gna_hw_perf_encoding hwPerfEncoding, gna_perf_t * perfResults)
@@ -101,7 +100,6 @@ void * Device::AllocateMemory(const uint32_t requestedSize, uint32_t * const siz
 
 void Device::FreeMemory()
 {
-    // TODO: Release model(s) if not released by user?
     totalMemory.reset();
 }
 
@@ -135,15 +133,7 @@ void Device::LoadModel(gna_model_id *modelId, const gna_model *raw_model)
 
 void Device::PropagateRequest(gna_request_cfg_id configId, acceleration accel, gna_request_id *requestId)
 {
-    auto profiler = std::make_unique<RequestProfiler>();
-    profilerDTscStart(&profiler->preprocess);
-    auto& configuration = requestBuilder.GetConfiguration(configId);
-    auto callback = [&, accel](KernelBuffers *buffers, RequestProfiler *profilerPtr)
-    {
-        return acceleratorController.ScoreModel(configuration, accel, profilerPtr, buffers);
-    };
-    // TODO:REFACTOR pass configuration reference to Request 
-    auto request = std::make_unique<Request>(callback, move(profiler), configuration.PerfResults);
+    auto request = requestBuilder.CreateRequest(configId, accel, acceleratorController);
     requestHandler.Enqueue(requestId, std::move(request));
 }
 

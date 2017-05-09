@@ -33,15 +33,15 @@
 namespace GNA
 {
 
-/**
- * Accelerator Interface
- */
 class IAccelerator
 {
 public:
 
     // TODO:REFACTOR refactor, it is no longer interface
-    IAccelerator(acceleration acceleration_mode) : accel(acceleration_mode) {}
+    IAccelerator(acceleration acceleration_mode) :
+        accel(acceleration_mode)
+    {}
+    virtual ~IAccelerator() = default;
 
     virtual status_t Score(
         uint32_t layerIndex,
@@ -50,8 +50,6 @@ public:
         RequestProfiler *profiler,
         KernelBuffers *buffers) = 0;
 
-    virtual ~IAccelerator() = default;
-    
 protected:
     acceleration accel;
 };

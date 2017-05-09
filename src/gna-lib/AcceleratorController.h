@@ -52,7 +52,7 @@ public:
         RequestConfiguration& config,
         acceleration accel,
         RequestProfiler *profiler,
-        KernelBuffers *buffers);
+        KernelBuffers *buffers) const;
 
 private:
     std::map<acceleration, std::shared_ptr<IAccelerator>> accelerators;

@@ -25,6 +25,9 @@
 
 #include "Request.h"
 
+#include "AcceleratorController.h"
+#include "RequestConfiguration.h"
+
 using std::function;
 using std::future;
 using std::move;
@@ -32,15 +35,22 @@ using std::unique_ptr;
 
 using namespace GNA;
 
-Request::Request(RequestFunctor callback, unique_ptr<RequestProfiler> profiler, gna_perf_t *perfResults) :
+Request::Request(RequestConfiguration& config, std::unique_ptr<RequestProfiler> profiler, acceleration accel,
+        const AcceleratorController& acceleratorController) :
+    Configuration(config),
+    Accel{accel},
     Profiler{move(profiler)},
-    PerfResults{perfResults},
-    scoreTask{callback}
+    PerfResults{config.PerfResults}
 {
     if (PerfResults)
     {
         memset(PerfResults, 0, sizeof(gna_perf_t));
     }
+    auto callback = [&, accel](KernelBuffers *buffers, RequestProfiler *profilerPtr)
+    {
+        return acceleratorController.ScoreModel(Configuration, Accel, profilerPtr, buffers);
+    };
+    scoreTask = std::packaged_task<status_t(KernelBuffers *buffers, RequestProfiler *profiler)>(callback);
 }
 
 future<status_t> Request::GetFuture()

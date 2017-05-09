@@ -95,6 +95,7 @@ CnnLayer::CnnLayer(nn_layer const * const layer) :
     auto outputElementCount = Convolution.OutputElementsCount; // INTEL_NO_POOLING use convolution outputs per filter
     if (INTEL_NO_POOLING != Pooling.Type) // use pooled outputs per filter
     {
+        Expect::True(nullptr != Activation, XNN_ERR_PWL_SEGMENTS); // Activation is required for cnn with pooling
         outputElementCount = ((Convolution.OutputElementsCount - 1) / Pooling.Stride + 1);
     }
     Expect::True(Output.ElementCount == Convolution.Filters.Count * outputElementCount, XNN_ERR_LYR_CFG);
