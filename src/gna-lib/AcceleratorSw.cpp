@@ -215,7 +215,7 @@ status_t AcceleratorSw::Score(
         }
         case INTEL_GMM:
         {
-            gmmSoftwareKernel(layer->Get<const GmmLayer>(), layerConfiguration, sat);
+            gmmSoftwareKernel(accel, layer->Get<const GmmLayer>(), layerConfiguration, sat);
             break;
         }
         default:
@@ -281,7 +281,7 @@ void AcceleratorSw::checkScoresSaturation(const uint32_t& nGMMs, const uint32_t&
     }
 }
 
-void AcceleratorSw::gmmSoftwareKernel(const GmmLayer* gmm, const LayerConfiguration * const layerConfiguration,
+void AcceleratorSw::gmmSoftwareKernel(const acceleration accel, const GmmLayer* gmm, const LayerConfiguration * const layerConfiguration,
     uint32_t& nSaturated)
 {
     const auto context = GmmScoreContext(gmm, layerConfiguration);
@@ -310,7 +310,7 @@ void AcceleratorSw::gmmSoftwareKernel(const GmmLayer* gmm, const LayerConfigurat
         if (gmm->Config.mode == GNA_MAXMIX8)
         {
             uint8_t *vars; // auxiliary pointer
-            //if(GNA_GEN_FAST == kd.accel || GNA_GEN_SAT == kd.accel)
+            if(GNA_GEN_FAST == accel || GNA_GEN_SAT == accel)
             {
                 for(j = 0; j < context.StateCount; j++)
                 {
@@ -328,7 +328,7 @@ void AcceleratorSw::gmmSoftwareKernel(const GmmLayer* gmm, const LayerConfigurat
                     }
                 }
             }
-            //else //if(GNA_SW_SSE4_2 == kd.accel || GNA_SW_AVX1 == kd.accel || GNA_SW_AVX2 == kd.accel)
+            else //if(GNA_SW_SSE4_2 == accel || GNA_SW_AVX1 == accel || GNA_SW_AVX2 == accel)
             {
                 uint8_t pFeatureBuffer[GMM_FV_ELEMENT_COUNT_MAX*GMM_FV_COUNT_MAX+GMM_FV_MEM_ALIGN]; // max data size
                 fv = (uint8_t*)(((unsigned long long)pFeatureBuffer+GMM_FV_MEM_ALIGN) & 0xffffffffffffffc0ull); // aligned to GMM_FV_MEM_ALIGN bytes
@@ -460,7 +460,7 @@ void AcceleratorSw::gmmSoftwareKernel(const GmmLayer* gmm, const LayerConfigurat
                     }
                     break;
                 }
-            } //else //if(GNA_SW_SSE4_2 == kd.accel || GNA_SW_AVX1 == kd.accel || GNA_SW_AVX2 == kd.accel)
+            } //else //if(GNA_SW_SSE4_2 == accel || GNA_SW_AVX1 == accel || GNA_SW_AVX2 == accel)
         }//else if (gmm.mode == GNA_MAXMIX8)
         else if (gmm->Config.mode == GNA_MAXMIX16)
         {
@@ -489,7 +489,7 @@ void AcceleratorSw::gmmSoftwareKernel(const GmmLayer* gmm, const LayerConfigurat
         if (gmm->Config.mode == GNA_MAXMIX8)
         {
             uint8_t *vars; // auxiliary pointer
-            //if(GNA_GEN_FAST == kd.accel || GNA_GEN_SAT == kd.accel)
+            if(GNA_GEN_FAST == accel || GNA_GEN_SAT == accel)
             {
                 for(j = 0; j < context.StateCount; j++)
                 {
@@ -508,7 +508,7 @@ void AcceleratorSw::gmmSoftwareKernel(const GmmLayer* gmm, const LayerConfigurat
                     }
                 }
             }
-            //else //if(GNA_SW_SSE4_2 == kd.accel || GNA_SW_AVX1 == kd.accel || GNA_SW_AVX2 == kd.accel)
+            else //if(GNA_SW_SSE4_2 == accel || GNA_SW_AVX1 == accel || GNA_SW_AVX2 == accel)
             {
                 uint8_t  pFeatureBuffer[GMM_FV_ELEMENT_COUNT_MAX*GMM_FV_COUNT_MAX+GMM_FV_MEM_ALIGN]; // max data size
                 fv = (uint8_t*)(((unsigned long long)pFeatureBuffer+GMM_FV_MEM_ALIGN) & 0xffffffffffffffc0ull);
@@ -641,7 +641,7 @@ void AcceleratorSw::gmmSoftwareKernel(const GmmLayer* gmm, const LayerConfigurat
                     }
                     break;
                 }
-            } // else //if(GNA_SW_SSE4_2 == kd.accel || GNA_SW_AVX1 == kd.accel || GNA_SW_AVX2 == kd.accel)
+            } // else //if(GNA_SW_SSE4_2 == accel || GNA_SW_AVX1 == accel || GNA_SW_AVX2 == accel)
         }//else if (gmm.mode == GNA_MAXMIX8)
         else if (gmm->Config.mode == GNA_MAXMIX16)
         {

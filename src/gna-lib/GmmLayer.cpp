@@ -39,7 +39,7 @@ GmmParams::GmmParams(const gna_gmm_config &config, const uint32_t inputElementCo
     }
     else if (GMM_LAYOUT_INTERLEAVED == config.layout)
     {
-        MeanSetOffsetSize = config.mixtureComponentCount * inputElementCount * (VarianceSize + GMM_CONSTANTS_SIZE + GMM_MEAN_VALUE_SIZE);
+        MeanSetOffsetSize = config.mixtureComponentCount * (inputElementCount * (VarianceSize + GMM_MEAN_VALUE_SIZE) + GMM_CONSTANTS_SIZE);
         VarSetOffsetSize = MeanSetOffsetSize;
         GaussConstSetOffsetSize = MeanSetOffsetSize;
     }

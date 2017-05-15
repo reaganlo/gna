@@ -72,7 +72,7 @@ private:
     void applyRequestBuffersToLayer(const LayerConfiguration& layerConfiguration, Layer* layer,
         nn_layer& sourceLayer, uint32_t &nOuts, const uint32_t * &activeIndices);
 
-    void gmmSoftwareKernel(const GmmLayer* gmm, const LayerConfiguration * const layerConfiguration,
+    void gmmSoftwareKernel(const acceleration accel, const GmmLayer* gmm, const LayerConfiguration * const layerConfiguration,
         uint32_t& nSaturated);
 };
 
