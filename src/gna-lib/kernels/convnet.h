@@ -25,114 +25,23 @@
 
 #pragma once
 
-#include "KernelMacros.h"
 #include "common.h"
+#include "KernelMacros.h"
+#include "pwl.h"
 
-#define CNNFilter16         KERNEL(CNNFilter16)
-#define CNNFilterPool16     KERNEL(CNNFilterPool16)
-#define SumPoolingFunction  KERNEL(SumPoolingFunction)
-#define MaxPoolingFunction  KERNEL(MaxPoolingFunction)
+#define ConvolutionKernelImpl KERNEL(ConvolutionKernelImpl)
+#define ConvolutionPoolingKernelImpl KERNEL(ConvolutionPoolingKernelImpl)
 #define MaxPartialPoolingFunction KERNEL(MaxPartialPoolingFunction)
 #define SumPartialPoolingFunction KERNEL(SumPartialPoolingFunction)
 
 #ifdef __cplusplus
-extern "C" {  // API uses C linkage so that it can be used by C and C++ applications
+extern "C" {
 #endif
 
+void ConvolutionKernelImpl(ConvolutionConfig const * const filterConfig);
 
-/* Calculates CNNFilter16
- *
- * @FMR     number of input columns
- * @FM      number of feature maps
- * @FMC     number of feature map columns
- * @FN      number of filters
- * @FC      number of filters coefficients
- * @I       input vectors pointer(non-interleaved)
- * @F       filters
- * @B       biases
- * @O       output matrix
- * @nSat    number of saturations found
- */
-void
-CNNFilter16(
-    const   uint32_t    IC,
-    const   uint32_t    FM,
-    const   uint32_t    FMC,
-    const   uint32_t    FN,
-    const   uint32_t    FC,
-            int16_t*    I,
-            int16_t*    F,
-            nn_bias_s*  B,
-            int32_t*    O,
-            uint32_t*   nSat
-);
-   
-/* Calculates CNNFilterPool16
- *
- * @IC      number of input columns
- * @FM      number of feature maps
- * @FMC     umber of feature map columns
- * @FN      number of filters
- * @FC      number of filter coeficients
- * @PS      number of pool size
- * @PSTEP   number of pool step
- * @NS      number of segments
- * @S       pointer to segments
- * @B       pointer to biases
- * @F       pointer to filters
- * @I       pointer to inputs
- * @O       pointer to outputs
- * @nSat    number of saturations found
- * @PT      pool type
- * @pwlBuff PWL unpacked buffer
- * @pool    Pool buffer
- */
-void
-CNNFilterPool16(
-    const   uint32_t            IC,
-    const   uint32_t            FM,
-    const   uint32_t            FMC,
-    const   uint32_t            FN,
-    const   uint32_t            FC,
-    const   uint32_t            PS,
-    const   uint32_t            PSTEP,
-    const   uint32_t            NS,
-            nn_pwl_seg*         S,
-            nn_bias_s*          B,
-            int16_t*            F,
-            int16_t*            I,
-            int16_t*            O,
-            uint32_t*           nSat,
-            nn_pool_type        PT,
-            void*               pwlBuff,
-            int64_t*            pool
-);
-
-
-/* Calculates SumPoolingFunction
-* @PS   number of pool size
-* @P    pointer to pool array
-* @V    pointer to value
-*/
-void
-SumPoolingFunction(
-    const   uint32_t    PS,
-            int64_t*    P,
-            int64_t*    V
-);
-
-/* Calculates MaxPoolingFunction
-* @PS   number of pool size
-* @P    pointer to pool array
-* @V    pointer to value
-*/
-
-void
-MaxPoolingFunction(
-    const   uint32_t    PS,
-            int64_t*    P,
-            int64_t*    V
-);
+void ConvolutionPoolingKernelImpl(ConvolutionConfig const * const filterConfig, 
+    ConvolutionPoolingConfig const * const poolConfig, PwlBaseConfig const * const pwlConfig, PwlCached * const pwl);
 
 /* Calculates MaxPartialPoolingFunction
 * @PS   number of pool size
@@ -141,14 +50,7 @@ MaxPoolingFunction(
 * @P    pointer to pool array
 * @V    pointer to value
 */
-void
-MaxPartialPoolingFunction(
-    const   uint32_t    PS,
-    const   int32_t     PNE,
-    const   uint32_t    PSI,
-            int64_t*    P,
-            int64_t*    V
-);
+void MaxPartialPoolingFunction(const uint32_t PS, const int32_t PNE, const uint32_t PSI, int64_t* P, int64_t* V);
 
 
 /* Calculates SumPartialPoolingFunction
@@ -158,32 +60,7 @@ MaxPartialPoolingFunction(
 * @P    pointer to pool array
 * @V    pointer to value
 */
-void
-SumPartialPoolingFunction(
-    const   uint32_t    PS,
-    const   int32_t     PNE,
-    const   uint32_t    PSI,
-            int64_t*    P,
-            int64_t*    V
-);
-
-inline void
-saturate64_store_out(
-int64_t*            out,
-uint32_t*           nSat)
-{
-    if (*out > INT32_MAX)
-    {
-        *out = INT32_MAX;
-        (*nSat)++;
-    }
-    else if (*out < INT32_MIN)
-    {
-        *out = INT32_MIN;
-        (*nSat)++;
-    } 
-}
-
+void SumPartialPoolingFunction(const uint32_t PS, const int32_t PNE, const uint32_t PSI, int64_t* P, int64_t* V);
 
 #ifdef __cplusplus
 }

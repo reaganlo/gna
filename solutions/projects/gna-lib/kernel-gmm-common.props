@@ -31,7 +31,8 @@
     </ImportGroup>
     <ItemGroup>
         <ClInclude Include="$(SRC_DIR)\gna-lib\kernels\kernel-gmm.h" />
+        <ClCompile Include="$(SRC_DIR)\gna-lib\kernels\kernel-gmm.cpp" />
         <ClInclude Include="$(SRC_DIR)\gna-lib\kernels\gmm.h" />
-        <ClCompile Include="$(SRC_DIR)\gna-lib\kernels\gmm.c" />
+        <ClCompile Include="$(SRC_DIR)\gna-lib\kernels\gmm.cpp" />
     </ItemGroup>
 </Project>

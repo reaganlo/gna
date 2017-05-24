@@ -29,13 +29,21 @@
 
 namespace GNA
 {
-
 // Transpose Layer descriptor converter
 class TransposeLayer : public Layer
 {
 public:
     TransposeLayer(nn_layer const * const layer);
     virtual ~TransposeLayer() = default;
+
+    virtual void UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const override;
+
+private:
+    void computeHidden(acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const;
+    void computeConfig(const LayerConfiguration& layerConfiguration, acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const;
+
+    const std::map<acceleration, TransposeKernel>& transposeKernels;
+    TransposeConfig transposeHiddenConfig;
 };
 
 class CopyLayer : public Layer
@@ -43,12 +51,17 @@ class CopyLayer : public Layer
 public:
     CopyLayer(const nn_layer *layer);
     virtual ~CopyLayer() = default;
+    void UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const;
 
     const uint32_t ColumnCount;
     const uint32_t RowCount;
 
-protected:
-    const nn_layer_copy* const sourceLayer;
+private:
+    void computeHidden(acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const;
+    void computeConfig(const LayerConfiguration& layerConfiguration, acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const;
+
+    const std::map<acceleration, CopyKernel>& copyKernels;
+    CopyConfig copyHiddenConfig;
 };
 
 }

@@ -23,10 +23,11 @@
  in any way.
 */
 
+#include "ThreadPool.h"
+
 #include "common.h"
 #include "GnaException.h"
 #include "pwl-types.h"
-#include "ThreadPool.h"
 
 using std::condition_variable;
 using std::function;
@@ -97,7 +98,7 @@ void allocateFvBuffers(KernelBuffers * buffers)
 
     buffers->ySeg = ((int8_t*)(buffers->xBase) + PWL_X_BUFFER_SIZE);
 
-    buffers->pwl = _kernel_malloc(PWL_PARAMS_BUFFER_SIZE);
+    buffers->pwl = static_cast<PwlCached*>(_kernel_malloc(PWL_PARAMS_BUFFER_SIZE));
     if (nullptr == buffers->pwl)
     {
         throw GnaException(GNA_ERR_RESOURCES);
@@ -108,9 +109,9 @@ void allocateFvBuffers(KernelBuffers * buffers)
     memset(buffers->xBase,  0,      PWL_X_BUFFER_SIZE);
     memset(buffers->ySeg,   0,      PWL_Y_BUFFER_SIZE);
 
-    ((pwl_params*)buffers->pwl)->lookup = (pwl_u_t*)buffers->lookup;
-    ((pwl_params*)buffers->pwl)->xBase  = (pwl_x_t*)buffers->xBase;
-    ((pwl_params*)buffers->pwl)->ySeg   = (pwl_y_t*)buffers->ySeg;
+    ((PwlCached*)buffers->pwl)->lookup = (pwl_u_t*)buffers->lookup;
+    ((PwlCached*)buffers->pwl)->xBase  = (pwl_x_t*)buffers->xBase;
+    ((PwlCached*)buffers->pwl)->ySeg   = (pwl_y_t*)buffers->ySeg;
 }
 
 void deallocateFvBuffers(KernelBuffers *buffers)

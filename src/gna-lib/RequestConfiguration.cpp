@@ -23,10 +23,12 @@
  in any way.
 */
 
+#include "RequestConfiguration.h"
+
 #include <memory>
 
 #include "GnaException.h"
-#include "RequestConfiguration.h"
+#include "LayerConfiguration.h"
 #include "Validator.h"
 #include "GnaDrvApi.h"
 #include "GnaConfig.h"
@@ -34,18 +36,26 @@
 
 using namespace GNA;
 
-RequestConfiguration::RequestConfiguration(const CompiledModel& model, gna_request_cfg_id configId) :
+RequestConfiguration::RequestConfiguration(CompiledModel& model, gna_request_cfg_id configId) :
     Model{model},
     ConfigId{configId}
 { }
 
 void RequestConfiguration::AddBuffer(gna_buffer_type type, uint32_t layerIndex, void *address)
 {
+    const auto& layer = *Model.GetLayers().at(layerIndex);
+    auto layerType = layer.Config.Type;
+    if (INTEL_HIDDEN == layerType 
+        || (GNA_IN == type && INTEL_OUTPUT == layerType) 
+        || (GNA_OUT == type && INTEL_INPUT == layerType))
+    {
+        throw GnaException{ XNN_ERR_LYR_TYPE };
+    }
+
     invalidateHwConfigCache();
 
     auto found = LayerConfigurations.emplace(layerIndex, std::make_unique<LayerConfiguration>());
     auto layerConfiguration = found.first->second.get();
-    // TODO:REFACTOR add model validation - verify if RequestConfiguration is  valid for given layer
     switch (type)
     {
     case GNA_IN:
@@ -61,19 +71,35 @@ void RequestConfiguration::AddBuffer(gna_buffer_type type, uint32_t layerIndex, 
     default:
         throw GnaException(GNA_UNKNOWN_ERROR);
     }
+
+    layer.UpdateKernelConfigs(*layerConfiguration);
 }
 
 void RequestConfiguration::AddActiveList(uint32_t layerIndex, const ActiveList& activeList)
 {
+    const auto& layer = *Model.GetLayers().at(layerIndex);
+    auto layerType = layer.Config.Type;
+    if (INTEL_OUTPUT != layerType && INTEL_INPUT_OUTPUT != layerType)
+    {
+        throw GnaException{ XNN_ERR_LYR_TYPE };
+    }
+    auto layerKind = layer.Config.Kind;
+    if (INTEL_AFFINE != layerKind && INTEL_AFFINE_MULTIBIAS != layerKind && INTEL_GMM != layerKind)
+    {
+        throw GnaException{ XNN_ERR_LYR_KIND };
+    }
+
     invalidateHwConfigCache();
 
-    // TODO:REFACTOR add model validation - verify if RequestConfiguration is  valid for given layer
     auto found = LayerConfigurations.emplace(layerIndex, std::make_unique<LayerConfiguration>());
     auto layerConfiguration = found.first->second.get();
     Expect::Null(layerConfiguration->ActiveList.get());
+
     auto activeListPtr = ActiveList::Create(activeList);
     layerConfiguration->ActiveList.swap(activeListPtr);
     ++ActiveListCount;
+
+    layer.UpdateKernelConfigs(*layerConfiguration);
 }
 
 // TODO: below methods are hardware related only thus should be somewhere closer to hardware classes
@@ -216,7 +242,8 @@ void RequestConfiguration::writeXnnActiveListsIntoCache(uint32_t layerIndex, uin
     auto upperBound = LayerConfigurations.upper_bound(layerIndex + layerCount);
     for (auto it = lowerBound; it != upperBound; ++it)
     {
-        if (INTEL_GMM != layers[it->first]->sourceLayer.nLayerKind && it->second->ActiveList)
+        
+        if (INTEL_GMM != layers[it->first]->Config.Kind && it->second->ActiveList)
         {
             HardwareActiveListDescriptor descriptor{it->second->ActiveList.get(), actLstCfg};
             Model.WriteHardwareLayerActiveList(it->first, descriptor);
@@ -240,7 +267,7 @@ void RequestConfiguration::writeGmmActiveListsIntoCache(uint32_t layerIndex, uin
     auto upperBound = LayerConfigurations.upper_bound(layerIndex + layerCount);
     for (auto it = lowerBound; it != upperBound; ++it)
     {
-        if (INTEL_GMM == layers[it->first]->sourceLayer.nLayerKind && it->second->ActiveList)
+        if (INTEL_GMM == layers[it->first]->Config.Kind && it->second->ActiveList)
         {
             HardwareActiveListDescriptor descriptor{it->second->ActiveList.get(), actLstCfg};
             Model.WriteHardwareLayerActiveList(it->first, descriptor);
@@ -252,9 +279,3 @@ void RequestConfiguration::writeGmmActiveListsIntoCache(uint32_t layerIndex, uin
     buffer = actLstCfg;
 }
 
-ConfigurationBuffer::ConfigurationBuffer(gna_buffer_type typeIn, void* address) :
-    InOutBuffer{address},
-    type{typeIn}
-{
-    Expect::NotNull(buffer);
-}

@@ -23,48 +23,36 @@
  in any way.
 */
 
+#include <string.h>
+
 #include "igemv.h"
 #include "igemv8.h"
-#include "string.h"
 
-void igemm8_subset(
-    const uint32_t M,
-    const uint32_t N,
-    const uint32_t K,
-    const int16_t *I,
-    const int8_t *W,
-    const nn_bias_c *B,
-          int32_t *O,
-    const uint32_t *AL,
-    const uint32_t L,
-          uint32_t *nSat,
-          KernelBuffers *bufs)
+void AffineActiveListKernelImpl1B(AffineConfig const * const config, AffineConfigAl const * const al)
 {
     uint32_t acc_iters;
     uint32_t rem_iters;
     uint32_t i, j, k, l, kk, kpartial, nKpartial, niters;
-    kpartial = (hw_buf_size[N - 1]) / N;
-    nKpartial = K / kpartial;
+    kpartial = (hw_buf_size[config->inputVectorCount - 1]) / config->inputVectorCount;
+    nKpartial = config->inputElementCount / kpartial;
 
     __m128i in[8], w, w0, w1;     // inputs & weight
     __m128i imm0, imm1, imm2, imm3, imm4, imm5, imm6, imm7, imm8, imm9, imm10;       // immediate
     __m128i acc[8]; // output accumulators
     __m128i zero = _mm_setzero_si128(); // AVX2 ZERO
 
-    int16_t *input[8];
-    int8_t *weight;             // inputs & weight pointers
-    nn_bias_c *bias;             // bias pointer
-    int32_t *out;              // output pointer
-    nn_bias_c *bias_end;         // outer loop pointer
+    int16_t const * input[8];
+    int8_t const * weight;             
+    nn_bias_c const * bias = config->biasesCompound;
+    int32_t * output;
+    nn_bias_c const * const biasEnd = bias + config->outputElementCount;
     int64_t sum[8];            // 64-bit accumulator buffer
 
-    uint32_t KT = K % SSE_16CAP; // K tail for manual processing
-    uint32_t KK = K - KT; // trimmed K for AVX2 processing
+    uint32_t KT = config->inputElementCount % SSE_16CAP; // config->inputElementCount tail for manual processing
+    uint32_t KK = config->inputElementCount - KT; // trimmed config->inputElementCount for AVX2 processing
 
-    out = O;
-    weight = const_cast<int8_t*>(W);
-    bias = const_cast<nn_bias_c*>(B);
-    bias_end = bias + M;
+    output = config->output;
+    weight = config->weights1B;
 
     __m128i *in_ptr0, *in_ptr1, *in_ptr2, *in_ptr3, *in_ptr4, *in_ptr5, *in_ptr6, *in_ptr7;
     __m128i in0, in1, in2, in3, in4, in5, in6, in7;
@@ -72,15 +60,15 @@ void igemm8_subset(
     int64_t sum0, sum1, sum2, sum3, sum4, sum5, sum6, sum7;
     uint32_t ix, ix_end;
 
-    if (1 == N)
+    if (1 == config->inputVectorCount)
     {
-        in_ptr0 = (__m128i*)I;
-        input[0] = const_cast<int16_t*>(I)+KK;
-        for (l = 0; l < L; l++)
+        in_ptr0 = (__m128i*)config->input;
+        input[0] = config->input+KK;
+        for (l = 0; l < al->count; l++)
         {
-            i = AL[l];
-            weight = const_cast<int8_t*>(W)+i*K;
-            bias = const_cast<nn_bias_c*>(B)+i;
+            i = al->indices[l];
+            weight = config->weights1B+i*config->inputElementCount;
+            bias = config->biasesCompound+i;
 
             ix = 0;
             acc0 = _mm_setzero_si128();
@@ -93,8 +81,8 @@ void igemm8_subset(
                 sum0 += vec_sum32(acc0) * bias->multiplier;
                 acc0 = _mm_setzero_si128();
                 acc1 = _mm_setzero_si128();
-                saturate_store_out(&sum0, out, nSat);
-                sum0 = *out;
+                saturate_store_out(&sum0, output, config->saturationCount);
+                sum0 = *output;
 
                 niters = kpartial < KK - kk * kpartial ? kpartial : KK - kk * kpartial;
                 acc_iters = niters / (256 * SSE_16CAP);
@@ -154,55 +142,55 @@ void igemm8_subset(
                 sum0 += (int32_t)((*input)[j] * *weight++ * bias->multiplier);
             }
 
-            saturate_store_out(&sum0, out, nSat);
+            saturate_store_out(&sum0, output, config->saturationCount);
 
-            out++;
+            output++;
         }
         return;
     }
 
-    switch (N)
+    switch (config->inputVectorCount)
     {
     case 8: 
-        for (i = 0; i < K; i++) bufs->d7[i] = I[i*N + 7];
-        input[7] = bufs->d7 + KK;
-        in_ptr7 = (__m128i*)bufs->d7;
+        for (i = 0; i < config->inputElementCount; i++) config->fvBuffers->d7[i] = config->input[i*config->inputVectorCount + 7];
+        input[7] = config->fvBuffers->d7 + KK;
+        in_ptr7 = (__m128i*)config->fvBuffers->d7;
     case 7: 
-        for (i = 0; i < K; i++) bufs->d6[i] = I[i*N + 6];
-        input[6] = bufs->d6 + KK;
-        in_ptr6 = (__m128i*)bufs->d6;
+        for (i = 0; i < config->inputElementCount; i++) config->fvBuffers->d6[i] = config->input[i*config->inputVectorCount + 6];
+        input[6] = config->fvBuffers->d6 + KK;
+        in_ptr6 = (__m128i*)config->fvBuffers->d6;
     case 6: 
-        for (i = 0; i < K; i++) bufs->d5[i] = I[i*N + 5];
-        input[5] = bufs->d5 + KK;
-        in_ptr5 = (__m128i*)bufs->d5;
+        for (i = 0; i < config->inputElementCount; i++) config->fvBuffers->d5[i] = config->input[i*config->inputVectorCount + 5];
+        input[5] = config->fvBuffers->d5 + KK;
+        in_ptr5 = (__m128i*)config->fvBuffers->d5;
     case 5: 
-        for (i = 0; i < K; i++) bufs->d4[i] = I[i*N + 4];
-        input[4] = bufs->d4 + KK;
-        in_ptr4 = (__m128i*)bufs->d4;
+        for (i = 0; i < config->inputElementCount; i++) config->fvBuffers->d4[i] = config->input[i*config->inputVectorCount + 4];
+        input[4] = config->fvBuffers->d4 + KK;
+        in_ptr4 = (__m128i*)config->fvBuffers->d4;
     case 4: 
-        for (i = 0; i < K; i++) bufs->d3[i] = I[i*N + 3];
-        input[3] = bufs->d3 + KK;
-        in_ptr3 = (__m128i*)bufs->d3;
+        for (i = 0; i < config->inputElementCount; i++) config->fvBuffers->d3[i] = config->input[i*config->inputVectorCount + 3];
+        input[3] = config->fvBuffers->d3 + KK;
+        in_ptr3 = (__m128i*)config->fvBuffers->d3;
     case 3: 
-        for (i = 0; i < K; i++) bufs->d2[i] = I[i*N + 2];
-        input[2] = bufs->d2 + KK;
-        in_ptr2 = (__m128i*)bufs->d2;
+        for (i = 0; i < config->inputElementCount; i++) config->fvBuffers->d2[i] = config->input[i*config->inputVectorCount + 2];
+        input[2] = config->fvBuffers->d2 + KK;
+        in_ptr2 = (__m128i*)config->fvBuffers->d2;
     case 2: 
-        for (i = 0; i < K; i++) bufs->d1[i] = I[i*N + 1];
-        input[1] = bufs->d1 + KK;
-        in_ptr1 = (__m128i*)bufs->d1;
-        for (i = 0; i < K; i++) bufs->d0[i] = I[i*N];
-        input[0] = bufs->d0 + KK;
-        in_ptr0 = (__m128i*)bufs->d0;
+        for (i = 0; i < config->inputElementCount; i++) config->fvBuffers->d1[i] = config->input[i*config->inputVectorCount + 1];
+        input[1] = config->fvBuffers->d1 + KK;
+        in_ptr1 = (__m128i*)config->fvBuffers->d1;
+        for (i = 0; i < config->inputElementCount; i++) config->fvBuffers->d0[i] = config->input[i*config->inputVectorCount];
+        input[0] = config->fvBuffers->d0 + KK;
+        in_ptr0 = (__m128i*)config->fvBuffers->d0;
     }
 
-    if (2 == N)
+    if (2 == config->inputVectorCount)
     {
-        for (l = 0; l < L; l++)
+        for (l = 0; l < al->count; l++)
         {
-            i = AL[l];
-            weight = const_cast<int8_t*>(W)+i*K;
-            bias = const_cast<nn_bias_c*>(B)+i;
+            i = al->indices[l];
+            weight = config->weights1B+i*config->inputElementCount;
+            bias = config->biasesCompound+i;
             ix = 0;
 
             sum0 = bias->bias;
@@ -213,8 +201,8 @@ void igemm8_subset(
 
             for (kk = 0; kk < nKpartial + 1; kk++)
             {
-                saturate(&sum0, nSat);
-                saturate(&sum1, nSat);
+                saturate(&sum0, config->saturationCount);
+                saturate(&sum1, config->saturationCount);
 
                 // kpartial = 12000 / 5 = 2400
                 // 2016 / (8 * 256) = 1
@@ -276,20 +264,20 @@ void igemm8_subset(
                 sum1 += (int32_t)(input[1][j] * *weight * bias->multiplier);
             }
 
-            saturate_store_out(&sum0, &out[0], nSat);
-            saturate_store_out(&sum1, &out[1], nSat);
+            saturate_store_out(&sum0, &output[0], config->saturationCount);
+            saturate_store_out(&sum1, &output[1], config->saturationCount);
 
-            out += N;
+            output += config->inputVectorCount;
         }
     }
 
-    if (3 == N)
+    if (3 == config->inputVectorCount)
     {
-        for (l = 0; l < L; l++)
+        for (l = 0; l < al->count; l++)
         {
-            i = AL[l];
-            weight = const_cast<int8_t*>(W)+i*K;
-            bias = const_cast<nn_bias_c*>(B)+i;
+            i = al->indices[l];
+            weight = config->weights1B+i*config->inputElementCount;
+            bias = config->biasesCompound+i;
             ix = 0;
 
             sum0 = bias->bias;
@@ -302,9 +290,9 @@ void igemm8_subset(
 
             for (kk = 0; kk < nKpartial + 1; kk++)
             {
-                saturate(&sum0, nSat);
-                saturate(&sum1, nSat);
-                saturate(&sum2, nSat);
+                saturate(&sum0, config->saturationCount);
+                saturate(&sum1, config->saturationCount);
+                saturate(&sum2, config->saturationCount);
 
                 // kpartial = 12000 / 5 = 2400
                 // 2016 / (8 * 256) = 1
@@ -377,21 +365,21 @@ void igemm8_subset(
                 sum2 += (int32_t)(input[2][j] * *weight * bias->multiplier);
             }
 
-            saturate_store_out(&sum0, &out[0], nSat);
-            saturate_store_out(&sum1, &out[1], nSat);
-            saturate_store_out(&sum2, &out[2], nSat);
+            saturate_store_out(&sum0, &output[0], config->saturationCount);
+            saturate_store_out(&sum1, &output[1], config->saturationCount);
+            saturate_store_out(&sum2, &output[2], config->saturationCount);
 
-            out += N;
+            output += config->inputVectorCount;
         }
     }
 
-    if (4 == N)
+    if (4 == config->inputVectorCount)
     {
-        for (l = 0; l < L; l++)
+        for (l = 0; l < al->count; l++)
         {
-            i = AL[l];
-            weight = const_cast<int8_t*>(W)+i*K;
-            bias = const_cast<nn_bias_c*>(B)+i;
+            i = al->indices[l];
+            weight = config->weights1B+i*config->inputElementCount;
+            bias = config->biasesCompound+i;
             ix = 0;
 
             sum0 = bias->bias;
@@ -406,10 +394,10 @@ void igemm8_subset(
 
             for (kk = 0; kk < nKpartial + 1; kk++)
             {
-                saturate(&sum0, nSat);
-                saturate(&sum1, nSat);
-                saturate(&sum2, nSat);
-                saturate(&sum3, nSat);
+                saturate(&sum0, config->saturationCount);
+                saturate(&sum1, config->saturationCount);
+                saturate(&sum2, config->saturationCount);
+                saturate(&sum3, config->saturationCount);
 
                 // kpartial = 12000 / 5 = 2400
                 // 2016 / (8 * 256) = 1
@@ -493,22 +481,22 @@ void igemm8_subset(
                 sum3 += (int32_t)(input[3][j] * *weight * bias->multiplier);
             }
 
-            saturate_store_out(&sum0, &out[0], nSat);
-            saturate_store_out(&sum1, &out[1], nSat);
-            saturate_store_out(&sum2, &out[2], nSat);
-            saturate_store_out(&sum3, &out[3], nSat);
+            saturate_store_out(&sum0, &output[0], config->saturationCount);
+            saturate_store_out(&sum1, &output[1], config->saturationCount);
+            saturate_store_out(&sum2, &output[2], config->saturationCount);
+            saturate_store_out(&sum3, &output[3], config->saturationCount);
 
-            out += N;
+            output += config->inputVectorCount;
         }
     }
 
-    if (5 == N)
+    if (5 == config->inputVectorCount)
     {
-        for (l = 0; l < L; l++)
+        for (l = 0; l < al->count; l++)
         {
-            i = AL[l];
-            weight = const_cast<int8_t*>(W)+i*K;
-            bias = const_cast<nn_bias_c*>(B)+i;
+            i = al->indices[l];
+            weight = config->weights1B+i*config->inputElementCount;
+            bias = config->biasesCompound+i;
             ix = 0;
 
             sum0 = bias->bias;
@@ -525,11 +513,11 @@ void igemm8_subset(
 
             for (kk = 0; kk < nKpartial + 1; kk++)
             {
-                saturate(&sum0, nSat);
-                saturate(&sum1, nSat);
-                saturate(&sum2, nSat);
-                saturate(&sum3, nSat);
-                saturate(&sum4, nSat);
+                saturate(&sum0, config->saturationCount);
+                saturate(&sum1, config->saturationCount);
+                saturate(&sum2, config->saturationCount);
+                saturate(&sum3, config->saturationCount);
+                saturate(&sum4, config->saturationCount);
 
                 // kpartial = 12000 / 5 = 2400
                 // 2016 / (8 * 256) = 1
@@ -624,23 +612,23 @@ void igemm8_subset(
                 sum4 += (int32_t)(input[4][j] * *weight * bias->multiplier);
             }
 
-            saturate_store_out(&sum0, &out[0], nSat);
-            saturate_store_out(&sum1, &out[1], nSat);
-            saturate_store_out(&sum2, &out[2], nSat);
-            saturate_store_out(&sum3, &out[3], nSat);
-            saturate_store_out(&sum4, &out[4], nSat);
+            saturate_store_out(&sum0, &output[0], config->saturationCount);
+            saturate_store_out(&sum1, &output[1], config->saturationCount);
+            saturate_store_out(&sum2, &output[2], config->saturationCount);
+            saturate_store_out(&sum3, &output[3], config->saturationCount);
+            saturate_store_out(&sum4, &output[4], config->saturationCount);
 
-            out += N;
+            output += config->inputVectorCount;
         }
     }
 
-    if (6 == N)
+    if (6 == config->inputVectorCount)
     {
-        for (l = 0; l < L; l++)
+        for (l = 0; l < al->count; l++)
         {
-            i = AL[l];
-            weight = const_cast<int8_t*>(W)+i*K;
-            bias = const_cast<nn_bias_c*>(B)+i;
+            i = al->indices[l];
+            weight = config->weights1B+i*config->inputElementCount;
+            bias = config->biasesCompound+i;
             ix = 0;
 
             sum0 = bias->bias;
@@ -659,12 +647,12 @@ void igemm8_subset(
 
             for (kk = 0; kk < nKpartial + 1; kk++)
             {
-                saturate(&sum0, nSat);
-                saturate(&sum1, nSat);
-                saturate(&sum2, nSat);
-                saturate(&sum3, nSat);
-                saturate(&sum4, nSat);
-                saturate(&sum5, nSat);
+                saturate(&sum0, config->saturationCount);
+                saturate(&sum1, config->saturationCount);
+                saturate(&sum2, config->saturationCount);
+                saturate(&sum3, config->saturationCount);
+                saturate(&sum4, config->saturationCount);
+                saturate(&sum5, config->saturationCount);
 
                 niters = kpartial < KK - kk * kpartial ? kpartial : KK - kk * kpartial;
 
@@ -723,24 +711,24 @@ void igemm8_subset(
                 sum5 += (int32_t)(input[5][j] * *weight * bias->multiplier);
             }
 
-            saturate_store_out(&sum0, &out[0], nSat);
-            saturate_store_out(&sum1, &out[1], nSat);
-            saturate_store_out(&sum2, &out[2], nSat);
-            saturate_store_out(&sum3, &out[3], nSat);
-            saturate_store_out(&sum4, &out[4], nSat);
-            saturate_store_out(&sum5, &out[5], nSat);
+            saturate_store_out(&sum0, &output[0], config->saturationCount);
+            saturate_store_out(&sum1, &output[1], config->saturationCount);
+            saturate_store_out(&sum2, &output[2], config->saturationCount);
+            saturate_store_out(&sum3, &output[3], config->saturationCount);
+            saturate_store_out(&sum4, &output[4], config->saturationCount);
+            saturate_store_out(&sum5, &output[5], config->saturationCount);
 
-            out += N;
+            output += config->inputVectorCount;
         }
     }
 
-    if (7 == N)
+    if (7 == config->inputVectorCount)
     {
-        for (l = 0; l < L; l++)
+        for (l = 0; l < al->count; l++)
         {
-            i = AL[l];
-            weight = const_cast<int8_t*>(W)+i*K;
-            bias = const_cast<nn_bias_c*>(B)+i;
+            i = al->indices[l];
+            weight = config->weights1B+i*config->inputElementCount;
+            bias = config->biasesCompound+i;
             ix = 0;
 
             sum0 = bias->bias;
@@ -761,13 +749,13 @@ void igemm8_subset(
 
             for (kk = 0; kk < nKpartial + 1; kk++)
             {
-                saturate(&sum0, nSat);
-                saturate(&sum1, nSat);
-                saturate(&sum2, nSat);
-                saturate(&sum3, nSat);
-                saturate(&sum4, nSat);
-                saturate(&sum5, nSat);
-                saturate(&sum6, nSat);
+                saturate(&sum0, config->saturationCount);
+                saturate(&sum1, config->saturationCount);
+                saturate(&sum2, config->saturationCount);
+                saturate(&sum3, config->saturationCount);
+                saturate(&sum4, config->saturationCount);
+                saturate(&sum5, config->saturationCount);
+                saturate(&sum6, config->saturationCount);
 
                 niters = kpartial < KK - kk * kpartial ? kpartial : KK - kk * kpartial;
 
@@ -833,25 +821,25 @@ void igemm8_subset(
                 sum6 += (int32_t)(input[6][j] * *weight * bias->multiplier);
             }
 
-            saturate_store_out(&sum0, &out[0], nSat);
-            saturate_store_out(&sum1, &out[1], nSat);
-            saturate_store_out(&sum2, &out[2], nSat);
-            saturate_store_out(&sum3, &out[3], nSat);
-            saturate_store_out(&sum4, &out[4], nSat);
-            saturate_store_out(&sum5, &out[5], nSat);
-            saturate_store_out(&sum6, &out[6], nSat);
+            saturate_store_out(&sum0, &output[0], config->saturationCount);
+            saturate_store_out(&sum1, &output[1], config->saturationCount);
+            saturate_store_out(&sum2, &output[2], config->saturationCount);
+            saturate_store_out(&sum3, &output[3], config->saturationCount);
+            saturate_store_out(&sum4, &output[4], config->saturationCount);
+            saturate_store_out(&sum5, &output[5], config->saturationCount);
+            saturate_store_out(&sum6, &output[6], config->saturationCount);
 
-            out += N;
+            output += config->inputVectorCount;
         }
     }
 
-    if (8 == N)
+    if (8 == config->inputVectorCount)
     {
-        for (l = 0; l < L; l++)
+        for (l = 0; l < al->count; l++)
         {
-            i = AL[l];
-            weight = const_cast<int8_t*>(W)+i*K;
-            bias = const_cast<nn_bias_c*>(B)+i;
+            i = al->indices[l];
+            weight = config->weights1B+i*config->inputElementCount;
+            bias = config->biasesCompound+i;
             ix = 0;
 
             sum0 = bias->bias;
@@ -874,14 +862,14 @@ void igemm8_subset(
 
             for (kk = 0; kk < nKpartial + 1; kk++)
             {
-                saturate(&sum0, nSat);
-                saturate(&sum1, nSat);
-                saturate(&sum2, nSat);
-                saturate(&sum3, nSat);
-                saturate(&sum4, nSat);
-                saturate(&sum5, nSat);
-                saturate(&sum6, nSat);
-                saturate(&sum7, nSat);
+                saturate(&sum0, config->saturationCount);
+                saturate(&sum1, config->saturationCount);
+                saturate(&sum2, config->saturationCount);
+                saturate(&sum3, config->saturationCount);
+                saturate(&sum4, config->saturationCount);
+                saturate(&sum5, config->saturationCount);
+                saturate(&sum6, config->saturationCount);
+                saturate(&sum7, config->saturationCount);
 
                 niters = kpartial < KK - kk * kpartial ? kpartial : KK - kk * kpartial;
 
@@ -953,33 +941,19 @@ void igemm8_subset(
                 sum7 += (int32_t)(input[7][j] * *weight * bias->multiplier);
             }
 
-            saturate_store_out(&sum0, &out[0], nSat);
-            saturate_store_out(&sum1, &out[1], nSat);
-            saturate_store_out(&sum2, &out[2], nSat);
-            saturate_store_out(&sum3, &out[3], nSat);
-            saturate_store_out(&sum4, &out[4], nSat);
-            saturate_store_out(&sum5, &out[5], nSat);
-            saturate_store_out(&sum6, &out[6], nSat);
-            saturate_store_out(&sum7, &out[7], nSat);
+            saturate_store_out(&sum0, &output[0], config->saturationCount);
+            saturate_store_out(&sum1, &output[1], config->saturationCount);
+            saturate_store_out(&sum2, &output[2], config->saturationCount);
+            saturate_store_out(&sum3, &output[3], config->saturationCount);
+            saturate_store_out(&sum4, &output[4], config->saturationCount);
+            saturate_store_out(&sum5, &output[5], config->saturationCount);
+            saturate_store_out(&sum6, &output[6], config->saturationCount);
+            saturate_store_out(&sum7, &output[7], config->saturationCount);
 
-            out += N;
+            output += config->inputVectorCount;
         }
     }
 }
 
-void
-igemm8_subset_mb(
-    const   uint32_t    M,
-    const   uint32_t    N,
-    const   uint32_t    K,
-    const   int16_t*    I,
-    const   int8_t*     W,
-    const   nn_bias_s*  B,
-    const   uint32_t    BG,
-    const   nn_bias_c*  CB,
-    int32_t*    O,
-    const   uint32_t*   AL,
-    const   uint32_t    L,
-    uint32_t*   nSat,
-    KernelBuffers*    fvBuffers)
+void AffineMultiBiasActiveListKernelImpl1B(AffineConfig const * const config, AffineConfigAl const * const al)
 {}

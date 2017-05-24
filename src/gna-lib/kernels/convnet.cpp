@@ -24,17 +24,26 @@
 */
 
 #include <cstring>
+
 #include "convnet.h"
 #include "igemv.h"
-#include "pwl.h"
+#include "pwl-types.h"
 
-void 
-SumPartialPoolingFunction(
-    const uint32_t  PS,
-    const int32_t   PNE,
-    const uint32_t  PSI,
-    int64_t*        P,
-    int64_t         *V)
+__forceinline void saturate64_store_out(int64_t * const out, uint32_t * const saturationCount)
+{
+    if (*out > INT32_MAX)
+    {
+        *out = INT32_MAX;
+        (*saturationCount)++;
+    }
+    else if (*out < INT32_MIN)
+    {
+        *out = INT32_MIN;
+        (*saturationCount)++;
+    } 
+}
+
+void SumPartialPoolingFunction(const uint32_t PS, const int32_t PNE, const uint32_t PSI, int64_t* P, int64_t* V)
 {
     uint32_t k = 0;
     uint32_t index = 0;
@@ -47,13 +56,7 @@ SumPartialPoolingFunction(
     }
 }
 
-void 
-MaxPartialPoolingFunction(
-    const   uint32_t  PS,
-    const   int32_t   PNE,
-    const   uint32_t  PSI,
-            int64_t*  P,
-            int64_t   *V)
+void MaxPartialPoolingFunction(const uint32_t PS, const int32_t PNE, const uint32_t PSI, int64_t* P, int64_t* V)
 {
     uint32_t k = 0;
     uint32_t index = 0;
@@ -69,30 +72,27 @@ MaxPartialPoolingFunction(
     }
 }
 
-void
-CNNFilter16(
-    const   uint32_t    IC,
-    const   uint32_t    FM,
-    const   uint32_t    FMC,
-    const   uint32_t    FN,
-    const   uint32_t    FC,
-    int16_t*    I,
-    int16_t*    F,
-    nn_bias_s*  B,
-    int32_t*    O,
-    uint32_t*   nSat)
+void ConvolutionKernelImpl(ConvolutionConfig const * const config)
 {
+    const uint32_t FN = config->filterCount;
+    const uint32_t FC = config->filterCoefficientCount;
+    const int16_t* const I = config->inputs;
+    const int16_t* const F = config->filters;
+    const nn_bias_s * const B = config->biases;
+    int32_t * const O = config->convolutedOutputs;
+    uint32_t * const saturationCount = config->saturationCount;
+
     uint32_t i, j, k;
 
     gna_sum_t sum, sum1, sum2, sum3, sum4, sum5, sum6, sum7, sum8;
 
-    uint32_t num_inputs_band_stride = FM * FMC;
-    uint32_t num_filter_outputs = (IC - FC) / num_inputs_band_stride + 1;
+    uint32_t num_inputs_band_stride = config->inputBandStride;
+    uint32_t num_filter_outputs = config->filterOutputCount;
 
 #if OPT_LEVEL > 1
     mm_ptr in1, in2, in3, in4, in5, in6, in7, in8, in_end, flt;
-    int32_t *out, *out1, *out2, *out3, *out4, *out5, *out6, *out7, *out8, *out9, *out10,
-            *bias, *bias_end = B + FN;
+    int32_t *out, *out1, *out2, *out3, *out4, *out5, *out6, *out7, *out8, *out9, *out10;
+    const nn_bias_s *bias, *bias_end = B + FN;
 
 #if OPT_LEVEL == 4 || OPT_LEVEL == 5
     __m256i f, v1, v2, v3, v4, v5, v6, v7, v8;
@@ -241,14 +241,14 @@ CNNFilter16(
 #endif
 
 #if GNA_SAT == 1
-            saturate_store_out(&sum1, out1, nSat);
-            saturate_store_out(&sum2, out2, nSat);
-            saturate_store_out(&sum3, out3, nSat);
-            saturate_store_out(&sum4, out4, nSat);
-            saturate_store_out(&sum5, out5, nSat);
-            saturate_store_out(&sum6, out6, nSat);
-            saturate_store_out(&sum7, out7, nSat);
-            saturate_store_out(&sum8, out8, nSat);
+            saturate_store_out(&sum1, out1, saturationCount);
+            saturate_store_out(&sum2, out2, saturationCount);
+            saturate_store_out(&sum3, out3, saturationCount);
+            saturate_store_out(&sum4, out4, saturationCount);
+            saturate_store_out(&sum5, out5, saturationCount);
+            saturate_store_out(&sum6, out6, saturationCount);
+            saturate_store_out(&sum7, out7, saturationCount);
+            saturate_store_out(&sum8, out8, saturationCount);
 #else
             *out1 = sum1;
             *out2 = sum2;
@@ -312,15 +312,15 @@ CNNFilter16(
 #endif
 
 #if GNA_SAT == 1
-            saturate_store_out(&sum1, out1++, nSat);
+            saturate_store_out(&sum1, out1++, saturationCount);
 #else 
             *out1++ = sum1;
 #endif
         }
     }
 #else
-    int16_t* ptr_coef;
-    int16_t* ptr_in;
+    const int16_t* ptr_coef;
+    const int16_t* ptr_in;
     for (j = 0; j < num_filter_outputs; j++)
     {
         ptr_in = I + j * num_inputs_band_stride;
@@ -333,7 +333,7 @@ CNNFilter16(
                 sum += ptr_in[k] * ptr_coef[k];
             }
 #if GNA_SAT == 1
-            saturate_store_out(&sum, &O[j * FN + i], nSat);
+            saturate_store_out(&sum, &O[j * FN + i], saturationCount);
 #else
             O[j * FN + i] = sum;
 #endif
@@ -342,26 +342,22 @@ CNNFilter16(
 #endif
 }
 
-void 
-CNNFilterPool16(
-    const uint32_t      IC,
-    const uint32_t      FM,
-    const uint32_t      FMC,
-    const uint32_t      FN,
-    const uint32_t      FC,
-    const uint32_t      PS,
-    const uint32_t      PSTEP,
-    const uint32_t      NS,
-    nn_pwl_seg*         S,
-    nn_bias_s*          B,
-    int16_t*            F, 
-    int16_t*            I,
-    int16_t*            O,
-    uint32_t*           nSat,
-    nn_pool_type   PT,
-    void*               pwlBuff,
-    int64_t*            pool)
+void ConvolutionPoolingKernelImpl(ConvolutionConfig const * const filterConfig, 
+    ConvolutionPoolingConfig const * const poolConfig, PwlBaseConfig const * const pwlConfig, PwlCached * const pwl)
 {
+    const uint32_t FN = filterConfig->filterCount;
+    const uint32_t FC = filterConfig->filterCoefficientCount;
+    const int16_t* const I = filterConfig->inputs;
+    const int16_t* const F = filterConfig->filters;
+    const nn_bias_s * const B = filterConfig->biases;
+    int16_t * const O = filterConfig->pooledOutputs;
+    uint32_t * const saturationCount = filterConfig->saturationCount;
+
+    const nn_pool_type PT = poolConfig->type;
+    const uint32_t PS = poolConfig->size;
+    const uint32_t PSTEP = poolConfig->step;
+    int64_t * const pool = poolConfig->buffer;
+
     void(*func_partial_pooling)(const uint32_t PS, const int32_t pool_num_entries, const uint32_t pool_start_index, int64_t* P, int64_t *V);
     
     if (PT == INTEL_SUM_POOLING)
@@ -377,24 +373,18 @@ CNNFilterPool16(
     uint32_t pool_end_index = 0;
     int32_t pool_num_entries = 0;
     uint32_t output_index = 0;
-    uint32_t num_inputs_band_stride = FM * FMC;
-    uint32_t num_filter_outputs = (IC - FC) / num_inputs_band_stride + 1;//FMR*FR + 1;//
+    uint32_t num_inputs_band_stride = filterConfig->inputBandStride;
+    uint32_t num_filter_outputs = filterConfig->filterOutputCount;
     uint32_t i;
     uint32_t j;
     uint32_t k;
     uint32_t z;
-    int16_t *ptr_in;
-    int16_t *ptr_coef;
+    const int16_t *ptr_in;
+    const int16_t *ptr_coef;
     int64_t value;
     uint32_t inc;
     uint32_t l;
     gna_sum_t sum, sum1, sum2, sum3, sum4, sum5, sum6;
-    pwl_params* params;
-
-    params = (pwl_params*)(pwlBuff);
-    params->NS = (uint8_t)NS;
-    PwlSetup(params, 0, 0, 0, 0, 0, nSat, NULL, NULL, S);
-
 
 #if OPT_LEVEL > 1
     mm_ptr in1, in2, in3, in4, in5, in6, flt, in_end;
@@ -406,7 +396,7 @@ CNNFilterPool16(
     mm_vector im1, im2, im3, im4, im5, im6;
     mm_vector acc1, acc2, acc3, acc4, acc5, acc6;
 #endif
-     
+
     output_index = 0;
     pool_start_index = 0;
     pool_end_index = 0;
@@ -924,9 +914,9 @@ CNNFilterPool16(
                 {
                     func_partial_pooling(PS, PS, 0, pool + i * CNN_POOL_SIZE_MAX, &value);
 #if GNA_SAT == 1
-                    saturate64_store_out(&value, nSat);
+                    saturate64_store_out(&value, saturationCount);
 #endif
-                    params->pwlSingle(params, (int32_t)value, &O[output_index * FN + i]);
+                    pwl->pwlSingle(pwl, (int32_t)value, &O[output_index * FN + i], saturationCount);
                 }
 
                 pool_start_index = (pool_start_index + PSTEP) % PS;
@@ -949,9 +939,9 @@ CNNFilterPool16(
         {
             func_partial_pooling(PS, pool_num_entries, pool_start_index, pool + i * CNN_POOL_SIZE_MAX, &value);
 #if GNA_SAT == 1 
-            saturate64_store_out(&value, nSat);
+            saturate64_store_out(&value, saturationCount);
 #endif
-            params->pwlSingle(params, (int32_t)value, &O[output_index * FN + i]);
+            pwl->pwlSingle(pwl, (int32_t)value, &O[output_index * FN + i], saturationCount);
         }
 
         pool_start_index = (pool_start_index + PSTEP) % PS;

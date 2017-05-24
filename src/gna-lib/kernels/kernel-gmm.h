@@ -25,23 +25,69 @@
 
 #pragma once
 
-#include "gmm.h"
-#include "KernelMacros.h"
 #include "common.h"
+#include "KernelMacros.h"
 
-#define SHIFT_SPHINX 14
-#define LOG_SHIFT_SPHINX 9
-#define LOG_THRESH_SPHINX 32768 // was originally 29350
-
-#ifdef INTEL64
-#define CVT64_128(a) _mm_cvtsi64_si128(*(int64_t*)(a))
-#else
-#define CVT64_128(a) _mm_loadl_epi64((__m128i*)(a))
+#define gmm_maxmix_8u8u_32u     KERNEL(gmm_maxmix_8u8u_32u)
+#define gmm_maxmix_8u16u_32u    KERNEL(gmm_maxmix_8u16u_32u)
+#if OPT_LEVEL > 1
+#define gmm_maxmix_8u8u_32u_g1  KERNEL(gmm_maxmix_8u8u_32u_g1)
+#define gmm_maxmix_8u8u_32u_g2  KERNEL(gmm_maxmix_8u8u_32u_g2)
+#define gmm_maxmix_8u8u_32u_g3  KERNEL(gmm_maxmix_8u8u_32u_g3)
+#define gmm_maxmix_8u8u_32u_g4  KERNEL(gmm_maxmix_8u8u_32u_g4)
+#define gmm_maxmix_8u8u_32u_g5  KERNEL(gmm_maxmix_8u8u_32u_g5)
+#define gmm_maxmix_8u8u_32u_g6  KERNEL(gmm_maxmix_8u8u_32u_g6)
+#define gmm_maxmix_8u8u_32u_g7  KERNEL(gmm_maxmix_8u8u_32u_g7)
+#define gmm_maxmix_8u8u_32u_g8  KERNEL(gmm_maxmix_8u8u_32u_g8)
 #endif
 
-#ifndef print_m128i
-#define print_m128i(reg,regname) {__declspec(align(64)) unsigned int tmp1_[4], i; \
-    _mm_store_ps((float*)(tmp1_), (reg));                     \
-    printf("%s:", regname);                                             \
-    for(i = 0; i < 4; i++) printf("%u ", tmp1_[i]); printf("\n");}
+// GMM kernel implementation arguments
+struct GmmMaxMixConfig
+{
+    GmmMaxMixConfig(uint32_t const scoreLimit, uint32_t const inputElementCount, uint32_t const mixtureCount) :
+        MinScore{scoreLimit},
+        InputElementCount{inputElementCount},
+        MixtureCount{mixtureCount},
+        Means{nullptr},
+        Vars{nullptr},
+        Gconst{nullptr},
+        Input{nullptr},
+        Output{nullptr}
+    {}
+
+    uint32_t const MinScore;
+    uint32_t const InputElementCount;
+    uint32_t const MixtureCount;
+    uint8_t const * Means;
+    union
+    {
+    uint8_t const * Vars;
+    uint16_t const * Vars16;
+    };
+    uint32_t const * Gconst;
+    uint8_t const * Input;
+    uint32_t * Output;
+};
+
+
+void gmm_maxmix_8u8u_32u(GmmMaxMixConfig const * const config);
+
+void gmm_maxmix_8u16u_32u(GmmMaxMixConfig const * const config);
+
+#if OPT_LEVEL > 1
+void gmm_maxmix_8u8u_32u_g1(GmmMaxMixConfig const * const config);
+
+void gmm_maxmix_8u8u_32u_g2(GmmMaxMixConfig const * const config);
+
+void gmm_maxmix_8u8u_32u_g3(GmmMaxMixConfig const * const config);
+
+void gmm_maxmix_8u8u_32u_g4(GmmMaxMixConfig const * const config);
+
+void gmm_maxmix_8u8u_32u_g5(GmmMaxMixConfig const * const config);
+
+void gmm_maxmix_8u8u_32u_g6(GmmMaxMixConfig const * const config);
+
+void gmm_maxmix_8u8u_32u_g7(GmmMaxMixConfig const * const config);
+
+void gmm_maxmix_8u8u_32u_g8(GmmMaxMixConfig const * const config);
 #endif

@@ -25,101 +25,89 @@
 
 #pragma once
 
-#include "common.h"
+#include "KernelArguments.h"
 
 namespace GNA
 {
 
-typedef void (*AffineTransformFn)(
-    const nn_layer*          pLayer,
-    const uint32_t*          pActiveIndices,
-          uint32_t           nActiveIndices,
-          uint32_t*          nSaturated,
-          KernelBuffers*     fvBuffers);
+typedef void (*AffineKernel)(AffineConfig const * const config);
 
-typedef void (*AffMBiasTransformFn)(
-    const nn_layer*          pLayer,
-    const uint32_t*          pActiveIndices,
-          uint32_t           nActiveIndices,
-          uint32_t*          nSaturated,
-          KernelBuffers*     fvBuffers);
+typedef void (*AffineActiveListKernel)(AffineConfig const * const config, AffineConfigAl const * const al);
 
-typedef void (*DiagonalTransformFn)(
-    const nn_layer* pLayer,
-          uint32_t* nSaturated);
+typedef void (*DiagonalKernel)(AffineConfig const * const config);
 
-typedef void (*PWLTransformFn)(
-    const nn_layer*     pLayer,
-          uint32_t      nRowBegin,
-          uint32_t      nRowEnd,
-          uint32_t      nColBegin,
-          uint32_t      nColEnd,
-          uint32_t*     nSaturated,
-          void*         pwlBuff);
+typedef void (*PwlKernel)(PwlBaseConfig const * const config, PwlCached * const pwl, 
+    PwlOutputConfig const * const outputConfig);
 
-typedef void (*RecurrentTransformFn)(
-    const nn_layer*     pLayer,
-          uint32_t*     nSaturated,
-          void*         pwlBuff);
+typedef void (*RecurrentKernel)(RecurrentConfig const * const config, PwlBaseConfig const * const pwlConfig,
+    PwlCached * const pwl);
 
-typedef void (*TransposeFn)(
-    const nn_layer*     pLayer);
+typedef void (*ConvolutionKernel)(ConvolutionConfig const * const config);
 
-typedef void (*CopyFn)(
-    const nn_layer*     pLayer);
+typedef void (*ConvolutionPoolingKernel)(ConvolutionConfig const * const filterConfig,
+    ConvolutionPoolingConfig const * const poolConfig, PwlBaseConfig const * const pwlConfig, PwlCached * const pwl);
 
-typedef void (*ConvTransformFn)(
-    const nn_layer*     pLayer,
-          uint32_t*     nSaturated,
-          void*         pwlBuff,
-          int64_t*      pool);
+typedef void (*TransposeKernel)(TransposeConfig const * const config);
 
-/**
- * Xnn kernel provider
- *
- *  Contains XNN kernel function pointers for selected acceleration
- */
+typedef void (*CopyKernel)(CopyConfig const * const config);
+
+// Xnn kernel provider
+// Contains XNN kernel function pointers for selected acceleration
 typedef struct _XnnKernel
 {
-    AffineTransformFn   affine;     // apply affine transform function
-    AffMBiasTransformFn affineMbias;// apply affine transform function
-    DiagonalTransformFn diagonal;   // apply affine transform function
-    PWLTransformFn      pwl;        // apply piecewise linear transform function
-    RecurrentTransformFn recurrent; // apply recurrent transform function
-    TransposeFn         transpose;  // apply transpose transform function
-    CopyFn              copy;       // apply copy function
-    ConvTransformFn     conv;       // apply convolutional transform function
+    AffineKernel affineSingle1Bfull;
+    AffineKernel affineSingle2Bfull;
+    AffineActiveListKernel affineSingle1Bal;
+    AffineActiveListKernel affineSingle2Bal;
 
-} XnnKernel;                        // Xnn kernel provider
+    AffineKernel affineMulti1Bfull;
+    AffineKernel affineMulti2Bfull;
+    AffineActiveListKernel affineMulti1Bal;
+    AffineActiveListKernel affineMulti2Bal;
 
-/**
- * Export list of available Xnn kernels providers
- */
+    DiagonalKernel diagonal1B;
+    DiagonalKernel diagonal2B;
+    
+    RecurrentKernel recurrent1B;
+    RecurrentKernel recurrent2B;
+    
+    ConvolutionKernel convolution;
+    ConvolutionPoolingKernel convolutionPooling; // TODO: split pwl and pooling from conv. kernel in next phase
 
-/** FAST VERSIONS */
-/** generic Xnn kernel provider */
+    PwlKernel pwl;
+
+    TransposeKernel transpose;
+
+    CopyKernel copy;
+
+} XnnKernel;
+
+// Export list of available Xnn kernels providers
+
+// FAST VERSIONS
+// generic Xnn kernel provider
 extern XnnKernel xnnKernel_generic;
 
-/** sse4.2 accelerated Xnn kernel provider */
+// sse4.2 accelerated Xnn kernel provider
 extern XnnKernel xnnKernel_sse4;
 
-/** avx1 accelerated Xnn kernel provider */
+// avx1 accelerated Xnn kernel provider
 extern XnnKernel xnnKernel_avx1;
 
-/** avx2 accelerated Xnn kernel provider */
+// avx2 accelerated Xnn kernel provider
 extern XnnKernel xnnKernel_avx2;
 
-/** SATURATED VERSIONS */
-/** generic Xnn kernel provider */
+// SATURATED VERSIONS
+// generic Xnn kernel provider
 extern XnnKernel xnnKernel_generic_sat;
 
-/** sse4.2 accelerated Xnn kernel provider */
+// sse4.2 accelerated Xnn kernel provider
 extern XnnKernel xnnKernel_sse4_sat;
 
-/** avx1 accelerated Xnn kernel provider */
+// avx1 accelerated Xnn kernel provider
 extern XnnKernel xnnKernel_avx1_sat;
 
-/** avx2 accelerated Xnn kernel provider */
+// avx2 accelerated Xnn kernel provider
 extern XnnKernel xnnKernel_avx2_sat;
 
 }

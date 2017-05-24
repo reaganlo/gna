@@ -40,6 +40,9 @@
 
 #include "common.h"
 #include "IoctlSender.h"
+#include "gmm.h"
+#include "XnnKernelApi.h"
+#include "LayerFunctions.h"
 
 namespace GNA
 {
@@ -65,6 +68,7 @@ enum GnaFeature
  */
 class AccelerationDetector : protected IoctlSender
 {
+
 public:
     AccelerationDetector();
     ~AccelerationDetector() = default;
@@ -78,6 +82,33 @@ public:
     bool HasFeature(GnaFeature feature) const;
 
     const uint32_t GetHardwareBufferSize() const;
+
+    // TODO: restrict maps access so unavailable accelerations are not selected
+    static const std::map<WeightMode, const std::map<acceleration, AffineKernel>> AffineKernels;
+
+    static const std::map<WeightMode, const std::map<acceleration, AffineActiveListKernel>> AffineKernelsAl;
+
+    static const std::map<WeightMode, const std::map<acceleration, AffineKernel>> MultibiasKernels;
+
+    static const std::map<WeightMode, const std::map<acceleration, AffineActiveListKernel>> MultibiasKernelsAl;
+
+    static const std::map<WeightMode, const std::map<acceleration, DiagonalKernel>> DiagonalKernels;
+
+    static const std::map<WeightMode, std::map<acceleration, RecurrentKernel>> RecurrentKernels;
+
+    static const std::map<gna_gmm_mode, std::map<acceleration, GmmMaxMix>> GmmKernels;
+
+    static const std::map<gna_gmm_mode, std::map<acceleration, GmmMaxMixActiveList>> GmmActiveListKernels;
+
+    static const std::map<acceleration, ConvolutionKernel> ConvolutionalFilterKernels;
+
+    static const std::map<acceleration, ConvolutionPoolingKernel> ConvolutionalFilterPoolKernels;
+
+    static const std::map<acceleration, TransposeKernel> TransposeKernels;
+
+    static const std::map<acceleration, CopyKernel> CopyKernels;
+
+    static const std::map<acceleration, PwlKernel> PwlKernels;
 
 protected:
     static const std::map<GnaDeviceType, std::array<bool, GnaFeatureCount>> gnaFeatureMap;

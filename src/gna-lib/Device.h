@@ -26,17 +26,12 @@
 #ifndef _DEVICE_H
 #define _DEVICE_H
 
-#include "AcceleratorController.h"
-#include "ModelCompiler.h"
 #include "ModelContainer.h"
 #include "RequestBuilder.h"
 #include "RequestHandler.h"
 
 namespace GNA
 {
-/**
- * Accelerator Manager for opening and closing accelerator device
- */
 class Device
 {
 public:
@@ -75,13 +70,9 @@ private:
     std::unique_ptr<Memory> totalMemory;
     RequestHandler requestHandler;
 
-    // !!! ORDER_DEPENDENCY !!!
-    // accelerationController depends on accelerationDetector
     AccelerationDetector accelerationDetector;
-    AcceleratorController acceleratorController;
 
     ModelContainer modelContainer;
-    ModelCompiler modelCompiler;
     RequestBuilder requestBuilder;
 };
 }

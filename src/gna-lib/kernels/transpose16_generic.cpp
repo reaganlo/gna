@@ -26,18 +26,14 @@
 #include "igemv.h"
 #include "igemv16.h"
 
-void transpose16(
-    const uint32_t M,
-    const uint32_t N,
-    const int16_t* I,
-          int16_t* O)
+void TransposeKernelImpl(TransposeConfig const * const cfg)
 {
     uint32_t i, j;
-    for (i = 0; i < M; i++)
+    for (i = 0; i < cfg->rowCount; i++)
     {
-        for (j = 0; j < N; j++)
+        for (j = 0; j < cfg->columnCount; j++)
         {
-            O[j * M + i] = I[i * N + j];
+            cfg->output[j * cfg->rowCount + i] = cfg->input[i * cfg->columnCount + j];
         }
     }
 }

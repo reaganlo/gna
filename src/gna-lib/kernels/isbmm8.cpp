@@ -26,26 +26,27 @@
 #include "igemv8.h"
 #include "igemv.h"
 
-void
-isbmm8(
-    const   uint32_t    M,
-    const   uint32_t    N,
-    const   int8_t*     W,
-    const   int16_t*    I,
-    const   nn_bias_c*  B,
-            int32_t*    O,
-            uint32_t*   nSat)
+void DiagonalKernelImpl1B(AffineConfig const * const config)
 {
-    uint32_t    i, j;
-    int64_t     sum;
-    int64_t     BiMltp_x_Wi;
+    uint32_t i, j;
+    int64_t sum;
+    int64_t weightValue;
+    int8_t const * weight = config->weights1B;
+    int16_t const * input = config->input;
+    int32_t * output = config->output;
+    nn_bias_c const * bias = config->biasesCompound;
 
-    for (i = 0; i < M; i++)
+    for (i = 0; i < config->outputElementCount; i++)
     {
-        BiMltp_x_Wi = B[i].multiplier * W[i];
-        for (j = 0; j < N; j++) {
-            sum =  (int32_t)(B[i].bias + (BiMltp_x_Wi * I[i*N + j]));
-            saturate_store_out(&sum, &O[i * N + j], nSat);
+        weightValue = bias[i].multiplier * weight[i];
+        for (j = 0; j < config->inputVectorCount; j++)
+        {
+            sum =  bias[i].bias + (weightValue * input[i * config->inputVectorCount + j]);
+#if GNA_SAT == 1
+            saturate_store_out(&sum, &output[i * config->inputVectorCount + j], config->saturationCount);
+#else 
+            output[i * config->inputVectorCount + j] = (int32_t)sum;
+#endif
         }
     }
 }

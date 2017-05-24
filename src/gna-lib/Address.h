@@ -164,25 +164,16 @@ public:
 // Address Aliases
 
 using BaseAddressC = Address<uint8_t * const>;
-//using AddressU8C = Address<uint8_t * const>;
-//using AddressU16C = Address<uint16_t * const>;
-//using AddressU32C = Address<uint32_t * const>;
-//using AddressU64C = Address<uint64_t * const>;
 
 using BaseAddress = Address<uint8_t *>;
-//using AddressU8 = Address<uint8_t *>;
-//using AddressU16 = Address<uint16_t *>;
-//using AddressU32 = Address<uint32_t *>;
-//using AddressU64 = Address<uint64_t *>;
 using AddrGmmCfg = Address<GMM_CONFIG *>;
 using AddrXnnLyr = Address<XNN_LYR *>;
 using AddrGmmCfgC = Address<GMM_CONFIG * const>;
-//using AddrXnnLyrC = Address<XNN_LYR * const>;
 
-using InOutBuffer = Address<uint8_t * const>;
-using GmmInputBuffer = Address<uint8_t * const>; // Input Buffer for GMM layer
-using XnnInputBuffer = Address<uint16_t * const>; // Input Buffer for Neural layer
-using OutputBuffer = Address<uint16_t * const>; // Activated Output Buffer
-using BareOutputBuffer = Address<uint32_t * const>;  // Non-Activated Output Buffer
+using InOutBuffer = Address<int8_t * const>;
+using GmmInputBuffer = Address<int8_t * const>; // Input Buffer for GMM layer
+using XnnInputBuffer = Address<int16_t * const>; // Input Buffer for Neural layer
+using OutputBuffer = Address<int16_t * const>; // Activated Output Buffer
+using BareOutputBuffer = Address<int32_t * const>;  // Non-Activated Output Buffer
 
 }

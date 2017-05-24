@@ -33,7 +33,6 @@
 namespace GNA
 {
 
-class AcceleratorController;
 class RequestConfiguration;
 
 /**
@@ -56,8 +55,7 @@ struct RequestProfiler
 class Request
 {
 public:
-    Request(RequestConfiguration& config, std::unique_ptr<RequestProfiler> profiler, acceleration accel,
-        const AcceleratorController& acceleratorController);
+    Request(RequestConfiguration& config, std::unique_ptr<RequestProfiler> profiler, acceleration accel);
     ~Request() = default;
     Request() = delete;
     Request(const Request &) = delete;

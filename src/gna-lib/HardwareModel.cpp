@@ -28,6 +28,8 @@
 #include "AccelerationDetector.h"
 #include "HardwareLayer.h"
 #include "Memory.h"
+#include "Request.h"
+#include "RequestConfiguration.h"
 #include "SoftwareModel.h"
 
 using namespace GNA;
@@ -48,6 +50,28 @@ HardwareModel::HardwareModel(const gna_model_id modId, const std::vector<std::un
     gmmDescriptorsSize{getGmmDescriptorsSize(XNN_LAYERS_MAX_COUNT)} // TODO: change to support variable number of gmms
 {
     build(layers, detector.GetHardwareBufferSize());
+}
+
+status_t HardwareModel::Score(
+    uint32_t layerIndex,
+    uint32_t layerCount,
+    const RequestConfiguration& requestConfiguration,
+    RequestProfiler *profiler,
+    KernelBuffers *buffers)
+{
+    UNREFERENCED_PARAMETER(buffers);
+
+    void* data;
+    size_t size;
+    requestConfiguration.GetHwConfigData(data, size, layerIndex, layerCount);
+
+    sender.Submit(data, size, profiler);
+
+    auto response = reinterpret_cast<PGNA_CALC_IN>(data);
+    auto status = response->status;
+    Expect::True(GNA_SUCCESS == status || GNA_SSATURATE == status, status);
+
+    return status;
 }
 
 void HardwareModel::build(const std::vector<std::unique_ptr<Layer>>& layers, const uint32_t hardwareInternalBufferSize)
@@ -85,3 +109,4 @@ uint32_t HardwareModel::getGmmDescriptorsSize(const uint16_t gmmLayersCount)
     auto gmmDescriptorsSizeTmp = size_t{gmmLayersCount * sizeof(GMM_CONFIG)};
     return gmmDescriptorsSizeTmp;
 }
+

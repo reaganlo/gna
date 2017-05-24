@@ -26,73 +26,55 @@
 #include "igemv.h"
 #include "igemv16.h"
 
-void
-igemm16_subset(
-    const   uint32_t    M,
-    const   uint32_t    N,
-    const   uint32_t    K,
-    const   int16_t*    I,
-    const   int16_t*    W,
-    const   nn_bias_s*  B,
-            int32_t*    O,
-    const   uint32_t*   AL,
-    const   uint32_t    L,
-            uint32_t*   nSat,
-    KernelBuffers* fvBuffers)
+void AffineActiveListKernelImpl2B(AffineConfig const * const config, AffineConfigAl const * const al)
 {
     uint32_t i, j, k, l;
-    int16_t *ptr_in, *ptr_w;
-    transpose16(K, N, const_cast<int16_t*>(I), fvBuffers->d0);
+    int16_t const * input;
+    int16_t const * weight;
 
-    for (l = 0; l < L; l++)
+    TransposeConfig transposeConfig = TransposeConfig{ config->inputElementCount, config->inputVectorCount, 
+                                                       config->input, config->fvBuffers->d0 };
+    TransposeKernelImpl(&transposeConfig);
+
+    for (l = 0; l < al->count; l++)
     {
-        i = AL[l];
+        i = al->indices[l];
 
-        ptr_in = fvBuffers->d0;
-        ptr_w = const_cast<int16_t*>(W)+i*K;
-        for (j = 0; j < N; j++)
+        input = config->fvBuffers->d0;
+        weight = config->weights2B + i*config->inputElementCount;
+        for (j = 0; j < config->inputVectorCount; j++)
         {
-            O[l*N + j] = B[i];
-            for (k = 0; k < K; k++)
+            config->output[l*config->inputVectorCount + j] = config->biasesSimple[i];
+            for (k = 0; k < config->inputElementCount; k++)
             {
-                O[l*N + j] += ptr_w[k] * *ptr_in++;
+                config->output[l*config->inputVectorCount + j] += weight[k] * *input++;
             }
         }
     }
 }
 
-void
-igemm16_subset_mb(
-    const   uint32_t    M,
-    const   uint32_t    N,
-    const   uint32_t    K,
-    const   int16_t*    I,
-    const   int16_t*    W,
-    const   nn_bias_s*  B,
-    const   uint32_t    BG,
-    int32_t*    O,
-    const   uint32_t*   AL,
-    const   uint32_t    L,
-    uint32_t*   nSat,
-    KernelBuffers* fvBuffers)
+void AffineMultiBiasActiveListKernelImpl2B(AffineConfig const * const config, AffineConfigAl const * const al)
 {
     uint32_t i, j, k, l;
-    const int16_t *ptr_in, *ptr_w;
+    int16_t const * input;
+    int16_t const * weight;
 
-    transpose16(K, N, I, fvBuffers->d0);
+    TransposeConfig transposeConfig = TransposeConfig{ config->inputElementCount, config->inputVectorCount, 
+                                                       config->input, config->fvBuffers->d0 };
+    TransposeKernelImpl(&transposeConfig);
 
-    for (l = 0; l < L; l++)
+    for (l = 0; l < al->count; l++)
     {
-        i = AL[l];
+        i = al->indices[l];
 
-        ptr_in = fvBuffers->d0;
-        ptr_w = W + i*K;
-        for (j = 0; j < N; j++)
+        input = config->fvBuffers->d0;
+        weight = config->weights2B + i*config->inputElementCount;
+        for (j = 0; j < config->inputVectorCount; j++)
         {
-            O[l*N + j] = B[i*BG];
-            for (k = 0; k < K; k++)
+            config->output[l*config->inputVectorCount + j] = config->multiBias[i*config->multiBiasVectorCount];
+            for (k = 0; k < config->inputElementCount; k++)
             {
-                O[l*N + j] += ptr_w[k] * *ptr_in++;
+                config->output[l*config->inputVectorCount + j] += weight[k] * *input++;
             }
         }
     }

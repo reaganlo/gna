@@ -36,18 +36,16 @@
         </ClCompile>
     </ItemDefinitionGroup>
     <ItemGroup>
-        <ClInclude Include="$(SRC_DIR)\gna-lib\kernels\XnnKernelApi.h" />
+        <ClInclude Include="$(SRC_DIR)\gna-lib\kernels\KernelArguments.h" />
         <ClInclude Include="$(SRC_DIR)\gna-lib\kernels\KernelMacros.h" />
+        <ClInclude Include="$(SRC_DIR)\gna-lib\kernels\XnnKernelApi.h" />
+        <ClInclude Include="$(SRC_DIR)\gna-lib\kernels\convnet.h" />
+        <ClInclude Include="$(SRC_DIR)\gna-lib\kernels\igemv.h" />
         <ClInclude Include="$(SRC_DIR)\gna-lib\kernels\igemv16.h" />
         <ClInclude Include="$(SRC_DIR)\gna-lib\kernels\igemv8.h" />
-        <ClInclude Include="$(SRC_DIR)\gna-lib\kernels\pwl.h" />
         <ClInclude Include="$(SRC_DIR)\gna-lib\kernels\pwl-types.h" />
-        <ClInclude Include="$(SRC_DIR)\gna-lib\kernels\igemv.h" />
-        <ClInclude Include="$(SRC_DIR)\gna-lib\kernels\convnet.h" />
+        <ClInclude Include="$(SRC_DIR)\gna-lib\kernels\pwl.h" />
         <ClCompile Include="$(SRC_DIR)\gna-lib\kernels\XnnKernel.cpp" />
-        <ClCompile Include="$(SRC_DIR)\gna-lib\kernels\isbmm16.cpp" />
-        <ClCompile Include="$(SRC_DIR)\gna-lib\kernels\isbmm8.cpp" />
-        <ClCompile Include="$(SRC_DIR)\gna-lib\kernels\pwl.cpp" />
         <ClCompile Include="$(SRC_DIR)\gna-lib\kernels\convnet.cpp" />
         <ClCompile Include="$(SRC_DIR)\gna-lib\kernels\igemm16_$(KERNEL_EXT).cpp" />
         <ClCompile Include="$(SRC_DIR)\gna-lib\kernels\igemm16_subset_$(KERNEL_EXT).cpp" />
@@ -55,6 +53,9 @@
         <ClCompile Include="$(SRC_DIR)\gna-lib\kernels\igemm8_subset_$(KERNEL_EXT).cpp" />
         <ClCompile Include="$(SRC_DIR)\gna-lib\kernels\igemv16_$(KERNEL_EXT).cpp" />
         <ClCompile Include="$(SRC_DIR)\gna-lib\kernels\igemv8_$(KERNEL_EXT).cpp" />
+        <ClCompile Include="$(SRC_DIR)\gna-lib\kernels\isbmm16.cpp" />
+        <ClCompile Include="$(SRC_DIR)\gna-lib\kernels\isbmm8.cpp" />
+        <ClCompile Include="$(SRC_DIR)\gna-lib\kernels\pwl.cpp" />
         <ClCompile Include="$(SRC_DIR)\gna-lib\kernels\transpose16_$(KERNEL_ACC).cpp" />
     </ItemGroup>
 </Project>

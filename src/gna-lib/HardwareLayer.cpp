@@ -29,6 +29,7 @@
 #include "ConvolutionalLayer.h"
 #include "GmmLayer.h"
 #include "GnaDrvApi.h"
+#include "LayerConfiguration.h"
 #include "RecurrentLayer.h"
 #include "RequestConfiguration.h"
 #include "SimpleLayers.h"
@@ -339,7 +340,7 @@ void HardwareLayerCnn::save()
     XnnDescriptor->flags.pool_param = static_cast<uint8_t>(cnn->Pooling.Type);
     XnnDescriptor->cnn_flt_bf_sz_iter = filtersElementCountInFullIteration;
     XnnDescriptor->cnn_flt_bf_sz_last = filtersElementCountInLastIteration;
-    XnnDescriptor->cnn_flt_buffer = getOffset(cnn->Convolution.Filters.Data);;
+    XnnDescriptor->cnn_flt_buffer = getOffset(cnn->Convolution.Filters.Data);
     XnnDescriptor->cnn_flt_size = cnn->Convolution.Filters.CoefficientCount;
     XnnDescriptor->cnn_n_flts = cnn->Convolution.Filters.Count;
     XnnDescriptor->cnn_n_flts_iter = filtersCountInFullIteration;
@@ -378,9 +379,6 @@ const std::map<const gna_gmm_mode, const GMM_MODE_CTRL> HardwareLayerGmm::GmmMod
     //{ gna_gmm_mode, { read_elimination, calculation_mode, __res_03} },
     { GNA_MAXMIX8, { 0, 0, 0 } },
     { GNA_MAXMIX16,{ 0, 0, 0 } },
-    { GNA_LINF, { 0, 2, 0 } },
-    { GNA_L1, { 0, 1, 0 } },
-    { GNA_L2, { 0, 0, 0 } },
 };
 
 HardwareLayerGmm::HardwareLayerGmm(const DescriptorParameters& parameters) :

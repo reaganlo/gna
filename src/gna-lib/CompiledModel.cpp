@@ -24,6 +24,10 @@
 */
 
 #include "CompiledModel.h"
+
+#include <functional>
+
+#include "Memory.h"
 #include "SubModel.h"
 
 using namespace GNA;
@@ -32,53 +36,43 @@ using std::make_unique;
 using std::unique_ptr;
 using std::vector;
 
-CompiledModel::CompiledModel(gna_model_id modelId, const gna_model *rawModel, const Memory& memoryIn) :
-    Id{modelId},
-    LayerCount{static_cast<uint16_t>(rawModel->nLayers)},
-    UserModel{rawModel},
-    memory{memoryIn},
-    submodels{}
-{};
-
-void CompiledModel::CompileSoftwareModel()
+CompiledModel::CompiledModel(gna_model_id modelId, const gna_model *rawModel, Memory& memoryIn, const AccelerationDetector& detector) :
+    Id{ modelId },
+    LayerCount{ static_cast<uint16_t>(rawModel->nLayers) },
+    UserModel{ rawModel },
+    memory{ memoryIn },
+    submodels{},
+    swFastAccel{ detector.GetFastestAcceleration() },
+    swSatAccel{ static_cast<acceleration>(detector.GetFastestAcceleration() & GNA_HW) }
 {
     softwareModel = make_unique<SoftwareModel>(UserModel);
-}
-
-void CompiledModel::CompileHardwareModel(const AccelerationDetector& detector)
-{
-    hardwareModel = make_unique<HardwareModel>(Id, softwareModel->Layers, memory, detector);
-}
-
-void CompiledModel::CreateSubmodels(const AccelerationDetector& dispatcher)
-{
-    auto layerType = UserModel->pLayers->nLayerKind;
-    auto submodelCount = 0;
-    auto smType = dispatcher.IsLayerSupported(layerType) ? Hardware : Software;
-    submodels.emplace_back(make_unique<SubModel>(smType, 0));
-
-    for(uint16_t layerIx = 1; layerIx < LayerCount; ++layerIx)
+    if (detector.IsHardwarePresent())
     {
-        layerType = UserModel->pLayers[layerIx].nLayerKind;
-        smType = dispatcher.IsLayerSupported(layerType) ? Hardware : Software;
-
-        if(smType == submodels[submodelCount]->Type)
-        {
-            // exceeded supported number of layers
-            if (Hardware == smType && !dispatcher.HasFeature(Layer8K)
-                && XNN_LAYERS_MAX_COUNT_OLD == submodels[submodelCount]->GetLayerCount())
-            {
-                submodels.emplace_back(make_unique<SubModel>(smType, layerIx));
-                submodelCount++;
-            }
-            else submodels[submodelCount]->AddLayer();
-        }
-        else
-        {
-            submodels.emplace_back(make_unique<SubModel>(smType, layerIx));
-            submodelCount++;
-        }
+        memory.Map(Id);
+        hardwareModel = make_unique<HardwareModel>(Id, softwareModel->Layers, memory, detector);
     }
+
+    createSubmodels(detector);
+    prepareScoreMethods(detector);
+};
+
+const size_t CompiledModel::MaximumInternalModelSize = CalculateInternalModelSize(XNN_LAYERS_MAX_COUNT, GMM_LAYERS_MAX_COUNT);
+
+const size_t CompiledModel::CalculateModelSize(const size_t userSize, const uint16_t layerCount,
+    const uint16_t gmmCountIn)
+{
+    auto internalSize = CalculateInternalModelSize(layerCount, gmmCountIn);
+    auto totalSize = userSize + internalSize;
+    Expect::InRange(totalSize, 1, 256 * 1024 * 1024, GNA_INVALIDMEMSIZE);
+    return totalSize;
+}
+
+const size_t CompiledModel::CalculateInternalModelSize(const uint16_t layerCount,
+    const uint16_t gmmCountIn)
+{
+    // TODO:INTEGRATION: add detector reference to c-tor and calculate hardware size if applicable
+    // for model dumper use fake detector in device
+    return HardwareModel::CalculateDescriptorSize(layerCount, gmmCountIn);
 }
 
 uint32_t CompiledModel::GetGmmCount() const
@@ -115,8 +109,139 @@ void CompiledModel::WriteHardwareLayerActiveList(const uint32_t layerIndex, Hard
     hardwareModel->WriteLayerActiveList(layerIndex, descriptor);
 }
 
-void CompiledModel::ValidateConfiguration(const RequestConfiguration& configuration) const
+status_t CompiledModel::Score(
+    RequestConfiguration& config,
+    acceleration accel,
+    RequestProfiler *profiler,
+    KernelBuffers *buffers)
 {
-    softwareModel->ValidateConfiguration(configuration);
+    auto swAccel = accel;
+    if (GNA_AUTO_FAST == accel || GNA_SW_FAST == accel)
+    {
+        swAccel = swFastAccel;
+    }
+    if (GNA_AUTO_SAT == accel || GNA_SW_SAT == accel)
+    {
+        swAccel = swSatAccel;
+    }
+
+    auto status = GNA_SUCCESS;
+    auto scoreMethod = scoreMethods[accel];
+    switch (scoreMethod)
+    {
+    case SoftwareOnly:
+        return softwareModel->Score(0, LayerCount, swAccel, config, profiler, buffers);
+    case HardwareOnly:
+        return hardwareModel->Score(0, LayerCount, config, profiler, buffers);
+    case Mixed:
+    {
+        for (const auto& submodel : submodels)
+        {
+            uint32_t layerIndex = submodel->LayerIndex;
+            uint32_t layerCount = submodel->GetLayerCount();
+            switch (submodel->Type)
+            {
+            case Software:
+                status = softwareModel->Score(layerIndex, layerCount, swAccel, config, profiler, buffers);
+                if (status != GNA_SUCCESS && status != GNA_SSATURATE)
+                    return status;
+                break;
+            case Hardware:
+                status = hardwareModel->Score(layerIndex, layerCount, config, profiler, buffers);
+                if (status != GNA_SUCCESS && status != GNA_SSATURATE)
+                    return status;
+                break;
+            case GMMHardware:
+                throw GnaException(GNA_CPUTYPENOTSUPPORTED);
+            }
+        }
+        break;
+    }
+    }
+    return status;
 }
 
+void CompiledModel::createSubmodels(const AccelerationDetector& dispatcher)
+{
+    auto layerType = UserModel->pLayers->nLayerKind;
+    auto submodelCount = 0;
+    auto smType = dispatcher.IsLayerSupported(layerType) ? Hardware : Software;
+    submodels.emplace_back(make_unique<SubModel>(smType, 0));
+
+    for (uint16_t layerIx = 1; layerIx < LayerCount; ++layerIx)
+    {
+        layerType = UserModel->pLayers[layerIx].nLayerKind;
+        smType = dispatcher.IsLayerSupported(layerType) ? Hardware : Software;
+
+        if (smType == submodels[submodelCount]->Type)
+        {
+            // exceeded supported number of layers
+            if (Hardware == smType && !dispatcher.HasFeature(Layer8K)
+                && XNN_LAYERS_MAX_COUNT_OLD == submodels[submodelCount]->GetLayerCount())
+            {
+                submodels.emplace_back(make_unique<SubModel>(smType, layerIx));
+                submodelCount++;
+            }
+            else submodels[submodelCount]->AddLayer();
+        }
+        else
+        {
+            submodels.emplace_back(make_unique<SubModel>(smType, layerIx));
+            submodelCount++;
+        }
+    }
+}
+
+void CompiledModel::prepareScoreMethods(const AccelerationDetector& detector)
+{
+    scoreMethods[GNA_GEN_FAST] = SoftwareOnly;
+    scoreMethods[GNA_GEN_SAT] = SoftwareOnly;
+
+    scoreMethods[GNA_SSE4_2_FAST] = SoftwareOnly;
+    scoreMethods[GNA_SSE4_2_SAT] = SoftwareOnly;
+
+    scoreMethods[GNA_AVX1_FAST] = SoftwareOnly;
+    scoreMethods[GNA_AVX1_SAT] = SoftwareOnly;
+
+    scoreMethods[GNA_AVX2_FAST] = SoftwareOnly;
+    scoreMethods[GNA_AVX2_SAT] = SoftwareOnly;
+
+    scoreMethods[GNA_SW_FAST] = SoftwareOnly;
+    scoreMethods[GNA_SW_SAT] = SoftwareOnly;
+
+    if (!detector.IsHardwarePresent())
+    {
+        scoreMethods[GNA_HW] = None;
+        scoreMethods[GNA_AUTO_FAST] = SoftwareOnly;
+        scoreMethods[GNA_AUTO_SAT] = SoftwareOnly;
+    }
+    else
+    {
+        if (submodels.size() > 1)
+        {
+            scoreMethods[GNA_HW] = Mixed;
+            scoreMethods[GNA_AUTO_FAST] = Mixed;
+            scoreMethods[GNA_AUTO_SAT] = Mixed;
+        }
+        else
+        {
+            switch (submodels.front()->Type)
+            {
+                // hardware does not support model
+            case Software:
+                scoreMethods[GNA_HW] = SoftwareOnly;
+                scoreMethods[GNA_AUTO_FAST] = SoftwareOnly;
+                scoreMethods[GNA_AUTO_SAT] = SoftwareOnly;
+                // hardware can handle whole model
+            case Hardware:
+                scoreMethods[GNA_HW] = HardwareOnly;
+                scoreMethods[GNA_AUTO_FAST] = HardwareOnly;
+                scoreMethods[GNA_AUTO_SAT] = HardwareOnly;
+            default:
+                scoreMethods[GNA_HW] = None;
+                scoreMethods[GNA_AUTO_FAST] = None;
+                scoreMethods[GNA_AUTO_SAT] = None;
+            }
+        }
+    }
+}

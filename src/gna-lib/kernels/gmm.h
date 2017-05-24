@@ -25,93 +25,30 @@
 
 #pragma once
 
-#include <stdint.h>
+#include "KernelArguments.h"
 
-// Definition of gmm_maxmix_8u8u_32u functions arguments list
-#define _GMM8_ARGS \
-    const uint8_t  *pFeat,          \
-    const uint8_t  *pMeans,         \
-    const uint8_t  *pVars,          \
-    const uint32_t *pGconst,        \
-          uint32_t  ScoreLimit32u,  \
-          uint32_t  nVecElements,   \
-          uint32_t  nMixtures
-// Definition of gmm_maxmix_8u8u_32u_g1? functions arguments list
-#define _GMM8_MAXMIX_ARGS \
-    const uint8_t  *pFeat,          \
-    const uint8_t  *pMeans,         \
-    const uint8_t  *pVars,          \
-    const uint32_t *pGconst,        \
-          uint32_t  ScoreLimit32u,  \
-          uint32_t  nVecElements,   \
-          uint32_t  nMixtures,      \
-          uint32_t* pScores 
-// Definition of gmm_maxmix_8u16u_32u functions arguments list
-#define _GMM16_ARGS \
-    const uint8_t  *pFeat,          \
-    const uint8_t  *pMeans,         \
-    const uint16_t *pVars,          \
-    const uint32_t *pGconst,        \
-          uint32_t  ScoreLimit32u,  \
-          uint32_t  nVecElements,   \
-          uint32_t  nMixtures
+typedef void (*GmmMaxMix) (GmmConfig const * const gmmConfig);
 
-/**
- * gmm_maxmix_8u8u_32u function pointer type
- */
-typedef
-uint32_t
-(*Gmm8Fn)(
-    _GMM8_ARGS);
+typedef void (*GmmMaxMixActiveList) (GmmConfig const * const gmmConfig, uint32_t const * const indices);
 
-/**
- * gmm_maxmix_8u16u_32u function pointer type
- */
-typedef
-uint32_t
-(*Gmm16Fn)(
-    _GMM16_ARGS);
-
-/**
- * gmm_maxmix_8u8u_32u_g1? function pointer type
- */
-typedef 
-void
-(*Gmm8MxFn)(
-    _GMM8_MAXMIX_ARGS);
-
-/**
- * GMM kernel provider
- *
- *  Contains GMM kernel function pointers for selected acceleration
- */
-typedef struct _GmmKernel
+struct GmmKernel
 {
-    Gmm8Fn      GMM8;
-    Gmm16Fn     GMM16;
-    Gmm8MxFn    GMM8_MAXMIX_G1;
-    Gmm8MxFn    GMM8_MAXMIX_G2;
-    Gmm8MxFn    GMM8_MAXMIX_G3;
-    Gmm8MxFn    GMM8_MAXMIX_G4;
-    Gmm8MxFn    GMM8_MAXMIX_G5;
-    Gmm8MxFn    GMM8_MAXMIX_G6;
-    Gmm8MxFn    GMM8_MAXMIX_G7;
-    Gmm8MxFn    GMM8_MAXMIX_G8;
+    GmmMaxMix gmmMaxMix8;
+    GmmMaxMix gmmMaxMix16;
+    GmmMaxMixActiveList gmmMaxMix8ActiveList;
+    GmmMaxMixActiveList gmmMaxMix16ActiveList;
+} ;
 
-} GmmKernel;                        // GMM kernel provider
+// Export list of available GMM kernels providers
 
-/**
- * Export list of available GMM kernels providers
- */
-
-/** generic GMM kernel provider */
+// generic GMM kernel provider
 extern GmmKernel gmmKernel_generic;
 
-/** sse4.2 accelerated GMM kernel provider */
+// sse4.2 accelerated GMM kernel provider
 extern GmmKernel gmmKernel_sse4;
 
-/** avx1 accelerated GMM kernel provider */
+// avx1 accelerated GMM kernel provider
 extern GmmKernel gmmKernel_avx1;
 
-/** avx2 accelerated GMM kernel provider */
+// avx2 accelerated GMM kernel provider
 extern GmmKernel gmmKernel_avx2;

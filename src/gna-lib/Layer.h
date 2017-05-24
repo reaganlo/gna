@@ -27,13 +27,16 @@
 
 #include <map>
 #include <memory>
+#include <vector>
 
 #include "Address.h"
 #include "common.h"
 #include "GnaConfig.h"
+#include "AccelerationDetector.h"
 
 namespace GNA
 {
+struct LayerConfiguration;
 
 typedef enum _Orientations
 {
@@ -46,7 +49,7 @@ struct LayerConfig
     static const std::map<const nn_layer_kind, const Orientations> OrientationsMap;
 
     LayerConfig(const nn_layer_kind kind, const nn_layer_type type);
-    LayerConfig()= delete;
+    LayerConfig() = delete;
     ~LayerConfig() = default;
 
     const nn_layer_kind Kind;
@@ -90,7 +93,7 @@ struct LayerOutput : public LayerMatrix
         return mode;
     };
 
-    uint32_t const * const ScratchPad;
+    int32_t * const ScratchPad;
 
 private:
     OutputMode mode;
@@ -114,16 +117,17 @@ public:
 
     virtual ~Layer() = default;
 
-    const nn_layer sourceLayer;// TODO:REFACTOR move to private when integration completed
+    std::function<void(acceleration accel, KernelBuffers* kernelBuffers, uint32_t* saturationCount)> ComputeHidden;
+    std::function<void(LayerConfiguration &layerConfiguration, acceleration accel, KernelBuffers* kernelBuffers, uint32_t* saturationCount)> ComputeConfig;
+
+    virtual void UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const = 0;
+
     const LayerConfig Config;
     const LayerInput Input;
     LayerOutput Output;
 
 protected:
     Layer(const nn_layer *layer);
-
-private:
-    static const nn_layer getSafeCopy(const nn_layer *layer);
 };
 
 }

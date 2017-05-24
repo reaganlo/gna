@@ -26,23 +26,25 @@
 #include "igemv16.h"
 #include "igemv.h"
 
-void
-isbmm16(
-    const   uint32_t    M,
-    const   uint32_t    N,
-    const   int16_t*    W,
-    const   int16_t*    I,
-    const   nn_bias_s*  B,
-            int32_t*    O,
-            uint32_t*   nSat)
+void DiagonalKernelImpl2B(AffineConfig const * const config)
 {
-    uint32_t    i, j;
-    int64_t     sum;
+    uint32_t i, j;
+    int64_t sum;
+    int16_t const * weight = config->weights2B;
+    int16_t const * input = config->input;
+    int32_t * output = config->output;
+    nn_bias_s const * bias = config->biasesSimple;
 
-    for (i = 0; i < M; i++) {
-        for (j = 0; j < N; j++) {
-            sum = (int32_t)(B[i] + (W[i] * I[i * N + j]));
-            saturate_store_out(&sum, &O[i * N + j], nSat);
+    for (i = 0; i < config->outputElementCount; i++)
+    {
+        for (j = 0; j < config->inputVectorCount; j++)
+        {
+            sum = bias[i] + (weight[i] * input[i * config->inputVectorCount + j]);
+#if GNA_SAT == 1
+            saturate_store_out(&sum, &output[i * config->inputVectorCount + j], config->saturationCount);
+#else 
+            output[i * config->inputVectorCount + j] = (int32_t)sum;
+#endif
         }
     }
 }

@@ -79,6 +79,12 @@ inline bool IsActivationFunctionEnabled(const intel_pwl_func_t * const pwl)
 #endif
 
 /**
+* Parameters for PWL functions - type declaration
+*/
+struct __PwlCached;
+typedef struct __PwlCached PwlCached;
+
+/**
  * Structure will hold aligned deinterleaved feature vectors
  * and PWL activation function auxiliary buffers used for performance improvements
  * One structure per thread in thread pool will be created and managed by kernel dispatcher
@@ -94,10 +100,10 @@ typedef struct
     int16_t *d6;
     int16_t *d7;
     int64_t *pool;
-    void    *pwl;
-    void    *lookup;
-    void    *xBase;
-    void    *ySeg;
+    PwlCached * pwl;
+    void *lookup;
+    void *xBase;
+    void *ySeg;
 } KernelBuffers;
 
 /**
@@ -127,4 +133,3 @@ typedef gna_perf_hw_t               perf_hw_t;
 #define STATUS_T_ALIAS
 typedef intel_gna_status_t      status_t;
 #endif
-

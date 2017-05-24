@@ -25,6 +25,12 @@
 
 #include "SoftwareModel.h"
 
+#include "ActiveList.h"
+#include "Layer.h"
+#include "GmmLayer.h"
+#include "LayerConfiguration.h"
+#include "RecurrentLayer.h"
+#include "Request.h"
 #include "RequestConfiguration.h"
 #include "Validator.h"
 
@@ -33,8 +39,8 @@ using std::make_unique;
 using namespace GNA;
 
 SoftwareModel::SoftwareModel(const gna_model *const network) :
-    layerCount{network->nLayers},
-    inputVectorCount{network->nGroup}
+    layerCount{ network->nLayers },
+    inputVectorCount{ network->nGroup }
 {
 #ifndef NO_ERRCHECK
     Expect::InRange(inputVectorCount, 1, XNN_N_GROUP_MAX, XNN_ERR_LYR_CFG);
@@ -44,7 +50,54 @@ SoftwareModel::SoftwareModel(const gna_model *const network) :
     build(network->pLayers);
 }
 
-void SoftwareModel::ValidateConfiguration(const RequestConfiguration& configuration) const
+status_t SoftwareModel::Score(
+    uint32_t layerIndex,
+    uint32_t layerCountIn,
+    acceleration accel,
+    const RequestConfiguration& requestConfiguration,
+    RequestProfiler *profiler,
+    KernelBuffers *fvBuffers)
+{
+    profilerDTscAStart(&profiler->scoring);
+
+    validateConfiguration(requestConfiguration);
+
+    const uint32_t* activeIndices = nullptr; // active list pointer
+    auto saturationCount = uint32_t{ 0 };   // scoring saturation counter
+
+    auto iter = Layers.begin() + layerIndex;
+    auto end = iter + layerCountIn;
+    for (; iter < end; ++iter)
+    {
+        const auto& layer = *iter;
+        if (INTEL_HIDDEN == layer->Config.Type)
+        {
+            layer->ComputeHidden(accel, fvBuffers, &saturationCount);
+        }
+        else 
+        {
+            auto found = requestConfiguration.LayerConfigurations.find(layerIndex);
+            if (found != requestConfiguration.LayerConfigurations.end())
+            {
+                auto layerConfiguration = found->second.get();
+                layer->ComputeConfig(*layerConfiguration, accel, fvBuffers, &saturationCount);
+            }
+            else
+            {
+                throw GnaException{ XNN_ERR_LYR_CFG };
+            }
+        }
+
+        ++layerIndex;
+    }
+
+    profilerDTscStop(&profiler->scoring);
+    profilerDTscStop(&profiler->total);
+
+    return (saturationCount > 0) ? GNA_SSATURATE : GNA_SUCCESS;
+}
+
+void SoftwareModel::validateConfiguration(const RequestConfiguration& configuration) const
 {
     Expect::True(inputLayerCount == configuration.InputBuffersCount, XNN_ERR_NETWORK_INPUTS);
     Expect::True(outputLayerCount == configuration.OutputBuffersCount, XNN_ERR_NETWORK_OUTPUTS);

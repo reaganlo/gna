@@ -25,6 +25,7 @@
 
 #pragma once
 
+#include "KernelArguments.h"
 #include "Layer.h"
 #include "LayerFunctions.h"
 
@@ -40,8 +41,21 @@ public:
     const std::unique_ptr<const AffineFunctionSingle> Affine;
     const std::unique_ptr<const ActivationFunction> Activation;
 
+    virtual void UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const override;
+
 protected:
-    const nn_layer_affine *sourceAffineLayer;
+    virtual void computeHidden(acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const;
+    virtual void computeHiddenPwl(acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const;
+    virtual void computeConfig(const LayerConfiguration& layerConfiguration, acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const;
+    virtual void computeConfigPwl(const LayerConfiguration& layerConfiguration, acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const;
+
+    const std::map<acceleration, AffineKernel>& affineKernels;
+    const std::map<acceleration, AffineActiveListKernel>& affineKernelsAl;
+    const std::map<acceleration, PwlKernel>& pwlKernels;
+
+    AffineConfig affineHiddenConfig;
+    const PwlBaseConfig pwlBaseConfig;
+    PwlOutputConfig pwlOutputConfig;
 };
 
 class AffineMultiBiasLayer : public Layer
@@ -49,19 +63,40 @@ class AffineMultiBiasLayer : public Layer
 public:
     AffineMultiBiasLayer(const nn_layer *layer);
     virtual ~AffineMultiBiasLayer() = default;
+    virtual void UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const override;
 
     const std::unique_ptr<const AffineFunctionMulti> Affine;
     const std::unique_ptr<const ActivationFunction> Activation;
 
 private:
-    const nn_layer_affine_multi *sourceAffineLayer;
+    virtual void computeHidden(acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const;
+    virtual void computeHiddenPwl(acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const;
+    virtual void computeConfig(const LayerConfiguration& layerConfiguration, acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const;
+    virtual void computeConfigPwl(const LayerConfiguration& layerConfiguration, acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const;
+
+    const std::map<acceleration, AffineKernel>& multibiasKernels;
+    const std::map<acceleration, AffineActiveListKernel>& multibiasKernelsAl;
+    const std::map<acceleration, PwlKernel>& pwlKernels;
+
+    AffineConfig affineHiddenConfig;
+    const PwlBaseConfig pwlBaseConfig;
+    PwlOutputConfig pwlOutputConfig;
 };
 
 class AffineDiagonalLayer : public AffineLayer
 {
 public:
     AffineDiagonalLayer(const nn_layer *layer);
-    virtual ~AffineDiagonalLayer()  = default;
+    virtual ~AffineDiagonalLayer() = default;
+    virtual void UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const override;
+
+private:
+    virtual void computeHidden(acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const override;
+    virtual void computeHiddenPwl(acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const override;
+    virtual void computeConfig(const LayerConfiguration& layerConfiguration, acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const override;
+    virtual void computeConfigPwl(const LayerConfiguration& layerConfiguration, acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const override;
+
+    const std::map<acceleration, DiagonalKernel>& diagonalKernels;
 };
 
 }

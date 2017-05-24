@@ -32,308 +32,106 @@
 #include "igemv8.h"
 #include "KernelMacros.h"
 #include "pwl.h"
+#include "pwl-types.h"
 
 namespace GNA
 {
 
-inline int32_t* getOutputBuffer(const intel_pwl_func_t * const pwl, const nn_layer* const layer)
+#define pwlKernelImpl KERNEL(pwlKernelImpl)
+#define recurrentKernelImpl1B KERNEL(recurrentKernelImpl1B)
+#define recurrentKernelImpl2B KERNEL(recurrentKernelImpl2B)
+#define copyKernelImpl KERNEL(copyKernelImpl)
+
+void pwlKernelImpl(PwlBaseConfig const * const config, PwlCached * const pwl, PwlOutputConfig const * const outputConfig)
 {
-    if (IsActivationFunctionEnabled(pwl))
-    {
-        return static_cast<int32_t*>(layer->pOutputsIntermediate);
-    }
-    else
-    {
-         return static_cast<int32_t*>(layer->pOutputs);
-    }
+    // TODO: add PWL setup caching in layer kernel configuration phase
+    // TODO: change to use pwlAll function directly
+    PwlCacheSetup(pwl, config);
+    pwl->pwlAll(pwl, outputConfig);
 }
 
-#define CONVOLUTIONAL_ROW_STRIDE 1
-
-#define GNAApplyPiecewiseLinearTransform    KERNEL(GNAApplyPiecewiseLinearTransform)
-#define GNAApplyAffineTransform             KERNEL(GNAApplyAffineTransform)
-#define GNAApplyAffineMBiasTransform        KERNEL(GNAApplyAffineMBiasTransform)
-#define GNAApplyDiagonalTransform           KERNEL(GNAApplyDiagonalTransform)
-#define GNAApplyRecurrentTransform          KERNEL(GNAApplyRecurrentTransform)
-#define GNAApplyTranspose                   KERNEL(GNAApplyTranspose)
-#define GNAApplyCopy                        KERNEL(GNAApplyCopy)
-#define GNAApplyConvolutionalTransform      KERNEL(GNAApplyConvolutionalTransform)
-
-void GNAApplyPiecewiseLinearTransform(
-    const nn_layer*     pLayer,
-          uint32_t      nRowBegin,
-          uint32_t      nRowEnd,
-          uint32_t      nColBegin,
-          uint32_t      nColEnd,
-          uint32_t*     nSaturated,
-          void*         pwlBuff)
+void recurrentKernelImpl1B(RecurrentConfig const * const config, PwlBaseConfig const * const pwlConfig,
+    PwlCached * const pwl)
 {
-    nn_pwl_seg* segments = NULL;
-    pwl_params* params;
-
-    params = (pwl_params*)pwlBuff;
-
-    if (pLayer->nLayerKind != INTEL_CONVOLUTIONAL)
-    {
-        segments = (&((nn_layer_affine*)pLayer->pLayerStruct)->pwl)->pSegments;
-        params->NS = (uint8_t)(&((nn_layer_affine*)pLayer->pLayerStruct)->pwl)->nSegments;
-    }
-    else
-    {
-        segments = (&((nn_layer_conv*)pLayer->pLayerStruct)->pwl)->pSegments;
-        params->NS = (uint8_t)(&((nn_layer_conv*)pLayer->pLayerStruct)->pwl)->nSegments;
-    }
-
-    PwlSetup(params, nRowBegin, nRowEnd, nColBegin, nColEnd,
-        pLayer->nOutputColumns, nSaturated, (int32_t*)pLayer->pOutputsIntermediate,
-        (int16_t*)pLayer->pOutputs, segments);
-
-    params->pwlAll(params);
-}
-
-void GNAApplyAffineTransform(
-    const nn_layer*          pLayer,
-    const uint32_t*          pActiveIndices,
-          uint32_t           nActiveIndices,
-          uint32_t*          nSaturated,
-          KernelBuffers*     fvBuffers)
-{
-    nn_layer_affine* aff = (nn_layer_affine*)pLayer->pLayerStruct;
-    uint32_t         m = pLayer->nOutputRows;
-    uint32_t         n = pLayer->nInputColumns;
-    uint32_t         k = pLayer->nInputRows;
-    void*            w = aff->affine.pWeights;
-    int16_t*         in = (int16_t*)pLayer->pInputs;
-    int32_t*         out = getOutputBuffer(&aff->pwl, pLayer);
-
-    if (aff->affine.nBytesPerWeight == 1)
-    {
-        nn_bias_c *bias = (nn_bias_c*)aff->affine.pBiases;
-        if (NULL == pActiveIndices)
-        {
-            igemm8(m, n, k, in, (int8_t*)w, bias, out, nSaturated, fvBuffers);
-        }
-        else
-        {
-            igemm8_subset(m, n, k, in, (int8_t*)w, bias, out,
-                pActiveIndices, nActiveIndices, nSaturated, fvBuffers);
-        }
-    }
-    else if (aff->affine.nBytesPerWeight == 2)
-    {
-        nn_bias_s *bias = (nn_bias_s*)aff->affine.pBiases;
-        if (pActiveIndices == NULL)
-        {
-            igemm16(m, n, k, in, (int16_t*)w, bias, out, nSaturated, fvBuffers);
-        }
-        else
-        {
-            igemm16_subset(m, n, k, in, (int16_t*)w, bias, out,
-                pActiveIndices, nActiveIndices, nSaturated, fvBuffers);
-        }
-    }
-}
-
-void GNAApplyAffineMBiasTransform(
-    const nn_layer*          pLayer,
-    const uint32_t*          pActiveIndices,
-          uint32_t           nActiveIndices,
-          uint32_t*          nSaturated,
-          KernelBuffers*     fvBuffers)
-{
-    nn_layer_affine_multi* aff = static_cast<nn_layer_affine_multi*>(pLayer->pLayerStruct);
-    uint32_t        m = pLayer->nOutputRows;
-    uint32_t        n = pLayer->nInputColumns;
-    uint32_t        k = pLayer->nInputRows;
-    void*           w = aff->affine.pWeights;
-    int16_t* in = static_cast<int16_t*>(pLayer->pInputs);
-    int32_t* out = getOutputBuffer(&aff->pwl, pLayer);
-
-    if (aff->affine.nBytesPerWeight == 1)
-    {
-        nn_bias_c *cbias = aff->affine.weightScaleFactors;
-        nn_bias_s *bias = aff->affine.pBiases + aff->affine.biasVectorIndex;
-        int8_t* w_8 = static_cast<int8_t*>(w);
-        if (pActiveIndices == NULL)
-        {
-            igemm8_mb(m, n, k, in, w_8, bias, aff->affine.biasVectorCount, cbias, out, nSaturated, fvBuffers);
-        }
-        else
-        {
-            igemm8_subset_mb(m, n, k, in, w_8, bias, aff->affine.biasVectorCount, cbias, out,
-                pActiveIndices, nActiveIndices, nSaturated, fvBuffers);
-        }
-    }
-    else if (aff->affine.nBytesPerWeight == 2)
-    {
-        nn_bias_s *bias = aff->affine.pBiases + aff->affine.biasVectorIndex;
-        int16_t* w_16 = static_cast<int16_t*>(w);
-        if (pActiveIndices == NULL)
-        {
-            igemm16_mb(m, n, k, in, w_16, bias, aff->affine.biasVectorCount, out, nSaturated, fvBuffers);
-        }
-        else
-        {
-            igemm16_subset_mb(m, n, k, in, w_16, bias, aff->affine.biasVectorCount, out,
-                pActiveIndices, nActiveIndices, nSaturated, fvBuffers);
-        }
-    }
-}
-
-void GNAApplyDiagonalTransform(
-    const nn_layer*     pLayer,
-          uint32_t*     nSaturated)
-{
-    nn_layer_affine* aff = (nn_layer_affine*)pLayer->pLayerStruct;
-    uint32_t         m = pLayer->nOutputRows;
-    uint32_t         n = pLayer->nInputColumns;
-    void*            w = aff->affine.pWeights;
-    int16_t*         in = (int16_t*)pLayer->pInputs;
-    int32_t*         out = getOutputBuffer(&aff->pwl, pLayer);
-
-    if (aff->affine.nBytesPerWeight == 1)
-    {
-        nn_bias_c *bias = (nn_bias_c*)aff->affine.pBiases;
-        isbmm8(m, n, (int8_t*)w, in, bias, out, nSaturated);
-    }
-    else if (aff->affine.nBytesPerWeight == 2)
-    {
-        nn_bias_s *bias = (int32_t*)aff->affine.pBiases;
-        isbmm16(m, n, (int16_t*)w, in, bias, out, nSaturated);
-    }
-}
-
-void GNAApplyRecurrentTransform(
-    const nn_layer*     pLayer,
-          uint32_t*     nSaturated,
-          void*         pwlBuff)
-{
-    nn_layer_reccurent*   rnn = (nn_layer_reccurent*)pLayer->pLayerStruct;
-    uint32_t        k = pLayer->nInputColumns;
-    uint32_t        m = pLayer->nOutputColumns;
-    void*           w = rnn->affine.pWeights;
-    int16_t*        in;
-    int16_t*        fb;
-    int32_t*        out;
+    auto runConfig = RecurrentConfig(*config); // local modifiable copy
+    PwlOutputConfig pwlOut { 0, 0, 0, config->outputElementCount, config->outputElementCount, 
+                            config->saturationCount, config->outputActivated};
+    PwlCacheSetup(pwl, pwlConfig); // TODO: add to model build cache
 
     // for each input vector
-    for (uint32_t i = 0; i < pLayer->nInputRows; i++)
+    for (uint32_t i = 0; i < config->inputVectorCount; i++)
     {
-        in = (int16_t*)pLayer->pInputs + i * k;
-        fb = (int16_t*)rnn->pFeedbackBuffer + (i*m);
-        out = (int32_t*)pLayer->pOutputsIntermediate + i * m;
+        runConfig.input = config->input + i * config->inputElementCount;
+        runConfig.feedbackBuffer = config->feedbackBuffer + (i*config->outputElementCount);
+        runConfig.output = config->output + i * config->outputElementCount;
+        RecurrentKernelImpl1B(&runConfig);
 
-        if (rnn->affine.nBytesPerWeight == 1)
-        {
-            nn_bias_c *B = (nn_bias_c*)rnn->affine.pBiases;
-            igemv8(m, k, in, fb, (int8_t*)w, B, out, nSaturated);
-        }
-        else if (rnn->affine.nBytesPerWeight == 2)
-        {
-            nn_bias_s *B = (nn_bias_s*)rnn->affine.pBiases;
-            igemv16(m, k, in, fb, (int16_t*)w, B, out, nSaturated);
-        }
-        GNAApplyPiecewiseLinearTransform(pLayer, i, i, 0, m, nSaturated, pwlBuff);
+        pwlOut.rowFirst = i;
+        pwlOut.rowLast = i;
+        pwl->pwlAll(pwl, &pwlOut);
     }
 }
 
-void GNAApplyTranspose(
-    const nn_layer* pLayer)
+void recurrentKernelImpl2B(RecurrentConfig const * const config, PwlBaseConfig const * const pwlConfig,
+    PwlCached * const pwl)
 {
-    uint32_t m = pLayer->nInputRows;
-    uint32_t n = pLayer->nInputColumns;
-    int16_t *in = (int16_t*)pLayer->pInputs;
-    int16_t *out = (int16_t*)pLayer->pOutputs;
+    auto rnnConfig = RecurrentConfig(*config); // local modifiable copy
+    PwlOutputConfig pwlOut{ 0, 0, 0, config->outputElementCount, config->outputElementCount, config->saturationCount, config->outputActivated };
+    PwlCacheSetup(pwl, pwlConfig); // TODO: add to model build cache
 
-    transpose16(m, n, in, out);
+    // for each input vector
+    for (uint32_t i = 0; i < config->inputVectorCount; i++)
+    {
+        rnnConfig.input = config->input + i * config->inputElementCount;
+        rnnConfig.feedbackBuffer = config->feedbackBuffer + (i*config->outputElementCount);
+        rnnConfig.output = config->output + i * config->outputElementCount;
+        RecurrentKernelImpl2B(&rnnConfig);
+
+        pwlOut.rowFirst = i;
+        pwlOut.rowLast = i;
+        pwl->pwlAll(pwl, &pwlOut);
+    }
 }
 
-void GNAApplyCopy(
-    const nn_layer* pLayer)
+void copyKernelImpl(CopyConfig const * const config)
 {
-    uint32_t    r;                  // row iterator
-    int16_t*    in = (int16_t*)pLayer->pInputs;
-    int16_t*    out = (int16_t*)pLayer->pOutputs;
-    uint32_t    nRows = ((nn_layer_copy*)pLayer->pLayerStruct)->nCopyRows;
-    uint32_t    nBytesCp = ((nn_layer_copy*)pLayer->pLayerStruct)->nCopyCols
-        * sizeof(int16_t);
+    uint32_t row;
+    uint32_t bytesToCopy = config->columnCount * sizeof(int16_t);
 
-    for (r = 0; r < nRows; r++)
+    for (row = 0; row < config->rowCount; row++)
     {
         memcpy_s(
-            out + (pLayer->nOutputColumns * r),
-            nBytesCp,
-            in + (pLayer->nInputColumns * r),
-            nBytesCp);
-    }
-}
-
-void GNAApplyConvolutionalTransform(
-    const nn_layer*     pLayer,
-          uint32_t*     nSaturated,
-          void*         pwlBuff,
-          int64_t*      pool)
-{
-    auto conv = (nn_layer_conv*)pLayer->pLayerStruct;
-    auto pwl = &conv->pwl;
-
-    if (conv->poolType == INTEL_NO_POOLING)
-    {
-        CNNFilter16(
-            pLayer->nInputColumns,
-            conv->nFeatureMaps,
-            conv->nFeatureMapColumns,
-            conv->nFilters,
-            conv->nFilterCoefficients,
-            (int16_t*)pLayer->pInputs,
-            (int16_t*)conv->pFilters,
-            (nn_bias_s*)conv->pBiases,
-            getOutputBuffer(pwl, pLayer),
-            nSaturated);
-        if (IsActivationFunctionEnabled(pwl))
-        {
-            GNAApplyPiecewiseLinearTransform(
-                pLayer,
-                0,
-                pLayer->nOutputRows - 1,
-                0,
-                pLayer->nOutputColumns - 1,
-                nSaturated,
-                pwlBuff);
-        }
-    }
-    else
-    {
-        CNNFilterPool16(pLayer->nInputColumns,
-            conv->nFeatureMaps,
-            conv->nFeatureMapColumns,
-            conv->nFilters,
-            conv->nFilterCoefficients,
-            conv->nPoolSize,
-            conv->nPoolStride,
-            conv->pwl.nSegments,
-            conv->pwl.pSegments,
-            (nn_bias_s*)conv->pBiases,
-            (int16_t*)conv->pFilters,
-            (int16_t*)pLayer->pInputs,
-            (int16_t*)pLayer->pOutputs,
-            nSaturated,
-            conv->poolType,
-            pwlBuff,
-            pool);
+            config->output + (config->outputColumnCount * row),
+            bytesToCopy,
+            config->input + (config->inputColumnCount * row),
+            bytesToCopy);
     }
 }
 
 XnnKernel KERNEL(xnnKernel) =
 {
-        GNAApplyAffineTransform,
-        GNAApplyAffineMBiasTransform,
-        GNAApplyDiagonalTransform,
-        GNAApplyPiecewiseLinearTransform,
-        GNAApplyRecurrentTransform,
-        GNAApplyTranspose,
-        GNAApplyCopy,
-        GNAApplyConvolutionalTransform
+    AffineKernelImpl1B,
+    AffineKernelImpl2B,
+    AffineActiveListKernelImpl1B,
+    AffineActiveListKernelImpl2B,
+
+    AffineMultiBiasKernelImpl1B,
+    AffineMultiBiasKernelImpl2B,
+    AffineMultiBiasActiveListKernelImpl1B,
+    AffineMultiBiasActiveListKernelImpl2B,
+
+    DiagonalKernelImpl1B,
+    DiagonalKernelImpl2B,
+
+    recurrentKernelImpl1B,
+    recurrentKernelImpl2B,
+
+    ConvolutionKernelImpl,
+    ConvolutionPoolingKernelImpl,
+
+    pwlKernelImpl,
+    TransposeKernelImpl,
+    copyKernelImpl,
 };
 
 }

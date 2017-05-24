@@ -28,14 +28,19 @@
 #include <memory>
 #include <vector>
 
-#include "Layer.h"
+#include "common.h"
+#include "profiler.h"
 
 namespace GNA
 {
 
+class ActiveList;
+class Layer;
+struct LayerConfiguration;
+class GmmLayer;
 class RequestConfiguration;
+struct RequestProfiler;
 
-// Model image for software accelerators
 class SoftwareModel
 {
 public:
@@ -44,7 +49,15 @@ public:
     SoftwareModel& operator=(const SoftwareModel&) = delete;
     ~SoftwareModel() = default;
 
-    void ValidateConfiguration(const RequestConfiguration& configuration) const;
+    status_t Score(
+        uint32_t layerIndex,
+        uint32_t layerCount,
+        acceleration accel,
+        const RequestConfiguration& requestConfiguration,
+        RequestProfiler *profiler,
+        KernelBuffers *fvBuffers);
+
+    void validateConfiguration(const RequestConfiguration& configuration) const;
 
     std::vector<std::unique_ptr<Layer>> Layers;
 

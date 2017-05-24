@@ -33,7 +33,7 @@ using namespace GNA;
 using std::unique_ptr;
 
 #define MAX_D0_STATE_PROBES 10
-#define WAIT_PERIOD			200		// in miliseconds
+#define WAIT_PERIOD            200        // in miliseconds
 
 WinHandle IoctlSender::deviceHandle;
 
@@ -67,7 +67,7 @@ void IoctlSender::Open(const GUID& guid)
         deviceDetails->cbSize = sizeof(SP_DEVICE_INTERFACE_DETAIL_DATA);
         if (!SetupDiGetDeviceInterfaceDetail(deviceInfo, &interfaceData, deviceDetails, bufferSize, nullptr, nullptr))
         {
-            //deviceDetailsData.release(); // TODO verify if data is freed
+            //deviceDetailsData.release(); // TODO: verify if data is freed
             continue;
         }
         break;

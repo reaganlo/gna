@@ -25,19 +25,23 @@
 
 #include "RecurrentLayer.h"
 
+#include "LayerConfiguration.h"
 #include "Validator.h"
 
 using namespace GNA;
 
 RnnLayer::RnnLayer(nn_layer const * const layer) :
     Layer(layer),
-    Affine{AffineFunction::Create(&static_cast<const nn_layer_reccurent*>(layer->pLayerStruct)->affine)},
+    Affine{ AffineFunction::Create(&static_cast<const nn_layer_reccurent*>(layer->pLayerStruct)->affine) },
     // RNN has only 2B output with Activation always enabled
     Activation(ActivationFunction::Create(&static_cast<const nn_layer_reccurent*>(layer->pLayerStruct)->pwl, true)),
-    FeedbackDelay{static_cast<const nn_layer_reccurent * const>(layer->pLayerStruct)->feedbackFrameDelay},
-    sourceLayer{static_cast<const nn_layer_reccurent * const>(layer->pLayerStruct)}
+    FeedbackDelay{ static_cast<const nn_layer_reccurent * const>(layer->pLayerStruct)->feedbackFrameDelay },
+    recurrentKernels{ AccelerationDetector::RecurrentKernels.at(Affine->GetWeightMode()) },
+    rnnHiddenConfig{ Output.ElementCount, Input.VectorCount, Input.ElementCount, Input.Buffer, nullptr,
+                        Output.ScratchPad, Output.Buffer, nullptr, Affine->GetWeights(), Affine->GetBiases() },
+    pwlBaseConfig{ Output.ScratchPad, Activation->Segments, Activation->SegmentCount }
 {
-    Expect::InRange(FeedbackDelay, 1, Input.VectorCount-1, XNN_ERR_NO_FEEDBACK);
+    Expect::InRange(FeedbackDelay, 1, Input.VectorCount - 1, XNN_ERR_NO_FEEDBACK);
 
     // must be multiple 32 to keep 64B output buffer alignment
     Expect::MultiplicityOf(Output.ElementCount, RNN_N_OUT_ELEMS_MPLY);
@@ -47,8 +51,52 @@ RnnLayer::RnnLayer(nn_layer const * const layer) :
 
     if (INTEL_INPUT == Config.Type || INTEL_HIDDEN == Config.Type)
     {
-        SetFeedbackBuffer();
+        feedbackBuffer = CalculateFeedbackBuffer(Output.Buffer);
+        rnnHiddenConfig.feedbackBuffer = feedbackBuffer;
     }
+
+    Layer::ComputeHidden = [this](acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) 
+                    {this->computeHidden(accel, fvBuffers, saturationCount); };
+
+    Layer::ComputeConfig = [this](LayerConfiguration &layerConfiguration, acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) 
+                    {this->computeConfig(layerConfiguration, accel, fvBuffers, saturationCount); };
+}
+
+void RnnLayer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const
+{
+    auto inputBuffer = layerConfiguration.InputBuffer
+        ? layerConfiguration.InputBuffer->Get<int16_t>() : Input.Buffer;
+
+    auto outputBuffer = layerConfiguration.OutputBuffer
+        ? layerConfiguration.OutputBuffer->Get<int32_t>() : Output.Buffer;
+
+    if(!layerConfiguration.recurrentConfig)
+        layerConfiguration.recurrentConfig = std::make_unique<RecurrentConfig>(rnnHiddenConfig);
+    layerConfiguration.recurrentConfig->input = inputBuffer;
+    layerConfiguration.recurrentConfig->output = outputBuffer;
+
+    if(outputBuffer)
+        layerConfiguration.recurrentConfig->feedbackBuffer = CalculateFeedbackBuffer(outputBuffer);
+}
+
+void RnnLayer::computeHidden(acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const
+{
+    auto rnnConfig = rnnHiddenConfig;
+    rnnConfig.saturationCount = saturationCount;
+
+    auto pwlConfig = pwlBaseConfig;
+    auto pwl = reinterpret_cast<PwlCached*>(fvBuffers->pwl);
+    recurrentKernels.at(accel)(&rnnConfig, &pwlConfig, pwl);
+}
+
+void RnnLayer::computeConfig(const LayerConfiguration& layerConfiguration, acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const
+{
+    auto rnnConfig = *layerConfiguration.recurrentConfig;
+    rnnConfig.saturationCount = saturationCount;
+
+    auto& pwlConfig = pwlBaseConfig;
+    auto pwl = reinterpret_cast<PwlCached*>(fvBuffers->pwl);
+    recurrentKernels.at(accel)(&rnnConfig, &pwlConfig, pwl);
 }
 
 const OutputBuffer RnnLayer::CalculateFeedbackBuffer(const OutputBuffer& outputBuffer) const
@@ -56,11 +104,4 @@ const OutputBuffer RnnLayer::CalculateFeedbackBuffer(const OutputBuffer& outputB
     const auto buffer = outputBuffer - (FeedbackDelay * Output.ElementCount);
     Expect::ValidBuffer(buffer, XNN_ERR_NO_FEEDBACK);
     return buffer;
-}
-
-void RnnLayer::SetFeedbackBuffer(const OutputBuffer& outputBuffer)
-{
-    feedbackBuffer = CalculateFeedbackBuffer(outputBuffer);
-    // TODO: remove when kernels use new layers
-    const_cast<nn_layer_reccurent*>(sourceLayer)->pFeedbackBuffer = feedbackBuffer;
 }

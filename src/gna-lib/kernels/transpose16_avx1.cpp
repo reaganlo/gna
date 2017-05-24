@@ -22,17 +22,18 @@
  or any other notice embedded in Materials by Intel or Intel's suppliers or licensors
  in any way.
 */
+#include <string.h>
 
 #include "igemv.h"
 #include "igemv16.h"
-#include "string.h"
 
-void transpose16(
-    const uint32_t M,
-    const uint32_t N,
-    const int16_t* I,
-          int16_t* O)
+void TransposeKernelImpl(TransposeConfig const * const cfg)
 {
+    uint32_t M = cfg->rowCount;
+    uint32_t N = cfg->columnCount;
+    const int16_t * const I = cfg->input;
+    int16_t * const O = cfg->output;
+
     uint32_t i, j;
 
     // input matrix is a vector - copy 

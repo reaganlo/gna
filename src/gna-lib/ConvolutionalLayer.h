@@ -38,7 +38,7 @@ struct FiltersConfig : public BiasSimple
 
     const uint32_t Count;
     const uint32_t CoefficientCount;  // Actual filter size, including 0-padding if necessary.
-    const uint16_t* Data;             // Filters stored one after the other.
+    const int16_t * const Data;             // Filters stored one after the other.
 };
 
 // feature maps definition - used for filter stride calculation
@@ -79,12 +79,30 @@ class CnnLayer : public Layer
 public:
     CnnLayer(nn_layer const * const layer);
     virtual ~CnnLayer() = default;
+    virtual void UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const override;
 
     const std::unique_ptr<const ActivationFunction> Activation;
     const ConvolutionFunction Convolution;
     const PoolingFunction Pooling;
+
 private:
-    const nn_layer_conv *sourceLayer;
+    void computeConfigPool(LayerConfiguration& layerConfiguration, acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const;
+    void computeHiddenPool(acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const;
+    void computeHidden(acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const;
+    void computeHiddenPwl(acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const;
+    void computeConfig(const LayerConfiguration& layerConfiguration, acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const;
+    void computeConfigPwl(const LayerConfiguration& layerConfiguration, acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const;
+
+    const std::map<acceleration, ConvolutionKernel>& filterKernels;
+    const std::map<acceleration, ConvolutionPoolingKernel>& poolingKernels;
+    const std::map<acceleration, PwlKernel>& pwlKernels;
+
+    ConvolutionConfig convolutionHiddenConfig;
+    const ConvolutionPoolingConfig poolingHiddenConfig;
+
+    const PwlBaseConfig pwlFilterConfig;
+    const PwlBaseConfig pwlPoolConfig;
+    PwlOutputConfig pwlOutputConfig;
 };
 
 }

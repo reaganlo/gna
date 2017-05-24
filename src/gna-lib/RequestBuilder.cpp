@@ -25,7 +25,8 @@
 
 #include "RequestBuilder.h"
 
-#include "AcceleratorController.h"
+#include "RequestConfiguration.h"
+#include "LayerConfiguration.h"
 
 using std::make_unique;
 
@@ -36,13 +37,13 @@ gna_request_cfg_id RequestBuilder::assignConfigId()
     return configIdSequence++;
 }
 
-void RequestBuilder::CreateConfiguration(const CompiledModel& model, gna_request_cfg_id *configId)
+void RequestBuilder::CreateConfiguration(CompiledModel& model, gna_request_cfg_id *configId)
 {
     *configId = assignConfigId();
     configurationVector.emplace_back(make_unique<RequestConfiguration>(model, *configId));
 }
 
-void RequestBuilder::AttachBuffer(gna_request_cfg_id configId, gna_buffer_type type, uint16_t layerIndex, 
+void RequestBuilder::AttachBuffer(gna_request_cfg_id configId, gna_buffer_type type, uint16_t layerIndex,
     void * address) const
 {
     auto& configuration = GetConfiguration(configId);
@@ -69,11 +70,10 @@ RequestConfiguration& RequestBuilder::GetConfiguration(gna_request_cfg_id config
     }
 }
 
-std::unique_ptr<Request> RequestBuilder::CreateRequest(gna_request_cfg_id configId, acceleration accel,
-    const AcceleratorController& acceleratorController)
+std::unique_ptr<Request> RequestBuilder::CreateRequest(gna_request_cfg_id configId, acceleration accel)
 {
     auto profiler = std::make_unique<RequestProfiler>();
     profilerDTscStart(&profiler->preprocess);
     auto& configuration = GetConfiguration(configId);
-    return std::make_unique<Request>(configuration, move(profiler), accel, acceleratorController);
+    return std::make_unique<Request>(configuration, move(profiler), accel);
 }

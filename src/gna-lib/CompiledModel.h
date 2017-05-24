@@ -25,6 +25,7 @@
 
 #pragma once
 
+#include <map>
 #include <vector>
 
 #include "AccelerationDetector.h"
@@ -40,13 +41,14 @@ struct ConfigurationBuffer;
 class CompiledModel
 {
 public:
-    CompiledModel(gna_model_id modelId, const gna_model *rawModel, const Memory& memory);
+    CompiledModel(gna_model_id modelId, const gna_model *rawModel, Memory& memory, const AccelerationDetector& detector);
     ~CompiledModel() = default;
     CompiledModel(const CompiledModel &) = delete;
     CompiledModel& operator=(const CompiledModel&) = delete;
 
     // TODO: most of these methods are here due to invalid object design, need to refactor to get rid of
-
+    static const size_t CalculateModelSize(const size_t userSize, const uint16_t layerCount, const uint16_t gmmCount);
+    static const size_t CalculateInternalModelSize(const uint16_t layerCount, const uint16_t gmmCount);
     uint32_t GetGmmCount() const;
     uint32_t GetHardwareOffset(const BaseAddressC& address) const;
     const std::vector<std::unique_ptr<Layer>>& GetLayers() const;
@@ -62,24 +64,41 @@ public:
     void WriteHardwareLayerNnopType(const uint32_t layerIndex, PNNOP_TYPE_DESCR nnopCfg, bool actListEnabled) const;
     void WriteHardwareLayerActiveList(const uint32_t layerIndex, HardwareActiveListDescriptor & descriptor) const;
 
-    void CompileSoftwareModel();
-    void CompileHardwareModel(const AccelerationDetector& detector);
-    void CreateSubmodels(const AccelerationDetector& detector);
+    status_t Score(
+        RequestConfiguration& config,
+        acceleration accel,
+        RequestProfiler *profiler,
+        KernelBuffers *buffers);
 
-    void ValidateConfiguration(const RequestConfiguration& configuration) const;
-
+    static const size_t MaximumInternalModelSize;
     const gna_model_id Id;
     const uint16_t LayerCount;
     const gna_model* const UserModel;
 
 private:
-    const Memory& memory;
+    typedef enum _ScoreMethod
+    {
+        HardwareOnly,
+        SoftwareOnly,
+        Mixed,
+        None
+    } ScoreMethod;
+
+    Memory& memory;
     uint16_t gmmCount = 0;
     uint32_t bufferSize = 0;
 
     std::unique_ptr<HardwareModel> hardwareModel;
     std::unique_ptr<SoftwareModel> softwareModel;
     std::vector<std::unique_ptr<SubModel>> submodels;
+
+    std::map<acceleration, ScoreMethod> scoreMethods;
+
+    const acceleration swFastAccel;
+    const acceleration swSatAccel;
+
+    void createSubmodels(const AccelerationDetector& detector);
+    void prepareScoreMethods(const AccelerationDetector &detector);
 };
 
 }

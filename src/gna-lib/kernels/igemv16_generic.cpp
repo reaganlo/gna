@@ -26,36 +26,30 @@
 #include "igemv.h"
 #include "igemv16.h"
 
-void
-igemv16(
-    const   uint32_t    M,
-    const   uint32_t    K,
-    const   int16_t*    I,
-    const   int16_t*    FB,
-    const   int16_t*    W,
-    const   nn_bias_s*  B,
-            int32_t*    O,
-            uint32_t*   nSat)
+void RecurrentKernelImpl2B(RecurrentConfig const * const config)
 {
-    nn_bias_s *bias = const_cast<nn_bias_s*>(B), *bias_end = bias + M;
-    int16_t *input = const_cast<int16_t*>(I), *i_end = input + K;
-    int16_t *feedback = const_cast<int16_t*>(FB), *fb_end = feedback + M;
-    int16_t *weight = const_cast<int16_t*>(W);
-    int32_t *out = const_cast<int32_t*>(O);
+    nn_bias_s const * bias = config->biasesSimple; 
+    nn_bias_s const * const biasEnd= bias + config->outputElementCount;
+    int16_t const * input = config->input;
+    int16_t const * const inputEnd = input + config->inputElementCount;
+    int16_t * feedback = config->feedbackBuffer;
+    int16_t const * const feedbackEnd = feedback + config->outputElementCount;
+    int16_t const * weight = config->weights2B;
+    int32_t * output = config->output;
 
-    for (; bias < bias_end; bias++, out++)
+    for (; bias < biasEnd; bias++, output++)
     {
-        *out = *bias;
-        input = const_cast<int16_t*>(I);
-        feedback = const_cast<int16_t*>(FB);
+        *output = *bias;
+        input = config->input;
+        feedback = config->feedbackBuffer;
 
-        for (; input < i_end;)
+        for (; input < inputEnd;)
         {
-            *out += *input++ * *weight++;
+            *output += *input++ * *weight++;
         }
-        for (; feedback < fb_end;)
+        for (; feedback < feedbackEnd;)
         {
-            *out += *feedback++ * *weight++;
+            *output += *feedback++ * *weight++;
         }
     }
 }

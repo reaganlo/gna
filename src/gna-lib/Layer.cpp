@@ -100,7 +100,7 @@ LayerInput::LayerInput(const nn_layer &layer, const LayerConfig& config) :
 
 LayerOutput::LayerOutput(const nn_layer &layer, const LayerConfig& config) :
     LayerMatrix{layer.nOutputRows, layer.nOutputColumns, layer.pOutputs, config},
-    ScratchPad{static_cast<uint32_t const * const>(layer.pOutputsIntermediate)},
+    ScratchPad{static_cast<int32_t * const>(layer.pOutputsIntermediate)},
     mode{NonActivatedOutput}
 {
     Expect::InRange(ElementCount, 1, XNN_N_IN_ELEMS_MAX, XNN_ERR_LYR_CFG);
@@ -156,19 +156,8 @@ unique_ptr<Layer> Layer::Create(const nn_layer* layer)
 }
 
 Layer::Layer(const nn_layer *layer) :
-    sourceLayer(getSafeCopy(layer)),
-    Config{sourceLayer.nLayerKind, sourceLayer.type},
-    Input{sourceLayer, Config},
-    Output{sourceLayer, Config}
+    Config{layer->nLayerKind, layer->type},
+    Input{*layer, Config},
+    Output{*layer, Config}
 {
-}
-
-const nn_layer Layer::getSafeCopy(const nn_layer *layer)
-{
-    Expect::NotNull(layer);
-    if (INTEL_INTERLEAVE != layer->nLayerKind && INTEL_DEINTERLEAVE != layer->nLayerKind)
-    {
-        Expect::NotNull(layer->pLayerStruct);
-    }
-    return *layer;
 }

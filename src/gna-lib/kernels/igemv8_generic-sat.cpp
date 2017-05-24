@@ -26,38 +26,30 @@
 #include "igemv.h"
 #include "igemv8.h"
 
-void
-igemv8(
-    const   uint32_t    M,//num_rows N
-    const   uint32_t    K,//K1
-    const   int16_t*    I,//A2
-    const   int16_t*    FB,
-    const   int8_t*     W,//X
-    const   nn_bias_c*  B,
-            int32_t*    O,
-            uint32_t*   nSat)
+void RecurrentKernelImpl1B(RecurrentConfig const * const config)
 {
-    uint32_t allElems = K + M; // total # of in + out/fb elements
+    uint32_t allElems = config->inputElementCount + config->outputElementCount; // total # of in + output/fb elements
     uint32_t i, j;
     int64_t sum;
-    nn_bias_c *bias = const_cast<nn_bias_c*>(B), *bias_end = bias + M;
-    int16_t *input;
-    int16_t *feedback;
-    int8_t *weight = const_cast<int8_t*>(W);
-    int32_t *out = const_cast<int32_t*>(O);
-    uint32_t kparts = K / hw_buf_size[0];
-    uint32_t kpart_rem = K % hw_buf_size[0];
+    nn_bias_c const * bias = config->biasesCompound; 
+    nn_bias_c const * const biasEnd= bias + config->outputElementCount;
+    int16_t const * input;
+    int16_t * feedback;
+    int8_t const * weight = config->weights1B;
+    int32_t * output = config->output;
+    uint32_t kparts = config->inputElementCount / hw_buf_size[0];
+    uint32_t kpart_rem = config->inputElementCount % hw_buf_size[0];
     uint32_t middle_fill = hw_buf_size[0] - kpart_rem;
-    uint32_t middle_part = (M < middle_fill) ? M : middle_fill;
-    uint32_t mm = M - middle_part;
+    uint32_t middle_part = (config->outputElementCount < middle_fill) ? config->outputElementCount : middle_fill;
+    uint32_t mm = config->outputElementCount - middle_part;
     uint32_t mparts = mm / hw_buf_size[0];
     uint32_t mpart_rem = mm % hw_buf_size[0];
 
-    for (; bias < bias_end; bias++)
+    for (; bias < biasEnd; bias++)
     {
         sum = bias->bias;
-        input = const_cast<int16_t*>(I);
-        feedback = const_cast<int16_t*>(FB);
+        input = config->input;
+        feedback = config->feedbackBuffer;
 
         for (i = 0; i < kparts; i++)
         {
@@ -65,8 +57,8 @@ igemv8(
             {
                 sum += (int32_t)(*input++ * *weight++ * bias->multiplier);
             }
-            saturate_store_out(&sum, out, nSat);
-            sum = *out;
+            saturate_store_out(&sum, output, config->saturationCount);
+            sum = *output;
         }
 
         for(i = 0; i < kpart_rem; i++)
@@ -79,8 +71,8 @@ igemv8(
             sum += (int32_t)(*feedback++ * *weight++ * bias->multiplier);
         }
 
-        saturate_store_out(&sum, out, nSat);
-        sum = *out;
+        saturate_store_out(&sum, output, config->saturationCount);
+        sum = *output;
 
         for (i = 0; i < mparts; i++)
         {
@@ -89,8 +81,8 @@ igemv8(
                 sum += (int32_t)(*feedback++ * *weight++ * bias->multiplier);
             }
 
-            saturate_store_out(&sum, out, nSat);
-            sum = *out;
+            saturate_store_out(&sum, output, config->saturationCount);
+            sum = *output;
         }
 
         for (i = 0; i < mpart_rem; i++)
@@ -98,7 +90,7 @@ igemv8(
             sum += (int32_t)(*feedback++ * *weight++ * bias->multiplier);
         }
 
-        saturate_store_out(&sum, out, nSat);
-        out++;
+        saturate_store_out(&sum, output, config->saturationCount);
+        output++;
     }
 }

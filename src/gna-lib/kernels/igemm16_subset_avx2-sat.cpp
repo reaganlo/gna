@@ -26,53 +26,41 @@
 #include "igemv.h"
 #include "igemv16.h"
 
-void igemm16_subset(
-    const uint32_t M,
-    const uint32_t N,
-    const uint32_t K,
-    const int16_t *I,
-    const int16_t *W,
-    const nn_bias_s *B,
-          int32_t *O,
-    const uint32_t *AL,
-    const uint32_t L,
-          uint32_t *nSat,
-          KernelBuffers *fvBuffers)
+void AffineActiveListKernelImpl2B(AffineConfig const * const config, AffineConfigAl const * const al)
 {
     uint32_t i, ix, ix_end, j, k, l, kk, kpartial, nKpartial, niters;
-    kpartial = (hw_buf_size[N - 1]) / N;
-    nKpartial = K / kpartial;
+    kpartial = (hw_buf_size[config->inputVectorCount - 1]) / config->inputVectorCount;
+    nKpartial = config->inputElementCount / kpartial;
 
     __m256i in[8], w;     // inputs & weight
     __m256i imm0, imm1, imm2, imm3, imm4, imm5, imm6, imm7, imm8, imm9, imm10;       // immediate
     __m256i acc[8]; // output accumulators
     __m256i zero = _mm256_setzero_si256(); // AVX2 ZERO
     __m256i *in_ptr0, *in_ptr1, *in_ptr2, *in_ptr3, *in_ptr4, *in_ptr5, *in_ptr6, *in_ptr7;
-    int16_t *input_0, *input_1, *input_2, *input_3, *input_4, *input_5, *input_6, *input_7;
+    int16_t const * input_0, *input_1, *input_2, *input_3, *input_4, *input_5, *input_6, *input_7;
 
-    int16_t *input[8], *weight;// inputs & weight pointers
-    nn_bias_s *bias;             // bias pointer
-    int32_t *out;              // output pointer
-    nn_bias_s *bias_end;         // outer loop pointer
+    int16_t const * input[8];
+    int16_t const * weight;
+    nn_bias_s const * bias = config->biasesSimple;
+    int32_t * output;
+    nn_bias_s const * const biasEnd = bias + config->outputElementCount;
     int64_t sum[8];            // 64-bit accumulator buffer
 
-    uint32_t KT = K % VEC_16CAP; // K tail for manual processing
-    uint32_t KK = K - KT; // trimmed K for AVX2 processing
+    uint32_t KT = config->inputElementCount % VEC_16CAP; // config->inputElementCount tail for manual processing
+    uint32_t KK = config->inputElementCount - KT; // trimmed config->inputElementCount for AVX2 processing
 
-    out = O;
-    weight = const_cast<int16_t*>(W);
-    bias = const_cast<nn_bias_s*>(B);
-    bias_end = bias + M;
+    output = config->output;
+    weight = config->weights2B;
 
-    if (1 == N)
+    if (1 == config->inputVectorCount)
     {
-        in_ptr0 = (__m256i*)I;
-        *input = const_cast<int16_t*>(I)+KK;
-        for (l = 0; l < L; l++)
+        in_ptr0 = (__m256i*)config->input;
+        *input = config->input+KK;
+        for (l = 0; l < al->count; l++)
         {
-            i = AL[l];
-            weight = const_cast<int16_t*>(W)+i*K;
-            bias = const_cast<nn_bias_s*>(B)+i;
+            i = al->indices[l];
+            weight = config->weights2B+i*config->inputElementCount;
+            bias = config->biasesSimple+i;
 
             *acc = _mm256_setzero_si256();
             *sum = *bias;
@@ -80,7 +68,7 @@ void igemm16_subset(
 
             for (kk = 0; kk < nKpartial + 1; kk++)
             {
-                saturate(sum, nSat);
+                saturate(sum, config->saturationCount);
 
                 niters = kpartial < KK - kk * kpartial ? kpartial : KK - kk * kpartial;
                 ix_end = ix + niters / VEC_16CAP;
@@ -113,56 +101,56 @@ void igemm16_subset(
                 *sum += (int32_t)((*input)[j] * *weight);
             }
 
-            saturate_store_out(sum, out, nSat);
+            saturate_store_out(sum, output, config->saturationCount);
 
-            out++;
+            output++;
         }
         return;
     }
 
-    switch (N)
+    switch (config->inputVectorCount)
     {
     case 8: 
-        for (i = 0; i < K; i++) fvBuffers->d7[i] = I[i*N + 7];
-        in_ptr7 = (__m256i*)fvBuffers->d7;
-        input[7] = fvBuffers->d7 + KK;
+        for (i = 0; i < config->inputElementCount; i++) config->fvBuffers->d7[i] = config->input[i*config->inputVectorCount + 7];
+        in_ptr7 = (__m256i*)config->fvBuffers->d7;
+        input[7] = config->fvBuffers->d7 + KK;
     case 7: 
-        for (i = 0; i < K; i++) fvBuffers->d6[i] = I[i*N + 6];
-        in_ptr6 = (__m256i*)fvBuffers->d6;
-        input[6] = fvBuffers->d6 + KK;
+        for (i = 0; i < config->inputElementCount; i++) config->fvBuffers->d6[i] = config->input[i*config->inputVectorCount + 6];
+        in_ptr6 = (__m256i*)config->fvBuffers->d6;
+        input[6] = config->fvBuffers->d6 + KK;
     case 6: 
-        for (i = 0; i < K; i++) fvBuffers->d5[i] = I[i*N + 5];
-        in_ptr5 = (__m256i*)fvBuffers->d5;
-        input[5] = fvBuffers->d5 + KK;
+        for (i = 0; i < config->inputElementCount; i++) config->fvBuffers->d5[i] = config->input[i*config->inputVectorCount + 5];
+        in_ptr5 = (__m256i*)config->fvBuffers->d5;
+        input[5] = config->fvBuffers->d5 + KK;
     case 5: 
-        for (i = 0; i < K; i++) fvBuffers->d4[i] = I[i*N + 4];
-        in_ptr4 = (__m256i*)fvBuffers->d4;
-        input[4] = fvBuffers->d4 + KK;
+        for (i = 0; i < config->inputElementCount; i++) config->fvBuffers->d4[i] = config->input[i*config->inputVectorCount + 4];
+        in_ptr4 = (__m256i*)config->fvBuffers->d4;
+        input[4] = config->fvBuffers->d4 + KK;
     case 4: 
-        for (i = 0; i < K; i++) fvBuffers->d3[i] = I[i*N + 3];
-        in_ptr3 = (__m256i*)fvBuffers->d3;
-        input[3] = fvBuffers->d3 + KK;
+        for (i = 0; i < config->inputElementCount; i++) config->fvBuffers->d3[i] = config->input[i*config->inputVectorCount + 3];
+        in_ptr3 = (__m256i*)config->fvBuffers->d3;
+        input[3] = config->fvBuffers->d3 + KK;
     case 3: 
-        for (i = 0; i < K; i++) fvBuffers->d2[i] = I[i*N + 2];
-        in_ptr2 = (__m256i*)fvBuffers->d2;
-        input[2] = fvBuffers->d2 + KK;
+        for (i = 0; i < config->inputElementCount; i++) config->fvBuffers->d2[i] = config->input[i*config->inputVectorCount + 2];
+        in_ptr2 = (__m256i*)config->fvBuffers->d2;
+        input[2] = config->fvBuffers->d2 + KK;
     case 2: 
-        for (i = 0; i < K; i++) fvBuffers->d1[i] = I[i*N + 1];
-        in_ptr1 = (__m256i*)fvBuffers->d1;
-        input[1] = fvBuffers->d1 + KK;
+        for (i = 0; i < config->inputElementCount; i++) config->fvBuffers->d1[i] = config->input[i*config->inputVectorCount + 1];
+        in_ptr1 = (__m256i*)config->fvBuffers->d1;
+        input[1] = config->fvBuffers->d1 + KK;
         
-        for (i = 0; i < K; i++) fvBuffers->d0[i] = I[i*N];
-        in_ptr0 = (__m256i*)fvBuffers->d0;
-        input[0] = fvBuffers->d0 + KK;
+        for (i = 0; i < config->inputElementCount; i++) config->fvBuffers->d0[i] = config->input[i*config->inputVectorCount];
+        in_ptr0 = (__m256i*)config->fvBuffers->d0;
+        input[0] = config->fvBuffers->d0 + KK;
     }
 
-    if (2 == N)
+    if (2 == config->inputVectorCount)
     {
-        for (l = 0; l < L; l++)
+        for (l = 0; l < al->count; l++)
         {
-            i = AL[l];
-            weight = const_cast<int16_t*>(W)+i*K;
-            bias = const_cast<nn_bias_s*>(B)+i;
+            i = al->indices[l];
+            weight = config->weights2B+i*config->inputElementCount;
+            bias = config->biasesSimple+i;
 
             acc[0] = _mm256_setzero_si256();
             acc[1] = _mm256_setzero_si256();
@@ -174,11 +162,11 @@ void igemm16_subset(
 
             for (kk = 0; kk < nKpartial + 1; kk++)
             {
-                for (i = 0; i < N; i++)
+                for (i = 0; i < config->inputVectorCount; i++)
                 {
                     sum[i] += vec_sum(acc[i]);
                     acc[i] = _mm256_setzero_si256();
-                    saturate(&sum[i], nSat);
+                    saturate(&sum[i], config->saturationCount);
                 }
                 niters = kpartial < KK - kk * kpartial ? kpartial : KK - kk * kpartial;
                 ix_end = ix + niters / VEC_16CAP;
@@ -219,20 +207,20 @@ void igemm16_subset(
                 sum[1] += (int32_t)(input[1][j] * *weight);
             }
 
-            saturate_store_out(&sum[0], &out[0], nSat);
-            saturate_store_out(&sum[1], &out[1], nSat);
+            saturate_store_out(&sum[0], &output[0], config->saturationCount);
+            saturate_store_out(&sum[1], &output[1], config->saturationCount);
 
-            out += N;
+            output += config->inputVectorCount;
         }
     }
 
-    if (3 == N)
+    if (3 == config->inputVectorCount)
     {
-        for (l = 0; l < L; l++)
+        for (l = 0; l < al->count; l++)
         {
-            i = AL[l];
-            weight = const_cast<int16_t*>(W)+i*K;
-            bias = const_cast<nn_bias_s*>(B)+i;
+            i = al->indices[l];
+            weight = config->weights2B+i*config->inputElementCount;
+            bias = config->biasesSimple+i;
 
             acc[0] = _mm256_setzero_si256();
             acc[1] = _mm256_setzero_si256();
@@ -245,11 +233,11 @@ void igemm16_subset(
 
             for (kk = 0; kk < nKpartial + 1; kk++)
             {
-                for (i = 0; i < N; i++)
+                for (i = 0; i < config->inputVectorCount; i++)
                 {
                     sum[i] += vec_sum(acc[i]);
                     acc[i] = _mm256_setzero_si256();
-                    saturate(&sum[i], nSat);
+                    saturate(&sum[i], config->saturationCount);
                 }
                 niters = kpartial < KK - kk * kpartial ? kpartial : KK - kk * kpartial;
                 ix_end = ix + niters / VEC_16CAP;
@@ -298,23 +286,23 @@ void igemm16_subset(
                 sum[2] += (int32_t)(input[2][j] * *weight);
             }
 
-            saturate_store_out(&sum[0], &out[0], nSat);
-            saturate_store_out(&sum[1], &out[1], nSat);
-            saturate_store_out(&sum[2], &out[2], nSat);
+            saturate_store_out(&sum[0], &output[0], config->saturationCount);
+            saturate_store_out(&sum[1], &output[1], config->saturationCount);
+            saturate_store_out(&sum[2], &output[2], config->saturationCount);
 
-            out += N;
+            output += config->inputVectorCount;
         }
     }
 
-    if (4 == N)
+    if (4 == config->inputVectorCount)
     {
-        for (l = 0; l < L; l++)
+        for (l = 0; l < al->count; l++)
         {
-            i = AL[l];
-            weight = const_cast<int16_t*>(W)+i*K;
-            bias = const_cast<nn_bias_s*>(B)+i;
+            i = al->indices[l];
+            weight = config->weights2B+i*config->inputElementCount;
+            bias = config->biasesSimple+i;
 
-            for (i = 0; i < N; i++)
+            for (i = 0; i < config->inputVectorCount; i++)
             {
                 acc[i] = _mm256_setzero_si256();
                 sum[i] = *bias;
@@ -323,11 +311,11 @@ void igemm16_subset(
 
             for (kk = 0; kk < nKpartial + 1; kk++)
             {
-                for (i = 0; i < N; i++)
+                for (i = 0; i < config->inputVectorCount; i++)
                 {
                     sum[i] += vec_sum(acc[i]);
                     acc[i] = _mm256_setzero_si256();
-                    saturate(&sum[i], nSat);
+                    saturate(&sum[i], config->saturationCount);
                 }
 
                 niters = kpartial < KK - kk * kpartial ? kpartial : KK - kk * kpartial;
@@ -386,24 +374,24 @@ void igemm16_subset(
                 sum[3] += (int32_t)(input[3][j] * *weight);
             }
 
-            saturate_store_out(&sum[0], &out[0], nSat);
-            saturate_store_out(&sum[1], &out[1], nSat);
-            saturate_store_out(&sum[2], &out[2], nSat);
-            saturate_store_out(&sum[3], &out[3], nSat);
+            saturate_store_out(&sum[0], &output[0], config->saturationCount);
+            saturate_store_out(&sum[1], &output[1], config->saturationCount);
+            saturate_store_out(&sum[2], &output[2], config->saturationCount);
+            saturate_store_out(&sum[3], &output[3], config->saturationCount);
 
-            out += N;
+            output += config->inputVectorCount;
         }
     }
 
-    if (5 == N)
+    if (5 == config->inputVectorCount)
     {
-        for (l = 0; l < L; l++)
+        for (l = 0; l < al->count; l++)
         {
-            i = AL[l];
-            weight = const_cast<int16_t*>(W)+i*K;
-            bias = const_cast<nn_bias_s*>(B)+i;
+            i = al->indices[l];
+            weight = config->weights2B+i*config->inputElementCount;
+            bias = config->biasesSimple+i;
 
-            for (i = 0; i < N; i++)
+            for (i = 0; i < config->inputVectorCount; i++)
             {
                 acc[i] = _mm256_setzero_si256();
                 sum[i] = *bias;
@@ -412,11 +400,11 @@ void igemm16_subset(
 
             for (kk = 0; kk < nKpartial + 1; kk++)
             {
-                for (i = 0; i < N; i++)
+                for (i = 0; i < config->inputVectorCount; i++)
                 {
                     sum[i] += vec_sum(acc[i]);
                     acc[i] = _mm256_setzero_si256();
-                    saturate(&sum[i], nSat);
+                    saturate(&sum[i], config->saturationCount);
                 }
                 niters = kpartial < KK - kk * kpartial ? kpartial : KK - kk * kpartial;
                 ix_end = ix + niters / VEC_16CAP;
@@ -468,37 +456,37 @@ void igemm16_subset(
                 }
             }
 
-            for (i = 0; i < N; i++)
+            for (i = 0; i < config->inputVectorCount; i++)
             {
                 sum[i] += vec_sum(acc[i]);
             }
 
             for (j = 0; j < KT; j++, weight++)
             {
-                for (i = 0; i < N; i++)
+                for (i = 0; i < config->inputVectorCount; i++)
                 {
                     sum[i] += (int32_t)(input[i][j] * *weight);
                 }
             }
 
-            for (i = 0; i < N; i++)
+            for (i = 0; i < config->inputVectorCount; i++)
             {
-                saturate_store_out(&sum[i], &out[i], nSat);
+                saturate_store_out(&sum[i], &output[i], config->saturationCount);
             }
 
-            out += N;
+            output += config->inputVectorCount;
         }
     }
 
-    if (6 == N)
+    if (6 == config->inputVectorCount)
     {
-        for (l = 0; l < L; l++)
+        for (l = 0; l < al->count; l++)
         {
-            i = AL[l];
-            weight = const_cast<int16_t*>(W)+i*K;
-            bias = const_cast<nn_bias_s*>(B)+i;
+            i = al->indices[l];
+            weight = config->weights2B+i*config->inputElementCount;
+            bias = config->biasesSimple+i;
 
-            for (i = 0; i < N; i++)
+            for (i = 0; i < config->inputVectorCount; i++)
             {
                 acc[i] = _mm256_setzero_si256();
                 sum[i] = *bias;
@@ -507,11 +495,11 @@ void igemm16_subset(
 
             for (kk = 0; kk < nKpartial + 1; kk++)
             {
-                for (i = 0; i < N; i++)
+                for (i = 0; i < config->inputVectorCount; i++)
                 {
                     sum[i] += vec_sum(acc[i]);
                     acc[i] = _mm256_setzero_si256();
-                    saturate(&sum[i], nSat);
+                    saturate(&sum[i], config->saturationCount);
                 }
 
                 niters = kpartial < KK - kk * kpartial ? kpartial : KK - kk * kpartial;
@@ -571,37 +559,37 @@ void igemm16_subset(
                 }
             }
 
-            for (i = 0; i < N; i++)
+            for (i = 0; i < config->inputVectorCount; i++)
             {
                 sum[i] += vec_sum(acc[i]);
             }
 
             for (j = 0; j < KT; j++, weight++)
             {
-                for (i = 0; i < N; i++)
+                for (i = 0; i < config->inputVectorCount; i++)
                 {
                     sum[i] += (int32_t)(input[i][j] * *weight);
                 }
             }
 
-            for (i = 0; i < N; i++)
+            for (i = 0; i < config->inputVectorCount; i++)
             {
-                saturate_store_out(&sum[i], &out[i], nSat);
+                saturate_store_out(&sum[i], &output[i], config->saturationCount);
             }
 
-            out += N;
+            output += config->inputVectorCount;
         }
     }
 
-    if (7 == N)
+    if (7 == config->inputVectorCount)
     {
-        for (l = 0; l < L; l++)
+        for (l = 0; l < al->count; l++)
         {
-            i = AL[l];
-            weight = const_cast<int16_t*>(W)+i*K;
-            bias = const_cast<nn_bias_s*>(B)+i;
+            i = al->indices[l];
+            weight = config->weights2B+i*config->inputElementCount;
+            bias = config->biasesSimple+i;
 
-            for (i = 0; i < N; i++)
+            for (i = 0; i < config->inputVectorCount; i++)
             {
                 acc[i] = _mm256_setzero_si256();
                 sum[i] = *bias;
@@ -610,11 +598,11 @@ void igemm16_subset(
 
             for (kk = 0; kk < nKpartial + 1; kk++)
             {
-                for (i = 0; i < N; i++)
+                for (i = 0; i < config->inputVectorCount; i++)
                 {
                     sum[i] += vec_sum(acc[i]);
                     acc[i] = _mm256_setzero_si256();
-                    saturate(&sum[i], nSat);
+                    saturate(&sum[i], config->saturationCount);
                 }
                 niters = kpartial < KK - kk * kpartial ? kpartial : KK - kk * kpartial;
                 ix_end = ix + niters / VEC_16CAP;
@@ -680,35 +668,35 @@ void igemm16_subset(
                 }
             }
 
-            for (i = 0; i < N; i++)
+            for (i = 0; i < config->inputVectorCount; i++)
             {
                 sum[i] += vec_sum(acc[i]);
             }
 
             for (j = 0; j < KT; j++, weight++)
             {
-                for (i = 0; i < N; i++)
+                for (i = 0; i < config->inputVectorCount; i++)
                 {
                     sum[i] += (int32_t)(input[i][j] * *weight);
                 }
             }
 
-            for (i = 0; i < N; i++)
+            for (i = 0; i < config->inputVectorCount; i++)
             {
-                saturate_store_out(&sum[i], &out[i], nSat);
+                saturate_store_out(&sum[i], &output[i], config->saturationCount);
             }
 
-            out += N;
+            output += config->inputVectorCount;
         }
     }
 
-    if (8 == N)
+    if (8 == config->inputVectorCount)
     {
-        for (l = 0; l < L; l++)
+        for (l = 0; l < al->count; l++)
         {
-            i = AL[l];
-            weight = const_cast<int16_t*>(W)+i*K;
-            bias = const_cast<nn_bias_s*>(B)+i;
+            i = al->indices[l];
+            weight = config->weights2B+i*config->inputElementCount;
+            bias = config->biasesSimple+i;
 
             acc[0] = _mm256_setzero_si256();
             acc[1] = _mm256_setzero_si256();
@@ -719,7 +707,7 @@ void igemm16_subset(
             acc[6] = _mm256_setzero_si256();
             acc[7] = _mm256_setzero_si256();
 
-            for (i = 0; i < N; i++)
+            for (i = 0; i < config->inputVectorCount; i++)
             {
                 sum[i] = *bias;
             }
@@ -727,11 +715,11 @@ void igemm16_subset(
 
             for (kk = 0; kk < nKpartial + 1; kk++)
             {
-                for (i = 0; i < N; i++)
+                for (i = 0; i < config->inputVectorCount; i++)
                 {
                     sum[i] += vec_sum(acc[i]);
                     acc[i] = _mm256_setzero_si256();
-                    saturate(&sum[i], nSat);
+                    saturate(&sum[i], config->saturationCount);
                 }
                 niters = kpartial < KK - kk * kpartial ? kpartial : KK - kk * kpartial;
                 ix_end = ix + niters / VEC_16CAP;
@@ -804,38 +792,26 @@ void igemm16_subset(
                 }
             }
 
-            for (i = 0; i < N; i++)
+            for (i = 0; i < config->inputVectorCount; i++)
             {
                 sum[i] += vec_sum(acc[i]);
             }
 
             for (j = 0; j < KT; j++, weight++)
             {
-                for (i = 0; i < N; i++)
+                for (i = 0; i < config->inputVectorCount; i++)
                 {
                     sum[i] += (int32_t)(input[i][j] * *weight);
                 }
             }
 
-            for (i = 0; i < N; i++)
+            for (i = 0; i < config->inputVectorCount; i++)
             {
-                saturate_store_out(&sum[i], out++, nSat);
+                saturate_store_out(&sum[i], output++, config->saturationCount);
             }
         }
     }
 }
 
-void igemm16_subset_mb(
-    const uint32_t M,
-    const uint32_t N,
-    const uint32_t K,
-    const int16_t *I,
-    const int16_t *W,
-    const nn_bias_s *B,
-    const uint32_t BG,
-    int32_t *Y,
-    const uint32_t *AL,
-    const uint32_t L,
-    uint32_t *nSat,
-    KernelBuffers *bufs)
+void AffineMultiBiasActiveListKernelImpl2B(AffineConfig const * const config, AffineConfigAl const * const al)
 {}

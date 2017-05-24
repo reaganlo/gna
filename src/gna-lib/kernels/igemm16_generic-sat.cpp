@@ -26,17 +26,7 @@
 #include "igemv.h"
 #include "igemv16.h"
 
-void
-igemm16(
-    const   uint32_t    M,
-    const   uint32_t    N,
-    const   uint32_t    K,
-    const   int16_t*    I,
-    const   int16_t*    W,
-    const   nn_bias_s*  B,
-            int32_t*    O,
-            uint32_t*   nSat,
-    KernelBuffers* fvBuffers)
+void AffineKernelImpl2B(AffineConfig const * const config)
 {
     uint32_t i, j, k;
     int64_t sum;
@@ -44,71 +34,67 @@ igemm16(
     uint32_t kpartial;
     uint32_t nKpartial;
 
-    kpartial    = (hw_buf_size[N - 1]) / N;
-    nKpartial   = K / kpartial;
+    kpartial    = (hw_buf_size[config->inputVectorCount - 1]) / config->inputVectorCount;
+    nKpartial   = config->inputElementCount / kpartial;
 
-    transpose16(K, N, I, fvBuffers->d0);
+    TransposeConfig transposeConfig = TransposeConfig{ config->inputElementCount, config->inputVectorCount, 
+                                                       config->input, config->fvBuffers->d0 };
+    TransposeKernelImpl(&transposeConfig);
 
-    int16_t *ptr_in, *ptr_w;
+    int16_t const * input;
+    int16_t const * weight;
 
-    kpartial = (hw_buf_size[N - 1]) / N;
-    nKpartial = K / kpartial;
+    kpartial = (hw_buf_size[config->inputVectorCount - 1]) / config->inputVectorCount;
+    nKpartial = config->inputElementCount / kpartial;
 
-    for (i = 0; i < M; i++)
+    for (i = 0; i < config->outputElementCount; i++)
     {
-        for (j = 0; j < N; j++)
+        for (j = 0; j < config->inputVectorCount; j++)
         {
-            sum = B[i];
+            sum = config->biasesSimple[i];
             for (kk = 0; kk < nKpartial + 1; kk++) {
-                ptr_in = fvBuffers->d0 + j*K + kk * kpartial;
-                ptr_w = const_cast<int16_t*>(W + i*K + kk * kpartial);
-                for (k = 0; (k < kpartial) && (kk*kpartial + k < K); k++) {
-                    sum += (int32_t)(ptr_w[k] * ptr_in[k]);
+                input = config->fvBuffers->d0 + j*config->inputElementCount + kk * kpartial;
+                weight = config->weights2B + i*config->inputElementCount + kk * kpartial;
+                for (k = 0; (k < kpartial) && (kk*kpartial + k < config->inputElementCount); k++) {
+                    sum += (int32_t)(weight[k] * input[k]);
                 }
-                saturate_store_out(&sum, &O[i*N + j], nSat);
-                sum = (int64_t)O[i*N + j]; // load the temp sum
+                saturate_store_out(&sum, &config->output[i*config->inputVectorCount + j], config->saturationCount);
+                sum = (int64_t)config->output[i*config->inputVectorCount + j]; // load the temp sum
             }
         }
     }
 }
 
-void igemm16_mb(
-    const uint32_t M,
-    const uint32_t N,
-    const uint32_t K,
-    const int16_t *I,
-    const int16_t *W,
-    const nn_bias_s *B,
-    const uint32_t BG,
-    int32_t *O,
-    uint32_t *nSat,
-    KernelBuffers *fvBuffers)
+void AffineMultiBiasKernelImpl2B(AffineConfig const * const config)
 {
     uint32_t i, j, k;
     int64_t sum;
     uint32_t kk;
-    const uint32_t kpartial = (hw_buf_size[N - 1]) / N;
-    const uint32_t nKpartial = K / kpartial;
+    const uint32_t kpartial = (hw_buf_size[config->inputVectorCount - 1]) / config->inputVectorCount;
+    const uint32_t nKpartial = config->inputElementCount / kpartial;
 
-    transpose16(K, N, I, fvBuffers->d0);
+    TransposeConfig transposeConfig = TransposeConfig{ config->inputElementCount, config->inputVectorCount, 
+                                                       config->input, config->fvBuffers->d0 };
+    TransposeKernelImpl(&transposeConfig);
 
-    const int16_t *ptr_in, *ptr_w;
+    int16_t const * input;
+    int16_t const * weight;
 
-    for (i = 0; i < M; i++)
+    for (i = 0; i < config->outputElementCount; i++)
     {
-        for (j = 0; j < N; j++)
+        for (j = 0; j < config->inputVectorCount; j++)
         {
-            sum = B[i*BG];
+            sum = config->multiBias[i*config->multiBiasVectorCount];
             for (kk = 0; kk < nKpartial + 1; kk++)
             {
-                ptr_in = fvBuffers->d0 + j*K + kk*kpartial;
-                ptr_w = W + i*K + kk*kpartial;
-                for (k = 0; (k < kpartial) && (kk*kpartial + k < K); k++)
+                input = config->fvBuffers->d0 + j*config->inputElementCount + kk*kpartial;
+                weight = config->weights2B + i*config->inputElementCount + kk*kpartial;
+                for (k = 0; (k < kpartial) && (kk*kpartial + k < config->inputElementCount); k++)
                 {
-                    sum += ptr_w[k] * ptr_in[k];
+                    sum += weight[k] * input[k];
                 }
-                saturate_store_out(&sum, &O[i*N + j], nSat);
-                sum = O[i*N + j]; // load the temp sum
+                saturate_store_out(&sum, &config->output[i*config->inputVectorCount + j], config->saturationCount);
+                sum = config->output[i*config->inputVectorCount + j]; // load the temp sum
             }
         }
     }

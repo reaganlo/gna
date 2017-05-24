@@ -44,9 +44,6 @@ typedef enum _gmm_mode
 {
     GNA_MAXMIX8,                    // MaxMix mode with 1B Inverse Covariances, use with inverseCovariancesForMaxMix8.
     GNA_MAXMIX16,                   // MaxMix mode with 2B Inverse Covariances, use with inverseCovariancesForMaxMix16.
-    GNA_LINF,                       // L-infinite distance computation.
-    GNA_L1,                         // L-1 distance computation.
-    GNA_L2,                         // L-2 distance computation.
     GNA_GMM_MODES_COUNT             // Number of modes.
 
 } gna_gmm_mode;

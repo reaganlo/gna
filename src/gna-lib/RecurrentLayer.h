@@ -38,21 +38,22 @@ class RnnLayer : public Layer
 public:
     RnnLayer(nn_layer const * const layer);
     virtual ~RnnLayer() = default;
-
     const OutputBuffer CalculateFeedbackBuffer(const OutputBuffer& outputBuffer) const;
-    void SetFeedbackBuffer(const OutputBuffer& outputBuffer);// TODO: not multi-thread safe
+    virtual void UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const override;
 
     const std::unique_ptr<const AffineFunctionSingle> Affine;
     const std::unique_ptr<const ActivationFunction> Activation;
     const uint32_t FeedbackDelay;
 
 private:
-    inline void RnnLayer::SetFeedbackBuffer() // TODO: not multi-thread safe
-    {
-        SetFeedbackBuffer(Output.Buffer);
-    }
-    const nn_layer_reccurent *sourceLayer;
-    OutputBuffer feedbackBuffer;// TODO: not multi-thread safe
+    void computeHidden(acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const;
+    void computeConfig(const LayerConfiguration& layerConfiguration, acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const;
+
+    OutputBuffer feedbackBuffer;
+    const std::map<acceleration, RecurrentKernel>& recurrentKernels;
+
+    RecurrentConfig rnnHiddenConfig;
+    const PwlBaseConfig pwlBaseConfig;
 };
 
 }

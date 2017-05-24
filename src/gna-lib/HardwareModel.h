@@ -27,6 +27,7 @@
 
 #include <vector>
 
+#include "IoctlSender.h"
 #include "HardwareLayer.h"
 
 namespace GNA
@@ -36,6 +37,8 @@ class SoftwareModel;
 class Memory;
 class AccelerationDetector;
 class Layer;
+class RequestConfiguration;
+struct RequestProfiler;
 
 class HardwareModel
 {
@@ -47,6 +50,13 @@ public:
     ~HardwareModel() = default;
     HardwareModel(const HardwareModel &) = delete;
     HardwareModel& operator=(const HardwareModel&) = delete;
+
+    status_t HardwareModel::Score(
+        uint32_t layerIndex,
+        uint32_t layerCount,
+        const RequestConfiguration& requestConfiguration,
+        RequestProfiler *profiler,
+        KernelBuffers *buffers);
 
     inline uint32_t GetOffset(const BaseAddressC& address) const
     {
@@ -89,6 +99,8 @@ private:
     const uint32_t gmmDescriptorsSize;
 
     bool memoryMapped = false;
+
+    IoctlSender sender;
 };
 
 }

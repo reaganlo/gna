@@ -32,6 +32,7 @@
 #include "ActiveList.h"
 #include "FakeDetector.h"
 #include "Memory.h"
+#include "RequestConfiguration.h"
 #include "Validator.h"
 
 using std::ofstream;
@@ -42,8 +43,7 @@ using std::move;
 using namespace GNA;
 
 Device::Device(gna_device_id* deviceId, uint8_t threadCount) :
-    requestHandler{threadCount},
-    acceleratorController{accelerationDetector}
+    requestHandler{threadCount}
 {
     Expect::NotNull(deviceId);
 
@@ -64,7 +64,7 @@ void Device::AttachBuffer(gna_request_cfg_id configId, gna_buffer_type type, uin
 
 void Device::CreateConfiguration(gna_model_id modelId, gna_request_cfg_id *configId)
 {
-    const auto &model = modelContainer.GetModel(modelId);
+    auto &model = modelContainer.GetModel(modelId);
     requestBuilder.CreateConfiguration(model, configId);
 }
 
@@ -116,13 +116,7 @@ void Device::LoadModel(gna_model_id *modelId, const gna_model *raw_model)
 {
     try
     {
-        modelContainer.AllocateModel(modelId, raw_model, *totalMemory);
-        auto &model = modelContainer.GetModel(*modelId);
-        if (accelerationDetector.IsHardwarePresent())
-        {
-            totalMemory->Map(model.Id);
-        }
-        modelCompiler.CascadeCompile(model, accelerationDetector);
+        modelContainer.AllocateModel(modelId, raw_model, *totalMemory, accelerationDetector);
     }
     catch (...)
     {
@@ -133,7 +127,7 @@ void Device::LoadModel(gna_model_id *modelId, const gna_model *raw_model)
 
 void Device::PropagateRequest(gna_request_cfg_id configId, acceleration accel, gna_request_id *requestId)
 {
-    auto request = requestBuilder.CreateRequest(configId, accel, acceleratorController);
+    auto request = requestBuilder.CreateRequest(configId, accel);
     requestHandler.Enqueue(requestId, std::move(request));
 }
 

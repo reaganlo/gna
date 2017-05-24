@@ -26,53 +26,46 @@
 #include "igemv.h"
 #include "igemv8.h"
 
-void igemv8(
-    const uint32_t M,
-    const uint32_t K,
-    const int16_t* I,
-    const int16_t *FB,
-    const int8_t* W,
-    const nn_bias_c *B,
-          int32_t *O,
-          uint32_t *nSat)
+void RecurrentKernelImpl1B(RecurrentConfig const * const config)
 {
-    int16_t *input;
-    int16_t *feedback;
-    int16_t *feed_end = const_cast<int16_t*>(FB)+M;
+    int16_t const * input;
+    int16_t * feedback;
+    int16_t *feedbackEnd = config->feedbackBuffer+config->outputElementCount;
 
-    nn_bias_c *bias = const_cast<nn_bias_c*>(B), *bias_end = bias + M;
-    int32_t *out = const_cast<int32_t*>(O);
-    int8_t *weight = const_cast<int8_t*>(W);
+    nn_bias_c const * bias = config->biasesCompound; 
+    nn_bias_c const * const biasEnd= bias + config->outputElementCount;
+    int32_t * output = config->output;
+    int8_t const * weight = config->weights1B;
 
     __m256i in, w, ma, acc, inm0, inm1, inm2, zero;
 
     zero = _mm256_setzero_si256();
 
-    uint32_t allElems = K + M; // total # of in + out/fb elements
+    uint32_t allElems = config->inputElementCount + config->outputElementCount; // total # of in + output/fb elements
     uint32_t i, j, k, kk;
     int64_t sum;
 
-    uint32_t KK = K - K % VEC_16CAP;
+    uint32_t KK = config->inputElementCount - config->inputElementCount % VEC_16CAP;
     uint32_t part_sz = hw_buf_size[0];
-    uint32_t kpart_sz = K % part_sz;
-    uint32_t mpart_sz = M < part_sz - kpart_sz ? M
+    uint32_t kpart_sz = config->inputElementCount % part_sz;
+    uint32_t mpart_sz = config->outputElementCount < part_sz - kpart_sz ? config->outputElementCount
                                                : part_sz - kpart_sz;
     uint32_t mm = mpart_sz - mpart_sz % VEC_16CAP;
-    uint32_t MM = M - (M - mpart_sz) % VEC_16CAP;
+    uint32_t MM = config->outputElementCount - (config->outputElementCount - mpart_sz) % VEC_16CAP;
 
-    uint32_t kparts = K / part_sz;
-    uint32_t mparts = (M - mpart_sz) / part_sz;
+    uint32_t kparts = config->inputElementCount / part_sz;
+    uint32_t mparts = (config->outputElementCount - mpart_sz) / part_sz;
 
     acc = _mm256_setzero_si256();
 
-    for (; bias < bias_end; bias++)
+    for (; bias < biasEnd; bias++)
     {
-        input = const_cast<int16_t*>(I);
-        feedback = const_cast<int16_t*>(FB);
+        input = config->input;
+        feedback = config->feedbackBuffer;
         sum = bias->bias;
 
         // compute parts using AVX 
-        // if K has modulo 16 remainder, leave it
+        // if config->inputElementCount has modulo 16 remainder, leave it
         for (j = 0; j < kparts + 1; j++)
         {
             in = _mm256_lddqu_si256((__m256i*)input);
@@ -98,13 +91,13 @@ void igemv8(
             {
                 sum += vec_sum(acc) * bias->multiplier;
                 acc = _mm256_setzero_si256();
-                saturate_store_out(&sum, out, nSat);
-                sum = (int64_t)*out;
+                saturate_store_out(&sum, output, config->saturationCount);
+                sum = (int64_t)*output;
             }
         }
 
         // compute remainder
-        for (k = KK; k < K; k++)
+        for (k = KK; k < config->inputElementCount; k++)
         {
             sum += (int32_t)(*input++ * *weight++ * bias->multiplier);
         }
@@ -113,7 +106,7 @@ void igemv8(
         w = _mm256_cvtepi8_epi16(_mm_lddqu_si128((__m128i*)weight));
 
         // compute using AVX instructions until additions reach part size
-        // or if loop reaches end of M (without the modulo 16 remainder)
+        // or if loop reaches end of config->outputElementCount (without the modulo 16 remainder)
         for (k = 0; k < mm; k += VEC_16CAP)
         {
             feedback += VEC_16CAP;
@@ -130,7 +123,7 @@ void igemv8(
             w = _mm256_cvtepi8_epi16(_mm_lddqu_si128((__m128i*)weight));
         }
  
-        // there is still M remainder
+        // there is still config->outputElementCount remainder
         for (; k < mpart_sz; k++)
         {
             sum += (int32_t)(*feedback++ * *weight++ * bias->multiplier);
@@ -139,8 +132,8 @@ void igemv8(
 
         sum += vec_sum(acc) * bias->multiplier;
         acc = _mm256_setzero_si256();
-        saturate_store_out(&sum, out, nSat);
-        sum = (int64_t)*out;
+        saturate_store_out(&sum, output, config->saturationCount);
+        sum = (int64_t)*output;
 
         for (j = 0; j < mparts + 1; j++)
         {
@@ -164,22 +157,22 @@ void igemv8(
             {
                 sum += vec_sum(acc) * bias->multiplier;
                 acc = _mm256_setzero_si256();
-                saturate_store_out(&sum, out, nSat);
-                sum = (int64_t)*out;
+                saturate_store_out(&sum, output, config->saturationCount);
+                sum = (int64_t)*output;
             }
         }
 
         // if there's remainder from mparts
-        for (; feedback < feed_end;)
+        for (; feedback < feedbackEnd;)
         {
             sum += *feedback++ * *weight++;
         }
 
         sum += vec_sum(acc) * bias->multiplier;
         acc = _mm256_setzero_si256();
-        saturate_store_out(&sum, out, nSat);
-        sum = (int64_t)*out;
+        saturate_store_out(&sum, output, config->saturationCount);
+        sum = (int64_t)*output;
 
-        out++;
+        output++;
     }
 }

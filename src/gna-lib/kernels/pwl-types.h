@@ -25,7 +25,7 @@
 
 #pragma once
 
-#include "common.h"
+#include "KernelArguments.h"
 
 /**
 * PWL Segment x base type
@@ -76,35 +76,8 @@ typedef struct __pwl_y
     int16_t     yBase;
 } pwl_y_t;
 
-static_assert(8 == sizeof(pwl_y_t), "Invalid size of pwl_y_t");
-
-/**
-* Parameters for PWL functions - type declaration
-*/
-struct __pwl_params;
-
-/**
-* Function pointer for apply PWL for single input-output
-*/
-typedef
-void
-(*PwlApplySingle)(
-    struct __pwl_params*     params,
-    int32_t         I,
-    int16_t*        O);
-
-/**
-* Function pointer for apply PWL for all inputs-outputs
-*/
-typedef
-void
-(*PwlApplyAll)(
-    struct __pwl_params*     params);
-
-/**
-* Parameters for PWL function
-*/
-typedef struct __pwl_params
+// PWL cache and config (constant for given layer)
+struct __PwlCached
 {
     pwl_x_t         xBase0Lu;               // first segment xBase value (Lookup algorithm)
     pwl_x_t         xBase0Neg;              // first segment xBase value x -1 for addition only  (Lookup algorithm)
@@ -115,29 +88,21 @@ typedef struct __pwl_params
     int16_t         shift0;                 // first segment extracted shift value (Lookup algorithm)
     int16_t         yBase0Lu;               // first segment yBase value (Lookup algorithm)
     int16_t         yBase0Bi;               // first segment yBase value (binary search algorithm)
-
-    uint32_t        nRowBegin;              // output row start
-    uint32_t        nRowEnd;                // output row end
-
-    uint32_t        nColBegin;              // output column start
-    uint32_t        nColEnd;                // output column end
-
-    uint32_t        nOutCols;               // number of output columns
+    PwlBaseConfig   config;
+    uint32_t        _reserved1;             // padding
     uint16_t        count;                  // number of lookup segments (active)
-    uint8_t         width;                  // lookup segment width (as bit shift divisor)
-    uint8_t         NS;                     // number of PWL segments
-
-    int32_t*        I;                      // input values
-    int16_t*        O;                      // output values
-    uint32_t*       nSaturated;             // number of saturation
+    uint8_t         width;                  // padding
+    uint8_t         _reserved2;
     pwl_u_t*        lookup;                 // lookup table data
     pwl_x_t*        xBase;                  // extracted PWL segments xBase data
     pwl_y_t*        ySeg;                   // extracted PWL segments value data
-    nn_pwl_seg*   prevLu;                 // previous PWL segments data for lookup table
-    nn_pwl_seg*   prevBi;                 // previous PWL segments data for binary search
+    const nn_pwl_seg* prevLu;                 // previous PWL segments data for lookup table
+    const nn_pwl_seg* prevBi;                 // previous PWL segments data for binary search
     PwlApplySingle  pwlSingle;              // algorithm used for PWL for single in-out
     PwlApplyAll     pwlAll;                 // algorithm used for PWL for all in-outs
-} pwl_params;
+};
+
+static_assert(8 == sizeof(pwl_y_t), "Invalid size of pwl_y_t");
 
 /**
 * PWL LOOKUP table number of elements
@@ -162,7 +127,7 @@ const int32_t PWL_LOOKUP_SIZE = (PWL_LOOKUP_COUNT) * PWL_LOOKUP_SEG_SIZE;
 /**
 * Size of additional buffer for unpacked PWL cache
 */
-const int32_t PWL_PARAMS_BUFFER_SIZE = ALIGN64(sizeof(pwl_params));
+const int32_t PWL_PARAMS_BUFFER_SIZE = ALIGN64(sizeof(PwlCached));
 
 /**
 * PWL xBase buffer size in bytes

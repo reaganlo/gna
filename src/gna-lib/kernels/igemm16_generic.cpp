@@ -26,78 +26,64 @@
 #include "igemv.h"
 #include "igemv16.h"
 
-void
-igemm16(
-    const   uint32_t    M,
-    const   uint32_t    N,
-    const   uint32_t    K,
-    const   int16_t*    I,
-    const   int16_t*    W,
-    const   nn_bias_s*  B,
-            int32_t*    O,
-            uint32_t*   nSat,
-    KernelBuffers* fvBuffers)
+void AffineKernelImpl2B(AffineConfig const * const config)
 {
     uint32_t i, j, k;
-    int16_t *ptr_in, *ptr_w = const_cast<int16_t*>(W);
+    int16_t const * input;
+    int16_t const * weight = config->weights2B;
 
-    int32_t *ptr_out = O,
-            *ptr_b = const_cast<nn_bias_s*>(B),
-            *b_end = ptr_b + M;
+    int32_t * output = config->output;
+    int32_t const * bias = config->biasesSimple;
+    int32_t const * const biasEnd = bias + config->outputElementCount;
 
-    transpose16(K, N, I, fvBuffers->d0);
+    TransposeConfig transposeConfig = TransposeConfig{ config->inputElementCount, config->inputVectorCount, config->input, config->fvBuffers->d0 };
+    TransposeKernelImpl(&transposeConfig);
 
-    for (; ptr_b < b_end;)
+    for (; bias < biasEnd;)
     {
-        ptr_in = fvBuffers->d0;
-        for (j = 0; j < N; j++)
+        input = config->fvBuffers->d0;
+        for (j = 0; j < config->inputVectorCount; j++)
         {
-            *ptr_out = *ptr_b;
-            for (k = 0; k < K; k++)
+            *output = *bias;
+            for (k = 0; k < config->inputElementCount; k++)
             {
-                *ptr_out += ptr_w[k] * *ptr_in++;
+                *output += weight[k] * *input++;
             }
 
-            ptr_out++;
+            output++;
         }
-        ptr_w += K;
-        ptr_b++;
+        weight += config->inputElementCount;
+        bias++;
     }
 }
 
-void
-igemm16_mb(
-    const   uint32_t    M,
-    const   uint32_t    N,
-    const   uint32_t    K,
-    const   int16_t*    I,
-    const   int16_t*    W,
-    const   nn_bias_s*  B,
-    const   uint32_t    BG,
-    int32_t*    O,
-    uint32_t*   nSat,
-    KernelBuffers* fvBuffers)
+void AffineMultiBiasKernelImpl2B(AffineConfig const * const config)
 {
     uint32_t j, k;
-    const int16_t *ptr_in;
-    const int32_t * const b_end = B + M*BG;
+    int32_t * output = config->output;
+    int16_t const * input;
+    int32_t const * const biasEnd = config->multiBias + config->outputElementCount*config->multiBiasVectorCount;
+    int16_t const * weight = config->weights2B;
+    nn_bias_s const * multiBias = config->multiBias;
 
-    transpose16(K, N, I, fvBuffers->d0);
+    TransposeConfig transposeConfig = TransposeConfig{ config->inputElementCount, config->inputVectorCount, 
+                                                       config->input, config->fvBuffers->d0 };
+    TransposeKernelImpl(&transposeConfig);
 
-    for (; B < b_end;)
+    for (; config->multiBias < biasEnd;)
     {
-        ptr_in = fvBuffers->d0;
-        for (j = 0; j < N; j++)
+        input = config->fvBuffers->d0;
+        for (j = 0; j < config->inputVectorCount; j++)
         {
-            *O = *B;
-            for (k = 0; k < K; k++)
+            *config->output = *config->multiBias;
+            for (k = 0; k < config->inputElementCount; k++)
             {
-                *O += W[k] * *ptr_in++;
+                *config->output += config->weights2B[k] * *input++;
             }
 
-            O++;
+            output++;
         }
-        W += K;
-        B += BG;
+        weight += config->inputElementCount;
+        multiBias += config->multiBiasVectorCount;
     }
 }

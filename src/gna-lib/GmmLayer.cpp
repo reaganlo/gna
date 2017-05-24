@@ -24,6 +24,8 @@
 */
 
 #include "GmmLayer.h"
+
+#include "LayerConfiguration.h"
 #include "Validator.h"
 
 using namespace GNA;
@@ -49,9 +51,65 @@ GmmLayer::GmmLayer(const nn_layer *layer) :
     Layer(layer),
     Config((static_cast<gna_gmm_layer*>(layer->pLayerStruct))->config),
     Data((static_cast<gna_gmm_layer*>(layer->pLayerStruct))->data),
-    Params{Config, Input.ElementCount}
+    Params{ Config, Input.ElementCount },
+    gmmKernels{ AccelerationDetector::GmmKernels.at(Config.mode) },
+    gmmActiveListKernels{ AccelerationDetector::GmmActiveListKernels.at(Config.mode) },
+    gmmHiddenConfig{ Input.VectorCount, Input.ElementCount, Config.mixtureComponentCount, Params.MeanSetOffsetSize, Params.VarSetOffsetSize,
+                    Params.GaussConstSetOffsetSize, Config.maximumScore, Config.stateCount, &Data, Input.Buffer, Output.Buffer, nullptr }
 {
     validate();
+
+    Layer::ComputeHidden = [this](acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) 
+                    {this->computeHidden(accel, fvBuffers, saturationCount); };
+
+    Layer::ComputeConfig = [this](LayerConfiguration &layerConfiguration, acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) 
+                    {this->computeConfig(layerConfiguration, accel, fvBuffers, saturationCount); };
+}
+
+void GmmLayer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const
+{
+    auto inputBuffer = layerConfiguration.InputBuffer
+        ? layerConfiguration.InputBuffer->Get<uint8_t>() : Input.Buffer;
+
+    auto outputBuffer = layerConfiguration.OutputBuffer
+        ? layerConfiguration.OutputBuffer->Get<uint8_t>() : Output.Buffer;
+
+    if(!layerConfiguration.gmmConfig)
+        layerConfiguration.gmmConfig = std::make_unique<GmmConfig>(gmmHiddenConfig);
+    if (layerConfiguration.ActiveList)
+    {
+        ValidateActiveList(layerConfiguration.ActiveList.get());
+        layerConfiguration.gmmConfig->stateCount = layerConfiguration.ActiveList->IndicesCount;
+    }
+    layerConfiguration.gmmConfig->input = inputBuffer;
+    layerConfiguration.gmmConfig->input = outputBuffer;
+}
+
+void GmmLayer::computeHidden(acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const
+{
+    auto gmmConfig = gmmHiddenConfig;
+    gmmConfig.inputScratchPad = reinterpret_cast<uint8_t*>(fvBuffers->d0);
+
+    gmmKernels.at(accel)(&gmmConfig);
+
+    checkScoresSaturation(Config.stateCount, Input.VectorCount, Output.Buffer, Config.maximumScore, *saturationCount);
+}
+
+void GmmLayer::computeConfig(const LayerConfiguration& layerConfiguration, acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const
+{
+    auto gmmConfig = *layerConfiguration.gmmConfig;
+    gmmConfig.inputScratchPad = reinterpret_cast<uint8_t*>(fvBuffers->d0);
+
+    if (layerConfiguration.ActiveList)
+    {
+        gmmActiveListKernels.at(accel)(&gmmConfig, layerConfiguration.ActiveList->Indices);
+    }
+    else
+    {
+        gmmKernels.at(accel)(&gmmConfig);
+    }
+
+    checkScoresSaturation(gmmConfig.stateCount, Input.VectorCount, gmmConfig.output, Config.maximumScore, *saturationCount);
 }
 
 void GmmLayer::ValidateActiveList(ActiveList const * const activeList) const
@@ -62,9 +120,23 @@ void GmmLayer::ValidateActiveList(ActiveList const * const activeList) const
     }
 }
 
+void GmmLayer::checkScoresSaturation(const uint32_t& nGMMs, const uint32_t& nVectors, const uint32_t * pS,
+    const uint32_t& maximumScore, uint32_t& nSaturated) const
+{
+    for (auto i = 0ui32; i < nGMMs * nVectors; i++)
+    {
+        if (maximumScore == *pS)
+        {
+            nSaturated++;
+            return;
+        }
+        pS++;
+    }
+}
+
 void GmmLayer::validate()
 {
-    Output.SetOutputMode(LayerOutput::NonActivatedOutput, sourceLayer.nBytesPerOutput);
+    Output.SetOutputMode(LayerOutput::NonActivatedOutput, GMM_SCORE_SIZE);
     Expect::InRange(Input.ElementCount, GMM_FV_ELEMENT_COUNT_MIN, GMM_FV_ELEMENT_COUNT_MAX, GNA_BADFEATLENGTH);
     Expect::InRange(Config.stateCount, 1, GMM_STATES_COUNT_MAX, GMM_BADNUMGMM);
     Expect::InRange(Config.mixtureComponentCount, 1, GMM_MIXTURE_COMP_COUNT_MAX, GMM_BADMIXCNUM);
@@ -75,5 +147,5 @@ void GmmLayer::validate()
     Expect::AlignedTo(Data.meanValues, GMM_MEM_ALIGNMENT, GMM_BADMEANALIGN);
     Expect::NotNull(Data.inverseCovariancesForMaxMix16);
     Expect::AlignedTo(Data.inverseCovariancesForMaxMix16, GMM_MEM_ALIGNMENT, GMM_BADVARSALIGN);
-    Expect::InRange(Config.layout, GMM_LAYOUT_FLAT, GMM_LAYOUT_INTERLEAVED, GMM_CFG_INVALID_LAYOUT);    
+    Expect::InRange(Config.layout, GMM_LAYOUT_FLAT, GMM_LAYOUT_INTERLEAVED, GMM_CFG_INVALID_LAYOUT);
 }

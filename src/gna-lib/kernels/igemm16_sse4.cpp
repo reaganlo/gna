@@ -23,42 +23,34 @@
  in any way.
 */
 
+#include <string.h>
+
 #include "igemv.h"
 #include "igemv16.h"
-#include "string.h"
 
-void
-igemm16(
-    const uint32_t M,
-    const uint32_t N,
-    const uint32_t K,
-    const int16_t *I,
-    const int16_t *W,
-    const nn_bias_s *B,
-          int32_t *Y,
-          uint32_t *nSat,
-          KernelBuffers* fvBuffers)
+void AffineKernelImpl2B(AffineConfig const * const config)
 {
-    int32_t *y = Y;
-    int16_t *weight = const_cast<int16_t*>(W);
-    int16_t *input_0, *input_1, *input_2, *input_3, *input_4, *input_5, *input_6, *input_7;
+    int32_t * output = config->output;
+    int16_t const * weight = config->weights2B;
+    int16_t const * input_0, *input_1, *input_2, *input_3, *input_4, *input_5, *input_6, *input_7;
 
     uint32_t i, j, ix, ix_end;
-    uint32_t KT = K % SSE_16CAP;
-    uint32_t KK = K - KT;
+    uint32_t KT = config->inputElementCount % SSE_16CAP;
+    uint32_t KK = config->inputElementCount - KT;
     __m128i *in_ptr0, *in_ptr1, *in_ptr2, *in_ptr3, *in_ptr4, *in_ptr5, *in_ptr6, *in_ptr7;
     __m128i v0, v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14, v15;
     __m128i in0, in1, in2, in3, in4, in5, in6, in7, w;
     __m128i acc0, acc1, acc2, acc3, acc4, acc5, acc6, acc7;
     __m128i s1, s2, s3, s4;
-    nn_bias_s *b, *be = const_cast<nn_bias_s*>(B)+M;
+    nn_bias_s const * bias;
+    nn_bias_s const * const biasEnd = config->biasesSimple + config->outputElementCount;
 
-    if (1 == N)
+    if (1 == config->inputVectorCount)
     {
-        in_ptr0 = (__m128i*)I;
-        input_0 = const_cast<int16_t*>(I)+KK;
+        in_ptr0 = (__m128i*)config->input;
+        input_0 = config->input+KK;
         ix_end = KK / SSE_16CAP;
-        for (b = const_cast<nn_bias_s*>(B); b < be; b++)
+        for (bias = config->biasesSimple; bias < biasEnd; bias++)
         {
             acc0 = _mm_setzero_si128();
 
@@ -72,56 +64,56 @@ igemm16(
                 acc0 = _mm_add_epi32(acc0, in0);
             }
 
-            *y = vec_sum(acc0) + *b;
+            *output = vec_sum(acc0) + *bias;
             for (i = 0; i < KT; i++, weight++)
             {
-                *y += input_0[i] * *weight;
+                *output += input_0[i] * *weight;
             }
-            y++;
+            output++;
         }
 
         return;
     }
 
-    switch (N)
+    switch (config->inputVectorCount)
     {
     case 8: 
-        for (i = 0; i < K; i++) fvBuffers->d7[i] = I[i*N + 7];
-        in_ptr7 = (__m128i*)fvBuffers->d7;
-        input_7 = fvBuffers->d7 + KK;
+        for (i = 0; i < config->inputElementCount; i++) config->fvBuffers->d7[i] = config->input[i*config->inputVectorCount + 7];
+        in_ptr7 = (__m128i*)config->fvBuffers->d7;
+        input_7 = config->fvBuffers->d7 + KK;
     case 7: 
-        for (i = 0; i < K; i++) fvBuffers->d6[i] = I[i*N + 6];
-        in_ptr6 = (__m128i*)fvBuffers->d6;
-        input_6 = fvBuffers->d6 + KK;
+        for (i = 0; i < config->inputElementCount; i++) config->fvBuffers->d6[i] = config->input[i*config->inputVectorCount + 6];
+        in_ptr6 = (__m128i*)config->fvBuffers->d6;
+        input_6 = config->fvBuffers->d6 + KK;
     case 6: 
-        for (i = 0; i < K; i++) fvBuffers->d5[i] = I[i*N + 5];
-        in_ptr5 = (__m128i*)fvBuffers->d5;
-        input_5 = fvBuffers->d5 + KK;
+        for (i = 0; i < config->inputElementCount; i++) config->fvBuffers->d5[i] = config->input[i*config->inputVectorCount + 5];
+        in_ptr5 = (__m128i*)config->fvBuffers->d5;
+        input_5 = config->fvBuffers->d5 + KK;
     case 5: 
-        for (i = 0; i < K; i++) fvBuffers->d4[i] = I[i*N + 4];
-        in_ptr4 = (__m128i*)fvBuffers->d4;
-        input_4 = fvBuffers->d4 + KK;
+        for (i = 0; i < config->inputElementCount; i++) config->fvBuffers->d4[i] = config->input[i*config->inputVectorCount + 4];
+        in_ptr4 = (__m128i*)config->fvBuffers->d4;
+        input_4 = config->fvBuffers->d4 + KK;
     case 4: 
-        for (i = 0; i < K; i++) fvBuffers->d3[i] = I[i*N + 3];
-        in_ptr3 = (__m128i*)fvBuffers->d3;
-        input_3 = fvBuffers->d3 + KK;
+        for (i = 0; i < config->inputElementCount; i++) config->fvBuffers->d3[i] = config->input[i*config->inputVectorCount + 3];
+        in_ptr3 = (__m128i*)config->fvBuffers->d3;
+        input_3 = config->fvBuffers->d3 + KK;
     case 3: 
-        for (i = 0; i < K; i++) fvBuffers->d2[i] = I[i*N + 2];
-        in_ptr2 = (__m128i*)fvBuffers->d2;
-        input_2 = fvBuffers->d2 + KK;
+        for (i = 0; i < config->inputElementCount; i++) config->fvBuffers->d2[i] = config->input[i*config->inputVectorCount + 2];
+        in_ptr2 = (__m128i*)config->fvBuffers->d2;
+        input_2 = config->fvBuffers->d2 + KK;
     case 2: 
-        for (i = 0; i < K; i++) fvBuffers->d1[i] = I[i*N + 1];
-        in_ptr1 = (__m128i*)fvBuffers->d1;
-        input_1 = fvBuffers->d1 + KK;
-        for (i = 0; i < K; i++) fvBuffers->d0[i] = I[i*N];
-        in_ptr0 = (__m128i*)fvBuffers->d0;
-        input_0 = fvBuffers->d0 + KK;
+        for (i = 0; i < config->inputElementCount; i++) config->fvBuffers->d1[i] = config->input[i*config->inputVectorCount + 1];
+        in_ptr1 = (__m128i*)config->fvBuffers->d1;
+        input_1 = config->fvBuffers->d1 + KK;
+        for (i = 0; i < config->inputElementCount; i++) config->fvBuffers->d0[i] = config->input[i*config->inputVectorCount];
+        in_ptr0 = (__m128i*)config->fvBuffers->d0;
+        input_0 = config->fvBuffers->d0 + KK;
     }
     ix_end = KK / SSE_16CAP;
 
-    if (2 == N)
+    if (2 == config->inputVectorCount)
     {
-        for (b = const_cast<nn_bias_s*>(B); b < be; b++)
+        for (bias = config->biasesSimple; bias < biasEnd; bias++)
         {
             acc0 = _mm_setzero_si128();
             acc1 = _mm_setzero_si128();
@@ -141,24 +133,24 @@ igemm16(
                 acc1 = _mm_add_epi32(acc1, in1);
             }
 
-            y[0] = *b + vec_sum(acc0);
-            y[1] = *b + vec_sum(acc1);
+            output[0] = *bias + vec_sum(acc0);
+            output[1] = *bias + vec_sum(acc1);
 
             for (i = 0; i < KT; i++, weight++)
             {
-                y[0] += input_0[i] * *weight;
-                y[1] += input_1[i] * *weight;
+                output[0] += input_0[i] * *weight;
+                output[1] += input_1[i] * *weight;
             }
 
-            y += N;
+            output += config->inputVectorCount;
         }
 
         return;
     }
 
-    if (3 == N)
+    if (3 == config->inputVectorCount)
     {
-        for (b = const_cast<nn_bias_s*>(B); b < be; b++)
+        for (bias = config->biasesSimple; bias < biasEnd; bias++)
         {
             acc0 = _mm_setzero_si128();
             acc1 = _mm_setzero_si128();
@@ -182,26 +174,26 @@ igemm16(
                 acc2 = _mm_add_epi32(acc2, in2);
             }
 
-            y[0] = *b + vec_sum(acc0);
-            y[1] = *b + vec_sum(acc1);
-            y[2] = *b + vec_sum(acc2);
+            output[0] = *bias + vec_sum(acc0);
+            output[1] = *bias + vec_sum(acc1);
+            output[2] = *bias + vec_sum(acc2);
 
             for (i = 0; i < KT; i++, weight++)
             {
-                y[0] += input_0[i] * *weight;
-                y[1] += input_1[i] * *weight;
-                y[2] += input_2[i] * *weight;
+                output[0] += input_0[i] * *weight;
+                output[1] += input_1[i] * *weight;
+                output[2] += input_2[i] * *weight;
             }
 
-            y += N;
+            output += config->inputVectorCount;
         }
 
         return;
     }
 
-    if (4 == N)
+    if (4 == config->inputVectorCount)
     {
-        for (b = const_cast<nn_bias_s*>(B); b < be; b++)
+        for (bias = config->biasesSimple; bias < biasEnd; bias++)
         {
             acc0 = _mm_setzero_si128();
             acc1 = _mm_setzero_si128();
@@ -229,28 +221,28 @@ igemm16(
                 acc3 = _mm_add_epi32(acc3, in3);
             }
 
-            y[0] = *b + vec_sum(acc0);
-            y[1] = *b + vec_sum(acc1);
-            y[2] = *b + vec_sum(acc2);
-            y[3] = *b + vec_sum(acc3);
+            output[0] = *bias + vec_sum(acc0);
+            output[1] = *bias + vec_sum(acc1);
+            output[2] = *bias + vec_sum(acc2);
+            output[3] = *bias + vec_sum(acc3);
 
             for (i = 0; i < KT; i++, weight++)
             {
-                y[0] += input_0[i] * *weight;
-                y[1] += input_1[i] * *weight;
-                y[2] += input_2[i] * *weight;
-                y[3] += input_3[i] * *weight;
+                output[0] += input_0[i] * *weight;
+                output[1] += input_1[i] * *weight;
+                output[2] += input_2[i] * *weight;
+                output[3] += input_3[i] * *weight;
             }
 
-            y += N;
+            output += config->inputVectorCount;
         }
 
         return;
     }
 
-    if (5 == N)
+    if (5 == config->inputVectorCount)
     {
-        for (b = const_cast<nn_bias_s*>(B); b < be; b++)
+        for (bias = config->biasesSimple; bias < biasEnd; bias++)
         {
             acc0 = _mm_setzero_si128();
             acc1 = _mm_setzero_si128();
@@ -282,30 +274,30 @@ igemm16(
                 acc4 = _mm_add_epi32(acc4, in4);
             }
 
-            y[0] = *b + vec_sum(acc0);
-            y[1] = *b + vec_sum(acc1);
-            y[2] = *b + vec_sum(acc2);
-            y[3] = *b + vec_sum(acc3);
-            y[4] = *b + vec_sum(acc4);
+            output[0] = *bias + vec_sum(acc0);
+            output[1] = *bias + vec_sum(acc1);
+            output[2] = *bias + vec_sum(acc2);
+            output[3] = *bias + vec_sum(acc3);
+            output[4] = *bias + vec_sum(acc4);
 
             for (i = 0; i < KT; i++, weight++)
             {
-                y[0] += input_0[i] * *weight;
-                y[1] += input_1[i] * *weight;
-                y[2] += input_2[i] * *weight;
-                y[3] += input_3[i] * *weight;
-                y[4] += input_4[i] * *weight;
+                output[0] += input_0[i] * *weight;
+                output[1] += input_1[i] * *weight;
+                output[2] += input_2[i] * *weight;
+                output[3] += input_3[i] * *weight;
+                output[4] += input_4[i] * *weight;
             }
 
-            y += N;
+            output += config->inputVectorCount;
         }
 
         return;
     }
 
-    if (6 == N)
+    if (6 == config->inputVectorCount)
     {
-        for (b = const_cast<nn_bias_s*>(B); b < be; b++)
+        for (bias = config->biasesSimple; bias < biasEnd; bias++)
         {
             acc0 = _mm_setzero_si128();
             acc1 = _mm_setzero_si128();
@@ -341,32 +333,32 @@ igemm16(
                 acc5 = _mm_add_epi32(acc5, in5);
             }
 
-            y[0] = *b + vec_sum(acc0);
-            y[1] = *b + vec_sum(acc1);
-            y[2] = *b + vec_sum(acc2);
-            y[3] = *b + vec_sum(acc3);
-            y[4] = *b + vec_sum(acc4);
-            y[5] = *b + vec_sum(acc5);
+            output[0] = *bias + vec_sum(acc0);
+            output[1] = *bias + vec_sum(acc1);
+            output[2] = *bias + vec_sum(acc2);
+            output[3] = *bias + vec_sum(acc3);
+            output[4] = *bias + vec_sum(acc4);
+            output[5] = *bias + vec_sum(acc5);
 
             for (i = 0; i < KT; i++, weight++)
             {
-                y[0] += input_0[i] * *weight;
-                y[1] += input_1[i] * *weight;
-                y[2] += input_2[i] * *weight;
-                y[3] += input_3[i] * *weight;
-                y[4] += input_4[i] * *weight;
-                y[5] += input_5[i] * *weight;
+                output[0] += input_0[i] * *weight;
+                output[1] += input_1[i] * *weight;
+                output[2] += input_2[i] * *weight;
+                output[3] += input_3[i] * *weight;
+                output[4] += input_4[i] * *weight;
+                output[5] += input_5[i] * *weight;
             }
 
-            y += N;
+            output += config->inputVectorCount;
         }
 
         return;
     }
 
-    if (7 == N)
+    if (7 == config->inputVectorCount)
     {
-        for (b = const_cast<nn_bias_s*>(B); b < be; b++)
+        for (bias = config->biasesSimple; bias < biasEnd; bias++)
         {
             acc0 = _mm_setzero_si128();
             acc1 = _mm_setzero_si128();
@@ -406,34 +398,34 @@ igemm16(
                 acc6 = _mm_add_epi32(acc6, in6);
             }
 
-            y[0] = *b + vec_sum(acc0);
-            y[1] = *b + vec_sum(acc1);
-            y[2] = *b + vec_sum(acc2);
-            y[3] = *b + vec_sum(acc3);
-            y[4] = *b + vec_sum(acc4);
-            y[5] = *b + vec_sum(acc5);
-            y[6] = *b + vec_sum(acc6);
+            output[0] = *bias + vec_sum(acc0);
+            output[1] = *bias + vec_sum(acc1);
+            output[2] = *bias + vec_sum(acc2);
+            output[3] = *bias + vec_sum(acc3);
+            output[4] = *bias + vec_sum(acc4);
+            output[5] = *bias + vec_sum(acc5);
+            output[6] = *bias + vec_sum(acc6);
 
             for (i = 0; i < KT; i++, weight++)
             {
-                y[0] += input_0[i] * *weight;
-                y[1] += input_1[i] * *weight;
-                y[2] += input_2[i] * *weight;
-                y[3] += input_3[i] * *weight;
-                y[4] += input_4[i] * *weight;
-                y[5] += input_5[i] * *weight;
-                y[6] += input_6[i] * *weight;
+                output[0] += input_0[i] * *weight;
+                output[1] += input_1[i] * *weight;
+                output[2] += input_2[i] * *weight;
+                output[3] += input_3[i] * *weight;
+                output[4] += input_4[i] * *weight;
+                output[5] += input_5[i] * *weight;
+                output[6] += input_6[i] * *weight;
             }
 
-            y += N;
+            output += config->inputVectorCount;
         }
 
         return;
     }
 
-    if (8 == N)
+    if (8 == config->inputVectorCount)
     {
-        for (b = const_cast<nn_bias_s*>(B); b < be; b++)
+        for (bias = config->biasesSimple; bias < biasEnd; bias++)
         {
             acc0 = _mm_setzero_si128();
             acc1 = _mm_setzero_si128();
@@ -458,42 +450,32 @@ igemm16(
                 acc7 = _mm_add_epi32(acc7, _mm_madd_epi16(_mm_load_si128(in_ptr7 + ix), w));
             }
 
-            y[0] = *b + vec_sum(acc0);
-            y[1] = *b + vec_sum(acc1);
-            y[2] = *b + vec_sum(acc2);
-            y[3] = *b + vec_sum(acc3);
-            y[4] = *b + vec_sum(acc4);
-            y[5] = *b + vec_sum(acc5);
-            y[6] = *b + vec_sum(acc6);
-            y[7] = *b + vec_sum(acc7);
+            output[0] = *bias + vec_sum(acc0);
+            output[1] = *bias + vec_sum(acc1);
+            output[2] = *bias + vec_sum(acc2);
+            output[3] = *bias + vec_sum(acc3);
+            output[4] = *bias + vec_sum(acc4);
+            output[5] = *bias + vec_sum(acc5);
+            output[6] = *bias + vec_sum(acc6);
+            output[7] = *bias + vec_sum(acc7);
 
             for (i = 0; i < KT; i++, weight++)
             {
-                y[0] += input_0[i] * *weight;
-                y[1] += input_1[i] * *weight;
-                y[2] += input_2[i] * *weight;
-                y[3] += input_3[i] * *weight;
-                y[4] += input_4[i] * *weight;
-                y[5] += input_5[i] * *weight;
-                y[6] += input_6[i] * *weight;
-                y[7] += input_7[i] * *weight;
+                output[0] += input_0[i] * *weight;
+                output[1] += input_1[i] * *weight;
+                output[2] += input_2[i] * *weight;
+                output[3] += input_3[i] * *weight;
+                output[4] += input_4[i] * *weight;
+                output[5] += input_5[i] * *weight;
+                output[6] += input_6[i] * *weight;
+                output[7] += input_7[i] * *weight;
             }
-            y += N;
+            output += config->inputVectorCount;
         }
 
         return;
     }
 }
 
-void igemm16_mb(
-    const uint32_t M,
-    const uint32_t N,
-    const uint32_t K,
-    const int16_t *I,
-    const int16_t *W,
-    const nn_bias_s *B,
-    const uint32_t BG,
-    int32_t *Y,
-    uint32_t *nSat,
-    KernelBuffers *bufs)
+void AffineMultiBiasKernelImpl2B(AffineConfig const * const config)
 {}

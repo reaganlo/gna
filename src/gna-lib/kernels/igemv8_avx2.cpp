@@ -26,83 +26,75 @@
 #include "igemv.h"
 #include "igemv8.h"
 
-void 
-igemv8(
-    const uint32_t M,
-    const uint32_t K,
-    const int16_t* I,
-    const int16_t *FB,
-    const int8_t* W,
-    const nn_bias_c *B,
-          int32_t *Y,
-          uint32_t *nSat)
+void RecurrentKernelImpl1B(RecurrentConfig const * const config)
 {
-    uint32_t LDA = M + K;
-    int16_t *input = const_cast<int16_t*>(I);
-    int16_t *feedback = const_cast<int16_t*>(FB);
+    uint32_t LDA = config->outputElementCount + config->inputElementCount;
+    int16_t const * input = config->input;
+    int16_t * feedback = config->feedbackBuffer;
 
-    int16_t *ie = input + K - K % 16;
-    int16_t *fe = feedback + M - M % 16;
+    int16_t const * const inputEnd = input + config->inputElementCount - config->inputElementCount % 16;
+    int16_t const * const feedbackEnd = feedback + config->outputElementCount - config->outputElementCount % 16;
 
-    nn_bias_c *b = const_cast<nn_bias_c*>(B), *be = b + M;
-    int32_t *y = const_cast<int32_t*>(Y);
-    int8_t *w0 = const_cast<int8_t*>(W);
-    int8_t *w1 = w0 + K;
+    nn_bias_c const * bias = config->biasesCompound;
+    nn_bias_c const * const biasEnd = bias + config->outputElementCount;
+    int32_t * output = config->output;
+    int8_t const * weight = config->weights1B;
+    int8_t const * weight2 = weight + config->inputElementCount;
 
     __m256i v0, v1, v2, v3, v4, v5, v6, v7, v8;
 
-    for (; b < be; b++)
+    for (; bias < biasEnd; bias++)
     {
         v2 = _mm256_setzero_si256();
 
-        input = const_cast<int16_t*>(I);
-        feedback = const_cast<int16_t*>(FB);
+        input = config->input;
+        feedback = config->feedbackBuffer;
 
         v0 = _mm256_lddqu_si256((__m256i*)input);
-        v1 = _mm256_cvtepi8_epi16(_mm_lddqu_si128((__m128i*)w0));
+        v1 = _mm256_cvtepi8_epi16(_mm_lddqu_si128((__m128i*)weight));
 
-        while (input < ie)
+        while (input < inputEnd)
         {
             input += 16;
-            w0 += 16;
+            weight += 16;
 
             v1 = _mm256_madd_epi16(v0, v1);
             v2 = _mm256_add_epi32(v1, v2);
 
             v0 = _mm256_lddqu_si256((__m256i*)input);
-            v1 = _mm256_cvtepi8_epi16(_mm_lddqu_si128((__m128i*)w0));
+            v1 = _mm256_cvtepi8_epi16(_mm_lddqu_si128((__m128i*)weight));
         }
 
         v0 = _mm256_lddqu_si256((__m256i*)feedback);
-        v1 = _mm256_cvtepi8_epi16(_mm_lddqu_si128((__m128i*)w1));
+        v1 = _mm256_cvtepi8_epi16(_mm_lddqu_si128((__m128i*)weight2));
 
-        while (feedback < fe)
+        while (feedback < feedbackEnd)
         {
             feedback += 16;
-            w1 += 16;
+            weight2 += 16;
 
             v1 = _mm256_madd_epi16(v0, v1);
             v2 = _mm256_add_epi32(v1, v2);
 
             v0 = _mm256_lddqu_si256((__m256i*)feedback);
-            v1 = _mm256_cvtepi8_epi16(_mm_lddqu_si128((__m128i*)w1));
+            v1 = _mm256_cvtepi8_epi16(_mm_lddqu_si128((__m128i*)weight2));
         }
 
-        *y = vec_sum(v2);
+        *output = vec_sum(v2);
 
-        while (input < ie + K % 16)
+        while (input < inputEnd + config->inputElementCount % 16)
         {
-            *y += *input++ * *w0++;
+            *output += *input++ * *weight++;
         }
 
-        while (feedback < fe + M % 16)
+        while (feedback < feedbackEnd + config->outputElementCount % 16)
         {
-            *y += *feedback++ * *w1++;
+            *output += *feedback++ * *weight2++;
         }
 
-        *y++ = *y * b->multiplier + b->bias;
+        *output++ = *output * bias->multiplier + bias->bias;
 
-        w0 += LDA - K;
-        w1 += LDA - M;
+        weight += LDA - config->inputElementCount;
+        weight2 += LDA - config->outputElementCount;
     }
 }

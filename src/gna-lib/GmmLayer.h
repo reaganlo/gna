@@ -30,7 +30,7 @@
 
 namespace GNA
 {
-    
+
 // GMM Advanced parameters that are model configuration dependent
 struct GmmParams
 {
@@ -53,10 +53,21 @@ public:
     const gna_gmm_data Data;
     const GmmParams Params;
 
+    virtual void UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const override;
     void ValidateActiveList(ActiveList const * const activeList) const;
 
-protected:
+private:
+    virtual void computeHidden(acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const;
+    virtual void computeConfig(const LayerConfiguration& layerConfiguration, acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const;
+
+    void checkScoresSaturation(const uint32_t& nGMMs, const uint32_t& nVectors, const uint32_t * pS,
+        const uint32_t& maximumScore, uint32_t& nSaturated) const;
     inline void validate();
+
+    const std::map<acceleration, GmmMaxMix> gmmKernels;
+    const std::map<acceleration, GmmMaxMixActiveList> gmmActiveListKernels;
+
+    GmmConfig gmmHiddenConfig;
 };
 
 }

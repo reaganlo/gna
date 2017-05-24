@@ -47,22 +47,22 @@ void Device::DumpModel(gna_model_id modelId, gna_device_kind deviceKind, const c
     auto deviceType = static_cast<GnaDeviceType>(deviceKind);
 
     FakeDetector detector{ deviceType };
-    model.CompileHardwareModel(detector);
 
     auto layerCount = model.LayerCount;
 
     auto hwLyrDsc = totalMemory->Get<XNN_LYR>();
 
     auto dumpMemory = make_unique<Memory>(totalMemory->ModelSize, layerCount, model.GetGmmCount());
-    auto dumpModel = make_unique<CompiledModel>(model.Id, model.UserModel, *dumpMemory);
-    dumpModel->CompileSoftwareModel();
-    dumpModel->CompileHardwareModel(detector);
+
+    gna_model_id dumpModelId;
+    modelContainer.AllocateModel(&dumpModelId, model.UserModel, *dumpMemory, detector);
+    auto& dumpModel = modelContainer.GetModel(dumpModelId);
 
     auto userBuffer = dumpMemory->Get();
     auto dumpDsc = reinterpret_cast<XNN_LYR*>(userBuffer);
 
     // TODO: after having model built from XML, this should go away
-    uint32_t patch_offset = ModelCompiler::MaximumInternalModelSize - dumpMemory->InternalSize;
+    uint32_t patch_offset = CompiledModel::MaximumInternalModelSize - dumpMemory->InternalSize;
     for (int i = 0; i < layerCount; i++)
     {
         if (dumpDsc[i].act_list_buffer != 0)
@@ -115,7 +115,7 @@ void Device::DumpModel(gna_model_id modelId, gna_device_kind deviceKind, const c
         }
 
 
-        uint32_t inputsOffset = dumpModel->GetHardwareOffset(&dumpDsc->in_buffer);
+        uint32_t inputsOffset = dumpModel.GetHardwareOffset(&dumpDsc->in_buffer);
 
         XNN_LYR *last_hwLyrDsc = dumpDsc + layerCount - 1;
         uint32_t nOutputs;
@@ -127,12 +127,12 @@ void Device::DumpModel(gna_model_id modelId, gna_device_kind deviceKind, const c
                 && (NN_DEINT != last_hwLyrDsc->op)
                 && (NN_COPY != last_hwLyrDsc->op)))
         {
-            outputsOffset = dumpModel->GetHardwareOffset(&last_hwLyrDsc->out_sum_buffer);
+            outputsOffset = dumpModel.GetHardwareOffset(&last_hwLyrDsc->out_sum_buffer);
             nBytesPerOutput = 4;
         }
         else
         {
-            outputsOffset = dumpModel->GetHardwareOffset(&last_hwLyrDsc->out_act_fn_buffer);
+            outputsOffset = dumpModel.GetHardwareOffset(&last_hwLyrDsc->out_act_fn_buffer);
             nBytesPerOutput = 2;
         }
 

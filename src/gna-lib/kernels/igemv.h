@@ -26,6 +26,7 @@
 #pragma once
 
 #include <immintrin.h>
+
 #include "common.h"
 
 // buffer 24K
@@ -46,38 +47,31 @@ const uint32_t hw_buf_size[8] =
 //    3072, 3072, 2880, 3072, 2880, 2880, 3024, 3072
 //};
 
-inline void
-saturate(
-    int64_t*            sum,
-    uint32_t*           nSat)
+__forceinline void saturate(int64_t* const sum, uint32_t * const saturationCount)
 {
     if (*sum > INT32_MAX)
     {
         *sum = INT32_MAX;
-        (*nSat)++;
+        (*saturationCount)++;
     }
     else if (*sum < INT32_MIN)
     {
         *sum = INT32_MIN;
-        (*nSat)++;
+        (*saturationCount)++;
     }
 }
 
-inline void
-saturate_store_out(
-    int64_t*            sum,
-    int32_t*            out,
-    uint32_t*           nSat)
+__forceinline void saturate_store_out(int64_t const * const sum, int32_t * const out, uint32_t * const saturationCount)
 {
     if (*sum > INT32_MAX)
     {
         *out = INT32_MAX;
-        (*nSat)++;
+        (*saturationCount)++;
     }
     else if (*sum < INT32_MIN)
     {
         *out = INT32_MIN;
-        (*nSat)++;
+        (*saturationCount)++;
     }
     else
     {

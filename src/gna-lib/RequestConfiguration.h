@@ -30,33 +30,13 @@
 #include <memory>
 #include <vector>
 
-#include "Address.h"
 #include "ActiveList.h"
 #include "common.h"
 #include "CompiledModel.h"
 
 namespace GNA
 {
-
-struct ConfigurationBuffer : public InOutBuffer
-{
-    ConfigurationBuffer(gna_buffer_type type, void *address);
-
-    ConfigurationBuffer(ConfigurationBuffer &&) = default;
-
-    ConfigurationBuffer() = delete;
-    ConfigurationBuffer(const ConfigurationBuffer &) = delete;
-    ConfigurationBuffer& operator=(const ConfigurationBuffer&) = delete;
-
-    gna_buffer_type type;
-};
-
-struct LayerConfiguration
-{
-    std::unique_ptr<ActiveList> ActiveList;
-    std::unique_ptr<ConfigurationBuffer> InputBuffer;
-    std::unique_ptr<ConfigurationBuffer> OutputBuffer;
-};
+struct LayerConfiguration;
 
 /*
 ** RequestConfiguration is a bunch of request buffers
@@ -66,14 +46,14 @@ struct LayerConfiguration
 class RequestConfiguration
 {
 public:
-    RequestConfiguration(const CompiledModel& model, gna_request_cfg_id configId);
+    RequestConfiguration(CompiledModel& model, gna_request_cfg_id configId);
 
     void AddBuffer(gna_buffer_type type, uint32_t layerIndex, void *address);
     void AddActiveList(uint32_t layerIndex, const ActiveList& activeList);
 
     void GetHwConfigData(void* &buffer, size_t &size, uint32_t layerIndex, uint32_t layerCount) const;
 
-    const CompiledModel& Model;
+    CompiledModel& Model;
 
     const gna_request_cfg_id ConfigId;
 

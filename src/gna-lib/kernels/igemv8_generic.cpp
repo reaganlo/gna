@@ -26,40 +26,34 @@
 #include "igemv.h"
 #include "igemv8.h"
 
-void
-igemv8(
-    const   uint32_t    M,//num_rows N
-    const   uint32_t    K,//K1
-    const   int16_t*    I,//A2
-    const   int16_t*    FB,
-    const   int8_t*     W,//X
-    const   nn_bias_c*  B,
-            int32_t*    O,
-            uint32_t*   nSat)
+void RecurrentKernelImpl1B(RecurrentConfig const * const config)
 {
-    nn_bias_c *bias = const_cast<nn_bias_c*>(B), *bias_end = bias + M;
-    int16_t *input = const_cast<int16_t*>(I), *i_end = input + K;
-    int16_t *feedback = const_cast<int16_t*>(FB), *fb_end = feedback + M;
-    int8_t *weight = const_cast<int8_t*>(W);
-    int32_t *out = const_cast<int32_t*>(O);
+    nn_bias_c const * bias = config->biasesCompound; 
+    nn_bias_c const * const biasEnd= bias + config->outputElementCount;
+    int16_t const * input = config->input;
+    int16_t const * const inputEnd = input + config->inputElementCount;
+    int16_t * feedback = config->feedbackBuffer;
+    int16_t const * const feedbackEnd = feedback + config->outputElementCount;
+    int8_t const * weight = config->weights1B;
+    int32_t * output = config->output;
     int32_t sum;
 
-    for (; bias < bias_end; bias++, out++)
+    for (; bias < biasEnd; bias++, output++)
     {
-        *out = bias->bias;
+        *output = bias->bias;
         sum = 0;
-        input = const_cast<int16_t*>(I);
-        feedback = const_cast<int16_t*>(FB);
+        input = config->input;
+        feedback = config->feedbackBuffer;
 
-        for (; input < i_end;)
+        for (; input < inputEnd;)
         {
             sum += *input++ * *weight++;
         }
-        for (; feedback < fb_end;)
+        for (; feedback < feedbackEnd;)
         {
             sum += *feedback++ * *weight++;
         }
 
-        *out += sum * bias->multiplier;
+        *output += sum * bias->multiplier;
     }
 }

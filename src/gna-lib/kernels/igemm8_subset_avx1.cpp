@@ -22,52 +22,42 @@
  or any other notice embedded in Materials by Intel or Intel's suppliers or licensors
  in any way.
 */
+#include <string.h>
 
 #include "igemv.h"
 #include "igemv8.h"
-#include <string.h>
 
-void igemm8_subset(
-    const uint32_t M,
-    const uint32_t N,
-    const uint32_t K,
-    const int16_t *I,
-    const int8_t *W,
-    const nn_bias_c *B,
-          int32_t *Y,
-    const uint32_t *AL,
-    const uint32_t L,
-          uint32_t *nSat,
-          KernelBuffers *bufs)
+void AffineActiveListKernelImpl1B(AffineConfig const * const config, AffineConfigAl const * const al)
 {
     uint32_t i, j, k, l, ix, ix_end;
 
-    int32_t *y = Y;
-    int8_t *weight = const_cast<int8_t*>(W);
+    int32_t * output = config->output;
+    int8_t const * weight = config->weights1B;
 
     __m256i v0, v1, v2, v3;
     __m128i s0, s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, s15, w, w0, w1;
-    int16_t *input_0, *input_1, *input_2, *input_3, *input_4, *input_5, *input_6, *input_7;
+    int16_t const * input_0, *input_1, *input_2, *input_3, *input_4, *input_5, *input_6, *input_7;
 
-    nn_bias_c *b, *be = const_cast<nn_bias_c*>(B) + M;
+    nn_bias_c const * bias;
+    nn_bias_c const * const biasEnd = config->biasesCompound + config->outputElementCount;
 
-    uint32_t KT = K % VEC_16CAP;
-    uint32_t KK = K - KT;
+    uint32_t KT = config->inputElementCount % VEC_16CAP;
+    uint32_t KK = config->inputElementCount - KT;
     ix_end = KK / VEC_16CAP;
 
     __m128i acc0, acc1, acc2, acc3, acc4, acc5, acc6, acc7;
     __m128i in0, in1, in2, in3, in4, in5, in6, in7;
     __m256i* in_ptr0, *in_ptr1, *in_ptr2, *in_ptr3;
 
-    if (1 == N)
+    if (1 == config->inputVectorCount)
     {
-        in_ptr0 = (__m256i*)I;
-        input_0 = const_cast<int16_t*>(I) + KK;
-        for (l = 0; l < L; l++)
+        in_ptr0 = (__m256i*)config->input;
+        input_0 = config->input + KK;
+        for (l = 0; l < al->count; l++)
         {
-            i = AL[l];
-            weight = const_cast<int8_t*>(W) + i*K;
-            b = const_cast<nn_bias_c*>(B) + i;
+            i = al->indices[l];
+            weight = config->weights1B + i*config->inputElementCount;
+            bias = config->biasesCompound + i;
 
             acc0 = _mm_setzero_si128();
 
@@ -88,42 +78,42 @@ void igemm8_subset(
                 acc0 = _mm_add_epi32(acc0, in1);
             }
 
-            *y = vec_sum(acc0) * b->multiplier + b->bias;
+            *output = vec_sum(acc0) * bias->multiplier + bias->bias;
             for (j = 0; j < KT; j++, weight++)
             {
-                *y += input_0[j] * *weight * b->multiplier;
+                *output += input_0[j] * *weight * bias->multiplier;
             }
-            y++;
+            output++;
         }
 
         return;
     }
 
-    input_0 = bufs->d0 + KK;
-    input_1 = bufs->d1 + KK;
-    input_2 = bufs->d2 + KK;
-    input_3 = bufs->d3 + KK;
+    input_0 = config->fvBuffers->d0 + KK;
+    input_1 = config->fvBuffers->d1 + KK;
+    input_2 = config->fvBuffers->d2 + KK;
+    input_3 = config->fvBuffers->d3 + KK;
 
-    in_ptr0 = (__m256i*)bufs->d0;
-    in_ptr1 = (__m256i*)bufs->d1;
-    in_ptr2 = (__m256i*)bufs->d2;
-    in_ptr3 = (__m256i*)bufs->d3;
+    in_ptr0 = (__m256i*)config->fvBuffers->d0;
+    in_ptr1 = (__m256i*)config->fvBuffers->d1;
+    in_ptr2 = (__m256i*)config->fvBuffers->d2;
+    in_ptr3 = (__m256i*)config->fvBuffers->d3;
 
-    switch (N)
+    switch (config->inputVectorCount)
     {
-    case 4: for (i = 0; i < K; i++) bufs->d3[i] = I[i*N + 3];
-    case 3: for (i = 0; i < K; i++) bufs->d2[i] = I[i*N + 2];
-    case 2: for (i = 0; i < K; i++) bufs->d1[i] = I[i*N + 1];
-            for (i = 0; i < K; i++) bufs->d0[i] = I[i*N];
+    case 4: for (i = 0; i < config->inputElementCount; i++) config->fvBuffers->d3[i] = config->input[i*config->inputVectorCount + 3];
+    case 3: for (i = 0; i < config->inputElementCount; i++) config->fvBuffers->d2[i] = config->input[i*config->inputVectorCount + 2];
+    case 2: for (i = 0; i < config->inputElementCount; i++) config->fvBuffers->d1[i] = config->input[i*config->inputVectorCount + 1];
+            for (i = 0; i < config->inputElementCount; i++) config->fvBuffers->d0[i] = config->input[i*config->inputVectorCount];
     }
 
-    if (2 == N)
+    if (2 == config->inputVectorCount)
     {
-        for (l = 0; l < L; l++)
+        for (l = 0; l < al->count; l++)
         {
-            i = AL[l];
-            weight = const_cast<int8_t*>(W) + i*K;
-            b = const_cast<nn_bias_c*>(B) + i;
+            i = al->indices[l];
+            weight = config->weights1B + i*config->inputElementCount;
+            bias = config->biasesCompound + i;
 
             acc0 = _mm_setzero_si128();
             acc1 = _mm_setzero_si128();
@@ -155,26 +145,26 @@ void igemm8_subset(
                 acc1 = _mm_add_epi32(acc1, in3);
             }
 
-            y[0] = vec_sum(acc0) * b->multiplier + b->bias;
-            y[1] = vec_sum(acc1) * b->multiplier + b->bias;
+            output[0] = vec_sum(acc0) * bias->multiplier + bias->bias;
+            output[1] = vec_sum(acc1) * bias->multiplier + bias->bias;
             for (j = 0; j < KT; j++, weight++)
             {
-                y[0] += input_0[j] * *weight * b->multiplier;
-                y[1] += input_1[j] * *weight * b->multiplier;
+                output[0] += input_0[j] * *weight * bias->multiplier;
+                output[1] += input_1[j] * *weight * bias->multiplier;
             }
-            y += N;
+            output += config->inputVectorCount;
         }
 
         return;
     }
 
-    if (3 == N)
+    if (3 == config->inputVectorCount)
     {
-        for (l = 0; l < L; l++)
+        for (l = 0; l < al->count; l++)
         {
-            i = AL[l];
-            weight = const_cast<int8_t*>(W) + i*K;
-            b = const_cast<nn_bias_c*>(B) + i;
+            i = al->indices[l];
+            weight = config->weights1B + i*config->inputElementCount;
+            bias = config->biasesCompound + i;
 
             acc0 = _mm_setzero_si128();
             acc1 = _mm_setzero_si128();
@@ -215,28 +205,28 @@ void igemm8_subset(
                 acc2 = _mm_add_epi32(acc2, in5);
             }
 
-            y[0] = vec_sum(acc0) * b->multiplier + b->bias;
-            y[1] = vec_sum(acc1) * b->multiplier + b->bias;
-            y[2] = vec_sum(acc2) * b->multiplier + b->bias;
+            output[0] = vec_sum(acc0) * bias->multiplier + bias->bias;
+            output[1] = vec_sum(acc1) * bias->multiplier + bias->bias;
+            output[2] = vec_sum(acc2) * bias->multiplier + bias->bias;
             for (j = 0; j < KT; j++, weight++)
             {
-                y[0] += input_0[j] * *weight * b->multiplier;
-                y[1] += input_1[j] * *weight * b->multiplier;
-                y[2] += input_2[j] * *weight * b->multiplier;
+                output[0] += input_0[j] * *weight * bias->multiplier;
+                output[1] += input_1[j] * *weight * bias->multiplier;
+                output[2] += input_2[j] * *weight * bias->multiplier;
             }
-            y += N;
+            output += config->inputVectorCount;
         }
 
         return;
     }
 
-    if (4 == N)
+    if (4 == config->inputVectorCount)
     {
-        for (l = 0; l < L; l++)
+        for (l = 0; l < al->count; l++)
         {
-            i = AL[l];
-            weight = const_cast<int8_t*>(W) + i*K;
-            b = const_cast<nn_bias_c*>(B) + i;
+            i = al->indices[l];
+            weight = config->weights1B + i*config->inputElementCount;
+            bias = config->biasesCompound + i;
 
             acc0 = _mm_setzero_si128();
             acc1 = _mm_setzero_si128();
@@ -285,67 +275,67 @@ void igemm8_subset(
                 acc3 = _mm_add_epi32(acc3, in7);
             }
 
-            y[0] = b->bias + vec_sum(acc0) * b->multiplier;
-            y[1] = b->bias + vec_sum(acc1) * b->multiplier;
-            y[2] = b->bias + vec_sum(acc2) * b->multiplier;
-            y[3] = b->bias + vec_sum(acc3) * b->multiplier;
+            output[0] = bias->bias + vec_sum(acc0) * bias->multiplier;
+            output[1] = bias->bias + vec_sum(acc1) * bias->multiplier;
+            output[2] = bias->bias + vec_sum(acc2) * bias->multiplier;
+            output[3] = bias->bias + vec_sum(acc3) * bias->multiplier;
             for (j = 0; j < KT; j++, weight++)
             {
-                y[0] += input_0[j] * *weight * b->multiplier;
-                y[1] += input_1[j] * *weight * b->multiplier;
-                y[2] += input_2[j] * *weight * b->multiplier;
-                y[3] += input_3[j] * *weight * b->multiplier;
+                output[0] += input_0[j] * *weight * bias->multiplier;
+                output[1] += input_1[j] * *weight * bias->multiplier;
+                output[2] += input_2[j] * *weight * bias->multiplier;
+                output[3] += input_3[j] * *weight * bias->multiplier;
             }
-            y += N;
+            output += config->inputVectorCount;
         }
 
         return;
     }
 
-    KT = K % SSE_16CAP;
-    KK = K - KT;
+    KT = config->inputElementCount % SSE_16CAP;
+    KK = config->inputElementCount - KT;
     ix_end = 2 * KK / VEC_16CAP;
 
-    //bufs->d1 = bufs->d0 + 2 * (UINT16_MAX + 1);
-    //bufs->d2 = bufs->d0 + 2 * (UINT16_MAX + 1);
-    //bufs->d3 = bufs->d0 + 2 * (UINT16_MAX + 1);
-    //bufs->d4 = bufs->d0 + 2 * (UINT16_MAX + 1);
+    //config->fvBuffers->d1 = config->fvBuffers->d0 + 2 * (UINT16_MAX + 1);
+    //config->fvBuffers->d2 = config->fvBuffers->d0 + 2 * (UINT16_MAX + 1);
+    //config->fvBuffers->d3 = config->fvBuffers->d0 + 2 * (UINT16_MAX + 1);
+    //config->fvBuffers->d4 = config->fvBuffers->d0 + 2 * (UINT16_MAX + 1);
 
-    in_ptr0 = (__m256i*)bufs->d0;
-    in_ptr1 = (__m256i*)bufs->d2;
-    in_ptr2 = (__m256i*)bufs->d4;
-    in_ptr3 = (__m256i*)bufs->d6;
+    in_ptr0 = (__m256i*)config->fvBuffers->d0;
+    in_ptr1 = (__m256i*)config->fvBuffers->d2;
+    in_ptr2 = (__m256i*)config->fvBuffers->d4;
+    in_ptr3 = (__m256i*)config->fvBuffers->d6;
 
-    input_0 = bufs->d0 + 2 * KK;
-    input_1 = bufs->d2 + 2 * KK;
-    input_2 = bufs->d4 + 2 * KK;
-    input_3 = bufs->d6 + 2 * KK;
+    input_0 = config->fvBuffers->d0 + 2 * KK;
+    input_1 = config->fvBuffers->d2 + 2 * KK;
+    input_2 = config->fvBuffers->d4 + 2 * KK;
+    input_3 = config->fvBuffers->d6 + 2 * KK;
 
-    if (5 == N)
+    if (5 == config->inputVectorCount)
     {
-        for (j = 0; j < 2 * K;)
+        for (j = 0; j < 2 * config->inputElementCount;)
         {
             i = j / 2;
-            for (k = i; k < i + 8 && k < K; k++, j++)
+            for (k = i; k < i + 8 && k < config->inputElementCount; k++, j++)
             {
-                bufs->d0[j] = I[k*N];
-                bufs->d2[j] = I[k*N + 2];
+                config->fvBuffers->d0[j] = config->input[k*config->inputVectorCount];
+                config->fvBuffers->d2[j] = config->input[k*config->inputVectorCount + 2];
             }
-            for (k = i; k < i + 8 && k < K; k++, j++)
+            for (k = i; k < i + 8 && k < config->inputElementCount; k++, j++)
             {
-                bufs->d0[j] = I[k*N + 1];
-                bufs->d2[j] = I[k*N + 3];
+                config->fvBuffers->d0[j] = config->input[k*config->inputVectorCount + 1];
+                config->fvBuffers->d2[j] = config->input[k*config->inputVectorCount + 3];
             }
         }
-        for (i = 0; i < K; i++) bufs->d4[i] = I[i*N + 4];
+        for (i = 0; i < config->inputElementCount; i++) config->fvBuffers->d4[i] = config->input[i*config->inputVectorCount + 4];
 
-        for (l = 0; l < L; l++)
+        for (l = 0; l < al->count; l++)
         {
-            i = AL[l];
-            weight = const_cast<int8_t*>(W) + i*K;
-            b = const_cast<nn_bias_c*>(B) + i;
+            i = al->indices[l];
+            weight = config->weights1B + i*config->inputElementCount;
+            bias = config->biasesCompound + i;
 
-            input_2 = bufs->d4;
+            input_2 = config->fvBuffers->d4;
 
             acc0 = _mm_setzero_si128();
             acc1 = _mm_setzero_si128();
@@ -380,51 +370,51 @@ void igemm8_subset(
                 acc4 = _mm_add_epi32(acc4, in4);
             }
 
-            y[0] = vec_sum(acc0) * b->multiplier + b->bias;
-            y[1] = vec_sum(acc1) * b->multiplier + b->bias;
-            y[2] = vec_sum(acc2) * b->multiplier + b->bias;
-            y[3] = vec_sum(acc3) * b->multiplier + b->bias;
-            y[4] = vec_sum(acc4) * b->multiplier + b->bias;
+            output[0] = vec_sum(acc0) * bias->multiplier + bias->bias;
+            output[1] = vec_sum(acc1) * bias->multiplier + bias->bias;
+            output[2] = vec_sum(acc2) * bias->multiplier + bias->bias;
+            output[3] = vec_sum(acc3) * bias->multiplier + bias->bias;
+            output[4] = vec_sum(acc4) * bias->multiplier + bias->bias;
 
             for (j = 0; j < KT; j++, weight++)
             {
-                y[0] += input_0[j] *     *weight * b->multiplier;
-                y[1] += input_0[j + KT] * *weight * b->multiplier;
-                y[2] += input_1[j] *     *weight * b->multiplier;
-                y[3] += input_1[j + KT] * *weight * b->multiplier;
-                y[4] += input_2[j] *     *weight * b->multiplier;
+                output[0] += input_0[j] *     *weight * bias->multiplier;
+                output[1] += input_0[j + KT] * *weight * bias->multiplier;
+                output[2] += input_1[j] *     *weight * bias->multiplier;
+                output[3] += input_1[j + KT] * *weight * bias->multiplier;
+                output[4] += input_2[j] *     *weight * bias->multiplier;
             }
 
-            y += N;
+            output += config->inputVectorCount;
         }
 
         return;
     }
 
-    if (6 == N)
+    if (6 == config->inputVectorCount)
     {
-        for (j = 0; j < 2 * K;)
+        for (j = 0; j < 2 * config->inputElementCount;)
         {
             i = j / 2;
-            for (k = i; k < i + 8 && k < K; k++, j++)
+            for (k = i; k < i + 8 && k < config->inputElementCount; k++, j++)
             {
-                bufs->d0[j] = I[k*N];
-                bufs->d2[j] = I[k*N + 2];
-                bufs->d4[j] = I[k*N + 4];
+                config->fvBuffers->d0[j] = config->input[k*config->inputVectorCount];
+                config->fvBuffers->d2[j] = config->input[k*config->inputVectorCount + 2];
+                config->fvBuffers->d4[j] = config->input[k*config->inputVectorCount + 4];
             }
-            for (k = i; k < i + 8 && k < K; k++, j++)
+            for (k = i; k < i + 8 && k < config->inputElementCount; k++, j++)
             {
-                bufs->d0[j] = I[k*N + 1];
-                bufs->d2[j] = I[k*N + 3];
-                bufs->d4[j] = I[k*N + 5];
+                config->fvBuffers->d0[j] = config->input[k*config->inputVectorCount + 1];
+                config->fvBuffers->d2[j] = config->input[k*config->inputVectorCount + 3];
+                config->fvBuffers->d4[j] = config->input[k*config->inputVectorCount + 5];
             }
         }
 
-        for (l = 0; l < L; l++)
+        for (l = 0; l < al->count; l++)
         {
-            i = AL[l];
-            weight = const_cast<int8_t*>(W) + i*K;
-            b = const_cast<nn_bias_c*>(B) + i;
+            i = al->indices[l];
+            weight = config->weights1B + i*config->inputElementCount;
+            bias = config->biasesCompound + i;
 
             acc0 = _mm_setzero_si128();
             acc1 = _mm_setzero_si128();
@@ -463,57 +453,57 @@ void igemm8_subset(
                 acc5 = _mm_add_epi32(acc5, in5);
             }
 
-            y[0] = vec_sum(acc0) * b->multiplier + b->bias;
-            y[1] = vec_sum(acc1) * b->multiplier + b->bias;
-            y[2] = vec_sum(acc2) * b->multiplier + b->bias;
-            y[3] = vec_sum(acc3) * b->multiplier + b->bias;
-            y[4] = vec_sum(acc4) * b->multiplier + b->bias;
-            y[5] = vec_sum(acc5) * b->multiplier + b->bias;
+            output[0] = vec_sum(acc0) * bias->multiplier + bias->bias;
+            output[1] = vec_sum(acc1) * bias->multiplier + bias->bias;
+            output[2] = vec_sum(acc2) * bias->multiplier + bias->bias;
+            output[3] = vec_sum(acc3) * bias->multiplier + bias->bias;
+            output[4] = vec_sum(acc4) * bias->multiplier + bias->bias;
+            output[5] = vec_sum(acc5) * bias->multiplier + bias->bias;
 
             for (j = 0; j < KT; j++, weight++)
             {
-                y[0] += input_0[j] *      *weight * b->multiplier;
-                y[1] += input_0[j + KT] * *weight * b->multiplier;
-                y[2] += input_1[j] *      *weight * b->multiplier;
-                y[3] += input_1[j + KT] * *weight * b->multiplier;
-                y[4] += input_2[j] *      *weight * b->multiplier;
-                y[5] += input_2[j + KT] * *weight * b->multiplier;
+                output[0] += input_0[j] *      *weight * bias->multiplier;
+                output[1] += input_0[j + KT] * *weight * bias->multiplier;
+                output[2] += input_1[j] *      *weight * bias->multiplier;
+                output[3] += input_1[j + KT] * *weight * bias->multiplier;
+                output[4] += input_2[j] *      *weight * bias->multiplier;
+                output[5] += input_2[j + KT] * *weight * bias->multiplier;
             }
 
-            y += N;
+            output += config->inputVectorCount;
         }
 
         return;
     }
 
-    if (7 == N)
+    if (7 == config->inputVectorCount)
     {
-        for (j = 0; j < 2 * K;)
+        for (j = 0; j < 2 * config->inputElementCount;)
         {
             i = j / 2;
-            for (k = i; k < i + 8 && k < K; k++, j++)
+            for (k = i; k < i + 8 && k < config->inputElementCount; k++, j++)
             {
-                bufs->d0[j] = I[k*N];
-                bufs->d2[j] = I[k*N + 2];
-                bufs->d4[j] = I[k*N + 4];
+                config->fvBuffers->d0[j] = config->input[k*config->inputVectorCount];
+                config->fvBuffers->d2[j] = config->input[k*config->inputVectorCount + 2];
+                config->fvBuffers->d4[j] = config->input[k*config->inputVectorCount + 4];
             }
-            for (k = i; k < i + 8 && k < K; k++, j++)
+            for (k = i; k < i + 8 && k < config->inputElementCount; k++, j++)
             {
-                bufs->d0[j] = I[k*N + 1];
-                bufs->d2[j] = I[k*N + 3];
-                bufs->d4[j] = I[k*N + 5];
+                config->fvBuffers->d0[j] = config->input[k*config->inputVectorCount + 1];
+                config->fvBuffers->d2[j] = config->input[k*config->inputVectorCount + 3];
+                config->fvBuffers->d4[j] = config->input[k*config->inputVectorCount + 5];
             }
         }
 
-        for (i = 0; i < K; i++) bufs->d6[i] = I[i*N + 6];
+        for (i = 0; i < config->inputElementCount; i++) config->fvBuffers->d6[i] = config->input[i*config->inputVectorCount + 6];
 
-        for (l = 0; l < L; l++)
+        for (l = 0; l < al->count; l++)
         {
-            i = AL[l];
-            weight = const_cast<int8_t*>(W) + i*K;
-            b = const_cast<nn_bias_c*>(B) + i;
+            i = al->indices[l];
+            weight = config->weights1B + i*config->inputElementCount;
+            bias = config->biasesCompound + i;
 
-            input_3 = bufs->d6;
+            input_3 = config->fvBuffers->d6;
 
             acc0 = _mm_setzero_si128();
             acc1 = _mm_setzero_si128();
@@ -558,55 +548,55 @@ void igemm8_subset(
 
             }
 
-            y[0] = b->bias + vec_sum(acc0) * b->multiplier;
-            y[1] = b->bias + vec_sum(acc1) * b->multiplier;
-            y[2] = b->bias + vec_sum(acc2) * b->multiplier;
-            y[3] = b->bias + vec_sum(acc3) * b->multiplier;
-            y[4] = b->bias + vec_sum(acc4) * b->multiplier;
-            y[5] = b->bias + vec_sum(acc5) * b->multiplier;
-            y[6] = b->bias + vec_sum(acc6) * b->multiplier;
+            output[0] = bias->bias + vec_sum(acc0) * bias->multiplier;
+            output[1] = bias->bias + vec_sum(acc1) * bias->multiplier;
+            output[2] = bias->bias + vec_sum(acc2) * bias->multiplier;
+            output[3] = bias->bias + vec_sum(acc3) * bias->multiplier;
+            output[4] = bias->bias + vec_sum(acc4) * bias->multiplier;
+            output[5] = bias->bias + vec_sum(acc5) * bias->multiplier;
+            output[6] = bias->bias + vec_sum(acc6) * bias->multiplier;
 
             for (j = 0; j < KT; j++, weight++)
             {
-                y[0] += input_0[j] *      *weight * b->multiplier;
-                y[1] += input_0[j + KT] * *weight * b->multiplier;
-                y[2] += input_1[j] *      *weight * b->multiplier;
-                y[3] += input_1[j + KT] * *weight * b->multiplier;
-                y[4] += input_2[j] *      *weight * b->multiplier;
-                y[5] += input_2[j + KT] * *weight * b->multiplier;
-                y[6] += input_3[j] *      *weight * b->multiplier;
+                output[0] += input_0[j] *      *weight * bias->multiplier;
+                output[1] += input_0[j + KT] * *weight * bias->multiplier;
+                output[2] += input_1[j] *      *weight * bias->multiplier;
+                output[3] += input_1[j + KT] * *weight * bias->multiplier;
+                output[4] += input_2[j] *      *weight * bias->multiplier;
+                output[5] += input_2[j + KT] * *weight * bias->multiplier;
+                output[6] += input_3[j] *      *weight * bias->multiplier;
             }
 
-            y += N;
+            output += config->inputVectorCount;
         }
     }
 
-    if (8 == N)
+    if (8 == config->inputVectorCount)
     {
-        for (j = 0; j < 2 * K;)
+        for (j = 0; j < 2 * config->inputElementCount;)
         {
             i = j / 2;
-            for (k = i; k < i + 8 && k < K; k++, j++)
+            for (k = i; k < i + 8 && k < config->inputElementCount; k++, j++)
             {
-                bufs->d0[j] = I[k*N];
-                bufs->d2[j] = I[k*N + 2];
-                bufs->d4[j] = I[k*N + 4];
-                bufs->d6[j] = I[k*N + 6];
+                config->fvBuffers->d0[j] = config->input[k*config->inputVectorCount];
+                config->fvBuffers->d2[j] = config->input[k*config->inputVectorCount + 2];
+                config->fvBuffers->d4[j] = config->input[k*config->inputVectorCount + 4];
+                config->fvBuffers->d6[j] = config->input[k*config->inputVectorCount + 6];
             }
-            for (k = i; k < i + 8 && k < K; k++, j++)
+            for (k = i; k < i + 8 && k < config->inputElementCount; k++, j++)
             {
-                bufs->d0[j] = I[k*N + 1];
-                bufs->d2[j] = I[k*N + 3];
-                bufs->d4[j] = I[k*N + 5];
-                bufs->d6[j] = I[k*N + 7];
+                config->fvBuffers->d0[j] = config->input[k*config->inputVectorCount + 1];
+                config->fvBuffers->d2[j] = config->input[k*config->inputVectorCount + 3];
+                config->fvBuffers->d4[j] = config->input[k*config->inputVectorCount + 5];
+                config->fvBuffers->d6[j] = config->input[k*config->inputVectorCount + 7];
             }
         }
 
-        for (l = 0; l < L; l++)
+        for (l = 0; l < al->count; l++)
         {
-            i = AL[l];
-            weight = const_cast<int8_t*>(W) + i*K;
-            b = const_cast<nn_bias_c*>(B) + i;
+            i = al->indices[l];
+            weight = config->weights1B + i*config->inputElementCount;
+            bias = config->biasesCompound + i;
 
             acc0 = _mm_setzero_si128();
             acc1 = _mm_setzero_si128();
@@ -654,8 +644,8 @@ void igemm8_subset(
                 acc7 = _mm_add_epi32(acc7, in7);
             }
 
-            s0 = _mm_set1_epi32(b->multiplier);
-            s1 = _mm_set1_epi32(b->bias);
+            s0 = _mm_set1_epi32(bias->multiplier);
+            s1 = _mm_set1_epi32(bias->bias);
 
             s2 = _mm_hadd_epi32(acc0, acc1);
             s3 = _mm_hadd_epi32(acc2, acc3);
@@ -670,40 +660,26 @@ void igemm8_subset(
             s7 = _mm_add_epi32(s5, s1);
 
             v0 = _mm256_set_m128i(s7, s6);
-            _mm256_stream_si256((__m256i*)y, v0);
+            _mm256_stream_si256((__m256i*)output, v0);
 
             for (j = 0; j < KT; j++, weight++)
             {
-                y[0] += input_0[j] *     *weight * b->multiplier;
-                y[1] += input_0[j + KT] * *weight * b->multiplier;
-                y[2] += input_1[j] *     *weight * b->multiplier;
-                y[3] += input_1[j + KT] * *weight * b->multiplier;
-                y[4] += input_2[j] *     *weight * b->multiplier;
-                y[5] += input_2[j + KT] * *weight * b->multiplier;
-                y[6] += input_3[j] *     *weight * b->multiplier;
-                y[7] += input_3[j + KT] * *weight * b->multiplier;
+                output[0] += input_0[j] *     *weight * bias->multiplier;
+                output[1] += input_0[j + KT] * *weight * bias->multiplier;
+                output[2] += input_1[j] *     *weight * bias->multiplier;
+                output[3] += input_1[j + KT] * *weight * bias->multiplier;
+                output[4] += input_2[j] *     *weight * bias->multiplier;
+                output[5] += input_2[j + KT] * *weight * bias->multiplier;
+                output[6] += input_3[j] *     *weight * bias->multiplier;
+                output[7] += input_3[j + KT] * *weight * bias->multiplier;
             }
 
-            y += N;
+            output += config->inputVectorCount;
         }
 
         return;
     }
 }
 
-void
-igemm8_subset_mb(
-    const   uint32_t    M,
-    const   uint32_t    N,
-    const   uint32_t    K,
-    const   int16_t*    I,
-    const   int8_t*     W,
-    const   nn_bias_s*  B,
-    const   uint32_t    BG,
-    const   nn_bias_c*  CB,
-    int32_t*    O,
-    const   uint32_t*   AL,
-    const   uint32_t    L,
-    uint32_t*   nSat,
-    KernelBuffers*    fvBuffers)
+void AffineMultiBiasActiveListKernelImpl1B(AffineConfig const * const config, AffineConfigAl const * const al)
 {}
