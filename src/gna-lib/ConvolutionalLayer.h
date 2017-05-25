@@ -93,9 +93,9 @@ private:
     void computeConfig(const LayerConfiguration& layerConfiguration, acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const;
     void computeConfigPwl(const LayerConfiguration& layerConfiguration, acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const;
 
-    const std::map<acceleration, ConvolutionKernel>& filterKernels;
-    const std::map<acceleration, ConvolutionPoolingKernel>& poolingKernels;
-    const std::map<acceleration, PwlKernel>& pwlKernels;
+    const std::map<const acceleration, const ConvolutionKernel>& filterKernels;
+    const std::map<const acceleration, const ConvolutionPoolingKernel>& poolingKernels;
+    const std::map<const acceleration, const PwlKernel>& pwlKernels;
 
     ConvolutionConfig convolutionHiddenConfig;
     const ConvolutionPoolingConfig poolingHiddenConfig;

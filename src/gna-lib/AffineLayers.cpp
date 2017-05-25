@@ -23,6 +23,7 @@
  in any way.
 */
 
+#include "AccelerationDetector.h"
 #include "AffineLayers.h"
 #include "LayerConfiguration.h"
 #include "Validator.h"
@@ -35,9 +36,9 @@ AffineLayer::AffineLayer(const nn_layer *layer) :
     Layer(layer),
     Affine(AffineFunction::Create(&static_cast<const nn_layer_affine*>(layer->pLayerStruct)->affine)),
     Activation(ActivationFunction::Create(&static_cast<const nn_layer_affine*>(layer->pLayerStruct)->pwl, false)),
-    affineKernels{ AccelerationDetector::AffineKernels.at(Affine->GetWeightMode()) },
-    affineKernelsAl{ AccelerationDetector::AffineKernelsAl.at(Affine->GetWeightMode()) },
-    pwlKernels{ AccelerationDetector::PwlKernels },
+    affineKernels{ AccelerationDetector::GetKernelMap<AffineKernel>(Affine->GetWeightMode(), Config.Kind)},
+    affineKernelsAl{ AccelerationDetector::GetKernelMap<AffineActiveListKernel>(Affine->GetWeightMode(), Config.Kind)},
+    pwlKernels{ AccelerationDetector::GetKernelMap<PwlKernel>()},
     affineHiddenConfig{ Output.ElementCount, Input.VectorCount, Input.ElementCount, Input.Buffer, Output.Buffer,
                         nullptr, nullptr, Affine->GetWeights(), Affine->GetBiases(), nullptr, 0 },
     pwlBaseConfig{Output.ScratchPad, Activation ? Activation->Segments : nullptr, Activation ? Activation->SegmentCount : 0},
@@ -144,9 +145,9 @@ AffineMultiBiasLayer::AffineMultiBiasLayer(const nn_layer *layer) :
     Layer(layer),
     Affine(AffineFunction::Create(&static_cast<const nn_layer_affine_multi*>(layer->pLayerStruct)->affine)),
     Activation(ActivationFunction::Create(&static_cast<const nn_layer_affine_multi*>(layer->pLayerStruct)->pwl, false)),
-    multibiasKernels{ AccelerationDetector::MultibiasKernels.at(Affine->GetWeightMode()) },
-    multibiasKernelsAl{ AccelerationDetector::MultibiasKernelsAl.at(Affine->GetWeightMode()) },
-    pwlKernels{ AccelerationDetector::PwlKernels },
+    multibiasKernels{ AccelerationDetector::GetKernelMap<AffineKernel>(Affine->GetWeightMode(), Config.Kind) },
+    multibiasKernelsAl{ AccelerationDetector::GetKernelMap<AffineActiveListKernel>(Affine->GetWeightMode(), Config.Kind) },
+    pwlKernels{ AccelerationDetector::GetKernelMap<PwlKernel>() },
     affineHiddenConfig{ Output.ElementCount, Input.VectorCount, Input.ElementCount, Input.Buffer, Output.Buffer,
                         nullptr, nullptr, Affine->GetWeights(), Affine->GetBiases(), Affine->GetMultibias(), Affine->BiasVectorCount },
     pwlBaseConfig{ Output.ScratchPad, Activation ? Activation->Segments : nullptr, Activation ? Activation->SegmentCount : 0},
@@ -252,7 +253,7 @@ void AffineMultiBiasLayer::computeConfigPwl(const LayerConfiguration &layerConfi
 
 AffineDiagonalLayer::AffineDiagonalLayer(const nn_layer *layer) :
     AffineLayer{ layer },
-    diagonalKernels {AccelerationDetector::DiagonalKernels.at(Affine->GetWeightMode())}
+    diagonalKernels {AccelerationDetector::GetKernelMap<AffineKernel>(Affine->GetWeightMode(), Config.Kind)}
 {
     Expect::True(Input.ElementCount == Output.ElementCount, XNN_ERR_LYR_CFG);
     Expect::True(Input.VectorCount == Output.VectorCount, XNN_ERR_LYR_CFG);

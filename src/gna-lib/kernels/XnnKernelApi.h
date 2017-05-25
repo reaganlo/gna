@@ -34,8 +34,6 @@ typedef void (*AffineKernel)(AffineConfig const * const config);
 
 typedef void (*AffineActiveListKernel)(AffineConfig const * const config, AffineConfigAl const * const al);
 
-typedef void (*DiagonalKernel)(AffineConfig const * const config);
-
 typedef void (*PwlKernel)(PwlBaseConfig const * const config, PwlCached * const pwl, 
     PwlOutputConfig const * const outputConfig);
 
@@ -65,8 +63,8 @@ typedef struct _XnnKernel
     AffineActiveListKernel affineMulti1Bal;
     AffineActiveListKernel affineMulti2Bal;
 
-    DiagonalKernel diagonal1B;
-    DiagonalKernel diagonal2B;
+    AffineKernel diagonal1B;
+    AffineKernel diagonal2B;
     
     RecurrentKernel recurrent1B;
     RecurrentKernel recurrent2B;

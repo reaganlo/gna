@@ -83,32 +83,35 @@ public:
 
     const uint32_t GetHardwareBufferSize() const;
 
-    // TODO: restrict maps access so unavailable accelerations are not selected
-    static const std::map<WeightMode, const std::map<acceleration, AffineKernel>> AffineKernels;
+    template<typename T>
+    static const std::map<const acceleration, const T>& GetKernelMap(WeightMode weightMode, nn_layer_kind layerKind);
 
-    static const std::map<WeightMode, const std::map<acceleration, AffineActiveListKernel>> AffineKernelsAl;
+    template<typename T>
+    static const std::map<const acceleration, const T>& GetKernelMap(WeightMode weightMode);
 
-    static const std::map<WeightMode, const std::map<acceleration, AffineKernel>> MultibiasKernels;
+    template<typename T>
+    static const std::map<const acceleration, const T>& GetKernelMap();
 
-    static const std::map<WeightMode, const std::map<acceleration, AffineActiveListKernel>> MultibiasKernelsAl;
+    template<typename T>
+    static const std::map<const acceleration, const T>& GetKernelMap(gna_gmm_mode);
 
-    static const std::map<WeightMode, const std::map<acceleration, DiagonalKernel>> DiagonalKernels;
+    void UpdateKernelsMap();
 
-    static const std::map<WeightMode, std::map<acceleration, RecurrentKernel>> RecurrentKernels;
+    static std::map<const WeightMode, std::map<const acceleration, const AffineKernel>> AffineKernels;
+    static std::map<const WeightMode, std::map<const acceleration, const AffineActiveListKernel>> AccelerationDetector::AffineKernelsAl;
+    static std::map<const WeightMode, std::map<const acceleration, const AffineKernel>> MultibiasKernels;
+    static std::map<const WeightMode, std::map<const acceleration, const AffineActiveListKernel>> AccelerationDetector::MultibiasKernelsAl;
+    static std::map<const WeightMode, std::map<const acceleration, const RecurrentKernel>> RecurrentKernels;
+    static std::map<const WeightMode, std::map<const acceleration, const AffineKernel>> AccelerationDetector::DiagonalKernels;
 
-    static const std::map<gna_gmm_mode, std::map<acceleration, GmmMaxMix>> GmmKernels;
+    static std::map<const acceleration, const TransposeKernel> TransposeKernels;
+    static std::map<const acceleration, const CopyKernel> AccelerationDetector::CopyKernels;
+    static std::map<const acceleration, const ConvolutionKernel> ConvolutionKernels;
+    static std::map<const acceleration, const ConvolutionPoolingKernel> AccelerationDetector::PoolingKernels;
+    static std::map<const acceleration, const PwlKernel> PwlKernels;
 
-    static const std::map<gna_gmm_mode, std::map<acceleration, GmmMaxMixActiveList>> GmmActiveListKernels;
-
-    static const std::map<acceleration, ConvolutionKernel> ConvolutionalFilterKernels;
-
-    static const std::map<acceleration, ConvolutionPoolingKernel> ConvolutionalFilterPoolKernels;
-
-    static const std::map<acceleration, TransposeKernel> TransposeKernels;
-
-    static const std::map<acceleration, CopyKernel> CopyKernels;
-
-    static const std::map<acceleration, PwlKernel> PwlKernels;
+    static std::map<const gna_gmm_mode, std::map<const acceleration, const GmmMaxMix>> AccelerationDetector::GmmKernels;
+    static std::map<const gna_gmm_mode, std::map<const acceleration, const GmmMaxMixActiveList>> GmmActiveListKernels;
 
 protected:
     static const std::map<GnaDeviceType, std::array<bool, GnaFeatureCount>> gnaFeatureMap;

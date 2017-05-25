@@ -56,7 +56,7 @@ public:
     ~Weight2B() = default;
 
     const uint16_t *Weights;
-    const WeightMode Mode = GNA_WEIGHT_2B;
+    static const WeightMode Mode = GNA_WEIGHT_2B;
 };
 
 struct BiasSimple

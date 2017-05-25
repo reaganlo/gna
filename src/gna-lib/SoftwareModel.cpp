@@ -25,6 +25,7 @@
 
 #include "SoftwareModel.h"
 
+#include "AccelerationDetector.h"
 #include "ActiveList.h"
 #include "Layer.h"
 #include "GmmLayer.h"

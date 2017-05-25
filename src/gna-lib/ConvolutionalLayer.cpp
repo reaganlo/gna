@@ -25,6 +25,7 @@
 
 #include "ConvolutionalLayer.h"
 
+#include "AccelerationDetector.h"
 #include "LayerConfiguration.h"
 #include "Validator.h"
 
@@ -86,9 +87,9 @@ CnnLayer::CnnLayer(nn_layer const * const layer) :
     Activation(ActivationFunction::Create(&static_cast<const nn_layer_conv*>(layer->pLayerStruct)->pwl, false)),
     Convolution{ static_cast<const nn_layer_conv*>(layer->pLayerStruct), Input.ElementCount },
     Pooling{ static_cast<const nn_layer_conv*>(layer->pLayerStruct) },
-    filterKernels{ AccelerationDetector::ConvolutionalFilterKernels },
-    poolingKernels{ AccelerationDetector::ConvolutionalFilterPoolKernels },
-    pwlKernels{ AccelerationDetector::PwlKernels },
+    filterKernels{ AccelerationDetector::GetKernelMap<ConvolutionKernel>() },
+    poolingKernels{ AccelerationDetector::GetKernelMap<ConvolutionPoolingKernel>() },
+    pwlKernels{ AccelerationDetector::GetKernelMap<PwlKernel>() },
     convolutionHiddenConfig{ Convolution.FeatureMaps.Stride, Convolution.OutputElementsCount,
         Convolution.Filters.Count, Convolution.Filters.CoefficientCount, Input.Buffer.Get<int16_t>(), Convolution.Filters.Data,
         Convolution.Filters.Biases, Activation ? reinterpret_cast<int16_t * const>(Output.ScratchPad) : Output.Buffer.Get<int16_t>(), nullptr },

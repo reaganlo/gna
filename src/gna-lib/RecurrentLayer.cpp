@@ -25,6 +25,7 @@
 
 #include "RecurrentLayer.h"
 
+#include "AccelerationDetector.h"
 #include "LayerConfiguration.h"
 #include "Validator.h"
 
@@ -36,7 +37,7 @@ RnnLayer::RnnLayer(nn_layer const * const layer) :
     // RNN has only 2B output with Activation always enabled
     Activation(ActivationFunction::Create(&static_cast<const nn_layer_reccurent*>(layer->pLayerStruct)->pwl, true)),
     FeedbackDelay{ static_cast<const nn_layer_reccurent * const>(layer->pLayerStruct)->feedbackFrameDelay },
-    recurrentKernels{ AccelerationDetector::RecurrentKernels.at(Affine->GetWeightMode()) },
+    recurrentKernels{ AccelerationDetector::GetKernelMap<RecurrentKernel>(Affine->GetWeightMode()) },
     rnnHiddenConfig{ Output.ElementCount, Input.VectorCount, Input.ElementCount, Input.Buffer, nullptr,
                         Output.ScratchPad, Output.Buffer, nullptr, Affine->GetWeights(), Affine->GetBiases() },
     pwlBaseConfig{ Output.ScratchPad, Activation->Segments, Activation->SegmentCount }

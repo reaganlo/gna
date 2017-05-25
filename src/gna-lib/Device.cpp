@@ -50,6 +50,8 @@ Device::Device(gna_device_id* deviceId, uint8_t threadCount) :
     id = static_cast<gna_device_id>(std::hash<std::thread::id>()(std::this_thread::get_id()));
 
     *deviceId = id;
+
+    accelerationDetector.UpdateKernelsMap();
 }
 
 Device::~Device()

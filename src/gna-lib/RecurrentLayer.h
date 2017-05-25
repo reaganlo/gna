@@ -50,7 +50,7 @@ private:
     void computeConfig(const LayerConfiguration& layerConfiguration, acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const;
 
     OutputBuffer feedbackBuffer;
-    const std::map<acceleration, RecurrentKernel>& recurrentKernels;
+    const std::map<const acceleration, const RecurrentKernel>& recurrentKernels;
 
     RecurrentConfig rnnHiddenConfig;
     const PwlBaseConfig pwlBaseConfig;

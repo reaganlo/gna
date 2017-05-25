@@ -49,9 +49,9 @@ protected:
     virtual void computeConfig(const LayerConfiguration& layerConfiguration, acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const;
     virtual void computeConfigPwl(const LayerConfiguration& layerConfiguration, acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const;
 
-    const std::map<acceleration, AffineKernel>& affineKernels;
-    const std::map<acceleration, AffineActiveListKernel>& affineKernelsAl;
-    const std::map<acceleration, PwlKernel>& pwlKernels;
+    const std::map<const acceleration, const AffineKernel>& affineKernels;
+    const std::map<const acceleration, const AffineActiveListKernel>& affineKernelsAl;
+    const std::map<const acceleration, const PwlKernel>& pwlKernels;
 
     AffineConfig affineHiddenConfig;
     const PwlBaseConfig pwlBaseConfig;
@@ -74,9 +74,9 @@ private:
     virtual void computeConfig(const LayerConfiguration& layerConfiguration, acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const;
     virtual void computeConfigPwl(const LayerConfiguration& layerConfiguration, acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const;
 
-    const std::map<acceleration, AffineKernel>& multibiasKernels;
-    const std::map<acceleration, AffineActiveListKernel>& multibiasKernelsAl;
-    const std::map<acceleration, PwlKernel>& pwlKernels;
+    const std::map<const acceleration, const AffineKernel>& multibiasKernels;
+    const std::map<const acceleration, const AffineActiveListKernel>& multibiasKernelsAl;
+    const std::map<const acceleration, const PwlKernel>& pwlKernels;
 
     AffineConfig affineHiddenConfig;
     const PwlBaseConfig pwlBaseConfig;
@@ -96,7 +96,7 @@ private:
     virtual void computeConfig(const LayerConfiguration& layerConfiguration, acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const override;
     virtual void computeConfigPwl(const LayerConfiguration& layerConfiguration, acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const override;
 
-    const std::map<acceleration, DiagonalKernel>& diagonalKernels;
+    const std::map<const acceleration, const AffineKernel>& diagonalKernels;
 };
 
 }

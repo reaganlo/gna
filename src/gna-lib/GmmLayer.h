@@ -64,8 +64,8 @@ private:
         const uint32_t& maximumScore, uint32_t& nSaturated) const;
     inline void validate();
 
-    const std::map<acceleration, GmmMaxMix> gmmKernels;
-    const std::map<acceleration, GmmMaxMixActiveList> gmmActiveListKernels;
+    const std::map<const acceleration, const GmmMaxMix> gmmKernels;
+    const std::map<const acceleration, const GmmMaxMixActiveList> gmmActiveListKernels;
 
     GmmConfig gmmHiddenConfig;
 };

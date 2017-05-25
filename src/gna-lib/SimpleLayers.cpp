@@ -25,6 +25,7 @@
 
 #include "SimpleLayers.h"
 
+#include "AccelerationDetector.h"
 #include "LayerConfiguration.h"
 #include "Validator.h"
 
@@ -32,7 +33,7 @@ using namespace GNA;
 
 TransposeLayer::TransposeLayer(nn_layer const * const layer) :
     Layer(layer),
-    transposeKernels{ AccelerationDetector::TransposeKernels },
+    transposeKernels{ AccelerationDetector::GetKernelMap<TransposeKernel>() },
     transposeHiddenConfig{ Input.ElementCount, Input.VectorCount, Input.Buffer, Output.Buffer }
 {
     Output.SetOutputMode(LayerOutput::NonActivatedOutput, layer->nBytesPerOutput);
@@ -78,7 +79,7 @@ CopyLayer::CopyLayer(const nn_layer *layer) :
     Layer(layer),
     ColumnCount{ static_cast<const nn_layer_copy*>(layer->pLayerStruct)->nCopyCols },
     RowCount{ static_cast<const nn_layer_copy*>(layer->pLayerStruct)->nCopyRows },
-    copyKernels{ AccelerationDetector::CopyKernels },
+    copyKernels{ AccelerationDetector::GetKernelMap<CopyKernel>() },
     copyHiddenConfig{ RowCount, ColumnCount, Input.VectorCount, Output.VectorCount, Input.Buffer, Output.Buffer }
 {
     Output.SetOutputMode(LayerOutput::NonActivatedOutput, layer->nBytesPerOutput);

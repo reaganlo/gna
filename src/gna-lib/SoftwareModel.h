@@ -34,6 +34,7 @@
 namespace GNA
 {
 
+class AccelerationDetector;
 class ActiveList;
 class Layer;
 struct LayerConfiguration;

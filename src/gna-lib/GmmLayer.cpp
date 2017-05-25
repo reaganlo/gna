@@ -25,6 +25,7 @@
 
 #include "GmmLayer.h"
 
+#include "AccelerationDetector.h"
 #include "LayerConfiguration.h"
 #include "Validator.h"
 
@@ -52,8 +53,8 @@ GmmLayer::GmmLayer(const nn_layer *layer) :
     Config((static_cast<gna_gmm_layer*>(layer->pLayerStruct))->config),
     Data((static_cast<gna_gmm_layer*>(layer->pLayerStruct))->data),
     Params{ Config, Input.ElementCount },
-    gmmKernels{ AccelerationDetector::GmmKernels.at(Config.mode) },
-    gmmActiveListKernels{ AccelerationDetector::GmmActiveListKernels.at(Config.mode) },
+    gmmKernels{ AccelerationDetector::GetKernelMap<GmmMaxMix>(Config.mode) },
+    gmmActiveListKernels{ AccelerationDetector::GetKernelMap<GmmMaxMixActiveList>(Config.mode) },
     gmmHiddenConfig{ Input.VectorCount, Input.ElementCount, Config.mixtureComponentCount, Params.MeanSetOffsetSize, Params.VarSetOffsetSize,
                     Params.GaussConstSetOffsetSize, Config.maximumScore, Config.stateCount, &Data, Input.Buffer, Output.Buffer, nullptr }
 {

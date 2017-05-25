@@ -42,7 +42,7 @@ private:
     void computeHidden(acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const;
     void computeConfig(const LayerConfiguration& layerConfiguration, acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const;
 
-    const std::map<acceleration, TransposeKernel>& transposeKernels;
+    const std::map<const acceleration, const TransposeKernel>& transposeKernels;
     TransposeConfig transposeHiddenConfig;
 };
 
@@ -60,7 +60,7 @@ private:
     void computeHidden(acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const;
     void computeConfig(const LayerConfiguration& layerConfiguration, acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const;
 
-    const std::map<acceleration, CopyKernel>& copyKernels;
+    const std::map<const acceleration, const CopyKernel>& copyKernels;
     CopyConfig copyHiddenConfig;
 };
 
