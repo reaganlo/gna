@@ -33,14 +33,14 @@ using namespace GNA;
 
 RnnLayer::RnnLayer(nn_layer const * const layer) :
     Layer(layer),
-    Affine{ AffineFunction::Create(&static_cast<const nn_layer_reccurent*>(layer->pLayerStruct)->affine) },
+    Affine{AffineFunction::Create(&static_cast<const nn_layer_reccurent*>(layer->pLayerStruct)->affine)},
     // RNN has only 2B output with Activation always enabled
-    Activation(ActivationFunction::Create(&static_cast<const nn_layer_reccurent*>(layer->pLayerStruct)->pwl, true)),
-    FeedbackDelay{ static_cast<const nn_layer_reccurent * const>(layer->pLayerStruct)->feedbackFrameDelay },
-    recurrentKernels{ AccelerationDetector::GetKernelMap<RecurrentKernel>(Affine->GetWeightMode()) },
-    rnnHiddenConfig{ Output.ElementCount, Input.VectorCount, Input.ElementCount, Input.Buffer, nullptr,
-                        Output.ScratchPad, Output.Buffer, nullptr, Affine->GetWeights(), Affine->GetBiases() },
-    pwlBaseConfig{ Output.ScratchPad, Activation->Segments, Activation->SegmentCount }
+    Activation(ActivationFunction::Create(&static_cast<const nn_layer_reccurent*>(layer->pLayerStruct)->pwl, true,
+        Output.ScratchPad, PwlOutputConfig{})),
+    FeedbackDelay{static_cast<const nn_layer_reccurent * const>(layer->pLayerStruct)->feedbackFrameDelay},
+    recurrentKernels{AccelerationDetector::GetKernelMap<RecurrentKernel>(Affine->GetWeightMode())},
+    rnnHiddenConfig{Output.ElementCount, Input.VectorCount, Input.ElementCount, Input.Buffer, nullptr,
+                        Output.ScratchPad, Output.Buffer, Affine->GetWeights(), Affine->GetBiases()}
 {
     Expect::InRange(FeedbackDelay, 1, Input.VectorCount - 1, XNN_ERR_NO_FEEDBACK);
 
@@ -71,33 +71,29 @@ void RnnLayer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const
     auto outputBuffer = layerConfiguration.OutputBuffer
         ? layerConfiguration.OutputBuffer->Get<int32_t>() : Output.Buffer;
 
-    if(!layerConfiguration.recurrentConfig)
-        layerConfiguration.recurrentConfig = std::make_unique<RecurrentConfig>(rnnHiddenConfig);
-    layerConfiguration.recurrentConfig->input = inputBuffer;
-    layerConfiguration.recurrentConfig->output = outputBuffer;
+    auto& configs = layerConfiguration.Configs;
+
+    if(!configs.Recurrent)
+        configs.Recurrent = std::make_unique<RecurrentConfig>(rnnHiddenConfig);
+    configs.Recurrent->input = inputBuffer;
+    configs.Recurrent->output = outputBuffer;
 
     if(outputBuffer)
-        layerConfiguration.recurrentConfig->feedbackBuffer = CalculateFeedbackBuffer(outputBuffer);
+        configs.Recurrent->feedbackBuffer = CalculateFeedbackBuffer(outputBuffer);
 }
 
 void RnnLayer::computeHidden(acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const
 {
-    auto rnnConfig = rnnHiddenConfig;
-    rnnConfig.saturationCount = saturationCount;
+    auto rnnConfig = RecurrentConfig{&rnnHiddenConfig, saturationCount};
 
-    auto pwlConfig = pwlBaseConfig;
-    auto pwl = reinterpret_cast<PwlCached*>(fvBuffers->pwl);
-    recurrentKernels.at(accel)(&rnnConfig, &pwlConfig, pwl);
+    recurrentKernels.at(accel)(&rnnConfig, &Activation->Pwl);
 }
 
 void RnnLayer::computeConfig(const LayerConfiguration& layerConfiguration, acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const
 {
-    auto rnnConfig = *layerConfiguration.recurrentConfig;
-    rnnConfig.saturationCount = saturationCount;
-
-    auto& pwlConfig = pwlBaseConfig;
-    auto pwl = reinterpret_cast<PwlCached*>(fvBuffers->pwl);
-    recurrentKernels.at(accel)(&rnnConfig, &pwlConfig, pwl);
+    auto rnnConfig = RecurrentConfig{layerConfiguration.Configs.Recurrent.get(), saturationCount};
+    
+    recurrentKernels.at(accel)(&rnnConfig, &Activation->Pwl);
 }
 
 const OutputBuffer RnnLayer::CalculateFeedbackBuffer(const OutputBuffer& outputBuffer) const

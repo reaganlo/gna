@@ -51,11 +51,8 @@ protected:
 
     const std::map<const acceleration, const AffineKernel>& affineKernels;
     const std::map<const acceleration, const AffineActiveListKernel>& affineKernelsAl;
-    const std::map<const acceleration, const PwlKernel>& pwlKernels;
 
     AffineConfig affineHiddenConfig;
-    const PwlBaseConfig pwlBaseConfig;
-    PwlOutputConfig pwlOutputConfig;
 };
 
 class AffineMultiBiasLayer : public Layer
@@ -75,12 +72,7 @@ private:
     virtual void computeConfigPwl(const LayerConfiguration& layerConfiguration, acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const;
 
     const std::map<const acceleration, const AffineKernel>& multibiasKernels;
-    const std::map<const acceleration, const AffineActiveListKernel>& multibiasKernelsAl;
-    const std::map<const acceleration, const PwlKernel>& pwlKernels;
-
     AffineConfig affineHiddenConfig;
-    const PwlBaseConfig pwlBaseConfig;
-    PwlOutputConfig pwlOutputConfig;
 };
 
 class AffineDiagonalLayer : public AffineLayer

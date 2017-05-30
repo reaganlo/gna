@@ -84,19 +84,17 @@ PoolingFunction::PoolingFunction(const nn_layer_conv * sourceLayer) :
 CnnLayer::CnnLayer(nn_layer const * const layer) :
     Layer(layer),
     // CNN has only 2B output with Activation always enabled
-    Activation(ActivationFunction::Create(&static_cast<const nn_layer_conv*>(layer->pLayerStruct)->pwl, false)),
-    Convolution{ static_cast<const nn_layer_conv*>(layer->pLayerStruct), Input.ElementCount },
-    Pooling{ static_cast<const nn_layer_conv*>(layer->pLayerStruct) },
-    filterKernels{ AccelerationDetector::GetKernelMap<ConvolutionKernel>() },
-    poolingKernels{ AccelerationDetector::GetKernelMap<ConvolutionPoolingKernel>() },
-    pwlKernels{ AccelerationDetector::GetKernelMap<PwlKernel>() },
-    convolutionHiddenConfig{ Convolution.FeatureMaps.Stride, Convolution.OutputElementsCount,
+    Activation(ActivationFunction::Create(&static_cast<const nn_layer_conv*>(layer->pLayerStruct)->pwl, false,
+        Output.ScratchPad,
+        PwlOutputConfig{0, Output.ElementCount - 1, 0, Output.VectorCount - 1, Output.VectorCount, Output.Buffer})),
+    Convolution{static_cast<const nn_layer_conv*>(layer->pLayerStruct), Input.ElementCount},
+    Pooling{static_cast<const nn_layer_conv*>(layer->pLayerStruct)},
+    filterKernels{AccelerationDetector::GetKernelMap<ConvolutionKernel>()},
+    poolingKernels{AccelerationDetector::GetKernelMap<ConvolutionPoolingKernel>()},
+    convolutionHiddenConfig{Convolution.FeatureMaps.Stride, Convolution.OutputElementsCount,
         Convolution.Filters.Count, Convolution.Filters.CoefficientCount, Input.Buffer.Get<int16_t>(), Convolution.Filters.Data,
-        Convolution.Filters.Biases, Activation ? reinterpret_cast<int16_t * const>(Output.ScratchPad) : Output.Buffer.Get<int16_t>(), nullptr },
-    poolingHiddenConfig{ Pooling.Type, Pooling.Size, Pooling.Stride, nullptr },
-    pwlFilterConfig{Output.ScratchPad, Activation ? Activation->Segments : nullptr, Activation ? Activation->SegmentCount : 0},
-    pwlPoolConfig{nullptr, Activation ? Activation->Segments : nullptr, Activation ? Activation->SegmentCount : 0},
-    pwlOutputConfig{0, Output.ElementCount - 1, 0, Output.VectorCount - 1, Output.VectorCount, nullptr, Output.Buffer}    
+        Convolution.Filters.Biases, Activation ? reinterpret_cast<int16_t * const>(Output.ScratchPad) : Output.Buffer.Get<int16_t>()},
+    poolingHiddenConfig{Pooling.Type, Pooling.Size, Pooling.Stride}
 {
     Expect::True(Input.VectorCount == 1, XNN_ERR_GROUPING);
     Expect::True(Input.VectorCount == Output.VectorCount, XNN_ERR_GROUPING);
@@ -151,26 +149,28 @@ void CnnLayer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const
     auto filterOutputBuffer = Activation ? Output.ScratchPad :
         (layerConfiguration.OutputBuffer ? layerConfiguration.OutputBuffer->Get<int32_t>() : Output.Buffer);
 
-    if(!layerConfiguration.convolutionConfig)
-        layerConfiguration.convolutionConfig = std::make_unique<ConvolutionConfig>(convolutionHiddenConfig);
-    layerConfiguration.convolutionConfig->inputs = inputBuffer;
-    layerConfiguration.convolutionConfig->convolutedOutputs = filterOutputBuffer;
+    auto& configs = layerConfiguration.Configs;
+
+    if(!configs.Convolution)
+        configs.Convolution = std::make_unique<ConvolutionConfig>(convolutionHiddenConfig);
+    configs.Convolution->inputs = inputBuffer;
+    configs.Convolution->convolutedOutputs = filterOutputBuffer;
 
     if (INTEL_NO_POOLING == Pooling.Type && Activation)
     {
-        auto pwlOutputBuffer = layerConfiguration.OutputBuffer 
-            ? layerConfiguration.OutputBuffer->Get<int16_t>() 
+        auto pwlOutputBuffer = layerConfiguration.OutputBuffer
+            ? layerConfiguration.OutputBuffer->Get<int16_t>()
             : Output.Buffer;
 
-        layerConfiguration.pwlOutputConfig = std::make_unique<PwlOutputConfig>(pwlOutputConfig);
-        layerConfiguration.pwlOutputConfig->output = pwlOutputBuffer;
+        if(!configs.PwlOutput)
+            configs.PwlOutput = Activation->GetOutputConfig(pwlOutputBuffer);
     }
 }
 
 void CnnLayer::computeHidden(acceleration accel, KernelBuffers *fvBuffers, uint32_t * saturationCount) const
 {
-    auto filterConfig = convolutionHiddenConfig;
-    filterConfig.saturationCount = saturationCount;
+    auto filterConfig = ConvolutionConfig{&convolutionHiddenConfig, saturationCount};
+
     filterKernels.at(accel)(&filterConfig);
 }
 
@@ -178,15 +178,13 @@ void CnnLayer::computeHiddenPwl(acceleration accel, KernelBuffers *fvBuffers, ui
 {
     computeHidden(accel, fvBuffers, saturationCount);
 
-    auto pwlOutConfig = pwlOutputConfig;
-    pwlOutConfig.saturationCount = saturationCount;
-    pwlKernels.at(accel)(&pwlFilterConfig, fvBuffers->pwl, &pwlOutConfig);
+    Activation->computeHidden(accel, saturationCount);
 }
 
 void CnnLayer::computeConfig(const LayerConfiguration& layerConfiguration, acceleration accel, KernelBuffers *fvBuffers, uint32_t * saturationCount) const
 {
-    auto filterConfig = *layerConfiguration.convolutionConfig;
-    filterConfig.saturationCount = saturationCount;
+    auto filterConfig = ConvolutionConfig{layerConfiguration.Configs.Convolution.get(), saturationCount};
+
     filterKernels.at(accel)(&filterConfig);
 }
 
@@ -194,29 +192,21 @@ void CnnLayer::computeConfigPwl(const LayerConfiguration& layerConfiguration, ac
 {
     computeConfig(layerConfiguration, accel, fvBuffers, saturationCount);
 
-    auto pwlOutConfig = *layerConfiguration.pwlOutputConfig;
-    pwlOutConfig.saturationCount = saturationCount;
-    pwlKernels.at(accel)(&pwlFilterConfig, fvBuffers->pwl, &pwlOutConfig);
+    Activation->computeConfig(layerConfiguration, accel, saturationCount);
 }
 
 void CnnLayer::computeHiddenPool(acceleration accel, KernelBuffers *fvBuffers, uint32_t * saturationCount) const
 {
-    auto filterConfig = convolutionHiddenConfig;
-    filterConfig.saturationCount = saturationCount;
+    auto filterConfig = ConvolutionConfig{&convolutionHiddenConfig, saturationCount};
+    auto poolConfig = PoolingConfig{&poolingHiddenConfig, fvBuffers->pool};
 
-    auto poolConfig = poolingHiddenConfig;
-    poolConfig.buffer = fvBuffers->pool;
-
-    poolingKernels.at(accel)(&filterConfig, &poolConfig, &pwlPoolConfig, fvBuffers->pwl);
+    poolingKernels.at(accel)(&filterConfig, &poolConfig, &Activation->Pwl);
 }
 
 void CnnLayer::computeConfigPool(LayerConfiguration& layerConfiguration, acceleration accel, KernelBuffers *fvBuffers, uint32_t * saturationCount) const
 {
-    auto filterConfig = *layerConfiguration.convolutionConfig;
-    filterConfig.saturationCount = saturationCount;
+    auto filterConfig = ConvolutionConfig{layerConfiguration.Configs.Convolution.get(), saturationCount};
+    auto poolConfig = PoolingConfig{&poolingHiddenConfig, fvBuffers->pool};
 
-    auto poolConfig = poolingHiddenConfig;
-    poolConfig.buffer = fvBuffers->pool;
-
-    poolingKernels.at(accel)(&filterConfig, &poolConfig, &pwlPoolConfig, fvBuffers->pwl);
+    poolingKernels.at(accel)(&filterConfig, &poolConfig, &Activation->Pwl);
 }

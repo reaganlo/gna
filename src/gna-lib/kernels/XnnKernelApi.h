@@ -26,6 +26,7 @@
 #pragma once
 
 #include "KernelArguments.h"
+#include "pwl.h"
 
 namespace GNA
 {
@@ -34,16 +35,14 @@ typedef void (*AffineKernel)(AffineConfig const * const config);
 
 typedef void (*AffineActiveListKernel)(AffineConfig const * const config, AffineConfigAl const * const al);
 
-typedef void (*PwlKernel)(PwlBaseConfig const * const config, PwlCached * const pwl, 
-    PwlOutputConfig const * const outputConfig);
+typedef void (*PwlKernel)(PwlCached const * const pwl, PwlOutputConfig const * const outputConfig);
 
-typedef void (*RecurrentKernel)(RecurrentConfig const * const config, PwlBaseConfig const * const pwlConfig,
-    PwlCached * const pwl);
+typedef void (*RecurrentKernel)(RecurrentConfig const * const config, PwlCached const * const pwl);
 
 typedef void (*ConvolutionKernel)(ConvolutionConfig const * const config);
 
-typedef void (*ConvolutionPoolingKernel)(ConvolutionConfig const * const filterConfig,
-    ConvolutionPoolingConfig const * const poolConfig, PwlBaseConfig const * const pwlConfig, PwlCached * const pwl);
+typedef void (*ConvolutionPoolingKernel)(ConvolutionConfig const * const filterConfig, 
+    PoolingConfig const * const poolConfig, PwlCached const * const pwl);
 
 typedef void (*TransposeKernel)(TransposeConfig const * const config);
 
@@ -58,10 +57,8 @@ typedef struct _XnnKernel
     AffineActiveListKernel affineSingle1Bal;
     AffineActiveListKernel affineSingle2Bal;
 
-    AffineKernel affineMulti1Bfull;
-    AffineKernel affineMulti2Bfull;
-    AffineActiveListKernel affineMulti1Bal;
-    AffineActiveListKernel affineMulti2Bal;
+    AffineKernel affineMulti1B;
+    AffineKernel affineMulti2B;
 
     AffineKernel diagonal1B;
     AffineKernel diagonal2B;

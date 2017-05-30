@@ -43,7 +43,6 @@
         <ClInclude Include="$(SRC_DIR)\gna-lib\kernels\igemv.h" />
         <ClInclude Include="$(SRC_DIR)\gna-lib\kernels\igemv16.h" />
         <ClInclude Include="$(SRC_DIR)\gna-lib\kernels\igemv8.h" />
-        <ClInclude Include="$(SRC_DIR)\gna-lib\kernels\pwl-types.h" />
         <ClInclude Include="$(SRC_DIR)\gna-lib\kernels\pwl.h" />
         <ClCompile Include="$(SRC_DIR)\gna-lib\kernels\XnnKernel.cpp" />
         <ClCompile Include="$(SRC_DIR)\gna-lib\kernels\convnet.cpp" />

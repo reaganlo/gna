@@ -59,39 +59,3 @@ void AffineActiveListKernelImpl2B(AffineConfig const * const config, AffineConfi
         }
     }
 }
-
-void AffineMultiBiasActiveListKernelImpl2B(AffineConfig const * const config, AffineConfigAl const * const al)
-{
-    uint32_t i, j, k, l;
-    int64_t sum;
-    uint32_t kk;
-    const uint32_t kpartial = (hw_buf_size[config->inputVectorCount - 1]) / config->inputVectorCount;
-    const uint32_t nKpartial = config->inputElementCount / kpartial;
-
-    TransposeConfig transposeConfig = TransposeConfig{ config->inputElementCount, config->inputVectorCount, 
-                                                       config->input, config->fvBuffers->d0 };
-    TransposeKernelImpl(&transposeConfig);
-
-    int16_t const * input;
-    int16_t const * weight;
-
-    for (l = 0; l < al->count; l++)
-    {
-        i = al->indices[l];
-        for (j = 0; j < config->inputVectorCount; j++)
-        {
-            sum = config->multiBias[i*config->multiBiasVectorCount];
-            for (kk = 0; kk < nKpartial + 1; kk++)
-            {
-                input = config->fvBuffers->d0 + j*config->inputElementCount + kk * kpartial;
-                weight = config->weights2B + i*config->inputElementCount + kk * kpartial;
-                for (k = 0; (k < kpartial) && (kk*kpartial + k < config->inputElementCount); k++)
-                {
-                    sum += weight[k] * input[k];
-                }
-                saturate_store_out(&sum, &config->output[l*config->inputVectorCount + j], config->saturationCount);
-                sum = config->output[l*config->inputVectorCount + j]; // load the temp sum
-            }
-        }
-    }
-}

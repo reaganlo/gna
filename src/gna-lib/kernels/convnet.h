@@ -34,6 +34,8 @@
 #define MaxPartialPoolingFunction KERNEL(MaxPartialPoolingFunction)
 #define SumPartialPoolingFunction KERNEL(SumPartialPoolingFunction)
 
+using GNA::PwlCached;
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -41,7 +43,7 @@ extern "C" {
 void ConvolutionKernelImpl(ConvolutionConfig const * const filterConfig);
 
 void ConvolutionPoolingKernelImpl(ConvolutionConfig const * const filterConfig, 
-    ConvolutionPoolingConfig const * const poolConfig, PwlBaseConfig const * const pwlConfig, PwlCached * const pwl);
+    PoolingConfig const * const poolConfig, PwlCached const * const pwl);
 
 /* Calculates MaxPartialPoolingFunction
 * @PS   number of pool size

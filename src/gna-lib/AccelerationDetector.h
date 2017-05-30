@@ -100,7 +100,6 @@ public:
     static std::map<const WeightMode, std::map<const acceleration, const AffineKernel>> AffineKernels;
     static std::map<const WeightMode, std::map<const acceleration, const AffineActiveListKernel>> AccelerationDetector::AffineKernelsAl;
     static std::map<const WeightMode, std::map<const acceleration, const AffineKernel>> MultibiasKernels;
-    static std::map<const WeightMode, std::map<const acceleration, const AffineActiveListKernel>> AccelerationDetector::MultibiasKernelsAl;
     static std::map<const WeightMode, std::map<const acceleration, const RecurrentKernel>> RecurrentKernels;
     static std::map<const WeightMode, std::map<const acceleration, const AffineKernel>> AccelerationDetector::DiagonalKernels;
 

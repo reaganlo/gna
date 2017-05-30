@@ -30,15 +30,25 @@
 
 struct PwlOutputConfig
 {
+    PwlOutputConfig() :
+        columnFirst{},
+        columnLast{},
+        columnCount{}
+    {}
+    PwlOutputConfig(PwlOutputConfig const * const source, uint32_t * saturationCountIn) :
+        PwlOutputConfig{*source}
+    {
+        saturationCount = saturationCountIn;
+    }
     PwlOutputConfig(uint32_t rowFirstIn, uint32_t rowLastIn, uint32_t columnFirstIn, uint32_t columnLastIn,
-        uint32_t columnCountIn, uint32_t * saturationCountIn, int16_t* outputIn) :
+        uint32_t columnCountIn, int16_t* outputIn) :
         rowFirst{rowFirstIn},
         rowLast{rowLastIn},
         columnFirst{columnFirstIn},
         columnLast{columnLastIn},
         columnCount{columnCountIn},
         output{outputIn},
-        saturationCount{saturationCountIn}
+        saturationCount{nullptr}
     {}
 
     uint32_t rowFirst;
@@ -50,41 +60,24 @@ struct PwlOutputConfig
     uint32_t * saturationCount;
 };
 
-
-// constant configuration for given layer 
-struct PwlBaseConfig
-{
-    PwlBaseConfig(int32_t * const inputIn, nn_pwl_seg const * const segmentsIn, uint32_t segmentCountIn) :
-        input{inputIn},
-        segments{segmentsIn},
-        segmentCount{segmentCountIn}
-    {}
-
-    int32_t const * const input;
-    nn_pwl_seg const * const segments;
-    uint32_t const segmentCount;
-};
-
-// Function pointer for apply PWL for single input-output
-typedef void (*PwlApplySingle)(PwlCached const * const pwl, int32_t I, int16_t * const output,
-    uint32_t * const saturationCount);
-
-// Function pointer for apply PWL for all inputs-outputs
-typedef void (*PwlApplyAll)(PwlCached const * const pwl, PwlOutputConfig const * const outputConfig);
-
 struct AffineConfig
 {
+    AffineConfig(AffineConfig const * const source, uint32_t * saturationCountIn, KernelBuffers * fvBuffersIn) :
+        AffineConfig{*source}
+    {
+        saturationCount = saturationCountIn;
+        fvBuffers = fvBuffersIn;
+    }
     AffineConfig(uint32_t const outputElementCountIn, uint32_t const inputVectorCountIn, 
-        uint32_t const inputElementCountIn, int16_t const * inputIn, int32_t * const outputIn, 
-        uint32_t * saturationCountIn, KernelBuffers * fvBuffersIn, void const * weightsIn,
+        uint32_t const inputElementCountIn, int16_t const * inputIn, int32_t * const outputIn, void const * weightsIn,
         void const * biases, nn_bias_s const * multiBiasIn, uint32_t const multiBiasVectorCountIn) :
         outputElementCount{outputElementCountIn},
         inputVectorCount{inputVectorCountIn},
         inputElementCount{inputElementCountIn},
         input{inputIn},
         output{outputIn},
-        saturationCount{saturationCountIn},
-        fvBuffers{fvBuffersIn},
+        saturationCount{nullptr},
+        fvBuffers{nullptr},
         weights1B{static_cast<int8_t const *>(weightsIn)},
         biasesCompound{static_cast<nn_bias_c const *>(biases)},
         multiBias{multiBiasIn},
@@ -127,10 +120,16 @@ struct AffineConfigAl
 
 struct RecurrentConfig
 {
+    RecurrentConfig(RecurrentConfig const * const source, uint32_t * saturationCountIn) :
+        RecurrentConfig{*source}
+    {
+        saturationCount = saturationCountIn;
+        pwlOutputConfig.saturationCount = saturationCountIn;
+    }
     RecurrentConfig(
         uint32_t const outputElementCountIn, uint32_t const inputVectorCountIn, uint32_t const inputElementCountIn,
         int16_t const * inputIn, int16_t * const feedbackBufferIn, int32_t * const outputIn, 
-        int16_t * outputActivatedIn, uint32_t * saturationCountIn, void const * weightsIn, void const * biases) :
+        int16_t * outputActivatedIn, void const * weightsIn, void const * biases) :
         outputElementCount{outputElementCountIn},
         inputVectorCount{inputVectorCountIn},
         inputElementCount{inputElementCountIn},
@@ -138,9 +137,10 @@ struct RecurrentConfig
         feedbackBuffer{feedbackBufferIn},
         output{outputIn},
         outputActivated{outputActivatedIn},
-        saturationCount{saturationCountIn},
+        saturationCount{nullptr},
         weights1B{static_cast<int8_t const *>(weightsIn)},
-        biasesCompound{static_cast<nn_bias_c const *>(biases)}
+        biasesCompound{static_cast<nn_bias_c const *>(biases)},
+        pwlOutputConfig{0, 0, 0, outputElementCount, outputElementCount, outputActivated}
     {}
 
     uint32_t const outputElementCount;      // M - cols
@@ -161,6 +161,7 @@ struct RecurrentConfig
     nn_bias_c const * const biasesCompound; // B - [M]
     nn_bias_s const * const biasesSimple;   // B - [M]
     };
+    PwlOutputConfig pwlOutputConfig;
 };
 
 struct TransposeConfig
@@ -201,9 +202,14 @@ struct CopyConfig
 
 struct ConvolutionConfig
 {
+    ConvolutionConfig(ConvolutionConfig const * const source, uint32_t * const saturationCountIn) :
+        ConvolutionConfig{*source}
+    {
+        saturationCount = saturationCountIn;
+    }
     ConvolutionConfig(uint32_t const inputBandStrideIn, uint32_t const FilterOutputCountIn, uint32_t const FilterCountIn,
         uint32_t const FilterCoefficientCountIn, int16_t const * const inputsIn, int16_t const * const filtersIn,
-        nn_bias_s const * const biasesIn, int16_t * const outputsIn, uint32_t * const saturationCountIn) :
+        nn_bias_s const * const biasesIn, int16_t * const outputsIn) :
         inputBandStride{inputBandStrideIn},
         filterOutputCount{FilterOutputCountIn},
         filterCount{FilterCountIn},
@@ -212,7 +218,7 @@ struct ConvolutionConfig
         filters{filtersIn},
         biases{biasesIn},
         pooledOutputs{outputsIn},
-        saturationCount{saturationCountIn}
+        saturationCount{nullptr}
     {}
 
     uint32_t const inputBandStride;
@@ -232,14 +238,18 @@ struct ConvolutionConfig
     uint32_t * saturationCount;
 };
 
-struct ConvolutionPoolingConfig
+struct PoolingConfig
 {
-    ConvolutionPoolingConfig(nn_pool_type const typeIn, uint32_t const sizeIn, uint32_t const stepIn,
-        int64_t * const bufferIn) :
+    PoolingConfig(PoolingConfig const * const source, int64_t * const bufferIn) :
+        PoolingConfig{*source}
+    {
+        buffer = bufferIn;
+    }
+    PoolingConfig(nn_pool_type const typeIn, uint32_t const sizeIn, uint32_t const stepIn) :
         type{typeIn},
         size{sizeIn},
         step{stepIn},
-        buffer{bufferIn}
+        buffer{nullptr}
     {}
 
     nn_pool_type const type;
@@ -250,10 +260,15 @@ struct ConvolutionPoolingConfig
 
 struct GmmConfig
 {
+    GmmConfig(GmmConfig const * const source, uint8_t *inputScratchPadIn) :
+        GmmConfig{*source}
+    {
+        inputScratchPad = inputScratchPadIn;
+    }
     GmmConfig(uint32_t const inputVectorCountIn, uint32_t const inputElementCountIn, uint32_t const mixCountIn,
         uint32_t const meanSetOffsetSizeIn, uint32_t const varSetOffsetSizeIn, uint32_t const gaussConstSetOffsetSizeIn,
         uint32_t const maxScoreIn, uint32_t const stateCountIn, gna_gmm_data const * const dataIn,
-        uint8_t const * const inputIn, uint32_t * const outputIn, uint8_t *inputScratchPadIn) :
+        uint8_t const * const inputIn, uint32_t * const outputIn) :
         inputVectorCount{inputVectorCountIn},
         inputElementCount{inputElementCountIn},
         mixtureComponentCount{mixCountIn},
@@ -264,7 +279,7 @@ struct GmmConfig
         stateCount{stateCountIn},
         data{dataIn},
         input{inputIn},
-        inputScratchPad{inputScratchPadIn},
+        inputScratchPad{nullptr},
         output{outputIn}
     {}
 

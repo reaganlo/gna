@@ -23,11 +23,12 @@
  in any way.
 */
 
+// TODO: make naming convention consistent with other kernel implementations
+
 #include <cstring>
 
 #include "convnet.h"
 #include "igemv.h"
-#include "pwl-types.h"
 
 __forceinline void saturate64_store_out(int64_t * const out, uint32_t * const saturationCount)
 {
@@ -343,7 +344,7 @@ void ConvolutionKernelImpl(ConvolutionConfig const * const config)
 }
 
 void ConvolutionPoolingKernelImpl(ConvolutionConfig const * const filterConfig, 
-    ConvolutionPoolingConfig const * const poolConfig, PwlBaseConfig const * const pwlConfig, PwlCached * const pwl)
+    PoolingConfig const * const poolConfig, PwlCached const * const pwl)
 {
     const uint32_t FN = filterConfig->filterCount;
     const uint32_t FC = filterConfig->filterCoefficientCount;
@@ -916,7 +917,7 @@ void ConvolutionPoolingKernelImpl(ConvolutionConfig const * const filterConfig,
 #if GNA_SAT == 1
                     saturate64_store_out(&value, saturationCount);
 #endif
-                    pwl->pwlSingle(pwl, (int32_t)value, &O[output_index * FN + i], saturationCount);
+                    pwl->ActivateSingle(&pwl->pwl, (int32_t)value, &O[output_index * FN + i], saturationCount);
                 }
 
                 pool_start_index = (pool_start_index + PSTEP) % PS;
@@ -941,7 +942,7 @@ void ConvolutionPoolingKernelImpl(ConvolutionConfig const * const filterConfig,
 #if GNA_SAT == 1 
             saturate64_store_out(&value, saturationCount);
 #endif
-            pwl->pwlSingle(pwl, (int32_t)value, &O[output_index * FN + i], saturationCount);
+            pwl->ActivateSingle(&pwl->pwl, (int32_t)value, &O[output_index * FN + i], saturationCount);
         }
 
         pool_start_index = (pool_start_index + PSTEP) % PS;

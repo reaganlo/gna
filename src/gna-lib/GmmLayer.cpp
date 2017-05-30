@@ -56,7 +56,7 @@ GmmLayer::GmmLayer(const nn_layer *layer) :
     gmmKernels{ AccelerationDetector::GetKernelMap<GmmMaxMix>(Config.mode) },
     gmmActiveListKernels{ AccelerationDetector::GetKernelMap<GmmMaxMixActiveList>(Config.mode) },
     gmmHiddenConfig{ Input.VectorCount, Input.ElementCount, Config.mixtureComponentCount, Params.MeanSetOffsetSize, Params.VarSetOffsetSize,
-                    Params.GaussConstSetOffsetSize, Config.maximumScore, Config.stateCount, &Data, Input.Buffer, Output.Buffer, nullptr }
+                    Params.GaussConstSetOffsetSize, Config.maximumScore, Config.stateCount, &Data, Input.Buffer, Output.Buffer }
 {
     validate();
 
@@ -75,21 +75,22 @@ void GmmLayer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const
     auto outputBuffer = layerConfiguration.OutputBuffer
         ? layerConfiguration.OutputBuffer->Get<uint8_t>() : Output.Buffer;
 
-    if(!layerConfiguration.gmmConfig)
-        layerConfiguration.gmmConfig = std::make_unique<GmmConfig>(gmmHiddenConfig);
+    auto& configs = layerConfiguration.Configs;
+
+    if(!configs.Gmm)
+        configs.Gmm = std::make_unique<GmmConfig>(gmmHiddenConfig);
     if (layerConfiguration.ActiveList)
     {
         ValidateActiveList(layerConfiguration.ActiveList.get());
-        layerConfiguration.gmmConfig->stateCount = layerConfiguration.ActiveList->IndicesCount;
+        configs.Gmm->stateCount = layerConfiguration.ActiveList->IndicesCount;
     }
-    layerConfiguration.gmmConfig->input = inputBuffer;
-    layerConfiguration.gmmConfig->input = outputBuffer;
+    configs.Gmm->input = inputBuffer;
+    configs.Gmm->input = outputBuffer;
 }
 
 void GmmLayer::computeHidden(acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const
 {
-    auto gmmConfig = gmmHiddenConfig;
-    gmmConfig.inputScratchPad = reinterpret_cast<uint8_t*>(fvBuffers->d0);
+    auto gmmConfig = GmmConfig{&gmmHiddenConfig, reinterpret_cast<uint8_t*>(fvBuffers->d0)};
 
     gmmKernels.at(accel)(&gmmConfig);
 
@@ -98,8 +99,7 @@ void GmmLayer::computeHidden(acceleration accel, KernelBuffers *fvBuffers, uint3
 
 void GmmLayer::computeConfig(const LayerConfiguration& layerConfiguration, acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const
 {
-    auto gmmConfig = *layerConfiguration.gmmConfig;
-    gmmConfig.inputScratchPad = reinterpret_cast<uint8_t*>(fvBuffers->d0);
+    auto gmmConfig = GmmConfig{layerConfiguration.Configs.Gmm.get(), reinterpret_cast<uint8_t*>(fvBuffers->d0)};
 
     if (layerConfiguration.ActiveList)
     {

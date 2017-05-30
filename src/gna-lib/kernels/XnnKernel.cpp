@@ -31,8 +31,6 @@
 #include "igemv16.h"
 #include "igemv8.h"
 #include "KernelMacros.h"
-#include "pwl.h"
-#include "pwl-types.h"
 
 namespace GNA
 {
@@ -42,21 +40,14 @@ namespace GNA
 #define recurrentKernelImpl2B KERNEL(recurrentKernelImpl2B)
 #define copyKernelImpl KERNEL(copyKernelImpl)
 
-void pwlKernelImpl(PwlBaseConfig const * const config, PwlCached * const pwl, PwlOutputConfig const * const outputConfig)
+void pwlKernelImpl(PwlCached const * const pwl, PwlOutputConfig const * const outputConfig)
 {
-    // TODO: add PWL setup caching in layer kernel configuration phase
-    // TODO: change to use pwlAll function directly
-    PwlCacheSetup(pwl, config);
-    pwl->pwlAll(pwl, outputConfig);
+    pwl->ActivateAll(&pwl->pwl, outputConfig);
 }
 
-void recurrentKernelImpl1B(RecurrentConfig const * const config, PwlBaseConfig const * const pwlConfig,
-    PwlCached * const pwl)
+void recurrentKernelImpl1B(RecurrentConfig const * const config, PwlCached const * const pwl)
 {
     auto runConfig = RecurrentConfig(*config); // local modifiable copy
-    PwlOutputConfig pwlOut { 0, 0, 0, config->outputElementCount, config->outputElementCount, 
-                            config->saturationCount, config->outputActivated};
-    PwlCacheSetup(pwl, pwlConfig); // TODO: add to model build cache
 
     // for each input vector
     for (uint32_t i = 0; i < config->inputVectorCount; i++)
@@ -66,30 +57,27 @@ void recurrentKernelImpl1B(RecurrentConfig const * const config, PwlBaseConfig c
         runConfig.output = config->output + i * config->outputElementCount;
         RecurrentKernelImpl1B(&runConfig);
 
-        pwlOut.rowFirst = i;
-        pwlOut.rowLast = i;
-        pwl->pwlAll(pwl, &pwlOut);
+        runConfig.pwlOutputConfig.rowFirst = i;
+        runConfig.pwlOutputConfig.rowLast = i;
+        pwl->ActivateAll(&pwl->pwl, &runConfig.pwlOutputConfig);
     }
 }
 
-void recurrentKernelImpl2B(RecurrentConfig const * const config, PwlBaseConfig const * const pwlConfig,
-    PwlCached * const pwl)
+void recurrentKernelImpl2B(RecurrentConfig const * const config, PwlCached const * const pwl)
 {
-    auto rnnConfig = RecurrentConfig(*config); // local modifiable copy
-    PwlOutputConfig pwlOut{ 0, 0, 0, config->outputElementCount, config->outputElementCount, config->saturationCount, config->outputActivated };
-    PwlCacheSetup(pwl, pwlConfig); // TODO: add to model build cache
+    auto runConfig = RecurrentConfig(*config); // local modifiable copy
 
     // for each input vector
     for (uint32_t i = 0; i < config->inputVectorCount; i++)
     {
-        rnnConfig.input = config->input + i * config->inputElementCount;
-        rnnConfig.feedbackBuffer = config->feedbackBuffer + (i*config->outputElementCount);
-        rnnConfig.output = config->output + i * config->outputElementCount;
-        RecurrentKernelImpl2B(&rnnConfig);
+        runConfig.input = config->input + i * config->inputElementCount;
+        runConfig.feedbackBuffer = config->feedbackBuffer + (i*config->outputElementCount);
+        runConfig.output = config->output + i * config->outputElementCount;
+        RecurrentKernelImpl2B(&runConfig);
 
-        pwlOut.rowFirst = i;
-        pwlOut.rowLast = i;
-        pwl->pwlAll(pwl, &pwlOut);
+        runConfig.pwlOutputConfig.rowFirst = i;
+        runConfig.pwlOutputConfig.rowLast = i;
+        pwl->ActivateAll(&pwl->pwl, &runConfig.pwlOutputConfig);
     }
 }
 
@@ -117,8 +105,6 @@ XnnKernel KERNEL(xnnKernel) =
 
     AffineMultiBiasKernelImpl1B,
     AffineMultiBiasKernelImpl2B,
-    AffineMultiBiasActiveListKernelImpl1B,
-    AffineMultiBiasActiveListKernelImpl2B,
 
     DiagonalKernelImpl1B,
     DiagonalKernelImpl2B,

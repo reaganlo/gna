@@ -52,30 +52,3 @@ void AffineActiveListKernelImpl2B(AffineConfig const * const config, AffineConfi
         }
     }
 }
-
-void AffineMultiBiasActiveListKernelImpl2B(AffineConfig const * const config, AffineConfigAl const * const al)
-{
-    uint32_t i, j, k, l;
-    int16_t const * input;
-    int16_t const * weight;
-
-    TransposeConfig transposeConfig = TransposeConfig{ config->inputElementCount, config->inputVectorCount, 
-                                                       config->input, config->fvBuffers->d0 };
-    TransposeKernelImpl(&transposeConfig);
-
-    for (l = 0; l < al->count; l++)
-    {
-        i = al->indices[l];
-
-        input = config->fvBuffers->d0;
-        weight = config->weights2B + i*config->inputElementCount;
-        for (j = 0; j < config->inputVectorCount; j++)
-        {
-            config->output[l*config->inputVectorCount + j] = config->multiBias[i*config->multiBiasVectorCount];
-            for (k = 0; k < config->inputElementCount; k++)
-            {
-                config->output[l*config->inputVectorCount + j] += weight[k] * *input++;
-            }
-        }
-    }
-}

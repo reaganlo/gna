@@ -21,19 +21,22 @@ struct ConfigurationBuffer : public InOutBuffer
     gna_buffer_type type;
 };
 
+struct KernelConfigs
+{
+    std::unique_ptr<AffineConfig> Affine;
+    std::unique_ptr<RecurrentConfig> Recurrent;
+    std::unique_ptr<ConvolutionConfig> Convolution;
+    std::unique_ptr<TransposeConfig> Transpose;
+    std::unique_ptr<CopyConfig> Copy;
+    std::unique_ptr<GmmConfig> Gmm;
+    std::unique_ptr<PwlOutputConfig> PwlOutput;
+};
+
 struct LayerConfiguration
 {
     std::unique_ptr<ActiveList> ActiveList;
     std::unique_ptr<ConfigurationBuffer> InputBuffer;
     std::unique_ptr<ConfigurationBuffer> OutputBuffer;
-
-    std::unique_ptr<AffineConfig> affineConfig;
-    std::unique_ptr<AffineConfigAl> activeListConfig;
-    std::unique_ptr<PwlOutputConfig> pwlOutputConfig;
-    std::unique_ptr<RecurrentConfig> recurrentConfig;
-    std::unique_ptr<ConvolutionConfig> convolutionConfig;
-    std::unique_ptr<TransposeConfig> transposeConfig;
-    std::unique_ptr<CopyConfig> copyConfig;
-    std::unique_ptr<GmmConfig> gmmConfig;
+    KernelConfigs Configs;
 };
 }

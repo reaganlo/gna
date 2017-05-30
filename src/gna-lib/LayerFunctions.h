@@ -25,9 +25,12 @@
 
 #pragma once
 
+#include <map>
 #include <memory>
 
 #include "common.h"
+#include "pwl.h"
+#include "XnnKernelApi.h"
 
 namespace GNA
 {
@@ -105,9 +108,7 @@ public:
     ~AffineFunctionSingle() = default;
 
 protected:
-    AffineFunctionSingle(const nn_func_affine *affine);
-
-    const nn_func_affine *sourceAffineFunction;
+    AffineFunctionSingle();
 };
 
 // 2B Weights AffineFunction
@@ -190,17 +191,29 @@ public:
 class ActivationFunction
 {
 public:
-    static const std::unique_ptr<const ActivationFunction> Create(const nn_func_pwl * const pwl, const bool mandatory);
+    static const std::unique_ptr<const ActivationFunction> Create(const nn_func_pwl * const pwl, const bool mandatory,
+        int32_t const * const input, const PwlOutputConfig& outputConfig);
 
     static const uint32_t SegmentCountMax = XNN_N_PWL_SEGS_MAX;
     static const uint32_t SegmentCountMin = XNN_N_PWL_SEGS_MIN;
 
-    ActivationFunction(const nn_func_pwl * const pwl);
+    ActivationFunction(const nn_func_pwl * const pwl, int32_t const * const inputIn, const PwlOutputConfig& outputConfig);
     ActivationFunction() = delete;
     virtual ~ActivationFunction() = default;
 
-    const uint32_t SegmentCount;
-    const nn_pwl_seg *Segments;
+    std::unique_ptr<PwlOutputConfig> GetOutputConfig(int16_t * const output) const;
+    void computeHidden(acceleration accel, uint32_t *saturationCount) const;
+    void computeConfig(const LayerConfiguration& layerConfiguration, acceleration accel, uint32_t *saturationCount) const;
+    
+
+    uint32_t const SegmentCount;
+    nn_pwl_seg const * const Segments;
+    PwlCached const Pwl;
+
+private:
+    const std::map<const acceleration, const PwlKernel>& Kernels;
+
+    PwlOutputConfig const OutputConfig;
 };
 
 }

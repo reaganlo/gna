@@ -73,6 +73,7 @@ struct PoolingFunction
     const uint32_t Stride;
 };
 
+// TODO: refactor: consider extracting kernel stuff into [LayerType]Kernel class and attach to layer as member
 
 class CnnLayer : public Layer
 {
@@ -95,14 +96,9 @@ private:
 
     const std::map<const acceleration, const ConvolutionKernel>& filterKernels;
     const std::map<const acceleration, const ConvolutionPoolingKernel>& poolingKernels;
-    const std::map<const acceleration, const PwlKernel>& pwlKernels;
 
-    ConvolutionConfig convolutionHiddenConfig;
-    const ConvolutionPoolingConfig poolingHiddenConfig;
-
-    const PwlBaseConfig pwlFilterConfig;
-    const PwlBaseConfig pwlPoolConfig;
-    PwlOutputConfig pwlOutputConfig;
+    const ConvolutionConfig convolutionHiddenConfig;
+    const PoolingConfig poolingHiddenConfig;
 };
 
 }

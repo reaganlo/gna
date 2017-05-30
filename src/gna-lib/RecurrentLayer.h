@@ -53,7 +53,6 @@ private:
     const std::map<const acceleration, const RecurrentKernel>& recurrentKernels;
 
     RecurrentConfig rnnHiddenConfig;
-    const PwlBaseConfig pwlBaseConfig;
 };
 
 }

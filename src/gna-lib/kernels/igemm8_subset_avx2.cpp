@@ -531,6 +531,3 @@ void AffineActiveListKernelImpl1B(AffineConfig const * const config, AffineConfi
         return;
     }
 }
-
-void AffineMultiBiasActiveListKernelImpl1B(AffineConfig const * const config, AffineConfigAl const * const al)
-{}

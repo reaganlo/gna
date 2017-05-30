@@ -84,7 +84,7 @@ void RequestConfiguration::AddActiveList(uint32_t layerIndex, const ActiveList& 
         throw GnaException{ XNN_ERR_LYR_TYPE };
     }
     auto layerKind = layer.Config.Kind;
-    if (INTEL_AFFINE != layerKind && INTEL_AFFINE_MULTIBIAS != layerKind && INTEL_GMM != layerKind)
+    if (INTEL_AFFINE != layerKind && INTEL_GMM != layerKind)
     {
         throw GnaException{ XNN_ERR_LYR_KIND };
     }

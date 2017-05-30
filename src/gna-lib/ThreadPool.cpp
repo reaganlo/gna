@@ -27,7 +27,6 @@
 
 #include "common.h"
 #include "GnaException.h"
-#include "pwl-types.h"
 
 using std::condition_variable;
 using std::function;
@@ -64,7 +63,7 @@ ThreadPool::~ThreadPool()
 
 void allocateFvBuffers(KernelBuffers * buffers)
 {
-    // TODO: move to model creation to minimize memory footprint
+    // TODO: use one allocation for inputs and pool buffer
     buffers->d0 = (int16_t*)_gna_malloc(8 * (UINT16_MAX + 1) * sizeof(int16_t));
     if (nullptr == buffers->d0)
     {
@@ -83,35 +82,6 @@ void allocateFvBuffers(KernelBuffers * buffers)
     {
         throw GnaException(GNA_ERR_RESOURCES);
     }
-
-    buffers->lookup = _gna_malloc(PWL_LOOKUP_SIZE);
-    if (nullptr == buffers->lookup)
-    {
-        throw GnaException(GNA_ERR_RESOURCES);
-    }
-
-    buffers->xBase = _gna_malloc(PWL_X_BUFFER_SIZE + PWL_Y_BUFFER_SIZE);
-    if (nullptr == buffers->xBase)
-    {
-        throw GnaException(GNA_ERR_RESOURCES);
-    }
-
-    buffers->ySeg = ((int8_t*)(buffers->xBase) + PWL_X_BUFFER_SIZE);
-
-    buffers->pwl = static_cast<PwlCached*>(_kernel_malloc(PWL_PARAMS_BUFFER_SIZE));
-    if (nullptr == buffers->pwl)
-    {
-        throw GnaException(GNA_ERR_RESOURCES);
-    }
-
-    memset(buffers->pwl,    0,      PWL_PARAMS_BUFFER_SIZE);
-    memset(buffers->lookup, 0xff,   PWL_LOOKUP_SIZE);
-    memset(buffers->xBase,  0,      PWL_X_BUFFER_SIZE);
-    memset(buffers->ySeg,   0,      PWL_Y_BUFFER_SIZE);
-
-    ((PwlCached*)buffers->pwl)->lookup = (pwl_u_t*)buffers->lookup;
-    ((PwlCached*)buffers->pwl)->xBase  = (pwl_x_t*)buffers->xBase;
-    ((PwlCached*)buffers->pwl)->ySeg   = (pwl_y_t*)buffers->ySeg;
 }
 
 void deallocateFvBuffers(KernelBuffers *buffers)
@@ -125,21 +95,6 @@ void deallocateFvBuffers(KernelBuffers *buffers)
     {
         _gna_free(buffers->pool);
         buffers->pool = nullptr;
-    }
-    if (nullptr != buffers->pwl)
-    {
-        _gna_free(buffers->pwl);
-        buffers->pwl = nullptr;
-    }
-    if (nullptr != buffers->lookup)
-    {
-        _gna_free(buffers->lookup);
-        buffers->lookup = nullptr;
-    }
-    if (nullptr != buffers->xBase)
-    {
-        _gna_free(buffers->xBase);
-        buffers->xBase = nullptr;
     }
 }
 

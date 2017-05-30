@@ -94,7 +94,7 @@ public:
             case Action::Score:
                 gna_request_id requestId;
                 deviceController.RequestEnqueue(modelSetup->ConfigId(action->configIndex), GNA_SOFTWARE, &requestId);
-                GnaRequestWait(requestId, 100);
+                GnaRequestWait(requestId, 5*60*1000);
                 break;
 
             case Action::CheckReferenceOutput:

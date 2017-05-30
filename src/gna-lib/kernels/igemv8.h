@@ -31,7 +31,6 @@
 #define AffineKernelImpl1B KERNEL(AffineKernelImpl1B)
 #define AffineActiveListKernelImpl1B KERNEL(AffineActiveListKernelImpl1B)
 #define AffineMultiBiasKernelImpl1B KERNEL(AffineMultiBiasKernelImpl1B)
-#define AffineMultiBiasActiveListKernelImpl1B KERNEL(AffineMultiBiasActiveListKernelImpl1B)
 #define RecurrentKernelImpl1B KERNEL(RecurrentKernelImpl1B)
 #define DiagonalKernelImpl1B KERNEL(DiagonalKernelImpl1B)
 
@@ -52,12 +51,6 @@ void AffineActiveListKernelImpl1B(AffineConfig const * const config, AffineConfi
 // (input vectors in N columns, vector elements in K rows)
 // handles multi bias
 void AffineMultiBiasKernelImpl1B(AffineConfig const * const config);
-
-// Calculates affine transform on interleaved input vectors
-//  (input vectors in N columns, vector elements in K rows)
-//  uses active outputs list
-// handles multi bias
-void AffineMultiBiasActiveListKernelImpl1B(AffineConfig const * const config, AffineConfigAl const * const al);
 
 // Calculates recurrent transform on flat input vectors
 // (input vectors in N rows, vector elements in K columns)
