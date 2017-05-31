@@ -7,7 +7,7 @@
     <ClInclude Include="$(SRC_DIR)\common\gna-api.h">
       <Filter>Api</Filter>
     </ClInclude>
-    <ClInclude Include="$(SRC_DIR)\common\gna-api-dev.h">
+    <ClInclude Include="$(SRC_DIR)\common\gna-api-instrumentation.h">
       <Filter>Api</Filter>
     </ClInclude>
     <ClInclude Include="$(SRC_DIR)\common\gna-api-extra.h">

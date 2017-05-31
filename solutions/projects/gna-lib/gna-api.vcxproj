@@ -92,7 +92,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="$(SRC_DIR)\common\GnaDrvApi.h" />
-    <ClInclude Include="$(SRC_DIR)\common\gna-api-dev.h" />
+    <ClInclude Include="$(SRC_DIR)\common\gna-api-instrumentation.h" />
     <ClInclude Include="$(SRC_DIR)\common\gna-api-extra.h" />
     <ClInclude Include="$(SRC_DIR)\common\gna-api-status.h" />
     <ClInclude Include="$(SRC_DIR)\common\gna-api-types-gmm.h" />

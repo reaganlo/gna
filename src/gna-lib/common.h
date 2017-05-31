@@ -28,8 +28,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "gna-api-dev.h"
+#include "gna-api-instrumentation.h"
 #include "gna-api-extra.h"
+#include "profiler.h"
 
 /**
  * Data alignment for intrinsics

@@ -37,6 +37,8 @@
 #include <intrin.h>
 #endif // os
 
+#include "gna-api-instrumentation.h"
+
 
 // enables or disables simple profiling
 #if defined(PROFILE) || defined(PROFILE_DETAILED)
@@ -90,21 +92,10 @@
 #define PROFILE_PRINT_D_(...)
 #endif // defined(PROFILE_PRINT) 
 
-#ifndef PERF_TYPE_DEF
-
-#define PERF_TYPE_DEF
-
 /**
  * max value of time_tsc type
  */
 #define TIME_TSC_MAX ULLONG_MAX
-
-/**
- * Time Stamp Counter time type
- */
-typedef unsigned long long time_tsc;
-
-static_assert(8 == sizeof(time_tsc), "Invalid size of time_tsc");
 
 #if !defined(DRIVER)
 /**
@@ -114,72 +105,6 @@ static_assert(8 == sizeof(time_tsc), "Invalid size of time_tsc");
 typedef struct __timeb64    time_rtc;
 #endif //os
 #endif // DRIVER
-
-/**
- * Accelerator (hardware level) scoring request performance results
- */
-typedef struct
-{
-    time_tsc            total;      // # of total cycles spent on scoring in hw
-    time_tsc            stall;      // # of stall cycles spent in hw (since scoring)
-} gna_perf_hw_t;
-
-static_assert(16 == sizeof(gna_perf_hw_t), "Invalid size of gna_perf_hw_t");
-
-/**
- * Accelerator (driver level) scoring request performance results
- */
-typedef struct
-{
-    time_tsc            startHW;    // time of setting up and issuing HW scoring
-    time_tsc            scoreHW;    // time between HW scoring start and scoring complete interrupt
-    time_tsc            intProc;    // time of processing scoring complete interrupt
-} gna_perf_drv_t;
-
-static_assert(24 == sizeof(gna_perf_drv_t), "Invalid size of gna_perf_drv_t");
-
-
-/**
- * Accelerator (library level) request absolute timing
- */
-typedef struct
-{
-    time_tsc            start;      // absolute request submit time
-    time_tsc            stop;       // absolute processing end time
-} gna_perf_total_t;
-
-static_assert(16 == sizeof(gna_perf_total_t), "Invalid size of gna_perf_total_t");
-
-/**
- * Accelerator (library level) scoring request performance results
- */
-typedef struct
-{
-    time_tsc            submit;     // time of score request submit
-    time_tsc            preprocess; // time of preprocessing request 
-    time_tsc            process;    // time of processing score request from submit till done notification
-    time_tsc            scoring;    // time of computing scores in software mode
-    time_tsc            total;      // time of total scoring - includes time when request is waiting in thread pool
-    time_tsc            ioctlSubmit;// time of issuing "start scoring IOCTL"
-    time_tsc            ioctlWaitOn;// time of waiting for "start scoring IOCTL" completion
-} gna_perf_lib_t;
-
-static_assert(56 == sizeof(gna_perf_lib_t), "Invalid size of gna_perf_lib_t");
-
-/**
- * Accelerator (overall) scoring request performance results
- */
-typedef struct
-{
-    gna_perf_lib_t lib;       // (library level) performance results
-    gna_perf_total_t total;   // (library level) request timing
-    gna_perf_drv_t drv;       // (driver level) performance results
-    gna_perf_hw_t  hw;        // Accelerator (hardware level) performance results
-} gna_perf_t;
-
-static_assert(112 == sizeof(gna_perf_t), "Invalid size of gna_perf_t");
-
-#endif //PERF_TYPE_DEF
 
 /**
  * Timestamp counter profiler
