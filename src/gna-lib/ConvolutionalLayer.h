@@ -31,14 +31,15 @@
 namespace GNA
 {
 
-struct FiltersConfig : public BiasSimple
+struct FiltersConfig
 {
     FiltersConfig(const nn_layer_conv *sourceLayer, const uint32_t inputElementCount);
     ~FiltersConfig() = default;
 
     const uint32_t Count;
     const uint32_t CoefficientCount;  // Actual filter size, including 0-padding if necessary.
-    const int16_t * const Data;             // Filters stored one after the other.
+    const int16_t * const Data;       // Filters stored one after the other.
+    const Bias Biases;
 };
 
 // feature maps definition - used for filter stride calculation

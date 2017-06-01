@@ -176,9 +176,9 @@ void HardwareLayerExt::save()
 
     if (affine)
     {
-        XnnDescriptor->flags.weight_size = (affine->GetWeightMode() == GNA_WEIGHT_2B) ? 0 : 1;
-        XnnDescriptor->aff_weight_buffer = getOffset(affine->GetWeights());
-        XnnDescriptor->aff_const_buffer = getOffset(affine->GetBiases());
+        XnnDescriptor->flags.weight_size = affine->Mode;
+        XnnDescriptor->aff_weight_buffer = getOffset(affine->Weights);
+        XnnDescriptor->aff_const_buffer = getOffset(affine->Biases);
     }
     if (activation)
     {
@@ -364,10 +364,10 @@ HardwareLayerAffineMBias::HardwareLayerAffineMBias(const DescriptorParameters& p
     save();
 
     XnnDescriptor->bias_grp_cnt = affineMulti->BiasVectorCount;
-    XnnDescriptor->bias_grp_ptr = getOffset(affineMulti->GetBiases());
+    XnnDescriptor->bias_grp_ptr = getOffset(affineMulti->Biases);
     XnnDescriptor->bias_grp_value = affineMulti->BiasVectorIndex;
 
-    if (affineMulti->GetWeightMode() == GNA_WEIGHT_1B)
+    if (affineMulti->Mode == GNA_WEIGHT_1B)
     {
         XnnDescriptor->aff_const_buffer = 
             getOffset((static_cast<const AffineFunctionMulti1B*>(affineMulti)->WeightScaleFactors));

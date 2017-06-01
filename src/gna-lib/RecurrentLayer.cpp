@@ -39,9 +39,9 @@ RnnLayer::RnnLayer(nn_layer const * const layer) :
     Activation(ActivationFunction::Create(&static_cast<const nn_layer_reccurent*>(layer->pLayerStruct)->pwl, true,
         Output.ScratchPad, PwlOutputConfig{})),
     FeedbackDelay{static_cast<const nn_layer_reccurent * const>(layer->pLayerStruct)->feedbackFrameDelay},
-    recurrentKernels{AccelerationDetector::GetKernelMap<RecurrentKernel>(Affine->GetWeightMode())},
+    recurrentKernels{AccelerationDetector::GetKernelMap<RecurrentKernel>(Affine->Mode)},
     rnnHiddenConfig{Output.ElementCount, Input.VectorCount, Input.ElementCount, Input.Buffer, nullptr,
-                        Output.ScratchPad, Output.Buffer, Affine->GetWeights(), Affine->GetBiases()}
+                        Output.ScratchPad, Output.Buffer, Affine->Weights, Affine->Biases}
 {
     Expect::InRange(FeedbackDelay, 1, Input.VectorCount - 1, XNN_ERR_NO_FEEDBACK);
 

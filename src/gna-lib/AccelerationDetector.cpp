@@ -331,35 +331,35 @@ void AccelerationDetector::UpdateKernelsMap()
 {
     if (ACC_SUPPORTED == accelerationModes[GNA_SSE4_2_FAST])
     {
-        AccelerationDetector::AffineKernels.at(Weight1B::Mode).emplace(GNA_SSE4_2_FAST, xnnKernel_sse4.affineSingle1Bfull);
-        AccelerationDetector::AffineKernels.at(Weight1B::Mode).emplace(GNA_SSE4_2_SAT, xnnKernel_sse4_sat.affineSingle1Bfull);
+        AccelerationDetector::AffineKernels.at(GNA_WEIGHT_1B).emplace(GNA_SSE4_2_FAST, xnnKernel_sse4.affineSingle1Bfull);
+        AccelerationDetector::AffineKernels.at(GNA_WEIGHT_1B).emplace(GNA_SSE4_2_SAT, xnnKernel_sse4_sat.affineSingle1Bfull);
 
-        AccelerationDetector::AffineKernels.at(Weight2B::Mode).emplace(GNA_SSE4_2_FAST, xnnKernel_sse4.affineSingle2Bfull);
-        AccelerationDetector::AffineKernels.at(Weight2B::Mode).emplace(GNA_SSE4_2_SAT, xnnKernel_sse4_sat.affineSingle2Bfull);
+        AccelerationDetector::AffineKernels.at(GNA_WEIGHT_2B).emplace(GNA_SSE4_2_FAST, xnnKernel_sse4.affineSingle2Bfull);
+        AccelerationDetector::AffineKernels.at(GNA_WEIGHT_2B).emplace(GNA_SSE4_2_SAT, xnnKernel_sse4_sat.affineSingle2Bfull);
 
-        AccelerationDetector::AffineKernelsAl.at(Weight1B::Mode).emplace(GNA_SSE4_2_FAST, xnnKernel_sse4.affineSingle1Bal);
-        AccelerationDetector::AffineKernelsAl.at(Weight1B::Mode).emplace(GNA_SSE4_2_SAT, xnnKernel_sse4_sat.affineSingle1Bal);
+        AccelerationDetector::AffineKernelsAl.at(GNA_WEIGHT_1B).emplace(GNA_SSE4_2_FAST, xnnKernel_sse4.affineSingle1Bal);
+        AccelerationDetector::AffineKernelsAl.at(GNA_WEIGHT_1B).emplace(GNA_SSE4_2_SAT, xnnKernel_sse4_sat.affineSingle1Bal);
 
-        AccelerationDetector::AffineKernelsAl.at(Weight2B::Mode).emplace(GNA_SSE4_2_FAST, xnnKernel_sse4.affineSingle2Bal);
-        AccelerationDetector::AffineKernelsAl.at(Weight2B::Mode).emplace(GNA_SSE4_2_SAT, xnnKernel_sse4_sat.affineSingle2Bal);
+        AccelerationDetector::AffineKernelsAl.at(GNA_WEIGHT_2B).emplace(GNA_SSE4_2_FAST, xnnKernel_sse4.affineSingle2Bal);
+        AccelerationDetector::AffineKernelsAl.at(GNA_WEIGHT_2B).emplace(GNA_SSE4_2_SAT, xnnKernel_sse4_sat.affineSingle2Bal);
 
-        AccelerationDetector::DiagonalKernels.at(Weight1B::Mode).emplace(GNA_SSE4_2_FAST, xnnKernel_sse4.diagonal1B);
-        AccelerationDetector::DiagonalKernels.at(Weight1B::Mode).emplace(GNA_SSE4_2_SAT, xnnKernel_sse4_sat.diagonal1B);
+        AccelerationDetector::DiagonalKernels.at(GNA_WEIGHT_1B).emplace(GNA_SSE4_2_FAST, xnnKernel_sse4.diagonal1B);
+        AccelerationDetector::DiagonalKernels.at(GNA_WEIGHT_1B).emplace(GNA_SSE4_2_SAT, xnnKernel_sse4_sat.diagonal1B);
 
-        AccelerationDetector::DiagonalKernels.at(Weight2B::Mode).emplace(GNA_SSE4_2_FAST, xnnKernel_sse4.diagonal2B);
-        AccelerationDetector::DiagonalKernels.at(Weight2B::Mode).emplace(GNA_SSE4_2_SAT, xnnKernel_sse4_sat.diagonal2B);
+        AccelerationDetector::DiagonalKernels.at(GNA_WEIGHT_2B).emplace(GNA_SSE4_2_FAST, xnnKernel_sse4.diagonal2B);
+        AccelerationDetector::DiagonalKernels.at(GNA_WEIGHT_2B).emplace(GNA_SSE4_2_SAT, xnnKernel_sse4_sat.diagonal2B);
 
-        AccelerationDetector::MultibiasKernels.at(Weight1B::Mode).emplace(GNA_SSE4_2_FAST, xnnKernel_sse4.affineMulti1B);
-        AccelerationDetector::MultibiasKernels.at(Weight1B::Mode).emplace(GNA_SSE4_2_SAT, xnnKernel_sse4_sat.affineMulti1B);
+        AccelerationDetector::MultibiasKernels.at(GNA_WEIGHT_1B).emplace(GNA_SSE4_2_FAST, xnnKernel_sse4.affineMulti1B);
+        AccelerationDetector::MultibiasKernels.at(GNA_WEIGHT_1B).emplace(GNA_SSE4_2_SAT, xnnKernel_sse4_sat.affineMulti1B);
 
-        AccelerationDetector::MultibiasKernels.at(Weight2B::Mode).emplace(GNA_SSE4_2_FAST, xnnKernel_sse4.affineMulti2B);
-        AccelerationDetector::MultibiasKernels.at(Weight2B::Mode).emplace(GNA_SSE4_2_SAT, xnnKernel_sse4_sat.affineMulti2B);
+        AccelerationDetector::MultibiasKernels.at(GNA_WEIGHT_2B).emplace(GNA_SSE4_2_FAST, xnnKernel_sse4.affineMulti2B);
+        AccelerationDetector::MultibiasKernels.at(GNA_WEIGHT_2B).emplace(GNA_SSE4_2_SAT, xnnKernel_sse4_sat.affineMulti2B);
 
-        AccelerationDetector::RecurrentKernels.at(Weight1B::Mode).emplace(GNA_SSE4_2_FAST, xnnKernel_sse4.recurrent1B);
-        AccelerationDetector::RecurrentKernels.at(Weight1B::Mode).emplace(GNA_SSE4_2_SAT, xnnKernel_sse4_sat.recurrent1B);
+        AccelerationDetector::RecurrentKernels.at(GNA_WEIGHT_1B).emplace(GNA_SSE4_2_FAST, xnnKernel_sse4.recurrent1B);
+        AccelerationDetector::RecurrentKernels.at(GNA_WEIGHT_1B).emplace(GNA_SSE4_2_SAT, xnnKernel_sse4_sat.recurrent1B);
 
-        AccelerationDetector::RecurrentKernels.at(Weight2B::Mode).emplace(GNA_SSE4_2_FAST, xnnKernel_sse4.recurrent2B);
-        AccelerationDetector::RecurrentKernels.at(Weight2B::Mode).emplace(GNA_SSE4_2_SAT, xnnKernel_sse4_sat.recurrent2B);
+        AccelerationDetector::RecurrentKernels.at(GNA_WEIGHT_2B).emplace(GNA_SSE4_2_FAST, xnnKernel_sse4.recurrent2B);
+        AccelerationDetector::RecurrentKernels.at(GNA_WEIGHT_2B).emplace(GNA_SSE4_2_SAT, xnnKernel_sse4_sat.recurrent2B);
 
         AccelerationDetector::ConvolutionKernels.emplace(GNA_SSE4_2_FAST, xnnKernel_sse4.convolution);
         AccelerationDetector::ConvolutionKernels.emplace(GNA_SSE4_2_SAT, xnnKernel_sse4_sat.convolution);
@@ -391,35 +391,35 @@ void AccelerationDetector::UpdateKernelsMap()
 
     if (ACC_SUPPORTED == accelerationModes[GNA_AVX1_FAST])
     {
-        AccelerationDetector::AffineKernels.at(Weight1B::Mode).emplace(GNA_AVX1_FAST, xnnKernel_avx1.affineSingle1Bfull);
-        AccelerationDetector::AffineKernels.at(Weight1B::Mode).emplace(GNA_AVX1_SAT, xnnKernel_avx1_sat.affineSingle1Bfull);
+        AccelerationDetector::AffineKernels.at(GNA_WEIGHT_1B).emplace(GNA_AVX1_FAST, xnnKernel_avx1.affineSingle1Bfull);
+        AccelerationDetector::AffineKernels.at(GNA_WEIGHT_1B).emplace(GNA_AVX1_SAT, xnnKernel_avx1_sat.affineSingle1Bfull);
 
-        AccelerationDetector::AffineKernels.at(Weight2B::Mode).emplace(GNA_AVX1_FAST, xnnKernel_avx1.affineSingle2Bfull);
-        AccelerationDetector::AffineKernels.at(Weight2B::Mode).emplace(GNA_AVX1_SAT, xnnKernel_avx1_sat.affineSingle2Bfull);
+        AccelerationDetector::AffineKernels.at(GNA_WEIGHT_2B).emplace(GNA_AVX1_FAST, xnnKernel_avx1.affineSingle2Bfull);
+        AccelerationDetector::AffineKernels.at(GNA_WEIGHT_2B).emplace(GNA_AVX1_SAT, xnnKernel_avx1_sat.affineSingle2Bfull);
 
-        AccelerationDetector::AffineKernelsAl.at(Weight1B::Mode).emplace(GNA_AVX1_FAST, xnnKernel_avx1.affineSingle1Bal);
-        AccelerationDetector::AffineKernelsAl.at(Weight1B::Mode).emplace(GNA_AVX1_SAT, xnnKernel_avx1_sat.affineSingle1Bal);
+        AccelerationDetector::AffineKernelsAl.at(GNA_WEIGHT_1B).emplace(GNA_AVX1_FAST, xnnKernel_avx1.affineSingle1Bal);
+        AccelerationDetector::AffineKernelsAl.at(GNA_WEIGHT_1B).emplace(GNA_AVX1_SAT, xnnKernel_avx1_sat.affineSingle1Bal);
 
-        AccelerationDetector::AffineKernelsAl.at(Weight2B::Mode).emplace(GNA_AVX1_FAST, xnnKernel_avx1.affineSingle2Bal);
-        AccelerationDetector::AffineKernelsAl.at(Weight2B::Mode).emplace(GNA_AVX1_SAT, xnnKernel_avx1_sat.affineSingle2Bal);
+        AccelerationDetector::AffineKernelsAl.at(GNA_WEIGHT_2B).emplace(GNA_AVX1_FAST, xnnKernel_avx1.affineSingle2Bal);
+        AccelerationDetector::AffineKernelsAl.at(GNA_WEIGHT_2B).emplace(GNA_AVX1_SAT, xnnKernel_avx1_sat.affineSingle2Bal);
 
-        AccelerationDetector::DiagonalKernels.at(Weight1B::Mode).emplace(GNA_AVX1_FAST, xnnKernel_avx1.diagonal1B);
-        AccelerationDetector::DiagonalKernels.at(Weight1B::Mode).emplace(GNA_AVX1_SAT, xnnKernel_avx1_sat.diagonal1B);
+        AccelerationDetector::DiagonalKernels.at(GNA_WEIGHT_1B).emplace(GNA_AVX1_FAST, xnnKernel_avx1.diagonal1B);
+        AccelerationDetector::DiagonalKernels.at(GNA_WEIGHT_1B).emplace(GNA_AVX1_SAT, xnnKernel_avx1_sat.diagonal1B);
 
-        AccelerationDetector::DiagonalKernels.at(Weight2B::Mode).emplace(GNA_AVX1_FAST, xnnKernel_avx1.diagonal2B);
-        AccelerationDetector::DiagonalKernels.at(Weight2B::Mode).emplace(GNA_AVX1_SAT, xnnKernel_avx1_sat.diagonal2B);
+        AccelerationDetector::DiagonalKernels.at(GNA_WEIGHT_2B).emplace(GNA_AVX1_FAST, xnnKernel_avx1.diagonal2B);
+        AccelerationDetector::DiagonalKernels.at(GNA_WEIGHT_2B).emplace(GNA_AVX1_SAT, xnnKernel_avx1_sat.diagonal2B);
 
-        AccelerationDetector::MultibiasKernels.at(Weight1B::Mode).emplace(GNA_AVX1_FAST, xnnKernel_avx1.affineMulti1B);
-        AccelerationDetector::MultibiasKernels.at(Weight1B::Mode).emplace(GNA_AVX1_SAT, xnnKernel_avx1_sat.affineMulti1B);
+        AccelerationDetector::MultibiasKernels.at(GNA_WEIGHT_1B).emplace(GNA_AVX1_FAST, xnnKernel_avx1.affineMulti1B);
+        AccelerationDetector::MultibiasKernels.at(GNA_WEIGHT_1B).emplace(GNA_AVX1_SAT, xnnKernel_avx1_sat.affineMulti1B);
 
-        AccelerationDetector::MultibiasKernels.at(Weight2B::Mode).emplace(GNA_AVX1_FAST, xnnKernel_avx1.affineMulti2B);
-        AccelerationDetector::MultibiasKernels.at(Weight2B::Mode).emplace(GNA_AVX1_SAT, xnnKernel_avx1_sat.affineMulti2B);
+        AccelerationDetector::MultibiasKernels.at(GNA_WEIGHT_2B).emplace(GNA_AVX1_FAST, xnnKernel_avx1.affineMulti2B);
+        AccelerationDetector::MultibiasKernels.at(GNA_WEIGHT_2B).emplace(GNA_AVX1_SAT, xnnKernel_avx1_sat.affineMulti2B);
 
-        AccelerationDetector::RecurrentKernels.at(Weight1B::Mode).emplace(GNA_AVX1_FAST, xnnKernel_avx1.recurrent1B);
-        AccelerationDetector::RecurrentKernels.at(Weight1B::Mode).emplace(GNA_AVX1_SAT, xnnKernel_avx1_sat.recurrent1B);
+        AccelerationDetector::RecurrentKernels.at(GNA_WEIGHT_1B).emplace(GNA_AVX1_FAST, xnnKernel_avx1.recurrent1B);
+        AccelerationDetector::RecurrentKernels.at(GNA_WEIGHT_1B).emplace(GNA_AVX1_SAT, xnnKernel_avx1_sat.recurrent1B);
 
-        AccelerationDetector::RecurrentKernels.at(Weight2B::Mode).emplace(GNA_AVX1_FAST, xnnKernel_avx1.recurrent2B);
-        AccelerationDetector::RecurrentKernels.at(Weight2B::Mode).emplace(GNA_AVX1_SAT, xnnKernel_avx1_sat.recurrent2B);
+        AccelerationDetector::RecurrentKernels.at(GNA_WEIGHT_2B).emplace(GNA_AVX1_FAST, xnnKernel_avx1.recurrent2B);
+        AccelerationDetector::RecurrentKernels.at(GNA_WEIGHT_2B).emplace(GNA_AVX1_SAT, xnnKernel_avx1_sat.recurrent2B);
 
         AccelerationDetector::ConvolutionKernels.emplace(GNA_AVX1_FAST, xnnKernel_avx1.convolution);
         AccelerationDetector::ConvolutionKernels.emplace(GNA_AVX1_SAT, xnnKernel_avx1_sat.convolution);
@@ -451,35 +451,35 @@ void AccelerationDetector::UpdateKernelsMap()
 
     if (ACC_SUPPORTED == accelerationModes[GNA_AVX2_FAST])
     {
-        AccelerationDetector::AffineKernels.at(Weight1B::Mode).emplace(GNA_AVX2_FAST, xnnKernel_avx2.affineSingle1Bfull);
-        AccelerationDetector::AffineKernels.at(Weight1B::Mode).emplace(GNA_AVX2_SAT, xnnKernel_avx2_sat.affineSingle1Bfull);
+        AccelerationDetector::AffineKernels.at(GNA_WEIGHT_1B).emplace(GNA_AVX2_FAST, xnnKernel_avx2.affineSingle1Bfull);
+        AccelerationDetector::AffineKernels.at(GNA_WEIGHT_1B).emplace(GNA_AVX2_SAT, xnnKernel_avx2_sat.affineSingle1Bfull);
 
-        AccelerationDetector::AffineKernels.at(Weight2B::Mode).emplace(GNA_AVX2_FAST, xnnKernel_avx2.affineSingle2Bfull);
-        AccelerationDetector::AffineKernels.at(Weight2B::Mode).emplace(GNA_AVX2_SAT, xnnKernel_avx2_sat.affineSingle2Bfull);
+        AccelerationDetector::AffineKernels.at(GNA_WEIGHT_2B).emplace(GNA_AVX2_FAST, xnnKernel_avx2.affineSingle2Bfull);
+        AccelerationDetector::AffineKernels.at(GNA_WEIGHT_2B).emplace(GNA_AVX2_SAT, xnnKernel_avx2_sat.affineSingle2Bfull);
 
-        AccelerationDetector::AffineKernelsAl.at(Weight1B::Mode).emplace(GNA_AVX2_FAST, xnnKernel_avx2.affineSingle1Bal);
-        AccelerationDetector::AffineKernelsAl.at(Weight1B::Mode).emplace(GNA_AVX2_SAT, xnnKernel_avx2_sat.affineSingle1Bal);
+        AccelerationDetector::AffineKernelsAl.at(GNA_WEIGHT_1B).emplace(GNA_AVX2_FAST, xnnKernel_avx2.affineSingle1Bal);
+        AccelerationDetector::AffineKernelsAl.at(GNA_WEIGHT_1B).emplace(GNA_AVX2_SAT, xnnKernel_avx2_sat.affineSingle1Bal);
 
-        AccelerationDetector::AffineKernelsAl.at(Weight2B::Mode).emplace(GNA_AVX2_FAST, xnnKernel_avx2.affineSingle2Bal);
-        AccelerationDetector::AffineKernelsAl.at(Weight2B::Mode).emplace(GNA_AVX2_SAT, xnnKernel_avx2_sat.affineSingle2Bal);
+        AccelerationDetector::AffineKernelsAl.at(GNA_WEIGHT_2B).emplace(GNA_AVX2_FAST, xnnKernel_avx2.affineSingle2Bal);
+        AccelerationDetector::AffineKernelsAl.at(GNA_WEIGHT_2B).emplace(GNA_AVX2_SAT, xnnKernel_avx2_sat.affineSingle2Bal);
 
-        AccelerationDetector::DiagonalKernels.at(Weight1B::Mode).emplace(GNA_AVX2_FAST, xnnKernel_avx2.diagonal1B);
-        AccelerationDetector::DiagonalKernels.at(Weight1B::Mode).emplace(GNA_AVX2_SAT, xnnKernel_avx2_sat.diagonal1B);
+        AccelerationDetector::DiagonalKernels.at(GNA_WEIGHT_1B).emplace(GNA_AVX2_FAST, xnnKernel_avx2.diagonal1B);
+        AccelerationDetector::DiagonalKernels.at(GNA_WEIGHT_1B).emplace(GNA_AVX2_SAT, xnnKernel_avx2_sat.diagonal1B);
 
-        AccelerationDetector::DiagonalKernels.at(Weight2B::Mode).emplace(GNA_AVX2_FAST, xnnKernel_avx2.diagonal2B);
-        AccelerationDetector::DiagonalKernels.at(Weight2B::Mode).emplace(GNA_AVX2_SAT, xnnKernel_avx2_sat.diagonal2B);
+        AccelerationDetector::DiagonalKernels.at(GNA_WEIGHT_2B).emplace(GNA_AVX2_FAST, xnnKernel_avx2.diagonal2B);
+        AccelerationDetector::DiagonalKernels.at(GNA_WEIGHT_2B).emplace(GNA_AVX2_SAT, xnnKernel_avx2_sat.diagonal2B);
 
-        AccelerationDetector::MultibiasKernels.at(Weight1B::Mode).emplace(GNA_AVX2_FAST, xnnKernel_avx2.affineMulti1B);
-        AccelerationDetector::MultibiasKernels.at(Weight1B::Mode).emplace(GNA_AVX2_SAT, xnnKernel_avx2_sat.affineMulti1B);
+        AccelerationDetector::MultibiasKernels.at(GNA_WEIGHT_1B).emplace(GNA_AVX2_FAST, xnnKernel_avx2.affineMulti1B);
+        AccelerationDetector::MultibiasKernels.at(GNA_WEIGHT_1B).emplace(GNA_AVX2_SAT, xnnKernel_avx2_sat.affineMulti1B);
 
-        AccelerationDetector::MultibiasKernels.at(Weight2B::Mode).emplace(GNA_AVX2_FAST, xnnKernel_avx2.affineMulti2B);
-        AccelerationDetector::MultibiasKernels.at(Weight2B::Mode).emplace(GNA_AVX2_SAT, xnnKernel_avx2_sat.affineMulti2B);
+        AccelerationDetector::MultibiasKernels.at(GNA_WEIGHT_2B).emplace(GNA_AVX2_FAST, xnnKernel_avx2.affineMulti2B);
+        AccelerationDetector::MultibiasKernels.at(GNA_WEIGHT_2B).emplace(GNA_AVX2_SAT, xnnKernel_avx2_sat.affineMulti2B);
 
-        AccelerationDetector::RecurrentKernels.at(Weight1B::Mode).emplace(GNA_AVX2_FAST, xnnKernel_avx2.recurrent1B);
-        AccelerationDetector::RecurrentKernels.at(Weight1B::Mode).emplace(GNA_AVX2_SAT, xnnKernel_avx2_sat.recurrent1B);
+        AccelerationDetector::RecurrentKernels.at(GNA_WEIGHT_1B).emplace(GNA_AVX2_FAST, xnnKernel_avx2.recurrent1B);
+        AccelerationDetector::RecurrentKernels.at(GNA_WEIGHT_1B).emplace(GNA_AVX2_SAT, xnnKernel_avx2_sat.recurrent1B);
 
-        AccelerationDetector::RecurrentKernels.at(Weight2B::Mode).emplace(GNA_AVX2_FAST, xnnKernel_avx2.recurrent2B);
-        AccelerationDetector::RecurrentKernels.at(Weight2B::Mode).emplace(GNA_AVX2_SAT, xnnKernel_avx2_sat.recurrent2B);
+        AccelerationDetector::RecurrentKernels.at(GNA_WEIGHT_2B).emplace(GNA_AVX2_FAST, xnnKernel_avx2.recurrent2B);
+        AccelerationDetector::RecurrentKernels.at(GNA_WEIGHT_2B).emplace(GNA_AVX2_SAT, xnnKernel_avx2_sat.recurrent2B);
 
         AccelerationDetector::ConvolutionKernels.emplace(GNA_AVX2_FAST, xnnKernel_avx2.convolution);
         AccelerationDetector::ConvolutionKernels.emplace(GNA_AVX2_SAT, xnnKernel_avx2_sat.convolution);

@@ -60,6 +60,7 @@ struct PwlOutputConfig
     uint32_t * saturationCount;
 };
 
+// TODO: refactor: consider splitting into run config and basic constant config
 struct AffineConfig
 {
     AffineConfig(AffineConfig const * const source, int16_t const * inputIn, int32_t * const outputIn) :

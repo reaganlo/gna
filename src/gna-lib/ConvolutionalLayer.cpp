@@ -32,10 +32,10 @@
 using namespace GNA;
 
 FiltersConfig::FiltersConfig(const nn_layer_conv * sourceLayer, const uint32_t inputElementCount) :
-    BiasSimple{ sourceLayer->nBytesBias, sourceLayer->pBiases },
     Count{ sourceLayer->nFilters },
     CoefficientCount{ sourceLayer->nFilterCoefficients },
-    Data{ static_cast<int16_t*>(sourceLayer->pFilters) }
+    Data{ static_cast<int16_t*>(sourceLayer->pFilters) },
+    Biases{ sourceLayer->pBiases }
 {
     Expect::InRange(sourceLayer->nFilterRows, 1, CNN_N_FLT_COEFF_MAX, XNN_ERR_LYR_CFG);
     Expect::True(sourceLayer->nBytesFilterCoefficient == 2, XNN_ERR_WEIGHT_BYTES);
@@ -48,6 +48,7 @@ FiltersConfig::FiltersConfig(const nn_layer_conv * sourceLayer, const uint32_t i
     Expect::MultiplicityOf(CoefficientCount, XNN_N_IN_ELEMS_MPLY);
 
     Expect::ValidBuffer(Data);
+    Expect::True(sizeof(nn_bias_s) == sourceLayer->nBytesBias, XNN_ERR_BIAS_BYTES);
 }
 
 FeatureMaps::FeatureMaps(const nn_layer_conv * sourceLayer) :

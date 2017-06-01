@@ -28,6 +28,7 @@
 #include <map>
 #include <memory>
 
+#include "Address.h"
 #include "common.h"
 #include "pwl.h"
 #include "XnnKernelApi.h"
@@ -37,48 +38,14 @@ namespace GNA
 
 struct LayerConfiguration;
 
+using Weight = Address<uint16_t * const>;
+using Bias = Address<nn_bias_s * const>;
+
 typedef enum _WeightMode
 {
     GNA_WEIGHT_1B = 1,
-    GNA_WEIGHT_2B = 2,
+    GNA_WEIGHT_2B = 0,
 } WeightMode;
-
-struct Weight1B
-{
-    Weight1B(uint32_t size, const void *weights);
-    ~Weight1B() = default;
-
-    const uint8_t * const Weights;
-    static const WeightMode Mode = GNA_WEIGHT_1B;
-};
-
-struct Weight2B
-{
-public:
-    Weight2B(uint32_t size, const void *weights);
-    ~Weight2B() = default;
-
-    const uint16_t * const Weights;
-    static const WeightMode Mode = GNA_WEIGHT_2B;
-};
-
-struct BiasSimple
-{
-public:
-    BiasSimple(uint32_t size, const void *biases);
-    ~BiasSimple() = default;
-
-    const nn_bias_s * const Biases;
-};
-
-struct BiasCompound
-{
-public:
-    BiasCompound(uint32_t size, const void *biases);
-    ~BiasCompound() = default;
-
-    const nn_bias_c * const Biases;
-};
 
 struct AffineBaseConfig
 {
@@ -104,20 +71,19 @@ public:
     static std::unique_ptr<const AffineFunction> Create(intel_layer_kind_t const kind, void const * layerDetails,
         AffineBaseConfig const & affineBase);
 
-    virtual const void * GetWeights() const = 0;
-
-    virtual const void * GetBiases() const = 0;
-
-    virtual WeightMode GetWeightMode() const = 0;
-
     std::unique_ptr<const AffineConfig> GetRunConfig(int16_t const * const inputs, int32_t * const outputs) const;
 
     void ComputeHidden(acceleration accel, uint32_t *saturationCount, KernelBuffers *fvBuffers) const;
     virtual void ComputeConfig(const LayerConfiguration& layerConfiguration, acceleration accel, uint32_t *saturationCount,
         KernelBuffers *fvBuffers) const;
 
+    const WeightMode Mode;
+    const Weight Weights;
+    const Bias Biases;
+
 protected:
-    AffineFunction(const std::map<const acceleration, const AffineKernel>& kernels);
+    AffineFunction(const std::map<const acceleration, const AffineKernel>& kernels, const WeightMode Mode,
+        const Weight weights, const Bias biases);
 
     const std::map<const acceleration, const AffineKernel>&  kernels;
     std::unique_ptr<const AffineConfig> hiddenConfig;
@@ -134,45 +100,34 @@ public:
 
 protected:
     AffineFunctionSingle(const std::map<const acceleration, const AffineKernel>& kernels,
-        const std::map<const acceleration, const AffineActiveListKernel>& kernelsAl);
+        const std::map<const acceleration, const AffineActiveListKernel>& kernelsAl, const WeightMode Mode, 
+        const Weight weights, const Bias biases);
 
     const std::map<const acceleration, const AffineActiveListKernel>& kernelsAl;
 };
 
 // 2B Weights AffineFunction
-class AffineFunctionSingle2B : public AffineFunctionSingle, public Weight2B, public BiasSimple
+class AffineFunctionSingle2B : public AffineFunctionSingle
 {
 public:
     AffineFunctionSingle2B(const nn_func_affine *affine, AffineBaseConfig const & affineBase,
         const std::map<const acceleration, const AffineKernel>& kernels,
         const std::map<const acceleration, const AffineActiveListKernel>& kernelsAl);
     ~AffineFunctionSingle2B() = default;
-
-    virtual const void * GetWeights() const override;
-
-    virtual const void * GetBiases() const override;
-
-    virtual WeightMode GetWeightMode() const override;
 };
 
 // 1B Weights AffineFunction
-class AffineFunctionSingle1B : public AffineFunctionSingle, public Weight1B, public BiasCompound
+class AffineFunctionSingle1B : public AffineFunctionSingle
 {
 public:
     AffineFunctionSingle1B(const nn_func_affine *affine, AffineBaseConfig const & affineBase,
         const std::map<const acceleration, const AffineKernel>& kernels,
         const std::map<const acceleration, const AffineActiveListKernel>& kernelsAl);
     ~AffineFunctionSingle1B() = default;
-
-    virtual const void * GetWeights() const override;
-
-    virtual const void * GetBiases() const override;
-
-    virtual WeightMode GetWeightMode() const override;
 };
 
 
-class AffineFunctionMulti : public AffineFunction, public BiasSimple
+class AffineFunctionMulti : public AffineFunction
 {
 public:
     ~AffineFunctionMulti() = default;
@@ -180,31 +135,25 @@ public:
     const uint32_t BiasVectorCount;
     const uint32_t BiasVectorIndex;
 
-    virtual const nn_bias_s * const GetMultibias() const = 0;
+    const nn_bias_s * const GetMultibias() const;
 
 protected:
-    AffineFunctionMulti(const nn_func_affine_multi *affine, const std::map<const acceleration, const AffineKernel>& kernels);
+    AffineFunctionMulti(const nn_func_affine_multi *affine,
+        const std::map<const acceleration, const AffineKernel>& kernels, const WeightMode Mode,
+        const Weight weights, const Bias biases);
 };
 
 // 2B Weights AffineFunction for Multi Bias
-class AffineFunctionMulti2B : public AffineFunctionMulti, public Weight2B
+class AffineFunctionMulti2B : public AffineFunctionMulti
 {
 public:
     AffineFunctionMulti2B(const nn_func_affine_multi *affine, AffineBaseConfig const & affineBase,
         const std::map<const acceleration, const AffineKernel>& kernels);
     ~AffineFunctionMulti2B() = default;
-
-    virtual const void * GetWeights() const override;
-
-    virtual const void * GetBiases() const override;
-
-    virtual WeightMode GetWeightMode() const override;
-
-    virtual const nn_bias_s * const GetMultibias() const override;
 };
 
 // 1B Weights AffineFunction for Multi Bias
-class AffineFunctionMulti1B : public AffineFunctionMulti, public Weight1B
+class AffineFunctionMulti1B : public AffineFunctionMulti
 {
 public:
     AffineFunctionMulti1B(const nn_func_affine_multi *affine, AffineBaseConfig const & affineBase,
@@ -212,14 +161,6 @@ public:
     ~AffineFunctionMulti1B() = default;
 
     const nn_bias_c *WeightScaleFactors;
-
-    virtual const void * GetWeights() const override;
-
-    virtual const void * GetBiases() const override;
-
-    virtual WeightMode GetWeightMode() const override;
-
-    virtual const nn_bias_s * const GetMultibias() const override;
 };
 
 class ActivationFunction
