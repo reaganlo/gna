@@ -33,7 +33,8 @@ using namespace GNA;
 
 RnnLayer::RnnLayer(nn_layer const * const layer) :
     Layer(layer),
-    Affine{AffineFunction::Create(&static_cast<const nn_layer_reccurent*>(layer->pLayerStruct)->affine)},
+    Affine{AffineFunction::Create(layer->nLayerKind, layer->pLayerStruct,
+        AffineBaseConfig{Output.ElementCount, Input.VectorCount, Input.ElementCount, Input.Buffer, Output.Buffer})},
     // RNN has only 2B output with Activation always enabled
     Activation(ActivationFunction::Create(&static_cast<const nn_layer_reccurent*>(layer->pLayerStruct)->pwl, true,
         Output.ScratchPad, PwlOutputConfig{})),
@@ -84,6 +85,7 @@ void RnnLayer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const
 
 void RnnLayer::computeHidden(acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const
 {
+    UNREFERENCED_PARAMETER(fvBuffers);
     auto rnnConfig = RecurrentConfig{&rnnHiddenConfig, saturationCount};
 
     recurrentKernels.at(accel)(&rnnConfig, &Activation->Pwl);
@@ -91,6 +93,7 @@ void RnnLayer::computeHidden(acceleration accel, KernelBuffers *fvBuffers, uint3
 
 void RnnLayer::computeConfig(const LayerConfiguration& layerConfiguration, acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const
 {
+    UNREFERENCED_PARAMETER(fvBuffers);
     auto rnnConfig = RecurrentConfig{layerConfiguration.Configs.Recurrent.get(), saturationCount};
     
     recurrentKernels.at(accel)(&rnnConfig, &Activation->Pwl);

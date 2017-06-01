@@ -62,40 +62,107 @@ BiasCompound::BiasCompound(uint32_t size, const void *biases) :
     Expect::True(sizeof(nn_bias_c) == size, XNN_ERR_BIAS_BYTES);
 }
 
-unique_ptr<const AffineFunctionSingle> AffineFunction::Create(const intel_affine_func_t * affine)
+unique_ptr<const AffineFunction> AffineFunction::Create(intel_layer_kind_t const kind, void const * layerDetails,
+    AffineBaseConfig const & affineBase)
 {
-    if (GNA_WEIGHT_2B == affine->nBytesPerWeight)
+    switch (kind)
     {
-        return make_unique<AffineFunctionSingle2B>(affine);
+    case INTEL_AFFINE:
+    case INTEL_AFFINE_DIAGONAL:
+        {
+            auto affine = &static_cast<const nn_layer_affine*>(layerDetails)->affine;
+            auto const mode = static_cast<const WeightMode>(affine->nBytesPerWeight);
+            if (GNA_WEIGHT_2B == mode)
+            {
+                return make_unique<AffineFunctionSingle2B>(affine, affineBase,
+                    AccelerationDetector::GetKernelMap<AffineKernel>(mode, kind),
+                    AccelerationDetector::GetKernelMap<AffineActiveListKernel>(mode));
+            }
+            else
+            {
+                return make_unique<AffineFunctionSingle1B>(affine, affineBase,
+                    AccelerationDetector::GetKernelMap<AffineKernel>(mode, kind),
+                    AccelerationDetector::GetKernelMap<AffineActiveListKernel>(mode));
+            }
+        }
+    case INTEL_AFFINE_MULTIBIAS:
+        {
+            auto affine = &static_cast<const nn_layer_affine_multi*>(layerDetails)->affine;
+            auto const mode = static_cast<const WeightMode>(affine->nBytesPerWeight);
+            if (GNA_WEIGHT_2B == mode)
+            {
+                return make_unique<AffineFunctionMulti2B>(affine, affineBase,
+                    AccelerationDetector::GetKernelMap<AffineKernel>(mode, kind));
+            }
+            else
+            {
+                return make_unique<AffineFunctionMulti1B>(affine, affineBase,
+                    AccelerationDetector::GetKernelMap<AffineKernel>(mode, kind));
+            }
+        }
+    default:
+        throw GnaException(XNN_ERR_LYR_KIND);
+    }
+}
+
+AffineFunction::AffineFunction(const std::map<const acceleration, const AffineKernel>& kernelsIn) :
+    kernels{kernelsIn}
+{
+}
+
+unique_ptr<const AffineConfig> AffineFunction::GetRunConfig(int16_t const * const inputs, int32_t * const outputs) const
+{
+    return make_unique<const AffineConfig>(hiddenConfig.get(), inputs, outputs);
+}
+
+void AffineFunction::ComputeHidden(acceleration accel, uint32_t *saturationCount, KernelBuffers *fvBuffers) const
+{
+    auto kernelConfig = AffineConfig{hiddenConfig.get(), saturationCount, fvBuffers};
+
+    kernels.at(accel)(&kernelConfig);
+}
+
+void AffineFunction::ComputeConfig(const LayerConfiguration& layerConfiguration, acceleration accel,
+    uint32_t *saturationCount, KernelBuffers *fvBuffers) const
+{
+    auto kernelConfig = AffineConfig{layerConfiguration.Configs.Affine.get(), saturationCount, fvBuffers};
+
+    kernels.at(accel)(&kernelConfig);
+
+}
+
+AffineFunctionSingle::AffineFunctionSingle(const std::map<const acceleration, const AffineKernel>& kernelsIn,
+        const std::map<const acceleration, const AffineActiveListKernel>& kernelsAlIn) :
+    AffineFunction(kernelsIn),
+    kernelsAl{kernelsAlIn}
+{
+}
+
+void AffineFunctionSingle::ComputeConfig(const LayerConfiguration& layerConfiguration, acceleration accel,
+    uint32_t *saturationCount, KernelBuffers *fvBuffers) const
+{
+    auto kernelConfig = AffineConfig{layerConfiguration.Configs.Affine.get(), saturationCount, fvBuffers};
+
+    if (layerConfiguration.ActiveList)
+    {
+        auto alConfig = AffineConfigAl{layerConfiguration.ActiveList->Indices, layerConfiguration.ActiveList->IndicesCount};
+        kernelsAl.at(accel)(&kernelConfig, &alConfig);
     }
     else
     {
-        return make_unique<AffineFunctionSingle1B>(affine);
+        kernels.at(accel)(&kernelConfig);
     }
 }
 
-unique_ptr<const AffineFunctionMulti> AffineFunction::Create(const nn_func_affine_multi * affine)
-{
-    if (GNA_WEIGHT_2B == affine->nBytesPerWeight)
-    {
-        return make_unique<AffineFunctionMulti2B>(affine);
-    }
-    else
-    {
-        return make_unique<AffineFunctionMulti1B>(affine);
-    }
-}
-
-
-AffineFunctionSingle::AffineFunctionSingle()
-{
-}
-
-AffineFunctionSingle2B::AffineFunctionSingle2B(const nn_func_affine *affine) :
-    AffineFunctionSingle(),
+AffineFunctionSingle2B::AffineFunctionSingle2B(const nn_func_affine *affine, AffineBaseConfig const & affineBase,
+    const std::map<const acceleration, const AffineKernel>& kernelsIn,
+    const std::map<const acceleration, const AffineActiveListKernel>& kernelsAlIn) :
+    AffineFunctionSingle(kernelsIn, kernelsAlIn),
     Weight2B{affine->nBytesPerWeight, affine->pWeights},
     BiasSimple{affine->nBytesPerBias, affine->pBiases}
 {
+    hiddenConfig = make_unique<const AffineConfig>(affineBase.OutputElementCount, affineBase.InputVectorCount,
+        affineBase.InputElementCount, affineBase.Inputs, affineBase.Outputs, Weights, Biases, nullptr, 0);
 }
 
 const void * AffineFunctionSingle2B::GetWeights() const
@@ -113,11 +180,15 @@ WeightMode AffineFunctionSingle2B::GetWeightMode() const
     return Weight2B::Mode;
 }
 
-AffineFunctionSingle1B::AffineFunctionSingle1B(const nn_func_affine *affine) :
-    AffineFunctionSingle(),
+AffineFunctionSingle1B::AffineFunctionSingle1B(const nn_func_affine *affine, AffineBaseConfig const & affineBase,
+    const std::map<const acceleration, const AffineKernel>& kernelsIn,
+    const std::map<const acceleration, const AffineActiveListKernel>& kernelsAlIn) :
+    AffineFunctionSingle(kernelsIn, kernelsAlIn),
     Weight1B{affine->nBytesPerWeight, affine->pWeights},
     BiasCompound{affine->nBytesPerBias, affine->pBiases}
 {
+    hiddenConfig = make_unique<const AffineConfig>(affineBase.OutputElementCount, affineBase.InputVectorCount,
+        affineBase.InputElementCount, affineBase.Inputs, affineBase.Outputs, Weights, Biases, nullptr, 0);
 }
 
 const void * AffineFunctionSingle1B::GetWeights() const
@@ -135,7 +206,9 @@ WeightMode AffineFunctionSingle1B::GetWeightMode() const
     return Weight1B::Mode;
 }
 
-AffineFunctionMulti::AffineFunctionMulti(const nn_func_affine_multi *affine) :
+AffineFunctionMulti::AffineFunctionMulti(const nn_func_affine_multi *affine,
+    const std::map<const acceleration, const AffineKernel>& kernelsIn) :
+    AffineFunction(kernelsIn),
     BiasSimple{sizeof(nn_bias_s), affine->pBiases},
     BiasVectorCount{affine->biasVectorCount},
     BiasVectorIndex{affine->biasVectorIndex}
@@ -144,10 +217,14 @@ AffineFunctionMulti::AffineFunctionMulti(const nn_func_affine_multi *affine) :
     Expect::InRange(BiasVectorIndex, 0, BiasVectorCount - 1, XNN_ERR_GROUPING);
 }
 
-AffineFunctionMulti2B::AffineFunctionMulti2B(const nn_func_affine_multi *affine) :
-    AffineFunctionMulti(affine),
+AffineFunctionMulti2B::AffineFunctionMulti2B(const nn_func_affine_multi *affine, AffineBaseConfig const & affineBase,
+        const std::map<const acceleration, const AffineKernel>& kernelsIn) :
+    AffineFunctionMulti(affine, kernelsIn),
     Weight2B{affine->nBytesPerWeight, affine->pWeights}
 {
+    hiddenConfig = make_unique<const AffineConfig>(affineBase.OutputElementCount, affineBase.InputVectorCount,
+        affineBase.InputElementCount, affineBase.Inputs, affineBase.Outputs, Weights, Biases, 
+        GetMultibias(), BiasVectorCount);
 }
 
 const void * AffineFunctionMulti2B::GetWeights() const
@@ -170,12 +247,16 @@ const nn_bias_s * const AffineFunctionMulti2B::GetMultibias() const
     return static_cast<const nn_bias_s* const>(GetBiases()) + BiasVectorIndex;
 }
 
-AffineFunctionMulti1B::AffineFunctionMulti1B(const nn_func_affine_multi *affine) :
-    AffineFunctionMulti(affine),
+AffineFunctionMulti1B::AffineFunctionMulti1B(const nn_func_affine_multi *affine, AffineBaseConfig const & affineBase,
+        const std::map<const acceleration, const AffineKernel>& kernelsIn) :
+    AffineFunctionMulti(affine, kernelsIn),
     Weight1B{affine->nBytesPerWeight, affine->pWeights},
     WeightScaleFactors{affine->weightScaleFactors}
 {
     Expect::ValidBuffer(WeightScaleFactors);
+    hiddenConfig = make_unique<const AffineConfig>(affineBase.OutputElementCount, affineBase.InputVectorCount,
+        affineBase.InputElementCount, affineBase.Inputs, affineBase.Outputs, Weights, Biases, 
+        GetMultibias(), BiasVectorCount);
 }
 
 const void * AffineFunctionMulti1B::GetWeights() const
@@ -199,11 +280,11 @@ const nn_bias_s * const AffineFunctionMulti1B::GetMultibias() const
 }
 
 const unique_ptr<const ActivationFunction> ActivationFunction::Create(const nn_func_pwl * const pwl,
-    const bool mandatory, int32_t const * const inputIn, const PwlOutputConfig& outputConfig)
+    const bool mandatory, int32_t const * const Inputs, const PwlOutputConfig& outputConfig)
 {
     if (mandatory || IsActivationFunctionEnabled(pwl))
     {
-        return make_unique<ActivationFunction>(pwl, inputIn, outputConfig);
+        return make_unique<ActivationFunction>(pwl, Inputs, outputConfig);
     }
     else
     {
@@ -211,11 +292,11 @@ const unique_ptr<const ActivationFunction> ActivationFunction::Create(const nn_f
     }
 }
 
-ActivationFunction::ActivationFunction(const nn_func_pwl *pwl, int32_t const * const inputIn,
+ActivationFunction::ActivationFunction(const nn_func_pwl *pwl, int32_t const * const Inputs,
     const PwlOutputConfig& outputConfig) :
     SegmentCount{pwl->nSegments},
     Segments{static_cast<nn_pwl_seg*>(pwl->pSegments)},
-    Pwl{inputIn, Segments, SegmentCount},
+    Pwl{Inputs, Segments, SegmentCount},
     Kernels{ AccelerationDetector::GetKernelMap<PwlKernel>()},
     OutputConfig{outputConfig}
 {
@@ -223,22 +304,22 @@ ActivationFunction::ActivationFunction(const nn_func_pwl *pwl, int32_t const * c
     Expect::InRange(SegmentCount, SegmentCountMin, SegmentCountMax, XNN_ERR_PWL_SEGMENTS);
 }
 
-void ActivationFunction::computeHidden(acceleration accel, uint32_t *saturationCount) const
+void ActivationFunction::ComputeHidden(acceleration accel, uint32_t *saturationCount) const
 {
     auto outConfig = PwlOutputConfig(&OutputConfig, saturationCount);
     Kernels.at(accel)(&Pwl, &outConfig);
 }
 
-void ActivationFunction::computeConfig(const LayerConfiguration& layerConfiguration, acceleration accel,
+void ActivationFunction::ComputeConfig(const LayerConfiguration& layerConfiguration, acceleration accel,
     uint32_t *saturationCount) const
 {
     auto outConfig = PwlOutputConfig(layerConfiguration.Configs.PwlOutput.get(), saturationCount);
     Kernels.at(accel)(&Pwl, &outConfig);
 }
 
-unique_ptr<PwlOutputConfig> ActivationFunction::GetOutputConfig(int16_t * const output) const
+unique_ptr<PwlOutputConfig> ActivationFunction::GetOutputConfig(int16_t * const outputsIn) const
 {
     auto outputConfig = make_unique<PwlOutputConfig>(OutputConfig);
-    outputConfig->output = output;
+    outputConfig->output = outputsIn;
     return move(outputConfig);
 }

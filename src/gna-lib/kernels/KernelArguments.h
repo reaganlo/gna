@@ -62,6 +62,12 @@ struct PwlOutputConfig
 
 struct AffineConfig
 {
+    AffineConfig(AffineConfig const * const source, int16_t const * inputIn, int32_t * const outputIn) :
+        AffineConfig{*source}
+    {
+        input = inputIn;
+        output = outputIn;
+    }
     AffineConfig(AffineConfig const * const source, uint32_t * saturationCountIn, KernelBuffers * fvBuffersIn) :
         AffineConfig{*source}
     {

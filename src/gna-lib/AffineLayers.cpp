@@ -23,8 +23,8 @@
  in any way.
 */
 
-#include "AccelerationDetector.h"
 #include "AffineLayers.h"
+
 #include "LayerConfiguration.h"
 #include "Validator.h"
 
@@ -32,258 +32,94 @@ using std::make_unique;
 
 using namespace GNA;
 
-AffineLayer::AffineLayer(const nn_layer *layer) :
+AffineBaseLayer::AffineBaseLayer(const nn_layer *layer) :
     Layer(layer),
-    Affine(AffineFunction::Create(&static_cast<const nn_layer_affine*>(layer->pLayerStruct)->affine)),
+    Affine(AffineFunction::Create(layer->nLayerKind, layer->pLayerStruct,
+        AffineBaseConfig{Output.ElementCount, Input.VectorCount, Input.ElementCount, Input.Buffer, Output.Buffer})),
     Activation(ActivationFunction::Create(&static_cast<const nn_layer_affine*>(layer->pLayerStruct)->pwl, false,
-        Output.ScratchPad, 
-        PwlOutputConfig{0, Output.ElementCount - 1, 0, Input.VectorCount - 1, Output.ElementCount, Output.Buffer})),
-    affineKernels{ AccelerationDetector::GetKernelMap<AffineKernel>(Affine->GetWeightMode(), Config.Kind)},
-    affineKernelsAl{ AccelerationDetector::GetKernelMap<AffineActiveListKernel>(Affine->GetWeightMode())},
-    affineHiddenConfig{ Output.ElementCount, Input.VectorCount, Input.ElementCount, Input.Buffer, Output.Buffer,
-        Affine->GetWeights(), Affine->GetBiases(), nullptr, 0 }
+        Output.ScratchPad,
+        PwlOutputConfig{0, Output.ElementCount - 1, 0, Input.VectorCount - 1, Output.ElementCount, Output.Buffer}))
 {
     Output.SetOutputMode(Activation.operator bool(), layer->nBytesPerOutput);
-
     if (Activation)
     {
-        Layer::ComputeHidden = [this](acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) 
-                        {this->computeHiddenPwl(accel, fvBuffers, saturationCount); };
+        Layer::ComputeHidden = [this](acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount)
+        {this->computeHiddenPwl(accel, fvBuffers, saturationCount); };
 
-        Layer::ComputeConfig = [this](LayerConfiguration &layerConfiguration, acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) 
-                        {this->computeConfigPwl(layerConfiguration, accel, fvBuffers, saturationCount); };
+        Layer::ComputeConfig = [this](LayerConfiguration &layerConfiguration, acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount)
+        {this->computeConfigPwl(layerConfiguration, accel, fvBuffers, saturationCount); };
     }
     else
     {
-        Layer::ComputeHidden = [this](acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) 
-                        {this->computeHidden(accel, fvBuffers, saturationCount); };
+        Layer::ComputeHidden = [this](acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount)
+        {this->computeHidden(accel, fvBuffers, saturationCount); };
 
-        Layer::ComputeConfig = [this](LayerConfiguration &layerConfiguration, acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) 
-                        {this->computeConfig(layerConfiguration, accel, fvBuffers, saturationCount); };
+        Layer::ComputeConfig = [this](LayerConfiguration &layerConfiguration, acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount)
+        {this->computeConfig(layerConfiguration, accel, fvBuffers, saturationCount); };
     }
-};
+}
+
+void AffineBaseLayer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const
+{
+    auto const inputs = layerConfiguration.InputBuffer ? *layerConfiguration.InputBuffer : Input.Buffer;
+
+    auto const outputs = layerConfiguration.OutputBuffer ? *layerConfiguration.OutputBuffer : Output.Buffer;
+
+    auto& configs = layerConfiguration.Configs;
+
+    if (Activation)
+    {
+        configs.PwlOutput = Activation->GetOutputConfig(outputs);
+        configs.Affine = Affine->GetRunConfig(inputs, Output.ScratchPad);
+    }
+    else
+    {
+        configs.Affine = Affine->GetRunConfig(inputs, outputs);
+    }
+}
+
+void AffineBaseLayer::computeHidden(acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const
+{
+    Affine->ComputeHidden(accel, saturationCount, fvBuffers);
+}
+
+void AffineBaseLayer::computeHiddenPwl(acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const
+{
+    Affine->ComputeHidden(accel, saturationCount, fvBuffers);
+
+    Activation->ComputeHidden(accel, saturationCount);
+}
+
+void AffineBaseLayer::computeConfig(const LayerConfiguration& layerConfiguration, acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const
+{
+    Affine->ComputeConfig(layerConfiguration, accel, saturationCount, fvBuffers);
+}
+
+void AffineBaseLayer::computeConfigPwl(const LayerConfiguration& layerConfiguration, acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const
+{
+    Affine->ComputeConfig(layerConfiguration, accel, saturationCount, fvBuffers);
+
+    Activation->ComputeConfig(layerConfiguration, accel, saturationCount);
+}
+
+AffineLayer::AffineLayer(const nn_layer *layer) :
+    AffineBaseLayer(layer)
+{};
 
 void AffineLayer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const
 {
-    auto nOutputs = layerConfiguration.ActiveList ? layerConfiguration.ActiveList->IndicesCount : Output.ElementCount;
-
-    auto inputBuffer = layerConfiguration.InputBuffer
-        ? *layerConfiguration.InputBuffer : Input.Buffer;
-
-    auto pwlOutputBuffer = layerConfiguration.OutputBuffer
-        ? *layerConfiguration.OutputBuffer : Output.Buffer;
-
-    auto outputBuffer = Activation ? Output.ScratchPad : pwlOutputBuffer;
-
-    auto& configs = layerConfiguration.Configs;
-    if(!configs.Affine)
-        configs.Affine = make_unique<AffineConfig>(affineHiddenConfig);
-    configs.Affine->input = inputBuffer;
-
+    AffineBaseLayer::UpdateKernelConfigs(layerConfiguration);
     if (Activation)
     {
-        if(!configs.PwlOutput)
-            configs.PwlOutput = Activation->GetOutputConfig(pwlOutputBuffer);
-        configs.PwlOutput->rowLast = nOutputs - 1;
-        configs.Affine->output = Output.ScratchPad;
+        auto const outputCount = layerConfiguration.ActiveList ?
+            layerConfiguration.ActiveList->IndicesCount : Output.ElementCount;
+        layerConfiguration.Configs.PwlOutput->rowLast = outputCount - 1;
     }
-    else
-    {
-        configs.Affine->output = outputBuffer;
-    }
-}
-
-void AffineLayer::computeHidden(acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const
-{
-    auto config = AffineConfig{&affineHiddenConfig, saturationCount, fvBuffers};
-
-    affineKernels.at(accel)(&config);
-}
-
-void AffineLayer::computeHiddenPwl(acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const
-{
-    computeHidden(accel, fvBuffers, saturationCount);
-
-    Activation->computeHidden(accel, saturationCount);
-}
-
-void AffineLayer::computeConfig(const LayerConfiguration& layerConfiguration, acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const
-{
-    auto config = AffineConfig{layerConfiguration.Configs.Affine.get(), saturationCount, fvBuffers};
-
-    if (layerConfiguration.ActiveList)
-    {
-        auto alConfig = AffineConfigAl{layerConfiguration.ActiveList->Indices, layerConfiguration.ActiveList->IndicesCount};
-        affineKernelsAl.at(accel)(&config, &alConfig);
-    }
-    else
-    {
-        affineKernels.at(accel)(&config);
-    }
-}
-
-void AffineLayer::computeConfigPwl(const LayerConfiguration& layerConfiguration, acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const
-{
-    computeConfig(layerConfiguration, accel, fvBuffers, saturationCount);
-
-    Activation->computeConfig(layerConfiguration, accel, saturationCount);
-}
-
-AffineMultiBiasLayer::AffineMultiBiasLayer(const nn_layer *layer) :
-    Layer(layer),
-    Affine(AffineFunction::Create(&static_cast<const nn_layer_affine_multi*>(layer->pLayerStruct)->affine)),
-    Activation(ActivationFunction::Create(&static_cast<const nn_layer_affine_multi*>(layer->pLayerStruct)->pwl, false,
-        Output.ScratchPad,
-        PwlOutputConfig{0, Output.ElementCount - 1, 0, Input.VectorCount - 1, Output.ElementCount, Output.Buffer})),
-    multibiasKernels{AccelerationDetector::GetKernelMap<AffineKernel>(Affine->GetWeightMode(), Config.Kind)},
-    affineHiddenConfig{Output.ElementCount, Input.VectorCount, Input.ElementCount, Input.Buffer, Output.Buffer,
-        Affine->GetWeights(), Affine->GetBiases(), Affine->GetMultibias(), Affine->BiasVectorCount}
-{
-    Output.SetOutputMode(Activation.operator bool(), layer->nBytesPerOutput);
-
-    if (Activation)
-    {
-        Layer::ComputeHidden = [this](acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) 
-                        {this->computeHiddenPwl(accel, fvBuffers, saturationCount); };
-
-        Layer::ComputeConfig = [this](LayerConfiguration &layerConfiguration, acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) 
-                        {this->computeConfigPwl(layerConfiguration, accel, fvBuffers, saturationCount); };
-    }
-    else
-    {
-        Layer::ComputeHidden = [this](acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) 
-                        {this->computeHidden(accel, fvBuffers, saturationCount); };
-
-        Layer::ComputeConfig = [this](LayerConfiguration &layerConfiguration, acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) 
-                        {this->computeConfig(layerConfiguration, accel, fvBuffers, saturationCount); };
-    }
-};
-
-void AffineMultiBiasLayer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const
-{
-    auto inputBuffer = layerConfiguration.InputBuffer
-        ? *layerConfiguration.InputBuffer : Input.Buffer;
-
-    auto pwlOutputBuffer = layerConfiguration.OutputBuffer
-        ? *layerConfiguration.OutputBuffer : Output.Buffer;
-
-    auto outputBuffer = Activation ? Output.ScratchPad : pwlOutputBuffer;
-
-    auto& configs = layerConfiguration.Configs;
-
-    if(!configs.Affine)
-        configs.Affine = make_unique<AffineConfig>(affineHiddenConfig);
-    configs.Affine->input = inputBuffer;
-    configs.Affine->output = outputBuffer;
-
-    if (Activation)
-    {
-        if(!configs.PwlOutput)
-            configs.PwlOutput = Activation->GetOutputConfig(pwlOutputBuffer);
-    }
-}
-
-void AffineMultiBiasLayer::computeHidden(acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const
-{
-    auto config = AffineConfig{&affineHiddenConfig, saturationCount, fvBuffers};
-
-    multibiasKernels.at(accel)(&config);
-}
-
-void AffineMultiBiasLayer::computeHiddenPwl(acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const
-{
-    computeHidden(accel, fvBuffers, saturationCount);
-
-    Activation->computeHidden(accel, saturationCount);
-}
-
-void AffineMultiBiasLayer::computeConfig(const LayerConfiguration &layerConfiguration, acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const
-{
-    auto config = AffineConfig{layerConfiguration.Configs.Affine.get(), saturationCount, fvBuffers};
-
-    multibiasKernels.at(accel)(&config);
-}
-
-void AffineMultiBiasLayer::computeConfigPwl(const LayerConfiguration &layerConfiguration, acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const
-{
-    computeConfig(layerConfiguration, accel, fvBuffers, saturationCount);
-
-    Activation->computeConfig(layerConfiguration, accel, saturationCount);
 }
 
 AffineDiagonalLayer::AffineDiagonalLayer(const nn_layer *layer) :
-    AffineLayer{ layer },
-    diagonalKernels {AccelerationDetector::GetKernelMap<AffineKernel>(Affine->GetWeightMode(), Config.Kind)}
+    AffineBaseLayer(layer)
 {
     Expect::True(Input.ElementCount == Output.ElementCount, XNN_ERR_LYR_CFG);
     Expect::True(Input.VectorCount == Output.VectorCount, XNN_ERR_LYR_CFG);
-
-    if (Activation)
-    {
-        Layer::ComputeHidden = [this](acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) 
-                        {this->computeHiddenPwl(accel, fvBuffers, saturationCount); };
-
-        Layer::ComputeConfig = [this](LayerConfiguration &layerConfiguration, acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) 
-                        {this->computeConfigPwl(layerConfiguration, accel, fvBuffers, saturationCount); };
-    }
-    else
-    {
-        Layer::ComputeHidden = [this](acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) 
-                        {this->computeHidden(accel, fvBuffers, saturationCount); };
-
-        Layer::ComputeConfig = [this](LayerConfiguration &layerConfiguration, acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) 
-                        {this->computeConfig(layerConfiguration, accel, fvBuffers, saturationCount); };
-    }
-}
-
-void AffineDiagonalLayer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const
-{
-    auto inputBuffer = layerConfiguration.InputBuffer
-        ? *layerConfiguration.InputBuffer : Input.Buffer;
-
-    auto pwlOutputBuffer = layerConfiguration.OutputBuffer
-        ? *layerConfiguration.OutputBuffer : Output.Buffer;
-
-    auto outputBuffer = Activation ? Output.ScratchPad : pwlOutputBuffer;
-
-    auto& configs = layerConfiguration.Configs;
-
-    if(!configs.Affine)
-        configs.Affine = make_unique<AffineConfig>(affineHiddenConfig);
-    configs.Affine->input = inputBuffer;
-    configs.Affine->output = outputBuffer;
-
-    if (Activation)
-    {
-        if(!configs.PwlOutput)
-            configs.PwlOutput = Activation->GetOutputConfig(pwlOutputBuffer);
-    }
-}
-
-void AffineDiagonalLayer::computeHidden(acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const
-{
-    auto config = AffineConfig{&affineHiddenConfig, saturationCount, fvBuffers};
-
-    diagonalKernels.at(accel)(&config);
-}
-
-void AffineDiagonalLayer::computeHiddenPwl(acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const
-{
-    computeHidden(accel, fvBuffers, saturationCount);
-
-    Activation->computeHidden(accel, saturationCount);
-}
-
-void AffineDiagonalLayer::computeConfig(const LayerConfiguration &layerConfiguration, acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const
-{
-    auto config = AffineConfig{layerConfiguration.Configs.Affine.get(), saturationCount, fvBuffers};
-
-    diagonalKernels.at(accel)(&config);
-}
-
-void AffineDiagonalLayer::computeConfigPwl(const LayerConfiguration &layerConfiguration, acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const
-{
-    computeConfig(layerConfiguration, accel, fvBuffers, saturationCount);
-
-    Activation->computeConfig(layerConfiguration, accel, saturationCount);
 }

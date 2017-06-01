@@ -23,7 +23,7 @@ struct ConfigurationBuffer : public InOutBuffer
 
 struct KernelConfigs
 {
-    std::unique_ptr<AffineConfig> Affine;
+    std::unique_ptr<const AffineConfig> Affine;
     std::unique_ptr<RecurrentConfig> Recurrent;
     std::unique_ptr<ConvolutionConfig> Convolution;
     std::unique_ptr<TransposeConfig> Transpose;

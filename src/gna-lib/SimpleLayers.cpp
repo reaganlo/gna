@@ -66,12 +66,16 @@ void TransposeLayer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration)
 
 void TransposeLayer::computeHidden(acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const
 {
+    UNREFERENCED_PARAMETER(fvBuffers);
+    UNREFERENCED_PARAMETER(saturationCount);
     auto transposeConfig = transposeHiddenConfig;
     transposeKernels.at(accel)(&transposeConfig);
 }
 
 void TransposeLayer::computeConfig(const LayerConfiguration& layerConfiguration, acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const
 {
+    UNREFERENCED_PARAMETER(fvBuffers);
+    UNREFERENCED_PARAMETER(saturationCount);
     auto transposeConfig = *layerConfiguration.Configs.Transpose;
     transposeKernels.at(accel)(&transposeConfig);
 }
@@ -112,12 +116,16 @@ void CopyLayer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration) cons
 
 void CopyLayer::computeHidden(acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const
 {
+    UNREFERENCED_PARAMETER(fvBuffers);
+    UNREFERENCED_PARAMETER(saturationCount);
     auto copyConfig = copyHiddenConfig;
     copyKernels.at(accel)(&copyConfig);
 }
 
 void CopyLayer::computeConfig(const LayerConfiguration& layerConfiguration, acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const
 {
+    UNREFERENCED_PARAMETER(fvBuffers);
+    UNREFERENCED_PARAMETER(saturationCount);
     auto copyConfig = *layerConfiguration.Configs.Copy;
     copyKernels.at(accel)(&copyConfig);
 }

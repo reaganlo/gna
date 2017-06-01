@@ -48,7 +48,7 @@ struct Weight1B
     Weight1B(uint32_t size, const void *weights);
     ~Weight1B() = default;
 
-    const uint8_t *Weights;
+    const uint8_t * const Weights;
     static const WeightMode Mode = GNA_WEIGHT_1B;
 };
 
@@ -58,7 +58,7 @@ public:
     Weight2B(uint32_t size, const void *weights);
     ~Weight2B() = default;
 
-    const uint16_t *Weights;
+    const uint16_t * const Weights;
     static const WeightMode Mode = GNA_WEIGHT_2B;
 };
 
@@ -68,7 +68,7 @@ public:
     BiasSimple(uint32_t size, const void *biases);
     ~BiasSimple() = default;
 
-    const nn_bias_s *Biases;
+    const nn_bias_s * const Biases;
 };
 
 struct BiasCompound
@@ -77,28 +77,50 @@ public:
     BiasCompound(uint32_t size, const void *biases);
     ~BiasCompound() = default;
 
-    const nn_bias_c *Biases;
+    const nn_bias_c * const Biases;
 };
 
-class AffineFunctionSingle;
-class AffineFunctionSingle1B;
-class AffineFunctionSingle2B;
-class AffineFunctionMulti;
-class AffineFunctionMulti1B;
-class AffineFunctionMulti2B;
+struct AffineBaseConfig
+{
+    AffineBaseConfig(uint32_t const outputElementCountIn, uint32_t const inputVectorCountIn,
+        uint32_t const inputElementCountIn, int16_t const * inputIn, int32_t * const outputIn) :
+        OutputElementCount{outputElementCountIn},
+        InputVectorCount{inputVectorCountIn},
+        InputElementCount{inputElementCountIn},
+        Inputs{inputIn},
+        Outputs{outputIn}
+    {}
+    uint32_t const OutputElementCount;
+    uint32_t const InputVectorCount;
+    uint32_t const InputElementCount;
+    int16_t const * const Inputs;
+    int32_t * const Outputs;
+};
 
 // AffineFunction interface
 struct AffineFunction
 {
 public:
-    static std::unique_ptr<const AffineFunctionSingle> Create(const intel_affine_func_t * affine);
-    static std::unique_ptr<const AffineFunctionMulti> Create(const nn_func_affine_multi * affine);
+    static std::unique_ptr<const AffineFunction> Create(intel_layer_kind_t const kind, void const * layerDetails,
+        AffineBaseConfig const & affineBase);
 
     virtual const void * GetWeights() const = 0;
 
     virtual const void * GetBiases() const = 0;
 
     virtual WeightMode GetWeightMode() const = 0;
+
+    std::unique_ptr<const AffineConfig> GetRunConfig(int16_t const * const inputs, int32_t * const outputs) const;
+
+    void ComputeHidden(acceleration accel, uint32_t *saturationCount, KernelBuffers *fvBuffers) const;
+    virtual void ComputeConfig(const LayerConfiguration& layerConfiguration, acceleration accel, uint32_t *saturationCount,
+        KernelBuffers *fvBuffers) const;
+
+protected:
+    AffineFunction(const std::map<const acceleration, const AffineKernel>& kernels);
+
+    const std::map<const acceleration, const AffineKernel>&  kernels;
+    std::unique_ptr<const AffineConfig> hiddenConfig;
 };
 
 // 2B Weights AffineFunction
@@ -107,15 +129,23 @@ class AffineFunctionSingle : public AffineFunction
 public:
     ~AffineFunctionSingle() = default;
 
+    virtual void ComputeConfig(const LayerConfiguration& layerConfiguration, acceleration accel, uint32_t *saturationCount,
+        KernelBuffers *fvBuffers) const override;
+
 protected:
-    AffineFunctionSingle();
+    AffineFunctionSingle(const std::map<const acceleration, const AffineKernel>& kernels,
+        const std::map<const acceleration, const AffineActiveListKernel>& kernelsAl);
+
+    const std::map<const acceleration, const AffineActiveListKernel>& kernelsAl;
 };
 
 // 2B Weights AffineFunction
 class AffineFunctionSingle2B : public AffineFunctionSingle, public Weight2B, public BiasSimple
 {
 public:
-    AffineFunctionSingle2B(const nn_func_affine *affine);
+    AffineFunctionSingle2B(const nn_func_affine *affine, AffineBaseConfig const & affineBase,
+        const std::map<const acceleration, const AffineKernel>& kernels,
+        const std::map<const acceleration, const AffineActiveListKernel>& kernelsAl);
     ~AffineFunctionSingle2B() = default;
 
     virtual const void * GetWeights() const override;
@@ -129,7 +159,9 @@ public:
 class AffineFunctionSingle1B : public AffineFunctionSingle, public Weight1B, public BiasCompound
 {
 public:
-    AffineFunctionSingle1B(const nn_func_affine *affine);
+    AffineFunctionSingle1B(const nn_func_affine *affine, AffineBaseConfig const & affineBase,
+        const std::map<const acceleration, const AffineKernel>& kernels,
+        const std::map<const acceleration, const AffineActiveListKernel>& kernelsAl);
     ~AffineFunctionSingle1B() = default;
 
     virtual const void * GetWeights() const override;
@@ -140,7 +172,7 @@ public:
 };
 
 
-class AffineFunctionMulti : public BiasSimple, public AffineFunction
+class AffineFunctionMulti : public AffineFunction, public BiasSimple
 {
 public:
     ~AffineFunctionMulti() = default;
@@ -151,14 +183,15 @@ public:
     virtual const nn_bias_s * const GetMultibias() const = 0;
 
 protected:
-    AffineFunctionMulti(const nn_func_affine_multi *affine);
+    AffineFunctionMulti(const nn_func_affine_multi *affine, const std::map<const acceleration, const AffineKernel>& kernels);
 };
 
 // 2B Weights AffineFunction for Multi Bias
 class AffineFunctionMulti2B : public AffineFunctionMulti, public Weight2B
 {
 public:
-    AffineFunctionMulti2B(const nn_func_affine_multi *affine);
+    AffineFunctionMulti2B(const nn_func_affine_multi *affine, AffineBaseConfig const & affineBase,
+        const std::map<const acceleration, const AffineKernel>& kernels);
     ~AffineFunctionMulti2B() = default;
 
     virtual const void * GetWeights() const override;
@@ -174,7 +207,8 @@ public:
 class AffineFunctionMulti1B : public AffineFunctionMulti, public Weight1B
 {
 public:
-    AffineFunctionMulti1B(const nn_func_affine_multi *affine);
+    AffineFunctionMulti1B(const nn_func_affine_multi *affine, AffineBaseConfig const & affineBase,
+        const std::map<const acceleration, const AffineKernel>& kernels);
     ~AffineFunctionMulti1B() = default;
 
     const nn_bias_c *WeightScaleFactors;
@@ -192,7 +226,7 @@ class ActivationFunction
 {
 public:
     static const std::unique_ptr<const ActivationFunction> Create(const nn_func_pwl * const pwl, const bool mandatory,
-        int32_t const * const input, const PwlOutputConfig& outputConfig);
+        int32_t const * const Inputs, const PwlOutputConfig& outputConfig);
 
     static const uint32_t SegmentCountMax = XNN_N_PWL_SEGS_MAX;
     static const uint32_t SegmentCountMin = XNN_N_PWL_SEGS_MIN;
@@ -201,9 +235,9 @@ public:
     ActivationFunction() = delete;
     virtual ~ActivationFunction() = default;
 
-    std::unique_ptr<PwlOutputConfig> GetOutputConfig(int16_t * const output) const;
-    void computeHidden(acceleration accel, uint32_t *saturationCount) const;
-    void computeConfig(const LayerConfiguration& layerConfiguration, acceleration accel, uint32_t *saturationCount) const;
+    std::unique_ptr<PwlOutputConfig> GetOutputConfig(int16_t * const outputs) const;
+    void ComputeHidden(acceleration accel, uint32_t *saturationCount) const;
+    void ComputeConfig(const LayerConfiguration& layerConfiguration, acceleration accel, uint32_t *saturationCount) const;
     
 
     uint32_t const SegmentCount;

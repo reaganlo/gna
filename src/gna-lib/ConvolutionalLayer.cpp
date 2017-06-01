@@ -169,6 +169,7 @@ void CnnLayer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const
 
 void CnnLayer::computeHidden(acceleration accel, KernelBuffers *fvBuffers, uint32_t * saturationCount) const
 {
+    UNREFERENCED_PARAMETER(fvBuffers);
     auto filterConfig = ConvolutionConfig{&convolutionHiddenConfig, saturationCount};
 
     filterKernels.at(accel)(&filterConfig);
@@ -176,13 +177,15 @@ void CnnLayer::computeHidden(acceleration accel, KernelBuffers *fvBuffers, uint3
 
 void CnnLayer::computeHiddenPwl(acceleration accel, KernelBuffers *fvBuffers, uint32_t * saturationCount) const
 {
+    UNREFERENCED_PARAMETER(fvBuffers);
     computeHidden(accel, fvBuffers, saturationCount);
 
-    Activation->computeHidden(accel, saturationCount);
+    Activation->ComputeHidden(accel, saturationCount);
 }
 
 void CnnLayer::computeConfig(const LayerConfiguration& layerConfiguration, acceleration accel, KernelBuffers *fvBuffers, uint32_t * saturationCount) const
 {
+    UNREFERENCED_PARAMETER(fvBuffers);
     auto filterConfig = ConvolutionConfig{layerConfiguration.Configs.Convolution.get(), saturationCount};
 
     filterKernels.at(accel)(&filterConfig);
@@ -192,7 +195,7 @@ void CnnLayer::computeConfigPwl(const LayerConfiguration& layerConfiguration, ac
 {
     computeConfig(layerConfiguration, accel, fvBuffers, saturationCount);
 
-    Activation->computeConfig(layerConfiguration, accel, saturationCount);
+    Activation->ComputeConfig(layerConfiguration, accel, saturationCount);
 }
 
 void CnnLayer::computeHiddenPool(acceleration accel, KernelBuffers *fvBuffers, uint32_t * saturationCount) const

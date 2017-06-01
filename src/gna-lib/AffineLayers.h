@@ -25,70 +25,48 @@
 
 #pragma once
 
-#include "KernelArguments.h"
 #include "Layer.h"
 #include "LayerFunctions.h"
 
 namespace GNA
 {
 
-class AffineLayer : public Layer
+class AffineBaseLayer : public Layer
+{
+public:
+    virtual ~AffineBaseLayer() = default;
+
+    const std::unique_ptr<const AffineFunction> Affine;
+    const std::unique_ptr<const ActivationFunction> Activation;
+
+protected:
+    AffineBaseLayer(const nn_layer *layer);
+
+    virtual void UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const override;
+
+private:
+    void computeHidden(acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const;
+    void computeHiddenPwl(acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const;
+    void computeConfig(const LayerConfiguration& layerConfiguration, acceleration accel, KernelBuffers *fvBuffers,
+        uint32_t *saturationCount) const;
+    void computeConfigPwl(const LayerConfiguration& layerConfiguration, acceleration accel, KernelBuffers *fvBuffers,
+        uint32_t *saturationCount) const;
+};
+
+class AffineLayer : public AffineBaseLayer
 {
 public:
     AffineLayer(const nn_layer *layer);
     virtual ~AffineLayer() = default;
 
-    const std::unique_ptr<const AffineFunctionSingle> Affine;
-    const std::unique_ptr<const ActivationFunction> Activation;
-
     virtual void UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const override;
-
-protected:
-    virtual void computeHidden(acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const;
-    virtual void computeHiddenPwl(acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const;
-    virtual void computeConfig(const LayerConfiguration& layerConfiguration, acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const;
-    virtual void computeConfigPwl(const LayerConfiguration& layerConfiguration, acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const;
-
-    const std::map<const acceleration, const AffineKernel>& affineKernels;
-    const std::map<const acceleration, const AffineActiveListKernel>& affineKernelsAl;
-
-    AffineConfig affineHiddenConfig;
 };
 
-class AffineMultiBiasLayer : public Layer
-{
-public:
-    AffineMultiBiasLayer(const nn_layer *layer);
-    virtual ~AffineMultiBiasLayer() = default;
-    virtual void UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const override;
-
-    const std::unique_ptr<const AffineFunctionMulti> Affine;
-    const std::unique_ptr<const ActivationFunction> Activation;
-
-private:
-    virtual void computeHidden(acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const;
-    virtual void computeHiddenPwl(acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const;
-    virtual void computeConfig(const LayerConfiguration& layerConfiguration, acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const;
-    virtual void computeConfigPwl(const LayerConfiguration& layerConfiguration, acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const;
-
-    const std::map<const acceleration, const AffineKernel>& multibiasKernels;
-    AffineConfig affineHiddenConfig;
-};
-
-class AffineDiagonalLayer : public AffineLayer
+class AffineDiagonalLayer : public AffineBaseLayer
 {
 public:
     AffineDiagonalLayer(const nn_layer *layer);
     virtual ~AffineDiagonalLayer() = default;
-    virtual void UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const override;
-
-private:
-    virtual void computeHidden(acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const override;
-    virtual void computeHiddenPwl(acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const override;
-    virtual void computeConfig(const LayerConfiguration& layerConfiguration, acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const override;
-    virtual void computeConfigPwl(const LayerConfiguration& layerConfiguration, acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const override;
-
-    const std::map<const acceleration, const AffineKernel>& diagonalKernels;
 };
 
 }

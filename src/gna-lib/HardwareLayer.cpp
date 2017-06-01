@@ -357,20 +357,20 @@ void HardwareLayerCnn::save()
 HardwareLayerAffineMBias::HardwareLayerAffineMBias(const DescriptorParameters& parameters) :
     HardwareLayerExt(parameters, parameters.SoftwareLayer->Input.VectorCount)
 {
-    auto mbiasLayer = SoftwareLayer->Get<const AffineMultiBiasLayer>();
-    affine = mbiasLayer->Affine.get();
+    auto mbiasLayer = SoftwareLayer->Get<const AffineLayer>();
+    auto affineMulti = static_cast<const AffineFunctionMulti*>(mbiasLayer->Affine.get());
     activation = mbiasLayer->Activation.get();
 
     save();
 
-    XnnDescriptor->bias_grp_cnt = mbiasLayer->Affine->BiasVectorCount;
-    XnnDescriptor->bias_grp_ptr = getOffset(mbiasLayer->Affine->GetBiases());
-    XnnDescriptor->bias_grp_value = mbiasLayer->Affine->BiasVectorIndex;
+    XnnDescriptor->bias_grp_cnt = affineMulti->BiasVectorCount;
+    XnnDescriptor->bias_grp_ptr = getOffset(affineMulti->GetBiases());
+    XnnDescriptor->bias_grp_value = affineMulti->BiasVectorIndex;
 
-    if (affine->GetWeightMode() == GNA_WEIGHT_1B)
+    if (affineMulti->GetWeightMode() == GNA_WEIGHT_1B)
     {
         XnnDescriptor->aff_const_buffer = 
-            getOffset((static_cast<const AffineFunctionMulti1B*>(affine)->WeightScaleFactors));
+            getOffset((static_cast<const AffineFunctionMulti1B*>(affineMulti)->WeightScaleFactors));
     }
 }
 

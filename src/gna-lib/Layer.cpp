@@ -145,11 +145,10 @@ unique_ptr<Layer> Layer::Create(const nn_layer* layer)
     switch (layer->nLayerKind)
     {
     case INTEL_AFFINE:
+    case INTEL_AFFINE_MULTIBIAS:
         return make_unique<AffineLayer>(layer);
     case INTEL_AFFINE_DIAGONAL:
         return make_unique<AffineDiagonalLayer>(layer);
-    case INTEL_AFFINE_MULTIBIAS:
-        return make_unique<AffineMultiBiasLayer>(layer);
     case INTEL_CONVOLUTIONAL:
         return make_unique<CnnLayer>(layer);
     case INTEL_COPY:
