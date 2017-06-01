@@ -149,7 +149,7 @@ struct RecurrentConfig
     int16_t const * input;                  // I - (flat) [N;K]
     int16_t * feedbackBuffer;               // (flat) [N,M]
     int32_t * output;                       // O1 - [N,M]
-    int16_t * const outputActivated;        // O2- [N,M]
+    int16_t * outputActivated;        // O2- [N,M]
     uint32_t * saturationCount;
     union
     {
@@ -294,5 +294,5 @@ struct GmmConfig
     gna_gmm_data const * const data;
     uint8_t const * input;
     uint8_t const * inputScratchPad;
-    uint32_t * const output;
+    uint32_t * output;
 };

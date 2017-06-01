@@ -41,7 +41,7 @@ using namespace GNA;
 // FLAT -> VectorCount = rowCount
 // INTERLEAVED -> ElementCount = rowCount
 // INTERLEAVED -> VectorCount = columnCount 
-const std::map<const nn_layer_kind, const Orientations> LayerConfig::OrientationsMap =
+const std::map<const nn_layer_kind, const Orientations> LayerConfig::InputOrientationsMap =
 {
     { INTEL_AFFINE, INTERLEAVED },
     { INTEL_AFFINE_DIAGONAL, INTERLEAVED },
@@ -54,32 +54,45 @@ const std::map<const nn_layer_kind, const Orientations> LayerConfig::Orientation
     { INTEL_RECURRENT, FLAT }
 };
 
+const std::map<const nn_layer_kind, const Orientations> LayerConfig::OutputOrientationsMap =
+{
+    { INTEL_AFFINE, INTERLEAVED },
+    { INTEL_AFFINE_DIAGONAL, INTERLEAVED },
+    { INTEL_AFFINE_MULTIBIAS, INTERLEAVED },
+    { INTEL_CONVOLUTIONAL, FLAT },
+    { INTEL_COPY, FLAT },
+    { INTEL_DEINTERLEAVE, FLAT },
+    { INTEL_GMM, FLAT },
+    { INTEL_INTERLEAVE, INTERLEAVED },
+    { INTEL_RECURRENT, FLAT }
+};
+
 LayerConfig::LayerConfig(const nn_layer_kind kind, const nn_layer_type type) :
     Kind{kind},
     Type{type},
-    Orientation{OrientationsMap.at(kind)}
+    InputOrientation{InputOrientationsMap.at(kind)},
+    OutputOrientation{OutputOrientationsMap.at(kind)}
 {
     Expect::InRange(kind, 0, NUM_LAYER_KINDS-1, XNN_ERR_LYR_TYPE);
     Expect::InRange(type, 0, NUM_LAYER_TYPES-1, XNN_ERR_LYR_TYPE);
 };
 
-
 LayerMatrix::LayerMatrix(const uint32_t rowCount, const uint32_t columnCount, void const * buffer,
-    const LayerConfig& config) :
-    ElementCount{(FLAT == config.Orientation) ? columnCount : rowCount},
-    VectorCount{(FLAT == config.Orientation) ? rowCount : columnCount},
+    const Orientations orientation, const nn_layer_type layerType) :
+    ElementCount{(FLAT == orientation) ? columnCount : rowCount},
+    VectorCount{(FLAT == orientation) ? rowCount : columnCount},
     Buffer{buffer}
 {
-    Expect::InRange(config.Orientation, INTERLEAVED, FLAT, XNN_ERR_LYR_CFG);
+    Expect::InRange(orientation, INTERLEAVED, FLAT, XNN_ERR_LYR_CFG);
     Expect::InRange(VectorCount, 1, XNN_N_GROUP_MAX, XNN_ERR_GROUPING);
-    if (INTEL_HIDDEN == config.Type)
+    if (INTEL_HIDDEN == layerType)
     {
         Expect::ValidBuffer(Buffer);
     }
 };
 
-LayerInput::LayerInput(const nn_layer &layer, const LayerConfig& config) :
-    LayerMatrix{layer.nInputRows, layer.nInputColumns, layer.pInputs, config}
+LayerInput::LayerInput(const nn_layer &layer, const Orientations orientation, const nn_layer_type layerType) :
+    LayerMatrix{layer.nInputRows, layer.nInputColumns, layer.pInputs, orientation, layerType}
 {
     if (INTEL_GMM == layer.nLayerKind)
     {
@@ -91,15 +104,14 @@ LayerInput::LayerInput(const nn_layer &layer, const LayerConfig& config) :
     }
     Expect::InRange(ElementCount, XNN_N_IN_ELEMS_MPLY, XNN_N_IN_ELEMS_MAX, XNN_ERR_LYR_CFG);
     Expect::MultiplicityOf(ElementCount, XNN_N_IN_ELEMS_MPLY);
-    if (INTEL_OUTPUT == config.Type)
+    if (INTEL_OUTPUT == layerType)
     {
         Expect::ValidBuffer(Buffer);
     }
 };
 
-
-LayerOutput::LayerOutput(const nn_layer &layer, const LayerConfig& config) :
-    LayerMatrix{layer.nOutputRows, layer.nOutputColumns, layer.pOutputs, config},
+LayerOutput::LayerOutput(const nn_layer& layer, const Orientations orientation, const nn_layer_type layerType) :
+    LayerMatrix{layer.nOutputRows, layer.nOutputColumns, layer.pOutputs, orientation, layerType},
     ScratchPad{static_cast<int32_t * const>(layer.pOutputsIntermediate)},
     mode{NonActivatedOutput}
 {
@@ -107,7 +119,7 @@ LayerOutput::LayerOutput(const nn_layer &layer, const LayerConfig& config) :
     Expect::InRange(layer.nBytesPerOutput, ActivatedOutputSize, NonActivatedOutputSize, XNN_ERR_INPUT_BYTES);
     Expect::True(NonActivatedOutputSize == layer.nBytesPerIntermediateOutput, XNN_ERR_INT_OUTPUT_BYTES);
     //Expect::ValidBuffer(ScratchPad); // TODO: review when scratch-pad is allocated by gna-lib
-    if (INTEL_INPUT == config.Type)
+    if (INTEL_INPUT == layerType)
     {
         Expect::ValidBuffer(Buffer);
     }
@@ -142,12 +154,12 @@ unique_ptr<Layer> Layer::Create(const nn_layer* layer)
         return make_unique<CnnLayer>(layer);
     case INTEL_COPY:
         return make_unique<CopyLayer>(layer);
+    case INTEL_INTERLEAVE:
+        /* FALLTHRU */
     case INTEL_DEINTERLEAVE:
         return make_unique<TransposeLayer>(layer);
     case INTEL_GMM:
         return make_unique<GmmLayer>(layer);
-    case INTEL_INTERLEAVE:
-        return make_unique<TransposeLayer>(layer);
     case INTEL_RECURRENT:
         return make_unique<RnnLayer>(layer);
     default:
@@ -157,7 +169,7 @@ unique_ptr<Layer> Layer::Create(const nn_layer* layer)
 
 Layer::Layer(const nn_layer *layer) :
     Config{layer->nLayerKind, layer->type},
-    Input{*layer, Config},
-    Output{*layer, Config}
+    Input{*layer, Config.InputOrientation, Config.Type},
+    Output{*layer, Config.OutputOrientation, Config.Type}
 {
 }

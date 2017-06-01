@@ -70,10 +70,10 @@ GmmLayer::GmmLayer(const nn_layer *layer) :
 void GmmLayer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const
 {
     auto inputBuffer = layerConfiguration.InputBuffer
-        ? layerConfiguration.InputBuffer->Get<uint8_t>() : Input.Buffer;
+        ? *layerConfiguration.InputBuffer : Input.Buffer;
 
     auto outputBuffer = layerConfiguration.OutputBuffer
-        ? layerConfiguration.OutputBuffer->Get<uint8_t>() : Output.Buffer;
+        ? *layerConfiguration.OutputBuffer : Output.Buffer;
 
     auto& configs = layerConfiguration.Configs;
 
@@ -85,7 +85,7 @@ void GmmLayer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const
         configs.Gmm->stateCount = layerConfiguration.ActiveList->IndicesCount;
     }
     configs.Gmm->input = inputBuffer;
-    configs.Gmm->input = outputBuffer;
+    configs.Gmm->output = outputBuffer;
 }
 
 void GmmLayer::computeHidden(acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const

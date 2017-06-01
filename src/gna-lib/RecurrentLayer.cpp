@@ -69,14 +69,14 @@ void RnnLayer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const
         ? layerConfiguration.InputBuffer->Get<int16_t>() : Input.Buffer;
 
     auto outputBuffer = layerConfiguration.OutputBuffer
-        ? layerConfiguration.OutputBuffer->Get<int32_t>() : Output.Buffer;
+        ? *layerConfiguration.OutputBuffer : Output.Buffer;
 
     auto& configs = layerConfiguration.Configs;
 
     if(!configs.Recurrent)
         configs.Recurrent = std::make_unique<RecurrentConfig>(rnnHiddenConfig);
     configs.Recurrent->input = inputBuffer;
-    configs.Recurrent->output = outputBuffer;
+    configs.Recurrent->outputActivated = outputBuffer;
 
     if(outputBuffer)
         configs.Recurrent->feedbackBuffer = CalculateFeedbackBuffer(outputBuffer);

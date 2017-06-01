@@ -34,11 +34,10 @@ using namespace GNA;
 TransposeLayer::TransposeLayer(nn_layer const * const layer) :
     Layer(layer),
     transposeKernels{ AccelerationDetector::GetKernelMap<TransposeKernel>() },
-    transposeHiddenConfig{ Input.ElementCount, Input.VectorCount, Input.Buffer, Output.Buffer }
+    transposeHiddenConfig{ Input.VectorCount, Input.ElementCount, Input.Buffer, Output.Buffer }
 {
-    Output.SetOutputMode(LayerOutput::NonActivatedOutput, layer->nBytesPerOutput);
-    Expect::True(Input.ElementCount == Output.VectorCount, XNN_ERR_LYR_CFG);
-    Expect::True(Input.VectorCount == Output.ElementCount, XNN_ERR_LYR_CFG);
+    Expect::True(Input.ElementCount == Output.ElementCount, XNN_ERR_LYR_CFG);
+    Expect::True(Input.VectorCount == Output.VectorCount, XNN_ERR_LYR_CFG);
     Expect::Null(layer->pLayerStruct); // transpose layers do not have layer details
     Expect::Null(Output.ScratchPad); // in transpose layer no 4B output array is allowed
 
@@ -82,9 +81,8 @@ CopyLayer::CopyLayer(const nn_layer *layer) :
     ColumnCount{ static_cast<const nn_layer_copy*>(layer->pLayerStruct)->nCopyCols },
     RowCount{ static_cast<const nn_layer_copy*>(layer->pLayerStruct)->nCopyRows },
     copyKernels{ AccelerationDetector::GetKernelMap<CopyKernel>() },
-    copyHiddenConfig{ RowCount, ColumnCount, Input.VectorCount, Output.VectorCount, Input.Buffer, Output.Buffer }
+    copyHiddenConfig{ RowCount, ColumnCount, Input.ElementCount, Output.ElementCount, Input.Buffer, Output.Buffer }
 {
-    Output.SetOutputMode(LayerOutput::NonActivatedOutput, layer->nBytesPerOutput);
     Expect::MultiplicityOf(ColumnCount, XNN_N_IN_ELEMS_MPLY);
     Expect::InRange(ColumnCount, XNN_N_IN_ELEMS_MPLY, XNN_N_IN_ELEMS_MAX, XNN_ERR_LYR_CFG);
     Expect::True(RowCount <= Input.VectorCount, XNN_ERR_LYR_CFG);

@@ -68,13 +68,14 @@ void AffineLayer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration) co
     auto nOutputs = layerConfiguration.ActiveList ? layerConfiguration.ActiveList->IndicesCount : Output.ElementCount;
 
     auto inputBuffer = layerConfiguration.InputBuffer
-        ? layerConfiguration.InputBuffer->Get<int16_t>() : Input.Buffer;
+        ? *layerConfiguration.InputBuffer : Input.Buffer;
 
-    const InOutBuffer outputBuffer = layerConfiguration.OutputBuffer
+    auto pwlOutputBuffer = layerConfiguration.OutputBuffer
         ? *layerConfiguration.OutputBuffer : Output.Buffer;
 
-    auto& configs = layerConfiguration.Configs;
+    auto outputBuffer = Activation ? Output.ScratchPad : pwlOutputBuffer;
 
+    auto& configs = layerConfiguration.Configs;
     if(!configs.Affine)
         configs.Affine = make_unique<AffineConfig>(affineHiddenConfig);
     configs.Affine->input = inputBuffer;
@@ -82,7 +83,7 @@ void AffineLayer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration) co
     if (Activation)
     {
         if(!configs.PwlOutput)
-            configs.PwlOutput = Activation->GetOutputConfig(outputBuffer);
+            configs.PwlOutput = Activation->GetOutputConfig(pwlOutputBuffer);
         configs.PwlOutput->rowLast = nOutputs - 1;
         configs.Affine->output = Output.ScratchPad;
     }
@@ -161,10 +162,12 @@ AffineMultiBiasLayer::AffineMultiBiasLayer(const nn_layer *layer) :
 void AffineMultiBiasLayer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const
 {
     auto inputBuffer = layerConfiguration.InputBuffer
-        ? layerConfiguration.InputBuffer->Get<int16_t>() : Input.Buffer;
+        ? *layerConfiguration.InputBuffer : Input.Buffer;
 
-    auto outputBuffer = layerConfiguration.OutputBuffer
-        ? layerConfiguration.OutputBuffer->Get<int32_t>() : Output.Buffer;
+    auto pwlOutputBuffer = layerConfiguration.OutputBuffer
+        ? *layerConfiguration.OutputBuffer : Output.Buffer;
+
+    auto outputBuffer = Activation ? Output.ScratchPad : pwlOutputBuffer;
 
     auto& configs = layerConfiguration.Configs;
 
@@ -176,7 +179,7 @@ void AffineMultiBiasLayer::UpdateKernelConfigs(LayerConfiguration& layerConfigur
     if (Activation)
     {
         if(!configs.PwlOutput)
-            configs.PwlOutput = Activation->GetOutputConfig(reinterpret_cast<int16_t*>(outputBuffer));
+            configs.PwlOutput = Activation->GetOutputConfig(pwlOutputBuffer);
     }
 }
 
@@ -236,11 +239,12 @@ AffineDiagonalLayer::AffineDiagonalLayer(const nn_layer *layer) :
 void AffineDiagonalLayer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const
 {
     auto inputBuffer = layerConfiguration.InputBuffer
-        ? layerConfiguration.InputBuffer->Get<int16_t>() : Input.Buffer;
+        ? *layerConfiguration.InputBuffer : Input.Buffer;
 
-    // TODO: critical: fix output buffer setting for activation and normal out.
-    auto outputBuffer = layerConfiguration.OutputBuffer 
-        ? layerConfiguration.OutputBuffer->Get<int32_t>() : Output.Buffer;
+    auto pwlOutputBuffer = layerConfiguration.OutputBuffer
+        ? *layerConfiguration.OutputBuffer : Output.Buffer;
+
+    auto outputBuffer = Activation ? Output.ScratchPad : pwlOutputBuffer;
 
     auto& configs = layerConfiguration.Configs;
 
@@ -252,7 +256,7 @@ void AffineDiagonalLayer::UpdateKernelConfigs(LayerConfiguration& layerConfigura
     if (Activation)
     {
         if(!configs.PwlOutput)
-            configs.PwlOutput = Activation->GetOutputConfig(reinterpret_cast<int16_t*>(outputBuffer));
+            configs.PwlOutput = Activation->GetOutputConfig(pwlOutputBuffer);
     }
 }
 

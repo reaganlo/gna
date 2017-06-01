@@ -46,7 +46,8 @@ typedef enum _Orientations
 
 struct LayerConfig
 {
-    static const std::map<const nn_layer_kind, const Orientations> OrientationsMap;
+    static const std::map<const nn_layer_kind, const Orientations> InputOrientationsMap;
+    static const std::map<const nn_layer_kind, const Orientations> OutputOrientationsMap;
 
     LayerConfig(const nn_layer_kind kind, const nn_layer_type type);
     LayerConfig() = delete;
@@ -54,12 +55,13 @@ struct LayerConfig
 
     const nn_layer_kind Kind;
     const nn_layer_type Type;
-    const Orientations Orientation;
+    const Orientations InputOrientation;
+    const Orientations OutputOrientation;
 };
 
 struct LayerMatrix
 {
-    LayerMatrix(const uint32_t rowCount, const uint32_t columnCount, void const * buffer, const LayerConfig& config);
+    LayerMatrix(const uint32_t rowCount, const uint32_t columnCount, void const * buffer, const Orientations orientation, const nn_layer_type layerType);
     ~LayerMatrix() = default;
 
     const uint32_t ElementCount;
@@ -69,7 +71,7 @@ struct LayerMatrix
 
 struct LayerInput : public LayerMatrix
 {
-    LayerInput(const nn_layer &layer, const LayerConfig& config);
+    LayerInput(const nn_layer &layer, const Orientations orientation, const nn_layer_type layerType);
     ~LayerInput() = default;
 };
 
@@ -84,7 +86,7 @@ struct LayerOutput : public LayerMatrix
     static const uint32_t NonActivatedOutputSize = 4;
     static const uint32_t ActivatedOutputSize = 2;
 
-    LayerOutput(const nn_layer &layer, const LayerConfig& config);
+    LayerOutput(const nn_layer &layer, const Orientations orientation, const nn_layer_type layerType);
     ~LayerOutput() = default;
 
     void SetOutputMode(const bool activationEnabled, const uint32_t outputSize);
