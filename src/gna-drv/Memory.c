@@ -304,7 +304,7 @@ mem_map_error:
         TraceFail(TLE, T_EXIT, status);
         EventWriteMemoryMapFail(NULL, status);
 
-        if (modelCtx)
+        if (NULL != modelCtx)
         {
             MemoryMapRelease(appCtx, modelCtx);
         }

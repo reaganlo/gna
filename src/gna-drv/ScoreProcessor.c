@@ -641,6 +641,12 @@ ScoreDeferredUnmap(
 
     // perform unmapping
     PMODEL_CTX modelCtx = appCtx->models[*mid];
+    if (NULL == modelCtx)
+    {
+        status = STATUS_UNSUCCESSFUL;
+        TraceFailMsg(TLE, T_EXIT, "No model context for given model id", status);
+        goto ioctl_mm_error;
+    }
     MemoryMapRelease(appCtx, modelCtx);
 
     // complete unmap request

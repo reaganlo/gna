@@ -232,15 +232,18 @@ void CompiledModel::prepareScoreMethods(const AccelerationDetector& detector)
                 scoreMethods[GNA_HW] = SoftwareOnly;
                 scoreMethods[GNA_AUTO_FAST] = SoftwareOnly;
                 scoreMethods[GNA_AUTO_SAT] = SoftwareOnly;
+                break;
                 // hardware can handle whole model
             case Hardware:
                 scoreMethods[GNA_HW] = HardwareOnly;
                 scoreMethods[GNA_AUTO_FAST] = HardwareOnly;
                 scoreMethods[GNA_AUTO_SAT] = HardwareOnly;
+                break;
             default:
                 scoreMethods[GNA_HW] = None;
                 scoreMethods[GNA_AUTO_FAST] = None;
                 scoreMethods[GNA_AUTO_SAT] = None;
+                break;
             }
         }
     }

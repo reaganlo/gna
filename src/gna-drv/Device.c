@@ -159,7 +159,9 @@ FileCleanupEvnt(
     {
         PMODEL_CTX modelCtx = appCtx->models[i];
         if (NULL != modelCtx)
+        {
             MemoryMapRelease(appCtx, modelCtx);
+        }
     }
 
     EventWriteDriverApiEnd(NULL, __FUNCTION__);
