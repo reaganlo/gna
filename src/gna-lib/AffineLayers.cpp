@@ -38,7 +38,7 @@ AffineBaseLayer::AffineBaseLayer(const nn_layer *layer) :
         AffineBaseConfig{Output.ElementCount, Input.VectorCount, Input.ElementCount, Input.Buffer, Output.Buffer})),
     Activation(ActivationFunction::Create(&static_cast<const nn_layer_affine*>(layer->pLayerStruct)->pwl, false,
         Output.ScratchPad,
-        PwlOutputConfig{0, Output.ElementCount - 1, 0, Input.VectorCount - 1, Output.ElementCount, Output.Buffer}))
+        PwlOutputConfig{0, Output.ElementCount - 1, 0, Input.VectorCount - 1, Output.VectorCount, Output.Buffer}))
 {
     Output.SetOutputMode(Activation.operator bool(), layer->nBytesPerOutput);
     if (Activation)
