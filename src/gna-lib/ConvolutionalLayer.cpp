@@ -85,7 +85,7 @@ PoolingFunction::PoolingFunction(const nn_layer_conv * sourceLayer) :
 CnnLayer::CnnLayer(nn_layer const * const layer) :
     Layer(layer),
     // CNN has only 2B output with Activation always enabled
-    Activation(ActivationFunction::Create(&static_cast<const nn_layer_conv*>(layer->pLayerStruct)->pwl, false,
+    Activation(ActivationFunction::Create(layer->nLayerKind, layer->pLayerStruct, false,
         Output.ScratchPad,
         PwlOutputConfig{0, Output.VectorCount - 1, 0, Output.ElementCount - 1, Output.ElementCount, Output.Buffer})),
     Convolution{static_cast<const nn_layer_conv*>(layer->pLayerStruct), Input.ElementCount},

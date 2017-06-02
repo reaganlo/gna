@@ -36,7 +36,7 @@ RnnLayer::RnnLayer(nn_layer const * const layer) :
     Affine{AffineFunction::Create(layer->nLayerKind, layer->pLayerStruct,
         AffineBaseConfig{Output.ElementCount, Input.VectorCount, Input.ElementCount, Input.Buffer, Output.Buffer})},
     // RNN has only 2B output with Activation always enabled
-    Activation(ActivationFunction::Create(&static_cast<const nn_layer_reccurent*>(layer->pLayerStruct)->pwl, true,
+    Activation(ActivationFunction::Create(layer->nLayerKind, layer->pLayerStruct, true,
         Output.ScratchPad, PwlOutputConfig{})),
     FeedbackDelay{static_cast<const nn_layer_reccurent * const>(layer->pLayerStruct)->feedbackFrameDelay},
     recurrentKernels{AccelerationDetector::GetKernelMap<RecurrentKernel>(Affine->Mode)},

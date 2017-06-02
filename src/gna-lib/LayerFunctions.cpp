@@ -106,7 +106,6 @@ void AffineFunction::ComputeConfig(const LayerConfiguration& layerConfiguration,
     auto kernelConfig = AffineConfig{layerConfiguration.Configs.Affine.get(), saturationCount, fvBuffers};
 
     kernels.at(accel)(&kernelConfig);
-
 }
 
 AffineFunctionSingle::AffineFunctionSingle(const std::map<const acceleration, const AffineKernel>& kernelsIn,
@@ -193,9 +192,30 @@ AffineFunctionMulti1B::AffineFunctionMulti1B(const nn_func_affine_multi *affine,
         GetMultibias(), BiasVectorCount);
 }
 
-const unique_ptr<const ActivationFunction> ActivationFunction::Create(const nn_func_pwl * const pwl,
+const unique_ptr<const ActivationFunction> ActivationFunction::Create(nn_layer_kind layerKind, void const *layerDetails,
     const bool mandatory, int32_t const * const Inputs, const PwlOutputConfig& outputConfig)
 {
+    const nn_func_pwl *pwl = nullptr;
+    switch (layerKind)
+    {
+    case INTEL_AFFINE:
+        /* FALLTHRU */
+    case INTEL_AFFINE_DIAGONAL:
+        pwl = &static_cast<nn_layer_affine const*>(layerDetails)->pwl;
+        break;
+    case INTEL_AFFINE_MULTIBIAS:
+        pwl = &static_cast<nn_layer_affine_multi const*>(layerDetails)->pwl;
+        break;
+    case INTEL_CONVOLUTIONAL:
+        pwl = &static_cast<nn_layer_conv const*>(layerDetails)->pwl;
+        break;
+    case INTEL_RECURRENT:
+        pwl = &static_cast<nn_layer_reccurent const*>(layerDetails)->pwl;
+        break;
+    default:
+        throw GnaException{ XNN_ERR_LYR_KIND };
+    }
+
     if (mandatory || IsActivationFunctionEnabled(pwl))
     {
         return make_unique<ActivationFunction>(pwl, Inputs, outputConfig);
