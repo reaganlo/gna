@@ -41,6 +41,7 @@ unique_ptr<const AffineFunction> AffineFunction::Create(intel_layer_kind_t const
     {
     case INTEL_AFFINE:
     case INTEL_AFFINE_DIAGONAL:
+    case INTEL_RECURRENT:
         {
             auto affine = &static_cast<const nn_layer_affine*>(layerDetails)->affine;
             auto const mode = static_cast<const WeightMode>(affine->nBytesPerWeight % 2);

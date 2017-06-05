@@ -541,6 +541,8 @@ AccelerationDetector::GetKernelMap<AffineKernel>(WeightMode weightMode, nn_layer
     switch (layerKind)
     {
     case INTEL_AFFINE:
+        /* FALLTHRU */
+    case INTEL_RECURRENT:
         return AffineKernels.at(weightMode);
     case INTEL_AFFINE_DIAGONAL:
         return DiagonalKernels.at(weightMode);

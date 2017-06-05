@@ -79,8 +79,11 @@ void RnnLayer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const
     configs.Recurrent->input = inputBuffer;
     configs.Recurrent->outputActivated = outputBuffer;
 
-    if(outputBuffer)
+    if (outputBuffer)
+    {
         configs.Recurrent->feedbackBuffer = CalculateFeedbackBuffer(outputBuffer);
+        configs.Recurrent->pwlOutputConfig.output = outputBuffer;
+    }
 }
 
 void RnnLayer::computeHidden(acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const
