@@ -71,6 +71,17 @@ status_t HardwareModel::Score(
     auto status = response->status;
     Expect::True(GNA_SUCCESS == status || GNA_SSATURATE == status, status);
 
+    auto perfResults = requestConfiguration.PerfResults;
+    if (perfResults)
+    {
+        perfResults->drv.startHW += response->drvPerf.startHW;
+        perfResults->drv.scoreHW += response->drvPerf.scoreHW;
+        perfResults->drv.intProc += response->drvPerf.intProc;
+
+        perfResults->hw.stall += response->hwPerf.stall;
+        perfResults->hw.total += response->hwPerf.total;
+    }
+
     return status;
 }
 
