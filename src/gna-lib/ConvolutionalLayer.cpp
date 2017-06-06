@@ -65,6 +65,7 @@ ConvolutionFunction::ConvolutionFunction(const nn_layer_conv * sourceLayer, cons
     FeatureMaps{ sourceLayer },
     OutputElementsCount{ (inputElementCount - Filters.CoefficientCount) / FeatureMaps.Stride + 1 }
 {
+    Expect::InRange(FeatureMaps.Stride, 1, Filters.CoefficientCount, XNN_ERR_LYR_CFG);
     auto featureCount = FeatureMaps.RowCount * FeatureMaps.Stride;
     Expect::True(featureCount >= CNN_N_FLT_COEFF_MIN, XNN_ERR_LYR_CFG);
 }
@@ -106,7 +107,7 @@ CnnLayer::CnnLayer(nn_layer const * const layer) :
     if (INTEL_NO_POOLING != Pooling.Type) // use pooled outputs per filter
     {
         Expect::True(nullptr != Activation, XNN_ERR_PWL_SEGMENTS); // Activation is required for cnn with pooling
-        outputElementCount = ((Convolution.OutputElementsCount - 1) / Pooling.Stride + 1);
+        outputElementCount = ((Convolution.OutputElementsCount - Pooling.Size) / Pooling.Stride + 1);
     }
     Expect::True(Output.ElementCount == Convolution.Filters.Count * outputElementCount, XNN_ERR_LYR_CFG);
     // NOTE: intentional const override for Output.ElementCount 

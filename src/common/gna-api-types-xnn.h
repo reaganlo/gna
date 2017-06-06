@@ -70,9 +70,9 @@ typedef struct _affine_multibias_func_t
     uint32_t nBytesPerWeight;       // Number of bytes per weight element, set to 1B or 2B.
     void* pWeights;                 // Weights data buffer.
     intel_compound_bias_t* weightScaleFactors; // Scaling factors for 1B weights or NULL for 2B weights.
-    uint32_t biasVectorCount;       // Number of the bias groups for the current layer.
-    uint32_t biasVectorIndex;       // Index of the bias group for the current layer.
-    intel_bias_t* pBiases;          // 2D array with grouped biases.
+    uint32_t biasVectorCount;       // Number of the bias vectors for the current layer.
+    uint32_t biasVectorIndex;       // Index of the bias vector for the current layer.
+    intel_bias_t* pBiases;          // 2D array containing set of bias vectors.
 
 } intel_affine_multibias_func_t;
 
