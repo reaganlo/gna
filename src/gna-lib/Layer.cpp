@@ -115,7 +115,14 @@ LayerOutput::LayerOutput(const nn_layer& layer, const Orientations orientation, 
     ScratchPad{static_cast<int32_t * const>(layer.pOutputsIntermediate)},
     mode{NonActivatedOutput}
 {
-    Expect::InRange(ElementCount, 1, XNN_N_IN_ELEMS_MAX, XNN_ERR_LYR_CFG);
+    if (INTEL_GMM == layer.nLayerKind)
+    {
+        Expect::InRange(ElementCount, 1, GMM_STATES_COUNT_MAX, XNN_ERR_LYR_CFG);
+    }
+    else
+    {
+        Expect::InRange(ElementCount, 1, XNN_N_IN_ELEMS_MAX, XNN_ERR_LYR_CFG);
+    }
     Expect::InRange(layer.nBytesPerOutput, ActivatedOutputSize, NonActivatedOutputSize, XNN_ERR_INPUT_BYTES);
     Expect::True(NonActivatedOutputSize == layer.nBytesPerIntermediateOutput, XNN_ERR_INT_OUTPUT_BYTES);
     //Expect::ValidBuffer(ScratchPad); // TODO: review when scratch-pad is allocated by gna-lib
