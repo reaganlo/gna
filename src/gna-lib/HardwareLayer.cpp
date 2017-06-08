@@ -329,6 +329,23 @@ HardwareLayerCnn::HardwareLayerCnn(const DescriptorParameters& parameters) :
     filtersElementCountInLastIteration = filtersCountInLastIteration * fitlerSize;
     Expect::InRange(filtersElementCountInLastIteration, 1, bufferElementCount, XNN_ERR_LYR_CFG);
 
+    // No pooling
+    outputElementCount = cnn->Convolution.OutputElementsCount;
+    convOutputElementCount = cnn->Convolution.OutputElementsCount;
+    // Pooling enabled
+    if (INTEL_NO_POOLING != cnn->Pooling.Type) // use pooled outputs per filter
+    {
+        if (convOutputElementCount >= cnn->Pooling.Size)
+        {
+            outputElementCount = ((convOutputElementCount - cnn->Pooling.Size) / cnn->Pooling.Stride + 1);
+        }
+        else
+        {
+            outputElementCount = 1;
+        }
+        convOutputElementCount = (outputElementCount - 1) * cnn->Pooling.Stride + cnn->Pooling.Size;
+    }
+
     save();
 }
 
@@ -346,9 +363,9 @@ void HardwareLayerCnn::save()
     XnnDescriptor->cnn_n_flts_iter = filtersCountInFullIteration;
     XnnDescriptor->cnn_n_flt_iters = filtersIterationCount;
     XnnDescriptor->cnn_n_flt_last = filtersCountInLastIteration;
-    XnnDescriptor->cnn_n_flt_outs = cnn->Convolution.OutputElementsCount;
+    XnnDescriptor->cnn_n_flt_outs = convOutputElementCount;
     XnnDescriptor->cnn_n_flt_stride = cnn->Convolution.FeatureMaps.Stride;
-    XnnDescriptor->cnn_n_out_p_flt = SoftwareLayer->Output.ElementCount;
+    XnnDescriptor->cnn_n_out_p_flt = outputElementCount;
     XnnDescriptor->cnn_pool_size = cnn->Pooling.Size;
     XnnDescriptor->cnn_pool_stride = cnn->Pooling.Stride;
     XnnDescriptor->aff_const_buffer = getOffset(cnn->Convolution.Filters.Biases);

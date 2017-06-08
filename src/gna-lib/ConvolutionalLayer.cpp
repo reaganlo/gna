@@ -71,9 +71,9 @@ ConvolutionFunction::ConvolutionFunction(const nn_layer_conv * sourceLayer, cons
 }
 
 PoolingFunction::PoolingFunction(const nn_layer_conv * sourceLayer) :
-    Type{ sourceLayer->poolType },
-    Size{ sourceLayer->nPoolSize },
-    Stride{ sourceLayer->nPoolStride }
+    Type{sourceLayer->poolType},
+    Size{sourceLayer->nPoolSize},
+    Stride{sourceLayer->nPoolStride}
 {
     Expect::InRange(Type, INTEL_NO_POOLING, NUM_POOLING_TYPES - 1, XNN_ERR_LYR_CFG);
     if (INTEL_NO_POOLING != Type)
@@ -100,19 +100,11 @@ CnnLayer::CnnLayer(nn_layer const * const layer) :
 {
     Expect::True(Input.VectorCount == 1, XNN_ERR_GROUPING);
     Expect::True(Input.VectorCount == Output.VectorCount, XNN_ERR_GROUPING);
-
-    Output.SetOutputMode(Activation.operator bool(), layer->nBytesPerOutput);
-
-    auto outputElementCount = Convolution.OutputElementsCount; // INTEL_NO_POOLING use convolution outputs per filter
-    if (INTEL_NO_POOLING != Pooling.Type) // use pooled outputs per filter
+    if (INTEL_NO_POOLING != Pooling.Type)
     {
         Expect::True(nullptr != Activation, XNN_ERR_PWL_SEGMENTS); // Activation is required for cnn with pooling
-        outputElementCount = ((Convolution.OutputElementsCount - Pooling.Size) / Pooling.Stride + 1);
     }
-    Expect::True(Output.ElementCount == Convolution.Filters.Count * outputElementCount, XNN_ERR_LYR_CFG);
-    // NOTE: intentional const override for Output.ElementCount 
-    // TODO: consider refactoring
-    ((uint32_t)Output.ElementCount) = outputElementCount;
+    Output.SetOutputMode(Activation.operator bool(), layer->nBytesPerOutput);
 
     if (INTEL_NO_POOLING == Pooling.Type)
     {
@@ -145,11 +137,10 @@ CnnLayer::CnnLayer(nn_layer const * const layer) :
 
 void CnnLayer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const
 {
-    auto inputBuffer = layerConfiguration.InputBuffer
-        ? layerConfiguration.InputBuffer->Get<int16_t>() : Input.Buffer;
+    auto inputBuffer = layerConfiguration.InputBuffer ? *layerConfiguration.InputBuffer : Input.Buffer;
 
     auto filterOutputBuffer = Activation ? Output.ScratchPad :
-        (layerConfiguration.OutputBuffer ? layerConfiguration.OutputBuffer->Get<int32_t>() : Output.Buffer);
+        (layerConfiguration.OutputBuffer ? *layerConfiguration.OutputBuffer : Output.Buffer);
 
     auto& configs = layerConfiguration.Configs;
 

@@ -203,6 +203,8 @@ private:
     uint32_t filtersCountInFullIteration;          // Number of filters in buffer in full iterations.
     uint32_t filtersElementCountInFullIteration;   // Size of filter in non-last iterations (elements).
     uint32_t filtersElementCountInLastIteration;   // Size of filter in last iterations (elements).
+    uint32_t outputElementCount;                   // Number of final output elements
+    uint32_t convOutputElementCount;               // Number of output elements after convolution and before downsampling
 };
 
 // Hardware GMM Layer descriptor converter
