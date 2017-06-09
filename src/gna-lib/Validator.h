@@ -106,7 +106,7 @@ public:
     }
 
     // If parameter is not in range of <a, b> prints error status code and throws exception.
-    inline static void InRange(const uint32_t parameter, const uint32_t a, const uint32_t b,
+    inline static void InRange(const size_t parameter, const size_t a, const size_t b,
         const status_t status)
     {
         False(parameter < a, status);
