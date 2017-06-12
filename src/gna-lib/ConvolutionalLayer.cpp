@@ -172,17 +172,22 @@ void CnnLayer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const
     auto filterOutputBuffer = Activation ? Output.ScratchPad :
         (layerConfiguration.OutputBuffer ? *layerConfiguration.OutputBuffer : Output.Buffer);
 
+    auto pwlOutputBuffer = layerConfiguration.OutputBuffer
+        ? *layerConfiguration.OutputBuffer
+        : Output.Buffer;
+
     auto& configs = layerConfiguration.Configs;
-
-    configs.Convolution = Convolution.GetRunConfig(inputBuffer, filterOutputBuffer);
-
-    if (INTEL_NO_POOLING == Pooling.Type && Activation)
+    if (INTEL_NO_POOLING == Pooling.Type)
     {
-        auto pwlOutputBuffer = layerConfiguration.OutputBuffer
-            ? layerConfiguration.OutputBuffer->Get<int16_t>()
-            : Output.Buffer;
-
-        configs.PwlOutput = Activation->GetOutputConfig(pwlOutputBuffer);
+        configs.Convolution = Convolution.GetRunConfig(inputBuffer, filterOutputBuffer);
+        if (Activation)
+        {
+            configs.PwlOutput = Activation->GetOutputConfig(pwlOutputBuffer);
+        }
+    }
+    else
+    {
+        configs.Convolution = Convolution.GetRunConfig(inputBuffer, pwlOutputBuffer);
     }
 }
 
