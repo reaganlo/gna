@@ -70,15 +70,15 @@ void AffineMultiBiasKernelImpl2B(AffineConfig const * const config)
                                                        config->input, config->fvBuffers->d0 };
     TransposeKernelImpl(&transposeConfig);
 
-    for (; config->multiBias < biasEnd;)
+    for (; multiBias < biasEnd;)
     {
         input = config->fvBuffers->d0;
         for (j = 0; j < config->inputVectorCount; j++)
         {
-            *config->output = *config->multiBias;
+            *output = *multiBias;
             for (k = 0; k < config->inputElementCount; k++)
             {
-                *config->output += config->weights2B[k] * *input++;
+                *output += weight[k] * *input++;
             }
 
             output++;
