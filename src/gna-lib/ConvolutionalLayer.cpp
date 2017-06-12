@@ -29,6 +29,9 @@
 #include "LayerConfiguration.h"
 #include "Validator.h"
 
+using std::make_unique;
+using std::unique_ptr;
+
 using namespace GNA;
 
 FiltersConfig::FiltersConfig(const nn_layer_conv * sourceLayer, const uint32_t inputElementCount) :
@@ -60,20 +63,45 @@ FeatureMaps::FeatureMaps(const nn_layer_conv * sourceLayer) :
     Expect::InRange(Stride, 1, CNN_N_FLT_COEFF_MAX, CNN_ERR_FLT_STRIDE);
 }
 
-ConvolutionFunction::ConvolutionFunction(const nn_layer_conv * sourceLayer, const uint32_t inputElementCount) :
+ConvolutionFunction::ConvolutionFunction(const nn_layer_conv * sourceLayer, const uint32_t inputElementCount,
+    int16_t const * const inputs, int16_t * const outputs) :
     Filters{ sourceLayer, inputElementCount },
     FeatureMaps{ sourceLayer },
-    OutputElementsCount{ (inputElementCount - Filters.CoefficientCount) / FeatureMaps.Stride + 1 }
+    OutputElementsCount{ (inputElementCount - Filters.CoefficientCount) / FeatureMaps.Stride + 1 },
+    kernels{AccelerationDetector::GetKernelMap<ConvolutionKernel>()},
+    hiddenConfig{FeatureMaps.Stride, OutputElementsCount, Filters.Count, Filters.CoefficientCount,
+        inputs, Filters.Data, Filters.Biases, outputs}
 {
     Expect::InRange(FeatureMaps.Stride, 1, Filters.CoefficientCount, XNN_ERR_LYR_CFG);
     auto featureCount = FeatureMaps.RowCount * FeatureMaps.Stride;
     Expect::True(featureCount >= CNN_N_FLT_COEFF_MIN, XNN_ERR_LYR_CFG);
 }
 
+unique_ptr<const ConvolutionConfig> ConvolutionFunction::GetRunConfig(int16_t const * const inputs, int32_t * const outputs) const
+{
+    return make_unique<const ConvolutionConfig>(&hiddenConfig, inputs, outputs);
+}
+
+void ConvolutionFunction::ComputeHidden(acceleration accel, uint32_t *saturationCount) const
+{
+    auto convConfig = ConvolutionConfig{&hiddenConfig, saturationCount};
+
+    kernels.at(accel)(&convConfig);
+}
+
+void ConvolutionFunction::ComputeConfig(const ConvolutionConfig* const config, acceleration accel, uint32_t *saturationCount) const
+{
+    auto convConfig = ConvolutionConfig{config, saturationCount};
+
+    kernels.at(accel)(&convConfig);
+}
+
 PoolingFunction::PoolingFunction(const nn_layer_conv * sourceLayer) :
     Type{sourceLayer->poolType},
     Size{sourceLayer->nPoolSize},
-    Stride{sourceLayer->nPoolStride}
+    Stride{sourceLayer->nPoolStride},
+    kernels{AccelerationDetector::GetKernelMap<ConvolutionPoolingKernel>()},
+    hiddenConfig{Type, Size, Stride}
 {
     Expect::InRange(Type, INTEL_NO_POOLING, NUM_POOLING_TYPES - 1, XNN_ERR_LYR_CFG);
     if (INTEL_NO_POOLING != Type)
@@ -83,20 +111,22 @@ PoolingFunction::PoolingFunction(const nn_layer_conv * sourceLayer) :
     }
 }
 
+void PoolingFunction::Compute(const ConvolutionConfig * convolutionConfig, acceleration accel, int64_t * poolScratchPad,
+    const PwlCached * pwl) const
+{
+    auto poolConfig = PoolingConfig{&hiddenConfig, poolScratchPad};
+    kernels.at(accel)(convolutionConfig, &poolConfig, pwl);
+}
+
 CnnLayer::CnnLayer(nn_layer const * const layer) :
     Layer(layer),
     // CNN has only 2B output with Activation always enabled
     Activation(ActivationFunction::Create(layer->nLayerKind, layer->pLayerStruct, false,
         Output.ScratchPad,
         PwlOutputConfig{0, Output.VectorCount - 1, 0, Output.ElementCount - 1, Output.ElementCount, Output.Buffer})),
-    Convolution{static_cast<const nn_layer_conv*>(layer->pLayerStruct), Input.ElementCount},
-    Pooling{static_cast<const nn_layer_conv*>(layer->pLayerStruct)},
-    filterKernels{AccelerationDetector::GetKernelMap<ConvolutionKernel>()},
-    poolingKernels{AccelerationDetector::GetKernelMap<ConvolutionPoolingKernel>()},
-    convolutionHiddenConfig{Convolution.FeatureMaps.Stride, Convolution.OutputElementsCount,
-        Convolution.Filters.Count, Convolution.Filters.CoefficientCount, Input.Buffer.Get<int16_t>(), Convolution.Filters.Data,
-        Convolution.Filters.Biases, Activation ? reinterpret_cast<int16_t * const>(Output.ScratchPad) : Output.Buffer.Get<int16_t>()},
-    poolingHiddenConfig{Pooling.Type, Pooling.Size, Pooling.Stride}
+    Convolution{static_cast<const nn_layer_conv*>(layer->pLayerStruct), Input.ElementCount, Input.Buffer,
+        Activation ? reinterpret_cast<int16_t * const>(Output.ScratchPad) : Output.Buffer},
+    Pooling{static_cast<const nn_layer_conv*>(layer->pLayerStruct)}
 {
     Expect::True(Input.VectorCount == 1, XNN_ERR_GROUPING);
     Expect::True(Input.VectorCount == Output.VectorCount, XNN_ERR_GROUPING);
@@ -144,10 +174,7 @@ void CnnLayer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const
 
     auto& configs = layerConfiguration.Configs;
 
-    if(!configs.Convolution)
-        configs.Convolution = std::make_unique<ConvolutionConfig>(convolutionHiddenConfig);
-    configs.Convolution->inputs = inputBuffer;
-    configs.Convolution->convolutedOutputs = filterOutputBuffer;
+    configs.Convolution = Convolution.GetRunConfig(inputBuffer, filterOutputBuffer);
 
     if (INTEL_NO_POOLING == Pooling.Type && Activation)
     {
@@ -155,54 +182,48 @@ void CnnLayer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const
             ? layerConfiguration.OutputBuffer->Get<int16_t>()
             : Output.Buffer;
 
-        if(!configs.PwlOutput)
-            configs.PwlOutput = Activation->GetOutputConfig(pwlOutputBuffer);
+        configs.PwlOutput = Activation->GetOutputConfig(pwlOutputBuffer);
     }
 }
 
 void CnnLayer::computeHidden(acceleration accel, KernelBuffers *fvBuffers, uint32_t * saturationCount) const
 {
     UNREFERENCED_PARAMETER(fvBuffers);
-    auto filterConfig = ConvolutionConfig{&convolutionHiddenConfig, saturationCount};
 
-    filterKernels.at(accel)(&filterConfig);
+    Convolution.ComputeHidden(accel, saturationCount);
 }
 
 void CnnLayer::computeHiddenPwl(acceleration accel, KernelBuffers *fvBuffers, uint32_t * saturationCount) const
 {
     UNREFERENCED_PARAMETER(fvBuffers);
-    computeHidden(accel, fvBuffers, saturationCount);
 
+    Convolution.ComputeHidden(accel, saturationCount);
     Activation->ComputeHidden(accel, saturationCount);
 }
 
 void CnnLayer::computeConfig(const LayerConfiguration& layerConfiguration, acceleration accel, KernelBuffers *fvBuffers, uint32_t * saturationCount) const
 {
     UNREFERENCED_PARAMETER(fvBuffers);
-    auto filterConfig = ConvolutionConfig{layerConfiguration.Configs.Convolution.get(), saturationCount};
 
-    filterKernels.at(accel)(&filterConfig);
+    Convolution.ComputeConfig(layerConfiguration.Configs.Convolution.get(), accel, saturationCount);
 }
 
 void CnnLayer::computeConfigPwl(const LayerConfiguration& layerConfiguration, acceleration accel, KernelBuffers *fvBuffers, uint32_t * saturationCount) const
 {
-    computeConfig(layerConfiguration, accel, fvBuffers, saturationCount);
+    UNREFERENCED_PARAMETER(fvBuffers);
 
+    Convolution.ComputeConfig(layerConfiguration.Configs.Convolution.get(), accel, saturationCount);
     Activation->ComputeConfig(layerConfiguration, accel, saturationCount);
 }
 
 void CnnLayer::computeHiddenPool(acceleration accel, KernelBuffers *fvBuffers, uint32_t * saturationCount) const
 {
-    auto filterConfig = ConvolutionConfig{&convolutionHiddenConfig, saturationCount};
-    auto poolConfig = PoolingConfig{&poolingHiddenConfig, fvBuffers->pool};
-
-    poolingKernels.at(accel)(&filterConfig, &poolConfig, &Activation->Pwl);
+    auto convConfig = ConvolutionConfig{Convolution.GetHiddenConfig(), saturationCount};
+    Pooling.Compute(&convConfig, accel, fvBuffers->pool, &Activation->Pwl);
 }
 
 void CnnLayer::computeConfigPool(LayerConfiguration& layerConfiguration, acceleration accel, KernelBuffers *fvBuffers, uint32_t * saturationCount) const
 {
-    auto filterConfig = ConvolutionConfig{layerConfiguration.Configs.Convolution.get(), saturationCount};
-    auto poolConfig = PoolingConfig{&poolingHiddenConfig, fvBuffers->pool};
-
-    poolingKernels.at(accel)(&filterConfig, &poolConfig, &Activation->Pwl);
+    auto convConfig = ConvolutionConfig{layerConfiguration.Configs.Convolution.get(), saturationCount};
+    Pooling.Compute(&convConfig, accel, fvBuffers->pool, &Activation->Pwl);
 }

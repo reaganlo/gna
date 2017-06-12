@@ -25,7 +25,7 @@ struct KernelConfigs
 {
     std::unique_ptr<const AffineConfig> Affine;
     std::unique_ptr<RecurrentConfig> Recurrent;
-    std::unique_ptr<ConvolutionConfig> Convolution;
+    std::unique_ptr<const ConvolutionConfig> Convolution;
     std::unique_ptr<TransposeConfig> Transpose;
     std::unique_ptr<CopyConfig> Copy;
     std::unique_ptr<GmmConfig> Gmm;

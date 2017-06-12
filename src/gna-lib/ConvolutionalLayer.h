@@ -56,12 +56,26 @@ struct FeatureMaps
 
 struct ConvolutionFunction
 {
-    ConvolutionFunction(const nn_layer_conv *sourceLayer, const uint32_t inputElementCount);
+    ConvolutionFunction(const nn_layer_conv *sourceLayer, const uint32_t inputElementCount,
+        int16_t const * inputs, int16_t * outputs);
     ~ConvolutionFunction() = default;
+
+    std::unique_ptr<const ConvolutionConfig> GetRunConfig(int16_t const * inputs, int32_t * outputs) const;
+    const ConvolutionConfig * GetHiddenConfig() const
+    {
+        return &hiddenConfig;
+    }
+
+    void ComputeHidden(acceleration accel, uint32_t *saturationCount) const;
+    void ComputeConfig(const ConvolutionConfig* config, acceleration accel, uint32_t *saturationCount) const;
 
     const FiltersConfig Filters;
     const FeatureMaps FeatureMaps;
     const uint32_t OutputElementsCount;   // Number of outputs after convolution per filter
+
+private:
+    const std::map<const acceleration, const ConvolutionKernel>& kernels;
+    const ConvolutionConfig hiddenConfig;
 };
 
 struct PoolingFunction
@@ -69,9 +83,16 @@ struct PoolingFunction
     PoolingFunction(const nn_layer_conv *sourceLayer);
     ~PoolingFunction() = default;
 
+    void Compute(const ConvolutionConfig * convolutionConfig, acceleration accel, int64_t * poolScratchPad,
+        const PwlCached * Pwl) const;
+
     const intel_pool_type_t Type;
     const uint32_t Size;
     const uint32_t Stride;
+
+private:
+    const std::map<const acceleration, const ConvolutionPoolingKernel>& kernels;
+    const PoolingConfig hiddenConfig;
 };
 
 // TODO: refactor: consider extracting kernel stuff into [LayerType]Kernel class and attach to layer as member
@@ -94,12 +115,6 @@ private:
     void computeHiddenPwl(acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const;
     void computeConfig(const LayerConfiguration& layerConfiguration, acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const;
     void computeConfigPwl(const LayerConfiguration& layerConfiguration, acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const;
-
-    const std::map<const acceleration, const ConvolutionKernel>& filterKernels;
-    const std::map<const acceleration, const ConvolutionPoolingKernel>& poolingKernels;
-
-    const ConvolutionConfig convolutionHiddenConfig;
-    const PoolingConfig poolingHiddenConfig;
 };
 
 }

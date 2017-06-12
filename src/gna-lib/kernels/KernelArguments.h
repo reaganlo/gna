@@ -209,6 +209,13 @@ struct CopyConfig
 
 struct ConvolutionConfig
 {
+    ConvolutionConfig(ConvolutionConfig const * const source, int16_t const * const inputsIn,
+        int32_t * const outputsIn) :
+        ConvolutionConfig{*source}
+    {
+        inputs = inputsIn;
+        convolutedOutputs = outputsIn;
+    }
     ConvolutionConfig(ConvolutionConfig const * const source, uint32_t * const saturationCountIn) :
         ConvolutionConfig{*source}
     {
