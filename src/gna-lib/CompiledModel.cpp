@@ -115,6 +115,8 @@ status_t CompiledModel::Score(
     RequestProfiler *profiler,
     KernelBuffers *buffers)
 {
+    profilerDTscAStart(&profiler->scoring);
+
     auto swAccel = accel;
     if (GNA_AUTO_FAST == accel || GNA_SW_FAST == accel)
     {
@@ -130,9 +132,11 @@ status_t CompiledModel::Score(
     switch (scoreMethod)
     {
     case SoftwareOnly:
-        return softwareModel->Score(0, LayerCount, swAccel, config, profiler, buffers);
+        status = softwareModel->Score(0, LayerCount, swAccel, config, profiler, buffers);
+        break;
     case HardwareOnly:
-        return hardwareModel->Score(0, LayerCount, config, profiler, buffers);
+        status = hardwareModel->Score(0, LayerCount, config, profiler, buffers);
+        break;
     case Mixed:
     {
         for (const auto& submodel : submodels)
@@ -158,6 +162,8 @@ status_t CompiledModel::Score(
         break;
     }
     }
+    profilerDTscStop(&profiler->scoring);
+    profilerDTscStop(&profiler->total);
     return status;
 }
 

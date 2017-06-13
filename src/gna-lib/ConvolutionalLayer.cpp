@@ -182,7 +182,7 @@ void CnnLayer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const
         configs.Convolution = Convolution.GetRunConfig(inputBuffer, filterOutputBuffer);
         if (Activation)
         {
-            configs.PwlOutput = Activation->GetOutputConfig(pwlOutputBuffer);
+        configs.PwlOutput = Activation->GetOutputConfig(pwlOutputBuffer);
         }
     }
     else

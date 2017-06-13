@@ -59,8 +59,6 @@ status_t SoftwareModel::Score(
     RequestProfiler *profiler,
     KernelBuffers *fvBuffers)
 {
-    profilerDTscAStart(&profiler->scoring);
-
     validateConfiguration(requestConfiguration);
 
     const uint32_t* activeIndices = nullptr; // active list pointer
@@ -91,9 +89,6 @@ status_t SoftwareModel::Score(
 
         ++layerIndex;
     }
-
-    profilerDTscStop(&profiler->scoring);
-    profilerDTscStop(&profiler->total);
 
     return (saturationCount > 0) ? GNA_SSATURATE : GNA_SUCCESS;
 }

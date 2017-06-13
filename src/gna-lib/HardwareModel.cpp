@@ -69,7 +69,6 @@ status_t HardwareModel::Score(
 
     auto response = reinterpret_cast<PGNA_CALC_IN>(data);
     auto status = response->status;
-    Expect::True(GNA_SUCCESS == status || GNA_SSATURATE == status, status);
 
     auto perfResults = requestConfiguration.PerfResults;
     if (perfResults)

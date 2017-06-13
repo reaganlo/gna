@@ -90,9 +90,10 @@ status_t RequestHandler::WaitFor(const gna_request_id requestId, const gna_timeo
     {
         auto score_status = future.get();
 
-        profilerDTscStop(&request->Profiler->process);
+        
         auto perfResults = request->PerfResults;
         auto profiler = request->Profiler.get();
+        profilerDTscStop(&profiler->process);
         if (perfResults)
         {
             perfResults->lib.preprocess = profiler->preprocess.passed;
@@ -100,6 +101,8 @@ status_t RequestHandler::WaitFor(const gna_request_id requestId, const gna_timeo
             perfResults->lib.submit     = profiler->submit.passed;
             perfResults->lib.scoring    = profiler->scoring.passed;
             perfResults->lib.total      = profiler->total.passed;
+            perfResults->lib.ioctlSubmit= profiler->ioctlSubmit.passed;
+            perfResults->lib.ioctlWaitOn= profiler->ioctlWaitOn.passed;
             perfResults->total.start    = profiler->submit.start;
             perfResults->total.stop     = profiler->process.stop;
         }
