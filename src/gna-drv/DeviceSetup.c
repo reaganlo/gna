@@ -241,19 +241,24 @@ GetDeviceCapabilities(
     _In_ WDFDEVICE dev,
     _In_ PDEV_CTX  devCtx)
 {
+    UNREFERENCED_PARAMETER(dev);
     UNREFERENCED_PARAMETER(devCtx);
     PAGED_CODE();
 
-    WDF_OBJECT_ATTRIBUTES attributes;
+    /*WDF_OBJECT_ATTRIBUTES attributes;
     WDFMEMORY memory;
     size_t hwid_memory;
-    PVOID hwid_buf;
+    PVOID hwid_buf;*/
     GNA_CPBLTS cpblts;
     RtlZeroMemory(&cpblts, sizeof(GNA_CPBLTS));
 
     cpblts.hwInBuffSize = HwReadInBuffSize(devCtx->hw.regs);
+    // NOTE: temporary workaround for missing HWID
+        // TODO: remove when HWID is assigned
+    cpblts.device_type = GNA_TIGERLAKE;
+    Trace(TLI, T_MEM, "TGL found");
 
-    WDF_OBJECT_ATTRIBUTES_INIT(&attributes);
+    /*WDF_OBJECT_ATTRIBUTES_INIT(&attributes);
     attributes.ParentObject = dev;
     NTSTATUS status = WdfDeviceAllocAndQueryProperty(dev, DevicePropertyHardwareID, NonPagedPoolNx, &attributes, &memory);
     if (!NT_SUCCESS(status))
@@ -299,7 +304,7 @@ GetDeviceCapabilities(
                 cpblts.device_type = GNA_GEMINILAKE;
             }
         }
-    }
+    }*/
     return cpblts;
 }
 
