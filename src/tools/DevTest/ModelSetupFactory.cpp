@@ -24,7 +24,16 @@
 */
 
 #include "ModelSetupFactory.h"
-#include "SetupModelBasic_1.h"
+#include "SetupConvolutionModel.h"
+#include "SetupCopyModel.h"
+#include "SetupDiagonalModel.h"
+#include "SetupGmmModel.h"
+#include "SetupMixModel.h"
+#include "SetupDnnModel_1.h"
+#include "SetupMultibiasModel_1.h"
+#include "SetupPoolingModel.h"
+#include "SetupRecurrentModel.h"
+#include "SetupTransposeModel.h"
 
 IModelSetup::UniquePtr ModelSetupFactory::CreateModel(ModelSetupType ms)
 {
@@ -33,11 +42,83 @@ IModelSetup::UniquePtr ModelSetupFactory::CreateModel(ModelSetupType ms)
     switch (ms)
     {
     default:
-    case ModelSetupBasic_1_1B:
-        ptr = std::make_unique<SetupModelBasic_1>(deviceController, false);
+    case ModelSetupDnn_1_1B:
+        ptr = std::make_unique<SetupDnnModel_1>(deviceController, false, false, false);
         break;
-    case ModelSetupBasic_1_2B:
-        ptr = std::make_unique<SetupModelBasic_1>(deviceController, true);
+    case ModelSetupDnn_1_2B:
+        ptr = std::make_unique<SetupDnnModel_1>(deviceController, true, false, false);
+        break;
+    case ModelSetupDnnAl_1_1B:
+        ptr = std::make_unique<SetupDnnModel_1>(deviceController, false, true, false);
+        break;
+    case ModelSetupDnnAl_1_2B:
+        ptr = std::make_unique<SetupDnnModel_1>(deviceController, true, true, false);
+        break;
+    case ModelSetupDnnPwl_1_1B:
+        ptr = std::make_unique<SetupDnnModel_1>(deviceController, false, false, true);
+        break;
+    case ModelSetupDnnPwl_1_2B:
+        ptr = std::make_unique<SetupDnnModel_1>(deviceController, true, false, true);
+        break;
+    case ModelSetupDnnAlPwl_1_1B:
+        ptr = std::make_unique<SetupDnnModel_1>(deviceController, false, true, true);
+        break;
+    case ModelSetupDnnAlPwl_1_2B:
+        ptr = std::make_unique<SetupDnnModel_1>(deviceController, true, true, true);
+        break;
+    case ModelSetupMultibias_1_1B:
+        ptr = std::make_unique<SetupMultibiasModel_1>(deviceController, false, false);
+        break;
+    case ModelSetupMultibias_1_2B:
+        ptr = std::make_unique<SetupMultibiasModel_1>(deviceController, true, false);
+        break;
+    case ModelSetupMultibiasPwl_1_1B:
+        ptr = std::make_unique<SetupMultibiasModel_1>(deviceController, false, true);
+        break;
+    case ModelSetupMultibiasPwl_1_2B:
+        ptr = std::make_unique<SetupMultibiasModel_1>(deviceController, true, true);
+        break;
+    case ModelSetupConvolution_1:
+        ptr = std::make_unique<SetupConvolutionModel>(deviceController, false);
+        break;
+    case ModelSetupConvolutionPwl_1:
+        ptr = std::make_unique<SetupConvolutionModel>(deviceController, true);
+        break;
+    case ModelSetupPooling_1:
+        ptr = std::make_unique<SetupPoolingModel>(deviceController);
+        break;
+    case ModelSetupRecurrent_1_1B:
+        ptr = std::make_unique<SetupRecurrentModel>(deviceController, false);
+        break;
+    case ModelSetupRecurrent_1_2B:
+        ptr = std::make_unique<SetupRecurrentModel>(deviceController, true);
+        break;
+    case ModelSetupDiagonal_1_1B:
+        ptr = std::make_unique<SetupDiagonalModel>(deviceController, false, false);
+        break;
+    case ModelSetupDiagonal_1_2B:
+        ptr = std::make_unique<SetupDiagonalModel>(deviceController, true, false);
+        break;
+    case ModelSetupDiagonalPwl_1_1B:
+        ptr = std::make_unique<SetupDiagonalModel>(deviceController, false, true);
+        break;
+    case ModelSetupDiagonalPwl_1_2B:
+        ptr = std::make_unique<SetupDiagonalModel>(deviceController, true, true);
+        break;
+    case ModelSetupCopy_1:
+        ptr = std::make_unique<SetupCopyModel>(deviceController);
+        break;
+    case ModelSetupTranspose_1:
+        ptr = std::make_unique<SetupTransposeModel>(deviceController);
+        break;
+    case ModelSetupGmm_1:
+        ptr = std::make_unique<SetupGmmModel>(deviceController, false);
+        break;
+    case ModelSetupGmmAl_1:
+        ptr = std::make_unique<SetupGmmModel>(deviceController, true);
+        break;
+    case ModelSetupMix:
+        ptr = std::make_unique<SetupMixModel>(deviceController);
         break;
     }
     return ptr;

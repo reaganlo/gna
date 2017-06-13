@@ -159,17 +159,39 @@
 
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="$(ROOT_DIR)\src\tools\DevTest\ChainModel.h" />
     <ClInclude Include="$(ROOT_DIR)\src\tools\DevTest\DeviceController.h" />
     <ClInclude Include="$(ROOT_DIR)\src\tools\DevTest\ModelSetupFactory.h" />
     <ClInclude Include="$(ROOT_DIR)\src\tools\DevTest\IModelSetup.h" />
+    <ClInclude Include="$(ROOT_DIR)\src\tools\DevTest\ModelUtilities.h" />
     <ClInclude Include="$(ROOT_DIR)\src\tools\DevTest\Script.h" />
-    <ClInclude Include="$(ROOT_DIR)\src\tools\DevTest\SetupModelBasic_1.h" />
+    <ClInclude Include="$(ROOT_DIR)\src\tools\DevTest\SetupConvolutionModel.h" />
+    <ClInclude Include="$(ROOT_DIR)\src\tools\DevTest\SetupCopyModel.h" />
+    <ClInclude Include="$(ROOT_DIR)\src\tools\DevTest\SetupDiagonalModel.h" />
+    <ClInclude Include="$(ROOT_DIR)\src\tools\DevTest\SetupGmmModel.h" />
+    <ClInclude Include="$(ROOT_DIR)\src\tools\DevTest\SetupMixModel.h" />
+    <ClInclude Include="$(ROOT_DIR)\src\tools\DevTest\SetupDnnModel_1.h" />
+    <ClInclude Include="$(ROOT_DIR)\src\tools\DevTest\SetupMultibiasModel_1.h" />
+    <ClInclude Include="$(ROOT_DIR)\src\tools\DevTest\SetupPoolingModel.h" />
+    <ClInclude Include="$(ROOT_DIR)\src\tools\DevTest\SetupRecurrentModel.h" />
+    <ClInclude Include="$(ROOT_DIR)\src\tools\DevTest\SetupTransposeModel.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="$(ROOT_DIR)\src\tools\DevTest\ChainModel.cpp" />
     <ClCompile Include="$(ROOT_DIR)\src\tools\DevTest\DevTest.cpp" />
     <ClCompile Include="$(ROOT_DIR)\src\tools\DevTest\DeviceController.cpp" />
     <ClCompile Include="$(ROOT_DIR)\src\tools\DevTest\ModelSetupFactory.cpp" />
-    <ClCompile Include="$(ROOT_DIR)\src\tools\DevTest\SetupModelBasic_1.cpp" />
+    <ClCompile Include="$(ROOT_DIR)\src\tools\DevTest\ModelUtilities.cpp" />
+    <ClCompile Include="$(ROOT_DIR)\src\tools\DevTest\SetupConvolutionModel.cpp" />
+    <ClCompile Include="$(ROOT_DIR)\src\tools\DevTest\SetupCopyModel.cpp" />
+    <ClCompile Include="$(ROOT_DIR)\src\tools\DevTest\SetupDiagonalModel.cpp" />
+    <ClCompile Include="$(ROOT_DIR)\src\tools\DevTest\SetupGmmModel.cpp" />
+    <ClCompile Include="$(ROOT_DIR)\src\tools\DevTest\SetupMixModel.cpp" />
+    <ClCompile Include="$(ROOT_DIR)\src\tools\DevTest\SetupDnnModel_1.cpp" />
+    <ClCompile Include="$(ROOT_DIR)\src\tools\DevTest\SetupMultibiasModel_1.cpp" />
+    <ClCompile Include="$(ROOT_DIR)\src\tools\DevTest\SetupPoolingModel.cpp" />
+    <ClCompile Include="$(ROOT_DIR)\src\tools\DevTest\SetupRecurrentModel.cpp" />
+    <ClCompile Include="$(ROOT_DIR)\src\tools\DevTest\SetupTransposeModel.cpp" />
     <ClCompile Include="$(ROOT_DIR)\src\tools\DevTest\Script.cpp" />
   </ItemGroup>
   <ItemGroup>

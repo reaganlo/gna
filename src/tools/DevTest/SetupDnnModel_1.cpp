@@ -29,26 +29,10 @@
 
 #include "gna-api.h"
 
-#include "SetupModelBasic_1.h"
+#include "SetupDnnModel_1.h"
 
 namespace
 {
-#if 1
-#define GROUP_4_INT_16
-#else
-#define GROUP_4_INT_8
-#endif
-
-#if defined GROUP_4_INT_16
-
-typedef int32_t elemBias_t;
-
-#elif defined GROUP_4_INT_8
-
-typedef intel_compound_bias_t elemBias_t;
-
-#endif
-
 const int layersNum = 1;
 const int groupingNum = 4;
 const int inVecSz = 16;
@@ -98,48 +82,14 @@ const int16_t inputs[inVecSz * groupingNum] = {
 };
 
 const intel_bias_t regularBiases[outVecSz*groupingNum] = {
-#ifdef MBIAS_READY
-    5,5,5,5,
-    4,4,4,4,
-    -2,-2,-2,-2,
-    5,5,5,5,
-    -7,-7,-7,-7,
-    -5,-5,-5,-5,
-    4,4,4,4,
-    -1,-1,-1,-1,
-#else
-    5,
-    4,
-    -2,
-    5,
-    -7,
-    -5,
-    4,
-    -1
-#endif
+    5, 4, -2, 5,
+    -7, -5, 4, -1
 };
 
 const  intel_compound_bias_t compoundBiases[outVecSz*groupingNum] =
 {
-#ifdef MBIAS_READY
-    {5,1,{0}},{5,1,{0}},{5,1,{0}},{5,1,{0}},
-    {4,1,{0}},{4,1,{0}},{4,1,{0}},{4,1,{0}},
-    {-2,1,{0}},{-2,1,{0}},{-2,1,{0}},{-2,1,{0}},
-    {5,1,{0}},{5,1,{0}},{5,1,{0}},{5,1,{0}},
-    {-7,1,{0}},{-7,1,{0}},{-7,1,{0}},{-7,1,{0}},
-    {-5,1,{0}},{-5,1,{0}},{-5,1,{0}},{-5,1,{0}},
-    {4,1,{0}},{4,1,{0}},{4,1,{0}},{4,1,{0}},
-    {-1,1,{0}},{-1,1,{0}},{-1,1,{0}},{-1,1,{0}},
-#else
-    { 5,1,{0} },
-    {4,1,{0}},
-    {-2,1,{0}},
-    {5,1,{0}},
-    {-7,1,{0}},
-    {-5,1,{0}},
-    {4,1,{0}},
-    {-1,1,{0}},
-#endif
+    { 5,1,{0} }, {4,1,{0}}, {-2,1,{0}}, {5,1,{0}},
+    {-7,1,{0}}, {-5,1,{0}}, {4,1,{0}}, {-1,1,{0}},
 };
 
 const int32_t ref_output[outVecSz * groupingNum] =
@@ -153,13 +103,24 @@ const int32_t ref_output[outVecSz * groupingNum] =
     99, 144, 38, -63,
     20, 56, -103, 10
 };
+
+const uint32_t alIndices[outVecSz / 2]
+{
+    0, 2, 4, 7
+};
 }
 
-SetupModelBasic_1::SetupModelBasic_1(DeviceController & deviceCtrl, bool wght2B)
+SetupDnnModel_1::SetupDnnModel_1(DeviceController & deviceCtrl, bool wght2B, bool activeListEn, bool pwlEn)
     : deviceController{deviceCtrl},
-    weightsAre2Bytes{wght2B}
+    weightsAre2Bytes{wght2B},
+    activeListEnabled{activeListEn},
+    pwlEnabled{pwlEn}
 {
-    sampleAffineLayer(nnet);
+    nnet.nGroup = groupingNum;
+    nnet.nLayers = layersNum;
+    nnet.pLayers = (intel_nnet_layer_t*)calloc(nnet.nLayers, sizeof(intel_nnet_layer_t));
+
+    sampleAffineLayer();
 
     deviceController.ModelCreate(&nnet, &modelId);
 
@@ -167,15 +128,22 @@ SetupModelBasic_1::SetupModelBasic_1(DeviceController & deviceCtrl, bool wght2B)
 
     deviceController.BufferAdd(configId, GNA_IN, 0, inputBuffer);
     deviceController.BufferAdd(configId, GNA_OUT, 0, outputBuffer);
+
+    if (activeListEnabled)
+    {
+        deviceController.ActiveListAdd(configId, 0, indicesCount, indices);
+    }
 }
 
-SetupModelBasic_1::~SetupModelBasic_1()
+SetupDnnModel_1::~SetupDnnModel_1()
 {
     deviceController.ModelRelease(modelId);
     deviceController.Free();
+
+    free(nnet.pLayers);
 }
 
-void SetupModelBasic_1::checkReferenceOutput() const
+void SetupDnnModel_1::checkReferenceOutput() const
 {
     for (int i = 0; i < sizeof(ref_output) / sizeof(int32_t); ++i)
     {
@@ -188,19 +156,25 @@ void SetupModelBasic_1::checkReferenceOutput() const
     }
 }
 
-void SetupModelBasic_1::sampleAffineLayer(intel_nnet_type_t& nnet)
+void SetupDnnModel_1::sampleAffineLayer()
 {
-    nnet.nGroup = groupingNum;
-    nnet.nLayers = layersNum;
-    nnet.pLayers = (intel_nnet_layer_t*)calloc(nnet.nLayers, sizeof(intel_nnet_layer_t));
-
     int buf_size_weights = weightsAre2Bytes ? ALIGN64(sizeof(weights_2B)) : ALIGN64(sizeof(weights_1B));
     int buf_size_inputs = ALIGN64(sizeof(inputs));
     int buf_size_biases = weightsAre2Bytes ? ALIGN64(sizeof(regularBiases)) : ALIGN64(sizeof(compoundBiases));
     int buf_size_outputs = ALIGN64(outVecSz * groupingNum * sizeof(int32_t));
     int buf_size_tmp_outputs = ALIGN64(outVecSz * groupingNum * sizeof(int32_t));
+    int buf_size_pwl = ALIGN64(nSegments * sizeof(intel_pwl_segment_t));
 
     uint32_t bytes_requested = buf_size_weights + buf_size_inputs + buf_size_biases + buf_size_outputs + buf_size_tmp_outputs;
+    if (activeListEnabled)
+    {
+        indicesCount = outVecSz / 2; 
+        bytes_requested += indicesCount * sizeof(uint32_t);
+    }
+    if (pwlEnabled)
+    {
+        bytes_requested += buf_size_pwl;
+    }
     uint32_t bytes_granted;
 
     uint8_t* pinned_mem_ptr = deviceController.Alloc(bytes_requested, &bytes_granted);
@@ -234,13 +208,32 @@ void SetupModelBasic_1::sampleAffineLayer(intel_nnet_type_t& nnet)
     outputBuffer = pinned_mem_ptr;
     pinned_mem_ptr += buf_size_outputs;
 
+    if (activeListEnabled)
+    {
+        size_t indicesSize = indicesCount * sizeof(uint32_t);
+        indices = (uint32_t*)pinned_mem_ptr;
+        memcpy(indices, alIndices, indicesSize);
+        pinned_mem_ptr += indicesSize;
+    }
+
+    void *tmp_outputs = nullptr;
+    if (pwlEnabled)
+    {
+        tmp_outputs = pinned_mem_ptr;
+        pinned_mem_ptr += buf_size_tmp_outputs;
+
+        intel_pwl_segment_t *pinned_pwl = reinterpret_cast<intel_pwl_segment_t*>(pinned_mem_ptr);
+        pinned_mem_ptr += buf_size_pwl;
+
+        pwl.nSegments = nSegments;
+        pwl.pSegments = pinned_pwl;
+        samplePwl(pwl.pSegments, pwl.nSegments);
+    }
+
     affine_func.nBytesPerWeight = weightsAre2Bytes ? 2 : 1;
     affine_func.nBytesPerBias = weightsAre2Bytes ? sizeof(intel_bias_t) : sizeof(intel_compound_bias_t);
     affine_func.pWeights = pinned_weights;
     affine_func.pBiases = pinned_biases;
-
-    pwl.nSegments = 0;
-    pwl.pSegments = NULL;
 
     affine_layer.affine = affine_func;
     affine_layer.pwl = pwl;
@@ -250,12 +243,35 @@ void SetupModelBasic_1::sampleAffineLayer(intel_nnet_type_t& nnet)
     nnet.pLayers[0].nOutputColumns = nnet.nGroup;
     nnet.pLayers[0].nOutputRows = outVecSz;
     nnet.pLayers[0].nBytesPerInput = sizeof(int16_t);
-    nnet.pLayers[0].nBytesPerOutput = sizeof(int32_t);
     nnet.pLayers[0].nBytesPerIntermediateOutput = 4;
     nnet.pLayers[0].nLayerKind = INTEL_AFFINE;
     nnet.pLayers[0].type = INTEL_INPUT_OUTPUT;
     nnet.pLayers[0].pLayerStruct = &affine_layer;
     nnet.pLayers[0].pInputs = nullptr;
-    nnet.pLayers[0].pOutputsIntermediate = nullptr;
     nnet.pLayers[0].pOutputs = nullptr;
+
+    if (pwlEnabled)
+    {
+        nnet.pLayers[0].pOutputsIntermediate = tmp_outputs;
+        nnet.pLayers[0].nBytesPerOutput = sizeof(int16_t);
+    }
+    else
+    {
+        nnet.pLayers[0].pOutputsIntermediate = nullptr;
+        nnet.pLayers[0].nBytesPerOutput = sizeof(int32_t);
+    }
+}
+
+void SetupDnnModel_1::samplePwl(intel_pwl_segment_t *segments, uint32_t nSegments)
+{
+    auto xBase = INT32_MIN;
+    auto xBaseInc = UINT32_MAX / nSegments;
+    auto yBase = INT32_MAX;
+    auto yBaseInc = UINT16_MAX / nSegments;
+    for (auto i = 0ui32; i < nSegments; i++, xBase += xBaseInc, yBase += yBaseInc)
+    {
+        segments[i].xBase = xBase;
+        segments[i].yBase = yBase;
+        segments[i].slope = 1;
+    }
 }

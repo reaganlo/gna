@@ -33,7 +33,7 @@ using namespace GNA;
 
 GmmParams::GmmParams(const gna_gmm_config &config, const uint32_t inputElementCount)
 {
-    VarianceSize = config.mode + 1;
+    VarianceSize = (GNA_MAXMIX16 == config.mode) ? sizeof(uint16_t) : sizeof(uint8_t);
     if (GMM_LAYOUT_FLAT == config.layout)
     {
         MeanSetOffsetSize = config.mixtureComponentCount * inputElementCount * GMM_MEAN_VALUE_SIZE;

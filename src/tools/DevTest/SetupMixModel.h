@@ -23,30 +23,41 @@
  in any way.
 */
 
-#pragma once
+#include "IModelSetup.h"
+#include "DeviceController.h"
 
-#include "gna-api.h"
-
-class DeviceController
+class SetupMixModel : public IModelSetup
 {
 public:
-    DeviceController();
-    ~DeviceController();
+    gna_model_id ModelId() const override
+    {
+        return 0;
+    }
 
-    uint8_t * Alloc(uint32_t sizeRequested, uint32_t * sizeGranted);
-    void Free();
+    gna_request_cfg_id ConfigId(int /*index*/) const override
+    {
+        // this model has only one Request Configuration
+        return configId;
+    }
 
-    void ModelCreate(const gna_model *, gna_model_id *);
-    void ModelRelease(gna_model_id);
+    SetupMixModel(DeviceController & deviceCtrl);
 
-    gna_request_cfg_id ConfigAdd(gna_model_id);
+    ~SetupMixModel();
 
-    void BufferAdd(gna_request_cfg_id, gna_buffer_type, uint32_t layerIndex, void * address);
-
-    void RequestEnqueue(gna_request_cfg_id, gna_acceleration, gna_request_id *);
-
-    void ActiveListAdd(gna_request_cfg_id configId, uint32_t layerIndex, uint32_t indicesCount, uint32_t* indices);
+    void checkReferenceOutput() const override;
 
 private:
-    gna_device_id gnaHandle;
+    DeviceController & deviceController;
+
+    gna_model_id modelId;
+    gna_request_cfg_id configId;
+    bool weightsAre2Bytes;
+
+    intel_nnet_type_t nnet;
+    intel_affine_func_t affine_func;
+    intel_pwl_func_t pwl;
+    intel_affine_layer_t affine_layer;
+
+    void * inputBuffer = nullptr;
+    void * outputBuffer = nullptr;
 };

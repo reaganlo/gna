@@ -31,8 +31,44 @@
 
 enum ModelSetupType
 {
-    ModelSetupBasic_1_1B,
-    ModelSetupBasic_1_2B
+    ModelSetupDnn_1_1B,
+    ModelSetupDnn_1_2B,
+    ModelSetupDnnAl_1_1B,
+    ModelSetupDnnAl_1_2B,
+    ModelSetupDnnPwl_1_1B,
+    ModelSetupDnnPwl_1_2B,
+    ModelSetupDnnAlPwl_1_1B,
+    ModelSetupDnnAlPwl_1_2B,
+
+    ModelSetupMultibias_1_1B,
+    ModelSetupMultibias_1_2B,
+    ModelSetupMultibiasAl_1_1B,
+    ModelSetupMultibiasAl_1_2B,
+    ModelSetupMultibiasPwl_1_1B,
+    ModelSetupMultibiasPwl_1_2B,
+    ModelSetupMultibiasAlPwl_1_1B,
+    ModelSetupMultibiasAlPwl_1_2B,
+
+    ModelSetupRecurrent_1_1B,
+    ModelSetupRecurrent_1_2B,
+
+    ModelSetupDiagonal_1_1B,
+    ModelSetupDiagonal_1_2B,
+    ModelSetupDiagonalPwl_1_1B,
+    ModelSetupDiagonalPwl_1_2B,
+
+    ModelSetupConvolution_1,
+    ModelSetupConvolutionPwl_1,
+
+    ModelSetupPooling_1,
+
+    ModelSetupGmm_1,
+    ModelSetupGmmAl_1,
+
+    ModelSetupCopy_1,
+    ModelSetupTranspose_1,
+
+    ModelSetupMix
 };
 
 class IModelSetup

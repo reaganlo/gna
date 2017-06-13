@@ -40,15 +40,80 @@ public:
 
     void PrepareScenario()
     {
-        script.actions.emplace_back(Action::LoadModel, ModelSetupBasic_1_1B, 0, 0);
-        script.actions.emplace_back(Action::Score, ModelSetupBasic_1_1B, 0, 0);
-        script.actions.emplace_back(Action::CheckReferenceOutput, ModelSetupBasic_1_1B, 0, 0);
-        script.actions.emplace_back(Action::CloseModel, ModelSetupBasic_1_1B, 0, 0);
+        //script.actions.emplace_back(Action::LoadModel, ModelSetupMix, 0, 0);
+        //script.actions.emplace_back(Action::Score, ModelSetupMix, 0, 0);
+        //script.actions.emplace_back(Action::CheckReferenceOutput, ModelSetupMix, 0, 0);
+        //script.actions.emplace_back(Action::CloseModel, ModelSetupMix, 0, 0);
 
-        script.actions.emplace_back(Action::LoadModel, ModelSetupBasic_1_2B, 0, 0);
-        script.actions.emplace_back(Action::Score, ModelSetupBasic_1_2B, 0, 0);
-        script.actions.emplace_back(Action::CheckReferenceOutput, ModelSetupBasic_1_2B, 0, 0);
-        script.actions.emplace_back(Action::CloseModel, ModelSetupBasic_1_2B, 0, 0);
+        //script.actions.emplace_back(Action::LoadModel, ModelSetupMultibias_1_2B, 0, 0);
+        //script.actions.emplace_back(Action::Score, ModelSetupMultibias_1_2B, 0, 0);
+        //script.actions.emplace_back(Action::CheckReferenceOutput, ModelSetupMultibias_1_2B, 0, 0);
+        //script.actions.emplace_back(Action::CloseModel, ModelSetupMultibias_1_2B, 0, 0);
+
+        //script.actions.emplace_back(Action::LoadModel, ModelSetupMultibias_1_1B, 0, 0);
+        //script.actions.emplace_back(Action::Score, ModelSetupMultibias_1_1B, 0, 0);
+        //script.actions.emplace_back(Action::CheckReferenceOutput, ModelSetupMultibias_1_1B, 0, 0);
+        //script.actions.emplace_back(Action::CloseModel, ModelSetupMultibias_1_1B, 0, 0);
+
+        //script.actions.emplace_back(Action::LoadModel, ModelSetupDnnAl_1_1B, 0, 0);
+        //script.actions.emplace_back(Action::Score, ModelSetupDnnAl_1_1B, 0, 0);
+        //script.actions.emplace_back(Action::CheckReferenceOutput, ModelSetupDnnAl_1_1B, 0, 0);
+        //script.actions.emplace_back(Action::CloseModel, ModelSetupDnnAl_1_1B, 0, 0);
+
+        //script.actions.emplace_back(Action::LoadModel, ModelSetupDnn_1_2B, 0, 0);
+        //script.actions.emplace_back(Action::Score, ModelSetupDnn_1_2B, 0, 0);
+        //script.actions.emplace_back(Action::CheckReferenceOutput, ModelSetupDnn_1_2B, 0, 0);
+        //script.actions.emplace_back(Action::CloseModel, ModelSetupDnn_1_2B, 0, 0);
+
+        //script.actions.emplace_back(Action::LoadModel, ModelSetupCopy_1, 0, 0);
+        //script.actions.emplace_back(Action::Score, ModelSetupCopy_1, 0, 0);
+        //script.actions.emplace_back(Action::CheckReferenceOutput, ModelSetupCopy_1, 0, 0);
+        //script.actions.emplace_back(Action::CloseModel, ModelSetupCopy_1, 0, 0);
+
+        //script.actions.emplace_back(Action::LoadModel, ModelSetupTranspose_1, 0, 0);
+        //script.actions.emplace_back(Action::Score, ModelSetupTranspose_1, 0, 0);
+        //script.actions.emplace_back(Action::CheckReferenceOutput, ModelSetupTranspose_1, 0, 0);
+        //script.actions.emplace_back(Action::CloseModel, ModelSetupTranspose_1, 0, 0);
+
+        //script.actions.emplace_back(Action::LoadModel, ModelSetupDiagonal_1_2B, 0, 0);
+        //script.actions.emplace_back(Action::Score, ModelSetupDiagonal_1_2B, 0, 0);
+        //script.actions.emplace_back(Action::CheckReferenceOutput, ModelSetupDiagonal_1_2B, 0, 0);
+        //script.actions.emplace_back(Action::CloseModel, ModelSetupDiagonal_1_2B, 0, 0);
+
+        //script.actions.emplace_back(Action::LoadModel, ModelSetupDiagonal_1_1B, 0, 0);
+        //script.actions.emplace_back(Action::Score, ModelSetupDiagonal_1_1B, 0, 0);
+        //script.actions.emplace_back(Action::CheckReferenceOutput, ModelSetupDiagonal_1_1B, 0, 0);
+        //script.actions.emplace_back(Action::CloseModel, ModelSetupDiagonal_1_1B, 0, 0);
+
+        //script.actions.emplace_back(Action::LoadModel, ModelSetupRecurrent_1_2B, 0, 0);
+        //script.actions.emplace_back(Action::Score, ModelSetupRecurrent_1_2B, 0, 0);
+        //script.actions.emplace_back(Action::CheckReferenceOutput, ModelSetupRecurrent_1_2B, 0, 0);
+        //script.actions.emplace_back(Action::CloseModel, ModelSetupRecurrent_1_2B, 0, 0);
+
+        //script.actions.emplace_back(Action::LoadModel, ModelSetupRecurrent_1_1B, 0, 0);
+        //script.actions.emplace_back(Action::Score, ModelSetupRecurrent_1_1B, 0, 0);
+        //script.actions.emplace_back(Action::CheckReferenceOutput, ModelSetupRecurrent_1_1B, 0, 0);
+        //script.actions.emplace_back(Action::CloseModel, ModelSetupRecurrent_1_1B, 0, 0);
+
+        //script.actions.emplace_back(Action::LoadModel, ModelSetupConvolution_1, 0, 0);
+        //script.actions.emplace_back(Action::Score, ModelSetupConvolution_1, 0, 0);
+        //script.actions.emplace_back(Action::CheckReferenceOutput, ModelSetupConvolution_1, 0, 0);
+        //script.actions.emplace_back(Action::CloseModel, ModelSetupConvolution_1, 0, 0);
+
+        //script.actions.emplace_back(Action::LoadModel, ModelSetupPooling_1, 0, 0);
+        //script.actions.emplace_back(Action::Score, ModelSetupPooling_1, 0, 0);
+        //script.actions.emplace_back(Action::CheckReferenceOutput, ModelSetupPooling_1, 0, 0);
+        //script.actions.emplace_back(Action::CloseModel, ModelSetupPooling_1, 0, 0);
+
+        script.actions.emplace_back(Action::LoadModel, ModelSetupGmm_1, 0, 0);
+        script.actions.emplace_back(Action::Score, ModelSetupGmm_1, 0, 0);
+        script.actions.emplace_back(Action::CheckReferenceOutput, ModelSetupGmm_1, 0, 0);
+        script.actions.emplace_back(Action::CloseModel, ModelSetupGmm_1, 0, 0);
+
+        //script.actions.emplace_back(Action::LoadModel, ModelSetupGmmAl_1, 0, 0);
+        //script.actions.emplace_back(Action::Score, ModelSetupGmmAl_1, 0, 0);
+        //script.actions.emplace_back(Action::CheckReferenceOutput, ModelSetupGmmAl_1, 0, 0);
+        //script.actions.emplace_back(Action::CloseModel, ModelSetupGmmAl_1, 0, 0);
     }
 
     void PrepareModels()
@@ -93,7 +158,7 @@ public:
 
             case Action::Score:
                 gna_request_id requestId;
-                deviceController.RequestEnqueue(modelSetup->ConfigId(action->configIndex), GNA_SOFTWARE, &requestId);
+                deviceController.RequestEnqueue(modelSetup->ConfigId(action->configIndex), GNA_GENERIC, &requestId);
                 GnaRequestWait(requestId, 5*60*1000);
                 break;
 

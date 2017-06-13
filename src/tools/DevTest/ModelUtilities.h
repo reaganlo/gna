@@ -1,3 +1,4 @@
+
 /*
  INTEL CONFIDENTIAL
  Copyright 2017 Intel Corporation.
@@ -23,43 +24,31 @@
  in any way.
 */
 
-#include "IModelSetup.h"
-#include "DeviceController.h"
+#pragma once
 
-class SetupModelBasic_1 : public IModelSetup
+#include <stdint.h>
+
+#include "gna-api.h"
+
+class ModelUtilities
 {
 public:
-    gna_model_id ModelId() const override
-    {
-        return 0;
-    }
+    static size_t CalculateDnnSize(uint32_t vectorCount, uint32_t inputElementCount, uint32_t outputElementCount,
+                                   uint32_t bytesPerWeight, uint32_t nSegments);
 
-    gna_request_cfg_id ConfigId(int /*index*/) const override
-    {
-        // this model has only one Request Configuration
-        return configId;
-    }
+    static size_t CalculateMultibiasSize(uint32_t vectorCount, uint32_t inputElementCount, uint32_t outputElementCount,
+                                   uint32_t bytesPerWeight, uint32_t nSegments);
 
-    SetupModelBasic_1(DeviceController & deviceCtrl, bool wght2B);
+    static size_t CalculateRnnSize(uint32_t vectorCount, uint32_t inputElementCount, uint32_t outputElementCount,
+                                   uint32_t bytesPerWeight, uint32_t nSegments);
 
-    ~SetupModelBasic_1();
+    static size_t CalculateCnnSize(uint32_t inputElementCount, uint32_t outputsPerFilter, 
+                                   uint32_t nFilters, uint32_t nFilterCoeficcients, uint32_t nSegments);
 
-    void checkReferenceOutput() const override;
+    static size_t CalculateSimpleSize(uint32_t vectorCount, uint32_t inputElementCount, uint32_t outputElementCount);
 
-private:
-    void sampleAffineLayer(intel_nnet_type_t& nnet);
+    static size_t CalculateGmmSize(uint32_t vectorCount, uint32_t stateCount, uint32_t mixtureCount, uint32_t inputElementCount, gna_gmm_mode gmmMode);
 
-    DeviceController & deviceController;
-
-    gna_model_id modelId;
-    gna_request_cfg_id configId;
-    bool weightsAre2Bytes;
-
-    intel_nnet_type_t nnet;
-    intel_affine_func_t affine_func;
-    intel_pwl_func_t pwl;
-    intel_affine_layer_t affine_layer;
-
-    void * inputBuffer = nullptr;
-    void * outputBuffer = nullptr;
+    static void GeneratePwlSegments(intel_pwl_segment_t *segments, uint32_t nSegments);
+                            
 };

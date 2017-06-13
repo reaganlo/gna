@@ -98,6 +98,15 @@ void DeviceController::BufferAdd(gna_request_cfg_id configId, gna_buffer_type ty
     }
 }
 
+void DeviceController::ActiveListAdd(gna_request_cfg_id configId, uint32_t layerIndex, uint32_t indicesCount, uint32_t* indices)
+{
+    intel_gna_status_t status = GnaRequestConfigActiveListAdd(configId, layerIndex, indicesCount, indices);
+    if (GNA_SUCCESS != status)
+    {
+        throw std::exception("ActiveList add failed");
+    }
+}
+
 void DeviceController::RequestEnqueue(gna_request_cfg_id configId, gna_acceleration accelerationIn, gna_request_id * requestId)
 {
     intel_gna_status_t status = GnaRequestEnqueue(configId, accelerationIn, requestId);
