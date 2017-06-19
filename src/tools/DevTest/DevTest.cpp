@@ -60,10 +60,10 @@ public:
         //script.actions.emplace_back(Action::CheckReferenceOutput, ModelSetupDnnAl_1_1B, 0, 0);
         //script.actions.emplace_back(Action::CloseModel, ModelSetupDnnAl_1_1B, 0, 0);
 
-        //script.actions.emplace_back(Action::LoadModel, ModelSetupDnn_1_2B, 0, 0);
-        //script.actions.emplace_back(Action::Score, ModelSetupDnn_1_2B, 0, 0);
-        //script.actions.emplace_back(Action::CheckReferenceOutput, ModelSetupDnn_1_2B, 0, 0);
-        //script.actions.emplace_back(Action::CloseModel, ModelSetupDnn_1_2B, 0, 0);
+        script.actions.emplace_back(Action::LoadModel, ModelSetupDnn_1_2B, 0, 0);
+        script.actions.emplace_back(Action::Score, ModelSetupDnn_1_2B, 0, 0);
+        script.actions.emplace_back(Action::CheckReferenceOutput, ModelSetupDnn_1_2B, 0, 0);
+        script.actions.emplace_back(Action::CloseModel, ModelSetupDnn_1_2B, 0, 0);
 
         //script.actions.emplace_back(Action::LoadModel, ModelSetupCopy_1, 0, 0);
         //script.actions.emplace_back(Action::Score, ModelSetupCopy_1, 0, 0);
@@ -105,10 +105,10 @@ public:
         //script.actions.emplace_back(Action::CheckReferenceOutput, ModelSetupPooling_1, 0, 0);
         //script.actions.emplace_back(Action::CloseModel, ModelSetupPooling_1, 0, 0);
 
-        script.actions.emplace_back(Action::LoadModel, ModelSetupGmm_1, 0, 0);
-        script.actions.emplace_back(Action::Score, ModelSetupGmm_1, 0, 0);
-        script.actions.emplace_back(Action::CheckReferenceOutput, ModelSetupGmm_1, 0, 0);
-        script.actions.emplace_back(Action::CloseModel, ModelSetupGmm_1, 0, 0);
+        //script.actions.emplace_back(Action::LoadModel, ModelSetupGmm_1, 0, 0);
+        //script.actions.emplace_back(Action::Score, ModelSetupGmm_1, 0, 0);
+        //script.actions.emplace_back(Action::CheckReferenceOutput, ModelSetupGmm_1, 0, 0);
+        //script.actions.emplace_back(Action::CloseModel, ModelSetupGmm_1, 0, 0);
 
         //script.actions.emplace_back(Action::LoadModel, ModelSetupGmmAl_1, 0, 0);
         //script.actions.emplace_back(Action::Score, ModelSetupGmmAl_1, 0, 0);

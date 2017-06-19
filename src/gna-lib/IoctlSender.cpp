@@ -100,6 +100,23 @@ void IoctlSender::IoctlSend(const DWORD code, LPVOID const inbuf, const DWORD in
     }
 }
 
+void IoctlSender::IoctlSendEx(const DWORD code, LPVOID const inbuf, const DWORD inlen, LPVOID const outbuf, const DWORD outlen, LPOVERLAPPED overlappedEx)
+{
+    ZeroMemory(overlappedEx, sizeof(OVERLAPPED));
+
+    overlappedEx->hEvent = deviceEvent;
+    auto bytesRead = DWORD{0};
+
+    auto ioResult = DeviceIoControl(deviceHandle, code, inbuf, inlen, outbuf, outlen, &bytesRead, overlappedEx);
+    checkStatus(ioResult);
+
+}
+
+void IoctlSender::WaitOverlapped(LPOVERLAPPED overlappedEx)
+{
+    wait(overlappedEx, (DRV_RECOVERY_TIMEOUT + 15) * 1000);
+}
+
 void IoctlSender::Submit(LPVOID const inbuf, const DWORD inlen, RequestProfiler * const profiler)
 {
     auto ioHandle = OVERLAPPED{0};

@@ -132,7 +132,7 @@ MemoryMap(
     {
         Trace(TLE, T_EXIT, "%!FUNC!: CheckMapConfigParameters failed with %d", sts);
         EventWriteMemoryMapFail(NULL, status);
-        return status;
+        goto mem_map_error;
     }
 
     pDmaAdapter = WdfDmaEnablerWdmGetDmaAdapter(devCtx->cfg.dmaEnabler, WdfDmaDirectionReadFromDevice);
@@ -312,6 +312,13 @@ mem_map_error:
     else
     {
         EventWriteMemoryMapSuccess(NULL);
+    }
+
+    if (appCtx->notifyRequest != WDF_NO_HANDLE)
+    {
+        WdfRequestComplete(appCtx->notifyRequest, status);
+        appCtx->notifyRequest = WDF_NO_HANDLE;
+        Trace(TLI, T_EXIT, "Notify request is completed with status: %d", status);
     }
 
     return status;

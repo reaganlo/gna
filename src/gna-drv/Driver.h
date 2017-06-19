@@ -107,6 +107,7 @@ typedef struct _MODEL_CTX
 
 typedef struct _APP_CTX
 {
+    WDFREQUEST notifyRequest;               // request to be completed to notify user application after memory map
     PMODEL_CTX models[APP_MODELS_LIMIT];
 } APP_CTX, *PAPP_CTX;
 

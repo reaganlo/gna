@@ -82,6 +82,10 @@ public:
 
     void IoctlSend(const DWORD code, LPVOID const inbuf, const DWORD inlen, LPVOID const outbuf, const DWORD outlen, BOOLEAN async = FALSE);
 
+    void IoctlSendEx(const DWORD code, LPVOID const inbuf, const DWORD inlen, LPVOID const outbuf, const DWORD outlen, LPOVERLAPPED overlappedEx);
+
+    void WaitOverlapped(LPOVERLAPPED overlappedEx);
+
     void IoctlSender::Submit(LPVOID const inbuf, const DWORD inlen, RequestProfiler * const profiler);
 
 private:

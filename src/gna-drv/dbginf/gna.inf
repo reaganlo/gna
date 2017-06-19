@@ -38,23 +38,11 @@ DriverVer=
 ;==============================================================================
 
 [Manufacturer]
-%Intel%=Intel, NT$ARCH$, NTx86.6.2, NTamd64.6.2, NTx86.10.0, NTamd64.10.0
+%Intel%=Intel, NT$ARCH$
 
 [Intel.NT$ARCH$]
 %IntelGNA.DeviceDesc%=IntelGNA_Install, PCI\VEN_8086&DEV_5A11   ;GNA CNL
 %IntelGNA.DeviceDesc%=IntelGNA_Install, PCI\VEN_8086&DEV_3190   ;GNA GLK
-
-[Intel.NTx86.6.2]
-; Prevent install on Win8.0+ (x86)
-
-[Intel.NTamd64.6.2]
-; Prevent install on Win8.0+ (amd64)
-
-[Intel.NTx86.10.0]
-; Prevent install on Win10.0+ (x86)
-
-[Intel.NTamd64.10.0]
-; Prevent install on Win10.0+ (amd64)
 
 ;==============================================================================
 ; Class section

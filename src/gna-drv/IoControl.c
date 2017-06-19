@@ -59,6 +59,15 @@ IoctlMemUnmap(
     _Inout_ WDFREQUEST  request);
 
 /**
+ * Stores request for later notification
+ * @devCtx              device context
+ * @request             ioctl request
+ */
+static VOID
+IoctlNotify(
+    _Inout_ WDFREQUEST  request);
+
+/**
  * Reads device capabilities from device config
  * @devCtx              device context
  * @request             ioctl request
@@ -140,6 +149,10 @@ IoctlDispatcher(
 
     case GNA_IOCTL_CPBLTS:
         IoctlGetCapabilities(devCtx, request);
+        break;
+
+    case GNA_IOCTL_NOTIFY:
+        IoctlNotify(request);
         break;
 
 #ifdef DRV_DEBUG_INTERFACE
@@ -271,6 +284,22 @@ IoctlMemUnmap(
         // complete unmap request in default queue
         WdfRequestComplete(unmapReq, status);
     }
+}
+
+static VOID
+IoctlNotify(
+    _Inout_ WDFREQUEST  request)
+{
+    TraceEntry(TLI, T_ENT);
+
+    PAPP_CTX appCtx = NULL;
+
+    appCtx = GetFileContext(WdfRequestGetFileObject(request));
+    appCtx->notifyRequest = request;
+
+    Trace(TLI, T_EXIT, "Notify request stored in application context");
+
+    return;
 }
 
 static VOID

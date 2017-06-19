@@ -459,7 +459,7 @@ ScoreStart(
         goto cleanup;
     }
     modelCtx = appCtx->models[input->modelId];
-    if (0 == modelCtx->desc.va->mmu_config.vamaxaddr)
+    if (NULL == modelCtx)
     {
         TraceFailMsg(TLI, T_MEM, "Application has NOT mapped memory!", status);
         goto cleanup;

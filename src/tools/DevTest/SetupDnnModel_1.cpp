@@ -229,6 +229,11 @@ void SetupDnnModel_1::sampleAffineLayer()
         pwl.pSegments = pinned_pwl;
         samplePwl(pwl.pSegments, pwl.nSegments);
     }
+    else
+    {
+        pwl.nSegments = 0;
+        pwl.pSegments = nullptr;
+    }
 
     affine_func.nBytesPerWeight = weightsAre2Bytes ? 2 : 1;
     affine_func.nBytesPerBias = weightsAre2Bytes ? sizeof(intel_bias_t) : sizeof(intel_compound_bias_t);

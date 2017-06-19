@@ -65,6 +65,9 @@ void Memory::Map(gna_model_id model_id)
     if (mapped)
         throw GnaException(GNA_UNKNOWN_ERROR);
 
+    OVERLAPPED notifyOverlapped;
+    sender.IoctlSendEx(GNA_IOCTL_NOTIFY, nullptr, 0, nullptr, 0, &notifyOverlapped);
+
     modelId = static_cast<uint64_t>(model_id);
 
     // write model id in user buffer
@@ -78,6 +81,8 @@ void Memory::Map(gna_model_id model_id)
         buffer,
         size,
         TRUE);
+
+    sender.WaitOverlapped(&notifyOverlapped);
 
     mapped = true;
 }
