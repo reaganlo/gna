@@ -34,7 +34,7 @@ using namespace GNA;
 RnnLayer::RnnLayer(nn_layer const * const layer) :
     Layer(layer),
     Affine{AffineFunction::Create(layer->nLayerKind, layer->pLayerStruct,
-        AffineBaseConfig{Output.ElementCount, Input.VectorCount, Input.ElementCount, Input.Buffer, Output.Buffer})},
+        AffineBaseConfig{Output.ElementCount, Input.VectorCount, Input.ElementCount, Input.Buffer, Output.ScratchPad})},
     // RNN has only 2B output with Activation always enabled
     Activation(ActivationFunction::Create(layer->nLayerKind, layer->pLayerStruct, true,
         Output.ScratchPad, PwlOutputConfig{})),
@@ -77,7 +77,6 @@ void RnnLayer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const
     if(!configs.Recurrent)
         configs.Recurrent = std::make_unique<RecurrentConfig>(rnnHiddenConfig);
     configs.Recurrent->input = inputBuffer;
-    configs.Recurrent->outputActivated = outputBuffer;
 
     if (outputBuffer)
     {

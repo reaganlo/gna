@@ -64,7 +64,7 @@ FeatureMaps::FeatureMaps(const nn_layer_conv * sourceLayer) :
 }
 
 ConvolutionFunction::ConvolutionFunction(const nn_layer_conv * sourceLayer, const uint32_t inputElementCount,
-    int16_t const * const inputs, int16_t * const outputs) :
+    int16_t const * const inputs, int32_t * const outputs) :
     Filters{ sourceLayer, inputElementCount },
     FeatureMaps{ sourceLayer },
     OutputElementsCount{ (inputElementCount - Filters.CoefficientCount) / FeatureMaps.Stride + 1 },
@@ -120,20 +120,15 @@ void PoolingFunction::Compute(const ConvolutionConfig * convolutionConfig, accel
 
 CnnLayer::CnnLayer(nn_layer const * const layer) :
     Layer(layer),
-    // CNN has only 2B output with Activation always enabled
     Activation(ActivationFunction::Create(layer->nLayerKind, layer->pLayerStruct, false,
         Output.ScratchPad,
         PwlOutputConfig{0, Output.VectorCount - 1, 0, Output.ElementCount - 1, Output.ElementCount, Output.Buffer})),
     Convolution{static_cast<const nn_layer_conv*>(layer->pLayerStruct), Input.ElementCount, Input.Buffer,
-        Activation ? reinterpret_cast<int16_t * const>(Output.ScratchPad) : Output.Buffer},
+        Activation ? Output.ScratchPad : Output.Buffer},
     Pooling{static_cast<const nn_layer_conv*>(layer->pLayerStruct)}
 {
     Expect::True(Input.VectorCount == 1, XNN_ERR_GROUPING);
     Expect::True(Input.VectorCount == Output.VectorCount, XNN_ERR_GROUPING);
-    if (INTEL_NO_POOLING != Pooling.Type)
-    {
-        Expect::True(nullptr != Activation, XNN_ERR_PWL_SEGMENTS); // Activation is required for cnn with pooling
-    }
     Output.SetOutputMode(Activation.operator bool(), layer->nBytesPerOutput);
 
     if (INTEL_NO_POOLING == Pooling.Type)
@@ -157,6 +152,7 @@ CnnLayer::CnnLayer(nn_layer const * const layer) :
     }
     else
     {
+        Expect::True(nullptr != Activation, XNN_ERR_PWL_SEGMENTS); // Activation is required for cnn with pooling
         Layer::ComputeHidden = [this](acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount)
         {this->computeHiddenPool(accel, fvBuffers, saturationCount); };
 
@@ -182,7 +178,7 @@ void CnnLayer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const
         configs.Convolution = Convolution.GetRunConfig(inputBuffer, filterOutputBuffer);
         if (Activation)
         {
-        configs.PwlOutput = Activation->GetOutputConfig(pwlOutputBuffer);
+            configs.PwlOutput = Activation->GetOutputConfig(pwlOutputBuffer);
         }
     }
     else

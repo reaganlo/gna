@@ -57,7 +57,7 @@ struct FeatureMaps
 struct ConvolutionFunction
 {
     ConvolutionFunction(const nn_layer_conv *sourceLayer, const uint32_t inputElementCount,
-        int16_t const * inputs, int16_t * outputs);
+        int16_t const * inputs, int32_t * outputs);
     ~ConvolutionFunction() = default;
 
     std::unique_ptr<const ConvolutionConfig> GetRunConfig(int16_t const * inputs, int32_t * outputs) const;

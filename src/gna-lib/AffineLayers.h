@@ -36,8 +36,8 @@ class AffineBaseLayer : public Layer
 public:
     virtual ~AffineBaseLayer() = default;
 
-    const std::unique_ptr<const AffineFunction> Affine;
     const std::unique_ptr<const ActivationFunction> Activation;
+    const std::unique_ptr<const AffineFunction> Affine;
 
 protected:
     AffineBaseLayer(const nn_layer *layer);

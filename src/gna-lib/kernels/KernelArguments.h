@@ -143,11 +143,10 @@ struct RecurrentConfig
         input{inputIn},
         feedbackBuffer{feedbackBufferIn},
         output{outputIn},
-        outputActivated{outputActivatedIn},
         saturationCount{nullptr},
         weights1B{static_cast<int8_t const *>(weightsIn)},
         biasesCompound{static_cast<nn_bias_c const *>(biases)},
-        pwlOutputConfig{0, 0, 0, outputElementCount, outputElementCount, outputActivated}
+        pwlOutputConfig{0, 0, 0, outputElementCount, outputElementCount, outputActivatedIn}
     {}
 
     uint32_t const outputElementCount;      // M - cols
@@ -156,7 +155,6 @@ struct RecurrentConfig
     int16_t const * input;                  // I - (flat) [N;K]
     int16_t * feedbackBuffer;               // (flat) [N,M]
     int32_t * output;                       // O1 - [N,M]
-    int16_t * outputActivated;        // O2- [N,M]
     uint32_t * saturationCount;
     union
     {
@@ -223,7 +221,7 @@ struct ConvolutionConfig
     }
     ConvolutionConfig(uint32_t const inputBandStrideIn, uint32_t const FilterOutputCountIn, uint32_t const FilterCountIn,
         uint32_t const FilterCoefficientCountIn, int16_t const * const inputsIn, int16_t const * const filtersIn,
-        nn_bias_s const * const biasesIn, int16_t * const outputsIn) :
+        nn_bias_s const * const biasesIn, int32_t * const outputsIn) :
         inputBandStride{inputBandStrideIn},
         filterOutputCount{FilterOutputCountIn},
         filterCount{FilterCountIn},
@@ -231,7 +229,7 @@ struct ConvolutionConfig
         inputs{inputsIn},
         filters{filtersIn},
         biases{biasesIn},
-        pooledOutputs{outputsIn},
+        convolutedOutputs{outputsIn},
         saturationCount{nullptr}
     {}
 

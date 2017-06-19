@@ -34,11 +34,12 @@ using namespace GNA;
 
 AffineBaseLayer::AffineBaseLayer(const nn_layer *layer) :
     Layer(layer),
-    Affine(AffineFunction::Create(layer->nLayerKind, layer->pLayerStruct,
-        AffineBaseConfig{Output.ElementCount, Input.VectorCount, Input.ElementCount, Input.Buffer, Output.Buffer})),
     Activation(ActivationFunction::Create(layer->nLayerKind, layer->pLayerStruct, false,
         Output.ScratchPad,
-        PwlOutputConfig{0, Output.ElementCount - 1, 0, Input.VectorCount - 1, Output.VectorCount, Output.Buffer}))
+        PwlOutputConfig{0, Output.ElementCount - 1, 0, Input.VectorCount - 1, Output.VectorCount, Output.Buffer})),
+    Affine(AffineFunction::Create(layer->nLayerKind, layer->pLayerStruct,
+        AffineBaseConfig{Output.ElementCount, Input.VectorCount, Input.ElementCount, Input.Buffer,
+            Activation ? Output.ScratchPad : Output.Buffer}))
 {
     Output.SetOutputMode(Activation.operator bool(), layer->nBytesPerOutput);
     if (Activation)

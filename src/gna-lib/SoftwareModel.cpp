@@ -59,6 +59,7 @@ status_t SoftwareModel::Score(
     RequestProfiler *profiler,
     KernelBuffers *fvBuffers)
 {
+    UNREFERENCED_PARAMETER(profiler);
     validateConfiguration(requestConfiguration);
 
     const uint32_t* activeIndices = nullptr; // active list pointer
