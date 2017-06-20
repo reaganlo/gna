@@ -380,6 +380,9 @@ HardwareLayerAffineMBias::HardwareLayerAffineMBias(const DescriptorParameters& p
 
     save();
 
+    XnnDescriptor->aff_weight_buffer = getOffset(affineMulti->Weights);
+    XnnDescriptor->flags.weight_size = affineMulti->Mode;
+
     XnnDescriptor->bias_grp_cnt = affineMulti->BiasVectorCount;
     XnnDescriptor->bias_grp_ptr = getOffset(affineMulti->Biases);
     XnnDescriptor->bias_grp_value = affineMulti->BiasVectorIndex;
