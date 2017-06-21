@@ -177,7 +177,7 @@ AffineFunctionMulti2B::AffineFunctionMulti2B(const nn_func_affine_multi *affine,
 {
     Expect::True(sizeof(uint16_t) == affine->nBytesPerWeight, XNN_ERR_WEIGHT_BYTES);
     hiddenConfig = make_unique<const AffineConfig>(affineBase.OutputElementCount, affineBase.InputVectorCount,
-        affineBase.InputElementCount, affineBase.Inputs, affineBase.Outputs, Weights, Biases, 
+        affineBase.InputElementCount, affineBase.Inputs, affineBase.Outputs, Weights, nullptr,
         GetMultibias(), BiasVectorCount);
 }
 
@@ -189,7 +189,7 @@ AffineFunctionMulti1B::AffineFunctionMulti1B(const nn_func_affine_multi *affine,
     Expect::True(sizeof(uint8_t) == affine->nBytesPerWeight, XNN_ERR_WEIGHT_BYTES);
     Expect::ValidBuffer(WeightScaleFactors);
     hiddenConfig = make_unique<const AffineConfig>(affineBase.OutputElementCount, affineBase.InputVectorCount,
-        affineBase.InputElementCount, affineBase.Inputs, affineBase.Outputs, Weights, Biases, 
+        affineBase.InputElementCount, affineBase.Inputs, affineBase.Outputs, Weights, WeightScaleFactors,
         GetMultibias(), BiasVectorCount);
 }
 
