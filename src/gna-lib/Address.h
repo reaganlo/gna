@@ -107,7 +107,7 @@ public:
 
     template<class X> uint32_t GetOffset(const Address<X*const>& base) const
     {
-        if (!this) return 0;
+        if (this->operator! ()) return 0;
         return PtrToUint((uint8_t*)(this->Get<uint8_t>() - base.Get<uint8_t>()));
     }
 

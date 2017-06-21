@@ -91,6 +91,8 @@ public:
     virtual void WriteActiveList(HardwareActiveListDescriptor & descriptor) const;
 
 protected:
+    static const std::map<const nn_layer_kind, const NN_OP_TYPE> OperationsMap;
+
     HardwareLayer(const DescriptorParameters& parameters);
 
     void save();
@@ -99,9 +101,6 @@ protected:
     {
         return address.GetOffset(MemoryBase);
     }
-
-private:
-    static const std::map<const nn_layer_kind, const NN_OP_TYPE> OperationsMap;
 };
 
 // Extended Hardware Layer descriptor converter

@@ -409,7 +409,7 @@ HardwareLayerGmm::HardwareLayerGmm(const DescriptorParameters& parameters) :
 
 void HardwareLayerGmm::save()
 {
-    HardwareLayer::save();
+    XnnDescriptor->op = OperationsMap.at(SoftwareLayer->Config.Kind);
     XnnDescriptor->gmm_descriptor = getOffset(GmmDescriptor);
     auto gmm = SoftwareLayer->Get<const GmmLayer>();
     // can be updated per request
