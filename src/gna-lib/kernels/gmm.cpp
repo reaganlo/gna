@@ -56,7 +56,7 @@ void gmmMaxMix8ActiveListKernelImpl(GmmConfig const * const gmmConfig, uint32_t 
             {
                 gmm_maxmix_8u8u_32u(&gmm);
                 gmm.Output++;
-                gmm.Input += gmm.InputElementCount;
+                gmm.Input += gmm.InputElementOffset;
             }
         }
     }
@@ -74,7 +74,7 @@ void gmmMaxMix8ActiveListKernelImpl(GmmConfig const * const gmmConfig, uint32_t 
             {
                 for (g = 0; g < gmmConfig->inputVectorCount; g++)
                 {
-                    *((uint64_t*)gmm.Input) = *((uint64_t*)((gmmConfig->input) + g * gmm.InputElementCount + n));
+                    *((uint64_t*)gmm.Input) = *((uint64_t*)((gmmConfig->input) + g * gmm.InputElementOffset + n));
                     gmm.Input += GMM_FV_COUNT_MAX;
                 }
             }
@@ -215,7 +215,7 @@ void gmmMaxMix16ActiveListKernelImpl(GmmConfig const * const gmmConfig, uint32_t
         {
             gmm_maxmix_8u16u_32u(&gmm);
             gmm.Output++;
-            gmm.Input += gmm.InputElementCount;
+            gmm.Input += gmm.InputElementOffset;
         }
     }
 }
@@ -242,7 +242,7 @@ void gmmMaxMix8KernelImpl(GmmConfig const * const gmmConfig)
             {
                 gmm_maxmix_8u8u_32u(&gmm);
                 gmm.Output++;
-                gmm.Input += gmm.InputElementCount;
+                gmm.Input += gmm.InputElementOffset;
             }
         }
     }
@@ -260,7 +260,7 @@ void gmmMaxMix8KernelImpl(GmmConfig const * const gmmConfig)
             {
                 for (g = 0; g < gmmConfig->inputVectorCount; g++)
                 {
-                    *((uint64_t*)gmm.Input) = *((uint64_t*)((gmmConfig->input) + g * gmm.InputElementCount + n));
+                    *((uint64_t*)gmm.Input) = *((uint64_t*)((gmmConfig->input) + g * gmm.InputElementOffset + n));
                     gmm.Input += GMM_FV_COUNT_MAX;
                 }
             }
@@ -386,7 +386,7 @@ void gmmMaxMix16KernelImpl(GmmConfig const * const gmmConfig)
         {
             gmm_maxmix_8u16u_32u(&gmm);
             gmm.Output++;
-            gmm.Input += gmm.InputElementCount;
+            gmm.Input += gmm.InputElementOffset;
         }
     }
 }

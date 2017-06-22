@@ -419,7 +419,7 @@ void HardwareLayerGmm::save()
 
     // GMM Model configuration, will be constant over time for model
     GmmDescriptor->gmmscrlen   = GMM_SCORE_SIZE * gmm->Input.VectorCount * gmm->Config.stateCount;; // will be updated when ActiveList is used
-    GmmDescriptor->fvoffset    = gmm->Input.ElementCount;
+    GmmDescriptor->fvoffset    = ALIGN64(gmm->Input.ElementCount * GMM_FV_ELEMENT_SIZE);
 
     GmmDescriptor->numfv       = gmm->Input.VectorCount;
     GmmDescriptor->vlength     = gmm->Input.ElementCount;

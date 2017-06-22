@@ -34,18 +34,25 @@ using namespace GNA;
 GmmParams::GmmParams(const gna_gmm_config &config, const uint32_t inputElementCount)
 {
     VarianceSize = (GNA_MAXMIX16 == config.mode) ? sizeof(uint16_t) : sizeof(uint8_t);
-    if (GMM_LAYOUT_FLAT == config.layout)
+    
+    MeanSetOffsetSize = config.mixtureComponentCount * inputElementCount * GMM_MEAN_VALUE_SIZE;
+    VarSetOffsetSize = config.mixtureComponentCount * inputElementCount * VarianceSize;
+    GaussConstSetOffsetSize = ALIGN(config.mixtureComponentCount, 2) * GMM_CONSTANTS_SIZE;
+    if (GMM_LAYOUT_INTERLEAVED == config.layout)
     {
-        MeanSetOffsetSize = config.mixtureComponentCount * inputElementCount * GMM_MEAN_VALUE_SIZE;
-        VarSetOffsetSize = config.mixtureComponentCount * inputElementCount * VarianceSize;
-        GaussConstSetOffsetSize = config.mixtureComponentCount * GMM_CONSTANTS_SIZE;
-    }
-    else if (GMM_LAYOUT_INTERLEAVED == config.layout)
-    {
-        MeanSetOffsetSize = config.mixtureComponentCount * (inputElementCount * (VarianceSize + GMM_MEAN_VALUE_SIZE) + GMM_CONSTANTS_SIZE);
+        MeanSetOffsetSize = MeanSetOffsetSize + VarSetOffsetSize + GaussConstSetOffsetSize;
         VarSetOffsetSize = MeanSetOffsetSize;
         GaussConstSetOffsetSize = MeanSetOffsetSize;
     }
+    Expect::InRange(MeanSetOffsetSize, GMM_FV_ELEMENT_COUNT_MULTIPLE_OF,
+        GMM_MIXTURE_COMP_COUNT_MAX * GMM_FV_ELEMENT_COUNT_MAX * GMM_MEAN_VALUE_SIZE, GMM_BADMEANSETOFF);
+    Expect::MultiplicityOf(MeanSetOffsetSize, GMM_MEM_ALIGNMENT);
+    Expect::InRange(VarSetOffsetSize, GMM_FV_ELEMENT_COUNT_MULTIPLE_OF,
+        GMM_MIXTURE_COMP_COUNT_MAX * GMM_FV_ELEMENT_COUNT_MAX * GMM_COVARIANCE_SIZE_MAX, GMM_BADVARSETOFF);
+    Expect::MultiplicityOf(VarSetOffsetSize, GMM_MEM_ALIGNMENT);
+    Expect::InRange(GaussConstSetOffsetSize, GMM_FV_ELEMENT_COUNT_MULTIPLE_OF,
+        GMM_MIXTURE_COMP_COUNT_MAX * GMM_CONSTANTS_SIZE, GMM_BADGCONSTOFFSET);
+    Expect::MultiplicityOf(GaussConstSetOffsetSize, GMM_MEM_ALIGNMENT);
 }
 
 GmmLayer::GmmLayer(const nn_layer *layer) :
