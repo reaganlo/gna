@@ -147,8 +147,9 @@ void HardwareLayer::save()
 
 const map<const uint32_t, const array<const uint32_t, XNN_N_GROUP_MAX>> HardwareLayerExt::bufferElementsMap
 {
-    { 12,{ 12288, 12288, 12096, 12288, 12000, 12096, 12096, 12288 } },
-    { 24,{ 6144, 6144, 6048, 6144, 5760, 6048, 6048, 6144 } }
+    { 24,{ 12288, 12288, 12096, 12288, 12000, 12096, 12096, 12288 } },
+    { 12,{ 6144, 6144, 6048, 6144, 5760, 6048, 6048, 6144 } },
+    { 6,{ 3072, 3072, 2880, 3072, 2880, 2880, 3024, 3072 } }
 };
 
 HardwareLayerExt::HardwareLayerExt(const DescriptorParameters& parameters, const uint32_t effectiveGrouping) :
