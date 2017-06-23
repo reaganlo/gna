@@ -336,15 +336,7 @@ HardwareLayerCnn::HardwareLayerCnn(const DescriptorParameters& parameters) :
     // Pooling enabled
     if (INTEL_NO_POOLING != cnn->Pooling.Type) // use pooled outputs per filter
     {
-        if (convOutputElementCount >= cnn->Pooling.Size)
-        {
-            outputElementCount = ((convOutputElementCount - cnn->Pooling.Size) / cnn->Pooling.Stride + 1);
-        }
-        else
-        {
-            outputElementCount = 1;
-        }
-        convOutputElementCount = (outputElementCount - 1) * cnn->Pooling.Stride + cnn->Pooling.Size;
+        outputElementCount = ((convOutputElementCount - 1) / cnn->Pooling.Stride + 1);
     }
 
     save();
