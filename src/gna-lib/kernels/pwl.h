@@ -99,6 +99,7 @@ struct PwlCachedConfig
     struct __binary
     {
         pwl_x_t * xBase;            // extracted PWL segments xBase data
+        pwl_y_t*  ySeg;             // extracted PWL segments value data
         pwl_x_t xBase0;             // first segment xBase value (binary search algorithm)
         int16_t yBase0;             // first segment yBase value (binary search algorithm)
         uint8_t _reserved[6];       // padding
@@ -131,12 +132,6 @@ struct PwlCached
 
     // PWL LOOKUP table size in B
     static const int32_t PWL_LOOKUP_SIZE = (PWL_LOOKUP_COUNT)* PWL_LOOKUP_SEG_SIZE;
-
-    // PWL xBase buffer size in bytes
-    static const int32_t PWL_X_BUFFER_SIZE = sizeof(pwl_x_t) * XNN_N_PWL_SEGS_MAX;
-
-    // PWL Unpacked segment values
-    static const int32_t PWL_Y_BUFFER_SIZE = sizeof(pwl_y_t) * XNN_N_PWL_SEGS_MAX;
 
     PwlCachedConfig pwl;
     PwlApplySingle  ActivateSingle;              // algorithm used for PWL for single in-out

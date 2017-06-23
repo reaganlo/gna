@@ -47,7 +47,7 @@ struct GmmMaxMixConfig
     GmmMaxMixConfig(uint32_t const scoreLimit, uint32_t const inputElementCount, uint32_t const mixtureCount) :
         MinScore{scoreLimit},
         InputElementCount{inputElementCount},
-        InputElementOffset{ALIGN64(InputElementCount)},
+        InputElementOffset(ALIGN64(InputElementCount)),
         MixtureCount{mixtureCount},
         Means{nullptr},
         Vars{nullptr},

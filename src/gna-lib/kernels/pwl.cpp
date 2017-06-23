@@ -145,7 +145,7 @@ void pwlKernelImplSingleBinary(PwlCachedConfig const * const pwl, int32_t I, int
                 sum = (int64_t)I + *xBase;
             }
         } while (k_upper > k_lower + 1);
-        seg = (pwl_y_t*)((int8_t*)xBase + PwlCached::PWL_X_BUFFER_SIZE);
+        seg = (pwl_y_t*)(xBase + pwl->segmentCount);
         sum *= seg->slope; // prod = diff * slope
         sum = sum >> seg->shift; // prod_shift = prod >> slope_shift
         sum += seg->yBase;                   // sum = prod_shift + ybase;
@@ -207,7 +207,7 @@ void pwlKernelImplAllBinary(PwlCachedConfig const * const pwl, PwlOutputConfig c
                         sum = (int64_t)input[j] + *xBase;
                     }
                 } while (k_upper > k_lower + 1);
-                seg = (pwl_y_t*)((int8_t*)xBase + PwlCached::PWL_X_BUFFER_SIZE);
+                seg = (pwl_y_t*)(xBase + pwl->segmentCount);
                 sum *= seg->slope; // prod = diff * slope
                 sum = sum >> seg->shift; // prod_shift = prod >> slope_shift
                 sum += seg->yBase;                   // sum = prod_shift + ybase;
@@ -514,6 +514,10 @@ PwlCached::PwlCached(int32_t const * const inputIn, nn_pwl_seg const * const seg
         for (; i < pwl.segmentCount; i++)
         {
             pwl.Binary.xBase[i]      = -1 * (pwl_x_t)(segments[i].xBase & XBASEMASK);
+            pwl.Binary.ySeg[i].shift = ((segments[i].xBase & ~XBASEMASK) + 1) << BIT_SHIFT_SIZE;
+            pwl.Binary.ySeg[i].slope = segments[i].slope;
+            pwl.Binary.ySeg[i].resvd = 0;
+            pwl.Binary.ySeg[i].yBase = segments[i].yBase;
         }
     }
 }
@@ -534,12 +538,14 @@ PwlCached::~PwlCached()
 
 void PwlCached::allocateBinaryCaches()
 {
-    pwl.Binary.xBase = (pwl_x_t*)_gna_malloc(PWL_X_BUFFER_SIZE + PWL_Y_BUFFER_SIZE);
+    auto totalSize = pwl.segmentCount * (sizeof(pwl_x_t) + sizeof(pwl_y_t));
+    pwl.Binary.xBase = (pwl_x_t*)_gna_malloc(totalSize);
     if (nullptr == pwl.Binary.xBase)
     {
         //throw GnaException(GNA_ERR_RESOURCES);
     }
-    memset(pwl.Binary.xBase, 0, PWL_X_BUFFER_SIZE);
+    memset(pwl.Binary.xBase, 0, totalSize);
+    pwl.Binary.ySeg = (pwl_y_t*)(pwl.Binary.xBase + pwl.segmentCount);
 }
 
 void PwlCached::allocateLookupCaches()
@@ -549,5 +555,5 @@ void PwlCached::allocateLookupCaches()
     {
         //throw GnaException(GNA_ERR_RESOURCES);
     }
-    memset(pwl.Lookup.table, 0xff,   PWL_LOOKUP_SIZE);
+    memset(pwl.Lookup.table, 0xff, PWL_LOOKUP_SIZE);
 }
