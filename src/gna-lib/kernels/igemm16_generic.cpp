@@ -62,9 +62,9 @@ void AffineMultiBiasKernelImpl2B(AffineConfig const * const config)
     uint32_t j, k;
     int32_t * output = config->output;
     int16_t const * input;
-    int32_t const * const biasEnd = config->multiBias + config->outputElementCount*config->multiBiasVectorCount;
     int16_t const * weight = config->weights2B;
     nn_bias_s const * multiBias = config->multiBias;
+    int32_t const * const biasEnd = config->multiBias + config->outputElementCount*config->multiBiasVectorCount;
 
     TransposeConfig transposeConfig = TransposeConfig{ config->inputElementCount, config->inputVectorCount, 
                                                        config->input, config->fvBuffers->d0 };

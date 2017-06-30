@@ -786,4 +786,769 @@ void AffineKernelImpl1B(AffineConfig const * const config)
 }
 
 void AffineMultiBiasKernelImpl1B(AffineConfig const * const config)
-{}
+{
+    __m256i in0, in1, in2, in3, in4, in5, in6, in7;
+    __m256i acc0, acc1, acc2, acc3, acc4, acc5, acc6, acc7;
+    __m256i *in_ptr0, *in_ptr1, *in_ptr2, *in_ptr3, *in_ptr4, *in_ptr5, *in_ptr6, *in_ptr7;
+    int64_t sum0, sum1, sum2, sum3, sum4, sum5, sum6, sum7;
+
+    uint32_t i, j, k, kk, kpartial, nKpartial, niters;
+    uint32_t acc_iters, rem_iters;
+
+    kpartial = (hw_buf_size[config->inputVectorCount - 1]) / config->inputVectorCount;
+    nKpartial = config->inputElementCount / kpartial;
+
+    __m256i in[8], w;     // inputs & weight
+    __m256i imm0, imm1, imm2, imm3, imm4, imm5, imm6, imm7, imm8, imm9, imm10;       // immediate
+    __m256i acc[8]; // output accumulators
+    __m256i zero = _mm256_setzero_si256(); // AVX2 ZERO
+
+    int16_t const * input[8];
+    int8_t const * weight;
+    int32_t * output;
+    nn_bias_s const * multiBias = config->multiBias;
+    nn_bias_s const * const biasEnd = config->multiBias + config->outputElementCount * config->multiBiasVectorCount;
+    nn_bias_c const * weightScaleFactor = config->weightScaleFactors;
+    int64_t sum[8];            // 64-bit accumulator buffer
+
+    uint32_t KT = config->inputElementCount % VEC_16CAP; // config->inputElementCount tail for manual processing
+    uint32_t KK = config->inputElementCount - KT; // trimmed config->inputElementCount for AVX2 processing
+
+    output = config->output;
+    weight = config->weights1B;
+
+    __m256i* in_ptr;
+    uint32_t ix, ix_end;
+
+    __m256i w0, w1;
+    int16_t const * input0;
+
+    if (1 == config->inputVectorCount)
+    {
+        input0 = config->input+KK;
+        in_ptr = (__m256i*)config->input;
+        for (; multiBias < biasEnd; multiBias+=config->multiBiasVectorCount)
+        {
+            ix = 0;
+            acc0 = _mm256_setzero_si256();
+            acc1 = _mm256_setzero_si256();
+            sum0 = *multiBias;
+
+            for (kk = 0; kk < nKpartial + 1; kk++)
+            {
+                acc0 = _mm256_add_epi32(acc0, acc1);
+                sum0 += vec_sum32(acc0) * weightScaleFactor->multiplier;
+
+                acc0 = _mm256_setzero_si256();
+                acc1 = _mm256_setzero_si256();
+
+                saturate(&sum0, config->saturationCount);
+                niters = kpartial < KK - kk * kpartial ? kpartial : KK - kk * kpartial;
+
+                // kpartial = 12288
+                // 12288 / 16 = 768
+                // 12888 / 256 = 48
+                // so, max number of loops is 3
+                acc_iters = niters / (VEC_16CAP * 256);
+                rem_iters = niters % (VEC_16CAP * 256);
+
+                for (i = 0; i < acc_iters; i++)
+                {
+                    acc0 = _mm256_setzero_si256();
+                    acc1 = _mm256_setzero_si256();
+
+                    ix_end = ix + 256;
+                    for (; ix < ix_end; ix += 2)
+                    {
+                        in0 = _mm256_load_si256(in_ptr + ix);
+                        in1 = _mm256_load_si256(in_ptr + ix + 1);
+
+                        w0 = _mm256_cvtepi8_epi16(_mm_lddqu_si128((__m128i*)weight));
+                        w1 = _mm256_cvtepi8_epi16(_mm_lddqu_si128((__m128i*)(weight + VEC_16CAP)));
+
+                        weight += 32;
+
+                        // multiply and add - won't saturate
+                        in0 = _mm256_madd_epi16(in0, w0);
+                        in1 = _mm256_madd_epi16(in1, w1);
+
+                        acc0 = _mm256_add_epi32(acc0, in0);
+                        acc1 = _mm256_add_epi32(acc1, in1);
+
+                        // load next vectors
+                    }
+
+                    acc0 = _mm256_add_epi32(acc0, acc1);
+                    sum0 += vec_sum32(acc0) * weightScaleFactor->multiplier;
+                }
+
+                acc0 = _mm256_setzero_si256();
+                acc1 = _mm256_setzero_si256();
+
+                ix_end = ix + rem_iters / VEC_16CAP;
+                for (; ix < ix_end; ix++)
+                {
+                    // load next vectors
+                    in0 = _mm256_load_si256(in_ptr + ix);
+                    w = _mm256_cvtepi8_epi16(_mm_lddqu_si128((__m128i*)weight));
+
+                    weight += VEC_16CAP;
+
+                    // multiply and add - won't saturate
+                    in0 = _mm256_madd_epi16(in0, w);
+                    acc0 = _mm256_add_epi32(acc0, in0);
+                }
+
+                sum0 += vec_sum32(acc0) * weightScaleFactor->multiplier;
+                acc0 = _mm256_setzero_si256();
+            }
+
+            for (j = 0; j < KT; j++, weight++)
+            {
+                sum0 += (int32_t)(input0[j] * *weight * weightScaleFactor->multiplier);
+            }
+
+            saturate_store_out(&sum0, output, config->saturationCount);
+
+            output++;
+            weightScaleFactor++;
+        }
+        return;
+    }
+
+    switch (config->inputVectorCount)
+    {
+    case 8: 
+        for (i = 0; i < config->inputElementCount; i++) config->fvBuffers->d7[i] = config->input[i*config->inputVectorCount + 7];
+        input[7] = config->fvBuffers->d7 + KK;
+        in_ptr7 = (__m256i*)config->fvBuffers->d7;
+    case 7: 
+        for (i = 0; i < config->inputElementCount; i++) config->fvBuffers->d6[i] = config->input[i*config->inputVectorCount + 6];
+        input[6] = config->fvBuffers->d6 + KK;
+        in_ptr6 = (__m256i*)config->fvBuffers->d6;
+    case 6: 
+        for (i = 0; i < config->inputElementCount; i++) config->fvBuffers->d5[i] = config->input[i*config->inputVectorCount + 5];
+        input[5] = config->fvBuffers->d5 + KK;
+        in_ptr5 = (__m256i*)config->fvBuffers->d5;
+    case 5: 
+        for (i = 0; i < config->inputElementCount; i++) config->fvBuffers->d4[i] = config->input[i*config->inputVectorCount + 4];
+        input[4] = config->fvBuffers->d4 + KK;
+        in_ptr4 = (__m256i*)config->fvBuffers->d4;
+    case 4: 
+        for (i = 0; i < config->inputElementCount; i++) config->fvBuffers->d3[i] = config->input[i*config->inputVectorCount + 3];
+        input[3] = config->fvBuffers->d3 + KK;
+        in_ptr3 = (__m256i*)config->fvBuffers->d3;
+    case 3: 
+        for (i = 0; i < config->inputElementCount; i++) config->fvBuffers->d2[i] = config->input[i*config->inputVectorCount + 2];
+        input[2] = config->fvBuffers->d2 + KK;
+        in_ptr2 = (__m256i*)config->fvBuffers->d2;
+    case 2: 
+        for (i = 0; i < config->inputElementCount; i++) config->fvBuffers->d1[i] = config->input[i*config->inputVectorCount + 1];
+        input[1] = config->fvBuffers->d1 + KK;
+        in_ptr1 = (__m256i*)config->fvBuffers->d1;
+        for (i = 0; i < config->inputElementCount; i++) config->fvBuffers->d0[i] = config->input[i*config->inputVectorCount];
+        input[0] = config->fvBuffers->d0 + KK;
+        in_ptr0 = (__m256i*)config->fvBuffers->d0;
+    }
+
+    if (2 == config->inputVectorCount)
+    {
+        for (; multiBias < biasEnd; multiBias+=config->multiBiasVectorCount)
+        {
+            ix = 0;
+
+            for (i = 0; i < config->inputVectorCount; i++)
+            {
+                acc[i] = _mm256_setzero_si256();
+                sum[i] = *multiBias;
+            }
+
+            for (kk = 0; kk < nKpartial + 1; kk++)
+            {
+                for (i = 0; i < config->inputVectorCount; i++)
+                {
+                    sum[i] += vec_sum32(acc[i]) * weightScaleFactor->multiplier;
+                    acc[i] = _mm256_setzero_si256();
+                    saturate(&sum[i], config->saturationCount);
+                }
+                niters = kpartial < KK - kk * kpartial ? kpartial : KK - kk * kpartial;
+
+                // kpartial = 6144
+                // 6144 / 16 = 384
+                // 6144 / 256 = 24
+                // so, max number of loops is 1
+
+                acc_iters = niters / (VEC_16CAP * 256);
+                rem_iters = niters % (VEC_16CAP * 256);
+
+                if (acc_iters == 1)
+                {
+                    acc[0] = _mm256_setzero_si256();
+                    acc[1] = _mm256_setzero_si256();
+
+                    ix_end = ix + 256;
+                    for (; ix < ix_end; ix++)
+                    {
+                        w = _mm256_cvtepi8_epi16(_mm_lddqu_si128((__m128i*)weight));
+                        weight += VEC_16CAP;
+
+                        in[0] = _mm256_load_si256(in_ptr0 + ix);
+                        in[1] = _mm256_load_si256(in_ptr1 + ix);
+
+                        // multiply and add - won't saturate
+                        in[0] = _mm256_madd_epi16(in[0], w);
+                        in[1] = _mm256_madd_epi16(in[1], w);
+
+                        acc[0] = _mm256_add_epi32(acc[0], in[0]);
+                        acc[1] = _mm256_add_epi32(acc[1], in[1]);
+                    }
+
+                    sum[0] += vec_sum32(acc[0]) * weightScaleFactor->multiplier;
+                    sum[1] += vec_sum32(acc[1]) * weightScaleFactor->multiplier;
+                }
+
+                acc[0] = _mm256_setzero_si256();
+                acc[1] = _mm256_setzero_si256();
+
+                ix_end = ix + rem_iters / VEC_16CAP;
+                for (; ix < ix_end; ix++)
+                {
+                    w = _mm256_cvtepi8_epi16(_mm_lddqu_si128((__m128i*)weight));
+                    weight += VEC_16CAP;
+
+                    // load next vectors
+                    in[0] = _mm256_load_si256(in_ptr0 + ix);
+                    in[1] = _mm256_load_si256(in_ptr1 + ix);
+
+                    // multiply and add - won't saturate
+                    in[0] = _mm256_madd_epi16(in[0], w);
+                    in[1] = _mm256_madd_epi16(in[1], w);
+
+                    acc[0] = _mm256_add_epi32(acc[0], in[0]);
+                    acc[1] = _mm256_add_epi32(acc[1], in[1]);
+                }
+
+                sum[0] += vec_sum32(acc[0]) * weightScaleFactor->multiplier;
+                sum[1] += vec_sum32(acc[1]) * weightScaleFactor->multiplier;
+
+                acc[0] = _mm256_setzero_si256();
+                acc[1] = _mm256_setzero_si256();
+            }
+
+            for (j = 0; j < KT; j++, weight++)
+            {
+                sum[0] += (int32_t)(input[0][j] * *weight * weightScaleFactor->multiplier);
+                sum[1] += (int32_t)(input[1][j] * *weight * weightScaleFactor->multiplier);
+            }
+
+            for (i = 0; i < config->inputVectorCount; i++)
+            {
+                saturate_store_out(&sum[i], &output[i], config->saturationCount);
+            }
+
+            output += config->inputVectorCount;
+            weightScaleFactor++;
+        }
+    }
+
+    if (3 == config->inputVectorCount)
+    {
+        for (; multiBias < biasEnd; multiBias+=config->multiBiasVectorCount)
+        {
+            ix = 0;
+
+            for (i = 0; i < config->inputVectorCount; i++)
+            {
+                acc[i] = _mm256_setzero_si256();
+                sum[i] = *multiBias;
+            }
+
+            for (kk = 0; kk < nKpartial + 1; kk++)
+            {
+                for (i = 0; i < config->inputVectorCount; i++)
+                {
+                    sum[i] += vec_sum32(acc[i]) * weightScaleFactor->multiplier;
+                    acc[i] = _mm256_setzero_si256();
+                    saturate(&sum[i], config->saturationCount);
+                }
+                niters = kpartial < KK - kk * kpartial ? kpartial : KK - kk * kpartial;
+
+                // kpartial = 12096 / 3 = 4032
+                // 4032 / 16 = 252
+                // accumulator will not saturate
+                ix_end = ix + niters / VEC_16CAP;
+                for (; ix < ix_end; ix++)
+                {
+                    // load next vectors
+                    in[0] = _mm256_load_si256(in_ptr0 + ix);
+                    in[1] = _mm256_load_si256(in_ptr1 + ix);
+                    in[2] = _mm256_load_si256(in_ptr2 + ix);
+
+                    w = _mm256_cvtepi8_epi16(_mm_lddqu_si128((__m128i*)weight));
+                    weight += VEC_16CAP;
+
+                    // multiply and add - won't saturate
+                    in[0] = _mm256_madd_epi16(in[0], w);
+                    in[1] = _mm256_madd_epi16(in[1], w);
+                    in[2] = _mm256_madd_epi16(in[2], w);
+
+                    acc[0] = _mm256_add_epi32(acc[0], in[0]);
+                    acc[1] = _mm256_add_epi32(acc[1], in[1]);
+                    acc[2] = _mm256_add_epi32(acc[2], in[2]);
+                }
+
+                for (i = 0; i < config->inputVectorCount; i++)
+                {
+                    sum[i] += vec_sum32(acc[i]) * weightScaleFactor->multiplier;
+                    acc[i] = _mm256_setzero_si256();
+                }
+            }
+
+            for (j = 0; j < KT; j++, weight++)
+            {
+                for (i = 0; i < config->inputVectorCount; i++)
+                {
+                    sum[i] += input[i][j] * *weight * weightScaleFactor->multiplier;
+                }
+            }
+
+            for (i = 0; i < config->inputVectorCount; i++)
+            {
+                saturate_store_out(&sum[i], &output[i], config->saturationCount);
+            }
+
+            output += config->inputVectorCount;
+            weightScaleFactor++;
+        }
+    }
+
+    if (4 == config->inputVectorCount)
+    {
+        for (; multiBias < biasEnd; multiBias+=config->multiBiasVectorCount)
+        {
+            ix = 0;
+
+            for (i = 0; i < config->inputVectorCount; i++)
+            {
+                acc[i] = _mm256_setzero_si256();
+                sum[i] = *multiBias;
+            }
+
+            for (kk = 0; kk < nKpartial + 1; kk++)
+            {
+                for (i = 0; i < config->inputVectorCount; i++)
+                {
+                    sum[i] += vec_sum32(acc[i]) * weightScaleFactor->multiplier;
+                    acc[i] = _mm256_setzero_si256();
+                    saturate(&sum[i], config->saturationCount);
+                }
+
+                niters = kpartial < KK - kk * kpartial ? kpartial : KK - kk * kpartial;
+                // kpartial = 12288 / 4 = 3072
+                // 3072 / 16 = 192
+                // accumulator will not saturate
+
+                ix_end = ix + niters / VEC_16CAP;
+                for (; ix < ix_end; ix++)
+                {
+                    // load next vectors
+                    in[0] = _mm256_load_si256(in_ptr0 + ix);
+                    in[1] = _mm256_load_si256(in_ptr1 + ix);
+                    in[2] = _mm256_load_si256(in_ptr2 + ix);
+                    in[3] = _mm256_load_si256(in_ptr3 + ix);
+
+                    w = _mm256_cvtepi8_epi16(_mm_lddqu_si128((__m128i*)weight));
+                    weight += VEC_16CAP;
+
+                    // multiply and add - won't saturate
+                    in[0] = _mm256_madd_epi16(in[0], w);
+                    in[1] = _mm256_madd_epi16(in[1], w);
+                    in[2] = _mm256_madd_epi16(in[2], w);
+                    in[3] = _mm256_madd_epi16(in[3], w);
+
+                    acc[0] = _mm256_add_epi32(acc[0], in[0]);
+                    acc[1] = _mm256_add_epi32(acc[1], in[1]);
+                    acc[2] = _mm256_add_epi32(acc[2], in[2]);
+                    acc[3] = _mm256_add_epi32(acc[3], in[3]);
+                }
+
+                for (i = 0; i < config->inputVectorCount; i++)
+                {
+                    sum[i] += vec_sum32(acc[i]) * weightScaleFactor->multiplier;
+                    acc[i] = _mm256_setzero_si256();
+                }
+            }
+
+            for (j = 0; j < KT; j++, weight++)
+            {
+                for (i = 0; i < config->inputVectorCount; i++)
+                {
+                    sum[i] += (int32_t)(input[i][j] * *weight * weightScaleFactor->multiplier);
+                }
+            }
+
+            for (i = 0; i < config->inputVectorCount; i++)
+            {
+                saturate_store_out(&sum[i], &output[i], config->saturationCount);
+            }
+
+            output += config->inputVectorCount;
+            weightScaleFactor++;
+        }
+    }
+
+    if (5 == config->inputVectorCount)
+    {
+        for (; multiBias < biasEnd; multiBias+=config->multiBiasVectorCount)
+        {
+            ix = 0;
+
+            for (i = 0; i < config->inputVectorCount; i++)
+            {
+                acc[i] = _mm256_setzero_si256();
+                sum[i] = *multiBias;
+            }
+
+            for (kk = 0; kk < nKpartial + 1; kk++)
+            {
+                for (i = 0; i < config->inputVectorCount; i++)
+                {
+                    sum[i] += vec_sum32(acc[i]) * weightScaleFactor->multiplier;
+                    acc[i] = _mm256_setzero_si256();
+                    saturate(&sum[i], config->saturationCount);
+                }
+                niters = kpartial < KK - kk * kpartial ? kpartial : KK - kk * kpartial;
+
+                // kpartial = 12000 / 5 = 2400
+                // 2400 / 16 = 150
+                // accumulator will not saturate
+                ix_end = ix + niters / VEC_16CAP;
+                for (; ix < ix_end; ix++)
+                {
+                    in[0] = _mm256_load_si256(in_ptr0 + ix);
+                    in[1] = _mm256_load_si256(in_ptr1 + ix);
+                    in[2] = _mm256_load_si256(in_ptr2 + ix);
+                    in[3] = _mm256_load_si256(in_ptr3 + ix);
+                    in[4] = _mm256_load_si256(in_ptr4 + ix);
+
+                    w = _mm256_cvtepi8_epi16(_mm_lddqu_si128((__m128i*)weight));
+                    weight += VEC_16CAP;
+
+                    // multiply and add - won't saturate
+                    in[0] = _mm256_madd_epi16(in[0], w);
+                    in[1] = _mm256_madd_epi16(in[1], w);
+                    in[2] = _mm256_madd_epi16(in[2], w);
+                    in[3] = _mm256_madd_epi16(in[3], w);
+                    in[4] = _mm256_madd_epi16(in[4], w);
+
+                    acc[0] = _mm256_add_epi32(acc[0], in[0]);
+                    acc[1] = _mm256_add_epi32(acc[1], in[1]);
+                    acc[2] = _mm256_add_epi32(acc[2], in[2]);
+                    acc[3] = _mm256_add_epi32(acc[3], in[3]);
+                    acc[4] = _mm256_add_epi32(acc[4], in[4]);
+                }
+
+                for (i = 0; i < config->inputVectorCount; i++)
+                {
+                    sum[i] += vec_sum32(acc[i]) * weightScaleFactor->multiplier;
+                    acc[i] = _mm256_setzero_si256();
+                }
+            }
+
+            for (j = 0; j < KT; j++, weight++)
+            {
+                for (i = 0; i < config->inputVectorCount; i++)
+                {
+                    sum[i] += (int32_t)(input[i][j] * *weight * weightScaleFactor->multiplier);
+                }
+            }
+
+            for (i = 0; i < config->inputVectorCount; i++)
+            {
+                saturate_store_out(&sum[i], &output[i], config->saturationCount);
+            }
+
+            output += config->inputVectorCount;
+            weightScaleFactor++;
+        }
+    }
+
+    if (6 == config->inputVectorCount)
+    {
+        for (; multiBias < biasEnd; multiBias+=config->multiBiasVectorCount)
+        {
+            ix = 0;
+
+            for (i = 0; i < config->inputVectorCount; i++)
+            {
+                acc[i] = _mm256_setzero_si256();
+                sum[i] = *multiBias;
+            }
+
+            for (kk = 0; kk < nKpartial + 1; kk++)
+            {
+                for (i = 0; i < config->inputVectorCount; i++)
+                {
+                    sum[i] += vec_sum32(acc[i]) * weightScaleFactor->multiplier;
+                    acc[i] = _mm256_setzero_si256();
+                    saturate(&sum[i], config->saturationCount);
+                }
+                niters = kpartial < KK - kk * kpartial ? kpartial : KK - kk * kpartial;
+
+                // kpartial = 12288 / 6 = 2048
+                // 2048 / 16 = 128
+                // accumulator will not saturate
+                ix_end = ix + niters / VEC_16CAP;
+                for (; ix < ix_end; ix++)
+                {
+                    in[0] = _mm256_load_si256(in_ptr0 + ix);
+                    in[1] = _mm256_load_si256(in_ptr1 + ix);
+                    in[2] = _mm256_load_si256(in_ptr2 + ix);
+                    in[3] = _mm256_load_si256(in_ptr3 + ix);
+                    in[4] = _mm256_load_si256(in_ptr4 + ix);
+                    in[5] = _mm256_load_si256(in_ptr5 + ix);
+                    w = _mm256_cvtepi8_epi16(_mm_lddqu_si128((__m128i*)weight));
+                    weight += VEC_16CAP;
+
+                    // multiply and add - won't saturate
+                    in[0] = _mm256_madd_epi16(in[0], w);
+                    in[1] = _mm256_madd_epi16(in[1], w);
+                    in[2] = _mm256_madd_epi16(in[2], w);
+                    in[3] = _mm256_madd_epi16(in[3], w);
+                    in[4] = _mm256_madd_epi16(in[4], w);
+                    in[5] = _mm256_madd_epi16(in[5], w);
+
+                    acc[0] = _mm256_add_epi32(acc[0], in[0]);
+                    acc[1] = _mm256_add_epi32(acc[1], in[1]);
+                    acc[2] = _mm256_add_epi32(acc[2], in[2]);
+                    acc[3] = _mm256_add_epi32(acc[3], in[3]);
+                    acc[4] = _mm256_add_epi32(acc[4], in[4]);
+                    acc[5] = _mm256_add_epi32(acc[5], in[5]);
+                }
+
+                for (i = 0; i < config->inputVectorCount; i++)
+                {
+                    sum[i] += vec_sum32(acc[i]) * weightScaleFactor->multiplier;
+                    acc[i] = _mm256_setzero_si256();
+                }
+            }
+
+            for (j = 0; j < KT; j++, weight++)
+            {
+                for (i = 0; i < config->inputVectorCount; i++)
+                {
+                    sum[i] += (int32_t)(input[i][j] * *weight * weightScaleFactor->multiplier);
+                }
+            }
+
+            for (i = 0; i < config->inputVectorCount; i++)
+            {
+                saturate_store_out(&sum[i], &output[i], config->saturationCount);
+            }
+
+            output += config->inputVectorCount;
+            weightScaleFactor++;
+        }
+    }
+
+    if (7 == config->inputVectorCount)
+    {
+        for (; multiBias < biasEnd; multiBias+=config->multiBiasVectorCount)
+        {
+            ix = 0;
+
+            for (i = 0; i < config->inputVectorCount; i++)
+            {
+                acc[i] = _mm256_setzero_si256();
+                sum[i] = *multiBias;
+            }
+
+            for (kk = 0; kk < nKpartial + 1; kk++)
+            {
+                for (i = 0; i < config->inputVectorCount; i++)
+                {
+                    sum[i] += vec_sum32(acc[i]) * weightScaleFactor->multiplier;
+                    acc[i] = _mm256_setzero_si256();
+                    saturate(&sum[i], config->saturationCount);
+                }
+                niters = kpartial < KK - kk * kpartial ? kpartial : KK - kk * kpartial;
+                // kpartial = 12288 / 7 = 1755
+                // kpartial / 16 = 109
+                // accumulator will not saturate
+
+                ix_end = ix + niters / VEC_16CAP;
+                for (; ix < ix_end; ix++)
+                {
+                    in[0] = _mm256_load_si256(in_ptr0 + ix);
+                    in[1] = _mm256_load_si256(in_ptr1 + ix);
+                    in[2] = _mm256_load_si256(in_ptr2 + ix);
+                    in[3] = _mm256_load_si256(in_ptr3 + ix);
+                    in[4] = _mm256_load_si256(in_ptr4 + ix);
+                    in[5] = _mm256_load_si256(in_ptr5 + ix);
+                    in[6] = _mm256_load_si256(in_ptr6 + ix);
+
+                    w = _mm256_cvtepi8_epi16(_mm_lddqu_si128((__m128i*)weight));
+                    weight += VEC_16CAP;
+
+                    // multiply and add - won't saturate
+                    in[0] = _mm256_madd_epi16(in[0], w);
+                    in[1] = _mm256_madd_epi16(in[1], w);
+                    in[2] = _mm256_madd_epi16(in[2], w);
+                    in[3] = _mm256_madd_epi16(in[3], w);
+                    in[4] = _mm256_madd_epi16(in[4], w);
+                    in[5] = _mm256_madd_epi16(in[5], w);
+                    in[6] = _mm256_madd_epi16(in[6], w);
+
+                    acc[0] = _mm256_add_epi32(acc[0], in[0]);
+                    acc[1] = _mm256_add_epi32(acc[1], in[1]);
+                    acc[2] = _mm256_add_epi32(acc[2], in[2]);
+                    acc[3] = _mm256_add_epi32(acc[3], in[3]);
+                    acc[4] = _mm256_add_epi32(acc[4], in[4]);
+                    acc[5] = _mm256_add_epi32(acc[5], in[5]);
+                    acc[6] = _mm256_add_epi32(acc[6], in[6]);
+                }
+
+                for (i = 0; i < config->inputVectorCount; i++)
+                {
+                    sum[i] += vec_sum32(acc[i]) * weightScaleFactor->multiplier;
+                    acc[i] = _mm256_setzero_si256();
+                }
+            }
+
+            for (j = 0; j < KT; j++, weight++)
+            {
+                for (i = 0; i < config->inputVectorCount; i++)
+                {
+                    sum[i] += (int32_t)(input[i][j] * *weight * weightScaleFactor->multiplier);
+                }
+            }
+
+            for (i = 0; i < config->inputVectorCount; i++)
+            {
+                saturate_store_out(&sum[i], &output[i], config->saturationCount);
+            }
+
+            output += config->inputVectorCount;
+            weightScaleFactor++;
+        }
+    }
+
+    if (8 == config->inputVectorCount)
+    {
+        for (; multiBias < biasEnd; multiBias+=config->multiBiasVectorCount)
+        {
+            ix = 0;
+
+            sum0 = *multiBias;
+            sum1 = *multiBias;
+            sum2 = *multiBias;
+            sum3 = *multiBias;
+            sum4 = *multiBias;
+            sum5 = *multiBias;
+            sum6 = *multiBias;
+            sum7 = *multiBias;
+
+            acc0 = _mm256_setzero_si256();
+            acc1 = _mm256_setzero_si256();
+            acc2 = _mm256_setzero_si256();
+            acc3 = _mm256_setzero_si256();
+            acc4 = _mm256_setzero_si256();
+            acc5 = _mm256_setzero_si256();
+            acc6 = _mm256_setzero_si256();
+            acc7 = _mm256_setzero_si256();
+
+            for (kk = 0; kk < nKpartial + 1; kk++)
+            {
+                saturate(&sum0, config->saturationCount);
+                saturate(&sum1, config->saturationCount);
+                saturate(&sum2, config->saturationCount);
+                saturate(&sum3, config->saturationCount);
+                saturate(&sum4, config->saturationCount);
+                saturate(&sum5, config->saturationCount);
+                saturate(&sum6, config->saturationCount);
+                saturate(&sum7, config->saturationCount);
+
+                // kpartial = 12288 / 8 = 1536
+                // 1536 / 16 = 96
+                // accumulator will not saturate
+                niters = kpartial < KK - kk * kpartial ? kpartial : KK - kk * kpartial;
+                ix_end = ix + niters / VEC_16CAP;
+                for (; ix < ix_end; ix++)
+                {
+                    in0 = _mm256_load_si256(in_ptr0 + ix);
+                    in1 = _mm256_load_si256(in_ptr1 + ix);
+                    in2 = _mm256_load_si256(in_ptr2 + ix);
+                    in3 = _mm256_load_si256(in_ptr3 + ix);
+                    in4 = _mm256_load_si256(in_ptr4 + ix);
+                    in5 = _mm256_load_si256(in_ptr5 + ix);
+                    in6 = _mm256_load_si256(in_ptr6 + ix);
+                    in7 = _mm256_load_si256(in_ptr7 + ix);
+
+                    w = _mm256_cvtepi8_epi16(_mm_lddqu_si128((__m128i*)weight));
+                    weight += VEC_16CAP;
+
+                    // multiply and add - won't saturate
+                    in0 = _mm256_madd_epi16(in0, w);
+                    in1 = _mm256_madd_epi16(in1, w);
+                    in2 = _mm256_madd_epi16(in2, w);
+                    in3 = _mm256_madd_epi16(in3, w);
+                    in4 = _mm256_madd_epi16(in4, w);
+                    in5 = _mm256_madd_epi16(in5, w);
+                    in6 = _mm256_madd_epi16(in6, w);
+                    in7 = _mm256_madd_epi16(in7, w);
+
+                    acc0 = _mm256_add_epi32(acc0, in0);
+                    acc1 = _mm256_add_epi32(acc1, in1);
+                    acc2 = _mm256_add_epi32(acc2, in2);
+                    acc3 = _mm256_add_epi32(acc3, in3);
+                    acc4 = _mm256_add_epi32(acc4, in4);
+                    acc5 = _mm256_add_epi32(acc5, in5);
+                    acc6 = _mm256_add_epi32(acc6, in6);
+                    acc7 = _mm256_add_epi32(acc7, in7);
+                }
+
+                sum0 += vec_sum32(acc0) * weightScaleFactor->multiplier;
+                sum1 += vec_sum32(acc1) * weightScaleFactor->multiplier;
+                sum2 += vec_sum32(acc2) * weightScaleFactor->multiplier;
+                sum3 += vec_sum32(acc3) * weightScaleFactor->multiplier;
+                sum4 += vec_sum32(acc4) * weightScaleFactor->multiplier;
+                sum5 += vec_sum32(acc5) * weightScaleFactor->multiplier;
+                sum6 += vec_sum32(acc6) * weightScaleFactor->multiplier;
+                sum7 += vec_sum32(acc7) * weightScaleFactor->multiplier;
+
+                acc0 = _mm256_setzero_si256();
+                acc1 = _mm256_setzero_si256();
+                acc2 = _mm256_setzero_si256();
+                acc3 = _mm256_setzero_si256();
+                acc4 = _mm256_setzero_si256();
+                acc5 = _mm256_setzero_si256();
+                acc6 = _mm256_setzero_si256();
+                acc7 = _mm256_setzero_si256();
+            }
+
+            for (j = 0; j < KT; j++, weight++)
+            {
+                sum0 += (int32_t)(input[0][j] * *weight * weightScaleFactor->multiplier);
+                sum1 += (int32_t)(input[1][j] * *weight * weightScaleFactor->multiplier);
+                sum2 += (int32_t)(input[2][j] * *weight * weightScaleFactor->multiplier);
+                sum3 += (int32_t)(input[3][j] * *weight * weightScaleFactor->multiplier);
+                sum4 += (int32_t)(input[4][j] * *weight * weightScaleFactor->multiplier);
+                sum5 += (int32_t)(input[5][j] * *weight * weightScaleFactor->multiplier);
+                sum6 += (int32_t)(input[6][j] * *weight * weightScaleFactor->multiplier);
+                sum7 += (int32_t)(input[7][j] * *weight * weightScaleFactor->multiplier);
+            }
+
+            saturate_store_out(&sum0, &output[0], config->saturationCount);
+            saturate_store_out(&sum1, &output[1], config->saturationCount);
+            saturate_store_out(&sum2, &output[2], config->saturationCount);
+            saturate_store_out(&sum3, &output[3], config->saturationCount);
+            saturate_store_out(&sum4, &output[4], config->saturationCount);
+            saturate_store_out(&sum5, &output[5], config->saturationCount);
+            saturate_store_out(&sum6, &output[6], config->saturationCount);
+            saturate_store_out(&sum7, &output[7], config->saturationCount);
+
+            output += config->inputVectorCount;
+            weightScaleFactor++;
+        }
+    }
+}

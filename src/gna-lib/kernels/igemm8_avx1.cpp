@@ -652,4 +652,633 @@ void AffineKernelImpl1B(AffineConfig const * const config)
 }
 
 void AffineMultiBiasKernelImpl1B(AffineConfig const * const config)
-{}
+{
+    uint32_t i, j, k, ix, ix_end;
+
+    int32_t * output = config->output;
+    int8_t const * weight = config->weights1B;
+
+    __m256i v0, v1, v2, v3;
+    __m128i s0, s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, s15, w, w0, w1;
+    int16_t const * input_0, *input_1, *input_2, *input_3, *input_4, *input_5, *input_6, *input_7;
+
+    nn_bias_s const * multiBias;
+    nn_bias_s const * const biasEnd = config->multiBias + config->outputElementCount * config->multiBiasVectorCount;
+    nn_bias_c const * weightScaleFactor = config->weightScaleFactors;
+
+    uint32_t KT = config->inputElementCount % VEC_16CAP;
+    uint32_t KK = config->inputElementCount - KT;
+    ix_end = KK / VEC_16CAP;
+
+    __m128i acc0, acc1, acc2, acc3, acc4, acc5, acc6, acc7;
+    __m128i in0, in1, in2, in3, in4, in5, in6, in7;
+    __m256i* in_ptr0, *in_ptr1, *in_ptr2, *in_ptr3;
+
+    if (1 == config->inputVectorCount)
+    {
+        in_ptr0 = (__m256i*) config->input;
+        input_0 = config->input + KK;
+        for (multiBias = config->multiBias; multiBias < biasEnd; multiBias+=config->multiBiasVectorCount)
+        {
+            acc0 = _mm_setzero_si128();
+            *output = *multiBias;
+
+            for (ix = 0; ix < ix_end; ix++)
+            {
+                v0 = _mm256_load_si256(in_ptr0 + ix);
+
+                in0 = _mm256_castsi256_si128(v0);
+                in1 = _mm256_extractf128_si256(v0, 1);
+                w0 = _mm_cvtepi8_epi16(_mm_lddqu_si128((__m128i*)weight));
+                w1 = _mm_cvtepi8_epi16(_mm_lddqu_si128((__m128i*)(weight + SSE_16CAP)));
+                weight += VEC_16CAP;
+
+                in0 = _mm_madd_epi16(in0, w0);
+                in1 = _mm_madd_epi16(in1, w1);
+
+                acc0 = _mm_add_epi32(acc0, in0);
+                acc0 = _mm_add_epi32(acc0, in1);
+            }
+
+            *output += vec_sum(acc0) * weightScaleFactor->multiplier;
+            for (j = 0; j < KT; j++, weight++)
+            {
+                *output += input_0[j] * *weight * weightScaleFactor->multiplier;
+            }
+            output++;
+            weightScaleFactor++;
+        }
+
+        return;
+    }
+
+    input_0 = config->fvBuffers->d0 + KK;
+    input_1 = config->fvBuffers->d1 + KK;
+    input_2 = config->fvBuffers->d2 + KK;
+    input_3 = config->fvBuffers->d3 + KK;
+
+    in_ptr0 = (__m256i*)config->fvBuffers->d0;
+    in_ptr1 = (__m256i*)config->fvBuffers->d1;
+    in_ptr2 = (__m256i*)config->fvBuffers->d2;
+    in_ptr3 = (__m256i*)config->fvBuffers->d3;
+
+    switch (config->inputVectorCount)
+    {
+    case 4: for (i = 0; i < config->inputElementCount; i++) config->fvBuffers->d3[i] = config->input[i*config->inputVectorCount + 3];
+    case 3: for (i = 0; i < config->inputElementCount; i++) config->fvBuffers->d2[i] = config->input[i*config->inputVectorCount + 2];
+    case 2: for (i = 0; i < config->inputElementCount; i++) config->fvBuffers->d1[i] = config->input[i*config->inputVectorCount + 1];
+            for (i = 0; i < config->inputElementCount; i++) config->fvBuffers->d0[i] = config->input[i*config->inputVectorCount];
+    }
+
+    if (2 == config->inputVectorCount)
+    {
+        for (multiBias = config->multiBias; multiBias < biasEnd; multiBias+=config->multiBiasVectorCount)
+        {
+            acc0 = _mm_setzero_si128();
+            acc1 = _mm_setzero_si128();
+
+            for (ix = 0; ix < ix_end; ix++)
+            {
+                v0 = _mm256_load_si256(in_ptr0 + ix);
+                v1 = _mm256_load_si256(in_ptr1 + ix);
+                in0 = _mm256_castsi256_si128(v0);
+                in1 = _mm256_castsi256_si128(v1);
+
+                in2 = _mm256_extractf128_si256(v0, 1);
+                in3 = _mm256_extractf128_si256(v1, 1);
+
+                w0 = _mm_cvtepi8_epi16(_mm_lddqu_si128((__m128i*)weight));
+                w1 = _mm_cvtepi8_epi16(_mm_lddqu_si128((__m128i*)(weight + SSE_16CAP)));
+                weight  += VEC_16CAP;
+
+                in0 = _mm_madd_epi16(in0, w0);
+                in1 = _mm_madd_epi16(in1, w0);
+
+                in2 = _mm_madd_epi16(in2, w1);
+                in3 = _mm_madd_epi16(in3, w1);
+
+                acc0 = _mm_add_epi32(acc0, in0);
+                acc1 = _mm_add_epi32(acc1, in1);
+
+                acc0 = _mm_add_epi32(acc0, in2);
+                acc1 = _mm_add_epi32(acc1, in3);
+            }
+
+            output[0] = vec_sum(acc0) * weightScaleFactor->multiplier + *multiBias;
+            output[1] = vec_sum(acc1) * weightScaleFactor->multiplier + *multiBias;
+            for (j = 0; j < KT; j++, weight++)
+            {
+                output[0] += input_0[j] * *weight * weightScaleFactor->multiplier;
+                output[1] += input_1[j] * *weight * weightScaleFactor->multiplier;
+            }
+            output += config->inputVectorCount;
+            weightScaleFactor++;
+        }
+
+        return;
+    }
+
+    if (3 == config->inputVectorCount)
+    {
+        for (multiBias = config->multiBias; multiBias < biasEnd; multiBias+=config->multiBiasVectorCount)
+        {
+            acc0 = _mm_setzero_si128();
+            acc1 = _mm_setzero_si128();
+            acc2 = _mm_setzero_si128();
+
+            for (ix = 0; ix < ix_end; ix++)
+            {
+                v0 = _mm256_load_si256(in_ptr0 + ix);
+                v1 = _mm256_load_si256(in_ptr1 + ix);
+                v2 = _mm256_load_si256(in_ptr2 + ix);
+
+                w0 = _mm_cvtepi8_epi16(_mm_lddqu_si128((__m128i*)weight));
+                w1 = _mm_cvtepi8_epi16(_mm_lddqu_si128((__m128i*)(weight + SSE_16CAP)));
+                weight  += VEC_16CAP;
+
+                in0 = _mm256_castsi256_si128(v0);
+                in1 = _mm256_castsi256_si128(v1);
+                in2 = _mm256_castsi256_si128(v2);
+
+                in3 = _mm256_extractf128_si256(v0, 1);
+                in4 = _mm256_extractf128_si256(v1, 1);
+                in5 = _mm256_extractf128_si256(v2, 1);
+
+                in0 = _mm_madd_epi16(in0, w0);
+                in1 = _mm_madd_epi16(in1, w0);
+                in2 = _mm_madd_epi16(in2, w0);
+
+                in3 = _mm_madd_epi16(in3, w1);
+                in4 = _mm_madd_epi16(in4, w1);
+                in5 = _mm_madd_epi16(in5, w1);
+
+                acc0 = _mm_add_epi32(acc0, in0);
+                acc1 = _mm_add_epi32(acc1, in1);
+                acc2 = _mm_add_epi32(acc2, in2);
+
+                acc0 = _mm_add_epi32(acc0, in3);
+                acc1 = _mm_add_epi32(acc1, in4);
+                acc2 = _mm_add_epi32(acc2, in5);
+            }
+
+            output[0] = vec_sum(acc0) * weightScaleFactor->multiplier + *multiBias;
+            output[1] = vec_sum(acc1) * weightScaleFactor->multiplier + *multiBias;
+            output[2] = vec_sum(acc2) * weightScaleFactor->multiplier + *multiBias;
+            for (j = 0; j < KT; j++, weight++)
+            {
+                output[0] += input_0[j] * *weight * weightScaleFactor->multiplier;
+                output[1] += input_1[j] * *weight * weightScaleFactor->multiplier;
+                output[2] += input_2[j] * *weight * weightScaleFactor->multiplier;
+            }
+            output += config->inputVectorCount;
+            weightScaleFactor++;
+        }
+
+        return;
+    }
+
+    if (4 == config->inputVectorCount)
+    {
+        for (multiBias = config->multiBias; multiBias < biasEnd; multiBias+=config->multiBiasVectorCount)
+        {
+            acc0 = _mm_setzero_si128();
+            acc1 = _mm_setzero_si128();
+            acc2 = _mm_setzero_si128();
+            acc3 = _mm_setzero_si128();
+
+            for (ix = 0; ix < ix_end; ix++)
+            {
+                v0 = _mm256_load_si256(in_ptr0 + ix);
+                v1 = _mm256_load_si256(in_ptr1 + ix);
+                v2 = _mm256_load_si256(in_ptr2 + ix);
+                v3 = _mm256_load_si256(in_ptr3 + ix);
+
+                in0 = _mm256_castsi256_si128(v0);
+                in1 = _mm256_castsi256_si128(v1);
+                in2 = _mm256_castsi256_si128(v2);
+                in3 = _mm256_castsi256_si128(v3);
+
+                in4 = _mm256_extractf128_si256(v0, 1);
+                in5 = _mm256_extractf128_si256(v1, 1);
+                in6 = _mm256_extractf128_si256(v2, 1);
+                in7 = _mm256_extractf128_si256(v3, 1);
+
+                w0 = _mm_cvtepi8_epi16(_mm_lddqu_si128((__m128i*)weight));
+                w1 = _mm_cvtepi8_epi16(_mm_lddqu_si128((__m128i*)(weight + SSE_16CAP)));
+                weight  += VEC_16CAP;
+
+                in0 = _mm_madd_epi16(in0, w0);
+                in1 = _mm_madd_epi16(in1, w0);
+                in2 = _mm_madd_epi16(in2, w0);
+                in3 = _mm_madd_epi16(in3, w0);
+
+                in4 = _mm_madd_epi16(in4, w1);
+                in5 = _mm_madd_epi16(in5, w1);
+                in6 = _mm_madd_epi16(in6, w1);
+                in7 = _mm_madd_epi16(in7, w1);
+
+                acc0 = _mm_add_epi32(acc0, in0);
+                acc1 = _mm_add_epi32(acc1, in1);
+                acc2 = _mm_add_epi32(acc2, in2);
+                acc3 = _mm_add_epi32(acc3, in3);
+
+                acc0 = _mm_add_epi32(acc0, in4);
+                acc1 = _mm_add_epi32(acc1, in5);
+                acc2 = _mm_add_epi32(acc2, in6);
+                acc3 = _mm_add_epi32(acc3, in7);
+            }
+
+            output[0] = *multiBias + vec_sum(acc0) * weightScaleFactor->multiplier;
+            output[1] = *multiBias + vec_sum(acc1) * weightScaleFactor->multiplier;
+            output[2] = *multiBias + vec_sum(acc2) * weightScaleFactor->multiplier;
+            output[3] = *multiBias + vec_sum(acc3) * weightScaleFactor->multiplier;
+            for (j = 0; j < KT; j++, weight++)
+            {
+                output[0] += input_0[j] * *weight * weightScaleFactor->multiplier;
+                output[1] += input_1[j] * *weight * weightScaleFactor->multiplier;
+                output[2] += input_2[j] * *weight * weightScaleFactor->multiplier;
+                output[3] += input_3[j] * *weight * weightScaleFactor->multiplier;
+            }
+            output += config->inputVectorCount;
+            weightScaleFactor++;
+        }
+
+        return;
+    }
+
+    KT = config->inputElementCount % SSE_16CAP;
+    KK = config->inputElementCount - KT;
+    ix_end = 2 * KK / VEC_16CAP;
+
+    //config->fvBuffers->d1 = config->fvBuffers->d0 + 2 * (UINT16_MAX + 1);
+    //config->fvBuffers->d2 = config->fvBuffers->d0 + 2 * (UINT16_MAX + 1);
+    //config->fvBuffers->d3 = config->fvBuffers->d0 + 2 * (UINT16_MAX + 1);
+    //config->fvBuffers->d4 = config->fvBuffers->d0 + 2 * (UINT16_MAX + 1);
+
+    in_ptr0 = (__m256i*)config->fvBuffers->d0;
+    in_ptr1 = (__m256i*)config->fvBuffers->d2;
+    in_ptr2 = (__m256i*)config->fvBuffers->d4;
+    in_ptr3 = (__m256i*)config->fvBuffers->d6;
+
+    input_0 = config->fvBuffers->d0 + 2 * KK;
+    input_1 = config->fvBuffers->d2 + 2 * KK;
+    input_2 = config->fvBuffers->d4 + 2 * KK;
+    input_3 = config->fvBuffers->d6 + 2 * KK;
+
+    if (5 == config->inputVectorCount)
+    {
+        for (j = 0; j < 2 * config->inputElementCount;)
+        {
+            i = j / 2;
+            for (k = i; k < i + 8 && k < config->inputElementCount; k++, j++)
+            {
+                config->fvBuffers->d0[j] = config->input[k*config->inputVectorCount];
+                config->fvBuffers->d2[j] = config->input[k*config->inputVectorCount + 2];
+            }
+            for (k = i; k < i + 8 && k < config->inputElementCount; k++, j++)
+            {
+                config->fvBuffers->d0[j] = config->input[k*config->inputVectorCount + 1];
+                config->fvBuffers->d2[j] = config->input[k*config->inputVectorCount + 3];
+            }
+        }
+        for (i = 0; i < config->inputElementCount; i++) config->fvBuffers->d4[i] = config->input[i*config->inputVectorCount + 4];
+
+        for (multiBias = config->multiBias; multiBias < biasEnd; multiBias+=config->multiBiasVectorCount)
+        {
+            input_2 = config->fvBuffers->d4;
+
+            acc0 = _mm_setzero_si128();
+            acc1 = _mm_setzero_si128();
+            acc2 = _mm_setzero_si128();
+            acc3 = _mm_setzero_si128();
+            acc4 = _mm_setzero_si128();
+
+            for (ix = 0; ix < ix_end; ix++)
+            {
+                v0 = _mm256_load_si256(in_ptr0 + ix);
+                v1 = _mm256_load_si256(in_ptr1 + ix);
+
+                in0 = _mm256_castsi256_si128(v0);
+                in1 = _mm256_extractf128_si256(v0, 1);
+                in2 = _mm256_castsi256_si128(v1);
+                in3 = _mm256_extractf128_si256(v1, 1);
+                in4 = _mm_load_si128((__m128i*)input_2);
+                w = _mm_cvtepi8_epi16(_mm_lddqu_si128((__m128i*)weight));
+                input_2 += SSE_16CAP;
+                weight  += SSE_16CAP;
+
+                in0 = _mm_madd_epi16(in0, w);
+                in1 = _mm_madd_epi16(in1, w);
+                in2 = _mm_madd_epi16(in2, w);
+                in3 = _mm_madd_epi16(in3, w);
+                in4 = _mm_madd_epi16(in4, w);
+
+                acc0 = _mm_add_epi32(acc0, in0);
+                acc1 = _mm_add_epi32(acc1, in1);
+                acc2 = _mm_add_epi32(acc2, in2);
+                acc3 = _mm_add_epi32(acc3, in3);
+                acc4 = _mm_add_epi32(acc4, in4);
+            }
+
+            output[0] = vec_sum(acc0) * weightScaleFactor->multiplier + *multiBias;
+            output[1] = vec_sum(acc1) * weightScaleFactor->multiplier + *multiBias;
+            output[2] = vec_sum(acc2) * weightScaleFactor->multiplier + *multiBias;
+            output[3] = vec_sum(acc3) * weightScaleFactor->multiplier + *multiBias;
+            output[4] = vec_sum(acc4) * weightScaleFactor->multiplier + *multiBias;
+
+            for (j = 0; j < KT; j++, weight++)
+            {
+                output[0] += input_0[j] *     *weight * weightScaleFactor->multiplier;
+                output[1] += input_0[j + KT] * *weight * weightScaleFactor->multiplier;
+                output[2] += input_1[j] *     *weight * weightScaleFactor->multiplier;
+                output[3] += input_1[j + KT] * *weight * weightScaleFactor->multiplier;
+                output[4] += input_2[j] *     *weight * weightScaleFactor->multiplier;
+            }
+
+            output += config->inputVectorCount;
+            weightScaleFactor++;
+        }
+
+        return;
+    }
+
+    if (6 == config->inputVectorCount)
+    {
+        for (j = 0; j < 2 * config->inputElementCount;)
+        {
+            i = j / 2;
+            for (k = i; k < i + 8 && k < config->inputElementCount; k++, j++)
+            {
+                config->fvBuffers->d0[j] = config->input[k*config->inputVectorCount];
+                config->fvBuffers->d2[j] = config->input[k*config->inputVectorCount + 2];
+                config->fvBuffers->d4[j] = config->input[k*config->inputVectorCount + 4];
+            }
+            for (k = i; k < i + 8 && k < config->inputElementCount; k++, j++)
+            {
+                config->fvBuffers->d0[j] = config->input[k*config->inputVectorCount + 1];
+                config->fvBuffers->d2[j] = config->input[k*config->inputVectorCount + 3];
+                config->fvBuffers->d4[j] = config->input[k*config->inputVectorCount + 5];
+            }
+        }
+
+        for (multiBias = config->multiBias; multiBias < biasEnd; multiBias+=config->multiBiasVectorCount)
+        {
+            acc0 = _mm_setzero_si128();
+            acc1 = _mm_setzero_si128();
+            acc2 = _mm_setzero_si128();
+            acc3 = _mm_setzero_si128();
+            acc4 = _mm_setzero_si128();
+            acc5 = _mm_setzero_si128();
+
+            for (ix = 0; ix < ix_end; ix++)
+            {
+                v0 = _mm256_load_si256(in_ptr0 + ix);
+                v1 = _mm256_load_si256(in_ptr1 + ix);
+                v2 = _mm256_load_si256(in_ptr2 + ix);
+
+                in0 = _mm256_castsi256_si128(v0);
+                in1 = _mm256_extractf128_si256(v0, 1);
+                in2 = _mm256_castsi256_si128(v1);
+                in3 = _mm256_extractf128_si256(v1, 1);
+                in4 = _mm256_castsi256_si128(v2);
+                in5 = _mm256_extractf128_si256(v2, 1);
+                w = _mm_cvtepi8_epi16(_mm_lddqu_si128((__m128i*)weight));
+                weight  += SSE_16CAP;
+
+                in0 = _mm_madd_epi16(in0, w);
+                in1 = _mm_madd_epi16(in1, w);
+                in2 = _mm_madd_epi16(in2, w);
+                in3 = _mm_madd_epi16(in3, w);
+                in4 = _mm_madd_epi16(in4, w);
+                in5 = _mm_madd_epi16(in5, w);
+
+                acc0 = _mm_add_epi32(acc0, in0);
+                acc1 = _mm_add_epi32(acc1, in1);
+                acc2 = _mm_add_epi32(acc2, in2);
+                acc3 = _mm_add_epi32(acc3, in3);
+                acc4 = _mm_add_epi32(acc4, in4);
+                acc5 = _mm_add_epi32(acc5, in5);
+            }
+
+            output[0] = vec_sum(acc0) * weightScaleFactor->multiplier + *multiBias;
+            output[1] = vec_sum(acc1) * weightScaleFactor->multiplier + *multiBias;
+            output[2] = vec_sum(acc2) * weightScaleFactor->multiplier + *multiBias;
+            output[3] = vec_sum(acc3) * weightScaleFactor->multiplier + *multiBias;
+            output[4] = vec_sum(acc4) * weightScaleFactor->multiplier + *multiBias;
+            output[5] = vec_sum(acc5) * weightScaleFactor->multiplier + *multiBias;
+
+            for (j = 0; j < KT; j++, weight++)
+            {
+                output[0] += input_0[j] *      *weight * weightScaleFactor->multiplier;
+                output[1] += input_0[j + KT] * *weight * weightScaleFactor->multiplier;
+                output[2] += input_1[j] *      *weight * weightScaleFactor->multiplier;
+                output[3] += input_1[j + KT] * *weight * weightScaleFactor->multiplier;
+                output[4] += input_2[j] *      *weight * weightScaleFactor->multiplier;
+                output[5] += input_2[j + KT] * *weight * weightScaleFactor->multiplier;
+            }
+
+            output += config->inputVectorCount;
+            weightScaleFactor++;
+        }
+
+        return;
+    }
+
+    if (7 == config->inputVectorCount)
+    {
+        for (j = 0; j < 2 * config->inputElementCount;)
+        {
+            i = j / 2;
+            for (k = i; k < i + 8 && k < config->inputElementCount; k++, j++)
+            {
+                config->fvBuffers->d0[j] = config->input[k*config->inputVectorCount];
+                config->fvBuffers->d2[j] = config->input[k*config->inputVectorCount + 2];
+                config->fvBuffers->d4[j] = config->input[k*config->inputVectorCount + 4];
+            }
+            for (k = i; k < i + 8 && k < config->inputElementCount; k++, j++)
+            {
+                config->fvBuffers->d0[j] = config->input[k*config->inputVectorCount + 1];
+                config->fvBuffers->d2[j] = config->input[k*config->inputVectorCount + 3];
+                config->fvBuffers->d4[j] = config->input[k*config->inputVectorCount + 5];
+            }
+        }
+
+        for (i = 0; i < config->inputElementCount; i++) config->fvBuffers->d6[i] = config->input[i*config->inputVectorCount + 6];
+
+        for (multiBias = config->multiBias; multiBias < biasEnd; multiBias+=config->multiBiasVectorCount)
+        {
+            input_3 = config->fvBuffers->d6;
+
+            acc0 = _mm_setzero_si128();
+            acc1 = _mm_setzero_si128();
+            acc2 = _mm_setzero_si128();
+            acc3 = _mm_setzero_si128();
+            acc4 = _mm_setzero_si128();
+            acc5 = _mm_setzero_si128();
+            acc6 = _mm_setzero_si128();
+
+            for (ix = 0; ix < ix_end; ix++)
+            {
+                v0 = _mm256_load_si256(in_ptr0 + ix);
+                v1 = _mm256_load_si256(in_ptr1 + ix);
+                v2 = _mm256_load_si256(in_ptr2 + ix);
+
+                in0 = _mm256_castsi256_si128(v0);
+                in1 = _mm256_extractf128_si256(v0, 1);
+                in2 = _mm256_castsi256_si128(v1);
+                in3 = _mm256_extractf128_si256(v1, 1);
+                in4 = _mm256_castsi256_si128(v2);
+                in5 = _mm256_extractf128_si256(v2, 1);
+                in6 = _mm_load_si128((__m128i*)input_3);
+                w = _mm_cvtepi8_epi16(_mm_lddqu_si128((__m128i*)weight));
+                input_3 += SSE_16CAP;
+                weight  += SSE_16CAP;
+
+                in0 = _mm_madd_epi16(in0, w);
+                in1 = _mm_madd_epi16(in1, w);
+                in2 = _mm_madd_epi16(in2, w);
+                in3 = _mm_madd_epi16(in3, w);
+                in4 = _mm_madd_epi16(in4, w);
+                in5 = _mm_madd_epi16(in5, w);
+                in6 = _mm_madd_epi16(in6, w);
+
+                acc0 = _mm_add_epi32(acc0, in0);
+                acc1 = _mm_add_epi32(acc1, in1);
+                acc2 = _mm_add_epi32(acc2, in2);
+                acc3 = _mm_add_epi32(acc3, in3);
+                acc4 = _mm_add_epi32(acc4, in4);
+                acc5 = _mm_add_epi32(acc5, in5);
+                acc6 = _mm_add_epi32(acc6, in6);
+
+            }
+
+            output[0] = *multiBias + vec_sum(acc0) * weightScaleFactor->multiplier;
+            output[1] = *multiBias + vec_sum(acc1) * weightScaleFactor->multiplier;
+            output[2] = *multiBias + vec_sum(acc2) * weightScaleFactor->multiplier;
+            output[3] = *multiBias + vec_sum(acc3) * weightScaleFactor->multiplier;
+            output[4] = *multiBias + vec_sum(acc4) * weightScaleFactor->multiplier;
+            output[5] = *multiBias + vec_sum(acc5) * weightScaleFactor->multiplier;
+            output[6] = *multiBias + vec_sum(acc6) * weightScaleFactor->multiplier;
+
+            for (j = 0; j < KT; j++, weight++)
+            {
+                output[0] += input_0[j] *      *weight * weightScaleFactor->multiplier;
+                output[1] += input_0[j + KT] * *weight * weightScaleFactor->multiplier;
+                output[2] += input_1[j] *      *weight * weightScaleFactor->multiplier;
+                output[3] += input_1[j + KT] * *weight * weightScaleFactor->multiplier;
+                output[4] += input_2[j] *      *weight * weightScaleFactor->multiplier;
+                output[5] += input_2[j + KT] * *weight * weightScaleFactor->multiplier;
+                output[6] += input_3[j] *      *weight * weightScaleFactor->multiplier;
+            }
+
+            output += config->inputVectorCount;
+            weightScaleFactor++;
+        }
+    }
+
+    if (8 == config->inputVectorCount)
+    {
+        for (j = 0; j < 2 * config->inputElementCount;)
+        {
+            i = j / 2;
+            for (k = i; k < i + 8 && k < config->inputElementCount; k++, j++)
+            {
+                config->fvBuffers->d0[j] = config->input[k*config->inputVectorCount];
+                config->fvBuffers->d2[j] = config->input[k*config->inputVectorCount + 2];
+                config->fvBuffers->d4[j] = config->input[k*config->inputVectorCount + 4];
+                config->fvBuffers->d6[j] = config->input[k*config->inputVectorCount + 6];
+            }
+            for (k = i; k < i + 8 && k < config->inputElementCount; k++, j++)
+            {
+                config->fvBuffers->d0[j] = config->input[k*config->inputVectorCount + 1];
+                config->fvBuffers->d2[j] = config->input[k*config->inputVectorCount + 3];
+                config->fvBuffers->d4[j] = config->input[k*config->inputVectorCount + 5];
+                config->fvBuffers->d6[j] = config->input[k*config->inputVectorCount + 7];
+            }
+        }
+
+        for (multiBias = config->multiBias; multiBias < biasEnd; multiBias+=config->multiBiasVectorCount)
+        {
+            acc0 = _mm_setzero_si128();
+            acc1 = _mm_setzero_si128();
+            acc2 = _mm_setzero_si128();
+            acc3 = _mm_setzero_si128();
+            acc4 = _mm_setzero_si128();
+            acc5 = _mm_setzero_si128();
+            acc6 = _mm_setzero_si128();
+            acc7 = _mm_setzero_si128();
+
+            for (ix = 0; ix < ix_end; ix++)
+            {
+                v0 = _mm256_load_si256(in_ptr0 + ix);
+                v1 = _mm256_load_si256(in_ptr1 + ix);
+                v2 = _mm256_load_si256(in_ptr2 + ix);
+                v3 = _mm256_load_si256(in_ptr3 + ix);
+
+                in0 = _mm256_castsi256_si128(v0);
+                in1 = _mm256_extractf128_si256(v0, 1);
+                in2 = _mm256_castsi256_si128(v1);
+                in3 = _mm256_extractf128_si256(v1, 1);
+                in4 = _mm256_castsi256_si128(v2);
+                in5 = _mm256_extractf128_si256(v2, 1);
+                in6 = _mm256_castsi256_si128(v3);
+                in7 = _mm256_extractf128_si256(v3, 1);
+                w = _mm_cvtepi8_epi16(_mm_lddqu_si128((__m128i*)weight));
+                weight  += SSE_16CAP;
+
+                in0 = _mm_madd_epi16(in0, w);
+                in1 = _mm_madd_epi16(in1, w);
+                in2 = _mm_madd_epi16(in2, w);
+                in3 = _mm_madd_epi16(in3, w);
+                in4 = _mm_madd_epi16(in4, w);
+                in5 = _mm_madd_epi16(in5, w);
+                in6 = _mm_madd_epi16(in6, w);
+                in7 = _mm_madd_epi16(in7, w);
+
+                acc0 = _mm_add_epi32(acc0, in0);
+                acc1 = _mm_add_epi32(acc1, in1);
+                acc2 = _mm_add_epi32(acc2, in2);
+                acc3 = _mm_add_epi32(acc3, in3);
+                acc4 = _mm_add_epi32(acc4, in4);
+                acc5 = _mm_add_epi32(acc5, in5);
+                acc6 = _mm_add_epi32(acc6, in6);
+                acc7 = _mm_add_epi32(acc7, in7);
+            }
+
+            s0 = _mm_set1_epi32(weightScaleFactor->multiplier);
+            s1 = _mm_set1_epi32(*multiBias);
+
+            s2 = _mm_hadd_epi32(acc0, acc1);
+            s3 = _mm_hadd_epi32(acc2, acc3);
+            s4 = _mm_hadd_epi32(s2, s3);
+            s5 = _mm_mullo_epi32(s4, s0);
+            s6 = _mm_add_epi32(s5, s1);
+
+            s2 = _mm_hadd_epi32(acc4, acc5);
+            s3 = _mm_hadd_epi32(acc6, acc7);
+            s4 = _mm_hadd_epi32(s2, s3);
+            s5 = _mm_mullo_epi32(s4, s0);
+            s7 = _mm_add_epi32(s5, s1);
+
+            v0 = _mm256_set_m128i(s7, s6);
+            _mm256_stream_si256((__m256i*)output, v0);
+
+            for (j = 0; j < KT; j++, weight++)
+            {
+                output[0] += input_0[j] *     *weight * weightScaleFactor->multiplier;
+                output[1] += input_0[j + KT] * *weight * weightScaleFactor->multiplier;
+                output[2] += input_1[j] *     *weight * weightScaleFactor->multiplier;
+                output[3] += input_1[j + KT] * *weight * weightScaleFactor->multiplier;
+                output[4] += input_2[j] *     *weight * weightScaleFactor->multiplier;
+                output[5] += input_2[j + KT] * *weight * weightScaleFactor->multiplier;
+                output[6] += input_3[j] *     *weight * weightScaleFactor->multiplier;
+                output[7] += input_3[j + KT] * *weight * weightScaleFactor->multiplier;
+            }
+
+            output += config->inputVectorCount;
+            weightScaleFactor++;
+        }
+
+        return;
+    }
+}
