@@ -119,4 +119,3 @@ uint32_t HardwareModel::getGmmDescriptorsSize(const uint16_t gmmLayersCount)
     auto gmmDescriptorsSizeTmp = size_t{gmmLayersCount * sizeof(GMM_CONFIG)};
     return gmmDescriptorsSizeTmp;
 }
-

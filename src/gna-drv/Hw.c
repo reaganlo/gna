@@ -117,8 +117,7 @@ HwWriteReg(
 
 VOID
 HwPrepareMmuConfig(
-    _In_    PMODEL_CTX  modelCtx,
-    _In_    UINT32      length)
+    _In_    PMODEL_CTX  modelCtx)
 {
     PMMU_CONFIG mmu;    // mmu config link
     P_PT_DIR    ptDir;  // page table directory
@@ -131,7 +130,7 @@ HwPrepareMmuConfig(
     // mark descriptor mmu config data 'dirty'
     RtlFillMemory(mmu, sizeof(MMU_CONFIG), 0xff);
     // populate mmu addresses
-    mmu->vamaxaddr = length - 1;
+    mmu->vamaxaddr = modelCtx->userMemorySize - 1;
     ptDir = modelCtx->ptDir;
     for (i = 0; i < modelCtx->pageTableCount && i < PT_DIR_SIZE; ++i)
     {

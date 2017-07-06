@@ -114,6 +114,7 @@ MemoryMap(
         modelCtx->pMdl = pMdl;
         modelCtx->mmapRequest = mapRequest;
         modelCtx->userMemoryBaseVA = usrBuffer;
+        modelCtx->userMemorySize = length;
         modelCtx->requestConfigId = -1;
         appCtx->models[modelId] = modelCtx;
 
@@ -271,7 +272,7 @@ MemoryMap(
     // prepare and store mmu config in app ctx for later copying into hw descriptor
     // HW configuration of mapping executed on app context switch before scoring start
     ModelDescInit(devCtx, modelCtx);
-    HwPrepareMmuConfig(modelCtx, length);
+    HwPrepareMmuConfig(modelCtx);
 
     Trace(TLI, T_MEM, "%!FUNC! HW Memory mapped successfully");
 

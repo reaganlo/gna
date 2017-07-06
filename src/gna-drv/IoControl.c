@@ -78,26 +78,18 @@ IoctlGetCapabilities(
     _Inout_ WDFREQUEST  request);
 
 #ifdef DRV_DEBUG_INTERFACE
-/**
- * Performs Hardware device register read
- *
- * @devCtx              device context
- * @request             ioctl request
- */
 static VOID
 IoctlReadReg(
     _Inout_ PDEV_CTX    devCtx,
     _Inout_ WDFREQUEST  request);
 
-/**
- * Performs Hardware device register write
- *
- * @devCtx              device context
- * @request             ioctl request
- */
 static VOID
 IoctlWriteReg(
     _Inout_ PDEV_CTX    devCtx,
+    _Inout_ WDFREQUEST  request);
+
+static VOID
+IoctlReadPageDir(
     _Inout_ WDFREQUEST  request);
 #endif
 
@@ -162,6 +154,10 @@ IoctlDispatcher(
     
     case GNA_IOCTL_WRITE_REG:
         IoctlWriteReg(devCtx, request);
+        break;
+
+    case GNA_IOCTL_READ_PGDIR:
+        IoctlReadPageDir(request);
         break;
 #endif // DRV_DEBUG_INTERFACE
 
@@ -385,7 +381,7 @@ IoctlWriteReg(
     size_t      inputLength;
     PGNA_WRITEREG_IN inputData;
 
-    TraceEntry(TLI, T_ENT);
+    TraceEntry(TLV, T_ENT);
 
     status = WdfRequestRetrieveInputBuffer(request, sizeof(PGNA_WRITEREG_IN), &inputData, &inputLength);
     if (!NT_SUCCESS(status))
@@ -409,4 +405,83 @@ IoctlWriteReg(
 ioctl_write_error:
     WdfRequestComplete(request, status);
 }
+
+static VOID
+IoctlReadPageDir(
+    _Inout_ WDFREQUEST  request)
+{
+    NTSTATUS status = STATUS_SUCCESS;
+    PUINT64 modelId = NULL;
+    size_t midLength = 0;
+    PGNA_PGDIR_OUT outData = NULL;
+    size_t outLength = 0;
+    PAPP_CTX appCtx = NULL;
+    PMODEL_CTX modelCtx = NULL;
+
+    status = WdfRequestRetrieveInputBuffer(request, sizeof(UINT64), &modelId, &midLength);
+
+    Trace(TLV, T_MEM, "Model id sent from userland: %llu", *modelId);
+    if (!NT_SUCCESS(status))
+    {
+        TraceFailMsg(TLE, T_EXIT, "WdfRequestRetrieveInputBuffer", status);
+        goto ioctl_readpgdir_error;
+    }
+
+    // not compatible data sent from userland
+    if (sizeof(*modelId) != midLength)
+    {
+        status = STATUS_UNSUCCESSFUL;
+        TraceFailMsg(TLE, T_EXIT, "Bad data sent", status);
+        goto ioctl_readpgdir_error;
+    }
+
+    // bad model id
+    if (*modelId >= APP_MODELS_LIMIT)
+    {
+        status = STATUS_UNSUCCESSFUL;
+        TraceFailMsg(TLE, T_EXIT, "Bad model id", status);
+        goto ioctl_readpgdir_error;
+    }
+
+    status = WdfRequestRetrieveOutputBuffer(request, sizeof(GNA_PGDIR_OUT), &outData, &outLength);
+    if (!NT_SUCCESS(status))
+    {
+        TraceFailMsg(TLE, T_EXIT, "WdfRequestRetrieveOutputBuffer", status);
+        goto ioctl_readpgdir_error;
+    }
+
+    appCtx = GetFileContext(WdfRequestGetFileObject(request));
+    modelCtx = appCtx->models[*modelId];
+    if (NULL == modelCtx)
+    {
+        status = STATUS_UNSUCCESSFUL;
+        TraceFailMsg(TLE, T_EXIT, "Model context for given model id does not exist", status);
+        goto ioctl_readpgdir_error;
+    }
+
+    outData->ptCount = modelCtx->pageTableCount;
+    {
+        UINT64 i = 0;
+        UINT64 copied = 0;
+        UINT64 toWrite = 0;
+
+        for (i = 0; i < modelCtx->pageTableCount; ++i)
+        {
+            outData->l1PhysAddr[i] = modelCtx->ptDir[i].commBuffLa.QuadPart;
+            toWrite = (UINT64)(modelCtx->userMemorySize - copied > PAGE_SIZE) ? PAGE_SIZE : modelCtx->userMemorySize - copied;
+            if (toWrite > 0)
+            {
+                memcpy_s(outData->l2PhysAddr + PT_ENTRY_NO * i, PAGE_SIZE, modelCtx->ptDir[i].commBuffVa, PAGE_SIZE);
+                copied += toWrite;
+            }
+        }
+    }
+
+    WdfRequestCompleteWithInformation(request, status, outLength);
+    return;
+
+ioctl_readpgdir_error:
+    WdfRequestComplete(request, status);
+}
+
 #endif // DRV_DEBUG_INTERFACE

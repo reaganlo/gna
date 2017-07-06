@@ -68,7 +68,7 @@ protected:
 struct DebugLogger : public Logger
 {
     DebugLogger() :
-        Logger(stdout, "[IntelGna] ", "INFO: ", "ERROR: ")
+        Logger(stderr, "[IntelGna] ", "INFO: ", "ERROR: ")
     {}
     virtual ~DebugLogger() = default;
 

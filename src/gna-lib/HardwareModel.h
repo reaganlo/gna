@@ -51,7 +51,7 @@ public:
     HardwareModel(const HardwareModel &) = delete;
     HardwareModel& operator=(const HardwareModel&) = delete;
 
-    status_t HardwareModel::Score(
+    virtual status_t HardwareModel::Score(
         uint32_t layerIndex,
         uint32_t layerCount,
         const RequestConfiguration& requestConfiguration,
@@ -82,7 +82,7 @@ public:
         hardwareLayers.at(layerIndex)->WriteActiveList(descriptor);
     }
 
-private:
+protected:
     void build(const std::vector<std::unique_ptr<Layer>>& layers, const uint32_t hardwareInternalBufferSize);
 
     static uint32_t getLayerDescriptorsSize(const uint16_t layerCount);

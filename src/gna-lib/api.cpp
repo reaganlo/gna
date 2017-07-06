@@ -27,6 +27,7 @@
 #include <thread>
 
 #include "Device.h"
+#include "DeviceVerbose.h"
 #include "Logger.h"
 #include "Validator.h"
 
@@ -35,13 +36,7 @@ using std::unique_ptr;
 
 using namespace GNA;
 
-/******************************************************************************
- *
- * Library internal objects
- *
- *****************************************************************************/
-
-unique_ptr<Device> GnaDevice;
+std::unique_ptr<Device> GnaDevice;
 
 /******************************************************************************
  *
@@ -245,7 +240,11 @@ GNAAPI intel_gna_status_t GnaDeviceOpen(
     }
     try
     {
+#if HW_VERBOSE == 1
+        GnaDevice = std::make_unique<DeviceVerbose>(deviceId, threadCount);
+#else
         GnaDevice = std::make_unique<Device>(deviceId, threadCount);
+#endif
         return GNA_SUCCESS;
     }
     catch (const GnaException &e)

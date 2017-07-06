@@ -23,41 +23,35 @@
  in any way.
 */
 
-#pragma once
+#ifndef _DEVICEVERBOSE_H
+#define _DEVICEVERBOSE_H
 
-#include <map>
-
-#include "common.h"
-#include "CompiledModel.h"
+#include "Device.h"
+#include "Memory.h"
+#include "ModelContainerVerbose.h"
 
 namespace GNA
 {
-
-class ModelContainer
+class DeviceVerbose : public Device
 {
 public:
-    ModelContainer::ModelContainer() = default;
-    ~ModelContainer() = default;
-    ModelContainer(const ModelContainer &) = delete;
-    ModelContainer& operator=(const ModelContainer&) = delete;
-    
-    /**
-    * Assigns model id based on model sequence
-    * !!! Not thread-safe !!!
-    */
-    inline gna_model_id ModelContainer::assignModelId()
+    DeviceVerbose::DeviceVerbose(gna_device_id* deviceId, uint8_t threadCount = 1) :
+        Device::Device(deviceId, threadCount)
     {
-        return modelSequence++;
+        modelContainer = std::make_unique<ModelContainerVerbose>();
     }
 
-    virtual void AllocateModel(gna_model_id *modelId, const gna_model * model, Memory& memory, const AccelerationDetector& detector);
-    void DeallocateModel(gna_model_id modelId);
+    void DeviceVerbose::SetPrescoreScenario(gna_model_id modelId, uint32_t nActions, dbg_action *actions)
+    {
+        auto& model = static_cast<CompiledModelVerbose&>(modelContainer->GetModel(modelId));
+        model.SetPrescoreScenario(nActions, actions);
+    }
 
-    CompiledModel& GetModel(gna_model_id modelId);
-
-protected:
-    gna_model_id modelSequence = 0;
-    std::map<gna_model_id, std::unique_ptr<CompiledModel>> models;
+    void DeviceVerbose::SetAfterscoreScenario(gna_model_id modelId, uint32_t nActions, dbg_action *actions)
+    {
+        auto& model = static_cast<CompiledModelVerbose&>(modelContainer->GetModel(modelId));
+        model.SetAfterscoreScenario(nActions, actions);
+    }
 };
-
 }
+#endif // _DEVICEVERBOSE_H

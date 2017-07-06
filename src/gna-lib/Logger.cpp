@@ -269,10 +269,10 @@ const char * const VerboseLogger::getStatusDescription(const intel_gna_status_t 
     return "";
 }
 
-#if defined(DUMP_ENABLED) || DEBUG >= 1
-std::unique_ptr<Logger> GNA::Log = std::make_unique<DebugLogger>();
-#elif HW_VERBOSE >= 1
+#if HW_VERBOSE == 1
 std::unique_ptr<Logger> GNA::Log = std::make_unique<VerboseLogger>();
+#elif defined(DUMP_ENABLED) || DEBUG >= 1
+std::unique_ptr<Logger> GNA::Log = std::make_unique<DebugLogger>();
 #else // RELEASE
 std::unique_ptr<Logger> GNA::Log = std::make_unique<Logger>();
 #endif

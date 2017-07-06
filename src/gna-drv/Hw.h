@@ -67,12 +67,10 @@ HwWriteReg(
  * Prepares hardware mmu config for further copying to hw base descriptor
  *
  * @appCtx              memory mapping data
- * @length              length of mapped buffer
  */
 VOID
 HwPrepareMmuConfig(
-    _In_    PMODEL_CTX  modelCtx,
-    _In_    UINT32      length);
+    _In_    PMODEL_CTX  modelCtx);
 
 /**
  * Retrieves hardware internal Input buffer size

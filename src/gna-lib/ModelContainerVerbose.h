@@ -25,39 +25,20 @@
 
 #pragma once
 
-#include <map>
-
-#include "common.h"
-#include "CompiledModel.h"
+#include "ModelContainer.h"
+#include "CompiledModelVerbose.h"
 
 namespace GNA
 {
 
-class ModelContainer
+class ModelContainerVerbose : public ModelContainer
 {
 public:
-    ModelContainer::ModelContainer() = default;
-    ~ModelContainer() = default;
-    ModelContainer(const ModelContainer &) = delete;
-    ModelContainer& operator=(const ModelContainer&) = delete;
-    
-    /**
-    * Assigns model id based on model sequence
-    * !!! Not thread-safe !!!
-    */
-    inline gna_model_id ModelContainer::assignModelId()
+    void AllocateModel(gna_model_id *modelId, const gna_model *rawModel, Memory& memory, const AccelerationDetector& detector)
     {
-        return modelSequence++;
+        *modelId = assignModelId();
+        std::unique_ptr<CompiledModel> modelVerbose = std::make_unique<CompiledModelVerbose>(*modelId, rawModel, memory, detector);
+        models[*modelId].swap(modelVerbose);
     }
-
-    virtual void AllocateModel(gna_model_id *modelId, const gna_model * model, Memory& memory, const AccelerationDetector& detector);
-    void DeallocateModel(gna_model_id modelId);
-
-    CompiledModel& GetModel(gna_model_id modelId);
-
-protected:
-    gna_model_id modelSequence = 0;
-    std::map<gna_model_id, std::unique_ptr<CompiledModel>> models;
 };
-
 }

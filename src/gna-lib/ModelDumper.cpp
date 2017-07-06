@@ -42,7 +42,7 @@ using namespace GNA;
 
 void Device::DumpModel(gna_model_id modelId, gna_device_kind deviceKind, const char * filepath)
 {
-    auto& model = modelContainer.GetModel(modelId);
+    auto& model = modelContainer->GetModel(modelId);
 
     auto deviceType = static_cast<GnaDeviceType>(deviceKind);
 
@@ -55,8 +55,8 @@ void Device::DumpModel(gna_model_id modelId, gna_device_kind deviceKind, const c
     auto dumpMemory = make_unique<Memory>(totalMemory->ModelSize, layerCount, model.GetGmmCount());
 
     gna_model_id dumpModelId;
-    modelContainer.AllocateModel(&dumpModelId, model.UserModel, *dumpMemory, detector);
-    auto& dumpModel = modelContainer.GetModel(dumpModelId);
+    modelContainer->AllocateModel(&dumpModelId, model.UserModel, *dumpMemory, detector);
+    auto& dumpModel = modelContainer->GetModel(dumpModelId);
 
     auto userBuffer = dumpMemory->Get();
     auto dumpDsc = reinterpret_cast<XNN_LYR*>(userBuffer);

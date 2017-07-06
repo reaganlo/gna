@@ -23,41 +23,59 @@
  in any way.
 */
 
-#pragma once
+#include <memory>
+#include <thread>
 
-#include <map>
+#include "gna-api-verbose.h"
 
-#include "common.h"
-#include "CompiledModel.h"
+#include "Device.h"
+#include "DeviceVerbose.h"
+#include "Logger.h"
+#include "Validator.h"
 
-namespace GNA
+using std::thread;
+using std::unique_ptr;
+
+using namespace GNA;
+
+extern std::unique_ptr<Device> GnaDevice;
+
+intel_gna_status_t GnaModelSetPrescoreScenario(
+    gna_model_id modelId,
+    uint32_t nActions,
+    dbg_action *pActions)
 {
-
-class ModelContainer
-{
-public:
-    ModelContainer::ModelContainer() = default;
-    ~ModelContainer() = default;
-    ModelContainer(const ModelContainer &) = delete;
-    ModelContainer& operator=(const ModelContainer&) = delete;
-    
-    /**
-    * Assigns model id based on model sequence
-    * !!! Not thread-safe !!!
-    */
-    inline gna_model_id ModelContainer::assignModelId()
+    try
     {
-        return modelSequence++;
+        static_cast<DeviceVerbose*>(GnaDevice.get())->SetPrescoreScenario(modelId, nActions, pActions);
+        return GNA_SUCCESS;
     }
+    catch (const GnaException &e)
+    {
+        return e.getStatus();
+    }
+    catch (...)
+    {
+        return GNA_UNKNOWN_ERROR;
+    }
+}
 
-    virtual void AllocateModel(gna_model_id *modelId, const gna_model * model, Memory& memory, const AccelerationDetector& detector);
-    void DeallocateModel(gna_model_id modelId);
-
-    CompiledModel& GetModel(gna_model_id modelId);
-
-protected:
-    gna_model_id modelSequence = 0;
-    std::map<gna_model_id, std::unique_ptr<CompiledModel>> models;
-};
-
+intel_gna_status_t GnaModelSetAfterscoreScenario(
+    gna_model_id modelId,
+    uint32_t nActions,
+    dbg_action *pActions)
+{
+    try
+    {
+        static_cast<DeviceVerbose*>(GnaDevice.get())->SetAfterscoreScenario(modelId, nActions, pActions);
+        return GNA_SUCCESS;
+    }
+    catch (const GnaException &e)
+    {
+        return e.getStatus();
+    }
+    catch (...)
+    {
+        return GNA_UNKNOWN_ERROR;
+    }
 }

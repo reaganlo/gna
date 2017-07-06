@@ -43,7 +43,8 @@ using std::move;
 using namespace GNA;
 
 Device::Device(gna_device_id* deviceId, uint8_t threadCount) :
-    requestHandler{threadCount}
+    requestHandler{threadCount},
+    modelContainer{std::make_unique<ModelContainer>()}
 {
     Expect::NotNull(deviceId);
 
@@ -66,7 +67,7 @@ void Device::AttachBuffer(gna_request_cfg_id configId, gna_buffer_type type, uin
 
 void Device::CreateConfiguration(gna_model_id modelId, gna_request_cfg_id *configId)
 {
-    auto &model = modelContainer.GetModel(modelId);
+    auto &model = modelContainer->GetModel(modelId);
     requestBuilder.CreateConfiguration(model, configId);
 }
 
@@ -107,7 +108,7 @@ void Device::FreeMemory()
 
 void Device::ReleaseModel(gna_model_id modelId)
 {
-    modelContainer.DeallocateModel(modelId);
+    modelContainer->DeallocateModel(modelId);
     if (accelerationDetector.IsHardwarePresent())
     {
         totalMemory->Unmap();
@@ -118,11 +119,11 @@ void Device::LoadModel(gna_model_id *modelId, const gna_model *raw_model)
 {
     try
     {
-        modelContainer.AllocateModel(modelId, raw_model, *totalMemory, accelerationDetector);
+        modelContainer->AllocateModel(modelId, raw_model, *totalMemory, accelerationDetector);
     }
     catch (...)
     {
-        modelContainer.DeallocateModel(*modelId);
+        modelContainer->DeallocateModel(*modelId);
         throw;
     }
 }

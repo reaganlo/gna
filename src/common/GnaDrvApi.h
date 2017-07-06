@@ -105,7 +105,7 @@ DEFINE_GUID(GUID_DEVINTERFACE_GMM_DRV,
 
 /**
  * MEM_MAP IOCTL - input data.
- * Size:    16 B
+ * Size:    8 B
  */
 typedef struct _GNA_MM_IN
 {
@@ -116,20 +116,18 @@ typedef struct _GNA_MM_IN
 static_assert(8 == sizeof(GNA_MM_IN), "Invalid size of GNA_MM_IN");
 
 /**
- * MEM_MAP IOCTL - output data.
- * Size:    266 776 B
+ * READ_PGDIR IOCTL - output data.
+ * Size:    266 768 B
  */
-typedef struct _GNA_MM_OUT
+typedef struct _GNA_PGDIR_OUT
 {
     UINT64              ptCount;    // Number of L1 pages allocated by the driver
     UINT64              l1PhysAddr[PT_DIR_SIZE+1];// physical addresses of allocated pages
     UINT32              l2PhysAddr[PT_SIZE];// physical addresses of page entries
-    status_t            status;     // status of memory map
-    UINT32              inBuffSize; // gna internal input buffer size
 
-} GNA_MM_OUT, *PGNA_MM_OUT;         // MEM_MAP IOCTL - output data
+} GNA_PGDIR_OUT, *PGNA_PGDIR_OUT;         // READ_PGDIR IOCTL - output data (debug mode only)
 
-static_assert(266776 == sizeof(GNA_MM_OUT), "Invalid size of GNA_MM_OUT");
+static_assert(266768 == sizeof(GNA_PGDIR_OUT), "Invalid size of GNA_PGDIR_OUT");
 
 /**
  *  Enumeration of device flavors
@@ -317,8 +315,9 @@ static_assert(16 == sizeof(GNA_WRITEREG_IN), "Invalid size of GNA_WRITEREG_IN");
 
 #ifdef  DRV_DEBUG_INTERFACE
 
-#define GNA_IOCTL_READ_REG  CTL_CODE(FILE_DEVICE_PCI_GNA, 0x903, METHOD_BUFFERED, FILE_ANY_ACCESS)
-#define GNA_IOCTL_WRITE_REG CTL_CODE(FILE_DEVICE_PCI_GNA, 0x904, METHOD_BUFFERED, FILE_ANY_ACCESS)
+#define GNA_IOCTL_READ_REG   CTL_CODE(FILE_DEVICE_PCI_GNA, 0x903, METHOD_BUFFERED, FILE_ANY_ACCESS)
+#define GNA_IOCTL_WRITE_REG  CTL_CODE(FILE_DEVICE_PCI_GNA, 0x904, METHOD_BUFFERED, FILE_ANY_ACCESS)
+#define GNA_IOCTL_READ_PGDIR CTL_CODE(FILE_DEVICE_PCI_GNA, 0x906, METHOD_BUFFERED, FILE_ANY_ACCESS)
 
 #endif // DRV_DEBUG_INTERFACE
 

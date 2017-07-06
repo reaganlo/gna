@@ -74,8 +74,8 @@ public:
     const gna_model_id Id;
     const uint16_t LayerCount;
     const gna_model* const UserModel;
-
-private:
+    
+protected:
     typedef enum _ScoreMethod
     {
         HardwareOnly,
@@ -88,8 +88,8 @@ private:
     uint16_t gmmCount = 0;
     uint32_t bufferSize = 0;
 
-    std::unique_ptr<HardwareModel> hardwareModel;
     std::unique_ptr<SoftwareModel> softwareModel;
+    std::unique_ptr<HardwareModel> hardwareModel;
     std::vector<std::unique_ptr<SubModel>> submodels;
 
     std::map<acceleration, ScoreMethod> scoreMethods;

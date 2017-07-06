@@ -38,7 +38,7 @@ namespace GNA
 typedef gmm_ioctl_score_gmms_t hw_calc_out_t;
 #else
 typedef GNA_MM_IN       hw_mmap_in_t;
-typedef GNA_MM_OUT      hw_mmap_out_t;
+typedef GNA_PGDIR_OUT   hw_pgdir_out_t;
 typedef GNA_CALC_IN     hw_calc_in_t;
 typedef GNA_READREG_IN  hw_read_in_t;
 typedef GNA_READREG_OUT hw_read_out_t;

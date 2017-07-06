@@ -37,6 +37,8 @@ class Device
 public:
     Device(gna_device_id *deviceId, uint8_t threadCount = 1);
     ~Device();
+    Device(const Device &) = delete;
+    Device& operator=(const Device&) = delete;
 
     void ValidateSession(gna_device_id deviceId) const;
 
@@ -44,9 +46,9 @@ public:
 
     void FreeMemory();
 
-    void LoadModel(gna_model_id *modelId, const gna_model *model);
+    virtual void LoadModel(gna_model_id *modelId, const gna_model *model);
 
-    void ReleaseModel(gna_model_id modelId);
+    virtual void ReleaseModel(gna_model_id modelId);
 
     void AttachBuffer(gna_request_cfg_id configId, gna_buffer_type type, uint16_t layerIndex, void *address);
 
@@ -61,10 +63,8 @@ public:
     status_t WaitForRequest(gna_request_id requestId, gna_timeout milliseconds);
 
     void DumpModel(gna_model_id modelId, gna_device_kind deviceKind, const char * filepath);
-    Device(const Device &) = delete;
-    Device& operator=(const Device&) = delete;
 
-private:
+protected:
     gna_device_id id = GNA_DEVICE_INVALID;
 
     std::unique_ptr<Memory> totalMemory;
@@ -72,8 +72,9 @@ private:
 
     AccelerationDetector accelerationDetector;
 
-    ModelContainer modelContainer;
     RequestBuilder requestBuilder;
+
+    std::unique_ptr<ModelContainer> modelContainer;
 };
 }
 #endif
