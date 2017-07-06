@@ -29,6 +29,8 @@
 #include "Hw.h"
 #include "gna-etw-manifest.h"
 
+#define ALIGN(number, significance)   (((int)((number) + significance -1) / significance) * significance)
+
 /******************************************************************************
  * Private Methods declaration
  ******************************************************************************/
@@ -371,7 +373,7 @@ static size_t calculateLayersDescriptorBufferSize(const PGNA_CALC_IN input)
     sz += max_*input->reqCfgDescr.xnnActiveListsCount;
     sz += max_*input->reqCfgDescr.gmmActiveListsCount;
 
-    return sz;
+    return ALIGN(sz, sizeof(UINT64));
 }
 
 static void setLayersDescriptorParameters(const PGNA_CALC_IN input, PMODEL_CTX modelCtx)

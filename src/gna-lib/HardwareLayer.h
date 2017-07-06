@@ -85,8 +85,8 @@ public:
     static std::unique_ptr<HardwareLayer> Create(const DescriptorParameters& parameters);
     virtual ~HardwareLayer() = default;
 
-    virtual void WriteInputBuffer(PGNA_BUFFER_DESCR lyrsCfg, const ConfigurationBuffer * buffer) const;
-    virtual void WriteOutputBuffer(PGNA_BUFFER_DESCR lyrsCfg, const ConfigurationBuffer * buffer) const;
+    virtual void WriteInputBuffer(PGNA_BUFFER_DESCR& lyrsCfg, const ConfigurationBuffer * buffer) const;
+    virtual void WriteOutputBuffer(PGNA_BUFFER_DESCR& lyrsCfg, const ConfigurationBuffer * buffer) const;
     virtual void WriteNnopType(PNNOP_TYPE_DESCR nnopCfg, bool actListEnabled) const;
     virtual void WriteActiveList(HardwareActiveListDescriptor & descriptor) const;
 
@@ -169,6 +169,8 @@ public:
     HardwareLayerRnn(const DescriptorParameters& parameters);
     virtual ~HardwareLayerRnn() = default;
 
+    virtual void WriteOutputBuffer(PGNA_BUFFER_DESCR& lyrsCfg, const ConfigurationBuffer * buffer) const override;
+
     // calculates feedback buffer offset for per RequestConfiguration output buffer
     const uint32_t CalculateFeedbackBuffer(const OutputBuffer& outputBuffer) const;
 
@@ -215,8 +217,8 @@ public:
     HardwareLayerGmm(const DescriptorParameters& parameters);
     virtual ~HardwareLayerGmm() = default;
 
-    virtual void WriteInputBuffer(PGNA_BUFFER_DESCR lyrsCfg, const ConfigurationBuffer * buffer) const override;
-    virtual void WriteOutputBuffer(PGNA_BUFFER_DESCR lyrsCfg, const ConfigurationBuffer * buffer) const override;
+    virtual void WriteInputBuffer(PGNA_BUFFER_DESCR& lyrsCfg, const ConfigurationBuffer * buffer) const override;
+    virtual void WriteOutputBuffer(PGNA_BUFFER_DESCR& lyrsCfg, const ConfigurationBuffer * buffer) const override;
     virtual void WriteNnopType(PNNOP_TYPE_DESCR nnopCfg, bool actListEnabled) const override;
     virtual void WriteActiveList(HardwareActiveListDescriptor & descriptor) const override;
 

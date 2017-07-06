@@ -90,23 +90,9 @@ uint32_t CompiledModel::GetHardwareOffset(const BaseAddressC& address) const
     return hardwareModel->GetOffset(address);
 }
 
-void CompiledModel::WriteHardwareLayerInputBuffer(const uint32_t layerIndex, PGNA_BUFFER_DESCR &lyrsCfg,
-    const ConfigurationBuffer * const buffer) const
+void CompiledModel::InvalidateConfigCache(gna_request_cfg_id configId) const
 {
-    hardwareModel->WriteLayerInputBuffer(layerIndex, lyrsCfg, buffer);
-}
-void CompiledModel::WriteHardwareLayerOutputBuffer(const uint32_t layerIndex, PGNA_BUFFER_DESCR &lyrsCfg,
-    const ConfigurationBuffer * const buffer) const
-{
-    hardwareModel->WriteLayerOutputBuffer(layerIndex, lyrsCfg, buffer);
-}
-void CompiledModel::WriteHardwareLayerNnopType(const uint32_t layerIndex, PNNOP_TYPE_DESCR nnopCfg, bool actListEnabled) const
-{
-    hardwareModel->WriteLayerNnopType(layerIndex, nnopCfg, actListEnabled);
-}
-void CompiledModel::WriteHardwareLayerActiveList(const uint32_t layerIndex, HardwareActiveListDescriptor & descriptor) const
-{
-    hardwareModel->WriteLayerActiveList(layerIndex, descriptor);
+    hardwareModel->InvalidateConfigCache(configId);
 }
 
 status_t CompiledModel::Score(
@@ -118,7 +104,7 @@ status_t CompiledModel::Score(
     profilerDTscAStart(&profiler->scoring);
 
     auto swAccel = accel;
-    if (GNA_AUTO_FAST == accel || GNA_SW_FAST == accel)
+    if (GNA_AUTO_FAST == accel || GNA_SW_FAST == accel || GNA_HW == accel)
     {
         swAccel = swFastAccel;
     }

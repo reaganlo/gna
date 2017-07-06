@@ -51,8 +51,6 @@ public:
     void AddBuffer(gna_buffer_type type, uint32_t layerIndex, void *address);
     void AddActiveList(uint32_t layerIndex, const ActiveList& activeList);
 
-    void GetHwConfigData(void* &buffer, size_t &size, uint32_t layerIndex, uint32_t layerCount) const;
-
     CompiledModel& Model;
 
     const gna_request_cfg_id ConfigId;
@@ -64,16 +62,5 @@ public:
     uint32_t InputBuffersCount = 0;
     uint32_t OutputBuffersCount = 0;
     uint32_t ActiveListCount = 0;
-
-private:
-    void invalidateHwConfigCache();
-    void calculateCacheSize(uint32_t layerIndex, uint32_t layerCount) const;
-    void writeBuffersIntoCache(uint32_t layerIndex, uint32_t layerCount, void* &lyrsCfg) const;
-    void writeNnopTypesIntoCache(uint32_t layerIndex, uint32_t layerCount, void* &buffer, UINT32 &count) const;
-    void writeXnnActiveListsIntoCache(uint32_t layerIndex, uint32_t layerCount, void* &buffer, UINT32 &count) const;
-    void writeGmmActiveListsIntoCache(uint32_t layerIndex, uint32_t layerCount, void* &buffer, UINT32 &count) const;
-
-    mutable std::map<uint32_t, std::unique_ptr<uint8_t[]>> hwConfigCaches;
-    mutable std::map<uint32_t, size_t> hwConfigSizes;
 };
 }

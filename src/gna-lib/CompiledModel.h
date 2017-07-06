@@ -57,12 +57,7 @@ public:
         return (submodels);
     }
 
-    void WriteHardwareLayerInputBuffer(const uint32_t layerIndex, PGNA_BUFFER_DESCR &lyrsCfg,
-        const ConfigurationBuffer * const buffer) const;
-    void WriteHardwareLayerOutputBuffer(const uint32_t layerIndex, PGNA_BUFFER_DESCR &lyrsCfg,
-        const ConfigurationBuffer * const buffer) const;
-    void WriteHardwareLayerNnopType(const uint32_t layerIndex, PNNOP_TYPE_DESCR nnopCfg, bool actListEnabled) const;
-    void WriteHardwareLayerActiveList(const uint32_t layerIndex, HardwareActiveListDescriptor & descriptor) const;
+    void InvalidateConfigCache(gna_request_cfg_id configId) const;
 
     status_t Score(
         RequestConfiguration& config,

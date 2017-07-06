@@ -37,6 +37,7 @@ class SoftwareModel;
 class Memory;
 class AccelerationDetector;
 class Layer;
+class LayerConfiguration;
 class RequestConfiguration;
 struct RequestProfiler;
 
@@ -51,6 +52,13 @@ public:
     HardwareModel(const HardwareModel &) = delete;
     HardwareModel& operator=(const HardwareModel&) = delete;
 
+    inline uint32_t GetOffset(const BaseAddressC& address) const
+    {
+        return address.GetOffset(memoryBaseAddress);
+    }
+
+    void InvalidateConfigCache(gna_request_cfg_id configId);
+
     virtual status_t HardwareModel::Score(
         uint32_t layerIndex,
         uint32_t layerCount,
@@ -58,49 +66,42 @@ public:
         RequestProfiler *profiler,
         KernelBuffers *buffers);
 
-    inline uint32_t GetOffset(const BaseAddressC& address) const
-    {
-        return address.GetOffset(memoryBaseAddress);
-    }
-
-    void WriteLayerInputBuffer(const uint32_t layerIndex, PGNA_BUFFER_DESCR &lyrsCfg,
-        const ConfigurationBuffer * const buffer) const
-    {
-        hardwareLayers.at(layerIndex)->WriteInputBuffer(lyrsCfg, buffer);
-    }
-    void WriteLayerOutputBuffer(const uint32_t layerIndex, PGNA_BUFFER_DESCR &lyrsCfg,
-        const ConfigurationBuffer * const buffer) const
-    {
-        hardwareLayers.at(layerIndex)->WriteOutputBuffer(lyrsCfg, buffer);
-    }
-    void WriteLayerNnopType(const uint32_t layerIndex, PNNOP_TYPE_DESCR nnopCfg, bool actListEnabled) const
-    {
-        hardwareLayers.at(layerIndex)->WriteNnopType(nnopCfg, actListEnabled);
-    }
-    void WriteLayerActiveList(const uint32_t layerIndex, HardwareActiveListDescriptor & descriptor) const
-    {
-        hardwareLayers.at(layerIndex)->WriteActiveList(descriptor);
-    }
-
 protected:
-    void build(const std::vector<std::unique_ptr<Layer>>& layers, const uint32_t hardwareInternalBufferSize);
-
-    static uint32_t getLayerDescriptorsSize(const uint16_t layerCount);
-
-    static uint32_t getGmmDescriptorsSize(const uint16_t gmmLayersCount);
-
     // needed for driver communication
     gna_model_id modelId;
 
-    std::vector<std::unique_ptr<HardwareLayer>> hardwareLayers;
+    IoctlSender sender;
 
     const BaseAddressC memoryBaseAddress;
     const uint32_t layerDescriptorsSize;
     const uint32_t gmmDescriptorsSize;
 
+private:
+    void build(const uint32_t hardwareInternalBufferSize);
+
+    size_t calculateCacheSize(uint32_t buffersCount, uint32_t nnopLayersCount, uint32_t activeListCount) const;
+
+    void getHwConfigData(void* &buffer, size_t &size, uint16_t layerIndex, uint16_t layerCount, const RequestConfiguration& requestConfiguration) const;
+
+    static uint32_t getLayerDescriptorsSize(const uint16_t layerCount);
+
+    static uint32_t getGmmDescriptorsSize(const uint16_t gmmLayersCount);
+
+    void writeBuffersIntoCache(void* &lyrsCfg, const std::map<uint32_t, std::unique_ptr<LayerConfiguration>>& layerConfigurations) const;
+    void writeNnopTypesIntoCache(void* &buffer, const std::map<uint32_t, std::unique_ptr<LayerConfiguration>>& layerConfigurations) const;
+    void writeXnnActiveListsIntoCache(void* &buffer, const std::map<uint32_t, std::unique_ptr<LayerConfiguration>>& layerConfigurations) const;
+    void writeGmmActiveListsIntoCache(void* &buffer, const std::map<uint32_t, std::unique_ptr<LayerConfiguration>>& layerConfigurations) const;
+
+    mutable std::map<gna_request_cfg_id, std::map<uint16_t, bool>> activeLists;
+    mutable std::map<gna_request_cfg_id, std::unique_ptr<uint8_t[]>> requestHwCaches;
+    mutable std::map<gna_request_cfg_id, size_t> requestCacheSizes;
+
+
+    std::vector<std::unique_ptr<HardwareLayer>> hardwareLayers;
+    const std::vector<std::unique_ptr<Layer>>& softwareLayers;
+
     bool memoryMapped = false;
 
-    IoctlSender sender;
 };
 
 }
