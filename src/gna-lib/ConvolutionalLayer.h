@@ -105,8 +105,8 @@ public:
     virtual void UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const override;
 
     const std::unique_ptr<const ActivationFunction> Activation;
-    const ConvolutionFunction Convolution;
     const PoolingFunction Pooling;
+    const ConvolutionFunction Convolution;
 
 private:
     void computeConfigPool(LayerConfiguration& layerConfiguration, acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const;

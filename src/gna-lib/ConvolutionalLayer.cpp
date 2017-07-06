@@ -123,9 +123,9 @@ CnnLayer::CnnLayer(nn_layer const * const layer) :
     Activation(ActivationFunction::Create(layer->nLayerKind, layer->pLayerStruct, false,
         Output.ScratchPad,
         PwlOutputConfig{0, Output.VectorCount - 1, 0, Output.ElementCount - 1, Output.ElementCount, Output.Buffer})),
+    Pooling{static_cast<const nn_layer_conv*>(layer->pLayerStruct)},
     Convolution{static_cast<const nn_layer_conv*>(layer->pLayerStruct), Input.ElementCount, Input.Buffer,
-        Activation ? Output.ScratchPad : Output.Buffer},
-    Pooling{static_cast<const nn_layer_conv*>(layer->pLayerStruct)}
+        (INTEL_NO_POOLING != Pooling.Type) ? Output.Buffer : (Activation ? Output.ScratchPad : Output.Buffer)}
 {
     Expect::True(Input.VectorCount == 1, XNN_ERR_GROUPING);
     Expect::True(Input.VectorCount == Output.VectorCount, XNN_ERR_GROUPING);

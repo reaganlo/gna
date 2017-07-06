@@ -246,7 +246,7 @@ HardwareLayerRnn::HardwareLayerRnn(const DescriptorParameters& parameters) :
 
 void HardwareLayerRnn::convert()
 {
-    auto elementCount = SoftwareLayer->Input.ElementCount;
+    auto elementCount = SoftwareLayer->Output.ElementCount;
 
     feedbackFirstIterElementCount = min((bufferElementCount - lastIterationElementCount), elementCount);
     Expect::True(feedbackFirstIterElementCount <= bufferElementCount, XNN_ERR_LYR_CFG);
@@ -302,6 +302,8 @@ HardwareLayerCnn::HardwareLayerCnn(const DescriptorParameters& parameters) :
     HardwareLayerExt(parameters, 1)
 {
     auto cnn = SoftwareLayer->Get<const CnnLayer>();
+    activation = cnn->Activation.get();
+
     auto fitlerCount = cnn->Convolution.Filters.Count;
     auto fitlerSize = cnn->Convolution.Filters.CoefficientCount;
     filtersCountInFullIteration =

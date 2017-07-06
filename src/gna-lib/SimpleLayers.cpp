@@ -34,7 +34,9 @@ using namespace GNA;
 TransposeLayer::TransposeLayer(nn_layer const * const layer) :
     Layer(layer),
     transposeKernels{ AccelerationDetector::GetKernelMap<TransposeKernel>() },
-    transposeHiddenConfig{ Input.VectorCount, Input.ElementCount, Input.Buffer, Output.Buffer }
+    transposeHiddenConfig{ Config.Kind == INTEL_INTERLEAVE ? Input.VectorCount : Input.ElementCount, 
+                           Config.Kind == INTEL_INTERLEAVE ? Input.ElementCount : Input.VectorCount, 
+                           Input.Buffer, Output.Buffer }
 {
     Expect::True(Input.ElementCount == Output.ElementCount, XNN_ERR_LYR_CFG);
     Expect::True(Input.VectorCount == Output.VectorCount, XNN_ERR_LYR_CFG);
@@ -68,16 +70,15 @@ void TransposeLayer::computeHidden(acceleration accel, KernelBuffers *fvBuffers,
 {
     UNREFERENCED_PARAMETER(fvBuffers);
     UNREFERENCED_PARAMETER(saturationCount);
-    auto transposeConfig = transposeHiddenConfig;
-    transposeKernels.at(accel)(&transposeConfig);
+    transposeKernels.at(accel)(&transposeHiddenConfig);
 }
 
 void TransposeLayer::computeConfig(const LayerConfiguration& layerConfiguration, acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const
 {
     UNREFERENCED_PARAMETER(fvBuffers);
     UNREFERENCED_PARAMETER(saturationCount);
-    auto transposeConfig = *layerConfiguration.Configs.Transpose;
-    transposeKernels.at(accel)(&transposeConfig);
+    auto transposeConfig = layerConfiguration.Configs.Transpose.get();
+    transposeKernels.at(accel)(transposeConfig);
 }
 
 CopyLayer::CopyLayer(const nn_layer *layer) :
@@ -118,14 +119,13 @@ void CopyLayer::computeHidden(acceleration accel, KernelBuffers *fvBuffers, uint
 {
     UNREFERENCED_PARAMETER(fvBuffers);
     UNREFERENCED_PARAMETER(saturationCount);
-    auto copyConfig = copyHiddenConfig;
-    copyKernels.at(accel)(&copyConfig);
+    copyKernels.at(accel)(&copyHiddenConfig);
 }
 
 void CopyLayer::computeConfig(const LayerConfiguration& layerConfiguration, acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const
 {
     UNREFERENCED_PARAMETER(fvBuffers);
     UNREFERENCED_PARAMETER(saturationCount);
-    auto copyConfig = *layerConfiguration.Configs.Copy;
-    copyKernels.at(accel)(&copyConfig);
+    auto copyConfig = layerConfiguration.Configs.Copy.get();
+    copyKernels.at(accel)(copyConfig);
 }
