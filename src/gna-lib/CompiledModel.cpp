@@ -92,7 +92,10 @@ uint32_t CompiledModel::GetHardwareOffset(const BaseAddressC& address) const
 
 void CompiledModel::InvalidateConfigCache(gna_request_cfg_id configId) const
 {
-    hardwareModel->InvalidateConfigCache(configId);
+    if (hardwareModel)
+    {
+        hardwareModel->InvalidateConfigCache(configId);
+    }
 }
 
 status_t CompiledModel::Score(

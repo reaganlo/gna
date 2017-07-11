@@ -37,19 +37,28 @@ public:
     CompiledModelVerbose(gna_model_id modelId, const gna_model *rawModel, Memory& memoryIn, const AccelerationDetector& detector) :
         CompiledModel(modelId, rawModel, memoryIn, detector)
     {
-        hardwareModel = std::make_unique<HardwareModelVerbose>(Id, softwareModel->Layers, memory, detector);
+        if (hardwareModel)
+        {
+            hardwareModel.reset(new HardwareModelVerbose(Id, softwareModel->Layers, memory, detector));
+        }
     };
 
     void CompiledModelVerbose::SetPrescoreScenario(uint32_t nActions, dbg_action *actions)
     {
-        auto& hardwareModelVerbose = static_cast<HardwareModelVerbose&>(*hardwareModel);
-        hardwareModelVerbose.SetPrescoreScenario(nActions, actions);
+        if (hardwareModel)
+        {
+            auto& hardwareModelVerbose = static_cast<HardwareModelVerbose&>(*hardwareModel);
+            hardwareModelVerbose.SetPrescoreScenario(nActions, actions);
+        }
     }
 
     void CompiledModelVerbose::SetAfterscoreScenario(uint32_t nActions, dbg_action *actions)
     {
-        auto& hardwareModelVerbose = static_cast<HardwareModelVerbose&>(*hardwareModel);
-        hardwareModelVerbose.SetAfterscoreScenario(nActions, actions);
+        if (hardwareModel)
+        {
+            auto& hardwareModelVerbose = static_cast<HardwareModelVerbose&>(*hardwareModel);
+            hardwareModelVerbose.SetAfterscoreScenario(nActions, actions);
+        }
     }
 };
 }
