@@ -306,10 +306,10 @@ void HardwareModelVerbose::executeDebugAction(dbg_action action)
         case GnaDumpXnnDescriptor:
             dumpXnnDescriptor(action.layer_number, file);
             break;
-        case GnaSetGmmDescriptor:
+        case GnaSetXnnDescriptor:
             setXnnDescriptor(action);
             break;
-        case GnaSetXnnDescriptor:
+        case GnaSetGmmDescriptor:
             setGmmDescriptor(action);
             break;
         case GnaLogMessage:
