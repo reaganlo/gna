@@ -55,6 +55,7 @@ typedef enum _dbg_action_type
     GnaDumpMemory,
     GnaDumpXnnDescriptor,
     GnaSetXnnDescriptor,
+    GnaSetGmmDescriptor,
     GnaReadRegister,
     GnaWriteRegister,
     GnaLogMessage,

@@ -86,6 +86,10 @@ private:
 
     void setXnnDescriptor(dbg_action action);
 
+    void setGmmDescriptor(dbg_action action);
+
+    void setDescriptor(uint8_t *xnnParam, uint64_t xnnValue, gna_set_size valueSize);
+
     void zeroMemory(void *memory, size_t memorySize);
 
     std::vector<dbg_action> prescoreActionVector;

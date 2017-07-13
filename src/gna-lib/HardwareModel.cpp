@@ -46,8 +46,8 @@ const size_t HardwareModel::CalculateDescriptorSize(const uint16_t layerCount, c
 HardwareModel::HardwareModel(const gna_model_id modId, const std::vector<std::unique_ptr<Layer>>& layers,
     const Memory& wholeMemory, const AccelerationDetector& detector) :
     modelId{modId},
-    softwareLayers {layers},
     memoryBaseAddress{wholeMemory},
+    softwareLayers {layers},
     layerDescriptorsSize{getLayerDescriptorsSize(XNN_LAYERS_MAX_COUNT)}, // TODO: change to support variable number of layers
     gmmDescriptorsSize{getGmmDescriptorsSize(XNN_LAYERS_MAX_COUNT)} // TODO: change to support variable number of gmms
 {

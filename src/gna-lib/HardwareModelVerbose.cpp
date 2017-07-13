@@ -194,24 +194,36 @@ void HardwareModelVerbose::zeroMemory(void *memory, size_t memorySize)
 
 void HardwareModelVerbose::setXnnDescriptor(dbg_action action)
 {
-    auto xnnLyr = memoryBaseAddress.Get<uint8_t>() + action.layer_number * sizeof(XNN_LYR);
+    auto xnnLyr = reinterpret_cast<uint8_t*>(hardwareLayers.at(action.layer_number)->XnnDescriptor);
     auto xnnParam = xnnLyr + action.xnn_offset;
-    switch (action.xnn_value_size)
+    setDescriptor(xnnParam, action.xnn_value, action.xnn_value_size);
+}
+
+void HardwareModelVerbose::setGmmDescriptor(dbg_action action)
+{
+    auto gmmConfig = reinterpret_cast<uint8_t*>(hardwareLayers.at(action.layer_number)->GmmDescriptor);
+    auto xnnParam = gmmConfig + action.xnn_offset;
+    setDescriptor(xnnParam, action.xnn_value, action.xnn_value_size);
+}
+
+void HardwareModelVerbose::setDescriptor(uint8_t *xnnParam, uint64_t xnnValue, gna_set_size valueSize)
+{
+    switch (valueSize)
     {
     case GNA_SET_BYTE:
-        *xnnParam = static_cast<uint8_t>(action.xnn_value);
+        *xnnParam = static_cast<uint8_t>(xnnValue);
         break;
     case GNA_SET_WORD:
-        *xnnParam = static_cast<uint16_t>(action.xnn_value);
+        *reinterpret_cast<uint16_t*>(xnnParam) = static_cast<uint16_t>(xnnValue);
         break;
     case GNA_SET_DWORD:
-        *xnnParam = static_cast<uint32_t>(action.xnn_value);
+        *reinterpret_cast<uint32_t*>(xnnParam) = static_cast<uint32_t>(xnnValue);
         break;
     case GNA_SET_QWORD:
-        *xnnParam = action.xnn_value;
+        *reinterpret_cast<uint64_t*>(xnnParam) = xnnValue;
         break;
     case GNA_SET_XNNLYR:
-        memset(xnnParam, action.xnn_value, sizeof(XNN_LYR));
+        memset(xnnParam, xnnValue, sizeof(XNN_LYR));
         break;
     }
 }
@@ -294,8 +306,11 @@ void HardwareModelVerbose::executeDebugAction(dbg_action action)
         case GnaDumpXnnDescriptor:
             dumpXnnDescriptor(action.layer_number, file);
             break;
-        case GnaSetXnnDescriptor:
+        case GnaSetGmmDescriptor:
             setXnnDescriptor(action);
+            break;
+        case GnaSetXnnDescriptor:
+            setGmmDescriptor(action);
             break;
         case GnaLogMessage:
             Log->Message("%s", action.log_message);
@@ -303,6 +318,11 @@ void HardwareModelVerbose::executeDebugAction(dbg_action action)
         case GnaSleep:
             Sleep(action.timeout);
             break;
+    }
+
+    if(NULL != file)
+    {
+        fclose(file);
     }
 }
 

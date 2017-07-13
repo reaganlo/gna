@@ -76,16 +76,19 @@ protected:
     const uint32_t layerDescriptorsSize;
     const uint32_t gmmDescriptorsSize;
 
+protected:
+    static uint32_t getLayerDescriptorsSize(const uint16_t layerCount);
+    static uint32_t getGmmDescriptorsSize(const uint16_t gmmLayersCount);
+
+    std::vector<std::unique_ptr<HardwareLayer>> hardwareLayers;
+    const std::vector<std::unique_ptr<Layer>>& softwareLayers;
+
 private:
     void build(const uint32_t hardwareInternalBufferSize);
 
     size_t calculateCacheSize(uint32_t buffersCount, uint32_t nnopLayersCount, uint32_t activeListCount) const;
 
     void getHwConfigData(void* &buffer, size_t &size, uint16_t layerIndex, uint16_t layerCount, const RequestConfiguration& requestConfiguration) const;
-
-    static uint32_t getLayerDescriptorsSize(const uint16_t layerCount);
-
-    static uint32_t getGmmDescriptorsSize(const uint16_t gmmLayersCount);
 
     void writeBuffersIntoCache(void* &lyrsCfg, const std::map<uint32_t, std::unique_ptr<LayerConfiguration>>& layerConfigurations) const;
     void writeNnopTypesIntoCache(void* &buffer, const std::map<uint32_t, std::unique_ptr<LayerConfiguration>>& layerConfigurations) const;
@@ -95,10 +98,6 @@ private:
     mutable std::map<gna_request_cfg_id, std::map<uint16_t, bool>> activeLists;
     mutable std::map<gna_request_cfg_id, std::unique_ptr<uint8_t[]>> requestHwCaches;
     mutable std::map<gna_request_cfg_id, size_t> requestCacheSizes;
-
-
-    std::vector<std::unique_ptr<HardwareLayer>> hardwareLayers;
-    const std::vector<std::unique_ptr<Layer>>& softwareLayers;
 
     bool memoryMapped = false;
 
