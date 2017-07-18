@@ -34,8 +34,7 @@ using namespace GNA;
 
 AffineBaseLayer::AffineBaseLayer(const nn_layer *layer) :
     Layer(layer),
-    Activation(ActivationFunction::Create(layer->nLayerKind, layer->pLayerStruct, false,
-        Output.ScratchPad,
+    Activation(ActivationFunction::Create(layer->nLayerKind, layer->pLayerStruct, Output.ScratchPad,
         PwlOutputConfig{0, Output.ElementCount - 1, 0, Input.VectorCount - 1, Output.VectorCount, Output.Buffer})),
     Affine(AffineFunction::Create(layer->nLayerKind, layer->pLayerStruct,
         AffineBaseConfig{Output.ElementCount, Input.VectorCount, Input.ElementCount, Input.Buffer,
@@ -60,22 +59,34 @@ AffineBaseLayer::AffineBaseLayer(const nn_layer *layer) :
     }
 }
 
-void AffineBaseLayer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const
+void AffineBaseLayer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration, ValidBoundariesFunctor validBoundaries) const
 {
-    auto const inputs = layerConfiguration.InputBuffer ? *layerConfiguration.InputBuffer : Input.Buffer;
+    Layer::UpdateKernelConfigs(layerConfiguration, validBoundaries);
 
-    auto const outputs = layerConfiguration.OutputBuffer ? *layerConfiguration.OutputBuffer : Output.Buffer;
+    auto inputBuffer = Input.Buffer;
+    if (layerConfiguration.InputBuffer)
+    {
+        inputBuffer = *layerConfiguration.InputBuffer;
+        validBoundaries(inputBuffer, Input.BufferSize);
+    }
+
+    auto outputBuffer = Output.Buffer;
+    if (layerConfiguration.OutputBuffer)
+    {
+        outputBuffer = *layerConfiguration.OutputBuffer;
+        validBoundaries(*layerConfiguration.OutputBuffer, Output.BufferSize);
+    }
 
     auto& configs = layerConfiguration.Configs;
 
     if (Activation)
     {
-        configs.PwlOutput = Activation->GetOutputConfig(outputs);
-        configs.Affine = Affine->GetRunConfig(inputs, Output.ScratchPad);
+        configs.PwlOutput = Activation->GetOutputConfig(outputBuffer);
+        configs.Affine = Affine->GetRunConfig(inputBuffer, Output.ScratchPad);
     }
     else
     {
-        configs.Affine = Affine->GetRunConfig(inputs, outputs);
+        configs.Affine = Affine->GetRunConfig(inputBuffer, outputBuffer);
     }
 }
 
@@ -107,9 +118,9 @@ AffineLayer::AffineLayer(const nn_layer *layer) :
     AffineBaseLayer(layer)
 {};
 
-void AffineLayer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const
+void AffineLayer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration, ValidBoundariesFunctor validBoundaries) const
 {
-    AffineBaseLayer::UpdateKernelConfigs(layerConfiguration);
+    AffineBaseLayer::UpdateKernelConfigs(layerConfiguration, validBoundaries);
     if (Activation)
     {
         auto const outputCount = layerConfiguration.ActiveList ?

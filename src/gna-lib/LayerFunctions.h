@@ -166,7 +166,7 @@ public:
 class ActivationFunction
 {
 public:
-    static const std::unique_ptr<const ActivationFunction> Create(nn_layer_kind layerKind, void const *layerDetails, const bool mandatory,
+    static const std::unique_ptr<const ActivationFunction> Create(nn_layer_kind layerKind, void const *layerDetails, 
         int32_t const * const Inputs, const PwlOutputConfig& outputConfig);
 
     static const uint32_t SegmentCountMax = XNN_N_PWL_SEGS_MAX;

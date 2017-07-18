@@ -52,8 +52,6 @@ void RequestConfiguration::AddBuffer(gna_buffer_type type, uint32_t layerIndex, 
         throw GnaException{ XNN_ERR_LYR_TYPE };
     }
 
-    Model.InvalidateConfigCache(ConfigId);
-
     auto found = LayerConfigurations.emplace(layerIndex, std::make_unique<LayerConfiguration>());
     auto layerConfiguration = found.first->second.get();
     switch (type)
@@ -72,7 +70,7 @@ void RequestConfiguration::AddBuffer(gna_buffer_type type, uint32_t layerIndex, 
         throw GnaException(GNA_UNKNOWN_ERROR);
     }
 
-    layer.UpdateKernelConfigs(*layerConfiguration);
+    Model.InvalidateConfig(ConfigId, layerConfiguration, layerIndex);
 }
 
 void RequestConfiguration::AddActiveList(uint32_t layerIndex, const ActiveList& activeList)
@@ -89,8 +87,6 @@ void RequestConfiguration::AddActiveList(uint32_t layerIndex, const ActiveList& 
         throw GnaException{ XNN_ERR_LYR_KIND };
     }
 
-    Model.InvalidateConfigCache(ConfigId);
-
     auto found = LayerConfigurations.emplace(layerIndex, std::make_unique<LayerConfiguration>());
     auto layerConfiguration = found.first->second.get();
     Expect::Null(layerConfiguration->ActiveList.get());
@@ -99,6 +95,6 @@ void RequestConfiguration::AddActiveList(uint32_t layerIndex, const ActiveList& 
     layerConfiguration->ActiveList.swap(activeListPtr);
     ++ActiveListCount;
 
-    layer.UpdateKernelConfigs(*layerConfiguration);
+    Model.InvalidateConfig(ConfigId, layerConfiguration, layerIndex);
 }
 

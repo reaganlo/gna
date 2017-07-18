@@ -28,6 +28,7 @@
 #include "AffineLayers.h"
 #include "ConvolutionalLayer.h"
 #include "GmmLayer.h"
+#include "LayerConfiguration.h"
 #include "RecurrentLayer.h"
 #include "SimpleLayers.h"
 #include "Validator.h"
@@ -77,11 +78,12 @@ LayerConfig::LayerConfig(const nn_layer_kind kind, const nn_layer_type type) :
     Expect::InRange(type, 0, NUM_LAYER_TYPES-1, XNN_ERR_LYR_TYPE);
 };
 
-LayerMatrix::LayerMatrix(const uint32_t rowCount, const uint32_t columnCount, void const * buffer,
+LayerMatrix::LayerMatrix(const uint32_t rowCount, const uint32_t columnCount, const uint32_t elementSize, void const * buffer,
     const Orientations orientation, const nn_layer_type layerType) :
     ElementCount{(FLAT == orientation) ? columnCount : rowCount},
     VectorCount{(FLAT == orientation) ? rowCount : columnCount},
-    Buffer{buffer}
+    Buffer{buffer},
+    BufferSize{rowCount * columnCount * elementSize}
 {
     Expect::InRange(orientation, INTERLEAVED, FLAT, XNN_ERR_LYR_CFG);
     Expect::InRange(VectorCount, 1, XNN_N_GROUP_MAX, XNN_ERR_GROUPING);
@@ -92,7 +94,7 @@ LayerMatrix::LayerMatrix(const uint32_t rowCount, const uint32_t columnCount, vo
 };
 
 LayerInput::LayerInput(const nn_layer &layer, const Orientations orientation, const nn_layer_type layerType) :
-    LayerMatrix{layer.nInputRows, layer.nInputColumns, layer.pInputs, orientation, layerType}
+    LayerMatrix{layer.nInputRows, layer.nInputColumns, layer.nBytesPerInput, layer.pInputs, orientation, layerType}
 {
     if (INTEL_GMM == layer.nLayerKind)
     {
@@ -111,7 +113,7 @@ LayerInput::LayerInput(const nn_layer &layer, const Orientations orientation, co
 };
 
 LayerOutput::LayerOutput(const nn_layer& layer, const Orientations orientation, const nn_layer_type layerType) :
-    LayerMatrix{layer.nOutputRows, layer.nOutputColumns, layer.pOutputs, orientation, layerType},
+    LayerMatrix{layer.nOutputRows, layer.nOutputColumns, layer.nBytesPerOutput, layer.pOutputs, orientation, layerType},
     ScratchPad{static_cast<int32_t * const>(layer.pOutputsIntermediate)},
     mode{NonActivatedOutput}
 {
@@ -178,4 +180,13 @@ Layer::Layer(const nn_layer *layer) :
     Input{*layer, Config.InputOrientation, Config.Type},
     Output{*layer, Config.OutputOrientation, Config.Type}
 {
+}
+
+void Layer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration, ValidBoundariesFunctor validBoundaries) const
+{
+    if (layerConfiguration.ActiveList)
+    {
+        const auto activeList = layerConfiguration.ActiveList.get();
+        validBoundaries(activeList->Indices, activeList->IndicesCount * sizeof(uint32_t));
+    }
 }

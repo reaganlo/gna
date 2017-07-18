@@ -92,6 +92,7 @@ const char* const Logger::StatusStrings[] =
     "XNN_ERR_LYR_KIND", " - XNN: Not supported layer kind",
     "XNN_ERR_LYR_TYPE", " - XNN: Not supported layer type",
     "XNN_ERR_LYR_CFG", " - XNN: Invalid layer configuration",
+    "XNN_ERR_INVALID_BUFFER", " - XNN: Buffer outside allocated memory",
     "XNN_ERR_NO_FEEDBACK", " - XNN: No RNN feedback buffer specified",
     "XNN_ERR_NO_LAYERS", " - XNN: At least one layer must be specified",
     "XNN_ERR_GROUPING", " - XNN: Invalid grouping factor",

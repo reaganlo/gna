@@ -28,8 +28,12 @@
 #include "AccelerationDetector.h"
 #include "ActiveList.h"
 #include "Layer.h"
+#include "AffineLayers.h"
+#include "ConvolutionalLayer.h"
+#include "RecurrentLayer.h"
 #include "GmmLayer.h"
 #include "LayerConfiguration.h"
+#include "Memory.h"
 #include "RecurrentLayer.h"
 #include "Request.h"
 #include "RequestConfiguration.h"
@@ -39,7 +43,7 @@ using std::make_unique;
 
 using namespace GNA;
 
-SoftwareModel::SoftwareModel(const gna_model *const network) :
+SoftwareModel::SoftwareModel(const gna_model *const network, ValidBoundariesFunctor validBoundaries) :
     layerCount{ network->nLayers },
     inputVectorCount{ network->nGroup }
 {
@@ -49,6 +53,7 @@ SoftwareModel::SoftwareModel(const gna_model *const network) :
     Expect::NotNull(network->pLayers);
 #endif
     build(network->pLayers);
+    validate(validBoundaries);
 }
 
 status_t SoftwareModel::Score(
@@ -118,6 +123,108 @@ void SoftwareModel::build(const nn_layer* layers)
             ++inputLayerCount;
             ++outputLayerCount;
             break;
+        }
+    }
+}
+
+void SoftwareModel::validate(ValidBoundariesFunctor validBoundaries) const
+{
+    for (const auto& layer : Layers)
+    {
+        if (layer->Config.Type != INTEL_INPUT
+            && layer->Config.Type != INTEL_INPUT_OUTPUT)
+        {
+            validBoundaries(layer->Input.Buffer.Get(), layer->Input.BufferSize);
+        }
+        if (layer->Config.Type != INTEL_OUTPUT
+            && layer->Config.Type != INTEL_INPUT_OUTPUT)
+        {
+            validBoundaries(layer->Output.Buffer.Get(), layer->Output.BufferSize);
+        }
+
+        const auto layerKind = layer->Config.Kind;
+        const auto affineLayer = dynamic_cast<AffineBaseLayer*>(layer.get());
+        const ActivationFunction *activation = nullptr;
+
+        if (affineLayer)
+        {
+            activation = affineLayer->Activation.get();
+
+            size_t biasesSize = layer->Output.ElementCount;
+            size_t weightsSize = (GNA_WEIGHT_2B == affineLayer->Affine->Mode ? sizeof(int16_t) : sizeof(int8_t));
+
+            if (INTEL_AFFINE_MULTIBIAS == layerKind)
+            {
+                biasesSize *= sizeof(nn_bias_s);
+                if (GNA_WEIGHT_1B == affineLayer->Affine->Mode)
+                {
+                    size_t weightScaleSize = layer->Output.ElementCount * sizeof(nn_bias_c);
+                    auto functionMulti = static_cast<const AffineFunctionMulti1B*>(affineLayer->Affine.get());
+                    validBoundaries(functionMulti->WeightScaleFactors, weightScaleSize);
+                }
+            }
+            else
+            {
+                biasesSize *= (GNA_WEIGHT_2B == affineLayer->Affine->Mode ? sizeof(nn_bias_s) : sizeof(nn_bias_c));
+            }
+
+            if (INTEL_RECURRENT == layerKind)
+            {
+                weightsSize *= ((layer->Output.ElementCount + layer->Input.ElementCount) * layer->Output.ElementCount);
+
+                if (INTEL_OUTPUT != layer->Config.Type && INTEL_INPUT_OUTPUT != layer->Config.Type)
+                {
+                    auto rnnLayer = static_cast<RnnLayer*>(layer.get());
+                    auto feedbackBuffer = layer->Output.Buffer.Get() - rnnLayer->FeedbackDelay * layer->Output.ElementCount;
+                    auto feedbackSize = layer->Output.ElementCount;
+                    validBoundaries(feedbackBuffer, feedbackSize);
+                }
+            }
+            else if (INTEL_AFFINE_DIAGONAL == layerKind)
+            {
+                weightsSize *= layer->Output.ElementCount;
+            }
+            else /* INTEL_AFFINE || INTEL_AFFINE_MULTIBIAS */
+            {
+                weightsSize *= layer->Input.ElementCount * layer->Output.ElementCount;
+            }
+
+            validBoundaries(affineLayer->Affine->Biases, biasesSize);
+            validBoundaries(affineLayer->Affine->Weights, weightsSize);
+        }
+        else if (INTEL_CONVOLUTIONAL == layerKind)
+        {
+            auto cnnLayer = static_cast<CnnLayer*>(layer.get());
+            activation = cnnLayer->Activation.get();
+
+            size_t filtersSize = cnnLayer->Convolution.Filters.Count * cnnLayer->Convolution.Filters.CoefficientCount;
+            validBoundaries(cnnLayer->Convolution.Filters.Data, filtersSize);
+
+            break;
+        }
+        else if (INTEL_GMM == layerKind)
+        {
+            auto gmmLayer = static_cast<GmmLayer*>(layer.get());
+            validBoundaries(gmmLayer->Data.gaussianConstants, gmmLayer->Params.GaussConstSetOffsetSize);
+            validBoundaries(gmmLayer->Data.meanValues, gmmLayer->Params.MeanSetOffsetSize);
+            if (GNA_MAXMIX16 == gmmLayer->Config.mode)
+            {
+                validBoundaries(gmmLayer->Data.inverseCovariancesForMaxMix16, gmmLayer->Params.VarianceSize);
+            }
+            else
+            {
+                validBoundaries(gmmLayer->Data.inverseCovariancesForMaxMix8, gmmLayer->Params.VarianceSize);
+            }
+            break;
+        }
+
+        if (activation)
+        {
+            auto scratchpadSize = layer->Output.ElementCount * layer->Output.VectorCount * LayerOutput::ActivatedOutputSize;
+            validBoundaries(layer->Output.ScratchPad, scratchpadSize);
+
+            auto segmentsSize = activation->SegmentCount * sizeof(nn_pwl_seg);
+            validBoundaries(activation->Segments, segmentsSize);
         }
     }
 }

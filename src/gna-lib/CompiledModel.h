@@ -57,7 +57,7 @@ public:
         return (submodels);
     }
 
-    void InvalidateConfigCache(gna_request_cfg_id configId) const;
+    void InvalidateConfig(gna_request_cfg_id configId, LayerConfiguration *layerConfiguration, uint32_t layerIndex) const;
 
     status_t Score(
         RequestConfiguration& config,
@@ -80,10 +80,11 @@ protected:
     } ScoreMethod;
 
     Memory& memory;
+    ValidBoundariesFunctor validBoundaries;
     uint16_t gmmCount = 0;
     uint32_t bufferSize = 0;
 
-    std::unique_ptr<SoftwareModel> softwareModel;
+    SoftwareModel softwareModel;
     std::unique_ptr<HardwareModel> hardwareModel;
     std::vector<std::unique_ptr<SubModel>> submodels;
 

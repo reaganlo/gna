@@ -74,16 +74,25 @@ GmmLayer::GmmLayer(const nn_layer *layer) :
                     {this->computeConfig(layerConfiguration, accel, fvBuffers, saturationCount); };
 }
 
-void GmmLayer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const
+void GmmLayer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration, ValidBoundariesFunctor validBoundaries) const
 {
-    auto inputBuffer = layerConfiguration.InputBuffer
-        ? *layerConfiguration.InputBuffer : Input.Buffer;
+    Layer::UpdateKernelConfigs(layerConfiguration, validBoundaries);
 
-    auto outputBuffer = layerConfiguration.OutputBuffer
-        ? *layerConfiguration.OutputBuffer : Output.Buffer;
+    auto inputBuffer = Input.Buffer;
+    if (layerConfiguration.InputBuffer)
+    {
+        inputBuffer = *layerConfiguration.InputBuffer;
+        validBoundaries(inputBuffer, Input.BufferSize);
+    }
+
+    auto outputBuffer = Output.Buffer;
+    if (layerConfiguration.OutputBuffer)
+    {
+        outputBuffer = *layerConfiguration.OutputBuffer;
+        validBoundaries(outputBuffer, Output.BufferSize);
+    }
 
     auto& configs = layerConfiguration.Configs;
-
     if(!configs.Gmm)
         configs.Gmm = std::make_unique<GmmConfig>(gmmHiddenConfig);
     if (layerConfiguration.ActiveList)

@@ -99,6 +99,16 @@ public:
         AlignedTo(pointer, 64, status);
     }
 
+    // If pointers do not fit in user memory, throws XNN_ERR_INVALID_BUFFER error
+    inline static void ValidBoundaries(const void *buffer, const size_t bufferSize, const void* modelMemory, const size_t modelSize)
+    {
+        auto *bufferEnd = static_cast<const uint8_t*>(buffer) + bufferSize;
+        auto *memoryEnd = static_cast<const uint8_t*>(modelMemory) + modelSize;
+
+        False(buffer < modelMemory, XNN_ERR_INVALID_BUFFER);
+        False(bufferEnd > memoryEnd, XNN_ERR_INVALID_BUFFER);
+    }
+
     // If parameter is not multiplicity of multiplicity prints error status code and throws exception.
     inline static void MultiplicityOf(const uint32_t parameter, const uint32_t multiplicity)
     {

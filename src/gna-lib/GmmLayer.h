@@ -53,7 +53,7 @@ public:
     const gna_gmm_data Data;
     const GmmParams Params;
 
-    virtual void UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const override;
+    virtual void UpdateKernelConfigs(LayerConfiguration& layerConfiguration, ValidBoundariesFunctor validBoundaries) const override;
     void ValidateActiveList(ActiveList const * const activeList) const;
 
 private:

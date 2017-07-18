@@ -194,8 +194,9 @@ AffineFunctionMulti1B::AffineFunctionMulti1B(const nn_func_affine_multi *affine,
 }
 
 const unique_ptr<const ActivationFunction> ActivationFunction::Create(nn_layer_kind layerKind, void const *layerDetails,
-    const bool mandatory, int32_t const * const Inputs, const PwlOutputConfig& outputConfig)
+    int32_t const * const Inputs, const PwlOutputConfig& outputConfig)
 {
+    bool mandatory = false;
     const nn_func_pwl *pwl = nullptr;
     switch (layerKind)
     {
@@ -208,9 +209,14 @@ const unique_ptr<const ActivationFunction> ActivationFunction::Create(nn_layer_k
         pwl = &static_cast<nn_layer_affine_multi const*>(layerDetails)->pwl;
         break;
     case INTEL_CONVOLUTIONAL:
-        pwl = &static_cast<nn_layer_conv const*>(layerDetails)->pwl;
+    {
+        auto cnn = static_cast<nn_layer_conv const*>(layerDetails);
+        if (INTEL_NO_POOLING != cnn->poolType) mandatory = true;
+        pwl = &cnn->pwl;
         break;
+    }
     case INTEL_RECURRENT:
+        mandatory = true;
         pwl = &static_cast<nn_layer_reccurent const*>(layerDetails)->pwl;
         break;
     default:

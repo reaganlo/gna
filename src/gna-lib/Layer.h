@@ -37,6 +37,7 @@
 namespace GNA
 {
 struct LayerConfiguration;
+using ValidBoundariesFunctor = std::function<void(const void *, const size_t)>;
 
 typedef enum _Orientations
 {
@@ -61,12 +62,13 @@ struct LayerConfig
 
 struct LayerMatrix
 {
-    LayerMatrix(const uint32_t rowCount, const uint32_t columnCount, void const * buffer, const Orientations orientation, const nn_layer_type layerType);
+    LayerMatrix(const uint32_t rowCount, const uint32_t columnCount, const uint32_t elementSize, void const * buffer, const Orientations orientation, const nn_layer_type layerType);
     ~LayerMatrix() = default;
 
     const uint32_t ElementCount;
     const uint32_t VectorCount;
     const InOutBuffer Buffer;
+    const uint32_t BufferSize;
 };
 
 struct LayerInput : public LayerMatrix
@@ -122,7 +124,7 @@ public:
     std::function<void(acceleration accel, KernelBuffers* kernelBuffers, uint32_t* saturationCount)> ComputeHidden;
     std::function<void(LayerConfiguration &layerConfiguration, acceleration accel, KernelBuffers* kernelBuffers, uint32_t* saturationCount)> ComputeConfig;
 
-    virtual void UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const = 0;
+    virtual void UpdateKernelConfigs(LayerConfiguration& layerConfiguration, ValidBoundariesFunctor validBoundaries) const;
 
     const LayerConfig Config;
     const LayerInput Input;

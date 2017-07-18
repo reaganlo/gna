@@ -102,7 +102,7 @@ class CnnLayer : public Layer
 public:
     CnnLayer(nn_layer const * const layer);
     virtual ~CnnLayer() = default;
-    virtual void UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const override;
+    virtual void UpdateKernelConfigs(LayerConfiguration& layerConfiguration, ValidBoundariesFunctor validBoundaries) const override;
 
     const std::unique_ptr<const ActivationFunction> Activation;
     const PoolingFunction Pooling;

@@ -103,6 +103,7 @@ typedef enum _gna_status_t
     XNN_ERR_LYR_KIND,        // Error: XNN: Not supported layer kind
     XNN_ERR_LYR_TYPE,        // Error: XNN: Not supported layer type
     XNN_ERR_LYR_CFG,         // Error: XNN: Invalid layer configuration
+    XNN_ERR_INVALID_BUFFER,  // Error: XNN: Buffer outside allocated memory
     XNN_ERR_NO_FEEDBACK,     // Error: XNN: No RNN feedback buffer specified
     XNN_ERR_NO_LAYERS,       // Error: XNN: At least one layer must be specified
     XNN_ERR_GROUPING,        // Error: XNN: Invalid grouping factor

@@ -120,8 +120,7 @@ void PoolingFunction::Compute(const ConvolutionConfig * convolutionConfig, accel
 
 CnnLayer::CnnLayer(nn_layer const * const layer) :
     Layer(layer),
-    Activation(ActivationFunction::Create(layer->nLayerKind, layer->pLayerStruct, false,
-        Output.ScratchPad,
+    Activation(ActivationFunction::Create(layer->nLayerKind, layer->pLayerStruct, Output.ScratchPad,
         PwlOutputConfig{0, Output.VectorCount - 1, 0, Output.ElementCount - 1, Output.ElementCount, Output.Buffer})),
     Pooling{static_cast<const nn_layer_conv*>(layer->pLayerStruct)},
     Convolution{static_cast<const nn_layer_conv*>(layer->pLayerStruct), Input.ElementCount, Input.Buffer,
@@ -161,9 +160,16 @@ CnnLayer::CnnLayer(nn_layer const * const layer) :
     }
 }
 
-void CnnLayer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const
+void CnnLayer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration, ValidBoundariesFunctor validBoundaries) const
 {
-    auto inputBuffer = layerConfiguration.InputBuffer ? *layerConfiguration.InputBuffer : Input.Buffer;
+    Layer::UpdateKernelConfigs(layerConfiguration, validBoundaries);
+
+    auto inputBuffer = Input.Buffer;
+    if (layerConfiguration.InputBuffer)
+    {
+        inputBuffer = *layerConfiguration.InputBuffer;
+        validBoundaries(inputBuffer, Input.BufferSize);
+    }
 
     auto filterOutputBuffer = Activation ? Output.ScratchPad :
         (layerConfiguration.OutputBuffer ? *layerConfiguration.OutputBuffer : Output.Buffer);
@@ -171,6 +177,21 @@ void CnnLayer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const
     auto pwlOutputBuffer = layerConfiguration.OutputBuffer
         ? *layerConfiguration.OutputBuffer
         : Output.Buffer;
+
+    if (layerConfiguration.OutputBuffer)
+    {
+        auto outputSize = Convolution.Filters.Count * Convolution.OutputElementsCount;
+        if (Activation)
+        {
+            outputSize *= LayerOutput::ActivatedOutputSize;
+            validBoundaries(pwlOutputBuffer, outputSize);
+        }
+        else
+        {
+            outputSize *= LayerOutput::NonActivatedOutputSize;
+            validBoundaries(filterOutputBuffer, outputSize);
+        }
+    }
 
     auto& configs = layerConfiguration.Configs;
     if (INTEL_NO_POOLING == Pooling.Type)

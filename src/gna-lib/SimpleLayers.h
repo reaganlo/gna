@@ -36,7 +36,7 @@ public:
     TransposeLayer(nn_layer const * const layer);
     virtual ~TransposeLayer() = default;
 
-    virtual void UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const override;
+    virtual void UpdateKernelConfigs(LayerConfiguration& layerConfiguration, ValidBoundariesFunctor validBoundaries) const override;
 
 private:
     void computeHidden(acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const;
@@ -51,7 +51,7 @@ class CopyLayer : public Layer
 public:
     CopyLayer(const nn_layer *layer);
     virtual ~CopyLayer() = default;
-    void UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const;
+    void UpdateKernelConfigs(LayerConfiguration& layerConfiguration, ValidBoundariesFunctor validBoundaries) const override;
 
     const uint32_t ColumnCount;
     const uint32_t RowCount;

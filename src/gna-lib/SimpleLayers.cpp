@@ -50,18 +50,26 @@ TransposeLayer::TransposeLayer(nn_layer const * const layer) :
                     {this->computeConfig(layerConfiguration, accel, fvBuffers, saturationCount); };
 }
 
-void TransposeLayer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const
+void TransposeLayer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration, ValidBoundariesFunctor validBoundaries) const
 {
-    auto inputBuffer = layerConfiguration.InputBuffer
-        ? layerConfiguration.InputBuffer->Get<int16_t>() : Input.Buffer;
+    auto inputBuffer = Input.Buffer;
+    if (layerConfiguration.InputBuffer)
+    {
+        inputBuffer = *layerConfiguration.InputBuffer;
+        validBoundaries(inputBuffer, Input.BufferSize);
+    }
 
-    auto outputBuffer = layerConfiguration.OutputBuffer
-        ? layerConfiguration.OutputBuffer->Get<int16_t>() : Output.Buffer;
+    auto outputBuffer = Output.Buffer;
+    if (layerConfiguration.OutputBuffer)
+    {
+        outputBuffer = *layerConfiguration.OutputBuffer;
+        validBoundaries(outputBuffer, Output.BufferSize);
+    }
 
     auto& configs = layerConfiguration.Configs;
-
     if(!configs.Transpose)
         configs.Transpose = std::make_unique<TransposeConfig>(transposeHiddenConfig);
+
     configs.Transpose->input = inputBuffer;
     configs.Transpose->output = outputBuffer;
 }
@@ -99,18 +107,26 @@ CopyLayer::CopyLayer(const nn_layer *layer) :
                     {this->computeConfig(layerConfiguration, accel, fvBuffers, saturationCount); };
 }
 
-void CopyLayer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const
+void CopyLayer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration, ValidBoundariesFunctor validBoundaries) const
 {
-    auto inputBuffer = layerConfiguration.InputBuffer
-        ? layerConfiguration.InputBuffer->Get<int16_t>() : Input.Buffer;
+    auto inputBuffer = Input.Buffer;
+    if (layerConfiguration.InputBuffer)
+    {
+        inputBuffer = *layerConfiguration.InputBuffer;
+        validBoundaries(inputBuffer, Input.BufferSize);
+    }
 
-    auto outputBuffer = layerConfiguration.OutputBuffer
-        ? layerConfiguration.OutputBuffer->Get<int16_t>() : Output.Buffer;
+    auto outputBuffer = Output.Buffer;
+    if (layerConfiguration.OutputBuffer)
+    {
+        outputBuffer = *layerConfiguration.OutputBuffer;
+        validBoundaries(outputBuffer, Output.BufferSize);
+    }
 
     auto& configs = layerConfiguration.Configs;
-
     if(!configs.Copy)
         configs.Copy = std::make_unique<CopyConfig>(copyHiddenConfig);
+
     configs.Copy->input = inputBuffer;
     configs.Copy->output = outputBuffer;
 }

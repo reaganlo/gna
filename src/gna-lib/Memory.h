@@ -51,7 +51,7 @@ public:
         return size;
     }
 
-    template<class T> T * const GetUserBuffer() const
+    template<class T = void> T * const GetUserBuffer() const
     {
         auto address = BaseAddressC(this->Get() + InternalSize);
         return address.Get<T>();

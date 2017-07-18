@@ -32,12 +32,7 @@
 using namespace GNA;
 
 RnnLayer::RnnLayer(nn_layer const * const layer) :
-    Layer(layer),
-    Affine{AffineFunction::Create(layer->nLayerKind, layer->pLayerStruct,
-        AffineBaseConfig{Output.ElementCount, Input.VectorCount, Input.ElementCount, Input.Buffer, Output.ScratchPad})},
-    // RNN has only 2B output with Activation always enabled
-    Activation(ActivationFunction::Create(layer->nLayerKind, layer->pLayerStruct, true,
-        Output.ScratchPad, PwlOutputConfig{})),
+    AffineBaseLayer(layer),
     FeedbackDelay{static_cast<const nn_layer_reccurent * const>(layer->pLayerStruct)->feedbackFrameDelay},
     recurrentKernels{AccelerationDetector::GetKernelMap<RecurrentKernel>(Affine->Mode)},
     rnnHiddenConfig{Output.ElementCount, Input.VectorCount, Input.ElementCount, Input.Buffer, nullptr,
@@ -47,7 +42,6 @@ RnnLayer::RnnLayer(nn_layer const * const layer) :
 
     // must be multiple 32 to keep 64B output buffer alignment
     Expect::MultiplicityOf(Output.ElementCount, RNN_N_OUT_ELEMS_MPLY);
-    Output.SetOutputMode(Activation.operator bool(), layer->nBytesPerOutput);
 
     Expect::True(Input.VectorCount == Output.VectorCount, XNN_ERR_LYR_CFG);
 
@@ -64,8 +58,10 @@ RnnLayer::RnnLayer(nn_layer const * const layer) :
                     {this->computeConfig(layerConfiguration, accel, fvBuffers, saturationCount); };
 }
 
-void RnnLayer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const
+void RnnLayer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration, ValidBoundariesFunctor validBoundaries) const
 {
+    AffineBaseLayer::UpdateKernelConfigs(layerConfiguration, validBoundaries);
+
     auto inputBuffer = layerConfiguration.InputBuffer
         ? layerConfiguration.InputBuffer->Get<int16_t>() : Input.Buffer;
 
@@ -80,7 +76,10 @@ void RnnLayer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const
 
     if (outputBuffer)
     {
-        configs.Recurrent->feedbackBuffer = CalculateFeedbackBuffer(outputBuffer);
+        auto feedback = CalculateFeedbackBuffer(outputBuffer);
+        validBoundaries(feedback, Output.BufferSize);
+
+        configs.Recurrent->feedbackBuffer = feedback;
         configs.Recurrent->pwlOutputConfig.output = outputBuffer;
     }
 }

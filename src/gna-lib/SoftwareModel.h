@@ -25,6 +25,7 @@
 
 #pragma once
 
+#include <functional>
 #include <memory>
 #include <vector>
 
@@ -34,18 +35,15 @@
 namespace GNA
 {
 
-class AccelerationDetector;
-class ActiveList;
 class Layer;
 struct LayerConfiguration;
-class GmmLayer;
 class RequestConfiguration;
 struct RequestProfiler;
 
 class SoftwareModel
 {
 public:
-    SoftwareModel(const gna_model *const network);
+    SoftwareModel(const gna_model *const network, std::function<void(const void*, const size_t)> validBoundaries);
     SoftwareModel(const SoftwareModel &) = delete;
     SoftwareModel& operator=(const SoftwareModel&) = delete;
     ~SoftwareModel() = default;
@@ -64,6 +62,7 @@ public:
 
 protected:
     inline void build(const nn_layer* layers);
+    void validate(std::function<void(const void*, const size_t)> validBoundaries) const;
 
     const uint32_t layerCount;
     const uint32_t inputVectorCount;

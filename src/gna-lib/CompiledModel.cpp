@@ -41,15 +41,17 @@ CompiledModel::CompiledModel(gna_model_id modelId, const gna_model *rawModel, Me
     LayerCount{ static_cast<uint16_t>(rawModel->nLayers) },
     UserModel{ rawModel },
     memory{ memoryIn },
+    validBoundaries{ [&memoryIn](const void *buffer, const size_t bufferSize)
+        { Expect::ValidBoundaries(buffer, bufferSize, memoryIn.GetUserBuffer(), memoryIn.ModelSize); } },
+    softwareModel { UserModel, validBoundaries},
     submodels{},
     swFastAccel{ detector.GetFastestAcceleration() },
     swSatAccel{ static_cast<acceleration>(detector.GetFastestAcceleration() & GNA_HW) }
 {
-    softwareModel = make_unique<SoftwareModel>(UserModel);
     if (detector.IsHardwarePresent())
     {
         memory.Map(Id);
-        hardwareModel = make_unique<HardwareModel>(Id, softwareModel->Layers, memory, detector);
+        hardwareModel = make_unique<HardwareModel>(Id, softwareModel.Layers, memory, detector);
     }
 
     createSubmodels(detector);
@@ -82,7 +84,7 @@ uint32_t CompiledModel::GetGmmCount() const
 
 const std::vector<std::unique_ptr<Layer>>& CompiledModel::GetLayers() const
 {
-    return softwareModel->Layers;
+    return softwareModel.Layers;
 }
 
 uint32_t CompiledModel::GetHardwareOffset(const BaseAddressC& address) const
@@ -90,12 +92,15 @@ uint32_t CompiledModel::GetHardwareOffset(const BaseAddressC& address) const
     return hardwareModel->GetOffset(address);
 }
 
-void CompiledModel::InvalidateConfigCache(gna_request_cfg_id configId) const
+void CompiledModel::InvalidateConfig(gna_request_cfg_id configId, LayerConfiguration *layerConfiguration, uint32_t layerIndex) const
 {
     if (hardwareModel)
     {
         hardwareModel->InvalidateConfigCache(configId);
     }
+
+    auto layer = GetLayers().at(layerIndex).get();
+    layer->UpdateKernelConfigs(*layerConfiguration, validBoundaries);
 }
 
 status_t CompiledModel::Score(
@@ -121,7 +126,7 @@ status_t CompiledModel::Score(
     switch (scoreMethod)
     {
     case SoftwareOnly:
-        status = softwareModel->Score(0, LayerCount, swAccel, config, profiler, buffers);
+        status = softwareModel.Score(0, LayerCount, swAccel, config, profiler, buffers);
         break;
     case HardwareOnly:
         status = hardwareModel->Score(0, LayerCount, config, profiler, buffers);
@@ -135,7 +140,7 @@ status_t CompiledModel::Score(
             switch (submodel->Type)
             {
             case Software:
-                status = softwareModel->Score(layerIndex, layerCount, swAccel, config, profiler, buffers);
+                status = softwareModel.Score(layerIndex, layerCount, swAccel, config, profiler, buffers);
                 if (status != GNA_SUCCESS && status != GNA_SSATURATE)
                     return status;
                 break;

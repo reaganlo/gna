@@ -42,7 +42,7 @@ public:
 protected:
     AffineBaseLayer(const nn_layer *layer);
 
-    virtual void UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const override;
+    virtual void UpdateKernelConfigs(LayerConfiguration& layerConfiguration, ValidBoundariesFunctor validBoundaries) const override;
 
 private:
     void computeHidden(acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const;
@@ -59,7 +59,7 @@ public:
     AffineLayer(const nn_layer *layer);
     virtual ~AffineLayer() = default;
 
-    virtual void UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const override;
+    virtual void UpdateKernelConfigs(LayerConfiguration& layerConfiguration, ValidBoundariesFunctor validBoundaries) const override;
 };
 
 class AffineDiagonalLayer : public AffineBaseLayer
