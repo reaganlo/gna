@@ -41,5 +41,5 @@ const std::map<GnaDeviceType, uint32_t> FakeDetector::DeviceHardwareBuffers =
 FakeDetector::FakeDetector(GnaDeviceType deviceType)
 {
     accelerationModes[GNA_HW] = ACC_SUPPORTED;
-    deviceCapabilities = { DeviceHardwareBuffers.at(deviceType), deviceType };
+    deviceCapabilities = { DeviceHardwareBuffers.at(deviceType), DRV_RECOVERY_TIMEOUT, deviceType };
 }

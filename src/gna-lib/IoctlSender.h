@@ -80,6 +80,8 @@ public:
 
     static void Open(const GUID& guid);
 
+    static uint32_t recoveryTimeout;
+
     void IoctlSend(const DWORD code, LPVOID const inbuf, const DWORD inlen, LPVOID const outbuf, const DWORD outlen, BOOLEAN async = FALSE);
 
     void IoctlSendEx(const DWORD code, LPVOID const inbuf, const DWORD inlen, LPVOID const outbuf, const DWORD outlen, LPOVERLAPPED overlappedEx);

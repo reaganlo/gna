@@ -183,6 +183,8 @@ void AccelerationDetector::discoverHardwareCapabilities()
     if (!IsHardwarePresent()) return;
 
     IoctlSend(GNA_IOCTL_CPBLTS, nullptr, 0, &deviceCapabilities, sizeof(GNA_CPBLTS));
+
+    IoctlSender::recoveryTimeout = deviceCapabilities.recoveryTimeout;
 }
 
 const uint32_t AccelerationDetector::GetHardwareBufferSize() const
@@ -205,7 +207,7 @@ bool AccelerationDetector::IsHardwarePresent() const
 bool AccelerationDetector::IsLayerSupported(intel_layer_kind_t layerType) const
 {
     if (!IsHardwarePresent()) return false;
-    const auto& deviceFeatureMap = gnaFeatureMap.at(deviceCapabilities.device_type);
+    const auto& deviceFeatureMap = gnaFeatureMap.at(deviceCapabilities.deviceType);
     switch (layerType)
     {
     case INTEL_AFFINE:
@@ -233,8 +235,8 @@ bool AccelerationDetector::IsLayerSupported(intel_layer_kind_t layerType) const
 
 bool AccelerationDetector::HasFeature(GnaFeature feature) const
 {
-    const auto& deviceFeatureMap = gnaFeatureMap.at(deviceCapabilities.device_type);
-    return deviceFeatureMap[feature];
+    const auto& deviceFeatureMap = gnaFeatureMap.at(deviceCapabilities.deviceType);
+    return deviceFeatureMap.at(feature);
 }
 
 AccelerationDetector::AccelerationDetector() :

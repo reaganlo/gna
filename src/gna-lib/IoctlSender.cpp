@@ -32,10 +32,11 @@ using namespace GNA;
 
 using std::unique_ptr;
 
-#define MAX_D0_STATE_PROBES 10
-#define WAIT_PERIOD            200        // in miliseconds
+#define MAX_D0_STATE_PROBES  10
+#define WAIT_PERIOD         200        // in miliseconds
 
 WinHandle IoctlSender::deviceHandle;
+uint32_t IoctlSender::recoveryTimeout = DRV_RECOVERY_TIMEOUT;
 
 IoctlSender::IoctlSender() :
     deviceEvent{CreateEvent(nullptr, false, false, nullptr)}
@@ -96,7 +97,7 @@ void IoctlSender::IoctlSend(const DWORD code, LPVOID const inbuf, const DWORD in
 
     if (!async)
     {
-        wait(&overlapped, (DRV_RECOVERY_TIMEOUT + 15) * 1000);
+        wait(&overlapped, (recoveryTimeout + 15) * 1000);
     }
 }
 
@@ -114,7 +115,7 @@ void IoctlSender::IoctlSendEx(const DWORD code, LPVOID const inbuf, const DWORD 
 
 void IoctlSender::WaitOverlapped(LPOVERLAPPED overlappedEx)
 {
-    wait(overlappedEx, (DRV_RECOVERY_TIMEOUT + 15) * 1000);
+    wait(overlappedEx, (recoveryTimeout + 15) * 1000);
 }
 
 void IoctlSender::Submit(LPVOID const inbuf, const DWORD inlen, RequestProfiler * const profiler)

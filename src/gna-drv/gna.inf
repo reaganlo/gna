@@ -38,24 +38,15 @@ DriverVer=
 ;==============================================================================
 
 [Manufacturer]
-%Intel%=Intel, NT$ARCH$, NTx86.6.2, NTamd64.6.2, NTx86.10.0, NTamd64.10.0
+%Intel%=Intel, NT$ARCH$, NTamd64.6.1
 
 [Intel.NT$ARCH$]
 %IntelGNA.DeviceDesc%=IntelGNA_Install, PCI\VEN_8086&DEV_5A11   ;GNA CNL
 %IntelGNA.DeviceDesc%=IntelGNA_Install, PCI\VEN_8086&DEV_3190   ;GNA GLK
 %IntelGNA.DeviceDesc%=IntelGNA_Install, PCI\VEN_8086&DEV_9A11   ;GNA TGL
 
-[Intel.NTx86.6.2]
-; Prevent install on Win8.0+ (x86)
-
-[Intel.NTamd64.6.2]
-; Prevent install on Win8.0+ (amd64)
-
-[Intel.NTx86.10.0]
-; Prevent install on Win10.0+ (x86)
-
-[Intel.NTamd64.10.0]
-; Prevent install on Win10.0+ (amd64)
+[Intel.NTamd64.6.1]
+; prevent install on Windows 7 or later
 
 ;==============================================================================
 ; Class section
@@ -78,13 +69,16 @@ gna.sys  = 1,,
 CopyFiles=@gna.sys
 
 [IntelGNA_Install.NT.HW]
-AddReg      = IntelGNA_Install_MSI_Reg
+AddReg      = IntelGNA_Install_MSI_Reg, IntelGNA_Install_Drv_Reg
 
 [IntelGNA_Install_MSI_Reg]
 HKR, "Interrupt Management", 0x00000010
 HKR, "Interrupt Management\MessageSignaledInterruptProperties", 0x00000010
 HKR, "Interrupt Management\MessageSignaledInterruptProperties", MSISupported, 0x00010001, 1
 HKR, "Interrupt Management\MessageSignaledInterruptProperties", MessageNumberLimit, 0x00010001, 1
+
+[IntelGNA_Install_Drv_Reg]
+HKR, "", DRV_RECOVERY_TIMEOUT, 0x00010003, 0x3c
 
 ;==============================================================================
 ; Service installation

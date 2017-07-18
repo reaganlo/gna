@@ -241,70 +241,87 @@ GetDeviceCapabilities(
     _In_ WDFDEVICE dev,
     _In_ PDEV_CTX  devCtx)
 {
+    NTSTATUS status = STATUS_SUCCESS;
     UNREFERENCED_PARAMETER(dev);
     UNREFERENCED_PARAMETER(devCtx);
     PAGED_CODE();
 
-    /*WDF_OBJECT_ATTRIBUTES attributes;
-    WDFMEMORY memory;
-    size_t hwid_memory;
-    PVOID hwid_buf;*/
     GNA_CPBLTS cpblts;
+
+    WDF_OBJECT_ATTRIBUTES attributes;
+    PWCHAR hwidBuffer;
+    SIZE_T hwidBufferSize = 512;
+    ULONG dataLen;
+    PDEVICE_OBJECT devObj;
+    size_t hwidLength = 21;
+
+    ULONG recoveryTimeout;
+    WDFKEY keyHandle;
+    UNICODE_STRING recoveryValueName;
+
     RtlZeroMemory(&cpblts, sizeof(GNA_CPBLTS));
 
     cpblts.hwInBuffSize = HwReadInBuffSize(devCtx->hw.regs);
-    // NOTE: temporary workaround for missing HWID
-        // TODO: remove when HWID is assigned
-    cpblts.device_type = GNA_TIGERLAKE;
-    Trace(TLI, T_MEM, "TGL found");
+    cpblts.deviceType = GNA_NUM_DEVICE_TYPES;
+    cpblts.recoveryTimeout = DRV_RECOVERY_TIMEOUT;
 
-    /*WDF_OBJECT_ATTRIBUTES_INIT(&attributes);
-    attributes.ParentObject = dev;
-    NTSTATUS status = WdfDeviceAllocAndQueryProperty(dev, DevicePropertyHardwareID, NonPagedPoolNx, &attributes, &memory);
+    status = WdfDeviceOpenRegistryKey(dev, PLUGPLAY_REGKEY_DEVICE, KEY_READ | KEY_WRITE, WDF_NO_OBJECT_ATTRIBUTES, &keyHandle);
     if (!NT_SUCCESS(status))
     {
-        TraceFailMsg(TLE, T_EXIT, "WdfDeviceAllocAndQueryProperty", status);
+        Trace(TLE, T_MEM, "WdfDeviceOpenRegistryKey failed with status: %x", status);
     }
     else
     {
-        hwid_buf = WdfMemoryGetBuffer(memory, &hwid_memory);
-        if (hwid_buf == NULL) {
-            TraceFailMsg(TLE, T_EXIT, "WdfMemoryGetBuffer returned NULL", status);
+        RtlInitUnicodeString(&recoveryValueName, L"DRV_RECOVERY_TIMEOUT");
+        status = WdfRegistryQueryValue(keyHandle, &recoveryValueName, sizeof(recoveryTimeout), &recoveryTimeout, NULL, NULL);
+
+        if (!NT_SUCCESS(status))
+        {
+            Trace(TLE, T_MEM, "WdfRegistryQueryValue failed with status: %x", status);
         }
         else
         {
-            UNICODE_STRING hwid, hwid2;
-            RtlInitUnicodeString(&hwid, hwid_buf);
-            Trace(TLI, T_MEM, "Device name length: %Iu", hwid_memory);
-            Trace(TLI, T_MEM, "Device name (unicode): %wZ", &hwid);
-
-            RtlInitUnicodeString(&hwid2, L"PCI\\VEN_8086&DEV_3190");
-            Trace(TLV, T_MEM, "GLK unicode: %wZ", &hwid2);
-            LONG cmp_res = RtlCompareUnicodeString(&hwid2, &hwid, TRUE);
-            if (cmp_res > -23)
-            {
-                RtlInitUnicodeString(&hwid2, L"PCI\\VEN_8086&DEV_5A11");
-                Trace(TLV, T_MEM, "CNL unicode: %wZ", &hwid2);
-                cmp_res = RtlCompareUnicodeString(&hwid2, &hwid, TRUE);
-
-                if (cmp_res > -23)
-                {
-                    Trace(TLI, T_MEM, "Unknown device found");
-                    cpblts.device_type = GNA_NUM_DEVICE_TYPES;
-                }
-                else
-                {
-                    Trace(TLI, T_MEM, "CNL found");
-                    cpblts.device_type = GNA_CANNONLAKE;
-                }
-            }
-            else
-            {
-                Trace(TLI, T_MEM, "GLK found");
-                cpblts.device_type = GNA_GEMINILAKE;
-            }
+            cpblts.recoveryTimeout = recoveryTimeout;
+            Trace(TLV, T_MEM, "WdfRegistryQueryValue returned value: %d", recoveryTimeout);
         }
-    }*/
+    }
+
+    hwidBuffer = ExAllocatePoolWithTag(NonPagedPoolNx, hwidBufferSize, MEM_POOL_TAG);
+    if (NULL == hwidBuffer)
+    {
+        Trace(TLE, T_MEM, "ExAllocatePool for hwidBuffer returned NULL");
+        goto exit;
+    }
+
+    WDF_OBJECT_ATTRIBUTES_INIT(&attributes);
+    attributes.ParentObject = dev;
+    devObj = WdfDeviceWdmGetPhysicalDevice(dev);
+    status = IoGetDeviceProperty(devObj, DevicePropertyHardwareID, (ULONG)hwidBufferSize, hwidBuffer, &dataLen);
+    if (!NT_SUCCESS(status))
+    {
+        TraceFailMsg(TLE, T_EXIT, "IoGetDeviceProperty", status);
+    }
+    else
+    {
+        Trace(TLV, T_MEM, "Retrieved hwid: %ls", hwidBuffer);
+
+        if (0 == wcsncmp(hwidBuffer, L"PCI\\VEN_8086&DEV_9A11", hwidLength))
+        {
+            cpblts.deviceType = GNA_TIGERLAKE;
+        }
+        else if (0 == wcsncmp(hwidBuffer, L"PCI\\VEN_8086&DEV_3190", hwidLength))
+        {
+            cpblts.deviceType = GNA_GEMINILAKE;
+        }
+        else if (0 == wcsncmp(hwidBuffer, L"PCI\\VEN_8086&DEV_5A11", hwidLength))
+        {
+            cpblts.deviceType = GNA_CANNONLAKE;
+        }
+    }
+
+    ExFreePool(hwidBuffer);
+
+exit:
     return cpblts;
 }
 

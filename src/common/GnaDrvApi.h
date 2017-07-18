@@ -59,13 +59,11 @@ typedef UINT8           __1B_RES;   // 1 B of reserved memory
  */
 #define     PT_DIR_SIZE             64
 
-
 /**
- * Time in seconds after which driver will try to auto recover
+ * Default time in seconds after which driver will try to auto recover
  *  from hardware hang
  */
 #define     DRV_RECOVERY_TIMEOUT    60
-// TODO: add registry value to enable manipulation of recovery time
 
 /**
  * Page table entries number
@@ -147,15 +145,16 @@ typedef enum _GnaDeviceType {
 
 /**
  * GNA device capabilities structure
- * Size: 4B
+ * Size: 12B
  */
 typedef struct _GNA_CPBLTS
 {
     UINT32 hwInBuffSize;
-    GnaDeviceType device_type;
+    UINT32 recoveryTimeout;
+    GnaDeviceType deviceType;
 } GNA_CPBLTS;
 
-static_assert(8 == sizeof(GNA_CPBLTS), "Invalid size of GNA_CPBLTS");
+static_assert(12 == sizeof(GNA_CPBLTS), "Invalid size of GNA_CPBLTS");
 
 /**
  * Calculate Control flags
