@@ -58,13 +58,13 @@ using namespace GNA;
 
 const map<GnaDeviceType, array<bool, GnaFeatureCount>>
 AccelerationDetector::gnaFeatureMap = {
-    // Basic, CNN,   GMM,  GMMLayer, MultiBias, L1Dist, L2Dist, ComputerVision, Layer8K
-{ GNA_CANNONLAKE,    {true, false, true, false,    false,     false,  false,  false, false} },
-{ GNA_GEMINILAKE,    {true, true,  true, false,    false,     false,  false,  false, false} },
-{ GNA_ICELAKE,       {true, true,  true, false,    false,     false,  false,  false, false} },
-{ GNA_TIGERLAKE,     {true, true,  true, true,     true,      false,  false,  false, true } },
-{ GNA_SUE_CREEK,     {true, true,  true, false,    false,     false,  false,  false, false} },
-{ GNA_SUE_CREEK_2,   {true, true,  true, true,     true,      false,  false,  false, true } }
+    // Basic, CNN,   GMM,  GMMLayer, MultiBias, L1Dist, L2Dist, ComputerVision, Layer8K, NewPerformanceCounters
+{ GNA_CANNONLAKE,    {true, false, true, false,    false,     false,  false,  false, false, false } },
+{ GNA_GEMINILAKE,    {true, true,  true, false,    false,     false,  false,  false, false, false } },
+{ GNA_ICELAKE,       {true, true,  true, false,    false,     false,  false,  false, false, false } },
+{ GNA_TIGERLAKE,     {true, true,  true, true,     true,      false,  false,  false, true,  true  } },
+{ GNA_SUE_CREEK,     {true, true,  true, false,    false,     false,  false,  false, false, false } },
+{ GNA_SUE_CREEK_2,   {true, true,  true, true,     true,      false,  false,  false, true,  true  } }
 };
 
 std::map<const WeightMode, std::map<const acceleration, const AffineKernel>> AccelerationDetector::AffineKernels = {

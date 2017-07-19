@@ -73,7 +73,13 @@ void Device::CreateConfiguration(gna_model_id modelId, gna_request_cfg_id *confi
 
 void Device::EnableProfiling(gna_request_cfg_id configId, gna_hw_perf_encoding hwPerfEncoding, gna_perf_t * perfResults)
 {
-    auto& requestConfiguration = requestBuilder.GetConfiguration(configId);    
+    if (hwPerfEncoding >= DESCRIPTOR_FETCH_TIME
+        && !accelerationDetector.HasFeature(NewPerformanceCounters))
+    {
+        throw GNA_CPUTYPENOTSUPPORTED;
+    }
+
+    auto& requestConfiguration = requestBuilder.GetConfiguration(configId);
     requestConfiguration.HwPerfEncoding = hwPerfEncoding;
     requestConfiguration.PerfResults = perfResults;
 }

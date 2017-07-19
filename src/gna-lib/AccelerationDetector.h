@@ -58,6 +58,7 @@ enum GnaFeature
     L2Distance,
     ComputerVision,
     Layer8K,
+    NewPerformanceCounters,
 
     GnaFeatureCount
 };
