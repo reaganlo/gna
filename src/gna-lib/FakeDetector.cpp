@@ -33,7 +33,6 @@ const std::map<GnaDeviceType, uint32_t> FakeDetector::DeviceHardwareBuffers =
     { GNA_GEMINILAKE,   24 },
     { GNA_ICELAKE,      24 },
     { GNA_TIGERLAKE,    24 },
-    { GNA_LAKEFIELD,    24 },
     { GNA_SUE_CREEK,    12 },
     { GNA_SUE_CREEK_2,  24 }
 };

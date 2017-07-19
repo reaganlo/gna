@@ -31,11 +31,11 @@ in any way.
 using namespace GNA;
 
 // just makes object from arguments
-Memory::Memory(void * bufferIn, const size_t sizeIn) :
+Memory::Memory(void * bufferIn, const size_t userSize, const uint16_t layerCount, const uint16_t gmmCount) :
     Address{bufferIn},
-    InternalSize{0},
-    ModelSize{0},
-    size{sizeIn}
+    InternalSize{CompiledModel::CalculateInternalModelSize(layerCount, gmmCount)},
+    ModelSize{ALIGN64(userSize)},
+    size{CompiledModel::CalculateModelSize(userSize, layerCount, gmmCount)}
 {};
 
 // allocates and zeros memory

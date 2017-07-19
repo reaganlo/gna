@@ -42,82 +42,57 @@ using namespace GNA;
 
 void Device::DumpModel(gna_model_id modelId, gna_device_kind deviceKind, const char * filepath)
 {
-    auto& model = modelContainer->GetModel(modelId);
-
     auto deviceType = static_cast<GnaDeviceType>(deviceKind);
-
     FakeDetector detector{ deviceType };
 
+    auto& model = modelContainer->GetModel(modelId);
     auto layerCount = model.LayerCount;
-
-    auto hwLyrDsc = totalMemory->Get<XNN_LYR>();
-
-    auto dumpMemory = make_unique<Memory>(totalMemory->ModelSize, layerCount, model.GetGmmCount());
+    auto gmmCount = model.GetGmmCount();
+    auto internalSize = CompiledModel::CalculateInternalModelSize(layerCount, gmmCount);
 
     gna_model_id dumpModelId;
-    modelContainer->AllocateModel(&dumpModelId, model.UserModel, *dumpMemory, detector);
-    auto& dumpModel = modelContainer->GetModel(dumpModelId);
+    void * address = totalMemory->Get() + totalMemory->InternalSize - internalSize;
 
-    auto userBuffer = dumpMemory->Get();
-    auto dumpDsc = reinterpret_cast<XNN_LYR*>(userBuffer);
+    // using placement new to avoid Memory destructor
+    void *memory = malloc(sizeof(Memory));
+    auto *dumpMemory = new (memory) Memory { address, totalMemory->ModelSize, layerCount, gmmCount };
 
-    // TODO: after having model built from XML, this should go away
-    uint32_t patch_offset = CompiledModel::MaximumInternalModelSize - dumpMemory->InternalSize;
-    for (int i = 0; i < layerCount; i++)
-    {
-        if (dumpDsc[i].act_list_buffer != 0)
-            dumpDsc[i].act_list_buffer = hwLyrDsc[i].act_list_buffer - patch_offset;
+    // save original layer descriptors
+    void *descriptorsCopy = malloc(totalMemory->InternalSize);
+    memcpy(descriptorsCopy, *totalMemory, totalMemory->InternalSize);
 
-        if (dumpDsc[i].aff_const_buffer != 0)
-            dumpDsc[i].aff_const_buffer = hwLyrDsc[i].aff_const_buffer - patch_offset;
+    // generating layer descriptors..
+    auto hwModel = make_unique<HardwareModel>(modelId, model.GetLayers(), gmmCount, *dumpMemory, detector);
 
-        if (dumpDsc[i].aff_weight_buffer != 0)
-            dumpDsc[i].aff_weight_buffer = hwLyrDsc[i].aff_weight_buffer - patch_offset;
-
-        // aff_weight_buffer and cnn_flt_buffer are the same through union
-        // if(hwLyrDsc[i].cnn_flt_buffer != 0) hwLyrDsc[i].cnn_flt_buffer = hwLyrDsc[i].cnn_flt_buffer - patch_offset;
-
-        if (dumpDsc[i].in_buffer != 0)
-            dumpDsc[i].in_buffer = hwLyrDsc[i].in_buffer - patch_offset;
-
-        if (dumpDsc[i].out_act_fn_buffer != 0)
-            dumpDsc[i].out_act_fn_buffer = hwLyrDsc[i].out_act_fn_buffer - patch_offset;
-
-        if (dumpDsc[i].out_sum_buffer != 0)
-            dumpDsc[i].out_sum_buffer = hwLyrDsc[i].out_sum_buffer - patch_offset;
-
-        if (dumpDsc[i].pwl_seg_def_buffer != 0)
-            dumpDsc[i].pwl_seg_def_buffer = hwLyrDsc[i].pwl_seg_def_buffer - patch_offset;
-
-        if (dumpDsc[i].rnn_out_fb_buffer != 0)
-            dumpDsc[i].rnn_out_fb_buffer = hwLyrDsc[i].rnn_out_fb_buffer - patch_offset;
-    }
+    // copying data..
+    void *data = totalMemory->Get() + totalMemory->InternalSize;
+    void *dumpData = dumpMemory->Get() + dumpMemory->InternalSize;
+    memcpy(dumpData, data, totalMemory->ModelSize);
 
     ofstream dumpStream(filepath, std::ios::out | std::ios::binary);
 
     // dump SUE model header needed for internal model handling
-    // TBD: considering universal model header for all platforms
     if (GNA_SUE_CREEK == static_cast<GnaDeviceType>(deviceKind)
         || GNA_SUE_CREEK_2 == static_cast<GnaDeviceType>(deviceKind))
     {
-        uint32_t input_elements = dumpDsc->n_in_elems;
-        if (NN_CNN != dumpDsc->op) input_elements *= dumpDsc->n_groups;
+        auto xnnDescriptor = reinterpret_cast<XNN_LYR*>(dumpMemory->Get());
+        uint32_t input_elements = xnnDescriptor->n_in_elems;
+        if (NN_CNN != xnnDescriptor->op) input_elements *= xnnDescriptor->n_groups;
 
         uint32_t inputs_size = input_elements * sizeof(int16_t);
-        void * input_buffer = (uint8_t*)userBuffer + dumpDsc->in_buffer;
+        void * input_buffer = dumpMemory->Get<uint8_t>() + xnnDescriptor->in_buffer;
 
         /* XNN parameters */
         uint32_t gna_mode = 1;
-        uint32_t nInputs = dumpDsc->n_in_elems;
-        if (NN_CNN != dumpDsc->op)
+        uint32_t nInputs = xnnDescriptor->n_in_elems;
+        if (NN_CNN != xnnDescriptor->op)
         {
-            nInputs *= dumpDsc->n_groups;
+            nInputs *= xnnDescriptor->n_groups;
         }
 
+        uint32_t inputsOffset = offsetof(XNN_LYR, in_buffer);
 
-        uint32_t inputsOffset = dumpModel.GetHardwareOffset(&dumpDsc->in_buffer);
-
-        XNN_LYR *last_hwLyrDsc = dumpDsc + layerCount - 1;
+        XNN_LYR *last_hwLyrDsc = xnnDescriptor + layerCount - 1;
         uint32_t nOutputs;
         uint32_t nBytesPerInput = 2;
         uint32_t nBytesPerOutput;
@@ -127,12 +102,12 @@ void Device::DumpModel(gna_model_id modelId, gna_device_kind deviceKind, const c
                 && (NN_DEINT != last_hwLyrDsc->op)
                 && (NN_COPY != last_hwLyrDsc->op)))
         {
-            outputsOffset = dumpModel.GetHardwareOffset(&last_hwLyrDsc->out_sum_buffer);
+            outputsOffset = (uint8_t*)&last_hwLyrDsc->out_sum_buffer - (uint8_t*)xnnDescriptor;
             nBytesPerOutput = 4;
         }
         else
         {
-            outputsOffset = dumpModel.GetHardwareOffset(&last_hwLyrDsc->out_act_fn_buffer);
+            outputsOffset = (uint8_t*)&last_hwLyrDsc->out_act_fn_buffer - (uint8_t*)xnnDescriptor;
             nBytesPerOutput = 2;
         }
 
@@ -161,6 +136,10 @@ void Device::DumpModel(gna_model_id modelId, gna_device_kind deviceKind, const c
         dumpStream.write(reinterpret_cast<const char*>(params), sizeof(params));
     }
 
-    dumpStream.write(dumpMemory->Get<const char>(), dumpMemory->InternalSize);
-    dumpStream.write(totalMemory->GetUserBuffer<const char>(), dumpMemory->ModelSize);
+    dumpStream.write(dumpMemory->Get<const char>(), dumpMemory->GetSize());
+    free(memory);
+
+    // restore layer descriptors
+    memcpy(*totalMemory, descriptorsCopy, totalMemory->InternalSize);
+    free(descriptorsCopy);
 }

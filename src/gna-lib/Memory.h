@@ -39,7 +39,7 @@ public:
     Memory() = default;
 
     // just makes object from arguments
-    Memory(void * buffer, const size_t size);
+    Memory(void * buffer, const size_t userSize, const uint16_t layerCount, const uint16_t gmmCount);
 
     // allocates and zeros memory
     Memory(const size_t userSize, const uint16_t layerCount, const uint16_t gmmCount);
@@ -67,7 +67,7 @@ public:
     // Size of memory requested for model by user.
     const size_t ModelSize;
 
-private:
+protected:
     size_t size = 0;
 
     IoctlSender sender;

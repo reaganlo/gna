@@ -43,7 +43,7 @@ struct RequestProfiler;
 class SoftwareModel
 {
 public:
-    SoftwareModel(const gna_model *const network, std::function<void(const void*, const size_t)> validBoundaries);
+    SoftwareModel(const gna_model *const network, uint16_t& gmmCount, std::function<void(const void*, const size_t)> validBoundaries);
     SoftwareModel(const SoftwareModel &) = delete;
     SoftwareModel& operator=(const SoftwareModel&) = delete;
     ~SoftwareModel() = default;
@@ -60,14 +60,12 @@ public:
 
     std::vector<std::unique_ptr<Layer>> Layers;
 
-protected:
-    inline void build(const nn_layer* layers);
+private:
+    void build(const gna_model *const network, uint16_t& gmmCount);
     void validate(std::function<void(const void*, const size_t)> validBoundaries) const;
 
     const uint32_t layerCount;
     const uint32_t inputVectorCount;
-
-private:
     uint32_t inputLayerCount = 0;
     uint32_t outputLayerCount = 0;
 };

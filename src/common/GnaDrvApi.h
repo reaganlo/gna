@@ -137,7 +137,6 @@ typedef enum _GnaDeviceType {
     GNA_CANNONLAKE,
     GNA_GEMINILAKE,
     GNA_ICELAKE,
-    GNA_LAKEFIELD,
     GNA_TIGERLAKE,
 
     GNA_NUM_DEVICE_TYPES,

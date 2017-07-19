@@ -39,7 +39,7 @@ public:
     {
         if (hardwareModel)
         {
-            hardwareModel.reset(new HardwareModelVerbose(Id, softwareModel.Layers, memory, detector));
+            hardwareModel.reset(new HardwareModelVerbose(Id, softwareModel.Layers, gmmCount, memory, detector));
         }
     };
 

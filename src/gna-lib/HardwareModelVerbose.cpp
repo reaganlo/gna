@@ -30,9 +30,9 @@
 
 using namespace GNA;
 
-HardwareModelVerbose::HardwareModelVerbose(const gna_model_id modId, const std::vector<std::unique_ptr<Layer>>& layers,
-    const Memory& wholeMemory, const AccelerationDetector& detector) :
-    HardwareModel::HardwareModel(modId, layers, wholeMemory, detector) 
+HardwareModelVerbose::HardwareModelVerbose(const gna_model_id modId, const std::vector<std::unique_ptr<Layer>>& layers, 
+    uint16_t gmmCount, const Memory& wholeMemory, const AccelerationDetector& detector) :
+    HardwareModel::HardwareModel(modId, layers, gmmCount, wholeMemory, detector) 
 { 
 }
 

@@ -49,7 +49,7 @@ public:
     // TODO: most of these methods are here due to invalid object design, need to refactor to get rid of
     static const size_t CalculateModelSize(const size_t userSize, const uint16_t layerCount, const uint16_t gmmCount);
     static const size_t CalculateInternalModelSize(const uint16_t layerCount, const uint16_t gmmCount);
-    uint32_t GetGmmCount() const;
+    uint16_t GetGmmCount() const;
     uint32_t GetHardwareOffset(const BaseAddressC& address) const;
     const std::vector<std::unique_ptr<Layer>>& GetLayers() const;
     decltype(auto) CompiledModel::GetSubmodels() const
@@ -86,8 +86,8 @@ protected:
 
     SoftwareModel softwareModel;
     std::unique_ptr<HardwareModel> hardwareModel;
-    std::vector<std::unique_ptr<SubModel>> submodels;
 
+    std::vector<std::unique_ptr<SubModel>> submodels;
     std::map<acceleration, ScoreMethod> scoreMethods;
 
     const acceleration swFastAccel;

@@ -63,7 +63,6 @@ AccelerationDetector::gnaFeatureMap = {
 { GNA_GEMINILAKE,    {true, true,  true, false,    false,     false,  false,  false, false} },
 { GNA_ICELAKE,       {true, true,  true, false,    false,     false,  false,  false, false} },
 { GNA_TIGERLAKE,     {true, true,  true, true,     true,      false,  false,  false, true } },
-{ GNA_LAKEFIELD,     {true, true,  true, true,     true,      false,  false,  false, true } },
 { GNA_SUE_CREEK,     {true, true,  true, false,    false,     false,  false,  false, false} },
 { GNA_SUE_CREEK_2,   {true, true,  true, true,     true,      false,  false,  false, true } }
 };

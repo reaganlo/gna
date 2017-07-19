@@ -46,8 +46,8 @@ class HardwareModel
 public:
     static const size_t CalculateDescriptorSize(const uint16_t layerCount, const uint16_t gmmLayersCount);
 
-    HardwareModel(const gna_model_id modId, const std::vector<std::unique_ptr<Layer>>& layers, const Memory& wholeMemory,
-        const AccelerationDetector& detector);
+    HardwareModel(const gna_model_id modId, const std::vector<std::unique_ptr<Layer>>& layers, 
+        uint16_t gmmCount, const Memory& wholeMemory, const AccelerationDetector& detector);
     ~HardwareModel() = default;
     HardwareModel(const HardwareModel &) = delete;
     HardwareModel& operator=(const HardwareModel&) = delete;

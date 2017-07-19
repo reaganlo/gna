@@ -43,7 +43,7 @@ CompiledModel::CompiledModel(gna_model_id modelId, const gna_model *rawModel, Me
     memory{ memoryIn },
     validBoundaries{ [&memoryIn](const void *buffer, const size_t bufferSize)
         { Expect::ValidBoundaries(buffer, bufferSize, memoryIn.GetUserBuffer(), memoryIn.ModelSize); } },
-    softwareModel { UserModel, validBoundaries},
+    softwareModel { UserModel, gmmCount, validBoundaries},
     submodels{},
     swFastAccel{ detector.GetFastestAcceleration() },
     swSatAccel{ static_cast<acceleration>(detector.GetFastestAcceleration() & GNA_HW) }
@@ -51,7 +51,7 @@ CompiledModel::CompiledModel(gna_model_id modelId, const gna_model *rawModel, Me
     if (detector.IsHardwarePresent())
     {
         memory.Map(Id);
-        hardwareModel = make_unique<HardwareModel>(Id, softwareModel.Layers, memory, detector);
+        hardwareModel = make_unique<HardwareModel>(Id, softwareModel.Layers, gmmCount, memory, detector);
     }
 
     createSubmodels(detector);
@@ -77,7 +77,7 @@ const size_t CompiledModel::CalculateInternalModelSize(const uint16_t layerCount
     return HardwareModel::CalculateDescriptorSize(layerCount, gmmCountIn);
 }
 
-uint32_t CompiledModel::GetGmmCount() const
+uint16_t CompiledModel::GetGmmCount() const
 {
     return gmmCount;
 }

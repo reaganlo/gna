@@ -53,8 +53,11 @@ DescriptorParameters::DescriptorParameters(const Layer* softwareLayer, const Bas
     Expect::ValidBuffer(MemoryBase);
     Expect::ValidBuffer(XnnDescriptor);
     Expect::AlignedTo(XnnDescriptor, sizeof(XNN_LYR));
-    Expect::ValidBuffer(GmmDescriptor);
-    Expect::AlignedTo(GmmDescriptor, sizeof(GMM_CONFIG));
+    if (INTEL_GMM == softwareLayer->Config.Kind)
+    {
+        Expect::ValidBuffer(GmmDescriptor);
+        Expect::AlignedTo(GmmDescriptor, sizeof(GMM_CONFIG));
+    }
 };
 
 const map<const nn_layer_kind, const NN_OP_TYPE> HardwareLayer::OperationsMap =

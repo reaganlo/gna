@@ -43,16 +43,16 @@ using std::make_unique;
 
 using namespace GNA;
 
-SoftwareModel::SoftwareModel(const gna_model *const network, ValidBoundariesFunctor validBoundaries) :
+SoftwareModel::SoftwareModel(const gna_model *const network, uint16_t& gmmCount, ValidBoundariesFunctor validBoundaries) :
     layerCount{ network->nLayers },
     inputVectorCount{ network->nGroup }
 {
 #ifndef NO_ERRCHECK
-    Expect::InRange(inputVectorCount, 1, XNN_N_GROUP_MAX, XNN_ERR_LYR_CFG);
-    Expect::InRange(layerCount, 1, XNN_LAYERS_MAX_COUNT, XNN_ERR_NET_LYR_NO);
+    Expect::InRange(network->nGroup, 1, XNN_N_GROUP_MAX, XNN_ERR_LYR_CFG);
+    Expect::InRange(network->nLayers, 1, XNN_LAYERS_MAX_COUNT, XNN_ERR_NET_LYR_NO);
     Expect::NotNull(network->pLayers);
 #endif
-    build(network->pLayers);
+    build(network, gmmCount);
     validate(validBoundaries);
 }
 
@@ -99,18 +99,18 @@ status_t SoftwareModel::Score(
     return (saturationCount > 0) ? GNA_SSATURATE : GNA_SUCCESS;
 }
 
-void SoftwareModel::validateConfiguration(const RequestConfiguration& configuration) const
+void SoftwareModel::build(const gna_model *const network, uint16_t& gmmCount)
 {
-    Expect::True(inputLayerCount == configuration.InputBuffersCount, XNN_ERR_NETWORK_INPUTS);
-    Expect::True(outputLayerCount == configuration.OutputBuffersCount, XNN_ERR_NETWORK_OUTPUTS);
-}
-
-void SoftwareModel::build(const nn_layer* layers)
-{
-    for (auto i = 0ui32; i < layerCount; i++)
+    for (auto i = 0ui32; i < network->nLayers; i++)
     {
-        auto layer = layers + i;
+        auto layer = network->pLayers + i;
         Layers.push_back(Layer::Create(const_cast<const nn_layer*>(layer)));
+
+        if (INTEL_GMM == layer->nLayerKind)
+        {
+            ++gmmCount;
+        }
+
         switch (layer->type)
         {
         case INTEL_INPUT:
@@ -227,4 +227,10 @@ void SoftwareModel::validate(ValidBoundariesFunctor validBoundaries) const
             validBoundaries(activation->Segments, segmentsSize);
         }
     }
+}
+
+void SoftwareModel::validateConfiguration(const RequestConfiguration& configuration) const
+{
+    Expect::True(inputLayerCount == configuration.InputBuffersCount, XNN_ERR_NETWORK_INPUTS);
+    Expect::True(outputLayerCount == configuration.OutputBuffersCount, XNN_ERR_NETWORK_OUTPUTS);
 }
