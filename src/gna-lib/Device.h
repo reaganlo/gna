@@ -26,29 +26,30 @@
 #ifndef _DEVICE_H
 #define _DEVICE_H
 
-#include "ModelContainer.h"
+#include "common.h"
+
+#include "AccelerationDetector.h"
 #include "RequestBuilder.h"
 #include "RequestHandler.h"
 
 namespace GNA
 {
+class Memory;
 class Device
 {
 public:
     Device(gna_device_id *deviceId, uint8_t threadCount = 1);
-    ~Device();
+    virtual ~Device();
     Device(const Device &) = delete;
     Device& operator=(const Device&) = delete;
 
     void ValidateSession(gna_device_id deviceId) const;
 
-    void * AllocateMemory(uint32_t requestedSize, uint32_t * sizeGranted);
+    void * AllocateMemory(uint32_t requestedSize, const uint16_t layerCount, uint16_t gmmCount, uint32_t * sizeGranted);
 
     void FreeMemory();
 
-    virtual void LoadModel(gna_model_id *modelId, const gna_model *model);
-
-    virtual void ReleaseModel(gna_model_id modelId);
+    void LoadModel(gna_model_id *modelId, const gna_model *model);
 
     void AttachBuffer(gna_request_cfg_id configId, gna_buffer_type type, uint16_t layerIndex, void *address);
 
@@ -65,16 +66,20 @@ public:
     void DumpModel(gna_model_id modelId, gna_device_kind deviceKind, const char * filepath);
 
 protected:
+    virtual std::unique_ptr<Memory> createMemoryObject(const uint64_t memoryId, const uint32_t requestedSize,
+        const uint16_t layerCount, const uint16_t gmmCount);
+
     gna_device_id id = GNA_DEVICE_INVALID;
 
-    std::unique_ptr<Memory> totalMemory;
     RequestHandler requestHandler;
 
     AccelerationDetector accelerationDetector;
 
     RequestBuilder requestBuilder;
 
-    std::unique_ptr<ModelContainer> modelContainer;
+    std::vector<std::unique_ptr<Memory>> memoryObjects;
+
+    uint32_t modelIdSequence = 0;
 };
 }
 #endif

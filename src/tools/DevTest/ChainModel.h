@@ -51,9 +51,12 @@ public:
 
     intel_nnet_type_t& Setup(uint8_t * pinned_memory);
 
+    uint16_t GetLayerCount() const;
     uint32_t GetModelSize();
     uint32_t GetInputBuffersSize();
     uint32_t GetOutputBuffersSize();
+
+    uint16_t GmmCount = 0;
 
 private:
     void setup_dnn_pointers(intel_nnet_layer_t *layer, uint8_t* &pinned_memory);

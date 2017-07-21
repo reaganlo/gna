@@ -92,24 +92,25 @@ typedef struct _HW_DESC
 
 } HW_DESC, *PHW_DESC;               //  HW Descriptor context
 
-typedef struct _MODEL_CTX
+typedef struct _MEMORY_CTX
 {
-    UINT64        modelId;                  // Back-reference model id
+    UINT64        memoryId;                 // Back-reference memory id
+    UINT64        modelId;                  // model id previously scored
     INT64         requestConfigId;          // request config that currently written into model memory
     PMDL          pMdl;                     // Pointer to MDL object used with MmLock/MmUnlock
     WDFREQUEST    mmapRequest;              // Memory map request to be completed on memory release
     PT_DIR        ptDir[PT_DIR_SIZE + 1];   // page table directory
     ULONG         pageTableCount;           // Number of actually used entries in page Tables.
     HW_DESC       desc;                     // hardware descriptor context
-    PVOID         userMemoryBaseVA;         // User memmory model buffer virtual address
+    PVOID         userMemoryBaseVA;         // User memory virtual address
     UINT32        userMemorySize;           // Size of user memory
 
-} MODEL_CTX, *PMODEL_CTX;               // Client/application context
+} MEMORY_CTX, *PMEMORY_CTX;               // Client/application context
 
 typedef struct _APP_CTX
 {
     WDFREQUEST notifyRequest;               // request to be completed to notify user application after memory map
-    PMODEL_CTX models[APP_MODELS_LIMIT];
+    PMEMORY_CTX memoryBuffers[APP_MEMORIES_LIMIT];
 } APP_CTX, *PAPP_CTX;
 
 /**

@@ -28,30 +28,38 @@
 
 #include "Device.h"
 #include "Memory.h"
-#include "ModelContainerVerbose.h"
+#include "MemoryVerbose.h"
 
 namespace GNA
 {
-class DeviceVerbose : public Device
-{
-public:
-    DeviceVerbose::DeviceVerbose(gna_device_id* deviceId, uint8_t threadCount = 1) :
-        Device::Device(deviceId, threadCount)
+    class DeviceVerbose : public Device
     {
-        modelContainer = std::make_unique<ModelContainerVerbose>();
-    }
+    public:
+        DeviceVerbose(gna_device_id* deviceId, uint8_t threadCount = 1) :
+            Device::Device(deviceId, threadCount)
+        { }
 
-    void DeviceVerbose::SetPrescoreScenario(gna_model_id modelId, uint32_t nActions, dbg_action *actions)
-    {
-        auto& model = static_cast<CompiledModelVerbose&>(modelContainer->GetModel(modelId));
-        model.SetPrescoreScenario(nActions, actions);
-    }
+        void SetPrescoreScenario(gna_model_id modelId, uint32_t nActions, dbg_action *actions)
+        {
+            auto memoryId = 0;
+            auto memory = memoryObjects.at(memoryId).get();
+            auto& model = static_cast<CompiledModelVerbose&>(memory->GetModel(modelId));
+            model.SetPrescoreScenario(nActions, actions);
+        }
 
-    void DeviceVerbose::SetAfterscoreScenario(gna_model_id modelId, uint32_t nActions, dbg_action *actions)
-    {
-        auto& model = static_cast<CompiledModelVerbose&>(modelContainer->GetModel(modelId));
-        model.SetAfterscoreScenario(nActions, actions);
-    }
-};
+        void SetAfterscoreScenario(gna_model_id modelId, uint32_t nActions, dbg_action *actions)
+        {
+            auto memoryId = 0;
+            auto memory = memoryObjects.at(memoryId).get();
+            auto& model = static_cast<CompiledModelVerbose&>(memory->GetModel(modelId));
+            model.SetAfterscoreScenario(nActions, actions);
+        }
+
+        std::unique_ptr<Memory> createMemoryObject(const uint64_t memoryId, const uint32_t requestedSize,
+            const uint16_t layerCount, const uint16_t gmmCount)
+        {
+            return std::make_unique<MemoryVerbose>(memoryId, requestedSize, layerCount, gmmCount);
+        }
+    };
 }
 #endif // _DEVICEVERBOSE_H

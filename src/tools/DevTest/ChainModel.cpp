@@ -38,7 +38,7 @@ ChainModel::~ChainModel()
 {
     for (auto& layer : layers)
     {
-        if(layer.pLayerStruct) free(layer.pLayerStruct);
+        if (layer.pLayerStruct) free(layer.pLayerStruct);
     }
 }
 
@@ -82,8 +82,8 @@ ChainModel& ChainModel::Affine(bool weights2B, bool pwlEnabled, bool activeListE
         nnet_layer.nBytesPerOutput = sizeof(int32_t);
     }
 
-    modelSize += ModelUtilities::CalculateDnnSize(groupingNum, inVecSz, outVecSz, weights2B ? sizeof(int16_t) : sizeof(int8_t), 
-                                                  pwlEnabled ? nSegments : 0);
+    modelSize += ModelUtilities::CalculateDnnSize(groupingNum, inVecSz, outVecSz, weights2B ? sizeof(int16_t) : sizeof(int8_t),
+        pwlEnabled ? nSegments : 0);
     layers.push_back(nnet_layer);
     return *this;
 }
@@ -128,8 +128,8 @@ ChainModel& ChainModel::Diagonal(bool weights2B, bool pwlEnabled)
         nnet_layer.nBytesPerOutput = sizeof(int32_t);
     }
 
-    modelSize += ModelUtilities::CalculateDnnSize(groupingNum, inVecSz, outVecSz, weights2B ? sizeof(int16_t) : sizeof(int8_t), 
-                                                  pwlEnabled ? nSegments : 0);
+    modelSize += ModelUtilities::CalculateDnnSize(groupingNum, inVecSz, outVecSz, weights2B ? sizeof(int16_t) : sizeof(int8_t),
+        pwlEnabled ? nSegments : 0);
     layers.push_back(nnet_layer);
     return *this;
 }
@@ -175,8 +175,8 @@ ChainModel& ChainModel::Multibias(bool weights2B, bool pwlEnabled)
         nnet_layer.nBytesPerOutput = sizeof(int32_t);
     }
 
-    modelSize += ModelUtilities::CalculateMultibiasSize(groupingNum, inVecSz, outVecSz, weights2B ? sizeof(int16_t) : sizeof(int8_t), 
-                                                  pwlEnabled ? nSegments : 0);
+    modelSize += ModelUtilities::CalculateMultibiasSize(groupingNum, inVecSz, outVecSz, weights2B ? sizeof(int16_t) : sizeof(int8_t),
+        pwlEnabled ? nSegments : 0);
     layers.push_back(nnet_layer);
     return *this;
 }
@@ -225,8 +225,8 @@ ChainModel& ChainModel::Convolution(bool pwlEnabled)
     nnet_layer.type = INTEL_HIDDEN;
     nnet_layer.pLayerStruct = convolution_layer;
 
-    auto outputsPerFilter = (nnet_layer.nInputColumns - convolution_layer->nFilterCoefficients) 
-                    / (convolution_layer->nFeatureMaps * convolution_layer->nFeatureMapColumns) + 1;
+    auto outputsPerFilter = (nnet_layer.nInputColumns - convolution_layer->nFilterCoefficients)
+        / (convolution_layer->nFeatureMaps * convolution_layer->nFeatureMapColumns) + 1;
     modelSize += ModelUtilities::CalculateCnnSize(cnnInVecSz, outputsPerFilter, convolution_layer->nFilters, convolution_layer->nFilterCoefficients, 64);
     layers.push_back(nnet_layer);
     return *this;
@@ -263,8 +263,8 @@ ChainModel& ChainModel::Pooling(intel_pool_type_t poolingType)
     nnet_layer.pLayerStruct = convolution_layer;
 
 
-    auto maxNCOE = (nnet_layer.nInputColumns - convolution_layer->nFilterCoefficients) 
-                    / (convolution_layer->nFeatureMaps * convolution_layer->nFeatureMapColumns) + 1;
+    auto maxNCOE = (nnet_layer.nInputColumns - convolution_layer->nFilterCoefficients)
+        / (convolution_layer->nFeatureMaps * convolution_layer->nFeatureMapColumns) + 1;
     auto outputsPerFilter = (maxNCOE - 1) / convolution_layer->nPoolStride + 1;
     modelSize += ModelUtilities::CalculateCnnSize(inVecSz, outputsPerFilter, convolution_layer->nFilters, convolution_layer->nFilterCoefficients, 64);
     layers.push_back(nnet_layer);
@@ -324,9 +324,10 @@ ChainModel& ChainModel::Gmm()
     nnet_layer.nLayerKind = INTEL_GMM;
     nnet_layer.pLayerStruct = gmm;
 
-    modelSize += ModelUtilities::CalculateGmmSize(gmm->config.mixtureComponentCount, 
-                  nnet.nGroup, inVecSz, gmm->config.stateCount, gmm->config.mode);
+    modelSize += ModelUtilities::CalculateGmmSize(gmm->config.mixtureComponentCount,
+        nnet.nGroup, inVecSz, gmm->config.stateCount, gmm->config.mode);
     layers.push_back(nnet_layer);
+    GmmCount++;
     return *this;
 }
 
@@ -391,30 +392,30 @@ intel_nnet_type_t& ChainModel::Setup(uint8_t *pinned_memory)
         auto layer = nnet.pLayers + layerIx;
         switch (layer->nLayerKind)
         {
-            case INTEL_AFFINE:
-                /* FALLTHRU */
-            case INTEL_AFFINE_DIAGONAL:
-                setup_dnn_pointers(layer, pinned_memory);
-                break;
-            case INTEL_AFFINE_MULTIBIAS:
-                setup_multibias_pointers(layer, pinned_memory);
-                break;
-            case INTEL_CONVOLUTIONAL:
-                setup_cnn_pointers(layer, pinned_memory);
-                break;
-            case INTEL_RECURRENT:
-                setup_rnn_pointers(layer, pinned_memory);
-                break;
-            case INTEL_INTERLEAVE:
-                /* FALLTHRU */
-            case INTEL_DEINTERLEAVE:
-                /* FALLTHRU */
-            case INTEL_COPY:
-                setup_simple_pointers(layer, pinned_memory);
-                break;
-            case INTEL_GMM:
-                setup_gmm_pointers(layer, pinned_memory);
-                break;
+        case INTEL_AFFINE:
+            /* FALLTHRU */
+        case INTEL_AFFINE_DIAGONAL:
+            setup_dnn_pointers(layer, pinned_memory);
+            break;
+        case INTEL_AFFINE_MULTIBIAS:
+            setup_multibias_pointers(layer, pinned_memory);
+            break;
+        case INTEL_CONVOLUTIONAL:
+            setup_cnn_pointers(layer, pinned_memory);
+            break;
+        case INTEL_RECURRENT:
+            setup_rnn_pointers(layer, pinned_memory);
+            break;
+        case INTEL_INTERLEAVE:
+            /* FALLTHRU */
+        case INTEL_DEINTERLEAVE:
+            /* FALLTHRU */
+        case INTEL_COPY:
+            setup_simple_pointers(layer, pinned_memory);
+            break;
+        case INTEL_GMM:
+            setup_gmm_pointers(layer, pinned_memory);
+            break;
         }
     }
 
@@ -424,6 +425,11 @@ intel_nnet_type_t& ChainModel::Setup(uint8_t *pinned_memory)
 uint32_t ChainModel::GetModelSize()
 {
     return modelSize;
+}
+
+uint16_t ChainModel::GetLayerCount() const
+{
+    return layers.size();
 }
 
 uint32_t ChainModel::GetInputBuffersSize()
@@ -495,8 +501,8 @@ void ChainModel::setup_dnn_pointers(intel_nnet_layer_t *layer, uint8_t* &pinned_
 
         pinned_scratchpad = pinned_memory;
         pinned_memory += ALIGN64(layer->nOutputRows * layer->nOutputColumns * sizeof(int32_t));
-        
-        affine_layer->pwl.pSegments = (intel_pwl_segment_t*)pinned_memory; 
+
+        affine_layer->pwl.pSegments = (intel_pwl_segment_t*)pinned_memory;
         ModelUtilities::GeneratePwlSegments(affine_layer->pwl.pSegments, affine_layer->pwl.nSegments);
         pinned_memory += ALIGN64(affine_layer->pwl.nSegments * sizeof(intel_pwl_segment_t));
     }
@@ -541,8 +547,8 @@ void ChainModel::setup_multibias_pointers(intel_nnet_layer_t *layer, uint8_t* &p
 
         pinned_scratchpad = pinned_memory;
         pinned_memory += ALIGN64(layer->nOutputRows * layer->nOutputColumns * sizeof(int32_t));
-        
-        affine_layer->pwl.pSegments = (intel_pwl_segment_t*)pinned_memory; 
+
+        affine_layer->pwl.pSegments = (intel_pwl_segment_t*)pinned_memory;
         ModelUtilities::GeneratePwlSegments(affine_layer->pwl.pSegments, affine_layer->pwl.nSegments);
         pinned_memory += ALIGN64(affine_layer->pwl.nSegments * sizeof(intel_pwl_segment_t));
     }
@@ -561,7 +567,7 @@ void ChainModel::setup_multibias_pointers(intel_nnet_layer_t *layer, uint8_t* &p
     pinned_memory += ALIGN64(layer->nInputRows * layer->nOutputRows * affine_layer->affine.nBytesPerWeight);
 
     void *pinned_scales = pinned_memory;
-    if(sizeof(int8_t) == affine_layer->affine.nBytesPerWeight)
+    if (sizeof(int8_t) == affine_layer->affine.nBytesPerWeight)
         pinned_memory += ALIGN64(layer->nOutputRows * sizeof(intel_compound_bias_t));
 
     layer->pInputs = pinned_inputs;
@@ -584,8 +590,8 @@ void ChainModel::setup_cnn_pointers(intel_nnet_layer_t *layer, uint8_t* &pinned_
         pinned_memory += ALIGN64(layer->nInputRows * layer->nInputColumns * sizeof(int16_t));
     }
 
-    uint32_t nOutputsPerFilter = (layer->nInputColumns - cnn_layer->nFilterCoefficients) 
-                        / (cnn_layer->nFeatureMaps * cnn_layer->nFeatureMapColumns) + 1;
+    uint32_t nOutputsPerFilter = (layer->nInputColumns - cnn_layer->nFilterCoefficients)
+        / (cnn_layer->nFeatureMaps * cnn_layer->nFeatureMapColumns) + 1;
     if (INTEL_NO_POOLING != cnn_layer->poolType)
     {
         nOutputsPerFilter = (nOutputsPerFilter - 1) / cnn_layer->nPoolStride + 1;
@@ -599,8 +605,8 @@ void ChainModel::setup_cnn_pointers(intel_nnet_layer_t *layer, uint8_t* &pinned_
 
         pinned_scratchpad = pinned_memory;
         pinned_memory += ALIGN64(layer->nOutputRows * layer->nOutputColumns * sizeof(int32_t));
-        
-        cnn_layer->pwl.pSegments = (intel_pwl_segment_t*)pinned_memory; 
+
+        cnn_layer->pwl.pSegments = (intel_pwl_segment_t*)pinned_memory;
         ModelUtilities::GeneratePwlSegments(cnn_layer->pwl.pSegments, cnn_layer->pwl.nSegments);
         pinned_memory += ALIGN64(cnn_layer->pwl.nSegments * sizeof(intel_pwl_segment_t));
     }
@@ -643,11 +649,11 @@ void ChainModel::setup_rnn_pointers(intel_nnet_layer_t *layer, uint8_t* &pinned_
         pinned_outputs = pinned_memory;
         pinned_memory += ALIGN64(layer->nOutputRows * layer->nOutputColumns * sizeof(int16_t));
     }
-        
+
     void *pinned_scratchpad = pinned_memory;
     pinned_memory += ALIGN64(layer->nOutputRows * layer->nOutputColumns * sizeof(int32_t));
 
-    recurrent_layer->pwl.pSegments = (intel_pwl_segment_t*)pinned_memory; 
+    recurrent_layer->pwl.pSegments = (intel_pwl_segment_t*)pinned_memory;
     ModelUtilities::GeneratePwlSegments(recurrent_layer->pwl.pSegments, recurrent_layer->pwl.nSegments);
     pinned_memory += ALIGN64(recurrent_layer->pwl.nSegments * sizeof(intel_pwl_segment_t));
 
@@ -700,13 +706,13 @@ void ChainModel::setup_gmm_pointers(intel_nnet_layer_t *layer, uint8_t* &pinned_
 
     void *pinned_vars = pinned_memory;
     auto nBytesPerVars = 0;
-    if(GNA_MAXMIX16 == gmm->config.mode)
+    if (GNA_MAXMIX16 == gmm->config.mode)
     {
         gmm->data.inverseCovariancesForMaxMix8 = nullptr;
         gmm->data.inverseCovariancesForMaxMix16 = (uint16_t*)pinned_vars;
         nBytesPerVars = sizeof(uint16_t);
     }
-    else 
+    else
     {
         gmm->data.inverseCovariancesForMaxMix8 = (uint8_t*)pinned_vars;
         gmm->data.inverseCovariancesForMaxMix16 = nullptr;

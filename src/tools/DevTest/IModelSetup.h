@@ -68,7 +68,8 @@ enum ModelSetupType
     ModelSetupCopy_1,
     ModelSetupTranspose_1,
 
-    ModelSetupMix
+    ModelSetupMix,
+    ModelSetupSplit_1_2B
 };
 
 class IModelSetup
@@ -76,10 +77,11 @@ class IModelSetup
 public:
     typedef std::unique_ptr<IModelSetup> UniquePtr;
 
-    virtual gna_model_id ModelId() const = 0;
-    virtual gna_request_cfg_id ConfigId(int index) const = 0;
+    virtual gna_model_id ModelId(int modelIndex) const = 0;
 
-    virtual void checkReferenceOutput() const = 0;
+    virtual gna_request_cfg_id ConfigId(int modelIndex, int configIndex) const = 0;
+
+    virtual void checkReferenceOutput(int modelIndex, int configIndex) const = 0;
 
     virtual ~IModelSetup() = default;
 };

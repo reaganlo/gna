@@ -151,7 +151,6 @@ ScoreComplete(
     // reset hw mapping
     if (hwUnmap)
     {
-        //HwUnmapMemory(&modelCtx->desc.va->mmu_config);
         devCtx->app.app = NULL;
     }
     WdfSpinLockRelease(devCtx->app.appLock);
@@ -376,15 +375,16 @@ static size_t calculateLayersDescriptorBufferSize(const PGNA_CALC_IN input)
     return ALIGN(sz, sizeof(UINT64));
 }
 
-static void setLayersDescriptorParameters(const PGNA_CALC_IN input, PMODEL_CTX modelCtx)
+static void setLayersDescriptorParameters(const PGNA_CALC_IN input, PMEMORY_CTX memoryCtx)
 {
-    if (input->reqCfgDescr.requestConfigId == modelCtx->requestConfigId)
+    if (input->reqCfgDescr.modelId == memoryCtx->modelId &&
+        input->reqCfgDescr.requestConfigId == memoryCtx->requestConfigId)
     {
         return;
     }
-    modelCtx->requestConfigId = input->reqCfgDescr.requestConfigId;
+    memoryCtx->requestConfigId = input->reqCfgDescr.requestConfigId;
 
-    PUCHAR const memoryBase = modelCtx->userMemoryBaseVA;
+    PUCHAR const memoryBase = memoryCtx->userMemoryBaseVA;
 
     // set buffers according to request config
     PGNA_BUFFER_DESCR bufferDescr = (PGNA_BUFFER_DESCR)((PUCHAR)input + sizeof(GNA_CALC_IN));
@@ -429,7 +429,7 @@ ScoreStart(
 {
     NTSTATUS    status = STATUS_INVALID_DEVICE_REQUEST;
     PAPP_CTX    appCtx = NULL; // file context of device for calling application
-    PMODEL_CTX  modelCtx = NULL; // current model context
+    PMEMORY_CTX  memoryCtx = NULL; // current memory context
     BOOLEAN     isAppCurrent = FALSE;// deterimenes if current app is saved as recent
     size_t      inputLength = 0;    // tmp in request buffer length
     PGNA_CALC_IN input = NULL; // input parameters
@@ -460,14 +460,14 @@ ScoreStart(
         TraceFailMsg(TLE, T_EXIT, "(Score parameters are invalid)", status);
         goto cleanup;
     }
-    modelCtx = appCtx->models[input->modelId];
-    if (NULL == modelCtx)
+    memoryCtx = appCtx->memoryBuffers[input->memoryId];
+    if (NULL == memoryCtx)
     {
         TraceFailMsg(TLI, T_MEM, "Application has NOT mapped memory!", status);
         goto cleanup;
     }
 
-    setLayersDescriptorParameters(input, modelCtx);
+    setLayersDescriptorParameters(input, memoryCtx);
 
     // check and remember application from which req. is being processed now
     WdfSpinLockAcquire(devCtx->req.reqLock);
@@ -487,13 +487,13 @@ ScoreStart(
         goto cleanup;
     }
     // configure device for scoring and start, parameters already validated
-    lyrDscBuffer = MmGetSystemAddressForMdlSafe(modelCtx->pMdl, HighPagePriority | MdlMappingNoExecute);
+    lyrDscBuffer = MmGetSystemAddressForMdlSafe(memoryCtx->pMdl, HighPagePriority | MdlMappingNoExecute);
     if (NULL == lyrDscBuffer)
     {
         status = STATUS_INVALID_ADDRESS;
         goto cleanup;
     }
-    HwInitExecution(devCtx->hw.regs, (ULONG)modelCtx->desc.la.QuadPart, &modelCtx->desc.va->xnn_config, input, &devCtx->cfg);
+    HwInitExecution(devCtx->hw.regs, (ULONG)memoryCtx->desc.la.QuadPart, &memoryCtx->desc.va->xnn_config, input, &devCtx->cfg);
 
     profilerDTscStop(&devCtx->profiler.startHW);
     profilerTscStart(&devCtx->profiler.scoreHW);
@@ -613,12 +613,12 @@ ScoreDeferredUnmap(
 
     appCtx = GetFileContext(WdfRequestGetFileObject(unmapReq));
 
-    PUINT64 mid;
-    size_t midLength;
+    PUINT64 memoryId;
+    size_t memoryIdLength;
 
     // retrieve and store input params
-    status = WdfRequestRetrieveInputBuffer(unmapReq, sizeof(UINT64), &mid, &midLength);
-    Trace(TLI, T_MEM, "Model id sent from userland: %llu", *mid);
+    status = WdfRequestRetrieveInputBuffer(unmapReq, sizeof(UINT64), &memoryId, &memoryIdLength);
+    Trace(TLI, T_MEM, "Model id sent from userland: %llu", *memoryId);
     if (!NT_SUCCESS(status))
     {
         TraceFailMsg(TLE, T_EXIT, "WdfRequestRetrieveInputBuffer", status);
@@ -626,30 +626,30 @@ ScoreDeferredUnmap(
     }
 
     // not compatible data sent from userland
-    if (sizeof(*mid) != midLength)
+    if (sizeof(*memoryId) != memoryIdLength)
     {
         status = STATUS_UNSUCCESSFUL;
         TraceFailMsg(TLE, T_EXIT, "Bad data sent", status);
         goto ioctl_mm_error;
     }
 
-    // bad model id
-    if (*mid >= APP_MODELS_LIMIT)
+    // bad memory id
+    if (*memoryId >= APP_MEMORIES_LIMIT)
     {
         status = STATUS_UNSUCCESSFUL;
-        TraceFailMsg(TLE, T_EXIT, "Bad model id", status);
+        TraceFailMsg(TLE, T_EXIT, "Bad memory id", status);
         goto ioctl_mm_error;
     }
 
     // perform unmapping
-    PMODEL_CTX modelCtx = appCtx->models[*mid];
-    if (NULL == modelCtx)
+    PMEMORY_CTX memoryCtx = appCtx->memoryBuffers[*memoryId];
+    if (NULL == memoryCtx)
     {
         status = STATUS_UNSUCCESSFUL;
-        TraceFailMsg(TLE, T_EXIT, "No model context for given model id", status);
+        TraceFailMsg(TLE, T_EXIT, "No memory context for given memory id", status);
         goto ioctl_mm_error;
     }
-    MemoryMapRelease(appCtx, modelCtx);
+    MemoryMapRelease(appCtx, memoryCtx);
 
     // complete unmap request
 ioctl_mm_error:

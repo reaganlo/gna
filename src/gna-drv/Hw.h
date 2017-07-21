@@ -70,7 +70,7 @@ HwWriteReg(
  */
 VOID
 HwPrepareMmuConfig(
-    _In_    PMODEL_CTX  modelCtx);
+    _In_    PMEMORY_CTX  memoryCtx);
 
 /**
  * Retrieves hardware internal Input buffer size

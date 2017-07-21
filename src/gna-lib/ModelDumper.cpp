@@ -45,7 +45,9 @@ void Device::DumpModel(gna_model_id modelId, gna_device_kind deviceKind, const c
     auto deviceType = static_cast<GnaDeviceType>(deviceKind);
     FakeDetector detector{ deviceType };
 
-    auto& model = modelContainer->GetModel(modelId);
+    auto memoryId = 0;
+    auto totalMemory = memoryObjects.at(memoryId).get();
+    auto& model = totalMemory->GetModel(modelId);
     auto layerCount = model.LayerCount;
     auto gmmCount = model.GetGmmCount();
     auto internalSize = CompiledModel::CalculateInternalModelSize(layerCount, gmmCount);
@@ -55,7 +57,7 @@ void Device::DumpModel(gna_model_id modelId, gna_device_kind deviceKind, const c
 
     // using placement new to avoid Memory destructor
     void *memory = malloc(sizeof(Memory));
-    auto *dumpMemory = new (memory) Memory { address, totalMemory->ModelSize, layerCount, gmmCount };
+    auto *dumpMemory = new (memory) Memory{ totalMemory->Id, address, totalMemory->ModelSize, layerCount, gmmCount };
 
     // save original layer descriptors
     void *descriptorsCopy = malloc(totalMemory->InternalSize);

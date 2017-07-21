@@ -29,14 +29,14 @@
 class SetupDiagonalModel : public IModelSetup
 {
 public:
-    gna_model_id ModelId() const override
+    gna_model_id ModelId(int /*modelIndex*/) const override
     {
-        return 0;
+        return modelId;
     }
 
-    gna_request_cfg_id ConfigId(int /*index*/) const override
+    gna_request_cfg_id ConfigId(int /*modelIndex*/, int /*configIndex*/) const override
     {
-        // this model has only one Request Configuration
+        // this one model setup has only one Request Configuration
         return configId;
     }
 
@@ -44,7 +44,7 @@ public:
 
     ~SetupDiagonalModel();
 
-    void checkReferenceOutput() const override;
+    void checkReferenceOutput(int modelIndex, int configIndex) const override;
 
 private:
     void sampleAffineLayer(intel_nnet_type_t& nnet);

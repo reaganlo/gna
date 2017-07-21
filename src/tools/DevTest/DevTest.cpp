@@ -65,6 +65,17 @@ public:
         script.actions.emplace_back(Action::CheckReferenceOutput, ModelSetupDnn_1_2B, 0, 0);
         script.actions.emplace_back(Action::CloseModel, ModelSetupDnn_1_2B, 0, 0);
 
+        //script.actions.emplace_back(Action::LoadModel, ModelSetupSplit_1_2B, 0, 0);
+        //script.actions.emplace_back(Action::Score, ModelSetupSplit_1_2B, 0, 0);
+        //script.actions.emplace_back(Action::Score, ModelSetupSplit_1_2B, 0, 1);
+        //script.actions.emplace_back(Action::Score, ModelSetupSplit_1_2B, 1, 0);
+        //script.actions.emplace_back(Action::Score, ModelSetupSplit_1_2B, 1, 1);
+        //script.actions.emplace_back(Action::CheckReferenceOutput, ModelSetupSplit_1_2B, 0, 0);
+        //script.actions.emplace_back(Action::CheckReferenceOutput, ModelSetupSplit_1_2B, 0, 1);
+        //script.actions.emplace_back(Action::CheckReferenceOutput, ModelSetupSplit_1_2B, 1, 0);
+        //script.actions.emplace_back(Action::CheckReferenceOutput, ModelSetupSplit_1_2B, 0, 1);
+        //script.actions.emplace_back(Action::CloseModel, ModelSetupSplit_1_2B, 0, 0);
+
         //script.actions.emplace_back(Action::LoadModel, ModelSetupCopy_1, 0, 0);
         //script.actions.emplace_back(Action::Score, ModelSetupCopy_1, 0, 0);
         //script.actions.emplace_back(Action::CheckReferenceOutput, ModelSetupCopy_1, 0, 0);
@@ -158,12 +169,12 @@ public:
 
             case Action::Score:
                 gna_request_id requestId;
-                deviceController.RequestEnqueue(modelSetup->ConfigId(action->configIndex), GNA_GENERIC, &requestId);
+                deviceController.RequestEnqueue(modelSetup->ConfigId(action->modelIndex, action->configIndex), GNA_HARDWARE, &requestId);
                 GnaRequestWait(requestId, 5*60*1000);
                 break;
 
             case Action::CheckReferenceOutput:
-                modelSetup->checkReferenceOutput();
+                modelSetup->checkReferenceOutput(action->modelIndex, action->configIndex);
                 break;
             }
         }

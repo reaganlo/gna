@@ -153,10 +153,9 @@
     </ClCompile>
     <PostBuildEvent>
       <Command>
-      copy $(ROOT_DIR)\bin\gna-lib\$(Configuration)\gna-api\$(Platform)\out\gna.dll $(OutDir)
+      copy $(ROOT_DIR)\bin\gna-lib\$(Configuration)\gna-api-verbose\$(Platform)\out\gna-verbose.dll $(OutDir)
       </Command>
     </PostBuildEvent>
-
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="$(ROOT_DIR)\src\tools\DevTest\ChainModel.h" />
@@ -174,6 +173,7 @@
     <ClInclude Include="$(ROOT_DIR)\src\tools\DevTest\SetupMultibiasModel_1.h" />
     <ClInclude Include="$(ROOT_DIR)\src\tools\DevTest\SetupPoolingModel.h" />
     <ClInclude Include="$(ROOT_DIR)\src\tools\DevTest\SetupRecurrentModel.h" />
+    <ClInclude Include="$(ROOT_DIR)\src\tools\DevTest\SetupSplitModel.h" />
     <ClInclude Include="$(ROOT_DIR)\src\tools\DevTest\SetupTransposeModel.h" />
   </ItemGroup>
   <ItemGroup>
@@ -191,6 +191,7 @@
     <ClCompile Include="$(ROOT_DIR)\src\tools\DevTest\SetupMultibiasModel_1.cpp" />
     <ClCompile Include="$(ROOT_DIR)\src\tools\DevTest\SetupPoolingModel.cpp" />
     <ClCompile Include="$(ROOT_DIR)\src\tools\DevTest\SetupRecurrentModel.cpp" />
+    <ClCompile Include="$(ROOT_DIR)\src\tools\DevTest\SetupSplitModel.cpp" />
     <ClCompile Include="$(ROOT_DIR)\src\tools\DevTest\SetupTransposeModel.cpp" />
     <ClCompile Include="$(ROOT_DIR)\src\tools\DevTest\Script.cpp" />
   </ItemGroup>
@@ -201,7 +202,7 @@
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
   <ItemGroup>
-    <ProjectReference Include="$(ROOT_DIR)\solutions\projects\gna-lib\gna-api.vcxproj">
+    <ProjectReference Include="$(ROOT_DIR)\solutions\projects\gna-lib\gna-api-verbose.vcxproj">
       <Project>{604EE608-306B-4EEB-8D12-7681599E48F5}</Project>
     </ProjectReference>
   </ItemGroup>

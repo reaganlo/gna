@@ -25,24 +25,27 @@ in any way.
 
 #include "Memory.h"
 
+#include "AccelerationDetector.h"
 #include "CompiledModel.h"
 #include "Validator.h"
 
 using namespace GNA;
 
 // just makes object from arguments
-Memory::Memory(void * bufferIn, const size_t userSize, const uint16_t layerCount, const uint16_t gmmCount) :
-    Address{bufferIn},
-    InternalSize{CompiledModel::CalculateInternalModelSize(layerCount, gmmCount)},
-    ModelSize{ALIGN64(userSize)},
-    size{CompiledModel::CalculateModelSize(userSize, layerCount, gmmCount)}
+Memory::Memory(uint64_t memoryId, void * bufferIn, const size_t userSize, const uint16_t layerCount, const uint16_t gmmCount) :
+    Address{ bufferIn },
+    Id{ memoryId },
+    InternalSize{ CompiledModel::CalculateInternalModelSize(layerCount, gmmCount) },
+    ModelSize{ ALIGN64(userSize) },
+    size{ CompiledModel::CalculateModelSize(userSize, layerCount, gmmCount) }
 {};
 
 // allocates and zeros memory
-Memory::Memory(const size_t userSize, const uint16_t layerCount, const uint16_t gmmCount) :
-    InternalSize{CompiledModel::CalculateInternalModelSize(layerCount, gmmCount)},
-    ModelSize{ALIGN64(userSize)},
-    size{CompiledModel::CalculateModelSize(userSize, layerCount, gmmCount)}
+Memory::Memory(const uint64_t memoryId, const size_t userSize, const uint16_t layerCount, const uint16_t gmmCount) :
+    Id{ memoryId },
+    InternalSize{ CompiledModel::CalculateInternalModelSize(layerCount, gmmCount) },
+    ModelSize{ ALIGN64(userSize) },
+    size{ CompiledModel::CalculateModelSize(userSize, layerCount, gmmCount) }
 {
     Expect::True(size > 0, GNA_INVALIDMEMSIZE);
     buffer = _gna_malloc(size);
@@ -54,13 +57,17 @@ Memory::~Memory()
 {
     if (buffer)
     {
+        if (mapped)
+        {
+            unmap();
+        }
         _gna_free(buffer);
         buffer = nullptr;
         size = 0;
     }
 }
 
-void Memory::Map(gna_model_id model_id)
+void Memory::Map()
 {
     if (mapped)
         throw GnaException(GNA_UNKNOWN_ERROR);
@@ -68,11 +75,9 @@ void Memory::Map(gna_model_id model_id)
     OVERLAPPED notifyOverlapped;
     sender.IoctlSendEx(GNA_IOCTL_NOTIFY, nullptr, 0, nullptr, 0, &notifyOverlapped);
 
-    modelId = static_cast<uint64_t>(model_id);
-
     // write model id in user buffer
     // driver will retrieve it
-    *reinterpret_cast<uint64_t*>(buffer) = static_cast<uint64_t>(modelId);
+    *reinterpret_cast<uint64_t*>(buffer) = Id;
 
     sender.IoctlSend(
         GNA_IOCTL_MEM_MAP,
@@ -87,12 +92,57 @@ void Memory::Map(gna_model_id model_id)
     mapped = true;
 }
 
-void Memory::Unmap()
+void Memory::unmap()
 {
     if (!mapped)
         throw GnaException(GNA_UNKNOWN_ERROR);
 
-    sender.IoctlSend(GNA_IOCTL_MEM_UNMAP, &modelId, sizeof(modelId), nullptr, 0);
+    sender.IoctlSend(GNA_IOCTL_MEM_UNMAP, const_cast<uint64_t*>(&Id), sizeof(Id), nullptr, 0);
 
     mapped = false;
+}
+
+void Memory::AllocateModel(const gna_model_id modelId, const gna_model *model, const AccelerationDetector& detector)
+{
+    void * descriptorsBase = Get() + descriptorsSize;
+
+    auto modelInternalSize = CompiledModel::CalculateInternalModelSize(model);
+    if (descriptorsSize + modelInternalSize > InternalSize)
+    {
+        throw GNA_ERR_RESOURCES;
+    }
+
+    modelDescriptors[modelId] = descriptorsBase;
+    descriptorsSize += modelInternalSize;
+
+    models[modelId] = createModel(modelId, model, detector);
+}
+
+void Memory::DeallocateModel(gna_model_id modelId)
+{
+    models[modelId].reset();
+}
+
+CompiledModel& Memory::GetModel(gna_model_id modelId)
+{
+    try
+    {
+        auto& model = models.at(modelId);
+        return *model.get();
+    }
+    catch (const std::out_of_range& e)
+    {
+        throw GnaException(GNA_INVALID_MODEL);
+    }
+}
+
+void * Memory::GetDescriptorsBase(gna_model_id modelId) const
+{
+    return modelDescriptors.at(modelId);
+}
+
+std::unique_ptr<CompiledModel> Memory::createModel(const gna_model_id modelId, const gna_model *model,
+    const AccelerationDetector &detector)
+{
+    return std::make_unique<CompiledModel>(modelId, model, *this, detector);
 }

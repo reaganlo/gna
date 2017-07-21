@@ -117,7 +117,7 @@ HwWriteReg(
 
 VOID
 HwPrepareMmuConfig(
-    _In_    PMODEL_CTX  modelCtx)
+    _In_    PMEMORY_CTX  memoryCtx)
 {
     PMMU_CONFIG mmu;    // mmu config link
     P_PT_DIR    ptDir;  // page table directory
@@ -125,14 +125,14 @@ HwPrepareMmuConfig(
 
     TraceEntry(TLI, T_ENT);
 
-    PDESCRIPTOR descVA = modelCtx->desc.va;
+    PDESCRIPTOR descVA = memoryCtx->desc.va;
     mmu = &descVA->mmu_config;
     // mark descriptor mmu config data 'dirty'
     RtlFillMemory(mmu, sizeof(MMU_CONFIG), 0xff);
     // populate mmu addresses
-    mmu->vamaxaddr = modelCtx->userMemorySize - 1;
-    ptDir = modelCtx->ptDir;
-    for (i = 0; i < modelCtx->pageTableCount && i < PT_DIR_SIZE; ++i)
+    mmu->vamaxaddr = memoryCtx->userMemorySize - 1;
+    ptDir = memoryCtx->ptDir;
+    for (i = 0; i < memoryCtx->pageTableCount && i < PT_DIR_SIZE; ++i)
     {
         mmu->pagdir_n[i] = (UINT32)(ptDir[i].commBuffLa.QuadPart/PAGE_SIZE);
     }
@@ -228,7 +228,7 @@ HwInitExecution(
     }
 
     // copy user provided XNN configuration
-    xnnConfig->labase = input->ctrlFlags.layerIndex * XNN_LYR_DSC_SIZE;
+    xnnConfig->labase = input->ctrlFlags.layerBase;
     xnnConfig->lacount = (UINT16)input->ctrlFlags.layerCount;
 
     // start scoring

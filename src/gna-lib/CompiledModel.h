@@ -42,13 +42,15 @@ class CompiledModel
 {
 public:
     CompiledModel(gna_model_id modelId, const gna_model *rawModel, Memory& memory, const AccelerationDetector& detector);
-    ~CompiledModel() = default;
+    virtual ~CompiledModel() = default;
     CompiledModel(const CompiledModel &) = delete;
     CompiledModel& operator=(const CompiledModel&) = delete;
 
     // TODO: most of these methods are here due to invalid object design, need to refactor to get rid of
     static const size_t CalculateModelSize(const size_t userSize, const uint16_t layerCount, const uint16_t gmmCount);
     static const size_t CalculateInternalModelSize(const uint16_t layerCount, const uint16_t gmmCount);
+    static const size_t CalculateInternalModelSize(const gna_model * rawModel);
+
     uint16_t GetGmmCount() const;
     uint32_t GetHardwareOffset(const BaseAddressC& address) const;
     const std::vector<std::unique_ptr<Layer>>& GetLayers() const;
@@ -79,7 +81,6 @@ protected:
         None
     } ScoreMethod;
 
-    Memory& memory;
     ValidBoundariesFunctor validBoundaries;
     uint16_t gmmCount = 0;
     uint32_t bufferSize = 0;

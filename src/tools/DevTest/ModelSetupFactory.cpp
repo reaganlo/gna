@@ -34,6 +34,7 @@
 #include "SetupPoolingModel.h"
 #include "SetupRecurrentModel.h"
 #include "SetupTransposeModel.h"
+#include "SetupSplitModel.h"
 
 IModelSetup::UniquePtr ModelSetupFactory::CreateModel(ModelSetupType ms)
 {
@@ -119,6 +120,9 @@ IModelSetup::UniquePtr ModelSetupFactory::CreateModel(ModelSetupType ms)
         break;
     case ModelSetupMix:
         ptr = std::make_unique<SetupMixModel>(deviceController);
+        break;
+    case ModelSetupSplit_1_2B:
+        ptr = std::make_unique<SetupSplitModel>(deviceController, true, false, false);
         break;
     }
     return ptr;

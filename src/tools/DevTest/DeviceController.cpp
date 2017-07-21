@@ -54,18 +54,9 @@ void DeviceController::ModelCreate(const gna_model * model, gna_model_id * model
     }
 }
 
-void DeviceController::ModelRelease(gna_model_id modelId)
+uint8_t * DeviceController::Alloc(uint32_t sizeRequested, uint16_t layerCount, uint16_t gmmCount, uint32_t * sizeGranted)
 {
-    intel_gna_status_t status = GnaModelRelease(modelId);
-    if (GNA_SUCCESS != status)
-    {
-        throw std::exception("Model release failed");
-    }
-}
-
-uint8_t * DeviceController::Alloc(uint32_t sizeRequested, uint32_t * sizeGranted)
-{
-    return (uint8_t*)GnaAlloc(gnaHandle, sizeRequested, sizeGranted);
+    return (uint8_t*)GnaAlloc(gnaHandle, sizeRequested, layerCount, gmmCount, sizeGranted);
 }
 
 void DeviceController::Free()
@@ -113,5 +104,23 @@ void DeviceController::RequestEnqueue(gna_request_cfg_id configId, gna_accelerat
     if (GNA_SUCCESS != status)
     {
         throw std::exception("Request enqueue failed");
+    }
+}
+
+void DeviceController::AfterscoreDebug(gna_model_id modelId, uint32_t nActions, dbg_action *actions)
+{
+    intel_gna_status_t status = GnaModelSetAfterscoreScenario(modelId, nActions, actions);
+    if (GNA_SUCCESS != status)
+    {
+        throw std::exception("Setting after score scenario failed");
+    }
+}
+
+void DeviceController::PrescoreDebug(gna_model_id modelId, uint32_t nActions, dbg_action *actions)
+{
+    intel_gna_status_t status = GnaModelSetPrescoreScenario(modelId, nActions, actions);
+    if (GNA_SUCCESS != status)
+    {
+        throw std::exception("Setting pre score scenario failed");
     }
 }

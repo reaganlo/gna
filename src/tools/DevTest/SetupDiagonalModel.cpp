@@ -122,11 +122,10 @@ SetupDiagonalModel::SetupDiagonalModel(DeviceController & deviceCtrl, bool wght2
 
 SetupDiagonalModel::~SetupDiagonalModel()
 {
-    deviceController.ModelRelease(modelId);
     deviceController.Free();
 }
 
-void SetupDiagonalModel::checkReferenceOutput() const
+void SetupDiagonalModel::checkReferenceOutput(int modelIndex, int configIndex) const
 {
     for (int i = 0; i < sizeof(ref_output) / sizeof(int32_t); ++i)
     {
@@ -156,7 +155,7 @@ void SetupDiagonalModel::sampleAffineLayer(intel_nnet_type_t& nnet)
     if (pwlEnabled) bytes_requested += buf_size_pwl;
     uint32_t bytes_granted;
 
-    uint8_t* pinned_mem_ptr = deviceController.Alloc(bytes_requested, &bytes_granted);
+    uint8_t* pinned_mem_ptr = deviceController.Alloc(bytes_requested, nnet.nLayers, 0, &bytes_granted);
 
     void* pinned_weights = pinned_mem_ptr;
     if (weightsAre2Bytes)

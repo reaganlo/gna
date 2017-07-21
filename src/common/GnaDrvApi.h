@@ -50,40 +50,40 @@ typedef intel_gna_status_t  status_t;
 typedef UINT8           __1B_RES;   // 1 B of reserved memory
 
 /**
- * GNA max models limit for single application
+ * GNA max memories limit for single application
  */
-#define     APP_MODELS_LIMIT         32
+#define     APP_MEMORIES_LIMIT         32
 
-/**
- * GNA Device Page Table directory
- */
+ /**
+  * GNA Device Page Table directory
+  */
 #define     PT_DIR_SIZE             64
 
-/**
- * Default time in seconds after which driver will try to auto recover
- *  from hardware hang
- */
+  /**
+   * Default time in seconds after which driver will try to auto recover
+   *  from hardware hang
+   */
 #define     DRV_RECOVERY_TIMEOUT    60
 
-/**
- * Page table entries number
- * There are up to 1024 32-bit pointers in one page in Page Table (L1)
- */
+   /**
+    * Page table entries number
+    * There are up to 1024 32-bit pointers in one page in Page Table (L1)
+    */
 #define     PT_ENTRY_NO             (0x1000 / 4)
 
-/**
- * Whole Page table size (L2)
- */
+    /**
+     * Whole Page table size (L2)
+     */
 #define     PT_SIZE                 ((PT_DIR_SIZE + 1) * PT_ENTRY_NO)
 
 
 #pragma warning(disable:4201)       // disables anonymous struct/unions warning, useful to flatten structs
 
-/**
- * Define an Interface Guid so that app can find the device and talk to it.
- */
+     /**
+      * Define an Interface Guid so that app can find the device and talk to it.
+      */
 
-// {8113B324-9F9B-4B9F-BF55-1342A58593DC}
+      // {8113B324-9F9B-4B9F-BF55-1342A58593DC}
 DEFINE_GUID(GUID_DEVINTERFACE_GNA_DRV,
     0x8113b324, 0x9f9b, 0x4b9f, 0xbf, 0x55, 0x13, 0x42, 0xa5, 0x85, 0x93, 0xdc);
 
@@ -101,13 +101,12 @@ DEFINE_GUID(GUID_DEVINTERFACE_GMM_DRV,
  *          as this is required for x86-x64 spaces cooperation
  *****************************************************************************/
 
-/**
- * MEM_MAP IOCTL - input data.
- * Size:    8 B
- */
+ /**
+  * MEM_MAP IOCTL - input data.
+  */
 typedef struct _GNA_MM_IN
 {
-    UINT64 model_id;     // Length of the application buffer
+    UINT64 memoryId;
 
 } GNA_MM_IN, *PGNA_MM_IN;           // MEM_MAP IOCTL - input data
 
@@ -115,12 +114,11 @@ static_assert(8 == sizeof(GNA_MM_IN), "Invalid size of GNA_MM_IN");
 
 /**
  * READ_PGDIR IOCTL - output data.
- * Size:    266 768 B
  */
 typedef struct _GNA_PGDIR_OUT
 {
     UINT64              ptCount;    // Number of L1 pages allocated by the driver
-    UINT64              l1PhysAddr[PT_DIR_SIZE+1];// physical addresses of allocated pages
+    UINT64              l1PhysAddr[PT_DIR_SIZE + 1];// physical addresses of allocated pages
     UINT32              l2PhysAddr[PT_SIZE];// physical addresses of page entries
 
 } GNA_PGDIR_OUT, *PGNA_PGDIR_OUT;         // READ_PGDIR IOCTL - output data (debug mode only)
@@ -144,7 +142,6 @@ typedef enum _GnaDeviceType {
 
 /**
  * GNA device capabilities structure
- * Size: 12B
  */
 typedef struct _GNA_CPBLTS
 {
@@ -157,18 +154,18 @@ static_assert(12 == sizeof(GNA_CPBLTS), "Invalid size of GNA_CPBLTS");
 
 /**
  * Calculate Control flags
- * Size:    8 B
  */
 typedef struct _CTRL_FLAGS
 {
-    UINT32      activeListOn    :1; // 00:00 - active list mode (0:disabled, 1:enabled)
-    UINT32      gnaMode         :2; // 01:02 - GNA operation mode (0:GMM, 1:xNN)
-    UINT32      layerIndex      :14;
-    UINT32      layerCount      :14;
-    UINT32      _rsvd           :1;
+    UINT32      activeListOn : 1; // 00:00 - active list mode (0:disabled, 1:enabled)
+    UINT32      gnaMode : 2; // 01:02 - GNA operation mode (0:GMM, 1:xNN)
+    UINT32      layerCount : 14;
+    UINT32		_rsvd : 15;
+
+    UINT32      layerBase;
 } CTRL_FLAGS;                       // Control flag
 
-static_assert(4 == sizeof(CTRL_FLAGS), "Invalid size of CTRL_FLAGS");
+static_assert(8 == sizeof(CTRL_FLAGS), "Invalid size of CTRL_FLAGS");
 
 /**
  * Structure used to send to driver which buffer addresses to overwrite according to
@@ -220,6 +217,7 @@ static_assert(24 == sizeof(GMM_ACTIVE_LIST_DESCR), "Invalid size of GMM_ACTIVE_L
 
 typedef struct _REQ_CONFIG_DESCR
 {
+    UINT32  modelId;
     UINT32  requestConfigId;
     UINT32  buffersCount;
     UINT32  nnopTypesCount;
@@ -227,16 +225,16 @@ typedef struct _REQ_CONFIG_DESCR
     UINT32  gmmActiveListsCount;
 } REQ_CONFIG_DESCR, *PREQ_CONFIG_DESCR;
 
-static_assert(20 == sizeof(REQ_CONFIG_DESCR), "Invalid size of REQ_CONFIG_DESCR");
+static_assert(24 == sizeof(REQ_CONFIG_DESCR), "Invalid size of REQ_CONFIG_DESCR");
 
 /**
  * CALCULATE request data with output information.
- * Size:    52 B
  * NOTE: always include performance results
  * this allow to use PROFILED library with NON-PROFILED driver and vice versa
  */
 typedef struct _GNA_CALC_IN
 {
+    UINT64              memoryId;        // model identifier
     UINT64              modelId;        // model identifier
     CTRL_FLAGS          ctrlFlags;      // scoring mode
     perf_drv_t          drvPerf;        // driver level performance profiling results
@@ -246,22 +244,21 @@ typedef struct _GNA_CALC_IN
     REQ_CONFIG_DESCR    reqCfgDescr;
 } GNA_CALC_IN, *PGNA_CALC_IN;       // CALCULATE IOCTL - Input data
 
-static_assert(77 == sizeof(GNA_CALC_IN), "Invalid size of GNA_CALC_IN");
+static_assert(93 == sizeof(GNA_CALC_IN), "Invalid size of GNA_CALC_IN");
 
 /**
  * Minimum Size of GNA (GMM/xNN) request in bytes
  */
 #define REQUEST_SIZE                sizeof(GNA_CALC_IN)
 
-/**
- * Minimum Size of xNN layer descriptors in bytes (at least 1 layer)
- */
+ /**
+  * Minimum Size of xNN layer descriptors in bytes (at least 1 layer)
+  */
 #define XNN_LYR_DSC_SIZE            (128)
 
-/**
- * READ_REG IOCTL - input data
- * Size:    8 B
- */
+  /**
+   * READ_REG IOCTL - input data
+   */
 typedef struct _PGNA_READREG_IN
 {
     UINT32              mbarIndex;  // Index of MBAR
@@ -273,7 +270,6 @@ static_assert(8 == sizeof(GNA_READREG_IN), "Invalid size of GNA_READREG_IN");
 
 /**
  * READ_REG IOCTL - output data
- * Size:    8 B
  */
 typedef struct _GNA_READREG_OUT
 {
@@ -286,7 +282,6 @@ static_assert(8 == sizeof(GNA_READREG_OUT), "Invalid size of GNA_READREG_OUT");
 
 /**
  * WRITE_REG ioctl - input data
- * Size:    16 B
  */
 typedef struct _GNA_WRITEREG_IN
 {

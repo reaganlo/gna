@@ -31,8 +31,8 @@
 using namespace GNA;
 
 HardwareModelVerbose::HardwareModelVerbose(const gna_model_id modId, const std::vector<std::unique_ptr<Layer>>& layers, 
-    uint16_t gmmCount, const Memory& wholeMemory, const AccelerationDetector& detector) :
-    HardwareModel::HardwareModel(modId, layers, gmmCount, wholeMemory, detector) 
+        uint16_t gmmCount, const Memory &memoryIn, const AccelerationDetector& detector) :
+    HardwareModel::HardwareModel(modId, layers, gmmCount, memoryIn, detector) 
 { 
 }
 
@@ -73,7 +73,7 @@ void HardwareModelVerbose::SetAfterscoreScenario(uint32_t nActions, dbg_action *
 void HardwareModelVerbose::readPageDir(FILE *file)
 {
     hw_mmap_in_t readPageDirIn;
-    readPageDirIn.model_id = modelId;
+    readPageDirIn.memoryId = memory.Id;
 
     hw_pgdir_out_t readPageDirOut;
     ZeroMemory(&readPageDirOut, sizeof(readPageDirOut));
@@ -184,7 +184,7 @@ void HardwareModelVerbose::writeRegister(dbg_action regAction)
 
 void HardwareModelVerbose::dumpMemory(FILE *file)
 {
-    fwrite(memoryBaseAddress.Get(), layerDescriptorsSize + gmmDescriptorsSize, 1, file);
+    fwrite(memory.Get(), memory.GetSize(), 1, file);
 }
 
 void HardwareModelVerbose::zeroMemory(void *memory, size_t memorySize)
@@ -331,7 +331,7 @@ void HardwareModelVerbose::executeDebugAction(dbg_action action)
 
 void HardwareModelVerbose::dumpXnnDescriptor(uint16_t layerNumber, FILE *file)
 {
-    auto lyrDsc = memoryBaseAddress.Get<XNN_LYR>() + layerNumber;
+    auto lyrDsc = (AddrXnnLyr(descriptorsAddress) + layerNumber).Get();
 
     fprintf(file, "\nDescriptor space\n");
     fprintf(file, "-----------------------------------------------------------------\n");

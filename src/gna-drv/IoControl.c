@@ -411,16 +411,16 @@ IoctlReadPageDir(
     _Inout_ WDFREQUEST  request)
 {
     NTSTATUS status = STATUS_SUCCESS;
-    PUINT64 modelId = NULL;
+    PUINT64 memoryId = NULL;
     size_t midLength = 0;
     PGNA_PGDIR_OUT outData = NULL;
     size_t outLength = 0;
     PAPP_CTX appCtx = NULL;
-    PMODEL_CTX modelCtx = NULL;
+    PMEMORY_CTX memoryCtx = NULL;
 
-    status = WdfRequestRetrieveInputBuffer(request, sizeof(UINT64), &modelId, &midLength);
+    status = WdfRequestRetrieveInputBuffer(request, sizeof(UINT64), &memoryId, &midLength);
 
-    Trace(TLV, T_MEM, "Model id sent from userland: %llu", *modelId);
+    Trace(TLV, T_MEM, "Memory id sent from userland: %llu", *memoryId);
     if (!NT_SUCCESS(status))
     {
         TraceFailMsg(TLE, T_EXIT, "WdfRequestRetrieveInputBuffer", status);
@@ -428,18 +428,18 @@ IoctlReadPageDir(
     }
 
     // not compatible data sent from userland
-    if (sizeof(*modelId) != midLength)
+    if (sizeof(*memoryId) != midLength)
     {
         status = STATUS_UNSUCCESSFUL;
         TraceFailMsg(TLE, T_EXIT, "Bad data sent", status);
         goto ioctl_readpgdir_error;
     }
 
-    // bad model id
-    if (*modelId >= APP_MODELS_LIMIT)
+    // bad memory id
+    if (*memoryId >= APP_MEMORIES_LIMIT)
     {
         status = STATUS_UNSUCCESSFUL;
-        TraceFailMsg(TLE, T_EXIT, "Bad model id", status);
+        TraceFailMsg(TLE, T_EXIT, "Bad memory id", status);
         goto ioctl_readpgdir_error;
     }
 
@@ -451,27 +451,27 @@ IoctlReadPageDir(
     }
 
     appCtx = GetFileContext(WdfRequestGetFileObject(request));
-    modelCtx = appCtx->models[*modelId];
-    if (NULL == modelCtx)
+    memoryCtx = appCtx->memoryBuffers[*memoryId];
+    if (NULL == memoryCtx)
     {
         status = STATUS_UNSUCCESSFUL;
-        TraceFailMsg(TLE, T_EXIT, "Model context for given model id does not exist", status);
+        TraceFailMsg(TLE, T_EXIT, "Model context for given memory id does not exist", status);
         goto ioctl_readpgdir_error;
     }
 
-    outData->ptCount = modelCtx->pageTableCount;
+    outData->ptCount = memoryCtx->pageTableCount;
     {
         UINT64 i = 0;
         UINT64 copied = 0;
         UINT64 toWrite = 0;
 
-        for (i = 0; i < modelCtx->pageTableCount; ++i)
+        for (i = 0; i < memoryCtx->pageTableCount; ++i)
         {
-            outData->l1PhysAddr[i] = modelCtx->ptDir[i].commBuffLa.QuadPart;
-            toWrite = (UINT64)(modelCtx->userMemorySize - copied > PAGE_SIZE) ? PAGE_SIZE : modelCtx->userMemorySize - copied;
+            outData->l1PhysAddr[i] = memoryCtx->ptDir[i].commBuffLa.QuadPart;
+            toWrite = (UINT64)(memoryCtx->userMemorySize - copied > PAGE_SIZE) ? PAGE_SIZE : memoryCtx->userMemorySize - copied;
             if (toWrite > 0)
             {
-                memcpy_s(outData->l2PhysAddr + PT_ENTRY_NO * i, PAGE_SIZE, modelCtx->ptDir[i].commBuffVa, PAGE_SIZE);
+                memcpy_s(outData->l2PhysAddr + PT_ENTRY_NO * i, PAGE_SIZE, memoryCtx->ptDir[i].commBuffVa, PAGE_SIZE);
                 copied += toWrite;
             }
         }

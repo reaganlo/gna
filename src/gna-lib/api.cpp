@@ -65,24 +65,6 @@ GNAAPI intel_gna_status_t GnaModelCreate(
     }
 }
 
-GNAAPI intel_gna_status_t GnaModelRelease(
-    const gna_model_id modelId)
-{
-    try
-    {
-        GnaDevice->ReleaseModel(modelId);
-        return GNA_SUCCESS;
-    }
-    catch (const GnaException &e)
-    {
-        return e.getStatus();
-    }
-    catch (...)
-    {
-        return GNA_UNKNOWN_ERROR;
-    }
-}
-
 GNAAPI intel_gna_status_t GnaModelRequestConfigAdd(
     const gna_model_id modelId,
     gna_request_cfg_id* const configId)
@@ -192,12 +174,14 @@ GNAAPI char const * GnaStatusToString(
 GNAAPI void* GnaAlloc(
     const gna_device_id deviceId,
     const uint32_t sizeRequested,
+    const uint16_t layerCount,
+    const uint16_t gmmCount,
     uint32_t* const sizeGranted)
 {
     try
     {
         GnaDevice->ValidateSession(deviceId);
-        return GnaDevice->AllocateMemory(sizeRequested, sizeGranted);
+        return GnaDevice->AllocateMemory(sizeRequested, layerCount, gmmCount, sizeGranted);
     }
     catch (const GnaException& e)
     {

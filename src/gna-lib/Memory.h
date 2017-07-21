@@ -25,56 +25,76 @@
 
 #pragma once
 
-#include "common.h"
-#include "IoctlSender.h"
+#include <memory>
+#include <map>
 
+#include "common.h"
 #include "Address.h"
+#include "IoctlSender.h"
 
 namespace GNA
 {
+    class AccelerationDetector;
+    class CompiledModel;
 
-class Memory : public BaseAddressC
-{
-public:
-    Memory() = default;
-
-    // just makes object from arguments
-    Memory(void * buffer, const size_t userSize, const uint16_t layerCount, const uint16_t gmmCount);
-
-    // allocates and zeros memory
-    Memory(const size_t userSize, const uint16_t layerCount, const uint16_t gmmCount);
-
-    ~Memory();
-
-    size_t GetSize() const
+    class Memory : public BaseAddressC
     {
-        return size;
-    }
+    public:
+        Memory() = default;
 
-    template<class T = void> T * const GetUserBuffer() const
-    {
-        auto address = BaseAddressC(this->Get() + InternalSize);
-        return address.Get<T>();
-    }
+        // just makes object from arguments
+        Memory(uint64_t memoryId, void * buffer, const size_t userSize, const uint16_t layerCount, const uint16_t gmmCount);
 
-    void Map(gna_model_id model_id);
+        // allocates and zeros memory
+        Memory(uint64_t memoryId, const size_t userSize, const uint16_t layerCount, const uint16_t gmmCount);
 
-    void Unmap();
+        virtual ~Memory();
 
-    // Internal GNA library auxiliary memory size.
-    const size_t InternalSize;
+        const uint64_t Id;
 
-    // Size of memory requested for model by user.
-    const size_t ModelSize;
+        size_t GetSize() const
+        {
+            return size;
+        }
 
-protected:
-    size_t size = 0;
+        template<class T = void> T * const GetUserBuffer() const
+        {
+            auto address = BaseAddressC(this->Get() + InternalSize);
+            return address.Get<T>();
+        }
 
-    IoctlSender sender;
+        void Map();
 
-    bool mapped = false;
+        void AllocateModel(const gna_model_id modelId, const gna_model * model, const AccelerationDetector& detector);
 
-    uint64_t modelId;
-};
+        void DeallocateModel(gna_model_id modelId);
+
+        CompiledModel& GetModel(gna_model_id modelId);
+        void * GetDescriptorsBase(gna_model_id modelId) const;
+
+        // Internal GNA library auxiliary memory size.
+        const size_t InternalSize;
+
+        // Size of memory requested for model by user.
+        const size_t ModelSize;
+
+    protected:
+        virtual std::unique_ptr<CompiledModel> createModel(const gna_model_id modelId, const gna_model *model, const AccelerationDetector &detector);
+
+        size_t size = 0;
+
+        size_t descriptorsSize = 0;
+
+        IoctlSender sender;
+
+        bool mapped = false;
+
+        std::map<gna_model_id, std::unique_ptr<CompiledModel>> models;
+        std::map<gna_model_id, void*> modelDescriptors;
+
+    private:
+        void unmap();
+
+    };
 
 }

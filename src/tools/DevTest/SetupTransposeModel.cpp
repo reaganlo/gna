@@ -85,13 +85,12 @@ SetupTransposeModel::SetupTransposeModel(DeviceController & deviceCtrl)
 
 SetupTransposeModel::~SetupTransposeModel()
 {
-    deviceController.ModelRelease(modelId);
     deviceController.Free();
 
     free(nnet.pLayers);
 }
 
-void SetupTransposeModel::checkReferenceOutput() const
+void SetupTransposeModel::checkReferenceOutput(int modelIndex, int configIndex) const
 {
     for (int i = 0; i < sizeof(ref_output) / sizeof(int16_t); ++i)
     {
@@ -112,7 +111,7 @@ void SetupTransposeModel::sampleTransposeLayer()
     uint32_t bytes_requested = buf_size_inputs + buf_size_outputs;
     uint32_t bytes_granted;
 
-    uint8_t* pinned_mem_ptr = deviceController.Alloc(bytes_requested, &bytes_granted);
+    uint8_t* pinned_mem_ptr = deviceController.Alloc(bytes_requested, nnet.nLayers, 0, &bytes_granted);
 
     inputBuffer = pinned_mem_ptr;
     memcpy(inputBuffer, inputs, sizeof(inputs));

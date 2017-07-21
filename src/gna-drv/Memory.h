@@ -55,6 +55,6 @@ MemoryMap(
 VOID
 MemoryMapRelease(
     _Inout_ PAPP_CTX      appCtx,
-    _Inout_ PMODEL_CTX    modelCtx);
+    _Inout_ PMEMORY_CTX    memoryCtx);
 
 #endif // _MEMORY__H

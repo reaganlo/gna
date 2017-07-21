@@ -34,7 +34,7 @@
 NTSTATUS
 ModelDescInit(
     _In_ PDEV_CTX     devCtx,
-    _In_ PMODEL_CTX   modelCtx);
+    _In_ PMEMORY_CTX   memoryCtx);
 VOID
 ModelDescRelease(
     _In_    PHW_DESC    desc);
@@ -68,7 +68,7 @@ MemoryMap(
     _In_    UINT32       length)
 {
     NTSTATUS    status = STATUS_SUCCESS;
-    PMODEL_CTX  modelCtx = NULL;
+    PMEMORY_CTX  memoryCtx = NULL;
     PVOID       usrBuffer = NULL;
     PVOID       dmaVA = NULL;
     PDMA_ADAPTER pDmaAdapter = NULL;
@@ -95,36 +95,36 @@ MemoryMap(
         goto mem_map_error;
     }
 
-    UINT64 modelId = *(UINT64*)usrBuffer;
-    Trace(TLI, T_MEM, "Model id saved in user buffer: %lld", modelId);
+    UINT64 memoryId = *(UINT64*)usrBuffer;
+    Trace(TLI, T_MEM, "Model id saved in user buffer: %lld", memoryId);
 
-    // bad model id
-    if (modelId >= APP_MODELS_LIMIT)
+    // bad memory id
+    if (memoryId >= APP_MEMORIES_LIMIT)
     {
         status = STATUS_UNSUCCESSFUL;
-        TraceFailMsg(TLE, T_EXIT, "Bad model id", status);
+        TraceFailMsg(TLE, T_EXIT, "Bad memory id", status);
         goto mem_map_error;
     }
 
-    modelCtx = appCtx->models[modelId];
-    if (NULL == modelCtx)
+    memoryCtx = appCtx->memoryBuffers[memoryId];
+    if (NULL == memoryCtx)
     {
-        modelCtx = (PMODEL_CTX) ExAllocatePoolWithTag(NonPagedPoolNx, sizeof(MODEL_CTX), MEM_POOL_TAG);
+        memoryCtx = (PMEMORY_CTX) ExAllocatePoolWithTag(NonPagedPoolNx, sizeof(MEMORY_CTX), MEM_POOL_TAG);
 
-        modelCtx->pMdl = pMdl;
-        modelCtx->mmapRequest = mapRequest;
-        modelCtx->userMemoryBaseVA = usrBuffer;
-        modelCtx->userMemorySize = length;
-        modelCtx->requestConfigId = -1;
-        appCtx->models[modelId] = modelCtx;
+        memoryCtx->pMdl = pMdl;
+        memoryCtx->mmapRequest = mapRequest;
+        memoryCtx->userMemoryBaseVA = usrBuffer;
+        memoryCtx->userMemorySize = length;
+        memoryCtx->requestConfigId = -1;
+        appCtx->memoryBuffers[memoryId] = memoryCtx;
 
-        Trace(TLI, T_MEM, "Memory mapping model with modelId = %lld", modelId);
+        Trace(TLI, T_MEM, "Memory mapping memory with memoryId = %lld", memoryId);
     }
-    // model already mapped
+    // memory already mapped
     else
     {
         status = STATUS_UNSUCCESSFUL;
-        TraceFailMsg(TLE, T_EXIT, "Model with provided model id already exists", status);
+        TraceFailMsg(TLE, T_EXIT, "Model with provided memory id already exists", status);
         goto mem_map_error;
     }
 
@@ -145,7 +145,7 @@ MemoryMap(
     }
 
     status = pDmaAdapter->DmaOperations->CalculateScatterGatherList(pDmaAdapter,
-        modelCtx->pMdl,
+        memoryCtx->pMdl,
         dmaVA,
         length,
         &SglSize,
@@ -175,7 +175,7 @@ MemoryMap(
 #pragma warning(suppress: 6387)
         status = pDmaAdapter->DmaOperations->BuildScatterGatherList(pDmaAdapter,
             WdfDeviceWdmGetDeviceObject(dev),
-            modelCtx->pMdl,
+            memoryCtx->pMdl,
             dmaVA,
             length,
             ProcessSGList,
@@ -206,9 +206,9 @@ MemoryMap(
     }
 
     //allocate L1 area
-    for (modelCtx->pageTableCount = 0; modelCtx->pageTableCount < nPTables; ++modelCtx->pageTableCount)
+    for (memoryCtx->pageTableCount = 0; memoryCtx->pageTableCount < nPTables; ++memoryCtx->pageTableCount)
     {
-        P_PT_DIR pageTable = &modelCtx->ptDir[modelCtx->pageTableCount];
+        P_PT_DIR pageTable = &memoryCtx->ptDir[memoryCtx->pageTableCount];
         status = WdfCommonBufferCreate(devCtx->cfg.dmaEnabler,
             PAGE_SIZE,
             WDF_NO_OBJECT_ATTRIBUTES,
@@ -222,14 +222,14 @@ MemoryMap(
         pageTable->commBuffLa = WdfCommonBufferGetAlignedLogicalAddress(pageTable->commBuff);
         RtlZeroMemory(pageTable->commBuffVa, PAGE_SIZE);
     }
-    Trace(TLI, T_MEM, "%!FUNC!: L1 Table pages allocated: %d", modelCtx->pageTableCount);
+    Trace(TLI, T_MEM, "%!FUNC!: L1 Table pages allocated: %d", memoryCtx->pageTableCount);
 
     //copy L2 addresses to L1 area
     {
         PSCATTER_GATHER_LIST pSgList = (PSCATTER_GATHER_LIST) pSglBuffer;
         PSCATTER_GATHER_ELEMENT pSgListElement = pSgList->Elements;
 
-        P_PT_DIR pageTable = modelCtx->ptDir;
+        P_PT_DIR pageTable = memoryCtx->ptDir;
         ULONG32 *pageTableEntry = (ULONG32*) pageTable->commBuffVa;
         ULONG32* pageTableEntriesEnd = pageTableEntry + PT_ENTRY_NO;
 
@@ -271,8 +271,8 @@ MemoryMap(
 
     // prepare and store mmu config in app ctx for later copying into hw descriptor
     // HW configuration of mapping executed on app context switch before scoring start
-    ModelDescInit(devCtx, modelCtx);
-    HwPrepareMmuConfig(modelCtx);
+    ModelDescInit(devCtx, memoryCtx);
+    HwPrepareMmuConfig(memoryCtx);
 
     Trace(TLI, T_MEM, "%!FUNC! HW Memory mapped successfully");
 
@@ -305,9 +305,9 @@ mem_map_error:
         TraceFail(TLE, T_EXIT, status);
         EventWriteMemoryMapFail(NULL, status);
 
-        if (NULL != modelCtx)
+        if (NULL != memoryCtx)
         {
-            MemoryMapRelease(appCtx, modelCtx);
+            MemoryMapRelease(appCtx, memoryCtx);
         }
     }
     else
@@ -328,28 +328,28 @@ mem_map_error:
 VOID
 MemoryMapRelease(
     _Inout_ PAPP_CTX              appCtx,
-    _Inout_ PMODEL_CTX            modelCtx)
+    _Inout_ PMEMORY_CTX            memoryCtx)
 {
     TraceEntry(TLI, T_ENT);
 
-    UINT64 modelId = modelCtx->modelId;
-    Trace(TLI, T_MEM, "Memory unmapping model with modelId = %lld", modelId);
+    UINT64 memoryId = memoryCtx->memoryId;
+    Trace(TLI, T_MEM, "Memory unmapping memory with memoryId = %lld", memoryId);
 
     ULONG i;
-    for (i = 0; i < modelCtx->pageTableCount; ++i)
+    for (i = 0; i < memoryCtx->pageTableCount; ++i)
     {
-        WdfObjectDelete(modelCtx->ptDir[i].commBuff);
+        WdfObjectDelete(memoryCtx->ptDir[i].commBuff);
     }
-    RtlZeroMemory(modelCtx->ptDir, sizeof(modelCtx->ptDir));
-    modelCtx->pageTableCount = 0;
+    RtlZeroMemory(memoryCtx->ptDir, sizeof(memoryCtx->ptDir));
+    memoryCtx->pageTableCount = 0;
 
-    ModelDescRelease(&modelCtx->desc);
+    ModelDescRelease(&memoryCtx->desc);
 
-    if (WDF_NO_HANDLE != modelCtx->mmapRequest)
+    if (WDF_NO_HANDLE != memoryCtx->mmapRequest)
     {
-        WdfRequestComplete(modelCtx->mmapRequest, STATUS_SUCCESS);
-        ExFreePool(modelCtx);
-        appCtx->models[modelId] = NULL;
+        WdfRequestComplete(memoryCtx->mmapRequest, STATUS_SUCCESS);
+        ExFreePool(memoryCtx);
+        appCtx->memoryBuffers[memoryId] = NULL;
     }
 
     EventWriteMemoryReleased(NULL);
@@ -362,7 +362,7 @@ MemoryMapRelease(
 NTSTATUS
 ModelDescInit(
     _In_ PDEV_CTX     devCtx,
-    _In_ PMODEL_CTX   modelCtx)
+    _In_ PMEMORY_CTX   memoryCtx)
 {
     NTSTATUS status     = STATUS_SUCCESS;
     PAGED_CODE();
@@ -371,19 +371,19 @@ ModelDescInit(
     status = WdfCommonBufferCreate(devCtx->cfg.dmaEnabler,
         PRV_CFG_SIZE,
         WDF_NO_OBJECT_ATTRIBUTES,
-        &modelCtx->desc.buffer);
+        &memoryCtx->desc.buffer);
     if (!NT_SUCCESS(status))
     {
         TraceFailMsg(TLE, T_EXIT, "WdfCommonBufferCreate", status);
         return status;
     }
 
-    modelCtx->desc.va = WdfCommonBufferGetAlignedVirtualAddress(modelCtx->desc.buffer);
-    modelCtx->desc.la = WdfCommonBufferGetAlignedLogicalAddress(modelCtx->desc.buffer);
-    RtlZeroMemory(modelCtx->desc.va, PRV_CFG_SIZE);
-    modelCtx->desc.la.QuadPart /= PAGE_SIZE;
+    memoryCtx->desc.va = WdfCommonBufferGetAlignedVirtualAddress(memoryCtx->desc.buffer);
+    memoryCtx->desc.la = WdfCommonBufferGetAlignedLogicalAddress(memoryCtx->desc.buffer);
+    RtlZeroMemory(memoryCtx->desc.va, PRV_CFG_SIZE);
+    memoryCtx->desc.la.QuadPart /= PAGE_SIZE;
     ASSERTMSG("DeviceDescInit Logical Descriptor address > 32bits",
-        (LONG64)(modelCtx->desc.la.QuadPart) < MAXUINT32 );
+        (LONG64)(memoryCtx->desc.la.QuadPart) < MAXUINT32 );
 
     return status;
 }

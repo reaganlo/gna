@@ -25,20 +25,29 @@
 
 #pragma once
 
-#include "ModelContainer.h"
+#include "Memory.h"
 #include "CompiledModelVerbose.h"
 
 namespace GNA
 {
-
-class ModelContainerVerbose : public ModelContainer
-{
-public:
-    void AllocateModel(gna_model_id *modelId, const gna_model *rawModel, Memory& memory, const AccelerationDetector& detector)
+    class MemoryVerbose : public Memory
     {
-        *modelId = assignModelId();
-        std::unique_ptr<CompiledModel> modelVerbose = std::make_unique<CompiledModelVerbose>(*modelId, rawModel, memory, detector);
-        models[*modelId].swap(modelVerbose);
-    }
-};
+    public:        
+        // just makes object from arguments
+        MemoryVerbose(uint64_t memoryId, void * bufferIn, const size_t userSize, const uint16_t layerCount, const uint16_t gmmCount)
+            : Memory{memoryId, bufferIn, userSize, layerCount, gmmCount}
+        {}
+
+        // allocates and zeros memory
+        MemoryVerbose(uint64_t memoryId, const size_t userSize, const uint16_t layerCount, const uint16_t gmmCount)
+            : Memory{ memoryId, userSize, layerCount, gmmCount }
+        {}
+
+    protected:
+        virtual std::unique_ptr<CompiledModel> createModel(const gna_model_id modelId, const gna_model *model,
+            const AccelerationDetector &detector) override
+        {
+            return std::make_unique<CompiledModelVerbose>(modelId, model, *this, detector);
+        }
+    };
 }

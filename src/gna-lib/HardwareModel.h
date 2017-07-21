@@ -27,8 +27,9 @@
 
 #include <vector>
 
-#include "IoctlSender.h"
 #include "HardwareLayer.h"
+#include "IoctlSender.h"
+#include "Memory.h"
 
 namespace GNA
 {
@@ -47,14 +48,14 @@ public:
     static const size_t CalculateDescriptorSize(const uint16_t layerCount, const uint16_t gmmLayersCount);
 
     HardwareModel(const gna_model_id modId, const std::vector<std::unique_ptr<Layer>>& layers, 
-        uint16_t gmmCount, const Memory& wholeMemory, const AccelerationDetector& detector);
+        uint16_t gmmCount, const Memory &memoryIn, const AccelerationDetector& detector);
     ~HardwareModel() = default;
     HardwareModel(const HardwareModel &) = delete;
     HardwareModel& operator=(const HardwareModel&) = delete;
 
     inline uint32_t GetOffset(const BaseAddressC& address) const
     {
-        return address.GetOffset(memoryBaseAddress);
+        return address.GetOffset(memory);
     }
 
     void InvalidateConfigCache(gna_request_cfg_id configId);
@@ -68,26 +69,24 @@ public:
 
 protected:
     // needed for driver communication
-    gna_model_id modelId;
+    const Memory &memory;
+    const gna_model_id modelId;
 
     IoctlSender sender;
 
-    const BaseAddressC memoryBaseAddress;
-    const uint32_t layerDescriptorsSize;
-    const uint32_t gmmDescriptorsSize;
+    const BaseAddressC descriptorsAddress;
 
     std::vector<std::unique_ptr<HardwareLayer>> hardwareLayers;
 
 private:
+    static uint32_t getLayerDescriptorsSize(const uint16_t layerCount);
+    static uint32_t getGmmDescriptorsSize(const uint16_t gmmLayersCount);
+
     void build(const uint32_t hardwareInternalBufferSize);
 
     size_t calculateCacheSize(uint32_t buffersCount, uint32_t nnopLayersCount, uint32_t activeListCount) const;
 
     void getHwConfigData(void* &buffer, size_t &size, uint16_t layerIndex, uint16_t layerCount, const RequestConfiguration& requestConfiguration) const;
-
-    static uint32_t getLayerDescriptorsSize(const uint16_t layerCount);
-
-    static uint32_t getGmmDescriptorsSize(const uint16_t gmmLayersCount);
 
     void writeBuffersIntoCache(void* &lyrsCfg, const std::map<uint32_t, std::unique_ptr<LayerConfiguration>>& layerConfigurations) const;
     void writeNnopTypesIntoCache(void* &buffer, const std::map<uint32_t, std::unique_ptr<LayerConfiguration>>& layerConfigurations) const;
@@ -98,6 +97,8 @@ private:
     mutable std::map<gna_request_cfg_id, std::unique_ptr<uint8_t[]>> requestHwCaches;
     mutable std::map<gna_request_cfg_id, size_t> requestCacheSizes;
 
+    const uint32_t gmmDescriptorsSize;
+    const uint32_t layerDescriptorsSize;
     const std::vector<std::unique_ptr<Layer>>& softwareLayers;
 };
 

@@ -123,7 +123,6 @@
     <ClInclude Include="$(SRC_DIR)\gna-lib\LayerFunctions.h" />
     <ClInclude Include="$(SRC_DIR)\gna-lib\Logger.h" />
     <ClInclude Include="$(SRC_DIR)\gna-lib\Memory.h" />
-    <ClInclude Include="$(SRC_DIR)\gna-lib\ModelContainer.h" />
     <ClInclude Include="$(SRC_DIR)\gna-lib\RecurrentLayer.h" />
     <ClInclude Include="$(SRC_DIR)\gna-lib\Request.h" />
     <ClInclude Include="$(SRC_DIR)\gna-lib\RequestBuilder.h" />
@@ -152,7 +151,6 @@
     <ClCompile Include="$(SRC_DIR)\gna-lib\LayerFunctions.cpp" />
     <ClCompile Include="$(SRC_DIR)\gna-lib\Logger.cpp" />
     <ClCompile Include="$(SRC_DIR)\gna-lib\Memory.cpp" />
-    <ClCompile Include="$(SRC_DIR)\gna-lib\ModelContainer.cpp" />
     <ClCompile Include="$(SRC_DIR)\gna-lib\ModelDumper.cpp" />
     <ClCompile Include="$(SRC_DIR)\gna-lib\RecurrentLayer.cpp" />
     <ClCompile Include="$(SRC_DIR)\gna-lib\Request.cpp" />

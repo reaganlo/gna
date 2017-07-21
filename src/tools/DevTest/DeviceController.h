@@ -26,6 +26,7 @@
 #pragma once
 
 #include "gna-api.h"
+#include "gna-api-verbose.h"
 
 class DeviceController
 {
@@ -33,11 +34,10 @@ public:
     DeviceController();
     ~DeviceController();
 
-    uint8_t * Alloc(uint32_t sizeRequested, uint32_t * sizeGranted);
+	uint8_t * Alloc(uint32_t sizeRequested, uint16_t layerCount, uint16_t gmmCount, uint32_t * sizeGranted);
     void Free();
 
     void ModelCreate(const gna_model *, gna_model_id *);
-    void ModelRelease(gna_model_id);
 
     gna_request_cfg_id ConfigAdd(gna_model_id);
 
@@ -46,6 +46,10 @@ public:
     void RequestEnqueue(gna_request_cfg_id, gna_acceleration, gna_request_id *);
 
     void ActiveListAdd(gna_request_cfg_id configId, uint32_t layerIndex, uint32_t indicesCount, uint32_t* indices);
+
+    void AfterscoreDebug(gna_model_id modelId, uint32_t nActions, dbg_action *actions);
+
+    void PrescoreDebug(gna_model_id modelId, uint32_t nActions, dbg_action *actions);
 
 private:
     gna_device_id gnaHandle;

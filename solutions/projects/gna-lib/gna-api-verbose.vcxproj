@@ -43,7 +43,7 @@
     <ClInclude Include="$(SRC_DIR)\gna-lib\CompiledModelVerbose.h" />
     <ClInclude Include="$(SRC_DIR)\gna-lib\DeviceVerbose.h" />
     <ClInclude Include="$(SRC_DIR)\gna-lib\HardwareModelVerbose.h" />
-    <ClInclude Include="$(SRC_DIR)\gna-lib\ModelContainerVerbose.h" />
+    <ClInclude Include="$(SRC_DIR)\gna-lib\MemoryVerbose.h" />
     <ClCompile Include="$(SRC_DIR)\gna-lib\api-verbose.cpp" />
     <ClCompile Include="$(SRC_DIR)\gna-lib\HardwareModelVerbose.cpp" />
   </ItemGroup>

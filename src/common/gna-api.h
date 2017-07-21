@@ -97,13 +97,17 @@ GNAAPI intel_gna_status_t GnaDeviceClose(
  *
  * @param deviceId      The device which will utilize the allocated buffer.
  * @param sizeRequested Buffer size desired by the caller.
+ * @param layerCount    Total number of layers for all neural networks
+ * @param gmmCount      Number of gmm layers for all neural networks
  * @param sizeGranted   (out) Buffer size granted by GNA,
  *                      can be less then requested due to HW constraints.
  * @deprecated          Will be removed in next release.
  */
 GNAAPI void* GnaAlloc(
-    gna_device_id deviceId,
-    uint32_t sizeRequested,
+    const gna_device_id deviceId,
+    const uint32_t sizeRequested,
+    const uint16_t layerCount,
+    const uint16_t gmmCount,
     uint32_t * sizeGranted);
 
 /**
@@ -139,18 +143,6 @@ GNAAPI intel_gna_status_t GnaModelCreate(
     gna_device_id deviceId,
     gna_model const * model,
     gna_model_id * modelId);
-
-/**
- * Removes the model and releases the resources.
- * NOTE:
- * - In the first phase the memory for model's data has to be released by GNAFree.
- * - Unreleased models are released by GNA during device closing.
- *
- * @param modelId       The model to be released.
- */
-GNAAPI intel_gna_status_t GnaModelRelease(
-    gna_model_id modelId);
-
 
 /******************  GNA Request Configuration API ******************/
 
@@ -348,7 +340,7 @@ GNAAPI char const * GnaStatusToString(
  * @return Rounded integer value.
  * @deprecated          Will be removed in next release.
  */
-#define ALIGN(number, significance)   (((int)((number) + significance -1) / significance) * significance)
+#define ALIGN(number, significance)   (((unsigned int)((number) + significance -1) / significance) * significance)
 
 /**
  * Rounds a number up, to the nearest multiple of 64

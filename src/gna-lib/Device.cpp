@@ -33,6 +33,7 @@
 #include "FakeDetector.h"
 #include "Memory.h"
 #include "RequestConfiguration.h"
+
 #include "Validator.h"
 
 using std::ofstream;
@@ -43,8 +44,8 @@ using std::move;
 using namespace GNA;
 
 Device::Device(gna_device_id* deviceId, uint8_t threadCount) :
-    requestHandler{threadCount},
-    modelContainer{std::make_unique<ModelContainer>()}
+    requestHandler{ threadCount },
+    memoryObjects{ APP_MEMORIES_LIMIT }
 {
     Expect::NotNull(deviceId);
 
@@ -67,7 +68,9 @@ void Device::AttachBuffer(gna_request_cfg_id configId, gna_buffer_type type, uin
 
 void Device::CreateConfiguration(gna_model_id modelId, gna_request_cfg_id *configId)
 {
-    auto &model = modelContainer->GetModel(modelId);
+    auto memoryId = 0;
+    auto memory = memoryObjects.at(memoryId).get();
+    auto &model = memory->GetModel(modelId);
     requestBuilder.CreateConfiguration(model, configId);
 }
 
@@ -86,7 +89,7 @@ void Device::EnableProfiling(gna_request_cfg_id configId, gna_hw_perf_encoding h
 
 void Device::AttachActiveList(gna_request_cfg_id configId, uint16_t layerIndex, uint32_t indicesCount, const uint32_t* const indices)
 {
-    auto activeList = ActiveList{indicesCount, indices};
+    auto activeList = ActiveList{ indicesCount, indices };
     requestBuilder.AttachActiveList(configId, layerIndex, activeList);
 }
 
@@ -95,41 +98,53 @@ void Device::ValidateSession(gna_device_id deviceId) const
     Expect::True(id == deviceId, GNA_INVALIDHANDLE);
 }
 
-void * Device::AllocateMemory(const uint32_t requestedSize, uint32_t * const sizeGranted)
+void * Device::AllocateMemory(const uint32_t requestedSize, const uint16_t layerCount, uint16_t gmmCount, uint32_t * const sizeGranted)
 {
     Expect::NotNull(sizeGranted);
     *sizeGranted = 0;
 
-    totalMemory = make_unique<Memory>(requestedSize, XNN_LAYERS_MAX_COUNT, GMM_LAYERS_MAX_COUNT);
-    *sizeGranted = static_cast<uint32_t>(totalMemory->ModelSize);
-    Expect::True(*sizeGranted >= requestedSize, GNA_ERR_RESOURCES);
+    auto memoryId = 0ui64;
+    for (; memoryId < memoryObjects.size(); ++memoryId)
+    {
+        if (!memoryObjects.at(memoryId))
+            break;
+    }
 
-    return totalMemory->GetUserBuffer<void>();
+    if (APP_MEMORIES_LIMIT == memoryId)
+    {
+        throw GNA_ERR_RESOURCES;
+    }
+
+    auto memoryObject = createMemoryObject(memoryId, requestedSize, layerCount, gmmCount);
+    memoryObjects[memoryId] = std::move(memoryObject);
+
+    auto memory = memoryObjects.at(memoryId).get();
+    if (accelerationDetector.IsHardwarePresent())
+    {
+        memory->Map();
+    }
+
+    *sizeGranted = memory->ModelSize;
+    return memory->GetUserBuffer();
 }
 
 void Device::FreeMemory()
 {
-    totalMemory.reset();
-}
-
-void Device::ReleaseModel(gna_model_id modelId)
-{
-    modelContainer->DeallocateModel(modelId);
-    if (accelerationDetector.IsHardwarePresent())
-    {
-        totalMemory->Unmap();
-    }
+    memoryObjects.clear();
 }
 
 void Device::LoadModel(gna_model_id *modelId, const gna_model *raw_model)
 {
+    *modelId = modelIdSequence++;
+    auto memoryId = 0; // default for 1st multi model phase
+    auto& memory = *memoryObjects.at(memoryId);
     try
     {
-        modelContainer->AllocateModel(modelId, raw_model, *totalMemory, accelerationDetector);
+        memory.AllocateModel(*modelId, raw_model, accelerationDetector);
     }
     catch (...)
     {
-        modelContainer->DeallocateModel(*modelId);
+        memory.DeallocateModel(*modelId);
         throw;
     }
 }
@@ -143,4 +158,10 @@ void Device::PropagateRequest(gna_request_cfg_id configId, acceleration accel, g
 status_t Device::WaitForRequest(gna_request_id requestId, gna_timeout milliseconds)
 {
     return requestHandler.WaitFor(requestId, milliseconds);
+}
+
+std::unique_ptr<Memory> Device::createMemoryObject(const uint64_t memoryId, const uint32_t requestedSize,
+    const uint16_t layerCount, const uint16_t gmmCount)
+{
+    return std::make_unique<Memory>(memoryId, requestedSize, layerCount, gmmCount);
 }

@@ -143,13 +143,12 @@ SetupMultibiasModel_1::SetupMultibiasModel_1(DeviceController & deviceCtrl, bool
 
 SetupMultibiasModel_1::~SetupMultibiasModel_1()
 {
-    deviceController.ModelRelease(modelId);
     deviceController.Free();
 
     free(nnet.pLayers);
 }
 
-void SetupMultibiasModel_1::checkReferenceOutput() const
+void SetupMultibiasModel_1::checkReferenceOutput(int modelIndex, int configIndex) const
 {
     for (int i = 0; i < sizeof(ref_output) / sizeof(int32_t); ++i)
     {
@@ -180,7 +179,7 @@ void SetupMultibiasModel_1::sampleAffineLayer()
     }
     uint32_t bytes_granted;
 
-    uint8_t* pinned_mem_ptr = deviceController.Alloc(bytes_requested, &bytes_granted);
+    uint8_t* pinned_mem_ptr = deviceController.Alloc(bytes_requested, nnet.nLayers, 0, &bytes_granted);
 
     void* pinned_weights = pinned_mem_ptr;
     if (weightsAre2Bytes)

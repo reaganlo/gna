@@ -40,18 +40,16 @@ CompiledModel::CompiledModel(gna_model_id modelId, const gna_model *rawModel, Me
     Id{ modelId },
     LayerCount{ static_cast<uint16_t>(rawModel->nLayers) },
     UserModel{ rawModel },
-    memory{ memoryIn },
     validBoundaries{ [&memoryIn](const void *buffer, const size_t bufferSize)
         { Expect::ValidBoundaries(buffer, bufferSize, memoryIn.GetUserBuffer(), memoryIn.ModelSize); } },
-    softwareModel { UserModel, gmmCount, validBoundaries},
+    softwareModel{ UserModel, gmmCount, validBoundaries },
     submodels{},
     swFastAccel{ detector.GetFastestAcceleration() },
     swSatAccel{ static_cast<acceleration>(detector.GetFastestAcceleration() & GNA_HW) }
 {
     if (detector.IsHardwarePresent())
     {
-        memory.Map(Id);
-        hardwareModel = make_unique<HardwareModel>(Id, softwareModel.Layers, gmmCount, memory, detector);
+        hardwareModel = make_unique<HardwareModel>(Id, softwareModel.Layers, gmmCount, memoryIn, detector);
     }
 
     createSubmodels(detector);
@@ -75,6 +73,17 @@ const size_t CompiledModel::CalculateInternalModelSize(const uint16_t layerCount
     // TODO:INTEGRATION: add detector reference to c-tor and calculate hardware size if applicable
     // for model dumper use fake detector in device
     return HardwareModel::CalculateDescriptorSize(layerCount, gmmCountIn);
+}
+
+const size_t CompiledModel::CalculateInternalModelSize(const gna_model * rawModel)
+{
+    uint16_t gmmLayerCount = 0;
+    for (auto ix = 0ui32; ix < rawModel->nLayers; ++ix)
+    {
+        if (INTEL_GMM == rawModel->pLayers[ix].nLayerKind)
+            gmmLayerCount++;
+    }
+    return HardwareModel::CalculateDescriptorSize(rawModel->nLayers, gmmLayerCount);
 }
 
 uint16_t CompiledModel::GetGmmCount() const

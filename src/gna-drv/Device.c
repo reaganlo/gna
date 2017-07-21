@@ -155,12 +155,12 @@ FileCleanupEvnt(
 
     PAPP_CTX appCtx = GetFileContext(appObj);
     UINT32 i;
-    for (i = 0; i < APP_MODELS_LIMIT; i++)
+    for (i = 0; i < APP_MEMORIES_LIMIT; i++)
     {
-        PMODEL_CTX modelCtx = appCtx->models[i];
-        if (NULL != modelCtx)
+        PMEMORY_CTX memoryCtx = appCtx->memoryBuffers[i];
+        if (NULL != memoryCtx)
         {
-            MemoryMapRelease(appCtx, modelCtx);
+            MemoryMapRelease(appCtx, memoryCtx);
         }
     }
 
