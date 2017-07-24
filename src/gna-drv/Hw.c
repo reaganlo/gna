@@ -209,7 +209,8 @@ VOID
 HwInitExecution(
     _In_    P_HW_REGS       regs,
     _In_    ULONG           baseDescriptorLA,
-    _In_    PXNN_CONFIG     xnnConfig,
+    _In_    PUINT8          lyrDscBuffer,
+    _In_    PVOID           config,
     _In_    PGNA_CALC_IN    input,
     _In_    PDEV_CONFIG     devCfg)
 {
@@ -227,9 +228,18 @@ HwInitExecution(
         HwAbort(regs);
     }
 
-    // copy user provided XNN configuration
-    xnnConfig->labase = input->ctrlFlags.layerBase;
-    xnnConfig->lacount = (UINT16)input->ctrlFlags.layerCount;
+    // copy user provided xNN or GMM configuration
+    if(1 == input->ctrlFlags.gnaMode)
+    {
+        PXNN_CONFIG xnnConfig = (PXNN_CONFIG)config;
+        xnnConfig->labase = input->ctrlFlags.layerBase;
+        xnnConfig->lacount = (UINT16)input->ctrlFlags.layerCount;
+    }
+    else
+    {
+        PVOID gmmDescriptor = lyrDscBuffer + input->ctrlFlags.gmmOffset;
+        RtlCopyMemory(config, gmmDescriptor, GMM_CFG_SIZE);
+    }
 
     // start scoring
     _WRITE(regs->desc_base, baseDescriptorLA);

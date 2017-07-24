@@ -157,12 +157,16 @@ static_assert(12 == sizeof(GNA_CPBLTS), "Invalid size of GNA_CPBLTS");
  */
 typedef struct _CTRL_FLAGS
 {
-    UINT32      activeListOn : 1; // 00:00 - active list mode (0:disabled, 1:enabled)
-    UINT32      gnaMode : 2; // 01:02 - GNA operation mode (0:GMM, 1:xNN)
-    UINT32      layerCount : 14;
-    UINT32		_rsvd : 15;
+    UINT32      activeListOn    :1; // 00:00 - active list mode (0:disabled, 1:enabled)
+    UINT32      gnaMode         :2; // 01:02 - GNA operation mode (0:GMM, 1:xNN)
+    UINT32      layerCount      :14;
+    UINT32      _rsvd           :15;
 
-    UINT32      layerBase;
+    union
+    {
+        UINT32      layerBase;
+        UINT32      gmmOffset;
+    };
 } CTRL_FLAGS;                       // Control flag
 
 static_assert(8 == sizeof(CTRL_FLAGS), "Invalid size of CTRL_FLAGS");
@@ -251,14 +255,20 @@ static_assert(93 == sizeof(GNA_CALC_IN), "Invalid size of GNA_CALC_IN");
  */
 #define REQUEST_SIZE                sizeof(GNA_CALC_IN)
 
- /**
-  * Minimum Size of xNN layer descriptors in bytes (at least 1 layer)
-  */
+/**
+ * Size of xNN layer descriptor in bytes
+ */
 #define XNN_LYR_DSC_SIZE            (128)
 
-  /**
-   * READ_REG IOCTL - input data
-   */
+/**
+ * Size of GMM config in bytes
+ */
+#define GMM_CFG_SIZE                (128)
+
+/**
+ * READ_REG IOCTL - input data
+ * Size:    8 B
+ */
 typedef struct _PGNA_READREG_IN
 {
     UINT32              mbarIndex;  // Index of MBAR

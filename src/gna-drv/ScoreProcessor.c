@@ -493,7 +493,7 @@ ScoreStart(
         status = STATUS_INVALID_ADDRESS;
         goto cleanup;
     }
-    HwInitExecution(devCtx->hw.regs, (ULONG)memoryCtx->desc.la.QuadPart, &memoryCtx->desc.va->xnn_config, input, &devCtx->cfg);
+    HwInitExecution(devCtx->hw.regs, (ULONG)memoryCtx->desc.la.QuadPart, lyrDscBuffer, &memoryCtx->desc.va->xnn_config, input, &devCtx->cfg);
 
     profilerDTscStop(&devCtx->profiler.startHW);
     profilerTscStart(&devCtx->profiler.scoreHW);

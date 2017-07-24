@@ -108,17 +108,19 @@ HwUnmapMemory(
  *
  * @regs                Address of Registers in MMIO space
  * @baseDescLa          Physical address of base descriptor
- * @xnnConfig           Pointer to xnn configuration of the model
- * @ctrlFlags           Control flags obtained from user application
+ * @lyrDscBuffer        Pointer to layer descriptors
+ * @config              Pointer to xnn configuration of the model
+ * @input               Input data obtained from user application
  * @devCfg              device config for legacy mode
  */
 VOID
 HwInitExecution(
-    _In_    P_HW_REGS   regs,
-    _In_    ULONG       baseDescLa,
-    _In_    PXNN_CONFIG xnnConfig,
-    _In_    PGNA_CALC_IN    input,
-    _In_    PDEV_CONFIG devCfg);
+    _In_    P_HW_REGS    regs,
+    _In_    ULONG        baseDescLa,
+    _In_    PUINT8       lyrDscBuffer,
+    _In_    PVOID        config,
+    _In_    PGNA_CALC_IN input,
+    _In_    PDEV_CONFIG  devCfg);
 
 /**
  * Pause execution hardware device command

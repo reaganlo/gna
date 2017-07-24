@@ -70,17 +70,9 @@ public:
     static const size_t MaximumInternalModelSize;
     const gna_model_id Id;
     const uint16_t LayerCount;
-    const gna_model* const UserModel;
     
 protected:
-    typedef enum _ScoreMethod
-    {
-        HardwareOnly,
-        SoftwareOnly,
-        Mixed,
-        None
-    } ScoreMethod;
-
+    Memory& memory;
     ValidBoundariesFunctor validBoundaries;
     uint16_t gmmCount = 0;
     uint32_t bufferSize = 0;
@@ -89,13 +81,11 @@ protected:
     std::unique_ptr<HardwareModel> hardwareModel;
 
     std::vector<std::unique_ptr<SubModel>> submodels;
-    std::map<acceleration, ScoreMethod> scoreMethods;
 
     const acceleration swFastAccel;
     const acceleration swSatAccel;
 
     void createSubmodels(const AccelerationDetector& detector);
-    void prepareScoreMethods(const AccelerationDetector &detector);
 };
 
 }

@@ -39,10 +39,10 @@ using std::vector;
 CompiledModel::CompiledModel(gna_model_id modelId, const gna_model *rawModel, Memory& memoryIn, const AccelerationDetector& detector) :
     Id{ modelId },
     LayerCount{ static_cast<uint16_t>(rawModel->nLayers) },
-    UserModel{ rawModel },
+    memory{ memoryIn },
     validBoundaries{ [&memoryIn](const void *buffer, const size_t bufferSize)
         { Expect::ValidBoundaries(buffer, bufferSize, memoryIn.GetUserBuffer(), memoryIn.ModelSize); } },
-    softwareModel{ UserModel, gmmCount, validBoundaries },
+    softwareModel{ rawModel, gmmCount, validBoundaries },
     submodels{},
     swFastAccel{ detector.GetFastestAcceleration() },
     swSatAccel{ static_cast<acceleration>(detector.GetFastestAcceleration() & GNA_HW) }
@@ -53,7 +53,6 @@ CompiledModel::CompiledModel(gna_model_id modelId, const gna_model *rawModel, Me
     }
 
     createSubmodels(detector);
-    prepareScoreMethods(detector);
 };
 
 const size_t CompiledModel::MaximumInternalModelSize = CalculateInternalModelSize(XNN_LAYERS_MAX_COUNT, GMM_LAYERS_MAX_COUNT);
@@ -131,39 +130,37 @@ status_t CompiledModel::Score(
     }
 
     auto status = GNA_SUCCESS;
-    auto scoreMethod = scoreMethods[accel];
-    switch (scoreMethod)
+    if ((GNA_HW == accel && !hardwareModel)
+        || accel > swFastAccel)
     {
-    case SoftwareOnly:
-        status = softwareModel.Score(0, LayerCount, swAccel, config, profiler, buffers);
-        break;
-    case HardwareOnly:
-        status = hardwareModel->Score(0, LayerCount, config, profiler, buffers);
-        break;
-    case Mixed:
-    {
-        for (const auto& submodel : submodels)
-        {
-            uint32_t layerIndex = submodel->LayerIndex;
-            uint32_t layerCount = submodel->GetLayerCount();
-            switch (submodel->Type)
-            {
-            case Software:
-                status = softwareModel.Score(layerIndex, layerCount, swAccel, config, profiler, buffers);
-                if (status != GNA_SUCCESS && status != GNA_SSATURATE)
-                    return status;
-                break;
-            case Hardware:
-                status = hardwareModel->Score(layerIndex, layerCount, config, profiler, buffers);
-                if (status != GNA_SUCCESS && status != GNA_SSATURATE)
-                    return status;
-                break;
-            case GMMHardware:
-                throw GnaException(GNA_CPUTYPENOTSUPPORTED);
-            }
-        }
-        break;
+        status = GNA_CPUTYPENOTSUPPORTED;
     }
+    else if(accel >= GNA_SW_SAT && accel <= GNA_AVX2_FAST)
+    {
+        status = softwareModel.Score(0, LayerCount, swAccel, config, profiler, buffers);
+    }
+    else for (const auto& submodel : submodels)
+    {
+        uint32_t layerIndex = submodel->LayerIndex;
+        uint32_t layerCount = submodel->GetLayerCount();
+        switch (submodel->Type)
+        {
+        case Software:
+            status = softwareModel.Score(layerIndex, layerCount, swAccel, config, profiler, buffers);
+            if (status != GNA_SUCCESS && status != GNA_SSATURATE)
+                return status;
+            break;
+        case Hardware:
+            status = hardwareModel->Score(layerIndex, layerCount, config, profiler, buffers, xNN);
+            if (status != GNA_SUCCESS && status != GNA_SSATURATE)
+                return status;
+            break;
+        case GMMHardware:
+            status = hardwareModel->Score(layerIndex, 1, config, profiler, buffers, GMM);
+            if (status != GNA_SUCCESS && status != GNA_SSATURATE)
+                return status;
+            break;
+        }
     }
     profilerDTscStop(&profiler->scoring);
     profilerDTscStop(&profiler->total);
@@ -172,88 +169,47 @@ status_t CompiledModel::Score(
 
 void CompiledModel::createSubmodels(const AccelerationDetector& dispatcher)
 {
-    auto layerType = UserModel->pLayers->nLayerKind;
+    auto getSubmodelType = [&dispatcher](intel_layer_kind_t layerKind)
+    {
+        if (dispatcher.IsLayerSupported(layerKind))
+        {
+            return SubmodelType::Hardware;
+        }
+        if (INTEL_GMM == layerKind && dispatcher.HasFeature(LegacyGMM))
+        {
+            return SubmodelType::GMMHardware;
+        }
+        return SubmodelType::Software;
+    };
+
+    auto &layers = softwareModel.Layers;
+    auto layerKind = layers.at(0)->Config.Kind;
+
     auto submodelCount = 0;
-    auto smType = dispatcher.IsLayerSupported(layerType) ? Hardware : Software;
+    auto smType = getSubmodelType(layerKind);
+
     submodels.emplace_back(make_unique<SubModel>(smType, 0));
 
     for (uint16_t layerIx = 1; layerIx < LayerCount; ++layerIx)
     {
-        layerType = UserModel->pLayers[layerIx].nLayerKind;
-        smType = dispatcher.IsLayerSupported(layerType) ? Hardware : Software;
+        layerKind = layers.at(layerIx)->Config.Kind;
+        smType = getSubmodelType(layerKind);
 
-        if (smType == submodels[submodelCount]->Type)
+        if (GMMHardware == smType || submodels.at(submodelCount)->Type != smType)
+        {
+            submodels.emplace_back(make_unique<SubModel>(smType, layerIx));
+            submodelCount++;
+        }
+        else
         {
             // exceeded supported number of layers
             if (Hardware == smType && !dispatcher.HasFeature(Layer8K)
-                && XNN_LAYERS_MAX_COUNT_OLD == submodels[submodelCount]->GetLayerCount())
+                && XNN_LAYERS_MAX_COUNT_OLD == submodels.at(submodelCount)->GetLayerCount())
             {
                 submodels.emplace_back(make_unique<SubModel>(smType, layerIx));
                 submodelCount++;
             }
             else submodels[submodelCount]->AddLayer();
-        }
-        else
-        {
-            submodels.emplace_back(make_unique<SubModel>(smType, layerIx));
-            submodelCount++;
-        }
-    }
-}
-
-void CompiledModel::prepareScoreMethods(const AccelerationDetector& detector)
-{
-    scoreMethods[GNA_GEN_FAST] = SoftwareOnly;
-    scoreMethods[GNA_GEN_SAT] = SoftwareOnly;
-
-    scoreMethods[GNA_SSE4_2_FAST] = SoftwareOnly;
-    scoreMethods[GNA_SSE4_2_SAT] = SoftwareOnly;
-
-    scoreMethods[GNA_AVX1_FAST] = SoftwareOnly;
-    scoreMethods[GNA_AVX1_SAT] = SoftwareOnly;
-
-    scoreMethods[GNA_AVX2_FAST] = SoftwareOnly;
-    scoreMethods[GNA_AVX2_SAT] = SoftwareOnly;
-
-    scoreMethods[GNA_SW_FAST] = SoftwareOnly;
-    scoreMethods[GNA_SW_SAT] = SoftwareOnly;
-
-    if (!detector.IsHardwarePresent())
-    {
-        scoreMethods[GNA_HW] = None;
-        scoreMethods[GNA_AUTO_FAST] = SoftwareOnly;
-        scoreMethods[GNA_AUTO_SAT] = SoftwareOnly;
-    }
-    else
-    {
-        if (submodels.size() > 1)
-        {
-            scoreMethods[GNA_HW] = Mixed;
-            scoreMethods[GNA_AUTO_FAST] = Mixed;
-            scoreMethods[GNA_AUTO_SAT] = Mixed;
-        }
-        else
-        {
-            switch (submodels.front()->Type)
-            {
-                // hardware does not support model
-            case Software:
-                scoreMethods[GNA_HW] = SoftwareOnly;
-                scoreMethods[GNA_AUTO_FAST] = SoftwareOnly;
-                scoreMethods[GNA_AUTO_SAT] = SoftwareOnly;
-                break;
-                // hardware can handle whole model
-            case Hardware:
-                scoreMethods[GNA_HW] = HardwareOnly;
-                scoreMethods[GNA_AUTO_FAST] = HardwareOnly;
-                scoreMethods[GNA_AUTO_SAT] = HardwareOnly;
-                break;
-            default:
-                scoreMethods[GNA_HW] = None;
-                scoreMethods[GNA_AUTO_FAST] = None;
-                scoreMethods[GNA_AUTO_SAT] = None;
-                break;
-            }
         }
     }
 }

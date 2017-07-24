@@ -41,14 +41,15 @@ status_t HardwareModelVerbose::Score(
     uint32_t layerCount,
     const RequestConfiguration& requestConfiguration,
     RequestProfiler *profiler,
-    KernelBuffers *buffers)
+    KernelBuffers *buffers,
+    const GnaOperationMode operationMode)
 {
     for (auto& action : prescoreActionVector)
     {
         executeDebugAction(action);
     }
 
-    auto status = HardwareModel::Score(layerIndex, layerCount, requestConfiguration, profiler, buffers);
+    auto status = HardwareModel::Score(layerIndex, layerCount, requestConfiguration, profiler, buffers, operationMode);
 
     for (auto& action : afterscoreActionVector)
     {
@@ -187,9 +188,9 @@ void HardwareModelVerbose::dumpMemory(FILE *file)
     fwrite(memory.Get(), memory.GetSize(), 1, file);
 }
 
-void HardwareModelVerbose::zeroMemory(void *memory, size_t memorySize)
+void HardwareModelVerbose::zeroMemory(void *memoryIn, size_t memorySize)
 {
-    memset(memory, 0, memorySize);
+    memset(memoryIn, 0, memorySize);
 }
 
 void HardwareModelVerbose::setXnnDescriptor(dbg_action action)

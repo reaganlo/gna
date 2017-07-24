@@ -45,9 +45,9 @@ const size_t HardwareModel::CalculateDescriptorSize(const uint16_t layerCount, c
 
 HardwareModel::HardwareModel(const gna_model_id modId, const std::vector<std::unique_ptr<Layer>>& layers, 
     uint16_t gmmCount, const Memory &memoryIn, const AccelerationDetector& detector) :
+    memory{memoryIn},
     modelId{modId},
     descriptorsAddress{memoryIn.GetDescriptorsBase(modId)},
-    memory{memoryIn},
     gmmDescriptorsSize{ getGmmDescriptorsSize(gmmCount) },
     layerDescriptorsSize{getLayerDescriptorsSize(layers.size())},
     softwareLayers {layers}
@@ -66,13 +66,14 @@ status_t HardwareModel::Score(
     uint32_t layerCount,
     const RequestConfiguration& requestConfiguration,
     RequestProfiler *profiler,
-    KernelBuffers *buffers)
+    KernelBuffers *buffers,
+    const GnaOperationMode operationMode)
 {
     UNREFERENCED_PARAMETER(buffers);
 
     void* data;
     size_t size;
-    getHwConfigData(data, size, layerIndex, layerCount, requestConfiguration);
+    getHwConfigData(data, size, layerIndex, layerCount, requestConfiguration, operationMode);
 
     sender.Submit(data, size, profiler);
 
@@ -130,7 +131,7 @@ uint32_t HardwareModel::getGmmDescriptorsSize(const uint16_t gmmLayersCount)
 }
 
 void HardwareModel::getHwConfigData(void* &buffer, size_t &size, uint16_t layerIndex, uint16_t layerCount,
-    const RequestConfiguration& requestConfiguration) const
+    const RequestConfiguration& requestConfiguration, const GnaOperationMode operationMode) const
 {
     const auto& layerConfigurations = requestConfiguration.LayerConfigurations;
 
@@ -193,7 +194,6 @@ void HardwareModel::getHwConfigData(void* &buffer, size_t &size, uint16_t layerI
         requestCache.reset(new uint8_t[requestCacheSizes.at(requestConfiguration.ConfigId)]);
 
         auto calculationData = reinterpret_cast<PGNA_CALC_IN>(requestCache.get());
-        calculationData->ctrlFlags.gnaMode = 1; // xnn by default
         calculationData->ctrlFlags.activeListOn = gmmActiveListCount > 0;
         calculationData->memoryId = memory.Id;
         calculationData->modelId = modelId;
@@ -212,8 +212,16 @@ void HardwareModel::getHwConfigData(void* &buffer, size_t &size, uint16_t layerI
     }
 
     auto calculationData = reinterpret_cast<PGNA_CALC_IN>(requestCache.get());
+    calculationData->ctrlFlags.gnaMode = operationMode;
+    if (xNN == operationMode)
+    {
+        calculationData->ctrlFlags.layerBase = GetOffset(descriptorsAddress) + layerIndex * sizeof(XNN_LYR);
+    }
+    else
+    {
+        calculationData->ctrlFlags.gmmOffset = hardwareLayers.at(layerIndex)->XnnDescriptor->gmm_descriptor;
+    }
     calculationData->ctrlFlags.activeListOn = requestActiveLists.at(layerIndex);
-	calculationData->ctrlFlags.layerBase = GetOffset(descriptorsAddress) + layerIndex * sizeof(XNN_LYR);
     calculationData->ctrlFlags.layerCount = layerCount;
 
     buffer = requestCache.get();

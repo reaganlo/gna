@@ -57,7 +57,8 @@ public:
         uint32_t layerCount,
         const RequestConfiguration& requestConfiguration,
         RequestProfiler *profiler,
-        KernelBuffers *buffers) override final;
+        KernelBuffers *buffers,
+        const GnaOperationMode operationMode) override final;
 
 private:
     void executeDebugAction(dbg_action action);
@@ -90,7 +91,7 @@ private:
 
     void setDescriptor(uint8_t *xnnParam, uint64_t xnnValue, gna_set_size valueSize);
 
-    void zeroMemory(void *memory, size_t memorySize);
+    void zeroMemory(void *memoryIn, size_t memorySize);
 
     std::vector<dbg_action> prescoreActionVector;
 

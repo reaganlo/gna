@@ -56,9 +56,6 @@ typedef enum _acceleration_all
     GNA_AVX2_SAT = GNA_AVX2 & GNA_HW,
     GNA_AVX2_FAST = GNA_AVX2,
     NUM_GNA_ACCEL_MODES = 0xE,
-    // DLL internal modes, do not use from API
-    GNA_CNL_SAT = 0x100 & GNA_HW,
-    GNA_CNL_FAST = 0x101,
 } gna_acceleration_all;
 
 static_assert(4 == sizeof(gna_acceleration_all), "Invalid size of gna_acceleration_all");

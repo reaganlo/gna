@@ -42,6 +42,12 @@ class LayerConfiguration;
 class RequestConfiguration;
 struct RequestProfiler;
 
+enum GnaOperationMode : uint8_t
+{
+    GMM = 0,
+    xNN = 1
+};
+
 class HardwareModel
 {
 public:
@@ -65,7 +71,8 @@ public:
         uint32_t layerCount,
         const RequestConfiguration& requestConfiguration,
         RequestProfiler *profiler,
-        KernelBuffers *buffers);
+        KernelBuffers *buffers,
+        const GnaOperationMode operationMode);
 
 protected:
     // needed for driver communication
@@ -86,7 +93,8 @@ private:
 
     size_t calculateCacheSize(uint32_t buffersCount, uint32_t nnopLayersCount, uint32_t activeListCount) const;
 
-    void getHwConfigData(void* &buffer, size_t &size, uint16_t layerIndex, uint16_t layerCount, const RequestConfiguration& requestConfiguration) const;
+    void getHwConfigData(void* &buffer, size_t &size, uint16_t layerIndex, uint16_t layerCount, 
+        const RequestConfiguration& requestConfiguration, const GnaOperationMode operationMode) const;
 
     void writeBuffersIntoCache(void* &lyrsCfg, const std::map<uint32_t, std::unique_ptr<LayerConfiguration>>& layerConfigurations) const;
     void writeNnopTypesIntoCache(void* &buffer, const std::map<uint32_t, std::unique_ptr<LayerConfiguration>>& layerConfigurations) const;
