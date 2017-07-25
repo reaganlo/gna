@@ -234,6 +234,8 @@ bool AccelerationDetector::IsLayerSupported(intel_layer_kind_t layerType) const
 
 bool AccelerationDetector::HasFeature(GnaFeature feature) const
 {
+    if (!IsHardwarePresent()) return false;
+
     const auto& deviceFeatureMap = gnaFeatureMap.at(deviceCapabilities.deviceType);
     return deviceFeatureMap.at(feature);
 }
