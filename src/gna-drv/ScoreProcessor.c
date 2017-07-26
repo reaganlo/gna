@@ -481,7 +481,7 @@ ScoreStart(
     WdfSpinLockRelease(devCtx->app.appLock);
 
     // setup timer for recovery after DRV_RECOVERY_TIMEOUT seconds from now
-    if (WdfTrue == WdfTimerStart(devCtx->timeout, -10000000 * devCtx->cfg.cpblts.recoveryTimeout))
+    if (WdfTrue == WdfTimerStart(devCtx->timeout, -10000000LL * devCtx->cfg.cpblts.recoveryTimeout))
     {
         status = STATUS_TIMER_NOT_CANCELED;
         goto cleanup;
