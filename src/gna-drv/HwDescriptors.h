@@ -26,7 +26,7 @@
 #if !defined(_GNA_DESC_H)
 #define _GNA_DESC_H
 
-#include "GnaDrvApi.h"
+#include "GnaDrvApiWinDebug.h"
 
 #pragma warning(disable:4201)
 

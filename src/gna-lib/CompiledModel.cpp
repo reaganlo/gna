@@ -36,10 +36,11 @@ using std::make_unique;
 using std::unique_ptr;
 using std::vector;
 
-CompiledModel::CompiledModel(gna_model_id modelId, const gna_model *rawModel, Memory& memoryIn, const AccelerationDetector& detector) :
+CompiledModel::CompiledModel(gna_model_id modelId, const gna_model *rawModel, Memory& memoryIn, IoctlSender &sender, const AccelerationDetector& detector) :
     Id{ modelId },
     LayerCount{ static_cast<uint16_t>(rawModel->nLayers) },
     memory{ memoryIn },
+    ioctlSender{ sender },
     validBoundaries{ [&memoryIn](const void *buffer, const size_t bufferSize)
         { Expect::ValidBoundaries(buffer, bufferSize, memoryIn.GetUserBuffer(), memoryIn.ModelSize); } },
     softwareModel{ rawModel, gmmCount, validBoundaries },
@@ -49,7 +50,7 @@ CompiledModel::CompiledModel(gna_model_id modelId, const gna_model *rawModel, Me
 {
     if (detector.IsHardwarePresent())
     {
-        hardwareModel = make_unique<HardwareModel>(Id, softwareModel.Layers, gmmCount, memoryIn, detector);
+        hardwareModel = make_unique<HardwareModel>(Id, softwareModel.Layers, gmmCount, memoryIn, sender, detector);
     }
 
     createSubmodels(detector);

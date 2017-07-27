@@ -41,7 +41,7 @@ struct ConfigurationBuffer;
 class CompiledModel
 {
 public:
-    CompiledModel(gna_model_id modelId, const gna_model *rawModel, Memory& memory, const AccelerationDetector& detector);
+    CompiledModel(gna_model_id modelId, const gna_model *rawModel, Memory& memory, IoctlSender &sender, const AccelerationDetector& detector);
     virtual ~CompiledModel() = default;
     CompiledModel(const CompiledModel &) = delete;
     CompiledModel& operator=(const CompiledModel&) = delete;
@@ -73,6 +73,7 @@ public:
     
 protected:
     Memory& memory;
+    IoctlSender &ioctlSender;
     ValidBoundariesFunctor validBoundaries;
     uint16_t gmmCount = 0;
     uint32_t bufferSize = 0;

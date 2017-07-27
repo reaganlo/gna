@@ -32,20 +32,22 @@ in any way.
 using namespace GNA;
 
 // just makes object from arguments
-Memory::Memory(uint64_t memoryId, void * bufferIn, const size_t userSize, const uint16_t layerCount, const uint16_t gmmCount) :
+Memory::Memory(uint64_t memoryId, void * bufferIn, const size_t userSize, const uint16_t layerCount, const uint16_t gmmCount, IoctlSender &sender) :
     Address{ bufferIn },
     Id{ memoryId },
     InternalSize{ CompiledModel::CalculateInternalModelSize(layerCount, gmmCount) },
     ModelSize{ ALIGN64(userSize) },
-    size{ CompiledModel::CalculateModelSize(userSize, layerCount, gmmCount) }
+    size{ CompiledModel::CalculateModelSize(userSize, layerCount, gmmCount) },
+    ioctlSender {sender}
 {};
 
 // allocates and zeros memory
-Memory::Memory(const uint64_t memoryId, const size_t userSize, const uint16_t layerCount, const uint16_t gmmCount) :
+Memory::Memory(const uint64_t memoryId, const size_t userSize, const uint16_t layerCount, const uint16_t gmmCount, IoctlSender &sender) :
     Id{ memoryId },
     InternalSize{ CompiledModel::CalculateInternalModelSize(layerCount, gmmCount) },
     ModelSize{ ALIGN64(userSize) },
-    size{ CompiledModel::CalculateModelSize(userSize, layerCount, gmmCount) }
+    size{ CompiledModel::CalculateModelSize(userSize, layerCount, gmmCount) },
+    ioctlSender{sender}
 {
     Expect::True(size > 0, GNA_INVALIDMEMSIZE);
     buffer = _gna_malloc(size);
@@ -57,10 +59,6 @@ Memory::~Memory()
 {
     if (buffer)
     {
-        if (mapped)
-        {
-            unmap();
-        }
         _gna_free(buffer);
         buffer = nullptr;
         size = 0;
@@ -70,35 +68,27 @@ Memory::~Memory()
 void Memory::Map()
 {
     if (mapped)
+    {
         throw GnaException(GNA_UNKNOWN_ERROR);
-
-    OVERLAPPED notifyOverlapped;
-    sender.IoctlSendEx(GNA_IOCTL_NOTIFY, nullptr, 0, nullptr, 0, &notifyOverlapped);
+    }
 
     // write model id in user buffer
     // driver will retrieve it
     *reinterpret_cast<uint64_t*>(buffer) = Id;
 
-    sender.IoctlSend(
-        GNA_IOCTL_MEM_MAP,
-        nullptr,
-        0,
-        buffer,
-        size,
-        TRUE);
-
-    sender.WaitOverlapped(&notifyOverlapped);
+    ioctlSender.IoctlSend(GNA_IOCTL_MEM_MAP, nullptr, 0, buffer, size); 
 
     mapped = true;
 }
 
-void Memory::unmap()
+void Memory::Unmap()
 {
     if (!mapped)
+    {
         throw GnaException(GNA_UNKNOWN_ERROR);
+    }
 
-    sender.IoctlSend(GNA_IOCTL_MEM_UNMAP, const_cast<uint64_t*>(&Id), sizeof(Id), nullptr, 0);
-
+    ioctlSender.IoctlSend(GNA_IOCTL_MEM_UNMAP, const_cast<uint64_t*>(&Id), sizeof(Id), nullptr, 0);
     mapped = false;
 }
 
@@ -144,5 +134,5 @@ void * Memory::GetDescriptorsBase(gna_model_id modelId) const
 std::unique_ptr<CompiledModel> Memory::createModel(const gna_model_id modelId, const gna_model *model,
     const AccelerationDetector &detector)
 {
-    return std::make_unique<CompiledModel>(modelId, model, *this, detector);
+    return std::make_unique<CompiledModel>(modelId, model, *this, ioctlSender, detector);
 }

@@ -28,7 +28,6 @@
 #include "ActiveList.h"
 #include "ConvolutionalLayer.h"
 #include "GmmLayer.h"
-#include "GnaDrvApi.h"
 #include "LayerConfiguration.h"
 #include "RecurrentLayer.h"
 #include "RequestConfiguration.h"

@@ -56,6 +56,7 @@
   <ItemDefinitionGroup>
     <ClCompile>
       <PreprocessorDefinitions>
+                WINDOWS=1;
                 HW_VERBOSE=$(HW_VERBOSE);
                 INTEL_GNA_DLLEXPORT=1;
                 %(PreprocessorDefinitions);
@@ -92,6 +93,8 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="$(SRC_DIR)\common\GnaDrvApi.h" />
+    <ClInclude Include="$(SRC_DIR)\common\GnaDrvApiWin.h" />
+    <ClInclude Include="$(SRC_DIR)\common\GnaDrvApiWinDebug.h" />
     <ClInclude Include="$(SRC_DIR)\common\gna-api-instrumentation.h" />
     <ClInclude Include="$(SRC_DIR)\common\gna-api-extra.h" />
     <ClInclude Include="$(SRC_DIR)\common\gna-api-status.h" />
@@ -115,13 +118,13 @@
     <ClInclude Include="$(SRC_DIR)\gna-lib\GnaTypes.h" />
     <ClInclude Include="$(SRC_DIR)\gna-lib\HardwareLayer.h" />
     <ClInclude Include="$(SRC_DIR)\gna-lib\HardwareModel.h" />
-    <ClInclude Include="$(SRC_DIR)\gna-lib\IoctlSender.h" />
     <ClInclude Include="$(SRC_DIR)\gna-lib\kernels\KernelArguments.h" />
     <ClInclude Include="$(SRC_DIR)\gna-lib\kernels\XnnKernelApi.h" />
     <ClInclude Include="$(SRC_DIR)\gna-lib\Layer.h" />
     <ClInclude Include="$(SRC_DIR)\gna-lib\LayerConfiguration.h" />
     <ClInclude Include="$(SRC_DIR)\gna-lib\LayerFunctions.h" />
     <ClInclude Include="$(SRC_DIR)\gna-lib\Logger.h" />
+    <ClInclude Include="$(SRC_DIR)\gna-lib\IoctlSender.h" />
     <ClInclude Include="$(SRC_DIR)\gna-lib\Memory.h" />
     <ClInclude Include="$(SRC_DIR)\gna-lib\RecurrentLayer.h" />
     <ClInclude Include="$(SRC_DIR)\gna-lib\Request.h" />
@@ -133,6 +136,7 @@
     <ClInclude Include="$(SRC_DIR)\gna-lib\SubModel.h" />
     <ClInclude Include="$(SRC_DIR)\gna-lib\ThreadPool.h" />
     <ClInclude Include="$(SRC_DIR)\gna-lib\Validator.h" />
+    <ClInclude Include="$(SRC_DIR)\gna-lib\WindowsIoctlSender.h" />
     <ClCompile Include="$(SRC_DIR)\common\profiler.c" />
     <ClCompile Include="$(SRC_DIR)\gna-lib\AccelerationDetector.cpp" />
     <ClCompile Include="$(SRC_DIR)\gna-lib\ActiveList.cpp" />
@@ -145,7 +149,6 @@
     <ClCompile Include="$(SRC_DIR)\gna-lib\GmmLayer.cpp" />
     <ClCompile Include="$(SRC_DIR)\gna-lib\HardwareLayer.cpp" />
     <ClCompile Include="$(SRC_DIR)\gna-lib\HardwareModel.cpp" />
-    <ClCompile Include="$(SRC_DIR)\gna-lib\IoctlSender.cpp" />
     <ClCompile Include="$(SRC_DIR)\gna-lib\Layer.cpp" />
     <ClCompile Include="$(SRC_DIR)\gna-lib\LayerConfiguration.cpp" />
     <ClCompile Include="$(SRC_DIR)\gna-lib\LayerFunctions.cpp" />
@@ -161,6 +164,7 @@
     <ClCompile Include="$(SRC_DIR)\gna-lib\SoftwareModel.cpp" />
     <ClCompile Include="$(SRC_DIR)\gna-lib\SubModel.cpp" />
     <ClCompile Include="$(SRC_DIR)\gna-lib\ThreadPool.cpp" />
+    <ClCompile Include="$(SRC_DIR)\gna-lib\WindowsIoctlSender.cpp" />
     <ResourceCompile Include="$(SRC_DIR)\common\version.rc" />
   </ItemGroup>
   <ItemGroup>

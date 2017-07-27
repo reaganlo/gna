@@ -24,6 +24,7 @@
 */
 
 #include "IoctlSender.h"
+#include "WindowsIoctlSender.h"
 
 #include "GnaException.h"
 #include "Logger.h"
@@ -35,17 +36,15 @@ using std::unique_ptr;
 #define MAX_D0_STATE_PROBES  10
 #define WAIT_PERIOD         200        // in miliseconds
 
-WinHandle IoctlSender::deviceHandle;
-uint32_t IoctlSender::recoveryTimeout = DRV_RECOVERY_TIMEOUT;
-
-IoctlSender::IoctlSender() :
+WindowsIoctlSender::WindowsIoctlSender() :
     deviceEvent{CreateEvent(nullptr, false, false, nullptr)}
 {
     ZeroMemory(&overlapped, sizeof(overlapped));
 }
 
-void IoctlSender::Open(const GUID& guid)
+void WindowsIoctlSender::Open()
 {
+    auto guid = GUID_DEVINTERFACE_GNA_DRV;
     auto deviceInfo = SetupDiGetClassDevs(&guid, nullptr, nullptr, DIGCF_PRESENT | DIGCF_DEVICEINTERFACE);
     Expect::False(INVALID_HANDLE_VALUE == deviceInfo, GNA_DEVNOTFOUND);
 
@@ -86,39 +85,47 @@ void IoctlSender::Open(const GUID& guid)
     Expect::False(INVALID_HANDLE_VALUE == deviceHandle, GNA_DEVNOTFOUND);
 }
 
-void IoctlSender::IoctlSend(const DWORD code, LPVOID const inbuf, const DWORD inlen, LPVOID const outbuf,
-    const DWORD outlen, BOOLEAN async)
+void WindowsIoctlSender::IoctlSend(const uint32_t code, void * const inbuf, const uint32_t inlen,
+    void * const outbuf, const uint32_t outlen)
 {
-    overlapped.hEvent = deviceEvent;
     auto bytesRead = DWORD{0};
+    auto ioResult = BOOL{};
 
-    auto ioResult = DeviceIoControl(deviceHandle, code, inbuf, inlen, outbuf, outlen, &bytesRead, &overlapped);
-    checkStatus(ioResult);
+    overlapped.hEvent = deviceEvent;
 
-    if (!async)
+    if (GNA_IOCTL_MEM_MAP == code)
     {
-        wait(&overlapped, (recoveryTimeout + 15) * 1000);
+        auto memoryMapOverlapped = std::make_unique<OVERLAPPED>();
+        memoryMapOverlapped->hEvent = CreateEvent(nullptr, false, false, nullptr);
+
+        ioResult = DeviceIoControl(deviceHandle, GNA_IOCTL_NOTIFY, nullptr, 0, nullptr, 0, &bytesRead, &overlapped);
+        checkStatus(ioResult);
+
+        ioResult = DeviceIoControl(deviceHandle, code, inbuf, inlen, outbuf, outlen, &bytesRead, memoryMapOverlapped.get());
+        checkStatus(ioResult);
+
+        wait(&overlapped, (RecoveryTimeout + 15) * 1000);
+
+        auto memoryId = *reinterpret_cast<uint64_t*>(outbuf);
+        memoryMapRequests[memoryId] = std::move(memoryMapOverlapped);
+    }
+    else
+    {
+        ioResult = DeviceIoControl(deviceHandle, code, inbuf, inlen, outbuf, outlen, &bytesRead, &overlapped);
+        checkStatus(ioResult);
+        wait(&overlapped, (RecoveryTimeout + 15) * 1000);
+    }
+
+    if (GNA_IOCTL_MEM_UNMAP == code)
+    {
+        auto memoryId = *reinterpret_cast<uint64_t*>(inbuf);
+        auto memoryMapOverlapped = memoryMapRequests.at(memoryId).get();
+        wait(memoryMapOverlapped, (RecoveryTimeout + 15) * 1000);
+        memoryMapRequests.erase(memoryId);
     }
 }
 
-void IoctlSender::IoctlSendEx(const DWORD code, LPVOID const inbuf, const DWORD inlen, LPVOID const outbuf, const DWORD outlen, LPOVERLAPPED overlappedEx)
-{
-    ZeroMemory(overlappedEx, sizeof(OVERLAPPED));
-
-    overlappedEx->hEvent = deviceEvent;
-    auto bytesRead = DWORD{0};
-
-    auto ioResult = DeviceIoControl(deviceHandle, code, inbuf, inlen, outbuf, outlen, &bytesRead, overlappedEx);
-    checkStatus(ioResult);
-
-}
-
-void IoctlSender::WaitOverlapped(LPOVERLAPPED overlappedEx)
-{
-    wait(overlappedEx, (recoveryTimeout + 15) * 1000);
-}
-
-void IoctlSender::Submit(LPVOID const inbuf, const DWORD inlen, RequestProfiler * const profiler)
+void WindowsIoctlSender::Submit(void * const inbuf, const uint32_t inlen, RequestProfiler * const profiler)
 {
     auto ioHandle = OVERLAPPED{0};
     ioHandle.hEvent = CreateEvent(nullptr, false, false, nullptr);
@@ -133,7 +140,7 @@ void IoctlSender::Submit(LPVOID const inbuf, const DWORD inlen, RequestProfiler 
     profilerDTscStop(&profiler->ioctlWaitOn);
 }
 
-void IoctlSender::wait(LPOVERLAPPED const ioctl, const DWORD timeout)
+void WindowsIoctlSender::wait(LPOVERLAPPED const ioctl, const DWORD timeout)
 {
     auto bytesRead = DWORD{0};
 
@@ -159,7 +166,7 @@ void IoctlSender::wait(LPOVERLAPPED const ioctl, const DWORD timeout)
     // io completed successfully
 }
 
-void IoctlSender::checkStatus(BOOL ioResult)
+void WindowsIoctlSender::checkStatus(BOOL ioResult)
 {
     auto lastError = GetLastError();
     if (ioResult == 0 && ERROR_IO_PENDING != lastError)
@@ -171,7 +178,7 @@ void IoctlSender::checkStatus(BOOL ioResult)
     }
 }
 
-void IoctlSender::printLastError(DWORD error)
+void WindowsIoctlSender::printLastError(DWORD error)
 {
     LPVOID lpMsgBuf;
     FormatMessage(

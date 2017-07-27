@@ -203,6 +203,7 @@ typedef struct _DEV_CTX
     DEV_CONFIG          cfg;        // driver configuration objects
     WDFTIMER            timeout;    // request timeout timer
     WDFQUEUE            queue;      // Device request queue
+    WDFQUEUE            memoryMapQueue;// MemoryMap request queue
     DEV_HW              hw;         // hardware registers      
     PROFILER            profiler;   // profiler object for performance measurements
 

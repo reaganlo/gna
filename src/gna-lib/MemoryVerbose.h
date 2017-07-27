@@ -34,20 +34,20 @@ namespace GNA
     {
     public:        
         // just makes object from arguments
-        MemoryVerbose(uint64_t memoryId, void * bufferIn, const size_t userSize, const uint16_t layerCount, const uint16_t gmmCount)
-            : Memory{memoryId, bufferIn, userSize, layerCount, gmmCount}
+        MemoryVerbose(uint64_t memoryId, void * bufferIn, const size_t userSize, const uint16_t layerCount, const uint16_t gmmCount, IoctlSender &sender)
+            : Memory{memoryId, bufferIn, userSize, layerCount, gmmCount, sender}
         {}
 
         // allocates and zeros memory
-        MemoryVerbose(uint64_t memoryId, const size_t userSize, const uint16_t layerCount, const uint16_t gmmCount)
-            : Memory{ memoryId, userSize, layerCount, gmmCount }
+        MemoryVerbose(uint64_t memoryId, const size_t userSize, const uint16_t layerCount, const uint16_t gmmCount, IoctlSender &sender)
+            : Memory{ memoryId, userSize, layerCount, gmmCount, sender}
         {}
 
     protected:
         virtual std::unique_ptr<CompiledModel> createModel(const gna_model_id modelId, const gna_model *model,
             const AccelerationDetector &detector) override
         {
-            return std::make_unique<CompiledModelVerbose>(modelId, model, *this, detector);
+            return std::make_unique<CompiledModelVerbose>(modelId, model, *this, ioctlSender, detector);
         }
     };
 }

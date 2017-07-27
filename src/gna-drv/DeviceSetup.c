@@ -597,6 +597,28 @@ QueueInit(
         return status;
     }
 
+    WDF_OBJECT_ATTRIBUTES_INIT(&attributes);
+    attributes.ParentObject = dev;
+    attributes.SynchronizationScope = WdfSynchronizationScopeQueue;
+    attributes.ExecutionLevel = WdfExecutionLevelPassive;
+
+    WDF_IO_QUEUE_CONFIG_INIT(&queueConfig, WdfIoQueueDispatchParallel);
+    queueConfig.PowerManaged = WdfFalse;
+    queueConfig.EvtIoDeviceControl = IoctlMemoryMap;
+
+    status = WdfIoQueueCreate(
+        dev,
+        &queueConfig,
+        &attributes,
+        &devCtx->memoryMapQueue);
+
+    if (!NT_SUCCESS(status))
+    {
+        TraceFailMsg(TLE, T_EXIT, "WdfIoQueueCreate(memoryMapQueue)", status);
+        EventWriteQueueAuxCreateFailed(NULL, status);
+        return status;
+    }
+
     status = WdfDeviceConfigureRequestDispatching(
                 dev,
                 devCtx->queue,

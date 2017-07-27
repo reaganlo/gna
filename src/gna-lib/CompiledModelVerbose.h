@@ -34,12 +34,12 @@ namespace GNA
 class CompiledModelVerbose : public CompiledModel
 {
 public:
-    CompiledModelVerbose(gna_model_id modelId, const gna_model *rawModel, Memory& memoryIn, const AccelerationDetector& detector) :
-        CompiledModel(modelId, rawModel, memoryIn, detector)
+    CompiledModelVerbose(gna_model_id modelId, const gna_model *rawModel, Memory& memoryIn, IoctlSender &sender, const AccelerationDetector& detector) :
+        CompiledModel(modelId, rawModel, memoryIn, sender, detector)
     {
         if (hardwareModel)
         {
-            hardwareModel.reset(new HardwareModelVerbose(Id, softwareModel.Layers, gmmCount, memoryIn, detector));
+            hardwareModel.reset(new HardwareModelVerbose(Id, softwareModel.Layers, gmmCount, memoryIn, sender, detector));
         }
     };
 

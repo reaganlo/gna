@@ -25,7 +25,11 @@
 
 #pragma once
 
-#include "GnaDrvApi.h"
+#if HW_VERBOSE == 1
+#include "GnaDrvApiWinDebug.h"
+#else
+#include "GnaDrvApiWin.h"
+#endif
 #include "GnaTypes.h"
 
 namespace GNA
@@ -37,12 +41,14 @@ namespace GNA
 #ifdef USING_GCC
 typedef gmm_ioctl_score_gmms_t hw_calc_out_t;
 #else
+#if HW_VERBOSE == 1
 typedef GNA_MM_IN       hw_mmap_in_t;
 typedef GNA_PGDIR_OUT   hw_pgdir_out_t;
 typedef GNA_CALC_IN     hw_calc_in_t;
 typedef GNA_READREG_IN  hw_read_in_t;
 typedef GNA_READREG_OUT hw_read_out_t;
 typedef GNA_WRITEREG_IN hw_write_in_t;
+#endif
 #endif // USING_GCC
 
 # pragma pack (1) // set structure packaging to 1 to ensure alignment and size

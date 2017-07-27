@@ -73,11 +73,13 @@ protected:
 
     RequestHandler requestHandler;
 
-    AccelerationDetector accelerationDetector;
-
     RequestBuilder requestBuilder;
 
     std::vector<std::unique_ptr<Memory>> memoryObjects;
+
+    std::unique_ptr<IoctlSender> ioctlSender;
+
+    AccelerationDetector accelerationDetector;
 
     uint32_t modelIdSequence = 0;
 };

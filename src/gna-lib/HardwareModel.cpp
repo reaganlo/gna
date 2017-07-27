@@ -44,9 +44,10 @@ const size_t HardwareModel::CalculateDescriptorSize(const uint16_t layerCount, c
 }
 
 HardwareModel::HardwareModel(const gna_model_id modId, const std::vector<std::unique_ptr<Layer>>& layers, 
-    uint16_t gmmCount, const Memory &memoryIn, const AccelerationDetector& detector) :
+    uint16_t gmmCount, const Memory &memoryIn, IoctlSender &sender, const AccelerationDetector& detector) :
     memory{memoryIn},
     modelId{modId},
+    ioctlSender{sender},
     descriptorsAddress{memoryIn.GetDescriptorsBase(modId)},
     gmmDescriptorsSize{ getGmmDescriptorsSize(gmmCount) },
     layerDescriptorsSize{getLayerDescriptorsSize(layers.size())},
@@ -75,7 +76,7 @@ status_t HardwareModel::Score(
     size_t size;
     getHwConfigData(data, size, layerIndex, layerCount, requestConfiguration, operationMode);
 
-    sender.Submit(data, size, profiler);
+    ioctlSender.Submit(data, size, profiler);
 
     auto response = reinterpret_cast<PGNA_CALC_IN>(data);
     auto status = response->status;

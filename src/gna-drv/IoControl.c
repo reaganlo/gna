@@ -127,16 +127,16 @@ IoctlDispatcher(
     switch (IoControlCode)
     {
     case GNA_IOCTL_MEM_MAP:
-        IoctlMemMap(dev, devCtx, request);
+        status = WdfRequestForwardToIoQueue(request, devCtx->memoryMapQueue);
+        if (!NT_SUCCESS(status))
+        {
+            TraceFailMsg(TLE, T_EXIT, "WdfRequestForwardToIoQueue failed:", status);
+            WdfRequestComplete(request, status);
+        }
         break;
 
     case GNA_IOCTL_MEM_UNMAP:
         IoctlMemUnmap(devCtx, request);
-        break;
-
-    case GNA_IOCTL_WAKEUP_HW: // empty ioctl only to wake up device, complete immediately
-        Trace(TLI, T_QUE, "%!FUNC! GNA_IOCTL_WAKEUP_HW");
-        WdfRequestComplete(request, status); 
         break;
 
     case GNA_IOCTL_CPBLTS:
@@ -218,6 +218,53 @@ IoctlDeferred(
 
     return;
 }
+
+VOID
+IoctlMemoryMap(
+    WDFQUEUE            queue,
+    WDFREQUEST          request,
+    size_t              OutputBufferLength,
+    size_t              InputBufferLength,
+    ULONG               IoControlCode)
+{
+    NTSTATUS    status = STATUS_SUCCESS;
+    WDFDEVICE   dev;
+    PDEV_CTX    devCtx = NULL;
+
+    UNREFERENCED_PARAMETER(OutputBufferLength);
+    UNREFERENCED_PARAMETER(InputBufferLength);
+
+    EventWriteDriverApiBegin(NULL, __FUNCTION__);
+
+    TraceEntry(TLV, T_ENT);
+    dev = WdfIoQueueGetDevice(queue);
+    devCtx = DeviceGetContext(dev);
+    if (NULL == devCtx)
+    {
+        status = STATUS_DATA_ERROR;
+        TraceFailMsg(TLE, T_EXIT, "DeviceGetContext", status);
+        WdfRequestComplete(request, status);
+        return;
+    }
+
+    switch (IoControlCode)
+    {
+    case GNA_IOCTL_MEM_MAP:
+        IoctlMemMap(dev, devCtx, request);
+        break;
+    default:
+        status = STATUS_INVALID_DEVICE_REQUEST;
+        TraceFailMsg(TLE, T_EXIT, "(Unknown IOCTL)", status);
+        WdfRequestComplete(request, status);
+        break;
+    }
+
+    EventWriteDriverApiEnd(NULL, __FUNCTION__);
+
+    return;
+}
+
+
 
 
 /******************************************************************************

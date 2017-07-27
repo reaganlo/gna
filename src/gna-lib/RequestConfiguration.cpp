@@ -30,7 +30,6 @@
 #include "GnaException.h"
 #include "LayerConfiguration.h"
 #include "Validator.h"
-#include "GnaDrvApi.h"
 #include "GnaConfig.h"
 #include "CompiledModel.h"
 

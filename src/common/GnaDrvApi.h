@@ -25,19 +25,8 @@
 
 #pragma once
 
-#ifdef DRIVER
-#   include <ntddk.h>
-#else
-#   include <initguid.h>
-#   include <Windows.h>
-#endif // !DRIVER
-
 #include "gna-api-status.h"
 #include "profiler.h"
-
-#if defined(_DEBUG) || !defined(DRIVER)
-#define DRV_DEBUG_INTERFACE
-#endif
 
 #ifndef STATUS_T_ALIAS
 #define STATUS_T_ALIAS
@@ -45,7 +34,6 @@ typedef intel_gna_status_t  status_t;
 #endif
 
 # pragma pack (1) // set structure packaging to 1 to ensure alignment and size
-
 
 typedef UINT8           __1B_RES;   // 1 B of reserved memory
 
@@ -79,19 +67,6 @@ typedef UINT8           __1B_RES;   // 1 B of reserved memory
 
 #pragma warning(disable:4201)       // disables anonymous struct/unions warning, useful to flatten structs
 
-     /**
-      * Define an Interface Guid so that app can find the device and talk to it.
-      */
-
-      // {8113B324-9F9B-4B9F-BF55-1342A58593DC}
-DEFINE_GUID(GUID_DEVINTERFACE_GNA_DRV,
-    0x8113b324, 0x9f9b, 0x4b9f, 0xbf, 0x55, 0x13, 0x42, 0xa5, 0x85, 0x93, 0xdc);
-
-// {608D09B8-41BC-4079-A040-1EE3F48483DD}
-DEFINE_GUID(GUID_DEVINTERFACE_GMM_DRV,
-    0x608d09b8, 0x41bc, 0x4079, 0xa0, 0x40, 0x1e, 0xe3, 0xf4, 0x84, 0x83, 0xdd);
-
-
 /******************************************************************************
  *
  * Driver IOCTL's input-output data structures
@@ -111,19 +86,6 @@ typedef struct _GNA_MM_IN
 } GNA_MM_IN, *PGNA_MM_IN;           // MEM_MAP IOCTL - input data
 
 static_assert(8 == sizeof(GNA_MM_IN), "Invalid size of GNA_MM_IN");
-
-/**
- * READ_PGDIR IOCTL - output data.
- */
-typedef struct _GNA_PGDIR_OUT
-{
-    UINT64              ptCount;    // Number of L1 pages allocated by the driver
-    UINT64              l1PhysAddr[PT_DIR_SIZE + 1];// physical addresses of allocated pages
-    UINT32              l2PhysAddr[PT_SIZE];// physical addresses of page entries
-
-} GNA_PGDIR_OUT, *PGNA_PGDIR_OUT;         // READ_PGDIR IOCTL - output data (debug mode only)
-
-static_assert(266768 == sizeof(GNA_PGDIR_OUT), "Invalid size of GNA_PGDIR_OUT");
 
 /**
  *  Enumeration of device flavors
@@ -264,65 +226,6 @@ static_assert(93 == sizeof(GNA_CALC_IN), "Invalid size of GNA_CALC_IN");
  * Size of GMM config in bytes
  */
 #define GMM_CFG_SIZE                (128)
-
-/**
- * READ_REG IOCTL - input data
- * Size:    8 B
- */
-typedef struct _PGNA_READREG_IN
-{
-    UINT32              mbarIndex;  // Index of MBAR
-    UINT32              regOffset;  // Register offset
-
-} GNA_READREG_IN, *PGNA_READREG_IN;// READ_REG IOCTL - input data
-
-static_assert(8 == sizeof(GNA_READREG_IN), "Invalid size of GNA_READREG_IN");
-
-/**
- * READ_REG IOCTL - output data
- */
-typedef struct _GNA_READREG_OUT
-{
-    UINT32              regValue;   // Register value
-    UINT32              __res;      // 4 B padding to multiple 8 B size
-
-} GNA_READREG_OUT, *PGNA_READREG_OUT;//READ_REG IOCTL - output data
-
-static_assert(8 == sizeof(GNA_READREG_OUT), "Invalid size of GNA_READREG_OUT");
-
-/**
- * WRITE_REG ioctl - input data
- */
-typedef struct _GNA_WRITEREG_IN
-{
-    UINT32              mbarIndex;  // Index of MBAR
-    UINT32              regOffset;  // Register offset
-    UINT32              regValue;   // Register value
-    UINT32              __res;      // 4 B padding to multiple 8 B size
-
-} GNA_WRITEREG_IN, *PGNA_WRITEREG_IN;// WRITE_REG ioctl - input data
-
-static_assert(16 == sizeof(GNA_WRITEREG_IN), "Invalid size of GNA_WRITEREG_IN");
-
-/******************************************************************************
- *
- * Driver IOCTL interface
- *
- *****************************************************************************/
-#define FILE_DEVICE_PCI_GNA 0x8000
-#define GNA_IOCTL_MEM_MAP   CTL_CODE(FILE_DEVICE_PCI_GNA, 0x900, METHOD_IN_DIRECT, FILE_ANY_ACCESS)
-#define GNA_IOCTL_MEM_UNMAP CTL_CODE(FILE_DEVICE_PCI_GNA, 0x901, METHOD_BUFFERED, FILE_ANY_ACCESS)
-#define GNA_IOCTL_WAKEUP_HW CTL_CODE(FILE_DEVICE_PCI_GNA, 0x905, METHOD_BUFFERED, FILE_ANY_ACCESS)
-#define GNA_IOCTL_CPBLTS    CTL_CODE(FILE_DEVICE_PCI_GNA, 0x902, METHOD_BUFFERED, FILE_ANY_ACCESS)
-#define GNA_IOCTL_NOTIFY    CTL_CODE(FILE_DEVICE_PCI_GNA, 0x907, METHOD_NEITHER, FILE_ANY_ACCESS)
-
-#ifdef  DRV_DEBUG_INTERFACE
-
-#define GNA_IOCTL_READ_REG   CTL_CODE(FILE_DEVICE_PCI_GNA, 0x903, METHOD_BUFFERED, FILE_ANY_ACCESS)
-#define GNA_IOCTL_WRITE_REG  CTL_CODE(FILE_DEVICE_PCI_GNA, 0x904, METHOD_BUFFERED, FILE_ANY_ACCESS)
-#define GNA_IOCTL_READ_PGDIR CTL_CODE(FILE_DEVICE_PCI_GNA, 0x906, METHOD_BUFFERED, FILE_ANY_ACCESS)
-
-#endif // DRV_DEBUG_INTERFACE
 
 #pragma pack ()
 

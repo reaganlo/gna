@@ -25,10 +25,6 @@
 
 #pragma once
 
-#include <Windows.h>
-#include <SetupApi.h>
-
-#include "GnaDrvApi.h"
 #include "common.h"
 #include "Request.h"
 #include "Validator.h"
@@ -36,73 +32,22 @@
 namespace GNA
 {
 
-class WinHandle
-{
-public:
-    WinHandle() :
-        deviceHandle(INVALID_HANDLE_VALUE)
-    {};
-
-    explicit WinHandle(HANDLE const handle) :
-        deviceHandle(handle)
-    {};
-
-    ~WinHandle()
-    {
-        if (INVALID_HANDLE_VALUE != deviceHandle)
-        {
-            CloseHandle(deviceHandle);
-            deviceHandle = INVALID_HANDLE_VALUE;
-        }
-    }
-
-    WinHandle(const WinHandle &) = delete;
-    WinHandle& operator=(const WinHandle&) = delete;
-
-    void Set(HANDLE const handle)
-    {
-        Expect::True(INVALID_HANDLE_VALUE == deviceHandle, GNA_UNKNOWN_ERROR);
-        deviceHandle = handle;
-    }
-
-    operator HANDLE() {
-        return deviceHandle;
-    }
-
-private:
-    HANDLE deviceHandle;
-};
-
 class IoctlSender
 {
 public:
-    IoctlSender();
+    virtual void IoctlSend(const uint32_t code, void * const inbuf, const uint32_t inlen, 
+        void * const outbuf, const uint32_t outlen) = 0;
 
-    static void Open(const GUID& guid);
+    virtual void Open() = 0;
 
-    static uint32_t recoveryTimeout;
+    virtual void Submit(void * const inbuf, const uint32_t inlen, RequestProfiler * const profiler) = 0;
 
-    void IoctlSend(const DWORD code, LPVOID const inbuf, const DWORD inlen, LPVOID const outbuf, const DWORD outlen, BOOLEAN async = FALSE);
+    uint32_t RecoveryTimeout;
 
-    void IoctlSendEx(const DWORD code, LPVOID const inbuf, const DWORD inlen, LPVOID const outbuf, const DWORD outlen, LPOVERLAPPED overlappedEx);
-
-    void WaitOverlapped(LPOVERLAPPED overlappedEx);
-
-    void IoctlSender::Submit(LPVOID const inbuf, const DWORD inlen, RequestProfiler * const profiler);
-
-private:
+protected:
+    IoctlSender() = default;
     IoctlSender(const IoctlSender &) = delete;
     IoctlSender& operator=(const IoctlSender&) = delete;
-
-    inline static void printLastError(DWORD error);
-
-    void wait(LPOVERLAPPED const ioctl, const DWORD timeout);
-
-    static void checkStatus(BOOL ioResult);
-
-    static WinHandle deviceHandle;
-    WinHandle deviceEvent;
-    OVERLAPPED overlapped;
 };
 
 }

@@ -167,7 +167,7 @@ void AccelerationDetector::discoverHardwareExistence()
 {
     try
     {
-        IoctlSender::Open(GUID_DEVINTERFACE_GNA_DRV);
+        ioctlSender.Open();
         accelerationModes[GNA_HW] = ACC_SUPPORTED;
     }
     catch (GnaException e)
@@ -181,9 +181,7 @@ void AccelerationDetector::discoverHardwareCapabilities()
 {
     if (!IsHardwarePresent()) return;
 
-    IoctlSend(GNA_IOCTL_CPBLTS, nullptr, 0, &deviceCapabilities, sizeof(GNA_CPBLTS));
-
-    IoctlSender::recoveryTimeout = deviceCapabilities.recoveryTimeout;
+    ioctlSender.IoctlSend(GNA_IOCTL_CPBLTS, nullptr, 0, &deviceCapabilities, sizeof(GNA_CPBLTS));
 }
 
 const uint32_t AccelerationDetector::GetHardwareBufferSize() const
@@ -240,8 +238,9 @@ bool AccelerationDetector::HasFeature(GnaFeature feature) const
     return deviceFeatureMap.at(feature);
 }
 
-AccelerationDetector::AccelerationDetector() :
-    fastestAcceleration{ GNA_GEN_FAST }
+AccelerationDetector::AccelerationDetector(IoctlSender &senderIn) :
+    fastestAcceleration{ GNA_GEN_FAST },
+    ioctlSender{ senderIn }
 {
     // generic, fastest software and auto always supported
     accelerationModes[GNA_GEN_SAT] = ACC_SUPPORTED;

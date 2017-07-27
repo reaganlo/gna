@@ -37,7 +37,8 @@ const std::map<GnaDeviceType, uint32_t> FakeDetector::DeviceHardwareBuffers =
     { GNA_SUE_CREEK_2,  24 }
 };
 
-FakeDetector::FakeDetector(GnaDeviceType deviceType)
+FakeDetector::FakeDetector(IoctlSender &senderIn, GnaDeviceType deviceType)
+    : AccelerationDetector(senderIn)
 {
     accelerationModes[GNA_HW] = ACC_SUPPORTED;
     deviceCapabilities = { DeviceHardwareBuffers.at(deviceType), DRV_RECOVERY_TIMEOUT, deviceType };

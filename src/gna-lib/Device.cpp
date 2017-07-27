@@ -36,6 +36,12 @@
 
 #include "Validator.h"
 
+#if WINDOWS == 1
+#include "WindowsIoctlSender.h"
+#else // LINUX
+
+#endif
+
 using std::ofstream;
 using std::make_shared;
 using std::make_unique;
@@ -45,7 +51,15 @@ using namespace GNA;
 
 Device::Device(gna_device_id* deviceId, uint8_t threadCount) :
     requestHandler{ threadCount },
-    memoryObjects{ APP_MEMORIES_LIMIT }
+    memoryObjects{ APP_MEMORIES_LIMIT },
+    ioctlSender{ 
+#if WINDOWS == 1
+    std::make_unique<WindowsIoctlSender>()
+#else // LINUX
+     
+#endif 
+    },
+    accelerationDetector{*ioctlSender}
 {
     Expect::NotNull(deviceId);
 
@@ -129,7 +143,17 @@ void * Device::AllocateMemory(const uint32_t requestedSize, const uint16_t layer
 }
 
 void Device::FreeMemory()
-{
+{    
+    if (accelerationDetector.IsHardwarePresent())
+    {
+        for (auto& memoryObject : memoryObjects)
+        {
+            if (memoryObject)
+            {
+                memoryObject->Unmap();
+            }
+        }
+    }
     memoryObjects.clear();
 }
 
@@ -163,5 +187,5 @@ status_t Device::WaitForRequest(gna_request_id requestId, gna_timeout millisecon
 std::unique_ptr<Memory> Device::createMemoryObject(const uint64_t memoryId, const uint32_t requestedSize,
     const uint16_t layerCount, const uint16_t gmmCount)
 {
-    return std::make_unique<Memory>(memoryId, requestedSize, layerCount, gmmCount);
+    return std::make_unique<Memory>(memoryId, requestedSize, layerCount, gmmCount, *ioctlSender);
 }

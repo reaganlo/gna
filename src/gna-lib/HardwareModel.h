@@ -54,7 +54,7 @@ public:
     static const size_t CalculateDescriptorSize(const uint16_t layerCount, const uint16_t gmmLayersCount);
 
     HardwareModel(const gna_model_id modId, const std::vector<std::unique_ptr<Layer>>& layers, 
-        uint16_t gmmCount, const Memory &memoryIn, const AccelerationDetector& detector);
+        uint16_t gmmCount, const Memory &memoryIn, IoctlSender &sender, const AccelerationDetector& detector);
     ~HardwareModel() = default;
     HardwareModel(const HardwareModel &) = delete;
     HardwareModel& operator=(const HardwareModel&) = delete;
@@ -78,8 +78,7 @@ protected:
     // needed for driver communication
     const Memory &memory;
     const gna_model_id modelId;
-
-    IoctlSender sender;
+    IoctlSender &ioctlSender;
 
     const BaseAddressC descriptorsAddress;
 

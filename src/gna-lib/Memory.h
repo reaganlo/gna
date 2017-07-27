@@ -43,10 +43,10 @@ namespace GNA
         Memory() = default;
 
         // just makes object from arguments
-        Memory(uint64_t memoryId, void * buffer, const size_t userSize, const uint16_t layerCount, const uint16_t gmmCount);
+        Memory(uint64_t memoryId, void * buffer, const size_t userSize, const uint16_t layerCount, const uint16_t gmmCount, IoctlSender &sender);
 
         // allocates and zeros memory
-        Memory(uint64_t memoryId, const size_t userSize, const uint16_t layerCount, const uint16_t gmmCount);
+        Memory(uint64_t memoryId, const size_t userSize, const uint16_t layerCount, const uint16_t gmmCount, IoctlSender &sender);
 
         virtual ~Memory();
 
@@ -64,6 +64,8 @@ namespace GNA
         }
 
         void Map();
+
+        void Unmap();
 
         void AllocateModel(const gna_model_id modelId, const gna_model * model, const AccelerationDetector& detector);
 
@@ -85,16 +87,12 @@ namespace GNA
 
         size_t descriptorsSize = 0;
 
-        IoctlSender sender;
+        IoctlSender &ioctlSender;
 
         bool mapped = false;
 
         std::map<gna_model_id, std::unique_ptr<CompiledModel>> models;
         std::map<gna_model_id, void*> modelDescriptors;
-
-    private:
-        void unmap();
-
     };
 
 }

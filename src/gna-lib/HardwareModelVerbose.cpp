@@ -31,8 +31,8 @@
 using namespace GNA;
 
 HardwareModelVerbose::HardwareModelVerbose(const gna_model_id modId, const std::vector<std::unique_ptr<Layer>>& layers, 
-        uint16_t gmmCount, const Memory &memoryIn, const AccelerationDetector& detector) :
-    HardwareModel::HardwareModel(modId, layers, gmmCount, memoryIn, detector) 
+        uint16_t gmmCount, const Memory &memoryIn, IoctlSender &sender, const AccelerationDetector& detector) :
+    HardwareModel::HardwareModel(modId, layers, gmmCount, memoryIn, sender, detector) 
 { 
 }
 
@@ -79,7 +79,7 @@ void HardwareModelVerbose::readPageDir(FILE *file)
     hw_pgdir_out_t readPageDirOut;
     ZeroMemory(&readPageDirOut, sizeof(readPageDirOut));
 
-    sender.IoctlSend(GNA_IOCTL_READ_PGDIR,
+    ioctlSender.IoctlSend(GNA_IOCTL_READ_PGDIR,
         &readPageDirIn, sizeof(readPageDirIn),
         &readPageDirOut, sizeof(readPageDirOut));
 
@@ -139,7 +139,7 @@ UINT32 HardwareModelVerbose::readReg(UINT32 regOffset)
     hw_read_out_t readRegOut;
     ZeroMemory(&readRegOut, sizeof(readRegOut));
 
-    sender.IoctlSend(GNA_IOCTL_READ_REG,
+    ioctlSender.IoctlSend(GNA_IOCTL_READ_REG,
         &readRegIn, sizeof(readRegIn),
         &readRegOut, sizeof(readRegOut));
 
@@ -153,7 +153,7 @@ void HardwareModelVerbose::writeReg(UINT32 regOffset, UINT32 regVal)
     writeRegIn.regOffset = regOffset;
     writeRegIn.regValue = regVal;
 
-    sender.IoctlSend(GNA_IOCTL_WRITE_REG,
+    ioctlSender.IoctlSend(GNA_IOCTL_WRITE_REG,
         &writeRegIn, sizeof(writeRegIn),
         NULL, 0);
 }

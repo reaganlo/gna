@@ -40,6 +40,11 @@
 
 #include "common.h"
 #include "IoctlSender.h"
+#if WINDOWS == 1
+#include "WindowsIoctlSender.h"
+#else // LINUX
+
+#endif
 #include "gmm.h"
 #include "XnnKernelApi.h"
 #include "LayerFunctions.h"
@@ -67,11 +72,11 @@ enum GnaFeature
  * Manages runtime acceleration modes
  * and configures execution kernels for given acceleration
  */
-class AccelerationDetector : protected IoctlSender
+class AccelerationDetector
 {
 
 public:
-    AccelerationDetector();
+    AccelerationDetector(IoctlSender &senderIn);
     ~AccelerationDetector() = default;
 
     acceleration AccelerationDetector::GetFastestAcceleration() const;
@@ -126,6 +131,8 @@ private:
     void discoverHardwareExistence();
 
     void discoverHardwareCapabilities();
+
+    IoctlSender &ioctlSender;
 };
 
 }

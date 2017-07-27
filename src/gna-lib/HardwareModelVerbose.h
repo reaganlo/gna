@@ -44,7 +44,7 @@ class HardwareModelVerbose : public HardwareModel
 {
 public:
     HardwareModelVerbose(const gna_model_id modId, const std::vector<std::unique_ptr<Layer>>& layers, 
-        uint16_t gmmCount, const Memory &memoryIn, const AccelerationDetector& detector);
+        uint16_t gmmCount, const Memory &memoryIn, IoctlSender &sender, const AccelerationDetector& detector);
     virtual ~HardwareModelVerbose() = default;
     HardwareModelVerbose(const HardwareModelVerbose &) = delete;
     HardwareModelVerbose& operator=(const HardwareModelVerbose&) = delete;

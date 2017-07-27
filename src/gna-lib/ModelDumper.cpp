@@ -43,7 +43,7 @@ using namespace GNA;
 void Device::DumpModel(gna_model_id modelId, gna_device_kind deviceKind, const char * filepath)
 {
     auto deviceType = static_cast<GnaDeviceType>(deviceKind);
-    FakeDetector detector{ deviceType };
+    FakeDetector detector{ *ioctlSender, deviceType };
 
     auto memoryId = 0;
     auto totalMemory = memoryObjects.at(memoryId).get();
@@ -57,14 +57,14 @@ void Device::DumpModel(gna_model_id modelId, gna_device_kind deviceKind, const c
 
     // using placement new to avoid Memory destructor
     void *memory = malloc(sizeof(Memory));
-    auto *dumpMemory = new (memory) Memory{ totalMemory->Id, address, totalMemory->ModelSize, layerCount, gmmCount };
+    auto *dumpMemory = new (memory) Memory{ totalMemory->Id, address, totalMemory->ModelSize, layerCount, gmmCount, *ioctlSender };
 
     // save original layer descriptors
     void *descriptorsCopy = malloc(totalMemory->InternalSize);
     memcpy(descriptorsCopy, *totalMemory, totalMemory->InternalSize);
 
     // generating layer descriptors..
-    auto hwModel = make_unique<HardwareModel>(modelId, model.GetLayers(), gmmCount, *dumpMemory, detector);
+    auto hwModel = make_unique<HardwareModel>(modelId, model.GetLayers(), gmmCount, *dumpMemory, *ioctlSender, detector);
 
     // copying data..
     void *data = totalMemory->Get() + totalMemory->InternalSize;
