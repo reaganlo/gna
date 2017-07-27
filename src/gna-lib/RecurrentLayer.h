@@ -40,8 +40,6 @@ public:
     const OutputBuffer CalculateFeedbackBuffer(const OutputBuffer& outputBuffer) const;
     virtual void UpdateKernelConfigs(LayerConfiguration& layerConfiguration, ValidBoundariesFunctor validBoundaries) const override;
 
-    const std::unique_ptr<const AffineFunction> Affine;
-    const std::unique_ptr<const ActivationFunction> Activation;
     const uint32_t FeedbackDelay;
 
 private:
