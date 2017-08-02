@@ -200,21 +200,54 @@ void SoftwareModel::validate(ValidBoundariesFunctor validBoundaries) const
             size_t filtersSize = cnnLayer->Convolution.Filters.Count * cnnLayer->Convolution.Filters.CoefficientCount;
             validBoundaries(cnnLayer->Convolution.Filters.Data, filtersSize);
 
+            size_t biasSize = cnnLayer->Convolution.Filters.Count * sizeof(nn_bias_s);
+            validBoundaries(cnnLayer->Convolution.Filters.Biases.Get(), biasSize);
+
             break;
         }
         else if (INTEL_GMM == layerKind)
         {
             auto gmmLayer = static_cast<GmmLayer*>(layer.get());
-            validBoundaries(gmmLayer->Data.gaussianConstants, gmmLayer->Params.GaussConstSetOffsetSize);
-            validBoundaries(gmmLayer->Data.meanValues, gmmLayer->Params.MeanSetOffsetSize);
-            if (GNA_MAXMIX16 == gmmLayer->Config.mode)
+
+            if (GMM_LAYOUT_FLAT == gmmLayer->Config.layout)
             {
-                validBoundaries(gmmLayer->Data.inverseCovariancesForMaxMix16, gmmLayer->Params.VarianceSize);
+                auto meanSetSize = gmmLayer->Config.stateCount * gmmLayer->Params.MeanSetOffsetSize;
+                auto varSetSize = gmmLayer->Config.stateCount * gmmLayer->Params.VarSetOffsetSize;
+                auto constSetSize = gmmLayer->Config.stateCount * gmmLayer->Params.GaussConstSetOffsetSize;
+
+                validBoundaries(gmmLayer->Data.gaussianConstants, constSetSize);
+                validBoundaries(gmmLayer->Data.meanValues, meanSetSize);
+                if (GNA_MAXMIX16 == gmmLayer->Config.mode)
+                {
+                    validBoundaries(gmmLayer->Data.inverseCovariancesForMaxMix16, varSetSize);
+                }
+                else
+                {
+                    validBoundaries(gmmLayer->Data.inverseCovariancesForMaxMix8, varSetSize);
+                }
             }
             else
             {
-                validBoundaries(gmmLayer->Data.inverseCovariancesForMaxMix8, gmmLayer->Params.VarianceSize);
+                auto means = gmmLayer->Data.meanValues;
+                auto vars = gmmLayer->Data.inverseCovariancesForMaxMix8;
+                auto consts = reinterpret_cast<uint8_t*>(gmmLayer->Data.gaussianConstants);
+
+                auto meanSetSize = gmmLayer->Config.mixtureComponentCount * gmmLayer->Input.ElementCount * GMM_MEAN_VALUE_SIZE;
+                auto varSetSize = gmmLayer->Config.mixtureComponentCount * gmmLayer->Input.ElementCount * gmmLayer->Params.VarianceSize;
+                auto gaussConstSetSize = ALIGN(gmmLayer->Config.mixtureComponentCount, 2) * GMM_CONSTANTS_SIZE;
+
+                for (auto i = uint32_t{ 0 }; i < gmmLayer->Config.stateCount; ++i)
+                {
+                    validBoundaries(means, meanSetSize);
+                    validBoundaries(vars, varSetSize);
+                    validBoundaries(consts, gaussConstSetSize);
+
+                    means += gmmLayer->Params.MeanSetOffsetSize;
+                    vars += gmmLayer->Params.VarSetOffsetSize;
+                    consts += gmmLayer->Params.GaussConstSetOffsetSize;
+                }
             }
+
             break;
         }
 
