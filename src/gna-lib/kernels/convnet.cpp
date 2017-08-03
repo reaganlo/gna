@@ -946,7 +946,7 @@ void ConvolutionPoolingKernelImpl(ConvolutionConfig const * const filterConfig,
         }
 
         pool_start_index = (pool_start_index + PSTEP) % PS;
-        pool_num_entries -= PS;
+        pool_num_entries -= PSTEP;
         output_index++;
     }
 }
