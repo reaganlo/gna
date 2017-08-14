@@ -102,7 +102,7 @@ void RnnLayer::computeConfig(const LayerConfiguration& layerConfiguration, accel
 
 const OutputBuffer RnnLayer::CalculateFeedbackBuffer(const OutputBuffer& outputBuffer) const
 {
-    const auto buffer = outputBuffer - (FeedbackDelay * Output.ElementCount * LayerOutput::ActivatedOutputSize);
+    const auto buffer = outputBuffer - (FeedbackDelay * Output.ElementCount);
     Expect::ValidBuffer(buffer, XNN_ERR_NO_FEEDBACK);
     return buffer;
 }
