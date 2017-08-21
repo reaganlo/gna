@@ -69,13 +69,14 @@ void RequestHandler::Enqueue(
         nRequests = (++nRequests) % GNA_REQUEST_WAIT_ANY;
     }
     profilerDTscStart(&r->Profiler->total);
-    profilerDTscStart(&r->Profiler->process);
     profilerDTscStart(&r->Profiler->submit);
 
     threadPool.Enqueue(r);
 
     profilerDTscStop(&r->Profiler->submit);
     profilerDTscStop(&r->Profiler->preprocess);
+
+    profilerDTscStart(&r->Profiler->process);
 }
 
 status_t RequestHandler::WaitFor(const gna_request_id requestId, const gna_timeout milliseconds)

@@ -214,7 +214,7 @@ bool AccelerationDetector::IsLayerSupported(intel_layer_kind_t layerType) const
     case INTEL_AFFINE_MULTIBIAS:
         return deviceFeatureMap[MultiBias];
     case INTEL_CONVOLUTIONAL:
-        return deviceFeatureMap[BaseFunctionality];
+        return deviceFeatureMap[CNN];
     case INTEL_COPY:
         return deviceFeatureMap[BaseFunctionality];
     case INTEL_DEINTERLEAVE:
