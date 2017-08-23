@@ -116,6 +116,7 @@ MemoryMap(
         memoryCtx->userMemoryBaseVA = usrBuffer;
         memoryCtx->userMemorySize = length;
         memoryCtx->requestConfigId = -1;
+        memoryCtx->memoryId = memoryId;
         appCtx->memoryBuffers[memoryId] = memoryCtx;
 
         Trace(TLI, T_MEM, "Memory mapping memory with memoryId = %lld", memoryId);
