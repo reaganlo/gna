@@ -241,10 +241,10 @@ const uint32_t GMM_LAYERS_MAX_COUNT = 8192;
 const uint32_t XNN_LAYERS_MAX_COUNT = 8192;
 
 /** GMM maximum number of Layers  */
-const uint32_t GMM_LAYERS_MAX_COUNT_OLD = 4096;
+const uint32_t GMM_LAYERS_MAX_COUNT_OLD = 1024;
 
 /** xNN maximum number of Layers  */
-const uint32_t XNN_LAYERS_MAX_COUNT_OLD = 4096;
+const uint32_t XNN_LAYERS_MAX_COUNT_OLD = 1024;
 
 /** CNN minimum number of filter coefficients */
 const uint32_t CNN_N_FLT_COEFF_MIN = 48;
