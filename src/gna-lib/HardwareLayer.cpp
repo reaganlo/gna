@@ -107,6 +107,7 @@ void HardwareLayer::WriteInputBuffer(PGNA_BUFFER_DESCR& lyrsCfg, const Configura
 void HardwareLayer::WriteOutputBuffer(PGNA_BUFFER_DESCR& lyrsCfg, const ConfigurationBuffer * const buffer) const
 {
     if (LayerOutput::ActivatedOutput == SoftwareLayer->Output.GetOutputMode()
+        || INTEL_CONVOLUTIONAL == SoftwareLayer->Config.Kind
         || INTEL_INTERLEAVE == SoftwareLayer->Config.Kind
         || INTEL_DEINTERLEAVE == SoftwareLayer->Config.Kind
         || INTEL_COPY == SoftwareLayer->Config.Kind)
