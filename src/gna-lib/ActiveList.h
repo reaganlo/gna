@@ -35,7 +35,7 @@ namespace GNA
 // Request's active list configuration and data
 struct ActiveList
 {
-    static std::unique_ptr<ActiveList> Create(const ActiveList& activeList, nn_layer_kind layerKind);
+    static std::unique_ptr<ActiveList> Create(const ActiveList& activeList);
 
     ActiveList(const uint32_t indicesCount, const uint32_t* indices);
     ActiveList(const ActiveList& activeList) = default;

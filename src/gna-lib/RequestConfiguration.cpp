@@ -90,7 +90,7 @@ void RequestConfiguration::AddActiveList(uint32_t layerIndex, const ActiveList& 
     auto layerConfiguration = found.first->second.get();
     Expect::Null(layerConfiguration->ActiveList.get());
 
-    auto activeListPtr = ActiveList::Create(activeList, layer.Config.Kind);
+    auto activeListPtr = ActiveList::Create(activeList);
     layerConfiguration->ActiveList.swap(activeListPtr);
     ++ActiveListCount;
 

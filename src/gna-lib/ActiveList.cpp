@@ -28,18 +28,9 @@
 
 using namespace GNA;
 
-std::unique_ptr<ActiveList> ActiveList::Create(const ActiveList& activeList, nn_layer_kind layerKind)
+std::unique_ptr<ActiveList> ActiveList::Create(const ActiveList& activeList)
 {
     Expect::ValidBuffer(activeList.Indices);
-    if (INTEL_AFFINE == layerKind)
-    {
-        Expect::InRange(activeList.IndicesCount, 1, XNN_N_IN_ELEMS_MAX, GNA_INVALIDINDICES);
-    }
-    else // INTEL_GMM
-    {
-        Expect::InRange(activeList.IndicesCount, 1, GMM_STATES_COUNT_MAX, GNA_INVALIDINDICES);
-    }
-    
     return std::make_unique<ActiveList>(activeList);
 }
 

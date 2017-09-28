@@ -57,7 +57,7 @@ extern "C" {
 
 /******************  GNA Device API ******************/
 
-/** GNA Device identificator **/
+/** GNA Device identifier **/
 typedef uint32_t gna_device_id;
 
 /** Maximum number of opened devices */
@@ -122,7 +122,7 @@ GNAAPI intel_gna_status_t GnaFree(
 
 /******************  GNA Model API ******************/
 
-/** GNA Model identificator **/
+/** GNA Model identifier **/
 typedef uint32_t gna_model_id;
 
 /** GNA Model type **/
@@ -146,7 +146,7 @@ GNAAPI intel_gna_status_t GnaModelCreate(
 
 /******************  GNA Request Configuration API ******************/
 
-/** GNA Request configuration identificator **/
+/** GNA Request configuration identifier **/
 typedef uint32_t gna_request_cfg_id;
 
 /** Buffer type for request configuration. */
@@ -185,7 +185,6 @@ GNAAPI intel_gna_status_t GnaModelRequestConfigAdd(
  * Each request configuration needs to have at least
  * - 1 input buffer for the first layer
  * - and 1 output buffer for the last layer.
- * More buffers can be added to provide additional customization of requests.
  *
  * @see GnaRequestConfigActiveListAdd Can be used to add Active list to the model's output.
  *
@@ -272,7 +271,7 @@ inline gna_acceleration GnaSetSaturationDetection(
     return (gna_acceleration)(acceleration & GNA_HARDWARE);
 }
 
-/** GNA Request identificator **/
+/** GNA Request identifier **/
 typedef uint32_t gna_request_id;
 
 /** GNA Wait Timeout type **/

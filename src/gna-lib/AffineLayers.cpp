@@ -123,6 +123,10 @@ void AffineLayer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration, Va
     AffineBaseLayer::UpdateKernelConfigs(layerConfiguration, validBoundaries);
     if (Activation)
     {
+        if (layerConfiguration.ActiveList)
+        {
+            Expect::InRange(layerConfiguration.ActiveList->IndicesCount, 1, Output.ElementCount, GNA_INVALIDINDICES);
+        }
         auto const outputCount = layerConfiguration.ActiveList ?
             layerConfiguration.ActiveList->IndicesCount : Output.ElementCount;
         layerConfiguration.Configs.PwlOutput->rowLast = outputCount - 1;
