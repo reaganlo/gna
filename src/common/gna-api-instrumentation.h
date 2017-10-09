@@ -25,6 +25,8 @@
 
 /******************************************************************************
  *
+ * GNA 2.0 API
+ *
  * Gaussian Mixture Models and Neural Network Accelerator Module
  * Development purposes API Definition
  *
@@ -40,6 +42,9 @@
 extern "C" {
 #endif
 
+/**
+ * List of all supported acceleration modes
+ */
 typedef enum _acceleration_all
 {
     GNA_HW = GNA_HARDWARE,
@@ -85,7 +90,7 @@ typedef enum _gna_hw_perf_encoding
 #define PERF_TYPE_DEF
 
 /**
- * Time Stamp Counter time type
+ * Time Stamp Counter type
  */
 typedef unsigned long long time_tsc;
 
@@ -160,24 +165,13 @@ static_assert(112 == sizeof(gna_perf_t), "Invalid size of gna_perf_t");
 #if !defined(DRIVER)
 
 /**
- * Adds single request configuration for use with model.
- * Request configurations have to be declared a priori to minimize the time
- * of preparation of request and reduce processing latency.
- * This configuration holds buffers that can be used with consecutive requests
- * to handle asynchronous processing.
- * When request are processed asynchronously each need to have individual
- * Input and output buffers set by this configuration.
- * Configurations can be reused with another request when request
- * with current configuration has been completed and retrieved by GnaRequestWait.
- * I.e. User can create e.g. 8 unique configurations and reuse them
- * with consecutive batches of 8 requests, when batches are enqueued sequentially.
- * NOTE:
- * - Unreleased configurations are released by GNA with corresponding model release.
+ * Enables and configures performance profiler for given request configuration.
  *
- * @param modelId           Model, that request configuration will be used with.
- *                          Configuration cannot be shared with other models.
- * @param configId          (out) Request configuration created by GNA.
- * @param hwPerfEncoding    Type of performance statistic.
+ * NOTE:
+ * - perfResults need to be within the memory allocated previously by GNAAlloc.
+ *
+ * @param configId          Request configuration to modify.
+ * @param hwPerfEncoding    Type of hardware performance statistic.
  * @param perfResults       Buffer to save performance measurements to or NULL to ignore.
  */
 GNAAPI intel_gna_status_t GnaRequestConfigEnablePerf(

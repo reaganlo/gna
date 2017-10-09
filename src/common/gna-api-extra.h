@@ -25,6 +25,8 @@
 
 /******************************************************************************
  *
+ * GNA 2.0 API
+ *
  * Gaussian Mixture Models and Neural Network Accelerator Module
  * Extra API functions definitions
  *

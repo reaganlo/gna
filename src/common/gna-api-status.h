@@ -25,6 +25,8 @@
 
 /******************************************************************************
  *
+ * GNA 2.0 API
+ *
  * GMM Scoring and Neural Network Accelerator Module
  * API Status codes definition
  *
