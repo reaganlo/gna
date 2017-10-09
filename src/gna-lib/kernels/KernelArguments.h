@@ -146,7 +146,7 @@ struct RecurrentConfig
         saturationCount{nullptr},
         weights1B{static_cast<int8_t const *>(weightsIn)},
         biasesCompound{static_cast<nn_bias_c const *>(biases)},
-        pwlOutputConfig{0, 0, 0, outputElementCount, outputElementCount, outputActivatedIn}
+        pwlOutputConfig{0, 0, 0, outputElementCount-1, outputElementCount, outputActivatedIn}
     {}
 
     uint32_t const outputElementCount;      // M - cols
