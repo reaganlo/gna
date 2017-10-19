@@ -85,6 +85,8 @@ private:
 
     void dumpXnnDescriptor(uint16_t layerNumber, FILE *f);
 
+    void dumpGmmDescriptor(uint16_t layerNumber, FILE *f);
+
     void setXnnDescriptor(dbg_action action);
 
     void setGmmDescriptor(dbg_action action);

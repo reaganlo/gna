@@ -307,6 +307,9 @@ void HardwareModelVerbose::executeDebugAction(dbg_action action)
         case GnaDumpXnnDescriptor:
             dumpXnnDescriptor(action.layer_number, file);
             break;
+        case GnaDumpGmmDescriptor:
+            dumpGmmDescriptor(action.layer_number, file);
+            break;
         case GnaSetXnnDescriptor:
             setXnnDescriptor(action);
             break;
@@ -373,4 +376,17 @@ void HardwareModelVerbose::dumpXnnDescriptor(uint16_t layerNumber, FILE *file)
     DUMP_CFG_ADDR(file, lyrDsc->pwl_seg_def_buffer);
     DUMP_CFG_ADDR(file, lyrDsc->in_buffer);
     DUMP_CFG_ADDR(file, lyrDsc->in_buffer);
+}
+
+void HardwareModelVerbose::dumpGmmDescriptor(uint16_t layerNumber, FILE *file)
+{
+    fprintf(file, "\nGMM Descriptor space\n");
+    fprintf(file, "-----------------------------------------------------------------\n");
+    fprintf(file, "---                   values (dwords  MSB->LSB)               ---\n");
+    
+    auto gmmConfig = hardwareLayers.at(layerNumber)->GmmDescriptor;
+    for (size_t i = 0; i < sizeof(GMM_CONFIG) / sizeof(uint32_t); i++)
+    {
+        DUMP_CFG_ADDR(file, gmmConfig->_value[i]);
+    }
 }

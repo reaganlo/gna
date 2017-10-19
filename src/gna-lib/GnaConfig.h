@@ -69,42 +69,46 @@ typedef uint8_t     __1B_RES;       // 1B of reserved memory
  * See:     HAS Section 5.4.2.7
  * Note:    Specifies Acoustic Model and scoring parameters
  */
-typedef struct _GMM_CONFIG
+typedef union _GMM_CONFIG
 {
-    FVADDR      fvaddr;             // 0000 - 0003
-    FVOFFSET    fvoffset;           // 0004 - 0007
-    FVWIDTH     fvwidth;            // 0008 - 000B
-    GMM_MODE_CTRL mode;             // 000C - 000F GMM mode control
-    NUMFV       numfv;              // 0010 - 0013
-    VLENGTH     vlength;            // 0014 - 0017
-    MVADDR      mvaddr;             // 0018 - 001B
-    __1B_RES    __res_001c[4];      // 001C - 001F (4B reserved)
-    MVWIDTH     mvwidth;            // 0020 - 0023
-    __1B_RES    __res_0024[4];      // 0024 - 0027 (4B reserved)
-    MVSOFFSET   mvsoffset;          // 0028 - 002B
-    __1B_RES    __res_002c[4];      // 002C - 002F (4B reserved)
-    VVADDR      vvaddr;             // 0030 - 0033
-    __1B_RES    __res_0034[4];      // 0034 - 0037 (4B reserved)
-    VVWIDTH     vvwidth;            // 0038 - 003B
-    __1B_RES    __res_003c[4];      // 003C - 003F (4B reserved)
-    VVSOFFSET   vvsoffset;          // 0040 - 0043
-    GCADDR      gcaddr;             // 0044 - 0047
-    __1B_RES    __res_0048[4];      // 0048 - 004B (4B reserved)
-    GCWIDTH     gcwidth;            // 004C - 004F
-    GCSOFFSET   gcsoffset;          // 0050 - 0053
-    MAXLSSCORE  maxlsscore;         // 0054 - 0057
-    MAXLSWIDTH  maxlswidth;         // 0058 - 005B
-    NUMMCPG     nummcpg;            // 005C - 005F
-    GMMTELST    gmmtelst;           // 0060 - 0063
-    NUMGMMS     numgmms;            // 0064 - 0067
-    ASLADDR     asladdr;            // 0068 - 006B
-    __1B_RES    __res_006c[4];      // 006C - 006F (4B reserved)
-    ASTLISTLEN  astlistlen;         // 0070 - 0073
-    GMMSCRWIDTH gmmscrwdth;         // 0074 - 0077
-    GMMSCRADD   gmmscradd;          // 0078 - 007B
-    GMMSCRLEN   gmmscrlen;          // 007C - 007F
+    struct
+    {
+        FVADDR      fvaddr;             // 0000 - 0003
+        FVOFFSET    fvoffset;           // 0004 - 0007
+        FVWIDTH     fvwidth;            // 0008 - 000B
+        GMM_MODE_CTRL mode;             // 000C - 000F GMM mode control
+        NUMFV       numfv;              // 0010 - 0013
+        VLENGTH     vlength;            // 0014 - 0017
+        MVADDR      mvaddr;             // 0018 - 001B
+        __1B_RES    __res_001c[4];      // 001C - 001F (4B reserved)
+        MVWIDTH     mvwidth;            // 0020 - 0023
+        __1B_RES    __res_0024[4];      // 0024 - 0027 (4B reserved)
+        MVSOFFSET   mvsoffset;          // 0028 - 002B
+        __1B_RES    __res_002c[4];      // 002C - 002F (4B reserved)
+        VVADDR      vvaddr;             // 0030 - 0033
+        __1B_RES    __res_0034[4];      // 0034 - 0037 (4B reserved)
+        VVWIDTH     vvwidth;            // 0038 - 003B
+        __1B_RES    __res_003c[4];      // 003C - 003F (4B reserved)
+        VVSOFFSET   vvsoffset;          // 0040 - 0043
+        GCADDR      gcaddr;             // 0044 - 0047
+        __1B_RES    __res_0048[4];      // 0048 - 004B (4B reserved)
+        GCWIDTH     gcwidth;            // 004C - 004F
+        GCSOFFSET   gcsoffset;          // 0050 - 0053
+        MAXLSSCORE  maxlsscore;         // 0054 - 0057
+        MAXLSWIDTH  maxlswidth;         // 0058 - 005B
+        NUMMCPG     nummcpg;            // 005C - 005F
+        GMMTELST    gmmtelst;           // 0060 - 0063
+        NUMGMMS     numgmms;            // 0064 - 0067
+        ASLADDR     asladdr;            // 0068 - 006B
+        __1B_RES    __res_006c[4];      // 006C - 006F (4B reserved)
+        ASTLISTLEN  astlistlen;         // 0070 - 0073
+        GMMSCRWIDTH gmmscrwdth;         // 0074 - 0077
+        GMMSCRADD   gmmscradd;          // 0078 - 007B
+        GMMSCRLEN   gmmscrlen;          // 007C - 007F
+    };
+    uint32_t _value[32];// value of whole Configuration
 
-} GMM_CONFIG;                       // GMM Configuration
+} GMM_CONFIG;                           // GMM Configuration
 
 static_assert(128 == sizeof(GMM_CONFIG), "Invalid size of GMM_CONFIG");
 
