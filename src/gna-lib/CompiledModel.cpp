@@ -121,11 +121,11 @@ status_t CompiledModel::Score(
     profilerDTscAStart(&profiler->scoring);
 
     auto swAccel = accel;
-    if (GNA_AUTO_FAST == accel || GNA_SW_FAST == accel || GNA_HW == accel)
+    if (GNA_AUTO_FAST == accel || GNA_SW_FAST == accel)
     {
         swAccel = swFastAccel;
     }
-    if (GNA_AUTO_SAT == accel || GNA_SW_SAT == accel)
+    if (GNA_AUTO_SAT == accel || GNA_SW_SAT == accel || GNA_HW == accel)
     {
         swAccel = swSatAccel;
     }
@@ -138,6 +138,7 @@ status_t CompiledModel::Score(
     }
     else if(accel >= GNA_SW_SAT && accel <= GNA_AVX2_FAST)
     {
+        Log->Message("Processing request using %s acceleration\n", AccelerationDetector::AccelerationToString(swAccel));
         status = softwareModel.Score(0, LayerCount, swAccel, config, profiler, buffers);
     }
     else for (const auto& submodel : submodels)
@@ -147,16 +148,19 @@ status_t CompiledModel::Score(
         switch (submodel->Type)
         {
         case Software:
+            Log->Message("Processing submodel using %s acceleration\n", AccelerationDetector::AccelerationToString(swAccel));
             status = softwareModel.Score(layerIndex, layerCount, swAccel, config, profiler, buffers);
             if (status != GNA_SUCCESS && status != GNA_SSATURATE)
                 return status;
             break;
         case Hardware:
+            Log->Message("Processing submodel using  %s acceleration\n", AccelerationDetector::AccelerationToString(GNA_HW));
             status = hardwareModel->Score(layerIndex, layerCount, config, profiler, buffers, xNN);
             if (status != GNA_SUCCESS && status != GNA_SSATURATE)
                 return status;
             break;
         case GMMHardware:
+            Log->Message("Processing submodel using %s (GMM) acceleration\n", AccelerationDetector::AccelerationToString(GNA_HW));
             status = hardwareModel->Score(layerIndex, 1, config, profiler, buffers, GMM);
             if (status != GNA_SUCCESS && status != GNA_SSATURATE)
                 return status;

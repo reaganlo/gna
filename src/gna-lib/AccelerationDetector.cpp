@@ -163,6 +163,24 @@ std::map<const gna_gmm_mode, std::map<const acceleration, const GmmMaxMixActiveL
                  { GNA_GEN_FAST,     gmmKernel_generic.gmmMaxMix16ActiveList }}}
 };
 
+std::map<acceleration const, std::string const> AccelerationDetector::accelerationNames
+{
+    {GNA_HW, "GNA_HW"},
+    {GNA_AUTO_SAT, "GNA_AUTO_SAT"},
+    {GNA_AUTO_FAST, "GNA_AUTO_FAST"},
+    {GNA_SW_SAT, "GNA_SW_SAT"},
+    {GNA_SW_FAST, "GNA_SW_FAST"},
+    {GNA_GEN_SAT, "GNA_GEN_SAT"},
+    {GNA_GEN_FAST, "GNA_GEN_FAST"},
+    {GNA_SSE4_2_SAT, "GNA_SSE4_2_SAT"},
+    {GNA_SSE4_2_FAST, "GNA_SSE4_2_FAST"},
+    {GNA_AVX1_SAT, "GNA_AVX1_SAT"},
+    {GNA_AVX1_FAST, "GNA_AVX1_FAST"},
+    {GNA_AVX2_SAT, "GNA_AVX2_SAT"},
+    {GNA_AVX2_FAST, "GNA_AVX2_FAST"},
+    {NUM_GNA_ACCEL_MODES, "UNKNOWN ACCELERATION"}
+};
+
 void AccelerationDetector::discoverHardwareExistence()
 {
     try
@@ -309,24 +327,34 @@ AccelerationDetector::AccelerationDetector(IoctlSender &senderIn) :
         }
     }
 
-    Log->Message("GNA_HW        %d\n", accelerationModes[GNA_HW]);
-    Log->Message("GNA_AUTO_FAST %d\n", accelerationModes[GNA_AUTO_FAST]);
-    Log->Message("GNA_AUTO_SAT  %d\n", accelerationModes[GNA_AUTO_SAT]);
-    Log->Message("GNA_AVX2_FAST %d\n", accelerationModes[GNA_AVX2_FAST]);
-    Log->Message("GNA_AVX2_SAT  %d\n", accelerationModes[GNA_AVX2_SAT]);
-    Log->Message("GNA_AVX1_FAST %d\n", accelerationModes[GNA_AVX1_FAST]);
-    Log->Message("GNA_AVX1_SAT  %d\n", accelerationModes[GNA_AVX1_SAT]);
-    Log->Message("GNA_SSE4_FAST %d\n", accelerationModes[GNA_SSE4_2_FAST]);
-    Log->Message("GNA_SSE4_SAT  %d\n", accelerationModes[GNA_SSE4_2_SAT]);
-    Log->Message("GNA_GEN_FAST  %d\n", accelerationModes[GNA_GEN_FAST]);
-    Log->Message("GNA_GEN_SAT   %d\n", accelerationModes[GNA_GEN_SAT]);
-    Log->Message("GNA_GEN_FAST  %d\n", accelerationModes[GNA_SW_FAST]);
-    Log->Message("GNA_GEN_SAT   %d\n", accelerationModes[GNA_SW_SAT]);
+    Log->Message("%s\t%d\n", accelerationNames[GNA_HW].c_str(), accelerationModes[GNA_HW]);
+    Log->Message("%s\t%d\n", accelerationNames[GNA_AUTO_FAST].c_str(), accelerationModes[GNA_AUTO_FAST]);
+    Log->Message("%s\t%d\n", accelerationNames[GNA_AUTO_SAT].c_str(), accelerationModes[GNA_AUTO_SAT]);
+    Log->Message("%s\t%d\n", accelerationNames[GNA_AVX2_FAST].c_str(), accelerationModes[GNA_AVX2_FAST]);
+    Log->Message("%s\t%d\n", accelerationNames[GNA_AVX2_SAT].c_str(), accelerationModes[GNA_AVX2_SAT]);
+    Log->Message("%s\t%d\n", accelerationNames[GNA_AVX1_FAST].c_str(), accelerationModes[GNA_AVX1_FAST]);
+    Log->Message("%s\t%d\n", accelerationNames[GNA_AVX1_SAT].c_str(), accelerationModes[GNA_AVX1_SAT]);
+    Log->Message("%s\t%d\n", accelerationNames[GNA_SSE4_2_FAST].c_str(), accelerationModes[GNA_SSE4_2_FAST]);
+    Log->Message("%s\t%d\n", accelerationNames[GNA_SSE4_2_SAT].c_str(), accelerationModes[GNA_SSE4_2_SAT]);
+    Log->Message("%s\t%d\n", accelerationNames[GNA_GEN_FAST].c_str(), accelerationModes[GNA_GEN_FAST]);
+    Log->Message("%s\t%d\n", accelerationNames[GNA_GEN_SAT].c_str(), accelerationModes[GNA_GEN_SAT]);
+    Log->Message("%s\t%d\n", accelerationNames[GNA_SW_FAST].c_str(), accelerationModes[GNA_SW_FAST]);
+    Log->Message("%s\t%d\n", accelerationNames[GNA_SW_SAT].c_str(), accelerationModes[GNA_SW_SAT]);
 }
 
 acceleration AccelerationDetector::GetFastestAcceleration() const
 {
     return fastestAcceleration;
+}
+
+char const * const GNA::AccelerationDetector::AccelerationToString(acceleration accel)
+{
+    auto name = accelerationNames.find(accel);
+    if (accelerationNames.end() == name)
+    {
+        accel = NUM_GNA_ACCEL_MODES;
+    }
+    return accelerationNames[accel].c_str();
 }
 
 void AccelerationDetector::UpdateKernelsMap()

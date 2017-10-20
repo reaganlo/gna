@@ -37,6 +37,7 @@
 
 #include <array>
 #include <map>
+#include <string>
 
 #include "common.h"
 #include "IoctlSender.h"
@@ -80,6 +81,8 @@ public:
     ~AccelerationDetector() = default;
 
     acceleration AccelerationDetector::GetFastestAcceleration() const;
+
+    static char const * const AccelerationToString(acceleration accel);
 
     bool IsHardwarePresent() const;
 
@@ -128,6 +131,8 @@ protected:
     acceleration fastestAcceleration;
 
 private:
+    static std::map<acceleration const, std::string const> accelerationNames;
+
     void discoverHardwareExistence();
 
     void discoverHardwareCapabilities();
