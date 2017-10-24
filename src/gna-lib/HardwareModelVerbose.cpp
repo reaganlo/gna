@@ -30,10 +30,29 @@
 
 using namespace GNA;
 
-HardwareModelVerbose::HardwareModelVerbose(const gna_model_id modId, const std::vector<std::unique_ptr<Layer>>& layers, 
-        uint16_t gmmCount, const Memory &memoryIn, IoctlSender &sender, const AccelerationDetector& detector) :
-    HardwareModel::HardwareModel(modId, layers, gmmCount, memoryIn, sender, detector) 
-{ 
+
+std::map<dbg_action_type const, char const * const> const HardwareModelVerbose::actionFileNames = 
+{
+    {GnaDumpMmio, "dumpmmio_"},
+    {GnaDumpPageDirectory, "dumppgdir_"},
+    {GnaReadRegister, "readreg_"},
+    {GnaDumpMemory, "memory_"},
+    {GnaDumpXnnDescriptor, "xnndesc_"},
+    {GnaDumpGmmDescriptor, "gmmdesc_"}
+};
+
+HardwareModelVerbose::HardwareModelVerbose(const gna_model_id modId,
+    const std::vector<std::unique_ptr<Layer>>& layers, uint16_t gmmCount, const Memory &memoryIn,
+    IoctlSender &sender, const AccelerationDetector& detector) :
+    HardwareModel::HardwareModel(modId, layers, gmmCount, memoryIn, sender, detector),
+    actionFileCounters{
+        {GnaDumpMmio, 0},
+        {GnaDumpPageDirectory, 0},
+        {GnaReadRegister, 0},
+        {GnaDumpMemory, 0},
+        {GnaDumpXnnDescriptor, 0},
+        {GnaDumpGmmDescriptor, 0}}
+{
 }
 
 status_t HardwareModelVerbose::Score(
@@ -241,92 +260,107 @@ void HardwareModelVerbose::dumpMmio(FILE *file)
     fprintf(file, "\n");
 }
 
-const char * HardwareModelVerbose::getFileName(dbg_action_type actionType)
+FILE * const GNA::HardwareModelVerbose::getActionFile(dbg_action & action)
 {
-    std::string str = "";
-    switch (actionType)
+    // determine if actionFile is necessary
+    if (0 == actionFileNames.count(action.action_type))
     {
-    case GnaDumpMmio:
-        str = "dumpmmio_" + std::to_string(mmioFileNo++) + ".txt";
-        break;
-    case GnaDumpPageDirectory:
-        str = "dumppgdir_" + std::to_string(pgdirFileNo++) + ".txt";
-        break;
-    case GnaReadRegister:
-        str = "readreg_" + std::to_string(readregFileNo++) + ".txt";
-        break;
-    case GnaDumpMemory:
-        str = "memory_ + " + std::to_string(memoryFileNo++) + ".txt";
-        break;
-    case GnaDumpXnnDescriptor:
-        str = "xnndesc_" + std::to_string(xnndescFileNo++) + ".txt";
-        break;
-    default:
-        break;
+        return nullptr; // no, return nullptr
     }
-
-    char * filename = new char[str.length() + 1];
-    std::strcpy(filename, str.c_str());
-    return filename;
-}
-
-void HardwareModelVerbose::executeDebugAction(dbg_action action)
-{
-    FILE *file;
+    // yes, open actionFile
+    FILE * actionFile = nullptr;
     try
     {
-        file = fopen(action.filename, "w");
-    }
-    catch(...)
-    {
-        const char * filename = getFileName(action.action_type);
-        file = fopen(filename, "w");
-        free((void*)filename);
-    }
+        // get actionFile name
+        std::string actionFileName;
+        if (nullptr != action.filename)
+        {
+            actionFileName = std::string(action.filename);
+        }
+        if (actionFileName.empty())
+        {
+            actionFileName = actionFileNames.at(action.action_type)
+                + std::to_string(actionFileCounters[action.action_type]++) + ".txt";
+        }
+        if (actionFileName.empty())
+        {
+            throw GnaException(GNA_NULLARGNOTALLOWED);
+        }
 
-    switch (action.action_type)
-    {    
+        // open file
+        actionFile = fopen(actionFileName.c_str(), "w");
+        if (nullptr == actionFile)
+        {
+            throw GnaException(GNA_NULLARGNOTALLOWED);
+        }
+    }
+    catch (...)
+    {
+        Log->Error("Action File is missing.\n");
+        throw;
+    }
+    return actionFile;
+}
+
+void HardwareModelVerbose::executeDebugAction(dbg_action& action)
+{
+    FILE * file = nullptr;
+    try
+    {
+        file = getActionFile(action);
+
+        switch (action.action_type)
+        {
         case GnaDumpMmio:
-            dumpMmio(file);
-            break;
+        dumpMmio(file);
+        break;
         case GnaDumpPageDirectory:
-            readPageDir(file);
-            break;
+        readPageDir(file);
+        break;
         case GnaReadRegister:
-            readRegister(file, action.gna_register);
-            break;
+        readRegister(file, action.gna_register);
+        break;
         case GnaWriteRegister:
-            writeRegister(action);
-            break;
+        writeRegister(action);
+        break;
         case GnaDumpMemory:
-            dumpMemory(file);
-            break;
+        dumpMemory(file);
+        break;
         case GnaZeroMemory:
-            zeroMemory(action.outputs, action.outputs_size);
-            break;
+        zeroMemory(action.outputs, action.outputs_size);
+        break;
         case GnaDumpXnnDescriptor:
-            dumpXnnDescriptor(action.layer_number, file);
-            break;
+        dumpXnnDescriptor(action.layer_number, file);
+        break;
         case GnaDumpGmmDescriptor:
-            dumpGmmDescriptor(action.layer_number, file);
-            break;
+        dumpGmmDescriptor(action.layer_number, file);
+        break;
         case GnaSetXnnDescriptor:
-            setXnnDescriptor(action);
-            break;
+        setXnnDescriptor(action);
+        break;
         case GnaSetGmmDescriptor:
-            setGmmDescriptor(action);
-            break;
+        setGmmDescriptor(action);
+        break;
         case GnaLogMessage:
-            Log->Message("%s", action.log_message);
-            break;
+        Log->Message("%s", action.log_message);
+        break;
         case GnaSleep:
-            Sleep(action.timeout);
-            break;
-    }
+        Sleep(action.timeout);
+        break;
+        }
 
-    if(NULL != file)
+        if (nullptr != file)
+        {
+            fclose(file);
+        }
+    }
+    catch (...)
     {
-        fclose(file);
+        if (nullptr != file)
+        {
+            fclose(file);
+        }
+        throw;
     }
 }
 

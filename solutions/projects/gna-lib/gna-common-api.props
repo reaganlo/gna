@@ -49,6 +49,9 @@
     <ItemDefinitionGroup>
         <ClCompile>
             <PreprocessorDefinitions>
+                PRODUCT_VERSION_A="$(VERSION_QB_A)";
+                VERSION_FILE_A="$(VERSION_FILE_A)";
+                PRODUCT_S="$(PRODUCT)";
                 PROFILE;
 		PROFILE_DETAILED;
                 WIN32;
@@ -73,6 +76,7 @@
         </Link>
         <PostBuildEvent>
             <Command>
+                echo $(API_DLL) version: $(VERSION_QB_A) ($(VERSION_FILE_A)) > $(OutDir)$(API_DLL).ver
                 copy $(SRC_DIR)\common\gna-api.h $(OutDir)gna-api.h
                 copy $(SRC_DIR)\common\gna-api-types-gmm.h $(OutDir)gna-api-types-gmm.h
                 copy $(SRC_DIR)\common\gna-api-types-xnn.h $(OutDir)gna-api-types-xnn.h

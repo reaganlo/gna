@@ -61,9 +61,9 @@ public:
         const GnaOperationMode operationMode) override final;
 
 private:
-    void executeDebugAction(dbg_action action);
+    void executeDebugAction(dbg_action& action);
 
-    const char * getFileName(dbg_action_type actionType);
+    FILE * const getActionFile(dbg_action& action);
 
     UINT32 readReg(UINT32 regOffset);
 
@@ -99,10 +99,7 @@ private:
 
     std::vector<dbg_action> afterscoreActionVector;
 
-    uint32_t pgdirFileNo = 0;
-    uint32_t readregFileNo = 0;
-    uint32_t mmioFileNo = 0;
-    uint32_t xnndescFileNo = 0;
-    uint32_t memoryFileNo = 0;
+    static std::map<dbg_action_type const, char const * const> const actionFileNames;
+    std::map<dbg_action_type const, uint32_t> actionFileCounters;
 };
 }
