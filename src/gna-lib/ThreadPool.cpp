@@ -26,7 +26,7 @@
 #include "ThreadPool.h"
 
 #include "common.h"
-#include "GnaException.h"
+#include "Validator.h"
 
 using std::condition_variable;
 using std::function;
@@ -100,6 +100,7 @@ void deallocateFvBuffers(KernelBuffers *buffers)
 
 void ThreadPool::Init(uint8_t n_threads) 
 {
+    Expect::InRange(n_threads, 1, 127, GNA_OPENFAILURE);
     {
         unique_lock<mutex> lock(tp_mutex);
         if (!stopped)
