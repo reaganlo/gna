@@ -87,7 +87,7 @@ int wmain(int argc, wchar_t *argv[])
     uint32_t bytes_granted;
 
     // call GNAAlloc (obtains pinned memory shared with the device)
-    uint8_t *pinned_mem_ptr = (uint8_t*)GnaAlloc(gna_handle, bytes_requested, &bytes_granted);
+    uint8_t *pinned_mem_ptr = (uint8_t*)GnaAlloc(gna_handle, bytes_requested, 1, 0, &bytes_granted);
 
     int16_t *pinned_weights = (int16_t*)pinned_mem_ptr;
     memcpy(pinned_weights, weights, sizeof(weights));   // puts the weights into the pinned memory
@@ -160,8 +160,7 @@ int wmain(int argc, wchar_t *argv[])
 
     print_outputs((int32_t*)pinned_outputs, nnet.pLayers->nOutputRows, nnet.pLayers->nOutputColumns);
 
-    // release model                                  // -177  -85   29   28
-    status = GnaModelRelease(model_id);
+                                                      // -177  -85   29   28
     // free the pinned memory                         //   96 -173   25  252
     status = GnaFree(gna_handle);                     // -160  274  157  -29
                                                       //   48  -60  158  -29

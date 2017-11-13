@@ -237,7 +237,7 @@ const uint32_t XNN_N_PWL_SEGS_MIN = 2;
 const uint32_t XNN_W_ELEM_SZ_MAX = 2;
 
 /** GMM maximum number of Layers  */
-const uint32_t GMM_LAYERS_MAX_COUNT = 8192;
+const uint32_t GMM_LAYERS_MAX_COUNT = 4096;
 
 /** xNN maximum number of Layers  */
 const uint32_t XNN_LAYERS_MAX_COUNT = 4096;

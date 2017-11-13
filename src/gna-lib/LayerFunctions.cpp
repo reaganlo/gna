@@ -225,6 +225,8 @@ const unique_ptr<const ActivationFunction> ActivationFunction::Create(nn_layer_k
 
     if (mandatory || IsActivationFunctionEnabled(pwl))
     {
+        Expect::ValidBuffer(pwl->pSegments, XNN_ERR_PWL_DATA);
+        Expect::InRange(pwl->nSegments, SegmentCountMin, SegmentCountMax, XNN_ERR_PWL_SEGMENTS);
         return make_unique<ActivationFunction>(pwl, Inputs, outputConfig);
     }
     else
@@ -241,8 +243,6 @@ ActivationFunction::ActivationFunction(const nn_func_pwl *pwl, int32_t const * c
     Kernels{ AccelerationDetector::GetKernelMap<PwlKernel>()},
     OutputConfig{outputConfig}
 {
-    Expect::ValidBuffer(Segments, XNN_ERR_PWL_DATA);
-    Expect::InRange(SegmentCount, SegmentCountMin, SegmentCountMax, XNN_ERR_PWL_SEGMENTS);
 }
 
 void ActivationFunction::ComputeHidden(acceleration accel, uint32_t *saturationCount) const

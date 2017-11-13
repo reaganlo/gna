@@ -119,14 +119,14 @@ void HardwareModel::build(const uint32_t hardwareInternalBufferSize)
 
 uint32_t HardwareModel::getLayerDescriptorsSize(const uint16_t layerCount)
 {
-    Expect::InRange(layerCount, 1, XNN_LAYERS_MAX_COUNT, XNN_ERR_NET_LYR_NO);
+    Expect::InRange(layerCount, 0, XNN_LAYERS_MAX_COUNT, XNN_ERR_NET_LYR_NO);
     auto layerDescriptorsSizeTmp = size_t{layerCount * sizeof(XNN_LYR)};
     return layerDescriptorsSizeTmp;
 }
 
 uint32_t HardwareModel::getGmmDescriptorsSize(const uint16_t gmmLayersCount)
 {
-    Expect::InRange(gmmLayersCount, 0, XNN_LAYERS_MAX_COUNT, XNN_ERR_NET_LYR_NO);
+    Expect::InRange(gmmLayersCount, 0, GMM_LAYERS_MAX_COUNT, XNN_ERR_NET_LYR_NO);
     auto gmmDescriptorsSizeTmp = size_t{gmmLayersCount * sizeof(GMM_CONFIG)};
     return gmmDescriptorsSizeTmp;
 }
