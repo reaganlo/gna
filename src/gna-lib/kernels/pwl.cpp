@@ -25,7 +25,7 @@
 
 #include <string.h>
 
-//#include "GnaException.h"
+#include "GnaException.h"
 #include "KernelMacros.h"
 #include "pwl.h"
 
@@ -542,7 +542,7 @@ void PwlCached::allocateBinaryCaches()
     pwl.Binary.xBase = (pwl_x_t*)_gna_malloc(totalSize);
     if (nullptr == pwl.Binary.xBase)
     {
-        //throw GnaException(GNA_ERR_RESOURCES);
+        throw GnaException(GNA_ERR_RESOURCES);
     }
     memset(pwl.Binary.xBase, 0, totalSize);
     pwl.Binary.ySeg = (pwl_y_t*)(pwl.Binary.xBase + pwl.segmentCount);
@@ -553,7 +553,7 @@ void PwlCached::allocateLookupCaches()
     pwl.Lookup.table = (pwl_u_t*)_gna_malloc(PWL_LOOKUP_SIZE);
     if (nullptr == pwl.Lookup.table)
     {
-        //throw GnaException(GNA_ERR_RESOURCES);
+        throw GnaException(GNA_ERR_RESOURCES);
     }
     memset(pwl.Lookup.table, 0xff, PWL_LOOKUP_SIZE);
 }

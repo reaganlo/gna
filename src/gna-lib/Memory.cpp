@@ -33,20 +33,20 @@ using namespace GNA;
 
 // just makes object from arguments
 Memory::Memory(uint64_t memoryId, void * bufferIn, const size_t userSize, const uint16_t layerCount, const uint16_t gmmCount, IoctlSender &sender) :
-    Address{ bufferIn },
-    Id{ memoryId },
-    InternalSize{ CompiledModel::CalculateInternalModelSize(layerCount, gmmCount) },
-    ModelSize{ ALIGN64(userSize) },
-    size{ CompiledModel::CalculateModelSize(userSize, layerCount, gmmCount) },
-    ioctlSender {sender}
+    Address{bufferIn},
+    Id{memoryId},
+    InternalSize{CompiledModel::CalculateInternalModelSize(layerCount, gmmCount)},
+    ModelSize{ALIGN64(userSize)},
+    size{CompiledModel::CalculateModelSize(userSize, layerCount, gmmCount)},
+    ioctlSender{sender}
 {};
 
 // allocates and zeros memory
 Memory::Memory(const uint64_t memoryId, const size_t userSize, const uint16_t layerCount, const uint16_t gmmCount, IoctlSender &sender) :
-    Id{ memoryId },
-    InternalSize{ CompiledModel::CalculateInternalModelSize(layerCount, gmmCount) },
-    ModelSize{ ALIGN64(userSize) },
-    size{ CompiledModel::CalculateModelSize(userSize, layerCount, gmmCount) },
+    Id{memoryId},
+    InternalSize{CompiledModel::CalculateInternalModelSize(layerCount, gmmCount)},
+    ModelSize{ALIGN64(userSize)},
+    size{CompiledModel::CalculateModelSize(userSize, layerCount, gmmCount)},
     ioctlSender{sender}
 {
     Expect::True(size > 0, GNA_INVALIDMEMSIZE);
@@ -76,7 +76,7 @@ void Memory::Map()
     // driver will retrieve it
     *reinterpret_cast<uint64_t*>(buffer) = Id;
 
-    ioctlSender.IoctlSend(GNA_IOCTL_MEM_MAP, nullptr, 0, buffer, size); 
+    ioctlSender.IoctlSend(GNA_IOCTL_MEM_MAP, nullptr, 0, buffer, size);
 
     mapped = true;
 }
@@ -99,7 +99,7 @@ void Memory::AllocateModel(const gna_model_id modelId, const gna_model *model, c
     auto modelInternalSize = CompiledModel::CalculateInternalModelSize(model);
     if (descriptorsSize + modelInternalSize > InternalSize)
     {
-        throw GNA_ERR_RESOURCES;
+        throw GnaException(GNA_ERR_RESOURCES);
     }
 
     modelDescriptors[modelId] = descriptorsBase;

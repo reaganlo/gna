@@ -50,6 +50,7 @@ void RequestHandler::Enqueue(
     gna_request_id *requestId,
     unique_ptr<Request> request)
 {
+    Expect::NotNull(requestId);
     auto r = request.get();
     {
         std::lock_guard<std::mutex> lockGuard(lock);

@@ -42,7 +42,7 @@ RequestConfiguration::RequestConfiguration(CompiledModel& model, gna_request_cfg
 
 void RequestConfiguration::AddBuffer(gna_buffer_type type, uint32_t layerIndex, void *address)
 {
-    const auto& layer = *Model.GetLayers().at(layerIndex);
+    const auto& layer = *Model.GetLayer(layerIndex);
     auto layerType = layer.Config.Type;
     if (INTEL_HIDDEN == layerType 
         || (GNA_IN == type && INTEL_OUTPUT == layerType) 
@@ -66,7 +66,7 @@ void RequestConfiguration::AddBuffer(gna_buffer_type type, uint32_t layerIndex, 
         ++OutputBuffersCount;
         break;
     default:
-        throw GnaException(GNA_UNKNOWN_ERROR);
+        throw GnaException(XNN_ERR_LYR_CFG);
     }
 
     Model.InvalidateConfig(ConfigId, layerConfiguration, layerIndex);
@@ -74,7 +74,7 @@ void RequestConfiguration::AddBuffer(gna_buffer_type type, uint32_t layerIndex, 
 
 void RequestConfiguration::AddActiveList(uint32_t layerIndex, const ActiveList& activeList)
 {
-    const auto& layer = *Model.GetLayers().at(layerIndex);
+    const auto& layer = *Model.GetLayer(layerIndex);
     auto layerType = layer.Config.Type;
     if (INTEL_OUTPUT != layerType && INTEL_INPUT_OUTPUT != layerType)
     {

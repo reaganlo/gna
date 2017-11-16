@@ -93,7 +93,7 @@ void Device::EnableProfiling(gna_request_cfg_id configId, gna_hw_perf_encoding h
     if (hwPerfEncoding >= DESCRIPTOR_FETCH_TIME
         && !accelerationDetector.HasFeature(NewPerformanceCounters))
     {
-        throw GNA_CPUTYPENOTSUPPORTED;
+        throw GnaException(GNA_CPUTYPENOTSUPPORTED);
     }
 
     auto& requestConfiguration = requestBuilder.GetConfiguration(configId);
@@ -126,7 +126,7 @@ void * Device::AllocateMemory(const uint32_t requestedSize, const uint16_t layer
 
     if (APP_MEMORIES_LIMIT == memoryId)
     {
-        throw GNA_ERR_RESOURCES;
+        throw GnaException(GNA_ERR_RESOURCES);
     }
 
     auto memoryObject = createMemoryObject(memoryId, requestedSize, layerCount, gmmCount);

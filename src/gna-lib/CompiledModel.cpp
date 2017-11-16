@@ -61,9 +61,10 @@ const size_t CompiledModel::MaximumInternalModelSize = CalculateInternalModelSiz
 const size_t CompiledModel::CalculateModelSize(const size_t userSize, const uint16_t layerCount,
     const uint16_t gmmCountIn)
 {
+    Expect::InRange(userSize, 64, 256 * 1024 * 1024, GNA_INVALIDMEMSIZE);
     auto internalSize = CalculateInternalModelSize(layerCount, gmmCountIn);
+    Expect::InRange(internalSize, 1 * sizeof(XNN_LYR), 256 * 1024 * 1024, GNA_INVALIDMEMSIZE);
     auto totalSize = userSize + internalSize;
-    Expect::InRange(totalSize, 1, 256 * 1024 * 1024, GNA_INVALIDMEMSIZE);
     return totalSize;
 }
 
@@ -96,6 +97,18 @@ const std::vector<std::unique_ptr<Layer>>& CompiledModel::GetLayers() const
     return softwareModel.Layers;
 }
 
+const std::unique_ptr<Layer>& GNA::CompiledModel::GetLayer(uint32_t layerIndex) const
+{
+    try
+    {
+        return softwareModel.Layers.at(layerIndex);
+    }
+    catch (const std::exception&)
+    {
+        throw GnaException(XNN_ERR_NET_LYR_NO);
+    }
+}
+
 uint32_t CompiledModel::GetHardwareOffset(const BaseAddressC& address) const
 {
     return hardwareModel->GetOffset(address);
@@ -108,7 +121,7 @@ void CompiledModel::InvalidateConfig(gna_request_cfg_id configId, LayerConfigura
         hardwareModel->InvalidateConfigCache(configId);
     }
 
-    auto layer = GetLayers().at(layerIndex).get();
+    auto layer = GetLayer(layerIndex).get();
     layer->UpdateKernelConfigs(*layerConfiguration, validBoundaries);
 }
 
