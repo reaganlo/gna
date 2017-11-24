@@ -28,76 +28,95 @@
 #include <limits.h>
 #include <stdlib.h>
 #include <stdint.h>
+#if defined(_WIN32)
+#include <Windows.h>
+#endif
+#else
+#if defined(_WIN32)
+#include <wdm.h>
+#define QueryPerformanceCounter(counter) (*counter = KeQueryPerformanceCounter(NULL))
+#endif
 #endif // DRIVER
 
 #include "profiler.h"
 
-/** 
- * OS time abstraction macros
- */
-#if defined(PROFILER_WIN)
-// get real time clock value
+#if defined(_WIN32)
 #define rtcGetTime(t) (int)_ftime64_s(t)
+#else 
+#define rtcGetTime(t) (int)ftime(t)
+#endif
+
 // time_rtc full seconds macro
 #define PROFILER_TSEC time
 // time_rtc seconds fraction macro
 #define PROFILER_TFRAC millitm
 // time_rtc seconds fraction resolution
-#define PROFILER_TFRAC_RES 1000ui32
-#endif // os
+#define PROFILER_TFRAC_RES 1000lu
+
 
 #if defined(PROFILE) || defined(PROFILE_DETAILED)
+#if defined(_WIN32)
+void profilerTscStart(gna_profiler_tsc * const profiler)
+{
+    profiler->passed = 0;
+    profiler->stop   = 0;
+    QueryPerformanceCounter((LARGE_INTEGER*)&profiler->start);
+}
+
+void profilerTscStop(gna_profiler_tsc * const profiler)
+{
+    QueryPerformanceCounter((LARGE_INTEGER*)&profiler->stop);
+    profiler->passed = profiler->stop - profiler->start;
+}
+
+void profilerTscStartAccumulate(gna_profiler_tsc * const profiler)
+{
+    QueryPerformanceCounter((LARGE_INTEGER*)&profiler->start);
+    profiler->stop = 0;
+}
+
+void profilerTscStopAccumulate(gna_profiler_tsc * const profiler)
+{
+    QueryPerformanceCounter((LARGE_INTEGER*)&profiler->stop);
+    profiler->passed += profiler->stop - profiler->start;
+}
+#else
+#if defined(__GNUC__) && !defined(__clang__)
+static __inline__ unsigned long long __rdtsc(void)
+{
+    unsigned hi, lo;
+    __asm__ __volatile__ ("rdtsc" : "=a"(lo), "=d"(hi));
+    return ( (unsigned long long)lo)|( ((unsigned long long)hi)<<32 );
+}
+#endif
 
 void profilerTscStart(gna_profiler_tsc * const profiler)
 {
-    int tmp[4];
-
-    if(NULL == profiler) return;
-
     profiler->passed = 0;
     profiler->stop   = 0;
-
-    __cpuid(tmp, 0);
 
     profiler->start  = (time_tsc)__rdtsc();
 }
 
 void profilerTscStop(gna_profiler_tsc * const profiler)
 {
-    int tmp[4];
-
-    if(NULL == profiler) return;
-
-    __cpuid(tmp, 0);
-
     profiler->stop   = (time_tsc)__rdtsc();
     profiler->passed = profiler->stop - profiler->start;
 }
 
 void profilerTscStartAccumulate(gna_profiler_tsc * const profiler)
 {
-    int tmp[4];
-
-    if (NULL == profiler) return;
-
     profiler->stop = 0;
-
-    __cpuid(tmp, 0);
 
     profiler->start = (time_tsc)__rdtsc();
 }
 
 void profilerTscStopAccumulate(gna_profiler_tsc * const profiler)
 {
-    int tmp[4];
-
-    if (NULL == profiler) return;
-
-    __cpuid(tmp, 0);
-
     profiler->stop = (time_tsc)__rdtsc();
     profiler->passed += profiler->stop - profiler->start;
 }
+#endif
 
 #if !defined(DRIVER)
 /**
@@ -128,8 +147,6 @@ time_rtc rtcGetTimeDiff(time_rtc* start, time_rtc* stop)
 
 void profilerRtcStart(gna_profiler_rtc * const profiler)
 {
-    if(NULL == profiler) return;
-
     profiler->passed.PROFILER_TSEC  = 0;
     profiler->passed.PROFILER_TFRAC = 0;
     profiler->stop.PROFILER_TSEC    = 0;
@@ -139,8 +156,6 @@ void profilerRtcStart(gna_profiler_rtc * const profiler)
 
 void profilerRtcStop(gna_profiler_rtc * const profiler)
 {
-    if(NULL == profiler) return;
-
     rtcGetTime(&profiler->stop);
     profiler->passed = rtcGetTimeDiff(&profiler->start, &profiler->stop);
 }
@@ -149,22 +164,19 @@ time_tsc profilerRtcGetMilis(gna_profiler_rtc * const profiler)
 {
     time_tsc milis = TIME_TSC_MAX;
 
-    if (NULL != profiler)
+    // check for milis overflow
+    if (TIME_TSC_MAX < (profiler->passed.PROFILER_TFRAC / (PROFILER_TFRAC_RES / 1000)))
     {
-        // check for milis overflow
-        if (TIME_TSC_MAX < (profiler->passed.PROFILER_TFRAC / (PROFILER_TFRAC_RES / 1000)))
-        {
-            return TIME_TSC_MAX;
-        }
-        milis = profiler->passed.PROFILER_TFRAC / (PROFILER_TFRAC_RES / 1000);
-
-        // check for milis overflow (simplyfied equation!)
-        if (TIME_TSC_MAX/1000 < uint64_t(profiler->passed.PROFILER_TSEC))
-        {
-            return TIME_TSC_MAX;
-        }
-        milis += 1000 * profiler->passed.PROFILER_TSEC;
+        return TIME_TSC_MAX;
     }
+    milis = profiler->passed.PROFILER_TFRAC / (PROFILER_TFRAC_RES / 1000);
+
+    // check for milis overflow (simplyfied equation!)
+    if (TIME_TSC_MAX / 1000 < (uint64_t)profiler->passed.PROFILER_TSEC)
+    {
+        return TIME_TSC_MAX;
+    }
+    milis += 1000 * profiler->passed.PROFILER_TSEC;
     return milis;
 }
 #endif // DRIVER

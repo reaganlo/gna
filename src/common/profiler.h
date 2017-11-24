@@ -25,20 +25,15 @@
 
 #pragma once
 
-// check OS flags
-#if (defined(_WIN32) || defined(_WIN64) || defined(DRIVER))
-#define PROFILER_WIN
-#else
-#error Invalid preprocessor flags! Cannot determine OS.
-#endif // OS flags
-
-#if defined(PROFILER_WIN)
 #include <sys/timeb.h>
-#include <intrin.h>
-#endif // os
-
 #include "gna-api-instrumentation.h"
 
+#if defined(_WIN32)
+#include <intrin.h>
+
+#else
+#include <mmintrin.h>
+#endif // os
 
 // enables or disables simple profiling
 #if defined(PROFILE) || defined(PROFILE_DETAILED)
@@ -101,9 +96,11 @@
 /**
  * Real Time Clock time type
  */
-#if defined(PROFILER_WIN)
+#if defined(_WIN32)
 typedef struct __timeb64    time_rtc;
-#endif //os
+#else
+typedef struct timeb        time_rtc;
+#endif
 #endif // DRIVER
 
 /**
@@ -131,6 +128,9 @@ typedef struct
 #endif //DRIVER
 
 #if defined(PROFILE) || defined(PROFILE_DETAILED)
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /**
  * Start TSC profiler
@@ -188,6 +188,9 @@ void profilerRtcStop(gna_profiler_rtc * const profiler);
  * @return  passed time in miliseconds (or TIME_TSC_MAX if p is invalid)
  */
 time_tsc profilerRtcGetMilis(gna_profiler_rtc * const profiler);
+#ifdef __cplusplus
+}
+#endif
 #endif //DRIVER
 
 #endif //#if defined(PROFILE) || defined(PROFILE_DETAILED)
