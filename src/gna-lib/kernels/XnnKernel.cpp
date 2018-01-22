@@ -48,6 +48,7 @@ void pwlKernelImpl(PwlCached const * const pwl, PwlOutputConfig const * const ou
 void recurrentKernelImpl1B(RecurrentConfig const * const config, PwlCached const * const pwl)
 {
     auto runConfig = RecurrentConfig(*config); // local modifiable copy
+    auto runPwlOutputConfig = PwlOutputConfig(runConfig.pwlOutputConfig);
 
     // for each input vector
     for (uint32_t i = 0; i < config->inputVectorCount; i++)
@@ -57,15 +58,16 @@ void recurrentKernelImpl1B(RecurrentConfig const * const config, PwlCached const
         runConfig.output = config->output + i * config->outputElementCount;
         RecurrentKernelImpl1B(&runConfig);
 
-        runConfig.pwlOutputConfig.rowFirst = i;
-        runConfig.pwlOutputConfig.rowLast = i;
-        pwl->ActivateAll(&pwl->pwl, &runConfig.pwlOutputConfig);
+        runPwlOutputConfig.input += runConfig.pwlOutputConfig.elementCount;
+        runPwlOutputConfig.output += runConfig.pwlOutputConfig.elementCount;
+        pwl->ActivateAll(&pwl->pwl, &runPwlOutputConfig);
     }
 }
 
 void recurrentKernelImpl2B(RecurrentConfig const * const config, PwlCached const * const pwl)
 {
     auto runConfig = RecurrentConfig(*config); // local modifiable copy
+    auto runPwlOutputConfig = PwlOutputConfig(runConfig.pwlOutputConfig);
 
     // for each input vector
     for (uint32_t i = 0; i < config->inputVectorCount; i++)
@@ -75,8 +77,8 @@ void recurrentKernelImpl2B(RecurrentConfig const * const config, PwlCached const
         runConfig.output = config->output + i * config->outputElementCount;
         RecurrentKernelImpl2B(&runConfig);
 
-        runConfig.pwlOutputConfig.rowFirst = i;
-        runConfig.pwlOutputConfig.rowLast = i;
+        runPwlOutputConfig.input += runConfig.pwlOutputConfig.elementCount;
+        runPwlOutputConfig.output += runConfig.pwlOutputConfig.elementCount;
         pwl->ActivateAll(&pwl->pwl, &runConfig.pwlOutputConfig);
     }
 }

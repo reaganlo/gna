@@ -55,8 +55,6 @@
 #if defined(PROFILE) && defined(PROFILE_DETAILED)
 #define PROFILE_D_(...) __VA_ARGS__
 // enable detailed profiling procedures
-#define profilerDTscAStart       profilerTscStartAccumulate
-#define profilerDTscAStop        profilerTscStopAccumulate
 #define profilerDTscStart        profilerTscStart
 #define profilerDTscStop         profilerTscStop
 #define profilerDTscGetMicros    profilerTscGetMicros
@@ -110,10 +108,9 @@ typedef struct
 {
     time_tsc            start;      // time value on profiler start
     time_tsc            stop;       // time value on profiler stop
-    time_tsc            passed;     // time passed between start and stop
 } gna_profiler_tsc;
 
-static_assert(24 == sizeof(gna_profiler_tsc), "Invalid size of gna_profiler_tsc");
+static_assert(16 == sizeof(gna_profiler_tsc), "Invalid size of gna_profiler_tsc");
 
 #if !defined(DRIVER)
 /**
@@ -140,25 +137,16 @@ extern "C" {
 void profilerTscStart(gna_profiler_tsc * const profiler);
 
 /**
- * Stop TSC profiler, accumulate passed
- *
- * @p   profiler object to stop
- */
-void profilerTscStopAccumulate(gna_profiler_tsc * const profiler);
-
-/**
-* Start TSC profiler, does not reset passed time
-*
-* @p profiler object to start
-*/
-void profilerTscStartAccumulate(gna_profiler_tsc * const profiler);
-
-/**
 * Stop TSC profiler
 *
 * @p   profiler object to stop
 */
 void profilerTscStop(gna_profiler_tsc * const profiler);
+
+/**
+ * Get TSC profiler ticks passed
+ */
+time_tsc profilerGetTscPassed(gna_profiler_tsc const * const profiler);
 
 #if !defined(DRIVER)
 /**

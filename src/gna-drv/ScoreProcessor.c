@@ -497,7 +497,7 @@ ScoreStart(
 
     profilerDTscStop(&devCtx->profiler.startHW);
     profilerTscStart(&devCtx->profiler.scoreHW);
-    Trace(TLV, T_QUE, "%!FUNC!: Scoring started, startHW time %llu", devCtx->profiler.startHW.passed);
+    Trace(TLV, T_QUE, "%!FUNC!: Scoring started, startHW time %llu", profilerGetTscPassed(&devCtx->profiler.startHW));
     return status; // SUCCESS - request will be completed by interrupt
 
 cleanup: // ERROR - complete request
@@ -549,7 +549,7 @@ ScoreFinalize(
 
     // read and save performance counters
 #if defined(PROFILE)
-    output->drvPerf.scoreHW = devCtx->profiler.scoreHW.passed;
+    output->drvPerf.scoreHW = profilerGetTscPassed(&devCtx->profiler.scoreHW);
     Trace(TLI, T_QUE, "%!FUNC!: scoreHW time %llu", output->drvPerf.scoreHW);
     EventWriteScoreCycles(NULL, output->drvPerf.scoreHW);
 #if defined(PROFILE_DETAILED)
@@ -566,9 +566,9 @@ ScoreFinalize(
     {
         output->hwPerf.total = TIME_TSC_MAX;
     }
-    output->drvPerf.startHW = devCtx->profiler.startHW.passed;
+    output->drvPerf.startHW = profilerGetTscPassed(&devCtx->profiler.startHW);
     profilerDTscStop(&devCtx->profiler.intProc);
-    output->drvPerf.intProc = devCtx->profiler.intProc.passed;
+    output->drvPerf.intProc = profilerGetTscPassed(&devCtx->profiler.intProc);
     // print performance results
     Trace(TLI, T_QUE, "%!FUNC!: startHW time %llu", output->drvPerf.startHW);
     Trace(TLI, T_QUE, "%!FUNC!: intProc time %llu", output->drvPerf.intProc);

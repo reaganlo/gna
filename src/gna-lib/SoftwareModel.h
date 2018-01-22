@@ -65,7 +65,6 @@ private:
     void validate(std::function<void(const void*, const size_t)> validBoundaries) const;
 
     const uint32_t layerCount;
-    const uint32_t inputVectorCount;
     uint32_t inputLayerCount = 0;
     uint32_t outputLayerCount = 0;
 };

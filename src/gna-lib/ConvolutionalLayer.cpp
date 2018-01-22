@@ -121,7 +121,7 @@ void PoolingFunction::Compute(const ConvolutionConfig * convolutionConfig, accel
 CnnLayer::CnnLayer(nn_layer const * const layer) :
     Layer(layer),
     Activation(ActivationFunction::Create(layer->nLayerKind, layer->pLayerStruct, Output.ScratchPad,
-        PwlOutputConfig{0, Output.VectorCount - 1, 0, Output.ElementCount - 1, Output.ElementCount, Output.Buffer})),
+        PwlOutputConfig{Output.ElementCount * Output.VectorCount, Output.ScratchPad, Output.Buffer})),
     Pooling{static_cast<const nn_layer_conv*>(layer->pLayerStruct)},
     Convolution{static_cast<const nn_layer_conv*>(layer->pLayerStruct), Input.ElementCount, Input.Buffer,
         (INTEL_NO_POOLING != Pooling.Type) ? Output.Buffer : (Activation ? Output.ScratchPad : Output.Buffer)}

@@ -31,31 +31,22 @@
 struct PwlOutputConfig
 {
     PwlOutputConfig() :
-        columnFirst{},
-        columnLast{},
-        columnCount{}
+        elementCount{}
     {}
     PwlOutputConfig(PwlOutputConfig const * const source, uint32_t * saturationCountIn) :
         PwlOutputConfig{*source}
     {
         saturationCount = saturationCountIn;
     }
-    PwlOutputConfig(uint32_t rowFirstIn, uint32_t rowLastIn, uint32_t columnFirstIn, uint32_t columnLastIn,
-        uint32_t columnCountIn, int16_t* outputIn) :
-        rowFirst{rowFirstIn},
-        rowLast{rowLastIn},
-        columnFirst{columnFirstIn},
-        columnLast{columnLastIn},
-        columnCount{columnCountIn},
+    PwlOutputConfig(uint32_t elementCountIn, int32_t* inputIn, int16_t* outputIn) :
+        elementCount{elementCountIn},
+        input{inputIn},
         output{outputIn},
         saturationCount{nullptr}
     {}
 
-    uint32_t rowFirst;
-    uint32_t rowLast;
-    uint32_t const columnFirst;
-    uint32_t const columnLast;
-    uint32_t const columnCount;
+    uint32_t elementCount;
+    int32_t * input;
     int16_t * output;
     uint32_t * saturationCount;
 };
@@ -146,7 +137,7 @@ struct RecurrentConfig
         saturationCount{nullptr},
         weights1B{static_cast<int8_t const *>(weightsIn)},
         biasesCompound{static_cast<nn_bias_c const *>(biases)},
-        pwlOutputConfig{0, 0, 0, outputElementCount-1, outputElementCount, outputActivatedIn}
+        pwlOutputConfig{outputElementCount, outputIn, outputActivatedIn}
     {}
 
     uint32_t const outputElementCount;      // M - cols

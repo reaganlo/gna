@@ -35,7 +35,7 @@ using namespace GNA;
 AffineBaseLayer::AffineBaseLayer(const nn_layer *layer) :
     Layer(layer),
     Activation(ActivationFunction::Create(layer->nLayerKind, layer->pLayerStruct, Output.ScratchPad,
-        PwlOutputConfig{0, Output.ElementCount - 1, 0, Input.VectorCount - 1, Output.VectorCount, Output.Buffer})),
+        PwlOutputConfig{Output.ElementCount * Output.VectorCount, Output.ScratchPad, Output.Buffer})),
     Affine(AffineFunction::Create(layer->nLayerKind, layer->pLayerStruct,
         AffineBaseConfig{Output.ElementCount, Input.VectorCount, Input.ElementCount, Input.Buffer,
             Activation ? Output.ScratchPad : Output.Buffer}))
@@ -129,7 +129,7 @@ void AffineLayer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration, Va
         }
         auto const outputCount = layerConfiguration.ActiveList ?
             layerConfiguration.ActiveList->IndicesCount : Output.ElementCount;
-        layerConfiguration.Configs.PwlOutput->rowLast = outputCount - 1;
+        layerConfiguration.Configs.PwlOutput->elementCount = outputCount * Output.VectorCount;
     }
 }
 

@@ -131,7 +131,7 @@ status_t CompiledModel::Score(
     RequestProfiler *profiler,
     KernelBuffers *buffers)
 {
-    profilerDTscAStart(&profiler->scoring);
+    profilerDTscStart(&profiler->scoring);
 
     auto swAccel = accel;
     if (GNA_AUTO_FAST == accel || GNA_SW_FAST == accel)

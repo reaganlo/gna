@@ -58,28 +58,14 @@
 #if defined(_WIN32)
 void profilerTscStart(gna_profiler_tsc * const profiler)
 {
-    profiler->passed = 0;
-    profiler->stop   = 0;
     QueryPerformanceCounter((LARGE_INTEGER*)&profiler->start);
 }
 
 void profilerTscStop(gna_profiler_tsc * const profiler)
 {
     QueryPerformanceCounter((LARGE_INTEGER*)&profiler->stop);
-    profiler->passed = profiler->stop - profiler->start;
 }
 
-void profilerTscStartAccumulate(gna_profiler_tsc * const profiler)
-{
-    QueryPerformanceCounter((LARGE_INTEGER*)&profiler->start);
-    profiler->stop = 0;
-}
-
-void profilerTscStopAccumulate(gna_profiler_tsc * const profiler)
-{
-    QueryPerformanceCounter((LARGE_INTEGER*)&profiler->stop);
-    profiler->passed += profiler->stop - profiler->start;
-}
 #else
 #if defined(__GNUC__) && !defined(__clang__)
 static __inline__ unsigned long long __rdtsc(void)
@@ -92,31 +78,20 @@ static __inline__ unsigned long long __rdtsc(void)
 
 void profilerTscStart(gna_profiler_tsc * const profiler)
 {
-    profiler->passed = 0;
-    profiler->stop   = 0;
-
     profiler->start  = (time_tsc)__rdtsc();
 }
 
 void profilerTscStop(gna_profiler_tsc * const profiler)
 {
     profiler->stop   = (time_tsc)__rdtsc();
-    profiler->passed = profiler->stop - profiler->start;
 }
 
-void profilerTscStartAccumulate(gna_profiler_tsc * const profiler)
-{
-    profiler->stop = 0;
-
-    profiler->start = (time_tsc)__rdtsc();
-}
-
-void profilerTscStopAccumulate(gna_profiler_tsc * const profiler)
-{
-    profiler->stop = (time_tsc)__rdtsc();
-    profiler->passed += profiler->stop - profiler->start;
-}
 #endif
+
+time_tsc profilerGetTscPassed(gna_profiler_tsc const * const profiler)
+{
+    return profiler->stop - profiler->start;
+}
 
 #if !defined(DRIVER)
 /**

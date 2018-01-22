@@ -44,8 +44,7 @@ using std::make_unique;
 using namespace GNA;
 
 SoftwareModel::SoftwareModel(const gna_model *const network, uint16_t& gmmCount, ValidBoundariesFunctor validBoundaries) :
-    layerCount{ network->nLayers },
-    inputVectorCount{ network->nGroup }
+    layerCount{ network->nLayers }
 {
 #ifndef NO_ERRCHECK
     Expect::InRange(network->nGroup, 1, XNN_N_GROUP_MAX, XNN_ERR_LYR_CFG);
