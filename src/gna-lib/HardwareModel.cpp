@@ -105,16 +105,28 @@ void HardwareModel::build(const uint32_t hardwareInternalBufferSize)
     {
         gmmDescriptor = AddrGmmCfg(layerDescriptor + softwareLayers.size());
     }
-
+    auto i = 0ui32;
     for (auto& layer : softwareLayers)
     {
-        const auto parameters = DescriptorParameters{layer.get(), memory, layerDescriptor, gmmDescriptor,
-            hardwareInternalBufferSize};
-        hardwareLayers.push_back(HardwareLayer::Create(parameters));
-        layerDescriptor++;
-        if (INTEL_GMM == layer->Config.Kind)
+        try
         {
-            gmmDescriptor++;
+            const auto parameters = DescriptorParameters{layer.get(), memory, layerDescriptor, gmmDescriptor,
+                hardwareInternalBufferSize};
+            hardwareLayers.push_back(HardwareLayer::Create(parameters));
+            layerDescriptor++;
+            if (INTEL_GMM == layer->Config.Kind)
+            {
+                gmmDescriptor++;
+            }
+            i++;
+        }
+        catch (const GnaException& e)
+        {
+            throw GnaModelException(e, i);
+        }
+        catch (...)
+        {
+            throw GnaModelException(GnaException(GNA_UNKNOWN_ERROR), i);
         }
     }
 }

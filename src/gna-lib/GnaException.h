@@ -57,4 +57,28 @@ protected:
     status_t Status;
 };
 
+/**
+ * Custom exception for model build errors
+ */
+class GnaModelException : protected GnaException
+{
+public:
+
+    GnaModelException(const GnaException& e, uint32_t layerId) :
+        GnaException{e},
+        LayerId{layerId}
+    {}
+
+    inline status_t getStatus() const
+    {
+        Log->Error(Status, " Model build failed on layer: %d", LayerId);
+        return Status;
+    }
+
+    virtual ~GnaModelException() {};
+
+protected:
+    uint32_t LayerId;
+};
+
 }

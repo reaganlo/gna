@@ -124,3 +124,8 @@ typedef gna_perf_hw_t               perf_hw_t;
 #define STATUS_T_ALIAS
 typedef intel_gna_status_t      status_t;
 #endif
+
+#include <functional>
+
+// Functor for validating if buffer is within memory boundaries
+using ValidBoundariesFunctor = std::function<void(const void *, const size_t)>;

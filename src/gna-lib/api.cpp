@@ -57,6 +57,10 @@ GNAAPI intel_gna_status_t GnaModelCreate(
         GnaDevice->LoadModel(modelId, model);
         return GNA_SUCCESS;
     }
+    catch (const GnaModelException &e)
+    {
+        return e.getStatus();
+    }
     catch (const GnaException &e)
     {
         return e.getStatus();

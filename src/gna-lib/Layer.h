@@ -37,7 +37,6 @@
 namespace GNA
 {
 struct LayerConfiguration;
-using ValidBoundariesFunctor = std::function<void(const void *, const size_t)>;
 
 typedef enum _Orientations
 {

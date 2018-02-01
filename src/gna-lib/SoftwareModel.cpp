@@ -102,26 +102,37 @@ void SoftwareModel::build(const gna_model *const network, uint16_t& gmmCount)
 {
     for (auto i = 0ui32; i < network->nLayers; i++)
     {
-        auto layer = network->pLayers + i;
-        Layers.push_back(Layer::Create(const_cast<const nn_layer*>(layer)));
-
-        if (INTEL_GMM == layer->nLayerKind)
+        try
         {
-            ++gmmCount;
+            auto layer = network->pLayers + i;
+            Layers.push_back(Layer::Create(const_cast<const nn_layer*>(layer)));
+
+            if (INTEL_GMM == layer->nLayerKind)
+            {
+                ++gmmCount;
+            }
+
+            switch (layer->type)
+            {
+            case INTEL_INPUT:
+            ++inputLayerCount;
+            break;
+            case INTEL_OUTPUT:
+            ++outputLayerCount;
+            break;
+            case INTEL_INPUT_OUTPUT:
+            ++inputLayerCount;
+            ++outputLayerCount;
+            break;
+            }
         }
-
-        switch (layer->type)
+        catch (const GnaException& e)
         {
-        case INTEL_INPUT:
-            ++inputLayerCount;
-            break;
-        case INTEL_OUTPUT:
-            ++outputLayerCount;
-            break;
-        case INTEL_INPUT_OUTPUT:
-            ++inputLayerCount;
-            ++outputLayerCount;
-            break;
+            throw GnaModelException(e, i);
+        }
+        catch (...)
+        {
+            throw GnaModelException(GnaException(GNA_UNKNOWN_ERROR), i);
         }
     }
 }

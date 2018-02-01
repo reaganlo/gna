@@ -43,7 +43,7 @@ struct RequestProfiler;
 class SoftwareModel
 {
 public:
-    SoftwareModel(const gna_model *const network, uint16_t& gmmCount, std::function<void(const void*, const size_t)> validBoundaries);
+    SoftwareModel(const gna_model *const network, uint16_t& gmmCount, ValidBoundariesFunctor validBoundaries);
     SoftwareModel(const SoftwareModel &) = delete;
     SoftwareModel& operator=(const SoftwareModel&) = delete;
     ~SoftwareModel() = default;
