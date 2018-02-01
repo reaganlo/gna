@@ -36,9 +36,4 @@ NTSTATUS
 DeviceInit(
     _Inout_ PWDFDEVICE_INIT devInit);
 
-GNA_CPBLTS
-GetDeviceCapabilities(
-    _In_ WDFDEVICE dev,
-    _In_ PDEV_CTX  devCtx);
-
 #endif // _DEVICE_SETUP_H

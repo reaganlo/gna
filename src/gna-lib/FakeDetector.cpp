@@ -29,10 +29,10 @@ using namespace GNA;
 
 const std::map<GnaDeviceType, uint32_t> FakeDetector::DeviceHardwareBuffers =
 {
-    { GNA_CANNONLAKE,   24 },
-    { GNA_GEMINILAKE,   24 },
-    { GNA_ICELAKE,      24 },
-    { GNA_TIGERLAKE,    24 },
+    { GNA_DEV_CNL,   24 },
+    { GNA_DEV_GLK,   24 },
+    { GNA_DEV_ICL,      24 },
+    { GNA_DEV_TGL,    24 },
     { GNA_SUE_CREEK,    12 },
     { GNA_SUE_CREEK_2,  24 }
 };

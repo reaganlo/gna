@@ -80,7 +80,6 @@
                 $(KERNELS_DIR)\xnn-sse4.lib;
                 %(AdditionalDependencies)
             </AdditionalDependencies>
-            <BaseAddress>0x13000000</BaseAddress>
             <ImageHasSafeExceptionHandlers Condition="$(IS_RELEASE) == true and $(Platform) == Win32">true</ImageHasSafeExceptionHandlers>
         </Link>
         <ResourceCompile>

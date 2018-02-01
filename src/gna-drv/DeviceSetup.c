@@ -106,6 +106,33 @@ DeviceDmaInit(
     _In_    WDFDEVICE   dev,
     _In_    PDEV_CTX    devCtx);
 
+/**
+ * Gets device HW ID
+ *
+ * @dev                 device object handle
+ */
+GnaDeviceType
+GetDeviceId(_In_ WDFDEVICE dev);
+
+/**
+ * Reads driver recovery time from registry
+ *
+ * @dev                 device object handle
+ */
+UINT32
+ReadRecoveryTimeReg(_In_ WDFDEVICE dev);
+
+/**
+ * Fetches and collects device and driver capablilities
+ *
+ * @dev                 device object handle
+ * @devCtx              device context
+ */
+GNA_CPBLTS
+FetchDeviceCapabilities(
+    _In_ WDFDEVICE dev,
+    _In_ PDEV_CTX  devCtx);
+
 #ifdef ALLOC_PRAGMA
 #pragma alloc_text (PAGE, DeviceInit)
 #pragma alloc_text (PAGE, SpinlockInit)
@@ -115,7 +142,9 @@ DeviceDmaInit(
 #pragma alloc_text (PAGE, QueueInit)
 #pragma alloc_text (PAGE, InterruptInit)
 #pragma alloc_text (PAGE, TimerInit)
-#pragma alloc_text (PAGE, GetDeviceCapabilities)
+#pragma alloc_text (PAGE, GetDeviceId)
+#pragma alloc_text (PAGE, ReadRecoveryTimeReg)
+#pragma alloc_text (PAGE, FetchDeviceCapabilities)
 #endif
 
 /******************************************************************************
@@ -236,34 +265,15 @@ cleanup:
  * Private Methods
  ******************************************************************************/
 
-GNA_CPBLTS
-GetDeviceCapabilities(
-    _In_ WDFDEVICE dev,
-    _In_ PDEV_CTX  devCtx)
+UINT32
+ReadRecoveryTimeReg(_In_ WDFDEVICE dev)
 {
-    NTSTATUS status = STATUS_SUCCESS;
-    UNREFERENCED_PARAMETER(dev);
-    UNREFERENCED_PARAMETER(devCtx);
     PAGED_CODE();
 
-    GNA_CPBLTS cpblts;
-
-    WDF_OBJECT_ATTRIBUTES attributes;
-    PWCHAR hwidBuffer;
-    SIZE_T hwidBufferSize = 512;
-    ULONG dataLen;
-    PDEVICE_OBJECT devObj;
-    size_t hwidLength = 21;
-
+    NTSTATUS status = STATUS_SUCCESS;
     ULONG recoveryTimeout;
     WDFKEY keyHandle;
     UNICODE_STRING recoveryValueName;
-
-    RtlZeroMemory(&cpblts, sizeof(GNA_CPBLTS));
-
-    cpblts.hwInBuffSize = HwReadInBuffSize(devCtx->hw.regs);
-    cpblts.deviceType = GNA_NUM_DEVICE_TYPES;
-    cpblts.recoveryTimeout = DRV_RECOVERY_TIMEOUT;
 
     status = WdfDeviceOpenRegistryKey(dev, PLUGPLAY_REGKEY_DEVICE, KEY_READ | KEY_WRITE, WDF_NO_OBJECT_ATTRIBUTES, &keyHandle);
     if (!NT_SUCCESS(status))
@@ -281,47 +291,83 @@ GetDeviceCapabilities(
         }
         else
         {
-            cpblts.recoveryTimeout = recoveryTimeout;
             Trace(TLV, T_MEM, "WdfRegistryQueryValue returned value: %d", recoveryTimeout);
+            return recoveryTimeout;
         }
     }
+    return DRV_RECOVERY_TIMEOUT;
+}
 
-    hwidBuffer = ExAllocatePoolWithTag(NonPagedPoolNx, hwidBufferSize, MEM_POOL_TAG);
-    if (NULL == hwidBuffer)
-    {
-        Trace(TLE, T_MEM, "ExAllocatePool for hwidBuffer returned NULL");
-        goto exit;
-    }
-
+GnaDeviceType
+GetDeviceId(_In_ WDFDEVICE dev)
+{
+    PAGED_CODE();
+    WDF_OBJECT_ATTRIBUTES attributes;
     WDF_OBJECT_ATTRIBUTES_INIT(&attributes);
     attributes.ParentObject = dev;
-    devObj = WdfDeviceWdmGetPhysicalDevice(dev);
-    status = IoGetDeviceProperty(devObj, DevicePropertyHardwareID, (ULONG)hwidBufferSize, hwidBuffer, &dataLen);
+    WDFMEMORY hwIdMemory;
+    NTSTATUS status = WdfDeviceAllocAndQueryProperty(dev, DevicePropertyHardwareID, NonPagedPoolNx, &attributes, &hwIdMemory);
     if (!NT_SUCCESS(status))
     {
-        TraceFailMsg(TLE, T_EXIT, "IoGetDeviceProperty", status);
+        TraceFailMsg(TLE, T_EXIT, "WdfDeviceAllocAndQueryProperty", status);
     }
     else
     {
-        Trace(TLV, T_MEM, "Retrieved hwid: %ls", hwidBuffer);
+        size_t hwIdBufferSize;
+        PWSTR hwIdString = (PWCHAR)WdfMemoryGetBuffer(hwIdMemory, &hwIdBufferSize);
+        if (NULL == hwIdString || hwIdBufferSize < sizeof(L"PCI\\VEN_8086&DEV_XXXX"))
+        {
+            TraceFailMsg(TLE, T_EXIT, "WdfMemoryGetBuffer failed", status);
+        }
+        else
+        {
+            UNICODE_STRING hwIdUnicodeString;   // "PCI\\VEN_8086&DEV_XXXX"
+            RtlInitUnicodeString(&hwIdUnicodeString, hwIdString);
+            hwIdUnicodeString.Buffer = (PWCHAR)hwIdUnicodeString.Buffer + sizeof("PCI\\VEN_8086&DEV_") - 1;
+            hwIdUnicodeString.Length = sizeof(L"XXXX");
+            hwIdUnicodeString.Buffer[sizeof("XXXX") - 1] = L'\0';
 
-        if (0 == wcsncmp(hwidBuffer, L"PCI\\VEN_8086&DEV_9A11", hwidLength))
-        {
-            cpblts.deviceType = GNA_TIGERLAKE;
-        }
-        else if (0 == wcsncmp(hwidBuffer, L"PCI\\VEN_8086&DEV_3190", hwidLength))
-        {
-            cpblts.deviceType = GNA_GEMINILAKE;
-        }
-        else if (0 == wcsncmp(hwidBuffer, L"PCI\\VEN_8086&DEV_5A11", hwidLength))
-        {
-            cpblts.deviceType = GNA_CANNONLAKE;
+            GnaDeviceType hwIdHex = GNA_NO_DEVICE;
+            status = RtlUnicodeStringToInteger(&hwIdUnicodeString, 16u, (PULONG)&hwIdHex);
+            WdfObjectDelete(hwIdMemory);
+            if (!NT_SUCCESS(status))
+            {
+                Trace(TLV, T_INIT, "Device HW ID string: %ls", hwIdString);
+                Trace(TLV, T_INIT, "Device HW ID string: %ls Unicode", hwIdUnicodeString.Buffer);
+                TraceFailMsg(TLE, T_INIT, "Device name parse error (RtlUnicodeStringToInteger)", status);
+                return GNA_NO_DEVICE;
+            }
+
+            switch (hwIdHex)
+            {
+            case GNA_DEV_CNL:
+            case GNA_DEV_GLK:
+            case GNA_DEV_ICL:
+            case GNA_DEV_TGL:
+                Trace(TLI, T_INIT, "Supported device found. HW ID: %X", hwIdHex);
+                return hwIdHex;
+            default:
+                Trace(TLE, T_INIT, "Unsupported device found. HW ID: %X", hwIdHex);
+            }
         }
     }
+    return GNA_NO_DEVICE;
+}
 
-    ExFreePool(hwidBuffer);
+GNA_CPBLTS
+FetchDeviceCapabilities(
+    _In_ WDFDEVICE dev,
+    _In_ PDEV_CTX  devCtx)
+{
+    PAGED_CODE();
 
-exit:
+    GNA_CPBLTS cpblts;
+
+    RtlZeroMemory(&cpblts, sizeof(GNA_CPBLTS));
+    cpblts.hwInBuffSize = HwReadInBuffSize(devCtx->hw.regs);
+    cpblts.recoveryTimeout = ReadRecoveryTimeReg(dev);
+    cpblts.deviceType = GetDeviceId(dev);
+
     return cpblts;
 }
 
@@ -399,8 +445,13 @@ DevicePrepareHardwareEvnt(
         return STATUS_DEVICE_CONFIGURATION_ERROR;
     }
 
-    // discover driver capabilities
-    devCtx->cfg.cpblts = GetDeviceCapabilities(dev, devCtx);
+    // discover device and driver capabilities
+    devCtx->cfg.cpblts = FetchDeviceCapabilities(dev, devCtx);
+    if (GNA_NO_DEVICE == devCtx->cfg.cpblts.deviceType)
+    {
+        TraceFailMsg(TLE, T_EXIT, "FetchDeviceCapabilities", STATUS_DEVICE_CONFIGURATION_ERROR);
+        return STATUS_DEVICE_CONFIGURATION_ERROR;
+    }
 
 
     TraceReturn(TLE, T_EXIT, status);

@@ -47,6 +47,10 @@
     </ImportGroup>
     <ItemDefinitionGroup>
         <ClCompile>
+            <PreprocessorDefinitions>
+                INTEL_GNA_DLLEXPORT=1;
+                %(PreprocessorDefinitions);
+            </PreprocessorDefinitions>
             <WarningLevel>Level3</WarningLevel>
             <TreatWarningAsError>false</TreatWarningAsError>
         </ClCompile>

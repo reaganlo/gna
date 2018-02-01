@@ -43,6 +43,7 @@ DriverVer=
 [Intel.NT$ARCH$]
 %IntelGNA.DeviceDesc%=IntelGNA_Install, PCI\VEN_8086&DEV_5A11   ;GNA CNL
 %IntelGNA.DeviceDesc%=IntelGNA_Install, PCI\VEN_8086&DEV_3190   ;GNA GLK
+%IntelGNA.DeviceDesc%=IntelGNA_Install, PCI\VEN_8086&DEV_8A11   ;GNA ICL
 %IntelGNA.DeviceDesc%=IntelGNA_Install, PCI\VEN_8086&DEV_9A11   ;GNA TGL
 
 [Intel.NTamd64.6.1]
