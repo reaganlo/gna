@@ -116,7 +116,7 @@ typedef enum _gna_status_t
     XNN_ERR_BIAS_BYTES,      // Error: XNN: Invalid number of bytes per bias
     XNN_ERR_BIAS_MULTIPLIER, // Error: XNN: Multiplier larger than 255
     XNN_ERR_BIAS_INDEX,      // Error: XNN: Bias Vector index larger than grouping factor
-    XNN_ERR_PWL_SEGMENTS,    // Error: XNN: Activation function segment number is invalid
+    XNN_ERR_PWL_SEGMENTS,    // Error: XNN: Activation function segment count is invalid, valid values: <2,128>
     XNN_ERR_PWL_DATA,        // Error: XNN: Activation function enabled but segment data not set
     CNN_ERR_FLT_COUNT,       // Error: CNN Layer: invalid number of filters
     CNN_ERR_FLT_STRIDE,      // Error: CNN Layer: invalid filter stride
