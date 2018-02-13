@@ -69,7 +69,7 @@ void Memory::Map()
 {
     if (mapped)
     {
-        throw GnaException(GNA_UNKNOWN_ERROR);
+        throw GnaException(GNA_ERR_MEMORY_ALREADY_MAPPED);
     }
 
     // write model id in user buffer
@@ -85,7 +85,7 @@ void Memory::Unmap()
 {
     if (!mapped)
     {
-        throw GnaException(GNA_UNKNOWN_ERROR);
+        throw GnaException(GNA_ERR_MEMORY_ALREADY_UNMAPPED);
     }
 
     ioctlSender.IoctlSend(GNA_IOCTL_MEM_UNMAP, const_cast<uint64_t*>(&Id), sizeof(Id), nullptr, 0);

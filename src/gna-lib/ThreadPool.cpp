@@ -98,9 +98,9 @@ void deallocateFvBuffers(KernelBuffers *buffers)
     }
 }
 
-void ThreadPool::Init(uint8_t n_threads) 
+void ThreadPool::Init(uint8_t n_threads)
 {
-    Expect::InRange(n_threads, 1, 127, GNA_OPENFAILURE);
+    Expect::InRange(n_threads, 1, 127, GNA_ERR_INVALID_THREAD_COUNT);
     {
         unique_lock<mutex> lock(tp_mutex);
         if (!stopped)
@@ -129,7 +129,7 @@ void ThreadPool::Init(uint8_t n_threads)
                         auto& request_task = tasks.front();
                         tasks.pop();
                         (*request_task)(&buffers);
-                    } 
+                    }
                 }
             }
         });
@@ -140,16 +140,16 @@ void ThreadPool::Enqueue(Request *request)
 {
     {
         unique_lock<mutex> lock(tp_mutex);
-        if (stopped) 
+        if (stopped)
         {
-            throw GnaException(GNA_UNKNOWN_ERROR);
+            throw GnaException(GNA_ERR_THREADPOOL_STOPPED);
         }
         tasks.emplace(request);
     }
     condition.notify_one();
 }
 
-void ThreadPool::Stop() 
+void ThreadPool::Stop()
 {
     {
         unique_lock<mutex> lock(tp_mutex);
@@ -161,7 +161,7 @@ void ThreadPool::Stop()
     }
 
     condition.notify_all();
-    for (auto &worker : workers) 
+    for (auto &worker : workers)
     {
         worker.join();
     }

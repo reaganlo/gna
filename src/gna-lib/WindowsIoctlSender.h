@@ -65,7 +65,7 @@ public:
 
     void Set(HANDLE const handle)
     {
-        Expect::True(INVALID_HANDLE_VALUE == deviceHandle, GNA_UNKNOWN_ERROR);
+        Expect::True(INVALID_HANDLE_VALUE == deviceHandle, GNA_INVALIDHANDLE);
         deviceHandle = handle;
     }
 

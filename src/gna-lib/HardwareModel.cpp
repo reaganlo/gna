@@ -126,7 +126,7 @@ void HardwareModel::build(const uint32_t hardwareInternalBufferSize)
         }
         catch (...)
         {
-            throw GnaModelException(GnaException(GNA_UNKNOWN_ERROR), i);
+            throw GnaModelException(GnaException(XNN_ERR_LYR_CFG), i);
         }
     }
 }

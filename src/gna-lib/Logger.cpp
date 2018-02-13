@@ -46,7 +46,7 @@ const char* const Logger::StatusStrings[] =
 
     "GNA_INVALIDINDICES", " - Scoring data: number of active indices  not supported",
     "GNA_DEVNOTFOUND", " - Device: device not available",
-    "GNA_OPENFAILURE", " - Device: internal error occurred during opening device",
+    "GNA_ERR_INVALID_THREAD_COUNT", " - Device failed to open, thread count is invalid",
     "GNA_INVALIDHANDLE", " - Device: invalid handle",
     "GNA_CPUTYPENOTSUPPORTED", " - Device: processor type not supported",
     "GNA_PARAMETEROUTOFRANGE", " - Device: GMM Parameter out of Range error occurred",
@@ -109,6 +109,9 @@ const char* const Logger::StatusStrings[] =
     "CNN_ERR_FLT_COUNT", " - CNN Layer: invalid number of filters",
     "CNN_ERR_FLT_STRIDE", " - CNN Layer: invalid filter stride",
     "CNN_ERR_POOL_STRIDE", " - CNN Layer: invalid pool stride",
+    "GNA_ERR_MEMORY_ALREADY_MAPPED", " - Memory is already mapped, cannot map again. Release memory first",
+    "GNA_ERR_MEMORY_ALREADY_UNMAPPED", " - Memory is already unmapped, cannot unmap again",
+    "GNA_ERR_THREADPOOL_STOPPED", " - Thread pool is stopped, cannot enqueue more requests",
 
     "UNKNOWN STATUS", " - Status code is invalid"
 };

@@ -1,3 +1,34 @@
+//*****************************************************************************
+//
+// INTEL CONFIDENTIAL
+// Copyright 2018 Intel Corporation
+//
+// The source code contained or described herein and all documents related
+// to the source code ("Material") are owned by Intel Corporation or its suppliers
+// or licensors. Title to the Material remains with Intel Corporation or its suppliers
+// and licensors. The Material contains trade secrets and proprietary
+// and confidential information of Intel or its suppliers and licensors.
+// The Material is protected by worldwide copyright and trade secret laws and treaty
+// provisions. No part of the Material may be used, copied, reproduced, modified,
+// published, uploaded, posted, transmitted, distributed, or disclosed in any way
+// without Intel's prior express written permission.
+//
+// No license under any patent, copyright, trade secret or other intellectual
+// property right is granted to or conferred upon you by disclosure or delivery
+// of the Materials, either expressly, by implication, inducement, estoppel
+// or otherwise. Any license under such intellectual property rights must
+// be express and approved by Intel in writing.
+//*****************************************************************************
+
+// Enable safe functions compatibility
+#if defined(__STDC_SECURE_LIB__)
+#define __STDC_WANT_SECURE_LIB__ 1
+#elif defined(__STDC_LIB_EXT1__)
+#define STDC_WANT_LIB_EXT1 1
+#else
+#define memcpy_s(_Destination, _DestinationSize, _Source, _SourceSize) memcpy(_Destination, _Source, _SourceSize)
+#endif
+
 #include <cstring>
 #include <cstdlib>
 #include <cstdio>
@@ -10,9 +41,9 @@ void print_outputs(
 )
 {
     printf("\nOutputs:\n");
-    for(int i = 0; i < nRows; ++i)
+    for(uint32_t i = 0; i < nRows; ++i)
     {
-        for(int j = 0; j < nColumns; ++j)
+        for(uint32_t j = 0; j < nColumns; ++j)
         {
             printf("%d\t", outputs[i*nColumns + j]);
         }
@@ -23,17 +54,27 @@ void print_outputs(
 
 int wmain(int argc, wchar_t *argv[])
 {
-    intel_gna_status_t status = GNA_SUCCESS; // for simplicity sake status codes are not examined after api functions calls
-                                             // it is highly recommended to inspect the status every time, and act accordingly
+    intel_gna_status_t status = GNA_SUCCESS;
+
     // open the device
     gna_device_id gna_handle;
-    GnaDeviceOpen(1, &gna_handle);
-
+    status = GnaDeviceOpen(1, &gna_handle);
+    if (GNA_SUCCESS!= status)
+    {
+        printf("GNADeviceOpen failed: %s\n", GnaStatusToString(status));
+        exit(-status);
+    }
 
     intel_nnet_type_t nnet;  // main neural network container
     nnet.nGroup = 4;         // grouping factor (1-8), specifies how many input vectors are simultaneously run through the nnet
     nnet.nLayers = 1;        // number of hidden layers, using 1 for simplicity sake
     nnet.pLayers = (intel_nnet_layer_t*)calloc(nnet.nLayers, sizeof(intel_nnet_layer_t));   // container for layer definitions
+    if (nullptr == nnet.pLayers)
+    {
+        printf("Allocation for nnet.pLayers failed.\n");
+        GnaDeviceClose(gna_handle);
+        exit(-1);
+    }
 
     int16_t weights[8 * 16] = {                                          // sample weight matrix (8 rows, 16 cols)
         -6, -2, -1, -1, -2,  9,  6,  5,  2,  4, -1,  5, -2, -4,  0,  9,  // in case of affine layer this is the left operand of matrix mul
@@ -88,17 +129,23 @@ int wmain(int argc, wchar_t *argv[])
 
     // call GNAAlloc (obtains pinned memory shared with the device)
     uint8_t *pinned_mem_ptr = (uint8_t*)GnaAlloc(gna_handle, bytes_requested, 1, 0, &bytes_granted);
+    if (nullptr == pinned_mem_ptr)
+    {
+        printf("GnaAlloc failed.\n");
+        GnaDeviceClose(gna_handle);
+        exit(-1);
+    }
 
     int16_t *pinned_weights = (int16_t*)pinned_mem_ptr;
-    memcpy(pinned_weights, weights, sizeof(weights));   // puts the weights into the pinned memory
+    memcpy_s(pinned_weights, buf_size_weights, weights, sizeof(weights));   // puts the weights into the pinned memory
     pinned_mem_ptr += buf_size_weights;                 // fast-forwards current pinned memory pointer to the next free block
 
     int16_t *pinned_inputs = (int16_t*)pinned_mem_ptr;
-    memcpy(pinned_inputs, inputs, sizeof(inputs));      // puts the inputs into the pinned memory
+    memcpy_s(pinned_inputs, buf_size_inputs, inputs, sizeof(inputs));      // puts the inputs into the pinned memory
     pinned_mem_ptr += buf_size_inputs;                  // fast-forwards current pinned memory pointer to the next free block
 
     int32_t *pinned_biases = (int32_t*)pinned_mem_ptr;
-    memcpy(pinned_biases, biases, sizeof(biases));      // puts the biases into the pinned memory
+    memcpy_s(pinned_biases, buf_size_biases, biases, sizeof(biases));      // puts the biases into the pinned memory
     pinned_mem_ptr += buf_size_biases;                  // fast-forwards current pinned memory pointer to the next free block
 
     int16_t *pinned_outputs = (int16_t*)pinned_mem_ptr;
@@ -135,21 +182,55 @@ int wmain(int argc, wchar_t *argv[])
     nnet_layer.pOutputsIntermediate = nullptr;
     nnet_layer.pOutputs = nullptr;
 
-    memcpy(nnet.pLayers, &nnet_layer, sizeof(nnet_layer));   // puts the layer into the main network container
+    memcpy_s(nnet.pLayers, sizeof(intel_nnet_layer_t), &nnet_layer, sizeof(nnet_layer));   // puts the layer into the main network container
                                                              // if there was another layer to add, it would get copied to nnet.pLayers + 1
 
     gna_model_id model_id;
-    GnaModelCreate(gna_handle, &nnet, &model_id);
+    status = GnaModelCreate(gna_handle, &nnet, &model_id);
+    if (GNA_SUCCESS!= status)
+    {
+        printf("GnaModelCreate failed: %s\n", GnaStatusToString(status));
+        GnaFree(gna_handle);
+        GnaDeviceClose(gna_handle);
+        exit(-status);
+    }
 
     gna_request_cfg_id config_id;
-    GnaModelRequestConfigAdd(model_id, &config_id);
-    GnaRequestConfigBufferAdd(config_id, GNA_IN, 0, pinned_inputs);
-    GnaRequestConfigBufferAdd(config_id, GNA_OUT, 0, pinned_outputs);
+    status = GnaModelRequestConfigAdd(model_id, &config_id);
+    if (GNA_SUCCESS!= status)
+    {
+        printf("GnaModelRequestConfigAdd failed: %s\n", GnaStatusToString(status));
+        GnaFree(gna_handle);
+        GnaDeviceClose(gna_handle);
+        exit(-status);
+    }
+    status = GnaRequestConfigBufferAdd(config_id, GNA_IN, 0, pinned_inputs);
+    if (GNA_SUCCESS!= status)
+    {
+        printf("GnaRequestConfigBufferAdd GNA_IN failed: %s\n", GnaStatusToString(status));
+        GnaFree(gna_handle);
+        GnaDeviceClose(gna_handle);
+        exit(-status);
+    }
+    status = GnaRequestConfigBufferAdd(config_id, GNA_OUT, 0, pinned_outputs);
+    if (GNA_SUCCESS!= status)
+    {
+        printf("GnaRequestConfigBufferAdd GNA_OUT failed: %s\n", GnaStatusToString(status));
+        GnaFree(gna_handle);
+        GnaDeviceClose(gna_handle);
+        exit(-status);
+    }
 
     // calculate on GNA HW (non-blocking call)
     gna_request_id request_id;     // this gets filled with the actual id later on
     status = GnaRequestEnqueue(config_id, GNA_GENERIC, &request_id);
-
+    if (GNA_SUCCESS!= status)
+    {
+        printf("GnaRequestEnqueue failed: %s\n", GnaStatusToString(status));
+        GnaFree(gna_handle);
+        GnaDeviceClose(gna_handle);
+        exit(-status);
+    }
     /**************************************************************************************************
      * Offload effect: other calculations can be done on CPU here, while nnet decoding runs on GNA HW *
      **************************************************************************************************/
@@ -157,18 +238,44 @@ int wmain(int argc, wchar_t *argv[])
     // wait for HW calculations (blocks until the results are ready)
     gna_timeout timeout = 1000;
     status = GnaRequestWait(request_id, timeout);     // after this call, outputs can be inspected under nnet.pLayers->pOutputs
+    if (GNA_SUCCESS!= status)
+    {
+        printf("GnaRequestWait failed: %s\n", GnaStatusToString(status));
+        GnaFree(gna_handle);
+        GnaDeviceClose(gna_handle);
+        exit(-status);
+    }
 
     print_outputs((int32_t*)pinned_outputs, nnet.pLayers->nOutputRows, nnet.pLayers->nOutputColumns);
 
-                                                      // -177  -85   29   28
-    // free the pinned memory                         //   96 -173   25  252
-    status = GnaFree(gna_handle);                     // -160  274  157  -29
-                                                      //   48  -60  158  -29
-    // free heap allocations                          //   26   -2  -44 -251
-    free(nnet.pLayers);                               // -173  -70   -1 -323
-                                                      //   99  144   38  -63
-    // close the device                               //   20   56 -103   10
+    // free the pinned memory
+    status = GnaFree(gna_handle);
+    if (GNA_SUCCESS!= status)
+    {
+        printf("GnaFree failed: %s\n", GnaStatusToString(status));
+        GnaDeviceClose(gna_handle);
+        exit(-status);
+    }
+    // Results:
+    // -177  -85   29   28
+    //   96 -173   25  252
+    // -160  274  157  -29
+    //   48  -60  158  -29
+    //   26   -2  -44 -251
+    // -173  -70   -1 -323
+    //   99  144   38  -63
+    //   20   56 -103   10
+
+    // free heap allocations
+    free(nnet.pLayers);
+
+    // close the device
     status = GnaDeviceClose(gna_handle);
+    if (GNA_SUCCESS!= status)
+    {
+        printf("GnaDeviceClose failed: %s\n", GnaStatusToString(status));
+        exit(-status);
+    }
 
     return 0;
 }

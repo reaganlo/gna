@@ -161,6 +161,10 @@ GNAAPI intel_gna_status_t GnaRequestWait(
     {
         return GnaDevice->WaitForRequest(requestId, milliseconds);
     }
+    catch (const GnaModelException &e)
+    {
+        return e.getStatus();
+    }
     catch (const GnaException &e)
     {
         return e.getStatus();

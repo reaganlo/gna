@@ -88,7 +88,7 @@ status_t SoftwareModel::Score(
             }
             else
             {
-                throw GnaException{ XNN_ERR_LYR_CFG };
+                throw GnaModelException{ XNN_ERR_LYR_CFG, layerIndex };
             }
         }
 
@@ -132,7 +132,7 @@ void SoftwareModel::build(const gna_model *const network, uint16_t& gmmCount)
         }
         catch (...)
         {
-            throw GnaModelException(GnaException(GNA_UNKNOWN_ERROR), i);
+            throw GnaModelException(GnaException(XNN_ERR_LYR_CFG), i);
         }
     }
 }

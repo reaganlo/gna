@@ -79,6 +79,15 @@ inline bool IsActivationFunctionEnabled(const intel_pwl_func_t * const pwl)
 #define UNREFERENCED_PARAMETER(P) (P)
 #endif
 
+// Enable safe functions compatibility
+#if defined(__STDC_SECURE_LIB__)
+#define __STDC_WANT_SECURE_LIB__ 1
+#elif defined(__STDC_LIB_EXT1__)
+#define STDC_WANT_LIB_EXT1 1
+#else
+#define memcpy_s(_Destination, _DestinationSize, _Source, _SourceSize) memcpy(_Destination, _Source, _SourceSize)
+#endif
+
 /**
  * Structure will hold aligned deinterleaved feature vectors
  * and PWL activation function auxiliary buffers used for performance improvements

@@ -57,7 +57,7 @@ typedef enum _gna_status_t
     GNA_BADFEATNUM,          // Error: Feature vector: number of feature vectors not supported
     GNA_INVALIDINDICES,      // Error: Scoring data: number of active indices not supported
     GNA_DEVNOTFOUND,         // Error: Device: not available
-    GNA_OPENFAILURE,         // Error: Device: failed to open
+    GNA_ERR_INVALID_THREAD_COUNT,// Error: Device failed to open, thread count is invalid.
     GNA_INVALIDHANDLE,       // Error: Device: invalid handle
     GNA_CPUTYPENOTSUPPORTED, // Error: Device: processor type not supported
     GNA_PARAMETEROUTOFRANGE, // Error: Device: GMM Parameter out of Range error occurred
@@ -123,6 +123,10 @@ typedef enum _gna_status_t
     CNN_ERR_POOL_STRIDE,     // Error: CNN Layer: invalid pool stride
 
     XNN_ERR_MM_INVALID_IN,   // Error: XNN: Invalid input data or configuration in matrix mul. op.
+
+    GNA_ERR_MEMORY_ALREADY_MAPPED, // Error: Memory is already mapped, cannot map again. Release memory first.
+    GNA_ERR_MEMORY_ALREADY_UNMAPPED, // Error: Memory is already unmapped, cannot unmap again.
+    GNA_ERR_THREADPOOL_STOPPED,   // Error: Thread pool is stopped, cannot enqueue more requests
 
     NUMGNASTATUS
 } intel_gna_status_t;       // GNA API Status codes

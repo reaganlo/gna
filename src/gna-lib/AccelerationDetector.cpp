@@ -543,25 +543,25 @@ void AccelerationDetector::UpdateKernelsMap()
 template<typename T>
 const std::map<const acceleration, const T>& AccelerationDetector::GetKernelMap(WeightMode weightMode, nn_layer_kind layerKind)
 {
-    throw GnaException{ GNA_UNKNOWN_ERROR };
+    throw GnaException{ GNA_CPUTYPENOTSUPPORTED };
 }
 
 template<typename T>
 const std::map<const acceleration, const T>& AccelerationDetector::GetKernelMap(WeightMode weightMode)
 {
-    throw GnaException{ GNA_UNKNOWN_ERROR };
+    throw GnaException{ GNA_CPUTYPENOTSUPPORTED };
 }
 
 template<typename T>
 const std::map<const acceleration, const T>& AccelerationDetector::GetKernelMap()
 {
-    throw GnaException{ GNA_UNKNOWN_ERROR };
+    throw GnaException{ GNA_CPUTYPENOTSUPPORTED };
 }
 
 template<typename T>
 const std::map<const acceleration, const T>& AccelerationDetector::GetKernelMap(gna_gmm_mode)
 {
-    throw GnaException{ GNA_UNKNOWN_ERROR };
+    throw GnaException{ GNA_CPUTYPENOTSUPPORTED };
 }
 
 template<>
@@ -579,7 +579,7 @@ AccelerationDetector::GetKernelMap<AffineKernel>(WeightMode weightMode, nn_layer
     case INTEL_AFFINE_MULTIBIAS:
         return MultibiasKernels.at(weightMode);
     default:
-        throw GnaException{ GNA_UNKNOWN_ERROR };
+        throw GnaException{ XNN_ERR_LYR_KIND };
     }
 }
 
