@@ -291,13 +291,14 @@ ScoreTimeoutEvnt(
         devCtx->req.timeouted = TRUE;
         WdfSpinLockRelease(devCtx->req.reqLock);
         HwAbort(devCtx->hw.regs);
+    }
+    // Always trigger DPC, to handle other unknown timeout causes.
 /**
  * Rationale for warning suppression:
  * Argument interrupt (parameter 1) is ignored by function InterruptDpcEvnt
  */
 #pragma warning(suppress: 6387)
-        InterruptDpcEvnt(WDF_NO_HANDLE, dev);
-    }
+    InterruptDpcEvnt(WDF_NO_HANDLE, dev);
 
     EventWriteDriverApiEnd(NULL, __FUNCTION__);
 }
