@@ -148,7 +148,7 @@ void pwlKernelImplAllBinary(PwlCachedConfig const * const pwl, PwlOutputConfig c
     uint32_t k_lower;
 
     // input and sum prefetch
-    input = pwl->input;
+    input = outputConfig->input;
     inputEnd = input + outputConfig->elementCount;
     output = outputConfig->output;
     do
@@ -257,8 +257,8 @@ void pwlKernelImplAllLookup(PwlCachedConfig const * const pwl, PwlOutputConfig c
     int32_t count = pwl->Lookup.count;
 
     // input and k prefetch
-    input = pwl->input;
-    inputEnd = input;
+    input = outputConfig->input;
+    inputEnd = input + outputConfig->elementCount;
     output = outputConfig->output;
     do
     {

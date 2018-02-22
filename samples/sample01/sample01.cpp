@@ -20,6 +20,9 @@
 // be express and approved by Intel in writing.
 //*****************************************************************************
 
+#include <cstdio>
+#include <cstdlib>
+
 // Enable safe functions compatibility
 #if defined(__STDC_SECURE_LIB__)
 #define __STDC_WANT_SECURE_LIB__ 1
@@ -30,8 +33,7 @@
 #endif
 
 #include <cstring>
-#include <cstdlib>
-#include <cstdio>
+
 #include "gna-api.h"
 
 void print_outputs(
@@ -46,6 +48,24 @@ void print_outputs(
         for(uint32_t j = 0; j < nColumns; ++j)
         {
             printf("%d\t", outputs[i*nColumns + j]);
+        }
+        putchar('\n');
+    }
+    putchar('\n');
+}
+
+void print_outputs16(
+    int16_t *outputs,
+    uint32_t nRows,
+    uint32_t nColumns
+)
+{
+    printf("\nOutputs:\n");
+    for(uint32_t i = 0; i < nRows; ++i)
+    {
+        for(uint32_t j = 0; j < nColumns; ++j)
+        {
+            printf("%hd\t", outputs[i*nColumns + j]);
         }
         putchar('\n');
     }
@@ -106,6 +126,12 @@ int wmain(int argc, wchar_t *argv[])
         -4, -6, -8, -2
     };
 
+    intel_pwl_segment_t pwl_segs[]
+    {
+        {-512i32, -512i16, 256},
+        {0, 0i16, 256}
+    };
+
     int32_t biases[8] = {      // sample bias vector, will get added to each of the four output vectors
          5,                    // in this sample the numbers are random and meaningless
          4,
@@ -120,11 +146,12 @@ int wmain(int argc, wchar_t *argv[])
     int buf_size_weights     = ALIGN64(sizeof(weights)); // note that buffer alignment to 64-bytes is required by GNA HW
     int buf_size_inputs      = ALIGN64(sizeof(inputs));
     int buf_size_biases      = ALIGN64(sizeof(biases));
+    int buf_size_pwl         = ALIGN64(sizeof(pwl_segs));
     int buf_size_outputs     = ALIGN64(8 * 4 * 4);       // (4 out vectors, 8 elems in each one, 4-byte elems)
     int buf_size_tmp_outputs = ALIGN64(8 * 4 * 4);       // (4 out vectors, 8 elems in each one, 4-byte elems)
 
     // prepare params for GNAAlloc
-    uint32_t bytes_requested = buf_size_weights + buf_size_inputs + buf_size_biases + buf_size_outputs + buf_size_tmp_outputs;
+    uint32_t bytes_requested = buf_size_weights + buf_size_inputs + buf_size_biases + buf_size_pwl + buf_size_outputs + buf_size_tmp_outputs;
     uint32_t bytes_granted;
 
     // call GNAAlloc (obtains pinned memory shared with the device)
@@ -148,6 +175,11 @@ int wmain(int argc, wchar_t *argv[])
     memcpy_s(pinned_biases, buf_size_biases, biases, sizeof(biases));      // puts the biases into the pinned memory
     pinned_mem_ptr += buf_size_biases;                  // fast-forwards current pinned memory pointer to the next free block
 
+
+    intel_pwl_segment_t *pinned_pwl = (intel_pwl_segment_t*)pinned_mem_ptr;
+    memcpy_s(pinned_pwl, buf_size_pwl, pwl_segs, sizeof(pwl_segs));      // puts the pwl into the pinned memory
+    pinned_mem_ptr += buf_size_pwl;                  // fast-forwards current pinned memory pointer to the next free block
+
     int16_t *pinned_outputs = (int16_t*)pinned_mem_ptr;
     pinned_mem_ptr += buf_size_outputs;                 // fast-forwards the current pinned memory pointer by the space needed for outputs
 
@@ -160,8 +192,8 @@ int wmain(int argc, wchar_t *argv[])
     affine_func.pBiases = pinned_biases;
 
     intel_pwl_func_t pwl;                  // no piecewise linear activation function used in this simple example
-    pwl.nSegments = 0;
-    pwl.pSegments = NULL;
+    pwl.nSegments = 2;
+    pwl.pSegments = pinned_pwl;
 
     intel_affine_layer_t affine_layer;     // affine layer combines the affine transformation and activation function
     affine_layer.affine = affine_func;
@@ -173,13 +205,13 @@ int wmain(int argc, wchar_t *argv[])
     nnet_layer.nOutputColumns = nnet.nGroup;
     nnet_layer.nOutputRows = 8;
     nnet_layer.nBytesPerInput = 2;
-    nnet_layer.nBytesPerOutput = 4;             // 4 bytes since we are not using PWL (would be 2 bytes otherwise)
+    nnet_layer.nBytesPerOutput = 2;             // 4 bytes since we are not using PWL (would be 2 bytes otherwise)
     nnet_layer.nBytesPerIntermediateOutput = 4; // this is always 4 bytes
     nnet_layer.type = INTEL_INPUT_OUTPUT;
     nnet_layer.nLayerKind = INTEL_AFFINE;
     nnet_layer.pLayerStruct = &affine_layer;
     nnet_layer.pInputs = nullptr;
-    nnet_layer.pOutputsIntermediate = nullptr;
+    nnet_layer.pOutputsIntermediate = pinned_tmp_outputs;
     nnet_layer.pOutputs = nullptr;
 
     memcpy_s(nnet.pLayers, sizeof(intel_nnet_layer_t), &nnet_layer, sizeof(nnet_layer));   // puts the layer into the main network container
@@ -246,7 +278,7 @@ int wmain(int argc, wchar_t *argv[])
         exit(-status);
     }
 
-    print_outputs((int32_t*)pinned_outputs, nnet.pLayers->nOutputRows, nnet.pLayers->nOutputColumns);
+    print_outputs16((int16_t*)pinned_outputs, nnet.pLayers->nOutputRows, nnet.pLayers->nOutputColumns);
 
     // free the pinned memory
     status = GnaFree(gna_handle);

@@ -30,9 +30,6 @@
 
 struct PwlOutputConfig
 {
-    PwlOutputConfig() :
-        elementCount{}
-    {}
     PwlOutputConfig(PwlOutputConfig const * const source, uint32_t * saturationCountIn) :
         PwlOutputConfig{*source}
     {

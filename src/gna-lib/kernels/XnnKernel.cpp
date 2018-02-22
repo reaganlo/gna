@@ -53,13 +53,13 @@ void recurrentKernelImpl1B(RecurrentConfig const * const config, PwlCached const
     // for each input vector
     for (uint32_t i = 0; i < config->inputVectorCount; i++)
     {
-        runConfig.input = config->input + i * config->inputElementCount;
-        runConfig.feedbackBuffer = config->feedbackBuffer + (i*config->outputElementCount);
-        runConfig.output = config->output + i * config->outputElementCount;
+        runConfig.input += config->inputElementCount;
+        runConfig.feedbackBuffer += config->outputElementCount;
+        runConfig.output += config->outputElementCount;
         RecurrentKernelImpl1B(&runConfig);
 
-        runPwlOutputConfig.input += runConfig.pwlOutputConfig.elementCount;
-        runPwlOutputConfig.output += runConfig.pwlOutputConfig.elementCount;
+        runPwlOutputConfig.input += runPwlOutputConfig.elementCount;
+        runPwlOutputConfig.output += runPwlOutputConfig.elementCount;
         pwl->ActivateAll(&pwl->pwl, &runPwlOutputConfig);
     }
 }
@@ -72,14 +72,14 @@ void recurrentKernelImpl2B(RecurrentConfig const * const config, PwlCached const
     // for each input vector
     for (uint32_t i = 0; i < config->inputVectorCount; i++)
     {
-        runConfig.input = config->input + i * config->inputElementCount;
-        runConfig.feedbackBuffer = config->feedbackBuffer + (i*config->outputElementCount);
-        runConfig.output = config->output + i * config->outputElementCount;
+        runConfig.input += config->inputElementCount;
+        runConfig.feedbackBuffer += config->outputElementCount;
+        runConfig.output += config->outputElementCount;
         RecurrentKernelImpl2B(&runConfig);
 
-        runPwlOutputConfig.input += runConfig.pwlOutputConfig.elementCount;
-        runPwlOutputConfig.output += runConfig.pwlOutputConfig.elementCount;
-        pwl->ActivateAll(&pwl->pwl, &runConfig.pwlOutputConfig);
+        runPwlOutputConfig.input += runPwlOutputConfig.elementCount;
+        runPwlOutputConfig.output += runPwlOutputConfig.elementCount;
+        pwl->ActivateAll(&pwl->pwl, &runPwlOutputConfig);
     }
 }
 
