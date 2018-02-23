@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2017 Intel Corporation.
+ Copyright 2018 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -53,16 +53,18 @@ class HardwareModel
 public:
     static const size_t CalculateDescriptorSize(const uint16_t layerCount, const uint16_t gmmLayersCount);
 
-    HardwareModel(const gna_model_id modId, const std::vector<std::unique_ptr<Layer>>& layers, 
-        uint16_t gmmCount, const Memory &memoryIn, IoctlSender &sender, const AccelerationDetector& detector);
+    HardwareModel(const gna_model_id modId, const std::vector<std::unique_ptr<Layer>>& layers, uint16_t gmmCount,
+        const uint64_t memoryId, const BaseAddressC memoryBase, const BaseAddressC descriptorBase,  IoctlSender &sender, const AccelerationDetector& detector);
     ~HardwareModel() = default;
     HardwareModel(const HardwareModel &) = delete;
     HardwareModel& operator=(const HardwareModel&) = delete;
 
     inline uint32_t GetOffset(const BaseAddressC& address) const
     {
-        return address.GetOffset(memory);
+        return address.GetOffset(memoryBase);
     }
+
+    void Build();
 
     void InvalidateConfigCache(gna_request_cfg_id configId);
 
@@ -76,23 +78,25 @@ public:
 
 protected:
     // needed for driver communication
-    const Memory &memory;
+    const BaseAddressC memoryBase;
     const gna_model_id modelId;
+    const uint64_t memoryId;
     IoctlSender &ioctlSender;
 
-    const BaseAddressC descriptorsAddress;
+    BaseAddressC descriptorsAddress;
+    uint32_t layerDescriptorsSize;
+    const uint32_t hardwareBufferSize;
 
     std::vector<std::unique_ptr<HardwareLayer>> hardwareLayers;
 
-private:
     static uint32_t getLayerDescriptorsSize(const uint16_t layerCount);
-    static uint32_t getGmmDescriptorsSize(const uint16_t gmmLayersCount);
 
-    void build(const uint32_t hardwareInternalBufferSize);
+private:
+    static uint32_t getGmmDescriptorsSize(const uint16_t gmmLayersCount);
 
     size_t calculateCacheSize(uint32_t buffersCount, uint32_t nnopLayersCount, uint32_t activeListCount) const;
 
-    void getHwConfigData(void* &buffer, size_t &size, uint16_t layerIndex, uint16_t layerCount, 
+    void getHwConfigData(void* &buffer, size_t &size, uint16_t layerIndex, uint16_t layerCount,
         const RequestConfiguration& requestConfiguration, const GnaOperationMode operationMode) const;
 
     void writeBuffersIntoCache(void* &lyrsCfg, const std::map<uint32_t, std::unique_ptr<LayerConfiguration>>& layerConfigurations) const;
@@ -105,7 +109,7 @@ private:
     mutable std::map<gna_request_cfg_id, size_t> requestCacheSizes;
 
     const uint32_t gmmDescriptorsSize;
-    const uint32_t layerDescriptorsSize;
+
     const std::vector<std::unique_ptr<Layer>>& softwareLayers;
 };
 

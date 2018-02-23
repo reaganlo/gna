@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2017 Intel Corporation.
+ Copyright 2018 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -23,48 +23,24 @@
  in any way.
 */
 
-/******************************************************************************
- *
- * GNA 2.0 API
- *
- * Gaussian Mixture Models and Neural Network Accelerator Module
- * Extra API functions definitions
- *
- *****************************************************************************/
-
 #pragma once
 
-#include "gna-api.h"
+#include "HardwareModel.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-typedef enum _gna_device_kind
+namespace GNA
 {
-    GNA_SUE,        // GNA v1.0
-    GNA_SUE_2,      // GNA v2.0
-    GNA_CNL,        // GNA v1.0
-    GNA_GLK,        // GNA v1.0
-    GNA_ICL,        // GNA v1.0
-    GNA_TGL,        // GNA v2.0
-} gna_device_kind;
 
-/**
- * Dumps the hardware-consumable model to the file
- * Model should be created through standard API GnaModelCreate function
- * Model will be validated against device kind provided as function argument
- * File path can be as well relative or absolute path to output file
- *
- * @param modelId       Model to be dumped to file
- * @param deviceKind    Device on which model will be used
- * @param filepath      Absolute or relative path to output file
- */
-GNAAPI intel_gna_status_t GnaModelDump(
-    gna_model_id        modelId,
-    gna_device_kind     deviceKind,
-    const char*         filepath);
+class HardwareModelSue1 : public HardwareModel
+{
+public:
+    static const size_t CalculateDescriptorSize(const uint16_t layerCount, const uint16_t gmmLayersCount);
 
-#ifdef __cplusplus
+    HardwareModelSue1(const gna_model_id modId, const std::vector<std::unique_ptr<Layer>>& layers,
+        const Memory &memoryIn, const BaseAddressC &dumpDescriptorAddr, IoctlSender &sender, const AccelerationDetector& detector);
+    ~HardwareModelSue1() = default;
+
+protected:
+    static uint32_t getLayerDescriptorsSize(const uint16_t layerCount);
+};
+
 }
-#endif

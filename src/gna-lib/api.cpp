@@ -270,23 +270,31 @@ GNAAPI intel_gna_status_t GnaDeviceClose(
     }
 }
 
-intel_gna_status_t GnaModelDump(
-    gna_model_id        modelId,
-    gna_device_kind     deviceKind,
-    const char*         filepath)
+void* GnaModelDump(
+    gna_model_id modelId,
+    gna_device_kind deviceKind,
+    intel_gna_model_header* modelHeader,
+    intel_gna_status_t* status,
+    intel_gna_alloc_cb customAlloc)
 {
     try
     {
-        GnaDevice->DumpModel(modelId, deviceKind, filepath);
-        return GNA_SUCCESS;
+        return GnaDevice->Dump(modelId, deviceKind, modelHeader, status, customAlloc);
+    }
+    catch (const GnaModelException &e)
+    {
+        *status = e.getStatus();
+        return NULL;
     }
     catch (const GnaException &e)
     {
-        return e.getStatus();
+        *status = e.getStatus();
+        return NULL;
     }
-    catch (...)
+    catch (std::exception &e)
     {
-        return GNA_UNKNOWN_ERROR;
+        *status = GNA_UNKNOWN_ERROR;
+        return NULL;
     }
 }
 

@@ -44,7 +44,8 @@ std::map<dbg_action_type const, char const * const> const HardwareModelVerbose::
 HardwareModelVerbose::HardwareModelVerbose(const gna_model_id modId,
     const std::vector<std::unique_ptr<Layer>>& layers, uint16_t gmmCount, const Memory &memoryIn,
     IoctlSender &sender, const AccelerationDetector& detector) :
-    HardwareModel::HardwareModel(modId, layers, gmmCount, memoryIn, sender, detector),
+    HardwareModel::HardwareModel(modId, layers, gmmCount, memoryIn.Id, memoryIn.Get(), memoryIn.GetDescriptorsBase(modId), sender, detector),
+    memorySize{ memoryIn.GetSize() },
     actionFileCounters{
         {GnaDumpMmio, 0},
         {GnaDumpPageDirectory, 0},
@@ -93,7 +94,7 @@ void HardwareModelVerbose::SetAfterscoreScenario(uint32_t nActions, dbg_action *
 void HardwareModelVerbose::readPageDir(FILE *file)
 {
     hw_mmap_in_t readPageDirIn;
-    readPageDirIn.memoryId = memory.Id;
+    readPageDirIn.memoryId = memoryId;
 
     hw_pgdir_out_t readPageDirOut;
     ZeroMemory(&readPageDirOut, sizeof(readPageDirOut));
@@ -204,12 +205,12 @@ void HardwareModelVerbose::writeRegister(dbg_action regAction)
 
 void HardwareModelVerbose::dumpMemory(FILE *file)
 {
-    fwrite(memory.Get(), memory.GetSize(), 1, file);
+    fwrite(memoryBase.Get(), memorySize, 1, file);
 }
 
-void HardwareModelVerbose::zeroMemory(void *memoryIn, size_t memorySize)
+void HardwareModelVerbose::zeroMemory(void *memoryIn, size_t memorySizeIn)
 {
-    memset(memoryIn, 0, memorySize);
+    memset(memoryIn, 0, memorySizeIn);
 }
 
 void HardwareModelVerbose::setXnnDescriptor(dbg_action action)

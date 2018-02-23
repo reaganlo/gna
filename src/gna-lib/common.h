@@ -29,7 +29,7 @@
 #include <stdlib.h>
 
 #include "gna-api-instrumentation.h"
-#include "gna-api-extra.h"
+#include "gna-api-dumper.h"
 #include "profiler.h"
 
 /**

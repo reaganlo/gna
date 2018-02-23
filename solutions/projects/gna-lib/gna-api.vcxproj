@@ -91,11 +91,11 @@
     </ResourceCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="$(SRC_DIR)\gna-lib\HardwareModelSue1.cpp" />
     <ClInclude Include="$(SRC_DIR)\common\GnaDrvApi.h" />
     <ClInclude Include="$(SRC_DIR)\common\GnaDrvApiWin.h" />
     <ClInclude Include="$(SRC_DIR)\common\GnaDrvApiWinDebug.h" />
     <ClInclude Include="$(SRC_DIR)\common\gna-api-instrumentation.h" />
-    <ClInclude Include="$(SRC_DIR)\common\gna-api-extra.h" />
     <ClInclude Include="$(SRC_DIR)\common\gna-api-status.h" />
     <ClInclude Include="$(SRC_DIR)\common\gna-api-types-gmm.h" />
     <ClInclude Include="$(SRC_DIR)\common\gna-api-types-xnn.h" />
@@ -164,6 +164,8 @@
     <ClCompile Include="$(SRC_DIR)\gna-lib\SubModel.cpp" />
     <ClCompile Include="$(SRC_DIR)\gna-lib\ThreadPool.cpp" />
     <ClCompile Include="$(SRC_DIR)\gna-lib\WindowsIoctlSender.cpp" />
+    <ClInclude Include="$(SRC_DIR)\common\gna-api-dumper.h" />
+    <ClInclude Include="$(SRC_DIR)\gna-lib\HardwareModelSue1.h" />
     <ResourceCompile Include="$(SRC_DIR)\common\version.rc" />
   </ItemGroup>
   <ItemGroup>

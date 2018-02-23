@@ -99,6 +99,8 @@ private:
 
     std::vector<dbg_action> afterscoreActionVector;
 
+    size_t memorySize;
+
     static std::map<dbg_action_type const, char const * const> const actionFileNames;
     std::map<dbg_action_type const, uint32_t> actionFileCounters;
 };

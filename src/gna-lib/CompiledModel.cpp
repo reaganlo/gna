@@ -50,7 +50,9 @@ CompiledModel::CompiledModel(gna_model_id modelId, const gna_model *rawModel, Me
 {
     if (detector.IsHardwarePresent())
     {
-        hardwareModel = make_unique<HardwareModel>(Id, softwareModel.Layers, gmmCount, memoryIn, sender, detector);
+        hardwareModel = make_unique<HardwareModel>(Id, softwareModel.Layers, gmmCount, memoryIn.Id,
+            memoryIn.Get(), memoryIn.GetDescriptorsBase(modelId), sender, detector);
+        hardwareModel->Build();
     }
 
     createSubmodels(detector);
