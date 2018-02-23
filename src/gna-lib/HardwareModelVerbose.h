@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2017 Intel Corporation.
+ Copyright 2018 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -61,6 +61,8 @@ public:
         const GnaOperationMode operationMode) override final;
 
 private:
+    static void zeroMemory(void *memoryIn, size_t memorySize);
+
     void executeDebugAction(dbg_action& action);
 
     FILE * const getActionFile(dbg_action& action);
@@ -92,8 +94,6 @@ private:
     void setGmmDescriptor(dbg_action action);
 
     void setDescriptor(uint8_t *xnnParam, uint64_t xnnValue, gna_set_size valueSize);
-
-    void zeroMemory(void *memoryIn, size_t memorySize);
 
     std::vector<dbg_action> prescoreActionVector;
 

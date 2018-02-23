@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2017 Intel Corporation.
+ Copyright 2018 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -47,15 +47,15 @@ const size_t HardwareModel::CalculateDescriptorSize(const uint16_t layerCount, c
 
 HardwareModel::HardwareModel(const gna_model_id modId, const std::vector<std::unique_ptr<Layer>>& layers,
     uint16_t gmmCount, const uint64_t memoryIdIn, const BaseAddressC memoryBaseIn, const BaseAddressC descriptorBaseIn, IoctlSender &sender, const AccelerationDetector& detector) :
+    memoryId{ memoryIdIn },
     memoryBase{ memoryBaseIn },
     modelId{modId},
-    memoryId{ memoryIdIn },
-    ioctlSender{sender},
     descriptorsAddress{descriptorBaseIn},
     layerDescriptorsSize{ getLayerDescriptorsSize(layers.size()) },
     hardwareBufferSize{ detector.GetHardwareBufferSize() },
-    gmmDescriptorsSize{ getGmmDescriptorsSize(gmmCount) },
-    softwareLayers{ layers }
+    ioctlSender{sender},
+    softwareLayers{ layers },
+    gmmDescriptorsSize{ getGmmDescriptorsSize(gmmCount) }
 {
 }
 void HardwareModel::InvalidateConfigCache(gna_request_cfg_id configId)

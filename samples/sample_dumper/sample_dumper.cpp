@@ -1,41 +1,56 @@
-//*****************************************************************************
-//
-// INTEL CONFIDENTIAL
-// Copyright 2018 Intel Corporation
-//
-// The source code contained or described herein and all documents related
-// to the source code ("Material") are owned by Intel Corporation or its suppliers
-// or licensors. Title to the Material remains with Intel Corporation or its suppliers
-// and licensors. The Material contains trade secrets and proprietary
-// and confidential information of Intel or its suppliers and licensors.
-// The Material is protected by worldwide copyright and trade secret laws and treaty
-// provisions. No part of the Material may be used, copied, reproduced, modified,
-// published, uploaded, posted, transmitted, distributed, or disclosed in any way
-// without Intel's prior express written permission.
-//
-// No license under any patent, copyright, trade secret or other intellectual
-// property right is granted to or conferred upon you by disclosure or delivery
-// of the Materials, either expressly, by implication, inducement, estoppel
-// or otherwise. Any license under such intellectual property rights must
-// be express and approved by Intel in writing.
-//*****************************************************************************
+/*
+ INTEL CONFIDENTIAL
+ Copyright 2018 Intel Corporation.
+
+ The source code contained or described herein and all documents related
+ to the source code ("Material") are owned by Intel Corporation or its suppliers
+ or licensors. Title to the Material remains with Intel Corporation or its suppliers
+ and licensors. The Material may contain trade secrets and proprietary
+ and confidential information of Intel Corporation and its suppliers and licensors,
+ and is protected by worldwide copyright and trade secret laws and treaty provisions.
+ No part of the Material may be used, copied, reproduced, modified, published,
+ uploaded, posted, transmitted, distributed, or disclosed in any way without Intel's
+ prior express written permission.
+
+ No license under any patent, copyright, trade secret or other intellectual
+ property right is granted to or conferred upon you by disclosure or delivery
+ of the Materials, either expressly, by implication, inducement, estoppel
+ or otherwise. Any license under such intellectual property rights must
+ be express and approved by Intel in writing.
+
+ Unless otherwise agreed by Intel in writing, you may not remove or alter this notice
+ or any other notice embedded in Materials by Intel or Intel's suppliers or licensors
+ in any way.
+*/
+
+#include <cstdio>
+#include <cstdlib>
+
+// Enable safe functions compatibility
+#if defined(__STDC_SECURE_LIB__)
+#define __STDC_WANT_SECURE_LIB__ 1
+#elif defined(__STDC_LIB_EXT1__)
+#define STDC_WANT_LIB_EXT1 1
+#else
+#define memcpy_s(_Destination, _DestinationSize, _Source, _SourceSize) memcpy(_Destination, _Source, _SourceSize)
+#endif
 
 #include <cstring>
-#include <cstdlib>
-#include <cstdio>
 #include <fstream>
+
 #include "gna-api.h"
 #include "gna-api-dumper.h"
 
 void print_outputs(
     int32_t *outputs,
     uint32_t nRows,
-    uint32_t nColumns)
+    uint32_t nColumns
+)
 {
     printf("\nOutputs:\n");
-    for(int i = 0; i < nRows; ++i)
+    for(uint32_t i = 0; i < nRows; ++i)
     {
-        for(int j = 0; j < nColumns; ++j)
+        for(uint32_t j = 0; j < nColumns; ++j)
         {
             printf("%d\t", outputs[i*nColumns + j]);
         }
@@ -48,7 +63,7 @@ void* customAlloc(size_t dumpedModelSize)
 {
     if (0 == dumpedModelSize)
     {
-        printf("customAlloc has invalid dump model size: %d\n", dumpedModelSize);
+        printf("customAlloc has invalid dump model size: %lld\n", dumpedModelSize);
         exit(-GNA_INVALIDMEMSIZE);
     }
     return _aligned_malloc(dumpedModelSize, 4096);
@@ -202,8 +217,9 @@ int wmain(int argc, wchar_t *argv[])
     nnet_layer.pOutputsIntermediate = tmp_outputs_buffer;
     nnet_layer.pOutputs = pinned_outputs;
 
-    memcpy(nnet.pLayers, &nnet_layer, sizeof(nnet_layer));   // puts the layer into the main network container
-                                                             // if there was another layer to add, it would get copied to nnet.pLayers + 1
+    // puts the layer into the main network container
+    // if there was another layer to add, it would get copied to nnet.pLayers + 1
+    memcpy_s(nnet.pLayers, nnet.nLayers * sizeof(intel_nnet_layer_t), &nnet_layer, sizeof(nnet_layer));
 
     gna_model_id model_id;
     GnaModelCreate(gna_handle, &nnet, &model_id);

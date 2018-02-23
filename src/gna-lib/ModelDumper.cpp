@@ -57,6 +57,7 @@ void* Device::Dump(gna_model_id modelId, gna_device_kind deviceKind, intel_gna_m
     Expect::NotNull(status);
     Expect::NotNull(modelHeader);
     Expect::NotNull(customAlloc);
+    Expect::True(GNA_SUE == deviceKind, GNA_CPUTYPENOTSUPPORTED); // Temporary limitation
 
     FakeDetector detector{ *ioctlSender, deviceDictionary.at(deviceKind) };
 

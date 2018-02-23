@@ -77,19 +77,17 @@ public:
         const GnaOperationMode operationMode);
 
 protected:
+    static uint32_t getLayerDescriptorsSize(const uint16_t layerCount);
+
     // needed for driver communication
+    const uint64_t memoryId;
     const BaseAddressC memoryBase;
     const gna_model_id modelId;
-    const uint64_t memoryId;
-    IoctlSender &ioctlSender;
-
     BaseAddressC descriptorsAddress;
     uint32_t layerDescriptorsSize;
     const uint32_t hardwareBufferSize;
-
+    IoctlSender &ioctlSender;
     std::vector<std::unique_ptr<HardwareLayer>> hardwareLayers;
-
-    static uint32_t getLayerDescriptorsSize(const uint16_t layerCount);
 
 private:
     static uint32_t getGmmDescriptorsSize(const uint16_t gmmLayersCount);
@@ -108,9 +106,8 @@ private:
     mutable std::map<gna_request_cfg_id, std::unique_ptr<uint8_t[]>> requestHwCaches;
     mutable std::map<gna_request_cfg_id, size_t> requestCacheSizes;
 
-    const uint32_t gmmDescriptorsSize;
-
     const std::vector<std::unique_ptr<Layer>>& softwareLayers;
+    const uint32_t gmmDescriptorsSize;
 };
 
 }
