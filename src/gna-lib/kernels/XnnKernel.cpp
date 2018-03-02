@@ -53,14 +53,14 @@ void recurrentKernelImpl1B(RecurrentConfig const * const config, PwlCached const
     // for each input vector
     for (uint32_t i = 0; i < config->inputVectorCount; i++)
     {
+        RecurrentKernelImpl1B(&runConfig);
         runConfig.input += config->inputElementCount;
         runConfig.feedbackBuffer += config->outputElementCount;
         runConfig.output += config->outputElementCount;
-        RecurrentKernelImpl1B(&runConfig);
 
+        pwl->ActivateAll(&pwl->pwl, &runPwlOutputConfig);
         runPwlOutputConfig.input += runPwlOutputConfig.elementCount;
         runPwlOutputConfig.output += runPwlOutputConfig.elementCount;
-        pwl->ActivateAll(&pwl->pwl, &runPwlOutputConfig);
     }
 }
 
@@ -72,14 +72,14 @@ void recurrentKernelImpl2B(RecurrentConfig const * const config, PwlCached const
     // for each input vector
     for (uint32_t i = 0; i < config->inputVectorCount; i++)
     {
+        RecurrentKernelImpl2B(&runConfig);
         runConfig.input += config->inputElementCount;
         runConfig.feedbackBuffer += config->outputElementCount;
         runConfig.output += config->outputElementCount;
-        RecurrentKernelImpl2B(&runConfig);
 
+        pwl->ActivateAll(&pwl->pwl, &runPwlOutputConfig);
         runPwlOutputConfig.input += runPwlOutputConfig.elementCount;
         runPwlOutputConfig.output += runPwlOutputConfig.elementCount;
-        pwl->ActivateAll(&pwl->pwl, &runPwlOutputConfig);
     }
 }
 
