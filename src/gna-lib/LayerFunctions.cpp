@@ -239,7 +239,7 @@ ActivationFunction::ActivationFunction(const nn_func_pwl *pwl, int32_t const * c
     const PwlOutputConfig& outputConfig) :
     SegmentCount{pwl->nSegments},
     Segments{static_cast<nn_pwl_seg*>(pwl->pSegments)},
-    Pwl{Inputs, Segments, SegmentCount},
+    Pwl{Inputs, outputConfig.elementCount, Segments, SegmentCount},
     Kernels{ AccelerationDetector::GetKernelMap<PwlKernel>()},
     OutputConfig{outputConfig}
 {
