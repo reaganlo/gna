@@ -79,7 +79,6 @@ MemoryMap(
     KIRQL       Irql;
     ULONG       SglSize;
     ULONG       sglMapRegs;
-    status_t    sts = GNA_SUCCESS; // status of internal calls
     UINT32      nPTables = 0;// number of required page tables
     UINT32      nPTentries = 0;// number of required page tables entries
 
@@ -129,10 +128,10 @@ MemoryMap(
         goto mem_map_error;
     }
 
-    sts = CheckMapConfigParameters(dmaVA, length);
-    if (GNA_SUCCESS != sts)
+    status = CheckMapConfigParameters(dmaVA, length);
+    if (GNA_SUCCESS != status)
     {
-        Trace(TLE, T_EXIT, "%!FUNC!: CheckMapConfigParameters failed with %d", sts);
+        Trace(TLE, T_EXIT, "%!FUNC!: CheckMapConfigParameters failed with %d", status);
         EventWriteMemoryMapFail(NULL, status);
         goto mem_map_error;
     }
