@@ -249,7 +249,7 @@ const uint32_t GMM_LAYERS_MAX_COUNT_OLD = 1024;
 const uint32_t XNN_LAYERS_MAX_COUNT_OLD = 1024;
 
 /** CNN minimum number of filter coefficients */
-const uint32_t CNN_N_FLT_COEFF_MIN = 48;
+const uint32_t CNN_N_FLT_COEFF_MIN = 8;
 
 /** CNN maximum number of filter coefficients */
 const uint32_t CNN_N_FLT_COEFF_MAX = 768;
