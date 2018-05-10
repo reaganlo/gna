@@ -244,6 +244,7 @@ DeviceInit(
     idleSettings.ExcludeD3Cold = WdfFalse;
     idleSettings.Enabled = WdfTrue;
     idleSettings.PowerUpIdleDeviceOnSystemWake = WdfTrue;
+    idleSettings.IdleTimeoutType = SystemManagedIdleTimeout;
 
     status = WdfDeviceAssignS0IdleSettings(dev, &idleSettings);
     if (!NT_SUCCESS(status))
