@@ -54,7 +54,7 @@ DriverVer=
 ;==============================================================================
 
 [DestinationDirs]
-DefaultDestDir = 12
+DefaultDestDir = 13
 
 [SourceDisksNames]
 1 = %DiskName%,,,""
@@ -95,7 +95,7 @@ DisplayName    = %IntelGNA.SVCDESC%
 ServiceType    = 1               ; SERVICE_KERNEL_DRIVER
 StartType      = 3               ; SERVICE_DEMAND_START
 ErrorControl   = 1               ; SERVICE_ERROR_NORMAL
-ServiceBinary  = %12%\gnalegacy.sys
+ServiceBinary  = %13%\gnalegacy.sys
 LoadOrderGroup = Extended Base
 
 ;==============================================================================
