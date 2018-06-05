@@ -38,7 +38,7 @@ AffineBaseLayer::AffineBaseLayer(const nn_layer *layer) :
         PwlOutputConfig{Output.ElementCount * Output.VectorCount, Output.ScratchPad, Output.Buffer})),
     Affine(AffineFunction::Create(layer->nLayerKind, layer->pLayerStruct,
         AffineBaseConfig{Output.ElementCount, Input.VectorCount, Input.ElementCount, Input.Buffer,
-            Activation ? Output.ScratchPad : Output.Buffer}))
+            Activation ? Output.ScratchPad : Output.Buffer.Get<int32_t>()}))
 {
     Output.SetOutputMode(Activation.operator bool(), layer->nBytesPerOutput);
     if (Activation)
@@ -123,12 +123,12 @@ void AffineLayer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration, Va
     AffineBaseLayer::UpdateKernelConfigs(layerConfiguration, validBoundaries);
     if (Activation)
     {
-        if (layerConfiguration.ActiveList)
+        if (layerConfiguration.ActList)
         {
-            Expect::InRange(layerConfiguration.ActiveList->IndicesCount, 1, Output.ElementCount, GNA_INVALIDINDICES);
+            Expect::InRange(layerConfiguration.ActList->IndicesCount, 1, Output.ElementCount, GNA_INVALIDINDICES);
         }
-        auto const outputCount = layerConfiguration.ActiveList ?
-            layerConfiguration.ActiveList->IndicesCount : Output.ElementCount;
+        auto const outputCount = layerConfiguration.ActList ?
+            layerConfiguration.ActList->IndicesCount : Output.ElementCount;
         layerConfiguration.Configs.PwlOutput->elementCount = outputCount * Output.VectorCount;
     }
 }

@@ -67,13 +67,13 @@ private:
 
     FILE * const getActionFile(dbg_action& action);
 
-    UINT32 readReg(UINT32 regOffset);
+    uint32_t readReg(uint32_t regOffset);
 
-    void writeReg(UINT32 regOffset, UINT32 regVal);
+    void writeReg(uint32_t regOffset, uint32_t regVal);
 
     void readPageDir(FILE *f);
 
-    void readRegister(FILE *file, UINT32 registerOffset);
+    void readRegister(FILE *file, uint32_t registerOffset);
 
     void writeRegister(dbg_action regAction);
 
@@ -81,7 +81,7 @@ private:
 
     void dumpMemory(FILE *file);
 
-    void dumpPageDir(hw_pgdir_out_t &pagedir, FILE *f);
+    void dumpPageDir(GNA_PGDIR_OUT &pagedir, FILE *f);
 
     void dumpPage(uint8_t *ph_addr, uint8_t* v_addr, size_t size, FILE *f);
 

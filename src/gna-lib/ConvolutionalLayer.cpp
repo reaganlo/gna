@@ -66,14 +66,14 @@ FeatureMaps::FeatureMaps(const nn_layer_conv * sourceLayer) :
 ConvolutionFunction::ConvolutionFunction(const nn_layer_conv * sourceLayer, const uint32_t inputElementCount,
     int16_t const * const inputs, int32_t * const outputs) :
     Filters{ sourceLayer, inputElementCount },
-    FeatureMaps{ sourceLayer },
-    OutputElementsCount{ (inputElementCount - Filters.CoefficientCount) / FeatureMaps.Stride + 1 },
+    FeatMaps{ sourceLayer },
+    OutputElementsCount{ (inputElementCount - Filters.CoefficientCount) / FeatMaps.Stride + 1 },
     kernels{AccelerationDetector::GetKernelMap<ConvolutionKernel>()},
-    hiddenConfig{FeatureMaps.Stride, OutputElementsCount, Filters.Count, Filters.CoefficientCount,
+    hiddenConfig{FeatMaps.Stride, OutputElementsCount, Filters.Count, Filters.CoefficientCount,
         inputs, Filters.Data, Filters.Biases, outputs}
 {
-    Expect::InRange(FeatureMaps.Stride, 1, Filters.CoefficientCount, XNN_ERR_LYR_CFG);
-    auto featureCount = FeatureMaps.RowCount * FeatureMaps.Stride;
+    Expect::InRange(FeatMaps.Stride, 1, Filters.CoefficientCount, XNN_ERR_LYR_CFG);
+    auto featureCount = FeatMaps.RowCount * FeatMaps.Stride;
     Expect::True(featureCount >= CNN_N_FLT_COEFF_MIN, XNN_ERR_LYR_CFG);
 }
 
@@ -124,7 +124,7 @@ CnnLayer::CnnLayer(nn_layer const * const layer) :
         PwlOutputConfig{Output.ElementCount * Output.VectorCount, Output.ScratchPad, Output.Buffer})),
     Pooling{static_cast<const nn_layer_conv*>(layer->pLayerStruct)},
     Convolution{static_cast<const nn_layer_conv*>(layer->pLayerStruct), Input.ElementCount, Input.Buffer,
-        (INTEL_NO_POOLING != Pooling.Type) ? Output.Buffer : (Activation ? Output.ScratchPad : Output.Buffer)}
+        (INTEL_NO_POOLING != Pooling.Type) ? Output.Buffer.Get<int32_t>() : (Activation ? Output.ScratchPad : Output.Buffer.Get<int32_t>())}
 {
     Expect::True(Input.VectorCount == 1, XNN_ERR_GROUPING);
     Expect::True(Input.VectorCount == Output.VectorCount, XNN_ERR_GROUPING);
@@ -172,7 +172,8 @@ void CnnLayer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration, Valid
     }
 
     auto filterOutputBuffer = Activation ? Output.ScratchPad :
-        (layerConfiguration.OutputBuffer ? *layerConfiguration.OutputBuffer : Output.Buffer);
+        (layerConfiguration.OutputBuffer
+         ? layerConfiguration.OutputBuffer->Get<int32_t>() : Output.Buffer.Get<int32_t>());
 
     auto pwlOutputBuffer = layerConfiguration.OutputBuffer
         ? *layerConfiguration.OutputBuffer

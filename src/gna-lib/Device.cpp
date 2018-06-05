@@ -36,10 +36,10 @@
 
 #include "Validator.h"
 
-#if WINDOWS == 1
+#if defined(_WIN32)
 #include "WindowsIoctlSender.h"
-#else // LINUX
-
+#else // linux
+#include "LinuxIoctlSender.h"
 #endif
 
 using std::ofstream;
@@ -52,12 +52,12 @@ using namespace GNA;
 Device::Device(gna_device_id* deviceId, uint8_t threadCount) :
     requestHandler{ threadCount },
     memoryObjects{ APP_MEMORIES_LIMIT },
-    ioctlSender{ 
-#if WINDOWS == 1
+    ioctlSender{
+#if defined(_WIN32)
     std::make_unique<WindowsIoctlSender>()
-#else // LINUX
-     
-#endif 
+#else // linux
+    std::make_unique<LinuxIoctlSender>()
+#endif
     },
     accelerationDetector{*ioctlSender}
 {
@@ -117,7 +117,7 @@ void * Device::AllocateMemory(const uint32_t requestedSize, const uint16_t layer
     Expect::NotNull(sizeGranted);
     *sizeGranted = 0;
 
-    auto memoryId = 0ui64;
+    auto memoryId = uint64_t{0};
     for (; memoryId < memoryObjects.size(); ++memoryId)
     {
         if (!memoryObjects.at(memoryId))
@@ -143,7 +143,7 @@ void * Device::AllocateMemory(const uint32_t requestedSize, const uint16_t layer
 }
 
 void Device::FreeMemory()
-{    
+{
     if (accelerationDetector.IsHardwarePresent())
     {
         for (auto& memoryObject : memoryObjects)

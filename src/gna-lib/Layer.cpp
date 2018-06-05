@@ -184,9 +184,9 @@ Layer::Layer(const nn_layer *layer) :
 
 void Layer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration, ValidBoundariesFunctor validBoundaries) const
 {
-    if (layerConfiguration.ActiveList)
+    if (layerConfiguration.ActList)
     {
-        const auto activeList = layerConfiguration.ActiveList.get();
+        const auto activeList = layerConfiguration.ActList.get();
         validBoundaries(activeList->Indices, activeList->IndicesCount * sizeof(uint32_t));
     }
 }

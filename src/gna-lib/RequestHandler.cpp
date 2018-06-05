@@ -62,7 +62,7 @@ void RequestHandler::Enqueue(
 
         *requestId = nRequests;
         r->Id = *requestId;
-        auto insert = requests.try_emplace(*requestId, move(request));
+        auto insert = requests.emplace(*requestId, move(request));
         if (!insert.second)
         {
             throw GnaException(GNA_ERR_RESOURCES);
@@ -95,7 +95,7 @@ status_t RequestHandler::WaitFor(const gna_request_id requestId, const gna_timeo
         
         auto perfResults = request->PerfResults;
         auto profiler = request->Profiler.get();
-        profilerDTscStop(&profiler->process);
+        profilerTscStop(&profiler->process);
         if (perfResults)
         {
             perfResults->lib.preprocess = profilerGetTscPassed(&profiler->preprocess);

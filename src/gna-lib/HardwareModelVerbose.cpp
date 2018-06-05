@@ -270,6 +270,7 @@ FILE * const GNA::HardwareModelVerbose::getActionFile(dbg_action & action)
     }
     // yes, open actionFile
     FILE * actionFile = nullptr;
+    errno_t openError = 0;
     try
     {
         // get actionFile name
@@ -289,8 +290,8 @@ FILE * const GNA::HardwareModelVerbose::getActionFile(dbg_action & action)
         }
 
         // open file
-        actionFile = fopen(actionFileName.c_str(), "w");
-        if (nullptr == actionFile)
+        fopen_s(&actionFile, actionFileName.c_str(), "w");
+        if (0 != openError || nullptr == actionFile)
         {
             throw GnaException(GNA_NULLARGNOTALLOWED);
         }

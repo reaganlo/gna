@@ -68,7 +68,7 @@ public:
 
     void InvalidateConfigCache(gna_request_cfg_id configId);
 
-    virtual status_t HardwareModel::Score(
+    virtual status_t Score(
         uint32_t layerIndex,
         uint32_t layerCount,
         const RequestConfiguration& requestConfiguration,

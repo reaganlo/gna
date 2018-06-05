@@ -29,8 +29,11 @@
 #include "gna-api-instrumentation.h"
 
 #if defined(_WIN32)
+#if !defined(_MSC_VER)
+#include <immintrin.h>
+#else
 #include <intrin.h>
-
+#endif
 #else
 #include <mmintrin.h>
 #endif // os

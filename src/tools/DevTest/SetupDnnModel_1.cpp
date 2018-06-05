@@ -272,6 +272,7 @@ SetupDnnModel_1::SetupDnnModel_1(DeviceController & deviceCtrl, bool wght2B, boo
         deviceController.ActiveListAdd(configId, 0, indicesCount, indices);
     }
 
+#if HW_VERBOSE == 1
     constexpr uint32_t nActions = 17;
 
     dbg_action afterActions[nActions]; 
@@ -333,6 +334,7 @@ SetupDnnModel_1::SetupDnnModel_1(DeviceController & deviceCtrl, bool wght2B, boo
     afterActions[16].gna_register = GNA_STS;
 
     deviceController.AfterscoreDebug(modelId, nActions, afterActions);
+#endif
 
     //deviceController.DumpModel(modelId, "dump.bin");
 }
@@ -352,7 +354,7 @@ void SetupDnnModel_1::checkReferenceOutput(int modelIndex, int configIndex) cons
         if (ref_output[i] != outElemVal)
         {
             // TODO: how it should notified? return or throw
-            throw std::exception("Wrong output");
+            throw std::runtime_error("Wrong output");
         }
     }
 }
@@ -474,7 +476,7 @@ void SetupDnnModel_1::samplePwl(intel_pwl_segment_t *segments, uint32_t nSegment
     auto xBaseInc = UINT32_MAX / nSegments;
     auto yBase = INT32_MAX;
     auto yBaseInc = UINT16_MAX / nSegments;
-    for (auto i = 0ui32; i < nSegments; i++, xBase += xBaseInc, yBase += yBaseInc)
+    for (auto i = uint32_t{0}; i < nSegments; i++, xBase += xBaseInc, yBase += yBaseInc)
     {
         segments[i].xBase = xBase;
         segments[i].yBase = yBase;

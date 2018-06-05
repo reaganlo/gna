@@ -88,10 +88,10 @@ void RequestConfiguration::AddActiveList(uint32_t layerIndex, const ActiveList& 
 
     auto found = LayerConfigurations.emplace(layerIndex, std::make_unique<LayerConfiguration>());
     auto layerConfiguration = found.first->second.get();
-    Expect::Null(layerConfiguration->ActiveList.get());
+    Expect::Null(layerConfiguration->ActList.get());
 
     auto activeListPtr = ActiveList::Create(activeList);
-    layerConfiguration->ActiveList.swap(activeListPtr);
+    layerConfiguration->ActList.swap(activeListPtr);
     ++ActiveListCount;
 
     Model.InvalidateConfig(ConfigId, layerConfiguration, layerIndex);

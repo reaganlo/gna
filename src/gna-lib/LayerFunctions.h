@@ -166,8 +166,10 @@ public:
 class ActivationFunction
 {
 public:
-    static const std::unique_ptr<const ActivationFunction> Create(nn_layer_kind layerKind, void const *layerDetails, 
+    static std::unique_ptr<const ActivationFunction> Create(nn_layer_kind layerKind, void const *layerDetails,
         int32_t const * const Inputs, const PwlOutputConfig& outputConfig);
+
+    static inline bool IsActivationFunctionEnabled(const intel_pwl_func_t * const pwl);
 
     static const uint32_t SegmentCountMax = XNN_N_PWL_SEGS_MAX;
     static const uint32_t SegmentCountMin = XNN_N_PWL_SEGS_MIN;
@@ -179,7 +181,6 @@ public:
     std::unique_ptr<PwlOutputConfig> GetOutputConfig(int16_t * const outputs) const;
     void ComputeHidden(acceleration accel, uint32_t *saturationCount) const;
     void ComputeConfig(const LayerConfiguration& layerConfiguration, acceleration accel, uint32_t *saturationCount) const;
-    
 
     uint32_t const SegmentCount;
     nn_pwl_seg const * const Segments;

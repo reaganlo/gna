@@ -152,7 +152,7 @@ public:
             case Action::LoadModel:
                 if (modelSetup)
                 {
-                    throw std::exception("Script error: model already loaded");
+                    throw std::runtime_error("Script error: model already loaded");
                 }
 
                 modelSetup = msf.CreateModel(action->modelSetup);
@@ -161,7 +161,7 @@ public:
             case Action::CloseModel:
                 if (!modelSetup)
                 {
-                    throw std::exception("Script error: no model to close");
+                    throw std::runtime_error("Script error: no model to close");
                 }
 
                 modelSetup.reset();

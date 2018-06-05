@@ -26,6 +26,10 @@
 #include <cstdio>
 #include <cstdlib>
 
+#if defined(__GNUC__) && !defined(__INTEL_COMPILER)
+#include <mm_malloc.h>
+#endif
+
 // Enable safe functions compatibility
 #if defined(__STDC_SECURE_LIB__)
 #define __STDC_WANT_SECURE_LIB__ 1
@@ -63,13 +67,13 @@ void* customAlloc(size_t dumpedModelSize)
 {
     if (0 == dumpedModelSize)
     {
-        printf("customAlloc has invalid dump model size: %lld\n", dumpedModelSize);
+        printf("customAlloc has invalid dump model size: %zu\n", dumpedModelSize);
         exit(-GNA_INVALIDMEMSIZE);
     }
-    return _aligned_malloc(dumpedModelSize, 4096);
+    return _mm_malloc(dumpedModelSize, 4096);
 }
 
-int wmain(int argc, wchar_t *argv[])
+int main(int argc, char *argv[])
 {
     int16_t weights[8 * 16] = {                                          // sample weight matrix (8 rows, 16 cols)
         -6, -2, -1, -1, -2,  9,  6,  5,  2,  4, -1,  5, -2, -4,  0,  9,  // in case of affine layer this is the left operand of matrix mul
@@ -241,7 +245,7 @@ int wmain(int argc, wchar_t *argv[])
     dumpStream.write(reinterpret_cast<const char*>(dumped_model), model_header.model_size);
 
     /* Release dump memory if no longer needed. */
-    _aligned_free(dumped_model);
+    _mm_free(dumped_model);
 
     gna_request_cfg_id config_id;
     GnaModelRequestConfigAdd(model_id, &config_id);

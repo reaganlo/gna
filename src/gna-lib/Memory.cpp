@@ -25,6 +25,8 @@ in any way.
 
 #include "Memory.h"
 
+#include <cstring>
+
 #include "AccelerationDetector.h"
 #include "CompiledModel.h"
 #include "Validator.h"

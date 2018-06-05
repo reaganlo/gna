@@ -63,7 +63,7 @@ void RnnLayer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration, Valid
     AffineBaseLayer::UpdateKernelConfigs(layerConfiguration, validBoundaries);
 
     auto inputBuffer = layerConfiguration.InputBuffer
-        ? layerConfiguration.InputBuffer->Get<int16_t>() : Input.Buffer;
+        ? *layerConfiguration.InputBuffer : Input.Buffer;
 
     auto outputBuffer = layerConfiguration.OutputBuffer
         ? *layerConfiguration.OutputBuffer : Output.Buffer;

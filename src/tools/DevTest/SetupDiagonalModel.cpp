@@ -133,7 +133,7 @@ void SetupDiagonalModel::checkReferenceOutput(int modelIndex, int configIndex) c
         if (ref_output[i] != outElemVal)
         {
             // TODO: how it should notified? return or throw
-            throw std::exception("Wrong output");
+            throw std::runtime_error("Wrong output");
         }
     }
 }
@@ -242,7 +242,7 @@ void SetupDiagonalModel::samplePwl(intel_pwl_segment_t *segments, uint32_t nSegm
     auto xBaseInc = UINT32_MAX / nSegments;
     auto yBase = INT32_MAX;
     auto yBaseInc = UINT16_MAX / nSegments;
-    for (auto i = 0ui32; i < nSegments; i++, xBase += xBaseInc, yBase += yBaseInc)
+    for (auto i = uint32_t{0}; i < nSegments; i++, xBase += xBaseInc, yBase += yBaseInc)
     {
         segments[i].xBase = xBase;
         segments[i].yBase = yBase;

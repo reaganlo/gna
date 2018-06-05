@@ -26,6 +26,8 @@
 #include <memory>
 #include <thread>
 
+#include "gna-api-dumper.h"
+
 #include "Device.h"
 #if HW_VERBOSE == 1
 #include "DeviceVerbose.h"

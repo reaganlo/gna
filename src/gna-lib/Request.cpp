@@ -25,6 +25,8 @@
 
 #include "Request.h"
 
+#include <cstring>
+
 #include "RequestConfiguration.h"
 
 using std::function;

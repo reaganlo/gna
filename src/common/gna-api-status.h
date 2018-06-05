@@ -2,11 +2,11 @@
     Copyright 2018 Intel Corporation.
     This software and the related documents are Intel copyrighted materials,
     and your use of them is governed by the express license under which they
-    were provided to you (Intel OBL Software License Agreement (OEM/IHV/ISV 
+    were provided to you (Intel OBL Software License Agreement (OEM/IHV/ISV
     Distribution & Single User) (v. 11.2.2017) ). Unless the License provides
     otherwise, you may not use, modify, copy, publish, distribute, disclose or
     transmit this software or the related documents without Intel's prior
-    written permission.
+    written permission.
     This software and the related documents are provided as is, with no
     express or implied warranties, other than those that are expressly
     stated in the License.
@@ -26,6 +26,17 @@
 
 #ifdef __cplusplus
 extern "C" {
+#endif
+
+/** Library API import/export macros */
+#if 1 == _WIN32
+#   if 1 == INTEL_GNA_DLLEXPORT
+#       define GNAAPI __declspec(dllexport)
+#   else
+#       define GNAAPI __declspec(dllimport)
+#   endif
+#else
+#       define GNAAPI
 #endif
 
 /** GNA API Status codes */
@@ -121,6 +132,15 @@ typedef enum _gna_status_t
 } intel_gna_status_t;       // GNA API Status codes
 
 static_assert(4 == sizeof(intel_gna_status_t), "Invalid size of intel_gna_status_t");
+
+/**
+ * Gets printable status name with the description as a c-string
+ *
+ * @param status        A status to translate.
+ * @return A c-string status with the description.
+ */
+GNAAPI char const * GnaStatusToString(
+    intel_gna_status_t status);
 
 #ifdef __cplusplus
 }

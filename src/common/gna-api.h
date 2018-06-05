@@ -6,7 +6,7 @@
     Distribution & Single User) (v. 11.2.2017) ). Unless the License provides
     otherwise, you may not use, modify, copy, publish, distribute, disclose or
     transmit this software or the related documents without Intel's prior
-    written permission.
+    written permission.
     This software and the related documents are provided as is, with no
     express or implied warranties, other than those that are expressly
     stated in the License.
@@ -310,15 +310,6 @@ const gna_timeout GNA_REQUEST_TIMEOUT_MAX = 180000;
 
 
 /******************  GNA Utilities API ******************/
-
-/**
- * Gets printable status name with the description as a c-string
- *
- * @param status        A status to translate.
- * @return A c-string status with the description.
- */
-GNAAPI char const * GnaStatusToString(
-    intel_gna_status_t status);
 
 /**
  * Rounds a number up, to the nearest multiple of significance

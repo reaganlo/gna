@@ -37,3 +37,4 @@ std::unique_ptr<ActiveList> ActiveList::Create(const ActiveList& activeList)
 ActiveList::ActiveList(const uint32_t indicesCountIn, const uint32_t* indicesIn) :
     IndicesCount{indicesCountIn},
     Indices{indicesIn} { }
+

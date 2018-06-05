@@ -41,7 +41,7 @@ __forceinline void saturate64_store_out(int64_t * const out, uint32_t * const sa
     {
         *out = INT32_MIN;
         (*saturationCount)++;
-    } 
+    }
 }
 
 void SumPartialPoolingFunction(const uint32_t PS, const int32_t PNE, const uint32_t PSI, int64_t* P, int64_t* V)
@@ -230,14 +230,14 @@ void ConvolutionKernelImpl(ConvolutionConfig const * const config)
                 s7 = _mm_madd_epi16(s7, sf);
                 s8 = _mm_madd_epi16(s8, sf);
 
-                sum1 += s1.m128i_i32[0] + s1.m128i_i32[1] + s1.m128i_i32[2] + s1.m128i_i32[3];
-                sum2 += s2.m128i_i32[0] + s2.m128i_i32[1] + s2.m128i_i32[2] + s2.m128i_i32[3];
-                sum3 += s3.m128i_i32[0] + s3.m128i_i32[1] + s3.m128i_i32[2] + s3.m128i_i32[3];
-                sum4 += s4.m128i_i32[0] + s4.m128i_i32[1] + s4.m128i_i32[2] + s4.m128i_i32[3];
-                sum5 += s5.m128i_i32[0] + s5.m128i_i32[1] + s5.m128i_i32[2] + s5.m128i_i32[3];
-                sum6 += s6.m128i_i32[0] + s6.m128i_i32[1] + s6.m128i_i32[2] + s6.m128i_i32[3];
-                sum7 += s7.m128i_i32[0] + s7.m128i_i32[1] + s7.m128i_i32[2] + s7.m128i_i32[3];
-                sum8 += s8.m128i_i32[0] + s8.m128i_i32[1] + s8.m128i_i32[2] + s8.m128i_i32[3];
+                sum1 += _mm_extract_epi32(s1, 0) + _mm_extract_epi32(s1, 1) + _mm_extract_epi32(s1, 2) + _mm_extract_epi32(s1, 3);
+                sum2 += _mm_extract_epi32(s2, 0) + _mm_extract_epi32(s2, 1) + _mm_extract_epi32(s2, 2) + _mm_extract_epi32(s2, 3);
+                sum3 += _mm_extract_epi32(s3, 0) + _mm_extract_epi32(s3, 1) + _mm_extract_epi32(s3, 2) + _mm_extract_epi32(s3, 3);
+                sum4 += _mm_extract_epi32(s4, 0) + _mm_extract_epi32(s4, 1) + _mm_extract_epi32(s4, 2) + _mm_extract_epi32(s4, 3);
+                sum5 += _mm_extract_epi32(s5, 0) + _mm_extract_epi32(s5, 1) + _mm_extract_epi32(s5, 2) + _mm_extract_epi32(s5, 3);
+                sum6 += _mm_extract_epi32(s6, 0) + _mm_extract_epi32(s6, 1) + _mm_extract_epi32(s6, 2) + _mm_extract_epi32(s6, 3);
+                sum7 += _mm_extract_epi32(s7, 0) + _mm_extract_epi32(s7, 1) + _mm_extract_epi32(s7, 2) + _mm_extract_epi32(s7, 3);
+                sum8 += _mm_extract_epi32(s8, 0) + _mm_extract_epi32(s8, 1) + _mm_extract_epi32(s8, 2) + _mm_extract_epi32(s8, 3);
             }
 #endif
 
@@ -308,13 +308,13 @@ void ConvolutionKernelImpl(ConvolutionConfig const * const config)
                 __m128i sf = _mm256_castsi256_si128(f);
 
                 s1 = _mm_madd_epi16(s1, sf);
-                sum1 += s1.m128i_i32[0] + s1.m128i_i32[1] + s1.m128i_i32[2] + s1.m128i_i32[3];
+                sum1 += _mm_extract_epi32(s1, 0) + _mm_extract_epi32(s1, 1) + _mm_extract_epi32(s1, 2) + _mm_extract_epi32(s1, 3);
             }
 #endif
 
 #if GNA_SAT == 1
             saturate_store_out(&sum1, out1++, saturationCount);
-#else 
+#else
             *out1++ = sum1;
 #endif
         }
@@ -343,7 +343,7 @@ void ConvolutionKernelImpl(ConvolutionConfig const * const config)
 #endif
 }
 
-void ConvolutionPoolingKernelImpl(ConvolutionConfig const * const filterConfig, 
+void ConvolutionPoolingKernelImpl(ConvolutionConfig const * const filterConfig,
     PoolingConfig const * const poolConfig, PwlCached const * const pwl)
 {
     const uint32_t FN = filterConfig->filterCount;
@@ -360,7 +360,7 @@ void ConvolutionPoolingKernelImpl(ConvolutionConfig const * const filterConfig,
     int64_t * const pool = poolConfig->buffer;
 
     void(*func_partial_pooling)(const uint32_t PS, const int32_t pool_num_entries, const uint32_t pool_start_index, int64_t* P, int64_t *V);
-    
+
     if (PT == INTEL_SUM_POOLING)
     {
         func_partial_pooling = SumPartialPoolingFunction;
@@ -391,7 +391,7 @@ void ConvolutionPoolingKernelImpl(ConvolutionConfig const * const filterConfig,
     mm_ptr in1, in2, in3, in4, in5, in6, flt, in_end;
 #if OPT_LEVEL == 4 || OPT_LEVEL == 5 // AVX1 load vectors
     __m256i v1, v2, v3, v4, v5, v6, f;
-#else 
+#else
     mm_vector v1, v2, v3, v4, v5, v6, f;
 #endif
     mm_vector im1, im2, im3, im4, im5, im6;
@@ -459,7 +459,7 @@ void ConvolutionPoolingKernelImpl(ConvolutionConfig const * const filterConfig,
                         in5++;
                         in6++;
                         flt++;
-                        
+
                         im1 = vec_madd16(v1, f);
                         im2 = vec_madd16(v2, f);
                         im3 = vec_madd16(v3, f);
@@ -502,13 +502,13 @@ void ConvolutionPoolingKernelImpl(ConvolutionConfig const * const filterConfig,
                         s5 = _mm_madd_epi16(s5, sf);
                         s6 = _mm_madd_epi16(s6, sf);
 
-                        sum1 += s1.m128i_i32[0] + s1.m128i_i32[1] + s1.m128i_i32[2] + s1.m128i_i32[3];
-                        sum2 += s2.m128i_i32[0] + s2.m128i_i32[1] + s2.m128i_i32[2] + s2.m128i_i32[3];
-                        sum3 += s3.m128i_i32[0] + s3.m128i_i32[1] + s3.m128i_i32[2] + s3.m128i_i32[3];
-                        sum4 += s4.m128i_i32[0] + s4.m128i_i32[1] + s4.m128i_i32[2] + s4.m128i_i32[3];
-                        sum5 += s5.m128i_i32[0] + s5.m128i_i32[1] + s5.m128i_i32[2] + s5.m128i_i32[3];
-                        sum6 += s6.m128i_i32[0] + s6.m128i_i32[1] + s6.m128i_i32[2] + s6.m128i_i32[3];
-                    }   
+                        sum1 += _mm_extract_epi32(s1, 0) + _mm_extract_epi32(s1, 1) + _mm_extract_epi32(s1, 2) + _mm_extract_epi32(s1, 3);
+                        sum2 += _mm_extract_epi32(s2, 0) + _mm_extract_epi32(s2, 1) + _mm_extract_epi32(s2, 2) + _mm_extract_epi32(s2, 3);
+                        sum3 += _mm_extract_epi32(s3, 0) + _mm_extract_epi32(s3, 1) + _mm_extract_epi32(s3, 2) + _mm_extract_epi32(s3, 3);
+                        sum4 += _mm_extract_epi32(s4, 0) + _mm_extract_epi32(s4, 1) + _mm_extract_epi32(s4, 2) + _mm_extract_epi32(s4, 3);
+                        sum5 += _mm_extract_epi32(s5, 0) + _mm_extract_epi32(s5, 1) + _mm_extract_epi32(s5, 2) + _mm_extract_epi32(s5, 3);
+                        sum6 += _mm_extract_epi32(s6, 0) + _mm_extract_epi32(s6, 1) + _mm_extract_epi32(s6, 2) + _mm_extract_epi32(s6, 3);
+                    }
 #endif
 
                     sum1 += vec_sum(acc1);
@@ -565,7 +565,7 @@ void ConvolutionPoolingKernelImpl(ConvolutionConfig const * const filterConfig,
                         in4++;
                         in5++;
                         flt++;
-                        
+
                         im1 = vec_madd16(v1, f);
                         im2 = vec_madd16(v2, f);
                         im3 = vec_madd16(v3, f);
@@ -603,12 +603,12 @@ void ConvolutionPoolingKernelImpl(ConvolutionConfig const * const filterConfig,
                         s4 = _mm_madd_epi16(s4, sf);
                         s5 = _mm_madd_epi16(s5, sf);
 
-                        sum1 += s1.m128i_i32[0] + s1.m128i_i32[1] + s1.m128i_i32[2] + s1.m128i_i32[3];
-                        sum2 += s2.m128i_i32[0] + s2.m128i_i32[1] + s2.m128i_i32[2] + s2.m128i_i32[3];
-                        sum3 += s3.m128i_i32[0] + s3.m128i_i32[1] + s3.m128i_i32[2] + s3.m128i_i32[3];
-                        sum4 += s4.m128i_i32[0] + s4.m128i_i32[1] + s4.m128i_i32[2] + s4.m128i_i32[3];
-                        sum5 += s5.m128i_i32[0] + s5.m128i_i32[1] + s5.m128i_i32[2] + s5.m128i_i32[3];
-                    }   
+                        sum1 += _mm_extract_epi32(s1, 0) + _mm_extract_epi32(s1, 1) + _mm_extract_epi32(s1, 2) + _mm_extract_epi32(s1, 3);
+                        sum2 += _mm_extract_epi32(s2, 0) + _mm_extract_epi32(s2, 1) + _mm_extract_epi32(s2, 2) + _mm_extract_epi32(s2, 3);
+                        sum3 += _mm_extract_epi32(s3, 0) + _mm_extract_epi32(s3, 1) + _mm_extract_epi32(s3, 2) + _mm_extract_epi32(s3, 3);
+                        sum4 += _mm_extract_epi32(s4, 0) + _mm_extract_epi32(s4, 1) + _mm_extract_epi32(s4, 2) + _mm_extract_epi32(s4, 3);
+                        sum5 += _mm_extract_epi32(s5, 0) + _mm_extract_epi32(s5, 1) + _mm_extract_epi32(s5, 2) + _mm_extract_epi32(s5, 3);
+                    }
 #endif
 
                     sum1 += vec_sum(acc1);
@@ -657,7 +657,7 @@ void ConvolutionPoolingKernelImpl(ConvolutionConfig const * const filterConfig,
                         in3++;
                         in4++;
                         flt++;
-                        
+
                         im1 = vec_madd16(v1, f);
                         im2 = vec_madd16(v2, f);
                         im3 = vec_madd16(v3, f);
@@ -690,11 +690,11 @@ void ConvolutionPoolingKernelImpl(ConvolutionConfig const * const filterConfig,
                         s3 = _mm_madd_epi16(s3, sf);
                         s4 = _mm_madd_epi16(s4, sf);
 
-                        sum1 += s1.m128i_i32[0] + s1.m128i_i32[1] + s1.m128i_i32[2] + s1.m128i_i32[3];
-                        sum2 += s2.m128i_i32[0] + s2.m128i_i32[1] + s2.m128i_i32[2] + s2.m128i_i32[3];
-                        sum3 += s3.m128i_i32[0] + s3.m128i_i32[1] + s3.m128i_i32[2] + s3.m128i_i32[3];
-                        sum4 += s4.m128i_i32[0] + s4.m128i_i32[1] + s4.m128i_i32[2] + s4.m128i_i32[3];
-                    }   
+                        sum1 += _mm_extract_epi32(s1, 0) + _mm_extract_epi32(s1, 1) + _mm_extract_epi32(s1, 2) + _mm_extract_epi32(s1, 3);
+                        sum2 += _mm_extract_epi32(s2, 0) + _mm_extract_epi32(s2, 1) + _mm_extract_epi32(s2, 2) + _mm_extract_epi32(s2, 3);
+                        sum3 += _mm_extract_epi32(s3, 0) + _mm_extract_epi32(s3, 1) + _mm_extract_epi32(s3, 2) + _mm_extract_epi32(s3, 3);
+                        sum4 += _mm_extract_epi32(s4, 0) + _mm_extract_epi32(s4, 1) + _mm_extract_epi32(s4, 2) + _mm_extract_epi32(s4, 3);
+                    }
 #endif
 
                     sum1 += vec_sum(acc1);
@@ -736,7 +736,7 @@ void ConvolutionPoolingKernelImpl(ConvolutionConfig const * const filterConfig,
                         in2++;
                         in3++;
                         flt++;
-                        
+
                         im1 = vec_madd16(v1, f);
                         im2 = vec_madd16(v2, f);
                         im3 = vec_madd16(v3, f);
@@ -764,10 +764,10 @@ void ConvolutionPoolingKernelImpl(ConvolutionConfig const * const filterConfig,
                         s2 = _mm_madd_epi16(s2, sf);
                         s3 = _mm_madd_epi16(s3, sf);
 
-                        sum1 += s1.m128i_i32[0] + s1.m128i_i32[1] + s1.m128i_i32[2] + s1.m128i_i32[3];
-                        sum2 += s2.m128i_i32[0] + s2.m128i_i32[1] + s2.m128i_i32[2] + s2.m128i_i32[3];
-                        sum3 += s3.m128i_i32[0] + s3.m128i_i32[1] + s3.m128i_i32[2] + s3.m128i_i32[3];
-                    }   
+                        sum1 += _mm_extract_epi32(s1, 0) + _mm_extract_epi32(s1, 1) + _mm_extract_epi32(s1, 2) + _mm_extract_epi32(s1, 3);
+                        sum2 += _mm_extract_epi32(s2, 0) + _mm_extract_epi32(s2, 1) + _mm_extract_epi32(s2, 2) + _mm_extract_epi32(s2, 3);
+                        sum3 += _mm_extract_epi32(s3, 0) + _mm_extract_epi32(s3, 1) + _mm_extract_epi32(s3, 2) + _mm_extract_epi32(s3, 3);
+                    }
 #endif
 
                     sum1 += vec_sum(acc1);
@@ -802,7 +802,7 @@ void ConvolutionPoolingKernelImpl(ConvolutionConfig const * const filterConfig,
                         in1++;
                         in2++;
                         flt++;
-                        
+
                         im1 = vec_madd16(v1, f);
                         im2 = vec_madd16(v2, f);
 
@@ -825,9 +825,9 @@ void ConvolutionPoolingKernelImpl(ConvolutionConfig const * const filterConfig,
                         s1 = _mm_madd_epi16(s1, sf);
                         s2 = _mm_madd_epi16(s2, sf);
 
-                        sum1 += s1.m128i_i32[0] + s1.m128i_i32[1] + s1.m128i_i32[2] + s1.m128i_i32[3];
-                        sum2 += s2.m128i_i32[0] + s2.m128i_i32[1] + s2.m128i_i32[2] + s2.m128i_i32[3];
-                    }   
+                        sum1 += _mm_extract_epi32(s1, 0) + _mm_extract_epi32(s1, 1) + _mm_extract_epi32(s1, 2) + _mm_extract_epi32(s1, 3);
+                        sum2 += _mm_extract_epi32(s2, 0) + _mm_extract_epi32(s2, 1) + _mm_extract_epi32(s2, 2) + _mm_extract_epi32(s2, 3);
+                    }
 #endif
 
                     sum1 += vec_sum(acc1);
@@ -855,7 +855,7 @@ void ConvolutionPoolingKernelImpl(ConvolutionConfig const * const filterConfig,
                     {
                         in1++;
                         flt++;
-                        
+
                         im1 = vec_madd16(v1, f);
 
                         acc1 = vec_accumulate(acc1, im1);
@@ -873,8 +873,8 @@ void ConvolutionPoolingKernelImpl(ConvolutionConfig const * const filterConfig,
 
                         s1 = _mm_madd_epi16(s1, sf);
 
-                        sum1 += s1.m128i_i32[0] + s1.m128i_i32[1] + s1.m128i_i32[2] + s1.m128i_i32[3];
-                    }   
+                        sum1 += _mm_extract_epi32(s1, 0) + _mm_extract_epi32(s1, 1) + _mm_extract_epi32(s1, 2) + _mm_extract_epi32(s1, 3);
+                    }
 #endif
 
                     sum1 += vec_sum(acc1);
@@ -939,7 +939,7 @@ void ConvolutionPoolingKernelImpl(ConvolutionConfig const * const filterConfig,
         for (i = 0; i < FN; i++)
         {
             func_partial_pooling(PS, pool_num_entries, pool_start_index, pool + i * CNN_POOL_SIZE_MAX, &value);
-#if GNA_SAT == 1 
+#if GNA_SAT == 1
             saturate64_store_out(&value, saturationCount);
 #endif
             pwl->ActivateSingle(&pwl->pwl, (int32_t)value, &O[output_index * FN + i], saturationCount);

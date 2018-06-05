@@ -86,7 +86,7 @@ void SetupCopyModel::checkReferenceOutput(int modelIndex, int configIndex) const
         if (ref_output[i] != outElemVal)
         {
             // TODO: how it should notified? return or throw
-            throw std::exception("Wrong output");
+            throw std::runtime_error("Wrong output");
         }
     }
 }

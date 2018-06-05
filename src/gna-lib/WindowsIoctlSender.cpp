@@ -130,14 +130,14 @@ void WindowsIoctlSender::Submit(void * const inbuf, const uint32_t inlen, Reques
     auto ioHandle = OVERLAPPED{0};
     ioHandle.hEvent = CreateEvent(nullptr, false, false, nullptr);
 
-    profilerDTscStart(&profiler->ioctlSubmit);
+    profilerTscStart(&profiler->ioctlSubmit);
     auto ioResult = WriteFile(deviceHandle, inbuf, inlen, nullptr, &ioHandle);
     checkStatus(ioResult);
-    profilerDTscStop(&profiler->ioctlSubmit);
+    profilerTscStop(&profiler->ioctlSubmit);
 
-    profilerDTscStart(&profiler->ioctlWaitOn);
+    profilerTscStart(&profiler->ioctlWaitOn);
     wait(&ioHandle, GNA_REQUEST_TIMEOUT_MAX);
-    profilerDTscStop(&profiler->ioctlWaitOn);
+    profilerTscStop(&profiler->ioctlWaitOn);
 }
 
 void WindowsIoctlSender::wait(LPOVERLAPPED const ioctl, const DWORD timeout)

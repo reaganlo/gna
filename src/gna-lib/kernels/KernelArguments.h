@@ -25,8 +25,27 @@
 
 #pragma once
 
-#include "..\common.h"
-#include "gna-api-types-gmm.h"
+#include <stdint.h>
+
+#include "common.h"
+
+/**
+ * Structure will hold aligned deinterleaved feature vectors
+ * and PWL activation function auxiliary buffers used for performance improvements
+ * One structure per thread in thread pool will be created and managed by kernel dispatcher
+ */
+typedef struct
+{
+    int16_t *d0;
+    int16_t *d1;
+    int16_t *d2;
+    int16_t *d3;
+    int16_t *d4;
+    int16_t *d5;
+    int16_t *d6;
+    int16_t *d7;
+    int64_t *pool;
+} KernelBuffers;
 
 struct PwlOutputConfig
 {

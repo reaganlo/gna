@@ -32,16 +32,19 @@
         <TARGET_TOOLSET_ID Condition="('$(PlatformToolset)' == 'WindowsKernelModeDriver8.0')">$(TARGET_WDK80_ID)</TARGET_TOOLSET_ID>
         <TARGET_TOOLSET_ID Condition="('$(PlatformToolset)' == 'WindowsKernelModeDriver8.1')">$(TARGET_WDK81_ID)</TARGET_TOOLSET_ID>
         <TARGET_TOOLSET_ID Condition="('$(PlatformToolset)'== 'WindowsKernelModeDriver10.0')">$(TARGET_WDK10_ID)</TARGET_TOOLSET_ID>
-        <TARGET_TOOLSET_ID Condition="('$(PlatformToolset)'== 'Intel C++ Compiler XE 15.0')">$(TARGET_XE_ID)</TARGET_TOOLSET_ID>
+        <TARGET_TOOLSET_ID Condition="('$(PlatformToolset)'== 'Intel C++ Compiler XE 15.0')">$(TARGET_XE_15_ID)</TARGET_TOOLSET_ID>
+        <TARGET_TOOLSET_ID Condition="('$(PlatformToolset)'== 'Intel C++ Compiler XE 16.0')">$(TARGET_XE_16_ID)</TARGET_TOOLSET_ID>
+        <TARGET_TOOLSET_ID Condition="('$(PlatformToolset)'== 'Intel C++ Compiler 17.0')">$(TARGET_ICC_17_ID)</TARGET_TOOLSET_ID>
+        <TARGET_TOOLSET_ID Condition="('$(PlatformToolset)'== 'Intel C++ Compiler 18.0')">$(TARGET_ICC_18_ID)</TARGET_TOOLSET_ID>
         <TARGET_TOOLSET_ID Condition="('$(PlatformToolset)'== 'v110')">$(TARGET_VS110_ID)</TARGET_TOOLSET_ID>
         <TARGET_TOOLSET_ID Condition="('$(PlatformToolset)'== 'v120')">$(TARGET_VS120_ID)</TARGET_TOOLSET_ID>
         <TARGET_TOOLSET_ID Condition="('$(PlatformToolset)'== 'v130')">$(TARGET_VS130_ID)</TARGET_TOOLSET_ID>
         <TARGET_TOOLSET_ID Condition="('$(PlatformToolset)'== 'v140')">$(TARGET_VS140_ID)</TARGET_TOOLSET_ID>
-        
+
         <VERSION_FILE_A>$(TARGET_WIN_VER).$(PLATFORM_ID).$(CONFIG_TYPE).$(TARGET_TOOLSET_ID)</VERSION_FILE_A>
         <VERSION_FILE_B>$(TARGET_WIN_VER),$(PLATFORM_ID),$(CONFIG_TYPE),$(TARGET_TOOLSET_ID)</VERSION_FILE_B>
     </PropertyGroup>
-        <ItemDefinitionGroup>
+    <ItemDefinitionGroup>
         <ResourceCompile>
             <PreprocessorDefinitions>
                 PRODUCT_VERSION_A=\"$(VERSION_QB_A)\";

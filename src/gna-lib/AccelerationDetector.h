@@ -41,11 +41,6 @@
 
 #include "common.h"
 #include "IoctlSender.h"
-#if WINDOWS == 1
-#include "WindowsIoctlSender.h"
-#else // LINUX
-
-#endif
 #include "gmm.h"
 #include "XnnKernelApi.h"
 #include "LayerFunctions.h"
@@ -80,7 +75,7 @@ public:
     AccelerationDetector(IoctlSender &senderIn);
     ~AccelerationDetector() = default;
 
-    acceleration AccelerationDetector::GetFastestAcceleration() const;
+    acceleration GetFastestAcceleration() const;
 
     static char const * const AccelerationToString(acceleration accel);
 
@@ -107,18 +102,18 @@ public:
     void UpdateKernelsMap();
 
     static std::map<const WeightMode, std::map<const acceleration, const AffineKernel>> AffineKernels;
-    static std::map<const WeightMode, std::map<const acceleration, const AffineActiveListKernel>> AccelerationDetector::AffineKernelsAl;
+    static std::map<const WeightMode, std::map<const acceleration, const AffineActiveListKernel>> AffineKernelsAl;
     static std::map<const WeightMode, std::map<const acceleration, const AffineKernel>> MultibiasKernels;
     static std::map<const WeightMode, std::map<const acceleration, const RecurrentKernel>> RecurrentKernels;
-    static std::map<const WeightMode, std::map<const acceleration, const AffineKernel>> AccelerationDetector::DiagonalKernels;
+    static std::map<const WeightMode, std::map<const acceleration, const AffineKernel>> DiagonalKernels;
 
     static std::map<const acceleration, const TransposeKernel> TransposeKernels;
-    static std::map<const acceleration, const CopyKernel> AccelerationDetector::CopyKernels;
+    static std::map<const acceleration, const CopyKernel> CopyKernels;
     static std::map<const acceleration, const ConvolutionKernel> ConvolutionKernels;
-    static std::map<const acceleration, const ConvolutionPoolingKernel> AccelerationDetector::PoolingKernels;
+    static std::map<const acceleration, const ConvolutionPoolingKernel> PoolingKernels;
     static std::map<const acceleration, const PwlKernel> PwlKernels;
 
-    static std::map<const gna_gmm_mode, std::map<const acceleration, const GmmMaxMix>> AccelerationDetector::GmmKernels;
+    static std::map<const gna_gmm_mode, std::map<const acceleration, const GmmMaxMix>> GmmKernels;
     static std::map<const gna_gmm_mode, std::map<const acceleration, const GmmMaxMixActiveList>> GmmActiveListKernels;
 
 protected:

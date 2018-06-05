@@ -55,7 +55,7 @@ public:
     uint32_t GetHardwareOffset(const BaseAddressC& address) const;
     const std::vector<std::unique_ptr<Layer>>& GetLayers() const;
     const std::unique_ptr<Layer>& GetLayer(uint32_t layerIndex) const;
-    decltype(auto) CompiledModel::GetSubmodels() const
+    decltype(auto) GetSubmodels() const
     {
         return (submodels);
     }
@@ -71,7 +71,7 @@ public:
     static const size_t MaximumInternalModelSize;
     const gna_model_id Id;
     const uint16_t LayerCount;
-    
+
 protected:
     Memory& memory;
     IoctlSender &ioctlSender;

@@ -28,7 +28,10 @@
 #include <functional>
 #include <future>
 
+#include "profiler.h"
+
 #include "GnaException.h"
+#include "KernelArguments.h"
 
 namespace GNA
 {

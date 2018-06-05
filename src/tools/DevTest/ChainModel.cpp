@@ -1,4 +1,3 @@
-
 /*
  INTEL CONFIDENTIAL
  Copyright 2017 Intel Corporation.
@@ -387,7 +386,7 @@ intel_nnet_type_t& ChainModel::Setup(uint8_t *pinned_memory)
     nnet.pLayers[nnet.nLayers - 1].type = INTEL_OUTPUT;
     locked = true;
 
-    for (auto layerIx = 0ui32; layerIx < nnet.nLayers; layerIx++)
+    for (auto layerIx = uint32_t{0}; layerIx < nnet.nLayers; layerIx++)
     {
         auto layer = nnet.pLayers + layerIx;
         switch (layer->nLayerKind)
@@ -454,28 +453,28 @@ uint32_t ChainModel::GetOutputBuffersSize()
     case INTEL_COPY:
         /* FALLTHRU */
     case INTEL_RECURRENT:
-        outputBufferSize *= sizeof int16_t;
+        outputBufferSize *= sizeof(int16_t);
         break;
     case INTEL_GMM:
-        outputBufferSize *= sizeof int32_t;
+        outputBufferSize *= sizeof(int32_t);
         break;
     case INTEL_AFFINE:
     case INTEL_AFFINE_DIAGONAL:
     {
         auto affine_layer = static_cast<intel_affine_layer_t*>(lastLayer->pLayerStruct);
-        outputBufferSize *= (affine_layer->pwl.nSegments > 0) ? sizeof int16_t : sizeof int32_t;
+        outputBufferSize *= (affine_layer->pwl.nSegments > 0) ? sizeof(int16_t) : sizeof(int32_t);
         break;
     }
     case INTEL_AFFINE_MULTIBIAS:
     {
         auto affine_layer = static_cast<intel_affine_multibias_layer_t*>(lastLayer->pLayerStruct);
-        outputBufferSize *= (affine_layer->pwl.nSegments > 0) ? sizeof int16_t : sizeof int32_t;
+        outputBufferSize *= (affine_layer->pwl.nSegments > 0) ? sizeof(int16_t) : sizeof(int32_t);
         break;
     }
     case INTEL_CONVOLUTIONAL:
     {
         auto convolution_layer = static_cast<intel_convolutional_layer_t*>(lastLayer->pLayerStruct);
-        outputBufferSize *= (convolution_layer->pwl.nSegments > 0) ? sizeof int16_t : sizeof int32_t;
+        outputBufferSize *= (convolution_layer->pwl.nSegments > 0) ? sizeof(int16_t) : sizeof(int32_t);
         break;
     }
     }

@@ -26,8 +26,11 @@
 #pragma once
 
 #include <immintrin.h>
+#include <stdint.h>
 
-#include "common.h"
+#if defined(__GNUC__) && !defined(__INTEL_COMPILER)
+#define __forceinline inline
+#endif
 
 // buffer 24K
 const uint32_t hw_buf_size[8] =

@@ -27,6 +27,7 @@
 #pragma once
 
 #include <stdint.h>
+#include <stddef.h>
 
 #include "gna-api.h"
 

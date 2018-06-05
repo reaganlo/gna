@@ -32,6 +32,10 @@
 #include "common.h"
 #include "profiler.h"
 
+#include "KernelArguments.h"
+
+#include "Validator.h"
+
 namespace GNA
 {
 

@@ -34,7 +34,7 @@ struct KernelConfigs
 
 struct LayerConfiguration
 {
-    std::unique_ptr<ActiveList> ActiveList;
+    std::unique_ptr<ActiveList> ActList;
     std::unique_ptr<ConfigurationBuffer> InputBuffer;
     std::unique_ptr<ConfigurationBuffer> OutputBuffer;
     KernelConfigs Configs;

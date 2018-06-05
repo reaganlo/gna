@@ -25,12 +25,17 @@
 
 #pragma once
 
-#include <stdio.h>
-#include <stdlib.h>
+#include <cstdio>
+#include <cstdlib>
+#include <functional>
 
+#if defined(__GNUC__) && !defined(__INTEL_COMPILER)
+#include <mm_malloc.h>
+#endif
+
+#include "gna-api-types-xnn.h"
+#include "gna-api-types-gmm.h"
 #include "gna-api-instrumentation.h"
-#include "gna-api-dumper.h"
-#include "profiler.h"
 
 /**
  * Data alignment for intrinsics
@@ -42,38 +47,9 @@
  */
 const uint32_t PAGE_SIZE = 0x1000;
 
-/**
- * Rounds a number up, to the nearest multiple of significance
- * Used for calculating memory sizes of GNA data buffers
- *
- * @param number        Memory size or number to round up.
- * @param significance  The multiple to which number will be rounded.
- * @return Rounded integer value.
- */
-inline uint32_t GnaRoundUpMultipleOf(uint32_t number, uint32_t significance)
-{
-    return (((number + significance - 1) / significance) * significance);
-}
-
-/**
- * Rounds a number up, to the nearest multiple of 64
- * Used for calculating memory sizes of GNA data buffers
- *
- * @param number        Memory size or number to round up.
- * @return Rounded integer value.
- */
-inline int32_t GnaRoundUpMultipleOf64(uint32_t number)
-{
-    return GnaRoundUpMultipleOf(number, 64);
-}
-
-inline bool IsActivationFunctionEnabled(const intel_pwl_func_t * const pwl)
-{
-    return (nullptr != pwl->pSegments) && (pwl->nSegments > 0);
-}
-
-#define _gna_malloc(a) _aligned_malloc(a, PAGE_SIZE)
-#define _gna_free(a)   _aligned_free(a)
+#define _gna_malloc(a)    _mm_malloc(a, PAGE_SIZE)
+#define _kernel_malloc(a) _mm_malloc(a, INTRIN_ALIGN)
+#define _gna_free(a)      _mm_free(a)
 
 #if !defined(UNREFERENCED_PARAMETER)
 #define UNREFERENCED_PARAMETER(P) (P)
@@ -87,24 +63,6 @@ inline bool IsActivationFunctionEnabled(const intel_pwl_func_t * const pwl)
 #else
 #define memcpy_s(_Destination, _DestinationSize, _Source, _SourceSize) memcpy(_Destination, _Source, _SourceSize)
 #endif
-
-/**
- * Structure will hold aligned deinterleaved feature vectors
- * and PWL activation function auxiliary buffers used for performance improvements
- * One structure per thread in thread pool will be created and managed by kernel dispatcher
- */
-typedef struct
-{
-    int16_t *d0;
-    int16_t *d1;
-    int16_t *d2;
-    int16_t *d3;
-    int16_t *d4;
-    int16_t *d5;
-    int16_t *d6;
-    int16_t *d7;
-    int64_t *pool;
-} KernelBuffers;
 
 /**
  * shorter aliases for official GMM API types
@@ -125,16 +83,8 @@ typedef intel_recurrent_layer_t     nn_layer_reccurent;
 typedef intel_copy_layer_t          nn_layer_copy;
 typedef intel_pool_type_t           nn_pool_type;
 typedef intel_convolutional_layer_t nn_layer_conv;
-typedef gna_perf_t                  perf_t;
-typedef gna_perf_drv_t              perf_drv_t;
-typedef gna_perf_hw_t               perf_hw_t;
 
 #ifndef STATUS_T_ALIAS
 #define STATUS_T_ALIAS
 typedef intel_gna_status_t      status_t;
 #endif
-
-#include <functional>
-
-// Functor for validating if buffer is within memory boundaries
-using ValidBoundariesFunctor = std::function<void(const void *, const size_t)>;

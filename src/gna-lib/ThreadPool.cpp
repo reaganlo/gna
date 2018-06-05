@@ -42,9 +42,6 @@ using std::vector;
 
 using namespace GNA;
 
-#define _kernel_malloc(a) _aligned_malloc(a, INTRIN_ALIGN)
-
-
 ThreadPool::ThreadPool() :
     stopped{true}
 {}

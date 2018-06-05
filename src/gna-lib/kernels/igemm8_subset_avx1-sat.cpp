@@ -102,8 +102,8 @@ void AffineActiveListKernelImpl1B(AffineConfig const * const config, AffineConfi
                         in0 = _mm_load_si128(in_ptr0 + ix);
                         in1 = _mm_load_si128(in_ptr0 + ix + 1);
 
-                        w0 = _mm_cvtepi8_epi16(_mm_loadu_si64(weight));
-                        w1 = _mm_cvtepi8_epi16(_mm_loadu_si64(weight + SSE_16CAP));
+                        w0 = _mm_cvtepi8_epi16(_mm_loadl_epi64((__m128i*)weight));
+                        w1 = _mm_cvtepi8_epi16(_mm_loadl_epi64((__m128i*)(weight + SSE_16CAP)));
                         weight += 2 * SSE_16CAP;
 
                         // multiply and add - won't saturate
@@ -125,7 +125,7 @@ void AffineActiveListKernelImpl1B(AffineConfig const * const config, AffineConfi
                 {
                     in0 = _mm_load_si128(in_ptr0 + ix);
 
-                    w = _mm_cvtepi8_epi16(_mm_loadu_si64(weight));
+                    w = _mm_cvtepi8_epi16(_mm_loadl_epi64((__m128i*)weight));
                     weight += SSE_16CAP;
 
                     // multiply and add - won't saturate
@@ -220,7 +220,7 @@ void AffineActiveListKernelImpl1B(AffineConfig const * const config, AffineConfi
                     {
                         in0 = _mm_load_si128(in_ptr0 + ix);
                         in1 = _mm_load_si128(in_ptr1 + ix);
-                        w = _mm_cvtepi8_epi16(_mm_loadu_si64((__m128i*)weight));
+                        w = _mm_cvtepi8_epi16(_mm_loadl_epi64((__m128i*)weight));
                         weight += SSE_16CAP;
 
                         // multiply and add - won't saturate
@@ -243,7 +243,7 @@ void AffineActiveListKernelImpl1B(AffineConfig const * const config, AffineConfi
                 {
                     in0 = _mm_load_si128(in_ptr0 + ix);
                     in1 = _mm_load_si128(in_ptr1 + ix);
-                    w = _mm_cvtepi8_epi16(_mm_loadu_si64((__m128i*)weight));
+                    w = _mm_cvtepi8_epi16(_mm_loadl_epi64((__m128i*)weight));
                     weight += SSE_16CAP;
 
                     // multiply and add - won't saturate
@@ -312,7 +312,7 @@ void AffineActiveListKernelImpl1B(AffineConfig const * const config, AffineConfi
                         in0 = _mm_load_si128(in_ptr0 + ix);
                         in1 = _mm_load_si128(in_ptr1 + ix);
                         in2 = _mm_load_si128(in_ptr2 + ix);
-                        w = _mm_cvtepi8_epi16(_mm_loadu_si64((__m128i*)weight));
+                        w = _mm_cvtepi8_epi16(_mm_loadl_epi64((__m128i*)weight));
                         weight += SSE_16CAP;
 
                         // multiply and add - won't saturate
@@ -340,7 +340,7 @@ void AffineActiveListKernelImpl1B(AffineConfig const * const config, AffineConfi
                     in0 = _mm_load_si128(in_ptr0 + ix);
                     in1 = _mm_load_si128(in_ptr1 + ix);
                     in2 = _mm_load_si128(in_ptr2 + ix);
-                    w = _mm_cvtepi8_epi16(_mm_loadu_si64((__m128i*)weight));
+                    w = _mm_cvtepi8_epi16(_mm_loadl_epi64((__m128i*)weight));
                     weight += SSE_16CAP;
 
                     // multiply and add - won't saturate
@@ -419,7 +419,7 @@ void AffineActiveListKernelImpl1B(AffineConfig const * const config, AffineConfi
                         in1 = _mm_load_si128(in_ptr1 + ix);
                         in2 = _mm_load_si128(in_ptr2 + ix);
                         in3 = _mm_load_si128(in_ptr3 + ix);
-                        w = _mm_cvtepi8_epi16(_mm_loadu_si64((__m128i*)weight));
+                        w = _mm_cvtepi8_epi16(_mm_loadl_epi64((__m128i*)weight));
                         weight += SSE_16CAP;
 
                         // multiply and add - won't saturate
@@ -452,7 +452,7 @@ void AffineActiveListKernelImpl1B(AffineConfig const * const config, AffineConfi
                     in1 = _mm_load_si128(in_ptr1 + ix);
                     in2 = _mm_load_si128(in_ptr2 + ix);
                     in3 = _mm_load_si128(in_ptr3 + ix);
-                    w = _mm_cvtepi8_epi16(_mm_loadu_si64((__m128i*)weight));
+                    w = _mm_cvtepi8_epi16(_mm_loadl_epi64((__m128i*)weight));
                     weight += SSE_16CAP;
 
                     // multiply and add - won't saturate
@@ -541,7 +541,7 @@ void AffineActiveListKernelImpl1B(AffineConfig const * const config, AffineConfi
                         in2 = _mm_load_si128(in_ptr2 + ix);
                         in3 = _mm_load_si128(in_ptr3 + ix);
                         in4 = _mm_load_si128(in_ptr4 + ix);
-                        w = _mm_cvtepi8_epi16(_mm_loadu_si64((__m128i*)weight));
+                        w = _mm_cvtepi8_epi16(_mm_loadl_epi64((__m128i*)weight));
                         weight += SSE_16CAP;
 
                         // multiply and add - won't saturate
@@ -579,7 +579,7 @@ void AffineActiveListKernelImpl1B(AffineConfig const * const config, AffineConfi
                     in2 = _mm_load_si128(in_ptr2 + ix);
                     in3 = _mm_load_si128(in_ptr3 + ix);
                     in4 = _mm_load_si128(in_ptr4 + ix);
-                    w = _mm_cvtepi8_epi16(_mm_loadu_si64((__m128i*)weight));
+                    w = _mm_cvtepi8_epi16(_mm_loadl_epi64((__m128i*)weight));
                     weight += SSE_16CAP;
 
                     // multiply and add - won't saturate
@@ -667,7 +667,7 @@ void AffineActiveListKernelImpl1B(AffineConfig const * const config, AffineConfi
                     in3 = _mm_load_si128(in_ptr3 + ix);
                     in4 = _mm_load_si128(in_ptr4 + ix);
                     in5 = _mm_load_si128(in_ptr5 + ix);
-                    w = _mm_cvtepi8_epi16(_mm_loadu_si64((__m128i*)weight));
+                    w = _mm_cvtepi8_epi16(_mm_loadl_epi64((__m128i*)weight));
                     weight += SSE_16CAP;
 
                     // multiply and add - won't saturate
@@ -772,7 +772,7 @@ void AffineActiveListKernelImpl1B(AffineConfig const * const config, AffineConfi
                     in4 = _mm_load_si128(in_ptr4 + ix);
                     in5 = _mm_load_si128(in_ptr5 + ix);
                     in6 = _mm_load_si128(in_ptr6 + ix);
-                    w = _mm_cvtepi8_epi16(_mm_loadu_si64((__m128i*)weight));
+                    w = _mm_cvtepi8_epi16(_mm_loadl_epi64((__m128i*)weight));
                     weight += SSE_16CAP;
 
                     // multiply and add - won't saturate
@@ -887,7 +887,7 @@ void AffineActiveListKernelImpl1B(AffineConfig const * const config, AffineConfi
                     in5 = _mm_load_si128(in_ptr5 + ix);
                     in6 = _mm_load_si128(in_ptr6 + ix);
                     in7 = _mm_load_si128(in_ptr7 + ix);
-                    w = _mm_cvtepi8_epi16(_mm_loadu_si64((__m128i*)weight));
+                    w = _mm_cvtepi8_epi16(_mm_loadl_epi64((__m128i*)weight));
                     weight += SSE_16CAP;
 
                     // multiply and add - won't saturate

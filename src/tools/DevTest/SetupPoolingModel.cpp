@@ -119,7 +119,7 @@ void SetupPoolingModel::checkReferenceOutput(int modelIndex, int configIndex) co
         int16_t outElemVal = static_cast<const int16_t*>(outputBuffer)[i];
         if (ref_output[i] != outElemVal)
         {
-            throw std::exception("Wrong output");
+            throw std::runtime_error("Wrong output");
         }
     }
 }
@@ -130,7 +130,7 @@ void SetupPoolingModel::samplePwl(intel_pwl_segment_t *segments, uint32_t nSegme
     auto xBaseInc = 2*abs(xBase) / nSegments;
     auto yBase = xBase;
     auto yBaseInc = 1;
-    for (auto i = 0ui32; i < nSegments; i++, xBase += xBaseInc, yBase += yBaseInc, yBaseInc++) 
+    for (auto i = uint32_t{0}; i < nSegments; i++, xBase += xBaseInc, yBase += yBaseInc, yBaseInc++) 
     {
         segments[i].xBase = xBase;
         segments[i].yBase = yBase;

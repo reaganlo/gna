@@ -25,6 +25,8 @@
 
 #include "HardwareModel.h"
 
+#include <algorithm>
+
 #include "AccelerationDetector.h"
 #include "HardwareLayer.h"
 #include "LayerConfiguration.h"
@@ -46,7 +48,8 @@ const size_t HardwareModel::CalculateDescriptorSize(const uint16_t layerCount, c
 }
 
 HardwareModel::HardwareModel(const gna_model_id modId, const std::vector<std::unique_ptr<Layer>>& layers,
-    uint16_t gmmCount, const uint64_t memoryIdIn, const BaseAddressC memoryBaseIn, const BaseAddressC descriptorBaseIn, IoctlSender &sender, const AccelerationDetector& detector) :
+    uint16_t gmmCount, const uint64_t memoryIdIn, const BaseAddressC memoryBaseIn,
+    const BaseAddressC descriptorBaseIn, IoctlSender &sender, const AccelerationDetector& detector) :
     memoryId{ memoryIdIn },
     memoryBase{ memoryBaseIn },
     modelId{modId},
@@ -105,7 +108,7 @@ void HardwareModel::Build()
     {
         gmmDescriptor = AddrGmmCfg(layerDescriptor + softwareLayers.size());
     }
-    auto i = 0ui32;
+    auto i = uint32_t { 0 };
     for (auto& layer : softwareLayers)
     {
         try
@@ -159,7 +162,7 @@ void HardwareModel::getHwConfigData(void* &buffer, size_t &size, uint16_t layerI
         for (auto it = lowerBound; it != upperBound; ++it)
         {
             auto layer = softwareLayers.at(it->first).get();
-            if (it->second->ActiveList && INTEL_GMM == layer->Config.Kind)
+            if (it->second->ActList && INTEL_GMM == layer->Config.Kind)
             {
                 requestActiveLists[layerIndex] = true;
                 break;
@@ -179,7 +182,7 @@ void HardwareModel::getHwConfigData(void* &buffer, size_t &size, uint16_t layerI
         for (auto it = layerConfigurations.cbegin(); it != layerConfigurations.cend(); ++it)
         {
             auto layer = softwareLayers.at(it->first).get();
-            if (it->second->ActiveList)
+            if (it->second->ActList)
             {
                 (INTEL_AFFINE == layer->Config.Kind) ? ++xnnActiveListCount : ++gmmActiveListCount;
             }
@@ -248,8 +251,8 @@ size_t HardwareModel::calculateCacheSize(uint32_t buffersCount, uint32_t nnopLay
     uint32_t cacheSize = sizeof(GNA_CALC_IN);
     cacheSize += buffersCount * sizeof(GNA_BUFFER_DESCR);
     cacheSize += nnopLayersCount * sizeof(NNOP_TYPE_DESCR);
-    cacheSize += activeListCount * max(sizeof(XNN_ACTIVE_LIST_DESCR), sizeof(GMM_ACTIVE_LIST_DESCR));
-    cacheSize = ALIGN(cacheSize, sizeof UINT64);
+    cacheSize += activeListCount * (std::max)(sizeof(XNN_ACTIVE_LIST_DESCR), sizeof(GMM_ACTIVE_LIST_DESCR));
+    cacheSize = ALIGN(cacheSize, sizeof(uint64_t));
 
     return cacheSize;
 }
@@ -283,7 +286,7 @@ void HardwareModel::writeNnopTypesIntoCache(void* &buffer, const std::map<uint32
         if(it->second->OutputBuffer
             && (layer->Config.Kind == INTEL_AFFINE || layer->Config.Kind == INTEL_GMM))
         {
-            hardwareLayers.at(it->first)->WriteNnopType(nnopCfg, nullptr != it->second->ActiveList);
+            hardwareLayers.at(it->first)->WriteNnopType(nnopCfg, nullptr != it->second->ActList);
             ++nnopCfg;
         }
     }
@@ -297,9 +300,9 @@ void HardwareModel::writeXnnActiveListsIntoCache(void* &buffer, const std::map<u
 
     for (auto it = layerConfigurations.cbegin(); it != layerConfigurations.cend(); ++it)
     {
-        if (INTEL_GMM != softwareLayers.at(it->first)->Config.Kind && it->second->ActiveList)
+        if (INTEL_GMM != softwareLayers.at(it->first)->Config.Kind && it->second->ActList)
         {
-            HardwareActiveListDescriptor descriptor{it->second->ActiveList.get(), actLstCfg};
+            HardwareActiveListDescriptor descriptor{it->second->ActList.get(), actLstCfg};
             hardwareLayers.at(it->first)->WriteActiveList(descriptor);
             ++actLstCfg;
         }
@@ -313,9 +316,9 @@ void HardwareModel::writeGmmActiveListsIntoCache(void* &buffer, const std::map<u
     auto actLstCfg = reinterpret_cast<PGMM_ACTIVE_LIST_DESCR>(buffer);
     for (auto it = layerConfigurations.cbegin(); it != layerConfigurations.cend(); ++it)
     {
-        if (INTEL_GMM == softwareLayers.at(it->first)->Config.Kind && it->second->ActiveList)
+        if (INTEL_GMM == softwareLayers.at(it->first)->Config.Kind && it->second->ActList)
         {
-            HardwareActiveListDescriptor descriptor{it->second->ActiveList.get(), actLstCfg};
+            HardwareActiveListDescriptor descriptor{it->second->ActList.get(), actLstCfg};
             hardwareLayers.at(it->first)->WriteActiveList(descriptor);
             ++actLstCfg;
         }

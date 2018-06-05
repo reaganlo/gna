@@ -26,6 +26,8 @@
 #ifndef _DEVICE_H
 #define _DEVICE_H
 
+#include "gna-api-dumper.h"
+
 #include "common.h"
 
 #include "AccelerationDetector.h"

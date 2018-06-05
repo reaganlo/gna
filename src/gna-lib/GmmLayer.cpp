@@ -95,10 +95,10 @@ void GmmLayer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration, Valid
     auto& configs = layerConfiguration.Configs;
     if(!configs.Gmm)
         configs.Gmm = std::make_unique<GmmConfig>(gmmHiddenConfig);
-    if (layerConfiguration.ActiveList)
+    if (layerConfiguration.ActList)
     {
-        ValidateActiveList(layerConfiguration.ActiveList.get());
-        configs.Gmm->stateCount = layerConfiguration.ActiveList->IndicesCount;
+        ValidateActiveList(layerConfiguration.ActList.get());
+        configs.Gmm->stateCount = layerConfiguration.ActList->IndicesCount;
     }
     configs.Gmm->input = inputBuffer;
     configs.Gmm->output = outputBuffer;
@@ -117,9 +117,9 @@ void GmmLayer::computeConfig(const LayerConfiguration& layerConfiguration, accel
 {
     auto gmmConfig = GmmConfig{layerConfiguration.Configs.Gmm.get(), reinterpret_cast<uint8_t*>(fvBuffers->d0)};
 
-    if (layerConfiguration.ActiveList)
+    if (layerConfiguration.ActList)
     {
-        gmmActiveListKernels.at(accel)(&gmmConfig, layerConfiguration.ActiveList->Indices);
+        gmmActiveListKernels.at(accel)(&gmmConfig, layerConfiguration.ActList->Indices);
     }
     else
     {
@@ -140,7 +140,7 @@ void GmmLayer::ValidateActiveList(ActiveList const * const activeList) const
 void GmmLayer::checkScoresSaturation(const uint32_t& nGMMs, const uint32_t& nVectors, const uint32_t * pS,
     const uint32_t& maximumScore, uint32_t& nSaturated) const
 {
-    for (auto i = 0ui32; i < nGMMs * nVectors; i++)
+    for (auto i = uint32_t{0}; i < nGMMs * nVectors; i++)
     {
         if (maximumScore == *pS)
         {

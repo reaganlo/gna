@@ -86,10 +86,10 @@
                 copy $(SRC_DIR)\common\gna-api-status.h $(OutDir)gna-api-status.h
                 copy $(SRC_DIR)\common\gna-api-dumper.h $(OutDir)gna-api-dumper.h
                 copy $(SRC_DIR)\common\gna-api-instrumentation.h $(OutDir)gna-api-instrumentation.h
-                copy $(OutDir)*.h $(ROOT_DIR)samples\GNA\include\*
-                copy $(OutDir)*.dll $(ROOT_DIR)samples\GNA\$(Platform)\*
-                copy $(OutDir)*.lib $(ROOT_DIR)samples\GNA\$(Platform)\*
-                copy $(OutDir)*.pdb $(ROOT_DIR)samples\GNA\$(Platform)\*
+                copy $(OutDir)*.h $(ROOT_DIR)samples\gna-lib\include\*
+                copy $(OutDir)*.dll $(ROOT_DIR)samples\gna-lib\$(Platform)\*
+                copy $(OutDir)*.lib $(ROOT_DIR)samples\gna-lib\$(Platform)\*
+                copy $(OutDir)*.pdb $(ROOT_DIR)samples\gna-lib\$(Platform)\*
             </Command>
             <Message>
 				Copying API definiton headers to library output and sample inputs

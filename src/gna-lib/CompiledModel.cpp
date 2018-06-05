@@ -51,12 +51,12 @@ CompiledModel::CompiledModel(gna_model_id modelId, const gna_model *rawModel, Me
     if (detector.IsHardwarePresent())
     {
         hardwareModel = make_unique<HardwareModel>(Id, softwareModel.Layers, gmmCount, memoryIn.Id,
-            memoryIn.Get(), memoryIn.GetDescriptorsBase(modelId), sender, detector);
+            memoryIn, memoryIn.GetDescriptorsBase(modelId), sender, detector);
         hardwareModel->Build();
     }
 
     createSubmodels(detector);
-};
+}
 
 const size_t CompiledModel::MaximumInternalModelSize = CalculateInternalModelSize(XNN_LAYERS_MAX_COUNT, GMM_LAYERS_MAX_COUNT);
 
@@ -81,7 +81,7 @@ const size_t CompiledModel::CalculateInternalModelSize(const uint16_t layerCount
 const size_t CompiledModel::CalculateInternalModelSize(const gna_model * rawModel)
 {
     uint16_t gmmLayerCount = 0;
-    for (auto ix = 0ui32; ix < rawModel->nLayers; ++ix)
+    for (auto ix = uint32_t{0}; ix < rawModel->nLayers; ++ix)
     {
         if (INTEL_GMM == rawModel->pLayers[ix].nLayerKind)
             gmmLayerCount++;

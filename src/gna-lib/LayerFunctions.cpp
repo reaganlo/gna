@@ -122,9 +122,9 @@ void AffineFunctionSingle::ComputeConfig(const LayerConfiguration& layerConfigur
 {
     auto kernelConfig = AffineConfig{layerConfiguration.Configs.Affine.get(), saturationCount, fvBuffers};
 
-    if (layerConfiguration.ActiveList)
+    if (layerConfiguration.ActList)
     {
-        auto alConfig = AffineConfigAl{layerConfiguration.ActiveList->Indices, layerConfiguration.ActiveList->IndicesCount};
+        auto alConfig = AffineConfigAl{layerConfiguration.ActList->Indices, layerConfiguration.ActList->IndicesCount};
         kernelsAl.at(accel)(&kernelConfig, &alConfig);
     }
     else
@@ -193,7 +193,7 @@ AffineFunctionMulti1B::AffineFunctionMulti1B(const nn_func_affine_multi *affine,
         GetMultibias(), BiasVectorCount);
 }
 
-const unique_ptr<const ActivationFunction> ActivationFunction::Create(nn_layer_kind layerKind, void const *layerDetails,
+std::unique_ptr<const ActivationFunction> ActivationFunction::Create(nn_layer_kind layerKind, void const *layerDetails,
     int32_t const * const Inputs, const PwlOutputConfig& outputConfig)
 {
     bool mandatory = false;
@@ -233,6 +233,11 @@ const unique_ptr<const ActivationFunction> ActivationFunction::Create(nn_layer_k
     {
         return unique_ptr<const ActivationFunction>(nullptr);
     }
+}
+
+inline bool ActivationFunction::IsActivationFunctionEnabled(const intel_pwl_func_t * const pwl)
+{
+    return (nullptr != pwl->pSegments) && (pwl->nSegments > 0);
 }
 
 ActivationFunction::ActivationFunction(const nn_func_pwl *pwl, int32_t const * const Inputs,

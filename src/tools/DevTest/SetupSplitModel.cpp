@@ -61,9 +61,9 @@ SetupSplitModel::SetupSplitModel(DeviceController & deviceCtrl, bool wght2B, boo
     auto wholeSize = firstModelSize + firstModelConfigSize + secondModelSize + secondModelConfigSize;
 
     auto totalLayerCount = firstNnet.nLayers + secondNnet.nLayers;
-    auto totalGmmCount = 0ui16;
+    auto totalGmmCount = uint16_t{0};
 
-    auto grantedSize = 0ui32;
+    auto grantedSize = uint32_t{0};
     auto pinned_memory = deviceController.Alloc(wholeSize, totalLayerCount, totalGmmCount, &grantedSize);
     if (NULL == pinned_memory || grantedSize < wholeSize)
     {
@@ -128,7 +128,7 @@ void SetupSplitModel::checkReferenceOutput(int modelIndex, int configIndex) cons
         if (refOutputs[i] != outElemVal)
         {
             // TODO: how it should notified? return or throw
-            throw std::exception("Wrong output");
+            throw std::runtime_error("Wrong output");
         }
     }
 }

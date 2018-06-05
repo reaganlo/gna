@@ -108,7 +108,7 @@ public:
     template<class X> uint32_t GetOffset(const Address<X*const>& base) const
     {
         if (this->operator! ()) return 0;
-        return PtrToUint((uint8_t*)(this->Get<uint8_t>() - base.Get<uint8_t>()));
+        return reinterpret_cast<uintptr_t>((uint8_t*)(this->Get<uint8_t>() - base.template Get<uint8_t>()));
     }
 
 protected:
@@ -133,20 +133,25 @@ public:
         Address<T*const>(address.Get())
     {}
 
+    T * Get() const
+    {
+        return static_cast<T*>(this->buffer);
+    }
+
     const Address operator++(int)
     {
         Address tmp{ *this };
-        this->buffer = this->Get<T>() + 1;
+        this->buffer = this->Get() + 1;
         return tmp;
     }
     const Address& operator-=(const uint32_t& right)
     {
-        this->buffer = this->Get<T>() - right;
+        this->buffer = this->Get() - right;
         return *this;
     }
     const Address& operator+=(const uint32_t& right)
     {
-        this->buffer = this->Get<T>() + right;
+        this->buffer = this->Get() + right;
         return *this;
     }
     const Address& operator =(const Address& right)

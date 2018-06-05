@@ -75,7 +75,7 @@ void print_outputs16(
     putchar('\n');
 }
 
-int wmain(int argc, wchar_t *argv[])
+int main(int argc, char *argv[])
 {
     intel_gna_status_t status = GNA_SUCCESS;
 
@@ -131,8 +131,8 @@ int wmain(int argc, wchar_t *argv[])
 
     intel_pwl_segment_t pwl_segs[]
     {
-        {-512i32, -512i16, 256},
-        {0, 0i16, 256}
+        {-512, -51, 256},
+        {0, 0, 256}
     };
 
     int32_t biases[8] = {      // sample bias vector, will get added to each of the four output vectors

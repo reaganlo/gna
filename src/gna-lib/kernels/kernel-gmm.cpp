@@ -113,8 +113,6 @@ void gmm_maxmix_8u16u_32u(GmmMaxMixConfig const * const gmm)
 
 #if OPT_LEVEL > 1 // SSE4+
 
-#include "immintrin.h"
-
 void gmm_maxmix_8u8u_32u(GmmMaxMixConfig const * const gmm)
 {
     const uint8_t *mean = gmm->Means;

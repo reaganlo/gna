@@ -57,7 +57,7 @@ struct FeatureMaps
 struct ConvolutionFunction
 {
     ConvolutionFunction(const nn_layer_conv *sourceLayer, const uint32_t inputElementCount,
-        int16_t const * inputs, int32_t * outputs);
+        int16_t const * inputs, int32_t *const outputs);
     ~ConvolutionFunction() = default;
 
     std::unique_ptr<const ConvolutionConfig> GetRunConfig(int16_t const * inputs, int32_t * outputs) const;
@@ -70,7 +70,7 @@ struct ConvolutionFunction
     void ComputeConfig(const ConvolutionConfig* config, acceleration accel, uint32_t *saturationCount) const;
 
     const FiltersConfig Filters;
-    const FeatureMaps FeatureMaps;
+    const FeatureMaps FeatMaps;
     const uint32_t OutputElementsCount;   // Number of outputs after convolution per filter
 
 private:

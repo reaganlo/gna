@@ -74,7 +74,7 @@ RequestConfiguration& RequestBuilder::GetConfiguration(gna_request_cfg_id config
 std::unique_ptr<Request> RequestBuilder::CreateRequest(gna_request_cfg_id configId, acceleration accel)
 {
     auto profiler = std::make_unique<RequestProfiler>();
-    profilerDTscStart(&profiler->preprocess);
+    profilerTscStart(&profiler->preprocess);
     auto& configuration = GetConfiguration(configId);
     return std::make_unique<Request>(configuration, move(profiler), accel);
 }

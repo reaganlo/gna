@@ -25,7 +25,6 @@
 
 #pragma once
 
-#include "common.h"
 #include "KernelMacros.h"
 #include "pwl.h"
 
@@ -42,7 +41,7 @@ extern "C" {
 
 void ConvolutionKernelImpl(ConvolutionConfig const * const filterConfig);
 
-void ConvolutionPoolingKernelImpl(ConvolutionConfig const * const filterConfig, 
+void ConvolutionPoolingKernelImpl(ConvolutionConfig const * const filterConfig,
     PoolingConfig const * const poolConfig, PwlCached const * const pwl);
 
 /* Calculates MaxPartialPoolingFunction

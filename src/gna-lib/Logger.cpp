@@ -23,7 +23,7 @@
  in any way.
 */
 
-#include <minmax.h>
+#include <algorithm>
 
 #include "Logger.h"
 
@@ -164,7 +164,7 @@ void Logger::Error(const status_t status) const
 
 const char * const Logger::StatusToString(const intel_gna_status_t status) noexcept
 {
-    const auto statusSafe = min(status, NUMGNASTATUS);
+    const auto statusSafe = std::min(status, NUMGNASTATUS);
     return StatusStrings[2 * statusSafe];
 }
 
@@ -257,7 +257,7 @@ template<typename ... X> void DebugLogger::print(FILE * const streamIn, const st
 
 const char * const DebugLogger::getStatusDescription(const intel_gna_status_t status) const
 {
-    const auto statusSafe = min(status, NUMGNASTATUS);
+    const auto statusSafe = std::min(status, NUMGNASTATUS);
     return StatusStrings[2 * statusSafe + 1];
 }
 

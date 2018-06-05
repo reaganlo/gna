@@ -89,14 +89,14 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>..\GNA\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\gna-lib\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <PostBuildEvent>
-      <Command>copy $(ProjectDir)..\GNA\$(Platform)\gna.dll  $(ProjectDir)..\bin\$(ProjectName)\$(Configuration)\$(Platform)\gna.dll
-copy $(ProjectDir)..\GNA\$(Platform)\gna.pdb $(ProjectDir)..\bin\$(ProjectName)\$(Configuration)\$(Platform)\gna.pdb</Command>
+      <Command>copy $(ProjectDir)..\gna-lib\$(Platform)\gna.dll  $(ProjectDir)..\bin\$(ProjectName)\$(Configuration)\$(Platform)\gna.dll
+copy $(ProjectDir)..\gna-lib\$(Platform)\gna.pdb $(ProjectDir)..\bin\$(ProjectName)\$(Configuration)\$(Platform)\gna.pdb</Command>
     </PostBuildEvent>
     <Link>
-      <AdditionalLibraryDirectories>..\GNA\$(Platform);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>..\gna-lib\$(Platform);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>gna.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
@@ -105,15 +105,15 @@ copy $(ProjectDir)..\GNA\$(Platform)\gna.pdb $(ProjectDir)..\bin\$(ProjectName)\
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>..\GNA\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\gna-lib\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
-      <AdditionalLibraryDirectories>..\GNA\$(Platform);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>..\gna-lib\$(Platform);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>gna.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>copy $(ProjectDir)..\GNA\$(Platform)\gna.dll  $(ProjectDir)..\bin\$(ProjectName)\$(Configuration)\$(Platform)\gna.dll
-copy $(ProjectDir)..\GNA\$(Platform)\gna.pdb $(ProjectDir)..\bin\$(ProjectName)\$(Configuration)\$(Platform)\gna.pdb</Command>
+      <Command>copy $(ProjectDir)..\gna-lib\$(Platform)\gna.dll  $(ProjectDir)..\bin\$(ProjectName)\$(Configuration)\$(Platform)\gna.dll
+copy $(ProjectDir)..\gna-lib\$(Platform)\gna.pdb $(ProjectDir)..\bin\$(ProjectName)\$(Configuration)\$(Platform)\gna.pdb</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -123,17 +123,17 @@ copy $(ProjectDir)..\GNA\$(Platform)\gna.pdb $(ProjectDir)..\bin\$(ProjectName)\
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>..\GNA\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\gna-lib\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalLibraryDirectories>..\GNA\$(Platform);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>..\gna-lib\$(Platform);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>gna.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>copy $(ProjectDir)..\GNA\$(Platform)\gna.dll  $(ProjectDir)..\bin\$(ProjectName)\$(Configuration)\$(Platform)\gna.dll
-copy $(ProjectDir)..\GNA\$(Platform)\gna.pdb $(ProjectDir)..\bin\$(ProjectName)\$(Configuration)\$(Platform)\gna.pdb</Command>
+      <Command>copy $(ProjectDir)..\gna-lib\$(Platform)\gna.dll  $(ProjectDir)..\bin\$(ProjectName)\$(Configuration)\$(Platform)\gna.dll
+copy $(ProjectDir)..\gna-lib\$(Platform)\gna.pdb $(ProjectDir)..\bin\$(ProjectName)\$(Configuration)\$(Platform)\gna.pdb</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -143,17 +143,17 @@ copy $(ProjectDir)..\GNA\$(Platform)\gna.pdb $(ProjectDir)..\bin\$(ProjectName)\
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>..\GNA\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\gna-lib\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalLibraryDirectories>..\GNA\$(Platform);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>..\gna-lib\$(Platform);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>gna.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>copy $(ProjectDir)..\GNA\$(Platform)\gna.dll  $(ProjectDir)..\bin\$(ProjectName)\$(Configuration)\$(Platform)\gna.dll
-copy $(ProjectDir)..\GNA\$(Platform)\gna.pdb $(ProjectDir)..\bin\$(ProjectName)\$(Configuration)\$(Platform)\gna.pdb</Command>
+      <Command>copy $(ProjectDir)..\gna-lib\$(Platform)\gna.dll  $(ProjectDir)..\bin\$(ProjectName)\$(Configuration)\$(Platform)\gna.dll
+copy $(ProjectDir)..\gna-lib\$(Platform)\gna.pdb $(ProjectDir)..\bin\$(ProjectName)\$(Configuration)\$(Platform)\gna.pdb</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>

@@ -72,7 +72,7 @@ void RecurrentKernelImpl1B(RecurrentConfig const * const config)
         for (j = 0; j < kparts + 1; j++)
         {
             in = _mm_lddqu_si128((__m128i*)input);
-            w = _mm_cvtepi8_epi16(_mm_loadu_si64((__m128i*)weight));
+            w = _mm_cvtepi8_epi16(_mm_loadl_epi64((__m128i*)weight));
             for (k = 0; k < part_sz && (j*part_sz + k < KK); k += VEC_16CAP)
             {
                 input += VEC_16CAP;
@@ -86,7 +86,7 @@ void RecurrentKernelImpl1B(RecurrentConfig const * const config)
                 acc = _mm_add_epi64(acc, inm2);
 
                 in = _mm_lddqu_si128((__m128i*)input);
-                w = _mm_cvtepi8_epi16(_mm_loadu_si64((__m128i*)weight));
+                w = _mm_cvtepi8_epi16(_mm_loadl_epi64((__m128i*)weight));
             }
 
             // saturate if part size achieved
@@ -106,7 +106,7 @@ void RecurrentKernelImpl1B(RecurrentConfig const * const config)
         }
 
         in = _mm_lddqu_si128((__m128i*)feedback);
-        w = _mm_cvtepi8_epi16(_mm_loadu_si64((__m128i*)weight));
+        w = _mm_cvtepi8_epi16(_mm_loadl_epi64((__m128i*)weight));
 
         // compute using SSE instructions until additions reach part size
         // or if loop reaches end of config->outputElementCount (without the modulo 16 remainder)
@@ -123,7 +123,7 @@ void RecurrentKernelImpl1B(RecurrentConfig const * const config)
             acc = _mm_add_epi64(acc, inm2);
 
             in = _mm_lddqu_si128((__m128i*)feedback);
-            w = _mm_cvtepi8_epi16(_mm_loadu_si64((__m128i*)weight));
+            w = _mm_cvtepi8_epi16(_mm_loadl_epi64((__m128i*)weight));
         }
 
         // if part size wasn't reached, but there is still config->outputElementCount remainder
@@ -152,7 +152,7 @@ void RecurrentKernelImpl1B(RecurrentConfig const * const config)
                 acc = _mm_add_epi64(acc, inm2);
 
                 in = _mm_lddqu_si128((__m128i*)feedback);
-                w = _mm_cvtepi8_epi16(_mm_loadu_si64((__m128i*)weight));
+                w = _mm_cvtepi8_epi16(_mm_loadl_epi64((__m128i*)weight));
             }
 
             if (kk == part_sz)

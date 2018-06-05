@@ -25,6 +25,8 @@
 
 #include "HardwareLayer.h"
 
+#include <algorithm>
+
 #include "ActiveList.h"
 #include "ConvolutionalLayer.h"
 #include "GmmLayer.h"
@@ -98,8 +100,9 @@ HardwareLayer::HardwareLayer(const DescriptorParameters& parameters) :
 
 void HardwareLayer::WriteInputBuffer(PGNA_BUFFER_DESCR& lyrsCfg, const ConfigurationBuffer * const buffer) const
 {
+    Address<XNN_LYR *const> addr = XnnDescriptor;
     lyrsCfg->offset = getOffset(XnnDescriptor) + offsetof(XNN_LYR, in_buffer);
-    lyrsCfg->value = getOffset(buffer->Get());
+    lyrsCfg->value = getOffset(buffer);
 
     ++lyrsCfg;
 }
@@ -268,7 +271,7 @@ void HardwareLayerRnn::convert()
 {
     auto elementCount = SoftwareLayer->Output.ElementCount;
 
-    feedbackFirstIterElementCount = min((bufferElementCount - lastIterationElementCount), elementCount);
+    feedbackFirstIterElementCount = (std::min)((bufferElementCount - lastIterationElementCount), elementCount);
     Expect::True(feedbackFirstIterElementCount <= bufferElementCount, XNN_ERR_LYR_CFG);
 
     feedbackIterationsCount = (elementCount - feedbackFirstIterElementCount) / bufferElementCount;
@@ -327,15 +330,14 @@ HardwareLayerCnn::HardwareLayerCnn(const DescriptorParameters& parameters) :
     auto fitlerCount = cnn->Convolution.Filters.Count;
     auto fitlerSize = cnn->Convolution.Filters.CoefficientCount;
     filtersCountInFullIteration =
-        min(
+        (std::min)(
             fitlerCount,
             (fitlerSize <= bufferElementCount / 6 / 3) ?
-                16ui32 :
+                uint32_t{16} :
                 (fitlerSize <= bufferElementCount / 6 / 2) ?
-                    12ui32 :
+                    uint32_t{12} :
                     (fitlerSize <= bufferElementCount / 6) ?
-                        4ui32 :
-                        0ui32);
+                        uint32_t{4} : uint32_t{0});
     Expect::InRange(filtersCountInFullIteration, CNN_N_FLT_COEFF_MPLY, CNN_N_FLT_ITER_MAX, XNN_ERR_LYR_CFG);
     Expect::MultiplicityOf(filtersCountInFullIteration, CNN_N_FLT_COEFF_MPLY);
 
@@ -379,7 +381,7 @@ void HardwareLayerCnn::save()
     XnnDescriptor->cnn_n_flt_iters = filtersIterationCount;
     XnnDescriptor->cnn_n_flt_last = filtersCountInLastIteration;
     XnnDescriptor->cnn_n_flt_outs = convOutputElementCount;
-    XnnDescriptor->cnn_n_flt_stride = cnn->Convolution.FeatureMaps.Stride;
+    XnnDescriptor->cnn_n_flt_stride = cnn->Convolution.FeatMaps.Stride;
     XnnDescriptor->cnn_n_out_p_flt = outputElementCount;
     XnnDescriptor->cnn_pool_size = cnn->Pooling.Size;
     XnnDescriptor->cnn_pool_stride = cnn->Pooling.Stride;
@@ -486,8 +488,8 @@ void HardwareLayerGmm::WriteActiveList(HardwareActiveListDescriptor & descriptor
     auto gmm = SoftwareLayer->Get<const GmmLayer>();
 
     auto scoreElementsCount = GMM_SCORE_SIZE * gmm->Input.VectorCount * gmm->Config.stateCount;
-    auto activeListIndices = 0ui32;
-    auto activeListIndicesCount = 0ui32;
+    auto activeListIndices = uint32_t{0};
+    auto activeListIndicesCount = uint32_t{0};
     if (descriptor.List)
     {
         scoreElementsCount = GMM_SCORE_SIZE * gmm->Input.VectorCount * descriptor.List->IndicesCount;

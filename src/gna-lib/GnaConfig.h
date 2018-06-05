@@ -25,11 +25,16 @@
 
 #pragma once
 
+#if defined(_WIN32)
 #if HW_VERBOSE == 1
 #include "GnaDrvApiWinDebug.h"
 #else
 #include "GnaDrvApiWin.h"
 #endif
+#else
+#include <misc/gna.h>
+#endif
+
 #include "GnaTypes.h"
 
 namespace GNA

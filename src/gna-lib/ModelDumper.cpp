@@ -25,6 +25,7 @@
 
 #include "Device.h"
 
+#include <cstring>
 #include <iostream>
 #include <fstream>
 #include <memory>
@@ -56,7 +57,7 @@ void* Device::Dump(gna_model_id modelId, gna_device_kind deviceKind, intel_gna_m
     // Validate parameters
     Expect::NotNull(status);
     Expect::NotNull(modelHeader);
-    Expect::NotNull(customAlloc);
+    Expect::NotNull(reinterpret_cast<void*>(customAlloc));
     Expect::True(GNA_SUE == deviceKind, GNA_CPUTYPENOTSUPPORTED); // Temporary limitation
 
     FakeDetector detector{ *ioctlSender, deviceDictionary.at(deviceKind) };

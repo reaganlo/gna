@@ -25,7 +25,6 @@
 
 #pragma once
 
-#include "common.h"
 #include "KernelMacros.h"
 
 #define gmm_maxmix_8u8u_32u     KERNEL(gmm_maxmix_8u8u_32u)

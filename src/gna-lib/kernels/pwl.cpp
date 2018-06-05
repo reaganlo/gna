@@ -25,6 +25,10 @@
 
 #include <string.h>
 
+#if defined(__GNUC__)
+#include <limits.h>
+#endif
+
 #include "GnaException.h"
 #include "KernelMacros.h"
 #include "pwl.h"
@@ -45,7 +49,7 @@ const int32_t XBASEMASK = 0xFFFFFFFC;
 
 __forceinline static const void pwlSaturateStoreOut(int64_t sum, int16_t* O, uint32_t * const saturationCount)
 {
-#if GNA_SAT == 1    
+#if GNA_SAT == 1
     int64_t sat_mask;
     int64_t sat_mask_0;
 
@@ -78,6 +82,55 @@ __forceinline static const void pwlSaturateStoreOut(int64_t sum, int16_t* O, uin
     *O = (int16_t)sum;
 }
 
+__forceinline int32_t pwlFindFirstBitSet(int64_t bits)
+{
+    int32_t s = 0;
+
+#if defined(__GNUC__) && defined(__LP64__)
+    int32_t leadingZeros = __builtin_clzll(bits);
+    s = sizeof(int64_t) * CHAR_BIT - leadingZeros;
+#elif defined(__GNUC__)
+    int32_t widthHigh = (int32_t)(bits >> sizeof(s) * CHAR_BIT);
+    if (widthHigh != 0)
+    {
+        int32_t leadingZeros = __builtin_clz(widthHigh);
+        s = sizeof(int64_t) * CHAR_BIT - leadingZeros;
+    }
+    else
+    {
+        int32_t widthLow = (int32_t)bits;
+        int32_t leadingZeros = __builtin_clz(widthLow);
+        s = sizeof(int32_t) * CHAR_BIT - leadingZeros;
+    }
+#elif defined(_WIN64)
+#if !defined(_MSC_VER)
+    _BitScanReverse64((unsigned __int32*)&s, bits);
+#else
+    _BitScanReverse64((unsigned long*)&s, bits);
+#endif
+#elif defined(_WIN32)
+    // scan 32 MSB
+#if !defined(_MSC_VER)
+    _BitScanReverse((unsigned __int32*)&s, (unsigned long)(bits >> (sizeof(s) * CHAR_BIT)));
+#else
+    _BitScanReverse((unsigned long*)&s, (unsigned long)(bits >> (sizeof(s) * CHAR_BIT)));
+#endif
+    if (0 == s)
+    {
+        // scan 32 LSB
+#if !defined(_MSC_VER)
+        _BitScanReverse((unsigned __int32*)&s, (unsigned long)(bits & UINT32_MAX));
+#else
+        _BitScanReverse((unsigned long*)&s, (unsigned long)(bits & UINT32_MAX));
+#endif
+    }
+    else
+    {
+        s += sizeof(s) * CHAR_BIT;
+    }
+#endif
+    return s;
+}
 
 #define pwlKernelImplSingleBinary KERNEL(pwlKernelImplSingleBinary)
 void pwlKernelImplSingleBinary(PwlCachedConfig const * const pwl, int32_t I, int16_t* O,
@@ -470,8 +523,8 @@ void pwlKernelImplAllLookup(PwlCachedConfig const * const pwl, PwlOutputConfig c
 PwlCached::PwlCached(int32_t const * const inputIn, uint32_t elementsCount, nn_pwl_seg const * const segments, uint32_t segmentCountIn)
 {
     int32_t s;                      // PWL segment iterator
-    int32_t i;                      // pwl.lookup element offset iterator (beginning) 
-    int64_t j;                      // pwl.lookup element offset iterator (end) 
+    int32_t i;                      // pwl.lookup element offset iterator (beginning)
+    int64_t j;                      // pwl.lookup element offset iterator (end)
     pwl_x_t xBaseAtmp;                 // left segment xBase value (extracted)
     pwl_x_t xBaseBtmp;                 // right segment x Base value (extracted)
     int64_t widthTmp = UINT32_MAX;     // pwl.lookup segment widthTmp - minimum distance between pwl.segments' xbases
@@ -500,21 +553,7 @@ PwlCached::PwlCached(int32_t const * const inputIn, uint32_t elementsCount, nn_p
         }
         if (widthTmp >= 1 && widthTmp <= INT32_MAX)
         {
-#ifndef _WIN64
-            // scan 32 MSB
-            _BitScanReverse((unsigned long*)&s, (unsigned long)(widthTmp >> (sizeof(s) * CHAR_BIT)));
-            if (0 == s)
-            {
-                // scan 32 LSB
-                _BitScanReverse((unsigned long*)&s, (unsigned long)(widthTmp & UINT32_MAX));
-            }
-            else
-            {
-                s += sizeof(s) * CHAR_BIT;
-            }
-#else
-            _BitScanReverse64((unsigned long*)&s, widthTmp);
-#endif
+            s = pwlFindFirstBitSet(widthTmp);
             widthTmp = (uint64_t)1 << (uint64_t)s;
             j = PADD((int64_t)(
                 segments[pwl.segmentCount - 1].xBase & XBASEMASK) - (segments[1].xBase & XBASEMASK),

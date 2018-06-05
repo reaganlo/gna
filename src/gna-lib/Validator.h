@@ -133,4 +133,7 @@ protected:
     Expect& operator=(const Expect&) = delete;
 };
 
+// Functor for validating if buffer is within memory boundaries
+using ValidBoundariesFunctor = std::function<void(const void *, const size_t)>;
+
 }

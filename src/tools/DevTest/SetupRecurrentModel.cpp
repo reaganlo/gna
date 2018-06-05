@@ -173,7 +173,7 @@ void SetupRecurrentModel::checkReferenceOutput(int modelIndex, int configIndex) 
         if (ref_output[i] != outElemVal)
         {
             // TODO: how it should notified? return or throw
-            throw std::exception("Wrong output");
+            throw std::runtime_error("Wrong output");
         }
     }
 }
@@ -184,7 +184,7 @@ void SetupRecurrentModel::samplePwl(intel_pwl_segment_t *segments, uint32_t nSeg
     auto xBaseInc = 2*abs(xBase) / nSegments;
     auto yBase = -200;
     auto yBaseInc = 1;
-    for (auto i = 0ui32; i < nSegments; i++, xBase += xBaseInc, yBase += yBaseInc, yBaseInc++) 
+    for (auto i = uint32_t{0}; i < nSegments; i++, xBase += xBaseInc, yBase += yBaseInc, yBaseInc++) 
     {
         segments[i].xBase = xBase;
         segments[i].yBase = yBase;

@@ -32,7 +32,7 @@ DeviceController::DeviceController()
     intel_gna_status_t status = GnaDeviceOpen(1, &gnaHandle);
     if (GNA_SUCCESS != status)
     {
-        throw std::exception("Device open failed");
+        throw std::runtime_error("Device open failed");
     }
 }
 
@@ -50,7 +50,7 @@ void DeviceController::ModelCreate(const gna_model * model, gna_model_id * model
     intel_gna_status_t status = GnaModelCreate(gnaHandle, model, modelId);
     if (GNA_SUCCESS != status)
     {
-        throw std::exception("Model create failed");
+        throw std::runtime_error("Model create failed");
     }
 }
 
@@ -64,7 +64,7 @@ void DeviceController::Free()
     intel_gna_status_t status = GnaFree(gnaHandle);
     if (GNA_SUCCESS != status)
     {
-        throw std::exception("Config add failed");
+        throw std::runtime_error("Config add failed");
     }
 }
 
@@ -74,7 +74,7 @@ gna_request_cfg_id DeviceController::ConfigAdd(gna_model_id modelId)
     intel_gna_status_t status = GnaModelRequestConfigAdd(modelId, &configId);
     if (GNA_SUCCESS != status)
     {
-        throw std::exception("Config add failed");
+        throw std::runtime_error("Config add failed");
     }
 
     return configId;
@@ -85,7 +85,7 @@ void DeviceController::BufferAdd(gna_request_cfg_id configId, gna_buffer_type ty
     intel_gna_status_t status = GnaRequestConfigBufferAdd(configId, type, layerIndex, address);
     if (GNA_SUCCESS != status)
     {
-        throw std::exception("Buffer add failed");
+        throw std::runtime_error("Buffer add failed");
     }
 }
 
@@ -94,7 +94,7 @@ void DeviceController::ActiveListAdd(gna_request_cfg_id configId, uint32_t layer
     intel_gna_status_t status = GnaRequestConfigActiveListAdd(configId, layerIndex, indicesCount, indices);
     if (GNA_SUCCESS != status)
     {
-        throw std::exception("ActiveList add failed");
+        throw std::runtime_error("ActiveList add failed");
     }
 }
 
@@ -103,16 +103,17 @@ void DeviceController::RequestEnqueue(gna_request_cfg_id configId, gna_accelerat
     intel_gna_status_t status = GnaRequestEnqueue(configId, accelerationIn, requestId);
     if (GNA_SUCCESS != status)
     {
-        throw std::exception("Request enqueue failed");
+        throw std::runtime_error("Request enqueue failed");
     }
 }
 
+#if HW_VERBOSE == 1
 void DeviceController::AfterscoreDebug(gna_model_id modelId, uint32_t nActions, dbg_action *actions)
 {
     intel_gna_status_t status = GnaModelSetAfterscoreScenario(modelId, nActions, actions);
     if (GNA_SUCCESS != status)
     {
-        throw std::exception("Setting after score scenario failed");
+        throw std::runtime_error("Setting after score scenario failed");
     }
 }
 
@@ -121,6 +122,7 @@ void DeviceController::PrescoreDebug(gna_model_id modelId, uint32_t nActions, db
     intel_gna_status_t status = GnaModelSetPrescoreScenario(modelId, nActions, actions);
     if (GNA_SUCCESS != status)
     {
-        throw std::exception("Setting pre score scenario failed");
+        throw std::runtime_error("Setting pre score scenario failed");
     }
 }
+#endif

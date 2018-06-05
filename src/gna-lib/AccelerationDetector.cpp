@@ -23,9 +23,23 @@
  in any way.
 */
 
-#ifdef _WIN32
+#if defined(__GNUC__)
+#include <cpuid.h>
+static inline unsigned long long _xgetbv(unsigned int ctr)
+{
+    int a, d;
+    __asm("xgetbv" : "=a"(a),"=d"(d) : "c"(ctr) : );
+    return a | (((unsigned long long) d) << 32);
+}
+#define cpuid(info, level) __get_cpuid_count(level, 0, &info[0], & info[1], &info[2], &info[3])
+#else
+#if !defined(_MSC_VER)
+#include <immintrin.h>
+#elif defined(__INTEL_COMPILER)
 #include <intrin.h>
-#endif
+#endif // __INTEL_COMPILER
+#define cpuid(info, level) __cpuidex((int*)(info), level, 0)
+#endif // __GNUC__
 
 #include "AccelerationDetector.h"
 #include "GnaException.h"
@@ -271,43 +285,26 @@ AccelerationDetector::AccelerationDetector(IoctlSender &senderIn) :
     discoverHardwareExistence();
     discoverHardwareCapabilities();
 
-    int cpuId[4];           // cpu id string
-    int sse4 = ACC_NOTSUPPORTED; // is Intel SSE4 Extensions support available
-    int avx1 = ACC_NOTSUPPORTED; // Intel ACX1 Extensions support available
-    int avx2 = ACC_NOTSUPPORTED; // Intel ACX2 Extensions support available
+    unsigned int cpuId[4];           // cpu id string
     unsigned long long xcrFeature = 0;
 
+    cpuid(cpuId, 0);
+    int largestFunctionId = cpuId[0];
+
     // get CPU IDs
-    __cpuid(cpuId, 1);
+    cpuid(cpuId, 1);
 
     // detect SSE4
     // check both SSE4_1, SSE4_2 feature flags (bits 19,20)
-    sse4 = cpuId[2] & SSE4_MASK;
-    if (SSE4_MASK == sse4)
+    if (cpuId[2] & SSE4_MASK)
     {
         accelerationModes[GNA_SSE4_2_FAST] = ACC_SUPPORTED;
         accelerationModes[GNA_SSE4_2_SAT] = ACC_SUPPORTED;
         fastestAcceleration = GNA_SSE4_2_FAST;
     }
 
-    // detect AVX1 & AVX2
-    // check OSXSAVE and AVX feature flags, bits 27,28
-    avx1 = cpuId[2] & AVX1_MASK;
-    if (AVX1_MASK == avx1) // processor supports AVX instructions and XGETBV is enabled by OS
+    if (cpuId[2] & AVX1_MASK)
     {
-        // AVX2 requires AVX1 support
-        // get AVX2 flag, bit 5
-        //avx2 = cpuId2[1] & AVX2_MASK;
-        // below asm code is equivalent to line above
-        _asm
-        {
-            mov eax, 7
-            mov ecx, 0
-            cpuid; get CPU ID
-            and ebx, AVX2_MASK_ASM; compare CPU ID and AVX2 mask
-            mov avx2, ebx; save result in avx2
-        }
-
         // check OS has enabled both XMM and YMM state support
         xcrFeature = _xgetbv(_XCR_XFEATURE_ENABLED_MASK);
         xcrFeature = xcrFeature & XYMM_MASK;
@@ -316,9 +313,13 @@ AccelerationDetector::AccelerationDetector(IoctlSender &senderIn) :
             accelerationModes[GNA_AVX1_FAST] = ACC_SUPPORTED;
             accelerationModes[GNA_AVX1_SAT] = ACC_SUPPORTED;
             fastestAcceleration = GNA_AVX1_FAST;
+        }
 
-            // check AVX2 flag, bit 5
-            if (AVX2_MASK & avx2)
+        // check AVX2 flag
+        if (largestFunctionId >= 7)
+        {
+            cpuid(cpuId, 7);
+            if (cpuId[1] & AVX2_MASK)
             {
                 accelerationModes[GNA_AVX2_FAST] = ACC_SUPPORTED;
                 accelerationModes[GNA_AVX2_SAT] = ACC_SUPPORTED;

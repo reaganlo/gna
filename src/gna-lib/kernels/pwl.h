@@ -26,8 +26,6 @@
 
 #pragma once
 
-#include "common.h"
-
 #include "KernelArguments.h"
 
 // PWL Segment x base type
@@ -85,7 +83,7 @@ namespace GNA
 
         union
         {
-            struct __lookup
+            struct
             {
                 pwl_x_t xBase0;             // first segment xBase value (Lookup algorithm)
                 pwl_x_t xBase0Neg;          // first segment xBase value x -1 for addition only  (Lookup algorithm)
@@ -97,12 +95,12 @@ namespace GNA
                 uint8_t width;
                 uint8_t _reserved[7];       // padding
             } Lookup;
-            struct __binary
+            struct
             {
                 nn_pwl_seg* source;         // unpacked segments
                 pwl_y_t*  ySeg;             // extracted PWL segments value data
                 pwl_x_t xBase0;             // first segment xBase value (binary search algorithm)
-                int16_t yBase0;             // first segment yBase value (binary search algorithm)        
+                int16_t yBase0;             // first segment yBase value (binary search algorithm)
                 uint8_t _reserved[6];       // padding
             } Binary;
         };

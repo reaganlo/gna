@@ -23,6 +23,7 @@
  in any way.
 */
 
+#include "common.h"
 #include "XnnKernelApi.h"
 
 #include <string.h>

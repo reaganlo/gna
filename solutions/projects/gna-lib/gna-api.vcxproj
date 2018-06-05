@@ -59,7 +59,6 @@
   <ItemDefinitionGroup>
     <ClCompile>
       <PreprocessorDefinitions>
-                WINDOWS=1;
                 HW_VERBOSE=$(HW_VERBOSE);
                 INTEL_GNA_DLLEXPORT=1;
                 %(PreprocessorDefinitions);

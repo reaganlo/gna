@@ -36,12 +36,12 @@ namespace GNA
 /**
  * Custom exception with device open error support
  */
-class GnaException : public std::exception
+class GnaException : public std::runtime_error
 {
 public:
 
-    GnaException(status_t status) : 
-        std::exception{ GnaStatusToString(status) },
+    GnaException(status_t status) :
+        std::runtime_error{ GnaStatusToString(status) },
         Status{ status }
     {}
 

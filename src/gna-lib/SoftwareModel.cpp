@@ -100,7 +100,7 @@ status_t SoftwareModel::Score(
 
 void SoftwareModel::build(const gna_model *const network, uint16_t& gmmCount)
 {
-    for (auto i = 0ui32; i < network->nLayers; i++)
+    for (auto i = uint32_t{0}; i < network->nLayers; i++)
     {
         try
         {

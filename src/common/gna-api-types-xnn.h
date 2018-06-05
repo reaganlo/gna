@@ -6,7 +6,7 @@
     Distribution & Single User) (v. 11.2.2017) ). Unless the License provides
     otherwise, you may not use, modify, copy, publish, distribute, disclose or
     transmit this software or the related documents without Intel's prior
-    written permission.
+    written permission.
     This software and the related documents are provided as is, with no
     express or implied warranties, other than those that are expressly
     stated in the License.

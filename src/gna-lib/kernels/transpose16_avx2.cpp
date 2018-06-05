@@ -37,7 +37,7 @@ void TransposeKernelImpl(TransposeConfig const * const cfg)
 
     uint32_t i, j;
 
-    // input matrix is a vector - copy 
+    // input matrix is a vector - copy
     if (M == 1 || N == 1)
     {
         memcpy_s(O, M * N * sizeof(int16_t), I, M * N * sizeof(int16_t));
@@ -615,61 +615,61 @@ void TransposeKernelImpl(TransposeConfig const * const cfg)
             v7 = _mm256_extracti128_si256(abcd_hilo, 1);
             v8 = _mm256_extracti128_si256(abcd_hi, 1);
 
-            v1_hi = _mm_bsrli_si128(v1, 8);
-            v2_hi = _mm_bsrli_si128(v2, 8);
-            v3_hi = _mm_bsrli_si128(v3, 8);
-            v4_hi = _mm_bsrli_si128(v4, 8);
-            v5_hi = _mm_bsrli_si128(v5, 8);
-            v6_hi = _mm_bsrli_si128(v6, 8);
-            v7_hi = _mm_bsrli_si128(v7, 8);
-            v8_hi = _mm_bsrli_si128(v8, 8);
+            v1_hi = _mm_srli_si128(v1, 8);
+            v2_hi = _mm_srli_si128(v2, 8);
+            v3_hi = _mm_srli_si128(v3, 8);
+            v4_hi = _mm_srli_si128(v4, 8);
+            v5_hi = _mm_srli_si128(v5, 8);
+            v6_hi = _mm_srli_si128(v6, 8);
+            v7_hi = _mm_srli_si128(v7, 8);
+            v8_hi = _mm_srli_si128(v8, 8);
 
-            _mm_storeu_si64(out0, v1);
+            _mm_storel_epi64((__m128i*)out0, v1);
             *(out0 + 4) = *in4++;
 
-            _mm_storeu_si64(out1, v1_hi);
+            _mm_storel_epi64((__m128i*)out1, v1_hi);
             *(out1 + 4) = *in4++;
 
-            _mm_storeu_si64(out2, v2);
+            _mm_storel_epi64((__m128i*)out2, v2);
             *(out2 + 4) = *in4++;
 
-            _mm_storeu_si64(out3, v2_hi);
+            _mm_storel_epi64((__m128i*)out3, v2_hi);
             *(out3 + 4) = *in4++;
 
-            _mm_storeu_si64(out4, v3);
+            _mm_storel_epi64((__m128i*)out4, v3);
             *(out4 + 4) = *in4++;
 
-            _mm_storeu_si64(out5, v3_hi);
+            _mm_storel_epi64((__m128i*)out5, v3_hi);
             *(out5 + 4) = *in4++;
 
-            _mm_storeu_si64(out6, v4);
+            _mm_storel_epi64((__m128i*)out6, v4);
             *(out6 + 4) = *in4++;
 
-            _mm_storeu_si64(out7, v4_hi);
+            _mm_storel_epi64((__m128i*)out7, v4_hi);
             *(out7 + 4) = *in4++;
 
-            _mm_storeu_si64(out8, v5);
+            _mm_storel_epi64((__m128i*)out8, v5);
             *(out8 + 4) = *in4++;
 
-            _mm_storeu_si64(out9, v5_hi);
+            _mm_storel_epi64((__m128i*)out9, v5_hi);
             *(out9 + 4) = *in4++;
 
-            _mm_storeu_si64(out10, v6);
+            _mm_storel_epi64((__m128i*)out10, v6);
             *(out10 + 4) = *in4++;
 
-            _mm_storeu_si64(out11, v6_hi);
+            _mm_storel_epi64((__m128i*)out11, v6_hi);
             *(out11 + 4) = *in4++;
 
-            _mm_storeu_si64(out12, v7);
+            _mm_storel_epi64((__m128i*)out12, v7);
             *(out12 + 4) = *in4++;
 
-            _mm_storeu_si64(out13, v7_hi);
+            _mm_storel_epi64((__m128i*)out13, v7_hi);
             *(out13 + 4) = *in4++;
 
-            _mm_storeu_si64(out14, v8);
+            _mm_storel_epi64((__m128i*)out14, v8);
             *(out14 + 4) = *in4++;
 
-            _mm_storeu_si64(out15, v8_hi);
+            _mm_storel_epi64((__m128i*)out15, v8_hi);
             *(out15 + 4) = *in4++;
 
             out0 +=  VEC_16CAP * M;
@@ -903,42 +903,42 @@ void TransposeKernelImpl(TransposeConfig const * const cfg)
             mix1 = _mm256_shuffle_epi8(mix1, shuffle_mask);
             mix1 = _mm256_permutevar8x32_epi32(mix1, permute_mask);
             mix1 = _mm256_inserti128_si256(
-                mix1, _mm_bsrli_si128(_mm256_extracti128_si256(mix1, 1), 2), 1);
+                mix1, _mm_srli_si128(_mm256_extracti128_si256(mix1, 1), 2), 1);
 
             mix2 = _mm256_shuffle_epi8(mix2, shuffle_mask);
             mix2 = _mm256_permutevar8x32_epi32(mix2, permute_mask);
             mix2 = _mm256_inserti128_si256(
-                mix2, _mm_bsrli_si128(_mm256_extracti128_si256(mix2, 1), 2), 1);
+                mix2, _mm_srli_si128(_mm256_extracti128_si256(mix2, 1), 2), 1);
 
             mix3 = _mm256_shuffle_epi8(mix3, shuffle_mask);
             mix3 = _mm256_permutevar8x32_epi32(mix3, permute_mask);
             mix3 = _mm256_inserti128_si256(
-                mix3, _mm_bsrli_si128(_mm256_extracti128_si256(mix3, 1), 2), 1);
+                mix3, _mm_srli_si128(_mm256_extracti128_si256(mix3, 1), 2), 1);
 
             mix4 = _mm256_shuffle_epi8(mix4, shuffle_mask);
             mix4 = _mm256_permutevar8x32_epi32(mix4, permute_mask);
             mix4 = _mm256_inserti128_si256(
-                mix4, _mm_bsrli_si128(_mm256_extracti128_si256(mix4, 1), 2), 1);
+                mix4, _mm_srli_si128(_mm256_extracti128_si256(mix4, 1), 2), 1);
 
             mix5 = _mm256_shuffle_epi8(mix5, shuffle_mask);
             mix5 = _mm256_permutevar8x32_epi32(mix5, permute_mask);
             mix5 = _mm256_inserti128_si256(
-                mix5, _mm_bsrli_si128(_mm256_extracti128_si256(mix5, 1), 2), 1);
+                mix5, _mm_srli_si128(_mm256_extracti128_si256(mix5, 1), 2), 1);
 
             mix6 = _mm256_shuffle_epi8(mix6, shuffle_mask);
             mix6 = _mm256_permutevar8x32_epi32(mix6, permute_mask);
             mix6 = _mm256_inserti128_si256(
-                mix6, _mm_bsrli_si128(_mm256_extracti128_si256(mix6, 1), 2), 1);
+                mix6, _mm_srli_si128(_mm256_extracti128_si256(mix6, 1), 2), 1);
 
             mix7 = _mm256_shuffle_epi8(mix7, shuffle_mask);
             mix7 = _mm256_permutevar8x32_epi32(mix7, permute_mask);
             mix7 = _mm256_inserti128_si256(
-                mix7, _mm_bsrli_si128(_mm256_extracti128_si256(mix7, 1), 2), 1);
+                mix7, _mm_srli_si128(_mm256_extracti128_si256(mix7, 1), 2), 1);
 
             mix8 = _mm256_shuffle_epi8(mix8, shuffle_mask);
             mix8 = _mm256_permutevar8x32_epi32(mix8, permute_mask);
             mix8 = _mm256_inserti128_si256(
-                mix8, _mm_bsrli_si128(_mm256_extracti128_si256(mix8, 1), 2), 1);
+                mix8, _mm_srli_si128(_mm256_extracti128_si256(mix8, 1), 2), 1);
 
             _mm256_maskstore_epi32((int*)out0, store_mask, mix1);
             _mm256_maskstore_epi32((int*)out1, store_mask, mix2);
@@ -1512,8 +1512,8 @@ void TransposeKernelImpl(TransposeConfig const * const cfg)
 
         int16_t *out0, *out1, *out2, *out3, *out4;
 
-        ad1234 = _mm256_i32gather_epi64((int64_t*)in0, gather_n5, scale_64);
-        ad5___ = _mm256_i32gather_epi64((int64_t*)(in0 + 4), gather_n5, scale_32);
+        ad1234 = _mm256_i32gather_epi64((const long long*)in0, gather_n5, scale_64);
+        ad5___ = _mm256_i32gather_epi64((const long long*)(in0 + 4), gather_n5, scale_32);
 
         for (i = 0; i < M_VEC; i += 4)
         {
@@ -1534,14 +1534,14 @@ void TransposeKernelImpl(TransposeConfig const * const cfg)
             ad34 = _mm256_extracti128_si256(ad1234, 1);
             ad5 = _mm256_castsi256_si128(ad5___);
 
-            _mm_storeu_si64((long long*)out0, ad12);
-            _mm_storeu_si64((long long*)out1, _mm_bsrli_si128(ad12, 8));
-            _mm_storeu_si64((long long*)out2, ad34);
-            _mm_storeu_si64((long long*)out3, _mm_bsrli_si128(ad34, 8));
-            _mm_storeu_si64((long long*)out4, ad5);
+            _mm_storel_epi64((__m128i*)out0, ad12);
+            _mm_storel_epi64((__m128i*)out1, _mm_srli_si128(ad12, 8));
+            _mm_storel_epi64((__m128i*)out2, ad34);
+            _mm_storel_epi64((__m128i*)out3, _mm_srli_si128(ad34, 8));
+            _mm_storel_epi64((__m128i*)out4, ad5);
 
-            ad1234 = _mm256_i32gather_epi64((int64_t*)in0, gather_n5, scale_64);
-            ad5___ = _mm256_i32gather_epi64((int64_t*)(in0 + 4), gather_n5, scale_32);
+            ad1234 = _mm256_i32gather_epi64((const long long*)in0, gather_n5, scale_64);
+            ad5___ = _mm256_i32gather_epi64((const long long*)(in0 + 4), gather_n5, scale_32);
         }
         for (; i < M; i++)
         {
@@ -1599,14 +1599,14 @@ void TransposeKernelImpl(TransposeConfig const * const cfg)
             out6 = out4 + M;
             out7 = out6 + 4;
 
-            _mm_storeu_si64(out0, ad12);
-            _mm_storeu_si64(out1, eh12);
-            _mm_storeu_si64(out2, _mm_bsrli_si128(ad12, 8));
-            _mm_storeu_si64(out3, _mm_bsrli_si128(eh12, 8));
-            _mm_storeu_si64(out4, ad34);
-            _mm_storeu_si64(out5, eh34);
-            _mm_storeu_si64(out6, _mm_bsrli_si128(ad34, 8));
-            _mm_storeu_si64(out7, _mm_bsrli_si128(eh34, 8));
+            _mm_storel_epi64((__m128i*)out0, ad12);
+            _mm_storel_epi64((__m128i*)out1, eh12);
+            _mm_storel_epi64((__m128i*)out2, _mm_srli_si128(ad12, 8));
+            _mm_storel_epi64((__m128i*)out3, _mm_srli_si128(eh12, 8));
+            _mm_storel_epi64((__m128i*)out4, ad34);
+            _mm_storel_epi64((__m128i*)out5, eh34);
+            _mm_storel_epi64((__m128i*)out6, _mm_srli_si128(ad34, 8));
+            _mm_storel_epi64((__m128i*)out7, _mm_srli_si128(eh34, 8));
 
             ad = _mm256_lddqu_si256((__m256i*)in0);
             eh = _mm256_lddqu_si256((__m256i*)in1);
