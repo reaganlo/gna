@@ -281,10 +281,11 @@ if(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
 
   add_dependencies(gna-api-verbose ${kernel_libraries})
 
+  file(MAKE_DIRECTORY ${GNA_API_VERBOSE_INCL_DIR})
   add_custom_command(TARGET gna-api POST_BUILD
-  COMMAND ${CMAKE_COMMAND} -E copy_if_different
-  ${api_headers_verbose}
-  ${GNA_API_VERBOSE_INCL_DIR})
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+    ${api_headers_verbose}
+    ${GNA_API_VERBOSE_INCL_DIR})
 
   add_custom_command(TARGET gna-api-verbose POST_BUILD
     COMMAND

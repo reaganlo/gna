@@ -57,19 +57,10 @@ else()
   set(OS_PREFIX LNX)
 endif()
 
-# configuration types
-set(CMAKE_CONFIGURATION_TYPES "${OS_PREFIX}-DEBUG;${OS_PREFIX}-RELEASE")
+# setting default configuration
+include(${CMAKE_SOURCE_DIR}/cmake/set_build_type.cmake)
 
-# release configuration default
-get_property(IsMultiConfig GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
-if(NOT IsMultiConfig)
-  if(NOT DEFINED CMAKE_BUILD_TYPE
-      OR (NOT ${CMAKE_BUILD_TYPE} STREQUAL "${OS_PREFIX}-DEBUG"
-        AND NOT ${CMAKE_BUILD_TYPE} STREQUAL "${OS_PREFIX}-RELEASE"))
-    set(CMAKE_BUILD_TYPE "${OS_PREFIX}-RELEASE")
-  endif()
-endif()
-
+# postfix for debug libraries
 if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
   set(CMAKE_${OS_PREFIX}-DEBUG_POSTFIX d)
 endif()
@@ -125,6 +116,11 @@ else()
   endif()
 endif()
 
+# set 32-bit compilation flags
+if(CMAKE_ARCHITECTURE STREQUAL x86)
+  include(${CMAKE_SOURCE_DIR}/cmake/set_x86_flags.cmake)
+endif()
+
 set(CMAKE_CXX_FLAGS                                ${CXX_FLAGS})
 set(CMAKE_CXX_FLAGS_${OS_PREFIX}-DEBUG             ${CXX_FLAGS_DEBUG})
 set(CMAKE_CXX_FLAGS_${OS_PREFIX}-RELEASE           ${CXX_FLAGS_RELEASE})
@@ -134,15 +130,6 @@ set(CMAKE_SHARED_LINKER_FLAGS_${OS_PREFIX}-RELEASE ${CXX_LINKER_FLAGS_RELEASE})
 set(CMAKE_EXE_LINKER_FLAGS                         "${CMAKE_EXE_LINKER_FLAGS} ${CXX_LINKER_FLAGS}")
 set(CMAKE_EXE_LINKER_FLAGS_${OS_PREFIX}-DEBUG      ${CXX_LINKER_FLAGS_DEBUG})
 set(CMAKE_EXE_LINKER_FLAGS_${OS_PREFIX}-RELEASE    ${CXX_LINKER_FLAGS_RELEASE})
-
-if(CMAKE_ARCHITECTURE STREQUAL x86)
-  if(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Qm32")
-    set(CMAKE_CXX_LINK_FLAGS "${CMAKE_CXX_LINK_FLAGS} /Qm32")
-  elseif(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -L/usr/lib32 -m32")
-  endif()
-endif()
 
 add_subdirectory(src/gna-lib/kernels)
 add_subdirectory(src/gna-lib)
