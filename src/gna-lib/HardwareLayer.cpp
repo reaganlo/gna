@@ -308,11 +308,10 @@ void HardwareLayerRnn::save()
     XnnDescriptor->rnn_n_fb_iters = feedbackIterationsCount;
     XnnDescriptor->rnn_n_elems_first = feedbackFirstIterElementCount;
     XnnDescriptor->rnn_n_elems_last = feedbackLastIterElementCount;
-    // will be 0 for hidden layers
-    if (INTEL_INPUT == SoftwareLayer->Config.Type || INTEL_HIDDEN == SoftwareLayer->Config.Type)
-    {
-        XnnDescriptor->rnn_out_fb_buffer = CalculateFeedbackBuffer(SoftwareLayer->Output.Buffer);
-    }
+
+    // even if layer is an output layer, feedback buffer should be calculated
+    // could be used later by firmware for feedback delay calculation
+    XnnDescriptor->rnn_out_fb_buffer = CalculateFeedbackBuffer(SoftwareLayer->Output.Buffer);
 }
 
 const uint32_t HardwareLayerRnn::CalculateFeedbackBuffer(const OutputBuffer& outputBuffer) const
