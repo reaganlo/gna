@@ -31,7 +31,7 @@ static inline unsigned long long _xgetbv(unsigned int ctr)
     __asm("xgetbv" : "=a"(a),"=d"(d) : "c"(ctr) : );
     return a | (((unsigned long long) d) << 32);
 }
-#define cpuid(info, level) __get_cpuid_count(level, 0, &info[0], & info[1], &info[2], &info[3])
+#define cpuid(info, level) __cpuid_count(level, 0, info[0], info[1], info[2], info[3])
 #else
 #if !defined(_MSC_VER)
 #include <immintrin.h>
