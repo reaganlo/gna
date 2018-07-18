@@ -102,7 +102,7 @@ void HardwareLayer::WriteInputBuffer(PGNA_BUFFER_DESCR& lyrsCfg, const Configura
 {
     Address<XNN_LYR *const> addr = XnnDescriptor;
     lyrsCfg->offset = getOffset(XnnDescriptor) + offsetof(XNN_LYR, in_buffer);
-    lyrsCfg->value = getOffset(buffer);
+    lyrsCfg->value = getOffset(buffer->Get());
 
     ++lyrsCfg;
 }
