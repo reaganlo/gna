@@ -74,15 +74,6 @@ DeviceD0ExitEvnt(
     // reset state
     ScoreComplete(devCtx, STATUS_CANCELLED, WDF_NO_HANDLE, TRUE, NULL);
 
-    // clean both queues
-    WdfIoQueuePurgeSynchronously(devCtx->queue);
-    WdfIoQueuePurgeSynchronously(WdfDeviceGetDefaultQueue(dev));
-
-    // resume queues to function normally when D0 is entering
-    Trace(TLI, T_QUE, "%!FUNC! Queues purge completed, Both QUEUE START");
-    WdfIoQueueStart(devCtx->queue);
-    WdfIoQueueStart(WdfDeviceGetDefaultQueue(dev));
-
     EventWriteDriverApiEnd(NULL, __FUNCTION__);
 
     return STATUS_SUCCESS;
