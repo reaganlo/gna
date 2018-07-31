@@ -123,7 +123,8 @@ MemoryMap(
     // memory already mapped
     else
     {
-        status = STATUS_UNSUCCESSFUL;
+        memoryCtx = NULL;
+        status = GNA_ERR_MEMORY_ALREADY_MAPPED;
         TraceFailMsg(TLE, T_EXIT, "Model with provided memory id already exists", status);
         goto mem_map_error;
     }

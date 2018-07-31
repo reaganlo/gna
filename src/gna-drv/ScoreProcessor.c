@@ -451,7 +451,8 @@ ScoreStart(
 
     if (calculateLayersDescriptorBufferSize(input) != inputLength)
     {
-        TraceFailMsg(TLE, T_EXIT, "Score input buffer wrong size", STATUS_INVALID_BUFFER_SIZE);
+        status = STATUS_INVALID_BUFFER_SIZE;
+        TraceFailMsg(TLE, T_EXIT, "Score input buffer wrong size", status);
         goto cleanup;
     }
 
@@ -646,7 +647,7 @@ ScoreDeferredUnmap(
     PMEMORY_CTX memoryCtx = appCtx->memoryBuffers[*memoryId];
     if (NULL == memoryCtx)
     {
-        status = STATUS_UNSUCCESSFUL;
+        status = GNA_ERR_MEMORY_ALREADY_UNMAPPED;
         TraceFailMsg(TLE, T_EXIT, "No memory context for given memory id", status);
         goto ioctl_mm_error;
     }
