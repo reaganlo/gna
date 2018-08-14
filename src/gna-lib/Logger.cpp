@@ -42,8 +42,8 @@ const char* const Logger::StatusStrings[] =
     "GNA_BADFEATLENGTH", " - Feature vector: length not supported",
     "GNA_BADFEATOFFSET", " - Feature vector: offset not supported",
     "GNA_BADFEATALIGN", " - Feature vector: invalid memory alignment",
-    "GNA_BADFEATNUM", " - Feature vector: Number of feature vectors not supported",
 
+    "GNA_BADFEATNUM", " - Feature vector: Number of feature vectors not supported",
     "GNA_INVALIDINDICES", " - Scoring data: number of active indices  not supported",
     "GNA_DEVNOTFOUND", " - Device: device not available",
     "GNA_ERR_INVALID_THREAD_COUNT", " - Device failed to open, thread count is invalid",
@@ -53,6 +53,7 @@ const char* const Logger::StatusStrings[] =
     "GNA_VAOUTOFRANGE", " - Device: Virtual Address out of range on DMA ch.",
     "GNA_UNEXPCOMPL", " - Device: Unexpected completion during PCIe operation",
     "GNA_DMAREQERR", " - Device: DMA error during PCIe operation",
+
     "GNA_MMUREQERR", " - Device: MMU error during PCIe operation",
     "GNA_BREAKPOINTPAUSE", " - Device: GMM accelerator paused on breakpoint",
     "GNA_BADMEMALIGN", " - Device: invalid memory alignment",
@@ -65,16 +66,17 @@ const char* const Logger::StatusStrings[] =
     "GNA_NULLARGNOTALLOWED", " - NULL argument not allowed",
     "GNA_INVALID_MODEL", " - Given model is invalid",
     "GNA_INVALID_REQUEST_CONFIGURATION", " - Given request configuration is invalid",
+
     "GNA_NULLARGREQUIRED", " - NULL argument is required",
     "GNA_ERR_MEM_ALLOC1", " - Memory: Already allocated, only single allocation per device is allowed",
     "GNA_ERR_RESOURCES", " - Unable to create new resources",
     "GNA_ERR_NOT_MULTIPLE", " - Value is not multiple of required value",
     "GNA_ERR_DEV_FAILURE", " - Critical device error occurred, device has been reset",
-
     "GMM_BADMEANWIDTH", " - Mean vector: width not supported",
     "GMM_BADMEANOFFSET", " - Mean vector: offset not supported",
     "GMM_BADMEANSETOFF", " - Mean vector: set offset not supported",
     "GMM_BADMEANALIGN", " - Mean vector: invalid memory alignment",
+
     "GMM_BADVARWIDTH", " - Variance vector: width not supported",
     "GMM_BADVAROFFSET", " - Variance vector: offset not supported",
     "GMM_BADVARSETOFF", " - Variance vector: set offset not supported",
@@ -105,10 +107,10 @@ const char* const Logger::StatusStrings[] =
     "XNN_ERR_BIAS_INDEX", " - XNN: Bias Vector index larger than grouping factor",
     "XNN_ERR_PWL_SEGMENTS", " - XNN: Activation function segment count is invalid, valid values: <2,128>",
     "XNN_ERR_PWL_DATA", " - XNN: Activation function enabled but segment data not set",
-    "XNN_ERR_MM_INVALID_IN", " - XNN: Invalid input data or configuration in matrix mul. op.",
     "CNN_ERR_FLT_COUNT", " - CNN Layer: invalid number of filters",
     "CNN_ERR_FLT_STRIDE", " - CNN Layer: invalid filter stride",
     "CNN_ERR_POOL_STRIDE", " - CNN Layer: invalid pool stride",
+
     "GNA_ERR_MEMORY_ALREADY_MAPPED", " - Memory is already mapped, cannot map again. Release memory first",
     "GNA_ERR_MEMORY_ALREADY_UNMAPPED", " - Memory is already unmapped, cannot unmap again",
     "GNA_ERR_THREADPOOL_STOPPED", " - Thread pool is stopped, cannot enqueue more requests",

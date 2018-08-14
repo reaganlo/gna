@@ -122,8 +122,6 @@ typedef enum _gna_status_t
     CNN_ERR_FLT_STRIDE,      // Error: CNN Layer: invalid filter stride
     CNN_ERR_POOL_STRIDE,     // Error: CNN Layer: invalid pool stride
 
-    XNN_ERR_MM_INVALID_IN,   // Error: XNN: Invalid input data or configuration in matrix mul. op.
-
     GNA_ERR_MEMORY_ALREADY_MAPPED, // Error: Memory is already mapped, cannot map again. Release memory first.
     GNA_ERR_MEMORY_ALREADY_UNMAPPED, // Error: Memory is already unmapped, cannot unmap again.
     GNA_ERR_THREADPOOL_STOPPED,   // Error: Thread pool is stopped, cannot enqueue more requests
