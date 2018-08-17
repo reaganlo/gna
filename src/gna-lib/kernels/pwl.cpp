@@ -520,6 +520,34 @@ void pwlKernelImplAllLookup(PwlCachedConfig const * const pwl, PwlOutputConfig c
     } while (input < inputEnd);
 }
 
+void PwlCached::KERNEL(InitializeActivationFunctions)() const {
+    if (useLookup)
+    {
+        ActivateAll = pwlKernelImplAllLookup;
+        ActivateSingle = pwlKernelImplSingleLookup;
+    }
+    else
+    {
+        if (pwl.segmentCount > 32)
+        {
+            ActivateAll = pwlKernelImplAllBinaryOpt;
+            ActivateSingle = pwlKernelImplSingleBinaryOpt;
+        }
+        else if (pwl.segmentCount > 3)
+        {
+            ActivateAll = pwlKernelImplAllBinary;
+            ActivateSingle = pwlKernelImplSingleBinary;
+        }
+        else
+        {
+            ActivateAll = pwlKernelImplAllLinear;
+            ActivateSingle = pwlKernelImplSingleLinear;
+        }
+    }
+
+}
+
+#if OPT_LEVEL == 0
 PwlCached::PwlCached(int32_t const * const inputIn, uint32_t elementsCount, nn_pwl_seg const * const segments, uint32_t segmentCountIn)
 {
     int32_t s;                      // PWL segment iterator
@@ -530,7 +558,6 @@ PwlCached::PwlCached(int32_t const * const inputIn, uint32_t elementsCount, nn_p
     int64_t widthTmp = UINT32_MAX;     // pwl.lookup segment widthTmp - minimum distance between pwl.segments' xbases
     int64_t countTmp;                  // pwl.lookup segment countTmp (active)
     pwl_s_t usegTmp;
-    bool useLookup = false;
     ActivateAll = NULL;
     ActivateSingle = NULL;
     pwl.input = inputIn;
@@ -577,8 +604,6 @@ PwlCached::PwlCached(int32_t const * const inputIn, uint32_t elementsCount, nn_p
         pwl.Lookup.xBase1diff = pwl.Lookup.xBase0 - (segments[1].xBase & XBASEMASK);
         pwl.Lookup.width = s;
         pwl.Lookup.count = (uint16_t)countTmp - 1;
-        ActivateAll = pwlKernelImplAllLookup;
-        ActivateSingle = pwlKernelImplSingleLookup;
         widthTmp = s - 1;
         i = 0;
         j = 0;
@@ -662,8 +687,6 @@ PwlCached::PwlCached(int32_t const * const inputIn, uint32_t elementsCount, nn_p
         if (pwl.segmentCount > 32)
         {
             allocateBinaryCaches();
-            ActivateAll = pwlKernelImplAllBinaryOpt;
-            ActivateSingle = pwlKernelImplSingleBinaryOpt;
             i = 0;
             for (; i < pwl.segmentCount; i++)
             {
@@ -674,18 +697,8 @@ PwlCached::PwlCached(int32_t const * const inputIn, uint32_t elementsCount, nn_p
                 pwl.Binary.ySeg[i].yBase = segments[i].yBase;
             }
         }
-        else if (pwl.segmentCount > 3)
-        {
-            pwl.data = nullptr;
-            ActivateAll = pwlKernelImplAllBinary;
-            ActivateSingle = pwlKernelImplSingleBinary;
-        }
         else
-        {
             pwl.data = nullptr;
-            ActivateAll = pwlKernelImplAllLinear;
-            ActivateSingle = pwlKernelImplSingleLinear;
-        }
     }
 }
 
@@ -719,3 +732,4 @@ void PwlCached::allocateLookupCaches()
     }
     memset(pwl.data, 0xff, PWL_LOOKUP_SIZE);
 }
+#endif

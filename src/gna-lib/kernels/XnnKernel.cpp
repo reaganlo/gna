@@ -40,9 +40,11 @@ namespace GNA
 #define recurrentKernelImpl1B KERNEL(recurrentKernelImpl1B)
 #define recurrentKernelImpl2B KERNEL(recurrentKernelImpl2B)
 #define copyKernelImpl KERNEL(copyKernelImpl)
+#define InitializeActivationFunctions KERNEL(InitializeActivationFunctions)
 
 void pwlKernelImpl(PwlCached const * const pwl, PwlOutputConfig const * const outputConfig)
 {
+    pwl->InitializeActivationFunctions();
     pwl->ActivateAll(&pwl->pwl, outputConfig);
 }
 
@@ -50,6 +52,8 @@ void recurrentKernelImpl1B(RecurrentConfig const * const config, PwlCached const
 {
     auto runConfig = RecurrentConfig(*config); // local modifiable copy
     auto runPwlOutputConfig = PwlOutputConfig(runConfig.pwlOutputConfig);
+
+    pwl->InitializeActivationFunctions();
 
     // for each input vector
     for (uint32_t i = 0; i < config->inputVectorCount; i++)
@@ -69,6 +73,8 @@ void recurrentKernelImpl2B(RecurrentConfig const * const config, PwlCached const
 {
     auto runConfig = RecurrentConfig(*config); // local modifiable copy
     auto runPwlOutputConfig = PwlOutputConfig(runConfig.pwlOutputConfig);
+
+    pwl->InitializeActivationFunctions();
 
     // for each input vector
     for (uint32_t i = 0; i < config->inputVectorCount; i++)

@@ -387,6 +387,8 @@ void ConvolutionPoolingKernelImpl(ConvolutionConfig const * const filterConfig,
     uint32_t l;
     gna_sum_t sum, sum1, sum2, sum3, sum4, sum5, sum6;
 
+    pwl->KERNEL(InitializeActivationFunctions)();
+
 #if OPT_LEVEL > 1
     mm_ptr in1, in2, in3, in4, in5, in6, flt, in_end;
 #if OPT_LEVEL == 4 || OPT_LEVEL == 5 // AVX1 load vectors
