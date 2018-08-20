@@ -38,6 +38,18 @@
 #endif
 
 /**
+* Macros for decoration of function names build with different optimizations
+*/
+#define PASTER(x,y)     x ## y
+#define EVALUATOR(x,y)  PASTER(x,y)
+#define KERNEL(NAME)    EVALUATOR(NAME, KERNEL_SUFFIX)
+
+#define vec_accumulate KERNEL(vec_accumulate)
+#define vec_sum KERNEL(vec_sum)
+#define vec_sum32 KERNEL(vec_sum32)
+#define vec_madd16 KERNEL(vec_madd16)
+
+/**
  * Rounds a number up, to the nearest multiple of significance
  * Used for calculating the memory sizes of GNA data buffers
  *
@@ -274,9 +286,3 @@ typedef int64_t gna_sum_t;
 
 #define SSE_16CAP 8
 
-/**
- * Macros for decoration of function names build with different optimizations
- */
-#define PASTER(x,y)     x ## y
-#define EVALUATOR(x,y)  PASTER(x,y)
-#define KERNEL(NAME)    EVALUATOR(NAME, KERNEL_SUFFIX)
