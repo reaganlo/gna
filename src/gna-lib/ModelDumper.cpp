@@ -42,16 +42,6 @@ using std::move;
 
 using namespace GNA;
 
-const std::map<const gna_device_kind, const GnaDeviceType> Device::deviceDictionary =
-{
-    { GNA_SUE, GNA_SUE_CREEK },
-    { GNA_SUE_2, GNA_SUE_CREEK_2 },
-    { GNA_CNL, GNA_DEV_CNL },
-    { GNA_GLK, GNA_DEV_GLK },
-    { GNA_ICL, GNA_DEV_ICL },
-    { GNA_TGL, GNA_DEV_TGL },
-};
-
 void* Device::Dump(gna_model_id modelId, gna_device_kind deviceKind, intel_gna_model_header* modelHeader, intel_gna_status_t* status, intel_gna_alloc_cb customAlloc)
 {
     // Validate parameters
@@ -60,7 +50,7 @@ void* Device::Dump(gna_model_id modelId, gna_device_kind deviceKind, intel_gna_m
     Expect::NotNull(reinterpret_cast<void*>(customAlloc));
     Expect::True(GNA_SUE == deviceKind, GNA_CPUTYPENOTSUPPORTED); // Temporary limitation
 
-    FakeDetector detector{ *ioctlSender, deviceDictionary.at(deviceKind) };
+    FakeDetector detector{ *ioctlSender, deviceKind };
 
     auto memoryId = 0;
     auto totalMemory = memoryObjects.at(memoryId).get();

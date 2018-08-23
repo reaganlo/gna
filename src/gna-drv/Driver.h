@@ -94,6 +94,7 @@ typedef struct _HW_DESC
 
 typedef struct _MEMORY_CTX
 {
+    LIST_ENTRY    listEntry;
     UINT64        memoryId;                 // Back-reference memory id
     UINT64        modelId;                  // model id previously scored
     INT64         requestConfigId;          // request config that currently written into model memory
@@ -109,8 +110,12 @@ typedef struct _MEMORY_CTX
 
 typedef struct _APP_CTX
 {
-    WDFREQUEST notifyRequest;               // request to be completed to notify user application after memory map
-    PMEMORY_CTX memoryBuffers[APP_MEMORIES_LIMIT];
+    WDFREQUEST  notifyRequest;              // request to be completed to notify user application after memory map
+    PUINT64     notifyBuffer;               // notify request buffer will be filled with memory id
+    UINT64      memoryIdCounter;
+    WDFSPINLOCK memoryIdLock;
+    LIST_ENTRY  memoryListHead;
+    WDFSPINLOCK memoryListLock;
 } APP_CTX, *PAPP_CTX;
 
 /**

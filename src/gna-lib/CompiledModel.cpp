@@ -50,7 +50,8 @@ CompiledModel::CompiledModel(gna_model_id modelId, const gna_model *rawModel, Me
 {
     if (detector.IsHardwarePresent())
     {
-        hardwareModel = make_unique<HardwareModel>(Id, softwareModel.Layers, gmmCount, memoryIn.Id,
+        auto memoryId = memoryIn.GetId();
+        hardwareModel = make_unique<HardwareModel>(Id, softwareModel.Layers, gmmCount, memoryId,
             memoryIn, memoryIn.GetDescriptorsBase(modelId), sender, detector);
         hardwareModel->Build();
     }
@@ -99,11 +100,11 @@ const std::vector<std::unique_ptr<Layer>>& CompiledModel::GetLayers() const
     return softwareModel.Layers;
 }
 
-const std::unique_ptr<Layer>& GNA::CompiledModel::GetLayer(uint32_t layerIndex) const
+const Layer* CompiledModel::GetLayer(uint32_t layerIndex) const
 {
     try
     {
-        return softwareModel.Layers.at(layerIndex);
+        return softwareModel.Layers.at(layerIndex).get();
     }
     catch (const std::exception&)
     {
@@ -120,10 +121,10 @@ void CompiledModel::InvalidateConfig(gna_request_cfg_id configId, LayerConfigura
 {
     if (hardwareModel)
     {
-        hardwareModel->InvalidateConfigCache(configId);
+        hardwareModel->InvalidateConfig(configId);
     }
 
-    auto layer = GetLayer(layerIndex).get();
+    auto layer = GetLayer(layerIndex);
     layer->UpdateKernelConfigs(*layerConfiguration, validBoundaries);
 }
 
@@ -147,7 +148,7 @@ status_t CompiledModel::Score(
 
     auto status = GNA_SUCCESS;
     if ((GNA_HW == accel && !hardwareModel)
-        || accel > swFastAccel)
+        || (int32_t) accel > (int32_t) swFastAccel)
     {
         status = GNA_CPUTYPENOTSUPPORTED;
     }

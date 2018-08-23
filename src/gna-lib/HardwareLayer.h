@@ -49,35 +49,6 @@ struct DescriptorParameters
     const uint32_t HardwareInternalBufferSize;
 };
 
-struct HardwareActiveListDescriptor
-{
-    const ActiveList * const List;
-    union Config
-    {
-        PXNN_ACTIVE_LIST_DESCR const Xnn;
-        PGMM_ACTIVE_LIST_DESCR const Gmm;
-
-        // ctors needed for initialization of constant Config's fields
-        Config(PXNN_ACTIVE_LIST_DESCR xnnConfig)
-            : Xnn{xnnConfig}
-        {}
-
-        Config(PGMM_ACTIVE_LIST_DESCR gmmConfig)
-            : Gmm{gmmConfig}
-        {}
-    } Config;
-
-    HardwareActiveListDescriptor(const ActiveList * list, PXNN_ACTIVE_LIST_DESCR xnnConfig) :
-        List(list),
-        Config(xnnConfig)
-    {}
-
-    HardwareActiveListDescriptor(const ActiveList * list, PGMM_ACTIVE_LIST_DESCR gmmConfig) :
-        List(list),
-        Config(gmmConfig)
-    {}
-};
-
 // Hardware Layer descriptor converter
 class HardwareLayer : public DescriptorParameters
 {
@@ -85,10 +56,17 @@ public:
     static std::unique_ptr<HardwareLayer> Create(const DescriptorParameters& parameters);
     virtual ~HardwareLayer() = default;
 
-    virtual void WriteInputBuffer(PGNA_BUFFER_DESCR& lyrsCfg, const ConfigurationBuffer * buffer) const;
-    virtual void WriteOutputBuffer(PGNA_BUFFER_DESCR& lyrsCfg, const ConfigurationBuffer * buffer) const;
-    virtual void WriteNnopType(PNNOP_TYPE_DESCR nnopCfg, bool actListEnabled) const;
-    virtual void WriteActiveList(HardwareActiveListDescriptor & descriptor) const;
+    virtual NN_OP_TYPE GetNnopType(bool hasActiveList) const;
+
+    uint32_t GetLayerDescriptorOffset() const;
+    virtual uint32_t GetGmmDescriptorOffset() const;
+    virtual uint32_t GetLdScrlenOffset() const;
+    virtual uint32_t GetLdOutputOffset() const;
+    virtual uint32_t GetLdInputOffset() const;
+    virtual uint32_t GetLdNnopOffset() const;
+    virtual uint32_t GetLdActlenOffset() const;
+    virtual uint32_t GetLdActlistOffset() const;
+    virtual uint32_t GetScrlen(uint32_t indicesCount) const;
 
 protected:
     static const std::map<const nn_layer_kind, const NN_OP_TYPE> OperationsMap;
@@ -137,7 +115,7 @@ public:
     HardwareLayerAffDiagTrans(const DescriptorParameters& parameters);
     virtual ~HardwareLayerAffDiagTrans() = default;
 
-    virtual void WriteNnopType(PNNOP_TYPE_DESCR nnopCfg, bool actListEnabled) const override;
+    virtual NN_OP_TYPE GetNnopType(bool hasActiveList) const override;
 };
 
 class HardwareLayerAffineMBias : public HardwareLayerExt
@@ -168,8 +146,6 @@ public:
     HardwareLayerRnn& operator=(const HardwareLayerRnn&) = delete;
     HardwareLayerRnn(const DescriptorParameters& parameters);
     virtual ~HardwareLayerRnn() = default;
-
-    virtual void WriteOutputBuffer(PGNA_BUFFER_DESCR& lyrsCfg, const ConfigurationBuffer * buffer) const override;
 
     // calculates feedback buffer offset for per RequestConfiguration output buffer
     const uint32_t CalculateFeedbackBuffer(const OutputBuffer& outputBuffer) const;
@@ -217,10 +193,12 @@ public:
     HardwareLayerGmm(const DescriptorParameters& parameters);
     virtual ~HardwareLayerGmm() = default;
 
-    virtual void WriteInputBuffer(PGNA_BUFFER_DESCR& lyrsCfg, const ConfigurationBuffer * buffer) const override;
-    virtual void WriteOutputBuffer(PGNA_BUFFER_DESCR& lyrsCfg, const ConfigurationBuffer * buffer) const override;
-    virtual void WriteNnopType(PNNOP_TYPE_DESCR nnopCfg, bool actListEnabled) const override;
-    virtual void WriteActiveList(HardwareActiveListDescriptor & descriptor) const override;
+    virtual NN_OP_TYPE GetNnopType(bool hasActiveList) const override;
+    virtual uint32_t GetGmmDescriptorOffset() const override;
+    virtual uint32_t GetLdActlistOffset() const override;
+    virtual uint32_t GetLdActlenOffset() const override;
+    virtual uint32_t GetLdScrlenOffset() const override;
+    virtual uint32_t GetScrlen(uint32_t indicesCount) const override;
 
 protected:
     static const std::map<const gna_gmm_mode, const GMM_MODE_CTRL> GmmModes;

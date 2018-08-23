@@ -86,8 +86,10 @@ FileCreateEvnt(
     WDFREQUEST          request,
     WDFFILEOBJECT       appObj)
 {
-    PAPP_CTX appCtx     = NULL;
-    PDEV_CTX devCtx     = NULL;
+    WDF_OBJECT_ATTRIBUTES listLockAttributes;
+    WDF_OBJECT_ATTRIBUTES idLockAttributes;
+    NTSTATUS status = STATUS_SUCCESS;
+    PAPP_CTX appCtx = NULL;
 
     UNREFERENCED_PARAMETER(dev);
 
@@ -96,7 +98,35 @@ FileCreateEvnt(
 
     appCtx = GetFileContext(appObj);
     RtlZeroMemory(appCtx, sizeof(APP_CTX));
-    devCtx  = DeviceGetContext(dev);
+
+    WDF_OBJECT_ATTRIBUTES_INIT(&listLockAttributes);
+    listLockAttributes.ParentObject = dev;
+    status = WdfSpinLockCreate(&listLockAttributes, &appCtx->memoryListLock);
+    if (!NT_SUCCESS(status))
+    {
+        TraceFailMsg(TLE, T_EXIT, "WdfSpinLockCreate(memoryListLock)", status);
+        EventWriteSpinLockCreateFailed(NULL, "memoryListLock", status);
+        WdfRequestComplete(request, status);
+    }
+    else
+    {
+        EventWriteSpinLockCreated(NULL, "memoryListLock");
+    }
+    InitializeListHead(&appCtx->memoryListHead);
+
+    WDF_OBJECT_ATTRIBUTES_INIT(&idLockAttributes);
+    idLockAttributes.ParentObject = dev;
+    status = WdfSpinLockCreate(&idLockAttributes, &appCtx->memoryIdLock);
+    if (!NT_SUCCESS(status))
+    {
+        TraceFailMsg(TLE, T_EXIT, "WdfSpinLockCreate(memoryIdLock)", status);
+        EventWriteSpinLockCreateFailed(NULL, "memoryIdLock", status);
+        WdfRequestComplete(request, status);
+    }
+    else
+    {
+        EventWriteSpinLockCreated(NULL, "memoryIdLock");
+    }
 
     WdfRequestComplete(request, STATUS_SUCCESS);
 
@@ -107,8 +137,8 @@ VOID
 FileCloseEvnt(
     WDFFILEOBJECT       appObj)
 {
-    PDEV_CTX devCtx     = NULL;
-    PAPP_CTX appCtx     = NULL;
+    PDEV_CTX devCtx = NULL;
+    PAPP_CTX appCtx = NULL;
 
     TraceEntry(TLI, T_ENT);
     EventWriteDriverApiBegin(NULL, __FUNCTION__);
@@ -131,7 +161,10 @@ VOID
 FileCleanupEvnt(
     WDFFILEOBJECT       appObj)
 {
-    PDEV_CTX devCtx     = NULL;
+    PDEV_CTX devCtx = NULL;
+    PAPP_CTX appCtx = NULL;
+    PMEMORY_CTX memoryCtx = NULL;
+    PLIST_ENTRY pEntry = NULL;
 
     TraceEntry(TLI, T_ENT);
     EventWriteDriverApiBegin(NULL, __FUNCTION__);
@@ -144,15 +177,16 @@ FileCleanupEvnt(
     // free resources but do not abort and clean hw regs
     // memory is unlocked regardless the status of unmap operation.
 
-    PAPP_CTX appCtx = GetFileContext(appObj);
-    UINT32 i;
-    for (i = 0; i < APP_MEMORIES_LIMIT; i++)
+    appCtx = GetFileContext(appObj);
+
+    pEntry = appCtx->memoryListHead.Flink;
+
+    while (pEntry != &appCtx->memoryListHead)
     {
-        PMEMORY_CTX memoryCtx = appCtx->memoryBuffers[i];
-        if (NULL != memoryCtx)
-        {
-            MemoryMapRelease(appCtx, memoryCtx);
-        }
+        memoryCtx = CONTAINING_RECORD(pEntry, MEMORY_CTX, listEntry);
+        MemoryMapRelease(appCtx, memoryCtx);
+
+        pEntry = appCtx->memoryListHead.Flink;
     }
 
     EventWriteDriverApiEnd(NULL, __FUNCTION__);

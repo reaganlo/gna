@@ -61,10 +61,11 @@ HardwareModel::HardwareModel(const gna_model_id modId, const std::vector<std::un
     gmmDescriptorsSize{ getGmmDescriptorsSize(gmmCount) }
 {
 }
-void HardwareModel::InvalidateConfigCache(gna_request_cfg_id configId)
+
+void HardwareModel::InvalidateConfig(gna_request_cfg_id configId)
 {
-    requestHwCaches[configId].reset();
-    requestCacheSizes[configId] = 0;
+    if(hardwareRequests.find(configId) != hardwareRequests.end())
+        hardwareRequests[configId]->Invalidate();
 }
 
 status_t HardwareModel::Score(
@@ -77,27 +78,29 @@ status_t HardwareModel::Score(
 {
     UNREFERENCED_PARAMETER(buffers);
 
-    void* data;
-    size_t size;
-    getHwConfigData(data, size, layerIndex, layerCount, requestConfiguration, operationMode);
+    auto configId = requestConfiguration.ConfigId;
 
-    ioctlSender.Submit(data, size, profiler);
+    auto inserted = hardwareRequests.emplace(
+        configId,
+        std::make_unique<HardwareRequest>(memoryId, *this, requestConfiguration));
 
-    auto response = reinterpret_cast<PGNA_CALC_IN>(data);
-    auto status = response->status;
+    auto hwRequest = inserted.first->second.get();
+    hwRequest->Update(layerIndex, layerCount, operationMode);
+
+    auto result = ioctlSender.Submit(hwRequest, profiler);
 
     auto perfResults = requestConfiguration.PerfResults;
     if (perfResults)
     {
-        perfResults->drv.startHW += response->drvPerf.startHW;
-        perfResults->drv.scoreHW += response->drvPerf.scoreHW;
-        perfResults->drv.intProc += response->drvPerf.intProc;
+        perfResults->drv.startHW += result.driverPerf.startHW;
+        perfResults->drv.scoreHW += result.driverPerf.scoreHW;
+        perfResults->drv.intProc += result.driverPerf.intProc;
 
-        perfResults->hw.stall += response->hwPerf.stall;
-        perfResults->hw.total += response->hwPerf.total;
+        perfResults->hw.stall += result.hardwarePerf.stall;
+        perfResults->hw.total += result.hardwarePerf.total;
     }
 
-    return status;
+    return result.status;
 }
 
 void HardwareModel::Build()
@@ -148,181 +151,3 @@ uint32_t HardwareModel::getGmmDescriptorsSize(const uint16_t gmmLayersCount)
     return gmmDescriptorsSizeTmp;
 }
 
-void HardwareModel::getHwConfigData(void* &buffer, size_t &size, uint16_t layerIndex, uint16_t layerCount,
-    const RequestConfiguration& requestConfiguration, const GnaOperationMode operationMode) const
-{
-    const auto& layerConfigurations = requestConfiguration.LayerConfigurations;
-
-    auto& requestActiveLists = activeLists[requestConfiguration.ConfigId];
-    if (requestActiveLists.find(layerIndex) == requestActiveLists.end())
-    {
-        requestActiveLists[layerIndex] = false;
-        auto lowerBound = layerConfigurations.lower_bound(layerIndex);
-        auto upperBound = layerConfigurations.upper_bound(layerIndex + layerCount);
-        for (auto it = lowerBound; it != upperBound; ++it)
-        {
-            auto layer = softwareLayers.at(it->first).get();
-            if (it->second->ActList && INTEL_GMM == layer->Config.Kind)
-            {
-                requestActiveLists[layerIndex] = true;
-                break;
-            }
-        }
-    }
-
-    auto& requestCache = requestHwCaches.at(requestConfiguration.ConfigId);
-    if (!requestCache)
-    {
-        uint32_t buffersCount = 0;
-        uint32_t activeListCount = 0;
-        uint32_t xnnActiveListCount = 0;
-        uint32_t gmmActiveListCount = 0;
-        uint32_t nnopTypesCount = 0;
-
-        for (auto it = layerConfigurations.cbegin(); it != layerConfigurations.cend(); ++it)
-        {
-            auto layer = softwareLayers.at(it->first).get();
-            if (it->second->ActList)
-            {
-                (INTEL_AFFINE == layer->Config.Kind) ? ++xnnActiveListCount : ++gmmActiveListCount;
-            }
-            if (it->second->InputBuffer)
-            {
-                ++buffersCount;
-            }
-            if (it->second->OutputBuffer)
-            {
-                ++buffersCount;
-
-                // for rnn fb buffer offset
-                if (INTEL_RECURRENT == layer->Config.Kind)
-                {
-                    ++buffersCount;
-                }
-            }
-            if (it->second->OutputBuffer && (INTEL_AFFINE == layer->Config.Kind || INTEL_GMM == layer->Config.Kind))
-            {
-                ++nnopTypesCount;
-            }
-        }
-
-        activeListCount = xnnActiveListCount + gmmActiveListCount;
-        requestCacheSizes[requestConfiguration.ConfigId] = calculateCacheSize(buffersCount, nnopTypesCount, activeListCount);
-
-        requestCache.reset(new uint8_t[requestCacheSizes.at(requestConfiguration.ConfigId)]);
-
-        auto calculationData = reinterpret_cast<PGNA_CALC_IN>(requestCache.get());
-        calculationData->ctrlFlags.activeListOn = gmmActiveListCount > 0;
-        calculationData->memoryId = memoryId;
-        calculationData->modelId = modelId;
-        calculationData->hwPerfEncoding = requestConfiguration.HwPerfEncoding;
-        calculationData->reqCfgDescr.requestConfigId = requestConfiguration.ConfigId;
-        calculationData->reqCfgDescr.buffersCount = buffersCount;
-        calculationData->reqCfgDescr.xnnActiveListsCount = xnnActiveListCount;
-        calculationData->reqCfgDescr.gmmActiveListsCount = gmmActiveListCount;
-        calculationData->reqCfgDescr.nnopTypesCount = nnopTypesCount;
-
-        void* bufferShifted = requestCache.get() + sizeof(GNA_CALC_IN);
-        writeBuffersIntoCache(bufferShifted, requestConfiguration.LayerConfigurations);
-        writeNnopTypesIntoCache(bufferShifted, requestConfiguration.LayerConfigurations);
-        writeXnnActiveListsIntoCache(bufferShifted, requestConfiguration.LayerConfigurations);
-        writeGmmActiveListsIntoCache(bufferShifted, requestConfiguration.LayerConfigurations);
-    }
-
-    auto calculationData = reinterpret_cast<PGNA_CALC_IN>(requestCache.get());
-    calculationData->ctrlFlags.gnaMode = operationMode;
-    if (xNN == operationMode)
-    {
-        calculationData->ctrlFlags.layerBase = GetOffset(descriptorsAddress) + layerIndex * sizeof(XNN_LYR);
-    }
-    else
-    {
-        calculationData->ctrlFlags.gmmOffset = hardwareLayers.at(layerIndex)->XnnDescriptor->gmm_descriptor;
-    }
-    calculationData->ctrlFlags.activeListOn = requestActiveLists.at(layerIndex);
-    calculationData->ctrlFlags.layerCount = layerCount;
-
-    buffer = requestCache.get();
-    size = requestCacheSizes.at(requestConfiguration.ConfigId);
-}
-
-size_t HardwareModel::calculateCacheSize(uint32_t buffersCount, uint32_t nnopLayersCount, uint32_t activeListCount) const
-{
-    uint32_t cacheSize = sizeof(GNA_CALC_IN);
-    cacheSize += buffersCount * sizeof(GNA_BUFFER_DESCR);
-    cacheSize += nnopLayersCount * sizeof(NNOP_TYPE_DESCR);
-    cacheSize += activeListCount * (std::max)(sizeof(XNN_ACTIVE_LIST_DESCR), sizeof(GMM_ACTIVE_LIST_DESCR));
-    cacheSize = ALIGN(cacheSize, sizeof(uint64_t));
-
-    return cacheSize;
-}
-
-void HardwareModel::writeBuffersIntoCache(void* &buffer, const std::map<uint32_t, std::unique_ptr<LayerConfiguration>>& layerConfigurations) const
-{
-    auto lyrsCfg = reinterpret_cast<PGNA_BUFFER_DESCR>(buffer);
-    for (auto it = layerConfigurations.cbegin(); it != layerConfigurations.cend(); ++it)
-    {
-        auto& hwLayer = hardwareLayers.at(it->first);
-        if (it->second->InputBuffer)
-        {
-            hwLayer->WriteInputBuffer(lyrsCfg, it->second->InputBuffer.get());
-        }
-
-        if (it->second->OutputBuffer)
-        {
-            hwLayer->WriteOutputBuffer(lyrsCfg, it->second->OutputBuffer.get());
-        }
-    }
-
-    buffer = lyrsCfg;
-}
-
-void HardwareModel::writeNnopTypesIntoCache(void* &buffer, const std::map<uint32_t, std::unique_ptr<LayerConfiguration>>& layerConfigurations) const
-{
-    auto nnopCfg = reinterpret_cast<PNNOP_TYPE_DESCR>(buffer);
-    for (auto it = layerConfigurations.cbegin(); it != layerConfigurations.cend(); ++it)
-    {
-        auto layer = softwareLayers.at(it->first).get();
-        if(it->second->OutputBuffer
-            && (layer->Config.Kind == INTEL_AFFINE || layer->Config.Kind == INTEL_GMM))
-        {
-            hardwareLayers.at(it->first)->WriteNnopType(nnopCfg, nullptr != it->second->ActList);
-            ++nnopCfg;
-        }
-    }
-
-    buffer = nnopCfg;
-}
-
-void HardwareModel::writeXnnActiveListsIntoCache(void* &buffer, const std::map<uint32_t, std::unique_ptr<LayerConfiguration>>& layerConfigurations) const
-{
-    auto actLstCfg = reinterpret_cast<PXNN_ACTIVE_LIST_DESCR>(buffer);
-
-    for (auto it = layerConfigurations.cbegin(); it != layerConfigurations.cend(); ++it)
-    {
-        if (INTEL_GMM != softwareLayers.at(it->first)->Config.Kind && it->second->ActList)
-        {
-            HardwareActiveListDescriptor descriptor{it->second->ActList.get(), actLstCfg};
-            hardwareLayers.at(it->first)->WriteActiveList(descriptor);
-            ++actLstCfg;
-        }
-    }
-
-    buffer = actLstCfg;
-}
-
-void HardwareModel::writeGmmActiveListsIntoCache(void* &buffer, const std::map<uint32_t, std::unique_ptr<LayerConfiguration>>& layerConfigurations) const
-{
-    auto actLstCfg = reinterpret_cast<PGMM_ACTIVE_LIST_DESCR>(buffer);
-    for (auto it = layerConfigurations.cbegin(); it != layerConfigurations.cend(); ++it)
-    {
-        if (INTEL_GMM == softwareLayers.at(it->first)->Config.Kind && it->second->ActList)
-        {
-            HardwareActiveListDescriptor descriptor{it->second->ActList.get(), actLstCfg};
-            hardwareLayers.at(it->first)->WriteActiveList(descriptor);
-            ++actLstCfg;
-        }
-    }
-
-    buffer = actLstCfg;
-}

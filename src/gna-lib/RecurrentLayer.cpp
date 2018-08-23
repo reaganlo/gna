@@ -96,7 +96,7 @@ void RnnLayer::computeConfig(const LayerConfiguration& layerConfiguration, accel
 {
     UNREFERENCED_PARAMETER(fvBuffers);
     auto rnnConfig = RecurrentConfig{layerConfiguration.Configs.Recurrent.get(), saturationCount};
-    
+
     recurrentKernels.at(accel)(&rnnConfig, &Activation->Pwl);
 }
 

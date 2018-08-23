@@ -110,7 +110,7 @@
             <RandomizedBaseAddress Condition="$(IS_RELEASE) == true">true</RandomizedBaseAddress>
         </Link>
         <Inf>
-            <TimeStamp Condition="$(IS_VER_SET)!=true">*</TimeStamp>
+            <TimeStamp Condition="$(IS_VER_SET)!=true">2.0.0.0</TimeStamp>
             <TimeStamp Condition="$(IS_VER_SET)==true">$(VERSION_QB_A)</TimeStamp>
             <Architecture>$(INF_PLATFORM).$(TARGET_WIN_INF)</Architecture>
         </Inf>
@@ -142,6 +142,7 @@
         <ClInclude Include="$(SRC_DIR)\common\GnaDrvApi.h" />
         <ClInclude Include="$(SRC_DIR)\common\GnaDrvApiWin.h" />
         <ClInclude Include="$(SRC_DIR)\common\GnaDrvApiWinDebug.h" />
+        <ClInclude Include="$(SRC_DIR)\common\GnaDrvGuids.h" />
         <ClInclude Include="$(SRC_DIR)\gna-drv\Trace.h" />
         <ClInclude Include="$(SRC_DIR)\common\profiler.h" />
         <ClInclude Include="$(SRC_DIR)\common\gna-api-status.h" />

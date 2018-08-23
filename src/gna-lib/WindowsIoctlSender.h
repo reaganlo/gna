@@ -85,9 +85,15 @@ public:
 
     virtual void Open() override;
 
-    virtual void IoctlSend(const uint32_t code, void * const inbuf, const uint32_t inlen, void * const outbuf, const uint32_t outlen) override;
+    virtual void IoctlSend(const GnaIoctlCommand code, void * const inbuf, const uint32_t inlen, void * const outbuf, const uint32_t outlen) override;
 
-    virtual void Submit(void * const inbuf, const uint32_t inlen, RequestProfiler * const profiler) override;
+    virtual GnaCapabilities GetDeviceCapabilities() const override;
+
+    virtual uint64_t MemoryMap(void *memory, size_t memorySize) override;
+
+    virtual void MemoryUnmap(uint64_t memoryId) override;
+
+    virtual RequestResult Submit(HardwareRequest * const hardwareRequest, RequestProfiler * const profiler) override;
 
 private:
     WindowsIoctlSender(const WindowsIoctlSender &) = delete;
@@ -99,10 +105,23 @@ private:
 
     void checkStatus(BOOL ioResult);
 
+    void createRequestDescriptor(HardwareRequest *hardwareRequest);
+
+    void getDeviceCapabilities();
+
+    static const std::map<GnaIoctlCommand, decltype(GNA_IOCTL_CPBLTS)> ioctlCommandsMap;
+
+    std::map<uint64_t, std::unique_ptr<OVERLAPPED>> memoryMapRequests;
+
     WinHandle deviceHandle;
     WinHandle deviceEvent;
     OVERLAPPED overlapped;
-    std::map<uint64_t, std::unique_ptr<OVERLAPPED>> memoryMapRequests;
+
+    UINT32 recoveryTimeout = DRV_RECOVERY_TIMEOUT;
+
+    GnaCapabilities deviceCapabilities;
+    std::unique_ptr<GNA_CALC_IN> calculationData = nullptr;
+    size_t calculationSize;
 };
 
 }

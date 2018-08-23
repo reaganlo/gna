@@ -43,14 +43,14 @@ namespace GNA
         Memory() = default;
 
         // just makes object from arguments
-        Memory(uint64_t memoryId, void * buffer, const size_t userSize, const uint16_t layerCount, const uint16_t gmmCount, IoctlSender &sender);
+        Memory(void * buffer, const size_t userSize, const uint16_t layerCount, const uint16_t gmmCount, IoctlSender &sender);
 
         // allocates and zeros memory
-        Memory(uint64_t memoryId, const size_t userSize, const uint16_t layerCount, const uint16_t gmmCount, IoctlSender &sender);
+        Memory(const size_t userSize, const uint16_t layerCount, const uint16_t gmmCount, IoctlSender &sender);
 
         virtual ~Memory();
 
-        const uint64_t Id;
+        uint64_t GetId() const;
 
         size_t GetSize() const
         {
@@ -82,6 +82,8 @@ namespace GNA
 
     protected:
         virtual std::unique_ptr<CompiledModel> createModel(const gna_model_id modelId, const gna_model *model, const AccelerationDetector &detector);
+
+        uint64_t id = 0;
 
         size_t size = 0;
 

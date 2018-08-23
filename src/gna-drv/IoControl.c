@@ -105,9 +105,9 @@ IoctlDispatcher(
     size_t              InputBufferLength,
     ULONG               IoControlCode)
 {
-    NTSTATUS    status  = STATUS_SUCCESS;
+    NTSTATUS    status = STATUS_SUCCESS;
     WDFDEVICE   dev;
-    PDEV_CTX    devCtx  = NULL;
+    PDEV_CTX    devCtx = NULL;
     UNREFERENCED_PARAMETER(OutputBufferLength);
     UNREFERENCED_PARAMETER(InputBufferLength);
 
@@ -277,10 +277,10 @@ IoctlMemMap(
     _Inout_ PDEV_CTX    devCtx,
     _Inout_ WDFREQUEST  request)
 {
-    NTSTATUS    status      = STATUS_SUCCESS;
-    PAPP_CTX    appCtx      = NULL;
-    size_t      inLength    = 0;
-    PVOID       inputData   = NULL;
+    NTSTATUS    status = STATUS_SUCCESS;
+    PAPP_CTX    appCtx = NULL;
+    size_t      inLength = 0;
+    PVOID       inputData = NULL;
     
     TraceEntry(TLI, T_ENT);
 
@@ -335,9 +335,19 @@ IoctlNotify(
 {
     TraceEntry(TLI, T_ENT);
 
-    PAPP_CTX appCtx = NULL;
+    PAPP_CTX appCtx;
+    NTSTATUS status;
+    size_t outbuf_len;
 
     appCtx = GetFileContext(WdfRequestGetFileObject(request));
+    status = WdfRequestRetrieveOutputBuffer(request, sizeof(UINT64), &appCtx->notifyBuffer, &outbuf_len);
+    if (!NT_SUCCESS(status))
+    {
+        TraceFailMsg(TLE, T_EXIT, "WdfRequestRetrieveOutputBuffer", status);
+        WdfRequestComplete(request, status);
+        return;
+    }
+
     appCtx->notifyRequest = request;
 
     Trace(TLI, T_EXIT, "Notify request stored in application context");
@@ -360,7 +370,6 @@ IoctlGetCapabilities(
     status = WdfRequestRetrieveOutputBuffer(request, sizeof(GNA_CPBLTS), &outbuf, &outbuf_len);
     if (!NT_SUCCESS(status))
     {
-
         TraceFailMsg(TLE, T_EXIT, "WdfRequestRetrieveOutputBuffer", status);
         // complete unmap request in default queue
         WdfRequestComplete(request, status);
@@ -378,8 +387,8 @@ IoctlReadReg(
     _Inout_ PDEV_CTX    devCtx,
     _Inout_ WDFREQUEST  request)
 {
-    NTSTATUS status       = STATUS_SUCCESS;
-    size_t   inputLength  = 0;
+    NTSTATUS status = STATUS_SUCCESS;
+    size_t   inputLength = 0;
     size_t   outputLength = 0;
     PGNA_READREG_IN inputData;
     PGNA_READREG_OUT outputData;
@@ -482,14 +491,6 @@ IoctlReadPageDir(
         goto ioctl_readpgdir_error;
     }
 
-    // bad memory id
-    if (*memoryId >= APP_MEMORIES_LIMIT)
-    {
-        status = STATUS_UNSUCCESSFUL;
-        TraceFailMsg(TLE, T_EXIT, "Bad memory id", status);
-        goto ioctl_readpgdir_error;
-    }
-
     status = WdfRequestRetrieveOutputBuffer(request, sizeof(GNA_PGDIR_OUT), &outData, &outLength);
     if (!NT_SUCCESS(status))
     {
@@ -498,7 +499,7 @@ IoctlReadPageDir(
     }
 
     appCtx = GetFileContext(WdfRequestGetFileObject(request));
-    memoryCtx = appCtx->memoryBuffers[*memoryId];
+    memoryCtx = FindMemoryContextByIdLocked(appCtx, *memoryId);
     if (NULL == memoryCtx)
     {
         status = STATUS_UNSUCCESSFUL;

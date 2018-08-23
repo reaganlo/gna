@@ -45,10 +45,8 @@ static inline unsigned long long _xgetbv(unsigned int ctr)
 #include "GnaException.h"
 #include "Logger.h"
 
-using std::array;
-using std::make_shared;
-using std::map;
-using std::shared_ptr;
+#include <map>
+#include <array>
 
 using namespace GNA;
 
@@ -70,15 +68,15 @@ using namespace GNA;
 #define _XCR_XFEATURE_ENABLED_MASK 0
 #endif
 
-const map<GnaDeviceType, array<bool, GnaFeatureCount>>
+const std::map<gna_device_kind, std::array<bool, GnaFeatureCount>>
 AccelerationDetector::gnaFeatureMap = {
     // Basic, CNN,   GMM,  GMMLayer, MultiBias, L1Dist, L2Dist, ComputerVision, Layer8K, NewPerformanceCounters
-{ GNA_DEV_CNL,    {true, false, true, false,    false,     false,  false,  false, false, false } },
-{ GNA_DEV_GLK,    {true, true,  true, false,    false,     false,  false,  false, false, false } },
-{ GNA_DEV_ICL,       {true, true,  true, false,    false,     false,  false,  false, false, false } },
-{ GNA_DEV_TGL,     {true, true,  true, true,     true,      false,  false,  false, true,  true  } },
-{ GNA_SUE_CREEK,     {true, true,  true, false,    false,     false,  false,  false, false, false } },
-{ GNA_SUE_CREEK_2,   {true, true,  true, true,     true,      false,  false,  false, true,  true  } }
+{ GNA_CNL,   {true, false, true, false,    false,     false,  false,  false, false, false } },
+{ GNA_GLK,   {true, true,  true, false,    false,     false,  false,  false, false, false } },
+{ GNA_ICL,   {true, true,  true, false,    false,     false,  false,  false, false, false } },
+{ GNA_TGL,   {true, true,  true, true,     true,      false,  false,  false, true,  true  } },
+{ GNA_SUE,   {true, true,  true, false,    false,     false,  false,  false, false, false } },
+{ GNA_SUE_2, {true, true,  true, true,     true,      false,  false,  false, true,  true  } }
 };
 
 std::map<const WeightMode, std::map<const acceleration, const AffineKernel>> AccelerationDetector::AffineKernels = {
@@ -195,25 +193,20 @@ std::map<acceleration const, std::string const> AccelerationDetector::accelerati
     {NUM_GNA_ACCEL_MODES, "UNKNOWN ACCELERATION"}
 };
 
-void AccelerationDetector::discoverHardwareExistence()
+void AccelerationDetector::discoverHardware()
 {
+    accelerationModes[GNA_HW] = ACC_NOTSUPPORTED;
     try
     {
         ioctlSender.Open();
+        deviceCapabilities = ioctlSender.GetDeviceCapabilities();
         accelerationModes[GNA_HW] = ACC_SUPPORTED;
     }
     catch (GnaException e)
     {
         accelerationModes[GNA_HW] = ACC_NOTSUPPORTED;
-        Log->Message("Hardware not detected.\n");
+        Log->Message("No compatible hardware detected.\n");
     }
-}
-
-void AccelerationDetector::discoverHardwareCapabilities()
-{
-    if (!IsHardwarePresent()) return;
-
-    ioctlSender.IoctlSend(GNA_IOCTL_CPBLTS, nullptr, 0, &deviceCapabilities, sizeof(GNA_CPBLTS));
 }
 
 const uint32_t AccelerationDetector::GetHardwareBufferSize() const
@@ -236,7 +229,7 @@ bool AccelerationDetector::IsHardwarePresent() const
 bool AccelerationDetector::IsLayerSupported(intel_layer_kind_t layerType) const
 {
     if (!IsHardwarePresent()) return false;
-    const auto& deviceFeatureMap = gnaFeatureMap.at(deviceCapabilities.deviceType);
+    const auto& deviceFeatureMap = gnaFeatureMap.at(deviceCapabilities.deviceKind);
     switch (layerType)
     {
     case INTEL_AFFINE:
@@ -266,7 +259,7 @@ bool AccelerationDetector::HasFeature(GnaFeature feature) const
 {
     if (!IsHardwarePresent()) return false;
 
-    const auto& deviceFeatureMap = gnaFeatureMap.at(deviceCapabilities.deviceType);
+    const auto& deviceFeatureMap = gnaFeatureMap.at(deviceCapabilities.deviceKind);
     return deviceFeatureMap.at(feature);
 }
 
@@ -282,8 +275,7 @@ AccelerationDetector::AccelerationDetector(IoctlSender &senderIn) :
     accelerationModes[GNA_AUTO_SAT] = ACC_SUPPORTED;
     accelerationModes[GNA_AUTO_FAST] = ACC_SUPPORTED;
 
-    discoverHardwareExistence();
-    discoverHardwareCapabilities();
+    discoverHardware();
 
     unsigned int cpuId[4];           // cpu id string
     unsigned long long xcrFeature = 0;

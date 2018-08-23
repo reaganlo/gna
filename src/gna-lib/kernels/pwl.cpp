@@ -88,19 +88,19 @@ __forceinline int32_t pwlFindFirstBitSet(int64_t bits)
 
 #if defined(__GNUC__) && defined(__LP64__)
     int32_t leadingZeros = __builtin_clzll(bits);
-    s = sizeof(int64_t) * CHAR_BIT - leadingZeros;
+    s = sizeof(int64_t) * CHAR_BIT - leadingZeros - 1;
 #elif defined(__GNUC__)
     int32_t widthHigh = (int32_t)(bits >> sizeof(s) * CHAR_BIT);
     if (widthHigh != 0)
     {
         int32_t leadingZeros = __builtin_clz(widthHigh);
-        s = sizeof(int64_t) * CHAR_BIT - leadingZeros;
+        s = sizeof(int64_t) * CHAR_BIT - leadingZeros - 1;
     }
     else
     {
         int32_t widthLow = (int32_t)bits;
         int32_t leadingZeros = __builtin_clz(widthLow);
-        s = sizeof(int32_t) * CHAR_BIT - leadingZeros;
+        s = sizeof(int32_t) * CHAR_BIT - leadingZeros - 1;
     }
 #elif defined(_WIN64)
 #if !defined(_MSC_VER)

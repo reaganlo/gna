@@ -365,15 +365,23 @@ GNAScoreDebug(
 
 static size_t calculateLayersDescriptorBufferSize(const PGNA_CALC_IN input)
 {
-    const max_ = max(sizeof(XNN_ACTIVE_LIST_DESCR), sizeof(GMM_ACTIVE_LIST_DESCR));
-
     size_t sz = sizeof(GNA_CALC_IN);
-    sz += sizeof(GNA_BUFFER_DESCR)*input->reqCfgDescr.buffersCount;        
-    sz += sizeof(NNOP_TYPE_DESCR)*input->reqCfgDescr.nnopTypesCount;
-    sz += max_*input->reqCfgDescr.xnnActiveListsCount;
-    sz += max_*input->reqCfgDescr.gmmActiveListsCount;
+    sz += sizeof(GNA_BUFFER_DESCR) * input->reqCfgDescr.buffersCount;
+    sz += sizeof(NNOP_TYPE_DESCR) * input->reqCfgDescr.nnopTypesCount;
+    sz += sizeof(XNN_ACTIVE_LIST_DESCR) * input->reqCfgDescr.xnnActiveListsCount;
+    sz += sizeof(GMM_ACTIVE_LIST_DESCR) * input->reqCfgDescr.gmmActiveListsCount;
 
     return ALIGN(sz, sizeof(UINT64));
+}
+
+static void copyLayerDescriptors(const PGNA_CALC_IN input, PVOID userVA)
+{
+    PUCHAR memoryBase = (PUCHAR)userVA;
+    memoryBase += input->ctrlFlags.layerBase;
+
+    PUCHAR layerDescriptors = (PUCHAR)input + sizeof(GNA_CALC_IN);
+    size_t descriptorsSize = input->ctrlFlags.layerCount * XNN_LYR_DSC_SIZE;
+    RtlCopyMemory(memoryBase, layerDescriptors, descriptorsSize);
 }
 
 static void setLayersDescriptorParameters(const PGNA_CALC_IN input, PMEMORY_CTX memoryCtx)
@@ -433,6 +441,7 @@ ScoreStart(
     PMEMORY_CTX  memoryCtx = NULL; // current memory context
     BOOLEAN     isAppCurrent = FALSE;// deterimenes if current app is saved as recent
     size_t      inputLength = 0;    // tmp in request buffer length
+    size_t      calculatedInputLength = 0; // input length as calculated from GNA_CALC_IN
     PGNA_CALC_IN input = NULL; // input parameters
     PVOID       lyrDscBuffer = NULL; // layer descriptor buffer address to save config to
 
@@ -449,11 +458,16 @@ ScoreStart(
         goto cleanup;
     }
 
-    if (calculateLayersDescriptorBufferSize(input) != inputLength)
+    if (!input->ctrlFlags.copyDescriptors)
     {
-        status = STATUS_INVALID_BUFFER_SIZE;
-        TraceFailMsg(TLE, T_EXIT, "Score input buffer wrong size", status);
-        goto cleanup;
+        calculatedInputLength = calculateLayersDescriptorBufferSize(input);
+        if (calculatedInputLength != inputLength)
+        {
+            status = STATUS_INVALID_BUFFER_SIZE;
+            Trace(TLE, T_QUE, "Incorrect input size. Is %#llx, should be %#llx", inputLength, calculatedInputLength);
+            TraceFailMsg(TLE, T_EXIT, "Score input buffer wrong size", status);
+            goto cleanup;
+        }
     }
 
     status = ScoreValidateParams(input);
@@ -462,14 +476,21 @@ ScoreStart(
         TraceFailMsg(TLE, T_EXIT, "(Score parameters are invalid)", status);
         goto cleanup;
     }
-    memoryCtx = appCtx->memoryBuffers[input->memoryId];
+    memoryCtx = FindMemoryContextByIdLocked(appCtx, input->memoryId);
     if (NULL == memoryCtx)
     {
         TraceFailMsg(TLI, T_MEM, "Application has NOT mapped memory!", status);
         goto cleanup;
     }
 
-    setLayersDescriptorParameters(input, memoryCtx);
+    if (!input->ctrlFlags.copyDescriptors)
+    {
+        setLayersDescriptorParameters(input, memoryCtx);
+    }
+    else
+    {
+        copyLayerDescriptors(input, memoryCtx->userMemoryBaseVA);
+    }
 
     // check and remember application from which req. is being processed now
     WdfSpinLockAcquire(devCtx->req.reqLock);
@@ -596,6 +617,7 @@ ScoreDeferredUnmap(
     NTSTATUS status = STATUS_SUCCESS;
     WDFFILEOBJECT app = NULL;     // file object of calling application
     PAPP_CTX      appCtx = NULL;     // file context of calling application
+    PMEMORY_CTX   memoryCtx = NULL;
 
     TraceEntry(TLI, T_ENT);
     // cancel all request from current application
@@ -619,8 +641,7 @@ ScoreDeferredUnmap(
     size_t memoryIdLength;
 
     // retrieve and store input params
-    status = WdfRequestRetrieveInputBuffer(unmapReq, sizeof(UINT64), &memoryId, &memoryIdLength);
-    Trace(TLI, T_MEM, "Model id sent from userland: %llu", *memoryId);
+    status = WdfRequestRetrieveInputBuffer(unmapReq, sizeof(*memoryId), &memoryId, &memoryIdLength);
     if (!NT_SUCCESS(status))
     {
         TraceFailMsg(TLE, T_EXIT, "WdfRequestRetrieveInputBuffer", status);
@@ -635,16 +656,10 @@ ScoreDeferredUnmap(
         goto ioctl_mm_error;
     }
 
-    // bad memory id
-    if (*memoryId >= APP_MEMORIES_LIMIT)
-    {
-        status = STATUS_UNSUCCESSFUL;
-        TraceFailMsg(TLE, T_EXIT, "Bad memory id", status);
-        goto ioctl_mm_error;
-    }
+    Trace(TLI, T_MEM, "Model id sent from userland: %llu", *memoryId);
 
     // perform unmapping
-    PMEMORY_CTX memoryCtx = appCtx->memoryBuffers[*memoryId];
+    memoryCtx = FindMemoryContextByIdLocked(appCtx, *memoryId);
     if (NULL == memoryCtx)
     {
         status = GNA_ERR_MEMORY_ALREADY_UNMAPPED;

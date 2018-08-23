@@ -42,10 +42,10 @@ RequestConfiguration::RequestConfiguration(CompiledModel& model, gna_request_cfg
 
 void RequestConfiguration::AddBuffer(gna_buffer_type type, uint32_t layerIndex, void *address)
 {
-    const auto& layer = *Model.GetLayer(layerIndex);
-    auto layerType = layer.Config.Type;
-    if (INTEL_HIDDEN == layerType 
-        || (GNA_IN == type && INTEL_OUTPUT == layerType) 
+    auto layer = Model.GetLayer(layerIndex);
+    auto layerType = layer->Config.Type;
+    if (INTEL_HIDDEN == layerType
+        || (GNA_IN == type && INTEL_OUTPUT == layerType)
         || (GNA_OUT == type && INTEL_INPUT == layerType))
     {
         throw GnaException{ XNN_ERR_LYR_TYPE };
@@ -74,13 +74,13 @@ void RequestConfiguration::AddBuffer(gna_buffer_type type, uint32_t layerIndex, 
 
 void RequestConfiguration::AddActiveList(uint32_t layerIndex, const ActiveList& activeList)
 {
-    const auto& layer = *Model.GetLayer(layerIndex);
-    auto layerType = layer.Config.Type;
+    auto layer = Model.GetLayer(layerIndex);
+    auto layerType = layer->Config.Type;
     if (INTEL_OUTPUT != layerType && INTEL_INPUT_OUTPUT != layerType)
     {
         throw GnaException{ XNN_ERR_LYR_TYPE };
     }
-    auto layerKind = layer.Config.Kind;
+    auto layerKind = layer->Config.Kind;
     if (INTEL_AFFINE != layerKind && INTEL_GMM != layerKind)
     {
         throw GnaException{ XNN_ERR_LYR_KIND };

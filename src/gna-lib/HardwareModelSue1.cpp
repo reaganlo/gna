@@ -40,7 +40,7 @@ HardwareModelSue1::HardwareModelSue1(const gna_model_id modId, const std::vector
         modId,
         layers,
         0,
-        memoryIn.Id,
+        memoryIn.GetId(),
         memoryIn.Get() + memoryIn.InternalSize - getLayerDescriptorsSize(layers.size()),
         memoryIn.GetDescriptorsBase(modId),
         sender,

@@ -34,9 +34,8 @@ in any way.
 using namespace GNA;
 
 // just makes object from arguments
-Memory::Memory(uint64_t memoryId, void * bufferIn, const size_t userSize, const uint16_t layerCount, const uint16_t gmmCount, IoctlSender &sender) :
+Memory::Memory(void * bufferIn, const size_t userSize, const uint16_t layerCount, const uint16_t gmmCount, IoctlSender &sender) :
     Address{bufferIn},
-    Id{memoryId},
     InternalSize{CompiledModel::CalculateInternalModelSize(layerCount, gmmCount)},
     ModelSize{ALIGN64(userSize)},
     size{CompiledModel::CalculateModelSize(userSize, layerCount, gmmCount)},
@@ -44,8 +43,7 @@ Memory::Memory(uint64_t memoryId, void * bufferIn, const size_t userSize, const 
 {};
 
 // allocates and zeros memory
-Memory::Memory(const uint64_t memoryId, const size_t userSize, const uint16_t layerCount, const uint16_t gmmCount, IoctlSender &sender) :
-    Id{memoryId},
+Memory::Memory(const size_t userSize, const uint16_t layerCount, const uint16_t gmmCount, IoctlSender &sender) :
     InternalSize{CompiledModel::CalculateInternalModelSize(layerCount, gmmCount)},
     ModelSize{ALIGN64(userSize)},
     size{CompiledModel::CalculateModelSize(userSize, layerCount, gmmCount)},
@@ -74,11 +72,7 @@ void Memory::Map()
         throw GnaException(GNA_ERR_MEMORY_ALREADY_MAPPED);
     }
 
-    // write model id in user buffer
-    // driver will retrieve it
-    *reinterpret_cast<uint64_t*>(buffer) = Id;
-
-    ioctlSender.IoctlSend(GNA_IOCTL_MEM_MAP, nullptr, 0, buffer, size);
+    id = ioctlSender.MemoryMap(buffer, size);
 
     mapped = true;
 }
@@ -90,8 +84,18 @@ void Memory::Unmap()
         throw GnaException(GNA_ERR_MEMORY_ALREADY_UNMAPPED);
     }
 
-    ioctlSender.IoctlSend(GNA_IOCTL_MEM_UNMAP, const_cast<uint64_t*>(&Id), sizeof(Id), nullptr, 0);
+    ioctlSender.MemoryUnmap(id);
     mapped = false;
+}
+
+uint64_t Memory::GetId() const
+{
+    if (!mapped)
+    {
+        throw GnaException(GNA_ERR_MEMORY_NOT_MAPPED);
+    }
+
+    return id;
 }
 
 void Memory::AllocateModel(const gna_model_id modelId, const gna_model *model, const AccelerationDetector& detector)

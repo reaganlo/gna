@@ -40,7 +40,11 @@
 #include <string>
 
 #include "common.h"
-#include "IoctlSender.h"
+#if defined(_WIN32)
+#include "WindowsIoctlSender.h"
+#else
+#include "LinuxIoctlSender.h"
+#endif
 #include "gmm.h"
 #include "XnnKernelApi.h"
 #include "LayerFunctions.h"
@@ -117,20 +121,18 @@ public:
     static std::map<const gna_gmm_mode, std::map<const acceleration, const GmmMaxMixActiveList>> GmmActiveListKernels;
 
 protected:
-    static const std::map<GnaDeviceType, std::array<bool, GnaFeatureCount>> gnaFeatureMap;
+    static const std::map<gna_device_kind, std::array<bool, GnaFeatureCount>> gnaFeatureMap;
 
     std::map<acceleration, uint8_t> accelerationModes;
 
-    GNA_CPBLTS deviceCapabilities;
+    GnaCapabilities deviceCapabilities;
 
     acceleration fastestAcceleration;
 
 private:
     static std::map<acceleration const, std::string const> accelerationNames;
 
-    void discoverHardwareExistence();
-
-    void discoverHardwareCapabilities();
+    void discoverHardware();
 
     IoctlSender &ioctlSender;
 };

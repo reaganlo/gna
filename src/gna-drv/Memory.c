@@ -46,6 +46,10 @@ CheckMapConfigParameters(
 
 #define     DIV_CEIL(x, y)          (((x)+(y)-1)/(y))
 
+PMEMORY_CTX FindMemoryContextByUserVALocked(
+    _In_ PAPP_CTX appCtx,
+    _In_ PVOID usrBuffer);
+
 //NOTE: This is just a "dummy" subroutine, but it is necessary to initialize the fake DMA operation
 DRIVER_LIST_CONTROL
 ProcessSGList;
@@ -86,7 +90,7 @@ MemoryMap(
 
     dmaVA = MmGetMdlVirtualAddress(pMdl);
     usrBuffer = MmGetSystemAddressForMdlSafe(pMdl, NormalPagePriority | MdlMappingNoExecute);
-    Trace(TLI, T_MEM, "User buffer address: %p", usrBuffer);
+    Trace(TLI, T_MEM, "User buffer address: %p, length: %u", usrBuffer, length);
     if (NULL == usrBuffer)
     {
         status = STATUS_UNSUCCESSFUL;
@@ -94,18 +98,7 @@ MemoryMap(
         goto mem_map_error;
     }
 
-    UINT64 memoryId = *(UINT64*)usrBuffer;
-    Trace(TLI, T_MEM, "Model id saved in user buffer: %lld", memoryId);
-
-    // bad memory id
-    if (memoryId >= APP_MEMORIES_LIMIT)
-    {
-        status = STATUS_UNSUCCESSFUL;
-        TraceFailMsg(TLE, T_EXIT, "Bad memory id", status);
-        goto mem_map_error;
-    }
-
-    memoryCtx = appCtx->memoryBuffers[memoryId];
+    memoryCtx = FindMemoryContextByUserVALocked(appCtx, usrBuffer);
     if (NULL == memoryCtx)
     {
         memoryCtx = (PMEMORY_CTX) ExAllocatePoolWithTag(NonPagedPoolNx, sizeof(MEMORY_CTX), MEM_POOL_TAG);
@@ -115,10 +108,17 @@ MemoryMap(
         memoryCtx->userMemoryBaseVA = usrBuffer;
         memoryCtx->userMemorySize = length;
         memoryCtx->requestConfigId = -1;
-        memoryCtx->memoryId = memoryId;
-        appCtx->memoryBuffers[memoryId] = memoryCtx;
+        InitializeListHead(&memoryCtx->listEntry);
 
-        Trace(TLI, T_MEM, "Memory mapping memory with memoryId = %lld", memoryId);
+        WdfSpinLockAcquire(appCtx->memoryIdLock);
+        memoryCtx->memoryId = appCtx->memoryIdCounter++;
+        WdfSpinLockRelease(appCtx->memoryIdLock);
+
+        WdfSpinLockAcquire(appCtx->memoryListLock);
+        InsertTailList(&appCtx->memoryListHead, &memoryCtx->listEntry);
+        WdfSpinLockRelease(appCtx->memoryListLock);
+
+        Trace(TLI, T_MEM, "Memory mapping memory with memoryId = %lld", memoryCtx->memoryId);
     }
     // memory already mapped
     else
@@ -318,8 +318,17 @@ mem_map_error:
 
     if (appCtx->notifyRequest != WDF_NO_HANDLE)
     {
-        WdfRequestComplete(appCtx->notifyRequest, status);
+        if (memoryCtx)
+        {
+            *appCtx->notifyBuffer = memoryCtx->memoryId;
+            WdfRequestCompleteWithInformation(appCtx->notifyRequest, status, sizeof(UINT64));
+        }
+        else
+        {
+            WdfRequestComplete(appCtx->notifyRequest, status);
+        }
         appCtx->notifyRequest = WDF_NO_HANDLE;
+        appCtx->notifyBuffer = NULL;
         Trace(TLI, T_EXIT, "Notify request is completed with status: %d", status);
     }
 
@@ -331,6 +340,8 @@ MemoryMapRelease(
     _Inout_ PAPP_CTX              appCtx,
     _Inout_ PMEMORY_CTX            memoryCtx)
 {
+    BOOLEAN removed;
+
     TraceEntry(TLI, T_ENT);
 
     UINT64 memoryId = memoryCtx->memoryId;
@@ -349,9 +360,18 @@ MemoryMapRelease(
     if (WDF_NO_HANDLE != memoryCtx->mmapRequest)
     {
         WdfRequestComplete(memoryCtx->mmapRequest, STATUS_SUCCESS);
-        ExFreePool(memoryCtx);
-        appCtx->memoryBuffers[memoryId] = NULL;
     }
+
+    WdfSpinLockAcquire(appCtx->memoryListLock);
+    removed = RemoveEntryList(&memoryCtx->listEntry);
+    WdfSpinLockRelease(appCtx->memoryListLock);
+
+    if (!removed)
+    {
+        Trace(TLW, T_MEM, "Memory context not removed from list");
+    }
+
+    ExFreePool(memoryCtx);
 
     EventWriteMemoryReleased(NULL);
 }
@@ -365,7 +385,7 @@ ModelDescInit(
     _In_ PDEV_CTX     devCtx,
     _In_ PMEMORY_CTX   memoryCtx)
 {
-    NTSTATUS status     = STATUS_SUCCESS;
+    NTSTATUS status = STATUS_SUCCESS;
     PAGED_CODE();
 
     // prepare private configuration memory in common buffer
@@ -426,4 +446,54 @@ ProcessSGList(
     UNREFERENCED_PARAMETER(scatterGather);
     UNREFERENCED_PARAMETER(context);
     return;
+}
+
+PMEMORY_CTX FindMemoryContextByIdLocked(
+    _In_ PAPP_CTX appCtx,
+    _In_ UINT64 memoryId)
+{
+    WdfSpinLockAcquire(appCtx->memoryListLock);
+    PLIST_ENTRY pEntry = appCtx->memoryListHead.Flink;
+
+    while(pEntry != &appCtx->memoryListHead)
+    {
+        PMEMORY_CTX memoryCtx;
+        memoryCtx = (PMEMORY_CTX)CONTAINING_RECORD(pEntry, MEMORY_CTX, listEntry);
+
+        if (memoryCtx->memoryId == memoryId)
+        {
+            WdfSpinLockRelease(appCtx->memoryListLock);
+            return memoryCtx;
+        }
+
+        pEntry = pEntry->Flink;
+    }
+
+    WdfSpinLockRelease(appCtx->memoryListLock);
+    return NULL;
+}
+
+PMEMORY_CTX FindMemoryContextByUserVALocked(
+    _In_ PAPP_CTX appCtx,
+    _In_ PVOID usrBuffer)
+{
+    WdfSpinLockAcquire(appCtx->memoryListLock);
+    PLIST_ENTRY pEntry = appCtx->memoryListHead.Flink;
+
+    while(pEntry != &appCtx->memoryListHead)
+    {
+        PMEMORY_CTX memoryCtx;
+        memoryCtx = (PMEMORY_CTX)CONTAINING_RECORD(pEntry, MEMORY_CTX, listEntry);
+
+        if (memoryCtx->userMemoryBaseVA == usrBuffer)
+        {
+            WdfSpinLockRelease(appCtx->memoryListLock);
+            return memoryCtx;
+        }
+
+        pEntry = pEntry->Flink;
+    }
+
+    WdfSpinLockRelease(appCtx->memoryListLock);
+    return NULL;
 }

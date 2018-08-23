@@ -27,19 +27,19 @@
 
 using namespace GNA;
 
-const std::map<GnaDeviceType, uint32_t> FakeDetector::DeviceHardwareBuffers =
+const std::map<gna_device_kind, uint32_t> FakeDetector::DeviceHardwareBuffers =
 {
-    { GNA_DEV_CNL,   24 },
-    { GNA_DEV_GLK,   24 },
-    { GNA_DEV_ICL,      24 },
-    { GNA_DEV_TGL,    24 },
-    { GNA_SUE_CREEK,    12 },
-    { GNA_SUE_CREEK_2,  24 }
+    { GNA_CNL,   24 },
+    { GNA_GLK,   24 },
+    { GNA_ICL,   24 },
+    { GNA_TGL,   24 },
+    { GNA_SUE,   12 },
+    { GNA_SUE_2, 24 }
 };
 
-FakeDetector::FakeDetector(IoctlSender &senderIn, GnaDeviceType deviceType)
+FakeDetector::FakeDetector(IoctlSender &senderIn, gna_device_kind deviceKind)
     : AccelerationDetector(senderIn)
 {
     accelerationModes[GNA_HW] = ACC_SUPPORTED;
-    deviceCapabilities = { DeviceHardwareBuffers.at(deviceType), DRV_RECOVERY_TIMEOUT, deviceType };
+    deviceCapabilities = { DeviceHardwareBuffers.at(deviceKind), 0, deviceKind };
 }

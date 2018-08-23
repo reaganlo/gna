@@ -31,7 +31,7 @@
 using namespace GNA;
 
 
-std::map<dbg_action_type const, char const * const> const HardwareModelVerbose::actionFileNames = 
+std::map<dbg_action_type const, char const * const> const HardwareModelVerbose::actionFileNames =
 {
     {GnaDumpMmio, "dumpmmio_"},
     {GnaDumpPageDirectory, "dumppgdir_"},
@@ -44,7 +44,7 @@ std::map<dbg_action_type const, char const * const> const HardwareModelVerbose::
 HardwareModelVerbose::HardwareModelVerbose(const gna_model_id modId,
     const std::vector<std::unique_ptr<Layer>>& layers, uint16_t gmmCount, const Memory &memoryIn,
     IoctlSender &sender, const AccelerationDetector& detector) :
-    HardwareModel::HardwareModel(modId, layers, gmmCount, memoryIn.Id, memoryIn.Get(), memoryIn.GetDescriptorsBase(modId), sender, detector),
+    HardwareModel::HardwareModel(modId, layers, gmmCount, memoryIn.GetId(), memoryIn.Get(), memoryIn.GetDescriptorsBase(modId), sender, detector),
     memorySize{ memoryIn.GetSize() },
     actionFileCounters{
         {GnaDumpMmio, 0},
@@ -99,7 +99,7 @@ void HardwareModelVerbose::readPageDir(FILE *file)
     hw_pgdir_out_t readPageDirOut;
     ZeroMemory(&readPageDirOut, sizeof(readPageDirOut));
 
-    ioctlSender.IoctlSend(GNA_IOCTL_READ_PGDIR,
+    ioctlSender.IoctlSend(GNA_COMMAND_READ_PGDIR,
         &readPageDirIn, sizeof(readPageDirIn),
         &readPageDirOut, sizeof(readPageDirOut));
 
@@ -159,7 +159,7 @@ UINT32 HardwareModelVerbose::readReg(UINT32 regOffset)
     hw_read_out_t readRegOut;
     ZeroMemory(&readRegOut, sizeof(readRegOut));
 
-    ioctlSender.IoctlSend(GNA_IOCTL_READ_REG,
+    ioctlSender.IoctlSend(GNA_COMMAND_READ_REG,
         &readRegIn, sizeof(readRegIn),
         &readRegOut, sizeof(readRegOut));
 
@@ -173,7 +173,7 @@ void HardwareModelVerbose::writeReg(UINT32 regOffset, UINT32 regVal)
     writeRegIn.regOffset = regOffset;
     writeRegIn.regValue = regVal;
 
-    ioctlSender.IoctlSend(GNA_IOCTL_WRITE_REG,
+    ioctlSender.IoctlSend(GNA_COMMAND_WRITE_REG,
         &writeRegIn, sizeof(writeRegIn),
         NULL, 0);
 }

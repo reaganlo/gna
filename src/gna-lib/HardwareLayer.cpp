@@ -98,16 +98,88 @@ HardwareLayer::HardwareLayer(const DescriptorParameters& parameters) :
 {
 }
 
-void HardwareLayer::WriteInputBuffer(PGNA_BUFFER_DESCR& lyrsCfg, const ConfigurationBuffer * const buffer) const
+NN_OP_TYPE HardwareLayer::GetNnopType(bool hasActiveList) const
 {
-    Address<XNN_LYR *const> addr = XnnDescriptor;
-    lyrsCfg->offset = getOffset(XnnDescriptor) + offsetof(XNN_LYR, in_buffer);
-    lyrsCfg->value = getOffset(buffer->Get());
-
-    ++lyrsCfg;
+    throw GnaException { XNN_ERR_LYR_CFG };
 }
 
-void HardwareLayer::WriteOutputBuffer(PGNA_BUFFER_DESCR& lyrsCfg, const ConfigurationBuffer * const buffer) const
+NN_OP_TYPE HardwareLayerAffDiagTrans::GetNnopType(bool hasActiveList) const
+{
+    return hasActiveList ? NN_AFF_AL : NN_AFFINE;
+}
+
+NN_OP_TYPE HardwareLayerGmm::GetNnopType(bool hasActiveList) const
+{
+    return hasActiveList ? NN_GMM_ACTIVE_LIST : NN_GMM;
+}
+
+uint32_t HardwareLayer::GetLayerDescriptorOffset() const
+{
+    return getOffset(XnnDescriptor);
+}
+
+uint32_t HardwareLayer::GetGmmDescriptorOffset() const
+{
+    throw GnaException { XNN_ERR_LYR_CFG };
+}
+
+uint32_t HardwareLayerGmm::GetGmmDescriptorOffset() const
+{
+    return getOffset(GmmDescriptor);
+}
+
+uint32_t HardwareLayerGmm::GetScrlen(uint32_t indicesCount) const
+{
+    auto gmm = SoftwareLayer->Get<const GmmLayer>();
+    return GMM_SCORE_SIZE * gmm->Input.VectorCount * indicesCount;
+}
+
+uint32_t HardwareLayerGmm::GetLdScrlenOffset() const
+{
+    return getOffset(GmmDescriptor) + offsetof(GMM_CONFIG, gmmscrlen);
+}
+
+uint32_t HardwareLayerGmm::GetLdActlenOffset() const
+{
+    return getOffset(GmmDescriptor) + offsetof(GMM_CONFIG, astlistlen);
+}
+
+uint32_t HardwareLayerGmm::GetLdActlistOffset() const
+{
+    return getOffset(GmmDescriptor) + offsetof(GMM_CONFIG, asladdr);
+}
+
+uint32_t HardwareLayer::GetScrlen(uint32_t indicesCount) const
+{
+    throw GnaException(XNN_ERR_LYR_CFG);
+}
+
+uint32_t HardwareLayer::GetLdScrlenOffset() const
+{
+    throw GnaException(XNN_ERR_LYR_CFG);
+}
+
+uint32_t HardwareLayer::GetLdActlistOffset() const
+{
+    return getOffset(XnnDescriptor) + offsetof(XNN_LYR, act_list_buffer);
+}
+
+uint32_t HardwareLayer::GetLdActlenOffset() const
+{
+    return getOffset(XnnDescriptor) + offsetof(XNN_LYR, act_list_n_elems);
+}
+
+uint32_t HardwareLayer::GetLdNnopOffset() const
+{
+    return getOffset(XnnDescriptor) + offsetof(XNN_LYR, op);
+}
+
+uint32_t HardwareLayer::GetLdInputOffset() const
+{
+    return getOffset(XnnDescriptor) + offsetof(XNN_LYR, in_buffer);
+}
+
+uint32_t HardwareLayer::GetLdOutputOffset() const
 {
     if (LayerOutput::ActivatedOutput == SoftwareLayer->Output.GetOutputMode()
         || INTEL_CONVOLUTIONAL == SoftwareLayer->Config.Kind
@@ -115,29 +187,12 @@ void HardwareLayer::WriteOutputBuffer(PGNA_BUFFER_DESCR& lyrsCfg, const Configur
         || INTEL_DEINTERLEAVE == SoftwareLayer->Config.Kind
         || INTEL_COPY == SoftwareLayer->Config.Kind)
     {
-        lyrsCfg->offset = getOffset(XnnDescriptor) + offsetof(XNN_LYR, out_act_fn_buffer);
+        return getOffset(XnnDescriptor) + offsetof(XNN_LYR, out_act_fn_buffer);
     }
     else
     {
-        lyrsCfg->offset = getOffset(XnnDescriptor) + offsetof(XNN_LYR, out_sum_buffer);
+        return getOffset(XnnDescriptor) + offsetof(XNN_LYR, out_sum_buffer);
     }
-    lyrsCfg->value = getOffset(buffer->Get());
-
-    ++lyrsCfg;
-}
-
-void HardwareLayer::WriteNnopType(PNNOP_TYPE_DESCR, bool) const
-{
-    throw GnaException(XNN_ERR_LYR_CFG);
-}
-
-void HardwareLayer::WriteActiveList(HardwareActiveListDescriptor & descriptor) const
-{
-    auto& config = descriptor.Config.Xnn;
-    config->act_list_buffer_offset = getOffset(XnnDescriptor) + offsetof(XNN_LYR, act_list_buffer);
-    config->act_list_buffer_value = getOffset(descriptor.List->Indices);
-    config->act_list_n_elems_offset = getOffset(XnnDescriptor) + offsetof(XNN_LYR, act_list_n_elems);
-    config->act_list_n_elems_value = descriptor.List->IndicesCount;
 }
 
 void HardwareLayer::save()
@@ -221,15 +276,6 @@ HardwareLayerAffDiagTrans::HardwareLayerAffDiagTrans(const DescriptorParameters&
     save();
 }
 
-void HardwareLayerAffDiagTrans::WriteNnopType(PNNOP_TYPE_DESCR nnopCfg, bool actListEnabled) const
-{
-    if (INTEL_AFFINE == SoftwareLayer->Config.Kind)
-    {
-        nnopCfg->offset = getOffset(XnnDescriptor) + offsetof(XNN_LYR, op);
-        nnopCfg->value = actListEnabled ? NN_AFF_AL : NN_AFFINE;
-    }
-}
-
 HardwareLayerCopy::HardwareLayerCopy(const DescriptorParameters& parameters) :
     HardwareLayer(parameters)
 {
@@ -256,16 +302,6 @@ HardwareLayerRnn::HardwareLayerRnn(const DescriptorParameters& parameters) :
     convert();
     save();
 };
-
-void HardwareLayerRnn::WriteOutputBuffer(PGNA_BUFFER_DESCR& lyrsCfg, const ConfigurationBuffer * buffer) const
-{
-    HardwareLayer::WriteOutputBuffer(lyrsCfg, buffer);
-
-    lyrsCfg->offset = getOffset(XnnDescriptor) + offsetof(XNN_LYR, rnn_out_fb_buffer);
-    lyrsCfg->value = CalculateFeedbackBuffer(*buffer);
-
-    ++lyrsCfg;
-}
 
 void HardwareLayerRnn::convert()
 {
@@ -405,7 +441,7 @@ HardwareLayerAffineMBias::HardwareLayerAffineMBias(const DescriptorParameters& p
 
     if (affineMulti->Mode == GNA_WEIGHT_1B)
     {
-        XnnDescriptor->aff_const_buffer = 
+        XnnDescriptor->aff_const_buffer =
             getOffset((static_cast<const AffineFunctionMulti1B*>(affineMulti)->WeightScaleFactors));
     }
 }
@@ -460,47 +496,3 @@ void HardwareLayerGmm::save()
     GmmDescriptor->mvwidth     = GMM_MEAN_VALUE_SIZE;
 }
 
-void HardwareLayerGmm::WriteInputBuffer(PGNA_BUFFER_DESCR& lyrsCfg, const ConfigurationBuffer * const buffer) const
-{
-    lyrsCfg->offset = getOffset(GmmDescriptor) + offsetof(GMM_CONFIG, fvaddr);
-    lyrsCfg->value = getOffset(buffer->Get());
-
-    ++lyrsCfg;
-}
-
-void HardwareLayerGmm::WriteOutputBuffer(PGNA_BUFFER_DESCR& lyrsCfg, const ConfigurationBuffer * const buffer) const
-{
-    lyrsCfg->offset = getOffset(GmmDescriptor) + offsetof(GMM_CONFIG, gmmscradd);
-    lyrsCfg->value = getOffset(buffer->Get());
-
-    ++lyrsCfg;
-}
-
-void HardwareLayerGmm::WriteNnopType(PNNOP_TYPE_DESCR nnopCfg, bool actListEnabled) const
-{
-    nnopCfg->offset = getOffset(XnnDescriptor) + offsetof(XNN_LYR, op);
-    nnopCfg->value = actListEnabled ? NN_GMM_ACTIVE_LIST : NN_GMM;
-}
-
-void HardwareLayerGmm::WriteActiveList(HardwareActiveListDescriptor & descriptor) const
-{
-    auto gmm = SoftwareLayer->Get<const GmmLayer>();
-
-    auto scoreElementsCount = GMM_SCORE_SIZE * gmm->Input.VectorCount * gmm->Config.stateCount;
-    auto activeListIndices = uint32_t{0};
-    auto activeListIndicesCount = uint32_t{0};
-    if (descriptor.List)
-    {
-        scoreElementsCount = GMM_SCORE_SIZE * gmm->Input.VectorCount * descriptor.List->IndicesCount;
-        activeListIndices = getOffset(descriptor.List->Indices);
-        activeListIndicesCount = descriptor.List->IndicesCount;
-    }
-
-    auto& config = descriptor.Config.Gmm;
-    config->asladdr_offset = getOffset(GmmDescriptor) + offsetof(GMM_CONFIG, asladdr);
-    config->asladdr_value = activeListIndices;
-    config->astlistlen_offset = getOffset(GmmDescriptor) + offsetof(GMM_CONFIG, astlistlen);
-    config->astlistlen_value = activeListIndicesCount;
-    config->gmmscrlen_offset = getOffset(GmmDescriptor) + offsetof(GMM_CONFIG, gmmscrlen);
-    config->gmmscrlen_value = scoreElementsCount;
-}

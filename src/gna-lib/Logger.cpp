@@ -113,6 +113,7 @@ const char* const Logger::StatusStrings[] =
 
     "GNA_ERR_MEMORY_ALREADY_MAPPED", " - Memory is already mapped, cannot map again. Release memory first",
     "GNA_ERR_MEMORY_ALREADY_UNMAPPED", " - Memory is already unmapped, cannot unmap again",
+    "GNA_ERR_MEMORY_NOT_MAPPED", " - Memory is not mapped",
     "GNA_ERR_THREADPOOL_STOPPED", " - Thread pool is stopped, cannot enqueue more requests",
 
     "UNKNOWN STATUS", " - Status code is invalid"

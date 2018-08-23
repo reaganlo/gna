@@ -27,10 +27,14 @@
 
 #include "IoctlSender.h"
 
+#include "gna.h"
+
 #include <map>
 #include <memory>
 
 #include "common.h"
+
+#include "HardwareRequest.h"
 #include "Request.h"
 #include "Validator.h"
 
@@ -44,13 +48,29 @@ public:
 
     virtual void Open() override;
 
-    virtual void IoctlSend(const uint32_t code, void * const inbuf, const uint32_t inlen, void * const outbuf, const uint32_t outlen) override;
+    virtual void IoctlSend(const GnaIoctlCommand command, void * const inbuf, const uint32_t inlen, void * const outbuf, const uint32_t outlen) override;
 
-    virtual void Submit(void * const inbuf, const uint32_t inlen, RequestProfiler * const profiler) override;
+    virtual GnaCapabilities GetDeviceCapabilities() const override;
+
+    virtual uint64_t MemoryMap(void *memory, size_t memorySize) override;
+
+    virtual void MemoryUnmap(uint64_t memoryId) override;
+
+    virtual RequestResult Submit(HardwareRequest * const hardwareRequest, RequestProfiler * const profiler) override;
 
 private:
     LinuxIoctlSender(const LinuxIoctlSender &) = delete;
     LinuxIoctlSender& operator=(const LinuxIoctlSender&) = delete;
+
+    void createRequestDescriptor(HardwareRequest *hardwareRequest);
+
+    status_t parseHwStatus(__u32 hwStatus) const;
+
+    int gnaFileDescriptor = -1;
+    GnaCapabilities deviceCapabilities;
+
+    std::unique_ptr<gna_score_cfg> scoreConfig = nullptr;
+    size_t scoreConfigSize = 0;
 };
 
 }

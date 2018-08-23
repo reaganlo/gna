@@ -72,18 +72,18 @@ static __inline__ unsigned long long __rdtsc(void)
 {
     unsigned hi, lo;
     __asm__ __volatile__ ("rdtsc" : "=a"(lo), "=d"(hi));
-    return ( (unsigned long long)lo)|( ((unsigned long long)hi)<<32 );
+    return ((unsigned long long)lo)|(((unsigned long long)hi)<<32 );
 }
 #endif
 
 void profilerTscStart(gna_profiler_tsc * const profiler)
 {
-    profiler->start  = (time_tsc)__rdtsc();
+    profiler->start = (time_tsc)__rdtsc();
 }
 
 void profilerTscStop(gna_profiler_tsc * const profiler)
 {
-    profiler->stop   = (time_tsc)__rdtsc();
+    profiler->stop = (time_tsc)__rdtsc();
 }
 
 #endif
@@ -122,10 +122,10 @@ time_rtc rtcGetTimeDiff(time_rtc* start, time_rtc* stop)
 
 void profilerRtcStart(gna_profiler_rtc * const profiler)
 {
-    profiler->passed.PROFILER_TSEC  = 0;
+    profiler->passed.PROFILER_TSEC = 0;
     profiler->passed.PROFILER_TFRAC = 0;
-    profiler->stop.PROFILER_TSEC    = 0;
-    profiler->stop.PROFILER_TFRAC   = 0;
+    profiler->stop.PROFILER_TSEC = 0;
+    profiler->stop.PROFILER_TFRAC = 0;
     rtcGetTime(&profiler->start);
 }
 

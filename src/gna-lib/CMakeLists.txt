@@ -79,6 +79,8 @@ set(gna_lib_sources
   ${SRC_DIR}/HardwareLayer.cpp
   ${SRC_DIR}/HardwareModel.cpp
   ${SRC_DIR}/HardwareModelSue1.cpp
+  ${SRC_DIR}/HardwareRequest.cpp
+  ${SRC_DIR}/IoctlSender.cpp
   ${SRC_DIR}/LayerConfiguration.cpp
   ${SRC_DIR}/Layer.cpp
   ${SRC_DIR}/LayerFunctions.cpp
@@ -112,6 +114,7 @@ set(gna_lib_headers
   ${SRC_DIR}/HardwareLayer.h
   ${SRC_DIR}/HardwareModel.h
   ${SRC_DIR}/HardwareModelSue1.h
+  ${SRC_DIR}/HardwareRequest.h
   ${SRC_DIR}/IoctlSender.h
   ${SRC_DIR}/LayerConfiguration.h
   ${SRC_DIR}/LayerFunctions.h
@@ -162,6 +165,11 @@ set(api_headers ${gna_api_headers} ${gna_api_extra})
 source_group(Api FILES ${api_headers})
 
 add_library(gna-api SHARED)
+
+if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
+  target_include_directories(gna-api PRIVATE ${CMAKE_SOURCE_DIR}/src/gna-lnx-drv)
+  set(gna_lib_headers ${gna_lib_headers} ${CMAKE_SOURCE_DIR}/src/gna-lnx-drv/gna.h)
+endif()
 
 target_include_directories(gna-api
   PRIVATE ${SRC_DIR} ${KERNEL_DIR})

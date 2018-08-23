@@ -32,15 +32,15 @@ namespace GNA
 {
     class MemoryVerbose : public Memory
     {
-    public:        
+    public:
         // just makes object from arguments
-        MemoryVerbose(uint64_t memoryId, void * bufferIn, const size_t userSize, const uint16_t layerCount, const uint16_t gmmCount, IoctlSender &sender)
-            : Memory{memoryId, bufferIn, userSize, layerCount, gmmCount, sender}
+        MemoryVerbose(void * bufferIn, const size_t userSize, const uint16_t layerCount, const uint16_t gmmCount, IoctlSender &sender)
+            : Memory{bufferIn, userSize, layerCount, gmmCount, sender}
         {}
 
         // allocates and zeros memory
-        MemoryVerbose(uint64_t memoryId, const size_t userSize, const uint16_t layerCount, const uint16_t gmmCount, IoctlSender &sender)
-            : Memory{ memoryId, userSize, layerCount, gmmCount, sender}
+        MemoryVerbose(const size_t userSize, const uint16_t layerCount, const uint16_t gmmCount, IoctlSender &sender)
+            : Memory{userSize, layerCount, gmmCount, sender}
         {}
 
     protected:

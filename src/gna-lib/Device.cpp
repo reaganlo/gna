@@ -51,7 +51,7 @@ using namespace GNA;
 
 Device::Device(gna_device_id* deviceId, uint8_t threadCount) :
     requestHandler{ threadCount },
-    memoryObjects{ APP_MEMORIES_LIMIT },
+    memoryObjects{ },
     ioctlSender{
 #if defined(_WIN32)
     std::make_unique<WindowsIoctlSender>()
@@ -82,8 +82,7 @@ void Device::AttachBuffer(gna_request_cfg_id configId, gna_buffer_type type, uin
 
 void Device::CreateConfiguration(gna_model_id modelId, gna_request_cfg_id *configId)
 {
-    auto memoryId = 0;
-    auto memory = memoryObjects.at(memoryId).get();
+    auto memory = memoryObjects.front().get();
     auto &model = memory->GetModel(modelId);
     requestBuilder.CreateConfiguration(model, configId);
 }
@@ -117,29 +116,19 @@ void * Device::AllocateMemory(const uint32_t requestedSize, const uint16_t layer
     Expect::NotNull(sizeGranted);
     *sizeGranted = 0;
 
-    auto memoryId = uint64_t{0};
-    for (; memoryId < memoryObjects.size(); ++memoryId)
-    {
-        if (!memoryObjects.at(memoryId))
-            break;
-    }
+    auto memoryObject = createMemoryObject(requestedSize, layerCount, gmmCount);
 
-    if (APP_MEMORIES_LIMIT == memoryId)
-    {
-        throw GnaException(GNA_ERR_RESOURCES);
-    }
-
-    auto memoryObject = createMemoryObject(memoryId, requestedSize, layerCount, gmmCount);
-    memoryObjects[memoryId] = std::move(memoryObject);
-
-    auto memory = memoryObjects.at(memoryId).get();
     if (accelerationDetector.IsHardwarePresent())
     {
-        memory->Map();
+        memoryObject->Map();
     }
 
-    *sizeGranted = memory->ModelSize;
-    return memory->GetUserBuffer();
+    *sizeGranted = memoryObject->ModelSize;
+    auto userBuffer = memoryObject->GetUserBuffer();
+
+    memoryObjects.emplace_back(std::move(memoryObject));
+
+    return userBuffer;
 }
 
 void Device::FreeMemory()
@@ -160,8 +149,9 @@ void Device::FreeMemory()
 void Device::LoadModel(gna_model_id *modelId, const gna_model *raw_model)
 {
     *modelId = modelIdSequence++;
-    auto memoryId = 0; // default for 1st multi model phase
-    auto& memory = *memoryObjects.at(memoryId);
+
+    // default for 1st multi model phase
+    auto& memory = *memoryObjects.front();
     try
     {
         memory.AllocateModel(*modelId, raw_model, accelerationDetector);
@@ -184,8 +174,8 @@ status_t Device::WaitForRequest(gna_request_id requestId, gna_timeout millisecon
     return requestHandler.WaitFor(requestId, milliseconds);
 }
 
-std::unique_ptr<Memory> Device::createMemoryObject(const uint64_t memoryId, const uint32_t requestedSize,
+std::unique_ptr<Memory> Device::createMemoryObject(const uint32_t requestedSize,
     const uint16_t layerCount, const uint16_t gmmCount)
 {
-    return std::make_unique<Memory>(memoryId, requestedSize, layerCount, gmmCount, *ioctlSender);
+    return std::make_unique<Memory>(requestedSize, layerCount, gmmCount, *ioctlSender);
 }

@@ -55,7 +55,7 @@ typedef UINT8           __1B_RES;   // 1 B of reserved memory
 
 
 /**
- * Time in seconds after which driver will try to auto recover 
+ * Time in seconds after which driver will try to auto recover
  *  from hardware hang
  */
 #define     DRV_RECOVERY_TIMEOUT    60
@@ -115,7 +115,7 @@ static_assert(16 == sizeof(GNA_MM_IN), "Invalid size of GNA_MM_IN");
  * Size:    266 776 B
  */
 typedef struct _GNA_MM_OUT
-{   
+{
     UINT64              ptCount;    // Number of L1 pages allocated by the driver
     UINT64              l1PhysAddr[PT_DIR_SIZE+1];// physical addresses of allocated pages
     UINT32              l2PhysAddr[PT_SIZE];// physical addresses of page entries
@@ -137,7 +137,7 @@ typedef union _CTRL_FLAGS
     UINT32      activeListOn    :1; // 00:00 - active list mode (0:disabled, 1:enabled)
     UINT32      gnaMode         :2; // 01:02 - GNA operation mode (0:GMM, 1:xNN)
     UINT32      hwVerification  :1; // 03:03 - if request is for hw verification purposes
-    UINT32      __res_04        :28;// 04:31 - reserved 
+    UINT32      __res_04        :28;// 04:31 - reserved
     UINT32      xnnLyrDscSize   :32;// 32:63 - xnn layer descriptor data size
     };
     UINT32      _dword[2];          // value of whole register
@@ -154,7 +154,7 @@ static_assert(8 == sizeof(CTRL_FLAGS), "Invalid size of CTRL_FLAGS");
 /**
  * CALCULATE request data with output information.
  * Size:    312 B
- * NOTE: always include performance results 
+ * NOTE: always include performance results
  * this allow to use PROFILED library with NON-PROFILED driver and vice versa
  */
 typedef struct _GNA_CALC_IN
@@ -165,7 +165,7 @@ typedef struct _GNA_CALC_IN
     perf_hw_t           hwPerf;     // hardware level performance results
     status_t            status;     // status of scoring
     UINT32              __res;      // 4 B padding to multiple 8 B size
-  
+
 } GNA_CALC_IN, *PGNA_CALC_IN;       // CALCULATE IOCTL - Input data
 
 static_assert(312 == sizeof(GNA_CALC_IN), "Invalid size of GNA_CALC_IN");

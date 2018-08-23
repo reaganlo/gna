@@ -68,10 +68,8 @@ public:
     void* Dump(gna_model_id modelId, gna_device_kind deviceKind, intel_gna_model_header* modelHeader, intel_gna_status_t* status, intel_gna_alloc_cb customAlloc);
 
 protected:
-    virtual std::unique_ptr<Memory> createMemoryObject(const uint64_t memoryId, const uint32_t requestedSize,
+    virtual std::unique_ptr<Memory> createMemoryObject(const uint32_t requestedSize,
         const uint16_t layerCount, const uint16_t gmmCount);
-
-    static const std::map<const gna_device_kind, const GnaDeviceType> deviceDictionary;
 
     gna_device_id id = GNA_DEVICE_INVALID;
 

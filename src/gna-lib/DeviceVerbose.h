@@ -55,10 +55,10 @@ namespace GNA
             model.SetAfterscoreScenario(nActions, actions);
         }
 
-        std::unique_ptr<Memory> createMemoryObject(const uint64_t memoryId, const uint32_t requestedSize,
+        std::unique_ptr<Memory> createMemoryObject(const uint32_t requestedSize,
             const uint16_t layerCount, const uint16_t gmmCount)
         {
-            return std::make_unique<MemoryVerbose>(memoryId, requestedSize, layerCount, gmmCount, *ioctlSender);
+            return std::make_unique<MemoryVerbose>(requestedSize, layerCount, gmmCount, *ioctlSender);
         }
     };
 }

@@ -35,9 +35,9 @@ namespace GNA
 class FakeDetector : public AccelerationDetector
 {
 public:
-    FakeDetector(IoctlSender &sender, GnaDeviceType deviceType);
+    FakeDetector(IoctlSender &sender, gna_device_kind deviceKind);
 
-    static const std::map<GnaDeviceType, uint32_t> DeviceHardwareBuffers;
+    static const std::map<gna_device_kind, uint32_t> DeviceHardwareBuffers;
 };
 
 }

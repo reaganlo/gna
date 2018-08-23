@@ -91,8 +91,6 @@ status_t RequestHandler::WaitFor(const gna_request_id requestId, const gna_timeo
     case std::future_status::ready:
     {
         auto score_status = future.get();
-
-        
         auto perfResults = request->PerfResults;
         auto profiler = request->Profiler.get();
         profilerTscStop(&profiler->process);

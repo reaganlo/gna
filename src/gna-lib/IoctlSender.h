@@ -25,6 +25,10 @@
 
 #pragma once
 
+#include "gna-api-dumper.h"
+
+#include <map>
+
 #include "common.h"
 #include "Request.h"
 #include "Validator.h"
@@ -32,22 +36,57 @@
 namespace GNA
 {
 
+class HardwareRequest;
+
+struct RequestResult
+{
+    perf_hw_t hardwarePerf;
+    perf_drv_t driverPerf;
+    status_t status;
+};
+
+enum GnaIoctlCommand
+{
+    GNA_COMMAND_MAP,
+    GNA_COMMAND_UNMAP,
+    GNA_COMMAND_SCORE,
+    GNA_COMMAND_CAPABILITIES,
+#if HW_VERBOSE == 1
+    GNA_COMMAND_READ_PGDIR,
+    GNA_COMMAND_READ_REG,
+    GNA_COMMAND_WRITE_REG
+#endif
+};
+
+struct GnaCapabilities
+{
+    uint32_t hwInBuffSize;
+    uint32_t recoveryTimeout;
+    gna_device_kind deviceKind;
+};
+
 class IoctlSender
 {
 public:
-    virtual void IoctlSend(const uint32_t code, void * const inbuf, const uint32_t inlen, 
+    virtual void IoctlSend(const GnaIoctlCommand command, void * const inbuf, const uint32_t inlen,
         void * const outbuf, const uint32_t outlen) = 0;
 
     virtual void Open() = 0;
 
-    virtual void Submit(void * const inbuf, const uint32_t inlen, RequestProfiler * const profiler) = 0;
+    virtual GnaCapabilities GetDeviceCapabilities() const = 0;
 
-    uint32_t RecoveryTimeout;
+    virtual uint64_t MemoryMap(void *memory, size_t memorySize) = 0;
+
+    virtual void MemoryUnmap(uint64_t memoryId) = 0;
+
+    virtual RequestResult Submit(HardwareRequest * const hardwareRequest, RequestProfiler * const profiler) = 0;
 
 protected:
     IoctlSender() = default;
     IoctlSender(const IoctlSender &) = delete;
     IoctlSender& operator=(const IoctlSender&) = delete;
+
+    static const std::map<uint32_t, gna_device_kind> deviceTypeMap;
 };
 
 }

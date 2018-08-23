@@ -57,4 +57,16 @@ MemoryMapRelease(
     _Inout_ PAPP_CTX      appCtx,
     _Inout_ PMEMORY_CTX    memoryCtx);
 
+/**
+ * Finds memory context in the list
+ * Should be called with acquired list lock
+ *
+ * @appCtx      app context
+ * @memoryId    memory id
+ * @return      memory context
+ */
+PMEMORY_CTX FindMemoryContextByIdLocked(
+    _In_ PAPP_CTX appCtx,
+    _In_ UINT64 memoryId);
+
 #endif // _MEMORY__H

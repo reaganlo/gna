@@ -37,11 +37,6 @@ typedef intel_gna_status_t  status_t;
 
 typedef UINT8           __1B_RES;   // 1 B of reserved memory
 
-/**
- * GNA max memories limit for single application
- */
-#define     APP_MEMORIES_LIMIT         32
-
  /**
   * GNA Device Page Table directory
   */
@@ -94,13 +89,10 @@ static_assert(8 == sizeof(GNA_MM_IN), "Invalid size of GNA_MM_IN");
 typedef enum _GnaDeviceType
 {
     GNA_NO_DEVICE   = 0x0000,   // No supported device available
-    GNA_DEV_SKL     = 0x1911,   // GMM Device, requires separate driver
     GNA_DEV_CNL     = 0x5A11,   // GNA 1.0 Device Cannonlake, no CNN support
     GNA_DEV_GLK     = 0x3190,   // GNA 1.0 Device Geminilake, full featured GNA 1.0
     GNA_DEV_ICL     = 0x8A11,   // GNA 1.0 Device Icelake, same function set as GLK
     GNA_DEV_TGL     = 0x9A11,   // GNA 2.0 Device Tigerlake, full featured GNA 2.0
-    GNA_SUE_CREEK   = 0xFFFF1,  // GNA 1.0 Embeded
-    GNA_SUE_CREEK_2 = 0xFFFF2,  // GNA 2.0 Embeded
 
 } GnaDeviceType;
 
@@ -124,7 +116,8 @@ typedef struct _CTRL_FLAGS
     UINT32      activeListOn    :1; // 00:00 - active list mode (0:disabled, 1:enabled)
     UINT32      gnaMode         :2; // 01:02 - GNA operation mode (0:GMM, 1:xNN)
     UINT32      layerCount      :14;
-    UINT32      _rsvd           :15;
+    UINT32      copyDescriptors :1; // for GNA 1.0 library compatibility
+    UINT32      _rsvd           :14;
 
     union
     {
