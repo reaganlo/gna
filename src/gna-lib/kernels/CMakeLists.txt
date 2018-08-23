@@ -107,7 +107,7 @@ set(xnn_sse4_sat_sources
   igemm8_sse4-sat.cpp
   igemm8_subset_sse4-sat.cpp
   igemv16_sse4-sat.cpp
-  igemv8_sse4.cpp
+  igemv8_sse4-sat.cpp
   transpose16_sse4.cpp)
 
 set(xnn_avx1_sources
