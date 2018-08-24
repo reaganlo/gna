@@ -30,8 +30,8 @@
 using namespace GNA;
 
 const std::map<uint32_t, gna_device_kind> IoctlSender::deviceTypeMap = {
-    { 0x3190, GNA_CNL },
     { 0x3190, GNA_GLK },
+    { 0x5A11, GNA_CNL },
     { 0x8A11, GNA_ICL },
     { 0x9A11, GNA_TGL }
 };
