@@ -288,14 +288,14 @@ AccelerationDetector::AccelerationDetector(IoctlSender &senderIn) :
 
     // detect SSE4
     // check both SSE4_1, SSE4_2 feature flags (bits 19,20)
-    if (cpuId[2] & SSE4_MASK)
+    if ((cpuId[2] & SSE4_MASK) == SSE4_MASK)
     {
         accelerationModes[GNA_SSE4_2_FAST] = ACC_SUPPORTED;
         accelerationModes[GNA_SSE4_2_SAT] = ACC_SUPPORTED;
         fastestAcceleration = GNA_SSE4_2_FAST;
     }
 
-    if (cpuId[2] & AVX1_MASK)
+    if ((cpuId[2] & AVX1_MASK) == AVX1_MASK)
     {
         // check OS has enabled both XMM and YMM state support
         xcrFeature = _xgetbv(_XCR_XFEATURE_ENABLED_MASK);
@@ -311,7 +311,7 @@ AccelerationDetector::AccelerationDetector(IoctlSender &senderIn) :
         if (largestFunctionId >= 7)
         {
             cpuid(cpuId, 7);
-            if (cpuId[1] & AVX2_MASK)
+            if ((cpuId[1] & AVX2_MASK) == AVX2_MASK)
             {
                 accelerationModes[GNA_AVX2_FAST] = ACC_SUPPORTED;
                 accelerationModes[GNA_AVX2_SAT] = ACC_SUPPORTED;
