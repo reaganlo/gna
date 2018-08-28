@@ -72,11 +72,15 @@ Device::Device(gna_device_id* deviceId, uint8_t threadCount) :
 
 void Device::AttachBuffer(gna_request_cfg_id configId, gna_buffer_type type, uint16_t layerIndex, void *address)
 {
+    Expect::NotNull(address);
+
     requestBuilder.AttachBuffer(configId, type, layerIndex, address);
 }
 
 void Device::CreateConfiguration(gna_model_id modelId, gna_request_cfg_id *configId)
 {
+    Expect::NotNull(configId);
+
     auto memory = memoryObjects.front().get();
     auto &model = memory->GetModel(modelId);
     requestBuilder.CreateConfiguration(model, configId);
@@ -84,6 +88,8 @@ void Device::CreateConfiguration(gna_model_id modelId, gna_request_cfg_id *confi
 
 void Device::EnableProfiling(gna_request_cfg_id configId, gna_hw_perf_encoding hwPerfEncoding, gna_perf_t * perfResults)
 {
+    Expect::NotNull(perfResults);
+
     if (hwPerfEncoding >= DESCRIPTOR_FETCH_TIME
         && !accelerationDetector.HasFeature(NewPerformanceCounters))
     {
@@ -97,6 +103,8 @@ void Device::EnableProfiling(gna_request_cfg_id configId, gna_hw_perf_encoding h
 
 void Device::AttachActiveList(gna_request_cfg_id configId, uint16_t layerIndex, uint32_t indicesCount, const uint32_t* const indices)
 {
+    Expect::NotNull(indices);
+
     auto activeList = ActiveList{ indicesCount, indices };
     requestBuilder.AttachActiveList(configId, layerIndex, activeList);
 }
@@ -141,15 +149,18 @@ void Device::FreeMemory()
     memoryObjects.clear();
 }
 
-void Device::LoadModel(gna_model_id *modelId, const gna_model *raw_model)
+void Device::LoadModel(gna_model_id *modelId, const gna_model *rawModel)
 {
+    Expect::NotNull(modelId);
+    Expect::NotNull(rawModel);
+
     *modelId = modelIdSequence++;
 
     // default for 1st multi model phase
     auto& memory = *memoryObjects.front();
     try
     {
-        memory.AllocateModel(*modelId, raw_model, accelerationDetector);
+        memory.AllocateModel(*modelId, rawModel, accelerationDetector);
     }
     catch (...)
     {
@@ -160,6 +171,8 @@ void Device::LoadModel(gna_model_id *modelId, const gna_model *raw_model)
 
 void Device::PropagateRequest(gna_request_cfg_id configId, acceleration accel, gna_request_id *requestId)
 {
+    Expect::NotNull(requestId);
+
     auto request = requestBuilder.CreateRequest(configId, accel);
     requestHandler.Enqueue(requestId, std::move(request));
 }

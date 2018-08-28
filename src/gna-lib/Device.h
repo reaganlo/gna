@@ -50,7 +50,7 @@ public:
 
     void FreeMemory();
 
-    void LoadModel(gna_model_id *modelId, const gna_model *model);
+    void LoadModel(gna_model_id *modelId, const gna_model *rawModel);
 
     void AttachBuffer(gna_request_cfg_id configId, gna_buffer_type type, uint16_t layerIndex, void *address);
 

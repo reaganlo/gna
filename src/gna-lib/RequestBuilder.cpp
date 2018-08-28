@@ -39,7 +39,6 @@ gna_request_cfg_id RequestBuilder::assignConfigId()
 
 void RequestBuilder::CreateConfiguration(CompiledModel& model, gna_request_cfg_id *configId)
 {
-    Expect::NotNull(configId);
     *configId = assignConfigId();
     configurationVector.emplace_back(make_unique<RequestConfiguration>(model, *configId));
 }
