@@ -234,6 +234,7 @@ void WindowsIoctlSender::createRequestDescriptor(HardwareRequest *hardwareReques
     calculationSize += ioBuffersSize +  nnopTypesSize +  xnnActiveListsSize +  gmmActiveListsSize;
     calculationSize = ALIGN(calculationSize, sizeof(uint64_t));
     calculationData.reset(reinterpret_cast<PGNA_CALC_IN>(new uint8_t[calculationSize]));
+    memset(calculationData.get(), 0, calculationSize);
 
     calculationData->memoryId = hardwareRequest->MemoryId;
     calculationData->modelId = hardwareRequest->ModelId;

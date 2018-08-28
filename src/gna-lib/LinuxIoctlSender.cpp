@@ -181,6 +181,7 @@ void LinuxIoctlSender::createRequestDescriptor(HardwareRequest *hardwareRequest)
     scoreConfigSize += ioBuffersSize +  nnopTypesSize +  xnnActiveListsSize +  gmmActiveListsSize;
     scoreConfigSize = ALIGN(scoreConfigSize, sizeof(uint64_t));
     scoreConfig.reset(reinterpret_cast<gna_score_cfg*>(new uint8_t[scoreConfigSize]));
+    memset(scoreConfig.get(), 0, scoreConfigSize);
 
     scoreConfig->memory_id = hardwareRequest->MemoryId;
     scoreConfig->hw_perf_encoding = hardwareRequest->HwPerfEncoding;
