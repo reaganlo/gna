@@ -26,37 +26,10 @@
 #include "ThreadPool.h"
 
 #include "common.h"
+#include "RequestConfiguration.h"
 #include "Validator.h"
 
-using std::condition_variable;
-using std::function;
-using std::future;
-using std::make_shared;
-using std::map;
-using std::mutex;
-using std::packaged_task;
-using std::queue;
-using std::thread;
-using std::unique_lock;
-using std::vector;
-
 using namespace GNA;
-
-ThreadPool::ThreadPool() :
-    stopped{true}
-{}
-
-ThreadPool::~ThreadPool()
-{
-    {
-        unique_lock<mutex> lock(tp_mutex);
-        if (stopped)
-        {
-            return;
-        }
-    }
-    Stop();
-}
 
 void allocateFvBuffers(KernelBuffers * buffers)
 {
@@ -95,19 +68,10 @@ void deallocateFvBuffers(KernelBuffers *buffers)
     }
 }
 
-void ThreadPool::Init(uint8_t n_threads)
+ThreadPool::ThreadPool(uint8_t nThreads)
 {
-    Expect::InRange(n_threads, 1, 127, GNA_ERR_INVALID_THREAD_COUNT);
-    {
-        unique_lock<mutex> lock(tp_mutex);
-        if (!stopped)
-        {
-            throw GnaException(GNA_ERR_QUEUE);
-        }
-
-        stopped = false;
-    }
-    for (uint8_t i = 0; i < n_threads; i++)
+    Expect::InRange(nThreads, 1, 127, GNA_ERR_INVALID_THREAD_COUNT);
+    for (uint8_t i = 0; i < nThreads; i++)
     {
         this->workers.emplace_back([&]() {
             thread_local KernelBuffers buffers;
@@ -115,7 +79,7 @@ void ThreadPool::Init(uint8_t n_threads)
             while (true)
             {
                 {
-                    unique_lock<mutex> lock(tp_mutex);
+                    std::unique_lock<std::mutex> lock(tp_mutex);
                     condition.wait(lock, [&]() { return stopped || !tasks.empty(); });
                     if (stopped)
                     {
@@ -124,7 +88,7 @@ void ThreadPool::Init(uint8_t n_threads)
                     }
                     if (!tasks.empty()) {
                         auto& request_task = tasks.front();
-                        tasks.pop();
+                        tasks.pop_front();
                         (*request_task)(&buffers);
                     }
                 }
@@ -133,26 +97,13 @@ void ThreadPool::Init(uint8_t n_threads)
     }
 }
 
-void ThreadPool::Enqueue(Request *request)
+ThreadPool::~ThreadPool()
 {
     {
-        unique_lock<mutex> lock(tp_mutex);
+        std::unique_lock<std::mutex> lock(tp_mutex);
         if (stopped)
         {
             throw GnaException(GNA_ERR_THREADPOOL_STOPPED);
-        }
-        tasks.emplace(request);
-    }
-    condition.notify_one();
-}
-
-void ThreadPool::Stop()
-{
-    {
-        unique_lock<mutex> lock(tp_mutex);
-        if (stopped)
-        {
-            throw GnaException(GNA_ERR_QUEUE);
         }
         stopped = true;
     }
@@ -165,3 +116,36 @@ void ThreadPool::Stop()
     // release resources if any left
     this->workers.erase(workers.begin(), workers.end());
 }
+
+void ThreadPool::Enqueue(Request *request)
+{
+    {
+        std::unique_lock<std::mutex> lock(tp_mutex);
+        if (stopped)
+        {
+            throw GnaException(GNA_ERR_THREADPOOL_STOPPED);
+        }
+        tasks.emplace_back(request);
+    }
+    condition.notify_one();
+}
+
+void ThreadPool::CancelTasks(const gna_model_id modelId)
+{
+    {
+        std::unique_lock<std::mutex> lock(tp_mutex);
+        if (stopped)
+        {
+            throw GnaException(GNA_ERR_THREADPOOL_STOPPED);
+        }
+
+        for (auto it = tasks.begin(); it != tasks.end(); )
+        {
+            Request *request = *it;
+            if (request->Configuration.Model.Id == modelId)
+                it = tasks.erase(it);
+            else ++it;
+        }
+    }
+}
+

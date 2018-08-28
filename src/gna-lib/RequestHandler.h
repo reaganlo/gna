@@ -48,6 +48,8 @@ public:
 
     status_t WaitFor(const gna_request_id requestId, const gna_timeout milliseconds);
 
+    void CancelRequests(const gna_model_id modelId);
+
 private:
 
     void initRequestMap();

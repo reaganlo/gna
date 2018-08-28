@@ -34,15 +34,13 @@ using std::unique_ptr;
 
 using namespace GNA;
 
-RequestHandler::RequestHandler(uint8_t threadCount)
+RequestHandler::RequestHandler(uint8_t threadCount) : threadPool(threadCount)
 {
     initRequestMap();
-    threadPool.Init(threadCount);
 }
 
 RequestHandler::~RequestHandler()
 {
-    threadPool.Stop();
     clearRequestMap();
 }
 
@@ -114,6 +112,11 @@ status_t RequestHandler::WaitFor(const gna_request_id requestId, const gna_timeo
     default:
         return GNA_DEVICEBUSY;
     }
+}
+
+void RequestHandler::CancelRequests(const gna_model_id modelId)
+{
+    threadPool.CancelTasks(modelId);
 }
 
 status_t RequestHandler::removeRequest(gna_request_id requestId)

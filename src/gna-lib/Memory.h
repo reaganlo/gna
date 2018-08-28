@@ -50,6 +50,8 @@ namespace GNA
 
         virtual ~Memory();
 
+        std::map<gna_model_id, std::unique_ptr<CompiledModel>> Models;
+
         uint64_t GetId() const;
 
         size_t GetSize() const
@@ -64,8 +66,6 @@ namespace GNA
         }
 
         void Map();
-
-        void Unmap();
 
         void AllocateModel(const gna_model_id modelId, const gna_model * model, const AccelerationDetector& detector);
 
@@ -83,6 +83,8 @@ namespace GNA
     protected:
         virtual std::unique_ptr<CompiledModel> createModel(const gna_model_id modelId, const gna_model *model, const AccelerationDetector &detector);
 
+        void unmap();
+
         uint64_t id = 0;
 
         size_t size = 0;
@@ -93,7 +95,6 @@ namespace GNA
 
         bool mapped = false;
 
-        std::map<gna_model_id, std::unique_ptr<CompiledModel>> models;
         std::map<gna_model_id, void*> modelDescriptors;
     };
 

@@ -59,6 +59,9 @@ Memory::~Memory()
 {
     if (buffer)
     {
+        if (mapped)
+            unmap();
+
         _gna_free(buffer);
         buffer = nullptr;
         size = 0;
@@ -77,13 +80,8 @@ void Memory::Map()
     mapped = true;
 }
 
-void Memory::Unmap()
+void Memory::unmap()
 {
-    if (!mapped)
-    {
-        throw GnaException(GNA_ERR_MEMORY_ALREADY_UNMAPPED);
-    }
-
     ioctlSender.MemoryUnmap(id);
     mapped = false;
 }
@@ -111,19 +109,19 @@ void Memory::AllocateModel(const gna_model_id modelId, const gna_model *model, c
     modelDescriptors[modelId] = descriptorsBase;
     descriptorsSize += modelInternalSize;
 
-    models[modelId] = createModel(modelId, model, detector);
+    Models[modelId] = createModel(modelId, model, detector);
 }
 
 void Memory::DeallocateModel(gna_model_id modelId)
 {
-    models[modelId].reset();
+    Models[modelId].reset();
 }
 
 CompiledModel& Memory::GetModel(gna_model_id modelId)
 {
     try
     {
-        auto& model = models.at(modelId);
+        auto& model = Models.at(modelId);
         return *model.get();
     }
     catch (const std::out_of_range& e)

@@ -30,7 +30,7 @@
 #include <future>
 #include <map>
 #include <mutex>
-#include <queue>
+#include <deque>
 #include <thread>
 #include <vector>
 
@@ -41,22 +41,21 @@ namespace GNA
 {
 class ThreadPool {
 public:
-    ThreadPool();
+    ThreadPool(uint8_t nThreads);
     ~ThreadPool();
     ThreadPool(const ThreadPool &) = delete;
     ThreadPool& operator=(const ThreadPool&) = delete;
 
-    void Init(uint8_t n_threads);
-    void Stop();
+    void CancelTasks(const gna_model_id modelId);
     void Enqueue(Request *request);
 
 private:
     std::vector<std::thread> workers;
     // calculation function queue
-    std::queue<Request*> tasks;
+    std::deque<Request*> tasks;
     std::mutex tp_mutex;
     std::condition_variable condition;
-    bool stopped;
+    bool stopped = false;
 };
 
 }

@@ -70,11 +70,6 @@ Device::Device(gna_device_id* deviceId, uint8_t threadCount) :
     accelerationDetector.UpdateKernelsMap();
 }
 
-Device::~Device()
-{
-    FreeMemory();
-}
-
 void Device::AttachBuffer(gna_request_cfg_id configId, gna_buffer_type type, uint16_t layerIndex, void *address)
 {
     requestBuilder.AttachBuffer(configId, type, layerIndex, address);
@@ -133,13 +128,13 @@ void * Device::AllocateMemory(const uint32_t requestedSize, const uint16_t layer
 
 void Device::FreeMemory()
 {
-    if (accelerationDetector.IsHardwarePresent())
+    for (auto& memoryObject : memoryObjects)
     {
-        for (auto& memoryObject : memoryObjects)
+        if (memoryObject)
         {
-            if (memoryObject)
+            for (auto it = memoryObject->Models.begin(); it != memoryObject->Models.end(); ++it)
             {
-                memoryObject->Unmap();
+                requestHandler.CancelRequests(it->first);
             }
         }
     }

@@ -41,7 +41,6 @@ class Device
 {
 public:
     Device(gna_device_id *deviceId, uint8_t threadCount = 1);
-    virtual ~Device();
     Device(const Device &) = delete;
     Device& operator=(const Device&) = delete;
 
@@ -73,17 +72,17 @@ protected:
 
     gna_device_id id = GNA_DEVICE_INVALID;
 
-    RequestHandler requestHandler;
-
-    RequestBuilder requestBuilder;
-
-    std::vector<std::unique_ptr<Memory>> memoryObjects;
+    uint32_t modelIdSequence = 0;
 
     std::unique_ptr<IoctlSender> ioctlSender;
 
     AccelerationDetector accelerationDetector;
 
-    uint32_t modelIdSequence = 0;
+    std::vector<std::unique_ptr<Memory>> memoryObjects;
+
+    RequestBuilder requestBuilder;
+
+    RequestHandler requestHandler;
 };
 }
 #endif
