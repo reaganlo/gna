@@ -54,21 +54,23 @@ void HardwareRequest::Invalidate()
     {
         auto layer = model.GetLayer(it->first);
         auto hwLayer = hwModel.GetLayer(it->first);
-        if (it->second->InputBuffer)
+        auto layerCfg = it->second.get();
+
+        if (layerCfg->InputBuffer)
         {
             auto bufferInputOffset = hwModel.GetOffset(*it->second->InputBuffer);
             auto ldInputOffset = hwLayer->GetLdInputOffset();
             IoBuffers.emplace_back(IoBufferPatch{ldInputOffset, bufferInputOffset});
         }
 
-        if (it->second->OutputBuffer)
+        if (layerCfg->OutputBuffer)
         {
             auto bufferOutputOffset = hwModel.GetOffset(*it->second->OutputBuffer);
             auto ldOutputOffset = hwLayer->GetLdOutputOffset();
             IoBuffers.emplace_back(IoBufferPatch{ldOutputOffset, bufferOutputOffset});
         }
 
-        if (it->second->ActList)
+        if (layerCfg->ActList)
         {
             if (INTEL_GMM != layer->Config.Kind)
             {
@@ -90,7 +92,7 @@ void HardwareRequest::Invalidate()
                 auto activeList = it->second->ActList.get();
                 auto scrlen = hwLayer->GetScrlen(activeList->IndicesCount);
                 auto asladdr = hwModel.GetOffset(activeList->Indices);
-                uint16_t indices = activeList->IndicesCount;
+                auto indices = activeList->IndicesCount;
 
                 GmmActiveLists.emplace_back(GmmAlPatch{ldActlistOffset, asladdr,
                                                         ldActlenOffset, indices,
@@ -98,6 +100,14 @@ void HardwareRequest::Invalidate()
             }
         }
 
+        if (layerCfg->OutputBuffer &&
+            (layer->Config.Kind == INTEL_AFFINE || layer->Config.Kind == INTEL_GMM))
+        {
+            auto nnopTypeOffset = hwLayer->GetLdNnopOffset();
+            auto nnopTypeValue = hwLayer->GetNnopType(layerCfg->ActList.get() != nullptr);
+
+            NnopTypes.emplace_back(NnopTypePatch{ nnopTypeOffset, nnopTypeValue });
+        }
     }
 }
 

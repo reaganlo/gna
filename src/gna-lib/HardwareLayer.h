@@ -194,6 +194,8 @@ public:
     virtual ~HardwareLayerGmm() = default;
 
     virtual NN_OP_TYPE GetNnopType(bool hasActiveList) const override;
+    virtual uint32_t GetLdOutputOffset() const override;
+    virtual uint32_t GetLdInputOffset() const override;
     virtual uint32_t GetGmmDescriptorOffset() const override;
     virtual uint32_t GetLdActlistOffset() const override;
     virtual uint32_t GetLdActlenOffset() const override;

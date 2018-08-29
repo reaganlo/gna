@@ -128,6 +128,16 @@ uint32_t HardwareLayerGmm::GetGmmDescriptorOffset() const
     return getOffset(GmmDescriptor);
 }
 
+uint32_t HardwareLayerGmm::GetLdOutputOffset() const
+{
+    return getOffset(GmmDescriptor) + offsetof(GMM_CONFIG, gmmscradd);
+}
+
+uint32_t HardwareLayerGmm::GetLdInputOffset() const
+{
+    return getOffset(GmmDescriptor) + offsetof(GMM_CONFIG, fvaddr);
+}
+
 uint32_t HardwareLayerGmm::GetScrlen(uint32_t indicesCount) const
 {
     auto gmm = SoftwareLayer->Get<const GmmLayer>();
