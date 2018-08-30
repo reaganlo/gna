@@ -155,6 +155,7 @@ void WindowsIoctlSender::MemoryUnmap(uint64_t memoryId)
     auto bytesRead = DWORD{0};
     auto ioResult = BOOL{};
 
+    // TODO: remove ummap IOCTL in favor of CancelIoEx (cancel handler in driver, cancel requests)
     ioResult = DeviceIoControl(deviceHandle, GNA_IOCTL_MEM_UNMAP, &memoryId, sizeof(memoryId), nullptr, 0, &bytesRead, &overlapped);
     checkStatus(ioResult);
     wait(&overlapped, (recoveryTimeout + 15) * 1000);

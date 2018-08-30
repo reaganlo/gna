@@ -622,6 +622,8 @@ ScoreDeferredUnmap(
     TraceEntry(TLI, T_ENT);
     // cancel all request from current application
     app = WdfRequestGetFileObject(unmapReq);
+
+    // FIXME: cancel requests by memory
     ScoreCancelReqByApp(devCtx->queue, app);
     Trace(TLV, T_QUE, "%!FUNC! Force Powering off HW to D0i3.");
     HwPowerSwitch(devCtx->hw.regs, &devCtx->cfg, HW_POWER_OFF);
