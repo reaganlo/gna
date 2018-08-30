@@ -50,8 +50,6 @@ using std::move;
 using namespace GNA;
 
 Device::Device(gna_device_id* deviceId, uint8_t threadCount) :
-    requestHandler{ threadCount },
-    memoryObjects{ },
     ioctlSender{
 #if defined(_WIN32)
     std::make_unique<WindowsIoctlSender>()
@@ -59,7 +57,9 @@ Device::Device(gna_device_id* deviceId, uint8_t threadCount) :
     std::make_unique<LinuxIoctlSender>()
 #endif
     },
-    accelerationDetector{*ioctlSender}
+    accelerationDetector{*ioctlSender},
+    memoryObjects{ },
+    requestHandler{ threadCount }
 {
     Expect::NotNull(deviceId);
 

@@ -62,6 +62,7 @@ public:
     virtual uint32_t GetGmmDescriptorOffset() const;
     virtual uint32_t GetLdScrlenOffset() const;
     virtual uint32_t GetLdOutputOffset() const;
+    virtual uint32_t GetLdFeedbackOffset() const;
     virtual uint32_t GetLdInputOffset() const;
     virtual uint32_t GetLdNnopOffset() const;
     virtual uint32_t GetLdActlenOffset() const;
@@ -146,6 +147,8 @@ public:
     HardwareLayerRnn& operator=(const HardwareLayerRnn&) = delete;
     HardwareLayerRnn(const DescriptorParameters& parameters);
     virtual ~HardwareLayerRnn() = default;
+
+    virtual uint32_t GetLdFeedbackOffset() const override;
 
     // calculates feedback buffer offset for per RequestConfiguration output buffer
     const uint32_t CalculateFeedbackBuffer(const OutputBuffer& outputBuffer) const;

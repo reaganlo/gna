@@ -205,6 +205,11 @@ uint32_t HardwareLayer::GetLdOutputOffset() const
     }
 }
 
+uint32_t HardwareLayer::GetLdFeedbackOffset() const
+{
+    throw GnaException { XNN_ERR_LYR_CFG };
+}
+
 void HardwareLayer::save()
 {
     XnnDescriptor->op = OperationsMap.at(SoftwareLayer->Config.Kind);
@@ -358,6 +363,11 @@ void HardwareLayerRnn::save()
     // even if layer is an output layer, feedback buffer should be calculated
     // could be used later by firmware for feedback delay calculation
     XnnDescriptor->rnn_out_fb_buffer = CalculateFeedbackBuffer(SoftwareLayer->Output.Buffer);
+}
+
+uint32_t HardwareLayerRnn::GetLdFeedbackOffset() const
+{
+    return getOffset(XnnDescriptor) + offsetof(XNN_LYR, rnn_out_fb_buffer);
 }
 
 const uint32_t HardwareLayerRnn::CalculateFeedbackBuffer(const OutputBuffer& outputBuffer) const

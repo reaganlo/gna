@@ -111,7 +111,7 @@ void WindowsIoctlSender::IoctlSend(const GnaIoctlCommand command, void * const i
     uint32_t code;
     switch(command)
     {
-#if GNA_HWVERBOSE == 1
+#if HW_VERBOSE == 1
         case GNA_COMMAND_READ_PGDIR:
             /* FALLTHRU */
         case GNA_COMMAND_READ_REG:

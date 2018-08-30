@@ -68,6 +68,14 @@ void HardwareRequest::Invalidate()
             auto bufferOutputOffset = hwModel.GetOffset(*it->second->OutputBuffer);
             auto ldOutputOffset = hwLayer->GetLdOutputOffset();
             IoBuffers.emplace_back(IoBufferPatch{ldOutputOffset, bufferOutputOffset});
+
+            if (layer->Config.Kind == INTEL_RECURRENT)
+            {
+                auto rnnLayer = dynamic_cast<const HardwareLayerRnn*>(hwLayer);
+                auto bufferFeedbackOffset = rnnLayer->CalculateFeedbackBuffer(*layerCfg->OutputBuffer);
+                auto ldFeedbackOffset = hwLayer->GetLdFeedbackOffset();
+                IoBuffers.emplace_back(IoBufferPatch{ldFeedbackOffset, bufferFeedbackOffset});
+            }
         }
 
         if (layerCfg->ActList)
