@@ -38,7 +38,7 @@
     <ItemDefinitionGroup>
         <ResourceCompile>
             <PreprocessorDefinitions>
-		API_DLL=\"$(API_DLL)\";
+                API_DLL=\"$(API_DLL)\";
                 %(PreprocessorDefinitions)
             </PreprocessorDefinitions>
         </ResourceCompile>

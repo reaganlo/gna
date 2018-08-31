@@ -19,9 +19,10 @@ This Software is built with Microsoft* Visual Studio*  2015 Update 3
 compilers. This implies requirement of having Visual C++ runtime libraries 
 available in Windows* in order to run this software.  
 
+// TODO: publish cmake script files
 In order to run the sample:
 1a. Use installation script to install gna library on your Linux system, or
-1b. Put libgna.so.2 to GNA\x64 directory, put gna-api.h, gna-api-status.h, gna-api-types-gmm.h, gna-api-types-xnn.h into GNA\include directory
+1b. Put libgna.so.2 to gna-lib\x64 directory, put gna-api.h, gna-api-status.h, gna-api-types-gmm.h, gna-api-types-xnn.h into gna-lib\include directory
 2. Install Redistributable Libraries for Intel(R) C++ Compiler 17.0 if necessary
    https://software.intel.com/en-us/articles/redistributables-for-intel-parallel-studio-xe-2017-composer-edition-for-linux
 3. Generate projects with CMake, example command:

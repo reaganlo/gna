@@ -2,11 +2,11 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
 VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "gna-drv", "projects\gna-drv\gna-drv.vcxproj", "{4933913D-4FCE-4DC1-B275-5A0FF780B25D}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "gna-drv", "gna-drv.vcxproj", "{4933913D-4FCE-4DC1-B275-5A0FF780B25D}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "gna-drv-package", "projects\gna-drv\gna-drv-package.vcxproj", "{7C0DF08A-69C1-4828-B2F3-123B2669BED7}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "gna-drv-package", "gna-drv-package.vcxproj", "{7C0DF08A-69C1-4828-B2F3-123B2669BED7}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "gna-drv-legacy", "projects\gna-drv\gna-drv-legacy.vcxproj", "{93E2D41C-6DAC-49E8-A3CD-18D35B529FD2}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "gna-drv-legacy", "gna-drv-legacy.vcxproj", "{93E2D41C-6DAC-49E8-A3CD-18D35B529FD2}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

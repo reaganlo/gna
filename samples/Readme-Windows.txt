@@ -20,8 +20,8 @@ compilers. This implies requirement of having Visual C++ runtime libraries
 available in Windows* in order to run this software.  
 
 In order to run the sample:
-1. Put gna.lib and gna.dll into GNA\[x86|x64] directory
-2. Put gna-api.h, gna-api-status.h, gna-api-types-gmm.h, gna-api-types-xnn.h, gna-api-dumper.h, gna-api-instrumentation.h into GNA\include directory
+1. Put gna.lib and gna.dll into gna-lib\[x86|x64] directory
+2. Put gna-api.h, gna-api-status.h, gna-api-types-gmm.h, gna-api-types-xnn.h, gna-api-dumper.h, gna-api-instrumentation.h into gna-lib\include directory
 3. Install Redistributable Libraries for Intel(R) C++ Compiler 17.0 if necessary
    https://software.intel.com/en-us/articles/redistributables-for-intel-parallel-studio-xe-2017-composer-edition-for-windows
 4. Install Redistributable Libraries for Microsoft Visual Studio 2015 if necessary 
@@ -30,6 +30,7 @@ In order to run the sample:
 6. Build project in Microsoft Visual Studio 2015.
 7. Executable should be under bin\<sample name>\<config>\<architecture>\ directory.
 
+// TODO: publish cmake script files
 (optional) Generate projects with CMake.
 1. Generate projects
    Example command: cmake -G "Visual Studio 14 2015 Win64" -T "Intel C++ Compiler 17.0" .

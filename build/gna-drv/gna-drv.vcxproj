@@ -50,7 +50,7 @@
         <RunCodeAnalysis>true</RunCodeAnalysis>
     </PropertyGroup>
     <PropertyGroup>
-        <CodeAnalysisRuleSet>..\common\Drivers.ruleset</CodeAnalysisRuleSet>
+        <CodeAnalysisRuleSet>Drivers.ruleset</CodeAnalysisRuleSet>
 		<SupportsPackaging>false</SupportsPackaging>
     </PropertyGroup>
     <PropertyGroup Label="Configuration" Condition="$(IS_DEBUG) == true">

@@ -195,7 +195,7 @@ set_target_properties(gna-api
   ARCHIVE_OUTPUT_DIRECTORY_${OS_PREFIX}-RELEASE ${GNA_API_OUT_DIR}
   RUNTIME_OUTPUT_DIRECTORY_${OS_PREFIX}-DEBUG ${GNA_API_OUT_DIR}
   RUNTIME_OUTPUT_DIRECTORY_${OS_PREFIX}-RELEASE ${GNA_API_OUT_DIR}
-  VS_USER_PROPS ${CMAKE_SOURCE_DIR}/solutions/projects/common/version-dll.props
+  VS_USER_PROPS ${CMAKE_SOURCE_DIR}/build/common/version-dll.props
   OUTPUT_NAME gna)
 
 if(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
@@ -229,6 +229,7 @@ if(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
     $<TARGET_FILE:gna-api>
     $<TARGET_LINKER_FILE:gna-api>
+	$<TARGET_PDB_FILE:gna-api>
     ${CMAKE_SOURCE_DIR}/samples/gna-lib/${CMAKE_ARCHITECTURE})
 else()
   add_custom_command(TARGET gna-api POST_BUILD
@@ -276,7 +277,7 @@ if(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
     ARCHIVE_OUTPUT_DIRECTORY_${OS_PREFIX}-RELEASE ${GNA_API_VERBOSE_OUT_DIR}
     RUNTIME_OUTPUT_DIRECTORY_${OS_PREFIX}-DEBUG ${GNA_API_VERBOSE_OUT_DIR}
     RUNTIME_OUTPUT_DIRECTORY_${OS_PREFIX}-RELEASE ${GNA_API_VERBOSE_OUT_DIR}
-    VS_USER_PROPS ${CMAKE_SOURCE_DIR}/solutions/projects/common/version-dll.props
+    VS_USER_PROPS ${CMAKE_SOURCE_DIR}/build/common/version-dll.props
     OUTPUT_NAME gna-verbose)
 
   set_property(TARGET gna-api-verbose PROPERTY COMPILE_FLAGS "/WX")

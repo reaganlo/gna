@@ -90,7 +90,7 @@
         <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
     </ImportGroup>
     <PropertyGroup>
-        <ROOT_DIR>..\..\..\</ROOT_DIR>
+        <ROOT_DIR>..\..\</ROOT_DIR>
         <SRC_DIR>$(ROOT_DIR)src</SRC_DIR>
         <OUTPUT_DIR>$(ROOT_DIR)bin\$(DRV_PATH_NAME)\$(Configuration)\gna-$(MSBuildProjectName)\$(PLATFORM_NAME)\</OUTPUT_DIR>
         <OutDir>$(OUTPUT_DIR)out\</OutDir>
@@ -100,7 +100,4 @@
         <TRACE_MAN_FILE>$(SRC_DIR)\gna-drv\gna-etw-manifest.man</TRACE_MAN_FILE>
         <TRACE_RC_FILE>$(IntDir)gna-etw-manifest.rc</TRACE_RC_FILE>
     </PropertyGroup>
-    <ItemGroup>
-        <None Include="..\common\projects.licenseheader" />
-    </ItemGroup>
 </Project>

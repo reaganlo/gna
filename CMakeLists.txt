@@ -58,7 +58,7 @@ else()
 endif()
 
 # setting default configuration
-include(${CMAKE_SOURCE_DIR}/cmake/set_build_type.cmake)
+include(${CMAKE_SOURCE_DIR}/build/cmake/set_build_type.cmake)
 
 # postfix for debug libraries
 if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
@@ -118,7 +118,7 @@ endif()
 
 # set 32-bit compilation flags
 if(CMAKE_ARCHITECTURE STREQUAL x86)
-  include(${CMAKE_SOURCE_DIR}/cmake/set_x86_flags.cmake)
+  include(${CMAKE_SOURCE_DIR}/build/cmake/set_x86_flags.cmake)
 endif()
 
 set(CMAKE_CXX_FLAGS                                ${CXX_FLAGS})
