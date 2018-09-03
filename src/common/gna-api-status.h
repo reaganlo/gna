@@ -125,7 +125,6 @@ typedef enum _gna_status_t
     GNA_ERR_MEMORY_ALREADY_MAPPED,   // Error: Memory is already mapped, cannot map again. Release memory first.
     GNA_ERR_MEMORY_ALREADY_UNMAPPED, // Error: Memory is already unmapped, cannot unmap again.
     GNA_ERR_MEMORY_NOT_MAPPED,       // Error: Memory is not mapped.
-    GNA_ERR_THREADPOOL_STOPPED,      // Error: Thread pool is stopped, cannot enqueue more requests
 
     NUMGNASTATUS
 } intel_gna_status_t;       // GNA API Status codes

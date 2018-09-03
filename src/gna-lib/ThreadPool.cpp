@@ -78,19 +78,18 @@ ThreadPool::ThreadPool(uint8_t nThreads)
             allocateFvBuffers(&buffers);
             while (true)
             {
+                std::unique_lock<std::mutex> lock(tp_mutex);
+                condition.wait(lock, [&]() { return stopped || !tasks.empty(); });
+                if (stopped)
                 {
-                    std::unique_lock<std::mutex> lock(tp_mutex);
-                    condition.wait(lock, [&]() { return stopped || !tasks.empty(); });
-                    if (stopped)
-                    {
-                        deallocateFvBuffers(&buffers);
-                        return;
-                    }
-                    if (!tasks.empty()) {
-                        auto& request_task = tasks.front();
-                        tasks.pop_front();
-                        (*request_task)(&buffers);
-                    }
+                    deallocateFvBuffers(&buffers);
+                    return;
+                }
+                if (!tasks.empty()) {
+                    auto& request_task = tasks.front();
+                    tasks.pop_front();
+                    lock.unlock();
+                    (*request_task)(&buffers);
                 }
             }
         });
@@ -99,14 +98,7 @@ ThreadPool::ThreadPool(uint8_t nThreads)
 
 ThreadPool::~ThreadPool()
 {
-    {
-        std::unique_lock<std::mutex> lock(tp_mutex);
-        if (stopped)
-        {
-            throw GnaException(GNA_ERR_THREADPOOL_STOPPED);
-        }
-        stopped = true;
-    }
+    stopped = true;
 
     condition.notify_all();
     for (auto &worker : workers)
@@ -121,10 +113,6 @@ void ThreadPool::Enqueue(Request *request)
 {
     {
         std::unique_lock<std::mutex> lock(tp_mutex);
-        if (stopped)
-        {
-            throw GnaException(GNA_ERR_THREADPOOL_STOPPED);
-        }
         tasks.emplace_back(request);
     }
     condition.notify_one();
@@ -132,20 +120,13 @@ void ThreadPool::Enqueue(Request *request)
 
 void ThreadPool::CancelTasks(const gna_model_id modelId)
 {
+    std::unique_lock<std::mutex> lock(tp_mutex);
+    for (auto it = tasks.begin(); it != tasks.end(); )
     {
-        std::unique_lock<std::mutex> lock(tp_mutex);
-        if (stopped)
-        {
-            throw GnaException(GNA_ERR_THREADPOOL_STOPPED);
-        }
-
-        for (auto it = tasks.begin(); it != tasks.end(); )
-        {
-            Request *request = *it;
-            if (request->Configuration.Model.Id == modelId)
-                it = tasks.erase(it);
-            else ++it;
-        }
+        Request *request = *it;
+        if (request->Configuration.Model.Id == modelId)
+            it = tasks.erase(it);
+        else ++it;
     }
 }
 

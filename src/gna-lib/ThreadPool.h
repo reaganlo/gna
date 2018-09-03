@@ -25,6 +25,7 @@
 
 #pragma once
 
+#include <atomic>
 #include <condition_variable>
 #include <functional>
 #include <future>
@@ -55,7 +56,7 @@ private:
     std::deque<Request*> tasks;
     std::mutex tp_mutex;
     std::condition_variable condition;
-    bool stopped = false;
+    std::atomic_bool stopped = false;
 };
 
 }
