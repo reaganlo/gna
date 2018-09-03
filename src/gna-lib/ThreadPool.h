@@ -56,7 +56,7 @@ private:
     std::deque<Request*> tasks;
     std::mutex tp_mutex;
     std::condition_variable condition;
-    std::atomic_bool stopped = false;
+    std::atomic_bool stopped;
 };
 
 }

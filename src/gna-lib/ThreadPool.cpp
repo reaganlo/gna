@@ -68,7 +68,8 @@ void deallocateFvBuffers(KernelBuffers *buffers)
     }
 }
 
-ThreadPool::ThreadPool(uint8_t nThreads)
+ThreadPool::ThreadPool(uint8_t nThreads) :
+    stopped(false)
 {
     Expect::InRange(nThreads, 1, 127, GNA_ERR_INVALID_THREAD_COUNT);
     for (uint8_t i = 0; i < nThreads; i++)

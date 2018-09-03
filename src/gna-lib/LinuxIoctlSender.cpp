@@ -128,6 +128,23 @@ RequestResult LinuxIoctlSender::Submit(HardwareRequest * const hardwareRequest, 
         createRequestDescriptor(hardwareRequest);
     }
 
+    scoreConfig->flags.active_list_on = hardwareRequest->ActiveListOn;
+    scoreConfig->flags.gna_mode = hardwareRequest->Mode == xNN ? 1 : 0;
+    scoreConfig->flags.layer_count = hardwareRequest->LayerCount;
+
+    if(xNN == hardwareRequest->Mode)
+    {
+        scoreConfig->flags.config_base = hardwareRequest->LayerBase;
+    }
+    else if(GMM == hardwareRequest->Mode)
+    {
+        scoreConfig->flags.config_base = hardwareRequest->GmmOffset;
+    }
+    else
+    {
+        throw GnaException { XNN_ERR_LYR_CFG };
+    }
+
     if(ioctl(gnaFileDescriptor, GNA_SCORE, scoreConfig.get()))
     {
         throw GnaException { GNA_IOCTLSENDERR };
@@ -192,23 +209,6 @@ void LinuxIoctlSender::createRequestDescriptor(HardwareRequest *hardwareRequest)
     scoreConfig->req_cfg_desc.xnn_al_count = xnnActiveListsCount;
     scoreConfig->req_cfg_desc.gmm_al_count = gmmActiveListsCount;
     scoreConfig->req_cfg_desc.nnop_type_count = nnopTypesCount;
-
-    scoreConfig->flags.active_list_on = hardwareRequest->ActiveListOn;
-    scoreConfig->flags.gna_mode = hardwareRequest->Mode == xNN ? 1 : 0;
-    scoreConfig->flags.layer_count = hardwareRequest->LayerCount;
-
-    if(xNN == hardwareRequest->Mode)
-    {
-        scoreConfig->flags.config_base = hardwareRequest->LayerBase;
-    }
-    else if(GMM == hardwareRequest->Mode)
-    {
-        scoreConfig->flags.config_base = hardwareRequest->GmmOffset;
-    }
-    else
-    {
-        throw GnaException { XNN_ERR_LYR_CFG };
-    }
 
     uint8_t *requestData = reinterpret_cast<uint8_t*>(scoreConfig.get()) + sizeof(gna_score_cfg);
     uint8_t *calculationEnd = requestData + scoreConfigSize;

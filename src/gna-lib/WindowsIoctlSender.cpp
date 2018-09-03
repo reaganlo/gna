@@ -176,6 +176,23 @@ RequestResult WindowsIoctlSender::Submit(HardwareRequest *hardwareRequest, Reque
         createRequestDescriptor(hardwareRequest);
     }
 
+    calculationData->ctrlFlags.activeListOn = hardwareRequest->ActiveListOn;
+    calculationData->ctrlFlags.gnaMode = hardwareRequest->Mode;
+    calculationData->ctrlFlags.layerCount = hardwareRequest->LayerCount;
+
+    if(xNN == hardwareRequest->Mode)
+    {
+        calculationData->ctrlFlags.layerBase = hardwareRequest->LayerBase;
+    }
+    else if(GMM == hardwareRequest->Mode)
+    {
+        calculationData->ctrlFlags.gmmOffset = hardwareRequest->GmmOffset;
+    }
+    else
+    {
+        throw GnaException { XNN_ERR_LYR_CFG };
+    }
+
     profilerTscStart(&profiler->ioctlSubmit);
     auto ioResult = WriteFile(deviceHandle, calculationData.get(), calculationSize, nullptr, &ioHandle);
     checkStatus(ioResult);
@@ -247,22 +264,7 @@ void WindowsIoctlSender::createRequestDescriptor(HardwareRequest *hardwareReques
     calculationData->reqCfgDescr.gmmActiveListsCount = gmmActiveListsCount;
     calculationData->reqCfgDescr.nnopTypesCount = nnopTypesCount;
 
-    calculationData->ctrlFlags.activeListOn = hardwareRequest->ActiveListOn;
-    calculationData->ctrlFlags.gnaMode = hardwareRequest->Mode;
-    calculationData->ctrlFlags.layerCount = hardwareRequest->LayerCount;
 
-    if(xNN == hardwareRequest->Mode)
-    {
-        calculationData->ctrlFlags.layerBase = hardwareRequest->LayerBase;
-    }
-    else if(GMM == hardwareRequest->Mode)
-    {
-        calculationData->ctrlFlags.gmmOffset = hardwareRequest->GmmOffset;
-    }
-    else
-    {
-        throw GnaException { XNN_ERR_LYR_CFG };
-    }
 
     uint8_t *requestData = reinterpret_cast<uint8_t*>(calculationData.get()) + sizeof(GNA_CALC_IN);
     uint8_t *calculationEnd = requestData + calculationSize;

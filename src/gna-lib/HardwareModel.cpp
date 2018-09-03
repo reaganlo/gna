@@ -79,12 +79,20 @@ status_t HardwareModel::Score(
     UNREFERENCED_PARAMETER(buffers);
 
     auto configId = requestConfiguration.ConfigId;
+    HardwareRequest *hwRequest = nullptr;
 
-    auto inserted = hardwareRequests.emplace(
-        configId,
-        std::make_unique<HardwareRequest>(memoryId, *this, requestConfiguration));
+    if (hardwareRequests.find(configId) == hardwareRequests.end())
+    {
+        auto inserted = hardwareRequests.emplace(
+            configId,
+            std::make_unique<HardwareRequest>(memoryId, *this, requestConfiguration));
+        hwRequest = inserted.first->second.get();
+    }
+    else
+    {
+        hwRequest = hardwareRequests.at(configId).get();
+    }
 
-    auto hwRequest = inserted.first->second.get();
     hwRequest->Update(layerIndex, layerCount, operationMode);
 
     auto result = ioctlSender.Submit(hwRequest, profiler);
