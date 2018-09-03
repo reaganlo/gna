@@ -48,15 +48,20 @@ CompiledModel::CompiledModel(gna_model_id modelId, const gna_model *rawModel, Me
     swFastAccel{ detector.GetFastestAcceleration() },
     swSatAccel{ static_cast<acceleration>(detector.GetFastestAcceleration() & GNA_HW) }
 {
-    if (detector.IsHardwarePresent())
+    createSubmodels(detector);
+    auto isHardwareCompliant = !(1 == submodels.size() && SubmodelType::Software == submodels.at(0)->Type);
+    if(!isHardwareCompliant)
+    {
+        Log->Message("WARNING: None of model layers is compliant with selected hardware GNA device, "
+            "only software processing is available for this model.\n");
+    }
+    if (detector.IsHardwarePresent() && isHardwareCompliant)
     {
         auto memoryId = memoryIn.GetId();
         hardwareModel = make_unique<HardwareModel>(Id, softwareModel.Layers, gmmCount, memoryId,
             memoryIn, memoryIn.GetDescriptorsBase(modelId), sender, detector);
         hardwareModel->Build();
     }
-
-    createSubmodels(detector);
 }
 
 const size_t CompiledModel::MaximumInternalModelSize = CalculateInternalModelSize(XNN_LAYERS_MAX_COUNT, GMM_LAYERS_MAX_COUNT);
@@ -225,7 +230,7 @@ void CompiledModel::createSubmodels(const AccelerationDetector& dispatcher)
         {
             // exceeded supported number of layers
             if (Hardware == smType && !dispatcher.HasFeature(Layer8K)
-                && XNN_LAYERS_MAX_COUNT_OLD == submodels.at(submodelCount)->GetLayerCount())
+                && XNN_LAYERS_MAX_COUNT_OLD <= submodels.at(submodelCount)->GetLayerCount())
             {
                 submodels.emplace_back(make_unique<SubModel>(smType, layerIx));
                 submodelCount++;
