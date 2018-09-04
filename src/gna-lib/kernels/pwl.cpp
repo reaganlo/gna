@@ -233,7 +233,7 @@ void pwlKernelImplAllBinary(PwlCachedConfig const * const pwl, PwlOutputConfig c
 #define pwlKernelImplAllLinear KERNEL(pwlKernelImplAllLinear)
 void pwlKernelImplAllLinear(PwlCachedConfig const * const pwl, PwlOutputConfig const * const outputConfig)
 {
-    int32_t const * input = pwl->input;
+    int32_t const * input = outputConfig->input;
     int32_t const * const inputEnd = input + outputConfig->elementCount;
     int16_t * output = outputConfig->output;
     int64_t sum;
@@ -560,7 +560,6 @@ PwlCached::PwlCached(int32_t const * const inputIn, uint32_t elementsCount, nn_p
     pwl_s_t usegTmp;
     ActivateAll = NULL;
     ActivateSingle = NULL;
-    pwl.input = inputIn;
     pwl.segmentCount = segmentCountIn;
 
 

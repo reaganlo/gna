@@ -77,7 +77,6 @@ namespace GNA
     // PWL cached config (constant for given layer)
     struct PwlCachedConfig
     {
-        int32_t const * input;
         uint32_t segmentCount;
         void * data;
 
