@@ -117,6 +117,10 @@ public:
     std::vector<GmmAlPatch> GmmActiveLists;
     std::vector<XnnAlPatch> XnnActiveLists;
 
+    /* Driver specific request data*/
+    std::unique_ptr<uint8_t[]> CalculationData = nullptr;
+    size_t CalculationSize;
+
     /* Hardware request ready for driver submition indicator */
     bool SubmitReady = false;
 
@@ -128,7 +132,6 @@ private:
     std::map<uint32_t, bool> activeLists;
 
     void updateActiveLists(uint32_t layerIndex, uint32_t layerCount);
-
 };
 
 };

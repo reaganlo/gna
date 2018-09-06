@@ -128,6 +128,8 @@ RequestResult LinuxIoctlSender::Submit(HardwareRequest * const hardwareRequest, 
         createRequestDescriptor(hardwareRequest);
     }
 
+    auto scoreConfig = reinterpret_cast<struct gna_score_cfg *>(hardwareRequest->CalculationData.get());
+
     scoreConfig->flags.active_list_on = hardwareRequest->ActiveListOn;
     scoreConfig->flags.gna_mode = hardwareRequest->Mode == xNN ? 1 : 0;
     scoreConfig->flags.layer_count = hardwareRequest->LayerCount;
@@ -145,7 +147,7 @@ RequestResult LinuxIoctlSender::Submit(HardwareRequest * const hardwareRequest, 
         throw GnaException { XNN_ERR_LYR_CFG };
     }
 
-    if(ioctl(gnaFileDescriptor, GNA_SCORE, scoreConfig.get()))
+    if(ioctl(gnaFileDescriptor, GNA_SCORE, scoreConfig))
     {
         throw GnaException { GNA_IOCTLSENDERR };
     }
@@ -185,7 +187,8 @@ RequestResult LinuxIoctlSender::Submit(HardwareRequest * const hardwareRequest, 
 
 void LinuxIoctlSender::createRequestDescriptor(HardwareRequest *hardwareRequest)
 {
-    scoreConfigSize = sizeof(*scoreConfig);
+    auto& scoreConfigSize = hardwareRequest->CalculationSize;
+    scoreConfigSize = sizeof(struct gna_score_cfg);
     auto ioBuffersCount = hardwareRequest->IoBuffers.size();
     auto ioBuffersSize = ioBuffersCount * sizeof(hardwareRequest->IoBuffers[0]);
     auto nnopTypesCount = hardwareRequest->NnopTypes.size();
@@ -197,12 +200,12 @@ void LinuxIoctlSender::createRequestDescriptor(HardwareRequest *hardwareRequest)
 
     scoreConfigSize += ioBuffersSize +  nnopTypesSize +  xnnActiveListsSize +  gmmActiveListsSize;
     scoreConfigSize = ALIGN(scoreConfigSize, sizeof(uint64_t));
-    scoreConfig.reset(reinterpret_cast<gna_score_cfg*>(new uint8_t[scoreConfigSize]));
-    memset(scoreConfig.get(), 0, scoreConfigSize);
+    hardwareRequest->CalculationData.reset(new uint8_t[scoreConfigSize]);
 
+    auto scoreConfig = reinterpret_cast<struct gna_score_cfg *>(hardwareRequest->CalculationData.get());
+    memset(scoreConfig, 0, scoreConfigSize);
     scoreConfig->memory_id = hardwareRequest->MemoryId;
     scoreConfig->hw_perf_encoding = hardwareRequest->HwPerfEncoding;
-
     scoreConfig->req_cfg_desc.model_id = hardwareRequest->ModelId;
     scoreConfig->req_cfg_desc.request_cfg_id = hardwareRequest->RequestConfigId;
     scoreConfig->req_cfg_desc.buffer_count = ioBuffersCount;
@@ -210,7 +213,7 @@ void LinuxIoctlSender::createRequestDescriptor(HardwareRequest *hardwareRequest)
     scoreConfig->req_cfg_desc.gmm_al_count = gmmActiveListsCount;
     scoreConfig->req_cfg_desc.nnop_type_count = nnopTypesCount;
 
-    uint8_t *requestData = reinterpret_cast<uint8_t*>(scoreConfig.get()) + sizeof(gna_score_cfg);
+    uint8_t *requestData = reinterpret_cast<uint8_t*>(scoreConfig) + sizeof(gna_score_cfg);
     uint8_t *calculationEnd = requestData + scoreConfigSize;
     memcpy_s(requestData, calculationEnd - requestData, hardwareRequest->IoBuffers.data(), ioBuffersSize);
     requestData += ioBuffersSize;

@@ -176,6 +176,8 @@ RequestResult WindowsIoctlSender::Submit(HardwareRequest *hardwareRequest, Reque
         createRequestDescriptor(hardwareRequest);
     }
 
+    auto calculationData = reinterpret_cast<PGNA_CALC_IN>(hardwareRequest->CalculationData.get());
+
     calculationData->ctrlFlags.activeListOn = hardwareRequest->ActiveListOn;
     calculationData->ctrlFlags.gnaMode = hardwareRequest->Mode;
     calculationData->ctrlFlags.layerCount = hardwareRequest->LayerCount;
@@ -194,7 +196,7 @@ RequestResult WindowsIoctlSender::Submit(HardwareRequest *hardwareRequest, Reque
     }
 
     profilerTscStart(&profiler->ioctlSubmit);
-    auto ioResult = WriteFile(deviceHandle, calculationData.get(), calculationSize, nullptr, &ioHandle);
+    auto ioResult = WriteFile(deviceHandle, calculationData, hardwareRequest->CalculationSize, nullptr, &ioHandle);
     checkStatus(ioResult);
     profilerTscStop(&profiler->ioctlSubmit);
 
@@ -239,7 +241,8 @@ void WindowsIoctlSender::getDeviceCapabilities()
 
 void WindowsIoctlSender::createRequestDescriptor(HardwareRequest *hardwareRequest)
 {
-    calculationSize = sizeof(*calculationData);
+    auto& calculationSize = hardwareRequest->CalculationSize;
+    calculationSize = sizeof(GNA_CALC_IN);
     auto ioBuffersCount = hardwareRequest->IoBuffers.size();
     auto ioBuffersSize = ioBuffersCount * sizeof(hardwareRequest->IoBuffers[0]);
     auto nnopTypesCount = hardwareRequest->NnopTypes.size();
@@ -251,22 +254,20 @@ void WindowsIoctlSender::createRequestDescriptor(HardwareRequest *hardwareReques
 
     calculationSize += ioBuffersSize +  nnopTypesSize +  xnnActiveListsSize +  gmmActiveListsSize;
     calculationSize = ALIGN(calculationSize, sizeof(uint64_t));
-    calculationData.reset(reinterpret_cast<PGNA_CALC_IN>(new uint8_t[calculationSize]));
-    memset(calculationData.get(), 0, calculationSize);
+    hardwareRequest->CalculationData.reset(new uint8_t[calculationSize]);
 
+    auto calculationData = reinterpret_cast<PGNA_CALC_IN>(hardwareRequest->CalculationData.get());
+    memset(calculationData, 0, calculationSize);
     calculationData->memoryId = hardwareRequest->MemoryId;
     calculationData->modelId = hardwareRequest->ModelId;
     calculationData->hwPerfEncoding = hardwareRequest->HwPerfEncoding;
-
     calculationData->reqCfgDescr.requestConfigId = hardwareRequest->RequestConfigId;
     calculationData->reqCfgDescr.buffersCount = ioBuffersCount;
     calculationData->reqCfgDescr.xnnActiveListsCount = xnnActiveListsCount;
     calculationData->reqCfgDescr.gmmActiveListsCount = gmmActiveListsCount;
     calculationData->reqCfgDescr.nnopTypesCount = nnopTypesCount;
 
-
-
-    uint8_t *requestData = reinterpret_cast<uint8_t*>(calculationData.get()) + sizeof(GNA_CALC_IN);
+    uint8_t *requestData = reinterpret_cast<uint8_t*>(calculationData) + sizeof(GNA_CALC_IN);
     uint8_t *calculationEnd = requestData + calculationSize;
     memcpy_s(requestData, calculationEnd - requestData, hardwareRequest->IoBuffers.data(), ioBuffersSize);
     requestData += ioBuffersSize;

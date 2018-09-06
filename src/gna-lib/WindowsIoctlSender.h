@@ -120,8 +120,6 @@ private:
     UINT32 recoveryTimeout = DRV_RECOVERY_TIMEOUT;
 
     GnaCapabilities deviceCapabilities;
-    std::unique_ptr<GNA_CALC_IN> calculationData = nullptr;
-    size_t calculationSize;
 };
 
 }
