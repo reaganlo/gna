@@ -43,20 +43,21 @@ namespace GNA
 class ThreadPool {
 public:
     ThreadPool(uint8_t nThreads);
-    ~ThreadPool();
+    ~ThreadPool() = default;
     ThreadPool(const ThreadPool &) = delete;
     ThreadPool& operator=(const ThreadPool&) = delete;
 
     void CancelTasks(const gna_model_id modelId);
     void Enqueue(Request *request);
+    void Stop();
 
 private:
-    std::vector<std::thread> workers;
-    // calculation function queue
+    std::vector<KernelBuffers> buffers; // NOTE: order is important, buffers have to be destroyed last
+    std::mutex tpMutex;
     std::deque<Request*> tasks;
-    std::mutex tp_mutex;
+    bool stopped = false;
     std::condition_variable condition;
-    std::atomic_bool stopped;
+    std::vector<std::thread> workers;
 };
 
 }

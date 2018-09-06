@@ -46,7 +46,7 @@ Request::Request(RequestConfiguration& config, std::unique_ptr<RequestProfiler> 
     {
         memset(PerfResults, 0, sizeof(gna_perf_t));
     }
-    auto callback = [&, accel](KernelBuffers *buffers, RequestProfiler *profilerPtr)
+    auto callback = [&](KernelBuffers *buffers, RequestProfiler *profilerPtr)
     {
         return Configuration.Model.Score(Configuration, Accel, profilerPtr, buffers);
     };

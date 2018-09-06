@@ -182,6 +182,11 @@ status_t Device::WaitForRequest(gna_request_id requestId, gna_timeout millisecon
     return requestHandler.WaitFor(requestId, milliseconds);
 }
 
+void Device::Stop()
+{
+    requestHandler.StopRequests();
+}
+
 std::unique_ptr<Memory> Device::createMemoryObject(const uint32_t requestedSize,
     const uint16_t layerCount, const uint16_t gmmCount)
 {

@@ -259,6 +259,7 @@ GNAAPI intel_gna_status_t GnaDeviceClose(
     try
     {
         GnaDevice->ValidateSession(deviceId);
+        GnaDevice->Stop();
         GnaDevice.reset();
         return GNA_SUCCESS;
     }

@@ -34,7 +34,7 @@
  * and PWL activation function auxiliary buffers used for performance improvements
  * One structure per thread in thread pool will be created and managed by kernel dispatcher
  */
-typedef struct
+struct KernelBuffers
 {
     int16_t *d0;
     int16_t *d1;
@@ -45,7 +45,9 @@ typedef struct
     int16_t *d6;
     int16_t *d7;
     int64_t *pool;
-} KernelBuffers;
+    KernelBuffers();
+    ~KernelBuffers();
+};
 
 struct PwlOutputConfig
 {

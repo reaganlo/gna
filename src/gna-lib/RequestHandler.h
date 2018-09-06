@@ -50,6 +50,8 @@ public:
 
     void CancelRequests(const gna_model_id modelId);
 
+    void StopRequests();
+
 private:
 
     void initRequestMap();

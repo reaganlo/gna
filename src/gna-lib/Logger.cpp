@@ -244,7 +244,7 @@ template<typename ... X> void DebugLogger::print(FILE * const streamIn, const st
 {
     if (nullptr != status)
     {
-        fprintf(streamIn, "Status: %s [%d]%s", StatusToString(*status), *status,
+        fprintf(streamIn, "Status: %s [%d]%s\n", StatusToString(*status), *status,
             getStatusDescription(*status));
     }
     if (nullptr != format)

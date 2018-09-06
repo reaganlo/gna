@@ -119,6 +119,11 @@ void RequestHandler::CancelRequests(const gna_model_id modelId)
     threadPool.CancelTasks(modelId);
 }
 
+void RequestHandler::StopRequests()
+{
+    threadPool.Stop();
+}
+
 status_t RequestHandler::removeRequest(gna_request_id requestId)
 {
     std::lock_guard<std::mutex> lockGuard(lock);

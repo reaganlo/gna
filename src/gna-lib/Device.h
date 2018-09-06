@@ -64,6 +64,8 @@ public:
 
     status_t WaitForRequest(gna_request_id requestId, gna_timeout milliseconds);
 
+    void Stop();
+
     void* Dump(gna_model_id modelId, gna_device_kind deviceKind, intel_gna_model_header* modelHeader, intel_gna_status_t* status, intel_gna_alloc_cb customAlloc);
 
 protected:
