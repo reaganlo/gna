@@ -95,6 +95,18 @@ ThreadPool::ThreadPool(uint8_t nThreads) :
     }
 }
 
+ThreadPool::~ThreadPool()
+{
+#if defined(_WIN32)
+    for (auto& w : workers)
+    {
+	w.detach();
+    }
+#else
+    Stop();
+#endif
+}
+
 void ThreadPool::Stop()
 {
     {
@@ -107,6 +119,8 @@ void ThreadPool::Stop()
     {
         worker.join();
     }
+
+    workers.clear();
 }
 
 void ThreadPool::Enqueue(Request *request)

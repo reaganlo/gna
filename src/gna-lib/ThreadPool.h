@@ -43,7 +43,7 @@ namespace GNA
 class ThreadPool {
 public:
     ThreadPool(uint8_t nThreads);
-    ~ThreadPool() = default;
+    ~ThreadPool();
     ThreadPool(const ThreadPool &) = delete;
     ThreadPool& operator=(const ThreadPool&) = delete;
 
