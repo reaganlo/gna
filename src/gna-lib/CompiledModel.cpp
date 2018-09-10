@@ -175,13 +175,13 @@ status_t CompiledModel::Score(
                 return status;
             break;
         case Hardware:
-            Log->Message("Processing submodel using  %s acceleration\n", AccelerationDetector::AccelerationToString(GNA_HW));
+            Log->Message("Processing submodel using %s acceleration\n", AccelerationDetector::AccelerationToString(GNA_HW));
             status = hardwareModel->Score(layerIndex, layerCount, config, profiler, buffers, xNN);
             if (status != GNA_SUCCESS && status != GNA_SSATURATE)
                 return status;
             break;
         case GMMHardware:
-            Log->Message("Processing submodel using %s (GMM) acceleration\n", AccelerationDetector::AccelerationToString(GNA_HW));
+            Log->Message("Processing submodel using %s acceleration (GMM Legacy mode)\n", AccelerationDetector::AccelerationToString(GNA_HW));
             status = hardwareModel->Score(layerIndex, 1, config, profiler, buffers, GMM);
             if (status != GNA_SUCCESS && status != GNA_SSATURATE)
                 return status;
