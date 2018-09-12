@@ -46,7 +46,7 @@ class LinuxIoctlSender : public IoctlSender
 public:
     LinuxIoctlSender() = default;
 
-    ~LinuxIoctlSender();
+    virtual ~LinuxIoctlSender() override;
 
     virtual void Open() override;
 

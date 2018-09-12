@@ -73,6 +73,8 @@ public:
 
     virtual void Open() = 0;
 
+    virtual ~IoctlSender() = default;
+
     virtual GnaCapabilities GetDeviceCapabilities() const = 0;
 
     virtual uint64_t MemoryMap(void *memory, size_t memorySize) = 0;
