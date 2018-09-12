@@ -46,6 +46,8 @@ class LinuxIoctlSender : public IoctlSender
 public:
     LinuxIoctlSender() = default;
 
+    ~LinuxIoctlSender();
+
     virtual void Open() override;
 
     virtual void IoctlSend(const GnaIoctlCommand command, void * const inbuf, const uint32_t inlen, void * const outbuf, const uint32_t outlen) override;
@@ -68,9 +70,6 @@ private:
 
     int gnaFileDescriptor = -1;
     GnaCapabilities deviceCapabilities;
-
-    std::unique_ptr<gna_score_cfg> scoreConfig = nullptr;
-    size_t scoreConfigSize = 0;
 };
 
 }

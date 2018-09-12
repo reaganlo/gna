@@ -79,6 +79,14 @@ void LinuxIoctlSender::Open()
     deviceCapabilities.recoveryTimeout = gnaCaps.recovery_timeout;
 }
 
+LinuxIoctlSender::~LinuxIoctlSender()
+{
+    if (gnaFileDescriptor != -1)
+    {
+        close(gnaFileDescriptor);
+    }
+}
+
 uint64_t LinuxIoctlSender::MemoryMap(void *memory, size_t memorySize)
 {
     struct gna_usrptr usrptr;
