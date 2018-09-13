@@ -85,10 +85,10 @@ ThreadPool::ThreadPool(uint8_t nThreads) :
                 }
                 if (!tasks.empty())
                 {
-                    auto& request_task = tasks.front();
+                    auto request_task = tasks.front();
                     tasks.pop_front();
                     lock.unlock();
-                    (*request_task)(buff);
+                    request_task->operator()(buff);
                 }
             }
         });
