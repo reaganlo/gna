@@ -155,7 +155,10 @@ RequestResult LinuxIoctlSender::Submit(HardwareRequest * const hardwareRequest, 
         throw GnaException { XNN_ERR_LYR_CFG };
     }
 
-    if(ioctl(gnaFileDescriptor, GNA_SCORE, scoreConfig))
+    profilerTscStart(&profiler->ioctlSubmit);
+    ret = ioctl(gnaFileDescriptor, GNA_SCORE, scoreConfig);
+    profilerTscStop(&profiler->ioctlSubmit);
+    if (ret)
     {
         throw GnaException { GNA_IOCTLSENDERR };
     }
@@ -164,7 +167,9 @@ RequestResult LinuxIoctlSender::Submit(HardwareRequest * const hardwareRequest, 
     wait_data.request_id = scoreConfig->request_id;
     wait_data.timeout = GNA_REQUEST_TIMEOUT_MAX;
 
+    profilerTscStart(&profiler->ioctlWaitOn);
     ret = ioctl(gnaFileDescriptor, GNA_WAIT, &wait_data);
+    profilerTscStop(&profiler->ioctlWaitOn);
     if(!ret)
     {
         result.status = (wait_data.hw_status & GNA_STS_SATURATE) ? GNA_SSATURATE : GNA_SUCCESS;
