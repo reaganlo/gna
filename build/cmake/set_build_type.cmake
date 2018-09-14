@@ -30,7 +30,7 @@ if(NOT IsMultiConfig)
   endif()
 else()
   # configuration types for multi-config generators
-  set(CMAKE_CONFIGURATION_TYPES "${OS_PREFIX}-DEBUG;${OS_PREFIX}-RELEASE")
+  set(CMAKE_CONFIGURATION_TYPES "${OS_PREFIX}-DEBUG;${OS_PREFIX}-RELEASE;KLOCWORK")
 endif()
 
 if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
