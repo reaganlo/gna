@@ -31,66 +31,6 @@
 
 #include "SetupConvolutionModel.h"
 
-namespace
-{
-const int layersNum = 1;
-const int groupingNum = 1;
-const int nFilters = 4;
-const int nFilterCoefficients = 48;
-const int inVecSz = 96;
-const int outVecSz = 8;
-
-const int16_t filters[nFilters * nFilterCoefficients] =
-{
-    -6, -2, -1, -1, -2,  9,  6,  5,  2,  4, -1,  5, -2, -4,  0,  9,
-    -8,  8, -4,  6,  5,  3, -7, -9,  7,  0, -4, -1,  1,  7,  6, -6,
-    2, -8,  6,  5, -1, -2,  7,  5, -1,  4,  8,  7, -9, -1,  7,  1,
-
-    0, -2,  1,  0,  6, -6,  7,  4, -6,  0,  3, -2,  1,  8, -6, -2,
-    -6, -3,  4, -2, -8, -6,  6,  5,  6, -9, -5, -2, -5, -8, -6, -2,
-    -7,  0,  6, -3, -1, -6,  4,  1, -4, -5, -3,  7,  9, -9,  9,  9,
-
-    0, -2,  6, -3,  5, -2, -1, -3, -5,  7,  6,  6, -8,  0, -4,  9,
-    2,  7, -8, -7,  8, -6, -6,  1,  7, -4, -4,  9, -6, -6,  5, -7,
-    -6, -2, -1, -1, -2,  9,  6,  5,  2,  4, -1,  5, -2, -4,  0,  9,
-
-    -8,  8, -4,  6,  5,  3, -7, -9,  7,  0, -4, -1,  1,  7,  6, -6,
-    2, -8,  6,  5, -1, -2,  7,  5, -1,  4,  8,  7, -9, -1,  7,  1,
-    0, -2,  1,  0,  6, -6,  7,  4, -6,  0,  3, -2,  1,  8, -6, -2,
-};
-
-const int16_t inputs[inVecSz * groupingNum] = {
-    -5,  9, -7,  4, 5, -4, -7,  4, 0,  7,  1, -7, 1,  6,  7,  9,
-    2, -4,  9,  8, -5, -1,  2,  9, -8, -8,  8,  1, -7,  2, -1, -1,
-    -9, -5, -8,  5, 0, -1,  3,  9, 0,  8,  1, -2, -9,  8,  0, -7,
-
-    -9, -8, -1, -4, -3, -7, -2,  3, -8,  0,  1,  3, -4, -6, -8, -2,
-    -5,  9, -7,  4, 5, -4, -7,  4, 0,  7,  1, -7, 1,  6,  7,  9,
-    2, -4,  9,  8, -5, -1,  2,  9, -8, -8,  8,  1, -7,  2, -1, -1
-};
-
-const intel_bias_t regularBiases[outVecSz*groupingNum] = {
-    5, 4, -2, 5, -7, -5, 4, -1
-};
-
-const  intel_compound_bias_t compoundBiases[outVecSz*groupingNum] =
-{
-    { 5,1,{0} },
-    {4,1,{0}},
-    {-2,1,{0}},
-    {5,1,{0}},
-    {-7,1,{0}},
-    {-5,1,{0}},
-    {4,1,{0}},
-    {-1,1,{0}},
-};
-
-const int32_t ref_output[outVecSz * groupingNum] =
-{      
-    -83, -108, -127, 666, 558, -152, 131, -171
-};
-}
-
 SetupConvolutionModel::SetupConvolutionModel(DeviceController & deviceCtrl, bool pwlEn)
     : deviceController{deviceCtrl},
       pwlEnabled{pwlEn}
@@ -116,33 +56,50 @@ SetupConvolutionModel::~SetupConvolutionModel()
     free(nnet.pLayers);
 }
 
-void SetupConvolutionModel::checkReferenceOutput(int modelIndex, int configIndex) const
+template <class intel_reference_output_type>
+intel_reference_output_type* SetupConvolutionModel::refOutputAssign(int configIndex) const
 {
-    for (int i = 0; i < sizeof(ref_output) / sizeof(int32_t); ++i)
+    if (configIndex == configPwlEnabled)
     {
-        int32_t outElemVal = static_cast<const int32_t*>(outputBuffer)[i];
-        if (ref_output[i] != outElemVal)
-        {
-            // TODO: how it should notified? return or throw
-            throw std::runtime_error("Wrong output");
-        }
+        return (intel_reference_output_type*)ref_outputPwl;
+    }
+    return (intel_reference_output_type*)ref_output;
+}
+
+template <class intel_reference_output_type>
+void SetupConvolutionModel::compareReferenceValues(unsigned i, int configIndex) const
+{
+    intel_reference_output_type outElemVal = static_cast<const intel_reference_output_type*>(outputBuffer)[i];
+    const intel_reference_output_type* refOutput = refOutputAssign<intel_reference_output_type>(configIndex);
+    if (refOutput[i] != outElemVal)
+    {
+        // TODO: how it should notified? return or throw
+        throw std::runtime_error("Wrong output");
     }
 }
 
-void SetupConvolutionModel::samplePwl(intel_pwl_segment_t *segments, uint32_t nSegments)
+void SetupConvolutionModel::checkReferenceOutput(int modelIndex, int configIndex) const
 {
-    auto xBase = INT32_MIN;
-    auto xBaseInc = UINT32_MAX / nSegments;
-    auto yBase = INT32_MAX;
-    auto yBaseInc = UINT16_MAX / nSegments;
-    for (auto i = uint32_t{0}; i < nSegments; i++, xBase += xBaseInc, yBase += yBaseInc)
+    unsigned int ref_output_size = refSize[configIndex];
+    for (unsigned int i = 0; i < ref_output_size; ++i)
+    {
+        (configIndex == configPwlEnabled) ? compareReferenceValues<int16_t>(i, configIndex) : compareReferenceValues<int32_t>(i, configIndex);
+    }
+}
+
+void SetupConvolutionModel::samplePwl(intel_pwl_segment_t *segments, uint32_t numberOfSegments)
+{
+    int64_t xBase = INT32_MIN;
+    auto xBaseInc = UINT32_MAX / numberOfSegments;
+    uint16_t yBase = uint16_t(INT32_MAX);
+    auto yBaseInc = UINT16_MAX / numberOfSegments;
+    for (auto i = uint32_t{ 0 }; i < numberOfSegments; i++, xBase += xBaseInc, yBase += yBaseInc)
     {
         segments[i].xBase = xBase;
         segments[i].yBase = yBase;
         segments[i].slope = 1;
     }
 }
-
 void SetupConvolutionModel::sampleConvolutionLayer()
 {
     int buf_size_filters = ALIGN64(sizeof(filters));

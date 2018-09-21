@@ -23,23 +23,14 @@
  in any way.
 */
 
+#include <array>
+
 #include "IModelSetup.h"
 #include "DeviceController.h"
 
 class SetupGmmModel : public IModelSetup
 {
 public:
-    gna_model_id ModelId(int /*modelIndex*/) const override
-    {
-        return modelId;
-    }
-
-    gna_request_cfg_id ConfigId(int /*modelIndex*/, int /*configIndex*/) const override
-    {
-        // this one model setup has only one Request Configuration
-        return configId;
-    }
-
     SetupGmmModel(DeviceController & deviceCtrl, bool activeListEn);
 
     ~SetupGmmModel();
@@ -51,17 +42,69 @@ private:
 
     DeviceController & deviceController;
 
-    gna_model_id modelId;
-    gna_request_cfg_id configId;
     bool activeListEnabled;
     uint32_t indicesCount;
     uint32_t* indices;
 
-    intel_nnet_type_t nnet;
     intel_affine_func_t affine_func;
     intel_pwl_func_t pwl;
     intel_affine_layer_t affine_layer;
 
     void * inputBuffer = nullptr;
     void * outputBuffer = nullptr;
+
+    static const int groupingNum = 1;
+    static const int inVecSz = 32;
+    static const int inVecSzRow = 2;
+    static const int outVecSzAl = 4;
+
+
+    int16_t variance[outVecSzAl * inVecSz] =
+    {                                          // sample weight matrix (8 rows, 16 cols)
+        1, 1, 1, 1,1, 1, 1, 1,1, 1, 1, 1,1, 1, 1, 1,1, 1, 1, 1,1, 1, 1, 1,1, 1, 1, 1,1, 1, 1, 1,
+        1, 1, 1, 1,1, 1, 1, 1,1, 1, 1, 1,1, 1, 1, 1,1, 1, 1, 1,1, 1, 1, 1,1, 1, 1, 1,1, 1, 1, 1,
+        1, 1, 1, 1,1, 1, 1, 1,1, 1, 1, 1,1, 1, 1, 1,1, 1, 1, 1,1, 1, 1, 1,1, 1, 1, 1,1, 1, 1, 1,
+        1, 1, 1, 1,1, 1, 1, 1,1, 1, 1, 1,1, 1, 1, 1,1, 1, 1, 1,1, 1, 1, 1,1, 1, 1, 1,1, 1, 1, 1,
+    };
+
+    uint8_t feature_vector[inVecSzRow * inVecSz] =
+    {
+        1, 1, 1, 1,1, 1, 1, 1,1, 1, 1, 1,1, 1, 1, 1,1, 1, 1, 1,1, 1, 1, 1,1, 1, 1, 1,1, 1, 1, 1,
+        1, 1, 1, 1,1, 1, 1, 1,1, 1, 1, 1,1, 1, 1, 1,1, 1, 1, 1,1, 1, 1, 1,1, 1, 1, 1,1, 1, 1, 1,
+
+    };
+
+    int32_t Gconst[inVecSz] =
+    {      // sample bias vector, will get added to each of the four output vectors
+        1, 1, 1, 1,1, 1, 1, 1,1, 1, 1, 1,1, 1, 1, 1,1, 1, 1, 1,1, 1, 1, 1,1, 1, 1, 1,1, 1, 1, 1,
+    };
+
+    const uint32_t alIndices[outVecSzAl]
+    {
+        0, 2, 4, 7
+    };
+
+    const int32_t ref_output_[outVecSz * groupingNum] =
+    {
+        1, 1, 1, 1, 1, 1, 1, 1,
+    };
+
+    const int32_t ref_output_Al[outVecSzAl * groupingNum] =
+    {
+        1, 1, 1, 1
+    };
+
+    static const uint8_t numberOfGmmModels = 2;
+
+    std::array <unsigned int, numberOfGmmModels> refSize =
+    {
+        sizeof(ref_output_) / sizeof(int32_t),
+        sizeof(ref_output_Al) / sizeof(int32_t)
+    };
+
+    const int32_t* refOutputAssign[numberOfGmmModels] =
+    {
+        ref_output_,
+        ref_output_Al,
+    };
 };

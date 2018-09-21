@@ -23,40 +23,82 @@
  in any way.
 */
 
+#include <array>
 #include "IModelSetup.h"
 #include "DeviceController.h"
 
 class SetupCopyModel : public IModelSetup
 {
 public:
-    gna_model_id ModelId(int /*modelIndex*/) const override
-    {
-        return modelId;
-    }
-
-    gna_request_cfg_id ConfigId(int /*modelIndex*/, int /*configIndex*/) const override
-    {
-        // this one model setup has only one Request Configuration
-        return configId;
-    }
-
-    SetupCopyModel(DeviceController & deviceCtrl);
+    SetupCopyModel(DeviceController & deviceCtrl, uint32_t nCopyColumns, uint32_t nCopyRows);
 
     ~SetupCopyModel();
 
     void checkReferenceOutput(int modelIndex, int configIndex) const override;
 
 private:
-    void sampleCopyLayer();
+    void sampleCopyLayer(uint32_t nCopyColumns, uint32_t nCopyRows);
 
     DeviceController & deviceController;
 
-    gna_model_id modelId;
-    gna_request_cfg_id configId;
-
-    intel_nnet_type_t nnet;
     intel_copy_layer_t copy_layer;
 
     void * inputBuffer = nullptr;
     void * outputBuffer = nullptr;
+
+    static const int outVecSz = 16;
+
+    const int16_t inputs[groupingNum * inVecSz] =
+    {
+        -5,  9, -7,  4,  5, -4, -7,  4,  0,  7,  1, -7,  1,  6,  7,  9,
+         2, -4,  9,  8, -5, -1,  2,  9, -8, -8,  8,  1, -7,  2, -1, -1,
+        -9, -5, -8,  5,  0, -1,  3,  9,  0,  8,  1, -2, -9,  8,  0, -7,
+        -9, -8, -1, -4, -3, -7, -2,  3, -8,  0,  1,  3, -4, -6, -8, -2
+    };
+
+    const int16_t ref_output_model_1[groupingNum * outVecSz] =
+    {
+        -5,  9, -7,  4,  5, -4, -7,  4,  0,  7,  1, -7,  1,  6,  7,  9,
+        2, -4,  9,  8, -5, -1,  2,  9, -8, -8,  8,  1, -7,  2, -1, -1,
+        -9, -5, -8,  5,  0, -1,  3,  9,  0,  8,  1, -2, -9,  8,  0, -7,
+        -9, -8, -1, -4, -3, -7, -2,  3, -8,  0,  1,  3, -4, -6, -8, -2
+    };
+
+    const int16_t ref_output_model_2[groupingNum * outVecSz / 2] =
+    {
+        -5,  9, -7,  4,  5, -4, -7,  4,  0,  7,  1, -7,  1,  6,  7,  9,
+        2, -4,  9,  8, -5, -1,  2,  9, -8, -8,  8,  1, -7,  2, -1, -1,
+    };
+
+    const int16_t ref_output_model_3[groupingNum * outVecSz] =
+    {
+        -5,  9, -7,  4,  5, -4, -7,  4, 0, 0, 0, 0, 0, 0, 0, 0,
+        2, -4,  9,  8, -5, -1,  2,  9, 0, 0, 0, 0, 0, 0, 0, 0,
+        -9, -5, -8,  5,  0, -1,  3,  9, 0, 0, 0, 0, 0, 0, 0, 0,
+        -9, -8, -1, -4, -3, -7, -2,  3, 0, 0, 0, 0, 0, 0, 0, 0,
+    };
+
+    const int16_t ref_output_model_4[groupingNum * outVecSz / 2] =
+    {
+        -5,  9, -7,  4,  5, -4, -7,  4, 0, 0, 0, 0, 0, 0, 0, 0,
+        2, -4,  9,  8, -5, -1,  2,  9, 0, 0, 0, 0, 0, 0, 0, 0,
+    };
+
+    static const uint8_t numberOfCopyModels = 4;
+
+    const std::array<unsigned int, numberOfCopyModels> refSize =
+    {
+        sizeof(ref_output_model_1) / sizeof(int16_t),
+        sizeof(ref_output_model_2) / sizeof(int16_t),
+        sizeof(ref_output_model_3) / sizeof(int16_t),
+        sizeof(ref_output_model_4) / sizeof(int16_t),
+    };
+
+    const int16_t* refOutputAssign[numberOfCopyModels] =
+    {
+        ref_output_model_1,
+        ref_output_model_2,
+        ref_output_model_3,
+        ref_output_model_4,
+    };
 };

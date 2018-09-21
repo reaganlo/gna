@@ -45,86 +45,172 @@ public:
         //script.actions.emplace_back(Action::CheckReferenceOutput, ModelSetupMix, 0, 0);
         //script.actions.emplace_back(Action::CloseModel, ModelSetupMix, 0, 0);
 
-        //script.actions.emplace_back(Action::LoadModel, ModelSetupMultibias_1_2B, 0, 0);
-        //script.actions.emplace_back(Action::Score, ModelSetupMultibias_1_2B, 0, 0);
-        //script.actions.emplace_back(Action::CheckReferenceOutput, ModelSetupMultibias_1_2B, 0, 0);
-        //script.actions.emplace_back(Action::CloseModel, ModelSetupMultibias_1_2B, 0, 0);
+        script.actions.emplace_back(Action::LoadModel, ModelSetupMultibias_1_2B, 0, 0);
+        script.actions.emplace_back(Action::Score, ModelSetupMultibias_1_2B, 0, 0);
+        script.actions.emplace_back(Action::CheckReferenceOutput, ModelSetupMultibias_1_2B, 0, 0);
+        script.actions.emplace_back(Action::CloseModel, ModelSetupMultibias_1_2B, 0, 0);
 
-        //script.actions.emplace_back(Action::LoadModel, ModelSetupMultibias_1_1B, 0, 0);
-        //script.actions.emplace_back(Action::Score, ModelSetupMultibias_1_1B, 0, 0);
-        //script.actions.emplace_back(Action::CheckReferenceOutput, ModelSetupMultibias_1_1B, 0, 0);
-        //script.actions.emplace_back(Action::CloseModel, ModelSetupMultibias_1_1B, 0, 0);
+        script.actions.emplace_back(Action::LoadModel, ModelSetupMultibias_1_1B, 0, 0);
+        script.actions.emplace_back(Action::Score, ModelSetupMultibias_1_1B, 0, 0);
+        script.actions.emplace_back(Action::CheckReferenceOutput, ModelSetupMultibias_1_1B, 0, 1);
+        script.actions.emplace_back(Action::CloseModel, ModelSetupMultibias_1_1B, 0, 0);
 
-        //script.actions.emplace_back(Action::LoadModel, ModelSetupDnnAl_1_1B, 0, 0);
-        //script.actions.emplace_back(Action::Score, ModelSetupDnnAl_1_1B, 0, 0);
-        //script.actions.emplace_back(Action::CheckReferenceOutput, ModelSetupDnnAl_1_1B, 0, 0);
-        //script.actions.emplace_back(Action::CloseModel, ModelSetupDnnAl_1_1B, 0, 0);
+        script.actions.emplace_back(Action::LoadModel, ModelSetupMultibiasPwl_1_2B, 0, 0);
+        script.actions.emplace_back(Action::Score, ModelSetupMultibiasPwl_1_2B, 0, 0);
+        script.actions.emplace_back(Action::CheckReferenceOutput, ModelSetupMultibiasPwl_1_2B, 0, 2);
+        script.actions.emplace_back(Action::CloseModel, ModelSetupMultibiasPwl_1_2B, 0, 0);
+
+        script.actions.emplace_back(Action::LoadModel, ModelSetupMultibiasPwl_1_2B, 0, 0);
+        script.actions.emplace_back(Action::Score, ModelSetupMultibiasPwl_1_2B, 0, 0);
+        script.actions.emplace_back(Action::CheckReferenceOutput, ModelSetupMultibiasPwl_1_2B, 0, 3);
+        script.actions.emplace_back(Action::CloseModel, ModelSetupMultibiasPwl_1_2B, 0, 0);
+
+        script.actions.emplace_back(Action::LoadModel, ModelSetupDnn_1_1B, 0, 0);
+        script.actions.emplace_back(Action::Score, ModelSetupDnn_1_1B, 0, 0);
+        script.actions.emplace_back(Action::CheckReferenceOutput, ModelSetupDnn_1_1B, 0, 0);
+        script.actions.emplace_back(Action::CloseModel, ModelSetupDnn_1_1B, 0, 0);
 
         script.actions.emplace_back(Action::LoadModel, ModelSetupDnn_1_2B, 0, 0);
         script.actions.emplace_back(Action::Score, ModelSetupDnn_1_2B, 0, 0);
-        script.actions.emplace_back(Action::CheckReferenceOutput, ModelSetupDnn_1_2B, 0, 0);
+        script.actions.emplace_back(Action::CheckReferenceOutput, ModelSetupDnn_1_2B, 0, 1);
         script.actions.emplace_back(Action::CloseModel, ModelSetupDnn_1_2B, 0, 0);
 
-        //script.actions.emplace_back(Action::LoadModel, ModelSetupSplit_1_2B, 0, 0);
-        //script.actions.emplace_back(Action::Score, ModelSetupSplit_1_2B, 0, 0);
-        //script.actions.emplace_back(Action::Score, ModelSetupSplit_1_2B, 0, 1);
-        //script.actions.emplace_back(Action::Score, ModelSetupSplit_1_2B, 1, 0);
-        //script.actions.emplace_back(Action::Score, ModelSetupSplit_1_2B, 1, 1);
-        //script.actions.emplace_back(Action::CheckReferenceOutput, ModelSetupSplit_1_2B, 0, 0);
-        //script.actions.emplace_back(Action::CheckReferenceOutput, ModelSetupSplit_1_2B, 0, 1);
-        //script.actions.emplace_back(Action::CheckReferenceOutput, ModelSetupSplit_1_2B, 1, 0);
-        //script.actions.emplace_back(Action::CheckReferenceOutput, ModelSetupSplit_1_2B, 0, 1);
-        //script.actions.emplace_back(Action::CloseModel, ModelSetupSplit_1_2B, 0, 0);
+        script.actions.emplace_back(Action::LoadModel, ModelSetupDnnAl_1_1B, 0, 0);
+        script.actions.emplace_back(Action::Score, ModelSetupDnnAl_1_1B, 0, 0);
+        script.actions.emplace_back(Action::CheckReferenceOutput, ModelSetupDnnAl_1_1B, 0, 2);
+        script.actions.emplace_back(Action::CloseModel, ModelSetupDnnAl_1_1B, 0, 0);
 
-        //script.actions.emplace_back(Action::LoadModel, ModelSetupCopy_1, 0, 0);
-        //script.actions.emplace_back(Action::Score, ModelSetupCopy_1, 0, 0);
-        //script.actions.emplace_back(Action::CheckReferenceOutput, ModelSetupCopy_1, 0, 0);
-        //script.actions.emplace_back(Action::CloseModel, ModelSetupCopy_1, 0, 0);
+        script.actions.emplace_back(Action::LoadModel, ModelSetupDnnAl_1_2B, 0, 0);
+        script.actions.emplace_back(Action::Score, ModelSetupDnnAl_1_2B, 0, 0);
+        script.actions.emplace_back(Action::CheckReferenceOutput, ModelSetupDnnAl_1_2B, 0, 3);
+        script.actions.emplace_back(Action::CloseModel, ModelSetupDnnAl_1_2B, 0, 0);
 
-        //script.actions.emplace_back(Action::LoadModel, ModelSetupTranspose_1, 0, 0);
-        //script.actions.emplace_back(Action::Score, ModelSetupTranspose_1, 0, 0);
-        //script.actions.emplace_back(Action::CheckReferenceOutput, ModelSetupTranspose_1, 0, 0);
-        //script.actions.emplace_back(Action::CloseModel, ModelSetupTranspose_1, 0, 0);
+        script.actions.emplace_back(Action::LoadModel, ModelSetupDnnPwl_1_1B, 0, 0);
+        script.actions.emplace_back(Action::Score, ModelSetupDnnPwl_1_1B, 0, 0);
+        script.actions.emplace_back(Action::CheckReferenceOutput, ModelSetupDnnPwl_1_1B, 0, 4);
+        script.actions.emplace_back(Action::CloseModel, ModelSetupDnnPwl_1_1B, 0, 0);
 
-        //script.actions.emplace_back(Action::LoadModel, ModelSetupDiagonal_1_2B, 0, 0);
-        //script.actions.emplace_back(Action::Score, ModelSetupDiagonal_1_2B, 0, 0);
-        //script.actions.emplace_back(Action::CheckReferenceOutput, ModelSetupDiagonal_1_2B, 0, 0);
-        //script.actions.emplace_back(Action::CloseModel, ModelSetupDiagonal_1_2B, 0, 0);
+        script.actions.emplace_back(Action::LoadModel, ModelSetupDnnPwl_1_2B, 0, 0);
+        script.actions.emplace_back(Action::Score, ModelSetupDnnPwl_1_2B, 0, 0);
+        script.actions.emplace_back(Action::CheckReferenceOutput, ModelSetupDnnPwl_1_2B, 0, 5);
+        script.actions.emplace_back(Action::CloseModel, ModelSetupDnnPwl_1_2B, 0, 0);
 
-        //script.actions.emplace_back(Action::LoadModel, ModelSetupDiagonal_1_1B, 0, 0);
-        //script.actions.emplace_back(Action::Score, ModelSetupDiagonal_1_1B, 0, 0);
-        //script.actions.emplace_back(Action::CheckReferenceOutput, ModelSetupDiagonal_1_1B, 0, 0);
-        //script.actions.emplace_back(Action::CloseModel, ModelSetupDiagonal_1_1B, 0, 0);
+        script.actions.emplace_back(Action::LoadModel, ModelSetupDnnAlPwl_1_1B, 0, 0);
+        script.actions.emplace_back(Action::Score, ModelSetupDnnAlPwl_1_1B, 0, 0);
+        script.actions.emplace_back(Action::CheckReferenceOutput, ModelSetupDnnAlPwl_1_1B, 0, 6);
+        script.actions.emplace_back(Action::CloseModel, ModelSetupDnnAlPwl_1_1B, 0, 0);
 
-        //script.actions.emplace_back(Action::LoadModel, ModelSetupRecurrent_1_2B, 0, 0);
-        //script.actions.emplace_back(Action::Score, ModelSetupRecurrent_1_2B, 0, 0);
-        //script.actions.emplace_back(Action::CheckReferenceOutput, ModelSetupRecurrent_1_2B, 0, 0);
-        //script.actions.emplace_back(Action::CloseModel, ModelSetupRecurrent_1_2B, 0, 0);
+        script.actions.emplace_back(Action::LoadModel, ModelSetupDnnAlPwl_1_2B, 0, 0);
+        script.actions.emplace_back(Action::Score, ModelSetupDnnAlPwl_1_2B, 0, 0);
+        script.actions.emplace_back(Action::CheckReferenceOutput, ModelSetupDnnAlPwl_1_2B, 0, 7);
+        script.actions.emplace_back(Action::CloseModel, ModelSetupDnnAlPwl_1_2B, 0, 0);
 
-        //script.actions.emplace_back(Action::LoadModel, ModelSetupRecurrent_1_1B, 0, 0);
-        //script.actions.emplace_back(Action::Score, ModelSetupRecurrent_1_1B, 0, 0);
-        //script.actions.emplace_back(Action::CheckReferenceOutput, ModelSetupRecurrent_1_1B, 0, 0);
-        //script.actions.emplace_back(Action::CloseModel, ModelSetupRecurrent_1_1B, 0, 0);
+        script.actions.emplace_back(Action::LoadModel, ModelSetupSplit_1_1B, 0, 0);
+        script.actions.emplace_back(Action::Score, ModelSetupSplit_1_1B, 0, 0);
+        script.actions.emplace_back(Action::Score, ModelSetupSplit_1_1B, 0, 1);
+        script.actions.emplace_back(Action::Score, ModelSetupSplit_1_1B, 1, 0);
+        script.actions.emplace_back(Action::Score, ModelSetupSplit_1_1B, 1, 1);
+        script.actions.emplace_back(Action::CheckReferenceOutput, ModelSetupSplit_1_1B, 0, 0);
+        script.actions.emplace_back(Action::CheckReferenceOutput, ModelSetupSplit_1_1B, 0, 1);
+        script.actions.emplace_back(Action::CheckReferenceOutput, ModelSetupSplit_1_1B, 1, 0);
+        script.actions.emplace_back(Action::CheckReferenceOutput, ModelSetupSplit_1_1B, 1, 1);
+        script.actions.emplace_back(Action::CloseModel, ModelSetupSplit_1_1B, 0, 0);
 
-        //script.actions.emplace_back(Action::LoadModel, ModelSetupConvolution_1, 0, 0);
-        //script.actions.emplace_back(Action::Score, ModelSetupConvolution_1, 0, 0);
-        //script.actions.emplace_back(Action::CheckReferenceOutput, ModelSetupConvolution_1, 0, 0);
-        //script.actions.emplace_back(Action::CloseModel, ModelSetupConvolution_1, 0, 0);
+        script.actions.emplace_back(Action::LoadModel, ModelSetupSplit_1_2B, 0, 0);
+        script.actions.emplace_back(Action::Score, ModelSetupSplit_1_2B, 0, 0);
+        script.actions.emplace_back(Action::Score, ModelSetupSplit_1_2B, 0, 1);
+        script.actions.emplace_back(Action::Score, ModelSetupSplit_1_2B, 1, 0);
+        script.actions.emplace_back(Action::Score, ModelSetupSplit_1_2B, 1, 1);
+        script.actions.emplace_back(Action::CheckReferenceOutput, ModelSetupSplit_1_2B, 0, 0);
+        script.actions.emplace_back(Action::CheckReferenceOutput, ModelSetupSplit_1_2B, 0, 1);
+        script.actions.emplace_back(Action::CheckReferenceOutput, ModelSetupSplit_1_2B, 1, 0);
+        script.actions.emplace_back(Action::CheckReferenceOutput, ModelSetupSplit_1_2B, 1, 1);
+        script.actions.emplace_back(Action::CloseModel, ModelSetupSplit_1_2B, 0, 0);
 
-        //script.actions.emplace_back(Action::LoadModel, ModelSetupPooling_1, 0, 0);
-        //script.actions.emplace_back(Action::Score, ModelSetupPooling_1, 0, 0);
-        //script.actions.emplace_back(Action::CheckReferenceOutput, ModelSetupPooling_1, 0, 0);
-        //script.actions.emplace_back(Action::CloseModel, ModelSetupPooling_1, 0, 0);
+        script.actions.emplace_back(Action::LoadModel, ModelSetupCopy_1, 0, 0);
+        script.actions.emplace_back(Action::Score, ModelSetupCopy_1, 0, 0);
+        script.actions.emplace_back(Action::CheckReferenceOutput, ModelSetupCopy_1, 0, 0);
+        script.actions.emplace_back(Action::CloseModel, ModelSetupCopy_1, 0, 0);
 
-        //script.actions.emplace_back(Action::LoadModel, ModelSetupGmm_1, 0, 0);
-        //script.actions.emplace_back(Action::Score, ModelSetupGmm_1, 0, 0);
-        //script.actions.emplace_back(Action::CheckReferenceOutput, ModelSetupGmm_1, 0, 0);
-        //script.actions.emplace_back(Action::CloseModel, ModelSetupGmm_1, 0, 0);
+        script.actions.emplace_back(Action::LoadModel, ModelSetupCopy_2, 0, 0);
+        script.actions.emplace_back(Action::Score, ModelSetupCopy_2, 0, 0);
+        script.actions.emplace_back(Action::CheckReferenceOutput, ModelSetupCopy_2, 0, 1);
+        script.actions.emplace_back(Action::CloseModel, ModelSetupCopy_2, 0, 0);
 
-        //script.actions.emplace_back(Action::LoadModel, ModelSetupGmmAl_1, 0, 0);
-        //script.actions.emplace_back(Action::Score, ModelSetupGmmAl_1, 0, 0);
-        //script.actions.emplace_back(Action::CheckReferenceOutput, ModelSetupGmmAl_1, 0, 0);
-        //script.actions.emplace_back(Action::CloseModel, ModelSetupGmmAl_1, 0, 0);
+        script.actions.emplace_back(Action::LoadModel, ModelSetupCopy_3, 0, 0);
+        script.actions.emplace_back(Action::Score, ModelSetupCopy_3, 0, 0);
+        script.actions.emplace_back(Action::CheckReferenceOutput, ModelSetupCopy_3, 0, 2);
+        script.actions.emplace_back(Action::CloseModel, ModelSetupCopy_3, 0, 0);
+
+        script.actions.emplace_back(Action::LoadModel, ModelSetupCopy_4, 0, 0);
+        script.actions.emplace_back(Action::Score, ModelSetupCopy_4, 0, 0);
+        script.actions.emplace_back(Action::CheckReferenceOutput, ModelSetupCopy_4, 0, 3);
+        script.actions.emplace_back(Action::CloseModel, ModelSetupCopy_4, 0, 0);
+
+        script.actions.emplace_back(Action::LoadModel, ModelSetupTranspose_1, 0, 0);
+        script.actions.emplace_back(Action::Score, ModelSetupTranspose_1, 0, 0);
+        script.actions.emplace_back(Action::CheckReferenceOutput, ModelSetupTranspose_1, 0, 0);
+        script.actions.emplace_back(Action::CloseModel, ModelSetupTranspose_1, 0, 0);
+
+        script.actions.emplace_back(Action::LoadModel, ModelSetupTranspose_2, 0, 0);
+        script.actions.emplace_back(Action::Score, ModelSetupTranspose_2, 0, 0);
+        script.actions.emplace_back(Action::CheckReferenceOutput, ModelSetupTranspose_2, 0, 1);
+        script.actions.emplace_back(Action::CloseModel, ModelSetupTranspose_2, 0, 0);
+
+        script.actions.emplace_back(Action::LoadModel, ModelSetupDiagonal_1_1B, 0, 0);
+        script.actions.emplace_back(Action::Score, ModelSetupDiagonal_1_1B, 0, 0);
+        script.actions.emplace_back(Action::CheckReferenceOutput, ModelSetupDiagonal_1_1B, 0, 1);
+        script.actions.emplace_back(Action::CloseModel, ModelSetupDiagonal_1_1B, 0, 0);
+
+        script.actions.emplace_back(Action::LoadModel, ModelSetupDiagonal_1_2B, 0, 0);
+        script.actions.emplace_back(Action::Score, ModelSetupDiagonal_1_2B, 0, 0);
+        script.actions.emplace_back(Action::CheckReferenceOutput, ModelSetupDiagonal_1_2B, 0, 0);
+        script.actions.emplace_back(Action::CloseModel, ModelSetupDiagonal_1_2B, 0, 0);
+
+        script.actions.emplace_back(Action::LoadModel, ModelSetupDiagonalPwl_1_1B, 0, 0);
+        script.actions.emplace_back(Action::Score, ModelSetupDiagonalPwl_1_1B, 0, 0);
+        script.actions.emplace_back(Action::CheckReferenceOutput, ModelSetupDiagonalPwl_1_1B, 0, 2);
+        script.actions.emplace_back(Action::CloseModel, ModelSetupDiagonalPwl_1_1B, 0, 0);
+
+        script.actions.emplace_back(Action::LoadModel, ModelSetupDiagonalPwl_1_2B, 0, 0);
+        script.actions.emplace_back(Action::Score, ModelSetupDiagonalPwl_1_2B, 0, 0);
+        script.actions.emplace_back(Action::CheckReferenceOutput, ModelSetupDiagonalPwl_1_2B, 0, 3);
+        script.actions.emplace_back(Action::CloseModel, ModelSetupDiagonalPwl_1_2B, 0, 0);
+
+        script.actions.emplace_back(Action::LoadModel, ModelSetupRecurrent_1_2B, 0, 0);
+        script.actions.emplace_back(Action::Score, ModelSetupRecurrent_1_2B, 0, 0);
+        script.actions.emplace_back(Action::CheckReferenceOutput, ModelSetupRecurrent_1_2B, 0, 0);
+        script.actions.emplace_back(Action::CloseModel, ModelSetupRecurrent_1_2B, 0, 0);
+
+        script.actions.emplace_back(Action::LoadModel, ModelSetupRecurrent_1_1B, 0, 0);
+        script.actions.emplace_back(Action::Score, ModelSetupRecurrent_1_1B, 0, 0);
+        script.actions.emplace_back(Action::CheckReferenceOutput, ModelSetupRecurrent_1_1B, 0, 0);
+        script.actions.emplace_back(Action::CloseModel, ModelSetupRecurrent_1_1B, 0, 0);
+
+        script.actions.emplace_back(Action::LoadModel, ModelSetupConvolution_1, 0, 0);
+        script.actions.emplace_back(Action::Score, ModelSetupConvolution_1, 0, 0);
+        script.actions.emplace_back(Action::CheckReferenceOutput, ModelSetupConvolution_1, 0, 0);
+        script.actions.emplace_back(Action::CloseModel, ModelSetupConvolution_1, 0, 0);
+
+        script.actions.emplace_back(Action::LoadModel, ModelSetupConvolutionPwl_1, 0, 0);
+        script.actions.emplace_back(Action::Score, ModelSetupConvolutionPwl_1, 0, 0);
+        script.actions.emplace_back(Action::CheckReferenceOutput, ModelSetupConvolutionPwl_1, 0, 1);
+        script.actions.emplace_back(Action::CloseModel, ModelSetupConvolutionPwl_1, 0, 0);
+
+        script.actions.emplace_back(Action::LoadModel, ModelSetupPooling_1, 0, 0);
+        script.actions.emplace_back(Action::Score, ModelSetupPooling_1, 0, 0);
+        script.actions.emplace_back(Action::CheckReferenceOutput, ModelSetupPooling_1, 0, 0);
+        script.actions.emplace_back(Action::CloseModel, ModelSetupPooling_1, 0, 0);
+
+        script.actions.emplace_back(Action::LoadModel, ModelSetupGmm_1, 0, 0);
+        script.actions.emplace_back(Action::Score, ModelSetupGmm_1, 0, 0);
+        script.actions.emplace_back(Action::CheckReferenceOutput, ModelSetupGmm_1, 0, 0);
+        script.actions.emplace_back(Action::CloseModel, ModelSetupGmm_1, 0, 0);
+
+        script.actions.emplace_back(Action::LoadModel, ModelSetupGmmAl_1, 0, 0);
+        script.actions.emplace_back(Action::Score, ModelSetupGmmAl_1, 0, 0);
+        script.actions.emplace_back(Action::CheckReferenceOutput, ModelSetupGmmAl_1, 0, 1);
+        script.actions.emplace_back(Action::CloseModel, ModelSetupGmmAl_1, 0, 0);
     }
 
     void PrepareModels()
@@ -221,7 +307,6 @@ int main()
     {
         retCode = handleException();
     }
-
     return retCode;
 }
 

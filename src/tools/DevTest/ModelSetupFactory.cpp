@@ -38,6 +38,10 @@
 
 IModelSetup::UniquePtr ModelSetupFactory::CreateModel(ModelSetupType ms)
 {
+    uint32_t copyColumns16 = 16;
+    uint32_t copyColumns8 = 8;
+    uint32_t copyRows4 = 4;
+    uint32_t copyRows2 = 2;
     IModelSetup::UniquePtr ptr;
 
     switch (ms)
@@ -107,10 +111,22 @@ IModelSetup::UniquePtr ModelSetupFactory::CreateModel(ModelSetupType ms)
         ptr = std::make_unique<SetupDiagonalModel>(deviceController, true, true);
         break;
     case ModelSetupCopy_1:
-        ptr = std::make_unique<SetupCopyModel>(deviceController);
+        ptr = std::make_unique<SetupCopyModel>(deviceController, copyColumns16, copyRows4);
+        break;
+    case ModelSetupCopy_2:
+        ptr = std::make_unique<SetupCopyModel>(deviceController, copyColumns16, copyRows2);
+        break;
+    case ModelSetupCopy_3:
+        ptr = std::make_unique<SetupCopyModel>(deviceController, copyColumns8, copyRows4);
+        break;
+    case ModelSetupCopy_4:
+        ptr = std::make_unique<SetupCopyModel>(deviceController, copyColumns8, copyRows2);
         break;
     case ModelSetupTranspose_1:
-        ptr = std::make_unique<SetupTransposeModel>(deviceController);
+        ptr = std::make_unique<SetupTransposeModel>(deviceController, 0);
+    break;
+    case ModelSetupTranspose_2:
+        ptr = std::make_unique<SetupTransposeModel>(deviceController, 1);
         break;
     case ModelSetupGmm_1:
         ptr = std::make_unique<SetupGmmModel>(deviceController, false);
@@ -120,6 +136,9 @@ IModelSetup::UniquePtr ModelSetupFactory::CreateModel(ModelSetupType ms)
         break;
     case ModelSetupMix:
         ptr = std::make_unique<SetupMixModel>(deviceController);
+        break;
+    case ModelSetupSplit_1_1B:
+        ptr = std::make_unique<SetupSplitModel>(deviceController, false, false, false);
         break;
     case ModelSetupSplit_1_2B:
         ptr = std::make_unique<SetupSplitModel>(deviceController, true, false, false);

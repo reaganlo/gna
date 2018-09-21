@@ -73,31 +73,30 @@ SetupSplitModel::SetupSplitModel(DeviceController & deviceCtrl, bool wght2B, boo
     setupFirstAffineLayer(pinned_memory);
     setupSecondAffineLayer(pinned_memory);
 
-    gna_model_id modelId;
-    gna_request_cfg_id configId;
+    gna_model_id modelIdSplit;
 
-    deviceController.ModelCreate(&firstNnet, &modelId);
-    models.push_back(modelId);
+    deviceController.ModelCreate(&firstNnet, &modelIdSplit);
+    models.push_back(modelIdSplit);
 
-    configId = deviceController.ConfigAdd(modelId);
-    modelsConfigurations[modelId].push_back(configId);
+    configId = deviceController.ConfigAdd(modelIdSplit);
+    modelsConfigurations[modelIdSplit].push_back(configId);
 
-    configId = deviceController.ConfigAdd(modelId);
-    modelsConfigurations[modelId].push_back(configId);
+    configId = deviceController.ConfigAdd(modelIdSplit);
+    modelsConfigurations[modelIdSplit].push_back(configId);
 
     setupInputBuffer(pinned_memory, 0, 0);
     setupInputBuffer(pinned_memory, 0, 1);
     setupOutputBuffer(pinned_memory, 0, 0);
     setupOutputBuffer(pinned_memory, 0, 1);
 
-    deviceController.ModelCreate(&secondNnet, &modelId);
-    models.push_back(modelId);
+    deviceController.ModelCreate(&secondNnet, &modelIdSplit);
+    models.push_back(modelIdSplit);
 
-    configId = deviceController.ConfigAdd(modelId);
-    modelsConfigurations[modelId].push_back(configId);
+    configId = deviceController.ConfigAdd(modelIdSplit);
+    modelsConfigurations[modelIdSplit].push_back(configId);
 
-    configId = deviceController.ConfigAdd(modelId);
-    modelsConfigurations[modelId].push_back(configId);
+    configId = deviceController.ConfigAdd(modelIdSplit);
+    modelsConfigurations[modelIdSplit].push_back(configId);
 
     setupInputBuffer(pinned_memory, 1, 0);
     setupInputBuffer(pinned_memory, 1, 1);
@@ -118,11 +117,11 @@ void SetupSplitModel::checkReferenceOutput(int modelIndex, int configIndex) cons
     auto outputCount = (0 == modelIndex) ? affineOutputs.at(configIndex).size() : diagonalOutputs.at(configIndex).size();
     auto refOutputs = (0 == modelIndex) ? affineOutputs.at(configIndex).data() : diagonalOutputs.at(configIndex).data();
 
-    auto modelId = models.at(modelIndex);
-    auto configId = modelsConfigurations.at(modelId).at(configIndex);
-    auto outputBuffer = static_cast<int32_t*>(configurationBuffers.at(modelId).at(configId).second);
+    auto modelIdSplit = models.at(modelIndex);
+    auto configIdSplit = modelsConfigurations.at(modelIdSplit).at(configIndex);
+    auto outputBuffer = static_cast<int32_t*>(configurationBuffers.at(modelIdSplit).at(configIdSplit).second);
 
-    for (int i = 0; i < outputCount; ++i)
+    for (unsigned int i = 0; i < outputCount; ++i)
     {
         int32_t outElemVal = outputBuffer[i];
         if (refOutputs[i] != outElemVal)
@@ -222,7 +221,7 @@ void SetupSplitModel::setupSecondAffineLayer(uint8_t* &pinned_memory)
 
     int buf_size_weights = weightsAre2Bytes ? ALIGN64(sizeof(diagonal_weights_2B)) : ALIGN64(sizeof(diagonal_weights_1B));
     int buf_size_biases = weightsAre2Bytes ? ALIGN64(sizeof(diagonalRegularBiases)) : ALIGN64(sizeof(diagonalCompoundBiases));
-    int buf_size_tmp_outputs = ALIGN64(diagonalOutVecSz * groupingNum * sizeof(int32_t));
+    int buf_size_tmp_outputs = ALIGN64(outVecSz * groupingNum * sizeof(int32_t));
     int buf_size_pwl = ALIGN64(nSegments * sizeof(intel_pwl_segment_t));
 
     void* pinned_weights = pinned_memory;
@@ -317,9 +316,8 @@ size_t SetupSplitModel::getFirstModelSize()
 size_t SetupSplitModel::getSecondModelSize()
 {
     int buf_size_weights = weightsAre2Bytes ? ALIGN64(sizeof(weights_2B)) : ALIGN64(sizeof(weights_1B));
-    int buf_size_inputs = ALIGN64(sizeof(inputs));
     int buf_size_biases = weightsAre2Bytes ? ALIGN64(sizeof(regularBiases)) : ALIGN64(sizeof(compoundBiases));
-    int buf_size_tmp_outputs = ALIGN64(outVecSz * groupingNum * sizeof(int32_t));
+    int buf_size_tmp_outputs = ALIGN64(diagonalOutVecSz * groupingNum * sizeof(int32_t));
     int buf_size_pwl = ALIGN64(nSegments * sizeof(intel_pwl_segment_t));
 
     uint32_t bytes_requested = buf_size_weights + buf_size_biases + buf_size_tmp_outputs;
@@ -333,10 +331,11 @@ size_t SetupSplitModel::getSecondModelSize()
 
 void SetupSplitModel::setupInputBuffer(uint8_t* &pinned_memory, int modelIndex, int configIndex)
 {
-    auto modelId = models.at(modelIndex);
-    auto configId = modelsConfigurations.at(modelIndex).at(configIndex);
+    modelId = models.at(modelIndex);
 
-    auto& pinnedInput = configurationBuffers[modelId][configId].first;
+    configId = modelsConfigurations.at(modelId).at(configIndex);
+
+    auto& pinnedInput = configurationBuffers[modelId][configIndex].first;
     pinnedInput = pinned_memory;
     auto& srcBuffer = inputs.at(modelIndex).at(configIndex);
 
@@ -350,10 +349,10 @@ void SetupSplitModel::setupInputBuffer(uint8_t* &pinned_memory, int modelIndex, 
 
 void SetupSplitModel::setupOutputBuffer(uint8_t* &pinned_memory, int modelIndex, int configIndex)
 {
-    auto modelId = models.at(modelIndex);
-    auto configId = modelsConfigurations.at(modelIndex).at(configIndex);
+    auto modelIdSplit= models.at(modelIndex);
+    configId = modelsConfigurations.at(modelIdSplit).at(configIndex);
 
-    auto& pinnedOutput = configurationBuffers[modelId][configId].second;
+    auto& pinnedOutput = configurationBuffers[modelIdSplit][configId].second;
     pinnedOutput = pinned_memory;
     deviceController.BufferAdd(configId, GNA_OUT, 0, pinnedOutput);
 
@@ -362,5 +361,3 @@ void SetupSplitModel::setupOutputBuffer(uint8_t* &pinned_memory, int modelIndex,
     auto buf_size_outputs = ALIGN64(outputsSize);
     pinned_memory += buf_size_outputs;
 }
-
-

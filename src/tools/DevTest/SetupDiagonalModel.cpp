@@ -31,80 +31,6 @@
 
 #include "SetupDiagonalModel.h"
 
-namespace
-{
-const int layersNum = 1;
-const int groupingNum = 4;
-const int inVecSz = 16;
-const int outVecSz = 16;
-
-const int8_t weights_1B[inVecSz] =
-{
-    -6, -2, -1, -1, -2,  9,  6,  5,  2,  4, -1,  5, -2, -4,  0,  9,
-};
-
-const int16_t weights_2B[inVecSz] =
-{
-    -6, -2, -1, -1, -2,  9,  6,  5,  2,  4, -1,  5, -2, -4,  0,  9,
-};
-
-const int32_t ref_output[outVecSz * groupingNum] =
-{
-   35, -49,  47, -19,
-   -6,  12,  18,  -4,
-   -2,  -9,  -3,   5,
-    4,  -1,  -2,  -4,
-  -11,   1, -25, -23,
-  -50, -14,  13,  76,
-  -44, -44,  52,  10,
-  -36,   9,  -6,  -6,
-  -13,  -5, -11,  15,
-    4,   0,  16,  40,
-   -2, -10,  -3,   0,
-  -40,  45,   5, -30,
-   11,   9,  -5,   1,
-    7,  23,   3, -17,
-    4,   4,   4,   4,
-  -37, -55, -73, -19
-};
-
-const int16_t inputs[inVecSz * groupingNum] = {
-    -5,  9, -7,  4,
-    5, -4, -7,  4,
-    0,  7,  1, -7,
-    1,  6,  7,  9,
-    2, -4,  9,  8,
-    -5, -1,  2,  9,
-    -8, -8,  8,  1,
-    -7,  2, -1, -1,
-    -9, -5, -8,  5,
-    0, -1,  3,  9,
-    0,  8,  1, -2,
-    -9,  8,  0, -7,
-    -9, -8, -1, -4,
-    -3, -7, -2,  3,
-    -8,  0,  1,  3,
-    -4, -6, -8, -2
-};
-
-const intel_bias_t regularBiases[outVecSz] = {
-    5, 4, -2, 5, -7, -5, 4, -1, 5, 4, -2, 5, -7, -5, 4, -1
-};
-
-const  intel_compound_bias_t compoundBiases[outVecSz*groupingNum] =
-{
-    { 5,1,{0} },
-    {4,1,{0}},
-    {-2,1,{0}},
-    {5,1,{0}},
-    {-7,1,{0}},
-    {-5,1,{0}},
-    {4,1,{0}},
-    {-1,1,{0}},
-};
-
-}
-
 SetupDiagonalModel::SetupDiagonalModel(DeviceController & deviceCtrl, bool wght2B, bool pwlEn)
     : deviceController{deviceCtrl},
     weightsAre2Bytes{wght2B},
@@ -125,24 +51,51 @@ SetupDiagonalModel::~SetupDiagonalModel()
     deviceController.Free();
 }
 
-void SetupDiagonalModel::checkReferenceOutput(int modelIndex, int configIndex) const
+template <class intel_reference_output_type>
+intel_reference_output_type* SetupDiagonalModel::refOutputAssign(int configIndex) const
 {
-    for (int i = 0; i < sizeof(ref_output) / sizeof(int32_t); ++i)
+    switch (configIndex)
     {
-        int32_t outElemVal = static_cast<const int32_t*>(outputBuffer)[i];
-        if (ref_output[i] != outElemVal)
-        {
-            // TODO: how it should notified? return or throw
-            throw std::runtime_error("Wrong output");
-        }
+    case configDiagonal_1_1B:
+        return (intel_reference_output_type*)ref_output;
+    case confiDiagonal_1_2B:
+        return (intel_reference_output_type*)ref_output;
+    case confiDiagonalPwl_1_1B:
+        return (intel_reference_output_type*)ref_output_pwl;
+    case confiDiagonalPwl_1_2B:
+        return (intel_reference_output_type*)ref_output_pwl;
+    default:
+        throw std::runtime_error("Invalid configuration index");
     }
 }
 
-void SetupDiagonalModel::sampleAffineLayer(intel_nnet_type_t& nnet)
+template <class intel_reference_output_type>
+void SetupDiagonalModel::compareReferenceValues(unsigned int i, int configIndex) const
 {
-    nnet.nGroup = groupingNum;
-    nnet.nLayers = layersNum;
-    nnet.pLayers = (intel_nnet_layer_t*)calloc(nnet.nLayers, sizeof(intel_nnet_layer_t));
+    intel_reference_output_type outElemVal = static_cast<const intel_reference_output_type*>(outputBuffer)[i];
+    const intel_reference_output_type* refOutput = refOutputAssign<intel_reference_output_type>(configIndex);
+    if (refOutput[i] != outElemVal)
+    {
+        // TODO: how it should notified? return or throw
+        throw std::runtime_error("Wrong output");
+    }
+}
+
+
+void SetupDiagonalModel::checkReferenceOutput(int modelIndex, int configIndex) const
+{
+    unsigned int ref_output_size = refSize[configIndex];
+    for (unsigned int i = 0; i < ref_output_size; ++i)
+    {
+        (configIndex == configPwl) ? compareReferenceValues<int16_t>(i, configIndex) : compareReferenceValues<int16_t>(i, configIndex);
+    }
+}
+
+void SetupDiagonalModel::sampleAffineLayer(intel_nnet_type_t& hNnet)
+{
+    hNnet.nGroup = groupingNum;
+    hNnet.nLayers = layersNum;
+    hNnet.pLayers = (intel_nnet_layer_t*)calloc(nnet.nLayers, sizeof(intel_nnet_layer_t));
 
     int buf_size_weights = weightsAre2Bytes ? ALIGN64(sizeof(weights_2B)) : ALIGN64(sizeof(weights_1B));
     int buf_size_inputs = ALIGN64(sizeof(inputs));
@@ -155,7 +108,7 @@ void SetupDiagonalModel::sampleAffineLayer(intel_nnet_type_t& nnet)
     if (pwlEnabled) bytes_requested += buf_size_pwl;
     uint32_t bytes_granted;
 
-    uint8_t* pinned_mem_ptr = deviceController.Alloc(bytes_requested, nnet.nLayers, 0, &bytes_granted);
+    uint8_t* pinned_mem_ptr = deviceController.Alloc(bytes_requested, hNnet.nLayers, 0, &bytes_granted);
 
     void* pinned_weights = pinned_mem_ptr;
     if (weightsAre2Bytes)
@@ -213,36 +166,36 @@ void SetupDiagonalModel::sampleAffineLayer(intel_nnet_type_t& nnet)
     affine_layer.affine = affine_func;
     affine_layer.pwl = pwl;
 
-    nnet.pLayers[0].nInputColumns = nnet.nGroup;
-    nnet.pLayers[0].nInputRows = inVecSz;
-    nnet.pLayers[0].nOutputColumns = nnet.nGroup;
-    nnet.pLayers[0].nOutputRows = outVecSz;
-    nnet.pLayers[0].nBytesPerInput = sizeof(int16_t);
+    hNnet.pLayers[0].nInputColumns = hNnet.nGroup;
+    hNnet.pLayers[0].nInputRows = inVecSz;
+    hNnet.pLayers[0].nOutputColumns = hNnet.nGroup;
+    hNnet.pLayers[0].nOutputRows = outVecSz;
+    hNnet.pLayers[0].nBytesPerInput = sizeof(int16_t);
     if (pwlEnabled)
     {
-        nnet.pLayers[0].pOutputsIntermediate = tmp_outputs;
-        nnet.pLayers[0].nBytesPerOutput = sizeof(int16_t);
+        hNnet.pLayers[0].pOutputsIntermediate = tmp_outputs;
+        hNnet.pLayers[0].nBytesPerOutput = sizeof(int16_t);
     }
     else
     {
-        nnet.pLayers[0].pOutputsIntermediate = nullptr;
-        nnet.pLayers[0].nBytesPerOutput = sizeof(int32_t);
+        hNnet.pLayers[0].pOutputsIntermediate = nullptr;
+        hNnet.pLayers[0].nBytesPerOutput = sizeof(int32_t);
     }
-    nnet.pLayers[0].nBytesPerIntermediateOutput = 4;
-    nnet.pLayers[0].nLayerKind = INTEL_AFFINE_DIAGONAL;
-    nnet.pLayers[0].type = INTEL_INPUT_OUTPUT;
-    nnet.pLayers[0].pLayerStruct = &affine_layer;
-    nnet.pLayers[0].pInputs = nullptr;
-    nnet.pLayers[0].pOutputs = nullptr;
+    hNnet.pLayers[0].nBytesPerIntermediateOutput = 4;
+    hNnet.pLayers[0].nLayerKind = INTEL_AFFINE_DIAGONAL;
+    hNnet.pLayers[0].type = INTEL_INPUT_OUTPUT;
+    hNnet.pLayers[0].pLayerStruct = &affine_layer;
+    hNnet.pLayers[0].pInputs = nullptr;
+    hNnet.pLayers[0].pOutputs = nullptr;
 }
 
-void SetupDiagonalModel::samplePwl(intel_pwl_segment_t *segments, uint32_t nSegments)
+void SetupDiagonalModel::samplePwl(intel_pwl_segment_t *segments, uint32_t numberOfSegments)
 {
     auto xBase = INT32_MIN;
-    auto xBaseInc = UINT32_MAX / nSegments;
+    auto xBaseInc = UINT32_MAX / numberOfSegments;
     auto yBase = INT32_MAX;
-    auto yBaseInc = UINT16_MAX / nSegments;
-    for (auto i = uint32_t{0}; i < nSegments; i++, xBase += xBaseInc, yBase += yBaseInc)
+    auto yBaseInc = UINT16_MAX / numberOfSegments;
+    for (auto i = uint32_t{0}; i < numberOfSegments; i++, xBase += xBaseInc, yBase += yBaseInc)
     {
         segments[i].xBase = xBase;
         segments[i].yBase = yBase;

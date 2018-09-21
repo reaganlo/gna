@@ -23,23 +23,13 @@
  in any way.
 */
 
+#include <array>
 #include "IModelSetup.h"
 #include "DeviceController.h"
 
 class SetupDiagonalModel : public IModelSetup
 {
 public:
-    gna_model_id ModelId(int /*modelIndex*/) const override
-    {
-        return modelId;
-    }
-
-    gna_request_cfg_id ConfigId(int /*modelIndex*/, int /*configIndex*/) const override
-    {
-        // this one model setup has only one Request Configuration
-        return configId;
-    }
-
     SetupDiagonalModel(DeviceController & deviceCtrl, bool weight2B, bool pwlEn);
 
     ~SetupDiagonalModel();
@@ -50,20 +40,136 @@ private:
     void sampleAffineLayer(intel_nnet_type_t& nnet);
     void samplePwl(intel_pwl_segment_t *segments, uint32_t nSegments);
 
+    template <class intel_reference_output_type>
+    intel_reference_output_type* refOutputAssign(int configIndex) const;
+
+    template <class intel_reference_output_type>
+    void compareReferenceValues(unsigned int i, int configIndex) const;
+
     DeviceController & deviceController;
 
-    gna_model_id modelId;
-    gna_request_cfg_id configId;
     bool weightsAre2Bytes;
     bool pwlEnabled;
 
     uint32_t nSegments = 64;
 
-    intel_nnet_type_t nnet;
     intel_affine_func_t affine_func;
     intel_pwl_func_t pwl;
     intel_affine_layer_t affine_layer;
 
     void * inputBuffer = nullptr;
     void * outputBuffer = nullptr;
+
+    const int configPwl = 1;
+
+    static const int outVecSz = 16;
+
+    const int8_t weights_1B[inVecSz] =
+    {
+        -6, -2, -1, -1, -2,  9,  6,  5,  2,  4, -1,  5, -2, -4,  0,  9,
+    };
+
+    const int16_t weights_2B[inVecSz] =
+    {
+        -6, -2, -1, -1, -2,  9,  6,  5,  2,  4, -1,  5, -2, -4,  0,  9,
+    };
+
+    const int32_t ref_output[outVecSz * groupingNum] =
+    {
+         35, -49,  47, -19,
+         -6,  12,  18,  -4,
+         -2,  -9,  -3,   5,
+          4,  -1,  -2,  -4,
+        -11,   1, -25, -23,
+        -50, -14,  13,  76,
+        -44, -44,  52,  10,
+        -36,   9,  -6,  -6,
+        -13,  -5, -11,  15,
+          4,   0,  16,  40,
+         -2, -10,  -3,   0,
+        -40,  45,   5, -30,
+         11,   9,  -5,   1,
+          7,  23,   3, -17,
+          4,   4,   4,   4,
+        -37, -55, -73, -19
+    };
+
+    const int16_t ref_output_pwl[outVecSz * groupingNum] =
+    {
+        32735,  32735,  32735,  32735,
+        32735,  32735,  32735,  32735,
+        32735,  32735,  32735,  32735,
+        32735,  32735,  32735,  32735,
+        32735,  32735,  32735,  32735,
+        32735,  32735,  32735,  32735,
+        32735,  32735,  32735,  32735,
+        32735,  32735,  32735,  32735,
+        32735,  32735,  32735,  32735,
+        32735,  32735,  32735,  32735,
+        32735,  32735,  32735,  32735,
+        32735,  32735,  32735,  32735,
+        32735,  32735,  32735,  32735,
+        32735,  32735,  32735,  32735,
+        32735,  32735,  32735,  32735,
+        32735,  32735,  32735,  32735,
+    };
+
+    static const uint8_t numberOfDiagonalModels = 4;
+    const std::array<unsigned int, numberOfDiagonalModels> refSize =
+    {
+        sizeof(ref_output) / sizeof(int32_t),
+        sizeof(ref_output) / sizeof(int32_t),
+        sizeof(ref_output_pwl) / sizeof(int16_t),
+        sizeof(ref_output_pwl) / sizeof(int16_t),
+    };
+
+    const int16_t inputs[inVecSz * groupingNum] =
+    {
+        -5,  9, -7,  4,
+         5, -4, -7,  4,
+         0,  7,  1, -7,
+         1,  6,  7,  9,
+         2, -4,  9,  8,
+        -5, -1,  2,  9,
+        -8, -8,  8,  1,
+        -7,  2, -1, -1,
+        -9, -5, -8,  5,
+         0, -1,  3,  9,
+         0,  8,  1, -2,
+        -9,  8,  0, -7,
+        -9, -8, -1, -4,
+        -3, -7, -2,  3,
+        -8,  0,  1,  3,
+        -4, -6, -8, -2
+    };
+
+    const intel_bias_t regularBiases[outVecSz] =
+    {
+        5, 4, -2, 5, -7, -5, 4, -1, 5, 4, -2, 5, -7, -5, 4, -1
+    };
+
+    const  intel_compound_bias_t compoundBiases[outVecSz * groupingNum] =
+    {
+    { 5,1,{ 0 } },
+    { 4,1,{ 0 } },
+    { -2,1,{ 0 } },
+    { 5,1,{ 0 } },
+    { -7,1,{ 0 } },
+    { -5,1,{ 0 } },
+    { 4,1,{ 0 } },
+    { -1,1,{ 0 } },
+    { 5,1,{ 0 } },
+    { 4,1,{ 0 } },
+    { -2,1,{ 0 } },
+    { 5,1,{ 0 } },
+    { -7,1,{ 0 } },
+    { -5,1,{ 0 } },
+    { 4,1,{ 0 } },
+    { -1,1,{ 0 } },
+    };
+
+    static const int configDiagonal_1_1B = 0;
+    static const int  confiDiagonal_1_2B = 1;
+    static const int  confiDiagonalPwl_1_1B = 2;
+    static const int  confiDiagonalPwl_1_2B = 3;
 };

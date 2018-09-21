@@ -31,66 +31,9 @@
 
 #include "SetupPoolingModel.h"
 
-namespace
-{
-const int layersNum = 1;
-const int groupingNum = 1;
-const int nFilters = 4;
-const int nFilterCoefficients = 48;
-const int inVecSz = 96;
-const int outVecSz = 4;
-
-const int16_t filters[nFilters * nFilterCoefficients] =
-{
-    -6, -2, -1, -1, -2,  9,  6,  5,  2,  4, -1,  5, -2, -4,  0,  9,
-    -8,  8, -4,  6,  5,  3, -7, -9,  7,  0, -4, -1,  1,  7,  6, -6,
-    2, -8,  6,  5, -1, -2,  7,  5, -1,  4,  8,  7, -9, -1,  7,  1,
-
-    0, -2,  1,  0,  6, -6,  7,  4, -6,  0,  3, -2,  1,  8, -6, -2,
-    -6, -3,  4, -2, -8, -6,  6,  5,  6, -9, -5, -2, -5, -8, -6, -2,
-    -7,  0,  6, -3, -1, -6,  4,  1, -4, -5, -3,  7,  9, -9,  9,  9,
-
-    0, -2,  6, -3,  5, -2, -1, -3, -5,  7,  6,  6, -8,  0, -4,  9,
-    2,  7, -8, -7,  8, -6, -6,  1,  7, -4, -4,  9, -6, -6,  5, -7,
-    -6, -2, -1, -1, -2,  9,  6,  5,  2,  4, -1,  5, -2, -4,  0,  9,
-
-    -8,  8, -4,  6,  5,  3, -7, -9,  7,  0, -4, -1,  1,  7,  6, -6,
-    2, -8,  6,  5, -1, -2,  7,  5, -1,  4,  8,  7, -9, -1,  7,  1,
-    0, -2,  1,  0,  6, -6,  7,  4, -6,  0,  3, -2,  1,  8, -6, -2,
-};
-
-const int16_t inputs[inVecSz * groupingNum] = {
-    -5,  9, -7,  4, 5, -4, -7,  4, 0,  7,  1, -7, 1,  6,  7,  9,
-    2, -4,  9,  8, -5, -1,  2,  9, -8, -8,  8,  1, -7,  2, -1, -1,
-    -9, -5, -8,  5, 0, -1,  3,  9, 0,  8,  1, -2, -9,  8,  0, -7,
-
-    -9, -8, -1, -4, -3, -7, -2,  3, -8,  0,  1,  3, -4, -6, -8, -2,
-    -5,  9, -7,  4, 5, -4, -7,  4, 0,  7,  1, -7, 1,  6,  7,  9,
-    2, -4,  9,  8, -5, -1,  2,  9, -8, -8,  8,  1, -7,  2, -1, -1
-};
-
-const intel_bias_t regularBiases[outVecSz*groupingNum] = {
-    5, 4, -2, 5
-};
-
-const  intel_compound_bias_t compoundBiases[outVecSz*groupingNum] =
-{
-    { 5,1,{0} },
-    {4,1,{0}},
-    {-2,1,{0}},
-    {5,1,{0}},
-};
-
-const int16_t ref_output[outVecSz * groupingNum] =
-{
-    1170, -410, -39, 1230
-};
-}
-
 SetupPoolingModel::SetupPoolingModel(DeviceController & deviceCtrl)
     : deviceController{deviceCtrl}
 {
-    uint32_t nSegments = 64;
     nnet.nGroup = groupingNum;
     nnet.nLayers = layersNum;
     nnet.pLayers = (intel_nnet_layer_t*)calloc(nnet.nLayers, sizeof(intel_nnet_layer_t));
@@ -114,7 +57,7 @@ SetupPoolingModel::~SetupPoolingModel()
 
 void SetupPoolingModel::checkReferenceOutput(int modelIndex, int configIndex) const
 {
-    for (int i = 0; i < sizeof(ref_output) / sizeof(int16_t); ++i)
+    for (unsigned int i = 0; i < sizeof(ref_output) / sizeof(int16_t); ++i)
     {
         int16_t outElemVal = static_cast<const int16_t*>(outputBuffer)[i];
         if (ref_output[i] != outElemVal)
@@ -124,13 +67,13 @@ void SetupPoolingModel::checkReferenceOutput(int modelIndex, int configIndex) co
     }
 }
 
-void SetupPoolingModel::samplePwl(intel_pwl_segment_t *segments, uint32_t nSegments)
+void SetupPoolingModel::samplePwl(intel_pwl_segment_t *segments, uint32_t numberOfSegments)
 {
     auto xBase = -600;
-    auto xBaseInc = 2*abs(xBase) / nSegments;
+    auto xBaseInc = 2*abs(xBase) / numberOfSegments;
     auto yBase = xBase;
     auto yBaseInc = 1;
-    for (auto i = uint32_t{0}; i < nSegments; i++, xBase += xBaseInc, yBase += yBaseInc, yBaseInc++) 
+    for (auto i = uint32_t{0}; i < numberOfSegments; i++, xBase += xBaseInc, yBase += yBaseInc, yBaseInc++)
     {
         segments[i].xBase = xBase;
         segments[i].yBase = yBase;

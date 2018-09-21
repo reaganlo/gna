@@ -66,10 +66,16 @@ enum ModelSetupType
     ModelSetupGmmAl_1,
 
     ModelSetupCopy_1,
+    ModelSetupCopy_2,
+    ModelSetupCopy_3,
+    ModelSetupCopy_4,
+
     ModelSetupTranspose_1,
+    ModelSetupTranspose_2,
 
     ModelSetupMix,
-    ModelSetupSplit_1_2B
+    ModelSetupSplit_1_1B,
+    ModelSetupSplit_1_2B,
 };
 
 class IModelSetup
@@ -77,11 +83,27 @@ class IModelSetup
 public:
     typedef std::unique_ptr<IModelSetup> UniquePtr;
 
-    virtual gna_model_id ModelId(int modelIndex) const = 0;
+    virtual gna_model_id ModelId(int /*modelIndex*/) const
+    {
+        return modelId;
+    }
 
-    virtual gna_request_cfg_id ConfigId(int modelIndex, int configIndex) const = 0;
+    virtual gna_request_cfg_id ConfigId(int /*modelIndex*/, int /*configIndex*/) const
+    {
+        return configId;
+    }
 
     virtual void checkReferenceOutput(int modelIndex, int configIndex) const = 0;
 
     virtual ~IModelSetup() = default;
+
+protected:
+    gna_model_id modelId;
+    gna_request_cfg_id configId;
+
+    intel_nnet_type_t nnet;
+    static const int layersNum = 1;
+    static const int groupingNum = 4;
+    static const int inVecSz = 16;
+    static const int outVecSz = 8;
 };

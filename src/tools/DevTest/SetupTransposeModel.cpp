@@ -31,49 +31,14 @@
 
 #include "SetupTransposeModel.h"
 
-namespace
+SetupTransposeModel::SetupTransposeModel(DeviceController & deviceCtrl, int configIndex)
+    : deviceController{ deviceCtrl }
 {
-const int layersNum = 1;
-const int groupingNum = 4;
-const int inVecSz = 16;
-const int outVecSz = 16;
-
-const int16_t inputs[groupingNum * inVecSz] = {
-    -5,  9, -7,  4, 5, -4, -7,  4, 0,  7,  1, -7, 1,  6,  7,  9,
-    2, -4,  9,  8, -5, -1,  2,  9, -8, -8,  8,  1, -7,  2, -1, -1,
-    -9, -5, -8,  5, 0, -1,  3,  9, 0,  8,  1, -2, -9,  8,  0, -7,
-    -9, -8, -1, -4, -3, -7, -2,  3, -8,  0,  1,  3, -4, -6, -8, -2
-};
-
-const int16_t ref_output[outVecSz * groupingNum] =
-{
-    -5, 2, -9, -9,
-    9, -4, -5, -8, 
-    -7, 9, -8, -1,
-    4, 8, 5, -4,
-    5, -5, 0, -3,
-    -4, -1, -1, -7,
-    -7, 2, 3, -2,
-    4, 9, 9, 3,
-    0, -8, 0, -8,
-    7, -8, 8, 0,
-    1, 8, 1, 1,
-    -7, 1, -2, 3,
-    1, -7, -9, -4,
-    6, 2, 8, -6,
-    7, -1, 0, -8,
-    9, -1, -7, -2
-};
-}
-
-SetupTransposeModel::SetupTransposeModel(DeviceController & deviceCtrl)
-    : deviceController{deviceCtrl}
-{
-    nnet.nGroup = groupingNum;
+    nnet.nGroup = groupingNum[configIndex];
     nnet.nLayers = layersNum;
     nnet.pLayers = (intel_nnet_layer_t*)calloc(nnet.nLayers, sizeof(intel_nnet_layer_t));
 
-    sampleTransposeLayer();
+    sampleTransposeLayer(configIndex);
 
     deviceController.ModelCreate(&nnet, &modelId);
 
@@ -92,7 +57,9 @@ SetupTransposeModel::~SetupTransposeModel()
 
 void SetupTransposeModel::checkReferenceOutput(int modelIndex, int configIndex) const
 {
-    for (int i = 0; i < sizeof(ref_output) / sizeof(int16_t); ++i)
+    int ref_output_size = refSize[configIndex];
+    const int16_t * ref_output = refOutputAssign[configIndex];
+    for (int i = 0; i < ref_output_size; ++i)
     {
         int16_t outElemVal = static_cast<const int16_t*>(outputBuffer)[i];
         if (ref_output[i] != outElemVal)
@@ -103,10 +70,10 @@ void SetupTransposeModel::checkReferenceOutput(int modelIndex, int configIndex) 
     }
 }
 
-void SetupTransposeModel::sampleTransposeLayer()
+void SetupTransposeModel::sampleTransposeLayer(int configIndex)
 {
-    int buf_size_inputs = ALIGN64(sizeof(inputs));
-    int buf_size_outputs = ALIGN64(outVecSz * groupingNum * sizeof(int32_t));
+    int buf_size_inputs = ALIGN64(inputsSize[configIndex]);
+    int buf_size_outputs = ALIGN64(outVecSz * groupingNum[configIndex] * sizeof(int32_t));
 
     uint32_t bytes_requested = buf_size_inputs + buf_size_outputs;
     uint32_t bytes_granted;
@@ -114,7 +81,7 @@ void SetupTransposeModel::sampleTransposeLayer()
     uint8_t* pinned_mem_ptr = deviceController.Alloc(bytes_requested, nnet.nLayers, 0, &bytes_granted);
 
     inputBuffer = pinned_mem_ptr;
-    memcpy(inputBuffer, inputs, sizeof(inputs));
+    memcpy(inputBuffer, inputs[configIndex], inputsSize[configIndex]);
     pinned_mem_ptr += buf_size_inputs;
 
     outputBuffer = pinned_mem_ptr;

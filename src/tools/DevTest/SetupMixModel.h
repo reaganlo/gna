@@ -29,17 +29,6 @@
 class SetupMixModel : public IModelSetup
 {
 public:
-    gna_model_id ModelId(int /*modelIndex*/) const override
-    {
-        return modelId;
-    }
-
-    gna_request_cfg_id ConfigId(int /*modelIndex*/, int /*configIndex*/) const override
-    {
-        // this one model setup has only one Request Configuration
-        return configId;
-    }
-
     SetupMixModel(DeviceController & deviceCtrl);
 
     ~SetupMixModel();
@@ -49,11 +38,8 @@ public:
 private:
     DeviceController & deviceController;
 
-    gna_model_id modelId;
-    gna_request_cfg_id configId;
     bool weightsAre2Bytes;
 
-    intel_nnet_type_t nnet;
     intel_affine_func_t affine_func;
     intel_pwl_func_t pwl;
     intel_affine_layer_t affine_layer;

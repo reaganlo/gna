@@ -32,84 +32,6 @@
 
 #include "SetupDnnModel_1.h"
 
-namespace
-{
-const int layersNum = 1;
-const int groupingNum = 4;
-const int inVecSz = 16;
-const int outVecSz = 8;
-
-const int8_t weights_1B[outVecSz * inVecSz] =
-{
-    -6, -2, -1, -1, -2,  9,  6,  5,  2,  4, -1,  5, -2, -4,  0,  9,
-    -8,  8, -4,  6,  5,  3, -7, -9,  7,  0, -4, -1,  1,  7,  6, -6,
-    2, -8,  6,  5, -1, -2,  7,  5, -1,  4,  8,  7, -9, -1,  7,  1,
-    0, -2,  1,  0,  6, -6,  7,  4, -6,  0,  3, -2,  1,  8, -6, -2,
-    -6, -3,  4, -2, -8, -6,  6,  5,  6, -9, -5, -2, -5, -8, -6, -2,
-    -7,  0,  6, -3, -1, -6,  4,  1, -4, -5, -3,  7,  9, -9,  9,  9,
-    0, -2,  6, -3,  5, -2, -1, -3, -5,  7,  6,  6, -8,  0, -4,  9,
-    2,  7, -8, -7,  8, -6, -6,  1,  7, -4, -4,  9, -6, -6,  5, -7
-};
-
-const int16_t weights_2B[outVecSz * inVecSz] =
-{
-    -6, -2, -1, -1, -2,  9,  6,  5,  2,  4, -1,  5, -2, -4,  0,  9,
-    -8,  8, -4,  6,  5,  3, -7, -9,  7,  0, -4, -1,  1,  7,  6, -6,
-    2, -8,  6,  5, -1, -2,  7,  5, -1,  4,  8,  7, -9, -1,  7,  1,
-    0, -2,  1,  0,  6, -6,  7,  4, -6,  0,  3, -2,  1,  8, -6, -2,
-    -6, -3,  4, -2, -8, -6,  6,  5,  6, -9, -5, -2, -5, -8, -6, -2,
-    -7,  0,  6, -3, -1, -6,  4,  1, -4, -5, -3,  7,  9, -9,  9,  9,
-    0, -2,  6, -3,  5, -2, -1, -3, -5,  7,  6,  6, -8,  0, -4,  9,
-    2,  7, -8, -7,  8, -6, -6,  1,  7, -4, -4,  9, -6, -6,  5, -7
-};
-
-const int16_t inputs[inVecSz * groupingNum] = {
-    -5,  9, -7,  4,
-    5, -4, -7,  4,
-    0,  7,  1, -7,
-    1,  6,  7,  9,
-    2, -4,  9,  8,
-    -5, -1,  2,  9,
-    -8, -8,  8,  1,
-    -7,  2, -1, -1,
-    -9, -5, -8,  5,
-    0, -1,  3,  9,
-    0,  8,  1, -2,
-    -9,  8,  0, -7,
-    -9, -8, -1, -4,
-    -3, -7, -2,  3,
-    -8,  0,  1,  3,
-    -4, -6, -8, -2
-};
-
-const intel_bias_t regularBiases[outVecSz*groupingNum] = {
-    5, 4, -2, 5,
-    -7, -5, 4, -1
-};
-
-const  intel_compound_bias_t compoundBiases[outVecSz*groupingNum] =
-{
-    { 5,1,{0} }, {4,1,{0}}, {-2,1,{0}}, {5,1,{0}},
-    {-7,1,{0}}, {-5,1,{0}}, {4,1,{0}}, {-1,1,{0}},
-};
-
-const int32_t ref_output[outVecSz * groupingNum] =
-{
-    -177, -85, 29, 28,
-    96, -173, 25, 252,
-    -160, 274, 157, -29,
-    48, -60, 158, -29,
-    26, -2, -44, -251,
-    -173, -70, -1, -323,
-    99, 144, 38, -63,
-    20, 56, -103, 10
-};
-
-const uint32_t alIndices[outVecSz / 2]
-{
-    0, 2, 4, 7
-};
-}
 
 typedef uint8_t     __1B_RES;       // 1B of reserved memory
 
@@ -346,15 +268,79 @@ SetupDnnModel_1::~SetupDnnModel_1()
     free(nnet.pLayers);
 }
 
+template <class intel_reference_output_type>
+intel_reference_output_type* SetupDnnModel_1::refOutputAssign(int configIndex) const
+{
+    switch (configIndex)
+    {
+    case configDnn1_1B:
+        return (intel_reference_output_type*)ref_output_model_1;
+    case configDnn1_2B:
+        return (intel_reference_output_type*)ref_output_model_1;
+    case configDnnAl_1_1B:
+        return (intel_reference_output_type*)ref_output_modelAl_1;
+    case configDnnAl_1_2B:
+        return (intel_reference_output_type*)ref_output_modelAl_1;
+    case configDnnPwl_1_1B:
+        return (intel_reference_output_type*)ref_output_modelPwl_1;
+    case configDnnPwl_1_2B:
+        return (intel_reference_output_type*)ref_output_modelPwl_1;
+    case configDnnAlPwl_1_1B:
+        return (intel_reference_output_type*)ref_output_modelAlPwl_1;
+    case configDnnAlPwl_1_2B:
+        return (intel_reference_output_type*)ref_output_modelAlPwl_1;
+    default:
+        throw std::runtime_error("Invalid configuration index");;
+    }
+}
+
+template <class intel_reference_output_type>
+void SetupDnnModel_1::compareReferenceValues(unsigned int i, int configIndex) const
+{
+    intel_reference_output_type outElemVal = static_cast<const intel_reference_output_type*>(outputBuffer)[i];
+    const intel_reference_output_type* refOutput = refOutputAssign<intel_reference_output_type>(configIndex);
+    if (refOutput[i] != outElemVal)
+    {
+        // TODO: how it should notified? return or throw
+        throw std::runtime_error("Wrong output");
+    }
+}
+
+
 void SetupDnnModel_1::checkReferenceOutput(int modelIndex, int configIndex) const
 {
-    for (int i = 0; i < sizeof(ref_output) / sizeof(int32_t); ++i)
+    unsigned int ref_output_size = refSize[configIndex];
+    for (unsigned int i = 0; i < ref_output_size; ++i)
     {
-        int32_t outElemVal = static_cast<const int32_t*>(outputBuffer)[i];
-        if (ref_output[i] != outElemVal)
+        switch (configIndex)
         {
-            // TODO: how it should notified? return or throw
-            throw std::runtime_error("Wrong output");
+        case configDnn1_1B:
+            compareReferenceValues<int32_t>(i, configIndex);
+            break;
+        case configDnn1_2B:
+            compareReferenceValues<int32_t>(i, configIndex);
+            break;
+        case configDnnAl_1_1B:
+            compareReferenceValues<int32_t>(i, configIndex);
+            break;
+        case configDnnAl_1_2B:
+            compareReferenceValues<int32_t>(i, configIndex);
+            break;
+        case configDnnPwl_1_1B:
+            compareReferenceValues<int16_t>(i, configIndex);
+            break;
+        case configDnnPwl_1_2B:
+            compareReferenceValues<int16_t>(i, configIndex);
+            break;
+        case configDnnAlPwl_1_1B:
+            compareReferenceValues<int16_t>(i, configIndex);
+            break;
+        case configDnnAlPwl_1_2B:
+            compareReferenceValues<int16_t>(i, configIndex);
+        break;
+        default:
+            throw std::runtime_error("Invalid configuration index");
+            break;
         }
     }
 }
@@ -413,7 +399,7 @@ void SetupDnnModel_1::sampleAffineLayer()
 
     if (activeListEnabled)
     {
-        size_t indicesSize = indicesCount * sizeof(uint32_t);
+        size_t indicesSize = ALIGN64(indicesCount * sizeof(uint32_t));
         indices = (uint32_t*)pinned_mem_ptr;
         memcpy(indices, alIndices, indicesSize);
         pinned_mem_ptr += indicesSize;
@@ -470,13 +456,13 @@ void SetupDnnModel_1::sampleAffineLayer()
     }
 }
 
-void SetupDnnModel_1::samplePwl(intel_pwl_segment_t *segments, uint32_t nSegments)
+void SetupDnnModel_1::samplePwl(intel_pwl_segment_t *segments, uint32_t numberOfSegments)
 {
     auto xBase = INT32_MIN;
-    auto xBaseInc = UINT32_MAX / nSegments;
+    auto xBaseInc = UINT32_MAX / numberOfSegments;
     auto yBase = INT32_MAX;
-    auto yBaseInc = UINT16_MAX / nSegments;
-    for (auto i = uint32_t{0}; i < nSegments; i++, xBase += xBaseInc, yBase += yBaseInc)
+    auto yBaseInc = UINT16_MAX / numberOfSegments;
+    for (auto i = uint32_t{0}; i < numberOfSegments; i++, xBase += xBaseInc, yBase += yBaseInc)
     {
         segments[i].xBase = xBase;
         segments[i].yBase = yBase;

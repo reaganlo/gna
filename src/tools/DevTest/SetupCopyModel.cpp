@@ -31,37 +31,14 @@
 
 #include "SetupCopyModel.h"
 
-namespace
-{
-const int layersNum = 1;
-const int groupingNum = 4;
-const int inVecSz = 16;
-const int outVecSz = 16;
-
-const int16_t inputs[groupingNum * inVecSz] = {
-    -5,  9, -7,  4, 5, -4, -7,  4, 0,  7,  1, -7, 1,  6,  7,  9,
-    2, -4,  9,  8, -5, -1,  2,  9, -8, -8,  8,  1, -7,  2, -1, -1,
-    -9, -5, -8,  5, 0, -1,  3,  9, 0,  8,  1, -2, -9,  8,  0, -7,
-    -9, -8, -1, -4, -3, -7, -2,  3, -8,  0,  1,  3, -4, -6, -8, -2
-};
-
-const int16_t ref_output[groupingNum * outVecSz] =
-{
-    -5,  9, -7,  4, 5, -4, -7,  4, 0,  7,  1, -7, 1,  6,  7,  9,
-    2, -4,  9,  8, -5, -1,  2,  9, -8, -8,  8,  1, -7,  2, -1, -1,
-    -9, -5, -8,  5, 0, -1,  3,  9, 0,  8,  1, -2, -9,  8,  0, -7,
-    -9, -8, -1, -4, -3, -7, -2,  3, -8,  0,  1,  3, -4, -6, -8, -2
-};
-}
-
-SetupCopyModel::SetupCopyModel(DeviceController & deviceCtrl)
+SetupCopyModel::SetupCopyModel(DeviceController & deviceCtrl, uint32_t nCopyColumns, uint32_t nCopyRows)
     : deviceController{deviceCtrl}
 {
     nnet.nGroup = groupingNum;
     nnet.nLayers = layersNum;
     nnet.pLayers = (intel_nnet_layer_t*)calloc(nnet.nLayers, sizeof(intel_nnet_layer_t));
 
-    sampleCopyLayer();
+    sampleCopyLayer(nCopyColumns, nCopyRows);
 
     deviceController.ModelCreate(&nnet, &modelId);
 
@@ -80,7 +57,9 @@ SetupCopyModel::~SetupCopyModel()
 
 void SetupCopyModel::checkReferenceOutput(int modelIndex, int configIndex) const
 {
-    for (int i = 0; i < sizeof(ref_output) / sizeof(int16_t); ++i)
+    unsigned int ref_output_size = refSize[configIndex];
+    const int16_t * ref_output = refOutputAssign[configIndex];
+    for (unsigned int i = 0; i < ref_output_size; ++i)
     {
         int16_t outElemVal = static_cast<const int16_t*>(outputBuffer)[i];
         if (ref_output[i] != outElemVal)
@@ -91,7 +70,7 @@ void SetupCopyModel::checkReferenceOutput(int modelIndex, int configIndex) const
     }
 }
 
-void SetupCopyModel::sampleCopyLayer()
+void SetupCopyModel::sampleCopyLayer(uint32_t nCopyColumns, uint32_t nCopyRows)
 {
     int buf_size_inputs = ALIGN64(sizeof(inputs));
     int buf_size_outputs = ALIGN64(outVecSz * groupingNum * sizeof(int32_t));
@@ -108,8 +87,8 @@ void SetupCopyModel::sampleCopyLayer()
     outputBuffer = pinned_mem_ptr;
     pinned_mem_ptr += buf_size_outputs;
 
-    copy_layer.nCopyCols = inVecSz;
-    copy_layer.nCopyRows = groupingNum;
+    copy_layer.nCopyCols = nCopyColumns;
+    copy_layer.nCopyRows = nCopyRows;
 
     nnet.pLayers[0].nInputColumns = inVecSz;
     nnet.pLayers[0].nInputRows = nnet.nGroup;

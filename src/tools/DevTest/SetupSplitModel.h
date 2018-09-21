@@ -41,8 +41,8 @@ public:
 
     gna_request_cfg_id ConfigId(int modelIndex, int configIndex) const override
     {
-        auto modelId = ModelId(modelIndex);
-        return modelsConfigurations.at(modelId).at(configIndex);
+        auto modelIdSplit = ModelId(modelIndex);
+        return modelsConfigurations.at(modelIdSplit).at(configIndex);
     }
 
     SetupSplitModel(DeviceController & deviceCtrl, bool weight2B, bool activeListEn, bool pwlEn);
@@ -72,7 +72,7 @@ private:
 
     uint32_t nSegments = 64;
 
-    intel_nnet_type_t firstNnet;
+    intel_nnet_type_t& firstNnet = nnet;
     intel_nnet_type_t secondNnet;
 
     intel_affine_func_t firstAffineFunc;
@@ -89,36 +89,32 @@ private:
 
     std::map<gna_model_id, std::map<gna_request_cfg_id, std::pair<void*, void*>>> configurationBuffers;
 
-    const int layersNum = 1;
-    static constexpr int groupingNum = 4;
-    static constexpr int inVecSz = 16;
-    static constexpr int outVecSz = 8;
-
     const int8_t weights_1B[outVecSz * inVecSz] =
     {
         -6, -2, -1, -1, -2,  9,  6,  5,  2,  4, -1,  5, -2, -4,  0,  9,
         -8,  8, -4,  6,  5,  3, -7, -9,  7,  0, -4, -1,  1,  7,  6, -6,
-        2, -8,  6,  5, -1, -2,  7,  5, -1,  4,  8,  7, -9, -1,  7,  1,
-        0, -2,  1,  0,  6, -6,  7,  4, -6,  0,  3, -2,  1,  8, -6, -2,
+         2, -8,  6,  5, -1, -2,  7,  5, -1,  4,  8,  7, -9, -1,  7,  1,
+         0, -2,  1,  0,  6, -6,  7,  4, -6,  0,  3, -2,  1,  8, -6, -2,
         -6, -3,  4, -2, -8, -6,  6,  5,  6, -9, -5, -2, -5, -8, -6, -2,
         -7,  0,  6, -3, -1, -6,  4,  1, -4, -5, -3,  7,  9, -9,  9,  9,
-        0, -2,  6, -3,  5, -2, -1, -3, -5,  7,  6,  6, -8,  0, -4,  9,
-        2,  7, -8, -7,  8, -6, -6,  1,  7, -4, -4,  9, -6, -6,  5, -7
+         0, -2,  6, -3,  5, -2, -1, -3, -5,  7,  6,  6, -8,  0, -4,  9,
+         2,  7, -8, -7,  8, -6, -6,  1,  7, -4, -4,  9, -6, -6,  5, -7
     };
 
     const int16_t weights_2B[outVecSz * inVecSz] =
     {
         -6, -2, -1, -1, -2,  9,  6,  5,  2,  4, -1,  5, -2, -4,  0,  9,
         -8,  8, -4,  6,  5,  3, -7, -9,  7,  0, -4, -1,  1,  7,  6, -6,
-        2, -8,  6,  5, -1, -2,  7,  5, -1,  4,  8,  7, -9, -1,  7,  1,
-        0, -2,  1,  0,  6, -6,  7,  4, -6,  0,  3, -2,  1,  8, -6, -2,
+         2, -8,  6,  5, -1, -2,  7,  5, -1,  4,  8,  7, -9, -1,  7,  1,
+         0, -2,  1,  0,  6, -6,  7,  4, -6,  0,  3, -2,  1,  8, -6, -2,
         -6, -3,  4, -2, -8, -6,  6,  5,  6, -9, -5, -2, -5, -8, -6, -2,
         -7,  0,  6, -3, -1, -6,  4,  1, -4, -5, -3,  7,  9, -9,  9,  9,
-        0, -2,  6, -3,  5, -2, -1, -3, -5,  7,  6,  6, -8,  0, -4,  9,
-        2,  7, -8, -7,  8, -6, -6,  1,  7, -4, -4,  9, -6, -6,  5, -7
+         0, -2,  6, -3,  5, -2, -1, -3, -5,  7,  6,  6, -8,  0, -4,  9,
+         2,  7, -8, -7,  8, -6, -6,  1,  7, -4, -4,  9, -6, -6,  5, -7
     };
 
-    const intel_bias_t regularBiases[outVecSz*groupingNum] = {
+    const intel_bias_t regularBiases[outVecSz*groupingNum] =
+    {
         5, 4, -2, 5, -7, -5, 4, -1
     };
 
@@ -146,13 +142,15 @@ private:
         -6, -2, -1, -1, -2,  9,  6,  5,  2,  4, -1,  5, -2, -4,  0,  9,
     };
 
-    const intel_bias_t diagonalRegularBiases[diagonalOutVecSz] = {
+    const intel_bias_t diagonalRegularBiases[diagonalOutVecSz] =
+    {
         5, 4, -2, 5, -7, -5, 4, -1, 5, 4, -2, 5, -7, -5, 4, -1
     };
 
-    const  intel_compound_bias_t diagonalCompoundBiases[diagonalOutVecSz*groupingNum] =
+    const  intel_compound_bias_t diagonalCompoundBiases[diagonalOutVecSz * groupingNum] =
     {
         { 5,1,{0} }, {4,1,{0}}, {-2,1,{0}}, {5,1,{0}}, {-7,1,{0}}, {-5,1,{0}}, {4,1,{0}}, {-1,1,{0}},
+        { 5,1,{ 0 } },{ 4,1,{ 0 } },{ -2,1,{ 0 } },{ 5,1,{ 0 } },{ -7,1,{ 0 } },{ -5,1,{ 0 } },{ 4,1,{ 0 } },{ -1,1,{ 0 } },
     };
 
     const std::map<uint32_t /*modelIndex*/, const std::map<uint32_t /*configIndex*/,
@@ -194,13 +192,13 @@ private:
     const std::map<uint32_t /*configIndex*/,
         const std::array<int32_t, SetupSplitModel::diagonalOutVecSz * SetupSplitModel::groupingNum>> diagonalOutputs =
     {
-                {0, { 35, -49,  47, -19, -6,  12,  18,  -4, -2,  -9,  -3,   5, 4,  -1,  -2,  -4,
-                     -11,   1, -25, -23, -50, -14,  13,  76, -44, -44,  52,  10, -36,   9,  -6,  -6,
-                     -13,  -5, -11,  15, 4,   0,  16,  40, -2, -10,  -3,   0, -40,  45,   5, -30,
-                      11,   9,  -5,   1, 7,  23,   3, -17, 4,   4,   4,   4, -37, -55, -73, -19 }},
-                {1, { -9,  -5,  -8,   5, 0,  -1,   3,   9, 0,   8,   1,  -2, -9,   8,   0,  -7,
-                      -9,  -8,  -1,  -4, -3,  -7,  -2,   3, -8,   0,   1,   3, -4,  -6,  -8,  -2,
-                      -5,   9,  -7,   4, 5,  -4,  -7,   4, 0,   7,   1,  -7, 1,   6,   7,   9,
-                       2,  -4,   9,   8, -5,  -1,   2,   9, -8,  -8,   8,   1, -7,   2,  -1,  -1 }}
+        { 0,{ 35, -49,  47, -19,  -6,  12,  18,  -4, -2,  -9,  -3,    5,   4,  -1,  -2,  -4,
+        -11,   1, -25, -23, -50, -14,  13,  76, -44, -44,  52,  10, -36,   9,  -6,  -6,
+        -13,  -5, -11,  15,   4,   0,  16,  40, -2, -10,  -3,    0, -40,  45,   5, -30,
+        11,   9,  -5,   1,   7,  23,   3, -17,  4,   4,   4,    4, -37, -55, -73, -19 } },
+    { 1,{ 59,  35,  53, -25,   4,   6,  -2, -14, -2, -10,  -3,    0,  14,  -3,   5,  12,
+          11,   9,  -5,   1, -32, -68, -23,  22,-44,   4,  10,   22, -21, -31, -41, -11,
+          -5,  23,  -9,  13,  24, -12, -24,  20, -2,  -9,  -3,    5,  10,  35,  40,  50,
+         -11,   1, -25, -23,  15,  -1, -13, -41,  4,   4,   4,    4, -64,  17, -10, -10 } },
     };
 };
