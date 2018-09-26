@@ -30,6 +30,7 @@ set(PROJECT_NAME tools)
 set(CMAKE_CXX_STANDARD 14)
 set(CXX_STANDARD_REQUIRED ON)
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
+#set(VERBOSE_MODE 1) #uncomment if needed detailed output for tests
 
 project(${PROJECT_NAME})
 
@@ -101,3 +102,24 @@ if(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
     $<TARGET_PDB_FILE:gna-api>
     $<TARGET_FILE_DIR:DevTest>)
 endif()
+
+#tests
+enable_testing()
+
+add_test(NAME TESTs COMMAND DevTest)
+
+#test running after each change or build
+if (${OS_PREFIX} MATCHES "WIN")
+    if (${VERBOSE_MODE}) #set VERBOSE_MODE if needed
+        add_custom_command (
+            TARGET DevTest POST_BUILD
+            COMMAND ${CMAKE_CTEST_COMMAND} -C $<CONFIG> -V
+        )
+    else()
+        add_custom_command (
+            TARGET DevTest POST_BUILD
+            COMMAND ${CMAKE_CTEST_COMMAND} -C $<CONFIG>
+        )
+    endif()
+endif()
+

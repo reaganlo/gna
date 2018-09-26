@@ -114,6 +114,7 @@ SetupSplitModel::~SetupSplitModel()
 
 void SetupSplitModel::checkReferenceOutput(int modelIndex, int configIndex) const
 {
+    std::cout << "(model, configuration) " << modelIndex << " " << configIndex << ": ";
     auto outputCount = (0 == modelIndex) ? affineOutputs.at(configIndex).size() : diagonalOutputs.at(configIndex).size();
     auto refOutputs = (0 == modelIndex) ? affineOutputs.at(configIndex).data() : diagonalOutputs.at(configIndex).data();
 

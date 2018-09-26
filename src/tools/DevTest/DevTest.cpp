@@ -1,31 +1,32 @@
 /*
- INTEL CONFIDENTIAL
- Copyright 2017 Intel Corporation.
+INTEL CONFIDENTIAL
+Copyright 2017 Intel Corporation.
 
- The source code contained or described herein and all documents related
- to the source code ("Material") are owned by Intel Corporation or its suppliers
- or licensors. Title to the Material remains with Intel Corporation or its suppliers
- and licensors. The Material may contain trade secrets and proprietary
- and confidential information of Intel Corporation and its suppliers and licensors,
- and is protected by worldwide copyright and trade secret laws and treaty provisions.
- No part of the Material may be used, copied, reproduced, modified, published,
- uploaded, posted, transmitted, distributed, or disclosed in any way without Intel's
- prior express written permission.
+The source code contained or described herein and all documents related
+to the source code ("Material") are owned by Intel Corporation or its suppliers
+or licensors. Title to the Material remains with Intel Corporation or its suppliers
+and licensors. The Material may contain trade secrets and proprietary
+and confidential information of Intel Corporation and its suppliers and licensors,
+and is protected by worldwide copyright and trade secret laws and treaty provisions.
+No part of the Material may be used, copied, reproduced, modified, published,
+uploaded, posted, transmitted, distributed, or disclosed in any way without Intel's
+prior express written permission.
 
- No license under any patent, copyright, trade secret or other intellectual
- property right is granted to or conferred upon you by disclosure or delivery
- of the Materials, either expressly, by implication, inducement, estoppel
- or otherwise. Any license under such intellectual property rights must
- be express and approved by Intel in writing.
+No license under any patent, copyright, trade secret or other intellectual
+property right is granted to or conferred upon you by disclosure or delivery
+of the Materials, either expressly, by implication, inducement, estoppel
+or otherwise. Any license under such intellectual property rights must
+be express and approved by Intel in writing.
 
- Unless otherwise agreed by Intel in writing, you may not remove or alter this notice
- or any other notice embedded in Materials by Intel or Intel's suppliers or licensors
- in any way.
+Unless otherwise agreed by Intel in writing, you may not remove or alter this notice
+or any other notice embedded in Materials by Intel or Intel's suppliers or licensors
+in any way.
 */
 
 #include <iostream>
 #include <stdexcept>
 #include <vector>
+#include <string>
 
 #include "Script.h"
 #include "DeviceController.h"
@@ -45,20 +46,20 @@ public:
         //script.actions.emplace_back(Action::CheckReferenceOutput, ModelSetupMix, 0, 0);
         //script.actions.emplace_back(Action::CloseModel, ModelSetupMix, 0, 0);
 
-        script.actions.emplace_back(Action::LoadModel, ModelSetupMultibias_1_2B, 0, 0);
-        script.actions.emplace_back(Action::Score, ModelSetupMultibias_1_2B, 0, 0);
-        script.actions.emplace_back(Action::CheckReferenceOutput, ModelSetupMultibias_1_2B, 0, 0);
-        script.actions.emplace_back(Action::CloseModel, ModelSetupMultibias_1_2B, 0, 0);
-
         script.actions.emplace_back(Action::LoadModel, ModelSetupMultibias_1_1B, 0, 0);
         script.actions.emplace_back(Action::Score, ModelSetupMultibias_1_1B, 0, 0);
-        script.actions.emplace_back(Action::CheckReferenceOutput, ModelSetupMultibias_1_1B, 0, 1);
+        script.actions.emplace_back(Action::CheckReferenceOutput, ModelSetupMultibias_1_1B, 0, 0);
         script.actions.emplace_back(Action::CloseModel, ModelSetupMultibias_1_1B, 0, 0);
 
-        script.actions.emplace_back(Action::LoadModel, ModelSetupMultibiasPwl_1_2B, 0, 0);
-        script.actions.emplace_back(Action::Score, ModelSetupMultibiasPwl_1_2B, 0, 0);
-        script.actions.emplace_back(Action::CheckReferenceOutput, ModelSetupMultibiasPwl_1_2B, 0, 2);
-        script.actions.emplace_back(Action::CloseModel, ModelSetupMultibiasPwl_1_2B, 0, 0);
+        script.actions.emplace_back(Action::LoadModel, ModelSetupMultibias_1_2B, 0, 0);
+        script.actions.emplace_back(Action::Score, ModelSetupMultibias_1_2B, 0, 0);
+        script.actions.emplace_back(Action::CheckReferenceOutput, ModelSetupMultibias_1_2B, 0, 1);
+        script.actions.emplace_back(Action::CloseModel, ModelSetupMultibias_1_2B, 0, 0);
+
+        script.actions.emplace_back(Action::LoadModel, ModelSetupMultibiasPwl_1_1B, 0, 0);
+        script.actions.emplace_back(Action::Score, ModelSetupMultibiasPwl_1_1B, 0, 0);
+        script.actions.emplace_back(Action::CheckReferenceOutput, ModelSetupMultibiasPwl_1_1B, 0, 2);
+        script.actions.emplace_back(Action::CloseModel, ModelSetupMultibiasPwl_1_1B, 0, 0);
 
         script.actions.emplace_back(Action::LoadModel, ModelSetupMultibiasPwl_1_2B, 0, 0);
         script.actions.emplace_back(Action::Score, ModelSetupMultibiasPwl_1_2B, 0, 0);
@@ -107,23 +108,23 @@ public:
 
         script.actions.emplace_back(Action::LoadModel, ModelSetupSplit_1_1B, 0, 0);
         script.actions.emplace_back(Action::Score, ModelSetupSplit_1_1B, 0, 0);
-        script.actions.emplace_back(Action::Score, ModelSetupSplit_1_1B, 0, 1);
-        script.actions.emplace_back(Action::Score, ModelSetupSplit_1_1B, 1, 0);
-        script.actions.emplace_back(Action::Score, ModelSetupSplit_1_1B, 1, 1);
         script.actions.emplace_back(Action::CheckReferenceOutput, ModelSetupSplit_1_1B, 0, 0);
+        script.actions.emplace_back(Action::Score, ModelSetupSplit_1_1B, 0, 1);
         script.actions.emplace_back(Action::CheckReferenceOutput, ModelSetupSplit_1_1B, 0, 1);
+        script.actions.emplace_back(Action::Score, ModelSetupSplit_1_1B, 1, 0);
         script.actions.emplace_back(Action::CheckReferenceOutput, ModelSetupSplit_1_1B, 1, 0);
+        script.actions.emplace_back(Action::Score, ModelSetupSplit_1_1B, 1, 1);
         script.actions.emplace_back(Action::CheckReferenceOutput, ModelSetupSplit_1_1B, 1, 1);
         script.actions.emplace_back(Action::CloseModel, ModelSetupSplit_1_1B, 0, 0);
 
         script.actions.emplace_back(Action::LoadModel, ModelSetupSplit_1_2B, 0, 0);
         script.actions.emplace_back(Action::Score, ModelSetupSplit_1_2B, 0, 0);
-        script.actions.emplace_back(Action::Score, ModelSetupSplit_1_2B, 0, 1);
-        script.actions.emplace_back(Action::Score, ModelSetupSplit_1_2B, 1, 0);
-        script.actions.emplace_back(Action::Score, ModelSetupSplit_1_2B, 1, 1);
         script.actions.emplace_back(Action::CheckReferenceOutput, ModelSetupSplit_1_2B, 0, 0);
+        script.actions.emplace_back(Action::Score, ModelSetupSplit_1_2B, 0, 1);
         script.actions.emplace_back(Action::CheckReferenceOutput, ModelSetupSplit_1_2B, 0, 1);
+        script.actions.emplace_back(Action::Score, ModelSetupSplit_1_2B, 1, 0);
         script.actions.emplace_back(Action::CheckReferenceOutput, ModelSetupSplit_1_2B, 1, 0);
+        script.actions.emplace_back(Action::Score, ModelSetupSplit_1_2B, 1, 1);
         script.actions.emplace_back(Action::CheckReferenceOutput, ModelSetupSplit_1_2B, 1, 1);
         script.actions.emplace_back(Action::CloseModel, ModelSetupSplit_1_2B, 0, 0);
 
@@ -256,11 +257,12 @@ public:
             case Action::Score:
                 gna_request_id requestId;
                 deviceController.RequestEnqueue(modelSetup->ConfigId(action->modelIndex, action->configIndex), GNA_AUTO, &requestId);
-                GnaRequestWait(requestId, 5*60*1000);
+                GnaRequestWait(requestId, 5 * 60 * 1000);
                 break;
 
             case Action::CheckReferenceOutput:
                 modelSetup->checkReferenceOutput(action->modelIndex, action->configIndex);
+                std::cout << "Test passed" << std::endl;
                 break;
             }
         }
@@ -272,16 +274,9 @@ public:
 
     ~ApplicationWrapper()
     {
-        printError();
     }
 
 private:
-    void printError(int error = 0)
-    {
-        if (0 != error)
-        {
-        }
-    }
 
     DeviceController deviceController;
 
@@ -289,11 +284,10 @@ private:
     ActionScript script;
 };
 
-static int handleException();
-
 int main()
 {
-    int retCode = 0;
+    const int retCode = 0;
+    const int retError = -1;
 
     try
     {
@@ -303,30 +297,15 @@ int main()
         app.Run();
         app.CloseScenario();
     }
-    catch (...)
-    {
-        retCode = handleException();
-    }
-    return retCode;
-}
-
-static int handleException()
-{
-    int retCode = -1;
-
-    std::cout << "\nException!!!\n";
-    try
-    {
-        throw;
-    }
     catch (std::exception e)
     {
-        std::cout << e.what() << std::endl;
+        std::cerr << e.what() << std::endl;
+        return retError;
     }
     catch (...)
     {
-        std::cout << "Unknown exception\n";
+        std::cerr << "Unknown exception" << std::endl;
+        return retError;
     }
-
     return retCode;
 }
