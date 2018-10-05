@@ -33,61 +33,31 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 # project name
 project(${PROJECT_NAME})
 
+# options
+option(GNA_LIB_DEBUG "Use debug postfix for GNA library (Linux only)" OFF)
+
 if(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
-  option(GNA_LOCAL_PACKAGE ON)
+  option(GNA_LOCAL_PACKAGE "Use local GNA library package" ON)
 else()
-  option(GNA_LOCAL_PACKAGE OFF)
+  option(GNA_LOCAL_PACKAGE "Use local GNA library package" OFF)
 endif()
 
-# Visual Studio
-if(MSVC)
-  string(TOLOWER ${CMAKE_CXX_COMPILER_ARCHITECTURE_ID} CMAKE_ARCHITECTURE)
-elseif(NOT CMAKE_ARCHITECTURE)
-  set(CMAKE_ARCHITECTURE "x64")
-endif()
+message(STATUS ${CMAKE_SYSTEM_NAME})
+message(STATUS ${GNA_LOCAL_PACKAGE})
+
+# set architecture name
+set(CMAKE_ARCHITECTURE "x64")
 
 # output path variables
 set(GNA_BINARY_DIR ${CMAKE_SOURCE_DIR}/bin)
 set(GNA_SAMPLE_OUT_DIR ${GNA_BINARY_DIR}/$<CONFIG>)
 
-# configuration prefix
-if(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
-  set(OS_PREFIX WIN)
+# set library postfix
+if(GNA_LIB_DEBUG)
+  set(GNA_LIB_POSTFIX "d")
 else()
-  set(OS_PREFIX LNX)
+  set(GNA_LIB_POSTFIX "")
 endif()
-
-# configuration flags
-if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
-  set(CXX_FLAGS "-g -Wall")
-  set(CXX_FLAGS_DEBUG "-O0 -DDEBUG=1")
-  set(CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
-elseif(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
-  set(CXX_FLAGS "/EHa /DWIN32 /D_WINDOWS /Zi /Wall /sdl")
-  set(CXX_FLAGS_DEBUG "/MDd /Od /DDEBUG=1 /RTC1")
-  set(CXX_FLAGS_RELEASE "/MD /O3 /Oi /DNDEBUG /Gy")
-  set(CXX_LINKER_FLAGS "/DEBUG")
-  set(CXX_LINKER_FLAGS_DEBUG "/INCREMENTAL")
-  set(CXX_LINKER_FLAGS_RELEASE "/INCREMENTAL:NO /NOLOGO /OPT:REF /OPT:ICF")
-endif()
-
-# set default configuration
-include(${CMAKE_SOURCE_DIR}/../build/cmake/set_build_type.cmake)
-
-# set 32-bit compilation flags
-if(CMAKE_ARCHITECTURE STREQUAL x86)
-  include(${CMAKE_SOURCE_DIR}/../build/cmake/set_x86_flags.cmake)
-endif()
-
-set(CMAKE_CXX_FLAGS                                ${CXX_FLAGS})
-set(CMAKE_CXX_FLAGS_${OS_PREFIX}-DEBUG             ${CXX_FLAGS_DEBUG})
-set(CMAKE_CXX_FLAGS_${OS_PREFIX}-RELEASE           ${CXX_FLAGS_RELEASE})
-set(CMAKE_SHARED_LINKER_FLAGS                      "${CMAKE_SHARED_LINKER_FLAGS} ${CXX_LINKER_FLAGS}")
-set(CMAKE_SHARED_LINKER_FLAGS_${OS_PREFIX}-DEBUG   ${CXX_LINKER_FLAGS_DEBUG})
-set(CMAKE_SHARED_LINKER_FLAGS_${OS_PREFIX}-RELEASE ${CXX_LINKER_FLAGS_RELEASE})
-set(CMAKE_EXE_LINKER_FLAGS                         "${CMAKE_EXE_LINKER_FLAGS} ${CXX_LINKER_FLAGS}")
-set(CMAKE_EXE_LINKER_FLAGS_${OS_PREFIX}-DEBUG      ${CXX_LINKER_FLAGS_DEBUG})
-set(CMAKE_EXE_LINKER_FLAGS_${OS_PREFIX}-RELEASE    ${CXX_LINKER_FLAGS_RELEASE})
 
 # create imported target or find GNA library in the system
 if(GNA_LOCAL_PACKAGE)
@@ -99,7 +69,7 @@ if(GNA_LOCAL_PACKAGE)
       PROPERTY IMPORTED_IMPLIB ${CMAKE_CURRENT_LIST_DIR}/gna-lib/${CMAKE_ARCHITECTURE}/gna.lib)
   else()
     set_property(TARGET Gna::gna-api
-      PROPERTY IMPORTED_LOCATION ${CMAKE_CURRENT_LIST_DIR}/gna-lib/${CMAKE_ARCHITECTURE}/libgna.so.2)
+      PROPERTY IMPORTED_LOCATION ${CMAKE_CURRENT_LIST_DIR}/gna-lib/${CMAKE_ARCHITECTURE}/libgna${GNA_LIB_POSTFIX}.so.2)
   endif()
   set_property(TARGET Gna::gna-api PROPERTY
     INTERFACE_INCLUDE_DIRECTORIES ${CMAKE_SOURCE_DIR}/gna-lib/include)
