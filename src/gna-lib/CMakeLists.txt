@@ -333,3 +333,4 @@ install(EXPORT GnaTargets
   FILE gna-config.cmake
   NAMESPACE Gna::
   DESTINATION lib/cmake/gna${GNA_VERSION_MAJOR})
+
