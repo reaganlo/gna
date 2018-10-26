@@ -239,47 +239,6 @@ void WindowsIoctlSender::getDeviceCapabilities()
     }
 }
 
-void WindowsIoctlSender::createRequestDescriptor(HardwareRequest *hardwareRequest)
-{
-    auto& calculationSize = hardwareRequest->CalculationSize;
-    calculationSize = sizeof(GNA_CALC_IN);
-    auto ioBuffersCount = hardwareRequest->IoBuffers.size();
-    auto ioBuffersSize = ioBuffersCount * sizeof(hardwareRequest->IoBuffers[0]);
-    auto nnopTypesCount = hardwareRequest->NnopTypes.size();
-    auto nnopTypesSize = nnopTypesCount * sizeof(hardwareRequest->NnopTypes[0]);
-    auto xnnActiveListsCount = hardwareRequest->XnnActiveLists.size();
-    auto xnnActiveListsSize = xnnActiveListsCount * sizeof(hardwareRequest->XnnActiveLists[0]);
-    auto gmmActiveListsCount = hardwareRequest->GmmActiveLists.size();
-    auto gmmActiveListsSize = gmmActiveListsCount * sizeof(hardwareRequest->GmmActiveLists[0]);
-
-    calculationSize += ioBuffersSize +  nnopTypesSize +  xnnActiveListsSize +  gmmActiveListsSize;
-    calculationSize = ALIGN(calculationSize, sizeof(uint64_t));
-    hardwareRequest->CalculationData.reset(new uint8_t[calculationSize]);
-
-    auto calculationData = reinterpret_cast<PGNA_CALC_IN>(hardwareRequest->CalculationData.get());
-    memset(calculationData, 0, calculationSize);
-    calculationData->memoryId = hardwareRequest->MemoryId;
-    calculationData->modelId = hardwareRequest->ModelId;
-    calculationData->hwPerfEncoding = hardwareRequest->HwPerfEncoding;
-    calculationData->reqCfgDescr.requestConfigId = hardwareRequest->RequestConfigId;
-    calculationData->reqCfgDescr.buffersCount = ioBuffersCount;
-    calculationData->reqCfgDescr.xnnActiveListsCount = xnnActiveListsCount;
-    calculationData->reqCfgDescr.gmmActiveListsCount = gmmActiveListsCount;
-    calculationData->reqCfgDescr.nnopTypesCount = nnopTypesCount;
-
-    uint8_t *requestData = reinterpret_cast<uint8_t*>(calculationData) + sizeof(GNA_CALC_IN);
-    uint8_t *calculationEnd = requestData + calculationSize;
-    memcpy_s(requestData, calculationEnd - requestData, hardwareRequest->IoBuffers.data(), ioBuffersSize);
-    requestData += ioBuffersSize;
-    memcpy_s(requestData, calculationEnd - requestData, hardwareRequest->NnopTypes.data(), nnopTypesSize);
-    requestData += nnopTypesSize;
-    memcpy_s(requestData, calculationEnd - requestData, hardwareRequest->XnnActiveLists.data(), xnnActiveListsSize);
-    requestData += xnnActiveListsCount;
-    memcpy_s(requestData, calculationEnd - requestData, hardwareRequest->GmmActiveLists.data(), gmmActiveListsSize);
-
-    hardwareRequest->SubmitReady = true;
-}
-
 void WindowsIoctlSender::wait(LPOVERLAPPED const ioctl, const DWORD timeout)
 {
     auto bytesRead = DWORD{0};

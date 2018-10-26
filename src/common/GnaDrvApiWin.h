@@ -32,13 +32,6 @@
  *
  *****************************************************************************/
 
-#ifdef DRIVER
-#   include <ntddk.h>
-#else
-#   include <initguid.h>
-#   include <Windows.h>
-#endif // !DRIVER
-
 #include "GnaDrvApi.h"
 
 # pragma pack (1) // set structure packaging to 1 to ensure alignment and size

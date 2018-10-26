@@ -242,7 +242,7 @@ typedef uint32_t GCWIDTH;
 * Offset:   0x0050
 * Size:     0x04 B
 * See:      HAS Section 5.4.2.7.14
-* Note:     Specifies the number of bytes from the start of one Gaussian 
+* Note:     Specifies the number of bytes from the start of one Gaussian
 *           Constant set to the start of the next Gaussian Constant set
 *           Valid value are:
 *               from:   0x08
@@ -259,7 +259,7 @@ typedef uint32_t GCSOFFSET;
 * Offset:   0x0054
 * Size:     0x04 B
 * See:      HAS Section 5.4.2.7.15
-* Note:     Specifies vendor dependent score threshold representing maximum 
+* Note:     Specifies vendor dependent score threshold representing maximum
 *           score (corresponding to smallest log likelihood)
 *           SW must initialize this to the appropriate max score result
 */
@@ -300,8 +300,8 @@ typedef uint32_t NUMMCPG;
 * Offset:   0x0060
 * Size:     0x04 B
 * See:      HAS Section 5.4.2.7.18
-* Note:     The value in this register must match the total amount of data 
-*           elements that are used in the mean and var arrays, the size of 
+* Note:     The value in this register must match the total amount of data
+*           elements that are used in the mean and var arrays, the size of
 *           the element is calculated directly
 *           Valid value is:
 *               Number of Mixture Components * Feature vectore length
@@ -329,7 +329,7 @@ typedef uint32_t NUMGMMS;
 * Offset:   0x0068
 * Size:     0x04 B
 * See:      HAS Section 5.4.2.7.20
-* Note:     Specifies virtual address pointer to the Active GMM List 
+* Note:     Specifies virtual address pointer to the Active GMM List
 *           in user pinned memory
 *           Must be 64B aligned
 */
@@ -383,7 +383,7 @@ typedef uint32_t GMMSCRADD;
 * Offset:   0x007C
 * Size:     0x04 B
 * See:      HAS Section 5.4.2.7.24
-* Note:     The value in this register must match the total amount of data, 
+* Note:     The value in this register must match the total amount of data,
 *           in bytes, that is stored to the Gscore output array.
 *           Valid values are:
 *               GMMSCRWIDTH (4) * NUMFV * NumberGMMstates, w/o Active list

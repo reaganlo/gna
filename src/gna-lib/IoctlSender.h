@@ -88,6 +88,8 @@ protected:
     IoctlSender(const IoctlSender &) = delete;
     IoctlSender& operator=(const IoctlSender&) = delete;
 
+    virtual void createRequestDescriptor(HardwareRequest *hardwareRequest);
+
     static const std::map<uint32_t, gna_device_kind> deviceTypeMap;
 };
 

@@ -30,6 +30,15 @@
 
 using namespace GNA;
 
+#if defined(_WIN32)
+#if HW_VERBOSE == 1
+#include "GnaDrvApiWinDebug.h"
+#else
+#include "GnaDrvApiWin.h"
+#endif
+#else
+#error Verbose version of library available only on Windows OS
+#endif
 
 std::map<dbg_action_type const, char const * const> const HardwareModelVerbose::actionFileNames =
 {
@@ -93,10 +102,10 @@ void HardwareModelVerbose::SetAfterscoreScenario(uint32_t nActions, dbg_action *
 
 void HardwareModelVerbose::readPageDir(FILE *file)
 {
-    hw_mmap_in_t readPageDirIn;
+    GNA_MM_IN readPageDirIn;
     readPageDirIn.memoryId = memoryId;
 
-    hw_pgdir_out_t readPageDirOut;
+    GNA_PGDIR_OUT readPageDirOut;
     ZeroMemory(&readPageDirOut, sizeof(readPageDirOut));
 
     ioctlSender.IoctlSend(GNA_COMMAND_READ_PGDIR,
@@ -106,7 +115,7 @@ void HardwareModelVerbose::readPageDir(FILE *file)
     dumpPageDir(readPageDirOut, file);
 }
 
-void HardwareModelVerbose::dumpPageDir(hw_pgdir_out_t &pagedir, FILE *file)
+void HardwareModelVerbose::dumpPageDir(GNA_PGDIR_OUT &pagedir, FILE *file)
 {
     fprintf(file, "\nPage directory\n");
     fprintf(file, "-----------------------------------------------------------------\n");
@@ -153,10 +162,10 @@ void HardwareModelVerbose::dumpPage(uint8_t *ph_addr, uint8_t* v_addr, size_t si
 
 UINT32 HardwareModelVerbose::readReg(UINT32 regOffset)
 {
-    hw_read_in_t readRegIn;
+    GNA_READREG_IN readRegIn;
     readRegIn.mbarIndex = 0;
     readRegIn.regOffset = regOffset;
-    hw_read_out_t readRegOut;
+    GNA_READREG_OUT readRegOut;
     ZeroMemory(&readRegOut, sizeof(readRegOut));
 
     ioctlSender.IoctlSend(GNA_COMMAND_READ_REG,
@@ -168,7 +177,7 @@ UINT32 HardwareModelVerbose::readReg(UINT32 regOffset)
 
 void HardwareModelVerbose::writeReg(UINT32 regOffset, UINT32 regVal)
 {
-    hw_write_in_t writeRegIn;
+    GNA_WRITEREG_IN writeRegIn;
     writeRegIn.mbarIndex = 0;
     writeRegIn.regOffset = regOffset;
     writeRegIn.regValue = regVal;
@@ -419,7 +428,7 @@ void HardwareModelVerbose::dumpGmmDescriptor(uint16_t layerNumber, FILE *file)
     fprintf(file, "\nGMM Descriptor space\n");
     fprintf(file, "-----------------------------------------------------------------\n");
     fprintf(file, "---                   values (dwords  MSB->LSB)               ---\n");
-    
+
     auto gmmConfig = hardwareLayers.at(layerNumber)->GmmDescriptor;
     for (size_t i = 0; i < sizeof(GMM_CONFIG) / sizeof(uint32_t); i++)
     {

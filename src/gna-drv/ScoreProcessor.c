@@ -52,7 +52,9 @@ ScoreStart(
 
 NTSTATUS
 ScoreValidateParams(
-    _In_    PGNA_CALC_IN config);
+    _In_    PGNA_CALC_IN input,
+    _In_    size_t       inputLength,
+    _In_    PAPP_CTX     appCtx);
 
 /**
  * Completes scoring request processed by hardware
@@ -363,71 +365,31 @@ GNAScoreDebug(
     Trace(TLI, T_MEM, "GNA actFuncSectDefPtr: %#x:", read32);
 }
 
-static size_t calculateLayersDescriptorBufferSize(const PGNA_CALC_IN input)
+static PGNA_MEMORY_PATCH GetNextPatch(PGNA_MEMORY_PATCH patch)
 {
-    size_t sz = sizeof(GNA_CALC_IN);
-    sz += sizeof(GNA_BUFFER_DESCR) * input->reqCfgDescr.buffersCount;
-    sz += sizeof(NNOP_TYPE_DESCR) * input->reqCfgDescr.nnopTypesCount;
-    sz += sizeof(XNN_ACTIVE_LIST_DESCR) * input->reqCfgDescr.xnnActiveListsCount;
-    sz += sizeof(GMM_ACTIVE_LIST_DESCR) * input->reqCfgDescr.gmmActiveListsCount;
-
-    return ALIGN(sz, sizeof(UINT64));
+    return (PGNA_MEMORY_PATCH)(patch->data + patch->size);
 }
 
-static void copyLayerDescriptors(const PGNA_CALC_IN input, PVOID userVA)
+static void PatchMemory(const PGNA_CALC_IN input, PMEMORY_CTX memoryCtx)
 {
-    PUCHAR memoryBase = (PUCHAR)userVA;
-    memoryBase += input->ctrlFlags.layerBase;
-
-    PUCHAR layerDescriptors = (PUCHAR)input + sizeof(GNA_CALC_IN);
-    size_t descriptorsSize = input->ctrlFlags.layerCount * XNN_LYR_DSC_SIZE;
-    RtlCopyMemory(memoryBase, layerDescriptors, descriptorsSize);
-}
-
-static void setLayersDescriptorParameters(const PGNA_CALC_IN input, PMEMORY_CTX memoryCtx)
-{
-    if (input->reqCfgDescr.modelId == memoryCtx->modelId &&
-        input->reqCfgDescr.requestConfigId == memoryCtx->requestConfigId)
-    {
-        return;
-    }
-    memoryCtx->requestConfigId = input->reqCfgDescr.requestConfigId;
-
     PUCHAR const memoryBase = memoryCtx->userMemoryBaseVA;
 
-    // set buffers according to request config
-    PGNA_BUFFER_DESCR bufferDescr = (PGNA_BUFFER_DESCR)((PUCHAR)input + sizeof(GNA_CALC_IN));
-    for (UINT32 i = 0; i < input->reqCfgDescr.buffersCount; ++i)
-    {
-        *(PUINT32)(memoryBase + bufferDescr->offset) = bufferDescr->value;
-        ++bufferDescr;
-    }
+    PGNA_MEMORY_PATCH memoryPatch;
+    PUINT8 memoryDestination;
+    UINT32 i;
 
-    // set nnop type
-    PNNOP_TYPE_DESCR nnopTypeDescr = (PNNOP_TYPE_DESCR)bufferDescr;
-    for (UINT32 i = 0; i < input->reqCfgDescr.nnopTypesCount; ++i)
-    {
-        *(PUINT8)(memoryBase + nnopTypeDescr->offset) = nnopTypeDescr->value;
-        ++nnopTypeDescr;
-    }
+    /* update memory according to request config */
+    Trace(TLV, T_MEM, "patchCount %llu\n", input->patchCount);
 
-    // set xnn active list params according to request config
-    PXNN_ACTIVE_LIST_DESCR xnnActLstDescr = (PXNN_ACTIVE_LIST_DESCR)nnopTypeDescr;
-    for (UINT32 i = 0; i < input->reqCfgDescr.xnnActiveListsCount; ++i)
+    memoryPatch = (PGNA_MEMORY_PATCH)input->patches;
+    for (i = 0; i < input->patchCount; ++i)
     {
-        *(PUINT32)(memoryBase + xnnActLstDescr->act_list_buffer_offset) = xnnActLstDescr->act_list_buffer_value;
-        *(PUINT16)(memoryBase + xnnActLstDescr->act_list_n_elems_offset) = xnnActLstDescr->act_list_n_elems_value;
-        ++xnnActLstDescr;
-    }
+        Trace(TLV, T_MEM, "patch %d. offset: %llu, size: %llu\n",
+            i, memoryPatch->offset, memoryPatch->size);
 
-    // set gmm active list params according to request config
-    PGMM_ACTIVE_LIST_DESCR gmmActLstDescr = (PGMM_ACTIVE_LIST_DESCR)xnnActLstDescr;
-    for (UINT32 i = 0; i < input->reqCfgDescr.gmmActiveListsCount; ++i)
-    {
-        *(PUINT32)(memoryBase + gmmActLstDescr->asladdr_offset) = gmmActLstDescr->asladdr_value;
-        *(PUINT32)(memoryBase + gmmActLstDescr->astlistlen_offset) = gmmActLstDescr->astlistlen_value;
-        *(PUINT32)(memoryBase + gmmActLstDescr->gmmscrlen_offset) = gmmActLstDescr->gmmscrlen_value;
-        ++gmmActLstDescr;
+        memoryDestination = memoryBase + memoryPatch->offset;
+        RtlCopyMemory(memoryDestination, memoryPatch->data, memoryPatch->size);
+        memoryPatch = GetNextPatch(memoryPatch);
     }
 }
 
@@ -441,7 +403,6 @@ ScoreStart(
     PMEMORY_CTX  memoryCtx = NULL; // current memory context
     BOOLEAN     isAppCurrent = FALSE;// deterimenes if current app is saved as recent
     size_t      inputLength = 0;    // tmp in request buffer length
-    size_t      calculatedInputLength = 0; // input length as calculated from GNA_CALC_IN
     PGNA_CALC_IN input = NULL; // input parameters
     PVOID       lyrDscBuffer = NULL; // layer descriptor buffer address to save config to
 
@@ -458,19 +419,7 @@ ScoreStart(
         goto cleanup;
     }
 
-    if (!input->ctrlFlags.copyDescriptors)
-    {
-        calculatedInputLength = calculateLayersDescriptorBufferSize(input);
-        if (calculatedInputLength != inputLength)
-        {
-            status = STATUS_INVALID_BUFFER_SIZE;
-            Trace(TLE, T_QUE, "Incorrect input size. Is %#llx, should be %#llx", inputLength, calculatedInputLength);
-            TraceFailMsg(TLE, T_EXIT, "Score input buffer wrong size", status);
-            goto cleanup;
-        }
-    }
-
-    status = ScoreValidateParams(input);
+    status = ScoreValidateParams(input, inputLength, appCtx);
     if (!NT_SUCCESS(status))
     {
         TraceFailMsg(TLE, T_EXIT, "(Score parameters are invalid)", status);
@@ -483,14 +432,7 @@ ScoreStart(
         goto cleanup;
     }
 
-    if (!input->ctrlFlags.copyDescriptors)
-    {
-        setLayersDescriptorParameters(input, memoryCtx);
-    }
-    else
-    {
-        copyLayerDescriptors(input, memoryCtx->userMemoryBaseVA);
-    }
+    PatchMemory(input, memoryCtx);
 
     // check and remember application from which req. is being processed now
     WdfSpinLockAcquire(devCtx->req.reqLock);
@@ -535,12 +477,52 @@ cleanup: // ERROR - complete request
 
 NTSTATUS
 ScoreValidateParams(
-    _In_    PGNA_CALC_IN    params)
+    _In_    PGNA_CALC_IN    input,
+    _In_    size_t          inputLength,
+    _In_    PAPP_CTX        appCtx)
 {
+    PMEMORY_CTX memoryCtx = NULL;
+    PGNA_MEMORY_PATCH memoryPatch = NULL;
+    size_t calculatedRequestSize;
+    size_t userRequestSize;
+    UINT64 patchBoundary;
+    int i;
+
     TraceEntry(TLI, T_ENT);
 
-    ERRCHECKP(NULL == params, STATUS_DATA_ERROR);
-    ERRCHECKP(params->ctrlFlags.gnaMode > 1, STATUS_INVALID_PARAMETER);
+    ERRCHECKP(NULL == input, STATUS_DATA_ERROR);
+    ERRCHECKP(input->ctrlFlags.gnaMode > 1, STATUS_INVALID_PARAMETER);
+    ERRCHECKP(input->configSize != inputLength, STATUS_INVALID_PARAMETER);
+
+    memoryCtx = FindMemoryContextByIdLocked(appCtx, input->memoryId);
+    calculatedRequestSize = sizeof(GNA_CALC_IN);
+    userRequestSize = input->configSize;
+    memoryPatch = (PGNA_MEMORY_PATCH) (
+        (PUINT8)input + sizeof(GNA_CALC_IN));
+
+    for (i = 0; i < input->patchCount; ++i)
+    {
+        // validate if memory patch exceeds memory boundary
+        patchBoundary = memoryPatch->offset + memoryPatch->size;
+        if (patchBoundary > memoryCtx->userMemorySize) {
+            Trace(TLE, T_MEM, "patch %d exceeds memory boundary", i);
+            return STATUS_INVALID_PARAMETER;
+        }
+
+        // validate if calculated size exceeds size provide by user
+        calculatedRequestSize += sizeof(GNA_MEMORY_PATCH)
+            + memoryPatch->size;
+
+        if (calculatedRequestSize > userRequestSize) {
+            Trace(TLE, T_MEM, "patch %d exceeds user request size\n", i);
+            return STATUS_INVALID_PARAMETER;
+        }
+
+        memoryPatch = GetNextPatch(memoryPatch);
+    }
+
+    calculatedRequestSize = ALIGN(calculatedRequestSize, sizeof(UINT64));
+    ERRCHECKP(calculatedRequestSize != inputLength, STATUS_INVALID_PARAMETER);
 
     return STATUS_SUCCESS;
 }

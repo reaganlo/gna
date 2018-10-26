@@ -167,8 +167,7 @@ source_group(Api FILES ${api_headers})
 add_library(gna-api SHARED)
 
 if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
-  target_include_directories(gna-api PRIVATE ${CMAKE_SOURCE_DIR}/src/gna-lnx-drv)
-  set(gna_lib_headers ${gna_lib_headers} ${CMAKE_SOURCE_DIR}/src/gna-lnx-drv/gna.h)
+  set(gna_lib_headers ${gna_lib_headers} ${COMMON_DIR}/gna.h)
 endif()
 
 target_include_directories(gna-api

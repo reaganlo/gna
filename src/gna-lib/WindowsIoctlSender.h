@@ -105,8 +105,6 @@ private:
 
     void checkStatus(BOOL ioResult);
 
-    void createRequestDescriptor(HardwareRequest *hardwareRequest);
-
     void getDeviceCapabilities();
 
     static const std::map<GnaIoctlCommand, decltype(GNA_IOCTL_CPBLTS)> ioctlCommandsMap;

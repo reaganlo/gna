@@ -51,7 +51,6 @@ enum GnaOperationMode : uint8_t
     xNN = 1
 };
 
-#pragma pack(1)
 struct IoBufferPatch
 {
     uint32_t bufferLdOffset;
@@ -84,7 +83,6 @@ struct GmmAlPatch
     uint32_t gmmScrlenLdOffset;
     GMMSCRLEN gmmSrclen;
 };
-#pragma pack()
 
 class HardwareRequest
 {

@@ -55,49 +55,18 @@ struct gna_capabilities {
 struct gna_ctrl_flags {
 	__u32				active_list_on:1;
 	__u32				gna_mode:2;
-	__u32				layer_count:14;
-	__u32				copy_whole_descriptors:1;
-	__u32				reserved:14;
+	__u32				reserved:29;
 	__u32				config_base;
+	__u32				layer_count;
 } __attribute__((packed));
 
 /**
- * Structure used to send to driver which buffer addresses to overwrite
- * according to score request configuration
+ * Structure describes part of memory to be overwritten before starting GNA
  */
-struct gna_buffer_descr {
-	__u32				offset;
-	__u32				value;
-} __attribute__((packed));
-
-struct gna_nnop_descr {
-	__u32				offset;
-	__u8				value;
-} __attribute__((packed));
-
-struct gna_xnn_al_descr {
-	__u32				al_buffer_offset;
-	__u32				al_buffer_value;
-	__u32				al_n_elems_offset;
-	__u16				al_n_elems_value;
-} __attribute__((packed));
-
-struct gna_gmm_al_descr {
-	__u32				asl_addr_offset;
-	__u32				asl_addr_value;
-	__u32				asl_len_offset;
-	__u32				asl_len_value;
-	__u32				gmm_scrlen_offset;
-	__u32				gmm_scrlen_value;
-} __attribute__((packed));
-
-struct gna_req_config {
-	__u32				model_id;
-	__u32				request_cfg_id;
-	__u32				buffer_count;
-	__u32				nnop_type_count;
-	__u32				xnn_al_count;
-	__u32				gmm_al_count;
+struct gna_memory_patch {
+	__u64				offset;
+	__u64				size;
+	__u8				data[];
 } __attribute__((packed));
 
 struct gna_drv_perf {
@@ -115,12 +84,13 @@ struct gna_score_cfg {
 
 	__u64			request_id;
 	__u64			memory_id;
+	__u64			config_size;
+	__u64			patch_count;
 
 	struct gna_ctrl_flags	flags;
-
 	__u8			hw_perf_encoding;
 
-	struct gna_req_config	req_cfg_desc;
+	__u8			patches[];
 
 } __attribute__((packed));
 

@@ -64,8 +64,6 @@ private:
     LinuxIoctlSender(const LinuxIoctlSender &) = delete;
     LinuxIoctlSender& operator=(const LinuxIoctlSender&) = delete;
 
-    void createRequestDescriptor(HardwareRequest *hardwareRequest);
-
     status_t parseHwStatus(__u32 hwStatus) const;
 
     int gnaFileDescriptor = -1;

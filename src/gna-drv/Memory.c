@@ -107,7 +107,6 @@ MemoryMap(
         memoryCtx->mmapRequest = mapRequest;
         memoryCtx->userMemoryBaseVA = usrBuffer;
         memoryCtx->userMemorySize = length;
-        memoryCtx->requestConfigId = -1;
         InitializeListHead(&memoryCtx->listEntry);
 
         WdfSpinLockAcquire(appCtx->memoryIdLock);

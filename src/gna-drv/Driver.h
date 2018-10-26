@@ -48,15 +48,15 @@ Environment:
 #include <wdf.h>
 
 #if 10 == TARGET_WIN_VER
-#	if NTDDI_VERSION < 0x0A000000 
-#	error Target Windows 10 version is not set properly 
+#	if NTDDI_VERSION < 0x0A000000
+#	error Target Windows 10 version is not set properly
 #	endif
 #elif 63 == TARGET_WIN_VER
-#	if NTDDI_VERSION != 0x06030000 
-#	error Target Windows 8.1 version is not set properly 
+#	if NTDDI_VERSION != 0x06030000
+#	error Target Windows 8.1 version is not set properly
 #	endif
 #else
-#	error Target Windows version is not set  
+#	error Target Windows version is not set
 #endif
 
 #include "Trace.h"
@@ -96,8 +96,6 @@ typedef struct _MEMORY_CTX
 {
     LIST_ENTRY    listEntry;
     UINT64        memoryId;                 // Back-reference memory id
-    UINT64        modelId;                  // model id previously scored
-    INT64         requestConfigId;          // request config that currently written into model memory
     PMDL          pMdl;                     // Pointer to MDL object used with MmLock/MmUnlock
     WDFREQUEST    mmapRequest;              // Memory map request to be completed on memory release
     PT_DIR        ptDir[PT_DIR_SIZE + 1];   // page table directory
@@ -169,7 +167,7 @@ typedef struct _DEV_CONFIG
  */
 typedef struct _REQ_STATE
 {
-    WDFREQUEST          req;        // request being currently processed and owned by drv    
+    WDFREQUEST          req;        // request being currently processed and owned by drv
     PGNA_CALC_IN        data;       // active request data buffer address
     BOOLEAN             timeouted;  // flag indicating if hardware is in live-loop and timeout occurred
     BOOLEAN             hwVerify;   // flag indicating if request is for hardware verification purposes
@@ -209,7 +207,7 @@ typedef struct _DEV_CTX
     WDFTIMER            timeout;    // request timeout timer
     WDFQUEUE            queue;      // Device request queue
     WDFQUEUE            memoryMapQueue;// MemoryMap request queue
-    DEV_HW              hw;         // hardware registers      
+    DEV_HW              hw;         // hardware registers
     PROFILER            profiler;   // profiler object for performance measurements
 
 } DEV_CTX, *PDEV_CTX;               // Device context

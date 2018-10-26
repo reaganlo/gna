@@ -197,47 +197,6 @@ RequestResult LinuxIoctlSender::Submit(HardwareRequest * const hardwareRequest, 
     return result;
 }
 
-void LinuxIoctlSender::createRequestDescriptor(HardwareRequest *hardwareRequest)
-{
-    auto& scoreConfigSize = hardwareRequest->CalculationSize;
-    scoreConfigSize = sizeof(struct gna_score_cfg);
-    auto ioBuffersCount = hardwareRequest->IoBuffers.size();
-    auto ioBuffersSize = ioBuffersCount * sizeof(hardwareRequest->IoBuffers[0]);
-    auto nnopTypesCount = hardwareRequest->NnopTypes.size();
-    auto nnopTypesSize = nnopTypesCount * sizeof(hardwareRequest->NnopTypes[0]);
-    auto xnnActiveListsCount = hardwareRequest->XnnActiveLists.size();
-    auto xnnActiveListsSize = xnnActiveListsCount * sizeof(hardwareRequest->XnnActiveLists[0]);
-    auto gmmActiveListsCount = hardwareRequest->GmmActiveLists.size();
-    auto gmmActiveListsSize = gmmActiveListsCount * sizeof(hardwareRequest->GmmActiveLists[0]);
-
-    scoreConfigSize += ioBuffersSize +  nnopTypesSize +  xnnActiveListsSize +  gmmActiveListsSize;
-    scoreConfigSize = ALIGN(scoreConfigSize, sizeof(uint64_t));
-    hardwareRequest->CalculationData.reset(new uint8_t[scoreConfigSize]);
-
-    auto scoreConfig = reinterpret_cast<struct gna_score_cfg *>(hardwareRequest->CalculationData.get());
-    memset(scoreConfig, 0, scoreConfigSize);
-    scoreConfig->memory_id = hardwareRequest->MemoryId;
-    scoreConfig->hw_perf_encoding = hardwareRequest->HwPerfEncoding;
-    scoreConfig->req_cfg_desc.model_id = hardwareRequest->ModelId;
-    scoreConfig->req_cfg_desc.request_cfg_id = hardwareRequest->RequestConfigId;
-    scoreConfig->req_cfg_desc.buffer_count = ioBuffersCount;
-    scoreConfig->req_cfg_desc.xnn_al_count = xnnActiveListsCount;
-    scoreConfig->req_cfg_desc.gmm_al_count = gmmActiveListsCount;
-    scoreConfig->req_cfg_desc.nnop_type_count = nnopTypesCount;
-
-    uint8_t *requestData = reinterpret_cast<uint8_t*>(scoreConfig) + sizeof(gna_score_cfg);
-    uint8_t *calculationEnd = requestData + scoreConfigSize;
-    memcpy_s(requestData, calculationEnd - requestData, hardwareRequest->IoBuffers.data(), ioBuffersSize);
-    requestData += ioBuffersSize;
-    memcpy_s(requestData, calculationEnd - requestData, hardwareRequest->NnopTypes.data(), nnopTypesSize);
-    requestData += nnopTypesSize;
-    memcpy_s(requestData, calculationEnd - requestData, hardwareRequest->XnnActiveLists.data(), xnnActiveListsSize);
-    requestData += xnnActiveListsCount;
-    memcpy_s(requestData, calculationEnd - requestData, hardwareRequest->GmmActiveLists.data(), gmmActiveListsSize);
-
-    hardwareRequest->SubmitReady = true;
-}
-
 status_t LinuxIoctlSender::parseHwStatus(__u32 hwStatus) const
 {
     if (hwStatus & GNA_STS_PCI_MMU_ERR)

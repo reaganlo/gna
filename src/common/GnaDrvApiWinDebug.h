@@ -41,6 +41,16 @@
 
 # pragma pack (1) // set structure packaging to 1 to ensure alignment and size
 
+ /**
+  * MEM_MAP IOCTL - input data.
+  */
+typedef struct _GNA_MM_IN
+{
+    UINT64 memoryId;
+
+} GNA_MM_IN, *PGNA_MM_IN;           // MEM_MAP IOCTL - input data
+
+static_assert(8 == sizeof(GNA_MM_IN), "Invalid size of GNA_MM_IN");
 /**
  * READ_PGDIR IOCTL - output data.
  * Size:    266 768 B

@@ -28,6 +28,13 @@
 #include "gna-api-status.h"
 #include "profiler.h"
 
+#ifdef DRIVER
+#   include <ntddk.h>
+#else
+#   include <initguid.h>
+#   include <Windows.h>
+#endif // !DRIVER
+
 #ifndef STATUS_T_ALIAS
 #define STATUS_T_ALIAS
 typedef intel_gna_status_t  status_t;
@@ -60,7 +67,11 @@ typedef UINT8           __1B_RES;   // 1 B of reserved memory
 #define     PT_SIZE                 ((PT_DIR_SIZE + 1) * PT_ENTRY_NO)
 
 
-#pragma warning(disable:4201)       // disables anonymous struct/unions warning, useful to flatten structs
+// disable zero-sized array in struct/union warning
+#pragma warning(disable:4200)
+
+// disables anonymous struct/unions warning, useful to flatten structs
+#pragma warning(disable:4201)
 
 /******************************************************************************
  *
@@ -70,17 +81,6 @@ typedef UINT8           __1B_RES;   // 1 B of reserved memory
  * NOTE: all below IOCTL in/out data type structures have to be 8 B padded
  *          as this is required for x86-x64 spaces cooperation
  *****************************************************************************/
-
- /**
-  * MEM_MAP IOCTL - input data.
-  */
-typedef struct _GNA_MM_IN
-{
-    UINT64 memoryId;
-
-} GNA_MM_IN, *PGNA_MM_IN;           // MEM_MAP IOCTL - input data
-
-static_assert(8 == sizeof(GNA_MM_IN), "Invalid size of GNA_MM_IN");
 
 /**
  *  Enumeration of device flavors
@@ -129,83 +129,38 @@ typedef struct _CTRL_FLAGS
 static_assert(8 == sizeof(CTRL_FLAGS), "Invalid size of CTRL_FLAGS");
 
 /**
- * Structure used to send to driver which buffer addresses to overwrite according to
- * score request configuration
- */
-typedef struct _GNA_BUFFER_DESCR
-{
-    UINT32 offset; // points where to write the value (refers to user memory base address)
-    UINT32 value; // address offset of the buffer (refers to user memory base address)
-} GNA_BUFFER_DESCR, *PGNA_BUFFER_DESCR;
-
-static_assert(8 == sizeof(GNA_BUFFER_DESCR), "Invalid size of GNA_BUFFER_DESCR");
-
-typedef struct _NNOP_TYPE_DESCR
-{
-    UINT32 offset;
-    UINT8  value;
-} NNOP_TYPE_DESCR, *PNNOP_TYPE_DESCR;
-
-static_assert(5 == sizeof(NNOP_TYPE_DESCR), "Invalid size of NNOP_TYPE_DESCR");
-
-/**
- * _offset member points where to write the _value (refers to user memory base address)
- */
-typedef struct _XNN_ACTIVE_LIST_DESCR
-{
-    UINT32 act_list_buffer_offset;
-    UINT32 act_list_buffer_value;
-    UINT32 act_list_n_elems_offset;
-    UINT16 act_list_n_elems_value;
-} XNN_ACTIVE_LIST_DESCR, *PXNN_ACTIVE_LIST_DESCR;
-
-static_assert(14 == sizeof(XNN_ACTIVE_LIST_DESCR), "Invalid size of XNN_ACTIVE_LIST_DESCR");
-
-/**
-* _offset member points where to write the _value (refers to user memory base address)
-*/
-typedef struct _GMM_ACTIVE_LIST_DESCR
-{
-    UINT32 asladdr_offset;
-    UINT32 asladdr_value;
-    UINT32 astlistlen_offset;
-    UINT32 astlistlen_value;
-    UINT32 gmmscrlen_offset;
-    UINT32 gmmscrlen_value;
-} GMM_ACTIVE_LIST_DESCR, *PGMM_ACTIVE_LIST_DESCR;
-
-static_assert(24 == sizeof(GMM_ACTIVE_LIST_DESCR), "Invalid size of GMM_ACTIVE_LIST_DESCR");
-
-typedef struct _REQ_CONFIG_DESCR
-{
-    UINT32  modelId;
-    UINT32  requestConfigId;
-    UINT32  buffersCount;
-    UINT32  nnopTypesCount;
-    UINT32  xnnActiveListsCount;
-    UINT32  gmmActiveListsCount;
-} REQ_CONFIG_DESCR, *PREQ_CONFIG_DESCR;
-
-static_assert(24 == sizeof(REQ_CONFIG_DESCR), "Invalid size of REQ_CONFIG_DESCR");
-
-/**
  * CALCULATE request data with output information.
  * NOTE: always include performance results
  * this allow to use PROFILED library with NON-PROFILED driver and vice versa
  */
+
 typedef struct _GNA_CALC_IN
 {
-    UINT64              memoryId;        // model identifier
-    UINT64              modelId;        // model identifier
+    // input part
+    UINT64              memoryId;       // model identifier
+    UINT64              configSize;     // size of whole config w/ patches
+    UINT64              patchCount;     // number of patches lying outside this structures
     CTRL_FLAGS          ctrlFlags;      // scoring mode
+    UINT8               hwPerfEncoding; // hardware level performance encoding type
+    // output part
     perf_drv_t          drvPerf;        // driver level performance profiling results
     perf_hw_t           hwPerf;         // hardware level performance results
-    UINT8               hwPerfEncoding; // hardware level performance encoding type
     status_t            status;         // status of scoring
-    REQ_CONFIG_DESCR    reqCfgDescr;
-} GNA_CALC_IN, *PGNA_CALC_IN;       // CALCULATE IOCTL - Input data
 
-static_assert(93 == sizeof(GNA_CALC_IN), "Invalid size of GNA_CALC_IN");
+    // memory patches
+    UINT8               patches[];
+} GNA_CALC_IN, *PGNA_CALC_IN;       // CALCULATE IOCTL - Input/output data
+
+static_assert(77 == sizeof(GNA_CALC_IN), "Invalid size of GNA_CALC_IN");
+
+typedef struct _GNA_MEMORY_PATCH
+{
+    UINT64 offset;
+    UINT64 size;
+    UINT8 data[];
+} GNA_MEMORY_PATCH, *PGNA_MEMORY_PATCH;
+
+static_assert(16 == sizeof(GNA_MEMORY_PATCH), "Invalid size of GNA_MEMORY_PATCH");
 
 /**
  * Minimum Size of GNA (GMM/xNN) request in bytes
