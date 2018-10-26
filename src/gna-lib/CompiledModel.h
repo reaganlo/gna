@@ -47,9 +47,9 @@ public:
     CompiledModel& operator=(const CompiledModel&) = delete;
 
     // TODO: most of these methods are here due to invalid object design, need to refactor to get rid of
-    static const size_t CalculateModelSize(const size_t userSize, const uint16_t layerCount, const uint16_t gmmCount);
-    static const size_t CalculateInternalModelSize(const uint16_t layerCount, const uint16_t gmmCount);
-    static const size_t CalculateInternalModelSize(const gna_model * rawModel);
+    static size_t CalculateModelSize(const size_t userSize, const uint16_t layerCount, const uint16_t gmmCount);
+    static size_t CalculateInternalModelSize(const uint16_t layerCount, const uint16_t gmmCount);
+    static size_t CalculateInternalModelSize(const gna_model * rawModel);
 
     uint16_t GetGmmCount() const;
     uint32_t GetHardwareOffset(const BaseAddressC& address) const;

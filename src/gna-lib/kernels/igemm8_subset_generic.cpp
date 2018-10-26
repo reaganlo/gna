@@ -29,11 +29,14 @@
 
 void AffineActiveListKernelImpl1B(AffineConfig const * const config, AffineConfigAl const * const al)
 {
-    uint32_t i,j,k,l;
+    uint32_t i;
+    uint32_t j;
+    uint32_t k;
+    uint32_t l;
     int16_t const * input;
     int8_t const * weight;
 
-    TransposeConfig transposeConfig = TransposeConfig{ config->inputElementCount, config->inputVectorCount, 
+    TransposeConfig transposeConfig = TransposeConfig{ config->inputElementCount, config->inputVectorCount,
                                                        config->input, config->fvBuffers->d0 };
     TransposeKernelImpl(&transposeConfig);
 

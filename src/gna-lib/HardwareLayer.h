@@ -151,7 +151,7 @@ public:
     virtual uint32_t GetLdFeedbackOffset() const override;
 
     // calculates feedback buffer offset for per RequestConfiguration output buffer
-    const uint32_t CalculateFeedbackBuffer(const OutputBuffer& outputBuffer) const;
+    uint32_t CalculateFeedbackBuffer(const OutputBuffer& outputBuffer) const;
 
 protected:
     void convert();

@@ -50,7 +50,7 @@ struct Logger
     virtual void Error(const status_t status, const char * const format, ...) const;
     virtual void Error(const status_t status) const;
 
-    static const char * const StatusToString(const intel_gna_status_t status) noexcept;
+    static const char * StatusToString(const intel_gna_status_t status) noexcept;
 
 protected:
     static const char * const StatusStrings[2 * (NUMGNASTATUS + 1)];
@@ -94,7 +94,7 @@ protected:
     DebugLogger(FILE * const defaultStreamIn, const char * const componentIn, const char * const levelMessageIn,
         const char * const levelErrorIn);
 
-    virtual const char * const getStatusDescription(const intel_gna_status_t status) const;
+    virtual const char * getStatusDescription(const intel_gna_status_t status) const;
 };
 
 // Verbose logger for validation purposes
@@ -108,7 +108,7 @@ struct VerboseLogger : public DebugLogger
     virtual void HorizontalSpacer() const override;
 
 protected:
-    virtual const char * const getStatusDescription(const intel_gna_status_t status) const override;
+    virtual const char * getStatusDescription(const intel_gna_status_t status) const override;
 };
 
 extern std::unique_ptr<Logger> Log;

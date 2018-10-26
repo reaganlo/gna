@@ -164,7 +164,7 @@ void Logger::Error(const status_t status) const
     UNREFERENCED_PARAMETER(status);
 }
 
-const char * const Logger::StatusToString(const intel_gna_status_t status) noexcept
+const char * Logger::StatusToString(const intel_gna_status_t status) noexcept
 {
     const auto statusSafe = std::min(status, NUMGNASTATUS);
     return StatusStrings[2 * statusSafe];
@@ -257,7 +257,7 @@ template<typename ... X> void DebugLogger::print(FILE * const streamIn, const st
     }
 }
 
-const char * const DebugLogger::getStatusDescription(const intel_gna_status_t status) const
+const char * DebugLogger::getStatusDescription(const intel_gna_status_t status) const
 {
     const auto statusSafe = std::min(status, NUMGNASTATUS);
     return StatusStrings[2 * statusSafe + 1];
@@ -269,7 +269,7 @@ void VerboseLogger::HorizontalSpacer() const
     fprintf(defaultStream, " - ----------------------------------------------------------------\n");
 }
 
-const char * const VerboseLogger::getStatusDescription(const intel_gna_status_t status) const
+const char * VerboseLogger::getStatusDescription(const intel_gna_status_t status) const
 {
     UNREFERENCED_PARAMETER(status);
     return "";

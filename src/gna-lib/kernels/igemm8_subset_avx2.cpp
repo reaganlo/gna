@@ -30,21 +30,68 @@
 
 void AffineActiveListKernelImpl1B(AffineConfig const * const config, AffineConfigAl const * const al)
 {
-    uint32_t i, j, l, ix, ix_end;
     uint32_t KT = config->inputElementCount % VEC_16CAP;
     uint32_t KK = config->inputElementCount - KT;
-    ix_end = KK / VEC_16CAP;
+    uint32_t ix_end = KK / VEC_16CAP;
+    uint32_t ix;
+    uint32_t i;
+    uint32_t j;
+    uint32_t l;
+
     int8_t const * weight = config->weights1B;
     int32_t * output = config->output;
     nn_bias_c const * bias;
-    nn_bias_c const * const biasEnd = config->biasesCompound+config->outputElementCount;
+    int16_t const *input_0 = nullptr;
+    int16_t const *input_1 = nullptr;
+    int16_t const *input_2 = nullptr;
+    int16_t const *input_3 = nullptr;
+    int16_t const *input_4 = nullptr;
+    int16_t const *input_5 = nullptr;
+    int16_t const *input_6 = nullptr;
+    int16_t const *input_7 = nullptr;
 
-    int16_t const * input_0, *input_1, *input_2, *input_3, *input_4, *input_5, *input_6, *input_7;
-    __m256i *in_ptr0, *in_ptr1, *in_ptr2, *in_ptr3, *in_ptr4, *in_ptr5, *in_ptr6, *in_ptr7;
-    __m256i in0, in1, in2, in3, in4, in5, in6, in7, w;
-    __m256i acc0, acc1, acc2, acc3, acc4, acc5, acc6, acc7;
-    __m256i v0, v1, v2, v3, v4, v5, v6, v7;
-    __m128i s1, s2, s3, s4;
+    // simd input pointers
+    __m256i *in_ptr0;
+    __m256i *in_ptr1;
+    __m256i *in_ptr2;
+    __m256i *in_ptr3;
+    __m256i *in_ptr4;
+    __m256i *in_ptr5;
+    __m256i *in_ptr6;
+    __m256i *in_ptr7;
+
+    // simd inputs and weight
+    __m256i in0;
+    __m256i in1;
+    __m256i in2;
+    __m256i in3;
+    __m256i in4;
+    __m256i in5;
+    __m256i in6;
+    __m256i in7;
+    __m256i v0;
+    __m256i v1;
+    __m256i v2;
+    __m256i v3;
+    __m256i v4;
+    __m256i v5;
+    __m256i v6;
+    __m256i v7;
+    __m128i s1;
+    __m128i s2;
+    __m128i s3;
+    __m128i s4;
+    __m256i w;
+
+    // simd accumulators
+    __m256i acc0;
+    __m256i acc1;
+    __m256i acc2;
+    __m256i acc3;
+    __m256i acc4;
+    __m256i acc5;
+    __m256i acc6;
+    __m256i acc7;
 
     if (1 == config->inputVectorCount)
     {

@@ -60,14 +60,14 @@ private:
 
     status_t removeRequest(const gna_request_id requestId);
 
-    Request * const get(const uint32_t requestId)
+    Request * get(const uint32_t requestId)
     {
         try
         {
             auto& request = requests.at(requestId);
             return request.get();
         }
-        catch (const std::out_of_range)
+        catch (const std::out_of_range&)
         {
             throw GnaException(GNA_BADREQID);
         }

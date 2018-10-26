@@ -37,7 +37,7 @@ class RnnLayer : public AffineBaseLayer
 public:
     RnnLayer(nn_layer const * const layer);
     virtual ~RnnLayer() = default;
-    const OutputBuffer CalculateFeedbackBuffer(const OutputBuffer& outputBuffer) const;
+    OutputBuffer CalculateFeedbackBuffer(const OutputBuffer& outputBuffer) const;
     virtual void UpdateKernelConfigs(LayerConfiguration& layerConfiguration, ValidBoundariesFunctor validBoundaries) const override;
 
     const uint32_t FeedbackDelay;

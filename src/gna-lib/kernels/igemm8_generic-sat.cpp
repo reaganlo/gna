@@ -29,17 +29,22 @@
 
 void AffineKernelImpl1B(AffineConfig const * const config)
 {
-    uint32_t niters, acc_iters, rem_iters;
-    uint32_t i,j,k,l;
+    uint32_t nKpartial;
+    uint32_t kpartial;
+    uint32_t acc_iters;
+    uint32_t rem_iters;
+    uint32_t niters;
+    uint32_t i;
+    uint32_t j;
+    uint32_t k;
+    uint32_t l;
     int64_t sum;
     int32_t acc;
     uint32_t kk;
-    uint32_t kpartial;
-    uint32_t nKpartial;
     kpartial    = (hw_buf_size[config->inputVectorCount - 1]) / config->inputVectorCount;
     nKpartial   = config->inputElementCount / kpartial;
 
-    TransposeConfig transposeConfig = TransposeConfig{ config->inputElementCount, config->inputVectorCount, 
+    TransposeConfig transposeConfig = TransposeConfig{ config->inputElementCount, config->inputVectorCount,
                                                        config->input, config->fvBuffers->d0 };
     TransposeKernelImpl(&transposeConfig);
 
@@ -76,7 +81,7 @@ void AffineKernelImpl1B(AffineConfig const * const config)
                     acc += weight[k] * input[k];
                 }
                 // conversion to signed int needed - multiplier is unsigned, and temporary result would biasEnd also unsigned
-                sum += (int32_t)(acc * config->biasesCompound[i].multiplier); 
+                sum += (int32_t)(acc * config->biasesCompound[i].multiplier);
                 saturate_store_out(&sum, &config->output[i*config->inputVectorCount + j], config->saturationCount);
                 sum = (int64_t)config->output[i*config->inputVectorCount + j];
             }
@@ -86,15 +91,20 @@ void AffineKernelImpl1B(AffineConfig const * const config)
 
 void AffineMultiBiasKernelImpl1B(AffineConfig const * const config)
 {
-    uint32_t niters, acc_iters, rem_iters;
-    uint32_t i, j, k, l;
-    int64_t sum;
-    int32_t acc;
-    uint32_t kk;
     const uint32_t kpartial = hw_buf_size[config->inputVectorCount - 1] / config->inputVectorCount;
     const uint32_t nKpartial = config->inputElementCount / kpartial;
+    uint32_t acc_iters;
+    uint32_t rem_iters;
+    uint32_t niters;
+    uint32_t kk;
+    uint32_t i;
+    uint32_t j;
+    uint32_t k;
+    uint32_t l;
+    int64_t sum;
+    int32_t acc;
 
-    TransposeConfig transposeConfig = TransposeConfig{ config->inputElementCount, config->inputVectorCount, 
+    TransposeConfig transposeConfig = TransposeConfig{ config->inputElementCount, config->inputVectorCount,
                                                        config->input, config->fvBuffers->d0 };
     TransposeKernelImpl(&transposeConfig);
 

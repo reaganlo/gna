@@ -29,25 +29,66 @@
 
 void AffineActiveListKernelImpl1B(AffineConfig const * const config, AffineConfigAl const * const al)
 {
-    uint32_t i, j, k, l, ix, ix_end;
+    uint32_t KT = config->inputElementCount % VEC_16CAP;
+    uint32_t KK = config->inputElementCount - KT;
+    uint32_t ix_end = KK / VEC_16CAP;
+    uint32_t ix;
+    uint32_t i;
+    uint32_t j;
+    uint32_t k;
+    uint32_t l;
 
     int32_t * output = config->output;
     int8_t const * weight = config->weights1B;
 
-    __m256i v0, v1, v2, v3;
-    __m128i s0, s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, s15, w, w0, w1;
-    int16_t const * input_0, *input_1, *input_2, *input_3, *input_4, *input_5, *input_6, *input_7;
-
+    int16_t const *input_0 = nullptr;
+    int16_t const *input_1 = nullptr;
+    int16_t const *input_2 = nullptr;
+    int16_t const *input_3 = nullptr;
     nn_bias_c const * bias;
-    nn_bias_c const * const biasEnd = config->biasesCompound + config->outputElementCount;
 
-    uint32_t KT = config->inputElementCount % VEC_16CAP;
-    uint32_t KK = config->inputElementCount - KT;
-    ix_end = KK / VEC_16CAP;
+    // simd inputs
+    __m256i v0;
+    __m256i v1;
+    __m256i v2;
+    __m256i v3;
+    __m128i s0;
+    __m128i s1;
+    __m128i s2;
+    __m128i s3;
+    __m128i s4;
+    __m128i s5;
+    __m128i s6;
+    __m128i s7;
+    __m128i in0;
+    __m128i in1;
+    __m128i in2;
+    __m128i in3;
+    __m128i in4;
+    __m128i in5;
+    __m128i in6;
+    __m128i in7;
 
-    __m128i acc0, acc1, acc2, acc3, acc4, acc5, acc6, acc7;
-    __m128i in0, in1, in2, in3, in4, in5, in6, in7;
-    __m256i* in_ptr0, *in_ptr1, *in_ptr2, *in_ptr3;
+    // simd weights
+    __m128i w0;
+    __m128i w1;
+    __m128i w;
+
+    // simd accumulators
+    __m128i acc0;
+    __m128i acc1;
+    __m128i acc2;
+    __m128i acc3;
+    __m128i acc4;
+    __m128i acc5;
+    __m128i acc6;
+    __m128i acc7;
+
+    // simd input pointers
+    __m256i *in_ptr0 = nullptr;
+    __m256i *in_ptr1 = nullptr;
+    __m256i *in_ptr2 = nullptr;
+    __m256i *in_ptr3 = nullptr;
 
     if (1 == config->inputVectorCount)
     {

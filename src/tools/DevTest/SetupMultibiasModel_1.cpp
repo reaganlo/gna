@@ -181,6 +181,7 @@ void SetupMultibiasModel_1::sampleAffineLayer()
     }
     else
     {
+        tmp_outputs = NULL;
         pwl.nSegments = 0;
         pwl.pSegments = NULL;
     }

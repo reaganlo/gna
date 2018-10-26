@@ -29,20 +29,26 @@
 
 void AffineActiveListKernelImpl1B(AffineConfig const * const config, AffineConfigAl const * const al)
 {
-    uint32_t niters, acc_iters, rem_iters;
-    uint32_t i,j,k,l,m;
-    int64_t sum;
-    int32_t acc;
-    uint32_t kk;
     uint32_t kpartial;
     uint32_t nKpartial;
+    uint32_t acc_iters;
+    uint32_t rem_iters;
+    uint32_t niters;
+    uint32_t i;
+    uint32_t j;
+    uint32_t k;
+    uint32_t kk;
+    uint32_t l;
+    uint32_t m;
+    int64_t sum;
+    int32_t acc;
     kpartial = (hw_buf_size[config->inputVectorCount - 1]) / config->inputVectorCount;
     nKpartial = config->inputElementCount / kpartial;
 
     int16_t const * input;
     int8_t const * weight;
 
-    TransposeConfig transposeConfig = TransposeConfig{ config->inputElementCount, config->inputVectorCount, 
+    TransposeConfig transposeConfig = TransposeConfig{ config->inputElementCount, config->inputVectorCount,
                                                        config->input, config->fvBuffers->d0 };
     TransposeKernelImpl(&transposeConfig);
 
@@ -77,7 +83,7 @@ void AffineActiveListKernelImpl1B(AffineConfig const * const config, AffineConfi
                 sum += (int32_t)(acc * config->biasesCompound[i].multiplier);
 
                 saturate_store_out(&sum, &config->output[l*config->inputVectorCount + j], config->saturationCount);
-                sum = (int64_t)config->output[l*config->inputVectorCount + j]; 
+                sum = (int64_t)config->output[l*config->inputVectorCount + j];
             }
         }
     }

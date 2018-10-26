@@ -23,8 +23,6 @@
  in any way.
 */
 
-#pragma once
-
 #include "IoctlSender.h"
 
 using namespace GNA;

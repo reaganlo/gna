@@ -297,7 +297,7 @@ int main()
         app.Run();
         app.CloseScenario();
     }
-    catch (std::exception e)
+    catch (std::exception& e)
     {
         std::cerr << e.what() << std::endl;
         return retError;

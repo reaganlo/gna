@@ -27,7 +27,7 @@
 
 using namespace GNA;
 
-const size_t HardwareModelSue1::CalculateDescriptorSize(const uint16_t layerCount, const uint16_t gmmLayersCount)
+size_t HardwareModelSue1::CalculateDescriptorSize(const uint16_t layerCount, const uint16_t gmmLayersCount)
 {
     Expect::True(gmmLayersCount == 0, XNN_ERR_NET_LYR_NO);
     Expect::InRange(layerCount, 1, XNN_LAYERS_MAX_COUNT + GMM_LAYERS_MAX_COUNT, XNN_ERR_NET_LYR_NO);

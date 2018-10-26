@@ -28,22 +28,32 @@
 
 void RecurrentKernelImpl2B(RecurrentConfig const * const config)
 {
+    uint32_t kk;
+    uint32_t j;
+    uint32_t k;
+    int64_t sum;
+
     int16_t const * input;
     int16_t * feedback;
     int16_t *feedbackEnd = config->feedbackBuffer+config->outputElementCount;
 
-    nn_bias_s const * bias = config->biasesSimple; 
+    nn_bias_s const * bias = config->biasesSimple;
     nn_bias_s const * const biasEnd= bias + config->outputElementCount;
     int32_t * output = config->output;
     int16_t const * weight = config->weights2B;
 
-    __m256i in, w, ma, acc, inm0, inm1, inm2, zero;
+    // simd inputs and weights
+    __m256i in;
+    __m256i w;
 
-    zero = _mm256_setzero_si256();
+    // simd accumulators
+    __m256i ma;
+    __m256i acc;
 
-    uint32_t allElems = config->inputElementCount + config->outputElementCount; // total # of in + output/fb elements
-    uint32_t i, j, k, kk;
-    int64_t sum;
+    // simd intermediates
+    __m256i inm0;
+    __m256i inm1;
+    __m256i inm2;
 
     uint32_t KK = config->inputElementCount - config->inputElementCount % VEC_16CAP;
     uint32_t part_sz = hw_buf_size[0];
@@ -64,7 +74,7 @@ void RecurrentKernelImpl2B(RecurrentConfig const * const config)
         feedback = config->feedbackBuffer;
         sum = *bias;
 
-        // compute parts using AVX 
+        // compute parts using AVX
         // if config->inputElementCount has modulo 16 remainder, leave it
         for (j = 0; j < kparts + 1; j++)
         {

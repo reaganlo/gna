@@ -415,6 +415,8 @@ intel_nnet_type_t& ChainModel::Setup(uint8_t *pinned_memory)
         case INTEL_GMM:
             setup_gmm_pointers(layer, pinned_memory);
             break;
+        default:
+            break;
         }
     }
 
@@ -446,37 +448,39 @@ uint32_t ChainModel::GetOutputBuffersSize()
     auto outputBufferSize = std::uint32_t{ lastLayer->nOutputRows * lastLayer->nOutputColumns };
     switch (lastLayer->nLayerKind)
     {
-    case INTEL_INTERLEAVE:
-        /* FALLTHRU */
-    case INTEL_DEINTERLEAVE:
-        /* FALLTHRU */
-    case INTEL_COPY:
-        /* FALLTHRU */
-    case INTEL_RECURRENT:
-        outputBufferSize *= sizeof(int16_t);
-        break;
-    case INTEL_GMM:
-        outputBufferSize *= sizeof(int32_t);
-        break;
-    case INTEL_AFFINE:
-    case INTEL_AFFINE_DIAGONAL:
-    {
-        auto affine_layer = static_cast<intel_affine_layer_t*>(lastLayer->pLayerStruct);
-        outputBufferSize *= (affine_layer->pwl.nSegments > 0) ? sizeof(int16_t) : sizeof(int32_t);
-        break;
-    }
-    case INTEL_AFFINE_MULTIBIAS:
-    {
-        auto affine_layer = static_cast<intel_affine_multibias_layer_t*>(lastLayer->pLayerStruct);
-        outputBufferSize *= (affine_layer->pwl.nSegments > 0) ? sizeof(int16_t) : sizeof(int32_t);
-        break;
-    }
-    case INTEL_CONVOLUTIONAL:
-    {
-        auto convolution_layer = static_cast<intel_convolutional_layer_t*>(lastLayer->pLayerStruct);
-        outputBufferSize *= (convolution_layer->pwl.nSegments > 0) ? sizeof(int16_t) : sizeof(int32_t);
-        break;
-    }
+        case INTEL_INTERLEAVE:
+            /* FALLTHRU */
+        case INTEL_DEINTERLEAVE:
+            /* FALLTHRU */
+        case INTEL_COPY:
+            /* FALLTHRU */
+        case INTEL_RECURRENT:
+            outputBufferSize *= sizeof(int16_t);
+            break;
+        case INTEL_GMM:
+            outputBufferSize *= sizeof(int32_t);
+            break;
+        case INTEL_AFFINE:
+        case INTEL_AFFINE_DIAGONAL:
+            {
+                auto affine_layer = static_cast<intel_affine_layer_t*>(lastLayer->pLayerStruct);
+                outputBufferSize *= (affine_layer->pwl.nSegments > 0) ? sizeof(int16_t) : sizeof(int32_t);
+                break;
+            }
+        case INTEL_AFFINE_MULTIBIAS:
+            {
+                auto affine_layer = static_cast<intel_affine_multibias_layer_t*>(lastLayer->pLayerStruct);
+                outputBufferSize *= (affine_layer->pwl.nSegments > 0) ? sizeof(int16_t) : sizeof(int32_t);
+                break;
+            }
+        case INTEL_CONVOLUTIONAL:
+            {
+                auto convolution_layer = static_cast<intel_convolutional_layer_t*>(lastLayer->pLayerStruct);
+                outputBufferSize *= (convolution_layer->pwl.nSegments > 0) ? sizeof(int16_t) : sizeof(int32_t);
+                break;
+            }
+        default:
+            break;
     }
     return outputBufferSize;
 }

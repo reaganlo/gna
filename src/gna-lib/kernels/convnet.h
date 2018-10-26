@@ -51,7 +51,7 @@ void ConvolutionPoolingKernelImpl(ConvolutionConfig const * const filterConfig,
 * @P    pointer to pool array
 * @V    pointer to value
 */
-void MaxPartialPoolingFunction(const uint32_t PS, const int32_t PNE, const uint32_t PSI, int64_t* P, int64_t* V);
+void MaxPartialPoolingFunction(const uint32_t PS, const uint32_t PNE, const uint32_t PSI, const int64_t* P, int64_t* V);
 
 
 /* Calculates SumPartialPoolingFunction
@@ -61,7 +61,7 @@ void MaxPartialPoolingFunction(const uint32_t PS, const int32_t PNE, const uint3
 * @P    pointer to pool array
 * @V    pointer to value
 */
-void SumPartialPoolingFunction(const uint32_t PS, const int32_t PNE, const uint32_t PSI, int64_t* P, int64_t* V);
+void SumPartialPoolingFunction(const uint32_t PS, const uint32_t PNE, const uint32_t PSI, const int64_t* P, int64_t* V);
 
 #ifdef __cplusplus
 }

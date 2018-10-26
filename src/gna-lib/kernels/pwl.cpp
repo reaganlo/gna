@@ -25,6 +25,10 @@
 
 #include <string.h>
 
+#if defined(_WIN32)
+#pragma warning (disable: 592)
+#endif
+
 #if defined(__GNUC__)
 #include <limits.h>
 #endif
@@ -47,7 +51,7 @@ const int32_t XBASEMASK = 0xFFFFFFFC;
 
 #define PADD(value, pad)   ((((value) + pad -1) / pad) * pad)
 
-__forceinline static const void pwlSaturateStoreOut(int64_t sum, int16_t* O, uint32_t * const saturationCount)
+__forceinline static void pwlSaturateStoreOut(int64_t sum, int16_t* O, uint32_t * const saturationCount)
 {
 #if GNA_SAT == 1
     int64_t sat_mask;
@@ -137,7 +141,6 @@ void pwlKernelImplSingleBinary(PwlCachedConfig const * const pwl, int32_t I, int
     uint32_t * const saturationCount)
 {
     int64_t     sum;
-    pwl_x_t*    xBase;
     nn_pwl_seg* segment;
     uint32_t    k;
     uint32_t    k_upper;
@@ -551,7 +554,7 @@ void PwlCached::KERNEL(InitializeActivationFunctions)() const {
 PwlCached::PwlCached(int32_t const * const inputIn, uint32_t elementsCount, nn_pwl_seg const * const segments, uint32_t segmentCountIn)
 {
     int32_t s;                      // PWL segment iterator
-    int32_t i;                      // pwl.lookup element offset iterator (beginning)
+    uint32_t i;                      // pwl.lookup element offset iterator (beginning)
     int64_t j;                      // pwl.lookup element offset iterator (end)
     pwl_x_t xBaseAtmp;                 // left segment xBase value (extracted)
     pwl_x_t xBaseBtmp;                 // right segment x Base value (extracted)
@@ -609,7 +612,7 @@ PwlCached::PwlCached(int32_t const * const inputIn, uint32_t elementsCount, nn_p
         s = 2;
         xBaseAtmp = (segments[1].xBase & XBASEMASK);
         xBaseBtmp = segments[s].xBase & XBASEMASK;
-        while (s < pwl.segmentCount)
+        while (s < static_cast<int32_t>(pwl.segmentCount))
         {
             usegTmp.xBase = pwl.Lookup.xBase0 - pwl.Lookup.xBase1diff - (pwl_x_t)(segments[s - 1].xBase & XBASEMASK);
             usegTmp.shift = ((segments[s - 1].xBase & ~XBASEMASK) + 1) << BIT_SHIFT_SIZE;

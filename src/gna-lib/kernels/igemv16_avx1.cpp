@@ -41,8 +41,13 @@ void RecurrentKernelImpl2B(RecurrentConfig const * const config)
     int16_t const * weight = config->weights2B;
     int16_t const * weight2 = weight + config->inputElementCount;
 
-    __m256i v0, v1, v2, v3, v4, v5, v6, v7, v8;
-    __m128i s0, s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11;
+    __m256i v0;
+    __m128i s0;
+    __m128i s1;
+    __m128i s2;
+    __m128i s3;
+    __m128i s4;
+    __m128i s5;
 
     for (; bias < biasEnd; bias++)
     {

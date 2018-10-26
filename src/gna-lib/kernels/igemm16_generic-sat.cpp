@@ -37,7 +37,7 @@ void AffineKernelImpl2B(AffineConfig const * const config)
     kpartial    = (hw_buf_size[config->inputVectorCount - 1]) / config->inputVectorCount;
     nKpartial   = config->inputElementCount / kpartial;
 
-    TransposeConfig transposeConfig = TransposeConfig{ config->inputElementCount, config->inputVectorCount, 
+    TransposeConfig transposeConfig = TransposeConfig{ config->inputElementCount, config->inputVectorCount,
                                                        config->input, config->fvBuffers->d0 };
     TransposeKernelImpl(&transposeConfig);
 
@@ -73,7 +73,7 @@ void AffineMultiBiasKernelImpl2B(AffineConfig const * const config)
     const uint32_t kpartial = (hw_buf_size[config->inputVectorCount - 1]) / config->inputVectorCount;
     const uint32_t nKpartial = config->inputElementCount / kpartial;
 
-    TransposeConfig transposeConfig = TransposeConfig{ config->inputElementCount, config->inputVectorCount, 
+    TransposeConfig transposeConfig = TransposeConfig{ config->inputElementCount, config->inputVectorCount,
                                                        config->input, config->fvBuffers->d0 };
     TransposeKernelImpl(&transposeConfig);
 

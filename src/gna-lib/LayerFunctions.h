@@ -135,7 +135,7 @@ public:
     const uint32_t BiasVectorCount;
     const uint32_t BiasVectorIndex;
 
-    const nn_bias_s * const GetMultibias() const;
+    const nn_bias_s * GetMultibias() const;
 
 protected:
     AffineFunctionMulti(const nn_func_affine_multi *affine,

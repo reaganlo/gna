@@ -202,14 +202,14 @@ void AccelerationDetector::discoverHardware()
         deviceCapabilities = ioctlSender.GetDeviceCapabilities();
         accelerationModes[GNA_HW] = ACC_SUPPORTED;
     }
-    catch (GnaException e)
+    catch (GnaException& e)
     {
         accelerationModes[GNA_HW] = ACC_NOTSUPPORTED;
         Log->Message("No compatible hardware detected.\n");
     }
 }
 
-const uint32_t AccelerationDetector::GetHardwareBufferSize() const
+uint32_t AccelerationDetector::GetHardwareBufferSize() const
 {
     if (IsHardwarePresent())
     {
@@ -340,7 +340,7 @@ acceleration AccelerationDetector::GetFastestAcceleration() const
     return fastestAcceleration;
 }
 
-char const * const GNA::AccelerationDetector::AccelerationToString(acceleration accel)
+char const * AccelerationDetector::AccelerationToString(acceleration accel)
 {
     auto name = accelerationNames.find(accel);
     if (accelerationNames.end() == name)

@@ -81,7 +81,7 @@ public:
 
     acceleration GetFastestAcceleration() const;
 
-    static char const * const AccelerationToString(acceleration accel);
+    static char const * AccelerationToString(acceleration accel);
 
     bool IsHardwarePresent() const;
 
@@ -89,7 +89,7 @@ public:
 
     bool HasFeature(GnaFeature feature) const;
 
-    const uint32_t GetHardwareBufferSize() const;
+    uint32_t GetHardwareBufferSize() const;
 
     template<typename T>
     static const std::map<const acceleration, const T>& GetKernelMap(WeightMode weightMode, nn_layer_kind layerKind);

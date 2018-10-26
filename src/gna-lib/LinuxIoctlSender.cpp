@@ -32,7 +32,7 @@
 #include <string.h>
 #include <fcntl.h>
 #include <unistd.h>
-#include <stropts.h>
+#include <sys/ioctl.h>
 
 using namespace GNA;
 
@@ -42,7 +42,6 @@ void LinuxIoctlSender::Open()
 {
     struct gna_capabilities gnaCaps;
     int found = 0;
-    int ret;
     int fd;
 
     for(int i = 0; i < 16; i++)
@@ -106,7 +105,7 @@ uint64_t LinuxIoctlSender::MemoryMap(void *memory, size_t memorySize)
 void LinuxIoctlSender::MemoryUnmap(uint64_t memoryId)
 {
     struct gna_usrptr usrptr;
-    usrptr.padd = NULL;
+    usrptr.padd = 0;
     usrptr.length = 0;
     usrptr.memory_id = memoryId;
     if(ioctl(gnaFileDescriptor, GNA_UNMAP_USRPTR, &usrptr))

@@ -44,7 +44,7 @@ __forceinline void saturate64_store_out(int64_t * const out, uint32_t * const sa
     }
 }
 
-void SumPartialPoolingFunction(const uint32_t PS, const int32_t PNE, const uint32_t PSI, int64_t* P, int64_t* V)
+void SumPartialPoolingFunction(const uint32_t PS, const uint32_t PNE, const uint32_t PSI, const int64_t* P, int64_t* V)
 {
     uint32_t k = 0;
     uint32_t index = 0;
@@ -57,7 +57,7 @@ void SumPartialPoolingFunction(const uint32_t PS, const int32_t PNE, const uint3
     }
 }
 
-void MaxPartialPoolingFunction(const uint32_t PS, const int32_t PNE, const uint32_t PSI, int64_t* P, int64_t* V)
+void MaxPartialPoolingFunction(const uint32_t PS, const uint32_t PNE, const uint32_t PSI, const int64_t* P, int64_t* V)
 {
     uint32_t k = 0;
     uint32_t index = 0;
@@ -81,19 +81,21 @@ void ConvolutionKernelImpl(ConvolutionConfig const * const config)
     const int16_t* const F = config->filters;
     const nn_bias_s * const B = config->biases;
     int32_t * const O = config->convolutedOutputs;
+
+#if GNA_SAT == 1
     uint32_t * const saturationCount = config->saturationCount;
+#endif
 
-    uint32_t i, j, k;
-
-    gna_sum_t sum, sum1, sum2, sum3, sum4, sum5, sum6, sum7, sum8;
+    uint32_t i, j;
 
     uint32_t num_inputs_band_stride = config->inputBandStride;
     uint32_t num_filter_outputs = config->filterOutputCount;
 
 #if OPT_LEVEL > 1
+    gna_sum_t sum1, sum2, sum3, sum4, sum5, sum6, sum7, sum8;
     mm_ptr in1, in2, in3, in4, in5, in6, in7, in8, in_end, flt;
-    int32_t *out, *out1, *out2, *out3, *out4, *out5, *out6, *out7, *out8, *out9, *out10;
-    const nn_bias_s *bias, *bias_end = B + FN;
+    int32_t *out1, *out2, *out3, *out4, *out5, *out6, *out7, *out8;
+    const nn_bias_s *bias;
 
 #if OPT_LEVEL == 4 || OPT_LEVEL == 5
     __m256i f, v1, v2, v3, v4, v5, v6, v7, v8;
@@ -101,8 +103,8 @@ void ConvolutionKernelImpl(ConvolutionConfig const * const config)
     mm_vector f, v1, v2, v3, v4, v5, v6, v7, v8;
 #endif
 
-    mm_vector acc1, acc2, acc3, acc4, acc5, acc6, acc7, acc8, acc9, acc10,
-            im1, im2, im3, im4, im5, im6, im7, im8, im9, im10;
+    mm_vector acc1, acc2, acc3, acc4, acc5, acc6, acc7, acc8,
+            im1, im2, im3, im4, im5, im6, im7, im8;
 
     uint32_t FC_REM = FC % VEC_16CAP;
     uint32_t FC_VEC = FC - FC_REM;
@@ -322,6 +324,9 @@ void ConvolutionKernelImpl(ConvolutionConfig const * const config)
 #else
     const int16_t* ptr_coef;
     const int16_t* ptr_in;
+    gna_sum_t sum;
+    uint32_t k;
+
     for (j = 0; j < num_filter_outputs; j++)
     {
         ptr_in = I + j * num_inputs_band_stride;
@@ -359,7 +364,7 @@ void ConvolutionPoolingKernelImpl(ConvolutionConfig const * const filterConfig,
     const uint32_t PSTEP = poolConfig->step;
     int64_t * const pool = poolConfig->buffer;
 
-    void(*func_partial_pooling)(const uint32_t PS, const int32_t pool_num_entries, const uint32_t pool_start_index, int64_t* P, int64_t *V);
+    void(*func_partial_pooling)(const uint32_t PS, const uint32_t pool_num_entries, const uint32_t pool_start_index, const int64_t* P, int64_t *V);
 
     if (PT == INTEL_SUM_POOLING)
     {
@@ -378,26 +383,44 @@ void ConvolutionPoolingKernelImpl(ConvolutionConfig const * const filterConfig,
     uint32_t num_filter_outputs = filterConfig->filterOutputCount;
     uint32_t i;
     uint32_t j;
-    uint32_t k;
-    uint32_t z;
-    const int16_t *ptr_in;
-    const int16_t *ptr_coef;
     int64_t value;
     uint32_t inc;
-    uint32_t l;
-    gna_sum_t sum, sum1, sum2, sum3, sum4, sum5, sum6;
 
     pwl->KERNEL(InitializeActivationFunctions)();
 
 #if OPT_LEVEL > 1
+    gna_sum_t sum1, sum2, sum3, sum4, sum5, sum6;
     mm_ptr in1, in2, in3, in4, in5, in6, flt, in_end;
 #if OPT_LEVEL == 4 || OPT_LEVEL == 5 // AVX1 load vectors
-    __m256i v1, v2, v3, v4, v5, v6, f;
+    __m256i v1;
+    __m256i v2;
+    __m256i v3;
+    __m256i v4;
+    __m256i v5;
+    __m256i v6;
+    __m256i f;
 #else
-    mm_vector v1, v2, v3, v4, v5, v6, f;
+    mm_vector v1;
+    mm_vector v2;
+    mm_vector v3;
+    mm_vector v4;
+    mm_vector v5;
+    mm_vector v6;
+    mm_vector f;
 #endif
-    mm_vector im1, im2, im3, im4, im5, im6;
-    mm_vector acc1, acc2, acc3, acc4, acc5, acc6;
+    mm_vector im1;
+    mm_vector im2;
+    mm_vector im3;
+    mm_vector im4;
+    mm_vector im5;
+    mm_vector im6;
+
+    mm_vector acc1;
+    mm_vector acc2;
+    mm_vector acc3;
+    mm_vector acc4;
+    mm_vector acc5;
+    mm_vector acc6;
 #endif
 
     output_index = 0;
@@ -591,7 +614,7 @@ void ConvolutionPoolingKernelImpl(ConvolutionConfig const * const filterConfig,
 #if OPT_LEVEL != 2 && OPT_LEVEL != 3
                     if (FC_VEC < FC)
                     {
-                        __m128i s1, s2, s3, s4, s5, s6, sf;
+                        __m128i s1, s2, s3, s4, s5, sf;
                         sf = _mm256_castsi256_si128(f);
                         s1 = _mm256_castsi256_si128(v1);
                         s2 = _mm256_castsi256_si128(v2);
@@ -680,7 +703,7 @@ void ConvolutionPoolingKernelImpl(ConvolutionConfig const * const filterConfig,
 #if OPT_LEVEL != 2 && OPT_LEVEL != 3
                     if (FC_VEC < FC)
                     {
-                        __m128i s1, s2, s3, s4, s5, s6, sf;
+                        __m128i s1, s2, s3, s4, sf;
                         sf = _mm256_castsi256_si128(f);
                         s1 = _mm256_castsi256_si128(v1);
                         s2 = _mm256_castsi256_si128(v2);
@@ -756,7 +779,7 @@ void ConvolutionPoolingKernelImpl(ConvolutionConfig const * const filterConfig,
 #if OPT_LEVEL != 2 && OPT_LEVEL != 3
                     if (FC_VEC < FC)
                     {
-                        __m128i s1, s2, s3, s4, s5, s6, sf;
+                        __m128i s1, s2, s3, sf;
                         sf = _mm256_castsi256_si128(f);
                         s1 = _mm256_castsi256_si128(v1);
                         s2 = _mm256_castsi256_si128(v2);
@@ -819,7 +842,7 @@ void ConvolutionPoolingKernelImpl(ConvolutionConfig const * const filterConfig,
 #if OPT_LEVEL != 2 && OPT_LEVEL != 3
                     if (FC_VEC < FC)
                     {
-                        __m128i s1, s2, s3, s4, s5, s6, sf;
+                        __m128i s1, s2, sf;
                         sf = _mm256_castsi256_si128(f);
                         s1 = _mm256_castsi256_si128(v1);
                         s2 = _mm256_castsi256_si128(v2);
@@ -869,7 +892,7 @@ void ConvolutionPoolingKernelImpl(ConvolutionConfig const * const filterConfig,
 #if OPT_LEVEL != 2 && OPT_LEVEL != 3
                     if (FC_VEC < FC)
                     {
-                        __m128i s1, s2, s3, s4, s5, s6, sf;
+                        __m128i s1, sf;
                         sf = _mm256_castsi256_si128(f);
                         s1 = _mm256_castsi256_si128(v1);
 
@@ -888,6 +911,12 @@ void ConvolutionPoolingKernelImpl(ConvolutionConfig const * const filterConfig,
             pool_end_index %= PS;
 
 #else
+            const int16_t *ptr_in;
+            const int16_t *ptr_coef;
+            gna_sum_t sum;
+            uint32_t k;
+            uint32_t l;
+
             for (l = 0; l < inc; l++)
             {
                 ptr_in = I + (j + l)*num_inputs_band_stride;
@@ -911,7 +940,7 @@ void ConvolutionPoolingKernelImpl(ConvolutionConfig const * const filterConfig,
 
             j += inc;
             pool_num_entries += inc;
-            if (pool_num_entries == PS)
+            if (static_cast<uint32_t>(pool_num_entries) == PS)
             {
                 for (i = 0; i < FN; i++)
                 {
@@ -940,7 +969,8 @@ void ConvolutionPoolingKernelImpl(ConvolutionConfig const * const filterConfig,
     {
         for (i = 0; i < FN; i++)
         {
-            func_partial_pooling(PS, pool_num_entries, pool_start_index, pool + i * CNN_POOL_SIZE_MAX, &value);
+            func_partial_pooling(PS, static_cast<uint32_t>(pool_num_entries),
+                    pool_start_index, pool + i * CNN_POOL_SIZE_MAX, &value);
 #if GNA_SAT == 1
             saturate64_store_out(&value, saturationCount);
 #endif

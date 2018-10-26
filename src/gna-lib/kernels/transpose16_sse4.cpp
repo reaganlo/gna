@@ -35,9 +35,10 @@ void TransposeKernelImpl(TransposeConfig const * const cfg)
     const int16_t * const I = cfg->input;
     int16_t * const O = cfg->output;
 
-    uint32_t i, j;
+    uint32_t i;
+    uint32_t j;
 
-    // input matrix is a vector - copy 
+    // input matrix is a vector - copy
     if (M == 1 || N == 1)
     {
         memcpy_s(O, M * N * sizeof(int16_t), I, M * N * sizeof(int16_t));
@@ -906,7 +907,7 @@ void TransposeKernelImpl(TransposeConfig const * const cfg)
             *out3 = out2 + M,
             *out4 = out3 + M;
 
-        __m128i a, b, c, d, e, f, g, h;
+        __m128i a, b, c, d, e;
         __m128i v1, v2, v3, v4, v5;
         __m128i mask1, mask2, mask3, mask4, mask5;
         mask1 = _mm_setr_epi8(0, 1, 10, 11, 4, 5, 14, 15, 8, 9, 2, 3, 12, 13, 6, 7);
@@ -1094,7 +1095,7 @@ void TransposeKernelImpl(TransposeConfig const * const cfg)
         __m128i a, b, c, d, e, f, g, h;
         __m128i ab_lo, ab_hi, cd_lo, cd_hi, ef_lo, ef_hi, gh_lo, gh_hi;
         __m128i abcd_lo, abcd_hi, abcd_lohi, abcd_hilo, efgh_lo, efgh_lohi, efgh_hi, efgh_hilo;
-        __m128i full1, full2, full3, full4, full5, full6, full7, full8;
+        __m128i full1, full2, full3, full4, full5, full6, full7;
 
         a = _mm_lddqu_si128((__m128i*)in0);
         b = _mm_lddqu_si128((__m128i*)in1);

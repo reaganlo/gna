@@ -28,7 +28,8 @@
 
 void DiagonalKernelImpl1B(AffineConfig const * const config)
 {
-    uint32_t i, j;
+    uint32_t i;
+    uint32_t j;
     int64_t sum;
     int64_t weightValue;
     int8_t const * weight = config->weights1B;
@@ -44,7 +45,7 @@ void DiagonalKernelImpl1B(AffineConfig const * const config)
             sum =  bias[i].bias + (weightValue * input[i * config->inputVectorCount + j]);
 #if GNA_SAT == 1
             saturate_store_out(&sum, &output[i * config->inputVectorCount + j], config->saturationCount);
-#else 
+#else
             output[i * config->inputVectorCount + j] = (int32_t)sum;
 #endif
         }

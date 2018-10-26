@@ -35,7 +35,8 @@ void TransposeKernelImpl(TransposeConfig const * const cfg)
     const int16_t * const I = cfg->input;
     int16_t * const O = cfg->output;
 
-    uint32_t i, j;
+    uint32_t i;
+    uint32_t j;
 
     // input matrix is a vector - copy
     if (M == 1 || N == 1)
@@ -1143,7 +1144,7 @@ void TransposeKernelImpl(TransposeConfig const * const cfg)
         M_VEC = M - M % SSE_16CAP;
         N_VEC = N - N % SSE_16CAP;
 
-        __m256i ab, cd, ef, gh, ac, bd, eg, fh;
+        __m256i ab, cd, ef, gh;
         __m256i abcd_lo, abcd_hi, efgh_lo, efgh_hi,
             full1, full2, full3, full4;
         __m256i mask1, mask2;
@@ -1239,8 +1240,8 @@ void TransposeKernelImpl(TransposeConfig const * const cfg)
     if (N == 7)
     {
         __m256i mix1, mix2, mix3, mix4, mix5, mix6, mix7;
-        __m256i v1, v2, v3, v4, v5, v6, v7, v8;
-        const int blend1 = 129; 
+        __m256i v1, v2, v3, v4, v5, v6, v7;
+        const int blend1 = 129;
         const int blend2 = 64;
         const int blend3 = 32;
         const int blend4 = 16;
@@ -1408,8 +1409,8 @@ void TransposeKernelImpl(TransposeConfig const * const cfg)
     {
         M_VEC = M - M % SSE_16CAP;
 
-        __m256i mix1, mix2, mix3, mix4, mix5, mix6, mix7;
-        __m256i v1, v2, v3, v4, v5, v6, v7, v8;
+        __m256i mix1, mix2, mix3;
+        __m256i v1, v2, v3;
         const int blend1 = 146;
         const int blend2 = 36;
         const int blend3 = 73;

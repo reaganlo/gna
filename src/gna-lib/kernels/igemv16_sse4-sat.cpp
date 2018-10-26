@@ -28,36 +28,42 @@
 
 void RecurrentKernelImpl2B(RecurrentConfig const * const config)
 {
+    uint32_t KK = config->inputElementCount - config->inputElementCount % VEC_16CAP;
+    uint32_t part_sz = hw_buf_size[0];
+    uint32_t kpart_sz = config->inputElementCount % part_sz;
+    uint32_t mpart_sz = config->outputElementCount < part_sz - kpart_sz
+        ? config->outputElementCount
+        : part_sz - kpart_sz;
+    uint32_t mm = mpart_sz - mpart_sz % VEC_16CAP;
+    uint32_t MM = config->outputElementCount - (config->outputElementCount - mpart_sz) % VEC_16CAP;
+    uint32_t kparts = config->inputElementCount / part_sz;
+    uint32_t mparts = (config->outputElementCount - mpart_sz) / part_sz;
+    uint32_t kk;
+    uint32_t j;
+    uint32_t k;
+    int64_t sum;
+
     int16_t const * input;
     int16_t * feedback;
     int16_t *feedbackEnd = config->feedbackBuffer+config->outputElementCount;
 
-    nn_bias_s const * bias = config->biasesSimple; 
+    nn_bias_s const * bias = config->biasesSimple;
     nn_bias_s const * const biasEnd= bias + config->outputElementCount;
     int32_t * output = config->output;
     int16_t const * weight = config->weights2B;
 
-    __m128i in, w, ma;
-    __m128i inm0, inm1, inm2, inm3;
-    __m128i zero;
+    // simd input and weight
+    __m128i in;
+    __m128i w;
+
+    // simd intermediates
+    __m128i inm0;
+    __m128i inm1;
+    __m128i inm2;
+
+    // simd accumulators
+    __m128i ma;
     __m128i acc;
-
-    zero = _mm_setzero_si128();
-
-    uint32_t allElems = config->inputElementCount + config->outputElementCount; // total # of in + output/fb elements
-    uint32_t i, j, k, kk;
-    int64_t sum;
-
-    uint32_t KK = config->inputElementCount - config->inputElementCount % VEC_16CAP;
-    uint32_t part_sz = hw_buf_size[0];
-    uint32_t kpart_sz = config->inputElementCount % part_sz;
-    uint32_t mpart_sz = config->outputElementCount < part_sz - kpart_sz ? config->outputElementCount
-        : part_sz - kpart_sz;
-    uint32_t mm = mpart_sz - mpart_sz % VEC_16CAP;
-    uint32_t MM = config->outputElementCount - (config->outputElementCount - mpart_sz) % VEC_16CAP;
-
-    uint32_t kparts = config->inputElementCount / part_sz;
-    uint32_t mparts = (config->outputElementCount - mpart_sz) / part_sz;
 
     acc = _mm_setzero_si128();
 
@@ -67,7 +73,7 @@ void RecurrentKernelImpl2B(RecurrentConfig const * const config)
         feedback = config->feedbackBuffer;
         sum = *bias;
 
-        // compute parts using SSE 
+        // compute parts using SSE
         // if config->inputElementCount has modulo 16 remainder, leave it
         for (j = 0; j < kparts + 1; j++)
         {

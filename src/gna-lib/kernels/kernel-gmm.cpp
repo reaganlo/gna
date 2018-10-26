@@ -25,6 +25,10 @@
 
 #include "kernel-gmm.h"
 
+#if defined(_WIN32)
+#pragma warning (disable: 592)
+#endif
+
 #ifdef INTEL64
 #define CVT64_128(a) _mm_cvtsi64_si128(*(int64_t*)(a))
 #else

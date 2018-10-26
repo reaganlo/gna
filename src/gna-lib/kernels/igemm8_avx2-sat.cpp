@@ -25,42 +25,90 @@
 
 #include "igemv.h"
 #include "igemv8.h"
+#include "string.h"
 
 void AffineKernelImpl1B(AffineConfig const * const config)
 {
-    __m256i in0, in1, in2, in3, in4, in5, in6, in7;
-    __m256i acc0, acc1, acc2, acc3, acc4, acc5, acc6, acc7;
-    __m256i *in_ptr0, *in_ptr1, *in_ptr2, *in_ptr3, *in_ptr4, *in_ptr5, *in_ptr6, *in_ptr7;
-    int64_t sum0, sum1, sum2, sum3, sum4, sum5, sum6, sum7;
-
-    uint32_t i, j, k, kk, kpartial, nKpartial, niters;
-    uint32_t acc_iters, rem_iters;
+    uint32_t KT = config->inputElementCount % VEC_16CAP; // config->inputElementCount tail for manual processing
+    uint32_t KK = config->inputElementCount - KT; // trimmed config->inputElementCount for AVX2 processing
+    uint32_t ix, ix_end;
+    uint32_t kpartial;
+    uint32_t nKpartial;
+    uint32_t acc_iters;
+    uint32_t rem_iters;
+    uint32_t niters;
+    uint32_t kk;
+    uint32_t i;
+    uint32_t j;
 
     kpartial = (hw_buf_size[config->inputVectorCount - 1]) / config->inputVectorCount;
     nKpartial = config->inputElementCount / kpartial;
 
-    __m256i in[8], w;     // inputs & weight
-    __m256i imm0, imm1, imm2, imm3, imm4, imm5, imm6, imm7, imm8, imm9, imm10;       // immediate
-    __m256i acc[8]; // output accumulators
-    __m256i zero = _mm256_setzero_si256(); // AVX2 ZERO
+    // simd inputs
+    __m256i in0;
+    __m256i in1;
+    __m256i in2;
+    __m256i in3;
+    __m256i in4;
+    __m256i in5;
+    __m256i in6;
+    __m256i in7;
+
+    // simd accumulators
+    __m256i acc0;
+    __m256i acc1;
+    __m256i acc2;
+    __m256i acc3;
+    __m256i acc4;
+    __m256i acc5;
+    __m256i acc6;
+    __m256i acc7;
+
+    // simd input pointers
+    __m256i *in_ptr0 = nullptr;
+    __m256i *in_ptr1 = nullptr;
+    __m256i *in_ptr2 = nullptr;
+    __m256i *in_ptr3 = nullptr;
+    __m256i *in_ptr4 = nullptr;
+    __m256i *in_ptr5 = nullptr;
+    __m256i *in_ptr6 = nullptr;
+    __m256i *in_ptr7 = nullptr;
+
+    // simd accumulators' sums
+    int64_t sum0;
+    int64_t sum1;
+    int64_t sum2;
+    int64_t sum3;
+    int64_t sum4;
+    int64_t sum5;
+    int64_t sum6;
+    int64_t sum7;
+
+    // simd inputs and weight
+    __m256i in[8];
+    __m256i w;
+
+    // simd accumulators
+    __m256i acc[8];
 
     int16_t const * input[8];
+    memset(input, 0, sizeof(input));
+
+    int64_t sum[8];            // 64-bit accumulator buffer
+    memset(sum, 0, sizeof(sum));
+
     int8_t const * weight;
     nn_bias_c const * bias  = config->biasesCompound;
     int32_t * output;
     nn_bias_c const * const biasEnd = bias + config->outputElementCount;
-    int64_t sum[8];            // 64-bit accumulator buffer
 
-    uint32_t KT = config->inputElementCount % VEC_16CAP; // config->inputElementCount tail for manual processing
-    uint32_t KK = config->inputElementCount - KT; // trimmed config->inputElementCount for AVX2 processing
-
-    output = config->output;
     weight = config->weights1B;
+    output = config->output;
 
     __m256i* in_ptr;
-    uint32_t ix, ix_end;
+    __m256i w0;
+    __m256i w1;
 
-    __m256i w0, w1;
     int16_t const * input0;
 
     if (1 == config->inputVectorCount)
@@ -787,32 +835,78 @@ void AffineKernelImpl1B(AffineConfig const * const config)
 
 void AffineMultiBiasKernelImpl1B(AffineConfig const * const config)
 {
-    __m256i in0, in1, in2, in3, in4, in5, in6, in7;
-    __m256i acc0, acc1, acc2, acc3, acc4, acc5, acc6, acc7;
-    __m256i *in_ptr0, *in_ptr1, *in_ptr2, *in_ptr3, *in_ptr4, *in_ptr5, *in_ptr6, *in_ptr7;
-    int64_t sum0, sum1, sum2, sum3, sum4, sum5, sum6, sum7;
+    uint32_t KT = config->inputElementCount % VEC_16CAP; // config->inputElementCount tail for manual processing
+    uint32_t KK = config->inputElementCount - KT; // trimmed config->inputElementCount for AVX2 processing
+    uint32_t kpartial;
+    uint32_t nKpartial;
+    uint32_t acc_iters;
+    uint32_t rem_iters;
+    uint32_t niters;
+    uint32_t kk;
+    uint32_t i;
+    uint32_t j;
 
-    uint32_t i, j, k, kk, kpartial, nKpartial, niters;
-    uint32_t acc_iters, rem_iters;
+    // simd inputs
+    __m256i in0;
+    __m256i in1;
+    __m256i in2;
+    __m256i in3;
+    __m256i in4;
+    __m256i in5;
+    __m256i in6;
+    __m256i in7;
+
+    // simd accumulators
+    __m256i acc0;
+    __m256i acc1;
+    __m256i acc2;
+    __m256i acc3;
+    __m256i acc4;
+    __m256i acc5;
+    __m256i acc6;
+    __m256i acc7;
+
+    // simd input pointers
+    __m256i *in_ptr0 = nullptr;
+    __m256i *in_ptr1 = nullptr;
+    __m256i *in_ptr2 = nullptr;
+    __m256i *in_ptr3 = nullptr;
+    __m256i *in_ptr4 = nullptr;
+    __m256i *in_ptr5 = nullptr;
+    __m256i *in_ptr6 = nullptr;
+    __m256i *in_ptr7 = nullptr;
+
+    // simd accumulators' sums
+    int64_t sum0;
+    int64_t sum1;
+    int64_t sum2;
+    int64_t sum3;
+    int64_t sum4;
+    int64_t sum5;
+    int64_t sum6;
+    int64_t sum7;
 
     kpartial = (hw_buf_size[config->inputVectorCount - 1]) / config->inputVectorCount;
     nKpartial = config->inputElementCount / kpartial;
 
-    __m256i in[8], w;     // inputs & weight
-    __m256i imm0, imm1, imm2, imm3, imm4, imm5, imm6, imm7, imm8, imm9, imm10;       // immediate
-    __m256i acc[8]; // output accumulators
-    __m256i zero = _mm256_setzero_si256(); // AVX2 ZERO
+    // simd inputs and weight
+    __m256i in[8];
+    __m256i w;
+
+    // simd accumulators
+    __m256i acc[8];
 
     int16_t const * input[8];
+    memset(input, 0, sizeof(input));
+
+    int64_t sum[8]; // 64-bit accumulator buffer
+    memset(sum, 0, sizeof(sum));
+
     int8_t const * weight;
     int32_t * output;
     nn_bias_s const * multiBias = config->multiBias;
     nn_bias_s const * const biasEnd = config->multiBias + config->outputElementCount * config->multiBiasVectorCount;
     nn_bias_c const * weightScaleFactor = config->weightScaleFactors;
-    int64_t sum[8];            // 64-bit accumulator buffer
-
-    uint32_t KT = config->inputElementCount % VEC_16CAP; // config->inputElementCount tail for manual processing
-    uint32_t KK = config->inputElementCount - KT; // trimmed config->inputElementCount for AVX2 processing
 
     output = config->output;
     weight = config->weights1B;

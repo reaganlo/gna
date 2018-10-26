@@ -36,7 +36,7 @@ void AffineActiveListKernelImpl2B(AffineConfig const * const config, AffineConfi
     kpartial    = (hw_buf_size[config->inputVectorCount - 1]) / config->inputVectorCount;
     nKpartial   = (int32_t)config->inputElementCount / kpartial;
 
-    TransposeConfig transposeConfig = TransposeConfig{ config->inputElementCount, config->inputVectorCount, 
+    TransposeConfig transposeConfig = TransposeConfig{ config->inputElementCount, config->inputVectorCount,
                                                        config->input, config->fvBuffers->d0 };
     TransposeKernelImpl(&transposeConfig);
 

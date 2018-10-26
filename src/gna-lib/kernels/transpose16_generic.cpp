@@ -28,7 +28,8 @@
 
 void TransposeKernelImpl(TransposeConfig const * const cfg)
 {
-    uint32_t i, j;
+    uint32_t i;
+    uint32_t j;
     for (i = 0; i < cfg->rowCount; i++)
     {
         for (j = 0; j < cfg->columnCount; j++)

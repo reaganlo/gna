@@ -28,7 +28,8 @@
 
 void DiagonalKernelImpl2B(AffineConfig const * const config)
 {
-    uint32_t i, j;
+    uint32_t i;
+    uint32_t j;
     int64_t sum;
     int16_t const * weight = config->weights2B;
     int16_t const * input = config->input;

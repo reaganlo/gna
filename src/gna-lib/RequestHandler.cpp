@@ -65,7 +65,8 @@ void RequestHandler::Enqueue(
         {
             throw GnaException(GNA_ERR_RESOURCES);
         }
-        nRequests = (++nRequests) % GNA_REQUEST_WAIT_ANY;
+        nRequests++;
+        nRequests = nRequests % GNA_REQUEST_WAIT_ANY;
     }
     profilerDTscStart(&r->Profiler->total);
     profilerDTscStart(&r->Profiler->submit);

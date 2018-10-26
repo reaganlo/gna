@@ -85,19 +85,19 @@ public:
         return (nullptr == buffer);
     }
 
-    template<class X> operator X* const() const
+    template<class X> operator X* () const
     {
-        return static_cast<X * const>(buffer);
+        return static_cast<X *>(buffer);
     }
 
-    template<class X> X * const Get() const
+    template<class X> X * Get() const
     {
-        return static_cast<X * const>(buffer);
+        return static_cast<X *>(buffer);
     }
 
-    T * const Get() const
+    T * Get() const
     {
-        return static_cast<T * const>(buffer);
+        return static_cast<T *>(buffer);
     }
 
     T& operator*() const

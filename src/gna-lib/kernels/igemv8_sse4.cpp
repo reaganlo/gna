@@ -41,7 +41,9 @@ void RecurrentKernelImpl1B(RecurrentConfig const * const config)
     int8_t const * weight = config->weights1B;
     int8_t const * weight2 = weight + config->inputElementCount;
 
-    __m128i v0, v1, v2;
+    __m128i v0;
+    __m128i v1;
+    __m128i v2;
 
     for (; bias < biasEnd; bias++)
     {
@@ -92,7 +94,8 @@ void RecurrentKernelImpl1B(RecurrentConfig const * const config)
             *output += *feedback++ * *weight2++;
         }
 
-        *output++ = *output * bias->multiplier + bias->bias;
+        *output = *output * bias->multiplier + bias->bias;
+        output++;
 
         weight += LDA - config->inputElementCount;
         weight2 += LDA - config->outputElementCount;

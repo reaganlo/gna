@@ -30,35 +30,76 @@
 
 void AffineActiveListKernelImpl1B(AffineConfig const * const config, AffineConfigAl const * const al)
 {
+    uint32_t KT = config->inputElementCount % SSE_16CAP; // config->inputElementCount tail for manual processing
+    uint32_t KK = config->inputElementCount - KT; // trimmed config->inputElementCount for AVX2 processing
+    uint32_t kpartial;
+    uint32_t nKpartial;
+    uint32_t niters;
     uint32_t acc_iters;
     uint32_t rem_iters;
-    uint32_t i, j, k, l, kk, kpartial, nKpartial, niters;
+    uint32_t ix_end;
+    uint32_t ix;
+    uint32_t kk;
+    uint32_t i;
+    uint32_t j;
+    uint32_t l;
     kpartial = (hw_buf_size[config->inputVectorCount - 1]) / config->inputVectorCount;
     nKpartial = config->inputElementCount / kpartial;
 
-    __m128i in[8], w, w0, w1;     // inputs & weight
-    __m128i imm0, imm1, imm2, imm3, imm4, imm5, imm6, imm7, imm8, imm9, imm10;       // immediate
-    __m128i acc[8]; // output accumulators
-    __m128i zero = _mm_setzero_si128(); // AVX2 ZERO
-
     int16_t const * input[8];
-    int8_t const * weight;             
+    memset(input, 0, sizeof(input));
+
+    int8_t const * weight;
     nn_bias_c const * bias = config->biasesCompound;
     int32_t * output;
-    nn_bias_c const * const biasEnd = bias + config->outputElementCount;
-    int64_t sum[8];            // 64-bit accumulator buffer
 
-    uint32_t KT = config->inputElementCount % SSE_16CAP; // config->inputElementCount tail for manual processing
-    uint32_t KK = config->inputElementCount - KT; // trimmed config->inputElementCount for AVX2 processing
-
-    output = config->output;
     weight = config->weights1B;
+    output = config->output;
 
-    __m128i *in_ptr0, *in_ptr1, *in_ptr2, *in_ptr3, *in_ptr4, *in_ptr5, *in_ptr6, *in_ptr7;
-    __m128i in0, in1, in2, in3, in4, in5, in6, in7;
-    __m128i acc0, acc1, acc2, acc3, acc4, acc5, acc6, acc7;
-    int64_t sum0, sum1, sum2, sum3, sum4, sum5, sum6, sum7;
-    uint32_t ix, ix_end;
+    // simd weights
+    __m128i w0;
+    __m128i w1;
+    __m128i w;
+
+    // simd input pointers
+    __m128i *in_ptr0 = nullptr;
+    __m128i *in_ptr1 = nullptr;
+    __m128i *in_ptr2 = nullptr;
+    __m128i *in_ptr3 = nullptr;
+    __m128i *in_ptr4 = nullptr;
+    __m128i *in_ptr5 = nullptr;
+    __m128i *in_ptr6 = nullptr;
+    __m128i *in_ptr7 = nullptr;
+
+    // simd inputs
+    __m128i in0;
+    __m128i in1;
+    __m128i in2;
+    __m128i in3;
+    __m128i in4;
+    __m128i in5;
+    __m128i in6;
+    __m128i in7;
+
+    // simd accumulators
+    __m128i acc0;
+    __m128i acc1;
+    __m128i acc2;
+    __m128i acc3;
+    __m128i acc4;
+    __m128i acc5;
+    __m128i acc6;
+    __m128i acc7;
+
+    // accumulators' sums
+    int64_t sum0;
+    int64_t sum1;
+    int64_t sum2;
+    int64_t sum3;
+    int64_t sum4;
+    int64_t sum5;
+    int64_t sum6;
+    int64_t sum7;
 
     if (1 == config->inputVectorCount)
     {

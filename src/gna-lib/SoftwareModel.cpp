@@ -66,7 +66,6 @@ status_t SoftwareModel::Score(
     UNREFERENCED_PARAMETER(profiler);
     validateConfiguration(requestConfiguration);
 
-    const uint32_t* activeIndices = nullptr; // active list pointer
     auto saturationCount = uint32_t{ 0 };   // scoring saturation counter
 
     auto iter = Layers.begin() + layerIndex;
@@ -114,16 +113,18 @@ void SoftwareModel::build(const gna_model *const network, uint16_t& gmmCount)
 
             switch (layer->type)
             {
-            case INTEL_INPUT:
-            ++inputLayerCount;
-            break;
-            case INTEL_OUTPUT:
-            ++outputLayerCount;
-            break;
-            case INTEL_INPUT_OUTPUT:
-            ++inputLayerCount;
-            ++outputLayerCount;
-            break;
+                case INTEL_INPUT:
+                    ++inputLayerCount;
+                    break;
+                case INTEL_OUTPUT:
+                    ++outputLayerCount;
+                    break;
+                case INTEL_INPUT_OUTPUT:
+                    ++inputLayerCount;
+                    ++outputLayerCount;
+                    break;
+                default:
+                    break;
             }
         }
         catch (const GnaException& e)

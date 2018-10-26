@@ -59,7 +59,7 @@ namespace GNA
             return size;
         }
 
-        template<class T = void> T * const GetUserBuffer() const
+        template<class T = void> T * GetUserBuffer() const
         {
             auto address = BaseAddressC(this->Get() + InternalSize);
             return address.Get<T>();

@@ -30,7 +30,7 @@
 #include "common.h"
 #include "RequestConfiguration.h"
 #include "Validator.h"
-#include "KernelArguments.h"`
+#include "KernelArguments.h"
 
 using namespace GNA;
 

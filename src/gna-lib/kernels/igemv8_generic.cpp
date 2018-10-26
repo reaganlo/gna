@@ -28,7 +28,7 @@
 
 void RecurrentKernelImpl1B(RecurrentConfig const * const config)
 {
-    nn_bias_c const * bias = config->biasesCompound; 
+    nn_bias_c const * bias = config->biasesCompound;
     nn_bias_c const * const biasEnd= bias + config->outputElementCount;
     int16_t const * input = config->input;
     int16_t const * const inputEnd = input + config->inputElementCount;

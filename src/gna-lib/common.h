@@ -52,7 +52,7 @@ const uint32_t PAGE_SIZE = 0x1000;
 #define _gna_free(a)      _mm_free(a)
 
 #if !defined(UNREFERENCED_PARAMETER)
-#define UNREFERENCED_PARAMETER(P) (P)
+#define UNREFERENCED_PARAMETER(P) ((void)(P))
 #endif
 
 // Enable safe functions compatibility
@@ -61,7 +61,10 @@ const uint32_t PAGE_SIZE = 0x1000;
 #elif defined(__STDC_LIB_EXT1__)
 #define STDC_WANT_LIB_EXT1 1
 #else
-#define memcpy_s(_Destination, _DestinationSize, _Source, _SourceSize) memcpy(_Destination, _Source, _SourceSize)
+#define memcpy_s(_Destination, _DestinationSize, _Source, _SourceSize) do {\
+		memcpy(_Destination, _Source, _SourceSize);\
+		UNREFERENCED_PARAMETER(_DestinationSize);\
+	} while(0);
 #endif
 
 /**

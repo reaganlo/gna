@@ -29,28 +29,48 @@
 
 void AffineActiveListKernelImpl2B(AffineConfig const * const config, AffineConfigAl const * const al)
 {
-    uint32_t i, j, k, l, kk, kpartial, nKpartial, niters;
+    uint32_t KT = config->inputElementCount % SSE_16CAP; // config->inputElementCount tail for manual processing
+    uint32_t KK = config->inputElementCount - KT; // trimmed config->inputElementCount for AVX2 processing
+    uint32_t nKpartial;
+    uint32_t kpartial;
+    uint32_t niters;
+    uint32_t ix_end;
+    uint32_t ix;
+    uint32_t kk;
+    uint32_t i;
+    uint32_t j;
+    uint32_t l;
     kpartial = (hw_buf_size[config->inputVectorCount - 1]) / config->inputVectorCount;
     nKpartial = config->inputElementCount / kpartial;
 
-    __m128i in[8], w;     // inputs & weight
-    __m128i imm0, imm1, imm2, imm3, imm4, imm5, imm6, imm7, imm8, imm9, imm10;       // immediate
-    __m128i acc[8]; // output accumulators
-    __m128i *in_ptr0, *in_ptr1, *in_ptr2, *in_ptr3, *in_ptr4, *in_ptr5, *in_ptr6, *in_ptr7;
-    uint32_t ix, ix_end;
+    // simd inputs and weight
+    __m128i in[8];
+    __m128i w;
+
+    // simd accumulators
+    __m128i acc[8];
+
+    // simd input pointers
+    __m128i *in_ptr0 = nullptr;
+    __m128i *in_ptr1 = nullptr;
+    __m128i *in_ptr2 = nullptr;
+    __m128i *in_ptr3 = nullptr;
+    __m128i *in_ptr4 = nullptr;
+    __m128i *in_ptr5 = nullptr;
+    __m128i *in_ptr6 = nullptr;
+    __m128i *in_ptr7 = nullptr;
 
     int16_t const * input[8];
+    memset(input, 0, sizeof(input));
+
     int16_t const * weight;
     nn_bias_s const * bias = config->biasesSimple;
     int32_t * output;
-    nn_bias_s const * const biasEnd = bias + config->outputElementCount;
     int64_t sum[8];            // 64-bit accumulator buffer
+    memset(sum, 0, sizeof(sum));
 
-    uint32_t KT = config->inputElementCount % SSE_16CAP; // config->inputElementCount tail for manual processing
-    uint32_t KK = config->inputElementCount - KT; // trimmed config->inputElementCount for AVX2 processing
-
-    output = config->output;
     weight = config->weights2B;
+    output = config->output;
 
     if (1 == config->inputVectorCount)
     {

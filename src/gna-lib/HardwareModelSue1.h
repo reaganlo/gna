@@ -33,7 +33,7 @@ namespace GNA
 class HardwareModelSue1 : public HardwareModel
 {
 public:
-    static const size_t CalculateDescriptorSize(const uint16_t layerCount, const uint16_t gmmLayersCount);
+    static size_t CalculateDescriptorSize(const uint16_t layerCount, const uint16_t gmmLayersCount);
 
     HardwareModelSue1(const gna_model_id modId, const std::vector<std::unique_ptr<Layer>>& layers,
         const Memory &memoryIn, const BaseAddressC &dumpDescriptorAddr, IoctlSender &sender, const AccelerationDetector& detector);

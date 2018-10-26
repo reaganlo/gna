@@ -66,7 +66,7 @@ CompiledModel::CompiledModel(gna_model_id modelId, const gna_model *rawModel, Me
 
 const size_t CompiledModel::MaximumInternalModelSize = CalculateInternalModelSize(XNN_LAYERS_MAX_COUNT, GMM_LAYERS_MAX_COUNT);
 
-const size_t CompiledModel::CalculateModelSize(const size_t userSize, const uint16_t layerCount,
+size_t CompiledModel::CalculateModelSize(const size_t userSize, const uint16_t layerCount,
     const uint16_t gmmCountIn)
 {
     Expect::InRange(userSize, 64, 256 * 1024 * 1024, GNA_INVALIDMEMSIZE);
@@ -76,7 +76,7 @@ const size_t CompiledModel::CalculateModelSize(const size_t userSize, const uint
     return totalSize;
 }
 
-const size_t CompiledModel::CalculateInternalModelSize(const uint16_t layerCount,
+size_t CompiledModel::CalculateInternalModelSize(const uint16_t layerCount,
     const uint16_t gmmCountIn)
 {
     // TODO:INTEGRATION: add detector reference to c-tor and calculate hardware size if applicable
@@ -84,7 +84,7 @@ const size_t CompiledModel::CalculateInternalModelSize(const uint16_t layerCount
     return HardwareModel::CalculateDescriptorSize(layerCount, gmmCountIn);
 }
 
-const size_t CompiledModel::CalculateInternalModelSize(const gna_model * rawModel)
+size_t CompiledModel::CalculateInternalModelSize(const gna_model * rawModel)
 {
     uint16_t gmmLayerCount = 0;
     for (auto ix = uint32_t{0}; ix < rawModel->nLayers; ++ix)

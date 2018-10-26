@@ -35,20 +35,42 @@ void AffineKernelImpl2B(AffineConfig const * const config)
     auto weight = config->weights2B;
     auto bias = config->biasesSimple;
     auto output = config->output;
+
     auto const biasEnd = bias + config->outputElementCount;
     auto const tailElementCount = config->inputElementCount % SSE_16CAP; // config->inputElementCount tail for manual processing
     auto const headElementCount = config->inputElementCount - tailElementCount; // trimmed config->inputElementCount for AVX2 processing
     auto const partialCapacity = (hw_buf_size[config->inputVectorCount - 1]) / config->inputVectorCount;
     auto const iterationCount = config->inputElementCount / partialCapacity;
 
-    uint32_t i, j, iter, iterationCapacity;
-    __m128i in[8], w; // inputs & weight
-    __m128i imm0, imm1, imm2, imm3, imm4, imm5, imm6, imm7, imm8, imm9, imm10; // immediate
-    __m128i acc[8]; // output accumulators
-    __m128i *in_ptr0, *in_ptr1, *in_ptr2, *in_ptr3, *in_ptr4, *in_ptr5, *in_ptr6, *in_ptr7;
-    uint32_t ix, ix_end;
+    uint32_t iterationCapacity;
+    uint32_t iter;
+    uint32_t ix_end;
+    uint32_t ix;
+    uint32_t i;
+    uint32_t j;
+
+    // simd inputs and weight
+    __m128i in[8];
+    __m128i w;
+
+    // simd accumulators
+    __m128i acc[8];
+
+    // simd input pointers
+    __m128i *in_ptr0 = nullptr;
+    __m128i *in_ptr1 = nullptr;
+    __m128i *in_ptr2 = nullptr;
+    __m128i *in_ptr3 = nullptr;
+    __m128i *in_ptr4 = nullptr;
+    __m128i *in_ptr5 = nullptr;
+    __m128i *in_ptr6 = nullptr;
+    __m128i *in_ptr7 = nullptr;
+
     int16_t const * input[8];
+    memset(input, 0, sizeof(input));
+
     int64_t sum[8]; // 64-bit accumulator buffer
+    memset(sum, 0, sizeof(sum));
 
     if (1 == config->inputVectorCount)
     {
@@ -704,20 +726,42 @@ void AffineMultiBiasKernelImpl2B(AffineConfig const * const config)
     auto weight = config->weights2B;
     auto multiBias = config->multiBias;
     auto output = config->output;
+
     auto const biasEnd = multiBias + config->outputElementCount * config->multiBiasVectorCount;
     auto const tailElementCount = config->inputElementCount % SSE_16CAP; // config->inputElementCount tail for manual processing
     auto const headElementCount = config->inputElementCount - tailElementCount; // trimmed config->inputElementCount for AVX2 processing
     auto const partialCapacity = (hw_buf_size[config->inputVectorCount - 1]) / config->inputVectorCount;
     auto const iterationCount = config->inputElementCount / partialCapacity;
 
-    uint32_t i, j, iter, iterationCapacity;
-    __m128i in[8], w; // inputs & weight
-    __m128i imm0, imm1, imm2, imm3, imm4, imm5, imm6, imm7, imm8, imm9, imm10; // immediate
-    __m128i acc[8]; // output accumulators
-    __m128i *in_ptr0, *in_ptr1, *in_ptr2, *in_ptr3, *in_ptr4, *in_ptr5, *in_ptr6, *in_ptr7;
-    uint32_t ix, ix_end;
+    uint32_t iterationCapacity;
+    uint32_t iter;
+    uint32_t ix_end;
+    uint32_t ix;
+    uint32_t i;
+    uint32_t j;
+
+    // simd inputs and weight
+    __m128i in[8];
+    __m128i w;
+
+    // simd accumulators
+    __m128i acc[8];
+
+    // simd input pointers
+    __m128i *in_ptr0 = nullptr;
+    __m128i *in_ptr1 = nullptr;
+    __m128i *in_ptr2 = nullptr;
+    __m128i *in_ptr3 = nullptr;
+    __m128i *in_ptr4 = nullptr;
+    __m128i *in_ptr5 = nullptr;
+    __m128i *in_ptr6 = nullptr;
+    __m128i *in_ptr7 = nullptr;
+
     int16_t const * input[8];
+    memset(input, 0, sizeof(input));
+
     int64_t sum[8]; // 64-bit accumulator buffer
+    memset(sum, 0, sizeof(sum));
 
     if (1 == config->inputVectorCount)
     {

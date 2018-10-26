@@ -29,7 +29,8 @@
 
 void AffineKernelImpl1B(AffineConfig const * const config)
 {
-    uint32_t j,k;
+    uint32_t j;
+    uint32_t k;
     int8_t const * weight = config->weights1B;
     int16_t const * input;
     int32_t * output = config->output;
@@ -60,7 +61,8 @@ void AffineKernelImpl1B(AffineConfig const * const config)
 
 void AffineMultiBiasKernelImpl1B(AffineConfig const * const config)
 {
-    uint32_t j, k;
+    uint32_t j;
+    uint32_t k;
     int16_t const * input;
     int32_t * output = config->output;
     nn_bias_c const * const biasEnd = config->weightScaleFactors + config->outputElementCount;

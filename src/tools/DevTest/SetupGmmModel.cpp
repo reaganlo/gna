@@ -117,7 +117,6 @@ void SetupGmmModel::sampleGmmLayer(intel_nnet_type_t& hNnet)
     outputBuffer = ((int16_t*)pinned_mem_ptr) + 32;
     pinned_mem_ptr += buf_size_outputs;                 // fast-forwards the current pinned memory pointer by the space needed for outputs
 
-    int32_t *pinned_tmp_outputs = (int32_t*)pinned_mem_ptr;      // the last free block will be used for GNA's scratch pad
     pinned_mem_ptr += buf_size_tmp_outputs;
 
     if (activeListEnabled)

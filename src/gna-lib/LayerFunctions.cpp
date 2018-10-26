@@ -166,7 +166,7 @@ AffineFunctionMulti::AffineFunctionMulti(const nn_func_affine_multi *affine,
     Expect::InRange(BiasVectorIndex, 0, BiasVectorCount - 1, XNN_ERR_GROUPING);
 }
 
-const nn_bias_s * const AffineFunctionMulti::GetMultibias() const
+const nn_bias_s * AffineFunctionMulti::GetMultibias() const
 {
     return Biases + BiasVectorIndex;
 }

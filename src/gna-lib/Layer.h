@@ -91,7 +91,7 @@ struct LayerOutput : public LayerMatrix
     ~LayerOutput() = default;
 
     void SetOutputMode(const bool activationEnabled, const uint32_t outputSize);
-    const OutputMode GetOutputMode() const
+    OutputMode GetOutputMode() const
     {
         return mode;
     };

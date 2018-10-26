@@ -46,7 +46,7 @@ struct RequestProfiler;
 class HardwareModel
 {
 public:
-    static const size_t CalculateDescriptorSize(const uint16_t layerCount, const uint16_t gmmLayersCount);
+    static size_t CalculateDescriptorSize(const uint16_t layerCount, const uint16_t gmmLayersCount);
 
     HardwareModel(const gna_model_id modId, const std::vector<std::unique_ptr<Layer>>& layers, uint16_t gmmCount,
         const uint64_t memoryId, const BaseAddressC memoryBase, const BaseAddressC descriptorBase,  IoctlSender &sender, const AccelerationDetector& detector);

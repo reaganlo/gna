@@ -281,12 +281,16 @@ HardwareLayerAffDiagTrans::HardwareLayerAffDiagTrans(const DescriptorParameters&
 {
     switch (SoftwareLayer->Config.Kind)
     {
-    case INTEL_AFFINE:
-    case INTEL_AFFINE_DIAGONAL:
-        auto aff = SoftwareLayer->Get<const AffineLayer>();
-        affine = aff->Affine.get();
-        activation = aff->Activation.get();
-        break;
+        case INTEL_AFFINE:
+        case INTEL_AFFINE_DIAGONAL:
+            {
+                auto aff = SoftwareLayer->Get<const AffineLayer>();
+                affine = aff->Affine.get();
+                activation = aff->Activation.get();
+                break;
+            }
+        default:
+            throw GnaException { GNA_UNKNOWN_ERROR };
     }
     save();
 }
@@ -370,7 +374,7 @@ uint32_t HardwareLayerRnn::GetLdFeedbackOffset() const
     return getOffset(XnnDescriptor) + offsetof(XNN_LYR, rnn_out_fb_buffer);
 }
 
-const uint32_t HardwareLayerRnn::CalculateFeedbackBuffer(const OutputBuffer& outputBuffer) const
+uint32_t HardwareLayerRnn::CalculateFeedbackBuffer(const OutputBuffer& outputBuffer) const
 {
     auto rnn = SoftwareLayer->Get<const RnnLayer>();
     return getOffset(rnn->CalculateFeedbackBuffer(outputBuffer));

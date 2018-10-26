@@ -96,7 +96,7 @@
 
 #pragma message("Building SSE4 kernel, level 2")
 #define OPT_LEVEL       2
-#define KERNEL_SUFFIX   _sse4  
+#define KERNEL_SUFFIX   _sse4
 __forceinline __m128i vec_accumulate(__m128i acc, __m128i x)
 {
     return _mm_add_epi32(acc, x);
@@ -114,7 +114,7 @@ __forceinline int32_t vec_sum(__m128i x)
 __forceinline __m128i vec_accumulate(__m128i acc, __m128i x)
 {
     return _mm_add_epi64(acc, _mm_add_epi64(
-        _mm_cvtepi32_epi64(x), 
+        _mm_cvtepi32_epi64(x),
         _mm_cvtepi32_epi64(_mm_srli_si128(x, 8))));
 }
 __forceinline int64_t vec_sum(__m128i x)
@@ -130,7 +130,7 @@ __forceinline int64_t vec_sum32(__m128i x)
 
 #pragma message("Building AVX1 kernel, level 4")
 #define OPT_LEVEL       4
-#define KERNEL_SUFFIX   _avx1  
+#define KERNEL_SUFFIX   _avx1
 __forceinline __m128i vec_accumulate(__m128i acc, __m128i x)
 {
     return _mm_add_epi32(acc, x);
@@ -150,7 +150,7 @@ __forceinline __m128i vec_madd16(__m256i x, __m256i y)
 
 #pragma message("Building AVX1 kernel with saturation, level 5")
 #define OPT_LEVEL       5
-#define KERNEL_SUFFIX   _avx1_sat  
+#define KERNEL_SUFFIX   _avx1_sat
 __forceinline __m128i vec_accumulate(__m128i acc, __m128i x)
 {
     return _mm_add_epi64(acc, x);
@@ -195,7 +195,7 @@ __forceinline int32_t vec_sum(__m256i x)
 __forceinline __m256i vec_accumulate(__m256i acc, __m256i x)
 {
     return _mm256_add_epi64(acc, _mm256_add_epi64(
-        _mm256_cvtepi32_epi64(_mm256_castsi256_si128(x)), 
+        _mm256_cvtepi32_epi64(_mm256_castsi256_si128(x)),
         _mm256_cvtepi32_epi64(_mm256_extracti128_si256(x, 1))));
 }
 __forceinline int64_t vec_sum32(__m256i x)
@@ -264,7 +264,7 @@ __forceinline __m256i vec_load(void *ptr)
 #endif
 
 // AVX2+
-#if OPT_LEVEL > 5 
+#if OPT_LEVEL > 5
 typedef __m256i mm_vector;
 __forceinline __m256i vec_madd16(__m256i x, __m256i y)
 {

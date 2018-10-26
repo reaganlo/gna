@@ -31,14 +31,9 @@
 #define gmmMaxMix8ActiveListKernelImpl KERNEL(gmmMaxMix8ActiveListKernelImpl)
 #define gmmMaxMix16ActiveListKernelImpl KERNEL(gmmMaxMix16ActiveListKernelImpl)
 
-#pragma warning (disable : 592 )
-
 void gmmMaxMix8ActiveListKernelImpl(GmmConfig const * const gmmConfig, uint32_t const * const indices)
 {
-    uint32_t i, j, k;
-    uint32_t const meanOffset = gmmConfig->meanSetOffsetSize / GMM_MEAN_VALUE_SIZE;
-    uint32_t const varOffset = gmmConfig->varSetOffsetSize / (GNA_MAXMIX8 + 1);
-    uint32_t const gConstOffset = gmmConfig->gaussConstSetOffsetSize / GMM_CONSTANTS_SIZE;
+    uint32_t j, k;
     auto gmm = GmmMaxMixConfig{gmmConfig->maximumScore, gmmConfig->inputElementCount, gmmConfig->mixtureComponentCount};
 
 #if OPT_LEVEL == 0 || OPT_LEVEL == 1
@@ -52,7 +47,7 @@ void gmmMaxMix8ActiveListKernelImpl(GmmConfig const * const gmmConfig, uint32_t 
             gmm.Input = gmmConfig->input;
             gmm.Output = gmmConfig->output + j*gmmConfig->inputVectorCount;
 
-            for (i = 0; i < gmmConfig->inputVectorCount; i++)
+            for (uint32_t i = 0; i < gmmConfig->inputVectorCount; i++)
             {
                 gmm_maxmix_8u8u_32u(&gmm);
                 gmm.Output++;
@@ -222,7 +217,7 @@ void gmmMaxMix16ActiveListKernelImpl(GmmConfig const * const gmmConfig, uint32_t
 
 void gmmMaxMix8KernelImpl(GmmConfig const * const gmmConfig)
 {
-    uint32_t i, j, k;
+    uint32_t j;
     uint32_t const meanOffset = gmmConfig->meanSetOffsetSize / GMM_MEAN_VALUE_SIZE;;
     uint32_t const varOffset = gmmConfig->varSetOffsetSize / (GNA_MAXMIX8 + 1);;
     uint32_t const gConstOffset = gmmConfig->gaussConstSetOffsetSize / GMM_CONSTANTS_SIZE;
@@ -238,7 +233,7 @@ void gmmMaxMix8KernelImpl(GmmConfig const * const gmmConfig)
             gmm.Gconst = gmmConfig->data->gaussianConstants + j*gConstOffset;
             gmm.Output = gmmConfig->output + j*gmmConfig->inputVectorCount;
 
-            for (i = 0; i < gmmConfig->inputVectorCount; i++)
+            for (uint32_t i = 0; i < gmmConfig->inputVectorCount; i++)
             {
                 gmm_maxmix_8u8u_32u(&gmm);
                 gmm.Output++;
@@ -362,13 +357,13 @@ void gmmMaxMix8KernelImpl(GmmConfig const * const gmmConfig)
             }
             break;
         }
-    } 
+    }
 #endif
 }
 
 void gmmMaxMix16KernelImpl(GmmConfig const * const gmmConfig)
 {
-    uint32_t i, j, k;
+    uint32_t i, j;
     uint32_t const meanOffset = gmmConfig->meanSetOffsetSize / GMM_MEAN_VALUE_SIZE;
     uint32_t const varOffset = gmmConfig->varSetOffsetSize / (GNA_MAXMIX16 + 1);
     uint32_t const gConstOffset = gmmConfig->gaussConstSetOffsetSize / GMM_CONSTANTS_SIZE;

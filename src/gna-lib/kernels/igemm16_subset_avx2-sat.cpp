@@ -25,32 +25,65 @@
 
 #include "igemv.h"
 #include "igemv16.h"
+#include "string.h"
 
 void AffineActiveListKernelImpl2B(AffineConfig const * const config, AffineConfigAl const * const al)
 {
-    uint32_t i, ix, ix_end, j, k, l, kk, kpartial, nKpartial, niters;
+    uint32_t KT = config->inputElementCount % VEC_16CAP; // config->inputElementCount tail for manual processing
+    uint32_t KK = config->inputElementCount - KT; // trimmed config->inputElementCount for AVX2 processing
+    uint32_t nKpartial;
+    uint32_t kpartial;
+    uint32_t niters;
+    uint32_t ix_end;
+    uint32_t ix;
+    uint32_t kk;
+    uint32_t i;
+    uint32_t j;
+    uint32_t l;
     kpartial = (hw_buf_size[config->inputVectorCount - 1]) / config->inputVectorCount;
     nKpartial = config->inputElementCount / kpartial;
 
-    __m256i in[8], w;     // inputs & weight
-    __m256i imm0, imm1, imm2, imm3, imm4, imm5, imm6, imm7, imm8, imm9, imm10;       // immediate
-    __m256i acc[8]; // output accumulators
-    __m256i zero = _mm256_setzero_si256(); // AVX2 ZERO
-    __m256i *in_ptr0, *in_ptr1, *in_ptr2, *in_ptr3, *in_ptr4, *in_ptr5, *in_ptr6, *in_ptr7;
-    int16_t const * input_0, *input_1, *input_2, *input_3, *input_4, *input_5, *input_6, *input_7;
+    // simd inputs and weight
+    __m256i in[8];
+    __m256i w;
+
+    // simd intermediate
+    __m256i imm0;
+    __m256i imm1;
+    __m256i imm2;
+    __m256i imm3;
+    __m256i imm4;
+    __m256i imm5;
+    __m256i imm6;
+    __m256i imm7;
+    __m256i imm8;
+    __m256i imm9;
+
+    // simd accumulators
+    __m256i acc[8];
+
+    // simd input pointers
+    __m256i *in_ptr0 = nullptr;
+    __m256i *in_ptr1 = nullptr;
+    __m256i *in_ptr2 = nullptr;
+    __m256i *in_ptr3 = nullptr;
+    __m256i *in_ptr4 = nullptr;
+    __m256i *in_ptr5 = nullptr;
+    __m256i *in_ptr6 = nullptr;
+    __m256i *in_ptr7 = nullptr;
 
     int16_t const * input[8];
+    memset(input, 0, sizeof(input));
+
+    int64_t sum[8];            // 64-bit accumulator buffer
+    memset(sum, 0, sizeof(sum));
+
     int16_t const * weight;
     nn_bias_s const * bias = config->biasesSimple;
     int32_t * output;
-    nn_bias_s const * const biasEnd = bias + config->outputElementCount;
-    int64_t sum[8];            // 64-bit accumulator buffer
 
-    uint32_t KT = config->inputElementCount % VEC_16CAP; // config->inputElementCount tail for manual processing
-    uint32_t KK = config->inputElementCount - KT; // trimmed config->inputElementCount for AVX2 processing
-
-    output = config->output;
     weight = config->weights2B;
+    output = config->output;
 
     if (1 == config->inputVectorCount)
     {
