@@ -24,6 +24,7 @@
 static const std::map<std::string, std::string> validHwIds{
     {"5A11", "GNA 0.9 CNL"},
     {"3190", "GNA 1.0 GLK"},
+    {"4511", "GNA 1.0 EHL"},
     {"8A11", "GNA 1.0 ICL"},
     {"9A11", "GNA 2.0 TGL"} };
 

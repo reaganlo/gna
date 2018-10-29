@@ -344,6 +344,7 @@ GetDeviceId(_In_ WDFDEVICE dev)
             {
             case GNA_DEV_CNL:
             case GNA_DEV_GLK:
+            case GNA_DEV_EHL:
             case GNA_DEV_ICL:
             case GNA_DEV_TGL:
                 Trace(TLI, T_INIT, "Supported device found. HW ID: %X", hwIdHex);

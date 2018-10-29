@@ -44,6 +44,7 @@ typedef enum _gna_device_kind
     GNA_SUE_2,      // GNA v2.0
     GNA_CNL,        // GNA v1.0
     GNA_GLK,        // GNA v1.0
+    GNA_EHL,        // GNA v1.0
     GNA_ICL,        // GNA v1.0
     GNA_TGL,        // GNA v2.0
 } gna_device_kind;

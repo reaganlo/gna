@@ -91,6 +91,7 @@ typedef enum _GnaDeviceType
     GNA_NO_DEVICE   = 0x0000,   // No supported device available
     GNA_DEV_CNL     = 0x5A11,   // GNA 1.0 Device Cannonlake, no CNN support
     GNA_DEV_GLK     = 0x3190,   // GNA 1.0 Device Geminilake, full featured GNA 1.0
+    GNA_DEV_EHL     = 0x4511,   // GNA 1.0 Device Elkhartlake, same function set as GLK
     GNA_DEV_ICL     = 0x8A11,   // GNA 1.0 Device Icelake, same function set as GLK
     GNA_DEV_TGL     = 0x9A11,   // GNA 2.0 Device Tigerlake, full featured GNA 2.0
 
