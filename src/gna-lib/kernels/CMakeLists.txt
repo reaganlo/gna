@@ -50,7 +50,6 @@ elseif(${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU" OR ${CMAKE_CXX_COMPILER_ID} STREQ
 endif()
 
 set(KERNEL_DIR ${SRC_DIR}/kernels)
-set(GNA_KERNELS_OUT_DIR ${GNA_LIB_OUT_DIR}/kernels/${CMAKE_ARCHITECTURE})
 
 # --- XNN KERNELS --- #
 set(xnn_kernel_sources
@@ -306,5 +305,4 @@ set_target_properties(xnn_kernel_generic xnn_kernel_generic_sat
   gmm_kernel_generic gmm_kernel_sse4 gmm_kernel_avx1 gmm_kernel_avx2
   PROPERTIES
   POSITION_INDEPENDENT_CODE True
-  ARCHIVE_OUTPUT_DIRECTORY ${GNA_KERNELS_OUT_DIR}
   PREFIX "")

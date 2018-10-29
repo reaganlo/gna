@@ -138,6 +138,19 @@ set(CMAKE_EXE_LINKER_FLAGS_${OS_PREFIX}-DEBUG      ${CXX_LINKER_FLAGS_DEBUG})
 set(CMAKE_EXE_LINKER_FLAGS_${OS_PREFIX}-RELEASE    ${CXX_LINKER_FLAGS_RELEASE})
 set(CMAKE_EXE_LINKER_FLAGS_KLOCWORK               ${CXX_LINKER_FLAGS_RELEASE})
 
+# make samples package
+file(MAKE_DIRECTORY ${GNA_BINARY_DIR}/samples)
+file(MAKE_DIRECTORY ${GNA_BINARY_DIR}/samples/gna-lib)
+file(MAKE_DIRECTORY ${GNA_BINARY_DIR}/samples/gna-lib/include)
+file(MAKE_DIRECTORY ${GNA_BINARY_DIR}/samples/gna-lib/x64)
+file(MAKE_DIRECTORY ${GNA_BINARY_DIR}/samples/gna-lib/x86)
+file(COPY samples/CMakeLists.txt
+          samples/gna-samples.sln
+          samples/readme.txt
+          samples/sample01
+          samples/sample_dumper
+    DESTINATION ${GNA_BINARY_DIR}/samples)
+
 add_subdirectory(src/gna-lib/kernels)
 add_subdirectory(src/gna-lib)
 add_subdirectory(src/tools)

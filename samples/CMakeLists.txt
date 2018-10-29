@@ -42,9 +42,6 @@ else()
   option(GNA_LOCAL_PACKAGE "Use local GNA library package" OFF)
 endif()
 
-message(STATUS ${CMAKE_SYSTEM_NAME})
-message(STATUS ${GNA_LOCAL_PACKAGE})
-
 # set architecture name
 set(CMAKE_ARCHITECTURE "x64")
 
@@ -68,8 +65,29 @@ if(GNA_LOCAL_PACKAGE)
     set_property(TARGET Gna::gna-api
       PROPERTY IMPORTED_IMPLIB ${CMAKE_CURRENT_LIST_DIR}/gna-lib/${CMAKE_ARCHITECTURE}/gna.lib)
   else()
+
+    # find all gna shared object files
+    file(GLOB gna_lib_matches ${CMAKE_CURRENT_LIST_DIR}/gna-lib/${CMAKE_ARCHITECTURE}/libgna${GNA_LIB_POSTFIX}.so.2*)
+    if(NOT gna_lib_matches)
+      message(FATAL_ERROR "gna library not found")
+    endif()
+
+    # convert cmake list to newline separated list
+    STRING(REPLACE ";" "\n" matches "${gna_lib_matches}")
+
+    # sort shared object files by version (from latest to oldest)
+    execute_process(COMMAND bash "-c" "echo -e \"${matches}\" | sort -Vr"
+      WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+      OUTPUT_VARIABLE sorted_matches)
+
+    # convert output to cmake list
+    STRING(REPLACE "\n" ";" sorted_matches "${sorted_matches}")
+
+    # get and link latest version of shared library
+    list(GET sorted_matches 0 gna_sofile)
+    message(STATUS "Linking ${gna_sofile}")
     set_property(TARGET Gna::gna-api
-      PROPERTY IMPORTED_LOCATION ${CMAKE_CURRENT_LIST_DIR}/gna-lib/${CMAKE_ARCHITECTURE}/libgna${GNA_LIB_POSTFIX}.so.2)
+      PROPERTY IMPORTED_LOCATION ${gna_sofile})
   endif()
   set_property(TARGET Gna::gna-api PROPERTY
     INTERFACE_INCLUDE_DIRECTORIES ${CMAKE_SOURCE_DIR}/gna-lib/include)
