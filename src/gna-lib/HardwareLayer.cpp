@@ -289,8 +289,11 @@ HardwareLayerAffDiagTrans::HardwareLayerAffDiagTrans(const DescriptorParameters&
                 activation = aff->Activation.get();
                 break;
             }
+        case INTEL_INTERLEAVE:
+        case INTEL_DEINTERLEAVE:
+            break;
         default:
-            throw GnaException { GNA_UNKNOWN_ERROR };
+            throw GnaException { XNN_ERR_LYR_KIND };
     }
     save();
 }
