@@ -47,23 +47,21 @@ set(KERNEL_DIR ${SRC_DIR}/kernels)
 set(GNA_LIB_OUT_DIR ${GNA_BINARY_DIR}/gna-lib/$<CONFIG>)
 
 # linking with libpthreads
-if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
+if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux" OR
+  ${CMAKE_SYSTEM_NAME} STREQUAL "Android")
   find_package(Threads)
 endif()
 
 if(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
   set(OS_PREFIX WIN)
+elseif(${CMAKE_SYSTEM_NAME} STREQUAL "Android")
+  set(OS_PREFIX AND)
 else()
   set(OS_PREFIX LNX)
 endif()
 
 # setting default configuration
 include(${CMAKE_SOURCE_DIR}/build/cmake/set_build_type.cmake)
-
-# postfix for debug libraries
-if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
-  set(CMAKE_${OS_PREFIX}-DEBUG_POSTFIX d)
-endif()
 
 # Visual Studio
 if(MSVC)
@@ -73,11 +71,15 @@ elseif(NOT CMAKE_ARCHITECTURE)
 endif()
 
 # configuration flags
-if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
+if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux" OR
+  ${CMAKE_SYSTEM_NAME} STREQUAL "Android")
   if(${CMAKE_BUILD_TYPE} STREQUAL "${OS-PREFIX}-RELEASE")
     add_definitions("-D_FORTIFY_SOURCE=2")
   endif()
   set(CXX_FLAGS "-Wall -Werror")
+  if(${CMAKE_SYSTEM_NAME} STREQUAL "Android")
+    set(CXX_FLAGS "-Wall")
+  endif()
   set(CXX_FLAGS_DEBUG "-g -O0 -DDEBUG=1")
   set(CXX_FLAGS_RELEASE "-fstack-protector-all -O3 -DNDEBUG")
   if(${CMAKE_CXX_COMPILER_ID} STREQUAL "Intel")
@@ -117,6 +119,8 @@ else()
     else()
       set(CXX_FLAGS_RELEASE "${CXX_FLAGS_RELEASE} -flto -fno-fat-lto-objects")
     endif()
+  elseif(${CMAKE_SYSTEM_NAME} STREQUAL "Android")
+    set(CXX_FLAGS_RELEASE "${CXX_FLAGS_RELEASE} -flto -fno-fat-lto-objects")
   endif()
 endif()
 

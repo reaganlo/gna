@@ -28,14 +28,14 @@
 
 #include "gna-api.h"
 #include "SelfTest.h"
-#include "WindowsHardwareSelfTest.h"
+#include "MultiOsHardwareSelfTest.h"
 
 int main(int argc, char *argv[])
 {
     PressEnterToContinue();
     LOG("Starting GNA device self-test\n");
     //getchar();
-    WindowsGnaSelfTestHardwareStatus hwDrvStatus;
+    MultiOsGnaSelfTestHardwareStatus hwDrvStatus;
     hwDrvStatus.Initialize();
 
     if (!hwDrvStatus.IsOK()) {

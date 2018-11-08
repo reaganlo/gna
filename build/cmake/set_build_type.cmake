@@ -33,6 +33,7 @@ else()
   set(CMAKE_CONFIGURATION_TYPES "${OS_PREFIX}-DEBUG;${OS_PREFIX}-RELEASE;KLOCWORK")
 endif()
 
-if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
+# postfix for debug libraries
+if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux" OR ${CMAKE_SYSTEM_NAME} STREQUAL "Android")
   set(CMAKE_${OS_PREFIX}-DEBUG_POSTFIX d)
 endif()

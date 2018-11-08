@@ -25,7 +25,15 @@
 
 #pragma once
 
-#include <sys/timeb.h>
+#include <time.h>
+//Instead of obsolete timeb
+struct timeWithMilis
+{
+    time_t time;                //seconds
+    unsigned short int millitm; //miliseconds
+};
+int getTimeWithMilis(struct timeWithMilis* t);
+
 #include "gna-api-instrumentation.h"
 
 #if defined(_WIN32)
@@ -80,13 +88,13 @@
 #endif // defined(PROFILE) && defined(PROFILE_DETAILED)
 
 // enables or disables profile print macro
-#if defined(PROFILE_PRINT) 
+#if defined(PROFILE_PRINT)
 #define PROFILE_PRINT_      PROFILE_
 #define PROFILE_PRINT_D_    PROFILE_D_
 #else
 #define PROFILE_PRINT_(...)
 #define PROFILE_PRINT_D_(...)
-#endif // defined(PROFILE_PRINT) 
+#endif // defined(PROFILE_PRINT)
 
 /**
  * max value of time_tsc type
@@ -98,9 +106,10 @@
  * Real Time Clock time type
  */
 #if defined(_WIN32)
-typedef struct __timeb64    time_rtc;
+#include <sys/timeb.h>
+typedef struct __timeb64     time_rtc;
 #else
-typedef struct timeb        time_rtc;
+typedef struct timeWithMilis time_rtc;
 #endif
 #endif // DRIVER
 

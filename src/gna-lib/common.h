@@ -45,7 +45,9 @@
 /**
  * GNA main memory required alignment size
  */
+#ifndef PAGE_SIZE // on Android OS PAGE_SIZE is defined in <sys/user.h>
 const uint32_t PAGE_SIZE = 0x1000;
+#endif //PAGE_SIZE
 
 #define _gna_malloc(a)    _mm_malloc(a, PAGE_SIZE)
 #define _kernel_malloc(a) _mm_malloc(a, INTRIN_ALIGN)

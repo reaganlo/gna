@@ -129,15 +129,15 @@ void SelfTestDevice::SampleModelCreate()
     Alloc(bytes_requested, nnet.nLayers, 0);
 
     int16_t *pinned_weights = (int16_t*)pinned_mem_ptr;
-    memcpy_s(pinned_weights, buf_size_weights, weights, sizeof(weights));   // puts the weights into the pinned memory
+    memcpy(pinned_weights, weights, sizeof(weights));   // puts the weights into the pinned memory
     pinned_mem_ptr += buf_size_weights;                 // fast-forwards current pinned memory pointer to the next free block
 
     pinned_inputs = (int16_t*)pinned_mem_ptr;
-    memcpy_s(pinned_inputs, buf_size_inputs, inputs, sizeof(inputs));      // puts the inputs into the pinned memory
+    memcpy(pinned_inputs, inputs, sizeof(inputs));      // puts the inputs into the pinned memory
     pinned_mem_ptr += buf_size_inputs;                  // fast-forwards current pinned memory pointer to the next free block
 
     int32_t *pinned_biases = (int32_t*)pinned_mem_ptr;
-    memcpy_s(pinned_biases, buf_size_biases, biases, sizeof(biases));      // puts the biases into the pinned memory
+    memcpy(pinned_biases, biases, sizeof(biases));      // puts the biases into the pinned memory
     pinned_mem_ptr += buf_size_biases;                  // fast-forwards current pinned memory pointer to the next free block
 
     pinned_outputs = (int16_t*)pinned_mem_ptr;
@@ -279,7 +279,7 @@ DEF_GNASELFTESTISSUE(NO_DRIVER,"NO_DRIVER");
 
 void GnaSelfTestIssue::Handle() const
 {
-    LOG(info);
+    LOG("%s",info);
     LOG("Do you want to go further anyway? [y/N]");
     std::string buf;
     std::getline(std::cin, buf);

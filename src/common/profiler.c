@@ -42,8 +42,17 @@
 
 #if defined(_WIN32)
 #define rtcGetTime(t) (int)_ftime64_s(t)
-#else 
-#define rtcGetTime(t) (int)ftime(t)
+#else
+#include <sys/time.h>
+int getTimeWithMilis(struct timeWithMilis* t)
+{
+    struct timeval tv;
+    int ret = gettimeofday(&tv, NULL);
+    t->time = tv.tv_sec;
+    t->millitm = tv.tv_usec/1000;
+    return ret;
+}
+#define rtcGetTime(t) (int)getTimeWithMilis(t)
 #endif
 
 // time_rtc full seconds macro

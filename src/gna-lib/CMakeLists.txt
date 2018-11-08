@@ -52,9 +52,12 @@ endif()
 
 project(${PROJECT_NAME})
 
-if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
+set(IOCTL_SENDER_PREFIX ${CMAKE_SYSTEM_NAME})
+
+if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux" OR ${CMAKE_SYSTEM_NAME} STREQUAL "Android")
   set(API_EXTRA_LIBS "")
   set(API_EXTRA_DEFS "")
+  set(IOCTL_SENDER_PREFIX "Linux")
 elseif(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
   set(API_EXTRA_LIBS "setupapi.lib")
   set(API_EXTRA_DEFS "-DINTEL_GNA_DLLEXPORT=1")
@@ -96,7 +99,7 @@ set(gna_lib_sources
   ${SRC_DIR}/SoftwareModel.cpp
   ${SRC_DIR}/SubModel.cpp
   ${SRC_DIR}/ThreadPool.cpp
-  ${SRC_DIR}/${CMAKE_SYSTEM_NAME}IoctlSender.cpp)
+  ${SRC_DIR}/${IOCTL_SENDER_PREFIX}IoctlSender.cpp)
 
 set(gna_lib_headers
   ${SRC_DIR}/AccelerationDetector.h
@@ -132,7 +135,7 @@ set(gna_lib_headers
   ${SRC_DIR}/SubModel.h
   ${SRC_DIR}/ThreadPool.h
   ${SRC_DIR}/Validator.h
-  ${SRC_DIR}/${CMAKE_SYSTEM_NAME}IoctlSender.h)
+  ${SRC_DIR}/${IOCTL_SENDER_PREFIX}IoctlSender.h)
 
 set(gna_api_headers
   ${COMMON_DIR}/gna-api.h
@@ -166,7 +169,7 @@ source_group(Api FILES ${api_headers})
 
 add_library(gna-api SHARED)
 
-if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
+if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux" OR ${CMAKE_SYSTEM_NAME} STREQUAL "Android")
   set(gna_lib_headers ${gna_lib_headers} ${COMMON_DIR}/gna.h)
 endif()
 
