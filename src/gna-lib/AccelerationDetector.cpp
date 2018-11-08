@@ -69,7 +69,7 @@ using namespace GNA;
 #endif
 
 const std::map<gna_device_kind, std::array<bool, GnaFeatureCount>>
-AccelerationDetector::gnaFeatureMap = {
+AccelerationDetector::gnaFeatureMap {{
     // Basic, CNN,   LegacyGMM,  GMMLayer, MultiBias, L1Dist, L2Dist, ComputerVision, Layer8K, NewPerformanceCounters
 { GNA_CNL,   {true, false, true,  false,    false,     false,  false,  false, false, false } },
 { GNA_GLK,   {true, true,  true,  false,    false,     false,  false,  false, false, false } },
@@ -78,7 +78,7 @@ AccelerationDetector::gnaFeatureMap = {
 { GNA_TGL,   {true, true,  false, true,     true,      false,  false,  false, true,  true  } },
 { GNA_SUE,   {true, true,  true,  false,    false,     false,  false,  false, false, false } },
 { GNA_SUE_2, {true, true,  false, true,     true,      false,  false,  false, true,  true  } }
-};
+}};
 
 std::map<const WeightMode, std::map<const acceleration, const AffineKernel>> AccelerationDetector::AffineKernels = {
     {GNA_WEIGHT_1B,
@@ -534,6 +534,9 @@ void AccelerationDetector::UpdateKernelsMap()
     }
 }
 
+namespace GNA
+{
+
 template<typename T>
 const std::map<const acceleration, const T>& AccelerationDetector::GetKernelMap(WeightMode weightMode, nn_layer_kind layerKind)
 {
@@ -638,4 +641,6 @@ const std::map<const acceleration, const GmmMaxMixActiveList>&
 AccelerationDetector::GetKernelMap<GmmMaxMixActiveList>(gna_gmm_mode gmmMode)
 {
     return GmmActiveListKernels.at(gmmMode);
+}
+
 }

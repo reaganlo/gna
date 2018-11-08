@@ -115,13 +115,12 @@ private:
     };
 
     static const uint8_t numberOfDiagonalModels = 4;
-    const std::array<unsigned int, numberOfDiagonalModels> refSize =
-    {
+    const std::array<unsigned int, numberOfDiagonalModels> refSize {{
         sizeof(ref_output) / sizeof(int32_t),
         sizeof(ref_output) / sizeof(int32_t),
         sizeof(ref_output_pwl) / sizeof(int16_t),
         sizeof(ref_output_pwl) / sizeof(int16_t),
-    };
+    }};
 
     const int16_t inputs[inVecSz * groupingNum] =
     {

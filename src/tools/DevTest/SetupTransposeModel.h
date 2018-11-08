@@ -111,11 +111,11 @@ private:
          -68,    76,    94,  -157,  -13,    172,
     };
     static const uint8_t numberOfTransposeModels = 2;
-    const std::array<int, numberOfTransposeModels> refSize =
-    {
+    const std::array<int, numberOfTransposeModels> refSize
+    {{
         sizeof(ref_output_1) / sizeof(int16_t),
         sizeof(ref_output_2) / sizeof(int16_t),
-    };
+    }};
 
     const int16_t* refOutputAssign[numberOfTransposeModels] =
     {
@@ -135,9 +135,9 @@ private:
         sizeof(inputs_2),
     };
 
-    const std::array<int, numberOfTransposeModels> groupingNum =
-    {
+    const std::array<int, numberOfTransposeModels> groupingNum
+    {{
         groupingNumConfig1,
         groupingNumConfig2
-    };
+    }};
 };

@@ -110,9 +110,9 @@ private:
         32735, 32735, 32735, 32737, 32737, 32735, 32735, 32735
     };
     static const uint8_t numberOfConvolutionModels = 2;
-    const std::array<unsigned int, numberOfConvolutionModels> refSize =
-    {
+    const std::array<unsigned int, numberOfConvolutionModels> refSize
+    {{
         sizeof(ref_output) / sizeof(int32_t),
         sizeof(ref_outputPwl) / sizeof(int16_t),
-    };
+    }};
 };

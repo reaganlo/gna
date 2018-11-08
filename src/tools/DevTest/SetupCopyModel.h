@@ -86,13 +86,13 @@ private:
 
     static const uint8_t numberOfCopyModels = 4;
 
-    const std::array<unsigned int, numberOfCopyModels> refSize =
-    {
+    const std::array<unsigned int, numberOfCopyModels> refSize
+    {{
         sizeof(ref_output_model_1) / sizeof(int16_t),
         sizeof(ref_output_model_2) / sizeof(int16_t),
         sizeof(ref_output_model_3) / sizeof(int16_t),
         sizeof(ref_output_model_4) / sizeof(int16_t),
-    };
+    }};
 
     const int16_t* refOutputAssign[numberOfCopyModels] =
     {

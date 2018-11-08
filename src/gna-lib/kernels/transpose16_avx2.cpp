@@ -1241,14 +1241,6 @@ void TransposeKernelImpl(TransposeConfig const * const cfg)
     {
         __m256i mix1, mix2, mix3, mix4, mix5, mix6, mix7;
         __m256i v1, v2, v3, v4, v5, v6, v7;
-        const int blend1 = 129;
-        const int blend2 = 64;
-        const int blend3 = 32;
-        const int blend4 = 16;
-        const int blend5 = 8;
-        const int blend6 = 4;
-        const int blend7 = 2;
-
         __m256i m1, m2, m3, m4, m5, m6, m7;
 
         m1 = _mm256_setr_epi8(0, 1, 14, 15, 12, 13, 10, 11, 8, 9, 6, 7, 4, 5, 2, 3,
@@ -1310,60 +1302,60 @@ void TransposeKernelImpl(TransposeConfig const * const cfg)
             v6 = _mm256_permute2x128_si256(mix3, mix7, 33);
             v7 = _mm256_permute2x128_si256(mix4, mix7, 48);
 
-            mix1 = _mm256_blend_epi16(v1, v2, blend2);
-            mix1 = _mm256_blend_epi16(mix1, v3, blend3);
-            mix1 = _mm256_blend_epi16(mix1, v4, blend4);
-            mix1 = _mm256_blend_epi16(mix1, v5, blend5);
-            mix1 = _mm256_blend_epi16(mix1, v6, blend6);
-            mix1 = _mm256_blend_epi16(mix1, v7, blend7);
+            mix1 = _mm256_blend_epi16(v1, v2, 64);
+            mix1 = _mm256_blend_epi16(mix1, v3, 32);
+            mix1 = _mm256_blend_epi16(mix1, v4, 16);
+            mix1 = _mm256_blend_epi16(mix1, v5, 8);
+            mix1 = _mm256_blend_epi16(mix1, v6, 4);
+            mix1 = _mm256_blend_epi16(mix1, v7, 2);
             mix1 = _mm256_shuffle_epi8(mix1, m1);
 
-            mix2 = _mm256_blend_epi16(v1, v2, blend1);
-            mix2 = _mm256_blend_epi16(mix2, v3, blend2);
-            mix2 = _mm256_blend_epi16(mix2, v4, blend3);
-            mix2 = _mm256_blend_epi16(mix2, v5, blend4);
-            mix2 = _mm256_blend_epi16(mix2, v6, blend5);
-            mix2 = _mm256_blend_epi16(mix2, v7, blend6);
+            mix2 = _mm256_blend_epi16(v1, v2, 129);
+            mix2 = _mm256_blend_epi16(mix2, v3, 64);
+            mix2 = _mm256_blend_epi16(mix2, v4, 32);
+            mix2 = _mm256_blend_epi16(mix2, v5, 16);
+            mix2 = _mm256_blend_epi16(mix2, v6, 8);
+            mix2 = _mm256_blend_epi16(mix2, v7, 4);
             mix2 = _mm256_shuffle_epi8(mix2, m2);
 
-            mix3 = _mm256_blend_epi16(v1, v2, blend7);
-            mix3 = _mm256_blend_epi16(mix3, v3, blend1);
-            mix3 = _mm256_blend_epi16(mix3, v4, blend2);
-            mix3 = _mm256_blend_epi16(mix3, v5, blend3);
-            mix3 = _mm256_blend_epi16(mix3, v6, blend4);
-            mix3 = _mm256_blend_epi16(mix3, v7, blend5);
+            mix3 = _mm256_blend_epi16(v1, v2, 2);
+            mix3 = _mm256_blend_epi16(mix3, v3, 129);
+            mix3 = _mm256_blend_epi16(mix3, v4, 64);
+            mix3 = _mm256_blend_epi16(mix3, v5, 32);
+            mix3 = _mm256_blend_epi16(mix3, v6, 16);
+            mix3 = _mm256_blend_epi16(mix3, v7, 8);
             mix3 = _mm256_shuffle_epi8(mix3, m3);
 
-            mix4 = _mm256_blend_epi16(v1, v2, blend6);
-            mix4 = _mm256_blend_epi16(mix4, v3, blend7);
-            mix4 = _mm256_blend_epi16(mix4, v4, blend1);
-            mix4 = _mm256_blend_epi16(mix4, v5, blend2);
-            mix4 = _mm256_blend_epi16(mix4, v6, blend3);
-            mix4 = _mm256_blend_epi16(mix4, v7, blend4);
+            mix4 = _mm256_blend_epi16(v1, v2, 4);
+            mix4 = _mm256_blend_epi16(mix4, v3, 2);
+            mix4 = _mm256_blend_epi16(mix4, v4, 129);
+            mix4 = _mm256_blend_epi16(mix4, v5, 64);
+            mix4 = _mm256_blend_epi16(mix4, v6, 32);
+            mix4 = _mm256_blend_epi16(mix4, v7, 16);
             mix4 = _mm256_shuffle_epi8(mix4, m4);
 
-            mix5 = _mm256_blend_epi16(v1, v2, blend5);
-            mix5 = _mm256_blend_epi16(mix5, v3, blend6);
-            mix5 = _mm256_blend_epi16(mix5, v4, blend7);
-            mix5 = _mm256_blend_epi16(mix5, v5, blend1);
-            mix5 = _mm256_blend_epi16(mix5, v6, blend2);
-            mix5 = _mm256_blend_epi16(mix5, v7, blend3);
+            mix5 = _mm256_blend_epi16(v1, v2, 8);
+            mix5 = _mm256_blend_epi16(mix5, v3, 4);
+            mix5 = _mm256_blend_epi16(mix5, v4, 2);
+            mix5 = _mm256_blend_epi16(mix5, v5, 129);
+            mix5 = _mm256_blend_epi16(mix5, v6, 64);
+            mix5 = _mm256_blend_epi16(mix5, v7, 32);
             mix5 = _mm256_shuffle_epi8(mix5, m5);
 
-            mix6 = _mm256_blend_epi16(v1, v2, blend4);
-            mix6 = _mm256_blend_epi16(mix6, v3, blend5);
-            mix6 = _mm256_blend_epi16(mix6, v4, blend6);
-            mix6 = _mm256_blend_epi16(mix6, v5, blend7);
-            mix6 = _mm256_blend_epi16(mix6, v6, blend1);
-            mix6 = _mm256_blend_epi16(mix6, v7, blend2);
+            mix6 = _mm256_blend_epi16(v1, v2, 16);
+            mix6 = _mm256_blend_epi16(mix6, v3, 8);
+            mix6 = _mm256_blend_epi16(mix6, v4, 4);
+            mix6 = _mm256_blend_epi16(mix6, v5, 2);
+            mix6 = _mm256_blend_epi16(mix6, v6, 129);
+            mix6 = _mm256_blend_epi16(mix6, v7, 64);
             mix6 = _mm256_shuffle_epi8(mix6, m6);
 
-            mix7 = _mm256_blend_epi16(v1, v2, blend3);
-            mix7 = _mm256_blend_epi16(mix7, v3, blend4);
-            mix7 = _mm256_blend_epi16(mix7, v4, blend5);
-            mix7 = _mm256_blend_epi16(mix7, v5, blend6);
-            mix7 = _mm256_blend_epi16(mix7, v6, blend7);
-            mix7 = _mm256_blend_epi16(mix7, v7, blend1);
+            mix7 = _mm256_blend_epi16(v1, v2, 32);
+            mix7 = _mm256_blend_epi16(mix7, v3, 16);
+            mix7 = _mm256_blend_epi16(mix7, v4, 8);
+            mix7 = _mm256_blend_epi16(mix7, v5, 4);
+            mix7 = _mm256_blend_epi16(mix7, v6, 2);
+            mix7 = _mm256_blend_epi16(mix7, v7, 129);
             mix7 = _mm256_shuffle_epi8(mix7, m7);
 
             _mm256_storeu_si256((__m256i*) out0, mix1);
@@ -1411,10 +1403,6 @@ void TransposeKernelImpl(TransposeConfig const * const cfg)
 
         __m256i mix1, mix2, mix3;
         __m256i v1, v2, v3;
-        const int blend1 = 146;
-        const int blend2 = 36;
-        const int blend3 = 73;
-
         __m256i m1, m2, m3;
 
         m1 = _mm256_setr_epi8(0, 1, 12, 13, 8, 9, 4, 5, 2, 3, 14, 15, 10, 11, 6, 7,
@@ -1449,18 +1437,18 @@ void TransposeKernelImpl(TransposeConfig const * const cfg)
             v2 = mix2;
             v3 = _mm256_permute2x128_si256(mix1, mix3, 49);
 
-            mix1 = _mm256_blend_epi32(v1, v2, blend1);
-            mix1 = _mm256_blend_epi32(mix1, v3, blend2);
+            mix1 = _mm256_blend_epi32(v1, v2, 146);
+            mix1 = _mm256_blend_epi32(mix1, v3, 36);
             mix1 = _mm256_shuffle_epi8(mix1, m1);
             mix1 = _mm256_permute4x64_epi64(mix1, 216);
 
-            mix2 = _mm256_blend_epi32(v1, v2, blend2);
-            mix2 = _mm256_blend_epi32(mix2, v3, blend3);
+            mix2 = _mm256_blend_epi32(v1, v2, 36);
+            mix2 = _mm256_blend_epi32(mix2, v3, 73);
             mix2 = _mm256_shuffle_epi8(mix2, m2);
             mix2 = _mm256_permute4x64_epi64(mix2, 216);
 
-            mix3 = _mm256_blend_epi32(v1, v2, blend3);
-            mix3 = _mm256_blend_epi32(mix3, v3, blend1);
+            mix3 = _mm256_blend_epi32(v1, v2, 73);
+            mix3 = _mm256_blend_epi32(mix3, v3, 146);
             mix3 = _mm256_shuffle_epi8(mix3, m3);
             mix3 = _mm256_permute4x64_epi64(mix3, 216);
 

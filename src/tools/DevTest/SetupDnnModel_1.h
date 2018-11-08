@@ -167,8 +167,8 @@ private:
 
     static const uint8_t numberOfDnnModels = 8;
 
-    const std::array<int, numberOfDnnModels> refSize =
-    {
+    const std::array<int, numberOfDnnModels> refSize
+    {{
         sizeof(ref_output_model_1) / sizeof(int32_t),
         sizeof(ref_output_model_1) / sizeof(int32_t),
         sizeof(ref_output_modelAl_1) / sizeof(int32_t),
@@ -177,7 +177,7 @@ private:
         sizeof(ref_output_modelPwl_1) / sizeof(int16_t),
         sizeof(ref_output_modelAlPwl_1) / sizeof(int16_t),
         sizeof(ref_output_modelAlPwl_1) / sizeof(int16_t),
-    };
+    }};
 
     static const int configDnn1_1B = 0;
     static const int configDnn1_2B = 1;

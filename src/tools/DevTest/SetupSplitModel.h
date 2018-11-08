@@ -154,8 +154,8 @@ private:
     };
 
     const std::map<uint32_t /*modelIndex*/, const std::map<uint32_t /*configIndex*/,
-        const std::array<int16_t, SetupSplitModel::inVecSz * SetupSplitModel::groupingNum>>> inputs =
-    {
+        const std::array<int16_t, SetupSplitModel::inVecSz * SetupSplitModel::groupingNum>>> inputs
+    {{
         {0, {
             {0, {-5,  9, -7,  4, 5, -4, -7,  4, 0,  7,  1, -7, 1,  6,  7,  9,
                   2, -4,  9,  8, -5, -1,  2,  9, -8, -8,  8,  1, -7,  2, -1, -1,
@@ -178,20 +178,20 @@ private:
                   -5,  9, -7,  4,  5,-4, -7,  4,  0,  7,  1, -7,  1,  6,  7,  9,
                    2,-4,  9,  8, -5, -1,  2,  9, -8, -8,  8,  1, -7,  2, -1, -1 }}
         }}
-    };
+    }};
 
     const std::map<uint32_t /*configIndex*/,
-        const std::array<int32_t, SetupSplitModel::outVecSz * SetupSplitModel::groupingNum>> affineOutputs =
-    {
+        const std::array<int32_t, SetupSplitModel::outVecSz * SetupSplitModel::groupingNum>> affineOutputs
+    {{
                 {0, { -177, -85, 29, 28, 96, -173, 25, 252, -160, 274, 157, -29, 48, -60, 158, -29,
                         26, -2, -44, -251, -173, -70, -1, -323, 99, 144, 38, -63, 20, 56, -103, 10 }},
                 {1, { -41, -1,   -47,   24, -15, 3,  159, 118, -170, 132, -56, -158, -51, -28, -9, -31,
                       102,  233, -83, -147,   6, 22, 301,   4,   31, 109, -53,  -85,  15, -85,  5,  98 }}
-    };
+    }};
 
     const std::map<uint32_t /*configIndex*/,
-        const std::array<int32_t, SetupSplitModel::diagonalOutVecSz * SetupSplitModel::groupingNum>> diagonalOutputs =
-    {
+        const std::array<int32_t, SetupSplitModel::diagonalOutVecSz * SetupSplitModel::groupingNum>> diagonalOutputs
+    {{
         { 0,{ 35, -49,  47, -19,  -6,  12,  18,  -4, -2,  -9,  -3,    5,   4,  -1,  -2,  -4,
         -11,   1, -25, -23, -50, -14,  13,  76, -44, -44,  52,  10, -36,   9,  -6,  -6,
         -13,  -5, -11,  15,   4,   0,  16,  40, -2, -10,  -3,    0, -40,  45,   5, -30,
@@ -200,5 +200,5 @@ private:
           11,   9,  -5,   1, -32, -68, -23,  22,-44,   4,  10,   22, -21, -31, -41, -11,
           -5,  23,  -9,  13,  24, -12, -24,  20, -2,  -9,  -3,    5,  10,  35,  40,  50,
          -11,   1, -25, -23,  15,  -1, -13, -41,  4,   4,   4,    4, -64,  17, -10, -10 } },
-    };
+    }};
 };

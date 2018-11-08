@@ -96,11 +96,11 @@ private:
 
     static const uint8_t numberOfGmmModels = 2;
 
-    std::array <unsigned int, numberOfGmmModels> refSize =
-    {
+    std::array<unsigned int, numberOfGmmModels> refSize
+    {{
         sizeof(ref_output_) / sizeof(int32_t),
         sizeof(ref_output_Al) / sizeof(int32_t)
-    };
+    }};
 
     const int32_t* refOutputAssign[numberOfGmmModels] =
     {

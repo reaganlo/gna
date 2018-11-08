@@ -164,13 +164,13 @@ private:
 
     static const uint8_t numberOfDnnModels = 4;
 
-    const std::array<int, numberOfDnnModels> refSize =
-    {
+    const std::array<int, numberOfDnnModels> refSize
+    {{
         sizeof(ref_output) / sizeof(int32_t),
         sizeof(ref_output) / sizeof(int32_t),
         sizeof(ref_output_pwl) / sizeof(int16_t),
         sizeof(ref_output_pwl) / sizeof(int16_t),
-    };
+    }};
 
     static const int confiMultiBias_1_1B = 0;
     static const int confiMultiBias_1_2B = 1;

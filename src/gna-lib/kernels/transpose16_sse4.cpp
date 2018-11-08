@@ -130,10 +130,6 @@ void TransposeKernelImpl(TransposeConfig const * const cfg)
         cmask2 = _mm_setr_epi8(4, 5, 0, 1, 0, 1, 6, 7, 0, 1, 0, 1, 8, 9, 0, 1);
         cmask3 = _mm_setr_epi8(0, 1, 10, 11, 0, 1, 0, 1, 12, 13, 0, 1, 0, 1, 14, 15);
 
-        const int blend1 = 36;
-        const int blend2 = 73;
-        const int blend3 = 146;
-
         a = _mm_lddqu_si128((__m128i*)in0);
         b = _mm_lddqu_si128((__m128i*)in1);
         c = _mm_lddqu_si128((__m128i*)in2);
@@ -158,9 +154,9 @@ void TransposeKernelImpl(TransposeConfig const * const cfg)
             c2 = _mm_shuffle_epi8(c, cmask2);
             c3 = _mm_shuffle_epi8(c, cmask3);
 
-            mix1 = _mm_blend_epi16(ab1, c1, blend1);
-            mix2 = _mm_blend_epi16(ab2, c2, blend2);
-            mix3 = _mm_blend_epi16(ab3, c3, blend3);
+            mix1 = _mm_blend_epi16(ab1, c1, 36);
+            mix2 = _mm_blend_epi16(ab2, c2, 73);
+            mix3 = _mm_blend_epi16(ab3, c3, 146);
 
             _mm_stream_si128((__m128i*) out0, mix1);
             _mm_stream_si128((__m128i*) out1, mix2);
@@ -915,11 +911,6 @@ void TransposeKernelImpl(TransposeConfig const * const cfg)
         mask3 = _mm_setr_epi8(4, 5, 14, 15, 8, 9, 2, 3, 12, 13, 6, 7, 0, 1, 10, 11);
         mask4 = _mm_setr_epi8(6, 7, 0, 1, 10, 11, 4, 5, 14, 15, 8, 9, 2, 3, 12, 13);
         mask5 = _mm_setr_epi8(8, 9, 2, 3, 12, 13, 6, 7, 0, 1, 10, 11, 4, 5, 14, 15);
-        const int blend1 = 132,
-            blend2 = 16,
-            blend3 = 66,
-            blend4 = 8,
-            blend5 = 33;
 
         a = _mm_load_si128((__m128i*)in0);
         b = _mm_load_si128((__m128i*)in1);
@@ -935,34 +926,34 @@ void TransposeKernelImpl(TransposeConfig const * const cfg)
             in3 += N * SSE_16CAP;
             in4 += N * SSE_16CAP;
 
-            v1 = _mm_blend_epi16(a, b, blend1);
-            v1 = _mm_blend_epi16(v1, c, blend2);
-            v1 = _mm_blend_epi16(v1, d, blend3);
-            v1 = _mm_blend_epi16(v1, e, blend4);
+            v1 = _mm_blend_epi16(a, b, 132);
+            v1 = _mm_blend_epi16(v1, c, 16);
+            v1 = _mm_blend_epi16(v1, d, 66);
+            v1 = _mm_blend_epi16(v1, e, 8);
             v1 = _mm_shuffle_epi8(v1, mask1);
 
-            v2 = _mm_blend_epi16(a, b, blend4);
-            v2 = _mm_blend_epi16(v2, c, blend5);
-            v2 = _mm_blend_epi16(v2, d, blend1);
-            v2 = _mm_blend_epi16(v2, e, blend2);
+            v2 = _mm_blend_epi16(a, b, 8);
+            v2 = _mm_blend_epi16(v2, c, 33);
+            v2 = _mm_blend_epi16(v2, d, 132);
+            v2 = _mm_blend_epi16(v2, e, 16);
             v2 = _mm_shuffle_epi8(v2, mask2);
 
-            v3 = _mm_blend_epi16(a, b, blend2);
-            v3 = _mm_blend_epi16(v3, c, blend3);
-            v3 = _mm_blend_epi16(v3, d, blend4);
-            v3 = _mm_blend_epi16(v3, e, blend5);
+            v3 = _mm_blend_epi16(a, b, 16);
+            v3 = _mm_blend_epi16(v3, c, 66);
+            v3 = _mm_blend_epi16(v3, d, 8);
+            v3 = _mm_blend_epi16(v3, e, 33);
             v3 = _mm_shuffle_epi8(v3, mask3);
 
-            v4 = _mm_blend_epi16(a, b, blend5);
-            v4 = _mm_blend_epi16(v4, c, blend1);
-            v4 = _mm_blend_epi16(v4, d, blend2);
-            v4 = _mm_blend_epi16(v4, e, blend3);
+            v4 = _mm_blend_epi16(a, b, 33);
+            v4 = _mm_blend_epi16(v4, c, 132);
+            v4 = _mm_blend_epi16(v4, d, 16);
+            v4 = _mm_blend_epi16(v4, e, 66);
             v4 = _mm_shuffle_epi8(v4, mask4);
 
-            v5 = _mm_blend_epi16(a, b, blend3);
-            v5 = _mm_blend_epi16(v5, c, blend4);
-            v5 = _mm_blend_epi16(v5, d, blend5);
-            v5 = _mm_blend_epi16(v5, e, blend1);
+            v5 = _mm_blend_epi16(a, b, 66);
+            v5 = _mm_blend_epi16(v5, c, 8);
+            v5 = _mm_blend_epi16(v5, d, 33);
+            v5 = _mm_blend_epi16(v5, e, 132);
             v5 = _mm_shuffle_epi8(v5, mask5);
 
             _mm_storeu_si128((__m128i*) out0, v1);
