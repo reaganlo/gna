@@ -19,34 +19,38 @@
 // or otherwise. Any license under such intellectual property rights must
 // be express and approved by Intel in writing.
 //*****************************************************************************
-#pragma once
-#include "HardwareSelfTest.h"
-#include <vector>
-#include "PciDeviceInfo.h"
+#include "LinuxHardwareSelfTest.h"
+extern "C"{
+#include <pci/pci.h>
+}
 
-#define GNA_ST_LSMOD "lsmod | grep ^gna"
-#define GNA_ST_MODPROBE "modprobe -v --dry-run gna"
-
-class LinuxGnaSelfTestHardwareStatus : public GnaSelfTestHardwareStatus
+std::vector<PciDeviceInfo> LinuxGnaSelfTestHardwareStatus::getDevicesList()
 {
-public:
-    LinuxGnaSelfTestHardwareStatus()
+    LOG("INFO in getDevicesList LIBPCI method\n");
+    std::vector<PciDeviceInfo> devList;
+    struct pci_access *pciCtrl;
+    struct pci_dev *dev;
+    char devNameBuf[1024], *devName;
+    pciCtrl = pci_alloc();     //PCI library control structure allocation
+    pci_init(pciCtrl);         //PCI library control structure initialization
+    pci_scan_bus(pciCtrl);     //Get the list of devices
+    for (dev=pciCtrl->devices; dev; dev=dev->next)
     {
-        determineUserIdentity();
+        pci_fill_info(dev, PCI_FILL_IDENT | PCI_FILL_BASES | PCI_FILL_CLASS);
+        devName = pci_lookup_name(pciCtrl, devNameBuf, sizeof(devNameBuf), PCI_LOOKUP_DEVICE, dev->vendor_id, dev->device_id);
+        PciDeviceInfo di;
+        di.vendorId = dev->vendor_id;
+        di.deviceId = dev->device_id;
+        di.devClass = dev->device_class;
+        di.irq = dev->irq;
+        di.domain = dev->domain;
+        di.bus = dev->bus;
+        di.dev = dev->dev;
+        di.func = dev->func;
+        di.irqPin = pci_read_byte(dev, PCI_INTERRUPT_PIN);
+        di.name = devName;
+        devList.push_back(di);
     }
-private:
-    void initHardwareInfo() override;
-    void initDriverInfo() override;
-    int checkHWId();
-    int checkDriver();
-    std::vector<PciDeviceInfo> getDevicesList();
-    // search for a GNA node in /dev/gnaXX - XX in (0,range-1)
-    // returns path to the node
-    // returns empty string on failure
-    const int DEFAULT_GNA_DEV_NODE_RANGE = 16;
-    std::string devfsGnaNode(int range);
-    std::string readCmdOutput(const char* command) const;
-    void determineUserIdentity() const;
-    // end of the search range
-
-};
+    pci_cleanup(pciCtrl);
+    return devList;
+}

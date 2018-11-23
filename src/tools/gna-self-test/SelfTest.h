@@ -28,7 +28,6 @@
 
 #define DEFAULT_SELFTEST_TIMEOUT_MS 10000
 
-
 void PressEnterToContinue();
 
 class SelfTestDevice {

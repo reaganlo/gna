@@ -21,7 +21,8 @@
 //*****************************************************************************
 #pragma once
 #include "SelfTest.h"
-
+#include <iostream>
+#include <sstream>
 class GnaSelfTestHardwareStatus
 {
     virtual void initHardwareInfo() = 0;

@@ -23,6 +23,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <iostream>
+#include <string>
 
 void HandleGnaStatus(const intel_gna_status_t& status, const char * what = "") {
     LOG("%s: %s\n", what, GnaStatusToString(status));
@@ -46,7 +47,6 @@ SelfTestDevice::SelfTestDevice()
 }
 
 // obtains pinned memory shared with the device
-#include <string>
 void SelfTestDevice::Alloc(const uint32_t bytesRequested, const uint16_t layerCount, const uint16_t gmmCount)
 {
 

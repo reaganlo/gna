@@ -124,90 +124,85 @@ if(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
   endif()
 endif()
 
-#gna-self-test only for windows at this point
-if(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
-  set(gna_self_test_sources
+#Beginning of gna-self-test part COMMON
+
+set(gna_self_test_sources
     gna-self-test/gna-self-test.cpp
-    gna-self-test/SelfTest.cpp
-    gna-self-test/WindowsHardwareSelfTest.cpp)
+    gna-self-test/SelfTest.cpp)
   set(gna_self_test_headers
     gna-self-test/SelfTest.h
     gna-self-test/MultiOsHardwareSelfTest.h
-    gna-self-test/WindowsHardwareSelfTest.h
     gna-self-test/HardwareSelfTest.h)
-  add_executable(gna-self-test
+set(GNA_SELF_TEST_LINK_LIBS
+  gna-api)
+
+#gna-self-test specific part for Windows
+if(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
+  set(gna_self_test_sources
     ${gna_self_test_sources}
-    ${gna_self_test_headers})
-  target_include_directories(gna-self-test PRIVATE ${COMMON_DIR})
-
-  set_target_properties(gna-self-test
-    PROPERTIES
-    RUNTIME_OUTPUT_DIRECTORY_${OS_PREFIX}-DEBUG ${GNA_GNA_SELF_TEST_OUT_DIR}
-    RUNTIME_OUTPUT_DIRECTORY_${OS_PREFIX}-RELEASE ${GNA_GNA_SELF_TEST_OUT_DIR}
-    EXCLUDE_FROM_DEFAULT_BUILD_KLOCWORK TRUE
-    OUTPUT_NAME gna-self-test)
-
-  target_link_libraries(gna-self-test
-    gna-api
+    gna-self-test/WindowsHardwareSelfTest.cpp)
+  set(gna_self_test_headers
+    ${gna_self_test_headers}
+    gna-self-test/WindowsHardwareSelfTest.h)
+  set(GNA_SELF_TEST_LINK_LIBS
+    ${GNA_SELF_TEST_LINK_LIBS}
     setupapi)
+endif()
 
+#gna-self-test specific for Linux and Android
+if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux"
+  OR ${CMAKE_SYSTEM_NAME} STREQUAL "Android")
+  if(NOT DEFINED LIB_PCI)
+    find_library(LIB_PCI
+      NAMES pci
+      DOC "Path to libpci.so, may be set to false to force not using")
+    message("Looking for pci library: ${LIB_PCI}")
+  endif()
+  if(LIB_PCI)
+    set(GNA_SELF_TEST_LINK_LIBS
+      ${GNA_SELF_TEST_LINK_LIBS}
+      pci)
+    set(gna_self_test_sources
+      ${gna_self_test_sources}
+      gna-self-test/LinuxPciLibBasedImpl.cpp)
+  else()
+    set(gna_self_test_sources
+      ${gna_self_test_sources}
+      gna-self-test/LinuxNoPciLibBasedImpl.cpp)
+  endif()
+  if(${CMAKE_SYSTEM_NAME} STREQUAL "Android")
+    set(GNA_SELF_TEST_LINK_LIBS
+      ${GNA_SELF_TEST_LINK_LIBS}
+      c++_shared)
+  endif()
+
+  set(gna_self_test_sources
+    ${gna_self_test_sources}
+    gna-self-test/LinuxHardwareSelfTest.cpp
+    gna-self-test/PciDeviceInfo.cpp)
+  set(gna_self_test_headers
+    ${gna_self_test_headers}
+    gna-self-test/LinuxHardwareSelfTest.h
+    gna-self-test/PciDeviceInfo.h)
+endif()
+
+add_executable(gna-self-test
+  ${gna_self_test_sources}
+  ${gna_self_test_headers})
+set_target_properties(gna-self-test
+  PROPERTIES
+  RUNTIME_OUTPUT_DIRECTORY_${OS_PREFIX}-DEBUG ${GNA_GNA_SELF_TEST_OUT_DIR}
+  RUNTIME_OUTPUT_DIRECTORY_${OS_PREFIX}-RELEASE ${GNA_GNA_SELF_TEST_OUT_DIR}
+  EXCLUDE_FROM_DEFAULT_BUILD_KLOCWORK TRUE
+  OUTPUT_NAME gna-self-test)
+target_link_libraries(gna-self-test ${GNA_SELF_TEST_LINK_LIBS})
+target_include_directories(gna-self-test PRIVATE ${COMMON_DIR})
+
+#copy gna.dll and gna.pdb for Windows
+if(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
   add_custom_command(TARGET gna-self-test POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
       $<TARGET_FILE:gna-api>
-	  $<TARGET_PDB_FILE:gna-api>
+      $<TARGET_PDB_FILE:gna-api>
       $<TARGET_FILE_DIR:gna-self-test>)
-endif()
-
-#gna-self-test only for Linux at this point
-if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
-  set(gna_self_test_sources
-    gna-self-test/gna-self-test.cpp
-    gna-self-test/SelfTest.cpp
-    gna-self-test/LinuxHardwareSelfTest.cpp)
-  set(gna_self_test_headers
-    gna-self-test/SelfTest.h
-    gna-self-test/MultiOsHardwareSelfTest.h
-    gna-self-test/LinuxHardwareSelfTest.h
-    gna-self-test/HardwareSelfTest.h)
-  add_executable(gna-self-test
-    ${gna_self_test_sources}
-    ${gna_self_test_headers})
-  target_include_directories(gna-self-test PRIVATE ${COMMON_DIR})
-
-  set_target_properties(gna-self-test
-    PROPERTIES
-    RUNTIME_OUTPUT_DIRECTORY_${OS_PREFIX}-DEBUG ${GNA_GNA_SELF_TEST_OUT_DIR}
-    RUNTIME_OUTPUT_DIRECTORY_${OS_PREFIX}-RELEASE ${GNA_GNA_SELF_TEST_OUT_DIR}
-    EXCLUDE_FROM_DEFAULT_BUILD_KLOCWORK TRUE
-    OUTPUT_NAME gna-self-test)
-
-  target_link_libraries(gna-self-test
-    gna-api)
-endif()
-
-if(${CMAKE_SYSTEM_NAME} STREQUAL "Android")
-  set(gna_self_test_sources
-    gna-self-test/gna-self-test.cpp
-    gna-self-test/SelfTest.cpp
-    gna-self-test/LinuxHardwareSelfTest.cpp)
-  set(gna_self_test_headers
-    gna-self-test/SelfTest.h
-    gna-self-test/MultiOsHardwareSelfTest.h
-    gna-self-test/LinuxHardwareSelfTest.h
-    gna-self-test/HardwareSelfTest.h)
-  add_executable(gna-self-test
-    ${gna_self_test_sources}
-    ${gna_self_test_headers})
-  target_include_directories(gna-self-test PRIVATE ${COMMON_DIR})
-
-  set_target_properties(gna-self-test
-    PROPERTIES
-    RUNTIME_OUTPUT_DIRECTORY_${OS_PREFIX}-DEBUG ${GNA_GNA_SELF_TEST_OUT_DIR}
-    RUNTIME_OUTPUT_DIRECTORY_${OS_PREFIX}-RELEASE ${GNA_GNA_SELF_TEST_OUT_DIR}
-    EXCLUDE_FROM_DEFAULT_BUILD_KLOCWORK TRUE
-    OUTPUT_NAME gna-self-test)
-
-  target_link_libraries(gna-self-test
-    gna-api
-    c++_shared)
 endif()

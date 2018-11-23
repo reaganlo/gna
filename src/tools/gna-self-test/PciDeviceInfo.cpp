@@ -19,34 +19,45 @@
 // or otherwise. Any license under such intellectual property rights must
 // be express and approved by Intel in writing.
 //*****************************************************************************
-#pragma once
-#include "HardwareSelfTest.h"
-#include <vector>
 #include "PciDeviceInfo.h"
+#include <sstream>
+#include "SelfTest.h"
 
-#define GNA_ST_LSMOD "lsmod | grep ^gna"
-#define GNA_ST_MODPROBE "modprobe -v --dry-run gna"
-
-class LinuxGnaSelfTestHardwareStatus : public GnaSelfTestHardwareStatus
+std::ostream & _PciDeviceInfo::println(std::ostream & out) const
 {
-public:
-    LinuxGnaSelfTestHardwareStatus()
-    {
-        determineUserIdentity();
-    }
-private:
-    void initHardwareInfo() override;
-    void initDriverInfo() override;
-    int checkHWId();
-    int checkDriver();
-    std::vector<PciDeviceInfo> getDevicesList();
-    // search for a GNA node in /dev/gnaXX - XX in (0,range-1)
-    // returns path to the node
-    // returns empty string on failure
-    const int DEFAULT_GNA_DEV_NODE_RANGE = 16;
-    std::string devfsGnaNode(int range);
-    std::string readCmdOutput(const char* command) const;
-    void determineUserIdentity() const;
-    // end of the search range
+    out << std::hex << domain << ' ' << (int)bus << ' ' << (int)dev << ' ' << (int)func << ' '
+        << vendorId << ' ' << deviceId << ' ' << devClass << ' ' << irq << ' ' << (int)irqPin << ' ' << name << std::endl;
+    return out;
+}
 
-};
+std::string _PciDeviceInfo::toString() const
+{
+    std::ostringstream oss;
+    println(oss);
+    return oss.str();
+}
+
+// Sample input: "00:03.0 \"0100\" \"1af4\" \"1001\" \"virtio-pci\"
+_PciDeviceInfo _PciDeviceInfo::fromLspciString(const std::string & s)
+{
+    int s_bus, s_dev, s_func, s_vendorId, s_devId, s_devClass;
+    int ret = sscanf(s.c_str(), "%x:%x.%d \" %x\" \" %x\" \" %x", &s_bus, &s_dev, &s_func, &s_devClass, &s_vendorId, &s_devId);
+
+    if (ret != 6)
+    {
+        LOG("ERROR in fromLspciString: parsing error: <%s>\n", s.c_str());
+        throw std::logic_error("ERROR in fromLspciString(): parsing error");
+    }
+    struct _PciDeviceInfo t;
+    t.bus = s_bus;
+    t.dev = s_dev;
+    t.func = s_func;
+    t.vendorId = s_vendorId;
+    t.deviceId = s_devId;
+    t.devClass = s_devClass;
+    t.name = s;
+    t.domain = 0;
+    t.irq = 0;
+    t.irqPin = 0;
+    return t;
+}

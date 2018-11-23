@@ -20,33 +20,21 @@
 // be express and approved by Intel in writing.
 //*****************************************************************************
 #pragma once
-#include "HardwareSelfTest.h"
-#include <vector>
-#include "PciDeviceInfo.h"
-
-#define GNA_ST_LSMOD "lsmod | grep ^gna"
-#define GNA_ST_MODPROBE "modprobe -v --dry-run gna"
-
-class LinuxGnaSelfTestHardwareStatus : public GnaSelfTestHardwareStatus
-{
-public:
-    LinuxGnaSelfTestHardwareStatus()
-    {
-        determineUserIdentity();
-    }
-private:
-    void initHardwareInfo() override;
-    void initDriverInfo() override;
-    int checkHWId();
-    int checkDriver();
-    std::vector<PciDeviceInfo> getDevicesList();
-    // search for a GNA node in /dev/gnaXX - XX in (0,range-1)
-    // returns path to the node
-    // returns empty string on failure
-    const int DEFAULT_GNA_DEV_NODE_RANGE = 16;
-    std::string devfsGnaNode(int range);
-    std::string readCmdOutput(const char* command) const;
-    void determineUserIdentity() const;
-    // end of the search range
-
-};
+#include <string>
+#include <cstdint>
+typedef struct _PciDeviceInfo {
+    std::string name;
+    uint16_t  domain;
+    uint8_t bus;
+    uint8_t dev;
+    uint8_t func;
+    uint16_t vendorId;
+    uint16_t deviceId;
+    uint16_t devClass;
+    int irq;
+    uint8_t irqPin;
+    std::ostream& println(std::ostream& out) const;
+    std::string toString() const;
+    // Sample input: "00:03.0 \"0100\" \"1af4\" \"1001\" \"virtio-pci\"
+    static struct _PciDeviceInfo fromLspciString(const std::string& s);
+} PciDeviceInfo;

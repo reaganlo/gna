@@ -19,34 +19,24 @@
 // or otherwise. Any license under such intellectual property rights must
 // be express and approved by Intel in writing.
 //*****************************************************************************
-#pragma once
-#include "HardwareSelfTest.h"
-#include <vector>
-#include "PciDeviceInfo.h"
+#include "LinuxHardwareSelfTest.h"
+#include <sstream>
 
-#define GNA_ST_LSMOD "lsmod | grep ^gna"
-#define GNA_ST_MODPROBE "modprobe -v --dry-run gna"
+// List PCI devices in machine readable format (-m), includieng kernel driver info (-k) and numeric form (-n)
+#define GNA_ST_LSPCI "lspci -n -k -m"
 
-class LinuxGnaSelfTestHardwareStatus : public GnaSelfTestHardwareStatus
+std::vector<PciDeviceInfo> LinuxGnaSelfTestHardwareStatus::getDevicesList()
 {
-public:
-    LinuxGnaSelfTestHardwareStatus()
+    LOG("INFO in getDevicesList LSPCI method\n");
+    std::vector<PciDeviceInfo> devList;
+    std::istringstream in{ readCmdOutput(GNA_ST_LSPCI)};
+    std::string s;
+    while(std::getline(in,s))
     {
-        determineUserIdentity();
+        if(s.size()<10) continue;  //too short to be 'a proper line' from lspci
+        PciDeviceInfo dev = PciDeviceInfo::fromLspciString(s);
+        devList.push_back(dev);
     }
-private:
-    void initHardwareInfo() override;
-    void initDriverInfo() override;
-    int checkHWId();
-    int checkDriver();
-    std::vector<PciDeviceInfo> getDevicesList();
-    // search for a GNA node in /dev/gnaXX - XX in (0,range-1)
-    // returns path to the node
-    // returns empty string on failure
-    const int DEFAULT_GNA_DEV_NODE_RANGE = 16;
-    std::string devfsGnaNode(int range);
-    std::string readCmdOutput(const char* command) const;
-    void determineUserIdentity() const;
-    // end of the search range
 
-};
+    return devList;
+}
