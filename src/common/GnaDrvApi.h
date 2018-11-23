@@ -44,6 +44,11 @@ typedef intel_gna_status_t  status_t;
 
 typedef UINT8           __1B_RES;   // 1 B of reserved memory
 
+/**
+ * Size of GNA (GMM/xNN) configuration data in bytes
+ */
+#define CFG_SIZE    256
+
  /**
   * GNA Device Page Table directory
   */
@@ -114,16 +119,14 @@ static_assert(12 == sizeof(GNA_CPBLTS), "Invalid size of GNA_CPBLTS");
  */
 typedef struct _CTRL_FLAGS
 {
-    UINT32      activeListOn    :1; // 00:00 - active list mode (0:disabled, 1:enabled)
-    UINT32      gnaMode         :2; // 01:02 - GNA operation mode (0:GMM, 1:xNN)
-    UINT32      layerCount      :14;
-    UINT32      copyDescriptors :1; // for GNA 1.0 library compatibility
-    UINT32      _rsvd           :14;
-
+    UINT32      activeListOn : 1;    // active list mode (0:disabled, 1:enabled)
+    UINT32      gnaMode : 2;         // GNA operation mode (0:GMM, 1:xNN)
+    UINT32      ddiVersion : 21;
+    UINT32      hwPerfEncoding : 8;
     union
     {
-        UINT32      layerBase;
-        UINT32      gmmOffset;
+        UINT32      xnnLyrDscSize;   // backward compatibility: size of layer descriptors sent
+        UINT32      layerCount;
     };
 } CTRL_FLAGS;                       // Control flag
 
@@ -134,25 +137,32 @@ static_assert(8 == sizeof(CTRL_FLAGS), "Invalid size of CTRL_FLAGS");
  * NOTE: always include performance results
  * this allow to use PROFILED library with NON-PROFILED driver and vice versa
  */
-
 typedef struct _GNA_CALC_IN
 {
-    // input part
-    UINT64              memoryId;       // model identifier
-    UINT64              configSize;     // size of whole config w/ patches
-    UINT64              patchCount;     // number of patches lying outside this structures
-    CTRL_FLAGS          ctrlFlags;      // scoring mode
-    UINT8               hwPerfEncoding; // hardware level performance encoding type
-    // output part
-    perf_drv_t          drvPerf;        // driver level performance profiling results
-    perf_hw_t           hwPerf;         // hardware level performance results
-    status_t            status;         // status of scoring
+    /* input part */
+    CTRL_FLAGS          ctrlFlags;        // scoring mode
 
-    // memory patches
-    UINT8               patches[];
+    union {
+        UINT8           config[CFG_SIZE]; // backward compatibility: configuration data for GMM or xNN
+        struct {
+            UINT64      memoryId;         // model identifier
+            UINT32      configBase;       // layer base / offset to gmm descriptor
+            UINT64      configSize;       // size of whole config w/ patches
+            UINT64      patchCount;       // number of patches lying outside this structures
+        };
+    };
+
+    /* output part*/
+    perf_drv_t          drvPerf;          // driver level performance profiling results
+    perf_hw_t           hwPerf;           // hardware level performance results
+    status_t            status;           // status of scoring
+
+    UINT32              __res;            // 4 B padding to multiple 8 B size
+
+    UINT8               patches[];        // memory patches
 } GNA_CALC_IN, *PGNA_CALC_IN;       // CALCULATE IOCTL - Input/output data
 
-static_assert(77 == sizeof(GNA_CALC_IN), "Invalid size of GNA_CALC_IN");
+static_assert(312 == sizeof(GNA_CALC_IN), "Invalid size of GNA_CALC_IN");
 
 typedef struct _GNA_MEMORY_PATCH
 {
@@ -168,14 +178,14 @@ static_assert(16 == sizeof(GNA_MEMORY_PATCH), "Invalid size of GNA_MEMORY_PATCH"
  */
 #define REQUEST_SIZE                sizeof(GNA_CALC_IN)
 
-/**
- * Size of xNN layer descriptor in bytes
- */
+ /**
+  * Size of xNN layer descriptor in bytes
+  */
 #define XNN_LYR_DSC_SIZE            (128)
 
-/**
- * Size of GMM config in bytes
- */
+  /**
+   * Size of GMM config in bytes
+   */
 #define GMM_CFG_SIZE                (128)
 
 #pragma pack ()

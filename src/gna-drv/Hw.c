@@ -90,6 +90,18 @@ HwPowerTransitionVerify(
     _In_    P_HW_REGS   regs,
     _Inout_ D0I3_CTRL*  d0i3);
 
+VOID
+HwSetDescriptors(
+    _In_    PVOID           config,
+    _In_    PUINT8          lyrDscBuffer,
+    _In_    PGNA_CALC_IN    input);
+
+VOID
+HwSetDescriptors2(
+    _In_    PVOID           config,
+    _In_    PUINT8          lyrDscBuffer,
+    _In_    PGNA_CALC_IN    input);
+
 /******************************************************************************
  * Public Methods
  ******************************************************************************/
@@ -117,6 +129,29 @@ HwWriteReg(
 
 VOID
 HwPrepareMmuConfig(
+    _In_    PAPP_CTX    appCtx,
+    _In_    UINT32      length)
+{
+    PMMU_CONFIG mmu;    // mmu config link
+    P_PT_DIR    ptDir;  // page table directory
+    ULONG       i;      // page table iterator
+
+    TraceEntry(TLI, T_ENT);
+
+    mmu = &appCtx->hwMmuConfig;
+    // mark descriptor mmu config data 'dirty'
+    RtlFillMemory(mmu, sizeof(MMU_CONFIG), 0xff);
+    // populate mmu addresses
+    mmu->vamaxaddr = length - 1;
+    ptDir = appCtx->ptDir;
+    for (i = 0; i < appCtx->pageTableCount && i < PT_DIR_SIZE; ++i)
+    {
+        mmu->pagdir_n[i] = (UINT32)(ptDir[i].commBuffLa.QuadPart / PAGE_SIZE);
+    }
+}
+
+VOID
+HwPrepareMmuConfig2(
     _In_    PMEMORY_CTX  memoryCtx)
 {
     PMMU_CONFIG mmu;    // mmu config link
@@ -197,9 +232,10 @@ HwStart(
     ctrl.start_accel = 1;
     ctrl.compl_int_en = 1;
     ctrl.err_int_en = 1;
-    ctrl.comp_stats_en = input->hwPerfEncoding & 0xF;
     ctrl.active_list_en = input->ctrlFlags.activeListOn;
     ctrl.gna_mode = input->ctrlFlags.gnaMode;
+    ctrl.comp_stats_en = input->ctrlFlags.hwPerfEncoding & 0xF;
+
     _WRITE(regs->ctrl, ctrl._dword);
 
     getRegs(regs); // debug register dump, necessary to satisfy verbose test timing conditions (e.g. breakpoint tests)
@@ -208,13 +244,12 @@ HwStart(
 VOID
 HwInitExecution(
     _In_    P_HW_REGS       regs,
-    _In_    ULONG           baseDescriptorLA,
-    _In_    PUINT8          lyrDscBuffer,
     _In_    PVOID           config,
+    _In_    PUINT8          lyrDscBuffer,
     _In_    PGNA_CALC_IN    input,
+    _In_    ULONG           baseDescriptorLA,
     _In_    PDEV_CONFIG     devCfg)
 {
-    //NTSTATUS sts = STATUS_SUCCESS;
 #ifndef ENABLE_LEGACY_INTERRUPTS
     UNREFERENCED_PARAMETER(devCfg);
 #endif
@@ -228,17 +263,13 @@ HwInitExecution(
         HwAbort(regs);
     }
 
-    // copy user provided xNN or GMM configuration
-    if(1 == input->ctrlFlags.gnaMode)
+    if (input->ctrlFlags.ddiVersion == 0)
     {
-        PXNN_CONFIG xnnConfig = (PXNN_CONFIG)config;
-        xnnConfig->labase = input->ctrlFlags.layerBase;
-        xnnConfig->lacount = (UINT16)input->ctrlFlags.layerCount;
+        HwSetDescriptors(config, lyrDscBuffer, input);
     }
     else
     {
-        PVOID gmmDescriptor = lyrDscBuffer + input->ctrlFlags.gmmOffset;
-        RtlCopyMemory(config, gmmDescriptor, GMM_CFG_SIZE);
+        HwSetDescriptors2(config, lyrDscBuffer, input);
     }
 
     // start scoring
@@ -507,4 +538,40 @@ HwPowerTransitionVerify(
         i++;
     };
     return (0 == d0i3->cmd_in_progress); // true = pm cmd completed if 0
+}
+
+VOID
+HwSetDescriptors(
+    _In_    PVOID           config,
+    _In_    PUINT8          lyrDscBuffer,
+    _In_    PGNA_CALC_IN    input)
+{
+    // copy user provided configuration data into base descriptor memory space
+    memcpy_s(config, CFG_SIZE, input->config, CFG_SIZE);
+    // copy user provided layer descriptor data into layer descriptor memory space
+    // (beginning of user buffer)
+    if (1 == input->ctrlFlags.gnaMode)
+    {
+        memcpy_s(lyrDscBuffer, input->ctrlFlags.xnnLyrDscSize, ((UINT8*)input) + REQUEST_SIZE, input->ctrlFlags.xnnLyrDscSize);
+    }
+}
+
+VOID
+HwSetDescriptors2(
+    _In_    PVOID          config,
+    _In_    PUINT8         lyrDscBuffer,
+    _In_    PGNA_CALC_IN   input)
+{
+    // copy user provided xNN or GMM configuration
+    if (1 == input->ctrlFlags.gnaMode)
+    {
+        PXNN_CONFIG xnnConfig = (PXNN_CONFIG)config;
+        xnnConfig->labase = input->configBase;
+        xnnConfig->lacount = (UINT16)input->ctrlFlags.layerCount;
+    }
+    else
+    {
+        PVOID gmmDescriptor = lyrDscBuffer + input->configBase;
+        RtlCopyMemory(config, gmmDescriptor, GMM_CFG_SIZE);
+    }
 }

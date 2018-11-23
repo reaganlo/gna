@@ -37,13 +37,12 @@ using std::unique_ptr;
 #define MAX_D0_STATE_PROBES  10
 #define WAIT_PERIOD         200        // in miliseconds
 
-const std::map<GnaIoctlCommand, decltype(GNA_IOCTL_CPBLTS)> WindowsIoctlSender::ioctlCommandsMap =
+const std::map<GnaIoctlCommand, decltype(GNA_IOCTL_CPBLTS2)> WindowsIoctlSender::ioctlCommandsMap =
 {
-    { GNA_COMMAND_CAPABILITIES, GNA_IOCTL_CPBLTS },
-    { GNA_COMMAND_MAP, GNA_IOCTL_MEM_MAP },
-    { GNA_COMMAND_UNMAP, GNA_IOCTL_MEM_UNMAP },
+    { GNA_COMMAND_CAPABILITIES, GNA_IOCTL_CPBLTS2 },
+    { GNA_COMMAND_MAP, GNA_IOCTL_MEM_MAP2 },
+    { GNA_COMMAND_UNMAP, GNA_IOCTL_MEM_UNMAP2 },
 #if HW_VERBOSE == 1
-    { GNA_COMMAND_READ_PGDIR, GNA_IOCTL_READ_PGDIR },
     { GNA_COMMAND_READ_REG, GNA_IOCTL_READ_REG },
     { GNA_COMMAND_WRITE_REG, GNA_IOCTL_WRITE_REG }
 #endif
@@ -112,8 +111,6 @@ void WindowsIoctlSender::IoctlSend(const GnaIoctlCommand command, void * const i
     switch(command)
     {
 #if HW_VERBOSE == 1
-        case GNA_COMMAND_READ_PGDIR:
-            /* FALLTHRU */
         case GNA_COMMAND_READ_REG:
             /* FALLTHRU */
         case GNA_COMMAND_WRITE_REG:
@@ -140,7 +137,7 @@ uint64_t WindowsIoctlSender::MemoryMap(void *memory, size_t memorySize)
     ioResult = DeviceIoControl(deviceHandle, GNA_IOCTL_NOTIFY, nullptr, 0, &memoryId, sizeof(memoryId), &bytesRead, &overlapped);
     checkStatus(ioResult);
 
-    ioResult = DeviceIoControl(deviceHandle, GNA_IOCTL_MEM_MAP, nullptr, 0, memory, memorySize, &bytesRead, memoryMapOverlapped.get());
+    ioResult = DeviceIoControl(deviceHandle, GNA_IOCTL_MEM_MAP2, nullptr, 0, memory, memorySize, &bytesRead, memoryMapOverlapped.get());
     checkStatus(ioResult);
 
     wait(&overlapped, (recoveryTimeout + 15) * 1000);
@@ -156,7 +153,7 @@ void WindowsIoctlSender::MemoryUnmap(uint64_t memoryId)
     auto ioResult = BOOL{};
 
     // TODO: remove ummap IOCTL in favor of CancelIoEx (cancel handler in driver, cancel requests)
-    ioResult = DeviceIoControl(deviceHandle, GNA_IOCTL_MEM_UNMAP, &memoryId, sizeof(memoryId), nullptr, 0, &bytesRead, &overlapped);
+    ioResult = DeviceIoControl(deviceHandle, GNA_IOCTL_MEM_UNMAP2, &memoryId, sizeof(memoryId), nullptr, 0, &bytesRead, &overlapped);
     checkStatus(ioResult);
     wait(&overlapped, (recoveryTimeout + 15) * 1000);
 
@@ -178,17 +175,18 @@ RequestResult WindowsIoctlSender::Submit(HardwareRequest *hardwareRequest, Reque
 
     auto calculationData = reinterpret_cast<PGNA_CALC_IN>(hardwareRequest->CalculationData.get());
 
+    calculationData->ctrlFlags.ddiVersion = 2;
     calculationData->ctrlFlags.activeListOn = hardwareRequest->ActiveListOn;
     calculationData->ctrlFlags.gnaMode = hardwareRequest->Mode;
     calculationData->ctrlFlags.layerCount = hardwareRequest->LayerCount;
 
     if(xNN == hardwareRequest->Mode)
     {
-        calculationData->ctrlFlags.layerBase = hardwareRequest->LayerBase;
+        calculationData->configBase = hardwareRequest->LayerBase;
     }
     else if(GMM == hardwareRequest->Mode)
     {
-        calculationData->ctrlFlags.gmmOffset = hardwareRequest->GmmOffset;
+        calculationData->configBase = hardwareRequest->GmmOffset;
     }
     else
     {
@@ -221,7 +219,7 @@ void WindowsIoctlSender::getDeviceCapabilities()
     auto bytesRead = DWORD{0};
     GNA_CPBLTS cpblts;
 
-    auto ioResult = DeviceIoControl(deviceHandle, GNA_IOCTL_CPBLTS, nullptr, 0,
+    auto ioResult = DeviceIoControl(deviceHandle, GNA_IOCTL_CPBLTS2, nullptr, 0,
             &cpblts, sizeof(cpblts), &bytesRead, &overlapped);
 
     checkStatus(ioResult);

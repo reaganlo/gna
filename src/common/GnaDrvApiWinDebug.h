@@ -41,30 +41,6 @@
 
 # pragma pack (1) // set structure packaging to 1 to ensure alignment and size
 
- /**
-  * MEM_MAP IOCTL - input data.
-  */
-typedef struct _GNA_MM_IN
-{
-    UINT64 memoryId;
-
-} GNA_MM_IN, *PGNA_MM_IN;           // MEM_MAP IOCTL - input data
-
-static_assert(8 == sizeof(GNA_MM_IN), "Invalid size of GNA_MM_IN");
-/**
- * READ_PGDIR IOCTL - output data.
- * Size:    266 768 B
- */
-typedef struct _GNA_PGDIR_OUT
-{
-    UINT64              ptCount;    // Number of L1 pages allocated by the driver
-    UINT64              l1PhysAddr[PT_DIR_SIZE+1];// physical addresses of allocated pages
-    UINT32              l2PhysAddr[PT_SIZE];// physical addresses of page entries
-
-} GNA_PGDIR_OUT, *PGNA_PGDIR_OUT;         // READ_PGDIR IOCTL - output data (debug mode only)
-
-static_assert(266768 == sizeof(GNA_PGDIR_OUT), "Invalid size of GNA_PGDIR_OUT");
-
 /**
  * READ_REG IOCTL - input data
  * Size:    8 B
@@ -112,9 +88,8 @@ static_assert(16 == sizeof(GNA_WRITEREG_IN), "Invalid size of GNA_WRITEREG_IN");
  *
  *****************************************************************************/
 
-#define GNA_IOCTL_READ_REG   CTL_CODE(FILE_DEVICE_PCI_GNA, 0xA03, METHOD_BUFFERED, FILE_ANY_ACCESS)
-#define GNA_IOCTL_WRITE_REG  CTL_CODE(FILE_DEVICE_PCI_GNA, 0xA04, METHOD_BUFFERED, FILE_ANY_ACCESS)
-#define GNA_IOCTL_READ_PGDIR CTL_CODE(FILE_DEVICE_PCI_GNA, 0xA06, METHOD_BUFFERED, FILE_ANY_ACCESS)
+#define GNA_IOCTL_READ_REG   CTL_CODE(FILE_DEVICE_PCI_GNA, 0x903, METHOD_BUFFERED, FILE_ANY_ACCESS)
+#define GNA_IOCTL_WRITE_REG  CTL_CODE(FILE_DEVICE_PCI_GNA, 0x904, METHOD_BUFFERED, FILE_ANY_ACCESS)
 
 #pragma pack ()
 

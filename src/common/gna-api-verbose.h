@@ -2,7 +2,7 @@
     Copyright 2018 Intel Corporation.
     This software and the related documents are Intel copyrighted materials,
     and your use of them is governed by the express license under which they
-    were provided to you (Intel OBL Software License Agreement (OEM/IHV/ISV 
+    were provided to you (Intel OBL Software License Agreement (OEM/IHV/ISV
     Distribution & Single User) (v. 11.2.2017) ). Unless the License provides
     otherwise, you may not use, modify, copy, publish, distribute, disclose or
     transmit this software or the related documents without Intel's prior
@@ -39,7 +39,7 @@ extern "C" {
 typedef enum _dbg_action_type
 {
     GnaDumpMmio,
-    GnaDumpPageDirectory,
+    GnaReservedAction,
     GnaZeroMemory,
     GnaDumpMemory,
     GnaDumpXnnDescriptor,
@@ -97,7 +97,7 @@ typedef struct _dbg_action
 {
     dbg_action_type action_type;
     gna_reg gna_register;
-    union 
+    union
     {
         gna_timeout timeout;
         const char *log_message;

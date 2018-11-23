@@ -84,10 +84,10 @@ typedef struct _XNN_CONFIG
 
 /**
  * MMU Setup & Directory
- * 
+ *
  * Offset:   0x0200
  * Size:     0x0110 // TODO: verify has is correct
- * See:      HAS Section 5.4.4     
+ * See:      HAS Section 5.4.4
  * Note:     Specifies user pinned memory parameters
  */
 typedef union _MMU_CONFIG
@@ -115,8 +115,15 @@ static_assert(272 == sizeof(MMU_CONFIG), "Invalid size of MMU_CONFIG");
 typedef struct _DESCRIPTOR
 {
     __1B_RES    __res_0000[256];    // 0000 - 00FF - (256B reserved)
-    XNN_CONFIG  xnn_config;         // 0100 - 0107 - GNA Configuration, 8B
-    UINT8       _unused[248];       // 0108 - 01FF - unused
+    union
+    {
+        struct
+        {
+            XNN_CONFIG  xnn_config;         // 0100 - 0107 - GNA Configuration, 8B
+            UINT8       _unused[248];       // 0108 - 01FF - unused
+        };
+        UINT8       cfg_data[CFG_SIZE]; // 0100 - 01FF - Whole GNA Configuration, 256B
+    };
     MMU_CONFIG  mmu_config;         // 0200 - 030F - MMU setup and directory
 } DESCRIPTOR, *PDESCRIPTOR;         // GNA Base Descriptor
 

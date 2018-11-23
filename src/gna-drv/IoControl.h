@@ -44,6 +44,6 @@ IoctlDeferred;
 * IOCTL Request auxilary queue dispatching method
 */
 EVT_WDF_IO_QUEUE_IO_DEVICE_CONTROL
-IoctlMemoryMap;
+IoctlMemoryMap2;
 
 #endif // _IO_CONTROL_H

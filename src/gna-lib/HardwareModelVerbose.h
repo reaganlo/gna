@@ -43,7 +43,7 @@ struct RequestProfiler;
 class HardwareModelVerbose : public HardwareModel
 {
 public:
-    HardwareModelVerbose(const gna_model_id modId, const std::vector<std::unique_ptr<Layer>>& layers, 
+    HardwareModelVerbose(const gna_model_id modId, const std::vector<std::unique_ptr<Layer>>& layers,
         uint16_t gmmCount, const Memory &memoryIn, IoctlSender &sender, const AccelerationDetector& detector);
     virtual ~HardwareModelVerbose() = default;
     HardwareModelVerbose(const HardwareModelVerbose &) = delete;
@@ -71,8 +71,6 @@ private:
 
     void writeReg(uint32_t regOffset, uint32_t regVal);
 
-    void readPageDir(FILE *f);
-
     void readRegister(FILE *file, uint32_t registerOffset);
 
     void writeRegister(dbg_action regAction);
@@ -80,10 +78,6 @@ private:
     void dumpMmio(FILE *f);
 
     void dumpMemory(FILE *file);
-
-    void dumpPageDir(GNA_PGDIR_OUT &pagedir, FILE *f);
-
-    void dumpPage(uint8_t *ph_addr, uint8_t* v_addr, size_t size, FILE *f);
 
     void dumpXnnDescriptor(uint16_t layerNumber, FILE *f);
 

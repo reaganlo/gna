@@ -24,7 +24,7 @@
 */
 
 #include "ScoreProcessor.h"
-#include "scoreprocessor.tmh"
+#include "ScoreProcessor.tmh"
 #include "Memory.h"
 #include "Hw.h"
 #include "gna-etw-manifest.h"
@@ -44,17 +44,27 @@
  *
  * @return  start status, on error completes request with error information
  */
-static
 NTSTATUS
 ScoreStart(
-    _In_    PDEV_CTX    devCtx,
-    _In_    WDFREQUEST  request);
+    _In_    PGNA_CALC_IN input,
+    _In_    size_t inputLength,
+    _In_    PAPP_CTX2 appCtx,
+    _In_    PDEV_CTX devCtx,
+    _In_    WDFREQUEST request);
+
+extern
+NTSTATUS
+ScoreStart2(
+    _In_ PGNA_CALC_IN input,
+    _In_ size_t inputLength,
+    _In_ PAPP_CTX2 appCtx,
+    _In_ PDEV_CTX devCtx,
+    _In_ WDFREQUEST request);
 
 NTSTATUS
 ScoreValidateParams(
     _In_    PGNA_CALC_IN input,
-    _In_    size_t       inputLength,
-    _In_    PAPP_CTX     appCtx);
+    _In_    size_t       inputLength);
 
 /**
  * Completes scoring request processed by hardware
@@ -82,13 +92,14 @@ ScoreSubmitEvnt(
     WDFREQUEST          request,
     size_t              length)
 {
-    PDEV_CTX devCtx = WDF_NO_HANDLE;
     NTSTATUS status = STATUS_SUCCESS;
+    size_t calcInLength = 0;
+    PGNA_CALC_IN calcIn = NULL;
+    PAPP_CTX2 appCtx = NULL;
+    PDEV_CTX devCtx = NULL;
 
     TraceEntry(TLI, T_ENT);
     EventWriteDriverApiBegin(NULL, __FUNCTION__);
-
-    devCtx = DeviceGetContext(WdfIoQueueGetDevice(queue));
 
     // verify length is sufficient
     if (length < REQUEST_SIZE)
@@ -96,10 +107,40 @@ ScoreSubmitEvnt(
         status = STATUS_BUFFER_TOO_SMALL;
         TraceFailMsg(TLE, T_EXIT, "Input data has invalid size", status);
         WdfRequestComplete(request, status);
+        return;
     }
-    else
+
+    devCtx = DeviceGetContext(WdfIoQueueGetDevice(queue));
+    profilerDTscStart(&devCtx->profiler.startHW);
+    // get app context and verify if has mem mapped
+    appCtx = GetFileContext(WdfRequestGetFileObject(request));
+    // get pointer to request data and verify if valid
+    status = WdfRequestRetrieveInputBuffer(request, REQUEST_SIZE, &calcIn, &calcInLength);
+    if (!NT_SUCCESS(status))
     {
-        ScoreStart(devCtx, request);
+        TraceFailMsg(TLE, T_EXIT, "WdfRequestRetrieveInputBuffer", status);
+        return;
+    }
+
+    switch (calcIn->ctrlFlags.ddiVersion)
+    {
+    case 0:
+        status = ScoreStart(calcIn, calcInLength, appCtx, devCtx, request);
+        break;
+    case 2:
+        status = ScoreStart2(calcIn, calcInLength, appCtx, devCtx, request);
+        break;
+    default:
+        status = STATUS_INVALID_PARAMETER;
+        TraceFailMsg(TLE, T_EXIT, "WdfRequestRetrieveInputBuffer", status);
+        return;
+    }
+
+    if (!NT_SUCCESS(status))
+    {
+        ScoreComplete(devCtx, status, request, TRUE, NULL);
+        ScoreProcessorSleep(devCtx);
+        TraceFail(TLE, T_EXIT, status);
     }
 
     EventWriteDriverApiEnd(NULL, __FUNCTION__);
@@ -138,7 +179,7 @@ ScoreComplete(
     _In_        NTSTATUS    status,
     _In_opt_    WDFREQUEST  request,
     _In_        BOOLEAN     hwUnmap,
-    _In_opt_    PAPP_CTX    appCancel)
+    _In_opt_    PAPP_CTX2    appCancel)
 {
     TraceEntry(TLI, T_ENT);
 
@@ -365,74 +406,26 @@ GNAScoreDebug(
     Trace(TLI, T_MEM, "GNA actFuncSectDefPtr: %#x:", read32);
 }
 
-static PGNA_MEMORY_PATCH GetNextPatch(PGNA_MEMORY_PATCH patch)
-{
-    return (PGNA_MEMORY_PATCH)(patch->data + patch->size);
-}
-
-static void PatchMemory(const PGNA_CALC_IN input, PMEMORY_CTX memoryCtx)
-{
-    PUCHAR const memoryBase = memoryCtx->userMemoryBaseVA;
-
-    PGNA_MEMORY_PATCH memoryPatch;
-    PUINT8 memoryDestination;
-    UINT32 i;
-
-    /* update memory according to request config */
-    Trace(TLV, T_MEM, "patchCount %llu\n", input->patchCount);
-
-    memoryPatch = (PGNA_MEMORY_PATCH)input->patches;
-    for (i = 0; i < input->patchCount; ++i)
-    {
-        Trace(TLV, T_MEM, "patch %d. offset: %llu, size: %llu\n",
-            i, memoryPatch->offset, memoryPatch->size);
-
-        memoryDestination = memoryBase + memoryPatch->offset;
-        RtlCopyMemory(memoryDestination, memoryPatch->data, memoryPatch->size);
-        memoryPatch = GetNextPatch(memoryPatch);
-    }
-}
-
 NTSTATUS
 ScoreStart(
-    _In_    PDEV_CTX    devCtx,
-    _In_    WDFREQUEST  request)
+    _In_ PGNA_CALC_IN input,
+    _In_ size_t inputLength,
+    _In_ PAPP_CTX2 appCtx,
+    _In_ PDEV_CTX devCtx,
+    _In_ WDFREQUEST request)
 {
     NTSTATUS    status = STATUS_INVALID_DEVICE_REQUEST;
-    PAPP_CTX    appCtx = NULL; // file context of device for calling application
-    PMEMORY_CTX  memoryCtx = NULL; // current memory context
     BOOLEAN     isAppCurrent = FALSE;// deterimenes if current app is saved as recent
-    size_t      inputLength = 0;    // tmp in request buffer length
-    PGNA_CALC_IN input = NULL; // input parameters
     PVOID       lyrDscBuffer = NULL; // layer descriptor buffer address to save config to
 
     TraceEntry(TLI, T_ENT);
 
-    profilerDTscStart(&devCtx->profiler.startHW);
-    // get app context and verify if has mem mapped
-    appCtx = GetFileContext(WdfRequestGetFileObject(request));
-    // get pointer to request data and verify if valid
-    status = WdfRequestRetrieveInputBuffer(request, REQUEST_SIZE, &input, &inputLength);
-    if (!NT_SUCCESS(status))
-    {
-        TraceFailMsg(TLE, T_EXIT, "WdfRequestRetrieveInputBuffer", status);
-        goto cleanup;
-    }
-
-    status = ScoreValidateParams(input, inputLength, appCtx);
+    status = ScoreValidateParams(input, inputLength);
     if (!NT_SUCCESS(status))
     {
         TraceFailMsg(TLE, T_EXIT, "(Score parameters are invalid)", status);
-        goto cleanup;
+        return status;
     }
-    memoryCtx = FindMemoryContextByIdLocked(appCtx, input->memoryId);
-    if (NULL == memoryCtx)
-    {
-        TraceFailMsg(TLI, T_MEM, "Application has NOT mapped memory!", status);
-        goto cleanup;
-    }
-
-    PatchMemory(input, memoryCtx);
 
     // check and remember application from which req. is being processed now
     WdfSpinLockAcquire(devCtx->req.reqLock);
@@ -445,84 +438,44 @@ ScoreStart(
     devCtx->app.app = appCtx;
     WdfSpinLockRelease(devCtx->app.appLock);
 
+    if (FALSE == isAppCurrent)
+    {
+        HwMapMemory(&devCtx->desc.va->mmu_config, &appCtx->appCtx1.hwMmuConfig);
+    }
+
     // setup timer for recovery after DRV_RECOVERY_TIMEOUT seconds from now
     if (WdfTrue == WdfTimerStart(devCtx->timeout, -10000000LL * devCtx->cfg.cpblts.recoveryTimeout))
     {
         status = STATUS_TIMER_NOT_CANCELED;
-        goto cleanup;
+        return status;
     }
+
     // configure device for scoring and start, parameters already validated
-    lyrDscBuffer = MmGetSystemAddressForMdlSafe(memoryCtx->pMdl, HighPagePriority | MdlMappingNoExecute);
+    lyrDscBuffer = MmGetSystemAddressForMdlSafe(appCtx->appCtx1.pMdl, HighPagePriority | MdlMappingNoExecute);
     if (NULL == lyrDscBuffer)
     {
         status = STATUS_INVALID_ADDRESS;
-        goto cleanup;
+        return status;
     }
-    HwInitExecution(devCtx->hw.regs, (ULONG)memoryCtx->desc.la.QuadPart, lyrDscBuffer, &memoryCtx->desc.va->xnn_config, input, &devCtx->cfg);
+
+    HwInitExecution(devCtx->hw.regs, devCtx->desc.va->cfg_data, lyrDscBuffer, input, (ULONG)(devCtx->desc.la.QuadPart), &devCtx->cfg);
 
     profilerDTscStop(&devCtx->profiler.startHW);
     profilerTscStart(&devCtx->profiler.scoreHW);
     Trace(TLV, T_QUE, "%!FUNC!: Scoring started, startHW time %llu", profilerGetTscPassed(&devCtx->profiler.startHW));
     return status; // SUCCESS - request will be completed by interrupt
-
-cleanup: // ERROR - complete request
-    if (!NT_SUCCESS(status))
-    {
-        ScoreComplete(devCtx, status, request, TRUE, NULL);
-        ScoreProcessorSleep(devCtx);
-        TraceFail(TLE, T_EXIT, status);
-    }
-    return status;
 }
 
 NTSTATUS
 ScoreValidateParams(
     _In_    PGNA_CALC_IN    input,
-    _In_    size_t          inputLength,
-    _In_    PAPP_CTX        appCtx)
+    _In_    size_t          inputLength)
 {
-    PMEMORY_CTX memoryCtx = NULL;
-    PGNA_MEMORY_PATCH memoryPatch = NULL;
-    size_t calculatedRequestSize;
-    size_t userRequestSize;
-    UINT64 patchBoundary;
-    int i;
-
     TraceEntry(TLI, T_ENT);
 
     ERRCHECKP(NULL == input, STATUS_DATA_ERROR);
     ERRCHECKP(input->ctrlFlags.gnaMode > 1, STATUS_INVALID_PARAMETER);
-    ERRCHECKP(input->configSize != inputLength, STATUS_INVALID_PARAMETER);
-
-    memoryCtx = FindMemoryContextByIdLocked(appCtx, input->memoryId);
-    calculatedRequestSize = sizeof(GNA_CALC_IN);
-    userRequestSize = input->configSize;
-    memoryPatch = (PGNA_MEMORY_PATCH) (
-        (PUINT8)input + sizeof(GNA_CALC_IN));
-
-    for (i = 0; i < input->patchCount; ++i)
-    {
-        // validate if memory patch exceeds memory boundary
-        patchBoundary = memoryPatch->offset + memoryPatch->size;
-        if (patchBoundary > memoryCtx->userMemorySize) {
-            Trace(TLE, T_MEM, "patch %d exceeds memory boundary", i);
-            return STATUS_INVALID_PARAMETER;
-        }
-
-        // validate if calculated size exceeds size provide by user
-        calculatedRequestSize += sizeof(GNA_MEMORY_PATCH)
-            + memoryPatch->size;
-
-        if (calculatedRequestSize > userRequestSize) {
-            Trace(TLE, T_MEM, "patch %d exceeds user request size\n", i);
-            return STATUS_INVALID_PARAMETER;
-        }
-
-        memoryPatch = GetNextPatch(memoryPatch);
-    }
-
-    calculatedRequestSize = ALIGN(calculatedRequestSize, sizeof(UINT64));
-    ERRCHECKP(calculatedRequestSize != inputLength, STATUS_INVALID_PARAMETER);
+    ERRCHECKP(input->ctrlFlags.xnnLyrDscSize + REQUEST_SIZE != inputLength, STATUS_INVALID_BUFFER_SIZE);
 
     return STATUS_SUCCESS;
 }
@@ -531,7 +484,7 @@ NTSTATUS
 ScoreFinalize(
     _In_    PDEV_CTX    devCtx)
 {
-    PGNA_CALC_IN        output;     // request output parameters
+    PGNA_CALC_IN       output;     // request output parameters
     status_t            hwSts;      // hardware status
     PROFILE_D_(ULONG32  ptcReg = 0);// HW Performance Total Cycle register value
     PROFILE_D_(ULONG32  pscReg = 0);// HW Performance Stall Cycle register value
@@ -596,16 +549,12 @@ ScoreDeferredUnmap(
     _In_    PDEV_CTX    devCtx,
     _In_    WDFREQUEST  unmapReq)
 {
-    NTSTATUS status = STATUS_SUCCESS;
     WDFFILEOBJECT app = NULL;     // file object of calling application
-    PAPP_CTX      appCtx = NULL;     // file context of calling application
-    PMEMORY_CTX   memoryCtx = NULL;
+    PAPP_CTX2     appCtx = NULL;     // file context of calling application
 
     TraceEntry(TLI, T_ENT);
     // cancel all request from current application
     app = WdfRequestGetFileObject(unmapReq);
-
-    // FIXME: cancel requests by memory
     ScoreCancelReqByApp(devCtx->queue, app);
     Trace(TLV, T_QUE, "%!FUNC! Force Powering off HW to D0i3.");
     HwPowerSwitch(devCtx->hw.regs, &devCtx->cfg, HW_POWER_OFF);
@@ -618,41 +567,7 @@ ScoreDeferredUnmap(
         devCtx->app.app = NULL;
     }
     WdfSpinLockRelease(devCtx->app.appLock);
-
-    appCtx = GetFileContext(WdfRequestGetFileObject(unmapReq));
-
-    PUINT64 memoryId;
-    size_t memoryIdLength;
-
-    // retrieve and store input params
-    status = WdfRequestRetrieveInputBuffer(unmapReq, sizeof(*memoryId), &memoryId, &memoryIdLength);
-    if (!NT_SUCCESS(status))
-    {
-        TraceFailMsg(TLE, T_EXIT, "WdfRequestRetrieveInputBuffer", status);
-        goto ioctl_mm_error;
-    }
-
-    // not compatible data sent from userland
-    if (sizeof(*memoryId) != memoryIdLength)
-    {
-        status = STATUS_UNSUCCESSFUL;
-        TraceFailMsg(TLE, T_EXIT, "Bad data sent", status);
-        goto ioctl_mm_error;
-    }
-
-    Trace(TLI, T_MEM, "Model id sent from userland: %llu", *memoryId);
-
-    // perform unmapping
-    memoryCtx = FindMemoryContextByIdLocked(appCtx, *memoryId);
-    if (NULL == memoryCtx)
-    {
-        status = GNA_ERR_MEMORY_ALREADY_UNMAPPED;
-        TraceFailMsg(TLE, T_EXIT, "No memory context for given memory id", status);
-        goto ioctl_mm_error;
-    }
-    MemoryMapRelease(appCtx, memoryCtx);
-
+    MemoryMapRelease(&appCtx->appCtx1);
     // complete unmap request
-ioctl_mm_error:
-    WdfRequestComplete(unmapReq, status);
+    WdfRequestComplete(unmapReq, STATUS_SUCCESS);
 }

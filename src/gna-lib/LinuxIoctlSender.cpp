@@ -137,17 +137,17 @@ RequestResult LinuxIoctlSender::Submit(HardwareRequest * const hardwareRequest, 
 
     auto scoreConfig = reinterpret_cast<struct gna_score_cfg *>(hardwareRequest->CalculationData.get());
 
-    scoreConfig->flags.active_list_on = hardwareRequest->ActiveListOn;
-    scoreConfig->flags.gna_mode = hardwareRequest->Mode == xNN ? 1 : 0;
-    scoreConfig->flags.layer_count = hardwareRequest->LayerCount;
+    scoreConfig->ctrl_flags.active_list_on = hardwareRequest->ActiveListOn;
+    scoreConfig->ctrl_flags.gna_mode = hardwareRequest->Mode == xNN ? 1 : 0;
+    scoreConfig->layer_count = hardwareRequest->LayerCount;
 
     if(xNN == hardwareRequest->Mode)
     {
-        scoreConfig->flags.config_base = hardwareRequest->LayerBase;
+        scoreConfig->layer_base = hardwareRequest->LayerBase;
     }
     else if(GMM == hardwareRequest->Mode)
     {
-        scoreConfig->flags.config_base = hardwareRequest->GmmOffset;
+        scoreConfig->layer_base = hardwareRequest->GmmOffset;
     }
     else
     {

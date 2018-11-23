@@ -49,7 +49,7 @@ ScoreComplete(
     _In_    NTSTATUS    status,
     _In_opt_ WDFREQUEST request,
     _In_    BOOLEAN     hwUnmap,
-    _In_opt_ PAPP_CTX   appCancel);
+    _In_opt_ PAPP_CTX2  appCancel);
 
 /**
  * Retrieves and cancels all request in queue
@@ -99,7 +99,6 @@ VOID
 ScoreProcessorWakeup(
     _In_    PDEV_CTX    devCtx);
 
-
 /**
 * Releases application requests from queue and performs unmap
 *
@@ -110,5 +109,10 @@ VOID
 ScoreDeferredUnmap(
     _In_    PDEV_CTX    devCtx,
     _In_    WDFREQUEST  unmapReq);
+VOID
+ScoreDeferredUnmap2(
+    _In_    PDEV_CTX    devCtx,
+    _In_    WDFREQUEST  unmapReq);
+
 
 #endif // _SCORE_PROCESSOR_H

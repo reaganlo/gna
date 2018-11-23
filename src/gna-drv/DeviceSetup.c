@@ -107,6 +107,20 @@ DeviceDmaInit(
     _In_    PDEV_CTX    devCtx);
 
 /**
+ * Initializes Descriptor memory and stores its address into HW
+ */
+NTSTATUS
+DeviceDescInit(
+    _In_    PDEV_CTX    devCtx);
+
+/**
+ * Releases Descriptor memory from driver
+ */
+VOID
+DeviceDescRelease(
+    _In_    PHW_DESC    hwDesc);
+
+/**
  * Gets device HW ID
  *
  * @dev                 device object handle
@@ -136,6 +150,7 @@ FetchDeviceCapabilities(
 #ifdef ALLOC_PRAGMA
 #pragma alloc_text (PAGE, DeviceInit)
 #pragma alloc_text (PAGE, SpinlockInit)
+#pragma alloc_text (PAGE, DeviceDescInit)
 #pragma alloc_text (PAGE, DevicePrepareHardwareEvnt)
 #pragma alloc_text (PAGE, DeviceReleaseHardwareEvnt)
 #pragma alloc_text (PAGE, DeviceDmaInit)
@@ -182,7 +197,7 @@ DeviceInit(
         FileCloseEvnt,
         FileCleanupEvnt);
 
-    WDF_OBJECT_ATTRIBUTES_INIT_CONTEXT_TYPE(&fileAttributes, APP_CTX);
+    WDF_OBJECT_ATTRIBUTES_INIT_CONTEXT_TYPE(&fileAttributes, APP_CTX2);
     WdfDeviceInitSetFileObjectConfig(devInit,
         &fileConfig,
         &fileAttributes);
@@ -254,6 +269,14 @@ DeviceInit(
         goto cleanup;
     }
 
+    status = DeviceDescInit(devCtx);
+    if (!NT_SUCCESS(status))
+    {
+        TraceFailMsg(TLE, T_EXIT, "DeviceDescInit: Descriptor init failed.", status);
+        EventWriteDevicePrepareHWfail(NULL, "DeviceDescInit: Descriptor init failed.", status);
+        goto cleanup;
+    }
+
     EventWriteDeviceInitSuccess(NULL);
     return status;
 
@@ -261,6 +284,46 @@ cleanup:
     TraceReturn(TLE, T_EXIT, status);
     EventWriteDeviceInitFail(NULL, status);
     return status;
+}
+
+NTSTATUS
+DeviceDescInit(
+    _In_ PDEV_CTX   devCtx)
+{
+    NTSTATUS status = STATUS_SUCCESS;
+    PAGED_CODE();
+
+    // prepare private configuration memory in common buffer
+    status = WdfCommonBufferCreate(devCtx->cfg.dmaEnabler,
+        PRV_CFG_SIZE,
+        WDF_NO_OBJECT_ATTRIBUTES,
+        &devCtx->desc.buffer);
+    if (!NT_SUCCESS(status))
+    {
+        TraceFailMsg(TLE, T_EXIT, "WdfCommonBufferCreate", status);
+        return status;
+    }
+
+    devCtx->desc.va = WdfCommonBufferGetAlignedVirtualAddress(devCtx->desc.buffer);
+    devCtx->desc.la = WdfCommonBufferGetAlignedLogicalAddress(devCtx->desc.buffer);
+    RtlZeroMemory(devCtx->desc.va, PRV_CFG_SIZE);
+    devCtx->desc.la.QuadPart /= PAGE_SIZE;
+    ASSERTMSG("DeviceDescInit Logical Descriptor address > 32bits",
+        (LONG64)(devCtx->desc.la.QuadPart) < MAXUINT32);
+
+
+    return status;
+}
+
+VOID
+DeviceDescRelease(
+    _In_    PHW_DESC    desc)
+{
+    if (WDF_NO_HANDLE != desc->buffer)
+    {
+        WdfObjectDelete(desc->buffer);
+        RtlZeroMemory(desc, sizeof(HW_DESC));
+    }
 }
 
 /******************************************************************************
@@ -498,6 +561,7 @@ DeviceCleanupCallback(
     EventWriteGenericFunctionEntry(NULL, __FUNCTION__);
 
     devCtx = DeviceGetContext(dev);
+    DeviceDescRelease(&devCtx->desc);
 }
 
 
@@ -658,7 +722,7 @@ QueueInit(
 
     WDF_IO_QUEUE_CONFIG_INIT(&queueConfig, WdfIoQueueDispatchParallel);
     queueConfig.PowerManaged = WdfFalse;
-    queueConfig.EvtIoDeviceControl = IoctlMemoryMap;
+    queueConfig.EvtIoDeviceControl = IoctlMemoryMap2;
 
     status = WdfIoQueueCreate(
         dev,

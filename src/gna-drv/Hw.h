@@ -64,12 +64,24 @@ HwWriteReg(
     _In_    ULONG       value);
 
 /**
+ * Warning: backward compatibility function
+ * Prepares hardware mmu config for further copying to hw base descriptor
+ *
+ * @appCtx              memory mapping data
+ * @length              length of mapped buffer
+ */
+VOID
+HwPrepareMmuConfig(
+    _In_    PAPP_CTX    appCtx,
+    _In_    UINT32      length);
+
+/**
  * Prepares hardware mmu config for further copying to hw base descriptor
  *
  * @appCtx              memory mapping data
  */
 VOID
-HwPrepareMmuConfig(
+HwPrepareMmuConfig2(
     _In_    PMEMORY_CTX  memoryCtx);
 
 /**
@@ -107,20 +119,20 @@ HwUnmapMemory(
  * Programs the hardware device and starts execution
  *
  * @regs                Address of Registers in MMIO space
- * @baseDescLa          Physical address of base descriptor
- * @lyrDscBuffer        Pointer to layer descriptors
  * @config              Pointer to xnn configuration of the model
+ * @lyrDscBuffer        Pointer to layer descriptors
  * @input               Input data obtained from user application
+ * @baseDescLa          Physical address of base descriptor
  * @devCfg              device config for legacy mode
  */
 VOID
 HwInitExecution(
-    _In_    P_HW_REGS    regs,
-    _In_    ULONG        baseDescLa,
-    _In_    PUINT8       lyrDscBuffer,
-    _In_    PVOID        config,
-    _In_    PGNA_CALC_IN input,
-    _In_    PDEV_CONFIG  devCfg);
+    _In_    P_HW_REGS       regs,
+    _In_    PVOID           config,
+    _In_    PUINT8          lyrDscBuffer,
+    _In_    PGNA_CALC_IN    input,
+    _In_    ULONG           baseDescriptorLA,
+    _In_    PDEV_CONFIG     devCfg);
 
 /**
  * Pause execution hardware device command

@@ -43,7 +43,6 @@ using namespace GNA;
 std::map<dbg_action_type const, char const * const> const HardwareModelVerbose::actionFileNames =
 {
     {GnaDumpMmio, "dumpmmio_"},
-    {GnaDumpPageDirectory, "dumppgdir_"},
     {GnaReadRegister, "readreg_"},
     {GnaDumpMemory, "memory_"},
     {GnaDumpXnnDescriptor, "xnndesc_"},
@@ -57,7 +56,6 @@ HardwareModelVerbose::HardwareModelVerbose(const gna_model_id modId,
     memorySize{ memoryIn.GetSize() },
     actionFileCounters{
         {GnaDumpMmio, 0},
-        {GnaDumpPageDirectory, 0},
         {GnaReadRegister, 0},
         {GnaDumpMemory, 0},
         {GnaDumpXnnDescriptor, 0},
@@ -98,66 +96,6 @@ void HardwareModelVerbose::SetAfterscoreScenario(uint32_t nActions, dbg_action *
 {
     afterscoreActionVector.clear();
     afterscoreActionVector.insert(afterscoreActionVector.begin(), actions, actions + nActions);
-}
-
-void HardwareModelVerbose::readPageDir(FILE *file)
-{
-    GNA_MM_IN readPageDirIn;
-    readPageDirIn.memoryId = memoryId;
-
-    GNA_PGDIR_OUT readPageDirOut;
-    ZeroMemory(&readPageDirOut, sizeof(readPageDirOut));
-
-    ioctlSender.IoctlSend(GNA_COMMAND_READ_PGDIR,
-        &readPageDirIn, sizeof(readPageDirIn),
-        &readPageDirOut, sizeof(readPageDirOut));
-
-    dumpPageDir(readPageDirOut, file);
-}
-
-void HardwareModelVerbose::dumpPageDir(GNA_PGDIR_OUT &pagedir, FILE *file)
-{
-    fprintf(file, "\nPage directory\n");
-    fprintf(file, "-----------------------------------------------------------------\n");
-    fprintf(file, "---                  values (dwords MSB->LSB)                 ---  \n");
-    for (uint32_t i = 0; i < pagedir.ptCount; i++)
-    {
-        fprintf(file, "entry  %02x %016llx\n", i, (pagedir.l1PhysAddr[i] / PAGE_SIZE));
-    }
-    fprintf(file, "\nPage entries\n");
-    fprintf(file, "-----------------------------------------------------------------\n");
-    fprintf(file, "---           memory dump as dwords(MSB->LSB)        ---  \n");
-    for (uint32_t i = 0; i < pagedir.ptCount; i++)
-    {
-        dumpPage((uint8_t*)(pagedir.l1PhysAddr[i]), ((uint8_t*)(pagedir.l2PhysAddr)) + i*PAGE_SIZE, PAGE_SIZE, file);
-    }
-    fprintf(file, "\n");
-}
-
-void HardwareModelVerbose::dumpPage(uint8_t *ph_addr, uint8_t* v_addr, size_t size, FILE *file)
-{
-    fprintf(file, "\n-----------------------------------------------------------------\n");
-    for (size_t i = 0; i < size; i += 16)
-    {
-        fprintf(file, "%016llx    ", (uint64_t)(ph_addr + i));
-        fprintf(file, "%02x", (unsigned int)v_addr[i + 0x03]);
-        fprintf(file, "%02x", (unsigned int)v_addr[i + 0x01]);
-        fprintf(file, "%02x", (unsigned int)v_addr[i + 0x02]);
-        fprintf(file, "%02x ", (unsigned int)v_addr[i + 0x00]);
-        fprintf(file, "%02x", (unsigned int)v_addr[i + 0x07]);
-        fprintf(file, "%02x", (unsigned int)v_addr[i + 0x06]);
-        fprintf(file, "%02x", (unsigned int)v_addr[i + 0x05]);
-        fprintf(file, "%02x ", (unsigned int)v_addr[i + 0x04]);
-        fprintf(file, "%02x", (unsigned int)v_addr[i + 0x0b]);
-        fprintf(file, "%02x", (unsigned int)v_addr[i + 0x0a]);
-        fprintf(file, "%02x", (unsigned int)v_addr[i + 0x09]);
-        fprintf(file, "%02x ", (unsigned int)v_addr[i + 0x08]);
-        fprintf(file, "%02x", (unsigned int)v_addr[i + 0x0f]);
-        fprintf(file, "%02x", (unsigned int)v_addr[i + 0x0e]);
-        fprintf(file, "%02x", (unsigned int)v_addr[i + 0x0d]);
-        fprintf(file, "%02x\n", (unsigned int)v_addr[i + 0x0c]);
-    }
-    fprintf(file, "\n");
 }
 
 UINT32 HardwareModelVerbose::readReg(UINT32 regOffset)
@@ -324,9 +262,6 @@ void HardwareModelVerbose::executeDebugAction(dbg_action& action)
         {
         case GnaDumpMmio:
         dumpMmio(file);
-        break;
-        case GnaDumpPageDirectory:
-        readPageDir(file);
         break;
         case GnaReadRegister:
         readRegister(file, action.gna_register);

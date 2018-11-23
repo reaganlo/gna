@@ -40,6 +40,7 @@ typedef struct gna_memory_patch GnaMemoryPatch;
  * dereferencing driver structures    *
  **************************************/
 #define memoryId memory_id
+#define ctrlFlags ctrl_flags
 #define hwPerfEncoding hw_perf_encoding
 #define configSize config_size
 #define patchCount patch_count
@@ -81,8 +82,8 @@ void IoctlSender::createRequestDescriptor(HardwareRequest *hardwareRequest)
 
     auto scoreConfig = reinterpret_cast<GnaDriverRequest *>(hardwareRequest->CalculationData.get());
     memset(scoreConfig, 0, scoreConfigSize);
+    scoreConfig->ctrlFlags.hwPerfEncoding = hardwareRequest->HwPerfEncoding;
     scoreConfig->memoryId = hardwareRequest->MemoryId;
-    scoreConfig->hwPerfEncoding = hardwareRequest->HwPerfEncoding;
     scoreConfig->configSize = scoreConfigSize;
     scoreConfig->patchCount = ioBuffersCount + nnopTypesCount + 2*xnnActiveListsCount + 3*gmmActiveListsCount;
 

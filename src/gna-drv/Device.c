@@ -27,6 +27,7 @@
 #include "device.tmh"
 #include "ScoreProcessor.h"
 #include "Memory.h"
+#include "Memory2.h"
 #include "gna-etw-manifest.h"
 
 /******************************************************************************
@@ -79,7 +80,6 @@ DeviceD0ExitEvnt(
     return STATUS_SUCCESS;
 }
 
-
 VOID
 FileCreateEvnt(
     WDFDEVICE           dev,
@@ -89,7 +89,7 @@ FileCreateEvnt(
     WDF_OBJECT_ATTRIBUTES listLockAttributes;
     WDF_OBJECT_ATTRIBUTES idLockAttributes;
     NTSTATUS status = STATUS_SUCCESS;
-    PAPP_CTX appCtx = NULL;
+    PAPP_CTX2 appCtx = NULL;
 
     UNREFERENCED_PARAMETER(dev);
 
@@ -97,7 +97,7 @@ FileCreateEvnt(
     EventWriteDriverApiBegin(NULL, __FUNCTION__);
 
     appCtx = GetFileContext(appObj);
-    RtlZeroMemory(appCtx, sizeof(APP_CTX));
+    RtlZeroMemory(appCtx, sizeof(APP_CTX2));
 
     WDF_OBJECT_ATTRIBUTES_INIT(&listLockAttributes);
     listLockAttributes.ParentObject = dev;
@@ -138,7 +138,7 @@ FileCloseEvnt(
     WDFFILEOBJECT       appObj)
 {
     PDEV_CTX devCtx = NULL;
-    PAPP_CTX appCtx = NULL;
+    PAPP_CTX2 appCtx = NULL;
 
     TraceEntry(TLI, T_ENT);
     EventWriteDriverApiBegin(NULL, __FUNCTION__);
@@ -152,7 +152,7 @@ FileCloseEvnt(
         devCtx->app.app = NULL;
     }
     WdfSpinLockRelease(devCtx->app.appLock);
-    RtlZeroMemory(appCtx, sizeof(APP_CTX));
+    RtlZeroMemory(appCtx, sizeof(APP_CTX2));
 
     EventWriteDriverApiEnd(NULL, __FUNCTION__);
 }
@@ -162,7 +162,7 @@ FileCleanupEvnt(
     WDFFILEOBJECT       appObj)
 {
     PDEV_CTX devCtx = NULL;
-    PAPP_CTX appCtx = NULL;
+    PAPP_CTX2 appCtx = NULL;
     PMEMORY_CTX memoryCtx = NULL;
     PLIST_ENTRY pEntry = NULL;
 
@@ -178,16 +178,18 @@ FileCleanupEvnt(
     // memory is unlocked regardless the status of unmap operation.
 
     appCtx = GetFileContext(appObj);
+    MemoryMapRelease(&appCtx->appCtx1);
 
     pEntry = appCtx->memoryListHead.Flink;
 
     while (pEntry != &appCtx->memoryListHead)
     {
         memoryCtx = CONTAINING_RECORD(pEntry, MEMORY_CTX, listEntry);
-        MemoryMapRelease(appCtx, memoryCtx);
+        MemoryMapRelease2(appCtx, memoryCtx);
 
         pEntry = appCtx->memoryListHead.Flink;
     }
+
 
     EventWriteDriverApiEnd(NULL, __FUNCTION__);
 }

@@ -26,21 +26,28 @@
 #include "IoControl.h"
 #include "IoControl.tmh"
 #include "Memory.h"
+#include "Memory2.h"
 #include "ScoreProcessor.h"
 #include "Hw.h"
 #include "gna-etw-manifest.h"
+
+/*
+ * Old IOCTL definitions
+ */
+#define GNA_IOCTL_WAKEUP_HW CTL_CODE(FILE_DEVICE_PCI_GNA, 0x905, METHOD_BUFFERED, FILE_ANY_ACCESS)
+#define GNA_IOCTL_CPBLTS    CTL_CODE(FILE_DEVICE_PCI_GNA, 0x902, METHOD_BUFFERED, FILE_ANY_ACCESS)
 
 /******************************************************************************
  * Private Methods declaration
  ******************************************************************************/
 
-/**
- * Performs user memory mapping
- *
- * @dev                 device object handle
- * @devCtx              device context
- * @request             ioctl request
- */
+ /**
+  * Performs user memory mapping
+  *
+  * @dev                 device object handle
+  * @devCtx              device context
+  * @request             ioctl request
+  */
 static VOID
 IoctlMemMap(
     _In_    WDFDEVICE   dev,
@@ -59,6 +66,40 @@ IoctlMemUnmap(
     _Inout_ WDFREQUEST  request);
 
 /**
+ * Reads device capabilities from device config
+ * @devCtx              device context
+ * @request             ioctl request
+ */
+static VOID
+IoctlGetCapabilities(
+    _Inout_ PDEV_CTX    devCtx,
+    _Inout_ WDFREQUEST  request);
+
+/**
+ * Performs user memory mapping
+ *
+ * @dev                 device object handle
+ * @devCtx              device context
+ * @request             ioctl request
+ */
+static VOID
+IoctlMemMap2(
+    _In_    WDFDEVICE   dev,
+    _Inout_ PDEV_CTX    devCtx,
+    _Inout_ WDFREQUEST  request);
+
+/**
+ * Unmaps user mapped memory
+ *
+ * @devCtx              device context
+ * @request             ioctl request
+ */
+static VOID
+IoctlMemUnmap2(
+    _Inout_ PDEV_CTX    devCtx,
+    _Inout_ WDFREQUEST  request);
+
+/**
  * Stores request for later notification
  * @devCtx              device context
  * @request             ioctl request
@@ -73,7 +114,7 @@ IoctlNotify(
  * @request             ioctl request
  */
 static VOID
-IoctlGetCapabilities(
+IoctlGetCapabilities2(
     _Inout_ PDEV_CTX    devCtx,
     _Inout_ WDFREQUEST  request);
 
@@ -86,10 +127,6 @@ IoctlReadReg(
 static VOID
 IoctlWriteReg(
     _Inout_ PDEV_CTX    devCtx,
-    _Inout_ WDFREQUEST  request);
-
-static VOID
-IoctlReadPageDir(
     _Inout_ WDFREQUEST  request);
 #endif
 
@@ -126,7 +163,26 @@ IoctlDispatcher(
 
     switch (IoControlCode)
     {
+    /* API 1 IOCTLs */
     case GNA_IOCTL_MEM_MAP:
+        IoctlMemMap(dev, devCtx, request);
+        break;
+
+    case GNA_IOCTL_MEM_UNMAP:
+        IoctlMemUnmap(devCtx, request);
+        break;
+
+    case GNA_IOCTL_WAKEUP_HW: // empty ioctl only to wake up device, complete immediately
+        Trace(TLI, T_QUE, "%!FUNC! GNA_IOCTL_WAKEUP_HW");
+        WdfRequestComplete(request, status);
+        break;
+
+    case GNA_IOCTL_CPBLTS:
+        IoctlGetCapabilities(devCtx, request);
+        break;
+
+    /* API 2 IOCTLs */
+    case GNA_IOCTL_MEM_MAP2:
         status = WdfRequestForwardToIoQueue(request, devCtx->memoryMapQueue);
         if (!NT_SUCCESS(status))
         {
@@ -135,12 +191,12 @@ IoctlDispatcher(
         }
         break;
 
-    case GNA_IOCTL_MEM_UNMAP:
-        IoctlMemUnmap(devCtx, request);
+    case GNA_IOCTL_MEM_UNMAP2:
+        IoctlMemUnmap2(devCtx, request);
         break;
 
-    case GNA_IOCTL_CPBLTS:
-        IoctlGetCapabilities(devCtx, request);
+    case GNA_IOCTL_CPBLTS2:
+        IoctlGetCapabilities2(devCtx, request);
         break;
 
     case GNA_IOCTL_NOTIFY:
@@ -151,14 +207,11 @@ IoctlDispatcher(
     case GNA_IOCTL_READ_REG:
         IoctlReadReg(devCtx, request);
         break;
-    
+
     case GNA_IOCTL_WRITE_REG:
         IoctlWriteReg(devCtx, request);
         break;
 
-    case GNA_IOCTL_READ_PGDIR:
-        IoctlReadPageDir(request);
-        break;
 #endif // DRV_DEBUG_INTERFACE
 
     default:
@@ -206,6 +259,9 @@ IoctlDeferred(
     case GNA_IOCTL_MEM_UNMAP:
         ScoreDeferredUnmap(devCtx, request);
         break;
+    case GNA_IOCTL_MEM_UNMAP2:
+        ScoreDeferredUnmap2(devCtx, request);
+        break;
 
     default:
         status = STATUS_INVALID_DEVICE_REQUEST;
@@ -220,7 +276,7 @@ IoctlDeferred(
 }
 
 VOID
-IoctlMemoryMap(
+IoctlMemoryMap2(
     WDFQUEUE            queue,
     WDFREQUEST          request,
     size_t              OutputBufferLength,
@@ -249,8 +305,8 @@ IoctlMemoryMap(
 
     switch (IoControlCode)
     {
-    case GNA_IOCTL_MEM_MAP:
-        IoctlMemMap(dev, devCtx, request);
+    case GNA_IOCTL_MEM_MAP2:
+        IoctlMemMap2(dev, devCtx, request);
         break;
     default:
         status = STATUS_INVALID_DEVICE_REQUEST;
@@ -264,9 +320,6 @@ IoctlMemoryMap(
     return;
 }
 
-
-
-
 /******************************************************************************
  * Private Methods
  ******************************************************************************/
@@ -277,34 +330,47 @@ IoctlMemMap(
     _Inout_ PDEV_CTX    devCtx,
     _Inout_ WDFREQUEST  request)
 {
-    NTSTATUS    status = STATUS_SUCCESS;
-    PAPP_CTX    appCtx = NULL;
-    size_t      inLength = 0;
-    PVOID       inputData = NULL;
-    
+    NTSTATUS    status      = STATUS_SUCCESS;
+    PAPP_CTX    appCtx      = NULL;
+    size_t      inLength    = 0;
+    size_t      outLength   = 0;
+    PGNA_MM_IN  inputData   = NULL;
+    void* POINTER_64 usrBuffer= NULL;// Base address of the application buffer
+    UINT32 length = 0;    // Length of the application buffer
+    PGNA_MM_OUT outData = NULL;
+
     TraceEntry(TLI, T_ENT);
 
     ASSERT(NULL != devCtx);
 
     // prevent from double-mapping, verify if mem is not mapped already
-    appCtx = GetFileContext(WdfRequestGetFileObject(request));
-
+    appCtx = &GetFileContext(WdfRequestGetFileObject(request))->appCtx1;
+    if (NULL != appCtx->pMdl)
+    {
+        status = STATUS_CANCELLED;
+        TraceFailMsg(TLE, T_EXIT, "Memory already mapped, CANNOT map once again.", status);
+        goto ioctl_mm_error;
+    }
     // retrieve and store input params
-    status = WdfRequestRetrieveOutputBuffer(request, XNN_LYR_DSC_SIZE, &inputData, &inLength);
+    status = WdfRequestRetrieveInputBuffer(request, sizeof(GNA_MM_IN), &inputData, &inLength);
+    if (!NT_SUCCESS(status))
+    {
+        TraceFailMsg(TLE, T_EXIT, "WdfRequestRetrieveInputBuffer", status);
+        goto ioctl_mm_error;
+    }
+    usrBuffer   = inputData->memoryBase;
+    length      = (UINT32)inputData->length;
+    // retrieve output buffer
+    status = WdfRequestRetrieveOutputBuffer(request, sizeof(GNA_MM_OUT), &outData, &outLength);
     if (!NT_SUCCESS(status))
     {
         TraceFailMsg(TLE, T_EXIT, "WdfRequestRetrieveOutputBuffer", status);
         goto ioctl_mm_error;
     }
+    // perform mapping
+    status = MemoryMap(dev, devCtx, appCtx, usrBuffer, length, outData);
 
-    PIRP irp = WdfRequestWdmGetIrp(request);
-    status = MemoryMap(dev, devCtx, appCtx, irp->MdlAddress, request, (UINT32)inLength);
-    if (!NT_SUCCESS(status))
-    {
-        TraceFailMsg(TLE, T_EXIT, "MemoryMap failed", status);
-        goto ioctl_mm_error;
-    }
-
+    WdfRequestCompleteWithInformation(request, status, outLength);
     return;
 
 ioctl_mm_error:
@@ -330,12 +396,98 @@ IoctlMemUnmap(
 }
 
 static VOID
+IoctlGetCapabilities(
+    _Inout_ PDEV_CTX    devCtx,
+    _Inout_ WDFREQUEST  request)
+{
+    GnaDeviceType* deviceType;
+    size_t outputBufferSize;
+
+    TraceEntry(TLI, T_ENT);
+
+    NTSTATUS status = STATUS_SUCCESS;
+
+    status = WdfRequestRetrieveOutputBuffer(request, sizeof(GnaDeviceType), &deviceType, &outputBufferSize);
+    if (!NT_SUCCESS(status))
+    {
+
+        TraceFailMsg(TLE, T_EXIT, "WdfRequestRetrieveOutputBuffer", status);
+        // complete unmap request in default queue
+        WdfRequestComplete(request, status);
+        return;
+    }
+
+    *deviceType = devCtx->cfg.cpblts.deviceType;
+
+    WdfRequestCompleteWithInformation(request, STATUS_SUCCESS, outputBufferSize);
+}
+
+
+static VOID
+IoctlMemMap2(
+    _In_    WDFDEVICE   dev,
+    _Inout_ PDEV_CTX    devCtx,
+    _Inout_ WDFREQUEST  request)
+{
+    NTSTATUS    status = STATUS_SUCCESS;
+    PAPP_CTX2    appCtx = NULL;
+    size_t      inLength = 0;
+    PVOID       inputData = NULL;
+
+    TraceEntry(TLI, T_ENT);
+
+    ASSERT(NULL != devCtx);
+
+    // prevent from double-mapping, verify if mem is not mapped already
+    appCtx = GetFileContext(WdfRequestGetFileObject(request));
+
+    // retrieve and store input params
+    status = WdfRequestRetrieveOutputBuffer(request, XNN_LYR_DSC_SIZE, &inputData, &inLength);
+    if (!NT_SUCCESS(status))
+    {
+        TraceFailMsg(TLE, T_EXIT, "WdfRequestRetrieveOutputBuffer", status);
+        goto ioctl_mm_error;
+    }
+
+    PIRP irp = WdfRequestWdmGetIrp(request);
+    status = MemoryMap2(dev, devCtx, appCtx, irp->MdlAddress, request, (UINT32)inLength);
+    if (!NT_SUCCESS(status))
+    {
+        TraceFailMsg(TLE, T_EXIT, "MemoryMap failed", status);
+        goto ioctl_mm_error;
+    }
+
+    return;
+
+ioctl_mm_error:
+    WdfRequestComplete(request, status);
+}
+
+static VOID
+IoctlMemUnmap2(
+    _Inout_ PDEV_CTX    devCtx,
+    _Inout_ WDFREQUEST  unmapReq)
+{
+    NTSTATUS status = STATUS_SUCCESS;
+
+    TraceEntry(TLI, T_ENT);
+    // forward unmap req. to queue
+    status = WdfRequestForwardToIoQueue(unmapReq, devCtx->queue);
+    if (!NT_SUCCESS(status))
+    {
+        TraceFailMsg(TLE, T_EXIT, "WdfRequestForwardToIoQueue", status);
+        // complete unmap request in default queue
+        WdfRequestComplete(unmapReq, status);
+    }
+}
+
+static VOID
 IoctlNotify(
     _Inout_ WDFREQUEST  request)
 {
     TraceEntry(TLI, T_ENT);
 
-    PAPP_CTX appCtx;
+    PAPP_CTX2 appCtx;
     NTSTATUS status;
     size_t outbuf_len;
 
@@ -356,7 +508,7 @@ IoctlNotify(
 }
 
 static VOID
-IoctlGetCapabilities(
+IoctlGetCapabilities2(
     _Inout_ PDEV_CTX    devCtx,
     _Inout_ WDFREQUEST  request)
 {
@@ -409,7 +561,7 @@ IoctlReadReg(
         goto ioctl_read_error;
     }
 
-    if (0 != inputData->mbarIndex || 
+    if (0 != inputData->mbarIndex ||
         inputData->regOffset >= devCtx->hw.regsLength ||
         inputData->regOffset % 4 != 0)
     {
@@ -417,7 +569,7 @@ IoctlReadReg(
         TraceFailMsg(TLE, T_EXIT, "(Invalid read parameters)", status);
         goto ioctl_read_error;
     }
-    
+
     EventWriteHwRegisterRead(NULL, __FUNCTION__);
     outputData->regValue = HwReadReg(devCtx->hw.regs, inputData->regOffset);
 
@@ -446,7 +598,7 @@ IoctlWriteReg(
         goto ioctl_write_error;
     }
 
-    if (0 != inputData->mbarIndex || 
+    if (0 != inputData->mbarIndex ||
         inputData->regOffset >= devCtx->hw.regsLength ||
         inputData->regOffset % 4 != 0)
     {
@@ -456,79 +608,9 @@ IoctlWriteReg(
     }
 
     EventWriteHwRegisterWrite(NULL, __FUNCTION__);
-    HwWriteReg(devCtx->hw.regs, inputData->regOffset, inputData->regValue);    
+    HwWriteReg(devCtx->hw.regs, inputData->regOffset, inputData->regValue);
 
 ioctl_write_error:
-    WdfRequestComplete(request, status);
-}
-
-static VOID
-IoctlReadPageDir(
-    _Inout_ WDFREQUEST  request)
-{
-    NTSTATUS status = STATUS_SUCCESS;
-    PUINT64 memoryId = NULL;
-    size_t midLength = 0;
-    PGNA_PGDIR_OUT outData = NULL;
-    size_t outLength = 0;
-    PAPP_CTX appCtx = NULL;
-    PMEMORY_CTX memoryCtx = NULL;
-
-    status = WdfRequestRetrieveInputBuffer(request, sizeof(UINT64), &memoryId, &midLength);
-
-    Trace(TLV, T_MEM, "Memory id sent from userland: %llu", *memoryId);
-    if (!NT_SUCCESS(status))
-    {
-        TraceFailMsg(TLE, T_EXIT, "WdfRequestRetrieveInputBuffer", status);
-        goto ioctl_readpgdir_error;
-    }
-
-    // not compatible data sent from userland
-    if (sizeof(*memoryId) != midLength)
-    {
-        status = STATUS_UNSUCCESSFUL;
-        TraceFailMsg(TLE, T_EXIT, "Bad data sent", status);
-        goto ioctl_readpgdir_error;
-    }
-
-    status = WdfRequestRetrieveOutputBuffer(request, sizeof(GNA_PGDIR_OUT), &outData, &outLength);
-    if (!NT_SUCCESS(status))
-    {
-        TraceFailMsg(TLE, T_EXIT, "WdfRequestRetrieveOutputBuffer", status);
-        goto ioctl_readpgdir_error;
-    }
-
-    appCtx = GetFileContext(WdfRequestGetFileObject(request));
-    memoryCtx = FindMemoryContextByIdLocked(appCtx, *memoryId);
-    if (NULL == memoryCtx)
-    {
-        status = STATUS_UNSUCCESSFUL;
-        TraceFailMsg(TLE, T_EXIT, "Model context for given memory id does not exist", status);
-        goto ioctl_readpgdir_error;
-    }
-
-    outData->ptCount = memoryCtx->pageTableCount;
-    {
-        UINT64 i = 0;
-        UINT64 copied = 0;
-        UINT64 toWrite = 0;
-
-        for (i = 0; i < memoryCtx->pageTableCount; ++i)
-        {
-            outData->l1PhysAddr[i] = memoryCtx->ptDir[i].commBuffLa.QuadPart;
-            toWrite = (UINT64)(memoryCtx->userMemorySize - copied > PAGE_SIZE) ? PAGE_SIZE : memoryCtx->userMemorySize - copied;
-            if (toWrite > 0)
-            {
-                memcpy_s(outData->l2PhysAddr + PT_ENTRY_NO * i, PAGE_SIZE, memoryCtx->ptDir[i].commBuffVa, PAGE_SIZE);
-                copied += toWrite;
-            }
-        }
-    }
-
-    WdfRequestCompleteWithInformation(request, status, outLength);
-    return;
-
-ioctl_readpgdir_error:
     WdfRequestComplete(request, status);
 }
 

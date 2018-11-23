@@ -11,6 +11,8 @@ extern "C" {
 #include <linux/types.h>
 #include <linux/ioctl.h>
 
+#define GNA_CFG_SIZE 256
+
 #define GNA_STS_SCORE_COMPLETED		(1 <<  0)
 #define GNA_STS_STATISTICS_VALID	(1 <<  3)
 #define GNA_STS_PCI_MMU_ERR		(1 <<  4)
@@ -41,68 +43,75 @@ enum gna_device_t {
 };
 
 struct gna_usrptr {
-	__u64				memory_id;
-	__u64				padd;
-	__u32				length;
+	__u64 memory_id;
+	__u64 padd;
+	__u32 length;
 } __attribute__((packed));
 
 struct gna_capabilities {
-	__u32				in_buff_size;
-	__u32				recovery_timeout;
-	enum gna_device_t		device_type;
+	__u32 in_buff_size;
+	__u32 recovery_timeout;
+	enum gna_device_t device_type;
 } __attribute__((packed));
 
 struct gna_ctrl_flags {
-	__u32				active_list_on:1;
-	__u32				gna_mode:2;
-	__u32				reserved:29;
-	__u32				config_base;
-	__u32				layer_count;
+	__u32 active_list_on:1;
+	__u32 gna_mode:2;
+	__u32 copy_descriptor:1;
+	__u32 hw_perf_encoding:8;
+	__u32 reserved:20;
 } __attribute__((packed));
 
 /**
  * Structure describes part of memory to be overwritten before starting GNA
  */
 struct gna_memory_patch {
-	__u64				offset;
-	__u64				size;
-	__u8				data[];
+	__u64 offset;
+	__u64 size;
+	__u8 data[];
 } __attribute__((packed));
 
 struct gna_drv_perf {
-	__u64				start_hw;
-	__u64				score_hw;
-	__u64				intr_proc;
+	__u64 start_hw;
+	__u64 score_hw;
+	__u64 intr_proc;
 } __attribute__((packed));
 
 struct gna_hw_perf {
-	__u64				total;
-	__u64				stall;
+	__u64 total;
+	__u64 stall;
 } __attribute__((packed));
 
 struct gna_score_cfg {
 
-	__u64			request_id;
-	__u64			memory_id;
-	__u64			config_size;
-	__u64			patch_count;
+	struct gna_ctrl_flags ctrl_flags;
 
-	struct gna_ctrl_flags	flags;
-	__u8			hw_perf_encoding;
+	__u64 request_id;
+	__u64 memory_id;
 
-	__u8			patches[];
+	union {
+		__u8 descriptor[GNA_CFG_SIZE];
+		struct {
+			__u32 layer_base;
+			__u32 layer_count;
+		};
+	};
+
+	__u64 patch_count;
+	__u64 config_size;
+	__u8 patches[];
 
 } __attribute__((packed));
 
 struct gna_wait {
 	/* user input */
-	__u32			request_id;
-	__u32			timeout;
+	__u32 request_id;
+	__u32 timeout;
 
 	/* user output */
-	__u32			hw_status;
-	struct gna_drv_perf	drv_perf;
-	struct gna_hw_perf	hw_perf;
+	__u32 hw_status;
+	struct gna_drv_perf drv_perf;
+	struct gna_hw_perf hw_perf;
 } __attribute__((packed));
 
 /**

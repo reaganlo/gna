@@ -104,22 +104,37 @@ typedef struct _MEMORY_CTX
     PVOID         userMemoryBaseVA;         // User memory virtual address
     UINT32        userMemorySize;           // Size of user memory
 
-} MEMORY_CTX, *PMEMORY_CTX;               // Client/application context
+} MEMORY_CTX, *PMEMORY_CTX;               // Memory context
 
+/**
+ * API 1 client context - basically it's a reduced memory context
+ */
 typedef struct _APP_CTX
 {
-    WDFREQUEST  notifyRequest;              // request to be completed to notify user application after memory map
-    PUINT64     notifyBuffer;               // notify request buffer will be filled with memory id
+    PMDL                pMdl;       // Pointer to MDL object used with MmLock/MmUnlock
+    BOOLEAN             memLocked;  // Indicates whether the memory is successfully locked.
+    PT_DIR              ptDir[PT_DIR_SIZE + 1];// page table directory
+    ULONG               pageTableCount;// Number of actually used entries in page Tables.
+    MMU_CONFIG          hwMmuConfig;// Preinitialized hardware mmu config for application
+
+} APP_CTX, *PAPP_CTX;               // Client/application context
+
+typedef struct _APP_CTX2
+{
+    WDFREQUEST  notifyRequest;          // request to be completed to notify user application after memory map
+    PUINT64     notifyBuffer;           // notify request buffer will be filled with memory id
     UINT64      memoryIdCounter;
     WDFSPINLOCK memoryIdLock;
     LIST_ENTRY  memoryListHead;
     WDFSPINLOCK memoryListLock;
-} APP_CTX, *PAPP_CTX;
+
+    APP_CTX     appCtx1;                // for backward compatibility
+} APP_CTX2, *PAPP_CTX2;
 
 /**
  * Getter for File context
  */
-WDF_DECLARE_CONTEXT_TYPE_WITH_NAME(APP_CTX, GetFileContext)
+WDF_DECLARE_CONTEXT_TYPE_WITH_NAME(APP_CTX2, GetFileContext)
 
 
 /******************************************************************************
@@ -180,7 +195,7 @@ typedef struct _REQ_STATE
  */
 typedef struct _APP_STATE
 {
-    PAPP_CTX            app;        // file context of application from which last scoring was issued
+    PAPP_CTX2            app;        // file context of application from which last scoring was issued
     WDFSPINLOCK         appLock;    // spinlock for protection of async app state access
 
 } APP_STATE, *PAPP_STATE;           // Current App state
@@ -208,6 +223,7 @@ typedef struct _DEV_CTX
     WDFQUEUE            queue;      // Device request queue
     WDFQUEUE            memoryMapQueue;// MemoryMap request queue
     DEV_HW              hw;         // hardware registers
+    HW_DESC             desc;       // hardware descriptor (backward compatibility)
     PROFILER            profiler;   // profiler object for performance measurements
 
 } DEV_CTX, *PDEV_CTX;               // Device context

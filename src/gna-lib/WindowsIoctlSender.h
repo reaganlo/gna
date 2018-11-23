@@ -107,7 +107,7 @@ private:
 
     void getDeviceCapabilities();
 
-    static const std::map<GnaIoctlCommand, decltype(GNA_IOCTL_CPBLTS)> ioctlCommandsMap;
+    static const std::map<GnaIoctlCommand, decltype(GNA_IOCTL_CPBLTS2)> ioctlCommandsMap;
 
     std::map<uint64_t, std::unique_ptr<OVERLAPPED>> memoryMapRequests;
 

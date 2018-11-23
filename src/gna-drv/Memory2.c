@@ -25,57 +25,95 @@
 
 #include "Memory.h"
 #include "Memory.tmh"
+#include "Memory2.h"
+#include "Memory2.tmh"
 #include "Hw.h"
 #include "gna-etw-manifest.h"
+
+PMEMORY_CTX FindMemoryContextByUserVALocked(
+    _In_ PAPP_CTX2 appCtx,
+    _In_ PVOID usrBuffer);
+
+//NOTE: This is just a "dummy" subroutine, but it is necessary to initialize the fake DMA operation
+DRIVER_LIST_CONTROL
+ProcessSGList;
 
 /******************************************************************************
  * Public Methods
  ******************************************************************************/
+
 NTSTATUS
-MemoryMap(
-    _In_    WDFDEVICE           dev,
-    _In_    PDEV_CTX            devCtx,
-    _In_    PAPP_CTX            appCtx,
-    _In_    void* POINTER_64    usrBuffer,
-    _In_    UINT32              length,
-    _Inout_ PGNA_MM_OUT      outData)
+MemoryMap2(
+    _In_    WDFDEVICE    dev,
+    _In_    PDEV_CTX     devCtx,
+    _In_    PAPP_CTX2    appCtx,
+    _In_    PMDL         pMdl,
+    _In_    WDFREQUEST   mapRequest,
+    _In_    UINT32       length)
 {
-    NTSTATUS    status          = STATUS_SUCCESS;
-    PDMA_ADAPTER pDmaAdapter    = NULL;
+    NTSTATUS    status = STATUS_SUCCESS;
+    PMEMORY_CTX memoryCtx = NULL;
+    PVOID       usrBuffer = NULL;
+    PVOID       dmaVA = NULL;
+    PDMA_ADAPTER pDmaAdapter = NULL;
     NPAGED_LOOKASIDE_LIST lsList;
-    BOOLEAN     lsListInitDone  = FALSE;
-    BOOLEAN     SglBuildDone    = FALSE;
-    PVOID       pSglBuffer      = NULL;
+    BOOLEAN     lsListInitDone = FALSE;
+    BOOLEAN     SglBuildDone = FALSE;
+    PVOID       pSglBuffer = NULL;
     KIRQL       Irql;
     ULONG       SglSize;
     ULONG       sglMapRegs;
-    status_t    sts             = GNA_SUCCESS; // status of internal calls
-    UINT32      nPTables        = 0;// number of required page tables
-    UINT32      nPTentries      = 0;// number of required page tables entries
+    UINT32      nPTables = 0;// number of required page tables
+    UINT32      nPTentries = 0;// number of required page tables entries
 
     TraceEntry(TLI, T_ENT);
 
-    __try
+    dmaVA = MmGetMdlVirtualAddress(pMdl);
+    usrBuffer = MmGetSystemAddressForMdlSafe(pMdl, NormalPagePriority | MdlMappingNoExecute);
+    Trace(TLI, T_MEM, "User buffer address: %p, length: %u", usrBuffer, length);
+    if (NULL == usrBuffer)
     {
-        ProbeForWrite(usrBuffer, length, PAGE_SIZE);
-    }
-    __except (STATUS_ACCESS_VIOLATION == GetExceptionCode() ? EXCEPTION_EXECUTE_HANDLER : EXCEPTION_EXECUTE_HANDLER)
-    {
-        status = GetExceptionCode();
-        TraceFailMsg(TLE, T_EXIT, "%!FUNC!: ProbeForWrite failed with code %08X", status);
-        EventWriteMemoryMapFail(NULL, status);
-        return status;
+        status = STATUS_UNSUCCESSFUL;
+        TraceFailMsg(TLE, T_EXIT, "MmGetSystemAddressForMdlSafe returned NULL", status);
+        goto mem_map_error;
     }
 
-    RtlZeroMemory(outData, sizeof(GNA_MM_OUT));
-
-    sts = CheckMapConfigParameters(usrBuffer, length);
-    outData->status = sts;
-    if (GNA_SUCCESS != sts)
+    memoryCtx = FindMemoryContextByUserVALocked(appCtx, usrBuffer);
+    if (NULL == memoryCtx)
     {
-        Trace(TLE, T_EXIT, "%!FUNC!: CheckMapConfigParameters failed with %d", sts);
+        memoryCtx = (PMEMORY_CTX) ExAllocatePoolWithTag(NonPagedPoolNx, sizeof(MEMORY_CTX), MEM_POOL_TAG);
+
+        memoryCtx->pMdl = pMdl;
+        memoryCtx->mmapRequest = mapRequest;
+        memoryCtx->userMemoryBaseVA = usrBuffer;
+        memoryCtx->userMemorySize = length;
+        InitializeListHead(&memoryCtx->listEntry);
+
+        WdfSpinLockAcquire(appCtx->memoryIdLock);
+        memoryCtx->memoryId = appCtx->memoryIdCounter++;
+        WdfSpinLockRelease(appCtx->memoryIdLock);
+
+        WdfSpinLockAcquire(appCtx->memoryListLock);
+        InsertTailList(&appCtx->memoryListHead, &memoryCtx->listEntry);
+        WdfSpinLockRelease(appCtx->memoryListLock);
+
+        Trace(TLI, T_MEM, "Memory mapping memory with memoryId = %lld", memoryCtx->memoryId);
+    }
+    // memory already mapped
+    else
+    {
+        memoryCtx = NULL;
+        status = GNA_ERR_MEMORY_ALREADY_MAPPED;
+        TraceFailMsg(TLE, T_EXIT, "Model with provided memory id already exists", status);
+        goto mem_map_error;
+    }
+
+    status = CheckMapConfigParameters(dmaVA, length);
+    if (GNA_SUCCESS != status)
+    {
+        Trace(TLE, T_EXIT, "%!FUNC!: CheckMapConfigParameters failed with %d", status);
         EventWriteMemoryMapFail(NULL, status);
-        return status;
+        goto mem_map_error;
     }
 
     pDmaAdapter = WdfDmaEnablerWdmGetDmaAdapter(devCtx->cfg.dmaEnabler, WdfDmaDirectionReadFromDevice);
@@ -86,31 +124,9 @@ MemoryMap(
         goto mem_map_error;
     }
 
-    Trace(TLI, T_MEM, "%!FUNC!: Allocating MDL for app buffer 0x%p", usrBuffer);
-    Trace(TLI, T_MEM, "%!FUNC!: Requested memory size %u", length);
-    appCtx->pMdl = IoAllocateMdl(usrBuffer, length, FALSE, FALSE, NULL);
-    if (NULL == appCtx->pMdl)
-    {
-        status = STATUS_UNSUCCESSFUL;
-        TraceFailMsg(TLE, T_EXIT, "IoAllocateMdl", status);
-        goto mem_map_error;
-    }
-
-    __try
-    {
-        MmProbeAndLockPages(appCtx->pMdl, KernelMode, IoModifyAccess);
-    }
-    __except (STATUS_ACCESS_VIOLATION == GetExceptionCode() ? EXCEPTION_EXECUTE_HANDLER : EXCEPTION_EXECUTE_HANDLER)
-    {
-        status = STATUS_UNSUCCESSFUL;
-        TraceFailMsg(TLE, T_EXIT, "MmProbeAndLockPages", status);
-        goto mem_map_error;
-    }
-    appCtx->memLocked = TRUE;
-
     status = pDmaAdapter->DmaOperations->CalculateScatterGatherList(pDmaAdapter,
-        appCtx->pMdl,
-        usrBuffer,
+        memoryCtx->pMdl,
+        dmaVA,
         length,
         &SglSize,
         &sglMapRegs);
@@ -139,8 +155,8 @@ MemoryMap(
 #pragma warning(suppress: 6387)
         status = pDmaAdapter->DmaOperations->BuildScatterGatherList(pDmaAdapter,
             WdfDeviceWdmGetDeviceObject(dev),
-            appCtx->pMdl,
-            usrBuffer,
+            memoryCtx->pMdl,
+            dmaVA,
             length,
             ProcessSGList,
             NULL,
@@ -170,9 +186,9 @@ MemoryMap(
     }
 
     //allocate L1 area
-    for (appCtx->pageTableCount = 0; appCtx->pageTableCount < nPTables; ++appCtx->pageTableCount)
+    for (memoryCtx->pageTableCount = 0; memoryCtx->pageTableCount < nPTables; ++memoryCtx->pageTableCount)
     {
-        P_PT_DIR pageTable = &appCtx->ptDir[appCtx->pageTableCount];
+        P_PT_DIR pageTable = &memoryCtx->ptDir[memoryCtx->pageTableCount];
         status = WdfCommonBufferCreate(devCtx->cfg.dmaEnabler,
             PAGE_SIZE,
             WDF_NO_OBJECT_ATTRIBUTES,
@@ -186,14 +202,14 @@ MemoryMap(
         pageTable->commBuffLa = WdfCommonBufferGetAlignedLogicalAddress(pageTable->commBuff);
         RtlZeroMemory(pageTable->commBuffVa, PAGE_SIZE);
     }
-    Trace(TLI, T_MEM, "%!FUNC!: L1 Table pages allocated: %d", appCtx->pageTableCount);
+    Trace(TLI, T_MEM, "%!FUNC!: L1 Table pages allocated: %d", memoryCtx->pageTableCount);
 
     //copy L2 addresses to L1 area
     {
         PSCATTER_GATHER_LIST pSgList = (PSCATTER_GATHER_LIST) pSglBuffer;
         PSCATTER_GATHER_ELEMENT pSgListElement = pSgList->Elements;
 
-        P_PT_DIR pageTable = appCtx->ptDir;
+        P_PT_DIR pageTable = memoryCtx->ptDir;
         ULONG32 *pageTableEntry = (ULONG32*) pageTable->commBuffVa;
         ULONG32* pageTableEntriesEnd = pageTableEntry + PT_ENTRY_NO;
 
@@ -234,11 +250,9 @@ MemoryMap(
     }
 
     // prepare and store mmu config in app ctx for later copying into hw descriptor
-    HwPrepareMmuConfig(appCtx, length);
     // HW configuration of mapping executed on app context switch before scoring start
-
-    // retrieve hw input buffer size for library
-    outData->inBuffSize = HwReadInBuffSize(devCtx->hw.regs);
+    ModelDescInit(devCtx, memoryCtx);
+    HwPrepareMmuConfig2(memoryCtx);
 
     Trace(TLI, T_MEM, "%!FUNC! HW Memory mapped successfully");
 
@@ -271,9 +285,9 @@ mem_map_error:
         TraceFail(TLE, T_EXIT, status);
         EventWriteMemoryMapFail(NULL, status);
 
-        if (appCtx)
+        if (NULL != memoryCtx)
         {
-            MemoryMapRelease(appCtx);
+            MemoryMapRelease2(appCtx, memoryCtx);
         }
     }
     else
@@ -281,113 +295,116 @@ mem_map_error:
         EventWriteMemoryMapSuccess(NULL);
     }
 
+    if (appCtx->notifyRequest != WDF_NO_HANDLE)
+    {
+        if (memoryCtx)
+        {
+            *appCtx->notifyBuffer = memoryCtx->memoryId;
+            WdfRequestCompleteWithInformation(appCtx->notifyRequest, status, sizeof(UINT64));
+        }
+        else
+        {
+            WdfRequestComplete(appCtx->notifyRequest, status);
+        }
+        appCtx->notifyRequest = WDF_NO_HANDLE;
+        appCtx->notifyBuffer = NULL;
+        Trace(TLI, T_EXIT, "Notify request is completed with status: %d", status);
+    }
+
     return status;
 }
 
 VOID
-MemoryMapRelease(
-    _Inout_ PAPP_CTX            appCtx)
+MemoryMapRelease2(
+    _Inout_ PAPP_CTX2              appCtx,
+    _Inout_ PMEMORY_CTX            memoryCtx)
 {
-    ULONG i;
+    BOOLEAN removed;
+
     TraceEntry(TLI, T_ENT);
 
-    for (i = 0; i < appCtx->pageTableCount; ++i)
-    {
-        WdfObjectDelete(appCtx->ptDir[i].commBuff);
-    }
-    RtlZeroMemory(appCtx->ptDir, sizeof(appCtx->ptDir));
-    appCtx->pageTableCount = 0;
+    UINT64 memoryId = memoryCtx->memoryId;
+    Trace(TLI, T_MEM, "Memory unmapping memory with memoryId = %lld", memoryId);
 
-    if (appCtx->memLocked)
+    ULONG i;
+    for (i = 0; i < memoryCtx->pageTableCount; ++i)
     {
-        __try
-        {
-            MmUnlockPages(appCtx->pMdl);
-        }
-        __except(STATUS_ACCESS_VIOLATION == GetExceptionCode() ? EXCEPTION_EXECUTE_HANDLER : EXCEPTION_EXECUTE_HANDLER)
-        {
-            Trace(TLE, T_MEM, "%!FUNC!: MmUnlockPages failed with EXCEPTION_EXECUTE_HANDLER");
-            EventWriteMemoryReleaseExcept(NULL);
-        }
-        appCtx->memLocked = FALSE;
+        WdfObjectDelete(memoryCtx->ptDir[i].commBuff);
     }
-    if (appCtx->pMdl)
+    RtlZeroMemory(memoryCtx->ptDir, sizeof(memoryCtx->ptDir));
+    memoryCtx->pageTableCount = 0;
+
+    ModelDescRelease(&memoryCtx->desc);
+
+    if (WDF_NO_HANDLE != memoryCtx->mmapRequest)
     {
-        IoFreeMdl(appCtx->pMdl);
-        appCtx->pMdl = NULL;
+        WdfRequestComplete(memoryCtx->mmapRequest, STATUS_SUCCESS);
     }
-    if (appCtx->hwMmuConfig.vamaxaddr)
+
+    WdfSpinLockAcquire(appCtx->memoryListLock);
+    removed = RemoveEntryList(&memoryCtx->listEntry);
+    WdfSpinLockRelease(appCtx->memoryListLock);
+
+    if (!removed)
     {
-        RtlZeroMemory(&appCtx->hwMmuConfig, sizeof(MMU_CONFIG));
+        Trace(TLW, T_MEM, "Memory context not removed from list");
     }
+
+    ExFreePool(memoryCtx);
 
     EventWriteMemoryReleased(NULL);
 }
 
-NTSTATUS
-ModelDescInit(
-    _In_ PDEV_CTX     devCtx,
-    _In_ PMEMORY_CTX   memoryCtx)
+PMEMORY_CTX FindMemoryContextByIdLocked(
+    _In_ PAPP_CTX2 appCtx,
+    _In_ UINT64 memoryId)
 {
-    NTSTATUS status = STATUS_SUCCESS;
-    PAGED_CODE();
+    WdfSpinLockAcquire(appCtx->memoryListLock);
+    PLIST_ENTRY pEntry = appCtx->memoryListHead.Flink;
 
-    // prepare private configuration memory in common buffer
-    status = WdfCommonBufferCreate(devCtx->cfg.dmaEnabler,
-        PRV_CFG_SIZE,
-        WDF_NO_OBJECT_ATTRIBUTES,
-        &memoryCtx->desc.buffer);
-    if (!NT_SUCCESS(status))
+    while(pEntry != &appCtx->memoryListHead)
     {
-        TraceFailMsg(TLE, T_EXIT, "WdfCommonBufferCreate", status);
-        return status;
+        PMEMORY_CTX memoryCtx;
+        memoryCtx = (PMEMORY_CTX)CONTAINING_RECORD(pEntry, MEMORY_CTX, listEntry);
+
+        if (memoryCtx->memoryId == memoryId)
+        {
+            WdfSpinLockRelease(appCtx->memoryListLock);
+            return memoryCtx;
+        }
+
+        pEntry = pEntry->Flink;
     }
 
-    memoryCtx->desc.va = WdfCommonBufferGetAlignedVirtualAddress(memoryCtx->desc.buffer);
-    memoryCtx->desc.la = WdfCommonBufferGetAlignedLogicalAddress(memoryCtx->desc.buffer);
-    RtlZeroMemory(memoryCtx->desc.va, PRV_CFG_SIZE);
-    memoryCtx->desc.la.QuadPart /= PAGE_SIZE;
-    ASSERTMSG("DeviceDescInit Logical Descriptor address > 32bits",
-        (LONG64)(memoryCtx->desc.la.QuadPart) < MAXUINT32 );
-
-    return status;
+    WdfSpinLockRelease(appCtx->memoryListLock);
+    return NULL;
 }
 
-VOID
-ModelDescRelease(
-    _In_    PHW_DESC    desc)
+/******************************************************************************
+ * Private Methods
+ ******************************************************************************/
+
+PMEMORY_CTX FindMemoryContextByUserVALocked(
+    _In_ PAPP_CTX2 appCtx,
+    _In_ PVOID usrBuffer)
 {
-    if (WDF_NO_HANDLE != desc->buffer)
+    WdfSpinLockAcquire(appCtx->memoryListLock);
+    PLIST_ENTRY pEntry = appCtx->memoryListHead.Flink;
+
+    while(pEntry != &appCtx->memoryListHead)
     {
-        WdfObjectDelete(desc->buffer);
-        RtlZeroMemory(desc, sizeof(HW_DESC));
+        PMEMORY_CTX memoryCtx;
+        memoryCtx = (PMEMORY_CTX)CONTAINING_RECORD(pEntry, MEMORY_CTX, listEntry);
+
+        if (memoryCtx->userMemoryBaseVA == usrBuffer)
+        {
+            WdfSpinLockRelease(appCtx->memoryListLock);
+            return memoryCtx;
+        }
+
+        pEntry = pEntry->Flink;
     }
-}
 
-status_t
-CheckMapConfigParameters(
-    _In_    PVOID     usrBuffer,
-    _In_    UINT32    length)
-{
-    TraceEntry(TLI, T_ENT);
-
-    ERRCHECKP(0 == length || length > HW_MAX_MEM_SIZE, GNA_INVALIDMEMSIZE);
-    ERRCHECKP(NULL == usrBuffer, GNA_NULLARGNOTALLOWED);
-    ERRCHECKP(0 != (PtrToInt(Ptr64ToPtr(usrBuffer)) % PAGE_SIZE), GNA_BADMEMALIGN);
-    return GNA_SUCCESS;
-}
-
-VOID
-ProcessSGList(
-    _In_    PDEVICE_OBJECT          devObj,
-    _In_    PIRP                    irp,
-    _In_    PSCATTER_GATHER_LIST    scatterGather,
-    _In_    PVOID                   context
-    )
-{
-    UNREFERENCED_PARAMETER(devObj);
-    UNREFERENCED_PARAMETER(irp);
-    UNREFERENCED_PARAMETER(scatterGather);
-    UNREFERENCED_PARAMETER(context);
-    return;
+    WdfSpinLockRelease(appCtx->memoryListLock);
+    return NULL;
 }

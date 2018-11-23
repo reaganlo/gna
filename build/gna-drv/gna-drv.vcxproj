@@ -130,7 +130,9 @@
         <ClCompile Include="$(SRC_DIR)\gna-drv\Hw.c" />
         <ClCompile Include="$(SRC_DIR)\gna-drv\IoControl.c" />
         <ClCompile Include="$(SRC_DIR)\gna-drv\Memory.c" />
+        <ClCompile Include="$(SRC_DIR)\gna-drv\Memory2.c" />
         <ClCompile Include="$(SRC_DIR)\gna-drv\ScoreProcessor.c" />
+        <ClCompile Include="$(SRC_DIR)\gna-drv\ScoreProcessor2.c" />
         <ClCompile Include="$(SRC_DIR)\common\profiler.c" />
         <ClInclude Include="$(SRC_DIR)\gna-drv\Device.h" />
         <ClInclude Include="$(SRC_DIR)\gna-drv\DeviceSetup.h" />
@@ -138,6 +140,7 @@
         <ClInclude Include="$(SRC_DIR)\gna-drv\Hw.h" />
         <ClInclude Include="$(SRC_DIR)\gna-drv\IoControl.h" />
         <ClInclude Include="$(SRC_DIR)\gna-drv\Memory.h" />
+        <ClInclude Include="$(SRC_DIR)\gna-drv\Memory2.h" />
         <ClInclude Include="$(SRC_DIR)\gna-drv\ScoreProcessor.h" />
         <ClInclude Include="$(SRC_DIR)\common\GnaDrvApi.h" />
         <ClInclude Include="$(SRC_DIR)\common\GnaDrvApiWin.h" />
