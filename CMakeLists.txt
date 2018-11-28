@@ -70,7 +70,7 @@ endif()
 # configuration flags
 if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux" OR
   ${CMAKE_SYSTEM_NAME} STREQUAL "Android")
-  if(${CMAKE_BUILD_TYPE} STREQUAL "${OS-PREFIX}-RELEASE")
+  if(${CMAKE_BUILD_TYPE} STREQUAL "${OS_PREFIX}_RELEASE")
     add_definitions("-D_FORTIFY_SOURCE=2")
   endif()
   set(CXX_FLAGS "-Wall -Werror")
