@@ -153,6 +153,8 @@ file(COPY samples/CMakeLists.txt
           samples/sample01
           samples/sample_dumper
     DESTINATION ${GNA_BINARY_DIR}/samples)
+file(COPY readme.txt
+    DESTINATION ${GNA_BINARY_DIR}/)
 
 add_subdirectory(src/gna-lib/kernels)
 add_subdirectory(src/gna-lib)
