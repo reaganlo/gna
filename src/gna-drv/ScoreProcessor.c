@@ -458,6 +458,7 @@ ScoreStart(
         return status;
     }
 
+    input->ctrlFlags.hwPerfEncoding = 1;
     HwInitExecution(devCtx->hw.regs, devCtx->desc.va->cfg_data, lyrDscBuffer, input, (ULONG)(devCtx->desc.la.QuadPart), &devCtx->cfg);
 
     profilerDTscStop(&devCtx->profiler.startHW);
