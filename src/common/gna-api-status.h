@@ -29,14 +29,20 @@ extern "C" {
 #endif
 
 /** Library API import/export macros */
-#if 1 == _WIN32
-#   if 1 == INTEL_GNA_DLLEXPORT
-#       define GNAAPI __declspec(dllexport)
-#   else
-#       define GNAAPI __declspec(dllimport)
-#   endif
-#else
-#       define GNAAPI
+#if !defined(GNAAPI)
+#    if 1 == _WIN32
+#       if 1 == INTEL_GNA_DLLEXPORT
+#           define GNAAPI __declspec(dllexport)
+#       else
+#           define GNAAPI __declspec(dllimport)
+#       endif
+#    else
+#        if __GNUC__ >= 4
+#           define GNAAPI __attribute__ ((visibility ("default")))
+#        else
+#           define GNAAPI
+#        endif
+#    endif
 #endif
 
 /** GNA API Status codes */

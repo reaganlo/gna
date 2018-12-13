@@ -78,7 +78,7 @@ if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux" OR
     set(CXX_FLAGS "-Wall")
   endif()
   set(CXX_FLAGS_DEBUG "-g -O0 -DDEBUG=1")
-  set(CXX_FLAGS_RELEASE "-fstack-protector-all -O3 -DNDEBUG")
+  set(CXX_FLAGS_RELEASE "-fvisibility=hidden -fvisibility-inlines-hidden -fstack-protector-all -O3 -DNDEBUG")
   if(${CMAKE_CXX_COMPILER_ID} STREQUAL "Intel")
     set(CXX_FLAGS_RELEASE "${CXX_FLAGS_RELEASE} -fbuiltin -inline-forceinline")
   endif()
