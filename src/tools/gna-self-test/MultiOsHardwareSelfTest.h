@@ -29,3 +29,14 @@ typedef class WindowsGnaSelfTestHardwareStatus MultiOsGnaSelfTestHardwareStatus;
 typedef class LinuxGnaSelfTestHardwareStatus MultiOsGnaSelfTestHardwareStatus;
 #endif
 
+// Currently only Android compile-time configuration
+void PrintSystemInfo()
+{
+#ifdef __ANDROID__
+    LOG("This application was build for Android OS\n");
+    LOG("Preprocessor definition __ANDROID__     = %d\n",int(__ANDROID__ ));
+#endif
+#ifdef __ANDROID_API__
+    LOG("Preprocessor definition __ANDROID_API__ = d\n",int(__ANDROID_API__));
+#endif
+}

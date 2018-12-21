@@ -177,9 +177,11 @@ if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux"
       gna-self-test/LinuxNoPciLibBasedImpl.cpp)
   endif()
   if(${CMAKE_SYSTEM_NAME} STREQUAL "Android")
+    set(ANDROID_CPP_LIB_SHARED_PATH "${CMAKE_ANDROID_STANDALONE_TOOLCHAIN}/x86_64-linux-android/lib64/libc++_shared.so")
     set(GNA_SELF_TEST_LINK_LIBS
       ${GNA_SELF_TEST_LINK_LIBS}
-      c++_shared)
+      ${ANDROID_CPP_LIB_SHARED_PATH})
+    target_link_libraries(DevTest ${ANDROID_CPP_LIB_SHARED_PATH})
   endif()
 
   set(gna_self_test_sources
@@ -211,4 +213,11 @@ if(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
       $<TARGET_FILE:gna-api>
       $<TARGET_PDB_FILE:gna-api>
       $<TARGET_FILE_DIR:gna-self-test>)
+endif()
+
+#needed when building executables with Intel compiler for Android
+if(${CMAKE_SYSTEM_NAME} STREQUAL "Android")
+  set_target_properties(gna-self-test DevTest
+    PROPERTIES
+    LINK_OPTIONS "-pie")
 endif()

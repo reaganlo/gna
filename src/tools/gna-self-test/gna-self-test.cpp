@@ -34,6 +34,7 @@ int main(int argc, char *argv[])
 {
     PressEnterToContinue();
     LOG("Starting GNA device self-test\n");
+    PrintSystemInfo();
     //getchar();
     MultiOsGnaSelfTestHardwareStatus hwDrvStatus;
     hwDrvStatus.Initialize();

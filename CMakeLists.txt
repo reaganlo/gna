@@ -23,7 +23,6 @@
 
 # minimum version of CMake
 cmake_minimum_required(VERSION 3.9)
-
 # global variables
 set(PROJECT_NAME gna-lib)
 set(CMAKE_CXX_STANDARD 14)
@@ -32,7 +31,6 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 # project name
 project(${PROJECT_NAME})
-
 # main binary path
 set(GNA_BINARY_DIR ${CMAKE_SOURCE_DIR}/bin)
 
@@ -52,7 +50,7 @@ endif()
 if(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
   set(OS_PREFIX WIN)
 elseif(${CMAKE_SYSTEM_NAME} STREQUAL "Android")
-  set(OS_PREFIX AND)
+  set(OS_PREFIX AOS)
 else()
   set(OS_PREFIX LNX)
 endif()
