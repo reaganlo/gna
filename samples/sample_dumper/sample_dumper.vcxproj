@@ -130,6 +130,7 @@ copy $(ProjectDir)..\gna-lib\$(Platform)\gna.pdb $(ProjectDir)..\bin\$(ProjectNa
       <OptimizeReferences>true</OptimizeReferences>
       <AdditionalLibraryDirectories>..\gna-lib\$(Platform);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>gna.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <StripPrivateSymbols>$(OutDir)$(TargetName)Public.pdb</StripPrivateSymbols>
     </Link>
     <PostBuildEvent>
       <Command>copy $(ProjectDir)..\gna-lib\$(Platform)\gna.dll  $(ProjectDir)..\bin\$(ProjectName)\$(Configuration)\$(Platform)\gna.dll
@@ -150,6 +151,7 @@ copy $(ProjectDir)..\gna-lib\$(Platform)\gna.pdb $(ProjectDir)..\bin\$(ProjectNa
       <OptimizeReferences>true</OptimizeReferences>
       <AdditionalLibraryDirectories>..\gna-lib\$(Platform);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>gna.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <StripPrivateSymbols>$(OutDir)$(TargetName)Public.pdb</StripPrivateSymbols>
     </Link>
     <PostBuildEvent>
       <Command>copy $(ProjectDir)..\gna-lib\$(Platform)\gna.dll  $(ProjectDir)..\bin\$(ProjectName)\$(Configuration)\$(Platform)\gna.dll

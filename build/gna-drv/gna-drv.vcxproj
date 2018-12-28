@@ -1,70 +1,70 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <!--
 //*****************************************************************************
-// 
+//
 // INTEL CONFIDENTIAL
 // Copyright 2012-2015 Intel Corporation
-// 
-// The source code contained or described herein and all documents related 
-// to the source code ("Material") are owned by Intel Corporation or its suppliers 
-// or licensors. Title to the Material remains with Intel Corporation or its suppliers 
-// and licensors. The Material contains trade secrets and proprietary 
+//
+// The source code contained or described herein and all documents related
+// to the source code ("Material") are owned by Intel Corporation or its suppliers
+// or licensors. Title to the Material remains with Intel Corporation or its suppliers
+// and licensors. The Material contains trade secrets and proprietary
 // and confidential information of Intel or its suppliers and licensors.
 // The Material is protected by worldwide copyright and trade secret laws and treaty
-// provisions. No part of the Material may be used, copied, reproduced, modified, 
-// published, uploaded, posted, transmitted, distributed, or disclosed in any way 
+// provisions. No part of the Material may be used, copied, reproduced, modified,
+// published, uploaded, posted, transmitted, distributed, or disclosed in any way
 // without Intel's prior express written permission.
-// 
-// No license under any patent, copyright, trade secret or other intellectual 
-// property right is granted to or conferred upon you by disclosure or delivery 
-// of the Materials, either expressly, by implication, inducement, estoppel 
-// or otherwise. Any license under such intellectual property rights must 
+//
+// No license under any patent, copyright, trade secret or other intellectual
+// property right is granted to or conferred upon you by disclosure or delivery
+// of the Materials, either expressly, by implication, inducement, estoppel
+// or otherwise. Any license under such intellectual property rights must
 // be express and approved by Intel in writing.
 //*****************************************************************************
 -->
 <Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-    <PropertyGroup Label="Configuration">
-        <ConfigurationType>Driver</ConfigurationType>
-        <DriverType>KMDF</DriverType>
-    </PropertyGroup>
-    <PropertyGroup Label="Globals">
-        <ProjectGuid>{4933913D-4FCE-4DC1-B275-5A0FF780B25D}</ProjectGuid>
-        <TemplateGuid>{497e31cb-056b-4f31-abb8-447fd55ee5a5}</TemplateGuid>
-    </PropertyGroup>
-    <ImportGroup Label="PropertySheets">
-        <Import Project="gna-drv.props" />
-    </ImportGroup>
-    <PropertyGroup>
-        <TargetName>$(DRV_NAME)</TargetName>
-        <ENABLE_LEGACY_INTERRUPTS Condition="($(LEGACY) == true)">ENABLE_LEGACY_INTERRUPTS</ENABLE_LEGACY_INTERRUPTS>
-        <LIBCOMMON_DIR>$(ROOT_DIR)src\common\</LIBCOMMON_DIR>
-        <DEBUG_DEFS Condition="$(IS_DEBUG) == true">
+  <PropertyGroup Label="Configuration">
+    <ConfigurationType>Driver</ConfigurationType>
+    <DriverType>KMDF</DriverType>
+  </PropertyGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{4933913D-4FCE-4DC1-B275-5A0FF780B25D}</ProjectGuid>
+    <TemplateGuid>{497e31cb-056b-4f31-abb8-447fd55ee5a5}</TemplateGuid>
+  </PropertyGroup>
+  <ImportGroup Label="PropertySheets">
+    <Import Project="gna-drv.props" />
+  </ImportGroup>
+  <PropertyGroup>
+    <TargetName>$(DRV_NAME)</TargetName>
+    <ENABLE_LEGACY_INTERRUPTS Condition="($(LEGACY) == true)">ENABLE_LEGACY_INTERRUPTS</ENABLE_LEGACY_INTERRUPTS>
+    <LIBCOMMON_DIR>$(ROOT_DIR)src\common\</LIBCOMMON_DIR>
+    <DEBUG_DEFS Condition="$(IS_DEBUG) == true">
             _DEBUG;
         </DEBUG_DEFS>
-        <DebuggerFlavor>DbgengKernelDebugger</DebuggerFlavor>
-    </PropertyGroup>
-    <ImportGroup Label="PropertySheets">
-        <Import Project="..\common\version.props" />
-    </ImportGroup>
-    <PropertyGroup Condition="$(IS_RELEASE) == true">
-        <RunCodeAnalysis>true</RunCodeAnalysis>
-    </PropertyGroup>
-    <PropertyGroup>
-        <CodeAnalysisRuleSet>Drivers.ruleset</CodeAnalysisRuleSet>
-		<SupportsPackaging>false</SupportsPackaging>
-    </PropertyGroup>
-    <PropertyGroup Label="Configuration" Condition="$(IS_DEBUG) == true">
-        <UseDebugLibraries>true</UseDebugLibraries>
-    </PropertyGroup>
-    <PropertyGroup Label="Configuration" Condition="$(IS_RELEASE) == true">
-        <UseDebugLibraries>false</UseDebugLibraries>
-    </PropertyGroup>
-    <ImportGroup Label="ExtensionSettings">
-    </ImportGroup>
-    <PropertyGroup Label="UserMacros" />
-    <ItemDefinitionGroup>
-        <ResourceCompile>
-            <PreprocessorDefinitions>
+    <DebuggerFlavor>DbgengKernelDebugger</DebuggerFlavor>
+  </PropertyGroup>
+  <ImportGroup Label="PropertySheets">
+    <Import Project="..\common\version.props" />
+  </ImportGroup>
+  <PropertyGroup Condition="$(IS_RELEASE) == true">
+    <RunCodeAnalysis>true</RunCodeAnalysis>
+  </PropertyGroup>
+  <PropertyGroup>
+    <CodeAnalysisRuleSet>Drivers.ruleset</CodeAnalysisRuleSet>
+    <SupportsPackaging>false</SupportsPackaging>
+  </PropertyGroup>
+  <PropertyGroup Label="Configuration" Condition="$(IS_DEBUG) == true">
+    <UseDebugLibraries>true</UseDebugLibraries>
+  </PropertyGroup>
+  <PropertyGroup Label="Configuration" Condition="$(IS_RELEASE) == true">
+    <UseDebugLibraries>false</UseDebugLibraries>
+  </PropertyGroup>
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <ItemDefinitionGroup>
+    <ResourceCompile>
+      <PreprocessorDefinitions>
                 DRIVER;
                 $(DEBUG_DEFS);
                 TARGET_WIN_VER=$(TARGET_WIN_VER);
@@ -77,17 +77,17 @@
                 DRV_NAME=\"$(DRV_NAME)\";
                 %(PreprocessorDefinitions)
             </PreprocessorDefinitions>
-        </ResourceCompile>
-        <ClCompile>
-            <AdditionalIncludeDirectories>
+    </ResourceCompile>
+    <ClCompile>
+      <AdditionalIncludeDirectories>
                 $(IntDir);
                 $(SRC_DIR)\common\;
                 %(AdditionalIncludeDirectories);
             </AdditionalIncludeDirectories>
-            <PrecompiledHeader>
-            </PrecompiledHeader>
-            <WarningLevel>Level3</WarningLevel>
-            <PreprocessorDefinitions>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <PreprocessorDefinitions>
                 $(DEBUG_DEFS);
                 $(ENABLE_LEGACY_INTERRUPTS);
                 DRIVER;
@@ -108,18 +108,19 @@
             <ImageHasSafeExceptionHandlers Condition="$(IS_RELEASE) == true and $(Platform) == Win32">true</ImageHasSafeExceptionHandlers>
             <DataExecutionPrevention Condition="$(IS_RELEASE) == true">true</DataExecutionPrevention>
             <RandomizedBaseAddress Condition="$(IS_RELEASE) == true">true</RandomizedBaseAddress>
-        </Link>
-        <Inf>
-            <TimeStamp Condition="$(IS_VER_SET)!=true">2.0.0.0</TimeStamp>
-            <TimeStamp Condition="$(IS_VER_SET)==true">$(VERSION_QB_A)</TimeStamp>
-            <Architecture>$(INF_PLATFORM).$(TARGET_WIN_INF)</Architecture>
-        </Inf>
-        <PostBuildEvent>
-            <Command>
-				copy $(TRACE_MAN_FILE) $(OutDir)
+            <StripPrivateSymbols Condition="$(IS_RELEASE) == true">$(OutDir)$(TargetName)Public.pdb</StripPrivateSymbols>
+    </Link>
+    <Inf>
+      <TimeStamp Condition="$(IS_VER_SET)!=true">2.0.0.0</TimeStamp>
+      <TimeStamp Condition="$(IS_VER_SET)==true">$(VERSION_QB_A)</TimeStamp>
+      <Architecture>$(INF_PLATFORM).$(TARGET_WIN_INF)</Architecture>
+    </Inf>
+    <PostBuildEvent>
+      <Command>
+                copy $(TRACE_MAN_FILE) $(OutDir)
             </Command>
-            <Message>
-				Copying ETW manifest file to output folder
+      <Message>
+                Copying ETW manifest file to output folder
             </Message>
         </PostBuildEvent>
     </ItemDefinitionGroup>

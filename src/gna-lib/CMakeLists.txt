@@ -73,6 +73,9 @@ set(GNA_LIB_VERBOSE_OUT_DIR ${GNA_BINARY_DIR}/gna-lib-verbose)
 set(GNA_LIB_VERBOSE_DEBUG_OUT_DIR ${GNA_LIB_VERBOSE_OUT_DIR}/${OS_PREFIX}-DEBUG/${CMAKE_ARCHITECTURE})
 set(GNA_LIB_VERBOSE_RELEASE_OUT_DIR ${GNA_LIB_VERBOSE_OUT_DIR}/${OS_PREFIX}-RELEASE/${CMAKE_ARCHITECTURE})
 
+set(GNA_API_PDB_STRIPPED ${GNA_LIB_RELEASE_OUT_DIR}/gnaPublic.pdb)
+set(GNA_API_VERBOSE_PDB_STRIPPED ${GNA_LIB_VERBOSE_RELEASE_OUT_DIR}/gna-verbosePublic.pdb)
+
 set(gna_lib_sources
   ${SRC_DIR}/AccelerationDetector.cpp
   ${SRC_DIR}/ActiveList.cpp
@@ -235,8 +238,14 @@ if(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
     $<TARGET_FILE:gna-api>
     $<TARGET_LINKER_FILE:gna-api>
-	$<TARGET_PDB_FILE:gna-api>
-    ${CMAKE_SOURCE_DIR}/samples/gna-lib/${CMAKE_ARCHITECTURE})
+    $<$<CONFIG:${OS_PREFIX}_RELEASE>:$<TARGET_FILE_DIR:gna-api>/gnaPublic.pdb>
+    $<$<CONFIG:${OS_PREFIX}_DEBUG>:$<TARGET_PDB_FILE:gna-api>>
+    ${CMAKE_SOURCE_DIR}/samples/gna-lib/${CMAKE_ARCHITECTURE}
+    COMMAND ${CMAKE_COMMAND}
+      -DPDB_PUBLIC=${GNA_API_PDB_STRIPPED}
+      -DPDB_PATH=${GNA_LIB_RELEASE_OUT_DIR}
+      -DFILE_NAME=gna.pdb
+      -P ${CMAKE_SOURCE_DIR}/build/cmake/pdb_public.cmake)
 else()
   add_custom_command(TARGET gna-api POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
@@ -305,8 +314,22 @@ if(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
 
   add_custom_command(TARGET gna-api-verbose POST_BUILD
     COMMAND
-    echo $(API_DLL) version: $(VERSION_QB_A) ($(VERSION_FILE_A)) > $(OutDir)$(API_DLL).ver)
+    echo $(API_DLL) version: $(VERSION_QB_A) ($(VERSION_FILE_A)) > $(OutDir)$(API_DLL).ver
+    COMMAND ${CMAKE_COMMAND}
+      -DPDB_PUBLIC=${GNA_API_VERBOSE_PDB_STRIPPED}
+      -DPDB_PATH=${GNA_LIB_VERBOSE_RELEASE_OUT_DIR}
+      -DFILE_NAME=gna-verbose.pdb
+      -P ${CMAKE_SOURCE_DIR}/build/cmake/pdb_public.cmake)
+endif()
 
+#strip symbols on linux
+if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
+  if(${CMAKE_BUILD_TYPE} STREQUAL "LNX_RELEASE")
+    add_custom_command(TARGET gna-api POST_BUILD
+      COMMAND cp $<TARGET_FILE:gna-api> $<TARGET_FILE:gna-api>.dbg
+      COMMAND strip --only-keep-debug $<TARGET_FILE:gna-api>.dbg
+      COMMAND strip --strip-unneeded $<TARGET_FILE:gna-api>)
+  endif()
 endif()
 
 install(TARGETS gna-api EXPORT GnaTargets
@@ -339,4 +362,3 @@ install(EXPORT GnaTargets
   FILE gna-config.cmake
   NAMESPACE Gna::
   DESTINATION lib/cmake/gna${GNA_VERSION_MAJOR})
-

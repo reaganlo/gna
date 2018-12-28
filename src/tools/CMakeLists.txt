@@ -44,6 +44,9 @@ set(GNA_DEVTEST_RELEASE_OUT_DIR ${GNA_TOOLS_RELEASE_OUT_DIR}/DevTest/${CMAKE_ARC
 set(GNA_SELF_TEST_DEBUG_OUT_DIR ${GNA_TOOLS_DEBUG_OUT_DIR}/gna-self-test/${CMAKE_ARCHITECTURE})
 set(GNA_SELF_TEST_RELEASE_OUT_DIR ${GNA_TOOLS_RELEASE_OUT_DIR}/gna-self-test/${CMAKE_ARCHITECTURE})
 
+set(GNA_DEVTEST_PDB_STRIPPED ${GNA_DEVTEST_RELEASE_OUT_DIR}/DevTestPublic.pdb)
+set(GNA_SELF_TEST_PDB_STRIPPED ${GNA_SELF_TEST_RELEASE_OUT_DIR}/gna-self-testPublic.pdb)
+
 set(devtest_sources
   DevTest/ChainModel.cpp
   DevTest/DeviceController.cpp
@@ -100,14 +103,30 @@ target_link_libraries(DevTest gna-api)
 add_custom_command(TARGET DevTest POST_BUILD
   COMMAND ${CMAKE_COMMAND} -E copy_if_different
   $<TARGET_FILE:gna-api>
+  $<$<CONFIG:LNX_RELEASE>:$<TARGET_FILE:gna-api>.dbg>
   $<TARGET_FILE_DIR:DevTest>)
 
 # on Windows copy pdb file
 if(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
   add_custom_command(TARGET DevTest POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
-    $<TARGET_PDB_FILE:gna-api>
-    $<TARGET_FILE_DIR:DevTest>)
+      $<TARGET_PDB_FILE:gna-api>
+      $<TARGET_FILE_DIR:DevTest>
+    COMMAND ${CMAKE_COMMAND}
+      -DPDB_PUBLIC=${GNA_DEVTEST_PDB_STRIPPED}
+      -DPDB_PATH=${GNA_DEVTEST_RELEASE_OUT_DIR}
+      -DFILE_NAME=DevTest.pdb
+      -P ${CMAKE_SOURCE_DIR}/build/cmake/pdb_public.cmake)
+endif()
+
+#strip symbols on linux
+if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
+  if(${CMAKE_BUILD_TYPE} STREQUAL "LNX_RELEASE")
+    add_custom_command(TARGET DevTest POST_BUILD
+      COMMAND cp $<TARGET_FILE:DevTest> $<TARGET_FILE:DevTest>.dbg
+      COMMAND strip --only-keep-debug $<TARGET_FILE:DevTest>.dbg
+      COMMAND strip --strip-unneeded $<TARGET_FILE:DevTest>)
+  endif()
 endif()
 
 #tests
@@ -212,7 +231,22 @@ if(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
       $<TARGET_FILE:gna-api>
       $<TARGET_PDB_FILE:gna-api>
-      $<TARGET_FILE_DIR:gna-self-test>)
+      $<TARGET_FILE_DIR:gna-self-test>
+    COMMAND ${CMAKE_COMMAND}
+      -DPDB_PUBLIC=${GNA_SELF_TEST_PDB_STRIPPED}
+      -DPDB_PATH=${GNA_SELF_TEST_RELEASE_OUT_DIR}
+      -DFILE_NAME=gna-self-test.pdb
+      -P ${CMAKE_SOURCE_DIR}/build/cmake/pdb_public.cmake)
+endif()
+
+#strip symbols on linux
+if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
+  if(${CMAKE_BUILD_TYPE} STREQUAL "LNX_RELEASE")
+    add_custom_command(TARGET gna-self-test POST_BUILD
+      COMMAND cp $<TARGET_FILE:gna-self-test> $<TARGET_FILE:gna-self-test>.dbg
+      COMMAND strip --only-keep-debug $<TARGET_FILE:gna-self-test>.dbg
+      COMMAND strip --strip-unneeded $<TARGET_FILE:gna-self-test>)
+  endif()
 endif()
 
 #needed when building executables with Intel compiler for Android

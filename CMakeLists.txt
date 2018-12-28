@@ -91,7 +91,7 @@ elseif(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
   endif()
   set(CXX_LINKER_FLAGS "/DEBUG")
   set(CXX_LINKER_FLAGS_DEBUG "/INCREMENTAL")
-  set(CXX_LINKER_FLAGS_RELEASE "/INCREMENTAL:NO /NOLOGO /OPT:REF /OPT:ICF")
+  set(CXX_LINKER_FLAGS_RELEASE "/INCREMENTAL:NO /NOLOGO /OPT:REF /OPT:ICF /PDBSTRIPPED:$(TargetDir)$(TargetName)Public.pdb")
 endif()
 
 # interprocedural optimization
