@@ -216,10 +216,6 @@ void SetupSplitModel::setupFirstAffineLayer(uint8_t* &pinned_mem_ptr)
 
 void SetupSplitModel::setupSecondAffineLayer(uint8_t* &pinned_memory)
 {
-    secondNnet.nGroup = groupingNum;
-    secondNnet.nLayers = layersNum;
-    secondNnet.pLayers = (intel_nnet_layer_t*)calloc(secondNnet.nLayers, sizeof(intel_nnet_layer_t));
-
     int buf_size_weights = weightsAre2Bytes ? ALIGN64(sizeof(diagonal_weights_2B)) : ALIGN64(sizeof(diagonal_weights_1B));
     int buf_size_biases = weightsAre2Bytes ? ALIGN64(sizeof(diagonalRegularBiases)) : ALIGN64(sizeof(diagonalCompoundBiases));
     int buf_size_tmp_outputs = ALIGN64(outVecSz * groupingNum * sizeof(int32_t));

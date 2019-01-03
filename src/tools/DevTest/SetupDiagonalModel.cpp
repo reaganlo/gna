@@ -49,6 +49,11 @@ SetupDiagonalModel::SetupDiagonalModel(DeviceController & deviceCtrl, bool wght2
 SetupDiagonalModel::~SetupDiagonalModel()
 {
     deviceController.Free();
+    if(nnet.pLayers)
+    {
+        free(nnet.pLayers);
+        nnet.pLayers = nullptr;
+    }
 }
 
 template <class intel_reference_output_type>
