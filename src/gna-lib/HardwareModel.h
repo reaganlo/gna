@@ -39,17 +39,17 @@ class SoftwareModel;
 class Memory;
 class AccelerationDetector;
 class Layer;
-class LayerConfiguration;
+struct LayerConfiguration;
 class RequestConfiguration;
 struct RequestProfiler;
 
 class HardwareModel
 {
 public:
-    static size_t CalculateDescriptorSize(const uint16_t layerCount, const uint16_t gmmLayersCount);
+    static size_t CalculateDescriptorSize(const uint32_t layerCount, const uint16_t gmmLayersCount);
 
-    HardwareModel(const gna_model_id modId, const std::vector<std::unique_ptr<Layer>>& layers, uint16_t gmmCount,
-        const uint64_t memoryId, const BaseAddressC memoryBase, const BaseAddressC descriptorBase,  IoctlSender &sender, const AccelerationDetector& detector);
+    HardwareModel(const gna_model_id modId, const std::vector<std::unique_ptr<Layer>>& layers, uint32_t gmmCount,
+        const uint64_t memoryId, const BaseAddress memoryBase, const BaseAddress baseDescriptorAddress,  IoctlSender &sender, const AccelerationDetector& detector);
     ~HardwareModel() = default;
     HardwareModel(const HardwareModel &) = delete;
     HardwareModel& operator=(const HardwareModel&) = delete;
@@ -59,13 +59,12 @@ public:
         return hardwareLayers.at(layerIndex).get();
     }
 
-    inline uint32_t GetOffset(const BaseAddressC& address) const
+    inline uint32_t GetOffset(const BaseAddress& address) const
     {
         return address.GetOffset(memoryBase);
     }
 
     void Build();
-
     void InvalidateConfig(gna_request_cfg_id configId);
 
     virtual status_t Score(
@@ -77,20 +76,18 @@ public:
         const GnaOperationMode operationMode);
 
 protected:
-    static uint32_t getLayerDescriptorsSize(const uint16_t layerCount);
+    static uint32_t getLayerDescriptorsSize(const uint32_t layerCount);
 
     // needed for driver communication
     const uint64_t memoryId;
-    const BaseAddressC memoryBase;
+    const BaseAddress memoryBase;
     const gna_model_id modelId;
-    BaseAddressC descriptorsAddress;
-    uint32_t layerDescriptorsSize;
-    const uint32_t hardwareBufferSize;
+    LayerDescriptor baseDescriptor;
     IoctlSender &ioctlSender;
     std::vector<std::unique_ptr<HardwareLayer>> hardwareLayers;
 
 private:
-    static uint32_t getGmmDescriptorsSize(const uint16_t gmmLayersCount);
+    static uint32_t getGmmDescriptorsSize(const uint32_t gmmLayersCount);
 
     std::map<gna_request_cfg_id, std::unique_ptr<HardwareRequest>> hardwareRequests;
 

@@ -29,6 +29,7 @@
 
 #include "convnet.h"
 #include "igemv.h"
+#include "pwl.h"
 
 __forceinline void saturate64_store_out(int64_t * const out, uint32_t * const saturationCount)
 {
@@ -385,8 +386,6 @@ void ConvolutionPoolingKernelImpl(ConvolutionConfig const * const filterConfig,
     uint32_t j;
     int64_t value;
     uint32_t inc;
-
-    pwl->KERNEL(InitializeActivationFunctions)();
 
 #if OPT_LEVEL > 1
     gna_sum_t sum1, sum2, sum3, sum4, sum5, sum6;

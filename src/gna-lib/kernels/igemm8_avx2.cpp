@@ -562,7 +562,8 @@ void AffineMultiBiasKernelImpl1B(AffineConfig const * const config)
     int32_t * output = config->output;
     nn_bias_s const * multiBias;
     nn_bias_s const * const biasEnd = config->multiBias + config->outputElementCount * config->multiBiasVectorCount;
-    nn_bias_c const * weightScaleFactor = config->weightScaleFactors;
+    nn_scaling const * weightScaleFactor = config->weightScaleFactors;
+
     int16_t const *input_0 = nullptr;
     int16_t const *input_1 = nullptr;
     int16_t const *input_2 = nullptr;

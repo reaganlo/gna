@@ -41,16 +41,16 @@ namespace GNA
 
         void SetPrescoreScenario(gna_model_id modelId, uint32_t nActions, dbg_action *actions)
         {
-            auto memoryId = 0;
-            auto memory = memoryObjects.at(memoryId).get();
+            auto memoryId = getMemoryId(modelId);
+            auto memory = getMemory(memoryId);
             auto& model = static_cast<CompiledModelVerbose&>(memory->GetModel(modelId));
             model.SetPrescoreScenario(nActions, actions);
         }
 
         void SetAfterscoreScenario(gna_model_id modelId, uint32_t nActions, dbg_action *actions)
         {
-            auto memoryId = 0;
-            auto memory = memoryObjects.at(memoryId).get();
+            auto memoryId = getMemoryId(modelId);
+            auto memory = getMemory(memoryId);
             auto& model = static_cast<CompiledModelVerbose&>(memory->GetModel(modelId));
             model.SetAfterscoreScenario(nActions, actions);
         }

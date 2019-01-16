@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2017 Intel Corporation.
+ Copyright 2018 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -45,6 +45,7 @@ static inline unsigned long long _xgetbv(unsigned int ctr)
 #include "GnaException.h"
 #include "Logger.h"
 
+#include <algorithm>
 #include <map>
 #include <array>
 
@@ -68,113 +69,502 @@ using namespace GNA;
 #define _XCR_XFEATURE_ENABLED_MASK 0
 #endif
 
-const std::map<gna_device_kind, std::array<bool, GnaFeatureCount>>
-AccelerationDetector::gnaFeatureMap {{
-    // Basic, CNN,   LegacyGMM,  GMMLayer, MultiBias, L1Dist, L2Dist, ComputerVision, Layer8K, NewPerformanceCounters
-{ GNA_CNL,   {true, false, true,  false,    false,     false,  false,  false, false, false } },
-{ GNA_GLK,   {true, true,  true,  false,    false,     false,  false,  false, false, false } },
-{ GNA_EHL,   {true, true,  true,  false,    false,     false,  false,  false, false, false } },
-{ GNA_ICL,   {true, true,  true,  false,    false,     false,  false,  false, false, false } },
-{ GNA_TGL,   {true, true,  false, true,     true,      false,  false,  false, true,  true  } },
-{ GNA_SUE,   {true, true,  true,  false,    false,     false,  false,  false, false, false } },
-{ GNA_SUE_2, {true, true,  false, true,     true,      false,  false,  false, true,  true  } }
-}};
-
-std::map<const WeightMode, std::map<const acceleration, const AffineKernel>> AccelerationDetector::AffineKernels = {
-    {GNA_WEIGHT_1B,
-       {{ GNA_GEN_SAT,     xnnKernel_generic_sat.affineSingle1Bfull },
-        { GNA_GEN_FAST,    xnnKernel_generic.affineSingle1Bfull }}
+std::map<gna_device_version, const GnaHardwareCapabiities> gnaCapsMap = {
+    { GNA_KBL,
+        {GMM_DEVICE,
+        {false, false, true, false, false, false,  false,  false, false, false, false },
+        6,
+        {{1, 8}},
+        4,
+        0,
+        0,},
     },
-    {GNA_WEIGHT_2B,
-       {{ GNA_GEN_SAT,     xnnKernel_generic_sat.affineSingle2Bfull },
-        { GNA_GEN_FAST,    xnnKernel_generic.affineSingle2Bfull }}
+    { GNA_SKL,
+        {GMM_DEVICE,
+        {false, false, true, false, false, false,  false,  false, false, false, false },
+        6,
+        {{1, 8}},
+        4,
+        0,
+        0,},
+    },
+    { GNA_CNL,
+        {GNA_0_9,
+        {true, false, true, false,    false,     false,  false,  false, false, false, false },
+        6,
+        {{2, 8}},
+        4,
+        1,
+        1,},
+    },
+    { GNA_GLK,
+        {GNA_1_0,
+        {true, true,  true, false,    false,     false,  false,  false, false, false, false },
+        6,
+        {{2, 8}},
+        4,
+        1,
+        1,},
+    },
+    { GNA_ICL,
+        {GNA_1_0,
+        {true, true,  true, false,    false,     false,  false,  false, false, false, false },
+        6,
+        {{2, 8}},
+        4,
+        1,
+        1,},
+    },
+    { GNA_SUE_CREEK,
+        {GNA_1_0_EMBEDDED,
+        {true, true,  true, false,    false,     false,  false,  false, false, false, false },
+        3,
+        {{2, 8}},
+        4,
+        1,
+        1,},
+    },
+    { GNA_TGL,
+        {GNA_2_0,
+        {true, true,  true, true,     true,      false,  false,  false, true,  true, false  },
+        6,
+        {{2, 8}},
+        4,
+        1,
+        1,},
+    },
+    { GNA_JELLYFISH,
+        {GNA_2_1_EMBEDDED,
+        {true, true,  true, true,     true,      false,  false,  false, true,  true, false },
+        3,
+        {{2, 8}},
+        4,
+        1,
+        1,},
+    },
+    { GNA_ADL,
+        {GNA_3_0,
+        {true, true,  true, true,     true,      false,  false,  false, true, true, true },
+        8,
+        {{1, 16}, {2, 8}},
+        4,
+        2,
+        16,},
+    },
+    { GNA_ACE_EMBEDDED,
+        {GNA_3_0_EMBEDDED,
+        {true, true,  true, true,     true,      false,  false,  false, true,  true, true },
+        8,
+        {{1, 16}, {2, 8}},
+        4,
+        2,
+        16,},
+    },
+    { GNA_ACE_ANNA,
+        {GNA_3_1_AUTONOMUS,
+        {true, true,  true, true,     true,      false,  false,  false, true,  true, true },
+        2,
+        {{1, 16}, {2, 8}},
+        4,
+        2,
+        16,},
+    },
+};
+
+std::map<kernel_op, std::map<KernelMode, KernelMap<VoidKernel>>>
+AccelerationDetector::Kernels = {
+    { KERNEL_AFFINE,
+    {
+        {
+            {GNA_INT16 ,GNA_INT8, GNA_BIAS_MODE_RICH_FORMAT },
+            {
+                { { GNA_GEN_SAT },{ (VoidKernel)xnnKernel_generic_sat.affineSingle1B2Bfull } },
+                { { GNA_GEN_FAST },{ (VoidKernel)xnnKernel_generic.affineSingle1B2Bfull } },
+                { { GNA_SSE4_2_SAT },{ (VoidKernel)xnnKernel_sse4_sat.affineSingle1Bfull } },
+                { { GNA_SSE4_2_FAST },{ (VoidKernel)xnnKernel_sse4.affineSingle1Bfull } },
+
+            }
+        },
+        {
+            { GNA_INT16 ,GNA_INT16, GNA_BIAS_MODE_1_2_4B },
+            {
+                { { GNA_GEN_SAT },{ (VoidKernel)xnnKernel_generic_sat.affineSingle2B2Bfull } },
+                { { GNA_GEN_FAST },{ (VoidKernel)xnnKernel_generic.affineSingle2B2Bfull } },
+                { { GNA_SSE4_2_SAT },{ (VoidKernel)xnnKernel_sse4_sat.affineSingle2Bfull } },
+                { { GNA_SSE4_2_FAST },{ (VoidKernel)xnnKernel_sse4.affineSingle2Bfull } }
+            }
+        },
+        {
+            { GNA_INT8 ,GNA_INT8, GNA_BIAS_MODE_1_2_4B },
+            {
+                { { GNA_GEN_SAT },{ (VoidKernel)xnnKernel_generic_sat.affineSingle1B1Bfull } },
+                { { GNA_GEN_FAST },{ (VoidKernel)xnnKernel_generic.affineSingle1B1Bfull } },
+
+            }
+        },
+        {
+            { GNA_INT8 ,GNA_INT16, GNA_BIAS_MODE_1_2_4B },
+            {
+                { { GNA_GEN_SAT },{ (VoidKernel)xnnKernel_generic_sat.affineSingle2B1Bfull } },
+                { { GNA_GEN_FAST },{ (VoidKernel)xnnKernel_generic.affineSingle2B1Bfull } },
+            }
+        }
+    }
+    },
+    { KERNEL_AFFINE_AL,
+    {
+        {
+            { GNA_INT16 ,GNA_INT8, GNA_BIAS_MODE_RICH_FORMAT },
+            {
+                { { GNA_GEN_SAT },{ (VoidKernel)xnnKernel_generic_sat.affineSingle1B2Bal } },
+                { { GNA_GEN_FAST },{ (VoidKernel)xnnKernel_generic.affineSingle1B2Bal } },
+                { { GNA_SSE4_2_SAT },{ (VoidKernel)xnnKernel_sse4_sat.affineSingle1Bal } },
+                { { GNA_SSE4_2_FAST },{ (VoidKernel)xnnKernel_sse4.affineSingle1Bal } }
+            }
+        },
+        {
+            { GNA_INT16 ,GNA_INT16, GNA_BIAS_MODE_1_2_4B },
+            {
+                { { GNA_GEN_SAT },{ (VoidKernel)xnnKernel_generic_sat.affineSingle2B2Bal } },
+                { { GNA_GEN_FAST },{ (VoidKernel)xnnKernel_generic.affineSingle2B2Bal } },
+                { { GNA_SSE4_2_SAT },{ (VoidKernel)xnnKernel_sse4_sat.affineSingle2Bal } },
+                { { GNA_SSE4_2_FAST },{ (VoidKernel)xnnKernel_sse4.affineSingle2Bal } }
+            }
+        },
+        {
+            { GNA_INT8 ,GNA_INT8, GNA_BIAS_MODE_1_2_4B },
+            {
+                { { GNA_GEN_SAT },{ (VoidKernel)xnnKernel_generic_sat.affineSingle1B1Bal } },
+                { { GNA_GEN_FAST },{ (VoidKernel)xnnKernel_generic.affineSingle1B1Bal } }
+            }
+        },
+        {
+            { GNA_INT8 ,GNA_INT16, GNA_BIAS_MODE_1_2_4B },
+            {
+                { { GNA_GEN_SAT },{ (VoidKernel)xnnKernel_generic_sat.affineSingle2B1Bal } },
+                { { GNA_GEN_FAST },{ (VoidKernel)xnnKernel_generic.affineSingle2B1Bal } }
+            }
+        }
+    }
+    },
+    { KERNEL_AFFINE_MULTIBIAS,
+    {
+        {
+            { GNA_INT16 ,GNA_INT8, GNA_BIAS_MODE_1_2_4B },
+            {
+                { { GNA_GEN_SAT },{ (VoidKernel)xnnKernel_generic_sat.affineMulti1B2B } },
+                { { GNA_GEN_FAST },{ (VoidKernel)xnnKernel_generic.affineMulti1B2B } },
+                { { GNA_SSE4_2_SAT },{ (VoidKernel)xnnKernel_sse4_sat.affineMulti1B } },
+                { { GNA_SSE4_2_FAST },{ (VoidKernel)xnnKernel_sse4.affineMulti1B } }
+            }
+        },
+        {
+            { GNA_INT16 ,GNA_INT16, GNA_BIAS_MODE_1_2_4B },
+            {
+                { { GNA_GEN_SAT },{ (VoidKernel)xnnKernel_generic_sat.affineMulti2B2B } },
+                { { GNA_GEN_FAST },{ (VoidKernel)xnnKernel_generic.affineMulti2B2B } },
+                { { GNA_SSE4_2_SAT },{ (VoidKernel)xnnKernel_sse4_sat.affineMulti2B } },
+                { { GNA_SSE4_2_FAST },{ (VoidKernel)xnnKernel_sse4.affineMulti2B } }
+            }
+        },
+        {
+            { GNA_INT8 ,GNA_INT8, GNA_BIAS_MODE_1_2_4B },
+            {
+                { { GNA_GEN_SAT },{ (VoidKernel)xnnKernel_generic_sat.affineMulti1B1B } },
+                { { GNA_GEN_FAST },{ (VoidKernel)xnnKernel_generic.affineMulti1B1B } }
+            }
+        },
+        {
+            { GNA_INT8 ,GNA_INT16, GNA_BIAS_MODE_1_2_4B },
+            {
+                { { GNA_GEN_SAT },{ (VoidKernel)xnnKernel_generic_sat.affineMulti2B1B } },
+                { { GNA_GEN_FAST },{ (VoidKernel)xnnKernel_generic.affineMulti2B1B } }
+            }
+        }
+    }
+    },
+    { KERNEL_RECURRENT,
+    {
+        {
+            { GNA_INT16 ,GNA_INT8, GNA_BIAS_MODE_RICH_FORMAT },
+            {
+                { { GNA_GEN_SAT },{ (VoidKernel)xnnKernel_generic_sat.recurrent1B2B } },
+                { { GNA_GEN_FAST },{ (VoidKernel)xnnKernel_generic.recurrent1B2B } },
+                { { GNA_SSE4_2_SAT },{ (VoidKernel)xnnKernel_sse4_sat.recurrent1B } },
+                { { GNA_SSE4_2_FAST },{ (VoidKernel)xnnKernel_sse4.recurrent1B } }
+            }
+        },
+        {
+            { GNA_INT16 ,GNA_INT16, GNA_BIAS_MODE_1_2_4B },
+            {
+                { { GNA_GEN_SAT },{ (VoidKernel)xnnKernel_generic_sat.recurrent2B2B } },
+                { { GNA_GEN_FAST },{ (VoidKernel)xnnKernel_generic.recurrent2B2B } },
+                { { GNA_SSE4_2_SAT },{ (VoidKernel)xnnKernel_sse4_sat.recurrent2B } },
+                { { GNA_SSE4_2_FAST },{ (VoidKernel)xnnKernel_sse4.recurrent2B } }
+            }
+        },
+        {
+            { GNA_INT8 ,GNA_INT8, GNA_BIAS_MODE_1_2_4B },
+            {
+                { { GNA_GEN_SAT },{ (VoidKernel)xnnKernel_generic_sat.recurrent1B1B } },
+                { { GNA_GEN_FAST },{ (VoidKernel)xnnKernel_generic.recurrent1B1B } }
+            }
+        },
+        {
+            { GNA_INT8 ,GNA_INT16, GNA_BIAS_MODE_1_2_4B },
+            {
+                { { GNA_GEN_SAT },{ (VoidKernel)xnnKernel_generic_sat.recurrent2B1B } },
+                { { GNA_GEN_FAST },{ (VoidKernel)xnnKernel_generic.recurrent2B1B } }
+            }
+        },
+    }
+    },
+    { KERNEL_AFFINE_DIAGONAL,
+    {
+        {
+            { GNA_INT16 ,GNA_INT8, GNA_BIAS_MODE_RICH_FORMAT },
+            {
+                { { GNA_GEN_SAT },{ (VoidKernel)xnnKernel_generic_sat.diagonal1B2B } },
+                { { GNA_GEN_FAST },{ (VoidKernel)xnnKernel_generic.diagonal1B2B } },
+                { { GNA_SSE4_2_SAT },{ (VoidKernel)xnnKernel_sse4_sat.diagonal1B } },
+                { { GNA_SSE4_2_FAST },{ (VoidKernel)xnnKernel_sse4.diagonal1B } }
+            }
+        },
+        {
+            { GNA_INT16 ,GNA_INT16, GNA_BIAS_MODE_1_2_4B },
+            {
+                { { GNA_GEN_SAT },{ (VoidKernel)xnnKernel_generic_sat.diagonal2B2B } },
+                { { GNA_GEN_FAST },{ (VoidKernel)xnnKernel_generic.diagonal2B2B } },
+                { { GNA_SSE4_2_SAT },{ (VoidKernel)xnnKernel_sse4_sat.diagonal2B } },
+                { { GNA_SSE4_2_FAST },{ (VoidKernel)xnnKernel_sse4.diagonal2B } }
+            }
+        },
+        {
+            { GNA_INT8 ,GNA_INT8, GNA_BIAS_MODE_1_2_4B },
+            {
+                { { GNA_GEN_SAT },{ (VoidKernel)xnnKernel_generic_sat.diagonal1B1B } },
+                { { GNA_GEN_FAST },{ (VoidKernel)xnnKernel_generic.diagonal1B1B } }
+            }
+        },
+        {
+            { GNA_INT8 ,GNA_INT16, GNA_BIAS_MODE_1_2_4B },
+            {
+                { { GNA_GEN_SAT },{ (VoidKernel)xnnKernel_generic_sat.diagonal2B1B } },
+                { { GNA_GEN_FAST },{ (VoidKernel)xnnKernel_generic.diagonal2B1B } }
+            }
+        },
+    }
+    },
+    { KERNEL_TRANSPOSE,
+    {
+        {
+            { GNA_INT8},
+            {
+                { { GNA_GEN_SAT },{ (VoidKernel)xnnKernel_generic_sat.transpose1B } },
+                { { GNA_GEN_FAST },{ (VoidKernel)xnnKernel_generic.transpose1B } },
+                { { GNA_SSE4_2_SAT },{ (VoidKernel)xnnKernel_sse4_sat.transpose1B } },
+                { { GNA_SSE4_2_FAST },{ (VoidKernel)xnnKernel_sse4.transpose1B } }
+            }
+        },
+        {
+            { GNA_INT16},
+            {
+                { { GNA_GEN_SAT },{ (VoidKernel)xnnKernel_generic_sat.transpose2B } },
+                { { GNA_GEN_FAST },{ (VoidKernel)xnnKernel_generic.transpose2B } },
+                { { GNA_SSE4_2_SAT },{ (VoidKernel)xnnKernel_sse4_sat.transpose2B } },
+                { { GNA_SSE4_2_FAST },{ (VoidKernel)xnnKernel_sse4.transpose2B } }
+            }
+        }
+    }
+    },
+    { KERNEL_COPY,
+    {
+        {
+            { GNA_INT8 },
+            {
+                { { GNA_GEN_SAT },{ (VoidKernel)xnnKernel_generic_sat.copy1B } },
+                { { GNA_GEN_FAST },{ (VoidKernel)xnnKernel_generic.copy1B } },
+                { { GNA_SSE4_2_SAT },{ (VoidKernel)xnnKernel_sse4_sat.copy1B } },
+                { { GNA_SSE4_2_FAST },{ (VoidKernel)xnnKernel_sse4.copy1B } }
+            }
+        },
+        {
+            { GNA_INT16 },
+            {
+                { { GNA_GEN_SAT },{ (VoidKernel)xnnKernel_generic_sat.copy2B } },
+                { { GNA_GEN_FAST },{ (VoidKernel)xnnKernel_generic.copy2B } },
+                { { GNA_SSE4_2_SAT },{ (VoidKernel)xnnKernel_sse4_sat.copy2B } },
+                { { GNA_SSE4_2_FAST },{ (VoidKernel)xnnKernel_sse4.copy2B } }
+            }
+        }
+    }
+    },
+    { KERNEL_CONVOLUTIONAL,
+    {
+        {
+            { GNA_INT16 },
+            {
+                { { GNA_GEN_SAT },{ (VoidKernel)xnnKernel_generic_sat.convolution2B } },
+                { { GNA_GEN_FAST },{ (VoidKernel)xnnKernel_generic.convolution2B } },
+                { { GNA_SSE4_2_SAT },{ (VoidKernel)xnnKernel_sse4_sat.convolution } },
+                { { GNA_SSE4_2_FAST },{ (VoidKernel)xnnKernel_sse4.convolution } }
+            }
+        },
+        {
+            { GNA_INT8 },
+            {
+                { { GNA_GEN_SAT },{ (VoidKernel)xnnKernel_generic_sat.convolution1B } },
+                { { GNA_GEN_FAST },{ (VoidKernel)xnnKernel_generic.convolution1B } }
+            }
+        }
+    }
+    },
+    // TODO:3:CNN2D: for enabling only, add actual CNN2D kernels when ready
+    { KERNEL_CONVOLUTIONAL_2D,
+    {
+        {
+            { GNA_INT16, GNA_INT8, GNA_BIAS_MODE_1_2_4B },
+            {
+                { { GNA_GEN_SAT },{ (VoidKernel)xnnKernel_generic_sat.convolution2D1B2B } },
+                { { GNA_GEN_FAST },{ (VoidKernel)xnnKernel_generic.convolution2D1B2B } },
+            }
+        },
+        {
+            { GNA_INT16, GNA_INT16, GNA_BIAS_MODE_1_2_4B },
+            {
+                { { GNA_GEN_SAT },{ (VoidKernel)xnnKernel_generic_sat.convolution2D2B2B } },
+               { { GNA_GEN_FAST },{ (VoidKernel)xnnKernel_generic.convolution2D2B2B } },
+            }
+        },
+        {
+            { GNA_INT8, GNA_INT8, GNA_BIAS_MODE_1_2_4B },
+            {
+                { { GNA_GEN_SAT },{ (VoidKernel)xnnKernel_generic_sat.convolution2D1B1B } },
+                { { GNA_GEN_FAST },{ (VoidKernel)xnnKernel_generic.convolution2D1B1B } },
+            }
+        },
+         {
+            { GNA_INT8, GNA_INT16, GNA_BIAS_MODE_1_2_4B },
+            {
+                { { GNA_GEN_SAT },{ (VoidKernel)xnnKernel_generic_sat.convolution2D2B1B } },
+                { { GNA_GEN_FAST },{ (VoidKernel)xnnKernel_generic.convolution2D2B1B } },
+            }
+        }
+    }
+    },
+        // TODO:3:CNN2D add pooling kernels
+    { KERNEL_POOLING,
+    {
+        {
+            { GNA_INT16, GNA_INT8, GNA_BIAS_MODE_1_2_4B },
+            {
+                { { GNA_GEN_SAT },{ (VoidKernel)xnnKernel_generic_sat.convolutionPooling2B } },
+                { { GNA_GEN_FAST },{ (VoidKernel)xnnKernel_generic.convolutionPooling2B } },
+                { { GNA_SSE4_2_SAT },{ (VoidKernel)xnnKernel_sse4_sat.convolutionPooling } },
+                { { GNA_SSE4_2_FAST },{ (VoidKernel)xnnKernel_sse4.convolutionPooling } }
+            }
+        },
+        {
+            { GNA_INT8, GNA_INT8, GNA_BIAS_MODE_1_2_4B },
+            {
+                { { GNA_GEN_SAT },{ (VoidKernel)xnnKernel_generic_sat.convolutionPooling1B } },
+                { { GNA_GEN_FAST },{ (VoidKernel)xnnKernel_generic.convolutionPooling1B } }
+            }
+        }
+    }
+    },
+    { KERNEL_POOLING_2D,
+    {
+        {
+            { GNA_INT8 },
+            {
+                { { GNA_GEN_SAT },{ (VoidKernel)xnnKernel_generic_sat.convolutionPooling2D1B } },
+                { { GNA_GEN_FAST },{ (VoidKernel)xnnKernel_generic_sat.convolutionPooling2D1B } },
+            }
+        },
+        {
+            { GNA_INT16 },
+            {
+                { { GNA_GEN_SAT },{ (VoidKernel)xnnKernel_generic_sat.convolutionPooling2D2B } },
+                { { GNA_GEN_FAST },{ (VoidKernel)xnnKernel_generic_sat.convolutionPooling2D2B } },
+            }
+        },
+        {
+            { GNA_INT32 },
+            {
+                { { GNA_GEN_SAT },{ (VoidKernel)xnnKernel_generic_sat.convolutionPooling2D4B } },
+                { { GNA_GEN_FAST },{ (VoidKernel)xnnKernel_generic_sat.convolutionPooling2D4B } },
+            }
+        },
+         {
+            { GNA_DATA_ACTIVATION_DISABLED },
+            {
+                { { GNA_GEN_SAT },{ (VoidKernel)xnnKernel_generic_sat.convolutionPooling2D4B } },
+                { { GNA_GEN_FAST },{ (VoidKernel)xnnKernel_generic_sat.convolutionPooling2D4B } },
+            }
+        },
+    }
+    },
+    { KERNEL_PWL,
+    {
+        {
+            { GNA_INT16 },
+            {
+                { { GNA_GEN_SAT },{ (VoidKernel)xnnKernel_generic_sat.pwl } },
+                { { GNA_GEN_FAST },{ (VoidKernel)xnnKernel_generic.pwl } },
+                { { GNA_SSE4_2_SAT },{ (VoidKernel)xnnKernel_sse4_sat.pwl } },
+                { { GNA_SSE4_2_FAST },{ (VoidKernel)xnnKernel_sse4.pwl } }
+            }
+        }
+    }
+    },
+    { KERNEL_GMM,
+    {
+        {
+            { GNA_INT16 ,GNA_INT8, GNA_BIAS_MODE_1_2_4B },
+            {
+                { { GNA_GEN_SAT },{ (VoidKernel)gmmKernel_generic.gmmMaxMix8 } },
+                { { GNA_GEN_FAST },{ (VoidKernel)gmmKernel_generic.gmmMaxMix8 } },
+                { { GNA_SSE4_2_SAT },{ (VoidKernel)gmmKernel_sse4.gmmMaxMix8 } },
+                { { GNA_SSE4_2_FAST },{ (VoidKernel)gmmKernel_sse4.gmmMaxMix8 } }
+            }
+        },
+        {
+            { GNA_INT16 ,GNA_INT16, GNA_BIAS_MODE_1_2_4B },
+            {
+                { { GNA_GEN_SAT },{ (VoidKernel)gmmKernel_generic.gmmMaxMix16 } },
+                { { GNA_GEN_FAST },{ (VoidKernel)gmmKernel_generic.gmmMaxMix16 } },
+                { { GNA_SSE4_2_SAT },{ (VoidKernel)gmmKernel_sse4.gmmMaxMix16 } },
+                { { GNA_SSE4_2_FAST },{ (VoidKernel)gmmKernel_sse4.gmmMaxMix16 } }
+            }
+        }
+    }
+    },
+    { KERNEL_GMM_AL,
+    {
+        {
+            { GNA_INT16 ,GNA_INT8, GNA_BIAS_MODE_1_2_4B },
+            {
+                { { GNA_GEN_SAT },{ (VoidKernel)gmmKernel_generic.gmmMaxMix8ActiveList } },
+                { { GNA_GEN_FAST },{ (VoidKernel)gmmKernel_generic.gmmMaxMix8ActiveList } },
+                { { GNA_SSE4_2_SAT },{ (VoidKernel)gmmKernel_sse4.gmmMaxMix8ActiveList } },
+                { { GNA_SSE4_2_FAST },{ (VoidKernel)gmmKernel_sse4.gmmMaxMix8ActiveList } }
+            }
+        },
+        {
+            { GNA_INT16 ,GNA_INT16, GNA_BIAS_MODE_1_2_4B },
+            {
+                { { GNA_GEN_SAT },{ (VoidKernel)gmmKernel_generic.gmmMaxMix16ActiveList } },
+                { { GNA_GEN_FAST },{ (VoidKernel)gmmKernel_generic.gmmMaxMix16ActiveList } },
+                { { GNA_SSE4_2_SAT },{ (VoidKernel)gmmKernel_sse4.gmmMaxMix16ActiveList } },
+                { { GNA_SSE4_2_FAST },{ (VoidKernel)gmmKernel_sse4.gmmMaxMix16ActiveList } }
+            }
+        }
+    }
     }
 };
 
-std::map<const WeightMode, std::map<const acceleration, const AffineActiveListKernel>> AccelerationDetector::AffineKernelsAl = {
-    {GNA_WEIGHT_1B,
-       {{ GNA_GEN_SAT,     xnnKernel_generic_sat.affineSingle1Bal },
-        { GNA_GEN_FAST,    xnnKernel_generic.affineSingle1Bal }}
-    },
-    {GNA_WEIGHT_2B,
-       {{ GNA_GEN_SAT,     xnnKernel_generic_sat.affineSingle2Bal },
-        { GNA_GEN_FAST,    xnnKernel_generic.affineSingle2Bal }}
-    }
-};
-
-std::map<const WeightMode, std::map<const acceleration, const AffineKernel>> AccelerationDetector::MultibiasKernels = {
-    {GNA_WEIGHT_1B,
-       {{ GNA_GEN_SAT,     xnnKernel_generic_sat.affineMulti1B },
-        { GNA_GEN_FAST,    xnnKernel_generic.affineMulti1B }}
-    },
-    {GNA_WEIGHT_2B,
-       {{ GNA_GEN_SAT,     xnnKernel_generic_sat.affineMulti2B },
-        { GNA_GEN_FAST,    xnnKernel_generic.affineMulti2B }}
-    }
-};
-
-std::map<const WeightMode, std::map<const acceleration, const RecurrentKernel>> AccelerationDetector::RecurrentKernels = {
-    {GNA_WEIGHT_1B,
-       {{ GNA_GEN_SAT,     xnnKernel_generic_sat.recurrent1B },
-        { GNA_GEN_FAST,    xnnKernel_generic.recurrent1B }}
-    },
-    {GNA_WEIGHT_2B,
-       {{ GNA_GEN_SAT,     xnnKernel_generic_sat.recurrent2B },
-        { GNA_GEN_FAST,    xnnKernel_generic.recurrent2B }}
-    }
-};
-
-std::map<const WeightMode, std::map<const acceleration, const AffineKernel>> AccelerationDetector::DiagonalKernels = {
-    {GNA_WEIGHT_1B,
-       {{ GNA_GEN_SAT,     xnnKernel_generic_sat.diagonal1B },
-        { GNA_GEN_FAST,    xnnKernel_generic.diagonal1B }}
-    },
-    {GNA_WEIGHT_2B,
-       {{ GNA_GEN_SAT,     xnnKernel_generic_sat.diagonal2B },
-        { GNA_GEN_FAST,    xnnKernel_generic.diagonal2B }}
-    }
-};
-
-std::map<const acceleration, const TransposeKernel> AccelerationDetector::TransposeKernels = {
-    { GNA_GEN_SAT,     xnnKernel_generic_sat.transpose },
-    { GNA_GEN_FAST,    xnnKernel_generic.transpose }
-};
-
-std::map<const acceleration, const CopyKernel> AccelerationDetector::CopyKernels = {
-    { GNA_GEN_SAT,     xnnKernel_generic_sat.copy },
-    { GNA_GEN_FAST,    xnnKernel_generic.copy }
-};
-
-std::map<const acceleration, const ConvolutionKernel> AccelerationDetector::ConvolutionKernels = {
-    { GNA_GEN_SAT,     xnnKernel_generic_sat.convolution },
-    { GNA_GEN_FAST,    xnnKernel_generic.convolution }
-};
-
-std::map<const acceleration, const ConvolutionPoolingKernel> AccelerationDetector::PoolingKernels = {
-    { GNA_GEN_SAT,     xnnKernel_generic_sat.convolutionPooling },
-    { GNA_GEN_FAST,    xnnKernel_generic.convolutionPooling }
-};
-
-std::map<const acceleration, const PwlKernel> AccelerationDetector::PwlKernels = {
-    { GNA_GEN_SAT,     xnnKernel_generic_sat.pwl },
-    { GNA_GEN_FAST,    xnnKernel_generic.pwl }
-};
-
-std::map<const gna_gmm_mode, std::map<const acceleration, const GmmMaxMix>> AccelerationDetector::GmmKernels = {
-    { GNA_MAXMIX8, {{ GNA_GEN_SAT,  gmmKernel_generic.gmmMaxMix8 },
-                 { GNA_GEN_FAST,    gmmKernel_generic.gmmMaxMix8 }}},
-
-    { GNA_MAXMIX16, {{ GNA_GEN_SAT,  gmmKernel_generic.gmmMaxMix16 },
-                 { GNA_GEN_FAST,     gmmKernel_generic.gmmMaxMix16 }}}
-};
-
-std::map<const gna_gmm_mode, std::map<const acceleration, const GmmMaxMixActiveList>> AccelerationDetector::GmmActiveListKernels = {
-    { GNA_MAXMIX8, {{ GNA_GEN_SAT,  gmmKernel_generic.gmmMaxMix8ActiveList },
-                 { GNA_GEN_FAST,    gmmKernel_generic.gmmMaxMix8ActiveList }}},
-
-    { GNA_MAXMIX16, {{ GNA_GEN_SAT,  gmmKernel_generic.gmmMaxMix16ActiveList },
-                 { GNA_GEN_FAST,     gmmKernel_generic.gmmMaxMix16ActiveList }}}
-};
+uint32_t AccelerationDetector::bufferElementsForSw[2][XNN_N_GROUP_MAX] = {};
 
 std::map<acceleration const, std::string const> AccelerationDetector::accelerationNames
 {
@@ -194,6 +584,42 @@ std::map<acceleration const, std::string const> AccelerationDetector::accelerati
     {NUM_GNA_ACCEL_MODES, "UNKNOWN ACCELERATION"}
 };
 
+gna_device_version AccelerationDetector::GetDeviceVersion(gna_device_generation generation)
+{
+    auto type = std::find_if(gnaCapsMap.cbegin(), gnaCapsMap.cend(),
+        [generation](const std::pair<const gna_device_version, const GnaHardwareCapabiities>& deviceVer)
+            {
+                return deviceVer.second.Generation == generation;
+            });
+    return type->first;
+}
+
+uint32_t AccelerationDetector::GetComputeEngineCount(gna_device_version hwId)
+{
+    return gnaCapsMap.at(hwId).ComputeEngineCount;
+}
+
+uint32_t AccelerationDetector::GetBufferSizeInKB(gna_device_version hwId)
+{
+    auto caps = gnaCapsMap.at(hwId);
+    return caps.ComputeEngineCount * caps.BufferSizesPerCEInKB;
+}
+
+uint32_t AccelerationDetector::GetBufferElementCount(gna_device_version hwId, uint32_t grouping,
+    uint32_t inputPrecision)
+{
+    if (grouping == 7) return 31360 / inputPrecision;
+    if (grouping == 3) return 32640 / inputPrecision;
+
+    auto count = GetBufferSizeInKB(hwId) * 1024;
+    count /= inputPrecision;
+
+    const auto& caps = gnaCapsMap.at(hwId);
+    const auto floorBase = caps.ComputeEngineCount * grouping * 16; // inputPrecision;
+    count = GnaFloor(count, floorBase);
+    return count;
+}
+
 void AccelerationDetector::discoverHardware()
 {
     accelerationModes[GNA_HW] = ACC_NOTSUPPORTED;
@@ -201,25 +627,49 @@ void AccelerationDetector::discoverHardware()
     {
         ioctlSender.Open();
         deviceCapabilities = ioctlSender.GetDeviceCapabilities();
+
+        if (deviceCapabilities.hwId == GNA_ADL)
+            deviceCapabilities.hwInBuffSize = 32; //TODO:3: remove when ADL bug with input buffer will be fixed
+
+
+        Expect::Equal((size_t)1, gnaCapsMap.count(deviceCapabilities.hwId), GNA_DEVNOTFOUND);
+        Expect::Equal(deviceCapabilities.hwInBuffSize, GetBufferSizeInKB(deviceCapabilities.hwId),
+            status_t::GNA_ERR_INVALID_DEVICE_VERSION);
         accelerationModes[GNA_HW] = ACC_SUPPORTED;
+
     }
-    catch (GnaException& e)
+    catch (GnaException&)
     {
         accelerationModes[GNA_HW] = ACC_NOTSUPPORTED;
         Log->Message("No compatible hardware detected.\n");
     }
+    setHwCompatibilityMode(deviceCapabilities.hwId);
 }
 
-uint32_t AccelerationDetector::GetHardwareBufferSize() const
+void AccelerationDetector::setHwCompatibilityMode(gna_device_version hwId)
 {
-    if (IsHardwarePresent())
+    for (uint32_t p = 0; p < 2; p++)
     {
-        return deviceCapabilities.hwInBuffSize;
+        for (uint32_t i = 0; i < 8; i++)
+        {
+            bufferElementsForSw[p][i] = GetBufferElementCount(hwId, i + 1, p + 1);
+        }
     }
-    else
-    {
-        throw GnaException(GNA_DEVNOTFOUND);
-    }
+
+    setHwCompatibilityMode_generic(bufferElementsForSw);
+    setHwCompatibilityMode_sse4(bufferElementsForSw);
+    setHwCompatibilityMode_avx1(bufferElementsForSw);
+    setHwCompatibilityMode_avx2(bufferElementsForSw);
+    setHwCompatibilityMode_generic_sat(bufferElementsForSw);
+    setHwCompatibilityMode_sse4_sat(bufferElementsForSw);
+    setHwCompatibilityMode_avx1_sat(bufferElementsForSw);
+    setHwCompatibilityMode_avx2_sat(bufferElementsForSw);
+}
+
+
+gna_device_version AccelerationDetector::GetDeviceVersion() const
+{
+    return deviceCapabilities.hwId;
 }
 
 bool AccelerationDetector::IsHardwarePresent() const
@@ -227,44 +677,36 @@ bool AccelerationDetector::IsHardwarePresent() const
     return ACC_SUPPORTED == accelerationModes.at(GNA_HW);
 }
 
-bool AccelerationDetector::IsLayerSupported(intel_layer_kind_t layerType) const
+bool AccelerationDetector::IsLayerSupported(nn_operation operation) const
 {
-    if (!IsHardwarePresent()) return false;
-    const auto& deviceFeatureMap = gnaFeatureMap.at(deviceCapabilities.deviceKind);
-    switch (layerType)
+    static const std::map<nn_operation, GnaFeature> featureMap =
     {
-    case INTEL_AFFINE:
-        return deviceFeatureMap[BaseFunctionality];
-    case INTEL_AFFINE_DIAGONAL:
-        return deviceFeatureMap[BaseFunctionality];
-    case INTEL_AFFINE_MULTIBIAS:
-        return deviceFeatureMap[MultiBias];
-    case INTEL_CONVOLUTIONAL:
-        return deviceFeatureMap[CNN];
-    case INTEL_COPY:
-        return deviceFeatureMap[BaseFunctionality];
-    case INTEL_DEINTERLEAVE:
-        return deviceFeatureMap[BaseFunctionality];
-    case INTEL_INTERLEAVE:
-        return deviceFeatureMap[BaseFunctionality];
-    case INTEL_RECURRENT:
-        return deviceFeatureMap[BaseFunctionality];
-    case INTEL_GMM:
-        return deviceFeatureMap[GMMLayer];
-    default:
-        return false;
-    }
+        {INTEL_AFFINE, BaseFunctionality},
+        {INTEL_AFFINE_DIAGONAL, BaseFunctionality},
+        {INTEL_COPY, BaseFunctionality},
+        {INTEL_DEINTERLEAVE, BaseFunctionality},
+        {INTEL_INTERLEAVE, BaseFunctionality},
+        {INTEL_RECURRENT, BaseFunctionality},
+        {INTEL_AFFINE_MULTIBIAS, MultiBias},
+        {INTEL_CONVOLUTIONAL, CNN},
+        {INTEL_GMM, GMMLayer},
+        {INTEL_CONVOLUTIONAL_2D, CNN2D},
+    };
+
+    return HasFeature(featureMap.at(operation));
 }
 
 bool AccelerationDetector::HasFeature(GnaFeature feature) const
 {
-    if (!IsHardwarePresent()) return false;
+    if (!IsHardwarePresent())
+        return false;
 
-    const auto& deviceFeatureMap = gnaFeatureMap.at(deviceCapabilities.deviceKind);
-    return deviceFeatureMap.at(feature);
+    const auto& caps = gnaCapsMap.at(deviceCapabilities.hwId);
+    return caps.Features.at(feature);
 }
 
 AccelerationDetector::AccelerationDetector(IoctlSender &senderIn) :
+    deviceCapabilities{GetBufferSizeInKB(GNA_ADL), 0, GNA_ADL},
     fastestAcceleration{ GNA_GEN_FAST },
     ioctlSender{ senderIn }
 {
@@ -351,296 +793,3 @@ char const * AccelerationDetector::AccelerationToString(acceleration accel)
     return accelerationNames[accel].c_str();
 }
 
-void AccelerationDetector::UpdateKernelsMap()
-{
-    if (ACC_SUPPORTED == accelerationModes[GNA_SSE4_2_FAST])
-    {
-        AccelerationDetector::AffineKernels.at(GNA_WEIGHT_1B).emplace(GNA_SSE4_2_FAST, xnnKernel_sse4.affineSingle1Bfull);
-        AccelerationDetector::AffineKernels.at(GNA_WEIGHT_1B).emplace(GNA_SSE4_2_SAT, xnnKernel_sse4_sat.affineSingle1Bfull);
-
-        AccelerationDetector::AffineKernels.at(GNA_WEIGHT_2B).emplace(GNA_SSE4_2_FAST, xnnKernel_sse4.affineSingle2Bfull);
-        AccelerationDetector::AffineKernels.at(GNA_WEIGHT_2B).emplace(GNA_SSE4_2_SAT, xnnKernel_sse4_sat.affineSingle2Bfull);
-
-        AccelerationDetector::AffineKernelsAl.at(GNA_WEIGHT_1B).emplace(GNA_SSE4_2_FAST, xnnKernel_sse4.affineSingle1Bal);
-        AccelerationDetector::AffineKernelsAl.at(GNA_WEIGHT_1B).emplace(GNA_SSE4_2_SAT, xnnKernel_sse4_sat.affineSingle1Bal);
-
-        AccelerationDetector::AffineKernelsAl.at(GNA_WEIGHT_2B).emplace(GNA_SSE4_2_FAST, xnnKernel_sse4.affineSingle2Bal);
-        AccelerationDetector::AffineKernelsAl.at(GNA_WEIGHT_2B).emplace(GNA_SSE4_2_SAT, xnnKernel_sse4_sat.affineSingle2Bal);
-
-        AccelerationDetector::DiagonalKernels.at(GNA_WEIGHT_1B).emplace(GNA_SSE4_2_FAST, xnnKernel_sse4.diagonal1B);
-        AccelerationDetector::DiagonalKernels.at(GNA_WEIGHT_1B).emplace(GNA_SSE4_2_SAT, xnnKernel_sse4_sat.diagonal1B);
-
-        AccelerationDetector::DiagonalKernels.at(GNA_WEIGHT_2B).emplace(GNA_SSE4_2_FAST, xnnKernel_sse4.diagonal2B);
-        AccelerationDetector::DiagonalKernels.at(GNA_WEIGHT_2B).emplace(GNA_SSE4_2_SAT, xnnKernel_sse4_sat.diagonal2B);
-
-        AccelerationDetector::MultibiasKernels.at(GNA_WEIGHT_1B).emplace(GNA_SSE4_2_FAST, xnnKernel_sse4.affineMulti1B);
-        AccelerationDetector::MultibiasKernels.at(GNA_WEIGHT_1B).emplace(GNA_SSE4_2_SAT, xnnKernel_sse4_sat.affineMulti1B);
-
-        AccelerationDetector::MultibiasKernels.at(GNA_WEIGHT_2B).emplace(GNA_SSE4_2_FAST, xnnKernel_sse4.affineMulti2B);
-        AccelerationDetector::MultibiasKernels.at(GNA_WEIGHT_2B).emplace(GNA_SSE4_2_SAT, xnnKernel_sse4_sat.affineMulti2B);
-
-        AccelerationDetector::RecurrentKernels.at(GNA_WEIGHT_1B).emplace(GNA_SSE4_2_FAST, xnnKernel_sse4.recurrent1B);
-        AccelerationDetector::RecurrentKernels.at(GNA_WEIGHT_1B).emplace(GNA_SSE4_2_SAT, xnnKernel_sse4_sat.recurrent1B);
-
-        AccelerationDetector::RecurrentKernels.at(GNA_WEIGHT_2B).emplace(GNA_SSE4_2_FAST, xnnKernel_sse4.recurrent2B);
-        AccelerationDetector::RecurrentKernels.at(GNA_WEIGHT_2B).emplace(GNA_SSE4_2_SAT, xnnKernel_sse4_sat.recurrent2B);
-
-        AccelerationDetector::ConvolutionKernels.emplace(GNA_SSE4_2_FAST, xnnKernel_sse4.convolution);
-        AccelerationDetector::ConvolutionKernels.emplace(GNA_SSE4_2_SAT, xnnKernel_sse4_sat.convolution);
-
-        AccelerationDetector::PoolingKernels.emplace(GNA_SSE4_2_FAST, xnnKernel_sse4.convolutionPooling);
-        AccelerationDetector::PoolingKernels.emplace(GNA_SSE4_2_SAT, xnnKernel_sse4_sat.convolutionPooling);
-
-        AccelerationDetector::GmmKernels.at(GNA_MAXMIX8).emplace(GNA_SSE4_2_FAST, gmmKernel_sse4.gmmMaxMix8);
-        AccelerationDetector::GmmKernels.at(GNA_MAXMIX8).emplace(GNA_SSE4_2_SAT, gmmKernel_sse4.gmmMaxMix8);
-
-        AccelerationDetector::GmmKernels.at(GNA_MAXMIX16).emplace(GNA_SSE4_2_FAST, gmmKernel_sse4.gmmMaxMix16);
-        AccelerationDetector::GmmKernels.at(GNA_MAXMIX16).emplace(GNA_SSE4_2_SAT, gmmKernel_sse4.gmmMaxMix16);
-
-        AccelerationDetector::GmmActiveListKernels.at(GNA_MAXMIX8).emplace(GNA_SSE4_2_FAST, gmmKernel_sse4.gmmMaxMix8ActiveList);
-        AccelerationDetector::GmmActiveListKernels.at(GNA_MAXMIX8).emplace(GNA_SSE4_2_SAT, gmmKernel_sse4.gmmMaxMix8ActiveList);
-
-        AccelerationDetector::GmmActiveListKernels.at(GNA_MAXMIX16).emplace(GNA_SSE4_2_FAST, gmmKernel_sse4.gmmMaxMix16ActiveList);
-        AccelerationDetector::GmmActiveListKernels.at(GNA_MAXMIX16).emplace(GNA_SSE4_2_SAT, gmmKernel_sse4.gmmMaxMix16ActiveList);
-
-        AccelerationDetector::PwlKernels.emplace(GNA_SSE4_2_FAST, xnnKernel_sse4.pwl);
-        AccelerationDetector::PwlKernels.emplace(GNA_SSE4_2_SAT, xnnKernel_sse4_sat.pwl);
-
-        AccelerationDetector::TransposeKernels.emplace(GNA_SSE4_2_FAST, xnnKernel_sse4.transpose);
-        AccelerationDetector::TransposeKernels.emplace(GNA_SSE4_2_SAT, xnnKernel_sse4_sat.transpose);
-
-        AccelerationDetector::CopyKernels.emplace(GNA_SSE4_2_FAST, xnnKernel_sse4.copy);
-        AccelerationDetector::CopyKernels.emplace(GNA_SSE4_2_SAT, xnnKernel_sse4_sat.copy);
-    }
-
-    if (ACC_SUPPORTED == accelerationModes[GNA_AVX1_FAST])
-    {
-        AccelerationDetector::AffineKernels.at(GNA_WEIGHT_1B).emplace(GNA_AVX1_FAST, xnnKernel_avx1.affineSingle1Bfull);
-        AccelerationDetector::AffineKernels.at(GNA_WEIGHT_1B).emplace(GNA_AVX1_SAT, xnnKernel_avx1_sat.affineSingle1Bfull);
-
-        AccelerationDetector::AffineKernels.at(GNA_WEIGHT_2B).emplace(GNA_AVX1_FAST, xnnKernel_avx1.affineSingle2Bfull);
-        AccelerationDetector::AffineKernels.at(GNA_WEIGHT_2B).emplace(GNA_AVX1_SAT, xnnKernel_avx1_sat.affineSingle2Bfull);
-
-        AccelerationDetector::AffineKernelsAl.at(GNA_WEIGHT_1B).emplace(GNA_AVX1_FAST, xnnKernel_avx1.affineSingle1Bal);
-        AccelerationDetector::AffineKernelsAl.at(GNA_WEIGHT_1B).emplace(GNA_AVX1_SAT, xnnKernel_avx1_sat.affineSingle1Bal);
-
-        AccelerationDetector::AffineKernelsAl.at(GNA_WEIGHT_2B).emplace(GNA_AVX1_FAST, xnnKernel_avx1.affineSingle2Bal);
-        AccelerationDetector::AffineKernelsAl.at(GNA_WEIGHT_2B).emplace(GNA_AVX1_SAT, xnnKernel_avx1_sat.affineSingle2Bal);
-
-        AccelerationDetector::DiagonalKernels.at(GNA_WEIGHT_1B).emplace(GNA_AVX1_FAST, xnnKernel_avx1.diagonal1B);
-        AccelerationDetector::DiagonalKernels.at(GNA_WEIGHT_1B).emplace(GNA_AVX1_SAT, xnnKernel_avx1_sat.diagonal1B);
-
-        AccelerationDetector::DiagonalKernels.at(GNA_WEIGHT_2B).emplace(GNA_AVX1_FAST, xnnKernel_avx1.diagonal2B);
-        AccelerationDetector::DiagonalKernels.at(GNA_WEIGHT_2B).emplace(GNA_AVX1_SAT, xnnKernel_avx1_sat.diagonal2B);
-
-        AccelerationDetector::MultibiasKernels.at(GNA_WEIGHT_1B).emplace(GNA_AVX1_FAST, xnnKernel_avx1.affineMulti1B);
-        AccelerationDetector::MultibiasKernels.at(GNA_WEIGHT_1B).emplace(GNA_AVX1_SAT, xnnKernel_avx1_sat.affineMulti1B);
-
-        AccelerationDetector::MultibiasKernels.at(GNA_WEIGHT_2B).emplace(GNA_AVX1_FAST, xnnKernel_avx1.affineMulti2B);
-        AccelerationDetector::MultibiasKernels.at(GNA_WEIGHT_2B).emplace(GNA_AVX1_SAT, xnnKernel_avx1_sat.affineMulti2B);
-
-        AccelerationDetector::RecurrentKernels.at(GNA_WEIGHT_1B).emplace(GNA_AVX1_FAST, xnnKernel_avx1.recurrent1B);
-        AccelerationDetector::RecurrentKernels.at(GNA_WEIGHT_1B).emplace(GNA_AVX1_SAT, xnnKernel_avx1_sat.recurrent1B);
-
-        AccelerationDetector::RecurrentKernels.at(GNA_WEIGHT_2B).emplace(GNA_AVX1_FAST, xnnKernel_avx1.recurrent2B);
-        AccelerationDetector::RecurrentKernels.at(GNA_WEIGHT_2B).emplace(GNA_AVX1_SAT, xnnKernel_avx1_sat.recurrent2B);
-
-        AccelerationDetector::ConvolutionKernels.emplace(GNA_AVX1_FAST, xnnKernel_avx1.convolution);
-        AccelerationDetector::ConvolutionKernels.emplace(GNA_AVX1_SAT, xnnKernel_avx1_sat.convolution);
-
-        AccelerationDetector::PoolingKernels.emplace(GNA_AVX1_FAST, xnnKernel_avx1.convolutionPooling);
-        AccelerationDetector::PoolingKernels.emplace(GNA_AVX1_SAT, xnnKernel_avx1_sat.convolutionPooling);
-
-        AccelerationDetector::GmmKernels.at(GNA_MAXMIX8).emplace(GNA_AVX1_FAST, gmmKernel_avx1.gmmMaxMix8);
-        AccelerationDetector::GmmKernels.at(GNA_MAXMIX8).emplace(GNA_AVX1_SAT, gmmKernel_avx1.gmmMaxMix8);
-
-        AccelerationDetector::GmmKernels.at(GNA_MAXMIX16).emplace(GNA_AVX1_FAST, gmmKernel_avx1.gmmMaxMix16);
-        AccelerationDetector::GmmKernels.at(GNA_MAXMIX16).emplace(GNA_AVX1_SAT, gmmKernel_avx1.gmmMaxMix16);
-
-        AccelerationDetector::GmmActiveListKernels.at(GNA_MAXMIX8).emplace(GNA_AVX1_FAST, gmmKernel_avx1.gmmMaxMix8ActiveList);
-        AccelerationDetector::GmmActiveListKernels.at(GNA_MAXMIX8).emplace(GNA_AVX1_SAT, gmmKernel_avx1.gmmMaxMix8ActiveList);
-
-        AccelerationDetector::GmmActiveListKernels.at(GNA_MAXMIX16).emplace(GNA_AVX1_FAST, gmmKernel_avx1.gmmMaxMix16ActiveList);
-        AccelerationDetector::GmmActiveListKernels.at(GNA_MAXMIX16).emplace(GNA_AVX1_SAT, gmmKernel_avx1.gmmMaxMix16ActiveList);
-
-        AccelerationDetector::PwlKernels.emplace(GNA_AVX1_FAST, xnnKernel_avx1.pwl);
-        AccelerationDetector::PwlKernels.emplace(GNA_AVX1_SAT, xnnKernel_avx1_sat.pwl);
-
-        AccelerationDetector::TransposeKernels.emplace(GNA_AVX1_FAST, xnnKernel_avx1.transpose);
-        AccelerationDetector::TransposeKernels.emplace(GNA_AVX1_SAT, xnnKernel_avx1_sat.transpose);
-
-        AccelerationDetector::CopyKernels.emplace(GNA_AVX1_FAST, xnnKernel_avx1.copy);
-        AccelerationDetector::CopyKernels.emplace(GNA_AVX1_SAT, xnnKernel_avx1_sat.copy);
-    }
-
-    if (ACC_SUPPORTED == accelerationModes[GNA_AVX2_FAST])
-    {
-        AccelerationDetector::AffineKernels.at(GNA_WEIGHT_1B).emplace(GNA_AVX2_FAST, xnnKernel_avx2.affineSingle1Bfull);
-        AccelerationDetector::AffineKernels.at(GNA_WEIGHT_1B).emplace(GNA_AVX2_SAT, xnnKernel_avx2_sat.affineSingle1Bfull);
-
-        AccelerationDetector::AffineKernels.at(GNA_WEIGHT_2B).emplace(GNA_AVX2_FAST, xnnKernel_avx2.affineSingle2Bfull);
-        AccelerationDetector::AffineKernels.at(GNA_WEIGHT_2B).emplace(GNA_AVX2_SAT, xnnKernel_avx2_sat.affineSingle2Bfull);
-
-        AccelerationDetector::AffineKernelsAl.at(GNA_WEIGHT_1B).emplace(GNA_AVX2_FAST, xnnKernel_avx2.affineSingle1Bal);
-        AccelerationDetector::AffineKernelsAl.at(GNA_WEIGHT_1B).emplace(GNA_AVX2_SAT, xnnKernel_avx2_sat.affineSingle1Bal);
-
-        AccelerationDetector::AffineKernelsAl.at(GNA_WEIGHT_2B).emplace(GNA_AVX2_FAST, xnnKernel_avx2.affineSingle2Bal);
-        AccelerationDetector::AffineKernelsAl.at(GNA_WEIGHT_2B).emplace(GNA_AVX2_SAT, xnnKernel_avx2_sat.affineSingle2Bal);
-
-        AccelerationDetector::DiagonalKernels.at(GNA_WEIGHT_1B).emplace(GNA_AVX2_FAST, xnnKernel_avx2.diagonal1B);
-        AccelerationDetector::DiagonalKernels.at(GNA_WEIGHT_1B).emplace(GNA_AVX2_SAT, xnnKernel_avx2_sat.diagonal1B);
-
-        AccelerationDetector::DiagonalKernels.at(GNA_WEIGHT_2B).emplace(GNA_AVX2_FAST, xnnKernel_avx2.diagonal2B);
-        AccelerationDetector::DiagonalKernels.at(GNA_WEIGHT_2B).emplace(GNA_AVX2_SAT, xnnKernel_avx2_sat.diagonal2B);
-
-        AccelerationDetector::MultibiasKernels.at(GNA_WEIGHT_1B).emplace(GNA_AVX2_FAST, xnnKernel_avx2.affineMulti1B);
-        AccelerationDetector::MultibiasKernels.at(GNA_WEIGHT_1B).emplace(GNA_AVX2_SAT, xnnKernel_avx2_sat.affineMulti1B);
-
-        AccelerationDetector::MultibiasKernels.at(GNA_WEIGHT_2B).emplace(GNA_AVX2_FAST, xnnKernel_avx2.affineMulti2B);
-        AccelerationDetector::MultibiasKernels.at(GNA_WEIGHT_2B).emplace(GNA_AVX2_SAT, xnnKernel_avx2_sat.affineMulti2B);
-
-        AccelerationDetector::RecurrentKernels.at(GNA_WEIGHT_1B).emplace(GNA_AVX2_FAST, xnnKernel_avx2.recurrent1B);
-        AccelerationDetector::RecurrentKernels.at(GNA_WEIGHT_1B).emplace(GNA_AVX2_SAT, xnnKernel_avx2_sat.recurrent1B);
-
-        AccelerationDetector::RecurrentKernels.at(GNA_WEIGHT_2B).emplace(GNA_AVX2_FAST, xnnKernel_avx2.recurrent2B);
-        AccelerationDetector::RecurrentKernels.at(GNA_WEIGHT_2B).emplace(GNA_AVX2_SAT, xnnKernel_avx2_sat.recurrent2B);
-
-        AccelerationDetector::ConvolutionKernels.emplace(GNA_AVX2_FAST, xnnKernel_avx2.convolution);
-        AccelerationDetector::ConvolutionKernels.emplace(GNA_AVX2_SAT, xnnKernel_avx2_sat.convolution);
-
-        AccelerationDetector::PoolingKernels.emplace(GNA_AVX2_FAST, xnnKernel_avx2.convolutionPooling);
-        AccelerationDetector::PoolingKernels.emplace(GNA_AVX2_SAT, xnnKernel_avx2_sat.convolutionPooling);
-
-        AccelerationDetector::GmmKernels.at(GNA_MAXMIX8).emplace(GNA_AVX2_FAST, gmmKernel_avx2.gmmMaxMix8);
-        AccelerationDetector::GmmKernels.at(GNA_MAXMIX8).emplace(GNA_AVX2_SAT, gmmKernel_avx2.gmmMaxMix8);
-
-        AccelerationDetector::GmmKernels.at(GNA_MAXMIX16).emplace(GNA_AVX2_FAST, gmmKernel_avx2.gmmMaxMix16);
-        AccelerationDetector::GmmKernels.at(GNA_MAXMIX16).emplace(GNA_AVX2_SAT, gmmKernel_avx2.gmmMaxMix16);
-
-        AccelerationDetector::GmmActiveListKernels.at(GNA_MAXMIX8).emplace(GNA_AVX2_FAST, gmmKernel_avx2.gmmMaxMix8ActiveList);
-        AccelerationDetector::GmmActiveListKernels.at(GNA_MAXMIX8).emplace(GNA_AVX2_SAT, gmmKernel_avx2.gmmMaxMix8ActiveList);
-
-        AccelerationDetector::GmmActiveListKernels.at(GNA_MAXMIX16).emplace(GNA_AVX2_FAST, gmmKernel_avx2.gmmMaxMix16ActiveList);
-        AccelerationDetector::GmmActiveListKernels.at(GNA_MAXMIX16).emplace(GNA_AVX2_SAT, gmmKernel_avx2.gmmMaxMix16ActiveList);
-
-        AccelerationDetector::PwlKernels.emplace(GNA_AVX2_FAST, xnnKernel_avx2.pwl);
-        AccelerationDetector::PwlKernels.emplace(GNA_AVX2_SAT, xnnKernel_avx2_sat.pwl);
-
-        AccelerationDetector::TransposeKernels.emplace(GNA_AVX2_FAST, xnnKernel_avx2.transpose);
-        AccelerationDetector::TransposeKernels.emplace(GNA_AVX2_SAT, xnnKernel_avx2_sat.transpose);
-
-        AccelerationDetector::CopyKernels.emplace(GNA_AVX2_FAST, xnnKernel_avx2.copy);
-        AccelerationDetector::CopyKernels.emplace(GNA_AVX2_SAT, xnnKernel_avx2_sat.copy);
-    }
-}
-
-namespace GNA
-{
-
-template<typename T>
-const std::map<const acceleration, const T>& AccelerationDetector::GetKernelMap(WeightMode weightMode, nn_layer_kind layerKind)
-{
-    throw GnaException{ GNA_CPUTYPENOTSUPPORTED };
-}
-
-template<typename T>
-const std::map<const acceleration, const T>& AccelerationDetector::GetKernelMap(WeightMode weightMode)
-{
-    throw GnaException{ GNA_CPUTYPENOTSUPPORTED };
-}
-
-template<typename T>
-const std::map<const acceleration, const T>& AccelerationDetector::GetKernelMap()
-{
-    throw GnaException{ GNA_CPUTYPENOTSUPPORTED };
-}
-
-template<typename T>
-const std::map<const acceleration, const T>& AccelerationDetector::GetKernelMap(gna_gmm_mode)
-{
-    throw GnaException{ GNA_CPUTYPENOTSUPPORTED };
-}
-
-template<>
-const std::map<const acceleration, const AffineKernel>&
-AccelerationDetector::GetKernelMap<AffineKernel>(WeightMode weightMode, nn_layer_kind layerKind)
-{
-    switch (layerKind)
-    {
-    case INTEL_AFFINE:
-        /* FALLTHRU */
-    case INTEL_RECURRENT:
-        return AffineKernels.at(weightMode);
-    case INTEL_AFFINE_DIAGONAL:
-        return DiagonalKernels.at(weightMode);
-    case INTEL_AFFINE_MULTIBIAS:
-        return MultibiasKernels.at(weightMode);
-    default:
-        throw GnaException{ XNN_ERR_LYR_KIND };
-    }
-}
-
-template<>
-const std::map<const acceleration, const AffineActiveListKernel>&
-AccelerationDetector::GetKernelMap<AffineActiveListKernel>(WeightMode weightMode)
-{
-    return AffineKernelsAl.at(weightMode);
-}
-
-template<>
-const std::map<const acceleration, const RecurrentKernel>&
-AccelerationDetector::GetKernelMap<RecurrentKernel>(WeightMode weightMode)
-{
-    return RecurrentKernels.at(weightMode);
-}
-
-template<>
-const std::map<const acceleration, const ConvolutionKernel>&
-AccelerationDetector::GetKernelMap<ConvolutionKernel>()
-{
-    return ConvolutionKernels;
-}
-
-template<>
-const std::map<const acceleration, const ConvolutionPoolingKernel>&
-AccelerationDetector::GetKernelMap<ConvolutionPoolingKernel>()
-{
-    return PoolingKernels;
-}
-
-template<>
-const std::map<const acceleration, const PwlKernel>&
-AccelerationDetector::GetKernelMap<PwlKernel>()
-{
-    return PwlKernels;
-}
-
-template<>
-const std::map<const acceleration, const TransposeKernel>&
-AccelerationDetector::GetKernelMap<TransposeKernel>()
-{
-    return TransposeKernels;
-}
-
-template<>
-const std::map<const acceleration, const CopyKernel>&
-AccelerationDetector::GetKernelMap<CopyKernel>()
-{
-    return CopyKernels;
-}
-
-template<>
-const std::map<const acceleration, const GmmMaxMix>&
-AccelerationDetector::GetKernelMap<GmmMaxMix>(gna_gmm_mode gmmMode)
-{
-    return GmmKernels.at(gmmMode);
-}
-
-template<>
-const std::map<const acceleration, const GmmMaxMixActiveList>&
-AccelerationDetector::GetKernelMap<GmmMaxMixActiveList>(gna_gmm_mode gmmMode)
-{
-    return GmmActiveListKernels.at(gmmMode);
-}
-
-}

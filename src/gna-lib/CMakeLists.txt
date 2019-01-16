@@ -77,13 +77,24 @@ set(GNA_API_PDB_STRIPPED ${GNA_LIB_RELEASE_OUT_DIR}/gnaPublic.pdb)
 set(GNA_API_VERBOSE_PDB_STRIPPED ${GNA_LIB_VERBOSE_RELEASE_OUT_DIR}/gna-verbosePublic.pdb)
 
 set(gna_lib_sources
-  ${SRC_DIR}/AccelerationDetector.cpp
-  ${SRC_DIR}/ActiveList.cpp
-  ${SRC_DIR}/AffineLayers.cpp
   ${SRC_DIR}/api.cpp
+  ${SRC_DIR}/AccelerationDetector.cpp
+  ${SRC_DIR}/ActivationFunction.cpp
+  ${SRC_DIR}/ActiveList.cpp
+  ${SRC_DIR}/AffineFunctions.cpp
+  ${SRC_DIR}/AffineLayers.cpp
+  ${SRC_DIR}/ApiProperty.cpp
+  ${SRC_DIR}/Bias.cpp
+  ${SRC_DIR}/Capabilities.cpp
   ${SRC_DIR}/CompiledModel.cpp
+  ${SRC_DIR}/Component.cpp
+  ${SRC_DIR}/ConvolutionalFunctions.cpp
+  ${SRC_DIR}/ConvolutionalFunctions2D.cpp
   ${SRC_DIR}/ConvolutionalLayer.cpp
+  ${SRC_DIR}/ConvolutionalLayer2D.cpp
+  ${SRC_DIR}/DataMode.cpp
   ${SRC_DIR}/Device.cpp
+  ${SRC_DIR}/DeviceLayerSupport.cpp
   ${SRC_DIR}/FakeDetector.cpp
   ${SRC_DIR}/GmmLayer.cpp
   ${SRC_DIR}/HardwareLayer.cpp
@@ -91,31 +102,52 @@ set(gna_lib_sources
   ${SRC_DIR}/HardwareModelSue1.cpp
   ${SRC_DIR}/HardwareRequest.cpp
   ${SRC_DIR}/IoctlSender.cpp
-  ${SRC_DIR}/LayerConfiguration.cpp
   ${SRC_DIR}/Layer.cpp
-  ${SRC_DIR}/LayerFunctions.cpp
+  ${SRC_DIR}/LayerConfiguration.cpp
+  ${SRC_DIR}/LayerDescriptor.cpp
+  ${SRC_DIR}/LayerInput.cpp
+  ${SRC_DIR}/LayerOutput.cpp
   ${SRC_DIR}/Logger.cpp
   ${SRC_DIR}/Memory.cpp
   ${SRC_DIR}/ModelDumper.cpp
+  ${SRC_DIR}/PoolingFunctions.cpp
+  ${SRC_DIR}/PoolingFunctions2D.cpp
   ${SRC_DIR}/RecurrentLayer.cpp
   ${SRC_DIR}/RequestBuilder.cpp
   ${SRC_DIR}/RequestConfiguration.cpp
   ${SRC_DIR}/Request.cpp
   ${SRC_DIR}/RequestHandler.cpp
+  ${SRC_DIR}/Scalar.cpp
+  ${SRC_DIR}/Shape.cpp
   ${SRC_DIR}/SimpleLayers.cpp
   ${SRC_DIR}/SoftwareModel.cpp
   ${SRC_DIR}/SubModel.cpp
+  ${SRC_DIR}/Tensor.cpp
   ${SRC_DIR}/ThreadPool.cpp
+  ${SRC_DIR}/Transform.cpp
+  ${SRC_DIR}/TransformMap.cpp
+  ${SRC_DIR}/Validator.cpp
+  ${SRC_DIR}/Weight.cpp
   ${SRC_DIR}/${IOCTL_SENDER_PREFIX}IoctlSender.cpp)
 
 set(gna_lib_headers
   ${SRC_DIR}/AccelerationDetector.h
+  ${SRC_DIR}/ActivationFunction.h
   ${SRC_DIR}/ActiveList.h
   ${SRC_DIR}/Address.h
+  ${SRC_DIR}/AffineFunctions.h
+  ${SRC_DIR}/ApiProperty.h
+  ${SRC_DIR}/Capabilities.h
   ${SRC_DIR}/common.h
   ${SRC_DIR}/CompiledModel.h
+  ${SRC_DIR}/Component.h
+  ${SRC_DIR}/ConvolutionalFunctions.h
+  ${SRC_DIR}/ConvolutionalFunctions2D.h
   ${SRC_DIR}/ConvolutionalLayer.h
+  ${SRC_DIR}/ConvolutionalLayer2D.h
   ${SRC_DIR}/Device.h
+  ${SRC_DIR}/DeviceLayerSupport.h
+  ${SRC_DIR}/Expect.h
   ${SRC_DIR}/FakeDetector.h
   ${SRC_DIR}/GmmLayer.h
   ${SRC_DIR}/GnaConfig.h
@@ -127,21 +159,32 @@ set(gna_lib_headers
   ${SRC_DIR}/HardwareRequest.h
   ${SRC_DIR}/IoctlSender.h
   ${SRC_DIR}/LayerConfiguration.h
-  ${SRC_DIR}/LayerFunctions.h
   ${SRC_DIR}/Layer.h
+  ${SRC_DIR}/LayerDescriptor.h
+  ${SRC_DIR}/LayerInput.h
+  ${SRC_DIR}/LayerOutput.h
   ${SRC_DIR}/Logger.h
   ${SRC_DIR}/Memory.h
+  ${SRC_DIR}/ParameterLimits.h
+  ${SRC_DIR}/PoolingFunctions.h
+  ${SRC_DIR}/PoolingFunctions2D.h
   ${SRC_DIR}/RecurrentLayer.h
   ${SRC_DIR}/RequestBuilder.h
   ${SRC_DIR}/RequestConfiguration.h
   ${SRC_DIR}/Request.h
   ${SRC_DIR}/RequestHandler.h
   ${SRC_DIR}/RequestManager.h
+  ${SRC_DIR}/Scalar.h
+  ${SRC_DIR}/Shape.h
   ${SRC_DIR}/SimpleLayers.h
   ${SRC_DIR}/SoftwareModel.h
   ${SRC_DIR}/SubModel.h
+  ${SRC_DIR}/Tensor.h
   ${SRC_DIR}/ThreadPool.h
+  ${SRC_DIR}/Transform.h
+  ${SRC_DIR}/TransformMap.h
   ${SRC_DIR}/Validator.h
+  ${SRC_DIR}/Weight.h
   ${SRC_DIR}/${IOCTL_SENDER_PREFIX}IoctlSender.h)
 
 set(gna_api_headers
@@ -156,8 +199,8 @@ set(gna_api_extra
 
 set(common_sources
   ${COMMON_DIR}/profiler.c
-  ${COMMON_DIR}/profiler.h)
-set_source_files_properties(${COMMON_DIR}/profiler.c PROPERTIES LANGUAGE CXX)
+  ${COMMON_DIR}/profiler.h
+  ${COMMON_DIR}/Macros.h)
 
 if(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
   set_source_files_properties(${COMMON_DIR}/version.rc PROPERTIES LANGUAGE RC)
@@ -206,13 +249,6 @@ set_target_properties(gna-api
   RUNTIME_OUTPUT_DIRECTORY_${OS_PREFIX}_RELEASE ${GNA_LIB_RELEASE_OUT_DIR}
   VS_USER_PROPS ${CMAKE_SOURCE_DIR}/build/common/version-dll.props
   OUTPUT_NAME gna)
-
-if(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
-  set_property(TARGET gna-api PROPERTY COMPILE_FLAGS "/WX")
-else()
-  # TODO: enable after merge with GNA3.0 branch
-  #set_property(TARGET gna-api PROPERTY COMPILE_FLAGS "-Werror")
-endif()
 
 target_compile_definitions(gna-api
   PRIVATE ${API_EXTRA_DEFS} -DPROFILE -DPROFILE_DETAILED -DHW_VERBOSE=0)

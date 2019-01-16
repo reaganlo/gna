@@ -48,7 +48,7 @@ class RequestConfiguration
 public:
     RequestConfiguration(CompiledModel& model, gna_request_cfg_id configId);
 
-    void AddBuffer(gna_buffer_type type, uint32_t layerIndex, void *address);
+    void AddBuffer(GnaComponentType type, uint32_t layerIndex, void *address);
     void AddActiveList(uint32_t layerIndex, const ActiveList& activeList);
 
     CompiledModel& Model;
@@ -59,8 +59,6 @@ public:
     gna_perf_t * PerfResults = nullptr;
 
     std::map<uint32_t, std::unique_ptr<LayerConfiguration>> LayerConfigurations;
-    uint32_t InputBuffersCount = 0;
-    uint32_t OutputBuffersCount = 0;
     uint32_t ActiveListCount = 0;
 };
 }

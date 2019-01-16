@@ -26,7 +26,9 @@
 #include "ThreadPool.h"
 
 #include <cstring>
+#include <stdint.h>
 
+#include "gna-api-status.h"
 #include "common.h"
 #include "RequestConfiguration.h"
 #include "Validator.h"
@@ -34,7 +36,17 @@
 
 using namespace GNA;
 
-KernelBuffers::KernelBuffers()
+KernelBuffers::KernelBuffers() :
+    d0{ nullptr },
+    d1{ nullptr },
+    d2{ nullptr },
+    d3{ nullptr },
+    d4{ nullptr },
+    d5{ nullptr },
+    d6{ nullptr },
+    d7{ nullptr },
+    pool{ nullptr },
+    cnnFusedBuffer{ nullptr }
 {
     // TODO: use one allocation for inputs and pool buffer
     d0 = (int16_t*)_gna_malloc(8 * (UINT16_MAX + 1) * sizeof(int16_t));
@@ -56,6 +68,12 @@ KernelBuffers::KernelBuffers()
         this->~KernelBuffers();
         throw GnaException(GNA_ERR_RESOURCES);
     }
+
+    cnnFusedBuffer = (int8_t*)_kernel_malloc(32 * 1024);
+    if (nullptr == cnnFusedBuffer)
+    {
+        throw GnaException(GNA_ERR_RESOURCES);
+    }
 }
 
 KernelBuffers::~KernelBuffers()
@@ -64,13 +82,15 @@ KernelBuffers::~KernelBuffers()
         _gna_free(d0);
     if (nullptr != pool)
         _gna_free(pool);
-    memset(this, 0, sizeof(KernelBuffers));
+    if (nullptr != cnnFusedBuffer)
+        _gna_free(cnnFusedBuffer);
+    memset(this, 0, sizeof(KernelBuffers));    
 }
 
 ThreadPool::ThreadPool(uint8_t nThreads) :
     buffers{nThreads}
 {
-    Expect::InRange(nThreads, 1, 127, GNA_ERR_INVALID_THREAD_COUNT);
+    Expect::InRange(static_cast<uint32_t>(nThreads), 1U, 127U, GNA_ERR_INVALID_THREAD_COUNT);
     for (uint8_t i = 0; i < nThreads; i++)
     {
         KernelBuffers* buff = &buffers.at(i);
@@ -100,7 +120,7 @@ ThreadPool::~ThreadPool()
 #if defined(_WIN32)
     for (auto& w : workers)
     {
-	w.detach();
+        w.detach();
     }
 #else
     Stop();

@@ -29,9 +29,11 @@
 
 #include "GnaException.h"
 #include "LayerConfiguration.h"
-#include "Validator.h"
+#include "Expect.h"
 #include "GnaConfig.h"
 #include "CompiledModel.h"
+#include "Capabilities.h"
+
 
 using namespace GNA;
 
@@ -40,50 +42,28 @@ RequestConfiguration::RequestConfiguration(CompiledModel& model, gna_request_cfg
     ConfigId{configId}
 { }
 
-void RequestConfiguration::AddBuffer(gna_buffer_type type, uint32_t layerIndex, void *address)
+void RequestConfiguration::AddBuffer(GnaComponentType type, uint32_t layerIndex, void *address)
 {
-    auto layer = Model.GetLayer(layerIndex);
-    auto layerType = layer->Config.Type;
-    if (INTEL_HIDDEN == layerType
-        || (GNA_IN == type && INTEL_OUTPUT == layerType)
-        || (GNA_OUT == type && INTEL_INPUT == layerType))
-    {
-        throw GnaException{ XNN_ERR_LYR_TYPE };
-    }
+    Expect::InRange(type, ComponentTypeCount,  XNN_ERR_LYR_CFG);
+    Model.GetLayer(layerIndex); // validate layerIndex
+    Expect::NotNull(address);
 
     auto found = LayerConfigurations.emplace(layerIndex, std::make_unique<LayerConfiguration>());
     auto layerConfiguration = found.first->second.get();
-    switch (type)
-    {
-    case GNA_IN:
-        Expect::Null(layerConfiguration->InputBuffer.get());
-        layerConfiguration->InputBuffer = std::make_unique<ConfigurationBuffer>(GNA_IN, address);
-        ++InputBuffersCount;
-        break;
-    case GNA_OUT:
-        Expect::Null(layerConfiguration->OutputBuffer.get());
-        layerConfiguration->OutputBuffer = std::make_unique<ConfigurationBuffer>(GNA_OUT, address);
-        ++OutputBuffersCount;
-        break;
-    default:
-        throw GnaException(XNN_ERR_LYR_CFG);
-    }
+
+    auto emplaced = layerConfiguration->Buffers.emplace(type, address);
+    Expect::True(emplaced.second, GNA_INVALID_REQUEST_CONFIGURATION);
 
     Model.InvalidateConfig(ConfigId, layerConfiguration, layerIndex);
 }
 
 void RequestConfiguration::AddActiveList(uint32_t layerIndex, const ActiveList& activeList)
 {
-    auto layer = Model.GetLayer(layerIndex);
-    auto layerType = layer->Config.Type;
-    if (INTEL_OUTPUT != layerType && INTEL_INPUT_OUTPUT != layerType)
+    const auto& layer = *Model.GetLayer(layerIndex);
+    auto operation = layer.Operation;
+    if (INTEL_AFFINE != operation && INTEL_GMM != operation)
     {
-        throw GnaException{ XNN_ERR_LYR_TYPE };
-    }
-    auto layerKind = layer->Config.Kind;
-    if (INTEL_AFFINE != layerKind && INTEL_GMM != layerKind)
-    {
-        throw GnaException{ XNN_ERR_LYR_KIND };
+        throw GnaException{ XNN_ERR_LYR_OPERATION };
     }
 
     auto found = LayerConfigurations.emplace(layerIndex, std::make_unique<LayerConfiguration>());

@@ -36,8 +36,6 @@
 namespace GNA
 {
 
-struct ConfigurationBuffer;
-
 class CompiledModel
 {
 public:
@@ -52,7 +50,6 @@ public:
     static size_t CalculateInternalModelSize(const gna_model * rawModel);
 
     uint16_t GetGmmCount() const;
-    uint32_t GetHardwareOffset(const BaseAddressC& address) const;
     const std::vector<std::unique_ptr<Layer>>& GetLayers() const;
     const Layer* GetLayer(uint32_t layerIndex) const;
     decltype(auto) GetSubmodels() const
@@ -76,6 +73,7 @@ protected:
     Memory& memory;
     IoctlSender &ioctlSender;
     ValidBoundariesFunctor validBoundaries;
+    const BaseValidator validator;
     uint16_t gmmCount = 0;
     uint32_t bufferSize = 0;
 

@@ -31,6 +31,8 @@
 
 #include "SetupPoolingModel.h"
 
+#define UNREFERENCED_PARAMETER(P) ((void)(P))
+
 SetupPoolingModel::SetupPoolingModel(DeviceController & deviceCtrl)
     : deviceController{deviceCtrl}
 {
@@ -44,8 +46,8 @@ SetupPoolingModel::SetupPoolingModel(DeviceController & deviceCtrl)
 
     configId = deviceController.ConfigAdd(modelId);
 
-    deviceController.BufferAdd(configId, GNA_IN, 0, inputBuffer);
-    deviceController.BufferAdd(configId, GNA_OUT, 0, outputBuffer);
+    deviceController.BufferAdd(configId, InputComponent, 0, inputBuffer);
+    deviceController.BufferAdd(configId, OutputComponent, 0, outputBuffer);
 }
 
 SetupPoolingModel::~SetupPoolingModel()
@@ -57,6 +59,8 @@ SetupPoolingModel::~SetupPoolingModel()
 
 void SetupPoolingModel::checkReferenceOutput(int modelIndex, int configIndex) const
 {
+    UNREFERENCED_PARAMETER(modelIndex);
+    UNREFERENCED_PARAMETER(configIndex);
     for (unsigned int i = 0; i < sizeof(ref_output) / sizeof(int16_t); ++i)
     {
         int16_t outElemVal = static_cast<const int16_t*>(outputBuffer)[i];
@@ -76,7 +80,7 @@ void SetupPoolingModel::samplePwl(intel_pwl_segment_t *segments, uint32_t number
     for (auto i = uint32_t{0}; i < numberOfSegments; i++, xBase += xBaseInc, yBase += yBaseInc, yBaseInc++)
     {
         segments[i].xBase = xBase;
-        segments[i].yBase = yBase;
+        segments[i].yBase = static_cast<int16_t>(yBase);
         segments[i].slope = 1;
     }
 }
@@ -93,7 +97,7 @@ void SetupPoolingModel::samplePoolingLayer()
     uint32_t bytes_requested = buf_size_filters + buf_size_inputs + buf_size_biases + buf_size_outputs + buf_size_tmp_outputs + buf_size_pwl;
     uint32_t bytes_granted;
 
-    uint8_t* pinned_mem_ptr = deviceController.Alloc(bytes_requested, nnet.nLayers, 0, &bytes_granted);
+    uint8_t* pinned_mem_ptr = deviceController.Alloc(bytes_requested, static_cast<uint16_t>(nnet.nLayers), static_cast<uint16_t>(0), &bytes_granted);
 
     void* pinned_filters = pinned_mem_ptr;
     memcpy(pinned_filters, filters, sizeof(filters));
@@ -139,11 +143,11 @@ void SetupPoolingModel::samplePoolingLayer()
     nnet.pLayers[0].nInputRows = nnet.nGroup;
     nnet.pLayers[0].nOutputColumns = outVecSz;
     nnet.pLayers[0].nOutputRows = nnet.nGroup;
-    nnet.pLayers[0].nBytesPerInput = sizeof(int16_t);
-    nnet.pLayers[0].nBytesPerOutput = sizeof(int16_t); // activated
-    nnet.pLayers[0].nBytesPerIntermediateOutput = sizeof(int32_t);
-    nnet.pLayers[0].nLayerKind = INTEL_CONVOLUTIONAL;
-    nnet.pLayers[0].type = INTEL_INPUT_OUTPUT;
+    nnet.pLayers[0].nBytesPerInput = GNA_INT16;
+    nnet.pLayers[0].nBytesPerOutput = GNA_INT16; // activated
+    nnet.pLayers[0].nBytesPerIntermediateOutput = GNA_INT32;
+    nnet.pLayers[0].operation = INTEL_CONVOLUTIONAL;
+    nnet.pLayers[0].mode = INTEL_INPUT_OUTPUT;
     nnet.pLayers[0].pLayerStruct = &convolution_layer;
     nnet.pLayers[0].pInputs = nullptr;
     nnet.pLayers[0].pOutputsIntermediate = tmp_outputs;

@@ -501,6 +501,8 @@ IoctlNotify(
     }
 
     appCtx->notifyRequest = request;
+    // TODO: add timeout and kill when MAP is not send
+    // TODO: add buffer size!=0 verification
 
     Trace(TLI, T_EXIT, "Notify request stored in application context");
 

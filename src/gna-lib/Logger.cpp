@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2017 Intel Corporation.
+ Copyright 2018 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -26,6 +26,8 @@
 #include <algorithm>
 
 #include "Logger.h"
+
+#define UNREFERENCED_PARAMETER(P) ((void)(P))
 
 using namespace GNA;
 
@@ -91,29 +93,46 @@ const char* const Logger::StatusStrings[] =
     "XNN_ERR_NET_LYR_NO", " - XNN: Not supported number of layers",
     "XNN_ERR_NETWORK_INPUTS", " - XNN: Network is invalid - input buffers number differs from input layers number",
     "XNN_ERR_NETWORK_OUTPUTS", " - XNN: Network is invalid - output buffers number differs from output layers number",
-    "XNN_ERR_LYR_KIND", " - XNN: Not supported layer kind",
-    "XNN_ERR_LYR_TYPE", " - XNN: Not supported layer type",
-    "XNN_ERR_LYR_CFG", " - XNN: Invalid layer configuration",
+    "XNN_ERR_LYR_OPERATION", " - XNN: Not supported layer operation",
+    "XNN_ERR_LYR_CFG", " - XNN: Layer configuration for given device(s) and operation is invalid",
+    "XNN_ERR_LYR_INVALID_TENSOR_ORDER", " - XNN: Order of data tensor used in layer is invalid",
+    "XNN_ERR_LYR_INVALID_TENSOR_DIMENSIONS", " - Error: XNN: Dimensions of data tensor used in layer are invalid",
     "XNN_ERR_INVALID_BUFFER", " - XNN: Buffer outside allocated memory",
     "XNN_ERR_NO_FEEDBACK", " - XNN: No RNN feedback buffer specified",
     "XNN_ERR_NO_LAYERS", " - XNN: At least one layer must be specified",
     "XNN_ERR_GROUPING", " - XNN: Invalid grouping factor",
     "XNN_ERR_INPUT_BYTES", " - XNN: Invalid number of bytes per input",
+    "XNN_ERR_INPUT_VOLUME", " - XNN: Invalid input volume dimensions",
+    "XNN_ERR_OUTPUT_VOLUME", " - XNN: Invalid output volume dimensions",
     "XNN_ERR_INT_OUTPUT_BYTES", " - XNN: Invalid number of bytes per intermediate output",
     "XNN_ERR_OUTPUT_BYTES", " - XNN: Invalid number of bytes per output",
     "XNN_ERR_WEIGHT_BYTES", " - XNN: Invalid number of bytes per weight",
+    "XNN_ERR_WEIGHT_VOLUME", " - Error: XNN: Invalid weight/filter/GMM volume dimensions",
     "XNN_ERR_BIAS_BYTES", " - XNN: Invalid number of bytes per bias",
+    "XNN_ERR_BIAS_VOLUME", " - XNN: Invalid bias volume dimensions",
+    "XNN_ERR_BIAS_MODE", " - XNN: Invalid bias operation mode (gna_bias_mode)",
     "XNN_ERR_BIAS_MULTIPLIER", " - XNN: Multiplier larger than 255",
     "XNN_ERR_BIAS_INDEX", " - XNN: Bias Vector index larger than grouping factor",
     "XNN_ERR_PWL_SEGMENTS", " - XNN: Activation function segment count is invalid, valid values: <2,128>",
     "XNN_ERR_PWL_DATA", " - XNN: Activation function enabled but segment data not set",
-    "CNN_ERR_FLT_COUNT", " - CNN Layer: invalid number of filters",
-    "CNN_ERR_FLT_STRIDE", " - CNN Layer: invalid filter stride",
+    "XNN_ERR_MM_INVALID_IN", " - XNN: Invalid input data or configuration in matrix mul. op.",
+    "XNN_ERR_CONV_FLT_BYTES", " - CNN Layer: invalid number of bytes per convolution filter element",
+    "CNN_ERR_CONV_FLT_COUNT", " - CNN Layer: invalid number of convolution filters",
+    "CNN_ERR_CONV_FLT_VOLUME", " - CNN Layer: Invalid convolution filter volume dimensions",
+    "CNN_ERR_CONV_FLT_STRIDE", " - CNN Layer: invalid convolution filter stride",
     "CNN_ERR_POOL_STRIDE", " - CNN Layer: invalid pool stride",
+    "CNN_ERR_POOL_SIZE", " - CNN Layer: invalid pooling window dimensions",
+    "CNN_ERR_POOL_TYPE", " - CNN Layer: invalid pooling function type",
 
+    "XNN_ERR_MM_INVALID_IN", " -  XNN: Invalid input data or configuration in matrix mul. op.",
+    "GNA_ERR_MEMORY_NOT_ALLOCATED", " - Memory is not yet allocated. Allocate memory first.",
     "GNA_ERR_MEMORY_ALREADY_MAPPED", " - Memory is already mapped, cannot map again. Release memory first",
     "GNA_ERR_MEMORY_ALREADY_UNMAPPED", " - Memory is already unmapped, cannot unmap again",
-    "GNA_ERR_MEMORY_NOT_MAPPED", " - Memory is not mapped",
+    "GNA_ERR_MEMORY_NOT_MAPPED", " - Memory is not mapped.",
+    "GNA_ERR_INVALID_API_VERSION", " - Api version value is invalid",
+    "GNA_ERR_INVALID_DEVICE_VERSION", " - Device version value is invalid",
+    "GNA_ERR_INVALID_DATA_MODE", " - Data mode value is invalid",
+    "GNA_ERR_NOT_IMPLEMENTED", " - Functionality not implemented yet",
 
     "UNKNOWN STATUS", " - Status code is invalid"
 };
@@ -144,6 +163,11 @@ void Logger::Message(const status_t status, const char * const format, ...) cons
 }
 
 void Logger::Message(const char * const format, ...) const
+{
+    UNREFERENCED_PARAMETER(format);
+}
+
+void Logger::Warning(const char * const format, ...) const
 {
     UNREFERENCED_PARAMETER(format);
 }
@@ -201,6 +225,14 @@ void DebugLogger::Message(const char * const format, ...) const
     va_end(args);
 }
 
+void DebugLogger::Warning(const char * const format, ...) const
+{
+    va_list args;
+    va_start(args, format);
+    printMessage(nullptr, format, args);
+    va_end(args);
+}
+
 void DebugLogger::Error(const status_t status) const
 {
     printError(&status, nullptr, nullptr);
@@ -226,6 +258,12 @@ template<typename ... X> void DebugLogger::printMessage(const status_t * const s
 {
     printHeader(defaultStream, levelMessage);
     print(defaultStream, status, format, args...);
+}
+
+template<typename ... X> void DebugLogger::printWarning(const char * const format, X... args) const
+{
+    printHeader(defaultStream, levelWarning);
+    print(defaultStream, nullptr, format, args...);
 }
 
 template<typename ... X> void DebugLogger::printError(const status_t * const status, const char * const format, X... args) const

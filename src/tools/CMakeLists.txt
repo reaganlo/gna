@@ -51,10 +51,12 @@ set(devtest_sources
   DevTest/ChainModel.cpp
   DevTest/DeviceController.cpp
   DevTest/DevTest.cpp
+  DevTest/ModelSetup.cpp
   DevTest/ModelSetupFactory.cpp
   DevTest/ModelUtilities.cpp
   DevTest/Script.cpp
   DevTest/SetupConvolutionModel.cpp
+  DevTest/SetupConvolutionModel2D.cpp
   DevTest/SetupCopyModel.cpp
   DevTest/SetupDiagonalModel.cpp
   DevTest/SetupDnnModel_1.cpp
@@ -67,13 +69,16 @@ set(devtest_sources
   DevTest/SetupTransposeModel.cpp)
 
 set(devtest_headers
+  ${COMMON_DIR}/Macros.h
   DevTest/ChainModel.h
   DevTest/DeviceController.h
   DevTest/IModelSetup.h
+  DevTest/ModelSetup.h
   DevTest/ModelSetupFactory.h
   DevTest/ModelUtilities.h
   DevTest/Script.h
   DevTest/SetupConvolutionModel.h
+  DevTest/SetupConvolutionModel2D.h
   DevTest/SetupCopyModel.h
   DevTest/SetupDiagonalModel.h
   DevTest/SetupDnnModel_1.h
@@ -129,24 +134,11 @@ if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
   endif()
 endif()
 
+
 #tests
-enable_testing()
-
-add_test(NAME TESTs COMMAND DevTest)
-
-#test running after each change or build
-if(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
-  if (${VERBOSE_MODE}) #set VERBOSE_MODE if needed
-    add_custom_command (
-      TARGET DevTest POST_BUILD
-      COMMAND ${CMAKE_CTEST_COMMAND} -C $<CONFIG> -V
-      )
-  else()
-    add_custom_command (
-      TARGET DevTest POST_BUILD
-      COMMAND ${CMAKE_CTEST_COMMAND} -C $<CONFIG>
-    )
-  endif()
+if(BUILD_TESTING)
+    enable_testing()
+    add_test(NAME TESTs COMMAND DevTest)
 endif()
 
 #Beginning of gna-self-test part COMMON
@@ -154,7 +146,7 @@ endif()
 set(gna_self_test_sources
     gna-self-test/gna-self-test.cpp
     gna-self-test/SelfTest.cpp)
-  set(gna_self_test_headers
+set(gna_self_test_headers
     gna-self-test/SelfTest.h
     gna-self-test/MultiOsHardwareSelfTest.h
     gna-self-test/HardwareSelfTest.h)

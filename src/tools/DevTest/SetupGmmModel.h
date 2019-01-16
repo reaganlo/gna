@@ -38,17 +38,13 @@ public:
     void checkReferenceOutput(int modelIndex, int configIndex) const override;
 
 private:
-    void sampleGmmLayer(intel_nnet_type_t& nnet);
+    void sampleGmmLayer(intel_nnet_type_t& hNnet);
 
     DeviceController & deviceController;
 
     bool activeListEnabled;
     uint32_t indicesCount;
     uint32_t* indices;
-
-    intel_affine_func_t affine_func;
-    intel_pwl_func_t pwl;
-    intel_affine_layer_t affine_layer;
 
     void * inputBuffer = nullptr;
     void * outputBuffer = nullptr;

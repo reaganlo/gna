@@ -30,6 +30,9 @@
 #include "gna-api.h"
 
 #include "SetupDiagonalModel.h"
+#include "ModelUtilities.h"
+
+#define UNREFERENCED_PARAMETER(P) ((void)(P))
 
 SetupDiagonalModel::SetupDiagonalModel(DeviceController & deviceCtrl, bool wght2B, bool pwlEn)
     : deviceController{deviceCtrl},
@@ -42,8 +45,8 @@ SetupDiagonalModel::SetupDiagonalModel(DeviceController & deviceCtrl, bool wght2
 
     configId = deviceController.ConfigAdd(modelId);
 
-    deviceController.BufferAdd(configId, GNA_IN, 0, inputBuffer);
-    deviceController.BufferAdd(configId, GNA_OUT, 0, outputBuffer);
+    deviceController.BufferAdd(configId, InputComponent, 0, inputBuffer);
+    deviceController.BufferAdd(configId, OutputComponent, 0, outputBuffer);
 }
 
 SetupDiagonalModel::~SetupDiagonalModel()
@@ -89,6 +92,7 @@ void SetupDiagonalModel::compareReferenceValues(unsigned int i, int configIndex)
 
 void SetupDiagonalModel::checkReferenceOutput(int modelIndex, int configIndex) const
 {
+    UNREFERENCED_PARAMETER(modelIndex);
     unsigned int ref_output_size = refSize[configIndex];
     for (unsigned int i = 0; i < ref_output_size; ++i)
     {
@@ -113,7 +117,7 @@ void SetupDiagonalModel::sampleAffineLayer(intel_nnet_type_t& hNnet)
     if (pwlEnabled) bytes_requested += buf_size_pwl;
     uint32_t bytes_granted;
 
-    uint8_t* pinned_mem_ptr = deviceController.Alloc(bytes_requested, hNnet.nLayers, 0, &bytes_granted);
+    uint8_t* pinned_mem_ptr = deviceController.Alloc(bytes_requested, static_cast<uint16_t>(hNnet.nLayers), static_cast<uint16_t>(0), &bytes_granted);
 
     void* pinned_weights = pinned_mem_ptr;
     if (weightsAre2Bytes)
@@ -163,32 +167,32 @@ void SetupDiagonalModel::sampleAffineLayer(intel_nnet_type_t& hNnet)
         pwl.pSegments = nullptr;
     }
 
-    affine_func.nBytesPerWeight = weightsAre2Bytes ? 2 : 1;
-    affine_func.nBytesPerBias = weightsAre2Bytes ? sizeof(intel_bias_t) : sizeof(intel_compound_bias_t);
+    affine_func.nBytesPerWeight = weightsAre2Bytes ? GNA_INT16 : GNA_INT8;
+    affine_func.nBytesPerBias = weightsAre2Bytes ? GNA_INT32: GNA_DATA_RICH_FORMAT;
     affine_func.pWeights = pinned_weights;
     affine_func.pBiases = pinned_biases;
 
     affine_layer.affine = affine_func;
     affine_layer.pwl = pwl;
 
-    hNnet.pLayers[0].nInputColumns = hNnet.nGroup;
-    hNnet.pLayers[0].nInputRows = inVecSz;
-    hNnet.pLayers[0].nOutputColumns = hNnet.nGroup;
-    hNnet.pLayers[0].nOutputRows = outVecSz;
-    hNnet.pLayers[0].nBytesPerInput = sizeof(int16_t);
+    nnet.pLayers[0].nInputColumns = nnet.nGroup;
+    nnet.pLayers[0].nInputRows = inVecSz;
+    nnet.pLayers[0].nOutputColumns = nnet.nGroup;
+    nnet.pLayers[0].nOutputRows = outVecSz;
+    nnet.pLayers[0].nBytesPerInput = GNA_INT16;
     if (pwlEnabled)
     {
-        hNnet.pLayers[0].pOutputsIntermediate = tmp_outputs;
-        hNnet.pLayers[0].nBytesPerOutput = sizeof(int16_t);
+        nnet.pLayers[0].pOutputsIntermediate = tmp_outputs;
+        nnet.pLayers[0].nBytesPerOutput = GNA_INT16;
     }
     else
     {
-        hNnet.pLayers[0].pOutputsIntermediate = nullptr;
-        hNnet.pLayers[0].nBytesPerOutput = sizeof(int32_t);
+        nnet.pLayers[0].pOutputsIntermediate = nullptr;
+        nnet.pLayers[0].nBytesPerOutput = GNA_INT32;
     }
     hNnet.pLayers[0].nBytesPerIntermediateOutput = 4;
-    hNnet.pLayers[0].nLayerKind = INTEL_AFFINE_DIAGONAL;
-    hNnet.pLayers[0].type = INTEL_INPUT_OUTPUT;
+    hNnet.pLayers[0].operation = INTEL_AFFINE_DIAGONAL;
+    hNnet.pLayers[0].mode = INTEL_INPUT_OUTPUT;
     hNnet.pLayers[0].pLayerStruct = &affine_layer;
     hNnet.pLayers[0].pInputs = nullptr;
     hNnet.pLayers[0].pOutputs = nullptr;
@@ -196,14 +200,5 @@ void SetupDiagonalModel::sampleAffineLayer(intel_nnet_type_t& hNnet)
 
 void SetupDiagonalModel::samplePwl(intel_pwl_segment_t *segments, uint32_t numberOfSegments)
 {
-    auto xBase = INT32_MIN;
-    auto xBaseInc = UINT32_MAX / numberOfSegments;
-    auto yBase = INT32_MAX;
-    auto yBaseInc = UINT16_MAX / numberOfSegments;
-    for (auto i = uint32_t{0}; i < numberOfSegments; i++, xBase += xBaseInc, yBase += yBaseInc)
-    {
-        segments[i].xBase = xBase;
-        segments[i].yBase = yBase;
-        segments[i].slope = 1;
-    }
+    ModelUtilities::GeneratePwlSegments(segments, numberOfSegments);
 }

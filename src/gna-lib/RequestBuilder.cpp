@@ -43,14 +43,14 @@ void RequestBuilder::CreateConfiguration(CompiledModel& model, gna_request_cfg_i
     configurationVector.emplace_back(make_unique<RequestConfiguration>(model, *configId));
 }
 
-void RequestBuilder::AttachBuffer(gna_request_cfg_id configId, gna_buffer_type type, uint16_t layerIndex,
+void RequestBuilder::AttachBuffer(gna_request_cfg_id configId, GnaComponentType type, uint32_t layerIndex,
     void * address) const
 {
     auto& configuration = GetConfiguration(configId);
     configuration.AddBuffer(type, layerIndex, address);
 }
 
-void RequestBuilder::AttachActiveList(gna_request_cfg_id configId, uint16_t layerIndex,
+void RequestBuilder::AttachActiveList(gna_request_cfg_id configId, uint32_t layerIndex,
     const ActiveList& activeList) const
 {
     auto& configuration = GetConfiguration(configId);
@@ -64,7 +64,7 @@ RequestConfiguration& RequestBuilder::GetConfiguration(gna_request_cfg_id config
         auto& config = configurationVector.at(configId);
         return *config.get();
     }
-    catch (const std::out_of_range& e)
+    catch (const std::out_of_range&)
     {
         throw GnaException(GNA_INVALID_REQUEST_CONFIGURATION);
     }

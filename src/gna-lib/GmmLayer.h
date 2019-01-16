@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2017 Intel Corporation.
+ Copyright 2018 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -27,6 +27,8 @@
 
 #include "ActiveList.h"
 #include "Layer.h"
+#include "XnnKernelApi.h"
+
 
 namespace GNA
 {
@@ -46,26 +48,27 @@ struct GmmParams
 class GmmLayer : public Layer
 {
 public:
-    GmmLayer(const nn_layer *layer);
+    GmmLayer(const nn_layer *layer, const BaseValidator& validator);
     virtual ~GmmLayer() = default;
 
+    // TODO:3: Low priority: refactor components to Tensors
     const gna_gmm_config Config;
     const gna_gmm_data Data;
     const GmmParams Params;
 
-    virtual void UpdateKernelConfigs(LayerConfiguration& layerConfiguration, ValidBoundariesFunctor validBoundaries) const override;
+    virtual void UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const override;
     void ValidateActiveList(ActiveList const * const activeList) const;
 
 private:
     virtual void computeHidden(acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const;
-    virtual void computeConfig(const LayerConfiguration& layerConfiguration, acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const;
+    virtual void compute(const LayerConfiguration& layerConfiguration, acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const;
 
     void checkScoresSaturation(const uint32_t& nGMMs, const uint32_t& nVectors, const uint32_t * pS,
         const uint32_t& maximumScore, uint32_t& nSaturated) const;
     inline void validate();
 
-    const std::map<const acceleration, const GmmMaxMix> gmmKernels;
-    const std::map<const acceleration, const GmmMaxMixActiveList> gmmActiveListKernels;
+    const KernelMap<GmmMaxMix> gmmKernels;
+    const KernelMap<GmmMaxMixActiveList> gmmActiveListKernels;
 
     GmmConfig gmmHiddenConfig;
 };

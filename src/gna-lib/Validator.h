@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2017 Intel Corporation.
+ Copyright 2018 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -25,115 +25,65 @@
 
 #pragma once
 
-#include "GnaException.h"
+#include "Address.h"
+#include "Capabilities.h"
+
+#include <memory>
+#include <functional>
 
 namespace GNA
 {
 
-// Validator utility
-class Expect
-{
-public:
-    // If condition is NOT satisfied prints error status code and throws exception .
-    inline static void True(const bool condition, const status_t status)
-    {
-        if (!condition)
-        {
-            throw GnaException(status);
-        }
-    }
-
-    // If condition is satisfied prints error status code and throws exception .
-    inline static void False(const bool condition, const status_t status)
-    {
-        True(!condition, status);
-    }
-
-    // If pointer is nullptr prints error status code and throws exception.
-    inline static void NotNull(const void* pointer, const status_t status)
-    {
-        True(nullptr != pointer, status);
-    }
-
-    // If pointer is nullptr prints error status code and throws exception.
-    inline static void NotNull(const void* pointer)
-    {
-        NotNull(pointer, GNA_NULLARGNOTALLOWED);
-    }
-
-    // If pointer is NOT nullptr prints error status code and throws exception.
-    inline static void Null(const void* pointer)
-    {
-        True(nullptr == pointer, GNA_NULLARGREQUIRED);
-    }
-
-    // If pointer is not aligned to alignment prints error status code and throws exception.
-    inline static void AlignedTo(const void* pointer, const uint32_t alignment, const status_t status)
-    {
-        True(0 == (((uintptr_t)pointer) % alignment), status);
-    }
-
-    // If pointer is not aligned to alignment prints error status code and throws exception.
-    inline static void AlignedTo(const void* pointer, const uint32_t alignment)
-    {
-        AlignedTo(pointer, alignment, GNA_BADMEMALIGN);
-    }
-
-    // If pointer is not 64 B aligned prints error status code and throws exception.
-    inline static void AlignedTo64(const void* pointer)
-    {
-        AlignedTo(pointer, 64);
-    }
-
-    // If pointer is not 64 B aligned prints error status code and throws exception.
-    inline static void ValidBuffer(const void* pointer)
-    {
-        NotNull(pointer);
-        AlignedTo64(pointer);
-    }
-
-    // If pointer is not 64 B aligned prints error status code and throws exception.
-    inline static void ValidBuffer(const void* pointer, const status_t status)
-    {
-        NotNull(pointer, status);
-        AlignedTo(pointer, 64, status);
-    }
-
-    // If pointers do not fit in user memory, throws XNN_ERR_INVALID_BUFFER error
-    inline static void ValidBoundaries(const void *buffer, const size_t bufferSize, const void* modelMemory, const size_t modelSize)
-    {
-        auto *bufferEnd = static_cast<const uint8_t*>(buffer) + bufferSize;
-        auto *memoryEnd = static_cast<const uint8_t*>(modelMemory) + modelSize;
-
-        False(buffer < modelMemory, XNN_ERR_INVALID_BUFFER);
-        False(bufferEnd > memoryEnd, XNN_ERR_INVALID_BUFFER);
-    }
-
-    // If parameter is not multiplicity of multiplicity prints error status code and throws exception.
-    inline static void MultiplicityOf(const uint32_t parameter, const uint32_t multiplicity)
-    {
-        True(0 == (parameter % multiplicity), GNA_ERR_NOT_MULTIPLE);
-    }
-
-    // If parameter is not in range of <a, b> prints error status code and throws exception.
-    inline static void InRange(const size_t parameter, const size_t a, const size_t b,
-        const status_t status)
-    {
-        False(parameter < a, status);
-        False(parameter > b, status);
-    }
-
-protected:
-    /**
-     * Deleted functions to prevent from being defined or called
-     * @see: https://msdn.microsoft.com/en-us/library/dn457344.aspx
-     */
-    Expect() = delete;
-    Expect(const Expect &) = delete;
-    Expect& operator=(const Expect&) = delete;
-};
+class FullCapabilitiesMap;
+struct ComponentLimits;
 
 // Functor for validating if buffer is within memory boundaries
 using ValidBoundariesFunctor = std::function<void(const void *, const size_t)>;
 
-}
+class BaseValidator
+{
+public:
+    BaseValidator(gna_device_generation generation, const ValidBoundariesFunctor * const bufferValidator);
+    ~BaseValidator() = default;
+   
+    void ValidateBuffer(const void* const buffer, size_t size,
+        const AlignLimits& alignLimits = {GNA_MEM_ALIGN, GNA_BADMEMALIGN}) const;
+
+    inline void ValidateBufferIfSet(const void* const buffer, size_t size,
+        const AlignLimits& alignLimits = {GNA_MEM_ALIGN, GNA_BADMEMALIGN}) const
+    {
+        if (buffer)
+            ValidateBuffer(buffer, size, alignLimits);
+    }
+
+
+    const gna_device_generation Device;
+
+protected:
+    const ValidBoundariesFunctor * const bufferValidator;
+};
+
+class LayerValidator : public BaseValidator
+{
+public:
+    LayerValidator(const BaseValidator& validator, nn_operation operation);
+    ~LayerValidator() = default;
+
+    const nn_operation Operation;
+};
+
+class Validator : public LayerValidator
+{
+public:
+    Validator(const LayerValidator& validator, const FullCapabilitiesMap& capabilities);
+    ~Validator() = default;
+
+    const ComponentLimits * const Capabilities;
+    const gna_tensor_order Order;
+};
+
+};
+
+
+
+

@@ -26,9 +26,9 @@
     <PropertyGroup>
         <IS_VER_SET Condition="'$(GMM_VER_RELEASE)'!='' and '$(GMM_VER_HW)'!='' and '$(GMM_VER_FIX)'!='' and '$(GMM_VER_BUILD)'!=''">true</IS_VER_SET>
         <VERSION_QB_A Condition="$(IS_VER_SET) == true">$(GMM_VER_HW).$(GMM_VER_RELEASE).$(GMM_VER_FIX).$(GMM_VER_BUILD)</VERSION_QB_A>
-        <VERSION_QB_A Condition="$(IS_VER_SET) != true">2.0.0.0</VERSION_QB_A>
+        <VERSION_QB_A Condition="$(IS_VER_SET) != true">3.0.0.0</VERSION_QB_A>
         <VERSION_QB_B Condition="$(IS_VER_SET) == true">$(GMM_VER_HW),$(GMM_VER_RELEASE),$(GMM_VER_FIX),$(GMM_VER_BUILD)</VERSION_QB_B>
-        <VERSION_QB_B Condition="$(IS_VER_SET) != true">2,0,0,0</VERSION_QB_B>
+        <VERSION_QB_B Condition="$(IS_VER_SET) != true">3,0,0,0</VERSION_QB_B>
         <TARGET_TOOLSET_ID Condition="('$(PlatformToolset)' == 'WindowsKernelModeDriver8.0')">$(TARGET_WDK80_ID)</TARGET_TOOLSET_ID>
         <TARGET_TOOLSET_ID Condition="('$(PlatformToolset)' == 'WindowsKernelModeDriver8.1')">$(TARGET_WDK81_ID)</TARGET_TOOLSET_ID>
         <TARGET_TOOLSET_ID Condition="('$(PlatformToolset)'== 'WindowsKernelModeDriver10.0')">$(TARGET_WDK10_ID)</TARGET_TOOLSET_ID>
@@ -40,7 +40,7 @@
         <TARGET_TOOLSET_ID Condition="('$(PlatformToolset)'== 'v120')">$(TARGET_VS120_ID)</TARGET_TOOLSET_ID>
         <TARGET_TOOLSET_ID Condition="('$(PlatformToolset)'== 'v130')">$(TARGET_VS130_ID)</TARGET_TOOLSET_ID>
         <TARGET_TOOLSET_ID Condition="('$(PlatformToolset)'== 'v140')">$(TARGET_VS140_ID)</TARGET_TOOLSET_ID>
-
+        <TARGET_TOOLSET_ID Condition="('$(PlatformToolset)'== 'v141')">$(TARGET_VS141_ID)</TARGET_TOOLSET_ID>
         <VERSION_FILE_A>$(TARGET_WIN_VER).$(PLATFORM_ID).$(CONFIG_TYPE).$(TARGET_TOOLSET_ID)</VERSION_FILE_A>
         <VERSION_FILE_B>$(TARGET_WIN_VER),$(PLATFORM_ID),$(CONFIG_TYPE),$(TARGET_TOOLSET_ID)</VERSION_FILE_B>
     </PropertyGroup>

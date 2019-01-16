@@ -36,7 +36,7 @@
 #include "GnaDrvApiWinDebug.h"
 #include "common.h"
 #include "Request.h"
-#include "Validator.h"
+#include "Expect.h"
 
 namespace GNA
 {
@@ -66,7 +66,7 @@ public:
 
     void Set(HANDLE const handle)
     {
-        Expect::True(INVALID_HANDLE_VALUE == deviceHandle, GNA_INVALIDHANDLE);
+        Expect::Equal(INVALID_HANDLE_VALUE, deviceHandle, GNA_INVALIDHANDLE);
         deviceHandle = handle;
     }
 

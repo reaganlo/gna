@@ -28,27 +28,12 @@
 #include <immintrin.h>
 #include <stdint.h>
 
+#include "common.h"
+#include "KernelMacros.h"
+
 #if defined(__GNUC__) && !defined(__INTEL_COMPILER)
 #define __forceinline inline
 #endif
-
-// buffer 24K
-const uint32_t hw_buf_size[8] =
-{
-    12288, 12288, 12096, 12288, 12000, 12096, 12096, 12288
-};
-
-// buffer 12K
-//const uint32_t hw_buf_size[8] =
-//{
-//    6144, 6144, 6048, 6144, 5760, 6048, 6048, 6144
-//};
-
-// buffer 6K
-//const uint32_t hw_buf_size[8] =
-//{
-//    3072, 3072, 2880, 3072, 2880, 2880, 3024, 3072
-//};
 
 __forceinline void saturate(int64_t* const sum, uint32_t * const saturationCount)
 {

@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2017 Intel Corporation.
+ Copyright 2018 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -27,14 +27,14 @@
 
 #include "AccelerationDetector.h"
 #include "LayerConfiguration.h"
-#include "Validator.h"
+#include "Expect.h"
 
 using namespace GNA;
 
 GmmParams::GmmParams(const gna_gmm_config &config, const uint32_t inputElementCount)
 {
     VarianceSize = (GNA_MAXMIX16 == config.mode) ? sizeof(uint16_t) : sizeof(uint8_t);
-    
+
     MeanSetOffsetSize = config.mixtureComponentCount * inputElementCount * GMM_MEAN_VALUE_SIZE;
     VarSetOffsetSize = config.mixtureComponentCount * inputElementCount * VarianceSize;
     GaussConstSetOffsetSize = ALIGN(config.mixtureComponentCount, 2) * GMM_CONSTANTS_SIZE;
@@ -44,52 +44,55 @@ GmmParams::GmmParams(const gna_gmm_config &config, const uint32_t inputElementCo
         VarSetOffsetSize = MeanSetOffsetSize;
         GaussConstSetOffsetSize = MeanSetOffsetSize;
     }
-    Expect::InRange(MeanSetOffsetSize, GMM_FV_ELEMENT_COUNT_MULTIPLE_OF,
-        GMM_MIXTURE_COMP_COUNT_MAX * GMM_FV_ELEMENT_COUNT_MAX * GMM_MEAN_VALUE_SIZE, GMM_BADMEANSETOFF);
-    Expect::MultiplicityOf(MeanSetOffsetSize, GMM_MEM_ALIGNMENT);
-    Expect::InRange(VarSetOffsetSize, GMM_FV_ELEMENT_COUNT_MULTIPLE_OF,
-        GMM_MIXTURE_COMP_COUNT_MAX * GMM_FV_ELEMENT_COUNT_MAX * GMM_COVARIANCE_SIZE_MAX, GMM_BADVARSETOFF);
-    Expect::MultiplicityOf(VarSetOffsetSize, GMM_MEM_ALIGNMENT);
-    Expect::InRange(GaussConstSetOffsetSize, GMM_FV_ELEMENT_COUNT_MULTIPLE_OF,
-        GMM_MIXTURE_COMP_COUNT_MAX * GMM_CONSTANTS_SIZE, GMM_BADGCONSTOFFSET);
-    Expect::MultiplicityOf(GaussConstSetOffsetSize, GMM_MEM_ALIGNMENT);
+    else {
+        Expect::InRange(MeanSetOffsetSize, GMM_FV_ELEMENT_COUNT_MULTIPLE_OF,
+            GMM_MIXTURE_COMP_COUNT_MAX * GMM_FV_ELEMENT_COUNT_MAX * GMM_MEAN_VALUE_SIZE, GMM_BADMEANSETOFF);
+        Expect::MultiplicityOf(MeanSetOffsetSize, GMM_MEM_ALIGNMENT);
+        Expect::InRange(VarSetOffsetSize, GMM_FV_ELEMENT_COUNT_MULTIPLE_OF,
+            GMM_MIXTURE_COMP_COUNT_MAX * GMM_FV_ELEMENT_COUNT_MAX * GMM_COVARIANCE_SIZE_MAX, GMM_BADVARSETOFF);
+        Expect::MultiplicityOf(VarSetOffsetSize, GMM_MEM_ALIGNMENT);
+        Expect::InRange(GaussConstSetOffsetSize, GMM_FV_ELEMENT_COUNT_MULTIPLE_OF,
+            GMM_MIXTURE_COMP_COUNT_MAX * GMM_CONSTANTS_SIZE, GMM_BADGCONSTOFFSET);
+        Expect::MultiplicityOf(GaussConstSetOffsetSize, GMM_MEM_ALIGNMENT);
+    }
 }
 
-GmmLayer::GmmLayer(const nn_layer *layer) :
-    Layer(layer),
+GmmLayer::GmmLayer(const nn_layer *layer, const BaseValidator& validatorIn) :
+    Layer(layer, validatorIn, {}, BaseAddress()),
     Config((static_cast<gna_gmm_layer*>(layer->pLayerStruct))->config),
     Data((static_cast<gna_gmm_layer*>(layer->pLayerStruct))->data),
-    Params{ Config, Input.ElementCount },
-    gmmKernels{ AccelerationDetector::GetKernelMap<GmmMaxMix>(Config.mode) },
-    gmmActiveListKernels{ AccelerationDetector::GetKernelMap<GmmMaxMixActiveList>(Config.mode) },
-    gmmHiddenConfig{ Input.VectorCount, Input.ElementCount, Config.mixtureComponentCount, Params.MeanSetOffsetSize, Params.VarSetOffsetSize,
+    Params{ Config, Input.at(GNA_DIM_W) },
+    gmmKernels{ AccelerationDetector::GetKernelMap<GmmMaxMix>(KERNEL_GMM, Config.mode) },
+    gmmActiveListKernels{ AccelerationDetector::GetKernelMap<GmmMaxMixActiveList>(
+        KERNEL_GMM_AL, Config.mode)},
+    gmmHiddenConfig{ Input.at(GNA_DIM_N), Input.at(GNA_DIM_W), Config.mixtureComponentCount, Params.MeanSetOffsetSize, Params.VarSetOffsetSize,
                     Params.GaussConstSetOffsetSize, Config.maximumScore, Config.stateCount, &Data, Input.Buffer, Output.Buffer }
 {
     validate();
 
-    Layer::ComputeHidden = [this](acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) 
+    Layer::ComputeHidden = [this](acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount)
                     {this->computeHidden(accel, fvBuffers, saturationCount); };
 
-    Layer::ComputeConfig = [this](LayerConfiguration &layerConfiguration, acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) 
-                    {this->computeConfig(layerConfiguration, accel, fvBuffers, saturationCount); };
+    Layer::Compute = [this](LayerConfiguration &layerConfiguration, acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount)
+                    {this->compute(layerConfiguration, accel, fvBuffers, saturationCount); };
 }
 
-void GmmLayer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration, ValidBoundariesFunctor validBoundaries) const
+void GmmLayer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const
 {
-    Layer::UpdateKernelConfigs(layerConfiguration, validBoundaries);
+    Layer::UpdateKernelConfigs(layerConfiguration);
 
-    auto inputBuffer = Input.Buffer;
-    if (layerConfiguration.InputBuffer)
+    BaseAddress inputBuffer = Input;
+    if (layerConfiguration.Buffers.count(InputComponent))
     {
-        inputBuffer = *layerConfiguration.InputBuffer;
-        validBoundaries(inputBuffer, Input.BufferSize);
+        inputBuffer = layerConfiguration.Buffers[InputComponent];
+        Input.ValidateBuffer(inputBuffer);
     }
 
-    auto outputBuffer = Output.Buffer;
-    if (layerConfiguration.OutputBuffer)
+    BaseAddress outputBuffer = Output;
+    if (layerConfiguration.Buffers.count(OutputComponent))
     {
-        outputBuffer = *layerConfiguration.OutputBuffer;
-        validBoundaries(outputBuffer, Output.BufferSize);
+        outputBuffer = layerConfiguration.Buffers[OutputComponent];
+        Output.ValidateBuffer(outputBuffer);
     }
 
     auto& configs = layerConfiguration.Configs;
@@ -110,10 +113,10 @@ void GmmLayer::computeHidden(acceleration accel, KernelBuffers *fvBuffers, uint3
 
     gmmKernels.at(accel)(&gmmConfig);
 
-    checkScoresSaturation(Config.stateCount, Input.VectorCount, Output.Buffer, Config.maximumScore, *saturationCount);
+    checkScoresSaturation(Config.stateCount, Input.at(GNA_DIM_N), Output.Buffer, Config.maximumScore, *saturationCount);
 }
 
-void GmmLayer::computeConfig(const LayerConfiguration& layerConfiguration, acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const
+void GmmLayer::compute(const LayerConfiguration& layerConfiguration, acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const
 {
     auto gmmConfig = GmmConfig{layerConfiguration.Configs.Gmm.get(), reinterpret_cast<uint8_t*>(fvBuffers->d0)};
 
@@ -126,14 +129,14 @@ void GmmLayer::computeConfig(const LayerConfiguration& layerConfiguration, accel
         gmmKernels.at(accel)(&gmmConfig);
     }
 
-    checkScoresSaturation(gmmConfig.stateCount, Input.VectorCount, gmmConfig.output, Config.maximumScore, *saturationCount);
+    checkScoresSaturation(gmmConfig.stateCount, Input.at(GNA_DIM_N), gmmConfig.output, Config.maximumScore, *saturationCount);
 }
 
 void GmmLayer::ValidateActiveList(ActiveList const * const activeList) const
 {
     if (activeList)
     {
-        Expect::InRange(activeList->IndicesCount, 1, Config.stateCount, GNA_INVALIDINDICES);
+        Expect::InRange<uint32_t>(activeList->IndicesCount, ui32_1, Config.stateCount, GNA_INVALIDINDICES);
     }
 }
 
@@ -153,16 +156,26 @@ void GmmLayer::checkScoresSaturation(const uint32_t& nGMMs, const uint32_t& nVec
 
 void GmmLayer::validate()
 {
-    Output.SetOutputMode(LayerOutput::NonActivatedOutput, GMM_SCORE_SIZE);
-    Expect::InRange(Input.ElementCount, GMM_FV_ELEMENT_COUNT_MIN, GMM_FV_ELEMENT_COUNT_MAX, GNA_BADFEATLENGTH);
-    Expect::InRange(Config.stateCount, 1, GMM_STATES_COUNT_MAX, GMM_BADNUMGMM);
-    Expect::InRange(Config.mixtureComponentCount, 1, GMM_MIXTURE_COMP_COUNT_MAX, GMM_BADMIXCNUM);
-    Expect::InRange(Config.mode, 0, GNA_MAXMIX16, GMM_BADMODE);
+    Expect::Equal(Input.Mode.Size, GMM_FV_ELEMENT_SIZE, XNN_ERR_INPUT_BYTES);
+    Expect::InRange(Input.at(GNA_DIM_W), GMM_FV_ELEMENT_COUNT_MIN, GMM_FV_ELEMENT_COUNT_MAX, GNA_BADFEATLENGTH);
+    Expect::InSet(Output.Mode, { GNA_INT32, GNA_DATA_ACTIVATION_DISABLED }, XNN_ERR_OUTPUT_BYTES);
+    Expect::InRange(Output.at(GNA_DIM_H), ui32_1, GMM_STATES_COUNT_MAX, XNN_ERR_LYR_CFG);
+    Expect::InRange(Config.stateCount, ui32_1, GMM_STATES_COUNT_MAX, GMM_BADNUMGMM);
+    Expect::InRange(Config.mixtureComponentCount, ui32_1, GMM_MIXTURE_COMP_COUNT_MAX, GMM_BADMIXCNUM);
+    Expect::InRange(Config.mode, GNA_MAXMIX8, GNA_MAXMIX16, GMM_BADMODE);
     Expect::NotNull(Data.gaussianConstants);
-    Expect::AlignedTo(Data.gaussianConstants, GMM_MEM_ALIGNMENT, GMM_BADGCONSTALIGN);
+    Expect::AlignedTo(Data.gaussianConstants, {GMM_MEM_ALIGNMENT, GMM_BADGCONSTALIGN});
     Expect::NotNull(Data.meanValues);
-    Expect::AlignedTo(Data.meanValues, GMM_MEM_ALIGNMENT, GMM_BADMEANALIGN);
-    Expect::NotNull(Data.inverseCovariancesForMaxMix16);
-    Expect::AlignedTo(Data.inverseCovariancesForMaxMix16, GMM_MEM_ALIGNMENT, GMM_BADVARSALIGN);
+    Expect::AlignedTo(Data.meanValues, {GMM_MEM_ALIGNMENT, GMM_BADMEANALIGN});
+    Expect::NotNull(Data.inverseCovariances.inverseCovariancesForMaxMix16);
+    Expect::AlignedTo(Data.inverseCovariances.inverseCovariancesForMaxMix16, {GMM_MEM_ALIGNMENT, GMM_BADVARSALIGN});
     Expect::InRange(Config.layout, GMM_LAYOUT_FLAT, GMM_LAYOUT_INTERLEAVED, GMM_CFG_INVALID_LAYOUT);
+
+    if (GMM_LAYOUT_INTERLEAVED != Config.layout)
+    {
+        validator->ValidateBufferIfSet(Data.gaussianConstants, Config.stateCount * Params.GaussConstSetOffsetSize);
+        validator->ValidateBufferIfSet(Data.meanValues, Config.stateCount * Params.MeanSetOffsetSize);
+        validator->ValidateBufferIfSet(Data.inverseCovariances.inverseCovariancesForMaxMix16, Config.stateCount * Params.VarSetOffsetSize);
+    }
+    // TODO:3: Verify if GMM_LAYOUT_INTERLEAVED vlaidation is ok, if not revert prev algorithm
 }

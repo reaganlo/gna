@@ -53,15 +53,16 @@ set(KERNEL_DIR ${SRC_DIR}/kernels)
 
 # --- XNN KERNELS --- #
 set(xnn_kernel_sources
-  convnet.cpp
   isbmm8.cpp
   isbmm16.cpp
   pwl.cpp
-  XnnKernel.cpp)
+  XnnKernel.cpp
+  KernelArguments.cpp)
 
 set(xnn_kernel_headers
   ${SRC_DIR}/common.h
   ${SRC_DIR}/GnaException.h
+  ${COMMON_DIR}/Macros.h
   convnet.h
   igemv.h
   igemv8.h
@@ -74,6 +75,7 @@ set(xnn_kernel_api
   ${KERNEL_DIR}/KernelArguments.h)
 
 set(xnn_generic_sources
+  convnet_generic.cpp
   igemm16_generic.cpp
   igemm16_subset_generic.cpp
   igemm8_generic.cpp
@@ -83,6 +85,7 @@ set(xnn_generic_sources
   transpose16_generic.cpp)
 
 set(xnn_generic_sat_sources
+  convnet_generic-sat.cpp
   igemm16_generic-sat.cpp
   igemm16_subset_generic-sat.cpp
   igemm8_generic-sat.cpp
@@ -92,6 +95,7 @@ set(xnn_generic_sat_sources
   transpose16_generic.cpp)
 
 set(xnn_sse4_sources
+  convnet_sse4.cpp
   igemm16_sse4.cpp
   igemm16_subset_sse4.cpp
   igemm8_sse4.cpp
@@ -101,6 +105,7 @@ set(xnn_sse4_sources
   transpose16_sse4.cpp)
 
 set(xnn_sse4_sat_sources
+  convnet_sse4-sat.cpp
   igemm16_sse4-sat.cpp
   igemm16_subset_sse4-sat.cpp
   igemm8_sse4-sat.cpp
@@ -110,6 +115,7 @@ set(xnn_sse4_sat_sources
   transpose16_sse4.cpp)
 
 set(xnn_avx1_sources
+  convnet_avx1.cpp
   igemm16_avx1.cpp
   igemm16_subset_avx1.cpp
   igemm8_avx1.cpp
@@ -119,6 +125,7 @@ set(xnn_avx1_sources
   transpose16_avx1.cpp)
 
 set(xnn_avx1_sat_sources
+  convnet_avx1-sat.cpp
   igemm16_avx1-sat.cpp
   igemm16_subset_avx1-sat.cpp
   igemm8_avx1-sat.cpp
@@ -128,6 +135,7 @@ set(xnn_avx1_sat_sources
   transpose16_avx1.cpp)
 
 set(xnn_avx2_sources
+  convnet_avx2.cpp
   igemm16_avx2.cpp
   igemm16_subset_avx2.cpp
   igemm8_avx2.cpp
@@ -137,6 +145,7 @@ set(xnn_avx2_sources
   transpose16_avx2.cpp)
 
 set(xnn_avx2_sat_sources
+  convnet_avx2-sat.cpp
   igemm16_avx2-sat.cpp
   igemm16_subset_avx2-sat.cpp
   igemm8_avx2-sat.cpp
@@ -231,11 +240,12 @@ set_property(TARGET ${xnn_kernel_libraries} PROPERTY FOLDER library/kernels/xnn)
 
 # ___ GMM KERNELS ___ #
 set(gmm_kernel_sources
-  ${SRC_DIR}/common.h
   gmm.cpp
-  kernel-gmm.cpp)
+  kernel-gmm.cpp
+  KernelArguments.cpp)
 
 set(gmm_kernel_headers
+  ${COMMON_DIR}/Macros.h
   ${SRC_DIR}/common.h
   ${SRC_DIR}/GnaException.h
   KernelMacros.h

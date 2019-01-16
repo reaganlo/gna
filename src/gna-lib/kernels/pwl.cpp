@@ -34,8 +34,11 @@
 #endif
 
 #include "GnaException.h"
+#include "KernelArguments.h"
 #include "KernelMacros.h"
 #include "pwl.h"
+
+#define UNREFERENCED_PARAMETER(P) ((void)(P))
 
 using namespace GNA;
 
@@ -48,42 +51,63 @@ static const uint64_t BIT_SHIFT_SIZE = 3;
 // Mask for retrieving PWL segment xBase value
 const int32_t XBASEMASK = 0xFFFFFFFC;
 
+// Number of segments above which lookup algorithm is used when possible
+// otherwise binary search is used
+const int32_t PWL_SIZE_ALGORITHM_TRESHOLD = 3;
+const int32_t PWL_SIZE_OPT_ALGORITHM_TRESHOLD = 32;
+
+#if 1 == GNA_SAT
+/**
+ * Maximum value of 2B output, used for saturation handling
+ */
+static const int64_t OUTPUT_MAX[5]{0, INT8_MAX, INT16_MAX, 0, INT32_MAX };
+
+/**
+ * Minimum value of 2B output, used for saturation handling
+ */
+static const int64_t OUTPUT_MIN[5]{0, INT8_MIN, INT16_MIN, 0, INT32_MIN };
+#endif // GNA_SAT
 
 #define PADD(value, pad)   ((((value) + pad -1) / pad) * pad)
 
-__forceinline static void pwlSaturateStoreOut(int64_t sum, int16_t* O, uint32_t * const saturationCount)
+static __forceinline void pwlSaturateStoreOut(int64_t sum, int8_t* O,
+    uint32_t * const saturationCount, uint32_t bytesPerOutput)
 {
-#if GNA_SAT == 1
-    int64_t sat_mask;
-    int64_t sat_mask_0;
+    UNREFERENCED_PARAMETER(saturationCount);
+#if 1 == GNA_SAT
 
-    // move valid out from <-32768; 32767> to <0; 65535>
-    // values <INT64_MIN; -1> u <UINT16_MAX+1; INT64_MAX> are saturated
-    sum += 0x8000;
-    // create saturation mask from sum sign
-    sat_mask ^= sat_mask;       // sat_mask = 0
-    sat_mask |= sum;            // sat_mask = sum = Syyyyyyyyy
-    sat_mask = ~sat_mask;       // sat_mask = Nzzzzzzzzzz
-    sat_mask >>= 63;            // sat_mask = NNNNNNNNNNN (arithmetic shift-using signed int)
-    sat_mask_0 ^= sat_mask_0;   // sat_mask_0 = 0
-    sat_mask_0 |= sat_mask;     // sat_mask_0 = NNNNNNNNNNN = sat_mask
-    sat_mask_0 = ~sat_mask_0;   // sat_mask_0 = SSSSSSSSSSS
-    sat_mask_0 <<= 63;          // sat_mask_0 = S0000000000
-    sat_mask = (uint64_t)(sat_mask) >> 1;// sat_mask = 0NNNNNNNNNN (logical shift-using unsigned int)
-    sat_mask |= sat_mask_0;     // sat_mask = SNNNNNNNNNN (<0 = 0x80000000/ >0 = 0x7fffffff)
-                                // sat = sum & SAT_MASK;
-    sat_mask_0 |= 0xFFFFFFFFFFFF0000U;// sat_mask_0 = SAT_MASK
-    sat_mask_0 &= sum;          // sat_mask_0 (sat) = SAT_MASK & sum;
-    if (sat_mask_0)             // if sat != 0 then sat = saturation mask
-    {
-        sum = sat_mask;
-    }
-    // get only 16LSB and bring initial 0-point back and store
-    sum = (int16_t)((int16_t)sum + (int16_t)INT16_MIN);
-    // flag saturation
-    (*saturationCount) |= sat_mask_0;
+    if (sum >= OUTPUT_MIN[bytesPerOutput] && sum <= OUTPUT_MAX[bytesPerOutput])
 #endif
-    *O = (int16_t)sum;
+    {
+        if (bytesPerOutput == 1)
+            *(int8_t*)O = (int8_t)sum;
+        else if (bytesPerOutput == 2)
+            *(int16_t*)O = (int16_t)sum;
+        else if (bytesPerOutput == 4)
+            *(int32_t*)O = (int32_t)sum;
+    }
+#if 1 == GNA_SAT
+    else if (sum > OUTPUT_MAX[bytesPerOutput])
+    {
+        if (bytesPerOutput == 1)
+            *(int8_t*)O = (int8_t)OUTPUT_MAX[bytesPerOutput];
+        else if (bytesPerOutput == 2)
+            *(int16_t*)O = (int16_t)OUTPUT_MAX[bytesPerOutput];
+        else if (bytesPerOutput == 4)
+            *(int32_t*)O = (int32_t)OUTPUT_MAX[bytesPerOutput];
+        (*saturationCount)++;
+    }
+    else
+    {
+        if (bytesPerOutput == 1)
+            *(int8_t*)O = (int8_t)OUTPUT_MIN[bytesPerOutput];
+        else if (bytesPerOutput == 2)
+            *(int16_t*)O = (int16_t)OUTPUT_MIN[bytesPerOutput];
+        else if (bytesPerOutput == 4)
+            *(int32_t*)O = (int32_t)OUTPUT_MIN[bytesPerOutput];
+        (*saturationCount)++;
+    }
+#endif
 }
 
 __forceinline int32_t pwlFindFirstBitSet(int64_t bits)
@@ -171,7 +195,7 @@ void pwlKernelImplSingleBinary(PwlCachedConfig const * const pwl, int32_t I, int
         sum *= segment[k].slope; // prod = diff * slope
         sum >>= (((segment[k].xBase & ~XBASEMASK) + 1) << BIT_SHIFT_SIZE); // prod_shift = prod >> slope_shift
         sum += segment[k].yBase;                   // sum = prod_shift + ybase;
-        pwlSaturateStoreOut(sum, O, saturationCount);
+        pwlSaturateStoreOut(sum, (int8_t*)O, saturationCount, pwl->bytesPerOutput);
     }
     else
     {
@@ -180,21 +204,23 @@ void pwlKernelImplSingleBinary(PwlCachedConfig const * const pwl, int32_t I, int
 }
 
 #define pwlKernelImplAllBinary KERNEL(pwlKernelImplAllBinary)
-void pwlKernelImplAllBinary(PwlCachedConfig const * const pwl, PwlOutputConfig const * const outputConfig)
+void pwlKernelImplAllBinary(ExecutionKernelConfig<ActivationConfig> const * const config)
 {
     int64_t     sum;
     int32_t*    input;
     int32_t*    inputEnd;
-    int16_t*    output;
+    int8_t*    output;
     nn_pwl_seg* segment;
     uint32_t    k;
     uint32_t    k_upper;
     uint32_t    k_lower;
+    auto pwl = &config->RequestConfig->Transform.Kernel->pwl;
 
+    // input and sum prefetch
     segment = pwl->Binary.source;
-    input = outputConfig->input;
-    inputEnd = input + outputConfig->elementCount;
-    output = outputConfig->output;
+    input = (int32_t*)config->RequestConfig->Inputs;
+    inputEnd = input + config->RequestConfig->Transform.ElementCount;
+    output = config->RequestConfig->Outputs;
     do
     {
         if (*input > pwl->Binary.xBase0)
@@ -221,24 +247,26 @@ void pwlKernelImplAllBinary(PwlCachedConfig const * const pwl, PwlOutputConfig c
             sum *= segment[k].slope; // prod = diff * slope
             sum >>= (((segment[k].xBase & ~XBASEMASK) + 1) << BIT_SHIFT_SIZE); // prod_shift = prod >> slope_shift
             sum += segment[k].yBase;                   // sum = prod_shift + ybase;
-            pwlSaturateStoreOut(sum, output, outputConfig->saturationCount);
+            pwlSaturateStoreOut(sum, output, config->SaturationCount, pwl->bytesPerOutput);
         }
         else
         {
-            *output = pwl->Binary.yBase0;
+            pwlSaturateStoreOut(pwl->Binary.yBase0, output, config->SaturationCount, pwl->bytesPerOutput);
         }
 
         input++;
-        output++;
+        output += pwl->bytesPerOutput;
     } while (input < inputEnd);
 }
 
 #define pwlKernelImplAllLinear KERNEL(pwlKernelImplAllLinear)
-void pwlKernelImplAllLinear(PwlCachedConfig const * const pwl, PwlOutputConfig const * const outputConfig)
+void pwlKernelImplAllLinear(ExecutionKernelConfig<ActivationConfig> const * const config)
 {
-    int32_t const * input = outputConfig->input;
-    int32_t const * const inputEnd = input + outputConfig->elementCount;
-    int16_t * output = outputConfig->output;
+    auto pwl = &config->RequestConfig->Transform.Kernel->pwl;
+    int32_t const * input = (int32_t*)config->RequestConfig->Inputs;
+    int32_t const * const inputEnd = input + config->RequestConfig->Transform.ElementCount;
+    int8_t * output = config->RequestConfig->Outputs;
+
     int64_t sum;
     nn_pwl_seg * end = pwl->Binary.source - 1;
     nn_pwl_seg * segment;
@@ -248,7 +276,7 @@ void pwlKernelImplAllLinear(PwlCachedConfig const * const pwl, PwlOutputConfig c
         sum = (int64_t)*input - pwl->Binary.xBase0;
         if (sum <= 0)
         {
-            *output = pwl->Binary.yBase0;
+            pwlSaturateStoreOut(pwl->Binary.yBase0, output, config->SaturationCount, pwl->bytesPerOutput);
         }
         else
         {
@@ -261,12 +289,11 @@ void pwlKernelImplAllLinear(PwlCachedConfig const * const pwl, PwlOutputConfig c
             sum *= segment->slope; // prod = diff * slope
             sum >>= (((segment->xBase & ~XBASEMASK) + 1) << BIT_SHIFT_SIZE); // prod_shift = prod >> slope_shift
             sum += segment->yBase;                   // sum = prod_shift + ybase;
-            pwlSaturateStoreOut//(int64_t sum, int16_t* O, uint32_t * const saturationCount)
-                (sum, output, outputConfig->saturationCount);
+            pwlSaturateStoreOut(sum, output, config->SaturationCount, pwl->bytesPerOutput);
         }
 
         input++;
-        output++;
+        output += pwl->bytesPerOutput;
     } while (input < inputEnd);
 }
 
@@ -281,7 +308,7 @@ void pwlKernelImplSingleLinear(PwlCachedConfig const * const pwl, int32_t I, int
     sum = (int64_t)I - pwl->Binary.xBase0;
     if (sum <= 0)
     {
-        *O = pwl->Binary.yBase0;
+        pwlSaturateStoreOut(pwl->Binary.yBase0, (int8_t*)O, saturationCount, pwl->bytesPerOutput);
     }
     else
     {
@@ -295,7 +322,7 @@ void pwlKernelImplSingleLinear(PwlCachedConfig const * const pwl, int32_t I, int
         sum *= segment->slope; // prod = diff * slope
         sum >>= (((segment->xBase & ~XBASEMASK) + 1) << BIT_SHIFT_SIZE); // prod_shift = prod >> slope_shift
         sum += segment->yBase;                   // sum = prod_shift + ybase;
-        pwlSaturateStoreOut(sum, O, saturationCount);
+        pwlSaturateStoreOut(sum, (int8_t*)O, saturationCount, pwl->bytesPerOutput);
     }
 }
 
@@ -340,21 +367,22 @@ void pwlKernelImplSingleBinaryOpt(PwlCachedConfig const * const pwl, int32_t I, 
         sum *= seg->slope; // prod = diff * slope
         sum = sum >> seg->shift; // prod_shift = prod >> slope_shift
         sum += seg->yBase;                   // sum = prod_shift + ybase;
-        pwlSaturateStoreOut(sum, O, saturationCount);
+        pwlSaturateStoreOut(sum, (int8_t*)O, saturationCount, pwl->bytesPerOutput);
     }
     else
     {
-        *O = pwl->Binary.yBase0;
+        pwlSaturateStoreOut(pwl->Binary.yBase0, (int8_t*)O, saturationCount, pwl->bytesPerOutput);
     }
 }
 
 #define pwlKernelImplAllBinaryOpt KERNEL(pwlKernelImplAllBinaryOpt)
-void pwlKernelImplAllBinaryOpt(PwlCachedConfig const * const pwl, PwlOutputConfig const * const outputConfig)
+void pwlKernelImplAllBinaryOpt(ExecutionKernelConfig<ActivationConfig> const * const config)
 {
     int64_t sum;                    // tmp sum
     const int32_t* input;           // input row
     const int32_t* inputEnd;           // input row
-    int16_t* output;                // output row
+    int8_t* output;                // output row
+    auto pwl = &config->RequestConfig->Transform.Kernel->pwl;
     pwl_x_t* xBase;
     pwl_x_t * const xBaseReset = (pwl_x_t*)pwl->data + (pwl->segmentCount >> 1);;
     pwl_y_t* seg;
@@ -363,9 +391,9 @@ void pwlKernelImplAllBinaryOpt(PwlCachedConfig const * const pwl, PwlOutputConfi
     uint32_t k_lower;
 
     // input and sum prefetch
-    input = outputConfig->input;
-    inputEnd = input + outputConfig->elementCount;
-    output = outputConfig->output;
+    input = (int32_t*)config->RequestConfig->Inputs;
+    inputEnd = input + config->RequestConfig->Transform.ElementCount;
+    output = config->RequestConfig->Outputs;
     do
     {
         if (*input > pwl->Binary.xBase0)
@@ -395,13 +423,12 @@ void pwlKernelImplAllBinaryOpt(PwlCachedConfig const * const pwl, PwlOutputConfi
             sum *= seg->slope; // prod = diff * slope
             sum = sum >> seg->shift; // prod_shift = prod >> slope_shift
             sum += seg->yBase;                   // sum = prod_shift + ybase;
-            pwlSaturateStoreOut(sum, output, outputConfig->saturationCount);
+            pwlSaturateStoreOut(sum, output, config->SaturationCount, pwl->bytesPerOutput);
         }
         else
         {
-            *output = pwl->Binary.yBase0;
-        }
-        output++;
+            pwlSaturateStoreOut(pwl->Binary.yBase0, output, config->SaturationCount, pwl->bytesPerOutput);
+        } output += pwl->bytesPerOutput;
         input++;
     } while (input < inputEnd);
 }
@@ -449,31 +476,32 @@ void pwlKernelImplSingleLookup(PwlCachedConfig const * const pwl, int32_t I, int
             sum = sum >> pwl->Lookup.shift0; // prod_shift = prod >> slope_shift
             sum += pwl->Lookup.yBase0;                   // sum = prod_shift + ybase;
         }
-        pwlSaturateStoreOut(sum, O, saturationCount);
+        pwlSaturateStoreOut(sum, (int8_t*)O, saturationCount, pwl->bytesPerOutput);
     }
     else
     {
-        *O = pwl->Lookup.yBase0;
+        pwlSaturateStoreOut(pwl->Lookup.yBase0, (int8_t*)O, saturationCount, pwl->bytesPerOutput);
     }
 }
 
 #define pwlKernelImplAllLookup KERNEL(pwlKernelImplAllLookup)
-void pwlKernelImplAllLookup(PwlCachedConfig const * const pwl, PwlOutputConfig const * const outputConfig)
+void pwlKernelImplAllLookup(ExecutionKernelConfig<ActivationConfig> const * const config)
 {
     int64_t k;                      // lookup table iterator and helper
     int64_t sum;                    // tmp sum
     const int32_t* input;           // input row
     const int32_t* inputEnd;           // input row
-    int16_t* output;                // output row
+    int8_t* output;                // output row
+    auto pwl = &config->RequestConfig->Transform.Kernel->pwl;
     pwl_u_t* lookup = (pwl_u_t*)pwl->data;  // lookup table
     pwl_x_t xBase0 = pwl->Lookup.xBase0Neg;
     pwl_x_t xBase1diff = pwl->Lookup.xBase1diff;
     int32_t count = pwl->Lookup.count;
 
     // input and k prefetch
-    input = outputConfig->input;
-    inputEnd = input + outputConfig->elementCount;
-    output = outputConfig->output;
+    input = (int32_t*)config->RequestConfig->Inputs;
+    inputEnd = input + config->RequestConfig->Transform.ElementCount;
+    output = (int8_t*)config->RequestConfig->Outputs;
     do
     {
         lookup = (pwl_u_t*)pwl->data;
@@ -512,18 +540,19 @@ void pwlKernelImplAllLookup(PwlCachedConfig const * const pwl, PwlOutputConfig c
                 sum = sum >> pwl->Lookup.shift0;// prod_shift = prod >> slope_shift
                 sum += pwl->Lookup.yBase0;    // sum = prod_shift + ybase;
             }
-            pwlSaturateStoreOut(sum, output, outputConfig->saturationCount);
+            pwlSaturateStoreOut(sum, output, config->SaturationCount, pwl->bytesPerOutput);
         }
         else
         {
-            *output = pwl->Lookup.yBase0;
+            pwlSaturateStoreOut(pwl->Lookup.yBase0, (int8_t*)output, config->SaturationCount, pwl->bytesPerOutput);
         }
-        output++;
+        output += pwl->bytesPerOutput;
         input++;
     } while (input < inputEnd);
 }
 
-void PwlCached::KERNEL(InitializeActivationFunctions)() const {
+void PwlCached::KERNEL(InitializeActivationFunctions)() const
+{
     if (useLookup)
     {
         ActivateAll = pwlKernelImplAllLookup;
@@ -531,12 +560,12 @@ void PwlCached::KERNEL(InitializeActivationFunctions)() const {
     }
     else
     {
-        if (pwl.segmentCount > 32)
+        if (pwl.segmentCount > PWL_SIZE_OPT_ALGORITHM_TRESHOLD)
         {
             ActivateAll = pwlKernelImplAllBinaryOpt;
             ActivateSingle = pwlKernelImplSingleBinaryOpt;
         }
-        else if (pwl.segmentCount > 3)
+        else if (pwl.segmentCount > PWL_SIZE_ALGORITHM_TRESHOLD)
         {
             ActivateAll = pwlKernelImplAllBinary;
             ActivateSingle = pwlKernelImplSingleBinary;
@@ -551,22 +580,23 @@ void PwlCached::KERNEL(InitializeActivationFunctions)() const {
 }
 
 #if OPT_LEVEL == 0
-PwlCached::PwlCached(int32_t const * const inputIn, uint32_t elementsCount, nn_pwl_seg const * const segments, uint32_t segmentCountIn)
+PwlCached::PwlCached(const gna_data_mode mode, nn_pwl_seg const * const segments, uint32_t segmentCountIn)
 {
-    int32_t s;                      // PWL segment iterator
-    uint32_t i;                      // pwl.lookup element offset iterator (beginning)
-    int64_t j;                      // pwl.lookup element offset iterator (end)
+    // TODO:3: enable different modes
+    uint32_t s = 0;                    // PWL segment iterator
+    uint32_t i;                        // pwl.lookup element offset iterator (beginning)
+    int64_t j;                         // pwl.lookup element offset iterator (end)
     pwl_x_t xBaseAtmp;                 // left segment xBase value (extracted)
     pwl_x_t xBaseBtmp;                 // right segment x Base value (extracted)
     int64_t widthTmp = UINT32_MAX;     // pwl.lookup segment widthTmp - minimum distance between pwl.segments' xbases
-    int64_t countTmp;                  // pwl.lookup segment countTmp (active)
+    int64_t countTmp = 0;              // pwl.lookup segment countTmp (active)
     pwl_s_t usegTmp;
     ActivateAll = NULL;
     ActivateSingle = NULL;
     pwl.segmentCount = segmentCountIn;
+    pwl.bytesPerOutput = mode;
 
-
-    if (elementsCount > 128 && pwl.segmentCount > 3)
+    if (pwl.segmentCount > PWL_SIZE_ALGORITHM_TRESHOLD)
     {
         // first PWL pass - analyze PWL
         xBaseBtmp = segments[1].xBase & XBASEMASK;
@@ -594,7 +624,7 @@ PwlCached::PwlCached(int32_t const * const inputIn, uint32_t elementsCount, nn_p
             }
         }
     }
-
+    // second pass - PWL pwl.lookup build
     if (useLookup)
     {
         allocateLookupCaches();
@@ -604,7 +634,7 @@ PwlCached::PwlCached(int32_t const * const inputIn, uint32_t elementsCount, nn_p
         pwl.Lookup.slope0 = segments[0].slope;
         pwl.Lookup.yBase0 = segments[0].yBase;
         pwl.Lookup.xBase1diff = pwl.Lookup.xBase0 - (segments[1].xBase & XBASEMASK);
-        pwl.Lookup.width = s;
+        pwl.Lookup.width = (int8_t)s;
         pwl.Lookup.count = (uint16_t)countTmp - 1;
         widthTmp = s - 1;
         i = 0;
@@ -612,7 +642,7 @@ PwlCached::PwlCached(int32_t const * const inputIn, uint32_t elementsCount, nn_p
         s = 2;
         xBaseAtmp = (segments[1].xBase & XBASEMASK);
         xBaseBtmp = segments[s].xBase & XBASEMASK;
-        while (s < static_cast<int32_t>(pwl.segmentCount))
+        while (s < pwl.segmentCount)
         {
             usegTmp.xBase = pwl.Lookup.xBase0 - pwl.Lookup.xBase1diff - (pwl_x_t)(segments[s - 1].xBase & XBASEMASK);
             usegTmp.shift = ((segments[s - 1].xBase & ~XBASEMASK) + 1) << BIT_SHIFT_SIZE;

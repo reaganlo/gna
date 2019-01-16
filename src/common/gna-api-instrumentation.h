@@ -2,7 +2,7 @@
     Copyright 2018 Intel Corporation.
     This software and the related documents are Intel copyrighted materials,
     and your use of them is governed by the express license under which they
-    were provided to you (Intel OBL Software License Agreement (OEM/IHV/ISV 
+    were provided to you (Intel OBL Software License Agreement (OEM/IHV/ISV
     Distribution & Single User) (v. 11.2.2017) ). Unless the License provides
     otherwise, you may not use, modify, copy, publish, distribute, disclose or
     transmit this software or the related documents without Intel's prior
@@ -24,6 +24,10 @@
 #pragma once
 
 #if !defined(DRIVER)
+
+#if !defined(_WIN32)
+#include <assert.h>
+#endif
 
 #include "gna-api.h"
 
@@ -126,7 +130,7 @@ static_assert(16 == sizeof(gna_perf_total_t), "Invalid size of gna_perf_total_t"
 typedef struct
 {
     time_tsc            submit;     // time of score request submit
-    time_tsc            preprocess; // time of preprocessing request 
+    time_tsc            preprocess; // time of preprocessing request
     time_tsc            process;    // time of processing score request from submit till done notification
     time_tsc            scoring;    // time of computing scores in software mode
     time_tsc            total;      // time of total scoring - includes time when request is waiting in thread pool

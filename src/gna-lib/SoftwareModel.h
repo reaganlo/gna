@@ -31,6 +31,7 @@
 
 #include "common.h"
 #include "profiler.h"
+#include "Tensor.h"
 
 #include "KernelArguments.h"
 
@@ -47,7 +48,7 @@ struct RequestProfiler;
 class SoftwareModel
 {
 public:
-    SoftwareModel(const gna_model *const network, uint16_t& gmmCount, ValidBoundariesFunctor validBoundaries);
+    SoftwareModel(const gna_model *const network, uint16_t& gmmCount, const BaseValidator& validator);
     SoftwareModel(const SoftwareModel &) = delete;
     SoftwareModel& operator=(const SoftwareModel&) = delete;
     ~SoftwareModel() = default;
@@ -65,12 +66,11 @@ public:
     std::vector<std::unique_ptr<Layer>> Layers;
 
 private:
-    void build(const gna_model *const network, uint16_t& gmmCount);
-    void validate(std::function<void(const void*, const size_t)> validBoundaries) const;
+    void build(const nn_layer* layers, uint16_t& gmmCount, const BaseValidator& validator);
 
     const uint32_t layerCount;
-    uint32_t inputLayerCount = 0;
-    uint32_t outputLayerCount = 0;
+    //uint32_t inputLayerCount = 0;
+    //uint32_t outputLayerCount = 0;
 };
 
 }

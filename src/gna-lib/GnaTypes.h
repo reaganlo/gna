@@ -81,6 +81,9 @@ typedef uint32_t FVWIDTH;
  * See:      HAS Section 5.4.2.7.4
  * Note:     Controls mode of operation of GMM module
  */
+#if defined(_WIN32)
+#pragma warning(disable : 201)
+#endif
 typedef union _GMM_MODE_CTRL
 {
     struct

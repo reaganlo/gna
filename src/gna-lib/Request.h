@@ -80,8 +80,6 @@ public:
 
 private:
     std::packaged_task<status_t(KernelBuffers *buffers, RequestProfiler *profiler)> scoreTask;
-
-    status_t scoreStatus = GNA_DEVICEBUSY;
 };
 
 }

@@ -31,7 +31,7 @@ size_t ModelUtilities::CalculateDnnSize(uint32_t vectorCount, uint32_t inputElem
     size_t inputBytes = ALIGN64(vectorCount * inputElementCount * sizeof(int16_t));
     size_t weightBytes = ALIGN64(outputElementCount * inputElementCount * bytesPerWeight);
     size_t biasBytes = outputElementCount * ((bytesPerWeight == sizeof(int32_t)) 
-                        ? sizeof(intel_bias_t) : sizeof(intel_compound_bias_t));
+                        ? GNA_INT32: GNA_DATA_RICH_FORMAT);
     size_t outputBytes = 0;
     size_t tmpOutputBytes = 0;
     size_t pwlBytes = 0;
@@ -56,7 +56,7 @@ size_t ModelUtilities::CalculateMultibiasSize(uint32_t vectorCount, uint32_t inp
     size_t inputBytes = ALIGN64(vectorCount * inputElementCount * sizeof(int16_t));
     size_t weightBytes = ALIGN64(outputElementCount * inputElementCount * bytesPerWeight);
     size_t biasBytes = vectorCount * outputElementCount * ((bytesPerWeight == sizeof(int32_t)) 
-                        ? sizeof(intel_bias_t) : sizeof(intel_compound_bias_t));
+                        ? GNA_INT32: GNA_DATA_RICH_FORMAT);
     size_t scaleBytes = (sizeof(int16_t) == bytesPerWeight) ? 0 : outputElementCount * sizeof(intel_compound_bias_t);
     size_t outputBytes = 0;
     size_t tmpOutputBytes = 0;
@@ -106,7 +106,7 @@ size_t ModelUtilities::CalculateRnnSize(uint32_t vectorCount, uint32_t inputElem
     size_t inputBytes = ALIGN64(vectorCount * inputElementCount * sizeof(int16_t));
     size_t weightBytes = ALIGN64((inputElementCount + outputElementCount) * outputElementCount * bytesPerWeight);
     size_t biasBytes = outputElementCount * ((bytesPerWeight == sizeof(int32_t)) 
-                        ? sizeof(intel_bias_t) : sizeof(intel_compound_bias_t));
+                        ? GNA_INT32: GNA_DATA_RICH_FORMAT);
     size_t outputBytes = 0;
     size_t tmpOutputBytes = 0;
     size_t pwlBytes = 0;
@@ -163,7 +163,7 @@ void ModelUtilities::GeneratePwlSegments(intel_pwl_segment_t *segments, uint32_t
     for (auto i = uint32_t{0}; i < nSegments; i++, xBase += xBaseInc, yBase += yBaseInc)
     {
         segments[i].xBase = xBase;
-        segments[i].yBase = yBase;
-        segments[i].slope = 1;
+        segments[i].yBase = static_cast<int16_t>(yBase);
+        segments[i].slope = static_cast<int16_t>(1);
     }
 }

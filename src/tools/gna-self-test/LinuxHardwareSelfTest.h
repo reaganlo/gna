@@ -44,7 +44,7 @@ private:
     // returns path to the node
     // returns empty string on failure
     const int DEFAULT_GNA_DEV_NODE_RANGE = 16;
-    std::string devfsGnaNode(int range);
+    std::string devfsGnaNode(uint8_t range);
     std::string readCmdOutput(const char* command) const;
     void determineUserIdentity() const;
     // end of the search range

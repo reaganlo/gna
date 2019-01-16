@@ -92,15 +92,15 @@ int LinuxGnaSelfTestHardwareStatus::checkDriver()
     return 0;
 }
 
-std::string LinuxGnaSelfTestHardwareStatus::devfsGnaNode(int range)
+std::string LinuxGnaSelfTestHardwareStatus::devfsGnaNode(uint8_t range)
 {
     int fd;
     std::string found;
     struct gna_capabilities gnaCaps;
-    for(int i = 0; i < range; i++)
+    for(uint8_t i = 0; i < range; i++)
     {
         char name[12];
-        sprintf(name, "/dev/gna%d", i);
+        sprintf(name, "/dev/gna%c", i);
 
         fd = open(name, O_RDWR);
         if(fd == -1)

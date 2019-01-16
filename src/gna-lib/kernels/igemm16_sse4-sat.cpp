@@ -42,7 +42,7 @@ void AffineKernelImpl2B(AffineConfig const * const config)
     uint32_t i;
     uint32_t j;
 
-    kpartial = (hw_buf_size[config->inputVectorCount - 1]) / config->inputVectorCount;
+    kpartial = (hw_buf_size[config->inputVectorCount - 1 + XNN_N_GROUP_MAX]) / config->inputVectorCount;
     nKpartial = config->inputElementCount / kpartial;
 
     // simd inputs and weight
@@ -739,7 +739,7 @@ void AffineMultiBiasKernelImpl2B(AffineConfig const * const config)
     uint32_t kk;
     uint32_t i;
     uint32_t j;
-    kpartial = (hw_buf_size[config->inputVectorCount - 1]) / config->inputVectorCount;
+    kpartial = (hw_buf_size[config->inputVectorCount - 1 + XNN_N_GROUP_MAX]) / config->inputVectorCount;
     nKpartial = config->inputElementCount / kpartial;
 
     // simd inputs and weight

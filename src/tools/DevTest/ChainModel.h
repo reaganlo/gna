@@ -69,7 +69,7 @@ private:
     bool locked = false;
 
     intel_nnet_type_t nnet;
-    uint32_t modelSize = 0;
+    size_t modelSize = 0;
 
     std::vector<intel_nnet_layer_t> layers;
 

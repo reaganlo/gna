@@ -43,15 +43,15 @@ public:
     RequestBuilder& operator=(const RequestBuilder&) = delete;
 
     void CreateConfiguration(CompiledModel& model, gna_request_cfg_id *configId);
-    void AttachBuffer(gna_request_cfg_id configId, gna_buffer_type type, uint16_t layerIndex, void * address) const;
-    void AttachActiveList(gna_request_cfg_id configId, uint16_t layerIndex, const ActiveList& activeList) const;
+    void AttachBuffer(gna_request_cfg_id configId, GnaComponentType type, uint32_t layerIndex, void * address) const;
+    void AttachActiveList(gna_request_cfg_id configId, uint32_t layerIndex, const ActiveList& activeList) const;
     RequestConfiguration& GetConfiguration(gna_request_cfg_id configId) const;
     std::unique_ptr<Request> CreateRequest(gna_request_cfg_id configId, acceleration accel);
 
 private:
     std::vector<std::unique_ptr<RequestConfiguration>> configurationVector;
     gna_request_cfg_id assignConfigId();
- 
+
     gna_request_cfg_id configIdSequence = 0;
 };
 

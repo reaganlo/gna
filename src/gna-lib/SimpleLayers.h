@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2017 Intel Corporation.
+ Copyright 2018 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -26,41 +26,45 @@
 #pragma once
 
 #include "Layer.h"
+#include "XnnKernelApi.h"
 
 namespace GNA
 {
+
+// TODO:3: Refactor to use tensors and functions
+
 // Transpose Layer descriptor converter
 class TransposeLayer : public Layer
 {
 public:
-    TransposeLayer(nn_layer const * const layer);
+    TransposeLayer(nn_layer const * const layer, const BaseValidator& validatorIn);
     virtual ~TransposeLayer() = default;
 
-    virtual void UpdateKernelConfigs(LayerConfiguration& layerConfiguration, ValidBoundariesFunctor validBoundaries) const override;
+    virtual void UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const override;
 
 private:
     void computeHidden(acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const;
-    void computeConfig(const LayerConfiguration& layerConfiguration, acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const;
+    void compute(const LayerConfiguration& layerConfiguration, acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const;
 
-    const std::map<const acceleration, const TransposeKernel>& transposeKernels;
+    const KernelMap<TransposeKernel>& transposeKernels;
     TransposeConfig transposeHiddenConfig;
 };
 
 class CopyLayer : public Layer
 {
 public:
-    CopyLayer(const nn_layer *layer);
+    CopyLayer(const nn_layer *layer, const BaseValidator& validatorIn);
     virtual ~CopyLayer() = default;
-    void UpdateKernelConfigs(LayerConfiguration& layerConfiguration, ValidBoundariesFunctor validBoundaries) const override;
+    void UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const override;
 
     const uint32_t ColumnCount;
     const uint32_t RowCount;
 
 private:
     void computeHidden(acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const;
-    void computeConfig(const LayerConfiguration& layerConfiguration, acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const;
+    void compute(const LayerConfiguration& layerConfiguration, acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const;
 
-    const std::map<const acceleration, const CopyKernel>& copyKernels;
+    const KernelMap<CopyKernel>& copyKernels;
     CopyConfig copyHiddenConfig;
 };
 

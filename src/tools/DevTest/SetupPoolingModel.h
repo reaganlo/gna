@@ -43,7 +43,6 @@ private:
 
     uint32_t nSegments = 64;
 
-    intel_affine_func_t affine_func;
     intel_pwl_func_t pwl;
     intel_convolutional_layer_t convolution_layer;
 

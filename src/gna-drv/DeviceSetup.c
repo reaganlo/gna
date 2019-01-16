@@ -392,7 +392,7 @@ GetDeviceId(_In_ WDFDEVICE dev)
             hwIdUnicodeString.Length = sizeof(L"XXXX");
             hwIdUnicodeString.Buffer[sizeof("XXXX") - 1] = L'\0';
 
-            GnaDeviceType hwIdHex = GNA_NO_DEVICE;
+            GnaDeviceType hwIdHex = GNA_HW_NO_DEVICE;
             status = RtlUnicodeStringToInteger(&hwIdUnicodeString, 16u, (PULONG)&hwIdHex);
             WdfObjectDelete(hwIdMemory);
             if (!NT_SUCCESS(status))
@@ -400,16 +400,17 @@ GetDeviceId(_In_ WDFDEVICE dev)
                 Trace(TLV, T_INIT, "Device HW ID string: %ls", hwIdString);
                 Trace(TLV, T_INIT, "Device HW ID string: %ls Unicode", hwIdUnicodeString.Buffer);
                 TraceFailMsg(TLE, T_INIT, "Device name parse error (RtlUnicodeStringToInteger)", status);
-                return GNA_NO_DEVICE;
+                return GNA_HW_NO_DEVICE;
             }
 
             switch (hwIdHex)
             {
-            case GNA_DEV_CNL:
-            case GNA_DEV_GLK:
-            case GNA_DEV_EHL:
-            case GNA_DEV_ICL:
-            case GNA_DEV_TGL:
+            case GNA_HW_CNL:
+            case GNA_HW_GLK:
+            case GNA_HW_EHL:
+            case GNA_HW_ICL:
+            case GNA_HW_TGL:
+            case GNA_HW_ADL:
                 Trace(TLI, T_INIT, "Supported device found. HW ID: %X", hwIdHex);
                 return hwIdHex;
             default:
@@ -417,7 +418,7 @@ GetDeviceId(_In_ WDFDEVICE dev)
             }
         }
     }
-    return GNA_NO_DEVICE;
+    return GNA_HW_NO_DEVICE;
 }
 
 GNA_CPBLTS
@@ -513,7 +514,7 @@ DevicePrepareHardwareEvnt(
 
     // discover device and driver capabilities
     devCtx->cfg.cpblts = FetchDeviceCapabilities(dev, devCtx);
-    if (GNA_NO_DEVICE == devCtx->cfg.cpblts.deviceType)
+    if (GNA_HW_NO_DEVICE == devCtx->cfg.cpblts.deviceType)
     {
         TraceFailMsg(TLE, T_EXIT, "FetchDeviceCapabilities", STATUS_DEVICE_CONFIGURATION_ERROR);
         return STATUS_DEVICE_CONFIGURATION_ERROR;

@@ -58,7 +58,6 @@ int WindowsGnaSelfTestHardwareStatus::checkHWId()
     std::string fullHwId;
     while (SetupDiEnumDeviceInfo(devInfo, nDevices++, &devInfoData))
     {
-        LPTSTR *hwIds = NULL;
         uint32_t dataType;
         char *buffer = new char[4096];
         SetupDiGetDeviceRegistryProperty(devInfo, &devInfoData, SPDRP_HARDWAREID, (PDWORD)&dataType, (LPBYTE)buffer, 4096, NULL);

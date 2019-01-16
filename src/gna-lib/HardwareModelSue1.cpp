@@ -27,32 +27,57 @@
 
 using namespace GNA;
 
-size_t HardwareModelSue1::CalculateDescriptorSize(const uint16_t layerCount, const uint16_t gmmLayersCount)
+size_t HardwareModelSue1::CalculateDescriptorSize(const uint32_t layerCount, const uint16_t gmmLayersCount)
 {
-    Expect::True(gmmLayersCount == 0, XNN_ERR_NET_LYR_NO);
-    Expect::InRange(layerCount, 1, XNN_LAYERS_MAX_COUNT + GMM_LAYERS_MAX_COUNT, XNN_ERR_NET_LYR_NO);
+    Expect::Zero(gmmLayersCount, XNN_ERR_NET_LYR_NO);
+    Expect::InRange<uint32_t>(layerCount, 1, XNN_LAYERS_MAX_COUNT + GMM_LAYERS_MAX_COUNT, XNN_ERR_NET_LYR_NO);
     return getLayerDescriptorsSize(layerCount);
 }
 
 HardwareModelSue1::HardwareModelSue1(const gna_model_id modId, const std::vector<std::unique_ptr<Layer>>& layers,
-    const Memory &memoryIn, const BaseAddressC &dumpDescriptorAddr, IoctlSender &sender, const AccelerationDetector& detector) :
+    const Memory &memoryIn, const BaseAddress &dumpDescriptorAddr, IoctlSender &sender, const AccelerationDetector& detector) :
     HardwareModel(
         modId,
         layers,
         0,
         0,
-        memoryIn.Get() + memoryIn.InternalSize - getLayerDescriptorsSize(layers.size()),
+        memoryIn.Get() + memoryIn.InternalSize - getLayerDescriptorsSize(static_cast<uint32_t>(layers.size())),
         memoryIn.GetDescriptorsBase(modId),
         sender,
         detector)
 {
-    descriptorsAddress = dumpDescriptorAddr;
-    layerDescriptorsSize = getLayerDescriptorsSize(layers.size());
+    UNREFERENCED_PARAMETER(dumpDescriptorAddr);
 }
 
-uint32_t HardwareModelSue1::getLayerDescriptorsSize(const uint16_t layerCount)
+uint32_t HardwareModelSue1::getLayerDescriptorsSize(const uint32_t layerCount)
 {
-    Expect::InRange(layerCount, 0, XNN_LAYERS_MAX_COUNT, XNN_ERR_NET_LYR_NO);
-    auto layerDescriptorsSizeTmp = ALIGN(size_t{ layerCount * sizeof(XNN_LYR) }, 0x1000);
+    Expect::InRange<uint32_t>(layerCount, 0, XNN_LAYERS_MAX_COUNT, XNN_ERR_NET_LYR_NO);
+    auto layerDescriptorsSizeTmp =
+        ALIGN(LayerDescriptor::GetSize(layerCount, GNA_SUE_CREEK), 0x1000);
     return layerDescriptorsSizeTmp;
 }
+
+const LayerDescriptor& HardwareModelSue1::GetDescriptor(uint32_t layerIndex) const
+{
+    return hardwareLayers.at(layerIndex)->XnnDescriptor;
+};
+
+uint32_t HardwareModelSue1::GetOutputOffset(uint32_t layerIndex) const
+{
+    auto layer = hardwareLayers.at(layerIndex).get();
+    if (GNA_DATA_ACTIVATION_DISABLED == layer->SoftwareLayer->Output.Mode)
+    {
+        return layer->XnnDescriptor[out_sum_buffer].GetOffset();
+    }
+    else
+    {
+        return layer->XnnDescriptor[out_buffer].GetOffset();
+    }
+};
+
+uint32_t HardwareModelSue1::GetInputOffset(uint32_t layerIndex) const
+{
+    auto layer = hardwareLayers.at(layerIndex).get();
+    return layer->XnnDescriptor[in_buffer].GetOffset();
+
+};

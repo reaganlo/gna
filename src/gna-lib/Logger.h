@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2017 Intel Corporation.
+ Copyright 2018 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -46,6 +46,8 @@ struct Logger
     virtual void Message(const status_t status, const char * const format, ...) const;
     virtual void Message(const char * const format, ...) const;
 
+    virtual void Warning(const char * const format, ...) const;
+
     virtual void Error(const char * const format, ...) const;
     virtual void Error(const status_t status, const char * const format, ...) const;
     virtual void Error(const status_t status) const;
@@ -61,6 +63,7 @@ protected:
     FILE * const defaultStream = stdout;
     const char * const component = "";
     const char * const levelMessage = "INFO: ";
+    const char * const levelWarning = "WARNING: ";
     const char * const levelError = "ERROR: ";
 };
 
@@ -78,6 +81,9 @@ struct DebugLogger : public Logger
     virtual void Message(const status_t status, const char * const format, ...) const override;
     virtual void Message(const char * const format, ...) const override;
 
+    virtual void Warning(const char * const format, ...) const override;
+
+
     virtual void Error(const status_t status) const override;
     virtual void Error(const char * const format, ...) const override;
     virtual void Error(const status_t status, const char * const format, ...) const override;
@@ -85,6 +91,7 @@ struct DebugLogger : public Logger
 protected:
     template<typename ... X> void printMessage(
         const status_t * const status, const char * const format, X... args) const;
+    template<typename ... X> void printWarning(const char * const format, X... args) const;
     template<typename ... X>  void printError(
         const status_t * const status, const char * const format, X... args) const;
     inline void printHeader(FILE * const streamIn, const char * const level) const;

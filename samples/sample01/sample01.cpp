@@ -77,7 +77,7 @@ void print_outputs16(
 
 int main(int argc, char *argv[])
 {
-    intel_gna_status_t status = GNA_SUCCESS;
+    gna_status_t status = GNA_SUCCESS;
 
     // open the device
     gna_device_id gna_handle;
@@ -189,8 +189,8 @@ int main(int argc, char *argv[])
     int32_t *pinned_tmp_outputs = (int32_t*)pinned_mem_ptr;      // the last free block will be used for GNA's scratch pad
 
     intel_affine_func_t affine_func;       // parameters needed for the affine transformation are held here
-    affine_func.nBytesPerWeight = 2;
-    affine_func.nBytesPerBias = 4;
+    affine_func.nBytesPerWeight = GNA_INT16;
+    affine_func.nBytesPerBias = GNA_INT32;
     affine_func.pWeights = pinned_weights;
     affine_func.pBiases = pinned_biases;
 
@@ -207,11 +207,11 @@ int main(int argc, char *argv[])
     nnet_layer.nInputRows = 16;
     nnet_layer.nOutputColumns = nnet.nGroup;
     nnet_layer.nOutputRows = 8;
-    nnet_layer.nBytesPerInput = 2;
-    nnet_layer.nBytesPerOutput = 2;             // 4 bytes since we are not using PWL (would be 2 bytes otherwise)
-    nnet_layer.nBytesPerIntermediateOutput = 4; // this is always 4 bytes
-    nnet_layer.type = INTEL_INPUT_OUTPUT;
-    nnet_layer.nLayerKind = INTEL_AFFINE;
+    nnet_layer.nBytesPerInput = GNA_INT16;
+    nnet_layer.nBytesPerOutput = GNA_INT16;             // 4 bytes since we are not using PWL (would be 2 bytes otherwise)
+    nnet_layer.nBytesPerIntermediateOutput = GNA_INT32; // this is always 4 bytes
+    nnet_layer.mode = INTEL_INPUT_OUTPUT;
+    nnet_layer.operation = INTEL_AFFINE;
     nnet_layer.pLayerStruct = &affine_layer;
     nnet_layer.pInputs = nullptr;
     nnet_layer.pOutputsIntermediate = pinned_tmp_outputs;
@@ -239,18 +239,18 @@ int main(int argc, char *argv[])
         GnaDeviceClose(gna_handle);
         exit(-status);
     }
-    status = GnaRequestConfigBufferAdd(config_id, GNA_IN, 0, pinned_inputs);
+    status = GnaRequestConfigBufferAdd(config_id, InputComponent, 0, pinned_inputs);
     if (GNA_SUCCESS!= status)
     {
-        printf("GnaRequestConfigBufferAdd GNA_IN failed: %s\n", GnaStatusToString(status));
+        printf("GnaRequestConfigBufferAdd InputComponent failed: %s\n", GnaStatusToString(status));
         GnaFree(gna_handle);
         GnaDeviceClose(gna_handle);
         exit(-status);
     }
-    status = GnaRequestConfigBufferAdd(config_id, GNA_OUT, 0, pinned_outputs);
+    status = GnaRequestConfigBufferAdd(config_id, OutputComponent, 0, pinned_outputs);
     if (GNA_SUCCESS!= status)
     {
-        printf("GnaRequestConfigBufferAdd GNA_OUT failed: %s\n", GnaStatusToString(status));
+        printf("GnaRequestConfigBufferAdd OutputComponent failed: %s\n", GnaStatusToString(status));
         GnaFree(gna_handle);
         GnaDeviceClose(gna_handle);
         exit(-status);

@@ -38,12 +38,6 @@ public:
 private:
     DeviceController & deviceController;
 
-    bool weightsAre2Bytes;
-
-    intel_affine_func_t affine_func;
-    intel_pwl_func_t pwl;
-    intel_affine_layer_t affine_layer;
-
     void * inputBuffer = nullptr;
     void * outputBuffer = nullptr;
 };

@@ -33,27 +33,45 @@
 #include "igemv8.h"
 #include "KernelMacros.h"
 
+const uint32_t * hw_buf_size = nullptr;
+
 namespace GNA
 {
 
-#define pwlKernelImpl KERNEL(pwlKernelImpl)
+#define activationKernelImpl KERNEL(activationKernelImpl)
 #define recurrentKernelImpl1B KERNEL(recurrentKernelImpl1B)
 #define recurrentKernelImpl2B KERNEL(recurrentKernelImpl2B)
 #define copyKernelImpl KERNEL(copyKernelImpl)
+#define copyKernelImpl1B KERNEL(copyKernelImpl1B)
+#define copyKernelImpl2B KERNEL(copyKernelImpl2B)
+#define setHwCompatibilityMode KERNEL(setHwCompatibilityMode)
 #define InitializeActivationFunctions KERNEL(InitializeActivationFunctions)
 
-void pwlKernelImpl(PwlCached const * const pwl, PwlOutputConfig const * const outputConfig)
+void setHwCompatibilityMode(uint32_t bufferElementCounts[2][XNN_N_GROUP_MAX])
 {
-    pwl->InitializeActivationFunctions();
-    pwl->ActivateAll(&pwl->pwl, outputConfig);
+    hw_buf_size = (const uint32_t *)bufferElementCounts;
 }
 
-void recurrentKernelImpl1B(RecurrentConfig const * const config, PwlCached const * const pwl)
+#if OPT_LEVEL < 2
+#define recurrentKernelImpl1B1B KERNEL(recurrentKernelImpl1B1B)
+#define recurrentKernelImpl1B2B KERNEL(recurrentKernelImpl1B2B)
+#define recurrentKernelImpl2B1B KERNEL(recurrentKernelImpl2B1B)
+#define recurrentKernelImpl2B2B KERNEL(recurrentKernelImpl2B2B)
+#endif
+
+void activationKernelImpl(ExecutionKernelConfig<ActivationConfig> const * const config)
+{
+    config->RequestConfig->Transform.Kernel->InitializeActivationFunctions();
+    config->RequestConfig->Transform.Kernel->ActivateAll(config);
+}
+
+void recurrentKernelImpl1B(RecurrentConfig const * const config)
 {
     auto runConfig = RecurrentConfig(*config); // local modifiable copy
-    auto runPwlOutputConfig = PwlOutputConfig(runConfig.pwlOutputConfig);
-
-    pwl->InitializeActivationFunctions();
+    auto activationCfg = ExecutionKernelConfig<ActivationConfig>{
+        &runConfig.activation, {nullptr, runConfig.saturationCount}};
+    auto& activation = activationCfg.RequestConfig->Transform;
+    auto io = activationCfg.RequestConfig;
 
     // for each input vector
     for (uint32_t i = 0; i < config->inputVectorCount; i++)
@@ -63,18 +81,20 @@ void recurrentKernelImpl1B(RecurrentConfig const * const config, PwlCached const
         runConfig.feedbackBuffer += config->outputElementCount;
         runConfig.output += config->outputElementCount;
 
-        pwl->ActivateAll(&pwl->pwl, &runPwlOutputConfig);
-        runPwlOutputConfig.input += runPwlOutputConfig.elementCount;
-        runPwlOutputConfig.output += runPwlOutputConfig.elementCount;
+        activation.Kernel->InitializeActivationFunctions();
+        activation.Kernel->ActivateAll(&activationCfg);
+        io->Update(BufferMap{io->Inputs + activation.ElementCount * 4,
+            io->Outputs + activation.ElementCount * config->bytesPerOutput});
     }
 }
 
-void recurrentKernelImpl2B(RecurrentConfig const * const config, PwlCached const * const pwl)
+void recurrentKernelImpl2B(RecurrentConfig const * const config)
 {
     auto runConfig = RecurrentConfig(*config); // local modifiable copy
-    auto runPwlOutputConfig = PwlOutputConfig(runConfig.pwlOutputConfig);
-
-    pwl->InitializeActivationFunctions();
+    auto activationCfg = ExecutionKernelConfig<ActivationConfig>{
+        &runConfig.activation, {nullptr, runConfig.saturationCount}};
+    auto& activation = activationCfg.RequestConfig->Transform;
+    auto io = activationCfg.RequestConfig;
 
     // for each input vector
     for (uint32_t i = 0; i < config->inputVectorCount; i++)
@@ -84,13 +104,148 @@ void recurrentKernelImpl2B(RecurrentConfig const * const config, PwlCached const
         runConfig.feedbackBuffer += config->outputElementCount;
         runConfig.output += config->outputElementCount;
 
-        pwl->ActivateAll(&pwl->pwl, &runPwlOutputConfig);
-        runPwlOutputConfig.input += runPwlOutputConfig.elementCount;
-        runPwlOutputConfig.output += runPwlOutputConfig.elementCount;
+        activation.Kernel->InitializeActivationFunctions();
+        activation.Kernel->ActivateAll(&activationCfg);
+        io->Update(BufferMap{io->Inputs + activation.ElementCount * 4,
+            io->Outputs + activation.ElementCount * config->bytesPerOutput});
     }
 }
 
+#if OPT_LEVEL < 2
+void recurrentKernelImpl1B1B(RecurrentConfig const * const config)
+{
+    auto runConfig = RecurrentConfig(*config); // local modifiable copy
+    auto activationCfg = ExecutionKernelConfig<ActivationConfig>{
+        &runConfig.activation, {nullptr, runConfig.saturationCount}};
+    auto& activation = activationCfg.RequestConfig->Transform;
+    auto io = activationCfg.RequestConfig;
+
+    // for each input vector
+    for (uint32_t i = 0; i < config->inputVectorCount; i++)
+    {
+        RecurrentKernelImpl1B1B(&runConfig);
+        runConfig.input = (int16_t*)((uint64_t)runConfig.input + config->inputElementCount);
+        if (config->bytesPerOutput == 1)
+            runConfig.feedbackBuffer = (int16_t*)((uint64_t)runConfig.feedbackBuffer + config->outputElementCount);
+        else
+            runConfig.feedbackBuffer += config->outputElementCount;
+        runConfig.output += config->outputElementCount;
+
+        activation.Kernel->InitializeActivationFunctions();
+        activation.Kernel->ActivateAll(&activationCfg);
+        io->Update(BufferMap{io->Inputs + activation.ElementCount * 4,
+            io->Outputs + activation.ElementCount * config->bytesPerOutput});
+    }
+}
+void recurrentKernelImpl1B2B(RecurrentConfig const * const config)
+{
+     auto runConfig = RecurrentConfig(*config); // local modifiable copy
+    auto activationCfg = ExecutionKernelConfig<ActivationConfig>{
+        &runConfig.activation, {nullptr, runConfig.saturationCount}};
+    auto& activation = activationCfg.RequestConfig->Transform;
+    auto io = activationCfg.RequestConfig;
+
+    // for each input vector
+    for (uint32_t i = 0; i < config->inputVectorCount; i++)
+    {
+        RecurrentKernelImpl1B2B(&runConfig);
+        runConfig.input += config->inputElementCount;
+        if (config->bytesPerOutput == 1)
+            runConfig.feedbackBuffer = (int16_t*)((uint64_t)runConfig.feedbackBuffer + config->outputElementCount);
+        else
+            runConfig.feedbackBuffer += config->outputElementCount;
+        runConfig.output += config->outputElementCount;
+
+        activation.Kernel->InitializeActivationFunctions();
+        activation.Kernel->ActivateAll(&activationCfg);
+        io->Update(BufferMap{io->Inputs + activation.ElementCount * 4,
+            io->Outputs + activation.ElementCount * config->bytesPerOutput});
+    }
+}
+
+void recurrentKernelImpl2B1B(RecurrentConfig const * const config)
+{
+    auto runConfig = RecurrentConfig(*config); // local modifiable copy
+    auto activationCfg = ExecutionKernelConfig<ActivationConfig>{
+        &runConfig.activation, {nullptr, runConfig.saturationCount}};
+    auto& activation = activationCfg.RequestConfig->Transform;
+    auto io = activationCfg.RequestConfig;
+
+    // for each input vector
+    for (uint32_t i = 0; i < config->inputVectorCount; i++)
+    {
+        RecurrentKernelImpl2B1B(&runConfig);
+        runConfig.input = (int16_t*)((uint64_t)runConfig.input + config->inputElementCount);
+        if (config->bytesPerOutput == 1)
+            runConfig.feedbackBuffer = (int16_t*)((uint64_t)runConfig.feedbackBuffer + config->outputElementCount);
+        else
+            runConfig.feedbackBuffer += config->outputElementCount;
+        runConfig.output += config->outputElementCount;
+
+        activation.Kernel->InitializeActivationFunctions();
+        activation.Kernel->ActivateAll(&activationCfg);
+        io->Update(BufferMap{io->Inputs + activation.ElementCount * 4,
+            io->Outputs + activation.ElementCount * config->bytesPerOutput});
+    }
+}
+
+void recurrentKernelImpl2B2B(RecurrentConfig const * const config)
+{
+    auto runConfig = RecurrentConfig(*config); // local modifiable copy
+    auto activationCfg = ExecutionKernelConfig<ActivationConfig>{
+        &runConfig.activation, {nullptr, runConfig.saturationCount}};
+    auto& activation = activationCfg.RequestConfig->Transform;
+    auto io = activationCfg.RequestConfig;
+
+    // for each input vector
+    for (uint32_t i = 0; i < config->inputVectorCount; i++)
+    {
+        RecurrentKernelImpl2B2B(&runConfig);
+        runConfig.input += config->inputElementCount;
+        if(config->bytesPerOutput == 1)
+            runConfig.feedbackBuffer = (int16_t*)((uint64_t)runConfig.feedbackBuffer + config->outputElementCount);
+        else
+            runConfig.feedbackBuffer += config->outputElementCount;
+        runConfig.output += config->outputElementCount;
+
+        activation.Kernel->InitializeActivationFunctions();
+        activation.Kernel->ActivateAll(&activationCfg);
+        io->Update(BufferMap{io->Inputs + activation.ElementCount * 4,
+            io->Outputs + activation.ElementCount * config->bytesPerOutput});
+    }
+}
+#endif
 void copyKernelImpl(CopyConfig const * const config)
+{
+    uint32_t row;
+    uint32_t bytesToCopy = config->columnCount * sizeof(int16_t);
+
+    for (row = 0; row < config->rowCount; row++)
+    {
+        memcpy_s(
+            config->output + (config->outputColumnCount * row),
+            bytesToCopy,
+            config->input + (config->inputColumnCount * row),
+            bytesToCopy);
+    }
+}
+
+void copyKernelImpl1B(CopyConfig const * const config)
+{
+    uint32_t row;
+    uint32_t bytesToCopy = config->columnCount * sizeof(int8_t);
+
+    for (row = 0; row < config->rowCount; row++)
+    {
+        memcpy_s(
+            (int8_t*)config->output + (config->outputColumnCount * row),
+            bytesToCopy,
+            (int8_t*)config->input + (config->inputColumnCount * row),
+            bytesToCopy);
+    }
+}
+
+void copyKernelImpl2B(CopyConfig const * const config)
 {
     uint32_t row;
     uint32_t bytesToCopy = config->columnCount * sizeof(int16_t);
@@ -109,6 +264,7 @@ XnnKernel KERNEL(xnnKernel) =
 {
     AffineKernelImpl1B,
     AffineKernelImpl2B,
+
     AffineActiveListKernelImpl1B,
     AffineActiveListKernelImpl2B,
 
@@ -124,9 +280,50 @@ XnnKernel KERNEL(xnnKernel) =
     ConvolutionKernelImpl,
     ConvolutionPoolingKernelImpl,
 
-    pwlKernelImpl,
+    activationKernelImpl,
     TransposeKernelImpl,
     copyKernelImpl,
+
+#if OPT_LEVEL < 2
+
+    AffineKernelImpl1B1B,
+    AffineKernelImpl2B1B,
+    AffineKernelImpl1B2B,
+    AffineKernelImpl2B2B,
+    AffineActiveListKernelImpl1B1B,
+    AffineActiveListKernelImpl2B1B,
+    AffineActiveListKernelImpl1B2B,
+    AffineActiveListKernelImpl2B2B,
+    AffineMultiBiasKernelImpl1B1B,
+    AffineMultiBiasKernelImpl2B1B,
+    AffineMultiBiasKernelImpl1B2B,
+    AffineMultiBiasKernelImpl2B2B,
+    DiagonalKernelImpl1B1B,
+    DiagonalKernelImpl2B1B,
+    DiagonalKernelImpl1B2B,
+    DiagonalKernelImpl2B2B,
+    recurrentKernelImpl1B1B,
+    recurrentKernelImpl2B1B,
+    recurrentKernelImpl1B2B,
+    recurrentKernelImpl2B2B,
+    ConvolutionKernelImpl1B,
+    ConvolutionPoolingKernelImpl1B,
+    ConvolutionKernelImpl2B,
+    ConvolutionPoolingKernelImpl2B,
+    TransposeKernelImpl1B,
+    TransposeKernelImpl2B,
+    copyKernelImpl1B,
+    copyKernelImpl2B,
+
+    Convolution2DKernelImpl1B1B,
+    Convolution2DKernelImpl1B2B,
+    Convolution2DKernelImpl2B1B,
+    Convolution2DKernelImpl2B2B,
+
+    Pooling2DKernelImpl1B,
+    Pooling2DKernelImpl2B,
+    Pooling2DKernelImpl4B
+#endif
 };
 
 }

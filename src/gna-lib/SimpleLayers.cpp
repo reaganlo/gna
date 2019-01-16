@@ -27,43 +27,43 @@
 
 #include "AccelerationDetector.h"
 #include "LayerConfiguration.h"
-#include "Validator.h"
+#include "Expect.h"
 
 using namespace GNA;
 
-TransposeLayer::TransposeLayer(nn_layer const * const layer) :
-    Layer(layer),
-    transposeKernels{ AccelerationDetector::GetKernelMap<TransposeKernel>() },
-    transposeHiddenConfig{ Config.Kind == INTEL_INTERLEAVE ? Input.VectorCount : Input.ElementCount, 
-                           Config.Kind == INTEL_INTERLEAVE ? Input.ElementCount : Input.VectorCount, 
+TransposeLayer::TransposeLayer(nn_layer const * const layer, const BaseValidator& validatorIn) :
+    Layer(layer, validatorIn, {}, BaseAddress()),
+    transposeKernels{ AccelerationDetector::GetKernelMap<TransposeKernel>(KERNEL_TRANSPOSE,  KernelMode{Input.Mode}) },
+    transposeHiddenConfig{ Operation == INTEL_INTERLEAVE ? Input.at(GNA_DIM_N) : Input.at(GNA_DIM_W),
+                           Operation == INTEL_INTERLEAVE ? Input.at(GNA_DIM_W) : Input.at(GNA_DIM_N),
                            Input.Buffer, Output.Buffer }
 {
-    Expect::True(Input.ElementCount == Output.ElementCount, XNN_ERR_LYR_CFG);
-    Expect::True(Input.VectorCount == Output.VectorCount, XNN_ERR_LYR_CFG);
+    Expect::Equal(Input.at(GNA_DIM_W), Output.at(GNA_DIM_H), XNN_ERR_LYR_CFG);
+    Expect::Equal(Input.at(GNA_DIM_N), Output.at(GNA_DIM_N), XNN_ERR_LYR_CFG);
     Expect::Null(layer->pLayerStruct); // transpose layers do not have layer details
     Expect::Null(Output.ScratchPad); // in transpose layer no 4B output array is allowed
 
-    ComputeHidden = [this](acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) 
+    ComputeHidden = [this](acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount)
                     {this->computeHidden(accel, fvBuffers, saturationCount); };
 
-    ComputeConfig = [this](LayerConfiguration &layerConfiguration, acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) 
-                    {this->computeConfig(layerConfiguration, accel, fvBuffers, saturationCount); };
+    Compute = [this](LayerConfiguration &layerConfiguration, acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount)
+                    {this->compute(layerConfiguration, accel, fvBuffers, saturationCount); };
 }
 
-void TransposeLayer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration, ValidBoundariesFunctor validBoundaries) const
+void TransposeLayer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const
 {
-    auto inputBuffer = Input.Buffer;
-    if (layerConfiguration.InputBuffer)
+    BaseAddress inputBuffer = Input;
+    if (layerConfiguration.Buffers.count(InputComponent))
     {
-        inputBuffer = *layerConfiguration.InputBuffer;
-        validBoundaries(inputBuffer, Input.BufferSize);
+        inputBuffer = layerConfiguration.Buffers[InputComponent];
+        Input.ValidateBuffer(inputBuffer);
     }
 
-    auto outputBuffer = Output.Buffer;
-    if (layerConfiguration.OutputBuffer)
+    BaseAddress outputBuffer = Output;
+    if (layerConfiguration.Buffers.count(OutputComponent))
     {
-        outputBuffer = *layerConfiguration.OutputBuffer;
-        validBoundaries(outputBuffer, Output.BufferSize);
+        outputBuffer = layerConfiguration.Buffers[OutputComponent];
+        Output.ValidateBuffer(outputBuffer);
     }
 
     auto& configs = layerConfiguration.Configs;
@@ -81,7 +81,7 @@ void TransposeLayer::computeHidden(acceleration accel, KernelBuffers *fvBuffers,
     transposeKernels.at(accel)(&transposeHiddenConfig);
 }
 
-void TransposeLayer::computeConfig(const LayerConfiguration& layerConfiguration, acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const
+void TransposeLayer::compute(const LayerConfiguration& layerConfiguration, acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const
 {
     UNREFERENCED_PARAMETER(fvBuffers);
     UNREFERENCED_PARAMETER(saturationCount);
@@ -89,38 +89,39 @@ void TransposeLayer::computeConfig(const LayerConfiguration& layerConfiguration,
     transposeKernels.at(accel)(transposeConfig);
 }
 
-CopyLayer::CopyLayer(const nn_layer *layer) :
-    Layer(layer),
+CopyLayer::CopyLayer(const nn_layer *layer, const BaseValidator& validatorIn) :
+    Layer(layer, validatorIn, {}, BaseAddress()),
     ColumnCount{ static_cast<const nn_layer_copy*>(layer->pLayerStruct)->nCopyCols },
     RowCount{ static_cast<const nn_layer_copy*>(layer->pLayerStruct)->nCopyRows },
-    copyKernels{ AccelerationDetector::GetKernelMap<CopyKernel>() },
-    copyHiddenConfig{ RowCount, ColumnCount, Input.ElementCount, Output.ElementCount, Input.Buffer, Output.Buffer }
+    copyKernels{ AccelerationDetector::GetKernelMap<CopyKernel>(KERNEL_COPY, KernelMode {Input.Mode}) },
+    copyHiddenConfig{ RowCount, ColumnCount, Input.at(GNA_DIM_W), Output.at(GNA_DIM_H), Input.Buffer, Output.Buffer }
 {
+    // TODO:3: refactor to use scalars/component and validator
     Expect::MultiplicityOf(ColumnCount, XNN_N_IN_ELEMS_MPLY);
     Expect::InRange(ColumnCount, XNN_N_IN_ELEMS_MPLY, XNN_N_IN_ELEMS_MAX, XNN_ERR_LYR_CFG);
-    Expect::True(RowCount <= Input.VectorCount, XNN_ERR_LYR_CFG);
+    Expect::True(RowCount <= Input.at(GNA_DIM_N), XNN_ERR_LYR_CFG);
 
-    ComputeHidden = [this](acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) 
+    ComputeHidden = [this](acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount)
                     {this->computeHidden(accel, fvBuffers, saturationCount); };
 
-    ComputeConfig = [this](LayerConfiguration &layerConfiguration, acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) 
-                    {this->computeConfig(layerConfiguration, accel, fvBuffers, saturationCount); };
+    Compute = [this](LayerConfiguration &layerConfiguration, acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount)
+                    {this->compute(layerConfiguration, accel, fvBuffers, saturationCount); };
 }
 
-void CopyLayer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration, ValidBoundariesFunctor validBoundaries) const
+void CopyLayer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const
 {
-    auto inputBuffer = Input.Buffer;
-    if (layerConfiguration.InputBuffer)
+    BaseAddress inputBuffer = Input;
+    if (layerConfiguration.Buffers.count(InputComponent))
     {
-        inputBuffer = *layerConfiguration.InputBuffer;
-        validBoundaries(inputBuffer, Input.BufferSize);
+        inputBuffer = layerConfiguration.Buffers[InputComponent];
+        Input.ValidateBuffer(inputBuffer);
     }
 
-    auto outputBuffer = Output.Buffer;
-    if (layerConfiguration.OutputBuffer)
+    BaseAddress outputBuffer = Output;
+    if (layerConfiguration.Buffers.count(OutputComponent))
     {
-        outputBuffer = *layerConfiguration.OutputBuffer;
-        validBoundaries(outputBuffer, Output.BufferSize);
+        outputBuffer = layerConfiguration.Buffers[OutputComponent];
+        Output.ValidateBuffer(outputBuffer);
     }
 
     auto& configs = layerConfiguration.Configs;
@@ -138,7 +139,7 @@ void CopyLayer::computeHidden(acceleration accel, KernelBuffers *fvBuffers, uint
     copyKernels.at(accel)(&copyHiddenConfig);
 }
 
-void CopyLayer::computeConfig(const LayerConfiguration& layerConfiguration, acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const
+void CopyLayer::compute(const LayerConfiguration& layerConfiguration, acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const
 {
     UNREFERENCED_PARAMETER(fvBuffers);
     UNREFERENCED_PARAMETER(saturationCount);

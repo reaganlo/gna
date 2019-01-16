@@ -31,6 +31,10 @@
 
 #include "SetupConvolutionModel.h"
 
+#include "ModelUtilities.h"
+
+#define UNREFERENCED_PARAMETER(P) ((void)(P))
+
 SetupConvolutionModel::SetupConvolutionModel(DeviceController & deviceCtrl, bool pwlEn)
     : deviceController{deviceCtrl},
       pwlEnabled{pwlEn}
@@ -45,8 +49,8 @@ SetupConvolutionModel::SetupConvolutionModel(DeviceController & deviceCtrl, bool
 
     configId = deviceController.ConfigAdd(modelId);
 
-    deviceController.BufferAdd(configId, GNA_IN, 0, inputBuffer);
-    deviceController.BufferAdd(configId, GNA_OUT, 0, outputBuffer);
+    deviceController.BufferAdd(configId, InputComponent, 0, inputBuffer);
+    deviceController.BufferAdd(configId, OutputComponent, 0, outputBuffer);
 }
 
 SetupConvolutionModel::~SetupConvolutionModel()
@@ -80,6 +84,8 @@ void SetupConvolutionModel::compareReferenceValues(unsigned i, int configIndex) 
 
 void SetupConvolutionModel::checkReferenceOutput(int modelIndex, int configIndex) const
 {
+    UNREFERENCED_PARAMETER(modelIndex);
+
     unsigned int ref_output_size = refSize[configIndex];
     for (unsigned int i = 0; i < ref_output_size; ++i)
     {
@@ -89,17 +95,9 @@ void SetupConvolutionModel::checkReferenceOutput(int modelIndex, int configIndex
 
 void SetupConvolutionModel::samplePwl(intel_pwl_segment_t *segments, uint32_t numberOfSegments)
 {
-    int64_t xBase = INT32_MIN;
-    auto xBaseInc = UINT32_MAX / numberOfSegments;
-    uint16_t yBase = uint16_t(INT32_MAX);
-    auto yBaseInc = UINT16_MAX / numberOfSegments;
-    for (auto i = uint32_t{ 0 }; i < numberOfSegments; i++, xBase += xBaseInc, yBase += yBaseInc)
-    {
-        segments[i].xBase = xBase;
-        segments[i].yBase = yBase;
-        segments[i].slope = 1;
-    }
+    ModelUtilities::GeneratePwlSegments(segments, numberOfSegments);
 }
+
 void SetupConvolutionModel::sampleConvolutionLayer()
 {
     int buf_size_filters = ALIGN64(sizeof(filters));
@@ -116,7 +114,7 @@ void SetupConvolutionModel::sampleConvolutionLayer()
     }
     uint32_t bytes_granted;
 
-    uint8_t* pinned_mem_ptr = deviceController.Alloc(bytes_requested, nnet.nLayers, 0, &bytes_granted);
+    uint8_t* pinned_mem_ptr = deviceController.Alloc(bytes_requested, static_cast<uint16_t>(nnet.nLayers), static_cast<uint16_t>(0), &bytes_granted);
 
     void* pinned_filters = pinned_mem_ptr;
     memcpy(pinned_filters, filters, sizeof(filters));
@@ -171,17 +169,17 @@ void SetupConvolutionModel::sampleConvolutionLayer()
     if (pwlEnabled)
     {
         nnet.pLayers[0].pOutputsIntermediate = tmp_outputs;
-        nnet.pLayers[0].nBytesPerOutput = sizeof(int16_t); // activated
+        nnet.pLayers[0].nBytesPerOutput = GNA_INT16; // activated
     }
     else
     {
         nnet.pLayers[0].pOutputsIntermediate = nullptr;
-        nnet.pLayers[0].nBytesPerOutput = sizeof(int32_t);
+        nnet.pLayers[0].nBytesPerOutput = GNA_INT32;
     }
-    nnet.pLayers[0].nBytesPerInput = sizeof(int16_t);
-    nnet.pLayers[0].nBytesPerIntermediateOutput = sizeof(int32_t);
-    nnet.pLayers[0].nLayerKind = INTEL_CONVOLUTIONAL;
-    nnet.pLayers[0].type = INTEL_INPUT_OUTPUT;
+    nnet.pLayers[0].nBytesPerInput = GNA_INT16;
+    nnet.pLayers[0].nBytesPerIntermediateOutput = GNA_INT32;
+    nnet.pLayers[0].operation = INTEL_CONVOLUTIONAL;
+    nnet.pLayers[0].mode = INTEL_INPUT_OUTPUT;
     nnet.pLayers[0].pLayerStruct = &convolution_layer;
     nnet.pLayers[0].pInputs = nullptr;
     nnet.pLayers[0].pOutputs = nullptr;

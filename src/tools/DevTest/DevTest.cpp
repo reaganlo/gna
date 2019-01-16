@@ -41,6 +41,11 @@ public:
 
     void PrepareScenario()
     {
+        script.actions.emplace_back(Action::LoadModel, ModelSetupConvolution_2D, 0, 0);
+        script.actions.emplace_back(Action::Score, ModelSetupConvolution_2D, 0, 0);
+        //script.actions.emplace_back(Action::CheckReferenceOutput, ModelSetupConvolution_2D, 0, 0);
+        script.actions.emplace_back(Action::CloseModel, ModelSetupConvolution_2D, 0, 0);
+
         //script.actions.emplace_back(Action::LoadModel, ModelSetupMix, 0, 0);
         //script.actions.emplace_back(Action::Score, ModelSetupMix, 0, 0);
         //script.actions.emplace_back(Action::CheckReferenceOutput, ModelSetupMix, 0, 0);
@@ -96,15 +101,15 @@ public:
         script.actions.emplace_back(Action::CheckReferenceOutput, ModelSetupDnnPwl_1_2B, 0, 5);
         script.actions.emplace_back(Action::CloseModel, ModelSetupDnnPwl_1_2B, 0, 0);
 
-        script.actions.emplace_back(Action::LoadModel, ModelSetupDnnAlPwl_1_1B, 0, 0);
-        script.actions.emplace_back(Action::Score, ModelSetupDnnAlPwl_1_1B, 0, 0);
-        script.actions.emplace_back(Action::CheckReferenceOutput, ModelSetupDnnAlPwl_1_1B, 0, 6);
-        script.actions.emplace_back(Action::CloseModel, ModelSetupDnnAlPwl_1_1B, 0, 0);
+        //script.actions.emplace_back(Action::LoadModel, ModelSetupDnnAlPwl_1_1B, 0, 0);
+        //script.actions.emplace_back(Action::Score, ModelSetupDnnAlPwl_1_1B, 0, 0);
+        //script.actions.emplace_back(Action::CheckReferenceOutput, ModelSetupDnnAlPwl_1_1B, 0, 6);
+        //script.actions.emplace_back(Action::CloseModel, ModelSetupDnnAlPwl_1_1B, 0, 0);
 
-        script.actions.emplace_back(Action::LoadModel, ModelSetupDnnAlPwl_1_2B, 0, 0);
-        script.actions.emplace_back(Action::Score, ModelSetupDnnAlPwl_1_2B, 0, 0);
-        script.actions.emplace_back(Action::CheckReferenceOutput, ModelSetupDnnAlPwl_1_2B, 0, 7);
-        script.actions.emplace_back(Action::CloseModel, ModelSetupDnnAlPwl_1_2B, 0, 0);
+        //script.actions.emplace_back(Action::LoadModel, ModelSetupDnnAlPwl_1_2B, 0, 0);
+        //script.actions.emplace_back(Action::Score, ModelSetupDnnAlPwl_1_2B, 0, 0);
+        //script.actions.emplace_back(Action::CheckReferenceOutput, ModelSetupDnnAlPwl_1_2B, 0, 7);
+        //script.actions.emplace_back(Action::CloseModel, ModelSetupDnnAlPwl_1_2B, 0, 0);
 
         script.actions.emplace_back(Action::LoadModel, ModelSetupSplit_1_1B, 0, 0);
         script.actions.emplace_back(Action::Score, ModelSetupSplit_1_1B, 0, 0);
@@ -256,8 +261,8 @@ public:
 
             case Action::Score:
                 gna_request_id requestId;
-                deviceController.RequestEnqueue(modelSetup->ConfigId(action->modelIndex, action->configIndex), GNA_AUTO, &requestId);
-                GnaRequestWait(requestId, 5 * 60 * 1000);
+                deviceController.RequestEnqueue(modelSetup->ConfigId(action->modelIndex, action->configIndex), GNA_GENERIC, &requestId);
+                deviceController.RequestWait(requestId);
                 break;
 
             case Action::CheckReferenceOutput:

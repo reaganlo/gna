@@ -36,11 +36,12 @@ DriverVer=
 %Intel%=Intel, NT$ARCH$, NTamd64.6.1
 
 [Intel.NT$ARCH$]
-%IntelGNA.DeviceDesc%=IntelGNA_Install, PCI\VEN_8086&DEV_5A11   ;GNA CNL
-%IntelGNA.DeviceDesc%=IntelGNA_Install, PCI\VEN_8086&DEV_3190   ;GNA GLK
-%IntelGNA.DeviceDesc%=IntelGNA_Install, PCI\VEN_8086&DEV_4511   ;GNA EHL
-%IntelGNA.DeviceDesc%=IntelGNA_Install, PCI\VEN_8086&DEV_8A11   ;GNA ICL
-%IntelGNA.DeviceDesc%=IntelGNA_Install, PCI\VEN_8086&DEV_9A11   ;GNA TGL
+%IntelGNA.DeviceDesc%=IntelGNA_Install, PCI\VEN_8086&DEV_5A11   ;GNA 0.9 CNL
+%IntelGNA.DeviceDesc%=IntelGNA_Install, PCI\VEN_8086&DEV_3190   ;GNA 1.0 GLK
+%IntelGNA.DeviceDesc%=IntelGNA_Install, PCI\VEN_8086&DEV_8A11   ;GNA 1.0 ICL
+%IntelGNA.DeviceDesc%=IntelGNA_Install, PCI\VEN_8086&DEV_4511   ;GNA 1.0 EHL
+%IntelGNA.DeviceDesc%=IntelGNA_Install, PCI\VEN_8086&DEV_9A11   ;GNA 2.0 TGL
+%IntelGNA.DeviceDesc%=IntelGNA_Install, PCI\VEN_8086&DEV_46AD   ;GNA 3.0 ADL
 
 [Intel.NTamd64.6.1]
 ; prevent install on Windows 7 or later

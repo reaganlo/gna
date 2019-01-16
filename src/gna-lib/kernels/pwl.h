@@ -26,7 +26,13 @@
 
 #pragma once
 
+#include "common.h"
 #include "KernelArguments.h"
+
+template<typename TransformConfig>
+struct KernelConfig;
+
+struct ActivationConfig;
 
 // PWL Segment x base type
 typedef int64_t pwl_x_t;
@@ -74,11 +80,12 @@ static_assert(8 == sizeof(pwl_y_t), "Invalid size of pwl_y_t");
 namespace GNA
 {
 
-    // PWL cached config (constant for given layer)
-    struct PwlCachedConfig
-    {
-        uint32_t segmentCount;
-        void * data;
+// PWL cached config (constant for given layer)
+struct PwlCachedConfig
+{
+    uint32_t segmentCount;
+    uint32_t bytesPerOutput;
+    void * data;
 
         union
         {
@@ -104,51 +111,52 @@ namespace GNA
             } Binary;
         };
     };
-    // Function pointer for apply PWL for single input-output
-    typedef void(*PwlApplySingle)(PwlCachedConfig const * const pwl, int32_t I, int16_t * const output,
-        uint32_t * const saturationCount);
 
-    // Function pointer for apply PWL for all inputs-outputs
-    typedef void(*PwlApplyAll)(PwlCachedConfig const * const pwl, PwlOutputConfig const * const outputConfig);
+// Function pointer for apply PWL for single input-output
+typedef void(*PwlApplySingle)(PwlCachedConfig const * const pwl, int32_t I, int16_t * const output,
+    uint32_t * const saturationCount);
 
-    // PWL cache and config (constant for given layer)
-    struct PwlCached
-    {
-        bool useLookup = false;
+// Function pointer for apply PWL for all inputs-outputs
+typedef void(*PwlApplyAll)(ExecutionKernelConfig<ActivationConfig> const * const config);
 
-        //TODO: Move PwlCached to lib
-        void InitializeActivationFunctions_generic() const;
-        void InitializeActivationFunctions_generic_sat() const;
-        void InitializeActivationFunctions_sse4() const;
-        void InitializeActivationFunctions_sse4_sat() const;
-        void InitializeActivationFunctions_avx1() const;
-        void InitializeActivationFunctions_avx1_sat() const;
-        void InitializeActivationFunctions_avx2() const;
-        void InitializeActivationFunctions_avx2_sat() const;
+// PWL cache and config (constant for given layer)
+struct PwlCached
+{
+    bool useLookup = false;
 
-        // Prepares PWL parameters and auxiliary buffers
-        PwlCached(int32_t const * const inputIn, uint32_t elementsCount, nn_pwl_seg const * const segmentsIn, uint32_t segmentCountIn);
-        virtual ~PwlCached();
+    //TODO: Move PwlCached to lib
+    void InitializeActivationFunctions_generic() const;
+    void InitializeActivationFunctions_generic_sat() const;
+    void InitializeActivationFunctions_sse4() const;
+    void InitializeActivationFunctions_sse4_sat() const;
+    void InitializeActivationFunctions_avx1() const;
+    void InitializeActivationFunctions_avx1_sat() const;
+    void InitializeActivationFunctions_avx2() const;
+    void InitializeActivationFunctions_avx2_sat() const;
 
-        // PWL LOOKUP table number of elements
-        static const int32_t PWL_LOOKUP_COUNT = 1024;
+    // Prepares PWL parameters and auxiliary buffers
+    PwlCached(const gna_data_mode mode, nn_pwl_seg const * const segmentsIn, uint32_t segmentCountIn);
+    virtual ~PwlCached();
 
-        // PWL LOOKUP table element size in B
-        static const int32_t PWL_LOOKUP_SEG_SIZE = sizeof(pwl_u_t);
+    // PWL LOOKUP table number of elements
+    static const int32_t PWL_LOOKUP_COUNT = 1024;
 
-        // PWL LOOKUP table - number of segments per element
-        static const int32_t PWL_LOOKUP_SEG_SCOUNT = 2;
+    // PWL LOOKUP table element size in B
+    static const int32_t PWL_LOOKUP_SEG_SIZE = sizeof(pwl_u_t);
 
-        // PWL LOOKUP table size in B
-        static const int32_t PWL_LOOKUP_SIZE = (PWL_LOOKUP_COUNT)* PWL_LOOKUP_SEG_SIZE;
+    // PWL LOOKUP table - number of segments per element
+    static const int32_t PWL_LOOKUP_SEG_SCOUNT = 2;
 
-        PwlCachedConfig pwl;
-        mutable PwlApplySingle  ActivateSingle;              // algorithm used for PWL for single in-out
-        mutable PwlApplyAll     ActivateAll;                 // algorithm used for PWL for all in-outs
+    // PWL LOOKUP table size in B
+    static const int32_t PWL_LOOKUP_SIZE = (PWL_LOOKUP_COUNT)* PWL_LOOKUP_SEG_SIZE;
 
-    private:
-        void allocateLookupCaches();
-        void allocateBinaryCaches();
-    };
+    PwlCachedConfig pwl;
+    mutable PwlApplySingle  ActivateSingle;              // algorithm used for PWL for single in-out
+    mutable PwlApplyAll     ActivateAll;                 // algorithm used for PWL for all in-outs
+    uint32_t bytesPerOutput;
+private:
+    void allocateLookupCaches();
+    void allocateBinaryCaches();
+};
 
 }

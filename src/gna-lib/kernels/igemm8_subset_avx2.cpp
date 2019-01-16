@@ -51,14 +51,14 @@ void AffineActiveListKernelImpl1B(AffineConfig const * const config, AffineConfi
     int16_t const *input_7 = nullptr;
 
     // simd input pointers
-    __m256i *in_ptr0;
-    __m256i *in_ptr1;
-    __m256i *in_ptr2;
-    __m256i *in_ptr3;
-    __m256i *in_ptr4;
-    __m256i *in_ptr5;
-    __m256i *in_ptr6;
-    __m256i *in_ptr7;
+    __m256i *in_ptr0 = nullptr;
+    __m256i *in_ptr1 = nullptr;
+    __m256i *in_ptr2 = nullptr;
+    __m256i *in_ptr3 = nullptr;
+    __m256i *in_ptr4 = nullptr;
+    __m256i *in_ptr5 = nullptr;
+    __m256i *in_ptr6 = nullptr;
+    __m256i *in_ptr7 = nullptr;
 
     // simd inputs and weight
     __m256i in0;
@@ -129,31 +129,31 @@ void AffineActiveListKernelImpl1B(AffineConfig const * const config, AffineConfi
 
     switch (config->inputVectorCount)
     {
-    case 8: 
+    case 8:
         for (i = 0; i < config->inputElementCount; i++) config->fvBuffers->d7[i] = config->input[i*config->inputVectorCount + 7];
         input_7 = config->fvBuffers->d7 + KK;
         in_ptr7 = (__m256i*)config->fvBuffers->d7;
-    case 7: 
+    case 7:
         for (i = 0; i < config->inputElementCount; i++) config->fvBuffers->d6[i] = config->input[i*config->inputVectorCount + 6];
         input_6 = config->fvBuffers->d6 + KK;
         in_ptr6 = (__m256i*)config->fvBuffers->d6;
-    case 6: 
+    case 6:
         for (i = 0; i < config->inputElementCount; i++) config->fvBuffers->d5[i] = config->input[i*config->inputVectorCount + 5];
         input_5 = config->fvBuffers->d5 + KK;
         in_ptr5 = (__m256i*)config->fvBuffers->d5;
-    case 5: 
+    case 5:
         for (i = 0; i < config->inputElementCount; i++) config->fvBuffers->d4[i] = config->input[i*config->inputVectorCount + 4];
         input_4 = config->fvBuffers->d4 + KK;
         in_ptr4 = (__m256i*)config->fvBuffers->d4;
-    case 4: 
+    case 4:
         for (i = 0; i < config->inputElementCount; i++) config->fvBuffers->d3[i] = config->input[i*config->inputVectorCount + 3];
         input_3 = config->fvBuffers->d3 + KK;
         in_ptr3 = (__m256i*)config->fvBuffers->d3;
-    case 3: 
+    case 3:
         for (i = 0; i < config->inputElementCount; i++) config->fvBuffers->d2[i] = config->input[i*config->inputVectorCount + 2];
         input_2 = config->fvBuffers->d2 + KK;
         in_ptr2 = (__m256i*)config->fvBuffers->d2;
-    case 2: 
+    case 2:
         for (i = 0; i < config->inputElementCount; i++) config->fvBuffers->d1[i] = config->input[i*config->inputVectorCount + 1];
         input_1 = config->fvBuffers->d1 + KK;
         in_ptr1 = (__m256i*)config->fvBuffers->d1;

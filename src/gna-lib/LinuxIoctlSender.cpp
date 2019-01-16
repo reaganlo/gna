@@ -44,10 +44,10 @@ void LinuxIoctlSender::Open()
     int found = 0;
     int fd;
 
-    for(int i = 0; i < 16; i++)
+    for(uint8_t i = 0; i < 16; i++)
     {
         char name[12];
-        sprintf(name, "/dev/gna%d", i);
+        sprintf(name, "/dev/gna%hhu", i);
         fd = open(name, O_RDWR);
         if(-1 == fd)
         {
@@ -68,7 +68,7 @@ void LinuxIoctlSender::Open()
 
     try
     {
-        deviceCapabilities.deviceKind = deviceTypeMap.at(gnaCaps.device_type);
+        deviceCapabilities.hwId = static_cast<gna_device_version>(gnaCaps.device_type);
     }
     catch(std::out_of_range &e)
     {

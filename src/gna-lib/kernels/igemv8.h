@@ -34,6 +34,20 @@
 #define RecurrentKernelImpl1B KERNEL(RecurrentKernelImpl1B)
 #define DiagonalKernelImpl1B KERNEL(DiagonalKernelImpl1B)
 
+
+#define AffineKernelImpl1B1B KERNEL(AffineKernelImpl1B1B)
+#define AffineActiveListKernelImpl1B1B KERNEL(AffineActiveListKernelImpl1B1B)
+#define AffineMultiBiasKernelImpl1B1B KERNEL(AffineMultiBiasKernelImpl1B1B)
+#define RecurrentKernelImpl1B1B KERNEL(RecurrentKernelImpl1B1B)
+#define DiagonalKernelImpl1B1B KERNEL(DiagonalKernelImpl1B1B)
+
+
+#define AffineKernelImpl1B2B KERNEL(AffineKernelImpl1B2B)
+#define AffineActiveListKernelImpl1B2B KERNEL(AffineActiveListKernelImpl1B2B)
+#define AffineMultiBiasKernelImpl1B2B KERNEL(AffineMultiBiasKernelImpl1B2B)
+#define RecurrentKernelImpl1B2B KERNEL(RecurrentKernelImpl1B2B)
+#define DiagonalKernelImpl1B2B KERNEL(DiagonalKernelImpl1B2B)
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -58,6 +72,18 @@ void RecurrentKernelImpl1B(RecurrentConfig const * const config);
 
 void DiagonalKernelImpl1B(AffineConfig const * const config);
 
+#if OPT_LEVEL <2
+void AffineKernelImpl1B1B(AffineConfig const * const config);
+void AffineKernelImpl1B2B(AffineConfig const * const config);
+void AffineActiveListKernelImpl1B1B(AffineConfig const * const config, AffineConfigAl const * const al);
+void AffineActiveListKernelImpl1B2B(AffineConfig const * const config, AffineConfigAl const * const al);
+void AffineMultiBiasKernelImpl1B1B(AffineConfig const * const config);
+void AffineMultiBiasKernelImpl1B2B(AffineConfig const * const config);
+void RecurrentKernelImpl1B1B(RecurrentConfig const * const config);
+void RecurrentKernelImpl1B2B(RecurrentConfig const * const config);
+void DiagonalKernelImpl1B1B(AffineConfig const * const config);
+void DiagonalKernelImpl1B2B(AffineConfig const * const config);
+#endif
 #ifdef __cplusplus
 }
 #endif

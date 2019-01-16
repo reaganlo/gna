@@ -2,7 +2,7 @@
     Copyright 2018 Intel Corporation.
     This software and the related documents are Intel copyrighted materials,
     and your use of them is governed by the express license under which they
-    were provided to you (Intel OBL Software License Agreement (OEM/IHV/ISV 
+    were provided to you (Intel OBL Software License Agreement (OEM/IHV/ISV
     Distribution & Single User) (v. 11.2.2017) ). Unless the License provides
     otherwise, you may not use, modify, copy, publish, distribute, disclose or
     transmit this software or the related documents without Intel's prior
@@ -26,6 +26,7 @@
 #define __GNA_API_DUMPER_H
 
 #if !defined(_WIN32)
+#include <assert.h>
 #include <stddef.h>
 #endif
 
@@ -34,20 +35,6 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-/**
- * Kind / version of hardware device that dumped model will be used with.
- */
-typedef enum _gna_device_kind
-{
-    GNA_SUE,        // GNA v1.0
-    GNA_SUE_2,      // GNA v2.0
-    GNA_CNL,        // GNA v1.0
-    GNA_GLK,        // GNA v1.0
-    GNA_EHL,        // GNA v1.0
-    GNA_ICL,        // GNA v1.0
-    GNA_TGL,        // GNA v2.0
-} gna_device_kind;
 
 /**
  * Header describing parameters of dumped model.
@@ -92,7 +79,7 @@ typedef void* (*intel_gna_alloc_cb)(size_t size);
  * Model will be validated against device kind provided as function argument
  *
  * @param modelId       Id of model created previously with call to GnaModelCreate function.
- * @param deviceKind    Device on which model will be used
+ * @param deviceVersion    Device on which model will be used
  * @param modelHeader   (out) Header describing parameters of model being dumped.
  * @param status        (out) Status of conversion and dumping.
  * @param customAlloc   Pointer to a function with custom memory allocation. Total model size needs to be passed as parameter.
@@ -100,7 +87,7 @@ typedef void* (*intel_gna_alloc_cb)(size_t size);
  */
 GNAAPI void* GnaModelDump(
     gna_model_id modelId,
-    gna_device_kind deviceKind,
+    gna_device_generation deviceGeneration,
     intel_gna_model_header* modelHeader,
     intel_gna_status_t* status,
     intel_gna_alloc_cb customAlloc);

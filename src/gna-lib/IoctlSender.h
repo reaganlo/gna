@@ -31,7 +31,7 @@
 
 #include "common.h"
 #include "Request.h"
-#include "Validator.h"
+#include "Expect.h"
 
 namespace GNA
 {
@@ -62,7 +62,7 @@ struct GnaCapabilities
 {
     uint32_t hwInBuffSize;
     uint32_t recoveryTimeout;
-    gna_device_kind deviceKind;
+    gna_device_version hwId;
 };
 
 class IoctlSender
@@ -89,8 +89,6 @@ protected:
     IoctlSender& operator=(const IoctlSender&) = delete;
 
     virtual void createRequestDescriptor(HardwareRequest *hardwareRequest);
-
-    static const std::map<uint32_t, gna_device_kind> deviceTypeMap;
 };
 
 }

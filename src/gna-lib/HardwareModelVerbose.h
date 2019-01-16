@@ -79,9 +79,9 @@ private:
 
     void dumpMemory(FILE *file);
 
-    void dumpXnnDescriptor(uint16_t layerNumber, FILE *f);
+    void dumpXnnDescriptor(uint32_t layerNumber, FILE *f);
 
-    void dumpGmmDescriptor(uint16_t layerNumber, FILE *f);
+    void dumpGmmDescriptor(uint32_t layerNumber, FILE *f);
 
     void setXnnDescriptor(dbg_action action);
 

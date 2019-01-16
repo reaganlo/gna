@@ -126,7 +126,7 @@ void SelfTestDevice::SampleModelCreate()
     uint32_t bytes_requested = buf_size_weights + buf_size_inputs + buf_size_biases + buf_size_outputs + buf_size_tmp_outputs;
     //uint32_t bytes_granted;
 
-    Alloc(bytes_requested, nnet.nLayers, 0);
+    Alloc(bytes_requested, static_cast<uint16_t>(nnet.nLayers), static_cast<uint16_t>(0));
 
     int16_t *pinned_weights = (int16_t*)pinned_mem_ptr;
     memcpy(pinned_weights, weights, sizeof(weights));   // puts the weights into the pinned memory
@@ -167,12 +167,12 @@ void SelfTestDevice::SampleModelCreate()
     nnet_layer->nBytesPerInput = 2;
     nnet_layer->nBytesPerOutput = 4;             // 4 bytes since we are not using PWL (would be 2 bytes otherwise)
     nnet_layer->nBytesPerIntermediateOutput = 4; // this is always 4 bytes
-    nnet_layer->nLayerKind = INTEL_AFFINE;
+    nnet_layer->operation = INTEL_AFFINE;
     nnet_layer->pLayerStruct = &affine_layer;
     nnet_layer->pInputs = pinned_inputs;
     nnet_layer->pOutputsIntermediate = pinned_tmp_outputs;
     nnet_layer->pOutputs = pinned_outputs;
-    nnet_layer->type = intel_layer_type_t::INTEL_INPUT_OUTPUT;
+    nnet_layer->mode = INTEL_INPUT_OUTPUT;
     intel_gna_status_t status = GnaModelCreate(deviceId, &nnet, &sampleModelId);
     HandleGnaStatus(status, "GnaModelCreate");
 }
@@ -185,9 +185,9 @@ void SelfTestDevice::BuildSampleRequest()
 
 void SelfTestDevice::ConfigRequestBuffer()
 {
-    auto status = GnaRequestConfigBufferAdd(configId, gna_buffer_type::GNA_IN, 0, pinned_inputs);
+    auto status = GnaRequestConfigBufferAdd(configId, GnaComponentType::InputComponent, 0, pinned_inputs);
     HandleGnaStatus(status, "Adding input buffer to request");
-    status = GnaRequestConfigBufferAdd(configId, gna_buffer_type::GNA_OUT, 0, pinned_outputs);
+    status = GnaRequestConfigBufferAdd(configId, GnaComponentType::OutputComponent, 0, pinned_outputs);
     HandleGnaStatus(status, "Adding output buffer to request");
 }
 

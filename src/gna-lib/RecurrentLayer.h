@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2017 Intel Corporation.
+ Copyright 2018 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -25,7 +25,6 @@
 
 #pragma once
 
-#include "LayerFunctions.h"
 #include "AffineLayers.h"
 #include "Address.h"
 
@@ -35,19 +34,18 @@ namespace GNA
 class RnnLayer : public AffineBaseLayer
 {
 public:
-    RnnLayer(nn_layer const * const layer);
+    RnnLayer(nn_layer const * const layer, const BaseValidator& validatorIn);
     virtual ~RnnLayer() = default;
-    OutputBuffer CalculateFeedbackBuffer(const OutputBuffer& outputBuffer) const;
-    virtual void UpdateKernelConfigs(LayerConfiguration& layerConfiguration, ValidBoundariesFunctor validBoundaries) const override;
+    const BaseAddress CalculateFeedbackBuffer(const BaseAddress& outputBuffer) const;
+    virtual void UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const override;
 
     const uint32_t FeedbackDelay;
 
 private:
     void computeHidden(acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const;
-    void computeConfig(const LayerConfiguration& layerConfiguration, acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const;
+    void compute(const LayerConfiguration& layerConfiguration, acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const;
 
-    OutputBuffer feedbackBuffer;
-    const std::map<const acceleration, const RecurrentKernel>& recurrentKernels;
+    const KernelMap<RecurrentKernel>& recurrentKernels;
 
     RecurrentConfig rnnHiddenConfig;
 };

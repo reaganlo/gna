@@ -31,6 +31,8 @@
 
 #include "SetupRecurrentModel.h"
 
+#define UNREFERENCED_PARAMETER(P) ((void)(P))
+
 SetupRecurrentModel::SetupRecurrentModel(DeviceController & deviceCtrl, bool wght2B)
     : deviceController{deviceCtrl},
     weightsAre2Bytes{wght2B}
@@ -45,8 +47,8 @@ SetupRecurrentModel::SetupRecurrentModel(DeviceController & deviceCtrl, bool wgh
 
     configId = deviceController.ConfigAdd(modelId);
 
-    deviceController.BufferAdd(configId, GNA_IN, 0, inputBuffer);
-    deviceController.BufferAdd(configId, GNA_OUT, 0, outputBuffer);
+    deviceController.BufferAdd(configId, InputComponent, 0, inputBuffer);
+    deviceController.BufferAdd(configId, OutputComponent, 0, outputBuffer);
 }
 
 SetupRecurrentModel::~SetupRecurrentModel()
@@ -58,6 +60,8 @@ SetupRecurrentModel::~SetupRecurrentModel()
 
 void SetupRecurrentModel::checkReferenceOutput(int modelIndex, int configIndex) const
 {
+    UNREFERENCED_PARAMETER(modelIndex);
+    UNREFERENCED_PARAMETER(configIndex);
     for (unsigned int i = 0; i < sizeof(ref_output) / sizeof(int16_t); ++i)
     {
         int16_t outElemVal = static_cast<const int16_t*>(outputBuffer)[i];
@@ -78,7 +82,7 @@ void SetupRecurrentModel::samplePwl(intel_pwl_segment_t *segments, uint32_t numb
     for (auto i = uint32_t{0}; i < numberOfSegments; i++, xBase += xBaseInc, yBase += yBaseInc, yBaseInc++)
     {
         segments[i].xBase = xBase;
-        segments[i].yBase = yBase;
+        segments[i].yBase = static_cast<int16_t>(yBase);
         segments[i].slope = 1;
     }
 }
@@ -96,7 +100,7 @@ void SetupRecurrentModel::sampleRnnLayer(intel_nnet_type_t& hNnet)
     uint32_t bytes_requested = buf_size_weights + buf_size_inputs + buf_size_biases + buf_size_scratchpad + buf_size_outputs + buf_size_tmp_outputs + buf_size_pwl;
     uint32_t bytes_granted;
 
-    uint8_t* pinned_mem_ptr = deviceController.Alloc(bytes_requested, hNnet.nLayers, 0, &bytes_granted);
+    uint8_t* pinned_mem_ptr = deviceController.Alloc(bytes_requested, static_cast<uint16_t>(hNnet.nLayers), static_cast<uint16_t>(0), &bytes_granted);
 
     void* pinned_weights = pinned_mem_ptr;
     if (weightsAre2Bytes)
@@ -131,8 +135,8 @@ void SetupRecurrentModel::sampleRnnLayer(intel_nnet_type_t& hNnet)
     outputBuffer = pinned_mem_ptr;
     pinned_mem_ptr += buf_size_outputs;
 
-    affine_func.nBytesPerWeight = weightsAre2Bytes ? 2 : 1;
-    affine_func.nBytesPerBias = weightsAre2Bytes ? sizeof(intel_bias_t) : sizeof(intel_compound_bias_t);
+    affine_func.nBytesPerWeight = weightsAre2Bytes ? GNA_INT16 : GNA_INT8;
+    affine_func.nBytesPerBias = weightsAre2Bytes ? GNA_INT32: GNA_DATA_RICH_FORMAT;
     affine_func.pWeights = pinned_weights;
     affine_func.pBiases = pinned_biases;
 
@@ -149,11 +153,11 @@ void SetupRecurrentModel::sampleRnnLayer(intel_nnet_type_t& hNnet)
     hNnet.pLayers[0].nInputRows = hNnet.nGroup;
     hNnet.pLayers[0].nOutputColumns = outVecSz;
     hNnet.pLayers[0].nOutputRows = hNnet.nGroup;
-    hNnet.pLayers[0].nBytesPerInput = sizeof(int16_t);
-    hNnet.pLayers[0].nBytesPerOutput = sizeof(int16_t);
-    hNnet.pLayers[0].nBytesPerIntermediateOutput = sizeof(int32_t);
-    hNnet.pLayers[0].nLayerKind = INTEL_RECURRENT;
-    hNnet.pLayers[0].type = INTEL_INPUT_OUTPUT;
+    hNnet.pLayers[0].nBytesPerInput = GNA_INT16;
+    hNnet.pLayers[0].nBytesPerOutput = GNA_INT16;
+    hNnet.pLayers[0].nBytesPerIntermediateOutput = GNA_INT32;
+    hNnet.pLayers[0].operation = INTEL_RECURRENT;
+    hNnet.pLayers[0].mode = INTEL_INPUT_OUTPUT;
     hNnet.pLayers[0].pLayerStruct = &recurrent_layer;
     hNnet.pLayers[0].pInputs = nullptr;
     hNnet.pLayers[0].pOutputsIntermediate = scratchpad;

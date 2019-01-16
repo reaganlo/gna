@@ -93,6 +93,9 @@ typedef enum _gna_set_size
     GNA_SET_XNNLYR = 4,
 } gna_set_size;
 
+#if defined(_WIN32)
+#pragma warning(disable : 201)
+#endif
 typedef struct _dbg_action
 {
     dbg_action_type action_type;

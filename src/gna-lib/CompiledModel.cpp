@@ -43,7 +43,8 @@ CompiledModel::CompiledModel(gna_model_id modelId, const gna_model *rawModel, Me
     ioctlSender{ sender },
     validBoundaries{ [&memoryIn](const void *buffer, const size_t bufferSize)
         { Expect::ValidBoundaries(buffer, bufferSize, memoryIn.GetUserBuffer(), memoryIn.ModelSize); } },
-    softwareModel{ rawModel, gmmCount, validBoundaries },
+    validator{ GNA_3_0, &validBoundaries }, // TODO:3: Pass actual device/device list
+    softwareModel{ rawModel, gmmCount, validator },
     submodels{},
     swFastAccel{ detector.GetFastestAcceleration() },
     swSatAccel{ static_cast<acceleration>(detector.GetFastestAcceleration() & GNA_HW) }
@@ -52,7 +53,7 @@ CompiledModel::CompiledModel(gna_model_id modelId, const gna_model *rawModel, Me
     auto isHardwareCompliant = !(1 == submodels.size() && SubmodelType::Software == submodels.at(0)->Type);
     if(!isHardwareCompliant)
     {
-        Log->Message("WARNING: None of model layers is compliant with selected hardware GNA device, "
+        Log->Warning("None of model layers is compliant with selected hardware GNA device, "
             "only software processing is available for this model.\n");
     }
     if (detector.IsHardwarePresent() && isHardwareCompliant)
@@ -69,9 +70,10 @@ const size_t CompiledModel::MaximumInternalModelSize = CalculateInternalModelSiz
 size_t CompiledModel::CalculateModelSize(const size_t userSize, const uint16_t layerCount,
     const uint16_t gmmCountIn)
 {
-    Expect::InRange(userSize, 64, 256 * 1024 * 1024, GNA_INVALIDMEMSIZE);
+    Expect::InRange<size_t>(userSize, 64, 256 * 1024 * 1024, GNA_INVALIDMEMSIZE);
     auto internalSize = CalculateInternalModelSize(layerCount, gmmCountIn);
-    Expect::InRange(internalSize, 1 * sizeof(XNN_LYR), 256 * 1024 * 1024, GNA_INVALIDMEMSIZE);
+    Expect::InRange<size_t>(internalSize,
+        1 * LayerDescriptor::GetSize(), 256 * 1024 * 1024, GNA_INVALIDMEMSIZE);
     auto totalSize = userSize + internalSize;
     return totalSize;
 }
@@ -89,7 +91,7 @@ size_t CompiledModel::CalculateInternalModelSize(const gna_model * rawModel)
     uint16_t gmmLayerCount = 0;
     for (auto ix = uint32_t{0}; ix < rawModel->nLayers; ++ix)
     {
-        if (INTEL_GMM == rawModel->pLayers[ix].nLayerKind)
+        if (INTEL_GMM == rawModel->pLayers[ix].operation)
             gmmLayerCount++;
     }
     return HardwareModel::CalculateDescriptorSize(rawModel->nLayers, gmmLayerCount);
@@ -117,11 +119,6 @@ const Layer* CompiledModel::GetLayer(uint32_t layerIndex) const
     }
 }
 
-uint32_t CompiledModel::GetHardwareOffset(const BaseAddressC& address) const
-{
-    return hardwareModel->GetOffset(address);
-}
-
 void CompiledModel::InvalidateConfig(gna_request_cfg_id configId, LayerConfiguration *layerConfiguration, uint32_t layerIndex) const
 {
     if (hardwareModel)
@@ -130,7 +127,7 @@ void CompiledModel::InvalidateConfig(gna_request_cfg_id configId, LayerConfigura
     }
 
     auto layer = GetLayer(layerIndex);
-    layer->UpdateKernelConfigs(*layerConfiguration, validBoundaries);
+    layer->UpdateKernelConfigs(*layerConfiguration);
 }
 
 status_t CompiledModel::Score(
@@ -195,13 +192,13 @@ status_t CompiledModel::Score(
 
 void CompiledModel::createSubmodels(const AccelerationDetector& dispatcher)
 {
-    auto getSubmodelType = [&dispatcher](intel_layer_kind_t layerKind)
+    auto getSubmodelType = [&dispatcher](nn_operation operation)
     {
-        if (dispatcher.IsLayerSupported(layerKind))
+        if (dispatcher.IsLayerSupported(operation))
         {
             return SubmodelType::Hardware;
         }
-        if (INTEL_GMM == layerKind && dispatcher.HasFeature(LegacyGMM))
+        if (INTEL_GMM == operation && dispatcher.HasFeature(LegacyGMM))
         {
             return SubmodelType::GMMHardware;
         }
@@ -209,17 +206,17 @@ void CompiledModel::createSubmodels(const AccelerationDetector& dispatcher)
     };
 
     auto &layers = softwareModel.Layers;
-    auto layerKind = layers.at(0)->Config.Kind;
+    auto operation = layers.at(0)->Operation;
 
     auto submodelCount = 0;
-    auto smType = getSubmodelType(layerKind);
+    auto smType = getSubmodelType(operation);
 
     submodels.emplace_back(make_unique<SubModel>(smType, 0));
 
     for (uint16_t layerIx = 1; layerIx < LayerCount; ++layerIx)
     {
-        layerKind = layers.at(layerIx)->Config.Kind;
-        smType = getSubmodelType(layerKind);
+        operation = layers.at(layerIx)->Operation;
+        smType = getSubmodelType(operation);
 
         if (GMMHardware == smType || submodels.at(submodelCount)->Type != smType)
         {

@@ -2,7 +2,7 @@
     Copyright 2018 Intel Corporation.
     This software and the related documents are Intel copyrighted materials,
     and your use of them is governed by the express license under which they
-    were provided to you (Intel OBL Software License Agreement (OEM/IHV/ISV 
+    were provided to you (Intel OBL Software License Agreement (OEM/IHV/ISV
     Distribution & Single User) (v. 11.2.2017) ). Unless the License provides
     otherwise, you may not use, modify, copy, publish, distribute, disclose or
     transmit this software or the related documents without Intel's prior
@@ -29,6 +29,19 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+typedef enum _gmm_read_elimination
+{
+    GMM_NORMAL_OPERATION,
+    GMM_READ_ELIMINATION_ENABLED
+} gmm_read_elimination;
+
+typedef enum _gmm_calculation_mode
+{
+    GMM_L2_DISTANCE,
+    GMM_L1_DISTANCE,
+    GMM_LINF_DISTANCE
+} gmm_calculation_mode;
 
 /** GMM Calculation modes */
 typedef enum _gmm_mode
@@ -59,14 +72,17 @@ typedef struct _gmm_config
 } gna_gmm_config;
 
 /** GMM Data buffers */
-typedef struct _gmm_data
+typedef union _gmm_covariances
 {
-    uint8_t* meanValues;            // Mean values buffer.
-    union {
     uint8_t* inverseCovariancesForMaxMix8;  // Inverse Covariances buffer, use with GNA_MAXMIX8 gna_gmm_mode.
     uint16_t* inverseCovariancesForMaxMix16;// Inverse Covariances buffer, use with GNA_MAXMIX16 gna_gmm_mode.
-    };
-    uint32_t* gaussianConstants;    // Gaussian constants buffer.
+} gna_gmm_covariances;
+
+typedef struct _gmm_data
+{
+    uint8_t* meanValues;                    // Mean values buffer.
+    gna_gmm_covariances inverseCovariances; // Inverse Covariances buffer
+    uint32_t* gaussianConstants;            // Gaussian constants buffer.
 
 } gna_gmm_data;
 

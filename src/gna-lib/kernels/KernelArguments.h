@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2017 Intel Corporation.
+ Copyright 2018 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -26,8 +26,12 @@
 #pragma once
 
 #include <stdint.h>
+#include "../common.h"
+#include "../Address.h"
+#include "gna-api-types-gmm.h"
 
-#include "common.h"
+using GNA::BufferMap;
+using GNA::BaseAddress;
 
 /**
  * Structure will hold aligned deinterleaved feature vectors
@@ -45,60 +49,116 @@ struct KernelBuffers
     int16_t *d6;
     int16_t *d7;
     int64_t *pool;
+    int8_t *cnnFusedBuffer;
     KernelBuffers();
     ~KernelBuffers();
 };
 
-struct PwlOutputConfig
+namespace GNA
 {
-    PwlOutputConfig(PwlOutputConfig const * const source, uint32_t * saturationCountIn) :
-        PwlOutputConfig{*source}
-    {
-        saturationCount = saturationCountIn;
-    }
-    PwlOutputConfig(uint32_t elementCountIn, int32_t* inputIn, int16_t* outputIn) :
-        elementCount{elementCountIn},
-        input{inputIn},
-        output{outputIn},
-        saturationCount{nullptr}
+struct PwlCached;
+}
+
+struct BaseConfig: public BufferMap
+{
+    using BufferMap::BufferMap;
+    BaseConfig() = default;
+    BaseConfig(const BufferMap& buffers);
+    BaseConfig(const BaseAddress& inputBuffer, const BaseAddress& outputBuffer);
+
+    void Update(const BufferMap& buffers);
+
+    int8_t const * Inputs = nullptr;
+    int8_t * Outputs = nullptr;
+private:
+    void setPointers(); // TODO:3:remove and use map in kernels?
+};
+
+template<typename TransformConfig>
+struct KernelConfig : public BaseConfig
+{
+    using BaseConfig::BaseConfig;
+    KernelConfig(KernelConfig const & source) = default;
+    KernelConfig(TransformConfig const & source, BaseConfig const & io) :
+        BaseConfig{io},
+        Transform{source}
     {}
 
-    uint32_t elementCount;
-    int32_t * input;
-    int16_t * output;
-    uint32_t * saturationCount;
+    TransformConfig Transform;
+};
+
+struct ExecutionConfig
+{
+    ExecutionConfig(KernelBuffers const * intermediate, uint32_t * saturationCount) :
+        Intermediate{const_cast<KernelBuffers *>(intermediate)},
+        SaturationCount{saturationCount}
+    {};
+
+    KernelBuffers * Intermediate;
+    uint32_t * SaturationCount;
+};
+
+template<typename TransformConfig>
+struct ExecutionKernelConfig : public ExecutionConfig
+{
+    ExecutionKernelConfig(KernelConfig<TransformConfig> * requestConfig,
+        ExecutionConfig const & executioConfig) :
+        ExecutionConfig{executioConfig},
+        RequestConfig{requestConfig}
+    {
+        if (nullptr == RequestConfig->Inputs)
+        {
+            RequestConfig->Inputs = Intermediate->cnnFusedBuffer;
+        }
+        if (nullptr == RequestConfig->Outputs)
+        {
+            RequestConfig->Outputs = Intermediate->cnnFusedBuffer;
+        }
+    }
+
+    KernelConfig<TransformConfig> * const RequestConfig;
+};
+
+struct ActivationConfig
+{
+    ActivationConfig() = default; // TODO:3:remove when all layers are using Transform as base class
+    ActivationConfig(ActivationConfig const & source) = default;
+    ActivationConfig(uint32_t elementCount, GNA::PwlCached const * kernel);
+
+    uint32_t ElementCount;
+    GNA::PwlCached const * const Kernel;
+};
+
+struct PoolingConfig2D
+{
+    PoolingConfig2D(PoolingConfig2D const & source) = default;
+    PoolingConfig2D(nn_layer_pool2d const & config);
+
+    nn_layer_pool2d const Pooling;
+};
+
+struct ConvolutionConfig2D
+{
+    ConvolutionConfig2D(ConvolutionConfig2D const & source) = default;
+    ConvolutionConfig2D(gna_3d_dimensions const & inputDimensions,
+        gna_convolution_func const & config);
+
+    gna_3d_dimensions const InputDimensions;
+    gna_convolution_func const Convolution;
 };
 
 // TODO: refactor: consider splitting into run config and basic constant config
 struct AffineConfig
 {
-    AffineConfig(AffineConfig const * const source, int16_t const * inputIn, int32_t * const outputIn) :
-        AffineConfig{*source}
-    {
-        input = inputIn;
-        output = outputIn;
-    }
-    AffineConfig(AffineConfig const * const source, uint32_t * saturationCountIn, KernelBuffers * fvBuffersIn) :
-        AffineConfig{*source}
-    {
-        saturationCount = saturationCountIn;
-        fvBuffers = fvBuffersIn;
-    }
-    AffineConfig(uint32_t const outputElementCountIn, uint32_t const inputVectorCountIn, 
+    AffineConfig(int16_t const * inputIn, int32_t * const outputIn, AffineConfig const * const source);
+    AffineConfig(AffineConfig const * const source, uint32_t * saturationCountIn, KernelBuffers * fvBuffersIn);
+    AffineConfig(uint32_t const outputElementCountIn, uint32_t const inputVectorCountIn,
         uint32_t const inputElementCountIn, int16_t const * inputIn, int32_t * const outputIn, void const * weightsIn,
-        void const * biases, nn_bias_s const * multiBiasIn, uint32_t const multiBiasVectorCountIn) :
-        outputElementCount{outputElementCountIn},
-        inputVectorCount{inputVectorCountIn},
-        inputElementCount{inputElementCountIn},
-        input{inputIn},
-        output{outputIn},
-        saturationCount{nullptr},
-        fvBuffers{nullptr},
-        weights1B{static_cast<int8_t const *>(weightsIn)},
-        biasesCompound{static_cast<nn_bias_c const *>(biases)},
-        multiBias{multiBiasIn},
-        multiBiasVectorCount{multiBiasVectorCountIn}
-    {}
+        void const * biases, void const * multiBiasIn, uint32_t const multiBiasVectorCountIn);
+    AffineConfig(uint32_t const outputElementCountIn, uint32_t const inputVectorCountIn,
+        uint32_t const inputElementCountIn, int16_t const * inputIn, int32_t * const outputIn, void const * weightsIn,
+        void const * biases, void const * multiBiasIn, uint32_t const multiBiasVectorCountIn,
+        const uint32_t bytesPerBiasIn);
 
     uint32_t const outputElementCount;  // M - out rows
     uint32_t const inputVectorCount;    // N - columns
@@ -115,20 +175,18 @@ struct AffineConfig
     } ;
     union
     {
-    nn_bias_c const * const weightScaleFactors; // [M] Scaling factors for 1B weights or NULL for 2B weights. 
+    nn_scaling const * const weightScaleFactors; // [M] Scaling factors for 1B weights or NULL for 2B weights. 
     nn_bias_c const * const biasesCompound;     // B - [M]
     nn_bias_s const * const biasesSimple;       // B - [M]
     };
     nn_bias_s const * const multiBias;
     uint32_t const multiBiasVectorCount;
+    uint32_t const bytesPerBias = 0;
 };
 
 struct AffineConfigAl
 {
-    AffineConfigAl(uint32_t const * indicesIn, uint32_t const countIn) :
-        indices{indicesIn},
-        count{countIn}
-    {}
+    AffineConfigAl(uint32_t const * indicesIn, uint32_t const countIn);
 
     uint32_t const * const indices; // AL [L]
     uint32_t const count;           // L
@@ -136,27 +194,16 @@ struct AffineConfigAl
 
 struct RecurrentConfig
 {
-    RecurrentConfig(RecurrentConfig const * const source, uint32_t * saturationCountIn) :
-        RecurrentConfig{*source}
-    {
-        saturationCount = saturationCountIn;
-        pwlOutputConfig.saturationCount = saturationCountIn;
-    }
+    RecurrentConfig(RecurrentConfig const * const source, uint32_t * saturationCountIn);
     RecurrentConfig(
         uint32_t const outputElementCountIn, uint32_t const inputVectorCountIn, uint32_t const inputElementCountIn,
-        int16_t const * inputIn, int16_t * const feedbackBufferIn, int32_t * const outputIn, 
-        int16_t * outputActivatedIn, void const * weightsIn, void const * biases) :
-        outputElementCount{outputElementCountIn},
-        inputVectorCount{inputVectorCountIn},
-        inputElementCount{inputElementCountIn},
-        input{inputIn},
-        feedbackBuffer{feedbackBufferIn},
-        output{outputIn},
-        saturationCount{nullptr},
-        weights1B{static_cast<int8_t const *>(weightsIn)},
-        biasesCompound{static_cast<nn_bias_c const *>(biases)},
-        pwlOutputConfig{outputElementCount, outputIn, outputActivatedIn}
-    {}
+        int16_t const * inputIn, int16_t * const feedbackBufferIn, int32_t * const outputIn,
+        int16_t * outputActivatedIn, void const * weightsIn, void const * biases, ActivationConfig const & pwl);
+    RecurrentConfig(
+        uint32_t const outputElementCountIn, uint32_t const inputVectorCountIn, uint32_t const inputElementCountIn,
+        int16_t const * inputIn, int16_t * const feedbackBufferIn, int32_t * const outputIn,
+        int16_t * outputActivatedIn, void const * weightsIn, void const * biases,
+        uint32_t bytesPerBiasIn, uint32_t bytesPerOutput, ActivationConfig const & pwl);
 
     uint32_t const outputElementCount;      // M - cols
     uint32_t const inputVectorCount;        // N - rows
@@ -165,6 +212,8 @@ struct RecurrentConfig
     int16_t * feedbackBuffer;               // (flat) [N,M]
     int32_t * output;                       // O1 - [N,M]
     uint32_t * saturationCount;
+    uint32_t bytesPerBias = 0;
+    uint32_t bytesPerOutput = 0;
     union
     {
     int8_t const * const weights1B;         // W - [M,K+M]
@@ -175,18 +224,13 @@ struct RecurrentConfig
     nn_bias_c const * const biasesCompound; // B - [M]
     nn_bias_s const * const biasesSimple;   // B - [M]
     };
-    PwlOutputConfig pwlOutputConfig;
+    KernelConfig<ActivationConfig> activation;
 };
 
 struct TransposeConfig
 {
     TransposeConfig(uint32_t rowCountIn, uint32_t columntCountIn, int16_t const * const inputIn,
-        int16_t * const outputIn) :
-        rowCount{rowCountIn},
-        columnCount{columntCountIn},
-        input{inputIn},
-        output{outputIn}
-    {}
+        int16_t * const outputIn);
 
     uint32_t const rowCount;
     uint32_t const columnCount;
@@ -197,14 +241,7 @@ struct TransposeConfig
 struct CopyConfig
 {
     CopyConfig(uint32_t rowCountIn, uint32_t columntCountIn, uint32_t inputColumnCountIn, uint32_t outputColumnCountIn,
-        int16_t const * const inputIn, int16_t * const outputIn) :
-        rowCount{rowCountIn},
-        columnCount{columntCountIn},
-        inputColumnCount{inputColumnCountIn},
-        outputColumnCount{outputColumnCountIn},
-        input{inputIn},
-        output{outputIn}
-    {}
+        int16_t const * const inputIn, int16_t * const outputIn);
 
     uint32_t const rowCount;
     uint32_t const columnCount;
@@ -217,35 +254,21 @@ struct CopyConfig
 struct ConvolutionConfig
 {
     ConvolutionConfig(ConvolutionConfig const * const source, int16_t const * const inputsIn,
-        int32_t * const outputsIn) :
-        ConvolutionConfig{*source}
-    {
-        inputs = inputsIn;
-        convolutedOutputs = outputsIn;
-    }
-    ConvolutionConfig(ConvolutionConfig const * const source, uint32_t * const saturationCountIn) :
-        ConvolutionConfig{*source}
-    {
-        saturationCount = saturationCountIn;
-    }
+        int32_t * const outputsIn);
+    ConvolutionConfig(ConvolutionConfig const * const source, uint32_t * const saturationCountIn);
     ConvolutionConfig(uint32_t const inputBandStrideIn, uint32_t const FilterOutputCountIn, uint32_t const FilterCountIn,
         uint32_t const FilterCoefficientCountIn, int16_t const * const inputsIn, int16_t const * const filtersIn,
-        nn_bias_s const * const biasesIn, int32_t * const outputsIn) :
-        inputBandStride{inputBandStrideIn},
-        filterOutputCount{FilterOutputCountIn},
-        filterCount{FilterCountIn},
-        filterCoefficientCount{FilterCoefficientCountIn},
-        inputs{inputsIn},
-        filters{filtersIn},
-        biases{biasesIn},
-        convolutedOutputs{outputsIn},
-        saturationCount{nullptr}
-    {}
+        nn_bias_s const * const biasesIn, int32_t * const outputsIn);
+    ConvolutionConfig(uint32_t const inputBandStrideIn, uint32_t const FilterOutputCountIn, uint32_t const FilterCountIn,
+        uint32_t const FilterCoefficientCountIn, int16_t const * const inputsIn, int16_t const * const filtersIn,
+        nn_bias_s const * const biasesIn, int32_t * const outputsIn, uint32_t bytesPerBiasIn, uint32_t bytesPerFilter);
 
     uint32_t const inputBandStride;
     uint32_t const filterOutputCount;
     uint32_t const filterCount;
     uint32_t const filterCoefficientCount;
+    uint32_t const bytesPerBias = 0;
+    uint32_t const bytesPerFilter = 0;
 
     int16_t const * inputs;
     int16_t const * const filters;
@@ -254,24 +277,15 @@ struct ConvolutionConfig
     union
     {
         int32_t * convolutedOutputs;
-        int16_t * const pooledOutputs;
+        int16_t * pooledOutputs;
     };
     uint32_t * saturationCount;
 };
 
 struct PoolingConfig
 {
-    PoolingConfig(PoolingConfig const * const source, int64_t * const bufferIn) :
-        PoolingConfig{*source}
-    {
-        buffer = bufferIn;
-    }
-    PoolingConfig(nn_pool_type const typeIn, uint32_t const sizeIn, uint32_t const stepIn) :
-        type{typeIn},
-        size{sizeIn},
-        step{stepIn},
-        buffer{nullptr}
-    {}
+    PoolingConfig(PoolingConfig const * const source, int64_t * const bufferIn);
+    PoolingConfig(nn_pool_type const typeIn, uint32_t const sizeIn, uint32_t const stepIn);
 
     nn_pool_type const type;
     uint32_t const size;
@@ -281,28 +295,11 @@ struct PoolingConfig
 
 struct GmmConfig
 {
-    GmmConfig(GmmConfig const * const source, uint8_t *inputScratchPadIn) :
-        GmmConfig{*source}
-    {
-        inputScratchPad = inputScratchPadIn;
-    }
+    GmmConfig(GmmConfig const * const source, uint8_t *inputScratchPadIn);
     GmmConfig(uint32_t const inputVectorCountIn, uint32_t const inputElementCountIn, uint32_t const mixCountIn,
         uint32_t const meanSetOffsetSizeIn, uint32_t const varSetOffsetSizeIn, uint32_t const gaussConstSetOffsetSizeIn,
         uint32_t const maxScoreIn, uint32_t const stateCountIn, gna_gmm_data const * const dataIn,
-        uint8_t const * const inputIn, uint32_t * const outputIn) :
-        inputVectorCount{inputVectorCountIn},
-        inputElementCount{inputElementCountIn},
-        mixtureComponentCount{mixCountIn},
-        meanSetOffsetSize{meanSetOffsetSizeIn},
-        varSetOffsetSize{varSetOffsetSizeIn},
-        gaussConstSetOffsetSize{gaussConstSetOffsetSizeIn},
-        maximumScore{maxScoreIn},
-        stateCount{stateCountIn},
-        data{dataIn},
-        input{inputIn},
-        inputScratchPad{nullptr},
-        output{outputIn}
-    {}
+        uint8_t const * const inputIn, uint32_t * const outputIn);
 
     uint32_t const inputVectorCount;
     uint32_t const inputElementCount;

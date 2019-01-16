@@ -534,14 +534,14 @@ void AffineMultiBiasKernelImpl2B(AffineConfig const * const config)
     int16_t const *input_7 = nullptr;
 
     // simd input pointers
-    __m128i *in_ptr0;
-    __m128i *in_ptr1;
-    __m128i *in_ptr2;
-    __m128i *in_ptr3;
-    __m128i *in_ptr4;
-    __m128i *in_ptr5;
-    __m128i *in_ptr6;
-    __m128i *in_ptr7;
+    __m128i *in_ptr0 = nullptr;
+    __m128i *in_ptr1 = nullptr;
+    __m128i *in_ptr2 = nullptr;
+    __m128i *in_ptr3 = nullptr;
+    __m128i *in_ptr4 = nullptr;
+    __m128i *in_ptr5 = nullptr;
+    __m128i *in_ptr6 = nullptr;
+    __m128i *in_ptr7 = nullptr;
 
     // simd inputs and weight
     __m128i in0;

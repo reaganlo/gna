@@ -42,7 +42,6 @@
 #include <cstring>
 #include <fstream>
 
-#include "gna-api.h"
 #include "gna-api-dumper.h"
 
 void print_outputs(
@@ -192,8 +191,8 @@ int main(int argc, char *argv[])
     }
 
     intel_affine_func_t affine_func;       // parameters needed for the affine transformation are held here
-    affine_func.nBytesPerWeight = 2;
-    affine_func.nBytesPerBias = 4;
+    affine_func.nBytesPerWeight = GNA_INT16;
+    affine_func.nBytesPerBias = GNA_INT32;
     affine_func.pWeights = weights_buffer;
     affine_func.pBiases = biases_buffer;
 
@@ -210,11 +209,11 @@ int main(int argc, char *argv[])
     nnet_layer.nInputRows = 16;
     nnet_layer.nOutputColumns = nnet.nGroup;
     nnet_layer.nOutputRows = 8;
-    nnet_layer.nBytesPerInput = 2;
-    nnet_layer.nBytesPerOutput = 4;             // 4 bytes since we are not using PWL (would be 2 bytes otherwise)
-    nnet_layer.nBytesPerIntermediateOutput = 4; // this is always 4 bytes
-    nnet_layer.type = INTEL_INPUT_OUTPUT;
-    nnet_layer.nLayerKind = INTEL_AFFINE;
+    nnet_layer.nBytesPerInput = GNA_INT16;
+    nnet_layer.nBytesPerOutput = GNA_INT32;             // 4 bytes since we are not using PWL (would be 2 bytes otherwise)
+    nnet_layer.nBytesPerIntermediateOutput = GNA_INT32; // this is always 4 bytes
+    nnet_layer.mode = INTEL_INPUT_OUTPUT;
+    nnet_layer.operation = INTEL_AFFINE;
     nnet_layer.pLayerStruct = &affine_layer;
 
     nnet_layer.pInputs = pinned_inputs;
@@ -229,7 +228,7 @@ int main(int argc, char *argv[])
     GnaModelCreate(gna_handle, &nnet, &model_id);
 
     intel_gna_model_header model_header;
-    void* dumped_model = GnaModelDump(model_id, GNA_SUE, &model_header, &status, customAlloc);
+    void* dumped_model = GnaModelDump(model_id, GNA_1_0_EMBEDDED, &model_header, &status, customAlloc);
     if (GNA_SUCCESS != status || NULL == dumped_model)
     {
         GnaFree(gna_handle);
@@ -249,8 +248,8 @@ int main(int argc, char *argv[])
 
     gna_request_cfg_id config_id;
     GnaModelRequestConfigAdd(model_id, &config_id);
-    GnaRequestConfigBufferAdd(config_id, GNA_IN, 0, pinned_inputs);
-    GnaRequestConfigBufferAdd(config_id, GNA_OUT, 0, pinned_outputs);
+    GnaRequestConfigBufferAdd(config_id, InputComponent, 0, pinned_inputs);
+    GnaRequestConfigBufferAdd(config_id, OutputComponent, 0, pinned_outputs);
 
     // calculate on GNA HW (non-blocking call)
     gna_request_id request_id;     // this gets filled with the actual id later on

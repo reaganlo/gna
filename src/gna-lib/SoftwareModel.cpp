@@ -37,22 +37,21 @@
 #include "RecurrentLayer.h"
 #include "Request.h"
 #include "RequestConfiguration.h"
-#include "Validator.h"
+#include "Expect.h"
 
 using std::make_unique;
 
 using namespace GNA;
 
-SoftwareModel::SoftwareModel(const gna_model *const network, uint16_t& gmmCount, ValidBoundariesFunctor validBoundaries) :
+SoftwareModel::SoftwareModel(const gna_model *const network, uint16_t& gmmCount, const BaseValidator& validator) :
     layerCount{ network->nLayers }
 {
 #ifndef NO_ERRCHECK
-    Expect::InRange(network->nGroup, 1, XNN_N_GROUP_MAX, XNN_ERR_LYR_CFG);
-    Expect::InRange(network->nLayers, 1, XNN_LAYERS_MAX_COUNT, XNN_ERR_NET_LYR_NO);
+    Expect::InRange(network->nGroup, ui32_1, XNN_N_GROUP_MAX, XNN_ERR_LYR_CFG);
+    Expect::InRange(layerCount, ui32_1, XNN_LAYERS_MAX_COUNT, XNN_ERR_NET_LYR_NO);
     Expect::NotNull(network->pLayers);
 #endif
-    build(network, gmmCount);
-    validate(validBoundaries);
+    build(network->pLayers, gmmCount, validator);
 }
 
 status_t SoftwareModel::Score(
@@ -73,22 +72,16 @@ status_t SoftwareModel::Score(
     for (; iter < end; ++iter)
     {
         const auto& layer = *iter;
-        if (INTEL_HIDDEN == layer->Config.Type)
+        auto found = requestConfiguration.LayerConfigurations.find(layerIndex);
+        if (found == requestConfiguration.LayerConfigurations.end())
         {
+            // TODO:3:simplify to single Compute as in Cnn2D
             layer->ComputeHidden(accel, fvBuffers, &saturationCount);
         }
-        else 
+        else
         {
-            auto found = requestConfiguration.LayerConfigurations.find(layerIndex);
-            if (found != requestConfiguration.LayerConfigurations.end())
-            {
-                auto layerConfiguration = found->second.get();
-                layer->ComputeConfig(*layerConfiguration, accel, fvBuffers, &saturationCount);
-            }
-            else
-            {
-                throw GnaModelException{ XNN_ERR_LYR_CFG, layerIndex };
-            }
+            auto layerConfiguration = found->second.get();
+            layer->Compute(*layerConfiguration, accel, fvBuffers, &saturationCount);
         }
 
         ++layerIndex;
@@ -97,34 +90,18 @@ status_t SoftwareModel::Score(
     return (saturationCount > 0) ? GNA_SSATURATE : GNA_SUCCESS;
 }
 
-void SoftwareModel::build(const gna_model *const network, uint16_t& gmmCount)
+void SoftwareModel::build(const nn_layer* layers, uint16_t& gmmCount, const BaseValidator& validator)
 {
-    for (auto i = uint32_t{0}; i < network->nLayers; i++)
+    for (auto i = uint32_t{0}; i < layerCount; i++)
     {
         try
         {
-            auto layer = network->pLayers + i;
-            Layers.push_back(Layer::Create(const_cast<const nn_layer*>(layer)));
+            auto layer = layers + i;
+            Layers.push_back(Layer::Create(layer, validator));
 
-            if (INTEL_GMM == layer->nLayerKind)
+            if (INTEL_GMM == layer->operation)
             {
                 ++gmmCount;
-            }
-
-            switch (layer->type)
-            {
-                case INTEL_INPUT:
-                    ++inputLayerCount;
-                    break;
-                case INTEL_OUTPUT:
-                    ++outputLayerCount;
-                    break;
-                case INTEL_INPUT_OUTPUT:
-                    ++inputLayerCount;
-                    ++outputLayerCount;
-                    break;
-                default:
-                    break;
             }
         }
         catch (const GnaException& e)
@@ -138,143 +115,10 @@ void SoftwareModel::build(const gna_model *const network, uint16_t& gmmCount)
     }
 }
 
-void SoftwareModel::validate(ValidBoundariesFunctor validBoundaries) const
-{
-    for (const auto& layer : Layers)
-    {
-        if (layer->Config.Type != INTEL_INPUT
-            && layer->Config.Type != INTEL_INPUT_OUTPUT)
-        {
-            validBoundaries(layer->Input.Buffer.Get(), layer->Input.BufferSize);
-        }
-        if (layer->Config.Type != INTEL_OUTPUT
-            && layer->Config.Type != INTEL_INPUT_OUTPUT)
-        {
-            validBoundaries(layer->Output.Buffer.Get(), layer->Output.BufferSize);
-        }
-
-        const auto layerKind = layer->Config.Kind;
-        const auto affineLayer = dynamic_cast<AffineBaseLayer*>(layer.get());
-        const ActivationFunction *activation = nullptr;
-
-        if (affineLayer)
-        {
-            activation = affineLayer->Activation.get();
-
-            size_t biasesSize = layer->Output.ElementCount;
-            size_t weightsSize = (GNA_WEIGHT_2B == affineLayer->Affine->Mode ? sizeof(int16_t) : sizeof(int8_t));
-
-            if (INTEL_AFFINE_MULTIBIAS == layerKind)
-            {
-                biasesSize *= sizeof(nn_bias_s);
-                if (GNA_WEIGHT_1B == affineLayer->Affine->Mode)
-                {
-                    size_t weightScaleSize = layer->Output.ElementCount * sizeof(nn_bias_c);
-                    auto functionMulti = static_cast<const AffineFunctionMulti1B*>(affineLayer->Affine.get());
-                    validBoundaries(functionMulti->WeightScaleFactors, weightScaleSize);
-                }
-            }
-            else
-            {
-                biasesSize *= (GNA_WEIGHT_2B == affineLayer->Affine->Mode ? sizeof(nn_bias_s) : sizeof(nn_bias_c));
-            }
-
-            if (INTEL_RECURRENT == layerKind)
-            {
-                weightsSize *= ((layer->Output.ElementCount + layer->Input.ElementCount) * layer->Output.ElementCount);
-
-                if (INTEL_OUTPUT != layer->Config.Type && INTEL_INPUT_OUTPUT != layer->Config.Type)
-                {
-                    auto rnnLayer = static_cast<RnnLayer*>(layer.get());
-                    auto feedbackBuffer = layer->Output.Buffer.Get() - rnnLayer->FeedbackDelay * layer->Output.ElementCount;
-                    auto feedbackSize = layer->Output.ElementCount;
-                    validBoundaries(feedbackBuffer, feedbackSize);
-                }
-            }
-            else if (INTEL_AFFINE_DIAGONAL == layerKind)
-            {
-                weightsSize *= layer->Output.ElementCount;
-            }
-            else /* INTEL_AFFINE || INTEL_AFFINE_MULTIBIAS */
-            {
-                weightsSize *= layer->Input.ElementCount * layer->Output.ElementCount;
-            }
-
-            validBoundaries(affineLayer->Affine->Biases, biasesSize);
-            validBoundaries(affineLayer->Affine->Weights, weightsSize);
-        }
-        else if (INTEL_CONVOLUTIONAL == layerKind)
-        {
-            auto cnnLayer = static_cast<CnnLayer*>(layer.get());
-            activation = cnnLayer->Activation.get();
-
-            size_t filtersSize = cnnLayer->Convolution.Filters.Count * cnnLayer->Convolution.Filters.CoefficientCount;
-            validBoundaries(cnnLayer->Convolution.Filters.Data, filtersSize);
-
-            size_t biasSize = cnnLayer->Convolution.Filters.Count * sizeof(nn_bias_s);
-            validBoundaries(cnnLayer->Convolution.Filters.Biases.Get(), biasSize);
-
-            break;
-        }
-        else if (INTEL_GMM == layerKind)
-        {
-            auto gmmLayer = static_cast<GmmLayer*>(layer.get());
-
-            if (GMM_LAYOUT_FLAT == gmmLayer->Config.layout)
-            {
-                auto meanSetSize = gmmLayer->Config.stateCount * gmmLayer->Params.MeanSetOffsetSize;
-                auto varSetSize = gmmLayer->Config.stateCount * gmmLayer->Params.VarSetOffsetSize;
-                auto constSetSize = gmmLayer->Config.stateCount * gmmLayer->Params.GaussConstSetOffsetSize;
-
-                validBoundaries(gmmLayer->Data.gaussianConstants, constSetSize);
-                validBoundaries(gmmLayer->Data.meanValues, meanSetSize);
-                if (GNA_MAXMIX16 == gmmLayer->Config.mode)
-                {
-                    validBoundaries(gmmLayer->Data.inverseCovariancesForMaxMix16, varSetSize);
-                }
-                else
-                {
-                    validBoundaries(gmmLayer->Data.inverseCovariancesForMaxMix8, varSetSize);
-                }
-            }
-            else
-            {
-                auto means = gmmLayer->Data.meanValues;
-                auto vars = gmmLayer->Data.inverseCovariancesForMaxMix8;
-                auto consts = reinterpret_cast<uint8_t*>(gmmLayer->Data.gaussianConstants);
-
-                auto meanSetSize = gmmLayer->Config.mixtureComponentCount * gmmLayer->Input.ElementCount * GMM_MEAN_VALUE_SIZE;
-                auto varSetSize = gmmLayer->Config.mixtureComponentCount * gmmLayer->Input.ElementCount * gmmLayer->Params.VarianceSize;
-                auto gaussConstSetSize = ALIGN(gmmLayer->Config.mixtureComponentCount, 2) * GMM_CONSTANTS_SIZE;
-
-                for (auto i = uint32_t{ 0 }; i < gmmLayer->Config.stateCount; ++i)
-                {
-                    validBoundaries(means, meanSetSize);
-                    validBoundaries(vars, varSetSize);
-                    validBoundaries(consts, gaussConstSetSize);
-
-                    means += gmmLayer->Params.MeanSetOffsetSize;
-                    vars += gmmLayer->Params.VarSetOffsetSize;
-                    consts += gmmLayer->Params.GaussConstSetOffsetSize;
-                }
-            }
-
-            break;
-        }
-
-        if (activation)
-        {
-            auto scratchpadSize = layer->Output.ElementCount * layer->Output.VectorCount * LayerOutput::ActivatedOutputSize;
-            validBoundaries(layer->Output.ScratchPad, scratchpadSize);
-
-            auto segmentsSize = activation->SegmentCount * sizeof(nn_pwl_seg);
-            validBoundaries(activation->Segments, segmentsSize);
-        }
-    }
-}
-
 void SoftwareModel::validateConfiguration(const RequestConfiguration& configuration) const
 {
-    Expect::True(inputLayerCount == configuration.InputBuffersCount, XNN_ERR_NETWORK_INPUTS);
-    Expect::True(outputLayerCount == configuration.OutputBuffersCount, XNN_ERR_NETWORK_OUTPUTS);
+    UNREFERENCED_PARAMETER(configuration);
+    //TODO:3:review and remove
+    //Expect::True(inputLayerCount == configuration.InputBuffersCount, XNN_ERR_NETWORK_INPUTS);
+    //Expect::True(outputLayerCount == configuration.OutputBuffersCount, XNN_ERR_NETWORK_OUTPUTS);*/
 }

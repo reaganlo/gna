@@ -37,7 +37,7 @@ namespace GNA
     class AccelerationDetector;
     class CompiledModel;
 
-    class Memory : public BaseAddressC
+    class Memory : public BaseAddress
     {
     public:
         Memory() = default;
@@ -50,7 +50,7 @@ namespace GNA
 
         virtual ~Memory();
 
-        std::map<gna_model_id, std::unique_ptr<CompiledModel>> Models;
+        void Map();
 
         uint64_t GetId() const;
 
@@ -61,24 +61,25 @@ namespace GNA
 
         template<class T = void> T * GetUserBuffer() const
         {
-            auto address = BaseAddressC(this->Get() + InternalSize);
+            auto address = BaseAddress(this->Get() + InternalSize);
             return address.Get<T>();
         }
-
-        void Map();
 
         void AllocateModel(const gna_model_id modelId, const gna_model * model, const AccelerationDetector& detector);
 
         void DeallocateModel(gna_model_id modelId);
 
-        CompiledModel& GetModel(gna_model_id modelId);
+        CompiledModel& GetModel(gna_model_id modelId) const;
         void * GetDescriptorsBase(gna_model_id modelId) const;
+
+        std::map<gna_model_id, std::unique_ptr<CompiledModel>> Models;
 
         // Internal GNA library auxiliary memory size.
         const size_t InternalSize;
 
         // Size of memory requested for model by user.
         const size_t ModelSize;
+
 
     protected:
         virtual std::unique_ptr<CompiledModel> createModel(const gna_model_id modelId, const gna_model *model, const AccelerationDetector &detector);

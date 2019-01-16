@@ -31,7 +31,7 @@
 #include "Device.h"
 #include "DeviceVerbose.h"
 #include "Logger.h"
-#include "Validator.h"
+#include "Expect.h"
 
 using std::thread;
 using std::unique_ptr;

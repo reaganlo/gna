@@ -76,6 +76,8 @@ enum ModelSetupType
     ModelSetupMix,
     ModelSetupSplit_1_1B,
     ModelSetupSplit_1_2B,
+
+    ModelSetupConvolution_2D
 };
 
 class IModelSetup

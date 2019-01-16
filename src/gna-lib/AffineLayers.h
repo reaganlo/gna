@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2017 Intel Corporation.
+ Copyright 2018 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -25,8 +25,9 @@
 
 #pragma once
 
+#include "ActivationFunction.h"
+#include "AffineFunctions.h"
 #include "Layer.h"
-#include "LayerFunctions.h"
 
 namespace GNA
 {
@@ -36,36 +37,34 @@ class AffineBaseLayer : public Layer
 public:
     virtual ~AffineBaseLayer() = default;
 
-    const std::unique_ptr<const ActivationFunction> Activation;
     const std::unique_ptr<const AffineFunction> Affine;
+    const std::unique_ptr<const ActivationFunction> Activation;
 
 protected:
-    AffineBaseLayer(const nn_layer *layer);
+    AffineBaseLayer(const nn_layer *layer, const BaseValidator& validatorIn);
 
-    virtual void UpdateKernelConfigs(LayerConfiguration& layerConfiguration, ValidBoundariesFunctor validBoundaries) const override;
+    virtual void UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const override;
 
 private:
-    void computeHidden(acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const;
-    void computeHiddenPwl(acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const;
-    void computeConfig(const LayerConfiguration& layerConfiguration, acceleration accel, KernelBuffers *fvBuffers,
-        uint32_t *saturationCount) const;
-    void computeConfigPwl(const LayerConfiguration& layerConfiguration, acceleration accel, KernelBuffers *fvBuffers,
-        uint32_t *saturationCount) const;
+    void computeHidden(acceleration accel, ExecutionConfig const & execution) const;
+    void computeHiddenPwl(acceleration accel, ExecutionConfig const & execution) const;
+    void compute(const LayerConfiguration& layerConfiguration, acceleration accel, ExecutionConfig const & execution) const;
+    void computePwl(const LayerConfiguration& layerConfiguration, acceleration accel, ExecutionConfig const & execution) const;
 };
 
 class AffineLayer : public AffineBaseLayer
 {
 public:
-    AffineLayer(const nn_layer *layer);
+    AffineLayer(const nn_layer *layer, const BaseValidator& validatorIn);
     virtual ~AffineLayer() = default;
 
-    virtual void UpdateKernelConfigs(LayerConfiguration& layerConfiguration, ValidBoundariesFunctor validBoundaries) const override;
+    virtual void UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const override;
 };
 
 class AffineDiagonalLayer : public AffineBaseLayer
 {
 public:
-    AffineDiagonalLayer(const nn_layer *layer);
+    AffineDiagonalLayer(const nn_layer *layer, const BaseValidator& validatorIn);
     virtual ~AffineDiagonalLayer() = default;
 };
 

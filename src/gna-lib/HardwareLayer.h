@@ -30,23 +30,22 @@
 
 #include "AffineLayers.h"
 #include "Layer.h"
+#include "LayerDescriptor.h"
+#include "ConvolutionalFunctions.h"
 
 namespace GNA
 {
-class ActiveList;
-struct ConfigurationBuffer;
+
+struct ActiveList;
 
 struct DescriptorParameters
 {
-    DescriptorParameters(const Layer* softwareLayer, const BaseAddressC& memoryBase, const AddrXnnLyr& xnnDescriptor,
-        const AddrGmmCfgC& gmmDescriptor, const uint32_t hardwareInternalBufferSize);
+    DescriptorParameters(const Layer* softwareLayer, const LayerDescriptor& xnnDescriptor);
     virtual ~DescriptorParameters() = default;
 
     const Layer* SoftwareLayer;
-    const BaseAddressC& MemoryBase;
-    XNN_LYR * const XnnDescriptor;
-    GMM_CONFIG * const GmmDescriptor;
-    const uint32_t HardwareInternalBufferSize;
+    LayerDescriptor XnnDescriptor;
+    const AddrGmmCfg GmmDescriptor;
 };
 
 // Hardware Layer descriptor converter
@@ -58,7 +57,7 @@ public:
 
     virtual NN_OP_TYPE GetNnopType(bool hasActiveList) const;
 
-    uint32_t GetLayerDescriptorOffset() const;
+    virtual uint32_t GetXnnDescriptorOffset() const;
     virtual uint32_t GetGmmDescriptorOffset() const;
     virtual uint32_t GetLdScrlenOffset() const;
     virtual uint32_t GetLdOutputOffset() const;
@@ -70,16 +69,13 @@ public:
     virtual uint32_t GetScrlen(uint32_t indicesCount) const;
 
 protected:
-    static const std::map<const nn_layer_kind, const NN_OP_TYPE> OperationsMap;
+    static const std::map<const nn_operation, const NN_OP_TYPE> OperationsMap;
 
     HardwareLayer(const DescriptorParameters& parameters);
 
+    void saveCommonPart();
     void save();
-
-    inline uint32_t getOffset(const BaseAddressC& address) const
-    {
-        return address.GetOffset(MemoryBase);
-    }
+    void saveActivation(const ActivationFunction* activationIn);
 };
 
 // Extended Hardware Layer descriptor converter
@@ -99,12 +95,8 @@ protected:
     const uint32_t bufferElementCount;
     uint32_t lastIterationElementCount;
     const AffineFunction* affine = nullptr;
-    const ActivationFunction* activation = nullptr;
 
 private:
-    // Number of data elements that may be stored in hw buffer
-    static const std::map<const uint32_t, const std::array<const uint32_t, XNN_N_GROUP_MAX>> bufferElementsMap;
-
     const uint32_t iterationGrouping; // grouping for iteration calculation
     uint32_t iterationCount; // number of iterations = data chunks/parts
 };
@@ -151,7 +143,7 @@ public:
     virtual uint32_t GetLdFeedbackOffset() const override;
 
     // calculates feedback buffer offset for per RequestConfiguration output buffer
-    uint32_t CalculateFeedbackBuffer(const OutputBuffer& outputBuffer) const;
+    uint32_t CalculateFeedbackBuffer(const BaseAddress& outputBuffer) const;
 
 protected:
     void convert();
@@ -185,6 +177,41 @@ private:
     uint32_t filtersElementCountInLastIteration;   // Size of filter in last iterations (elements).
     uint32_t outputElementCount;                   // Number of final output elements
     uint32_t convOutputElementCount;               // Number of output elements after convolution and before downsampling
+};
+
+// Convolutional Layer descriptor converter
+class HardwareLayerCnn2D : public HardwareLayer
+{
+public:
+    HardwareLayerCnn2D(const HardwareLayerRnn &) = delete;
+    HardwareLayerCnn2D& operator=(const HardwareLayerRnn&) = delete;
+    HardwareLayerCnn2D(const DescriptorParameters& parameters);
+    virtual ~HardwareLayerCnn2D() = default;
+
+    static uint32_t GetKernelWorkGroupSize(gna_device_version hwId,
+        ConvolutionFunction2D const * cnn, PoolingFunction2D const * pooling,
+        const DataMode& outputMode);
+
+    static uint32_t GetKernelMemorySize(gna_device_version hwId,
+        FiltersTensor const * filter);
+
+    static uint32_t GetConvolutionMemorySize(gna_device_version hwId,
+        ConvolutionFunction2D const * cnn);
+
+    static uint32_t GetPoolingMemorySize(gna_device_version hwId,
+        PoolingFunction2D const * pooling, const DataMode& outputMode);
+
+protected:
+    void save();
+
+    ConvolutionFunction2D const * const cnn;
+    PoolingFunction2D const * const pooling;
+
+private:
+    static const uint32_t CNN_N_FLT_ITER_MAX = 16; // CNN maximum number of filters per iteration
+
+    uint32_t kernelWorkGroupIterationCount;
+    uint32_t kernelWorkGroupSize;
 };
 
 // Hardware GMM Layer descriptor converter

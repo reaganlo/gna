@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2017 Intel Corporation.
+ Copyright 2018 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -25,96 +25,33 @@
 
 #pragma once
 
+#include "ActivationFunction.h"
+#include "ConvolutionalFunctions.h"
 #include "Layer.h"
-#include "LayerFunctions.h"
+#include "PoolingFunctions.h"
+#include "ConvolutionalLayer2D.h"
 
 namespace GNA
 {
 
-struct FiltersConfig
-{
-    FiltersConfig(const nn_layer_conv *sourceLayer, const uint32_t inputElementCount);
-    ~FiltersConfig() = default;
-
-    const uint32_t Count;
-    const uint32_t CoefficientCount;  // Actual filter size, including 0-padding if necessary.
-    const int16_t * const Data;       // Filters stored one after the other.
-    const Bias Biases;
-};
-
-// feature maps definition - used for filter stride calculation
-struct FeatureMaps
-{
-    FeatureMaps(const nn_layer_conv *sourceLayer);
-    ~FeatureMaps() = default;
-
-    const uint32_t Count;
-    const uint32_t RowCount;
-    const uint32_t ColumnCount;
-    const uint32_t Stride;   // Size of convolution filter stride (in elements).
-};
-
-struct ConvolutionFunction
-{
-    ConvolutionFunction(const nn_layer_conv *sourceLayer, const uint32_t inputElementCount,
-        int16_t const * inputs, int32_t *const outputs);
-    ~ConvolutionFunction() = default;
-
-    std::unique_ptr<const ConvolutionConfig> GetRunConfig(int16_t const * inputs, int32_t * outputs) const;
-    const ConvolutionConfig * GetHiddenConfig() const
-    {
-        return &hiddenConfig;
-    }
-
-    void ComputeHidden(acceleration accel, uint32_t *saturationCount) const;
-    void ComputeConfig(const ConvolutionConfig* config, acceleration accel, uint32_t *saturationCount) const;
-
-    const FiltersConfig Filters;
-    const FeatureMaps FeatMaps;
-    const uint32_t OutputElementsCount;   // Number of outputs after convolution per filter
-
-private:
-    const std::map<const acceleration, const ConvolutionKernel>& kernels;
-    const ConvolutionConfig hiddenConfig;
-};
-
-struct PoolingFunction
-{
-    PoolingFunction(const nn_layer_conv *sourceLayer);
-    ~PoolingFunction() = default;
-
-    void Compute(const ConvolutionConfig * convolutionConfig, acceleration accel, int64_t * poolScratchPad,
-        const PwlCached * Pwl) const;
-
-    const intel_pool_type_t Type;
-    const uint32_t Size;
-    const uint32_t Stride;
-
-private:
-    const std::map<const acceleration, const ConvolutionPoolingKernel>& kernels;
-    const PoolingConfig hiddenConfig;
-};
-
-// TODO: refactor: consider extracting kernel stuff into [LayerType]Kernel class and attach to layer as member
-
 class CnnLayer : public Layer
 {
 public:
-    CnnLayer(nn_layer const * const layer);
+    CnnLayer(nn_layer const * const layer, const BaseValidator& validatorIn);
     virtual ~CnnLayer() = default;
-    virtual void UpdateKernelConfigs(LayerConfiguration& layerConfiguration, ValidBoundariesFunctor validBoundaries) const override;
+    virtual void UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const override;
 
-    const std::unique_ptr<const ActivationFunction> Activation;
-    const PoolingFunction Pooling;
-    const ConvolutionFunction Convolution;
+    std::unique_ptr<const ConvolutionFunction> Convolution;
+    std::unique_ptr<const PoolingFunction> Pooling;
+    std::unique_ptr<const ActivationFunction> Activation;
 
 private:
-    void computeConfigPool(LayerConfiguration& layerConfiguration, acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const;
-    void computeHiddenPool(acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const;
-    void computeHidden(acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const;
-    void computeHiddenPwl(acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const;
-    void computeConfig(const LayerConfiguration& layerConfiguration, acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const;
-    void computeConfigPwl(const LayerConfiguration& layerConfiguration, acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const;
+    void computePool(LayerConfiguration& layerConfiguration, acceleration accel, ExecutionConfig const & execution) const;
+    void computeHiddenPool(acceleration accel, ExecutionConfig const & execution) const;
+    void computeHidden(acceleration accel, ExecutionConfig const & execution) const;
+    void computeHiddenPwl(acceleration accel, ExecutionConfig const & execution) const;
+    void compute(const LayerConfiguration& layerConfiguration, acceleration accel, ExecutionConfig const & execution) const;
+    void computePwl(const LayerConfiguration& layerConfiguration, acceleration accel, ExecutionConfig const & execution) const;
 };
 
 }

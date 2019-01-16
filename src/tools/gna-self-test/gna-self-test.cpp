@@ -30,7 +30,7 @@
 #include "SelfTest.h"
 #include "MultiOsHardwareSelfTest.h"
 
-int main(int argc, char *argv[])
+int main()
 {
     PressEnterToContinue();
     LOG("Starting GNA device self-test\n");

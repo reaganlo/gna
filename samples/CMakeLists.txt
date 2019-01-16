@@ -122,3 +122,15 @@ add_custom_command(TARGET sample_dumper POST_BUILD
   COMMAND ${CMAKE_COMMAND} -E copy_if_different
   $<TARGET_FILE:Gna::gna-api>
   $<TARGET_FILE_DIR:sample_dumper>)
+
+# GnaId
+#add_executable(GnaId ${CMAKE_SOURCE_DIR}/GnaId/GnaId.cpp)
+#target_include_directories(GnaId PRIVATE GnaId)
+#target_link_libraries(GnaId PRIVATE Gna::gna-api)
+#set_target_properties(GnaId
+    #PROPERTIES
+    #RUNTIME_OUTPUT_DIRECTORY ${GNA_BINARY_DIR}/GnaId/$<CONFIG>/${CMAKE_ARCHITECTURE})
+#add_custom_command(TARGET GnaId POST_BUILD
+  #COMMAND ${CMAKE_COMMAND} -E copy_if_different
+  #$<TARGET_FILE:Gna::gna-api>
+  #$<TARGET_FILE_DIR:GnaId>)

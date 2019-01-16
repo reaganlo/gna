@@ -39,7 +39,7 @@ void AffineKernelImpl2B(AffineConfig const * const config)
     auto const biasEnd = bias + config->outputElementCount;
     auto const tailElementCount = config->inputElementCount % SSE_16CAP; // config->inputElementCount tail for manual processing
     auto const headElementCount = config->inputElementCount - tailElementCount; // trimmed config->inputElementCount for AVX2 processing
-    auto const partialCapacity = (hw_buf_size[config->inputVectorCount - 1]) / config->inputVectorCount;
+    auto const partialCapacity = (hw_buf_size[config->inputVectorCount - 1 + XNN_N_GROUP_MAX]) / config->inputVectorCount;
     auto const iterationCount = config->inputElementCount / partialCapacity;
 
     uint32_t iterationCapacity;
@@ -730,7 +730,7 @@ void AffineMultiBiasKernelImpl2B(AffineConfig const * const config)
     auto const biasEnd = multiBias + config->outputElementCount * config->multiBiasVectorCount;
     auto const tailElementCount = config->inputElementCount % SSE_16CAP; // config->inputElementCount tail for manual processing
     auto const headElementCount = config->inputElementCount - tailElementCount; // trimmed config->inputElementCount for AVX2 processing
-    auto const partialCapacity = (hw_buf_size[config->inputVectorCount - 1]) / config->inputVectorCount;
+    auto const partialCapacity = (hw_buf_size[config->inputVectorCount - 1 + XNN_N_GROUP_MAX]) / config->inputVectorCount;
     auto const iterationCount = config->inputElementCount / partialCapacity;
 
     uint32_t iterationCapacity;

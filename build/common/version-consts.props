@@ -41,13 +41,14 @@
         <TARGET_WDK10_ID Condition="('$(THRESHOLD_VER)' != '')">$(THRESHOLD_VER)</TARGET_WDK10_ID><!-- Windwos 10.0 Driver Kit/model numeric version id -->
         <TARGET_WDK10_ID Condition="('$(THRESHOLD_VER)' == 'RTM')">10</TARGET_WDK10_ID><!-- Windwos 10.0 Driver Kit/model numeric version id if not present-->
         <TARGET_XE_15_ID>15</TARGET_XE_15_ID><!-- Intel XE studio 15 toolset numeric version id -->
-        <TARGET_XE_16_ID>16</TARGET_XE_16_ID><!-- Intel XE studio 15 toolset numeric version id -->
-        <TARGET_ICC_17_ID>17</TARGET_ICC_17_ID><!-- Intel ICC studio 15 toolset numeric version id -->
-        <TARGET_ICC_18_ID>18</TARGET_ICC_18_ID><!-- Intel ICC studio 15 toolset numeric version id -->
+        <TARGET_XE_16_ID>16</TARGET_XE_16_ID><!-- Intel XE studio 16 toolset numeric version id -->
+        <TARGET_ICC_17_ID>17</TARGET_ICC_17_ID><!-- Intel ICC studio 17 toolset numeric version id -->
+        <TARGET_ICC_18_ID>18</TARGET_ICC_18_ID><!-- Intel ICC studio 18 toolset numeric version id -->
         <TARGET_VS110_ID>110</TARGET_VS110_ID><!-- Visual Studio 2012 toolset numeric version id -->
         <TARGET_VS120_ID>120</TARGET_VS120_ID><!-- Visual Studio 2013 toolset numeric version id -->
         <TARGET_VS130_ID>130</TARGET_VS130_ID><!-- Visual Studio 2015 pre release toolset numeric version id -->
         <TARGET_VS140_ID>140</TARGET_VS140_ID><!-- Visual Studio 2015 toolset numeric version id -->
+        <TARGET_VS141_ID>141</TARGET_VS141_ID><!-- Visual Studio 2018 toolset numeric version id -->
     </PropertyGroup>
     <PropertyGroup>
         <TARGET_WIN_VER>0</TARGET_WIN_VER>

@@ -38,3 +38,29 @@ void TransposeKernelImpl(TransposeConfig const * const cfg)
         }
     }
 }
+
+
+void TransposeKernelImpl1B(TransposeConfig const * const cfg)
+{
+    uint32_t i, j;
+    for (i = 0; i < cfg->rowCount; i++)
+    {
+        for (j = 0; j < cfg->columnCount; j++)
+        {
+            ((int8_t*)cfg->output)[j * cfg->rowCount + i] = ((int8_t*)cfg->input)[i * cfg->columnCount + j];
+        }
+    }
+}
+
+
+void TransposeKernelImpl2B(TransposeConfig const * const cfg)
+{
+    uint32_t i, j;
+    for (i = 0; i < cfg->rowCount; i++)
+    {
+        for (j = 0; j < cfg->columnCount; j++)
+        {
+            cfg->output[j * cfg->rowCount + i] = cfg->input[i * cfg->columnCount + j];
+        }
+    }
+}

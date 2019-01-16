@@ -117,6 +117,9 @@ void gmm_maxmix_8u16u_32u(GmmMaxMixConfig const * const gmm)
 
 #if OPT_LEVEL > 1 // SSE4+
 
+#if defined(_WIN32)
+#pragma warning( disable : 700 )
+#endif
 void gmm_maxmix_8u8u_32u(GmmMaxMixConfig const * const gmm)
 {
     const uint8_t *mean = gmm->Means;
@@ -129,7 +132,13 @@ void gmm_maxmix_8u8u_32u(GmmMaxMixConfig const * const gmm)
     for (i = 0; i < gmm->MixtureCount; i++)
     {
         __m128i sum;
+
+#if defined(__GNUC__)
+#pragma GCC diagnostic ignored "-Wuninitialized"
+#else
+#endif
         __m128i sum_1 = _mm_xor_si128(sum_1, sum_1);
+
         __m128i sum_2 = sum_1;
 
         for (j = 0; j < gmm->InputElementCount; j += 8)
@@ -162,7 +171,7 @@ void gmm_maxmix_8u8u_32u(GmmMaxMixConfig const * const gmm)
         consts++;
     }
 
-    *gmm->Output = minScore;
+    *gmm->Output = (uint32_t) minScore;
 }
 
 //gmm_maxmix_8u8u_32u_grouped_opt_f8_g1_sse4
@@ -279,7 +288,7 @@ void gmm_maxmix_8u8u_32u_g1(GmmMaxMixConfig const * const gmm)
         consts += 2;
     }
 
-    *gmm->Output = minScore;
+    *gmm->Output = (uint32_t) minScore;
 }
 
 #endif //#if OPT_LEVEL > 1 // SSE4+
@@ -352,7 +361,7 @@ void gmm_maxmix_8u16u_32u(GmmMaxMixConfig const * const gmm)
         consts++;
     }
 
-    (*(gmm->Output)) = minScore;
+    (*(gmm->Output)) = (uint32_t) minScore;
 }
 
 //gmm_maxmix_8u8u_32u_grouped_opt_f8_g2_sse4
@@ -430,8 +439,8 @@ void gmm_maxmix_8u8u_32u_g2(GmmMaxMixConfig const * const gmm)
     }
 
     _mm_storeu_si128((__m128i*)score, minScores);
-    gmm->Output[0] = score[0];
-    gmm->Output[1] = score[1];
+    gmm->Output[0] = (uint32_t) score[0];
+    gmm->Output[1] = (uint32_t) score[1];
 }
 
 //gmm_maxmix_8u8u_32u_grouped_opt_f8_g3_sse4
@@ -527,9 +536,9 @@ void gmm_maxmix_8u8u_32u_g3(GmmMaxMixConfig const * const gmm)
     }
     // store results
     _mm_storeu_si128((__m128i*)score, minScores);
-    gmm->Output[0] = score[0];
-    gmm->Output[1] = score[1];
-    gmm->Output[2] = minScore2;
+    gmm->Output[0] = (uint32_t) score[0];
+    gmm->Output[1] = (uint32_t) score[1];
+    gmm->Output[2] = (uint32_t) minScore2;
 }
 
 //gmm_maxmix_8u8u_32u_grouped_opt_f8_g4_sse4
@@ -649,11 +658,11 @@ void gmm_maxmix_8u8u_32u_g4(GmmMaxMixConfig const * const gmm)
     }
     // store results
     _mm_storeu_si128((__m128i*)score, minScores);
-    gmm->Output[0] = score[0];
-    gmm->Output[1] = score[1];
+    gmm->Output[0] = (uint32_t) score[0];
+    gmm->Output[1] = (uint32_t) score[1];
     _mm_storeu_si128((__m128i*)score, minScore2);
-    gmm->Output[2] = score[0];
-    gmm->Output[3] = score[1];
+    gmm->Output[2] = (uint32_t) score[0];
+    gmm->Output[3] = (uint32_t) score[1];
 }
 
 //gmm_maxmix_8u8u_32u_grouped_opt_f8_g5_sse4
@@ -783,12 +792,12 @@ void gmm_maxmix_8u8u_32u_g5(GmmMaxMixConfig const * const gmm)
         consts++;
     }
     _mm_storeu_si128((__m128i*)score, minScores);
-    gmm->Output[0] = score[0];
-    gmm->Output[1] = score[1];
+    gmm->Output[0] = (uint32_t) score[0];
+    gmm->Output[1] = (uint32_t) score[1];
     _mm_storeu_si128((__m128i*)score, minScore2);
-    gmm->Output[2] = score[0];
-    gmm->Output[3] = score[1];
-    gmm->Output[4] = minScores3;
+    gmm->Output[2] = (uint32_t) score[0];
+    gmm->Output[3] = (uint32_t) score[1];
+    gmm->Output[4] = (uint32_t) minScores3;
 }
 
 //gmm_maxmix_8u8u_32u_grouped_opt_f8_g6_sse4
@@ -896,9 +905,9 @@ void gmm_maxmix_8u8u_32u_g6(GmmMaxMixConfig const * const gmm)
                 __m128i prod_high_2 = _mm_mulhi_epu16(sqrdiff16s_2, load3_1); // 8x16-bit mul (hi part)
                 load1 = _mm_load_si128((__m128i*)input);
                 __m128i lower_prods = _mm_unpacklo_epi16(prod_low, prod_high); // lo 4x32-bit prd
-                __m128i upper_prods = _mm_unpackhi_epi16(prod_low, prod_high); // hi 4x32-bit prd
+                upper_prods = _mm_unpackhi_epi16(prod_low, prod_high); // hi 4x32-bit prd
                 __m128i lower_prods_2 = _mm_unpacklo_epi16(prod_low_2, prod_high_2); // lo 4x32-bit prd
-                __m128i upper_prods_2 = _mm_unpackhi_epi16(prod_low_2, prod_high_2); // hi 4x32-bit prd
+                upper_prods_2 = _mm_unpackhi_epi16(prod_low_2, prod_high_2); // hi 4x32-bit prd
                 sum_5 = _mm_add_epi32(sum_5, lower_prods);
                 sum_6 = _mm_add_epi32(sum_6, lower_prods_2);
                 sum_5 = _mm_add_epi32(sum_5, upper_prods);
@@ -936,12 +945,12 @@ void gmm_maxmix_8u8u_32u_g6(GmmMaxMixConfig const * const gmm)
         var += gmm->InputElementCount;
         consts++;
     }
-    gmm->Output[0] = minScores[0];
-    gmm->Output[1] = minScores[1];
-    gmm->Output[2] = minScores[2];
-    gmm->Output[3] = minScores[3];
-    gmm->Output[4] = minScores[4];
-    gmm->Output[5] = minScores[5];
+    gmm->Output[0] = (uint32_t) minScores[0];
+    gmm->Output[1] = (uint32_t) minScores[1];
+    gmm->Output[2] = (uint32_t) minScores[2];
+    gmm->Output[3] = (uint32_t) minScores[3];
+    gmm->Output[4] = (uint32_t) minScores[4];
+    gmm->Output[5] = (uint32_t) minScores[5];
 }
 
 //gmm_maxmix_8u8u_32u_grouped_opt_f8_g7_sse4
@@ -1057,9 +1066,9 @@ void gmm_maxmix_8u8u_32u_g7(GmmMaxMixConfig const * const gmm)
                 __m128i prod_high_3 = _mm_mulhi_epu16(sqrdiff16s_3, load3_1); // 8x16-bit mul (hi part)
 
                 __m128i lower_prods = _mm_unpacklo_epi16(prod_low, prod_high); // lo 4x32-bit prd
-                __m128i upper_prods = _mm_unpackhi_epi16(prod_low, prod_high); // hi 4x32-bit prd
+                upper_prods = _mm_unpackhi_epi16(prod_low, prod_high); // hi 4x32-bit prd
                 __m128i lower_prods_2 = _mm_unpacklo_epi16(prod_low_2, prod_high_2); // lo 4x32-bit prd
-                __m128i upper_prods_2 = _mm_unpackhi_epi16(prod_low_2, prod_high_2); // hi 4x32-bit prd
+                upper_prods_2 = _mm_unpackhi_epi16(prod_low_2, prod_high_2); // hi 4x32-bit prd
                 __m128i lower_prods_3 = _mm_unpacklo_epi16(prod_low_3, prod_high_3); // lo 4x32-bit prd
                 __m128i upper_prods_3 = _mm_unpackhi_epi16(prod_low_3, prod_high_3); // hi 4x32-bit prd
                 load1 = _mm_loadu_si128((__m128i*)input);
@@ -1106,13 +1115,13 @@ void gmm_maxmix_8u8u_32u_g7(GmmMaxMixConfig const * const gmm)
         var += gmm->InputElementCount;
         consts++;
     }
-    gmm->Output[0] = minScores[0];
-    gmm->Output[1] = minScores[1];
-    gmm->Output[2] = minScores[2];
-    gmm->Output[3] = minScores[3];
-    gmm->Output[4] = minScores[4];
-    gmm->Output[5] = minScores[5];
-    gmm->Output[6] = minScores[6];
+    gmm->Output[0] = (uint32_t) minScores[0];
+    gmm->Output[1] = (uint32_t) minScores[1];
+    gmm->Output[2] = (uint32_t) minScores[2];
+    gmm->Output[3] = (uint32_t) minScores[3];
+    gmm->Output[4] = (uint32_t) minScores[4];
+    gmm->Output[5] = (uint32_t) minScores[5];
+    gmm->Output[6] = (uint32_t) minScores[6];
 }
 
 //gmm_maxmix_8u8u_32u_grouped_opt_f8_g8_sse4
@@ -1245,9 +1254,9 @@ void gmm_maxmix_8u8u_32u_g8(GmmMaxMixConfig const * const gmm)
                 __m128i prod_high_2 = _mm_mulhi_epu16(sqrdiff16s_2, load3_1); // 8x16-bit mul (hi part)
                 load1 = _mm_load_si128((__m128i*)input);
                 __m128i lower_prods = _mm_unpacklo_epi16(prod_low, prod_high); // lo 4x32-bit prd
-                __m128i upper_prods = _mm_unpackhi_epi16(prod_low, prod_high); // hi 4x32-bit prd
+                upper_prods = _mm_unpackhi_epi16(prod_low, prod_high); // hi 4x32-bit prd
                 __m128i lower_prods_2 = _mm_unpacklo_epi16(prod_low_2, prod_high_2); // lo 4x32-bit prd
-                __m128i upper_prods_2 = _mm_unpackhi_epi16(prod_low_2, prod_high_2); // hi 4x32-bit prd
+                upper_prods_2 = _mm_unpackhi_epi16(prod_low_2, prod_high_2); // hi 4x32-bit prd
                 sum_7 = _mm_add_epi32(sum_7, lower_prods);
                 sum_8 = _mm_add_epi32(sum_8, lower_prods_2);
                 sum_7 = _mm_add_epi32(sum_7, upper_prods);
@@ -1297,17 +1306,17 @@ void gmm_maxmix_8u8u_32u_g8(GmmMaxMixConfig const * const gmm)
     }
 
     _mm_storeu_si128((__m128i*)score, minScores);
-    gmm->Output[0] = score[0];
-    gmm->Output[1] = score[1];
+    gmm->Output[0] = (uint32_t) score[0];
+    gmm->Output[1] = (uint32_t) score[1];
     _mm_storeu_si128((__m128i*)score, minScore2);
-    gmm->Output[2] = score[0];
-    gmm->Output[3] = score[1];
+    gmm->Output[2] = (uint32_t) score[0];
+    gmm->Output[3] = (uint32_t) score[1];
     _mm_storeu_si128((__m128i*)score, minScores3);
-    gmm->Output[4] = score[0];
-    gmm->Output[5] = score[1];
+    gmm->Output[4] = (uint32_t) score[0];
+    gmm->Output[5] = (uint32_t) score[1];
     _mm_storeu_si128((__m128i*)score, minScores4);
-    gmm->Output[6] = score[0];
-    gmm->Output[7] = score[1];
+    gmm->Output[6] = (uint32_t) score[0];
+    gmm->Output[7] = (uint32_t) score[1];
 }
 
 #endif //#if (OPT_LEVEL > 1 && OPT_LEVEL < 6) // SSE4/AVX1 only
@@ -1384,8 +1393,8 @@ void gmm_maxmix_8u8u_32u_g2(GmmMaxMixConfig const * const gmm)
         consts++;
     }
     _mm_storeu_si128((__m128i*)score, minScores);
-    gmm->Output[0] = score[0];
-    gmm->Output[1] = score[1];
+    gmm->Output[0] = (uint32_t) score[0];
+    gmm->Output[1] = (uint32_t) score[1];
 }
 
 //gmm_maxmix_8u8u_32u_grouped_opt_f8_g3_avx2
@@ -1470,9 +1479,9 @@ void gmm_maxmix_8u8u_32u_g3(GmmMaxMixConfig const * const gmm)
         consts++;
     }
     _mm256_storeu_si256((__m256i*)score, minScores);
-    gmm->Output[0] = score[0];
-    gmm->Output[1] = score[2];
-    gmm->Output[2] = score[1];
+    gmm->Output[0] = (uint32_t) score[0];
+    gmm->Output[1] = (uint32_t) score[2];
+    gmm->Output[2] = (uint32_t) score[1];
 }
 
 //gmm_maxmix_8u8u_32u_grouped_opt_f8_g4_avx2
@@ -1558,10 +1567,10 @@ void gmm_maxmix_8u8u_32u_g4(GmmMaxMixConfig const * const gmm)
     }
 
     _mm256_storeu_si256((__m256i*)score, minScores);
-    gmm->Output[0] = score[0];
-    gmm->Output[1] = score[2];
-    gmm->Output[2] = score[1];
-    gmm->Output[3] = score[3];
+    gmm->Output[0] = (uint32_t) score[0];
+    gmm->Output[1] = (uint32_t) score[2];
+    gmm->Output[2] = (uint32_t) score[1];
+    gmm->Output[3] = (uint32_t) score[3];
 }
 
 //gmm_maxmix_8u8u_32u_grouped_opt_f8_g5_avx2
@@ -1669,10 +1678,10 @@ void gmm_maxmix_8u8u_32u_g5(GmmMaxMixConfig const * const gmm)
     }
 
     _mm256_storeu_si256((__m256i*)score, minScores);
-    gmm->Output[0] = score[0];
-    gmm->Output[1] = score[2];
-    gmm->Output[2] = score[1];
-    gmm->Output[3] = score[3];
+    gmm->Output[0] = (uint32_t) score[0];
+    gmm->Output[1] = (uint32_t) score[2];
+    gmm->Output[2] = (uint32_t) score[1];
+    gmm->Output[3] = (uint32_t) score[3];
     gmm->Output[4] = _mm_cvtsi128_si32(_mm256_castsi256_si128(minScore2));
 }
 
@@ -1781,13 +1790,13 @@ void gmm_maxmix_8u8u_32u_g6(GmmMaxMixConfig const * const gmm)
     }
 
     _mm256_storeu_si256((__m256i*)score, minScores);
-    gmm->Output[0] = score[0];
-    gmm->Output[1] = score[2];
-    gmm->Output[2] = score[1];
-    gmm->Output[3] = score[3];
+    gmm->Output[0] = (uint32_t) score[0];
+    gmm->Output[1] = (uint32_t) score[2];
+    gmm->Output[2] = (uint32_t) score[1];
+    gmm->Output[3] = (uint32_t) score[3];
     _mm256_storeu_si256((__m256i*)score, minScore2);
-    gmm->Output[4] = score[0];
-    gmm->Output[5] = score[2];
+    gmm->Output[4] = (uint32_t) score[0];
+    gmm->Output[5] = (uint32_t) score[2];
 }
 
 //gmm_maxmix_8u8u_32u_grouped_opt_f8_g7_avx2
@@ -1922,14 +1931,14 @@ void gmm_maxmix_8u8u_32u_g7(GmmMaxMixConfig const * const gmm)
     }
 
     _mm256_storeu_si256((__m256i*)score, minScores);
-    gmm->Output[0] = score[0];
-    gmm->Output[1] = score[2];
-    gmm->Output[2] = score[1];
-    gmm->Output[3] = score[3];
+    gmm->Output[0] = (uint32_t) score[0];
+    gmm->Output[1] = (uint32_t) score[2];
+    gmm->Output[2] = (uint32_t) score[1];
+    gmm->Output[3] = (uint32_t) score[3];
     _mm256_storeu_si256((__m256i*)score, minScore2);
-    gmm->Output[4] = score[0];
-    gmm->Output[5] = score[2];
-    gmm->Output[6] = score[1];
+    gmm->Output[4] = (uint32_t) score[0];
+    gmm->Output[5] = (uint32_t) score[2];
+    gmm->Output[6] = (uint32_t) score[1];
 }
 
 //gmm_maxmix_8u8u_32u_grouped_opt_f8_g8_avx2
@@ -2064,15 +2073,15 @@ void gmm_maxmix_8u8u_32u_g8(GmmMaxMixConfig const * const gmm)
     }
 
     _mm256_storeu_si256((__m256i*)score, minScores);
-    gmm->Output[0] = score[0];
-    gmm->Output[1] = score[2];
-    gmm->Output[2] = score[1];
-    gmm->Output[3] = score[3];
+    gmm->Output[0] = (uint32_t) score[0];
+    gmm->Output[1] = (uint32_t) score[2];
+    gmm->Output[2] = (uint32_t) score[1];
+    gmm->Output[3] = (uint32_t) score[3];
     _mm256_storeu_si256((__m256i*)score, minScore2);
-    gmm->Output[4] = score[0];
-    gmm->Output[5] = score[2];
-    gmm->Output[6] = score[1];
-    gmm->Output[7] = score[3];
+    gmm->Output[4] = (uint32_t) score[0];
+    gmm->Output[5] = (uint32_t) score[2];
+    gmm->Output[6] = (uint32_t) score[1];
+    gmm->Output[7] = (uint32_t) score[3];
 }
 
 void gmm_maxmix_8u16u_32u(GmmMaxMixConfig const * const gmm)
@@ -2131,7 +2140,7 @@ void gmm_maxmix_8u16u_32u(GmmMaxMixConfig const * const gmm)
         consts++;
     }
 
-    (*(gmm->Output)) = minScore;
+    (*(gmm->Output)) = (uint32_t) minScore;
 }
 
 #endif //#if OPT_LEVEL > 5 // AVX2+

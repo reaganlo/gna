@@ -42,7 +42,7 @@ void gmmMaxMix8ActiveListKernelImpl(GmmConfig const * const gmmConfig, uint32_t 
         {
             k = indices[j];
             gmm.Means = gmmConfig->data->meanValues + k * gmmConfig->meanSetOffsetSize;
-            gmm.Vars = gmmConfig->data->inverseCovariancesForMaxMix8 + k * gmmConfig->varSetOffsetSize;
+            gmm.Vars = gmmConfig->data->inverseCovariances.inverseCovariancesForMaxMix8 + k * gmmConfig->varSetOffsetSize;
             gmm.Gconst = (uint32_t*)((uint8_t*)gmmConfig->data->gaussianConstants + k * gmmConfig->gaussConstSetOffsetSize);
             gmm.Input = gmmConfig->input;
             gmm.Output = gmmConfig->output + j*gmmConfig->inputVectorCount;
@@ -88,7 +88,7 @@ void gmmMaxMix8ActiveListKernelImpl(GmmConfig const * const gmmConfig, uint32_t 
             {
                 k = indices[j];
                 gmm.Means = gmmConfig->data->meanValues + k * gmmConfig->meanSetOffsetSize;
-                gmm.Vars = gmmConfig->data->inverseCovariancesForMaxMix8 + k * gmmConfig->varSetOffsetSize;
+                gmm.Vars = gmmConfig->data->inverseCovariances.inverseCovariancesForMaxMix8 + k * gmmConfig->varSetOffsetSize;
                 gmm.Gconst = (uint32_t*)((uint8_t*)gmmConfig->data->gaussianConstants + k * gmmConfig->gaussConstSetOffsetSize);
                 gmm.Output = gmmConfig->output + j*gmmConfig->inputVectorCount;
 
@@ -101,7 +101,7 @@ void gmmMaxMix8ActiveListKernelImpl(GmmConfig const * const gmmConfig, uint32_t 
             {
                 k = indices[j];
                 gmm.Means = gmmConfig->data->meanValues + k * gmmConfig->meanSetOffsetSize;
-                gmm.Vars = gmmConfig->data->inverseCovariancesForMaxMix8 + k * gmmConfig->varSetOffsetSize;
+                gmm.Vars = gmmConfig->data->inverseCovariances.inverseCovariancesForMaxMix8 + k * gmmConfig->varSetOffsetSize;
                 gmm.Gconst = (uint32_t*)((uint8_t*)gmmConfig->data->gaussianConstants + k * gmmConfig->gaussConstSetOffsetSize);
                 gmm.Output = gmmConfig->output + j*gmmConfig->inputVectorCount;
 
@@ -114,7 +114,7 @@ void gmmMaxMix8ActiveListKernelImpl(GmmConfig const * const gmmConfig, uint32_t 
             {
                 k = indices[j];
                 gmm.Means = gmmConfig->data->meanValues + k * gmmConfig->meanSetOffsetSize;
-                gmm.Vars = gmmConfig->data->inverseCovariancesForMaxMix8 + k * gmmConfig->varSetOffsetSize;
+                gmm.Vars = gmmConfig->data->inverseCovariances.inverseCovariancesForMaxMix8 + k * gmmConfig->varSetOffsetSize;
                 gmm.Gconst = (uint32_t*)((uint8_t*)gmmConfig->data->gaussianConstants + k * gmmConfig->gaussConstSetOffsetSize);
                 gmm.Output = gmmConfig->output + j*gmmConfig->inputVectorCount;
 
@@ -127,7 +127,7 @@ void gmmMaxMix8ActiveListKernelImpl(GmmConfig const * const gmmConfig, uint32_t 
             {
                 k = indices[j];
                 gmm.Means = gmmConfig->data->meanValues + k * gmmConfig->meanSetOffsetSize;
-                gmm.Vars = gmmConfig->data->inverseCovariancesForMaxMix8 + k * gmmConfig->varSetOffsetSize;
+                gmm.Vars = gmmConfig->data->inverseCovariances.inverseCovariancesForMaxMix8 + k * gmmConfig->varSetOffsetSize;
                 gmm.Gconst = (uint32_t*)((uint8_t*)gmmConfig->data->gaussianConstants + k * gmmConfig->gaussConstSetOffsetSize);
                 gmm.Output = (uint32_t*)gmmConfig->output + j*gmmConfig->inputVectorCount;
 
@@ -140,7 +140,7 @@ void gmmMaxMix8ActiveListKernelImpl(GmmConfig const * const gmmConfig, uint32_t 
             {
                 k = indices[j];
                 gmm.Means = gmmConfig->data->meanValues + k * gmmConfig->meanSetOffsetSize;
-                gmm.Vars = gmmConfig->data->inverseCovariancesForMaxMix8 + k * gmmConfig->varSetOffsetSize;
+                gmm.Vars = gmmConfig->data->inverseCovariances.inverseCovariancesForMaxMix8 + k * gmmConfig->varSetOffsetSize;
                 gmm.Gconst = (uint32_t*)((uint8_t*)gmmConfig->data->gaussianConstants + k * gmmConfig->gaussConstSetOffsetSize);
                 gmm.Output = gmmConfig->output + j*gmmConfig->inputVectorCount;
 
@@ -153,7 +153,7 @@ void gmmMaxMix8ActiveListKernelImpl(GmmConfig const * const gmmConfig, uint32_t 
             {
                 k = indices[j];
                 gmm.Means = gmmConfig->data->meanValues + k * gmmConfig->meanSetOffsetSize;
-                gmm.Vars = gmmConfig->data->inverseCovariancesForMaxMix8 + k * gmmConfig->varSetOffsetSize;
+                gmm.Vars = gmmConfig->data->inverseCovariances.inverseCovariancesForMaxMix8 + k * gmmConfig->varSetOffsetSize;
                 gmm.Gconst = (uint32_t*)((uint8_t*)gmmConfig->data->gaussianConstants + k * gmmConfig->gaussConstSetOffsetSize);
                 gmm.Output = gmmConfig->output + j*gmmConfig->inputVectorCount;
 
@@ -166,7 +166,7 @@ void gmmMaxMix8ActiveListKernelImpl(GmmConfig const * const gmmConfig, uint32_t 
             {
                 k = indices[j];
                 gmm.Means = gmmConfig->data->meanValues + k * gmmConfig->meanSetOffsetSize;
-                gmm.Vars = gmmConfig->data->inverseCovariancesForMaxMix8 + k * gmmConfig->varSetOffsetSize;
+                gmm.Vars = gmmConfig->data->inverseCovariances.inverseCovariancesForMaxMix8 + k * gmmConfig->varSetOffsetSize;
                 gmm.Gconst = (uint32_t*)((uint8_t*)gmmConfig->data->gaussianConstants + k * gmmConfig->gaussConstSetOffsetSize);
                 gmm.Output = gmmConfig->output + j*gmmConfig->inputVectorCount;
 
@@ -179,7 +179,7 @@ void gmmMaxMix8ActiveListKernelImpl(GmmConfig const * const gmmConfig, uint32_t 
             {
                 k = indices[j];
                 gmm.Means = gmmConfig->data->meanValues + k * gmmConfig->meanSetOffsetSize;
-                gmm.Vars = gmmConfig->data->inverseCovariancesForMaxMix8 + k * gmmConfig->varSetOffsetSize;
+                gmm.Vars = gmmConfig->data->inverseCovariances.inverseCovariancesForMaxMix8 + k * gmmConfig->varSetOffsetSize;
                 gmm.Gconst = (uint32_t*)((uint8_t*)gmmConfig->data->gaussianConstants + k * gmmConfig->gaussConstSetOffsetSize);
                 gmm.Output = gmmConfig->output + j*gmmConfig->inputVectorCount;
 
@@ -202,7 +202,7 @@ void gmmMaxMix16ActiveListKernelImpl(GmmConfig const * const gmmConfig, uint32_t
     {
         k = indices[j];
         gmm.Means = gmmConfig->data->meanValues + k * gmmConfig->meanSetOffsetSize;
-        gmm.Vars16 = gmmConfig->data->inverseCovariancesForMaxMix16 + k * gmmConfig->varSetOffsetSize / GMM_COVARIANCE_SIZE_MAX;
+        gmm.Vars16 = gmmConfig->data->inverseCovariances.inverseCovariancesForMaxMix16 + k * gmmConfig->varSetOffsetSize / GMM_COVARIANCE_SIZE_MAX;
         gmm.Gconst = (uint32_t*)((uint8_t*)gmmConfig->data->gaussianConstants + k * gmmConfig->gaussConstSetOffsetSize);
         gmm.Input = gmmConfig->input;
 
@@ -229,7 +229,7 @@ void gmmMaxMix8KernelImpl(GmmConfig const * const gmmConfig)
         {
             gmm.Input = gmmConfig->input;
             gmm.Means = gmmConfig->data->meanValues + j*meanOffset;
-            gmm.Vars = gmmConfig->data->inverseCovariancesForMaxMix8 + j*varOffset;
+            gmm.Vars = gmmConfig->data->inverseCovariances.inverseCovariancesForMaxMix8 + j*varOffset;
             gmm.Gconst = gmmConfig->data->gaussianConstants + j*gConstOffset;
             gmm.Output = gmmConfig->output + j*gmmConfig->inputVectorCount;
 
@@ -271,7 +271,7 @@ void gmmMaxMix8KernelImpl(GmmConfig const * const gmmConfig)
             for (j = 0; j < gmmConfig->stateCount; j++)
             {
                 gmm.Means = gmmConfig->data->meanValues + j*meanOffset;
-                gmm.Vars = gmmConfig->data->inverseCovariancesForMaxMix8 + j*varOffset;
+                gmm.Vars = gmmConfig->data->inverseCovariances.inverseCovariancesForMaxMix8 + j*varOffset;
                 gmm.Gconst = gmmConfig->data->gaussianConstants + j*gConstOffset;
                 gmm.Output = gmmConfig->output + j*gmmConfig->inputVectorCount;
 
@@ -283,7 +283,7 @@ void gmmMaxMix8KernelImpl(GmmConfig const * const gmmConfig)
             for (j = 0; j < gmmConfig->stateCount; j++)
             {
                 gmm.Means = gmmConfig->data->meanValues + j*meanOffset;
-                gmm.Vars = gmmConfig->data->inverseCovariancesForMaxMix8 + j*varOffset;
+                gmm.Vars = gmmConfig->data->inverseCovariances.inverseCovariancesForMaxMix8 + j*varOffset;
                 gmm.Gconst = gmmConfig->data->gaussianConstants + j*gConstOffset;
                 gmm.Output = gmmConfig->output + j*gmmConfig->inputVectorCount;
 
@@ -294,7 +294,7 @@ void gmmMaxMix8KernelImpl(GmmConfig const * const gmmConfig)
             for (j = 0; j < gmmConfig->stateCount; j++)
             {
                 gmm.Means = gmmConfig->data->meanValues + j*meanOffset;
-                gmm.Vars = gmmConfig->data->inverseCovariancesForMaxMix8 + j*varOffset;
+                gmm.Vars = gmmConfig->data->inverseCovariances.inverseCovariancesForMaxMix8 + j*varOffset;
                 gmm.Gconst = gmmConfig->data->gaussianConstants + j*gConstOffset;
                 gmm.Output = gmmConfig->output + j*gmmConfig->inputVectorCount;
 
@@ -305,7 +305,7 @@ void gmmMaxMix8KernelImpl(GmmConfig const * const gmmConfig)
             for (j = 0; j < gmmConfig->stateCount; j++)
             {
                 gmm.Means = gmmConfig->data->meanValues + j*meanOffset;
-                gmm.Vars = gmmConfig->data->inverseCovariancesForMaxMix8 + j*varOffset;
+                gmm.Vars = gmmConfig->data->inverseCovariances.inverseCovariancesForMaxMix8 + j*varOffset;
                 gmm.Gconst = gmmConfig->data->gaussianConstants + j*gConstOffset;
                 gmm.Output = gmmConfig->output + j*gmmConfig->inputVectorCount;
 
@@ -316,7 +316,7 @@ void gmmMaxMix8KernelImpl(GmmConfig const * const gmmConfig)
             for (j = 0; j < gmmConfig->stateCount; j++)
             {
                 gmm.Means = gmmConfig->data->meanValues + j*meanOffset;
-                gmm.Vars = gmmConfig->data->inverseCovariancesForMaxMix8 + j*varOffset;
+                gmm.Vars = gmmConfig->data->inverseCovariances.inverseCovariancesForMaxMix8 + j*varOffset;
                 gmm.Gconst = gmmConfig->data->gaussianConstants + j*gConstOffset;
                 gmm.Output = gmmConfig->output + j*gmmConfig->inputVectorCount;
 
@@ -327,7 +327,7 @@ void gmmMaxMix8KernelImpl(GmmConfig const * const gmmConfig)
             for (j = 0; j < gmmConfig->stateCount; j++)
             {
                 gmm.Means = gmmConfig->data->meanValues + j*meanOffset;
-                gmm.Vars = gmmConfig->data->inverseCovariancesForMaxMix8 + j*varOffset;
+                gmm.Vars = gmmConfig->data->inverseCovariances.inverseCovariancesForMaxMix8 + j*varOffset;
                 gmm.Gconst = gmmConfig->data->gaussianConstants + j*gConstOffset;
                 gmm.Output = gmmConfig->output + j*gmmConfig->inputVectorCount;
 
@@ -338,7 +338,7 @@ void gmmMaxMix8KernelImpl(GmmConfig const * const gmmConfig)
             for (j = 0; j < gmmConfig->stateCount; j++)
             {
                 gmm.Means = gmmConfig->data->meanValues + j*meanOffset;
-                gmm.Vars = gmmConfig->data->inverseCovariancesForMaxMix8 + j*varOffset;
+                gmm.Vars = gmmConfig->data->inverseCovariances.inverseCovariancesForMaxMix8 + j*varOffset;
                 gmm.Gconst = gmmConfig->data->gaussianConstants + j*gConstOffset;
                 gmm.Output = gmmConfig->output + j*gmmConfig->inputVectorCount;
 
@@ -349,7 +349,7 @@ void gmmMaxMix8KernelImpl(GmmConfig const * const gmmConfig)
             for (j = 0; j < gmmConfig->stateCount; j++)
             {
                 gmm.Means = gmmConfig->data->meanValues + j*meanOffset;
-                gmm.Vars = gmmConfig->data->inverseCovariancesForMaxMix8 + j*varOffset;
+                gmm.Vars = gmmConfig->data->inverseCovariances.inverseCovariancesForMaxMix8 + j*varOffset;
                 gmm.Gconst = gmmConfig->data->gaussianConstants + j*gConstOffset;
                 gmm.Output = gmmConfig->output + j*gmmConfig->inputVectorCount;
 
@@ -373,7 +373,7 @@ void gmmMaxMix16KernelImpl(GmmConfig const * const gmmConfig)
     {
         gmm.Input = gmmConfig->input;
         gmm.Means = gmmConfig->data->meanValues + j*meanOffset;
-        gmm.Vars16 = gmmConfig->data->inverseCovariancesForMaxMix16 + j*varOffset;
+        gmm.Vars16 = gmmConfig->data->inverseCovariances.inverseCovariancesForMaxMix16 + j*varOffset;
         gmm.Gconst = gmmConfig->data->gaussianConstants + j*gConstOffset;
         gmm.Output = gmmConfig->output + j*gmmConfig->inputVectorCount;
 

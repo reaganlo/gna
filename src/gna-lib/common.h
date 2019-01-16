@@ -29,6 +29,8 @@
 #include <cstdlib>
 #include <functional>
 
+#include "Macros.h"
+
 #if defined(__GNUC__) && !defined(__INTEL_COMPILER)
 #include <mm_malloc.h>
 #endif
@@ -49,33 +51,21 @@
 const uint32_t PAGE_SIZE = 0x1000;
 #endif //PAGE_SIZE
 
+const uint32_t ui32_1 = 1;
+const uint32_t ui32_0 = 0;
+const uint32_t ui32_UINT8_MAX = UINT8_MAX;
+
 #define _gna_malloc(a)    _mm_malloc(a, PAGE_SIZE)
 #define _kernel_malloc(a) _mm_malloc(a, INTRIN_ALIGN)
 #define _gna_free(a)      _mm_free(a)
-
-#if !defined(UNREFERENCED_PARAMETER)
-#define UNREFERENCED_PARAMETER(P) ((void)(P))
-#endif
-
-// Enable safe functions compatibility
-#if defined(__STDC_SECURE_LIB__)
-#define __STDC_WANT_SECURE_LIB__ 1
-#elif defined(__STDC_LIB_EXT1__)
-#define STDC_WANT_LIB_EXT1 1
-#else
-#define memcpy_s(_Destination, _DestinationSize, _Source, _SourceSize) do {\
-		memcpy(_Destination, _Source, _SourceSize);\
-		UNREFERENCED_PARAMETER(_DestinationSize);\
-	} while(0);
-#endif
 
 /**
  * shorter aliases for official GMM API types
  */
 typedef gna_acceleration_all        acceleration;
-typedef intel_layer_kind_t          nn_layer_kind;
-typedef intel_layer_type_t          nn_layer_type;
+typedef gna_layer_operation         nn_operation;
 typedef intel_compound_bias_t       nn_bias_c;
+typedef intel_weight_scaling_factor_t nn_scaling;
 typedef intel_bias_t                nn_bias_s;
 typedef intel_affine_func_t         nn_func_affine;
 typedef intel_affine_multibias_func_t nn_func_affine_multi;
@@ -85,6 +75,8 @@ typedef intel_nnet_layer_t          nn_layer;
 typedef intel_affine_layer_t        nn_layer_affine;
 typedef intel_affine_multibias_layer_t nn_layer_affine_multi;
 typedef intel_recurrent_layer_t     nn_layer_reccurent;
+typedef gna_convolutional_fused_layer_2d  nn_layer_cnn2d;
+typedef gna_pooling_layer_2d        nn_layer_pool2d;
 typedef intel_copy_layer_t          nn_layer_copy;
 typedef intel_pool_type_t           nn_pool_type;
 typedef intel_convolutional_layer_t nn_layer_conv;
@@ -93,3 +85,32 @@ typedef intel_convolutional_layer_t nn_layer_conv;
 #define STATUS_T_ALIAS
 typedef intel_gna_status_t      status_t;
 #endif
+
+typedef enum _TransformOperation
+{
+    ActivationTransform,
+    AffineTransform,
+    AffineDiagonalTransform,
+    AffineMultibiasTransform,
+    ConvolutionalTranform1D,
+    ConvolutionalTransform2D,
+    CopyTransform,
+    TransposeTransform,
+    GmmTransform,
+    PoolingTranform1D,
+    PoolingTransform2D,
+    RecurrentTranform,
+    TransformOperationCount,
+} TransformOperation;
+
+template<typename T>
+T GnaFloor(T number, T significance)
+{
+    return (T)(number / significance) * significance;
+}
+
+template<typename T>
+T GnaCeilDiv(T number, T divider)
+{
+    return (T)(((number) + divider - 1) / divider);
+}

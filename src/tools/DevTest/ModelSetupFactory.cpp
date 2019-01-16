@@ -27,6 +27,7 @@
 
 #include "ModelSetupFactory.h"
 #include "SetupConvolutionModel.h"
+#include "SetupConvolutionModel2D.h"
 #include "SetupCopyModel.h"
 #include "SetupDiagonalModel.h"
 #include "SetupGmmModel.h"
@@ -176,6 +177,9 @@ IModelSetup::UniquePtr ModelSetupFactory::CreateModel(ModelSetupType ms)
     case ModelSetupSplit_1_2B:
         std::cout << "ModelSetupSplit_1_2B ";
         ptr = std::make_unique<SetupSplitModel>(deviceController, true, false, false);
+        break;
+    case ModelSetupConvolution_2D:
+        ptr = std::make_unique<SetupConvolutionModel2D>(deviceController, false);
         break;
     }
     return ptr;

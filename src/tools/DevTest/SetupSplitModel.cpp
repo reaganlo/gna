@@ -32,13 +32,15 @@
 #include "ModelUtilities.h"
 #include "SetupSplitModel.h"
 
+#define UNREFERENCED_PARAMETER(P) ((void)(P))
 
 SetupSplitModel::SetupSplitModel(DeviceController & deviceCtrl, bool wght2B, bool activeListEn, bool pwlEn)
     : deviceController{ deviceCtrl },
     weightsAre2Bytes{ wght2B },
-    activeListEnabled{ activeListEn },
     pwlEnabled{ pwlEn }
 {
+    UNREFERENCED_PARAMETER(activeListEn);
+
     firstNnet.nGroup = groupingNum;
     firstNnet.nLayers = 1;
     firstNnet.pLayers = (intel_nnet_layer_t*)calloc(firstNnet.nLayers, sizeof(intel_nnet_layer_t));
@@ -64,7 +66,7 @@ SetupSplitModel::SetupSplitModel(DeviceController & deviceCtrl, bool wght2B, boo
     auto totalGmmCount = uint16_t{0};
 
     auto grantedSize = uint32_t{0};
-    auto pinned_memory = deviceController.Alloc(wholeSize, totalLayerCount, totalGmmCount, &grantedSize);
+    auto pinned_memory = deviceController.Alloc(static_cast<uint32_t>(wholeSize), static_cast<uint16_t>(totalLayerCount), totalGmmCount, &grantedSize);
     if (NULL == pinned_memory || grantedSize < wholeSize)
     {
         throw GNA_ERR_RESOURCES;
@@ -182,8 +184,8 @@ void SetupSplitModel::setupFirstAffineLayer(uint8_t* &pinned_mem_ptr)
         firstPwl.pSegments = nullptr;
     }
 
-    firstAffineFunc.nBytesPerWeight = weightsAre2Bytes ? 2 : 1;
-    firstAffineFunc.nBytesPerBias = weightsAre2Bytes ? sizeof(intel_bias_t) : sizeof(intel_compound_bias_t);
+    firstAffineFunc.nBytesPerWeight = weightsAre2Bytes ? GNA_INT16 : GNA_INT8;
+    firstAffineFunc.nBytesPerBias = weightsAre2Bytes ? GNA_INT32: GNA_DATA_RICH_FORMAT;
     firstAffineFunc.pWeights = pinned_weights;
     firstAffineFunc.pBiases = pinned_biases;
 
@@ -194,10 +196,10 @@ void SetupSplitModel::setupFirstAffineLayer(uint8_t* &pinned_mem_ptr)
     firstNnet.pLayers[0].nInputRows = inVecSz;
     firstNnet.pLayers[0].nOutputColumns = firstNnet.nGroup;
     firstNnet.pLayers[0].nOutputRows = outVecSz;
-    firstNnet.pLayers[0].nBytesPerInput = sizeof(int16_t);
-    firstNnet.pLayers[0].nBytesPerIntermediateOutput = 4;
-    firstNnet.pLayers[0].nLayerKind = INTEL_AFFINE;
-    firstNnet.pLayers[0].type = INTEL_INPUT_OUTPUT;
+    firstNnet.pLayers[0].nBytesPerInput = GNA_INT16;
+    firstNnet.pLayers[0].nBytesPerIntermediateOutput = GNA_INT32;
+    firstNnet.pLayers[0].operation = INTEL_AFFINE;
+    firstNnet.pLayers[0].mode = INTEL_INPUT_OUTPUT;
     firstNnet.pLayers[0].pLayerStruct = &firstAffineLayer;
     firstNnet.pLayers[0].pInputs = nullptr;
     firstNnet.pLayers[0].pOutputs = nullptr;
@@ -205,12 +207,12 @@ void SetupSplitModel::setupFirstAffineLayer(uint8_t* &pinned_mem_ptr)
     if (pwlEnabled)
     {
         firstNnet.pLayers[0].pOutputsIntermediate = tmp_outputs;
-        firstNnet.pLayers[0].nBytesPerOutput = sizeof(int16_t);
+        firstNnet.pLayers[0].nBytesPerOutput = GNA_INT16;
     }
     else
     {
         firstNnet.pLayers[0].pOutputsIntermediate = nullptr;
-        firstNnet.pLayers[0].nBytesPerOutput = sizeof(int32_t);
+        firstNnet.pLayers[0].nBytesPerOutput = GNA_INT32;
     }
 }
 
@@ -262,8 +264,8 @@ void SetupSplitModel::setupSecondAffineLayer(uint8_t* &pinned_memory)
         secondPwl.pSegments = nullptr;
     }
 
-    secondAffineFunc.nBytesPerWeight = weightsAre2Bytes ? 2 : 1;
-    secondAffineFunc.nBytesPerBias = weightsAre2Bytes ? sizeof(intel_bias_t) : sizeof(intel_compound_bias_t);
+    secondAffineFunc.nBytesPerWeight = weightsAre2Bytes ? GNA_INT16 : GNA_INT8;
+    secondAffineFunc.nBytesPerBias = weightsAre2Bytes ? GNA_INT32: GNA_DATA_RICH_FORMAT;
     secondAffineFunc.pWeights = pinned_weights;
     secondAffineFunc.pBiases = pinned_biases;
 
@@ -274,20 +276,20 @@ void SetupSplitModel::setupSecondAffineLayer(uint8_t* &pinned_memory)
     secondNnet.pLayers[0].nInputRows = diagonalInVecSz;
     secondNnet.pLayers[0].nOutputColumns = secondNnet.nGroup;
     secondNnet.pLayers[0].nOutputRows = diagonalOutVecSz;
-    secondNnet.pLayers[0].nBytesPerInput = sizeof(int16_t);
+    secondNnet.pLayers[0].nBytesPerInput = GNA_INT16;
     if (pwlEnabled)
     {
         secondNnet.pLayers[0].pOutputsIntermediate = tmp_outputs;
-        secondNnet.pLayers[0].nBytesPerOutput = sizeof(int16_t);
+        secondNnet.pLayers[0].nBytesPerOutput = GNA_INT16;
     }
     else
     {
         secondNnet.pLayers[0].pOutputsIntermediate = nullptr;
-        secondNnet.pLayers[0].nBytesPerOutput = sizeof(int32_t);
+        secondNnet.pLayers[0].nBytesPerOutput = GNA_INT32;
     }
-    secondNnet.pLayers[0].nBytesPerIntermediateOutput = 4;
-    secondNnet.pLayers[0].nLayerKind = INTEL_AFFINE_DIAGONAL;
-    secondNnet.pLayers[0].type = INTEL_INPUT_OUTPUT;
+    secondNnet.pLayers[0].nBytesPerIntermediateOutput = GNA_INT32;
+    secondNnet.pLayers[0].operation = INTEL_AFFINE_DIAGONAL;
+    secondNnet.pLayers[0].mode = INTEL_INPUT_OUTPUT;
     secondNnet.pLayers[0].pLayerStruct = &secondAffineLayer;
     secondNnet.pLayers[0].pInputs = nullptr;
     secondNnet.pLayers[0].pOutputs = nullptr;
@@ -338,7 +340,7 @@ void SetupSplitModel::setupInputBuffer(uint8_t* &pinned_memory, int modelIndex, 
 
     auto inputsSize = srcBuffer.size() * sizeof(int16_t);
     memcpy(pinnedInput, srcBuffer.data(), inputsSize);
-    deviceController.BufferAdd(configId, GNA_IN, 0, pinnedInput);
+    deviceController.BufferAdd(configId, InputComponent, 0, pinnedInput);
 
     auto buf_size_inputs = ALIGN64(inputsSize);
     pinned_memory += buf_size_inputs;
@@ -351,7 +353,7 @@ void SetupSplitModel::setupOutputBuffer(uint8_t* &pinned_memory, int modelIndex,
 
     auto& pinnedOutput = configurationBuffers[modelIdSplit][configId].second;
     pinnedOutput = pinned_memory;
-    deviceController.BufferAdd(configId, GNA_OUT, 0, pinnedOutput);
+    deviceController.BufferAdd(configId, OutputComponent, 0, pinnedOutput);
 
     auto outputsSize = groupingNum * ((0 == modelIndex) ? outVecSz : diagonalOutVecSz);
     outputsSize *= (pwlEnabled ? sizeof(int16_t) : sizeof(int32_t));

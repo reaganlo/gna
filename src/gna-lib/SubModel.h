@@ -40,8 +40,8 @@ enum SubmodelType
 class SubModel
 {
 public:
-    
-    SubModel(SubmodelType type, uint16_t layerIx);
+
+    SubModel(SubmodelType type, uint32_t layerIx);
     SubModel(SubModel&& rhs) = default;
     SubModel(const SubModel &) = delete;
     SubModel& operator=(const SubModel&) = delete;

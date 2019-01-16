@@ -41,7 +41,7 @@ void AffineKernelImpl1B(AffineConfig const * const config)
     uint32_t i;
     uint32_t j;
 
-    kpartial = (hw_buf_size[config->inputVectorCount - 1]) / config->inputVectorCount;
+    kpartial = (hw_buf_size[config->inputVectorCount - 1 + XNN_N_GROUP_MAX]) / config->inputVectorCount;
     nKpartial = config->inputElementCount / kpartial;
 
     // simd inputs
@@ -886,7 +886,7 @@ void AffineMultiBiasKernelImpl1B(AffineConfig const * const config)
     int64_t sum6;
     int64_t sum7;
 
-    kpartial = (hw_buf_size[config->inputVectorCount - 1]) / config->inputVectorCount;
+    kpartial = (hw_buf_size[config->inputVectorCount - 1 + XNN_N_GROUP_MAX]) / config->inputVectorCount;
     nKpartial = config->inputElementCount / kpartial;
 
     // simd inputs and weight
@@ -906,7 +906,7 @@ void AffineMultiBiasKernelImpl1B(AffineConfig const * const config)
     int32_t * output;
     nn_bias_s const * multiBias = config->multiBias;
     nn_bias_s const * const biasEnd = config->multiBias + config->outputElementCount * config->multiBiasVectorCount;
-    nn_bias_c const * weightScaleFactor = config->weightScaleFactors;
+    nn_scaling const * weightScaleFactor = config->weightScaleFactors;
 
     output = config->output;
     weight = config->weights1B;

@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2017 Intel Corporation.
+ Copyright 2018 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -25,117 +25,121 @@
 
 #include "AffineLayers.h"
 
+#include "common.h"
 #include "LayerConfiguration.h"
-#include "Validator.h"
+#include "Expect.h"
 
 using std::make_unique;
 
 using namespace GNA;
 
-AffineBaseLayer::AffineBaseLayer(const nn_layer *layer) :
-    Layer(layer),
-    Activation(ActivationFunction::Create(layer->nLayerKind, layer->pLayerStruct, Output.ScratchPad,
-        PwlOutputConfig{Output.ElementCount * Output.VectorCount, Output.ScratchPad, Output.Buffer})),
-    Affine(AffineFunction::Create(layer->nLayerKind, layer->pLayerStruct,
-        AffineBaseConfig{Output.ElementCount, Input.VectorCount, Input.ElementCount, Input.Buffer,
-            Activation ? Output.ScratchPad : Output.Buffer.Get<int32_t>()}))
+AffineBaseLayer::AffineBaseLayer(const nn_layer *layer, const BaseValidator& validatorIn) :
+    Layer(layer, validatorIn, {}, BaseAddress()),
+    Affine(AffineFunction::Create(&Input,
+        ActivationFunction::IsEnabled(layer) ? &Output.ScratchPad : &Output,
+        layer->pLayerStruct, *validator)),
+    // TODO:3: refactor to Transform and to use Affine->Output
+    Activation(ActivationFunction::Create({&Output.ScratchPad, &Output, Output.Mode, Output.Buffer,
+        layer->pLayerStruct, *validator}))
+
 {
-    Output.SetOutputMode(Activation.operator bool(), layer->nBytesPerOutput);
     if (Activation)
     {
         Layer::ComputeHidden = [this](acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount)
-        {this->computeHiddenPwl(accel, fvBuffers, saturationCount); };
+        {this->computeHiddenPwl(accel, ExecutionConfig{fvBuffers, saturationCount}); };
 
-        Layer::ComputeConfig = [this](LayerConfiguration &layerConfiguration, acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount)
-        {this->computeConfigPwl(layerConfiguration, accel, fvBuffers, saturationCount); };
+        Layer::Compute = [this](LayerConfiguration &layerConfiguration, acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount)
+        {this->computePwl(layerConfiguration, accel, ExecutionConfig{fvBuffers, saturationCount}); };
     }
     else
     {
         Layer::ComputeHidden = [this](acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount)
-        {this->computeHidden(accel, fvBuffers, saturationCount); };
+        {this->computeHidden(accel, ExecutionConfig{fvBuffers, saturationCount}); };
 
-        Layer::ComputeConfig = [this](LayerConfiguration &layerConfiguration, acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount)
-        {this->computeConfig(layerConfiguration, accel, fvBuffers, saturationCount); };
+        Layer::Compute = [this](LayerConfiguration &layerConfiguration, acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount)
+        {this->compute(layerConfiguration, accel, ExecutionConfig{fvBuffers, saturationCount}); };
     }
 }
 
-void AffineBaseLayer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration, ValidBoundariesFunctor validBoundaries) const
+void AffineBaseLayer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const
 {
-    Layer::UpdateKernelConfigs(layerConfiguration, validBoundaries);
+    Layer::UpdateKernelConfigs(layerConfiguration);
 
-    auto inputBuffer = Input.Buffer;
-    if (layerConfiguration.InputBuffer)
+    BaseAddress inputBuffer = Input;
+    if (layerConfiguration.Buffers.count(InputComponent))
     {
-        inputBuffer = *layerConfiguration.InputBuffer;
-        validBoundaries(inputBuffer, Input.BufferSize);
+        inputBuffer = layerConfiguration.Buffers[InputComponent];
+        Input.ValidateBuffer(inputBuffer);
     }
 
-    auto outputBuffer = Output.Buffer;
-    if (layerConfiguration.OutputBuffer)
+    BaseAddress outputBuffer = Output;
+    if (layerConfiguration.Buffers.count(OutputComponent))
     {
-        outputBuffer = *layerConfiguration.OutputBuffer;
-        validBoundaries(*layerConfiguration.OutputBuffer, Output.BufferSize);
+        outputBuffer = layerConfiguration.Buffers[OutputComponent];
+        Output.ValidateBuffer(layerConfiguration.Buffers[OutputComponent]);
     }
 
     auto& configs = layerConfiguration.Configs;
 
     if (Activation)
     {
-        configs.PwlOutput = Activation->GetOutputConfig(outputBuffer);
-        configs.Affine = Affine->GetRunConfig(inputBuffer, Output.ScratchPad);
+        configs.Affine = Affine->GetRequestConfig(inputBuffer, Output.ScratchPad);
+        if (outputBuffer)
+            Activation->UpdateConfigBuffers(layerConfiguration.ConfigList,
+                {{OutputComponent, outputBuffer}});
     }
     else
     {
-        configs.Affine = Affine->GetRunConfig(inputBuffer, outputBuffer);
+        configs.Affine = Affine->GetRequestConfig(inputBuffer, outputBuffer);
     }
 }
 
-void AffineBaseLayer::computeHidden(acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const
+void AffineBaseLayer::computeHidden(acceleration accel, ExecutionConfig const & execution) const
 {
-    Affine->ComputeHidden(accel, saturationCount, fvBuffers);
+    Affine->ComputeHidden(accel, execution);
 }
 
-void AffineBaseLayer::computeHiddenPwl(acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const
+void AffineBaseLayer::computeHiddenPwl(acceleration accel, ExecutionConfig const & execution) const
 {
-    Affine->ComputeHidden(accel, saturationCount, fvBuffers);
+    Affine->ComputeHidden(accel, execution);
 
-    Activation->ComputeHidden(accel, saturationCount);
+    Activation->Compute(accel, nullptr, execution);
 }
 
-void AffineBaseLayer::computeConfig(const LayerConfiguration& layerConfiguration, acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const
+void AffineBaseLayer::compute(const LayerConfiguration& layerConfiguration, acceleration accel, ExecutionConfig const & execution) const
 {
-    Affine->ComputeConfig(layerConfiguration, accel, saturationCount, fvBuffers);
+    Affine->Compute(layerConfiguration, accel, execution);
 }
 
-void AffineBaseLayer::computeConfigPwl(const LayerConfiguration& layerConfiguration, acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const
+void AffineBaseLayer::computePwl(const LayerConfiguration& layerConfiguration, acceleration accel, ExecutionConfig const & execution) const
 {
-    Affine->ComputeConfig(layerConfiguration, accel, saturationCount, fvBuffers);
+    Affine->Compute(layerConfiguration, accel, execution);
 
-    Activation->ComputeConfig(layerConfiguration, accel, saturationCount);
+    Activation->Compute(accel, &layerConfiguration, execution);
 }
 
-AffineLayer::AffineLayer(const nn_layer *layer) :
-    AffineBaseLayer(layer)
+AffineLayer::AffineLayer(const nn_layer *layer, const BaseValidator& validatorIn) :
+    AffineBaseLayer(layer, validatorIn)
 {};
 
-void AffineLayer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration, ValidBoundariesFunctor validBoundaries) const
+void AffineLayer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const
 {
-    AffineBaseLayer::UpdateKernelConfigs(layerConfiguration, validBoundaries);
+    AffineBaseLayer::UpdateKernelConfigs(layerConfiguration);
     if (Activation)
     {
         if (layerConfiguration.ActList)
         {
-            Expect::InRange(layerConfiguration.ActList->IndicesCount, 1, Output.ElementCount, GNA_INVALIDINDICES);
+            Expect::InRange(layerConfiguration.ActList->IndicesCount, ui32_1, Output.at(GNA_DIM_H), GNA_INVALIDINDICES);
         }
         auto const outputCount = layerConfiguration.ActList ?
-            layerConfiguration.ActList->IndicesCount : Output.ElementCount;
-        layerConfiguration.Configs.PwlOutput->elementCount = outputCount * Output.VectorCount;
+            layerConfiguration.ActList->IndicesCount : Output.at(GNA_DIM_H);
+        Activation->UpdateActiveOutputCount(layerConfiguration.ConfigList, outputCount * Output.at(GNA_DIM_N));
     }
 }
 
-AffineDiagonalLayer::AffineDiagonalLayer(const nn_layer *layer) :
-    AffineBaseLayer(layer)
+AffineDiagonalLayer::AffineDiagonalLayer(const nn_layer *layer, const BaseValidator& validatorIn) :
+    AffineBaseLayer(layer, validatorIn)
 {
-    Expect::True(Input.ElementCount == Output.ElementCount, XNN_ERR_LYR_CFG);
-    Expect::True(Input.VectorCount == Output.VectorCount, XNN_ERR_LYR_CFG);
+    Expect::Equal(Input.at(GNA_DIM_W), Output.at(GNA_DIM_H), XNN_ERR_LYR_CFG);
+    Expect::Equal(Input.at(GNA_DIM_N), Output.at(GNA_DIM_N), XNN_ERR_LYR_CFG);
 }

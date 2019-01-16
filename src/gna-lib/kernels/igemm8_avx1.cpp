@@ -710,7 +710,7 @@ void AffineMultiBiasKernelImpl1B(AffineConfig const * const config)
     int16_t const *input_3 = nullptr;
     nn_bias_s const * multiBias;
     nn_bias_s const * const biasEnd = config->multiBias + config->outputElementCount * config->multiBiasVectorCount;
-    nn_bias_c const * weightScaleFactor = config->weightScaleFactors;
+    nn_scaling const * weightScaleFactor = config->weightScaleFactors;
 
     // simd inputs
     __m256i v0;

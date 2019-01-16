@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2017 Intel Corporation.
+ Copyright 2018 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -25,228 +25,152 @@
 
 #include "ConvolutionalLayer.h"
 
-#include "AccelerationDetector.h"
 #include "LayerConfiguration.h"
-#include "Validator.h"
-
-using std::make_unique;
-using std::unique_ptr;
+#include "Expect.h"
 
 using namespace GNA;
 
-FiltersConfig::FiltersConfig(const nn_layer_conv * sourceLayer, const uint32_t inputElementCount) :
-    Count{ sourceLayer->nFilters },
-    CoefficientCount{ sourceLayer->nFilterCoefficients },
-    Data{ static_cast<int16_t*>(sourceLayer->pFilters) },
-    Biases{ sourceLayer->pBiases }
+#define UNREFERENCED_PARAMETER(P) ((void)(P))
+
+CnnLayer::CnnLayer(nn_layer const * const layer, const BaseValidator& validatorIn) :
+    Layer(layer, validatorIn, {}, BaseAddress())
 {
-    Expect::InRange(sourceLayer->nFilterRows, 1, CNN_N_FLT_COEFF_MAX, XNN_ERR_LYR_CFG);
-    Expect::True(sourceLayer->nBytesFilterCoefficient == 2, XNN_ERR_WEIGHT_BYTES);
+    Expect::One(Input.at(GNA_DIM_N), XNN_ERR_GROUPING);
+    Expect::Equal(Input.at(GNA_DIM_N), Output.at(GNA_DIM_N), XNN_ERR_GROUPING);
 
-    Expect::InRange(Count, CNN_N_FLT_COEFF_MPLY, CNN_N_FLT_MAX, CNN_ERR_FLT_COUNT);
-    Expect::MultiplicityOf(Count, CNN_N_FLT_COEFF_MPLY);
+    // TODO:3: use Input,Output tensor everywhere
+    Convolution = ConvolutionFunction::Create(&Input,
+        ActivationFunction::IsEnabled(layer) ? &Output.ScratchPad : &Output,
+        layer->pLayerStruct, *validator);
+    Activation = ActivationFunction::Create({&Output.ScratchPad, &Output, Output.Mode, Output.Buffer,
+        layer->pLayerStruct, *validator}),
+    Pooling = PoolingFunction::Create(layer->pLayerStruct, Convolution->Output, *validator, Input.Mode);
 
-    Expect::InRange(CoefficientCount, CNN_N_FLT_COEFF_MIN, CNN_N_FLT_COEFF_MAX, XNN_ERR_LYR_CFG);
-    Expect::True(CoefficientCount <= inputElementCount, XNN_ERR_LYR_CFG);
-    Expect::MultiplicityOf(CoefficientCount, XNN_N_IN_ELEMS_MPLY);
-
-    Expect::ValidBuffer(Data);
-    Expect::True(sizeof(nn_bias_s) == sourceLayer->nBytesBias, XNN_ERR_BIAS_BYTES);
-}
-
-FeatureMaps::FeatureMaps(const nn_layer_conv * sourceLayer) :
-    Count{ sourceLayer->nFeatureMaps },
-    RowCount{ sourceLayer->nFeatureMapRows },
-    ColumnCount{ sourceLayer->nFeatureMapColumns },
-    Stride{ Count * ColumnCount } // always move 1 "row"
-{
-    Expect::InRange(Stride, 1, CNN_N_FLT_COEFF_MAX, CNN_ERR_FLT_STRIDE);
-}
-
-ConvolutionFunction::ConvolutionFunction(const nn_layer_conv * sourceLayer, const uint32_t inputElementCount,
-    int16_t const * const inputs, int32_t * const outputs) :
-    Filters{ sourceLayer, inputElementCount },
-    FeatMaps{ sourceLayer },
-    OutputElementsCount{ (inputElementCount - Filters.CoefficientCount) / FeatMaps.Stride + 1 },
-    kernels{AccelerationDetector::GetKernelMap<ConvolutionKernel>()},
-    hiddenConfig{FeatMaps.Stride, OutputElementsCount, Filters.Count, Filters.CoefficientCount,
-        inputs, Filters.Data, Filters.Biases, outputs}
-{
-    Expect::InRange(FeatMaps.Stride, 1, Filters.CoefficientCount, XNN_ERR_LYR_CFG);
-    auto featureCount = FeatMaps.RowCount * FeatMaps.Stride;
-    Expect::True(featureCount >= CNN_N_FLT_COEFF_MIN, XNN_ERR_LYR_CFG);
-}
-
-unique_ptr<const ConvolutionConfig> ConvolutionFunction::GetRunConfig(int16_t const * const inputs, int32_t * const outputs) const
-{
-    return make_unique<const ConvolutionConfig>(&hiddenConfig, inputs, outputs);
-}
-
-void ConvolutionFunction::ComputeHidden(acceleration accel, uint32_t *saturationCount) const
-{
-    auto convConfig = ConvolutionConfig{&hiddenConfig, saturationCount};
-
-    kernels.at(accel)(&convConfig);
-}
-
-void ConvolutionFunction::ComputeConfig(const ConvolutionConfig* const config, acceleration accel, uint32_t *saturationCount) const
-{
-    auto convConfig = ConvolutionConfig{config, saturationCount};
-
-    kernels.at(accel)(&convConfig);
-}
-
-PoolingFunction::PoolingFunction(const nn_layer_conv * sourceLayer) :
-    Type{sourceLayer->poolType},
-    Size{sourceLayer->nPoolSize},
-    Stride{sourceLayer->nPoolStride},
-    kernels{AccelerationDetector::GetKernelMap<ConvolutionPoolingKernel>()},
-    hiddenConfig{Type, Size, Stride}
-{
-    Expect::InRange(Type, INTEL_NO_POOLING, NUM_POOLING_TYPES - 1, XNN_ERR_LYR_CFG);
-    if (INTEL_NO_POOLING != Type)
-    {
-        Expect::InRange(Size, CNN_POOL_SIZE_MIN, CNN_POOL_SIZE_MAX, XNN_ERR_LYR_CFG);
-        Expect::InRange(Stride, CNN_POOL_SIZE_MIN, CNN_POOL_SIZE_MAX, CNN_ERR_POOL_STRIDE);
-    }
-}
-
-void PoolingFunction::Compute(const ConvolutionConfig * convolutionConfig, acceleration accel, int64_t * poolScratchPad,
-    const PwlCached * pwl) const
-{
-    auto poolConfig = PoolingConfig{&hiddenConfig, poolScratchPad};
-    kernels.at(accel)(convolutionConfig, &poolConfig, pwl);
-}
-
-CnnLayer::CnnLayer(nn_layer const * const layer) :
-    Layer(layer),
-    Activation(ActivationFunction::Create(layer->nLayerKind, layer->pLayerStruct, Output.ScratchPad,
-        PwlOutputConfig{Output.ElementCount * Output.VectorCount, Output.ScratchPad, Output.Buffer})),
-    Pooling{static_cast<const nn_layer_conv*>(layer->pLayerStruct)},
-    Convolution{static_cast<const nn_layer_conv*>(layer->pLayerStruct), Input.ElementCount, Input.Buffer,
-        (INTEL_NO_POOLING != Pooling.Type) ? Output.Buffer.Get<int32_t>() : (Activation ? Output.ScratchPad : Output.Buffer.Get<int32_t>())}
-{
-    Expect::True(Input.VectorCount == 1, XNN_ERR_GROUPING);
-    Expect::True(Input.VectorCount == Output.VectorCount, XNN_ERR_GROUPING);
-    Output.SetOutputMode(Activation.operator bool(), layer->nBytesPerOutput);
-
-    if (INTEL_NO_POOLING == Pooling.Type)
+    if (!Pooling)
     {
         if (Activation)
         {
             Layer::ComputeHidden = [this](acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount)
-            {this->computeHiddenPwl(accel, fvBuffers, saturationCount); };
+            {this->computeHiddenPwl(accel, ExecutionConfig{fvBuffers, saturationCount}); };
 
-            Layer::ComputeConfig = [this](LayerConfiguration &layerConfiguration, acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount)
-            {this->computeConfigPwl(layerConfiguration, accel, fvBuffers, saturationCount); };
+            Layer::Compute = [this](LayerConfiguration &layerConfiguration, acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount)
+            {this->computePwl(layerConfiguration, accel, ExecutionConfig{fvBuffers, saturationCount}); };
         }
         else
         {
             Layer::ComputeHidden = [this](acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount)
-            {this->computeHidden(accel, fvBuffers, saturationCount); };
+            {this->computeHidden(accel, ExecutionConfig{fvBuffers, saturationCount}); };
 
-            Layer::ComputeConfig = [this](LayerConfiguration &layerConfiguration, acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount)
-            {this->computeConfig(layerConfiguration, accel, fvBuffers, saturationCount); };
+            Layer::Compute = [this](LayerConfiguration &layerConfiguration, acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount)
+            {this->compute(layerConfiguration, accel, ExecutionConfig{fvBuffers, saturationCount}); };
         }
+        Expect::Equal(Convolution->OutputsPerFilterCount, Output.Count / Convolution->Output.at(GNA_DIM_D),
+            XNN_ERR_LYR_INVALID_TENSOR_DIMENSIONS);
+        // TODO:3: new error
     }
     else
     {
-        Expect::True(nullptr != Activation, XNN_ERR_PWL_SEGMENTS); // Activation is required for cnn with pooling
-        Layer::ComputeHidden = [this](acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount)
-        {this->computeHiddenPool(accel, fvBuffers, saturationCount); };
+        Expect::NotNull(Activation.get(), XNN_ERR_PWL_SEGMENTS); // Activation is required for cnn with pooling
+        Expect::Equal(Pooling->OutputsPerFilterCount, Output.Count / Convolution->Output.at(GNA_DIM_D), XNN_ERR_LYR_INVALID_TENSOR_DIMENSIONS);
+        // TODO:3: new error
 
-        Layer::ComputeConfig = [this](LayerConfiguration &layerConfiguration, acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount)
-        {this->computeConfigPool(layerConfiguration, accel, fvBuffers, saturationCount); };
+        Layer::ComputeHidden = [this](acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount)
+        {this->computeHiddenPool(accel, ExecutionConfig{fvBuffers, saturationCount}); };
+
+        Layer::Compute = [this](LayerConfiguration &layerConfiguration, acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount)
+        {this->computePool(layerConfiguration, accel, ExecutionConfig{fvBuffers, saturationCount}); };
     }
 }
 
-void CnnLayer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration, ValidBoundariesFunctor validBoundaries) const
+void CnnLayer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const
 {
-    Layer::UpdateKernelConfigs(layerConfiguration, validBoundaries);
+    Layer::UpdateKernelConfigs(layerConfiguration);
 
-    auto inputBuffer = Input.Buffer;
-    if (layerConfiguration.InputBuffer)
+    BaseAddress inputBuffer = Input;
+    if (layerConfiguration.Buffers.count(InputComponent))
     {
-        inputBuffer = *layerConfiguration.InputBuffer;
-        validBoundaries(inputBuffer, Input.BufferSize);
+        inputBuffer = layerConfiguration.Buffers[InputComponent];
+        Input.ValidateBuffer(inputBuffer);
     }
 
-    auto filterOutputBuffer = Activation ? Output.ScratchPad :
-        (layerConfiguration.OutputBuffer
-         ? layerConfiguration.OutputBuffer->Get<int32_t>() : Output.Buffer.Get<int32_t>());
+    // TODO:3: simplify, too fancy logic
+    BaseAddress filterOutputBuffer = Activation ? Output.ScratchPad:
+        (layerConfiguration.Buffers.count(OutputComponent) ? layerConfiguration.Buffers[OutputComponent] : Output);
 
-    auto pwlOutputBuffer = layerConfiguration.OutputBuffer
-        ? *layerConfiguration.OutputBuffer
-        : Output.Buffer;
+    BaseAddress pwlOutputBuffer = layerConfiguration.Buffers.count(OutputComponent)
+        ? layerConfiguration.Buffers[OutputComponent]
+        : Output;
 
-    if (layerConfiguration.OutputBuffer)
+    if (layerConfiguration.Buffers.count(OutputComponent))
     {
-        auto outputSize = Convolution.Filters.Count * Convolution.OutputElementsCount;
         if (Activation)
         {
-            outputSize *= LayerOutput::ActivatedOutputSize;
-            validBoundaries(pwlOutputBuffer, outputSize);
+            Output.ValidateBuffer(pwlOutputBuffer);
         }
         else
         {
-            outputSize *= LayerOutput::NonActivatedOutputSize;
-            validBoundaries(filterOutputBuffer, outputSize);
+            Output.ValidateBuffer(filterOutputBuffer);
         }
     }
 
     auto& configs = layerConfiguration.Configs;
-    if (INTEL_NO_POOLING == Pooling.Type)
+    if (!Pooling)
     {
-        configs.Convolution = Convolution.GetRunConfig(inputBuffer, filterOutputBuffer);
+        configs.Convolution = Convolution->GetRequestConfig(inputBuffer, filterOutputBuffer);
         if (Activation)
         {
-            configs.PwlOutput = Activation->GetOutputConfig(pwlOutputBuffer);
+            Activation->UpdateConfigBuffers(layerConfiguration.ConfigList,
+                {Output.ScratchPad, pwlOutputBuffer});
         }
     }
     else
     {
-        configs.Convolution = Convolution.GetRunConfig(inputBuffer, pwlOutputBuffer);
+        configs.Convolution = Convolution->GetRequestConfig(inputBuffer, pwlOutputBuffer);
     }
 }
 
-void CnnLayer::computeHidden(acceleration accel, KernelBuffers *fvBuffers, uint32_t * saturationCount) const
+void CnnLayer::computeHidden(acceleration accel, ExecutionConfig const & execution) const
 {
-    UNREFERENCED_PARAMETER(fvBuffers);
+    UNREFERENCED_PARAMETER(execution.Intermediate);
 
-    Convolution.ComputeHidden(accel, saturationCount);
+    Convolution->ComputeHidden(accel, execution.SaturationCount);
 }
 
-void CnnLayer::computeHiddenPwl(acceleration accel, KernelBuffers *fvBuffers, uint32_t * saturationCount) const
+void CnnLayer::computeHiddenPwl(acceleration accel, ExecutionConfig const & execution) const
 {
-    UNREFERENCED_PARAMETER(fvBuffers);
+    UNREFERENCED_PARAMETER(execution.Intermediate);
 
-    Convolution.ComputeHidden(accel, saturationCount);
-    Activation->ComputeHidden(accel, saturationCount);
+    Convolution->ComputeHidden(accel, execution.SaturationCount);
+    Activation->Compute(accel, nullptr, execution);
 }
 
-void CnnLayer::computeConfig(const LayerConfiguration& layerConfiguration, acceleration accel, KernelBuffers *fvBuffers, uint32_t * saturationCount) const
+void CnnLayer::compute(const LayerConfiguration& layerConfiguration, acceleration accel, ExecutionConfig const & execution) const
 {
-    UNREFERENCED_PARAMETER(fvBuffers);
+    UNREFERENCED_PARAMETER(execution.Intermediate);
 
-    Convolution.ComputeConfig(layerConfiguration.Configs.Convolution.get(), accel, saturationCount);
+    Convolution->Compute(layerConfiguration.Configs.Convolution.get(), accel, execution.SaturationCount);
 }
 
-void CnnLayer::computeConfigPwl(const LayerConfiguration& layerConfiguration, acceleration accel, KernelBuffers *fvBuffers, uint32_t * saturationCount) const
+void CnnLayer::computePwl(const LayerConfiguration& layerConfiguration, acceleration accel, ExecutionConfig const & execution) const
 {
-    UNREFERENCED_PARAMETER(fvBuffers);
+    UNREFERENCED_PARAMETER(execution.Intermediate);
 
-    Convolution.ComputeConfig(layerConfiguration.Configs.Convolution.get(), accel, saturationCount);
-    Activation->ComputeConfig(layerConfiguration, accel, saturationCount);
+    Convolution->Compute(layerConfiguration.Configs.Convolution.get(), accel, execution.SaturationCount);
+    Activation->Compute(accel, &layerConfiguration, execution);
 }
 
-void CnnLayer::computeHiddenPool(acceleration accel, KernelBuffers *fvBuffers, uint32_t * saturationCount) const
+void CnnLayer::computeHiddenPool(acceleration accel, ExecutionConfig const & execution) const
 {
-    auto convConfig = ConvolutionConfig{Convolution.GetHiddenConfig(), saturationCount};
-    Pooling.Compute(&convConfig, accel, fvBuffers->pool, &Activation->Pwl);
+    auto convConfig = ConvolutionConfig{Convolution->GetHiddenConfig(), execution.SaturationCount};
+
+    //TODO:3: Refactor
+    convConfig.pooledOutputs = Output.Buffer;
+
+    Pooling->Compute(&convConfig, accel, execution.Intermediate->pool, &Activation->Pwl);
 }
 
-void CnnLayer::computeConfigPool(LayerConfiguration& layerConfiguration, acceleration accel, KernelBuffers *fvBuffers, uint32_t * saturationCount) const
+void CnnLayer::computePool(LayerConfiguration& layerConfiguration, acceleration accel, ExecutionConfig const & execution) const
 {
-    auto convConfig = ConvolutionConfig{layerConfiguration.Configs.Convolution.get(), saturationCount};
-    Pooling.Compute(&convConfig, accel, fvBuffers->pool, &Activation->Pwl);
+    auto convConfig = ConvolutionConfig{layerConfiguration.Configs.Convolution.get(), execution.SaturationCount};
+    Pooling->Compute(&convConfig, accel, execution.Intermediate->pool, &Activation->Pwl);
 }

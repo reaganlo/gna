@@ -2,7 +2,7 @@
     Copyright 2018 Intel Corporation.
     This software and the related documents are Intel copyrighted materials,
     and your use of them is governed by the express license under which they
-    were provided to you (Intel OBL Software License Agreement (OEM/IHV/ISV 
+    were provided to you (Intel OBL Software License Agreement (OEM/IHV/ISV
     Distribution & Single User) (v. 11.2.2017) ). Unless the License provides
     otherwise, you may not use, modify, copy, publish, distribute, disclose or
     transmit this software or the related documents without Intel's prior
@@ -14,7 +14,7 @@
 
 /******************************************************************************
  *
- * GNA 2.0 API
+ * GNA 3.0 API
  *
  * Gaussian Mixture Models and Neural Network Accelerator Module
  * API Definition
@@ -25,6 +25,10 @@
 #define __GNA_API_H
 
 #include <stdint.h>
+
+#if !defined(_WIN32)
+#include <assert.h>
+#endif
 
 #include "gna-api-status.h"
 #include "gna-api-types-gmm.h"
@@ -51,73 +55,431 @@ extern "C" {
 #    endif
 #endif
 
-
 /******************  GNA Device API ******************/
 
 /** GNA Device identifier **/
 typedef uint32_t gna_device_id;
 
-/** Maximum number of opened devices */
-const gna_device_id GNA_DEVICE_LIMIT = 1;
+////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////    start of changes            ////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////
+
+// TODO: GNA 3.0/1 reorganize API into headers to facilitate different/separate modules
+/******************************************************************************
+ * Draft:
+ * Model API (gna-api-model.h)
+ *   - gna-api-types-xnn.h
+ *   - gna-api-types-gmm (consolidate with xnn)
+ *   - ANNA enhancements - non-neural-network) (only for ANNA converter)
+ *   - Memory & model api
+ *      - alloc/free
+ *      - create
+ *      - import
+ *      - export (gna-api-dumper/export.h)
+ * Common API (gna-api.h)
+ *   - gna-api-status.h
+ *   - capability api?
+ *      - requires some model enums
+ *      - requires some instrumentation enums
+ *   - device api
+ *      - device open
+ *      - device close
+ *   - helpers/other
+  * Runtime Inference API (gna-api-inference.h)
+ *   - request configs
+ *   - request enqueue/wait
+ *   - include/incorporate gna-api-instrumentation.h
+ *****************************************************************************/
+
+
+
+/******************************************************************************
+ * GNA Capabilities API
+ *****************************************************************************/
+typedef enum _api_version
+{
+    GNA_API_NOT_SUPPORTED = GNA_NOT_SUPPORTED,
+    GNA_API_1_0,
+    GNA_API_2_0,
+    //GNA_API_2_1_S, // TODO: use GNA_API_3_0
+    GNA_API_3_0,
+
+    GNA_API_VERSION_COUNT
+} gna_api_version;
+
+// TODO:3: rename to generation or remove and use driver device types
+typedef enum _device_version
+{
+    GNA_DEVICE_NOT_SUPPORTED = GNA_NOT_SUPPORTED,
+    GNA_0_9,                // GNA 0.9 Device Cannon Lake (CNL), no CNN support
+    GNA_1_0,                // GNA 1.0 Device Gemini Lake (GLK), full featured GNA 1.0
+                            // GNA 1.0 Device Ice Lake (ICL), same function set as GLK
+    GNA_1_0_EMBEDDED,       // GNA 1.0 Embedded Sue Creek (SUE)
+    GNA_2_0,                // GNA 2.0 Device Tiger Lake, full featured GNA 2.0 (TGL)
+    GNA_2_1_EMBEDDED,       // GNA 2.1 Embedded Jelly Fish (JFL)
+    GNA_3_0,                // GNA 3.0 Device Alder Lake, full featured GNA 3.0 (ADL)
+    GNA_3_0_EMBEDDED,       // GNA 3.0 Embedded on Alder Lake PCH/ACE
+    GNA_3_1_AUTONOMUS,      // GNA 3.1 ANNA Autonomous Embedded on Alder Lake PCH/ACE
+    GMM_DEVICE,
+    GNA_DEVICE_COUNT
+} gna_device_generation;
+
+/**
+ *  Enumeration of device flavors
+ */
+typedef enum _gna_device_version
+{
+    GNA_UNSUPPORTED = 0x0000,   // No supported device available
+    GNA_SKL     = 0x1911,   // GMM Device Sky Lake
+    GNA_KBL     = 0x1911,   // GMM Device Kaby Lake // TODO:3: check KBL HW ID
+    GNA_CNL     = 0x5A11,   // GNA 0.9 Device Cannon Lake, no CNN support
+    GNA_GLK     = 0x3190,   // GNA 1.0 Device Gemini Lake, full featured GNA 1.0
+    GNA_EHL     = 0x4511,   // GNA 1.0 Device Elkhartlake, same function set as GLK
+    GNA_ICL     = 0x8A11,   // GNA 1.0 Device Ice Lake, same function set as GLK
+    GNA_TGL     = 0x9A11,   // GNA 2.0 Device Tiger Lake, full featured GNA 2.0
+    GNA_ADL     = 0x46AD,   // GNA 3.0 Device Alder Lake, full featured GNA 3.0
+    GNA_SUE_CREEK   = 0xFFFF1,  // GNA 1.0 Embedded Sue Creek
+    GNA_JELLYFISH   = 0xFFFF2,  // GNA 2.1 Embedded Jelly Fish
+    GNA_ACE_EMBEDDED= 0xFFFF3,  // GNA 3.0 Embedded on Alder Lake PCH/ACE
+    GNA_ACE_ANNA    = 0xFFFF4,  // GNA 3.1 ANNA Autonomous Embedded on Alder Lake PCH/ACE
+
+} gna_device_version;
+
+//
+//// Binary flags
+//typedef enum _memory_mode
+//{
+//    GNA_MEMORY_NOT_SUPPORTED = GNA_NOT_SUPPORTED,
+//    GNA_MEMORY_MAPPED = 1,
+//    GNA_MEMORY_DIRECT = 2,
+//    GNA_MEMORY_DEDICATED = 4, // Server device built-in memory
+//    GNA_MEMORY_FANCY_MODE = 8, // ACE extension?
+//} gna_memory_mode;
+//
+//// helper to identify returned property type
+//typedef enum _property_type
+//{
+//    GNA_TYPE_NOT_SUPPORTED = GNA_NOT_SUPPORTED, // not supported
+//    GNA_UINT8_T,                                // cast to uint8_t
+//    GNA_UINT16_T,                               // cast to uint16_t
+//    GNA_UINT32_T,                               // cast to uint32_t
+//    GNA_UINT64_T,                               // cast to uint64_t
+//    GNA_BOOL_T,                                 // cast to bool
+//
+//    GNA_API_VERSION_T,                          // cast to gna_api_version
+//
+//    GNA_DEVICE_GENERATION_T,                       // cast to gna_device_generation
+//    GNA_MEMORY_MODE_T,                          // Binary flags of gna_memory_mode
+//    GNA_DATA_MODE_T,                            // Binary flags of gna_data_mode
+//    GNA_BIAS_MODE_T,                            // Binary flags of gna_bias_mode
+//    GNA_POOLING_MODE_T,                         // Binary flags of gna_pooling_mode
+//    GNA_TENSOR_ORDER_T,                         // cast to gna_tensor_order_t
+//    // can facilitate some fancy structure up to 8B
+//} gna_property_type;
+//
+//typedef enum _api_property
+//{
+//    GNA_API_VERSION,                            // GNA_API_VERSION_T
+//    GNA_API_BUILD,                              // GNA_UINT32_T
+//    GNA_API_THREAD_COUNT,                       // GNA_UINT32_T
+//    GNA_API_THREAD_COUNT_MAX,                   // GNA_UINT32_T
+//
+//    GNA_API_PROPERTY_COUNT
+//} gna_api_property;
+//
+//typedef enum _device_property
+//{
+//    // properties for GNA_DEVICE subject
+//    GNA_DEVICE_AVAILABLE_COUNT,                 // GNA_UINT32_T
+//    GNA_DEVICE_ACTIVE_COUNT,                    // GNA_UINT32_T
+//    GNA_DEVICE_ACTIVE_COUNT_MAX,                // GNA_UINT32_T
+//    GNA_DEVICE_PROFILE,                         // GNA_DEVICE_PROFILE_T
+//    GNA_DEVICE_VERSION,                         // GNA_DEVICE_GENERATION_T
+//    GNA_DEVICE_DRIVER_BUILD,                    // GNA_UINT32_T
+//    GNA_DEVICE_CLOCK_FREQUENCY,                 // GNA_UINT32_T
+//    GNA_DEVICE_COMPUTE_ENGINE_COUNT,            // GNA_UINT32_T
+//    GNA_DEVICE_COMPUTE_ENGINE_COUNT_MIN,        // GNA_UINT32_T
+//    GNA_DEVICE_COMPUTE_ENGINE_COUNT_MAX,        // GNA_UINT32_T
+//    GNA_DEVICE_ACTIVATION_ENGINE_COUNT,         // GNA_UINT32_T
+//    GNA_DEVICE_ACTIVATION_ENGINE_COUNT_MIN,     // GNA_UINT32_T
+//    GNA_DEVICE_ACTIVATION_ENGINE_COUNT_MAX,     // GNA_UINT32_T
+//    GNA_DEVICE_POOLING_ENGINE_COUNT,            // GNA_UINT32_T
+//    GNA_DEVICE_POOLING_ENGINE_COUNT_MIN,        // GNA_UINT32_T
+//    GNA_DEVICE_POOLING_ENGINE_COUNT_MAX,        // GNA_UINT32_T
+//    GNA_DEVICE_STREAM_COUNT,                    // GNA_UINT32_T
+//    GNA_DEVICE_STREAM_COUNT_MIN,                // GNA_UINT32_T
+//    GNA_DEVICE_STREAM_COUNT_MAX,                // GNA_UINT32_T
+//    GNA_DEVICE_INPUT_BUFFER_SIZE,               // GNA_UINT64_T
+//    GNA_DEVICE_MEMORY_MODE,                     // GNA_MEMORY_MODE_T
+//    GNA_DEVICE_MEMORY_DEDICATED_SIZE,           // GNA_UINT64_T
+//    GNA_DEVICE_MEMORY_REGIONS_COUNT_MAX,        // GNA_UINT32_T
+//    GNA_DEVICE_MODEL_SIZE_MAX,                  // GNA_UINT64_T
+//    GNA_DEVICE_MODEL_COUNT_MAX,                 // GNA_UINT64_T
+//    GNA_DEVICE_MODEL_LAYER_COUNT_MAX,           // GNA_UINT32_T
+//    // ANNA
+//    GNA_DEVICE_EXT_,           // GNA_UINT32_T
+//
+//    GNA_DEVICE_PROPERTY_COUNT
+//} gna_device_property;
+//
+//typedef enum _layer_property
+//{
+//    GNA_LAYER_SUPPORTED,                        // GNA_BOOL_T        // TODO:3:CAPS:Use device's layer support coverage
+//    GNA_LAYER_HAS_ACTIVE_LIST,                  // GNA_BOOL_T       // TODO:3:CAPS:Use hw layer's properties
+//
+//    GNA_LAYER_INPUT_TENSOR_DIM_N_MIN,           // grouping GNA_UINT32_T    // TODO:3:CAPS:Use hw layer's properties
+//    GNA_LAYER_INPUT_TENSOR_DIM_N_MAX,           // grouping GNA_UINT32_T    // TODO:3:CAPS:Use hw layer's properties
+//    GNA_LAYER_INPUT_TENSOR_DIM_W_MIN,           // GNA_UINT32_T         // TODO:3:CAPS:Use hw layer's properties
+//    GNA_LAYER_INPUT_TENSOR_DIM_W_MAX,           // GNA_UINT32_T         // TODO:3:CAPS:Use hw layer's properties
+//    GNA_LAYER_INPUT_TENSOR_DIM_H_MIN,           // GNA_UINT32_T // TODO:3:CAPS:Use hw layer's properties
+//    GNA_LAYER_INPUT_TENSOR_DIM_H_MAX,           // GNA_UINT32_T // TODO:3:CAPS:Use hw layer's properties
+//    GNA_LAYER_INPUT_TENSOR_DIM_D_MIN,           // GNA_UINT32_T // TODO:3:CAPS:Use hw layer's properties
+//    GNA_LAYER_INPUT_TENSOR_DIM_D_MAX,           // GNA_UINT32_T // TODO:3:CAPS:Use hw layer's properties
+//    GNA_LAYER_INPUT_TENSOR_PRECISION,           // GNA_DATA_MODE_T      // TODO:3:CAPS:Use device's layer support coverage
+//    GNA_LAYER_INPUT_TENSOR_ORDER,               // GNA_TENSOR_ORDER_T   // TODO:3:CAPS:Use device's layer support coverage
+//
+//    GNA_LAYER_OUTPUT_TENSOR_DIM_N_MIN,           // grouping GNA_UINT32_T   // TODO:3:CAPS:Use hw layer's properties
+//    GNA_LAYER_OUTPUT_TENSOR_DIM_N_MAX,           // grouping GNA_UINT32_T   // TODO:3:CAPS:Use hw layer's properties
+//    GNA_LAYER_OUTPUT_TENSOR_DIM_W_MIN,           // GNA_UINT32_T    // TODO:3:CAPS:Use hw layer's properties
+//    GNA_LAYER_OUTPUT_TENSOR_DIM_W_MAX,           // GNA_UINT32_T    // TODO:3:CAPS:Use hw layer's properties
+//    GNA_LAYER_OUTPUT_TENSOR_DIM_H_MIN,           // GNA_UINT32_T    // TODO:3:CAPS:Use hw layer's properties
+//    GNA_LAYER_OUTPUT_TENSOR_DIM_H_MAX,           // GNA_UINT32_T    // TODO:3:CAPS:Use hw layer's properties
+//    GNA_LAYER_OUTPUT_TENSOR_DIM_D_MIN,           // GNA_UINT32_T    // TODO:3:CAPS:Use hw layer's properties
+//    GNA_LAYER_OUTPUT_TENSOR_DIM_D_MAX,           // GNA_UINT32_T    // TODO:3:CAPS:Use hw layer's properties
+//    GNA_LAYER_OUTPUT_TENSOR_PRECISION,          // GNA_DATA_MODE_T      // TODO:3:CAPS:Use device's layer support coverage
+//    GNA_LAYER_OUTPUT_TENSOR_ORDER,              // GNA_TENSOR_ORDER_T   // TODO:3:CAPS:Use device's layer support coverage
+//
+//    GNA_LAYER_WEIGHT_TENSOR_PRECISION,          // GNA_DATA_MODE_T      // TODO:3:CAPS:Use device's layer support coverage
+//    GNA_LAYER_WEIGHT_TENSOR_ORDER,              // GNA_TENSOR_ORDER_T   // TODO:3:CAPS:Use device's layer support coverage
+//
+//    GNA_LAYER_BIAS_TENSOR_DIM_N_MIN,            // bias grouping GNA_UINT32_T   // TODO:3:CAPS:Use hw layer's properties
+//    GNA_LAYER_BIAS_TENSOR_DIM_N_MAX,            // bias grouping GNA_UINT32_T   // TODO:3:CAPS:Use hw layer's properties
+//    GNA_LAYER_BIAS_TENSOR_DIM_W_MIN,            // GNA_UINT32_T // TODO:3:CAPS:Use hw layer's properties
+//    GNA_LAYER_BIAS_TENSOR_DIM_W_MAX,            // GNA_UINT32_T // TODO:3:CAPS:Use hw layer's properties
+//    GNA_LAYER_BIAS_TENSOR_PRECISION,            // GNA_DATA_MODE_T      // TODO:3:CAPS:Use device's layer support coverage
+//    GNA_LAYER_BIAS_TENSOR_ORDER,                // GNA_TENSOR_ORDER_T   // TODO:3:CAPS:Use device's layer support coverage
+//
+//    GNA_LAYER_ACTIVATION_FUNCTION_MODE,         // GNA_DATA_MODE_T      // TODO:3:CAPS:Use hw layer's properties
+//    GNA_LAYER_ACTIVATION_FUNCTION_RELU_HINT,    // GNA_BOOL_T           // TODO:3:CAPS:Use hw layer's properties
+//
+//    // TODO:3:CAPS:Use hw layer's properties
+//    // properties specific for GNA_LAYER_* subject
+//    GNA_LAYER_CONVOLUTION_BIAS_VOLUME,          // GNA_BIAS_MODE_T
+//    GNA_LAYER_CONVOLUTION_FILTER_COUNT_MIN,     // GNA_UINT32_T
+//    GNA_LAYER_CONVOLUTION_FILTER_COUNT_MAX,     // GNA_UINT32_T
+//    GNA_LAYER_CONVOLUTION_FILTER_COUNT_STEP,    // GNA_UINT32_T filter count must be multiple of
+//    GNA_LAYER_CONVOLUTION_FILTER_DIM_W_MIN,     // GNA_UINT32_T
+//    GNA_LAYER_CONVOLUTION_FILTER_DIM_W_MAX,     // GNA_UINT32_T
+//    GNA_LAYER_CONVOLUTION_FILTER_DIM_H_MIN,     // GNA_UINT32_T
+//    GNA_LAYER_CONVOLUTION_FILTER_DIM_H_MAX,     // GNA_UINT32_T
+//    GNA_LAYER_CONVOLUTION_KERNEL_ALIGNMENT,     // GNA_UINT32_T ??? to verify
+//    GNA_LAYER_CONVOLUTION_KERNEL_ELEMENT_PRECISION,// GNA_DATA_MODE_T
+//    GNA_LAYER_CONVOLUTION_STRIDE_DIM_W_MIN,     // GNA_UINT32_T
+//    GNA_LAYER_CONVOLUTION_STRIDE_DIM_W_MAX,     // GNA_UINT32_T
+//    GNA_LAYER_CONVOLUTION_STRIDE_DIM_H_MIN,     // GNA_UINT32_T
+//    GNA_LAYER_CONVOLUTION_STRIDE_DIM_H_MAX,     // GNA_UINT32_T
+//    //GNA_LAYER_CONVOLUTION_STRIDE_DIM_D_MIN,     // GNA_UINT32_T
+//    //GNA_LAYER_CONVOLUTION_STRIDE_DIM_D_MAX,     // GNA_UINT32_T
+//
+//    GNA_LAYER_POOLING_MODE,                     // GNA_POOLING_MODE_T
+//    GNA_LAYER_POOLING_WINDOW_SIZE_DIM_W_MIN,    // GNA_UINT32_T
+//    GNA_LAYER_POOLING_WINDOW_SIZE_DIM_W_MAX,    // GNA_UINT32_T
+//    GNA_LAYER_POOLING_WINDOW_SIZE_DIM_H_MIN,    // GNA_UINT32_T
+//    GNA_LAYER_POOLING_WINDOW_SIZE_DIM_H_MAX,    // GNA_UINT32_T
+//    //GNA_LAYER_POOLING_WINDOW_SIZE_DIM_D_MIN,    // GNA_UINT32_T
+//    //GNA_LAYER_POOLING_WINDOW_SIZE_DIM_D_MAX,    // GNA_UINT32_T
+//    GNA_LAYER_POOLING_STRIDE_DIM_W_MAX,         // GNA_UINT32_T
+//    GNA_LAYER_POOLING_STRIDE_DIM_W_MIN,         // GNA_UINT32_T
+//    GNA_LAYER_POOLING_STRIDE_DIM_H_MIN,         // GNA_UINT32_T
+//    GNA_LAYER_POOLING_STRIDE_DIM_H_MAX,         // GNA_UINT32_T
+//    //GNA_LAYER_POOLING_STRIDE_DIM_D_MIN,         // GNA_UINT32_T
+//    //GNA_LAYER_POOLING_STRIDE_DIM_D_MAX,         // GNA_UINT32_T
+//
+//    GNA_LAYER_RECURRENT_FEEDBACK_DEPTH_MIN,     // GNA_UINT32_T
+//    GNA_LAYER_RECURRENT_FEEDBACK_DEPTH_MAX,     // GNA_UINT32_T
+//} gna_layer_property;
+//
+///**
+// * Test if given mode is set amongst flags
+// *
+// * @modeFlags   A value or bitwise OR of more values from GNA mode enumeration.
+// * @mode        A tested mode value from GNA mode enumeration.
+// * @return true if mode is set, false otherwise
+//*/
+//inline bool GnaIsFlagSet(uint32_t modeFlags, uint32_t mode)
+//{
+//    if (modeFlags & mode || GNA_NOT_SUPPORTED == mode)
+//    {
+//        return true;
+//    }
+//    return false;
+//}
+
+// TODO:enable querying some properties on non-available devices like SueScreek
+
+GNAAPI intel_gna_status_t GnaGetDeviceCount(
+    uint32_t* deviceCount);
+//
+//// dedicated query functions
+//GNAAPI intel_gna_status_t GnaGetApiProperty(
+//    gna_api_property property,
+//    void* poropertyValue,                       // [out] value of returned property, pointer to allocated 8Byte memory region
+//    gna_property_type* propertyValueType);      // [out] type of returned property
+//
+//// optional
+//GNAAPI intel_gna_status_t GnaSetApiProperty(
+//    gna_api_property property,
+//    void* poropertyValue);                      // [in] value of property, pointer to allocated 8Byte memory region
+//
+//// e,g,     propertyString = "GNA_LAYER_POOLING_MODE"
+//GNAAPI intel_gna_status_t GnaApiPropertyNameToString(
+//    gna_api_property property,
+//    char const ** propertyString);               // [out] c-string containing property name, allocated by GNA
+//
+//// e,g,     propertyString = "GNA_POOLING_MAX | GNA_POOLING_SUM"
+//GNAAPI intel_gna_status_t GnaApiPropertyValueToString(
+//    gna_api_property property,
+//    void* poropertyValue,                       // [in] value of property
+//    char const ** propertyString);               // [out] c-string containing property value, allocated by GNA
+//
+//GNAAPI intel_gna_status_t GnaGetDeviceProperty(
+//    gna_device_id device,                       // id/index of device <0;GNA_DEVICE_AVAILABLE_COUNT-1>
+//    gna_device_property property,
+//    void* poropertyValue,                       // [out] value of returned property, pointer to allocated 8Byte memory region
+//    gna_property_type* propertyValueType);      // [out] type of returned property
+//
+//GNAAPI intel_gna_status_t GnaSetDeviceProperty(
+//    gna_device_id device,
+//    gna_device_property property,
+//    void* poropertyValue);                      // [in] value of property, pointer to allocated 8Byte memory region
+//
+//// e,g,     propertyString = "GNA_LAYER_POOLING_MODE"
+//GNAAPI intel_gna_status_t GnaDevicePropertyNameToString(
+//    gna_device_property property,
+//    char const * propertyString);               // [out] c-string containing property name, allocated by GNA
+//
+//// e,g,     propertyString = "GNA_POOLING_MAX | GNA_POOLING_SUM"
+//GNAAPI intel_gna_status_t GnaDevicePropertyValueToString(
+//    gna_device_property property,
+//    void* poropertyValue,                       // [in] value of property
+//    char const * propertyString);               // [out] c-string containing property value, allocated by GNA
+//
+//GNAAPI intel_gna_status_t GnaGetLayerProperty(
+//    gna_device_id device,
+//    gna_layer_operation layerOperation,
+//    gna_layer_property property,
+//    void* poropertyValue,                       // [out] value of returned property, pointer to allocated 8Byte memory region
+//    gna_property_type* propertyValueType);      // [out] type of returned property
+//
+//GNAAPI intel_gna_status_t GnaSetLayerProperty(
+//    gna_device_id device,
+//    gna_layer_operation layerOperation,
+//    gna_layer_property property,
+//    void* poropertyValue);                      // [in] value of property, pointer to allocated 8Byte memory region
+//
+//// e,g,     propertyString = "GNA_LAYER_POOLING_MODE"
+//GNAAPI intel_gna_status_t GnaLayerPropertyNameToString(
+//    gna_layer_property property,
+//    char const * propertyString);               // [out] c-string containing property name, allocated by GNA
+//
+//// e,g,     propertyString = "GNA_POOLING_MAX | GNA_POOLING_SUM"
+//GNAAPI intel_gna_status_t GnaLayerPropertyValueToString(
+//    gna_layer_property property,
+//    void* poropertyValue,                       // [in] value of property
+//    char const * propertyString);               // [out] c-string containing property value, allocated by GNA
+//
+//
+//// Query hardware device properties even if not present in system, like SueCreek
+//GNAAPI intel_gna_status_t GnaGetHardwareDeviceProperty(
+//    gna_device_generation generation,         // hardware device generation identifier, for not present devices
+//    gna_device_property property,
+//    void* poropertyValue,                       // [out] value of returned property, pointer to allocated 8Byte memory region
+//    gna_property_type* propertyValueType);      // [out] type of returned property
+//
+//GNAAPI intel_gna_status_t GnaGetHardwareLayerProperty(
+//    gna_device_generation generation,         // hardware device generation identifier, for not present devices
+//    gna_layer_operation layerOperation,
+//    gna_layer_property property,
+//    void* poropertyValue,                       // [out] value of returned property, pointer to allocated 8Byte memory region
+//    gna_property_type* propertyValueType);      // [out] type of returned property
+
+
+/******************************************************************************
+ * GNA Device API
+ *****************************************************************************/
+
+///** Maximum number of opened devices */
+//const gna_device_id GNA_DEVICE_LIMIT = 1;
 
 /** Device Id indicating invalid device */
-const gna_device_id GNA_DEVICE_INVALID = 0;
+const gna_device_id GNA_DEVICE_INVALID = (uint32_t) GNA_DISABLED;
 
 /**
  * Opens and initializes GNA device for processing.
  * NOTE:
  * - The device has to be closed after usage to prevent resource leakage.
- * - Only GNA_DEVICE_LIMIT number of devices can stay opened at a time.
+ * - Only GNA_DEVICE_ACTIVE_COUNT_MAX number of devices can stay opened at a time.
  *
  * @param threadCount   Number of software worker threads <1,127>. Currently only 1 thread is supported.
- * @param deviceId      (out) Id of the device that got opened or GNA_DEVICE_INVALID in case the device can not be opened.
+ * @param device        (in-out) index/Id of the device to open,  set to GNA_DEVICE_INVALID in case the device can not be opened.
  */
 GNAAPI intel_gna_status_t GnaDeviceOpen(
     uint8_t threadCount,
-    gna_device_id * deviceId);
+    gna_device_id * device);
+
+
+////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////    end of changes              ////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////
 
 /**
  * Closes GNA device and releases the corresponding resources.
  *
- * @param deviceId      The device to be closed.
+ * @param device      The device to be closed.
  */
 GNAAPI intel_gna_status_t GnaDeviceClose(
-    gna_device_id deviceId);
+    gna_device_id device);
 
-/******************  GNA Memory API ******************/
-/***** @deprecated Will be removed in next release. **/
+/******************************************************************************
+ * GNA Memory API
+ *****************************************************************************/
 
 /**
  * Allocates memory buffer, that can be used with GNA device.
  * NOTE:
  * - only 1 allocation at a time is supported
  *
- * @param deviceId      The device which will utilize the allocated buffer.
+ * @param device      The device which will utilize the allocated buffer.
  * @param sizeRequested Buffer size desired by the caller.
  * @param layerCount    Total number of layers for all neural networks
  * @param gmmCount      Number of gmm layers for all neural networks
  * @param sizeGranted   (out) Buffer size granted by GNA,
  *                      can be less then requested due to HW constraints.
- * @deprecated          Will be removed in next release.
  */
 GNAAPI void* GnaAlloc(
-    const gna_device_id deviceId,
+    const gna_device_id device,
     const uint32_t sizeRequested,
     const uint16_t layerCount,
     const uint16_t gmmCount,
     uint32_t * sizeGranted);
+// TODO:3:add status
+// TODO:3:facilitate multiple allocations
 
 /**
- * Releases the memory buffer.
+ * Releases all allocated memory buffers for given device.
  *
- * @param deviceId      The device which was paired with the buffer.
- * @deprecated          Will be removed in next release.
+ * @param device      The device which was paired with the buffer.
  */
 GNAAPI intel_gna_status_t GnaFree(
-    gna_device_id deviceId);
+    gna_device_id device);
 
+// TODO:3:facilitate multiple allocations
+GNAAPI intel_gna_status_t GnaFreeMemory(
+    void* memory);
 
-/******************  GNA Model API ******************/
+/******************************************************************************
+ * GNA Model API
+ *****************************************************************************/
 
 /** GNA Model identifier **/
 typedef uint32_t gna_model_id;
@@ -129,29 +491,48 @@ typedef intel_nnet_type_t gna_model;
  * Creates and compiles the model for use with a given device.
  * NOTE:
  * - Only 1 model supported in the first phase.
- * - Model's data has to be placed in memory allocated previously by GNAAlloc.
+ * - All Model's data has to be placed in single memory buffer allocated previously by GNAAlloc.
  * - The descriptor has to be placed in user's memory, not allocated by GNAAlloc.
  *
- * @param deviceId      GNA device that will utilize the model.
+ * @param device      GNA device that will utilize the model.
  * @param model         Model descriptor which will govern the model creation.
  * @param modelId       (out) The model created by GNA.
  */
 GNAAPI intel_gna_status_t GnaModelCreate(
-    gna_device_id deviceId,
+    gna_device_id device,
     gna_model const * model,
     gna_model_id * modelId);
 
-/******************  GNA Request Configuration API ******************/
+/******************************************************************************
+ * GNA Inference API
+ *****************************************************************************/
 
 /** GNA Request configuration identifier **/
 typedef uint32_t gna_request_cfg_id;
 
-/** Buffer type for request configuration. */
-typedef enum _buffer_type {
-    GNA_IN,             // Input buffer read by GNA device
-    GNA_OUT,            // Output buffer that GNA will write to
-    GNA_BUFFER_TYPES
-} gna_buffer_type;
+/**
+ * Component type
+ * Used e.g. for RequestConfig buffers.
+ **/
+typedef enum _ComponentType
+{
+    InputComponent = 0,
+    OutputComponent = 1,
+    IntermediateOutputComponent,
+    WeightComponent,
+    FilterComponent = WeightComponent,
+    BiasComponent,
+    WeightScaleFactorComponent,
+    PwlComponent,
+    StrideComponent,
+    WindowComponent,
+    // TODO:3: CopyComponent?,
+    GmmMeanComponent,
+    GmmInverseCovarianceComponent,
+    GmmGaussianConstantComponent,
+    // TODO:3: Recurrent component?
+    ComponentTypeCount,
+} GnaComponentType;
 
 /**
  * Adds single request configuration for use with the model.
@@ -196,7 +577,7 @@ GNAAPI intel_gna_status_t GnaModelRequestConfigAdd(
  */
 GNAAPI intel_gna_status_t GnaRequestConfigBufferAdd(
     gna_request_cfg_id configId,
-    gna_buffer_type type,
+    GnaComponentType type,
     uint32_t layerIndex,
     void * address);
 
@@ -214,7 +595,7 @@ GNAAPI intel_gna_status_t GnaRequestConfigBufferAdd(
  *
  * @param configId      Request configuration which will utilize the active list.
  * @param layerIndex    Index of the layer that active list is specified for.
- *                      The layer needs to have a GNA_OUT type buffer
+ *                      The layer needs to have a OutputComponent type buffer
  *                      already assigned in the request configuration.
  * @param indicesCount  The number of indices in the active list.
  * @param indices       The address of the array with active output indices.
@@ -225,9 +606,6 @@ GNAAPI intel_gna_status_t GnaRequestConfigActiveListAdd(
     uint32_t layerIndex,
     uint32_t indicesCount,
     uint32_t const * indices);
-
-
-/******************  GNA Request Calculation API ******************/
 
 /**
  * The list of processing acceleration modes.
@@ -315,7 +693,9 @@ const gna_request_id GNA_REQUEST_WAIT_ANY = 0xffffffff;
 const gna_timeout GNA_REQUEST_TIMEOUT_MAX = 180000;
 
 
-/******************  GNA Utilities API ******************/
+/******************************************************************************
+ * GNA Utilities API
+ *****************************************************************************/
 
 /**
  * Rounds a number up, to the nearest multiple of significance

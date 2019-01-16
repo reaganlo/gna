@@ -35,9 +35,6 @@ void TransposeKernelImpl(TransposeConfig const * const cfg)
     const int16_t * const I = cfg->input;
     int16_t * const O = cfg->output;
 
-    uint32_t i;
-    uint32_t j;
-
     // input matrix is a vector - copy
     if (M == 1 || N == 1)
     {
@@ -50,6 +47,8 @@ void TransposeKernelImpl(TransposeConfig const * const cfg)
     if (M * N < VEC_16CAP * VEC_16CAP
         || (N > 8 && N < 16) || (M > 8 && M < 16))
     {
+        uint32_t i;
+        uint32_t j;
         for (i = 0; i < M; i++)
         {
             for (j = 0; j < N; j++)
@@ -359,7 +358,7 @@ void TransposeKernelImpl(TransposeConfig const * const cfg)
         }
 
         out1 = out0 + 1;
-        for (i = N_VEC; i < N; i++)
+        for (uint32_t i = N_VEC; i < N; i++)
         {
             *out0 = *in0++;
             *out1 = *in1++;
@@ -441,7 +440,7 @@ void TransposeKernelImpl(TransposeConfig const * const cfg)
         out2 = out1 + 1;
         in1 = in0 + N;
         in2 = in1 + N;
-        for (i = N_VEC; i < N; i++)
+        for (uint32_t i = N_VEC; i < N; i++)
         {
             *out0 = *in0++;
             *out1 = *in1++;
@@ -535,7 +534,7 @@ void TransposeKernelImpl(TransposeConfig const * const cfg)
         out1 = out0 + 1;
         out2 = out1 + 1;
         out3 = out2 + 1;
-        for (i = N_VEC; i < N; i++)
+        for (uint32_t i = N_VEC; i < N; i++)
         {
             *out0 = *in0++;
             *out1 = *in1++;
@@ -981,7 +980,7 @@ void TransposeKernelImpl(TransposeConfig const * const cfg)
         in4 = in3 + N;
         in5 = in4 + N;
         in6 = in5 + N;
-        for (i = N_VEC; i < N; i++)
+        for (uint32_t i = N_VEC; i < N; i++)
         {
             *out0 = *in0++;
             *out1 = *in1++;
@@ -1118,17 +1117,17 @@ void TransposeKernelImpl(TransposeConfig const * const cfg)
         }
 
         M_VEC = M - M % 8;
-        for (i = M_VEC; i < M; i++)
+        for (uint32_t i = M_VEC; i < M; i++)
         {
-            for (j = 0; j < N_VEC; j++)
+            for (uint32_t j = 0; j < N_VEC; j++)
             {
                 O[j * M + i] = I[i * N + j];
             }
         }
 
-        for (i = N_VEC; i < N; i++)
+        for (uint32_t i = N_VEC; i < N; i++)
         {
-            for (j = 0; j < M; j++)
+            for (uint32_t j = 0; j < M; j++)
             {
                 O[i * M + j] = I[j * N + i];
             }
@@ -1137,7 +1136,7 @@ void TransposeKernelImpl(TransposeConfig const * const cfg)
         return;
     }
 
-    // DEINTERLAVE 
+    // DEINTERLAVE
     // N is 8 max
     if (N == 8)
     {
@@ -1226,9 +1225,9 @@ void TransposeKernelImpl(TransposeConfig const * const cfg)
             gh = _mm256_stream_load_si256((__m256i*)in3);
         }
 
-        for (i = M_VEC; i < M; i++)
+        for (uint32_t i = M_VEC; i < M; i++)
         {
-            for (j = 0; j < N_VEC; j++)
+            for (uint32_t j = 0; j < N_VEC; j++)
             {
                 O[j * M + i] = I[i * N + j];
             }
@@ -1384,10 +1383,10 @@ void TransposeKernelImpl(TransposeConfig const * const cfg)
         }
 
         M_VEC = M - M % VEC_16CAP;
-        for (i = M_VEC; i < M; i++)
+        for (uint32_t i = M_VEC; i < M; i++)
         {
             out0 = O + i;
-            for (j = 0; j < N; j++)
+            for (uint32_t j = 0; j < N; j++)
             {
                 *out0 = *in0++;
                 out0 += M;
@@ -1471,10 +1470,10 @@ void TransposeKernelImpl(TransposeConfig const * const cfg)
             mix3 = _mm256_stream_load_si256((__m256i*) in2);
         }
 
-        for (i = M_VEC; i < M; i++)
+        for (uint32_t i = M_VEC; i < M; i++)
         {
             out0 = O + i;
-            for (j = 0; j < N; j++)
+            for (uint32_t j = 0; j < N; j++)
             {
                 *out0 = *in0++;
                 out0 += M;
@@ -1504,6 +1503,8 @@ void TransposeKernelImpl(TransposeConfig const * const cfg)
         ad1234 = _mm256_i32gather_epi64((const long long*)in0, gather_n5, scale_64);
         ad5___ = _mm256_i32gather_epi64((const long long*)(in0 + 4), gather_n5, scale_32);
 
+        uint32_t i;
+        uint32_t j;
         for (i = 0; i < M_VEC; i += 4)
         {
             in0 += N * 4;
@@ -1563,6 +1564,8 @@ void TransposeKernelImpl(TransposeConfig const * const cfg)
 
         __m128i ad12, ad34, eh12, eh34;
 
+        uint32_t i;
+        uint32_t j;
         for (i = 0; i < M_VEC; i += 8)
         {
             in0 += 8 * N;
@@ -1629,6 +1632,8 @@ void TransposeKernelImpl(TransposeConfig const * const cfg)
         ah12 = _mm256_i32gather_epi32((int32_t*)in0, gather_n3, scale_32);
         ah3_ = _mm256_i32gather_epi32((int32_t*)(in0 + 2), gather_n3, scale_32);
 
+        uint32_t i;
+        uint32_t j;
         for (i = 0; i < M_VEC; i += 8)
         {
             in0 += 8 * N;
@@ -1679,6 +1684,8 @@ void TransposeKernelImpl(TransposeConfig const * const cfg)
 
         ah = _mm256_load_si256((__m256i*)in0);
 
+        uint32_t i;
+        uint32_t j;
         for (i = 0; i < M_VEC; i += SSE_16CAP)
         {
             in0 += 16;

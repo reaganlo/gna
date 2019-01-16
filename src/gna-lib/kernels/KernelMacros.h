@@ -286,3 +286,6 @@ typedef int64_t gna_sum_t;
 
 #define SSE_16CAP 8
 
+
+#define hw_buf_size KERNEL(hw_buf_size)
+extern const uint32_t * hw_buf_size;

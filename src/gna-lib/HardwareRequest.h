@@ -43,7 +43,7 @@ namespace GNA
 
 class HardwareModel;
 class RequestConfiguration;
-class LayerConfiguration;
+struct LayerConfiguration;
 
 enum GnaOperationMode : uint8_t
 {

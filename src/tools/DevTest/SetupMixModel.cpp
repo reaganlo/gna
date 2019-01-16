@@ -32,10 +32,12 @@
 #include "SetupMixModel.h"
 #include "ChainModel.h"
 
+#define UNREFERENCED_PARAMETER(P) ((void)(P))
+
 SetupMixModel::SetupMixModel(DeviceController & deviceCtrl)
     : deviceController{deviceCtrl}
 {
-    ChainModel chainModel; 
+    ChainModel chainModel;
     chainModel.Affine(true, true, false).Affine(true, true, false).Multibias(false, true).Convolution(true).Pooling(INTEL_SUM_POOLING).Recurrent(true).Copy().Gmm().Transpose().Transpose();
     uint32_t modelSize = chainModel.GetModelSize();
     uint32_t bytesGranted;
@@ -56,8 +58,8 @@ SetupMixModel::SetupMixModel(DeviceController & deviceCtrl)
 
     configId = deviceController.ConfigAdd(modelId);
 
-    deviceController.BufferAdd(configId, GNA_IN, 0, inputBuffer);
-    deviceController.BufferAdd(configId, GNA_OUT, nnet.nLayers - 1, outputBuffer);
+    deviceController.BufferAdd(configId, InputComponent, 0, inputBuffer);
+    deviceController.BufferAdd(configId, OutputComponent, nnet.nLayers - 1, outputBuffer);
 }
 
 SetupMixModel::~SetupMixModel()
@@ -67,4 +69,6 @@ SetupMixModel::~SetupMixModel()
 
 void SetupMixModel::checkReferenceOutput(int modelIndex, int configIndex) const
 {
+    UNREFERENCED_PARAMETER(modelIndex);
+    UNREFERENCED_PARAMETER(configIndex);
 }

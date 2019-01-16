@@ -75,5 +75,5 @@ build.err
 src/drv-linux/source/gmm_drv.ver
 #Ignore project filters
 *.filters
+build/projects/
 tags
-build/projects

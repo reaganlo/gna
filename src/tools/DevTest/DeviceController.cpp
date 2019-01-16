@@ -56,7 +56,13 @@ void DeviceController::ModelCreate(const gna_model * model, gna_model_id * model
 
 uint8_t * DeviceController::Alloc(uint32_t sizeRequested, uint16_t layerCount, uint16_t gmmCount, uint32_t * sizeGranted)
 {
-    return (uint8_t*)GnaAlloc(gnaHandle, sizeRequested, layerCount, gmmCount, sizeGranted);
+    auto memory = (uint8_t*)GnaAlloc(gnaHandle, sizeRequested, layerCount, gmmCount, sizeGranted);
+    if (nullptr == memory)
+    {
+        throw std::runtime_error("GnaAlloc failed");
+    }
+
+    return memory;
 }
 
 void DeviceController::Free()
@@ -80,7 +86,7 @@ gna_request_cfg_id DeviceController::ConfigAdd(gna_model_id modelId)
     return configId;
 }
 
-void DeviceController::BufferAdd(gna_request_cfg_id configId, gna_buffer_type type, uint32_t layerIndex, void * address)
+void DeviceController::BufferAdd(gna_request_cfg_id configId, GnaComponentType type, uint32_t layerIndex, void * address)
 {
     intel_gna_status_t status = GnaRequestConfigBufferAdd(configId, type, layerIndex, address);
     if (GNA_SUCCESS != status)
@@ -106,6 +112,16 @@ void DeviceController::RequestEnqueue(gna_request_cfg_id configId, gna_accelerat
         throw std::runtime_error("Request enqueue failed");
     }
 }
+
+void DeviceController::RequestWait(gna_request_id requestId)
+{
+    intel_gna_status_t status = GnaRequestWait(requestId, 5 * 60 * 1000);
+    if (GNA_SUCCESS != status)
+    {
+        throw std::runtime_error("Request wait failed");
+    }
+}
+
 
 #if HW_VERBOSE == 1
 void DeviceController::AfterscoreDebug(gna_model_id modelId, uint32_t nActions, dbg_action *actions)

@@ -24,6 +24,10 @@
 #ifndef __GNA_API_STATUS_H
 #define __GNA_API_STATUS_H
 
+#if !defined(_WIN32)
+#include <assert.h>
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -108,34 +112,61 @@ typedef enum _gna_status_t
     XNN_ERR_NET_LYR_NO,      // Error: XNN: Not supported number of layers
     XNN_ERR_NETWORK_INPUTS,  // Error: XNN: Network is invalid - input buffers number differs from input layers number
     XNN_ERR_NETWORK_OUTPUTS, // Error: XNN: Network is invalid - output buffers number differs from output layers number
-    XNN_ERR_LYR_KIND,        // Error: XNN: Not supported layer kind
-    XNN_ERR_LYR_TYPE,        // Error: XNN: Not supported layer type
-    XNN_ERR_LYR_CFG,         // Error: XNN: Invalid layer configuration
+    XNN_ERR_LYR_OPERATION,   // Error: XNN: Not supported layer operation
+    XNN_ERR_LYR_CFG,         // Error: XNN: Layer configuration for given device(s) and operation is invalid
+    XNN_ERR_LYR_INVALID_TENSOR_ORDER, // Error: XNN: Order of data tensor used in layer is invalid
+    XNN_ERR_LYR_INVALID_TENSOR_DIMENSIONS, // Error: XNN: Dimensions of data tensor used in layer are invalid
     XNN_ERR_INVALID_BUFFER,  // Error: XNN: Buffer outside allocated memory
     XNN_ERR_NO_FEEDBACK,     // Error: XNN: No RNN feedback buffer specified
     XNN_ERR_NO_LAYERS,       // Error: XNN: At least one layer must be specified
     XNN_ERR_GROUPING,        // Error: XNN: Invalid grouping factor
     XNN_ERR_INPUT_BYTES,     // Error: XNN: Invalid number of bytes per input
+    XNN_ERR_INPUT_VOLUME,    // Error: XNN: Invalid input volume dimensions
+    XNN_ERR_OUTPUT_VOLUME,   // Error: XNN: Invalid output volume dimensions
     XNN_ERR_INT_OUTPUT_BYTES,// Error: XNN: Invalid number of bytes per intermediate output
     XNN_ERR_OUTPUT_BYTES,    // Error: XNN: Invalid number of bytes per output
     XNN_ERR_WEIGHT_BYTES,    // Error: XNN: Invalid number of bytes per weight
+    XNN_ERR_WEIGHT_VOLUME,   // Error: XNN: Invalid weight/filter/GMM volume dimensions
     XNN_ERR_BIAS_BYTES,      // Error: XNN: Invalid number of bytes per bias
+    XNN_ERR_BIAS_VOLUME,     // Error: XNN: Invalid bias volume dimensions
+    XNN_ERR_BIAS_MODE,       // Error: XNN: Invalid bias operation mode (gna_bias_mode)
     XNN_ERR_BIAS_MULTIPLIER, // Error: XNN: Multiplier larger than 255
     XNN_ERR_BIAS_INDEX,      // Error: XNN: Bias Vector index larger than grouping factor
     XNN_ERR_PWL_SEGMENTS,    // Error: XNN: Activation function segment count is invalid, valid values: <2,128>
     XNN_ERR_PWL_DATA,        // Error: XNN: Activation function enabled but segment data not set
-    CNN_ERR_FLT_COUNT,       // Error: CNN Layer: invalid number of filters
-    CNN_ERR_FLT_STRIDE,      // Error: CNN Layer: invalid filter stride
+    XNN_ERR_CONV_FLT_BYTES,  // Error: CNN Layer: invalid number of bytes per convolution filter element
+    CNN_ERR_CONV_FLT_COUNT,  // Error: CNN Layer: invalid number of convolution filters
+    CNN_ERR_CONV_FLT_VOLUME, // Error: CNN Layer: Invalid convolution filter volume dimensions
+    CNN_ERR_CONV_FLT_STRIDE, // Error: CNN Layer: invalid convolution filter stride
+    CNN_ERR_CONV_FLT_PADDING, // Error: CNN Layer: invalid convolution padding
     CNN_ERR_POOL_STRIDE,     // Error: CNN Layer: invalid pool stride
+    CNN_ERR_POOL_SIZE,       // Error: CNN Layer: invalid pooling window dimensions
+    CNN_ERR_POOL_TYPE,       // Error: CNN Layer: invalid pooling function type
 
-    GNA_ERR_MEMORY_ALREADY_MAPPED,   // Error: Memory is already mapped, cannot map again. Release memory first.
+    XNN_ERR_MM_INVALID_IN,   // Error: XNN: Invalid input data or configuration in matrix mul. op.
+
+    GNA_ERR_MEMORY_NOT_ALLOCATED, // Error: Memory is not yet allocated. Allocate memory first.
+    GNA_ERR_MEMORY_ALREADY_MAPPED, // Error: Memory is already mapped, cannot map again. Release memory first.
     GNA_ERR_MEMORY_ALREADY_UNMAPPED, // Error: Memory is already unmapped, cannot unmap again.
     GNA_ERR_MEMORY_NOT_MAPPED,       // Error: Memory is not mapped.
 
+    GNA_ERR_INVALID_API_VERSION,    // Error: Api version value is invalid
+    GNA_ERR_INVALID_DEVICE_VERSION,    // Error: Device version value is invalid
+
+
+    GNA_ERR_INVALID_DATA_MODE,  // Error: Data mode value is invalid
+    GNA_ERR_NOT_IMPLEMENTED,    // Error: Functionality not implemented yet
+
     NUMGNASTATUS
-} intel_gna_status_t;       // GNA API Status codes
+} intel_gna_status_t, gna_status_t;       // GNA API Status codes
 
 static_assert(4 == sizeof(intel_gna_status_t), "Invalid size of intel_gna_status_t");
+
+/** Value indicating that feature is disabled */
+#define GNA_DISABLED (1 << 31)
+
+/** Value indicating that feature is not available */
+#define GNA_NOT_SUPPORTED (0)
 
 /**
  * Gets printable status name with the description as a c-string

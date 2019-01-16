@@ -63,7 +63,7 @@ void RecurrentKernelImpl2B(RecurrentConfig const * const config)
     int64_t sum;
 
     uint32_t KK = config->inputElementCount - config->inputElementCount % VEC_16CAP;
-    uint32_t part_sz = hw_buf_size[0];
+    uint32_t part_sz = hw_buf_size[0 + XNN_N_GROUP_MAX];
     uint32_t kpart_sz = config->inputElementCount % part_sz;
     uint32_t mpart_sz = config->outputElementCount < part_sz - kpart_sz ? config->outputElementCount
         : part_sz - kpart_sz;

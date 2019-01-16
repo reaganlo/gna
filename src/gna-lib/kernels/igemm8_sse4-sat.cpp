@@ -42,7 +42,7 @@ void AffineKernelImpl1B(AffineConfig const * const config)
     uint32_t kk;
     uint32_t i;
     uint32_t j;
-    kpartial = (hw_buf_size[config->inputVectorCount - 1]) / config->inputVectorCount;
+    kpartial = (hw_buf_size[config->inputVectorCount - 1 + XNN_N_GROUP_MAX]) / config->inputVectorCount;
     nKpartial = config->inputElementCount / kpartial;
 
     int16_t const * input[8];
@@ -984,7 +984,7 @@ void AffineMultiBiasKernelImpl1B(AffineConfig const * const config)
     uint32_t i;
     uint32_t j;
     uint32_t kk;
-    kpartial = (hw_buf_size[config->inputVectorCount - 1]) / config->inputVectorCount;
+    kpartial = (hw_buf_size[config->inputVectorCount - 1 + XNN_N_GROUP_MAX]) / config->inputVectorCount;
     nKpartial = config->inputElementCount / kpartial;
 
     int16_t const * input[8];
@@ -994,7 +994,7 @@ void AffineMultiBiasKernelImpl1B(AffineConfig const * const config)
     int32_t * output;
     nn_bias_s const * multiBias = config->multiBias;
     nn_bias_s const * const biasEnd = config->multiBias + config->outputElementCount * config->multiBiasVectorCount;
-    nn_bias_c const * weightScaleFactor = config->weightScaleFactors;
+    nn_scaling const * weightScaleFactor = config->weightScaleFactors;
 
     uint32_t KT = config->inputElementCount % SSE_16CAP; // config->inputElementCount tail for manual processing
     uint32_t KK = config->inputElementCount - KT; // trimmed config->inputElementCount for AVX2 processing

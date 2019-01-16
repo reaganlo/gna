@@ -29,7 +29,7 @@ in any way.
 
 #include "AccelerationDetector.h"
 #include "CompiledModel.h"
-#include "Validator.h"
+#include "Expect.h"
 
 using namespace GNA;
 
@@ -49,7 +49,7 @@ Memory::Memory(const size_t userSize, const uint16_t layerCount, const uint16_t 
     size{CompiledModel::CalculateModelSize(userSize, layerCount, gmmCount)},
     ioctlSender{sender}
 {
-    Expect::True(size > 0, GNA_INVALIDMEMSIZE);
+    Expect::GtZero(size, GNA_INVALIDMEMSIZE);
     buffer = _gna_malloc(size);
     Expect::ValidBuffer(buffer);
     memset(buffer, 0, size);
@@ -117,14 +117,14 @@ void Memory::DeallocateModel(gna_model_id modelId)
     Models[modelId].reset();
 }
 
-CompiledModel& Memory::GetModel(gna_model_id modelId)
+CompiledModel& Memory::GetModel(gna_model_id modelId) const
 {
     try
     {
         auto& model = Models.at(modelId);
         return *model.get();
     }
-    catch (const std::out_of_range& e)
+    catch (const std::out_of_range&)
     {
         throw GnaException(GNA_INVALID_MODEL);
     }

@@ -102,6 +102,13 @@ void WindowsIoctlSender::Open()
 void WindowsIoctlSender::IoctlSend(const GnaIoctlCommand command, void * const inbuf, const uint32_t inlen,
     void * const outbuf, const uint32_t outlen)
 {
+    UNREFERENCED_PARAMETER(command);
+    UNREFERENCED_PARAMETER(inbuf);
+    UNREFERENCED_PARAMETER(inlen);
+    UNREFERENCED_PARAMETER(outbuf);
+    UNREFERENCED_PARAMETER(outlen);
+
+#if HW_VERBOSE == 1
     auto bytesRead = DWORD{0};
     auto ioResult = BOOL{};
 
@@ -110,7 +117,6 @@ void WindowsIoctlSender::IoctlSend(const GnaIoctlCommand command, void * const i
     uint32_t code;
     switch(command)
     {
-#if HW_VERBOSE == 1
         case GNA_COMMAND_READ_REG:
             /* FALLTHRU */
         case GNA_COMMAND_WRITE_REG:
@@ -119,10 +125,10 @@ void WindowsIoctlSender::IoctlSend(const GnaIoctlCommand command, void * const i
             checkStatus(ioResult);
             wait(&overlapped, (recoveryTimeout + 15) * 1000);
             break;
-#endif
         default:
             throw GnaException { GNA_IOCTLSENDERR };
     }
+#endif
 }
 
 uint64_t WindowsIoctlSender::MemoryMap(void *memory, size_t memorySize)
@@ -134,10 +140,14 @@ uint64_t WindowsIoctlSender::MemoryMap(void *memory, size_t memorySize)
     auto memoryMapOverlapped = std::make_unique<OVERLAPPED>();
     memoryMapOverlapped->hEvent = CreateEvent(nullptr, false, false, nullptr);
 
-    ioResult = DeviceIoControl(deviceHandle, GNA_IOCTL_NOTIFY, nullptr, 0, &memoryId, sizeof(memoryId), &bytesRead, &overlapped);
+    ioResult = DeviceIoControl(deviceHandle, static_cast<DWORD>(GNA_IOCTL_NOTIFY),
+        nullptr, static_cast<DWORD>(0),
+        &memoryId, sizeof(memoryId), &bytesRead, &overlapped);
     checkStatus(ioResult);
 
-    ioResult = DeviceIoControl(deviceHandle, GNA_IOCTL_MEM_MAP2, nullptr, 0, memory, memorySize, &bytesRead, memoryMapOverlapped.get());
+    ioResult = DeviceIoControl(deviceHandle, static_cast<DWORD>(GNA_IOCTL_MEM_MAP2),
+        nullptr, static_cast<DWORD>(0), memory,
+        static_cast<DWORD>(memorySize), &bytesRead, memoryMapOverlapped.get());
     checkStatus(ioResult);
 
     wait(&overlapped, (recoveryTimeout + 15) * 1000);
@@ -153,7 +163,7 @@ void WindowsIoctlSender::MemoryUnmap(uint64_t memoryId)
     auto ioResult = BOOL{};
 
     // TODO: remove ummap IOCTL in favor of CancelIoEx (cancel handler in driver, cancel requests)
-    ioResult = DeviceIoControl(deviceHandle, GNA_IOCTL_MEM_UNMAP2, &memoryId, sizeof(memoryId), nullptr, 0, &bytesRead, &overlapped);
+    ioResult = DeviceIoControl(deviceHandle, static_cast<DWORD>(GNA_IOCTL_MEM_UNMAP2), &memoryId, sizeof(memoryId), nullptr, 0, &bytesRead, &overlapped);
     checkStatus(ioResult);
     wait(&overlapped, (recoveryTimeout + 15) * 1000);
 
@@ -194,7 +204,7 @@ RequestResult WindowsIoctlSender::Submit(HardwareRequest *hardwareRequest, Reque
     }
 
     profilerTscStart(&profiler->ioctlSubmit);
-    auto ioResult = WriteFile(deviceHandle, calculationData, hardwareRequest->CalculationSize, nullptr, &ioHandle);
+    auto ioResult = WriteFile(deviceHandle, calculationData, static_cast<DWORD>(hardwareRequest->CalculationSize), nullptr, &ioHandle);
     checkStatus(ioResult);
     profilerTscStop(&profiler->ioctlSubmit);
 
@@ -219,7 +229,7 @@ void WindowsIoctlSender::getDeviceCapabilities()
     auto bytesRead = DWORD{0};
     GNA_CPBLTS cpblts;
 
-    auto ioResult = DeviceIoControl(deviceHandle, GNA_IOCTL_CPBLTS2, nullptr, 0,
+    auto ioResult = DeviceIoControl(deviceHandle, static_cast<DWORD>(GNA_IOCTL_CPBLTS2), nullptr, 0,
             &cpblts, sizeof(cpblts), &bytesRead, &overlapped);
 
     checkStatus(ioResult);
@@ -227,14 +237,7 @@ void WindowsIoctlSender::getDeviceCapabilities()
 
     deviceCapabilities.hwInBuffSize = cpblts.hwInBuffSize;
     deviceCapabilities.recoveryTimeout = cpblts.recoveryTimeout;
-    try
-    {
-        deviceCapabilities.deviceKind = deviceTypeMap.at(cpblts.deviceType);
-    }
-    catch (const std::out_of_range &e)
-    {
-        throw GnaException { GNA_DEVNOTFOUND };
-    }
+    deviceCapabilities.hwId = static_cast<gna_device_version>(cpblts.deviceType);
 }
 
 void WindowsIoctlSender::wait(LPOVERLAPPED const ioctl, const DWORD timeout)

@@ -31,6 +31,8 @@
 
 #include "SetupCopyModel.h"
 
+#define UNREFERENCED_PARAMETER(P) ((void)(P))
+
 SetupCopyModel::SetupCopyModel(DeviceController & deviceCtrl, uint32_t nCopyColumns, uint32_t nCopyRows)
     : deviceController{deviceCtrl}
 {
@@ -44,8 +46,8 @@ SetupCopyModel::SetupCopyModel(DeviceController & deviceCtrl, uint32_t nCopyColu
 
     configId = deviceController.ConfigAdd(modelId);
 
-    deviceController.BufferAdd(configId, GNA_IN, 0, inputBuffer);
-    deviceController.BufferAdd(configId, GNA_OUT, 0, outputBuffer);
+    deviceController.BufferAdd(configId, InputComponent, 0, inputBuffer);
+    deviceController.BufferAdd(configId, OutputComponent, 0, outputBuffer);
 }
 
 SetupCopyModel::~SetupCopyModel()
@@ -57,6 +59,8 @@ SetupCopyModel::~SetupCopyModel()
 
 void SetupCopyModel::checkReferenceOutput(int modelIndex, int configIndex) const
 {
+    UNREFERENCED_PARAMETER(modelIndex);
+
     unsigned int ref_output_size = refSize[configIndex];
     const int16_t * ref_output = refOutputAssign[configIndex];
     for (unsigned int i = 0; i < ref_output_size; ++i)
@@ -78,7 +82,7 @@ void SetupCopyModel::sampleCopyLayer(uint32_t nCopyColumns, uint32_t nCopyRows)
     uint32_t bytes_requested = buf_size_inputs + buf_size_outputs;
     uint32_t bytes_granted;
 
-    uint8_t* pinned_mem_ptr = deviceController.Alloc(bytes_requested, nnet.nLayers, 0, &bytes_granted);
+    uint8_t* pinned_mem_ptr = deviceController.Alloc(bytes_requested, static_cast<uint16_t>(nnet.nLayers), static_cast<uint16_t>(0), &bytes_granted);
 
     inputBuffer = pinned_mem_ptr;
     memcpy(inputBuffer, inputs, sizeof(inputs));
@@ -94,11 +98,11 @@ void SetupCopyModel::sampleCopyLayer(uint32_t nCopyColumns, uint32_t nCopyRows)
     nnet.pLayers[0].nInputRows = nnet.nGroup;
     nnet.pLayers[0].nOutputColumns = outVecSz;
     nnet.pLayers[0].nOutputRows = nnet.nGroup;
-    nnet.pLayers[0].nBytesPerInput = sizeof(int16_t);
-    nnet.pLayers[0].nBytesPerOutput = sizeof(int16_t);
-    nnet.pLayers[0].nBytesPerIntermediateOutput = 4;
-    nnet.pLayers[0].nLayerKind = INTEL_COPY;
-    nnet.pLayers[0].type = INTEL_INPUT_OUTPUT;
+    nnet.pLayers[0].nBytesPerInput = GNA_INT16;
+    nnet.pLayers[0].nBytesPerOutput = GNA_INT16;
+    nnet.pLayers[0].nBytesPerIntermediateOutput = GNA_INT32;
+    nnet.pLayers[0].operation = INTEL_COPY;
+    nnet.pLayers[0].mode = INTEL_INPUT_OUTPUT;
     nnet.pLayers[0].pLayerStruct = &copy_layer;
     nnet.pLayers[0].pInputs = nullptr;
     nnet.pLayers[0].pOutputsIntermediate = nullptr;

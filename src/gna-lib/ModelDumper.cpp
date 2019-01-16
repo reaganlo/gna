@@ -32,7 +32,7 @@
 
 #include "FakeDetector.h"
 #include "Memory.h"
-#include "Validator.h"
+#include "Expect.h"
 #include "HardwareModelSue1.h"
 
 using std::ofstream;
@@ -42,18 +42,18 @@ using std::move;
 
 using namespace GNA;
 
-void* Device::Dump(gna_model_id modelId, gna_device_kind deviceKind, intel_gna_model_header* modelHeader, intel_gna_status_t* status, intel_gna_alloc_cb customAlloc)
+void* Device::Dump(gna_model_id modelId, gna_device_generation deviceGeneration, intel_gna_model_header* modelHeader, intel_gna_status_t* status, intel_gna_alloc_cb customAlloc)
 {
     // Validate parameters
     Expect::NotNull(status);
     Expect::NotNull(modelHeader);
-    Expect::NotNull(reinterpret_cast<void*>(customAlloc));
-    Expect::True(GNA_SUE == deviceKind, GNA_CPUTYPENOTSUPPORTED); // Temporary limitation
+    Expect::NotNull((void *)customAlloc);
+    Expect::Equal(GNA_1_0_EMBEDDED, deviceGeneration, GNA_CPUTYPENOTSUPPORTED); // Temporary limitation
 
-    FakeDetector detector{ *ioctlSender, deviceKind };
+    FakeDetector detector{ *ioctlSender, FakeDetector::GetDeviceVersion(deviceGeneration) };
 
-    auto memoryId = 0;
-    auto totalMemory = memoryObjects.at(memoryId).get();
+    auto memoryId = getMemoryId(modelId);
+    auto totalMemory = getMemory(memoryId);
     auto& model = totalMemory->GetModel(modelId);
     auto layerCount = model.LayerCount;
     auto gmmCount = model.GetGmmCount();
@@ -74,56 +74,14 @@ void* Device::Dump(gna_model_id modelId, gna_device_kind deviceKind, intel_gna_m
     void *dumpData = static_cast<uint8_t*>(address) + internalSize;
     memcpy(dumpData, data, totalMemory->ModelSize);
 
-    /* Determine XNN parameters */
-    XNN_LYR * const desc = reinterpret_cast<XNN_LYR*>(address);
-    XNN_LYR const * const last_desc = desc + layerCount - 1;
-    uint32_t nBytesPerOutput;
-    uint32_t outputsOffset;
-    if (last_desc->pwl_n_segs == 0
-        && ((NN_INTER != last_desc->op)
-            && (NN_DEINT != last_desc->op)
-            && (NN_COPY != last_desc->op)))
-    {
-        outputsOffset = (uint8_t*)&last_desc->out_sum_buffer - (uint8_t*)desc;
-        nBytesPerOutput = 4;
-    }
-    else
-    {
-        outputsOffset = (uint8_t*)&last_desc->out_act_fn_buffer - (uint8_t*)desc;
-        nBytesPerOutput = 2;
-    }
-    uint32_t nOutputs;
-    switch (last_desc->op)
-    {
-    case NN_AFF_AL:
-        nOutputs = last_desc->act_list_n_elems * last_desc->n_groups;
-        break;
-    case NN_CNN:
-    {
-        uint32_t max_ncoe = (last_desc->n_in_elems - last_desc->cnn_flt_size) / last_desc->cnn_n_flt_stride + 1;
-        uint32_t n_outputs_per_filter = (0 == last_desc->flags.pool_param)
-            ? max_ncoe
-            : (max_ncoe - 1) / last_desc->cnn_pool_stride + 1;
-        nOutputs = n_outputs_per_filter * last_desc->cnn_n_flts;
-        break;
-    }
-    default:
-        nOutputs = last_desc->n_out_elems * last_desc->n_groups;
-        break;
-    }
-
+    // TODO:3: review
     // filling model header
-    uint32_t const gna_mode = 1;
-    uint32_t const nBytesPerInput = 2;
-    uint32_t nInputs = desc->n_in_elems;
-    if (NN_CNN != desc->op)
-    {
-        nInputs *= desc->n_groups;
-    }
-
-    uint32_t inputsOffset = (uint8_t*)&desc->in_buffer - (uint8_t*)desc;
-    *modelHeader = { 0, static_cast<uint32_t>(dumpedModelTotalSize), gna_mode, layerCount, nBytesPerInput,
-        nBytesPerOutput, nInputs, nOutputs, inputsOffset, outputsOffset };
+    auto const &input = model.GetLayer(0)->Input;
+    auto const &output = model.GetLayer(0)->Output;
+    uint32_t outputsOffset = hwModel->GetOutputOffset(layerCount - 1);
+    uint32_t inputsOffset = hwModel->GetInputOffset(0);
+    *modelHeader = { 0, static_cast<uint32_t>(dumpedModelTotalSize), 1, layerCount, input.Mode.Size,
+        output.Mode.Size, input.Count, output.Count, inputsOffset, outputsOffset };
 
     return address;
 }

@@ -132,7 +132,7 @@ void HardwareModelVerbose::readRegister(FILE *file, UINT32 registerOffset)
 
 void HardwareModelVerbose::writeRegister(dbg_action regAction)
 {
-    uint32_t regValue;
+    uint32_t regValue = 0;
     switch (regAction.reg_operation)
     {
     case Equal:
@@ -162,15 +162,19 @@ void HardwareModelVerbose::zeroMemory(void *memoryIn, size_t memorySizeIn)
 
 void HardwareModelVerbose::setXnnDescriptor(dbg_action action)
 {
-    auto xnnLyr = reinterpret_cast<uint8_t*>(hardwareLayers.at(action.layer_number)->XnnDescriptor);
-    auto xnnParam = xnnLyr + action.xnn_offset;
+    auto xnnParam = hardwareLayers.at(action.layer_number)->XnnDescriptor.GetMemAddress() + action.xnn_offset;
     setDescriptor(xnnParam, action.xnn_value, action.xnn_value_size);
 }
 
 void HardwareModelVerbose::setGmmDescriptor(dbg_action action)
 {
-    auto gmmConfig = reinterpret_cast<uint8_t*>(hardwareLayers.at(action.layer_number)->GmmDescriptor);
-    auto xnnParam = gmmConfig + action.xnn_offset;
+    const auto& hwLayer = hardwareLayers.at(action.layer_number);
+    if (hwLayer->SoftwareLayer->Operation != INTEL_GMM)
+    {
+        throw GnaException{ XNN_ERR_LYR_OPERATION };
+    }
+    auto gmmDescriptor = hwLayer->XnnDescriptor.GmmDescriptor;
+    auto xnnParam = gmmDescriptor.Get<uint8_t>() + action.xnn_offset;
     setDescriptor(xnnParam, action.xnn_value, action.xnn_value_size);
 }
 
@@ -191,7 +195,7 @@ void HardwareModelVerbose::setDescriptor(uint8_t *xnnParam, uint64_t xnnValue, g
         *reinterpret_cast<uint64_t*>(xnnParam) = xnnValue;
         break;
     case GNA_SET_XNNLYR:
-        memset(xnnParam, xnnValue, sizeof(XNN_LYR));
+        memset(xnnParam, static_cast<int>(xnnValue), baseDescriptor.Size);
         break;
     }
 }
@@ -310,55 +314,54 @@ void HardwareModelVerbose::executeDebugAction(dbg_action& action)
     }
 }
 
-#define DUMP_CFG(file, field) fprintf(file, "%02p %08x\n", &(field), (uint32_t)field)
-#define DUMP_CFG_ADDR(file, pointer) fprintf(file, "%02p %08x\n", &(pointer), pointer)
+#define DUMP_CFG(file, field) fprintf(file, "%02p %08x\n", &(field), field.Get())
+#define DUMP_CFG_ADDR(file, pointer) fprintf(file, "%02p %08x\n", &(pointer), pointer.Get())
+#define DUMP_GMM_ADDR(file, pointer) fprintf(file, "%02p %08x\n", &(pointer), pointer)
 
-void HardwareModelVerbose::dumpXnnDescriptor(uint16_t layerNumber, FILE *file)
+void HardwareModelVerbose::dumpXnnDescriptor(uint32_t layerNumber, FILE *file)
 {
-    auto lyrDsc = (AddrXnnLyr(descriptorsAddress) + layerNumber).Get();
-
+    auto lyrDsc = hardwareLayers.at(layerNumber)->XnnDescriptor;
     fprintf(file, "\nDescriptor space\n");
     fprintf(file, "-----------------------------------------------------------------\n");
     fprintf(file, "---                   values (dwords  MSB->LSB)               ---\n");
-    DUMP_CFG(file, lyrDsc->op);
-    DUMP_CFG(file, lyrDsc->flags._char);
-    DUMP_CFG(file, lyrDsc->n_in_elems);
-    DUMP_CFG(file, lyrDsc->n_out_elems);
-    DUMP_CFG(file, lyrDsc->cnn_n_out_p_flt);
-    DUMP_CFG(file, lyrDsc->n_groups);
-    DUMP_CFG(file, lyrDsc->cnn_n_flt_last);
-    DUMP_CFG(file, lyrDsc->n_iters);
-    DUMP_CFG(file, lyrDsc->cnn_pool_stride);
-    DUMP_CFG(file, lyrDsc->n_elems_last);
-    DUMP_CFG(file, lyrDsc->cnn_n_flt_stride);
-    DUMP_CFG(file, lyrDsc->rnn_n_fb_iters);
-    DUMP_CFG(file, lyrDsc->cnn_pool_size);
-    DUMP_CFG(file, lyrDsc->rnn_n_elems_first);
-    DUMP_CFG(file, lyrDsc->cnn_n_flts);
-    DUMP_CFG(file, lyrDsc->rnn_n_elems_last);
-    DUMP_CFG(file, lyrDsc->cnn_n_flt_iters);
-    DUMP_CFG(file, lyrDsc->pwl_n_segs);
-    DUMP_CFG(file, lyrDsc->act_list_n_elems);
-    DUMP_CFG(file, lyrDsc->cpy_n_elems);
-    DUMP_CFG(file, lyrDsc->cnn_flt_size);
-    DUMP_CFG(file, lyrDsc->cnn_n_flts_iter);
-    DUMP_CFG(file, lyrDsc->cnn_n_flt_outs);
-    DUMP_CFG(file, lyrDsc->cnn_flt_bf_sz_iter);
-    DUMP_CFG(file, lyrDsc->cnn_flt_bf_sz_last);
-    DUMP_CFG_ADDR(file, lyrDsc->in_buffer);
-    DUMP_CFG_ADDR(file, lyrDsc->out_act_fn_buffer);
-    DUMP_CFG_ADDR(file, lyrDsc->out_sum_buffer);
-    DUMP_CFG_ADDR(file, lyrDsc->rnn_out_fb_buffer);
-    DUMP_CFG_ADDR(file, lyrDsc->aff_weight_buffer);
-    DUMP_CFG_ADDR(file, lyrDsc->cnn_flt_buffer);
-    DUMP_CFG_ADDR(file, lyrDsc->aff_const_buffer);
-    DUMP_CFG_ADDR(file, lyrDsc->act_list_buffer);
-    DUMP_CFG_ADDR(file, lyrDsc->pwl_seg_def_buffer);
-    DUMP_CFG_ADDR(file, lyrDsc->in_buffer);
-    DUMP_CFG_ADDR(file, lyrDsc->in_buffer);
+    DUMP_CFG(file, lyrDsc[op]);
+    DUMP_CFG(file, lyrDsc[flags]);
+    DUMP_CFG(file, lyrDsc[n_in_elems]);
+    DUMP_CFG(file, lyrDsc[n_out_elems]);
+    DUMP_CFG(file, lyrDsc[cnn_n_out_p_flt]);
+    DUMP_CFG(file, lyrDsc[n_groups]);
+    DUMP_CFG(file, lyrDsc[cnn_n_flt_last]);
+    DUMP_CFG(file, lyrDsc[n_iters]);
+    DUMP_CFG(file, lyrDsc[cnn_pool_stride]);
+    DUMP_CFG(file, lyrDsc[n_elems_last]);
+    DUMP_CFG(file, lyrDsc[cnn_n_flt_stride]);
+    DUMP_CFG(file, lyrDsc[rnn_n_fb_iters]);
+    DUMP_CFG(file, lyrDsc[cnn_pool_size]);
+    DUMP_CFG(file, lyrDsc[rnn_n_elems_first]);
+    DUMP_CFG(file, lyrDsc[cnn_n_flts]);
+    DUMP_CFG(file, lyrDsc[rnn_n_elems_last]);
+    DUMP_CFG(file, lyrDsc[cnn_n_flt_iters]);
+    DUMP_CFG(file, lyrDsc[pwl_n_segs]);
+    DUMP_CFG(file, lyrDsc[act_list_n_elems]);
+    DUMP_CFG(file, lyrDsc[cpy_n_elems]);
+    DUMP_CFG(file, lyrDsc[cnn_flt_size]);
+    DUMP_CFG(file, lyrDsc[cnn_n_flts_iter]);
+    DUMP_CFG(file, lyrDsc[cnn_n_flt_outs]);
+    DUMP_CFG(file, lyrDsc[cnn_flt_bf_sz_iter]);
+    DUMP_CFG(file, lyrDsc[cnn_flt_bf_sz_last]);
+    DUMP_CFG_ADDR(file, lyrDsc[in_buffer]);
+    DUMP_CFG_ADDR(file, lyrDsc[out_buffer]);
+    DUMP_CFG_ADDR(file, lyrDsc[out_sum_buffer]);
+    DUMP_CFG_ADDR(file, lyrDsc[rnn_out_fb_buffer]);
+    DUMP_CFG_ADDR(file, lyrDsc[weight_buffer]);
+    DUMP_CFG_ADDR(file, lyrDsc[bias_buffer]);
+    DUMP_CFG_ADDR(file, lyrDsc[act_list_buffer]);
+    DUMP_CFG_ADDR(file, lyrDsc[pwl_seg_def_buffer]);
+    DUMP_CFG_ADDR(file, lyrDsc[in_buffer]);
+    DUMP_CFG_ADDR(file, lyrDsc[in_buffer]);
 }
 
-void HardwareModelVerbose::dumpGmmDescriptor(uint16_t layerNumber, FILE *file)
+void HardwareModelVerbose::dumpGmmDescriptor(uint32_t layerNumber, FILE *file)
 {
     fprintf(file, "\nGMM Descriptor space\n");
     fprintf(file, "-----------------------------------------------------------------\n");
@@ -367,6 +370,6 @@ void HardwareModelVerbose::dumpGmmDescriptor(uint16_t layerNumber, FILE *file)
     auto gmmConfig = hardwareLayers.at(layerNumber)->GmmDescriptor;
     for (size_t i = 0; i < sizeof(GMM_CONFIG) / sizeof(uint32_t); i++)
     {
-        DUMP_CFG_ADDR(file, gmmConfig->_value[i]);
+        DUMP_GMM_ADDR(file, (gmmConfig.Get()->_value[i]));
     }
 }

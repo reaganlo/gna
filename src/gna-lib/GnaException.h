@@ -28,6 +28,7 @@
 #include <stdexcept>
 
 #include "common.h"
+#include "gna-api-status.h"
 #include "Logger.h"
 
 namespace GNA
@@ -58,14 +59,44 @@ protected:
 };
 
 /**
+ * Custom exception for tensor build errors
+ */
+class GnaTensorException : public GnaException
+{
+public:
+
+    GnaTensorException(const GnaException& e, gna_tensor_dim dimension) :
+        GnaException{e},
+        Dimension{dimension}
+    {}
+
+    inline status_t getStatus() const
+    {
+        Log->Error(Status, " Tensor build failed on dimension: %u", Dimension); // TODO:3: tensor dims names
+        return Status;
+    }
+
+    virtual ~GnaTensorException() {};
+
+protected:
+    gna_tensor_dim Dimension;
+};
+
+
+/**
  * Custom exception for model build errors
  */
-class GnaModelException : protected GnaException
+class GnaModelException : public GnaTensorException
 {
 public:
 
     GnaModelException(const GnaException& e, uint32_t layerId) :
-        GnaException{e},
+        GnaTensorException{e, GNA_DIM_S},
+        LayerId{layerId}
+    {}
+
+    GnaModelException(const GnaTensorException& e, uint32_t layerId) :
+        GnaTensorException{e},
         LayerId{layerId}
     {}
 

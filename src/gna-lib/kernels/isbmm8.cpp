@@ -25,7 +25,6 @@
 
 #include "igemv8.h"
 #include "igemv.h"
-
 void DiagonalKernelImpl1B(AffineConfig const * const config)
 {
     uint32_t i;
@@ -42,12 +41,55 @@ void DiagonalKernelImpl1B(AffineConfig const * const config)
         weightValue = bias[i].multiplier * weight[i];
         for (j = 0; j < config->inputVectorCount; j++)
         {
-            sum =  bias[i].bias + (weightValue * input[i * config->inputVectorCount + j]);
-#if GNA_SAT == 1
+            sum = bias[i].bias + (weightValue * input[i * config->inputVectorCount + j]);
             saturate_store_out(&sum, &output[i * config->inputVectorCount + j], config->saturationCount);
-#else
-            output[i * config->inputVectorCount + j] = (int32_t)sum;
-#endif
+        }
+    }
+}
+
+void DiagonalKernelImpl1B2B(AffineConfig const * const config)
+{
+    uint32_t i, j;
+    int64_t sum;
+    int64_t weightValue;
+    int8_t const * weight = config->weights1B;
+    int16_t const * input = config->input;
+    int32_t * output = config->output;
+    nn_bias_c const * bias = config->biasesCompound;
+
+    for (i = 0; i < config->outputElementCount; i++)
+    {
+        weightValue = bias[i].multiplier * weight[i];
+        for (j = 0; j < config->inputVectorCount; j++)
+        {
+            sum =  bias[i].bias + (weightValue * input[i * config->inputVectorCount + j]);
+            saturate_store_out(&sum, &output[i * config->inputVectorCount + j], config->saturationCount);
+        }
+    }
+}
+
+void DiagonalKernelImpl1B1B(AffineConfig const * const config)
+{
+    uint32_t i;
+    uint32_t j;
+    int64_t sum = 0;
+    int8_t const * weight = config->weights1B;
+    int8_t const * input = (int8_t*)config->input;
+    int32_t * output = config->output;
+    int8_t const * bias = (int8_t*)config->biasesSimple;
+
+    for (i = 0; i < config->outputElementCount; i++)
+    {
+        for (j = 0; j < config->inputVectorCount; j++)
+        {
+            if (config->bytesPerBias == 1)
+                sum = bias[i] + (weight[i] * input[i * config->inputVectorCount + j]);
+            else if (config->bytesPerBias == 2)
+                sum = ((int16_t*)bias)[i] + (weight[i] * input[i * config->inputVectorCount + j]);
+            else if (config->bytesPerBias == 4)
+                sum = ((int32_t*)bias)[i] + (weight[i] * input[i * config->inputVectorCount + j]);
+
+            saturate_store_out(&sum, &output[i * config->inputVectorCount + j], config->saturationCount);
         }
     }
 }

@@ -35,15 +35,17 @@ public:
     ~DeviceController();
 
     uint8_t * Alloc(uint32_t sizeRequested, uint16_t layerCount, uint16_t gmmCount, uint32_t * sizeGranted);
+
     void Free();
 
     void ModelCreate(const gna_model *, gna_model_id *);
 
     gna_request_cfg_id ConfigAdd(gna_model_id);
 
-    void BufferAdd(gna_request_cfg_id, gna_buffer_type, uint32_t layerIndex, void * address);
+    void BufferAdd(gna_request_cfg_id, GnaComponentType, uint32_t layerIndex, void * address);
 
     void RequestEnqueue(gna_request_cfg_id, gna_acceleration, gna_request_id *);
+    void RequestWait(gna_request_id);
 
     void ActiveListAdd(gna_request_cfg_id configId, uint32_t layerIndex, uint32_t indicesCount, uint32_t* indices);
 

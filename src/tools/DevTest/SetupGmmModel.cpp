@@ -31,6 +31,8 @@
 
 #include "SetupGmmModel.h"
 
+#define UNREFERENCED_PARAMETER(P) ((void)(P))
+
 SetupGmmModel::SetupGmmModel(DeviceController & deviceCtrl, bool activeListEn)
     : deviceController{deviceCtrl},
       activeListEnabled{activeListEn}
@@ -41,8 +43,8 @@ SetupGmmModel::SetupGmmModel(DeviceController & deviceCtrl, bool activeListEn)
 
     configId = deviceController.ConfigAdd(modelId);
 
-    deviceController.BufferAdd(configId, GNA_IN, 0, inputBuffer);
-    deviceController.BufferAdd(configId, GNA_OUT, 0, outputBuffer);
+    deviceController.BufferAdd(configId, InputComponent, 0, inputBuffer);
+    deviceController.BufferAdd(configId, OutputComponent, 0, outputBuffer);
 
     if (activeListEnabled)
     {
@@ -60,6 +62,7 @@ SetupGmmModel::~SetupGmmModel()
 
 void SetupGmmModel::checkReferenceOutput(int modelIndex, int configIndex) const
 {
+    UNREFERENCED_PARAMETER(modelIndex);
     unsigned int ref_output_size = refSize[configIndex];
     const int32_t* ref_output = refOutputAssign[configIndex];
     for (unsigned int i = 0; i < ref_output_size; ++i)
@@ -78,7 +81,7 @@ void SetupGmmModel::sampleGmmLayer(intel_nnet_type_t& hNnet)
 {
     hNnet.nGroup = groupingNum;
     hNnet.nLayers = layersNum;
-    hNnet.pLayers = (intel_nnet_layer_t*)calloc(hNnet.nLayers, sizeof(intel_nnet_layer_t));
+    hNnet.pLayers = (intel_nnet_layer_t*)calloc(nnet.nLayers, sizeof(intel_nnet_layer_t));
 
     uint32_t stateCount = 8;
     const int elementSize = sizeof(int32_t);
@@ -100,7 +103,7 @@ void SetupGmmModel::sampleGmmLayer(intel_nnet_type_t& hNnet)
     uint32_t bytes_granted;
 
     // call GNAAlloc (obtains pinned memory shared with the device)
-    uint8_t* pinned_mem_ptr = deviceController.Alloc(bytes_requested, hNnet.nLayers, 1, &bytes_granted);
+    uint8_t* pinned_mem_ptr = deviceController.Alloc(bytes_requested, static_cast<uint16_t>(hNnet.nLayers), static_cast<uint16_t>(1), &bytes_granted);
 
     int16_t *pinned_weights = (int16_t*)pinned_mem_ptr;
     memcpy(pinned_weights, variance, sizeof(variance));   // puts the weights into the pinned memory
@@ -129,7 +132,7 @@ void SetupGmmModel::sampleGmmLayer(intel_nnet_type_t& hNnet)
 
     gna_gmm_layer *gmm = (gna_gmm_layer*)calloc(1, sizeof(gna_gmm_layer));
     gmm->data.gaussianConstants = (uint32_t*)pinned_biases;
-    gmm->data.inverseCovariancesForMaxMix16 = (uint16_t*)pinned_weights;
+    gmm->data.inverseCovariances.inverseCovariancesForMaxMix16 = (uint16_t*)pinned_weights;
     gmm->data.meanValues = (uint8_t*)pinned_weights;
     gmm->config.layout = GMM_LAYOUT_FLAT;
     gmm->config.maximumScore = UINT32_MAX;
@@ -142,11 +145,11 @@ void SetupGmmModel::sampleGmmLayer(intel_nnet_type_t& hNnet)
     hNnet.pLayers[0].nInputRows = hNnet.nGroup;
     hNnet.pLayers[0].nOutputColumns = outVecSz;
     hNnet.pLayers[0].nOutputRows = hNnet.nGroup;
-    hNnet.pLayers[0].nBytesPerInput = 1;
-    hNnet.pLayers[0].nBytesPerOutput = 4;             // 4 bytes since we are not using PWL (would be 2 bytes otherwise)
-    hNnet.pLayers[0].nBytesPerIntermediateOutput = 4; // this is always 4 bytes
-    hNnet.pLayers[0].type = INTEL_INPUT_OUTPUT;
-    hNnet.pLayers[0].nLayerKind = INTEL_GMM;
+    hNnet.pLayers[0].nBytesPerInput = GNA_INT8;
+    hNnet.pLayers[0].nBytesPerOutput = GNA_INT32;             // 4 bytes since we are not using PWL (would be 2 bytes otherwise)
+    hNnet.pLayers[0].nBytesPerIntermediateOutput = GNA_INT32; // this is always 4 bytes
+    hNnet.pLayers[0].mode = INTEL_INPUT_OUTPUT;
+    hNnet.pLayers[0].operation = INTEL_GMM;
     hNnet.pLayers[0].pLayerStruct = gmm;
     hNnet.pLayers[0].pInputs = nullptr;
     hNnet.pLayers[0].pOutputsIntermediate = nullptr;

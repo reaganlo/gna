@@ -33,7 +33,7 @@
 #include "DeviceVerbose.h"
 #endif
 #include "Logger.h"
-#include "Validator.h"
+#include "Expect.h"
 
 using std::thread;
 using std::unique_ptr;
@@ -67,8 +67,9 @@ GNAAPI intel_gna_status_t GnaModelCreate(
     {
         return e.getStatus();
     }
-    catch (...)
+    catch (const std::exception& e)
     {
+        Log->Error("Unknown exception: ", e.what());
         return GNA_UNKNOWN_ERROR;
     }
 }
@@ -86,15 +87,16 @@ GNAAPI intel_gna_status_t GnaModelRequestConfigAdd(
     {
         return e.getStatus();
     }
-    catch (...)
+    catch (const std::exception& e)
     {
+        Log->Error("Unknown exception: ", e.what());
         return GNA_UNKNOWN_ERROR;
     }
 }
 
 GNAAPI intel_gna_status_t GnaRequestConfigBufferAdd(
     const gna_request_cfg_id configId,
-    const gna_buffer_type type,
+    const GnaComponentType type,
     const uint32_t layerIndex,
     void* const address)
 {
@@ -107,8 +109,9 @@ GNAAPI intel_gna_status_t GnaRequestConfigBufferAdd(
     {
         return e.getStatus();
     }
-    catch (...)
+    catch (const std::exception& e)
     {
+        Log->Error("Unknown exception: ", e.what());
         return GNA_UNKNOWN_ERROR;
     }
 }
@@ -128,8 +131,9 @@ GNAAPI intel_gna_status_t GnaRequestConfigActiveListAdd(
     {
         return e.getStatus();
     }
-    catch (...)
+    catch (const std::exception& e)
     {
+        Log->Error("Unknown exception: ", e.what());
         return GNA_UNKNOWN_ERROR;
     }
 }
@@ -149,8 +153,9 @@ GNAAPI intel_gna_status_t GnaRequestEnqueue(
     {
         return e.getStatus();
     }
-    catch (...)
+    catch (const std::exception& e)
     {
+        Log->Error("Unknown exception: ", e.what());
         return GNA_UNKNOWN_ERROR;
     }
 }
@@ -171,8 +176,9 @@ GNAAPI intel_gna_status_t GnaRequestWait(
     {
         return e.getStatus();
     }
-    catch (...)
+    catch (const std::exception& e)
     {
+        Log->Error("Unknown exception: ", e.what());
         return GNA_UNKNOWN_ERROR;
     }
 }
@@ -200,8 +206,9 @@ GNAAPI void* GnaAlloc(
         Log->Error(e.getStatus(), "Memory allocation failed.\n");
         return nullptr;
     }
-    catch (...)
+    catch (const std::exception& e)
     {
+        Log->Error("Unknown exception: ", e.what());
         return nullptr;
     }
 }
@@ -219,15 +226,14 @@ GNAAPI intel_gna_status_t GnaFree(
     {
         return e.getStatus();
     }
-    catch (...)
+    catch (const std::exception& e)
     {
+        Log->Error("Unknown exception: ", e.what());
         return GNA_UNKNOWN_ERROR;
     }
 }
 
-GNAAPI intel_gna_status_t GnaDeviceOpen(
-    const uint8_t threadCount,
-    gna_device_id* const deviceId)
+GNAAPI intel_gna_status_t GnaDeviceOpen(uint8_t threadCount, gna_device_id * device)
 {
     if(GnaDevice)
     {
@@ -237,9 +243,9 @@ GNAAPI intel_gna_status_t GnaDeviceOpen(
     try
     {
 #if HW_VERBOSE == 1
-        GnaDevice = std::make_unique<DeviceVerbose>(deviceId, threadCount);
+        GnaDevice = std::make_unique<DeviceVerbose>(device, threadCount);
 #else
-        GnaDevice = std::make_unique<Device>(deviceId, threadCount);
+        GnaDevice = std::make_unique<Device>(device, threadCount);
 #endif
         return GNA_SUCCESS;
     }
@@ -247,8 +253,9 @@ GNAAPI intel_gna_status_t GnaDeviceOpen(
     {
         return e.getStatus();
     }
-    catch (...)
+    catch (const std::exception& e)
     {
+        Log->Error("Unknown exception: ", e.what());
         return GNA_UNKNOWN_ERROR;
     }
 }
@@ -267,22 +274,23 @@ GNAAPI intel_gna_status_t GnaDeviceClose(
     {
         return e.getStatus();
     }
-    catch (...)
+    catch (const std::exception& e)
     {
+        Log->Error("Unknown exception: ", e.what());
         return GNA_UNKNOWN_ERROR;
     }
 }
 
 void* GnaModelDump(
     gna_model_id modelId,
-    gna_device_kind deviceKind,
+    gna_device_generation deviceGeneration,
     intel_gna_model_header* modelHeader,
     intel_gna_status_t* status,
     intel_gna_alloc_cb customAlloc)
 {
     try
     {
-        return GnaDevice->Dump(modelId, deviceKind, modelHeader, status, customAlloc);
+        return GnaDevice->Dump(modelId, deviceGeneration, modelHeader, status, customAlloc);
     }
     catch (const GnaModelException &e)
     {
@@ -296,6 +304,7 @@ void* GnaModelDump(
     }
     catch (std::exception &e)
     {
+        Log->Error("Unknown exception: ", e.what());
         *status = GNA_UNKNOWN_ERROR;
         return NULL;
     }
@@ -313,8 +322,9 @@ intel_gna_status_t GnaRequestConfigEnablePerf(gna_request_cfg_id configId, gna_h
     {
         return e.getStatus();
     }
-    catch (...)
+    catch (const std::exception& e)
     {
+        Log->Error("Unknown exception: ", e.what());
         return GNA_UNKNOWN_ERROR;
     }
 }

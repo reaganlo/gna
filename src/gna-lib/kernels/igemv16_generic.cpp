@@ -28,8 +28,8 @@
 
 void RecurrentKernelImpl2B(RecurrentConfig const * const config)
 {
-    nn_bias_s const * bias = config->biasesSimple;
-    nn_bias_s const * const biasEnd= bias + config->outputElementCount;
+    int8_t const * bias = (int8_t*)config->biasesSimple;
+    int8_t const * const biasEnd = bias + config->outputElementCount * config->bytesPerBias;
     int16_t const * input = config->input;
     int16_t const * const inputEnd = input + config->inputElementCount;
     int16_t * feedback = config->feedbackBuffer;
@@ -37,9 +37,15 @@ void RecurrentKernelImpl2B(RecurrentConfig const * const config)
     int16_t const * weight = config->weights2B;
     int32_t * output = config->output;
 
-    for (; bias < biasEnd; bias++, output++)
+    for (; bias < biasEnd; bias+=config->bytesPerBias, output++)
     {
-        *output = *bias;
+        if (config->bytesPerBias == 1)
+            *output = *(int8_t*)bias;
+        else if (config->bytesPerBias == 2)
+            *output = *(int16_t*)bias;
+        else if (config->bytesPerBias == 4)
+            *output = *(int32_t*)bias;
+
         input = config->input;
         feedback = config->feedbackBuffer;
 
@@ -50,6 +56,90 @@ void RecurrentKernelImpl2B(RecurrentConfig const * const config)
         for (; feedback < feedbackEnd;)
         {
             *output += *feedback++ * *weight++;
+        }
+    }
+}
+
+void RecurrentKernelImpl2B2B(RecurrentConfig const * const config)
+{
+    int8_t const * bias = (int8_t*)config->biasesSimple;
+    int8_t const * const biasEnd = bias + config->outputElementCount * config->bytesPerBias;
+    int16_t const * input = config->input;
+    int16_t const * const inputEnd = input + config->inputElementCount;
+    int8_t * feedback = (int8_t*)config->feedbackBuffer;
+    int8_t const * const feedbackEnd = feedback + config->outputElementCount * config->bytesPerOutput;
+    int16_t const * weight = config->weights2B;
+    int32_t * output = config->output;
+
+    for (; bias < biasEnd; bias += config->bytesPerBias, output++)
+    {
+        if (config->bytesPerBias == 1)
+            *output = *(int8_t*)bias;
+        else if (config->bytesPerBias == 2)
+            *output = *(int16_t*)bias;
+        else if (config->bytesPerBias == 4)
+            *output = *(int32_t*)bias;
+
+        input = config->input;
+        feedback = (int8_t*)config->feedbackBuffer;
+
+        for (; input < inputEnd;)
+        {
+            *output += *input++ * *weight++;
+        }
+        for (; feedback < feedbackEnd;)
+        {
+            if (config->bytesPerOutput == 1)
+            {
+                *output += *feedback++ * *weight++;
+            }
+            else if (config->bytesPerOutput == 2)
+            {
+                *output += *(int16_t*)feedback * *weight++;
+                feedback += 2;
+            }
+        }
+    }
+}
+
+void RecurrentKernelImpl2B1B(RecurrentConfig const * const config)
+{
+    int8_t const * bias = (int8_t*)config->biasesSimple;
+    int8_t const * const biasEnd = bias + config->outputElementCount * config->bytesPerBias;
+    int8_t const * input = (int8_t*)config->input;
+    int8_t const * const inputEnd = input + config->inputElementCount;
+    int8_t * feedback = (int8_t*)config->feedbackBuffer;
+    int8_t const * const feedbackEnd = feedback + config->outputElementCount * config->bytesPerOutput;
+    int16_t const * weight = config->weights2B;
+    int32_t * output = config->output;
+
+    for (; bias < biasEnd; bias += config->bytesPerBias, output++)
+    {
+        if (config->bytesPerBias == 1)
+            *output = *(int8_t*)bias;
+        else if (config->bytesPerBias == 2)
+            *output = *(int16_t*)bias;
+        else if (config->bytesPerBias == 4)
+            *output = *(int32_t*)bias;
+
+        input = (int8_t*)config->input;
+        feedback = (int8_t*)config->feedbackBuffer;
+
+        for (; input < inputEnd;)
+        {
+            *output += *input++ * *weight++;
+        }
+        for (; feedback < feedbackEnd;)
+        {
+            if (config->bytesPerOutput == 1)
+            {
+                *output += *feedback++ * *weight++;
+            }
+            else if (config->bytesPerOutput == 2)
+            {
+                *output += *(int16_t*)feedback * *weight++;
+                feedback += 2;
+            }
         }
     }
 }

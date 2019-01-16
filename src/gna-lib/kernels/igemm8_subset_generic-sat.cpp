@@ -29,28 +29,28 @@
 
 void AffineActiveListKernelImpl1B(AffineConfig const * const config, AffineConfigAl const * const al)
 {
-    uint32_t kpartial;
     uint32_t nKpartial;
+    uint32_t kpartial;
     uint32_t acc_iters;
     uint32_t rem_iters;
     uint32_t niters;
+    uint32_t kk;
     uint32_t i;
     uint32_t j;
     uint32_t k;
-    uint32_t kk;
     uint32_t l;
     uint32_t m;
     int64_t sum;
     int32_t acc;
-    kpartial = (hw_buf_size[config->inputVectorCount - 1]) / config->inputVectorCount;
+    kpartial = (hw_buf_size[config->inputVectorCount - 1 + XNN_N_GROUP_MAX]) / config->inputVectorCount;
     nKpartial = config->inputElementCount / kpartial;
 
     int16_t const * input;
     int8_t const * weight;
 
     TransposeConfig transposeConfig = TransposeConfig{ config->inputElementCount, config->inputVectorCount,
-                                                       config->input, config->fvBuffers->d0 };
-    TransposeKernelImpl(&transposeConfig);
+        config->input, config->fvBuffers->d0 };
+    TransposeKernelImpl2B(&transposeConfig);
 
     for (l = 0; l < al->count; l++) {
         i = al->indices[l];
@@ -84,6 +84,112 @@ void AffineActiveListKernelImpl1B(AffineConfig const * const config, AffineConfi
 
                 saturate_store_out(&sum, &config->output[l*config->inputVectorCount + j], config->saturationCount);
                 sum = (int64_t)config->output[l*config->inputVectorCount + j];
+            }
+        }
+    }
+}
+
+void AffineActiveListKernelImpl1B2B(AffineConfig const * const config, AffineConfigAl const * const al)
+{
+    uint32_t acc_iters;
+    uint32_t rem_iters;
+    uint32_t niters;
+    uint32_t nKpartial;
+    uint32_t kpartial;
+    uint32_t kk;
+    uint32_t i;
+    uint32_t j;
+    uint32_t k;
+    uint32_t l;
+    uint32_t m;
+    int64_t sum;
+    int32_t acc;
+    kpartial = (hw_buf_size[config->inputVectorCount - 1 + XNN_N_GROUP_MAX]) / config->inputVectorCount;
+    nKpartial = config->inputElementCount / kpartial;
+
+    int16_t const * input;
+    int8_t const * weight;
+
+    TransposeConfig transposeConfig = TransposeConfig{ config->inputElementCount, config->inputVectorCount,
+        config->input, config->fvBuffers->d0 };
+    TransposeKernelImpl2B(&transposeConfig);
+
+    for (l = 0; l < al->count; l++) {
+        i = al->indices[l];
+        for (j = 0; j < config->inputVectorCount; j++) {
+            sum = config->biasesCompound[i].bias;
+            for (kk = 0; kk < nKpartial + 1; kk++) {
+                niters = kpartial < config->inputElementCount - kk * kpartial ? kpartial : config->inputElementCount - kk * kpartial;
+
+                acc_iters = niters / 512;
+                rem_iters = niters % 512;
+                acc = 0;
+                for (k = 0; k < acc_iters; k++)
+                {
+                    input = config->fvBuffers->d0 + j*config->inputElementCount + kk * kpartial + k * 512;
+                    weight = config->weights1B + i*config->inputElementCount + kk * kpartial + k * 512;
+                    for (m = 0; m < 512; m++)
+                    {
+                        acc += weight[m] * input[m];
+                    }
+                    sum += (int32_t)(acc * config->biasesCompound[i].multiplier);
+                    acc = 0;
+                }
+
+                input = config->fvBuffers->d0 + j*config->inputElementCount + kk * kpartial + acc_iters * 512;
+                weight = config->weights1B + i*config->inputElementCount + kk * kpartial + acc_iters * 512;
+                for (k = 0; k < rem_iters; k++)
+                {
+                    acc += weight[k] * input[k];
+                }
+                sum += (int32_t)(acc * config->biasesCompound[i].multiplier);
+
+                saturate_store_out(&sum, &config->output[l*config->inputVectorCount + j], config->saturationCount);
+                sum = (int64_t)config->output[l*config->inputVectorCount + j];
+            }
+        }
+    }
+}
+
+void AffineActiveListKernelImpl1B1B(AffineConfig const * const config, AffineConfigAl const * const al)
+{
+    uint32_t i;
+    uint32_t j;
+    uint32_t k;
+    uint32_t l;
+    uint32_t kk;
+    uint32_t kpartial;
+    uint32_t nKpartial;
+    kpartial = (hw_buf_size[config->inputVectorCount - 1]) / config->inputVectorCount;
+    nKpartial = (int32_t)config->inputElementCount / kpartial;
+
+    TransposeConfig transposeConfig = TransposeConfig{ config->inputElementCount, config->inputVectorCount,
+        config->input, config->fvBuffers->d0 };
+    TransposeKernelImpl1B(&transposeConfig);
+
+    int8_t const * input;
+    int8_t const * weight;
+
+    int64_t sum = 0;
+    for (l = 0; l < al->count; l++) {
+        i = al->indices[l];
+        for (j = 0; j < config->inputVectorCount; j++) {
+
+            if (config->bytesPerBias == 1)
+                sum = ((int8_t*)config->biasesSimple)[i];
+            else if (config->bytesPerBias == 2)
+                sum = ((int16_t*)config->biasesSimple)[i];
+            else if (config->bytesPerBias == 4)
+                sum = ((int32_t*)config->biasesSimple)[i];
+
+            for (kk = 0; kk < nKpartial + 1; kk++) {
+                input = ((int8_t*)config->fvBuffers->d0) + j*config->inputElementCount + kk * kpartial;
+                weight = config->weights1B + i*config->inputElementCount + kk * kpartial;
+                for (k = 0; (k < kpartial) && (kk*kpartial + k < config->inputElementCount); k++) {
+                    sum += (int32_t)(weight[k] * input[k]);
+                }
+                saturate_store_out(&sum, &config->output[l*config->inputVectorCount + j], config->saturationCount);
+                sum = (int64_t)config->output[l*config->inputVectorCount + j]; // load the temp sum
             }
         }
     }

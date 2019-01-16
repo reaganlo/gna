@@ -40,11 +40,7 @@ public:
 private:
     void sampleTransposeLayer(int configIndex);
 
-    intel_pwl_func_t pwl;
-
     DeviceController & deviceController;
-
-    intel_nnet_layer_t transposeLayer;
 
     void * inputBuffer = nullptr;
     void * outputBuffer = nullptr;

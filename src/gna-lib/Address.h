@@ -26,8 +26,7 @@
 #pragma once
 
 #include "common.h"
-
-#include "GnaConfig.h"
+#include <map>
 
 namespace GNA
 {
@@ -41,16 +40,19 @@ template<typename T> class Address<T*const>
 public:
     Address() = default;
     Address(void * const value) :
-        buffer(static_cast<T*>(value))
+        buffer(const_cast<void*>(value))
     {}
     Address(const void * const value) :
-        buffer(static_cast<T*>(const_cast<void*>(value)))
+        buffer(const_cast<void*>(value))
+    {}
+    Address(const T * value) :
+        buffer(const_cast<T*>(value))
     {}
     Address(const Address& address) :
         buffer(address.buffer)
     {}
     template<class C> Address(const Address<C*>& address) :
-        buffer(address.Get())
+        buffer(const_cast<C*>(address.Get()))
     {}
     template<class C> Address(const Address<C*const>& address) :
         buffer(address.Get())
@@ -108,7 +110,9 @@ public:
     template<class X> uint32_t GetOffset(const Address<X*const>& base) const
     {
         if (this->operator! ()) return 0;
-        return reinterpret_cast<uintptr_t>((uint8_t*)(this->Get<uint8_t>() - base.template Get<uint8_t>()));
+        return static_cast<uint32_t>(
+            reinterpret_cast<uintptr_t>(
+              reinterpret_cast<uint8_t*>(this->Get<uint8_t>() - base.template Get<uint8_t>())));
     }
 
 protected:
@@ -133,9 +137,19 @@ public:
         Address<T*const>(address.Get())
     {}
 
+    template<class X> X * Get() const
+    {
+        return static_cast<X *>(this->buffer);
+    }
+
     T * Get() const
     {
         return static_cast<T*>(this->buffer);
+    }
+
+    T * operator->() const
+    {
+        return static_cast<T * const>(this->buffer);
     }
 
     const Address operator++(int)
@@ -167,18 +181,23 @@ public:
 };
 
 // Address Aliases
+using BaseAddress = Address<uint8_t * const>;
 
-using BaseAddressC = Address<uint8_t * const>;
+class BufferMap : public std::map<GnaComponentType, BaseAddress>
+{
+public:
+    using map::map;
 
-using BaseAddress = Address<uint8_t *>;
-using AddrGmmCfg = Address<GMM_CONFIG *>;
-using AddrXnnLyr = Address<XNN_LYR *>;
-using AddrGmmCfgC = Address<GMM_CONFIG * const>;
+    BufferMap() = default;
 
-using InOutBuffer = Address<int8_t * const>;
-using GmmInputBuffer = Address<int8_t * const>; // Input Buffer for GMM layer
-using XnnInputBuffer = Address<int16_t * const>; // Input Buffer for Neural layer
-using OutputBuffer = Address<int16_t * const>; // Activated Output Buffer
-using BareOutputBuffer = Address<int32_t * const>;  // Non-Activated Output Buffer
+    BufferMap(const BaseAddress& inputBuffer, const BaseAddress& outputBuffer) :
+        map()
+    {
+        if (inputBuffer)
+            emplace(InputComponent, inputBuffer);
+        if (outputBuffer)
+            emplace(OutputComponent, outputBuffer);
+    }
+};
 
 }
