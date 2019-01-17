@@ -166,6 +166,7 @@ struct GnaHardwareCapabiities
     uint32_t BufferSizesPerCEInKB;
     uint32_t PoolingEngineCountPerCE;
     uint32_t ActivationEngineCount;
+    std::array<uint32_t, XNN_N_GROUP_MAX> BufferElementCountBackward;
 };
 
 /**

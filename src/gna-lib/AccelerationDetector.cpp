@@ -77,7 +77,8 @@ std::map<gna_device_version, const GnaHardwareCapabiities> gnaCapsMap = {
         {{1, 8}},
         4,
         0,
-        0,},
+        0,
+        {12288, 12288, 12096, 12288, 12000, 12096, 12096, 12288},},
     },
     { GNA_SKL,
         {GMM_DEVICE,
@@ -86,7 +87,8 @@ std::map<gna_device_version, const GnaHardwareCapabiities> gnaCapsMap = {
         {{1, 8}},
         4,
         0,
-        0,},
+        0,
+        {12288, 12288, 12096, 12288, 12000, 12096, 12096, 12288},},
     },
     { GNA_CNL,
         {GNA_0_9,
@@ -95,7 +97,8 @@ std::map<gna_device_version, const GnaHardwareCapabiities> gnaCapsMap = {
         {{2, 8}},
         4,
         1,
-        1,},
+        1,
+        {12288, 12288, 12096, 12288, 12000, 12096, 12096, 12288},},
     },
     { GNA_GLK,
         {GNA_1_0,
@@ -104,7 +107,8 @@ std::map<gna_device_version, const GnaHardwareCapabiities> gnaCapsMap = {
         {{2, 8}},
         4,
         1,
-        1,},
+        1,
+        {12288, 12288, 12096, 12288, 12000, 12096, 12096, 12288},},
     },
     { GNA_ICL,
         {GNA_1_0,
@@ -113,7 +117,8 @@ std::map<gna_device_version, const GnaHardwareCapabiities> gnaCapsMap = {
         {{2, 8}},
         4,
         1,
-        1,},
+        1,
+        {12288, 12288, 12096, 12288, 12000, 12096, 12096, 12288},},
     },
     { GNA_SUE_CREEK,
         {GNA_1_0_EMBEDDED,
@@ -122,7 +127,8 @@ std::map<gna_device_version, const GnaHardwareCapabiities> gnaCapsMap = {
         {{2, 8}},
         4,
         1,
-        1,},
+        1,
+        {6144, 6144, 6048, 6144, 5760, 6048, 6048, 6144},},
     },
     { GNA_TGL,
         {GNA_2_0,
@@ -131,7 +137,8 @@ std::map<gna_device_version, const GnaHardwareCapabiities> gnaCapsMap = {
         {{2, 8}},
         4,
         1,
-        1,},
+        1,
+        {12288, 12288, 12096, 12288, 12000, 12096, 12096, 12288},},
     },
     { GNA_JELLYFISH,
         {GNA_2_1_EMBEDDED,
@@ -140,7 +147,8 @@ std::map<gna_device_version, const GnaHardwareCapabiities> gnaCapsMap = {
         {{2, 8}},
         4,
         1,
-        1,},
+        1,
+        {12288, 12288, 12096, 12288, 12000, 12096, 12096, 12288},},
     },
     { GNA_ADL,
         {GNA_3_0,
@@ -149,7 +157,8 @@ std::map<gna_device_version, const GnaHardwareCapabiities> gnaCapsMap = {
         {{1, 16}, {2, 8}},
         4,
         2,
-        16,},
+        16,
+        {},},
     },
     { GNA_ACE_EMBEDDED,
         {GNA_3_0_EMBEDDED,
@@ -158,7 +167,8 @@ std::map<gna_device_version, const GnaHardwareCapabiities> gnaCapsMap = {
         {{1, 16}, {2, 8}},
         4,
         2,
-        16,},
+        16,
+        {},},
     },
     { GNA_ACE_ANNA,
         {GNA_3_1_AUTONOMUS,
@@ -167,7 +177,8 @@ std::map<gna_device_version, const GnaHardwareCapabiities> gnaCapsMap = {
         {{1, 16}, {2, 8}},
         4,
         2,
-        16,},
+        16,
+        {},},
     },
 };
 
@@ -608,16 +619,20 @@ uint32_t AccelerationDetector::GetBufferSizeInKB(gna_device_version hwId)
 uint32_t AccelerationDetector::GetBufferElementCount(gna_device_version hwId, uint32_t grouping,
     uint32_t inputPrecision)
 {
-    if (grouping == 7) return 31360 / inputPrecision;
-    if (grouping == 3) return 32640 / inputPrecision;
+    if (hwId == GNA_ADL || hwId == GNA_ACE_EMBEDDED || hwId == GNA_ACE_ANNA)
+    {
+        const auto ceCount = gnaCapsMap.at(hwId).ComputeEngineCount;
+        auto count = (GetBufferSizeInKB(hwId) * 1024)
+            / (ceCount *  16 * grouping);
+        count *= ceCount * 16 / inputPrecision;
+        count *= grouping;
 
-    auto count = GetBufferSizeInKB(hwId) * 1024;
-    count /= inputPrecision;
-
-    const auto& caps = gnaCapsMap.at(hwId);
-    const auto floorBase = caps.ComputeEngineCount * grouping * 16; // inputPrecision;
-    count = GnaFloor(count, floorBase);
-    return count;
+        return count;
+    }
+    else
+    {
+        return gnaCapsMap.at(hwId).BufferElementCountBackward[grouping - 1];
+    }
 }
 
 void AccelerationDetector::discoverHardware()
