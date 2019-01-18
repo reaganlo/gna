@@ -47,9 +47,9 @@ int WindowsGnaSelfTestHardwareStatus::checkHWId()
 
     if (!SetupDiGetDeviceInfoListDetail(devInfo, &devListData))
     {
-        LOG("SetupDiGetDeviceInfoListDetail FAILED with GetLastError() = %llu\n", (unsigned long long)GetLastError());
-        LOG("Make sure to run self-test as Administrator\n");
-        GnaSelfTestIssue::SETUPDI_ERROR.Handle();
+        logger.Error("SetupDiGetDeviceInfoListDetail FAILED with GetLastError() = %llu\n", (unsigned long long)GetLastError());
+        logger.Verbose("Make sure to run self-test as Administrator\n");
+        Handle(GSTIT_SETUPDI_ERROR);
     }
 
     devInfoData.cbSize = sizeof(SP_DEVINFO_DATA);
@@ -72,13 +72,13 @@ int WindowsGnaSelfTestHardwareStatus::checkHWId()
         }
 
         if (!fullHwId.empty()) {
-            LOG("The device have been found: (%s)\n", fullHwId.c_str());
+            logger.Verbose("The device have been found: (%s)\n", fullHwId.c_str());
             break;
         }
     }
 
     if (fullHwId.empty()) {
-        LOG("FAILED (no hardware device detected)\n");
+        logger.Error("FAILED (no hardware device detected)\n");
         return -1;
     }
     return 0;
@@ -101,39 +101,38 @@ int WindowsGnaSelfTestHardwareStatus::checkDriver()
     SetupDiEnumDriverInfo(devInfo, &devInfoData, SPDIT_COMPATDRIVER,
         0, &driverInfoData);
 
-    LOG("Checking driver...\n");
+    logger.Verbose("Checking driver...\n");
 
     if (driverInfoData.DriverVersion == 0)
     {
-        LOG("FAILED (no driver installed)");
-        GnaSelfTestIssue::NO_DRIVER.Handle();
+       Handle(GSTIT_NO_DRIVER);
     }
     else
     {
         uint32_t major = driverInfoData.DriverVersion >> 48 & 0xFFFF;
 
         if (major == 2) {
-            LOG("GNA 2.0 driver detected\n");
+            logger.Verbose("GNA 2.0 driver detected\n");
         }
         else if (major == 10)
         {
-            LOG("FAILED (null driver installed)\n");
-            LOG("Please install the driver, you may also need to enable the device [see Bring up guide]\n");  //TODO: guide to guide
-            GnaSelfTestIssue::NUL_DRIVER.Handle();
+            logger.Verbose("GNA null driver has been detected\n");
+            logger.Verbose("Please install the driver, you may also need to enable the device\n");
+            Handle(GSTIT_NUL_DRIVER);
         }
         else if (major == 1)
         {
-            LOG("GNA 1.0 driver detected\n");
-            LOG("Please update the driver\n");
-            GnaSelfTestIssue::DRV_1_INSTEAD_2.Handle();
+            logger.Verbose("GNA 1.0 driver detected\n");
+            logger.Verbose("Please update the driver\n");
+            Handle(GSTIT_DRV_1_INSTEAD_2);
         }
         else
         {
-            LOG("FAILED (unknown driver installed)\n");
-            GnaSelfTestIssue::UNKNOWN_DRIVER.Handle();
+            logger.Verbose("GNA unknown driver driver has been detected\n");
+            Handle(GSTIT_UNKNOWN_DRIVER);
         }
 
-        LOG("Driver version: %d.%d.%d.%d\n",
+        logger.Verbose("Driver version: %d.%d.%d.%d\n",
             int(driverInfoData.DriverVersion >> 48 & 0xFFFF),
             int(driverInfoData.DriverVersion >> 32 & 0xFFFF),
             int(driverInfoData.DriverVersion >> 16 & 0xFFFF),

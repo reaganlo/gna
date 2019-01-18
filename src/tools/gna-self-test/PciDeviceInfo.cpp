@@ -45,7 +45,7 @@ _PciDeviceInfo _PciDeviceInfo::fromLspciString(const std::string & s)
 
     if (ret != 6)
     {
-        LOG("ERROR in fromLspciString: parsing error: <%s>\n", s.c_str());
+        logger.Error("ERROR in fromLspciString: parsing error: <%s>\n", s.c_str());
         throw std::logic_error("ERROR in fromLspciString(): parsing error");
     }
     struct _PciDeviceInfo t;

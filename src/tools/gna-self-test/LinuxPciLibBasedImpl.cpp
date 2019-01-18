@@ -26,7 +26,7 @@ extern "C"{
 
 std::vector<PciDeviceInfo> LinuxGnaSelfTestHardwareStatus::getDevicesList()
 {
-    LOG("INFO in getDevicesList LIBPCI method\n");
+    logger.Verbose("INFO in getDevicesList LIBPCI method\n");
     std::vector<PciDeviceInfo> devList;
     struct pci_access *pciCtrl;
     struct pci_dev *dev;

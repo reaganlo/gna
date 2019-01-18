@@ -25,16 +25,13 @@
 #include <sstream>
 class GnaSelfTestHardwareStatus
 {
-    virtual void initHardwareInfo() = 0;
-    virtual void initDriverInfo() = 0;
-protected:
-    bool hardwareAvailable;
-    bool driverAvailable;
 public:
-    GnaSelfTestHardwareStatus() {}
+    GnaSelfTestHardwareStatus(const GnaSelfTest& gst) :gnaSelfTest{ gst }
+    {
+    }
     void Initialize()
     {
-        LOG("Detecting device...\n");
+        logger.Verbose("Detecting device...\n");
         initHardwareInfo();
         initDriverInfo();
     }
@@ -43,7 +40,18 @@ public:
     }
     void Print() const
     {
-        LOG("hardwareAvailable: %s\n", hardwareAvailable ? "true" : "false");
-        LOG("driverAvailable: %s\n", driverAvailable ? "true" : "false");
+        logger.Verbose("hardwareAvailable: %s\n", hardwareAvailable ? "true" : "false");
+        logger.Verbose("driverAvailable: %s\n", driverAvailable ? "true" : "false");
     }
+protected:
+    bool hardwareAvailable;
+    bool driverAvailable;
+    void Handle(const GnaSelfTestIssue& issue) const
+    {
+        gnaSelfTest.Handle(issue);
+    }
+    const GnaSelfTest& gnaSelfTest;
+private:
+    virtual void initHardwareInfo() = 0;
+    virtual void initDriverInfo() = 0;
 };

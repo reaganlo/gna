@@ -56,7 +56,6 @@ void LinuxGnaSelfTestHardwareStatus::initDriverInfo()
 int LinuxGnaSelfTestHardwareStatus::checkHWId()
 {
     bool devFound=false;
-    LOG("WARNING checking the GNA device in Linux/Android is not supported\n");
     auto devList = getDevicesList();
     for(auto dev : devList)
     {
@@ -65,9 +64,9 @@ int LinuxGnaSelfTestHardwareStatus::checkHWId()
             if(known.first.first == dev.vendorId && known.first.second == dev.deviceId)
             {
                 devFound=true;
-                LOG("SUCCESS the device have been found on Your system\n");
-                LOG("Device name: < %s >\n",known.second.c_str());
-                LOG("Details: < %s >\n",dev.toString().c_str());
+                logger.Verbose("SUCCESS the device have been found on Your system\n");
+                logger.Verbose("Device name: < %s >\n",known.second.c_str());
+                logger.Verbose("Details: < %s >\n",dev.toString().c_str());
             }
         }
     }
@@ -76,19 +75,17 @@ int LinuxGnaSelfTestHardwareStatus::checkHWId()
 
 int LinuxGnaSelfTestHardwareStatus::checkDriver()
 {
-    LOG("WARNING checking the GNA driver in Linux/Android is not supported\n");
-
     readCmdOutput(GNA_ST_LSMOD);
     readCmdOutput(GNA_ST_MODPROBE);
 
-    LOG("INFO Looking for device node /dev/gna[0-%d]\n",DEFAULT_GNA_DEV_NODE_RANGE-1);
+    logger.Verbose("Looking for device node /dev/gna[0-%d]\n",DEFAULT_GNA_DEV_NODE_RANGE-1);
     std::string devEntry = devfsGnaNode(DEFAULT_GNA_DEV_NODE_RANGE);
     if(devEntry.size()==0)
     {
-        LOG("WARNING Looks like there is no node at /dev/gna[0-%d]\n",DEFAULT_GNA_DEV_NODE_RANGE-1);
+        logger.Error("ERROR Looks like there is no node at /dev/gna[0-%d]\n",DEFAULT_GNA_DEV_NODE_RANGE-1);
         return -1;
     }
-    LOG("INFO GNA Node at <%s> has been found\n",devEntry.c_str());
+    logger.Verbose("INFO GNA Node at <%s> has been found\n",devEntry.c_str());
     return 0;
 }
 
@@ -99,17 +96,15 @@ std::string LinuxGnaSelfTestHardwareStatus::devfsGnaNode(uint8_t range)
     struct gna_capabilities gnaCaps;
     for(uint8_t i = 0; i < range; i++)
     {
-        char name[12];
-        sprintf(name, "/dev/gna%c", i);
-
-        fd = open(name, O_RDWR);
+        auto name = "/dev/gna" + std::to_string(i);
+        fd = open(name.c_str(), O_RDWR);
         if(fd == -1)
         {
             continue;
         }
         if(0 == ioctl(fd, GNA_CPBLTS, &gnaCaps))
         {
-            LOG("INFO GNA device with id = %d found\n",(int)gnaCaps.device_type);
+            logger.Verbose("INFO GNA device of type = %X found\n",(int)gnaCaps.device_type);
             found = name;
             close(fd);
             break;
@@ -122,12 +117,12 @@ std::string LinuxGnaSelfTestHardwareStatus::devfsGnaNode(uint8_t range)
 std::string LinuxGnaSelfTestHardwareStatus::readCmdOutput(const char* command) const
 {
     std::string output;
-    LOG("INFO running <%s>\n",command);
+    logger.Verbose("INFO running <%s>\n",command);
     FILE * file = popen(command,"r");
     if(file!=NULL)
     {
         char line[256];
-        LOG("<%s>: --------OUTPUT------------------\n",command);
+        logger.Verbose("<%s>: --------OUTPUT------------------\n",command);
         do
         {
             char* str = fgets(line,sizeof(line),file);
@@ -135,11 +130,11 @@ std::string LinuxGnaSelfTestHardwareStatus::readCmdOutput(const char* command) c
             {
                 output+=str;
                 line[strcspn(str,"\r\n")]=0;
-                LOG("<%s>: <%s>\n",command,str);
+                logger.Verbose("<%s>: <%s>\n",command,str);
             }
             else
             {
-                LOG("<%s>: --------END-OF-OUTPUT-----------\n",command);
+                logger.Verbose("<%s>: --------END-OF-OUTPUT-----------\n",command);
                 break;
             }
         }
@@ -148,7 +143,7 @@ std::string LinuxGnaSelfTestHardwareStatus::readCmdOutput(const char* command) c
     }
     else
     {
-        LOG("ERROR Can not read output from <%s>\n",command);
+        logger.Error("ERROR Can not read output from <%s>\n",command);
     }
     return output;
 }
@@ -156,9 +151,9 @@ void LinuxGnaSelfTestHardwareStatus::determineUserIdentity() const
 {
     uid_t uid = getuid();
     uid_t euid = geteuid();
-    LOG("UID: %d; EUID: %d\n",(int)uid,(int)euid);
+    logger.Verbose("UID: %d; EUID: %d\n",(int)uid,(int)euid);
     if(euid!=0)
     {
-        LOG("NOTICE Consider running as Administrator [sudo gna-self-test]\n");
+        logger.Verbose("Consider running as Administrator [sudo gna-self-test]\n");
     }
 }

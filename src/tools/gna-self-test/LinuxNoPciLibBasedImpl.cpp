@@ -27,7 +27,7 @@
 
 std::vector<PciDeviceInfo> LinuxGnaSelfTestHardwareStatus::getDevicesList()
 {
-    LOG("INFO in getDevicesList LSPCI method\n");
+    logger.Verbose("INFO in getDevicesList LSPCI method\n");
     std::vector<PciDeviceInfo> devList;
     std::istringstream in{ readCmdOutput(GNA_ST_LSPCI)};
     std::string s;

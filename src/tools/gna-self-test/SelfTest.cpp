@@ -24,142 +24,102 @@
 #include <cstring>
 #include <iostream>
 #include <string>
+#include <map>
 
-void HandleGnaStatus(const intel_gna_status_t& status, const char * what = "") {
-    LOG("%s: %s\n", what, GnaStatusToString(status));
-    if (status != GNA_SUCCESS) {
-        GnaSelfTestIssue::GENERAL_GNA_NO_SUCCESS.Handle();
+void GnaSelfTest::HandleGnaStatus(const intel_gna_status_t &status, const char *what) const
+{
+    logger.Verbose("%s: %s\n", what, GnaStatusToString(status));
+    if (status != GNA_SUCCESS)
+    {
+        Handle(GSTIT_GENERAL_GNA_NO_SUCCESS);
     }
 }
 
-SelfTestDevice::SelfTestDevice()
+SelfTestDevice::SelfTestDevice(const GnaSelfTest& gst) : gnaSelfTest{ gst }
 {
     // open the device
     intel_gna_status_t status = GnaDeviceOpen(1, &deviceId);
 
-    const char * statusStr = GnaStatusToString(status);
-    LOG("SelfTestDevice: %s\n", statusStr);
+    const char *statusStr = GnaStatusToString(status);
+    logger.Verbose("SelfTestDevice: %s\n", statusStr);
     if (deviceId == GNA_DEVICE_INVALID || status != GNA_SUCCESS)
     {
-        LOG("selfTestOpenDevice FAILED\n");
-        GnaSelfTestIssue::DEVICE_OPEN_NO_SUCCESS.Handle();
+        logger.Error("GnaDeviceOpen FAILED\n");
+        gnaSelfTest.Handle(GSTIT_DEVICE_OPEN_NO_SUCCESS);
     }
 }
 
 // obtains pinned memory shared with the device
 void SelfTestDevice::Alloc(const uint32_t bytesRequested, const uint16_t layerCount, const uint16_t gmmCount)
 {
-
-    //uint8_t *pinned_mem_ptr = (uint8_t*)GNAAlloc(gna_handle, bytes_requested, &bytes_granted);
     uint32_t sizeGranted;
-    pinned_mem_ptr = reinterpret_cast<uint8_t*>(GnaAlloc(deviceId, bytesRequested, layerCount, gmmCount, &sizeGranted));
+    pinned_mem_ptr = reinterpret_cast<uint8_t *>(GnaAlloc(deviceId, bytesRequested, layerCount, gmmCount, &sizeGranted));
 
-    LOG("Requested: %i Granted: %i\n", (int)bytesRequested, (int)sizeGranted);
+    logger.Verbose("Requested: %i Granted: %i\n", (int)bytesRequested, (int)sizeGranted);
 
     if (nullptr == pinned_mem_ptr)
     {
-        LOG("GnaAlloc: Memory allocation FAILED\n");
-        GnaSelfTestIssue::GNAALLOC_MEM_ALLOC_FAILED.Handle();
+        logger.Error("GnaAlloc: Memory allocation FAILED\n");
+        gnaSelfTest.Handle(GSTIT_GNAALLOC_MEM_ALLOC_FAILED);
     }
 }
 
-//TODO refactor into factory
-void SelfTestDevice::SampleModelCreate()
+void SelfTestDevice::SampleModelCreate(const SampleModelForGnaSelfTest& model)
 {
-    nnet.nGroup = 4;         // grouping factor (1-8), specifies how many input vectors are simultaneously run through the nnet
-    nnet.nLayers = 1;        // number of hidden layers, using 1 for simplicity sake
-    nnet.pLayers = (intel_nnet_layer_t*)calloc(nnet.nLayers, sizeof(intel_nnet_layer_t));   // container for layer definitions
+    nnet.nGroup = 4;  // grouping factor (1-8), specifies how many input vectors are simultaneously run through the nnet
+    nnet.nLayers = 1; // number of hidden layers, using 1 for simplicity sake
+
+    nnet.pLayers = (intel_nnet_layer_t *)calloc(nnet.nLayers, sizeof(intel_nnet_layer_t)); // container for layer definitions
     if (nullptr == nnet.pLayers)
     {
-        LOG("calloc: Allocation for nnet.pLayers FAILED.\n");
-        GnaSelfTestIssue::MALLOC_FAILED.Handle();
+        logger.Error("calloc: Allocation for nnet.pLayers FAILED.\n");
+        gnaSelfTest.Handle(GSTIT_MALLOC_FAILED);
     }
 
-    int16_t weights[8 * 16] = {                                          // sample weight matrix (8 rows, 16 cols)
-        -6, -2, -1, -1, -2,  9,  6,  5,  2,  4, -1,  5, -2, -4,  0,  9,  // in case of affine layer this is the left operand of matrix mul
-        -8,  8, -4,  6,  5,  3, -7, -9,  7,  0, -4, -1,  1,  7,  6, -6,  // in this sample the numbers are random and meaningless
-        2, -8,  6,  5, -1, -2,  7,  5, -1,  4,  8,  7, -9, -1,  7,  1,
-        0, -2,  1,  0,  6, -6,  7,  4, -6,  0,  3, -2,  1,  8, -6, -2,
-        -6, -3,  4, -2, -8, -6,  6,  5,  6, -9, -5, -2, -5, -8, -6, -2,
-        -7,  0,  6, -3, -1, -6,  4,  1, -4, -5, -3,  7,  9, -9,  9,  9,
-        0, -2,  6, -3,  5, -2, -1, -3, -5,  7,  6,  6, -8,  0, -4,  9,
-        2,  7, -8, -7,  8, -6, -6,  1,  7, -4, -4,  9, -6, -6,  5, -7
-    };
+    int buf_size_weights = ALIGN64(model.GetWeightsByteSize()); // note that buffer alignment to 64-bytes is required by GNA HW
+    int buf_size_inputs = ALIGN64(model.GetInputsByteSize());
+    int buf_size_biases = ALIGN64(model.GetBiasesByteSize());
+    int buf_size_outputs = ALIGN64(model.GetRefScoresByteSize());
+    int buf_size_tmp_outputs = ALIGN64(model.GetRefScoresByteSize());
 
-    int16_t inputs[16 * 4] = {      // sample input matrix (16 rows, 4 cols), consists of 4 input vectors (grouping of 4 is used)
-        -5,  9, -7,  4,             // in case of affine layer this is the right operand of matrix mul
-        5, -4, -7,  4,             // in this sample the numbers are random and meaningless
-        0,  7,  1, -7,
-        1,  6,  7,  9,
-        2, -4,  9,  8,
-        -5, -1,  2,  9,
-        -8, -8,  8,  1,
-        -7,  2, -1, -1,
-        -9, -5, -8,  5,
-        0, -1,  3,  9,
-        0,  8,  1, -2,
-        -9,  8,  0, -7,
-        -9, -8, -1, -4,
-        -3, -7, -2,  3,
-        -8,  0,  1,  3,
-        -4, -6, -8, -2
-    };
-
-    int32_t biases[8] = {      // sample bias vector, will get added to each of the four output vectors
-        5,                    // in this sample the numbers are random and meaningless
-        4,
-        -2,
-        5,
-        -7,
-        -5,
-        4,
-        -1
-    };
-
-    int buf_size_weights = ALIGN64(sizeof(weights)); // note that buffer alignment to 64-bytes is required by GNA HW
-    int buf_size_inputs = ALIGN64(sizeof(inputs));
-    int buf_size_biases = ALIGN64(sizeof(biases));
-    int buf_size_outputs = ALIGN64(8 * 4 * 4);       // (4 out vectors, 8 elems in each one, 4-byte elems)
-    int buf_size_tmp_outputs = ALIGN64(8 * 4 * 4);       // (4 out vectors, 8 elems in each one, 4-byte elems)
-
-                                                         // prepare params for GNAAlloc
+    // prepare params for GNAAlloc
     uint32_t bytes_requested = buf_size_weights + buf_size_inputs + buf_size_biases + buf_size_outputs + buf_size_tmp_outputs;
     //uint32_t bytes_granted;
 
     Alloc(bytes_requested, static_cast<uint16_t>(nnet.nLayers), static_cast<uint16_t>(0));
 
-    int16_t *pinned_weights = (int16_t*)pinned_mem_ptr;
-    memcpy(pinned_weights, weights, sizeof(weights));   // puts the weights into the pinned memory
-    pinned_mem_ptr += buf_size_weights;                 // fast-forwards current pinned memory pointer to the next free block
+    int16_t *pinned_weights = (int16_t *)pinned_mem_ptr;
+    model.CopyWeights(pinned_weights);    // puts the weights into the pinned memory
+    pinned_mem_ptr += buf_size_weights;   // fast-forwards current pinned memory pointer to the next free block
 
-    pinned_inputs = (int16_t*)pinned_mem_ptr;
-    memcpy(pinned_inputs, inputs, sizeof(inputs));      // puts the inputs into the pinned memory
-    pinned_mem_ptr += buf_size_inputs;                  // fast-forwards current pinned memory pointer to the next free block
+    pinned_inputs = (int16_t *)pinned_mem_ptr;
+    model.CopyInputs(pinned_inputs);    // puts the inputs into the pinned memory
+    pinned_mem_ptr += buf_size_inputs;  // fast-forwards current pinned memory pointer to the next free block
 
-    int32_t *pinned_biases = (int32_t*)pinned_mem_ptr;
-    memcpy(pinned_biases, biases, sizeof(biases));      // puts the biases into the pinned memory
-    pinned_mem_ptr += buf_size_biases;                  // fast-forwards current pinned memory pointer to the next free block
+    int32_t *pinned_biases = (int32_t *)pinned_mem_ptr;
+    model.CopyBiases(pinned_biases); // puts the biases into the pinned memory
+    pinned_mem_ptr += buf_size_biases; // fast-forwards current pinned memory pointer to the next free block
 
-    pinned_outputs = (int16_t*)pinned_mem_ptr;
-    pinned_mem_ptr += buf_size_outputs;                 // fast-forwards the current pinned memory pointer by the space needed for outputs
+    pinned_outputs = (int16_t *)pinned_mem_ptr;
+    pinned_mem_ptr += buf_size_outputs; // fast-forwards the current pinned memory pointer by the space needed for outputs
 
-    int32_t *pinned_tmp_outputs = (int32_t*)pinned_mem_ptr;      // the last free block will be used for GNA's scratch pad
+    int32_t *pinned_tmp_outputs = (int32_t *)pinned_mem_ptr; // the last free block will be used for GNA's scratch pad
 
-    intel_affine_func_t affine_func;       // parameters needed for the affine transformation are held here
+    intel_affine_func_t affine_func; // parameters needed for the affine transformation are held here
     affine_func.nBytesPerWeight = 2;
     affine_func.nBytesPerBias = 4;
     affine_func.pWeights = pinned_weights;
     affine_func.pBiases = pinned_biases;
 
-    intel_pwl_func_t pwl;                  // no piecewise linear activation function used in this simple example
+    intel_pwl_func_t pwl; // no piecewise linear activation function used in this simple example
     pwl.nSegments = 0;
     pwl.pSegments = nullptr;
 
-    intel_affine_layer_t affine_layer;     // affine layer combines the affine transformation and activation function
+    intel_affine_layer_t affine_layer; // affine layer combines the affine transformation and activation function
     affine_layer.affine = affine_func;
     affine_layer.pwl = pwl;
 
-    intel_nnet_layer_t* nnet_layer = &nnet.pLayers[0];   // contains the definition of a single layer
+    intel_nnet_layer_t *nnet_layer = &nnet.pLayers[0]; // contains the definition of a single layer
     nnet_layer->nInputColumns = nnet.nGroup;
     nnet_layer->nInputRows = 16;
     nnet_layer->nOutputColumns = nnet.nGroup;
@@ -174,47 +134,36 @@ void SelfTestDevice::SampleModelCreate()
     nnet_layer->pOutputs = pinned_outputs;
     nnet_layer->mode = INTEL_INPUT_OUTPUT;
     intel_gna_status_t status = GnaModelCreate(deviceId, &nnet, &sampleModelId);
-    HandleGnaStatus(status, "GnaModelCreate");
+    gnaSelfTest.HandleGnaStatus(status, "GnaModelCreate");
 }
 
 void SelfTestDevice::BuildSampleRequest()
 {
     auto status = GnaModelRequestConfigAdd(sampleModelId, &configId);
-    HandleGnaStatus(status, "GnaModelRequestConfigAdd");
+    gnaSelfTest.HandleGnaStatus(status, "GnaModelRequestConfigAdd");
 }
 
 void SelfTestDevice::ConfigRequestBuffer()
 {
     auto status = GnaRequestConfigBufferAdd(configId, GnaComponentType::InputComponent, 0, pinned_inputs);
-    HandleGnaStatus(status, "Adding input buffer to request");
+    gnaSelfTest.HandleGnaStatus(status, "Adding input buffer to request");
     status = GnaRequestConfigBufferAdd(configId, GnaComponentType::OutputComponent, 0, pinned_outputs);
-    HandleGnaStatus(status, "Adding output buffer to request");
+    gnaSelfTest.HandleGnaStatus(status, "Adding output buffer to request");
 }
 
 void SelfTestDevice::RequestAndWait()
 {
-    LOG("Enqueing GNA request for processing\n")
+    logger.Verbose("Enqueing GNA request for processing\n");
     auto status = GnaRequestEnqueue(configId, gna_acceleration::GNA_AUTO, &requestId);
     // Offload effect: other calculations can be done on CPU here, while nnet decoding runs on GNA HW
     status = GnaRequestWait(requestId, DEFAULT_SELFTEST_TIMEOUT_MS);
-    HandleGnaStatus(status, "GnaRequestEnqueue");
-    HandleGnaStatus(status, "GnaRequestWait");
+    gnaSelfTest.HandleGnaStatus(status, "GnaRequestEnqueue");
+    gnaSelfTest.HandleGnaStatus(status, "GnaRequestWait");
 }
 
-void SelfTestDevice::CompareResults()
+void SelfTestDevice::CompareResults(const SampleModelForGnaSelfTest& model)
 {
-    int32_t refScores[] = {
-        -177,  -85,  29,   28,
-        96, -173,  25,  252,
-        -160,  274, 157,  -29,
-        48,  -60, 158,  -29,
-        26,   -2, -44, -251,
-        -173,  -70,  -1, -323,
-        99,  144,  38,  -63,
-        20,   56,-103,   10
-    };
-
-    int32_t *outputs = (int32_t*)pinned_outputs;
+    int32_t *outputs = (int32_t *)pinned_outputs;
     int errorCount = 0;
     for (uint32_t j = 0; j < nnet.pLayers[0].nOutputRows; j++)
     {
@@ -222,69 +171,99 @@ void SelfTestDevice::CompareResults()
         {
             uint32_t idx = j * nnet.nGroup + i;
 
-            if (outputs[idx] != refScores[idx])
+            if (outputs[idx] != model.GetRefScore(idx))
                 errorCount++;
         }
     }
 
     if (errorCount != 0)
-        LOG("FAILED (%d errors in scores)\n", errorCount)
+    {
+        logger.Error("FAILED (%d errors in scores)\n", errorCount);
+        gnaSelfTest.Handle(GSTIT_ERRORS_IN_SCORES);
+    }
     else
-        LOG("SUCCESSFULL\n");
-
+        logger.Log("SUCCESSFULL\n");
 }
 
-SelfTestDevice::~SelfTestDevice() {
+SelfTestDevice::~SelfTestDevice()
+{
     // free the pinned memory
-    if (deviceId != GNA_DEVICE_INVALID) {
-        if (pinned_mem_ptr != nullptr) {
-            LOG("releasing the gna allocated memory...\n");
+    if (deviceId != GNA_DEVICE_INVALID)
+    {
+        if (pinned_mem_ptr != nullptr)
+        {
+            logger.Verbose("releasing the gna allocated memory...\n");
             auto status = GnaFree(deviceId);
-            HandleGnaStatus(status, "GnaFree");
+            gnaSelfTest.HandleGnaStatus(status, "GnaFree");
             pinned_mem_ptr = nullptr;
         }
-        LOG("releasing the device...\n");
+        logger.Verbose("releasing the device...\n");
         auto status = GnaDeviceClose(deviceId);
-        HandleGnaStatus(status, "GnaDeviceClose");
+        gnaSelfTest.HandleGnaStatus(status, "GnaDeviceClose");
     }
 
     // free heap allocations
-    if (nnet.pLayers != nullptr) {
-        LOG("releasing the network memory\n");
+    if (nnet.pLayers != nullptr)
+    {
+        logger.Verbose("releasing the network memory\n");
         free(nnet.pLayers);
     }
 }
 
-void PressEnterToContinue()
+void GnaSelfTest::askToContinueOrExit(int exitCode) const
 {
-    LOG("----------------------------------------------\n");
-    //LOG("Press [Enter] to continue");
-    //std::string buf;
-    //std::getline(std::cin, buf);
-}
-
-//TODO: add more details on the exact place in the Bring up guide
-#define DEF_GNASELFTESTISSUE(NAME,INFO) const GnaSelfTestIssue GnaSelfTestIssue::NAME = GnaSelfTestIssue("ERROR Issue " INFO ": Find additional instructions in Bring up guide\n");
-DEF_GNASELFTESTISSUE(GENERAL_GNA_NO_SUCCESS,"GENERAL_GNA_NO_SUCCESS");
-DEF_GNASELFTESTISSUE(DRV_1_INSTEAD_2,"DRV_1_INSTEAD_2");
-DEF_GNASELFTESTISSUE(NO_HARDWARE,"NO_HARDWARE");
-DEF_GNASELFTESTISSUE(NUL_DRIVER,"NUL_DRIVER");
-DEF_GNASELFTESTISSUE(DEVICE_OPEN_NO_SUCCESS,"DEVICE_OPEN_NO_SUCCESS");
-DEF_GNASELFTESTISSUE(HARDWARE_OR_DRIVER_NOT_INITIALIZED_PROPERLY,"HARDWARE_OR_DRIVER_NOT_INITIALIZED_PROPERLY");
-DEF_GNASELFTESTISSUE(GNAALLOC_MEM_ALLOC_FAILED,"GNAALLOC_MEM_ALLOC_FAILED");
-DEF_GNASELFTESTISSUE(UNKNOWN_DRIVER,"UNKNOWN_DRIVER");
-DEF_GNASELFTESTISSUE(MALLOC_FAILED,"MALLOC_FAILED");
-DEF_GNASELFTESTISSUE(SETUPDI_ERROR,"SETUPDI_ERROR");
-DEF_GNASELFTESTISSUE(NO_DRIVER,"NO_DRIVER");
-
-void GnaSelfTestIssue::Handle() const
-{
-    LOG("%s",info);
-    LOG("Do you want to go further anyway? [y/N]");
+    logger.Log("Do you want to go further anyway? [y/N]");
     std::string buf;
     std::getline(std::cin, buf);
-    if (buf.size() == 0 || (buf[0] != 'y'&&buf[0] != 'Y')) {
-        LOG("Bye\n");
-        exit(0);
+    if (buf.size() == 0 || (buf[0] != 'y' && buf[0] != 'Y'))
+    {
+        logger.Log("Bye\n");
+        exit(exitCode);
+    }
+}
+
+
+namespace
+{
+    const std::map<GSTIT, std::string> issueSymbols = {
+    { GSTIT_GENERAL_GNA_NO_SUCCESS,                         "GSTIT_GENERAL_GNA_NO_SUCCESS"},
+    { GSTIT_DRV_1_INSTEAD_2,                                "GSTIT_DRV_1_INSTEAD_2"},
+    { GSTIT_NO_HARDWARE,                                    "GSTIT_NO_HARDWARE"},
+    { GSTIT_NUL_DRIVER,                                     "GSTIT_NUL_DRIVER"},
+    { GSTIT_DEVICE_OPEN_NO_SUCCESS,                         "GSTIT_DEVICE_OPEN_NO_SUCCESS"},
+    { GSTIT_HARDWARE_OR_DRIVER_NOT_INITIALIZED_PROPERLY,    "GSTIT_HARDWARE_OR_DRIVER_NOT_INITIALIZED_PROPERLY"},
+    { GSTIT_GNAALLOC_MEM_ALLOC_FAILED,                      "GSTIT_GNAALLOC_MEM_ALLOC_FAILED"},
+    { GSTIT_UNKNOWN_DRIVER,                                 "GSTIT_UNKNOWN_DRIVER"},
+    { GSTIT_MALLOC_FAILED,                                  "GSTIT_MALLOC_FAILED"},
+    { GSTIT_SETUPDI_ERROR,                                  "GSTIT_SETUPDI_ERROR"},
+    { GSTIT_NO_DRIVER,                                      "GSTIT_NO_DRIVER"},
+    { GSTIT_ERRORS_IN_SCORES,                               "GSTIT_ERRORS_IN_SCORES"} };
+};
+GnaSelfTestIssue::GnaSelfTestIssue(GSTIT type) :issueType{ type }
+{
+    //TODO: add more details on the exact place in the Bring up guide
+    symbol = issueSymbols.at(type);
+}
+std::string GnaSelfTestIssue::GetDescription() const
+{
+    std::string desc = "ERROR Issue " + symbol + ": Find additional instructions in Bring up guide\n";
+    return desc;
+}
+
+void GnaSelfTest::Handle(const GnaSelfTestIssue& issue) const
+{
+    logger.Error("%s", issue.GetDescription().c_str());
+
+    if (config.ContinueMode())
+    {
+        if (config.PauseMode()) {
+            askToContinueOrExit(issue.ExitCode());
+        }
+        logger.Log("WARNING Continuing the execution after the problem\n");
+    }
+    else
+    {
+        logger.Verbose("You can run \"gna-self-test -c\" to continue gna-self-test despite the problem\n");
+        exit(issue.ExitCode());
     }
 }

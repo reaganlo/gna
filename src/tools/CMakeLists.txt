@@ -145,11 +145,13 @@ endif()
 
 set(gna_self_test_sources
     gna-self-test/gna-self-test.cpp
-    gna-self-test/SelfTest.cpp)
+    gna-self-test/SelfTest.cpp
+    gna-self-test/SampleModelForGnaSelfTest.cpp)
 set(gna_self_test_headers
     gna-self-test/SelfTest.h
     gna-self-test/MultiOsHardwareSelfTest.h
-    gna-self-test/HardwareSelfTest.h)
+    gna-self-test/HardwareSelfTest.h
+    gna-self-test/SampleModelForGnaSelfTest.h)
 set(GNA_SELF_TEST_LINK_LIBS
   gna-api)
 
@@ -217,11 +219,16 @@ set_target_properties(gna-self-test
 target_link_libraries(gna-self-test ${GNA_SELF_TEST_LINK_LIBS})
 target_include_directories(gna-self-test PRIVATE ${COMMON_DIR})
 
-#copy gna.dll and gna.pdb for Windows
+#copy gna library
+add_custom_command(TARGET gna-self-test POST_BUILD
+  COMMAND ${CMAKE_COMMAND} -E copy_if_different
+  $<TARGET_FILE:gna-api>
+  $<TARGET_FILE_DIR:gna-self-test>)
+
+#copy gna.pdb for Windows
 if(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
   add_custom_command(TARGET gna-self-test POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
-      $<TARGET_FILE:gna-api>
       $<TARGET_PDB_FILE:gna-api>
       $<TARGET_FILE_DIR:gna-self-test>
     COMMAND ${CMAKE_COMMAND}

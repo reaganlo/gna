@@ -30,7 +30,7 @@
 class LinuxGnaSelfTestHardwareStatus : public GnaSelfTestHardwareStatus
 {
 public:
-    LinuxGnaSelfTestHardwareStatus()
+    LinuxGnaSelfTestHardwareStatus(const GnaSelfTest& gst): GnaSelfTestHardwareStatus{gst}
     {
         determineUserIdentity();
     }
@@ -43,7 +43,7 @@ private:
     // search for a GNA node in /dev/gnaXX - XX in (0,range-1)
     // returns path to the node
     // returns empty string on failure
-    const int DEFAULT_GNA_DEV_NODE_RANGE = 16;
+    const uint8_t DEFAULT_GNA_DEV_NODE_RANGE = 16;
     std::string devfsGnaNode(uint8_t range);
     std::string readCmdOutput(const char* command) const;
     void determineUserIdentity() const;

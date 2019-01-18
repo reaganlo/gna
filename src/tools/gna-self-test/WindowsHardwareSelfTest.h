@@ -26,7 +26,8 @@
 
 class WindowsGnaSelfTestHardwareStatus : public GnaSelfTestHardwareStatus {
 public:
-    WindowsGnaSelfTestHardwareStatus(){}
+    WindowsGnaSelfTestHardwareStatus(const GnaSelfTest& gst) :GnaSelfTestHardwareStatus{ gst }
+    {}
 private:
     HDEVINFO devInfo = INVALID_HANDLE_VALUE;
     SP_DEVINFO_LIST_DETAIL_DATA devListData;
