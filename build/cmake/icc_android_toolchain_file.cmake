@@ -41,7 +41,8 @@ set(CMAKE_SYSTEM_PROCESSOR x86_64)
 
 set(CMAKE_SYSROOT ${CMAKE_ANDROID_STANDALONE_TOOLCHAIN}/sysroot)
 include_directories("${CMAKE_ANDROID_STANDALONE_TOOLCHAIN}/include/c++/4.9.x")
-set(CMAKE_CXX_FLAGS "-L${CMAKE_ANDROID_STANDALONE_TOOLCHAIN}/x86_64-linux-android/lib64 -lc++_shared")
+# Needed for building executables including CMake simple C++ test program
+set(CMAKE_EXE_LINKER_FLAGS_INIT "-L${CMAKE_ANDROID_STANDALONE_TOOLCHAIN}/x86_64-linux-android/lib64 -lc++_shared")
 
 set(CMAKE_C_COMPILER ${ICC_DIR}/icc)
 set(CMAKE_CXX_COMPILER ${ICC_DIR}/icpc)
