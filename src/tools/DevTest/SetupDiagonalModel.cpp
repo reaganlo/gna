@@ -39,7 +39,7 @@ SetupDiagonalModel::SetupDiagonalModel(DeviceController & deviceCtrl, bool wght2
     weightsAre2Bytes{wght2B},
     pwlEnabled{pwlEn}
 {
-    sampleAffineLayer(nnet);
+    sampleAffineLayer();
 
     deviceController.ModelCreate(&nnet, &modelId);
 
@@ -52,11 +52,7 @@ SetupDiagonalModel::SetupDiagonalModel(DeviceController & deviceCtrl, bool wght2
 SetupDiagonalModel::~SetupDiagonalModel()
 {
     deviceController.Free();
-    if(nnet.pLayers)
-    {
-        free(nnet.pLayers);
-        nnet.pLayers = nullptr;
-    }
+    free(nnet.pLayers);
 }
 
 template <class intel_reference_output_type>
@@ -100,11 +96,11 @@ void SetupDiagonalModel::checkReferenceOutput(int modelIndex, int configIndex) c
     }
 }
 
-void SetupDiagonalModel::sampleAffineLayer(intel_nnet_type_t& hNnet)
+void SetupDiagonalModel::sampleAffineLayer()
 {
-    hNnet.nGroup = groupingNum;
-    hNnet.nLayers = layersNum;
-    hNnet.pLayers = (intel_nnet_layer_t*)calloc(nnet.nLayers, sizeof(intel_nnet_layer_t));
+    nnet.nGroup = groupingNum;
+    nnet.nLayers = layersNum;
+    nnet.pLayers = (intel_nnet_layer_t*)calloc(nnet.nLayers, sizeof(intel_nnet_layer_t));
 
     int buf_size_weights = weightsAre2Bytes ? ALIGN64(sizeof(weights_2B)) : ALIGN64(sizeof(weights_1B));
     int buf_size_inputs = ALIGN64(sizeof(inputs));
@@ -117,7 +113,7 @@ void SetupDiagonalModel::sampleAffineLayer(intel_nnet_type_t& hNnet)
     if (pwlEnabled) bytes_requested += buf_size_pwl;
     uint32_t bytes_granted;
 
-    uint8_t* pinned_mem_ptr = deviceController.Alloc(bytes_requested, static_cast<uint16_t>(hNnet.nLayers), static_cast<uint16_t>(0), &bytes_granted);
+    uint8_t* pinned_mem_ptr = deviceController.Alloc(bytes_requested, static_cast<uint16_t>(nnet.nLayers), static_cast<uint16_t>(0), &bytes_granted);
 
     void* pinned_weights = pinned_mem_ptr;
     if (weightsAre2Bytes)
@@ -190,12 +186,12 @@ void SetupDiagonalModel::sampleAffineLayer(intel_nnet_type_t& hNnet)
         nnet.pLayers[0].pOutputsIntermediate = nullptr;
         nnet.pLayers[0].nBytesPerOutput = GNA_INT32;
     }
-    hNnet.pLayers[0].nBytesPerIntermediateOutput = 4;
-    hNnet.pLayers[0].operation = INTEL_AFFINE_DIAGONAL;
-    hNnet.pLayers[0].mode = INTEL_INPUT_OUTPUT;
-    hNnet.pLayers[0].pLayerStruct = &affine_layer;
-    hNnet.pLayers[0].pInputs = nullptr;
-    hNnet.pLayers[0].pOutputs = nullptr;
+    nnet.pLayers[0].nBytesPerIntermediateOutput = 4;
+    nnet.pLayers[0].operation = INTEL_AFFINE_DIAGONAL;
+    nnet.pLayers[0].mode = INTEL_INPUT_OUTPUT;
+    nnet.pLayers[0].pLayerStruct = &affine_layer;
+    nnet.pLayers[0].pInputs = nullptr;
+    nnet.pLayers[0].pOutputs = nullptr;
 }
 
 void SetupDiagonalModel::samplePwl(intel_pwl_segment_t *segments, uint32_t numberOfSegments)

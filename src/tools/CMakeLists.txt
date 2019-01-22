@@ -30,7 +30,6 @@ set(PROJECT_NAME tools)
 set(CMAKE_CXX_STANDARD 14)
 set(CXX_STANDARD_REQUIRED ON)
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
-#set(VERBOSE_MODE 1) #uncomment if needed detailed output for tests
 
 project(${PROJECT_NAME})
 
@@ -133,7 +132,6 @@ if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
       COMMAND strip --strip-unneeded $<TARGET_FILE:DevTest>)
   endif()
 endif()
-
 
 #tests
 if(BUILD_TESTING)

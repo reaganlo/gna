@@ -41,10 +41,10 @@ public:
 
     void PrepareScenario()
     {
-        script.actions.emplace_back(Action::LoadModel, ModelSetupConvolution_2D, 0, 0);
-        script.actions.emplace_back(Action::Score, ModelSetupConvolution_2D, 0, 0);
+        //script.actions.emplace_back(Action::LoadModel, ModelSetupConvolution_2D, 0, 0);
+        //script.actions.emplace_back(Action::Score, ModelSetupConvolution_2D, 0, 0);
         //script.actions.emplace_back(Action::CheckReferenceOutput, ModelSetupConvolution_2D, 0, 0);
-        script.actions.emplace_back(Action::CloseModel, ModelSetupConvolution_2D, 0, 0);
+        //script.actions.emplace_back(Action::CloseModel, ModelSetupConvolution_2D, 0, 0);
 
         //script.actions.emplace_back(Action::LoadModel, ModelSetupMix, 0, 0);
         //script.actions.emplace_back(Action::Score, ModelSetupMix, 0, 0);

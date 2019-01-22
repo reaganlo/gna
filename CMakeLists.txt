@@ -78,11 +78,16 @@ if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux" OR
   if(${CMAKE_SYSTEM_NAME} STREQUAL "Android")
     set(CXX_FLAGS "-Wall")
   endif()
+
   if(${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
     # clang double braces bug: https://bugs.llvm.org/show_bug.cgi?id=21629
     set(CXX_FLAGS "${CXX_FLAGS} -Wno-missing-braces")
   endif()
-  set(CXX_FLAGS_DEBUG "-g -O0 -DDEBUG=1")
+    set(CXX_FLAGS_DEBUG "-g -DDEBUG=1")
+  if(${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU")
+    set(CXX_FLAGS_DEBUG "${CXX_FLAGS_DEBUG} -Og -DDEBUG=1")
+  endif()
+
   set(CXX_FLAGS_RELEASE "-fvisibility=hidden -fvisibility-inlines-hidden -fstack-protector-all -O3 -DNDEBUG")
 
   if(${CMAKE_CXX_COMPILER_ID} STREQUAL "Intel")
@@ -90,7 +95,9 @@ if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux" OR
     if(NOT ${CMAKE_SYSTEM_NAME} STREQUAL "Android")
       # Intel compiler hangs or crashes when using -inline-forceinline option for Android target
       # icpc: error #10014: problem during multi-file optimization compilation (code 4)
-      set(CXX_FLAGS_RELEASE "${CXX_FLAGS_RELEASE} -inline-forceinline")
+
+      # icpc: error #10106: Fatal error ....   (intel64/mcpcom), terminater by kill signal
+      #set(CXX_FLAGS_RELEASE "${CXX_FLAGS_RELEASE} -inline-forceinline")
     endif()
   endif()
   set(CXX_LINKER_FLAGS "-z now")

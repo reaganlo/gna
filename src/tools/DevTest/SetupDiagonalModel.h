@@ -37,7 +37,7 @@ public:
     void checkReferenceOutput(int modelIndex, int configIndex) const override;
 
 private:
-    void sampleAffineLayer(intel_nnet_type_t& nnet);
+    void sampleAffineLayer();
     void samplePwl(intel_pwl_segment_t *segments, uint32_t nSegments);
 
     template <class intel_reference_output_type>

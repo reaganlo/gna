@@ -41,6 +41,7 @@ using std::unique_ptr;
 void LinuxIoctlSender::Open()
 {
     struct gna_capabilities gnaCaps;
+    gnaCaps = {};
     int found = 0;
     int fd;
 
@@ -163,6 +164,7 @@ RequestResult LinuxIoctlSender::Submit(HardwareRequest * const hardwareRequest, 
     }
 
     gna_wait wait_data;
+    wait_data = {};
     wait_data.request_id = scoreConfig->request_id;
     wait_data.timeout = GNA_REQUEST_TIMEOUT_MAX;
 

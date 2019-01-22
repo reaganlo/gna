@@ -38,10 +38,10 @@
 typedef uint8_t     __1B_RES;       // 1B of reserved memory
 
 SetupDnnModel_1::SetupDnnModel_1(DeviceController & deviceCtrl, bool wght2B, bool activeListEn, bool pwlEn)
-    : deviceController{deviceCtrl},
-    weightsAre2Bytes{wght2B},
-    activeListEnabled{activeListEn},
-    pwlEnabled{pwlEn}
+    : deviceController{ deviceCtrl },
+    weightsAre2Bytes{ wght2B },
+    activeListEnabled{ activeListEn },
+    pwlEnabled{ pwlEn }
 {
     nnet.nGroup = groupingNum;
     nnet.nLayers = layersNum;
@@ -205,7 +205,7 @@ void SetupDnnModel_1::checkReferenceOutput(int modelIndex, int configIndex) cons
             break;
         case configDnnAlPwl_1_2B:
             compareReferenceValues<int16_t>(i, configIndex);
-        break;
+            break;
         default:
             throw std::runtime_error("Invalid configuration index");
             break;
@@ -222,15 +222,15 @@ void SetupDnnModel_1::sampleAffineLayer()
     int buf_size_tmp_outputs = ALIGN64(outVecSz * groupingNum * sizeof(int32_t));
     int buf_size_pwl = ALIGN64(nSegments * sizeof(intel_pwl_segment_t));
 
-    uint32_t bytes_requested = buf_size_weights + buf_size_inputs + buf_size_biases + buf_size_outputs + buf_size_tmp_outputs;
+    uint32_t bytes_requested = buf_size_weights + buf_size_inputs + buf_size_biases + buf_size_outputs;
     if (activeListEnabled)
     {
         indicesCount = outVecSz / 2;
-        bytes_requested += indicesCount * sizeof(uint32_t);
+        bytes_requested += ALIGN64(indicesCount * sizeof(uint32_t));
     }
     if (pwlEnabled)
     {
-        bytes_requested += buf_size_pwl;
+        bytes_requested += buf_size_pwl + buf_size_tmp_outputs;
     }
     uint32_t bytes_granted;
 
@@ -269,7 +269,7 @@ void SetupDnnModel_1::sampleAffineLayer()
     {
         size_t indicesSize = ALIGN64(indicesCount * sizeof(uint32_t));
         indices = (uint32_t*)pinned_mem_ptr;
-        memcpy(indices, alIndices, indicesSize);
+        memcpy(indices, alIndices, indicesCount * sizeof(uint32_t));
         pinned_mem_ptr += indicesSize;
     }
 

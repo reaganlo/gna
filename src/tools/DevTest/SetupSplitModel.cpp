@@ -109,7 +109,6 @@ SetupSplitModel::SetupSplitModel(DeviceController & deviceCtrl, bool wght2B, boo
 SetupSplitModel::~SetupSplitModel()
 {
     deviceController.Free();
-
     free(firstNnet.pLayers);
     free(secondNnet.pLayers);
 }
