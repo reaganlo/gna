@@ -101,7 +101,7 @@ static const std::map<const XnnParameterType, const XnnParameter> XnnDescriptorG
             {GNA_INT8, static_cast<uint8_t>(1)},
             {GNA_INT16, static_cast<uint8_t>(0)},
         }}},
-    {pool_param, { 0x0B, 1, 6, 2, //CHANGE BEFOR COMMIT
+    {pool_param, { 0x01, 1, 3, 2,
          {
             {INTEL_NO_POOLING, static_cast<uint8_t>(0)},
             {INTEL_MAX_POOLING, static_cast<uint8_t>(1)},

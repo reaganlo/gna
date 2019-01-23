@@ -400,32 +400,32 @@ HardwareLayerCnn::HardwareLayerCnn(const DescriptorParameters& parameters) :
 {
     auto cnn = SoftwareLayer->Get<const CnnLayer>();
 
-    auto fitlerCount = cnn->Convolution->Filters->Count;
-    auto fitlerSize = cnn->Convolution->Filters->CoefficientCount;
+    auto filterCount = cnn->Convolution->Filters->Count;
+    auto filterSize = cnn->Convolution->Filters->CoefficientCount;
     filtersCountInFullIteration =
         (std::min)(
-            fitlerCount,
-            (fitlerSize <= bufferElementCount / 6 / 3) ?
+            filterCount,
+            (filterSize <= bufferElementCount / 6 / 3) ?
                 uint32_t{16} :
-                (fitlerSize <= bufferElementCount / 6 / 2) ?
+                (filterSize <= bufferElementCount / 6 / 2) ?
                     uint32_t{12} :
-                    (fitlerSize <= bufferElementCount / 6) ?
+                    (filterSize <= bufferElementCount / 6) ?
                         uint32_t{4} : uint32_t{0});
 
     Expect::InRange(filtersCountInFullIteration, CNN_N_FLT_COEFF_MPLY, CNN_N_FLT_ITER_MAX, XNN_ERR_LYR_CFG);
     Expect::MultiplicityOf(filtersCountInFullIteration, CNN_N_FLT_COEFF_MPLY);
 
-    filtersIterationCount = (fitlerCount - 1) / filtersCountInFullIteration + 1;
+    filtersIterationCount = (filterCount - 1) / filtersCountInFullIteration + 1;
 
-    filtersCountInLastIteration = fitlerCount - ((filtersIterationCount - 1) * filtersCountInFullIteration);
+    filtersCountInLastIteration = filterCount - ((filtersIterationCount - 1) * filtersCountInFullIteration);
     Expect::InRange(filtersCountInLastIteration, CNN_N_FLT_COEFF_MPLY, CNN_N_FLT_ITER_MAX, XNN_ERR_LYR_CFG);
     Expect::MultiplicityOf(filtersCountInLastIteration, CNN_N_FLT_COEFF_MPLY);
 
 
-    filtersElementCountInFullIteration = filtersCountInFullIteration * fitlerSize;
+    filtersElementCountInFullIteration = filtersCountInFullIteration * filterSize;
     Expect::InRange(filtersElementCountInFullIteration, ui32_1, bufferElementCount, XNN_ERR_LYR_CFG);
 
-    filtersElementCountInLastIteration = filtersCountInLastIteration * fitlerSize;
+    filtersElementCountInLastIteration = filtersCountInLastIteration * filterSize;
     Expect::InRange(filtersElementCountInLastIteration, ui32_1, bufferElementCount, XNN_ERR_LYR_CFG);
 
     // No pooling
