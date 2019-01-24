@@ -587,7 +587,11 @@ HardwareLayerAffineMBias::HardwareLayerAffineMBias(const DescriptorParameters& p
     XnnDescriptor[weight_buffer] = *affineMulti->Weights;
     XnnDescriptor[weight_size] = affineMulti->Weights->Mode;
 
-    XnnDescriptor[bias_precision] = affineMulti->Biases->Mode;
+    if (XnnDescriptor.HasParameter(bias_precision))
+    {
+        XnnDescriptor[bias_precision] = affineMulti->Biases->Mode;
+    }
+	
     XnnDescriptor[bias_grp_cnt] = affineMulti->Biases->at(GNA_DIM_N);
     XnnDescriptor[bias_grp_buffer] = *affineMulti->Biases;
     XnnDescriptor[bias_grp_value] = affineMulti->Biases->VectorIndex;
