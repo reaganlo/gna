@@ -60,8 +60,8 @@ public:
     void ValidateActiveList(ActiveList const * const activeList) const;
 
 private:
-    virtual void computeHidden(acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const;
-    virtual void compute(const LayerConfiguration& layerConfiguration, acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const;
+    virtual void computeHidden(AccelerationMode accel, ExecutionConfig const & executionConfig) const;
+    virtual void compute(const LayerConfiguration& layerConfiguration, AccelerationMode accel, ExecutionConfig const & executionConfig) const;
 
     void checkScoresSaturation(const uint32_t& nGMMs, const uint32_t& nVectors, const uint32_t * pS,
         const uint32_t& maximumScore, uint32_t& nSaturated) const;

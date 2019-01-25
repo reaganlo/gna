@@ -58,11 +58,17 @@ public:
 
     void CreateConfiguration(gna_model_id modelId, gna_request_cfg_id *configId);
 
+    void ReleaseConfiguration(gna_request_cfg_id configId);
+    
+    void SetHardwareConsistency(gna_request_cfg_id configId, gna_device_version hardwareVersion);
+
+    void EnforceAcceleration(gna_request_cfg_id configId, AccelerationMode accel);
+
     void AttachActiveList(gna_request_cfg_id configId, uint32_t layerIndex, uint32_t indicesCount, const uint32_t* const indices);
 
     void EnableProfiling(gna_request_cfg_id configId, gna_hw_perf_encoding hwPerfEncoding, gna_perf_t * perfResults);
 
-    void PropagateRequest(gna_request_cfg_id configId, acceleration accel, gna_request_id *requestId);
+    void PropagateRequest(gna_request_cfg_id configId, gna_request_id *requestId);
 
     status_t WaitForRequest(gna_request_id requestId, gna_timeout milliseconds);
 

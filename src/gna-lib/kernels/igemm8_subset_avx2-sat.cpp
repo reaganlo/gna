@@ -43,7 +43,7 @@ void AffineActiveListKernelImpl1B(AffineConfig const * const config, AffineConfi
     uint32_t j;
     uint32_t l;
 
-    kpartial = (hw_buf_size[config->inputVectorCount - 1 + XNN_N_GROUP_MAX]) / config->inputVectorCount;
+    kpartial = (config->execution->BufferElementCount[config->inputVectorCount - 1 + XNN_N_GROUP_MAX]) / config->inputVectorCount;
     nKpartial = config->inputElementCount / kpartial;
 
     // simd input pointers
@@ -133,7 +133,7 @@ void AffineActiveListKernelImpl1B(AffineConfig const * const config, AffineConfi
                 acc0 = _mm256_setzero_si256();
                 acc1 = _mm256_setzero_si256();
 
-                saturate_store_out(&sum0, output, config->saturationCount);
+                saturate_store_out(&sum0, output, config->execution->SaturationCount);
                 niters = kpartial < KK - kk * kpartial ? kpartial : KK - kk * kpartial;
 
                 // kpartial = 12288
@@ -199,7 +199,7 @@ void AffineActiveListKernelImpl1B(AffineConfig const * const config, AffineConfi
                 sum0 += (int32_t)(input0[j] * *weight * bias->multiplier);
             }
 
-            saturate_store_out(&sum0, output, config->saturationCount);
+            saturate_store_out(&sum0, output, config->execution->SaturationCount);
 
             output++;
         }
@@ -209,36 +209,36 @@ void AffineActiveListKernelImpl1B(AffineConfig const * const config, AffineConfi
     switch (config->inputVectorCount)
     {
     case 8: 
-        for (i = 0; i < config->inputElementCount; i++) config->fvBuffers->d7[i] = config->input[i*config->inputVectorCount + 7];
-        input[7] = config->fvBuffers->d7 + KK;
-        in_ptr7 = (__m256i*)config->fvBuffers->d7;
+        for (i = 0; i < config->inputElementCount; i++) config->execution->Intermediate->d7[i] = config->input[i*config->inputVectorCount + 7];
+        input[7] = config->execution->Intermediate->d7 + KK;
+        in_ptr7 = (__m256i*)config->execution->Intermediate->d7;
     case 7: 
-        for (i = 0; i < config->inputElementCount; i++) config->fvBuffers->d6[i] = config->input[i*config->inputVectorCount + 6];
-        input[6] = config->fvBuffers->d6 + KK;
-        in_ptr6 = (__m256i*)config->fvBuffers->d6;
+        for (i = 0; i < config->inputElementCount; i++) config->execution->Intermediate->d6[i] = config->input[i*config->inputVectorCount + 6];
+        input[6] = config->execution->Intermediate->d6 + KK;
+        in_ptr6 = (__m256i*)config->execution->Intermediate->d6;
     case 6: 
-        for (i = 0; i < config->inputElementCount; i++) config->fvBuffers->d5[i] = config->input[i*config->inputVectorCount + 5];
-        input[5] = config->fvBuffers->d5 + KK;
-        in_ptr5 = (__m256i*)config->fvBuffers->d5;
+        for (i = 0; i < config->inputElementCount; i++) config->execution->Intermediate->d5[i] = config->input[i*config->inputVectorCount + 5];
+        input[5] = config->execution->Intermediate->d5 + KK;
+        in_ptr5 = (__m256i*)config->execution->Intermediate->d5;
     case 5: 
-        for (i = 0; i < config->inputElementCount; i++) config->fvBuffers->d4[i] = config->input[i*config->inputVectorCount + 4];
-        input[4] = config->fvBuffers->d4 + KK;
-        in_ptr4 = (__m256i*)config->fvBuffers->d4;
+        for (i = 0; i < config->inputElementCount; i++) config->execution->Intermediate->d4[i] = config->input[i*config->inputVectorCount + 4];
+        input[4] = config->execution->Intermediate->d4 + KK;
+        in_ptr4 = (__m256i*)config->execution->Intermediate->d4;
     case 4: 
-        for (i = 0; i < config->inputElementCount; i++) config->fvBuffers->d3[i] = config->input[i*config->inputVectorCount + 3];
-        input[3] = config->fvBuffers->d3 + KK;
-        in_ptr3 = (__m256i*)config->fvBuffers->d3;
+        for (i = 0; i < config->inputElementCount; i++) config->execution->Intermediate->d3[i] = config->input[i*config->inputVectorCount + 3];
+        input[3] = config->execution->Intermediate->d3 + KK;
+        in_ptr3 = (__m256i*)config->execution->Intermediate->d3;
     case 3: 
-        for (i = 0; i < config->inputElementCount; i++) config->fvBuffers->d2[i] = config->input[i*config->inputVectorCount + 2];
-        input[2] = config->fvBuffers->d2 + KK;
-        in_ptr2 = (__m256i*)config->fvBuffers->d2;
+        for (i = 0; i < config->inputElementCount; i++) config->execution->Intermediate->d2[i] = config->input[i*config->inputVectorCount + 2];
+        input[2] = config->execution->Intermediate->d2 + KK;
+        in_ptr2 = (__m256i*)config->execution->Intermediate->d2;
     case 2: 
-        for (i = 0; i < config->inputElementCount; i++) config->fvBuffers->d1[i] = config->input[i*config->inputVectorCount + 1];
-        input[1] = config->fvBuffers->d1 + KK;
-        in_ptr1 = (__m256i*)config->fvBuffers->d1;
-        for (i = 0; i < config->inputElementCount; i++) config->fvBuffers->d0[i] = config->input[i*config->inputVectorCount];
-        input[0] = config->fvBuffers->d0 + KK;
-        in_ptr0 = (__m256i*)config->fvBuffers->d0;
+        for (i = 0; i < config->inputElementCount; i++) config->execution->Intermediate->d1[i] = config->input[i*config->inputVectorCount + 1];
+        input[1] = config->execution->Intermediate->d1 + KK;
+        in_ptr1 = (__m256i*)config->execution->Intermediate->d1;
+        for (i = 0; i < config->inputElementCount; i++) config->execution->Intermediate->d0[i] = config->input[i*config->inputVectorCount];
+        input[0] = config->execution->Intermediate->d0 + KK;
+        in_ptr0 = (__m256i*)config->execution->Intermediate->d0;
     }
 
     if (2 == config->inputVectorCount)
@@ -262,7 +262,7 @@ void AffineActiveListKernelImpl1B(AffineConfig const * const config, AffineConfi
                 {
                     sum[i] += vec_sum32(acc[i]) * bias->multiplier;
                     acc[i] = _mm256_setzero_si256();
-                    saturate_store_out(&sum[i], &output[i], config->saturationCount);
+                    saturate_store_out(&sum[i], &output[i], config->execution->SaturationCount);
                     sum[i] = output[i];
                 }
                 niters = kpartial < KK - kk * kpartial ? kpartial : KK - kk * kpartial;
@@ -337,7 +337,7 @@ void AffineActiveListKernelImpl1B(AffineConfig const * const config, AffineConfi
 
             for (i = 0; i < config->inputVectorCount; i++)
             {
-                saturate_store_out(&sum[i], &output[i], config->saturationCount);
+                saturate_store_out(&sum[i], &output[i], config->execution->SaturationCount);
             }
 
             output += config->inputVectorCount;
@@ -365,7 +365,7 @@ void AffineActiveListKernelImpl1B(AffineConfig const * const config, AffineConfi
                 {
                     sum[i] += vec_sum32(acc[i]) * bias->multiplier;
                     acc[i] = _mm256_setzero_si256();
-                    saturate_store_out(&sum[i], &output[i], config->saturationCount);
+                    saturate_store_out(&sum[i], &output[i], config->execution->SaturationCount);
                     sum[i] = output[i];
                 }
                 niters = kpartial < KK - kk * kpartial ? kpartial : KK - kk * kpartial;
@@ -411,7 +411,7 @@ void AffineActiveListKernelImpl1B(AffineConfig const * const config, AffineConfi
 
             for (i = 0; i < config->inputVectorCount; i++)
             {
-                saturate_store_out(&sum[i], &output[i], config->saturationCount);
+                saturate_store_out(&sum[i], &output[i], config->execution->SaturationCount);
             }
 
             output += config->inputVectorCount;
@@ -439,7 +439,7 @@ void AffineActiveListKernelImpl1B(AffineConfig const * const config, AffineConfi
                 {
                     sum[i] += vec_sum32(acc[i]) * bias->multiplier;
                     acc[i] = _mm256_setzero_si256();
-                    saturate_store_out(&sum[i], &output[i], config->saturationCount);
+                    saturate_store_out(&sum[i], &output[i], config->execution->SaturationCount);
                     sum[i] = output[i];
                 }
 
@@ -489,7 +489,7 @@ void AffineActiveListKernelImpl1B(AffineConfig const * const config, AffineConfi
 
             for (i = 0; i < config->inputVectorCount; i++)
             {
-                saturate_store_out(&sum[i], &output[i], config->saturationCount);
+                saturate_store_out(&sum[i], &output[i], config->execution->SaturationCount);
             }
 
             output += config->inputVectorCount;
@@ -517,7 +517,7 @@ void AffineActiveListKernelImpl1B(AffineConfig const * const config, AffineConfi
                 {
                     sum[i] += vec_sum32(acc[i]) * bias->multiplier;
                     acc[i] = _mm256_setzero_si256();
-                    saturate_store_out(&sum[i], &output[i], config->saturationCount);
+                    saturate_store_out(&sum[i], &output[i], config->execution->SaturationCount);
                     sum[i] = output[i];
                 }
                 niters = kpartial < KK - kk * kpartial ? kpartial : KK - kk * kpartial;
@@ -568,7 +568,7 @@ void AffineActiveListKernelImpl1B(AffineConfig const * const config, AffineConfi
 
             for (i = 0; i < config->inputVectorCount; i++)
             {
-                saturate_store_out(&sum[i], &output[i], config->saturationCount);
+                saturate_store_out(&sum[i], &output[i], config->execution->SaturationCount);
             }
 
             output += config->inputVectorCount;
@@ -596,7 +596,7 @@ void AffineActiveListKernelImpl1B(AffineConfig const * const config, AffineConfi
                 {
                     sum[i] += vec_sum32(acc[i]) * bias->multiplier;
                     acc[i] = _mm256_setzero_si256();
-                    saturate_store_out(&sum[i], &output[i], config->saturationCount);
+                    saturate_store_out(&sum[i], &output[i], config->execution->SaturationCount);
                     sum[i] = output[i];
                 }
                 niters = kpartial < KK - kk * kpartial ? kpartial : KK - kk * kpartial;
@@ -649,7 +649,7 @@ void AffineActiveListKernelImpl1B(AffineConfig const * const config, AffineConfi
 
             for (i = 0; i < config->inputVectorCount; i++)
             {
-                saturate_store_out(&sum[i], &output[i], config->saturationCount);
+                saturate_store_out(&sum[i], &output[i], config->execution->SaturationCount);
             }
 
             output += config->inputVectorCount;
@@ -677,7 +677,7 @@ void AffineActiveListKernelImpl1B(AffineConfig const * const config, AffineConfi
                 {
                     sum[i] += vec_sum32(acc[i]) * bias->multiplier;
                     acc[i] = _mm256_setzero_si256();
-                    saturate_store_out(&sum[i], &output[i], config->saturationCount);
+                    saturate_store_out(&sum[i], &output[i], config->execution->SaturationCount);
                     sum[i] = output[i];
                 }
                 niters = kpartial < KK - kk * kpartial ? kpartial : KK - kk * kpartial;
@@ -734,7 +734,7 @@ void AffineActiveListKernelImpl1B(AffineConfig const * const config, AffineConfi
 
             for (i = 0; i < config->inputVectorCount; i++)
             {
-                saturate_store_out(&sum[i], &output[i], config->saturationCount);
+                saturate_store_out(&sum[i], &output[i], config->execution->SaturationCount);
             }
 
             output += config->inputVectorCount;
@@ -770,14 +770,14 @@ void AffineActiveListKernelImpl1B(AffineConfig const * const config, AffineConfi
 
             for (kk = 0; kk < nKpartial + 1; kk++)
             {
-                saturate(&sum0, config->saturationCount);
-                saturate(&sum1, config->saturationCount);
-                saturate(&sum2, config->saturationCount);
-                saturate(&sum3, config->saturationCount);
-                saturate(&sum4, config->saturationCount);
-                saturate(&sum5, config->saturationCount);
-                saturate(&sum6, config->saturationCount);
-                saturate(&sum7, config->saturationCount);
+                saturate(&sum0, config->execution->SaturationCount);
+                saturate(&sum1, config->execution->SaturationCount);
+                saturate(&sum2, config->execution->SaturationCount);
+                saturate(&sum3, config->execution->SaturationCount);
+                saturate(&sum4, config->execution->SaturationCount);
+                saturate(&sum5, config->execution->SaturationCount);
+                saturate(&sum6, config->execution->SaturationCount);
+                saturate(&sum7, config->execution->SaturationCount);
 
                 // kpartial = 12288 / 8 = 1536
                 // 1536 / 16 = 96
@@ -849,14 +849,14 @@ void AffineActiveListKernelImpl1B(AffineConfig const * const config, AffineConfi
                 sum7 += (int32_t)(input[7][j] * *weight * bias->multiplier);
             }
 
-            saturate_store_out(&sum0, &output[0], config->saturationCount);
-            saturate_store_out(&sum1, &output[1], config->saturationCount);
-            saturate_store_out(&sum2, &output[2], config->saturationCount);
-            saturate_store_out(&sum3, &output[3], config->saturationCount);
-            saturate_store_out(&sum4, &output[4], config->saturationCount);
-            saturate_store_out(&sum5, &output[5], config->saturationCount);
-            saturate_store_out(&sum6, &output[6], config->saturationCount);
-            saturate_store_out(&sum7, &output[7], config->saturationCount);
+            saturate_store_out(&sum0, &output[0], config->execution->SaturationCount);
+            saturate_store_out(&sum1, &output[1], config->execution->SaturationCount);
+            saturate_store_out(&sum2, &output[2], config->execution->SaturationCount);
+            saturate_store_out(&sum3, &output[3], config->execution->SaturationCount);
+            saturate_store_out(&sum4, &output[4], config->execution->SaturationCount);
+            saturate_store_out(&sum5, &output[5], config->execution->SaturationCount);
+            saturate_store_out(&sum6, &output[6], config->execution->SaturationCount);
+            saturate_store_out(&sum7, &output[7], config->execution->SaturationCount);
 
             output += config->inputVectorCount;
         }

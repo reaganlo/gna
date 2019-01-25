@@ -34,13 +34,19 @@ using namespace GNA;
 
 gna_request_cfg_id RequestBuilder::assignConfigId()
 {
-    return configIdSequence++;
+    return configIdSequence++; // TODO:3: add unique id
 }
 
-void RequestBuilder::CreateConfiguration(CompiledModel& model, gna_request_cfg_id *configId)
+void RequestBuilder::CreateConfiguration(CompiledModel& model, gna_request_cfg_id *configId, gna_device_version consistentDevice)
 {
     *configId = assignConfigId();
-    configurationVector.emplace_back(make_unique<RequestConfiguration>(model, *configId));
+    configurations.emplace(*configId, make_unique<RequestConfiguration>(model, *configId, consistentDevice));
+}
+
+void RequestBuilder::ReleaseConfiguration(gna_request_cfg_id configId)
+{
+    //TODO:3: consider adding thread safty mechanism
+    configurations.erase(configId);
 }
 
 void RequestBuilder::AttachBuffer(gna_request_cfg_id configId, GnaComponentType type, uint32_t layerIndex,
@@ -57,11 +63,13 @@ void RequestBuilder::AttachActiveList(gna_request_cfg_id configId, uint32_t laye
     configuration.AddActiveList(layerIndex, activeList);
 }
 
+// TODO:3: RequestBuilder inconsistent usage, some request methods are called directly, some via RequestBuilder
+
 RequestConfiguration& RequestBuilder::GetConfiguration(gna_request_cfg_id configId) const
 {
     try
     {
-        auto& config = configurationVector.at(configId);
+        auto& config = configurations.at(configId);
         return *config.get();
     }
     catch (const std::out_of_range&)
@@ -70,10 +78,10 @@ RequestConfiguration& RequestBuilder::GetConfiguration(gna_request_cfg_id config
     }
 }
 
-std::unique_ptr<Request> RequestBuilder::CreateRequest(gna_request_cfg_id configId, acceleration accel)
+std::unique_ptr<Request> RequestBuilder::CreateRequest(gna_request_cfg_id configId)
 {
     auto profiler = std::make_unique<RequestProfiler>();
     profilerTscStart(&profiler->preprocess);
     auto& configuration = GetConfiguration(configId);
-    return std::make_unique<Request>(configuration, move(profiler), accel);
+    return std::make_unique<Request>(configuration, move(profiler));
 }

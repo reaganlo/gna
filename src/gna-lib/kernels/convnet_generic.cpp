@@ -222,7 +222,7 @@ void ConvolutionPoolingKernelImpl(ConvolutionConfig const * const filterConfig,
     const int16_t* const F = filterConfig->filters;
     const int8_t * const B = (int8_t *)filterConfig->biases;
     int16_t * const O = filterConfig->pooledOutputs;
-    uint32_t * const saturationCount = filterConfig->saturationCount;
+    uint32_t * const saturationCount = filterConfig->execution->SaturationCount;
 
     const nn_pool_type PT = poolConfig->type;
     const uint32_t PS = poolConfig->size;
@@ -345,7 +345,7 @@ void ConvolutionPoolingKernelImpl1B(ConvolutionConfig const * const filterConfig
     const int8_t* const F = (int8_t *)filterConfig->filters;
     const int8_t * const B = (int8_t *)filterConfig->biases;
     int8_t * const O = (int8_t*)filterConfig->pooledOutputs;
-    uint32_t * const saturationCount = filterConfig->saturationCount;
+    uint32_t * const saturationCount = filterConfig->execution->SaturationCount;
 
     const nn_pool_type PT = poolConfig->type;
     const uint32_t PS = poolConfig->size;
@@ -471,7 +471,7 @@ void ConvolutionPoolingKernelImpl2B(ConvolutionConfig const * const filterConfig
     const int8_t* const F = (int8_t *)filterConfig->filters;
     const int8_t * const B = (int8_t *)filterConfig->biases;
     int8_t * const O = (int8_t *)filterConfig->pooledOutputs;
-    uint32_t * const saturationCount = filterConfig->saturationCount;
+    uint32_t * const saturationCount = filterConfig->execution->SaturationCount;
 
     const nn_pool_type PT = poolConfig->type;
     const uint32_t PS = poolConfig->size;

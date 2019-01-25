@@ -81,7 +81,24 @@ void Device::CreateConfiguration(gna_model_id modelId, gna_request_cfg_id *confi
     auto memoryId = getMemoryId(modelId);
     auto memory = getMemory(memoryId);
     auto &model = memory->GetModel(modelId);
-    requestBuilder.CreateConfiguration(model, configId);
+    requestBuilder.CreateConfiguration(model, configId, accelerationDetector.GetDeviceVersion());
+}
+
+void Device::ReleaseConfiguration(gna_request_cfg_id configId)
+{
+    requestBuilder.ReleaseConfiguration(configId);
+}
+
+void Device::SetHardwareConsistency(gna_request_cfg_id configId, gna_device_version hardwareVersion)
+{
+    auto& requestConfiguration = requestBuilder.GetConfiguration(configId);
+    requestConfiguration.SetHardwareConsistency(hardwareVersion);
+}
+
+void Device::EnforceAcceleration(gna_request_cfg_id configId, AccelerationMode accel)
+{
+    auto& requestConfiguration = requestBuilder.GetConfiguration(configId);
+    requestConfiguration.EnforceAcceleration(accel);
 }
 
 void Device::EnableProfiling(gna_request_cfg_id configId, gna_hw_perf_encoding hwPerfEncoding, gna_perf_t * perfResults)
@@ -177,11 +194,11 @@ void Device::LoadModel(gna_model_id *modelId, const gna_model *rawModel)
     }
 }
 
-void Device::PropagateRequest(gna_request_cfg_id configId, acceleration accel, gna_request_id *requestId)
+void Device::PropagateRequest(gna_request_cfg_id configId, gna_request_id *requestId)
 {
     Expect::NotNull(requestId);
 
-    auto request = requestBuilder.CreateRequest(configId, accel);
+    auto request = requestBuilder.CreateRequest(configId);
     requestHandler.Enqueue(requestId, std::move(request));
 }
 

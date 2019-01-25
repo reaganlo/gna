@@ -46,19 +46,31 @@ struct LayerConfiguration;
 class RequestConfiguration
 {
 public:
-    RequestConfiguration(CompiledModel& model, gna_request_cfg_id configId);
+    RequestConfiguration(CompiledModel& model, gna_request_cfg_id configId, gna_device_version consistentDevice);
 
     void AddBuffer(GnaComponentType type, uint32_t layerIndex, void *address);
     void AddActiveList(uint32_t layerIndex, const ActiveList& activeList);
+    void SetHardwareConsistency(gna_device_version consistentDevice);
+    void EnforceAcceleration(AccelerationMode accel);
 
     CompiledModel& Model;
 
-    const gna_request_cfg_id ConfigId;
+    const gna_request_cfg_id Id;
 
     gna_hw_perf_encoding HwPerfEncoding = PERF_COUNT_DISABLED;
     gna_perf_t * PerfResults = nullptr;
 
     std::map<uint32_t, std::unique_ptr<LayerConfiguration>> LayerConfigurations;
+
     uint32_t ActiveListCount = 0;
+    
+    // Number of elements in buffer per input precision and per grouping
+    uint32_t BufferElementCount[2 * XNN_N_GROUP_MAX];
+
+    AccelerationMode Acceleration = GNA_AUTO_FAST;
+
+private:
+    // For enabling _SAT acceleration modes
+    bool EnableHwConsistency = false;
 };
 }

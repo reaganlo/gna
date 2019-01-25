@@ -39,7 +39,7 @@ void AffineKernelImpl2B(AffineConfig const * const config)
     auto const biasEnd = bias + config->outputElementCount;
     auto const tailElementCount = config->inputElementCount % SSE_16CAP; // config->inputElementCount tail for manual processing
     auto const headElementCount = config->inputElementCount - tailElementCount; // trimmed config->inputElementCount for AVX2 processing
-    auto const partialCapacity = (hw_buf_size[config->inputVectorCount - 1 + XNN_N_GROUP_MAX]) / config->inputVectorCount;
+    auto const partialCapacity = (config->execution->BufferElementCount[config->inputVectorCount - 1 + XNN_N_GROUP_MAX]) / config->inputVectorCount;
     auto const iterationCount = config->inputElementCount / partialCapacity;
 
     uint32_t iterationCapacity;
@@ -86,7 +86,7 @@ void AffineKernelImpl2B(AffineConfig const * const config)
             {
                 *sum += vec_sum(*acc);
                 *acc = _mm_setzero_si128();
-                saturate(sum, config->saturationCount);
+                saturate(sum, config->execution->SaturationCount);
 
                 iterationCapacity = partialCapacity < headElementCount - iter * partialCapacity ? partialCapacity : headElementCount - iter * partialCapacity;
                 ix_end = ix + iterationCapacity / SSE_16CAP;
@@ -114,7 +114,7 @@ void AffineKernelImpl2B(AffineConfig const * const config)
                 *sum += (int32_t)((*input)[j] * *weight);
             }
 
-            saturate_store_out(sum, output, config->saturationCount);
+            saturate_store_out(sum, output, config->execution->SaturationCount);
 
             output++;
         }
@@ -124,36 +124,36 @@ void AffineKernelImpl2B(AffineConfig const * const config)
     switch (config->inputVectorCount)
     {
     case 8: 
-        for (i = 0; i < config->inputElementCount; i++) config->fvBuffers->d7[i] = config->input[i*config->inputVectorCount + 7];
-        in_ptr7 = (__m128i*)config->fvBuffers->d7;
-        input[7] = config->fvBuffers->d7 + headElementCount;
+        for (i = 0; i < config->inputElementCount; i++) config->execution->Intermediate->d7[i] = config->input[i*config->inputVectorCount + 7];
+        in_ptr7 = (__m128i*)config->execution->Intermediate->d7;
+        input[7] = config->execution->Intermediate->d7 + headElementCount;
     case 7: 
-        for (i = 0; i < config->inputElementCount; i++) config->fvBuffers->d6[i] = config->input[i*config->inputVectorCount + 6];
-        in_ptr6 = (__m128i*)config->fvBuffers->d6;
-        input[6] = config->fvBuffers->d6 + headElementCount;
+        for (i = 0; i < config->inputElementCount; i++) config->execution->Intermediate->d6[i] = config->input[i*config->inputVectorCount + 6];
+        in_ptr6 = (__m128i*)config->execution->Intermediate->d6;
+        input[6] = config->execution->Intermediate->d6 + headElementCount;
     case 6: 
-        for (i = 0; i < config->inputElementCount; i++) config->fvBuffers->d5[i] = config->input[i*config->inputVectorCount + 5];
-        in_ptr5 = (__m128i*)config->fvBuffers->d5;
-        input[5] = config->fvBuffers->d5 + headElementCount;
+        for (i = 0; i < config->inputElementCount; i++) config->execution->Intermediate->d5[i] = config->input[i*config->inputVectorCount + 5];
+        in_ptr5 = (__m128i*)config->execution->Intermediate->d5;
+        input[5] = config->execution->Intermediate->d5 + headElementCount;
     case 5: 
-        for (i = 0; i < config->inputElementCount; i++) config->fvBuffers->d4[i] = config->input[i*config->inputVectorCount + 4];
-        in_ptr4 = (__m128i*)config->fvBuffers->d4;
-        input[4] = config->fvBuffers->d4 + headElementCount;
+        for (i = 0; i < config->inputElementCount; i++) config->execution->Intermediate->d4[i] = config->input[i*config->inputVectorCount + 4];
+        in_ptr4 = (__m128i*)config->execution->Intermediate->d4;
+        input[4] = config->execution->Intermediate->d4 + headElementCount;
     case 4: 
-        for (i = 0; i < config->inputElementCount; i++) config->fvBuffers->d3[i] = config->input[i*config->inputVectorCount + 3];
-        in_ptr3 = (__m128i*)config->fvBuffers->d3;
-        input[3] = config->fvBuffers->d3 + headElementCount;
+        for (i = 0; i < config->inputElementCount; i++) config->execution->Intermediate->d3[i] = config->input[i*config->inputVectorCount + 3];
+        in_ptr3 = (__m128i*)config->execution->Intermediate->d3;
+        input[3] = config->execution->Intermediate->d3 + headElementCount;
     case 3: 
-        for (i = 0; i < config->inputElementCount; i++) config->fvBuffers->d2[i] = config->input[i*config->inputVectorCount + 2];
-        in_ptr2 = (__m128i*)config->fvBuffers->d2;
-        input[2] = config->fvBuffers->d2 + headElementCount;
+        for (i = 0; i < config->inputElementCount; i++) config->execution->Intermediate->d2[i] = config->input[i*config->inputVectorCount + 2];
+        in_ptr2 = (__m128i*)config->execution->Intermediate->d2;
+        input[2] = config->execution->Intermediate->d2 + headElementCount;
     case 2: 
-        for (i = 0; i < config->inputElementCount; i++) config->fvBuffers->d1[i] = config->input[i*config->inputVectorCount + 1];
-        in_ptr1 = (__m128i*)config->fvBuffers->d1;
-        input[1] = config->fvBuffers->d1 + headElementCount;
-        for (i = 0; i < config->inputElementCount; i++) config->fvBuffers->d0[i] = config->input[i*config->inputVectorCount];
-        in_ptr0 = (__m128i*)config->fvBuffers->d0;
-        input[0] = config->fvBuffers->d0 + headElementCount;
+        for (i = 0; i < config->inputElementCount; i++) config->execution->Intermediate->d1[i] = config->input[i*config->inputVectorCount + 1];
+        in_ptr1 = (__m128i*)config->execution->Intermediate->d1;
+        input[1] = config->execution->Intermediate->d1 + headElementCount;
+        for (i = 0; i < config->inputElementCount; i++) config->execution->Intermediate->d0[i] = config->input[i*config->inputVectorCount];
+        in_ptr0 = (__m128i*)config->execution->Intermediate->d0;
+        input[0] = config->execution->Intermediate->d0 + headElementCount;
     }
 
     if (2 == config->inputVectorCount)
@@ -173,7 +173,7 @@ void AffineKernelImpl2B(AffineConfig const * const config)
                 {
                     sum[i] += vec_sum(acc[i]);
                     acc[i] = _mm_setzero_si128();
-                    saturate(&sum[i], config->saturationCount);
+                    saturate(&sum[i], config->execution->SaturationCount);
                 }
 
                 iterationCapacity = partialCapacity < headElementCount - iter * partialCapacity ? partialCapacity : headElementCount - iter * partialCapacity;
@@ -215,7 +215,7 @@ void AffineKernelImpl2B(AffineConfig const * const config)
 
             for (i = 0; i < config->inputVectorCount; i++)
             {
-                saturate_store_out(&sum[i], &output[i], config->saturationCount);
+                saturate_store_out(&sum[i], &output[i], config->execution->SaturationCount);
             }
 
             output += config->inputVectorCount;
@@ -239,7 +239,7 @@ void AffineKernelImpl2B(AffineConfig const * const config)
                 {
                     sum[i] += vec_sum(acc[i]);
                     acc[i] = _mm_setzero_si128();
-                    saturate(&sum[i], config->saturationCount);
+                    saturate(&sum[i], config->execution->SaturationCount);
                 }
 
                 iterationCapacity = partialCapacity < headElementCount - iter * partialCapacity ? partialCapacity : headElementCount - iter * partialCapacity;
@@ -285,7 +285,7 @@ void AffineKernelImpl2B(AffineConfig const * const config)
 
             for (i = 0; i < config->inputVectorCount; i++)
             {
-                saturate_store_out(&sum[i], &output[i], config->saturationCount);
+                saturate_store_out(&sum[i], &output[i], config->execution->SaturationCount);
             }
 
             output += config->inputVectorCount;
@@ -309,7 +309,7 @@ void AffineKernelImpl2B(AffineConfig const * const config)
                 {
                     sum[i] += vec_sum(acc[i]);
                     acc[i] = _mm_setzero_si128();
-                    saturate(&sum[i], config->saturationCount);
+                    saturate(&sum[i], config->execution->SaturationCount);
                 }
 
                 iterationCapacity = partialCapacity < headElementCount - iter * partialCapacity ? partialCapacity : headElementCount - iter * partialCapacity;
@@ -365,7 +365,7 @@ void AffineKernelImpl2B(AffineConfig const * const config)
 
             for (i = 0; i < config->inputVectorCount; i++)
             {
-                saturate_store_out(&sum[i], &output[i], config->saturationCount);
+                saturate_store_out(&sum[i], &output[i], config->execution->SaturationCount);
             }
 
             output += config->inputVectorCount;
@@ -389,7 +389,7 @@ void AffineKernelImpl2B(AffineConfig const * const config)
                 {
                     sum[i] += vec_sum(acc[i]);
                     acc[i] = _mm_setzero_si128();
-                    saturate(&sum[i], config->saturationCount);
+                    saturate(&sum[i], config->execution->SaturationCount);
                 }
 
                 iterationCapacity = partialCapacity < headElementCount - iter * partialCapacity ? partialCapacity : headElementCount - iter * partialCapacity;
@@ -450,7 +450,7 @@ void AffineKernelImpl2B(AffineConfig const * const config)
 
             for (i = 0; i < config->inputVectorCount; i++)
             {
-                saturate_store_out(&sum[i], &output[i], config->saturationCount);
+                saturate_store_out(&sum[i], &output[i], config->execution->SaturationCount);
             }
 
             output += config->inputVectorCount;
@@ -474,7 +474,7 @@ void AffineKernelImpl2B(AffineConfig const * const config)
                 {
                     sum[i] += vec_sum(acc[i]);
                     acc[i] = _mm_setzero_si128();
-                    saturate(&sum[i], config->saturationCount);
+                    saturate(&sum[i], config->execution->SaturationCount);
                 }
 
                 iterationCapacity = partialCapacity < headElementCount - iter * partialCapacity ? partialCapacity : headElementCount - iter * partialCapacity;
@@ -532,7 +532,7 @@ void AffineKernelImpl2B(AffineConfig const * const config)
 
             for (i = 0; i < config->inputVectorCount; i++)
             {
-                saturate_store_out(&sum[i], &output[i], config->saturationCount);
+                saturate_store_out(&sum[i], &output[i], config->execution->SaturationCount);
             }
 
             output += config->inputVectorCount;
@@ -556,7 +556,7 @@ void AffineKernelImpl2B(AffineConfig const * const config)
                 {
                     sum[i] += vec_sum(acc[i]);
                     acc[i] = _mm_setzero_si128();
-                    saturate(&sum[i], config->saturationCount);
+                    saturate(&sum[i], config->execution->SaturationCount);
                 }
 
                 iterationCapacity = partialCapacity < headElementCount - iter * partialCapacity ? partialCapacity : headElementCount - iter * partialCapacity;
@@ -618,7 +618,7 @@ void AffineKernelImpl2B(AffineConfig const * const config)
 
             for (i = 0; i < config->inputVectorCount; i++)
             {
-                saturate_store_out(&sum[i], &output[i], config->saturationCount);
+                saturate_store_out(&sum[i], &output[i], config->execution->SaturationCount);
             }
 
             output += config->inputVectorCount;
@@ -650,7 +650,7 @@ void AffineKernelImpl2B(AffineConfig const * const config)
                 for (i = 0; i < config->inputVectorCount; i++)
                 {
                     acc[i] = _mm_setzero_si128();
-                    saturate(&sum[i], config->saturationCount);
+                    saturate(&sum[i], config->execution->SaturationCount);
                 }
 
                 iterationCapacity = partialCapacity < headElementCount - iter * partialCapacity ? partialCapacity : headElementCount - iter * partialCapacity;
@@ -715,7 +715,7 @@ void AffineKernelImpl2B(AffineConfig const * const config)
 
             for (i = 0; i < config->inputVectorCount; i++)
             {
-                saturate_store_out(&sum[i], output++, config->saturationCount);
+                saturate_store_out(&sum[i], output++, config->execution->SaturationCount);
             }
         }
     }
@@ -730,7 +730,7 @@ void AffineMultiBiasKernelImpl2B(AffineConfig const * const config)
     auto const biasEnd = multiBias + config->outputElementCount * config->multiBiasVectorCount;
     auto const tailElementCount = config->inputElementCount % SSE_16CAP; // config->inputElementCount tail for manual processing
     auto const headElementCount = config->inputElementCount - tailElementCount; // trimmed config->inputElementCount for AVX2 processing
-    auto const partialCapacity = (hw_buf_size[config->inputVectorCount - 1 + XNN_N_GROUP_MAX]) / config->inputVectorCount;
+    auto const partialCapacity = (config->execution->BufferElementCount[config->inputVectorCount - 1 + XNN_N_GROUP_MAX]) / config->inputVectorCount;
     auto const iterationCount = config->inputElementCount / partialCapacity;
 
     uint32_t iterationCapacity;
@@ -777,7 +777,7 @@ void AffineMultiBiasKernelImpl2B(AffineConfig const * const config)
             {
                 *sum += vec_sum(*acc);
                 *acc = _mm_setzero_si128();
-                saturate(sum, config->saturationCount);
+                saturate(sum, config->execution->SaturationCount);
 
                 iterationCapacity = partialCapacity < headElementCount - iter * partialCapacity ? partialCapacity : headElementCount - iter * partialCapacity;
                 ix_end = ix + iterationCapacity / SSE_16CAP;
@@ -805,7 +805,7 @@ void AffineMultiBiasKernelImpl2B(AffineConfig const * const config)
                 *sum += (int32_t)((*input)[j] * *weight);
             }
 
-            saturate_store_out(sum, output, config->saturationCount);
+            saturate_store_out(sum, output, config->execution->SaturationCount);
 
             output++;
         }
@@ -815,36 +815,36 @@ void AffineMultiBiasKernelImpl2B(AffineConfig const * const config)
     switch (config->inputVectorCount)
     {
     case 8: 
-        for (i = 0; i < config->inputElementCount; i++) config->fvBuffers->d7[i] = config->input[i*config->inputVectorCount + 7];
-        in_ptr7 = (__m128i*)config->fvBuffers->d7;
-        input[7] = config->fvBuffers->d7 + headElementCount;
+        for (i = 0; i < config->inputElementCount; i++) config->execution->Intermediate->d7[i] = config->input[i*config->inputVectorCount + 7];
+        in_ptr7 = (__m128i*)config->execution->Intermediate->d7;
+        input[7] = config->execution->Intermediate->d7 + headElementCount;
     case 7: 
-        for (i = 0; i < config->inputElementCount; i++) config->fvBuffers->d6[i] = config->input[i*config->inputVectorCount + 6];
-        in_ptr6 = (__m128i*)config->fvBuffers->d6;
-        input[6] = config->fvBuffers->d6 + headElementCount;
+        for (i = 0; i < config->inputElementCount; i++) config->execution->Intermediate->d6[i] = config->input[i*config->inputVectorCount + 6];
+        in_ptr6 = (__m128i*)config->execution->Intermediate->d6;
+        input[6] = config->execution->Intermediate->d6 + headElementCount;
     case 6: 
-        for (i = 0; i < config->inputElementCount; i++) config->fvBuffers->d5[i] = config->input[i*config->inputVectorCount + 5];
-        in_ptr5 = (__m128i*)config->fvBuffers->d5;
-        input[5] = config->fvBuffers->d5 + headElementCount;
+        for (i = 0; i < config->inputElementCount; i++) config->execution->Intermediate->d5[i] = config->input[i*config->inputVectorCount + 5];
+        in_ptr5 = (__m128i*)config->execution->Intermediate->d5;
+        input[5] = config->execution->Intermediate->d5 + headElementCount;
     case 5: 
-        for (i = 0; i < config->inputElementCount; i++) config->fvBuffers->d4[i] = config->input[i*config->inputVectorCount + 4];
-        in_ptr4 = (__m128i*)config->fvBuffers->d4;
-        input[4] = config->fvBuffers->d4 + headElementCount;
+        for (i = 0; i < config->inputElementCount; i++) config->execution->Intermediate->d4[i] = config->input[i*config->inputVectorCount + 4];
+        in_ptr4 = (__m128i*)config->execution->Intermediate->d4;
+        input[4] = config->execution->Intermediate->d4 + headElementCount;
     case 4: 
-        for (i = 0; i < config->inputElementCount; i++) config->fvBuffers->d3[i] = config->input[i*config->inputVectorCount + 3];
-        in_ptr3 = (__m128i*)config->fvBuffers->d3;
-        input[3] = config->fvBuffers->d3 + headElementCount;
+        for (i = 0; i < config->inputElementCount; i++) config->execution->Intermediate->d3[i] = config->input[i*config->inputVectorCount + 3];
+        in_ptr3 = (__m128i*)config->execution->Intermediate->d3;
+        input[3] = config->execution->Intermediate->d3 + headElementCount;
     case 3: 
-        for (i = 0; i < config->inputElementCount; i++) config->fvBuffers->d2[i] = config->input[i*config->inputVectorCount + 2];
-        in_ptr2 = (__m128i*)config->fvBuffers->d2;
-        input[2] = config->fvBuffers->d2 + headElementCount;
+        for (i = 0; i < config->inputElementCount; i++) config->execution->Intermediate->d2[i] = config->input[i*config->inputVectorCount + 2];
+        in_ptr2 = (__m128i*)config->execution->Intermediate->d2;
+        input[2] = config->execution->Intermediate->d2 + headElementCount;
     case 2: 
-        for (i = 0; i < config->inputElementCount; i++) config->fvBuffers->d1[i] = config->input[i*config->inputVectorCount + 1];
-        in_ptr1 = (__m128i*)config->fvBuffers->d1;
-        input[1] = config->fvBuffers->d1 + headElementCount;
-        for (i = 0; i < config->inputElementCount; i++) config->fvBuffers->d0[i] = config->input[i*config->inputVectorCount];
-        in_ptr0 = (__m128i*)config->fvBuffers->d0;
-        input[0] = config->fvBuffers->d0 + headElementCount;
+        for (i = 0; i < config->inputElementCount; i++) config->execution->Intermediate->d1[i] = config->input[i*config->inputVectorCount + 1];
+        in_ptr1 = (__m128i*)config->execution->Intermediate->d1;
+        input[1] = config->execution->Intermediate->d1 + headElementCount;
+        for (i = 0; i < config->inputElementCount; i++) config->execution->Intermediate->d0[i] = config->input[i*config->inputVectorCount];
+        in_ptr0 = (__m128i*)config->execution->Intermediate->d0;
+        input[0] = config->execution->Intermediate->d0 + headElementCount;
     }
 
     if (2 == config->inputVectorCount)
@@ -864,7 +864,7 @@ void AffineMultiBiasKernelImpl2B(AffineConfig const * const config)
                 {
                     sum[i] += vec_sum(acc[i]);
                     acc[i] = _mm_setzero_si128();
-                    saturate(&sum[i], config->saturationCount);
+                    saturate(&sum[i], config->execution->SaturationCount);
                 }
 
                 iterationCapacity = partialCapacity < headElementCount - iter * partialCapacity ? partialCapacity : headElementCount - iter * partialCapacity;
@@ -906,7 +906,7 @@ void AffineMultiBiasKernelImpl2B(AffineConfig const * const config)
 
             for (i = 0; i < config->inputVectorCount; i++)
             {
-                saturate_store_out(&sum[i], &output[i], config->saturationCount);
+                saturate_store_out(&sum[i], &output[i], config->execution->SaturationCount);
             }
 
             output += config->inputVectorCount;
@@ -930,7 +930,7 @@ void AffineMultiBiasKernelImpl2B(AffineConfig const * const config)
                 {
                     sum[i] += vec_sum(acc[i]);
                     acc[i] = _mm_setzero_si128();
-                    saturate(&sum[i], config->saturationCount);
+                    saturate(&sum[i], config->execution->SaturationCount);
                 }
 
                 iterationCapacity = partialCapacity < headElementCount - iter * partialCapacity ? partialCapacity : headElementCount - iter * partialCapacity;
@@ -976,7 +976,7 @@ void AffineMultiBiasKernelImpl2B(AffineConfig const * const config)
 
             for (i = 0; i < config->inputVectorCount; i++)
             {
-                saturate_store_out(&sum[i], &output[i], config->saturationCount);
+                saturate_store_out(&sum[i], &output[i], config->execution->SaturationCount);
             }
 
             output += config->inputVectorCount;
@@ -1000,7 +1000,7 @@ void AffineMultiBiasKernelImpl2B(AffineConfig const * const config)
                 {
                     sum[i] += vec_sum(acc[i]);
                     acc[i] = _mm_setzero_si128();
-                    saturate(&sum[i], config->saturationCount);
+                    saturate(&sum[i], config->execution->SaturationCount);
                 }
 
                 iterationCapacity = partialCapacity < headElementCount - iter * partialCapacity ? partialCapacity : headElementCount - iter * partialCapacity;
@@ -1056,7 +1056,7 @@ void AffineMultiBiasKernelImpl2B(AffineConfig const * const config)
 
             for (i = 0; i < config->inputVectorCount; i++)
             {
-                saturate_store_out(&sum[i], &output[i], config->saturationCount);
+                saturate_store_out(&sum[i], &output[i], config->execution->SaturationCount);
             }
 
             output += config->inputVectorCount;
@@ -1080,7 +1080,7 @@ void AffineMultiBiasKernelImpl2B(AffineConfig const * const config)
                 {
                     sum[i] += vec_sum(acc[i]);
                     acc[i] = _mm_setzero_si128();
-                    saturate(&sum[i], config->saturationCount);
+                    saturate(&sum[i], config->execution->SaturationCount);
                 }
 
                 iterationCapacity = partialCapacity < headElementCount - iter * partialCapacity ? partialCapacity : headElementCount - iter * partialCapacity;
@@ -1141,7 +1141,7 @@ void AffineMultiBiasKernelImpl2B(AffineConfig const * const config)
 
             for (i = 0; i < config->inputVectorCount; i++)
             {
-                saturate_store_out(&sum[i], &output[i], config->saturationCount);
+                saturate_store_out(&sum[i], &output[i], config->execution->SaturationCount);
             }
 
             output += config->inputVectorCount;
@@ -1165,7 +1165,7 @@ void AffineMultiBiasKernelImpl2B(AffineConfig const * const config)
                 {
                     sum[i] += vec_sum(acc[i]);
                     acc[i] = _mm_setzero_si128();
-                    saturate(&sum[i], config->saturationCount);
+                    saturate(&sum[i], config->execution->SaturationCount);
                 }
 
                 iterationCapacity = partialCapacity < headElementCount - iter * partialCapacity ? partialCapacity : headElementCount - iter * partialCapacity;
@@ -1223,7 +1223,7 @@ void AffineMultiBiasKernelImpl2B(AffineConfig const * const config)
 
             for (i = 0; i < config->inputVectorCount; i++)
             {
-                saturate_store_out(&sum[i], &output[i], config->saturationCount);
+                saturate_store_out(&sum[i], &output[i], config->execution->SaturationCount);
             }
 
             output += config->inputVectorCount;
@@ -1247,7 +1247,7 @@ void AffineMultiBiasKernelImpl2B(AffineConfig const * const config)
                 {
                     sum[i] += vec_sum(acc[i]);
                     acc[i] = _mm_setzero_si128();
-                    saturate(&sum[i], config->saturationCount);
+                    saturate(&sum[i], config->execution->SaturationCount);
                 }
 
                 iterationCapacity = partialCapacity < headElementCount - iter * partialCapacity ? partialCapacity : headElementCount - iter * partialCapacity;
@@ -1309,7 +1309,7 @@ void AffineMultiBiasKernelImpl2B(AffineConfig const * const config)
 
             for (i = 0; i < config->inputVectorCount; i++)
             {
-                saturate_store_out(&sum[i], &output[i], config->saturationCount);
+                saturate_store_out(&sum[i], &output[i], config->execution->SaturationCount);
             }
 
             output += config->inputVectorCount;
@@ -1341,7 +1341,7 @@ void AffineMultiBiasKernelImpl2B(AffineConfig const * const config)
                 for (i = 0; i < config->inputVectorCount; i++)
                 {
                     acc[i] = _mm_setzero_si128();
-                    saturate(&sum[i], config->saturationCount);
+                    saturate(&sum[i], config->execution->SaturationCount);
                 }
 
                 iterationCapacity = partialCapacity < headElementCount - iter * partialCapacity ? partialCapacity : headElementCount - iter * partialCapacity;
@@ -1406,7 +1406,7 @@ void AffineMultiBiasKernelImpl2B(AffineConfig const * const config)
 
             for (i = 0; i < config->inputVectorCount; i++)
             {
-                saturate_store_out(&sum[i], output++, config->saturationCount);
+                saturate_store_out(&sum[i], output++, config->execution->SaturationCount);
             }
         }
     }

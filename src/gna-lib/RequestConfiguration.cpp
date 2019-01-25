@@ -37,10 +37,15 @@
 
 using namespace GNA;
 
-RequestConfiguration::RequestConfiguration(CompiledModel& model, gna_request_cfg_id configId) :
+RequestConfiguration::RequestConfiguration(CompiledModel& model, gna_request_cfg_id configId,
+    gna_device_version consistentDevice) :
     Model{model},
-    ConfigId{configId}
-{ }
+    Id{configId},
+    BufferElementCount{}
+{
+    // TODO:3: optimize and store precalculated values if applicable for all layers
+    AccelerationDetector::GetHardwareConsistencySettings(BufferElementCount, consistentDevice);
+}
 
 void RequestConfiguration::AddBuffer(GnaComponentType type, uint32_t layerIndex, void *address)
 {
@@ -54,7 +59,7 @@ void RequestConfiguration::AddBuffer(GnaComponentType type, uint32_t layerIndex,
     auto emplaced = layerConfiguration->Buffers.emplace(type, address);
     Expect::True(emplaced.second, GNA_INVALID_REQUEST_CONFIGURATION);
 
-    Model.InvalidateConfig(ConfigId, layerConfiguration, layerIndex);
+    Model.InvalidateConfig(Id, layerConfiguration, layerIndex);
 }
 
 void RequestConfiguration::AddActiveList(uint32_t layerIndex, const ActiveList& activeList)
@@ -74,6 +79,28 @@ void RequestConfiguration::AddActiveList(uint32_t layerIndex, const ActiveList& 
     layerConfiguration->ActList.swap(activeListPtr);
     ++ActiveListCount;
 
-    Model.InvalidateConfig(ConfigId, layerConfiguration, layerIndex);
+    Model.InvalidateConfig(Id, layerConfiguration, layerIndex);
 }
 
+void RequestConfiguration::SetHardwareConsistency(gna_device_version consistentDevice)
+{
+    if (GNA_UNSUPPORTED != consistentDevice)
+    {
+        AccelerationDetector::GetHardwareConsistencySettings(BufferElementCount, consistentDevice);
+        EnableHwConsistency = true;
+    }
+    else
+    {
+        EnableHwConsistency = false;
+    }
+    EnforceAcceleration(Acceleration); // update Acceleration
+}
+
+void RequestConfiguration::EnforceAcceleration(AccelerationMode accel)
+{
+    Acceleration = accel;
+    if (EnableHwConsistency)
+    {
+        Acceleration = static_cast<AccelerationMode>(Acceleration &  GNA_HW);
+    }
+}

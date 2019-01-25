@@ -43,11 +43,11 @@ TransposeLayer::TransposeLayer(nn_layer const * const layer, const BaseValidator
     Expect::Null(layer->pLayerStruct); // transpose layers do not have layer details
     Expect::Null(Output.ScratchPad); // in transpose layer no 4B output array is allowed
 
-    ComputeHidden = [this](acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount)
-                    {this->computeHidden(accel, fvBuffers, saturationCount); };
+    ComputeHidden = [this](AccelerationMode accel, ExecutionConfig const & executionConfig)
+                    {this->computeHidden(accel, executionConfig); };
 
-    Compute = [this](LayerConfiguration &layerConfiguration, acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount)
-                    {this->compute(layerConfiguration, accel, fvBuffers, saturationCount); };
+    Compute = [this](LayerConfiguration &layerConfiguration, AccelerationMode accel, ExecutionConfig const & executionConfig)
+                    {this->compute(layerConfiguration, accel, executionConfig); };
 }
 
 void TransposeLayer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const
@@ -74,17 +74,15 @@ void TransposeLayer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration)
     configs.Transpose->output = outputBuffer;
 }
 
-void TransposeLayer::computeHidden(acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const
+void TransposeLayer::computeHidden(AccelerationMode accel, ExecutionConfig const & executionConfig) const
 {
-    UNREFERENCED_PARAMETER(fvBuffers);
-    UNREFERENCED_PARAMETER(saturationCount);
+    UNREFERENCED_PARAMETER(executionConfig);
     transposeKernels.at(accel)(&transposeHiddenConfig);
 }
 
-void TransposeLayer::compute(const LayerConfiguration& layerConfiguration, acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const
+void TransposeLayer::compute(const LayerConfiguration& layerConfiguration, AccelerationMode accel, ExecutionConfig const & executionConfig) const
 {
-    UNREFERENCED_PARAMETER(fvBuffers);
-    UNREFERENCED_PARAMETER(saturationCount);
+    UNREFERENCED_PARAMETER(executionConfig);
     auto transposeConfig = layerConfiguration.Configs.Transpose.get();
     transposeKernels.at(accel)(transposeConfig);
 }
@@ -101,11 +99,11 @@ CopyLayer::CopyLayer(const nn_layer *layer, const BaseValidator& validatorIn) :
     Expect::InRange(ColumnCount, XNN_N_IN_ELEMS_MPLY, XNN_N_IN_ELEMS_MAX, XNN_ERR_LYR_CFG);
     Expect::True(RowCount <= Input.at(GNA_DIM_N), XNN_ERR_LYR_CFG);
 
-    ComputeHidden = [this](acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount)
-                    {this->computeHidden(accel, fvBuffers, saturationCount); };
+    ComputeHidden = [this](AccelerationMode accel, ExecutionConfig const & executionConfig)
+                    {this->computeHidden(accel, executionConfig); };
 
-    Compute = [this](LayerConfiguration &layerConfiguration, acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount)
-                    {this->compute(layerConfiguration, accel, fvBuffers, saturationCount); };
+    Compute = [this](LayerConfiguration &layerConfiguration, AccelerationMode accel, ExecutionConfig const & executionConfig)
+                    {this->compute(layerConfiguration, accel, executionConfig); };
 }
 
 void CopyLayer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const
@@ -132,17 +130,15 @@ void CopyLayer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration) cons
     configs.Copy->output = outputBuffer;
 }
 
-void CopyLayer::computeHidden(acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const
+void CopyLayer::computeHidden(AccelerationMode accel, ExecutionConfig const & executionConfig) const
 {
-    UNREFERENCED_PARAMETER(fvBuffers);
-    UNREFERENCED_PARAMETER(saturationCount);
+    UNREFERENCED_PARAMETER(executionConfig);
     copyKernels.at(accel)(&copyHiddenConfig);
 }
 
-void CopyLayer::compute(const LayerConfiguration& layerConfiguration, acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const
+void CopyLayer::compute(const LayerConfiguration& layerConfiguration, AccelerationMode accel, ExecutionConfig const & executionConfig) const
 {
-    UNREFERENCED_PARAMETER(fvBuffers);
-    UNREFERENCED_PARAMETER(saturationCount);
+    UNREFERENCED_PARAMETER(executionConfig);
     auto copyConfig = layerConfiguration.Configs.Copy.get();
     copyKernels.at(accel)(copyConfig);
 }

@@ -50,19 +50,19 @@ CnnLayer::CnnLayer(nn_layer const * const layer, const BaseValidator& validatorI
     {
         if (Activation)
         {
-            Layer::ComputeHidden = [this](acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount)
-            {this->computeHiddenPwl(accel, ExecutionConfig{fvBuffers, saturationCount}); };
+            Layer::ComputeHidden = [this](AccelerationMode accel, ExecutionConfig const & executionConfig)
+            {this->computeHiddenPwl(accel, executionConfig); };
 
-            Layer::Compute = [this](LayerConfiguration &layerConfiguration, acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount)
-            {this->computePwl(layerConfiguration, accel, ExecutionConfig{fvBuffers, saturationCount}); };
+            Layer::Compute = [this](LayerConfiguration &layerConfiguration, AccelerationMode accel, ExecutionConfig const & executionConfig)
+            {this->computePwl(layerConfiguration, accel, executionConfig); };
         }
         else
         {
-            Layer::ComputeHidden = [this](acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount)
-            {this->computeHidden(accel, ExecutionConfig{fvBuffers, saturationCount}); };
+            Layer::ComputeHidden = [this](AccelerationMode accel, ExecutionConfig const & executionConfig)
+            {this->computeHidden(accel, executionConfig); };
 
-            Layer::Compute = [this](LayerConfiguration &layerConfiguration, acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount)
-            {this->compute(layerConfiguration, accel, ExecutionConfig{fvBuffers, saturationCount}); };
+            Layer::Compute = [this](LayerConfiguration &layerConfiguration, AccelerationMode accel, ExecutionConfig const & executionConfig)
+            {this->compute(layerConfiguration, accel, executionConfig); };
         }
         Expect::Equal(Convolution->OutputsPerFilterCount, Output.Count / Convolution->Output.at(GNA_DIM_D),
             XNN_ERR_LYR_INVALID_TENSOR_DIMENSIONS);
@@ -74,11 +74,11 @@ CnnLayer::CnnLayer(nn_layer const * const layer, const BaseValidator& validatorI
         Expect::Equal(Pooling->OutputsPerFilterCount, Output.Count / Convolution->Output.at(GNA_DIM_D), XNN_ERR_LYR_INVALID_TENSOR_DIMENSIONS);
         // TODO:3: new error
 
-        Layer::ComputeHidden = [this](acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount)
-        {this->computeHiddenPool(accel, ExecutionConfig{fvBuffers, saturationCount}); };
+        Layer::ComputeHidden = [this](AccelerationMode accel, ExecutionConfig const & executionConfig)
+        {this->computeHiddenPool(accel, executionConfig); };
 
-        Layer::Compute = [this](LayerConfiguration &layerConfiguration, acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount)
-        {this->computePool(layerConfiguration, accel, ExecutionConfig{fvBuffers, saturationCount}); };
+        Layer::Compute = [this](LayerConfiguration &layerConfiguration, AccelerationMode accel, ExecutionConfig const & executionConfig)
+        {this->computePool(layerConfiguration, accel, executionConfig); };
     }
 }
 
@@ -129,39 +129,39 @@ void CnnLayer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const
     }
 }
 
-void CnnLayer::computeHidden(acceleration accel, ExecutionConfig const & execution) const
+void CnnLayer::computeHidden(AccelerationMode accel, ExecutionConfig const & execution) const
 {
     UNREFERENCED_PARAMETER(execution.Intermediate);
 
-    Convolution->ComputeHidden(accel, execution.SaturationCount);
+    Convolution->ComputeHidden(accel, execution);
 }
 
-void CnnLayer::computeHiddenPwl(acceleration accel, ExecutionConfig const & execution) const
+void CnnLayer::computeHiddenPwl(AccelerationMode accel, ExecutionConfig const & execution) const
 {
     UNREFERENCED_PARAMETER(execution.Intermediate);
 
-    Convolution->ComputeHidden(accel, execution.SaturationCount);
+    Convolution->ComputeHidden(accel, execution);
     Activation->Compute(accel, nullptr, execution);
 }
 
-void CnnLayer::compute(const LayerConfiguration& layerConfiguration, acceleration accel, ExecutionConfig const & execution) const
+void CnnLayer::compute(const LayerConfiguration& layerConfiguration, AccelerationMode accel, ExecutionConfig const & execution) const
 {
     UNREFERENCED_PARAMETER(execution.Intermediate);
 
-    Convolution->Compute(layerConfiguration.Configs.Convolution.get(), accel, execution.SaturationCount);
+    Convolution->Compute(layerConfiguration.Configs.Convolution.get(), accel, execution);
 }
 
-void CnnLayer::computePwl(const LayerConfiguration& layerConfiguration, acceleration accel, ExecutionConfig const & execution) const
+void CnnLayer::computePwl(const LayerConfiguration& layerConfiguration, AccelerationMode accel, ExecutionConfig const & execution) const
 {
     UNREFERENCED_PARAMETER(execution.Intermediate);
 
-    Convolution->Compute(layerConfiguration.Configs.Convolution.get(), accel, execution.SaturationCount);
+    Convolution->Compute(layerConfiguration.Configs.Convolution.get(), accel, execution);
     Activation->Compute(accel, &layerConfiguration, execution);
 }
 
-void CnnLayer::computeHiddenPool(acceleration accel, ExecutionConfig const & execution) const
+void CnnLayer::computeHiddenPool(AccelerationMode accel, ExecutionConfig const & execution) const
 {
-    auto convConfig = ConvolutionConfig{Convolution->GetHiddenConfig(), execution.SaturationCount};
+    auto convConfig = ConvolutionConfig{Convolution->GetHiddenConfig(), execution};
 
     //TODO:3: Refactor
     convConfig.pooledOutputs = Output.Buffer;
@@ -169,8 +169,8 @@ void CnnLayer::computeHiddenPool(acceleration accel, ExecutionConfig const & exe
     Pooling->Compute(&convConfig, accel, execution.Intermediate->pool, &Activation->Pwl);
 }
 
-void CnnLayer::computePool(LayerConfiguration& layerConfiguration, acceleration accel, ExecutionConfig const & execution) const
+void CnnLayer::computePool(LayerConfiguration& layerConfiguration, AccelerationMode accel, ExecutionConfig const & execution) const
 {
-    auto convConfig = ConvolutionConfig{layerConfiguration.Configs.Convolution.get(), execution.SaturationCount};
+    auto convConfig = ConvolutionConfig{layerConfiguration.Configs.Convolution.get(), execution};
     Pooling->Compute(&convConfig, accel, execution.Intermediate->pool, &Activation->Pwl);
 }

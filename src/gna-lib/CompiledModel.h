@@ -61,7 +61,6 @@ public:
 
     status_t Score(
         RequestConfiguration& config,
-        acceleration accel,
         RequestProfiler *profiler,
         KernelBuffers *buffers);
 
@@ -81,9 +80,6 @@ protected:
     std::unique_ptr<HardwareModel> hardwareModel;
 
     std::vector<std::unique_ptr<SubModel>> submodels;
-
-    const acceleration swFastAccel;
-    const acceleration swSatAccel;
 
     void createSubmodels(const AccelerationDetector& detector);
 };

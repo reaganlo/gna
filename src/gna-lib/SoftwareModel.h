@@ -48,7 +48,7 @@ struct RequestProfiler;
 class SoftwareModel
 {
 public:
-    SoftwareModel(const gna_model *const network, uint16_t& gmmCount, const BaseValidator& validator);
+    SoftwareModel(const gna_model *const network, uint16_t& gmmCount, const BaseValidator& validator, const AccelerationMode fastestAccel);
     SoftwareModel(const SoftwareModel &) = delete;
     SoftwareModel& operator=(const SoftwareModel&) = delete;
     ~SoftwareModel() = default;
@@ -56,8 +56,7 @@ public:
     status_t Score(
         uint32_t layerIndex,
         uint32_t layerCount,
-        acceleration accel,
-        const RequestConfiguration& requestConfiguration,
+        RequestConfiguration const &requestConfiguration,
         RequestProfiler *profiler,
         KernelBuffers *fvBuffers);
 
@@ -68,9 +67,32 @@ public:
 private:
     void build(const nn_layer* layers, uint16_t& gmmCount, const BaseValidator& validator);
 
-    const uint32_t layerCount;
-    //uint32_t inputLayerCount = 0;
-    //uint32_t outputLayerCount = 0;
+    AccelerationMode getEffectiveAccelerationMode(AccelerationMode requiredAccel) const
+    {
+        switch (requiredAccel)
+        {
+        case GNA_AUTO_FAST:
+        case GNA_SW_FAST:
+            return fastestAccel;
+        case GNA_AUTO_SAT:
+        case GNA_SW_SAT:
+        case GNA_HW:
+            return static_cast<AccelerationMode>(fastestAccel & GNA_HW);
+        // enforced sw modes
+        default:
+            if ((int32_t) requiredAccel > (int32_t) fastestAccel)
+            {
+                return NUM_GNA_ACCEL_MODES;
+            }
+            else
+            {
+                return requiredAccel;
+            }
+        }
+    }
+
+    uint32_t const layerCount;
+    AccelerationMode const fastestAccel;
 };
 
 }

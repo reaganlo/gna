@@ -88,7 +88,7 @@ class BaseTransform
 public:
     virtual ~BaseTransform() = default;
 
-    virtual void Compute(acceleration accel, LayerConfiguration const * layerConfiguration,
+    virtual void Compute(AccelerationMode accel, LayerConfiguration const * layerConfiguration,
         ExecutionConfig const & execution) const = 0;
 
     virtual void UpdateConfigBuffers(unique_ptr<BaseConfig> configs[], const BufferMap& buffers) const = 0;
@@ -110,7 +110,7 @@ protected:
 template<typename TransformType, typename KernelType> class Transform : public BaseTransform
 {
 public:
-    virtual void Compute(acceleration accel,
+    virtual void Compute(AccelerationMode accel,
         LayerConfiguration const * layerConfiguration, ExecutionConfig const & execution) const
     {
         auto executionConfig = createExecutionConfig(layerConfiguration, execution);

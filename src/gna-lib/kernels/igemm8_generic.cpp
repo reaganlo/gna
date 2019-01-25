@@ -38,12 +38,12 @@ void AffineKernelImpl1B(AffineConfig const * const config)
     nn_bias_c const * const biasEnd = bias + config->outputElementCount;
 
     TransposeConfig transposeConfig = TransposeConfig{ config->inputElementCount, config->inputVectorCount,
-        config->input, config->fvBuffers->d0 };
+        config->input, config->execution->Intermediate->d0 };
     TransposeKernelImpl(&transposeConfig);
 
     for (; bias < biasEnd;)
     {
-        input = config->fvBuffers->d0;
+        input = config->execution->Intermediate->d0;
         for (j = 0; j < config->inputVectorCount; j++)
         {
             *output = 0;
@@ -69,12 +69,12 @@ void AffineKernelImpl1B1B(AffineConfig const * const config)
     int8_t const * bias = (int8_t*)config->biasesSimple;
     int8_t const * const biasEnd = bias + (config->outputElementCount * config->bytesPerBias);
 
-    TransposeConfig transposeConfig = TransposeConfig{ config->inputElementCount, config->inputVectorCount, config->input, config->fvBuffers->d0 };
+    TransposeConfig transposeConfig = TransposeConfig{ config->inputElementCount, config->inputVectorCount, config->input, config->execution->Intermediate->d0 };
     TransposeKernelImpl1B(&transposeConfig);
 
     for (; bias < biasEnd;)
     {
-        input = (int8_t*)config->fvBuffers->d0;
+        input = (int8_t*)config->execution->Intermediate->d0;
         for (j = 0; j < config->inputVectorCount; j++)
         {
             if (config->bytesPerBias == 1)
@@ -105,12 +105,12 @@ void AffineKernelImpl1B2B(AffineConfig const * const config)
     nn_bias_c const * const biasEnd = bias + config->outputElementCount;
 
     TransposeConfig transposeConfig = TransposeConfig{ config->inputElementCount, config->inputVectorCount,
-        config->input, config->fvBuffers->d0 };
+        config->input, config->execution->Intermediate->d0 };
     TransposeKernelImpl2B(&transposeConfig);
 
     for (; bias < biasEnd;)
     {
-        input = config->fvBuffers->d0;
+        input = config->execution->Intermediate->d0;
         for (j = 0; j < config->inputVectorCount; j++)
         {
             *output = 0;
@@ -138,12 +138,12 @@ void AffineMultiBiasKernelImpl1B(AffineConfig const * const config)
     nn_bias_s const * multiBias = config->multiBias;
 
     TransposeConfig transposeConfig = TransposeConfig{ config->inputElementCount, config->inputVectorCount,
-        config->input, config->fvBuffers->d0 };
+        config->input, config->execution->Intermediate->d0 };
     TransposeKernelImpl(&transposeConfig);
 
     for (; weightScaleFactors < biasEnd;)
     {
-        input = config->fvBuffers->d0;
+        input = config->execution->Intermediate->d0;
         for (j = 0; j < config->inputVectorCount; ++j)
         {
             *output = 0;
@@ -171,12 +171,12 @@ void AffineMultiBiasKernelImpl1B2B(AffineConfig const * const config)
     nn_bias_s const * multiBias = config->multiBias;
 
     TransposeConfig transposeConfig = TransposeConfig{ config->inputElementCount, config->inputVectorCount,
-        config->input, config->fvBuffers->d0 };
+        config->input, config->execution->Intermediate->d0 };
     TransposeKernelImpl2B(&transposeConfig);
 
     for (; weightScaleFactors < biasEnd;)
     {
-        input = config->fvBuffers->d0;
+        input = config->execution->Intermediate->d0;
         for (j = 0; j < config->inputVectorCount; ++j)
         {
             *output = 0;
@@ -203,12 +203,12 @@ void AffineMultiBiasKernelImpl1B1B(AffineConfig const * const config)
     int8_t const * const biasEnd = multiBias + (config->outputElementCount * config->bytesPerBias)*config->multiBiasVectorCount;
 
     TransposeConfig transposeConfig = TransposeConfig{ config->inputElementCount, config->inputVectorCount,
-        config->input, config->fvBuffers->d0 };
+        config->input, config->execution->Intermediate->d0 };
     TransposeKernelImpl1B(&transposeConfig);
 
     for (; multiBias < biasEnd;)
     {
-        input = (int8_t*)config->fvBuffers->d0;
+        input = (int8_t*)config->execution->Intermediate->d0;
         for (j = 0; j < config->inputVectorCount; j++)
         {
             if (config->bytesPerBias == 1)

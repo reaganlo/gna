@@ -43,8 +43,10 @@ using std::make_unique;
 
 using namespace GNA;
 
-SoftwareModel::SoftwareModel(const gna_model *const network, uint16_t& gmmCount, const BaseValidator& validator) :
-    layerCount{ network->nLayers }
+SoftwareModel::SoftwareModel(const gna_model *const network, uint16_t& gmmCount,
+    const BaseValidator& validator, const AccelerationMode fastestAccelIn) :
+    layerCount{ network->nLayers },
+    fastestAccel{ fastestAccelIn }
 {
 #ifndef NO_ERRCHECK
     Expect::InRange(network->nGroup, ui32_1, XNN_N_GROUP_MAX, XNN_ERR_LYR_CFG);
@@ -57,15 +59,23 @@ SoftwareModel::SoftwareModel(const gna_model *const network, uint16_t& gmmCount,
 status_t SoftwareModel::Score(
     uint32_t layerIndex,
     uint32_t layerCountIn,
-    acceleration accel,
-    const RequestConfiguration& requestConfiguration,
+    RequestConfiguration const &requestConfiguration,
     RequestProfiler *profiler,
     KernelBuffers *fvBuffers)
 {
     UNREFERENCED_PARAMETER(profiler);
     validateConfiguration(requestConfiguration);
 
+    auto accel = getEffectiveAccelerationMode(requestConfiguration.Acceleration);
+    if (NUM_GNA_ACCEL_MODES == accel)
+    {
+        return GNA_CPUTYPENOTSUPPORTED;
+    }
+    Log->Message("Processing using %s acceleration\n", AccelerationDetector::AccelerationToString(accel));
+
     auto saturationCount = uint32_t{ 0 };   // scoring saturation counter
+    auto executionConfig = ExecutionConfig{const_cast<KernelBuffers const *>(fvBuffers),
+        &saturationCount, requestConfiguration.BufferElementCount};
 
     auto iter = Layers.begin() + layerIndex;
     auto end = iter + layerCountIn;
@@ -76,12 +86,12 @@ status_t SoftwareModel::Score(
         if (found == requestConfiguration.LayerConfigurations.end())
         {
             // TODO:3:simplify to single Compute as in Cnn2D
-            layer->ComputeHidden(accel, fvBuffers, &saturationCount);
+            layer->ComputeHidden(accel, executionConfig);
         }
         else
         {
             auto layerConfiguration = found->second.get();
-            layer->Compute(*layerConfiguration, accel, fvBuffers, &saturationCount);
+            layer->Compute(*layerConfiguration, accel, executionConfig);
         }
 
         ++layerIndex;

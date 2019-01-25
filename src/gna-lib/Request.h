@@ -58,7 +58,7 @@ struct RequestProfiler
 class Request
 {
 public:
-    Request(RequestConfiguration& config, std::unique_ptr<RequestProfiler> profiler, acceleration accel);
+    Request(RequestConfiguration& config, std::unique_ptr<RequestProfiler> profiler);
     ~Request() = default;
     Request() = delete;
     Request(const Request &) = delete;
@@ -74,7 +74,6 @@ public:
     // External id (0-GNA_REQUEST_WAIT_ANY)
     gna_request_id Id = 0;
     RequestConfiguration& Configuration;
-    acceleration Accel;
     std::unique_ptr<RequestProfiler> Profiler;
     gna_perf_t *PerfResults;
 

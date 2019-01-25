@@ -89,13 +89,15 @@ struct KernelConfig : public BaseConfig
 
 struct ExecutionConfig
 {
-    ExecutionConfig(KernelBuffers const * intermediate, uint32_t * saturationCount) :
-        Intermediate{const_cast<KernelBuffers *>(intermediate)},
-        SaturationCount{saturationCount}
+    ExecutionConfig(KernelBuffers const * intermediate, uint32_t * saturationCount, uint32_t const * bufferElementCount) :
+        Intermediate{intermediate},
+        SaturationCount{saturationCount},
+        BufferElementCount{bufferElementCount}
     {};
 
-    KernelBuffers * Intermediate;
-    uint32_t * SaturationCount;
+    KernelBuffers const * const Intermediate;
+    uint32_t * const SaturationCount;
+    uint32_t const * const BufferElementCount;
 };
 
 template<typename TransformConfig>
@@ -151,7 +153,7 @@ struct ConvolutionConfig2D
 struct AffineConfig
 {
     AffineConfig(int16_t const * inputIn, int32_t * const outputIn, AffineConfig const * const source);
-    AffineConfig(AffineConfig const * const source, uint32_t * saturationCountIn, KernelBuffers * fvBuffersIn);
+    AffineConfig(AffineConfig const * const source, ExecutionConfig const & executionConfig);
     AffineConfig(uint32_t const outputElementCountIn, uint32_t const inputVectorCountIn,
         uint32_t const inputElementCountIn, int16_t const * inputIn, int32_t * const outputIn, void const * weightsIn,
         void const * biases, void const * multiBiasIn, uint32_t const multiBiasVectorCountIn);
@@ -165,9 +167,7 @@ struct AffineConfig
     uint32_t const inputElementCount;   // K - rows
     int16_t const * input;              // I - (interleaved) [K;N]
     int32_t * output;                   // O - [M;N]
-    uint32_t * saturationCount;
-    KernelBuffers const * fvBuffers;
-
+    ExecutionConfig const * execution;
     union
     {
     int8_t const * const weights1B;     // W - [M;K]
@@ -194,7 +194,7 @@ struct AffineConfigAl
 
 struct RecurrentConfig
 {
-    RecurrentConfig(RecurrentConfig const * const source, uint32_t * saturationCountIn);
+    RecurrentConfig(RecurrentConfig const * const source, ExecutionConfig const & executionConfig);
     RecurrentConfig(
         uint32_t const outputElementCountIn, uint32_t const inputVectorCountIn, uint32_t const inputElementCountIn,
         int16_t const * inputIn, int16_t * const feedbackBufferIn, int32_t * const outputIn,
@@ -211,7 +211,7 @@ struct RecurrentConfig
     int16_t const * input;                  // I - (flat) [N;K]
     int16_t * feedbackBuffer;               // (flat) [N,M]
     int32_t * output;                       // O1 - [N,M]
-    uint32_t * saturationCount;
+    ExecutionConfig const * execution;
     uint32_t bytesPerBias = 0;
     uint32_t bytesPerOutput = 0;
     union
@@ -255,7 +255,7 @@ struct ConvolutionConfig
 {
     ConvolutionConfig(ConvolutionConfig const * const source, int16_t const * const inputsIn,
         int32_t * const outputsIn);
-    ConvolutionConfig(ConvolutionConfig const * const source, uint32_t * const saturationCountIn);
+    ConvolutionConfig(ConvolutionConfig const * const source, ExecutionConfig const & executionConfig);
     ConvolutionConfig(uint32_t const inputBandStrideIn, uint32_t const FilterOutputCountIn, uint32_t const FilterCountIn,
         uint32_t const FilterCoefficientCountIn, int16_t const * const inputsIn, int16_t const * const filtersIn,
         nn_bias_s const * const biasesIn, int32_t * const outputsIn);
@@ -279,7 +279,7 @@ struct ConvolutionConfig
         int32_t * convolutedOutputs;
         int16_t * pooledOutputs;
     };
-    uint32_t * saturationCount;
+    ExecutionConfig const * execution;
 };
 
 struct PoolingConfig

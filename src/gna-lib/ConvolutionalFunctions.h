@@ -58,8 +58,8 @@ struct ConvolutionFunction
         return hiddenConfig.get();
     }
 
-    void ComputeHidden(acceleration accel, uint32_t *saturationCount) const;
-    void Compute(const ConvolutionConfig* config, acceleration accel, uint32_t *saturationCount) const;
+    void ComputeHidden(AccelerationMode accel, ExecutionConfig const & execution) const;
+    void Compute(const ConvolutionConfig* config, AccelerationMode accel, ExecutionConfig const & execution) const;
 
     std::unique_ptr<const BiasTensor> Biases;
 

@@ -81,7 +81,7 @@ private:
 class GnaSelfTestIssue;
 class GnaSelfTest {
 public:
-    GnaSelfTest(GnaSelfTestConfig config) :config{config}{}
+    GnaSelfTest(GnaSelfTestConfig configIn) :config{configIn}{}
     void StartTest();
     void Handle(const GnaSelfTestIssue& issue) const;
     void HandleGnaStatus(const intel_gna_status_t &status, const char *what = "") const;

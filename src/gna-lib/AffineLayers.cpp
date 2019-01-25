@@ -45,19 +45,19 @@ AffineBaseLayer::AffineBaseLayer(const nn_layer *layer, const BaseValidator& val
 {
     if (Activation)
     {
-        Layer::ComputeHidden = [this](acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount)
-        {this->computeHiddenPwl(accel, ExecutionConfig{fvBuffers, saturationCount}); };
+        Layer::ComputeHidden = [this](AccelerationMode accel, ExecutionConfig const & executionConfig)
+        {this->computeHiddenPwl(accel, executionConfig); };
 
-        Layer::Compute = [this](LayerConfiguration &layerConfiguration, acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount)
-        {this->computePwl(layerConfiguration, accel, ExecutionConfig{fvBuffers, saturationCount}); };
+        Layer::Compute = [this](LayerConfiguration &layerConfiguration, AccelerationMode accel, ExecutionConfig const & executionConfig)
+        {this->computePwl(layerConfiguration, accel, executionConfig); };
     }
     else
     {
-        Layer::ComputeHidden = [this](acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount)
-        {this->computeHidden(accel, ExecutionConfig{fvBuffers, saturationCount}); };
+        Layer::ComputeHidden = [this](AccelerationMode accel, ExecutionConfig const & executionConfig)
+        {this->computeHidden(accel, executionConfig); };
 
-        Layer::Compute = [this](LayerConfiguration &layerConfiguration, acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount)
-        {this->compute(layerConfiguration, accel, ExecutionConfig{fvBuffers, saturationCount}); };
+        Layer::Compute = [this](LayerConfiguration &layerConfiguration, AccelerationMode accel, ExecutionConfig const & executionConfig)
+        {this->compute(layerConfiguration, accel, executionConfig); };
     }
 }
 
@@ -94,24 +94,24 @@ void AffineBaseLayer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration
     }
 }
 
-void AffineBaseLayer::computeHidden(acceleration accel, ExecutionConfig const & execution) const
+void AffineBaseLayer::computeHidden(AccelerationMode accel, ExecutionConfig const & execution) const
 {
     Affine->ComputeHidden(accel, execution);
 }
 
-void AffineBaseLayer::computeHiddenPwl(acceleration accel, ExecutionConfig const & execution) const
+void AffineBaseLayer::computeHiddenPwl(AccelerationMode accel, ExecutionConfig const & execution) const
 {
     Affine->ComputeHidden(accel, execution);
 
     Activation->Compute(accel, nullptr, execution);
 }
 
-void AffineBaseLayer::compute(const LayerConfiguration& layerConfiguration, acceleration accel, ExecutionConfig const & execution) const
+void AffineBaseLayer::compute(const LayerConfiguration& layerConfiguration, AccelerationMode accel, ExecutionConfig const & execution) const
 {
     Affine->Compute(layerConfiguration, accel, execution);
 }
 
-void AffineBaseLayer::computePwl(const LayerConfiguration& layerConfiguration, acceleration accel, ExecutionConfig const & execution) const
+void AffineBaseLayer::computePwl(const LayerConfiguration& layerConfiguration, AccelerationMode accel, ExecutionConfig const & execution) const
 {
     Affine->Compute(layerConfiguration, accel, execution);
 

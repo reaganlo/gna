@@ -35,7 +35,7 @@ HardwareRequest::HardwareRequest(uint64_t memoryId, const HardwareModel& hwModel
                                 const RequestConfiguration& requestConfigurationIn)
     : MemoryId(memoryId), ModelId(requestConfigurationIn.Model.Id),
       HwPerfEncoding(requestConfigurationIn.HwPerfEncoding),
-      RequestConfigId(requestConfigurationIn.ConfigId),
+      RequestConfigId(requestConfigurationIn.Id),
       requestConfiguration(requestConfigurationIn), hwModel(hwModelIn)
 {
     Invalidate();

@@ -46,11 +46,11 @@ RnnLayer::RnnLayer(nn_layer const * const layer, const BaseValidator& validatorI
 
     rnnHiddenConfig.feedbackBuffer = CalculateFeedbackBuffer(Output);
 
-    Layer::ComputeHidden = [this](acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount)
-                    {this->computeHidden(accel, fvBuffers, saturationCount); };
+    Layer::ComputeHidden = [this](AccelerationMode accel, ExecutionConfig const & executionConfig)
+                    {this->computeHidden(accel, executionConfig); };
 
-    Layer::Compute = [this](LayerConfiguration &layerConfiguration, acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount)
-                    {this->compute(layerConfiguration, accel, fvBuffers, saturationCount); };
+    Layer::Compute = [this](LayerConfiguration &layerConfiguration, AccelerationMode accel, ExecutionConfig const & executionConfig)
+                    {this->compute(layerConfiguration, accel, executionConfig); };
 }
 
 void RnnLayer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const
@@ -77,18 +77,16 @@ void RnnLayer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const
     }
 }
 
-void RnnLayer::computeHidden(acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const
+void RnnLayer::computeHidden(AccelerationMode accel, ExecutionConfig const & executionConfig) const
 {
-    UNREFERENCED_PARAMETER(fvBuffers);
-    auto rnnConfig = RecurrentConfig{&rnnHiddenConfig, saturationCount};
+    auto rnnConfig = RecurrentConfig{&rnnHiddenConfig, executionConfig};
 
     recurrentKernels.at(accel)(&rnnConfig);
 }
 
-void RnnLayer::compute(const LayerConfiguration& layerConfiguration, acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const
+void RnnLayer::compute(const LayerConfiguration& layerConfiguration, AccelerationMode accel, ExecutionConfig const & executionConfig) const
 {
-    UNREFERENCED_PARAMETER(fvBuffers);
-    auto rnnConfig = RecurrentConfig{layerConfiguration.Configs.Recurrent.get(), saturationCount};
+    auto rnnConfig = RecurrentConfig{layerConfiguration.Configs.Recurrent.get(), executionConfig};
 
     recurrentKernels.at(accel)(&rnnConfig);
 }

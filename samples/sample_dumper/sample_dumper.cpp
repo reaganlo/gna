@@ -225,7 +225,14 @@ int main(int argc, char *argv[])
     memcpy_s(nnet.pLayers, nnet.nLayers * sizeof(intel_nnet_layer_t), &nnet_layer, sizeof(nnet_layer));
 
     gna_model_id model_id;
-    GnaModelCreate(gna_handle, &nnet, &model_id);
+    status = GnaModelCreate(gna_handle, &nnet, &model_id);
+    if (GNA_SUCCESS!= status)
+    {
+        printf("GnaModelCreate failed: %s\n", GnaStatusToString(status));
+        GnaFree(gna_handle);
+        GnaDeviceClose(gna_handle);
+        exit(-status);
+    }
 
     intel_gna_model_header model_header;
     void* dumped_model = GnaModelDump(model_id, GNA_1_0_EMBEDDED, &model_header, &status, customAlloc);
@@ -247,13 +254,57 @@ int main(int argc, char *argv[])
     _mm_free(dumped_model);
 
     gna_request_cfg_id config_id;
-    GnaModelRequestConfigAdd(model_id, &config_id);
-    GnaRequestConfigBufferAdd(config_id, InputComponent, 0, pinned_inputs);
-    GnaRequestConfigBufferAdd(config_id, OutputComponent, 0, pinned_outputs);
+     status = GnaRequestConfigCreate(model_id, &config_id);
+    if (GNA_SUCCESS!= status)
+    {
+        printf("GnaRequestConfigCreate failed: %s\n", GnaStatusToString(status));
+        GnaFree(gna_handle);
+        GnaDeviceClose(gna_handle);
+        exit(-status);
+    }
+    status = GnaRequestConfigBufferAdd(config_id, InputComponent, 0, pinned_inputs);
+    if (GNA_SUCCESS!= status)
+    {
+        printf("GnaRequestConfigBufferAdd InputComponent failed: %s\n", GnaStatusToString(status));
+        GnaFree(gna_handle);
+        GnaDeviceClose(gna_handle);
+        exit(-status);
+    }
+    status = GnaRequestConfigBufferAdd(config_id, OutputComponent, 0, pinned_outputs);
+    if (GNA_SUCCESS!= status)
+    {
+        printf("GnaRequestConfigBufferAdd OutputComponent failed: %s\n", GnaStatusToString(status));
+        GnaFree(gna_handle);
+        GnaDeviceClose(gna_handle);
+        exit(-status);
+    }
+    status = GnaRequestConfigEnableHardwareConsistency(config_id, GNA_SUE_CREEK);
+    if (GNA_SUCCESS!= status)
+    {
+        printf("GnaRequestConfigEnableHardwareConsistency for GNA_SUE_CREEK failed: %s\n", GnaStatusToString(status));
+        GnaFree(gna_handle);
+        GnaDeviceClose(gna_handle);
+        exit(-status);
+    }
+    status = GnaRequestConfigEnforceAcceleration(config_id, GNA_GENERIC);
+    if (GNA_SUCCESS!= status)
+    {
+        printf("GnaRequestConfigEnforceAcceleration GNA_GENERIC failed: %s\n", GnaStatusToString(status));
+        GnaFree(gna_handle);
+        GnaDeviceClose(gna_handle);
+        exit(-status);
+    }
 
     // calculate on GNA HW (non-blocking call)
     gna_request_id request_id;     // this gets filled with the actual id later on
-    status = GnaRequestEnqueue(config_id, GNA_GENERIC, &request_id);
+    status = GnaRequestEnqueue(config_id, &request_id);
+    if (GNA_SUCCESS!= status)
+    {
+        printf("GnaRequestEnqueue failed: %s\n", GnaStatusToString(status));
+        GnaFree(gna_handle);
+        GnaDeviceClose(gna_handle);
+        exit(-status);
+    }
 
     /**************************************************************************************************
      * Offload effect: other calculations can be done on CPU here, while nnet decoding runs on GNA HW *

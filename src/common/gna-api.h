@@ -553,7 +553,7 @@ typedef enum _ComponentType
  *                      Request configuration cannot be shared with other models.
  * @param configId      (out) Request configuration created by GNA.
  */
-GNAAPI intel_gna_status_t GnaModelRequestConfigAdd(
+GNAAPI intel_gna_status_t GnaRequestConfigCreate(
     gna_model_id modelId,
     gna_request_cfg_id * configId);
 
@@ -599,7 +599,7 @@ GNAAPI intel_gna_status_t GnaRequestConfigBufferAdd(
  *                      already assigned in the request configuration.
  * @param indicesCount  The number of indices in the active list.
  * @param indices       The address of the array with active output indices.
- * @see GnaModelRequestConfigAdd and GnaRequestConfigBufferAdd for details.
+ * @see GnaRequestConfigCreate and GnaRequestConfigBufferAdd for details.
  */
 GNAAPI intel_gna_status_t GnaRequestConfigActiveListAdd(
     gna_request_cfg_id configId,
@@ -608,15 +608,32 @@ GNAAPI intel_gna_status_t GnaRequestConfigActiveListAdd(
     uint32_t const * indices);
 
 /**
- * The list of processing acceleration modes.
- * GNA supports a bunch of acceleration modes. Their availability depends on the CPU type.
- * The modes supported by the current system are detected by GNA.
- * Use GNA_AUTO mode to let GNA select the best available acceleration.
- * NOTE:
- * - GNA_HARDWARE: in some GNA hardware generations, model components unsupported
- *   by hardware will be processed using software acceleration.
- * By default fast acceleration mode, which does not detect saturation will be used.
- * @see GnaSetSaturationDetection to enable saturation detection.
+ Enables software result consistency with selected device version.
+ Assures that for given request config software mode inference results
+ (scores) are bit-exact with that produced by the hardware device .
+ Useful e.g. for verification of results from model created and exported
+ for GNA embedded devices.
+ @See also gna_acceleration.
+
+ @param configId Request configuration to be configured.
+ @param deviceVersion Device version to be consistent with.
+ @return Status of operation. 
+ */
+GNAAPI intel_gna_status_t GnaRequestConfigEnableHardwareConsistency(
+    gna_request_cfg_id configId,
+    gna_device_version deviceVersion);
+
+/**
+ The list of processing acceleration modes.
+ Current acceleration modes availability depends on the CPU type.
+ Available modes are detected by GNA.
+ 
+ NOTE:
+ - GNA_HARDWARE: in some GNA hardware generations, model components unsupported
+   by hardware will be processed using software acceleration.
+ When software inference is used, by default "fast" algorithm is used
+ and results may be not bit-exact with these produced by hardware device.
+ @See GnaRequestConfigSetHwResultConsistency to enable bit-exact results consitency.
  */
 typedef enum  _acceleration
 {
@@ -632,19 +649,29 @@ typedef enum  _acceleration
 static_assert(4 == sizeof(gna_acceleration), "Invalid size of gna_acceleration");
 
 /**
- * Sets saturation detection for a given acceleration mode.
- * Use only for GnaRequestEnqueue acceleration argument.
- * Hardware acceleration has saturation detection always enabled.
- * GMM layers have saturation detection always enabled.
- *
- * @param acceleration  The desired acceleration mode.
- * @return Acceleration mode with enabled saturation detection.
+ Enforces processing request with selected acceleration mode.
+ When not set GNA_AUTO is used.
+ @See also gna_acceleration.
+
+ @param configId Affected request configuration.
+ @param acceleration Acceleration mode used for processing.
+ @return Status of operation. 
  */
-inline gna_acceleration GnaSetSaturationDetection(
-    const gna_acceleration acceleration)
-{
-    return (gna_acceleration)(acceleration & GNA_HARDWARE);
-}
+GNAAPI intel_gna_status_t GnaRequestConfigEnforceAcceleration(
+    gna_request_cfg_id configId,
+    gna_acceleration accelerationMode);
+
+/**
+ Releases request config and its resources.
+ Not thread-safe.
+ Please make sure all requests using this config are completed.
+
+ @param configId Affected request configuration.
+ @return Status of operation. 
+ */
+GNAAPI intel_gna_status_t GnaRequestConfigRelease(
+    gna_request_cfg_id configId);
+
 
 /** GNA Request identifier **/
 typedef uint32_t gna_request_id;
@@ -659,14 +686,12 @@ typedef uint32_t gna_timeout;
  * - The model, that the request will be calculated against is provided by configuration.
  *
  * @param configId      The request configuration.
- * @param acceleration  Acceleration mode used for processing.
  * @param requestId     (out) Request created by GNA.
  * @return              Status of request preparation and queuing only.
  *                      To retrieve the results and processing status call GnaRequestWait.
  */
 GNAAPI intel_gna_status_t GnaRequestEnqueue(
     gna_request_cfg_id configId,
-    gna_acceleration acceleration,
     gna_request_id * requestId);
 
 /**

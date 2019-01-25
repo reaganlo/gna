@@ -139,8 +139,8 @@ void SelfTestDevice::SampleModelCreate(const SampleModelForGnaSelfTest& model)
 
 void SelfTestDevice::BuildSampleRequest()
 {
-    auto status = GnaModelRequestConfigAdd(sampleModelId, &configId);
-    gnaSelfTest.HandleGnaStatus(status, "GnaModelRequestConfigAdd");
+    auto status = GnaRequestConfigCreate(sampleModelId, &configId);
+    gnaSelfTest.HandleGnaStatus(status, "GnaRequestConfigCreate");
 }
 
 void SelfTestDevice::ConfigRequestBuffer()
@@ -154,7 +154,7 @@ void SelfTestDevice::ConfigRequestBuffer()
 void SelfTestDevice::RequestAndWait()
 {
     logger.Verbose("Enqueing GNA request for processing\n");
-    auto status = GnaRequestEnqueue(configId, gna_acceleration::GNA_AUTO, &requestId);
+    auto status = GnaRequestEnqueue(configId, &requestId);
     // Offload effect: other calculations can be done on CPU here, while nnet decoding runs on GNA HW
     status = GnaRequestWait(requestId, DEFAULT_SELFTEST_TIMEOUT_MS);
     gnaSelfTest.HandleGnaStatus(status, "GnaRequestEnqueue");

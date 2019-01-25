@@ -43,8 +43,8 @@ public:
     virtual void UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const override;
 
 private:
-    void computeHidden(acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const;
-    void compute(const LayerConfiguration& layerConfiguration, acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const;
+    void computeHidden(AccelerationMode accel, ExecutionConfig const & executionConfig) const;
+    void compute(const LayerConfiguration& layerConfiguration, AccelerationMode accel, ExecutionConfig const & executionConfig) const;
 
     const KernelMap<TransposeKernel>& transposeKernels;
     TransposeConfig transposeHiddenConfig;
@@ -61,8 +61,8 @@ public:
     const uint32_t RowCount;
 
 private:
-    void computeHidden(acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const;
-    void compute(const LayerConfiguration& layerConfiguration, acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const;
+    void computeHidden(AccelerationMode accel, ExecutionConfig const & executionConfig) const;
+    void compute(const LayerConfiguration& layerConfiguration, AccelerationMode accel, ExecutionConfig const & executionConfig) const;
 
     const KernelMap<CopyKernel>& copyKernels;
     CopyConfig copyHiddenConfig;

@@ -46,10 +46,10 @@ ConvolutionalLayer2D::ConvolutionalLayer2D(nn_layer const * const layer, const B
         Transforms.Get<PoolingFunction2D>(PoolingTransform2D),
         GetOutputTransform()->Output->Mode);
 
-    Layer::ComputeHidden = [this](acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount)
-    {this->compute(nullptr, accel, ExecutionConfig{ fvBuffers, saturationCount }); };
+    Layer::ComputeHidden = [this](AccelerationMode accel, ExecutionConfig const & executionConfig)
+    {this->compute(nullptr, accel, executionConfig); };
 
-    Layer::Compute = [this](LayerConfiguration &layerConfiguration, acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount)
-    {this->compute(&layerConfiguration, accel, ExecutionConfig{ fvBuffers, saturationCount }); };
+    Layer::Compute = [this](LayerConfiguration &layerConfiguration, AccelerationMode accel, ExecutionConfig const & executionConfig)
+    {this->compute(&layerConfiguration, accel, executionConfig); };
 
 }

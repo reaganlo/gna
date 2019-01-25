@@ -47,7 +47,7 @@ void DiagonalKernelImpl2B(AffineConfig const * const config)
             else if (config->bytesPerBias == 4)
                 sum = ((int32_t*)bias)[i] + (weight[i] * input[i * config->inputVectorCount + j]);
 
-            saturate_store_out(&sum, &output[i * config->inputVectorCount + j], config->saturationCount);
+            saturate_store_out(&sum, &output[i * config->inputVectorCount + j], config->execution->SaturationCount);
         }
     }
 }
@@ -73,7 +73,7 @@ void DiagonalKernelImpl2B2B(AffineConfig const * const config)
             else if (config->bytesPerBias == 4)
                 sum = ((int32_t*)bias)[i] + (weight[i] * input[i * config->inputVectorCount + j]);
 
-            saturate_store_out(&sum, &output[i * config->inputVectorCount + j], config->saturationCount);
+            saturate_store_out(&sum, &output[i * config->inputVectorCount + j], config->execution->SaturationCount);
         }
     }
 }
@@ -99,7 +99,7 @@ void DiagonalKernelImpl2B1B(AffineConfig const * const config)
             else if (config->bytesPerBias == 4)
                 sum = ((int32_t*)bias)[i] + (weight[i] * input[i * config->inputVectorCount + j]);
 
-            saturate_store_out(&sum, &output[i * config->inputVectorCount + j], config->saturationCount);
+            saturate_store_out(&sum, &output[i * config->inputVectorCount + j], config->execution->SaturationCount);
         }
     }
 }

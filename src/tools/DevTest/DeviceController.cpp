@@ -77,7 +77,7 @@ void DeviceController::Free()
 gna_request_cfg_id DeviceController::ConfigAdd(gna_model_id modelId)
 {
     gna_request_cfg_id configId;
-    intel_gna_status_t status = GnaModelRequestConfigAdd(modelId, &configId);
+    intel_gna_status_t status = GnaRequestConfigCreate(modelId, &configId);
     if (GNA_SUCCESS != status)
     {
         throw std::runtime_error("Config add failed");
@@ -95,6 +95,24 @@ void DeviceController::BufferAdd(gna_request_cfg_id configId, GnaComponentType t
     }
 }
 
+void DeviceController::RequestSetAcceleration(gna_request_cfg_id configId, gna_acceleration accel)
+{
+    intel_gna_status_t status = GnaRequestConfigEnforceAcceleration(configId, accel);
+    if (GNA_SUCCESS != status)
+    {
+        throw std::runtime_error("RequestSetAcceleration add failed");
+    }
+}
+
+void DeviceController::RequestSetConsistency(gna_request_cfg_id configId, gna_device_version version)
+{
+    intel_gna_status_t status = GnaRequestConfigEnableHardwareConsistency(configId, version);
+    if (GNA_SUCCESS != status)
+    {
+        throw std::runtime_error("RequestSetConsistency add failed");
+    }
+}
+
 void DeviceController::ActiveListAdd(gna_request_cfg_id configId, uint32_t layerIndex, uint32_t indicesCount, uint32_t* indices)
 {
     intel_gna_status_t status = GnaRequestConfigActiveListAdd(configId, layerIndex, indicesCount, indices);
@@ -104,9 +122,9 @@ void DeviceController::ActiveListAdd(gna_request_cfg_id configId, uint32_t layer
     }
 }
 
-void DeviceController::RequestEnqueue(gna_request_cfg_id configId, gna_acceleration accelerationIn, gna_request_id * requestId)
+void DeviceController::RequestEnqueue(gna_request_cfg_id configId, gna_request_id * requestId)
 {
-    intel_gna_status_t status = GnaRequestEnqueue(configId, accelerationIn, requestId);
+    intel_gna_status_t status = GnaRequestEnqueue(configId, requestId);
     if (GNA_SUCCESS != status)
     {
         throw std::runtime_error("Request enqueue failed");

@@ -25,10 +25,11 @@
 
 #include "CompiledModel.h"
 
-#include <functional>
-
 #include "Memory.h"
+#include "RequestConfiguration.h"
 #include "SubModel.h"
+
+#include <functional>
 
 using namespace GNA;
 
@@ -44,10 +45,8 @@ CompiledModel::CompiledModel(gna_model_id modelId, const gna_model *rawModel, Me
     validBoundaries{ [&memoryIn](const void *buffer, const size_t bufferSize)
         { Expect::ValidBoundaries(buffer, bufferSize, memoryIn.GetUserBuffer(), memoryIn.ModelSize); } },
     validator{ GNA_3_0, &validBoundaries }, // TODO:3: Pass actual device/device list
-    softwareModel{ rawModel, gmmCount, validator },
-    submodels{},
-    swFastAccel{ detector.GetFastestAcceleration() },
-    swSatAccel{ static_cast<acceleration>(detector.GetFastestAcceleration() & GNA_HW) }
+    softwareModel{ rawModel, gmmCount, validator, detector.GetFastestAcceleration() },
+    submodels{}
 {
     createSubmodels(detector);
     auto isHardwareCompliant = !(1 == submodels.size() && SubmodelType::Software == submodels.at(0)->Type);
@@ -132,32 +131,20 @@ void CompiledModel::InvalidateConfig(gna_request_cfg_id configId, LayerConfigura
 
 status_t CompiledModel::Score(
     RequestConfiguration& config,
-    acceleration accel,
     RequestProfiler *profiler,
     KernelBuffers *buffers)
 {
     profilerDTscStart(&profiler->scoring);
 
-    auto swAccel = accel;
-    if (GNA_AUTO_FAST == accel || GNA_SW_FAST == accel)
-    {
-        swAccel = swFastAccel;
-    }
-    if (GNA_AUTO_SAT == accel || GNA_SW_SAT == accel || GNA_HW == accel)
-    {
-        swAccel = swSatAccel;
-    }
-
     auto status = GNA_SUCCESS;
-    if ((GNA_HW == accel && !hardwareModel)
-        || (int32_t) accel > (int32_t) swFastAccel)
+    if (GNA_HW == config.Acceleration && !hardwareModel)
     {
         status = GNA_CPUTYPENOTSUPPORTED;
     }
-    else if(accel >= GNA_SW_SAT && accel <= GNA_AVX2_FAST)
+    else if(config.Acceleration >= GNA_SW_SAT && config.Acceleration <= GNA_AVX2_FAST)
     {
-        Log->Message("Processing request using %s acceleration\n", AccelerationDetector::AccelerationToString(swAccel));
-        status = softwareModel.Score(0, LayerCount, swAccel, config, profiler, buffers);
+        Log->Message("Processing whole request\n");
+        status = softwareModel.Score(0, LayerCount, config, profiler, buffers);
     }
     else for (const auto& submodel : submodels)
     {
@@ -166,8 +153,8 @@ status_t CompiledModel::Score(
         switch (submodel->Type)
         {
         case Software:
-            Log->Message("Processing submodel using %s acceleration\n", AccelerationDetector::AccelerationToString(swAccel));
-            status = softwareModel.Score(layerIndex, layerCount, swAccel, config, profiler, buffers);
+            Log->Message("Processing submodel\n");
+            status = softwareModel.Score(layerIndex, layerCount, config, profiler, buffers);
             if (status != GNA_SUCCESS && status != GNA_SSATURATE)
                 return status;
             break;

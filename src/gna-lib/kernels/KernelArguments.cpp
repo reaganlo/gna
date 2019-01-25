@@ -78,12 +78,10 @@ AffineConfig::AffineConfig(int16_t const * inputIn, int32_t * const outputIn,
     output = outputIn;
 }
 
-AffineConfig::AffineConfig(AffineConfig const * const source, uint32_t * saturationCountIn,
-    KernelBuffers * fvBuffersIn) :
+AffineConfig::AffineConfig(AffineConfig const * const source, ExecutionConfig const & executionConfigIn) :
     AffineConfig{*source}
 {
-    saturationCount = saturationCountIn;
-    fvBuffers = fvBuffersIn;
+    execution = &executionConfigIn;
 }
 
 AffineConfig::AffineConfig(uint32_t const outputElementCountIn, uint32_t const inputVectorCountIn,
@@ -95,8 +93,7 @@ AffineConfig::AffineConfig(uint32_t const outputElementCountIn, uint32_t const i
     inputElementCount{inputElementCountIn},
     input{inputIn},
     output{outputIn},
-    saturationCount{nullptr},
-    fvBuffers{nullptr},
+    execution{nullptr},
     weights1B{static_cast<int8_t const *>(weightsIn)},
     biasesCompound{static_cast<nn_bias_c const *>(biases)},
     multiBias{static_cast<nn_bias_s const *>(multiBiasIn)},
@@ -113,8 +110,7 @@ AffineConfig::AffineConfig(uint32_t const outputElementCountIn, uint32_t const i
     inputElementCount{inputElementCountIn},
     input{inputIn},
     output{outputIn},
-    saturationCount{nullptr},
-    fvBuffers{nullptr},
+    execution{nullptr},
     weights1B{static_cast<int8_t const *>(weightsIn)},
     biasesCompound{static_cast<nn_bias_c const *>(biases)},
     multiBias{static_cast<nn_bias_s const *>(multiBiasIn)},
@@ -127,10 +123,10 @@ AffineConfigAl::AffineConfigAl(uint32_t const * indicesIn, uint32_t const countI
     count{countIn}
 {}
 
-RecurrentConfig::RecurrentConfig(RecurrentConfig const * const source, uint32_t * saturationCountIn) :
+RecurrentConfig::RecurrentConfig(RecurrentConfig const * const source, ExecutionConfig const & executionConfigIn) :
     RecurrentConfig{*source}
 {
-    saturationCount = saturationCountIn;
+    execution = &executionConfigIn;
 }
 
 RecurrentConfig::RecurrentConfig(uint32_t const outputElementCountIn,
@@ -143,7 +139,7 @@ RecurrentConfig::RecurrentConfig(uint32_t const outputElementCountIn,
     input{inputIn},
     feedbackBuffer{feedbackBufferIn},
     output{outputIn},
-    saturationCount{nullptr},
+    execution{nullptr},
     weights1B{static_cast<int8_t const *>(weightsIn)},
     biasesCompound{static_cast<nn_bias_c const *>(biases)},
     activation{pwl, BaseConfig(outputIn, outputActivatedIn)}
@@ -161,7 +157,7 @@ RecurrentConfig::RecurrentConfig(uint32_t const outputElementCountIn,
     input{inputIn},
     feedbackBuffer{feedbackBufferIn},
     output{outputIn},
-    saturationCount{nullptr},
+    execution{nullptr},
     bytesPerBias{bytesPerBiasIn},
     bytesPerOutput{bytesPerOutputIn},
     weights1B{static_cast<int8_t const *>(weightsIn)},
@@ -196,10 +192,10 @@ ConvolutionConfig::ConvolutionConfig(ConvolutionConfig const * const source,
 }
 
 ConvolutionConfig::ConvolutionConfig(ConvolutionConfig const * const source,
-    uint32_t * const saturationCountIn) :
+    ExecutionConfig const & executionConfigIn) :
     ConvolutionConfig{*source}
 {
-    saturationCount = saturationCountIn;
+    execution = &executionConfigIn;
 }
 
 ConvolutionConfig::ConvolutionConfig(uint32_t const inputBandStrideIn,
@@ -214,7 +210,7 @@ ConvolutionConfig::ConvolutionConfig(uint32_t const inputBandStrideIn,
     filters{filtersIn},
     biases{biasesIn},
     convolutedOutputs{outputsIn},
-    saturationCount{nullptr}
+    execution{nullptr}
 {}
 
 ConvolutionConfig::ConvolutionConfig(uint32_t const inputBandStrideIn,
@@ -232,8 +228,7 @@ ConvolutionConfig::ConvolutionConfig(uint32_t const inputBandStrideIn,
     filters{filtersIn},
     biases{biasesIn},
     convolutedOutputs{outputsIn},
-    saturationCount{nullptr}
-
+    execution{nullptr}
 {}
 
 PoolingConfig::PoolingConfig(PoolingConfig const * const source, int64_t * const bufferIn) :

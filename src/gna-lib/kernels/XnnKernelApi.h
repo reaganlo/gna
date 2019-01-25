@@ -36,7 +36,7 @@ namespace GNA
 
 // TODO:3: move to layer/functions base header
 template<typename KernelType>
-using KernelMap = std::map<acceleration, KernelType>;
+using KernelMap = std::map<AccelerationMode, KernelType>;
 
 typedef void (*VoidKernel)();
 

@@ -115,36 +115,36 @@ void AffineActiveListKernelImpl2B(AffineConfig const * const config, AffineConfi
     switch (config->inputVectorCount)
     {
     case 8: 
-        for (i = 0; i < config->inputElementCount; i++) config->fvBuffers->d7[i] = config->input[i*config->inputVectorCount + 7];
-        in_ptr7 = (__m128i*)config->fvBuffers->d7;
-        input_7 = config->fvBuffers->d7 + KK;
+        for (i = 0; i < config->inputElementCount; i++) config->execution->Intermediate->d7[i] = config->input[i*config->inputVectorCount + 7];
+        in_ptr7 = (__m128i*)config->execution->Intermediate->d7;
+        input_7 = config->execution->Intermediate->d7 + KK;
     case 7: 
-        for (i = 0; i < config->inputElementCount; i++) config->fvBuffers->d6[i] = config->input[i*config->inputVectorCount + 6];
-        in_ptr6 = (__m128i*)config->fvBuffers->d6;
-        input_6 = config->fvBuffers->d6 + KK;
+        for (i = 0; i < config->inputElementCount; i++) config->execution->Intermediate->d6[i] = config->input[i*config->inputVectorCount + 6];
+        in_ptr6 = (__m128i*)config->execution->Intermediate->d6;
+        input_6 = config->execution->Intermediate->d6 + KK;
     case 6: 
-        for (i = 0; i < config->inputElementCount; i++) config->fvBuffers->d5[i] = config->input[i*config->inputVectorCount + 5];
-        in_ptr5 = (__m128i*)config->fvBuffers->d5;
-        input_5 = config->fvBuffers->d5 + KK;
+        for (i = 0; i < config->inputElementCount; i++) config->execution->Intermediate->d5[i] = config->input[i*config->inputVectorCount + 5];
+        in_ptr5 = (__m128i*)config->execution->Intermediate->d5;
+        input_5 = config->execution->Intermediate->d5 + KK;
     case 5: 
-        for (i = 0; i < config->inputElementCount; i++) config->fvBuffers->d4[i] = config->input[i*config->inputVectorCount + 4];
-        in_ptr4 = (__m128i*)config->fvBuffers->d4;
-        input_4 = config->fvBuffers->d4 + KK;
+        for (i = 0; i < config->inputElementCount; i++) config->execution->Intermediate->d4[i] = config->input[i*config->inputVectorCount + 4];
+        in_ptr4 = (__m128i*)config->execution->Intermediate->d4;
+        input_4 = config->execution->Intermediate->d4 + KK;
     case 4: 
-        for (i = 0; i < config->inputElementCount; i++) config->fvBuffers->d3[i] = config->input[i*config->inputVectorCount + 3];
-        in_ptr3 = (__m128i*)config->fvBuffers->d3;
-        input_3 = config->fvBuffers->d3 + KK;
+        for (i = 0; i < config->inputElementCount; i++) config->execution->Intermediate->d3[i] = config->input[i*config->inputVectorCount + 3];
+        in_ptr3 = (__m128i*)config->execution->Intermediate->d3;
+        input_3 = config->execution->Intermediate->d3 + KK;
     case 3: 
-        for (i = 0; i < config->inputElementCount; i++) config->fvBuffers->d2[i] = config->input[i*config->inputVectorCount + 2];
-        in_ptr2 = (__m128i*)config->fvBuffers->d2;
-        input_2 = config->fvBuffers->d2 + KK;
+        for (i = 0; i < config->inputElementCount; i++) config->execution->Intermediate->d2[i] = config->input[i*config->inputVectorCount + 2];
+        in_ptr2 = (__m128i*)config->execution->Intermediate->d2;
+        input_2 = config->execution->Intermediate->d2 + KK;
     case 2: 
-        for (i = 0; i < config->inputElementCount; i++) config->fvBuffers->d1[i] = config->input[i*config->inputVectorCount + 1];
-        in_ptr1 = (__m128i*)config->fvBuffers->d1;
-        input_1 = config->fvBuffers->d1 + KK;
-        for (i = 0; i < config->inputElementCount; i++) config->fvBuffers->d0[i] = config->input[i*config->inputVectorCount];
-        in_ptr0 = (__m128i*)config->fvBuffers->d0;
-        input_0 = config->fvBuffers->d0 + KK;
+        for (i = 0; i < config->inputElementCount; i++) config->execution->Intermediate->d1[i] = config->input[i*config->inputVectorCount + 1];
+        in_ptr1 = (__m128i*)config->execution->Intermediate->d1;
+        input_1 = config->execution->Intermediate->d1 + KK;
+        for (i = 0; i < config->inputElementCount; i++) config->execution->Intermediate->d0[i] = config->input[i*config->inputVectorCount];
+        in_ptr0 = (__m128i*)config->execution->Intermediate->d0;
+        input_0 = config->execution->Intermediate->d0 + KK;
     }
     ix_end = KK / SSE_16CAP;
 

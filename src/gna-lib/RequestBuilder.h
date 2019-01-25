@@ -42,14 +42,16 @@ public:
     RequestBuilder(const RequestBuilder &) = delete;
     RequestBuilder& operator=(const RequestBuilder&) = delete;
 
-    void CreateConfiguration(CompiledModel& model, gna_request_cfg_id *configId);
+    void CreateConfiguration(CompiledModel& model, gna_request_cfg_id *configId, gna_device_version consistentDevice);
+    void ReleaseConfiguration(gna_request_cfg_id configId);
+
     void AttachBuffer(gna_request_cfg_id configId, GnaComponentType type, uint32_t layerIndex, void * address) const;
     void AttachActiveList(gna_request_cfg_id configId, uint32_t layerIndex, const ActiveList& activeList) const;
     RequestConfiguration& GetConfiguration(gna_request_cfg_id configId) const;
-    std::unique_ptr<Request> CreateRequest(gna_request_cfg_id configId, acceleration accel);
+    std::unique_ptr<Request> CreateRequest(gna_request_cfg_id configId);
 
 private:
-    std::vector<std::unique_ptr<RequestConfiguration>> configurationVector;
+    std::unordered_map<uint32_t, std::unique_ptr<RequestConfiguration>> configurations;
     gna_request_cfg_id assignConfigId();
 
     gna_request_cfg_id configIdSequence = 0;

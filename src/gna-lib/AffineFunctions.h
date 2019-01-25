@@ -50,9 +50,9 @@ public:
     std::unique_ptr<const AffineConfig> GetRequestConfig(const BaseAddress& inputs,
         const BaseAddress& outputs) const;
 
-    void ComputeHidden(acceleration accel, ExecutionConfig const & execution) const;
+    void ComputeHidden(AccelerationMode accel, ExecutionConfig const & execution) const;
     virtual void Compute(const LayerConfiguration& layerConfiguration,
-        acceleration accel, ExecutionConfig const & execution) const;
+        AccelerationMode accel, ExecutionConfig const & execution) const;
 
     std::unique_ptr<const WeightTensor> Weights;
     std::unique_ptr<const BiasTensor> Biases;
@@ -74,7 +74,7 @@ public:
         const KernelMap<AffineActiveListKernel>& kernelsAl);
     ~AffineFunctionSingle() = default;
 
-    virtual void Compute(const LayerConfiguration& layerConfiguration, acceleration accel,
+    virtual void Compute(const LayerConfiguration& layerConfiguration, AccelerationMode accel,
         ExecutionConfig const & execution) const override;
 
 protected:

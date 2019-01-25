@@ -269,7 +269,7 @@ void ConvolutionPoolingKernelImpl(ConvolutionConfig const * const filterConfig,
     const int16_t* const F = filterConfig->filters;
     const nn_bias_s * const B = filterConfig->biases;
     int16_t * const O = filterConfig->pooledOutputs;
-    uint32_t * const saturationCount = filterConfig->saturationCount;
+    uint32_t * const saturationCount = filterConfig->execution->SaturationCount;
 
     const nn_pool_type PT = poolConfig->type;
     const uint32_t PS = poolConfig->size;

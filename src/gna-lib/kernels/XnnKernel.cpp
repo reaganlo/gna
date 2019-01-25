@@ -33,8 +33,6 @@
 #include "igemv8.h"
 #include "KernelMacros.h"
 
-const uint32_t * hw_buf_size = nullptr;
-
 namespace GNA
 {
 
@@ -44,13 +42,7 @@ namespace GNA
 #define copyKernelImpl KERNEL(copyKernelImpl)
 #define copyKernelImpl1B KERNEL(copyKernelImpl1B)
 #define copyKernelImpl2B KERNEL(copyKernelImpl2B)
-#define setHwCompatibilityMode KERNEL(setHwCompatibilityMode)
 #define InitializeActivationFunctions KERNEL(InitializeActivationFunctions)
-
-void setHwCompatibilityMode(uint32_t bufferElementCounts[2][XNN_N_GROUP_MAX])
-{
-    hw_buf_size = (const uint32_t *)bufferElementCounts;
-}
 
 #if OPT_LEVEL < 2
 #define recurrentKernelImpl1B1B KERNEL(recurrentKernelImpl1B1B)
@@ -69,7 +61,7 @@ void recurrentKernelImpl1B(RecurrentConfig const * const config)
 {
     auto runConfig = RecurrentConfig(*config); // local modifiable copy
     auto activationCfg = ExecutionKernelConfig<ActivationConfig>{
-        &runConfig.activation, {nullptr, runConfig.saturationCount}};
+        &runConfig.activation, *runConfig.execution};
     auto& activation = activationCfg.RequestConfig->Transform;
     auto io = activationCfg.RequestConfig;
 
@@ -92,7 +84,7 @@ void recurrentKernelImpl2B(RecurrentConfig const * const config)
 {
     auto runConfig = RecurrentConfig(*config); // local modifiable copy
     auto activationCfg = ExecutionKernelConfig<ActivationConfig>{
-        &runConfig.activation, {nullptr, runConfig.saturationCount}};
+        &runConfig.activation, *runConfig.execution};
     auto& activation = activationCfg.RequestConfig->Transform;
     auto io = activationCfg.RequestConfig;
 
@@ -116,7 +108,7 @@ void recurrentKernelImpl1B1B(RecurrentConfig const * const config)
 {
     auto runConfig = RecurrentConfig(*config); // local modifiable copy
     auto activationCfg = ExecutionKernelConfig<ActivationConfig>{
-        &runConfig.activation, {nullptr, runConfig.saturationCount}};
+        &runConfig.activation, *runConfig.execution};
     auto& activation = activationCfg.RequestConfig->Transform;
     auto io = activationCfg.RequestConfig;
 
@@ -141,7 +133,7 @@ void recurrentKernelImpl1B2B(RecurrentConfig const * const config)
 {
      auto runConfig = RecurrentConfig(*config); // local modifiable copy
     auto activationCfg = ExecutionKernelConfig<ActivationConfig>{
-        &runConfig.activation, {nullptr, runConfig.saturationCount}};
+        &runConfig.activation, *runConfig.execution};
     auto& activation = activationCfg.RequestConfig->Transform;
     auto io = activationCfg.RequestConfig;
 
@@ -167,7 +159,7 @@ void recurrentKernelImpl2B1B(RecurrentConfig const * const config)
 {
     auto runConfig = RecurrentConfig(*config); // local modifiable copy
     auto activationCfg = ExecutionKernelConfig<ActivationConfig>{
-        &runConfig.activation, {nullptr, runConfig.saturationCount}};
+        &runConfig.activation, *runConfig.execution};
     auto& activation = activationCfg.RequestConfig->Transform;
     auto io = activationCfg.RequestConfig;
 
@@ -193,7 +185,7 @@ void recurrentKernelImpl2B2B(RecurrentConfig const * const config)
 {
     auto runConfig = RecurrentConfig(*config); // local modifiable copy
     auto activationCfg = ExecutionKernelConfig<ActivationConfig>{
-        &runConfig.activation, {nullptr, runConfig.saturationCount}};
+        &runConfig.activation, *runConfig.execution};
     auto& activation = activationCfg.RequestConfig->Transform;
     auto io = activationCfg.RequestConfig;
 

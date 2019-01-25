@@ -42,8 +42,8 @@ public:
     const uint32_t FeedbackDelay;
 
 private:
-    void computeHidden(acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const;
-    void compute(const LayerConfiguration& layerConfiguration, acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const;
+    void computeHidden(AccelerationMode accel, ExecutionConfig const & executionConfig) const;
+    void compute(const LayerConfiguration& layerConfiguration, AccelerationMode accel, ExecutionConfig const & executionConfig) const;
 
     const KernelMap<RecurrentKernel>& recurrentKernels;
 

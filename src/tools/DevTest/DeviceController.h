@@ -43,8 +43,11 @@ public:
     gna_request_cfg_id ConfigAdd(gna_model_id);
 
     void BufferAdd(gna_request_cfg_id, GnaComponentType, uint32_t layerIndex, void * address);
+    void RequestSetAcceleration(gna_request_cfg_id, gna_acceleration);
+    void RequestSetConsistency(gna_request_cfg_id, gna_device_version);
 
-    void RequestEnqueue(gna_request_cfg_id, gna_acceleration, gna_request_id *);
+
+    void RequestEnqueue(gna_request_cfg_id, gna_request_id *);
     void RequestWait(gna_request_id);
 
     void ActiveListAdd(gna_request_cfg_id configId, uint32_t layerIndex, uint32_t indicesCount, uint32_t* indices);

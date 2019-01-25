@@ -44,7 +44,7 @@ struct PoolingFunction
         const KernelMap<ConvolutionPoolingKernel>& kernels);
     ~PoolingFunction() = default;
 
-    void Compute(const ConvolutionConfig * convolutionConfig, acceleration accel, int64_t * poolScratchPad,
+    void Compute(const ConvolutionConfig * convolutionConfig, AccelerationMode accel, int64_t * poolScratchPad,
         const PwlCached * Pwl) const;
 
     const nn_pool_type Type;

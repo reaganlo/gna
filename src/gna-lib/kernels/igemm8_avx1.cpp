@@ -128,22 +128,22 @@ void AffineKernelImpl1B(AffineConfig const * const config)
         return;
     }
 
-    input_0 = config->fvBuffers->d0 + KK;
-    input_1 = config->fvBuffers->d1 + KK;
-    input_2 = config->fvBuffers->d2 + KK;
-    input_3 = config->fvBuffers->d3 + KK;
+    input_0 = config->execution->Intermediate->d0 + KK;
+    input_1 = config->execution->Intermediate->d1 + KK;
+    input_2 = config->execution->Intermediate->d2 + KK;
+    input_3 = config->execution->Intermediate->d3 + KK;
 
-    in_ptr0 = (__m256i*)config->fvBuffers->d0;
-    in_ptr1 = (__m256i*)config->fvBuffers->d1;
-    in_ptr2 = (__m256i*)config->fvBuffers->d2;
-    in_ptr3 = (__m256i*)config->fvBuffers->d3;
+    in_ptr0 = (__m256i*)config->execution->Intermediate->d0;
+    in_ptr1 = (__m256i*)config->execution->Intermediate->d1;
+    in_ptr2 = (__m256i*)config->execution->Intermediate->d2;
+    in_ptr3 = (__m256i*)config->execution->Intermediate->d3;
 
     switch (config->inputVectorCount)
     {
-    case 4: for (i = 0; i < config->inputElementCount; i++) config->fvBuffers->d3[i] = config->input[i*config->inputVectorCount + 3];
-    case 3: for (i = 0; i < config->inputElementCount; i++) config->fvBuffers->d2[i] = config->input[i*config->inputVectorCount + 2];
-    case 2: for (i = 0; i < config->inputElementCount; i++) config->fvBuffers->d1[i] = config->input[i*config->inputVectorCount + 1];
-            for (i = 0; i < config->inputElementCount; i++) config->fvBuffers->d0[i] = config->input[i*config->inputVectorCount];
+    case 4: for (i = 0; i < config->inputElementCount; i++) config->execution->Intermediate->d3[i] = config->input[i*config->inputVectorCount + 3];
+    case 3: for (i = 0; i < config->inputElementCount; i++) config->execution->Intermediate->d2[i] = config->input[i*config->inputVectorCount + 2];
+    case 2: for (i = 0; i < config->inputElementCount; i++) config->execution->Intermediate->d1[i] = config->input[i*config->inputVectorCount + 1];
+            for (i = 0; i < config->inputElementCount; i++) config->execution->Intermediate->d0[i] = config->input[i*config->inputVectorCount];
     }
 
     if (2 == config->inputVectorCount)
@@ -323,20 +323,20 @@ void AffineKernelImpl1B(AffineConfig const * const config)
     KK = config->inputElementCount - KT;
     ix_end = 2 * KK / VEC_16CAP;
 
-    //config->fvBuffers->d1 = config->fvBuffers->d0 + 2 * (UINT16_MAX + 1);
-    //config->fvBuffers->d2 = config->fvBuffers->d0 + 2 * (UINT16_MAX + 1);
-    //config->fvBuffers->d3 = config->fvBuffers->d0 + 2 * (UINT16_MAX + 1);
-    //config->fvBuffers->d4 = config->fvBuffers->d0 + 2 * (UINT16_MAX + 1);
+    //config->execution->Intermediate->d1 = config->execution->Intermediate->d0 + 2 * (UINT16_MAX + 1);
+    //config->execution->Intermediate->d2 = config->execution->Intermediate->d0 + 2 * (UINT16_MAX + 1);
+    //config->execution->Intermediate->d3 = config->execution->Intermediate->d0 + 2 * (UINT16_MAX + 1);
+    //config->execution->Intermediate->d4 = config->execution->Intermediate->d0 + 2 * (UINT16_MAX + 1);
 
-    in_ptr0 = (__m256i*)config->fvBuffers->d0;
-    in_ptr1 = (__m256i*)config->fvBuffers->d2;
-    in_ptr2 = (__m256i*)config->fvBuffers->d4;
-    in_ptr3 = (__m256i*)config->fvBuffers->d6;
+    in_ptr0 = (__m256i*)config->execution->Intermediate->d0;
+    in_ptr1 = (__m256i*)config->execution->Intermediate->d2;
+    in_ptr2 = (__m256i*)config->execution->Intermediate->d4;
+    in_ptr3 = (__m256i*)config->execution->Intermediate->d6;
 
-    input_0 = config->fvBuffers->d0 + 2 * KK;
-    input_1 = config->fvBuffers->d2 + 2 * KK;
-    input_2 = config->fvBuffers->d4 + 2 * KK;
-    input_3 = config->fvBuffers->d6 + 2 * KK;
+    input_0 = config->execution->Intermediate->d0 + 2 * KK;
+    input_1 = config->execution->Intermediate->d2 + 2 * KK;
+    input_2 = config->execution->Intermediate->d4 + 2 * KK;
+    input_3 = config->execution->Intermediate->d6 + 2 * KK;
 
     if (5 == config->inputVectorCount)
     {
@@ -345,20 +345,20 @@ void AffineKernelImpl1B(AffineConfig const * const config)
             i = j / 2;
             for (k = i; k < i + 8 && k < config->inputElementCount; k++, j++)
             {
-                config->fvBuffers->d0[j] = config->input[k*config->inputVectorCount];
-                config->fvBuffers->d2[j] = config->input[k*config->inputVectorCount + 2];
+                config->execution->Intermediate->d0[j] = config->input[k*config->inputVectorCount];
+                config->execution->Intermediate->d2[j] = config->input[k*config->inputVectorCount + 2];
             }
             for (k = i; k < i + 8 && k < config->inputElementCount; k++, j++)
             {
-                config->fvBuffers->d0[j] = config->input[k*config->inputVectorCount + 1];
-                config->fvBuffers->d2[j] = config->input[k*config->inputVectorCount + 3];
+                config->execution->Intermediate->d0[j] = config->input[k*config->inputVectorCount + 1];
+                config->execution->Intermediate->d2[j] = config->input[k*config->inputVectorCount + 3];
             }
         }
-        for (i = 0; i < config->inputElementCount; i++) config->fvBuffers->d4[i] = config->input[i*config->inputVectorCount + 4];
+        for (i = 0; i < config->inputElementCount; i++) config->execution->Intermediate->d4[i] = config->input[i*config->inputVectorCount + 4];
 
         for (bias = config->biasesCompound; bias < biasEnd; bias++)
         {
-            input_2 = config->fvBuffers->d4;
+            input_2 = config->execution->Intermediate->d4;
 
             acc0 = _mm_setzero_si128();
             acc1 = _mm_setzero_si128();
@@ -421,15 +421,15 @@ void AffineKernelImpl1B(AffineConfig const * const config)
             i = j / 2;
             for (k = i; k < i + 8 && k < config->inputElementCount; k++, j++)
             {
-                config->fvBuffers->d0[j] = config->input[k*config->inputVectorCount];
-                config->fvBuffers->d2[j] = config->input[k*config->inputVectorCount + 2];
-                config->fvBuffers->d4[j] = config->input[k*config->inputVectorCount + 4];
+                config->execution->Intermediate->d0[j] = config->input[k*config->inputVectorCount];
+                config->execution->Intermediate->d2[j] = config->input[k*config->inputVectorCount + 2];
+                config->execution->Intermediate->d4[j] = config->input[k*config->inputVectorCount + 4];
             }
             for (k = i; k < i + 8 && k < config->inputElementCount; k++, j++)
             {
-                config->fvBuffers->d0[j] = config->input[k*config->inputVectorCount + 1];
-                config->fvBuffers->d2[j] = config->input[k*config->inputVectorCount + 3];
-                config->fvBuffers->d4[j] = config->input[k*config->inputVectorCount + 5];
+                config->execution->Intermediate->d0[j] = config->input[k*config->inputVectorCount + 1];
+                config->execution->Intermediate->d2[j] = config->input[k*config->inputVectorCount + 3];
+                config->execution->Intermediate->d4[j] = config->input[k*config->inputVectorCount + 5];
             }
         }
 
@@ -502,23 +502,23 @@ void AffineKernelImpl1B(AffineConfig const * const config)
             i = j / 2;
             for (k = i; k < i + 8 && k < config->inputElementCount; k++, j++)
             {
-                config->fvBuffers->d0[j] = config->input[k*config->inputVectorCount];
-                config->fvBuffers->d2[j] = config->input[k*config->inputVectorCount + 2];
-                config->fvBuffers->d4[j] = config->input[k*config->inputVectorCount + 4];
+                config->execution->Intermediate->d0[j] = config->input[k*config->inputVectorCount];
+                config->execution->Intermediate->d2[j] = config->input[k*config->inputVectorCount + 2];
+                config->execution->Intermediate->d4[j] = config->input[k*config->inputVectorCount + 4];
             }
             for (k = i; k < i + 8 && k < config->inputElementCount; k++, j++)
             {
-                config->fvBuffers->d0[j] = config->input[k*config->inputVectorCount + 1];
-                config->fvBuffers->d2[j] = config->input[k*config->inputVectorCount + 3];
-                config->fvBuffers->d4[j] = config->input[k*config->inputVectorCount + 5];
+                config->execution->Intermediate->d0[j] = config->input[k*config->inputVectorCount + 1];
+                config->execution->Intermediate->d2[j] = config->input[k*config->inputVectorCount + 3];
+                config->execution->Intermediate->d4[j] = config->input[k*config->inputVectorCount + 5];
             }
         }
 
-        for (i = 0; i < config->inputElementCount; i++) config->fvBuffers->d6[i] = config->input[i*config->inputVectorCount + 6];
+        for (i = 0; i < config->inputElementCount; i++) config->execution->Intermediate->d6[i] = config->input[i*config->inputVectorCount + 6];
 
         for (bias = config->biasesCompound; bias < biasEnd; bias++)
         {
-            input_3 = config->fvBuffers->d6;
+            input_3 = config->execution->Intermediate->d6;
 
             acc0 = _mm_setzero_si128();
             acc1 = _mm_setzero_si128();
@@ -593,17 +593,17 @@ void AffineKernelImpl1B(AffineConfig const * const config)
             i = j / 2;
             for (k = i; k < i + 8 && k < config->inputElementCount; k++, j++)
             {
-                config->fvBuffers->d0[j] = config->input[k*config->inputVectorCount];
-                config->fvBuffers->d2[j] = config->input[k*config->inputVectorCount + 2];
-                config->fvBuffers->d4[j] = config->input[k*config->inputVectorCount + 4];
-                config->fvBuffers->d6[j] = config->input[k*config->inputVectorCount + 6];
+                config->execution->Intermediate->d0[j] = config->input[k*config->inputVectorCount];
+                config->execution->Intermediate->d2[j] = config->input[k*config->inputVectorCount + 2];
+                config->execution->Intermediate->d4[j] = config->input[k*config->inputVectorCount + 4];
+                config->execution->Intermediate->d6[j] = config->input[k*config->inputVectorCount + 6];
             }
             for (k = i; k < i + 8 && k < config->inputElementCount; k++, j++)
             {
-                config->fvBuffers->d0[j] = config->input[k*config->inputVectorCount + 1];
-                config->fvBuffers->d2[j] = config->input[k*config->inputVectorCount + 3];
-                config->fvBuffers->d4[j] = config->input[k*config->inputVectorCount + 5];
-                config->fvBuffers->d6[j] = config->input[k*config->inputVectorCount + 7];
+                config->execution->Intermediate->d0[j] = config->input[k*config->inputVectorCount + 1];
+                config->execution->Intermediate->d2[j] = config->input[k*config->inputVectorCount + 3];
+                config->execution->Intermediate->d4[j] = config->input[k*config->inputVectorCount + 5];
+                config->execution->Intermediate->d6[j] = config->input[k*config->inputVectorCount + 7];
             }
         }
 
@@ -795,22 +795,22 @@ void AffineMultiBiasKernelImpl1B(AffineConfig const * const config)
         return;
     }
 
-    input_0 = config->fvBuffers->d0 + KK;
-    input_1 = config->fvBuffers->d1 + KK;
-    input_2 = config->fvBuffers->d2 + KK;
-    input_3 = config->fvBuffers->d3 + KK;
+    input_0 = config->execution->Intermediate->d0 + KK;
+    input_1 = config->execution->Intermediate->d1 + KK;
+    input_2 = config->execution->Intermediate->d2 + KK;
+    input_3 = config->execution->Intermediate->d3 + KK;
 
-    in_ptr0 = (__m256i*)config->fvBuffers->d0;
-    in_ptr1 = (__m256i*)config->fvBuffers->d1;
-    in_ptr2 = (__m256i*)config->fvBuffers->d2;
-    in_ptr3 = (__m256i*)config->fvBuffers->d3;
+    in_ptr0 = (__m256i*)config->execution->Intermediate->d0;
+    in_ptr1 = (__m256i*)config->execution->Intermediate->d1;
+    in_ptr2 = (__m256i*)config->execution->Intermediate->d2;
+    in_ptr3 = (__m256i*)config->execution->Intermediate->d3;
 
     switch (config->inputVectorCount)
     {
-    case 4: for (i = 0; i < config->inputElementCount; i++) config->fvBuffers->d3[i] = config->input[i*config->inputVectorCount + 3];
-    case 3: for (i = 0; i < config->inputElementCount; i++) config->fvBuffers->d2[i] = config->input[i*config->inputVectorCount + 2];
-    case 2: for (i = 0; i < config->inputElementCount; i++) config->fvBuffers->d1[i] = config->input[i*config->inputVectorCount + 1];
-            for (i = 0; i < config->inputElementCount; i++) config->fvBuffers->d0[i] = config->input[i*config->inputVectorCount];
+    case 4: for (i = 0; i < config->inputElementCount; i++) config->execution->Intermediate->d3[i] = config->input[i*config->inputVectorCount + 3];
+    case 3: for (i = 0; i < config->inputElementCount; i++) config->execution->Intermediate->d2[i] = config->input[i*config->inputVectorCount + 2];
+    case 2: for (i = 0; i < config->inputElementCount; i++) config->execution->Intermediate->d1[i] = config->input[i*config->inputVectorCount + 1];
+            for (i = 0; i < config->inputElementCount; i++) config->execution->Intermediate->d0[i] = config->input[i*config->inputVectorCount];
     }
 
     if (2 == config->inputVectorCount)
@@ -993,20 +993,20 @@ void AffineMultiBiasKernelImpl1B(AffineConfig const * const config)
     KK = config->inputElementCount - KT;
     ix_end = 2 * KK / VEC_16CAP;
 
-    //config->fvBuffers->d1 = config->fvBuffers->d0 + 2 * (UINT16_MAX + 1);
-    //config->fvBuffers->d2 = config->fvBuffers->d0 + 2 * (UINT16_MAX + 1);
-    //config->fvBuffers->d3 = config->fvBuffers->d0 + 2 * (UINT16_MAX + 1);
-    //config->fvBuffers->d4 = config->fvBuffers->d0 + 2 * (UINT16_MAX + 1);
+    //config->execution->Intermediate->d1 = config->execution->Intermediate->d0 + 2 * (UINT16_MAX + 1);
+    //config->execution->Intermediate->d2 = config->execution->Intermediate->d0 + 2 * (UINT16_MAX + 1);
+    //config->execution->Intermediate->d3 = config->execution->Intermediate->d0 + 2 * (UINT16_MAX + 1);
+    //config->execution->Intermediate->d4 = config->execution->Intermediate->d0 + 2 * (UINT16_MAX + 1);
 
-    in_ptr0 = (__m256i*)config->fvBuffers->d0;
-    in_ptr1 = (__m256i*)config->fvBuffers->d2;
-    in_ptr2 = (__m256i*)config->fvBuffers->d4;
-    in_ptr3 = (__m256i*)config->fvBuffers->d6;
+    in_ptr0 = (__m256i*)config->execution->Intermediate->d0;
+    in_ptr1 = (__m256i*)config->execution->Intermediate->d2;
+    in_ptr2 = (__m256i*)config->execution->Intermediate->d4;
+    in_ptr3 = (__m256i*)config->execution->Intermediate->d6;
 
-    input_0 = config->fvBuffers->d0 + 2 * KK;
-    input_1 = config->fvBuffers->d2 + 2 * KK;
-    input_2 = config->fvBuffers->d4 + 2 * KK;
-    input_3 = config->fvBuffers->d6 + 2 * KK;
+    input_0 = config->execution->Intermediate->d0 + 2 * KK;
+    input_1 = config->execution->Intermediate->d2 + 2 * KK;
+    input_2 = config->execution->Intermediate->d4 + 2 * KK;
+    input_3 = config->execution->Intermediate->d6 + 2 * KK;
 
     if (5 == config->inputVectorCount)
     {
@@ -1015,20 +1015,20 @@ void AffineMultiBiasKernelImpl1B(AffineConfig const * const config)
             i = j / 2;
             for (k = i; k < i + 8 && k < config->inputElementCount; k++, j++)
             {
-                config->fvBuffers->d0[j] = config->input[k*config->inputVectorCount];
-                config->fvBuffers->d2[j] = config->input[k*config->inputVectorCount + 2];
+                config->execution->Intermediate->d0[j] = config->input[k*config->inputVectorCount];
+                config->execution->Intermediate->d2[j] = config->input[k*config->inputVectorCount + 2];
             }
             for (k = i; k < i + 8 && k < config->inputElementCount; k++, j++)
             {
-                config->fvBuffers->d0[j] = config->input[k*config->inputVectorCount + 1];
-                config->fvBuffers->d2[j] = config->input[k*config->inputVectorCount + 3];
+                config->execution->Intermediate->d0[j] = config->input[k*config->inputVectorCount + 1];
+                config->execution->Intermediate->d2[j] = config->input[k*config->inputVectorCount + 3];
             }
         }
-        for (i = 0; i < config->inputElementCount; i++) config->fvBuffers->d4[i] = config->input[i*config->inputVectorCount + 4];
+        for (i = 0; i < config->inputElementCount; i++) config->execution->Intermediate->d4[i] = config->input[i*config->inputVectorCount + 4];
 
         for (multiBias = config->multiBias; multiBias < biasEnd; multiBias+=config->multiBiasVectorCount)
         {
-            input_2 = config->fvBuffers->d4;
+            input_2 = config->execution->Intermediate->d4;
 
             acc0 = _mm_setzero_si128();
             acc1 = _mm_setzero_si128();
@@ -1092,15 +1092,15 @@ void AffineMultiBiasKernelImpl1B(AffineConfig const * const config)
             i = j / 2;
             for (k = i; k < i + 8 && k < config->inputElementCount; k++, j++)
             {
-                config->fvBuffers->d0[j] = config->input[k*config->inputVectorCount];
-                config->fvBuffers->d2[j] = config->input[k*config->inputVectorCount + 2];
-                config->fvBuffers->d4[j] = config->input[k*config->inputVectorCount + 4];
+                config->execution->Intermediate->d0[j] = config->input[k*config->inputVectorCount];
+                config->execution->Intermediate->d2[j] = config->input[k*config->inputVectorCount + 2];
+                config->execution->Intermediate->d4[j] = config->input[k*config->inputVectorCount + 4];
             }
             for (k = i; k < i + 8 && k < config->inputElementCount; k++, j++)
             {
-                config->fvBuffers->d0[j] = config->input[k*config->inputVectorCount + 1];
-                config->fvBuffers->d2[j] = config->input[k*config->inputVectorCount + 3];
-                config->fvBuffers->d4[j] = config->input[k*config->inputVectorCount + 5];
+                config->execution->Intermediate->d0[j] = config->input[k*config->inputVectorCount + 1];
+                config->execution->Intermediate->d2[j] = config->input[k*config->inputVectorCount + 3];
+                config->execution->Intermediate->d4[j] = config->input[k*config->inputVectorCount + 5];
             }
         }
 
@@ -1174,23 +1174,23 @@ void AffineMultiBiasKernelImpl1B(AffineConfig const * const config)
             i = j / 2;
             for (k = i; k < i + 8 && k < config->inputElementCount; k++, j++)
             {
-                config->fvBuffers->d0[j] = config->input[k*config->inputVectorCount];
-                config->fvBuffers->d2[j] = config->input[k*config->inputVectorCount + 2];
-                config->fvBuffers->d4[j] = config->input[k*config->inputVectorCount + 4];
+                config->execution->Intermediate->d0[j] = config->input[k*config->inputVectorCount];
+                config->execution->Intermediate->d2[j] = config->input[k*config->inputVectorCount + 2];
+                config->execution->Intermediate->d4[j] = config->input[k*config->inputVectorCount + 4];
             }
             for (k = i; k < i + 8 && k < config->inputElementCount; k++, j++)
             {
-                config->fvBuffers->d0[j] = config->input[k*config->inputVectorCount + 1];
-                config->fvBuffers->d2[j] = config->input[k*config->inputVectorCount + 3];
-                config->fvBuffers->d4[j] = config->input[k*config->inputVectorCount + 5];
+                config->execution->Intermediate->d0[j] = config->input[k*config->inputVectorCount + 1];
+                config->execution->Intermediate->d2[j] = config->input[k*config->inputVectorCount + 3];
+                config->execution->Intermediate->d4[j] = config->input[k*config->inputVectorCount + 5];
             }
         }
 
-        for (i = 0; i < config->inputElementCount; i++) config->fvBuffers->d6[i] = config->input[i*config->inputVectorCount + 6];
+        for (i = 0; i < config->inputElementCount; i++) config->execution->Intermediate->d6[i] = config->input[i*config->inputVectorCount + 6];
 
         for (multiBias = config->multiBias; multiBias < biasEnd; multiBias+=config->multiBiasVectorCount)
         {
-            input_3 = config->fvBuffers->d6;
+            input_3 = config->execution->Intermediate->d6;
 
             acc0 = _mm_setzero_si128();
             acc1 = _mm_setzero_si128();
@@ -1266,17 +1266,17 @@ void AffineMultiBiasKernelImpl1B(AffineConfig const * const config)
             i = j / 2;
             for (k = i; k < i + 8 && k < config->inputElementCount; k++, j++)
             {
-                config->fvBuffers->d0[j] = config->input[k*config->inputVectorCount];
-                config->fvBuffers->d2[j] = config->input[k*config->inputVectorCount + 2];
-                config->fvBuffers->d4[j] = config->input[k*config->inputVectorCount + 4];
-                config->fvBuffers->d6[j] = config->input[k*config->inputVectorCount + 6];
+                config->execution->Intermediate->d0[j] = config->input[k*config->inputVectorCount];
+                config->execution->Intermediate->d2[j] = config->input[k*config->inputVectorCount + 2];
+                config->execution->Intermediate->d4[j] = config->input[k*config->inputVectorCount + 4];
+                config->execution->Intermediate->d6[j] = config->input[k*config->inputVectorCount + 6];
             }
             for (k = i; k < i + 8 && k < config->inputElementCount; k++, j++)
             {
-                config->fvBuffers->d0[j] = config->input[k*config->inputVectorCount + 1];
-                config->fvBuffers->d2[j] = config->input[k*config->inputVectorCount + 3];
-                config->fvBuffers->d4[j] = config->input[k*config->inputVectorCount + 5];
-                config->fvBuffers->d6[j] = config->input[k*config->inputVectorCount + 7];
+                config->execution->Intermediate->d0[j] = config->input[k*config->inputVectorCount + 1];
+                config->execution->Intermediate->d2[j] = config->input[k*config->inputVectorCount + 3];
+                config->execution->Intermediate->d4[j] = config->input[k*config->inputVectorCount + 5];
+                config->execution->Intermediate->d6[j] = config->input[k*config->inputVectorCount + 7];
             }
         }
 

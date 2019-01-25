@@ -49,8 +49,8 @@ public:
     virtual ~Layer() = default;
 
     // TODO:3: reduce complexity and optimization level to simplify code and logic, use single function
-    std::function<void(acceleration accel, KernelBuffers* kernelBuffers, uint32_t* saturationCount)> ComputeHidden;
-    std::function<void(LayerConfiguration &layerConfiguration, acceleration accel, KernelBuffers* kernelBuffers, uint32_t* saturationCount)> Compute;
+    std::function<void(AccelerationMode accel, ExecutionConfig const & executionConfig)> ComputeHidden;
+    std::function<void(LayerConfiguration &layerConfiguration, AccelerationMode accel, ExecutionConfig const & executionConfig)> Compute;
 
     virtual void UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const;
     virtual DataConfig GetDataMode() const;
@@ -81,7 +81,7 @@ protected:
         const BaseAddress& intermediateBuffer);
 
     void compute(const LayerConfiguration* layerConfiguration,
-        acceleration accel, ExecutionConfig const & execution) const
+        AccelerationMode accel, ExecutionConfig const & execution) const
     {
         for (const auto& transform : Transforms)
         {

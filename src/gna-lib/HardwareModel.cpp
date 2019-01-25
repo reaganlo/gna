@@ -76,7 +76,7 @@ status_t HardwareModel::Score(
 {
     UNREFERENCED_PARAMETER(buffers);
 
-    auto configId = requestConfiguration.ConfigId;
+    auto configId = requestConfiguration.Id;
     HardwareRequest *hwRequest = nullptr;
 
     if (hardwareRequests.find(configId) == hardwareRequests.end())

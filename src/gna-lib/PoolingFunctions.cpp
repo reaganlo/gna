@@ -120,7 +120,7 @@ PoolingFunction::PoolingFunction(nn_operation const operation, const Shape& inpu
 }
 
 // TODO:3: extract activation from pooling
-void PoolingFunction::Compute(const ConvolutionConfig * convolutionConfig, acceleration accel, int64_t * poolScratchPad,
+void PoolingFunction::Compute(const ConvolutionConfig * convolutionConfig, AccelerationMode accel, int64_t * poolScratchPad,
     const PwlCached * pwl) const
 {
     auto poolConfig = PoolingConfig{ hiddenConfig.get(), poolScratchPad };

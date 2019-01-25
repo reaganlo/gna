@@ -149,17 +149,17 @@ unique_ptr<const AffineConfig> AffineFunction::GetRequestConfig(const BaseAddres
     return make_unique<const AffineConfig>(inputs, outputs, hiddenConfig.get());
 }
 
-void AffineFunction::ComputeHidden(acceleration accel, ExecutionConfig const & execution) const
+void AffineFunction::ComputeHidden(AccelerationMode accel, ExecutionConfig const & execution) const
 {
-    auto kernelConfig = AffineConfig{hiddenConfig.get(), execution.SaturationCount, execution.Intermediate};
+    auto kernelConfig = AffineConfig{hiddenConfig.get(), execution};
 
     kernels.at(accel)(&kernelConfig);
 }
 
-void AffineFunction::Compute(const LayerConfiguration& layerConfiguration, acceleration accel,
+void AffineFunction::Compute(const LayerConfiguration& layerConfiguration, AccelerationMode accel,
     ExecutionConfig const & execution) const
 {
-    auto kernelConfig = AffineConfig{layerConfiguration.Configs.Affine.get(), execution.SaturationCount, execution.Intermediate};
+    auto kernelConfig = AffineConfig{layerConfiguration.Configs.Affine.get(), execution};
 
     kernels.at(accel)(&kernelConfig);
 }
@@ -179,10 +179,10 @@ AffineFunctionSingle::AffineFunctionSingle(const BaseAddress& input, const BaseA
          input, output, *Weights, *Biases, nullptr, 0, Biases->Mode);
 }
 
-void AffineFunctionSingle::Compute(const LayerConfiguration& layerConfiguration, acceleration accel,
+void AffineFunctionSingle::Compute(const LayerConfiguration& layerConfiguration, AccelerationMode accel,
     ExecutionConfig const & execution) const
 {
-    auto kernelConfig = AffineConfig{layerConfiguration.Configs.Affine.get(), execution.SaturationCount, execution.Intermediate};
+    auto kernelConfig = AffineConfig{layerConfiguration.Configs.Affine.get(), execution};
 
     if (layerConfiguration.ActList)
     {

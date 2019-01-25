@@ -36,9 +36,8 @@ using std::unique_ptr;
 
 using namespace GNA;
 
-Request::Request(RequestConfiguration& config, std::unique_ptr<RequestProfiler> profiler, acceleration accel) :
+Request::Request(RequestConfiguration& config, std::unique_ptr<RequestProfiler> profiler) :
     Configuration(config),
-    Accel{accel},
     Profiler{move(profiler)},
     PerfResults{config.PerfResults}
 {
@@ -48,7 +47,7 @@ Request::Request(RequestConfiguration& config, std::unique_ptr<RequestProfiler> 
     }
     auto callback = [&](KernelBuffers *buffers, RequestProfiler *profilerPtr)
     {
-        return Configuration.Model.Score(Configuration, Accel, profilerPtr, buffers);
+        return Configuration.Model.Score(Configuration, profilerPtr, buffers);
     };
     scoreTask = std::packaged_task<status_t(KernelBuffers *buffers, RequestProfiler *profiler)>(callback);
 }

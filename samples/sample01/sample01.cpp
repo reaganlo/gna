@@ -231,10 +231,10 @@ int main(int argc, char *argv[])
     }
 
     gna_request_cfg_id config_id;
-    status = GnaModelRequestConfigAdd(model_id, &config_id);
+    status = GnaRequestConfigCreate(model_id, &config_id);
     if (GNA_SUCCESS!= status)
     {
-        printf("GnaModelRequestConfigAdd failed: %s\n", GnaStatusToString(status));
+        printf("GnaRequestConfigCreate failed: %s\n", GnaStatusToString(status));
         GnaFree(gna_handle);
         GnaDeviceClose(gna_handle);
         exit(-status);
@@ -255,10 +255,18 @@ int main(int argc, char *argv[])
         GnaDeviceClose(gna_handle);
         exit(-status);
     }
+    status = GnaRequestConfigEnforceAcceleration(config_id, GNA_GENERIC);
+    if (GNA_SUCCESS!= status)
+    {
+        printf("GnaRequestConfigEnforceAcceleration GNA_GENERIC failed: %s\n", GnaStatusToString(status));
+        GnaFree(gna_handle);
+        GnaDeviceClose(gna_handle);
+        exit(-status);
+    }
 
     // calculate on GNA HW (non-blocking call)
     gna_request_id request_id;     // this gets filled with the actual id later on
-    status = GnaRequestEnqueue(config_id, GNA_GENERIC, &request_id);
+    status = GnaRequestEnqueue(config_id, &request_id);
     if (GNA_SUCCESS!= status)
     {
         printf("GnaRequestEnqueue failed: %s\n", GnaStatusToString(status));

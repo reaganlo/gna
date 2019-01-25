@@ -173,7 +173,6 @@ set(gna_lib_headers
   ${SRC_DIR}/RequestConfiguration.h
   ${SRC_DIR}/Request.h
   ${SRC_DIR}/RequestHandler.h
-  ${SRC_DIR}/RequestManager.h
   ${SRC_DIR}/Scalar.h
   ${SRC_DIR}/Shape.h
   ${SRC_DIR}/SimpleLayers.h

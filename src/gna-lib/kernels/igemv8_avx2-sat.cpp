@@ -33,7 +33,7 @@ void RecurrentKernelImpl1B(RecurrentConfig const * const config)
     uint32_t k;
     int64_t sum;
     uint32_t KK = config->inputElementCount - config->inputElementCount % VEC_16CAP;
-    uint32_t part_sz = hw_buf_size[0 + XNN_N_GROUP_MAX];
+    uint32_t part_sz = config->execution->BufferElementCount[0 + XNN_N_GROUP_MAX];
     uint32_t kpart_sz = config->inputElementCount % part_sz;
     uint32_t mpart_sz = config->outputElementCount < part_sz - kpart_sz
         ? config->outputElementCount
@@ -99,7 +99,7 @@ void RecurrentKernelImpl1B(RecurrentConfig const * const config)
             {
                 sum += vec_sum(acc) * bias->multiplier;
                 acc = _mm256_setzero_si256();
-                saturate_store_out(&sum, output, config->saturationCount);
+                saturate_store_out(&sum, output, config->execution->SaturationCount);
                 sum = (int64_t)*output;
             }
         }
@@ -140,7 +140,7 @@ void RecurrentKernelImpl1B(RecurrentConfig const * const config)
 
         sum += vec_sum(acc) * bias->multiplier;
         acc = _mm256_setzero_si256();
-        saturate_store_out(&sum, output, config->saturationCount);
+        saturate_store_out(&sum, output, config->execution->SaturationCount);
         sum = (int64_t)*output;
 
         for (j = 0; j < mparts + 1; j++)
@@ -165,7 +165,7 @@ void RecurrentKernelImpl1B(RecurrentConfig const * const config)
             {
                 sum += vec_sum(acc) * bias->multiplier;
                 acc = _mm256_setzero_si256();
-                saturate_store_out(&sum, output, config->saturationCount);
+                saturate_store_out(&sum, output, config->execution->SaturationCount);
                 sum = (int64_t)*output;
             }
         }
@@ -178,7 +178,7 @@ void RecurrentKernelImpl1B(RecurrentConfig const * const config)
 
         sum += vec_sum(acc) * bias->multiplier;
         acc = _mm256_setzero_si256();
-        saturate_store_out(&sum, output, config->saturationCount);
+        saturate_store_out(&sum, output, config->execution->SaturationCount);
         sum = (int64_t)*output;
 
         output++;

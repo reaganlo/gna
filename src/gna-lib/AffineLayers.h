@@ -46,10 +46,10 @@ protected:
     virtual void UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const override;
 
 private:
-    void computeHidden(acceleration accel, ExecutionConfig const & execution) const;
-    void computeHiddenPwl(acceleration accel, ExecutionConfig const & execution) const;
-    void compute(const LayerConfiguration& layerConfiguration, acceleration accel, ExecutionConfig const & execution) const;
-    void computePwl(const LayerConfiguration& layerConfiguration, acceleration accel, ExecutionConfig const & execution) const;
+    void computeHidden(AccelerationMode accel, ExecutionConfig const & execution) const;
+    void computeHiddenPwl(AccelerationMode accel, ExecutionConfig const & execution) const;
+    void compute(const LayerConfiguration& layerConfiguration, AccelerationMode accel, ExecutionConfig const & execution) const;
+    void computePwl(const LayerConfiguration& layerConfiguration, AccelerationMode accel, ExecutionConfig const & execution) const;
 };
 
 class AffineLayer : public AffineBaseLayer

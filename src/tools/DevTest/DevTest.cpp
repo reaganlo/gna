@@ -260,11 +260,15 @@ public:
                 break;
 
             case Action::Score:
+            {
+                auto config = modelSetup->ConfigId(action->modelIndex, action->configIndex);
+                deviceController.RequestSetAcceleration(config, gna_acceleration::GNA_GENERIC);
+                deviceController.RequestSetConsistency(config, gna_device_version::GNA_ADL);
                 gna_request_id requestId;
-                deviceController.RequestEnqueue(modelSetup->ConfigId(action->modelIndex, action->configIndex), GNA_GENERIC, &requestId);
+                deviceController.RequestEnqueue(config, &requestId);
                 deviceController.RequestWait(requestId);
                 break;
-
+            }
             case Action::CheckReferenceOutput:
                 modelSetup->checkReferenceOutput(action->modelIndex, action->configIndex);
                 std::cout << "Test passed" << std::endl;

@@ -38,13 +38,13 @@ void RecurrentKernelImpl2B(RecurrentConfig const * const config)
     int16_t * feedback;
     int16_t const * weight = config->weights2B;
     int32_t * output = config->output;
-    uint32_t kparts = config->inputElementCount / hw_buf_size[0 + XNN_N_GROUP_MAX];
-    uint32_t kpart_rem = config->inputElementCount % hw_buf_size[0 + XNN_N_GROUP_MAX];
-    uint32_t middle_fill = hw_buf_size[0 + XNN_N_GROUP_MAX] - kpart_rem;
+    uint32_t kparts = config->inputElementCount / config->execution->BufferElementCount[0 + XNN_N_GROUP_MAX];
+    uint32_t kpart_rem = config->inputElementCount % config->execution->BufferElementCount[0 + XNN_N_GROUP_MAX];
+    uint32_t middle_fill = config->execution->BufferElementCount[0 + XNN_N_GROUP_MAX] - kpart_rem;
     uint32_t middle_part = (config->outputElementCount < middle_fill) ? config->outputElementCount : middle_fill;
     uint32_t mm = config->outputElementCount - middle_part;
-    uint32_t mparts = mm / hw_buf_size[0 + XNN_N_GROUP_MAX];
-    uint32_t mpart_rem = mm % hw_buf_size[0 + XNN_N_GROUP_MAX];
+    uint32_t mparts = mm / config->execution->BufferElementCount[0 + XNN_N_GROUP_MAX];
+    uint32_t mpart_rem = mm % config->execution->BufferElementCount[0 + XNN_N_GROUP_MAX];
 
     for (; bias < biasEnd; bias += config->bytesPerBias)
     {
@@ -60,11 +60,11 @@ void RecurrentKernelImpl2B(RecurrentConfig const * const config)
 
         for (i = 0; i < kparts; i++)
         {
-            for (j = 0; j < hw_buf_size[0 + XNN_N_GROUP_MAX]; j++)
+            for (j = 0; j < config->execution->BufferElementCount[0 + XNN_N_GROUP_MAX]; j++)
             {
                 sum += *input++ * *weight++;
             }
-            saturate_store_out(&sum, output, config->saturationCount);
+            saturate_store_out(&sum, output, config->execution->SaturationCount);
             sum = *output;
         }
 
@@ -78,17 +78,17 @@ void RecurrentKernelImpl2B(RecurrentConfig const * const config)
             sum += *feedback++ * *weight++;
         }
 
-        saturate_store_out(&sum, output, config->saturationCount);
+        saturate_store_out(&sum, output, config->execution->SaturationCount);
         sum = *output;
 
         for (i = 0; i < mparts; i++)
         {
-            for (j = 0; j < hw_buf_size[0 + XNN_N_GROUP_MAX]; j++)
+            for (j = 0; j < config->execution->BufferElementCount[0 + XNN_N_GROUP_MAX]; j++)
             {
                 sum += *feedback++ * *weight++;
             }
 
-            saturate_store_out(&sum, output, config->saturationCount);
+            saturate_store_out(&sum, output, config->execution->SaturationCount);
             sum = *output;
         }
 
@@ -97,7 +97,7 @@ void RecurrentKernelImpl2B(RecurrentConfig const * const config)
             sum += *feedback++ * *weight++;
         }
 
-        saturate_store_out(&sum, output, config->saturationCount);
+        saturate_store_out(&sum, output, config->execution->SaturationCount);
         output++;
     }
 }
@@ -114,13 +114,13 @@ void RecurrentKernelImpl2B1B(RecurrentConfig const * const config)
     int8_t * feedback;
     int16_t const * weight = config->weights2B;
     int32_t * output = config->output;
-    uint32_t kparts = config->inputElementCount / hw_buf_size[0];
-    uint32_t kpart_rem = config->inputElementCount % hw_buf_size[0];
-    uint32_t middle_fill = hw_buf_size[0] - kpart_rem;
+    uint32_t kparts = config->inputElementCount / config->execution->BufferElementCount[0];
+    uint32_t kpart_rem = config->inputElementCount % config->execution->BufferElementCount[0];
+    uint32_t middle_fill = config->execution->BufferElementCount[0] - kpart_rem;
     uint32_t middle_part = (config->outputElementCount < middle_fill) ? config->outputElementCount : middle_fill;
     uint32_t mm = config->outputElementCount - middle_part;
-    uint32_t mparts = mm / hw_buf_size[0];
-    uint32_t mpart_rem = mm % hw_buf_size[0];
+    uint32_t mparts = mm / config->execution->BufferElementCount[0];
+    uint32_t mpart_rem = mm % config->execution->BufferElementCount[0];
 
     for (; bias < biasEnd; bias += config->bytesPerBias)
     {
@@ -136,11 +136,11 @@ void RecurrentKernelImpl2B1B(RecurrentConfig const * const config)
 
         for (i = 0; i < kparts; i++)
         {
-            for (j = 0; j < hw_buf_size[0]; j++)
+            for (j = 0; j < config->execution->BufferElementCount[0]; j++)
             {
                 sum += *input++ * *weight++;
             }
-            saturate_store_out(&sum, output, config->saturationCount);
+            saturate_store_out(&sum, output, config->execution->SaturationCount);
             sum = *output;
         }
 
@@ -162,12 +162,12 @@ void RecurrentKernelImpl2B1B(RecurrentConfig const * const config)
             }
         }
 
-        saturate_store_out(&sum, output, config->saturationCount);
+        saturate_store_out(&sum, output, config->execution->SaturationCount);
         sum = *output;
 
         for (i = 0; i < mparts; i++)
         {
-            for (j = 0; j < hw_buf_size[0]; j++)
+            for (j = 0; j < config->execution->BufferElementCount[0]; j++)
             {
                 if (config->bytesPerOutput == 1)
                 {
@@ -180,7 +180,7 @@ void RecurrentKernelImpl2B1B(RecurrentConfig const * const config)
                 }
             }
 
-            saturate_store_out(&sum, output, config->saturationCount);
+            saturate_store_out(&sum, output, config->execution->SaturationCount);
             sum = *output;
         }
 
@@ -197,7 +197,7 @@ void RecurrentKernelImpl2B1B(RecurrentConfig const * const config)
             }
         }
 
-        saturate_store_out(&sum, output, config->saturationCount);
+        saturate_store_out(&sum, output, config->execution->SaturationCount);
         output++;
     }
 }
@@ -214,13 +214,13 @@ void RecurrentKernelImpl2B2B(RecurrentConfig const * const config)
     int8_t * feedback;
     int16_t const * weight = config->weights2B;
     int32_t * output = config->output;
-    uint32_t kparts = config->inputElementCount / hw_buf_size[0 + XNN_N_GROUP_MAX];
-    uint32_t kpart_rem = config->inputElementCount % hw_buf_size[0 + XNN_N_GROUP_MAX];
-    uint32_t middle_fill = hw_buf_size[0 + XNN_N_GROUP_MAX] - kpart_rem;
+    uint32_t kparts = config->inputElementCount / config->execution->BufferElementCount[0 + XNN_N_GROUP_MAX];
+    uint32_t kpart_rem = config->inputElementCount % config->execution->BufferElementCount[0 + XNN_N_GROUP_MAX];
+    uint32_t middle_fill = config->execution->BufferElementCount[0 + XNN_N_GROUP_MAX] - kpart_rem;
     uint32_t middle_part = (config->outputElementCount < middle_fill) ? config->outputElementCount : middle_fill;
     uint32_t mm = config->outputElementCount - middle_part;
-    uint32_t mparts = mm / hw_buf_size[0 + XNN_N_GROUP_MAX];
-    uint32_t mpart_rem = mm % hw_buf_size[0 + XNN_N_GROUP_MAX];
+    uint32_t mparts = mm / config->execution->BufferElementCount[0 + XNN_N_GROUP_MAX];
+    uint32_t mpart_rem = mm % config->execution->BufferElementCount[0 + XNN_N_GROUP_MAX];
 
     for (; bias < biasEnd; bias += config->bytesPerBias)
     {
@@ -236,11 +236,11 @@ void RecurrentKernelImpl2B2B(RecurrentConfig const * const config)
 
         for (i = 0; i < kparts; i++)
         {
-            for (j = 0; j < hw_buf_size[0 + XNN_N_GROUP_MAX]; j++)
+            for (j = 0; j < config->execution->BufferElementCount[0 + XNN_N_GROUP_MAX]; j++)
             {
                 sum += *input++ * *weight++;
             }
-            saturate_store_out(&sum, output, config->saturationCount);
+            saturate_store_out(&sum, output, config->execution->SaturationCount);
             sum = *output;
         }
 
@@ -262,12 +262,12 @@ void RecurrentKernelImpl2B2B(RecurrentConfig const * const config)
             }
         }
 
-        saturate_store_out(&sum, output, config->saturationCount);
+        saturate_store_out(&sum, output, config->execution->SaturationCount);
         sum = *output;
 
         for (i = 0; i < mparts; i++)
         {
-            for (j = 0; j < hw_buf_size[0 + XNN_N_GROUP_MAX]; j++)
+            for (j = 0; j < config->execution->BufferElementCount[0 + XNN_N_GROUP_MAX]; j++)
             {
                 if (config->bytesPerOutput == 1)
                 {
@@ -280,7 +280,7 @@ void RecurrentKernelImpl2B2B(RecurrentConfig const * const config)
                 }
             }
 
-            saturate_store_out(&sum, output, config->saturationCount);
+            saturate_store_out(&sum, output, config->execution->SaturationCount);
             sum = *output;
         }
 
@@ -297,7 +297,7 @@ void RecurrentKernelImpl2B2B(RecurrentConfig const * const config)
             }
         }
 
-        saturate_store_out(&sum, output, config->saturationCount);
+        saturate_store_out(&sum, output, config->execution->SaturationCount);
         output++;
     }
 }

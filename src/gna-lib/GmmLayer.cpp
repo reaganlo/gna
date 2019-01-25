@@ -70,11 +70,11 @@ GmmLayer::GmmLayer(const nn_layer *layer, const BaseValidator& validatorIn) :
 {
     validate();
 
-    Layer::ComputeHidden = [this](acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount)
-                    {this->computeHidden(accel, fvBuffers, saturationCount); };
+    Layer::ComputeHidden = [this](AccelerationMode accel, ExecutionConfig const & executionConfig)
+                    {this->computeHidden(accel, executionConfig); };
 
-    Layer::Compute = [this](LayerConfiguration &layerConfiguration, acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount)
-                    {this->compute(layerConfiguration, accel, fvBuffers, saturationCount); };
+    Layer::Compute = [this](LayerConfiguration &layerConfiguration, AccelerationMode accel, ExecutionConfig const & executionConfig)
+                    {this->compute(layerConfiguration, accel, executionConfig); };
 }
 
 void GmmLayer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const
@@ -107,18 +107,18 @@ void GmmLayer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const
     configs.Gmm->output = outputBuffer;
 }
 
-void GmmLayer::computeHidden(acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const
+void GmmLayer::computeHidden(AccelerationMode accel, ExecutionConfig const & executionConfig) const
 {
-    auto gmmConfig = GmmConfig{&gmmHiddenConfig, reinterpret_cast<uint8_t*>(fvBuffers->d0)};
+    auto gmmConfig = GmmConfig{&gmmHiddenConfig, reinterpret_cast<uint8_t*>(executionConfig.Intermediate->d0)};
 
     gmmKernels.at(accel)(&gmmConfig);
 
-    checkScoresSaturation(Config.stateCount, Input.at(GNA_DIM_N), Output.Buffer, Config.maximumScore, *saturationCount);
+    checkScoresSaturation(Config.stateCount, Input.at(GNA_DIM_N), Output.Buffer, Config.maximumScore, *executionConfig.SaturationCount);
 }
 
-void GmmLayer::compute(const LayerConfiguration& layerConfiguration, acceleration accel, KernelBuffers *fvBuffers, uint32_t *saturationCount) const
+void GmmLayer::compute(const LayerConfiguration& layerConfiguration, AccelerationMode accel, ExecutionConfig const & executionConfig) const
 {
-    auto gmmConfig = GmmConfig{layerConfiguration.Configs.Gmm.get(), reinterpret_cast<uint8_t*>(fvBuffers->d0)};
+    auto gmmConfig = GmmConfig{layerConfiguration.Configs.Gmm.get(), reinterpret_cast<uint8_t*>(executionConfig.Intermediate->d0)};
 
     if (layerConfiguration.ActList)
     {
@@ -129,7 +129,7 @@ void GmmLayer::compute(const LayerConfiguration& layerConfiguration, acceleratio
         gmmKernels.at(accel)(&gmmConfig);
     }
 
-    checkScoresSaturation(gmmConfig.stateCount, Input.at(GNA_DIM_N), gmmConfig.output, Config.maximumScore, *saturationCount);
+    checkScoresSaturation(gmmConfig.stateCount, Input.at(GNA_DIM_N), gmmConfig.output, Config.maximumScore, *executionConfig.SaturationCount);
 }
 
 void GmmLayer::ValidateActiveList(ActiveList const * const activeList) const

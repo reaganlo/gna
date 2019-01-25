@@ -74,7 +74,7 @@ GNAAPI intel_gna_status_t GnaModelCreate(
     }
 }
 
-GNAAPI intel_gna_status_t GnaModelRequestConfigAdd(
+GNAAPI intel_gna_status_t GnaRequestConfigCreate(
     const gna_model_id modelId,
     gna_request_cfg_id* const configId)
 {
@@ -138,15 +138,71 @@ GNAAPI intel_gna_status_t GnaRequestConfigActiveListAdd(
     }
 }
 
+GNAAPI intel_gna_status_t GnaRequestConfigEnableHardwareConsistency(
+    gna_request_cfg_id configId,
+    gna_device_version hardwareVersion)
+{
+    try
+    {
+        GnaDevice->SetHardwareConsistency(configId, hardwareVersion);
+        return GNA_SUCCESS;
+    }
+    catch (const GnaException &e)
+    {
+        return e.getStatus();
+    }
+    catch (const std::exception& e)
+    {
+        Log->Error("Unknown exception: ", e.what());
+        return GNA_UNKNOWN_ERROR;
+    }
+}
+
+GNAAPI intel_gna_status_t GnaRequestConfigEnforceAcceleration(
+    gna_request_cfg_id configId,
+    gna_acceleration accel)
+{
+    try
+    {
+        GnaDevice->EnforceAcceleration(configId, static_cast<AccelerationMode>(accel));
+        return GNA_SUCCESS;
+    }
+    catch (const GnaException &e)
+    {
+        return e.getStatus();
+    }
+    catch (const std::exception& e)
+    {
+        Log->Error("Unknown exception: ", e.what());
+        return GNA_UNKNOWN_ERROR;
+    }
+}
+
+GNAAPI intel_gna_status_t GnaRequestConfigRelease(gna_request_cfg_id configId)
+{
+    try
+    {
+        GnaDevice->ReleaseConfiguration(configId);
+        return GNA_SUCCESS;
+    }
+    catch (const GnaException &e)
+    {
+        return e.getStatus();
+    }
+    catch (const std::exception& e)
+    {
+        Log->Error("Unknown exception: ", e.what());
+        return GNA_UNKNOWN_ERROR;
+    }
+}
+
 GNAAPI intel_gna_status_t GnaRequestEnqueue(
     const gna_request_cfg_id configId,
-    const gna_acceleration  accelerationIn,
     gna_request_id* const requestId)
 {
     try
     {
-        auto internal_acceleration = static_cast<acceleration>(accelerationIn);
-        GnaDevice->PropagateRequest(configId, internal_acceleration, requestId);
+        GnaDevice->PropagateRequest(configId, requestId);
         return GNA_SUCCESS;
     }
     catch (const GnaException &e)

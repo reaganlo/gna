@@ -62,7 +62,6 @@ const uint32_t ui32_UINT8_MAX = UINT8_MAX;
 /**
  * shorter aliases for official GMM API types
  */
-typedef gna_acceleration_all        acceleration;
 typedef gna_layer_operation         nn_operation;
 typedef intel_compound_bias_t       nn_bias_c;
 typedef intel_weight_scaling_factor_t nn_scaling;
@@ -85,6 +84,27 @@ typedef intel_convolutional_layer_t nn_layer_conv;
 #define STATUS_T_ALIAS
 typedef intel_gna_status_t      status_t;
 #endif
+
+/**
+ * List of all supported acceleration modes
+ */
+typedef enum __AccelerationMode
+{
+    GNA_HW = GNA_HARDWARE,
+    GNA_AUTO_SAT = GNA_AUTO & GNA_HW,
+    GNA_AUTO_FAST = GNA_AUTO,
+    GNA_SW_SAT = GNA_SOFTWARE & GNA_HW,
+    GNA_SW_FAST = GNA_SOFTWARE,
+    GNA_GEN_SAT = GNA_GENERIC & GNA_HW,
+    GNA_GEN_FAST = GNA_GENERIC,
+    GNA_SSE4_2_SAT = GNA_SSE4_2 & GNA_HW,
+    GNA_SSE4_2_FAST = GNA_SSE4_2,
+    GNA_AVX1_SAT = GNA_AVX1 & GNA_HW,
+    GNA_AVX1_FAST = GNA_AVX1,
+    GNA_AVX2_SAT = GNA_AVX2 & GNA_HW,
+    GNA_AVX2_FAST = GNA_AVX2,
+    NUM_GNA_ACCEL_MODES = 0xE,
+} AccelerationMode;
 
 typedef enum _TransformOperation
 {

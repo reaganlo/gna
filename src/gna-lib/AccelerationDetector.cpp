@@ -69,7 +69,7 @@ using namespace GNA;
 #define _XCR_XFEATURE_ENABLED_MASK 0
 #endif
 
-std::map<gna_device_version, const GnaHardwareCapabiities> gnaCapsMap = {
+std::map<gna_device_version, const GnaHardwareCapabiities> AccelerationDetector::gnaCapsMap = {
     { GNA_KBL,
         {GMM_DEVICE,
         {false, false, true, false, false, false,  false,  false, false, false, false },
@@ -839,9 +839,7 @@ AccelerationDetector::Kernels = {
     }
 };
 
-uint32_t AccelerationDetector::bufferElementsForSw[2][XNN_N_GROUP_MAX] = {};
-
-std::map<acceleration const, std::string const> AccelerationDetector::accelerationNames
+std::map<AccelerationMode const, std::string const> AccelerationDetector::accelerationNames
 {
     {GNA_HW, "GNA_HW"},
     {GNA_AUTO_SAT, "GNA_AUTO_SAT"},
@@ -922,29 +920,19 @@ void AccelerationDetector::discoverHardware()
         accelerationModes[GNA_HW] = ACC_NOTSUPPORTED;
         Log->Message("No compatible hardware detected.\n");
     }
-    setHwCompatibilityMode(deviceCapabilities.hwId);
 }
 
-void AccelerationDetector::setHwCompatibilityMode(gna_device_version hwId)
+void AccelerationDetector::GetHardwareConsistencySettings(uint32_t bufferElementCount[2 * XNN_N_GROUP_MAX],
+    gna_device_version hwId)
 {
     for (uint32_t p = 0; p < 2; p++)
     {
-        for (uint32_t i = 0; i < 8; i++)
+        for (uint32_t i = 0; i < XNN_N_GROUP_MAX; i++)
         {
-            bufferElementsForSw[p][i] = GetBufferElementCount(hwId, i + 1, p + 1);
+            bufferElementCount[p * XNN_N_GROUP_MAX +  i] = GetBufferElementCount(hwId, i + 1, p + 1);
         }
     }
-
-    setHwCompatibilityMode_generic(bufferElementsForSw);
-    setHwCompatibilityMode_sse4(bufferElementsForSw);
-    setHwCompatibilityMode_avx1(bufferElementsForSw);
-    setHwCompatibilityMode_avx2(bufferElementsForSw);
-    setHwCompatibilityMode_generic_sat(bufferElementsForSw);
-    setHwCompatibilityMode_sse4_sat(bufferElementsForSw);
-    setHwCompatibilityMode_avx1_sat(bufferElementsForSw);
-    setHwCompatibilityMode_avx2_sat(bufferElementsForSw);
 }
-
 
 gna_device_version AccelerationDetector::GetDeviceVersion() const
 {
@@ -1057,12 +1045,12 @@ AccelerationDetector::AccelerationDetector(IoctlSender &senderIn) :
     Log->Message("%s\t%d\n", accelerationNames[GNA_SW_SAT].c_str(), accelerationModes[GNA_SW_SAT]);
 }
 
-acceleration AccelerationDetector::GetFastestAcceleration() const
+AccelerationMode AccelerationDetector::GetFastestAcceleration() const
 {
     return fastestAcceleration;
 }
 
-char const * AccelerationDetector::AccelerationToString(acceleration accel)
+char const * AccelerationDetector::AccelerationToString(AccelerationMode accel)
 {
     auto name = accelerationNames.find(accel);
     if (accelerationNames.end() == name)

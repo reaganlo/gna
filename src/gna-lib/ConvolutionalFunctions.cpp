@@ -151,16 +151,16 @@ unique_ptr<const ConvolutionConfig> ConvolutionFunction::GetRequestConfig(const 
     return make_unique<const ConvolutionConfig>(hiddenConfig.get(), inputs, outputs);
 }
 
-void ConvolutionFunction::ComputeHidden(acceleration accel, uint32_t *saturationCount) const
+void ConvolutionFunction::ComputeHidden(AccelerationMode accel, ExecutionConfig const & execution) const
 {
-    auto convConfig = ConvolutionConfig{ hiddenConfig.get(), saturationCount };
+    auto convConfig = ConvolutionConfig{hiddenConfig.get(), execution};
 
     kernels.at(accel)(&convConfig);
 }
 
-void ConvolutionFunction::Compute(const ConvolutionConfig* const config, acceleration accel, uint32_t *saturationCount) const
+void ConvolutionFunction::Compute(const ConvolutionConfig* const config, AccelerationMode accel, ExecutionConfig const & execution) const
 {
-    auto convConfig = ConvolutionConfig{ config, saturationCount };
+    auto convConfig = ConvolutionConfig{ config, execution };
 
     kernels.at(accel)(&convConfig);
 }

@@ -46,12 +46,12 @@ public:
     std::unique_ptr<const ActivationFunction> Activation;
 
 private:
-    void computePool(LayerConfiguration& layerConfiguration, acceleration accel, ExecutionConfig const & execution) const;
-    void computeHiddenPool(acceleration accel, ExecutionConfig const & execution) const;
-    void computeHidden(acceleration accel, ExecutionConfig const & execution) const;
-    void computeHiddenPwl(acceleration accel, ExecutionConfig const & execution) const;
-    void compute(const LayerConfiguration& layerConfiguration, acceleration accel, ExecutionConfig const & execution) const;
-    void computePwl(const LayerConfiguration& layerConfiguration, acceleration accel, ExecutionConfig const & execution) const;
+    void computePool(LayerConfiguration& layerConfiguration, AccelerationMode accel, ExecutionConfig const & execution) const;
+    void computeHiddenPool(AccelerationMode accel, ExecutionConfig const & execution) const;
+    void computeHidden(AccelerationMode accel, ExecutionConfig const & execution) const;
+    void computeHiddenPwl(AccelerationMode accel, ExecutionConfig const & execution) const;
+    void compute(const LayerConfiguration& layerConfiguration, AccelerationMode accel, ExecutionConfig const & execution) const;
+    void computePwl(const LayerConfiguration& layerConfiguration, AccelerationMode accel, ExecutionConfig const & execution) const;
 };
 
 }

@@ -180,11 +180,12 @@ public:
     AccelerationDetector(IoctlSender &senderIn);
     ~AccelerationDetector() = default;
 
-    void setHwCompatibilityMode(gna_device_version hwId);
+    static void GetHardwareConsistencySettings(uint32_t bufferElementCount[2 * XNN_N_GROUP_MAX],
+        gna_device_version hwId);
 
-    acceleration GetFastestAcceleration() const;
+    AccelerationMode GetFastestAcceleration() const;
 
-    static char const * AccelerationToString(acceleration accel);
+    static char const * AccelerationToString(AccelerationMode accel);
 
     static gna_device_version GetDeviceVersion(gna_device_generation generation);
 
@@ -224,34 +225,17 @@ public:
 
     static std::map<kernel_op, std::map<KernelMode, KernelMap<VoidKernel>>> Kernels;
 
-
-    /*static std::map<const gna_data_mode, std::map<const acceleration, const AffineKernel>> AffineKernels;
-    static std::map<const gna_data_mode, std::map<const acceleration, const AffineActiveListKernel>> AccelerationDetector::AffineKernelsAl;
-    static std::map<const gna_data_mode, std::map<const acceleration, const AffineKernel>> MultibiasKernels;
-    static std::map<const gna_data_mode, std::map<const acceleration, const RecurrentKernel>> RecurrentKernels;
-    static std::map<const gna_data_mode, std::map<const acceleration, const AffineKernel>> AccelerationDetector::DiagonalKernels;
-
-    static std::map<const acceleration, const TransposeKernel> TransposeKernels;
-    static std::map<const acceleration, const CopyKernel> CopyKernels;
-    static std::map<const acceleration, const ConvolutionKernel> ConvolutionKernels;
-    static std::map<const acceleration, const ConvolutionPoolingKernel> AccelerationDetector::PoolingKernels;
-    static std::map<const acceleration, const ActivationKernel> PwlKernels;
-
-    static std::map<const gna_gmm_mode, std::map<const acceleration, const GmmMaxMix>> AccelerationDetector::GmmKernels;
-    static std::map<const gna_gmm_mode, std::map<const acceleration, const GmmMaxMixActiveList>> GmmActiveListKernels;*/
-
 protected:
-    std::map<acceleration, uint8_t> accelerationModes;
+    static std::map<gna_device_version, const GnaHardwareCapabiities> gnaCapsMap;
+
+    std::map<AccelerationMode, uint8_t> accelerationModes;
 
     GnaCapabilities deviceCapabilities;
 
-    acceleration fastestAcceleration;
-
-    // number of elements in buffer per input precision and per grouping
-    static uint32_t bufferElementsForSw[2][XNN_N_GROUP_MAX];
+    AccelerationMode fastestAcceleration;
 
 private:
-    static std::map<acceleration const, std::string const> accelerationNames;
+    static std::map<AccelerationMode const, std::string const> accelerationNames;
 
     void discoverHardware();
 
