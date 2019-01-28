@@ -134,3 +134,18 @@ T GnaCeilDiv(T number, T divider)
 {
     return (T)(((number) + divider - 1) / divider);
 }
+
+inline int64_t getBias(void* ptr, uint32_t idx, gna_data_mode prec)
+{
+    switch (prec)
+    {
+    case GNA_INT8:
+        return ((int8_t*)ptr)[idx];
+    case GNA_INT16:
+        return ((int16_t*)ptr)[idx];
+    case GNA_INT32:
+        return ((int32_t*)ptr)[idx];
+    default:
+        return 0;
+    }
+}

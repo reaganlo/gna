@@ -77,15 +77,15 @@ void AffineKernelImpl2B(AffineConfig const * const config)
     __m128i acc6;
     __m128i acc7;
 
-    nn_bias_s const * bias;
-    nn_bias_s const * const biasEnd = config->biasesSimple + config->outputElementCount;
+    uint8_t const * bias = (uint8_t*)config->biasesSimple;
+    uint8_t const * const biasEnd = bias + (config->outputElementCount*config->bytesPerBias);
 
     if (1 == config->inputVectorCount)
     {
         in_ptr0 = (__m128i*)config->input;
         input_0 = config->input+KK;
         ix_end = KK / SSE_16CAP;
-        for (bias = config->biasesSimple; bias < biasEnd; bias++)
+        for (; bias < biasEnd; bias += config->bytesPerBias)
         {
             acc0 = _mm_setzero_si128();
 
@@ -99,7 +99,7 @@ void AffineKernelImpl2B(AffineConfig const * const config)
                 acc0 = _mm_add_epi32(acc0, in0);
             }
 
-            *output = vec_sum(acc0) + *bias;
+            *output = vec_sum(acc0) + getBias((void*)bias, 0, (gna_data_mode)config->bytesPerBias);
             for (i = 0; i < KT; i++, weight++)
             {
                 *output += input_0[i] * *weight;
@@ -148,7 +148,7 @@ void AffineKernelImpl2B(AffineConfig const * const config)
 
     if (2 == config->inputVectorCount)
     {
-        for (bias = config->biasesSimple; bias < biasEnd; bias++)
+        for (; bias < biasEnd; bias += config->bytesPerBias)
         {
             acc0 = _mm_setzero_si128();
             acc1 = _mm_setzero_si128();
@@ -168,8 +168,8 @@ void AffineKernelImpl2B(AffineConfig const * const config)
                 acc1 = _mm_add_epi32(acc1, in1);
             }
 
-            output[0] = *bias + vec_sum(acc0);
-            output[1] = *bias + vec_sum(acc1);
+            output[0] = getBias((void*)bias, 0, (gna_data_mode)config->bytesPerBias) + vec_sum(acc0);
+            output[1] = getBias((void*)bias, 0, (gna_data_mode)config->bytesPerBias) + vec_sum(acc1);
 
             for (i = 0; i < KT; i++, weight++)
             {
@@ -185,7 +185,7 @@ void AffineKernelImpl2B(AffineConfig const * const config)
 
     if (3 == config->inputVectorCount)
     {
-        for (bias = config->biasesSimple; bias < biasEnd; bias++)
+        for (; bias < biasEnd; bias += config->bytesPerBias)
         {
             acc0 = _mm_setzero_si128();
             acc1 = _mm_setzero_si128();
@@ -209,9 +209,9 @@ void AffineKernelImpl2B(AffineConfig const * const config)
                 acc2 = _mm_add_epi32(acc2, in2);
             }
 
-            output[0] = *bias + vec_sum(acc0);
-            output[1] = *bias + vec_sum(acc1);
-            output[2] = *bias + vec_sum(acc2);
+            output[0] = getBias((void*)bias, 0, (gna_data_mode)config->bytesPerBias) + vec_sum(acc0);
+            output[1] = getBias((void*)bias, 0, (gna_data_mode)config->bytesPerBias) + vec_sum(acc1);
+            output[2] = getBias((void*)bias, 0, (gna_data_mode)config->bytesPerBias) + vec_sum(acc2);
 
             for (i = 0; i < KT; i++, weight++)
             {
@@ -228,7 +228,7 @@ void AffineKernelImpl2B(AffineConfig const * const config)
 
     if (4 == config->inputVectorCount)
     {
-        for (bias = config->biasesSimple; bias < biasEnd; bias++)
+        for (; bias < biasEnd; bias += config->bytesPerBias)
         {
             acc0 = _mm_setzero_si128();
             acc1 = _mm_setzero_si128();
@@ -256,10 +256,10 @@ void AffineKernelImpl2B(AffineConfig const * const config)
                 acc3 = _mm_add_epi32(acc3, in3);
             }
 
-            output[0] = *bias + vec_sum(acc0);
-            output[1] = *bias + vec_sum(acc1);
-            output[2] = *bias + vec_sum(acc2);
-            output[3] = *bias + vec_sum(acc3);
+            output[0] = getBias((void*)bias, 0, (gna_data_mode)config->bytesPerBias) + vec_sum(acc0);
+            output[1] = getBias((void*)bias, 0, (gna_data_mode)config->bytesPerBias) + vec_sum(acc1);
+            output[2] = getBias((void*)bias, 0, (gna_data_mode)config->bytesPerBias) + vec_sum(acc2);
+            output[3] = getBias((void*)bias, 0, (gna_data_mode)config->bytesPerBias) + vec_sum(acc3);
 
             for (i = 0; i < KT; i++, weight++)
             {
@@ -277,7 +277,7 @@ void AffineKernelImpl2B(AffineConfig const * const config)
 
     if (5 == config->inputVectorCount)
     {
-        for (bias = config->biasesSimple; bias < biasEnd; bias++)
+        for (; bias < biasEnd; bias += config->bytesPerBias)
         {
             acc0 = _mm_setzero_si128();
             acc1 = _mm_setzero_si128();
@@ -309,11 +309,11 @@ void AffineKernelImpl2B(AffineConfig const * const config)
                 acc4 = _mm_add_epi32(acc4, in4);
             }
 
-            output[0] = *bias + vec_sum(acc0);
-            output[1] = *bias + vec_sum(acc1);
-            output[2] = *bias + vec_sum(acc2);
-            output[3] = *bias + vec_sum(acc3);
-            output[4] = *bias + vec_sum(acc4);
+            output[0] = getBias((void*)bias, 0, (gna_data_mode)config->bytesPerBias) + vec_sum(acc0);
+            output[1] = getBias((void*)bias, 0, (gna_data_mode)config->bytesPerBias) + vec_sum(acc1);
+            output[2] = getBias((void*)bias, 0, (gna_data_mode)config->bytesPerBias) + vec_sum(acc2);
+            output[3] = getBias((void*)bias, 0, (gna_data_mode)config->bytesPerBias) + vec_sum(acc3);
+            output[4] = getBias((void*)bias, 0, (gna_data_mode)config->bytesPerBias) + vec_sum(acc4);
 
             for (i = 0; i < KT; i++, weight++)
             {
@@ -332,7 +332,7 @@ void AffineKernelImpl2B(AffineConfig const * const config)
 
     if (6 == config->inputVectorCount)
     {
-        for (bias = config->biasesSimple; bias < biasEnd; bias++)
+        for (; bias < biasEnd; bias += config->bytesPerBias)
         {
             acc0 = _mm_setzero_si128();
             acc1 = _mm_setzero_si128();
@@ -368,12 +368,12 @@ void AffineKernelImpl2B(AffineConfig const * const config)
                 acc5 = _mm_add_epi32(acc5, in5);
             }
 
-            output[0] = *bias + vec_sum(acc0);
-            output[1] = *bias + vec_sum(acc1);
-            output[2] = *bias + vec_sum(acc2);
-            output[3] = *bias + vec_sum(acc3);
-            output[4] = *bias + vec_sum(acc4);
-            output[5] = *bias + vec_sum(acc5);
+            output[0] = getBias((void*)bias, 0, (gna_data_mode)config->bytesPerBias) + vec_sum(acc0);
+            output[1] = getBias((void*)bias, 0, (gna_data_mode)config->bytesPerBias) + vec_sum(acc1);
+            output[2] = getBias((void*)bias, 0, (gna_data_mode)config->bytesPerBias) + vec_sum(acc2);
+            output[3] = getBias((void*)bias, 0, (gna_data_mode)config->bytesPerBias) + vec_sum(acc3);
+            output[4] = getBias((void*)bias, 0, (gna_data_mode)config->bytesPerBias) + vec_sum(acc4);
+            output[5] = getBias((void*)bias, 0, (gna_data_mode)config->bytesPerBias) + vec_sum(acc5);
 
             for (i = 0; i < KT; i++, weight++)
             {
@@ -393,7 +393,7 @@ void AffineKernelImpl2B(AffineConfig const * const config)
 
     if (7 == config->inputVectorCount)
     {
-        for (bias = config->biasesSimple; bias < biasEnd; bias++)
+        for (; bias < biasEnd; bias += config->bytesPerBias)
         {
             acc0 = _mm_setzero_si128();
             acc1 = _mm_setzero_si128();
@@ -433,13 +433,13 @@ void AffineKernelImpl2B(AffineConfig const * const config)
                 acc6 = _mm_add_epi32(acc6, in6);
             }
 
-            output[0] = *bias + vec_sum(acc0);
-            output[1] = *bias + vec_sum(acc1);
-            output[2] = *bias + vec_sum(acc2);
-            output[3] = *bias + vec_sum(acc3);
-            output[4] = *bias + vec_sum(acc4);
-            output[5] = *bias + vec_sum(acc5);
-            output[6] = *bias + vec_sum(acc6);
+            output[0] = getBias((void*)bias, 0, (gna_data_mode)config->bytesPerBias) + vec_sum(acc0);
+            output[1] = getBias((void*)bias, 0, (gna_data_mode)config->bytesPerBias) + vec_sum(acc1);
+            output[2] = getBias((void*)bias, 0, (gna_data_mode)config->bytesPerBias) + vec_sum(acc2);
+            output[3] = getBias((void*)bias, 0, (gna_data_mode)config->bytesPerBias) + vec_sum(acc3);
+            output[4] = getBias((void*)bias, 0, (gna_data_mode)config->bytesPerBias) + vec_sum(acc4);
+            output[5] = getBias((void*)bias, 0, (gna_data_mode)config->bytesPerBias) + vec_sum(acc5);
+            output[6] = getBias((void*)bias, 0, (gna_data_mode)config->bytesPerBias) + vec_sum(acc6);
 
             for (i = 0; i < KT; i++, weight++)
             {
@@ -460,7 +460,7 @@ void AffineKernelImpl2B(AffineConfig const * const config)
 
     if (8 == config->inputVectorCount)
     {
-        for (bias = config->biasesSimple; bias < biasEnd; bias++)
+        for (; bias < biasEnd; bias += config->bytesPerBias)
         {
             acc0 = _mm_setzero_si128();
             acc1 = _mm_setzero_si128();
@@ -485,14 +485,14 @@ void AffineKernelImpl2B(AffineConfig const * const config)
                 acc7 = _mm_add_epi32(acc7, _mm_madd_epi16(_mm_load_si128(in_ptr7 + ix), w));
             }
 
-            output[0] = *bias + vec_sum(acc0);
-            output[1] = *bias + vec_sum(acc1);
-            output[2] = *bias + vec_sum(acc2);
-            output[3] = *bias + vec_sum(acc3);
-            output[4] = *bias + vec_sum(acc4);
-            output[5] = *bias + vec_sum(acc5);
-            output[6] = *bias + vec_sum(acc6);
-            output[7] = *bias + vec_sum(acc7);
+            output[0] = getBias((void*)bias, 0, (gna_data_mode)config->bytesPerBias) + vec_sum(acc0);
+            output[1] = getBias((void*)bias, 0, (gna_data_mode)config->bytesPerBias) + vec_sum(acc1);
+            output[2] = getBias((void*)bias, 0, (gna_data_mode)config->bytesPerBias) + vec_sum(acc2);
+            output[3] = getBias((void*)bias, 0, (gna_data_mode)config->bytesPerBias) + vec_sum(acc3);
+            output[4] = getBias((void*)bias, 0, (gna_data_mode)config->bytesPerBias) + vec_sum(acc4);
+            output[5] = getBias((void*)bias, 0, (gna_data_mode)config->bytesPerBias) + vec_sum(acc5);
+            output[6] = getBias((void*)bias, 0, (gna_data_mode)config->bytesPerBias) + vec_sum(acc6);
+            output[7] = getBias((void*)bias, 0, (gna_data_mode)config->bytesPerBias) + vec_sum(acc7);
 
             for (i = 0; i < KT; i++, weight++)
             {
@@ -520,8 +520,8 @@ void AffineMultiBiasKernelImpl2B(AffineConfig const * const config)
     uint32_t ix;
     uint32_t i;
 
-    nn_bias_s const * multiBias;
-    nn_bias_s const * const biasEnd = config->multiBias + config->outputElementCount * config->multiBiasVectorCount;
+    uint8_t const * multiBias;
+    uint8_t const * const biasEnd = (uint8_t*)config->multiBias + config->outputElementCount * config->multiBiasVectorCount * config->bytesPerBias;
     int32_t * output = config->output;
     int16_t const * weight = config->weights2B;
     int16_t const *input_0 = nullptr;
@@ -568,7 +568,7 @@ void AffineMultiBiasKernelImpl2B(AffineConfig const * const config)
         in_ptr0 = (__m128i*)config->input;
         input_0 = config->input+KK;
         ix_end = KK / SSE_16CAP;
-        for (multiBias = config->multiBias; multiBias < biasEnd; multiBias+=config->multiBiasVectorCount)
+        for (multiBias = (uint8_t*)config->multiBias; multiBias < biasEnd; multiBias+=(config->multiBiasVectorCount*config->bytesPerBias))
         {
             acc0 = _mm_setzero_si128();
 
@@ -582,7 +582,7 @@ void AffineMultiBiasKernelImpl2B(AffineConfig const * const config)
                 acc0 = _mm_add_epi32(acc0, in0);
             }
 
-            *output = vec_sum(acc0) + *multiBias;
+            *output = vec_sum(acc0) + getBias((void*)multiBias, 0, (gna_data_mode)config->bytesPerBias);
             for (i = 0; i < KT; i++, weight++)
             {
                 *output += input_0[i] * *weight;
@@ -631,7 +631,7 @@ void AffineMultiBiasKernelImpl2B(AffineConfig const * const config)
 
     if (2 == config->inputVectorCount)
     {
-        for (multiBias = config->multiBias; multiBias < biasEnd; multiBias+=config->multiBiasVectorCount)
+        for (multiBias = (uint8_t*)config->multiBias; multiBias < biasEnd; multiBias+=(config->multiBiasVectorCount*config->bytesPerBias))
         {
             acc0 = _mm_setzero_si128();
             acc1 = _mm_setzero_si128();
@@ -651,8 +651,8 @@ void AffineMultiBiasKernelImpl2B(AffineConfig const * const config)
                 acc1 = _mm_add_epi32(acc1, in1);
             }
 
-            output[0] = *multiBias + vec_sum(acc0);
-            output[1] = *multiBias + vec_sum(acc1);
+            output[0] = getBias((void*)multiBias, 0, (gna_data_mode)config->bytesPerBias) + vec_sum(acc0);
+            output[1] = getBias((void*)multiBias, 0, (gna_data_mode)config->bytesPerBias) + vec_sum(acc1);
 
             for (i = 0; i < KT; i++, weight++)
             {
@@ -668,7 +668,7 @@ void AffineMultiBiasKernelImpl2B(AffineConfig const * const config)
 
     if (3 == config->inputVectorCount)
     {
-        for (multiBias = config->multiBias; multiBias < biasEnd; multiBias+=config->multiBiasVectorCount)
+        for (multiBias = (uint8_t*)config->multiBias; multiBias < biasEnd; multiBias+=(config->multiBiasVectorCount*config->bytesPerBias))
         {
             acc0 = _mm_setzero_si128();
             acc1 = _mm_setzero_si128();
@@ -692,9 +692,9 @@ void AffineMultiBiasKernelImpl2B(AffineConfig const * const config)
                 acc2 = _mm_add_epi32(acc2, in2);
             }
 
-            output[0] = *multiBias + vec_sum(acc0);
-            output[1] = *multiBias + vec_sum(acc1);
-            output[2] = *multiBias + vec_sum(acc2);
+            output[0] = getBias((void*)multiBias, 0, (gna_data_mode)config->bytesPerBias) + vec_sum(acc0);
+            output[1] = getBias((void*)multiBias, 0, (gna_data_mode)config->bytesPerBias) + vec_sum(acc1);
+            output[2] = getBias((void*)multiBias, 0, (gna_data_mode)config->bytesPerBias) + vec_sum(acc2);
 
             for (i = 0; i < KT; i++, weight++)
             {
@@ -711,7 +711,7 @@ void AffineMultiBiasKernelImpl2B(AffineConfig const * const config)
 
     if (4 == config->inputVectorCount)
     {
-        for (multiBias = config->multiBias; multiBias < biasEnd; multiBias+=config->multiBiasVectorCount)
+        for (multiBias = (uint8_t*)config->multiBias; multiBias < biasEnd; multiBias+=(config->multiBiasVectorCount*config->bytesPerBias))
         {
             acc0 = _mm_setzero_si128();
             acc1 = _mm_setzero_si128();
@@ -739,10 +739,10 @@ void AffineMultiBiasKernelImpl2B(AffineConfig const * const config)
                 acc3 = _mm_add_epi32(acc3, in3);
             }
 
-            output[0] = *multiBias + vec_sum(acc0);
-            output[1] = *multiBias + vec_sum(acc1);
-            output[2] = *multiBias + vec_sum(acc2);
-            output[3] = *multiBias + vec_sum(acc3);
+            output[0] = getBias((void*)multiBias, 0, (gna_data_mode)config->bytesPerBias) + vec_sum(acc0);
+            output[1] = getBias((void*)multiBias, 0, (gna_data_mode)config->bytesPerBias) + vec_sum(acc1);
+            output[2] = getBias((void*)multiBias, 0, (gna_data_mode)config->bytesPerBias) + vec_sum(acc2);
+            output[3] = getBias((void*)multiBias, 0, (gna_data_mode)config->bytesPerBias) + vec_sum(acc3);
 
             for (i = 0; i < KT; i++, weight++)
             {
@@ -760,7 +760,7 @@ void AffineMultiBiasKernelImpl2B(AffineConfig const * const config)
 
     if (5 == config->inputVectorCount)
     {
-        for (multiBias = config->multiBias; multiBias < biasEnd; multiBias+=config->multiBiasVectorCount)
+        for (multiBias = (uint8_t*)config->multiBias; multiBias < biasEnd; multiBias+=(config->multiBiasVectorCount*config->bytesPerBias))
         {
             acc0 = _mm_setzero_si128();
             acc1 = _mm_setzero_si128();
@@ -792,11 +792,11 @@ void AffineMultiBiasKernelImpl2B(AffineConfig const * const config)
                 acc4 = _mm_add_epi32(acc4, in4);
             }
 
-            output[0] = *multiBias + vec_sum(acc0);
-            output[1] = *multiBias + vec_sum(acc1);
-            output[2] = *multiBias + vec_sum(acc2);
-            output[3] = *multiBias + vec_sum(acc3);
-            output[4] = *multiBias + vec_sum(acc4);
+            output[0] = getBias((void*)multiBias, 0, (gna_data_mode)config->bytesPerBias) + vec_sum(acc0);
+            output[1] = getBias((void*)multiBias, 0, (gna_data_mode)config->bytesPerBias) + vec_sum(acc1);
+            output[2] = getBias((void*)multiBias, 0, (gna_data_mode)config->bytesPerBias) + vec_sum(acc2);
+            output[3] = getBias((void*)multiBias, 0, (gna_data_mode)config->bytesPerBias) + vec_sum(acc3);
+            output[4] = getBias((void*)multiBias, 0, (gna_data_mode)config->bytesPerBias) + vec_sum(acc4);
 
             for (i = 0; i < KT; i++, weight++)
             {
@@ -815,7 +815,7 @@ void AffineMultiBiasKernelImpl2B(AffineConfig const * const config)
 
     if (6 == config->inputVectorCount)
     {
-        for (multiBias = config->multiBias; multiBias < biasEnd; multiBias+=config->multiBiasVectorCount)
+        for (multiBias = (uint8_t*)config->multiBias; multiBias < biasEnd; multiBias+=(config->multiBiasVectorCount*config->bytesPerBias))
         {
             acc0 = _mm_setzero_si128();
             acc1 = _mm_setzero_si128();
@@ -851,12 +851,12 @@ void AffineMultiBiasKernelImpl2B(AffineConfig const * const config)
                 acc5 = _mm_add_epi32(acc5, in5);
             }
 
-            output[0] = *multiBias + vec_sum(acc0);
-            output[1] = *multiBias + vec_sum(acc1);
-            output[2] = *multiBias + vec_sum(acc2);
-            output[3] = *multiBias + vec_sum(acc3);
-            output[4] = *multiBias + vec_sum(acc4);
-            output[5] = *multiBias + vec_sum(acc5);
+            output[0] = getBias((void*)multiBias, 0, (gna_data_mode)config->bytesPerBias) + vec_sum(acc0);
+            output[1] = getBias((void*)multiBias, 0, (gna_data_mode)config->bytesPerBias) + vec_sum(acc1);
+            output[2] = getBias((void*)multiBias, 0, (gna_data_mode)config->bytesPerBias) + vec_sum(acc2);
+            output[3] = getBias((void*)multiBias, 0, (gna_data_mode)config->bytesPerBias) + vec_sum(acc3);
+            output[4] = getBias((void*)multiBias, 0, (gna_data_mode)config->bytesPerBias) + vec_sum(acc4);
+            output[5] = getBias((void*)multiBias, 0, (gna_data_mode)config->bytesPerBias) + vec_sum(acc5);
 
             for (i = 0; i < KT; i++, weight++)
             {
@@ -876,7 +876,7 @@ void AffineMultiBiasKernelImpl2B(AffineConfig const * const config)
 
     if (7 == config->inputVectorCount)
     {
-        for (multiBias = config->multiBias; multiBias < biasEnd; multiBias+=config->multiBiasVectorCount)
+        for (multiBias = (uint8_t*)config->multiBias; multiBias < biasEnd; multiBias+=(config->multiBiasVectorCount*config->bytesPerBias))
         {
             acc0 = _mm_setzero_si128();
             acc1 = _mm_setzero_si128();
@@ -916,13 +916,13 @@ void AffineMultiBiasKernelImpl2B(AffineConfig const * const config)
                 acc6 = _mm_add_epi32(acc6, in6);
             }
 
-            output[0] = *multiBias + vec_sum(acc0);
-            output[1] = *multiBias + vec_sum(acc1);
-            output[2] = *multiBias + vec_sum(acc2);
-            output[3] = *multiBias + vec_sum(acc3);
-            output[4] = *multiBias + vec_sum(acc4);
-            output[5] = *multiBias + vec_sum(acc5);
-            output[6] = *multiBias + vec_sum(acc6);
+            output[0] = getBias((void*)multiBias, 0, (gna_data_mode)config->bytesPerBias) + vec_sum(acc0);
+            output[1] = getBias((void*)multiBias, 0, (gna_data_mode)config->bytesPerBias) + vec_sum(acc1);
+            output[2] = getBias((void*)multiBias, 0, (gna_data_mode)config->bytesPerBias) + vec_sum(acc2);
+            output[3] = getBias((void*)multiBias, 0, (gna_data_mode)config->bytesPerBias) + vec_sum(acc3);
+            output[4] = getBias((void*)multiBias, 0, (gna_data_mode)config->bytesPerBias) + vec_sum(acc4);
+            output[5] = getBias((void*)multiBias, 0, (gna_data_mode)config->bytesPerBias) + vec_sum(acc5);
+            output[6] = getBias((void*)multiBias, 0, (gna_data_mode)config->bytesPerBias) + vec_sum(acc6);
 
             for (i = 0; i < KT; i++, weight++)
             {
@@ -943,7 +943,7 @@ void AffineMultiBiasKernelImpl2B(AffineConfig const * const config)
 
     if (8 == config->inputVectorCount)
     {
-        for (multiBias = config->multiBias; multiBias < biasEnd; multiBias+=config->multiBiasVectorCount)
+        for (multiBias = (uint8_t*)config->multiBias; multiBias < biasEnd; multiBias+=(config->multiBiasVectorCount*config->bytesPerBias))
         {
             acc0 = _mm_setzero_si128();
             acc1 = _mm_setzero_si128();
@@ -968,14 +968,14 @@ void AffineMultiBiasKernelImpl2B(AffineConfig const * const config)
                 acc7 = _mm_add_epi32(acc7, _mm_madd_epi16(_mm_load_si128(in_ptr7 + ix), w));
             }
 
-            output[0] = *multiBias + vec_sum(acc0);
-            output[1] = *multiBias + vec_sum(acc1);
-            output[2] = *multiBias + vec_sum(acc2);
-            output[3] = *multiBias + vec_sum(acc3);
-            output[4] = *multiBias + vec_sum(acc4);
-            output[5] = *multiBias + vec_sum(acc5);
-            output[6] = *multiBias + vec_sum(acc6);
-            output[7] = *multiBias + vec_sum(acc7);
+            output[0] = getBias((void*)multiBias, 0, (gna_data_mode)config->bytesPerBias) + vec_sum(acc0);
+            output[1] = getBias((void*)multiBias, 0, (gna_data_mode)config->bytesPerBias) + vec_sum(acc1);
+            output[2] = getBias((void*)multiBias, 0, (gna_data_mode)config->bytesPerBias) + vec_sum(acc2);
+            output[3] = getBias((void*)multiBias, 0, (gna_data_mode)config->bytesPerBias) + vec_sum(acc3);
+            output[4] = getBias((void*)multiBias, 0, (gna_data_mode)config->bytesPerBias) + vec_sum(acc4);
+            output[5] = getBias((void*)multiBias, 0, (gna_data_mode)config->bytesPerBias) + vec_sum(acc5);
+            output[6] = getBias((void*)multiBias, 0, (gna_data_mode)config->bytesPerBias) + vec_sum(acc6);
+            output[7] = getBias((void*)multiBias, 0, (gna_data_mode)config->bytesPerBias) + vec_sum(acc7);
 
             for (i = 0; i < KT; i++, weight++)
             {

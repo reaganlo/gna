@@ -346,8 +346,8 @@ AccelerationDetector::Kernels = {
                 { { GNA_GEN_SAT },{ (VoidKernel)xnnKernel_generic_sat.affineMulti1B1B } },
                 { { GNA_GEN_FAST },{ (VoidKernel)xnnKernel_generic.affineMulti1B1B } },
 
-                { { GNA_SSE4_2_SAT },{ (VoidKernel)xnnKernel_generic_sat.affineMulti2B } },
-                { { GNA_SSE4_2_FAST },{ (VoidKernel)xnnKernel_generic.affineMulti2B } },
+                { { GNA_SSE4_2_SAT },{ (VoidKernel)xnnKernel_generic_sat.affineMulti1B1B } },
+                { { GNA_SSE4_2_FAST },{ (VoidKernel)xnnKernel_generic.affineMulti1B1B } },
 
                 { { GNA_AVX1_SAT },{ (VoidKernel)xnnKernel_generic_sat.affineMulti1B1B } },
                 { { GNA_AVX1_FAST },{ (VoidKernel)xnnKernel_generic.affineMulti1B1B } },

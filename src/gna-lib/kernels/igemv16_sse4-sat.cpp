@@ -47,8 +47,8 @@ void RecurrentKernelImpl2B(RecurrentConfig const * const config)
     int16_t * feedback;
     int16_t *feedbackEnd = config->feedbackBuffer+config->outputElementCount;
 
-    nn_bias_s const * bias = config->biasesSimple;
-    nn_bias_s const * const biasEnd= bias + config->outputElementCount;
+    uint8_t const * bias = (uint8_t*)config->biasesSimple;
+    uint8_t const * const biasEnd = bias + (config->outputElementCount*config->bytesPerBias);
     int32_t * output = config->output;
     int16_t const * weight = config->weights2B;
 
@@ -67,11 +67,11 @@ void RecurrentKernelImpl2B(RecurrentConfig const * const config)
 
     acc = _mm_setzero_si128();
 
-    for (; bias < biasEnd; bias++)
+    for (; bias < biasEnd; bias += config->bytesPerBias)
     {
         input = config->input;
         feedback = config->feedbackBuffer;
-        sum = *bias;
+        sum = getBias((void*)bias, 0, (gna_data_mode)config->bytesPerBias);
 
         // compute parts using SSE
         // if config->inputElementCount has modulo 16 remainder, leave it
