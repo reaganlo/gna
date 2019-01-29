@@ -66,7 +66,7 @@ void HardwareModel::InvalidateConfig(gna_request_cfg_id configId)
         hardwareRequests[configId]->Invalidate();
 }
 
-status_t HardwareModel::Score(
+uint32_t HardwareModel::Score(
     uint32_t layerIndex,
     uint32_t layerCount,
     const RequestConfiguration& requestConfiguration,
@@ -75,6 +75,8 @@ status_t HardwareModel::Score(
     const GnaOperationMode operationMode)
 {
     UNREFERENCED_PARAMETER(buffers);
+
+    SoftwareModel::LogAcceleration(operationMode ? GNA_HW : GMM_HW);
 
     auto configId = requestConfiguration.Id;
     HardwareRequest *hwRequest = nullptr;
@@ -106,7 +108,14 @@ status_t HardwareModel::Score(
         perfResults->hw.total += result.hardwarePerf.total;
     }
 
-    return result.status;
+    if (result.status != GNA_SUCCESS && result.status != GNA_SSATURATE)
+    {
+        throw GnaException(result.status);
+    }
+    else
+    {
+        return GNA_SSATURATE == result.status;
+    }
 }
 
 void HardwareModel::Build()

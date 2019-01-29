@@ -136,45 +136,57 @@ status_t CompiledModel::Score(
 {
     profilerDTscStart(&profiler->scoring);
 
-    auto status = GNA_SUCCESS;
-    if (GNA_HW == config.Acceleration && !hardwareModel)
+    auto saturationCount = uint32_t{0};
+    auto isHardwareEnforced = GNA_HW == config.Acceleration && !hardwareModel;
+    auto isSoftwareEnforced = config.Acceleration >= GNA_SW_SAT && config.Acceleration <= GNA_AVX2_FAST;
+
+    try
     {
-        status = GNA_CPUTYPENOTSUPPORTED;
+        if (isHardwareEnforced)
+        {
+            return GNA_CPUTYPENOTSUPPORTED;
+        }
+        else if (isSoftwareEnforced)
+        {
+            saturationCount = softwareModel.Score(0, LayerCount, config, profiler, buffers);
+        }
+        else
+        {
+            saturationCount = scoreAllSubModels(config, profiler, buffers);
+        }
     }
-    else if(config.Acceleration >= GNA_SW_SAT && config.Acceleration <= GNA_AVX2_FAST)
+    catch (const GnaException& e)
     {
-        Log->Message("Processing whole request\n");
-        status = softwareModel.Score(0, LayerCount, config, profiler, buffers);
+        return e.getStatus();
     }
-    else for (const auto& submodel : submodels)
+    profilerDTscStop(&profiler->scoring);
+    profilerDTscStop(&profiler->total);
+
+    return (saturationCount > 0) ? GNA_SSATURATE : GNA_SUCCESS;
+}
+
+uint32_t CompiledModel::scoreAllSubModels(RequestConfiguration& config,
+    RequestProfiler *profiler, KernelBuffers *buffers)
+{
+    auto saturationCount = uint32_t{0};
+    for (const auto& submodel : submodels)
     {
         uint32_t layerIndex = submodel->LayerIndex;
         uint32_t layerCount = submodel->GetLayerCount();
         switch (submodel->Type)
         {
         case Software:
-            Log->Message("Processing submodel\n");
-            status = softwareModel.Score(layerIndex, layerCount, config, profiler, buffers);
-            if (status != GNA_SUCCESS && status != GNA_SSATURATE)
-                return status;
-            break;
+        saturationCount += softwareModel.Score(layerIndex, layerCount, config, profiler, buffers);
+        break;
         case Hardware:
-            Log->Message("Processing submodel using %s acceleration\n", AccelerationDetector::AccelerationToString(GNA_HW));
-            status = hardwareModel->Score(layerIndex, layerCount, config, profiler, buffers, xNN);
-            if (status != GNA_SUCCESS && status != GNA_SSATURATE)
-                return status;
-            break;
+        saturationCount += hardwareModel->Score(layerIndex, layerCount, config, profiler, buffers, xNN);
+        break;
         case GMMHardware:
-            Log->Message("Processing submodel using %s acceleration (GMM Legacy mode)\n", AccelerationDetector::AccelerationToString(GNA_HW));
-            status = hardwareModel->Score(layerIndex, 1, config, profiler, buffers, GMM);
-            if (status != GNA_SUCCESS && status != GNA_SSATURATE)
-                return status;
-            break;
+        saturationCount += hardwareModel->Score(layerIndex, 1, config, profiler, buffers, GMM);
+        break;
         }
     }
-    profilerDTscStop(&profiler->scoring);
-    profilerDTscStop(&profiler->total);
-    return status;
+    return saturationCount;
 }
 
 void CompiledModel::createSubmodels(const AccelerationDetector& dispatcher)

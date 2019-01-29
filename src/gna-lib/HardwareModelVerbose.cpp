@@ -63,7 +63,7 @@ HardwareModelVerbose::HardwareModelVerbose(const gna_model_id modId,
 {
 }
 
-status_t HardwareModelVerbose::Score(
+uint32_t HardwareModelVerbose::Score(
     uint32_t layerIndex,
     uint32_t layerCount,
     const RequestConfiguration& requestConfiguration,

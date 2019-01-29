@@ -56,7 +56,7 @@ SoftwareModel::SoftwareModel(const gna_model *const network, uint16_t& gmmCount,
     build(network->pLayers, gmmCount, validator);
 }
 
-status_t SoftwareModel::Score(
+uint32_t SoftwareModel::Score(
     uint32_t layerIndex,
     uint32_t layerCountIn,
     RequestConfiguration const &requestConfiguration,
@@ -71,7 +71,7 @@ status_t SoftwareModel::Score(
     {
         return GNA_CPUTYPENOTSUPPORTED;
     }
-    Log->Message("Processing using %s acceleration\n", AccelerationDetector::AccelerationToString(accel));
+    LogAcceleration(accel);
 
     auto saturationCount = uint32_t{ 0 };   // scoring saturation counter
     auto executionConfig = ExecutionConfig{const_cast<KernelBuffers const *>(fvBuffers),
@@ -97,7 +97,7 @@ status_t SoftwareModel::Score(
         ++layerIndex;
     }
 
-    return (saturationCount > 0) ? GNA_SSATURATE : GNA_SUCCESS;
+    return saturationCount;
 }
 
 void SoftwareModel::build(const nn_layer* layers, uint16_t& gmmCount, const BaseValidator& validator)

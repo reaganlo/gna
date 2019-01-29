@@ -71,7 +71,7 @@ protected:
 struct DebugLogger : public Logger
 {
     DebugLogger() :
-        Logger(stderr, "[IntelGna] ", "INFO: ", "ERROR: ")
+        DebugLogger(stderr, "[IntelGna] ", "INFO: ", "ERROR: ")
     {}
     virtual ~DebugLogger() = default;
 
@@ -108,7 +108,7 @@ protected:
 struct VerboseLogger : public DebugLogger
 {
     VerboseLogger() :
-        DebugLogger(stderr, "", "", "ERROR: ")
+        DebugLogger()
     {}
     virtual ~VerboseLogger() = default;
 

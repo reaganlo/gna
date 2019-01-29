@@ -82,6 +82,9 @@ protected:
     std::vector<std::unique_ptr<SubModel>> submodels;
 
     void createSubmodels(const AccelerationDetector& detector);
+
+    uint32_t scoreAllSubModels(RequestConfiguration& config,
+        RequestProfiler *profiler, KernelBuffers *buffers);
 };
 
 }

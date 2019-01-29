@@ -52,7 +52,7 @@ public:
     void SetPrescoreScenario(uint32_t nActions, dbg_action *actions);
     void SetAfterscoreScenario(uint32_t nActions, dbg_action *actions);
 
-    virtual status_t Score(
+    virtual uint32_t Score(
         uint32_t layerIndex,
         uint32_t layerCount,
         const RequestConfiguration& requestConfiguration,

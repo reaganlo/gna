@@ -842,6 +842,7 @@ AccelerationDetector::Kernels = {
 std::map<AccelerationMode const, std::string const> AccelerationDetector::accelerationNames
 {
     {GNA_HW, "GNA_HW"},
+    {GMM_HW, "GMM_HW"},
     {GNA_AUTO_SAT, "GNA_AUTO_SAT"},
     {GNA_AUTO_FAST, "GNA_AUTO_FAST"},
     {GNA_SW_SAT, "GNA_SW_SAT"},
@@ -854,7 +855,7 @@ std::map<AccelerationMode const, std::string const> AccelerationDetector::accele
     {GNA_AVX1_FAST, "GNA_AVX1_FAST"},
     {GNA_AVX2_SAT, "GNA_AVX2_SAT"},
     {GNA_AVX2_FAST, "GNA_AVX2_FAST"},
-    {NUM_GNA_ACCEL_MODES, "UNKNOWN ACCELERATION"}
+    {NUM_GNA_ACCEL_MODES, "UNKNOWN ACCELERATION"},
 };
 
 gna_device_version AccelerationDetector::GetDeviceVersion(gna_device_generation generation)

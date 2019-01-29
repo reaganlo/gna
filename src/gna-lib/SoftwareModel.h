@@ -29,6 +29,7 @@
 #include <memory>
 #include <vector>
 
+#include "AccelerationDetector.h"
 #include "common.h"
 #include "profiler.h"
 #include "Tensor.h"
@@ -48,12 +49,18 @@ struct RequestProfiler;
 class SoftwareModel
 {
 public:
+    static void LogAcceleration(AccelerationMode accel)
+    {
+        Log->Message("Processing using %s acceleration\n",
+            AccelerationDetector::AccelerationToString(accel));
+    }
+
     SoftwareModel(const gna_model *const network, uint16_t& gmmCount, const BaseValidator& validator, const AccelerationMode fastestAccel);
     SoftwareModel(const SoftwareModel &) = delete;
     SoftwareModel& operator=(const SoftwareModel&) = delete;
     ~SoftwareModel() = default;
 
-    status_t Score(
+    uint32_t Score(
         uint32_t layerIndex,
         uint32_t layerCount,
         RequestConfiguration const &requestConfiguration,

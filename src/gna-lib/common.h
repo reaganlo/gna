@@ -91,6 +91,7 @@ typedef intel_gna_status_t      status_t;
 typedef enum __AccelerationMode
 {
     GNA_HW = GNA_HARDWARE,
+    GMM_HW = GNA_HARDWARE - 1, // legacy GMM device
     GNA_AUTO_SAT = GNA_AUTO & GNA_HW,
     GNA_AUTO_FAST = GNA_AUTO,
     GNA_SW_SAT = GNA_SOFTWARE & GNA_HW,
