@@ -65,14 +65,7 @@ const LayerDescriptor& HardwareModelSue1::GetDescriptor(uint32_t layerIndex) con
 uint32_t HardwareModelSue1::GetOutputOffset(uint32_t layerIndex) const
 {
     auto layer = hardwareLayers.at(layerIndex).get();
-    if (GNA_DATA_ACTIVATION_DISABLED == layer->SoftwareLayer->Output.Mode)
-    {
-        return layer->XnnDescriptor[out_sum_buffer].GetOffset();
-    }
-    else
-    {
-        return layer->XnnDescriptor[out_buffer].GetOffset();
-    }
+    return layer->GetLdOutputOffset();
 };
 
 uint32_t HardwareModelSue1::GetInputOffset(uint32_t layerIndex) const

@@ -192,8 +192,8 @@ std::unique_ptr<ActivationFunction> ActivationFunction::Create(const TransformFa
     }
     else
     {
-        // TODO:3: Rethink what to do with backward compatibility (nOuputBytes=GNA_INT32)
-        Expect::InSet(config.outputMode, { GNA_INT32, GNA_DATA_ACTIVATION_DISABLED }, XNN_ERR_OUTPUT_BYTES);
+        auto valuePtr = &(config.output->Mode.Value);
+        *((gna_data_mode*)valuePtr) = GNA_DATA_ACTIVATION_DISABLED;
         return std::unique_ptr<ActivationFunction>(nullptr);
     }
 }

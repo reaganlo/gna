@@ -158,7 +158,7 @@ void GmmLayer::validate()
 {
     Expect::Equal(Input.Mode.Size, GMM_FV_ELEMENT_SIZE, XNN_ERR_INPUT_BYTES);
     Expect::InRange(Input.at(GNA_DIM_W), GMM_FV_ELEMENT_COUNT_MIN, GMM_FV_ELEMENT_COUNT_MAX, GNA_BADFEATLENGTH);
-    Expect::InSet(Output.Mode, { GNA_INT32, GNA_DATA_ACTIVATION_DISABLED }, XNN_ERR_OUTPUT_BYTES);
+    Expect::InSet(Output.Mode, { GNA_INT32 }, XNN_ERR_OUTPUT_BYTES);
     Expect::InRange(Output.at(GNA_DIM_H), ui32_1, GMM_STATES_COUNT_MAX, XNN_ERR_LYR_CFG);
     Expect::InRange(Config.stateCount, ui32_1, GMM_STATES_COUNT_MAX, GMM_BADNUMGMM);
     Expect::InRange(Config.mixtureComponentCount, ui32_1, GMM_MIXTURE_COMP_COUNT_MAX, GMM_BADMIXCNUM);
