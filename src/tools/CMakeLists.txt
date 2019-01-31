@@ -101,7 +101,8 @@ set_target_properties(DevTest
   RUNTIME_OUTPUT_DIRECTORY_${OS_PREFIX}_RELEASE ${GNA_DEVTEST_RELEASE_OUT_DIR}
   EXCLUDE_FROM_DEFAULT_BUILD_KLOCWORK TRUE
   OUTPUT_NAME DevTest)
-
+target_compile_options(DevTest
+  PRIVATE ${EXTRA_EXE_COMPILE_OPTIONS})
 target_link_libraries(DevTest gna-api)
 
 add_custom_command(TARGET DevTest POST_BUILD
@@ -217,6 +218,9 @@ set_target_properties(gna-self-test
 target_link_libraries(gna-self-test ${GNA_SELF_TEST_LINK_LIBS})
 target_include_directories(gna-self-test PRIVATE ${COMMON_DIR})
 
+target_compile_options(gna-self-test
+  PRIVATE ${EXTRA_EXE_COMPILE_OPTIONS})
+
 #copy gna library
 add_custom_command(TARGET gna-self-test POST_BUILD
   COMMAND ${CMAKE_COMMAND} -E copy_if_different
@@ -244,11 +248,4 @@ if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
       COMMAND strip --only-keep-debug $<TARGET_FILE:gna-self-test>.dbg
       COMMAND strip --strip-unneeded $<TARGET_FILE:gna-self-test>)
   endif()
-endif()
-
-#needed when building executables with Intel compiler for Android
-if(${CMAKE_SYSTEM_NAME} STREQUAL "Android")
-  set_target_properties(gna-self-test DevTest
-    PROPERTIES
-    LINK_OPTIONS "-pie")
 endif()

@@ -160,11 +160,11 @@ endif()
 
 # -fvisibility-inlines-hidden is a C++ only flag
 string(REGEX REPLACE " -fvisibility-inlines-hidden" "" C_FLAGS_RELEASE ${CXX_FLAGS_RELEASE})
-set(CMAKE_CXX_FLAGS                                ${CXX_FLAGS})
+set(CMAKE_CXX_FLAGS                                "${CMAKE_CXX_FLAGS} ${CXX_FLAGS}")
 set(CMAKE_CXX_FLAGS_${OS_PREFIX}_DEBUG             ${CXX_FLAGS_DEBUG})
 set(CMAKE_CXX_FLAGS_${OS_PREFIX}_RELEASE           ${CXX_FLAGS_RELEASE})
 set(CMAKE_CXX_FLAGS_KLOCWORK                       ${CXX_FLAGS_RELEASE})
-set(CMAKE_C_FLAGS                                  ${CXX_FLAGS})
+set(CMAKE_C_FLAGS                                  "${CMAKE_C_FLAGS} ${CXX_FLAGS}")
 set(CMAKE_C_FLAGS_${OS_PREFIX}_DEBUG               ${CXX_FLAGS_DEBUG})
 set(CMAKE_C_FLAGS_${OS_PREFIX}_RELEASE             ${C_FLAGS_RELEASE})
 set(CMAKE_C_FLAGS_KLOCWORK                         ${C_FLAGS_RELEASE})
