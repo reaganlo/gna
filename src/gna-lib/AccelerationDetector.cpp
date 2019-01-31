@@ -567,8 +567,8 @@ AccelerationDetector::Kernels = {
             {
                 { { GNA_GEN_SAT },{ (VoidKernel)xnnKernel_generic_sat.convolution2B } },
                 { { GNA_GEN_FAST },{ (VoidKernel)xnnKernel_generic.convolution2B } },
-                { { GNA_SSE4_2_SAT },{ (VoidKernel)xnnKernel_sse4_sat.convolution } },
-                { { GNA_SSE4_2_FAST },{ (VoidKernel)xnnKernel_sse4.convolution } },
+                { { GNA_SSE4_2_SAT },{ (VoidKernel)xnnKernel_generic_sat.convolution2B } },
+                { { GNA_SSE4_2_FAST },{ (VoidKernel)xnnKernel_generic.convolution2B } },
 
                 { { GNA_AVX1_SAT },{ (VoidKernel)xnnKernel_generic_sat.convolution2B } },
                 { { GNA_AVX1_FAST },{ (VoidKernel)xnnKernel_generic.convolution2B } },
@@ -665,8 +665,8 @@ AccelerationDetector::Kernels = {
             {
                 { { GNA_GEN_SAT },{ (VoidKernel)xnnKernel_generic_sat.convolutionPooling2B } },
                 { { GNA_GEN_FAST },{ (VoidKernel)xnnKernel_generic.convolutionPooling2B } },
-                { { GNA_SSE4_2_SAT },{ (VoidKernel)xnnKernel_sse4_sat.convolutionPooling } },
-                { { GNA_SSE4_2_FAST },{ (VoidKernel)xnnKernel_sse4.convolutionPooling } },
+                { { GNA_SSE4_2_SAT },{ (VoidKernel)xnnKernel_generic_sat.convolutionPooling2B } },
+                { { GNA_SSE4_2_FAST },{ (VoidKernel)xnnKernel_generic.convolutionPooling2B } },
 
                 { { GNA_AVX1_SAT },{ (VoidKernel)xnnKernel_generic_sat.convolutionPooling2B } },
                 { { GNA_AVX1_FAST },{ (VoidKernel)xnnKernel_generic.convolutionPooling2B } },
