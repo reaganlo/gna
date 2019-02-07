@@ -45,6 +45,7 @@ using namespace GNA;
 void* Device::Dump(gna_model_id modelId, gna_device_generation deviceGeneration, intel_gna_model_header* modelHeader, intel_gna_status_t* status, intel_gna_alloc_cb customAlloc)
 {
     // Validate parameters
+
     Expect::NotNull(status);
     Expect::NotNull(modelHeader);
     Expect::NotNull((void *)customAlloc);
@@ -67,8 +68,7 @@ void* Device::Dump(gna_model_id modelId, gna_device_generation deviceGeneration,
 
     // creating HW layer descriptors directly into dump memory
     auto hwModel = make_unique<HardwareModelSue1>(modelId, model.GetLayers(), *totalMemory, address, *ioctlSender, detector);
-    hwModel->Build();
-
+    
     // copying data..
     void *data = totalMemory->Get() + totalMemory->InternalSize;
     void *dumpData = static_cast<uint8_t*>(address) + internalSize;

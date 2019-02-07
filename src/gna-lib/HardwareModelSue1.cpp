@@ -46,7 +46,9 @@ HardwareModelSue1::HardwareModelSue1(const gna_model_id modId, const std::vector
         sender,
         detector)
 {
-    UNREFERENCED_PARAMETER(dumpDescriptorAddr);
+    Build();
+
+    memcpy(dumpDescriptorAddr, baseDescriptor.GetMemAddress(), memoryIn.InternalSize);
 }
 
 uint32_t HardwareModelSue1::getLayerDescriptorsSize(const uint32_t layerCount)
