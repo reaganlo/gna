@@ -82,7 +82,7 @@ void RecurrentKernelImpl2B(RecurrentConfig const * const config)
             v1 = _mm_lddqu_si128((__m128i*)weight2);
         }
 
-        *output = vec_sum(v2) + getBias((void*)bias, 0, (gna_data_mode)config->bytesPerBias);
+        *output = vec_sum(v2) + (int32_t)getBias((void*)bias, 0, (gna_data_mode)config->bytesPerBias);
 
         while (input < inputEnd + config->inputElementCount % 8)
         {

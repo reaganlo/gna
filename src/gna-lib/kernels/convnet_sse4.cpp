@@ -192,14 +192,14 @@ void ConvolutionKernelImpl(ConvolutionConfig const * const config)
                 f = vec_lddqu(flt);
             }
 
-            sum1 = getBias((void*)bias, 0, (gna_data_mode)config->bytesPerBias) + vec_sum(acc1);
-            sum2 = getBias((void*)bias, 0, (gna_data_mode)config->bytesPerBias) + vec_sum(acc2);
-            sum3 = getBias((void*)bias, 0, (gna_data_mode)config->bytesPerBias) + vec_sum(acc3);
-            sum4 = getBias((void*)bias, 0, (gna_data_mode)config->bytesPerBias) + vec_sum(acc4);
-            sum5 = getBias((void*)bias, 0, (gna_data_mode)config->bytesPerBias) + vec_sum(acc5);
-            sum6 = getBias((void*)bias, 0, (gna_data_mode)config->bytesPerBias) + vec_sum(acc6);
-            sum7 = getBias((void*)bias, 0, (gna_data_mode)config->bytesPerBias) + vec_sum(acc7);
-            sum8 = getBias((void*)bias, 0, (gna_data_mode)config->bytesPerBias) + vec_sum(acc8);
+            sum1 = (gna_sum_t)getBias((void*)bias, 0, (gna_data_mode)config->bytesPerBias) + vec_sum(acc1);
+            sum2 = (gna_sum_t)getBias((void*)bias, 0, (gna_data_mode)config->bytesPerBias) + vec_sum(acc2);
+            sum3 = (gna_sum_t)getBias((void*)bias, 0, (gna_data_mode)config->bytesPerBias) + vec_sum(acc3);
+            sum4 = (gna_sum_t)getBias((void*)bias, 0, (gna_data_mode)config->bytesPerBias) + vec_sum(acc4);
+            sum5 = (gna_sum_t)getBias((void*)bias, 0, (gna_data_mode)config->bytesPerBias) + vec_sum(acc5);
+            sum6 = (gna_sum_t)getBias((void*)bias, 0, (gna_data_mode)config->bytesPerBias) + vec_sum(acc6);
+            sum7 = (gna_sum_t)getBias((void*)bias, 0, (gna_data_mode)config->bytesPerBias) + vec_sum(acc7);
+            sum8 = (gna_sum_t)getBias((void*)bias, 0, (gna_data_mode)config->bytesPerBias) + vec_sum(acc8);
 
             bias += config->bytesPerBias;
 
@@ -253,7 +253,7 @@ void ConvolutionKernelImpl(ConvolutionConfig const * const config)
                 v1 = vec_lddqu(in1);
             }
 
-            sum1 = getBias((void*)bias, 0, (gna_data_mode)config->bytesPerBias) + vec_sum(acc1);
+            sum1 = (gna_sum_t)getBias((void*)bias, 0, (gna_data_mode)config->bytesPerBias) + vec_sum(acc1);
             bias += config->bytesPerBias;
 
             *out1++ = sum1;
@@ -351,12 +351,12 @@ void ConvolutionPoolingKernelImpl(ConvolutionConfig const * const filterConfig,
                     acc5 = vec_setzero();
                     acc6 = vec_setzero();
 
-                    sum1 = getBias((void*)B, i, (gna_data_mode)filterConfig->bytesPerBias);
-                    sum2 = getBias((void*)B, i, (gna_data_mode)filterConfig->bytesPerBias);
-                    sum3 = getBias((void*)B, i, (gna_data_mode)filterConfig->bytesPerBias);
-                    sum4 = getBias((void*)B, i, (gna_data_mode)filterConfig->bytesPerBias);
-                    sum5 = getBias((void*)B, i, (gna_data_mode)filterConfig->bytesPerBias);
-                    sum6 = getBias((void*)B, i, (gna_data_mode)filterConfig->bytesPerBias);
+                    sum1 = (gna_sum_t)getBias((void*)B, i, (gna_data_mode)filterConfig->bytesPerBias);
+                    sum2 = (gna_sum_t)getBias((void*)B, i, (gna_data_mode)filterConfig->bytesPerBias);
+                    sum3 = (gna_sum_t)getBias((void*)B, i, (gna_data_mode)filterConfig->bytesPerBias);
+                    sum4 = (gna_sum_t)getBias((void*)B, i, (gna_data_mode)filterConfig->bytesPerBias);
+                    sum5 = (gna_sum_t)getBias((void*)B, i, (gna_data_mode)filterConfig->bytesPerBias);
+                    sum6 = (gna_sum_t)getBias((void*)B, i, (gna_data_mode)filterConfig->bytesPerBias);
 
                     for (; in1 < in_end; )
                     {
@@ -431,11 +431,11 @@ void ConvolutionPoolingKernelImpl(ConvolutionConfig const * const filterConfig,
                     acc4 = vec_setzero();
                     acc5 = vec_setzero();
 
-                    sum1 = getBias((void*)B, i, (gna_data_mode)filterConfig->bytesPerBias);
-                    sum2 = getBias((void*)B, i, (gna_data_mode)filterConfig->bytesPerBias);
-                    sum3 = getBias((void*)B, i, (gna_data_mode)filterConfig->bytesPerBias);
-                    sum4 = getBias((void*)B, i, (gna_data_mode)filterConfig->bytesPerBias);
-                    sum5 = getBias((void*)B, i, (gna_data_mode)filterConfig->bytesPerBias);
+                    sum1 = (gna_sum_t)getBias((void*)B, i, (gna_data_mode)filterConfig->bytesPerBias);
+                    sum2 = (gna_sum_t)getBias((void*)B, i, (gna_data_mode)filterConfig->bytesPerBias);
+                    sum3 = (gna_sum_t)getBias((void*)B, i, (gna_data_mode)filterConfig->bytesPerBias);
+                    sum4 = (gna_sum_t)getBias((void*)B, i, (gna_data_mode)filterConfig->bytesPerBias);
+                    sum5 = (gna_sum_t)getBias((void*)B, i, (gna_data_mode)filterConfig->bytesPerBias);
 
                     for (; in1 < in_end; )
                     {
@@ -500,10 +500,10 @@ void ConvolutionPoolingKernelImpl(ConvolutionConfig const * const filterConfig,
                     acc3 = vec_setzero();
                     acc4 = vec_setzero();
 
-                    sum1 = getBias((void*)B, i, (gna_data_mode)filterConfig->bytesPerBias);
-                    sum2 = getBias((void*)B, i, (gna_data_mode)filterConfig->bytesPerBias);
-                    sum3 = getBias((void*)B, i, (gna_data_mode)filterConfig->bytesPerBias);
-                    sum4 = getBias((void*)B, i, (gna_data_mode)filterConfig->bytesPerBias);
+                    sum1 = (gna_sum_t)getBias((void*)B, i, (gna_data_mode)filterConfig->bytesPerBias);
+                    sum2 = (gna_sum_t)getBias((void*)B, i, (gna_data_mode)filterConfig->bytesPerBias);
+                    sum3 = (gna_sum_t)getBias((void*)B, i, (gna_data_mode)filterConfig->bytesPerBias);
+                    sum4 = (gna_sum_t)getBias((void*)B, i, (gna_data_mode)filterConfig->bytesPerBias);
 
                     for (; in1 < in_end; )
                     {
@@ -559,9 +559,9 @@ void ConvolutionPoolingKernelImpl(ConvolutionConfig const * const filterConfig,
                     acc2 = vec_setzero();
                     acc3 = vec_setzero();
 
-                    sum1 = getBias((void*)B, i, (gna_data_mode)filterConfig->bytesPerBias);
-                    sum2 = getBias((void*)B, i, (gna_data_mode)filterConfig->bytesPerBias);
-                    sum3 = getBias((void*)B, i, (gna_data_mode)filterConfig->bytesPerBias);
+                    sum1 = (gna_sum_t)getBias((void*)B, i, (gna_data_mode)filterConfig->bytesPerBias);
+                    sum2 = (gna_sum_t)getBias((void*)B, i, (gna_data_mode)filterConfig->bytesPerBias);
+                    sum3 = (gna_sum_t)getBias((void*)B, i, (gna_data_mode)filterConfig->bytesPerBias);
 
                     for (; in1 < in_end; )
                     {
@@ -608,8 +608,8 @@ void ConvolutionPoolingKernelImpl(ConvolutionConfig const * const filterConfig,
                     acc1 = vec_setzero();
                     acc2 = vec_setzero();
 
-                    sum1 = getBias((void*)B, i, (gna_data_mode)filterConfig->bytesPerBias);
-                    sum2 = getBias((void*)B, i, (gna_data_mode)filterConfig->bytesPerBias);
+                    sum1 = (gna_sum_t)getBias((void*)B, i, (gna_data_mode)filterConfig->bytesPerBias);
+                    sum2 = (gna_sum_t)getBias((void*)B, i, (gna_data_mode)filterConfig->bytesPerBias);
 
                     for (; in1 < in_end; )
                     {
@@ -647,7 +647,7 @@ void ConvolutionPoolingKernelImpl(ConvolutionConfig const * const filterConfig,
 
                     acc1 = vec_setzero();
 
-                    sum1 = getBias((void*)B, i, (gna_data_mode)filterConfig->bytesPerBias);
+                    sum1 = (gna_sum_t)getBias((void*)B, i, (gna_data_mode)filterConfig->bytesPerBias);
 
                     for (; in1 < in_end; )
                     {
