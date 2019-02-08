@@ -77,7 +77,7 @@ void* Device::Dump(gna_model_id modelId, gna_device_generation deviceGeneration,
     // TODO:3: review
     // filling model header
     auto const &input = model.GetLayer(0)->Input;
-    auto const &output = model.GetLayer(0)->Output;
+    auto const &output = model.GetLayer(layerCount - 1)->Output;
     uint32_t outputsOffset = hwModel->GetOutputOffset(layerCount - 1);
     uint32_t inputsOffset = hwModel->GetInputOffset(0);
     *modelHeader = { 0, static_cast<uint32_t>(dumpedModelTotalSize), 1, layerCount, input.Mode.Size,

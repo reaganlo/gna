@@ -67,12 +67,12 @@ const LayerDescriptor& HardwareModelSue1::GetDescriptor(uint32_t layerIndex) con
 uint32_t HardwareModelSue1::GetOutputOffset(uint32_t layerIndex) const
 {
     auto layer = hardwareLayers.at(layerIndex).get();
-    return layer->GetLdOutputOffset();
+    return layer->GetLdOutputOffset() - GetDescriptor(0).GetOffset();
 };
 
 uint32_t HardwareModelSue1::GetInputOffset(uint32_t layerIndex) const
 {
     auto layer = hardwareLayers.at(layerIndex).get();
-    return layer->XnnDescriptor[in_buffer].GetOffset();
+    return layer->GetLdInputOffset () - GetDescriptor(0).GetOffset();
 
 };
