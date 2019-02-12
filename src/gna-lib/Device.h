@@ -36,11 +36,31 @@
 
 namespace GNA
 {
+
+class DeviceManager
+{
+public:
+    static uint32_t GetDeviceCount();
+
+    static gna_device_version GetDeviceVersion(gna_device_id deviceId);
+
+    static void SetThreadCount(gna_device_id deviceId, uint32_t threadCount);
+
+    static uint32_t GetThreadCount(gna_device_id deviceId);
+
+    static void VerifyDeviceIndex(gna_device_id deviceId);
+
+
+private:
+    static std::map<uint32_t, uint32_t> threadCountMap;
+};
+
+
 class Memory;
 class Device
 {
 public:
-    Device(gna_device_id *deviceId, uint8_t threadCount = 1);
+    Device(gna_device_id deviceId, uint8_t threadCount = 1);
     Device(const Device &) = delete;
     Device& operator=(const Device&) = delete;
 
@@ -81,6 +101,7 @@ protected:
         const uint16_t layerCount, const uint16_t gmmCount);
 
     static const std::map<const gna_device_generation, const gna_device_version> deviceDictionary;
+
     inline void* getMemoryId(gna_model_id modelId) const
     {
         try
@@ -126,7 +147,7 @@ protected:
         }
     }
 
-    gna_device_id id = GNA_DEVICE_INVALID;
+    gna_device_id id;
 
     uint32_t modelIdSequence = 0;
 

@@ -38,12 +38,13 @@ void GnaSelfTest::HandleGnaStatus(const intel_gna_status_t &status, const char *
 SelfTestDevice::SelfTestDevice(const GnaSelfTest& gst) : gnaSelfTest{ gst }
 {
     // open the device
-    intel_gna_status_t status = GnaDeviceOpen(1, &deviceId);
+    intel_gna_status_t status = GnaDeviceOpen(deviceId);
 
     const char *statusStr = GnaStatusToString(status);
     logger.Verbose("SelfTestDevice: %s\n", statusStr);
-    if (deviceId == GNA_DEVICE_INVALID || status != GNA_SUCCESS)
+    if (status != GNA_SUCCESS)
     {
+        deviceId = GNA_DISABLED;
         logger.Error("GnaDeviceOpen FAILED\n");
         gnaSelfTest.Handle(GSTIT_DEVICE_OPEN_NO_SUCCESS);
     }
@@ -188,7 +189,7 @@ void SelfTestDevice::CompareResults(const SampleModelForGnaSelfTest& model)
 SelfTestDevice::~SelfTestDevice()
 {
     // free the pinned memory
-    if (deviceId != GNA_DEVICE_INVALID)
+    if (deviceId != GNA_DISABLED)
     {
         if (pinned_mem_ptr != nullptr)
         {

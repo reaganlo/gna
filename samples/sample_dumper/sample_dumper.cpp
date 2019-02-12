@@ -121,9 +121,17 @@ int main(int argc, char *argv[])
     intel_gna_status_t status = GNA_SUCCESS; // for simplicity sake status codes are not examined after api functions calls
                                              // it is highly recommended to inspect the status every time, and act accordingly
                                              // open the device
-    gna_device_id gna_handle;
-    status = GnaDeviceOpen(1, &gna_handle);
-    if (GNA_SUCCESS != status)
+   gna_device_id deviceNumber;
+     status = GnaDeviceGetCount(&deviceNumber);
+    if (GNA_SUCCESS!= status)
+    {
+        printf("GnaDeviceGetCount failed: %s\n", GnaStatusToString(status));
+        exit(-status);
+    }
+    gna_device_id deviceIndex = 0;
+    // open the device
+    status = GnaDeviceOpen(deviceIndex);
+    if (GNA_SUCCESS!= status)
     {
         printf("GNADeviceOpen failed: %s\n", GnaStatusToString(status));
         exit(-status);
@@ -142,11 +150,11 @@ int main(int argc, char *argv[])
     // call GNAAlloc (obtains pinned memory shared with the device)
     const uint32_t layer_count = 1;
     uint32_t bytes_granted;
-    uint8_t *model_memory = (uint8_t*)GnaAlloc(gna_handle, bytes_requested, layer_count, 0, &bytes_granted);
+    uint8_t *model_memory = (uint8_t*)GnaAlloc(deviceIndex, bytes_requested, layer_count, 0, &bytes_granted);
     if (NULL == model_memory)
     {
         printf("GNADumpAlloc failed.\n");
-        GnaDeviceClose(gna_handle);
+        GnaDeviceClose(deviceIndex);
         exit(-GNA_ERR_MEM_ALLOC1);
     }
 
@@ -185,8 +193,8 @@ int main(int argc, char *argv[])
     if (nullptr == nnet.pLayers)
     {
         printf("Allocation for nnet.pLayers failed: %s\n", GnaStatusToString(status));
-        GnaFree(gna_handle);
-        GnaDeviceClose(gna_handle);
+        GnaFree(deviceIndex);
+        GnaDeviceClose(deviceIndex);
         exit(-status);
     }
 
@@ -225,12 +233,12 @@ int main(int argc, char *argv[])
     memcpy_s(nnet.pLayers, nnet.nLayers * sizeof(intel_nnet_layer_t), &nnet_layer, sizeof(nnet_layer));
 
     gna_model_id model_id;
-    status = GnaModelCreate(gna_handle, &nnet, &model_id);
+    status = GnaModelCreate(deviceIndex, &nnet, &model_id);
     if (GNA_SUCCESS!= status)
     {
         printf("GnaModelCreate failed: %s\n", GnaStatusToString(status));
-        GnaFree(gna_handle);
-        GnaDeviceClose(gna_handle);
+        GnaFree(deviceIndex);
+        GnaDeviceClose(deviceIndex);
         exit(-status);
     }
 
@@ -238,8 +246,8 @@ int main(int argc, char *argv[])
     void* dumped_model = GnaModelDump(model_id, GNA_1_0_EMBEDDED, &model_header, &status, customAlloc);
     if (GNA_SUCCESS != status || NULL == dumped_model)
     {
-        GnaFree(gna_handle);
-        GnaDeviceClose(gna_handle);
+        GnaFree(deviceIndex);
+        GnaDeviceClose(deviceIndex);
         exit(-status);
     }
 
@@ -258,40 +266,40 @@ int main(int argc, char *argv[])
     if (GNA_SUCCESS!= status)
     {
         printf("GnaRequestConfigCreate failed: %s\n", GnaStatusToString(status));
-        GnaFree(gna_handle);
-        GnaDeviceClose(gna_handle);
+        GnaFree(deviceIndex);
+        GnaDeviceClose(deviceIndex);
         exit(-status);
     }
     status = GnaRequestConfigBufferAdd(config_id, InputComponent, 0, pinned_inputs);
     if (GNA_SUCCESS!= status)
     {
         printf("GnaRequestConfigBufferAdd InputComponent failed: %s\n", GnaStatusToString(status));
-        GnaFree(gna_handle);
-        GnaDeviceClose(gna_handle);
+        GnaFree(deviceIndex);
+        GnaDeviceClose(deviceIndex);
         exit(-status);
     }
     status = GnaRequestConfigBufferAdd(config_id, OutputComponent, 0, pinned_outputs);
     if (GNA_SUCCESS!= status)
     {
         printf("GnaRequestConfigBufferAdd OutputComponent failed: %s\n", GnaStatusToString(status));
-        GnaFree(gna_handle);
-        GnaDeviceClose(gna_handle);
+        GnaFree(deviceIndex);
+        GnaDeviceClose(deviceIndex);
         exit(-status);
     }
     status = GnaRequestConfigEnableHardwareConsistency(config_id, GNA_SUE_CREEK);
     if (GNA_SUCCESS!= status)
     {
         printf("GnaRequestConfigEnableHardwareConsistency for GNA_SUE_CREEK failed: %s\n", GnaStatusToString(status));
-        GnaFree(gna_handle);
-        GnaDeviceClose(gna_handle);
+        GnaFree(deviceIndex);
+        GnaDeviceClose(deviceIndex);
         exit(-status);
     }
     status = GnaRequestConfigEnforceAcceleration(config_id, GNA_GENERIC);
     if (GNA_SUCCESS!= status)
     {
         printf("GnaRequestConfigEnforceAcceleration GNA_GENERIC failed: %s\n", GnaStatusToString(status));
-        GnaFree(gna_handle);
-        GnaDeviceClose(gna_handle);
+        GnaFree(deviceIndex);
+        GnaDeviceClose(deviceIndex);
         exit(-status);
     }
 
@@ -301,8 +309,8 @@ int main(int argc, char *argv[])
     if (GNA_SUCCESS!= status)
     {
         printf("GnaRequestEnqueue failed: %s\n", GnaStatusToString(status));
-        GnaFree(gna_handle);
-        GnaDeviceClose(gna_handle);
+        GnaFree(deviceIndex);
+        GnaDeviceClose(deviceIndex);
         exit(-status);
     }
 
@@ -322,13 +330,13 @@ int main(int argc, char *argv[])
 
                                                       // -177  -85   29   28
     // free the pinned memory                         //   96 -173   25  252
-    status = GnaFree(gna_handle);                     // -160  274  157  -29
+    status = GnaFree(deviceIndex);                     // -160  274  157  -29
                                                       //   48  -60  158  -29
     // free heap allocations                          //   26   -2  -44 -251
     free(nnet.pLayers);                               // -173  -70   -1 -323
                                                       //   99  144   38  -63
     // close the device                               //   20   56 -103   10
-    status = GnaDeviceClose(gna_handle);
+    status = GnaDeviceClose(deviceIndex);
 
     return 0;
 }

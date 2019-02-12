@@ -109,7 +109,7 @@ public:
     void CompareResults(const SampleModelForGnaSelfTest &model);
     ~SelfTestDevice();
 private:
-    gna_device_id deviceId;
+    gna_device_id deviceId = 0;
     uint8_t *pinned_mem_ptr = nullptr;
     gna_model_id sampleModelId;
     gna_request_cfg_id configId;

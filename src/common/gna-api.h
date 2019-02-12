@@ -58,7 +58,7 @@ extern "C" {
 /******************  GNA Device API ******************/
 
 /** GNA Device identifier **/
-typedef uint32_t gna_device_id;
+typedef uint32_t gna_device_id; // TODO:3:API redesign: remove and use uint32_t instead.
 
 ////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////    start of changes            ////////////////////////////////////
@@ -108,7 +108,7 @@ typedef enum _api_version
 } gna_api_version;
 
 // TODO:3: rename to generation or remove and use driver device types
-typedef enum _device_version
+typedef enum _device_generation
 {
     GNA_DEVICE_NOT_SUPPORTED = GNA_NOT_SUPPORTED,
     GNA_0_9,                // GNA 0.9 Device Cannon Lake (CNL), no CNN support
@@ -129,7 +129,7 @@ typedef enum _device_version
  */
 typedef enum _gna_device_version
 {
-    GNA_UNSUPPORTED = 0x0000,   // No supported device available
+    GNA_UNSUPPORTED = 0x0000,   // No supported hardware device available.
     GNA_SKL     = 0x1911,   // GMM Device Sky Lake
     GNA_KBL     = 0x1911,   // GMM Device Kaby Lake // TODO:3: check KBL HW ID
     GNA_CNL     = 0x5A11,   // GNA 0.9 Device Cannon Lake, no CNN support
@@ -317,8 +317,6 @@ typedef enum _gna_device_version
 
 // TODO:enable querying some properties on non-available devices like SueScreek
 
-GNAAPI intel_gna_status_t GnaGetDeviceCount(
-    uint32_t* deviceCount);
 //
 //// dedicated query functions
 //GNAAPI intel_gna_status_t GnaGetApiProperty(
@@ -343,13 +341,13 @@ GNAAPI intel_gna_status_t GnaGetDeviceCount(
 //    char const ** propertyString);               // [out] c-string containing property value, allocated by GNA
 //
 //GNAAPI intel_gna_status_t GnaGetDeviceProperty(
-//    gna_device_id device,                       // id/index of device <0;GNA_DEVICE_AVAILABLE_COUNT-1>
+//    gna_device_version deviceVersion,                       // id/index of device <0;GNA_DEVICE_AVAILABLE_COUNT-1>
 //    gna_device_property property,
 //    void* poropertyValue,                       // [out] value of returned property, pointer to allocated 8Byte memory region
 //    gna_property_type* propertyValueType);      // [out] type of returned property
 //
 //GNAAPI intel_gna_status_t GnaSetDeviceProperty(
-//    gna_device_id device,
+//    gna_device_version deviceVersion,
 //    gna_device_property property,
 //    void* poropertyValue);                      // [in] value of property, pointer to allocated 8Byte memory region
 //
@@ -365,14 +363,14 @@ GNAAPI intel_gna_status_t GnaGetDeviceCount(
 //    char const * propertyString);               // [out] c-string containing property value, allocated by GNA
 //
 //GNAAPI intel_gna_status_t GnaGetLayerProperty(
-//    gna_device_id device,
+//    gna_device_version deviceVersion,
 //    gna_layer_operation layerOperation,
 //    gna_layer_property property,
 //    void* poropertyValue,                       // [out] value of returned property, pointer to allocated 8Byte memory region
 //    gna_property_type* propertyValueType);      // [out] type of returned property
 //
 //GNAAPI intel_gna_status_t GnaSetLayerProperty(
-//    gna_device_id device,
+//    gna_device_version deviceVersion,
 //    gna_layer_operation layerOperation,
 //    gna_layer_property property,
 //    void* poropertyValue);                      // [in] value of property, pointer to allocated 8Byte memory region
@@ -388,49 +386,67 @@ GNAAPI intel_gna_status_t GnaGetDeviceCount(
 //    void* poropertyValue,                       // [in] value of property
 //    char const * propertyString);               // [out] c-string containing property value, allocated by GNA
 //
-//
-//// Query hardware device properties even if not present in system, like SueCreek
-//GNAAPI intel_gna_status_t GnaGetHardwareDeviceProperty(
-//    gna_device_generation generation,         // hardware device generation identifier, for not present devices
-//    gna_device_property property,
-//    void* poropertyValue,                       // [out] value of returned property, pointer to allocated 8Byte memory region
-//    gna_property_type* propertyValueType);      // [out] type of returned property
-//
-//GNAAPI intel_gna_status_t GnaGetHardwareLayerProperty(
-//    gna_device_generation generation,         // hardware device generation identifier, for not present devices
-//    gna_layer_operation layerOperation,
-//    gna_layer_property property,
-//    void* poropertyValue,                       // [out] value of returned property, pointer to allocated 8Byte memory region
-//    gna_property_type* propertyValueType);      // [out] type of returned property
-
 
 /******************************************************************************
  * GNA Device API
  *****************************************************************************/
 
-///** Maximum number of opened devices */
-//const gna_device_id GNA_DEVICE_LIMIT = 1;
-
-/** Device Id indicating invalid device */
-const gna_device_id GNA_DEVICE_INVALID = (uint32_t) GNA_DISABLED;
+/**
+ Gets number of available GNA devices on this computer.
+ If no hardware device is available deviceCount is set to 1,
+ as software device still can be used.
+ @See deviceCount to verify device version.
+ 
+ @param deviceCount (out) Number of available hardware devices.
+ @return Status of operation. 
+ */
+GNAAPI intel_gna_status_t GnaDeviceGetCount(
+    uint32_t * deviceCount);
 
 /**
- * Opens and initializes GNA device for processing.
- * NOTE:
- * - The device has to be closed after usage to prevent resource leakage.
- * - Only GNA_DEVICE_ACTIVE_COUNT_MAX number of devices can stay opened at a time.
- *
- * @param threadCount   Number of software worker threads <1,127>. Currently only 1 thread is supported.
- * @param device        (in-out) index/Id of the device to open,  set to GNA_DEVICE_INVALID in case the device can not be opened.
+ Retrieves hardware device version.
+ Devices are zero-based indexed.
+ Select desired device providing deviceIndex from 0 to deviceCount-1.
+ @See GnaDeviceGetCount.
+ 
+ @param deviceIndex Index of queried device.
+ @param deviceVersion (out) GnaDeviceVersion identifier.
+                            If no hardware devices are available sets
+                            deviceVersion = GNA_UNSUPPORTED.
+ @return Status of the operation. 
+ */
+GNAAPI intel_gna_status_t GnaDeviceGetVersion(
+    uint32_t deviceIndex,
+    gna_device_version * deviceVersion);
+
+/**
+ Sets number of software worker threads for given device.
+ NOTE:
+ - Must be called synchronously before GnaDeviceOpen.
+ Device indexes are zero-based.
+ Select desired device providing deviceIndex from 0 to deviceCount-1.
+
+ @param deviceIndex Index of the affected device.
+ @param threadCount Number of software worker threads [1,127]. Default is 1.
+ */
+GNAAPI intel_gna_status_t GnaDeviceSetThreadNumber(
+    gna_device_id deviceIndex,
+    uint32_t threadNumber);
+
+/**
+ Opens and initializes GNA device for processing.
+ Device indexes are zero-based.
+ Select desired device providing deviceIndex from 0 to deviceCount-1.
+ If no hardware devices are avaiable, software device can be still opened
+ by setting deviceIndex to 0.
+ NOTE:
+ - The device has to be closed after usage to prevent resource leakage.
+ - Only GNA_DEVICE_ACTIVE_COUNT_MAX number of devices can stay opened at a time.
+
+ @param deviceIndex Index of the device to be opened.
  */
 GNAAPI intel_gna_status_t GnaDeviceOpen(
-    uint8_t threadCount,
-    gna_device_id * device);
-
-
-////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////    end of changes              ////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////
+    gna_device_id deviceIndex);
 
 /**
  * Closes GNA device and releases the corresponding resources.

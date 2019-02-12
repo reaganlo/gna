@@ -49,7 +49,53 @@ using std::move;
 
 using namespace GNA;
 
-Device::Device(gna_device_id* deviceId, uint8_t threadCount) :
+std::map<uint32_t, uint32_t> DeviceManager::threadCountMap =
+{
+    {0,1},
+};
+
+uint32_t DeviceManager::GetDeviceCount()
+{
+    // TODO:3: implement fetching number of avaialbe devices
+    return 1;
+}
+
+gna_device_version DeviceManager::GetDeviceVersion(gna_device_id deviceId)
+{
+    VerifyDeviceIndex(deviceId);
+    // TODO:3: implement fetching device version
+    return GNA_ADL;
+}
+
+void DeviceManager::SetThreadCount(gna_device_id deviceId, uint32_t threadCount)
+{
+    VerifyDeviceIndex(deviceId);
+    Expect::InRange(static_cast<uint32_t>(threadCount), 1U, 127U, GNA_ERR_INVALID_THREAD_COUNT);
+
+    threadCountMap[deviceId] = threadCount;
+}
+
+uint32_t DeviceManager::GetThreadCount(gna_device_id deviceId)
+{
+    VerifyDeviceIndex(deviceId);
+    auto found = threadCountMap.find(deviceId);
+    if (threadCountMap.end() != found)
+    {
+        return found->second;
+    }
+    else
+    {
+        return 1;
+    }
+}
+
+void DeviceManager::VerifyDeviceIndex(gna_device_id deviceId)
+{
+    Expect::InRange<uint32_t>(deviceId, 0, GetDeviceCount() - 1, GNA_INVALIDHANDLE);
+}
+
+Device::Device(gna_device_id deviceId, uint8_t threadCount) :
+    id{deviceId},
     ioctlSender{
 #if defined(_WIN32)
     std::make_unique<WindowsIoctlSender>()
@@ -62,11 +108,7 @@ Device::Device(gna_device_id* deviceId, uint8_t threadCount) :
     modelMemoryMap{ },
     requestHandler{ threadCount }
 {
-    Expect::NotNull(deviceId);
-
-    id = static_cast<gna_device_id>(std::hash<std::thread::id>()(std::this_thread::get_id()));
-
-    *deviceId = id;
+    DeviceManager::VerifyDeviceIndex(deviceId);
 }
 
 void Device::AttachBuffer(gna_request_cfg_id configId, GnaComponentType type, uint32_t layerIndex, void *address)

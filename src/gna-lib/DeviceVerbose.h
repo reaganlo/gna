@@ -35,7 +35,7 @@ namespace GNA
     class DeviceVerbose : public Device
     {
     public:
-        DeviceVerbose(gna_device_id* deviceId, uint8_t threadCount = 1) :
+        DeviceVerbose(gna_device_id deviceId, uint8_t threadCount = 1) :
             Device::Device(deviceId, threadCount)
         { }
 

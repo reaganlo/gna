@@ -29,10 +29,18 @@
 
 DeviceController::DeviceController()
 {
-    intel_gna_status_t status = GnaDeviceOpen(1, &gnaHandle);
-    if (GNA_SUCCESS != status)
+    gna_device_id deviceNumber = 0;
+    auto status = GnaDeviceGetCount(&deviceNumber);
+    if (GNA_SUCCESS!= status)
     {
-        throw std::runtime_error("Device open failed");
+        throw std::runtime_error("GnaDeviceGetCount failed");
+    }
+    gnaHandle = 0;
+    // open the device
+    status = GnaDeviceOpen(gnaHandle);
+    if (GNA_SUCCESS!= status)
+    {
+        throw std::runtime_error("GnaDeviceOpen failed");
     }
 }
 
