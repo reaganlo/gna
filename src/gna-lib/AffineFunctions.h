@@ -56,6 +56,7 @@ public:
 
     std::unique_ptr<const WeightTensor> Weights;
     std::unique_ptr<const BiasTensor> Biases;
+    virtual ~AffineFunction() = default;
 
 protected:
     AffineFunction(const KernelMap<AffineKernel>& kernels,

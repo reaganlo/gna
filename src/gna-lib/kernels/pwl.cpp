@@ -644,6 +644,7 @@ PwlCached::PwlCached(const gna_data_mode mode, nn_pwl_seg const * const segments
         xBaseBtmp = segments[s].xBase & XBASEMASK;
         while (s < pwl.segmentCount)
         {
+	    xBaseBtmp = segments[s].xBase & XBASEMASK;
             usegTmp.xBase = pwl.Lookup.xBase0 - pwl.Lookup.xBase1diff - (pwl_x_t)(segments[s - 1].xBase & XBASEMASK);
             usegTmp.shift = ((segments[s - 1].xBase & ~XBASEMASK) + 1) << BIT_SHIFT_SIZE;
             usegTmp.slope = segments[s - 1].slope;
@@ -678,7 +679,6 @@ PwlCached::PwlCached(const gna_data_mode mode, nn_pwl_seg const * const segments
                 }
             }
             s++;
-            xBaseBtmp = segments[s].xBase & XBASEMASK;
         }
         usegTmp.xBase = pwl.Lookup.xBase0 - pwl.Lookup.xBase1diff - (pwl_x_t)(segments[s - 1].xBase & XBASEMASK);
         usegTmp.shift = ((segments[s - 1].xBase & ~XBASEMASK) + 1) << BIT_SHIFT_SIZE;
