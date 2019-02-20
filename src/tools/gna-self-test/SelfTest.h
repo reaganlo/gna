@@ -110,6 +110,7 @@ public:
     ~SelfTestDevice();
 private:
     gna_device_id deviceId = 0;
+    bool deviceOpened = false;
     uint8_t *pinned_mem_ptr = nullptr;
     gna_model_id sampleModelId;
     gna_request_cfg_id configId;
