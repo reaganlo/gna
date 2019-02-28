@@ -901,7 +901,7 @@ void Convolution2DKernelImpl1B1B(ExecutionKernelConfig<ConvolutionConfig2D> cons
     void* biasData = config->RequestConfig->Transform.Convolution.biases.biasesData;
 
     uint32_t outWidth = 1 + ((inputWidthWPad - filterWidth) / strideWidth);
-    uint32_t outHeight = 1 + ((inputHeightWPad - filterWidth) / strideHeight);
+    uint32_t outHeight = 1 + ((inputHeightWPad - filterHeight) / strideHeight);
 
     for (uint32_t OD = 0; OD < numFilters; OD++) { //Output depth or #filters
 
@@ -977,7 +977,7 @@ void Convolution2DKernelImpl1B2B(ExecutionKernelConfig<ConvolutionConfig2D> cons
     void* biasData = config->RequestConfig->Transform.Convolution.biases.biasesData;
 
     uint32_t outWidth = 1 + ((inputWidthWPad - filterWidth) / strideWidth);
-    uint32_t outHeight = 1 + ((inputHeightWPad - filterWidth) / strideHeight);
+    uint32_t outHeight = 1 + ((inputHeightWPad - filterHeight) / strideHeight);
 
     for (uint32_t OD = 0; OD < numFilters; OD++) { //Output depth or #filters
 
@@ -1053,7 +1053,7 @@ void Convolution2DKernelImpl2B1B(ExecutionKernelConfig<ConvolutionConfig2D> cons
     void* biasData = config->RequestConfig->Transform.Convolution.biases.biasesData;
 
     uint32_t outWidth = 1 + ((inputWidthWPad - filterWidth) / strideWidth);
-    uint32_t outHeight = 1 + ((inputHeightWPad - filterWidth) / strideHeight);
+    uint32_t outHeight = 1 + ((inputHeightWPad - filterHeight) / strideHeight);
 
     for (uint32_t OD = 0; OD < numFilters; OD++) { //Output depth or #filters
 
@@ -1129,7 +1129,7 @@ void Convolution2DKernelImpl2B2B(ExecutionKernelConfig<ConvolutionConfig2D> cons
     void* biasData = config->RequestConfig->Transform.Convolution.biases.biasesData;
 
     uint32_t outWidth = 1 + ((inputWidthWPad - filterWidth) / strideWidth);
-    uint32_t outHeight = 1 + ((inputHeightWPad - filterWidth) / strideHeight);
+    uint32_t outHeight = 1 + ((inputHeightWPad - filterHeight) / strideHeight);
 
     for (uint32_t OD = 0; OD < numFilters; OD++) { //Output depth or #filters
 
