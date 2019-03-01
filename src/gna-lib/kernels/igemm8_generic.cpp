@@ -135,7 +135,7 @@ void AffineMultiBiasKernelImpl1B(AffineConfig const * const config)
     nn_scaling const * const biasEnd = config->weightScaleFactors + config->outputElementCount;
     int8_t const * weight = config->weights1B;
     nn_scaling const * weightScaleFactors = config->weightScaleFactors;
-    nn_bias_s const * multiBias = config->multiBias;
+    int8_t const * multiBias = (int8_t*)config->multiBias;
 
     TransposeConfig transposeConfig = TransposeConfig{ config->inputElementCount, config->inputVectorCount,
         config->input, config->execution->Intermediate->d0 };
@@ -152,10 +152,16 @@ void AffineMultiBiasKernelImpl1B(AffineConfig const * const config)
                 *output += weight[k] * *input++;
             }
             *output *= weightScaleFactors->multiplier;
-            *output++ += *multiBias;
+
+            if (config->bytesPerBias == 1)
+                *output++ += (uint8_t)*multiBias;
+            else if (config->bytesPerBias == 2)
+                *output++ += *(int16_t*)multiBias;
+            else if (config->bytesPerBias == 4)
+                *output++ += *(int32_t*)multiBias;
         }
         weight += config->inputElementCount;
-        multiBias += config->multiBiasVectorCount;
+        multiBias += config->multiBiasVectorCount * config->bytesPerBias;
         weightScaleFactors++;
     }
 }
@@ -168,7 +174,7 @@ void AffineMultiBiasKernelImpl1B2B(AffineConfig const * const config)
     nn_scaling const * const biasEnd = config->weightScaleFactors + config->outputElementCount;
     int8_t const * weight = config->weights1B;
     nn_scaling const * weightScaleFactors = config->weightScaleFactors;
-    nn_bias_s const * multiBias = config->multiBias;
+    int8_t const * multiBias = (int8_t*)config->multiBias;
 
     TransposeConfig transposeConfig = TransposeConfig{ config->inputElementCount, config->inputVectorCount,
         config->input, config->execution->Intermediate->d0 };
@@ -185,10 +191,16 @@ void AffineMultiBiasKernelImpl1B2B(AffineConfig const * const config)
                 *output += weight[k] * *input++;
             }
             *output *= weightScaleFactors->multiplier;
-            *output++ += *multiBias;
+
+            if (config->bytesPerBias == 1)
+                *output++ += *multiBias;
+            else if (config->bytesPerBias == 2)
+                *output++ += *(int16_t*)multiBias;
+            else if (config->bytesPerBias == 4)
+                *output++ += *(int32_t*)multiBias;
         }
         weight += config->inputElementCount;
-        multiBias += config->multiBiasVectorCount;
+        multiBias += config->multiBiasVectorCount * config->bytesPerBias;
         weightScaleFactors++;
     }
 }

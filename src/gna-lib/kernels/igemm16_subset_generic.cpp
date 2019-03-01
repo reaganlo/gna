@@ -43,12 +43,7 @@ void AffineActiveListKernelImpl2B(AffineConfig const * const config, AffineConfi
         weight = config->weights2B + i*config->inputElementCount;
         for (j = 0; j < config->inputVectorCount; j++)
         {
-            if (config->bytesPerBias == 1)
-                config->output[l*config->inputVectorCount + j] = ((int8_t*)config->biasesSimple)[i];
-            if (config->bytesPerBias == 2)
-                config->output[l*config->inputVectorCount + j] = ((int16_t*)config->biasesSimple)[i];
-            if (config->bytesPerBias == 4)
-                config->output[l*config->inputVectorCount + j] = config->biasesSimple[i];
+            config->output[l*config->inputVectorCount + j] = getBias((void*)config->biasesSimple, i, (gna_data_mode)config->bytesPerBias);
 
             for (k = 0; k < config->inputElementCount; k++)
             {
@@ -75,12 +70,7 @@ void AffineActiveListKernelImpl2B2B(AffineConfig const * const config, AffineCon
         weight = config->weights2B + i*config->inputElementCount;
         for (j = 0; j < config->inputVectorCount; j++)
         {
-            if (config->bytesPerBias == 1)
-                config->output[l*config->inputVectorCount + j] = ((int8_t*)config->biasesSimple)[i];
-            if (config->bytesPerBias == 2)
-                config->output[l*config->inputVectorCount + j] = ((int16_t*)config->biasesSimple)[i];
-            if (config->bytesPerBias == 4)
-                config->output[l*config->inputVectorCount + j] = config->biasesSimple[i];
+            config->output[l*config->inputVectorCount + j] = getBias((void*)config->biasesSimple, i, (gna_data_mode)config->bytesPerBias);
 
             for (k = 0; k < config->inputElementCount; k++)
             {
@@ -108,12 +98,7 @@ void AffineActiveListKernelImpl2B1B(AffineConfig const * const config, AffineCon
         weight = config->weights2B + i*config->inputElementCount;
         for (j = 0; j < config->inputVectorCount; j++)
         {
-            if (config->bytesPerBias == 1)
-                config->output[l*config->inputVectorCount + j] = ((int8_t*)config->biasesSimple)[i];
-            if (config->bytesPerBias == 2)
-                config->output[l*config->inputVectorCount + j] = ((int16_t*)config->biasesSimple)[i];
-            if (config->bytesPerBias == 4)
-                config->output[l*config->inputVectorCount + j] = config->biasesSimple[i];
+            config->output[l*config->inputVectorCount + j] = getBias((void*)config->biasesSimple, i, (gna_data_mode)config->bytesPerBias);
 
             for (k = 0; k < config->inputElementCount; k++)
             {

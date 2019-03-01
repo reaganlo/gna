@@ -50,12 +50,7 @@ void AffineKernelImpl2B(AffineConfig const * const config)
     {
         for (j = 0; j < config->inputVectorCount; j++)
         {
-            if (config->bytesPerBias == 1)
-                sum = ((int8_t*)config->biasesSimple)[i];
-            else if (config->bytesPerBias == 2)
-                sum = ((int16_t*)config->biasesSimple)[i];
-            else if (config->bytesPerBias == 4)
-                sum = ((int32_t*)config->biasesSimple)[i];
+            sum = getBias((void*)config->biasesSimple, i, (gna_data_mode)config->bytesPerBias);
 
             for (kk = 0; kk < nKpartial + 1; kk++) {
                 input = config->execution->Intermediate->d0 + j*config->inputElementCount + kk * kpartial;
@@ -94,12 +89,7 @@ void AffineKernelImpl2B2B(AffineConfig const * const config)
     {
         for (j = 0; j < config->inputVectorCount; j++)
         {
-            if (config->bytesPerBias == 1)
-                sum = ((int8_t*)config->biasesSimple)[i];
-            else if (config->bytesPerBias == 2)
-                sum = ((int16_t*)config->biasesSimple)[i];
-            else if (config->bytesPerBias == 4)
-                sum = ((int32_t*)config->biasesSimple)[i];
+            sum = getBias((void*)config->biasesSimple, i, (gna_data_mode)config->bytesPerBias);
 
             for (kk = 0; kk < nKpartial + 1; kk++) {
                 input = config->execution->Intermediate->d0 + j*config->inputElementCount + kk * kpartial;
@@ -138,12 +128,7 @@ void AffineKernelImpl2B1B(AffineConfig const * const config)
     {
         for (j = 0; j < config->inputVectorCount; j++)
         {
-            if (config->bytesPerBias == 1)
-                sum = ((int8_t*)config->biasesSimple)[i];
-            else if (config->bytesPerBias == 2)
-                sum = ((int16_t*)config->biasesSimple)[i];
-            else if (config->bytesPerBias == 4)
-                sum = ((int32_t*)config->biasesSimple)[i];
+            sum = getBias((void*)config->biasesSimple, i, (gna_data_mode)config->bytesPerBias);
 
             for (kk = 0; kk < nKpartial + 1; kk++) {
                 input = ((int8_t*)config->execution->Intermediate->d0) + j*config->inputElementCount + kk * kpartial;
@@ -179,12 +164,7 @@ void AffineMultiBiasKernelImpl2B(AffineConfig const * const config)
     {
         for (j = 0; j < config->inputVectorCount; j++)
         {
-            if (config->bytesPerBias == 1)
-                sum = ((int8_t*)config->multiBias)[i*config->multiBiasVectorCount];
-            else if (config->bytesPerBias == 2)
-                sum = ((int16_t*)config->multiBias)[i*config->multiBiasVectorCount];
-            else if (config->bytesPerBias == 4)
-                sum = config->multiBias[i*config->multiBiasVectorCount];
+            sum = getBias((void*)config->multiBias, i*config->multiBiasVectorCount, (gna_data_mode)config->bytesPerBias);
 
             for (kk = 0; kk < nKpartial + 1; kk++)
             {
@@ -222,12 +202,7 @@ void AffineMultiBiasKernelImpl2B2B(AffineConfig const * const config)
     {
         for (j = 0; j < config->inputVectorCount; j++)
         {
-            if (config->bytesPerBias == 1)
-                sum = ((int8_t*)config->multiBias)[i*config->multiBiasVectorCount];
-            else if (config->bytesPerBias == 2)
-                sum = ((int16_t*)config->multiBias)[i*config->multiBiasVectorCount];
-            else if (config->bytesPerBias == 4)
-                sum = config->multiBias[i*config->multiBiasVectorCount];
+            sum = getBias((void*)config->multiBias, i*config->multiBiasVectorCount, (gna_data_mode)config->bytesPerBias);
 
             for (kk = 0; kk < nKpartial + 1; kk++)
             {
@@ -265,12 +240,7 @@ void AffineMultiBiasKernelImpl2B1B(AffineConfig const * const config)
     {
         for (j = 0; j < config->inputVectorCount; j++)
         {
-            if (config->bytesPerBias == 1)
-                sum = ((int8_t*)config->multiBias)[i*config->multiBiasVectorCount];
-            else if (config->bytesPerBias == 2)
-                sum = ((int16_t*)config->multiBias)[i*config->multiBiasVectorCount];
-            else if (config->bytesPerBias == 4)
-                sum = config->multiBias[i*config->multiBiasVectorCount];
+            sum = getBias((void*)config->multiBias, i*config->multiBiasVectorCount, (gna_data_mode)config->bytesPerBias);
 
             for (kk = 0; kk < nKpartial + 1; kk++)
             {
