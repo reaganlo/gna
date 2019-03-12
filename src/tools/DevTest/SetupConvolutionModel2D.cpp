@@ -105,6 +105,11 @@ SetupConvolutionModel2D::SetupConvolutionModel2D(DeviceController & deviceCtrl, 
     deviceController.BufferAdd(configId, OutputComponent, 0, outputBuffer);
 }
 
+SetupConvolutionModel2D::~SetupConvolutionModel2D()
+{
+   deviceController.Free(memory);
+}
+
 void SetupConvolutionModel2D::sampleConvolutionLayer()
 {
     uint32_t buf_size_filters = ALIGN64(sizeof(filters));
@@ -114,7 +119,8 @@ void SetupConvolutionModel2D::sampleConvolutionLayer()
 
     uint32_t bytes_requested = buf_size_filters + buf_size_inputs + buf_size_biases + buf_size_outputs;
     uint32_t bytes_granted;
-    uint8_t* pinned_mem_ptr = deviceController.Alloc(bytes_requested, static_cast<uint16_t>(nnet.nLayers), static_cast<uint16_t>(0), &bytes_granted);
+    memory = deviceController.Alloc(bytes_requested, &bytes_granted);
+    uint8_t* pinned_mem_ptr = static_cast<uint8_t*>(memory);
 
     void* pinned_filters = pinned_mem_ptr;
     memcpy(pinned_filters, filters, sizeof(filters));

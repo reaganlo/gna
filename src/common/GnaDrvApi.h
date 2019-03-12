@@ -60,17 +60,16 @@ typedef UINT8           __1B_RES;   // 1 B of reserved memory
    */
 #define     DRV_RECOVERY_TIMEOUT    60
 
+#define     PT_ENTRY_SIZE           4
    /**
     * Page table entries number
     * There are up to 1024 32-bit pointers in one page in Page Table (L1)
     */
-#define     PT_ENTRY_NO             (0x1000 / 4)
+#define     PT_ENTRY_NO             (0x1000 / PT_ENTRY_SIZE)
 
-    /**
-     * Whole Page table size (L2)
-     */
-#define     PT_SIZE                 ((PT_DIR_SIZE + 1) * PT_ENTRY_NO)
-
+#define GNA_PARAM_DEVICE_ID         (1LLU << 0)
+#define GNA_PARAM_RECOVERY_TIMEOUT  (1LLU << 1)
+#define GNA_PARAM_IBUFFS            (1LLU << 2)
 
 // disable zero-sized array in struct/union warning
 #pragma warning(disable:4200)
@@ -150,12 +149,10 @@ typedef struct _GNA_CALC_IN
     CTRL_FLAGS          ctrlFlags;        // scoring mode
 
     union {
-        UINT8           config[CFG_SIZE]; // backward compatibility: configuration data for GMM or xNN
+        UINT8           config[CFG_SIZE]; // configuration data for GMM or xNN
         struct {
-            UINT64      memoryId;         // model identifier
             UINT32      configBase;       // layer base / offset to gmm descriptor
-            UINT64      configSize;       // size of whole config w/ patches
-            UINT64      patchCount;       // number of patches lying outside this structures
+            UINT64      bufferCount;      // number of buffers lying outside this structure
         };
     };
 
@@ -164,13 +161,34 @@ typedef struct _GNA_CALC_IN
     perf_hw_t           hwPerf;           // hardware level performance results
     status_t            status;           // status of scoring
 
-    UINT32              __res;            // 4 B padding to multiple 8 B size
+    UINT32              pad;            // 4 B padding to multiple 8 B size
 
-    UINT8               patches[];        // memory patches
+    UINT8               buffers[];        // memory buffers with patches
 } GNA_CALC_IN, *PGNA_CALC_IN;       // CALCULATE IOCTL - Input/output data
 
 static_assert(312 == sizeof(GNA_CALC_IN), "Invalid size of GNA_CALC_IN");
 
+/*
+ * User buffer identified by memory id
+ * List of such buffers are received in WRITE request to driver
+ * Each buffer is added to MMU according to it's offset and size
+ * Each buffer may contain patches that driver will apply to the memory before starting GNA
+ */
+typedef struct _GNA_MEMORY_BUFFER
+{
+    UINT64 memoryId;
+    UINT64 offset;
+    UINT64 size;
+    UINT64 patchCount;
+} GNA_MEMORY_BUFFER, *PGNA_MEMORY_BUFFER;
+
+static_assert(32 == sizeof(GNA_MEMORY_BUFFER), "Invalid size of GNA_MEMORY_BUFFER");
+
+/* Patch structure describes memory location that has to be patched before request
+ * Memory is patched according to provided data and it's size
+ * List of such patches are received in WRITE request to driver
+ * Each patch is linked to memory described by GNA_MEMORY_BUFFER
+ */
 typedef struct _GNA_MEMORY_PATCH
 {
     UINT64 offset;

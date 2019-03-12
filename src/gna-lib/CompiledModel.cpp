@@ -25,6 +25,7 @@
 
 #include "CompiledModel.h"
 
+#include "Macros.h"
 #include "Memory.h"
 #include "RequestConfiguration.h"
 #include "SubModel.h"
@@ -33,72 +34,73 @@
 
 using namespace GNA;
 
-using std::make_unique;
-using std::unique_ptr;
-using std::vector;
-
-CompiledModel::CompiledModel(gna_model_id modelId, const gna_model *rawModel, Memory& memoryIn, IoctlSender &sender, const AccelerationDetector& detector) :
-    Id{ modelId },
-    LayerCount{ static_cast<uint16_t>(rawModel->nLayers) },
-    memory{ memoryIn },
-    ioctlSender{ sender },
-    validBoundaries{ [&memoryIn](const void *buffer, const size_t bufferSize)
-        { Expect::ValidBoundaries(buffer, bufferSize, memoryIn.GetUserBuffer(), memoryIn.ModelSize); } },
-    validator{ GNA_3_0, &validBoundaries }, // TODO:3: Pass actual device/device list
-    softwareModel{ rawModel, gmmCount, validator, detector.GetFastestAcceleration() },
-    submodels{}
+CompiledModel::CompiledModel(
+        const gna_model *const userModel,
+        const AccelerationDetector &detectorIn,
+        std::vector<std::unique_ptr<Memory>>& memoryObjects) :
+    LayerCount{ userModel->nLayers },
+    GmmCount{ getGmmCount(userModel) },
+    detector { detectorIn },
+    memoryList { memoryObjects },
+    modelMemoryList { },
+    softwareModel
+    {
+        userModel,
+        makeValidator(GNA_3_0),
+        detector.GetFastestAcceleration()
+    }
 {
-    createSubmodels(detector);
-    auto isHardwareCompliant = !(1 == submodels.size() && SubmodelType::Software == submodels.at(0)->Type);
-    if(!isHardwareCompliant)
+}
+
+void CompiledModel::CopyData(void *address, size_t size) const
+{
+    auto modelSize = CalculateSize();
+    if (size < modelSize)
+    {
+        throw GnaException{ GNA_ERR_RESOURCES };
+    }
+
+    for (const auto &memory : modelMemoryList)
+    {
+        auto memorySize = memory->GetSize();
+        memcpy_s(address, size, memory->GetBuffer(), memorySize);
+        size -= memorySize;
+        address = static_cast<void *>(
+            static_cast<uint8_t *>(address) + memorySize);
+    }
+}
+
+uint32_t CompiledModel::CalculateSize() const
+{
+    uint32_t modelSize = 0;
+    for (const auto &memory : modelMemoryList)
+    {
+        modelSize += static_cast<uint32_t>(memory->GetSize());
+    }
+
+    return modelSize;
+}
+
+void CompiledModel::BuildHardwareModel(DriverInterface &ddi, HardwareCapabilities &hwCaps)
+{
+    createSubmodels(hwCaps);
+    auto hasHardwareCompliantLayer =
+        !(1 == submodels.size() && SubmodelType::Software == submodels.at(0)->Type);
+    if(!hasHardwareCompliantLayer)
     {
         Log->Warning("None of model layers is compliant with selected hardware GNA device, "
             "only software processing is available for this model.\n");
     }
-    if (detector.IsHardwarePresent() && isHardwareCompliant)
+    else if (hwCaps.IsHardwareSupported())
     {
-        auto memoryId = memoryIn.GetId();
-        hardwareModel = make_unique<HardwareModel>(Id, softwareModel.Layers, gmmCount, memoryId,
-            memoryIn, memoryIn.GetDescriptorsBase(modelId), sender, detector);
-        hardwareModel->Build();
+        hardwareModel = std::make_unique<HardwareModelScorable>(
+                                softwareModel.Layers, GmmCount, ddi, hwCaps);
     }
-}
 
-const size_t CompiledModel::MaximumInternalModelSize = CalculateInternalModelSize(XNN_LAYERS_MAX_COUNT, GMM_LAYERS_MAX_COUNT);
-
-size_t CompiledModel::CalculateModelSize(const size_t userSize, const uint16_t layerCount,
-    const uint16_t gmmCountIn)
-{
-    Expect::InRange<size_t>(userSize, 64, 256 * 1024 * 1024, GNA_INVALIDMEMSIZE);
-    auto internalSize = CalculateInternalModelSize(layerCount, gmmCountIn);
-    Expect::InRange<size_t>(internalSize,
-        1 * LayerDescriptor::GetSize(), 256 * 1024 * 1024, GNA_INVALIDMEMSIZE);
-    auto totalSize = userSize + internalSize;
-    return totalSize;
-}
-
-size_t CompiledModel::CalculateInternalModelSize(const uint16_t layerCount,
-    const uint16_t gmmCountIn)
-{
-    // TODO:INTEGRATION: add detector reference to c-tor and calculate hardware size if applicable
-    // for model dumper use fake detector in device
-    return HardwareModel::CalculateDescriptorSize(layerCount, gmmCountIn);
-}
-
-size_t CompiledModel::CalculateInternalModelSize(const gna_model * rawModel)
-{
-    uint16_t gmmLayerCount = 0;
-    for (auto ix = uint32_t{0}; ix < rawModel->nLayers; ++ix)
+    if (hardwareModel)
     {
-        if (INTEL_GMM == rawModel->pLayers[ix].operation)
-            gmmLayerCount++;
+        hardwareModel->Build(modelMemoryList);
     }
-    return HardwareModel::CalculateDescriptorSize(rawModel->nLayers, gmmLayerCount);
-}
-
-uint16_t CompiledModel::GetGmmCount() const
-{
-    return gmmCount;
 }
 
 const std::vector<std::unique_ptr<Layer>>& CompiledModel::GetLayers() const
@@ -114,7 +116,7 @@ const Layer* CompiledModel::GetLayer(uint32_t layerIndex) const
     }
     catch (const std::exception&)
     {
-        throw GnaException(XNN_ERR_NET_LYR_NO);
+        throw GnaException(XNN_ERR_LYR_CFG);
     }
 }
 
@@ -137,12 +139,12 @@ status_t CompiledModel::Score(
     profilerDTscStart(&profiler->scoring);
 
     auto saturationCount = uint32_t{0};
-    auto isHardwareEnforced = GNA_HW == config.Acceleration && !hardwareModel;
-    auto isSoftwareEnforced = config.Acceleration >= GNA_SW_SAT && config.Acceleration <= GNA_AVX2_FAST;
+    auto isHardwareEnforced = GNA_HW == config.Acceleration;
+    auto isSoftwareEnforced = config.Acceleration > GNA_AUTO_FAST && config.Acceleration < NUM_GNA_ACCEL_MODES;
 
     try
     {
-        if (isHardwareEnforced)
+        if (isHardwareEnforced && !hardwareModel)
         {
             return GNA_CPUTYPENOTSUPPORTED;
         }
@@ -165,6 +167,81 @@ status_t CompiledModel::Score(
     return (saturationCount > 0) ? GNA_SSATURATE : GNA_SUCCESS;
 }
 
+void CompiledModel::ValidateBuffer(
+    std::vector<Memory *> &configMemoryList, Memory *memory) const
+{
+    if (hardwareModel)
+    {
+        hardwareModel->ValidateConfigBuffer(configMemoryList, memory);
+    }
+}
+
+// TODO:3: count buffer use in model to minimize redundant mapping
+Memory * CompiledModel::FindBuffer(const void *buffer, size_t bufferSize) const
+{
+    for(const auto &memory : memoryList)
+    {
+        auto memoryBuffer = memory->GetBuffer();
+        auto memorySize = memory->GetSize();
+        if (Expect::InMemoryRange(buffer, bufferSize, memoryBuffer, memorySize))
+        {
+            return memory.get();
+        }
+    }
+
+    return nullptr;
+}
+
+bool CompiledModel::IsPartOfModel(Memory *memory) const
+{
+    auto foundIt = std::find(modelMemoryList.cbegin(), modelMemoryList.cend(), memory);
+    return foundIt != modelMemoryList.cend();
+}
+
+void CompiledModel::AddUniqueMemory(Memory *memory)
+{
+    if (!IsPartOfModel(memory))
+    {
+        modelMemoryList.push_back(memory);
+    }
+}
+
+void CompiledModel::IdentifyBuffer(const void *buffer, size_t bufferSize)
+{
+    auto memory = FindBuffer(buffer, bufferSize);
+    Expect::NotNull(memory, XNN_ERR_INVALID_BUFFER);
+
+    AddUniqueMemory(memory);
+}
+
+uint32_t CompiledModel::getGmmCount(const gna_model *const userModel) const
+{
+    uint32_t gmmCount = 0;
+    for (uint32_t i = 0; i < userModel->nLayers; i++)
+    {
+        if (userModel->pLayers[i].operation == INTEL_GMM)
+        {
+            ++gmmCount;
+        }
+    }
+
+    return gmmCount;
+}
+
+BaseValidator CompiledModel::makeValidator(gna_device_generation deviceGeneration)
+{
+    return BaseValidator
+    {
+        deviceGeneration,
+        ValidBoundariesFunctor {
+            [this] (const void *buffer, size_t bufferSize)
+            {
+                IdentifyBuffer(buffer, bufferSize);
+            }
+        }
+    };
+}
+
 uint32_t CompiledModel::scoreAllSubModels(RequestConfiguration& config,
     RequestProfiler *profiler, KernelBuffers *buffers)
 {
@@ -181,6 +258,7 @@ uint32_t CompiledModel::scoreAllSubModels(RequestConfiguration& config,
         case Hardware:
         saturationCount += hardwareModel->Score(layerIndex, layerCount, config, profiler, buffers, xNN);
         break;
+        // TODO: 3: HardwareModel should identify if device is a GMM device
         case GMMHardware:
         saturationCount += hardwareModel->Score(layerIndex, 1, config, profiler, buffers, GMM);
         break;
@@ -189,15 +267,15 @@ uint32_t CompiledModel::scoreAllSubModels(RequestConfiguration& config,
     return saturationCount;
 }
 
-void CompiledModel::createSubmodels(const AccelerationDetector& dispatcher)
+void CompiledModel::createSubmodels(const HardwareCapabilities& hwCaps)
 {
-    auto getSubmodelType = [&dispatcher](nn_operation operation)
+    auto getSubmodelType = [&hwCaps](nn_operation operation)
     {
-        if (dispatcher.IsLayerSupported(operation))
+        if (hwCaps.IsLayerSupported(operation))
         {
             return SubmodelType::Hardware;
         }
-        if (INTEL_GMM == operation && dispatcher.HasFeature(LegacyGMM))
+        if (INTEL_GMM == operation && hwCaps.HasFeature(LegacyGMM))
         {
             return SubmodelType::GMMHardware;
         }
@@ -210,7 +288,7 @@ void CompiledModel::createSubmodels(const AccelerationDetector& dispatcher)
     auto submodelCount = 0;
     auto smType = getSubmodelType(operation);
 
-    submodels.emplace_back(make_unique<SubModel>(smType, 0));
+    submodels.emplace_back(std::make_unique<SubModel>(smType, 0));
 
     for (uint16_t layerIx = 1; layerIx < LayerCount; ++layerIx)
     {
@@ -219,19 +297,21 @@ void CompiledModel::createSubmodels(const AccelerationDetector& dispatcher)
 
         if (GMMHardware == smType || submodels.at(submodelCount)->Type != smType)
         {
-            submodels.emplace_back(make_unique<SubModel>(smType, layerIx));
+            submodels.emplace_back(std::make_unique<SubModel>(smType, layerIx));
             submodelCount++;
         }
         else
         {
             // exceeded supported number of layers
-            if (Hardware == smType && !dispatcher.HasFeature(Layer8K)
-                && XNN_LAYERS_MAX_COUNT_OLD <= submodels.at(submodelCount)->GetLayerCount())
+            if (Hardware == smType &&
+                submodels.at(submodelCount)->GetLayerCount() == hwCaps.GetMaximumLayerCount())
             {
-                submodels.emplace_back(make_unique<SubModel>(smType, layerIx));
+                submodels.emplace_back(std::make_unique<SubModel>(smType, layerIx));
                 submodelCount++;
             }
             else submodels[submodelCount]->AddLayer();
         }
     }
 }
+
+

@@ -36,6 +36,8 @@
 namespace GNA
 {
 
+class Memory;
+
 // Validator utility
 class Expect
 {
@@ -129,15 +131,22 @@ public:
         AlignedTo(pointer, alignLimits);
     }
 
-    // If pointers do not fit in user memory, throws XNN_ERR_INVALID_BUFFER error
-    inline static void ValidBoundaries(const void* buffer, const size_t bufferSize,
-        const void* modelMemory, const size_t modelSize)
+    inline static bool InMemoryRange(
+        const void* buffer, const size_t bufferSize,
+        const void *memory, const size_t memorySize)
     {
         auto *bufferEnd = static_cast<const uint8_t*>(buffer) + bufferSize;
-        auto *memoryEnd = static_cast<const uint8_t*>(modelMemory) + modelSize;
+        auto *memoryEnd = static_cast<const uint8_t*>(memory) + memorySize;
 
-        False(buffer < modelMemory, XNN_ERR_INVALID_BUFFER);
-        False(bufferEnd > memoryEnd, XNN_ERR_INVALID_BUFFER);
+        return (buffer >= memory) && (bufferEnd <= memoryEnd);
+    }
+
+    // If pointers do not fit in user memory, throws XNN_ERR_INVALID_BUFFER error
+    inline static void ValidBoundaries(
+        const void *buffer, const size_t bufferSize,
+        const void *memory, const size_t memorySize)
+    {
+        False(InMemoryRange(buffer, bufferSize, memory, memorySize), XNN_ERR_INVALID_BUFFER);
     }
 
     // If parameter is not multiplicity of multiplicity prints error status code and throws exception.

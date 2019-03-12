@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2017 Intel Corporation.
+ Copyright 2018 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -23,51 +23,38 @@
  in any way.
 */
 
-#if !defined(_MEMORY2__H)
-#define _MEMORY2__H
+#pragma once
 
-#include "Driver.h"
+#include <memory>
+#include <vector>
 
-/**
- * Performs user memory mapping
- *
- * @dev         device object
- * @devCtx      device context
- * @appCtx      app context
- * @usrBuffer   Base address of the application buffer
- * @length      Length of the application buffer
- * @outData     mapping output data to return
- * @return  mapping status
- */
-NTSTATUS
-MemoryMap2(
-    _In_    WDFDEVICE   dev,
-    _In_    PDEV_CTX    devCtx,
-    _In_    PAPP_CTX2   appCtx,
-    _In_    PMDL        pMdl,
-    _In_    WDFREQUEST  mapRequest,
-    _In_    UINT32      length);
+#include "HardwareCapabilities.h"
+#include "HardwareLayer.h"
+#include "HardwareRequest.h"
+#include "DriverInterface.h"
+#include "Memory.h"
 
-/**
- * Unlocks the application memory buffer
- * and frees system objects associated with locked area.
- */
-VOID
-MemoryMapRelease2(
-    _Inout_ PAPP_CTX2      appCtx,
-    _Inout_ PMEMORY_CTX    memoryCtx);
+namespace GNA
+{
 
-/**
- * Finds memory context in the list
- * Should be called with acquired list lock
- *
- * @appCtx      app context
- * @memoryId    memory id
- * @return      memory context
- */
+class SoftwareModel;
+class Memory;
+class AccelerationDetector;
+class Layer;
+struct LayerConfiguration;
+class RequestConfiguration;
+struct RequestProfiler;
 
-PMEMORY_CTX FindMemoryContextByIdLocked(
-    _In_ PAPP_CTX2 appCtx,
-    _In_ UINT64 memoryId);
+class IScorable
+{
+public:
+    virtual uint32_t Score(
+        uint32_t layerIndex,
+        uint32_t layerCount,
+        const RequestConfiguration& requestConfiguration,
+        RequestProfiler *profiler,
+        KernelBuffers *buffers,
+        GnaOperationMode operationMode) = 0;
+};
 
-#endif // _MEMORY__H
+}

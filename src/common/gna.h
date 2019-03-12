@@ -11,6 +11,14 @@ extern "C" {
 #include <linux/types.h>
 #include <linux/ioctl.h>
 
+/* Request processing flags */
+#define GNA_SCORE_COPY_DESCRIPTOR	(1 <<  0)
+
+/* GNA parameters */
+#define GNA_PARAM_DEVICE_ID		(1 <<  0)
+#define GNA_PARAM_RECOVERY_TIMEOUT	(1 <<  1)
+#define GNA_PARAM_IBUFFS		(1 <<  2)
+
 #define GNA_CFG_SIZE 256
 
 #define GNA_STS_SCORE_COMPLETED		(1 <<  0)
@@ -39,36 +47,50 @@ enum gna_device_t {
 	GNA_DEV_GLK	= 0x3190,
 	GNA_DEV_EHL	= 0x4511,
 	GNA_DEV_ICL	= 0x8A11,
-	GNA_DEV_TGL	= 0x9A11
+	GNA_DEV_TGL	= 0x9A11,
+	GNA_DEV_ADL	= 0x46AD
 };
 
-struct gna_usrptr {
+struct gna_userptr {
 	__u64 memory_id;
-	__u64 padd;
-	__u32 length;
-} __attribute__((packed));
-
-struct gna_capabilities {
-	__u32 in_buff_size;
-	__u32 recovery_timeout;
-	enum gna_device_t device_type;
+	__u64 user_address;
+	__u32 user_size;
 } __attribute__((packed));
 
 struct gna_ctrl_flags {
 	__u32 active_list_on:1;
 	__u32 gna_mode:2;
-	__u32 copy_descriptor:1;
 	__u32 hw_perf_encoding:8;
-	__u32 reserved:20;
+	__u32 reserved:21;
+} __attribute__((packed));
+
+struct gna_getparam {
+	__u64 param;
+	__u64 value;
 } __attribute__((packed));
 
 /**
  * Structure describes part of memory to be overwritten before starting GNA
  */
-struct gna_memory_patch {
+struct gna_patch {
+	/* offset from targeted memory */
+	__u64 offset;
+
+	__u64 size;
+	union {
+		__u64 value;
+		void *user_ptr;
+	};
+} __attribute__((packed));
+
+struct gna_buffer {
+	__u64 memory_id;
+
 	__u64 offset;
 	__u64 size;
-	__u8 data[];
+
+	__u64 patch_count;
+	__u64 patches_ptr;
 } __attribute__((packed));
 
 struct gna_drv_perf {
@@ -84,10 +106,13 @@ struct gna_hw_perf {
 
 struct gna_score_cfg {
 
+	/* Flags applied to GNA control register */
 	struct gna_ctrl_flags ctrl_flags;
 
+	/* Request processing flags */
+	__u64 flags;
+
 	__u64 request_id;
-	__u64 memory_id;
 
 	union {
 		__u8 descriptor[GNA_CFG_SIZE];
@@ -97,15 +122,15 @@ struct gna_score_cfg {
 		};
 	};
 
-	__u64 patch_count;
-	__u64 config_size;
-	__u8 patches[];
+	/* List of GNA memory buffers */
+	__u64 buffers_ptr;
+	__u64 buffer_count;
 
 } __attribute__((packed));
 
 struct gna_wait {
 	/* user input */
-	__u32 request_id;
+	__u64 request_id;
 	__u32 timeout;
 
 	/* user output */
@@ -114,20 +139,11 @@ struct gna_wait {
 	struct gna_hw_perf hw_perf;
 } __attribute__((packed));
 
-/**
- * Intel GMM & Neural Network Accelerator ioctl definitions
- *
- * GNA_DRV_MAP_USRPTR: Map the userspace address to physical pages
- * GNA_DRV_UNMAP_USRPTR: Unmap the userspace address
- * GNA_DRV_SCORE: Submit scoring requet/Start scoring operation
- * GNA_DRV_WAIT: Blocking call to query about a specific score request
- * GNA_DRV_CPBLTS: Get the device capabilities
- */
-#define GNA_MAP_USRPTR		_IOWR('C', 0x01, struct gna_usrptr)
-#define GNA_UNMAP_USRPTR	 _IOR('C', 0x02, __u64)
-#define GNA_SCORE		_IOWR('C', 0x03, struct gna_score_cfg)
-#define GNA_WAIT		_IOWR('C', 0x04, struct gna_wait)
-#define GNA_CPBLTS		_IOWR('C', 0x05, struct gna_capabilities)
+#define GNA_IOCTL_USERPTR	_IOWR('C', 0x01, struct gna_userptr)
+#define GNA_IOCTL_FREE		_IOWR('C', 0x01, __u64)
+#define GNA_IOCTL_SCORE		_IOWR('C', 0x02, struct gna_score_cfg)
+#define GNA_IOCTL_WAIT		_IOWR('C', 0x03, struct gna_wait)
+#define GNA_IOCTL_GETPARAM	_IOWR('C', 0x04, struct gna_getparam)
 
 #if defined(__cplusplus)
 }

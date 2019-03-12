@@ -29,7 +29,7 @@ class SetupConvolutionModel2D : public ModelSetup
 {
 public:
     SetupConvolutionModel2D(DeviceController & deviceCtrl, bool pwlEn);
-    virtual ~SetupConvolutionModel2D() = default;
+    virtual ~SetupConvolutionModel2D();
 
 private:
     void sampleConvolutionLayer();
@@ -38,4 +38,6 @@ private:
     gna_convolutional_fused_layer_2d layer = {};
     bool pwlEnabled;
     uint32_t nSegments = 64;
+
+    void * memory = nullptr;
 };

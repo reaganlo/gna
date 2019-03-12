@@ -1,4 +1,4 @@
-﻿/*
+/*
  INTEL CONFIDENTIAL
  Copyright 2017 Intel Corporation.
 
@@ -27,6 +27,8 @@
 
 #include "igemv.h"
 #include "igemv16.h"
+
+#include "Macros.h"
 
 void TransposeKernelImpl(TransposeConfig const * const cfg)
 {

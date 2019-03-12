@@ -62,8 +62,10 @@ public:
 
     std::map<uint32_t, std::unique_ptr<LayerConfiguration>> LayerConfigurations;
 
+    std::vector<Memory *> MemoryList;
+
     uint32_t ActiveListCount = 0;
-    
+
     // Number of elements in buffer per input precision and per grouping
     uint32_t BufferElementCount[2 * XNN_N_GROUP_MAX];
 
@@ -71,6 +73,8 @@ public:
 
 private:
     // For enabling _SAT acceleration modes
-    bool EnableHwConsistency = false;
+    bool enableHwConsistency = false;
+
+    void addMemoryObject(void *buffer, uint32_t bufferSize);
 };
 }

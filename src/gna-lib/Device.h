@@ -60,26 +60,26 @@ class Memory;
 class Device
 {
 public:
-    Device(gna_device_id deviceId, uint8_t threadCount = 1);
+    Device(gna_device_id deviceId, uint32_t threadCount = 1);
     Device(const Device &) = delete;
     Device& operator=(const Device&) = delete;
 
     void ValidateSession(gna_device_id deviceId) const;
 
-    void * AllocateMemory(uint32_t requestedSize, const uint16_t layerCount, uint16_t gmmCount, uint32_t * sizeGranted);
+    status_t AllocateMemory(uint32_t requestedSize, uint32_t * sizeGranted, void **memoryAddress);
 
-    void FreeMemory(void * const buffer);
+    void FreeMemory(void *const buffer);
 
-    void FreeMemory();
+    void LoadModel(gna_model_id *modelId, const gna_model *userModel);
 
-    void LoadModel(gna_model_id *modelId, const gna_model *rawModel);
+    void ReleaseModel(gna_model_id const modelId);
 
     void AttachBuffer(gna_request_cfg_id configId, GnaComponentType type, uint32_t layerIndex, void *address);
 
     void CreateConfiguration(gna_model_id modelId, gna_request_cfg_id *configId);
 
     void ReleaseConfiguration(gna_request_cfg_id configId);
-    
+
     void SetHardwareConsistency(gna_request_cfg_id configId, gna_device_version hardwareVersion);
 
     void EnforceAcceleration(gna_request_cfg_id configId, AccelerationMode accel);
@@ -97,67 +97,23 @@ public:
     void* Dump(gna_model_id modelId, gna_device_generation generation, intel_gna_model_header* modelHeader, intel_gna_status_t* status, intel_gna_alloc_cb customAlloc);
 
 protected:
-    virtual std::unique_ptr<Memory> createMemoryObject(const uint32_t requestedSize,
-        const uint16_t layerCount, const uint16_t gmmCount);
+    virtual std::unique_ptr<Memory> createMemoryObject( const uint32_t requestedSize);
 
     static const std::map<const gna_device_generation, const gna_device_version> deviceDictionary;
-
-    inline void* getMemoryId(gna_model_id modelId) const
-    {
-        try
-        {
-            return modelMemoryMap.at(modelId);
-        }
-        catch (std::out_of_range&)
-        {
-            throw GnaException(GNA_INVALID_MODEL);
-        }
-    }
-
-    inline Memory* getMemory(void* memoryId) const
-    {
-        if (nullptr == memoryId)
-        {
-            auto memIter = memoryObjects.begin(); // TODO:3: CUrrent API does not allow memory buffer selection thus using first and the only
-            if (memoryObjects.end() == memIter)
-            {
-                throw GnaException(GNA_ERR_MEMORY_NOT_ALLOCATED);
-            }
-            memoryId = memIter->first;
-        }
-        try
-        {
-             return memoryObjects.at(memoryId).get();
-        }
-        catch (std::out_of_range&)
-        {
-            throw GnaException(GNA_ERR_MEMORY_NOT_ALLOCATED);
-        }
-    }
-
-    inline std::unique_ptr<Memory>& getMemoryObj(void* memoryId)
-    {
-        try
-        {
-             return memoryObjects.at(memoryId);
-        }
-        catch (std::out_of_range&)
-        {
-            throw GnaException(GNA_ERR_MEMORY_NOT_ALLOCATED);
-        }
-    }
 
     gna_device_id id;
 
     uint32_t modelIdSequence = 0;
 
-    std::unique_ptr<IoctlSender> ioctlSender;
+    std::unique_ptr<DriverInterface> driverInterface;
+
+    HardwareCapabilities hardwareCapabilities;
 
     AccelerationDetector accelerationDetector;
 
-    std::map<void*, std::unique_ptr<Memory>> memoryObjects;
+    std::map<gna_model_id, std::unique_ptr<CompiledModel>> models;
 
-    std::map<gna_model_id, void*> modelMemoryMap;
+    std::vector<std::unique_ptr<Memory>> memoryObjects;
 
     RequestBuilder requestBuilder;
 

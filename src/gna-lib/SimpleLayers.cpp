@@ -26,8 +26,9 @@
 #include "SimpleLayers.h"
 
 #include "AccelerationDetector.h"
-#include "LayerConfiguration.h"
 #include "Expect.h"
+#include "LayerConfiguration.h"
+#include "Macros.h"
 
 using namespace GNA;
 

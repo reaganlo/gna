@@ -84,14 +84,14 @@ KernelBuffers::~KernelBuffers()
         _gna_free(pool);
     if (nullptr != cnnFusedBuffer)
         _gna_free(cnnFusedBuffer);
-    memset(this, 0, sizeof(KernelBuffers));    
+    memset(this, 0, sizeof(KernelBuffers));
 }
 
-ThreadPool::ThreadPool(uint8_t nThreads) :
+ThreadPool::ThreadPool(uint32_t nThreads) :
     buffers{nThreads}
 {
-    Expect::InRange(static_cast<uint32_t>(nThreads), 1U, 127U, GNA_ERR_INVALID_THREAD_COUNT);
-    for (uint8_t i = 0; i < nThreads; i++)
+    Expect::InRange(nThreads, 1U, 127U, GNA_ERR_INVALID_THREAD_COUNT);
+    for (uint32_t i = 0; i < nThreads; i++)
     {
         KernelBuffers* buff = &buffers.at(i);
         this->workers.emplace_back([&, buff]() {
@@ -148,17 +148,5 @@ void ThreadPool::Enqueue(Request *request)
     std::lock_guard<std::mutex> lock(tpMutex);
     tasks.emplace_back(request);
     condition.notify_one();
-}
-
-void ThreadPool::CancelTasks(const gna_model_id modelId)
-{
-    std::lock_guard<std::mutex> lock(tpMutex);
-    for (auto it = tasks.begin(); it != tasks.end(); )
-    {
-        Request *request = *it;
-        if (request->Configuration.Model.Id == modelId)
-            it = tasks.erase(it);
-        else ++it;
-    }
 }
 

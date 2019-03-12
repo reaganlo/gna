@@ -136,7 +136,7 @@ void GmmLayer::ValidateActiveList(ActiveList const * const activeList) const
 {
     if (activeList)
     {
-        Expect::InRange<uint32_t>(activeList->IndicesCount, ui32_1, Config.stateCount, GNA_INVALIDINDICES);
+        Expect::InRange(activeList->IndicesCount, ui32_1, Config.stateCount, GNA_INVALIDINDICES);
     }
 }
 

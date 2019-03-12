@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2017 Intel Corporation.
+ Copyright 2018 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -25,70 +25,53 @@
 
 #pragma once
 
-#include "gna-api-dumper.h"
+#include "DriverInterface.h"
+
+#include "gna.h"
 
 #include <map>
+#include <memory>
 
 #include "common.h"
+
 #include "Request.h"
-#include "Expect.h"
+#include "Validator.h"
 
 namespace GNA
 {
 
-class HardwareRequest;
-
-struct RequestResult
-{
-    perf_hw_t hardwarePerf;
-    perf_drv_t driverPerf;
-    status_t status;
-};
-
-enum GnaIoctlCommand
-{
-    GNA_COMMAND_MAP,
-    GNA_COMMAND_UNMAP,
-    GNA_COMMAND_SCORE,
-    GNA_COMMAND_CAPABILITIES,
-#if HW_VERBOSE == 1
-    GNA_COMMAND_READ_PGDIR,
-    GNA_COMMAND_READ_REG,
-    GNA_COMMAND_WRITE_REG
-#endif
-};
-
-struct GnaCapabilities
-{
-    uint32_t hwInBuffSize;
-    uint32_t recoveryTimeout;
-    gna_device_version hwId;
-};
-
-class IoctlSender
+class LinuxDriverInterface : public DriverInterface
 {
 public:
-    virtual void IoctlSend(const GnaIoctlCommand command, void * const inbuf, const uint32_t inlen,
-        void * const outbuf, const uint32_t outlen) = 0;
+    LinuxDriverInterface() = default;
 
-    virtual void Open() = 0;
+    virtual ~LinuxDriverInterface() override;
 
-    virtual ~IoctlSender() = default;
+    virtual void OpenDevice() override;
 
-    virtual GnaCapabilities GetDeviceCapabilities() const = 0;
+    virtual void IoctlSend(const GnaIoctlCommand command,
+            void * const inbuf, const uint32_t inlen,
+            void * const outbuf, const uint32_t outlen) override;
 
-    virtual uint64_t MemoryMap(void *memory, size_t memorySize) = 0;
+    virtual DriverCapabilities GetCapabilities() const override;
 
-    virtual void MemoryUnmap(uint64_t memoryId) = 0;
+    virtual uint64_t MemoryMap(void *memory, size_t memorySize) override;
 
-    virtual RequestResult Submit(HardwareRequest * const hardwareRequest, RequestProfiler * const profiler) = 0;
+    virtual void MemoryUnmap(uint64_t memoryId) override;
+
+    virtual RequestResult Submit(HardwareRequest& hardwareRequest,
+                                RequestProfiler * const profiler) const override;
 
 protected:
-    IoctlSender() = default;
-    IoctlSender(const IoctlSender &) = delete;
-    IoctlSender& operator=(const IoctlSender&) = delete;
+    void createRequestDescriptor(HardwareRequest& hardwareRequest) const override;
 
-    virtual void createRequestDescriptor(HardwareRequest *hardwareRequest);
+private:
+    LinuxDriverInterface(const LinuxDriverInterface &) = delete;
+    LinuxDriverInterface& operator=(const LinuxDriverInterface&) = delete;
+
+    status_t parseHwStatus(__u32 hwStatus) const;
+
+    int gnaFileDescriptor = -1;
 };
 
 }

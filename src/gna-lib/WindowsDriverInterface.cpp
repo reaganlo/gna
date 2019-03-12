@@ -23,12 +23,12 @@
  in any way.
 */
 
-#include "IoctlSender.h"
-#include "WindowsIoctlSender.h"
+#include "WindowsDriverInterface.h"
 
 #include "GnaException.h"
-#include "Logger.h"
 #include "HardwareRequest.h"
+#include "Logger.h"
+#include "Memory.h"
 
 using namespace GNA;
 
@@ -37,9 +37,9 @@ using std::unique_ptr;
 #define MAX_D0_STATE_PROBES  10
 #define WAIT_PERIOD         200        // in miliseconds
 
-const std::map<GnaIoctlCommand, decltype(GNA_IOCTL_CPBLTS2)> WindowsIoctlSender::ioctlCommandsMap =
+const std::map<GnaIoctlCommand, decltype(GNA_IOCTL_NOTIFY)> WindowsDriverInterface::ioctlCommandsMap =
 {
-    { GNA_COMMAND_CAPABILITIES, GNA_IOCTL_CPBLTS2 },
+    { GNA_COMMAND_GET_PARAM, GNA_IOCTL_GET_PARAM },
     { GNA_COMMAND_MAP, GNA_IOCTL_MEM_MAP2 },
     { GNA_COMMAND_UNMAP, GNA_IOCTL_MEM_UNMAP2 },
 #if HW_VERBOSE == 1
@@ -48,13 +48,13 @@ const std::map<GnaIoctlCommand, decltype(GNA_IOCTL_CPBLTS2)> WindowsIoctlSender:
 #endif
 };
 
-WindowsIoctlSender::WindowsIoctlSender() :
+WindowsDriverInterface::WindowsDriverInterface() :
     deviceEvent{CreateEvent(nullptr, false, false, nullptr)}
 {
     ZeroMemory(&overlapped, sizeof(overlapped));
 }
 
-void WindowsIoctlSender::Open()
+void WindowsDriverInterface::OpenDevice()
 {
     auto guid = GUID_DEVINTERFACE_GNA_DRV;
     auto deviceInfo = SetupDiGetClassDevs(&guid, nullptr, nullptr, DIGCF_PRESENT | DIGCF_DEVICEINTERFACE);
@@ -97,9 +97,11 @@ void WindowsIoctlSender::Open()
     Expect::False(INVALID_HANDLE_VALUE == deviceHandle, GNA_DEVNOTFOUND);
 
     getDeviceCapabilities();
+
+    opened = true;
 }
 
-void WindowsIoctlSender::IoctlSend(const GnaIoctlCommand command, void * const inbuf, const uint32_t inlen,
+void WindowsDriverInterface::IoctlSend(const GnaIoctlCommand command, void * const inbuf, const uint32_t inlen,
     void * const outbuf, const uint32_t outlen)
 {
     UNREFERENCED_PARAMETER(command);
@@ -131,7 +133,7 @@ void WindowsIoctlSender::IoctlSend(const GnaIoctlCommand command, void * const i
 #endif
 }
 
-uint64_t WindowsIoctlSender::MemoryMap(void *memory, size_t memorySize)
+uint64_t WindowsDriverInterface::MemoryMap(void *memory, size_t memorySize)
 {
     auto bytesRead = DWORD{0};
     auto ioResult = BOOL{};
@@ -157,13 +159,15 @@ uint64_t WindowsIoctlSender::MemoryMap(void *memory, size_t memorySize)
     return memoryId;
 }
 
-void WindowsIoctlSender::MemoryUnmap(uint64_t memoryId)
+void WindowsDriverInterface::MemoryUnmap(uint64_t memoryId)
 {
     auto bytesRead = DWORD{0};
     auto ioResult = BOOL{};
 
     // TODO: remove ummap IOCTL in favor of CancelIoEx (cancel handler in driver, cancel requests)
-    ioResult = DeviceIoControl(deviceHandle, static_cast<DWORD>(GNA_IOCTL_MEM_UNMAP2), &memoryId, sizeof(memoryId), nullptr, 0, &bytesRead, &overlapped);
+    ioResult = DeviceIoControl(static_cast<HANDLE>(deviceHandle),
+        static_cast<DWORD>(GNA_IOCTL_MEM_UNMAP2), &memoryId, sizeof(memoryId),
+        nullptr, 0, &bytesRead, &overlapped);
     checkStatus(ioResult);
     wait(&overlapped, (recoveryTimeout + 15) * 1000);
 
@@ -172,31 +176,32 @@ void WindowsIoctlSender::MemoryUnmap(uint64_t memoryId)
     memoryMapRequests.erase(memoryId);
 }
 
-RequestResult WindowsIoctlSender::Submit(HardwareRequest *hardwareRequest, RequestProfiler * const profiler)
+RequestResult WindowsDriverInterface::Submit(HardwareRequest& hardwareRequest,
+    RequestProfiler * const profiler) const
 {
     RequestResult result = { 0 };
     auto ioHandle = OVERLAPPED{0};
     ioHandle.hEvent = CreateEvent(nullptr, false, false, nullptr);
 
-    if(!hardwareRequest->SubmitReady)
+    if(!hardwareRequest.SubmitReady)
     {
         createRequestDescriptor(hardwareRequest);
     }
 
-    auto calculationData = reinterpret_cast<PGNA_CALC_IN>(hardwareRequest->CalculationData.get());
+    auto calculationData = reinterpret_cast<PGNA_CALC_IN>(hardwareRequest.CalculationData.get());
 
     calculationData->ctrlFlags.ddiVersion = 2;
-    calculationData->ctrlFlags.activeListOn = hardwareRequest->ActiveListOn;
-    calculationData->ctrlFlags.gnaMode = hardwareRequest->Mode;
-    calculationData->ctrlFlags.layerCount = hardwareRequest->LayerCount;
+    calculationData->ctrlFlags.activeListOn = hardwareRequest.ActiveListOn;
+    calculationData->ctrlFlags.gnaMode = hardwareRequest.Mode;
+    calculationData->ctrlFlags.layerCount = hardwareRequest.LayerCount;
 
-    if(xNN == hardwareRequest->Mode)
+    if(xNN == hardwareRequest.Mode)
     {
-        calculationData->configBase = hardwareRequest->LayerBase;
+        calculationData->configBase = hardwareRequest.LayerBase;
     }
-    else if(GMM == hardwareRequest->Mode)
+    else if(GMM == hardwareRequest.Mode)
     {
-        calculationData->configBase = hardwareRequest->GmmOffset;
+        calculationData->configBase = hardwareRequest.GmmOffset;
     }
     else
     {
@@ -204,7 +209,9 @@ RequestResult WindowsIoctlSender::Submit(HardwareRequest *hardwareRequest, Reque
     }
 
     profilerTscStart(&profiler->ioctlSubmit);
-    auto ioResult = WriteFile(deviceHandle, calculationData, static_cast<DWORD>(hardwareRequest->CalculationSize), nullptr, &ioHandle);
+    auto ioResult = WriteFile(static_cast<HANDLE>(deviceHandle),
+        calculationData, static_cast<DWORD>(hardwareRequest.CalculationSize),
+        nullptr, &ioHandle);
     checkStatus(ioResult);
     profilerTscStop(&profiler->ioctlSubmit);
 
@@ -219,28 +226,95 @@ RequestResult WindowsIoctlSender::Submit(HardwareRequest *hardwareRequest, Reque
     return result;
 }
 
-GnaCapabilities WindowsIoctlSender::GetDeviceCapabilities() const
+DriverCapabilities WindowsDriverInterface::GetCapabilities() const
 {
-    return deviceCapabilities;
+    return driverCapabilities;
 }
 
-void WindowsIoctlSender::getDeviceCapabilities()
+void WindowsDriverInterface::createRequestDescriptor(HardwareRequest& hardwareRequest) const
+{
+    auto& scoreConfigSize = hardwareRequest.CalculationSize;
+    scoreConfigSize = sizeof(GNA_CALC_IN) +
+        hardwareRequest.DriverMemoryObjects.size() * sizeof(GNA_MEMORY_BUFFER);
+
+    for (const auto &buffer : hardwareRequest.DriverMemoryObjects)
+    {
+        scoreConfigSize += buffer.Patches.size() * sizeof(GNA_MEMORY_PATCH);
+
+        for (const auto &patch : buffer.Patches)
+        {
+            scoreConfigSize += patch.Size;
+        }
+    }
+
+    scoreConfigSize = ALIGN(scoreConfigSize, sizeof(uint64_t));
+    hardwareRequest.CalculationData.reset(new uint8_t[scoreConfigSize]);
+
+    uint8_t *calculationData = static_cast<uint8_t *>(hardwareRequest.CalculationData.get());
+    auto scoreConfig = reinterpret_cast<GNA_CALC_IN *>(
+                        hardwareRequest.CalculationData.get());
+    memset(scoreConfig, 0, scoreConfigSize);
+    scoreConfig->ctrlFlags.hwPerfEncoding = hardwareRequest.HwPerfEncoding;
+
+    scoreConfig->bufferCount = hardwareRequest.DriverMemoryObjects.size();
+
+    auto buffer = reinterpret_cast<GNA_MEMORY_BUFFER *>(
+        reinterpret_cast<uintptr_t>(calculationData + sizeof(GNA_CALC_IN)));
+
+    auto patch = reinterpret_cast<GNA_MEMORY_PATCH *>(
+        reinterpret_cast<uintptr_t>(buffer) + scoreConfig->bufferCount * sizeof(GNA_MEMORY_BUFFER));
+
+    for (const auto &driverBuffer : hardwareRequest.DriverMemoryObjects)
+    {
+        buffer->memoryId = driverBuffer.Buffer->GetId();
+        buffer->offset = 0;
+        buffer->size = driverBuffer.Buffer->GetSize();
+        buffer->patchCount = driverBuffer.Patches.size();
+
+        for (const auto &driverPatch : driverBuffer.Patches)
+        {
+            patch->offset = driverPatch.Offset;
+            patch->size = driverPatch.Size;
+            memcpy_s(patch->data, driverPatch.Size, &driverPatch.Value, driverPatch.Size);
+            patch = reinterpret_cast<GNA_MEMORY_PATCH *>(
+                reinterpret_cast<uintptr_t>(patch) + sizeof(GNA_MEMORY_PATCH) + patch->size);
+        }
+
+        buffer++;
+    }
+
+    hardwareRequest.SubmitReady = true;
+}
+
+void WindowsDriverInterface::getDeviceCapabilities()
 {
     auto bytesRead = DWORD{0};
-    GNA_CPBLTS cpblts;
+    UINT64 params[3] = {
+        GNA_PARAM_DEVICE_ID,
+        GNA_PARAM_IBUFFS,
+        GNA_PARAM_RECOVERY_TIMEOUT
+    };
 
-    auto ioResult = DeviceIoControl(deviceHandle, static_cast<DWORD>(GNA_IOCTL_CPBLTS2), nullptr, 0,
-            &cpblts, sizeof(cpblts), &bytesRead, &overlapped);
+    UINT64 values[3];
 
-    checkStatus(ioResult);
-    wait(&overlapped, (recoveryTimeout + 15) * 1000);
+    for (uint32_t i = 0; i < sizeof(params)/sizeof(UINT64); i++)
+    {
+        auto ioResult = DeviceIoControl(deviceHandle,
+            static_cast<DWORD>(GNA_IOCTL_GET_PARAM),
+            &params[i], sizeof(params[i]),
+            &values[i], sizeof(values[i]),
+            &bytesRead, &overlapped);
 
-    deviceCapabilities.hwInBuffSize = cpblts.hwInBuffSize;
-    deviceCapabilities.recoveryTimeout = cpblts.recoveryTimeout;
-    deviceCapabilities.hwId = static_cast<gna_device_version>(cpblts.deviceType);
+        checkStatus(ioResult);
+        wait(&overlapped, (recoveryTimeout + 15) * 1000);
+    }
+
+    driverCapabilities.hwId = static_cast<gna_device_version>(values[0]);
+    driverCapabilities.hwInBuffSize = static_cast<uint32_t>(values[1]);
+    driverCapabilities.recoveryTimeout = static_cast<uint32_t>(values[2]);
 }
 
-void WindowsIoctlSender::wait(LPOVERLAPPED const ioctl, const DWORD timeout)
+void WindowsDriverInterface::wait(LPOVERLAPPED const ioctl, const DWORD timeout) const
 {
     auto bytesRead = DWORD{0};
 
@@ -266,7 +340,7 @@ void WindowsIoctlSender::wait(LPOVERLAPPED const ioctl, const DWORD timeout)
     // io completed successfully
 }
 
-void WindowsIoctlSender::checkStatus(BOOL ioResult)
+void WindowsDriverInterface::checkStatus(BOOL ioResult) const
 {
     auto lastError = GetLastError();
     if (ioResult == 0 && ERROR_IO_PENDING != lastError)
@@ -278,7 +352,7 @@ void WindowsIoctlSender::checkStatus(BOOL ioResult)
     }
 }
 
-void WindowsIoctlSender::printLastError(DWORD error)
+void WindowsDriverInterface::printLastError(DWORD error) const
 {
     LPVOID lpMsgBuf;
     FormatMessage(

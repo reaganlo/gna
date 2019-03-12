@@ -45,6 +45,7 @@ private:
 
     void * inputBuffer = nullptr;
     void * outputBuffer = nullptr;
+    void * memory = nullptr;
 
     static const int outVecSz = 16;
 

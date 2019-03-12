@@ -115,6 +115,22 @@ public:
               reinterpret_cast<uint8_t*>(this->Get<uint8_t>() - base.template Get<uint8_t>())));
     }
 
+    bool InRange(void *memory, uint32_t memorySize) const
+    {
+        if (buffer < memory)
+        {
+            return false;
+        }
+
+        auto memoryEnd = reinterpret_cast<uint8_t*>(memory) + memorySize;
+        if (buffer >= memoryEnd)
+        {
+            return false;
+        }
+
+        return true;
+    }
+
 protected:
     void * buffer = nullptr;
 };
@@ -199,5 +215,8 @@ public:
             emplace(OutputComponent, outputBuffer);
     }
 };
+
+// Functor for getting buffer offset for HW
+using GetHwOffset = std::function<uint32_t(const BaseAddress&)>;
 
 }

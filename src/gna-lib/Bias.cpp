@@ -104,12 +104,12 @@ BiasTensor::BiasTensor(const Shape& dimensions, const uint32_t biasVectorIndex, 
     BiasMode { mode }
 {
     auto vectorCountIter = Dimensions.find(GNA_DIM_N);
-    auto vectorCount = 1;
+    auto vectorCount = ui32_1;
     if (Dimensions.end() != vectorCountIter)
     {
         vectorCount = vectorCountIter->second;
     }
-    Expect::InRange<uint32_t>(VectorIndex, 0, vectorCount - 1, XNN_ERR_BIAS_INDEX);
+    Expect::InRange(VectorIndex, ui32_0, vectorCount - 1, XNN_ERR_BIAS_INDEX);
     Expect::InSet(BiasMode, modeLimits);
 };
 

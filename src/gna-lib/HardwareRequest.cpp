@@ -25,96 +25,84 @@
 
 #include "HardwareRequest.h"
 
-#include "HardwareModel.h"
+#include "HardwareLayer.h"
+#include "HardwareModelScorable.h"
 #include "LayerConfiguration.h"
 #include "RequestConfiguration.h"
 
 using namespace GNA;
 
-HardwareRequest::HardwareRequest(uint64_t memoryId, const HardwareModel& hwModelIn,
-                                const RequestConfiguration& requestConfigurationIn)
-    : MemoryId(memoryId), ModelId(requestConfigurationIn.Model.Id),
-      HwPerfEncoding(requestConfigurationIn.HwPerfEncoding),
+HardwareRequest::HardwareRequest(const HardwareModelScorable& hwModelIn,
+                                const RequestConfiguration& requestConfigurationIn,
+                                Memory *ldMemoryIn, const std::vector<Memory *>& modelMemoryObjects)
+    : HwPerfEncoding(requestConfigurationIn.HwPerfEncoding),
       RequestConfigId(requestConfigurationIn.Id),
-      requestConfiguration(requestConfigurationIn), hwModel(hwModelIn)
+      requestConfiguration(requestConfigurationIn),
+      hwModel(hwModelIn),
+      ldMemory(ldMemoryIn)
 {
+    DriverMemoryObjects.push_back(DriverBuffer{ ldMemory });
+    for (auto memory : modelMemoryObjects)
+    {
+        DriverMemoryObjects.push_back(DriverBuffer{ memory });
+    }
+    for (auto memory : requestConfiguration.MemoryList)
+    {
+        DriverMemoryObjects.push_back(DriverBuffer{ memory });
+    }
     Invalidate();
 }
 
 void HardwareRequest::Invalidate()
 {
-    IoBuffers.clear();
-    NnopTypes.clear();
-    XnnActiveLists.clear();
-    GmmActiveLists.clear();
+    auto& ldPatches = DriverMemoryObjects.front().Patches;
+    ldPatches.clear();
 
     auto& model = requestConfiguration.Model;
     auto& layerConfigurations = requestConfiguration.LayerConfigurations;
+
     for (auto it = layerConfigurations.cbegin(); it != layerConfigurations.cend(); ++it)
     {
         auto layer = model.GetLayer(it->first);
         auto hwLayer = hwModel.GetLayer(it->first);
         auto layerCfg = it->second.get();
 
-        if (layerCfg->Buffers.count(InputComponent))
-        {
-            auto bufferInputOffset = hwModel.GetOffset(it->second->Buffers[InputComponent]);
-            auto ldInputOffset = hwLayer->GetLdInputOffset();
-            IoBuffers.emplace_back(IoBufferPatch{ldInputOffset, bufferInputOffset});
-        }
-
-        if (layerCfg->Buffers.count(OutputComponent))
-        {
-            auto bufferOutputOffset = hwModel.GetOffset(it->second->Buffers[OutputComponent]);
-            auto ldOutputOffset = hwLayer->GetLdOutputOffset();
-            IoBuffers.emplace_back(IoBufferPatch{ldOutputOffset, bufferOutputOffset});
-
-            if (layer->Operation == INTEL_RECURRENT)
-            {
-                auto rnnLayer = dynamic_cast<const HardwareLayerRnn*>(hwLayer);
-                auto bufferFeedbackOffset = rnnLayer->CalculateFeedbackBuffer(layerCfg->Buffers[OutputComponent]);
-                auto ldFeedbackOffset = hwLayer->GetLdFeedbackOffset();
-                IoBuffers.emplace_back(IoBufferPatch{ldFeedbackOffset, bufferFeedbackOffset});
-            }
-        }
+        generateBufferPatches(*layerCfg, *layer, *hwLayer);
 
         if (layerCfg->ActList)
         {
             if (INTEL_GMM != layer->Operation)
             {
-                auto ldActlistOffset = hwLayer->GetLdActlistOffset();
-                auto ldActlenOffset = hwLayer->GetLdActlenOffset();
                 auto activeList = it->second->ActList.get();
-                auto actlistOffset = hwModel.GetOffset(activeList->Indices);
+
+                auto ldActlistOffset = hwLayer->GetLdActlistOffset();
+                auto actlistOffset = hwModel.GetBufferOffsetForConfiguration(
+                                    activeList->Indices, requestConfiguration);
+
+                auto ldActlenOffset = hwLayer->GetLdActlenOffset();
                 uint16_t indices = static_cast<uint16_t>(activeList->IndicesCount);
 
-                XnnActiveLists.emplace_back(XnnAlPatch{ldActlistOffset, actlistOffset,
-                                                        ldActlenOffset, indices});
+                ldPatches.push_back({ ldActlistOffset, actlistOffset, sizeof(uint32_t) });
+                ldPatches.push_back({ ldActlenOffset, indices, sizeof(uint32_t) });
             }
             else
             {
-                auto ldActlistOffset = hwLayer->GetLdActlistOffset();
-                auto ldActlenOffset = hwLayer->GetLdActlenOffset();
-                auto ldScrlenOffset = hwLayer->GetLdScrlenOffset();
-
                 auto activeList = it->second->ActList.get();
-                auto scrlen = hwLayer->GetScrlen(activeList->IndicesCount);
-                auto asladdr = hwModel.GetOffset(activeList->Indices);
+
+                auto ldActlistOffset = hwLayer->GetLdActlistOffset();
+                auto asladdr = hwModel.GetBufferOffsetForConfiguration(
+                                    activeList->Indices, requestConfiguration);
+
+                auto ldActlenOffset = hwLayer->GetLdActlenOffset();
                 auto indices = activeList->IndicesCount;
 
-                GmmActiveLists.emplace_back(GmmAlPatch{ldActlistOffset, asladdr,
-                                                        ldActlenOffset, indices,
-                                                        ldScrlenOffset, scrlen});
+                auto ldScrlenOffset = hwLayer->GetLdScrlenOffset();
+                auto scrlen = hwLayer->GetScrlen(activeList->IndicesCount);
+
+                ldPatches.push_back({ldActlistOffset, asladdr, sizeof(ASLADDR)});
+                ldPatches.push_back({ldActlenOffset, indices, sizeof(ASTLISTLEN)});
+                ldPatches.push_back({ldScrlenOffset, scrlen, sizeof(GMMSCRLEN)});
             }
-        }
-
-        if (layerCfg->Buffers.count(OutputComponent) &&
-            (layer->Operation == INTEL_AFFINE || layer->Operation == INTEL_GMM))
-        {
-            auto nnopTypeOffset = hwLayer->GetLdNnopOffset();
-            auto nnopTypeValue = hwLayer->GetNnopType(layerCfg->ActList.get() != nullptr);
-
-            NnopTypes.emplace_back(NnopTypePatch{ nnopTypeOffset, nnopTypeValue });
         }
     }
 }
@@ -133,6 +121,78 @@ void HardwareRequest::Update(uint32_t layerIndex, uint32_t layerCount, GnaOperat
 
     updateActiveLists(layerIndex, layerCount);
     ActiveListOn = activeLists.at(layerIndex);
+}
+
+void HardwareRequest::generateBufferPatches(const LayerConfiguration& layerConfiguration,
+        const Layer &layer, const HardwareLayer &hwLayer)
+{
+    const auto& buffers = layerConfiguration.Buffers;
+    auto& ldPatches = DriverMemoryObjects.front().Patches;
+
+    for (auto it = buffers.cbegin(); it != buffers.cend(); it++)
+    {
+        auto componentType = it->first;
+        auto address = it->second;
+
+        uint32_t bufferOffset = hwModel.GetBufferOffsetForConfiguration(address, requestConfiguration);
+        uint32_t ldOffset = 0;
+        switch (componentType)
+        {
+            case InputComponent:
+                ldOffset = hwLayer.GetLdInputOffset();
+                break;
+            case OutputComponent:
+            {
+                ldOffset = hwLayer.GetLdOutputOffset();
+                if (INTEL_RECURRENT == layer.Operation)
+                {
+                    auto feedbackBufferOffset = hwModel.GetBufferOffsetForConfiguration(
+                        layerConfiguration.Configs.Recurrent->feedbackBuffer, requestConfiguration);
+                    auto ldFeedbackOffset = hwLayer.GetLdFeedbackOffset();
+                    ldPatches.push_back({ ldFeedbackOffset, feedbackBufferOffset, sizeof(uint32_t) });
+                }
+                else if (layer.Operation == INTEL_AFFINE || layer.Operation == INTEL_GMM)
+                {
+                    auto nnopTypeOffset = hwLayer.GetLdNnopOffset();
+                    auto nnopTypeValue = hwLayer.GetNnopType(layerConfiguration.ActList.get() != nullptr);
+                    ldPatches.push_back({ nnopTypeOffset, nnopTypeValue, sizeof(uint8_t) });
+                }
+                break;
+            }
+            case IntermediateOutputComponent:
+                ldOffset = hwLayer.GetLdIntermediateOutputOffset();
+                break;
+            // TODO:3: support updating below components
+            //case WeightComponent:
+            //    ldOffset = hwLayer.GetLdWeightOffset();
+            //    break;
+            //case BiasComponent:
+            //    ldOffset = hwLayer.GetLdBiasOffset();
+            //    break;
+            //case WeightScaleFactorComponent:
+            //    ldOffset = hwLayer.GetLdWeightScaleFactorOffset();
+            //    break;
+            //case PwlComponent:
+            //    ldOffset = hwLayer.GetLdPwlOffset();
+            //    break;
+            //case GmmMeanComponent:
+            //    ldOffset = hwLayer.GetLdGmmMeanOffset();
+            //    break;
+            //case GmmInverseCovarianceComponent:
+            //    ldOffset = hwLayer.GetLdGmmInverseCovarianceOffset();
+            //    break;
+            //case GmmGaussianConstantComponent:
+            //    ldOffset = hwLayer.GetLdGaussianConstantOffset();
+            //    break;
+            //case RecurrentComponent:
+                //ldOffset = hwLayer.GetLdFeedbackOffset();
+                //break;
+            default:
+                throw GnaException { GNA_UNKNOWN_ERROR };
+        }
+
+        ldPatches.push_back({ ldOffset, bufferOffset, sizeof(uint32_t) });
+    }
 }
 
 void HardwareRequest::updateActiveLists(uint32_t layerIndex, uint32_t layerCount)

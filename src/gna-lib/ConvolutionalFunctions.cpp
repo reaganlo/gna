@@ -26,6 +26,7 @@
 #include "ConvolutionalFunctions.h"
 
 #include "AccelerationDetector.h"
+#include "HardwareCapabilities.h"
 #include "Expect.h"
 #include "HardwareLayer.h"
 
@@ -45,8 +46,7 @@ FiltersTensor::FiltersTensor(const Shape& dimensions, const DataMode & dataMode,
     if (GNA_DATA_DISABLED != Mode)
     {
         const auto kernelMemorySize = HardwareLayerCnn2D::GetKernelMemorySize(
-            AccelerationDetector::GetDeviceVersion(validator->Device),
-            this);
+            HardwareCapabilities::GetDeviceVersion(validator->Device), this);
         auto caps = static_cast<const TensorLimits* const>(validator->Capabilities);
         validator->ValidateBufferIfSet(Buffer, kernelMemorySize * Count, caps->Align);
     }

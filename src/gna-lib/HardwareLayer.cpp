@@ -30,12 +30,14 @@
 
 #include "ActiveList.h"
 #include "ConvolutionalLayer.h"
+#include "Expect.h"
 #include "GmmLayer.h"
+#include "HardwareCapabilities.h"
 #include "LayerConfiguration.h"
+#include "Macros.h"
 #include "RecurrentLayer.h"
 #include "RequestConfiguration.h"
 #include "SimpleLayers.h"
-#include "Expect.h"
 
 using std::array;
 using std::make_unique;
@@ -44,10 +46,14 @@ using std::unique_ptr;
 
 using namespace GNA;
 
-DescriptorParameters::DescriptorParameters(const Layer* softwareLayer, const LayerDescriptor& xnnDescriptor) :
+DescriptorParameters::DescriptorParameters(
+        const Layer* softwareLayer,
+        const LayerDescriptor& xnnDescriptor,
+        GetHwOffset getHwOffset) :
     SoftwareLayer{ softwareLayer },
     XnnDescriptor{ xnnDescriptor },
-    GmmDescriptor{ xnnDescriptor.GmmDescriptor }
+    GmmDescriptor{ xnnDescriptor.GmmDescriptor },
+    GetBufferOffset{ getHwOffset }
 {
 };
 
@@ -165,6 +171,55 @@ uint32_t HardwareLayer::GetLdScrlenOffset() const
     throw GnaException(XNN_ERR_LYR_CFG);
 }
 
+uint32_t HardwareLayer::GetLdGmmMeanOffset() const
+{
+    throw GnaException(XNN_ERR_LYR_CFG);
+}
+
+uint32_t HardwareLayer::GetLdGmmInverseCovarianceOffset() const
+{
+    throw GnaException(XNN_ERR_LYR_CFG);
+}
+
+uint32_t HardwareLayer::GetLdGaussianConstantOffset() const
+{
+    throw GnaException(XNN_ERR_LYR_CFG);
+}
+
+uint32_t HardwareLayer::GetLdWeightOffset() const
+{
+    return XnnDescriptor[weight_buffer].GetOffset();
+}
+
+uint32_t HardwareLayer::GetLdBiasOffset() const
+{
+    return XnnDescriptor[bias_buffer].GetOffset();
+}
+
+uint32_t HardwareLayer::GetLdFilterOffset() const
+{
+    return XnnDescriptor[weight_buffer].GetOffset();
+}
+
+uint32_t HardwareLayer::GetLdIntermediateOutputOffset() const
+{
+    return XnnDescriptor[out_sum_buffer].GetOffset();
+}
+
+uint32_t HardwareLayer::GetLdWeightScaleFactorOffset() const
+{
+    if (INTEL_AFFINE_MULTIBIAS == SoftwareLayer->Operation)
+    {
+        return XnnDescriptor[bias_buffer].GetOffset();
+    }
+    throw GnaException(XNN_ERR_LYR_CFG);
+}
+
+uint32_t HardwareLayer::GetLdPwlOffset() const
+{
+    return XnnDescriptor[pwl_seg_def_buffer].GetOffset();
+}
+
 uint32_t HardwareLayer::GetLdActlistOffset() const
 {
     return XnnDescriptor[act_list_buffer].GetOffset();
@@ -218,12 +273,12 @@ void HardwareLayer::saveCommonPart()
 {
     XnnDescriptor[op] =static_cast<uint8_t>(OperationsMap.at(SoftwareLayer->Operation));
     XnnDescriptor[n_groups] = SoftwareLayer->Input.at(GNA_DIM_N);
-    XnnDescriptor[in_buffer] = SoftwareLayer->Input;
+    XnnDescriptor[in_buffer] = GetBufferOffset(SoftwareLayer->Input);
     if(XnnDescriptor.HasParameter(input_element_precision))
     {
         XnnDescriptor[input_element_precision] = SoftwareLayer->Input.Mode;
     }
-    XnnDescriptor[out_buffer] = SoftwareLayer->Output;
+    XnnDescriptor[out_buffer] = GetBufferOffset(SoftwareLayer->Output);
 }
 
 void HardwareLayer::save()
@@ -234,11 +289,11 @@ void HardwareLayer::save()
     XnnDescriptor[n_out_elems] = SoftwareLayer->Output.at(GNA_DIM_H);
     if (GNA_DATA_ACTIVATION_DISABLED == SoftwareLayer->Output.Mode)
     {
-        XnnDescriptor[out_sum_buffer] = SoftwareLayer->Output;
+        XnnDescriptor[out_sum_buffer] = GetBufferOffset(SoftwareLayer->Output);
     }
     else
     {
-        XnnDescriptor[out_sum_buffer] = SoftwareLayer->Output.ScratchPad;
+        XnnDescriptor[out_sum_buffer] = GetBufferOffset(SoftwareLayer->Output.ScratchPad);
     }
 }
 
@@ -248,14 +303,14 @@ void HardwareLayer::saveActivation(const ActivationFunction* activationIn)
     {
         XnnDescriptor[act_fn_precision] = SoftwareLayer->Output.Mode;
         XnnDescriptor[pwl_n_segs] = activationIn->Segments->Count;
-        XnnDescriptor[pwl_seg_def_buffer] = *activationIn->Segments;
+        XnnDescriptor[pwl_seg_def_buffer] = GetBufferOffset(*activationIn->Segments);
     }
 }
 
 HardwareLayerExt::HardwareLayerExt(const DescriptorParameters& parameters, const uint32_t effectiveGrouping) :
     HardwareLayer(parameters),
-    bufferElementCount{XnnDescriptor.Detector.GetBufferElementCount(effectiveGrouping,
-        SoftwareLayer->Input.Mode)},
+    bufferElementCount { parameters.XnnDescriptor.HwCapabilities.GetBufferElementCount(
+                            effectiveGrouping, SoftwareLayer->Input.Mode) },
     iterationGrouping{effectiveGrouping}
 {
     Expect::InRange(iterationGrouping, ui32_1, XNN_N_GROUP_MAX, XNN_ERR_GROUPING);
@@ -279,8 +334,8 @@ void HardwareLayerExt::save()
     if (affine)
     {
         XnnDescriptor[weight_size] = affine->Weights->Mode;
-        XnnDescriptor[weight_buffer] = *affine->Weights;
-        XnnDescriptor[bias_buffer] = *affine->Biases;
+        XnnDescriptor[weight_buffer] = GetBufferOffset(*affine->Weights);
+        XnnDescriptor[bias_buffer] = GetBufferOffset(*affine->Biases);
         if(XnnDescriptor.HasParameter(bias_precision))
         {
             XnnDescriptor[bias_precision] = affine->Biases->Mode;
@@ -392,7 +447,7 @@ uint32_t HardwareLayerRnn::GetLdFeedbackOffset() const
 uint32_t HardwareLayerRnn::CalculateFeedbackBuffer(const BaseAddress& outputBuffer) const
 {
     auto rnn = SoftwareLayer->Get<const RnnLayer>();
-    return XnnDescriptor[rnn_out_fb_buffer].GetBufferOffset(rnn->CalculateFeedbackBuffer(outputBuffer));
+    return GetBufferOffset(rnn->CalculateFeedbackBuffer(outputBuffer));
 }
 
 HardwareLayerCnn::HardwareLayerCnn(const DescriptorParameters& parameters) :
@@ -460,7 +515,7 @@ void HardwareLayerCnn::save()
         XnnDescriptor[bias_precision] = cnn->Convolution->Biases->Mode;
     }
     XnnDescriptor[weight_size] = cnn->Convolution->Filters->Mode;
-    XnnDescriptor[weight_buffer] = *cnn->Convolution->Filters;
+    XnnDescriptor[weight_buffer] = GetBufferOffset(*cnn->Convolution->Filters);
     XnnDescriptor[cnn_flt_bf_sz_iter] = filtersElementCountInFullIteration;
     XnnDescriptor[cnn_flt_bf_sz_last] = filtersElementCountInLastIteration;
     XnnDescriptor[cnn_flt_size] = cnn->Convolution->Filters->CoefficientCount;
@@ -469,10 +524,10 @@ void HardwareLayerCnn::save()
     XnnDescriptor[cnn_n_flt_iters] = filtersIterationCount;
     XnnDescriptor[cnn_n_flt_last] = filtersCountInLastIteration;
     XnnDescriptor[cnn_n_flt_outs] = convOutputElementCount;
-    XnnDescriptor[bias_buffer] = *cnn->Convolution->Biases;
+    XnnDescriptor[bias_buffer] = GetBufferOffset(*cnn->Convolution->Biases);
     XnnDescriptor[cnn_n_flt_stride] = cnn->Convolution->Stride->at(GNA_DIM_W);
     XnnDescriptor[cnn_n_out_p_flt] = outputElementCount;
-    XnnDescriptor[bias_buffer] = *cnn->Convolution->Biases;
+    XnnDescriptor[bias_buffer] = GetBufferOffset(*cnn->Convolution->Biases);
 }
 
 uint32_t HardwareLayerCnn2D::GetKernelWorkGroupSize(gna_device_version hw,
@@ -485,7 +540,7 @@ uint32_t HardwareLayerCnn2D::GetKernelWorkGroupSize(gna_device_version hw,
         + GetPoolingMemorySize(hw, poolingIn, outputMode);
     Expect::GtZero(modelMemorySize, XNN_ERR_LYR_CFG);
 
-    uint32_t kernelWorkGroup =  AccelerationDetector::GetBufferSizeInKB(hw) * 1024;
+    uint32_t kernelWorkGroup =  HardwareCapabilities::GetBufferSizeInKB(hw) * 1024;
     kernelWorkGroup /= modelMemorySize;
     kernelWorkGroup = GnaFloor(kernelWorkGroup, (uint32_t)16);
     Expect::GtZero(kernelWorkGroup, GNA_MODELSIZEEXCEEDED);
@@ -529,7 +584,7 @@ HardwareLayerCnn2D::HardwareLayerCnn2D(const DescriptorParameters& parameters) :
     cnn{SoftwareLayer->Get()->Transforms.Get<ConvolutionFunction2D>(ConvolutionalTransform2D)},
     pooling{SoftwareLayer->Get()->Transforms.Get<PoolingFunction2D>(PoolingTransform2D)}
 {
-    kernelWorkGroupSize = GetKernelWorkGroupSize(parameters.XnnDescriptor.Detector.GetDeviceVersion(),
+    kernelWorkGroupSize = GetKernelWorkGroupSize(parameters.XnnDescriptor.HwCapabilities.GetDeviceVersion(),
         cnn, pooling, SoftwareLayer->GetOutputTransform()->Output->Mode);
 
     kernelWorkGroupIterationCount = GnaCeilDiv(cnn->Filters->Count, kernelWorkGroupSize);
@@ -543,9 +598,9 @@ void HardwareLayerCnn2D::save()
 {
     saveCommonPart();
     XnnDescriptor[weight_size] = cnn->Filters->Mode;
-    XnnDescriptor[weight_buffer] = *cnn->Filters;
+    XnnDescriptor[weight_buffer] = GetBufferOffset(*cnn->Filters);
     XnnDescriptor[cnn_n_flts] = cnn->Filters->Count;
-    XnnDescriptor[bias_buffer] = *cnn->Biases;
+    XnnDescriptor[bias_buffer] = GetBufferOffset(*cnn->Biases);
     XnnDescriptor[bias_precision] = cnn->Biases->Mode;
     XnnDescriptor[cnn2d_bias_mode] = cnn->Biases->BiasMode;
     XnnDescriptor[cnn2d_in_dim_d] = cnn->Input->Dimensions.at(GNA_DIM_D);
@@ -584,21 +639,21 @@ HardwareLayerAffineMBias::HardwareLayerAffineMBias(const DescriptorParameters& p
     save();
     saveActivation(mbiasLayer->Activation.get());
 
-    XnnDescriptor[weight_buffer] = *affineMulti->Weights;
+    XnnDescriptor[weight_buffer] = GetBufferOffset(*affineMulti->Weights);
     XnnDescriptor[weight_size] = affineMulti->Weights->Mode;
 
     if (XnnDescriptor.HasParameter(bias_precision))
     {
         XnnDescriptor[bias_precision] = affineMulti->Biases->Mode;
     }
-	
+
     XnnDescriptor[bias_grp_cnt] = affineMulti->Biases->at(GNA_DIM_N);
-    XnnDescriptor[bias_grp_buffer] = *affineMulti->Biases;
+    XnnDescriptor[bias_grp_buffer] = GetBufferOffset(*affineMulti->Biases);
     XnnDescriptor[bias_grp_value] = affineMulti->Biases->VectorIndex;
 
     if (affineMulti->Weights->Mode == GNA_INT8 && mbiasLayer->Input.Mode == GNA_INT16)
     {
-        XnnDescriptor[bias_buffer] = *affineMulti->WeightScaleFactors;
+        XnnDescriptor[bias_buffer] = GetBufferOffset(*affineMulti->WeightScaleFactors);
     }
 }
 
@@ -618,13 +673,12 @@ HardwareLayerGmm::HardwareLayerGmm(const DescriptorParameters& parameters) :
 void HardwareLayerGmm::save()
 {
     XnnDescriptor[op] = static_cast<uint8_t>(OperationsMap.at(SoftwareLayer->Operation));
-    XnnDescriptor[gmm_descriptor] = XnnDescriptor.GmmDescriptor;
+    XnnDescriptor[gmm_descriptor] = GetBufferOffset(XnnDescriptor.GmmDescriptor);
 
-    const auto& gmmParam = XnnDescriptor[gmm_descriptor];
     auto gmm = SoftwareLayer->Get<const GmmLayer>();
     // can be updated per request
-    XnnDescriptor[fvaddr]    = gmmParam.GetBufferOffset(gmm->Input);
-    XnnDescriptor[gmmscradd] = gmmParam.GetBufferOffset(gmm->Output);
+    XnnDescriptor[fvaddr]    = GetBufferOffset(gmm->Input);
+    XnnDescriptor[gmmscradd] = GetBufferOffset(gmm->Output);
 
     // GMM Model configuration, will be constant over time for model
     XnnDescriptor[gmmscrlen] = GMM_SCORE_SIZE * gmm->Input.at(GNA_DIM_N) * gmm->Config.stateCount;; // will be updated when ActiveList is used
@@ -634,9 +688,9 @@ void HardwareLayerGmm::save()
     XnnDescriptor[vlength]   = gmm->Input.at(GNA_DIM_W);
 
     XnnDescriptor[mode]      = GmmModes.at(gmm->Config.mode)._value;
-    XnnDescriptor[gcaddr]    = gmmParam.GetBufferOffset(gmm->Data.gaussianConstants);
-    XnnDescriptor[mvaddr]    = gmmParam.GetBufferOffset(gmm->Data.meanValues);
-    XnnDescriptor[vvaddr]    = gmmParam.GetBufferOffset(gmm->Data.inverseCovariances.inverseCovariancesForMaxMix16);
+    XnnDescriptor[gcaddr]    = GetBufferOffset(gmm->Data.gaussianConstants);
+    XnnDescriptor[mvaddr]    = GetBufferOffset(gmm->Data.meanValues);
+    XnnDescriptor[vvaddr]    = GetBufferOffset(gmm->Data.inverseCovariances.inverseCovariancesForMaxMix16);
 
     XnnDescriptor[gcsoffset] = gmm->Params.GaussConstSetOffsetSize;
     XnnDescriptor[mvsoffset] = gmm->Params.MeanSetOffsetSize;

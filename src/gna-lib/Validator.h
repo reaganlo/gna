@@ -38,14 +38,14 @@ class FullCapabilitiesMap;
 struct ComponentLimits;
 
 // Functor for validating if buffer is within memory boundaries
-using ValidBoundariesFunctor = std::function<void(const void *, const size_t)>;
+using ValidBoundariesFunctor = std::function<void(const void *, size_t)>;
 
 class BaseValidator
 {
 public:
-    BaseValidator(gna_device_generation generation, const ValidBoundariesFunctor * const bufferValidator);
+    BaseValidator(gna_device_generation generation, const ValidBoundariesFunctor bufferValidator);
     ~BaseValidator() = default;
-   
+
     void ValidateBuffer(const void* const buffer, size_t size,
         const AlignLimits& alignLimits = {GNA_MEM_ALIGN, GNA_BADMEMALIGN}) const;
 
@@ -56,11 +56,10 @@ public:
             ValidateBuffer(buffer, size, alignLimits);
     }
 
-
     const gna_device_generation Device;
 
 protected:
-    const ValidBoundariesFunctor * const bufferValidator;
+    const ValidBoundariesFunctor bufferValidator;
 };
 
 class LayerValidator : public BaseValidator

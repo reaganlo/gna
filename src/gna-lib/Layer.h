@@ -56,7 +56,7 @@ public:
     virtual DataConfig GetDataMode() const;
 
     TransformList Transforms;
-    
+
     BaseTransform const * GetInputTransform() const
     {
         return inputTransform;
@@ -66,6 +66,7 @@ public:
         return outputTransform;
     };
 
+    uint32_t GetOperandSize(GnaComponentType componentType) const;
 
 protected:
     std::unique_ptr<const LayerValidator> validator;
@@ -95,7 +96,7 @@ private:
     BaseTransform * outputTransform = nullptr;
 
     void addBufferAs(const BufferMap& source, GnaComponentType sourceType,
-        BufferMap& destination, GnaComponentType destinationType, uint32_t size) const;
+        BufferMap& destination, GnaComponentType destinationType) const;
 };
 
 }

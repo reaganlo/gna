@@ -62,11 +62,9 @@ SetupSplitModel::SetupSplitModel(DeviceController & deviceCtrl, bool wght2B, boo
 
     auto wholeSize = firstModelSize + firstModelConfigSize + secondModelSize + secondModelConfigSize;
 
-    auto totalLayerCount = firstNnet.nLayers + secondNnet.nLayers;
-    auto totalGmmCount = uint16_t{0};
-
     auto grantedSize = uint32_t{0};
-    auto pinned_memory = deviceController.Alloc(static_cast<uint32_t>(wholeSize), static_cast<uint16_t>(totalLayerCount), totalGmmCount, &grantedSize);
+    memory = deviceController.Alloc(static_cast<uint32_t>(wholeSize), &grantedSize);
+    auto pinned_memory = static_cast<uint8_t*>(memory);
     if (NULL == pinned_memory || grantedSize < wholeSize)
     {
         throw GNA_ERR_RESOURCES;
@@ -108,7 +106,7 @@ SetupSplitModel::SetupSplitModel(DeviceController & deviceCtrl, bool wght2B, boo
 
 SetupSplitModel::~SetupSplitModel()
 {
-    deviceController.Free();
+    deviceController.Free(memory);
     free(firstNnet.pLayers);
     free(secondNnet.pLayers);
 }

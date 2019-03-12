@@ -30,13 +30,13 @@
 #include <vector>
 
 #include "AccelerationDetector.h"
+#include "KernelArguments.h"
+#include "IScorable.h"
+#include "Tensor.h"
+#include "Validator.h"
+
 #include "common.h"
 #include "profiler.h"
-#include "Tensor.h"
-
-#include "KernelArguments.h"
-
-#include "Validator.h"
 
 namespace GNA
 {
@@ -46,7 +46,7 @@ struct LayerConfiguration;
 class RequestConfiguration;
 struct RequestProfiler;
 
-class SoftwareModel
+class SoftwareModel : public IScorable
 {
 public:
     static void LogAcceleration(AccelerationMode accel)
@@ -55,48 +55,30 @@ public:
             AccelerationDetector::AccelerationToString(accel));
     }
 
-    SoftwareModel(const gna_model *const network, uint16_t& gmmCount, const BaseValidator& validator, const AccelerationMode fastestAccel);
+    SoftwareModel(const gna_model *const network,
+                  BaseValidator validator,
+                  AccelerationMode fastestAcceleration);
+
     SoftwareModel(const SoftwareModel &) = delete;
     SoftwareModel& operator=(const SoftwareModel&) = delete;
     ~SoftwareModel() = default;
 
-    uint32_t Score(
+    virtual uint32_t Score(
         uint32_t layerIndex,
         uint32_t layerCount,
         RequestConfiguration const &requestConfiguration,
         RequestProfiler *profiler,
-        KernelBuffers *fvBuffers);
+        KernelBuffers *fvBuffers,
+        GnaOperationMode operationMode = xNN) override;
 
     void validateConfiguration(const RequestConfiguration& configuration) const;
 
     std::vector<std::unique_ptr<Layer>> Layers;
 
 private:
-    void build(const nn_layer* layers, uint16_t& gmmCount, const BaseValidator& validator);
+    void build(const nn_layer* layers, const BaseValidator& validator);
 
-    AccelerationMode getEffectiveAccelerationMode(AccelerationMode requiredAccel) const
-    {
-        switch (requiredAccel)
-        {
-        case GNA_AUTO_FAST:
-        case GNA_SW_FAST:
-            return fastestAccel;
-        case GNA_AUTO_SAT:
-        case GNA_SW_SAT:
-        case GNA_HW:
-            return static_cast<AccelerationMode>(fastestAccel & GNA_HW);
-        // enforced sw modes
-        default:
-            if ((int32_t) requiredAccel > (int32_t) fastestAccel)
-            {
-                return NUM_GNA_ACCEL_MODES;
-            }
-            else
-            {
-                return requiredAccel;
-            }
-        }
-    }
+    AccelerationMode getEffectiveAccelerationMode(AccelerationMode requiredAccel) const;
 
     uint32_t const layerCount;
     AccelerationMode const fastestAccel;

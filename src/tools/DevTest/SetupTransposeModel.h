@@ -44,6 +44,7 @@ private:
 
     void * inputBuffer = nullptr;
     void * outputBuffer = nullptr;
+    void * memory = nullptr;
 
     static const int groupingNumConfig1 = 4;
     static const int groupingNumConfig2 = 6;

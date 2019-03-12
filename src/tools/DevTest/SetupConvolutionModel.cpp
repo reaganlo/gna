@@ -55,8 +55,7 @@ SetupConvolutionModel::SetupConvolutionModel(DeviceController & deviceCtrl, bool
 
 SetupConvolutionModel::~SetupConvolutionModel()
 {
-    deviceController.Free();
-
+    deviceController.Free(memory);
     free(nnet.pLayers);
 }
 
@@ -114,7 +113,8 @@ void SetupConvolutionModel::sampleConvolutionLayer()
     }
     uint32_t bytes_granted;
 
-    uint8_t* pinned_mem_ptr = deviceController.Alloc(bytes_requested, static_cast<uint16_t>(nnet.nLayers), static_cast<uint16_t>(0), &bytes_granted);
+    memory = deviceController.Alloc(bytes_requested, &bytes_granted);
+    uint8_t* pinned_mem_ptr = static_cast<uint8_t*>(memory);
 
     void* pinned_filters = pinned_mem_ptr;
     memcpy(pinned_filters, filters, sizeof(filters));

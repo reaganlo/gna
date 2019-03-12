@@ -33,10 +33,10 @@ namespace GNA
 class HardwareModelSue1 : public HardwareModel
 {
 public:
-    static size_t CalculateDescriptorSize(const uint32_t layerCount, const uint16_t gmmLayersCount);
+    HardwareModelSue1(
+        const std::vector<std::unique_ptr<Layer>>& layers,
+        uint32_t gmmCount, std::unique_ptr<Memory> dumpMemory);
 
-    HardwareModelSue1(const gna_model_id modId, const std::vector<std::unique_ptr<Layer>>& layers,
-        const Memory &memoryIn, const BaseAddress &dumpDescriptorAddr, IoctlSender &sender, const AccelerationDetector& detector);
     ~HardwareModelSue1() = default;
 
     const LayerDescriptor& GetDescriptor(uint32_t layerIndex) const;
@@ -45,8 +45,15 @@ public:
 
     uint32_t GetInputOffset(uint32_t layerIndex) const;
 
+    // this override does not add PAGE_SIZE alignment to calculations
+    // since memory buffers are copied to one allocated memory buffer
+    virtual uint32_t GetBufferOffset(const BaseAddress& buffer) const override;
+
 protected:
-    static uint32_t getLayerDescriptorsSize(const uint32_t layerCount);
+    virtual void allocateLayerDescriptors() override;
+
+private:
+    HardwareCapabilities sueCapabilities = HardwareCapabilities{ GNA_SUE_CREEK };
 };
 
 }

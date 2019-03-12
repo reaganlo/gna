@@ -52,8 +52,7 @@ SetupCopyModel::SetupCopyModel(DeviceController & deviceCtrl, uint32_t nCopyColu
 
 SetupCopyModel::~SetupCopyModel()
 {
-    deviceController.Free();
-
+    deviceController.Free(memory);
     free(nnet.pLayers);
 }
 
@@ -82,7 +81,8 @@ void SetupCopyModel::sampleCopyLayer(uint32_t nCopyColumns, uint32_t nCopyRows)
     uint32_t bytes_requested = buf_size_inputs + buf_size_outputs;
     uint32_t bytes_granted;
 
-    uint8_t* pinned_mem_ptr = deviceController.Alloc(bytes_requested, static_cast<uint16_t>(nnet.nLayers), static_cast<uint16_t>(0), &bytes_granted);
+    memory = deviceController.Alloc(bytes_requested, &bytes_granted);
+    uint8_t* pinned_mem_ptr = static_cast<uint8_t*>(memory);
 
     inputBuffer = pinned_mem_ptr;
     memcpy(inputBuffer, inputs, sizeof(inputs));

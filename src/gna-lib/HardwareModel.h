@@ -25,11 +25,13 @@
 
 #pragma once
 
+#include <memory>
 #include <vector>
 
+#include "HardwareCapabilities.h"
 #include "HardwareLayer.h"
 #include "HardwareRequest.h"
-#include "IoctlSender.h"
+#include "DriverInterface.h"
 #include "Memory.h"
 
 namespace GNA
@@ -46,53 +48,55 @@ struct RequestProfiler;
 class HardwareModel
 {
 public:
-    static size_t CalculateDescriptorSize(const uint32_t layerCount, const uint16_t gmmLayersCount);
+    static uint32_t CalculateDescriptorSize(const uint32_t layerCount,
+        const uint32_t gmmLayersCount, const gna_device_version hwId = GNA_ADL);
 
-    HardwareModel(const gna_model_id modId, const std::vector<std::unique_ptr<Layer>>& layers, uint32_t gmmCount,
-        const uint64_t memoryId, const BaseAddress memoryBase, const BaseAddress baseDescriptorAddress,  IoctlSender &sender, const AccelerationDetector& detector);
+    HardwareModel(const std::vector<std::unique_ptr<Layer>>& layers, uint32_t gmmCount,
+        const HardwareCapabilities& hwCaps);
+
     ~HardwareModel() = default;
     HardwareModel(const HardwareModel &) = delete;
     HardwareModel& operator=(const HardwareModel&) = delete;
+
+    void Build(const std::vector<Memory* >& memoryObjects);
 
     const HardwareLayer* GetLayer(uint32_t layerIndex) const
     {
         return hardwareLayers.at(layerIndex).get();
     }
 
-    inline uint32_t GetOffset(const BaseAddress& address) const
-    {
-        return address.GetOffset(memoryBase);
-    }
+    uint64_t GetMemoryId(const BaseAddress& address) const;
 
-    void Build();
-    void InvalidateConfig(gna_request_cfg_id configId);
-
-    virtual uint32_t Score(
-        uint32_t layerIndex,
-        uint32_t layerCount,
-        const RequestConfiguration& requestConfiguration,
-        RequestProfiler *profiler,
-        KernelBuffers *buffers,
-        const GnaOperationMode operationMode);
+    /* Calculates offset proper for GNA hardware
+     * Few assumptions here:
+     * a) MMU is enabled
+     * b) layer descriptor memory is added first to MMU
+     * c) other memory buffers are added to MMU in order they are provided
+     */
+    virtual uint32_t GetBufferOffset(const BaseAddress& address) const;
 
 protected:
-    static uint32_t getLayerDescriptorsSize(const uint32_t layerCount);
+    static uint32_t getLayerDescriptorsSize(const uint32_t layerCount,
+        gna_device_version hwId = GNA_DEFAULT_VERSION);
+    static uint32_t getGmmDescriptorsSize(const uint32_t gmmLayersCount,
+        gna_device_version hwId = GNA_DEFAULT_VERSION);
 
-    // needed for driver communication
-    const uint64_t memoryId;
-    const BaseAddress memoryBase;
-    const gna_model_id modelId;
-    LayerDescriptor baseDescriptor;
-    IoctlSender &ioctlSender;
-    std::vector<std::unique_ptr<HardwareLayer>> hardwareLayers;
+    virtual void allocateLayerDescriptors();
 
-private:
-    static uint32_t getGmmDescriptorsSize(const uint32_t gmmLayersCount);
-
-    std::map<gna_request_cfg_id, std::unique_ptr<HardwareRequest>> hardwareRequests;
+    std::unique_ptr<LayerDescriptor> baseDescriptor;
 
     const std::vector<std::unique_ptr<Layer>>& softwareLayers;
+    std::vector<std::unique_ptr<HardwareLayer>> hardwareLayers;
+
+    const HardwareCapabilities& hwCapabilities;
+
     const uint32_t gmmDescriptorsSize;
+    const uint32_t xnnDescriptorsSize;
+
+    std::unique_ptr<Memory> ldMemory;
+    std::vector<Memory *> modelMemoryObjects;
+
+    uint32_t modelSize = 0;
 };
 
 }

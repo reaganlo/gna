@@ -25,49 +25,56 @@
 
 #pragma once
 
-#include "IoctlSender.h"
-
-#include "gna.h"
-
-#include <map>
 #include <memory>
+#include <vector>
 
-#include "common.h"
-
+#include "HardwareModel.h"
 #include "HardwareRequest.h"
-#include "Request.h"
-#include "Validator.h"
+#include "IScorable.h"
+#include "DriverInterface.h"
 
 namespace GNA
 {
 
-class LinuxIoctlSender : public IoctlSender
+class SoftwareModel;
+class Memory;
+class AccelerationDetector;
+class Layer;
+struct LayerConfiguration;
+class RequestConfiguration;
+struct RequestProfiler;
+
+class HardwareModelScorable : public HardwareModel, public IScorable
 {
 public:
-    LinuxIoctlSender() = default;
 
-    virtual ~LinuxIoctlSender() override;
+    HardwareModelScorable(
+        const std::vector<std::unique_ptr<Layer>>& layers, uint32_t gmmCount,
+        DriverInterface &ddi, const HardwareCapabilities& hwCapsIn);
 
-    virtual void Open() override;
+    void InvalidateConfig(gna_request_cfg_id configId);
 
-    virtual void IoctlSend(const GnaIoctlCommand command, void * const inbuf, const uint32_t inlen, void * const outbuf, const uint32_t outlen) override;
+    virtual uint32_t Score(
+        uint32_t layerIndex,
+        uint32_t layerCount,
+        const RequestConfiguration& requestConfiguration,
+        RequestProfiler *profiler,
+        KernelBuffers *buffers,
+        const GnaOperationMode operationMode) override;
 
-    virtual GnaCapabilities GetDeviceCapabilities() const override;
+    uint32_t GetBufferOffsetForConfiguration(
+        const BaseAddress& address,
+        const RequestConfiguration& requestConfiguration) const;
 
-    virtual uint64_t MemoryMap(void *memory, size_t memorySize) override;
+    void ValidateConfigBuffer(
+        std::vector<Memory *> configMemoryList, Memory *bufferMemory) const;
 
-    virtual void MemoryUnmap(uint64_t memoryId) override;
+protected:
+    DriverInterface &driverInterface;
 
-    virtual RequestResult Submit(HardwareRequest * const hardwareRequest, RequestProfiler * const profiler) override;
+    std::map<gna_request_cfg_id, std::unique_ptr<HardwareRequest>> hardwareRequests;
 
-private:
-    LinuxIoctlSender(const LinuxIoctlSender &) = delete;
-    LinuxIoctlSender& operator=(const LinuxIoctlSender&) = delete;
-
-    status_t parseHwStatus(__u32 hwStatus) const;
-
-    int gnaFileDescriptor = -1;
-    GnaCapabilities deviceCapabilities;
+    virtual void allocateLayerDescriptors() override;
 };
 
 }

@@ -141,7 +141,9 @@ typedef enum _gna_device_version
     GNA_SUE_CREEK   = 0xFFFF1,  // GNA 1.0 Embedded Sue Creek
     GNA_JELLYFISH   = 0xFFFF2,  // GNA 2.1 Embedded Jelly Fish
     GNA_ACE_EMBEDDED= 0xFFFF3,  // GNA 3.0 Embedded on Alder Lake PCH/ACE
-    GNA_ACE_ANNA    = 0xFFFF4,  // GNA 3.1 ANNA Autonomous Embedded on Alder Lake PCH/ACE
+    GNA_ACE_ANNA    = 0xFFFF4,  // GNA 3.1 ANNA Autonomous Embedded on Alder Lake PCH/ACE,
+
+    GNA_DEFAULT_VERSION = GNA_ADL, // Latest GNA version which can be used for inference using this library
 
 } gna_device_version;
 
@@ -319,45 +321,45 @@ typedef enum _gna_device_version
 
 //
 //// dedicated query functions
-//GNAAPI intel_gna_status_t GnaGetApiProperty(
+//GNAAPI gna_status_t GnaGetApiProperty(
 //    gna_api_property property,
 //    void* poropertyValue,                       // [out] value of returned property, pointer to allocated 8Byte memory region
 //    gna_property_type* propertyValueType);      // [out] type of returned property
 //
 //// optional
-//GNAAPI intel_gna_status_t GnaSetApiProperty(
+//GNAAPI gna_status_t GnaSetApiProperty(
 //    gna_api_property property,
 //    void* poropertyValue);                      // [in] value of property, pointer to allocated 8Byte memory region
 //
 //// e,g,     propertyString = "GNA_LAYER_POOLING_MODE"
-//GNAAPI intel_gna_status_t GnaApiPropertyNameToString(
+//GNAAPI gna_status_t GnaApiPropertyNameToString(
 //    gna_api_property property,
 //    char const ** propertyString);               // [out] c-string containing property name, allocated by GNA
 //
 //// e,g,     propertyString = "GNA_POOLING_MAX | GNA_POOLING_SUM"
-//GNAAPI intel_gna_status_t GnaApiPropertyValueToString(
+//GNAAPI gna_status_t GnaApiPropertyValueToString(
 //    gna_api_property property,
 //    void* poropertyValue,                       // [in] value of property
 //    char const ** propertyString);               // [out] c-string containing property value, allocated by GNA
 //
-//GNAAPI intel_gna_status_t GnaGetDeviceProperty(
+//GNAAPI gna_status_t GnaGetDeviceProperty(
 //    gna_device_version deviceVersion,                       // id/index of device <0;GNA_DEVICE_AVAILABLE_COUNT-1>
 //    gna_device_property property,
 //    void* poropertyValue,                       // [out] value of returned property, pointer to allocated 8Byte memory region
 //    gna_property_type* propertyValueType);      // [out] type of returned property
 //
-//GNAAPI intel_gna_status_t GnaSetDeviceProperty(
+//GNAAPI gna_status_t GnaSetDeviceProperty(
 //    gna_device_version deviceVersion,
 //    gna_device_property property,
 //    void* poropertyValue);                      // [in] value of property, pointer to allocated 8Byte memory region
 //
 //// e,g,     propertyString = "GNA_LAYER_POOLING_MODE"
-//GNAAPI intel_gna_status_t GnaDevicePropertyNameToString(
+//GNAAPI gna_status_t GnaDevicePropertyNameToString(
 //    gna_device_property property,
 //    char const * propertyString);               // [out] c-string containing property name, allocated by GNA
 //
 //// e,g,     propertyString = "GNA_POOLING_MAX | GNA_POOLING_SUM"
-//GNAAPI intel_gna_status_t GnaDevicePropertyValueToString(
+//GNAAPI gna_status_t GnaDevicePropertyValueToString(
 //    gna_device_property property,
 //    void* poropertyValue,                       // [in] value of property
 //    char const * propertyString);               // [out] c-string containing property value, allocated by GNA
@@ -376,12 +378,12 @@ typedef enum _gna_device_version
 //    void* poropertyValue);                      // [in] value of property, pointer to allocated 8Byte memory region
 //
 //// e,g,     propertyString = "GNA_LAYER_POOLING_MODE"
-//GNAAPI intel_gna_status_t GnaLayerPropertyNameToString(
+//GNAAPI gna_status_t GnaLayerPropertyNameToString(
 //    gna_layer_property property,
 //    char const * propertyString);               // [out] c-string containing property name, allocated by GNA
 //
 //// e,g,     propertyString = "GNA_POOLING_MAX | GNA_POOLING_SUM"
-//GNAAPI intel_gna_status_t GnaLayerPropertyValueToString(
+//GNAAPI gna_status_t GnaLayerPropertyValueToString(
 //    gna_layer_property property,
 //    void* poropertyValue,                       // [in] value of property
 //    char const * propertyString);               // [out] c-string containing property value, allocated by GNA
@@ -396,9 +398,9 @@ typedef enum _gna_device_version
  If no hardware device is available deviceCount is set to 1,
  as software device still can be used.
  @See deviceCount to verify device version.
- 
+
  @param deviceCount (out) Number of available hardware devices.
- @return Status of operation. 
+ @return Status of operation.
  */
 GNAAPI intel_gna_status_t GnaDeviceGetCount(
     uint32_t * deviceCount);
@@ -408,12 +410,12 @@ GNAAPI intel_gna_status_t GnaDeviceGetCount(
  Devices are zero-based indexed.
  Select desired device providing deviceIndex from 0 to deviceCount-1.
  @See GnaDeviceGetCount.
- 
+
  @param deviceIndex Index of queried device.
  @param deviceVersion (out) GnaDeviceVersion identifier.
                             If no hardware devices are available sets
                             deviceVersion = GNA_UNSUPPORTED.
- @return Status of the operation. 
+ @return Status of the operation.
  */
 GNAAPI intel_gna_status_t GnaDeviceGetVersion(
     uint32_t deviceIndex,
@@ -451,10 +453,10 @@ GNAAPI intel_gna_status_t GnaDeviceOpen(
 /**
  * Closes GNA device and releases the corresponding resources.
  *
- * @param device      The device to be closed.
+ * @param deviceIndex Index of the device to be closed.
  */
-GNAAPI intel_gna_status_t GnaDeviceClose(
-    gna_device_id device);
+GNAAPI gna_status_t GnaDeviceClose(
+    gna_device_id deviceIndex);
 
 /******************************************************************************
  * GNA Memory API
@@ -462,36 +464,24 @@ GNAAPI intel_gna_status_t GnaDeviceClose(
 
 /**
  * Allocates memory buffer, that can be used with GNA device.
- * NOTE:
- * - only 1 allocation at a time is supported
  *
- * @param device      The device which will utilize the allocated buffer.
  * @param sizeRequested Buffer size desired by the caller.
- * @param layerCount    Total number of layers for all neural networks
- * @param gmmCount      Number of gmm layers for all neural networks
  * @param sizeGranted   (out) Buffer size granted by GNA,
  *                      can be less then requested due to HW constraints.
+ * @param memoryAddress (out) Address of memory buffer
  */
-GNAAPI void* GnaAlloc(
-    const gna_device_id device,
-    const uint32_t sizeRequested,
-    const uint16_t layerCount,
-    const uint16_t gmmCount,
-    uint32_t * sizeGranted);
-// TODO:3:add status
-// TODO:3:facilitate multiple allocations
+GNAAPI gna_status_t GnaAlloc(
+    uint32_t sizeRequested,
+    uint32_t *sizeGranted,
+    void **memoryAddress);
 
 /**
  * Releases all allocated memory buffers for given device.
  *
- * @param device      The device which was paired with the buffer.
+ * @param memory      Memory buffer to be freed.
  */
-GNAAPI intel_gna_status_t GnaFree(
-    gna_device_id device);
-
-// TODO:3:facilitate multiple allocations
-GNAAPI intel_gna_status_t GnaFreeMemory(
-    void* memory);
+GNAAPI gna_status_t GnaFree(
+    void *memory);
 
 /******************************************************************************
  * GNA Model API
@@ -505,19 +495,23 @@ typedef intel_nnet_type_t gna_model;
 
 /**
  * Creates and compiles the model for use with a given device.
- * NOTE:
- * - Only 1 model supported in the first phase.
- * - All Model's data has to be placed in single memory buffer allocated previously by GNAAlloc.
- * - The descriptor has to be placed in user's memory, not allocated by GNAAlloc.
  *
- * @param device      GNA device that will utilize the model.
+ * @param deviceId      Id of GNA device that will utilize the model.
  * @param model         Model descriptor which will govern the model creation.
  * @param modelId       (out) The model created by GNA.
  */
-GNAAPI intel_gna_status_t GnaModelCreate(
-    gna_device_id device,
-    gna_model const * model,
-    gna_model_id * modelId);
+GNAAPI gna_status_t GnaModelCreate(
+    gna_device_id deviceId,
+    gna_model const *model,
+    gna_model_id *modelId);
+
+/**
+ * Releases model structures and request configurations
+ *
+ * @param modelId       (in) Model to release
+ */
+GNAAPI gna_status_t GnaModelRelease(
+    gna_model_id modelId);
 
 /******************************************************************************
  * GNA Inference API
@@ -571,7 +565,7 @@ typedef enum _ComponentType
  */
 GNAAPI intel_gna_status_t GnaRequestConfigCreate(
     gna_model_id modelId,
-    gna_request_cfg_id * configId);
+    gna_request_cfg_id *configId);
 
 /**
  * Adds a single buffer to the request configuration.
@@ -591,11 +585,11 @@ GNAAPI intel_gna_status_t GnaRequestConfigCreate(
  * @param layerIndex    Index of the layer that hosts the buffer.
  * @param address       Address of the buffer.
  */
-GNAAPI intel_gna_status_t GnaRequestConfigBufferAdd(
+GNAAPI gna_status_t GnaRequestConfigBufferAdd(
     gna_request_cfg_id configId,
     GnaComponentType type,
     uint32_t layerIndex,
-    void * address);
+    void *address);
 
 /**
  * Adds active outputs list to the request configuration.
@@ -617,11 +611,11 @@ GNAAPI intel_gna_status_t GnaRequestConfigBufferAdd(
  * @param indices       The address of the array with active output indices.
  * @see GnaRequestConfigCreate and GnaRequestConfigBufferAdd for details.
  */
-GNAAPI intel_gna_status_t GnaRequestConfigActiveListAdd(
+GNAAPI gna_status_t GnaRequestConfigActiveListAdd(
     gna_request_cfg_id configId,
     uint32_t layerIndex,
     uint32_t indicesCount,
-    uint32_t const * indices);
+    uint32_t const *indices);
 
 /**
  Enables software result consistency with selected device version.
@@ -633,7 +627,7 @@ GNAAPI intel_gna_status_t GnaRequestConfigActiveListAdd(
 
  @param configId Request configuration to be configured.
  @param deviceVersion Device version to be consistent with.
- @return Status of operation. 
+ @return Status of operation.
  */
 GNAAPI intel_gna_status_t GnaRequestConfigEnableHardwareConsistency(
     gna_request_cfg_id configId,
@@ -643,7 +637,7 @@ GNAAPI intel_gna_status_t GnaRequestConfigEnableHardwareConsistency(
  The list of processing acceleration modes.
  Current acceleration modes availability depends on the CPU type.
  Available modes are detected by GNA.
- 
+
  NOTE:
  - GNA_HARDWARE: in some GNA hardware generations, model components unsupported
    by hardware will be processed using software acceleration.
@@ -671,7 +665,7 @@ static_assert(4 == sizeof(gna_acceleration), "Invalid size of gna_acceleration")
 
  @param configId Affected request configuration.
  @param acceleration Acceleration mode used for processing.
- @return Status of operation. 
+ @return Status of operation.
  */
 GNAAPI intel_gna_status_t GnaRequestConfigEnforceAcceleration(
     gna_request_cfg_id configId,
@@ -683,7 +677,7 @@ GNAAPI intel_gna_status_t GnaRequestConfigEnforceAcceleration(
  Please make sure all requests using this config are completed.
 
  @param configId Affected request configuration.
- @return Status of operation. 
+ @return Status of operation.
  */
 GNAAPI intel_gna_status_t GnaRequestConfigRelease(
     gna_request_cfg_id configId);
@@ -706,7 +700,7 @@ typedef uint32_t gna_timeout;
  * @return              Status of request preparation and queuing only.
  *                      To retrieve the results and processing status call GnaRequestWait.
  */
-GNAAPI intel_gna_status_t GnaRequestEnqueue(
+GNAAPI gna_status_t GnaRequestEnqueue(
     gna_request_cfg_id configId,
     gna_request_id * requestId);
 
@@ -720,7 +714,7 @@ GNAAPI intel_gna_status_t GnaRequestEnqueue(
  * @param requestId     The request to wait for.
  * @param milliseconds  timeout duration in milliseconds.
  */
-GNAAPI intel_gna_status_t GnaRequestWait(
+GNAAPI gna_status_t GnaRequestWait(
     gna_request_id requestId,
     gna_timeout milliseconds);
 

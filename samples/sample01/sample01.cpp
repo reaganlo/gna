@@ -91,7 +91,7 @@ int main(int argc, char *argv[])
     status = GnaDeviceOpen(deviceIndex);
     if (GNA_SUCCESS!= status)
     {
-        printf("GNADeviceOpen failed: %s\n", GnaStatusToString(status));
+        printf("GnaDeviceOpen failed: %s\n", GnaStatusToString(status));
         exit(-status);
     }
 
@@ -160,18 +160,21 @@ int main(int argc, char *argv[])
     int buf_size_outputs     = ALIGN64(8 * 4 * 4);       // (4 out vectors, 8 elems in each one, 4-byte elems)
     int buf_size_tmp_outputs = ALIGN64(8 * 4 * 4);       // (4 out vectors, 8 elems in each one, 4-byte elems)
 
-    // prepare params for GNAAlloc
+    // prepare params for GnaAlloc
     uint32_t bytes_requested = buf_size_weights + buf_size_inputs + buf_size_biases + buf_size_pwl + buf_size_outputs + buf_size_tmp_outputs;
     uint32_t bytes_granted;
 
-    // call GNAAlloc (obtains pinned memory shared with the device)
-    uint8_t *pinned_mem_ptr = (uint8_t*)GnaAlloc(deviceIndex, bytes_requested, 1, 0, &bytes_granted);
-    if (nullptr == pinned_mem_ptr)
+    // call GnaAlloc (obtains pinned memory shared with the device)
+    void *memory;
+    status = GnaAlloc(bytes_requested, &bytes_granted, &memory);
+    if (GNA_SUCCESS != status || nullptr == memory)
     {
-        printf("GnaAlloc failed.\n");
+        printf("GnaAlloc failed: %s\n", GnaStatusToString(status));
         GnaDeviceClose(deviceIndex);
-        exit(-1);
+        exit(-status);
     }
+
+    uint8_t *pinned_mem_ptr = (uint8_t*) memory;
 
     int16_t *pinned_weights = (int16_t*)pinned_mem_ptr;
     memcpy_s(pinned_weights, buf_size_weights, weights, sizeof(weights));   // puts the weights into the pinned memory
@@ -232,7 +235,7 @@ int main(int argc, char *argv[])
     if (GNA_SUCCESS!= status)
     {
         printf("GnaModelCreate failed: %s\n", GnaStatusToString(status));
-        GnaFree(deviceIndex);
+        GnaFree(memory);
         GnaDeviceClose(deviceIndex);
         exit(-status);
     }
@@ -242,7 +245,7 @@ int main(int argc, char *argv[])
     if (GNA_SUCCESS!= status)
     {
         printf("GnaRequestConfigCreate failed: %s\n", GnaStatusToString(status));
-        GnaFree(deviceIndex);
+        GnaFree(memory);
         GnaDeviceClose(deviceIndex);
         exit(-status);
     }
@@ -250,7 +253,7 @@ int main(int argc, char *argv[])
     if (GNA_SUCCESS!= status)
     {
         printf("GnaRequestConfigBufferAdd InputComponent failed: %s\n", GnaStatusToString(status));
-        GnaFree(deviceIndex);
+        GnaFree(memory);
         GnaDeviceClose(deviceIndex);
         exit(-status);
     }
@@ -258,7 +261,7 @@ int main(int argc, char *argv[])
     if (GNA_SUCCESS!= status)
     {
         printf("GnaRequestConfigBufferAdd OutputComponent failed: %s\n", GnaStatusToString(status));
-        GnaFree(deviceIndex);
+        GnaFree(memory);
         GnaDeviceClose(deviceIndex);
         exit(-status);
     }
@@ -266,7 +269,7 @@ int main(int argc, char *argv[])
     if (GNA_SUCCESS!= status)
     {
         printf("GnaRequestConfigEnforceAcceleration GNA_GENERIC failed: %s\n", GnaStatusToString(status));
-        GnaFree(deviceIndex);
+        GnaFree(memory);
         GnaDeviceClose(deviceIndex);
         exit(-status);
     }
@@ -277,7 +280,7 @@ int main(int argc, char *argv[])
     if (GNA_SUCCESS!= status)
     {
         printf("GnaRequestEnqueue failed: %s\n", GnaStatusToString(status));
-        GnaFree(deviceIndex);
+        GnaFree(memory);
         GnaDeviceClose(deviceIndex);
         exit(-status);
     }
@@ -291,7 +294,7 @@ int main(int argc, char *argv[])
     if (GNA_SUCCESS!= status)
     {
         printf("GnaRequestWait failed: %s\n", GnaStatusToString(status));
-        GnaFree(deviceIndex);
+        GnaFree(memory);
         GnaDeviceClose(deviceIndex);
         exit(-status);
     }
@@ -299,7 +302,7 @@ int main(int argc, char *argv[])
     print_outputs16((int16_t*)pinned_outputs, nnet.pLayers->nOutputRows, nnet.pLayers->nOutputColumns);
 
     // free the pinned memory
-    status = GnaFree(deviceIndex);
+    status = GnaFree(memory);
     if (GNA_SUCCESS!= status)
     {
         printf("GnaFree failed: %s\n", GnaStatusToString(status));

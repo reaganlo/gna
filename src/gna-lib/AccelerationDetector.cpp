@@ -33,11 +33,11 @@ static inline unsigned long long _xgetbv(unsigned int ctr)
 }
 #define cpuid(info, level) __cpuid_count(level, 0, info[0], info[1], info[2], info[3])
 #else
-#if !defined(_MSC_VER)
+#if defined(__INTEL_COMPILER)
 #include <immintrin.h>
-#elif defined(__INTEL_COMPILER)
+#else // __INTEL_COMPILER
 #include <intrin.h>
-#endif // __INTEL_COMPILER
+#endif
 #define cpuid(info, level) __cpuidex((int*)(info), level, 0)
 #endif // __GNUC__
 
@@ -68,119 +68,6 @@ using namespace GNA;
 #ifndef _XCR_XFEATURE_ENABLED_MASK
 #define _XCR_XFEATURE_ENABLED_MASK 0
 #endif
-
-std::map<gna_device_version, const GnaHardwareCapabiities> AccelerationDetector::gnaCapsMap = {
-    { GNA_KBL,
-        {GMM_DEVICE,
-        {false, false, true, false, false, false,  false,  false, false, false, false },
-        6,
-        {{1, 8}},
-        4,
-        0,
-        0,
-        {12288, 12288, 12096, 12288, 12000, 12096, 12096, 12288},},
-    },
-    { GNA_SKL,
-        {GMM_DEVICE,
-        {false, false, true, false, false, false,  false,  false, false, false, false },
-        6,
-        {{1, 8}},
-        4,
-        0,
-        0,
-        {12288, 12288, 12096, 12288, 12000, 12096, 12096, 12288},},
-    },
-    { GNA_CNL,
-        {GNA_0_9,
-        {true, false, true, false,    false,     false,  false,  false, false, false, false },
-        6,
-        {{2, 8}},
-        4,
-        1,
-        1,
-        {12288, 12288, 12096, 12288, 12000, 12096, 12096, 12288},},
-    },
-    { GNA_GLK,
-        {GNA_1_0,
-        {true, true,  true, false,    false,     false,  false,  false, false, false, false },
-        6,
-        {{2, 8}},
-        4,
-        1,
-        1,
-        {12288, 12288, 12096, 12288, 12000, 12096, 12096, 12288},},
-    },
-    { GNA_ICL,
-        {GNA_1_0,
-        {true, true,  true, false,    false,     false,  false,  false, false, false, false },
-        6,
-        {{2, 8}},
-        4,
-        1,
-        1,
-        {12288, 12288, 12096, 12288, 12000, 12096, 12096, 12288},},
-    },
-    { GNA_SUE_CREEK,
-        {GNA_1_0_EMBEDDED,
-        {true, true,  true, false,    false,     false,  false,  false, false, false, false },
-        3,
-        {{2, 8}},
-        4,
-        1,
-        1,
-        {6144, 6144, 6048, 6144, 5760, 6048, 6048, 6144},},
-    },
-    { GNA_TGL,
-        {GNA_2_0,
-        {true, true,  true, true,     true,      false,  false,  false, true,  true, false  },
-        6,
-        {{2, 8}},
-        4,
-        1,
-        1,
-        {12288, 12288, 12096, 12288, 12000, 12096, 12096, 12288},},
-    },
-    { GNA_JELLYFISH,
-        {GNA_2_1_EMBEDDED,
-        {true, true,  true, true,     true,      false,  false,  false, true,  true, false },
-        3,
-        {{2, 8}},
-        4,
-        1,
-        1,
-        {12288, 12288, 12096, 12288, 12000, 12096, 12096, 12288},},
-    },
-    { GNA_ADL,
-        {GNA_3_0,
-        {true, true,  true, true,     true,      false,  false,  false, true, true, true },
-        8,
-        {{1, 16}, {2, 8}},
-        4,
-        2,
-        16,
-        {},},
-    },
-    { GNA_ACE_EMBEDDED,
-        {GNA_3_0_EMBEDDED,
-        {true, true,  true, true,     true,      false,  false,  false, true,  true, true },
-        8,
-        {{1, 16}, {2, 8}},
-        4,
-        2,
-        16,
-        {},},
-    },
-    { GNA_ACE_ANNA,
-        {GNA_3_1_AUTONOMUS,
-        {true, true,  true, true,     true,      false,  false,  false, true,  true, true },
-        2,
-        {{1, 16}, {2, 8}},
-        4,
-        2,
-        16,
-        {},},
-    },
-};
 
 std::map<kernel_op, std::map<KernelMode, KernelMap<VoidKernel>>>
 AccelerationDetector::Kernels = {
@@ -858,135 +745,16 @@ std::map<AccelerationMode const, std::string const> AccelerationDetector::accele
     {NUM_GNA_ACCEL_MODES, "UNKNOWN ACCELERATION"},
 };
 
-gna_device_version AccelerationDetector::GetDeviceVersion(gna_device_generation generation)
-{
-    auto type = std::find_if(gnaCapsMap.cbegin(), gnaCapsMap.cend(),
-        [generation](const std::pair<const gna_device_version, const GnaHardwareCapabiities>& deviceVer)
-            {
-                return deviceVer.second.Generation == generation;
-            });
-    return type->first;
-}
-
-uint32_t AccelerationDetector::GetComputeEngineCount(gna_device_version hwId)
-{
-    return gnaCapsMap.at(hwId).ComputeEngineCount;
-}
-
-uint32_t AccelerationDetector::GetBufferSizeInKB(gna_device_version hwId)
-{
-    auto caps = gnaCapsMap.at(hwId);
-    return caps.ComputeEngineCount * caps.BufferSizesPerCEInKB;
-}
-
-uint32_t AccelerationDetector::GetBufferElementCount(gna_device_version hwId, uint32_t grouping,
-    uint32_t inputPrecision)
-{
-    if (hwId == GNA_ADL || hwId == GNA_ACE_EMBEDDED || hwId == GNA_ACE_ANNA)
-    {
-        const auto ceCount = gnaCapsMap.at(hwId).ComputeEngineCount;
-        auto count = (GetBufferSizeInKB(hwId) * 1024)
-            / (ceCount *  16 * grouping);
-        count *= ceCount * 16 / inputPrecision;
-        count *= grouping;
-
-        return count;
-    }
-    else
-    {
-        return gnaCapsMap.at(hwId).BufferElementCountBackward[grouping - 1];
-    }
-}
-
-void AccelerationDetector::discoverHardware()
-{
-    accelerationModes[GNA_HW] = ACC_NOTSUPPORTED;
-    try
-    {
-        ioctlSender.Open();
-        deviceCapabilities = ioctlSender.GetDeviceCapabilities();
-
-        if (deviceCapabilities.hwId == GNA_ADL)
-            deviceCapabilities.hwInBuffSize = 32; //TODO:3: remove when ADL bug with input buffer will be fixed
-
-
-        Expect::Equal((size_t)1, gnaCapsMap.count(deviceCapabilities.hwId), GNA_DEVNOTFOUND);
-        Expect::Equal(deviceCapabilities.hwInBuffSize, GetBufferSizeInKB(deviceCapabilities.hwId),
-            status_t::GNA_ERR_INVALID_DEVICE_VERSION);
-        accelerationModes[GNA_HW] = ACC_SUPPORTED;
-
-    }
-    catch (GnaException&)
-    {
-        accelerationModes[GNA_HW] = ACC_NOTSUPPORTED;
-        Log->Message("No compatible hardware detected.\n");
-    }
-}
-
-void AccelerationDetector::GetHardwareConsistencySettings(uint32_t bufferElementCount[2 * XNN_N_GROUP_MAX],
-    gna_device_version hwId)
-{
-    for (uint32_t p = 0; p < 2; p++)
-    {
-        for (uint32_t i = 0; i < XNN_N_GROUP_MAX; i++)
-        {
-            bufferElementCount[p * XNN_N_GROUP_MAX +  i] = GetBufferElementCount(hwId, i + 1, p + 1);
-        }
-    }
-}
-
-gna_device_version AccelerationDetector::GetDeviceVersion() const
-{
-    return deviceCapabilities.hwId;
-}
-
-bool AccelerationDetector::IsHardwarePresent() const
-{
-    return ACC_SUPPORTED == accelerationModes.at(GNA_HW);
-}
-
-bool AccelerationDetector::IsLayerSupported(nn_operation operation) const
-{
-    static const std::map<nn_operation, GnaFeature> featureMap =
-    {
-        {INTEL_AFFINE, BaseFunctionality},
-        {INTEL_AFFINE_DIAGONAL, BaseFunctionality},
-        {INTEL_COPY, BaseFunctionality},
-        {INTEL_DEINTERLEAVE, BaseFunctionality},
-        {INTEL_INTERLEAVE, BaseFunctionality},
-        {INTEL_RECURRENT, BaseFunctionality},
-        {INTEL_AFFINE_MULTIBIAS, MultiBias},
-        {INTEL_CONVOLUTIONAL, CNN},
-        {INTEL_GMM, GMMLayer},
-        {INTEL_CONVOLUTIONAL_2D, CNN2D},
-    };
-
-    return HasFeature(featureMap.at(operation));
-}
-
-bool AccelerationDetector::HasFeature(GnaFeature feature) const
-{
-    if (!IsHardwarePresent())
-        return false;
-
-    const auto& caps = gnaCapsMap.at(deviceCapabilities.hwId);
-    return caps.Features.at(feature);
-}
-
-AccelerationDetector::AccelerationDetector(IoctlSender &senderIn) :
-    deviceCapabilities{GetBufferSizeInKB(GNA_ADL), 0, GNA_ADL},
-    fastestAcceleration{ GNA_GEN_FAST },
-    ioctlSender{ senderIn }
+AccelerationDetector::AccelerationDetector() :
+    fastestAcceleration{ GNA_GEN_FAST }
 {
     // generic, fastest software and auto always supported
-    accelerationModes[GNA_GEN_SAT] = ACC_SUPPORTED;
-    accelerationModes[GNA_GEN_FAST] = ACC_SUPPORTED;
-    accelerationModes[GNA_SW_SAT] = ACC_SUPPORTED;
-    accelerationModes[GNA_SW_FAST] = ACC_SUPPORTED;
-    accelerationModes[GNA_AUTO_SAT] = ACC_SUPPORTED;
-    accelerationModes[GNA_AUTO_FAST] = ACC_SUPPORTED;
-
-    discoverHardware();
+    accelerationModes[GNA_GEN_SAT] = true;
+    accelerationModes[GNA_GEN_FAST] = true;
+    accelerationModes[GNA_SW_SAT] = true;
+    accelerationModes[GNA_SW_FAST] = true;
+    accelerationModes[GNA_AUTO_SAT] = true;
+    accelerationModes[GNA_AUTO_FAST] = true;
 
     unsigned int cpuId[4];           // cpu id string
     unsigned long long xcrFeature = 0;
@@ -1001,8 +769,8 @@ AccelerationDetector::AccelerationDetector(IoctlSender &senderIn) :
     // check both SSE4_1, SSE4_2 feature flags (bits 19,20)
     if ((cpuId[2] & SSE4_MASK) == SSE4_MASK)
     {
-        accelerationModes[GNA_SSE4_2_FAST] = ACC_SUPPORTED;
-        accelerationModes[GNA_SSE4_2_SAT] = ACC_SUPPORTED;
+        accelerationModes[GNA_SSE4_2_FAST] = true;
+        accelerationModes[GNA_SSE4_2_SAT] = true;
         fastestAcceleration = GNA_SSE4_2_FAST;
     }
 
@@ -1013,8 +781,8 @@ AccelerationDetector::AccelerationDetector(IoctlSender &senderIn) :
         xcrFeature = xcrFeature & XYMM_MASK;
         if (XYMM_MASK == xcrFeature)
         {
-            accelerationModes[GNA_AVX1_FAST] = ACC_SUPPORTED;
-            accelerationModes[GNA_AVX1_SAT] = ACC_SUPPORTED;
+            accelerationModes[GNA_AVX1_FAST] = true;
+            accelerationModes[GNA_AVX1_SAT] = true;
             fastestAcceleration = GNA_AVX1_FAST;
         }
 
@@ -1024,8 +792,8 @@ AccelerationDetector::AccelerationDetector(IoctlSender &senderIn) :
             cpuid(cpuId, 7);
             if ((cpuId[1] & AVX2_MASK) == AVX2_MASK)
             {
-                accelerationModes[GNA_AVX2_FAST] = ACC_SUPPORTED;
-                accelerationModes[GNA_AVX2_SAT] = ACC_SUPPORTED;
+                accelerationModes[GNA_AVX2_FAST] = true;
+                accelerationModes[GNA_AVX2_SAT] = true;
                 fastestAcceleration = GNA_AVX2_FAST;
             }
         }

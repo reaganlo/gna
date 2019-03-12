@@ -42,12 +42,11 @@ namespace GNA
 {
 class ThreadPool {
 public:
-    ThreadPool(uint8_t nThreads);
+    explicit ThreadPool(uint32_t nThreads);
     ~ThreadPool();
     ThreadPool(const ThreadPool &) = delete;
     ThreadPool& operator=(const ThreadPool&) = delete;
 
-    void CancelTasks(const gna_model_id modelId);
     void Enqueue(Request *request);
     void Stop();
 

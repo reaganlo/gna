@@ -27,6 +27,7 @@
 
 #include <array>
 #include <map>
+#include <set>
 
 #include "AffineLayers.h"
 #include "Layer.h"
@@ -40,12 +41,16 @@ struct ActiveList;
 
 struct DescriptorParameters
 {
-    DescriptorParameters(const Layer* softwareLayer, const LayerDescriptor& xnnDescriptor);
+    DescriptorParameters(const Layer* softwareLayer,
+                         const LayerDescriptor& xnnDescriptor,
+                         GetHwOffset getHwOffset);
+
     virtual ~DescriptorParameters() = default;
 
     const Layer* SoftwareLayer;
     LayerDescriptor XnnDescriptor;
     const AddrGmmCfg GmmDescriptor;
+    GetHwOffset GetBufferOffset;
 };
 
 // Hardware Layer descriptor converter
@@ -59,13 +64,29 @@ public:
 
     virtual uint32_t GetXnnDescriptorOffset() const;
     virtual uint32_t GetGmmDescriptorOffset() const;
-    virtual uint32_t GetLdScrlenOffset() const;
-    virtual uint32_t GetLdOutputOffset() const;
-    virtual uint32_t GetLdFeedbackOffset() const;
-    virtual uint32_t GetLdInputOffset() const;
+
     virtual uint32_t GetLdNnopOffset() const;
+
+    virtual uint32_t GetLdScrlenOffset() const;
+    virtual uint32_t GetLdGmmMeanOffset() const;
+    virtual uint32_t GetLdGmmInverseCovarianceOffset() const;
+    virtual uint32_t GetLdGaussianConstantOffset() const;
+
+    virtual uint32_t GetLdInputOffset() const;
+    virtual uint32_t GetLdOutputOffset() const;
+
+    virtual uint32_t GetLdWeightOffset() const;
+    virtual uint32_t GetLdBiasOffset() const;
+    virtual uint32_t GetLdFilterOffset() const;
+    virtual uint32_t GetLdIntermediateOutputOffset() const;
+    virtual uint32_t GetLdWeightScaleFactorOffset() const;
+    virtual uint32_t GetLdPwlOffset() const;
+
+    virtual uint32_t GetLdFeedbackOffset() const;
+
     virtual uint32_t GetLdActlenOffset() const;
     virtual uint32_t GetLdActlistOffset() const;
+
     virtual uint32_t GetScrlen(uint32_t indicesCount) const;
 
 protected:

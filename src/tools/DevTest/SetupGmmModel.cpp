@@ -54,8 +54,7 @@ SetupGmmModel::SetupGmmModel(DeviceController & deviceCtrl, bool activeListEn)
 
 SetupGmmModel::~SetupGmmModel()
 {
-    deviceController.Free();
-
+    deviceController.Free(memory);
     free(nnet.pLayers->pLayerStruct);
     free(nnet.pLayers);
 }
@@ -103,7 +102,8 @@ void SetupGmmModel::sampleGmmLayer(intel_nnet_type_t& hNnet)
     uint32_t bytes_granted;
 
     // call GNAAlloc (obtains pinned memory shared with the device)
-    uint8_t* pinned_mem_ptr = deviceController.Alloc(bytes_requested, static_cast<uint16_t>(hNnet.nLayers), static_cast<uint16_t>(1), &bytes_granted);
+    memory = deviceController.Alloc(bytes_requested, &bytes_granted);
+    uint8_t* pinned_mem_ptr = static_cast<uint8_t*>(memory);
 
     int16_t *pinned_weights = (int16_t*)pinned_mem_ptr;
     memcpy(pinned_weights, variance, sizeof(variance));   // puts the weights into the pinned memory

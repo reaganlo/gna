@@ -30,27 +30,24 @@
 
 #include "common.h"
 #include "Address.h"
-#include "IoctlSender.h"
+#include "DriverInterface.h"
 
 namespace GNA
 {
-    class AccelerationDetector;
-    class CompiledModel;
-
     class Memory : public BaseAddress
     {
     public:
         Memory() = default;
 
         // just makes object from arguments
-        Memory(void * buffer, const size_t userSize, const uint16_t layerCount, const uint16_t gmmCount, IoctlSender &sender);
+        Memory(void * buffer, uint32_t userSize, uint32_t alignment = GNA_BUFFER_ALIGNMENT);
 
         // allocates and zeros memory
-        Memory(const size_t userSize, const uint16_t layerCount, const uint16_t gmmCount, IoctlSender &sender);
+        Memory(const size_t userSize, uint32_t alignment = GNA_BUFFER_ALIGNMENT);
 
         virtual ~Memory();
 
-        void Map();
+        void Map(DriverInterface& ddi);
 
         uint64_t GetId() const;
 
@@ -59,44 +56,25 @@ namespace GNA
             return size;
         }
 
-        template<class T = void> T * GetUserBuffer() const
+        template<class T = void> T * GetBuffer() const
         {
-            auto address = BaseAddress(this->Get() + InternalSize);
-            return address.Get<T>();
+            return Get<T>();
         }
 
-        void AllocateModel(const gna_model_id modelId, const gna_model * model, const AccelerationDetector& detector);
-
-        void DeallocateModel(gna_model_id modelId);
-
-        CompiledModel& GetModel(gna_model_id modelId) const;
-        void * GetDescriptorsBase(gna_model_id modelId) const;
-
-        std::map<gna_model_id, std::unique_ptr<CompiledModel>> Models;
-
-        // Internal GNA library auxiliary memory size.
-        const size_t InternalSize;
-
-        // Size of memory requested for model by user.
-        const size_t ModelSize;
-
+        static const uint32_t GNA_BUFFER_ALIGNMENT = 64;
 
     protected:
-        virtual std::unique_ptr<CompiledModel> createModel(const gna_model_id modelId, const gna_model *model, const AccelerationDetector &detector);
-
         void unmap();
 
         uint64_t id = 0;
 
         size_t size = 0;
 
-        size_t descriptorsSize = 0;
-
-        IoctlSender &ioctlSender;
+        DriverInterface *driverInterface;
 
         bool mapped = false;
 
-        std::map<gna_model_id, void*> modelDescriptors;
+        bool deallocate = true;
     };
 
 }

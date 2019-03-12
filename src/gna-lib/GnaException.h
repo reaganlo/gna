@@ -39,7 +39,7 @@ class GnaException : public std::runtime_error
 {
 public:
 
-    GnaException(status_t status) :
+    explicit GnaException(status_t status) :
         std::runtime_error{ Logger::StatusToString(status) },
         Status{ status }
     {}

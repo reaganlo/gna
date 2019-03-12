@@ -33,6 +33,7 @@
 #include "SetupGmmModel.h"
 #include "SetupMixModel.h"
 #include "SetupDnnModel_1.h"
+#include "SetupDnnModel_Multibuffer.h"
 #include "SetupMultibiasModel_1.h"
 #include "SetupPoolingModel.h"
 #include "SetupRecurrentModel.h"
@@ -50,6 +51,7 @@ IModelSetup::UniquePtr ModelSetupFactory::CreateModel(ModelSetupType ms)
     switch (ms)
     {
     default:
+    /* fall through */
     case ModelSetupDnn_1_1B:
         ptr = std::make_unique<SetupDnnModel_1>(deviceController, false, false, false);
         std::cout << "Test ModelSetupDnn_1_1B: ";
@@ -81,6 +83,38 @@ IModelSetup::UniquePtr ModelSetupFactory::CreateModel(ModelSetupType ms)
     case ModelSetupDnnAlPwl_1_2B:
         ptr = std::make_unique<SetupDnnModel_1>(deviceController, true, true, true);
         std::cout << "Test ModelSetupDnnAlPwl_1_2B: ";
+        break;
+    case ModelSetupDnn_Multibuffer_1B:
+        ptr = std::make_unique<SetupDnnModel_Multibuffer>(deviceController, false, false, false);
+        std::cout << "Test ModelSetupDnn_Multibuffer_1B: ";
+        break;
+    case ModelSetupDnn_Multibuffer_2B:
+        ptr = std::make_unique<SetupDnnModel_Multibuffer>(deviceController, true, false, false);
+        std::cout << "Test ModelSetupDnn_Multibuffer_2B: ";
+        break;
+    case ModelSetupDnnAl_Multibuffer_1B:
+        ptr = std::make_unique<SetupDnnModel_Multibuffer>(deviceController, false, true, false);
+        std::cout << "Test ModelSetupDnnAl_Multibuffer_1B: ";
+        break;
+    case ModelSetupDnnAl_Multibuffer_2B:
+        ptr = std::make_unique<SetupDnnModel_Multibuffer>(deviceController, true, true, false);
+        std::cout << "Test ModelSetupDnnAl_Multibuffer_2B: ";
+        break;
+    case ModelSetupDnnPwl_Multibuffer_1B:
+        ptr = std::make_unique<SetupDnnModel_Multibuffer>(deviceController, false, false, true);
+        std::cout << "Test ModelSetupDnnPwl_Multibuffer_1B: ";
+        break;
+    case ModelSetupDnnPwl_Multibuffer_2B:
+        ptr = std::make_unique<SetupDnnModel_Multibuffer>(deviceController, true, false, true);
+        std::cout << "Test ModelSetupDnnPwl_Multibuffer_2B: ";
+        break;
+    case ModelSetupDnnAlPwl_Multibuffer_1B:
+        ptr = std::make_unique<SetupDnnModel_Multibuffer>(deviceController, false, true, true);
+        std::cout << "Test ModelSetupDnnAlPwl_Multibuffer_1B: ";
+        break;
+    case ModelSetupDnnAlPwl_Multibuffer_2B:
+        ptr = std::make_unique<SetupDnnModel_Multibuffer>(deviceController, true, true, true);
+        std::cout << "Test ModelSetupDnnAlPwl_Multibuffer_2B: ";
         break;
     case ModelSetupMultibias_1_1B:
         ptr = std::make_unique<SetupMultibiasModel_1>(deviceController, false, false);

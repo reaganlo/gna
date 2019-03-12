@@ -54,10 +54,10 @@ intel_gna_status_t HandleUnknownException(const std::exception& e)
  *
  *****************************************************************************/
 
-GNAAPI intel_gna_status_t GnaModelCreate(
-    const gna_device_id deviceId,
-    const gna_model* const model,
-    gna_model_id* const modelId)
+GNAAPI gna_status_t GnaModelCreate(
+    gna_device_id deviceId,
+    gna_model const *model,
+    gna_model_id *modelId)
 {
     try
     {
@@ -79,6 +79,25 @@ GNAAPI intel_gna_status_t GnaModelCreate(
     }
 }
 
+GNAAPI gna_status_t GnaModelRelease(
+    gna_model_id modelId)
+{
+    try
+    {
+        GnaDevice->ReleaseModel(modelId);
+        return GNA_SUCCESS;
+    }
+    catch (const GnaException &e)
+    {
+        return e.getStatus();
+    }
+    catch (const std::exception& e)
+    {
+        Log->Error("Unknown exception: ", e.what());
+        return GNA_UNKNOWN_ERROR;
+    }
+}
+
 GNAAPI intel_gna_status_t GnaRequestConfigCreate(
     const gna_model_id modelId,
     gna_request_cfg_id* const configId)
@@ -87,6 +106,10 @@ GNAAPI intel_gna_status_t GnaRequestConfigCreate(
     {
         GnaDevice->CreateConfiguration(modelId, configId);
         return GNA_SUCCESS;
+    }
+    catch (const GnaModelException &e)
+    {
+        return e.getStatus();
     }
     catch (const GnaException &e)
     {
@@ -98,11 +121,11 @@ GNAAPI intel_gna_status_t GnaRequestConfigCreate(
     }
 }
 
-GNAAPI intel_gna_status_t GnaRequestConfigBufferAdd(
-    const gna_request_cfg_id configId,
-    const GnaComponentType type,
-    const uint32_t layerIndex,
-    void* const address)
+GNAAPI gna_status_t GnaRequestConfigBufferAdd(
+    gna_request_cfg_id configId,
+    GnaComponentType type,
+    uint32_t layerIndex,
+    void *address)
 {
     try
     {
@@ -119,11 +142,11 @@ GNAAPI intel_gna_status_t GnaRequestConfigBufferAdd(
     }
 }
 
-GNAAPI intel_gna_status_t GnaRequestConfigActiveListAdd(
-    const gna_request_cfg_id configId,
-    const uint32_t layerIndex,
-    const uint32_t indicesCount,
-    const uint32_t* const indices)
+GNAAPI gna_status_t GnaRequestConfigActiveListAdd(
+    gna_request_cfg_id const configId,
+    uint32_t const layerIndex,
+    uint32_t const indicesCount,
+    uint32_t const *const indices)
 {
     try
     {
@@ -217,9 +240,9 @@ GNAAPI intel_gna_status_t GnaRequestEnqueue(
     }
 }
 
-GNAAPI intel_gna_status_t GnaRequestWait(
-    const gna_request_id requestId,
-    const gna_timeout milliseconds)
+GNAAPI gna_status_t GnaRequestWait(
+    gna_request_id requestId,
+    gna_timeout milliseconds)
 {
     try
     {
@@ -240,41 +263,38 @@ GNAAPI intel_gna_status_t GnaRequestWait(
 }
 
 GNAAPI char const * GnaStatusToString(
-    const intel_gna_status_t status)
+    const gna_status_t status)
 {
     return Logger::StatusToString(status);
 }
 
-GNAAPI void* GnaAlloc(
-    const gna_device_id deviceId,
-    const uint32_t sizeRequested,
-    const uint16_t layerCount,
-    const uint16_t gmmCount,
-    uint32_t* const sizeGranted)
+// TODO: support memory allocation for multiple devices
+GNAAPI gna_status_t GnaAlloc(
+    uint32_t const sizeRequested,
+    uint32_t *const sizeGranted,
+    void **memoryAddress)
 {
     try
     {
-        GnaDevice->ValidateSession(deviceId);
-        return GnaDevice->AllocateMemory(sizeRequested, layerCount, gmmCount, sizeGranted);
+        return GnaDevice->AllocateMemory(sizeRequested, sizeGranted, memoryAddress);
     }
     catch (const GnaException& e)
     {
         Log->Error(e.getStatus(), "Memory allocation failed.\n");
-        return nullptr;
+        return e.getStatus();
     }
     catch (const std::exception& e)
     {
-        return nullptr;
+        return HandleUnknownException(e);
     }
 }
 
-GNAAPI intel_gna_status_t GnaFree(
-    const gna_device_id deviceId)
+GNAAPI gna_status_t GnaFree(
+    void *memory)
 {
     try
     {
-        GnaDevice->ValidateSession(deviceId);
-        GnaDevice->FreeMemory();
+        GnaDevice->FreeMemory(memory);
         return GNA_SUCCESS;
     }
     catch (const GnaException &e)
@@ -369,8 +389,8 @@ GNAAPI intel_gna_status_t GnaDeviceOpen(gna_device_id device)
     }
 }
 
-GNAAPI intel_gna_status_t GnaDeviceClose(
-    const gna_device_id deviceId)
+GNAAPI gna_status_t GnaDeviceClose(
+    gna_device_id deviceId)
 {
     try
     {
@@ -393,7 +413,7 @@ void* GnaModelDump(
     gna_model_id modelId,
     gna_device_generation deviceGeneration,
     intel_gna_model_header* modelHeader,
-    intel_gna_status_t* status,
+    gna_status_t* status,
     intel_gna_alloc_cb customAlloc)
 {
     try
@@ -417,8 +437,8 @@ void* GnaModelDump(
     }
 }
 
-intel_gna_status_t GnaRequestConfigEnablePerf(gna_request_cfg_id configId, gna_hw_perf_encoding hwPerfEncoding,
-    gna_perf_t* perfResults)
+gna_status_t GnaRequestConfigEnablePerf(gna_request_cfg_id configId,
+        gna_hw_perf_encoding hwPerfEncoding, gna_perf_t* perfResults)
 {
     try
     {

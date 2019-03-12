@@ -71,7 +71,7 @@ static_assert(64 == sizeof(intel_gna_model_header), "Invalid size of intel_gna_m
  * allocates memory as needed and returns pointer to this memory.
  * In case of allocation error NULL pointer return value is expected
  */
-typedef void* (*intel_gna_alloc_cb)(size_t size);
+typedef void* (*intel_gna_alloc_cb)(uint32_t size);
 
 /**
  * Dumps the hardware-consumable model to the memory allocated by customAlloc

@@ -30,15 +30,6 @@
 
 using namespace GNA;
 
-#if defined(_WIN32)
-#if HW_VERBOSE == 1
-#include "GnaDrvApiWinDebug.h"
-#else
-#include "GnaDrvApiWin.h"
-#endif
-#else
-#error Verbose version of library available only on Windows OS
-#endif
 
 std::map<dbg_action_type const, char const * const> const HardwareModelVerbose::actionFileNames =
 {
@@ -49,11 +40,9 @@ std::map<dbg_action_type const, char const * const> const HardwareModelVerbose::
     {GnaDumpGmmDescriptor, "gmmdesc_"}
 };
 
-HardwareModelVerbose::HardwareModelVerbose(const gna_model_id modId,
-    const std::vector<std::unique_ptr<Layer>>& layers, uint16_t gmmCount, const Memory &memoryIn,
-    IoctlSender &sender, const AccelerationDetector& detector) :
-    HardwareModel::HardwareModel(modId, layers, gmmCount, memoryIn.GetId(), memoryIn.Get(), memoryIn.GetDescriptorsBase(modId), sender, detector),
-    memorySize{ memoryIn.GetSize() },
+HardwareModelVerbose::HardwareModelVerbose(const std::vector<std::unique_ptr<Layer>>& layers, uint32_t gmmCount,
+        DriverInterface &ddi, const HardwareCapabilities& hwCaps) :
+    HardwareModelScorable(layers, gmmCount, ddi, hwCaps),
     actionFileCounters{
         {GnaDumpMmio, 0},
         {GnaReadRegister, 0},
@@ -76,7 +65,8 @@ uint32_t HardwareModelVerbose::Score(
         executeDebugAction(action);
     }
 
-    auto status = HardwareModel::Score(layerIndex, layerCount, requestConfiguration, profiler, buffers, operationMode);
+    auto status = HardwareModelScorable::Score(layerIndex, layerCount,
+                        requestConfiguration, profiler, buffers, operationMode);
 
     for (auto& action : afterscoreActionVector)
     {
@@ -106,7 +96,7 @@ UINT32 HardwareModelVerbose::readReg(UINT32 regOffset)
     GNA_READREG_OUT readRegOut;
     ZeroMemory(&readRegOut, sizeof(readRegOut));
 
-    ioctlSender.IoctlSend(GNA_COMMAND_READ_REG,
+    driverInterface.IoctlSend(GNA_COMMAND_READ_REG,
         &readRegIn, sizeof(readRegIn),
         &readRegOut, sizeof(readRegOut));
 
@@ -120,7 +110,7 @@ void HardwareModelVerbose::writeReg(UINT32 regOffset, UINT32 regVal)
     writeRegIn.regOffset = regOffset;
     writeRegIn.regValue = regVal;
 
-    ioctlSender.IoctlSend(GNA_COMMAND_WRITE_REG,
+    driverInterface.IoctlSend(GNA_COMMAND_WRITE_REG,
         &writeRegIn, sizeof(writeRegIn),
         NULL, 0);
 }
@@ -152,7 +142,10 @@ void HardwareModelVerbose::writeRegister(dbg_action regAction)
 
 void HardwareModelVerbose::dumpMemory(FILE *file)
 {
-    fwrite(memoryBase.Get(), memorySize, 1, file);
+    for (const auto &memory : modelMemoryObjects)
+    {
+        fwrite(memory->GetBuffer(), memory->GetSize(), sizeof(uint8_t), file);
+    }
 }
 
 void HardwareModelVerbose::zeroMemory(void *memoryIn, size_t memorySizeIn)
@@ -195,7 +188,7 @@ void HardwareModelVerbose::setDescriptor(uint8_t *xnnParam, uint64_t xnnValue, g
         *reinterpret_cast<uint64_t*>(xnnParam) = xnnValue;
         break;
     case GNA_SET_XNNLYR:
-        memset(xnnParam, static_cast<int>(xnnValue), baseDescriptor.Size);
+        memset(xnnParam, static_cast<int>(xnnValue), baseDescriptor->GetSize());
         break;
     }
 }

@@ -30,6 +30,7 @@
 #include "AccelerationDetector.h"
 #include "HardwareLayer.h"
 #include "LayerConfiguration.h"
+#include "Macros.h"
 #include "Memory.h"
 #include "Request.h"
 #include "RequestConfiguration.h"
@@ -37,101 +38,75 @@
 
 using namespace GNA;
 
-size_t HardwareModel::CalculateDescriptorSize(const uint32_t layerCount, const uint16_t gmmLayersCount)
+uint32_t HardwareModel::CalculateDescriptorSize(
+        const uint32_t layerCount, const uint32_t gmmLayersCount,
+        const gna_device_version hwId)
 {
-    Expect::InRange<uint32_t>(layerCount + gmmLayersCount, 1, XNN_LAYERS_MAX_COUNT + GMM_LAYERS_MAX_COUNT,
-        XNN_ERR_NET_LYR_NO);
+    Expect::InRange(layerCount, ui32_1,
+        HardwareCapabilities::GetMaximumLayerCount(hwId), XNN_ERR_NET_LYR_NO);
+    Expect::InRange(gmmLayersCount, ui32_0, layerCount, XNN_ERR_NET_LYR_NO);
+
     auto layerDescriptorsSizeTmp = getLayerDescriptorsSize(layerCount);
     auto gmmDescriptorsSizeTmp = getGmmDescriptorsSize(gmmLayersCount);
 
     return layerDescriptorsSizeTmp + gmmDescriptorsSizeTmp;
 }
 
-HardwareModel::HardwareModel(const gna_model_id modId, const std::vector<std::unique_ptr<Layer>>& layers,
-    uint32_t gmmCount, const uint64_t memoryIdIn, const BaseAddress memoryBaseIn,
-    const BaseAddress baseDescriptorAddress, IoctlSender &sender, const AccelerationDetector& detector) :
-    memoryId{ memoryIdIn },
-    memoryBase{ memoryBaseIn },
-    modelId{ modId },
-    baseDescriptor{ memoryBaseIn, baseDescriptorAddress, detector },
-    ioctlSender{sender},
+HardwareModel::HardwareModel(
+    const std::vector<std::unique_ptr<Layer>>& layers, uint32_t gmmCount,
+    const HardwareCapabilities& hwCapsIn) :
     softwareLayers{ layers },
-    gmmDescriptorsSize{ getGmmDescriptorsSize(gmmCount) }
+    hwCapabilities{ hwCapsIn },
+    gmmDescriptorsSize{ getGmmDescriptorsSize(gmmCount, hwCapabilities.GetDeviceVersion()) },
+    xnnDescriptorsSize{ getLayerDescriptorsSize(static_cast<uint32_t>(layers.size()),
+                                                        hwCapabilities.GetDeviceVersion()) }
 {
 }
 
-void HardwareModel::InvalidateConfig(gna_request_cfg_id configId)
+uint64_t HardwareModel::GetMemoryId(const BaseAddress& address) const
 {
-    if(hardwareRequests.find(configId) != hardwareRequests.end())
-        hardwareRequests[configId]->Invalidate();
+    auto foundIt = std::find_if(modelMemoryObjects.cbegin(), modelMemoryObjects.cend(),
+        [&address] (Memory *memory)
+        {
+            return address.InRange(memory->GetBuffer(),
+                                    static_cast<uint32_t>(memory->GetSize()));
+        });
+
+    if (foundIt != modelMemoryObjects.cend())
+        throw GnaException { GNA_UNKNOWN_ERROR };
+
+    return (*foundIt)->GetId();
 }
 
-uint32_t HardwareModel::Score(
-    uint32_t layerIndex,
-    uint32_t layerCount,
-    const RequestConfiguration& requestConfiguration,
-    RequestProfiler *profiler,
-    KernelBuffers *buffers,
-    const GnaOperationMode operationMode)
+void HardwareModel::Build(const std::vector<Memory* >& modelMemoryObjectsIn)
 {
-    UNREFERENCED_PARAMETER(buffers);
+    modelMemoryObjects = modelMemoryObjectsIn;
 
-    SoftwareModel::LogAcceleration(operationMode ? GNA_HW : GMM_HW);
+    allocateLayerDescriptors();
 
-    auto configId = requestConfiguration.Id;
-    HardwareRequest *hwRequest = nullptr;
-
-    if (hardwareRequests.find(configId) == hardwareRequests.end())
+    modelSize = ALIGN(ldMemory->GetSize(), PAGE_SIZE);
+    for (const auto memory : modelMemoryObjectsIn)
     {
-        auto inserted = hardwareRequests.emplace(
-            configId,
-            std::make_unique<HardwareRequest>(memoryId, *this, requestConfiguration));
-        hwRequest = inserted.first->second.get();
+        modelSize += ALIGN(memory->GetSize(), PAGE_SIZE);
     }
-    else
-    {
-        hwRequest = hardwareRequests.at(configId).get();
-    }
+    Expect::InRange(modelSize, HardwareCapabilities::MaximumModelSize,
+                    GNA_MODELSIZEEXCEEDED);
 
-    hwRequest->Update(layerIndex, layerCount, operationMode);
-
-    auto result = ioctlSender.Submit(hwRequest, profiler);
-
-    auto perfResults = requestConfiguration.PerfResults;
-    if (perfResults)
-    {
-        perfResults->drv.startHW += result.driverPerf.startHW;
-        perfResults->drv.scoreHW += result.driverPerf.scoreHW;
-        perfResults->drv.intProc += result.driverPerf.intProc;
-
-        perfResults->hw.stall += result.hardwarePerf.stall;
-        perfResults->hw.total += result.hardwarePerf.total;
-    }
-
-    if (result.status != GNA_SUCCESS && result.status != GNA_SSATURATE)
-    {
-        throw GnaException(result.status);
-    }
-    else
-    {
-        return GNA_SSATURATE == result.status;
-    }
-}
-
-void HardwareModel::Build()
-{
     auto gmmDescriptor = AddrGmmCfg();
     if (0 != gmmDescriptorsSize)
     {
-        gmmDescriptor = AddrGmmCfg(baseDescriptor.GetMemAddress()) + static_cast<uint32_t>(softwareLayers.size());
+        gmmDescriptor = AddrGmmCfg(ldMemory->GetBuffer<uint8_t>() +
+                LayerDescriptor::GetSize(static_cast<uint32_t>(softwareLayers.size()),
+                                         hwCapabilities.GetDeviceVersion()));
     }
-    auto layerDescriptor = LayerDescriptor(baseDescriptor, gmmDescriptor);
+    auto layerDescriptor = LayerDescriptor(*baseDescriptor, gmmDescriptor);
     auto i = uint32_t { 0 };
     for (auto& layer : softwareLayers)
     {
         try
         {
-            const auto parameters = DescriptorParameters{layer.get(), layerDescriptor};
+            const auto parameters = DescriptorParameters{layer.get(), layerDescriptor,
+            [this] (const BaseAddress& buffer) { return GetBufferOffset(buffer); }};
             hardwareLayers.push_back(HardwareLayer::Create(parameters));
             if (INTEL_GMM == layer->Operation)
             {
@@ -151,17 +126,63 @@ void HardwareModel::Build()
     }
 }
 
-uint32_t HardwareModel::getLayerDescriptorsSize(const uint32_t layerCount)
+// TODO:3: throw exception if not found, but NULL in nnet should be handled
+uint32_t HardwareModel::GetBufferOffset(const BaseAddress& address) const
 {
-    Expect::InRange<uint32_t>(layerCount, 0, XNN_LAYERS_MAX_COUNT, XNN_ERR_NET_LYR_NO);
-    auto layerDescriptorsSizeTmp = LayerDescriptor::GetSize(layerCount, GNA_CNL);
+    if (address.InRange(ldMemory->GetBuffer(),
+                        static_cast<uint32_t>(ldMemory->GetSize())))
+    {
+        return address.GetOffset(BaseAddress{ ldMemory->GetBuffer() });
+    }
+
+    auto offset = ALIGN(ldMemory->GetSize(), PAGE_SIZE);
+    for (auto memory : modelMemoryObjects)
+    {
+        if (address.InRange(memory->GetBuffer(),
+                            static_cast<uint32_t>(memory->GetSize())))
+        {
+            return offset + address.GetOffset(BaseAddress{memory->GetBuffer()});
+        }
+
+        offset += ALIGN(memory->GetSize(), PAGE_SIZE);
+    }
+
+    return 0;
+}
+
+uint32_t HardwareModel::getLayerDescriptorsSize(
+    const uint32_t layerCount, const gna_device_version hwId)
+{
+    Expect::InRange(layerCount, ui32_1,
+        HardwareCapabilities::GetMaximumLayerCount(hwId), XNN_ERR_NET_LYR_NO);
+    auto layerDescriptorsSizeTmp = LayerDescriptor::GetSize(layerCount, hwId);
     return layerDescriptorsSizeTmp;
 }
 
-uint32_t HardwareModel::getGmmDescriptorsSize(const uint32_t gmmLayersCount)
+uint32_t HardwareModel::getGmmDescriptorsSize(
+    const uint32_t gmmLayersCount, const gna_device_version hwId)
 {
-    Expect::InRange(gmmLayersCount, GMM_LAYERS_MAX_COUNT, XNN_ERR_NET_LYR_NO);
+    Expect::InRange(gmmLayersCount, ui32_0,
+        HardwareCapabilities::GetMaximumLayerCount(hwId), XNN_ERR_NET_LYR_NO);
     auto gmmDescriptorsSizeTmp = size_t{gmmLayersCount * sizeof(GMM_CONFIG)};
     return static_cast<uint32_t>(gmmDescriptorsSizeTmp);
 }
 
+void HardwareModel::allocateLayerDescriptors()
+{
+    auto ldMemorySize = xnnDescriptorsSize + gmmDescriptorsSize;
+    auto ldSize = LayerDescriptor::GetSize(1, hwCapabilities.GetDeviceVersion());
+    ldMemory = std::make_unique<Memory>(ldMemorySize, ldSize);
+
+    if (!ldMemory)
+    {
+        throw GnaException {GNA_ERR_RESOURCES};
+    }
+
+    baseDescriptor = std::make_unique<LayerDescriptor>(
+            *ldMemory, ldMemory->GetBuffer(), hwCapabilities);
+    if (!baseDescriptor)
+    {
+        throw GnaException{ GNA_ERR_RESOURCES };
+    }
+}

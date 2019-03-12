@@ -33,12 +33,12 @@
 #include <limits.h>
 #endif
 
+#include "pwl.h"
+
 #include "GnaException.h"
 #include "KernelArguments.h"
 #include "KernelMacros.h"
-#include "pwl.h"
-
-#define UNREFERENCED_PARAMETER(P) ((void)(P))
+#include "Macros.h"
 
 using namespace GNA;
 

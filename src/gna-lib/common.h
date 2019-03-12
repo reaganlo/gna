@@ -29,8 +29,6 @@
 #include <cstdlib>
 #include <functional>
 
-#include "Macros.h"
-
 #if defined(__GNUC__) && !defined(__INTEL_COMPILER)
 #include <mm_malloc.h>
 #endif

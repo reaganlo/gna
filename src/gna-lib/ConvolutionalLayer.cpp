@@ -25,12 +25,11 @@
 
 #include "ConvolutionalLayer.h"
 
-#include "LayerConfiguration.h"
 #include "Expect.h"
+#include "LayerConfiguration.h"
+#include "Macros.h"
 
 using namespace GNA;
-
-#define UNREFERENCED_PARAMETER(P) ((void)(P))
 
 CnnLayer::CnnLayer(nn_layer const * const layer, const BaseValidator& validatorIn) :
     Layer(layer, validatorIn, {}, BaseAddress())

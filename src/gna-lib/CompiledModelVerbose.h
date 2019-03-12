@@ -34,14 +34,11 @@ namespace GNA
 class CompiledModelVerbose : public CompiledModel
 {
 public:
-    CompiledModelVerbose(gna_model_id modelId, const gna_model *rawModel, Memory& memoryIn, IoctlSender &sender, const AccelerationDetector& detector) :
-        CompiledModel(modelId, rawModel, memoryIn, sender, detector)
+    CompiledModelVerbose(const gna_model *const userModel,
+        const AccelerationDetector &detectorIn,
+        std::vector<std::unique_ptr<Memory>>& memoryObjects) :
+        CompiledModel(userModel, detectorIn, memoryObjects)
     {
-        if (hardwareModel)
-        {
-            hardwareModel.reset(new HardwareModelVerbose(Id, softwareModel.Layers, gmmCount, memoryIn, sender, detector));
-            hardwareModel->Build();
-        }
     };
 
     void CompiledModelVerbose::SetPrescoreScenario(uint32_t nActions, dbg_action *actions)

@@ -40,6 +40,15 @@ enum ModelSetupType
     ModelSetupDnnAlPwl_1_1B,
     ModelSetupDnnAlPwl_1_2B,
 
+    ModelSetupDnn_Multibuffer_1B,
+    ModelSetupDnn_Multibuffer_2B,
+    ModelSetupDnnAl_Multibuffer_1B,
+    ModelSetupDnnAl_Multibuffer_2B,
+    ModelSetupDnnPwl_Multibuffer_1B,
+    ModelSetupDnnPwl_Multibuffer_2B,
+    ModelSetupDnnAlPwl_Multibuffer_1B,
+    ModelSetupDnnAlPwl_Multibuffer_2B,
+
     ModelSetupMultibias_1_1B,
     ModelSetupMultibias_1_2B,
     ModelSetupMultibiasAl_1_1B,

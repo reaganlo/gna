@@ -30,22 +30,17 @@
 #include <memory>
 
 #include "ActiveList.h"
-#include "FakeDetector.h"
+#include "Macros.h"
 #include "Memory.h"
 #include "RequestConfiguration.h"
 
 #include "Expect.h"
 
 #if defined(_WIN32)
-#include "WindowsIoctlSender.h"
+#include "WindowsDriverInterface.h"
 #else // linux
-#include "LinuxIoctlSender.h"
+#include "LinuxDriverInterface.h"
 #endif
-
-using std::ofstream;
-using std::make_shared;
-using std::make_unique;
-using std::move;
 
 using namespace GNA;
 
@@ -64,7 +59,7 @@ gna_device_version DeviceManager::GetDeviceVersion(gna_device_id deviceId)
 {
     VerifyDeviceIndex(deviceId);
     // TODO:3: implement fetching device version
-    return GNA_ADL;
+    return GNA_DEFAULT_VERSION;
 }
 
 void DeviceManager::SetThreadCount(gna_device_id deviceId, uint32_t threadCount)
@@ -91,27 +86,44 @@ uint32_t DeviceManager::GetThreadCount(gna_device_id deviceId)
 
 void DeviceManager::VerifyDeviceIndex(gna_device_id deviceId)
 {
-    Expect::InRange<uint32_t>(deviceId, 0, GetDeviceCount() - 1, GNA_INVALIDHANDLE);
+    Expect::InRange(deviceId, ui32_0, GetDeviceCount() - 1, GNA_INVALIDHANDLE);
 }
 
-Device::Device(gna_device_id deviceId, uint8_t threadCount) :
+Device::Device(gna_device_id deviceId, uint32_t threadCount) :
     id{deviceId},
-    ioctlSender{
+    driverInterface
+    {
 #if defined(_WIN32)
-    std::make_unique<WindowsIoctlSender>()
-#else // linux
-    std::make_unique<LinuxIoctlSender>()
+        std::make_unique<WindowsDriverInterface>()
+#else // GNU/Linux / Android / ChromeOS
+        std::make_unique<LinuxDriverInterface>()
 #endif
     },
-    accelerationDetector{*ioctlSender},
+    hardwareCapabilities { },
+    accelerationDetector{ },
     memoryObjects{ },
-    modelMemoryMap{ },
     requestHandler{ threadCount }
 {
     DeviceManager::VerifyDeviceIndex(deviceId);
+
+    try
+    {
+        driverInterface->OpenDevice();
+        hardwareCapabilities.DiscoverHardware(*driverInterface);
+        accelerationDetector.SetHardwareAcceleration(
+            hardwareCapabilities.IsHardwareSupported());
+    }
+    catch (GnaException &e)
+    {
+        if (e.getStatus() != GNA_DEVNOTFOUND)
+        {
+            throw;
+        }
+    }
 }
 
-void Device::AttachBuffer(gna_request_cfg_id configId, GnaComponentType type, uint32_t layerIndex, void *address)
+void Device::AttachBuffer(gna_request_cfg_id configId,
+    GnaComponentType type, uint32_t layerIndex, void *address)
 {
     Expect::NotNull(address);
 
@@ -120,10 +132,9 @@ void Device::AttachBuffer(gna_request_cfg_id configId, GnaComponentType type, ui
 
 void Device::CreateConfiguration(gna_model_id modelId, gna_request_cfg_id *configId)
 {
-    auto memoryId = getMemoryId(modelId);
-    auto memory = getMemory(memoryId);
-    auto &model = memory->GetModel(modelId);
-    requestBuilder.CreateConfiguration(model, configId, accelerationDetector.GetDeviceVersion());
+    auto &model = *models.at(modelId);
+    requestBuilder.CreateConfiguration(model, configId,
+                    hardwareCapabilities.GetDeviceVersion());
 }
 
 void Device::ReleaseConfiguration(gna_request_cfg_id configId)
@@ -131,7 +142,8 @@ void Device::ReleaseConfiguration(gna_request_cfg_id configId)
     requestBuilder.ReleaseConfiguration(configId);
 }
 
-void Device::SetHardwareConsistency(gna_request_cfg_id configId, gna_device_version hardwareVersion)
+void Device::SetHardwareConsistency(gna_request_cfg_id configId,
+                                    gna_device_version hardwareVersion)
 {
     auto& requestConfiguration = requestBuilder.GetConfiguration(configId);
     requestConfiguration.SetHardwareConsistency(hardwareVersion);
@@ -143,12 +155,13 @@ void Device::EnforceAcceleration(gna_request_cfg_id configId, AccelerationMode a
     requestConfiguration.EnforceAcceleration(accel);
 }
 
-void Device::EnableProfiling(gna_request_cfg_id configId, gna_hw_perf_encoding hwPerfEncoding, gna_perf_t * perfResults)
+void Device::EnableProfiling(gna_request_cfg_id configId,
+    gna_hw_perf_encoding hwPerfEncoding, gna_perf_t * perfResults)
 {
     Expect::NotNull(perfResults);
 
     if (hwPerfEncoding >= DESCRIPTOR_FETCH_TIME
-        && !accelerationDetector.HasFeature(NewPerformanceCounters))
+        && !hardwareCapabilities.HasFeature(NewPerformanceCounters))
     {
         throw GnaException(GNA_CPUTYPENOTSUPPORTED);
     }
@@ -158,7 +171,8 @@ void Device::EnableProfiling(gna_request_cfg_id configId, gna_hw_perf_encoding h
     requestConfiguration.PerfResults = perfResults;
 }
 
-void Device::AttachActiveList(gna_request_cfg_id configId, uint32_t layerIndex, uint32_t indicesCount, const uint32_t* const indices)
+void Device::AttachActiveList(gna_request_cfg_id configId, uint32_t layerIndex,
+        uint32_t indicesCount, const uint32_t* const indices)
 {
     Expect::NotNull(indices);
 
@@ -171,69 +185,62 @@ void Device::ValidateSession(gna_device_id deviceId) const
     Expect::Equal(id, deviceId, GNA_INVALIDHANDLE);
 }
 
-void * Device::AllocateMemory(const uint32_t requestedSize, const uint16_t layerCount, uint16_t gmmCount, uint32_t * const sizeGranted)
+status_t Device::AllocateMemory(uint32_t requestedSize,
+        uint32_t *sizeGranted, void **memoryAddress)
 {
     Expect::NotNull(sizeGranted);
     *sizeGranted = 0;
 
-    auto memoryObject = createMemoryObject(requestedSize, layerCount, gmmCount);
+    auto memoryObject = createMemoryObject(requestedSize);
 
-    if (accelerationDetector.IsHardwarePresent())
+    if (hardwareCapabilities.IsHardwareSupported())
     {
-        memoryObject->Map();
+        memoryObject->Map(*driverInterface);
     }
 
-    auto memory = memoryObject.get();
-    memoryObjects[memory->GetUserBuffer()] = std::move(memoryObject);
-    *sizeGranted = (uint32_t)memory->ModelSize;
-    return memory->GetUserBuffer();
+    *memoryAddress = memoryObject->GetBuffer();
+    *sizeGranted = (uint32_t)memoryObject->GetSize();
+    memoryObjects.emplace_back(std::move(memoryObject));
+    return GNA_SUCCESS;
 }
 
-void Device::FreeMemory(void * buffer)
+void Device::FreeMemory(void *buffer)
 {
-    auto& mem = getMemoryObj(buffer);
-    if (mem && buffer == mem->GetUserBuffer())
-    {
-        for (auto mapping = modelMemoryMap.begin(); mapping != modelMemoryMap.end();)
-        {
-            if (mapping->second == buffer)
-            {
-                mapping = modelMemoryMap.erase(mapping);
-            }
-            else
-            {
-                mapping++;
-            }
-        }
-        mem.reset();
-        memoryObjects.erase(buffer);
-    }
+    // TODO:3: mechanism to detect if memory is used in some model
+    memoryObjects.erase(
+            std::find_if(memoryObjects.begin(), memoryObjects.end(),
+                [buffer] (std::unique_ptr<Memory>& memory)
+                {
+                    if (memory->GetBuffer() == buffer)
+                        return true;
+                    return false;
+                })
+    );
 }
 
-void Device::FreeMemory()
+void Device::ReleaseModel(gna_model_id const modelId)
 {
-    memoryObjects.clear();
-    modelMemoryMap.clear();
+    UNREFERENCED_PARAMETER(modelId);
 }
 
-void Device::LoadModel(gna_model_id *modelId, const gna_model *rawModel)
+void Device::LoadModel(gna_model_id *modelId, const gna_model *userModel)
 {
     Expect::NotNull(modelId);
-    Expect::NotNull(rawModel);
+    Expect::NotNull(userModel);
+    Expect::NotNull(userModel->pLayers);
+
+    auto compiledModel = std::make_unique<CompiledModel>(
+            userModel, accelerationDetector, memoryObjects);
+
+    if (!compiledModel)
+    {
+        throw GnaException(GNA_ERR_RESOURCES);
+    }
 
     *modelId = modelIdSequence++;
-    auto memory = getMemory(nullptr);
-    try
-    {
-        memory->AllocateModel(*modelId, rawModel, accelerationDetector);
-        modelMemoryMap[*modelId] = memory->GetUserBuffer();
-    }
-    catch (...)
-    {
-        memory->DeallocateModel(*modelId);
-        modelMemoryMap.erase(*modelId);
-        throw;
-    }
+
+    compiledModel->BuildHardwareModel(*driverInterface, hardwareCapabilities);
+    models.emplace(*modelId, std::move(compiledModel));
 }
 
 void Device::PropagateRequest(gna_request_cfg_id configId, gna_request_id *requestId)
@@ -254,8 +261,7 @@ void Device::Stop()
     requestHandler.StopRequests();
 }
 
-std::unique_ptr<Memory> Device::createMemoryObject(const uint32_t requestedSize,
-    const uint16_t layerCount, const uint16_t gmmCount)
+std::unique_ptr<Memory> Device::createMemoryObject(uint32_t requestedSize)
 {
-    return std::make_unique<Memory>(requestedSize, layerCount, gmmCount, *ioctlSender);
+    return std::make_unique<Memory>(requestedSize);
 }

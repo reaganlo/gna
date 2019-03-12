@@ -27,12 +27,13 @@
 
 #include <memory>
 
-#include "GnaException.h"
-#include "LayerConfiguration.h"
-#include "Expect.h"
-#include "GnaConfig.h"
-#include "CompiledModel.h"
 #include "Capabilities.h"
+#include "CompiledModel.h"
+#include "Expect.h"
+#include "GnaException.h"
+#include "GnaConfig.h"
+#include "HardwareCapabilities.h"
+#include "LayerConfiguration.h"
 
 
 using namespace GNA;
@@ -44,13 +45,12 @@ RequestConfiguration::RequestConfiguration(CompiledModel& model, gna_request_cfg
     BufferElementCount{}
 {
     // TODO:3: optimize and store precalculated values if applicable for all layers
-    AccelerationDetector::GetHardwareConsistencySettings(BufferElementCount, consistentDevice);
+    HardwareCapabilities::GetHardwareConsistencySettings(BufferElementCount, consistentDevice);
 }
 
 void RequestConfiguration::AddBuffer(GnaComponentType type, uint32_t layerIndex, void *address)
 {
     Expect::InRange(type, ComponentTypeCount,  XNN_ERR_LYR_CFG);
-    Model.GetLayer(layerIndex); // validate layerIndex
     Expect::NotNull(address);
 
     auto found = LayerConfigurations.emplace(layerIndex, std::make_unique<LayerConfiguration>());
@@ -59,6 +59,10 @@ void RequestConfiguration::AddBuffer(GnaComponentType type, uint32_t layerIndex,
     auto emplaced = layerConfiguration->Buffers.emplace(type, address);
     Expect::True(emplaced.second, GNA_INVALID_REQUEST_CONFIGURATION);
 
+    auto layer = Model.GetLayer(layerIndex);
+    auto bufferSize = layer->GetOperandSize(type);
+    addMemoryObject(address, bufferSize);
+
     Model.InvalidateConfig(Id, layerConfiguration, layerIndex);
 }
 
@@ -66,14 +70,16 @@ void RequestConfiguration::AddActiveList(uint32_t layerIndex, const ActiveList& 
 {
     const auto& layer = *Model.GetLayer(layerIndex);
     auto operation = layer.Operation;
-    if (INTEL_AFFINE != operation && INTEL_GMM != operation)
-    {
-        throw GnaException{ XNN_ERR_LYR_OPERATION };
-    }
 
-    auto found = LayerConfigurations.emplace(layerIndex, std::make_unique<LayerConfiguration>());
+    Expect::InSet(operation, { INTEL_AFFINE, INTEL_GMM }, XNN_ERR_LYR_OPERATION);
+
+    auto found = LayerConfigurations.emplace(
+        layerIndex, std::make_unique<LayerConfiguration>());
     auto layerConfiguration = found.first->second.get();
+
     Expect::Null(layerConfiguration->ActList.get());
+
+    addMemoryObject((void *)activeList.Indices, activeList.IndicesCount * sizeof(uint32_t));
 
     auto activeListPtr = ActiveList::Create(activeList);
     layerConfiguration->ActList.swap(activeListPtr);
@@ -82,16 +88,18 @@ void RequestConfiguration::AddActiveList(uint32_t layerIndex, const ActiveList& 
     Model.InvalidateConfig(Id, layerConfiguration, layerIndex);
 }
 
-void RequestConfiguration::SetHardwareConsistency(gna_device_version consistentDevice)
+void RequestConfiguration::SetHardwareConsistency(
+    gna_device_version consistentDevice)
 {
     if (GNA_UNSUPPORTED != consistentDevice)
     {
-        AccelerationDetector::GetHardwareConsistencySettings(BufferElementCount, consistentDevice);
-        EnableHwConsistency = true;
+        HardwareCapabilities::GetHardwareConsistencySettings(
+                                BufferElementCount, consistentDevice);
+        enableHwConsistency = true;
     }
     else
     {
-        EnableHwConsistency = false;
+        enableHwConsistency = false;
     }
     EnforceAcceleration(Acceleration); // update Acceleration
 }
@@ -99,8 +107,20 @@ void RequestConfiguration::SetHardwareConsistency(gna_device_version consistentD
 void RequestConfiguration::EnforceAcceleration(AccelerationMode accel)
 {
     Acceleration = accel;
-    if (EnableHwConsistency)
+    if (enableHwConsistency)
     {
         Acceleration = static_cast<AccelerationMode>(Acceleration &  GNA_HW);
+    }
+}
+
+void RequestConfiguration::addMemoryObject(void *buffer, uint32_t bufferSize)
+{
+    auto memory = Model.FindBuffer(buffer, bufferSize);
+    Expect::NotNull(memory, GNA_INVALID_REQUEST_CONFIGURATION);
+
+    if (!Model.IsPartOfModel(memory))
+    {
+        Model.ValidateBuffer(MemoryList, memory);
+        MemoryList.push_back(memory);
     }
 }

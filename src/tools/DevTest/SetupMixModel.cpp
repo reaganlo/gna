@@ -42,7 +42,8 @@ SetupMixModel::SetupMixModel(DeviceController & deviceCtrl)
     uint32_t modelSize = chainModel.GetModelSize();
     uint32_t bytesGranted;
 
-    uint8_t* pinned_memory = deviceController.Alloc(modelSize, chainModel.GetLayerCount(), chainModel.GmmCount, &bytesGranted);
+    memory = deviceController.Alloc(modelSize, &bytesGranted);
+    uint8_t* pinned_memory = static_cast<uint8_t*>(memory);
     nnet = chainModel.Setup(pinned_memory);
 
     auto inputBufferSize = chainModel.GetInputBuffersSize();
@@ -64,7 +65,7 @@ SetupMixModel::SetupMixModel(DeviceController & deviceCtrl)
 
 SetupMixModel::~SetupMixModel()
 {
-    deviceController.Free();
+    deviceController.Free(memory);
 }
 
 void SetupMixModel::checkReferenceOutput(int modelIndex, int configIndex) const

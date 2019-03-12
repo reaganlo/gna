@@ -29,7 +29,8 @@
 #include <vector>
 
 #include "AccelerationDetector.h"
-#include "HardwareModel.h"
+#include "HardwareCapabilities.h"
+#include "HardwareModelScorable.h"
 #include "SoftwareModel.h"
 #include "SubModel.h"
 
@@ -39,17 +40,17 @@ namespace GNA
 class CompiledModel
 {
 public:
-    CompiledModel(gna_model_id modelId, const gna_model *rawModel, Memory& memory, IoctlSender &sender, const AccelerationDetector& detector);
+    CompiledModel(
+        const gna_model *const userModel,
+        const AccelerationDetector &detectorIn,
+        std::vector<std::unique_ptr<Memory>>& memoryObjects);
+
     virtual ~CompiledModel() = default;
     CompiledModel(const CompiledModel &) = delete;
     CompiledModel& operator=(const CompiledModel&) = delete;
 
-    // TODO: most of these methods are here due to invalid object design, need to refactor to get rid of
-    static size_t CalculateModelSize(const size_t userSize, const uint16_t layerCount, const uint16_t gmmCount);
-    static size_t CalculateInternalModelSize(const uint16_t layerCount, const uint16_t gmmCount);
-    static size_t CalculateInternalModelSize(const gna_model * rawModel);
+    void BuildHardwareModel(DriverInterface &ddi, HardwareCapabilities &hwCaps);
 
-    uint16_t GetGmmCount() const;
     const std::vector<std::unique_ptr<Layer>>& GetLayers() const;
     const Layer* GetLayer(uint32_t layerIndex) const;
     decltype(auto) GetSubmodels() const
@@ -57,34 +58,47 @@ public:
         return (submodels);
     }
 
-    void InvalidateConfig(gna_request_cfg_id configId, LayerConfiguration *layerConfiguration, uint32_t layerIndex) const;
+    void AddUniqueMemory(Memory *memory);
+    Memory * FindBuffer(const void *buffer, const size_t bufferSize) const;
+    void IdentifyBuffer(const void *buffer, size_t bufferSize);
+    uint32_t CalculateSize() const;
+    void CopyData(void *address, size_t size) const;
+
+    void InvalidateConfig(gna_request_cfg_id configId,
+            LayerConfiguration *layerConfiguration, uint32_t layerIndex) const;
+
+    bool IsPartOfModel(Memory *memory) const;
 
     status_t Score(
         RequestConfiguration& config,
         RequestProfiler *profiler,
         KernelBuffers *buffers);
 
-    static const size_t MaximumInternalModelSize;
-    const gna_model_id Id;
-    const uint16_t LayerCount;
+    void ValidateBuffer(std::vector<Memory *> &configMemoryList, Memory *memory) const;
+
+    const uint32_t LayerCount;
+    const uint32_t GmmCount;
 
 protected:
-    Memory& memory;
-    IoctlSender &ioctlSender;
-    ValidBoundariesFunctor validBoundaries;
-    const BaseValidator validator;
-    uint16_t gmmCount = 0;
-    uint32_t bufferSize = 0;
+    std::unique_ptr<HardwareModelScorable> hardwareModel;
 
-    SoftwareModel softwareModel;
-    std::unique_ptr<HardwareModel> hardwareModel;
+private:
+    void createSubmodels(const HardwareCapabilities& hwCaps);
 
-    std::vector<std::unique_ptr<SubModel>> submodels;
-
-    void createSubmodels(const AccelerationDetector& detector);
 
     uint32_t scoreAllSubModels(RequestConfiguration& config,
         RequestProfiler *profiler, KernelBuffers *buffers);
+
+    uint32_t getGmmCount(const gna_model *const userModel) const;
+
+    BaseValidator makeValidator(gna_device_generation deviceGeneration);
+
+    const AccelerationDetector &detector;
+    std::vector<std::unique_ptr<Memory>>& memoryList;
+    std::vector<Memory *> modelMemoryList;
+    SoftwareModel softwareModel;
+    std::vector<std::unique_ptr<SubModel>> submodels;
+
 };
 
 }

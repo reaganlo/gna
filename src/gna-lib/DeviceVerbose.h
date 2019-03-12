@@ -35,30 +35,25 @@ namespace GNA
     class DeviceVerbose : public Device
     {
     public:
-        DeviceVerbose(gna_device_id deviceId, uint8_t threadCount = 1) :
+        DeviceVerbose(gna_device_id deviceId, uint32_t threadCount = 1) :
             Device::Device(deviceId, threadCount)
         { }
 
         void SetPrescoreScenario(gna_model_id modelId, uint32_t nActions, dbg_action *actions)
         {
-            auto memoryId = getMemoryId(modelId);
-            auto memory = getMemory(memoryId);
-            auto& model = static_cast<CompiledModelVerbose&>(memory->GetModel(modelId));
+            auto& model = dynamic_cast<CompiledModelVerbose&>(*models.at(modelId));
             model.SetPrescoreScenario(nActions, actions);
         }
 
         void SetAfterscoreScenario(gna_model_id modelId, uint32_t nActions, dbg_action *actions)
         {
-            auto memoryId = getMemoryId(modelId);
-            auto memory = getMemory(memoryId);
-            auto& model = static_cast<CompiledModelVerbose&>(memory->GetModel(modelId));
+            auto& model = dynamic_cast<CompiledModelVerbose&>(*models.at(modelId));
             model.SetAfterscoreScenario(nActions, actions);
         }
 
-        std::unique_ptr<Memory> createMemoryObject(const uint32_t requestedSize,
-            const uint16_t layerCount, const uint16_t gmmCount)
+        std::unique_ptr<Memory> createMemoryObject(void *buffer, uint32_t requestedSize)
         {
-            return std::make_unique<MemoryVerbose>(requestedSize, layerCount, gmmCount, *ioctlSender);
+            return std::make_unique<MemoryVerbose>(buffer, requestedSize);
         }
     };
 }

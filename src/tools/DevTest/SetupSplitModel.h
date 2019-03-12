@@ -66,6 +66,7 @@ private:
     bool weightsAre2Bytes;
     bool pwlEnabled;
 
+    void * memory = nullptr;
 
     uint32_t nSegments = 64;
 

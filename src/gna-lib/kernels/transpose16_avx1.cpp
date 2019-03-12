@@ -27,6 +27,8 @@
 #include "igemv.h"
 #include "igemv16.h"
 
+#include "Macros.h"
+
 void TransposeKernelImpl(TransposeConfig const * const cfg)
 {
     uint32_t M = cfg->rowCount;

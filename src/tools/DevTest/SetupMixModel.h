@@ -40,4 +40,6 @@ private:
 
     void * inputBuffer = nullptr;
     void * outputBuffer = nullptr;
+
+    void * memory = nullptr;
 };

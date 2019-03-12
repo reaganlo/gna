@@ -34,9 +34,9 @@ public:
     DeviceController();
     ~DeviceController();
 
-    uint8_t * Alloc(uint32_t sizeRequested, uint16_t layerCount, uint16_t gmmCount, uint32_t * sizeGranted);
+    uint8_t * Alloc(uint32_t sizeRequested, uint32_t * sizeGranted);
 
-    void Free();
+    void Free(void *memory);
 
     void ModelCreate(const gna_model *, gna_model_id *);
 

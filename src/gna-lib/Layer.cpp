@@ -94,7 +94,7 @@ Layer::Layer(const nn_layer *layer, const BaseValidator& validatorIn,
 }
 
 void Layer::addBufferAs(const BufferMap& source, GnaComponentType sourceType,
-    BufferMap& destination, GnaComponentType destinationType, uint32_t size) const
+    BufferMap& destination, GnaComponentType destinationType) const
 {
     if (IntermediateOutputComponent == sourceType && Transforms.size() < 2)
         return;
@@ -102,18 +102,12 @@ void Layer::addBufferAs(const BufferMap& source, GnaComponentType sourceType,
     auto buffer = source.find(sourceType);
     if (buffer != source.end())
     {
-        validator->ValidateBuffer(buffer->second, size);
         destination[destinationType] = buffer->second;
     }
 }
 
 void Layer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const
 {
-    if (layerConfiguration.ActList)
-    {
-        const auto activeList = layerConfiguration.ActList.get();
-        validator->ValidateBuffer(activeList->Indices, activeList->IndicesCount * sizeof(uint32_t));
-    }
     //TODO:3: remove condition when all layers use Transforms
     if (Transforms.size() > 0)
     {
@@ -128,23 +122,23 @@ void Layer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const
             if (transform == Transforms.cbegin())
             {
                 addBufferAs(layerConfiguration.Buffers, InputComponent,
-                    buffers, InputComponent, Input.Size);
+                    buffers, InputComponent);
                 addBufferAs(layerConfiguration.Buffers, IntermediateOutputComponent,
-                    buffers, OutputComponent, Output.ScratchPad.Size);
+                    buffers, OutputComponent);
             }
             if (transform == --Transforms.cend())
             {
                 addBufferAs(layerConfiguration.Buffers, OutputComponent,
-                    buffers, OutputComponent, Output.Size);
+                    buffers, OutputComponent);
                 addBufferAs(layerConfiguration.Buffers, IntermediateOutputComponent,
-                    buffers, InputComponent, Output.ScratchPad.Size);
+                    buffers, InputComponent);
             }
             if (transform != Transforms.cbegin() && transform != --Transforms.cend())
             {
                 addBufferAs(layerConfiguration.Buffers, IntermediateOutputComponent,
-                    buffers, InputComponent, Output.ScratchPad.Size);
+                    buffers, InputComponent);
                 addBufferAs(layerConfiguration.Buffers, IntermediateOutputComponent,
-                    buffers, OutputComponent, Output.ScratchPad.Size);
+                    buffers, OutputComponent);
             }
             transform->get()->UpdateConfigBuffers(layerConfiguration.ConfigList, buffers);
         }
@@ -155,5 +149,21 @@ void Layer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const
 DataConfig Layer::GetDataMode() const
 {
     return DataConfig(Input.Mode, GNA_INT16, GNA_INT32, Output.Mode);
+}
+
+// TODO:3 support all component types
+uint32_t Layer::GetOperandSize(GnaComponentType componentType) const
+{
+    switch (componentType)
+    {
+    case InputComponent:
+        return Input.Size;
+    case OutputComponent:
+        return Output.Size;
+    case IntermediateOutputComponent:
+        return Output.ScratchPad.Size;
+    default:
+        return 0;
+    }
 }
 

@@ -30,7 +30,6 @@
 #include <fstream>
 #include <memory>
 
-#include "FakeDetector.h"
 #include "Memory.h"
 #include "Expect.h"
 #include "HardwareModelSue1.h"
@@ -51,36 +50,37 @@ void* Device::Dump(gna_model_id modelId, gna_device_generation deviceGeneration,
     Expect::NotNull((void *)customAlloc);
     Expect::Equal(GNA_1_0_EMBEDDED, deviceGeneration, GNA_CPUTYPENOTSUPPORTED); // Temporary limitation
 
-    FakeDetector detector{ *ioctlSender, FakeDetector::GetDeviceVersion(deviceGeneration) };
+    auto& model = models.at(modelId);
+    auto const layerCount = model->LayerCount;
+    auto const gmmCount = model->GmmCount;
 
-    auto memoryId = getMemoryId(modelId);
-    auto totalMemory = getMemory(memoryId);
-    auto& model = totalMemory->GetModel(modelId);
-    auto layerCount = model.LayerCount;
-    auto gmmCount = model.GetGmmCount();
-    auto internalSize = HardwareModelSue1::CalculateDescriptorSize(layerCount, gmmCount);
-    size_t const dumpedModelTotalSize = totalMemory->ModelSize + internalSize;
+    auto const ldSize = HardwareModelSue1::CalculateDescriptorSize(layerCount, gmmCount);
+    auto const modelSize = model->CalculateSize();
+    auto const totalSize = ldSize + modelSize;
 
-    void * address = customAlloc(dumpedModelTotalSize);
+    void * address = customAlloc(totalSize);
 
     Expect::NotNull(address);
-    memset(address, 0, dumpedModelTotalSize);
+    memset(address, 0, totalSize);
+
+    auto dumpMemory = std::make_unique<Memory>(address, totalSize);
 
     // creating HW layer descriptors directly into dump memory
-    auto hwModel = make_unique<HardwareModelSue1>(modelId, model.GetLayers(), *totalMemory, address, *ioctlSender, detector);
-    
+    auto hwModel = make_unique<HardwareModelSue1>(
+                    model->GetLayers(), model->GmmCount, std::move(dumpMemory));
+    hwModel->Build({});
+
     // copying data..
-    void *data = totalMemory->Get() + totalMemory->InternalSize;
-    void *dumpData = static_cast<uint8_t*>(address) + internalSize;
-    memcpy(dumpData, data, totalMemory->ModelSize);
+    void *data = static_cast<uint8_t*>(address) + ldSize;
+    model->CopyData(data, modelSize);
 
     // TODO:3: review
     // filling model header
-    auto const &input = model.GetLayer(0)->Input;
-    auto const &output = model.GetLayer(layerCount - 1)->Output;
+    auto const &input = model->GetLayer(0)->Input;
+    auto const &output = model->GetLayer(layerCount - 1)->Output;
     uint32_t outputsOffset = hwModel->GetOutputOffset(layerCount - 1);
     uint32_t inputsOffset = hwModel->GetInputOffset(0);
-    *modelHeader = { 0, static_cast<uint32_t>(dumpedModelTotalSize), 1, layerCount, input.Mode.Size,
+    *modelHeader = { 0, static_cast<uint32_t>(totalSize), 1, layerCount, input.Mode.Size,
         output.Mode.Size, input.Count, output.Count, inputsOffset, outputsOffset };
 
     return address;

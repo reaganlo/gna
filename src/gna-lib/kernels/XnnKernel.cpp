@@ -32,6 +32,7 @@
 #include "igemv16.h"
 #include "igemv8.h"
 #include "KernelMacros.h"
+#include "Macros.h"
 
 namespace GNA
 {

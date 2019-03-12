@@ -26,8 +26,7 @@
 #include <algorithm>
 
 #include "Logger.h"
-
-#define UNREFERENCED_PARAMETER(P) ((void)(P))
+#include "Macros.h"
 
 using namespace GNA;
 
@@ -190,7 +189,7 @@ void Logger::Error(const status_t status) const
 
 const char * Logger::StatusToString(const intel_gna_status_t status) noexcept
 {
-    const auto statusSafe = std::min(status, NUMGNASTATUS);
+    const auto statusSafe = (std::min)(status, NUMGNASTATUS);
     return StatusStrings[2 * statusSafe];
 }
 
@@ -297,7 +296,7 @@ template<typename ... X> void DebugLogger::print(FILE * const streamIn, const st
 
 const char * DebugLogger::getStatusDescription(const intel_gna_status_t status) const
 {
-    const auto statusSafe = std::min(status, NUMGNASTATUS);
+    const auto statusSafe = (std::min)(status, NUMGNASTATUS);
     return StatusStrings[2 * statusSafe + 1];
 }
 

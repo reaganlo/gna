@@ -26,6 +26,7 @@
 #include "ConvolutionalLayer2D.h"
 
 #include "AccelerationDetector.h"
+#include "HardwareCapabilities.h"
 #include "LayerConfiguration.h"
 #include "Expect.h"
 #include "HardwareLayer.h"
@@ -41,7 +42,7 @@ ConvolutionalLayer2D::ConvolutionalLayer2D(nn_layer const * const layer, const B
 
     // performed for layer size validation
     HardwareLayerCnn2D::GetKernelWorkGroupSize(
-        AccelerationDetector::GetDeviceVersion(validator->Device),
+        HardwareCapabilities::GetDeviceVersion(validator->Device),
         Transforms.Get<ConvolutionFunction2D>(ConvolutionalTransform2D),
         Transforms.Get<PoolingFunction2D>(PoolingTransform2D),
         GetOutputTransform()->Output->Mode);

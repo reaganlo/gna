@@ -271,22 +271,22 @@ const std::map<const XnnParameterType, const XnnParameter>& LayerDescriptor::get
 }
 
 LayerDescriptor::LayerDescriptor(const BaseAddress memoryBaseIn, const BaseAddress& addressIn,
-    const AccelerationDetector& detector) :
-    LayerDescriptor{
+    const HardwareCapabilities& hwCaps) :
+    LayerDescriptor {
         {},
-        getSize(detector.GetDeviceVersion()),
-        detector,
+        getSize(hwCaps.GetDeviceVersion()),
+        hwCaps,
         memoryBaseIn,
         addressIn,
-        getParameterMap(detector.GetDeviceVersion()) }
+        getParameterMap(hwCaps.GetDeviceVersion()) }
 {
 };
 
 LayerDescriptor::LayerDescriptor(const LayerDescriptor& base, AddrGmmCfg gmmDescriptor) :
-     LayerDescriptor{
+     LayerDescriptor {
         gmmDescriptor,
         base.Size,
-        base.Detector,
+        base.HwCapabilities,
         base.memoryBase,
         base.address,
         *base.xnnReferenceParams }
@@ -294,10 +294,11 @@ LayerDescriptor::LayerDescriptor(const LayerDescriptor& base, AddrGmmCfg gmmDesc
 };
 
 LayerDescriptor::LayerDescriptor(const AddrGmmCfg gmmConfig, const size_t size,
-    const AccelerationDetector& detector, const BaseAddress memoryBaseIn, BaseAddress descriptorBaseIn,
-    const std::map<const XnnParameterType, const XnnParameter>& paramsIn) :
+        const HardwareCapabilities& hwCaps,
+        const BaseAddress memoryBaseIn, BaseAddress descriptorBaseIn,
+        const std::map<const XnnParameterType, const XnnParameter>& paramsIn) :
     Size{ size },
-    Detector{ detector },
+    HwCapabilities { hwCaps },
     GmmDescriptor{ gmmConfig },
     memoryBase{ memoryBaseIn },
     address{ descriptorBaseIn },
@@ -313,3 +314,5 @@ LayerDescriptor::LayerDescriptor(const AddrGmmCfg gmmConfig, const size_t size,
         Expect::AlignedTo(GmmDescriptor, sizeof(GMM_CONFIG));
     }
 }
+
+

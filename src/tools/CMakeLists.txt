@@ -59,6 +59,7 @@ set(devtest_sources
   DevTest/SetupCopyModel.cpp
   DevTest/SetupDiagonalModel.cpp
   DevTest/SetupDnnModel_1.cpp
+  DevTest/SetupDnnModel_Multibuffer.cpp
   DevTest/SetupGmmModel.cpp
   DevTest/SetupMixModel.cpp
   DevTest/SetupMultibiasModel_1.cpp
@@ -81,6 +82,7 @@ set(devtest_headers
   DevTest/SetupCopyModel.h
   DevTest/SetupDiagonalModel.h
   DevTest/SetupDnnModel_1.h
+  DevTest/SetupDnnModel_Multibuffer.h
   DevTest/SetupGmmModel.h
   DevTest/SetupMixModel.h
   DevTest/SetupMultibiasModel_1.h

@@ -33,15 +33,18 @@
 #include<tuple>
 #include<vector>
 
-#include "GnaConfig.h"
-#include "GnaTypes.h"
 #include "common.h"
 #include "profiler.h"
+
+#include "GnaConfig.h"
+#include "GnaTypes.h"
+#include "HardwareLayer.h"
+#include "Layer.h"
 
 namespace GNA
 {
 
-class HardwareModel;
+class HardwareModelScorable;
 class RequestConfiguration;
 struct LayerConfiguration;
 
@@ -51,7 +54,7 @@ enum GnaOperationMode : uint8_t
     xNN = 1
 };
 
-struct IoBufferPatch
+/*struct IoBufferPatch
 {
     uint32_t bufferLdOffset;
     uint32_t bufferOffset;
@@ -83,19 +86,41 @@ struct GmmAlPatch
     uint32_t gmmScrlenLdOffset;
     GMMSCRLEN gmmSrclen;
 };
+*/
+
+struct DriverPatch
+{
+    DriverPatch(uint32_t offset, uint32_t value, uint32_t size) :
+        Offset(offset), Value(value), Size(size)
+    {}
+
+    uint32_t Offset;
+    uint32_t Value;
+    uint32_t Size;
+};
+
+struct DriverBuffer
+{
+    explicit DriverBuffer(Memory *memoryIn) :
+        Buffer (memoryIn)
+    {}
+
+    Memory *Buffer;
+    std::vector<DriverPatch> Patches = {};
+};
 
 class HardwareRequest
 {
 public:
-    HardwareRequest(uint64_t memoryId, const HardwareModel& hwModelIn,
-                    const RequestConfiguration& requestConfigurationIn);
+    // TODO:3: ldMemory should be on modelMemoryObjects
+    HardwareRequest(const HardwareModelScorable& hwModelIn,
+        const RequestConfiguration& requestConfigurationIn,
+        Memory *ldMemory, const std::vector<Memory *>& modelMemoryObjectsIn);
 
     void Invalidate();
     void Update(uint32_t layerIndex, uint32_t layerCount, GnaOperationMode operationMode);
 
     /* these fields will not change between request executions */
-    const uint64_t MemoryId;
-    const gna_model_id ModelId;
     const gna_hw_perf_encoding HwPerfEncoding;
     const gna_request_cfg_id RequestConfigId;
 
@@ -110,10 +135,7 @@ public:
     uint32_t GmmOffset;
     bool ActiveListOn;
 
-    std::vector<IoBufferPatch> IoBuffers;
-    std::vector<NnopTypePatch> NnopTypes;
-    std::vector<GmmAlPatch> GmmActiveLists;
-    std::vector<XnnAlPatch> XnnActiveLists;
+    std::vector<DriverBuffer> DriverMemoryObjects;
 
     /* Driver specific request data*/
     std::unique_ptr<uint8_t[]> CalculationData = nullptr;
@@ -125,11 +147,16 @@ public:
 private:
 
     const RequestConfiguration& requestConfiguration;
-    const HardwareModel& hwModel;
+    const HardwareModelScorable& hwModel;
 
     std::map<uint32_t, bool> activeLists;
 
     void updateActiveLists(uint32_t layerIndex, uint32_t layerCount);
+
+    void generateBufferPatches(const LayerConfiguration& layerConfiguration,
+                               const Layer &layer, const HardwareLayer &hwLayer);
+
+    Memory *ldMemory;
 };
 
 };

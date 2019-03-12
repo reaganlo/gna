@@ -53,8 +53,7 @@ SetupRecurrentModel::SetupRecurrentModel(DeviceController & deviceCtrl, bool wgh
 
 SetupRecurrentModel::~SetupRecurrentModel()
 {
-    deviceController.Free();
-
+    deviceController.Free(memory);
     free(nnet.pLayers);
 }
 
@@ -100,7 +99,8 @@ void SetupRecurrentModel::sampleRnnLayer(intel_nnet_type_t& hNnet)
     uint32_t bytes_requested = buf_size_weights + buf_size_inputs + buf_size_biases + buf_size_scratchpad + buf_size_outputs + buf_size_tmp_outputs + buf_size_pwl;
     uint32_t bytes_granted;
 
-    uint8_t* pinned_mem_ptr = deviceController.Alloc(bytes_requested, static_cast<uint16_t>(hNnet.nLayers), static_cast<uint16_t>(0), &bytes_granted);
+    memory = deviceController.Alloc(bytes_requested, &bytes_granted);
+    uint8_t* pinned_mem_ptr = static_cast<uint8_t*>(memory);
 
     void* pinned_weights = pinned_mem_ptr;
     if (weightsAre2Bytes)

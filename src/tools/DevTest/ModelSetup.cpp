@@ -42,8 +42,6 @@ ModelSetup::ModelSetup(DeviceController & deviceCtrl, intel_nnet_type_t model,
 
 ModelSetup::~ModelSetup()
 {
-    deviceController.Free();
-
     free(nnet.pLayers);
 }
 

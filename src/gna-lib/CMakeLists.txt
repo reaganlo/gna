@@ -95,13 +95,13 @@ set(gna_lib_sources
   ${SRC_DIR}/DataMode.cpp
   ${SRC_DIR}/Device.cpp
   ${SRC_DIR}/DeviceLayerSupport.cpp
-  ${SRC_DIR}/FakeDetector.cpp
   ${SRC_DIR}/GmmLayer.cpp
+  ${SRC_DIR}/HardwareCapabilities.cpp
   ${SRC_DIR}/HardwareLayer.cpp
   ${SRC_DIR}/HardwareModel.cpp
+  ${SRC_DIR}/HardwareModelScorable.cpp
   ${SRC_DIR}/HardwareModelSue1.cpp
   ${SRC_DIR}/HardwareRequest.cpp
-  ${SRC_DIR}/IoctlSender.cpp
   ${SRC_DIR}/Layer.cpp
   ${SRC_DIR}/LayerConfiguration.cpp
   ${SRC_DIR}/LayerDescriptor.cpp
@@ -128,7 +128,7 @@ set(gna_lib_sources
   ${SRC_DIR}/TransformMap.cpp
   ${SRC_DIR}/Validator.cpp
   ${SRC_DIR}/Weight.cpp
-  ${SRC_DIR}/${IOCTL_SENDER_PREFIX}IoctlSender.cpp)
+  ${SRC_DIR}/${IOCTL_SENDER_PREFIX}DriverInterface.cpp)
 
 set(gna_lib_headers
   ${SRC_DIR}/AccelerationDetector.h
@@ -147,17 +147,19 @@ set(gna_lib_headers
   ${SRC_DIR}/ConvolutionalLayer2D.h
   ${SRC_DIR}/Device.h
   ${SRC_DIR}/DeviceLayerSupport.h
+  ${SRC_DIR}/DriverInterface.h
   ${SRC_DIR}/Expect.h
-  ${SRC_DIR}/FakeDetector.h
   ${SRC_DIR}/GmmLayer.h
   ${SRC_DIR}/GnaConfig.h
   ${SRC_DIR}/GnaException.h
   ${SRC_DIR}/GnaTypes.h
+  ${SRC_DIR}/HardwareCapabilities.h
   ${SRC_DIR}/HardwareLayer.h
   ${SRC_DIR}/HardwareModel.h
+  ${SRC_DIR}/HardwareModelScorable.h
   ${SRC_DIR}/HardwareModelSue1.h
   ${SRC_DIR}/HardwareRequest.h
-  ${SRC_DIR}/IoctlSender.h
+  ${SRC_DIR}/IScorable.h
   ${SRC_DIR}/LayerConfiguration.h
   ${SRC_DIR}/Layer.h
   ${SRC_DIR}/LayerDescriptor.h
@@ -184,7 +186,7 @@ set(gna_lib_headers
   ${SRC_DIR}/TransformMap.h
   ${SRC_DIR}/Validator.h
   ${SRC_DIR}/Weight.h
-  ${SRC_DIR}/${IOCTL_SENDER_PREFIX}IoctlSender.h)
+  ${SRC_DIR}/${IOCTL_SENDER_PREFIX}DriverInterface.h)
 
 set(gna_api_headers
   ${COMMON_DIR}/gna-api.h

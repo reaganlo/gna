@@ -29,7 +29,7 @@
 
 using namespace GNA;
 
-BaseValidator::BaseValidator(gna_device_generation generation, const ValidBoundariesFunctor * const validBoundariesIn) :
+BaseValidator::BaseValidator(gna_device_generation generation, const ValidBoundariesFunctor validBoundariesIn) :
     Device{ generation },
     bufferValidator{ validBoundariesIn }
 {
@@ -38,10 +38,7 @@ BaseValidator::BaseValidator(gna_device_generation generation, const ValidBounda
 void BaseValidator::ValidateBuffer(const void * const buffer, size_t size, const AlignLimits& alignLimits) const
 {
     Expect::ValidBuffer(buffer, alignLimits);
-    if (bufferValidator)
-    {
-        (*bufferValidator)(buffer, size);
-    }
+    bufferValidator(buffer, size);
 }
 
 LayerValidator::LayerValidator(const BaseValidator& validator, nn_operation operation) :

@@ -1,6 +1,6 @@
 /*
 INTEL CONFIDENTIAL
-Copyright 2017 Intel Corporation.
+Copyright 2018 Intel Corporation.
 
 The source code contained or described herein and all documents related
 to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -27,6 +27,8 @@ in any way.
 
 #include <cstring>
 
+#include "common.h"
+
 #include "AccelerationDetector.h"
 #include "CompiledModel.h"
 #include "Expect.h"
@@ -34,30 +36,26 @@ in any way.
 using namespace GNA;
 
 // just makes object from arguments
-Memory::Memory(void * bufferIn, const size_t userSize, const uint16_t layerCount, const uint16_t gmmCount, IoctlSender &sender) :
+Memory::Memory(void *bufferIn, uint32_t userSize, uint32_t alignment) :
     Address{bufferIn},
-    InternalSize{CompiledModel::CalculateInternalModelSize(layerCount, gmmCount)},
-    ModelSize{ALIGN64(userSize)},
-    size{CompiledModel::CalculateModelSize(userSize, layerCount, gmmCount)},
-    ioctlSender{sender}
-{};
+    size{ALIGN(userSize, alignment)}
+{
+    deallocate = false;
+};
 
 // allocates and zeros memory
-Memory::Memory(const size_t userSize, const uint16_t layerCount, const uint16_t gmmCount, IoctlSender &sender) :
-    InternalSize{CompiledModel::CalculateInternalModelSize(layerCount, gmmCount)},
-    ModelSize{ALIGN64(userSize)},
-    size{CompiledModel::CalculateModelSize(userSize, layerCount, gmmCount)},
-    ioctlSender{sender}
+Memory::Memory(const size_t userSize, uint32_t alignment) :
+    size{ALIGN(userSize, alignment)}
 {
     Expect::GtZero(size, GNA_INVALIDMEMSIZE);
     buffer = _gna_malloc(size);
     Expect::ValidBuffer(buffer);
-    memset(buffer, 0, size);
+    memset(buffer, 0, size); // this is costly and probably not needed
 };
 
 Memory::~Memory()
 {
-    if (buffer)
+    if (buffer && deallocate)
     {
         if (mapped)
             unmap();
@@ -68,21 +66,22 @@ Memory::~Memory()
     }
 }
 
-void Memory::Map()
+void Memory::Map(DriverInterface& ddi)
 {
+    driverInterface = &ddi;
     if (mapped)
     {
         throw GnaException(GNA_ERR_MEMORY_ALREADY_MAPPED);
     }
 
-    id = ioctlSender.MemoryMap(buffer, size);
+    id = driverInterface->MemoryMap(buffer, size);
 
     mapped = true;
 }
 
 void Memory::unmap()
 {
-    ioctlSender.MemoryUnmap(id);
+    driverInterface->MemoryUnmap(id);
     mapped = false;
 }
 
@@ -96,47 +95,3 @@ uint64_t Memory::GetId() const
     return id;
 }
 
-void Memory::AllocateModel(const gna_model_id modelId, const gna_model *model, const AccelerationDetector& detector)
-{
-    void * descriptorsBase = Get() + descriptorsSize;
-
-    auto modelInternalSize = CompiledModel::CalculateInternalModelSize(model);
-    if (descriptorsSize + modelInternalSize > InternalSize)
-    {
-        throw GnaException(GNA_ERR_RESOURCES);
-    }
-
-    modelDescriptors[modelId] = descriptorsBase;
-    descriptorsSize += modelInternalSize;
-
-    Models[modelId] = createModel(modelId, model, detector);
-}
-
-void Memory::DeallocateModel(gna_model_id modelId)
-{
-    Models[modelId].reset();
-}
-
-CompiledModel& Memory::GetModel(gna_model_id modelId) const
-{
-    try
-    {
-        auto& model = Models.at(modelId);
-        return *model.get();
-    }
-    catch (const std::out_of_range&)
-    {
-        throw GnaException(GNA_INVALID_MODEL);
-    }
-}
-
-void * Memory::GetDescriptorsBase(gna_model_id modelId) const
-{
-    return modelDescriptors.at(modelId);
-}
-
-std::unique_ptr<CompiledModel> Memory::createModel(const gna_model_id modelId, const gna_model *model,
-    const AccelerationDetector &detector)
-{
-    return std::make_unique<CompiledModel>(modelId, model, *this, ioctlSender, detector);
-}

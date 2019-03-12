@@ -64,6 +64,7 @@ private:
 
     void * inputBuffer = nullptr;
     void * outputBuffer = nullptr;
+    void * memory = nullptr;
 
     const int8_t weights_1B[outVecSz * inVecSz] =
     {

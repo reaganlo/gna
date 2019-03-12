@@ -52,6 +52,7 @@ private:
     void * inputBuffer = nullptr;
     void * scratchpad = nullptr;
     void * outputBuffer = nullptr;
+    void * memory = nullptr;
 
     static const int inVecSz = 8;
     static const int outVecSz = 32;

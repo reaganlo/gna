@@ -48,6 +48,7 @@ private:
 
     void * inputBuffer = nullptr;
     void * outputBuffer = nullptr;
+    void * memory = nullptr;
 
     static const int groupingNum = 1;
     static const int inVecSz = 32;

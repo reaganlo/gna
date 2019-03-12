@@ -30,8 +30,8 @@
 #include "common.h"
 
 #include "Address.h"
-#include "AccelerationDetector.h"
 #include "GnaConfig.h"
+#include "HardwareCapabilities.h"
 
 namespace GNA
 {
@@ -258,13 +258,6 @@ public:
         }
     }
 
-    // sets value as absolute offset
-    void operator=(const BaseAddress& buffer)
-    {
-        Expect::True(4 == Size && 0 == bitCount, GNA_UNKNOWN_ERROR);
-        *address.Get<uint32_t>() = GetBufferOffset(buffer);
-    }
-
     uint8_t* operator&() const
     {
         return address.Get<uint8_t>();
@@ -291,12 +284,6 @@ public:
     {
         return absoluteOffset;
     }
-
-    uint32_t GetBufferOffset(const BaseAddress& buffer) const
-    {
-        return buffer.GetOffset(memoryBase);
-    }
-
 
     uint32_t    Size;
 private:
@@ -335,23 +322,28 @@ private:
 class LayerDescriptor
 {
 public:
-    // Gets default size of descriptor (GNA_DEV_CNL hw)
+    // Gets default size of descriptor
     inline static size_t GetSize()
     {
-        return getSize(GNA_ADL);
+        return getSize(GNA_DEFAULT_VERSION);
     }
 
     // Gets total size of all layers' descriptors for given hw
-    inline static uint32_t GetSize(const uint32_t layerCount, const gna_device_version hwId)
+    inline static uint32_t GetSize(const uint32_t layerCount,
+        const gna_device_version hwId = GNA_DEFAULT_VERSION)
     {
         return static_cast<const uint32_t>(getSize(hwId) * layerCount);
     }
 
     LayerDescriptor() = delete;
+
     LayerDescriptor(const LayerDescriptor&) = default;
+
     LayerDescriptor(const BaseAddress memoryBase, const BaseAddress& address,
-        const AccelerationDetector& detector);
+                    const HardwareCapabilities& hwCaps);
+
     LayerDescriptor(const LayerDescriptor& base, AddrGmmCfg gmmDescriptor);
+
     ~LayerDescriptor() = default;
 
     void Forward(AddrGmmCfg gmmDescriptor)
@@ -390,14 +382,14 @@ public:
     }
 
     size_t Size;
-    const AccelerationDetector& Detector;
+    const HardwareCapabilities& HwCapabilities;
     AddrGmmCfg GmmDescriptor;
 
 private:
     static size_t getSize(const gna_device_version hwId);
     static const std::map<const XnnParameterType, const XnnParameter>& getParameterMap(const gna_device_version hwId);
 
-    LayerDescriptor(const AddrGmmCfg gmmConfig, const size_t size, const AccelerationDetector& detector,
+    LayerDescriptor(const AddrGmmCfg gmmConfig, const size_t size, const HardwareCapabilities& hwCaps,
         const BaseAddress memoryBaseIn, BaseAddress descriptorBaseIn,
         const std::map<const XnnParameterType, const XnnParameter>& paramsIn);
 

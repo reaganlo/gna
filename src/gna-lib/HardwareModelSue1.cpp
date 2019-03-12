@@ -27,36 +27,12 @@
 
 using namespace GNA;
 
-size_t HardwareModelSue1::CalculateDescriptorSize(const uint32_t layerCount, const uint16_t gmmLayersCount)
+HardwareModelSue1::HardwareModelSue1(
+    const std::vector<std::unique_ptr<Layer>>& layers, uint32_t gmmCount,
+    std::unique_ptr<Memory> dumpMemory) :
+    HardwareModel(layers, gmmCount, sueCapabilities)
 {
-    Expect::Zero(gmmLayersCount, XNN_ERR_NET_LYR_NO);
-    Expect::InRange<uint32_t>(layerCount, 1, XNN_LAYERS_MAX_COUNT + GMM_LAYERS_MAX_COUNT, XNN_ERR_NET_LYR_NO);
-    return getLayerDescriptorsSize(layerCount);
-}
-
-HardwareModelSue1::HardwareModelSue1(const gna_model_id modId, const std::vector<std::unique_ptr<Layer>>& layers,
-    const Memory &memoryIn, const BaseAddress &dumpDescriptorAddr, IoctlSender &sender, const AccelerationDetector& detector) :
-    HardwareModel(
-        modId,
-        layers,
-        0,
-        0,
-        memoryIn.Get() + memoryIn.InternalSize - getLayerDescriptorsSize(static_cast<uint32_t>(layers.size())),
-        memoryIn.GetDescriptorsBase(modId),
-        sender,
-        detector)
-{
-    Build();
-
-    memcpy(dumpDescriptorAddr, baseDescriptor.GetMemAddress(), memoryIn.InternalSize);
-}
-
-uint32_t HardwareModelSue1::getLayerDescriptorsSize(const uint32_t layerCount)
-{
-    Expect::InRange<uint32_t>(layerCount, 0, XNN_LAYERS_MAX_COUNT, XNN_ERR_NET_LYR_NO);
-    auto layerDescriptorsSizeTmp =
-        ALIGN(LayerDescriptor::GetSize(layerCount, GNA_SUE_CREEK), 0x1000);
-    return layerDescriptorsSizeTmp;
+    ldMemory = std::move(dumpMemory);
 }
 
 const LayerDescriptor& HardwareModelSue1::GetDescriptor(uint32_t layerIndex) const
@@ -74,5 +50,37 @@ uint32_t HardwareModelSue1::GetInputOffset(uint32_t layerIndex) const
 {
     auto layer = hardwareLayers.at(layerIndex).get();
     return layer->GetLdInputOffset () - GetDescriptor(0).GetOffset();
-
 };
+
+void HardwareModelSue1::allocateLayerDescriptors()
+{
+    baseDescriptor = std::make_unique<LayerDescriptor>(
+            *ldMemory, ldMemory->GetBuffer(), hwCapabilities);
+    if (!baseDescriptor)
+    {
+        throw GnaException{ GNA_ERR_RESOURCES };
+    }
+};
+
+uint32_t HardwareModelSue1::GetBufferOffset(const BaseAddress& address) const
+{
+    if (address.InRange(ldMemory->GetBuffer(),
+        static_cast<uint32_t>(ldMemory->GetSize())))
+    {
+        return address.GetOffset(BaseAddress{ ldMemory->GetBuffer() });
+    }
+
+    auto offset = static_cast<uint32_t>(ldMemory->GetSize());
+    for (auto memory : modelMemoryObjects)
+    {
+        if (address.InRange(memory->GetBuffer(),
+            static_cast<uint32_t>(memory->GetSize())))
+        {
+            return offset + address.GetOffset(BaseAddress{memory->GetBuffer()});
+        }
+
+        offset += static_cast<uint32_t>(memory->GetSize());
+    }
+
+    return 0;
+}

@@ -32,42 +32,16 @@
 
 #pragma once
 
-#define ACC_SUPPORTED 1
-#define ACC_NOTSUPPORTED 0
-
 #include <array>
 #include <map>
 #include <unordered_map>
 #include <string>
 
-#include "common.h"
-#if defined(_WIN32)
-#include "WindowsIoctlSender.h"
-#else
-#include "LinuxIoctlSender.h"
-#endif
 #include "gmm.h"
 #include "XnnKernelApi.h"
 
 namespace GNA
 {
-
-enum GnaFeature
-{
-    BaseFunctionality = 0, // DNN, DNN_AL, DIAGONAL, RNN, COPY, TRANSPOSE, PWL
-    CNN,
-    LegacyGMM,
-    GMMLayer,
-    MultiBias,
-    L1Distance,
-    L2Distance,
-    ComputerVision,
-    Layer8K,
-    NewPerformanceCounters,
-    CNN2D,
-
-    GnaFeatureCount
-};
 
 typedef enum _nn_bias_mode
 {
@@ -156,19 +130,6 @@ typedef enum _kernel_op
 
 } kernel_op;
 
-struct GnaHardwareCapabiities
-{
-    gna_device_generation Generation;
-    // Basic, CNN,   GMM,  GMMLayer, MultiBias, L1Dist, L2Dist, ComputerVision, Layer8K, NewPerformanceCounters
-    std::array<bool, GnaFeatureCount> Features;
-    uint32_t ComputeEngineCount;
-    std::map<const uint32_t /* input precision */, const uint32_t> MacCountPerCE;
-    uint32_t BufferSizesPerCEInKB;
-    uint32_t PoolingEngineCountPerCE;
-    uint32_t ActivationEngineCount;
-    std::array<uint32_t, XNN_N_GROUP_MAX> BufferElementCountBackward;
-};
-
 /**
  * Manages runtime acceleration modes
  * and configures execution kernels for given acceleration
@@ -177,43 +138,12 @@ class AccelerationDetector
 {
 
 public:
-    AccelerationDetector(IoctlSender &senderIn);
+    AccelerationDetector();
     ~AccelerationDetector() = default;
-
-    static void GetHardwareConsistencySettings(uint32_t bufferElementCount[2 * XNN_N_GROUP_MAX],
-        gna_device_version hwId);
 
     AccelerationMode GetFastestAcceleration() const;
 
     static char const * AccelerationToString(AccelerationMode accel);
-
-    static gna_device_version GetDeviceVersion(gna_device_generation generation);
-
-    static uint32_t GetComputeEngineCount(gna_device_version hwId);
-
-    static uint32_t GetBufferSizeInKB(gna_device_version hwId);
- 
-    static inline uint32_t GetBufferSizeInKB(gna_device_generation generation)
-    {
-        return GetBufferSizeInKB(GetDeviceVersion(generation));
-    }
-
-    // Gets the number of data elements that may be stored in hw buffer
-    static uint32_t GetBufferElementCount(gna_device_version hwId,
-            uint32_t grouping, uint32_t inputPrecision = GNA_INT16);
-
-    bool IsHardwarePresent() const;
-
-    bool IsLayerSupported(nn_operation operation) const;
-
-    bool HasFeature(GnaFeature feature) const;
-
-    uint32_t GetBufferElementCount(uint32_t grouping, uint32_t inputPrecision = GNA_INT16) const
-    {
-        return GetBufferElementCount(deviceCapabilities.hwId, grouping, inputPrecision);
-    }
-
-    gna_device_version GetDeviceVersion() const;
 
     template<typename KernelType>
     static const KernelMap<KernelType>&
@@ -223,23 +153,21 @@ public:
             Kernels.at(operation).at(dataMode));
     }
 
+    void SetHardwareAcceleration(bool isHardwareSupported)
+    {
+        accelerationModes[GNA_HW] = isHardwareSupported;
+    }
+
     static std::map<kernel_op, std::map<KernelMode, KernelMap<VoidKernel>>> Kernels;
 
 protected:
-    static std::map<gna_device_version, const GnaHardwareCapabiities> gnaCapsMap;
-
-    std::map<AccelerationMode, uint8_t> accelerationModes;
-
-    GnaCapabilities deviceCapabilities;
-
-    AccelerationMode fastestAcceleration;
+    std::map<AccelerationMode, bool> accelerationModes;
 
 private:
+
     static std::map<AccelerationMode const, std::string const> accelerationNames;
 
-    void discoverHardware();
-
-    IoctlSender &ioctlSender;
+    AccelerationMode fastestAcceleration;
 };
 
 }

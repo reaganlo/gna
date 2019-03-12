@@ -97,7 +97,7 @@ class SelfTestDevice
 public:
     SelfTestDevice(const GnaSelfTest& gst);
     // obtains pinned memory shared with the device
-    void Alloc(const uint32_t bytesRequested, const uint16_t layerCount, const uint16_t gmmCount);
+    void Alloc(const uint32_t bytesRequested);
 
     void SampleModelCreate(const SampleModelForGnaSelfTest &model);
 

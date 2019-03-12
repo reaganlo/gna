@@ -54,10 +54,12 @@ SelfTestDevice::SelfTestDevice(const GnaSelfTest& gst) : gnaSelfTest{ gst }
 }
 
 // obtains pinned memory shared with the device
-void SelfTestDevice::Alloc(const uint32_t bytesRequested, const uint16_t layerCount, const uint16_t gmmCount)
+void SelfTestDevice::Alloc(const uint32_t bytesRequested)
 {
     uint32_t sizeGranted;
-    pinned_mem_ptr = reinterpret_cast<uint8_t *>(GnaAlloc(deviceId, bytesRequested, layerCount, gmmCount, &sizeGranted));
+    void *memory = static_cast<void *>(pinned_mem_ptr);
+    GnaAlloc(bytesRequested, &sizeGranted, &memory);
+    pinned_mem_ptr = static_cast<uint8_t *>(memory);
 
     logger.Verbose("Requested: %i Granted: %i\n", (int)bytesRequested, (int)sizeGranted);
 
@@ -90,7 +92,7 @@ void SelfTestDevice::SampleModelCreate(const SampleModelForGnaSelfTest& model)
     uint32_t bytes_requested = buf_size_weights + buf_size_inputs + buf_size_biases + buf_size_outputs + buf_size_tmp_outputs;
     //uint32_t bytes_granted;
 
-    Alloc(bytes_requested, static_cast<uint16_t>(nnet.nLayers), static_cast<uint16_t>(0));
+    Alloc(bytes_requested);
 
     int16_t *pinned_weights = (int16_t *)pinned_mem_ptr;
     model.CopyWeights(pinned_weights);    // puts the weights into the pinned memory
@@ -197,7 +199,7 @@ SelfTestDevice::~SelfTestDevice()
         if (pinned_mem_ptr != nullptr)
         {
             logger.Verbose("releasing the gna allocated memory...\n");
-            auto status = GnaFree(deviceId);
+            auto status = GnaFree(pinned_mem_ptr);
             gnaSelfTest.HandleGnaStatus(status, "GnaFree");
             pinned_mem_ptr = nullptr;
         }

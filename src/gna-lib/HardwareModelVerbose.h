@@ -25,8 +25,18 @@
 
 #pragma once
 
-#include "HardwareModel.h"
+#include "HardwareModelScorable.h"
 #include "gna-api-verbose.h"
+
+#if defined(_WIN32)
+#if HW_VERBOSE == 1
+#include "GnaDrvApiWinDebug.h"
+#else
+#include "GnaDrvApiWin.h"
+#endif
+#else
+#error Verbose version of library available only on Windows OS
+#endif
 
 #include <vector>
 
@@ -40,11 +50,11 @@ class Layer;
 class RequestConfiguration;
 struct RequestProfiler;
 
-class HardwareModelVerbose : public HardwareModel
+class HardwareModelVerbose : public HardwareModelScorable
 {
 public:
-    HardwareModelVerbose(const gna_model_id modId, const std::vector<std::unique_ptr<Layer>>& layers,
-        uint16_t gmmCount, const Memory &memoryIn, IoctlSender &sender, const AccelerationDetector& detector);
+    HardwareModelVerbose(const std::vector<std::unique_ptr<Layer>>& layers, uint32_t gmmCount,
+        DriverInterface &ddi, const HardwareCapabilities& hwCaps);
     virtual ~HardwareModelVerbose() = default;
     HardwareModelVerbose(const HardwareModelVerbose &) = delete;
     HardwareModelVerbose& operator=(const HardwareModelVerbose&) = delete;
@@ -67,11 +77,11 @@ private:
 
     FILE * const getActionFile(dbg_action& action);
 
-    uint32_t readReg(uint32_t regOffset);
+    UINT32 readReg(UINT32 regOffset);
 
-    void writeReg(uint32_t regOffset, uint32_t regVal);
+    void writeReg(UINT32 regOffset, UINT32 regVal);
 
-    void readRegister(FILE *file, uint32_t registerOffset);
+    void readRegister(FILE *file, UINT32 registerOffset);
 
     void writeRegister(dbg_action regAction);
 

@@ -27,6 +27,8 @@
 
 #if defined(__GNUC__)
 #define UNREFERENCED_PARAMETER(P) ((void)(P))
+#else
+#include <windows.h>
 #endif
 
 // Enable safe functions compatibility

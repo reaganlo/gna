@@ -62,20 +62,21 @@ void DeviceController::ModelCreate(const gna_model * model, gna_model_id * model
     }
 }
 
-uint8_t * DeviceController::Alloc(uint32_t sizeRequested, uint16_t layerCount, uint16_t gmmCount, uint32_t * sizeGranted)
+uint8_t * DeviceController::Alloc(uint32_t sizeRequested, uint32_t * sizeGranted)
 {
-    auto memory = (uint8_t*)GnaAlloc(gnaHandle, sizeRequested, layerCount, gmmCount, sizeGranted);
+    void *memory;
+    GnaAlloc(sizeRequested, sizeGranted, &memory);
     if (nullptr == memory)
     {
         throw std::runtime_error("GnaAlloc failed");
     }
 
-    return memory;
+    return static_cast<uint8_t *>(memory);
 }
 
-void DeviceController::Free()
+void DeviceController::Free(void *memory)
 {
-    intel_gna_status_t status = GnaFree(gnaHandle);
+    intel_gna_status_t status = GnaFree(memory);
     if (GNA_SUCCESS != status)
     {
         throw std::runtime_error("Config add failed");

@@ -114,7 +114,7 @@ PoolingFunction::PoolingFunction(nn_operation const operation, const Shape& inpu
             // TODO:3: verify if -1 or -Window.dim
             OutputDimensions[dim.first] =  ((inputDimensions.at(dim.first) - 1) / dim.second + 1);
             OutputsPerFilterCount *= OutputDimensions[dim.first];
-            Expect::InRange<uint32_t>(OutputDimensions[dim.first], 1, inputDimensions.at(dim.first), CNN_ERR_POOL_SIZE);
+            Expect::InRange(OutputDimensions[dim.first], ui32_1, inputDimensions.at(dim.first), CNN_ERR_POOL_SIZE);
         }
     }
 }

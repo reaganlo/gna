@@ -50,6 +50,7 @@ private:
 
     void * inputBuffer = nullptr;
     void * outputBuffer = nullptr;
+    void * memory = nullptr;
 
     const int configPwlEnabled = 1;
 

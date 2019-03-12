@@ -38,7 +38,7 @@ class RequestHandler
 {
 public:
 
-    RequestHandler(uint8_t threadCount);
+    explicit RequestHandler(uint32_t threadCount);
 
     ~RequestHandler();
 
@@ -47,8 +47,6 @@ public:
         std::unique_ptr<Request> request);
 
     status_t WaitFor(const gna_request_id requestId, const gna_timeout milliseconds);
-
-    void CancelRequests(const gna_model_id modelId);
 
     void StopRequests();
 

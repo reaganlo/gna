@@ -25,7 +25,7 @@
 
 #pragma once
 
-#include "IoctlSender.h"
+#include "DriverInterface.h"
 
 #include <map>
 #include <memory>
@@ -70,7 +70,7 @@ public:
         deviceHandle = handle;
     }
 
-    operator HANDLE() {
+    operator HANDLE() const {
         return deviceHandle;
     }
 
@@ -78,36 +78,42 @@ private:
     HANDLE deviceHandle;
 };
 
-class WindowsIoctlSender : public IoctlSender
+class WindowsDriverInterface : public DriverInterface
 {
 public:
-    WindowsIoctlSender();
+    WindowsDriverInterface();
 
-    virtual void Open() override;
+    virtual void OpenDevice() override;
 
-    virtual void IoctlSend(const GnaIoctlCommand code, void * const inbuf, const uint32_t inlen, void * const outbuf, const uint32_t outlen) override;
+    virtual void IoctlSend(const GnaIoctlCommand command,
+        void * const inbuf, const uint32_t inlen,
+        void * const outbuf, const uint32_t outlen) override;
 
-    virtual GnaCapabilities GetDeviceCapabilities() const override;
+    virtual DriverCapabilities GetCapabilities() const override;
 
     virtual uint64_t MemoryMap(void *memory, size_t memorySize) override;
 
     virtual void MemoryUnmap(uint64_t memoryId) override;
 
-    virtual RequestResult Submit(HardwareRequest * const hardwareRequest, RequestProfiler * const profiler) override;
+    virtual RequestResult Submit(
+        HardwareRequest& hardwareRequest, RequestProfiler * const profiler) const override;
+
+protected:
+    void createRequestDescriptor(HardwareRequest& hardwareRequest) const;
 
 private:
-    WindowsIoctlSender(const WindowsIoctlSender &) = delete;
-    WindowsIoctlSender& operator=(const WindowsIoctlSender&) = delete;
+    WindowsDriverInterface(const WindowsDriverInterface &) = delete;
+    WindowsDriverInterface& operator=(const WindowsDriverInterface&) = delete;
 
-    inline void printLastError(DWORD error);
+    inline void printLastError(DWORD error) const;
 
-    void wait(LPOVERLAPPED const ioctl, const DWORD timeout);
+    void wait(LPOVERLAPPED const ioctl, const DWORD timeout) const;
 
-    void checkStatus(BOOL ioResult);
+    void checkStatus(BOOL ioResult) const;
 
     void getDeviceCapabilities();
 
-    static const std::map<GnaIoctlCommand, decltype(GNA_IOCTL_CPBLTS2)> ioctlCommandsMap;
+    static const std::map<GnaIoctlCommand, decltype(GNA_IOCTL_NOTIFY)> ioctlCommandsMap;
 
     std::map<uint64_t, std::unique_ptr<OVERLAPPED>> memoryMapRequests;
 
@@ -116,8 +122,6 @@ private:
     OVERLAPPED overlapped;
 
     UINT32 recoveryTimeout = DRV_RECOVERY_TIMEOUT;
-
-    GnaCapabilities deviceCapabilities;
 };
 
 }
