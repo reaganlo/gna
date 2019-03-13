@@ -866,6 +866,8 @@ void Convolution2DKernelImpl1B1B(ExecutionKernelConfig<ConvolutionConfig2D> cons
     uint32_t numFilters = config->RequestConfig->Transform.Convolution.filters.count;
     uint32_t filterHeight = config->RequestConfig->Transform.Convolution.filters.dimensions.height;
     uint32_t filterWidth = config->RequestConfig->Transform.Convolution.filters.dimensions.width;
+    uint32_t memForFilter = (filterHeight * filterWidth * inputDepth);
+    uint32_t filterPadding = (ALIGN(memForFilter, 16) - memForFilter);
 
     uint32_t padHeight = config->RequestConfig->Transform.Convolution.zeroPadding.height;
     uint32_t padWidth = config->RequestConfig->Transform.Convolution.zeroPadding.width;
@@ -892,7 +894,7 @@ void Convolution2DKernelImpl1B1B(ExecutionKernelConfig<ConvolutionConfig2D> cons
 
     for (uint32_t OD = 0; OD < numFilters; OD++) { //Output depth or #filters
 
-        uint32_t fIdxN = (OD * (inputDepth * filterWidth * filterHeight));
+        uint32_t fIdxN = (OD * (inputDepth * filterWidth * filterHeight + filterPadding));
 
         for (uint32_t OW = 0; OW < outWidth; OW++) { //Output width
             for (uint32_t OH = 0; OH < outHeight; OH++) {    //Output height
@@ -941,6 +943,8 @@ void Convolution2DKernelImpl1B2B(ExecutionKernelConfig<ConvolutionConfig2D> cons
     uint32_t numFilters = config->RequestConfig->Transform.Convolution.filters.count;
     uint32_t filterHeight = config->RequestConfig->Transform.Convolution.filters.dimensions.height;
     uint32_t filterWidth = config->RequestConfig->Transform.Convolution.filters.dimensions.width;
+    uint32_t memForFilter = (filterHeight * filterWidth * inputDepth);
+    uint32_t filterPadding = (ALIGN(memForFilter, 16) - memForFilter);
 
     uint32_t padHeight = config->RequestConfig->Transform.Convolution.zeroPadding.height;
     uint32_t padWidth = config->RequestConfig->Transform.Convolution.zeroPadding.width;
@@ -967,7 +971,7 @@ void Convolution2DKernelImpl1B2B(ExecutionKernelConfig<ConvolutionConfig2D> cons
 
     for (uint32_t OD = 0; OD < numFilters; OD++) { //Output depth or #filters
 
-        uint32_t fIdxN = (OD * (inputDepth * filterWidth * filterHeight));
+        uint32_t fIdxN = (OD * (inputDepth * filterWidth * filterHeight + filterPadding));
 
         for (uint32_t OW = 0; OW < outWidth; OW++) { //Output width
             for (uint32_t OH = 0; OH < outHeight; OH++) {    //Output height
@@ -1016,6 +1020,8 @@ void Convolution2DKernelImpl2B1B(ExecutionKernelConfig<ConvolutionConfig2D> cons
     uint32_t numFilters = config->RequestConfig->Transform.Convolution.filters.count;
     uint32_t filterHeight = config->RequestConfig->Transform.Convolution.filters.dimensions.height;
     uint32_t filterWidth = config->RequestConfig->Transform.Convolution.filters.dimensions.width;
+    uint32_t memForFilter = (filterHeight * filterWidth * inputDepth);
+    uint32_t filterPadding = (ALIGN(memForFilter, 16) - memForFilter) / 2;
 
     uint32_t padHeight = config->RequestConfig->Transform.Convolution.zeroPadding.height;
     uint32_t padWidth = config->RequestConfig->Transform.Convolution.zeroPadding.width;
@@ -1042,7 +1048,7 @@ void Convolution2DKernelImpl2B1B(ExecutionKernelConfig<ConvolutionConfig2D> cons
 
     for (uint32_t OD = 0; OD < numFilters; OD++) { //Output depth or #filters
 
-        uint32_t fIdxN = (OD * (inputDepth * filterWidth * filterHeight));
+        uint32_t fIdxN = (OD * (inputDepth * filterWidth * filterHeight + filterPadding));
 
         for (uint32_t OW = 0; OW < outWidth; OW++) { //Output width
             for (uint32_t OH = 0; OH < outHeight; OH++) {    //Output height
@@ -1091,6 +1097,8 @@ void Convolution2DKernelImpl2B2B(ExecutionKernelConfig<ConvolutionConfig2D> cons
     uint32_t numFilters = config->RequestConfig->Transform.Convolution.filters.count;
     uint32_t filterHeight = config->RequestConfig->Transform.Convolution.filters.dimensions.height;
     uint32_t filterWidth = config->RequestConfig->Transform.Convolution.filters.dimensions.width;
+    uint32_t memForFilter = (filterHeight * filterWidth * inputDepth);
+    uint32_t filterPadding = (ALIGN(memForFilter, 16) - memForFilter) /2;
 
     uint32_t padHeight = config->RequestConfig->Transform.Convolution.zeroPadding.height;
     uint32_t padWidth = config->RequestConfig->Transform.Convolution.zeroPadding.width;
@@ -1117,7 +1125,7 @@ void Convolution2DKernelImpl2B2B(ExecutionKernelConfig<ConvolutionConfig2D> cons
 
     for (uint32_t OD = 0; OD < numFilters; OD++) { // Output depth
 
-        uint32_t fIdxN = (OD * (inputDepth * filterWidth * filterHeight));
+        uint32_t fIdxN = (OD * (inputDepth * filterWidth * filterHeight + filterPadding));
 
         for (uint32_t OW = 0; OW < outWidth; OW++) {
             for (uint32_t OH = 0; OH < outHeight; OH++) {
