@@ -42,6 +42,10 @@ public:
 
     ~RequestHandler();
 
+    uint32_t GetNumberOfThreads() const;
+
+    void ChangeNumberOfThreads(uint32_t threadCount);
+
     void Enqueue(
         gna_request_id *requestId,
         std::unique_ptr<Request> request);

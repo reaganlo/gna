@@ -29,14 +29,7 @@
 
 using namespace GNA;
 
-HardwareCapabilities::HardwareCapabilities(
-    gna_device_version deviceVersionIn) :
-    deviceVersion{deviceVersionIn},
-    bufferSize{ GetBufferSizeInKB(deviceVersion) }
-{
-}
-
-// GNA hardware supports 2 megabyte models, consisting of:
+// GNA hardware supports 256MB models, consisting of:
 // - layer descriptors
 // - user data
 const uint32_t HardwareCapabilities::MaximumModelSize = 256 * 1024 * 1024;
@@ -312,6 +305,12 @@ uint32_t HardwareCapabilities::GetBufferSizeInKB(gna_device_version hwId)
     return caps.ComputeEngineCount * caps.BufferSizesPerCEInKB;
 }
 
+uint32_t HardwareCapabilities::GetBufferSizeInKB() const
+{
+    auto caps = gnaCapsMap.at(deviceVersion);
+    return caps.ComputeEngineCount * caps.BufferSizesPerCEInKB;
+}
+
 uint32_t HardwareCapabilities::GetBufferElementCount(
     gna_device_version hwId, uint32_t grouping, uint32_t inputPrecision)
 {
@@ -329,6 +328,13 @@ uint32_t HardwareCapabilities::GetBufferElementCount(
     {
         return gnaCapsMap.at(hwId).BufferElementCountBackward[grouping - 1];
     }
+}
+
+HardwareCapabilities::HardwareCapabilities(
+    gna_device_version deviceVersionIn) :
+    deviceVersion{deviceVersionIn},
+    bufferSize {GetBufferSizeInKB()}
+{
 }
 
 void HardwareCapabilities::DiscoverHardware(DriverInterface &driverInterface)
@@ -377,6 +383,11 @@ void HardwareCapabilities::GetHardwareConsistencySettings(uint32_t bufferElement
 gna_device_version HardwareCapabilities::GetDeviceVersion() const
 {
     return deviceVersion;
+}
+
+gna_device_generation HardwareCapabilities::GetDeviceGeneration() const
+{
+    return gnaCapsMap.at(deviceVersion).Generation;
 }
 
 bool HardwareCapabilities::IsLayerSupported(nn_operation operation) const

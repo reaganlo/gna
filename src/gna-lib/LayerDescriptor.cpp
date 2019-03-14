@@ -254,7 +254,6 @@ static const std::map<const XnnParameterType, const XnnParameter> XnnDescriptorG
 
 const std::map<const XnnParameterType, const XnnParameter>& LayerDescriptor::getParameterMap(const gna_device_version hwId)
 {
-
     static const std::map<const gna_device_version, const std::map<const XnnParameterType, const XnnParameter>&> parameterMap =
     {
         {GNA_CNL, XnnDescriptorGNA_1},
@@ -278,25 +277,29 @@ LayerDescriptor::LayerDescriptor(const BaseAddress memoryBaseIn, const BaseAddre
         hwCaps,
         memoryBaseIn,
         addressIn,
-        getParameterMap(hwCaps.GetDeviceVersion()) }
+        getParameterMap(hwCaps.GetDeviceVersion()),
+        {}
+    }
 {
 };
 
-LayerDescriptor::LayerDescriptor(const LayerDescriptor& base, AddrGmmCfg gmmDescriptor) :
+LayerDescriptor::LayerDescriptor(const LayerDescriptor& base, AddrGmmCfg gmmDescriptor, GetHwOffset getHwOffsetIn) :
      LayerDescriptor {
         gmmDescriptor,
         base.Size,
         base.HwCapabilities,
         base.memoryBase,
         base.address,
-        *base.xnnReferenceParams }
+        *base.xnnReferenceParams,
+        getHwOffsetIn}
 {
 };
 
 LayerDescriptor::LayerDescriptor(const AddrGmmCfg gmmConfig, const size_t size,
         const HardwareCapabilities& hwCaps,
         const BaseAddress memoryBaseIn, BaseAddress descriptorBaseIn,
-        const std::map<const XnnParameterType, const XnnParameter>& paramsIn) :
+        const std::map<const XnnParameterType, const XnnParameter>& paramsIn,
+        GetHwOffset getHwOffsetIn) :
     Size{ size },
     HwCapabilities { hwCaps },
     GmmDescriptor{ gmmConfig },
@@ -304,7 +307,8 @@ LayerDescriptor::LayerDescriptor(const AddrGmmCfg gmmConfig, const size_t size,
     address{ descriptorBaseIn },
     offset{ address.GetOffset(memoryBase) },
     xnnReferenceParams{ &paramsIn },
-    gmmReferenceParams{ &GmmDescriptorGNA }
+    gmmReferenceParams{ &GmmDescriptorGNA },
+    getHwOffset{getHwOffsetIn}
 {
     Expect::ValidBuffer(address);
     Expect::AlignedTo(address, static_cast<uint32_t>(Size));
@@ -314,5 +318,3 @@ LayerDescriptor::LayerDescriptor(const AddrGmmCfg gmmConfig, const size_t size,
         Expect::AlignedTo(GmmDescriptor, sizeof(GMM_CONFIG));
     }
 }
-
-

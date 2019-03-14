@@ -23,48 +23,35 @@
  in any way.
 */
 
-#ifndef _DEVICE_H
-#define _DEVICE_H
+#pragma once
+
+#include <map>
 
 #include "gna-api-dumper.h"
 
 #include "common.h"
 
 #include "AccelerationDetector.h"
+#include "HardwareCapabilities.h"
 #include "RequestBuilder.h"
 #include "RequestHandler.h"
 
 namespace GNA
 {
 
-class DeviceManager
-{
-public:
-    static uint32_t GetDeviceCount();
-
-    static gna_device_version GetDeviceVersion(gna_device_id deviceId);
-
-    static void SetThreadCount(gna_device_id deviceId, uint32_t threadCount);
-
-    static uint32_t GetThreadCount(gna_device_id deviceId);
-
-    static void VerifyDeviceIndex(gna_device_id deviceId);
-
-
-private:
-    static std::map<uint32_t, uint32_t> threadCountMap;
-};
-
-
 class Memory;
 class Device
 {
 public:
-    Device(gna_device_id deviceId, uint32_t threadCount = 1);
+    Device(uint32_t threadCount = 1);
     Device(const Device &) = delete;
     Device& operator=(const Device&) = delete;
 
-    void ValidateSession(gna_device_id deviceId) const;
+    gna_device_version GetVersion() const;
+
+    uint32_t GetNumberOfThreads() const;
+
+    void SetNumberOfThreads(uint32_t threadCount);
 
     status_t AllocateMemory(uint32_t requestedSize, uint32_t * sizeGranted, void **memoryAddress);
 
@@ -118,6 +105,8 @@ protected:
     RequestBuilder requestBuilder;
 
     RequestHandler requestHandler;
+
+private:
+    uint32_t numberOfThreads;
 };
 }
-#endif

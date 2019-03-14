@@ -28,19 +28,13 @@
 
 #include "gna-api-dumper.h"
 
-#include "Device.h"
-#if HW_VERBOSE == 1
-#include "DeviceVerbose.h"
-#endif
+#include "DeviceManager.h"
 #include "Logger.h"
 #include "Expect.h"
 
-using std::thread;
-using std::unique_ptr;
-
 using namespace GNA;
 
-std::unique_ptr<Device> GnaDevice;
+DeviceManager deviceManager;
 
 intel_gna_status_t HandleUnknownException(const std::exception& e)
 {
@@ -61,8 +55,8 @@ GNAAPI gna_status_t GnaModelCreate(
 {
     try
     {
-        GnaDevice->ValidateSession(deviceId);
-        GnaDevice->LoadModel(modelId, model);
+        auto& device = deviceManager.GetDevice(deviceId);
+        device.LoadModel(modelId, model);
         return GNA_SUCCESS;
     }
     catch (const GnaModelException &e)
@@ -84,7 +78,8 @@ GNAAPI gna_status_t GnaModelRelease(
 {
     try
     {
-        GnaDevice->ReleaseModel(modelId);
+        auto& device = deviceManager.GetDevice(0);
+        device.ReleaseModel(modelId);
         return GNA_SUCCESS;
     }
     catch (const GnaException &e)
@@ -104,7 +99,8 @@ GNAAPI intel_gna_status_t GnaRequestConfigCreate(
 {
     try
     {
-        GnaDevice->CreateConfiguration(modelId, configId);
+        auto& device = deviceManager.GetDevice(0);
+        device.CreateConfiguration(modelId, configId);
         return GNA_SUCCESS;
     }
     catch (const GnaModelException &e)
@@ -129,7 +125,8 @@ GNAAPI gna_status_t GnaRequestConfigBufferAdd(
 {
     try
     {
-        GnaDevice->AttachBuffer(configId, type, layerIndex, address);
+        auto& device = deviceManager.GetDevice(0);
+        device.AttachBuffer(configId, type, layerIndex, address);
         return GNA_SUCCESS;
     }
     catch (const GnaException &e)
@@ -150,7 +147,8 @@ GNAAPI gna_status_t GnaRequestConfigActiveListAdd(
 {
     try
     {
-        GnaDevice->AttachActiveList(configId, layerIndex, indicesCount, indices);
+        auto& device = deviceManager.GetDevice(0);
+        device.AttachActiveList(configId, layerIndex, indicesCount, indices);
         return GNA_SUCCESS;
     }
     catch (const GnaException &e)
@@ -169,7 +167,8 @@ GNAAPI intel_gna_status_t GnaRequestConfigEnableHardwareConsistency(
 {
     try
     {
-        GnaDevice->SetHardwareConsistency(configId, hardwareVersion);
+        auto& device = deviceManager.GetDevice(0);
+        device.SetHardwareConsistency(configId, hardwareVersion);
         return GNA_SUCCESS;
     }
     catch (const GnaException &e)
@@ -189,7 +188,8 @@ GNAAPI intel_gna_status_t GnaRequestConfigEnforceAcceleration(
 {
     try
     {
-        GnaDevice->EnforceAcceleration(configId, static_cast<AccelerationMode>(accel));
+        auto& device = deviceManager.GetDevice(0);
+        device.EnforceAcceleration(configId, static_cast<AccelerationMode>(accel));
         return GNA_SUCCESS;
     }
     catch (const GnaException &e)
@@ -207,7 +207,8 @@ GNAAPI intel_gna_status_t GnaRequestConfigRelease(gna_request_cfg_id configId)
 {
     try
     {
-        GnaDevice->ReleaseConfiguration(configId);
+        auto& device = deviceManager.GetDevice(0);
+        device.ReleaseConfiguration(configId);
         return GNA_SUCCESS;
     }
     catch (const GnaException &e)
@@ -227,7 +228,8 @@ GNAAPI intel_gna_status_t GnaRequestEnqueue(
 {
     try
     {
-        GnaDevice->PropagateRequest(configId, requestId);
+        auto& device = deviceManager.GetDevice(0);
+        device.PropagateRequest(configId, requestId);
         return GNA_SUCCESS;
     }
     catch (const GnaException &e)
@@ -246,7 +248,8 @@ GNAAPI gna_status_t GnaRequestWait(
 {
     try
     {
-        return GnaDevice->WaitForRequest(requestId, milliseconds);
+        auto& device = deviceManager.GetDevice(0);
+        return device.WaitForRequest(requestId, milliseconds);
     }
     catch (const GnaModelException &e)
     {
@@ -276,7 +279,8 @@ GNAAPI gna_status_t GnaAlloc(
 {
     try
     {
-        return GnaDevice->AllocateMemory(sizeRequested, sizeGranted, memoryAddress);
+        auto& device = deviceManager.GetDevice(0);
+        return device.AllocateMemory(sizeRequested, sizeGranted, memoryAddress);
     }
     catch (const GnaException& e)
     {
@@ -294,7 +298,8 @@ GNAAPI gna_status_t GnaFree(
 {
     try
     {
-        GnaDevice->FreeMemory(memory);
+        auto& device = deviceManager.GetDevice(0);
+        device.FreeMemory(memory);
         return GNA_SUCCESS;
     }
     catch (const GnaException &e)
@@ -312,7 +317,7 @@ GNAAPI intel_gna_status_t GnaDeviceGetCount(uint32_t * deviceCount)
     try
     {
         Expect::NotNull(deviceCount);
-        *deviceCount = DeviceManager::GetDeviceCount();
+        *deviceCount = deviceManager.GetDeviceCount();
         return GNA_SUCCESS;
     }
     catch (const GnaException &e)
@@ -331,7 +336,7 @@ GNAAPI intel_gna_status_t GnaDeviceGetVersion(uint32_t deviceIndex,
     try
     {
         Expect::NotNull(deviceVersion);
-        *deviceVersion = DeviceManager::GetDeviceVersion(deviceIndex);
+        *deviceVersion = deviceManager.GetDeviceVersion(deviceIndex);
         return GNA_SUCCESS;
     }
     catch (const GnaException &e)
@@ -348,7 +353,7 @@ GNAAPI intel_gna_status_t GnaDeviceSetThreadNumber(gna_device_id device, uint32_
 {
     try
     {
-        DeviceManager::SetThreadCount(device, threadNumber);
+        deviceManager.SetThreadCount(device, threadNumber);
         return GNA_SUCCESS;
     }
     catch (const GnaException &e)
@@ -363,20 +368,9 @@ GNAAPI intel_gna_status_t GnaDeviceSetThreadNumber(gna_device_id device, uint32_
 
 GNAAPI intel_gna_status_t GnaDeviceOpen(gna_device_id device)
 {
-    if(GnaDevice)
-    {
-        Log->Error("GNA Device already opened. Close Device first.\n");
-        return GNA_INVALIDHANDLE;
-    }
     try
     {
-        auto threadCount = DeviceManager::GetThreadCount(device);
-
-#if HW_VERBOSE == 1
-        GnaDevice = std::make_unique<DeviceVerbose>(device, threadCount);
-#else
-        GnaDevice = std::make_unique<Device>(device, threadCount);
-#endif
+        deviceManager.OpenDevice(device);
         return GNA_SUCCESS;
     }
     catch (const GnaException &e)
@@ -394,9 +388,7 @@ GNAAPI gna_status_t GnaDeviceClose(
 {
     try
     {
-        GnaDevice->ValidateSession(deviceId);
-        GnaDevice->Stop();
-        GnaDevice.reset();
+        deviceManager.CloseDevice(deviceId);
         return GNA_SUCCESS;
     }
     catch (const GnaException &e)
@@ -418,7 +410,8 @@ void* GnaModelDump(
 {
     try
     {
-        return GnaDevice->Dump(modelId, deviceGeneration, modelHeader, status, customAlloc);
+        auto& device = deviceManager.GetDevice(0);
+        return device.Dump(modelId, deviceGeneration, modelHeader, status, customAlloc);
     }
     catch (const GnaModelException &e)
     {
@@ -442,7 +435,8 @@ gna_status_t GnaRequestConfigEnablePerf(gna_request_cfg_id configId,
 {
     try
     {
-        GnaDevice->EnableProfiling(configId, hwPerfEncoding, perfResults);
+        auto& device = deviceManager.GetDevice(0);
+        device.EnableProfiling(configId, hwPerfEncoding, perfResults);
         return GNA_SUCCESS;
     }
     catch (const GnaException &e)

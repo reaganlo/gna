@@ -42,7 +42,7 @@ ConvolutionalLayer2D::ConvolutionalLayer2D(nn_layer const * const layer, const B
 
     // performed for layer size validation
     HardwareLayerCnn2D::GetKernelWorkGroupSize(
-        HardwareCapabilities::GetDeviceVersion(validator->Device),
+        validator->HwCapabilities.GetDeviceVersion(),
         Transforms.Get<ConvolutionFunction2D>(ConvolutionalTransform2D),
         Transforms.Get<PoolingFunction2D>(PoolingTransform2D),
         GetOutputTransform()->Output->Mode);
@@ -50,7 +50,9 @@ ConvolutionalLayer2D::ConvolutionalLayer2D(nn_layer const * const layer, const B
     Layer::ComputeHidden = [this](AccelerationMode accel, ExecutionConfig const & executionConfig)
     {this->compute(nullptr, accel, executionConfig); };
 
-    Layer::Compute = [this](LayerConfiguration &layerConfiguration, AccelerationMode accel, ExecutionConfig const & executionConfig)
+    Layer::Compute = [this](LayerConfiguration &layerConfiguration,
+                            AccelerationMode accel,
+                            ExecutionConfig const & executionConfig)
     {this->compute(&layerConfiguration, accel, executionConfig); };
 
 }

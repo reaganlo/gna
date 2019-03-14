@@ -44,6 +44,16 @@ RequestHandler::~RequestHandler()
     clearRequestMap();
 }
 
+uint32_t RequestHandler::GetNumberOfThreads() const
+{
+    return threadPool.GetNumberOfThreads();
+}
+
+void RequestHandler::ChangeNumberOfThreads(uint32_t threadCount)
+{
+    threadPool.SetNumberOfThreads(threadCount);
+}
+
 void RequestHandler::Enqueue(
     gna_request_id *requestId,
     unique_ptr<Request> request)

@@ -99,14 +99,14 @@ void HardwareModel::Build(const std::vector<Memory* >& modelMemoryObjectsIn)
                 LayerDescriptor::GetSize(static_cast<uint32_t>(softwareLayers.size()),
                                          hwCapabilities.GetDeviceVersion()));
     }
-    auto layerDescriptor = LayerDescriptor(*baseDescriptor, gmmDescriptor);
+    auto layerDescriptor = LayerDescriptor(*baseDescriptor, gmmDescriptor,
+        [this](const BaseAddress& buffer) { return GetBufferOffset(buffer); });
     auto i = uint32_t { 0 };
     for (auto& layer : softwareLayers)
     {
         try
         {
-            const auto parameters = DescriptorParameters{layer.get(), layerDescriptor,
-            [this] (const BaseAddress& buffer) { return GetBufferOffset(buffer); }};
+            const auto parameters = DescriptorParameters{layer.get(), layerDescriptor };
             hardwareLayers.push_back(HardwareLayer::Create(parameters));
             if (INTEL_GMM == layer->Operation)
             {

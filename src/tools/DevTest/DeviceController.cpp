@@ -24,24 +24,34 @@
 */
 
 #include <stdexcept>
+#include <iostream>
 
 #include "DeviceController.h"
 
 DeviceController::DeviceController()
 {
+    gna_device_version deviceVersion;
     gna_device_id deviceNumber = 0;
     auto status = GnaDeviceGetCount(&deviceNumber);
-    if (GNA_SUCCESS!= status)
+    if (GNA_SUCCESS != status)
     {
         throw std::runtime_error("GnaDeviceGetCount failed");
     }
     gnaHandle = 0;
     // open the device
     status = GnaDeviceOpen(gnaHandle);
-    if (GNA_SUCCESS!= status)
+    if (GNA_SUCCESS != status)
     {
         throw std::runtime_error("GnaDeviceOpen failed");
     }
+
+    status = GnaDeviceGetVersion(gnaHandle, &deviceVersion);
+    if (GNA_SUCCESS != status)
+    {
+        throw std::runtime_error("GnaDeviceGetVersion failed");
+    }
+
+    std::cout << "Device version: " << std::hex << deviceVersion << std::endl;
 }
 
 DeviceController::~DeviceController()

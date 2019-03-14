@@ -46,7 +46,7 @@ FiltersTensor::FiltersTensor(const Shape& dimensions, const DataMode & dataMode,
     if (GNA_DATA_DISABLED != Mode)
     {
         const auto kernelMemorySize = HardwareLayerCnn2D::GetKernelMemorySize(
-            HardwareCapabilities::GetDeviceVersion(validator->Device), this);
+            validator->HwCapabilities.GetDeviceVersion(), this);
         auto caps = static_cast<const TensorLimits* const>(validator->Capabilities);
         validator->ValidateBufferIfSet(Buffer, kernelMemorySize * Count, caps->Align);
     }

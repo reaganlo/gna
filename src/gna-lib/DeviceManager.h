@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2017 Intel Corporation.
+ Copyright 2018 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -25,41 +25,43 @@
 
 #pragma once
 
-#include "CompiledModel.h"
-#include "HardwareModelVerbose.h"
+#include <map>
+#include <memory>
+
+#include "Device.h"
+
+#include "common.h"
 
 namespace GNA
 {
 
-class CompiledModelVerbose : public CompiledModel
+class DeviceManager
 {
 public:
-    CompiledModelVerbose(const gna_model *const userModel,
-        const AccelerationDetector& detectorIn,
-        const HardwareCapabilities& hwCapabilitiesIn,
-        std::vector<std::unique_ptr<Memory>>& memoryObjects) :
-        CompiledModel(userModel, detectorIn, hwCapabilitiesIn, memoryObjects)
-    {
-    };
+    DeviceManager();
 
-    void CompiledModelVerbose::SetPrescoreScenario(uint32_t nActions, dbg_action *actions)
-    {
-        if (hardwareModel)
-        {
-            auto& hardwareModelVerbose = static_cast<HardwareModelVerbose&>(*hardwareModel);
-            hardwareModelVerbose.SetPrescoreScenario(nActions, actions);
-        }
-    }
+    Device& GetDevice(gna_device_id deviceId);
 
-    void CompiledModelVerbose::SetAfterscoreScenario(uint32_t nActions, dbg_action *actions)
-    {
-        if (hardwareModel)
-        {
-            auto& hardwareModelVerbose = static_cast<HardwareModelVerbose&>(*hardwareModel);
-            hardwareModelVerbose.SetAfterscoreScenario(nActions, actions);
-        }
-    }
+    uint32_t GetDeviceCount();
+
+    gna_device_version GetDeviceVersion(gna_device_id deviceId);
+
+    void SetThreadCount(gna_device_id deviceId, uint32_t threadCount);
+
+    uint32_t GetThreadCount(gna_device_id deviceId);
+
+    void VerifyDeviceIndex(gna_device_id deviceId);
+
+    void OpenDevice(gna_device_id deviceId);
+
+    void CloseDevice(gna_device_id deviceId);
+
+    static constexpr uint32_t DefaultThreadCount = 1;
+
+private:
+    std::vector<std::unique_ptr<Device>> deviceMap;
+
+    std::vector<bool> deviceOpenedMap;
 };
+
 }
-
-

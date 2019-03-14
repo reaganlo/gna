@@ -28,17 +28,14 @@
 
 #include "gna-api-verbose.h"
 
-#include "Device.h"
+#include "DeviceManager.h"
 #include "DeviceVerbose.h"
-#include "Logger.h"
 #include "Expect.h"
-
-using std::thread;
-using std::unique_ptr;
+#include "Logger.h"
 
 using namespace GNA;
 
-extern std::unique_ptr<Device> GnaDevice;
+extern DeviceManager deviceManager;
 
 intel_gna_status_t GnaModelSetPrescoreScenario(
     gna_model_id modelId,
@@ -47,7 +44,8 @@ intel_gna_status_t GnaModelSetPrescoreScenario(
 {
     try
     {
-        static_cast<DeviceVerbose*>(GnaDevice.get())->SetPrescoreScenario(modelId, nActions, pActions);
+        auto& device = dynamic_cast<DeviceVerbose&>(deviceManager.GetDevice(0));
+        device.SetPrescoreScenario(modelId, nActions, pActions);
         return GNA_SUCCESS;
     }
     catch (const GnaException &e)
@@ -67,7 +65,8 @@ intel_gna_status_t GnaModelSetAfterscoreScenario(
 {
     try
     {
-        static_cast<DeviceVerbose*>(GnaDevice.get())->SetAfterscoreScenario(modelId, nActions, pActions);
+        auto& device = dynamic_cast<DeviceVerbose&>(deviceManager.GetDevice(0));
+        device.SetAfterscoreScenario(modelId, nActions, pActions);
         return GNA_SUCCESS;
     }
     catch (const GnaException &e)

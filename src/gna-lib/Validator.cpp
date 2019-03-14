@@ -29,8 +29,10 @@
 
 using namespace GNA;
 
-BaseValidator::BaseValidator(gna_device_generation generation, const ValidBoundariesFunctor validBoundariesIn) :
-    Device{ generation },
+BaseValidator::BaseValidator(
+    const HardwareCapabilities& hwCapabilities,
+    const ValidBoundariesFunctor validBoundariesIn) :
+    HwCapabilities{ hwCapabilities },
     bufferValidator{ validBoundariesIn }
 {
 }

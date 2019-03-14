@@ -95,6 +95,7 @@ set(gna_lib_sources
   ${SRC_DIR}/DataMode.cpp
   ${SRC_DIR}/Device.cpp
   ${SRC_DIR}/DeviceLayerSupport.cpp
+  ${SRC_DIR}/DeviceManager.cpp
   ${SRC_DIR}/GmmLayer.cpp
   ${SRC_DIR}/HardwareCapabilities.cpp
   ${SRC_DIR}/HardwareLayer.cpp
@@ -147,6 +148,7 @@ set(gna_lib_headers
   ${SRC_DIR}/ConvolutionalLayer2D.h
   ${SRC_DIR}/Device.h
   ${SRC_DIR}/DeviceLayerSupport.h
+  ${SRC_DIR}/DeviceManager.h
   ${SRC_DIR}/DriverInterface.h
   ${SRC_DIR}/Expect.h
   ${SRC_DIR}/GmmLayer.h

@@ -27,6 +27,7 @@
 
 #include "Address.h"
 #include "Capabilities.h"
+#include "HardwareCapabilities.h"
 
 #include <memory>
 #include <functional>
@@ -43,7 +44,9 @@ using ValidBoundariesFunctor = std::function<void(const void *, size_t)>;
 class BaseValidator
 {
 public:
-    BaseValidator(gna_device_generation generation, const ValidBoundariesFunctor bufferValidator);
+    BaseValidator(
+        const HardwareCapabilities& hwCapabilities,
+        const ValidBoundariesFunctor bufferValidator);
     ~BaseValidator() = default;
 
     void ValidateBuffer(const void* const buffer, size_t size,
@@ -56,7 +59,7 @@ public:
             ValidateBuffer(buffer, size, alignLimits);
     }
 
-    const gna_device_generation Device;
+    const HardwareCapabilities& HwCapabilities;
 
 protected:
     const ValidBoundariesFunctor bufferValidator;

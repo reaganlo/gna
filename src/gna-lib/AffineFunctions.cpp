@@ -41,7 +41,7 @@ using AD = GNA::AccelerationDetector;
 const FullCapabilitiesMap AffineFunctionMulti::Capabilities =
 {
     {INTEL_AFFINE_MULTIBIAS, {
-        {GNA_3_0, std::make_shared<TensorLimits>(TensorLimits{
+        {GNA_2_0, std::make_shared<TensorLimits>(TensorLimits{
             {GNA_TENSOR_NH},
                 {{GNA_DIM_N, {1, XNN_N_GROUP_MAX, 1, XNN_ERR_BIAS_VOLUME}},
                 {GNA_DIM_H, {1, XNN_N_IN_ELEMS_MAX, 1, XNN_ERR_BIAS_VOLUME}}},

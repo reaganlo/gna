@@ -42,21 +42,28 @@ namespace GNA
 {
 class ThreadPool {
 public:
-    explicit ThreadPool(uint32_t nThreads);
+    explicit ThreadPool(uint32_t threadCount);
     ~ThreadPool();
     ThreadPool(const ThreadPool &) = delete;
     ThreadPool& operator=(const ThreadPool&) = delete;
+
+    uint32_t GetNumberOfThreads() const;
+
+    void SetNumberOfThreads(uint32_t threadCount);
 
     void Enqueue(Request *request);
     void Stop();
 
 private:
+    void employWorkers();
+
     std::vector<KernelBuffers> buffers; // NOTE: order is important, buffers have to be destroyed last
     std::mutex tpMutex;
     std::deque<Request*> tasks;
     bool stopped = false;
     std::condition_variable condition;
     std::vector<std::thread> workers;
+    uint32_t numberOfThreads;
 };
 
 }

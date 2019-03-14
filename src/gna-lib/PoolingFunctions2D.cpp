@@ -34,7 +34,7 @@ using std::move;
 
 using namespace GNA;
 
-static const ComponentLimits __WH_limits= 
+static const ComponentLimits __WH_limits=
 {
     {GNA_TENSOR_WH},
     {{GNA_DIM_W, {1, CNN_N_KERNEL_ELEMENTS_PER_DIMENSION_MAX, 1, CNN_ERR_POOL_STRIDE}},

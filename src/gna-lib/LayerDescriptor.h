@@ -215,15 +215,16 @@ public:
         Expect::NotNull(translator.get());
     }
 
-    XnnParameter(BaseAddress descriptorAddress, uint32_t descriptorOffset, const BaseAddress memoryBaseIn, const XnnParameter& param) :
+    XnnParameter(BaseAddress descriptorAddress, uint32_t descriptorOffset,
+                const XnnParameter& param, const GetHwOffset getHwOffset) :
         Size { param.Size },
-        memoryBase { memoryBaseIn },
         offset { param.offset },
         address { descriptorAddress + offset },
         absoluteOffset{ descriptorOffset + offset },
         bitOffset { param.bitOffset },
         bitCount { param.bitCount },
-        translator { param.translator }
+        translator { param.translator },
+        getBufferOffset { getHwOffset }
     {
     }
 
@@ -258,6 +259,13 @@ public:
         }
     }
 
+    // sets value as absolute offset
+    void operator=(const BaseAddress& buffer)
+    {
+        Expect::True(4 == Size && 0 == bitCount, GNA_UNKNOWN_ERROR);
+        *address.Get<uint32_t>() = getBufferOffset(buffer);
+    }
+
     uint8_t* operator&() const
     {
         return address.Get<uint8_t>();
@@ -287,13 +295,13 @@ public:
 
     uint32_t    Size;
 private:
-    const BaseAddress memoryBase;   // model memory base
     uint32_t    offset; // Parameter offset relative to LayerDescriptor base
     BaseAddress address;            // global parameter address
     uint32_t absoluteOffset = 0;    // absolute parameters offset from model memory base
     uint8_t bitOffset = 0;
     uint8_t bitCount = 0;
     const std::shared_ptr<const ParamTranslator> translator;
+    GetHwOffset getBufferOffset;
 
      // sets parameter value
     template<typename T>
@@ -342,7 +350,7 @@ public:
     LayerDescriptor(const BaseAddress memoryBase, const BaseAddress& address,
                     const HardwareCapabilities& hwCaps);
 
-    LayerDescriptor(const LayerDescriptor& base, AddrGmmCfg gmmDescriptor);
+    LayerDescriptor(const LayerDescriptor& base, AddrGmmCfg gmmDescriptor, GetHwOffset getHwOffsetIn);
 
     ~LayerDescriptor() = default;
 
@@ -362,13 +370,13 @@ public:
     XnnParameter operator[](const GmmParameterType paramType) const
     {
         auto gmmOffset = GmmDescriptor.GetOffset(memoryBase);
-        return XnnParameter(GmmDescriptor, gmmOffset, memoryBase, gmmReferenceParams->at(paramType));
+        return XnnParameter(GmmDescriptor, gmmOffset, gmmReferenceParams->at(paramType), getHwOffset);
     }
 
     // return XnnParameter copy for xNN data manipulation
     XnnParameter operator[](const XnnParameterType paramType) const
     {
-        return XnnParameter(address, offset, memoryBase, xnnReferenceParams->at(paramType));
+        return XnnParameter(address, offset, xnnReferenceParams->at(paramType), getHwOffset);
     }
 
     BaseAddress GetMemAddress() const
@@ -391,13 +399,15 @@ private:
 
     LayerDescriptor(const AddrGmmCfg gmmConfig, const size_t size, const HardwareCapabilities& hwCaps,
         const BaseAddress memoryBaseIn, BaseAddress descriptorBaseIn,
-        const std::map<const XnnParameterType, const XnnParameter>& paramsIn);
+        const std::map<const XnnParameterType, const XnnParameter>& paramsIn,
+        GetHwOffset getHwOffsetIn);
 
     BaseAddress memoryBase;
     BaseAddress address;     // LayerDescriptor memory address
     uint32_t offset;      // absolute offset of LayerDescriptor from model memory base
     const std::map<const XnnParameterType, const XnnParameter>* xnnReferenceParams;
     const std::map<const GmmParameterType, const XnnParameter>* gmmReferenceParams;
+    GetHwOffset getHwOffset;
 };
 
 }

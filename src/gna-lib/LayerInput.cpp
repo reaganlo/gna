@@ -29,30 +29,52 @@
 
 using namespace GNA;
 
-static const std::vector<uint32_t> multipiers =
+static const std::vector<uint32_t> _Multipliers =
 { 2 * XNN_N_IN_ELEMS_MPLY, 1 * XNN_N_IN_ELEMS_MPLY, XNN_N_IN_ELEMS_MPLY / 2};
 
-static const ShapeLimits __nw_limits=
+static const ShapeLimits _NWLimits =
 {
     {GNA_DIM_N, {1, XNN_N_GROUP_MAX, 1, XNN_ERR_INPUT_VOLUME}},
-    {GNA_DIM_W, {XNN_N_IN_ELEMS_MPLY, XNN_N_IN_ELEMS_MAX, multipiers, XNN_ERR_INPUT_VOLUME}}
+    {GNA_DIM_W, {XNN_N_IN_ELEMS_MPLY, XNN_N_IN_ELEMS_MAX, _Multipliers, XNN_ERR_INPUT_VOLUME}}
 };
 
-static const DataModeLimits __modes = { { GNA_INT8, GNA_INT16, GNA_INT32, GNA_DATA_CONSTANT_SCALAR, GNA_DATA_DISABLED },
-    XNN_ERR_INPUT_BYTES };
+static const DataModeLimits _ModesGen0_9 = {
+    { GNA_INT16 },
+    XNN_ERR_INPUT_BYTES
+};
 
-static const TensorLimits __nw_tensor_limits =
+static const TensorLimits _NWTensorLimitsGen0_9 =
 {
     {GNA_TENSOR_NW},
-    __nw_limits,
-    __modes
+    _NWLimits,
+    _ModesGen0_9
 };
 
-static const TensorLimits __wn_tensor_limits =
+static const TensorLimits _WNTensorLimitsGen0_9 =
 {
     {GNA_TENSOR_WN},
-    __nw_limits,
-    __modes
+    _NWLimits,
+    _ModesGen0_9
+};
+
+/* GNA_DATA_DISABLED may be supported in next generation */
+static const DataModeLimits _ModesGen3 = {
+    { GNA_INT8, GNA_INT16 },
+    XNN_ERR_INPUT_BYTES
+};
+
+static const TensorLimits _NWTensorLimitsGen3 =
+{
+    {GNA_TENSOR_NW},
+    _NWLimits,
+    _ModesGen3
+};
+
+static const TensorLimits _WNTensorLimitsGen3 =
+{
+    {GNA_TENSOR_WN},
+    _NWLimits,
+    _ModesGen3
 };
 
 // GNA_TENSOR_WN -> GNA_DIM_W = columnCount
@@ -61,23 +83,29 @@ static const TensorLimits __wn_tensor_limits =
 // GNA_TENSOR_NW -> GNA_DIM_N = columnCount
 const FullCapabilitiesMap LayerInput::capabilities =
 {
-    // TODO:3: add caps for previous device versions
     {INTEL_AFFINE, {
-        {GNA_3_0, std::make_shared<TensorLimits>(__nw_tensor_limits)}
+        {GNA_0_9, std::make_shared<TensorLimits>(_NWTensorLimitsGen0_9)},
+        {GNA_3_0, std::make_shared<TensorLimits>(_NWTensorLimitsGen3)}
     }},
     {INTEL_AFFINE_DIAGONAL, {
-        {GNA_3_0, std::make_shared<TensorLimits>(__nw_tensor_limits)}
-
+        {GNA_0_9, std::make_shared<TensorLimits>(_NWTensorLimitsGen0_9)},
+        {GNA_3_0, std::make_shared<TensorLimits>(_NWTensorLimitsGen3)}
     }},
     {INTEL_AFFINE_MULTIBIAS, {
-        {GNA_3_0, std::make_shared<TensorLimits>(__nw_tensor_limits)}
+        {GNA_2_0, std::make_shared<TensorLimits>(_NWTensorLimitsGen0_9)},
+        {GNA_3_0, std::make_shared<TensorLimits>(_NWTensorLimitsGen3)}
     }},
     {INTEL_CONVOLUTIONAL, {
+        {GNA_1_0, std::make_shared<TensorLimits>(TensorLimits{
+            { GNA_TENSOR_WN },
+            {{GNA_DIM_N, {1, 1, 1, XNN_ERR_INPUT_VOLUME}},
+             {GNA_DIM_W, {XNN_N_IN_ELEMS_MPLY, XNN_N_IN_ELEMS_MAX, _Multipliers, XNN_ERR_INPUT_VOLUME}}},
+            _ModesGen0_9})},
         {GNA_3_0, std::make_shared<TensorLimits>(TensorLimits{
             { GNA_TENSOR_WN },
             {{GNA_DIM_N, {1, 1, 1, XNN_ERR_INPUT_VOLUME}},
-             {GNA_DIM_W, {XNN_N_IN_ELEMS_MPLY, XNN_N_IN_ELEMS_MAX, multipiers, XNN_ERR_INPUT_VOLUME}}},
-            __modes})}
+             {GNA_DIM_W, {XNN_N_IN_ELEMS_MPLY, XNN_N_IN_ELEMS_MAX, _Multipliers, XNN_ERR_INPUT_VOLUME}}},
+            _ModesGen3})}
     }},
     {INTEL_CONVOLUTIONAL_2D, {
         {GNA_3_0, std::make_shared<TensorLimits>(TensorLimits{
@@ -86,7 +114,7 @@ const FullCapabilitiesMap LayerInput::capabilities =
              {GNA_DIM_H, {1, XNN_N_IN_ELEMS_MAX, 1, XNN_ERR_INPUT_VOLUME}},
              {GNA_DIM_W, {1, XNN_N_IN_ELEMS_MAX, 1, XNN_ERR_INPUT_VOLUME}},
              {GNA_DIM_D, {1, XNN_N_IN_ELEMS_MAX, 1, XNN_ERR_INPUT_VOLUME}}},
-            __modes})}
+            _ModesGen3})}
     }},
    {GNA_LAYER_CNN_2D_POOLING, {
         {GNA_3_0, std::make_shared<TensorLimits>(TensorLimits{
@@ -98,23 +126,27 @@ const FullCapabilitiesMap LayerInput::capabilities =
              { { GNA_INT8, GNA_INT16 }, XNN_ERR_INPUT_BYTES }})}
     }},
     {INTEL_COPY, {
-        {GNA_3_0, std::make_shared<TensorLimits>(__wn_tensor_limits)}
+        {GNA_0_9, std::make_shared<TensorLimits>(_WNTensorLimitsGen0_9)},
+        {GNA_3_0, std::make_shared<TensorLimits>(_WNTensorLimitsGen3)}
     }},
     {INTEL_DEINTERLEAVE, {
-        {GNA_3_0, std::make_shared<TensorLimits>(__nw_tensor_limits)}
+        {GNA_0_9, std::make_shared<TensorLimits>(_NWTensorLimitsGen0_9)},
+        {GNA_3_0, std::make_shared<TensorLimits>(_NWTensorLimitsGen3)}
     }},
      {INTEL_GMM, {
-        {GNA_3_0, std::make_shared<TensorLimits>(TensorLimits{
+        {GMM_DEVICE, std::make_shared<TensorLimits>(TensorLimits{
             {GNA_TENSOR_WN},                   // H - GMM states, D - #mixtures
             {{GNA_DIM_N, {1, XNN_N_GROUP_MAX, 1, XNN_ERR_INPUT_VOLUME}},
              {GNA_DIM_W, {GMM_FV_ELEMENT_COUNT_MIN, GMM_FV_ELEMENT_COUNT_MAX, GMM_FV_ELEMENT_COUNT_MULTIPLE_OF, GNA_BADFEATLENGTH}}},
             { { GNA_INT8}, XNN_ERR_INPUT_BYTES }})}
     }},
      {INTEL_INTERLEAVE, {
-        {GNA_3_0, std::make_shared<TensorLimits>(__wn_tensor_limits)}
+        {GNA_0_9, std::make_shared<TensorLimits>(_WNTensorLimitsGen0_9)},
+        {GNA_3_0, std::make_shared<TensorLimits>(_WNTensorLimitsGen3)}
     }},
     {INTEL_RECURRENT, {
-        {GNA_3_0, std::make_shared<TensorLimits>(__wn_tensor_limits)}
+        {GNA_0_9, std::make_shared<TensorLimits>(_WNTensorLimitsGen0_9)},
+        {GNA_3_0, std::make_shared<TensorLimits>(_WNTensorLimitsGen3)}
     }}
 };
 

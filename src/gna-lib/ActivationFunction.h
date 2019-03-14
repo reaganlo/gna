@@ -58,8 +58,8 @@ public:
         config->Transform.ElementCount = outputCount;
     }
 
-    ActivationFunction(const BaseTransformConfig<ActivationKernel>& config, 
-        DataMode mode, std::unique_ptr<Tensor> pwl);
+    ActivationFunction(const BaseTransformConfig<ActivationKernel>& config,
+                        DataMode mode, std::unique_ptr<Tensor> pwl);
     ActivationFunction() = delete;
     virtual ~ActivationFunction() = default;
 

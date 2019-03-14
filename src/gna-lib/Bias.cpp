@@ -29,43 +29,66 @@
 
 using namespace GNA;
 
-static const DataModeLimits Modes = {
-    { GNA_INT8, GNA_INT16, GNA_INT32/*, GNA_DATA_DISABLED */},
+static const DataModeLimits _ModesGen0_9 = {
+    { GNA_INT32 },
     XNN_ERR_BIAS_BYTES };
 
-static const DataModeLimits ModesWithRich = {
-    { GNA_INT8, GNA_INT16, GNA_INT32, GNA_DATA_RICH_FORMAT },
+static const DataModeLimits _ModesWithRichGen0_9 = {
+    { GNA_INT32, GNA_DATA_RICH_FORMAT },
+    XNN_ERR_BIAS_BYTES };
+
+static const DataModeLimits _ModesGen3 = {
+    { GNA_INT8, GNA_INT16, GNA_INT32, GNA_DATA_DISABLED },
+    XNN_ERR_BIAS_BYTES };
+
+static const DataModeLimits _ModesWithRichGen3 = {
+    { GNA_INT8, GNA_INT16, GNA_INT32, GNA_DATA_DISABLED, GNA_DATA_RICH_FORMAT },
     XNN_ERR_BIAS_BYTES };
 
 const FullCapabilitiesMap BiasTensor::capabilities =
 {
-    // TODO:3: add caps for previous device versions
     {INTEL_AFFINE, {
+        {GNA_0_9,std::make_shared<TensorLimits>(TensorLimits{
+            {GNA_TENSOR_H},
+            {{GNA_DIM_H, {1, XNN_N_IN_ELEMS_MAX, 1, XNN_ERR_BIAS_VOLUME}}},
+            _ModesWithRichGen0_9}),
+        },
         {GNA_3_0, std::make_shared<TensorLimits>(TensorLimits{
             {GNA_TENSOR_H},
             {{GNA_DIM_H, {1, XNN_N_IN_ELEMS_MAX, 1, XNN_ERR_BIAS_VOLUME}}},
-            ModesWithRich})}
-        //{GNA_0_9,std::make_shared<TensorLimits>() // TODO:3:cover backward compatibility in all components
-        //},
+            _ModesWithRichGen3})}
     }},
     {INTEL_AFFINE_DIAGONAL, {
+        {GNA_0_9, std::make_shared<TensorLimits>(TensorLimits{
+            {GNA_TENSOR_H},
+            {{GNA_DIM_H, {1, XNN_N_IN_ELEMS_MAX, 1, XNN_ERR_BIAS_VOLUME}}},
+            _ModesWithRichGen0_9})},
         {GNA_3_0, std::make_shared<TensorLimits>(TensorLimits{
             {GNA_TENSOR_H},
             {{GNA_DIM_H, {1, XNN_N_IN_ELEMS_MAX, 1, XNN_ERR_BIAS_VOLUME}}},
-            ModesWithRich})}
+            _ModesWithRichGen3})}
     }},
     {INTEL_AFFINE_MULTIBIAS, {
+        {GNA_2_0, std::make_shared<TensorLimits>(TensorLimits{
+            {GNA_TENSOR_NH},
+                {{GNA_DIM_N, {1, XNN_N_GROUP_MAX, 1, XNN_ERR_BIAS_VOLUME}},
+                {GNA_DIM_H, {1, XNN_N_IN_ELEMS_MAX, 1, XNN_ERR_BIAS_VOLUME}}},
+            _ModesGen0_9})},
         {GNA_3_0, std::make_shared<TensorLimits>(TensorLimits{
             {GNA_TENSOR_NH},
                 {{GNA_DIM_N, {1, XNN_N_GROUP_MAX, 1, XNN_ERR_BIAS_VOLUME}},
                 {GNA_DIM_H, {1, XNN_N_IN_ELEMS_MAX, 1, XNN_ERR_BIAS_VOLUME}}},
-            Modes})}
+            _ModesGen3})}
     }},
     {INTEL_CONVOLUTIONAL, {
+        {GNA_1_0, std::make_shared<TensorLimits>(TensorLimits{
+            {GNA_TENSOR_H},          // H - #kernel (GNA_BIAS_PER_KERNEL)
+            {{GNA_DIM_H, {CNN_N_FLT_COEFF_MPLY, CNN_N_FLT_MAX, CNN_N_FLT_COEFF_MPLY, XNN_ERR_BIAS_VOLUME}}},
+            _ModesGen0_9})},
         {GNA_3_0, std::make_shared<TensorLimits>(TensorLimits{
             {GNA_TENSOR_H},          // H - #kernel (GNA_BIAS_PER_KERNEL)
             {{GNA_DIM_H, {CNN_N_FLT_COEFF_MPLY, CNN_N_FLT_MAX, CNN_N_FLT_COEFF_MPLY, XNN_ERR_BIAS_VOLUME}}},
-            Modes})}
+            _ModesGen3})}
     }},
     {INTEL_CONVOLUTIONAL_2D, {
         {GNA_3_0, std::make_shared<TensorLimits>(TensorLimits{
@@ -74,10 +97,10 @@ const FullCapabilitiesMap BiasTensor::capabilities =
                 {GNA_DIM_H, {1, XNN_N_IN_ELEMS_MAX, 1, XNN_ERR_BIAS_VOLUME}},
                 {GNA_DIM_W, {1, XNN_N_IN_ELEMS_MAX, 1, XNN_ERR_BIAS_VOLUME}},
                 {GNA_DIM_D, {1, XNN_N_IN_ELEMS_MAX, 1, XNN_ERR_BIAS_VOLUME}},},
-            Modes})}
+            _ModesGen3})}
     }},
-     {INTEL_GMM, {
-        {GNA_3_0, std::make_shared<TensorLimits>(TensorLimits{
+    {INTEL_GMM, {
+        {GMM_DEVICE, std::make_shared<TensorLimits>(TensorLimits{
             {GNA_TENSOR_HD},                   // H - GMM states, D - #mixtures
             {{GNA_DIM_H, {1, GMM_MIXTURE_COMP_COUNT_MAX, 1, GMM_BADMIXCNUM}},
                 {GNA_DIM_D, {1, GMM_STATES_COUNT_MAX, 1, GMM_BADNUMGMM}}},
@@ -85,10 +108,14 @@ const FullCapabilitiesMap BiasTensor::capabilities =
             {GMM_MEM_ALIGNMENT, GMM_BADGCONSTALIGN}})}
     }},
     {INTEL_RECURRENT, {
+        {GNA_0_9, std::make_shared<TensorLimits>(TensorLimits{
+            {GNA_TENSOR_H},
+            {{GNA_DIM_H, {RNN_N_OUT_ELEMS_MPLY, XNN_N_IN_ELEMS_MAX, RNN_N_OUT_ELEMS_MPLY, XNN_ERR_BIAS_VOLUME}}},
+            _ModesWithRichGen0_9})},
         {GNA_3_0, std::make_shared<TensorLimits>(TensorLimits{
             {GNA_TENSOR_H},
             {{GNA_DIM_H, {RNN_N_OUT_ELEMS_MPLY, XNN_N_IN_ELEMS_MAX, RNN_N_OUT_ELEMS_MPLY, XNN_ERR_BIAS_VOLUME}}},
-            ModesWithRich})}
+            _ModesWithRichGen3})}
     }}
 };
 

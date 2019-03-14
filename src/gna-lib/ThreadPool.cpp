@@ -87,32 +87,12 @@ KernelBuffers::~KernelBuffers()
     memset(this, 0, sizeof(KernelBuffers));
 }
 
-ThreadPool::ThreadPool(uint32_t nThreads) :
-    buffers{nThreads}
+ThreadPool::ThreadPool(uint32_t threadCount) :
+    buffers{ threadCount },
+    numberOfThreads{ threadCount }
 {
-    Expect::InRange(nThreads, 1U, 127U, GNA_ERR_INVALID_THREAD_COUNT);
-    for (uint32_t i = 0; i < nThreads; i++)
-    {
-        KernelBuffers* buff = &buffers.at(i);
-        this->workers.emplace_back([&, buff]() {
-            while (true)
-            {
-                std::unique_lock<std::mutex> lock(tpMutex);
-                condition.wait(lock, [&]() { return stopped || !tasks.empty(); });
-                if (stopped)
-                {
-                    return;
-                }
-                if (!tasks.empty())
-                {
-                    auto request_task = tasks.front();
-                    tasks.pop_front();
-                    lock.unlock();
-                    request_task->operator()(buff);
-                }
-            }
-        });
-    }
+    Expect::InRange(threadCount, 1U, 127U, GNA_ERR_INVALID_THREAD_COUNT);
+    employWorkers();
 }
 
 ThreadPool::~ThreadPool()
@@ -125,6 +105,44 @@ ThreadPool::~ThreadPool()
 #else
     Stop();
 #endif
+}
+
+uint32_t ThreadPool::GetNumberOfThreads() const
+{
+    return numberOfThreads;
+}
+
+void ThreadPool::SetNumberOfThreads(uint32_t threadCount)
+{
+    Expect::InRange(threadCount, 1U, 127U, GNA_ERR_INVALID_THREAD_COUNT);
+
+    if (threadCount == numberOfThreads)
+    {
+        return;
+    }
+
+    Stop();
+
+    if (threadCount > numberOfThreads)
+    {
+        for (uint32_t i = numberOfThreads; i < threadCount; i++)
+        {
+            buffers.push_back(KernelBuffers{});
+        }
+    }
+    else
+    {
+        uint32_t numberOfDeletions = numberOfThreads - threadCount;
+        for (uint32_t i = 0; i < numberOfDeletions; i++)
+        {
+            buffers.pop_back();
+        }
+    }
+
+    Expect::Equal(threadCount, static_cast<uint32_t>(buffers.size()), GNA_ERR_RESOURCES);
+
+    numberOfThreads = threadCount;
+    employWorkers();
 }
 
 void ThreadPool::Stop()
@@ -150,3 +168,28 @@ void ThreadPool::Enqueue(Request *request)
     condition.notify_one();
 }
 
+void ThreadPool::employWorkers()
+{
+    for (uint32_t i = 0; i < numberOfThreads; i++)
+    {
+        KernelBuffers* buff = &buffers.at(i);
+        this->workers.emplace_back([&, buff]() {
+            while (true)
+            {
+                std::unique_lock<std::mutex> lock(tpMutex);
+                condition.wait(lock, [&]() { return stopped || !tasks.empty(); });
+                if (stopped)
+                {
+                    return;
+                }
+                if (!tasks.empty())
+                {
+                    auto request_task = tasks.front();
+                    tasks.pop_front();
+                    lock.unlock();
+                    request_task->operator()(buff);
+                }
+            }
+        });
+    }
+}

@@ -36,17 +36,19 @@ using namespace GNA;
 
 CompiledModel::CompiledModel(
         const gna_model *const userModel,
-        const AccelerationDetector &detectorIn,
+        const AccelerationDetector& detectorIn,
+        const HardwareCapabilities& hwCapabilitiesIn,
         std::vector<std::unique_ptr<Memory>>& memoryObjects) :
     LayerCount{ userModel->nLayers },
     GmmCount{ getGmmCount(userModel) },
     detector { detectorIn },
+    hwCapabilities{ hwCapabilitiesIn },
     memoryList { memoryObjects },
     modelMemoryList { },
     softwareModel
     {
         userModel,
-        makeValidator(GNA_3_0),
+        makeValidator(),
         detector.GetFastestAcceleration()
     }
 {
@@ -81,9 +83,9 @@ uint32_t CompiledModel::CalculateSize() const
     return modelSize;
 }
 
-void CompiledModel::BuildHardwareModel(DriverInterface &ddi, HardwareCapabilities &hwCaps)
+void CompiledModel::BuildHardwareModel(DriverInterface &ddi)
 {
-    createSubmodels(hwCaps);
+    createSubmodels(hwCapabilities);
     auto hasHardwareCompliantLayer =
         !(1 == submodels.size() && SubmodelType::Software == submodels.at(0)->Type);
     if(!hasHardwareCompliantLayer)
@@ -91,10 +93,10 @@ void CompiledModel::BuildHardwareModel(DriverInterface &ddi, HardwareCapabilitie
         Log->Warning("None of model layers is compliant with selected hardware GNA device, "
             "only software processing is available for this model.\n");
     }
-    else if (hwCaps.IsHardwareSupported())
+    else if (hwCapabilities.IsHardwareSupported())
     {
         hardwareModel = std::make_unique<HardwareModelScorable>(
-                                softwareModel.Layers, GmmCount, ddi, hwCaps);
+                                softwareModel.Layers, GmmCount, ddi, hwCapabilities);
     }
 
     if (hardwareModel)
@@ -228,11 +230,11 @@ uint32_t CompiledModel::getGmmCount(const gna_model *const userModel) const
     return gmmCount;
 }
 
-BaseValidator CompiledModel::makeValidator(gna_device_generation deviceGeneration)
+BaseValidator CompiledModel::makeValidator()
 {
     return BaseValidator
     {
-        deviceGeneration,
+        hwCapabilities,
         ValidBoundariesFunctor {
             [this] (const void *buffer, size_t bufferSize)
             {

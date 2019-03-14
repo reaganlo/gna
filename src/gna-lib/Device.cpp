@@ -24,6 +24,9 @@
 */
 
 #include "Device.h"
+#if HW_VERBOSE == 1
+#include "DeviceVerbose.h"
+#endif
 
 #include <iostream>
 #include <fstream>
@@ -44,53 +47,7 @@
 
 using namespace GNA;
 
-std::map<uint32_t, uint32_t> DeviceManager::threadCountMap =
-{
-    {0,1},
-};
-
-uint32_t DeviceManager::GetDeviceCount()
-{
-    // TODO:3: implement fetching number of avaialbe devices
-    return 1;
-}
-
-gna_device_version DeviceManager::GetDeviceVersion(gna_device_id deviceId)
-{
-    VerifyDeviceIndex(deviceId);
-    // TODO:3: implement fetching device version
-    return GNA_DEFAULT_VERSION;
-}
-
-void DeviceManager::SetThreadCount(gna_device_id deviceId, uint32_t threadCount)
-{
-    VerifyDeviceIndex(deviceId);
-    Expect::InRange(static_cast<uint32_t>(threadCount), 1U, 127U, GNA_ERR_INVALID_THREAD_COUNT);
-
-    threadCountMap[deviceId] = threadCount;
-}
-
-uint32_t DeviceManager::GetThreadCount(gna_device_id deviceId)
-{
-    VerifyDeviceIndex(deviceId);
-    auto found = threadCountMap.find(deviceId);
-    if (threadCountMap.end() != found)
-    {
-        return found->second;
-    }
-    else
-    {
-        return 1;
-    }
-}
-
-void DeviceManager::VerifyDeviceIndex(gna_device_id deviceId)
-{
-    Expect::InRange(deviceId, ui32_0, GetDeviceCount() - 1, GNA_INVALIDHANDLE);
-}
-
-Device::Device(gna_device_id deviceId, uint32_t threadCount) :
-    id{deviceId},
+Device::Device(uint32_t threadCount) :
     driverInterface
     {
 #if defined(_WIN32)
@@ -99,13 +56,8 @@ Device::Device(gna_device_id deviceId, uint32_t threadCount) :
         std::make_unique<LinuxDriverInterface>()
 #endif
     },
-    hardwareCapabilities { },
-    accelerationDetector{ },
-    memoryObjects{ },
     requestHandler{ threadCount }
 {
-    DeviceManager::VerifyDeviceIndex(deviceId);
-
     try
     {
         driverInterface->OpenDevice();
@@ -120,6 +72,21 @@ Device::Device(gna_device_id deviceId, uint32_t threadCount) :
             throw;
         }
     }
+}
+
+gna_device_version Device::GetVersion() const
+{
+    return hardwareCapabilities.GetDeviceVersion();
+}
+
+uint32_t Device::GetNumberOfThreads() const
+{
+    return requestHandler.GetNumberOfThreads();
+}
+
+void Device::SetNumberOfThreads(uint32_t threadCount)
+{
+    requestHandler.ChangeNumberOfThreads(threadCount);
 }
 
 void Device::AttachBuffer(gna_request_cfg_id configId,
@@ -180,11 +147,6 @@ void Device::AttachActiveList(gna_request_cfg_id configId, uint32_t layerIndex,
     requestBuilder.AttachActiveList(configId, layerIndex, activeList);
 }
 
-void Device::ValidateSession(gna_device_id deviceId) const
-{
-    Expect::Equal(id, deviceId, GNA_INVALIDHANDLE);
-}
-
 status_t Device::AllocateMemory(uint32_t requestedSize,
         uint32_t *sizeGranted, void **memoryAddress)
 {
@@ -230,7 +192,7 @@ void Device::LoadModel(gna_model_id *modelId, const gna_model *userModel)
     Expect::NotNull(userModel->pLayers);
 
     auto compiledModel = std::make_unique<CompiledModel>(
-            userModel, accelerationDetector, memoryObjects);
+            userModel, accelerationDetector, hardwareCapabilities, memoryObjects);
 
     if (!compiledModel)
     {
@@ -239,7 +201,7 @@ void Device::LoadModel(gna_model_id *modelId, const gna_model *userModel)
 
     *modelId = modelIdSequence++;
 
-    compiledModel->BuildHardwareModel(*driverInterface, hardwareCapabilities);
+    compiledModel->BuildHardwareModel(*driverInterface);
     models.emplace(*modelId, std::move(compiledModel));
 }
 

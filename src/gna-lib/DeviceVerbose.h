@@ -23,8 +23,7 @@
  in any way.
 */
 
-#ifndef _DEVICEVERBOSE_H
-#define _DEVICEVERBOSE_H
+#pragma once
 
 #include "Device.h"
 #include "Memory.h"
@@ -35,8 +34,8 @@ namespace GNA
     class DeviceVerbose : public Device
     {
     public:
-        DeviceVerbose(gna_device_id deviceId, uint32_t threadCount = 1) :
-            Device::Device(deviceId, threadCount)
+        DeviceVerbose(uint32_t threadCount = 1) :
+            Device::Device(threadCount)
         { }
 
         void SetPrescoreScenario(gna_model_id modelId, uint32_t nActions, dbg_action *actions)
@@ -57,4 +56,4 @@ namespace GNA
         }
     };
 }
-#endif // _DEVICEVERBOSE_H
+

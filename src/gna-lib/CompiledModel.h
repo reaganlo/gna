@@ -42,14 +42,15 @@ class CompiledModel
 public:
     CompiledModel(
         const gna_model *const userModel,
-        const AccelerationDetector &detectorIn,
+        const AccelerationDetector& detectorIn,
+        const HardwareCapabilities& hwCapabilitiesIn,
         std::vector<std::unique_ptr<Memory>>& memoryObjects);
 
     virtual ~CompiledModel() = default;
     CompiledModel(const CompiledModel &) = delete;
     CompiledModel& operator=(const CompiledModel&) = delete;
 
-    void BuildHardwareModel(DriverInterface &ddi, HardwareCapabilities &hwCaps);
+    void BuildHardwareModel(DriverInterface &ddi);
 
     const std::vector<std::unique_ptr<Layer>>& GetLayers() const;
     const Layer* GetLayer(uint32_t layerIndex) const;
@@ -91,9 +92,10 @@ private:
 
     uint32_t getGmmCount(const gna_model *const userModel) const;
 
-    BaseValidator makeValidator(gna_device_generation deviceGeneration);
+    BaseValidator makeValidator();
 
-    const AccelerationDetector &detector;
+    const AccelerationDetector& detector;
+    const HardwareCapabilities& hwCapabilities;
     std::vector<std::unique_ptr<Memory>>& memoryList;
     std::vector<Memory *> modelMemoryList;
     SoftwareModel softwareModel;

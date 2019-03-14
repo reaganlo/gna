@@ -42,8 +42,7 @@ struct ActiveList;
 struct DescriptorParameters
 {
     DescriptorParameters(const Layer* softwareLayer,
-                         const LayerDescriptor& xnnDescriptor,
-                         GetHwOffset getHwOffset);
+                        const LayerDescriptor& xnnDescriptor);
 
     virtual ~DescriptorParameters() = default;
 
@@ -162,9 +161,6 @@ public:
     virtual ~HardwareLayerRnn() = default;
 
     virtual uint32_t GetLdFeedbackOffset() const override;
-
-    // calculates feedback buffer offset for per RequestConfiguration output buffer
-    uint32_t CalculateFeedbackBuffer(const BaseAddress& outputBuffer) const;
 
 protected:
     void convert();

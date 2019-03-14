@@ -83,7 +83,7 @@ public:
 
     static uint32_t GetBufferSizeInKB(gna_device_version hwId);
 
-    static inline uint32_t GetBufferSizeInKB(gna_device_generation generation)
+    static uint32_t GetBufferSizeInKB(gna_device_generation generation)
     {
         return GetBufferSizeInKB(GetDeviceVersion(generation));
     }
@@ -92,12 +92,16 @@ public:
     static uint32_t GetBufferElementCount(gna_device_version hwId,
         uint32_t grouping, uint32_t inputPrecision = GNA_INT16);
 
+    uint32_t GetBufferSizeInKB() const;
+
     uint32_t GetBufferElementCount(uint32_t grouping, uint32_t inputPrecision = GNA_INT16) const
     {
         return GetBufferElementCount(deviceVersion, grouping, inputPrecision);
     }
 
     gna_device_version GetDeviceVersion() const;
+
+    gna_device_generation GetDeviceGeneration() const;
 
     uint32_t GetMaximumLayerCount() const;
 
