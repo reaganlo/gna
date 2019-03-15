@@ -48,13 +48,14 @@ Device& DeviceManager::GetDevice(gna_device_id deviceId)
     if (deviceMap.empty())
     {
         // TODO:3: support multiple devices
-        deviceMap[0] =
+        deviceMap.emplace_back(
 #if HW_VERBOSE == 0
-            std::make_unique<Device>(DeviceManager::DefaultThreadCount);
+            std::make_unique<Device>(DeviceManager::DefaultThreadCount)
 #else
-            std::make_unique<DeviceVerbose>(DeviceManager::DefaultThreadCount);
+            std::make_unique<DeviceVerbose>(DeviceManager::DefaultThreadCount)
 #endif
-        deviceOpenedMap[0] = false;
+        );
+        deviceOpenedMap.emplace_back(false);
     }
 
     auto& device = *deviceMap.at(deviceId);
