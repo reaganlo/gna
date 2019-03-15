@@ -111,6 +111,7 @@ typedef enum _api_version
 typedef enum _device_generation
 {
     GNA_DEVICE_NOT_SUPPORTED = GNA_NOT_SUPPORTED,
+    GMM_DEVICE,
     GNA_0_9,                // GNA 0.9 Device Cannon Lake (CNL), no CNN support
     GNA_1_0,                // GNA 1.0 Device Gemini Lake (GLK), full featured GNA 1.0
                             // GNA 1.0 Device Ice Lake (ICL), same function set as GLK
@@ -120,7 +121,6 @@ typedef enum _device_generation
     GNA_3_0,                // GNA 3.0 Device Alder Lake, full featured GNA 3.0 (ADL)
     GNA_3_0_EMBEDDED,       // GNA 3.0 Embedded on Alder Lake PCH/ACE
     GNA_3_1_AUTONOMUS,      // GNA 3.1 ANNA Autonomous Embedded on Alder Lake PCH/ACE
-    GMM_DEVICE,
     GNA_DEVICE_COUNT
 } gna_device_generation;
 
@@ -143,9 +143,12 @@ typedef enum _gna_device_version
     GNA_ACE_EMBEDDED= 0xFFFF3,  // GNA 3.0 Embedded on Alder Lake PCH/ACE
     GNA_ACE_ANNA    = 0xFFFF4,  // GNA 3.1 ANNA Autonomous Embedded on Alder Lake PCH/ACE,
 
-    GNA_DEFAULT_VERSION = GNA_ADL, // Latest GNA version which can be used for inference using this library
+    GNA_SOFTWARE_EMULATION = GNA_DEFAULT, // Software emulation fall-back will be used.
 
 } gna_device_version;
+
+// Latest GNA version which can be used for inference using this library
+const gna_device_version GNA_DEFAULT_DEVICE_VERSION = GNA_ADL;
 
 //
 //// Binary flags

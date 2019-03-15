@@ -76,7 +76,9 @@ Device::Device(uint32_t threadCount) :
 
 gna_device_version Device::GetVersion() const
 {
-    return hardwareCapabilities.GetDeviceVersion();
+    return hardwareCapabilities.IsHardwareSupported()
+        ? hardwareCapabilities.GetDeviceVersion()
+        : GNA_SOFTWARE_EMULATION;
 }
 
 uint32_t Device::GetNumberOfThreads() const

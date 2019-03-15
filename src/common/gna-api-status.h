@@ -162,11 +162,14 @@ typedef enum _gna_status_t
 
 static_assert(4 == sizeof(intel_gna_status_t), "Invalid size of intel_gna_status_t");
 
-/** Value indicating that feature is disabled */
-#define GNA_DISABLED (1 << 31)
+/** Constant indicating that feature is disabled. */
+#define GNA_DISABLED (-1)
 
-/** Value indicating that feature is not available */
-#define GNA_NOT_SUPPORTED (0)
+/** Constant indicating that value is default. */
+#define GNA_DEFAULT (0)
+
+/** Constant indicating that feature is not available. */
+#define GNA_NOT_SUPPORTED (1 << 31)
 
 /**
  * Gets printable status name with the description as a c-string

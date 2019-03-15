@@ -50,8 +50,9 @@ public:
         Api{api},
         Hw{hw}
     {
-        Expect::InRange<size_t>(api.size(), GNA_API_NOT_SUPPORTED, GNA_API_VERSION_COUNT, XNN_ERR_LYR_CFG);
-        Expect::InRange<size_t>(hw.size(), GNA_DEVICE_NOT_SUPPORTED, GNA_DEVICE_COUNT, XNN_ERR_LYR_CFG);
+        // FIXME: change to InSet
+        //Expect::InRange<size_t>(api.size(), GNA_API_NOT_SUPPORTED, GNA_API_VERSION_COUNT, XNN_ERR_LYR_CFG);
+        //Expect::InRange<size_t>(hw.size(), GNA_DEVICE_NOT_SUPPORTED, GNA_DEVICE_COUNT, XNN_ERR_LYR_CFG);
         for (auto apiSupport : Api)
         {
             Expect::True(apiSupport.second, GNA_NULLARGREQUIRED);

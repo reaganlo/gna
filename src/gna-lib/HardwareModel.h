@@ -77,9 +77,9 @@ public:
 
 protected:
     static uint32_t getLayerDescriptorsSize(const uint32_t layerCount,
-        gna_device_version hwId = GNA_DEFAULT_VERSION);
+        gna_device_version hwId = GNA_DEFAULT_DEVICE_VERSION);
     static uint32_t getGmmDescriptorsSize(const uint32_t gmmLayersCount,
-        gna_device_version hwId = GNA_DEFAULT_VERSION);
+        gna_device_version hwId = GNA_DEFAULT_DEVICE_VERSION);
 
     virtual void allocateLayerDescriptors();
 

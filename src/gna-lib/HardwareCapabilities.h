@@ -64,7 +64,7 @@ struct GenerationCapabilities
 class HardwareCapabilities
 {
 public:
-    explicit HardwareCapabilities(gna_device_version deviceVersion = GNA_DEFAULT_VERSION);
+    explicit HardwareCapabilities(gna_device_version deviceVersion = GNA_DEFAULT_DEVICE_VERSION);
 
     void DiscoverHardware(DriverInterface &driverInterface);
 

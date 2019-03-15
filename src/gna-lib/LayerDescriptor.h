@@ -333,12 +333,12 @@ public:
     // Gets default size of descriptor
     inline static size_t GetSize()
     {
-        return getSize(GNA_DEFAULT_VERSION);
+        return getSize(GNA_DEFAULT_DEVICE_VERSION);
     }
 
     // Gets total size of all layers' descriptors for given hw
     inline static uint32_t GetSize(const uint32_t layerCount,
-        const gna_device_version hwId = GNA_DEFAULT_VERSION)
+        const gna_device_version hwId = GNA_DEFAULT_DEVICE_VERSION)
     {
         return static_cast<const uint32_t>(getSize(hwId) * layerCount);
     }
