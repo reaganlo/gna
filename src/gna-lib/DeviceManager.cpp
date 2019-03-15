@@ -64,7 +64,7 @@ Device& DeviceManager::GetDevice(gna_device_id deviceId)
 
 uint32_t DeviceManager::GetDeviceCount()
 {
-    return static_cast<uint32_t>(deviceMap.size());
+    return 1;
 }
 
 gna_device_version DeviceManager::GetDeviceVersion(gna_device_id deviceId)
