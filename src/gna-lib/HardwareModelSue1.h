@@ -53,7 +53,7 @@ protected:
     virtual void allocateLayerDescriptors() override;
 
 private:
-    HardwareCapabilities sueCapabilities = HardwareCapabilities{ GNA_SUE_CREEK };
+    static HardwareCapabilities sueCapabilities;
 };
 
 }

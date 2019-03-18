@@ -264,7 +264,7 @@ int main(int argc, char *argv[])
     _mm_free(dumped_model);
 
     gna_request_cfg_id config_id;
-     status = GnaRequestConfigCreate(model_id, &config_id);
+    status = GnaRequestConfigCreate(model_id, &config_id);
     if (GNA_SUCCESS!= status)
     {
         printf("GnaRequestConfigCreate failed: %s\n", GnaStatusToString(status));

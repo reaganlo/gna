@@ -63,12 +63,12 @@ void* Device::Dump(gna_model_id modelId, gna_device_generation deviceGeneration,
     Expect::NotNull(address);
     memset(address, 0, totalSize);
 
-    auto dumpMemory = std::make_unique<Memory>(address, totalSize);
+    auto dumpMemory = std::make_unique<Memory>(address, ldSize);
 
     // creating HW layer descriptors directly into dump memory
     auto hwModel = make_unique<HardwareModelSue1>(
                     model->GetLayers(), model->GmmCount, std::move(dumpMemory));
-    hwModel->Build({});
+    hwModel->Build(model->GetModelMemoryList());
 
     // copying data..
     void *data = static_cast<uint8_t*>(address) + ldSize;

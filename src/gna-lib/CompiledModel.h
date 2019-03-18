@@ -79,6 +79,10 @@ public:
 
     const uint32_t LayerCount;
     const uint32_t GmmCount;
+    const std::vector<Memory *>& GetModelMemoryList() const
+    {
+        return modelMemoryList;
+    }
 
 protected:
     std::unique_ptr<HardwareModelScorable> hardwareModel;
