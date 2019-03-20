@@ -25,10 +25,14 @@
 
 #pragma once
 
-#include <stdint.h>
-#include "../common.h"
-#include "../Address.h"
+#include "common.h"
 #include "gna-api-types-gmm.h"
+
+#include "Address.h"
+#include "Macros.h"
+
+#include <stdint.h>
+#include <string.h>
 
 using GNA::BufferMap;
 using GNA::BaseAddress;
@@ -40,18 +44,27 @@ using GNA::BaseAddress;
  */
 struct KernelBuffers
 {
-    int16_t *d0;
-    int16_t *d1;
-    int16_t *d2;
-    int16_t *d3;
-    int16_t *d4;
-    int16_t *d5;
-    int16_t *d6;
-    int16_t *d7;
-    int64_t *pool;
-    int8_t *cnnFusedBuffer;
     KernelBuffers();
     ~KernelBuffers();
+
+    KernelBuffers(const KernelBuffers& rhs) = delete;
+
+    KernelBuffers(KernelBuffers&& rhs) noexcept
+    {
+        memcpy_s(&rhs, sizeof(rhs), this, sizeof(*this));
+        memset(&rhs, 0, sizeof(rhs));
+    }
+
+    int16_t *d0 = nullptr;
+    int16_t *d1 = nullptr;
+    int16_t *d2 = nullptr;
+    int16_t *d3 = nullptr;
+    int16_t *d4 = nullptr;
+    int16_t *d5 = nullptr;
+    int16_t *d6 = nullptr;
+    int16_t *d7 = nullptr;
+    int64_t *pool = nullptr;
+    int8_t *cnnFusedBuffer = nullptr;
 };
 
 namespace GNA

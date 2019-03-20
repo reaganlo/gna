@@ -36,17 +36,7 @@
 
 using namespace GNA;
 
-KernelBuffers::KernelBuffers() :
-    d0{ nullptr },
-    d1{ nullptr },
-    d2{ nullptr },
-    d3{ nullptr },
-    d4{ nullptr },
-    d5{ nullptr },
-    d6{ nullptr },
-    d7{ nullptr },
-    pool{ nullptr },
-    cnnFusedBuffer{ nullptr }
+KernelBuffers::KernelBuffers()
 {
     // TODO: use one allocation for inputs and pool buffer
     d0 = (int16_t*)_gna_malloc(8 * (UINT16_MAX + 1) * sizeof(int16_t));
@@ -72,6 +62,7 @@ KernelBuffers::KernelBuffers() :
     cnnFusedBuffer = (int8_t*)_kernel_malloc(32 * 1024);
     if (nullptr == cnnFusedBuffer)
     {
+        this->~KernelBuffers();
         throw GnaException(GNA_ERR_RESOURCES);
     }
 }
@@ -84,7 +75,7 @@ KernelBuffers::~KernelBuffers()
         _gna_free(pool);
     if (nullptr != cnnFusedBuffer)
         _gna_free(cnnFusedBuffer);
-    memset(this, 0, sizeof(KernelBuffers));
+    memset(this, 0, sizeof(*this));
 }
 
 ThreadPool::ThreadPool(uint32_t threadCount) :
@@ -123,23 +114,17 @@ void ThreadPool::SetNumberOfThreads(uint32_t threadCount)
 
     Stop();
 
-    if (threadCount > numberOfThreads)
+    try
     {
-        for (uint32_t i = numberOfThreads; i < threadCount; i++)
-        {
-            buffers.push_back(KernelBuffers{});
-        }
+        buffers.resize(threadCount);
     }
-    else
+    catch (std::exception& e)
     {
-        uint32_t numberOfDeletions = numberOfThreads - threadCount;
-        for (uint32_t i = 0; i < numberOfDeletions; i++)
-        {
-            buffers.pop_back();
-        }
-    }
+        UNREFERENCED_PARAMETER(e);
 
-    Expect::Equal(threadCount, static_cast<uint32_t>(buffers.size()), GNA_ERR_RESOURCES);
+        employWorkers();
+        throw GnaException(GNA_ERR_RESOURCES);
+    }
 
     numberOfThreads = threadCount;
     employWorkers();
@@ -170,6 +155,7 @@ void ThreadPool::Enqueue(Request *request)
 
 void ThreadPool::employWorkers()
 {
+    stopped = false;
     for (uint32_t i = 0; i < numberOfThreads; i++)
     {
         KernelBuffers* buff = &buffers.at(i);

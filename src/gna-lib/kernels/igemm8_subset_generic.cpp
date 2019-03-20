@@ -103,7 +103,8 @@ void AffineActiveListKernelImpl1B1B(AffineConfig const * const config, AffineCon
         weight = config->weights1B + i*config->inputElementCount;
         for (j = 0; j < config->inputVectorCount; j++)
         {
-            config->output[l*config->inputVectorCount + j] = getBias((void*)config->biasesSimple, i, (gna_data_mode)config->bytesPerBias);
+            auto bias = getBias((void*)config->biasesSimple, i, (gna_data_mode)config->bytesPerBias);
+            config->output[l*config->inputVectorCount + j] = static_cast<int32_t>(bias);
 
             for (k = 0; k < config->inputElementCount; k++)
             {

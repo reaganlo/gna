@@ -135,8 +135,8 @@ static const TensorLimits _FlatTensorLimitsGen3 =
 const FullCapabilitiesMap ActivationFunction::outputCapabilities =
 {
     {INTEL_AFFINE, {
-        {GNA_0_9, std::make_shared<TensorLimits>(_InterleaveTensorLimitsGen3)},
-        {GNA_3_0, std::make_shared<TensorLimits>(_InterleaveTensorLimitsGen0_9)}
+        {GNA_0_9, std::make_shared<TensorLimits>(_InterleaveTensorLimitsGen0_9)},
+        {GNA_3_0, std::make_shared<TensorLimits>(_InterleaveTensorLimitsGen3)}
     }},
     {INTEL_AFFINE_DIAGONAL, {
         {GNA_0_9, std::make_shared<TensorLimits>(_InterleaveTensorLimitsGen0_9)},

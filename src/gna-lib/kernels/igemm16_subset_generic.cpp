@@ -31,7 +31,8 @@ void AffineActiveListKernelImpl2B(AffineConfig const * const config, AffineConfi
     int16_t const * input;
     int16_t const * weight;
 
-    TransposeConfig transposeConfig = TransposeConfig{ config->inputElementCount, config->inputVectorCount,
+    TransposeConfig transposeConfig = TransposeConfig{
+        config->inputElementCount, config->inputVectorCount,
         config->input, config->execution->Intermediate->d0 };
     TransposeKernelImpl(&transposeConfig);
 
@@ -43,7 +44,8 @@ void AffineActiveListKernelImpl2B(AffineConfig const * const config, AffineConfi
         weight = config->weights2B + i*config->inputElementCount;
         for (j = 0; j < config->inputVectorCount; j++)
         {
-            config->output[l*config->inputVectorCount + j] = getBias((void*)config->biasesSimple, i, (gna_data_mode)config->bytesPerBias);
+            auto bias = getBias((void*)config->biasesSimple, i, (gna_data_mode)config->bytesPerBias);
+            config->output[l*config->inputVectorCount + j] = static_cast<int32_t>(bias);
 
             for (k = 0; k < config->inputElementCount; k++)
             {
@@ -58,7 +60,8 @@ void AffineActiveListKernelImpl2B2B(AffineConfig const * const config, AffineCon
     int16_t const * input;
     int16_t const * weight;
 
-    TransposeConfig transposeConfig = TransposeConfig{ config->inputElementCount, config->inputVectorCount,
+    TransposeConfig transposeConfig = TransposeConfig{
+        config->inputElementCount, config->inputVectorCount,
         config->input, config->execution->Intermediate->d0 };
     TransposeKernelImpl2B(&transposeConfig);
 
@@ -70,7 +73,8 @@ void AffineActiveListKernelImpl2B2B(AffineConfig const * const config, AffineCon
         weight = config->weights2B + i*config->inputElementCount;
         for (j = 0; j < config->inputVectorCount; j++)
         {
-            config->output[l*config->inputVectorCount + j] = getBias((void*)config->biasesSimple, i, (gna_data_mode)config->bytesPerBias);
+            auto bias = getBias((void*)config->biasesSimple, i, (gna_data_mode)config->bytesPerBias);
+            config->output[l*config->inputVectorCount + j] = static_cast<int32_t>(bias);
 
             for (k = 0; k < config->inputElementCount; k++)
             {
@@ -98,7 +102,8 @@ void AffineActiveListKernelImpl2B1B(AffineConfig const * const config, AffineCon
         weight = config->weights2B + i*config->inputElementCount;
         for (j = 0; j < config->inputVectorCount; j++)
         {
-            config->output[l*config->inputVectorCount + j] = getBias((void*)config->biasesSimple, i, (gna_data_mode)config->bytesPerBias);
+            auto bias = getBias((void*)config->biasesSimple, i, (gna_data_mode)config->bytesPerBias);
+            config->output[l*config->inputVectorCount + j] = static_cast<int32_t>(bias);
 
             for (k = 0; k < config->inputElementCount; k++)
             {
