@@ -41,7 +41,7 @@ void WindowsGnaSelfTestHardwareStatus::initDriverInfo()
 int WindowsGnaSelfTestHardwareStatus::checkHWId()
 {
     GUID cls;
-    devInfo = SetupDiGetClassDevsEx(&cls, NULL, NULL, (0 ? 0 : DIGCF_ALLCLASSES), NULL, NULL, NULL);
+    devInfo = SetupDiGetClassDevsEx(&cls, NULL, NULL, (0 ? 0 : DIGCF_ALLCLASSES | DIGCF_PRESENT), NULL, NULL, NULL);
 
     devListData.cbSize = sizeof(SP_DEVINFO_LIST_DETAIL_DATA);
 
