@@ -91,10 +91,9 @@ void RequestConfiguration::AddActiveList(uint32_t layerIndex, const ActiveList& 
 void RequestConfiguration::SetHardwareConsistency(
     gna_device_version consistentDevice)
 {
-    if (GNA_UNSUPPORTED != consistentDevice)
+    if (GNA_UNSUPPORTED != consistentDevice && GNA_SOFTWARE_EMULATION != consistentDevice)
     {
-        HardwareCapabilities::GetHardwareConsistencySettings(
-                                BufferElementCount, consistentDevice);
+        HardwareCapabilities::GetHardwareConsistencySettings(BufferElementCount, consistentDevice);
         enableHwConsistency = true;
     }
     else

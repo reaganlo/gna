@@ -117,6 +117,8 @@ public:
 private:
     static std::map<gna_device_version, const GenerationCapabilities> gnaCapsMap;
 
+    static const GenerationCapabilities& getGenerationCapabilities(gna_device_version deviceVersionIn);
+
     bool hardwareSupported = false;
 
     gna_device_version deviceVersion;

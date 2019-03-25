@@ -67,7 +67,7 @@ public:
 
     void ReleaseConfiguration(gna_request_cfg_id configId);
 
-    void SetHardwareConsistency(gna_request_cfg_id configId, gna_device_version hardwareVersion);
+    void EnableHardwareConsistency(gna_request_cfg_id configId, gna_device_version hardwareVersion);
 
     void EnforceAcceleration(gna_request_cfg_id configId, AccelerationMode accel);
 

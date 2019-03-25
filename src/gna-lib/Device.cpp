@@ -111,9 +111,15 @@ void Device::ReleaseConfiguration(gna_request_cfg_id configId)
     requestBuilder.ReleaseConfiguration(configId);
 }
 
-void Device::SetHardwareConsistency(gna_request_cfg_id configId,
+void Device::EnableHardwareConsistency(gna_request_cfg_id configId,
                                     gna_device_version hardwareVersion)
 {
+    if (GNA_UNSUPPORTED == hardwareVersion
+        || GNA_SOFTWARE_EMULATION == hardwareVersion)
+    {
+        throw GnaException(GNA_ERR_INVALID_DEVICE_VERSION);
+    }
+
     auto& requestConfiguration = requestBuilder.GetConfiguration(configId);
     requestConfiguration.SetHardwareConsistency(hardwareVersion);
 }

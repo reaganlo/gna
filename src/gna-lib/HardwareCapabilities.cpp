@@ -279,6 +279,20 @@ std::map<gna_device_version, const GenerationCapabilities> HardwareCapabilities:
     },
 };
 
+const GenerationCapabilities&
+HardwareCapabilities::getGenerationCapabilities(gna_device_version deviceVersionIn)
+{
+    try
+    {
+        return gnaCapsMap.at(deviceVersionIn);
+    }
+    catch (std::out_of_range& e)
+    {
+        UNREFERENCED_PARAMETER(e);
+        throw GnaException(GNA_ERR_INVALID_DEVICE_VERSION);
+    }
+}
+
 gna_device_version HardwareCapabilities::GetDeviceVersion(gna_device_generation generation)
 {
     auto type = std::find_if(gnaCapsMap.cbegin(), gnaCapsMap.cend(),
@@ -291,23 +305,23 @@ gna_device_version HardwareCapabilities::GetDeviceVersion(gna_device_generation 
 
 uint32_t HardwareCapabilities::GetMaximumLayerCount(gna_device_version hwId)
 {
-    return gnaCapsMap.at(hwId).MaximumLayerCount;
+    return getGenerationCapabilities(hwId).MaximumLayerCount;
 }
 
 uint32_t HardwareCapabilities::GetComputeEngineCount(gna_device_version hwId)
 {
-    return gnaCapsMap.at(hwId).ComputeEngineCount;
+    return getGenerationCapabilities(hwId).ComputeEngineCount;
 }
 
 uint32_t HardwareCapabilities::GetBufferSizeInKB(gna_device_version hwId)
 {
-    auto caps = gnaCapsMap.at(hwId);
+    auto caps = getGenerationCapabilities(hwId);
     return caps.ComputeEngineCount * caps.BufferSizesPerCEInKB;
 }
 
 uint32_t HardwareCapabilities::GetBufferSizeInKB() const
 {
-    auto caps = gnaCapsMap.at(deviceVersion);
+    auto caps = getGenerationCapabilities(deviceVersion);
     return caps.ComputeEngineCount * caps.BufferSizesPerCEInKB;
 }
 
@@ -316,7 +330,7 @@ uint32_t HardwareCapabilities::GetBufferElementCount(
 {
     if (hwId == GNA_ADL || hwId == GNA_ACE_EMBEDDED || hwId == GNA_ACE_ANNA)
     {
-        const auto ceCount = gnaCapsMap.at(hwId).ComputeEngineCount;
+        const auto ceCount = getGenerationCapabilities(hwId).ComputeEngineCount;
         auto count = (GetBufferSizeInKB(hwId) * 1024)
             / (ceCount *  16 * grouping);
         count *= ceCount * 16 / inputPrecision;
@@ -326,7 +340,7 @@ uint32_t HardwareCapabilities::GetBufferElementCount(
     }
     else
     {
-        return gnaCapsMap.at(hwId).BufferElementCountBackward[grouping - 1];
+        return getGenerationCapabilities(hwId).BufferElementCountBackward[grouping - 1];
     }
 }
 
@@ -387,7 +401,7 @@ gna_device_version HardwareCapabilities::GetDeviceVersion() const
 
 gna_device_generation HardwareCapabilities::GetDeviceGeneration() const
 {
-    return gnaCapsMap.at(deviceVersion).Generation;
+    return getGenerationCapabilities(deviceVersion).Generation;
 }
 
 bool HardwareCapabilities::IsLayerSupported(nn_operation operation) const
@@ -414,7 +428,7 @@ bool HardwareCapabilities::HasFeature(GnaFeature feature) const
     if (!hardwareSupported)
         return false;
 
-    const auto& caps = gnaCapsMap.at(deviceVersion);
+    const auto& caps = getGenerationCapabilities(deviceVersion);
     return caps.Features.at(feature);
 }
 
