@@ -51,7 +51,7 @@ struct KernelBuffers
 
     KernelBuffers(KernelBuffers&& rhs) noexcept
     {
-        memcpy_s(&rhs, sizeof(rhs), this, sizeof(*this));
+        memcpy_s(this, sizeof(*this), &rhs, sizeof(rhs));
         memset(&rhs, 0, sizeof(rhs));
     }
 
