@@ -176,16 +176,25 @@ status_t Device::AllocateMemory(uint32_t requestedSize,
 
 void Device::FreeMemory(void *buffer)
 {
+    Expect::NotNull(buffer);
+
+    auto memoryIterator = std::find_if(memoryObjects.begin(), memoryObjects.end(),
+        [buffer] (std::unique_ptr<Memory>& memory)
+        {
+            if (memory->GetBuffer() == buffer)
+            {
+                return true;
+            }
+            return false;
+        });
+
+    if (memoryIterator == memoryObjects.end())
+    {
+        throw GnaException(GNA_ERR_MEMORY_NOT_ALLOCATED);
+    }
+
     // TODO:3: mechanism to detect if memory is used in some model
-    memoryObjects.erase(
-            std::find_if(memoryObjects.begin(), memoryObjects.end(),
-                [buffer] (std::unique_ptr<Memory>& memory)
-                {
-                    if (memory->GetBuffer() == buffer)
-                        return true;
-                    return false;
-                })
-    );
+    memoryObjects.erase(memoryIterator);
 }
 
 void Device::ReleaseModel(gna_model_id const modelId)
