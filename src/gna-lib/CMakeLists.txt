@@ -137,6 +137,7 @@ set(gna_lib_headers
   ${SRC_DIR}/ActiveList.h
   ${SRC_DIR}/Address.h
   ${SRC_DIR}/AffineFunctions.h
+  ${SRC_DIR}/ApiTypedefs.h
   ${SRC_DIR}/ApiProperty.h
   ${SRC_DIR}/Capabilities.h
   ${SRC_DIR}/common.h
@@ -199,6 +200,20 @@ set(gna_api_headers
 set(gna_api_extra
   ${COMMON_DIR}/gna-api-dumper.h
   ${COMMON_DIR}/gna-api-instrumentation.h)
+  
+set(gna2_api_core
+  ${API_DIR}/gna2-api.h
+  ${API_DIR}/gna2-common-api.h
+  ${API_DIR}/gna2-device-api.h
+  ${API_DIR}/gna2-inference-api.h
+  ${API_DIR}/gna2-instrumentation-api.h
+  ${API_DIR}/gna2-memory-api.h
+  ${API_DIR}/gna2-model-api.h)
+
+set(gna2_api_extension
+  ${API_DIR}/gna2-model-export-api.h
+  ${API_DIR}/gna2-model-suecreek-header.h
+  ${API_DIR}/gna2-capability-api.h)
 
 set(common_sources
   ${COMMON_DIR}/profiler.c
@@ -219,6 +234,10 @@ endif()
 
 set(api_headers ${gna_api_headers} ${gna_api_extra})
 source_group(Api FILES ${api_headers})
+set(gna2_api_all_public ${gna2_api_core} ${gna2_api_extension})
+source_group(Api2 FILES ${gna2_api_all_public})
+
+set(api_headers ${api_headers} ${gna2_api_core} ${gna2_api_extension})
 
 add_library(gna-api SHARED)
 
@@ -227,7 +246,7 @@ if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux" OR ${CMAKE_SYSTEM_NAME} STREQUAL "Andro
 endif()
 
 target_include_directories(gna-api
-  PRIVATE ${SRC_DIR} ${KERNEL_DIR})
+  PRIVATE ${SRC_DIR} ${API_DIR} ${KERNEL_DIR})
 
 target_include_directories(gna-api PUBLIC
   $<BUILD_INTERFACE:${COMMON_DIR}>
@@ -311,7 +330,13 @@ if(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
   set(api_headers_verbose
     ${api_headers}
     ${COMMON_DIR}/gna-api-verbose.h)
-
+  
+  set(gna_api_validation
+    ${gna2_api_all_public}
+    ${API_DIR}/gna2-validation-api.h)
+  
+  source_group(Api2 FILES ${gna_api_validation})
+    
   add_library(gna-api-verbose SHARED)
 
   target_include_directories(gna-api-verbose

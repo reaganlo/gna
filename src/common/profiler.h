@@ -97,7 +97,7 @@ int getTimeWithMilis(struct timeWithMilis* t);
 #endif // defined(PROFILE_PRINT)
 
 /**
- * max value of time_tsc type
+ * max value of uint64_t type
  */
 #define TIME_TSC_MAX ULLONG_MAX
 
@@ -118,11 +118,9 @@ typedef struct timeWithMilis time_rtc;
  */
 typedef struct
 {
-    time_tsc            start;      // time value on profiler start
-    time_tsc            stop;       // time value on profiler stop
+    uint64_t            start;      // time value on profiler start
+    uint64_t            stop;       // time value on profiler stop
 } gna_profiler_tsc;
-
-static_assert(16 == sizeof(gna_profiler_tsc), "Invalid size of gna_profiler_tsc");
 
 #if !defined(DRIVER)
 /**
@@ -158,13 +156,13 @@ void profilerTscStop(gna_profiler_tsc * const profiler);
 /**
  * Get TSC profiler ticks passed
  */
-time_tsc profilerGetTscPassed(gna_profiler_tsc const * const profiler);
+uint64_t profilerGetTscPassed(gna_profiler_tsc const * const profiler);
 
 #if !defined(DRIVER)
 /**
  * Start RTC profiler
  *
- * NOTE: available resolution is 10-15ms
+ * @note available resolution is 10-15ms
  *
  * @p profiler object to start
  */
@@ -173,7 +171,7 @@ void profilerRtcStart(gna_profiler_rtc * const profiler);
 /**
  * Stop RTC profiler
  *
- * NOTE: available resolution is 10-15ms
+ * @note available resolution is 10-15ms
  *
  * @p   profiler object to stop
  */
@@ -182,12 +180,12 @@ void profilerRtcStop(gna_profiler_rtc * const profiler);
 /**
  * Get passed miliseconds
  *
- * NOTE: available resolution is 10-15ms
+ * @note available resolution is 10-15ms
  *
  * @p       stopped profiler object
  * @return  passed time in miliseconds (or TIME_TSC_MAX if p is invalid)
  */
-time_tsc profilerRtcGetMilis(gna_profiler_rtc * const profiler);
+uint64_t profilerRtcGetMilis(gna_profiler_rtc * const profiler);
 #ifdef __cplusplus
 }
 #endif

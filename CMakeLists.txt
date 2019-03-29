@@ -39,6 +39,7 @@ set(GNA_BINARY_DIR ${CMAKE_SOURCE_DIR}/bin)
 # source path variables
 set(APP_DIR ${CMAKE_SOURCE_DIR}/src)
 set(COMMON_DIR ${APP_DIR}/common)
+set(API_DIR ${APP_DIR}/gna-api)
 set(SRC_DIR ${APP_DIR}/gna-lib)
 set(SAMPLES_DIR ${CMAKE_SOURCE_DIR}/samples)
 set(KERNEL_DIR ${SRC_DIR}/kernels)

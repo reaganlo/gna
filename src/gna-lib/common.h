@@ -104,6 +104,7 @@ typedef enum __AccelerationMode
     GNA_AVX2_FAST = GNA_AVX2,
     NUM_GNA_ACCEL_MODES = 0xE,
 } AccelerationMode;
+// TODO:3:API redesign provide map for new api and interan acceleartion modes.
 
 typedef enum _TransformOperation
 {

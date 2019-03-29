@@ -60,19 +60,12 @@ typedef enum _gna_hw_perf_encoding
 #define PERF_TYPE_DEF
 
 /**
- * Time Stamp Counter type
- */
-typedef unsigned long long time_tsc;
-
-static_assert(8 == sizeof(time_tsc), "Invalid size of time_tsc");
-
-/**
  * Accelerator (hardware level) scoring request performance results
  */
 typedef struct
 {
-    time_tsc            total;      // # of total cycles spent on scoring in hw
-    time_tsc            stall;      // # of stall cycles spent in hw (since scoring)
+    uint64_t            total;      // # of total cycles spent on scoring in hw
+    uint64_t            stall;      // # of stall cycles spent in hw (since scoring)
 } gna_perf_hw_t;
 
 static_assert(16 == sizeof(gna_perf_hw_t), "Invalid size of gna_perf_hw_t");
@@ -82,9 +75,9 @@ static_assert(16 == sizeof(gna_perf_hw_t), "Invalid size of gna_perf_hw_t");
  */
 typedef struct
 {
-    time_tsc            startHW;    // time of setting up and issuing HW scoring
-    time_tsc            scoreHW;    // time between HW scoring start and scoring complete interrupt
-    time_tsc            intProc;    // time of processing scoring complete interrupt
+    uint64_t            startHW;    // time of setting up and issuing HW scoring
+    uint64_t            scoreHW;    // time between HW scoring start and scoring complete interrupt
+    uint64_t            intProc;    // time of processing scoring complete interrupt
 } gna_perf_drv_t;
 
 static_assert(24 == sizeof(gna_perf_drv_t), "Invalid size of gna_perf_drv_t");
@@ -95,8 +88,8 @@ static_assert(24 == sizeof(gna_perf_drv_t), "Invalid size of gna_perf_drv_t");
  */
 typedef struct
 {
-    time_tsc            start;      // absolute request submit time
-    time_tsc            stop;       // absolute processing end time
+    uint64_t            start;      // absolute request submit time
+    uint64_t            stop;       // absolute processing end time
 } gna_perf_total_t;
 
 static_assert(16 == sizeof(gna_perf_total_t), "Invalid size of gna_perf_total_t");
@@ -106,13 +99,13 @@ static_assert(16 == sizeof(gna_perf_total_t), "Invalid size of gna_perf_total_t"
  */
 typedef struct
 {
-    time_tsc            submit;     // time of score request submit
-    time_tsc            preprocess; // time of preprocessing request
-    time_tsc            process;    // time of processing score request from submit till done notification
-    time_tsc            scoring;    // time of computing scores in software mode
-    time_tsc            total;      // time of total scoring - includes time when request is waiting in thread pool
-    time_tsc            ioctlSubmit;// time of issuing "start scoring IOCTL"
-    time_tsc            ioctlWaitOn;// time of waiting for "start scoring IOCTL" completion
+    uint64_t            submit;     // time of score request submit
+    uint64_t            preprocess; // time of preprocessing request
+    uint64_t            process;    // time of processing score request from submit till done notification
+    uint64_t            scoring;    // time of computing scores in software mode
+    uint64_t            total;      // time of total scoring - includes time when request is waiting in thread pool
+    uint64_t            ioctlSubmit;// time of issuing "start scoring IOCTL"
+    uint64_t            ioctlWaitOn;// time of waiting for "start scoring IOCTL" completion
 } gna_perf_lib_t;
 
 static_assert(56 == sizeof(gna_perf_lib_t), "Invalid size of gna_perf_lib_t");

@@ -87,17 +87,17 @@ static __inline__ unsigned long long __rdtsc(void)
 
 void profilerTscStart(gna_profiler_tsc * const profiler)
 {
-    profiler->start = (time_tsc)__rdtsc();
+    profiler->start = (uint64_t)__rdtsc();
 }
 
 void profilerTscStop(gna_profiler_tsc * const profiler)
 {
-    profiler->stop = (time_tsc)__rdtsc();
+    profiler->stop = (uint64_t)__rdtsc();
 }
 
 #endif
 
-time_tsc profilerGetTscPassed(gna_profiler_tsc const * const profiler)
+uint64_t profilerGetTscPassed(gna_profiler_tsc const * const profiler)
 {
     return profiler->stop - profiler->start;
 }
@@ -144,9 +144,9 @@ void profilerRtcStop(gna_profiler_rtc * const profiler)
     profiler->passed = rtcGetTimeDiff(&profiler->start, &profiler->stop);
 }
 
-time_tsc profilerRtcGetMilis(gna_profiler_rtc * const profiler)
+uint64_t profilerRtcGetMilis(gna_profiler_rtc * const profiler)
 {
-    time_tsc milis = TIME_TSC_MAX;
+    uint64_t milis = TIME_TSC_MAX;
 
     // check for milis overflow
     if (TIME_TSC_MAX < (profiler->passed.PROFILER_TFRAC / (PROFILER_TFRAC_RES / 1000)))
