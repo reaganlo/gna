@@ -30,7 +30,7 @@
 
 DeviceController::DeviceController()
 {
-    gna_device_version deviceVersion;
+    Gna2DeviceVersion deviceVersion;
     gna_device_id deviceNumber = 0;
     auto status = GnaDeviceGetCount(&deviceNumber);
     if (GNA_SUCCESS != status)
@@ -45,7 +45,7 @@ DeviceController::DeviceController()
         throw std::runtime_error("GnaDeviceOpen failed");
     }
 
-    status = GnaDeviceGetVersion(gnaHandle, &deviceVersion);
+    status = GnaDeviceGetVersion(gnaHandle, (gna_device_version*)&deviceVersion);
     if (GNA_SUCCESS != status)
     {
         throw std::runtime_error("GnaDeviceGetVersion failed");
@@ -123,9 +123,9 @@ void DeviceController::RequestSetAcceleration(gna_request_cfg_id configId, gna_a
     }
 }
 
-void DeviceController::RequestSetConsistency(gna_request_cfg_id configId, gna_device_version version)
+void DeviceController::RequestSetConsistency(gna_request_cfg_id configId, Gna2DeviceVersion version)
 {
-    intel_gna_status_t status = GnaRequestConfigEnableHardwareConsistency(configId, version);
+    intel_gna_status_t status = GnaRequestConfigEnableHardwareConsistency(configId, (gna_device_version)version);
     if (GNA_SUCCESS != status)
     {
         throw std::runtime_error("RequestSetConsistency add failed");

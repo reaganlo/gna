@@ -40,7 +40,7 @@ using namespace GNA;
 
 uint32_t HardwareModel::CalculateDescriptorSize(
         const uint32_t layerCount, const uint32_t gmmLayersCount,
-        const gna_device_version hwId)
+        const DeviceVersion hwId)
 {
     Expect::InRange(layerCount, ui32_1,
         HardwareCapabilities::GetMaximumLayerCount(hwId), XNN_ERR_NET_LYR_NO);
@@ -151,7 +151,7 @@ uint32_t HardwareModel::GetBufferOffset(const BaseAddress& address) const
 }
 
 uint32_t HardwareModel::getLayerDescriptorsSize(
-    const uint32_t layerCount, const gna_device_version hwId)
+    const uint32_t layerCount, const DeviceVersion hwId)
 {
     Expect::InRange(layerCount, ui32_1,
         HardwareCapabilities::GetMaximumLayerCount(hwId), XNN_ERR_NET_LYR_NO);
@@ -160,7 +160,7 @@ uint32_t HardwareModel::getLayerDescriptorsSize(
 }
 
 uint32_t HardwareModel::getGmmDescriptorsSize(
-    const uint32_t gmmLayersCount, const gna_device_version hwId)
+    const uint32_t gmmLayersCount, const DeviceVersion hwId)
 {
     Expect::InRange(gmmLayersCount, ui32_0,
         HardwareCapabilities::GetMaximumLayerCount(hwId), XNN_ERR_NET_LYR_NO);

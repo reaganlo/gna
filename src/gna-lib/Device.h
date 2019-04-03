@@ -47,7 +47,7 @@ public:
     Device(const Device &) = delete;
     Device& operator=(const Device&) = delete;
 
-    gna_device_version GetVersion() const;
+    DeviceVersion GetVersion() const;
 
     uint32_t GetNumberOfThreads() const;
 
@@ -67,7 +67,7 @@ public:
 
     void ReleaseConfiguration(gna_request_cfg_id configId);
 
-    void EnableHardwareConsistency(gna_request_cfg_id configId, gna_device_version hardwareVersion);
+    void EnableHardwareConsistency(gna_request_cfg_id configId, DeviceVersion hardwareVersion);
 
     void EnforceAcceleration(gna_request_cfg_id configId, AccelerationMode accel);
 
@@ -86,7 +86,7 @@ public:
 protected:
     virtual std::unique_ptr<Memory> createMemoryObject( const uint32_t requestedSize);
 
-    static const std::map<const gna_device_generation, const gna_device_version> deviceDictionary;
+    static const std::map<const gna_device_generation, const DeviceVersion> deviceDictionary;
 
     gna_device_id id;
 

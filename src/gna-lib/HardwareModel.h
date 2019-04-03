@@ -34,6 +34,8 @@
 #include "DriverInterface.h"
 #include "Memory.h"
 
+#include "gna2-common-impl.h"
+
 namespace GNA
 {
 
@@ -49,7 +51,7 @@ class HardwareModel
 {
 public:
     static uint32_t CalculateDescriptorSize(const uint32_t layerCount,
-        const uint32_t gmmLayersCount, const gna_device_version hwId = GNA_ADL);
+        const uint32_t gmmLayersCount, const DeviceVersion hwId = DefaultDeviceVersion);
 
     HardwareModel(const std::vector<std::unique_ptr<Layer>>& layers, uint32_t gmmCount,
         const HardwareCapabilities& hwCaps);
@@ -77,9 +79,9 @@ public:
 
 protected:
     static uint32_t getLayerDescriptorsSize(const uint32_t layerCount,
-        gna_device_version hwId = GNA_DEFAULT_DEVICE_VERSION);
+        DeviceVersion hwId = DefaultDeviceVersion);
     static uint32_t getGmmDescriptorsSize(const uint32_t gmmLayersCount,
-        gna_device_version hwId = GNA_DEFAULT_DEVICE_VERSION);
+        DeviceVersion hwId = DefaultDeviceVersion);
 
     virtual void allocateLayerDescriptors();
 

@@ -31,6 +31,8 @@
 #include "common.h"
 #include "DriverInterface.h"
 
+#include "gna2-common-impl.h"
+
 namespace GNA
 {
 
@@ -64,24 +66,24 @@ struct GenerationCapabilities
 class HardwareCapabilities
 {
 public:
-    explicit HardwareCapabilities(gna_device_version deviceVersion = GNA_DEFAULT_DEVICE_VERSION);
+    explicit HardwareCapabilities(DeviceVersion deviceVersion = DefaultDeviceVersion);
 
     void DiscoverHardware(DriverInterface &driverInterface);
 
     static void GetHardwareConsistencySettings(
-        uint32_t bufferElementCount[2 * XNN_N_GROUP_MAX], gna_device_version hwId);
+        uint32_t bufferElementCount[2 * XNN_N_GROUP_MAX], DeviceVersion hwId);
 
     // For now all hardware generations share the same maximum model size
     // in the future it's possible to integrate it as GenerationCapabilities field
     static const uint32_t MaximumModelSize;
 
-    static gna_device_version GetDeviceVersion(gna_device_generation generation);
+    static DeviceVersion GetDeviceVersion(gna_device_generation generation);
 
-    static uint32_t GetMaximumLayerCount(gna_device_version hwId);
+    static uint32_t GetMaximumLayerCount(DeviceVersion hwId);
 
-    static uint32_t GetComputeEngineCount(gna_device_version hwId);
+    static uint32_t GetComputeEngineCount(DeviceVersion hwId);
 
-    static uint32_t GetBufferSizeInKB(gna_device_version hwId);
+    static uint32_t GetBufferSizeInKB(DeviceVersion hwId);
 
     static uint32_t GetBufferSizeInKB(gna_device_generation generation)
     {
@@ -89,7 +91,7 @@ public:
     }
 
     // Gets the number of data elements that may be stored in hw buffer
-    static uint32_t GetBufferElementCount(gna_device_version hwId,
+    static uint32_t GetBufferElementCount(DeviceVersion hwId,
         uint32_t grouping, uint32_t inputPrecision = GNA_INT16);
 
     uint32_t GetBufferSizeInKB() const;
@@ -99,7 +101,7 @@ public:
         return GetBufferElementCount(deviceVersion, grouping, inputPrecision);
     }
 
-    gna_device_version GetDeviceVersion() const;
+    DeviceVersion GetDeviceVersion() const;
 
     gna_device_generation GetDeviceGeneration() const;
 
@@ -115,13 +117,13 @@ public:
     bool HasFeature(GnaFeature feature) const;
 
 private:
-    static std::map<gna_device_version, const GenerationCapabilities> gnaCapsMap;
+    static std::map<DeviceVersion, const GenerationCapabilities> gnaCapsMap;
 
-    static const GenerationCapabilities& getGenerationCapabilities(gna_device_version deviceVersionIn);
+    static const GenerationCapabilities& getGenerationCapabilities(DeviceVersion deviceVersionIn);
 
     bool hardwareSupported = false;
 
-    gna_device_version deviceVersion;
+    DeviceVersion deviceVersion;
 
     uint32_t bufferSize;
 
@@ -129,4 +131,3 @@ private:
 };
 
 }
-

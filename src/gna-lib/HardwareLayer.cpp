@@ -526,7 +526,7 @@ void HardwareLayerCnn::save()
     XnnDescriptor[bias_buffer] = *cnn->Convolution->Biases;
 }
 
-uint32_t HardwareLayerCnn2D::GetKernelWorkGroupSize(gna_device_version hw,
+uint32_t HardwareLayerCnn2D::GetKernelWorkGroupSize(DeviceVersion hw,
     ConvolutionFunction2D const * cnnIn, PoolingFunction2D const * poolingIn,
     const DataMode& outputMode)
 {
@@ -544,21 +544,21 @@ uint32_t HardwareLayerCnn2D::GetKernelWorkGroupSize(gna_device_version hw,
     return kernelWorkGroup;
 }
 
-uint32_t HardwareLayerCnn2D::GetKernelMemorySize(gna_device_version hw,
+uint32_t HardwareLayerCnn2D::GetKernelMemorySize(DeviceVersion hw,
     FiltersTensor const * filter)
 {
     UNREFERENCED_PARAMETER(hw);
     return ALIGN(filter->Size / filter->Count, 16);
 }
 
-uint32_t HardwareLayerCnn2D::GetConvolutionMemorySize(gna_device_version hw,
+uint32_t HardwareLayerCnn2D::GetConvolutionMemorySize(DeviceVersion hw,
     ConvolutionFunction2D const * cnnIn)
 {
     UNREFERENCED_PARAMETER(hw);
     return cnnIn->Filters->at(GNA_DIM_H) * cnnIn->Output->at(GNA_DIM_W) * 8;
 }
 
-uint32_t HardwareLayerCnn2D::GetPoolingMemorySize(gna_device_version hw,
+uint32_t HardwareLayerCnn2D::GetPoolingMemorySize(DeviceVersion hw,
     PoolingFunction2D const * poolingIn, const DataMode& outputMode)
 {
     UNREFERENCED_PARAMETER(hw);

@@ -67,7 +67,7 @@ uint32_t DeviceManager::GetDeviceCount()
     return 1;
 }
 
-gna_device_version DeviceManager::GetDeviceVersion(gna_device_id deviceId)
+DeviceVersion DeviceManager::GetDeviceVersion(gna_device_id deviceId)
 {
     VerifyDeviceIndex(deviceId);
 

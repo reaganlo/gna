@@ -333,12 +333,12 @@ public:
     // Gets default size of descriptor
     inline static size_t GetSize()
     {
-        return getSize(GNA_DEFAULT_DEVICE_VERSION);
+        return getSize(DefaultDeviceVersion);
     }
 
     // Gets total size of all layers' descriptors for given hw
     inline static uint32_t GetSize(const uint32_t layerCount,
-        const gna_device_version hwId = GNA_DEFAULT_DEVICE_VERSION)
+        const DeviceVersion hwId = DefaultDeviceVersion)
     {
         return static_cast<const uint32_t>(getSize(hwId) * layerCount);
     }
@@ -394,8 +394,8 @@ public:
     AddrGmmCfg GmmDescriptor;
 
 private:
-    static size_t getSize(const gna_device_version hwId);
-    static const std::map<const XnnParameterType, const XnnParameter>& getParameterMap(const gna_device_version hwId);
+    static size_t getSize(const DeviceVersion hwId);
+    static const std::map<const XnnParameterType, const XnnParameter>& getParameterMap(const DeviceVersion hwId);
 
     LayerDescriptor(const AddrGmmCfg gmmConfig, const size_t size, const HardwareCapabilities& hwCaps,
         const BaseAddress memoryBaseIn, BaseAddress descriptorBaseIn,

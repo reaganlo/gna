@@ -46,43 +46,43 @@
 
  If no hardware device is available device number is set to 1,
  as software device still can be used.
- @see GnaDeviceGetVersion() to determine version of available device.
+ @see Gna2DeviceGetVersion() to determine version of available device.
 
  @param [out] deviceCount Number of available devices.
  @return Status of the operation.
  */
-GNA_API enum GnaStatus GnaDeviceGetCount(
+GNA2_API enum Gna2Status Gna2DeviceGetCount(
     uint32_t * deviceCount);
 
 /**
  Retrieves hardware device version.
 
  Devices are zero-based indexed.
- Select desired device providing deviceIndex from 0 to GnaDeviceGetCount() - 1.
- @see GnaDeviceGetCount().
+ Select desired device providing deviceIndex from 0 to Gna2DeviceGetCount() - 1.
+ @see Gna2DeviceGetCount().
 
  @param deviceIndex Index of queried device.
- @param [out] deviceVersion GnaDeviceVersion identifier.
+ @param [out] deviceVersion Gna2DeviceVersion identifier.
  @return Status of the operation.
  */
-GNA_API enum GnaStatus GnaDeviceGetVersion(
+GNA2_API enum Gna2Status Gna2DeviceGetVersion(
     uint32_t deviceIndex,
-    enum GnaDeviceVersion * deviceVersion);
+    enum Gna2DeviceVersion * deviceVersion);
 
 /**
  Sets number of software worker threads for given device.
 
  @note
-    Must be called synchronously before GnaDeviceOpen().
+    Must be called synchronously before Gna2DeviceOpen().
 
  Device indexes are zero-based.
- Select desired device providing deviceIndex from 0 to GnaDeviceGetCount() - 1.
+ Select desired device providing deviceIndex from 0 to Gna2DeviceGetCount() - 1.
 
  @param deviceIndex Index of the affected device.
  @param threadNumber Number of software worker threads [1,127]. Default is 1.
  @return Status of the operation.
  */
-GNA_API enum GnaStatus GnaDeviceSetNumberOfThreads(
+GNA2_API enum Gna2Status Gna2DeviceSetNumberOfThreads(
     uint32_t deviceIndex,
     uint32_t numberOfThreads);
 
@@ -90,7 +90,7 @@ GNA_API enum GnaStatus GnaDeviceSetNumberOfThreads(
  Opens and initializes GNA device for processing.
 
  Device indexes are zero-based.
- Select desired device providing deviceIndex from 0 to GnaDeviceGetCount - 1.
+ Select desired device providing deviceIndex from 0 to Gna2DeviceGetCount - 1.
  If no hardware devices are available, software device can be still opened
  by setting deviceIndex to 0.
 
@@ -101,7 +101,7 @@ GNA_API enum GnaStatus GnaDeviceSetNumberOfThreads(
  @param deviceIndex Index of the device to be opened.
  @return Status of the operation.
  */
-GNA_API enum GnaStatus GnaDeviceOpen(
+GNA2_API enum Gna2Status Gna2DeviceOpen(
     uint32_t deviceIndex);
 
 /**
@@ -110,7 +110,7 @@ GNA_API enum GnaStatus GnaDeviceOpen(
  @param deviceIndex The device to be closed.
  @return Status of the operation.
  */
-GNA_API enum GnaStatus GnaDeviceClose(
+GNA2_API enum Gna2Status Gna2DeviceClose(
     uint32_t deviceIndex);
 
 #endif // __GNA2_DEVICE_API_H

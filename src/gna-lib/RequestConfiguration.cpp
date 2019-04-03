@@ -39,7 +39,7 @@
 using namespace GNA;
 
 RequestConfiguration::RequestConfiguration(CompiledModel& model, gna_request_cfg_id configId,
-    gna_device_version consistentDevice) :
+    DeviceVersion consistentDevice) :
     Model{model},
     Id{configId},
     BufferElementCount{}
@@ -89,9 +89,9 @@ void RequestConfiguration::AddActiveList(uint32_t layerIndex, const ActiveList& 
 }
 
 void RequestConfiguration::SetHardwareConsistency(
-    gna_device_version consistentDevice)
+    DeviceVersion consistentDevice)
 {
-    if (GNA_UNSUPPORTED != consistentDevice && GNA_SOFTWARE_EMULATION != consistentDevice)
+    if (GNA2_NOT_SUPPORTED != consistentDevice && Gna2DeviceVersionSoftwareEmulation != consistentDevice)
     {
         HardwareCapabilities::GetHardwareConsistencySettings(BufferElementCount, consistentDevice);
         enableHwConsistency = true;

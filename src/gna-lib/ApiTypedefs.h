@@ -31,29 +31,6 @@
 
 #include "gna2-api.h"
 
-#ifndef STATUS_T_ALIAS
-#define STATUS_T_ALIAS
-typedef enum GnaStatus ApiStatus;
-#endif
-
-typedef enum GnaBiasMode ApiBiasMode;
-typedef enum GnaDataType ApiDataType;
-typedef enum GnaDeviceGeneration DeviceGeneration;
-typedef enum GnaDeviceVersion DeviceVersion;
-typedef enum GnaErrorType ModelErrorType;
-typedef enum GnaInstrumentationMode HwInstrumentationMode;
-typedef enum GnaInstrumentationUnit InstrumentationUnit;
-typedef enum GnaOperationType ApiOperationType;
-typedef enum GnaPoolingMode ApiPoolingMode;
-typedef enum GnaTensorMode ApiTensorMode;
-typedef struct GnaDrvPerfResults DrvPerfResults;
-typedef struct GnaModel ApiModel;
-typedef struct GnaModelEmbeddedHeader ModelEmbeddedHeader;
-typedef struct GnaOperation ApiOperation;
-typedef struct GnaPerfResults PerfResults;
-typedef struct GnaShape ApiShape;
-typedef struct GnaTensor ApiTensor;
-
 /**
  Verifies data sizes used in the API and GNA hardware
 
@@ -66,3 +43,7 @@ static_assert(4 == sizeof(int32_t), "Invalid size of int32_t");
 static_assert(1 == sizeof(uint8_t), "Invalid size of uint8_t");
 static_assert(2 == sizeof(uint16_t), "Invalid size of uint16_t");
 static_assert(4 == sizeof(uint32_t), "Invalid size of uint32_t");
+
+typedef enum GnaInstrumentationMode InstrumentationMode;
+typedef enum GnaInstrumentationUnit InstrumentationUnit;
+typedef struct GnaModelSueCreekHeader SueCreekHeader;

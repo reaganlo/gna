@@ -52,7 +52,7 @@ SoftwareModel::SoftwareModel(const gna_model *const network,
 #ifndef NO_ERRCHECK
     Expect::InRange(network->nGroup, ui32_1, XNN_N_GROUP_MAX, XNN_ERR_LYR_CFG);
     Expect::InRange(layerCount, ui32_1,
-        HardwareCapabilities::GetMaximumLayerCount(GNA_DEFAULT_DEVICE_VERSION), XNN_ERR_NET_LYR_NO);
+        HardwareCapabilities::GetMaximumLayerCount(DefaultDeviceVersion), XNN_ERR_NET_LYR_NO);
     Expect::NotNull(network->pLayers);
 #endif
     build(network->pLayers, validator);

@@ -44,10 +44,10 @@
 /**
  Header describing parameters of dumped model.
 
- Structure is partially filled by GnaModelExport() with parameters necessary for SueCreek,
+ Structure is partially filled by Gna2ModelExport() with parameters necessary for SueCreek,
  other fields are populated by user as necessary.
  */
-struct GnaModelSueCreekHeader
+struct Gna2ModelSueCreekHeader
 {
     /**
      Offset in bytes of first layer descriptor in network.
@@ -55,7 +55,7 @@ struct GnaModelSueCreekHeader
     uint32_t LayerDescriptorBaseOffset;
 
     /**
-     Total size of model in bytes determined by GnaModelExport().
+     Total size of model in bytes determined by Gna2ModelExport().
      Including hardware descriptors, model data and input/output buffers.
      */
     uint32_t ModelSize;
@@ -125,7 +125,7 @@ struct GnaModelSueCreekHeader
     uint8_t Reserved[12];
 };
 
-static_assert(64 == sizeof(struct GnaModelSueCreekHeader), "Invalid size of struct GnaModelSueCreekHeader");
+static_assert(64 == sizeof(struct Gna2ModelSueCreekHeader), "Invalid size of struct Gna2ModelSueCreekHeader");
 
 #endif // __GNA2_MODEL_SUECREEK_HEADER_H
 

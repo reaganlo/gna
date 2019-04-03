@@ -27,7 +27,7 @@
  @{
  ******************************************************************************
 
- @addtogroup GNA_API_INFERENCE Inference API
+ @addtogroup GNA2_API_INFERENCE Inference API
 
  API for configuring and running inference requests.
 
@@ -41,8 +41,6 @@
 
 #include <stdint.h>
 
-enum GnaAccelerationMode;
-
 /**
  Adds single request configuration for use with the model.
 
@@ -53,7 +51,7 @@ enum GnaAccelerationMode;
  When requests are processed asynchronously each one needs to have individual
  Input and output buffers set by this configuration.
  Configurations can be reused with another request when the request
- with the current configuration has been completed and retrieved by GnaRequestWait().
+ with the current configuration has been completed and retrieved by Gna2RequestWait().
  Eg. The user can create 8 unique configurations and reuse them
  with consecutive batches of 8 requests, when batches are enqueued sequentially.
 
@@ -65,7 +63,7 @@ enum GnaAccelerationMode;
  @param [out] requestConfigId Request configuration created by GNA.
  @return Status of the operation.
  */
-GNA_API enum GnaStatus GnaRequestConfigCreate(
+GNA2_API enum Gna2Status Gna2RequestConfigCreate(
     uint32_t modelId,
     uint32_t * requestConfigId);
 
@@ -73,7 +71,7 @@ GNA_API enum GnaStatus GnaRequestConfigCreate(
  Sets a buffer of the operation operand for the request configuration.
 
  @note
- - Buffer addresses need to be within the memory allocated previously by GnaMemoryAlloc.
+ - Buffer addresses need to be within the memory allocated previously by Gna2MemoryAlloc.
  - Buffers are deleted by GNA during corresponding request configuration release. // TODO:3: is this true?
 
  @param requestConfigId Identifier of affected request configuration.
@@ -82,7 +80,7 @@ GNA_API enum GnaStatus GnaRequestConfigCreate(
  @param address Address of the buffer.
  @return Status of the operation.
  */
-GNA_API enum GnaStatus GnaRequestConfigSetOperandBuffer(
+GNA2_API enum Gna2Status Gna2RequestConfigSetOperandBuffer(
     uint32_t requestConfigId,
     uint32_t operationIndex,
     uint32_t operandIndex,
@@ -108,9 +106,9 @@ GNA_API enum GnaStatus GnaRequestConfigSetOperandBuffer(
  @param numberOfIndices The number of indices in the active list.
  @param indices The address of the array with active output indices.
  @return Status of the operation.
- @see GnaRequestConfigCreate and GnaRequestConfigSetOperandBuffer for details.
+ @see Gna2RequestConfigCreate and Gna2RequestConfigSetOperandBuffer for details.
  */
-GNA_API enum GnaStatus GnaRequestConfigEnableActiveList(
+GNA2_API enum Gna2Status Gna2RequestConfigEnableActiveList(
     uint32_t requestConfigId,
     uint32_t operationIndex,
     uint32_t numberOfIndices,
@@ -123,29 +121,15 @@ GNA_API enum GnaStatus GnaRequestConfigEnableActiveList(
  (scores) are bit-exact with that produced by the hardware device .
  Useful e.g. for verification of results from model created and exported
  for GNA embedded devices.
- @see GnaAccelerationMode.
+ @see Gna2AccelerationMode.
 
  @param requestConfigId Identifier of affected request configuration.
  @param deviceVersion Device version to be consistent with.
  @return Status of the operation.
  */
-GNA_API enum GnaStatus GnaRequestConfigEnableHardwareConsistency(
+GNA2_API enum Gna2Status Gna2RequestConfigEnableHardwareConsistency(
     uint32_t requestConfigId,
-    enum GnaDeviceVersion deviceVersion);
-
-/**
- Enforces processing request with selected acceleration mode.
-
- When not set ::GnaAccelerationModeAuto is used.
- @see GnaAccelerationMode.
-
- @param requestConfigId Identifier of affected request configuration.
- @param accelerationMode Acceleration mode used for processing.
- @return Status of the operation.
- */
-GNA_API enum GnaStatus GnaRequestConfigSetAccelerationMode(
-    uint32_t requestConfigId,
-    enum GnaAccelerationMode accelerationMode);
+    enum Gna2DeviceVersion deviceVersion);
 
 /**
  The list of processing acceleration modes.
@@ -154,14 +138,14 @@ GNA_API enum GnaStatus GnaRequestConfigSetAccelerationMode(
  Available modes are detected by GNA.
 
  @note
- - ::GnaAccelerationModeHardware: in some GNA hardware generations, model components unsupported
+ - ::Gna2AccelerationModeHardware: in some GNA hardware generations, model components unsupported
    by hardware will be processed using software acceleration.
 
  When software inference is used, by default "fast" algorithm is used
  and results may be not bit-exact with these produced by hardware device.
- @see GnaRequestConfigEnableHardwareConsistency to enable bit-exact results consistency.
+ @see Gna2RequestConfigEnableHardwareConsistency to enable bit-exact results consistency.
  */
-enum GnaAccelerationMode
+enum Gna2AccelerationMode
 {
     /**
      Fully automated acceleration selection.
@@ -170,21 +154,21 @@ enum GnaAccelerationMode
      (highest performance) applicable software acceleration.
 
      The order of preference is as follows:
-         1. ::GnaAccelerationModeHardware,
-         2. ::GnaAccelerationModeAvx2,
-         3. ::GnaAccelerationModeAvx1,
-         4. ::GnaAccelerationModeSse4x2
-         5. ::GnaAccelerationModeGeneric.
+         1. ::Gna2AccelerationModeHardware,
+         2. ::Gna2AccelerationModeAvx2,
+         3. ::Gna2AccelerationModeAvx1,
+         4. ::Gna2AccelerationModeSse4x2
+         5. ::Gna2AccelerationModeGeneric.
      */
-    GnaAccelerationModeAuto = GNA_DEFAULT,
+    Gna2AccelerationModeAuto = GNA2_DEFAULT,
 
     /**
      Automated software acceleration selection.
 
-     Automatic software emulation selection similar as in ::GnaAccelerationModeAuto.
+     Automatic software emulation selection similar as in ::Gna2AccelerationModeAuto.
      Only software optimizations are selected, even if GNA hardware device is available.
      */
-    GnaAccelerationModeSoftware = 1,
+    Gna2AccelerationModeSoftware = 1,
 
     /**
      GNA Hardware device acceleration.
@@ -194,7 +178,7 @@ enum GnaAccelerationMode
      For some older GNA hardware generations, model components unsupported
      by hardware will be processed using software acceleration.
      */
-    GnaAccelerationModeHardware = 2,
+    Gna2AccelerationModeHardware = 2,
 
     /**
      AVX2 Software acceleration.
@@ -202,7 +186,7 @@ enum GnaAccelerationMode
      Enforce the usage of optimized software implementation,
      using AVX2 CPU instruction set.
      */
-    GnaAccelerationModeAvx2 = 3,
+    Gna2AccelerationModeAvx2 = 3,
 
     /**
      AVX1 Software acceleration.
@@ -210,7 +194,7 @@ enum GnaAccelerationMode
      Enforce the usage of optimized software implementation,
      using AVX1 CPU instruction set.
      */
-    GnaAccelerationModeAvx1 = 4,
+    Gna2AccelerationModeAvx1 = 4,
 
     /**
      SSE4.2 Software acceleration.
@@ -218,7 +202,7 @@ enum GnaAccelerationMode
      Enforce the usage of optimized software implementation,
      using SSE4.2 CPU instruction set.
      */
-    GnaAccelerationModeSse4x2 = 5,
+    Gna2AccelerationModeSse4x2 = 5,
 
     /**
      Generic software implementation.
@@ -226,8 +210,22 @@ enum GnaAccelerationMode
      Enforce the usage of generic software implementation,
      using basic x86 CPU instruction set.
      */
-    GnaAccelerationModeGeneric = 6,
+    Gna2AccelerationModeGeneric = 6,
 };
+
+/**
+ Enforces processing request with selected acceleration mode.
+
+ When not set ::Gna2AccelerationModeAuto is used.
+ @see Gna2AccelerationMode.
+
+ @param requestConfigId Identifier of affected request configuration.
+ @param accelerationMode Acceleration mode used for processing.
+ @return Status of the operation.
+ */
+GNA2_API enum Gna2Status Gna2RequestConfigSetAccelerationMode(
+    uint32_t requestConfigId,
+    enum Gna2AccelerationMode accelerationMode);
 
 /**
  Releases request config and its resources.
@@ -239,7 +237,7 @@ enum GnaAccelerationMode
  @param requestConfigId Identifier of affected request configuration.
  @return Status of the operation.
  */
-GNA_API enum GnaStatus GnaRequestConfigRelease(
+GNA2_API enum Gna2Status Gna2RequestConfigRelease(
     uint32_t requestConfigId);
 
 /**
@@ -253,9 +251,9 @@ GNA_API enum GnaStatus GnaRequestConfigRelease(
  @param requestConfigId The request configuration.
  @param [out] requestId Identifier of the enqueued request.
  @return Status of request preparation and queuing only. To retrieve
-         the results and processing status call GnaRequestWait.
+         the results and processing status call Gna2RequestWait.
  */
-GNA_API enum GnaStatus GnaRequestEnqueue(
+GNA2_API enum Gna2Status Gna2RequestEnqueue(
     uint32_t requestConfigId,
     uint32_t * requestId);
 
@@ -268,11 +266,11 @@ GNA_API enum GnaStatus GnaRequestEnqueue(
  - Unretrieved requests are released by GNA during corresponding model release.
  - Maximum supported time of waiting for a request is 180000 milliseconds.
 
- @param requestId The request to wait for, use ::GNA_DISABLED to wait for any.
+ @param requestId The request to wait for, use ::GNA2_DISABLED to wait for any.
  @param timeoutMilliseconds Timeout duration in milliseconds.
  @return Status of request processing.
  */
-GNA_API enum GnaStatus GnaRequestWait(
+GNA2_API enum Gna2Status Gna2RequestWait(
     uint32_t requestId,
     uint32_t timeoutMilliseconds);
 

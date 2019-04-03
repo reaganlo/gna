@@ -37,7 +37,7 @@ gna_request_cfg_id RequestBuilder::assignConfigId()
     return configIdSequence++; // TODO:3: add unique id
 }
 
-void RequestBuilder::CreateConfiguration(CompiledModel& model, gna_request_cfg_id *configId, gna_device_version consistentDevice)
+void RequestBuilder::CreateConfiguration(CompiledModel& model, gna_request_cfg_id *configId, DeviceVersion consistentDevice)
 {
     *configId = assignConfigId();
     configurations.emplace(*configId, make_unique<RequestConfiguration>(model, *configId, consistentDevice));

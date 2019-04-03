@@ -28,7 +28,7 @@
 using namespace GNA;
 
 
-HardwareCapabilities HardwareModelSue1::sueCapabilities = HardwareCapabilities{ GNA_SUE_CREEK };
+HardwareCapabilities HardwareModelSue1::sueCapabilities = HardwareCapabilities{ Gna2DeviceVersionSueCreek };
 
 HardwareModelSue1::HardwareModelSue1(
     const std::vector<std::unique_ptr<Layer>>& layers, uint32_t gmmCount,

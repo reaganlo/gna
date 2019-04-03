@@ -95,7 +95,7 @@ add_executable(DevTest
   ${devtest_sources}
   ${devtest_headers})
 
-target_include_directories(DevTest PRIVATE ${COMMON_DIR})
+target_include_directories(DevTest PRIVATE ${COMMON_DIR} ${API_DIR})
 
 set_target_properties(DevTest
   PROPERTIES
@@ -218,7 +218,7 @@ set_target_properties(gna-self-test
   EXCLUDE_FROM_DEFAULT_BUILD_KLOCWORK TRUE
   OUTPUT_NAME gna-self-test)
 target_link_libraries(gna-self-test ${GNA_SELF_TEST_LINK_LIBS})
-target_include_directories(gna-self-test PRIVATE ${COMMON_DIR})
+target_include_directories(gna-self-test PRIVATE ${COMMON_DIR} ${API_DIR})
 
 target_compile_options(gna-self-test
   PRIVATE ${EXTRA_EXE_COMPILE_OPTIONS})

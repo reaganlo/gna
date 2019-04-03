@@ -32,6 +32,8 @@ in any way.
 #include "DeviceController.h"
 #include "ModelSetupFactory.h"
 
+#include "gna2-common-api.h"
+
 class ApplicationWrapper
 {
 public:
@@ -303,7 +305,7 @@ public:
             {
                 auto config = modelSetup->ConfigId(action->modelIndex, action->configIndex);
                 deviceController.RequestSetAcceleration(config, gna_acceleration::GNA_AUTO);
-                deviceController.RequestSetConsistency(config, gna_device_version::GNA_ADL);
+                deviceController.RequestSetConsistency(config, Gna2DeviceVersionAlderLake);
                 gna_request_id requestId;
                 deviceController.RequestEnqueue(config, &requestId);
                 deviceController.RequestWait(requestId);

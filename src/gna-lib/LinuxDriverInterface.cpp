@@ -29,6 +29,7 @@
 #include "HardwareRequest.h"
 #include "Logger.h"
 #include "Memory.h"
+#include "gna2-common-impl.h"
 
 #include <errno.h>
 #include <string.h>
@@ -77,7 +78,7 @@ void LinuxDriverInterface::OpenDevice()
 
     try
     {
-        driverCapabilities.hwId = static_cast<gna_device_version>(params[0].value);
+        driverCapabilities.hwId = static_cast<DeviceVersion>(params[0].value);
     }
     catch(std::out_of_range &e)
     {

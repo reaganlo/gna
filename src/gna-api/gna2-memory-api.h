@@ -27,7 +27,7 @@
 
  ******************************************************************************
 
- @addtogroup GNA_API_MEMORY Memory API
+ @addtogroup GNA2_API_MEMORY Memory API
 
  API for managing memory used by GNA Tensors.
 
@@ -50,7 +50,7 @@
  @param [out] memoryAddress Address of memory buffer
  @return Status of the operation.
  */
-GNA_API enum GnaStatus GnaMemoryAlloc(
+GNA2_API enum Gna2Status Gna2MemoryAlloc(
     uint32_t sizeRequested,
     uint32_t * sizeGranted,
     void ** memoryAddress);
@@ -61,7 +61,7 @@ GNA_API enum GnaStatus GnaMemoryAlloc(
  @param memory Memory buffer to be freed.
  @return Status of the operation.
  */
-GNA_API enum GnaStatus GnaMemoryFree(
+GNA2_API enum Gna2Status Gna2MemoryFree(
     void * memory);
 
 #endif // __GNA2_MEMORY_API_H

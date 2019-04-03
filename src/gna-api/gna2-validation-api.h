@@ -40,68 +40,68 @@
 
 typedef enum _dbg_action_type
 {
-    GnaDumpMmio,
-    GnaReservedAction,
-    GnaZeroMemory,
-    GnaDumpMemory,
-    GnaDumpXnnDescriptor,
-    GnaDumpGmmDescriptor,
-    GnaSetXnnDescriptor,
-    GnaSetGmmDescriptor,
-    GnaReadRegister,
-    GnaWriteRegister,
-    GnaLogMessage,
-    GnaSleep,
+    Gna2DumpMmio,
+    Gna2ReservedAction,
+    Gna2ZeroMemory,
+    Gna2DumpMemory,
+    Gna2DumpXnnDescriptor,
+    Gna2DumpGmmDescriptor,
+    Gna2SetXnnDescriptor,
+    Gna2SetGmmDescriptor,
+    Gna2ReadRegister,
+    Gna2WriteRegister,
+    Gna2LogMessage,
+    Gna2Sleep,
 
     NUM_ACTION_TYPES
-} dbg_action_type;
+} Gna2DebugActionType;
 
 typedef enum _register_operation
 {
     Equal,
     And,
     Or
-} register_op;
+} Gna2DebugRegisterOperation;
 
 typedef enum _gna_register
 {
-    GNA_STS          = 0x80,
-    GNA_CTRL         = 0x84,
-    GNA_MCTL         = 0x88,
-    GNA_PTC          = 0x8C,
-    GNA_SC           = 0x90,
-    GNA_ISI          = 0x94,
-    GNA_ISV_LOW      = 0x98,
-    GNA_ISV_HIGH     = 0x9C,
-    GNA_BP_LOW       = 0xA0,
-    GNA_BP_HIGH      = 0xA4,
-    GNA_D0i3C        = 0xA8,
-    GNA_DESBASE      = 0xB0,
-    GNA_IBUFFS       = 0xB4,
-    GNA_SAI1_LOW     = 0x100,
-    GNA_SAI1_HIGH    = 0x104,
-    GNA_SAI2_LOW     = 0x108,
-    GNA_SAI2_HIGH    = 0x10C,
-    GNA_SAIV         = 0x110
+    GNA2_STS          = 0x80,
+    GNA2_CTRL         = 0x84,
+    GNA2_MCTL         = 0x88,
+    GNA2_PTC          = 0x8C,
+    GNA2_SC           = 0x90,
+    GNA2_ISI          = 0x94,
+    GNA2_ISV_LOW      = 0x98,
+    GNA2_ISV_HIGH     = 0x9C,
+    GNA2_BP_LOW       = 0xA0,
+    GNA2_BP_HIGH      = 0xA4,
+    GNA2_D0i3C        = 0xA8,
+    GNA2_DESBASE      = 0xB0,
+    GNA2_IBUFFS       = 0xB4,
+    GNA2_SAI1_LOW     = 0x100,
+    GNA2_SAI1_HIGH    = 0x104,
+    GNA2_SAI2_LOW     = 0x108,
+    GNA2_SAI2_HIGH    = 0x10C,
+    GNA2_SAIV         = 0x110
 
-} gna_reg;
+} Gna2RegisterType;
 
 typedef enum _gna_set_size
 {
-    GNA_SET_BYTE =   0,
-    GNA_SET_WORD =   1,
-    GNA_SET_DWORD =  2,
-    GNA_SET_QWORD =  3,
-    GNA_SET_XNNLYR = 4,
-} gna_set_size;
+    GNA2_SET_BYTE =   0,
+    GNA2_SET_WORD =   1,
+    GNA2_SET_DWORD =  2,
+    GNA2_SET_QWORD =  3,
+    GNA2_SET_XNNLYR = 4,
+} Gna2SetSize;
 
 #if defined(_WIN32)
 #pragma warning(disable : 201)
 #endif
 typedef struct _dbg_action
 {
-    dbg_action_type action_type;
-    gna_reg gna_register;
+    Gna2DebugActionType action_type;
+    Gna2RegisterType gna_register;
     union
     {
         uint32_t timeout;
@@ -113,16 +113,16 @@ typedef struct _dbg_action
     };
     union
     {
-        register_op reg_operation;
+        Gna2DebugRegisterOperation reg_operation;
         struct
         {
             uint32_t xnn_offset : 29;
-            gna_set_size xnn_value_size : 3;
+            Gna2SetSize xnn_value_size : 3;
         };
         uint32_t outputs_size;
     };
     uint32_t layer_number;
-} dbg_action;
+} Gna2DebugAction;
 
 /**
  * Adds a custom debug scenario to the model
@@ -132,15 +132,15 @@ typedef struct _dbg_action
  * @param nActions
  * @param pActions
  */
-GNA_API enum GnaStatus GnaModelSetPrescoreScenario(
+GNA2_API enum Gna2Status Gna2ModelSetPrescoreScenario(
     uint32_t modelId,
     uint32_t nActions,
-    dbg_action *pActions);
+    Gna2DebugAction *pActions);
 
-GNA_API enum GnaStatus GnaModelSetAfterscoreScenario(
+GNA2_API enum Gna2Status Gna2ModelSetAfterscoreScenario(
     uint32_t modelId,
     uint32_t nActions,
-    dbg_action *pActions);
+    Gna2DebugAction *pActions);
 
 #endif // __GNA2_VALIDATION_API_H
 

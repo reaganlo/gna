@@ -34,8 +34,8 @@ using namespace GNA;
 // - user data
 const uint32_t HardwareCapabilities::MaximumModelSize = 256 * 1024 * 1024;
 
-std::map<gna_device_version, const GenerationCapabilities> HardwareCapabilities::gnaCapsMap = {
-    { GNA_KBL,
+std::map<DeviceVersion, const GenerationCapabilities> HardwareCapabilities::gnaCapsMap = {
+    { Gna2DeviceVersionSkylake,
         {GMM_DEVICE,
         1,
         {
@@ -57,29 +57,7 @@ std::map<gna_device_version, const GenerationCapabilities> HardwareCapabilities:
         0,
         {12288, 12288, 12096, 12288, 12000, 12096, 12096, 12288},},
     },
-    { GNA_SKL,
-        {GMM_DEVICE,
-        1,
-        {
-            { BaseFunctionality, false},
-            { CNN, false },
-            { LegacyGMM, true },
-            { GMMLayer, false },
-            { MultiBias, false },
-            { L1Distance, false },
-            { L2Distance, false },
-            { ComputerVision, false },
-            { NewPerformanceCounters, false },
-            { CNN2D, false }
-        },
-        6,
-        {{1, 8}},
-        4,
-        0,
-        0,
-        {12288, 12288, 12096, 12288, 12000, 12096, 12096, 12288},},
-    },
-    { GNA_CNL,
+    { Gna2DeviceVersionCannonlake,
         {GNA_0_9,
         1023,
         {
@@ -101,7 +79,7 @@ std::map<gna_device_version, const GenerationCapabilities> HardwareCapabilities:
         1,
         {12288, 12288, 12096, 12288, 12000, 12096, 12096, 12288},},
     },
-    { GNA_GLK,
+    { Gna2DeviceVersionGeminilake,
         {GNA_1_0,
         1023,
         {
@@ -123,7 +101,7 @@ std::map<gna_device_version, const GenerationCapabilities> HardwareCapabilities:
         1,
         {12288, 12288, 12096, 12288, 12000, 12096, 12096, 12288},},
     },
-    { GNA_ICL,
+    { Gna2DeviceVersionIcelake,
         {GNA_1_0,
         1023,
         {
@@ -145,7 +123,7 @@ std::map<gna_device_version, const GenerationCapabilities> HardwareCapabilities:
         1,
         {12288, 12288, 12096, 12288, 12000, 12096, 12096, 12288},},
     },
-    { GNA_SUE_CREEK,
+    { Gna2DeviceVersionSueCreek,
         {GNA_1_0_EMBEDDED,
         1023,
         {
@@ -167,7 +145,7 @@ std::map<gna_device_version, const GenerationCapabilities> HardwareCapabilities:
         1,
         {6144, 6144, 6048, 6144, 5760, 6048, 6048, 6144},},
     },
-    { GNA_TGL,
+    { Gna2DeviceVersionTigerlake,
         {GNA_2_0,
         4096,
         {
@@ -189,7 +167,7 @@ std::map<gna_device_version, const GenerationCapabilities> HardwareCapabilities:
         1,
         {12288, 12288, 12096, 12288, 12000, 12096, 12096, 12288},},
     },
-    { GNA_JELLYFISH,
+    { Gna2DeviceVersionJellyfish,
         {GNA_2_1_EMBEDDED,
         4096,
         {
@@ -211,7 +189,7 @@ std::map<gna_device_version, const GenerationCapabilities> HardwareCapabilities:
         1,
         {12288, 12288, 12096, 12288, 12000, 12096, 12096, 12288},},
     },
-    { GNA_ADL,
+    { Gna2DeviceVersionAlderLake,
         {GNA_3_0,
         8191,
         {
@@ -233,7 +211,7 @@ std::map<gna_device_version, const GenerationCapabilities> HardwareCapabilities:
         16,
         {},},
     },
-    { GNA_ACE_EMBEDDED,
+    { Gna2DeviceVersionAceEmbedded,
         {GNA_3_0_EMBEDDED,
         8191,
         {
@@ -255,7 +233,7 @@ std::map<gna_device_version, const GenerationCapabilities> HardwareCapabilities:
         16,
         {},},
     },
-    { GNA_ACE_ANNA,
+    { Gna2DeviceVersionAceAnna,
         {GNA_3_1_AUTONOMUS,
         8191,
         {
@@ -280,7 +258,7 @@ std::map<gna_device_version, const GenerationCapabilities> HardwareCapabilities:
 };
 
 const GenerationCapabilities&
-HardwareCapabilities::getGenerationCapabilities(gna_device_version deviceVersionIn)
+HardwareCapabilities::getGenerationCapabilities(DeviceVersion deviceVersionIn)
 {
     try
     {
@@ -293,27 +271,27 @@ HardwareCapabilities::getGenerationCapabilities(gna_device_version deviceVersion
     }
 }
 
-gna_device_version HardwareCapabilities::GetDeviceVersion(gna_device_generation generation)
+DeviceVersion HardwareCapabilities::GetDeviceVersion(gna_device_generation generation)
 {
     auto type = std::find_if(gnaCapsMap.cbegin(), gnaCapsMap.cend(),
-        [generation](const std::pair<const gna_device_version, const GenerationCapabilities>& genCaps)
+        [generation](const std::pair<const DeviceVersion, const GenerationCapabilities>& genCaps)
             {
                 return genCaps.second.Generation == generation;
             });
     return type->first;
 }
 
-uint32_t HardwareCapabilities::GetMaximumLayerCount(gna_device_version hwId)
+uint32_t HardwareCapabilities::GetMaximumLayerCount(DeviceVersion hwId)
 {
     return getGenerationCapabilities(hwId).MaximumLayerCount;
 }
 
-uint32_t HardwareCapabilities::GetComputeEngineCount(gna_device_version hwId)
+uint32_t HardwareCapabilities::GetComputeEngineCount(DeviceVersion hwId)
 {
     return getGenerationCapabilities(hwId).ComputeEngineCount;
 }
 
-uint32_t HardwareCapabilities::GetBufferSizeInKB(gna_device_version hwId)
+uint32_t HardwareCapabilities::GetBufferSizeInKB(DeviceVersion hwId)
 {
     auto caps = getGenerationCapabilities(hwId);
     return caps.ComputeEngineCount * caps.BufferSizesPerCEInKB;
@@ -326,9 +304,9 @@ uint32_t HardwareCapabilities::GetBufferSizeInKB() const
 }
 
 uint32_t HardwareCapabilities::GetBufferElementCount(
-    gna_device_version hwId, uint32_t grouping, uint32_t inputPrecision)
+    DeviceVersion hwId, uint32_t grouping, uint32_t inputPrecision)
 {
-    if (hwId == GNA_ADL || hwId == GNA_ACE_EMBEDDED || hwId == GNA_ACE_ANNA)
+    if (hwId == Gna2DeviceVersionAlderLake || hwId == Gna2DeviceVersionAceEmbedded || hwId == Gna2DeviceVersionAceAnna)
     {
         const auto ceCount = getGenerationCapabilities(hwId).ComputeEngineCount;
         auto count = (GetBufferSizeInKB(hwId) * 1024)
@@ -345,7 +323,7 @@ uint32_t HardwareCapabilities::GetBufferElementCount(
 }
 
 HardwareCapabilities::HardwareCapabilities(
-    gna_device_version deviceVersionIn) :
+    DeviceVersion deviceVersionIn) :
     deviceVersion{deviceVersionIn},
     bufferSize {GetBufferSizeInKB()}
 {
@@ -363,7 +341,7 @@ void HardwareCapabilities::DiscoverHardware(DriverInterface &driverInterface)
         auto driverCapabilities = driverInterface.GetCapabilities();
 
         //TODO:3: remove when ADL bug with input buffer will be fixed
-        if (driverCapabilities.hwId == GNA_ADL)
+        if (driverCapabilities.hwId == Gna2DeviceVersionAlderLake)
             driverCapabilities.hwInBuffSize = 32;
 
         Expect::Equal((size_t)1, gnaCapsMap.count(driverCapabilities.hwId), GNA_DEVNOTFOUND);
@@ -383,7 +361,7 @@ void HardwareCapabilities::DiscoverHardware(DriverInterface &driverInterface)
 }
 
 void HardwareCapabilities::GetHardwareConsistencySettings(uint32_t bufferElementCount[2 * XNN_N_GROUP_MAX],
-    gna_device_version hwId)
+    DeviceVersion hwId)
 {
     for (uint32_t p = 0; p < 2; p++)
     {
@@ -394,7 +372,7 @@ void HardwareCapabilities::GetHardwareConsistencySettings(uint32_t bufferElement
     }
 }
 
-gna_device_version HardwareCapabilities::GetDeviceVersion() const
+DeviceVersion HardwareCapabilities::GetDeviceVersion() const
 {
     return deviceVersion;
 }

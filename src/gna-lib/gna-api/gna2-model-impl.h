@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2017 Intel Corporation.
+ Copyright 2018 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -22,44 +22,33 @@
  or any other notice embedded in Materials by Intel or Intel's suppliers or licensors
  in any way.
 */
+#ifndef __GNA2_MODEL_IMPL_H
+#define __GNA2_MODEL_IMPL_H
 
-#pragma once
+#include "gna2-model-api.h"
 
-#include "gna-api.h"
-#include "gna-api-verbose.h"
+#include "gna2-common-impl.h"
+#include "DeviceManager.h"
 
-#include "gna2-common-api.h"
+#include <stdint.h>
 
-class DeviceController
+namespace GNA
 {
-public:
-    DeviceController();
-    ~DeviceController();
 
-    uint8_t * Alloc(uint32_t sizeRequested, uint32_t * sizeGranted);
+typedef struct Gna2Model ApiModel;
+typedef struct Gna2Operation ApiOperation;
+typedef struct Gna2Shape ApiShape;
+typedef struct Gna2Tensor ApiTensor;
+typedef struct Gna2ModelError ModelError;
 
-    void Free(void *memory);
+typedef enum Gna2OperationType OperationType;
+typedef enum Gna2TensorMode TensorMode;
+typedef enum Gna2DataType DataType;
+typedef enum Gna2BiasMode ApiBiasMode;
+typedef enum Gna2PoolingMode PoolingMode;
+typedef enum Gna2ErrorType ErrorType;
+typedef enum Gna2ItemType ItemType;
 
-    void ModelCreate(const gna_model *, gna_model_id *);
+}
 
-    gna_request_cfg_id ConfigAdd(gna_model_id);
-
-    void BufferAdd(gna_request_cfg_id, GnaComponentType, uint32_t layerIndex, void * address);
-    void RequestSetAcceleration(gna_request_cfg_id, gna_acceleration);
-    void RequestSetConsistency(gna_request_cfg_id, Gna2DeviceVersion);
-
-
-    void RequestEnqueue(gna_request_cfg_id, gna_request_id *);
-    void RequestWait(gna_request_id);
-
-    void ActiveListAdd(gna_request_cfg_id configId, uint32_t layerIndex, uint32_t indicesCount, uint32_t* indices);
-
-#if HW_VERBOSE == 1
-    void AfterscoreDebug(gna_model_id modelId, uint32_t nActions, dbg_action *actions);
-
-    void PrescoreDebug(gna_model_id modelId, uint32_t nActions, dbg_action *actions);
-#endif
-
-private:
-    gna_device_id gnaHandle;
-};
+#endif // __GNA2_MODEL_IMPL_H

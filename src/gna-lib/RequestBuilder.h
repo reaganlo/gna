@@ -42,7 +42,7 @@ public:
     RequestBuilder(const RequestBuilder &) = delete;
     RequestBuilder& operator=(const RequestBuilder&) = delete;
 
-    void CreateConfiguration(CompiledModel& model, gna_request_cfg_id *configId, gna_device_version consistentDevice);
+    void CreateConfiguration(CompiledModel& model, gna_request_cfg_id *configId, DeviceVersion consistentDevice);
     void ReleaseConfiguration(gna_request_cfg_id configId);
 
     void AttachBuffer(gna_request_cfg_id configId, GnaComponentType type, uint32_t layerIndex, void * address) const;

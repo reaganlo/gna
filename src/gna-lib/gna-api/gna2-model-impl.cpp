@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2017 Intel Corporation.
+ Copyright 2018 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -23,56 +23,60 @@
  in any way.
 */
 
-#include <memory>
-#include <thread>
+#include "gna2-model-impl.h"
 
-#include "gna-api-verbose.h"
-
+#include "Device.h"
 #include "DeviceManager.h"
-#include "DeviceVerbose.h"
-#include "Expect.h"
-#include "Logger.h"
+#include "gna2-common-impl.h"
+
+#include "gna2-model-api.h"
+#include "gna2-common-api.h"
 
 using namespace GNA;
 
-intel_gna_status_t GnaModelSetPrescoreScenario(
-    gna_model_id modelId,
-    uint32_t nActions,
-    dbg_action *pActions)
+GNA2_API enum Gna2Status Gna2ModelCreate(
+    uint32_t deviceIndex,
+    struct Gna2Model const * model,
+    uint32_t * modelId)
 {
     try
     {
-        auto& device = dynamic_cast<DeviceVerbose&>(DeviceManager::Get().GetDevice(0));
-        device.SetPrescoreScenario(modelId, nActions, pActions);
-        return GNA_SUCCESS;
+        auto& device = DeviceManager::Get().GetDevice(deviceIndex);
+        //device.LoadModel(modelId, model);
+        UNREFERENCED_PARAMETER(model);
+        UNREFERENCED_PARAMETER(modelId);
+        UNREFERENCED_PARAMETER(device);
+        return Gna2StatusSuccess;
+    }
+    catch (const GnaModelException &e)
+    {
+        return CAST2_STATUS e.getStatus();
     }
     catch (const GnaException &e)
     {
-        return e.getStatus();
+        return CAST2_STATUS e.getStatus();
     }
-    catch (...)
+    catch (const std::exception& e)
     {
-        return GNA_UNKNOWN_ERROR;
+        return HandleUnknownException2(e);
     }
 }
 
-intel_gna_status_t GnaModelSetAfterscoreScenario(
-    gna_model_id modelId,
-    uint32_t nActions,
-    dbg_action *pActions)
+GNA2_API enum Gna2Status Gna2ModelRelease(
+    uint32_t modelId)
 {
     try
     {
-        auto& device = dynamic_cast<DeviceVerbose&>(DeviceManager::Get().GetDevice(0));
-        device.SetAfterscoreScenario(modelId, nActions, pActions);
-        return GNA_SUCCESS;
+        auto& device = DeviceManager::Get().GetDevice(0);
+        device.ReleaseModel(modelId);
+        return Gna2StatusSuccess;
     }
     catch (const GnaException &e)
     {
-        return e.getStatus();
+        return CAST2_STATUS e.getStatus();
     }
-    catch (...)
+    catch (const std::exception& e)
     {
-        return GNA_UNKNOWN_ERROR;
+        return HandleUnknownException2(e);
     }
 }

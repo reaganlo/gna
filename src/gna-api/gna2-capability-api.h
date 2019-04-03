@@ -41,65 +41,63 @@
 
 #include <stdint.h>
 
-enum GnaDeviceGeneration;
-
 /**
  List of device generations.
 
  Generation determines the set of capabilities common amongst multiple device versions.
- @see GnaDeviceVersion.
+ @see Gna2DeviceVersion.
  */
-enum GnaDeviceGeneration
+enum Gna2DeviceGeneration
 {
     /**
      Legacy device supporting only Gaussian Mixture Models scoring.
      */
-    GnaDeviceGenerationGmm = 0x010,
+    Gna2DeviceGenerationGmm = 0x010,
 
     /**
      Initial GNA device generation with no CNN support.
-     Backward compatible with ::GnaDeviceGenerationGmm.
+     Backward compatible with ::Gna2DeviceGenerationGmm.
      */
-    GnaDeviceGeneration0x9 = 0x090,
+    Gna2DeviceGeneration0x9 = 0x090,
 
     /**
      First fully featured GNA device generation.
-     Backward compatible with ::GnaDeviceGeneration0x9.
+     Backward compatible with ::Gna2DeviceGeneration0x9.
      */
-    GnaDeviceGeneration1x0 = 0x100,
+    Gna2DeviceGeneration1x0 = 0x100,
 
     /**
-     Embedded device with same feature set as ::GnaDeviceGenerationEmbedded1x0.
+     Embedded device with same feature set as ::Gna2DeviceGenerationEmbedded1x0.
      */
-    GnaDeviceGenerationEmbedded1x0 = 0x10E,
+    Gna2DeviceGenerationEmbedded1x0 = 0x10E,
 
     /**
      Fully featured second GNA device generation.
-     Backward compatible with ::GnaDeviceGenerationEmbedded1x0.
+     Backward compatible with ::Gna2DeviceGenerationEmbedded1x0.
      */
-    GnaDeviceGeneration2x0 = 0x200,
+    Gna2DeviceGeneration2x0 = 0x200,
 
     /**
-     Embedded device with same feature set as ::GnaDeviceGeneration2x0.
+     Embedded device with same feature set as ::Gna2DeviceGeneration2x0.
      */
-    GnaDeviceGenerationEmbedded2x1 = 0x21E,
+    Gna2DeviceGenerationEmbedded2x1 = 0x21E,
 
     /**
      Fully featured third GNA device generation.
-     Partially compatible with ::GnaDeviceGeneration2x0.
+     Partially compatible with ::Gna2DeviceGeneration2x0.
      */
-    GnaDeviceGeneration3x0 = 0x300,
+    Gna2DeviceGeneration3x0 = 0x300,
 
     /**
-     Devices embedded on PCH/ACE, with same feature set as ::GnaDeviceGeneration3x0.
+     Devices embedded on PCH/ACE, with same feature set as ::Gna2DeviceGeneration3x0.
      */
-    GnaDeviceGenerationEmbedded3x0 = 0x30E,
+    Gna2DeviceGenerationEmbedded3x0 = 0x30E,
 
     /**
-     Devices embedded on PCH/ACE, with same feature set as ::GnaDeviceGeneration3x0
+     Devices embedded on PCH/ACE, with same feature set as ::Gna2DeviceGeneration3x0
      and autonomous extension.
      */
-    GnaDeviceGenerationAutonomus3x1 = 0x31F,
+    Gna2DeviceGenerationAutonomus3x1 = 0x31F,
 };
 
 /**
@@ -107,13 +105,13 @@ enum GnaDeviceGeneration
  when no hardware device is available.
 
  @see
- GNA_DEFAULT_DEVICE_VERSION.
+ GNA2_DEFAULT_DEVICE_VERSION.
 
  @note
  Usually it will be the latest existing GNA generation (excluding embedded)
  on the time of publishing the library, value may change with new release.
  */
-#define GNA_DEFAULT_DEVICE_GENERATION GnaDeviceGeneration3x0
+#define GNA2_DEFAULT_DEVICE_GENERATION Gna2DeviceGeneration3x0
 
 #endif // __GNA2_CAPABILITY_API_H
 
@@ -125,151 +123,151 @@ enum GnaDeviceGeneration
 // / * *
 // List of API versions.
 // */
-//enum GnaApiVersion
+//enum Gna2ApiVersion
 //{
 //    / **
 //     Previous GNA API 1.0.
 //     */
-//    GNA_API_1_0 = 1,
+//    GNA2_API_1_0 = 1,
 //
 //    /* *
 //     Current GNA API 2.0.
 //     */
-//    GNA_API_2_0 = 2,
+//    GNA2_API_2_0 = 2,
 //
 //    /* *
 //     Indicates that API version is not supported.
 //     */
-//    GNA_API_VERSION_NOT_SUPPORTED = GNA_NOT_SUPPORTED,
+//    GNA2_API_VERSION_NOT_SUPPORTED = GNA2_NOT_SUPPORTED,
 //};
 //
 //// Binary flags
 //typedef enum _memory_mode
 //{
-//    GNA_MEMORY_NOT_SUPPORTED = GNA_NOT_SUPPORTED,
-//    GNA_MEMORY_MAPPED = 1,
-//    GNA_MEMORY_DIRECT = 2,
-//    GNA_MEMORY_DEDICATED = 4, // Server device built-in memory
-//    GNA_MEMORY_FANCY_MODE = 8, // ACE extension?
+//    GNA2_MEMORY_NOT_SUPPORTED = GNA2_NOT_SUPPORTED,
+//    GNA2_MEMORY_MAPPED = 1,
+//    GNA2_MEMORY_DIRECT = 2,
+//    GNA2_MEMORY_DEDICATED = 4, // Server device built-in memory
+//    GNA2_MEMORY_FANCY_MODE = 8, // ACE extension?
 //} gna_memory_mode;
 
 //typedef enum _api_property
 //{
-//    GNA_API_VERSION,                            // GNA_API_VERSION_T
-//    GNA_API_BUILD,                              // GNA_UINT32_T
-//    GNA_API_THREAD_COUNT,                       // GNA_UINT32_T
-//    GNA_API_THREAD_COUNT_MAX,                   // GNA_UINT32_T
+//    GNA2_API_VERSION,                            // GNA2_API_VERSION_T
+//    GNA2_API_BUILD,                              // GNA2_UINT32_T
+//    GNA2_API_THREAD_COUNT,                       // GNA2_UINT32_T
+//    GNA2_API_THREAD_COUNT_MAX,                   // GNA2_UINT32_T
 //
-//    GNA_API_PROPERTY_COUNT
+//    GNA2_API_PROPERTY_COUNT
 //} gna_api_property;
 
-//enum GnaDevicePropertyType
+//enum Gna2DevicePropertyType
 //{
-//    GNA_DEVICE_AVAILABLE_COUNT,                 // GNA_UINT32_T
-//    GNA_DEVICE_ACTIVE_COUNT,                    // GNA_UINT32_T
-//    GNA_DEVICE_PROFILE,                         // GNA_DEVICE_PROFILE_T
-//    GNA_DEVICE_VERSION,                         // GNA_DEVICE_GENERATION_T
-//    GNA_DEVICE_DRIVER_BUILD,                    // GNA_UINT32_T
-//    GNA_DEVICE_CLOCK_FREQUENCY,                 // GNA_UINT32_T
-//    GNA_DEVICE_COMPUTE_ENGINE_COUNT,            // GNA_UINT32_T
-//    GNA_DEVICE_ACTIVATION_ENGINE_COUNT,         // GNA_UINT32_T
-//    GNA_DEVICE_POOLING_ENGINE_COUNT,            // GNA_UINT32_T
-//    GNA_DEVICE_STREAM_COUNT,                    // GNA_UINT32_T
-//    GNA_DEVICE_INPUT_BUFFER_SIZE,               // GNA_UINT64_T
-//    GNA_DEVICE_MEMORY_MODE,                     // GNA_MEMORY_MODE_T
-//    GNA_DEVICE_MEMORY_DEDICATED_SIZE,           // GNA_UINT64_T
-//    GNA_DEVICE_MEMORY_REGIONS_COUNT,            // GNA_UINT32_T
-//    GNA_DEVICE_MEMORY_SUPPORTED_SIZE,            // GNA_UINT32_T
-//    GNA_DEVICE_MODEL_COUNT_MAX,                 // GNA_UINT64_T
+//    GNA2_DEVICE_AVAILABLE_COUNT,                 // GNA2_UINT32_T
+//    GNA2_DEVICE_ACTIVE_COUNT,                    // GNA2_UINT32_T
+//    GNA2_DEVICE_PROFILE,                         // GNA2_DEVICE_PROFILE_T
+//    GNA2_DEVICE_VERSION,                         // GNA2_DEVICE_GENERATION_T
+//    GNA2_DEVICE_DRIVER_BUILD,                    // GNA2_UINT32_T
+//    GNA2_DEVICE_CLOCK_FREQUENCY,                 // GNA2_UINT32_T
+//    GNA2_DEVICE_COMPUTE_ENGINE_COUNT,            // GNA2_UINT32_T
+//    GNA2_DEVICE_ACTIVATION_ENGINE_COUNT,         // GNA2_UINT32_T
+//    GNA2_DEVICE_POOLING_ENGINE_COUNT,            // GNA2_UINT32_T
+//    GNA2_DEVICE_STREAM_COUNT,                    // GNA2_UINT32_T
+//    GNA2_DEVICE_INPUT_BUFFER_SIZE,               // GNA2_UINT64_T
+//    GNA2_DEVICE_MEMORY_MODE,                     // GNA2_MEMORY_MODE_T
+//    GNA2_DEVICE_MEMORY_DEDICATED_SIZE,           // GNA2_UINT64_T
+//    GNA2_DEVICE_MEMORY_REGIONS_COUNT,            // GNA2_UINT32_T
+//    GNA2_DEVICE_MEMORY_SUPPORTED_SIZE,            // GNA2_UINT32_T
+//    GNA2_DEVICE_MODEL_COUNT_MAX,                 // GNA2_UINT64_T
 //    // ANNA
-//    GNA_DEVICE_EXT_,           // GNA_UINT32_T
+//    GNA2_DEVICE_EXT_,           // GNA2_UINT32_T
 //};
 
 ///** Maximum number of requests that can be enqueued before retrieval */
-//const uint32_t GNA_REQUEST_QUEUE_LENGTH = 64;
+//const uint32_t GNA2_REQUEST_QUEUE_LENGTH = 64;
 //
 ///** Maximum supported time of waiting for a request in milliseconds. */
-//const uint32_t GNA_REQUEST_TIMEOUT_MAX = 180000;
+//const uint32_t GNA2_REQUEST_TIMEOUT_MAX = 180000;
 //
-//enum GnaPropertyType
+//enum Gna2PropertyType
 //{
 //    /**
 //     Determines if property is supported in given context.
 //
 //     A single char value, where 0 stands for False and 1 for True.
 //     */
-//    GNA_PROPERTY_IS_SUPORTED = 0,
+//    GNA2_PROPERTY_IS_SUPORTED = 0,
 //
 //    /**
 //     Current value of the property
 //
 //     A single int64_t value.
 //     */
-//    GNA_PROPERTY_CURRENT_VALUE = 1,
+//    GNA2_PROPERTY_CURRENT_VALUE = 1,
 //
 //    /**
 //     Default value of a parameter, when not set by the user.
 //
 //     A single int64_t value.
 //     */
-//    GNA_PROPERTY_DEFAULT_VALUE = 2,
+//    GNA2_PROPERTY_DEFAULT_VALUE = 2,
 //
 //    /**
 //     Minimal valid value (inclusive).
 //
 //     A single int64_t value.
 //     */
-//    GNA_PROPERTY_MINIMUM = 3,
+//    GNA2_PROPERTY_MINIMUM = 3,
 //
 //    /**
 //     Maximal valid value (inclusive).
 //
 //     A single int64_t value.
 //     */
-//    GNA_PROPERTY_MAXIMUM = 4,
+//    GNA2_PROPERTY_MAXIMUM = 4,
 //
 //    /**
 //     Multiplicity (or step) of valid values.
 //
 //     A single int64_t value.
 //     */
-//    GNA_PROPERTY_MULTIPLICITY = 5,
+//    GNA2_PROPERTY_MULTIPLICITY = 5,
 //
 //    /**
 //     Required alignment of data buffer pointers in bytes.
 //
 //     A single int64_t value.
 //    */
-//    GNA_PROPERTY_ALIGNMENT = GNA_PROPERTY_MULTIPLICITY,
+//    GNA2_PROPERTY_ALIGNMENT = GNA2_PROPERTY_MULTIPLICITY,
 //
 //    /**
 //     Set (array) of valid values, applicable mostly for enumerations.
-//     @see GNA_PROPERTY_VALUE_SET_SIZE.
+//     @see GNA2_PROPERTY_VALUE_SET_SIZE.
 //
-//     An array of GNA_PROPERTY_VALUE_SET_SIZE elements, each single uint64_t value.
+//     An array of GNA2_PROPERTY_VALUE_SET_SIZE elements, each single uint64_t value.
 //     */
-//    GNA_PROPERTY_VALUE_SET = 6,
+//    GNA2_PROPERTY_VALUE_SET = 6,
 //
 //    /**
 //     The size of the valid values set, in terms of elements.
-//     @see GNA_PROPERTY_VALUE_SET.
+//     @see GNA2_PROPERTY_VALUE_SET.
 //
 //     A single uint64_t value.
 //     */
-//    GNA_PROPERTY_VALUE_SET_SIZE = 7,
+//    GNA2_PROPERTY_VALUE_SET_SIZE = 7,
 //
 //    /**
 //     Special type, used where property is not applicable or unnecessary.
 //     */
-//    GNA_PROPERTY_NONE = GNA_DISABLED,
+//    GNA2_PROPERTY_NONE = GNA2_DISABLED,
 //};
 //
 ///**
 // Determines the parameters of GNA Properties in TLV-like format.
 // */
-//struct GnaProperty
+//struct Gna2Property
 //{
-//    enum GnaPropertyType Type;
+//    enum Gna2PropertyType Type;
 //
 //    uint32_t Size;
 //
@@ -284,9 +282,9 @@ enum GnaDeviceGeneration
 // * @mode        A tested mode value from GNA mode enumeration.
 // * @return true if mode is set, false otherwise
 //*/
-//inline bool GnaIsFlagSet(uint32_t modeFlags, uint32_t mode)
+//inline bool Gna2IsFlagSet(uint32_t modeFlags, uint32_t mode)
 //{
-//    if (modeFlags & mode || GNA_NOT_SUPPORTED == mode)
+//    if (modeFlags & mode || GNA2_NOT_SUPPORTED == mode)
 //    {
 //        return true;
 //    }
@@ -297,89 +295,89 @@ enum GnaDeviceGeneration
 //
 //
 // dedicated query functions
-//GNA_API enum GnaStatus GnaGetApiProperty(
+//GNA2_API enum Gna2Status Gna2GetApiProperty(
 //    gna_api_property property,
 //    void* poropertyValue,                       // [out] value of returned property, pointer to allocated 8Byte memory region
 //    gna_property_type* propertyValueType);      // [out] type of returned property
 //
 //// optional
-//GNA_API enum GnaStatus GnaSetApiProperty(
+//GNA2_API enum Gna2Status Gna2SetApiProperty(
 //    gna_api_property property,
 //    void* poropertyValue);                      // value of property, pointer to allocated 8Byte memory region
 //
-//// e,g,     propertyString = "GNA_LAYER_POOLING_MODE"
-//GNA_API enum GnaStatus GnaApiPropertyNameToString(
+//// e,g,     propertyString = "GNA2_LAYER_POOLING_MODE"
+//GNA2_API enum Gna2Status Gna2ApiPropertyNameToString(
 //    gna_api_property property,
 //    char const ** propertyString);               // [out] c-string containing property name, allocated by GNA
 //
-//// e,g,     propertyString = "GNA_POOLING_MAX | GNA_POOLING_SUM"
-//GNA_API enum GnaStatus GnaApiPropertyValueToString(
+//// e,g,     propertyString = "GNA2_POOLING_MAX | GNA2_POOLING_SUM"
+//GNA2_API enum Gna2Status Gna2ApiPropertyValueToString(
 //    gna_api_property property,
 //    void* poropertyValue,                       // value of property
 //    char const ** propertyString);               // [out] c-string containing property value, allocated by GNA
 
-//GNA_API enum GnaStatus GnaGetDeviceProperty(
-//    uint32_t device,                       // id/index of device <0;GNA_DEVICE_AVAILABLE_COUNT-1>
-//    enum GnaDevicePropertyType capability,
-//    enum GnaPropertyType property,
-//    struct GnaProperty * deviceProperty);
+//GNA2_API enum Gna2Status Gna2GetDeviceProperty(
+//    uint32_t device,                       // id/index of device <0;GNA2_DEVICE_AVAILABLE_COUNT-1>
+//    enum Gna2DevicePropertyType capability,
+//    enum Gna2PropertyType property,
+//    struct Gna2Property * deviceProperty);
 //
-//GNA_API enum GnaStatus GnaGetDeviceProperty(
-//    uint32_t device,                       // id/index of device <0;GNA_DEVICE_AVAILABLE_COUNT-1>
-//    enum GnaDevicePropertyType capability,
-//    struct GnaProperty * deviceProperties);
+//GNA2_API enum Gna2Status Gna2GetDeviceProperty(
+//    uint32_t device,                       // id/index of device <0;GNA2_DEVICE_AVAILABLE_COUNT-1>
+//    enum Gna2DevicePropertyType capability,
+//    struct Gna2Property * deviceProperties);
 //
-//GNA_API enum GnaStatus GnaSetDeviceProperty(
+//GNA2_API enum Gna2Status Gna2SetDeviceProperty(
 //    uint32_t device,
 //    gna_device_property property,
 //    void* poropertyValue);                      // value of property, pointer to allocated 8Byte memory region
 //
-//// e,g,     propertyString = "GNA_LAYER_POOLING_MODE"
-//GNA_API enum GnaStatus GnaDevicePropertyNameToString(
+//// e,g,     propertyString = "GNA2_LAYER_POOLING_MODE"
+//GNA2_API enum Gna2Status Gna2DevicePropertyNameToString(
 //    gna_device_property property,
 //    char const * propertyString);               // [out] c-string containing property name, allocated by GNA
 //
-//// e,g,     propertyString = "GNA_POOLING_MAX | GNA_POOLING_SUM"
-//GNA_API enum GnaStatus GnaDevicePropertyValueToString(
+//// e,g,     propertyString = "GNA2_POOLING_MAX | GNA2_POOLING_SUM"
+//GNA2_API enum Gna2Status Gna2DevicePropertyValueToString(
 //    gna_device_property property,
 //    void* poropertyValue,                       // value of property
 //    char const * propertyString);               // [out] c-string containing property value, allocated by GNA
 //
-//GNA_API enum GnaStatus GnaGetLayerProperty(
+//GNA2_API enum Gna2Status Gna2GetLayerProperty(
 //    uint32_t device,
-//    GnaOperationMode layerOperation,
+//    Gna2OperationMode layerOperation,
 //    gna_layer_property property,
 //    void* poropertyValue,                       // [out] value of returned property, pointer to allocated 8Byte memory region
 //    gna_property_type* propertyValueType);      // [out] type of returned property
 //
-//GNA_API enum GnaStatus GnaSetLayerProperty(
+//GNA2_API enum Gna2Status Gna2SetLayerProperty(
 //    uint32_t device,
-//    GnaOperationMode layerOperation,
+//    Gna2OperationMode layerOperation,
 //    gna_layer_property property,
 //    void* poropertyValue);                      // value of property, pointer to allocated 8Byte memory region
 //
-//// e,g,     propertyString = "GNA_LAYER_POOLING_MODE"
-//GNA_API enum GnaStatus GnaLayerPropertyNameToString(
+//// e,g,     propertyString = "GNA2_LAYER_POOLING_MODE"
+//GNA2_API enum Gna2Status Gna2LayerPropertyNameToString(
 //    gna_layer_property property,
 //    char const * propertyString);               // [out] c-string containing property name, allocated by GNA
 //
-//// e,g,     propertyString = "GNA_POOLING_MAX | GNA_POOLING_SUM"
-//GNA_API enum GnaStatus GnaLayerPropertyValueToString(
+//// e,g,     propertyString = "GNA2_POOLING_MAX | GNA2_POOLING_SUM"
+//GNA2_API enum Gna2Status Gna2LayerPropertyValueToString(
 //    gna_layer_property property,
 //    void* poropertyValue,                       // value of property
 //    char const * propertyString);               // [out] c-string containing property value, allocated by GNA
 //
 //
 //// Query hardware device properties even if not present in system, like SueCreek
-//GNA_API enum GnaStatus GnaGetHardwareDeviceProperty(
-//    enum GnaDeviceGeneration generation,         // hardware device generation identifier, for not present devices
+//GNA2_API enum Gna2Status Gna2GetHardwareDeviceProperty(
+//    enum Gna2DeviceGeneration generation,         // hardware device generation identifier, for not present devices
 //    gna_device_property property,
 //    void* poropertyValue,                       // [out] value of returned property, pointer to allocated 8Byte memory region
 //    gna_property_type* propertyValueType);      // [out] type of returned property
 //
-//GNA_API enum GnaStatus GnaGetHardwareLayerProperty(
-//    enum GnaDeviceGeneration generation,         // hardware device generation identifier, for not present devices
-//    GnaOperationMode layerOperation,
+//GNA2_API enum Gna2Status Gna2GetHardwareLayerProperty(
+//    enum Gna2DeviceGeneration generation,         // hardware device generation identifier, for not present devices
+//    Gna2OperationMode layerOperation,
 //    gna_layer_property property,
 //    void* poropertyValue,                       // [out] value of returned property, pointer to allocated 8Byte memory region
 //    gna_property_type* propertyValueType);      // [out] type of returned property

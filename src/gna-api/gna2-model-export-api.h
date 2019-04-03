@@ -53,7 +53,7 @@
 
  Export configuration allows to configure all the parameters necessary
  to export components of one or more models.
- Use GnaModelExportConfigSet*() functions to configure parameters. Parameters
+ Use Gna2ModelExportConfigSet*() functions to configure parameters. Parameters
  can be modified/overridden for existing configuration to export model
  with modified properties.
 
@@ -64,8 +64,8 @@
  @param [out] exportConfigId Identifier of created export configuration.
  @return Status of the operation.
  */
-GNA_API enum GnaStatus GnaModelExportConfigCreate(
-    GnaUserAllocator userAllocator,
+GNA2_API enum Gna2Status Gna2ModelExportConfigCreate(
+    Gna2UserAllocator userAllocator,
     uint32_t * exportConfigId);
 
 /**
@@ -74,23 +74,23 @@ GNA_API enum GnaStatus GnaModelExportConfigCreate(
  @param exportConfigId Identifier of export configuration to release.
  @return Status of the operation.
  */
-GNA_API enum GnaStatus GnaModelExportConfigRelease(
+GNA2_API enum Gna2Status Gna2ModelExportConfigRelease(
     uint32_t exportConfigId);
 
 /**
  Sets source model(s) to export.
 
  - Model will be validated against provided device.
- - Model(s) should be created through standard API GnaModelCreate() function.
+ - Model(s) should be created through standard API Gna2ModelCreate() function.
 
  @param exportConfigId Identifier of export configuration to set.
  @param sourceDeviceIndex Id of the device on which the exported model was created.
-    Use GNA_DISABLED to export model from all available devices at one.
- @param sourceModelId Id of the source model, created previously with GnaModelCreate() function.
-     Use GNA_DISABLED to export all models from given device at one.
+    Use GNA2_DISABLED to export model from all available devices at one.
+ @param sourceModelId Id of the source model, created previously with Gna2ModelCreate() function.
+     Use GNA2_DISABLED to export all models from given device at one.
  @return Status of the operation.
  */
-GNA_API enum GnaStatus GnaModelExportConfigSetSource(
+GNA2_API enum Gna2Status Gna2ModelExportConfigSetSource(
     uint32_t exportConfigId,
     uint32_t sourceDeviceIndex,
     uint32_t sourceModelId);
@@ -104,11 +104,35 @@ GNA_API enum GnaStatus GnaModelExportConfigSetSource(
  @param targetDeviceVersion Device on which model will be used.
  @return Status of the operation.
  */
-GNA_API enum GnaStatus GnaModelExportConfigSetTarget(
+GNA2_API enum Gna2Status Gna2ModelExportConfigSetTarget(
     uint32_t exportConfigId,
-    enum GnaDeviceVersion targetDeviceVersion);
+    enum Gna2DeviceVersion targetDeviceVersion);
 
-enum GnaModelExportComponent;
+/**
+ Determines the type of the component to export.
+ */
+enum Gna2ModelExportComponent
+{
+    /**
+     Hardware layer descriptors will be exported.
+     */
+    Gna2ModelExportComponentLayerDescriptors = GNA2_DEFAULT,
+
+    /**
+     Header describing layer descriptors will be exported.
+     */
+    Gna2ModelExportComponentLayerDescriptorHeader = 1,
+
+    /**
+     Hardware layer descriptors in legacy SueCreek format will be exported.
+     */
+    Gna2ModelExportComponentLegacySueCreekLayerDescriptors = 2,
+
+    /**
+     Header describing layer descriptors in legacy SueCreek format will be exported.
+     */
+    Gna2ModelExportComponentLegacySueCreekLayerDescriptorHeader = 3,
+};
 
 /**
  Exports the model(s) component.
@@ -124,76 +148,11 @@ enum GnaModelExportComponent;
  @param [out] exportBufferSize The size of exportBuffer in bytes.
  @return Status of the operation.
  */
-GNA_API enum GnaStatus GnaModelExport(
+GNA2_API enum Gna2Status Gna2ModelExport(
     uint32_t exportConfigId,
-    enum GnaModelExportComponent componentType,
+    enum Gna2ModelExportComponent componentType,
     void ** exportBuffer,
     uint32_t * exportBufferSize);
-
-/**
- Determines the type of the component to export.
- */
-enum GnaModelExportComponent
-{
-    /**
-     Hardware layer descriptors will be exported.
-     */
-    GnaModelExportComponentLayerDescriptors = GNA_DEFAULT,
-
-    /**
-     Header describing layer descriptors will be exported.
-     */
-    GnaModelExportComponentLayerDescriptorHeader = 1,
-
-    /**
-     Hardware layer descriptors in legacy SueCreek format will be exported.
-     */
-    GnaModelExportComponentLegacySueCreekLayerDescriptors = 2,
-
-    /**
-     Header describing layer descriptors in legacy SueCreek format will be exported.
-     */
-    GnaModelExportComponentLegacySueCreekLayerDescriptorHeader = 3,
-};
-
-//
-/// * *
-// Exports the hardware-consumable model in layer descriptor format.
-//
-// Model should be created through standard API GnaModelCreate() function
-//
-// @param exportConfigId Identifier of export configuration used.
-// @param sourceDeviceIndex Id of the device on which the exported model was created.
-// @param sourceModelId Id of the source model, created previously with GnaModelCreate() function.
-// @param [out] layerDescriptorBuffer Memory allocated by userAllocator with exported layer descriptors.
-// @param [out] layerDescriptorBufferSize The size of layerDescriptorBuffer in bytes.
-// @return Status of the operation.
-// */
-//GNA_API enum GnaStatus GnaModelExportLayerDescriptors(
-//    uint32_t exportConfigId,
-//    uint32_t sourceDeviceIndex,
-//    uint32_t sourceModelId,
-//    void * layerDescriptorBuffer,
-//    uint32_t * layerDescriptorBufferSize);
-//
-/// * *
-// Exports the layer descriptor header.
-//
-// Format of the model header is dependent of export configuration.
-//
-// @param exportConfigId Identifier of export configuration used.
-// @param sourceDeviceIndex Id of the device on which the exported model was created.
-// @param sourceModelId Id of the source model, created previously with GnaModelCreate() function.
-// @param [out] layerDescriptorHeaderBuffer Memory allocated by userAllocator with exported layer descriptor header.
-// @param [out] layerDescriptorHeaderBufferSize The size of layerDescriptorHeaderBuffer in bytes.
-// @return Status of the operation.
-// */
-//GNA_API enum GnaStatus GnaModelExportLayerDescriptorHeader(
-//    uint32_t exportConfigId,
-//    uint32_t sourceDeviceIndex,
-//    uint32_t sourceModelId,
-//    void * layerDescriptorHeaderBuffer,
-//    uint32_t * layerDescriptorHeaderBufferSize);
 
 #endif // __GNA2_MODEL_EXPORT_API_H
 

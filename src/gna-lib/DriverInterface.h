@@ -33,6 +33,8 @@
 #include "Request.h"
 #include "Expect.h"
 
+#include "gna2-common-impl.h"
+
 namespace GNA
 {
 
@@ -62,7 +64,7 @@ struct DriverCapabilities
 {
     uint32_t hwInBuffSize;
     uint32_t recoveryTimeout;
-    gna_device_version hwId;
+    DeviceVersion hwId;
 };
 
 class DriverInterface

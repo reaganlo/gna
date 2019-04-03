@@ -205,17 +205,17 @@ public:
     HardwareLayerCnn2D(const DescriptorParameters& parameters);
     virtual ~HardwareLayerCnn2D() = default;
 
-    static uint32_t GetKernelWorkGroupSize(gna_device_version hwId,
+    static uint32_t GetKernelWorkGroupSize(DeviceVersion hwId,
         ConvolutionFunction2D const * cnn, PoolingFunction2D const * pooling,
         const DataMode& outputMode);
 
-    static uint32_t GetKernelMemorySize(gna_device_version hwId,
+    static uint32_t GetKernelMemorySize(DeviceVersion hwId,
         FiltersTensor const * filter);
 
-    static uint32_t GetConvolutionMemorySize(gna_device_version hwId,
+    static uint32_t GetConvolutionMemorySize(DeviceVersion hwId,
         ConvolutionFunction2D const * cnn);
 
-    static uint32_t GetPoolingMemorySize(gna_device_version hwId,
+    static uint32_t GetPoolingMemorySize(DeviceVersion hwId,
         PoolingFunction2D const * pooling, const DataMode& outputMode);
 
 protected:

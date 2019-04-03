@@ -309,7 +309,7 @@ void WindowsDriverInterface::getDeviceCapabilities()
         wait(&overlapped, (recoveryTimeout + 15) * 1000);
     }
 
-    driverCapabilities.hwId = static_cast<gna_device_version>(values[0]);
+    driverCapabilities.hwId = static_cast<DeviceVersion>(values[0]);
     driverCapabilities.hwInBuffSize = static_cast<uint32_t>(values[1]);
     driverCapabilities.recoveryTimeout = static_cast<uint32_t>(values[2]);
 }

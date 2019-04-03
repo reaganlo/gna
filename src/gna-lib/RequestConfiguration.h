@@ -46,11 +46,11 @@ struct LayerConfiguration;
 class RequestConfiguration
 {
 public:
-    RequestConfiguration(CompiledModel& model, gna_request_cfg_id configId, gna_device_version consistentDevice);
+    RequestConfiguration(CompiledModel& model, gna_request_cfg_id configId, DeviceVersion consistentDevice);
 
     void AddBuffer(GnaComponentType type, uint32_t layerIndex, void *address);
     void AddActiveList(uint32_t layerIndex, const ActiveList& activeList);
-    void SetHardwareConsistency(gna_device_version consistentDevice);
+    void SetHardwareConsistency(DeviceVersion consistentDevice);
     void EnforceAcceleration(AccelerationMode accel);
 
     CompiledModel& Model;

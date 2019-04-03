@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2017 Intel Corporation.
+ Copyright 2018 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -23,43 +23,18 @@
  in any way.
 */
 
-#pragma once
+#ifndef __GNA2_VALIDATION_IMPL_H
+#define __GNA2_VALIDATION_IMPL_H
 
-#include "gna-api.h"
-#include "gna-api-verbose.h"
+#include "gna2-validation-api.h"
 
-#include "gna2-common-api.h"
+#include "gna2-common-impl.h"
 
-class DeviceController
+#include <stdint.h>
+
+namespace GNA
 {
-public:
-    DeviceController();
-    ~DeviceController();
 
-    uint8_t * Alloc(uint32_t sizeRequested, uint32_t * sizeGranted);
+}
 
-    void Free(void *memory);
-
-    void ModelCreate(const gna_model *, gna_model_id *);
-
-    gna_request_cfg_id ConfigAdd(gna_model_id);
-
-    void BufferAdd(gna_request_cfg_id, GnaComponentType, uint32_t layerIndex, void * address);
-    void RequestSetAcceleration(gna_request_cfg_id, gna_acceleration);
-    void RequestSetConsistency(gna_request_cfg_id, Gna2DeviceVersion);
-
-
-    void RequestEnqueue(gna_request_cfg_id, gna_request_id *);
-    void RequestWait(gna_request_id);
-
-    void ActiveListAdd(gna_request_cfg_id configId, uint32_t layerIndex, uint32_t indicesCount, uint32_t* indices);
-
-#if HW_VERBOSE == 1
-    void AfterscoreDebug(gna_model_id modelId, uint32_t nActions, dbg_action *actions);
-
-    void PrescoreDebug(gna_model_id modelId, uint32_t nActions, dbg_action *actions);
-#endif
-
-private:
-    gna_device_id gnaHandle;
-};
+#endif // __GNA2_VALIDATION_IMPL_H

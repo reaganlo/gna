@@ -27,7 +27,7 @@
  @{
  ******************************************************************************
 
- @addtogroup GNA_API_INSTRUMENTATION Instrumentation API
+ @addtogroup GNA2_API_INSTRUMENTATION Instrumentation API
 
  API for querying inference performance statistics.
 
@@ -41,9 +41,93 @@
 
 #include <stdint.h>
 
-enum GnaInstrumentationPoint;
-enum GnaInstrumentationUnit;
-enum GnaInstrumentationMode;
+/**
+ Inference request instrumentation points.
+ */
+enum Gna2InstrumentationPoint
+{
+    /**
+     Request preprocessing start, from library instrumentation.
+     */
+    Gna2InstrumentationPointLibPreprocessing = 0,
+
+    /**
+     Request submission start, from library instrumentation.
+     */
+    Gna2InstrumentationPointLibSubmission = 1,
+
+    /**
+     Request processing start, from library instrumentation.
+
+     */
+    Gna2InstrumentationPointLibProcessing = 2,
+
+    /**
+     Request execution start, from library instrumentation.
+     Actual software computation or issuing device request.
+     */
+    Gna2InstrumentationPointLibExecution = 3,
+
+    /**
+     Request ready to send to device, from library instrumentation.
+     */
+    Gna2InstrumentationPointLibDeviceRequestReady = 4,
+
+    /**
+     Request ready to send to device, from library instrumentation.
+     */
+    Gna2InstrumentationPointLibDeviceRequestSent = 5,
+
+    /**
+     Request completed by device, from library instrumentation.
+     */
+    Gna2InstrumentationPointLibDeviceRequestComepleted = 6,
+
+    /**
+     Request execution completed, from library instrumentation.
+     Actual software computation done or device request notified.
+     */
+    Gna2InstrumentationPointLibCompletion = 7,
+
+    /**
+     Request received by user, from library instrumentation.
+     */
+    Gna2InstrumentationPointLibReceived = 8,
+
+    /**
+     Request preprocessing start, from driver instrumentation.
+     */
+    Gna2InstrumentationPointDrvPreprocessing = 9,
+
+    /**
+     Request processing started by hardware, from driver instrumentation.
+     */
+    Gna2InstrumentationPointDrvProcessing = 10,
+
+    /**
+     Request completed interrupt triggered by hardware, from driver instrumentation.
+     */
+    Gna2InstrumentationPointDrvDeviceRequestComepleted = 11,
+
+    /**
+     Request execution completed, from driver instrumentation.
+     Driver completed interrupt and request handling.
+     */
+    Gna2InstrumentationPointDrvCompletion = 12,
+
+    /**
+     Total time spent on processing in hardware.
+     Total = Compute + Stall
+     @warning This event always provides time duration instead of time point.
+     */
+    Gna2InstrumentationPointHwTotalCycles = 13,
+
+    /**
+     Time hardware spent on waiting for data.
+     @warning This event always provides time duration instead of time point.
+     */
+    Gna2InstrumentationPointHwStallCycles = 14,
+};
 
 /**
  Enables and configures instrumentation configuration.
@@ -51,13 +135,13 @@ enum GnaInstrumentationMode;
  Instrumentation configurations have to be declared a priori to minimize the
  request preparation time and reduce processing latency.
  Configurations can be shared with multiple request configurations when the request
- with the current configuration has been completed and retrieved by GnaRequestWait().
+ with the current configuration has been completed and retrieved by Gna2RequestWait().
 
  @see
-    GnaRequestConfigSetInstrumentationUnit and ::GnaInstrumentationUnitMicroseconds
+    Gna2RequestConfigSetInstrumentationUnit and ::Gna2InstrumentationUnitMicroseconds
     for description of result units.
 
- @see GnaRequestConfigSetInstrumentationMode and GnaInstrumentationMode
+ @see Gna2RequestConfigSetInstrumentationMode and Gna2InstrumentationMode
     for description of hardware instrumentation.
 
  @param numberOfInstrumentationPoints A number of selected instrumentation points.
@@ -67,166 +151,65 @@ enum GnaInstrumentationMode;
  @param [out] instrumentationConfigId Identifier of created instrumentation configuration.
  @return Status of the operation.
  */
-GNA_API enum GnaStatus GnaInstrumentationConfigCreate(
+GNA2_API enum Gna2Status Gna2InstrumentationConfigCreate(
     uint32_t numberOfInstrumentationPoints,
-    enum GnaInstrumentationPoint* selectedInstrumentationPoints,
+    enum Gna2InstrumentationPoint* selectedInstrumentationPoints,
     uint64_t * results,
     uint32_t * instrumentationConfigId);
 
 /**
- Inference request instrumentation points.
- */
-enum GnaInstrumentationPoint
-{
-    /**
-     Request preprocessing start, from library instrumentation.
-     */
-    GnaInstrumentationPointLibPreprocessing = 0,
-
-    /**
-     Request submission start, from library instrumentation.
-     */
-    GnaInstrumentationPointLibSubmission = 1,
-
-    /**
-     Request processing start, from library instrumentation.
-
-     */
-    GnaInstrumentationPointLibProcessing = 2,
-
-    /**
-     Request execution start, from library instrumentation.
-     Actual software computation or issuing device request.
-     */
-    GnaInstrumentationPointLibExecution = 3,
-
-    /**
-     Request ready to send to device, from library instrumentation.
-     */
-    GnaInstrumentationPointLibDeviceRequestReady = 4,
-
-    /**
-     Request ready to send to device, from library instrumentation.
-     */
-    GnaInstrumentationPointLibDeviceRequestSent = 5,
-
-    /**
-     Request completed by device, from library instrumentation.
-     */
-    GnaInstrumentationPointLibDeviceRequestComepleted = 6,
-
-    /**
-     Request execution completed, from library instrumentation.
-     Actual software computation done or device request notified.
-     */
-    GnaInstrumentationPointLibCompletion = 7,
-
-    /**
-     Request received by user, from library instrumentation.
-     */
-    GnaInstrumentationPointLibReceived = 8,
-
-    /**
-     Request preprocessing start, from driver instrumentation.
-     */
-    GnaInstrumentationPointDrvPreprocessing = 9,
-
-    /**
-     Request processing started by hardware, from driver instrumentation.
-     */
-    GnaInstrumentationPointDrvProcessing = 10,
-
-    /**
-     Request completed interrupt triggered by hardware, from driver instrumentation.
-     */
-    GnaInstrumentationPointDrvDeviceRequestComepleted = 11,
-
-    /**
-     Request execution completed, from driver instrumentation.
-     Driver completed interrupt and request handling.
-     */
-    GnaInstrumentationPointDrvCompletion = 12,
-
-    /**
-     Total time spent on processing in hardware.
-     Total = Compute + Stall
-     @warning This event always provides time duration instead of time point.
-     */
-    GnaInstrumentationPointHwTotalCycles = 13,
-
-    /**
-     Time hardware spent on waiting for data.
-     @warning This event always provides time duration instead of time point.
-     */
-    GnaInstrumentationPointHwStallCycles = 14,
-};
-
-/**
  Assigns instrumentation config to given request configuration.
 
- @see GnaRequestConfigRelease()
+ @see Gna2RequestConfigRelease()
 
  @param instrumentationConfigId Identifier of instrumentation config used.
  @param requestConfigId Request configuration to modify.
  @return Status of the operation.
  */
-GNA_API enum GnaStatus GnaInstrumentationConfigAssignToRequestConfig(
+GNA2_API enum Gna2Status Gna2InstrumentationConfigAssignToRequestConfig(
     uint32_t instrumentationConfigId,
     uint32_t requestConfigId);
 
 /**
- Sets instrumentation unit for given configuration.
-
- Instrumentation results will represent a value in selected units.
- @note
-    ::GnaInstrumentationUnitMicroseconds is used when not set.
-
- @param instrumentationConfigId Instrumentation configuration to modify.
- @param instrumentationUnit Type of hardware performance statistic.
- */
-GNA_API enum GnaStatus GnaInstrumentationConfigSetUnit(
-    uint32_t instrumentationConfigId,
-    enum GnaInstrumentationUnit instrumentationUnit);
-
-/**
  Units that instrumentation will count and report.
  */
-enum GnaInstrumentationUnit
+enum Gna2InstrumentationUnit
 {
     /**
      Microseconds.
 
      Uses std::chrono. @see http://www.cplusplus.com/reference/chrono/
      */
-    GnaInstrumentationUnitMicroseconds = GNA_DEFAULT,
+    Gna2InstrumentationUnitMicroseconds = GNA2_DEFAULT,
 
     /**
      Milliseconds.
 
      Uses std::chrono. @see http://www.cplusplus.com/reference/chrono/
      */
-    GnaInstrumentationUnitMilliseconds = 1,
+    Gna2InstrumentationUnitMilliseconds = 1,
 
     /**
      Processor cycles.
 
      Uses RDTSC. @see https://en.wikipedia.org/wiki/Time_Stamp_Counter
      */
-    GnaInstrumentationUnitCycles = 2,
+    Gna2InstrumentationUnitCycles = 2,
 };
 
 /**
- Sets hardware instrumentation mode for given configuration.
+ Sets instrumentation unit for given configuration.
 
+ Instrumentation results will represent a value in selected units.
  @note
-    ::GnaInstrumentationModeTotalStall is used when not set.
+    ::Gna2InstrumentationUnitMicroseconds is used when not set.
 
  @param instrumentationConfigId Instrumentation configuration to modify.
- @param instrumentationMode Mode of hardware instrumentation.
+ @param instrumentationUnit Type of hardware performance statistic.
  */
-GNA_API enum GnaStatus GnaInstrumentationConfigSetMode(
+GNA2_API enum Gna2Status Gna2InstrumentationConfigSetUnit(
     uint32_t instrumentationConfigId,
-    enum GnaInstrumentationMode instrumentationMode);
+    enum Gna2InstrumentationUnit instrumentationUnit);
 
 /**
  Mode of instrumentation for hardware performance counters.
@@ -235,48 +218,61 @@ GNA_API enum GnaStatus GnaInstrumentationConfigSetMode(
  In addition one of several reasons for stall may be measured to allow
  identifying the bottlenecks in the scoring operation.
  */
-enum GnaInstrumentationMode
+enum Gna2InstrumentationMode
 {
     /**
      TODO:3:API: add comment
      */
-    GnaInstrumentationModeTotalStall = GNA_DEFAULT,
+    Gna2InstrumentationModeTotalStall = GNA2_DEFAULT,
 
     /**
      TODO:3:API: add comment
      */
-    GnaInstrumentationModeWaitForDmaCompletion = 1,
+    Gna2InstrumentationModeWaitForDmaCompletion = 1,
 
     /**
      TODO:3:API: add comment
      */
-    GnaInstrumentationModeWaitForMmuTranslation = 2,
+    Gna2InstrumentationModeWaitForMmuTranslation = 2,
 
     /**
      TODO:3:API: add comment
      */
-    GnaInstrumentationModeDescriptorFetchTime = 3,
+    Gna2InstrumentationModeDescriptorFetchTime = 3,
 
     /**
      TODO:3:API: add comment
      */
-    GnaInstrumentationModeInputBufferFillFromMemory = 4,
+    Gna2InstrumentationModeInputBufferFillFromMemory = 4,
 
     /**
      TODO:3:API: add comment
      */
-    GnaInstrumentationModeOutputBufferFullStall = 5,
+    Gna2InstrumentationModeOutputBufferFullStall = 5,
 
     /**
      TODO:3:API: add comment
      */
-    GnaInstrumentationModeOutputBufferWaitForIosfStall = 6,
+    Gna2InstrumentationModeOutputBufferWaitForIosfStall = 6,
 
     /**
      TODO:3:API: add comment
      */
-    GnaInstrumentationModeDisabled = GNA_DISABLED,
+    Gna2InstrumentationModeDisabled = GNA2_DISABLED,
 };
+
+/**
+ Sets hardware instrumentation mode for given configuration.
+
+ @note
+    ::Gna2InstrumentationModeTotalStall is used when not set.
+
+ @param instrumentationConfigId Instrumentation configuration to modify.
+ @param instrumentationMode Mode of hardware instrumentation.
+ */
+GNA2_API enum Gna2Status Gna2InstrumentationConfigSetMode(
+    uint32_t instrumentationConfigId,
+    enum Gna2InstrumentationMode instrumentationMode);
 
 /**
  Releases instrumentation config and its resources.
@@ -286,7 +282,7 @@ enum GnaInstrumentationMode
  @param instrumentationConfigId Identifier of affected instrumentation configuration.
  @return Status of the operation.
  */
-GNA_API enum GnaStatus GnaInstrumentationConfigRelease(
+GNA2_API enum Gna2Status Gna2InstrumentationConfigRelease(
     uint32_t instrumentationConfigId);
 
 #endif // __GNA2_INSTRUMENTATION_API_H

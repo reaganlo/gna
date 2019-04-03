@@ -60,6 +60,7 @@
 #include "gna2-common-api.h"
 #include "gna2-device-api.h"
 #include "gna2-inference-api.h"
+#include "gna2-instrumentation-api.h"
 #include "gna2-memory-api.h"
 #include "gna2-model-api.h"
 

@@ -27,20 +27,20 @@
 
 using namespace GNA;
 
-size_t LayerDescriptor::getSize(const gna_device_version hwId)
+size_t LayerDescriptor::getSize(const DeviceVersion hwId)
 {
-    static const std::map<const gna_device_version, const size_t> sizeMap =
+    static const std::map<const DeviceVersion, const size_t> sizeMap =
     {
 
-        {GNA_CNL, 128},
-        {GNA_GLK, 128},
-        {GNA_ICL, 128},
-        {GNA_TGL, 128},
-        {GNA_ADL, 128},
-        {GNA_SUE_CREEK, 128},
-        {GNA_JELLYFISH, 128},
-        {GNA_ACE_EMBEDDED, 128}, // TODO:3: verify the actual size
-        {GNA_ACE_ANNA, 128},
+        {Gna2DeviceVersionCannonlake, 128},
+        {Gna2DeviceVersionGeminilake, 128},
+        {Gna2DeviceVersionIcelake, 128},
+        {Gna2DeviceVersionTigerlake, 128},
+        {Gna2DeviceVersionAlderLake, 128},
+        {Gna2DeviceVersionSueCreek, 128},
+        {Gna2DeviceVersionJellyfish, 128},
+        {Gna2DeviceVersionAceEmbedded, 128}, // TODO:3: verify the actual size
+        {Gna2DeviceVersionAceAnna, 128},
     };
     return sizeMap.at(hwId);
 }
@@ -252,19 +252,19 @@ static const std::map<const XnnParameterType, const XnnParameter> XnnDescriptorG
        }}},
 };
 
-const std::map<const XnnParameterType, const XnnParameter>& LayerDescriptor::getParameterMap(const gna_device_version hwId)
+const std::map<const XnnParameterType, const XnnParameter>& LayerDescriptor::getParameterMap(const DeviceVersion hwId)
 {
-    static const std::map<const gna_device_version, const std::map<const XnnParameterType, const XnnParameter>&> parameterMap =
+    static const std::map<const DeviceVersion, const std::map<const XnnParameterType, const XnnParameter>&> parameterMap =
     {
-        {GNA_CNL, XnnDescriptorGNA_1},
-        {GNA_GLK, XnnDescriptorGNA_1},
-        {GNA_ICL, XnnDescriptorGNA_1},
-        {GNA_TGL, XnnDescriptorGNA_1},
-        {GNA_ADL, XnnDescriptorGNA_3},
-        {GNA_SUE_CREEK, XnnDescriptorGNA_1},
-        {GNA_JELLYFISH, XnnDescriptorGNA_1},
-        {GNA_ACE_EMBEDDED, XnnDescriptorGNA_3},
-        {GNA_ACE_ANNA, XnnDescriptorGNA_3},
+        {Gna2DeviceVersionCannonlake, XnnDescriptorGNA_1},
+        {Gna2DeviceVersionGeminilake, XnnDescriptorGNA_1},
+        {Gna2DeviceVersionIcelake, XnnDescriptorGNA_1},
+        {Gna2DeviceVersionTigerlake, XnnDescriptorGNA_1},
+        {Gna2DeviceVersionAlderLake, XnnDescriptorGNA_3},
+        {Gna2DeviceVersionSueCreek, XnnDescriptorGNA_1},
+        {Gna2DeviceVersionJellyfish, XnnDescriptorGNA_1},
+        {Gna2DeviceVersionAceEmbedded, XnnDescriptorGNA_3},
+        {Gna2DeviceVersionAceAnna, XnnDescriptorGNA_3},
     };
     return parameterMap.at(hwId);
 }

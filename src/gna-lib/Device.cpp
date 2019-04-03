@@ -74,11 +74,11 @@ Device::Device(uint32_t threadCount) :
     }
 }
 
-gna_device_version Device::GetVersion() const
+DeviceVersion Device::GetVersion() const
 {
     return hardwareCapabilities.IsHardwareSupported()
         ? hardwareCapabilities.GetDeviceVersion()
-        : GNA_SOFTWARE_EMULATION;
+        : Gna2DeviceVersionSoftwareEmulation;
 }
 
 uint32_t Device::GetNumberOfThreads() const
@@ -112,10 +112,10 @@ void Device::ReleaseConfiguration(gna_request_cfg_id configId)
 }
 
 void Device::EnableHardwareConsistency(gna_request_cfg_id configId,
-                                    gna_device_version hardwareVersion)
+                                    DeviceVersion hardwareVersion)
 {
-    if (GNA_UNSUPPORTED == hardwareVersion
-        || GNA_SOFTWARE_EMULATION == hardwareVersion)
+    if (GNA2_NOT_SUPPORTED == hardwareVersion
+        || Gna2DeviceVersionSoftwareEmulation == hardwareVersion)
     {
         throw GnaException(GNA_ERR_INVALID_DEVICE_VERSION);
     }

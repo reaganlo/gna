@@ -38,13 +38,20 @@ namespace GNA
 class DeviceManager
 {
 public:
-    DeviceManager();
+    static DeviceManager& Get()
+    {
+        static DeviceManager deviceManager;
+        return deviceManager;
+    }
+
+    DeviceManager(DeviceManager const&) = delete;
+    void operator=(DeviceManager const&) = delete;
 
     Device& GetDevice(gna_device_id deviceId);
 
     uint32_t GetDeviceCount();
 
-    gna_device_version GetDeviceVersion(gna_device_id deviceId);
+    DeviceVersion GetDeviceVersion(gna_device_id deviceId);
 
     void SetThreadCount(gna_device_id deviceId, uint32_t threadCount);
 
@@ -59,6 +66,8 @@ public:
     static constexpr uint32_t DefaultThreadCount = 1;
 
 private:
+    DeviceManager();
+
     std::vector<std::unique_ptr<Device>> deviceMap;
 
     std::vector<bool> deviceOpenedMap;

@@ -41,6 +41,7 @@ set(APP_DIR ${CMAKE_SOURCE_DIR}/src)
 set(COMMON_DIR ${APP_DIR}/common)
 set(API_DIR ${APP_DIR}/gna-api)
 set(SRC_DIR ${APP_DIR}/gna-lib)
+set(API_IMPL_DIR ${APP_DIR}/gna-lib/gna-api)
 set(SAMPLES_DIR ${CMAKE_SOURCE_DIR}/samples)
 set(KERNEL_DIR ${SRC_DIR}/kernels)
 

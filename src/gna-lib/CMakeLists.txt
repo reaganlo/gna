@@ -130,7 +130,20 @@ set(gna_lib_sources
   ${SRC_DIR}/Validator.cpp
   ${SRC_DIR}/Weight.cpp
   ${SRC_DIR}/${IOCTL_SENDER_PREFIX}DriverInterface.cpp)
+  
+set(gna_api_impl_src_2
+  ${API_IMPL_DIR}/gna2-common-impl.cpp
+  ${API_IMPL_DIR}/gna2-device-impl.cpp
+  ${API_IMPL_DIR}/gna2-inference-impl.cpp
+  ${API_IMPL_DIR}/gna2-instrumentation-impl.cpp
+  ${API_IMPL_DIR}/gna2-memory-impl.cpp
+  ${API_IMPL_DIR}/gna2-model-impl.cpp
+  ${API_IMPL_DIR}/gna2-model-export-impl.cpp
+  ${API_IMPL_DIR}/gna2-capability-impl.cpp)
 
+set(gna_lib_sources
+  ${gna_lib_sources} ${gna_api_impl_src_2})
+ 
 set(gna_lib_headers
   ${SRC_DIR}/AccelerationDetector.h
   ${SRC_DIR}/ActivationFunction.h
@@ -153,7 +166,6 @@ set(gna_lib_headers
   ${SRC_DIR}/DriverInterface.h
   ${SRC_DIR}/Expect.h
   ${SRC_DIR}/GmmLayer.h
-  ${SRC_DIR}/GnaConfig.h
   ${SRC_DIR}/GnaException.h
   ${SRC_DIR}/GnaTypes.h
   ${SRC_DIR}/HardwareCapabilities.h
@@ -190,6 +202,21 @@ set(gna_lib_headers
   ${SRC_DIR}/Validator.h
   ${SRC_DIR}/Weight.h
   ${SRC_DIR}/${IOCTL_SENDER_PREFIX}DriverInterface.h)
+  
+set(gna_api_impl_headers_2
+  ${API_IMPL_DIR}/gna2-impl.h
+  ${API_IMPL_DIR}/gna2-capability-impl.h
+  ${API_IMPL_DIR}/gna2-common-impl.h
+  ${API_IMPL_DIR}/gna2-device-impl.h
+  ${API_IMPL_DIR}/gna2-inference-impl.h
+  ${API_IMPL_DIR}/gna2-instrumentation-impl.h
+  ${API_IMPL_DIR}/gna2-memory-impl.h
+  ${API_IMPL_DIR}/gna2-model-impl.h
+  ${API_IMPL_DIR}/gna2-model-export-impl.h
+  ${API_IMPL_DIR}/gna2-validation-impl.h)
+  
+set(gna_lib_headers
+  ${gna_lib_headers} ${gna_api_impl_headers_2})
 
 set(gna_api_headers
   ${COMMON_DIR}/gna-api.h
@@ -201,7 +228,7 @@ set(gna_api_extra
   ${COMMON_DIR}/gna-api-dumper.h
   ${COMMON_DIR}/gna-api-instrumentation.h)
   
-set(gna2_api_core
+set(gna_api_headers_2
   ${API_DIR}/gna2-api.h
   ${API_DIR}/gna2-common-api.h
   ${API_DIR}/gna2-device-api.h
@@ -210,7 +237,7 @@ set(gna2_api_core
   ${API_DIR}/gna2-memory-api.h
   ${API_DIR}/gna2-model-api.h)
 
-set(gna2_api_extension
+set(gna_api_headers_extra_2
   ${API_DIR}/gna2-model-export-api.h
   ${API_DIR}/gna2-model-suecreek-header.h
   ${API_DIR}/gna2-capability-api.h)
@@ -234,10 +261,13 @@ endif()
 
 set(api_headers ${gna_api_headers} ${gna_api_extra})
 source_group(Api FILES ${api_headers})
-set(gna2_api_all_public ${gna2_api_core} ${gna2_api_extension})
-source_group(Api2 FILES ${gna2_api_all_public})
 
-set(api_headers ${api_headers} ${gna2_api_core} ${gna2_api_extension})
+set(api_headers_2 ${gna_api_headers_2} ${gna_api_headers_extra_2})
+source_group(Api2 FILES ${api_headers_2})
+
+source_group("Api2 Source Files" FILES ${gna_api_impl_src_2})
+
+set(api_headers ${api_headers} ${api_headers_2})
 
 add_library(gna-api SHARED)
 
@@ -246,7 +276,7 @@ if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux" OR ${CMAKE_SYSTEM_NAME} STREQUAL "Andro
 endif()
 
 target_include_directories(gna-api
-  PRIVATE ${SRC_DIR} ${API_DIR} ${KERNEL_DIR})
+  PRIVATE ${SRC_DIR} ${API_DIR} ${API_IMPL_DIR} ${KERNEL_DIR})
 
 target_include_directories(gna-api PUBLIC
   $<BUILD_INTERFACE:${COMMON_DIR}>
@@ -325,26 +355,30 @@ if(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
     ${SRC_DIR}/HardwareModelVerbose.h
     ${SRC_DIR}/HardwareModelVerbose.cpp
     ${SRC_DIR}/MemoryVerbose.h
-    ${SRC_DIR}/api-verbose.cpp)
+    ${SRC_DIR}/api-verbose.cpp
+    ${API_IMPL_DIR}/gna2-validation-impl.cpp)
 
+  source_group("Verbose Source Files" FILES ${verbose_sources})
+  
+  set(api_headers_verbose_only
+    ${COMMON_DIR}/gna-api-verbose.h
+    ${API_DIR}/gna2-validation-api.h)
+    
   set(api_headers_verbose
     ${api_headers}
-    ${COMMON_DIR}/gna-api-verbose.h)
+    ${api_headers_verbose_only})
+
+  source_group("Api2 Verbose" FILES ${api_headers_verbose_only})
   
-  set(gna_api_validation
-    ${gna2_api_all_public}
-    ${API_DIR}/gna2-validation-api.h)
-  
-  source_group(Api2 FILES ${gna_api_validation})
     
   add_library(gna-api-verbose SHARED)
 
   target_include_directories(gna-api-verbose
-    PRIVATE ${SRC_DIR} ${KERNEL_DIR}
+    PRIVATE ${SRC_DIR} ${API_DIR} ${API_IMPL_DIR} ${KERNEL_DIR}
     PUBLIC ${COMMON_DIR})
 
   target_sources(gna-api-verbose
-    PRIVATE ${common_sources} ${gna_lib_sources} ${gna_lib_headers} ${kernel_api_headers} ${verbose_sources}
+    PRIVATE ${common_sources} ${gna_lib_sources} ${gna_lib_headers} ${api_headers_verbose} ${kernel_api_headers} ${verbose_sources}
     PUBLIC ${api_headers_verbose})
 
   set_target_properties(gna-api-verbose
