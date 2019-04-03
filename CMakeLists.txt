@@ -193,6 +193,32 @@ file(COPY samples/CMakeLists.txt
 file(COPY readme.txt
     DESTINATION ${GNA_BINARY_DIR}/)
 
+find_program(CTAGS_PATH ctags)
+if(CTAGS_PATH)
+  message(STATUS "Found ctags: ${CTAGS_PATH}")
+
+  if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
+    execute_process(
+      COMMAND bash -c "echo | gcc -Wp,-v -x c++ - -fsyntax-only 2>&1 | grep ^./usr | xargs"
+      OUTPUT_VARIABLE CXX_STD_INCLUDE_DIRS)
+  else()
+    set(CXX_STD_INCLUDE_DIRS "")
+  endif()
+  add_custom_target(tags
+    COMMAND bash -c "ctags -R --c++-kinds=+p --fields=+iaS --extra=+q ${CMAKE_SOURCE_DIR}/src ${CXX_STD_INCLUDE_DIRS}"
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+endif()
+
+find_program(CSCOPE_PATH cscope)
+if(CSCOPE_PATH)
+  message(STATUS "Found cscope: ${CSCOPE_PATH}")
+
+  add_custom_target(cscope
+    COMMAND find -name "*.c" -o -name "*.cpp" -o -name "*.h" -o -name "*.hpp" > cscope.files
+    COMMAND cscope -Rqb -i cscope.files
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+endif()
+
 add_subdirectory(src/gna-lib/kernels)
 add_subdirectory(src/gna-lib)
 add_subdirectory(src/tools)
