@@ -54,6 +54,8 @@ SetupPoolingModel::~SetupPoolingModel()
 {
     deviceController.Free(memory);
     free(nnet.pLayers);
+
+    deviceController.ModelRelease(modelId);
 }
 
 void SetupPoolingModel::checkReferenceOutput(int modelIndex, int configIndex) const

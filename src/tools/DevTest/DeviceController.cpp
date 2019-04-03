@@ -72,6 +72,15 @@ void DeviceController::ModelCreate(const gna_model * model, gna_model_id * model
     }
 }
 
+void DeviceController::ModelRelease(gna_model_id modelId) const
+{
+    intel_gna_status_t status = GnaModelRelease(modelId);
+    if (GNA_SUCCESS != status)
+    {
+        throw std::runtime_error("Model create failed");
+    }
+}
+
 uint8_t * DeviceController::Alloc(uint32_t sizeRequested, uint32_t * sizeGranted)
 {
     void *memory;

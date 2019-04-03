@@ -141,6 +141,8 @@ SetupDnnModel_Multibuffer::~SetupDnnModel_Multibuffer()
         deviceController.Free(pwlMemory);
     }
     free(nnet.pLayers);
+
+    deviceController.ModelRelease(modelId);
 }
 
 template <class intel_reference_output_type>

@@ -57,6 +57,8 @@ SetupConvolutionModel::~SetupConvolutionModel()
 {
     deviceController.Free(memory);
     free(nnet.pLayers);
+
+    deviceController.ModelRelease(modelId);
 }
 
 template <class intel_reference_output_type>

@@ -54,6 +54,8 @@ SetupCopyModel::~SetupCopyModel()
 {
     deviceController.Free(memory);
     free(nnet.pLayers);
+
+    deviceController.ModelRelease(modelId);
 }
 
 void SetupCopyModel::checkReferenceOutput(int modelIndex, int configIndex) const

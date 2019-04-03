@@ -108,6 +108,8 @@ SetupConvolutionModel2D::SetupConvolutionModel2D(DeviceController & deviceCtrl, 
 SetupConvolutionModel2D::~SetupConvolutionModel2D()
 {
    deviceController.Free(memory);
+
+   deviceController.ModelRelease(modelId);
 }
 
 void SetupConvolutionModel2D::sampleConvolutionLayer()

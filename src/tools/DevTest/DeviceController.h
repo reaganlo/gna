@@ -40,9 +40,10 @@ public:
 
     void Free(void *memory);
 
-    void ModelCreate(const gna_model *, gna_model_id *);
+    void ModelCreate(const gna_model *model, gna_model_id *modelId);
+    void ModelRelease(gna_model_id modelId) const;
 
-    gna_request_cfg_id ConfigAdd(gna_model_id);
+    gna_request_cfg_id ConfigAdd(gna_model_id modelId);
 
     void BufferAdd(gna_request_cfg_id, GnaComponentType, uint32_t layerIndex, void * address);
     void RequestSetAcceleration(gna_request_cfg_id, gna_acceleration);

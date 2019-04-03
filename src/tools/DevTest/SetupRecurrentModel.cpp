@@ -55,6 +55,8 @@ SetupRecurrentModel::~SetupRecurrentModel()
 {
     deviceController.Free(memory);
     free(nnet.pLayers);
+
+    deviceController.ModelRelease(modelId);
 }
 
 void SetupRecurrentModel::checkReferenceOutput(int modelIndex, int configIndex) const

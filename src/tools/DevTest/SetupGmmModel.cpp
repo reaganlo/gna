@@ -57,6 +57,8 @@ SetupGmmModel::~SetupGmmModel()
     deviceController.Free(memory);
     free(nnet.pLayers->pLayerStruct);
     free(nnet.pLayers);
+
+    deviceController.ModelRelease(modelId);
 }
 
 void SetupGmmModel::checkReferenceOutput(int modelIndex, int configIndex) const

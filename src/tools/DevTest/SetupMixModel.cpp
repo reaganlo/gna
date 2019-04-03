@@ -66,6 +66,8 @@ SetupMixModel::SetupMixModel(DeviceController & deviceCtrl)
 SetupMixModel::~SetupMixModel()
 {
     deviceController.Free(memory);
+
+    deviceController.ModelRelease(modelId);
 }
 
 void SetupMixModel::checkReferenceOutput(int modelIndex, int configIndex) const

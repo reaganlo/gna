@@ -199,7 +199,7 @@ void Device::FreeMemory(void *buffer)
 
 void Device::ReleaseModel(gna_model_id const modelId)
 {
-    UNREFERENCED_PARAMETER(modelId);
+    models.erase(modelId);
 }
 
 void Device::LoadModel(gna_model_id *modelId, const gna_model *userModel)

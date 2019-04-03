@@ -109,6 +109,8 @@ SetupSplitModel::~SetupSplitModel()
     deviceController.Free(memory);
     free(firstNnet.pLayers);
     free(secondNnet.pLayers);
+
+    deviceController.ModelRelease(modelId);
 }
 
 void SetupSplitModel::checkReferenceOutput(int modelIndex, int configIndex) const

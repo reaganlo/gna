@@ -54,6 +54,8 @@ SetupTransposeModel::~SetupTransposeModel()
 {
     deviceController.Free(memory);
     free(nnet.pLayers);
+
+    deviceController.ModelRelease(modelId);
 }
 
 void SetupTransposeModel::checkReferenceOutput(int modelIndex, int configIndex) const
