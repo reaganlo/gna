@@ -24,6 +24,7 @@
 */
 
 #include "gna2-model-impl.h"
+#include "gna2-common-impl.h"
 
 #include "Device.h"
 #include "DeviceManager.h"
@@ -31,6 +32,8 @@
 
 #include "gna2-model-api.h"
 #include "gna2-common-api.h"
+
+#include <stdint.h>
 
 using namespace GNA;
 
@@ -79,4 +82,347 @@ GNA2_API enum Gna2Status Gna2ModelRelease(
     {
         return HandleUnknownException2(e);
     }
+}
+
+GNA2_API enum Gna2Status Gna2ModelGetLastError(struct Gna2ModelError * error)
+{
+    UNREFERENCED_PARAMETER(error);
+    // TODO:3:API: implement P2
+    return Gna2StatusNotImplemented;
+}
+
+GNA2_API enum Gna2Status Gna2ModelGetLastErrorMessage(char * messageBuffer,
+    uint32_t messageBufferSize)
+{
+    UNREFERENCED_PARAMETER(messageBuffer);
+    UNREFERENCED_PARAMETER(messageBufferSize);
+
+    // TODO:3:API: implement P2
+    return Gna2StatusNotImplemented;
+}
+
+GNA2_API enum Gna2Status Gna2ModelOperationInit(
+    struct Gna2Operation * operation,
+    enum Gna2OperationType type,
+    Gna2UserAllocator userAllocator)
+{
+    UNREFERENCED_PARAMETER(operation);
+    UNREFERENCED_PARAMETER(type);
+    UNREFERENCED_PARAMETER(userAllocator);
+    // TODO:3:API: implement P1
+    return Gna2StatusNotImplemented;
+}
+
+GNA2_API uint32_t Gna2DataTypeGetSize(enum Gna2DataType type)
+{
+    UNREFERENCED_PARAMETER(type);
+
+    // TODO:3:API: implement P1
+    return (uint32_t)GNA2_NOT_SUPPORTED;
+}
+
+GNA2_API uint32_t Gna2ShapeGetNumberOfElements(struct Gna2Shape const * shape)
+{
+    UNREFERENCED_PARAMETER(shape);
+
+    // TODO:3:API: implement P1
+    return (uint32_t)GNA2_NOT_SUPPORTED;
+}
+
+GNA2_API uint32_t Gna2TensorGetSize(struct Gna2Tensor const * tensor)
+{
+    UNREFERENCED_PARAMETER(tensor);
+    // TODO:3:API: implement P1
+    return (uint32_t)GNA2_NOT_SUPPORTED;
+}
+
+GNA2_API struct Gna2Shape Gna2ShapeInitScalar()
+{
+    // TODO:3:API: implement P2
+    return Gna2Shape{};
+}
+
+GNA2_API struct Gna2Shape Gna2ShapeInit1D(uint32_t x)
+{
+    UNREFERENCED_PARAMETER(x);
+    // TODO:3:API: implement P2
+    return Gna2Shape{};
+}
+
+GNA2_API struct Gna2Shape Gna2ShapeInit2D(uint32_t x, uint32_t y)
+{
+    UNREFERENCED_PARAMETER(x);
+    UNREFERENCED_PARAMETER(y);
+    // TODO:3:API: implement P2
+    return Gna2Shape{};
+}
+
+GNA2_API struct Gna2Shape Gna2ShapeInit3D(uint32_t x, uint32_t y, uint32_t z)
+{
+    UNREFERENCED_PARAMETER(x);
+    UNREFERENCED_PARAMETER(z);
+    UNREFERENCED_PARAMETER(y);
+    // TODO:3:API: implement P2
+    return Gna2Shape{};
+}
+
+GNA2_API struct Gna2Shape Gna2ShapeInit4D(uint32_t n, uint32_t x, uint32_t y,
+    uint32_t z)
+{
+    UNREFERENCED_PARAMETER(n);
+    UNREFERENCED_PARAMETER(x);
+    UNREFERENCED_PARAMETER(y);
+    UNREFERENCED_PARAMETER(z);
+    // TODO:3:API: implement P2
+    return Gna2Shape{};
+}
+
+GNA2_API struct Gna2Tensor Gna2TensorInit1D(uint32_t x, enum Gna2DataType type,
+    void * data)
+{
+    UNREFERENCED_PARAMETER(x);
+    UNREFERENCED_PARAMETER(type);
+    UNREFERENCED_PARAMETER(data);
+    // TODO:3:API: implement P2
+    return  Gna2Tensor{};
+}
+
+GNA2_API struct Gna2Tensor Gna2TensorInit2D(uint32_t x, uint32_t y,
+    enum Gna2DataType type, void * data)
+{
+    UNREFERENCED_PARAMETER(x);
+    UNREFERENCED_PARAMETER(y);
+    UNREFERENCED_PARAMETER(type);
+    UNREFERENCED_PARAMETER(data);
+    // TODO:3:API: implement P2
+    return  Gna2Tensor{};
+}
+
+GNA2_API struct Gna2Tensor Gna2TensorInit3D(uint32_t x, uint32_t y, uint32_t z,
+    enum Gna2DataType type, void * data)
+{
+    UNREFERENCED_PARAMETER(x);
+    UNREFERENCED_PARAMETER(y);
+    UNREFERENCED_PARAMETER(z);
+    UNREFERENCED_PARAMETER(type);
+    UNREFERENCED_PARAMETER(data);
+    // TODO:3:API: implement P2
+    return  Gna2Tensor{};
+}
+
+GNA2_API struct Gna2Tensor Gna2TensorInit4D(uint32_t n, uint32_t x, uint32_t y,
+    uint32_t z, enum Gna2DataType type, void * data)
+{
+    UNREFERENCED_PARAMETER(n);
+    UNREFERENCED_PARAMETER(x);
+    UNREFERENCED_PARAMETER(y);
+    UNREFERENCED_PARAMETER(z);
+    UNREFERENCED_PARAMETER(type);
+    UNREFERENCED_PARAMETER(data);
+    // TODO:3:API: implement P2
+    return  Gna2Tensor{};
+}
+
+GNA2_API struct Gna2Tensor Gna2TensorInitDisabled()
+{
+    // TODO:3:API: implement P2
+    return Gna2Tensor{};
+}
+
+GNA2_API struct Gna2Tensor Gna2TensorInitScalar(enum Gna2DataType type, void * data)
+{
+    UNREFERENCED_PARAMETER(type);
+    UNREFERENCED_PARAMETER(data);
+    // TODO:3:API: implement P2
+    return Gna2Tensor{};
+}
+
+GNA2_API struct Gna2Tensor Gna2TensorInitActivation(uint32_t numberOfSegments,
+    struct Gna2PwlSegment * segments)
+{
+    UNREFERENCED_PARAMETER(numberOfSegments);
+    UNREFERENCED_PARAMETER(segments);
+    // TODO:3:API: implement P2
+    return Gna2Tensor{};
+}
+
+GNA2_API struct Gna2Operation Gna2OperationInitFullyConnectedAffine(
+    struct Gna2Tensor * inputs, struct Gna2Tensor * outputs,
+    struct Gna2Tensor * weights, struct Gna2Tensor * biases,
+    struct Gna2Tensor * activation)
+{
+    UNREFERENCED_PARAMETER(inputs);
+    UNREFERENCED_PARAMETER(outputs);
+    UNREFERENCED_PARAMETER(weights);
+    UNREFERENCED_PARAMETER(biases);
+    UNREFERENCED_PARAMETER(activation);
+
+    // TODO:3:API: implement P2
+    return Gna2Operation{};
+}
+
+GNA2_API struct Gna2Operation Gna2OperationInitElementWiseAffine(
+    struct Gna2Tensor * inputs, struct Gna2Tensor * outputs,
+    struct Gna2Tensor * weights, struct Gna2Tensor * biases,
+    struct Gna2Tensor * activation)
+{
+    UNREFERENCED_PARAMETER(inputs);
+    UNREFERENCED_PARAMETER(outputs);
+    UNREFERENCED_PARAMETER(weights);
+    UNREFERENCED_PARAMETER(biases);
+    UNREFERENCED_PARAMETER(activation);
+    // TODO:3:API: implement P2
+    return Gna2Operation{};
+}
+
+GNA2_API struct Gna2Operation Gna2OperationInitFullyConnectedBiasGrouping(
+    struct Gna2Tensor * inputs, struct Gna2Tensor * outputs,
+    struct Gna2Tensor * weights, struct Gna2Tensor * biases,
+    struct Gna2Tensor * activation,
+    struct Gna2Tensor * weightScaleFactors,
+    enum Gna2BiasMode* biasMode,
+    uint32_t* biasVectorIndex)
+{
+    UNREFERENCED_PARAMETER(inputs);
+    UNREFERENCED_PARAMETER(outputs);
+    UNREFERENCED_PARAMETER(weights);
+    UNREFERENCED_PARAMETER(biases);
+    UNREFERENCED_PARAMETER(activation);
+    UNREFERENCED_PARAMETER(weightScaleFactors);
+    UNREFERENCED_PARAMETER(biasMode);
+    UNREFERENCED_PARAMETER(biasVectorIndex);
+    // TODO:3:API: implement P2
+    return Gna2Operation{};
+}
+
+GNA2_API struct Gna2Operation Gna2OperationInitRecurrent(
+    struct Gna2Tensor * inputs, struct Gna2Tensor * outputs,
+    struct Gna2Tensor * weights, struct Gna2Tensor * biases,
+    struct Gna2Tensor * activation,
+    uint32_t* delay)
+{
+    UNREFERENCED_PARAMETER(inputs);
+    UNREFERENCED_PARAMETER(outputs);
+    UNREFERENCED_PARAMETER(weights);
+    UNREFERENCED_PARAMETER(biases);
+    UNREFERENCED_PARAMETER(activation);
+    UNREFERENCED_PARAMETER(delay);
+    // TODO:3:API: implement P2
+    return Gna2Operation{};
+}
+
+GNA2_API struct Gna2Operation Gna2OperationInitConvolution(
+    struct Gna2Tensor * inputs, struct Gna2Tensor * outputs,
+    struct Gna2Tensor * filters, struct Gna2Tensor * biases,
+    struct Gna2Tensor * activation,
+    struct Gna2Shape * zeroPadding,
+    struct Gna2Shape * concolutionStride,
+    enum Gna2BiasMode * biasMode)
+{
+    UNREFERENCED_PARAMETER(inputs);
+    UNREFERENCED_PARAMETER(outputs);
+    UNREFERENCED_PARAMETER(filters);
+    UNREFERENCED_PARAMETER(biases);
+    UNREFERENCED_PARAMETER(activation);
+    UNREFERENCED_PARAMETER(zeroPadding);
+    UNREFERENCED_PARAMETER(concolutionStride);
+    UNREFERENCED_PARAMETER(biasMode);
+    // TODO:3:API: implement P2
+    return Gna2Operation{};
+}
+
+GNA2_API struct Gna2Operation Gna2OperationInitConvolutionFused(
+    struct Gna2Tensor * inputs, struct Gna2Tensor * outputs,
+    struct Gna2Tensor * filters, struct Gna2Tensor * biases,
+    struct Gna2Tensor * activation,
+    struct Gna2Shape * zeroPadding,
+    struct Gna2Shape * concolutionStride,
+    enum Gna2BiasMode * biasMode,
+    enum Gna2PoolingMode * poolingMode,
+    struct Gna2Shape * poolingWindow,
+    struct Gna2Shape * poolingStride)
+{
+    UNREFERENCED_PARAMETER(inputs);
+    UNREFERENCED_PARAMETER(outputs);
+    UNREFERENCED_PARAMETER(filters);
+    UNREFERENCED_PARAMETER(biases);
+    UNREFERENCED_PARAMETER(activation);
+    UNREFERENCED_PARAMETER(zeroPadding);
+    UNREFERENCED_PARAMETER(concolutionStride);
+    UNREFERENCED_PARAMETER(biasMode);
+    UNREFERENCED_PARAMETER(poolingMode);
+    UNREFERENCED_PARAMETER(poolingWindow);
+    UNREFERENCED_PARAMETER(poolingStride);
+    // TODO:3:API: implement P2
+    return Gna2Operation{};
+}
+
+GNA2_API struct Gna2Operation Gna2OperationInitPooling(
+    struct Gna2Tensor * inputs, struct Gna2Tensor * outputs,
+    struct Gna2Tensor * activation,
+    struct Gna2Shape * zeroPadding,
+    enum Gna2PoolingMode * poolingMode,
+    struct Gna2Shape * poolingWindow,
+    struct Gna2Shape * poolingStride)
+{
+     UNREFERENCED_PARAMETER(inputs);
+    UNREFERENCED_PARAMETER(outputs);
+    UNREFERENCED_PARAMETER(activation);
+    UNREFERENCED_PARAMETER(zeroPadding);
+    UNREFERENCED_PARAMETER(poolingMode);
+    UNREFERENCED_PARAMETER(poolingWindow);
+    UNREFERENCED_PARAMETER(poolingStride);
+    // TODO:3:API: implement P2
+    return Gna2Operation{};
+}
+
+GNA2_API struct Gna2Operation Gna2OperationInitCopy(
+    struct Gna2Tensor * inputs, struct Gna2Tensor * outputs,
+    struct Gna2Shape * copyParams)
+{
+    UNREFERENCED_PARAMETER(inputs);
+    UNREFERENCED_PARAMETER(outputs);
+    UNREFERENCED_PARAMETER(copyParams);
+    // TODO:3:API: implement P2
+    return Gna2Operation{};
+}
+
+GNA2_API struct Gna2Operation Gna2OperationInitTranspose(
+    struct Gna2Tensor * inputs, struct Gna2Tensor * outputs)
+{
+    UNREFERENCED_PARAMETER(inputs);
+    UNREFERENCED_PARAMETER(outputs);
+    // TODO:3:API: implement P2
+    return Gna2Operation{};
+}
+
+//TODO:3:API define
+GNA2_API struct Gna2Operation Gna2OperationInitGmm(
+    struct Gna2Tensor * inputs, struct Gna2Tensor * outputs,
+    struct Gna2Tensor * means,
+    struct Gna2Tensor * inverseCovariances,
+    struct Gna2Tensor * consts,
+    uint32_t * maximumScore)
+{
+    UNREFERENCED_PARAMETER(inputs);
+    UNREFERENCED_PARAMETER(outputs);
+    UNREFERENCED_PARAMETER(means);
+    UNREFERENCED_PARAMETER(inverseCovariances);
+    UNREFERENCED_PARAMETER(consts);
+    UNREFERENCED_PARAMETER(maximumScore);
+    // TODO:3:API: implement P2
+    return Gna2Operation{};
+}
+
+GNA2_API struct Gna2Operation Gna2OperationInitGmInterleaved(
+    struct Gna2Tensor * inputs, struct Gna2Tensor * outputs,
+    struct Gna2Tensor * interleavedTensors,
+    uint32_t * maximumScore)
+{
+     UNREFERENCED_PARAMETER(inputs);
+    UNREFERENCED_PARAMETER(outputs);
+    UNREFERENCED_PARAMETER(interleavedTensors);
+    UNREFERENCED_PARAMETER(maximumScore);
+    // TODO:3:API: implement P2
+    return Gna2Operation{};
 }

@@ -33,9 +33,6 @@
 #include "gna2-memory-impl.h"
 #include "gna2-model-impl.h"
 
-#include <stdint.h>
-
-
 namespace GNA
 {
 

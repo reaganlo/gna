@@ -35,6 +35,9 @@
 namespace GNA
 {
 
+typedef enum Gna2InstrumentationMode InstrumentationMode;
+typedef enum Gna2InstrumentationUnit InstrumentationUnit;
+
 }
 
 #endif // __GNA2_INSTRUMENTATION_IMPL_H

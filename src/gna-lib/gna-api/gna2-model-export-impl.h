@@ -35,6 +35,8 @@
 namespace GNA
 {
 
+typedef struct Gna2ModelSueCreekHeader SueCreekHeader;
+
 }
 
 #endif // __GNA2_MODEL_EXPORT_IMPL_H

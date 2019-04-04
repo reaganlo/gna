@@ -30,8 +30,24 @@
 
 #include <Logger.h>
 
+#if !defined(_WIN32)
+#include <assert.h>
+#endif
 #include <stdexcept>
 #include <stdint.h>
+
+/**
+ Verifies data sizes used in the API and GNA hardware
+
+ @note If data sizes in an application using API differ from data sizes
+       in the API library implementation, scoring will not work properly.
+ */
+static_assert(1 == sizeof(int8_t), "Invalid size of int8_t");
+static_assert(2 == sizeof(int16_t), "Invalid size of int16_t");
+static_assert(4 == sizeof(int32_t), "Invalid size of int32_t");
+static_assert(1 == sizeof(uint8_t), "Invalid size of uint8_t");
+static_assert(2 == sizeof(uint16_t), "Invalid size of uint16_t");
+static_assert(4 == sizeof(uint32_t), "Invalid size of uint32_t");
 
 namespace GNA
 {

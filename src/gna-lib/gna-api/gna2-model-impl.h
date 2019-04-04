@@ -27,11 +27,6 @@
 
 #include "gna2-model-api.h"
 
-#include "gna2-common-impl.h"
-#include "DeviceManager.h"
-
-#include <stdint.h>
-
 namespace GNA
 {
 

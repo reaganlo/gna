@@ -150,7 +150,6 @@ set(gna_lib_headers
   ${SRC_DIR}/ActiveList.h
   ${SRC_DIR}/Address.h
   ${SRC_DIR}/AffineFunctions.h
-  ${SRC_DIR}/ApiTypedefs.h
   ${SRC_DIR}/ApiProperty.h
   ${SRC_DIR}/Capabilities.h
   ${SRC_DIR}/common.h
@@ -160,6 +159,7 @@ set(gna_lib_headers
   ${SRC_DIR}/ConvolutionalFunctions2D.h
   ${SRC_DIR}/ConvolutionalLayer.h
   ${SRC_DIR}/ConvolutionalLayer2D.h
+  ${SRC_DIR}/DataMode.h
   ${SRC_DIR}/Device.h
   ${SRC_DIR}/DeviceLayerSupport.h
   ${SRC_DIR}/DeviceManager.h

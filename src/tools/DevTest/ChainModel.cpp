@@ -144,6 +144,7 @@ ChainModel& ChainModel::Multibias(bool weights2B, bool pwlEnabled)
 
     intel_affine_multibias_func_t multibias_func;
     multibias_func.nBytesPerWeight = weights2B ? GNA_INT16 : GNA_INT8;
+    multibias_func.nBytesPerBias = GNA_INT32;
     multibias_func.biasVectorCount = 4;
     multibias_func.biasVectorIndex = 1;
 

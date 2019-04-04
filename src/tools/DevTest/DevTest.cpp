@@ -43,35 +43,35 @@ public:
 
     void PrepareScenario()
     {
-        script.actions.emplace_back(Action::LoadModel, ModelSetupConvolution_2D, 0, 0);
+      /*  script.actions.emplace_back(Action::LoadModel, ModelSetupConvolution_2D, 0, 0);
         script.actions.emplace_back(Action::Score, ModelSetupConvolution_2D, 0, 0);
         script.actions.emplace_back(Action::CheckReferenceOutput, ModelSetupConvolution_2D, 0, 0);
         script.actions.emplace_back(Action::CloseModel, ModelSetupConvolution_2D, 0, 0);
+*/
+        //script.actions.emplace_back(Action::LoadModel, ModelSetupMix, 0, 0);
+        //script.actions.emplace_back(Action::Score, ModelSetupMix, 0, 0);
+        //script.actions.emplace_back(Action::CheckReferenceOutput, ModelSetupMix, 0, 0);
+        //script.actions.emplace_back(Action::CloseModel, ModelSetupMix, 0, 0);
 
-        script.actions.emplace_back(Action::LoadModel, ModelSetupMix, 0, 0);
-        script.actions.emplace_back(Action::Score, ModelSetupMix, 0, 0);
-        script.actions.emplace_back(Action::CheckReferenceOutput, ModelSetupMix, 0, 0);
-        script.actions.emplace_back(Action::CloseModel, ModelSetupMix, 0, 0);
+        //script.actions.emplace_back(Action::LoadModel, ModelSetupMultibias_1_1B, 0, 0);
+        //script.actions.emplace_back(Action::Score, ModelSetupMultibias_1_1B, 0, 0);
+        //script.actions.emplace_back(Action::CheckReferenceOutput, ModelSetupMultibias_1_1B, 0, 0);
+        //script.actions.emplace_back(Action::CloseModel, ModelSetupMultibias_1_1B, 0, 0);
 
-        script.actions.emplace_back(Action::LoadModel, ModelSetupMultibias_1_1B, 0, 0);
-        script.actions.emplace_back(Action::Score, ModelSetupMultibias_1_1B, 0, 0);
-        script.actions.emplace_back(Action::CheckReferenceOutput, ModelSetupMultibias_1_1B, 0, 0);
-        script.actions.emplace_back(Action::CloseModel, ModelSetupMultibias_1_1B, 0, 0);
+        //script.actions.emplace_back(Action::LoadModel, ModelSetupMultibias_1_2B, 0, 0);
+        //script.actions.emplace_back(Action::Score, ModelSetupMultibias_1_2B, 0, 0);
+        //script.actions.emplace_back(Action::CheckReferenceOutput, ModelSetupMultibias_1_2B, 0, 1);
+        //script.actions.emplace_back(Action::CloseModel, ModelSetupMultibias_1_2B, 0, 0);
 
-        script.actions.emplace_back(Action::LoadModel, ModelSetupMultibias_1_2B, 0, 0);
-        script.actions.emplace_back(Action::Score, ModelSetupMultibias_1_2B, 0, 0);
-        script.actions.emplace_back(Action::CheckReferenceOutput, ModelSetupMultibias_1_2B, 0, 1);
-        script.actions.emplace_back(Action::CloseModel, ModelSetupMultibias_1_2B, 0, 0);
+        //script.actions.emplace_back(Action::LoadModel, ModelSetupMultibiasPwl_1_1B, 0, 0);
+        //script.actions.emplace_back(Action::Score, ModelSetupMultibiasPwl_1_1B, 0, 0);
+        //script.actions.emplace_back(Action::CheckReferenceOutput, ModelSetupMultibiasPwl_1_1B, 0, 2);
+        //script.actions.emplace_back(Action::CloseModel, ModelSetupMultibiasPwl_1_1B, 0, 0);
 
-        script.actions.emplace_back(Action::LoadModel, ModelSetupMultibiasPwl_1_1B, 0, 0);
-        script.actions.emplace_back(Action::Score, ModelSetupMultibiasPwl_1_1B, 0, 0);
-        script.actions.emplace_back(Action::CheckReferenceOutput, ModelSetupMultibiasPwl_1_1B, 0, 2);
-        script.actions.emplace_back(Action::CloseModel, ModelSetupMultibiasPwl_1_1B, 0, 0);
-
-        script.actions.emplace_back(Action::LoadModel, ModelSetupMultibiasPwl_1_2B, 0, 0);
-        script.actions.emplace_back(Action::Score, ModelSetupMultibiasPwl_1_2B, 0, 0);
-        script.actions.emplace_back(Action::CheckReferenceOutput, ModelSetupMultibiasPwl_1_2B, 0, 3);
-        script.actions.emplace_back(Action::CloseModel, ModelSetupMultibiasPwl_1_2B, 0, 0);
+        //script.actions.emplace_back(Action::LoadModel, ModelSetupMultibiasPwl_1_2B, 0, 0);
+        //script.actions.emplace_back(Action::Score, ModelSetupMultibiasPwl_1_2B, 0, 0);
+        //script.actions.emplace_back(Action::CheckReferenceOutput, ModelSetupMultibiasPwl_1_2B, 0, 3);
+        //script.actions.emplace_back(Action::CloseModel, ModelSetupMultibiasPwl_1_2B, 0, 0);
 
         script.actions.emplace_back(Action::LoadModel, ModelSetupDnn_1_1B, 0, 0);
         script.actions.emplace_back(Action::Score, ModelSetupDnn_1_1B, 0, 0);

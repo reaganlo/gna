@@ -1395,14 +1395,6 @@ GNA2_API struct Gna2Operation Gna2OperationInitGmInterleaved(
     struct Gna2Tensor * interleavedTensors,
     uint32_t * maximumScore);
 
-// exemplary not existing operations
-GNA2_API struct Gna2Operation Gna2OperationInitNegation(
-    struct Gna2Tensor * inputs, struct Gna2Tensor * outputs);
-
-// exemplary not existing operations
-GNA2_API struct Gna2Operation Gna2OperationInitDotProduct(struct Gna2Tensor * inputs,
-    struct Gna2Tensor * operand, struct Gna2Tensor * outputs);
-
 #endif // __GNA2_MODEL_API_H
 
 /**

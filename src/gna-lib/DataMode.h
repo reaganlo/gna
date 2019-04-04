@@ -24,10 +24,15 @@
 */
 
 #pragma once
+#include <stdint.h>
 
-#include "common.h"
+#include "gna-api-types-xnn.h"
+
 
 #include "ParameterLimits.h"
+#include <gna2-model-impl.h>
+
+#include <gna2-model-api.h>
 
 #include <map>
 
@@ -36,35 +41,54 @@ namespace GNA
 
 struct DataMode
 {
-    template<typename T> static T ToSize(const gna_data_mode);
+    template<typename T, typename DT>  // TODO:3:API remove
+    static T ToSize(const DT mode)
+    {
+        try
+        {
+            return static_cast<T>(GetSizes<DT>().at(mode));
+        }
+        catch (const std::exception&)
+        {
+            throw GnaException(GNA_ERR_INVALID_DATA_MODE);
+        }
+    }
 
     DataMode() = delete;
     DataMode(const DataMode&) = default;
-    DataMode(const gna_data_mode dataMode);
-    DataMode(const uint32_t dataMode);
+    DataMode(const gna_data_mode dataMode); // TODO:3:API remove
+    DataMode(const uint32_t dataMode); // TODO:3:API remove
+    DataMode(const DataType dataType);
+    DataMode(const DataType dataType, const TensorMode tensorMode);
     ~DataMode() = default;
 
-    operator gna_data_mode() const
+    operator gna_data_mode() const // TODO:3:API remove
     {
         return Value;
     }
 
-    // TODO:3: New API 2.1
-    // const gna_data_type Type; // (e.g. uint32_t)
-    // const gna_data_mode Mode; // (e.g. Disabled, const,...)
 
-    const gna_data_mode Value;
+    const gna_data_mode Value; // TODO:3:API remove
+
+    const DataType Type;
+
+    const TensorMode Mode;
 
     // Size on data element in bytes
     const uint32_t Size;
 
 protected:
-    static const std::map<const gna_data_mode, const uint32_t>& GetSizes();
+    template<typename T> // TODO:3:API remove
+    static const std::map<const T, const uint32_t>& GetSizes();
+
+    static DataType TypeFromDataMode(const gna_data_mode dataMode); // TODO:3:API remove
+    static TensorMode ModeFromDataMode(const gna_data_mode dataMode); // TODO:3:API remove
+    static gna_data_mode ModeFromDataMode(const DataType dataMode); // TODO:3:API remove
 };
 
-bool operator ==(const gna_data_mode &left, const DataMode &right);
+bool operator ==(const gna_data_mode &left, const DataMode &right); // TODO:3:API remove
 
-bool operator !=(const gna_data_mode &left, const DataMode &right);
+bool operator !=(const gna_data_mode &left, const DataMode &right); // TODO:3:API remove
 
 using DataModeLimits = SetLimits<DataMode>;
 
