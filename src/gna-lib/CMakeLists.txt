@@ -22,7 +22,7 @@
 #in any way.
 
 # minimum version of CMake
-cmake_minimum_required(VERSION 3.9)
+cmake_minimum_required(VERSION 3.10)
 
 # global variables
 set(PROJECT_NAME gna-api)
@@ -130,7 +130,7 @@ set(gna_lib_sources
   ${SRC_DIR}/Validator.cpp
   ${SRC_DIR}/Weight.cpp
   ${SRC_DIR}/${IOCTL_SENDER_PREFIX}DriverInterface.cpp)
-  
+
 set(gna_api_impl_src_2
   ${API_IMPL_DIR}/gna2-common-impl.cpp
   ${API_IMPL_DIR}/gna2-device-impl.cpp
@@ -143,7 +143,7 @@ set(gna_api_impl_src_2
 
 set(gna_lib_sources
   ${gna_lib_sources} ${gna_api_impl_src_2})
- 
+
 set(gna_lib_headers
   ${SRC_DIR}/AccelerationDetector.h
   ${SRC_DIR}/ActivationFunction.h
@@ -202,7 +202,7 @@ set(gna_lib_headers
   ${SRC_DIR}/Validator.h
   ${SRC_DIR}/Weight.h
   ${SRC_DIR}/${IOCTL_SENDER_PREFIX}DriverInterface.h)
-  
+
 set(gna_api_impl_headers_2
   ${API_IMPL_DIR}/gna2-impl.h
   ${API_IMPL_DIR}/gna2-capability-impl.h
@@ -214,7 +214,7 @@ set(gna_api_impl_headers_2
   ${API_IMPL_DIR}/gna2-model-impl.h
   ${API_IMPL_DIR}/gna2-model-export-impl.h
   ${API_IMPL_DIR}/gna2-validation-impl.h)
-  
+
 set(gna_lib_headers
   ${gna_lib_headers} ${gna_api_impl_headers_2})
 
@@ -227,7 +227,7 @@ set(gna_api_headers
 set(gna_api_extra
   ${COMMON_DIR}/gna-api-dumper.h
   ${COMMON_DIR}/gna-api-instrumentation.h)
-  
+
 set(gna_api_headers_2
   ${API_DIR}/gna2-api.h
   ${API_DIR}/gna2-common-api.h
@@ -359,18 +359,18 @@ if(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
     ${API_IMPL_DIR}/gna2-validation-impl.cpp)
 
   source_group("Verbose Source Files" FILES ${verbose_sources})
-  
+
   set(api_headers_verbose_only
     ${COMMON_DIR}/gna-api-verbose.h
     ${API_DIR}/gna2-validation-api.h)
-    
+
   set(api_headers_verbose
     ${api_headers}
     ${api_headers_verbose_only})
 
   source_group("Api2 Verbose" FILES ${api_headers_verbose_only})
-  
-    
+
+
   add_library(gna-api-verbose SHARED)
 
   target_include_directories(gna-api-verbose

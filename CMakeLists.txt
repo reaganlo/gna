@@ -22,7 +22,7 @@
 #in any way.
 
 # minimum version of CMake
-cmake_minimum_required(VERSION 3.9)
+cmake_minimum_required(VERSION 3.10)
 # global variables
 set(PROJECT_NAME gna-lib)
 set(CMAKE_CXX_STANDARD 14)
@@ -32,6 +32,7 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 # project name
 project(${PROJECT_NAME})
+
 include(CTest)
 # main binary path
 set(GNA_BINARY_DIR ${CMAKE_SOURCE_DIR}/bin)
@@ -44,6 +45,7 @@ set(SRC_DIR ${APP_DIR}/gna-lib)
 set(API_IMPL_DIR ${APP_DIR}/gna-lib/gna-api)
 set(SAMPLES_DIR ${CMAKE_SOURCE_DIR}/samples)
 set(KERNEL_DIR ${SRC_DIR}/kernels)
+set(BUILD_DIR ${CMAKE_SOURCE_DIR}/build)
 
 # linking with libpthreads
 if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux" OR
@@ -223,3 +225,6 @@ endif()
 add_subdirectory(src/gna-lib/kernels)
 add_subdirectory(src/gna-lib)
 add_subdirectory(src/tools)
+
+# Set up gtest unit testing engine
+add_subdirectory(src/gtest)

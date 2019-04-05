@@ -22,7 +22,7 @@
 #in any way.
 
 # minimum version of CMake
-cmake_minimum_required(VERSION 3.9)
+cmake_minimum_required(VERSION 3.10)
 
 # global variables
 set(PROJECT_NAME kernels)
