@@ -39,10 +39,11 @@
 using namespace GNA;
 
 RequestConfiguration::RequestConfiguration(CompiledModel& model, gna_request_cfg_id configId,
-    DeviceVersion consistentDevice) :
+    DeviceVersion consistentDeviceIn) :
     Model{model},
     Id{configId},
-    BufferElementCount{}
+    BufferElementCount{},
+    consistentDevice{consistentDeviceIn}
 {
     // TODO:3: optimize and store precalculated values if applicable for all layers
     HardwareCapabilities::GetHardwareConsistencySettings(BufferElementCount, consistentDevice);
@@ -89,12 +90,13 @@ void RequestConfiguration::AddActiveList(uint32_t layerIndex, const ActiveList& 
 }
 
 void RequestConfiguration::SetHardwareConsistency(
-    DeviceVersion consistentDevice)
+    DeviceVersion consistentDeviceIn)
 {
     if (GNA2_NOT_SUPPORTED != consistentDevice && Gna2DeviceVersionSoftwareEmulation != consistentDevice)
     {
-        HardwareCapabilities::GetHardwareConsistencySettings(BufferElementCount, consistentDevice);
+        HardwareCapabilities::GetHardwareConsistencySettings(BufferElementCount, consistentDeviceIn);
         enableHwConsistency = true;
+        consistentDevice = consistentDeviceIn;
     }
     else
     {
@@ -112,6 +114,16 @@ void RequestConfiguration::EnforceAcceleration(AccelerationMode accel)
     }
 }
 
+bool RequestConfiguration::HasConsistencyMode() const
+{
+    return enableHwConsistency;
+}
+
+DeviceVersion RequestConfiguration::GetConsistentDevice() const
+{
+    return consistentDevice;
+}
+
 void RequestConfiguration::addMemoryObject(void *buffer, uint32_t bufferSize)
 {
     auto memory = Model.FindBuffer(buffer, bufferSize);
@@ -123,3 +135,4 @@ void RequestConfiguration::addMemoryObject(void *buffer, uint32_t bufferSize)
         MemoryList.push_back(memory);
     }
 }
+

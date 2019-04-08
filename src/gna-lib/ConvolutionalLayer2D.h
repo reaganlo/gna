@@ -38,6 +38,9 @@ class ConvolutionalLayer2D : public Layer
 public:
     ConvolutionalLayer2D(nn_layer const * const layer, const BaseValidator& validatorIn);
     virtual ~ConvolutionalLayer2D() = default;
+
+protected:
+    virtual DataConfig GetDataMode() const override;
 };
 
 }

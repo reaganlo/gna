@@ -26,6 +26,7 @@
 #pragma once
 
 #include <map>
+#include <memory>
 #include <vector>
 
 #include "AccelerationDetector.h"
@@ -54,10 +55,6 @@ public:
 
     const std::vector<std::unique_ptr<Layer>>& GetLayers() const;
     const Layer* GetLayer(uint32_t layerIndex) const;
-    decltype(auto) GetSubmodels() const
-    {
-        return (submodels);
-    }
 
     void AddUniqueMemory(Memory *memory);
     Memory * FindBuffer(const void *buffer, const size_t bufferSize) const;
@@ -88,8 +85,13 @@ protected:
     std::unique_ptr<HardwareModelScorable> hardwareModel;
 
 private:
+    const std::vector<std::unique_ptr<SubModel>>&
+        getSubmodels(const HardwareCapabilities& hwCaps);
+
     void createSubmodels(const HardwareCapabilities& hwCaps);
 
+    SubmodelType getSubmodelType(
+            const HardwareCapabilities &hwCaps, const Layer& layer) const;
 
     uint32_t scoreAllSubModels(RequestConfiguration& config,
         RequestProfiler *profiler, KernelBuffers *buffers);
@@ -103,7 +105,8 @@ private:
     std::vector<std::unique_ptr<Memory>>& memoryList;
     std::vector<Memory *> modelMemoryList;
     SoftwareModel softwareModel;
-    std::vector<std::unique_ptr<SubModel>> submodels;
+    std::map<DeviceVersion,
+            std::vector<std::unique_ptr<SubModel>>> submodels;
 
 };
 

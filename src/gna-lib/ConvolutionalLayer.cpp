@@ -173,3 +173,9 @@ void CnnLayer::computePool(LayerConfiguration& layerConfiguration, AccelerationM
     auto convConfig = ConvolutionConfig{layerConfiguration.Configs.Convolution.get(), execution};
     Pooling->Compute(&convConfig, accel, execution.Intermediate->pool, &Activation->Pwl);
 }
+
+DataConfig CnnLayer::GetDataMode() const
+{
+    return DataConfig(Input.Mode.Value, Convolution->Filters->Mode.Value,
+                      Convolution->Biases->Mode.Value, Output.Mode.Value);
+}

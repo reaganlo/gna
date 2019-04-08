@@ -403,9 +403,6 @@ bool HardwareCapabilities::IsLayerSupported(nn_operation operation) const
 
 bool HardwareCapabilities::HasFeature(GnaFeature feature) const
 {
-    if (!hardwareSupported)
-        return false;
-
     const auto& caps = getGenerationCapabilities(deviceVersion);
     return caps.Features.at(feature);
 }

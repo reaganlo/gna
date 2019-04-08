@@ -45,6 +45,9 @@ public:
     std::unique_ptr<const PoolingFunction> Pooling;
     std::unique_ptr<const ActivationFunction> Activation;
 
+protected:
+    virtual DataConfig GetDataMode() const override;
+
 private:
     void computePool(LayerConfiguration& layerConfiguration, AccelerationMode accel, ExecutionConfig const & execution) const;
     void computeHiddenPool(AccelerationMode accel, ExecutionConfig const & execution) const;

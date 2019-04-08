@@ -118,6 +118,13 @@ void AffineBaseLayer::computePwl(const LayerConfiguration& layerConfiguration, A
     Activation->Compute(accel, &layerConfiguration, execution);
 }
 
+DataConfig AffineBaseLayer::GetDataMode() const
+{
+    auto weightMode = this->Affine->Weights->Mode.Value;
+    auto biasMode = this->Affine->Biases->Mode.Value;
+    return DataConfig(Input.Mode, weightMode, biasMode, Output.Mode);
+}
+
 AffineLayer::AffineLayer(const nn_layer *layer, const BaseValidator& validatorIn) :
     AffineBaseLayer(layer, validatorIn)
 {};

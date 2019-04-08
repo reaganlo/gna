@@ -59,8 +59,7 @@ public:
         uint32_t layerCount,
         const RequestConfiguration& requestConfiguration,
         RequestProfiler *profiler,
-        KernelBuffers *buffers,
-        const GnaOperationMode operationMode) override;
+        KernelBuffers *buffers) override;
 
     uint32_t GetBufferOffsetForConfiguration(
         const BaseAddress& address,

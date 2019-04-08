@@ -63,11 +63,9 @@ uint32_t SoftwareModel::Score(
     uint32_t layerCountIn,
     RequestConfiguration const &requestConfiguration,
     RequestProfiler *profiler,
-    KernelBuffers *fvBuffers,
-    GnaOperationMode operationMode)
+    KernelBuffers *fvBuffers)
 {
     UNREFERENCED_PARAMETER(profiler);
-    UNREFERENCED_PARAMETER(operationMode);
 
     validateConfiguration(requestConfiguration);
 

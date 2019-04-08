@@ -43,6 +43,8 @@ public:
 protected:
     AffineBaseLayer(const nn_layer *layer, const BaseValidator& validatorIn);
 
+    virtual DataConfig GetDataMode() const override;
+
     virtual void UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const override;
 
 private:

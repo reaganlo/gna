@@ -67,8 +67,7 @@ public:
         uint32_t layerCount,
         const RequestConfiguration& requestConfiguration,
         RequestProfiler *profiler,
-        KernelBuffers *buffers,
-        const GnaOperationMode operationMode) override final;
+        KernelBuffers *buffers) override final;
 
 private:
     static void zeroMemory(void *memoryIn, size_t memorySize);

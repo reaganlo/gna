@@ -68,8 +68,7 @@ public:
         uint32_t layerCount,
         RequestConfiguration const &requestConfiguration,
         RequestProfiler *profiler,
-        KernelBuffers *fvBuffers,
-        GnaOperationMode operationMode = xNN) override;
+        KernelBuffers *fvBuffers) override;
 
     void validateConfiguration(const RequestConfiguration& configuration) const;
 

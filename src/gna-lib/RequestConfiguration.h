@@ -46,12 +46,16 @@ struct LayerConfiguration;
 class RequestConfiguration
 {
 public:
-    RequestConfiguration(CompiledModel& model, gna_request_cfg_id configId, DeviceVersion consistentDevice);
+    RequestConfiguration(CompiledModel& model, gna_request_cfg_id configId, DeviceVersion consistentDeviceIn);
 
     void AddBuffer(GnaComponentType type, uint32_t layerIndex, void *address);
     void AddActiveList(uint32_t layerIndex, const ActiveList& activeList);
     void SetHardwareConsistency(DeviceVersion consistentDevice);
     void EnforceAcceleration(AccelerationMode accel);
+
+    bool HasConsistencyMode() const;
+
+    DeviceVersion GetConsistentDevice() const;
 
     CompiledModel& Model;
 
@@ -74,6 +78,8 @@ public:
 private:
     // For enabling _SAT acceleration modes
     bool enableHwConsistency = false;
+
+    DeviceVersion consistentDevice;
 
     void addMemoryObject(void *buffer, uint32_t bufferSize);
 };

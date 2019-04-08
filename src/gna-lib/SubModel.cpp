@@ -27,9 +27,9 @@
 
 using namespace GNA;
 
-SubModel::SubModel(SubmodelType type, uint32_t layerIx) :
+SubModel::SubModel(SubmodelType type, uint32_t layerIndex) :
     Type{type},
-    LayerIndex{layerIx},
+    LayerIndex{layerIndex},
     layerCount{1}
 {};
 

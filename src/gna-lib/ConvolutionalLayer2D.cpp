@@ -56,3 +56,12 @@ ConvolutionalLayer2D::ConvolutionalLayer2D(nn_layer const * const layer, const B
     {this->compute(&layerConfiguration, accel, executionConfig); };
 
 }
+
+DataConfig ConvolutionalLayer2D::GetDataMode() const
+{
+    auto& convolutionTransform = *Transforms.Get<ConvolutionFunction2D>(ConvolutionalTransform2D);
+    auto filterMode = convolutionTransform.Filters->Mode.Value;
+    auto biasMode = convolutionTransform.Biases->Mode.Value;
+    return DataConfig(Input.Mode.Value, filterMode, biasMode, Output.Mode.Value);
+}
+

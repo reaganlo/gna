@@ -85,9 +85,10 @@ uint32_t CompiledModel::CalculateSize() const
 
 void CompiledModel::BuildHardwareModel(DriverInterface &ddi)
 {
-    createSubmodels(hwCapabilities);
+    const auto& deviceSubmodels = getSubmodels(hwCapabilities);
+
     auto hasHardwareCompliantLayer =
-        !(1 == submodels.size() && SubmodelType::Software == submodels.at(0)->Type);
+        !(1 == submodels.size() && SubmodelType::Software == deviceSubmodels.at(0)->Type);
     if(!hasHardwareCompliantLayer)
     {
         Log->Warning("None of model layers is compliant with selected hardware GNA device, "
@@ -142,7 +143,8 @@ status_t CompiledModel::Score(
 
     auto saturationCount = uint32_t{0};
     auto isHardwareEnforced = GNA_HW == config.Acceleration;
-    auto isSoftwareEnforced = config.Acceleration > GNA_AUTO_FAST && config.Acceleration < NUM_GNA_ACCEL_MODES;
+    auto isSoftwareEnforced = !hwCapabilities.IsHardwareSupported() ||
+        (config.Acceleration > GNA_AUTO_FAST && config.Acceleration < NUM_GNA_ACCEL_MODES);
 
     try
     {
@@ -150,7 +152,24 @@ status_t CompiledModel::Score(
         {
             return GNA_CPUTYPENOTSUPPORTED;
         }
-        else if (isSoftwareEnforced)
+
+        if (isHardwareEnforced || config.HasConsistencyMode())
+        {
+            auto hwCaps = hwCapabilities;
+            if (config.HasConsistencyMode()
+                    && hwCaps.GetDeviceVersion() != config.GetConsistentDevice())
+            {
+                hwCaps = HardwareCapabilities(config.GetConsistentDevice());
+            }
+
+            const auto& deviceSubmodels = getSubmodels(hwCaps);
+            if (deviceSubmodels.front()->Type == Software || deviceSubmodels.size() > 1)
+            {
+                return GNA_CPUTYPENOTSUPPORTED;
+            }
+        }
+
+        if (isSoftwareEnforced)
         {
             saturationCount = softwareModel.Score(0, LayerCount, config, profiler, buffers);
         }
@@ -247,8 +266,10 @@ BaseValidator CompiledModel::makeValidator()
 uint32_t CompiledModel::scoreAllSubModels(RequestConfiguration& config,
     RequestProfiler *profiler, KernelBuffers *buffers)
 {
+    const auto& deviceSubmodels = getSubmodels(
+            HardwareCapabilities(config.GetConsistentDevice()));
     auto saturationCount = uint32_t{0};
-    for (const auto& submodel : submodels)
+    for (const auto& submodel : deviceSubmodels)
     {
         uint32_t layerIndex = submodel->LayerIndex;
         uint32_t layerCount = submodel->GetLayerCount();
@@ -258,60 +279,114 @@ uint32_t CompiledModel::scoreAllSubModels(RequestConfiguration& config,
         saturationCount += softwareModel.Score(layerIndex, layerCount, config, profiler, buffers);
         break;
         case Hardware:
-        saturationCount += hardwareModel->Score(layerIndex, layerCount, config, profiler, buffers, xNN);
+        saturationCount += hardwareModel->Score(layerIndex, layerCount, config, profiler, buffers);
         break;
         // TODO: 3: HardwareModel should identify if device is a GMM device
         case GMMHardware:
-        saturationCount += hardwareModel->Score(layerIndex, 1, config, profiler, buffers, GMM);
+        saturationCount += hardwareModel->Score(layerIndex, 1, config, profiler, buffers);
         break;
         }
     }
     return saturationCount;
 }
 
+const std::vector<std::unique_ptr<SubModel>>&
+CompiledModel::getSubmodels(const HardwareCapabilities& hwCaps)
+{
+    if (submodels.find(hwCaps.GetDeviceVersion()) == submodels.end())
+    {
+        createSubmodels(hwCaps);
+    }
+
+    return submodels.at(hwCaps.GetDeviceVersion());
+}
+
+SubmodelType CompiledModel::getSubmodelType(
+        const HardwareCapabilities &hwCaps, const Layer& layer) const
+{
+    auto deviceGeneration = hwCaps.GetDeviceGeneration();
+    auto dataConfig = layer.GetDataMode();
+    auto supportMapIterator = DataConfig::Capabilities.find(dataConfig);
+    if (supportMapIterator == DataConfig::Capabilities.end())
+    {
+        return SubmodelType::Software;
+    }
+
+    const auto& supportMap = supportMapIterator->second;
+    auto supportIterator = supportMap.find(layer.Operation);
+    if (supportIterator == supportMap.end())
+    {
+        return SubmodelType::Software;
+    }
+
+    const auto& hwSupportMap = supportIterator->second.Hw;
+    auto hwSupportIterator = hwSupportMap.find(deviceGeneration);
+    if (hwSupportIterator == hwSupportMap.end())
+    {
+        return SubmodelType::Software;
+    }
+
+    auto isSupportedByHardware = hwSupportIterator->second;
+    if (!isSupportedByHardware)
+    {
+        return SubmodelType::Software;
+    }
+
+    if (hwCaps.IsLayerSupported(layer.Operation))
+    {
+        return SubmodelType::Hardware;
+    }
+
+    if (INTEL_GMM == layer.Operation && hwCaps.HasFeature(LegacyGMM))
+    {
+        return SubmodelType::GMMHardware;
+    }
+
+    return SubmodelType::Software;
+};
+
+
 void CompiledModel::createSubmodels(const HardwareCapabilities& hwCaps)
 {
-    auto getSubmodelType = [&hwCaps](nn_operation operation)
-    {
-        if (hwCaps.IsLayerSupported(operation))
-        {
-            return SubmodelType::Hardware;
-        }
-        if (INTEL_GMM == operation && hwCaps.HasFeature(LegacyGMM))
-        {
-            return SubmodelType::GMMHardware;
-        }
-        return SubmodelType::Software;
-    };
+    auto deviceVersion = hwCaps.GetDeviceVersion();
+    auto& deviceSubmodels = submodels[deviceVersion];
 
+    auto layerIndex = uint32_t { 0 };
     auto &layers = softwareModel.Layers;
-    auto operation = layers.at(0)->Operation;
 
-    auto submodelCount = 0;
-    auto smType = getSubmodelType(operation);
+    auto submodelType = getSubmodelType(hwCaps, *layers.at(layerIndex));
 
-    submodels.emplace_back(std::make_unique<SubModel>(smType, 0));
+    deviceSubmodels.emplace_back(std::make_unique<SubModel>(submodelType, 0));
+    auto currentSubmodel = deviceSubmodels.back().get();
+    layerIndex++;
 
-    for (uint16_t layerIx = 1; layerIx < LayerCount; ++layerIx)
+    for (; layerIndex < LayerCount; ++layerIndex)
     {
-        operation = layers.at(layerIx)->Operation;
-        smType = getSubmodelType(operation);
+        const auto& layer = *layers.at(layerIndex);
+        submodelType = getSubmodelType(hwCaps, layer);
 
-        if (GMMHardware == smType || submodels.at(submodelCount)->Type != smType)
+        auto doSplit = false;
+
+        if (GMMHardware == submodelType
+                || currentSubmodel->Type != submodelType)
         {
-            submodels.emplace_back(std::make_unique<SubModel>(smType, layerIx));
-            submodelCount++;
+            doSplit = true;
+        }
+        else if (Hardware == submodelType
+                && currentSubmodel->GetLayerCount() == hwCaps.GetMaximumLayerCount())
+        {
+            doSplit = true;
+        }
+
+        if (doSplit)
+        {
+            deviceSubmodels.emplace_back(
+                    std::make_unique<SubModel>(submodelType, layerIndex));
+            currentSubmodel = deviceSubmodels.back().get();
         }
         else
         {
-            // exceeded supported number of layers
-            if (Hardware == smType &&
-                submodels.at(submodelCount)->GetLayerCount() == hwCaps.GetMaximumLayerCount())
-            {
-                submodels.emplace_back(std::make_unique<SubModel>(smType, layerIx));
-                submodelCount++;
-            }
-            else submodels[submodelCount]->AddLayer();
+            currentSubmodel->AddLayer();
         }
     }
 }

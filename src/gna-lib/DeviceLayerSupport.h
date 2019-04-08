@@ -82,21 +82,45 @@ struct DataConfig
     }
     ~DataConfig() = default;
 
-    bool operator==(const DataConfig &mode) const
-    {
-        return mode.Input == Input && mode.Weight == Weight &&
-            mode.Bias == Bias && mode.Output == Output;
-    }
-
     bool operator<(const DataConfig &mode) const
     {
-        return mode.Input < Input && mode.Weight < Weight &&
-            mode.Bias < Bias && mode.Output < Output;
+        if (mode.Input != Input)
+        {
+            return mode.Input < Input;
+        }
+
+        if (mode.Weight != Weight)
+        {
+            return mode.Weight < Weight;
+        }
+
+        if (mode.Bias != Bias)
+        {
+            return mode.Bias < Bias;
+        }
+
+        if (mode.Output != Output)
+        {
+            return mode.Output < Output;
+        }
+
+        return false;
     }
 
     const gna_data_mode Input;
-    const gna_data_mode Weight;
-    const gna_data_mode Bias;
+
+    union
+    {
+        const gna_data_mode Covariance;
+        const gna_data_mode Weight;
+    };
+
+    union
+    {
+        const gna_data_mode Const;
+        const gna_data_mode Bias;
+    };
+
     const gna_data_mode Output;
 
     static const std::map<const DataConfig, std::map<const gna_layer_operation, const Support>> Capabilities;

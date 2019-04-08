@@ -57,8 +57,7 @@ uint32_t HardwareModelVerbose::Score(
     uint32_t layerCount,
     const RequestConfiguration& requestConfiguration,
     RequestProfiler *profiler,
-    KernelBuffers *buffers,
-    const GnaOperationMode operationMode)
+    KernelBuffers *buffers)
 {
     for (auto& action : prescoreActionVector)
     {
@@ -66,7 +65,7 @@ uint32_t HardwareModelVerbose::Score(
     }
 
     auto status = HardwareModelScorable::Score(layerIndex, layerCount,
-                        requestConfiguration, profiler, buffers, operationMode);
+                        requestConfiguration, profiler, buffers);
 
     for (auto& action : afterscoreActionVector)
     {

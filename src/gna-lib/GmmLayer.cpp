@@ -140,6 +140,14 @@ void GmmLayer::ValidateActiveList(ActiveList const * const activeList) const
     }
 }
 
+DataConfig GmmLayer::GetDataMode() const
+{
+    auto constMode = GNA_INT32; // GMM_CONSTANTS_SIZE
+    auto covarianceMode = (Config.mode == GNA_MAXMIX8) ? GNA_INT8 : GNA_INT16;
+    // TODO:3: handle all parameters (means)
+    return DataConfig(Input.Mode, covarianceMode, constMode, Output.Mode);
+}
+
 void GmmLayer::checkScoresSaturation(const uint32_t& nGMMs, const uint32_t& nVectors, const uint32_t * pS,
     const uint32_t& maximumScore, uint32_t& nSaturated) const
 {
@@ -158,7 +166,7 @@ void GmmLayer::validate()
 {
     Expect::Equal(Input.Mode.Size, GMM_FV_ELEMENT_SIZE, XNN_ERR_INPUT_BYTES);
     Expect::InRange(Input.at(GNA_DIM_W), GMM_FV_ELEMENT_COUNT_MIN, GMM_FV_ELEMENT_COUNT_MAX, GNA_BADFEATLENGTH);
-    Expect::InSet(Output.Mode, { GNA_INT32 }, XNN_ERR_OUTPUT_BYTES);
+    Expect::Equal(Output.Mode.Value, GNA_INT32, XNN_ERR_OUTPUT_BYTES);
     Expect::InRange(Output.at(GNA_DIM_H), ui32_1, GMM_STATES_COUNT_MAX, XNN_ERR_LYR_CFG);
     Expect::InRange(Config.stateCount, ui32_1, GMM_STATES_COUNT_MAX, GMM_BADNUMGMM);
     Expect::InRange(Config.mixtureComponentCount, ui32_1, GMM_MIXTURE_COMP_COUNT_MAX, GMM_BADMIXCNUM);

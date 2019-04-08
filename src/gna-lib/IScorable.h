@@ -53,8 +53,7 @@ public:
         uint32_t layerCount,
         const RequestConfiguration& requestConfiguration,
         RequestProfiler *profiler,
-        KernelBuffers *buffers,
-        GnaOperationMode operationMode) = 0;
+        KernelBuffers *buffers) = 0;
 };
 
 }

@@ -47,6 +47,18 @@ const ApiSupport API_3_0 =
     {GNA_API_3_0, true},
 };
 
+const HwSupport HW_GMM =
+{
+    {GMM_DEVICE, true},
+    {GNA_0_9, true},
+    {GNA_1_0, true},
+    {GNA_1_0_EMBEDDED, true},
+    {GNA_2_0, true},
+    {GNA_3_0, true},
+    {GNA_3_0_EMBEDDED, true},
+    {GNA_3_1_AUTONOMUS, true},
+};
+
 const HwSupport HW_0_9 =
 {
     {GNA_0_9, true},
@@ -94,6 +106,7 @@ const HwSupport HW_3_0 =
     {GNA_3_1_AUTONOMUS, true},
 };
 
+static const Support FROM_GMM = { API_1_0, HW_GMM};
 static const Support FROM_0_9 = { API_1_0, HW_0_9};
 static const Support FROM_0_9_AUX = FROM_0_9; // Helper for changes of AUX layers
 static const Support FROM_0_9_S_FALSE = { API_1_0, HW_0_9_S_FALSE};
@@ -133,6 +146,16 @@ static const std::map<const gna_layer_operation, const Support> FROM_3_0_AFF_CNN
     {INTEL_CONVOLUTIONAL_2D,    FROM_3_0},
 };
 
+static const std::map<const gna_layer_operation, const Support> FROM_3_0_AFF_CNN_GMM =
+{
+    {INTEL_GMM,                 FROM_GMM},
+    {INTEL_AFFINE,              FROM_3_0},
+    {INTEL_AFFINE_DIAGONAL,     FROM_3_0},
+    {INTEL_AFFINE_MULTIBIAS,    FROM_3_0},
+    {INTEL_CONVOLUTIONAL,       FROM_3_0},
+    {INTEL_CONVOLUTIONAL_2D,    FROM_3_0},
+};
+
 static const std::map<const gna_layer_operation, const Support> FROM_3_0_AFF_RNN_CNN_MB_FALSE =
 {
     {INTEL_AFFINE,              FROM_3_0},
@@ -156,6 +179,13 @@ static const std::map<const gna_layer_operation, const Support> FROM_3_0_CNN =
     {INTEL_CONVOLUTIONAL_2D,    FROM_3_0},
 };
 
+static const std::map<const gna_layer_operation, const Support> FROM_3_0_CNN_MB =
+{
+    {INTEL_AFFINE_MULTIBIAS,       FROM_3_0},
+    {INTEL_CONVOLUTIONAL,       FROM_3_0},
+    {INTEL_CONVOLUTIONAL_2D,    FROM_3_0},
+};
+
 static const std::map<const gna_layer_operation, const Support> FROM_3_0_CNN_AUX =
 {
     {INTEL_CONVOLUTIONAL,       FROM_3_0},
@@ -165,7 +195,17 @@ static const std::map<const gna_layer_operation, const Support> FROM_3_0_CNN_AUX
     {INTEL_INTERLEAVE,          FROM_0_9_AUX},
 };
 
-static const std::map<const gna_layer_operation, const Support> FROM_3_0_INPUT_DIABLED =
+static const std::map<const gna_layer_operation, const Support> FROM_3_0_CNN_MB_AUX =
+{
+    {INTEL_AFFINE_MULTIBIAS,    FROM_3_0},
+    {INTEL_CONVOLUTIONAL,       FROM_3_0},
+    {INTEL_CONVOLUTIONAL_2D,    FROM_3_0},
+    {INTEL_COPY,                FROM_0_9_AUX},
+    {INTEL_DEINTERLEAVE,        FROM_0_9_AUX},
+    {INTEL_INTERLEAVE,          FROM_0_9_AUX},
+};
+
+static const std::map<const gna_layer_operation, const Support> FROM_3_0_INPUT_DISABLED =
 {
     //{INTEL_AFFINE,              FROM_3_0}, // TODO:3:CAPS: Low priority
     {INTEL_AFFINE_DIAGONAL,     FROM_3_0},
@@ -178,7 +218,7 @@ static const std::map<const gna_layer_operation, const Support> FROM_3_0_INPUT_D
     {INTEL_INTERLEAVE,          FROM_3_0},
 };
 
-static const std::map<const gna_layer_operation, const Support> FROM_3_0_INPUT_DIABLED_BIAS_DISABLED =
+static const std::map<const gna_layer_operation, const Support> FROM_3_0_INPUT_DISABLED_BIAS_DISABLED =
 {
     //{INTEL_AFFINE,              FROM_3_0}, // TODO:3:CAPS: Low priority
     //{INTEL_AFFINE_DIAGONAL,     FROM_3_0},  // TODO:3:CAPS: Low priority
@@ -197,8 +237,8 @@ bool Support::IsSupported() const
 }
 
 const std::map<const DataConfig, std::map<const gna_layer_operation, const Support>> DataConfig::Capabilities =
- {
-    // input,       weight,         bias,       output
+{
+    // input, weight/filter/mean, bias/covariance, output
     {{GNA_INT8, GNA_INT8, GNA_INT8, GNA_INT8},
         FROM_3_0_AFF_RNN_CNN
     },
@@ -211,7 +251,6 @@ const std::map<const DataConfig, std::map<const gna_layer_operation, const Suppo
     {{GNA_INT8, GNA_INT8, GNA_INT8, GNA_DATA_ACTIVATION_DISABLED},
         FROM_3_0_AFF_CNN
     },
-
     {{GNA_INT8, GNA_INT8, GNA_INT16, GNA_INT8},
         FROM_3_0_AFF_RNN_CNN
     },
@@ -224,7 +263,6 @@ const std::map<const DataConfig, std::map<const gna_layer_operation, const Suppo
     {{GNA_INT8, GNA_INT8, GNA_INT16, GNA_DATA_ACTIVATION_DISABLED},
         FROM_3_0_AFF_CNN
     },
-
     {{GNA_INT8, GNA_INT8, GNA_INT32, GNA_INT8},
         FROM_3_0_AFF_RNN_CNN
     },
@@ -232,7 +270,7 @@ const std::map<const DataConfig, std::map<const gna_layer_operation, const Suppo
         FROM_3_0_AFF_CNN
     },
     {{GNA_INT8, GNA_INT8, GNA_INT32, GNA_INT32},
-        FROM_3_0_AFF_CNN
+        FROM_3_0_AFF_CNN_GMM
     },
     {{GNA_INT8, GNA_INT8, GNA_INT32, GNA_DATA_ACTIVATION_DISABLED},
         {
@@ -244,7 +282,6 @@ const std::map<const DataConfig, std::map<const gna_layer_operation, const Suppo
             {INTEL_GMM,                 FROM_0_9_S_FALSE},
         }
     },
-
     {{GNA_INT8, GNA_INT8, GNA_DATA_DISABLED, GNA_INT8},
         FROM_3_0_AFF_RNN_CNN_MB_FALSE
     },
@@ -257,8 +294,6 @@ const std::map<const DataConfig, std::map<const gna_layer_operation, const Suppo
     {{GNA_INT8, GNA_INT8, GNA_DATA_DISABLED, GNA_DATA_ACTIVATION_DISABLED},
         FROM_3_0_AFF_CNN_MB_FALSE
     },
-
-
     {{GNA_INT8, GNA_INT16, GNA_INT8, GNA_INT8},
         FROM_3_0_AFF_RNN_CNN
     },
@@ -271,7 +306,6 @@ const std::map<const DataConfig, std::map<const gna_layer_operation, const Suppo
     {{GNA_INT8, GNA_INT16, GNA_INT8, GNA_DATA_ACTIVATION_DISABLED},
         FROM_3_0_AFF_CNN
     },
-
     {{GNA_INT8, GNA_INT16, GNA_INT16, GNA_INT8},
         FROM_3_0_AFF_RNN_CNN
     },
@@ -284,7 +318,6 @@ const std::map<const DataConfig, std::map<const gna_layer_operation, const Suppo
     {{GNA_INT8, GNA_INT16, GNA_INT16, GNA_DATA_ACTIVATION_DISABLED},
         FROM_3_0_AFF_CNN
     },
-
     {{GNA_INT8, GNA_INT16, GNA_INT32, GNA_INT8},
         FROM_3_0_AFF_RNN_CNN
     },
@@ -292,7 +325,7 @@ const std::map<const DataConfig, std::map<const gna_layer_operation, const Suppo
         FROM_3_0_AFF_CNN
     },
     {{GNA_INT8, GNA_INT16, GNA_INT32, GNA_INT32},
-        FROM_3_0_AFF_CNN
+        FROM_3_0_AFF_CNN_GMM
     },
     {{GNA_INT8, GNA_INT16, GNA_INT32, GNA_DATA_ACTIVATION_DISABLED},
         {
@@ -304,7 +337,6 @@ const std::map<const DataConfig, std::map<const gna_layer_operation, const Suppo
             {INTEL_GMM,                 FROM_0_9_S_FALSE},
         }
     },
-
     {{GNA_INT8, GNA_INT16, GNA_DATA_DISABLED, GNA_INT8},
         FROM_3_0_AFF_RNN_CNN_MB_FALSE
     },
@@ -317,60 +349,6 @@ const std::map<const DataConfig, std::map<const gna_layer_operation, const Suppo
     {{GNA_INT8, GNA_INT16, GNA_DATA_DISABLED, GNA_DATA_ACTIVATION_DISABLED},
         FROM_3_0_AFF_CNN_MB_FALSE
     },
-
-    // Weight GNA_DATA_CONSTANT_SCALAR in spreadsheet is differentiated to const 1 and const scalar
-    {{GNA_INT8, GNA_DATA_CONSTANT_SCALAR, GNA_INT8, GNA_INT8},
-        FROM_3_0_AFF_CNN
-    },
-    {{GNA_INT8, GNA_DATA_CONSTANT_SCALAR, GNA_INT8, GNA_INT16},
-       FROM_3_0_AFF_CNN
-    },
-    {{GNA_INT8, GNA_DATA_CONSTANT_SCALAR, GNA_INT8, GNA_INT32},
-        FROM_3_0_AFF_CNN
-    },
-    {{GNA_INT8, GNA_DATA_CONSTANT_SCALAR, GNA_INT8, GNA_DATA_ACTIVATION_DISABLED},
-        FROM_3_0_AFF_CNN
-    },
-
-    {{GNA_INT8, GNA_DATA_CONSTANT_SCALAR, GNA_INT16, GNA_INT8},
-        FROM_3_0_AFF_CNN
-    },
-    {{GNA_INT8, GNA_DATA_CONSTANT_SCALAR, GNA_INT16, GNA_INT16},
-        FROM_3_0_AFF_CNN
-    },
-    {{GNA_INT8, GNA_DATA_CONSTANT_SCALAR, GNA_INT16, GNA_INT32},
-       FROM_3_0_AFF_CNN
-    },
-    {{GNA_INT8, GNA_DATA_CONSTANT_SCALAR, GNA_INT16, GNA_DATA_ACTIVATION_DISABLED},
-        FROM_3_0_AFF_CNN
-    },
-
-    {{GNA_INT8, GNA_DATA_CONSTANT_SCALAR, GNA_INT32, GNA_INT8},
-        FROM_3_0_AFF_CNN
-    },
-    {{GNA_INT8, GNA_DATA_CONSTANT_SCALAR, GNA_INT32, GNA_INT16},
-        FROM_3_0_AFF_CNN
-    },
-    {{GNA_INT8, GNA_DATA_CONSTANT_SCALAR, GNA_INT32, GNA_INT32},
-        FROM_3_0_AFF_CNN
-    },
-    {{GNA_INT8, GNA_DATA_CONSTANT_SCALAR, GNA_INT32, GNA_DATA_ACTIVATION_DISABLED},
-        FROM_3_0_AFF_CNN
-    },
-
-    {{GNA_INT8, GNA_DATA_CONSTANT_SCALAR, GNA_DATA_DISABLED, GNA_INT8},
-        FROM_3_0_AFF_CNN_MB_FALSE
-    },
-    {{GNA_INT8, GNA_DATA_CONSTANT_SCALAR, GNA_DATA_DISABLED, GNA_INT16},
-        FROM_3_0_AFF_RNN_CNN_MB_FALSE
-    },
-    {{GNA_INT8, GNA_DATA_CONSTANT_SCALAR, GNA_DATA_DISABLED, GNA_INT32},
-       FROM_3_0_AFF_CNN_MB_FALSE
-    },
-    {{GNA_INT8, GNA_DATA_CONSTANT_SCALAR, GNA_DATA_DISABLED, GNA_DATA_ACTIVATION_DISABLED},
-        FROM_3_0_AFF_CNN_MB_FALSE
-    },
-
 
     // 2B Input
     {{GNA_INT16, GNA_INT8, GNA_INT8, GNA_INT8},
@@ -385,7 +363,6 @@ const std::map<const DataConfig, std::map<const gna_layer_operation, const Suppo
     {{GNA_INT16, GNA_INT8, GNA_INT8, GNA_DATA_ACTIVATION_DISABLED},
         FROM_3_0_CNN
     },
-
     {{GNA_INT16, GNA_INT8, GNA_INT16, GNA_INT8},
         FROM_3_0_CNN
     },
@@ -398,20 +375,18 @@ const std::map<const DataConfig, std::map<const gna_layer_operation, const Suppo
     {{GNA_INT16, GNA_INT8, GNA_INT16, GNA_DATA_ACTIVATION_DISABLED},
         FROM_3_0_CNN
     },
-
     {{GNA_INT16, GNA_INT8, GNA_INT32, GNA_INT8},
-        FROM_3_0_CNN
+        FROM_3_0_CNN_MB
     },
     {{GNA_INT16, GNA_INT8, GNA_INT32, GNA_INT16},
-        FROM_3_0_CNN_AUX
+        FROM_3_0_CNN_MB_AUX
     },
     {{GNA_INT16, GNA_INT8, GNA_INT32, GNA_INT32},
-        FROM_3_0_CNN
+        FROM_3_0_CNN_MB
     },
     {{GNA_INT16, GNA_INT8, GNA_INT32, GNA_DATA_ACTIVATION_DISABLED},
-        FROM_3_0_CNN
+        FROM_3_0_CNN_MB
     },
-
     {{GNA_INT16, GNA_INT8, GNA_DATA_DISABLED, GNA_INT8},
         FROM_3_0_AFF_CNN_MB_FALSE
     },
@@ -433,19 +408,16 @@ const std::map<const DataConfig, std::map<const gna_layer_operation, const Suppo
     {{GNA_INT16, GNA_INT8, GNA_DATA_DISABLED, GNA_DATA_ACTIVATION_DISABLED},
         FROM_3_0_AFF_CNN_MB_FALSE
     },
-
     {{GNA_INT16, GNA_INT8, GNA_DATA_RICH_FORMAT, GNA_INT8},
         {
             {INTEL_AFFINE,              FROM_3_0},
             {INTEL_AFFINE_DIAGONAL,     FROM_3_0},
-            {INTEL_AFFINE_MULTIBIAS,    FROM_3_0},
         }
     },
     {{GNA_INT16, GNA_INT8, GNA_DATA_RICH_FORMAT, GNA_INT16},
         {
             {INTEL_AFFINE,              FROM_0_9},
             {INTEL_AFFINE_DIAGONAL,     FROM_0_9},
-            {INTEL_AFFINE_MULTIBIAS,    FROM_2_0},
             {INTEL_RECURRENT,           FROM_0_9},
             {INTEL_COPY,                FROM_0_9_AUX},
             {INTEL_DEINTERLEAVE,        FROM_0_9_AUX},
@@ -456,18 +428,14 @@ const std::map<const DataConfig, std::map<const gna_layer_operation, const Suppo
         {
             {INTEL_AFFINE,              FROM_3_0},
             {INTEL_AFFINE_DIAGONAL,     FROM_3_0},
-            {INTEL_AFFINE_MULTIBIAS,    FROM_3_0},
         }
     },
     {{GNA_INT16, GNA_INT8, GNA_DATA_RICH_FORMAT, GNA_DATA_ACTIVATION_DISABLED},
          {
             {INTEL_AFFINE,              FROM_0_9},
             {INTEL_AFFINE_DIAGONAL,     FROM_0_9},
-            {INTEL_AFFINE_MULTIBIAS,    FROM_2_0},
         }
     },
-
-
     {{GNA_INT16, GNA_INT16, GNA_INT8, GNA_INT8},
         FROM_3_0_AFF_CNN
     },
@@ -480,7 +448,6 @@ const std::map<const DataConfig, std::map<const gna_layer_operation, const Suppo
     {{GNA_INT16, GNA_INT16, GNA_INT8, GNA_DATA_ACTIVATION_DISABLED},
         FROM_3_0_AFF_CNN
     },
-
     {{GNA_INT16, GNA_INT16, GNA_INT16, GNA_INT8},
         FROM_3_0_AFF_CNN
     },
@@ -493,7 +460,6 @@ const std::map<const DataConfig, std::map<const gna_layer_operation, const Suppo
     {{GNA_INT16, GNA_INT16, GNA_INT16, GNA_DATA_ACTIVATION_DISABLED},
         FROM_3_0_AFF_CNN
     },
-
     {{GNA_INT16, GNA_INT16, GNA_INT32, GNA_INT8},
         FROM_3_0_AFF_CNN
     },
@@ -522,7 +488,6 @@ const std::map<const DataConfig, std::map<const gna_layer_operation, const Suppo
             {INTEL_CONVOLUTIONAL_2D,    FROM_3_0}
         }
     },
-
     {{GNA_INT16, GNA_INT16, GNA_DATA_DISABLED, GNA_INT8},
          FROM_3_0_AFF_CNN_MB_FALSE
     },
@@ -543,121 +508,5 @@ const std::map<const DataConfig, std::map<const gna_layer_operation, const Suppo
     },
     {{GNA_INT16, GNA_INT16, GNA_DATA_DISABLED, GNA_DATA_ACTIVATION_DISABLED},
         FROM_3_0_AFF_CNN_MB_FALSE
-    },
-
-    // Weight GNA_DATA_CONSTANT_SCALAR in spreadsheet is differentiated to const 1 and const scalar
-    {{GNA_INT16, GNA_DATA_CONSTANT_SCALAR, GNA_INT8, GNA_INT8},
-        FROM_3_0_AFF_CNN
-    },
-    {{GNA_INT16, GNA_DATA_CONSTANT_SCALAR, GNA_INT8, GNA_INT16},
-       FROM_3_0_AFF_RNN_CNN_AUX
-    },
-    {{GNA_INT16, GNA_DATA_CONSTANT_SCALAR, GNA_INT8, GNA_INT32},
-        FROM_3_0_AFF_CNN
-    },
-    {{GNA_INT16, GNA_DATA_CONSTANT_SCALAR, GNA_INT8, GNA_DATA_ACTIVATION_DISABLED},
-        FROM_3_0_AFF_CNN
-    },
-
-    {{GNA_INT16, GNA_DATA_CONSTANT_SCALAR, GNA_INT16, GNA_INT8},
-        FROM_3_0_AFF_CNN
-    },
-    {{GNA_INT16, GNA_DATA_CONSTANT_SCALAR, GNA_INT16, GNA_INT16},
-        FROM_3_0_AFF_RNN_CNN_AUX
-    },
-    {{GNA_INT16, GNA_DATA_CONSTANT_SCALAR, GNA_INT16, GNA_INT32},
-       FROM_3_0_AFF_CNN
-    },
-    {{GNA_INT16, GNA_DATA_CONSTANT_SCALAR, GNA_INT16, GNA_DATA_ACTIVATION_DISABLED},
-        FROM_3_0_AFF_CNN
-    },
-
-    {{GNA_INT16, GNA_DATA_CONSTANT_SCALAR, GNA_INT32, GNA_INT8},
-        FROM_3_0_AFF_CNN
-    },
-    {{GNA_INT16, GNA_DATA_CONSTANT_SCALAR, GNA_INT32, GNA_INT16},
-        FROM_3_0_AFF_RNN_CNN_AUX
-    },
-    {{GNA_INT16, GNA_DATA_CONSTANT_SCALAR, GNA_INT32, GNA_INT32},
-        FROM_3_0_AFF_CNN
-    },
-    {{GNA_INT16, GNA_DATA_CONSTANT_SCALAR, GNA_INT32, GNA_DATA_ACTIVATION_DISABLED},
-        FROM_3_0_AFF_CNN
-    },
-
-    {{GNA_INT16, GNA_DATA_CONSTANT_SCALAR, GNA_DATA_DISABLED, GNA_INT8},
-        FROM_3_0_AFF_CNN_MB_FALSE
-    },
-    {{GNA_INT16, GNA_DATA_CONSTANT_SCALAR, GNA_DATA_DISABLED, GNA_INT16},
-        {
-            {INTEL_AFFINE,              FROM_3_0},
-            {INTEL_AFFINE_DIAGONAL,     FROM_3_0},
-            {INTEL_RECURRENT,           FROM_3_0},    // TODO:3:CAPS: LOW priority in const weight mode
-            {INTEL_CONVOLUTIONAL,       FROM_3_0},
-            {INTEL_CONVOLUTIONAL_2D,    FROM_3_0},
-            {INTEL_COPY,                FROM_0_9_AUX},
-            {INTEL_DEINTERLEAVE,        FROM_0_9_AUX},
-            {INTEL_INTERLEAVE,          FROM_0_9_AUX},
-        }
-    },
-    {{GNA_INT16, GNA_DATA_CONSTANT_SCALAR, GNA_DATA_DISABLED, GNA_INT32},
-        FROM_3_0_AFF_CNN_MB_FALSE
-    },
-    {{GNA_INT16, GNA_DATA_CONSTANT_SCALAR, GNA_DATA_DISABLED, GNA_DATA_ACTIVATION_DISABLED},
-        FROM_3_0_AFF_CNN_MB_FALSE
-    },
-
-
-    // disabled input
-    {{GNA_DATA_DISABLED, GNA_DATA_DISABLED, GNA_INT8, GNA_INT8},
-        FROM_3_0_INPUT_DIABLED
-    },
-    {{GNA_DATA_DISABLED, GNA_DATA_DISABLED, GNA_INT8, GNA_INT16},
-       FROM_3_0_INPUT_DIABLED
-    },
-    {{GNA_DATA_DISABLED, GNA_DATA_DISABLED, GNA_INT8, GNA_INT32},
-        FROM_3_0_INPUT_DIABLED
-    },
-    {{GNA_DATA_DISABLED, GNA_DATA_DISABLED, GNA_INT8, GNA_DATA_ACTIVATION_DISABLED},
-        FROM_3_0_INPUT_DIABLED
-    },
-
-    {{GNA_DATA_DISABLED, GNA_DATA_DISABLED, GNA_INT16, GNA_INT8},
-        FROM_3_0_INPUT_DIABLED
-    },
-    {{GNA_DATA_DISABLED, GNA_DATA_DISABLED, GNA_INT16, GNA_INT16},
-        FROM_3_0_INPUT_DIABLED
-    },
-    {{GNA_DATA_DISABLED, GNA_DATA_DISABLED, GNA_INT16, GNA_INT32},
-       FROM_3_0_INPUT_DIABLED
-    },
-    {{GNA_DATA_DISABLED, GNA_DATA_DISABLED, GNA_INT16, GNA_DATA_ACTIVATION_DISABLED},
-        FROM_3_0_INPUT_DIABLED
-    },
-
-    {{GNA_DATA_DISABLED, GNA_DATA_DISABLED, GNA_INT32, GNA_INT8},
-        FROM_3_0_INPUT_DIABLED
-    },
-    {{GNA_DATA_DISABLED, GNA_DATA_DISABLED, GNA_INT32, GNA_INT16},
-        FROM_3_0_INPUT_DIABLED
-    },
-    {{GNA_DATA_DISABLED, GNA_DATA_DISABLED, GNA_INT32, GNA_INT32},
-        FROM_3_0_INPUT_DIABLED
-    },
-    {{GNA_DATA_DISABLED, GNA_DATA_DISABLED, GNA_INT32, GNA_DATA_ACTIVATION_DISABLED},
-        FROM_3_0_INPUT_DIABLED
-    },
-
-    {{GNA_DATA_DISABLED, GNA_DATA_DISABLED, GNA_DATA_DISABLED, GNA_INT8},
-        FROM_3_0_INPUT_DIABLED_BIAS_DISABLED
-    },
-    {{GNA_DATA_DISABLED, GNA_DATA_DISABLED, GNA_DATA_DISABLED, GNA_INT16},
-        FROM_3_0_INPUT_DIABLED_BIAS_DISABLED
-    },
-    {{GNA_DATA_DISABLED, GNA_DATA_DISABLED, GNA_DATA_DISABLED, GNA_INT32},
-        FROM_3_0_INPUT_DIABLED_BIAS_DISABLED
-    },
-    {{GNA_DATA_DISABLED, GNA_DATA_DISABLED, GNA_DATA_DISABLED, GNA_DATA_ACTIVATION_DISABLED},
-        FROM_3_0_INPUT_DIABLED_BIAS_DISABLED
     },
  };

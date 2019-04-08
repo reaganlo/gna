@@ -59,6 +59,8 @@ public:
     virtual void UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const override;
     void ValidateActiveList(ActiveList const * const activeList) const;
 
+    virtual DataConfig GetDataMode() const override;
+
 private:
     virtual void computeHidden(AccelerationMode accel, ExecutionConfig const & executionConfig) const;
     virtual void compute(const LayerConfiguration& layerConfiguration, AccelerationMode accel, ExecutionConfig const & executionConfig) const;

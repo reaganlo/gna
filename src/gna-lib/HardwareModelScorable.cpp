@@ -80,10 +80,24 @@ uint32_t HardwareModelScorable::Score(
     uint32_t layerCount,
     const RequestConfiguration& requestConfiguration,
     RequestProfiler *profiler,
-    KernelBuffers *buffers,
-    const GnaOperationMode operationMode)
+    KernelBuffers *buffers)
 {
     UNREFERENCED_PARAMETER(buffers);
+
+    if (layerIndex + layerCount > hardwareLayers.size())
+    {
+        throw GnaException(GNA_UNKNOWN_ERROR);
+    }
+
+    auto operationMode = xNN;
+
+    const auto& layer = *softwareLayers.at(layerIndex);
+    if (layer.Operation == INTEL_GMM && layerCount == 1
+            && !hwCapabilities.IsLayerSupported(layer.Operation)
+            && hwCapabilities.HasFeature(LegacyGMM))
+    {
+        operationMode = GMM;
+    }
 
     SoftwareModel::LogAcceleration(operationMode ? GNA_HW : GMM_HW);
 
