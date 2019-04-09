@@ -32,19 +32,26 @@ if(${GNA_BUILD_WITH_GTEST_ENABLED})
     if(NOT GIT_FOUND)
       message(FATAL_ERROR "ERROR: Git package have not been found")
     endif()
+    message("Executing '${GIT_EXECUTABLE} submodule update --init --recursive' command")
     execute_process(
       COMMAND ${GIT_EXECUTABLE} submodule update --init --recursive
       WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-	  ERROR_VARIABLE GNA_GIT_SUBMODULE_UPDATE_ERROR_VARIABLE
+      OUTPUT_VARIABLE GNA_GIT_SUBMODULE_UPDATE_OUTPUT_VARIABLE
+      ERROR_VARIABLE GNA_GIT_SUBMODULE_UPDATE_ERROR_VARIABLE
       RESULT_VARIABLE GNA_GIT_SUBMODULE_UPDATE_RESULT_VARIABLE)
-	if(NOT GNA_GIT_SUBMODULE_UPDATE_RESULT_VARIABLE EQUAL "0" OR
-      GNA_GIT_SUBMODULE_UPDATE_ERROR_VARIABLE OR
-      NOT EXISTS "${BUILD_DIR}/googletest/CMakeLists.txt")
-      message("ERROR: While executing '${GIT_EXECUTABLE} submodule update --init --recursive' command")
-      message("error message: ${GNA_GIT_SUBMODULE_UPDATE_ERROR_VARIABLE}")
-      message("command result: [ ${GNA_GIT_SUBMODULE_UPDATE_RESULT_VARIABLE} ]")
-      message(FATAL_ERROR "ERROR: googletest submodule not initialized properly")
-	endif()
+    if(GNA_GIT_SUBMODULE_UPDATE_OUTPUT_VARIABLE)
+      message("git's stdout message: [ ${GNA_GIT_SUBMODULE_UPDATE_OUTPUT_VARIABLE} ]")
+    endif()
+    if(GNA_GIT_SUBMODULE_UPDATE_ERROR_VARIABLE)
+      message("git's stderr message: [ ${GNA_GIT_SUBMODULE_UPDATE_ERROR_VARIABLE} ]")
+    endif()
+    if(NOT GNA_GIT_SUBMODULE_UPDATE_RESULT_VARIABLE EQUAL "0")
+      message("WARNING: git's result: [ ${GNA_GIT_SUBMODULE_UPDATE_RESULT_VARIABLE} ]")
+    endif()
+    if(NOT EXISTS "${BUILD_DIR}/googletest/CMakeLists.txt")
+      message("ERROR: File <${BUILD_DIR}/googletest/CMakeLists.txt> not found")
+      message(FATAL_ERROR "ERROR: googletest submodule was not initialized properly")
+    endif()
   endif()
 
   add_subdirectory("${BUILD_DIR}/googletest" "out_binary_googletest")
