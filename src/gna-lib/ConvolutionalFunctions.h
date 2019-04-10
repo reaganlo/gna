@@ -28,7 +28,7 @@
 #include <memory>
 
 #include "Bias.h"
-#include "XnnKernelApi.h"
+#include "XnnKernel.h"
 #include "Weight.h"
 
 namespace GNA

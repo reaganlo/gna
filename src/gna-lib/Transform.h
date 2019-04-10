@@ -31,7 +31,7 @@
 #include "Bias.h"
 #include "ConvolutionalFunctions.h"
 #include "LayerConfiguration.h"
-#include "XnnKernelApi.h"
+#include "XnnKernel.h"
 #include "Weight.h"
 
 namespace GNA

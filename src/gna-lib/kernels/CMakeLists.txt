@@ -71,7 +71,7 @@ set(xnn_kernel_headers
   pwl.h)
 
 set(xnn_kernel_api
-  ${KERNEL_DIR}/XnnKernelApi.h
+  ${KERNEL_DIR}/XnnKernel.h
   ${KERNEL_DIR}/KernelArguments.h)
 
 set(xnn_generic_sources
@@ -306,7 +306,7 @@ set(kernel_libraries
 
 set(kernel_api_headers
   ${KERNEL_DIR}/gmm.h
-  ${KERNEL_DIR}/XnnKernelApi.h
+  ${KERNEL_DIR}/XnnKernel.h
   PARENT_SCOPE)
 
 set_target_properties(xnn_kernel_generic xnn_kernel_generic_sat

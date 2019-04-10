@@ -35,10 +35,11 @@
 
 #include "pwl.h"
 
-#include "GnaException.h"
 #include "KernelArguments.h"
 #include "KernelMacros.h"
 #include "Macros.h"
+
+#include <stdexcept>
 
 using namespace GNA;
 
@@ -749,7 +750,7 @@ void PwlCached::allocateBinaryCaches()
     pwl.data = _gna_malloc(totalSize);
     if (nullptr == pwl.data)
     {
-        throw GnaException(GNA_ERR_RESOURCES);
+        throw std::runtime_error("PwlCached::allocateBinaryCaches() failed.");
     }
     memset(pwl.data, 0, totalSize);
     pwl.Binary.ySeg = (pwl_y_t*)((pwl_x_t*)pwl.data + pwl.segmentCount);
@@ -760,7 +761,7 @@ void PwlCached::allocateLookupCaches()
     pwl.data = _gna_malloc(PWL_LOOKUP_SIZE);
     if (nullptr == pwl.data)
     {
-        throw GnaException(GNA_ERR_RESOURCES);
+        throw std::runtime_error("PwlCached::allocateLookupCaches() failed.");
     }
     memset(pwl.data, 0xff, PWL_LOOKUP_SIZE);
 }

@@ -29,7 +29,7 @@
 
 #include "Bias.h"
 #include "ConvolutionalFunctions.h"
-#include "XnnKernelApi.h"
+#include "XnnKernel.h"
 #include "Transform.h"
 #include "Weight.h"
 #include "Capabilities.h"

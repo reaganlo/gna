@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2018 Intel Corporation.
+ Copyright 2019 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -36,7 +36,7 @@ using namespace GNA;
 
 static intel_gna_status_t HandleUnknownException(const std::exception& e)
 {
-    Log->Error("Unknown exception: ", e.what());
+    Log->Error("Unknown exception: %s.", e.what());
     return GNA_UNKNOWN_ERROR;
 }
 
@@ -174,8 +174,8 @@ GNAAPI intel_gna_status_t GnaRequestConfigEnableHardwareConsistency(
     }
     catch (const std::exception& e)
     {
-        Log->Error("Unknown exception: ", e.what());
-        return GNA_UNKNOWN_ERROR;
+        return HandleUnknownException(e);
+
     }
 }
 
@@ -195,8 +195,7 @@ GNAAPI intel_gna_status_t GnaRequestConfigEnforceAcceleration(
     }
     catch (const std::exception& e)
     {
-        Log->Error("Unknown exception: ", e.what());
-        return GNA_UNKNOWN_ERROR;
+        return HandleUnknownException(e);
     }
 }
 
@@ -214,8 +213,7 @@ GNAAPI intel_gna_status_t GnaRequestConfigRelease(gna_request_cfg_id configId)
     }
     catch (const std::exception& e)
     {
-        Log->Error("Unknown exception: ", e.what());
-        return GNA_UNKNOWN_ERROR;
+        return HandleUnknownException(e);
     }
 }
 

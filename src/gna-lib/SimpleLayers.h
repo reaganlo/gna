@@ -26,7 +26,7 @@
 #pragma once
 
 #include "Layer.h"
-#include "XnnKernelApi.h"
+#include "XnnKernel.h"
 
 namespace GNA
 {

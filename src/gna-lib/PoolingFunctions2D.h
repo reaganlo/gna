@@ -29,7 +29,7 @@
 
 #include "Capabilities.h"
 #include "Tensor.h"
-#include "XnnKernelApi.h"
+#include "XnnKernel.h"
 #include "Transform.h"
 
 namespace GNA

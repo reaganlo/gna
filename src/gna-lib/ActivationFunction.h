@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2018 Intel Corporation.
+ Copyright 2019 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -68,6 +68,8 @@ public:
 
 protected:
     static nn_func_pwl const * getPwl(void const *layerDetails, nn_operation operation);
+    static PwlCached createPwlCached(const gna_data_mode mode,
+        nn_pwl_seg const * const segmentsIn, uint32_t segmentCountIn);
 
     static const FullCapabilitiesMap capabilities;
     static const FullCapabilitiesMap outputCapabilities;

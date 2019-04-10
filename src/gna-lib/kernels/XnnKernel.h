@@ -54,7 +54,7 @@ typedef void (*ConvolutionKernel2D)(ExecutionKernelConfig<ConvolutionConfig2D> c
 
 typedef void (*PoolingKernel2D)(ExecutionKernelConfig<PoolingConfig2D> const * const config);
 
-typedef void (*ConvolutionPoolingKernel)(ConvolutionConfig const * const filterConfig, 
+typedef void (*ConvolutionPoolingKernel)(ConvolutionConfig const * const filterConfig,
     PoolingConfig const * const poolConfig, PwlCached const * const pwl);
 
 typedef void (*TransposeKernel)(TransposeConfig const * const config);

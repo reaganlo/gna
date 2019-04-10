@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2018 Intel Corporation.
+ Copyright 2019 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -256,11 +256,24 @@ nn_func_pwl const * ActivationFunction::getPwl(void const *layerDetails, nn_oper
     }
 }
 
+PwlCached ActivationFunction::createPwlCached(const gna_data_mode mode,
+    nn_pwl_seg const * const segmentsIn, uint32_t segmentCountIn)
+{
+    try
+    {
+        return PwlCached(mode, segmentsIn, segmentCountIn);
+    }
+    catch (const std::runtime_error&)
+    {
+        throw GnaException(GNA_ERR_RESOURCES);
+    }
+}
+
 ActivationFunction::ActivationFunction(const BaseTransformConfig<ActivationKernel>& config,
     DataMode mode, std::unique_ptr<Tensor> pwl) :
     Transform{ActivationTransform, &config.kernels, config.input},
     Segments{ std::move(pwl) },
-    Pwl{ Segments->Mode, Segments->Buffer, Segments->Count }
+    Pwl{ createPwlCached(Segments->Mode, Segments->Buffer, Segments->Count) }
 {
     const auto validator = Validator{config.validator, outputCapabilities};
     Output = std::make_unique<Tensor>(config.input->Dimensions, mode, config.outputBuffer,

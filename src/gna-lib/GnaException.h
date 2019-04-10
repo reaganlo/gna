@@ -25,9 +25,11 @@
 
 #pragma once
 
-#include <stdexcept>
-
 #include "Logger.h"
+
+#include "gna2-common-impl.h"
+
+#include <stdexcept>
 
 namespace GNA
 {
@@ -39,15 +41,26 @@ class GnaException : public std::runtime_error
 {
 public:
 
-    explicit GnaException(status_t status) :
-        std::runtime_error{ Logger::StatusToString(status) },
-        Status{ status }
+    template<typename StatusType = status_t>
+    explicit GnaException(StatusType status) :
+        std::runtime_error{ Logger::StatusToString(CAST1_STATUS status) },
+        Status{ CAST1_STATUS status }
     {}
 
     inline status_t getStatus() const
     {
         Log->Error(Status);
         return Status;
+    }
+
+    inline ApiStatus GetStatus() const
+    {
+        return (ApiStatus)Status;
+    }
+
+    inline void Print() const
+    {
+        Log->Error(Status, " GnaException");
     }
 
     virtual ~GnaException() {};
@@ -72,6 +85,11 @@ public:
     {
         Log->Error(Status, " Tensor build failed on dimension: %u", Dimension); // TODO:3: tensor dims names
         return Status;
+    }
+
+    inline void Print() const
+    {
+        Log->Error(Status, " GnaTensorException: Tensor build failed on dimension: %u", Dimension); // TODO:3: tensor dims names
     }
 
     virtual ~GnaTensorException() {};
@@ -102,6 +120,11 @@ public:
     {
         Log->Error(Status, " Model build failed on layer: %d", LayerId);
         return Status;
+    }
+
+    inline void Print() const
+    {
+        Log->Error(Status, " GnaModelException: Model build failed on layer: %d", LayerId);
     }
 
     virtual ~GnaModelException() {};

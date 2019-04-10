@@ -151,6 +151,7 @@ set(gna_lib_headers
   ${SRC_DIR}/Address.h
   ${SRC_DIR}/AffineFunctions.h
   ${SRC_DIR}/ApiProperty.h
+  ${SRC_DIR}/ApiWrapper.h
   ${SRC_DIR}/Capabilities.h
   ${SRC_DIR}/common.h
   ${SRC_DIR}/CompiledModel.h

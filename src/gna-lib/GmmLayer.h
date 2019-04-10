@@ -27,7 +27,7 @@
 
 #include "ActiveList.h"
 #include "Layer.h"
-#include "XnnKernelApi.h"
+#include "XnnKernel.h"
 
 
 namespace GNA

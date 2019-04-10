@@ -38,6 +38,7 @@
 #define __GNA2_COMMON_API_H
 
 #include <stdint.h>
+#include <stdbool.h>
 
 /**
  C-linkage macro.
@@ -337,7 +338,22 @@ enum Gna2Status
     Gna2StatusAccelerationModeNotSupported = -28,
 };
 
- /**
+/**
+ Verifies if status of the operation indicates it was successful.
+
+ @param status The status code returned from API function.
+ @return Successful status indicator.
+    @retval true The status indicates success or warning.
+    @retval false The status indicates some error.
+ */
+GNA2_API inline bool Gna2StatusIsSuccessful(enum Gna2Status status)
+{
+    return (Gna2StatusSuccess == status
+        || Gna2StatusWarningArithmeticSaturation == status
+        || Gna2StatusWarningDeviceBusy == status);
+}
+
+/**
  Gets message with detailed description of given status.
 
  @note

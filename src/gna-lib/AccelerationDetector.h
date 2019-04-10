@@ -38,7 +38,7 @@
 #include <string>
 
 #include "gmm.h"
-#include "XnnKernelApi.h"
+#include "XnnKernel.h"
 
 namespace GNA
 {

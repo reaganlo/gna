@@ -24,7 +24,7 @@
 */
 
 #include "common.h"
-#include "XnnKernelApi.h"
+#include "XnnKernel.h"
 
 #include <string.h>
 

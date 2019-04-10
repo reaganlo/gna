@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2018 Intel Corporation.
+ Copyright 2019 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -26,28 +26,14 @@
 #ifndef __GNA2_COMMON_IMPL_H
 #define __GNA2_COMMON_IMPL_H
 
-#include "gna2-common-api.h"
+#include <gna2-common-api.h>
 
-#include <Logger.h>
-
-#if !defined(_WIN32)
-#include <assert.h>
-#endif
-#include <stdexcept>
 #include <stdint.h>
-
-/**
- Verifies data sizes used in the API and GNA hardware
-
- @note If data sizes in an application using API differ from data sizes
-       in the API library implementation, scoring will not work properly.
- */
-static_assert(1 == sizeof(int8_t), "Invalid size of int8_t");
-static_assert(2 == sizeof(int16_t), "Invalid size of int16_t");
-static_assert(4 == sizeof(int32_t), "Invalid size of int32_t");
-static_assert(1 == sizeof(uint8_t), "Invalid size of uint8_t");
-static_assert(2 == sizeof(uint16_t), "Invalid size of uint16_t");
-static_assert(4 == sizeof(uint32_t), "Invalid size of uint32_t");
+#if defined(__GNUC__)
+#define UNREFERENCED_PARAMETER(P) ((void)(P))
+#else
+#include <windows.h>
+#endif
 
 namespace GNA
 {
@@ -58,14 +44,20 @@ DeviceVersion const DefaultDeviceVersion = GNA2_DEFAULT_DEVICE_VERSION;
 
 typedef enum Gna2Status ApiStatus;
 
+constexpr uint32_t const Gna2DisabledU32 = (uint32_t)GNA2_DISABLED;
+
+constexpr int32_t const Gna2DisabledI32 = (int32_t)GNA2_DISABLED;
+
+constexpr uint32_t const Gna2DefaultU32 = (uint32_t)GNA2_DEFAULT;
+
+constexpr int32_t const Gna2DefaultI32 = (int32_t)GNA2_DEFAULT;
+
+constexpr uint32_t const Gna2NotSupportedU32 = (uint32_t)GNA2_NOT_SUPPORTED;
+
+constexpr int32_t const Gna2NotSupportedI32 = (int32_t)GNA2_NOT_SUPPORTED;
+
 // temporary cast for simultaneous 2 apis usage
 #define CAST2_STATUS (ApiStatus)
-
-inline ApiStatus HandleUnknownException2(const std::exception& e)
-{
-    Log->Error("Unknown error: ", e.what());
-    return Gna2StatusUnknownError;
-}
 
 }
 

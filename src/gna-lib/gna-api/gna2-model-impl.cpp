@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2018 Intel Corporation.
+ Copyright 2019 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -26,8 +26,10 @@
 #include "gna2-model-impl.h"
 #include "gna2-common-impl.h"
 
+#include "ApiWrapper.h"
 #include "Device.h"
 #include "DeviceManager.h"
+#include "GnaException.h"
 #include "gna2-common-impl.h"
 
 #include "gna2-model-api.h"
@@ -42,53 +44,41 @@ GNA2_API enum Gna2Status Gna2ModelCreate(
     struct Gna2Model const * model,
     uint32_t * modelId)
 {
-    try
+    UNREFERENCED_PARAMETER(model);
+    UNREFERENCED_PARAMETER(modelId);
+    UNREFERENCED_PARAMETER(deviceIndex);
+
+    const std::function<ApiStatus()> command = [&]()
     {
         auto& device = DeviceManager::Get().GetDevice(deviceIndex);
         //device.LoadModel(modelId, model);
-        UNREFERENCED_PARAMETER(model);
-        UNREFERENCED_PARAMETER(modelId);
         UNREFERENCED_PARAMETER(device);
         return Gna2StatusSuccess;
-    }
-    catch (const GnaModelException &e)
-    {
-        return CAST2_STATUS e.getStatus();
-    }
-    catch (const GnaException &e)
-    {
-        return CAST2_STATUS e.getStatus();
-    }
-    catch (const std::exception& e)
-    {
-        return HandleUnknownException2(e);
-    }
+    };
+    return ApiWrapper::ExecuteSafely(command);
 }
 
 GNA2_API enum Gna2Status Gna2ModelRelease(
     uint32_t modelId)
 {
-    try
+    const std::function<ApiStatus()> command = [&]()
     {
         auto& device = DeviceManager::Get().GetDevice(0);
         device.ReleaseModel(modelId);
         return Gna2StatusSuccess;
-    }
-    catch (const GnaException &e)
-    {
-        return CAST2_STATUS e.getStatus();
-    }
-    catch (const std::exception& e)
-    {
-        return HandleUnknownException2(e);
-    }
+    };
+    return ApiWrapper::ExecuteSafely(command);
 }
 
 GNA2_API enum Gna2Status Gna2ModelGetLastError(struct Gna2ModelError * error)
 {
     UNREFERENCED_PARAMETER(error);
     // TODO:3:API: implement P2
-    return Gna2StatusNotImplemented;
+    const std::function<ApiStatus()> command = [&]()
+    {
+        return Gna2StatusNotImplemented;
+    };
+    return ApiWrapper::ExecuteSafely(command);
 }
 
 GNA2_API enum Gna2Status Gna2ModelGetLastErrorMessage(char * messageBuffer,
@@ -98,7 +88,11 @@ GNA2_API enum Gna2Status Gna2ModelGetLastErrorMessage(char * messageBuffer,
     UNREFERENCED_PARAMETER(messageBufferSize);
 
     // TODO:3:API: implement P2
-    return Gna2StatusNotImplemented;
+    const std::function<ApiStatus()> command = [&]()
+    {
+        return Gna2StatusNotImplemented;
+    };
+    return ApiWrapper::ExecuteSafely(command);
 }
 
 GNA2_API enum Gna2Status Gna2ModelOperationInit(
@@ -110,43 +104,64 @@ GNA2_API enum Gna2Status Gna2ModelOperationInit(
     UNREFERENCED_PARAMETER(type);
     UNREFERENCED_PARAMETER(userAllocator);
     // TODO:3:API: implement P1
-    return Gna2StatusNotImplemented;
+     const std::function<ApiStatus()> command = [&]()
+    {
+        return Gna2StatusNotImplemented;
+    };
+    return ApiWrapper::ExecuteSafely(command);
 }
 
 GNA2_API uint32_t Gna2DataTypeGetSize(enum Gna2DataType type)
 {
-    UNREFERENCED_PARAMETER(type);
-
-    // TODO:3:API: implement P1
-    return (uint32_t)GNA2_NOT_SUPPORTED;
+    const std::function<uint32_t()> command = [&]()
+    {
+        auto dataSize = DataMode::ToSize<uint32_t>(type);
+        return dataSize;
+    };
+    return ApiWrapper::ExecuteSafely(command, Gna2DefaultU32);
 }
 
 GNA2_API uint32_t Gna2ShapeGetNumberOfElements(struct Gna2Shape const * shape)
 {
-    UNREFERENCED_PARAMETER(shape);
-
     // TODO:3:API: implement P1
-    return (uint32_t)GNA2_NOT_SUPPORTED;
+    const std::function<uint32_t()> command = [&]()
+    {
+        UNREFERENCED_PARAMETER(shape);
+        return Gna2DefaultU32;
+    };
+    return ApiWrapper::ExecuteSafely(command, Gna2NotSupportedU32);
 }
 
 GNA2_API uint32_t Gna2TensorGetSize(struct Gna2Tensor const * tensor)
 {
-    UNREFERENCED_PARAMETER(tensor);
-    // TODO:3:API: implement P1
-    return (uint32_t)GNA2_NOT_SUPPORTED;
+    const std::function<uint32_t()> command = [&]()
+    {
+         // TODO:3:API: implement P1
+        UNREFERENCED_PARAMETER(tensor);
+        return Gna2DefaultU32;
+    };
+    return ApiWrapper::ExecuteSafely(command, Gna2NotSupportedU32);
 }
 
 GNA2_API struct Gna2Shape Gna2ShapeInitScalar()
 {
-    // TODO:3:API: implement P2
-    return Gna2Shape{};
+    const std::function<ApiShape()> command = [&]()
+    {
+        // TODO:3:API: implement P2
+        return ApiShape{};
+    };
+    return ApiWrapper::ExecuteSafely(command, Gna2Shape{});
 }
 
 GNA2_API struct Gna2Shape Gna2ShapeInit1D(uint32_t x)
 {
     UNREFERENCED_PARAMETER(x);
     // TODO:3:API: implement P2
-    return Gna2Shape{};
+    const std::function<ApiShape()> command = [&]()
+    {
+        return ApiShape{};
+    };
+    return ApiWrapper::ExecuteSafely(command, ApiShape{});
 }
 
 GNA2_API struct Gna2Shape Gna2ShapeInit2D(uint32_t x, uint32_t y)
@@ -154,7 +169,11 @@ GNA2_API struct Gna2Shape Gna2ShapeInit2D(uint32_t x, uint32_t y)
     UNREFERENCED_PARAMETER(x);
     UNREFERENCED_PARAMETER(y);
     // TODO:3:API: implement P2
-    return Gna2Shape{};
+    const std::function<ApiShape()> command = [&]()
+    {
+        return ApiShape{};
+    };
+    return ApiWrapper::ExecuteSafely(command, ApiShape{});
 }
 
 GNA2_API struct Gna2Shape Gna2ShapeInit3D(uint32_t x, uint32_t y, uint32_t z)
@@ -163,7 +182,11 @@ GNA2_API struct Gna2Shape Gna2ShapeInit3D(uint32_t x, uint32_t y, uint32_t z)
     UNREFERENCED_PARAMETER(z);
     UNREFERENCED_PARAMETER(y);
     // TODO:3:API: implement P2
-    return Gna2Shape{};
+    const std::function<ApiShape()> command = [&]()
+    {
+        return ApiShape{};
+    };
+    return ApiWrapper::ExecuteSafely(command, ApiShape{});
 }
 
 GNA2_API struct Gna2Shape Gna2ShapeInit4D(uint32_t n, uint32_t x, uint32_t y,
@@ -174,7 +197,11 @@ GNA2_API struct Gna2Shape Gna2ShapeInit4D(uint32_t n, uint32_t x, uint32_t y,
     UNREFERENCED_PARAMETER(y);
     UNREFERENCED_PARAMETER(z);
     // TODO:3:API: implement P2
-    return Gna2Shape{};
+    const std::function<ApiShape()> command = [&]()
+    {
+        return ApiShape{};
+    };
+    return ApiWrapper::ExecuteSafely(command, ApiShape{});
 }
 
 GNA2_API struct Gna2Tensor Gna2TensorInit1D(uint32_t x, enum Gna2DataType type,
@@ -184,7 +211,11 @@ GNA2_API struct Gna2Tensor Gna2TensorInit1D(uint32_t x, enum Gna2DataType type,
     UNREFERENCED_PARAMETER(type);
     UNREFERENCED_PARAMETER(data);
     // TODO:3:API: implement P2
-    return  Gna2Tensor{};
+    const std::function<ApiTensor()> command = [&]()
+    {
+        return ApiTensor{};
+    };
+    return ApiWrapper::ExecuteSafely(command, ApiTensor{});
 }
 
 GNA2_API struct Gna2Tensor Gna2TensorInit2D(uint32_t x, uint32_t y,
@@ -195,7 +226,11 @@ GNA2_API struct Gna2Tensor Gna2TensorInit2D(uint32_t x, uint32_t y,
     UNREFERENCED_PARAMETER(type);
     UNREFERENCED_PARAMETER(data);
     // TODO:3:API: implement P2
-    return  Gna2Tensor{};
+    const std::function<ApiTensor()> command = [&]()
+    {
+        return ApiTensor{};
+    };
+    return ApiWrapper::ExecuteSafely(command, ApiTensor{});
 }
 
 GNA2_API struct Gna2Tensor Gna2TensorInit3D(uint32_t x, uint32_t y, uint32_t z,
@@ -207,7 +242,11 @@ GNA2_API struct Gna2Tensor Gna2TensorInit3D(uint32_t x, uint32_t y, uint32_t z,
     UNREFERENCED_PARAMETER(type);
     UNREFERENCED_PARAMETER(data);
     // TODO:3:API: implement P2
-    return  Gna2Tensor{};
+    const std::function<ApiTensor()> command = [&]()
+    {
+        return ApiTensor{};
+    };
+    return ApiWrapper::ExecuteSafely(command, ApiTensor{});
 }
 
 GNA2_API struct Gna2Tensor Gna2TensorInit4D(uint32_t n, uint32_t x, uint32_t y,
@@ -220,13 +259,21 @@ GNA2_API struct Gna2Tensor Gna2TensorInit4D(uint32_t n, uint32_t x, uint32_t y,
     UNREFERENCED_PARAMETER(type);
     UNREFERENCED_PARAMETER(data);
     // TODO:3:API: implement P2
-    return  Gna2Tensor{};
+    const std::function<ApiTensor()> command = [&]()
+    {
+        return ApiTensor{};
+    };
+    return ApiWrapper::ExecuteSafely(command, ApiTensor{});
 }
 
 GNA2_API struct Gna2Tensor Gna2TensorInitDisabled()
 {
     // TODO:3:API: implement P2
-    return Gna2Tensor{};
+    const std::function<ApiTensor()> command = [&]()
+    {
+        return ApiTensor{};
+    };
+    return ApiWrapper::ExecuteSafely(command, ApiTensor{});
 }
 
 GNA2_API struct Gna2Tensor Gna2TensorInitScalar(enum Gna2DataType type, void * data)
@@ -234,7 +281,11 @@ GNA2_API struct Gna2Tensor Gna2TensorInitScalar(enum Gna2DataType type, void * d
     UNREFERENCED_PARAMETER(type);
     UNREFERENCED_PARAMETER(data);
     // TODO:3:API: implement P2
-    return Gna2Tensor{};
+    const std::function<ApiTensor()> command = [&]()
+    {
+        return ApiTensor{};
+    };
+    return ApiWrapper::ExecuteSafely(command, ApiTensor{});
 }
 
 GNA2_API struct Gna2Tensor Gna2TensorInitActivation(uint32_t numberOfSegments,
@@ -243,7 +294,11 @@ GNA2_API struct Gna2Tensor Gna2TensorInitActivation(uint32_t numberOfSegments,
     UNREFERENCED_PARAMETER(numberOfSegments);
     UNREFERENCED_PARAMETER(segments);
     // TODO:3:API: implement P2
-    return Gna2Tensor{};
+    const std::function<ApiTensor()> command = [&]()
+    {
+        return ApiTensor{};
+    };
+    return ApiWrapper::ExecuteSafely(command, ApiTensor{});
 }
 
 GNA2_API struct Gna2Operation Gna2OperationInitFullyConnectedAffine(
@@ -256,9 +311,12 @@ GNA2_API struct Gna2Operation Gna2OperationInitFullyConnectedAffine(
     UNREFERENCED_PARAMETER(weights);
     UNREFERENCED_PARAMETER(biases);
     UNREFERENCED_PARAMETER(activation);
-
     // TODO:3:API: implement P2
-    return Gna2Operation{};
+    const std::function<ApiOperation()> command = [&]()
+    {
+        return ApiOperation{};
+    };
+    return ApiWrapper::ExecuteSafely(command, ApiOperation{});
 }
 
 GNA2_API struct Gna2Operation Gna2OperationInitElementWiseAffine(
@@ -272,7 +330,11 @@ GNA2_API struct Gna2Operation Gna2OperationInitElementWiseAffine(
     UNREFERENCED_PARAMETER(biases);
     UNREFERENCED_PARAMETER(activation);
     // TODO:3:API: implement P2
-    return Gna2Operation{};
+    const std::function<ApiOperation()> command = [&]()
+    {
+        return ApiOperation{};
+    };
+    return ApiWrapper::ExecuteSafely(command, ApiOperation{});
 }
 
 GNA2_API struct Gna2Operation Gna2OperationInitFullyConnectedBiasGrouping(
@@ -292,7 +354,11 @@ GNA2_API struct Gna2Operation Gna2OperationInitFullyConnectedBiasGrouping(
     UNREFERENCED_PARAMETER(biasMode);
     UNREFERENCED_PARAMETER(biasVectorIndex);
     // TODO:3:API: implement P2
-    return Gna2Operation{};
+    const std::function<ApiOperation()> command = [&]()
+    {
+        return ApiOperation{};
+    };
+    return ApiWrapper::ExecuteSafely(command, ApiOperation{});
 }
 
 GNA2_API struct Gna2Operation Gna2OperationInitRecurrent(
@@ -308,7 +374,11 @@ GNA2_API struct Gna2Operation Gna2OperationInitRecurrent(
     UNREFERENCED_PARAMETER(activation);
     UNREFERENCED_PARAMETER(delay);
     // TODO:3:API: implement P2
-    return Gna2Operation{};
+    const std::function<ApiOperation()> command = [&]()
+    {
+        return ApiOperation{};
+    };
+    return ApiWrapper::ExecuteSafely(command, ApiOperation{});
 }
 
 GNA2_API struct Gna2Operation Gna2OperationInitConvolution(
@@ -328,7 +398,11 @@ GNA2_API struct Gna2Operation Gna2OperationInitConvolution(
     UNREFERENCED_PARAMETER(concolutionStride);
     UNREFERENCED_PARAMETER(biasMode);
     // TODO:3:API: implement P2
-    return Gna2Operation{};
+    const std::function<ApiOperation()> command = [&]()
+    {
+        return ApiOperation{};
+    };
+    return ApiWrapper::ExecuteSafely(command, ApiOperation{});
 }
 
 GNA2_API struct Gna2Operation Gna2OperationInitConvolutionFused(
@@ -354,7 +428,11 @@ GNA2_API struct Gna2Operation Gna2OperationInitConvolutionFused(
     UNREFERENCED_PARAMETER(poolingWindow);
     UNREFERENCED_PARAMETER(poolingStride);
     // TODO:3:API: implement P2
-    return Gna2Operation{};
+    const std::function<ApiOperation()> command = [&]()
+    {
+        return ApiOperation{};
+    };
+    return ApiWrapper::ExecuteSafely(command, ApiOperation{});
 }
 
 GNA2_API struct Gna2Operation Gna2OperationInitPooling(
@@ -373,7 +451,11 @@ GNA2_API struct Gna2Operation Gna2OperationInitPooling(
     UNREFERENCED_PARAMETER(poolingWindow);
     UNREFERENCED_PARAMETER(poolingStride);
     // TODO:3:API: implement P2
-    return Gna2Operation{};
+    const std::function<ApiOperation()> command = [&]()
+    {
+        return ApiOperation{};
+    };
+    return ApiWrapper::ExecuteSafely(command, ApiOperation{});
 }
 
 GNA2_API struct Gna2Operation Gna2OperationInitCopy(
@@ -384,7 +466,11 @@ GNA2_API struct Gna2Operation Gna2OperationInitCopy(
     UNREFERENCED_PARAMETER(outputs);
     UNREFERENCED_PARAMETER(copyParams);
     // TODO:3:API: implement P2
-    return Gna2Operation{};
+    const std::function<ApiOperation()> command = [&]()
+    {
+        return ApiOperation{};
+    };
+    return ApiWrapper::ExecuteSafely(command, ApiOperation{});
 }
 
 GNA2_API struct Gna2Operation Gna2OperationInitTranspose(
@@ -393,7 +479,11 @@ GNA2_API struct Gna2Operation Gna2OperationInitTranspose(
     UNREFERENCED_PARAMETER(inputs);
     UNREFERENCED_PARAMETER(outputs);
     // TODO:3:API: implement P2
-    return Gna2Operation{};
+    const std::function<ApiOperation()> command = [&]()
+    {
+        return ApiOperation{};
+    };
+    return ApiWrapper::ExecuteSafely(command, ApiOperation{});
 }
 
 //TODO:3:API define
@@ -411,7 +501,11 @@ GNA2_API struct Gna2Operation Gna2OperationInitGmm(
     UNREFERENCED_PARAMETER(consts);
     UNREFERENCED_PARAMETER(maximumScore);
     // TODO:3:API: implement P2
-    return Gna2Operation{};
+    const std::function<ApiOperation()> command = [&]()
+    {
+        return ApiOperation{};
+    };
+    return ApiWrapper::ExecuteSafely(command, ApiOperation{});
 }
 
 GNA2_API struct Gna2Operation Gna2OperationInitGmInterleaved(
@@ -424,5 +518,9 @@ GNA2_API struct Gna2Operation Gna2OperationInitGmInterleaved(
     UNREFERENCED_PARAMETER(interleavedTensors);
     UNREFERENCED_PARAMETER(maximumScore);
     // TODO:3:API: implement P2
-    return Gna2Operation{};
+    const std::function<ApiOperation()> command = [&]()
+    {
+        return ApiOperation{};
+    };
+    return ApiWrapper::ExecuteSafely(command, ApiOperation{});
 }

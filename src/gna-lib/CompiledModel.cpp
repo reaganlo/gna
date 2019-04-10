@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2018 Intel Corporation.
+ Copyright 2019 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -390,5 +390,3 @@ void CompiledModel::createSubmodels(const HardwareCapabilities& hwCaps)
         }
     }
 }
-
-

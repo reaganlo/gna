@@ -136,6 +136,8 @@ struct PwlCached
 
     // Prepares PWL parameters and auxiliary buffers
     PwlCached(const gna_data_mode mode, nn_pwl_seg const * const segmentsIn, uint32_t segmentCountIn);
+    PwlCached(PwlCached&& pwl_cached) = default;
+    PwlCached(const PwlCached& pwl_cached) = delete;
     virtual ~PwlCached();
 
     // PWL LOOKUP table number of elements

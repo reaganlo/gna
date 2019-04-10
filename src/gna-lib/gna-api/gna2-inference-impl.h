@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2018 Intel Corporation.
+ Copyright 2019 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -30,8 +30,7 @@
 
 #include "gna2-common-impl.h"
 
-#include <stdint.h>
-
+#include <cstdint>
 
 namespace GNA
 {

@@ -32,7 +32,7 @@
 #include "LayerOutput.h"
 #include "Tensor.h"
 #include "Weight.h"
-#include "XnnKernelApi.h"
+#include "XnnKernel.h"
 
 namespace GNA
 {

@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2018 Intel Corporation.
+ Copyright 2019 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -82,6 +82,9 @@ typedef intel_convolutional_layer_t nn_layer_conv;
 #define STATUS_T_ALIAS
 typedef intel_gna_status_t      status_t;
 #endif
+
+// temporary cast for simultaneous 2 apis usage
+#define CAST1_STATUS (status_t)
 
 /**
  * List of all supported acceleration modes

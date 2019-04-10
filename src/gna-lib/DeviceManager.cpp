@@ -45,21 +45,28 @@ DeviceManager::DeviceManager()
 
 Device& DeviceManager::GetDevice(gna_device_id deviceId)
 {
-    if (deviceMap.empty())
+    try
     {
-        // TODO:3: support multiple devices
-        deviceMap.emplace_back(
+        if (deviceMap.empty())
+        {
+            // TODO:3: support multiple devices
+            deviceMap.emplace_back(
 #if HW_VERBOSE == 0
-            std::make_unique<Device>(DeviceManager::DefaultThreadCount)
+                std::make_unique<Device>(DeviceManager::DefaultThreadCount)
 #else
-            std::make_unique<DeviceVerbose>(DeviceManager::DefaultThreadCount)
+                std::make_unique<DeviceVerbose>(DeviceManager::DefaultThreadCount)
 #endif
-        );
-        deviceOpenedMap.emplace_back(false);
-    }
+            );
+            deviceOpenedMap.emplace_back(false);
+        }
 
-    auto& device = *deviceMap.at(deviceId);
-    return device;
+        auto& device = *deviceMap.at(deviceId);
+        return device;
+    }
+    catch (const std::out_of_range&)
+    {
+        throw GnaException(Gna2StatusIdentifierInvalid);
+    }
 }
 
 uint32_t DeviceManager::GetDeviceCount()
