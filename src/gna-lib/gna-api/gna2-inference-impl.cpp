@@ -26,6 +26,7 @@
 #include "gna2-common-impl.h"
 #include "gna2-inference-impl.h"
 
+#include "ApiWrapper.h"
 #include "Logger.h"
 #include "Expect.h"
 

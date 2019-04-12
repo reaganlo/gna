@@ -80,31 +80,31 @@ private:
 };
 
 template<>
-    ApiStatus ApiWrapper::ReturnError(const GnaModelException &e)
+    inline ApiStatus ApiWrapper::ReturnError(const GnaModelException &e)
     {
         return e.GetStatus();
     }
 
     template<>
-    ApiStatus ApiWrapper::ReturnError(const GnaException &e)
+    inline ApiStatus ApiWrapper::ReturnError(const GnaException &e)
     {
         return e.GetStatus();
     }
 
     template<>
-    ApiStatus ApiWrapper::ReturnError()
+    inline ApiStatus ApiWrapper::ReturnError()
     {
         return Gna2StatusUnknownError;
     }
 
     template<>
-    void ApiWrapper::ReturnError()
+    inline void ApiWrapper::ReturnError()
     {
         return;
     }
 
     template<>
-    void ApiWrapper::LogException(const std::exception& e)
+    inline void ApiWrapper::LogException(const std::exception& e)
     {
         Log->Error("Unknown error: %s.\n", e.what());
     }
