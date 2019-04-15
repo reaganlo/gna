@@ -215,7 +215,7 @@ void copyKernelImpl(CopyConfig const * const config)
 
     for (row = 0; row < config->rowCount; row++)
     {
-        memcpy_s(
+        memmove_s(
             config->output + (config->outputColumnCount * row),
             bytesToCopy,
             config->input + (config->inputColumnCount * row),
@@ -230,7 +230,7 @@ void copyKernelImpl1B(CopyConfig const * const config)
 
     for (row = 0; row < config->rowCount; row++)
     {
-        memcpy_s(
+        memmove_s(
             (int8_t*)config->output + (config->outputColumnCount * row),
             bytesToCopy,
             (int8_t*)config->input + (config->inputColumnCount * row),
@@ -245,7 +245,7 @@ void copyKernelImpl2B(CopyConfig const * const config)
 
     for (row = 0; row < config->rowCount; row++)
     {
-        memcpy_s(
+        memmove_s(
             config->output + (config->outputColumnCount * row),
             bytesToCopy,
             config->input + (config->inputColumnCount * row),

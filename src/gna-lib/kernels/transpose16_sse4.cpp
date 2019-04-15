@@ -43,7 +43,7 @@ void TransposeKernelImpl(TransposeConfig const * const cfg)
     // input matrix is a vector - copy
     if (M == 1 || N == 1)
     {
-        memcpy_s(O, M * N * sizeof(int16_t), I, M * N * sizeof(int16_t));
+        memmove_s(O, M * N * sizeof(int16_t), I, M * N * sizeof(int16_t));
         return;
     }
 
