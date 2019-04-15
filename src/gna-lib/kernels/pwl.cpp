@@ -581,6 +581,13 @@ void PwlCached::KERNEL(InitializeActivationFunctions)() const
 }
 
 #if OPT_LEVEL == 0
+
+PwlCached::PwlCached(PwlCached && pwlCached)
+{
+    memcpy_s(this, sizeof(*this), &pwlCached, sizeof(pwlCached));
+    memset(&pwlCached, 0, sizeof(pwlCached));
+}
+
 PwlCached::PwlCached(const gna_data_mode mode, nn_pwl_seg const * const segments, uint32_t segmentCountIn)
 {
     // TODO:3: enable different modes
