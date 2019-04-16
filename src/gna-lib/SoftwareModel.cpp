@@ -45,9 +45,10 @@ using std::make_unique;
 using namespace GNA;
 
 SoftwareModel::SoftwareModel(const gna_model *const network,
-    BaseValidator validator, AccelerationMode fastestAccelIn) :
+    BaseValidator validator,
+    const std::vector<Gna2AccelerationMode>& supportedCpuAccelerationsIn) :
     layerCount{ network->nLayers },
-    fastestAccel{ fastestAccelIn }
+    supportedCpuAccelerations { supportedCpuAccelerationsIn }
 {
 #ifndef NO_ERRCHECK
     Expect::InRange(network->nGroup, ui32_1, XNN_N_GROUP_MAX, XNN_ERR_LYR_CFG);
@@ -69,11 +70,8 @@ uint32_t SoftwareModel::Score(
 
     validateConfiguration(requestConfiguration);
 
-    auto accel = getEffectiveAccelerationMode(requestConfiguration.Acceleration);
-    if (NUM_GNA_ACCEL_MODES == accel)
-    {
-        return GNA_CPUTYPENOTSUPPORTED;
-    }
+    auto accel = requestConfiguration.Acceleration.GetEffectiveSoftwareAccelerationMode(supportedCpuAccelerations);
+
     LogAcceleration(accel);
 
     auto saturationCount = uint32_t{ 0 };   // scoring saturation counter
@@ -131,28 +129,5 @@ void SoftwareModel::validateConfiguration(const RequestConfiguration& configurat
     //Expect::True(outputLayerCount == configuration.OutputBuffersCount, XNN_ERR_NETWORK_OUTPUTS);*/
 }
 
-AccelerationMode SoftwareModel::getEffectiveAccelerationMode(AccelerationMode requiredAccel) const
-{
-    switch (requiredAccel)
-    {
-        case GNA_AUTO_FAST:
-        case GNA_SW_FAST:
-            return fastestAccel;
-        case GNA_AUTO_SAT:
-        case GNA_SW_SAT:
-        case GNA_HW:
-            return static_cast<AccelerationMode>(fastestAccel & GNA_HW);
-            // enforced sw modes
-        default:
-            if ((int32_t) requiredAccel > (int32_t) fastestAccel)
-            {
-                return NUM_GNA_ACCEL_MODES;
-            }
-            else
-            {
-                return requiredAccel;
-            }
-    }
-}
 
 

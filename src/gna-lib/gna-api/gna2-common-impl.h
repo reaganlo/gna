@@ -26,7 +26,7 @@
 #ifndef __GNA2_COMMON_IMPL_H
 #define __GNA2_COMMON_IMPL_H
 
-#include <gna2-common-api.h>
+#include "../gna-api/gna2-common-api.h"
 
 #include <stdint.h>
 #if defined(__GNUC__)

@@ -124,10 +124,10 @@ void Device::EnableHardwareConsistency(gna_request_cfg_id configId,
     requestConfiguration.SetHardwareConsistency(hardwareVersion);
 }
 
-void Device::EnforceAcceleration(gna_request_cfg_id configId, AccelerationMode accel)
+void Device::EnforceAcceleration(gna_request_cfg_id configId, Gna2AccelerationMode accelMode)
 {
     auto& requestConfiguration = requestBuilder.GetConfiguration(configId);
-    requestConfiguration.EnforceAcceleration(accel);
+    requestConfiguration.EnforceAcceleration(accelMode);
 }
 
 void Device::EnableProfiling(gna_request_cfg_id configId,
@@ -222,7 +222,7 @@ void Device::LoadModel(gna_model_id *modelId, const gna_model *userModel)
     models.emplace(*modelId, std::move(compiledModel));
 }
 
-void Device::PropagateRequest(gna_request_cfg_id configId, gna_request_id *requestId)
+void Device::PropagateRequest(gna_request_cfg_id configId, uint32_t *requestId)
 {
     Expect::NotNull(requestId);
 
@@ -230,7 +230,7 @@ void Device::PropagateRequest(gna_request_cfg_id configId, gna_request_id *reque
     requestHandler.Enqueue(requestId, std::move(request));
 }
 
-status_t Device::WaitForRequest(gna_request_id requestId, gna_timeout milliseconds)
+Gna2Status Device::WaitForRequest(gna_request_id requestId, gna_timeout milliseconds)
 {
     return requestHandler.WaitFor(requestId, milliseconds);
 }

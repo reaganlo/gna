@@ -95,28 +95,13 @@ void RequestConfiguration::SetHardwareConsistency(
     if (GNA2_NOT_SUPPORTED != consistentDevice && Gna2DeviceVersionSoftwareEmulation != consistentDevice)
     {
         HardwareCapabilities::GetHardwareConsistencySettings(BufferElementCount, consistentDeviceIn);
-        enableHwConsistency = true;
+        Acceleration.EnableHwConsistency();
         consistentDevice = consistentDeviceIn;
     }
     else
     {
-        enableHwConsistency = false;
+        Acceleration.DisableHwConsistency();
     }
-    EnforceAcceleration(Acceleration); // update Acceleration
-}
-
-void RequestConfiguration::EnforceAcceleration(AccelerationMode accel)
-{
-    Acceleration = accel;
-    if (enableHwConsistency)
-    {
-        Acceleration = static_cast<AccelerationMode>(Acceleration &  GNA_HW);
-    }
-}
-
-bool RequestConfiguration::HasConsistencyMode() const
-{
-    return enableHwConsistency;
 }
 
 DeviceVersion RequestConfiguration::GetConsistentDevice() const
@@ -135,4 +120,3 @@ void RequestConfiguration::addMemoryObject(void *buffer, uint32_t bufferSize)
         MemoryList.push_back(memory);
     }
 }
-

@@ -25,6 +25,8 @@
 
 #pragma once
 
+#include "gna2-inference-impl.h"
+
 #include <memory>
 
 #include "DeviceLayerSupport.h"

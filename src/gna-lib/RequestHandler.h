@@ -50,7 +50,7 @@ public:
         gna_request_id *requestId,
         std::unique_ptr<Request> request);
 
-    status_t WaitFor(const gna_request_id requestId, const gna_timeout milliseconds);
+    Gna2Status WaitFor(const gna_request_id requestId, const gna_timeout milliseconds);
 
     void StopRequests();
 
@@ -60,7 +60,7 @@ private:
 
     void clearRequestMap();
 
-    status_t removeRequest(const gna_request_id requestId);
+    bool removeRequest(uint32_t requestId);
 
     Request * get(const uint32_t requestId)
     {

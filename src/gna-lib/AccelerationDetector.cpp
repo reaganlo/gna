@@ -41,6 +41,7 @@ static inline unsigned long long _xgetbv(unsigned int ctr)
 #define cpuid(info, level) __cpuidex((int*)(info), level, 0)
 #endif // __GNUC__
 
+#include "gna2-inference-impl.h"
 #include "AccelerationDetector.h"
 #include "GnaException.h"
 #include "Logger.h"
@@ -68,6 +69,20 @@ using namespace GNA;
 #ifndef _XCR_XFEATURE_ENABLED_MASK
 #define _XCR_XFEATURE_ENABLED_MASK 0
 #endif
+
+static const AccelerationMode GNA_GEN_SAT {Gna2AccelerationModeGeneric, true };
+static const AccelerationMode GNA_GEN_FAST {Gna2AccelerationModeGeneric, false };
+static const AccelerationMode GNA_SSE4_2_SAT {Gna2AccelerationModeSse4x2, true };
+static const AccelerationMode GNA_SSE4_2_FAST {Gna2AccelerationModeSse4x2, false };
+static const AccelerationMode GNA_AVX1_SAT {Gna2AccelerationModeAvx1, true };
+static const AccelerationMode GNA_AVX1_FAST {Gna2AccelerationModeAvx1, false };
+static const AccelerationMode GNA_AVX2_SAT {Gna2AccelerationModeAvx2, true };
+static const AccelerationMode GNA_AVX2_FAST{ Gna2AccelerationModeAvx2, false };
+
+static const AccelerationMode GNA_SW_SAT { Gna2AccelerationModeSoftware,true };
+static const AccelerationMode GNA_SW_FAST { Gna2AccelerationModeSoftware,false };
+static const AccelerationMode GNA_AUTO_FAST { Gna2AccelerationModeAuto,false };
+static const AccelerationMode GNA_AUTO_SAT { Gna2AccelerationModeAuto,true };
 
 std::map<kernel_op, std::map<KernelMode, KernelMap<VoidKernel>>>
 AccelerationDetector::Kernels = {
@@ -726,27 +741,8 @@ AccelerationDetector::Kernels = {
     }
 };
 
-std::map<AccelerationMode const, std::string const> AccelerationDetector::accelerationNames
-{
-    {GNA_HW, "GNA_HW"},
-    {GMM_HW, "GMM_HW"},
-    {GNA_AUTO_SAT, "GNA_AUTO_SAT"},
-    {GNA_AUTO_FAST, "GNA_AUTO_FAST"},
-    {GNA_SW_SAT, "GNA_SW_SAT"},
-    {GNA_SW_FAST, "GNA_SW_FAST"},
-    {GNA_GEN_SAT, "GNA_GEN_SAT"},
-    {GNA_GEN_FAST, "GNA_GEN_FAST"},
-    {GNA_SSE4_2_SAT, "GNA_SSE4_2_SAT"},
-    {GNA_SSE4_2_FAST, "GNA_SSE4_2_FAST"},
-    {GNA_AVX1_SAT, "GNA_AVX1_SAT"},
-    {GNA_AVX1_FAST, "GNA_AVX1_FAST"},
-    {GNA_AVX2_SAT, "GNA_AVX2_SAT"},
-    {GNA_AVX2_FAST, "GNA_AVX2_FAST"},
-    {NUM_GNA_ACCEL_MODES, "UNKNOWN ACCELERATION"},
-};
-
 AccelerationDetector::AccelerationDetector() :
-    fastestAcceleration{ GNA_GEN_FAST }
+    supportedCpuAccelerations{ Gna2AccelerationModeGeneric }
 {
     // generic, fastest software and auto always supported
     accelerationModes[GNA_GEN_SAT] = true;
@@ -755,6 +751,9 @@ AccelerationDetector::AccelerationDetector() :
     accelerationModes[GNA_SW_FAST] = true;
     accelerationModes[GNA_AUTO_SAT] = true;
     accelerationModes[GNA_AUTO_FAST] = true;
+
+    // hardware unsupported, but can be changed afterwards
+    accelerationModes[AccelerationMode{ Gna2AccelerationModeHardware }] = false;
 
     unsigned int cpuId[4];           // cpu id string
     unsigned long long xcrFeature = 0;
@@ -771,7 +770,7 @@ AccelerationDetector::AccelerationDetector() :
     {
         accelerationModes[GNA_SSE4_2_FAST] = true;
         accelerationModes[GNA_SSE4_2_SAT] = true;
-        fastestAcceleration = GNA_SSE4_2_FAST;
+        supportedCpuAccelerations.push_back(Gna2AccelerationModeSse4x2);
     }
 
     if ((cpuId[2] & AVX1_MASK) == AVX1_MASK)
@@ -783,7 +782,7 @@ AccelerationDetector::AccelerationDetector() :
         {
             accelerationModes[GNA_AVX1_FAST] = true;
             accelerationModes[GNA_AVX1_SAT] = true;
-            fastestAcceleration = GNA_AVX1_FAST;
+            supportedCpuAccelerations.push_back(Gna2AccelerationModeAvx1);
         }
 
         // check AVX2 flag
@@ -794,38 +793,19 @@ AccelerationDetector::AccelerationDetector() :
             {
                 accelerationModes[GNA_AVX2_FAST] = true;
                 accelerationModes[GNA_AVX2_SAT] = true;
-                fastestAcceleration = GNA_AVX2_FAST;
+                supportedCpuAccelerations.push_back(Gna2AccelerationModeAvx2);
             }
         }
     }
 
-    Log->Message("%s\t%d\n", accelerationNames[GNA_HW].c_str(), accelerationModes[GNA_HW]);
-    Log->Message("%s\t%d\n", accelerationNames[GNA_AUTO_FAST].c_str(), accelerationModes[GNA_AUTO_FAST]);
-    Log->Message("%s\t%d\n", accelerationNames[GNA_AUTO_SAT].c_str(), accelerationModes[GNA_AUTO_SAT]);
-    Log->Message("%s\t%d\n", accelerationNames[GNA_AVX2_FAST].c_str(), accelerationModes[GNA_AVX2_FAST]);
-    Log->Message("%s\t%d\n", accelerationNames[GNA_AVX2_SAT].c_str(), accelerationModes[GNA_AVX2_SAT]);
-    Log->Message("%s\t%d\n", accelerationNames[GNA_AVX1_FAST].c_str(), accelerationModes[GNA_AVX1_FAST]);
-    Log->Message("%s\t%d\n", accelerationNames[GNA_AVX1_SAT].c_str(), accelerationModes[GNA_AVX1_SAT]);
-    Log->Message("%s\t%d\n", accelerationNames[GNA_SSE4_2_FAST].c_str(), accelerationModes[GNA_SSE4_2_FAST]);
-    Log->Message("%s\t%d\n", accelerationNames[GNA_SSE4_2_SAT].c_str(), accelerationModes[GNA_SSE4_2_SAT]);
-    Log->Message("%s\t%d\n", accelerationNames[GNA_GEN_FAST].c_str(), accelerationModes[GNA_GEN_FAST]);
-    Log->Message("%s\t%d\n", accelerationNames[GNA_GEN_SAT].c_str(), accelerationModes[GNA_GEN_SAT]);
-    Log->Message("%s\t%d\n", accelerationNames[GNA_SW_FAST].c_str(), accelerationModes[GNA_SW_FAST]);
-    Log->Message("%s\t%d\n", accelerationNames[GNA_SW_SAT].c_str(), accelerationModes[GNA_SW_SAT]);
-}
-
-AccelerationMode AccelerationDetector::GetFastestAcceleration() const
-{
-    return fastestAcceleration;
-}
-
-char const * AccelerationDetector::AccelerationToString(AccelerationMode accel)
-{
-    auto name = accelerationNames.find(accel);
-    if (accelerationNames.end() == name)
+    for (const auto& modeState : accelerationModes)
     {
-        accel = NUM_GNA_ACCEL_MODES;
+        auto name = modeState.first.GetName();
+        Log->Message("%s\t%s\n", name, modeState.second ? "Yes" : "No");
     }
-    return accelerationNames[accel].c_str();
 }
 
+const std::vector<Gna2AccelerationMode>& AccelerationDetector::GetSupportedCpuAccelerations() const
+{
+    return supportedCpuAccelerations;
+}

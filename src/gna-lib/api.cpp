@@ -34,6 +34,12 @@
 
 using namespace GNA;
 
+static std::map<Gna2Status, gna_status_t> Gna2StatusToLegacy{
+    {Gna2StatusWarningDeviceBusy, GNA_DEVICEBUSY},
+    {Gna2StatusSuccess, GNA_SUCCESS},
+    {Gna2StatusWarningArithmeticSaturation, GNA_SSATURATE},
+    {Gna2StatusIdentifierInvalid, GNA_BADREQID} };
+
 static intel_gna_status_t HandleUnknownException(const std::exception& e)
 {
     Log->Error("Unknown exception: %s.", e.what());
@@ -186,7 +192,7 @@ GNAAPI intel_gna_status_t GnaRequestConfigEnforceAcceleration(
     try
     {
         auto& device = DeviceManager::Get().GetDevice(0);
-        device.EnforceAcceleration(configId, static_cast<AccelerationMode>(accel));
+        device.EnforceAcceleration(configId, AccelerationMode(accel).GetMode());
         return GNA_SUCCESS;
     }
     catch (const GnaException &e)
@@ -244,7 +250,8 @@ GNAAPI gna_status_t GnaRequestWait(
     try
     {
         auto& device = DeviceManager::Get().GetDevice(0);
-        return device.WaitForRequest(requestId, milliseconds);
+        auto ret = device.WaitForRequest(requestId, milliseconds);
+        return Gna2StatusToLegacy[ret];
     }
     catch (const GnaModelException &e)
     {

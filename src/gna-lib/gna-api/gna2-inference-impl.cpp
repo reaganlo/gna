@@ -23,11 +23,264 @@
  in any way.
 */
 
-#include "gna2-common-impl.h"
 #include "gna2-inference-impl.h"
 
 #include "ApiWrapper.h"
 #include "Logger.h"
-#include "Expect.h"
+#include "DeviceManager.h"
+#include "Macros.h"
+
+#include "gna2-common-impl.h"
+
+#include <stdint.h>
+#include <vector>
 
 using namespace GNA;
+
+GNA2_API enum Gna2Status Gna2RequestConfigCreate(
+    uint32_t modelId,
+    uint32_t * requestConfigId)
+{
+    const std::function<ApiStatus()> command = [&]()
+    {
+        auto& device = DeviceManager::Get().GetDevice(0);
+        device.CreateConfiguration(modelId, requestConfigId);
+        return Gna2StatusSuccess;
+    };
+    return ApiWrapper::ExecuteSafely(command);
+}
+
+GNA2_API enum Gna2Status Gna2RequestConfigSetOperandBuffer(
+    uint32_t requestConfigId,
+    uint32_t operationIndex,
+    uint32_t operandIndex,
+    void * address)
+{
+    UNREFERENCED_PARAMETER(requestConfigId);
+    UNREFERENCED_PARAMETER(operationIndex);
+    UNREFERENCED_PARAMETER(operandIndex);
+    UNREFERENCED_PARAMETER(address);
+    const std::function<ApiStatus()> command = [&]()
+    {
+        //TODO:3:implement
+        return Gna2StatusNotImplemented;
+    };
+    return ApiWrapper::ExecuteSafely(command);
+}
+
+GNA2_API enum Gna2Status Gna2RequestConfigEnableActiveList(
+    uint32_t requestConfigId,
+    uint32_t operationIndex,
+    uint32_t numberOfIndices,
+    uint32_t const * indices)
+{
+    const std::function<ApiStatus()> command = [&]()
+    {
+        auto& device = DeviceManager::Get().GetDevice(0);
+        device.AttachActiveList(requestConfigId, operationIndex, numberOfIndices, indices);
+        return Gna2StatusSuccess;
+    };
+    return ApiWrapper::ExecuteSafely(command);
+}
+
+GNA2_API enum Gna2Status Gna2RequestConfigEnableHardwareConsistency(
+    uint32_t requestConfigId,
+    enum Gna2DeviceVersion deviceVersion)
+{
+    const std::function<ApiStatus()> command = [&]()
+    {
+        auto& device = DeviceManager::Get().GetDevice(0);
+        device.EnableHardwareConsistency(requestConfigId, deviceVersion);
+        return Gna2StatusSuccess;
+    };
+    return ApiWrapper::ExecuteSafely(command);
+}
+
+GNA2_API enum Gna2Status Gna2RequestConfigSetAccelerationMode(
+    uint32_t requestConfigId,
+    enum Gna2AccelerationMode accelerationMode)
+{
+    const std::function<ApiStatus()> command = [&]()
+    {
+        auto& device = DeviceManager::Get().GetDevice(0);
+        device.EnforceAcceleration(requestConfigId, accelerationMode);
+        return Gna2StatusSuccess;
+    };
+    return ApiWrapper::ExecuteSafely(command);
+}
+
+GNA2_API enum Gna2Status Gna2RequestConfigRelease(
+    uint32_t requestConfigId)
+{
+    const std::function<ApiStatus()> command = [&]()
+    {
+        auto& device = DeviceManager::Get().GetDevice(0);
+        device.ReleaseConfiguration(requestConfigId);
+        return Gna2StatusSuccess;
+    };
+    return ApiWrapper::ExecuteSafely(command);
+}
+
+GNA2_API enum Gna2Status Gna2RequestEnqueue(
+    uint32_t requestConfigId,
+    uint32_t * requestId)
+{
+    const std::function<ApiStatus()> command = [&]()
+    {
+        auto& device = DeviceManager::Get().GetDevice(0);
+        device.PropagateRequest(requestConfigId, requestId);
+        return Gna2StatusSuccess;
+    };
+    return ApiWrapper::ExecuteSafely(command);
+}
+
+GNA2_API enum Gna2Status Gna2RequestWait(
+    uint32_t requestId,
+    uint32_t timeoutMilliseconds)
+{
+    const std::function<ApiStatus()> command = [&]()
+    {
+        auto& device = DeviceManager::Get().GetDevice(0);
+        return device.WaitForRequest(requestId, timeoutMilliseconds);
+    };
+    return ApiWrapper::ExecuteSafely(command);
+}
+
+AccelerationMode::AccelerationMode(Gna2AccelerationMode basicMode, bool hardwareConsistencyEnabled)
+    :mode{ basicMode },
+    hardwareConsistency{ hardwareConsistencyEnabled }
+{
+    enforceValidity();
+}
+
+AccelerationMode::AccelerationMode(gna_acceleration legacyMode)
+{
+    switch (legacyMode)
+    {
+    case GNA_HARDWARE:
+        mode = Gna2AccelerationModeHardware;
+        break;
+    case GNA_AUTO:
+        mode = Gna2AccelerationModeAuto;
+        break;
+    case GNA_SOFTWARE:
+        mode = Gna2AccelerationModeSoftware;
+        break;
+    case GNA_GENERIC:
+        mode = Gna2AccelerationModeGeneric;
+        break;
+    case GNA_SSE4_2:
+        mode = Gna2AccelerationModeSse4x2;
+        break;
+    case GNA_AVX1:
+        mode = Gna2AccelerationModeAvx1;
+        break;
+    case GNA_AVX2:
+        mode = Gna2AccelerationModeAvx2;
+        break;
+    default:
+        mode = Gna2AccelerationModeAuto;
+    }
+    enforceValidity();
+}
+
+bool AccelerationMode::IsHardwareEnforced() const
+{
+    return mode == Gna2AccelerationModeHardware;
+}
+
+bool AccelerationMode::IsSoftwareEnforced() const
+{
+    return mode == Gna2AccelerationModeSoftware ||
+        mode == Gna2AccelerationModeGeneric ||
+        mode == Gna2AccelerationModeSse4x2 ||
+        mode == Gna2AccelerationModeAvx1 ||
+        mode == Gna2AccelerationModeAvx2;
+}
+
+AccelerationMode AccelerationMode::GetEffectiveSoftwareAccelerationMode(
+    const std::vector<Gna2AccelerationMode>& supportedCpuAccelerations) const
+{
+    if (mode == Gna2AccelerationModeHardware)
+        throw GnaException(CAST1_STATUS Gna2StatusAccelerationModeNotSupported);
+    if (mode == Gna2AccelerationModeSoftware ||
+        mode == Gna2AccelerationModeAuto)
+    {
+        //last is fastest
+        return AccelerationMode{ supportedCpuAccelerations.back(),hardwareConsistency };
+    }
+    for(const auto& supported: supportedCpuAccelerations)
+    {
+        if(mode == supported)
+        {
+            return AccelerationMode{ supported,hardwareConsistency };
+        }
+    }
+    throw GnaException(CAST1_STATUS Gna2StatusAccelerationModeNotSupported);
+}
+
+void AccelerationMode::SetMode(Gna2AccelerationMode newMode)
+{
+    mode = newMode;
+    enforceValidity();
+}
+
+void AccelerationMode::EnableHwConsistency()
+{
+    hardwareConsistency = true;
+    enforceValidity();
+}
+
+void AccelerationMode::DisableHwConsistency()
+{
+    hardwareConsistency = false;
+    enforceValidity();
+}
+
+static std::map<AccelerationMode, const char*> AccelerationModeNames{
+    {AccelerationMode{ Gna2AccelerationModeHardware },"GNA_ACC_MODE_WH"},
+    {AccelerationMode{ Gna2AccelerationModeAuto,true },"GNA_ACC_MODE_AUTO_SAT"},
+    {AccelerationMode{ Gna2AccelerationModeAuto,false },"GNA_ACC_MODE_AUTO_FAST"},
+    {AccelerationMode{ Gna2AccelerationModeSoftware,true },"GNA_ACC_MODE_SW_SAT"},
+    {AccelerationMode{ Gna2AccelerationModeSoftware,false },"GNA_ACC_MODE_SW_FAST"},
+    {AccelerationMode{ Gna2AccelerationModeGeneric,true },"GNA_ACC_MODE_GEN_SAT"},
+    {AccelerationMode{ Gna2AccelerationModeGeneric,false },"GNA_ACC_MODE_GEN_FAST"},
+    {AccelerationMode{ Gna2AccelerationModeSse4x2,true },"GNA_ACC_MODE_SSE4_2_SAT"},
+    {AccelerationMode{ Gna2AccelerationModeSse4x2,false },"GNA_ACC_MODE_SSE4_2_FAST"},
+    {AccelerationMode{ Gna2AccelerationModeAvx1, true },"GNA_ACC_MODE_AVX1_SAT"},
+    {AccelerationMode{ Gna2AccelerationModeAvx1, false },"GNA_ACC_MODE_AVX1_FAST"},
+    {AccelerationMode{ Gna2AccelerationModeAvx2,true },"GNA_ACC_MODE_AVX2_SAT"},
+    {AccelerationMode{ Gna2AccelerationModeAvx2,false },"GNA_ACC_MODE_AVX2_FAST"},
+};
+
+const char* AccelerationMode::UNKNOWN_ACCELERATION_MODE_NAME = "GNA_UNKNOWN_ACCELERATION_MODE";
+
+const char* AccelerationMode::GetName() const
+{
+    auto item = AccelerationModeNames.find(*this);
+    if (item != AccelerationModeNames.end())
+        return item->second;
+    return UNKNOWN_ACCELERATION_MODE_NAME;
+}
+
+bool AccelerationMode::GetHwConsistency() const
+{
+    return hardwareConsistency;
+}
+
+Gna2AccelerationMode GNA::AccelerationMode::GetMode() const
+{
+    return mode;
+}
+
+void AccelerationMode::enforceValidity()
+{
+    if (mode == Gna2AccelerationModeHardware)
+        hardwareConsistency = true;
+}
+
+bool AccelerationMode::operator<(const AccelerationMode& right) const
+{
+    auto ret = (mode < right.mode) || ((mode == right.mode) && hardwareConsistency && (false == right.hardwareConsistency));
+    return ret;
+}

@@ -32,13 +32,11 @@
 
 #pragma once
 
-#include <array>
-#include <map>
-#include <unordered_map>
-#include <string>
-
 #include "gmm.h"
 #include "XnnKernel.h"
+
+#include <map>
+#include <vector>
 
 namespace GNA
 {
@@ -141,9 +139,7 @@ public:
     AccelerationDetector();
     ~AccelerationDetector() = default;
 
-    AccelerationMode GetFastestAcceleration() const;
-
-    static char const * AccelerationToString(AccelerationMode accel);
+    const std::vector<Gna2AccelerationMode>& GetSupportedCpuAccelerations() const;
 
     template<typename KernelType>
     static const KernelMap<KernelType>&
@@ -155,7 +151,7 @@ public:
 
     void SetHardwareAcceleration(bool isHardwareSupported)
     {
-        accelerationModes[GNA_HW] = isHardwareSupported;
+        accelerationModes[AccelerationMode{Gna2AccelerationModeHardware}] = isHardwareSupported;
     }
 
     static std::map<kernel_op, std::map<KernelMode, KernelMap<VoidKernel>>> Kernels;
@@ -164,10 +160,8 @@ protected:
     std::map<AccelerationMode, bool> accelerationModes;
 
 private:
-
-    static std::map<AccelerationMode const, std::string const> accelerationNames;
-
-    AccelerationMode fastestAcceleration;
+    //sorted from slowest to fastest
+    std::vector<Gna2AccelerationMode> supportedCpuAccelerations;
 };
 
 }

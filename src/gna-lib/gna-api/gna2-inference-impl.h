@@ -26,14 +26,57 @@
 #ifndef __GNA2_INFERENCE_IMPL_H
 #define __GNA2_INFERENCE_IMPL_H
 
-#include "gna2-inference-api.h"
-
 #include "gna2-common-impl.h"
+#include "gna-api.h"
+#include "../gna-api/gna2-inference-api.h"
 
+#include <string>
+#include <vector>
 #include <cstdint>
+
 
 namespace GNA
 {
+    /**
+ * List of all supported acceleration modes
+ */
+class AccelerationMode
+{
+public:
+    AccelerationMode(Gna2AccelerationMode basicMode, bool hardwareConsistencyEnabled = false);
+
+    AccelerationMode(gna_acceleration legacyMode);
+
+    bool IsHardwareEnforced() const;
+
+    bool IsSoftwareEnforced() const;
+
+    // operator needed by std::map
+    bool operator<(const AccelerationMode& right) const;
+
+    AccelerationMode GetEffectiveSoftwareAccelerationMode(const std::vector<Gna2AccelerationMode>& supportedCpuAccelerations) const;
+
+    void SetMode(Gna2AccelerationMode newMode);
+
+    void EnableHwConsistency();
+
+    void DisableHwConsistency();
+
+    Gna2AccelerationMode GetMode() const;
+
+    bool GetHwConsistency() const;
+
+    const char* GetName() const;
+
+private:
+    Gna2AccelerationMode mode;
+
+    static const char* UNKNOWN_ACCELERATION_MODE_NAME;
+
+    bool hardwareConsistency = false;
+
+    void enforceValidity();
+};
 
 }
 

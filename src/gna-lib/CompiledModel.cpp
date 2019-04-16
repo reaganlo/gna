@@ -49,7 +49,7 @@ CompiledModel::CompiledModel(
     {
         userModel,
         makeValidator(),
-        detector.GetFastestAcceleration()
+        detector.GetSupportedCpuAccelerations()
     }
 {
 }
@@ -142,9 +142,9 @@ status_t CompiledModel::Score(
     profilerDTscStart(&profiler->scoring);
 
     auto saturationCount = uint32_t{0};
-    auto isHardwareEnforced = GNA_HW == config.Acceleration;
-    auto isSoftwareEnforced = !hwCapabilities.IsHardwareSupported() ||
-        (config.Acceleration > GNA_AUTO_FAST && config.Acceleration < NUM_GNA_ACCEL_MODES);
+    const auto isHardwareEnforced = config.Acceleration.IsHardwareEnforced();
+    const auto isSoftwareEnforced = !hwCapabilities.IsHardwareSupported() ||
+        (config.Acceleration.IsSoftwareEnforced());
 
     try
     {

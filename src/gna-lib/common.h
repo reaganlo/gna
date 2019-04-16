@@ -86,29 +86,6 @@ typedef intel_gna_status_t      status_t;
 // temporary cast for simultaneous 2 apis usage
 #define CAST1_STATUS (status_t)
 
-/**
- * List of all supported acceleration modes
- */
-typedef enum __AccelerationMode
-{
-    GNA_HW = GNA_HARDWARE,
-    GMM_HW = GNA_HARDWARE - 1, // legacy GMM device
-    GNA_AUTO_SAT = GNA_AUTO & GNA_HW,
-    GNA_AUTO_FAST = GNA_AUTO,
-    GNA_SW_SAT = GNA_SOFTWARE & GNA_HW,
-    GNA_SW_FAST = GNA_SOFTWARE,
-    GNA_GEN_SAT = GNA_GENERIC & GNA_HW,
-    GNA_GEN_FAST = GNA_GENERIC,
-    GNA_SSE4_2_SAT = GNA_SSE4_2 & GNA_HW,
-    GNA_SSE4_2_FAST = GNA_SSE4_2,
-    GNA_AVX1_SAT = GNA_AVX1 & GNA_HW,
-    GNA_AVX1_FAST = GNA_AVX1,
-    GNA_AVX2_SAT = GNA_AVX2 & GNA_HW,
-    GNA_AVX2_FAST = GNA_AVX2,
-    NUM_GNA_ACCEL_MODES = 0xE,
-} AccelerationMode;
-// TODO:3:API redesign provide map for new api and interan acceleartion modes.
-
 typedef enum _TransformOperation
 {
     ActivationTransform,

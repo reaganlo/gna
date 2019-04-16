@@ -51,13 +51,23 @@ class SoftwareModel : public IScorable
 public:
     static void LogAcceleration(AccelerationMode accel)
     {
-        Log->Message("Processing using %s acceleration\n",
-            AccelerationDetector::AccelerationToString(accel));
+        auto name = accel.GetName();
+        Log->Message("Processing using %s acceleration\n", name);
     }
-
+    static void LogOperationMode(GnaOperationMode mode)
+    {
+        if(mode == GMM)
+        {
+            Log->Message("Processing using GMM operation mode\n");
+        }
+        else if(mode == xNN)
+        {
+            Log->Message("Processing using xNN operation mode\n");
+        }
+    }
     SoftwareModel(const gna_model *const network,
                   BaseValidator validator,
-                  AccelerationMode fastestAcceleration);
+                  const std::vector<Gna2AccelerationMode>& supportedCpuAccelerations);
 
     SoftwareModel(const SoftwareModel &) = delete;
     SoftwareModel& operator=(const SoftwareModel&) = delete;
@@ -77,10 +87,8 @@ public:
 private:
     void build(const nn_layer* layers, const BaseValidator& validator);
 
-    AccelerationMode getEffectiveAccelerationMode(AccelerationMode requiredAccel) const;
-
     uint32_t const layerCount;
-    AccelerationMode const fastestAccel;
+    const std::vector<Gna2AccelerationMode>& supportedCpuAccelerations;
 };
 
 }

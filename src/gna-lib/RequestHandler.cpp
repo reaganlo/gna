@@ -89,7 +89,7 @@ void RequestHandler::Enqueue(
     profilerDTscStart(&r->Profiler->process);
 }
 
-status_t RequestHandler::WaitFor(const gna_request_id requestId, const gna_timeout milliseconds)
+Gna2Status RequestHandler::WaitFor(const gna_request_id requestId, const gna_timeout milliseconds)
 {
     auto request = get(requestId);
     auto future = request->GetFuture();
@@ -116,12 +116,17 @@ status_t RequestHandler::WaitFor(const gna_request_id requestId, const gna_timeo
             perfResults->total.stop     = profiler->process.stop;
         }
 
-        auto status = removeRequest(requestId);
-        Expect::Success(status);
-        return score_status;
+        bool removed = removeRequest(requestId);
+        if (!removed)
+            return Gna2StatusIdentifierInvalid;
+        if (score_status == GNA_SUCCESS)
+            return Gna2StatusSuccess;
+        if (score_status == GNA_SSATURATE)
+            return Gna2StatusWarningArithmeticSaturation;
+        Expect::Success(score_status);
     }
     default:
-        return GNA_DEVICEBUSY;
+        return Gna2StatusWarningDeviceBusy;
     }
 }
 
@@ -130,16 +135,16 @@ void RequestHandler::StopRequests()
     threadPool.Stop();
 }
 
-status_t RequestHandler::removeRequest(gna_request_id requestId)
+bool RequestHandler::removeRequest(const uint32_t requestId)
 {
     std::lock_guard<std::mutex> lockGuard(lock);
     auto r = requests.find(requestId);
     if (requests.end() != r)
     {
         requests.erase(requestId);
-        return GNA_SUCCESS;
+        return true;
     }
-    return GNA_BADREQID;
+    return false;
 }
 
 void RequestHandler::initRequestMap()

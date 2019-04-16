@@ -69,15 +69,15 @@ public:
 
     void EnableHardwareConsistency(gna_request_cfg_id configId, DeviceVersion hardwareVersion);
 
-    void EnforceAcceleration(gna_request_cfg_id configId, AccelerationMode accel);
+    void EnforceAcceleration(gna_request_cfg_id configId, Gna2AccelerationMode accel);
 
     void AttachActiveList(gna_request_cfg_id configId, uint32_t layerIndex, uint32_t indicesCount, const uint32_t* const indices);
 
     void EnableProfiling(gna_request_cfg_id configId, gna_hw_perf_encoding hwPerfEncoding, gna_perf_t * perfResults);
 
-    void PropagateRequest(gna_request_cfg_id configId, gna_request_id *requestId);
+    void PropagateRequest(gna_request_cfg_id configId, uint32_t *requestId);
 
-    status_t WaitForRequest(gna_request_id requestId, gna_timeout milliseconds);
+    Gna2Status WaitForRequest(gna_request_id requestId, gna_timeout milliseconds);
 
     void Stop();
 

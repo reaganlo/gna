@@ -25,11 +25,13 @@
 
 #pragma once
 
-#include <map>
-
 #include "gmm.h"
 #include "KernelArguments.h"
 #include "pwl.h"
+
+#include "gna-api/gna2-inference-impl.h"
+
+#include <map>
 
 namespace GNA
 {

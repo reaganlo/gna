@@ -99,7 +99,8 @@ uint32_t HardwareModelScorable::Score(
         operationMode = GMM;
     }
 
-    SoftwareModel::LogAcceleration(operationMode ? GNA_HW : GMM_HW);
+    SoftwareModel::LogAcceleration(AccelerationMode{Gna2AccelerationModeHardware,true});
+    SoftwareModel::LogOperationMode(operationMode);
 
     auto configId = requestConfiguration.Id;
     HardwareRequest *hwRequest = nullptr;

@@ -25,6 +25,8 @@
 
 #pragma once
 
+#include "gna2-inference-api.h"
+
 #include <array>
 #include <map>
 #include <memory>
@@ -51,10 +53,15 @@ public:
     void AddBuffer(GnaComponentType type, uint32_t layerIndex, void *address);
     void AddActiveList(uint32_t layerIndex, const ActiveList& activeList);
     void SetHardwareConsistency(DeviceVersion consistentDevice);
-    void EnforceAcceleration(AccelerationMode accel);
+    void EnforceAcceleration(Gna2AccelerationMode accelMode)
+    {
+        Acceleration.SetMode(accelMode);
+    }
 
-    bool HasConsistencyMode() const;
-
+    bool HasConsistencyMode() const
+    {
+        return Acceleration.GetHwConsistency();
+    }
     DeviceVersion GetConsistentDevice() const;
 
     CompiledModel& Model;
@@ -73,12 +80,9 @@ public:
     // Number of elements in buffer per input precision and per grouping
     uint32_t BufferElementCount[2 * XNN_N_GROUP_MAX];
 
-    AccelerationMode Acceleration = GNA_AUTO_FAST;
+    AccelerationMode Acceleration = Gna2AccelerationModeAuto;
 
 private:
-    // For enabling _SAT acceleration modes
-    bool enableHwConsistency = false;
-
     DeviceVersion consistentDevice;
 
     void addMemoryObject(void *buffer, uint32_t bufferSize);
