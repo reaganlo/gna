@@ -124,6 +124,13 @@ static const std::map<const gna_layer_operation, const Support> FROM_3_0_AFF_RNN
     {INTEL_CONVOLUTIONAL_2D,    FROM_3_0},
 };
 
+static const std::map<const gna_layer_operation, const Support> FROM_0_9_COPY_TRANSPOSE =
+{
+    {INTEL_COPY,                FROM_0_9_AUX},//FROM_3_0
+    {INTEL_DEINTERLEAVE,        FROM_0_9_AUX},//FROM_3_0
+    {INTEL_INTERLEAVE,          FROM_0_9_AUX},//FROM_3_0
+};
+
 static const std::map<const gna_layer_operation, const Support> FROM_3_0_AFF_RNN_CNN_AUX =
 {
     {INTEL_AFFINE,              FROM_3_0},
@@ -239,6 +246,9 @@ bool Support::IsSupported() const
 const std::map<const DataConfig, std::map<const gna_layer_operation, const Support>> DataConfig::Capabilities =
 {
     // input, weight/filter/mean, bias/covariance, output
+    {{GNA_INT8, GNA_DATA_DISABLED, GNA_DATA_DISABLED, GNA_INT8},
+        FROM_0_9_COPY_TRANSPOSE
+    },
     {{GNA_INT8, GNA_INT8, GNA_INT8, GNA_INT8},
         FROM_3_0_AFF_RNN_CNN
     },
@@ -351,6 +361,9 @@ const std::map<const DataConfig, std::map<const gna_layer_operation, const Suppo
     },
 
     // 2B Input
+    {{GNA_INT16, GNA_DATA_DISABLED, GNA_DATA_DISABLED, GNA_INT16},
+        FROM_0_9_COPY_TRANSPOSE
+    },
     {{GNA_INT16, GNA_INT8, GNA_INT8, GNA_INT8},
         FROM_3_0_CNN
     },

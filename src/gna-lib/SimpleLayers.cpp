@@ -75,6 +75,11 @@ void TransposeLayer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration)
     configs.Transpose->output = outputBuffer;
 }
 
+DataConfig TransposeLayer::GetDataMode() const
+{
+    return DataConfig(Input.Mode, GNA_DATA_DISABLED, GNA_DATA_DISABLED, Output.Mode);
+}
+
 void TransposeLayer::computeHidden(AccelerationMode accel, ExecutionConfig const & executionConfig) const
 {
     UNREFERENCED_PARAMETER(executionConfig);
@@ -129,6 +134,11 @@ void CopyLayer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration) cons
 
     configs.Copy->input = inputBuffer;
     configs.Copy->output = outputBuffer;
+}
+
+DataConfig CopyLayer::GetDataMode() const
+{
+    return DataConfig(Input.Mode, GNA_DATA_DISABLED, GNA_DATA_DISABLED, Output.Mode);
 }
 
 void CopyLayer::computeHidden(AccelerationMode accel, ExecutionConfig const & executionConfig) const

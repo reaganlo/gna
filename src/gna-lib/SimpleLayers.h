@@ -42,6 +42,9 @@ public:
 
     virtual void UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const override;
 
+protected:
+    virtual DataConfig GetDataMode() const override;
+
 private:
     void computeHidden(AccelerationMode accel, ExecutionConfig const & executionConfig) const;
     void compute(const LayerConfiguration& layerConfiguration, AccelerationMode accel, ExecutionConfig const & executionConfig) const;
@@ -60,12 +63,16 @@ public:
     const uint32_t ColumnCount;
     const uint32_t RowCount;
 
+protected:
+    virtual DataConfig GetDataMode() const override;
+
 private:
     void computeHidden(AccelerationMode accel, ExecutionConfig const & executionConfig) const;
     void compute(const LayerConfiguration& layerConfiguration, AccelerationMode accel, ExecutionConfig const & executionConfig) const;
 
     const KernelMap<CopyKernel>& copyKernels;
     CopyConfig copyHiddenConfig;
+
 };
 
 }
