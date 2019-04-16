@@ -134,9 +134,9 @@ enum Gna2OperationType
         - b) outputs = pooling(activation(convolution(padding(inputs, zeroPadding), filters) + biases), activationFunction))
         .
         Where:
-        - pooling is optional
-        - activation is optional
-        - padding is optional
+            - pooling is optional
+            - activation is optional
+            - padding is optional
 
     Operands:
         1. inputs
@@ -158,7 +158,7 @@ enum Gna2OperationType
                 [W x H] 2D where: //TODO:3:API Redesign: provide shape info
                     - W is a number of 0s added each before and after each row of an input
                     - H is a number of 0s added each before and after each column of an input
-        2. Gna2Shape concolutionStride [required]:
+        2. Gna2Shape convolutionStride [required]:
              Specifies filter stride shape.
              Valid values:
                 For 1D convolution operation:
@@ -190,6 +190,7 @@ enum Gna2OperationType
                 - For 2D convolution operation: [W x H] 2D where:
                     - W is a number of elements to move in W dimension
                     - H is a number of elements to move in H dimension
+        7. zeroPadding (b operation only)
     */
     Gna2OperationTypeConvolution = 1,
 
@@ -200,11 +201,11 @@ enum Gna2OperationType
         output = copy(input, shape)
 
     Operands:
-        - 0 inputs
-        - 1 outputs
+        1. inputs
+        2. outputs
 
     Parameters:
-        - 0 Gna2Shape copyParams [required]:
+        1. Gna2Shape shape [required]:
              Specifies dimensions of copied sub-tensor.
              Valid values:
                 [W x H] 2D where: //TODO:3:API Redesign: provide shape info
@@ -217,42 +218,59 @@ enum Gna2OperationType
     Fully connected affine operation composed with activation function.
 
     Operation:
-    - a: outputs = activation(((inputs x weights) + biases), activationFunction)
-    - b: outputs = activation(((inputs x (weightScaleFactors * weights)) + biases[biasVectorIndex]), activationFunction)
-
-    Where:
-    - activation is optional
-    - weightScaleFactors is optional, required only for ::Gna2BiasModeGrouping Mode.
+        - a: outputs = activation(((inputs x weights) + biases), activationFunction)
+        - b: outputs = activation(((inputs x (weightScaleFactors * weights)) + biases[biasVectorIndex]), activationFunction)
+        .
+        Where:
+            - activation is optional
+            - weightScaleFactors is optional, required only for ::Gna2BiasModeGrouping Mode.
 
     Operands:
-    - 0 inputs
-    - 1 outputs
-    - 2 filters
-    - 3 biases
-    - 4 activationFunction
-    - 5 weightScaleFactors
+        1. inputs
+        2. outputs
+        3. weights
+        4. biases
+        5. activationFunction
+        6. weightScaleFactors
 
     Parameters:
-        - 0 Gna2BiasMode Mode of bias operation [optional] (Gna2BiasMode):
+        1. Gna2BiasMode Mode of bias operation [optional] (Gna2BiasMode):
             Supported values:
-            -::Gna2BiasModeDefault: normal operation
-            -::Gna2BiasModeGrouping: Special optimized case // TODO:3:API: elaborate
-                Requires weightScaleFactors, Bias vector index
-        - 1 uint32_t biasVectorIndex [optional]:
+                -::Gna2BiasModeDefault: normal operation
+                -::Gna2BiasModeGrouping: Special optimized case // TODO:3:API: elaborate
+                    Requires weightScaleFactors, Bias vector index
+        2. uint32_t biasVectorIndex [optional]:
             Index of the bias vector used for this operation.
             Supported values:
-            -[0, N-1]: Where N is a number of all bias vectors in biases tensor.
-             Default is 0.
-            -GNA2_DEFAULT: is equivalent of 0.
+                - [0, N-1]: Where N is a number of all bias vectors in biases tensor.
+                    Default is 0.
+                - GNA2_DEFAULT: is equivalent of 0.
     */
     Gna2OperationTypeFullyConnectedAffine = 3,
 
     /**
     Element wise affine operation composed with activation function and pooling.
-
-    Weights are diagonal matrix, represented by 1D vector.
-    output = activation((times(input, weights) + bias), pwl)
     Used e.g. for scaling input tensor.
+
+    Operation:
+        output = activation((times(input, weights) + biases), activationFunction)
+        .
+        Where:
+            - Activation is optional
+            - Weights is diagonal matrix, represented by 1D vector.
+    Operands:
+        1. inputs
+        2. outputs
+        3. weights
+        4. biases
+        5. activationFunction
+
+    Parameters:
+        1. Gna2BiasMode Mode of bias operation [optional] (Gna2BiasMode):
+            Supported values:
+                -::Gna2BiasModeDefault: normal operation
+                -::Gna2BiasModeGrouping: Special optimized case // TODO:3:API: elaborate
+                    Requires weightScaleFactors, Bias vector index
     */
     Gna2OperationTypeElementWiseAffine = 4,
 
@@ -260,21 +278,21 @@ enum Gna2OperationType
     Gaussian Mixture Model scoring operation.
 
     Operation:
-        a) output = GMM(input, means, inverseCovariances, constants)
-        b) output = GMM(input, interleaved{means, inverseCovariances, constants})
+        - a) output = GMM(input, means, inverseCovariances, constants)
+        - b) output = GMM(input, interleaved{means, inverseCovariances, constants})
 
     Operands a):
-        - 0 inputs
-        - 1 outputs
-        - 2 means
-        - 3 inverseCovariances
-        - 4 constants
+        1. inputs
+        2. outputs
+        3. means
+        4. inverseCovariances
+        5. constants
     Operands b):
-        - 0 inputs
-        - 1 outputs
-        - 2 interleaved{means, inverseCovariances, constants}
+        1. inputs
+        2. outputs
+        3. interleaved{means, inverseCovariances, constants}
     Parameters:
-        - 0 uint32_t maximumScore [required]:
+        1. uint32_t maximumScore [required]:
             Maximum Score value above which scores are saturated.
     */
     Gna2OperationTypeGmm = 5,
@@ -283,29 +301,45 @@ enum Gna2OperationType
     Fully connected affine operation with recurrence composed with activation function.
 
      Operation:
-        output = activation((((input[t], output[t-delay]) x weights) + bias), activationFunction)
+        - output = activation((((input[t], output[t-delay]) x weights) + bias), activationFunction)
+        .
         Where:
-            output[t-delay] - recurrent input (feedback) from t-delay output vector of current request.
+            - activation is optional
+            - output[t-delay] - recurrent input (feedback) from t-delay output vector of current request.
 
      Operands:
-        - 0 inputs
-        - 1 outputs
-        - 2 filters
-        - 3 biases
-        - 4 activationFunction
+        1. inputs
+        2. outputs
+        3. weights
+        4. biases
+        5. activationFunction
 
      Parameters:
-        -uint32_t delay:
+        1. Gna2BiasMode Mode of bias operation [optional] (Gna2BiasMode):
+            Supported values:
+                -::Gna2BiasModeDefault: normal operation
+                -::Gna2BiasModeGrouping: Special optimized case // TODO:3:API: elaborate
+                    Requires weightScaleFactors, Bias vector index
+        2. uint32_t delay:
             Delay in term of number of vectors in request.
             Supported values:
-            -[1, N-1]: Where N is a number of input vectors in current request.
+                - [1, N-1]: Where N is a number of input vectors in current request.
     */
     Gna2OperationTypeRecurrent = 6,
 
     /**
-     Tensor transposition operation.
+    Tensor transposition operation.
 
-     output<layout> = transpose(input<layout>)
+    Operation:
+        - output<layout> = transpose(input<layout>)
+        .
+        Where:
+            - layout ...
+    Operands:
+        1. inputs
+        2. outputs
+
+    Parameters: none.
      //TODO:3:API: use Tensor.Layout in input and output tensor to determine type of transposition interleaved/flat/other
     */
     Gna2OperationTypeTransposition = 7,

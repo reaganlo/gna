@@ -235,7 +235,7 @@ enum Gna2Status
     /**
      Error: Unable to create new resources.
     */
-    Gna2StatusResourceAllocatonError = -8,
+    Gna2StatusResourceAllocationError = -8,
 
     /**
      Error: Device: not available.
@@ -336,6 +336,11 @@ enum Gna2Status
      Error: Acceleration mode is not supported on this computer.
     */
     Gna2StatusAccelerationModeNotSupported = -28,
+
+    /**
+     Error: Model configuration is not supported.
+    */
+    Gna2StatusModelConfigurationInvalid = -29,
 };
 
 /**

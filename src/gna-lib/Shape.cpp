@@ -26,7 +26,6 @@
 #include "Shape.h"
 
 #include "Expect.h"
-#include "Component.h"
 
 using namespace GNA;
 
@@ -45,6 +44,9 @@ const std::map<const gna_tensor_order, const std::vector<gna_tensor_dim>> Shape:
     {GNA_TENSOR_WHD, {GNA_DIM_W, GNA_DIM_H, GNA_DIM_D}},
     {GNA_TENSOR_NHWD, {GNA_DIM_N, GNA_DIM_H, GNA_DIM_W, GNA_DIM_D}},
     {GNA_TENSOR_NDHW, {GNA_DIM_N, GNA_DIM_D, GNA_DIM_H, GNA_DIM_W}},
+    {GNA_TENSOR_ORDER_ANY, {GNA_DIM_N, GNA_DIM_W, GNA_DIM_H, GNA_DIM_D,
+        GNA_DIM_X, gna_tensor_dim(GNA_DIM_X + 1),
+        gna_tensor_dim(GNA_DIM_X + 2), gna_tensor_dim(GNA_DIM_X + 3)}},
 };
 
 Shape::Shape() :
@@ -88,8 +90,13 @@ Shape::Shape(const Shape map, gna_tensor_order newOrder) :
     order{newOrder}
 {};
 
-Shape::Shape(const gna_3d_dimensions dimensions) :
-    Shape{dimensions.width, dimensions.height, dimensions.depth, GNA_TENSOR_WHD}
+Shape::Shape(const gna_3d_dimensions shape) :
+    Shape{shape.width, shape.height, shape.depth, GNA_TENSOR_WHD}
+{}
+
+Shape::Shape(const ApiShape & apiShape, const gna_tensor_order layout)  :
+    __ShapeMap{ Create(apiShape, layout) },
+    order{ layout }
 {};
 
 Shape& Shape::operator=(const Shape& right)
@@ -100,15 +107,40 @@ Shape& Shape::operator=(const Shape& right)
 }
 
 const Shape Shape::SubsetDimensionMap(
-    const Shape dimensions, gna_tensor_order newOrder)
+    const __ShapeMap& shape, gna_tensor_order newOrder)
 {
-    Expect::True(dimensions.size() >= VectorIndices.at(newOrder).size(), XNN_ERR_NETWORK_INPUTS); // TODO:3: add error code
+    Expect::True(shape.size() >= VectorIndices.at(newOrder).size(), XNN_ERR_NETWORK_INPUTS); // TODO:3: add error code
     Shape dims;
     for (const auto& dim : VectorIndices.at(newOrder))
     {
-        dims[dim] = dimensions.at(dim);
+        dims[dim] = shape.at(dim);
     }
     return dims;
+}
+
+__ShapeMap Shape::Create(const ApiShape & apiShape, const gna_tensor_order order)
+{
+    const auto dimensionCount = static_cast<size_type>(apiShape.NumberOfDimensions);
+    Expect::InRange<size_type>(dimensionCount,
+        0, ShapeMaximumNumberOfDimension,
+        CAST1_STATUS Gna2StatusModelConfigurationInvalid);
+    
+    const auto& layout = VectorIndices.at(order);
+    Expect::InRange(dimensionCount, layout.size(),
+        CAST1_STATUS Gna2StatusModelConfigurationInvalid);
+    
+    __ShapeMap shape;
+    size_type i = 0;
+    for (; i < dimensionCount; i++)
+    {
+        shape[layout.at(i)] = apiShape.Dimensions[i];
+    }
+    for (; i < layout.size(); i++)
+    {
+        shape[layout.at(i)] = 0;
+    }
+
+    return shape;
 }
 
 Shape::operator gna_3d_dimensions const() const
@@ -127,6 +159,28 @@ Shape::operator gna_3d_dimensions const() const
     else
     {
         throw GnaException(XNN_ERR_LYR_INVALID_TENSOR_ORDER);
+    }
+}
+
+uint32_t Shape::GetNumberOfElements() const
+{
+    uint32_t count = 1;
+    uint32_t sum = 0;
+    for (const auto& dim : *this)
+    {
+        sum += dim.second;
+        if (0 != dim.second)
+        {
+            count *= dim.second;
+        }
+    }
+    if (0 == sum)
+    {
+        return 0;
+    }
+    else
+    {
+        return count;
     }
 }
 

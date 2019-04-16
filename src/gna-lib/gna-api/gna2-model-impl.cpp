@@ -29,8 +29,7 @@
 #include "ApiWrapper.h"
 #include "Device.h"
 #include "DeviceManager.h"
-#include "GnaException.h"
-#include "gna2-common-impl.h"
+#include "ModelWrapper.h"
 
 #include "gna2-model-api.h"
 #include "gna2-common-api.h"
@@ -100,13 +99,10 @@ GNA2_API enum Gna2Status Gna2ModelOperationInit(
     enum Gna2OperationType type,
     Gna2UserAllocator userAllocator)
 {
-    UNREFERENCED_PARAMETER(operation);
-    UNREFERENCED_PARAMETER(type);
-    UNREFERENCED_PARAMETER(userAllocator);
-    // TODO:3:API: implement P1
-     const std::function<ApiStatus()> command = [&]()
+    const std::function<ApiStatus()> command = [&]()
     {
-        return Gna2StatusNotImplemented;
+        ModelWrapper::OperationInit(operation, type, userAllocator);
+        return Gna2StatusSuccess;
     };
     return ApiWrapper::ExecuteSafely(command);
 }
@@ -115,19 +111,18 @@ GNA2_API uint32_t Gna2DataTypeGetSize(enum Gna2DataType type)
 {
     const std::function<uint32_t()> command = [&]()
     {
-        auto dataSize = DataMode::ToSize<uint32_t>(type);
+        const auto dataSize = DataMode::ToSize<uint32_t>(type);
         return dataSize;
     };
-    return ApiWrapper::ExecuteSafely(command, Gna2DefaultU32);
+    return ApiWrapper::ExecuteSafely(command, Gna2NotSupportedU32);
 }
 
 GNA2_API uint32_t Gna2ShapeGetNumberOfElements(struct Gna2Shape const * shape)
 {
-    // TODO:3:API: implement P1
     const std::function<uint32_t()> command = [&]()
     {
-        UNREFERENCED_PARAMETER(shape);
-        return Gna2DefaultU32;
+        const auto shapeImpl = Shape(*shape);
+        return static_cast<uint32_t>(shapeImpl.size());
     };
     return ApiWrapper::ExecuteSafely(command, Gna2NotSupportedU32);
 }

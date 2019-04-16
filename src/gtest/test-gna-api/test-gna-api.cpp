@@ -30,6 +30,8 @@
 #include <gtest/gtest.h>
 #include <iostream>
 
+#define UNREFERENCED_PARAMETER(P) (P)
+
 class TestGnaApi : public testing::Test
 {
 protected:
@@ -61,6 +63,21 @@ protected:
 
 };
 
+class TestGnaModelApi : public TestGnaApi
+{
+protected:
+    static void * Allocator(uint32_t size)
+    {
+        return malloc(size);
+    }
+
+    static void * InvalidAllocator(uint32_t size)
+    {
+        UNREFERENCED_PARAMETER(size);
+        return nullptr;
+    }
+};
+
 TEST_F(TestGnaApi, allocateMemory)
 {
     uint32_t sizeRequested = 47;
@@ -73,13 +90,53 @@ TEST_F(TestGnaApi, allocateMemory)
     GnaFree(mem);
 }
 
-TEST_F(TestGnaApi, nullModelCreate)
+TEST_F(TestGnaModelApi, Gna2DataTypeGetSizeSuccesfull)
 {
-    auto status = GnaModelCreate(0, nullptr, nullptr);
+    auto size = Gna2DataTypeGetSize(Gna2DataTypeVoid);
+    ASSERT_EQ(size, static_cast<uint32_t>(0));
+    size = Gna2DataTypeGetSize(Gna2DataTypeBoolean);
+    ASSERT_EQ(size, static_cast<uint32_t>(1));
+    size = Gna2DataTypeGetSize(Gna2DataTypeInt4);
+    ASSERT_EQ(size, static_cast<uint32_t>(1));
+    size = Gna2DataTypeGetSize(Gna2DataTypeInt8);
+    ASSERT_EQ(size, static_cast<uint32_t>(1));
+    size = Gna2DataTypeGetSize(Gna2DataTypeInt16);
+    ASSERT_EQ(size, static_cast<uint32_t>(2));
+    size = Gna2DataTypeGetSize(Gna2DataTypeInt32);
+    ASSERT_EQ(size, static_cast<uint32_t>(4));
+    size = Gna2DataTypeGetSize(Gna2DataTypeInt64);
+    ASSERT_EQ(size, static_cast<uint32_t>(8));
+    size = Gna2DataTypeGetSize(Gna2DataTypeUint4);
+    ASSERT_EQ(size, static_cast<uint32_t>(1));
+    size = Gna2DataTypeGetSize(Gna2DataTypeUint8);
+    ASSERT_EQ(size, static_cast<uint32_t>(1));
+    size = Gna2DataTypeGetSize(Gna2DataTypeUint16);
+    ASSERT_EQ(size, static_cast<uint32_t>(2));
+    size = Gna2DataTypeGetSize(Gna2DataTypeUint32);
+    ASSERT_EQ(size, static_cast<uint32_t>(4));
+    size = Gna2DataTypeGetSize(Gna2DataTypeUint64);
+    ASSERT_EQ(size, static_cast<uint32_t>(8));
+    size = Gna2DataTypeGetSize(Gna2DataTypeCompoundBias);
+    ASSERT_EQ(size, static_cast<uint32_t>(8));
+    size = Gna2DataTypeGetSize(Gna2DataTypePwlSegment);
+    ASSERT_EQ(size, static_cast<uint32_t>(8));
+    size = Gna2DataTypeGetSize(Gna2DataTypeWeightScaleFactor);
+    ASSERT_EQ(size, static_cast<uint32_t>(8));
+}
+
+TEST_F(TestGnaModelApi, Gna2DataTypeGetSizeIncorrectType)
+{
+    auto size = Gna2DataTypeGetSize(static_cast<Gna2DataType>(Gna2DataTypeInt8 - 100));
+    ASSERT_EQ(size, static_cast<uint32_t>(GNA2_NOT_SUPPORTED));
+}
+
+TEST_F(TestGnaModelApi, Gna2ModelCreateNull)
+{
+    const auto status = GnaModelCreate(0, nullptr, nullptr);
     ASSERT_NE(GNA_SUCCESS, status);
 }
 
-TEST_F(TestGnaApi, ModelCreate2Successfull)
+TEST_F(TestGnaModelApi, Gna2ModelCreate2Successfull)
 {
     uint32_t modelId = 0;
     Gna2Model model = {};
@@ -87,25 +144,74 @@ TEST_F(TestGnaApi, ModelCreate2Successfull)
     ASSERT_TRUE(Gna2StatusIsSuccessful(status));
 }
 
-TEST_F(TestGnaApi, DISABLED_ModelCreate2NullModel)
+TEST_F(TestGnaModelApi, DISABLED_Gna2ModelCreate2NullModel)
 {
     uint32_t modelId = 0;
     const auto status = Gna2ModelCreate(0, nullptr, &modelId);
     ASSERT_FALSE(Gna2StatusIsSuccessful(status));
 }
 
-TEST_F(TestGnaApi, DISABLED_ModelCreate2NullModelId)
+TEST_F(TestGnaModelApi, DISABLED_Gna2ModelCreate2NullModelId)
 {
     Gna2Model model = {};
     const auto status = Gna2ModelCreate(0, &model, nullptr);
     ASSERT_FALSE(Gna2StatusIsSuccessful(status));
 }
 
-TEST_F(TestGnaApi, ModelCreate2InvalidDeviceIndex)
+TEST_F(TestGnaModelApi, Gna2ItemTypeModelOperationsodelCreate2InvalidDeviceIndex)
 {
     uint32_t modelId = 0;
     Gna2Model model = {};
     const auto status = Gna2ModelCreate(100, &model, &modelId);
+    ASSERT_FALSE(Gna2StatusIsSuccessful(status));
+}
+
+TEST_F(TestGnaModelApi, Gna2ModelOperationInitSuccessfull)
+{
+    struct Gna2Operation operation = {};
+    const auto type = Gna2OperationTypeCopy;
+    const auto userAllocator = &Allocator;
+    const auto status = Gna2ModelOperationInit(&operation,
+        type, userAllocator);
+    ASSERT_TRUE(Gna2StatusIsSuccessful(status));
+}
+
+TEST_F(TestGnaModelApi, Gna2ModelOperationInitNullOperation)
+{
+    const auto type = static_cast<Gna2OperationType>(100);
+    const auto userAllocator = &Allocator;
+    const auto status = Gna2ModelOperationInit(nullptr,
+        type, userAllocator);
+    ASSERT_FALSE(Gna2StatusIsSuccessful(status));
+}
+
+TEST_F(TestGnaModelApi, Gna2ModelOperationInitInvalidType)
+{
+    struct Gna2Operation operation = {};
+    const auto type = static_cast<Gna2OperationType>(100);
+    const auto userAllocator = &Allocator;
+    const auto status = Gna2ModelOperationInit(&operation,
+        type, userAllocator);
+    ASSERT_FALSE(Gna2StatusIsSuccessful(status));
+}
+
+
+TEST_F(TestGnaModelApi, Gna2ModelOperationInitNullAllocator)
+{
+    struct Gna2Operation operation = {};
+    const auto type = Gna2OperationTypeCopy;
+    const auto status = Gna2ModelOperationInit(&operation,
+        type, nullptr);
+    ASSERT_FALSE(Gna2StatusIsSuccessful(status));
+}
+
+TEST_F(TestGnaModelApi, Gna2ModelOperationInitInvalidAllocator)
+{
+    struct Gna2Operation operation = {};
+    const auto type = Gna2OperationTypeCopy;
+    const auto userAllocator = &InvalidAllocator;
+    const auto status = Gna2ModelOperationInit(&operation,
+        type, userAllocator);
     ASSERT_FALSE(Gna2StatusIsSuccessful(status));
 }
 

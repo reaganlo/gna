@@ -55,25 +55,6 @@ protected:
     std::unique_ptr<const Validator> validator;
 };
 
-struct OrderLimits : public ValueLimits<gna_tensor_order>
-{
-    OrderLimits(const gna_tensor_order order, const status_t error = XNN_ERR_LYR_INVALID_TENSOR_ORDER) :
-        ValueLimits{ order, error }
-    {}
-};
-
-struct ComponentLimits
-{
-    ComponentLimits(const ComponentLimits&) = default;
-    ComponentLimits(const OrderLimits order, const ShapeLimits dimensions) :
-        Order{ order },
-        Dimensions{ dimensions }
-    {}
-
-    OrderLimits Order;
-    ShapeLimits Dimensions;
-};
-
 };
 
 

@@ -27,7 +27,7 @@
 
 #include "GnaException.h"
 
-#include "Capabilities.h"
+#include "ParameterLimits.h"
 #include "Shape.h"
 
 #include <vector>
@@ -212,8 +212,8 @@ public:
     }
 
     // If parameter is not in set prints error status code and throws exception.
-    template<typename T> static void InSet(const T& parameter, const std::vector<T>& setLimits,
-        const status_t error)
+    template<typename T, typename S> static void InSet(const T& parameter, const std::vector<T>& setLimits,
+        const S error)
     {
         for (const T& item : setLimits)
         {

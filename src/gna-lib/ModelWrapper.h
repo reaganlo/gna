@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2018 Intel Corporation.
+ Copyright 2019 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -23,22 +23,45 @@
  in any way.
 */
 
-#pragma once
+#ifndef __GNA2_MODEL_WRAPPER_H
+#define __GNA2_MODEL_WRAPPER_H
 
-#include "Layer.h"
-#include "Validator.h"
+#include "gna2-model-impl.h"
+
+#include "Expect.h"
+#include "GnaException.h"
+
+#include <cstdint>
+#include <cstring> 
+#include <map>
+#include <vector>
 
 namespace GNA
 {
 
-class ConvolutionalLayer2D : public Layer
+class ModelWrapper
 {
 public:
-    ConvolutionalLayer2D(nn_layer const * const layer, const BaseValidator& validatorIn);
-    virtual ~ConvolutionalLayer2D() = default;
+    static void OperationInit(ApiOperation * const operation,
+        const OperationType type, const Gna2UserAllocator userAllocator);
 
 protected:
-    virtual DataConfig GetDataMode() const override;
+    static uint32_t GetNumberOfOperands(OperationType operationType);
+    static uint32_t GetNumberOfParameters(OperationType operationType);
+
+private:
+    template<typename Type>
+    static Type ** AllocateAndFillZeros(const Gna2UserAllocator userAllocator, uint32_t elementCount)
+    {
+        Expect::NotNull((void *)(userAllocator));
+        const auto size =  static_cast<uint32_t>(sizeof(Type *)) * elementCount;
+        const auto memory = userAllocator(size);
+        Expect::NotNull(memory, CAST1_STATUS Gna2StatusResourceAllocationError);
+        memset(memory, 0, size);
+        return static_cast<Type **>(memory);
+    }
 };
 
 }
+
+#endif //ifndef __GNA2_MODEL_WRAPPER_H

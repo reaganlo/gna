@@ -111,6 +111,7 @@ set(gna_lib_sources
   ${SRC_DIR}/Logger.cpp
   ${SRC_DIR}/Memory.cpp
   ${SRC_DIR}/ModelDumper.cpp
+  ${SRC_DIR}/ModelWrapper.cpp
   ${SRC_DIR}/PoolingFunctions.cpp
   ${SRC_DIR}/PoolingFunctions2D.cpp
   ${SRC_DIR}/RecurrentLayer.cpp
@@ -183,6 +184,7 @@ set(gna_lib_headers
   ${SRC_DIR}/LayerOutput.h
   ${SRC_DIR}/Logger.h
   ${SRC_DIR}/Memory.h
+  ${SRC_DIR}/ModelWrapper.h
   ${SRC_DIR}/ParameterLimits.h
   ${SRC_DIR}/PoolingFunctions.h
   ${SRC_DIR}/PoolingFunctions2D.h

@@ -25,7 +25,10 @@
 
 #pragma once
 
-#include "common.h"
+#include "gna2-model-impl.h"
+
+#include "gna-api.h"
+#include "gna2-model-api.h"
 
 #include <map>
 #include <vector>
@@ -39,6 +42,8 @@ using __ShapeMap = std::map<const gna_tensor_dim, uint32_t>;
 
 struct Shape : public __ShapeMap
 {
+    static constexpr size_type ShapeMaximumNumberOfDimension = GNA2_SHAPE_MAXIMUM_NUMBER_OF_DIMENSIONS;
+
     Shape();
 
     Shape(const uint32_t x, const uint32_t y, gna_tensor_order mapOrder);
@@ -54,18 +59,24 @@ struct Shape : public __ShapeMap
 
     Shape(const Shape map, gna_tensor_order newOrder);
 
-    Shape(const gna_3d_dimensions dimensions);
+    Shape(const gna_3d_dimensions shape);
+
+    explicit Shape(const ApiShape& shape, const gna_tensor_order layout = GNA_TENSOR_ORDER_ANY);
 
     Shape& operator=(const Shape& right);
 
     operator gna_3d_dimensions const() const;
+
+    uint32_t GetNumberOfElements() const;
 
     void Validate(const ComponentLimits* validator) const;
 
 protected:
     static const std::map<const gna_tensor_order, const std::vector<gna_tensor_dim>> VectorIndices;
 
-    static const Shape SubsetDimensionMap(const Shape, gna_tensor_order newOrder);
+    static const Shape SubsetDimensionMap(const __ShapeMap&, gna_tensor_order newOrder);
+
+    static __ShapeMap Create(const ApiShape& shape, gna_tensor_order order);
 
     gna_tensor_order order;
 };

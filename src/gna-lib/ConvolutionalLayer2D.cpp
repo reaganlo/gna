@@ -25,11 +25,12 @@
 
 #include "ConvolutionalLayer2D.h"
 
-#include "AccelerationDetector.h"
-#include "HardwareCapabilities.h"
-#include "LayerConfiguration.h"
+#include "ConvolutionalFunctions2D.h"
 #include "Expect.h"
+#include "HardwareCapabilities.h"
 #include "HardwareLayer.h"
+#include "LayerConfiguration.h"
+#include "PoolingFunctions2D.h"
 
 using namespace GNA;
 
@@ -60,8 +61,8 @@ ConvolutionalLayer2D::ConvolutionalLayer2D(nn_layer const * const layer, const B
 DataConfig ConvolutionalLayer2D::GetDataMode() const
 {
     auto& convolutionTransform = *Transforms.Get<ConvolutionFunction2D>(ConvolutionalTransform2D);
-    auto filterMode = convolutionTransform.Filters->Mode.Value;
-    auto biasMode = convolutionTransform.Biases->Mode.Value;
+    const auto filterMode = convolutionTransform.Filters->Mode.Value;
+    const auto biasMode = convolutionTransform.Biases->Mode.Value;
     return DataConfig(Input.Mode.Value, filterMode, biasMode, Output.Mode.Value);
 }
 

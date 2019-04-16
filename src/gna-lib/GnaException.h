@@ -55,7 +55,7 @@ public:
 
     inline ApiStatus GetStatus() const
     {
-        return (ApiStatus)Status;
+        return CAST2_STATUS Status;
     }
 
     inline void Print() const

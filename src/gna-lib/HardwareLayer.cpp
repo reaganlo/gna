@@ -28,16 +28,16 @@
 #include <algorithm>
 #include <cmath>
 
-#include "ActiveList.h"
 #include "ConvolutionalLayer.h"
 #include "Expect.h"
 #include "GmmLayer.h"
 #include "HardwareCapabilities.h"
-#include "LayerConfiguration.h"
 #include "Macros.h"
 #include "RecurrentLayer.h"
 #include "RequestConfiguration.h"
 #include "SimpleLayers.h"
+#include "ConvolutionalFunctions2D.h"
+#include "PoolingFunctions2D.h"
 
 using std::array;
 using std::make_unique;

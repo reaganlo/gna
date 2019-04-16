@@ -111,20 +111,21 @@ typedef enum _bias_mode
  */
 typedef enum _tensor_order
 {
-    GNA_TENSOR_SCALAR = 0,                      // Scalar, order = 0
-    GNA_TENSOR_W = 1,                           // Width (1D vector)
-    GNA_TENSOR_H = 2,                           // Height (1D vector)
-    GNA_TENSOR_NW = 4,                          // Grouping, Width (2D Matrix) AKA INTERLEAVED
-    GNA_TENSOR_NH = 8,                          // Grouping, Height (2D Matrix) AKA INTERLEAVED
-    GNA_TENSOR_WN = 16,                         // Width, Grouping (2D Matrix) AKA DEINTERLEAVED/FLAT
-    GNA_TENSOR_WH = 32,                         // Width, Height (2D Matrix) (Weights)
-    GNA_TENSOR_HN = 64,                         // Height, Grouping (2D Matrix) AKA DEINTERLEAVED/FLAT
-    GNA_TENSOR_HD = 256,                        // Height, Depth/Channel, (2D Matrix)
-    GNA_TENSOR_HDW = 512,                       // Height, Depth/Channel, Width (3D Tensor)
-    GNA_TENSOR_NWH = 1024,                      // Grouping, Width, Height (3D Tensor)
-    GNA_TENSOR_WHD = 2048,                      //  Width, Height, Depth/Channel (3D Tensor)
-    GNA_TENSOR_NHWD = 4096,                     // N -Grouping[=1]/Number of filters, Height, Width, Depth/Channel (GNA 2D CNN default) (4D Tensor)
-    GNA_TENSOR_NDHW = 8192,                     // N -Grouping[=1]/Number of filters, Depth/Channel, Height, Width, (TensorFlow) (4D Tensor)
+    GNA_TENSOR_SCALAR = 0,      // Scalar, order = 0
+    GNA_TENSOR_W = 1,           // Width (1D vector)
+    GNA_TENSOR_H = 2,           // Height (1D vector)
+    GNA_TENSOR_NW = 4,          // Grouping, Width (2D Matrix) AKA INTERLEAVED
+    GNA_TENSOR_NH = 8,          // Grouping, Height (2D Matrix) AKA INTERLEAVED
+    GNA_TENSOR_WN = 16,         // Width, Grouping (2D Matrix) AKA DEINTERLEAVED/FLAT
+    GNA_TENSOR_WH = 32,         // Width, Height (2D Matrix) (Weights)
+    GNA_TENSOR_HN = 64,         // Height, Grouping (2D Matrix) AKA DEINTERLEAVED/FLAT
+    GNA_TENSOR_HD = 256,        // Height, Depth/Channel, (2D Matrix)
+    GNA_TENSOR_HDW = 512,       // Height, Depth/Channel, Width (3D Tensor)
+    GNA_TENSOR_NWH = 1024,      // Grouping, Width, Height (3D Tensor)
+    GNA_TENSOR_WHD = 2048,      //  Width, Height, Depth/Channel (3D Tensor)
+    GNA_TENSOR_NHWD = 4096,     // N -Grouping[=1]/Number of filters, Height, Width, Depth/Channel (GNA 2D CNN default) (4D Tensor)
+    GNA_TENSOR_NDHW = 8192,     // N -Grouping[=1]/Number of filters, Depth/Channel, Height, Width, (TensorFlow) (4D Tensor)
+    GNA_TENSOR_ORDER_ANY = -1,  // ordering as in gna_tensor_dim beginning with GNA_DIM_N
 
     // TODO:3:change to char tensor_format[16?] and implement ~~ uint32 tensor_format.Value...
 
@@ -141,7 +142,7 @@ typedef enum _tensor_dim
     GNA_DIM_W,          // Width
     GNA_DIM_H,          // Height
     GNA_DIM_D,          // Depth (for 2D operations same as Channel)
-    GNA_DIM_C,          // Channel (for 2D operations same as Depth)
+    //GNA_DIM_C,          // Channel (for 2D operations same as Depth)
     GNA_DIM_X,          // Staring index for higher dimensions
     // TODO:3: consider extension to higher dimensions - maybe use char dim[4] {"S"=0, "N"=1, "W"=1...., "1", "2", ... "16"}
 } gna_tensor_dim;
@@ -356,15 +357,15 @@ typedef struct _3d_dimensions
 
 } gna_3d_dimensions;
 
-/** 4D Tensor dimensions (shape) */
-typedef struct _4d_dimensions
-{
-    uint32_t width;                 // Number of elements in dimension W // GNA_DIM_W
-    uint32_t height;                // Number of in elements in dimension H // GNA_DIM_H
-    uint32_t depth;                 // Number of in elements in dimension D // GNA_DIM_D
-    uint32_t channels;              // Number of in channels per element  // GNA_DIM_C
-
-} gna_4d_dimensions;
+///** 4D Tensor dimensions (shape) */
+//typedef struct _4d_dimensions
+//{
+//    uint32_t width;                 // Number of elements in dimension W // GNA_DIM_W
+//    uint32_t height;                // Number of in elements in dimension H // GNA_DIM_H
+//    uint32_t depth;                 // Number of in elements in dimension D // GNA_DIM_D
+//    uint32_t channels;              // Number of in channels per element  // GNA_DIM_C
+//
+//} gna_4d_dimensions;
 
 /** Convolution filter details */
 typedef struct _convolution_filter
