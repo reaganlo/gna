@@ -53,7 +53,7 @@ public:
 
     void SetNumberOfThreads(uint32_t threadCount);
 
-    status_t AllocateMemory(uint32_t requestedSize, uint32_t * sizeGranted, void **memoryAddress);
+    Gna2Status AllocateMemory(uint32_t requestedSize, uint32_t * sizeGranted, void **memoryAddress);
 
     void FreeMemory(void *const buffer);
 

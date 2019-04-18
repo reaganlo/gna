@@ -46,7 +46,7 @@
 
  @param sizeRequested Buffer size desired by the caller.
  @param [out] sizeGranted Buffer size granted by GNA,
-                      can be less then requested due to HW constraints.
+                      can be more then requested due to HW constraints.
  @param [out] memoryAddress Address of memory buffer
  @return Status of the operation.
  */

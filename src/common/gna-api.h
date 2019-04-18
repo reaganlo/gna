@@ -470,7 +470,7 @@ GNAAPI gna_status_t GnaDeviceClose(
  *
  * @param sizeRequested Buffer size desired by the caller.
  * @param sizeGranted   (out) Buffer size granted by GNA,
- *                      can be less then requested due to HW constraints.
+ *                      can be more then requested due to HW constraints.
  * @param memoryAddress (out) Address of memory buffer
  */
 GNAAPI gna_status_t GnaAlloc(

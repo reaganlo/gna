@@ -155,7 +155,7 @@ void Device::AttachActiveList(gna_request_cfg_id configId, uint32_t layerIndex,
     requestBuilder.AttachActiveList(configId, layerIndex, activeList);
 }
 
-status_t Device::AllocateMemory(uint32_t requestedSize,
+Gna2Status Device::AllocateMemory(uint32_t requestedSize,
         uint32_t *sizeGranted, void **memoryAddress)
 {
     Expect::NotNull(sizeGranted);
@@ -171,7 +171,7 @@ status_t Device::AllocateMemory(uint32_t requestedSize,
     *memoryAddress = memoryObject->GetBuffer();
     *sizeGranted = (uint32_t)memoryObject->GetSize();
     memoryObjects.emplace_back(std::move(memoryObject));
-    return GNA_SUCCESS;
+    return Gna2StatusSuccess;
 }
 
 void Device::FreeMemory(void *buffer)
