@@ -34,7 +34,8 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 project(${PROJECT_NAME})
 
 add_executable(test-gna-api
-  test-gna-api.cpp)
+  test-gna-api.cpp
+  test-model-export-legacy-sue.cpp)
     
 target_include_directories(test-gna-api
   PRIVATE ${SRC_DIR} ${API_DIR} ${API_IMPL_DIR} ${KERNEL_DIR})
