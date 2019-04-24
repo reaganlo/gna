@@ -238,19 +238,19 @@ void AccelerationMode::DisableHwConsistency()
 }
 
 static std::map<AccelerationMode, const char*> AccelerationModeNames{
-    {AccelerationMode{ Gna2AccelerationModeHardware },"GNA_ACC_MODE_WH"},
-    {AccelerationMode{ Gna2AccelerationModeAuto,true },"GNA_ACC_MODE_AUTO_SAT"},
-    {AccelerationMode{ Gna2AccelerationModeAuto,false },"GNA_ACC_MODE_AUTO_FAST"},
-    {AccelerationMode{ Gna2AccelerationModeSoftware,true },"GNA_ACC_MODE_SW_SAT"},
-    {AccelerationMode{ Gna2AccelerationModeSoftware,false },"GNA_ACC_MODE_SW_FAST"},
-    {AccelerationMode{ Gna2AccelerationModeGeneric,true },"GNA_ACC_MODE_GEN_SAT"},
-    {AccelerationMode{ Gna2AccelerationModeGeneric,false },"GNA_ACC_MODE_GEN_FAST"},
-    {AccelerationMode{ Gna2AccelerationModeSse4x2,true },"GNA_ACC_MODE_SSE4_2_SAT"},
-    {AccelerationMode{ Gna2AccelerationModeSse4x2,false },"GNA_ACC_MODE_SSE4_2_FAST"},
-    {AccelerationMode{ Gna2AccelerationModeAvx1, true },"GNA_ACC_MODE_AVX1_SAT"},
-    {AccelerationMode{ Gna2AccelerationModeAvx1, false },"GNA_ACC_MODE_AVX1_FAST"},
-    {AccelerationMode{ Gna2AccelerationModeAvx2,true },"GNA_ACC_MODE_AVX2_SAT"},
-    {AccelerationMode{ Gna2AccelerationModeAvx2,false },"GNA_ACC_MODE_AVX2_FAST"},
+    {AccelerationMode{ Gna2AccelerationModeHardware },"GNA_HW"},
+    {AccelerationMode{ Gna2AccelerationModeAuto,true },"GNA_AUTO_SAT"},
+    {AccelerationMode{ Gna2AccelerationModeAuto,false },"GNA_AUTO_FAST"},
+    {AccelerationMode{ Gna2AccelerationModeSoftware,true },"GNA_SW_SAT"},
+    {AccelerationMode{ Gna2AccelerationModeSoftware,false },"GNA_SW_FAST"},
+    {AccelerationMode{ Gna2AccelerationModeGeneric,true },"GNA_GEN_SAT"},
+    {AccelerationMode{ Gna2AccelerationModeGeneric,false },"GNA_GEN_FAST"},
+    {AccelerationMode{ Gna2AccelerationModeSse4x2,true },"GNA_SSE4_2_SAT"},
+    {AccelerationMode{ Gna2AccelerationModeSse4x2,false },"GNA_SSE4_2_FAST"},
+    {AccelerationMode{ Gna2AccelerationModeAvx1, true },"GNA_AVX1_SAT"},
+    {AccelerationMode{ Gna2AccelerationModeAvx1, false },"GNA_AVX1_FAST"},
+    {AccelerationMode{ Gna2AccelerationModeAvx2,true },"GNA_AVX2_SAT"},
+    {AccelerationMode{ Gna2AccelerationModeAvx2,false },"GNA_AVX2_FAST"},
 };
 
 const char* AccelerationMode::UNKNOWN_ACCELERATION_MODE_NAME = "GNA_UNKNOWN_ACCELERATION_MODE";
