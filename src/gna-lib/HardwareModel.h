@@ -50,8 +50,9 @@ struct RequestProfiler;
 class HardwareModel
 {
 public:
-    static uint32_t CalculateDescriptorSize(const uint32_t layerCount,
-        const uint32_t gmmLayersCount, const DeviceVersion hwId = DefaultDeviceVersion);
+    static uint32_t CalculateDescriptorSize(
+        const uint32_t layerCount,
+        const uint32_t gmmLayersCount);
 
     HardwareModel(const std::vector<std::unique_ptr<Layer>>& layers, uint32_t gmmCount,
         const HardwareCapabilities& hwCaps);
@@ -80,8 +81,7 @@ public:
 protected:
     static uint32_t getLayerDescriptorsSize(const uint32_t layerCount,
         DeviceVersion hwId = DefaultDeviceVersion);
-    static uint32_t getGmmDescriptorsSize(const uint32_t gmmLayersCount,
-        DeviceVersion hwId = DefaultDeviceVersion);
+    static uint32_t getGmmDescriptorsSize(const uint32_t gmmLayersCount);
 
     virtual void allocateLayerDescriptors();
 

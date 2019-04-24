@@ -30,7 +30,7 @@
 using namespace GNA;
 
 BaseValidator::BaseValidator(
-    const HardwareCapabilities& hwCapabilities,
+    const HardwareCapabilities hwCapabilities,
     const ValidBoundariesFunctor validBoundariesIn) :
     HwCapabilities{ hwCapabilities },
     bufferValidator{ validBoundariesIn }

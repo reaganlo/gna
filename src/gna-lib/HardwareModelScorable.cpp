@@ -89,6 +89,10 @@ uint32_t HardwareModelScorable::Score(
         throw GnaException(GNA_UNKNOWN_ERROR);
     }
 
+    Expect::InRange(layerCount,
+        ui32_0, hwCapabilities.GetMaximumLayerCount(),
+        XNN_ERR_NET_LYR_NO);
+
     auto operationMode = xNN;
 
     const auto& layer = *softwareLayers.at(layerIndex);

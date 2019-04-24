@@ -39,12 +39,11 @@
 using namespace GNA;
 
 uint32_t HardwareModel::CalculateDescriptorSize(
-        const uint32_t layerCount, const uint32_t gmmLayersCount,
-        const DeviceVersion hwId)
+        const uint32_t layerCount, const uint32_t gmmLayersCount)
 {
     Expect::InRange(layerCount, ui32_1,
-        HardwareCapabilities::GetMaximumLayerCount(hwId), XNN_ERR_NET_LYR_NO);
-    Expect::InRange(gmmLayersCount, ui32_0, layerCount, XNN_ERR_NET_LYR_NO);
+        HardwareCapabilities::GetMaximumLayerCount(DefaultDeviceVersion),
+        XNN_ERR_NET_LYR_NO);
 
     auto layerDescriptorsSizeTmp = getLayerDescriptorsSize(layerCount);
     auto gmmDescriptorsSizeTmp = getGmmDescriptorsSize(gmmLayersCount);
@@ -57,7 +56,7 @@ HardwareModel::HardwareModel(
     const HardwareCapabilities& hwCapsIn) :
     softwareLayers{ layers },
     hwCapabilities{ hwCapsIn },
-    gmmDescriptorsSize{ getGmmDescriptorsSize(gmmCount, hwCapabilities.GetDeviceVersion()) },
+    gmmDescriptorsSize{ getGmmDescriptorsSize(gmmCount) },
     xnnDescriptorsSize{ getLayerDescriptorsSize(static_cast<uint32_t>(layers.size()),
                                                         hwCapabilities.GetDeviceVersion()) }
 {
@@ -153,17 +152,12 @@ uint32_t HardwareModel::GetBufferOffset(const BaseAddress& address) const
 uint32_t HardwareModel::getLayerDescriptorsSize(
     const uint32_t layerCount, const DeviceVersion hwId)
 {
-    Expect::InRange(layerCount, ui32_1,
-        HardwareCapabilities::GetMaximumLayerCount(hwId), XNN_ERR_NET_LYR_NO);
     auto layerDescriptorsSizeTmp = LayerDescriptor::GetSize(layerCount, hwId);
     return layerDescriptorsSizeTmp;
 }
 
-uint32_t HardwareModel::getGmmDescriptorsSize(
-    const uint32_t gmmLayersCount, const DeviceVersion hwId)
+uint32_t HardwareModel::getGmmDescriptorsSize(const uint32_t gmmLayersCount)
 {
-    Expect::InRange(gmmLayersCount, ui32_0,
-        HardwareCapabilities::GetMaximumLayerCount(hwId), XNN_ERR_NET_LYR_NO);
     auto gmmDescriptorsSizeTmp = size_t{gmmLayersCount * sizeof(GMM_CONFIG)};
     return static_cast<uint32_t>(gmmDescriptorsSizeTmp);
 }

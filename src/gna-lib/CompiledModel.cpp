@@ -140,36 +140,31 @@ status_t CompiledModel::Score(
     KernelBuffers *buffers)
 {
     profilerDTscStart(&profiler->scoring);
-
     auto saturationCount = uint32_t{0};
-    const auto isHardwareEnforced = config.Acceleration.IsHardwareEnforced();
-    const auto isSoftwareEnforced = !hwCapabilities.IsHardwareSupported() ||
-        (config.Acceleration.IsSoftwareEnforced());
-
     try
     {
-        if (isHardwareEnforced && !hardwareModel)
+        const auto isHardwareEnforced = config.Acceleration.IsHardwareEnforced();
+        const auto isSoftwareEnforced = config.Acceleration.IsSoftwareEnforced();
+        if (isHardwareEnforced)
         {
-            return GNA_CPUTYPENOTSUPPORTED;
-        }
-
-        if (isHardwareEnforced || config.HasConsistencyMode())
-        {
-            auto hwCaps = hwCapabilities;
-            if (config.HasConsistencyMode()
-                    && hwCaps.GetDeviceVersion() != config.GetConsistentDevice())
+            if (!hardwareModel)
             {
-                hwCaps = HardwareCapabilities(config.GetConsistentDevice());
+                return GNA_CPUTYPENOTSUPPORTED;
             }
 
-            const auto& deviceSubmodels = getSubmodels(hwCaps);
+            const auto& deviceSubmodels = getSubmodels(hwCapabilities);
             if (deviceSubmodels.front()->Type == Software || deviceSubmodels.size() > 1)
             {
                 return GNA_CPUTYPENOTSUPPORTED;
             }
         }
 
-        if (isSoftwareEnforced)
+        // TODO: 3: we need to store information about consistency between devices
+        // https://idc-tfs-01.devtools.intel.com:8088/tfs/DefaultCollection/Omega/_workitems?_a=edit&id=17703
+        const auto isConsistentDeviceSupported = hwCapabilities.IsHardwareSupported() &&
+                                (config.GetConsistentDevice() == hwCapabilities.GetDeviceVersion());
+        if (isSoftwareEnforced ||
+            (config.HasConsistencyMode() && !isConsistentDeviceSupported))
         {
             saturationCount = softwareModel.Score(0, LayerCount, config, profiler, buffers);
         }
@@ -189,7 +184,7 @@ status_t CompiledModel::Score(
 }
 
 void CompiledModel::ValidateBuffer(
-    std::vector<Memory *> &configMemoryList, Memory *memory) const
+        std::vector<Memory *> &configMemoryList, Memory *memory) const
 {
     if (hardwareModel)
     {
@@ -253,7 +248,7 @@ BaseValidator CompiledModel::makeValidator()
 {
     return BaseValidator
     {
-        hwCapabilities,
+        HardwareCapabilities(),
         ValidBoundariesFunctor {
             [this] (const void *buffer, size_t bufferSize)
             {
@@ -266,8 +261,7 @@ BaseValidator CompiledModel::makeValidator()
 uint32_t CompiledModel::scoreAllSubModels(RequestConfiguration& config,
     RequestProfiler *profiler, KernelBuffers *buffers)
 {
-    const auto& deviceSubmodels = getSubmodels(
-            HardwareCapabilities(config.GetConsistentDevice()));
+    const auto& deviceSubmodels = getSubmodels(hwCapabilities);
     auto saturationCount = uint32_t{0};
     for (const auto& submodel : deviceSubmodels)
     {

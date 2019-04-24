@@ -38,8 +38,8 @@ add_executable(test-gna-api
   test-model-export-legacy-sue.cpp)
     
 target_include_directories(test-gna-api
-  PRIVATE ${SRC_DIR} ${API_DIR} ${API_IMPL_DIR} ${KERNEL_DIR})
-  
+  PRIVATE ${SRC_DIR} ${COMMON_DIR} ${API_DIR} ${API_IMPL_DIR} ${KERNEL_DIR})
+
 target_compile_definitions(test-gna-api PRIVATE -DOPTGEN)
 
 target_link_libraries(test-gna-api gtest gna-api)

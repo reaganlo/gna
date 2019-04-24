@@ -114,8 +114,7 @@ void Device::ReleaseConfiguration(gna_request_cfg_id configId)
 void Device::EnableHardwareConsistency(gna_request_cfg_id configId,
                                     DeviceVersion hardwareVersion)
 {
-    if (GNA2_NOT_SUPPORTED == hardwareVersion
-        || Gna2DeviceVersionSoftwareEmulation == hardwareVersion)
+    if (Gna2DeviceVersionSoftwareEmulation == hardwareVersion)
     {
         throw GnaException(GNA_ERR_INVALID_DEVICE_VERSION);
     }

@@ -26,11 +26,11 @@
 #include "gna-api.h"
 #include "../../gna-api/gna2-model-api.h"
 
+#include "Macros.h"
+
 #include <chrono>
 #include <gtest/gtest.h>
 #include <iostream>
-
-#define UNREFERENCED_PARAMETER(P) (P)
 
 class TestGnaApi : public testing::Test
 {

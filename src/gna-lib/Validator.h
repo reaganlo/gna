@@ -45,7 +45,7 @@ class BaseValidator
 {
 public:
     BaseValidator(
-        const HardwareCapabilities& hwCapabilities,
+        const HardwareCapabilities hwCapabilities,
         const ValidBoundariesFunctor bufferValidator);
     ~BaseValidator() = default;
 
@@ -59,7 +59,7 @@ public:
             ValidateBuffer(buffer, size, alignLimits);
     }
 
-    const HardwareCapabilities& HwCapabilities;
+    const HardwareCapabilities HwCapabilities;
 
 protected:
     const ValidBoundariesFunctor bufferValidator;

@@ -38,6 +38,8 @@
 
 using namespace GNA;
 
+constexpr uint32_t DeviceManager::DefaultThreadCount;
+
 DeviceManager::DeviceManager()
 {
     // TODO:3: use DriverInterface method to determine number of devices

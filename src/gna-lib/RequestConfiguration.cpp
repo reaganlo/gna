@@ -92,7 +92,7 @@ void RequestConfiguration::AddActiveList(uint32_t layerIndex, const ActiveList& 
 void RequestConfiguration::SetHardwareConsistency(
     DeviceVersion consistentDeviceIn)
 {
-    if (GNA2_NOT_SUPPORTED != consistentDevice && Gna2DeviceVersionSoftwareEmulation != consistentDevice)
+    if (Gna2DeviceVersionSoftwareEmulation != consistentDevice)
     {
         HardwareCapabilities::GetHardwareConsistencySettings(BufferElementCount, consistentDeviceIn);
         Acceleration.EnableHwConsistency();
