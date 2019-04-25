@@ -25,6 +25,7 @@
 
 #include "ModelWrapper.h"
 
+#include "DataMode.h"
 #include "gna2-model-impl.h"
 
 #include <vector>
@@ -47,6 +48,19 @@ void ModelWrapper::OperationInit(ApiOperation * const operation, const Operation
     operation->Parameters = AllocateAndFillZeros<void>(userAllocator, operation->NumberOfParameters);
 }
 
+uint32_t ModelWrapper::DataTypeGetSize(DataType type)
+{
+    const auto dataSize = DataMode::ToSize<uint32_t>(type);
+    return dataSize;
+}
+
+uint32_t ModelWrapper::ShapeGetNumberOfElements(ApiShape const * shape)
+{
+    Expect::NotNull(shape);
+    const auto shapeImpl = Shape::Create(*shape);
+    return shapeImpl.GetNumberOfElements();
+}
+
 uint32_t ModelWrapper::GetNumberOfOperands(OperationType operationType)
 {
     static std::map<OperationType, uint32_t> numberOfOperands =
@@ -63,9 +77,9 @@ uint32_t ModelWrapper::GetNumberOfOperands(OperationType operationType)
     {
         return numberOfOperands.at(operationType);
     }
-    catch (const std::out_of_range&)
+    catch (const std::out_of_range &)
     {
-         throw GnaException(Gna2StatusModelConfigurationInvalid);
+        throw GnaException(Gna2StatusModelConfigurationInvalid);
     }
 }
 
@@ -86,8 +100,8 @@ uint32_t ModelWrapper::GetNumberOfParameters(OperationType operationType)
     {
         return numberOfParameters.at(operationType);
     }
-    catch (const std::out_of_range&)
+    catch (const std::out_of_range &)
     {
-         throw GnaException(Gna2StatusModelConfigurationInvalid);
+        throw GnaException(Gna2StatusModelConfigurationInvalid);
     }
 }

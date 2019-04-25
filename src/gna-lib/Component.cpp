@@ -30,7 +30,7 @@
 using namespace GNA;
 
 Component::Component(const Shape& dimensions, const Validator& validatorIn, bool validateDimensions) :
-    Dimensions{ dimensions, validatorIn.Order }
+    Dimensions{ dimensions.Reshape(validatorIn.Order) }
 {
     // TODO:3: what about data disabled? what size and dimensions? leave dimensions as should be and mode=size=0?
     Count = 1;

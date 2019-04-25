@@ -1255,6 +1255,7 @@ GNA2_API enum Gna2Status Gna2ModelOperationInit(
 
  @param type The type of the data.
  @return Size in bytes of given data type.
+ @retval GNA2_NOT_SUPPORTED If type is invalid.
  */
 GNA2_API uint32_t Gna2DataTypeGetSize(enum Gna2DataType type);
 
@@ -1265,6 +1266,8 @@ GNA2_API uint32_t Gna2DataTypeGetSize(enum Gna2DataType type);
 
  @param shape The shape to calculate the number of elements.
  @return Total number of elements.
+ @retval GNA2_NOT_SUPPORTED If shape is NULL or malformed.
+ @retval 0 If shape has no dimensions.
  */
 GNA2_API uint32_t Gna2ShapeGetNumberOfElements(struct Gna2Shape const * shape);
 
@@ -1387,7 +1390,7 @@ GNA2_API struct Gna2Operation Gna2OperationInitConvolution(
     struct Gna2Tensor * filters, struct Gna2Tensor * biases,
     struct Gna2Tensor * activation,
     struct Gna2Shape * zeroPadding,
-    struct Gna2Shape * concolutionStride,
+    struct Gna2Shape * convolutionStride,
     enum Gna2BiasMode * biasMode);
 
 GNA2_API struct Gna2Operation Gna2OperationInitConvolutionFused(
@@ -1395,7 +1398,7 @@ GNA2_API struct Gna2Operation Gna2OperationInitConvolutionFused(
     struct Gna2Tensor * filters, struct Gna2Tensor * biases,
     struct Gna2Tensor * activation,
     struct Gna2Shape * zeroPadding,
-    struct Gna2Shape * concolutionStride,
+    struct Gna2Shape * convolutionStride,
     enum Gna2BiasMode * biasMode,
     enum Gna2PoolingMode * poolingMode,
     struct Gna2Shape * poolingWindow,
@@ -1424,7 +1427,7 @@ GNA2_API struct Gna2Operation Gna2OperationInitGmm(
     struct Gna2Tensor * consts,
     uint32_t * maximumScore);
 
-GNA2_API struct Gna2Operation Gna2OperationInitGmInterleaved(
+GNA2_API struct Gna2Operation Gna2OperationInitGmmInterleaved(
     struct Gna2Tensor * inputs, struct Gna2Tensor * outputs,
     struct Gna2Tensor * interleavedTensors,
     uint32_t * maximumScore);

@@ -36,7 +36,7 @@ namespace GNA
 struct Component
 {
     Component(const Shape& dimensions, const Validator& validator, bool validateDimensions = true);
-    ~Component() = default;
+    virtual ~Component() = default;
 
     /**
      * Gets Dimensions value at dimension key

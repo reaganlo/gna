@@ -51,6 +51,7 @@ public:
     HardwareModelScorable(
         const std::vector<std::unique_ptr<Layer>>& layers, uint32_t gmmCount,
         DriverInterface &ddi, const HardwareCapabilities& hwCapsIn);
+    virtual ~HardwareModelScorable() = default;
 
     void InvalidateConfig(gna_request_cfg_id configId);
 

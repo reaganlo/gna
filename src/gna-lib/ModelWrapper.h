@@ -32,18 +32,34 @@
 #include "GnaException.h"
 
 #include <cstdint>
-#include <cstring> 
+#include <cstring>
 #include <map>
 #include <vector>
 
 namespace GNA
 {
-
 class ModelWrapper
 {
 public:
-    static void OperationInit(ApiOperation * const operation,
-        const OperationType type, const Gna2UserAllocator userAllocator);
+    static void OperationInit(ApiOperation * operation,
+        OperationType type, Gna2UserAllocator userAllocator);
+
+    static uint32_t DataTypeGetSize(DataType type);
+
+    static uint32_t ShapeGetNumberOfElements(ApiShape const * shape);
+
+    static ApiShape ShapeInit()
+    {
+        auto shape = Shape();
+        return static_cast<ApiShape>(shape);
+    }
+
+    template<typename ... T>
+    static ApiShape ShapeInit(gna_tensor_order order, T ... dimensions)
+    {
+        auto shape = Shape(order, static_cast<uint32_t>(dimensions)...);
+        return static_cast<ApiShape>(shape);
+    }
 
 protected:
     static uint32_t GetNumberOfOperands(OperationType operationType);
@@ -54,14 +70,13 @@ private:
     static Type ** AllocateAndFillZeros(const Gna2UserAllocator userAllocator, uint32_t elementCount)
     {
         Expect::NotNull((void *)(userAllocator));
-        const auto size =  static_cast<uint32_t>(sizeof(Type *)) * elementCount;
+        const auto size = static_cast<uint32_t>(sizeof(Type *)) * elementCount;
         const auto memory = userAllocator(size);
         Expect::NotNull(memory, CAST1_STATUS Gna2StatusResourceAllocationError);
         memset(memory, 0, size);
         return static_cast<Type **>(memory);
     }
 };
-
 }
 
 #endif //ifndef __GNA2_MODEL_WRAPPER_H

@@ -27,119 +27,104 @@
 
 #include "Expect.h"
 
+#include <unordered_map>
+#include <vector>
+#include <array>
+
 using namespace GNA;
 
-const std::map<const gna_tensor_order, const std::vector<gna_tensor_dim>> Shape::VectorIndices
+const std::unordered_map<gna_tensor_order, const std::vector<gna_tensor_dim>, TensorDimHash> Shape::VectorIndices
 {
-    {GNA_TENSOR_W, {GNA_DIM_W}},
-    {GNA_TENSOR_H, {GNA_DIM_H}},
-    {GNA_TENSOR_NW, {GNA_DIM_N, GNA_DIM_W}},
-    {GNA_TENSOR_NH, {GNA_DIM_N, GNA_DIM_H}},
-    {GNA_TENSOR_WN, {GNA_DIM_W, GNA_DIM_N}},
-    {GNA_TENSOR_WH, {GNA_DIM_W, GNA_DIM_H}},
-    {GNA_TENSOR_HN, {GNA_DIM_H, GNA_DIM_N}},
-    {GNA_TENSOR_HD, {GNA_DIM_H, GNA_DIM_D}},
-    {GNA_TENSOR_HDW, {GNA_DIM_H, GNA_DIM_D, GNA_DIM_W}},
-    {GNA_TENSOR_NWH, {GNA_DIM_N, GNA_DIM_W, GNA_DIM_H}},
-    {GNA_TENSOR_WHD, {GNA_DIM_W, GNA_DIM_H, GNA_DIM_D}},
-    {GNA_TENSOR_NHWD, {GNA_DIM_N, GNA_DIM_H, GNA_DIM_W, GNA_DIM_D}},
-    {GNA_TENSOR_NDHW, {GNA_DIM_N, GNA_DIM_D, GNA_DIM_H, GNA_DIM_W}},
-    {GNA_TENSOR_ORDER_ANY, {GNA_DIM_N, GNA_DIM_W, GNA_DIM_H, GNA_DIM_D,
-        GNA_DIM_X, gna_tensor_dim(GNA_DIM_X + 1),
-        gna_tensor_dim(GNA_DIM_X + 2), gna_tensor_dim(GNA_DIM_X + 3)}},
+    { GNA_TENSOR_SCALAR, {} },
+    { GNA_TENSOR_W, { GNA_DIM_W } },
+    { GNA_TENSOR_H, { GNA_DIM_H } },
+    { GNA_TENSOR_NW, { GNA_DIM_N, GNA_DIM_W } },
+    { GNA_TENSOR_NH, { GNA_DIM_N, GNA_DIM_H } },
+    { GNA_TENSOR_WN, { GNA_DIM_W, GNA_DIM_N } },
+    { GNA_TENSOR_WH, { GNA_DIM_W, GNA_DIM_H } },
+    { GNA_TENSOR_HN, { GNA_DIM_H, GNA_DIM_N } },
+    { GNA_TENSOR_HD, { GNA_DIM_H, GNA_DIM_D } },
+    { GNA_TENSOR_HDW, { GNA_DIM_H, GNA_DIM_D, GNA_DIM_W } },
+    { GNA_TENSOR_NWH, { GNA_DIM_N, GNA_DIM_W, GNA_DIM_H } },
+    { GNA_TENSOR_WHD, { GNA_DIM_W, GNA_DIM_H, GNA_DIM_D } },
+    { GNA_TENSOR_NHWD, { GNA_DIM_N, GNA_DIM_H, GNA_DIM_W, GNA_DIM_D } },
+    { GNA_TENSOR_NDHW, { GNA_DIM_N, GNA_DIM_D, GNA_DIM_H, GNA_DIM_W } },
+    {
+        GNA_TENSOR_ORDER_ANY,
+        {
+            GNA_DIM_N,
+            GNA_DIM_W,
+            GNA_DIM_H,
+            GNA_DIM_D,
+            GNA_DIM_X,
+            gna_tensor_dim(GNA_DIM_X + 1),
+            gna_tensor_dim(GNA_DIM_X + 2),
+            gna_tensor_dim(GNA_DIM_X + 3)
+        }
+    },
 };
 
-Shape::Shape() :
-    __ShapeMap(),
-    order{GNA_TENSOR_SCALAR}
+Shape::Shape(ShapeMap && map, gna_tensor_order order) :
+    ShapeMap{ std::move(map) },
+    Order{ order }
 {}
 
-Shape::Shape(const uint32_t x, const uint32_t y, gna_tensor_order mapOrder) :
-    __ShapeMap({ { VectorIndices.at(mapOrder).at(0), x }, { VectorIndices.at(mapOrder).at(1), y } }),
-    order{mapOrder}
+void Shape::ValidateNumberOfDimensions(gna_tensor_order order,
+    size_type orderDimensions, size_type shapeDimensions)
 {
-    Expect::Equal(VectorIndices.at(mapOrder).size(), (size_t)2, XNN_ERR_NETWORK_INPUTS); // TODO:3: add error code
+    auto condition = false;
+    if (GNA_TENSOR_ORDER_ANY == order)
+    {
+        condition = shapeDimensions <= orderDimensions;
+    }
+    else
+    {
+        condition = shapeDimensions == orderDimensions;
+    }
+    Expect::True(condition, CAST1_STATUS Gna2StatusModelConfigurationInvalid); // TODO:3: add error code
 }
-
-Shape::Shape(const uint32_t x, const uint32_t y, const uint32_t z, gna_tensor_order mapOrder) :
-    __ShapeMap({ { VectorIndices.at(mapOrder).at(0), x },
-          { VectorIndices.at(mapOrder).at(1), y },
-          { VectorIndices.at(mapOrder).at(2), z } }),
-    order{mapOrder}
-{
-    Expect::Equal(VectorIndices.at(mapOrder).size(), (size_t)3, XNN_ERR_NETWORK_INPUTS); // TODO:3: add error code
-}
-
-Shape::Shape(const uint32_t x, const uint32_t y, const uint32_t z, const uint32_t w, gna_tensor_order mapOrder) :
-    __ShapeMap({ { VectorIndices.at(mapOrder).at(0), x },
-          { VectorIndices.at(mapOrder).at(1), y },
-          { VectorIndices.at(mapOrder).at(2), z },
-          { VectorIndices.at(mapOrder).at(3), w }}),
-    order{mapOrder}
-{
-    // TODO:3: will never hit as exception is generated above
-    Expect::Equal(VectorIndices.at(mapOrder).size(), (size_t)4, XNN_ERR_NETWORK_INPUTS); // TODO:3: add error code
-}
-
-Shape::Shape(const uint32_t N, const uint32_t W, const uint32_t H) :
-    Shape{N, W, H, GNA_TENSOR_NWH}
-{};
-
-Shape::Shape(const Shape map, gna_tensor_order newOrder) :
-    __ShapeMap{SubsetDimensionMap(map, newOrder)},
-    order{newOrder}
-{};
 
 Shape::Shape(const gna_3d_dimensions shape) :
-    Shape{shape.width, shape.height, shape.depth, GNA_TENSOR_WHD}
+    Shape{ GNA_TENSOR_WHD, shape.width, shape.height, shape.depth }
 {}
 
-Shape::Shape(const ApiShape & apiShape, const gna_tensor_order layout)  :
-    __ShapeMap{ Create(apiShape, layout) },
-    order{ layout }
-{};
-
-Shape& Shape::operator=(const Shape& right)
+Shape & Shape::operator=(const Shape & right)
 {
-    __ShapeMap::operator=(static_cast<__ShapeMap>(right));
-    this->order = right.order;
+    ShapeMap::operator=(static_cast<ShapeMap>(right));
+    this->Order = right.Order;
     return (*this);
 }
 
-const Shape Shape::SubsetDimensionMap(
-    const __ShapeMap& shape, gna_tensor_order newOrder)
+Shape Shape::Reshape(gna_tensor_order order) const
 {
-    Expect::True(shape.size() >= VectorIndices.at(newOrder).size(), XNN_ERR_NETWORK_INPUTS); // TODO:3: add error code
+    Expect::True(this->size() >= VectorIndices.at(order).size(), XNN_ERR_NETWORK_INPUTS); // TODO:3: add error code
     Shape dims;
-    for (const auto& dim : VectorIndices.at(newOrder))
+    dims.Order = order;
+    for (const auto & dim : VectorIndices.at(order))
     {
-        dims[dim] = shape.at(dim);
+        dims[dim] = this->at(dim);
     }
     return dims;
 }
 
-__ShapeMap Shape::Create(const ApiShape & apiShape, const gna_tensor_order order)
+Shape Shape::Create(const ApiShape & shape, const gna_tensor_order order)
 {
-    const auto dimensionCount = static_cast<size_type>(apiShape.NumberOfDimensions);
-    Expect::InRange<size_type>(dimensionCount,
-        0, ShapeMaximumNumberOfDimension,
-        CAST1_STATUS Gna2StatusModelConfigurationInvalid);
-    
-    const auto& layout = VectorIndices.at(order);
-    Expect::InRange(dimensionCount, layout.size(),
-        CAST1_STATUS Gna2StatusModelConfigurationInvalid);
-    
-    __ShapeMap shape;
-    size_type i = 0;
-    for (; i < dimensionCount; i++)
-    {
-        shape[layout.at(i)] = apiShape.Dimensions[i];
-    }
-    for (; i < layout.size(); i++)
-    {
-        shape[layout.at(i)] = 0;
-    }
+    // TODO:3:verify if initializer_list can always be constructed using 2 pointers
+    return Shape(std::move(Create(std::vector<uint32_t>(shape.Dimensions,
+        &shape.Dimensions[shape.NumberOfDimensions]), order)), order);
+}
 
+ShapeMap Shape::Create(const std::vector<uint32_t> && dimensions, const gna_tensor_order order)
+{
+    const auto & layout = VectorIndices.at(order);
+    ValidateNumberOfDimensions(order, layout.size(), dimensions.size());
+
+    ShapeMap shape;
+    size_type i = 0;
+    for (const auto & dim : dimensions)
+    {
+        shape[layout.at(i++)] = dim;
+    }
     return shape;
 }
 
@@ -162,11 +147,23 @@ Shape::operator gna_3d_dimensions const() const
     }
 }
 
+Shape::operator ApiShape() const
+{
+    ApiShape shape = {};
+    shape.NumberOfDimensions = static_cast<uint32_t>(size());
+    uint32_t i = 0;
+    for (const auto & dim : *this)
+    {
+        shape.Dimensions[i++] = dim.second;
+    }
+    return shape;
+}
+
 uint32_t Shape::GetNumberOfElements() const
 {
     uint32_t count = 1;
     uint32_t sum = 0;
-    for (const auto& dim : *this)
+    for (const auto & dim : *this)
     {
         sum += dim.second;
         if (0 != dim.second)
@@ -176,7 +173,7 @@ uint32_t Shape::GetNumberOfElements() const
     }
     if (0 == sum)
     {
-        return 0;
+        return 0; // TODO:3:API: should scalar return 0?
     }
     else
     {
@@ -184,8 +181,8 @@ uint32_t Shape::GetNumberOfElements() const
     }
 }
 
-void Shape::Validate(const ComponentLimits* validator) const
+void Shape::Validate(const ComponentLimits * validator) const
 {
-    Expect::Equal(order, validator->Order.Value, validator->Order.Error);
+    Expect::Equal(Order, validator->Order.Value, validator->Order.Error);
     Expect::ShapeIsValid(*this, validator->Dimensions);
 }

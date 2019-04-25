@@ -67,7 +67,6 @@ struct DataMode
         return Value;
     }
 
-
     const gna_data_mode Value; // TODO:3:API remove
 
     const DataType Type;

@@ -31,54 +31,67 @@
 #include "gna2-model-api.h"
 
 #include <map>
+#include <unordered_map>
 #include <vector>
 
 namespace GNA
 {
-
 struct ComponentLimits;
 
-using __ShapeMap = std::map<const gna_tensor_dim, uint32_t>;
+struct TensorDimHash
+{
+    template<typename T>
+    std::size_t operator()(T t) const
+    {
+        return static_cast<std::size_t>(t);
+    }
+};
 
-struct Shape : public __ShapeMap
+using ShapeMap = std::map<gna_tensor_dim, uint32_t>;
+
+struct Shape : public ShapeMap
 {
     static constexpr size_type ShapeMaximumNumberOfDimension = GNA2_SHAPE_MAXIMUM_NUMBER_OF_DIMENSIONS;
 
-    Shape();
+    static Shape Create(const ApiShape & shape, gna_tensor_order order = GNA_TENSOR_ORDER_ANY);
 
-    Shape(const uint32_t x, const uint32_t y, gna_tensor_order mapOrder);
+    // Clang issue workaround @see: https://stackoverflow.com/questions/34494765/interaction-between-default-arguments-and-parameter-pack-gcc-and-clang-disagree
+    Shape() :
+        ShapeMap(),
+        Order{ GNA_TENSOR_SCALAR }
+    { }
 
-    Shape(const uint32_t x, const uint32_t y, const uint32_t z,
-        gna_tensor_order mapOrder);
+    template<typename ... T>
+    Shape(gna_tensor_order order, T ... dimensions) :
+        Shape{ Create(std::vector<uint32_t>({ static_cast<uint32_t>(dimensions)... }), order), order }
+    { }
 
-    Shape(const uint32_t x, const uint32_t y, const uint32_t z, const uint32_t w,
-        gna_tensor_order mapOrder);
+    Shape(gna_3d_dimensions shape);
 
-    // Creates Shape with GNA_TENSOR_NWH order
-    Shape(const uint32_t N, const uint32_t W, const uint32_t H);
-
-    Shape(const Shape map, gna_tensor_order newOrder);
-
-    Shape(const gna_3d_dimensions shape);
-
-    explicit Shape(const ApiShape& shape, const gna_tensor_order layout = GNA_TENSOR_ORDER_ANY);
-
-    Shape& operator=(const Shape& right);
+    Shape & operator=(const Shape & right);
 
     operator gna_3d_dimensions const() const;
 
+    operator ApiShape() const;
+
+    Shape Reshape(gna_tensor_order newOrder) const;
+
     uint32_t GetNumberOfElements() const;
 
-    void Validate(const ComponentLimits* validator) const;
+    void Validate(const ComponentLimits * validator) const;
 
 protected:
-    static const std::map<const gna_tensor_order, const std::vector<gna_tensor_dim>> VectorIndices;
+    static const std::unordered_map<gna_tensor_order, const std::vector<gna_tensor_dim>,
+        TensorDimHash> VectorIndices;
 
-    static const Shape SubsetDimensionMap(const __ShapeMap&, gna_tensor_order newOrder);
+    static ShapeMap Create(const std::vector<uint32_t> && dimensions,
+        gna_tensor_order order = GNA_TENSOR_ORDER_ANY);
 
-    static __ShapeMap Create(const ApiShape& shape, gna_tensor_order order);
+    static void ValidateNumberOfDimensions(gna_tensor_order order, size_type orderDimensions,
+        size_type shapeDimensions);
 
-    gna_tensor_order order;
+    Shape(ShapeMap && map, gna_tensor_order order);
+
+    gna_tensor_order Order;
 };
-
 }

@@ -92,7 +92,7 @@ public:
         Log->Error(Status, " GnaTensorException: Tensor build failed on dimension: %u", Dimension); // TODO:3: tensor dims names
     }
 
-    virtual ~GnaTensorException() {};
+    virtual ~GnaTensorException() = default;
 
 protected:
     gna_tensor_dim Dimension;
@@ -127,7 +127,7 @@ public:
         Log->Error(Status, " GnaModelException: Model build failed on layer: %d", LayerId);
     }
 
-    virtual ~GnaModelException() {};
+    virtual ~GnaModelException() = default;
 
 protected:
     uint32_t LayerId;

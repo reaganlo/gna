@@ -29,6 +29,9 @@
 
 using namespace GNA;
 
+namespace GNA
+{
+
 template<>
 const std::map<const gna_data_mode, const uint32_t>& DataMode::GetSizes()
 {
@@ -74,6 +77,7 @@ const std::map<const DataType, const uint32_t>& DataMode::GetSizes()
     return sizes;
 }
 
+}
 DataType DataMode::TypeFromDataMode(const gna_data_mode dataMode)
 {
     static const std::map<const gna_data_mode, const DataType> types =

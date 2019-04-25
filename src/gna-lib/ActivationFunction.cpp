@@ -31,53 +31,35 @@
 
 using namespace GNA;
 
-static const ComponentLimits _ActivationLimitsBase =
-{
-    {GNA_TENSOR_W},    // W - #inputs, H - #outputs
-    {{GNA_DIM_W, {XNN_N_PWL_SEGS_MIN, XNN_N_PWL_SEGS_MAX, 1, XNN_ERR_PWL_SEGMENTS}}}
-};
-
 static const TensorLimits _ActivationLimitsGen0_9 =
 {
-   _ActivationLimitsBase,
-    {{ GNA_INT16 },
-    XNN_ERR_OUTPUT_BYTES}
-};
-
-static const TensorLimits _ActivationLimitsGen3 =
-{
-   _ActivationLimitsBase,
-    {{ GNA_INT8, GNA_INT16, GNA_INT32 },
+    {{GNA_TENSOR_W},    // W - #inputs, H - #outputs
+    {{GNA_DIM_W, {XNN_N_PWL_SEGS_MIN, XNN_N_PWL_SEGS_MAX, 1, XNN_ERR_PWL_SEGMENTS}}}},
+    {{ GNA_DATA_RICH_FORMAT },
     XNN_ERR_OUTPUT_BYTES}
 };
 
 const FullCapabilitiesMap ActivationFunction::capabilities =
 {
     {INTEL_AFFINE,{
-        {GNA_0_9, std::make_shared<TensorLimits>(_ActivationLimitsGen0_9)}, // TODO:3: verify if shared_ptr here releases memory correctly on exit
-        {GNA_3_0, std::make_shared<TensorLimits>(_ActivationLimitsGen3)}
+        {GNA_0_9, std::make_shared<TensorLimits>(_ActivationLimitsGen0_9)},
     }},
     {INTEL_AFFINE_DIAGONAL,{
         {GNA_0_9, std::make_shared<TensorLimits>(_ActivationLimitsGen0_9)},
-        {GNA_3_0, std::make_shared<TensorLimits>(_ActivationLimitsGen3)}
     }},
     {INTEL_AFFINE_MULTIBIAS,{
         {GNA_2_0, std::make_shared<TensorLimits>(_ActivationLimitsGen0_9)},
-        {GNA_3_0, std::make_shared<TensorLimits>(_ActivationLimitsGen3)}
     }},
     {INTEL_CONVOLUTIONAL,{
         {GNA_1_0, std::make_shared<TensorLimits>(_ActivationLimitsGen0_9)},
-        {GNA_3_0, std::make_shared<TensorLimits>(_ActivationLimitsGen3)}
     }},
     {INTEL_CONVOLUTIONAL_2D,{
-        {GNA_3_0, std::make_shared<TensorLimits>(_ActivationLimitsGen3)}
+        {GNA_3_0, std::make_shared<TensorLimits>(_ActivationLimitsGen0_9)}
     }},
     {INTEL_RECURRENT,{
         {GNA_0_9, std::make_shared<TensorLimits>(_ActivationLimitsGen0_9)},
-        {GNA_3_0, std::make_shared<TensorLimits>(_ActivationLimitsGen3)}
     }}
 };
-
 
 // TODO:3: Copy of LayerOuputCapabilities due to unsolved discrepancy in layer architecture
 static const ShapeLimits _FlatLimits =
@@ -221,8 +203,8 @@ std::unique_ptr<ActivationFunction> ActivationFunction::Create(const TransformFa
 
     if (mandatory || IsEnabled(pwl))
     {
-        auto pwlFunction = std::make_unique<Tensor>(Shape(0, pwl->nSegments, 0),
-            config.outputMode, pwl->pSegments, Validator{config.validator, capabilities});
+        auto pwlFunction = std::make_unique<Tensor>(Shape(GNA_TENSOR_W, pwl->nSegments),
+            GNA_DATA_RICH_FORMAT, pwl->pSegments, Validator{config.validator, capabilities});
         return std::make_unique<ActivationFunction>(
             BaseTransformConfig<ActivationKernel>{config,
             AccelerationDetector::GetKernelMap<ActivationKernel>(KERNEL_PWL)}, config.outputMode,
@@ -273,7 +255,7 @@ ActivationFunction::ActivationFunction(const BaseTransformConfig<ActivationKerne
     DataMode mode, std::unique_ptr<Tensor> pwl) :
     Transform{ActivationTransform, &config.kernels, config.input},
     Segments{ std::move(pwl) },
-    Pwl{ createPwlCached(Segments->Mode, Segments->Buffer, Segments->Count) }
+    Pwl{ createPwlCached(config.outputMode, Segments->Buffer, Segments->Count) }
 {
     const auto validator = Validator{config.validator, outputCapabilities};
     Output = std::make_unique<Tensor>(config.input->Dimensions, mode, config.outputBuffer,

@@ -35,7 +35,7 @@ struct Tensor : public Component
 {
     Tensor(const Shape& dimensions, const DataMode& dataMode, void const * buffer,
         const Validator& validator);
-    ~Tensor() = default;
+    virtual ~Tensor() = default;
 
     void UpdateBuffer(const BaseAddress& outputBuffer);
 

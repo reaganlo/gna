@@ -151,7 +151,7 @@ const FullCapabilitiesMap LayerOutput::capabilities =
 };
 
 LayerOutput::LayerOutput(const nn_layer& layer, const LayerValidator& validatorIn) :
-    Tensor{ { layer.nOutputColumns, layer.nOutputRows, capabilities.GetOrder(validatorIn) },
+    Tensor{ { capabilities.GetOrder(validatorIn), layer.nOutputColumns, layer.nOutputRows },
         layer.nBytesPerOutput, layer.pOutputs,
         Validator{ validatorIn, capabilities } },
     ScratchPad{ Dimensions,

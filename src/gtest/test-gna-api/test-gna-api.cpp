@@ -28,9 +28,10 @@
 
 #include "Macros.h"
 
+#include <array>
 #include <chrono>
 #include <gtest/gtest.h>
-#include <iostream>
+#include <vector>
 
 class TestGnaApi : public testing::Test
 {
@@ -75,6 +76,25 @@ protected:
     {
         UNREFERENCED_PARAMETER(size);
         return nullptr;
+    }
+
+    template<typename ... T>
+    static void ShapeInitTest(const Gna2Shape& shape, T... dimensions)
+    {
+        const auto dimensionList = std::vector<uint32_t>({static_cast<uint32_t>(dimensions)...});
+        const auto size = dimensionList.size();
+        ASSERT_EQ(shape.NumberOfDimensions, static_cast<uint32_t>(size));
+
+        auto dimIter = dimensionList.begin();
+        uint32_t i = 0;
+        for (; i < size; ++dimIter, i++)
+        {
+            ASSERT_EQ(shape.Dimensions[i], *dimIter);
+        }
+        for (; i < static_cast<uint32_t>(GNA2_SHAPE_MAXIMUM_NUMBER_OF_DIMENSIONS); i++)
+        {
+            ASSERT_EQ(shape.Dimensions[i], static_cast<uint32_t>(0));
+        }
     }
 };
 
@@ -130,13 +150,85 @@ TEST_F(TestGnaModelApi, Gna2DataTypeGetSizeIncorrectType)
     ASSERT_EQ(size, static_cast<uint32_t>(GNA2_NOT_SUPPORTED));
 }
 
+TEST_F(TestGnaModelApi, Gna2ShapeGetNumberOfElementsSuccessfull)
+{
+    Gna2Shape shape = {};
+    shape.NumberOfDimensions = 2;
+    shape.Dimensions[0] = 2;
+    shape.Dimensions[1] = 3;
+    const auto size = Gna2ShapeGetNumberOfElements(&shape);
+    ASSERT_EQ(size, static_cast<uint32_t>(6));
+}
+
+TEST_F(TestGnaModelApi, Gna2ShapeGetNumberOfElementsNullShape)
+{
+    const auto size = Gna2ShapeGetNumberOfElements(nullptr);
+    ASSERT_EQ(size, static_cast<uint32_t>(GNA2_NOT_SUPPORTED));
+}
+
+TEST_F(TestGnaModelApi, Gna2ShapeGetNumberOfElementsZero)
+{
+    Gna2Shape shape = {};
+    shape.NumberOfDimensions = 0;
+    const auto size = Gna2ShapeGetNumberOfElements(&shape);
+    ASSERT_EQ(size, static_cast<uint32_t>(0));
+}
+
+TEST_F(TestGnaModelApi, Gna2ShapeGetNumberOfElementsInvalidDimensions)
+{
+    Gna2Shape shape = {};
+    shape.NumberOfDimensions = 0;
+    shape.Dimensions[0] = 2;
+    const auto size = Gna2ShapeGetNumberOfElements(&shape);
+    ASSERT_EQ(size, static_cast<uint32_t>(0));
+}
+
+TEST_F(TestGnaModelApi, Gna2ShapeGetNumberOfElementsInvalidDimensions2)
+{
+    Gna2Shape shape = {};
+    shape.NumberOfDimensions = 99;
+    shape.Dimensions[0] = 2;
+    const auto size = Gna2ShapeGetNumberOfElements(&shape);
+    ASSERT_EQ(size, static_cast<uint32_t>(GNA2_NOT_SUPPORTED));
+}
+
+TEST_F(TestGnaModelApi, Gna2ShapeInitScalarSuccessfull)
+{
+    const auto shape = Gna2ShapeInitScalar();
+    ShapeInitTest(shape);
+}
+
+TEST_F(TestGnaModelApi, Gna2ShapeInit1DSuccessfull)
+{
+    const auto shape = Gna2ShapeInit1D(9);
+    ShapeInitTest(shape, 9);
+}
+
+TEST_F(TestGnaModelApi, Gna2ShapeInit2DSuccessfull)
+{
+     const auto shape = Gna2ShapeInit2D(9, 13);
+    ShapeInitTest(shape, 9, 13);
+}
+
+TEST_F(TestGnaModelApi, Gna2ShapeInit3DSuccessfull)
+{
+     const auto shape = Gna2ShapeInit3D(9, 13, 42);
+    ShapeInitTest(shape, 9, 13, 42);
+}
+
+TEST_F(TestGnaModelApi, Gna2ShapeInit4DSuccessfull)
+{
+     const auto shape = Gna2ShapeInit4D(9, 13, 42, 0);
+    ShapeInitTest(shape, 9, 13, 42, 0);
+}
+
 TEST_F(TestGnaModelApi, Gna2ModelCreateNull)
 {
     const auto status = GnaModelCreate(0, nullptr, nullptr);
     ASSERT_NE(GNA_SUCCESS, status);
 }
 
-TEST_F(TestGnaModelApi, Gna2ModelCreate2Successfull)
+TEST_F(TestGnaModelApi, Gna2ModelCreateSuccessfull)
 {
     uint32_t modelId = 0;
     Gna2Model model = {};
@@ -144,14 +236,14 @@ TEST_F(TestGnaModelApi, Gna2ModelCreate2Successfull)
     ASSERT_TRUE(Gna2StatusIsSuccessful(status));
 }
 
-TEST_F(TestGnaModelApi, DISABLED_Gna2ModelCreate2NullModel)
+TEST_F(TestGnaModelApi, DISABLED_Gna2ModelCreateNullModel)
 {
     uint32_t modelId = 0;
     const auto status = Gna2ModelCreate(0, nullptr, &modelId);
     ASSERT_FALSE(Gna2StatusIsSuccessful(status));
 }
 
-TEST_F(TestGnaModelApi, DISABLED_Gna2ModelCreate2NullModelId)
+TEST_F(TestGnaModelApi, DISABLED_Gna2ModelCreateNullModelId)
 {
     Gna2Model model = {};
     const auto status = Gna2ModelCreate(0, &model, nullptr);

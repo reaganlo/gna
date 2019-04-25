@@ -170,15 +170,15 @@ Shape LayerInput::GetDimensions(const nn_layer& layer, gna_tensor_order order)
     case INTEL_DEINTERLEAVE:
     case INTEL_GMM:
     case INTEL_RECURRENT:
-        return {layer.nInputColumns, layer.nInputRows, order};
+        return {order, layer.nInputColumns, layer.nInputRows};
     case INTEL_CONVOLUTIONAL_2D:
     {
         auto const config = static_cast<nn_layer_cnn2d*>(layer.pLayerStruct);
-        return {layer.nInputRows,
+        return {order,
+            layer.nInputRows,
             config->inputDimensions.height,
             config->inputDimensions.width,
-            config->inputDimensions.depth,
-            order}; // GNA_TENSOR_NHWD
+            config->inputDimensions.depth}; // GNA_TENSOR_NHWD
     }
     default:
         return {};

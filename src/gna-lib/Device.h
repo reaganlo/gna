@@ -46,6 +46,7 @@ public:
     Device(uint32_t threadCount = 1);
     Device(const Device &) = delete;
     Device& operator=(const Device&) = delete;
+    virtual ~Device() = default;
 
     DeviceVersion GetVersion() const;
 

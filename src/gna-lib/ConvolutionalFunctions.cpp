@@ -89,10 +89,10 @@ unique_ptr<const ConvolutionFunction> ConvolutionFunction::Create(const Tensor* 
         Expect::True(featureCount >= CNN_N_FLT_COEFF_MIN, XNN_ERR_LYR_CFG);
         Expect::InRange(cnn->nFilterRows, ui32_1, CNN_N_FLT_COEFF_MAX, XNN_ERR_LYR_CFG);
 
-        filters = make_unique<const FiltersTensor>(Shape(cnn->nFilters, cnn->nFilterCoefficients, 0),
+        filters = make_unique<const FiltersTensor>(Shape(GNA_TENSOR_NWH, cnn->nFilters, cnn->nFilterCoefficients, 0),
             filterMode, filtersBuffer, validatorIn);
         strideComponent = make_unique<const Component>(stride, Validator{ validatorIn, strideLimits });
-        biases = make_unique<const BiasTensor>(Shape(0, 0, cnn->nFilters),
+        biases = make_unique<const BiasTensor>(Shape(GNA_TENSOR_NWH, 0, 0, cnn->nFilters),
             0, biasMode, biasesBuffer, validatorIn);
 
         break;

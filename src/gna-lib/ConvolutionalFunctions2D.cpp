@@ -86,11 +86,10 @@ std::unique_ptr<ConvolutionFunction2D> ConvolutionFunction2D::create(
     const TransformFactoryConfig& config, nn_layer_cnn2d const * cnn)
 {
     auto filters = make_unique<const FiltersTensor>(
-        Shape(cnn->convolution.filters.count,
+        Shape(GNA_TENSOR_NHWD, cnn->convolution.filters.count,
             cnn->convolution.filters.dimensions.height,
             cnn->convolution.filters.dimensions.width,
-            cnn->convolution.filters.dimensions.depth,
-            GNA_TENSOR_NHWD),
+            cnn->convolution.filters.dimensions.depth),
         cnn->convolution.filters.dataMode,
         cnn->convolution.filters.filtersData,
         config.validator);
@@ -117,17 +116,16 @@ std::unique_ptr<const BiasTensor> ConvolutionFunction2D::createBiasTensor(
     {
     case GNA_BIAS_PER_KERNEL:
     {
-        biasDims = Shape(convolution.filters.count, 1, 1, 1, GNA_TENSOR_NHWD);
+        biasDims = Shape(GNA_TENSOR_NHWD, convolution.filters.count, 1, 1, 1);
         break;
     }
     case GNA_BIAS_PER_STRIDE:
     {
-        biasDims = Shape(
+        biasDims = Shape(GNA_TENSOR_NHWD,
             1,
             convolution.filters.dimensions.height,
             convolution.filters.dimensions.width,
-            convolution.filters.dimensions.depth,
-            GNA_TENSOR_NHWD);
+            convolution.filters.dimensions.depth);
         break;
     }
     default:

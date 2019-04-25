@@ -38,10 +38,8 @@
 
 using namespace GNA;
 
-GNA2_API enum Gna2Status Gna2ModelCreate(
-    uint32_t deviceIndex,
-    struct Gna2Model const * model,
-    uint32_t * modelId)
+GNA2_API enum Gna2Status Gna2ModelCreate(uint32_t deviceIndex,
+    struct Gna2Model const * model, uint32_t * modelId)
 {
     UNREFERENCED_PARAMETER(model);
     UNREFERENCED_PARAMETER(modelId);
@@ -57,8 +55,7 @@ GNA2_API enum Gna2Status Gna2ModelCreate(
     return ApiWrapper::ExecuteSafely(command);
 }
 
-GNA2_API enum Gna2Status Gna2ModelRelease(
-    uint32_t modelId)
+GNA2_API enum Gna2Status Gna2ModelRelease(uint32_t modelId)
 {
     const std::function<ApiStatus()> command = [&]()
     {
@@ -94,10 +91,8 @@ GNA2_API enum Gna2Status Gna2ModelGetLastErrorMessage(char * messageBuffer,
     return ApiWrapper::ExecuteSafely(command);
 }
 
-GNA2_API enum Gna2Status Gna2ModelOperationInit(
-    struct Gna2Operation * operation,
-    enum Gna2OperationType type,
-    Gna2UserAllocator userAllocator)
+GNA2_API enum Gna2Status Gna2ModelOperationInit(struct Gna2Operation * operation,
+    enum Gna2OperationType type, Gna2UserAllocator userAllocator)
 {
     const std::function<ApiStatus()> command = [&]()
     {
@@ -111,8 +106,7 @@ GNA2_API uint32_t Gna2DataTypeGetSize(enum Gna2DataType type)
 {
     const std::function<uint32_t()> command = [&]()
     {
-        const auto dataSize = DataMode::ToSize<uint32_t>(type);
-        return dataSize;
+        return ModelWrapper::DataTypeGetSize(type);
     };
     return ApiWrapper::ExecuteSafely(command, Gna2NotSupportedU32);
 }
@@ -121,8 +115,7 @@ GNA2_API uint32_t Gna2ShapeGetNumberOfElements(struct Gna2Shape const * shape)
 {
     const std::function<uint32_t()> command = [&]()
     {
-        const auto shapeImpl = Shape(*shape);
-        return static_cast<uint32_t>(shapeImpl.size());
+        return ModelWrapper::ShapeGetNumberOfElements(shape);
     };
     return ApiWrapper::ExecuteSafely(command, Gna2NotSupportedU32);
 }
@@ -140,46 +133,37 @@ GNA2_API uint32_t Gna2TensorGetSize(struct Gna2Tensor const * tensor)
 
 GNA2_API struct Gna2Shape Gna2ShapeInitScalar()
 {
-    const std::function<ApiShape()> command = [&]()
+    const std::function<ApiShape()> command = []()
     {
-        // TODO:3:API: implement P2
-        return ApiShape{};
+        return ModelWrapper::ShapeInit();
     };
     return ApiWrapper::ExecuteSafely(command, Gna2Shape{});
 }
 
 GNA2_API struct Gna2Shape Gna2ShapeInit1D(uint32_t x)
 {
-    UNREFERENCED_PARAMETER(x);
-    // TODO:3:API: implement P2
     const std::function<ApiShape()> command = [&]()
     {
-        return ApiShape{};
+        return ModelWrapper::ShapeInit(GNA_TENSOR_ORDER_ANY, x);
     };
     return ApiWrapper::ExecuteSafely(command, ApiShape{});
 }
 
 GNA2_API struct Gna2Shape Gna2ShapeInit2D(uint32_t x, uint32_t y)
 {
-    UNREFERENCED_PARAMETER(x);
-    UNREFERENCED_PARAMETER(y);
     // TODO:3:API: implement P2
     const std::function<ApiShape()> command = [&]()
     {
-        return ApiShape{};
+        return ModelWrapper::ShapeInit(GNA_TENSOR_ORDER_ANY, x, y);
     };
     return ApiWrapper::ExecuteSafely(command, ApiShape{});
 }
 
 GNA2_API struct Gna2Shape Gna2ShapeInit3D(uint32_t x, uint32_t y, uint32_t z)
 {
-    UNREFERENCED_PARAMETER(x);
-    UNREFERENCED_PARAMETER(z);
-    UNREFERENCED_PARAMETER(y);
-    // TODO:3:API: implement P2
     const std::function<ApiShape()> command = [&]()
     {
-        return ApiShape{};
+        return ModelWrapper::ShapeInit(GNA_TENSOR_ORDER_ANY, x, y, z);
     };
     return ApiWrapper::ExecuteSafely(command, ApiShape{});
 }
@@ -187,14 +171,9 @@ GNA2_API struct Gna2Shape Gna2ShapeInit3D(uint32_t x, uint32_t y, uint32_t z)
 GNA2_API struct Gna2Shape Gna2ShapeInit4D(uint32_t n, uint32_t x, uint32_t y,
     uint32_t z)
 {
-    UNREFERENCED_PARAMETER(n);
-    UNREFERENCED_PARAMETER(x);
-    UNREFERENCED_PARAMETER(y);
-    UNREFERENCED_PARAMETER(z);
-    // TODO:3:API: implement P2
     const std::function<ApiShape()> command = [&]()
     {
-        return ApiShape{};
+        return ModelWrapper::ShapeInit(GNA_TENSOR_ORDER_ANY, n, x, y, z);
     };
     return ApiWrapper::ExecuteSafely(command, ApiShape{});
 }
@@ -381,7 +360,7 @@ GNA2_API struct Gna2Operation Gna2OperationInitConvolution(
     struct Gna2Tensor * filters, struct Gna2Tensor * biases,
     struct Gna2Tensor * activation,
     struct Gna2Shape * zeroPadding,
-    struct Gna2Shape * concolutionStride,
+    struct Gna2Shape * convolutionStride,
     enum Gna2BiasMode * biasMode)
 {
     UNREFERENCED_PARAMETER(inputs);
@@ -390,7 +369,7 @@ GNA2_API struct Gna2Operation Gna2OperationInitConvolution(
     UNREFERENCED_PARAMETER(biases);
     UNREFERENCED_PARAMETER(activation);
     UNREFERENCED_PARAMETER(zeroPadding);
-    UNREFERENCED_PARAMETER(concolutionStride);
+    UNREFERENCED_PARAMETER(convolutionStride);
     UNREFERENCED_PARAMETER(biasMode);
     // TODO:3:API: implement P2
     const std::function<ApiOperation()> command = [&]()
@@ -405,7 +384,7 @@ GNA2_API struct Gna2Operation Gna2OperationInitConvolutionFused(
     struct Gna2Tensor * filters, struct Gna2Tensor * biases,
     struct Gna2Tensor * activation,
     struct Gna2Shape * zeroPadding,
-    struct Gna2Shape * concolutionStride,
+    struct Gna2Shape * convolutionStride,
     enum Gna2BiasMode * biasMode,
     enum Gna2PoolingMode * poolingMode,
     struct Gna2Shape * poolingWindow,
@@ -417,7 +396,7 @@ GNA2_API struct Gna2Operation Gna2OperationInitConvolutionFused(
     UNREFERENCED_PARAMETER(biases);
     UNREFERENCED_PARAMETER(activation);
     UNREFERENCED_PARAMETER(zeroPadding);
-    UNREFERENCED_PARAMETER(concolutionStride);
+    UNREFERENCED_PARAMETER(convolutionStride);
     UNREFERENCED_PARAMETER(biasMode);
     UNREFERENCED_PARAMETER(poolingMode);
     UNREFERENCED_PARAMETER(poolingWindow);
@@ -503,7 +482,7 @@ GNA2_API struct Gna2Operation Gna2OperationInitGmm(
     return ApiWrapper::ExecuteSafely(command, ApiOperation{});
 }
 
-GNA2_API struct Gna2Operation Gna2OperationInitGmInterleaved(
+GNA2_API struct Gna2Operation Gna2OperationInitGmmInterleaved(
     struct Gna2Tensor * inputs, struct Gna2Tensor * outputs,
     struct Gna2Tensor * interleavedTensors,
     uint32_t * maximumScore)

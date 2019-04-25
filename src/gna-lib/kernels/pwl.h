@@ -138,7 +138,7 @@ struct PwlCached
     PwlCached(const gna_data_mode mode, nn_pwl_seg const * const segmentsIn, uint32_t segmentCountIn);
     PwlCached(PwlCached&& pwl_cached);
     PwlCached(const PwlCached& pwl_cached) = delete;
-    virtual ~PwlCached();
+    ~PwlCached();
 
     // PWL LOOKUP table number of elements
     static const int32_t PWL_LOOKUP_COUNT = 1024;

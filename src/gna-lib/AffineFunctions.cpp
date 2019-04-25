@@ -55,7 +55,8 @@ unique_ptr<const AffineFunction> AffineFunction::Create(const Tensor* input, con
         void const * layerDetails, const LayerValidator& validatorIn)
 {
     auto operation = validatorIn.Operation;
-    auto dimensions = Shape(input->at(GNA_DIM_N), input->at(GNA_DIM_W), output->at(GNA_DIM_H));
+    auto dimensions = Shape(GNA_TENSOR_NWH,
+        input->at(GNA_DIM_N), input->at(GNA_DIM_W), output->at(GNA_DIM_H));
     auto biasTensorDimensions = dimensions;
     uint32_t biasVectorIndex = 0;
     unique_ptr<const WeightTensor> weights;
@@ -101,7 +102,7 @@ unique_ptr<const AffineFunction> AffineFunction::Create(const Tensor* input, con
         if (GNA_INT8 == static_cast<gna_data_mode>(weightMode)
             && GNA_INT16 == input->Mode)
         {
-            weightScales = make_unique<const Tensor>(Shape(1, 0, output->at(GNA_DIM_H)), GNA_DATA_RICH_FORMAT,
+            weightScales = make_unique<const Tensor>(Shape(GNA_TENSOR_NWH, 1, 0, output->at(GNA_DIM_H)), GNA_DATA_RICH_FORMAT,
                 affine->weightScaleFactors, Validator{ validatorIn, AffineFunctionMulti::Capabilities });
         }
         break;
