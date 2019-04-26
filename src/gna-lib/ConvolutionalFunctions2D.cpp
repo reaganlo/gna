@@ -104,7 +104,7 @@ std::unique_ptr<ConvolutionFunction2D> ConvolutionFunction2D::create(
 
     return make_unique<ConvolutionFunction2D>(BaseTransformConfig<ConvolutionKernel2D>{config,
         AccelerationDetector::GetKernelMap<ConvolutionKernel2D>(
-            KERNEL_CONVOLUTIONAL_2D,  { config.input->Mode, filters->Mode, biases->Mode })},
+            KERNEL_CONVOLUTIONAL_2D,  { config.input->Mode, filters->Mode, (biases ? static_cast<gna_data_mode>(biases->Mode): GNA_DATA_DISABLED) })},
         move(filters), move(biases), move(stride), move(padding));
 }
 
@@ -119,6 +119,10 @@ std::unique_ptr<const BiasTensor> ConvolutionFunction2D::createBiasTensor(
         biasDims = Shape(GNA_TENSOR_NHWD, convolution.filters.count, 1, 1, 1);
         break;
     }
+    case GNA_BIAS_NOT_SUPPORTED:
+    {
+        biasDims = Shape();
+    }
     case GNA_BIAS_PER_STRIDE:
     {
         biasDims = Shape(GNA_TENSOR_NHWD,
@@ -131,7 +135,6 @@ std::unique_ptr<const BiasTensor> ConvolutionFunction2D::createBiasTensor(
     default:
     {
         throw GnaException(XNN_ERR_BIAS_VOLUME);
-        break;
     }
     }
     return make_unique<const BiasTensor>(

@@ -92,6 +92,7 @@ set(gna_lib_sources
   ${SRC_DIR}/ConvolutionalFunctions2D.cpp
   ${SRC_DIR}/ConvolutionalLayer.cpp
   ${SRC_DIR}/ConvolutionalLayer2D.cpp
+  ${SRC_DIR}/Cnn2DuArch.cpp
   ${SRC_DIR}/DataMode.cpp
   ${SRC_DIR}/Device.cpp
   ${SRC_DIR}/DeviceLayerSupport.cpp
@@ -161,6 +162,7 @@ set(gna_lib_headers
   ${SRC_DIR}/ConvolutionalFunctions2D.h
   ${SRC_DIR}/ConvolutionalLayer.h
   ${SRC_DIR}/ConvolutionalLayer2D.h
+  ${SRC_DIR}/Cnn2DuArch.h
   ${SRC_DIR}/DataMode.h
   ${SRC_DIR}/Device.h
   ${SRC_DIR}/DeviceLayerSupport.h

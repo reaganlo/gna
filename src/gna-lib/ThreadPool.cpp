@@ -59,7 +59,7 @@ KernelBuffers::KernelBuffers()
         throw GnaException(GNA_ERR_RESOURCES);
     }
 
-    cnnFusedBuffer = (int8_t*)_kernel_malloc(32 * 1024);
+    cnnFusedBuffer = (int8_t*)_kernel_malloc(5 * 1024 * 1024);
     if (nullptr == cnnFusedBuffer)
     {
         this->~KernelBuffers();

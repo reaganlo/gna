@@ -121,7 +121,7 @@ const FullCapabilitiesMap BiasTensor::capabilities =
 
 const SetLimits<gna_bias_mode> BiasTensor::modeLimits
 {
-    { GNA_BIAS_PER_KERNEL, GNA_BIAS_PER_STRIDE }, XNN_ERR_BIAS_MODE
+    { GNA_BIAS_NOT_SUPPORTED, GNA_BIAS_PER_KERNEL, GNA_BIAS_PER_STRIDE }, XNN_ERR_BIAS_MODE
 };
 
 BiasTensor::BiasTensor(const Shape& dimensions, const uint32_t biasVectorIndex, const DataMode& dataMode,
@@ -137,6 +137,7 @@ BiasTensor::BiasTensor(const Shape& dimensions, const uint32_t biasVectorIndex, 
         vectorCount = vectorCountIter->second;
     }
     Expect::InRange(VectorIndex, ui32_0, vectorCount - 1, XNN_ERR_BIAS_INDEX);
+
     Expect::InSet(BiasMode, modeLimits);
 };
 

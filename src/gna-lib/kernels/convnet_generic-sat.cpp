@@ -916,6 +916,9 @@ void Convolution2DKernelImpl1B1B(ExecutionKernelConfig<ConvolutionConfig2D> cons
                 if (biasMode == GNA_BIAS_PER_KERNEL) {
                     outVal = getBias(biasData, OD, biasPrecission);
                 }
+                else if (biasMode == GNA_BIAS_NOT_SUPPORTED) {
+                    outVal = 0;
+                }
                 else {
                     outVal = getBias(biasData, numFilters*outWidth*OH + numFilters * OW + OD, biasPrecission);
                 }
@@ -993,6 +996,9 @@ void Convolution2DKernelImpl1B2B(ExecutionKernelConfig<ConvolutionConfig2D> cons
                 int64_t outVal;// = &O[OH * outWidth * numFilters + OW * numFilters + OD]; //NHWC order
                 if (biasMode == GNA_BIAS_PER_KERNEL) {
                     outVal = getBias(biasData, OD, biasPrecission);
+                }
+                else if (biasMode == GNA_BIAS_NOT_SUPPORTED) {
+                    outVal = 0;
                 }
                 else {
                     outVal = getBias(biasData, numFilters*outWidth*OH + numFilters * OW + OD, biasPrecission);
@@ -1072,6 +1078,9 @@ void Convolution2DKernelImpl2B1B(ExecutionKernelConfig<ConvolutionConfig2D> cons
                 if (biasMode == GNA_BIAS_PER_KERNEL) {
                     outVal = getBias(biasData, OD, biasPrecission);
                 }
+                else if (biasMode == GNA_BIAS_NOT_SUPPORTED) {
+                    outVal = 0;
+                }
                 else {
                     outVal = getBias(biasData, numFilters*outWidth*OH + numFilters * OW + OD, biasPrecission);
                 }
@@ -1149,6 +1158,9 @@ void Convolution2DKernelImpl2B2B(ExecutionKernelConfig<ConvolutionConfig2D> cons
                 int64_t outVal;// = &O[OH * outWidth * numFilters + OW * numFilters + OD]; //NHWC order
                 if (biasMode == GNA_BIAS_PER_KERNEL) {
                     outVal = getBias(biasData, OD, biasPrecission);
+                }
+                else if (biasMode == GNA_BIAS_NOT_SUPPORTED) {
+                    outVal = 0;
                 }
                 else {
                     outVal = getBias(biasData, numFilters*outWidth*OH + numFilters * OW + OD, biasPrecission);

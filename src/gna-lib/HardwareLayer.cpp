@@ -29,6 +29,7 @@
 #include <cmath>
 
 #include "ConvolutionalLayer.h"
+#include "Cnn2DuArch.h"
 #include "Expect.h"
 #include "GmmLayer.h"
 #include "HardwareCapabilities.h"
@@ -530,18 +531,12 @@ uint32_t HardwareLayerCnn2D::GetKernelWorkGroupSize(DeviceVersion hw,
     ConvolutionFunction2D const * cnnIn, PoolingFunction2D const * poolingIn,
     const DataMode& outputMode)
 {
-
-    auto modelMemorySize = GetKernelMemorySize(hw, cnnIn->Filters.get())
-        + GetConvolutionMemorySize(hw, cnnIn)
-        + GetPoolingMemorySize(hw, poolingIn, outputMode);
-    Expect::GtZero(modelMemorySize, XNN_ERR_LYR_CFG);
-
-    uint32_t kernelWorkGroup =  HardwareCapabilities::GetBufferSizeInKB(hw) * 1024;
-    kernelWorkGroup /= modelMemorySize;
-    kernelWorkGroup = GnaFloor(kernelWorkGroup, (uint32_t)16);
-    Expect::GtZero(kernelWorkGroup, GNA_MODELSIZEEXCEEDED);
-
-    return kernelWorkGroup;
+    UNREFERENCED_PARAMETER(hw);
+    convolutional_fused_configuration validationResults;
+    auto status = GNA3_PopulateLD(cnnIn, poolingIn, outputMode, &validationResults);
+    Expect::True(status, XNN_ERR_LYR_CFG);
+    Expect::True(validationResults.Valid, XNN_ERR_LYR_CFG);
+    return validationResults.KWG;
 }
 
 uint32_t HardwareLayerCnn2D::GetKernelMemorySize(DeviceVersion hw,

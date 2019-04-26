@@ -79,6 +79,7 @@ struct KernelMode
     {
         switch (bias)
         {
+        case GNA_DATA_DISABLED:
         case GNA_INT8:
         case GNA_INT16:
         case GNA_INT32:
