@@ -175,7 +175,7 @@ ConvolutionFunction2D::ConvolutionFunction2D(const BaseTransformConfig<Convoluti
 
     auto out = Output->Dimensions;
     out.erase(GNA_DIM_D);
-    Expect::Fits(out, Input->Dimensions);
+    //Expect::Fits(out, Input->Dimensions); //TODO: Check if this check is valid/needed
 
     auto configuration = gna_convolution_func{
         {Filters->Mode, Filters->at(GNA_DIM_N), Filters->Dimensions, Filters->Buffer},
