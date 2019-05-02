@@ -92,7 +92,7 @@ unique_ptr<const ConvolutionFunction> ConvolutionFunction::Create(const Tensor* 
         filters = make_unique<const FiltersTensor>(Shape(GNA_TENSOR_NWH, cnn->nFilters, cnn->nFilterCoefficients, 0),
             filterMode, filtersBuffer, validatorIn);
         strideComponent = make_unique<const Component>(stride, Validator{ validatorIn, strideLimits });
-        biases = make_unique<const BiasTensor>(Shape(GNA_TENSOR_NWH, 0, 0, cnn->nFilters),
+        biases = make_unique<const BiasTensor>(Shape(GNA_TENSOR_N, cnn->nFilters),
             0, biasMode, biasesBuffer, validatorIn);
 
         break;

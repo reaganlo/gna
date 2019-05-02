@@ -36,12 +36,11 @@
 
 namespace GNA
 {
-
 struct ConvolutionFunction2D : public Transform<ConvolutionConfig2D, ConvolutionKernel2D>
 {
-    static std::unique_ptr<ConvolutionFunction2D> Create(const TransformFactoryConfig& config);
+    static std::unique_ptr<ConvolutionFunction2D> Create(const TransformFactoryConfig & config);
 
-    ConvolutionFunction2D(const BaseTransformConfig<ConvolutionKernel2D>& config,
+    ConvolutionFunction2D(const BaseTransformConfig<ConvolutionKernel2D> & config,
         std::unique_ptr<const FiltersTensor> filters,
         std::unique_ptr<const BiasTensor> biases,
         std::unique_ptr<const Component> stride,
@@ -58,16 +57,20 @@ struct ConvolutionFunction2D : public Transform<ConvolutionConfig2D, Convolution
     std::unique_ptr<const Component> Padding;
 
 protected:
-    static std::unique_ptr<ConvolutionFunction2D> create(const TransformFactoryConfig& config,
+    static std::unique_ptr<ConvolutionFunction2D> create(const TransformFactoryConfig & config,
         nn_layer_cnn2d const * cnn);
 
-    static std::unique_ptr<const BiasTensor> createBiasTensor(
-        gna_convolution_func const & convolution, const LayerValidator& validatorIn);
+    static Shape CalculateBiasShape(gna_bias_mode mode, uint32_t filterCount, Shape const & outputShape);
+
+    static std::unique_ptr<const BiasTensor> CreateBiasTensor(
+        gna_convolution_bias const & biases, uint32_t filtersCount,
+        Shape const & outputShape, const LayerValidator & validatorIn);
+
+    static Shape GetOutputShape(Shape const & inputShape,
+        Shape const & filerShape, Shape const & strideShape, Shape const & paddingShape);
 
     static const FullCapabilitiesMap strideLimits;
     static const FullCapabilitiesMap paddingLimits;
     static const FullCapabilitiesMap outputCapabilities;
 };
-
 }
-

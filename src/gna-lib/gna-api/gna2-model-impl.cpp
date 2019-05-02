@@ -460,6 +460,33 @@ GNA2_API struct Gna2Operation Gna2OperationInitTranspose(
     return ApiWrapper::ExecuteSafely(command, ApiOperation{});
 }
 
+GNA2_API struct Gna2Operation Gna2OperationInitInterleave(
+    struct Gna2Tensor * inputs, struct Gna2Tensor * outputs)
+{
+    UNREFERENCED_PARAMETER(inputs);
+    UNREFERENCED_PARAMETER(outputs);
+    // TODO:3:API: implement P2
+    const std::function<ApiOperation()> command = [&]()
+    {
+        return ApiOperation{};
+    };
+    return ApiWrapper::ExecuteSafely(command, ApiOperation{});
+}
+
+
+GNA2_API struct Gna2Operation Gna2OperationInitDeInterleave(
+    struct Gna2Tensor * inputs, struct Gna2Tensor * outputs)
+{
+    UNREFERENCED_PARAMETER(inputs);
+    UNREFERENCED_PARAMETER(outputs);
+    // TODO:3:API: implement P2
+    const std::function<ApiOperation()> command = [&]()
+    {
+        return ApiOperation{};
+    };
+    return ApiWrapper::ExecuteSafely(command, ApiOperation{});
+}
+
 //TODO:3:API define
 GNA2_API struct Gna2Operation Gna2OperationInitGmm(
     struct Gna2Tensor * inputs, struct Gna2Tensor * outputs,

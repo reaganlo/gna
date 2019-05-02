@@ -102,13 +102,13 @@ const FullCapabilitiesMap LayerOutput::capabilities =
             {{GNA_DIM_N, {1, 1, 1, XNN_ERR_OUTPUT_VOLUME}},
              {GNA_DIM_H, {1, XNN_N_IN_ELEMS_MAX, 1, XNN_ERR_OUTPUT_VOLUME}}},
             _ModesGen0_9})},
-        {GNA_3_0, std::make_shared<TensorLimits>(TensorLimits{
+    }},
+    {INTEL_CONVOLUTIONAL_2D, {
+        {GNA_1_0, std::make_shared<TensorLimits>(TensorLimits{
             { GNA_TENSOR_HN },
             {{GNA_DIM_N, {1, 1, 1, XNN_ERR_OUTPUT_VOLUME}},
              {GNA_DIM_H, {1, XNN_N_IN_ELEMS_MAX, 1, XNN_ERR_OUTPUT_VOLUME}}},
-            _ModesGen3})}
-    }},
-    {INTEL_CONVOLUTIONAL_2D, {
+            _ModesGen0_9})},
         {GNA_3_0, std::make_shared<TensorLimits>(TensorLimits{
             {GNA_TENSOR_WN},
             {{GNA_DIM_N, {1, 1, 1, XNN_ERR_OUTPUT_VOLUME}},

@@ -126,6 +126,8 @@ typedef enum _tensor_order
     GNA_TENSOR_NHWD = 4096,     // N -Grouping[=1]/Number of filters, Height, Width, Depth/Channel (GNA 2D CNN default) (4D Tensor)
     GNA_TENSOR_NDHW = 8192,     // N -Grouping[=1]/Number of filters, Depth/Channel, Height, Width, (TensorFlow) (4D Tensor)
     GNA_TENSOR_ORDER_ANY = -1,  // ordering as in gna_tensor_dim beginning with GNA_DIM_N
+    GNA_TENSOR_NHW = 4097,     // Temporary value for Bias Shape
+    GNA_TENSOR_N = 3,     // Temporary value for Bias Shape
 
     // TODO:3:change to char tensor_format[16?] and implement ~~ uint32 tensor_format.Value...
 

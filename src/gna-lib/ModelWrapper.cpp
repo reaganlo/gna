@@ -88,11 +88,11 @@ uint32_t ModelWrapper::GetNumberOfParameters(OperationType operationType)
     static std::map<OperationType, uint32_t> numberOfParameters =
     {
         { Gna2OperationTypeCopy, 1 },
-        { Gna2OperationTypeConvolution, 7 },
-        { Gna2OperationTypeElementWiseAffine, 1 },
+        { Gna2OperationTypeConvolution, 6 },
+        { Gna2OperationTypeElementWiseAffine, 0 },
         { Gna2OperationTypeFullyConnectedAffine, 2 },
         { Gna2OperationTypeGmm, 1 },
-        { Gna2OperationTypeRecurrent, 2 },
+        { Gna2OperationTypeRecurrent, 1 },
         { Gna2OperationTypeTransposition, 0 },
 
     };

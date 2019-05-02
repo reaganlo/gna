@@ -100,7 +100,11 @@ std::unique_ptr<ConvolutionFunction2D> ConvolutionFunction2D::create(
     auto padding = make_unique<const Component>(Shape(cnn->convolution.zeroPadding),
         Validator{ config.validator, paddingLimits });
 
-    auto biases = createBiasTensor(cnn->convolution, config.validator);
+    const Shape outputDims = GetOutputShape(config.input->Dimensions,
+        filters->Dimensions, stride->Dimensions, padding->Dimensions);
+
+    auto biases = CreateBiasTensor(cnn->convolution.biases, cnn->convolution.filters.count,
+        outputDims, config.validator);
 
     return make_unique<ConvolutionFunction2D>(BaseTransformConfig<ConvolutionKernel2D>{config,
         AccelerationDetector::GetKernelMap<ConvolutionKernel2D>(
@@ -108,42 +112,63 @@ std::unique_ptr<ConvolutionFunction2D> ConvolutionFunction2D::create(
         move(filters), move(biases), move(stride), move(padding));
 }
 
-std::unique_ptr<const BiasTensor> ConvolutionFunction2D::createBiasTensor(
-    gna_convolution_func const & convolution, const LayerValidator& validatorIn)
+Shape ConvolutionFunction2D::CalculateBiasShape(const gna_bias_mode mode, const uint32_t filterCount, Shape const & outputShape)
 {
-    Shape biasDims;
-    switch (convolution.biases.mode)
+    switch (mode)
     {
     case GNA_BIAS_PER_KERNEL:
     {
-        biasDims = Shape(GNA_TENSOR_NHWD, convolution.filters.count, 1, 1, 1);
-        break;
+        return Shape(GNA_TENSOR_NHW, filterCount, 1, 1);
     }
     case GNA_BIAS_NOT_SUPPORTED:
     {
-        biasDims = Shape();
+        return Shape();
     }
     case GNA_BIAS_PER_STRIDE:
     {
-        biasDims = Shape(GNA_TENSOR_NHWD,
-            1,
-            convolution.filters.dimensions.height,
-            convolution.filters.dimensions.width,
-            convolution.filters.dimensions.depth);
-        break;
+        return Shape(GNA_TENSOR_NHW,
+            filterCount,
+            outputShape.at(GNA_DIM_H),
+            outputShape.at(GNA_DIM_W));
     }
     default:
     {
-        throw GnaException(XNN_ERR_BIAS_VOLUME);
+        return Shape{};
     }
     }
+}
+
+std::unique_ptr<const BiasTensor> ConvolutionFunction2D::CreateBiasTensor(
+    gna_convolution_bias const & biases, uint32_t filtersCount,
+    Shape const & outputShape, const LayerValidator& validatorIn)
+{
+    Shape biasDims = CalculateBiasShape(biases.mode, filtersCount, outputShape);
+   
     return make_unique<const BiasTensor>(
         biasDims,
         0,
-        convolution.biases.dataMode,
-        convolution.biases.biasesData,
+        biases.dataMode,
+        biases.biasesData,
         validatorIn,
-        convolution.biases.mode);
+        biases.mode);
+}
+
+Shape ConvolutionFunction2D::GetOutputShape(Shape const & inputShape,
+        Shape const & filerShape, Shape const & strideShape, Shape const & paddingShape)
+{
+    Shape outputShape;
+    outputShape[GNA_DIM_N] = inputShape.at(GNA_DIM_N);
+    // save #filters as Depth dimension of output (D in filters is used for 3D convolution)
+    outputShape[GNA_DIM_D] = filerShape.at(GNA_DIM_N);
+
+    for (const auto& dimPair : strideShape)
+    {
+        auto const dim = dimPair.first;
+        outputShape[dim] =
+            1 + (inputShape.at(dim) + (2 * paddingShape.at(dim)) - filerShape.at(dim))
+            / dimPair.second;
+    }
+    return outputShape;
 }
 
 ConvolutionFunction2D::ConvolutionFunction2D(const BaseTransformConfig<ConvolutionKernel2D>& config,
@@ -157,18 +182,14 @@ ConvolutionFunction2D::ConvolutionFunction2D(const BaseTransformConfig<Convoluti
     Stride{ move(stride) },
     Padding{ move(padding) }
 {
-    Shape outputDims;
-    outputDims[GNA_DIM_N] = Input->Dimensions.at(GNA_DIM_N);
-    // save #filters as Depth dimension of output (D in filters is used for 3D convolution)
-    outputDims[GNA_DIM_D] = Filters->at(GNA_DIM_N);
-
-    for (const auto& dimPair : Stride->Dimensions)
+    if (GNA_BIAS_PER_KERNEL == Biases->BiasMode)
     {
-        auto const dim = dimPair.first;
-        outputDims[dim] =
-            1 + (Input->Dimensions.at(dim) + (2 * Padding->Dimensions.at(dim)) - Filters->at(dim))
-                 / dimPair.second;
+        Expect::Equal<uint32_t>(Biases->at(GNA_DIM_H), 1, XNN_ERR_BIAS_MODE);
+        Expect::Equal<uint32_t>(Biases->at(GNA_DIM_W), 1, XNN_ERR_BIAS_MODE);
     }
+
+    Shape outputDims = GetOutputShape(Input->Dimensions, Filters->Dimensions,
+        Stride->Dimensions, Padding->Dimensions);
 
     Output = make_unique<Tensor>(outputDims, DataMode{GNA_INT32}, config.outputBuffer,
         Validator{config.validator, outputCapabilities});

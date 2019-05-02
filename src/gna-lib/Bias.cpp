@@ -82,21 +82,21 @@ const FullCapabilitiesMap BiasTensor::capabilities =
     }},
     {INTEL_CONVOLUTIONAL, {
         {GNA_1_0, std::make_shared<TensorLimits>(TensorLimits{
-            {GNA_TENSOR_H},          // H - #kernel (GNA_BIAS_PER_KERNEL)
-            {{GNA_DIM_H, {CNN_N_FLT_COEFF_MPLY, CNN_N_FLT_MAX, CNN_N_FLT_COEFF_MPLY, XNN_ERR_BIAS_VOLUME}}},
+            {GNA_TENSOR_N},          // H - #kernel (GNA_BIAS_PER_KERNEL)
+            {{GNA_DIM_N, {CNN_N_FLT_COEFF_MPLY, CNN_N_FLT_MAX, CNN_N_FLT_COEFF_MPLY, XNN_ERR_BIAS_VOLUME}}},
             _ModesGen0_9})},
-        {GNA_3_0, std::make_shared<TensorLimits>(TensorLimits{
-            {GNA_TENSOR_H},          // H - #kernel (GNA_BIAS_PER_KERNEL)
-            {{GNA_DIM_H, {CNN_N_FLT_COEFF_MPLY, CNN_N_FLT_MAX, CNN_N_FLT_COEFF_MPLY, XNN_ERR_BIAS_VOLUME}}},
-            _ModesGen3})}
+
     }},
     {INTEL_CONVOLUTIONAL_2D, {
+        {GNA_1_0, std::make_shared<TensorLimits>(TensorLimits{
+            {GNA_TENSOR_N},          // H - #kernel (GNA_BIAS_PER_KERNEL)
+            {{GNA_DIM_N, {CNN_N_FLT_COEFF_MPLY, CNN_N_FLT_MAX, CNN_N_FLT_COEFF_MPLY, XNN_ERR_BIAS_VOLUME}}},
+            _ModesGen0_9})},
         {GNA_3_0, std::make_shared<TensorLimits>(TensorLimits{
-            {GNA_TENSOR_NHWD},    // N = #kernels + GNA_BIAS_PER_KERNEL (HWD=1) or GNA_BIAS_PER_STRIDE (HWD each filter dimensions),
+            {GNA_TENSOR_NHW},    // N = #kernels + GNA_BIAS_PER_KERNEL (HW=1) or GNA_BIAS_PER_STRIDE (HW conv. out dimensions),
                 {{GNA_DIM_N, {1, CNN_N_FLT_MAX, 1, XNN_ERR_BIAS_VOLUME}},
                 {GNA_DIM_H, {1, XNN_N_IN_ELEMS_MAX, 1, XNN_ERR_BIAS_VOLUME}},
-                {GNA_DIM_W, {1, XNN_N_IN_ELEMS_MAX, 1, XNN_ERR_BIAS_VOLUME}},
-                {GNA_DIM_D, {1, XNN_N_IN_ELEMS_MAX, 1, XNN_ERR_BIAS_VOLUME}},},
+                {GNA_DIM_W, {1, XNN_N_IN_ELEMS_MAX, 1, XNN_ERR_BIAS_VOLUME}}},
             _ModesGen3})}
     }},
     {INTEL_GMM, {
@@ -130,7 +130,7 @@ BiasTensor::BiasTensor(const Shape& dimensions, const uint32_t biasVectorIndex, 
     VectorIndex{ biasVectorIndex },
     BiasMode { mode }
 {
-    auto vectorCountIter = Dimensions.find(GNA_DIM_N);
+    const auto vectorCountIter = Dimensions.find(GNA_DIM_N);
     auto vectorCount = ui32_1;
     if (Dimensions.end() != vectorCountIter)
     {

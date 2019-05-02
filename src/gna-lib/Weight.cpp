@@ -65,9 +65,14 @@ const FullCapabilitiesMap WeightTensor::capabilities =
             {GNA_TENSOR_NW},    // N - # filters, W - # filter coefficients
             {{GNA_DIM_N, {CNN_N_FLT_COEFF_MPLY, CNN_N_FLT_MAX, CNN_N_FLT_COEFF_MPLY, CNN_ERR_CONV_FLT_COUNT}},
                 {GNA_DIM_W, {CNN_N_FLT_COEFF_MIN, CNN_N_FLT_COEFF_MAX, {2 * XNN_N_IN_ELEMS_MPLY, XNN_N_IN_ELEMS_MPLY}, CNN_ERR_CONV_FLT_VOLUME}}},
-            {{ GNA_INT8, GNA_INT16, GNA_DATA_CONSTANT_SCALAR }, XNN_ERR_CONV_FLT_BYTES }})}
+            {{ GNA_INT8, GNA_INT16 }, XNN_ERR_CONV_FLT_BYTES }})}
     }},
     {INTEL_CONVOLUTIONAL_2D, {
+        {GNA_1_0, std::make_shared<TensorLimits>(TensorLimits{
+            {GNA_TENSOR_NW},    // N - # filters, W - # filter coefficients
+            {{GNA_DIM_N, {CNN_N_FLT_COEFF_MPLY, CNN_N_FLT_MAX, CNN_N_FLT_COEFF_MPLY, CNN_ERR_CONV_FLT_COUNT}},
+                {GNA_DIM_W, {CNN_N_FLT_COEFF_MIN, CNN_N_FLT_COEFF_MAX, {2 * XNN_N_IN_ELEMS_MPLY, XNN_N_IN_ELEMS_MPLY}, CNN_ERR_CONV_FLT_VOLUME}}},
+            {{ GNA_INT8, GNA_INT16 }, XNN_ERR_CONV_FLT_BYTES }})},
         {GNA_3_0, std::make_shared<TensorLimits>(TensorLimits{
             { GNA_TENSOR_NHWD },    // N - # filters, HWD each filter dimensions
             {{GNA_DIM_N, {1, CNN_N_KERNELS_MAX, 1, CNN_ERR_CONV_FLT_COUNT}},

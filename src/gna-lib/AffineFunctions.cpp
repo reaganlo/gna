@@ -42,9 +42,8 @@ const FullCapabilitiesMap AffineFunctionMulti::Capabilities =
 {
     {INTEL_AFFINE_MULTIBIAS, {
         {GNA_2_0, std::make_shared<TensorLimits>(TensorLimits{
-            {GNA_TENSOR_NH},
-                {{GNA_DIM_N, {1, XNN_N_GROUP_MAX, 1, XNN_ERR_BIAS_VOLUME}},
-                {GNA_DIM_H, {1, XNN_N_IN_ELEMS_MAX, 1, XNN_ERR_BIAS_VOLUME}}},
+            {GNA_TENSOR_H},
+            {{GNA_DIM_H, {1, XNN_N_IN_ELEMS_MAX, 1, XNN_ERR_BIAS_VOLUME}}},
             {{ GNA_DATA_RICH_FORMAT }, XNN_ERR_BIAS_BYTES }})}
     }}
 };
@@ -102,7 +101,7 @@ unique_ptr<const AffineFunction> AffineFunction::Create(const Tensor* input, con
         if (GNA_INT8 == static_cast<gna_data_mode>(weightMode)
             && GNA_INT16 == input->Mode)
         {
-            weightScales = make_unique<const Tensor>(Shape(GNA_TENSOR_NWH, 1, 0, output->at(GNA_DIM_H)), GNA_DATA_RICH_FORMAT,
+            weightScales = make_unique<const Tensor>(Shape(GNA_TENSOR_H, output->at(GNA_DIM_H)), GNA_DATA_RICH_FORMAT,
                 affine->weightScaleFactors, Validator{ validatorIn, AffineFunctionMulti::Capabilities });
         }
         break;
@@ -204,13 +203,10 @@ AffineFunctionMulti::AffineFunctionMulti(const BaseAddress& input, const BaseAdd
     WeightScaleFactors{ move(weightScaleFactors) }
 {
     //// TODO:3: move to layer/hw capabilities as this differ for hws
-    //auto mode = DataConfig{ GNA_INT16, Weights->Mode, Biases->Mode, GNA_INT16 };
-    //auto support = DataConfig::Capabilities.at(mode).at(INTEL_AFFINE_MULTIBIAS).Api.at(GNA_API_3_0);
-  /*  if (GNA_INT8 == Weights->Mode)
+    if (GNA_INT8 == Weights->Mode)
     {
-        Expect::True(GNA_DATA_RICH_FORMAT == WeightScaleFactors->Mode, XNN_ERR_WEIGHT_BYTES);
         Expect::ValidBuffer(*WeightScaleFactors);
-    }*/
+    }
 
     hiddenConfig = make_unique<const AffineConfig>(AffineConfig(
         Biases->at(GNA_DIM_H), vectorCount, Weights->at(GNA_DIM_W),

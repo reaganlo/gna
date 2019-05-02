@@ -79,7 +79,7 @@ GNA2_API enum Gna2Status Gna2DeviceGetVersion(
  Select desired device providing deviceIndex from 0 to Gna2DeviceGetCount() - 1.
 
  @param deviceIndex Index of the affected device.
- @param threadNumber Number of software worker threads [1,127]. Default is 1.
+ @param numberOfThreads Number of software worker threads [1,127]. Default is 1.
  @return Status of the operation.
  */
 GNA2_API enum Gna2Status Gna2DeviceSetNumberOfThreads(
