@@ -161,10 +161,8 @@ status_t CompiledModel::Score(
 
         // TODO: 3: we need to store information about consistency between devices
         // https://idc-tfs-01.devtools.intel.com:8088/tfs/DefaultCollection/Omega/_workitems?_a=edit&id=17703
-        const auto isConsistentDeviceSupported = hwCapabilities.IsHardwareSupported() &&
-                                (config.GetConsistentDevice() == hwCapabilities.GetDeviceVersion());
-        if (isSoftwareEnforced ||
-            (config.HasConsistencyMode() && !isConsistentDeviceSupported))
+        if (isSoftwareEnforced || !hwCapabilities.IsHardwareSupported() ||
+            (config.GetConsistentDevice() != hwCapabilities.GetDeviceVersion()))
         {
             saturationCount = softwareModel.Score(0, LayerCount, config, profiler, buffers);
         }

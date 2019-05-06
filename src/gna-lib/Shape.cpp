@@ -110,8 +110,8 @@ Shape Shape::Reshape(gna_tensor_order order) const
 Shape Shape::Create(const ApiShape & shape, const gna_tensor_order order)
 {
     // TODO:3:verify if initializer_list can always be constructed using 2 pointers
-    return Shape(std::move(Create(std::vector<uint32_t>(shape.Dimensions,
-        &shape.Dimensions[shape.NumberOfDimensions]), order)), order);
+    return Shape(Create(std::vector<uint32_t>(shape.Dimensions,
+                &shape.Dimensions[shape.NumberOfDimensions]), order), order);
 }
 
 ShapeMap Shape::Create(const std::vector<uint32_t> && dimensions, const gna_tensor_order order)

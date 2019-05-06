@@ -431,6 +431,7 @@ const std::map<const DataConfig, std::map<const gna_layer_operation, const Suppo
         {
             {INTEL_AFFINE,              FROM_0_9},
             {INTEL_AFFINE_DIAGONAL,     FROM_0_9},
+            {INTEL_AFFINE_MULTIBIAS,    FROM_2_0},
             {INTEL_RECURRENT,           FROM_0_9},
             {INTEL_COPY,                FROM_0_9_AUX},
             {INTEL_DEINTERLEAVE,        FROM_0_9_AUX},
@@ -447,6 +448,7 @@ const std::map<const DataConfig, std::map<const gna_layer_operation, const Suppo
          {
             {INTEL_AFFINE,              FROM_0_9},
             {INTEL_AFFINE_DIAGONAL,     FROM_0_9},
+            {INTEL_AFFINE_MULTIBIAS,    FROM_2_0},
         }
     },
     {{GNA_INT16, GNA_INT16, GNA_INT8, GNA_INT8},

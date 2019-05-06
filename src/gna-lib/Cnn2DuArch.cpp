@@ -183,7 +183,7 @@ namespace GNA {
 
         ACTx = outputMode;
 
-        if ((GNA3_2DCNN_PLUPACK_EN == false) ) { // TODO check if valid
+        if (GNA3_2DCNN_PLUPACK_EN == false) { // TODO check if valid
             PLUPrec = GNA_INT32;
         }
         else {

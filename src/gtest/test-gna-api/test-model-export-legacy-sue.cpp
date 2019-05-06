@@ -133,7 +133,6 @@ TEST_F(TestSimpleModel, exportSueLegacyTest)
     uint32_t rw_buffer_size = ALIGN(buf_size_inputs + buf_size_outputs + buf_size_tmp_outputs, 0x1000);
     uint32_t bytes_requested = rw_buffer_size + buf_size_weights + buf_size_biases;
 
-    const uint32_t layer_count = 1;
     uint32_t bytes_granted;
 
     void *memory;
