@@ -22,11 +22,79 @@
  or any other notice embedded in Materials by Intel or Intel's suppliers or licensors
  in any way.
 */
-
-#include "gna2-common-impl.h"
 #include "gna2-model-export-impl.h"
 
-#include "Logger.h"
-#include "Expect.h"
+#include "ApiWrapper.h"
+#include "Device.h"
+#include "DeviceManager.h"
+#include "ModelExportConfig.h"
 
+#include "gna2-common-impl.h"
 using namespace GNA;
+
+GNA2_API enum Gna2Status Gna2ModelExportConfigCreate(
+    Gna2UserAllocator userAllocator,
+    uint32_t * const exportConfigId)
+{
+    const std::function<ApiStatus()> command = [&]()
+    {
+        Expect::NotNull((void*)userAllocator);
+        Expect::NotNull(exportConfigId);
+        *exportConfigId = ModelExportManager::GetManager().AddConfig(userAllocator);
+        return Gna2StatusSuccess;
+    };
+    return ApiWrapper::ExecuteSafely(command);
+}
+
+GNA2_API enum Gna2Status Gna2ModelExportConfigRelease(
+    uint32_t exportConfigId)
+{
+    const std::function<ApiStatus()> command = [&]()
+    {
+        ModelExportManager::GetManager().RemoveConfig(exportConfigId);
+        return Gna2StatusSuccess;
+    };
+    return ApiWrapper::ExecuteSafely(command);
+}
+
+GNA2_API enum Gna2Status Gna2ModelExportConfigSetSource(
+    uint32_t exportConfigId,
+    uint32_t sourceDeviceIndex,
+    uint32_t sourceModelId)
+{
+    const std::function<ApiStatus()> command = [&]()
+    {
+        auto& config = ModelExportManager::GetManager().GetConfig(exportConfigId);
+        config.SetSource(sourceDeviceIndex, sourceModelId);
+        return Gna2StatusSuccess;
+    };
+    return ApiWrapper::ExecuteSafely(command);
+}
+
+GNA2_API enum Gna2Status Gna2ModelExportConfigSetTarget(
+    uint32_t exportConfigId,
+    enum Gna2DeviceVersion targetDeviceVersion)
+{
+    const std::function<ApiStatus()> command = [&]()
+    {
+        auto& config = ModelExportManager::GetManager().GetConfig(exportConfigId);
+        config.SetTarget(targetDeviceVersion);
+        return Gna2StatusSuccess;
+    };
+    return ApiWrapper::ExecuteSafely(command);
+}
+
+GNA2_API enum Gna2Status Gna2ModelExport(
+    uint32_t exportConfigId,
+    enum Gna2ModelExportComponent componentType,
+    void ** exportBuffer,
+    uint32_t * exportBufferSize)
+{
+    const std::function<ApiStatus()> command = [&]()
+    {
+        auto& config = ModelExportManager::GetManager().GetConfig(exportConfigId);
+        config.Export(componentType, exportBuffer, exportBufferSize);
+        return Gna2StatusSuccess;
+    };
+    return ApiWrapper::ExecuteSafely(command);
+}

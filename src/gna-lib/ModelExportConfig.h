@@ -22,22 +22,52 @@
  or any other notice embedded in Materials by Intel or Intel's suppliers or licensors
  in any way.
 */
-
-#ifndef __GNA2_MODEL_EXPORT_IMPL_H
-#define __GNA2_MODEL_EXPORT_IMPL_H
+#pragma once
 
 #include "gna2-model-export-api.h"
-#include "gna2-model-suecreek-header.h"
-
-#include "gna2-common-impl.h"
-
-#include <stdint.h>
+#include "DeviceManager.h"
 
 namespace GNA
 {
+class ModelExportConfig
+{
+public:
+    explicit ModelExportConfig(Gna2UserAllocator userAllocator);
+    void SetSource(uint32_t deviceId, uint32_t modelId);
+    void SetTarget(Gna2DeviceVersion version);
+    void Export(enum Gna2ModelExportComponent componentType,
+        void ** exportBuffer,
+        uint32_t * exportBufferSize);
 
-typedef struct Gna2ModelSueCreekHeader SueCreekHeader;
+protected:
+    void ValidateState() const;
+
+private:
+    Gna2UserAllocator allocator = nullptr;
+    uint32_t sourceDeviceId = Gna2DisabledU32;
+    uint32_t sourceModelId = Gna2DisabledU32;
+    Gna2DeviceVersion targetDeviceVersion = Gna2DeviceVersionSoftwareEmulation;
+
+    static void* privateAllocator(uint32_t size);
+    static void privateDeAllocator(void * ptr);
+};
+
+class ModelExportManager
+{
+public:
+    static ModelExportManager& GetManager();
+
+    ModelExportManager(const ModelExportManager&) = delete;
+    void operator=(const ModelExportManager&) = delete;
+
+    uint32_t AddConfig(Gna2UserAllocator userAllocator);
+    void RemoveConfig(uint32_t id);
+    ModelExportConfig& GetConfig(uint32_t exportConfigId);
+
+private:
+    ModelExportManager() = default;
+    uint32_t configCount = 0;
+    std::map<uint32_t, ModelExportConfig> allConfigs;
+};
 
 }
-
-#endif // __GNA2_MODEL_EXPORT_IMPL_H

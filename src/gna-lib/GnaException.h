@@ -26,9 +26,10 @@
 #pragma once
 
 #include "Logger.h"
-
 #include "gna2-common-impl.h"
 
+#include <stdexcept>
+#include <string>
 #include <stdexcept>
 
 namespace GNA

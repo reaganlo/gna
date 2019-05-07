@@ -22,27 +22,24 @@
  or any other notice embedded in Materials by Intel or Intel's suppliers or licensors
  in any way.
 */
+#define __STDC_WANT_LIB_EXT1__ 1
+#include "gna-api-status.h"
+#include "gna-api.h"
+#include "gna2-model-suecreek-header.h"
+#include "gna2-model-export-api.h"
 
+#include <cinttypes>
+#include <cstring>
+#include <fstream>
 #include <cstdio>
 #include <cstdlib>
-
 #if defined(__GNUC__) && !defined(__INTEL_COMPILER)
 #include <mm_malloc.h>
 #endif
 
-// Enable safe functions compatibility
-#if defined(__STDC_SECURE_LIB__)
-#define __STDC_WANT_SECURE_LIB__ 1
-#elif defined(__STDC_LIB_EXT1__)
-#define STDC_WANT_LIB_EXT1 1
-#else
+#ifndef __STDC_LIB_EXT1__
 #define memcpy_s(_Destination, _DestinationSize, _Source, _SourceSize) memcpy(_Destination, _Source, _SourceSize)
 #endif
-
-#include <cstring>
-#include <fstream>
-
-#include "gna-api-dumper.h"
 
 void print_outputs(
     int32_t *outputs,
@@ -66,11 +63,13 @@ void* customAlloc(uint32_t dumpedModelSize)
 {
     if (0 == dumpedModelSize)
     {
-        printf("customAlloc has invalid dump model size: %zu\n", dumpedModelSize);
+        printf("customAlloc has invalid dump model size: %" PRIu32 "\n", dumpedModelSize);
         exit(-GNA_INVALIDMEMSIZE);
     }
     return _mm_malloc(dumpedModelSize, 4096);
 }
+
+void DumpLegacySueImageToFile(const char *dumpFileName, uint32_t sourceDeviceIndex, uint32_t sourceModelId, uint32_t RwRegionSize);
 
 int main(int argc, char *argv[])
 {
@@ -121,8 +120,8 @@ int main(int argc, char *argv[])
     intel_gna_status_t status = GNA_SUCCESS; // for simplicity sake status codes are not examined after api functions calls
                                              // it is highly recommended to inspect the status every time, and act accordingly
                                              // open the device
-   gna_device_id deviceNumber;
-     status = GnaDeviceGetCount(&deviceNumber);
+    gna_device_id deviceNumber;
+    status = GnaDeviceGetCount(&deviceNumber);
     if (GNA_SUCCESS!= status)
     {
         printf("GnaDeviceGetCount failed: %s\n", GnaStatusToString(status));
@@ -244,24 +243,7 @@ int main(int argc, char *argv[])
         exit(-status);
     }
 
-    intel_gna_model_header model_header;
-    void* dumped_model = GnaModelDump(model_id, GNA_1_0_EMBEDDED, &model_header, &status, customAlloc);
-    if (GNA_SUCCESS != status || NULL == dumped_model)
-    {
-        GnaFree(memory);
-        GnaDeviceClose(deviceIndex);
-        exit(-status);
-    }
-
-    model_header.rw_region_size = rw_buffer_size;
-
-    /* Save dumped model with header to stream or file. */
-    std::ofstream dumpStream("model.bin", std::ios::out | std::ios::binary);
-    dumpStream.write(reinterpret_cast<const char*>(&model_header), sizeof(intel_gna_model_header));
-    dumpStream.write(reinterpret_cast<const char*>(dumped_model), model_header.model_size);
-
-    /* Release dump memory if no longer needed. */
-    _mm_free(dumped_model);
+    DumpLegacySueImageToFile("model.bin", deviceIndex, model_id, rw_buffer_size);
 
     gna_request_cfg_id config_id;
     status = GnaRequestConfigCreate(model_id, &config_id);
@@ -341,4 +323,123 @@ int main(int argc, char *argv[])
     status = GnaDeviceClose(deviceIndex);
 
     return 0;
+}
+
+void HandleGnaStatus(Gna2Status status, const char* where, const char* statusFrom)
+{
+    if(status != Gna2StatusSuccess)
+    {
+        std::string s = "In: ";
+        s += where;
+        s += ": FAILURE in ";
+        s += statusFrom;
+        throw std::runtime_error( s.c_str());
+    }
+}
+
+uint32_t InitExportConfig(
+    uint32_t sourceDeviceIndex,
+    gna_model_id sourceModelId,
+    Gna2UserAllocator exportAllocator,
+    Gna2DeviceVersion targetDevice)
+{
+    uint32_t exportConfigId;
+    auto status = Gna2ModelExportConfigCreate(exportAllocator, &exportConfigId);
+    HandleGnaStatus(status, "InitExportConfig()",
+        "GnaModelExportConfigCreate()");
+    status = Gna2ModelExportConfigSetSource(exportConfigId, sourceDeviceIndex, sourceModelId);
+    HandleGnaStatus(status, "InitExportConfig()",
+        "GnaModelExportConfigSetSource()");
+    status = Gna2ModelExportConfigSetTarget(exportConfigId, targetDevice);
+    HandleGnaStatus(status, "InitExportConfig()",
+        "GnaModelExportConfigSetTarget()");
+    return exportConfigId;
+}
+
+void *DumpLegacySueImage(
+    uint32_t sourceDeviceIndex,
+    uint32_t modelId,
+    Gna2ModelSueCreekHeader* modelHeader,
+    Gna2UserAllocator userAlloc)
+{
+    uint32_t exportConfig;
+    void * bufferLdHeader;
+    uint32_t bufferLdHeaderSize;
+    void * bufferLd;
+    uint32_t bufferLdSize;
+
+    /* Export Legacy Sue Creek Header */
+
+    exportConfig = InitExportConfig(sourceDeviceIndex, modelId,
+        customAlloc,
+        Gna2DeviceVersionSueCreek);
+
+    auto status = Gna2ModelExport(exportConfig,
+        Gna2ModelExportComponentLegacySueCreekHeader,
+        &bufferLdHeader, &bufferLdHeaderSize);
+
+    HandleGnaStatus(status,
+        "DumpLegacySueImage()",
+        "GnaModelExport(Gna2ModelExportComponentLegacySueCreekHeader)");
+
+    if(bufferLdHeaderSize != sizeof(Gna2ModelSueCreekHeader))
+    {
+        throw std::runtime_error(
+            "In: DumpLegacySueImage(): "
+            "Inconsistent size of Sue Creek image header");
+    }
+    *modelHeader = *(reinterpret_cast<Gna2ModelSueCreekHeader*>(bufferLdHeader));
+    _mm_free(bufferLdHeader);
+    status = Gna2ModelExportConfigRelease(exportConfig);
+    HandleGnaStatus(status, "DumpLegacySueImage()",
+        "GnaModelExportConfigRelease()");
+
+    /* Export Legacy Sue Creek Image */
+
+    exportConfig = InitExportConfig(sourceDeviceIndex, modelId,
+        userAlloc,
+        Gna2DeviceVersionSueCreek);
+
+    status = Gna2ModelExport(exportConfig,
+        Gna2ModelExportComponentLegacySueCreekDump,
+        &bufferLd,
+        &bufferLdSize);
+    HandleGnaStatus(status, "DumpLegacySueImage()",
+        "GnaModelExport(Gna2ModelExportComponentLegacySueCreekDump)");
+
+    if(bufferLdSize != modelHeader->ModelSize)
+    {
+        throw std::runtime_error(
+            "In: DumpLegacySueImage(): Inconsistent size of Sue Creek image");
+    }
+
+    status = Gna2ModelExportConfigRelease(exportConfig);
+    HandleGnaStatus(status, "DumpLegacySueImage()",
+        "GnaModelExportConfigRelease()");
+
+    return bufferLd;
+}
+
+void DumpLegacySueImageToFile(
+    const char *dumpFileName,
+    uint32_t sourceDeviceIndex,
+    uint32_t sourceModelId,
+    const uint32_t RwRegionSize)
+{
+    Gna2ModelSueCreekHeader sueHeader = {};
+    void* ldAndData = DumpLegacySueImage(sourceDeviceIndex, sourceModelId,
+        &sueHeader,
+        customAlloc);
+
+    sueHeader.RwRegionSize = RwRegionSize;
+
+    /* Save dumped model with header to stream or file. */
+    std::ofstream dumpStream(dumpFileName, std::ios::out | std::ios::binary);
+    dumpStream.write(reinterpret_cast<const char*>(&sueHeader),
+        sizeof(Gna2ModelSueCreekHeader));
+    dumpStream.write(reinterpret_cast<const char*>(ldAndData),
+        sueHeader.ModelSize);
+
+    /* Release dump memory if no longer needed. */
+    _mm_free(ldAndData);
 }

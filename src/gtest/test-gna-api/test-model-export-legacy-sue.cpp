@@ -29,6 +29,7 @@
 #include "common.h"
 #include "gna-api.h"
 #include "gna-api-dumper.h"
+#include "gna2-model-export-impl.h"
 
 #include <gtest/gtest.h>
 #include <cstring>
@@ -89,10 +90,12 @@ protected:
     {
         return _mm_malloc(size, 4096);
     }
+
     static void Free(void * mem)
     {
         return _mm_free(mem);
     }
+
     const uint32_t expectedModelSize = 4544;
     const uint32_t expectedHeaderSize = 64;
 
@@ -118,92 +121,22 @@ protected:
         for (size_t i = 0; i < n_bytes; ++i)
             *crc = table[(uint8_t)*crc ^ ((uint8_t*)data)[i]] ^ *crc >> 8;
     }
+
+    void SetupNnet();
+    intel_nnet_layer_t nnet_layer ={};
+    intel_nnet_type_t nnet = { 1,4, &nnet_layer };
+    intel_affine_layer_t affine_layer;
+    gna_device_id deviceIndex = 0;
+    uint32_t rw_buffer_size = 0;
+    void *memory = nullptr;
 };
 
 TEST_F(TestSimpleModel, exportSueLegacyTest)
 {
-    gna_device_id deviceNumber;
-    auto status = GnaDeviceGetCount(&deviceNumber);
-    EXPECT_EQ(GNA_SUCCESS, status);
-
-    gna_device_id deviceIndex = 0;
-    status = GnaDeviceOpen(deviceIndex);
-    EXPECT_EQ(GNA_SUCCESS, status);
-
-    uint32_t rw_buffer_size = ALIGN(buf_size_inputs + buf_size_outputs + buf_size_tmp_outputs, 0x1000);
-    uint32_t bytes_requested = rw_buffer_size + buf_size_weights + buf_size_biases;
-
-    uint32_t bytes_granted;
-
-    void *memory;
-    status = GnaAlloc(bytes_requested, &bytes_granted, &memory);
-    EXPECT_EQ(GNA_SUCCESS, status);
-    EXPECT_NE(memory, nullptr);
-
-    /* Prepare model memory layout. */
-    uint8_t *model_memory = (uint8_t*)memory;
-
-    // RW region.
-    uint8_t *rw_buffers = model_memory;
-
-    int16_t *pinned_inputs = (int16_t*)rw_buffers;
-    memcpy_s(pinned_inputs, buf_size_inputs, inputs, sizeof(inputs));
-    rw_buffers += buf_size_inputs;
-
-    int16_t *pinned_outputs = (int16_t*)rw_buffers;
-    rw_buffers += buf_size_outputs;
-
-    int32_t *tmp_outputs_buffer = (int32_t*)rw_buffers;
-
-    model_memory += rw_buffer_size;
-    int16_t *weights_buffer = (int16_t*)model_memory;
-    memcpy_s(weights_buffer, buf_size_weights, weights, sizeof(weights));
-    model_memory += buf_size_weights;
-
-    int32_t *biases_buffer = (int32_t*)model_memory;
-    memcpy_s(biases_buffer, buf_size_biases, biases, sizeof(biases));
-    model_memory += buf_size_biases;
-
-    intel_nnet_type_t nnet;
-    nnet.nGroup = 4;
-    nnet.nLayers = 1;
-    nnet.pLayers = (intel_nnet_layer_t*)calloc(nnet.nLayers, sizeof(intel_nnet_layer_t));
-    EXPECT_NE(nnet.pLayers, nullptr);
-
-    intel_affine_func_t affine_func;
-    affine_func.nBytesPerWeight = GNA_INT16;
-    affine_func.nBytesPerBias = GNA_INT32;
-    affine_func.pWeights = weights_buffer;
-    affine_func.pBiases = biases_buffer;
-
-    intel_pwl_func_t pwl;
-    pwl.nSegments = 0;
-    pwl.pSegments = NULL;
-
-    intel_affine_layer_t affine_layer;
-    affine_layer.affine = affine_func;
-    affine_layer.pwl = pwl;
-
-    intel_nnet_layer_t nnet_layer = nnet.pLayers[0];
-    nnet_layer.nInputColumns = nnet.nGroup;
-    nnet_layer.nInputRows = 16;
-    nnet_layer.nOutputColumns = nnet.nGroup;
-    nnet_layer.nOutputRows = 8;
-    nnet_layer.nBytesPerInput = GNA_INT16;
-    nnet_layer.nBytesPerOutput = GNA_INT32;
-    nnet_layer.nBytesPerIntermediateOutput = GNA_INT32;
-    nnet_layer.mode = INTEL_INPUT_OUTPUT;
-    nnet_layer.operation = INTEL_AFFINE;
-    nnet_layer.pLayerStruct = &affine_layer;
-
-    nnet_layer.pInputs = pinned_inputs;
-    nnet_layer.pOutputsIntermediate = tmp_outputs_buffer;
-    nnet_layer.pOutputs = pinned_outputs;
-
-    memcpy_s(nnet.pLayers, nnet.nLayers * sizeof(intel_nnet_layer_t), &nnet_layer, sizeof(nnet_layer));
+    SetupNnet();
 
     gna_model_id model_id;
-    status = GnaModelCreate(deviceIndex, &nnet, &model_id);
+    auto status = GnaModelCreate(deviceIndex, &nnet, &model_id);
     EXPECT_EQ(status, GNA_SUCCESS);
 
     intel_gna_model_header model_header;
@@ -231,6 +164,140 @@ TEST_F(TestSimpleModel, exportSueLegacyTest)
 
     Free(dumped_model);
     status = GnaFree(memory);
-    free(nnet.pLayers);
     status = GnaDeviceClose(deviceIndex);
+}
+
+TEST_F(TestSimpleModel, exportSueLegacyTestUsingApi2)
+{
+    SetupNnet();
+
+    gna_model_id model_id;
+    auto status = GnaModelCreate(deviceIndex, &nnet, &model_id);
+    EXPECT_EQ(status, GNA_SUCCESS);
+
+    Gna2ModelSueCreekHeader modelHeader;
+
+    void * bufferLdHeader;
+    void * bufferDump;
+
+    uint32_t bufferLdHeaderSize;
+    uint32_t bufferDumpSize;
+
+    uint32_t exportConfig;
+
+    auto status2 = Gna2ModelExportConfigCreate(Allocator, &exportConfig);
+    EXPECT_EQ(status2, Gna2StatusSuccess);
+    status2 = Gna2ModelExportConfigSetSource(exportConfig, deviceIndex, model_id);
+    EXPECT_EQ(status2, Gna2StatusSuccess);
+    status2 = Gna2ModelExportConfigSetTarget(exportConfig, Gna2DeviceVersionSueCreek);
+    EXPECT_EQ(status2, Gna2StatusSuccess);
+
+    status2 = Gna2ModelExport(exportConfig,
+        Gna2ModelExportComponentLegacySueCreekHeader,
+        &bufferLdHeader, &bufferLdHeaderSize);
+
+    EXPECT_EQ(status2, Gna2StatusSuccess);
+    EXPECT_EQ(bufferLdHeaderSize, expectedHeaderSize);
+
+    modelHeader = *(reinterpret_cast<Gna2ModelSueCreekHeader*>(bufferLdHeader));
+    EXPECT_EQ(modelHeader.ModelSize, expectedModelSize);
+
+    status2 = Gna2ModelExport(exportConfig,
+        Gna2ModelExportComponentLegacySueCreekDump,
+        &bufferDump,
+        &bufferDumpSize);
+    EXPECT_EQ(status2, Gna2StatusSuccess);
+    EXPECT_NE(bufferDump, nullptr);
+    EXPECT_EQ(bufferDumpSize, expectedModelSize);
+
+    status2 = Gna2ModelExportConfigRelease(exportConfig);
+    EXPECT_EQ(status2, Gna2StatusSuccess);
+
+    modelHeader.RwRegionSize = rw_buffer_size;
+
+    uint32_t headerHash = 0;
+    crc32(&modelHeader, expectedHeaderSize, &headerHash);
+
+    uint32_t modelHash = 0;
+    crc32(bufferDump, expectedModelSize, &modelHash);
+
+    uint32_t fileHash = headerHash;
+    crc32(bufferDump, expectedModelSize, &fileHash);
+
+    EXPECT_EQ(expected_fileHash, fileHash);
+    EXPECT_EQ(expected_headerHash, headerHash);
+    EXPECT_EQ(expected_modelHash, modelHash);
+
+    Free(bufferLdHeader);
+    Free(bufferDump);
+    status = GnaFree(memory);
+    status = GnaDeviceClose(deviceIndex);
+}
+
+void TestSimpleModel::SetupNnet()
+{
+    gna_device_id deviceNumber;
+    auto status = GnaDeviceGetCount(&deviceNumber);
+    EXPECT_EQ(GNA_SUCCESS, status);
+
+    status = GnaDeviceOpen(deviceIndex);
+    EXPECT_EQ(GNA_SUCCESS, status);
+
+    rw_buffer_size = ALIGN(buf_size_inputs + buf_size_outputs + buf_size_tmp_outputs, 0x1000);
+    uint32_t bytes_requested = rw_buffer_size + buf_size_weights + buf_size_biases;
+
+    uint32_t bytes_granted;
+
+    status = GnaAlloc(bytes_requested, &bytes_granted, &memory);
+    EXPECT_EQ(GNA_SUCCESS, status);
+    EXPECT_NE(memory, nullptr);
+
+    uint8_t *model_memory = (uint8_t*)memory;
+
+    uint8_t *rw_buffers = model_memory;
+
+    int16_t *pinned_inputs = (int16_t*)rw_buffers;
+    memcpy_s(pinned_inputs, buf_size_inputs, inputs, sizeof(inputs));
+    rw_buffers += buf_size_inputs;
+
+    int16_t *pinned_outputs = (int16_t*)rw_buffers;
+    rw_buffers += buf_size_outputs;
+
+    int32_t *tmp_outputs_buffer = (int32_t*)rw_buffers;
+
+    model_memory += rw_buffer_size;
+    int16_t *weights_buffer = (int16_t*)model_memory;
+    memcpy_s(weights_buffer, buf_size_weights, weights, sizeof(weights));
+    model_memory += buf_size_weights;
+
+    int32_t *biases_buffer = (int32_t*)model_memory;
+    memcpy_s(biases_buffer, buf_size_biases, biases, sizeof(biases));
+
+    intel_affine_func_t affine_func;
+    affine_func.nBytesPerWeight = GNA_INT16;
+    affine_func.nBytesPerBias = GNA_INT32;
+    affine_func.pWeights = weights_buffer;
+    affine_func.pBiases = biases_buffer;
+
+    intel_pwl_func_t pwl;
+    pwl.nSegments = 0;
+    pwl.pSegments = NULL;
+
+    affine_layer.affine = affine_func;
+    affine_layer.pwl = pwl;
+
+    nnet_layer.nInputColumns = nnet.nGroup;
+    nnet_layer.nInputRows = 16;
+    nnet_layer.nOutputColumns = nnet.nGroup;
+    nnet_layer.nOutputRows = 8;
+    nnet_layer.nBytesPerInput = GNA_INT16;
+    nnet_layer.nBytesPerOutput = GNA_INT32;
+    nnet_layer.nBytesPerIntermediateOutput = GNA_INT32;
+    nnet_layer.mode = INTEL_INPUT_OUTPUT;
+    nnet_layer.operation = INTEL_AFFINE;
+    nnet_layer.pLayerStruct = &affine_layer;
+
+    nnet_layer.pInputs = pinned_inputs;
+    nnet_layer.pOutputsIntermediate = tmp_outputs_buffer;
+    nnet_layer.pOutputs = pinned_outputs;
 }

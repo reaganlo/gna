@@ -124,14 +124,14 @@ enum Gna2ModelExportComponent
     Gna2ModelExportComponentLayerDescriptorHeader = 1,
 
     /**
-     Hardware layer descriptors in legacy SueCreek format will be exported.
+     Hardware layer descriptors and model data in legacy SueCreek format will be exported.
      */
-    Gna2ModelExportComponentLegacySueCreekLayerDescriptors = 2,
+    Gna2ModelExportComponentLegacySueCreekDump = 2,
 
     /**
      Header describing layer descriptors in legacy SueCreek format will be exported.
      */
-    Gna2ModelExportComponentLegacySueCreekLayerDescriptorHeader = 3,
+    Gna2ModelExportComponentLegacySueCreekHeader = 3,
 };
 
 /**
