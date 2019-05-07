@@ -430,7 +430,7 @@ enum Gna2OperationType
             for optimized memory bandwidth usage and performance.
             Supported values:
                 - Mode: Same as in "flat" layout.
-                - Type: {::Gna2DataTypeVoid},
+                - Type: {::Gna2DataTypeNone},
                 - Shape and Layout: [H x C x W x C x W x C] 6D tensor, with dimensions as described above,
 
     Parameters:
@@ -621,7 +621,7 @@ enum Gna2DataType
     /**
      Data type not specified, can be used for disabled data.
      */
-    Gna2DataTypeVoid = GNA2_DISABLED,
+    Gna2DataTypeNone = GNA2_DEFAULT,
 
     /**
      1 Bit Boolean / binary type.

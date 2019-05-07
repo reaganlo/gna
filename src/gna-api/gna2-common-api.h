@@ -372,7 +372,7 @@ GNA2_API inline bool Gna2StatusIsSuccessful(enum Gna2Status status)
  @return Status of fetching the message.
     @retval Gna2StatusSuccess The status was fully serialized into the messageBuffer.
     @retval Gna2StatusUnknownError The messageBuffer is too small. Message was truncated.
-    @retval Gna2Nullargnotallowed The messageBuffer was NULL or messageBufferSize was 0.
+    @retval Gna2StatusNullArgumentNotAllowed The messageBuffer was NULL or messageBufferSize was 0.
  */
 GNA2_API enum Gna2Status Gna2StatusGetMessage(enum Gna2Status status,
     char * messageBuffer, uint32_t messageBufferSize);

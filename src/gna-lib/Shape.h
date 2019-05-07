@@ -81,8 +81,7 @@ struct Shape : public ShapeMap
     void Validate(const ComponentLimits * validator) const;
 
 protected:
-    static const std::unordered_map<gna_tensor_order, const std::vector<gna_tensor_dim>,
-        TensorDimHash> VectorIndices;
+    static const std::vector<gna_tensor_dim>& GetVectorIndices(gna_tensor_order order);
 
     static ShapeMap Create(const std::vector<uint32_t> && dimensions,
         gna_tensor_order order = GNA_TENSOR_ORDER_ANY);

@@ -33,36 +33,53 @@
 
 using namespace GNA;
 
-const std::unordered_map<gna_tensor_order, const std::vector<gna_tensor_dim>, TensorDimHash> Shape::VectorIndices
+
+const std::vector<gna_tensor_dim> & Shape::GetVectorIndices(gna_tensor_order order)
 {
-    { GNA_TENSOR_SCALAR, {} },
-    { GNA_TENSOR_W, { GNA_DIM_W } },
-    { GNA_TENSOR_H, { GNA_DIM_H } },
-    { GNA_TENSOR_NW, { GNA_DIM_N, GNA_DIM_W } },
-    { GNA_TENSOR_NH, { GNA_DIM_N, GNA_DIM_H } },
-    { GNA_TENSOR_WN, { GNA_DIM_W, GNA_DIM_N } },
-    { GNA_TENSOR_WH, { GNA_DIM_W, GNA_DIM_H } },
-    { GNA_TENSOR_HN, { GNA_DIM_H, GNA_DIM_N } },
-    { GNA_TENSOR_HD, { GNA_DIM_H, GNA_DIM_D } },
-    { GNA_TENSOR_HDW, { GNA_DIM_H, GNA_DIM_D, GNA_DIM_W } },
-    { GNA_TENSOR_NWH, { GNA_DIM_N, GNA_DIM_W, GNA_DIM_H } },
-    { GNA_TENSOR_WHD, { GNA_DIM_W, GNA_DIM_H, GNA_DIM_D } },
-    { GNA_TENSOR_NHWD, { GNA_DIM_N, GNA_DIM_H, GNA_DIM_W, GNA_DIM_D } },
-    { GNA_TENSOR_NDHW, { GNA_DIM_N, GNA_DIM_D, GNA_DIM_H, GNA_DIM_W } },
+    static const std::unordered_map<gna_tensor_order, const std::vector<gna_tensor_dim>, TensorDimHash>
+        vectorIndices =
     {
-        GNA_TENSOR_ORDER_ANY,
+        { GNA_TENSOR_SCALAR, {} },
+        { GNA_TENSOR_N, { GNA_DIM_N } },
+        { GNA_TENSOR_W, { GNA_DIM_W } },
+        { GNA_TENSOR_H, { GNA_DIM_H } },
+        { GNA_TENSOR_NW, { GNA_DIM_N, GNA_DIM_W } },
+        { GNA_TENSOR_NH, { GNA_DIM_N, GNA_DIM_H } },
+        { GNA_TENSOR_WN, { GNA_DIM_W, GNA_DIM_N } },
+        { GNA_TENSOR_WH, { GNA_DIM_W, GNA_DIM_H } },
+        { GNA_TENSOR_HN, { GNA_DIM_H, GNA_DIM_N } },
+        { GNA_TENSOR_HD, { GNA_DIM_H, GNA_DIM_D } },
+        { GNA_TENSOR_HDW, { GNA_DIM_H, GNA_DIM_D, GNA_DIM_W } },
+        { GNA_TENSOR_NWH, { GNA_DIM_N, GNA_DIM_W, GNA_DIM_H } },
+        { GNA_TENSOR_NHW, { GNA_DIM_N, GNA_DIM_H, GNA_DIM_W } },
+        { GNA_TENSOR_WHD, { GNA_DIM_W, GNA_DIM_H, GNA_DIM_D } },
+        { GNA_TENSOR_NHWD, { GNA_DIM_N, GNA_DIM_H, GNA_DIM_W, GNA_DIM_D } },
+        { GNA_TENSOR_NDHW, { GNA_DIM_N, GNA_DIM_D, GNA_DIM_H, GNA_DIM_W } },
         {
-            GNA_DIM_N,
-            GNA_DIM_W,
-            GNA_DIM_H,
-            GNA_DIM_D,
-            GNA_DIM_X,
-            gna_tensor_dim(GNA_DIM_X + 1),
-            gna_tensor_dim(GNA_DIM_X + 2),
-            gna_tensor_dim(GNA_DIM_X + 3)
-        }
-    },
-};
+            GNA_TENSOR_ORDER_ANY,
+            {
+                GNA_DIM_N,
+                GNA_DIM_W,
+                GNA_DIM_H,
+                GNA_DIM_D,
+                GNA_DIM_X,
+                gna_tensor_dim(GNA_DIM_X + 1),
+                gna_tensor_dim(GNA_DIM_X + 2),
+                gna_tensor_dim(GNA_DIM_X + 3)
+            }
+        },
+    };
+
+    try
+    {
+        return vectorIndices.at(order);
+    }
+    catch (const std::out_of_range&)
+    {
+        throw GnaException(XNN_ERR_LYR_INVALID_TENSOR_ORDER);
+    }
+    
+}
 
 Shape::Shape(ShapeMap && map, gna_tensor_order order) :
     ShapeMap{ std::move(map) },
@@ -97,10 +114,10 @@ Shape & Shape::operator=(const Shape & right)
 
 Shape Shape::Reshape(gna_tensor_order order) const
 {
-    Expect::True(this->size() >= VectorIndices.at(order).size(), XNN_ERR_NETWORK_INPUTS); // TODO:3: add error code
+    Expect::True(this->size() >= GetVectorIndices(order).size(), XNN_ERR_NETWORK_INPUTS); // TODO:3: add error code
     Shape dims;
     dims.Order = order;
-    for (const auto & dim : VectorIndices.at(order))
+    for (const auto & dim : GetVectorIndices(order))
     {
         dims[dim] = this->at(dim);
     }
@@ -116,7 +133,7 @@ Shape Shape::Create(const ApiShape & shape, const gna_tensor_order order)
 
 ShapeMap Shape::Create(const std::vector<uint32_t> && dimensions, const gna_tensor_order order)
 {
-    const auto & layout = VectorIndices.at(order);
+    const auto & layout = GetVectorIndices(order);
     ValidateNumberOfDimensions(order, layout.size(), dimensions.size());
 
     ShapeMap shape;
@@ -186,3 +203,4 @@ void Shape::Validate(const ComponentLimits * validator) const
     Expect::Equal(Order, validator->Order.Value, validator->Order.Error);
     Expect::ShapeIsValid(*this, validator->Dimensions);
 }
+

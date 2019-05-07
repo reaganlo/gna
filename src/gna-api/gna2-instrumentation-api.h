@@ -81,7 +81,7 @@ enum Gna2InstrumentationPoint
     /**
      Request completed by device, from library instrumentation.
      */
-    Gna2InstrumentationPointLibDeviceRequestComepleted = 6,
+    Gna2InstrumentationPointLibDeviceRequestCompleted = 6,
 
     /**
      Request execution completed, from library instrumentation.
@@ -107,7 +107,7 @@ enum Gna2InstrumentationPoint
     /**
      Request completed interrupt triggered by hardware, from driver instrumentation.
      */
-    Gna2InstrumentationPointDrvDeviceRequestComepleted = 11,
+    Gna2InstrumentationPointDrvDeviceRequestCompleted = 11,
 
     /**
      Request execution completed, from driver instrumentation.

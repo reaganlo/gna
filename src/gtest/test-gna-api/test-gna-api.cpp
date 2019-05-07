@@ -77,9 +77,14 @@ protected:
         UNREFERENCED_PARAMETER(size);
         return nullptr;
     }
+};
 
+class TestGnaShapeApi : public TestGnaApi
+{
+
+public:
     template<typename ... T>
-    static void ShapeInitTest(const Gna2Shape& shape, T... dimensions)
+    static void InitTest(const Gna2Shape& shape, T... dimensions)
     {
         const auto dimensionList = std::vector<uint32_t>({static_cast<uint32_t>(dimensions)...});
         const auto size = dimensionList.size();
@@ -98,6 +103,24 @@ protected:
     }
 };
 
+class TestGnaTensorApi : public TestGnaApi
+{
+protected:
+    template<typename ... T>
+    static void InitTest(const Gna2Tensor& tensor, enum Gna2DataType type,
+        void * data, T... dimensions)
+    {
+        TestGnaShapeApi::InitTest(tensor.Shape, dimensions...);
+        ASSERT_EQ(tensor.Data, data);
+        ASSERT_STREQ(tensor.Layout, "");
+        ASSERT_EQ(tensor.Mode, Gna2TensorModeDefault);
+        ASSERT_EQ(tensor.Type, type);
+
+    }
+
+    int16_t data = 0;
+};
+
 TEST_F(TestGnaApi, allocateMemory)
 {
     uint32_t sizeRequested = 47;
@@ -112,7 +135,7 @@ TEST_F(TestGnaApi, allocateMemory)
 
 TEST_F(TestGnaModelApi, Gna2DataTypeGetSizeSuccesfull)
 {
-    auto size = Gna2DataTypeGetSize(Gna2DataTypeVoid);
+    auto size = Gna2DataTypeGetSize(Gna2DataTypeNone);
     ASSERT_EQ(size, static_cast<uint32_t>(0));
     size = Gna2DataTypeGetSize(Gna2DataTypeBoolean);
     ASSERT_EQ(size, static_cast<uint32_t>(1));
@@ -150,7 +173,7 @@ TEST_F(TestGnaModelApi, Gna2DataTypeGetSizeIncorrectType)
     ASSERT_EQ(size, static_cast<uint32_t>(GNA2_NOT_SUPPORTED));
 }
 
-TEST_F(TestGnaModelApi, Gna2ShapeGetNumberOfElementsSuccessfull)
+TEST_F(TestGnaShapeApi, Gna2ShapeGetNumberOfElementsSuccessfull)
 {
     Gna2Shape shape = {};
     shape.NumberOfDimensions = 2;
@@ -160,13 +183,13 @@ TEST_F(TestGnaModelApi, Gna2ShapeGetNumberOfElementsSuccessfull)
     ASSERT_EQ(size, static_cast<uint32_t>(6));
 }
 
-TEST_F(TestGnaModelApi, Gna2ShapeGetNumberOfElementsNullShape)
+TEST_F(TestGnaShapeApi, Gna2ShapeGetNumberOfElementsNullShape)
 {
     const auto size = Gna2ShapeGetNumberOfElements(nullptr);
     ASSERT_EQ(size, static_cast<uint32_t>(GNA2_NOT_SUPPORTED));
 }
 
-TEST_F(TestGnaModelApi, Gna2ShapeGetNumberOfElementsZero)
+TEST_F(TestGnaShapeApi, Gna2ShapeGetNumberOfElementsZero)
 {
     Gna2Shape shape = {};
     shape.NumberOfDimensions = 0;
@@ -174,7 +197,7 @@ TEST_F(TestGnaModelApi, Gna2ShapeGetNumberOfElementsZero)
     ASSERT_EQ(size, static_cast<uint32_t>(0));
 }
 
-TEST_F(TestGnaModelApi, Gna2ShapeGetNumberOfElementsInvalidDimensions)
+TEST_F(TestGnaShapeApi, Gna2ShapeGetNumberOfElementsInvalidDimensions)
 {
     Gna2Shape shape = {};
     shape.NumberOfDimensions = 0;
@@ -183,7 +206,7 @@ TEST_F(TestGnaModelApi, Gna2ShapeGetNumberOfElementsInvalidDimensions)
     ASSERT_EQ(size, static_cast<uint32_t>(0));
 }
 
-TEST_F(TestGnaModelApi, Gna2ShapeGetNumberOfElementsInvalidDimensions2)
+TEST_F(TestGnaShapeApi, Gna2ShapeGetNumberOfElementsInvalidDimensions2)
 {
     Gna2Shape shape = {};
     shape.NumberOfDimensions = 99;
@@ -192,34 +215,70 @@ TEST_F(TestGnaModelApi, Gna2ShapeGetNumberOfElementsInvalidDimensions2)
     ASSERT_EQ(size, static_cast<uint32_t>(GNA2_NOT_SUPPORTED));
 }
 
-TEST_F(TestGnaModelApi, Gna2ShapeInitScalarSuccessfull)
+TEST_F(TestGnaShapeApi, Gna2ShapeInitScalarSuccessfull)
 {
     const auto shape = Gna2ShapeInitScalar();
-    ShapeInitTest(shape);
+    InitTest(shape);
 }
 
-TEST_F(TestGnaModelApi, Gna2ShapeInit1DSuccessfull)
+TEST_F(TestGnaShapeApi, Gna2ShapeInit1DSuccessfull)
 {
     const auto shape = Gna2ShapeInit1D(9);
-    ShapeInitTest(shape, 9);
+    InitTest(shape, 9);
 }
 
-TEST_F(TestGnaModelApi, Gna2ShapeInit2DSuccessfull)
+TEST_F(TestGnaShapeApi, Gna2ShapeInit2DSuccessfull)
 {
      const auto shape = Gna2ShapeInit2D(9, 13);
-    ShapeInitTest(shape, 9, 13);
+    InitTest(shape, 9, 13);
 }
 
-TEST_F(TestGnaModelApi, Gna2ShapeInit3DSuccessfull)
+TEST_F(TestGnaShapeApi, Gna2ShapeInit3DSuccessfull)
 {
      const auto shape = Gna2ShapeInit3D(9, 13, 42);
-    ShapeInitTest(shape, 9, 13, 42);
+    InitTest(shape, 9, 13, 42);
 }
 
-TEST_F(TestGnaModelApi, Gna2ShapeInit4DSuccessfull)
+TEST_F(TestGnaShapeApi, Gna2ShapeInit4DSuccessfull)
 {
-     const auto shape = Gna2ShapeInit4D(9, 13, 42, 0);
-    ShapeInitTest(shape, 9, 13, 42, 0);
+    const auto shape = Gna2ShapeInit4D(9, 13, 42, 0);
+    InitTest(shape, 9, 13, 42, 0);
+}
+
+TEST_F(TestGnaTensorApi, Gna2TensorInitDisabledSuccessfull)
+{
+    const auto tensor = Gna2TensorInitDisabled();
+    InitTest(tensor, Gna2DataTypeNone, nullptr);
+}
+
+TEST_F(TestGnaTensorApi, DISABLED_Gna2TensorInit1DSuccessfull)
+{
+    const auto tensor = Gna2TensorInit1D(9, Gna2DataTypeInt16, &data);
+    InitTest(tensor, Gna2DataTypeInt16, &data, 9);
+}
+
+TEST_F(TestGnaTensorApi, DISABLED_Gna2TensorInit2DSuccessfull)
+{
+    const auto tensor = Gna2TensorInit2D(9, 13, Gna2DataTypeInt16, &data);
+    InitTest(tensor, Gna2DataTypeInt16, &data, 9, 13);
+}
+
+TEST_F(TestGnaTensorApi, DISABLED_Gna2TensorInit3DSuccessfull)
+{
+    const auto tensor = Gna2TensorInit3D(9, 13, 42, Gna2DataTypeInt16, &data);
+    InitTest(tensor, Gna2DataTypeInt16, &data, 9, 13, 42);
+}
+
+TEST_F(TestGnaTensorApi, DISABLED_Gna2TensorInit4DSuccessfull)
+{
+    const auto tensor = Gna2TensorInit4D(9, 13, 42, 0, Gna2DataTypeInt16, &data);
+    InitTest(tensor, Gna2DataTypeInt16, &data, 9, 13, 42, 0);
+}
+
+TEST_F(TestGnaTensorApi, Gna2TensorInit1dInvalidType)
+{
+    const auto tensor = Gna2TensorInit1D(9, static_cast<Gna2DataType>(Gna2DataTypeWeightScaleFactor + 100), &data);
+    InitTest(tensor, Gna2DataTypeNone, nullptr);
 }
 
 TEST_F(TestGnaModelApi, Gna2ModelCreateNull)

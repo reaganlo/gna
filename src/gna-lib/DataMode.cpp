@@ -58,7 +58,7 @@ const std::map<const DataType, const uint32_t>& DataMode::GetSizes()
 {
     static const std::map<const DataType, const uint32_t> sizes =
     {
-        {Gna2DataTypeVoid, 0},
+        {Gna2DataTypeNone, 0},
         {Gna2DataTypeBoolean, 1},
         {Gna2DataTypeInt4, 1},
         {Gna2DataTypeInt8, 1},
@@ -82,7 +82,7 @@ DataType DataMode::TypeFromDataMode(const gna_data_mode dataMode)
 {
     static const std::map<const gna_data_mode, const DataType> types =
     {
-        {GNA_DATA_NOT_SUPPORTED, Gna2DataTypeVoid},
+        {GNA_DATA_NOT_SUPPORTED, Gna2DataTypeNone},
         {GNA_INT8, Gna2DataTypeInt8},
         {GNA_INT16, Gna2DataTypeInt16},
         {GNA_INT32, Gna2DataTypeInt32},
@@ -93,8 +93,8 @@ DataType DataMode::TypeFromDataMode(const gna_data_mode dataMode)
         {GNA_UINT64, Gna2DataTypeUint64},
         {GNA_DATA_RICH_FORMAT, Gna2DataTypeCompoundBias},
         {GNA_DATA_CONSTANT_SCALAR, Gna2DataTypeInt32},
-        {GNA_DATA_ACTIVATION_DISABLED, Gna2DataTypeVoid},
-        {GNA_DATA_DISABLED, Gna2DataTypeVoid},
+        {GNA_DATA_ACTIVATION_DISABLED, Gna2DataTypeNone},
+        {GNA_DATA_DISABLED, Gna2DataTypeNone},
     };
     return types.at(dataMode);
 }
@@ -124,7 +124,7 @@ gna_data_mode DataMode::ModeFromDataMode(const DataType dataType)
 {
     static const std::map<const DataType, const gna_data_mode> types =
     {
-        {Gna2DataTypeVoid, GNA_DATA_NOT_SUPPORTED},
+        {Gna2DataTypeNone, GNA_DATA_NOT_SUPPORTED},
         {Gna2DataTypeBoolean, GNA_DATA_NOT_SUPPORTED},
         {Gna2DataTypeInt4, GNA_DATA_NOT_SUPPORTED},
         {Gna2DataTypeInt8, GNA_INT8},

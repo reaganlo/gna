@@ -151,7 +151,6 @@ GNA2_API struct Gna2Shape Gna2ShapeInit1D(uint32_t x)
 
 GNA2_API struct Gna2Shape Gna2ShapeInit2D(uint32_t x, uint32_t y)
 {
-    // TODO:3:API: implement P2
     const std::function<ApiShape()> command = [&]()
     {
         return ModelWrapper::ShapeInit(GNA_TENSOR_ORDER_ANY, x, y);
