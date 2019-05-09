@@ -103,6 +103,7 @@ unique_ptr<const AffineFunction> AffineFunction::Create(const Tensor* input, con
         {
             weightScales = make_unique<const Tensor>(Shape(GNA_TENSOR_H, output->at(GNA_DIM_H)), GNA_DATA_RICH_FORMAT,
                 affine->weightScaleFactors, Validator{ validatorIn, AffineFunctionMulti::Capabilities });
+            Expect::ValidBuffer(*weightScales);
         }
         break;
     }
@@ -202,12 +203,6 @@ AffineFunctionMulti::AffineFunctionMulti(const BaseAddress& input, const BaseAdd
     AffineFunction(kernelsIn, move(weights), move(biases)),
     WeightScaleFactors{ move(weightScaleFactors) }
 {
-    //// TODO:3: move to layer/hw capabilities as this differ for hws
-    if (GNA_INT8 == Weights->Mode)
-    {
-        Expect::ValidBuffer(*WeightScaleFactors);
-    }
-
     hiddenConfig = make_unique<const AffineConfig>(AffineConfig(
         Biases->at(GNA_DIM_H), vectorCount, Weights->at(GNA_DIM_W),
         input, output, *Weights, ( WeightScaleFactors ? static_cast<const void*>(*WeightScaleFactors) : nullptr ),
