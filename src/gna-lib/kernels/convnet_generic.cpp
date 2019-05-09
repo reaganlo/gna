@@ -1026,7 +1026,7 @@ void Convolution2DKernelImpl2B1B(ExecutionKernelConfig<ConvolutionConfig2D> cons
     uint32_t numFilters = config->RequestConfig->Transform.Convolution.filters.count;
     uint32_t filterHeight = config->RequestConfig->Transform.Convolution.filters.dimensions.height;
     uint32_t filterWidth = config->RequestConfig->Transform.Convolution.filters.dimensions.width;
-    uint32_t memForFilter = (filterHeight * filterWidth * inputDepth);
+    uint32_t memForFilter = (filterHeight * filterWidth * inputDepth * 2);
     uint32_t filterPadding = (ALIGN(memForFilter, 16) - memForFilter) / 2;
 
     uint32_t padHeight = config->RequestConfig->Transform.Convolution.zeroPadding.height;
@@ -1106,7 +1106,7 @@ void Convolution2DKernelImpl2B2B(ExecutionKernelConfig<ConvolutionConfig2D> cons
     uint32_t numFilters = config->RequestConfig->Transform.Convolution.filters.count;
     uint32_t filterHeight = config->RequestConfig->Transform.Convolution.filters.dimensions.height;
     uint32_t filterWidth = config->RequestConfig->Transform.Convolution.filters.dimensions.width;
-    uint32_t memForFilter = (filterHeight * filterWidth * inputDepth);
+    uint32_t memForFilter = (filterHeight * filterWidth * inputDepth * 2);
     uint32_t filterPadding = (ALIGN(memForFilter, 16) - memForFilter) /2;
 
     uint32_t padHeight = config->RequestConfig->Transform.Convolution.zeroPadding.height;
