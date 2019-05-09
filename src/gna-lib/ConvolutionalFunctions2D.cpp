@@ -122,7 +122,7 @@ Shape ConvolutionFunction2D::CalculateBiasShape(const gna_bias_mode mode, const 
     }
     case GNA_BIAS_NOT_SUPPORTED:
     {
-        return Shape();
+        return Shape(GNA_TENSOR_NHW, 1, 1, 1); //TODO: FIX. Workaround for shape when bias_disabled
     }
     case GNA_BIAS_PER_STRIDE:
     {
