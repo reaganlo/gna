@@ -127,6 +127,12 @@ struct Gna2Model
 enum Gna2OperationType
 {
     /**
+    Value does not denote any GNA operation.
+    For safety purposes, this value should be assigned to ::Gna2Operation::Type,
+    before using any ::Gna2Operation initialization helper (e.g, Gna2OperationInitConvolution())
+    */
+    Gna2OperationTypeNone = GNA2_DEFAULT,
+    /**
     Convolutional operation composed with activation function and pooling.
 
     Operation:
@@ -206,7 +212,7 @@ enum Gna2OperationType
                      - H is a number of elements to move in H dimension
         2. Gna2BiasMode biasMode - Mode of bias operation:
             Supported values: {::Gna2BiasModeDefault, ::Gna2BiasModePerStride}
-        3. Gna2PoolingMode poolingType of bias operation [optional]
+        3. Gna2PoolingMode poolingMode in case of fused operation [optional]
         4. Gna2Shape poolingWindow [optional]:
             Specifies pooling window shape.
             Supported values:
@@ -1318,7 +1324,7 @@ struct Gna2ModelError
     User is responsible for releasing allocated Gna2Operation::Operands
     and Gna2Operation::Parameters buffers.
 
- @param operation The affected operation.
+ @param operation The affected operation. Must be zeroed before tha call.
  @param type The type of executed operation.
  @param userAllocator User provided memory allocator.
  @return Status of the operation.
@@ -1439,18 +1445,71 @@ GNA2_API struct Gna2Tensor Gna2TensorInitScalar(enum Gna2DataType type, void * d
 GNA2_API struct Gna2Tensor Gna2TensorInitActivation(uint32_t numberOfSegments,
     struct Gna2PwlSegment * segments);
 
+/**
+ In the first step, this function initializes operation structure just like Gna2ModelOperationInit function does.
+ Then it sets operands and parameters for the Fully Connected Affine operation.
 
-GNA2_API struct Gna2Operation Gna2OperationInitFullyConnectedAffine(
+ @note
+ Shallow assignment is performed (i.e., Gna2Tensor structures and parameters must be available after the call).
+
+ @param operation Address of Gna2Operation structure. Must be zeroed before tha call.
+ @param userAllocator User allocator for operands and parameters.
+ @param inputs Address of Gna2Tensor structure describing inputs.
+ @param outputs Address of Gna2Tensor structure describing outputs.
+ @param weights Address of Gna2Tensor structure describing weights.
+ @param biases Address of Gna2Tensor structure describing biases.
+ @param activation Address of Gna2Tensor structure describing activation.
+ @return ::Gna2StatusSuccess on success.
+ */
+GNA2_API enum Gna2Status Gna2OperationInitFullyConnectedAffine(
+    struct Gna2Operation * operation, Gna2UserAllocator userAllocator,
     struct Gna2Tensor * inputs, struct Gna2Tensor * outputs,
     struct Gna2Tensor * weights, struct Gna2Tensor * biases,
     struct Gna2Tensor * activation);
 
-GNA2_API struct Gna2Operation Gna2OperationInitElementWiseAffine(
+/**
+ In the first step, this function initializes operation structure just like Gna2ModelOperationInit function does.
+ Then it sets operands and parameters for the Element Wise Affine operation.
+
+ @note
+ Shallow assignment is performed (i.e., Gna2Tensor structures and parameters must be available after the call).
+
+ @param operation Address of Gna2Operation structure. Must be zeroed before tha call.
+ @param userAllocator User allocator for operands and parameters.
+ @param inputs Address of Gna2Tensor structure describing inputs.
+ @param outputs Address of Gna2Tensor structure describing outputs.
+ @param weights Address of Gna2Tensor structure describing weights.
+ @param biases Address of Gna2Tensor structure describing biases.
+ @param activation Address of Gna2Tensor structure describing activation.
+ @return ::Gna2StatusSuccess on success.
+ */
+GNA2_API enum Gna2Status Gna2OperationInitElementWiseAffine(
+    struct Gna2Operation * operation, Gna2UserAllocator userAllocator,
     struct Gna2Tensor * inputs, struct Gna2Tensor * outputs,
     struct Gna2Tensor * weights, struct Gna2Tensor * biases,
     struct Gna2Tensor * activation);
 
-GNA2_API struct Gna2Operation Gna2OperationInitFullyConnectedBiasGrouping(
+/**
+ In the first step, this function initializes operation structure just like Gna2ModelOperationInit function does.
+ Then it sets operands and parameters for the Fully Connected Bias Grouping operation.
+
+ @note
+ Shallow assignment is performed (i.e., Gna2Tensor structures and parameters must be available after the call).
+
+ @param operation Address of Gna2Operation structure. Must be zeroed before tha call.
+ @param userAllocator User allocator for operands and parameters.
+ @param inputs Address of Gna2Tensor structure describing inputs.
+ @param outputs Address of Gna2Tensor structure describing outputs.
+ @param weights Address of Gna2Tensor structure describing weights.
+ @param biases Address of Gna2Tensor structure describing biases.
+ @param activation Address of Gna2Tensor structure describing activation.
+ @param weightScaleFactors Address of Gna2Tensor structure describing weight Scale Factors.
+ @param biasMode Address of Gna2BiasMode parameter.
+ @param biasVectorIndex Address of bias vector index parameter.
+ @return ::Gna2StatusSuccess on success.
+ */
+GNA2_API enum Gna2Status Gna2OperationInitFullyConnectedBiasGrouping(
+    struct Gna2Operation * operation, Gna2UserAllocator userAllocator,
     struct Gna2Tensor * inputs, struct Gna2Tensor * outputs,
     struct Gna2Tensor * weights, struct Gna2Tensor * biases,
     struct Gna2Tensor * activation,
@@ -1458,62 +1517,187 @@ GNA2_API struct Gna2Operation Gna2OperationInitFullyConnectedBiasGrouping(
     enum Gna2BiasMode* biasMode,
     uint32_t* biasVectorIndex);
 
-GNA2_API struct Gna2Operation Gna2OperationInitRecurrent(
+/**
+ In the first step, this function initializes operation structure just like Gna2ModelOperationInit function does.
+ Then it sets operands and parameters for the Recurrent operation.
+
+ @note
+ Shallow assignment is performed (i.e., Gna2Tensor structures and parameters must be available after the call).
+
+ @param operation Address of Gna2Operation structure. Must be zeroed before tha call.
+ @param userAllocator User allocator for operands and parameters.
+ @param inputs Address of Gna2Tensor structure describing inputs.
+ @param outputs Address of Gna2Tensor structure describing outputs.
+ @param weights Address of Gna2Tensor structure describing weights.
+ @param biases Address of Gna2Tensor structure describing biases.
+ @param activation Address of Gna2Tensor structure describing activation.
+ @param delay Address of delay parameter.
+ @return ::Gna2StatusSuccess on success.
+ */
+GNA2_API enum Gna2Status Gna2OperationInitRecurrent(
+    struct Gna2Operation * operation, Gna2UserAllocator userAllocator,
     struct Gna2Tensor * inputs, struct Gna2Tensor * outputs,
     struct Gna2Tensor * weights, struct Gna2Tensor * biases,
     struct Gna2Tensor * activation,
     uint32_t* delay);
 
+/**
+ In the first step, this function initializes operation structure just like Gna2ModelOperationInit function does.
+ Then it sets operands and parameters for the Convolution operation.
 
-GNA2_API struct Gna2Operation Gna2OperationInitConvolution(
+ @note
+ Shallow assignment is performed (i.e., Gna2Tensor structures and parameters must be available after the call).
+
+ @param operation Address of Gna2Operation structure. Must be zeroed before tha call.
+ @param userAllocator User allocator for operands and parameters.
+ @param inputs Address of Gna2Tensor structure describing inputs.
+ @param outputs Address of Gna2Tensor structure describing outputs.
+ @param filters Address of Gna2Tensor structure describing filters.
+ @param biases Address of Gna2Tensor structure describing biases.
+ @param activation Address of Gna2Tensor structure describing activation.
+ @param convolutionStride Address of convolution stride parameter.
+ @param biasMode Address of bias mode parameter.
+ @return ::Gna2StatusSuccess on success.
+ */
+GNA2_API enum Gna2Status Gna2OperationInitConvolution(
+    struct Gna2Operation * operation, Gna2UserAllocator userAllocator,
     struct Gna2Tensor * inputs, struct Gna2Tensor * outputs,
     struct Gna2Tensor * filters, struct Gna2Tensor * biases,
     struct Gna2Tensor * activation,
-    struct Gna2Shape * zeroPadding,
     struct Gna2Shape * convolutionStride,
     enum Gna2BiasMode * biasMode);
 
-GNA2_API struct Gna2Operation Gna2OperationInitConvolutionFused(
+/**
+ In the first step, this function initializes operation structure just like Gna2ModelOperationInit function does.
+ Then it sets operands and parameters for the Convolution Fused operation.
+
+ @note
+ Shallow assignment is performed (i.e., Gna2Tensor structures and parameters must be available after the call).
+
+ @param operation Address of Gna2Operation structure. Must be zeroed before tha call.
+ @param userAllocator User allocator for operands and parameters.
+ @param inputs Address of Gna2Tensor structure describing inputs.
+ @param outputs Address of Gna2Tensor structure describing outputs.
+ @param filters Address of Gna2Tensor structure describing filters.
+ @param biases Address of Gna2Tensor structure describing biases.
+ @param activation Address of Gna2Tensor structure describing activation.
+ @param convolutionStride Address of convolution stride parameter.
+ @param biasMode Address of bias mode parameter.
+ @param poolingMode Address of poolingMode  parameter.
+ @param poolingWindow Address of pooling window parameter.
+ @param poolingStride Address of pooling stride parameter.
+ @param zeroPadding Address of zero padding parameter.
+ @return ::Gna2StatusSuccess on success.
+ */
+GNA2_API enum Gna2Status Gna2OperationInitConvolutionFused(
+    struct Gna2Operation * operation, Gna2UserAllocator userAllocator,
     struct Gna2Tensor * inputs, struct Gna2Tensor * outputs,
     struct Gna2Tensor * filters, struct Gna2Tensor * biases,
     struct Gna2Tensor * activation,
-    struct Gna2Shape * zeroPadding,
     struct Gna2Shape * convolutionStride,
     enum Gna2BiasMode * biasMode,
     enum Gna2PoolingMode * poolingMode,
     struct Gna2Shape * poolingWindow,
-    struct Gna2Shape * poolingStride);
+    struct Gna2Shape * poolingStride,
+    struct Gna2Shape * zeroPadding);
 
-GNA2_API struct Gna2Operation Gna2OperationInitPooling(
+/**
+ In the first step, this function initializes operation structure just like Gna2ModelOperationInit function does.
+ Then it sets operands and parameters for the Copy operation.
+
+ @note
+ Shallow assignment is performed (i.e., Gna2Tensor structures and parameters must be available after the call).
+
+ @param operation Address of Gna2Operation structure. Must be zeroed before tha call.
+ @param userAllocator User allocator for operands and parameters.
+ @param inputs Address of Gna2Tensor structure describing inputs.
+ @param outputs Address of Gna2Tensor structure describing outputs.
+ @param copyShape Address of copy shape parameter.
+ @return ::Gna2StatusSuccess on success.
+ */
+GNA2_API enum Gna2Status Gna2OperationInitCopy(
+    struct Gna2Operation * operation, Gna2UserAllocator userAllocator,
     struct Gna2Tensor * inputs, struct Gna2Tensor * outputs,
-    struct Gna2Tensor * activation,
-    struct Gna2Shape * zeroPadding,
-    enum Gna2PoolingMode * poolingMode,
-    struct Gna2Shape * poolingWindow,
-    struct Gna2Shape * poolingStride);
+    struct Gna2Shape * copyShape);
 
-GNA2_API struct Gna2Operation Gna2OperationInitCopy(
-    struct Gna2Tensor * inputs, struct Gna2Tensor * outputs,
-    struct Gna2Shape * copyParams);
+/**
+ In the first step, this function initializes operation structure just like Gna2ModelOperationInit function does.
+ Then it sets operands and parameters for the Interleave operation.
 
-GNA2_API struct Gna2Operation Gna2OperationInitTranspose(
+ @note
+ Shallow assignment is performed (i.e., Gna2Tensor structures and parameters must be available after the call).
+ Additionally the Gna2Tensor::Layout of the input and output tensors is set appropriately.
+
+ @param operation Address of Gna2Operation structure. Must be zeroed before tha call.
+ @param userAllocator User allocator for operands and parameters.
+ @param inputs Address of Gna2Tensor structure describing inputs.
+ @param outputs Address of Gna2Tensor structure describing outputs.
+ @return ::Gna2StatusSuccess on success.
+ */
+GNA2_API enum Gna2Status Gna2OperationInitInterleave(
+    struct Gna2Operation * operation, Gna2UserAllocator userAllocator,
     struct Gna2Tensor * inputs, struct Gna2Tensor * outputs);
 
-GNA2_API struct Gna2Operation Gna2OperationInitInterleave(
+/**
+ In the first step, this function initializes operation structure just like Gna2ModelOperationInit function does.
+ Then it sets operands and parameters for the De Interleave operation.
+
+ @note
+ Shallow assignment is performed (i.e., Gna2Tensor structures and parameters must be available after the call).
+ Additionally the Gna2Tensor::Layout of the input and output tensors is set appropriately.
+
+ @param operation Address of Gna2Operation structure. Must be zeroed before tha call.
+ @param userAllocator User allocator for operands and parameters.
+ @param inputs Address of Gna2Tensor structure describing inputs.
+ @param outputs Address of Gna2Tensor structure describing outputs.
+ @return ::Gna2StatusSuccess on success.
+ */
+GNA2_API enum Gna2Status Gna2OperationInitDeInterleave(
+    struct Gna2Operation * operation, Gna2UserAllocator userAllocator,
     struct Gna2Tensor * inputs, struct Gna2Tensor * outputs);
 
-GNA2_API struct Gna2Operation Gna2OperationInitDeInterleave(
-    struct Gna2Tensor * inputs, struct Gna2Tensor * outputs);
+/**
+ In the first step, this function initializes operation structure just like Gna2ModelOperationInit function does.
+ Then it sets operands and parameters for the Gmm operation.
 
-//TODO:3:API define
-GNA2_API struct Gna2Operation Gna2OperationInitGmm(
+ @note
+ Shallow assignment is performed (i.e., Gna2Tensor structures and parameters must be available after the call).
+
+ @param operation Address of Gna2Operation structure. Must be zeroed before tha call.
+ @param userAllocator User allocator for operands and parameters.
+ @param inputs Address of Gna2Tensor structure describing inputs.
+ @param outputs Address of Gna2Tensor structure describing outputs.
+ @param means Address of Gna2Tensor structure describing means.
+ @param inverseCovariances Address of Gna2Tensor structure describing inverse covariances.
+ @param constants Address of Gna2Tensor structure describing constants.
+ @param maximumScore Address of maximum score parameter.
+ @return ::Gna2StatusSuccess on success.
+ */
+GNA2_API enum Gna2Status Gna2OperationInitGmm(
+    struct Gna2Operation * operation, Gna2UserAllocator userAllocator,
     struct Gna2Tensor * inputs, struct Gna2Tensor * outputs,
     struct Gna2Tensor * means,
     struct Gna2Tensor * inverseCovariances,
     struct Gna2Tensor * constants,
     uint32_t * maximumScore);
 
-GNA2_API struct Gna2Operation Gna2OperationInitGmmInterleaved(
+/**
+ In the first step, this function initializes operation structure just like Gna2ModelOperationInit function does.
+ Then it sets operands and parameters for the Gmm Interleaved operation.
+
+ @note
+ Shallow assignment is performed (i.e., Gna2Tensor structures and parameters must be available after the call).
+
+ @param operation Address of Gna2Operation structure. Must be zeroed before tha call.
+ @param userAllocator User allocator for operands and parameters.
+ @param inputs Address of Gna2Tensor structure describing inputs.
+ @param outputs Address of Gna2Tensor structure describing outputs.
+ @param interleavedTensors Address of Gna2Tensor structure describing interleaved data.
+ @param maximumScore Address of maximum score parameter.
+ @return ::Gna2StatusSuccess on success.
+ */
+GNA2_API enum Gna2Status Gna2OperationInitGmmInterleaved(
+    struct Gna2Operation * operation, Gna2UserAllocator userAllocator,
     struct Gna2Tensor * inputs, struct Gna2Tensor * outputs,
     struct Gna2Tensor * interleavedTensors,
     uint32_t * maximumScore);

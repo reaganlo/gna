@@ -33,15 +33,15 @@
 
 #include <cstdint>
 #include <cstring>
+#include <initializer_list>
 #include <map>
-#include <vector>
 
 namespace GNA
 {
 class ModelWrapper
 {
 public:
-    static void OperationInit(ApiOperation * operation,
+    static void OperationInit(ApiOperation& operation,
         OperationType type, Gna2UserAllocator userAllocator);
 
     static uint32_t DataTypeGetSize(DataType type);
@@ -60,6 +60,41 @@ public:
         auto shape = Shape(order, static_cast<uint32_t>(dimensions)...);
         return static_cast<ApiShape>(shape);
     }
+
+    // All pointers in source != nullptr, otherwise exception is thrown
+    template<class T, class V>
+    static void TryAssign(T ** const destination, const size_t destinationSize, std::initializer_list<V*> source)
+    {
+        Expect::True(destinationSize >= source.size(),
+            Gna2StatusModelConfigurationInvalid);
+        int i = 0;
+        for (const auto& s : source)
+        {
+            Expect::NotNull(s);
+            destination[i++] = s;
+        }
+        std::fill(destination + i, destination + destinationSize, nullptr);
+    }
+
+    template<class ... T>
+    static void SetOperands(ApiOperation & operation, T ... operands)
+    {
+        Expect::Equal(operation.NumberOfOperands, GetNumberOfOperands(operation.Type),
+            Gna2StatusModelConfigurationInvalid);
+        TryAssign(operation.Operands, operation.NumberOfOperands,
+            {operands...});
+    }
+
+    template<class ... T>
+    static void SetParameters(ApiOperation & operation, T ... parameters)
+    {
+        Expect::Equal(operation.NumberOfParameters, GetNumberOfParameters(operation.Type),
+            Gna2StatusModelConfigurationInvalid);
+        TryAssign(operation.Parameters, operation.NumberOfParameters,
+            {static_cast<void*>(parameters)...});
+    }
+
+    static void SetLayout(Gna2Tensor& tensor, const char* layout);
 
 protected:
     static uint32_t GetNumberOfOperands(OperationType operationType);

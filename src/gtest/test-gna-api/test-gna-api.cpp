@@ -31,6 +31,7 @@
 #include <array>
 #include <chrono>
 #include <gtest/gtest.h>
+#include <initializer_list>
 #include <vector>
 
 class TestGnaApi : public testing::Test
@@ -76,6 +77,45 @@ protected:
     {
         UNREFERENCED_PARAMETER(size);
         return nullptr;
+    }
+};
+
+class TestGnaOperationInitApi : public TestGnaModelApi
+{
+protected:
+    //Operands for Gna2InitOperation???() testing
+    Gna2Tensor input{};
+    Gna2Tensor output{};
+    Gna2Tensor weights{};
+    Gna2Tensor filters{};
+    Gna2Tensor biases{};
+    Gna2Tensor activation{};
+
+    //Parameters for Gna2InitOperation???() testing
+    Gna2Shape convolutionStride{};
+    Gna2Shape poolingStride{};
+    Gna2Shape zeroPadding{};
+    Gna2BiasMode biasMode{};
+    Gna2PoolingMode poolingMode{};
+
+    void ExpectEqual(const Gna2Operation& l, const Gna2Operation& r) const
+    {
+        EXPECT_EQ(l.Type, r.Type);
+        EXPECT_EQ(l.Operands, r.Operands);
+        EXPECT_EQ(l.NumberOfOperands, r.NumberOfOperands);
+        EXPECT_EQ(l.Parameters, r.Parameters);
+        EXPECT_EQ(l.NumberOfParameters, r.NumberOfParameters);
+    }
+
+    template<class M, class V, class ... T>
+    void ExpectTableFilledBy(M pointerTable, V tableSize, T ... expectedValues)
+    {
+        EXPECT_EQ(tableSize, sizeof...(expectedValues));
+        ASSERT_NE(pointerTable, nullptr);
+        for (auto expectedValue : std::initializer_list<const void*>{ expectedValues... })
+        {
+            EXPECT_EQ(*pointerTable++, expectedValue);
+        }
     }
 };
 
@@ -317,7 +357,7 @@ TEST_F(TestGnaModelApi, Gna2ItemTypeModelOperationsodelCreate2InvalidDeviceIndex
     ASSERT_FALSE(Gna2StatusIsSuccessful(status));
 }
 
-TEST_F(TestGnaModelApi, Gna2ModelOperationInitSuccessfull)
+TEST_F(TestGnaOperationInitApi, Gna2ModelOperationInitSuccessfull)
 {
     struct Gna2Operation operation = {};
     const auto type = Gna2OperationTypeCopy;
@@ -327,16 +367,29 @@ TEST_F(TestGnaModelApi, Gna2ModelOperationInitSuccessfull)
     ASSERT_TRUE(Gna2StatusIsSuccessful(status));
 }
 
-TEST_F(TestGnaModelApi, Gna2ModelOperationInitNullOperation)
+TEST_F(TestGnaOperationInitApi, Gna2ModelOperationInitNullOperation)
 {
-    const auto type = static_cast<Gna2OperationType>(100);
+    const auto type = Gna2OperationTypeFullyConnectedAffine;
     const auto userAllocator = &Allocator;
     const auto status = Gna2ModelOperationInit(nullptr,
         type, userAllocator);
     ASSERT_FALSE(Gna2StatusIsSuccessful(status));
 }
 
-TEST_F(TestGnaModelApi, Gna2ModelOperationInitInvalidType)
+TEST_F(TestGnaOperationInitApi, Gna2ModelOperationInitNotZeroed)
+{
+    struct Gna2Operation operation = {};
+    operation.Operands = reinterpret_cast<Gna2Tensor const **>(&operation);
+    const struct Gna2Operation operationCopy { operation };
+    const auto type = Gna2OperationTypeCopy;
+    const auto userAllocator = &Allocator;
+    const auto status = Gna2ModelOperationInit(&operation,
+        type, userAllocator);
+    EXPECT_NE(status, Gna2StatusSuccess);
+    ExpectEqual(operation, operationCopy);
+}
+
+TEST_F(TestGnaOperationInitApi, Gna2ModelOperationInitInvalidType)
 {
     struct Gna2Operation operation = {};
     const auto type = static_cast<Gna2OperationType>(100);
@@ -347,7 +400,7 @@ TEST_F(TestGnaModelApi, Gna2ModelOperationInitInvalidType)
 }
 
 
-TEST_F(TestGnaModelApi, Gna2ModelOperationInitNullAllocator)
+TEST_F(TestGnaOperationInitApi, Gna2ModelOperationInitNullAllocator)
 {
     struct Gna2Operation operation = {};
     const auto type = Gna2OperationTypeCopy;
@@ -356,7 +409,7 @@ TEST_F(TestGnaModelApi, Gna2ModelOperationInitNullAllocator)
     ASSERT_FALSE(Gna2StatusIsSuccessful(status));
 }
 
-TEST_F(TestGnaModelApi, Gna2ModelOperationInitInvalidAllocator)
+TEST_F(TestGnaOperationInitApi, Gna2ModelOperationInitInvalidAllocator)
 {
     struct Gna2Operation operation = {};
     const auto type = Gna2OperationTypeCopy;
@@ -364,6 +417,63 @@ TEST_F(TestGnaModelApi, Gna2ModelOperationInitInvalidAllocator)
     const auto status = Gna2ModelOperationInit(&operation,
         type, userAllocator);
     ASSERT_FALSE(Gna2StatusIsSuccessful(status));
+}
+
+TEST_F(TestGnaOperationInitApi, Gna2OperationInitFullyConnectedAffine)
+{
+    struct Gna2Operation operation = {};
+    auto status = Gna2OperationInitFullyConnectedAffine(&operation, Allocator,
+        &input, &output, &weights, &biases, &activation);
+    ASSERT_EQ(Gna2StatusSuccess, status);
+    EXPECT_EQ(operation.Type, Gna2OperationTypeFullyConnectedAffine);
+    ExpectTableFilledBy(operation.Operands, operation.NumberOfOperands,
+        &input, &output, &weights, &biases, &activation, nullptr);
+    ExpectTableFilledBy(operation.Parameters, operation.NumberOfParameters, nullptr, nullptr);
+
+    free(operation.Parameters);
+    free(operation.Operands);
+}
+
+TEST_F(TestGnaOperationInitApi, Gna2OperationInitConvolution)
+{
+    struct Gna2Operation operation = {};
+    auto status = Gna2OperationInitConvolution(&operation, Allocator,
+        &input, &output, &filters, &biases, &activation,
+        &convolutionStride, &biasMode);
+    ASSERT_EQ(Gna2StatusSuccess, status);
+    EXPECT_EQ(operation.Type, Gna2OperationTypeConvolution);
+    ExpectTableFilledBy(operation.Operands, operation.NumberOfOperands,
+        &input, &output, &filters, &biases, &activation);
+    ExpectTableFilledBy(operation.Parameters, operation.NumberOfParameters,
+        &convolutionStride, &biasMode, nullptr, nullptr, nullptr, nullptr);
+
+    free(operation.Parameters);
+    free(operation.Operands);
+}
+
+TEST_F(TestGnaOperationInitApi, Gna2OperationInitOperationsUnsuccesfullNullOperand)
+{
+    struct Gna2Operation operation = {};
+    auto status = Gna2OperationInitFullyConnectedAffine(&operation, Allocator,
+        &input, &output, nullptr, &weights, &activation);
+    EXPECT_NE(status, Gna2StatusSuccess);
+}
+
+TEST_F(TestGnaOperationInitApi, Gna2OperationInitOperationsUnsuccesfullInvalidAllocator)
+{
+    struct Gna2Operation operation = {};
+    auto status = Gna2OperationInitFullyConnectedAffine(&operation, InvalidAllocator,
+        &input, &output, &weights, &biases, &activation);
+    EXPECT_NE(status, Gna2StatusSuccess);
+}
+
+TEST_F(TestGnaOperationInitApi, Gna2OperationInitOperationsUnsuccesfullNullParameter)
+{
+    struct Gna2Operation operation = {};
+    auto status = Gna2OperationInitConvolutionFused(&operation, Allocator,
+        &input, &output, &filters, &biases, &activation,
+        &convolutionStride, &biasMode, &poolingMode, nullptr, &poolingStride, &zeroPadding);
+    EXPECT_NE(status, Gna2StatusSuccess);
 }
 
 int main(int argc, char **argv)

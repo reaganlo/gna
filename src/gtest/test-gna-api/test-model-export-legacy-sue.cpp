@@ -125,7 +125,7 @@ protected:
     void SetupNnet();
     intel_nnet_layer_t nnet_layer ={};
     intel_nnet_type_t nnet = { 1,4, &nnet_layer };
-    intel_affine_layer_t affine_layer;
+    intel_affine_layer_t affine_layer{};
     gna_device_id deviceIndex = 0;
     uint32_t rw_buffer_size = 0;
     void *memory = nullptr;
@@ -175,16 +175,7 @@ TEST_F(TestSimpleModel, exportSueLegacyTestUsingApi2)
     auto status = GnaModelCreate(deviceIndex, &nnet, &model_id);
     EXPECT_EQ(status, GNA_SUCCESS);
 
-    Gna2ModelSueCreekHeader modelHeader;
-
-    void * bufferLdHeader;
-    void * bufferDump;
-
-    uint32_t bufferLdHeaderSize;
-    uint32_t bufferDumpSize;
-
     uint32_t exportConfig;
-
     auto status2 = Gna2ModelExportConfigCreate(Allocator, &exportConfig);
     EXPECT_EQ(status2, Gna2StatusSuccess);
     status2 = Gna2ModelExportConfigSetSource(exportConfig, deviceIndex, model_id);
@@ -192,6 +183,8 @@ TEST_F(TestSimpleModel, exportSueLegacyTestUsingApi2)
     status2 = Gna2ModelExportConfigSetTarget(exportConfig, Gna2DeviceVersionSueCreek);
     EXPECT_EQ(status2, Gna2StatusSuccess);
 
+    void * bufferLdHeader;
+    uint32_t bufferLdHeaderSize;
     status2 = Gna2ModelExport(exportConfig,
         Gna2ModelExportComponentLegacySueCreekHeader,
         &bufferLdHeader, &bufferLdHeaderSize);
@@ -199,9 +192,11 @@ TEST_F(TestSimpleModel, exportSueLegacyTestUsingApi2)
     EXPECT_EQ(status2, Gna2StatusSuccess);
     EXPECT_EQ(bufferLdHeaderSize, expectedHeaderSize);
 
-    modelHeader = *(reinterpret_cast<Gna2ModelSueCreekHeader*>(bufferLdHeader));
+    auto modelHeader = *(reinterpret_cast<Gna2ModelSueCreekHeader*>(bufferLdHeader));
     EXPECT_EQ(modelHeader.ModelSize, expectedModelSize);
 
+    void * bufferDump;
+    uint32_t bufferDumpSize;
     status2 = Gna2ModelExport(exportConfig,
         Gna2ModelExportComponentLegacySueCreekDump,
         &bufferDump,

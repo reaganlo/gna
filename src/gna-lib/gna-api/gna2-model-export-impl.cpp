@@ -40,7 +40,7 @@ GNA2_API enum Gna2Status Gna2ModelExportConfigCreate(
     {
         Expect::NotNull((void*)userAllocator);
         Expect::NotNull(exportConfigId);
-        *exportConfigId = ModelExportManager::GetManager().AddConfig(userAllocator);
+        *exportConfigId = ModelExportManager::Get().AddConfig(userAllocator);
         return Gna2StatusSuccess;
     };
     return ApiWrapper::ExecuteSafely(command);
@@ -51,7 +51,7 @@ GNA2_API enum Gna2Status Gna2ModelExportConfigRelease(
 {
     const std::function<ApiStatus()> command = [&]()
     {
-        ModelExportManager::GetManager().RemoveConfig(exportConfigId);
+        ModelExportManager::Get().RemoveConfig(exportConfigId);
         return Gna2StatusSuccess;
     };
     return ApiWrapper::ExecuteSafely(command);
@@ -64,7 +64,7 @@ GNA2_API enum Gna2Status Gna2ModelExportConfigSetSource(
 {
     const std::function<ApiStatus()> command = [&]()
     {
-        auto& config = ModelExportManager::GetManager().GetConfig(exportConfigId);
+        auto& config = ModelExportManager::Get().GetConfig(exportConfigId);
         config.SetSource(sourceDeviceIndex, sourceModelId);
         return Gna2StatusSuccess;
     };
@@ -77,7 +77,7 @@ GNA2_API enum Gna2Status Gna2ModelExportConfigSetTarget(
 {
     const std::function<ApiStatus()> command = [&]()
     {
-        auto& config = ModelExportManager::GetManager().GetConfig(exportConfigId);
+        auto& config = ModelExportManager::Get().GetConfig(exportConfigId);
         config.SetTarget(targetDeviceVersion);
         return Gna2StatusSuccess;
     };
@@ -92,7 +92,7 @@ GNA2_API enum Gna2Status Gna2ModelExport(
 {
     const std::function<ApiStatus()> command = [&]()
     {
-        auto& config = ModelExportManager::GetManager().GetConfig(exportConfigId);
+        auto& config = ModelExportManager::Get().GetConfig(exportConfigId);
         config.Export(componentType, exportBuffer, exportBufferSize);
         return Gna2StatusSuccess;
     };

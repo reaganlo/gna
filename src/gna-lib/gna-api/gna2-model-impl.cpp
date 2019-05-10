@@ -96,7 +96,8 @@ GNA2_API enum Gna2Status Gna2ModelOperationInit(struct Gna2Operation * operation
 {
     const std::function<ApiStatus()> command = [&]()
     {
-        ModelWrapper::OperationInit(operation, type, userAllocator);
+        Expect::NotNull(operation);
+        ModelWrapper::OperationInit(*operation, type, userAllocator);
         return Gna2StatusSuccess;
     };
     return ApiWrapper::ExecuteSafely(command);
@@ -274,253 +275,208 @@ GNA2_API struct Gna2Tensor Gna2TensorInitActivation(uint32_t numberOfSegments,
     return ApiWrapper::ExecuteSafely(command, ApiTensor{});
 }
 
-GNA2_API struct Gna2Operation Gna2OperationInitFullyConnectedAffine(
+GNA2_API enum Gna2Status Gna2OperationInitFullyConnectedAffine(
+    struct Gna2Operation * operation, Gna2UserAllocator userAllocator,
     struct Gna2Tensor * inputs, struct Gna2Tensor * outputs,
     struct Gna2Tensor * weights, struct Gna2Tensor * biases,
     struct Gna2Tensor * activation)
 {
-    UNREFERENCED_PARAMETER(inputs);
-    UNREFERENCED_PARAMETER(outputs);
-    UNREFERENCED_PARAMETER(weights);
-    UNREFERENCED_PARAMETER(biases);
-    UNREFERENCED_PARAMETER(activation);
-    // TODO:3:API: implement P2
-    const std::function<ApiOperation()> command = [&]()
+    const std::function<Gna2Status()> command = [&]()
     {
-        return ApiOperation{};
+        Expect::NotNull(operation);
+        ModelWrapper::OperationInit(*operation, Gna2OperationTypeFullyConnectedAffine, userAllocator);
+        ModelWrapper::SetOperands(*operation, inputs, outputs, weights, biases, activation);
+        return Gna2StatusSuccess;
     };
-    return ApiWrapper::ExecuteSafely(command, ApiOperation{});
+    return ApiWrapper::ExecuteSafely(command);
 }
 
-GNA2_API struct Gna2Operation Gna2OperationInitElementWiseAffine(
+GNA2_API enum Gna2Status Gna2OperationInitElementWiseAffine(
+    struct Gna2Operation * operation, Gna2UserAllocator userAllocator,
     struct Gna2Tensor * inputs, struct Gna2Tensor * outputs,
     struct Gna2Tensor * weights, struct Gna2Tensor * biases,
     struct Gna2Tensor * activation)
 {
-    UNREFERENCED_PARAMETER(inputs);
-    UNREFERENCED_PARAMETER(outputs);
-    UNREFERENCED_PARAMETER(weights);
-    UNREFERENCED_PARAMETER(biases);
-    UNREFERENCED_PARAMETER(activation);
-    // TODO:3:API: implement P2
-    const std::function<ApiOperation()> command = [&]()
+    const std::function<Gna2Status()> command = [&]()
     {
-        return ApiOperation{};
+        Expect::NotNull(operation);
+        ModelWrapper::OperationInit(*operation, Gna2OperationTypeElementWiseAffine, userAllocator);
+        ModelWrapper::SetOperands(*operation, inputs, outputs, weights, biases, activation);
+        return Gna2StatusSuccess;
     };
-    return ApiWrapper::ExecuteSafely(command, ApiOperation{});
+    return ApiWrapper::ExecuteSafely(command);
 }
 
-GNA2_API struct Gna2Operation Gna2OperationInitFullyConnectedBiasGrouping(
+GNA2_API enum Gna2Status Gna2OperationInitFullyConnectedBiasGrouping(
+    struct Gna2Operation * operation, Gna2UserAllocator userAllocator,
     struct Gna2Tensor * inputs, struct Gna2Tensor * outputs,
     struct Gna2Tensor * weights, struct Gna2Tensor * biases,
     struct Gna2Tensor * activation,
     struct Gna2Tensor * weightScaleFactors,
-    enum Gna2BiasMode* biasMode,
+    enum Gna2BiasMode* biasMode,    //TODO: 3: Bruno: consider enforcing somehow this param must be == Gna2BiasModeGrouping
     uint32_t* biasVectorIndex)
 {
-    UNREFERENCED_PARAMETER(inputs);
-    UNREFERENCED_PARAMETER(outputs);
-    UNREFERENCED_PARAMETER(weights);
-    UNREFERENCED_PARAMETER(biases);
-    UNREFERENCED_PARAMETER(activation);
-    UNREFERENCED_PARAMETER(weightScaleFactors);
-    UNREFERENCED_PARAMETER(biasMode);
-    UNREFERENCED_PARAMETER(biasVectorIndex);
-    // TODO:3:API: implement P2
-    const std::function<ApiOperation()> command = [&]()
+    const std::function<Gna2Status()> command = [&]()
     {
-        return ApiOperation{};
+        Expect::NotNull(operation);
+        ModelWrapper::OperationInit(*operation, Gna2OperationTypeFullyConnectedAffine, userAllocator);
+        ModelWrapper::SetOperands(*operation, inputs, outputs, weights, biases, activation, weightScaleFactors);
+        ModelWrapper::SetParameters(*operation, biasMode, biasVectorIndex);
+        return Gna2StatusSuccess;
     };
-    return ApiWrapper::ExecuteSafely(command, ApiOperation{});
+    return ApiWrapper::ExecuteSafely(command);
 }
 
-GNA2_API struct Gna2Operation Gna2OperationInitRecurrent(
+GNA2_API enum Gna2Status Gna2OperationInitRecurrent(
+    struct Gna2Operation * operation, Gna2UserAllocator userAllocator,
     struct Gna2Tensor * inputs, struct Gna2Tensor * outputs,
     struct Gna2Tensor * weights, struct Gna2Tensor * biases,
     struct Gna2Tensor * activation,
     uint32_t* delay)
 {
-    UNREFERENCED_PARAMETER(inputs);
-    UNREFERENCED_PARAMETER(outputs);
-    UNREFERENCED_PARAMETER(weights);
-    UNREFERENCED_PARAMETER(biases);
-    UNREFERENCED_PARAMETER(activation);
-    UNREFERENCED_PARAMETER(delay);
-    // TODO:3:API: implement P2
-    const std::function<ApiOperation()> command = [&]()
+    const std::function<Gna2Status()> command = [&]()
     {
-        return ApiOperation{};
+        Expect::NotNull(operation);
+        ModelWrapper::OperationInit(*operation, Gna2OperationTypeRecurrent, userAllocator);
+        ModelWrapper::SetOperands(*operation, inputs, outputs, weights, biases, activation);
+        ModelWrapper::SetParameters(*operation, delay);
+        return Gna2StatusSuccess;
     };
-    return ApiWrapper::ExecuteSafely(command, ApiOperation{});
+    return ApiWrapper::ExecuteSafely(command);
 }
 
-GNA2_API struct Gna2Operation Gna2OperationInitConvolution(
+GNA2_API enum Gna2Status Gna2OperationInitConvolution(
+    struct Gna2Operation * operation, Gna2UserAllocator userAllocator,
     struct Gna2Tensor * inputs, struct Gna2Tensor * outputs,
     struct Gna2Tensor * filters, struct Gna2Tensor * biases,
     struct Gna2Tensor * activation,
-    struct Gna2Shape * zeroPadding,
     struct Gna2Shape * convolutionStride,
     enum Gna2BiasMode * biasMode)
 {
-    UNREFERENCED_PARAMETER(inputs);
-    UNREFERENCED_PARAMETER(outputs);
-    UNREFERENCED_PARAMETER(filters);
-    UNREFERENCED_PARAMETER(biases);
-    UNREFERENCED_PARAMETER(activation);
-    UNREFERENCED_PARAMETER(zeroPadding);
-    UNREFERENCED_PARAMETER(convolutionStride);
-    UNREFERENCED_PARAMETER(biasMode);
-    // TODO:3:API: implement P2
-    const std::function<ApiOperation()> command = [&]()
+    const std::function<Gna2Status()> command = [&]()
     {
-        return ApiOperation{};
+        Expect::NotNull(operation);
+        ModelWrapper::OperationInit(*operation, Gna2OperationTypeConvolution, userAllocator);
+        ModelWrapper::SetOperands(*operation, inputs, outputs, filters, biases, activation);
+        ModelWrapper::SetParameters(*operation, convolutionStride, biasMode);
+
+        return Gna2StatusSuccess;
     };
-    return ApiWrapper::ExecuteSafely(command, ApiOperation{});
+    return ApiWrapper::ExecuteSafely(command);
 }
 
-GNA2_API struct Gna2Operation Gna2OperationInitConvolutionFused(
+GNA2_API enum Gna2Status Gna2OperationInitConvolutionFused(
+    struct Gna2Operation * operation, Gna2UserAllocator userAllocator,
     struct Gna2Tensor * inputs, struct Gna2Tensor * outputs,
     struct Gna2Tensor * filters, struct Gna2Tensor * biases,
     struct Gna2Tensor * activation,
-    struct Gna2Shape * zeroPadding,
     struct Gna2Shape * convolutionStride,
     enum Gna2BiasMode * biasMode,
     enum Gna2PoolingMode * poolingMode,
     struct Gna2Shape * poolingWindow,
-    struct Gna2Shape * poolingStride)
+    struct Gna2Shape * poolingStride,
+    struct Gna2Shape * zeroPadding)
 {
-    UNREFERENCED_PARAMETER(inputs);
-    UNREFERENCED_PARAMETER(outputs);
-    UNREFERENCED_PARAMETER(filters);
-    UNREFERENCED_PARAMETER(biases);
-    UNREFERENCED_PARAMETER(activation);
-    UNREFERENCED_PARAMETER(zeroPadding);
-    UNREFERENCED_PARAMETER(convolutionStride);
-    UNREFERENCED_PARAMETER(biasMode);
-    UNREFERENCED_PARAMETER(poolingMode);
-    UNREFERENCED_PARAMETER(poolingWindow);
-    UNREFERENCED_PARAMETER(poolingStride);
-    // TODO:3:API: implement P2
-    const std::function<ApiOperation()> command = [&]()
+    const std::function<Gna2Status()> command = [&]()
     {
-        return ApiOperation{};
+        Expect::NotNull(operation);
+        ModelWrapper::OperationInit(*operation, Gna2OperationTypeConvolution, userAllocator);
+        ModelWrapper::SetOperands(*operation, inputs, outputs, filters, biases, activation);
+        ModelWrapper::SetParameters(*operation,
+            convolutionStride, biasMode, poolingMode, poolingWindow, poolingStride, zeroPadding);
+
+        return Gna2StatusSuccess;
     };
-    return ApiWrapper::ExecuteSafely(command, ApiOperation{});
+    return ApiWrapper::ExecuteSafely(command);
 }
 
-GNA2_API struct Gna2Operation Gna2OperationInitPooling(
+GNA2_API enum Gna2Status Gna2OperationInitCopy(
+    struct Gna2Operation * operation, Gna2UserAllocator userAllocator,
     struct Gna2Tensor * inputs, struct Gna2Tensor * outputs,
-    struct Gna2Tensor * activation,
-    struct Gna2Shape * zeroPadding,
-    enum Gna2PoolingMode * poolingMode,
-    struct Gna2Shape * poolingWindow,
-    struct Gna2Shape * poolingStride)
+    struct Gna2Shape * copyShape)
 {
-     UNREFERENCED_PARAMETER(inputs);
-    UNREFERENCED_PARAMETER(outputs);
-    UNREFERENCED_PARAMETER(activation);
-    UNREFERENCED_PARAMETER(zeroPadding);
-    UNREFERENCED_PARAMETER(poolingMode);
-    UNREFERENCED_PARAMETER(poolingWindow);
-    UNREFERENCED_PARAMETER(poolingStride);
-    // TODO:3:API: implement P2
-    const std::function<ApiOperation()> command = [&]()
+    const std::function<Gna2Status()> command = [&]()
     {
-        return ApiOperation{};
+        Expect::NotNull(operation);
+        ModelWrapper::OperationInit(*operation, Gna2OperationTypeCopy, userAllocator);
+        ModelWrapper::SetOperands(*operation, inputs, outputs);
+        ModelWrapper::SetParameters(*operation, copyShape);
+
+        return Gna2StatusSuccess;
     };
-    return ApiWrapper::ExecuteSafely(command, ApiOperation{});
+    return ApiWrapper::ExecuteSafely(command);
 }
 
-GNA2_API struct Gna2Operation Gna2OperationInitCopy(
-    struct Gna2Tensor * inputs, struct Gna2Tensor * outputs,
-    struct Gna2Shape * copyParams)
-{
-    UNREFERENCED_PARAMETER(inputs);
-    UNREFERENCED_PARAMETER(outputs);
-    UNREFERENCED_PARAMETER(copyParams);
-    // TODO:3:API: implement P2
-    const std::function<ApiOperation()> command = [&]()
-    {
-        return ApiOperation{};
-    };
-    return ApiWrapper::ExecuteSafely(command, ApiOperation{});
-}
-
-GNA2_API struct Gna2Operation Gna2OperationInitTranspose(
+GNA2_API enum Gna2Status Gna2OperationInitInterleave(
+    struct Gna2Operation * operation, Gna2UserAllocator userAllocator,
     struct Gna2Tensor * inputs, struct Gna2Tensor * outputs)
 {
-    UNREFERENCED_PARAMETER(inputs);
-    UNREFERENCED_PARAMETER(outputs);
-    // TODO:3:API: implement P2
-    const std::function<ApiOperation()> command = [&]()
+    const std::function<Gna2Status()> command = [&]()
     {
-        return ApiOperation{};
+        Expect::NotNull(operation);
+        ModelWrapper::OperationInit(*operation, Gna2OperationTypeTransposition, userAllocator);
+        ModelWrapper::SetOperands(*operation, inputs, outputs);
+        ModelWrapper::SetLayout(*inputs, "NW");
+        ModelWrapper::SetLayout(*outputs, "WN");
+        return Gna2StatusSuccess;
     };
-    return ApiWrapper::ExecuteSafely(command, ApiOperation{});
+    return ApiWrapper::ExecuteSafely(command);
 }
 
-GNA2_API struct Gna2Operation Gna2OperationInitInterleave(
+
+GNA2_API enum Gna2Status Gna2OperationInitDeInterleave(
+    struct Gna2Operation * operation, Gna2UserAllocator userAllocator,
     struct Gna2Tensor * inputs, struct Gna2Tensor * outputs)
 {
-    UNREFERENCED_PARAMETER(inputs);
-    UNREFERENCED_PARAMETER(outputs);
-    // TODO:3:API: implement P2
-    const std::function<ApiOperation()> command = [&]()
+    const std::function<Gna2Status()> command = [&]()
     {
-        return ApiOperation{};
+        Expect::NotNull(operation);
+        ModelWrapper::OperationInit(*operation, Gna2OperationTypeTransposition, userAllocator);
+        ModelWrapper::SetOperands(*operation, inputs, outputs);
+        ModelWrapper::SetLayout(*inputs, "WN");
+        ModelWrapper::SetLayout(*outputs, "NW");
+        return Gna2StatusSuccess;
     };
-    return ApiWrapper::ExecuteSafely(command, ApiOperation{});
+    return ApiWrapper::ExecuteSafely(command);
 }
 
-
-GNA2_API struct Gna2Operation Gna2OperationInitDeInterleave(
-    struct Gna2Tensor * inputs, struct Gna2Tensor * outputs)
-{
-    UNREFERENCED_PARAMETER(inputs);
-    UNREFERENCED_PARAMETER(outputs);
-    // TODO:3:API: implement P2
-    const std::function<ApiOperation()> command = [&]()
-    {
-        return ApiOperation{};
-    };
-    return ApiWrapper::ExecuteSafely(command, ApiOperation{});
-}
-
-//TODO:3:API define
-GNA2_API struct Gna2Operation Gna2OperationInitGmm(
+GNA2_API enum Gna2Status Gna2OperationInitGmm(
+    struct Gna2Operation * operation, Gna2UserAllocator userAllocator,
     struct Gna2Tensor * inputs, struct Gna2Tensor * outputs,
     struct Gna2Tensor * means,
     struct Gna2Tensor * inverseCovariances,
     struct Gna2Tensor * consts,
     uint32_t * maximumScore)
 {
-    UNREFERENCED_PARAMETER(inputs);
-    UNREFERENCED_PARAMETER(outputs);
-    UNREFERENCED_PARAMETER(means);
-    UNREFERENCED_PARAMETER(inverseCovariances);
-    UNREFERENCED_PARAMETER(consts);
-    UNREFERENCED_PARAMETER(maximumScore);
-    // TODO:3:API: implement P2
-    const std::function<ApiOperation()> command = [&]()
+    const std::function<Gna2Status()> command = [&]()
     {
-        return ApiOperation{};
+        Expect::NotNull(operation);
+        ModelWrapper::OperationInit(*operation, Gna2OperationTypeGmm, userAllocator);
+        ModelWrapper::SetOperands(*operation, inputs, outputs, means, inverseCovariances, consts);
+        ModelWrapper::SetParameters(*operation, maximumScore);
+        ModelWrapper::SetLayout(*inputs, "");
+        ModelWrapper::SetLayout(*outputs, "");
+
+        return Gna2StatusSuccess;
     };
-    return ApiWrapper::ExecuteSafely(command, ApiOperation{});
+    return ApiWrapper::ExecuteSafely(command);
 }
 
-GNA2_API struct Gna2Operation Gna2OperationInitGmmInterleaved(
+GNA2_API enum Gna2Status Gna2OperationInitGmmInterleaved(
+    struct Gna2Operation * operation, Gna2UserAllocator userAllocator,
     struct Gna2Tensor * inputs, struct Gna2Tensor * outputs,
     struct Gna2Tensor * interleavedTensors,
     uint32_t * maximumScore)
 {
-     UNREFERENCED_PARAMETER(inputs);
-    UNREFERENCED_PARAMETER(outputs);
-    UNREFERENCED_PARAMETER(interleavedTensors);
-    UNREFERENCED_PARAMETER(maximumScore);
-    // TODO:3:API: implement P2
-    const std::function<ApiOperation()> command = [&]()
+    const std::function<Gna2Status()> command = [&]()
     {
-        return ApiOperation{};
+        Expect::NotNull(operation);
+        ModelWrapper::OperationInit(*operation, Gna2OperationTypeGmm, userAllocator);
+        ModelWrapper::SetOperands(*operation, inputs, outputs, interleavedTensors);
+        ModelWrapper::SetParameters(*operation, maximumScore);
+        ModelWrapper::SetLayout(*interleavedTensors, "HCWCWC");
+
+        return Gna2StatusSuccess;
     };
-    return ApiWrapper::ExecuteSafely(command, ApiOperation{});
+    return ApiWrapper::ExecuteSafely(command);
 }

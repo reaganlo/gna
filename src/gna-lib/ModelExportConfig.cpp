@@ -103,7 +103,7 @@ inline void ModelExportConfig::privateDeAllocator(void * ptr)
     _mm_free(ptr);
 }
 
-ModelExportManager & ModelExportManager::GetManager()
+ModelExportManager & ModelExportManager::Get()
 {
     static ModelExportManager globalManager;
     return globalManager;

@@ -55,7 +55,7 @@ private:
 class ModelExportManager
 {
 public:
-    static ModelExportManager& GetManager();
+    static ModelExportManager& Get();
 
     ModelExportManager(const ModelExportManager&) = delete;
     void operator=(const ModelExportManager&) = delete;

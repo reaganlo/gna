@@ -34,18 +34,22 @@ using std::vector;
 
 using namespace GNA;
 
-void ModelWrapper::OperationInit(ApiOperation * const operation, const OperationType type,
+void ModelWrapper::OperationInit(ApiOperation& operation, const OperationType type,
     const Gna2UserAllocator userAllocator)
 {
-    Expect::NotNull(operation);
+    Expect::Equal(operation.Type, Gna2OperationTypeNone, Gna2StatusModelConfigurationInvalid);
+    Expect::Equal(operation.NumberOfParameters, static_cast<uint32_t>(0), Gna2StatusModelConfigurationInvalid);
+    Expect::Equal(operation.NumberOfOperands, static_cast<uint32_t>(0), Gna2StatusModelConfigurationInvalid);
+    Expect::Null(operation.Operands);
+    Expect::Null(operation.Parameters);
 
-    operation->Type = type;
+    operation.Type = type;
 
-    operation->NumberOfOperands = GetNumberOfOperands(type);
-    operation->Operands = AllocateAndFillZeros<Gna2Tensor const>(userAllocator, operation->NumberOfOperands);
+    operation.NumberOfOperands = GetNumberOfOperands(type);
+    operation.Operands = AllocateAndFillZeros<Gna2Tensor const>(userAllocator, operation.NumberOfOperands);
 
-    operation->NumberOfParameters = GetNumberOfParameters(type);
-    operation->Parameters = AllocateAndFillZeros<void>(userAllocator, operation->NumberOfParameters);
+    operation.NumberOfParameters = GetNumberOfParameters(type);
+    operation.Parameters = AllocateAndFillZeros<void>(userAllocator, operation.NumberOfParameters);
 }
 
 uint32_t ModelWrapper::DataTypeGetSize(DataType type)
@@ -104,4 +108,8 @@ uint32_t ModelWrapper::GetNumberOfParameters(OperationType operationType)
     {
         throw GnaException(Gna2StatusModelConfigurationInvalid);
     }
+}
+void ModelWrapper::SetLayout(Gna2Tensor& tensor, const char* layout)
+{
+    snprintf(tensor.Layout, sizeof(tensor.Layout), "%s", layout);
 }
