@@ -73,10 +73,10 @@ Layer::Layer(const nn_layer *layer, const BaseValidator& validatorIn,
     Input{ *layer, *validator },
     Output{ *layer, *validator }
 {
-    Expect::InRange<uint32_t>(Operation, 0, LAYER_OPERATION_TYPE_COUT-1, XNN_ERR_LYR_OPERATION);
+    Expect::InRange<uint32_t>(Operation, 0, LAYER_OPERATION_TYPE_COUT-1, Gna2StatusXnnErrorLyrOperation);
 
     //TODO:3: uncomment when all layers are Transform-based, remove if below
-    //Expect::False(transforms.empty(), status_t::GNA_NULLARGNOTALLOWED); // TODO:3: add error code
+    //Expect::False(transforms.empty(), Gna2StatusNullArgumentNotAllowed);
     if (false == transforms.empty())
     {
         auto&& commonConfig = TransformFactoryConfig(&Input, &Output, Output.Mode, intermediateBuffer,

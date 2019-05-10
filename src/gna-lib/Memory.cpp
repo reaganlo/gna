@@ -47,7 +47,7 @@ Memory::Memory(void *bufferIn, uint32_t userSize, uint32_t alignment) :
 Memory::Memory(const size_t userSize, uint32_t alignment) :
     size{ALIGN(userSize, alignment)}
 {
-    Expect::GtZero(size, GNA_INVALIDMEMSIZE);
+    Expect::GtZero(size, Gna2StatusMemorySizeInvalid);
     buffer = _gna_malloc(size);
     Expect::ValidBuffer(buffer);
     memset(buffer, 0, size); // this is costly and probably not needed
@@ -71,7 +71,7 @@ void Memory::Map(DriverInterface& ddi)
     driverInterface = &ddi;
     if (mapped)
     {
-        throw GnaException(GNA_ERR_MEMORY_ALREADY_MAPPED);
+        throw GnaException(Gna2StatusUnknownError);
     }
 
     id = driverInterface->MemoryMap(buffer, size);
@@ -89,7 +89,7 @@ uint64_t Memory::GetId() const
 {
     if (!mapped)
     {
-        throw GnaException(GNA_ERR_MEMORY_NOT_MAPPED);
+        throw GnaException(Gna2StatusUnknownError);
     }
 
     return id;

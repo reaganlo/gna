@@ -37,14 +37,14 @@ template<typename T>
 struct ValueLimits
 {
     T Value;
-    status_t Error;
+    Gna2Status Error;
 };
 
 using AlignLimits = ValueLimits<uint32_t>;
 
 struct BufferLimits : public AlignLimits
 {
-    BufferLimits(const uint32_t alignment, const status_t error) :
+    BufferLimits(const uint32_t alignment, const Gna2Status error) :
         ValueLimits{alignment, error}
     {}
 };
@@ -52,40 +52,40 @@ struct BufferLimits : public AlignLimits
 template<typename T>
 struct SetLimits : public std::vector<T>
 {
-    SetLimits(const std::vector<T>& validValuesSet, status_t error) :
+    SetLimits(const std::vector<T>& validValuesSet, Gna2Status error) :
         std::vector<T>{validValuesSet},
         Error{error}
     {}
 
-    status_t Error;
+    Gna2Status Error;
 };
 
 template<typename T>
 struct RangeLimits
 {
-    RangeLimits(T min, status_t minError, T max, status_t maxError, const SetLimits<T>& multipliers) :
+    RangeLimits(T min, Gna2Status minError, T max, Gna2Status maxError, const SetLimits<T>& multipliers) :
         Min{min, minError},
         Max{max, maxError},
         Multipliers{multipliers}
     {
         if (Multipliers.size() <= 0)
-            throw GnaException(XNN_ERR_INPUT_VOLUME);
+            throw GnaException(Gna2StatusXnnErrorInputVolume);
     }
 
-    RangeLimits(T min, status_t minError, T max, status_t maxError, T multiplier, status_t multiplierError) :
+    RangeLimits(T min, Gna2Status minError, T max, Gna2Status maxError, T multiplier, Gna2Status multiplierError) :
         RangeLimits{min, minError, max, maxError,
             SetLimits<T>{std::vector<T>{multiplier}, multiplierError}}
     {}
 
-    RangeLimits(T min, T max, T multiplier, status_t error) :
+    RangeLimits(T min, T max, T multiplier, Gna2Status error) :
         RangeLimits{min, error, max, error, multiplier, error}
     {}
 
-    RangeLimits(T min, T max, status_t rangeError, T multiplier, status_t multiplierError) :
+    RangeLimits(T min, T max, Gna2Status rangeError, T multiplier, Gna2Status multiplierError) :
         RangeLimits{min, rangeError, max, rangeError, multiplier, multiplierError}
     {}
 
-    RangeLimits(T min, T max, const std::vector<T>& multipliers, status_t error) :
+    RangeLimits(T min, T max, const std::vector<T>& multipliers, Gna2Status error) :
         RangeLimits{min, error, max, error, SetLimits<T>{multipliers, error}}
     {}
 
@@ -101,7 +101,7 @@ using ShapeLimits = std::map<const gna_tensor_dim, RangeLimits<uint32_t>>;
 
 struct OrderLimits : public ValueLimits<gna_tensor_order>
 {
-    OrderLimits(const gna_tensor_order order, const status_t error = XNN_ERR_LYR_INVALID_TENSOR_ORDER) :
+    OrderLimits(const gna_tensor_order order, const Gna2Status error = Gna2StatusXnnErrorLyrInvalidTensorOrder) :
         ValueLimits{ order, error }
     {}
 };

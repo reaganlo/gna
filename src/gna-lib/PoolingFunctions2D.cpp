@@ -37,8 +37,8 @@ using namespace GNA;
 static const ComponentLimits __WH_limits=
 {
     {GNA_TENSOR_WH},
-    {{GNA_DIM_W, {1, CNN_N_KERNEL_ELEMENTS_PER_DIMENSION_MAX, 1, CNN_ERR_POOL_STRIDE}},
-    {GNA_DIM_H, {1, CNN_N_KERNEL_ELEMENTS_PER_DIMENSION_MAX, 1, CNN_ERR_POOL_STRIDE}},}
+    {{GNA_DIM_W, {1, CNN_N_KERNEL_ELEMENTS_PER_DIMENSION_MAX, 1, Gna2StatusCnnErrorPoolStride}},
+    {GNA_DIM_H, {1, CNN_N_KERNEL_ELEMENTS_PER_DIMENSION_MAX, 1, Gna2StatusCnnErrorPoolStride}},}
 };
 
 const FullCapabilitiesMap PoolingFunction2D::windowLimits
@@ -67,7 +67,7 @@ const FullCapabilitiesMap PoolingFunction2D::strideLimits
 
 const SetLimits<nn_pool_type> PoolingFunction2D::typeLimits =
 {
-    { INTEL_MAX_POOLING, INTEL_SUM_POOLING }, CNN_ERR_POOL_TYPE
+    { INTEL_MAX_POOLING, INTEL_SUM_POOLING }, Gna2StatusCnnErrorPoolType
 };
 
 const FullCapabilitiesMap PoolingFunction2D::outputCapabilities =
@@ -75,11 +75,11 @@ const FullCapabilitiesMap PoolingFunction2D::outputCapabilities =
     {INTEL_CONVOLUTIONAL_2D, {
         {GNA_3_0, std::make_shared<TensorLimits>(TensorLimits{
             {GNA_TENSOR_NHWD},
-            {{GNA_DIM_N, {1, CNN_N_KERNELS_MAX, 1, XNN_ERR_OUTPUT_VOLUME}},
-             {GNA_DIM_H, {1, XNN_N_IN_ELEMS_MAX, 1, XNN_ERR_OUTPUT_VOLUME}},
-             {GNA_DIM_W, {1, XNN_N_IN_ELEMS_MAX, 1, XNN_ERR_OUTPUT_VOLUME}},
-             {GNA_DIM_D, {1, XNN_N_IN_ELEMS_MAX, 1, XNN_ERR_OUTPUT_VOLUME}}},
-            {{GNA_INT8, GNA_INT16, GNA_INT32, GNA_DATA_ACTIVATION_DISABLED}, XNN_ERR_OUTPUT_BYTES }})}
+            {{GNA_DIM_N, {1, CNN_N_KERNELS_MAX, 1, Gna2StatusXnnErrorOutputVolume}},
+             {GNA_DIM_H, {1, XNN_N_IN_ELEMS_MAX, 1, Gna2StatusXnnErrorOutputVolume}},
+             {GNA_DIM_W, {1, XNN_N_IN_ELEMS_MAX, 1, Gna2StatusXnnErrorOutputVolume}},
+             {GNA_DIM_D, {1, XNN_N_IN_ELEMS_MAX, 1, Gna2StatusXnnErrorOutputVolume}}},
+            {{GNA_INT8, GNA_INT16, GNA_INT32, GNA_DATA_ACTIVATION_DISABLED}, Gna2StatusXnnErrorOutputBytes }})}
     }},
 };
 
@@ -99,7 +99,7 @@ unique_ptr<PoolingFunction2D> PoolingFunction2D::Create(const TransformFactoryCo
         return create(config, pooling);
     }
     default:
-        throw GnaException(XNN_ERR_LYR_OPERATION);
+        throw GnaException(Gna2StatusXnnErrorLyrOperation);
     }
 }
 

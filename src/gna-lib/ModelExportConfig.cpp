@@ -50,7 +50,7 @@ void ModelExportConfig::Export(Gna2ModelExportComponent componentType, void ** e
 
     *exportBuffer = nullptr;
     *exportBufferSize = 0;
-    intel_gna_status_t status;  //for legacy mode support
+    Gna2Status status;
     auto& device = DeviceManager::Get().GetDevice(sourceDeviceId);
     if (componentType == Gna2ModelExportComponentLegacySueCreekHeader)
     {
@@ -87,10 +87,10 @@ void ModelExportConfig::ValidateState() const
 {
     Expect::NotNull((void *) allocator);
     //TODO:3:Consider adding ~Gna2StatusInvalidState/NotInitialized
-    Expect::True(sourceDeviceId != Gna2DisabledU32, CAST1_STATUS Gna2StatusIdentifierInvalid);
-    Expect::True(sourceModelId != Gna2DisabledU32, CAST1_STATUS Gna2StatusIdentifierInvalid);
+    Expect::True(sourceDeviceId != Gna2DisabledU32, Gna2StatusIdentifierInvalid);
+    Expect::True(sourceModelId != Gna2DisabledU32, Gna2StatusIdentifierInvalid);
     //TODO:3:Remove when other devices supported
-    Expect::True(targetDeviceVersion == Gna2DeviceVersionSueCreek, CAST1_STATUS Gna2StatusDeviceVersionInvalid);
+    Expect::True(targetDeviceVersion == Gna2DeviceVersionSueCreek, Gna2StatusDeviceVersionInvalid);
 }
 
 inline void * ModelExportConfig::privateAllocator(uint32_t size)

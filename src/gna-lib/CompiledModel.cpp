@@ -59,7 +59,7 @@ void CompiledModel::CopyData(void *address, size_t size) const
     auto modelSize = CalculateSize();
     if (size < modelSize)
     {
-        throw GnaException{ GNA_ERR_RESOURCES };
+        throw GnaException{ Gna2StatusResourceAllocationError };
     }
 
     for (const auto &memory : modelMemoryList)
@@ -119,7 +119,7 @@ const Layer* CompiledModel::GetLayer(uint32_t layerIndex) const
     }
     catch (const std::exception&)
     {
-        throw GnaException(XNN_ERR_LYR_CFG);
+        throw GnaException(Gna2StatusXnnErrorLyrCfg);
     }
 }
 
@@ -134,7 +134,7 @@ void CompiledModel::InvalidateConfig(gna_request_cfg_id configId, LayerConfigura
     layer->UpdateKernelConfigs(*layerConfiguration);
 }
 
-status_t CompiledModel::Score(
+Gna2Status CompiledModel::Score(
     RequestConfiguration& config,
     RequestProfiler *profiler,
     KernelBuffers *buffers)
@@ -149,13 +149,13 @@ status_t CompiledModel::Score(
         {
             if (!hardwareModel)
             {
-                return GNA_CPUTYPENOTSUPPORTED;
+                return Gna2StatusAccelerationModeNotSupported;
             }
 
             const auto& deviceSubmodels = getSubmodels(hwCapabilities);
             if (deviceSubmodels.front()->Type == Software || deviceSubmodels.size() > 1)
             {
-                return GNA_CPUTYPENOTSUPPORTED;
+                return Gna2StatusAccelerationModeNotSupported;
             }
         }
 
@@ -173,12 +173,12 @@ status_t CompiledModel::Score(
     }
     catch (const GnaException& e)
     {
-        return e.getStatus();
+        return e.GetStatus();
     }
     profilerDTscStop(&profiler->scoring);
     profilerDTscStop(&profiler->total);
 
-    return (saturationCount > 0) ? GNA_SSATURATE : GNA_SUCCESS;
+    return (saturationCount > 0) ? Gna2StatusWarningArithmeticSaturation : Gna2StatusSuccess;
 }
 
 void CompiledModel::ValidateBuffer(
@@ -223,7 +223,7 @@ void CompiledModel::AddUniqueMemory(Memory *memory)
 void CompiledModel::IdentifyBuffer(const void *buffer, size_t bufferSize)
 {
     auto memory = FindBuffer(buffer, bufferSize);
-    Expect::NotNull(memory, XNN_ERR_INVALID_BUFFER);
+    Expect::NotNull(memory, Gna2StatusXnnErrorInvalidBuffer);
 
     AddUniqueMemory(memory);
 }

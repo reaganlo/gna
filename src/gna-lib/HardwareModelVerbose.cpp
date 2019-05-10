@@ -163,7 +163,7 @@ void HardwareModelVerbose::setGmmDescriptor(dbg_action action)
     const auto& hwLayer = hardwareLayers.at(action.layer_number);
     if (hwLayer->SoftwareLayer->Operation != INTEL_GMM)
     {
-        throw GnaException{ XNN_ERR_LYR_OPERATION };
+        throw GnaException{ Gna2StatusXnnErrorLyrOperation };
     }
     auto gmmDescriptor = hwLayer->XnnDescriptor.GmmDescriptor;
     auto xnnParam = gmmDescriptor.Get<uint8_t>() + action.xnn_offset;
@@ -229,14 +229,14 @@ FILE * const GNA::HardwareModelVerbose::getActionFile(dbg_action & action)
         }
         if (actionFileName.empty())
         {
-            throw GnaException(GNA_NULLARGNOTALLOWED);
+            throw GnaException(Gna2StatusNullArgumentNotAllowed);
         }
 
         // open file
         fopen_s(&actionFile, actionFileName.c_str(), "w");
         if (0 != openError || nullptr == actionFile)
         {
-            throw GnaException(GNA_NULLARGNOTALLOWED);
+            throw GnaException(Gna2StatusNullArgumentNotAllowed);
         }
     }
     catch (...)

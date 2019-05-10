@@ -43,6 +43,6 @@ BaseTransform * TransformList::Emplace(TransformOperation operation,
     case PoolingTransform2D:
         return emplace(PoolingFunction2D::Create(config));
     default:
-        throw GnaException(XNN_ERR_LYR_OPERATION);
+        throw GnaException(Gna2StatusXnnErrorLyrOperation);
     }
 }

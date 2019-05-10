@@ -41,14 +41,14 @@ using std::move;
 
 using namespace GNA;
 
-void* Device::Dump(gna_model_id modelId, gna_device_generation deviceGeneration, intel_gna_model_header* modelHeader, intel_gna_status_t* status, intel_gna_alloc_cb customAlloc)
+void* Device::Dump(gna_model_id modelId, gna_device_generation deviceGeneration, intel_gna_model_header* modelHeader, Gna2Status* status, intel_gna_alloc_cb customAlloc)
 {
     // Validate parameters
 
     Expect::NotNull(status);
     Expect::NotNull(modelHeader);
     Expect::NotNull((void *)customAlloc);
-    Expect::Equal(GNA_1_0_EMBEDDED, deviceGeneration, GNA_CPUTYPENOTSUPPORTED); // Temporary limitation
+    Expect::Equal(GNA_1_0_EMBEDDED, deviceGeneration, Gna2StatusAccelerationModeNotSupported); // Temporary limitation
 
     auto& model = models.at(modelId);
     auto const layerCount = model->LayerCount;
@@ -83,5 +83,6 @@ void* Device::Dump(gna_model_id modelId, gna_device_generation deviceGeneration,
     *modelHeader = { 0, static_cast<uint32_t>(totalSize), 1, layerCount, input.Mode.Size,
         output.Mode.Size, input.Count, output.Count, inputsOffset, outputsOffset };
 
+    *status = Gna2StatusSuccess;
     return address;
 }

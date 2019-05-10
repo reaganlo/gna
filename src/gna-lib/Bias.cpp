@@ -31,97 +31,97 @@ using namespace GNA;
 
 static const DataModeLimits _ModesGen0_9 = {
     { GNA_INT32 },
-    XNN_ERR_BIAS_BYTES };
+    Gna2StatusXnnErrorBiasBytes };
 
 static const DataModeLimits _ModesWithRichGen0_9 = {
     { GNA_INT32, GNA_DATA_RICH_FORMAT },
-    XNN_ERR_BIAS_BYTES };
+    Gna2StatusXnnErrorBiasBytes };
 
 static const DataModeLimits _ModesGen3 = {
     { GNA_INT8, GNA_INT16, GNA_INT32, GNA_DATA_DISABLED },
-    XNN_ERR_BIAS_BYTES };
+    Gna2StatusXnnErrorBiasBytes };
 
 static const DataModeLimits _ModesWithRichGen3 = {
     { GNA_INT8, GNA_INT16, GNA_INT32, GNA_DATA_DISABLED, GNA_DATA_RICH_FORMAT },
-    XNN_ERR_BIAS_BYTES };
+    Gna2StatusXnnErrorBiasBytes };
 
 const FullCapabilitiesMap BiasTensor::capabilities =
 {
     {INTEL_AFFINE, {
         {GNA_0_9,std::make_shared<TensorLimits>(TensorLimits{
             {GNA_TENSOR_H},
-            {{GNA_DIM_H, {1, XNN_N_IN_ELEMS_MAX, 1, XNN_ERR_BIAS_VOLUME}}},
+            {{GNA_DIM_H, {1, XNN_N_IN_ELEMS_MAX, 1, Gna2StatusXnnErrorBiasVolume}}},
             _ModesWithRichGen0_9}),
         },
         {GNA_3_0, std::make_shared<TensorLimits>(TensorLimits{
             {GNA_TENSOR_H},
-            {{GNA_DIM_H, {1, XNN_N_IN_ELEMS_MAX, 1, XNN_ERR_BIAS_VOLUME}}},
+            {{GNA_DIM_H, {1, XNN_N_IN_ELEMS_MAX, 1, Gna2StatusXnnErrorBiasVolume}}},
             _ModesWithRichGen3})}
     }},
     {INTEL_AFFINE_DIAGONAL, {
         {GNA_0_9, std::make_shared<TensorLimits>(TensorLimits{
             {GNA_TENSOR_H},
-            {{GNA_DIM_H, {1, XNN_N_IN_ELEMS_MAX, 1, XNN_ERR_BIAS_VOLUME}}},
+            {{GNA_DIM_H, {1, XNN_N_IN_ELEMS_MAX, 1, Gna2StatusXnnErrorBiasVolume}}},
             _ModesWithRichGen0_9})},
         {GNA_3_0, std::make_shared<TensorLimits>(TensorLimits{
             {GNA_TENSOR_H},
-            {{GNA_DIM_H, {1, XNN_N_IN_ELEMS_MAX, 1, XNN_ERR_BIAS_VOLUME}}},
+            {{GNA_DIM_H, {1, XNN_N_IN_ELEMS_MAX, 1, Gna2StatusXnnErrorBiasVolume}}},
             _ModesWithRichGen3})}
     }},
     {INTEL_AFFINE_MULTIBIAS, {
         {GNA_2_0, std::make_shared<TensorLimits>(TensorLimits{
             {GNA_TENSOR_NH},
-                {{GNA_DIM_N, {1, XNN_N_GROUP_MAX, 1, XNN_ERR_BIAS_VOLUME}},
-                {GNA_DIM_H, {1, XNN_N_IN_ELEMS_MAX, 1, XNN_ERR_BIAS_VOLUME}}},
+                {{GNA_DIM_N, {1, XNN_N_GROUP_MAX, 1, Gna2StatusXnnErrorBiasVolume}},
+                {GNA_DIM_H, {1, XNN_N_IN_ELEMS_MAX, 1, Gna2StatusXnnErrorBiasVolume}}},
             _ModesGen0_9})},
         {GNA_3_0, std::make_shared<TensorLimits>(TensorLimits{
             {GNA_TENSOR_NH},
-                {{GNA_DIM_N, {1, XNN_N_GROUP_MAX, 1, XNN_ERR_BIAS_VOLUME}},
-                {GNA_DIM_H, {1, XNN_N_IN_ELEMS_MAX, 1, XNN_ERR_BIAS_VOLUME}}},
+                {{GNA_DIM_N, {1, XNN_N_GROUP_MAX, 1, Gna2StatusXnnErrorBiasVolume}},
+                {GNA_DIM_H, {1, XNN_N_IN_ELEMS_MAX, 1, Gna2StatusXnnErrorBiasVolume}}},
             _ModesGen3})}
     }},
     {INTEL_CONVOLUTIONAL, {
         {GNA_1_0, std::make_shared<TensorLimits>(TensorLimits{
             {GNA_TENSOR_N},          // H - #kernel (GNA_BIAS_PER_KERNEL)
-            {{GNA_DIM_N, {CNN_N_FLT_COEFF_MPLY, CNN_N_FLT_MAX, CNN_N_FLT_COEFF_MPLY, XNN_ERR_BIAS_VOLUME}}},
+            {{GNA_DIM_N, {CNN_N_FLT_COEFF_MPLY, CNN_N_FLT_MAX, CNN_N_FLT_COEFF_MPLY, Gna2StatusXnnErrorBiasVolume}}},
             _ModesGen0_9})},
 
     }},
     {INTEL_CONVOLUTIONAL_2D, {
         {GNA_1_0, std::make_shared<TensorLimits>(TensorLimits{
             {GNA_TENSOR_N},          // H - #kernel (GNA_BIAS_PER_KERNEL)
-            {{GNA_DIM_N, {CNN_N_FLT_COEFF_MPLY, CNN_N_FLT_MAX, CNN_N_FLT_COEFF_MPLY, XNN_ERR_BIAS_VOLUME}}},
+            {{GNA_DIM_N, {CNN_N_FLT_COEFF_MPLY, CNN_N_FLT_MAX, CNN_N_FLT_COEFF_MPLY, Gna2StatusXnnErrorBiasVolume}}},
             _ModesGen0_9})},
         {GNA_3_0, std::make_shared<TensorLimits>(TensorLimits{
             {GNA_TENSOR_NHW},    // N = #kernels + GNA_BIAS_PER_KERNEL (HW=1) or GNA_BIAS_PER_STRIDE (HW conv. out dimensions),
-                {{GNA_DIM_N, {1, CNN_N_FLT_MAX, 1, XNN_ERR_BIAS_VOLUME}},
-                {GNA_DIM_H, {1, XNN_N_IN_ELEMS_MAX, 1, XNN_ERR_BIAS_VOLUME}},
-                {GNA_DIM_W, {1, XNN_N_IN_ELEMS_MAX, 1, XNN_ERR_BIAS_VOLUME}}},
+                {{GNA_DIM_N, {1, CNN_N_FLT_MAX, 1, Gna2StatusXnnErrorBiasVolume}},
+                {GNA_DIM_H, {1, XNN_N_IN_ELEMS_MAX, 1, Gna2StatusXnnErrorBiasVolume}},
+                {GNA_DIM_W, {1, XNN_N_IN_ELEMS_MAX, 1, Gna2StatusXnnErrorBiasVolume}}},
             _ModesGen3})}
     }},
     {INTEL_GMM, {
         {GMM_DEVICE, std::make_shared<TensorLimits>(TensorLimits{
             {GNA_TENSOR_HD},                   // H - GMM states, D - #mixtures
-            {{GNA_DIM_H, {1, GMM_MIXTURE_COMP_COUNT_MAX, 1, GMM_BADMIXCNUM}},
-                {GNA_DIM_D, {1, GMM_STATES_COUNT_MAX, 1, GMM_BADNUMGMM}}},
-            { {GNA_INT32}, GMM_BADMODE},
-            {GMM_MEM_ALIGNMENT, GMM_BADGCONSTALIGN}})}
+            {{GNA_DIM_H, {1, GMM_MIXTURE_COMP_COUNT_MAX, 1, Gna2StatusGmmBadMixCnum}},
+                {GNA_DIM_D, {1, GMM_STATES_COUNT_MAX, 1, Gna2StatusGmmBadNumGmm}}},
+            { {GNA_INT32}, Gna2StatusGmmBadMode},
+            {GMM_MEM_ALIGNMENT, Gna2StatusGmmBadGconstAlign}})}
     }},
     {INTEL_RECURRENT, {
         {GNA_0_9, std::make_shared<TensorLimits>(TensorLimits{
             {GNA_TENSOR_H},
-            {{GNA_DIM_H, {RNN_N_OUT_ELEMS_MPLY, XNN_N_IN_ELEMS_MAX, RNN_N_OUT_ELEMS_MPLY, XNN_ERR_BIAS_VOLUME}}},
+            {{GNA_DIM_H, {RNN_N_OUT_ELEMS_MPLY, XNN_N_IN_ELEMS_MAX, RNN_N_OUT_ELEMS_MPLY, Gna2StatusXnnErrorBiasVolume}}},
             _ModesWithRichGen0_9})},
         {GNA_3_0, std::make_shared<TensorLimits>(TensorLimits{
             {GNA_TENSOR_H},
-            {{GNA_DIM_H, {RNN_N_OUT_ELEMS_MPLY, XNN_N_IN_ELEMS_MAX, RNN_N_OUT_ELEMS_MPLY, XNN_ERR_BIAS_VOLUME}}},
+            {{GNA_DIM_H, {RNN_N_OUT_ELEMS_MPLY, XNN_N_IN_ELEMS_MAX, RNN_N_OUT_ELEMS_MPLY, Gna2StatusXnnErrorBiasVolume}}},
             _ModesWithRichGen3})}
     }}
 };
 
 const SetLimits<gna_bias_mode> BiasTensor::modeLimits
 {
-    { GNA_BIAS_NOT_SUPPORTED, GNA_BIAS_PER_KERNEL, GNA_BIAS_PER_STRIDE }, XNN_ERR_BIAS_MODE
+    { GNA_BIAS_NOT_SUPPORTED, GNA_BIAS_PER_KERNEL, GNA_BIAS_PER_STRIDE }, Gna2StatusXnnErrorBiasMode
 };
 
 BiasTensor::BiasTensor(const Shape& dimensions, const uint32_t biasVectorIndex, const DataMode& dataMode,
@@ -136,7 +136,7 @@ BiasTensor::BiasTensor(const Shape& dimensions, const uint32_t biasVectorIndex, 
     {
         vectorCount = vectorCountIter->second;
     }
-    Expect::InRange(VectorIndex, ui32_0, vectorCount - 1, XNN_ERR_BIAS_INDEX);
+    Expect::InRange(VectorIndex, ui32_0, vectorCount - 1, Gna2StatusXnnErrorBiasIndex);
 
     Expect::InSet(BiasMode, modeLimits);
 };

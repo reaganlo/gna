@@ -61,7 +61,7 @@ void HardwareModelSue1::allocateLayerDescriptors()
             *ldMemory, ldMemory->GetBuffer(), hwCapabilities);
     if (!baseDescriptor)
     {
-        throw GnaException{ GNA_ERR_RESOURCES };
+        throw GnaException{ Gna2StatusResourceAllocationError };
     }
 };
 

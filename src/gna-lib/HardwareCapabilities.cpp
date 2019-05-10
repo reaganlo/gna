@@ -267,7 +267,7 @@ HardwareCapabilities::getGenerationCapabilities(DeviceVersion deviceVersionIn)
     catch (std::out_of_range& e)
     {
         UNREFERENCED_PARAMETER(e);
-        throw GnaException(GNA_ERR_INVALID_DEVICE_VERSION);
+        throw GnaException(Gna2StatusDeviceVersionInvalid);
     }
 }
 
@@ -344,9 +344,11 @@ void HardwareCapabilities::DiscoverHardware(DriverInterface &driverInterface)
         if (driverCapabilities.hwId == Gna2DeviceVersionAlderLake)
             driverCapabilities.hwInBuffSize = 32;
 
-        Expect::Equal((size_t)1, gnaCapsMap.count(driverCapabilities.hwId), GNA_DEVNOTFOUND);
+        Expect::Equal((size_t)1, gnaCapsMap.count(driverCapabilities.hwId),
+                      Gna2StatusDeviceNotAvailable);
+
         Expect::Equal(driverCapabilities.hwInBuffSize, GetBufferSizeInKB(driverCapabilities.hwId),
-            status_t::GNA_ERR_INVALID_DEVICE_VERSION);
+                      Gna2StatusDeviceVersionInvalid);
 
         deviceVersion = driverCapabilities.hwId;
         bufferSize = driverCapabilities.hwInBuffSize;

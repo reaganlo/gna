@@ -65,7 +65,7 @@ void RequestHandler::Enqueue(
 
         if (requests.size() >= GNA_REQUEST_QUEUE_LENGTH)
         {
-            throw GnaException(GNA_ERR_QUEUE);
+            throw GnaException(Gna2StatusDeviceQueueError);
         }
 
         *requestId = nRequests;
@@ -73,7 +73,7 @@ void RequestHandler::Enqueue(
         auto insert = requests.emplace(*requestId, move(request));
         if (!insert.second)
         {
-            throw GnaException(GNA_ERR_RESOURCES);
+            throw GnaException(Gna2StatusResourceAllocationError);
         }
         nRequests++;
         nRequests = nRequests % GNA_REQUEST_WAIT_ANY;
@@ -118,12 +118,11 @@ Gna2Status RequestHandler::WaitFor(const gna_request_id requestId, const gna_tim
 
         bool removed = removeRequest(requestId);
         if (!removed)
+        {
             return Gna2StatusIdentifierInvalid;
-        if (score_status == GNA_SUCCESS)
-            return Gna2StatusSuccess;
-        if (score_status == GNA_SSATURATE)
-            return Gna2StatusWarningArithmeticSaturation;
-        Expect::Success(score_status);
+        }
+
+        return score_status;
     }
     default:
         return Gna2StatusWarningDeviceBusy;

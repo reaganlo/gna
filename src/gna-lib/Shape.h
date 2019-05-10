@@ -28,6 +28,7 @@
 #include "gna2-model-impl.h"
 
 #include "gna-api.h"
+#include "gna2-common-impl.h"
 #include "gna2-model-api.h"
 
 #include <map>
@@ -37,15 +38,6 @@
 namespace GNA
 {
 struct ComponentLimits;
-
-struct TensorDimHash
-{
-    template<typename T>
-    std::size_t operator()(T t) const
-    {
-        return static_cast<std::size_t>(t);
-    }
-};
 
 using ShapeMap = std::map<gna_tensor_dim, uint32_t>;
 

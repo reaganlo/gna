@@ -43,8 +43,8 @@ const FullCapabilitiesMap AffineFunctionMulti::Capabilities =
     {INTEL_AFFINE_MULTIBIAS, {
         {GNA_2_0, std::make_shared<TensorLimits>(TensorLimits{
             {GNA_TENSOR_H},
-            {{GNA_DIM_H, {1, XNN_N_IN_ELEMS_MAX, 1, XNN_ERR_BIAS_VOLUME}}},
-            {{ GNA_DATA_RICH_FORMAT }, XNN_ERR_BIAS_BYTES }})}
+            {{GNA_DIM_H, {1, XNN_N_IN_ELEMS_MAX, 1, Gna2StatusXnnErrorBiasVolume}}},
+            {{ GNA_DATA_RICH_FORMAT }, Gna2StatusXnnErrorBiasBytes }})}
     }}
 };
 
@@ -108,7 +108,7 @@ unique_ptr<const AffineFunction> AffineFunction::Create(const Tensor* input, con
         break;
     }
     default:
-        throw GnaException(XNN_ERR_LYR_OPERATION);
+        throw GnaException(Gna2StatusXnnErrorLyrOperation);
     }
 
     weights = make_unique<const WeightTensor>(dimensions, weightMode,
@@ -133,7 +133,7 @@ unique_ptr<const AffineFunction> AffineFunction::Create(const Tensor* input, con
          return make_unique<AffineFunctionMulti>(input->Buffer, output->Buffer, input->at(GNA_DIM_N),
              move(weights), move(biases), move(weightScales), affineKernel);
      default:
-        throw GnaException(XNN_ERR_LYR_OPERATION);
+        throw GnaException(Gna2StatusXnnErrorLyrOperation);
      }
 }
 
@@ -173,8 +173,8 @@ AffineFunctionSingle::AffineFunctionSingle(const BaseAddress& input, const BaseA
     kernelsAl{kernelsAlIn}
 {
     //// TODO:3: move to layer/hw capabilities as this differ for hws
-    //Expect::True(GNA_INT32 == Biases->Mode, XNN_ERR_BIAS_BYTES);
-    //Expect::True(GNA_DATA_RICH_FORMAT == Biases->Mode, XNN_ERR_BIAS_BYTES);
+    //Expect::True(GNA_INT32 == Biases->Mode, Gna2StatusXnnErrorBiasBytes);
+    //Expect::True(GNA_DATA_RICH_FORMAT == Biases->Mode, Gna2StatusXnnErrorBiasBytes);
      hiddenConfig = make_unique<const AffineConfig>(
          Biases->at(GNA_DIM_H), vectorCount, Weights->at(GNA_DIM_W),
          input, output, *Weights, *Biases, nullptr, 0, Biases->Mode);

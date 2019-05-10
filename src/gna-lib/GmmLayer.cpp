@@ -46,13 +46,13 @@ GmmParams::GmmParams(const gna_gmm_config &config, const uint32_t inputElementCo
     }
     else {
         Expect::InRange(MeanSetOffsetSize, GMM_FV_ELEMENT_COUNT_MULTIPLE_OF,
-            GMM_MIXTURE_COMP_COUNT_MAX * GMM_FV_ELEMENT_COUNT_MAX * GMM_MEAN_VALUE_SIZE, GMM_BADMEANSETOFF);
+            GMM_MIXTURE_COMP_COUNT_MAX * GMM_FV_ELEMENT_COUNT_MAX * GMM_MEAN_VALUE_SIZE, Gna2StatusGmmBadMeanSetoff);
         Expect::MultiplicityOf(MeanSetOffsetSize, GMM_MEM_ALIGNMENT);
         Expect::InRange(VarSetOffsetSize, GMM_FV_ELEMENT_COUNT_MULTIPLE_OF,
-            GMM_MIXTURE_COMP_COUNT_MAX * GMM_FV_ELEMENT_COUNT_MAX * GMM_COVARIANCE_SIZE_MAX, GMM_BADVARSETOFF);
+            GMM_MIXTURE_COMP_COUNT_MAX * GMM_FV_ELEMENT_COUNT_MAX * GMM_COVARIANCE_SIZE_MAX, Gna2StatusGmmBadVarSetoff);
         Expect::MultiplicityOf(VarSetOffsetSize, GMM_MEM_ALIGNMENT);
         Expect::InRange(GaussConstSetOffsetSize, GMM_FV_ELEMENT_COUNT_MULTIPLE_OF,
-            GMM_MIXTURE_COMP_COUNT_MAX * GMM_CONSTANTS_SIZE, GMM_BADGCONSTOFFSET);
+            GMM_MIXTURE_COMP_COUNT_MAX * GMM_CONSTANTS_SIZE, Gna2StatusGmmBadGconstOffset);
         Expect::MultiplicityOf(GaussConstSetOffsetSize, GMM_MEM_ALIGNMENT);
     }
 }
@@ -136,7 +136,7 @@ void GmmLayer::ValidateActiveList(ActiveList const * const activeList) const
 {
     if (activeList)
     {
-        Expect::InRange(activeList->IndicesCount, ui32_1, Config.stateCount, GNA_INVALIDINDICES);
+        Expect::InRange(activeList->IndicesCount, ui32_1, Config.stateCount, Gna2StatusActiveListIndicesInvalid);
     }
 }
 
@@ -164,20 +164,20 @@ void GmmLayer::checkScoresSaturation(const uint32_t& nGMMs, const uint32_t& nVec
 
 void GmmLayer::validate()
 {
-    Expect::Equal(Input.Mode.Size, GMM_FV_ELEMENT_SIZE, XNN_ERR_INPUT_BYTES);
-    Expect::InRange(Input.at(GNA_DIM_W), GMM_FV_ELEMENT_COUNT_MIN, GMM_FV_ELEMENT_COUNT_MAX, GNA_BADFEATLENGTH);
-    Expect::Equal(Output.Mode.Value, GNA_INT32, XNN_ERR_OUTPUT_BYTES);
-    Expect::InRange(Output.at(GNA_DIM_H), ui32_1, GMM_STATES_COUNT_MAX, XNN_ERR_LYR_CFG);
-    Expect::InRange(Config.stateCount, ui32_1, GMM_STATES_COUNT_MAX, GMM_BADNUMGMM);
-    Expect::InRange(Config.mixtureComponentCount, ui32_1, GMM_MIXTURE_COMP_COUNT_MAX, GMM_BADMIXCNUM);
-    Expect::InRange(Config.mode, GNA_MAXMIX8, GNA_MAXMIX16, GMM_BADMODE);
+    Expect::Equal(Input.Mode.Size, GMM_FV_ELEMENT_SIZE, Gna2StatusXnnErrorInputBytes);
+    Expect::InRange(Input.at(GNA_DIM_W), GMM_FV_ELEMENT_COUNT_MIN, GMM_FV_ELEMENT_COUNT_MAX, Gna2StatusBadFeatLength);
+    Expect::Equal(Output.Mode.Value, GNA_INT32, Gna2StatusXnnErrorOutputBytes);
+    Expect::InRange(Output.at(GNA_DIM_H), ui32_1, GMM_STATES_COUNT_MAX, Gna2StatusXnnErrorLyrCfg);
+    Expect::InRange(Config.stateCount, ui32_1, GMM_STATES_COUNT_MAX, Gna2StatusGmmBadNumGmm);
+    Expect::InRange(Config.mixtureComponentCount, ui32_1, GMM_MIXTURE_COMP_COUNT_MAX, Gna2StatusGmmBadMixCnum);
+    Expect::InRange(Config.mode, GNA_MAXMIX8, GNA_MAXMIX16, Gna2StatusGmmBadMode);
     Expect::NotNull(Data.gaussianConstants);
-    Expect::AlignedTo(Data.gaussianConstants, {GMM_MEM_ALIGNMENT, GMM_BADGCONSTALIGN});
+    Expect::AlignedTo(Data.gaussianConstants, {GMM_MEM_ALIGNMENT, Gna2StatusGmmBadGconstAlign});
     Expect::NotNull(Data.meanValues);
-    Expect::AlignedTo(Data.meanValues, {GMM_MEM_ALIGNMENT, GMM_BADMEANALIGN});
+    Expect::AlignedTo(Data.meanValues, {GMM_MEM_ALIGNMENT, Gna2StatusGmmBadMeanAlign});
     Expect::NotNull(Data.inverseCovariances.inverseCovariancesForMaxMix16);
-    Expect::AlignedTo(Data.inverseCovariances.inverseCovariancesForMaxMix16, {GMM_MEM_ALIGNMENT, GMM_BADVARSALIGN});
-    Expect::InRange(Config.layout, GMM_LAYOUT_FLAT, GMM_LAYOUT_INTERLEAVED, GMM_CFG_INVALID_LAYOUT);
+    Expect::AlignedTo(Data.inverseCovariances.inverseCovariancesForMaxMix16, {GMM_MEM_ALIGNMENT, Gna2StatusGmmBadVarsAlign});
+    Expect::InRange(Config.layout, GMM_LAYOUT_FLAT, GMM_LAYOUT_INTERLEAVED, Gna2StatusGmmCfgInvalidLayout);
 
     if (GMM_LAYOUT_INTERLEAVED != Config.layout)
     {

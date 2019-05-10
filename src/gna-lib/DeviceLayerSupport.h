@@ -51,15 +51,15 @@ public:
         Hw{hw}
     {
         // FIXME: change to InSet
-        //Expect::InRange<size_t>(api.size(), GNA_API_NOT_SUPPORTED, GNA_API_VERSION_COUNT, XNN_ERR_LYR_CFG);
-        //Expect::InRange<size_t>(hw.size(), GNA_DEVICE_NOT_SUPPORTED, GNA_DEVICE_COUNT, XNN_ERR_LYR_CFG);
+        //Expect::InRange<size_t>(api.size(), GNA_API_NOT_SUPPORTED, GNA_API_VERSION_COUNT, Gna2StatusXnnErrorLyrCfg);
+        //Expect::InRange<size_t>(hw.size(), GNA_DEVICE_NOT_SUPPORTED, GNA_DEVICE_COUNT, Gna2StatusXnnErrorLyrCfg);
         for (auto apiSupport : Api)
         {
-            Expect::True(apiSupport.second, GNA_NULLARGREQUIRED);
+            Expect::True(apiSupport.second, Gna2StatusNullArgumentRequired);
         }
         for (auto hwSupport : Hw)
         {
-            Expect::True(hwSupport.second, GNA_NULLARGREQUIRED);
+            Expect::True(hwSupport.second, Gna2StatusNullArgumentRequired);
         }
     }
 

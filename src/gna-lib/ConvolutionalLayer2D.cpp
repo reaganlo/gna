@@ -37,9 +37,9 @@ using namespace GNA;
 ConvolutionalLayer2D::ConvolutionalLayer2D(nn_layer const * const layer, const BaseValidator& validatorIn) :
     Layer(layer, validatorIn, {ConvolutionalTransform2D, ActivationTransform, PoolingTransform2D}, BaseAddress())
 {
-    Expect::One(Input.at(GNA_DIM_N), XNN_ERR_GROUPING);
-    Expect::One(Output.at(GNA_DIM_N), XNN_ERR_GROUPING);
-    Expect::Equal(Output.Size, GetOutputTransform()->Output->Size, status_t::XNN_ERR_OUTPUT_VOLUME);
+    Expect::One(Input.at(GNA_DIM_N), Gna2StatusXnnErrorGrouping);
+    Expect::One(Output.at(GNA_DIM_N), Gna2StatusXnnErrorGrouping);
+    Expect::Equal(Output.Size, GetOutputTransform()->Output->Size, Gna2StatusXnnErrorOutputVolume);
 
     // performed for layer size validation
     HardwareLayerCnn2D::GetKernelWorkGroupSize(

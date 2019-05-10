@@ -49,10 +49,10 @@ Request::Request(RequestConfiguration& config, std::unique_ptr<RequestProfiler> 
     {
         return Configuration.Model.Score(Configuration, profilerPtr, buffers);
     };
-    scoreTask = std::packaged_task<status_t(KernelBuffers *buffers, RequestProfiler *profiler)>(callback);
+    scoreTask = std::packaged_task<Gna2Status(KernelBuffers *buffers, RequestProfiler *profiler)>(callback);
 }
 
-future<status_t> Request::GetFuture()
+future<Gna2Status> Request::GetFuture()
 {
     return scoreTask.get_future();
 }

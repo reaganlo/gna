@@ -39,8 +39,8 @@ const FullCapabilitiesMap ConvolutionFunction2D::strideLimits
     { INTEL_CONVOLUTIONAL_2D, {
         { GNA_3_0, std::make_shared<ComponentLimits>(ComponentLimits(
             {GNA_TENSOR_WH},
-            {{GNA_DIM_W, {1, CNN_N_KERNEL_ELEMENTS_PER_DIMENSION_MAX, 1, CNN_ERR_CONV_FLT_STRIDE}},
-             {GNA_DIM_H, {1, CNN_N_KERNEL_ELEMENTS_PER_DIMENSION_MAX, 1, CNN_ERR_CONV_FLT_STRIDE}}}))}
+            {{GNA_DIM_W, {1, CNN_N_KERNEL_ELEMENTS_PER_DIMENSION_MAX, 1, Gna2StatusCnnErrorConvFltStride}},
+             {GNA_DIM_H, {1, CNN_N_KERNEL_ELEMENTS_PER_DIMENSION_MAX, 1, Gna2StatusCnnErrorConvFltStride}}}))}
     }}
 };
 
@@ -49,8 +49,8 @@ const FullCapabilitiesMap ConvolutionFunction2D::paddingLimits
     { INTEL_CONVOLUTIONAL_2D, {
         { GNA_3_0, std::make_shared<ComponentLimits>(ComponentLimits(
             {GNA_TENSOR_WH},
-            {{GNA_DIM_W, {0, CNN_N_KERNEL_ELEMENTS_PER_DIMENSION_MAX, 1, CNN_ERR_CONV_FLT_PADDING}},
-             {GNA_DIM_H, {0, CNN_N_KERNEL_ELEMENTS_PER_DIMENSION_MAX, 1, CNN_ERR_CONV_FLT_PADDING}}}))}
+            {{GNA_DIM_W, {0, CNN_N_KERNEL_ELEMENTS_PER_DIMENSION_MAX, 1, Gna2StatusCnnErrorConvFltPadding}},
+             {GNA_DIM_H, {0, CNN_N_KERNEL_ELEMENTS_PER_DIMENSION_MAX, 1, Gna2StatusCnnErrorConvFltPadding}}}))}
     }}
 };
 
@@ -59,11 +59,11 @@ const FullCapabilitiesMap ConvolutionFunction2D::outputCapabilities
     {INTEL_CONVOLUTIONAL_2D, {
         {GNA_3_0, std::make_shared<TensorLimits>(TensorLimits{
             {GNA_TENSOR_NHWD},
-            {{GNA_DIM_N, {1, 1, 1, XNN_ERR_OUTPUT_VOLUME}},
-             {GNA_DIM_H, {1, XNN_N_IN_ELEMS_MAX, 1, XNN_ERR_OUTPUT_VOLUME}},
-             {GNA_DIM_W, {1, XNN_N_IN_ELEMS_MAX, 1, XNN_ERR_OUTPUT_VOLUME}},
-             {GNA_DIM_D, {1, XNN_N_IN_ELEMS_MAX, 1, XNN_ERR_OUTPUT_VOLUME}}},
-            {{GNA_INT8, GNA_INT16, GNA_INT32, GNA_DATA_ACTIVATION_DISABLED}, XNN_ERR_OUTPUT_BYTES }})}
+            {{GNA_DIM_N, {1, 1, 1, Gna2StatusXnnErrorOutputVolume}},
+             {GNA_DIM_H, {1, XNN_N_IN_ELEMS_MAX, 1, Gna2StatusXnnErrorOutputVolume}},
+             {GNA_DIM_W, {1, XNN_N_IN_ELEMS_MAX, 1, Gna2StatusXnnErrorOutputVolume}},
+             {GNA_DIM_D, {1, XNN_N_IN_ELEMS_MAX, 1, Gna2StatusXnnErrorOutputVolume}}},
+            {{GNA_INT8, GNA_INT16, GNA_INT32, GNA_DATA_ACTIVATION_DISABLED}, Gna2StatusXnnErrorOutputBytes }})}
     }},
 };
 
@@ -78,7 +78,7 @@ unique_ptr<ConvolutionFunction2D> ConvolutionFunction2D::Create(const TransformF
         return create(config, cnn);
     }
     default:
-        throw GnaException(XNN_ERR_LYR_OPERATION);
+        throw GnaException(Gna2StatusXnnErrorLyrOperation);
     }
 }
 
@@ -184,8 +184,8 @@ ConvolutionFunction2D::ConvolutionFunction2D(const BaseTransformConfig<Convoluti
 {
     if (GNA_BIAS_PER_KERNEL == Biases->BiasMode)
     {
-        Expect::Equal<uint32_t>(Biases->at(GNA_DIM_H), 1, XNN_ERR_BIAS_MODE);
-        Expect::Equal<uint32_t>(Biases->at(GNA_DIM_W), 1, XNN_ERR_BIAS_MODE);
+        Expect::Equal<uint32_t>(Biases->at(GNA_DIM_H), 1, Gna2StatusXnnErrorBiasMode);
+        Expect::Equal<uint32_t>(Biases->at(GNA_DIM_W), 1, Gna2StatusXnnErrorBiasMode);
     }
 
     Shape outputDims = GetOutputShape(Input->Dimensions, Filters->Dimensions,

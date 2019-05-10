@@ -34,8 +34,8 @@ using namespace GNA;
 CnnLayer::CnnLayer(nn_layer const * const layer, const BaseValidator& validatorIn) :
     Layer(layer, validatorIn, {}, BaseAddress())
 {
-    Expect::One(Input.at(GNA_DIM_N), XNN_ERR_GROUPING);
-    Expect::Equal(Input.at(GNA_DIM_N), Output.at(GNA_DIM_N), XNN_ERR_GROUPING);
+    Expect::One(Input.at(GNA_DIM_N), Gna2StatusXnnErrorGrouping);
+    Expect::Equal(Input.at(GNA_DIM_N), Output.at(GNA_DIM_N), Gna2StatusXnnErrorGrouping);
 
     // TODO:3: use Input,Output tensor everywhere
     Convolution = ConvolutionFunction::Create(&Input,
@@ -64,13 +64,12 @@ CnnLayer::CnnLayer(nn_layer const * const layer, const BaseValidator& validatorI
             {this->compute(layerConfiguration, accel, executionConfig); };
         }
         Expect::Equal(Convolution->OutputsPerFilterCount, Output.Count / Convolution->Output.at(GNA_DIM_D),
-            XNN_ERR_LYR_INVALID_TENSOR_DIMENSIONS);
-        // TODO:3: new error
+            Gna2StatusXnnErrorLyrInvalidTensorDimensions);
     }
     else
     {
-        Expect::NotNull(Activation.get(), XNN_ERR_PWL_SEGMENTS); // Activation is required for cnn with pooling
-        Expect::Equal(Pooling->OutputsPerFilterCount, Output.Count / Convolution->Output.at(GNA_DIM_D), XNN_ERR_LYR_INVALID_TENSOR_DIMENSIONS);
+        Expect::NotNull(Activation.get(), Gna2StatusXnnErrorPwlSegments); // Activation is required for cnn with pooling
+        Expect::Equal(Pooling->OutputsPerFilterCount, Output.Count / Convolution->Output.at(GNA_DIM_D), Gna2StatusXnnErrorLyrInvalidTensorDimensions);
         // TODO:3: new error
 
         Layer::ComputeHidden = [this](AccelerationMode accel, ExecutionConfig const & executionConfig)

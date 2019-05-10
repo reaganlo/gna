@@ -57,7 +57,7 @@ const FullCapabilitiesMap ConvolutionFunction::strideLimits
     {INTEL_CONVOLUTIONAL, {
         { GNA_1_0, std::make_shared<ComponentLimits>(ComponentLimits(
             {GNA_TENSOR_W},
-            { { GNA_DIM_W, { 1, CNN_N_FLT_COEFF_MAX, 1, CNN_ERR_CONV_FLT_STRIDE}}}))}
+            { { GNA_DIM_W, { 1, CNN_N_FLT_COEFF_MAX, 1, Gna2StatusCnnErrorConvFltStride}}}))}
     }},
 };
 
@@ -86,8 +86,8 @@ unique_ptr<const ConvolutionFunction> ConvolutionFunction::Create(const Tensor* 
         stride[GNA_DIM_W] = cnn->nFeatureMaps * cnn->nFeatureMapColumns;
 
         auto featureCount = cnn->nFeatureMapRows  * stride[GNA_DIM_W];
-        Expect::True(featureCount >= CNN_N_FLT_COEFF_MIN, XNN_ERR_LYR_CFG);
-        Expect::InRange(cnn->nFilterRows, ui32_1, CNN_N_FLT_COEFF_MAX, XNN_ERR_LYR_CFG);
+        Expect::True(featureCount >= CNN_N_FLT_COEFF_MIN, Gna2StatusXnnErrorLyrCfg);
+        Expect::InRange(cnn->nFilterRows, ui32_1, CNN_N_FLT_COEFF_MAX, Gna2StatusXnnErrorLyrCfg);
 
         filters = make_unique<const FiltersTensor>(Shape(GNA_TENSOR_NWH, cnn->nFilters, cnn->nFilterCoefficients, 0),
             filterMode, filtersBuffer, validatorIn);
@@ -98,7 +98,7 @@ unique_ptr<const ConvolutionFunction> ConvolutionFunction::Create(const Tensor* 
         break;
     }
     default:
-        throw GnaException(XNN_ERR_LYR_OPERATION);
+        throw GnaException(Gna2StatusXnnErrorLyrOperation);
     }
 
     switch (validatorIn.Operation)
@@ -109,7 +109,7 @@ unique_ptr<const ConvolutionFunction> ConvolutionFunction::Create(const Tensor* 
                  static_cast<kernel_op>(validatorIn.Operation), KernelMode { input->Mode.Value }),
              input, output, move(filters), move(biases), move(strideComponent));
      default:
-        throw GnaException(XNN_ERR_LYR_OPERATION);
+        throw GnaException(Gna2StatusXnnErrorLyrOperation);
      }
 }
 
@@ -127,7 +127,7 @@ ConvolutionFunction::ConvolutionFunction(const KernelMap<ConvolutionKernel>& ker
     for (const auto& dim : Stride->Dimensions)
     {
         // TODO:3: add Expect::Fits() method
-        Expect::InRange(dim.second, ui32_1, Filters->at(dim.first), XNN_ERR_LYR_CFG);
+        Expect::InRange(dim.second, ui32_1, Filters->at(dim.first), Gna2StatusXnnErrorLyrCfg);
         Output[dim.first] =
             (input->Dimensions.at(dim.first) - Filters->at(dim.first)) / dim.second + 1;
         OutputsPerFilterCount *= Output[dim.first];
@@ -137,7 +137,7 @@ ConvolutionFunction::ConvolutionFunction(const KernelMap<ConvolutionKernel>& ker
     {
         if (GNA_DIM_N != dim.first)
         {
-            Expect::True(dim.second <= input->Dimensions.at(dim.first), XNN_ERR_LYR_CFG);
+            Expect::True(dim.second <= input->Dimensions.at(dim.first), Gna2StatusXnnErrorLyrCfg);
         }
     }
 

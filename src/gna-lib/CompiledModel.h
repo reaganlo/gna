@@ -67,7 +67,7 @@ public:
 
     bool IsPartOfModel(Memory *memory) const;
 
-    status_t Score(
+    Gna2Status Score(
         RequestConfiguration& config,
         RequestProfiler *profiler,
         KernelBuffers *buffers);

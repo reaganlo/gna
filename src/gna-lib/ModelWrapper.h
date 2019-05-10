@@ -72,7 +72,7 @@ private:
         Expect::NotNull((void *)(userAllocator));
         const auto size = static_cast<uint32_t>(sizeof(Type *)) * elementCount;
         const auto memory = userAllocator(size);
-        Expect::NotNull(memory, CAST1_STATUS Gna2StatusResourceAllocationError);
+        Expect::NotNull(memory, Gna2StatusResourceAllocationError);
         memset(memory, 0, size);
         return static_cast<Type **>(memory);
     }

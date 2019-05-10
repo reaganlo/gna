@@ -69,14 +69,14 @@ struct TensorLimits : public ComponentLimits
     TensorLimits(const ComponentLimits limits, const DataModeLimits& modes) :
         ComponentLimits{ limits },
         Modes{ modes },
-        Align{ GNA_MEM_ALIGN, GNA_BADMEMALIGN }
+        Align{ GNA_MEM_ALIGN, Gna2StatusMemoryAlignmentInvalid }
     {
     }
 
     TensorLimits(const OrderLimits order, const ShapeLimits& dimensions, const DataModeLimits& modes) :
         ComponentLimits{ order, dimensions },
         Modes{ modes },
-        Align{ GNA_MEM_ALIGN, GNA_BADMEMALIGN }
+        Align{ GNA_MEM_ALIGN, Gna2StatusMemoryAlignmentInvalid }
     {
     }
 

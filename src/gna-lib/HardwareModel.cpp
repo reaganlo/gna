@@ -43,7 +43,7 @@ uint32_t HardwareModel::CalculateDescriptorSize(
 {
     Expect::InRange(layerCount, ui32_1,
         HardwareCapabilities::GetMaximumLayerCount(DefaultDeviceVersion),
-        XNN_ERR_NET_LYR_NO);
+        Gna2StatusXnnErrorNetLyrNo);
 
     auto layerDescriptorsSizeTmp = getLayerDescriptorsSize(layerCount);
     auto gmmDescriptorsSizeTmp = getGmmDescriptorsSize(gmmLayersCount);
@@ -72,7 +72,7 @@ uint64_t HardwareModel::GetMemoryId(const BaseAddress& address) const
         });
 
     if (foundIt != modelMemoryObjects.cend())
-        throw GnaException { GNA_UNKNOWN_ERROR };
+        throw GnaException { Gna2StatusUnknownError };
 
     return (*foundIt)->GetId();
 }
@@ -89,7 +89,7 @@ void HardwareModel::Build(const std::vector<Memory* >& modelMemoryObjectsIn)
         modelSize += ALIGN(memory->GetSize(), PAGE_SIZE);
     }
     Expect::InRange(modelSize, HardwareCapabilities::MaximumModelSize,
-                    GNA_MODELSIZEEXCEEDED);
+                    Gna2StatusMemoryTotalSizeExceeded);
 
     auto gmmDescriptor = AddrGmmCfg();
     if (0 != gmmDescriptorsSize)
@@ -120,7 +120,7 @@ void HardwareModel::Build(const std::vector<Memory* >& modelMemoryObjectsIn)
         }
         catch (...)
         {
-            throw GnaModelException(GnaException(XNN_ERR_LYR_CFG), i);
+            throw GnaModelException(GnaException(Gna2StatusXnnErrorLyrCfg), i);
         }
     }
 }
@@ -170,13 +170,13 @@ void HardwareModel::allocateLayerDescriptors()
 
     if (!ldMemory)
     {
-        throw GnaException {GNA_ERR_RESOURCES};
+        throw GnaException {Gna2StatusResourceAllocationError};
     }
 
     baseDescriptor = std::make_unique<LayerDescriptor>(
             *ldMemory, ldMemory->GetBuffer(), hwCapabilities);
     if (!baseDescriptor)
     {
-        throw GnaException{ GNA_ERR_RESOURCES };
+        throw GnaException{ Gna2StatusResourceAllocationError };
     }
 }

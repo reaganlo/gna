@@ -38,7 +38,7 @@ Component::Component(const Shape& dimensions, const Validator& validatorIn, bool
     {
         Count *= dim.second;
     }
-    Expect::GtZero(Dimensions.size(), XNN_ERR_LYR_INVALID_TENSOR_DIMENSIONS);
+    Expect::GtZero(Dimensions.size(), Gna2StatusXnnErrorLyrInvalidTensorDimensions);
 
     validator = std::make_unique<const Validator>(validatorIn);
     Expect::NotNull(validator.get());

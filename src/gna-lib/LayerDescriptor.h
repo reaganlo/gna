@@ -210,8 +210,8 @@ public:
         bitCount{bitCountIn},
         translator{std::make_shared<const ParamTranslator>(translatorIn)}
     {
-        Expect::InRange<uint8_t>(bitOffset, 31, GNA_ERR_INVALID_DATA_MODE);
-        Expect::InRange<uint8_t>(bitCount, 1, 32, GNA_ERR_INVALID_DATA_MODE);
+        Expect::InRange<uint8_t>(bitOffset, 31, Gna2StatusDataModeInvalid);
+        Expect::InRange<uint8_t>(bitCount, 1, 32, Gna2StatusDataModeInvalid);
         Expect::NotNull(translator.get());
     }
 
@@ -262,7 +262,7 @@ public:
     // sets value as absolute offset
     void operator=(const BaseAddress& buffer)
     {
-        Expect::True(4 == Size && 0 == bitCount, GNA_UNKNOWN_ERROR);
+        Expect::True(4 == Size && 0 == bitCount, Gna2StatusUnknownError);
         *address.Get<uint32_t>() = getBufferOffset(buffer);
     }
 

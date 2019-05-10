@@ -67,7 +67,7 @@ Device::Device(uint32_t threadCount) :
     }
     catch (GnaException &e)
     {
-        if (e.getStatus() != GNA_DEVNOTFOUND)
+        if (e.GetStatus() != Gna2StatusDeviceNotAvailable)
         {
             throw;
         }
@@ -116,7 +116,7 @@ void Device::EnableHardwareConsistency(gna_request_cfg_id configId,
 {
     if (Gna2DeviceVersionSoftwareEmulation == hardwareVersion)
     {
-        throw GnaException(GNA_ERR_INVALID_DEVICE_VERSION);
+        throw GnaException(Gna2StatusDeviceVersionInvalid);
     }
 
     auto& requestConfiguration = requestBuilder.GetConfiguration(configId);
@@ -137,7 +137,7 @@ void Device::EnableProfiling(gna_request_cfg_id configId,
     if (hwPerfEncoding >= DESCRIPTOR_FETCH_TIME
         && !hardwareCapabilities.HasFeature(NewPerformanceCounters))
     {
-        throw GnaException(GNA_CPUTYPENOTSUPPORTED);
+        throw GnaException(Gna2StatusAccelerationModeNotSupported);
     }
 
     auto& requestConfiguration = requestBuilder.GetConfiguration(configId);
@@ -189,7 +189,7 @@ void Device::FreeMemory(void *buffer)
 
     if (memoryIterator == memoryObjects.end())
     {
-        throw GnaException(GNA_ERR_MEMORY_NOT_ALLOCATED);
+        throw GnaException(Gna2StatusIdentifierInvalid);
     }
 
     // TODO:3: mechanism to detect if memory is used in some model
@@ -212,7 +212,7 @@ void Device::LoadModel(gna_model_id *modelId, const gna_model *userModel)
 
     if (!compiledModel)
     {
-        throw GnaException(GNA_ERR_RESOURCES);
+        throw GnaException(Gna2StatusResourceAllocationError);
     }
 
     *modelId = modelIdSequence++;

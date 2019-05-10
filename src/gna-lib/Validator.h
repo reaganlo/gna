@@ -50,10 +50,10 @@ public:
     ~BaseValidator() = default;
 
     void ValidateBuffer(const void* const buffer, size_t size,
-        const AlignLimits& alignLimits = {GNA_MEM_ALIGN, GNA_BADMEMALIGN}) const;
+        const AlignLimits& alignLimits = {GNA_MEM_ALIGN, Gna2StatusMemoryAlignmentInvalid}) const;
 
     inline void ValidateBufferIfSet(const void* const buffer, size_t size,
-        const AlignLimits& alignLimits = {GNA_MEM_ALIGN, GNA_BADMEMALIGN}) const
+        const AlignLimits& alignLimits = {GNA_MEM_ALIGN, Gna2StatusMemoryAlignmentInvalid}) const
     {
         if (buffer)
             ValidateBuffer(buffer, size, alignLimits);

@@ -202,7 +202,7 @@ AccelerationMode AccelerationMode::GetEffectiveSoftwareAccelerationMode(
     const std::vector<Gna2AccelerationMode>& supportedCpuAccelerations) const
 {
     if (mode == Gna2AccelerationModeHardware)
-        throw GnaException(CAST1_STATUS Gna2StatusAccelerationModeNotSupported);
+        throw GnaException(Gna2StatusAccelerationModeNotSupported);
     if (mode == Gna2AccelerationModeSoftware ||
         mode == Gna2AccelerationModeAuto)
     {
@@ -216,7 +216,7 @@ AccelerationMode AccelerationMode::GetEffectiveSoftwareAccelerationMode(
             return AccelerationMode{ supported,hardwareConsistency };
         }
     }
-    throw GnaException(CAST1_STATUS Gna2StatusAccelerationModeNotSupported);
+    throw GnaException(Gna2StatusAccelerationModeNotSupported);
 }
 
 void AccelerationMode::SetMode(Gna2AccelerationMode newMode)

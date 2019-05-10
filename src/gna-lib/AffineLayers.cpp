@@ -136,7 +136,7 @@ void AffineLayer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration) co
     {
         if (layerConfiguration.ActList)
         {
-            Expect::InRange(layerConfiguration.ActList->IndicesCount, ui32_1, Output.at(GNA_DIM_H), GNA_INVALIDINDICES);
+            Expect::InRange(layerConfiguration.ActList->IndicesCount, ui32_1, Output.at(GNA_DIM_H), Gna2StatusActiveListIndicesInvalid);
         }
         auto const outputCount = layerConfiguration.ActList ?
             layerConfiguration.ActList->IndicesCount : Output.at(GNA_DIM_H);
@@ -147,6 +147,6 @@ void AffineLayer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration) co
 AffineDiagonalLayer::AffineDiagonalLayer(const nn_layer *layer, const BaseValidator& validatorIn) :
     AffineBaseLayer(layer, validatorIn)
 {
-    Expect::Equal(Input.at(GNA_DIM_W), Output.at(GNA_DIM_H), XNN_ERR_LYR_CFG);
-    Expect::Equal(Input.at(GNA_DIM_N), Output.at(GNA_DIM_N), XNN_ERR_LYR_CFG);
+    Expect::Equal(Input.at(GNA_DIM_W), Output.at(GNA_DIM_H), Gna2StatusXnnErrorLyrCfg);
+    Expect::Equal(Input.at(GNA_DIM_N), Output.at(GNA_DIM_N), Gna2StatusXnnErrorLyrCfg);
 }

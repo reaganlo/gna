@@ -120,7 +120,7 @@ public:
         }
         catch (const std::out_of_range&)
         {
-            throw GnaException(GNA_ERR_NOT_IMPLEMENTED);
+            throw GnaException(Gna2StatusNotImplemented);
         }
     }
 

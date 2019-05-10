@@ -87,7 +87,7 @@ DeviceVersion DeviceManager::GetDeviceVersion(gna_device_id deviceId)
 void DeviceManager::SetThreadCount(gna_device_id deviceId, uint32_t threadCount)
 {
     VerifyDeviceIndex(deviceId);
-    Expect::InRange(static_cast<uint32_t>(threadCount), 1U, 127U, GNA_ERR_INVALID_THREAD_COUNT);
+    Expect::InRange(static_cast<uint32_t>(threadCount), 1U, 127U, Gna2StatusDeviceNumberOfThreadsInvalid);
 
     auto& device = GetDevice(deviceId);
     device.SetNumberOfThreads(threadCount);
@@ -103,7 +103,7 @@ uint32_t DeviceManager::GetThreadCount(gna_device_id deviceId)
 
 void DeviceManager::VerifyDeviceIndex(gna_device_id deviceId)
 {
-    Expect::InRange(deviceId, ui32_0, GetDeviceCount() - 1, GNA_INVALIDHANDLE);
+    Expect::InRange(deviceId, ui32_0, GetDeviceCount() - 1, Gna2StatusIdentifierInvalid);
 }
 
 void DeviceManager::OpenDevice(gna_device_id deviceId)
@@ -115,7 +115,7 @@ void DeviceManager::OpenDevice(gna_device_id deviceId)
     if (deviceOpenedMap.at(deviceId))
     {
         Log->Error("GNA Device already opened. Close Device first.\n");
-        throw GnaException(GNA_INVALIDHANDLE);
+        throw GnaException(Gna2StatusIdentifierInvalid);
     }
 
     deviceOpenedMap[deviceId] = true;

@@ -71,7 +71,7 @@ private:
         }
         catch (const std::out_of_range&)
         {
-            throw GnaException(GNA_BADREQID);
+            throw GnaException(Gna2StatusIdentifierInvalid);
         }
     }
 

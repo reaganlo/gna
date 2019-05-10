@@ -65,12 +65,12 @@
 //    value = calloc(1, Type.Size);
 //    if (nullptr == value)
 //    {
-//        throw GnaException(GNA_ERR_RESOURCES);
+//        throw GnaException(Gna2StatusResourceAllocationError);
 //    }
 //    auto err = memcpy_s(value, Type.Size, valueIn, Type.Size);
 //    if (0 != err)
 //    {
-//        throw GnaException(GNA_ERR_RESOURCES);
+//        throw GnaException(Gna2StatusResourceAllocationError);
 //    }
 //}
 //

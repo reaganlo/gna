@@ -48,11 +48,11 @@ ComponentLimits * FullCapabilitiesMap::GetLatestCaps(const LayerValidator& valid
                 return latestHW->second.get();
             }
         }
-        throw GnaException(XNN_ERR_LYR_CFG);
+        throw GnaException(Gna2StatusXnnErrorLyrCfg);
     }
     // operation or device not supported at all
     catch (const std::out_of_range&)
     {
-        throw GnaException(XNN_ERR_LYR_CFG);
+        throw GnaException(Gna2StatusXnnErrorLyrCfg);
     }
 }

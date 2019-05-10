@@ -48,7 +48,7 @@ intel_gna_status_t GnaModelSetPrescoreScenario(
     }
     catch (const GnaException &e)
     {
-        return e.getStatus();
+        return e.GetLegacyStatus();
     }
     catch (...)
     {
@@ -69,7 +69,7 @@ intel_gna_status_t GnaModelSetAfterscoreScenario(
     }
     catch (const GnaException &e)
     {
-        return e.getStatus();
+        return e.GetLegacyStatus();
     }
     catch (...)
     {

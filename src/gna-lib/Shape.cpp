@@ -36,7 +36,7 @@ using namespace GNA;
 
 const std::vector<gna_tensor_dim> & Shape::GetVectorIndices(gna_tensor_order order)
 {
-    static const std::unordered_map<gna_tensor_order, const std::vector<gna_tensor_dim>, TensorDimHash>
+    static const std::unordered_map<gna_tensor_order, const std::vector<gna_tensor_dim>, EnumHash>
         vectorIndices =
     {
         { GNA_TENSOR_SCALAR, {} },
@@ -76,9 +76,8 @@ const std::vector<gna_tensor_dim> & Shape::GetVectorIndices(gna_tensor_order ord
     }
     catch (const std::out_of_range&)
     {
-        throw GnaException(XNN_ERR_LYR_INVALID_TENSOR_ORDER);
+        throw GnaException(Gna2StatusXnnErrorLyrInvalidTensorOrder);
     }
-    
 }
 
 Shape::Shape(ShapeMap && map, gna_tensor_order order) :
@@ -98,7 +97,7 @@ void Shape::ValidateNumberOfDimensions(gna_tensor_order order,
     {
         condition = shapeDimensions == orderDimensions;
     }
-    Expect::True(condition, CAST1_STATUS Gna2StatusModelConfigurationInvalid); // TODO:3: add error code
+    Expect::True(condition, Gna2StatusModelConfigurationInvalid); // TODO:3: add error code
 }
 
 Shape::Shape(const gna_3d_dimensions shape) :
@@ -114,7 +113,7 @@ Shape & Shape::operator=(const Shape & right)
 
 Shape Shape::Reshape(gna_tensor_order order) const
 {
-    Expect::True(this->size() >= GetVectorIndices(order).size(), XNN_ERR_NETWORK_INPUTS); // TODO:3: add error code
+    Expect::True(this->size() >= GetVectorIndices(order).size(), Gna2StatusXnnErrorNetworkInputs);
     Shape dims;
     dims.Order = order;
     for (const auto & dim : GetVectorIndices(order))
@@ -128,7 +127,7 @@ Shape Shape::Create(const ApiShape & shape, const gna_tensor_order order)
 {
     // TODO:3:verify if initializer_list can always be constructed using 2 pointers
     return Shape(Create(std::vector<uint32_t>(shape.Dimensions,
-                &shape.Dimensions[shape.NumberOfDimensions]), order), order);
+        &shape.Dimensions[shape.NumberOfDimensions]), order), order);
 }
 
 ShapeMap Shape::Create(const std::vector<uint32_t> && dimensions, const gna_tensor_order order)
@@ -160,7 +159,7 @@ Shape::operator gna_3d_dimensions const() const
     }
     else
     {
-        throw GnaException(XNN_ERR_LYR_INVALID_TENSOR_ORDER);
+        throw GnaException(Gna2StatusXnnErrorLyrInvalidTensorOrder);
     }
 }
 

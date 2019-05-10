@@ -58,7 +58,7 @@ void WindowsDriverInterface::OpenDevice()
 {
     auto guid = GUID_DEVINTERFACE_GNA_DRV;
     auto deviceInfo = SetupDiGetClassDevs(&guid, nullptr, nullptr, DIGCF_PRESENT | DIGCF_DEVICEINTERFACE);
-    Expect::False(INVALID_HANDLE_VALUE == deviceInfo, GNA_DEVNOTFOUND);
+    Expect::False(INVALID_HANDLE_VALUE == deviceInfo, Gna2StatusDeviceNotAvailable);
 
     auto deviceDetailsData = unique_ptr<char[]>();
     auto deviceDetails = PSP_DEVICE_INTERFACE_DETAIL_DATA{nullptr};
@@ -85,7 +85,7 @@ void WindowsDriverInterface::OpenDevice()
         break;
     }
     SetupDiDestroyDeviceInfoList(deviceInfo);
-    Expect::NotNull(deviceDetails, GNA_DEVNOTFOUND);
+    Expect::NotNull(deviceDetails, Gna2StatusDeviceNotAvailable);
 
     deviceHandle.Set(CreateFile(deviceDetails->DevicePath,
         GENERIC_READ | GENERIC_WRITE,
@@ -94,7 +94,7 @@ void WindowsDriverInterface::OpenDevice()
         CREATE_ALWAYS,
         FILE_ATTRIBUTE_NORMAL | FILE_FLAG_OVERLAPPED,
         nullptr));
-    Expect::False(INVALID_HANDLE_VALUE == deviceHandle, GNA_DEVNOTFOUND);
+    Expect::False(INVALID_HANDLE_VALUE == deviceHandle, Gna2StatusDeviceNotAvailable);
 
     getDeviceCapabilities();
 
@@ -128,7 +128,7 @@ void WindowsDriverInterface::IoctlSend(const GnaIoctlCommand command, void * con
             wait(&overlapped, (recoveryTimeout + 15) * 1000);
             break;
         default:
-            throw GnaException { GNA_IOCTLSENDERR };
+            throw GnaException { Gna2StatusDeviceOutgoingCommunicationError };
     }
 #endif
 }
@@ -205,7 +205,7 @@ RequestResult WindowsDriverInterface::Submit(HardwareRequest& hardwareRequest,
     }
     else
     {
-        throw GnaException { XNN_ERR_LYR_CFG };
+        throw GnaException { Gna2StatusXnnErrorLyrCfg };
     }
 
     profilerTscStart(&profiler->ioctlSubmit);
@@ -221,7 +221,7 @@ RequestResult WindowsDriverInterface::Submit(HardwareRequest& hardwareRequest,
 
     result.hardwarePerf = calculationData->hwPerf;
     result.driverPerf = calculationData->drvPerf;
-    result.status = calculationData->status;
+    result.status = StatusMapInverted.at(calculationData->status);
 
     return result;
 }
@@ -326,7 +326,7 @@ void WindowsDriverInterface::wait(LPOVERLAPPED const ioctl, const DWORD timeout)
              WAIT_IO_COMPLETION  == error ||
              WAIT_TIMEOUT        == error)
         {
-            throw GnaException(GNA_DEVICEBUSY); // not completed yet
+            throw GnaException(Gna2StatusWarningDeviceBusy); // not completed yet
         }
         else // other wait error
         {
@@ -334,7 +334,7 @@ void WindowsDriverInterface::wait(LPOVERLAPPED const ioctl, const DWORD timeout)
 #if DEBUG == 1
             printLastError(error);
 #endif
-            throw GnaException(GNA_IOCTLRESERR);
+            throw GnaException(Gna2StatusDeviceIngoingCommunicationError);
         }
     }
     // io completed successfully
@@ -348,7 +348,7 @@ void WindowsDriverInterface::checkStatus(BOOL ioResult) const
 #if DEBUG == 1
             printLastError(lastError);
 #endif
-        throw GnaException(GNA_IOCTLSENDERR);
+        throw GnaException(Gna2StatusDeviceOutgoingCommunicationError);
     }
 }
 

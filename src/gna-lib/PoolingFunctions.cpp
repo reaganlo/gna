@@ -37,14 +37,14 @@ using namespace GNA;
 const std::map<const nn_operation, const ShapeLimits> PoolingFunction::windowLimits =
 {
     {INTEL_CONVOLUTIONAL,
-        {{GNA_DIM_W, {CNN_POOL_SIZE_MIN, CNN_POOL_SIZE_MAX, 1, CNN_ERR_POOL_SIZE}}}
+        {{GNA_DIM_W, {CNN_POOL_SIZE_MIN, CNN_POOL_SIZE_MAX, 1, Gna2StatusCnnErrorPoolSize}}}
     },
 };
 
 const std::map<const nn_operation, const ShapeLimits> PoolingFunction::strideLimits =
 {
     {INTEL_CONVOLUTIONAL,
-        {{GNA_DIM_W, {CNN_POOL_SIZE_MIN, CNN_POOL_SIZE_MAX, 1, CNN_ERR_POOL_STRIDE}}}
+        {{GNA_DIM_W, {CNN_POOL_SIZE_MIN, CNN_POOL_SIZE_MAX, 1, Gna2StatusCnnErrorPoolStride}}}
     },
 };
 
@@ -67,7 +67,7 @@ unique_ptr<const PoolingFunction> PoolingFunction::Create(void const * layerDeta
         break;
     }
     default:
-        throw GnaException(XNN_ERR_LYR_OPERATION);
+        throw GnaException(Gna2StatusXnnErrorLyrOperation);
     }
 
     if (INTEL_NO_POOLING != type)
@@ -79,7 +79,7 @@ unique_ptr<const PoolingFunction> PoolingFunction::Create(void const * layerDeta
                 stride, type,
                 AccelerationDetector::GetKernelMap<ConvolutionPoolingKernel>(KERNEL_POOLING, inputMode));
         default:
-            throw GnaException(XNN_ERR_LYR_OPERATION);
+            throw GnaException(Gna2StatusXnnErrorLyrOperation);
         }
     }
     else
@@ -100,7 +100,7 @@ PoolingFunction::PoolingFunction(nn_operation const operation, const Shape& inpu
     kernels{ kernelsIn },
     hiddenConfig{ make_unique<PoolingConfig>(Type, Window.at(GNA_DIM_W), Stride.at(GNA_DIM_W)) }
 {
-    Expect::InSet(Type, { INTEL_MAX_POOLING, INTEL_SUM_POOLING }, CNN_ERR_POOL_TYPE);
+    Expect::InSet(Type, { INTEL_MAX_POOLING, INTEL_SUM_POOLING }, Gna2StatusCnnErrorPoolType);
     // TODO:3: use ShapeIsValid where applicable
     Expect::ShapeIsValid(Stride, strideLimits.at(operation));
     Expect::ShapeIsValid(Window, windowLimits.at(operation));
@@ -114,7 +114,7 @@ PoolingFunction::PoolingFunction(nn_operation const operation, const Shape& inpu
             // TODO:3: verify if -1 or -Window.dim
             OutputDimensions[dim.first] =  ((inputDimensions.at(dim.first) - 1) / dim.second + 1);
             OutputsPerFilterCount *= OutputDimensions[dim.first];
-            Expect::InRange(OutputDimensions[dim.first], ui32_1, inputDimensions.at(dim.first), CNN_ERR_POOL_SIZE);
+            Expect::InRange(OutputDimensions[dim.first], ui32_1, inputDimensions.at(dim.first), Gna2StatusCnnErrorPoolSize);
         }
     }
 }

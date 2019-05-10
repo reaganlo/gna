@@ -82,7 +82,9 @@ public:
 
     void Stop();
 
-    void* Dump(gna_model_id modelId, gna_device_generation generation, intel_gna_model_header* modelHeader, intel_gna_status_t* status, intel_gna_alloc_cb customAlloc);
+    void* Dump(gna_model_id modelId, gna_device_generation generation,
+            intel_gna_model_header* modelHeader, Gna2Status* status,
+            intel_gna_alloc_cb customAlloc);
 
 protected:
     virtual std::unique_ptr<Memory> createMemoryObject( const uint32_t requestedSize);

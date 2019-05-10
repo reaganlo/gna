@@ -43,7 +43,7 @@ class Expect
 {
 public:
     // If condition is NOT satisfied prints error status code and throws exception .
-    inline static void True(const bool condition, const status_t error)
+    inline static void True(const bool condition, const Gna2Status error)
     {
         if (!condition)
         {
@@ -52,43 +52,43 @@ public:
     }
 
     // If condition is satisfied prints error status code and throws exception .
-    inline static void False(const bool condition, const status_t error)
+    inline static void False(const bool condition, const Gna2Status error)
     {
         True(!condition, error);
     }
 
     template<typename T>
-    inline static void Equal(const T a, const T b, const status_t error)
+    inline static void Equal(const T a, const T b, const Gna2Status error)
     {
         True(a == b, error);
     }
 
     template<typename T>
-    inline static void One(const T value, const status_t error)
+    inline static void One(const T value, const Gna2Status error)
     {
         True(value == static_cast<T>(1), error);
     }
 
     template<typename T>
-    inline static void Zero(const T value, const status_t error)
+    inline static void Zero(const T value, const Gna2Status error)
     {
         True(value == static_cast<T>(0), error);
     }
 
     // If value is not > 0 prints error status code and throws exception .
     template<typename T>
-    inline static void GtZero(const T value, const status_t error)
+    inline static void GtZero(const T value, const Gna2Status error)
     {
         True(value > static_cast<T>(0), error);
     }
 
-    inline static void Success(const status_t status)
+    inline static void Success(const Gna2Status status)
     {
-        True(GNA_SUCCESS == status, status);
+        True(Gna2StatusSuccess == status, status);
     }
 
     // If pointer is nullptr prints error status code and throws exception.
-    inline static void NotNull(const void* pointer, const status_t error)
+    inline static void NotNull(const void* pointer, const Gna2Status error)
     {
         True(nullptr != pointer, error);
     }
@@ -96,13 +96,13 @@ public:
     // If pointer is nullptr prints error status code and throws exception.
     inline static void NotNull(const void* pointer)
     {
-        NotNull(pointer, GNA_NULLARGNOTALLOWED);
+        NotNull(pointer, Gna2StatusNullArgumentNotAllowed);
     }
 
     // If pointer is NOT nullptr prints error status code and throws exception.
     inline static void Null(const void* pointer)
     {
-        True(nullptr == pointer, GNA_NULLARGREQUIRED);
+        True(nullptr == pointer, Gna2StatusNullArgumentRequired);
     }
 
     // If pointer is not aligned to alignment prints error status code and throws exception.
@@ -114,7 +114,7 @@ public:
     // If pointer is not aligned to alignment prints error status code and throws exception.
     inline static void AlignedTo(const void* pointer, const uint32_t alignment = GNA_MEM_ALIGN)
     {
-        AlignedTo(pointer, {alignment, GNA_BADMEMALIGN});
+        AlignedTo(pointer, {alignment, Gna2StatusMemoryAlignmentInvalid});
     }
 
     // If pointer is not 64 B aligned prints error status code and throws exception.
@@ -141,18 +141,18 @@ public:
         return (buffer >= memory) && (bufferEnd <= memoryEnd);
     }
 
-    // If pointers do not fit in user memory, throws XNN_ERR_INVALID_BUFFER error
+    // If pointers do not fit in user memory, throws Gna2StatusXnnErrorInvalidBuffer error
     inline static void ValidBoundaries(
         const void *buffer, const size_t bufferSize,
         const void *memory, const size_t memorySize)
     {
-        False(InMemoryRange(buffer, bufferSize, memory, memorySize), XNN_ERR_INVALID_BUFFER);
+        False(InMemoryRange(buffer, bufferSize, memory, memorySize), Gna2StatusXnnErrorInvalidBuffer);
     }
 
     // If parameter is not multiplicity of multiplicity prints error status code and throws exception.
     template<typename T>
     inline static void MultiplicityOf(const T parameter, const T multiplicity,
-        const status_t error)
+        const Gna2Status error)
     {
         True(0 == (parameter % multiplicity), error);
     }
@@ -161,7 +161,7 @@ public:
     template<typename T>
     inline static void MultiplicityOf(const T parameter, const T multiplicity)
     {
-        MultiplicityOf(parameter, multiplicity, GNA_ERR_NOT_MULTIPLE);
+        MultiplicityOf(parameter, multiplicity, Gna2StatusNotMultipleOf);
     }
 
     // If parameter is not multiplicity of multiplicity prints error status code and throws exception.
@@ -174,7 +174,7 @@ public:
     // If parameter is not in range of <0, b> prints error status code and throws exception.
     template<typename T = uint32_t>
     inline static void InRange(const T parameter, const T max,
-        const status_t error)
+        const Gna2Status error)
     {
         InRange(parameter, static_cast<T>(0), max, error);
     }
@@ -182,7 +182,7 @@ public:
     // If parameter is not in range of <a, b> prints error status code and throws exception.
     template<typename T = uint32_t>
     inline static void InRange(const T parameter, const T a, const T b,
-        const status_t error)
+        const Gna2Status error)
     {
         False(parameter < a, error);
         False(parameter > b, error);
@@ -191,7 +191,7 @@ public:
     // If parameter is not in range of <a, b> prints error status code and throws exception.
     template<typename T = uint32_t>
     inline static void InRange(const T parameter, const T a, const T b,
-        const status_t lowerThanError, const status_t greaterThanError)
+        const Gna2Status lowerThanError, const Gna2Status greaterThanError)
     {
         False(parameter < a, lowerThanError);
         False(parameter > b, greaterThanError);
@@ -271,13 +271,13 @@ public:
     // If any dimension in a is different than in b prints error status code and throws exception.
     inline static void ShapesAreEqual(const Shape& a, const Shape& b)
     {
-        Compare(a, b, [](uint32_t x, uint32_t y) {Expect::True(x == y, XNN_ERR_LYR_INVALID_TENSOR_DIMENSIONS);});
+        Compare(a, b, [](uint32_t x, uint32_t y) {Expect::True(x == y, Gna2StatusXnnErrorLyrInvalidTensorDimensions);});
     }
 
     // If any dimension in a is greater than in b prints error status code and throws exception.
     inline static void Fits(const Shape& a, const Shape& b)
     {
-        Compare(a, b, [](uint32_t x, uint32_t y) {Expect::True(x <= y, XNN_ERR_LYR_INVALID_TENSOR_DIMENSIONS);});
+        Compare(a, b, [](uint32_t x, uint32_t y) {Expect::True(x <= y, Gna2StatusXnnErrorLyrInvalidTensorDimensions);});
     }
 
 protected:

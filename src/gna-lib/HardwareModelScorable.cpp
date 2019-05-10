@@ -64,7 +64,7 @@ uint32_t HardwareModelScorable::GetBufferOffsetForConfiguration(
         offset += ALIGN(memory->GetSize(), PAGE_SIZE);
     }
 
-    throw GnaException(GNA_ERR_MEMORY_NOT_ALLOCATED);
+    throw GnaException(Gna2StatusUnknownError);
 }
 
 void HardwareModelScorable::InvalidateConfig(gna_request_cfg_id configId)
@@ -86,12 +86,12 @@ uint32_t HardwareModelScorable::Score(
 
     if (layerIndex + layerCount > hardwareLayers.size())
     {
-        throw GnaException(GNA_UNKNOWN_ERROR);
+        throw GnaException(Gna2StatusUnknownError);
     }
 
     Expect::InRange(layerCount,
         ui32_0, hwCapabilities.GetMaximumLayerCount(),
-        XNN_ERR_NET_LYR_NO);
+        Gna2StatusXnnErrorNetLyrNo);
 
     auto operationMode = xNN;
 
@@ -136,13 +136,13 @@ uint32_t HardwareModelScorable::Score(
         perfResults->hw.total += result.hardwarePerf.total;
     }
 
-    if (result.status != GNA_SUCCESS && result.status != GNA_SSATURATE)
+    if (result.status != Gna2StatusSuccess && result.status != Gna2StatusWarningArithmeticSaturation)
     {
         throw GnaException(result.status);
     }
     else
     {
-        return GNA_SSATURATE == result.status;
+        return Gna2StatusWarningArithmeticSaturation == result.status;
     }
 }
 
@@ -158,7 +158,7 @@ void HardwareModelScorable::ValidateConfigBuffer(
     configModelSize += ALIGN(bufferMemory->GetSize(), PAGE_SIZE);
 
     Expect::InRange(configModelSize, HardwareCapabilities::MaximumModelSize,
-                    GNA_INVALID_REQUEST_CONFIGURATION);
+                    Gna2StatusMemoryTotalSizeExceeded);
 }
 
 void HardwareModelScorable::allocateLayerDescriptors()

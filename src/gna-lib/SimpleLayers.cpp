@@ -39,8 +39,8 @@ TransposeLayer::TransposeLayer(nn_layer const * const layer, const BaseValidator
                            Operation == INTEL_INTERLEAVE ? Input.at(GNA_DIM_W) : Input.at(GNA_DIM_N),
                            Input.Buffer, Output.Buffer }
 {
-    Expect::Equal(Input.at(GNA_DIM_W), Output.at(GNA_DIM_H), XNN_ERR_LYR_CFG);
-    Expect::Equal(Input.at(GNA_DIM_N), Output.at(GNA_DIM_N), XNN_ERR_LYR_CFG);
+    Expect::Equal(Input.at(GNA_DIM_W), Output.at(GNA_DIM_H), Gna2StatusXnnErrorLyrCfg);
+    Expect::Equal(Input.at(GNA_DIM_N), Output.at(GNA_DIM_N), Gna2StatusXnnErrorLyrCfg);
     Expect::Null(layer->pLayerStruct); // transpose layers do not have layer details
     Expect::Null(Output.ScratchPad); // in transpose layer no 4B output array is allowed
 
@@ -102,8 +102,8 @@ CopyLayer::CopyLayer(const nn_layer *layer, const BaseValidator& validatorIn) :
 {
     // TODO:3: refactor to use scalars/component and validator
     Expect::MultiplicityOf(ColumnCount, XNN_N_IN_ELEMS_MPLY);
-    Expect::InRange(ColumnCount, XNN_N_IN_ELEMS_MPLY, XNN_N_IN_ELEMS_MAX, XNN_ERR_LYR_CFG);
-    Expect::True(RowCount <= Input.at(GNA_DIM_N), XNN_ERR_LYR_CFG);
+    Expect::InRange(ColumnCount, XNN_N_IN_ELEMS_MPLY, XNN_N_IN_ELEMS_MAX, Gna2StatusXnnErrorLyrCfg);
+    Expect::True(RowCount <= Input.at(GNA_DIM_N), Gna2StatusXnnErrorLyrCfg);
 
     ComputeHidden = [this](AccelerationMode accel, ExecutionConfig const & executionConfig)
                     {this->computeHidden(accel, executionConfig); };

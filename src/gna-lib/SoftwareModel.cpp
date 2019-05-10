@@ -51,9 +51,9 @@ SoftwareModel::SoftwareModel(const gna_model *const network,
     supportedCpuAccelerations { supportedCpuAccelerationsIn }
 {
 #ifndef NO_ERRCHECK
-    Expect::InRange(network->nGroup, ui32_1, XNN_N_GROUP_MAX, XNN_ERR_LYR_CFG);
+    Expect::InRange(network->nGroup, ui32_1, XNN_N_GROUP_MAX, Gna2StatusXnnErrorLyrCfg);
     Expect::InRange(layerCount, ui32_1,
-        HardwareCapabilities::GetMaximumLayerCount(DefaultDeviceVersion), XNN_ERR_NET_LYR_NO);
+        HardwareCapabilities::GetMaximumLayerCount(DefaultDeviceVersion), Gna2StatusXnnErrorNetLyrNo);
     Expect::NotNull(network->pLayers);
 #endif
     build(network->pLayers, validator);
@@ -116,7 +116,7 @@ void SoftwareModel::build(const nn_layer* layers, const BaseValidator& validator
         }
         catch (...)
         {
-            throw GnaModelException(GnaException(XNN_ERR_LYR_CFG), i);
+            throw GnaModelException(GnaException(Gna2StatusXnnErrorLyrCfg), i);
         }
     }
 }
@@ -125,8 +125,8 @@ void SoftwareModel::validateConfiguration(const RequestConfiguration& configurat
 {
     UNREFERENCED_PARAMETER(configuration);
     //TODO:3:review and remove
-    //Expect::True(inputLayerCount == configuration.InputBuffersCount, XNN_ERR_NETWORK_INPUTS);
-    //Expect::True(outputLayerCount == configuration.OutputBuffersCount, XNN_ERR_NETWORK_OUTPUTS);*/
+    //Expect::True(inputLayerCount == configuration.InputBuffersCount, Gna2StatusXnnErrorNetworkInputs);
+    //Expect::True(outputLayerCount == configuration.OutputBuffersCount, Gna2StatusXnnErrorNetworkOutputs);*/
 }
 
 

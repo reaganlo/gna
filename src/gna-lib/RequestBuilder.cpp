@@ -74,7 +74,7 @@ RequestConfiguration& RequestBuilder::GetConfiguration(gna_request_cfg_id config
     }
     catch (const std::out_of_range&)
     {
-        throw GnaException(GNA_INVALID_REQUEST_CONFIGURATION);
+        throw GnaException(Gna2StatusIdentifierInvalid);
     }
 }
 

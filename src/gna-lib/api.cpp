@@ -26,19 +26,15 @@
 #include <memory>
 #include <thread>
 
+#include "gna2-common-impl.h"
 #include "gna-api-dumper.h"
 
 #include "DeviceManager.h"
-#include "Logger.h"
+#include "GnaException.h"
 #include "Expect.h"
+#include "Logger.h"
 
 using namespace GNA;
-
-static std::map<Gna2Status, gna_status_t> Gna2StatusToLegacy{
-    {Gna2StatusWarningDeviceBusy, GNA_DEVICEBUSY},
-    {Gna2StatusSuccess, GNA_SUCCESS},
-    {Gna2StatusWarningArithmeticSaturation, GNA_SSATURATE},
-    {Gna2StatusIdentifierInvalid, GNA_BADREQID} };
 
 static intel_gna_status_t HandleUnknownException(const std::exception& e)
 {
@@ -65,11 +61,11 @@ GNAAPI gna_status_t GnaModelCreate(
     }
     catch (const GnaModelException &e)
     {
-        return e.getStatus();
+        return e.GetLegacyStatus();
     }
     catch (const GnaException &e)
     {
-        return e.getStatus();
+        return e.GetLegacyStatus();
     }
     catch (const std::exception& e)
     {
@@ -88,7 +84,7 @@ GNAAPI gna_status_t GnaModelRelease(
     }
     catch (const GnaException &e)
     {
-        return e.getStatus();
+        return e.GetLegacyStatus();
     }
     catch (const std::exception& e)
     {
@@ -108,11 +104,11 @@ GNAAPI intel_gna_status_t GnaRequestConfigCreate(
     }
     catch (const GnaModelException &e)
     {
-        return e.getStatus();
+        return e.GetLegacyStatus();
     }
     catch (const GnaException &e)
     {
-        return e.getStatus();
+        return e.GetLegacyStatus();
     }
     catch (const std::exception& e)
     {
@@ -134,7 +130,7 @@ GNAAPI gna_status_t GnaRequestConfigBufferAdd(
     }
     catch (const GnaException &e)
     {
-        return e.getStatus();
+        return e.GetLegacyStatus();
     }
     catch (const std::exception& e)
     {
@@ -156,7 +152,7 @@ GNAAPI gna_status_t GnaRequestConfigActiveListAdd(
     }
     catch (const GnaException &e)
     {
-        return e.getStatus();
+        return e.GetLegacyStatus();
     }
     catch (const std::exception& e)
     {
@@ -176,7 +172,7 @@ GNAAPI intel_gna_status_t GnaRequestConfigEnableHardwareConsistency(
     }
     catch (const GnaException &e)
     {
-        return e.getStatus();
+        return e.GetLegacyStatus();
     }
     catch (const std::exception& e)
     {
@@ -197,7 +193,7 @@ GNAAPI intel_gna_status_t GnaRequestConfigEnforceAcceleration(
     }
     catch (const GnaException &e)
     {
-        return e.getStatus();
+        return e.GetLegacyStatus();
     }
     catch (const std::exception& e)
     {
@@ -215,7 +211,7 @@ GNAAPI intel_gna_status_t GnaRequestConfigRelease(gna_request_cfg_id configId)
     }
     catch (const GnaException &e)
     {
-        return e.getStatus();
+        return e.GetLegacyStatus();
     }
     catch (const std::exception& e)
     {
@@ -235,7 +231,7 @@ GNAAPI intel_gna_status_t GnaRequestEnqueue(
     }
     catch (const GnaException &e)
     {
-        return e.getStatus();
+        return e.GetLegacyStatus();
     }
     catch (const std::exception& e)
     {
@@ -250,16 +246,16 @@ GNAAPI gna_status_t GnaRequestWait(
     try
     {
         auto& device = DeviceManager::Get().GetDevice(0);
-        auto ret = device.WaitForRequest(requestId, milliseconds);
-        return Gna2StatusToLegacy[ret];
+        auto status = device.WaitForRequest(requestId, milliseconds);
+        return StatusMap.at(status);
     }
     catch (const GnaModelException &e)
     {
-        return e.getStatus();
+        return e.GetLegacyStatus();
     }
     catch (const GnaException &e)
     {
-        return e.getStatus();
+        return e.GetLegacyStatus();
     }
     catch (const std::exception& e)
     {
@@ -282,12 +278,13 @@ GNAAPI gna_status_t GnaAlloc(
     try
     {
         auto& device = DeviceManager::Get().GetDevice(0);
-        return CAST1_STATUS device.AllocateMemory(sizeRequested, sizeGranted, memoryAddress);
+        auto status = device.AllocateMemory(sizeRequested, sizeGranted, memoryAddress);
+        return StatusMap.at(status);
     }
     catch (const GnaException& e)
     {
-        Log->Error(e.getStatus(), "Memory allocation failed.\n");
-        return e.getStatus();
+        Log->Error(e.GetLegacyStatus(), "Memory allocation failed.\n");
+        return e.GetLegacyStatus();
     }
     catch (const std::exception& e)
     {
@@ -306,7 +303,7 @@ GNAAPI gna_status_t GnaFree(
     }
     catch (const GnaException &e)
     {
-        return e.getStatus();
+        return e.GetLegacyStatus();
     }
     catch (const std::exception& e)
     {
@@ -324,7 +321,7 @@ GNAAPI intel_gna_status_t GnaDeviceGetCount(uint32_t * deviceCount)
     }
     catch (const GnaException &e)
     {
-        return e.getStatus();
+        return e.GetLegacyStatus();
     }
     catch (const std::exception& e)
     {
@@ -343,7 +340,7 @@ GNAAPI intel_gna_status_t GnaDeviceGetVersion(uint32_t deviceIndex,
     }
     catch (const GnaException &e)
     {
-        return e.getStatus();
+        return e.GetLegacyStatus();
     }
     catch (const std::exception& e)
     {
@@ -360,7 +357,7 @@ GNAAPI intel_gna_status_t GnaDeviceSetThreadNumber(gna_device_id device, uint32_
     }
     catch (const GnaException &e)
     {
-        return e.getStatus();
+        return e.GetLegacyStatus();
     }
     catch (const std::exception& e)
     {
@@ -377,7 +374,7 @@ GNAAPI intel_gna_status_t GnaDeviceOpen(gna_device_id device)
     }
     catch (const GnaException &e)
     {
-        return e.getStatus();
+        return e.GetLegacyStatus();
     }
     catch (const std::exception& e)
     {
@@ -395,7 +392,7 @@ GNAAPI gna_status_t GnaDeviceClose(
     }
     catch (const GnaException &e)
     {
-        return e.getStatus();
+        return e.GetLegacyStatus();
     }
     catch (const std::exception& e)
     {
@@ -412,17 +409,20 @@ void* GnaModelDump(
 {
     try
     {
+        Gna2Status newStatus;
         auto& device = DeviceManager::Get().GetDevice(0);
-        return device.Dump(modelId, deviceGeneration, modelHeader, status, customAlloc);
+        auto dump = device.Dump(modelId, deviceGeneration, modelHeader, &newStatus, customAlloc);
+        *status = StatusMap.at(newStatus);
+        return dump;
     }
     catch (const GnaModelException &e)
     {
-        *status = e.getStatus();
+        *status = e.GetLegacyStatus();
         return NULL;
     }
     catch (const GnaException &e)
     {
-        *status = e.getStatus();
+        *status = e.GetLegacyStatus();
         return NULL;
     }
     catch (std::exception &e)
@@ -443,7 +443,7 @@ gna_status_t GnaRequestConfigEnablePerf(gna_request_cfg_id configId,
     }
     catch (const GnaException &e)
     {
-        return e.getStatus();
+        return e.GetLegacyStatus();
     }
     catch (const std::exception& e)
     {

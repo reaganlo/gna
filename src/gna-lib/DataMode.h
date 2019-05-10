@@ -50,7 +50,7 @@ struct DataMode
         }
         catch (const std::exception&)
         {
-            throw GnaException(GNA_ERR_INVALID_DATA_MODE);
+            throw GnaException(Gna2StatusDataModeInvalid);
         }
     }
 

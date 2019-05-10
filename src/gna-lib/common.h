@@ -77,14 +77,7 @@ typedef gna_pooling_layer_2d        nn_layer_pool2d;
 typedef intel_copy_layer_t          nn_layer_copy;
 typedef intel_pool_type_t           nn_pool_type;
 typedef intel_convolutional_layer_t nn_layer_conv;
-
-#ifndef STATUS_T_ALIAS
-#define STATUS_T_ALIAS
-typedef intel_gna_status_t      status_t;
-#endif
-
-// temporary cast for simultaneous 2 apis usage
-#define CAST1_STATUS (status_t)
+typedef intel_gna_status_t          status_t;
 
 typedef enum _TransformOperation
 {

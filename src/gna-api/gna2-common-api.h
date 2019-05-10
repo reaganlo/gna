@@ -341,6 +341,62 @@ enum Gna2Status
      Error: Model configuration is not supported.
     */
     Gna2StatusModelConfigurationInvalid = -29,
+
+    /**
+     Error: Number is not a multiple of given number
+    */
+    Gna2StatusNotMultipleOf = -30,
+
+    /* FIXME: this is just for gna_status_t compatibility, use model errors in the future */
+    Gna2StatusBadFeatLength,
+    Gna2StatusDataModeInvalid,
+    Gna2StatusXnnErrorNetLyrNo,
+    Gna2StatusXnnErrorNetworkInputs,
+    Gna2StatusXnnErrorNetworkOutputs,
+    Gna2StatusXnnErrorLyrOperation,
+    Gna2StatusXnnErrorLyrCfg,
+    Gna2StatusXnnErrorLyrInvalidTensorOrder,
+    Gna2StatusXnnErrorLyrInvalidTensorDimensions,
+    Gna2StatusXnnErrorInvalidBuffer,
+    Gna2StatusXnnErrorNoFeedback,
+    Gna2StatusXnnErrorNoLayers,
+    Gna2StatusXnnErrorGrouping,
+    Gna2StatusXnnErrorInputBytes,
+    Gna2StatusXnnErrorInputVolume,
+    Gna2StatusXnnErrorOutputVolume,
+    Gna2StatusXnnErrorIntOutputBytes,
+    Gna2StatusXnnErrorOutputBytes,
+    Gna2StatusXnnErrorWeightBytes,
+    Gna2StatusXnnErrorWeightVolume,
+    Gna2StatusXnnErrorBiasBytes,
+    Gna2StatusXnnErrorBiasVolume,
+    Gna2StatusXnnErrorBiasMode,
+    Gna2StatusXnnErrorBiasMultiplier,
+    Gna2StatusXnnErrorBiasIndex,
+    Gna2StatusXnnErrorPwlSegments,
+    Gna2StatusXnnErrorPwlData,
+    Gna2StatusXnnErrorConvFltBytes,
+    Gna2StatusCnnErrorConvFltCount,
+    Gna2StatusCnnErrorConvFltVolume,
+    Gna2StatusCnnErrorConvFltStride,
+    Gna2StatusCnnErrorConvFltPadding,
+    Gna2StatusCnnErrorPoolStride,
+    Gna2StatusCnnErrorPoolSize,
+    Gna2StatusCnnErrorPoolType,
+    Gna2StatusGmmBadMeanWidth,
+    Gna2StatusGmmBadMeanOffset,
+    Gna2StatusGmmBadMeanSetoff,
+    Gna2StatusGmmBadMeanAlign,
+    Gna2StatusGmmBadVarWidth,
+    Gna2StatusGmmBadVarOffset,
+    Gna2StatusGmmBadVarSetoff,
+    Gna2StatusGmmBadVarsAlign,
+    Gna2StatusGmmBadGconstOffset,
+    Gna2StatusGmmBadGconstAlign,
+    Gna2StatusGmmBadMixCnum,
+    Gna2StatusGmmBadNumGmm,
+    Gna2StatusGmmBadMode,
+    Gna2StatusGmmCfgInvalidLayout,
 };
 
 /**

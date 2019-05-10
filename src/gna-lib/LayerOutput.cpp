@@ -31,20 +31,20 @@ using namespace GNA;
 
 static const ShapeLimits _FlatLimits =
 {
-    {GNA_DIM_N, {1, XNN_N_GROUP_MAX, 1, XNN_ERR_OUTPUT_VOLUME}},
-    {GNA_DIM_H, {XNN_N_IN_ELEMS_MPLY, XNN_N_IN_ELEMS_MAX, XNN_N_IN_ELEMS_MPLY, XNN_ERR_OUTPUT_VOLUME}}
+    {GNA_DIM_N, {1, XNN_N_GROUP_MAX, 1, Gna2StatusXnnErrorOutputVolume}},
+    {GNA_DIM_H, {XNN_N_IN_ELEMS_MPLY, XNN_N_IN_ELEMS_MAX, XNN_N_IN_ELEMS_MPLY, Gna2StatusXnnErrorOutputVolume}}
 };
 
 static const ShapeLimits _InterleaveLimits =
 {
-    {GNA_DIM_N, {1, XNN_N_GROUP_MAX, 1, XNN_ERR_OUTPUT_VOLUME}},
-    {GNA_DIM_H, {1, XNN_N_IN_ELEMS_MAX, 1, XNN_ERR_OUTPUT_VOLUME}}
+    {GNA_DIM_N, {1, XNN_N_GROUP_MAX, 1, Gna2StatusXnnErrorOutputVolume}},
+    {GNA_DIM_H, {1, XNN_N_IN_ELEMS_MAX, 1, Gna2StatusXnnErrorOutputVolume}}
 };
 
 static const DataModeLimits _ModesGen0_9 =
 {
     {GNA_INT16, GNA_INT32, GNA_DATA_ACTIVATION_DISABLED},
-    XNN_ERR_OUTPUT_BYTES
+    Gna2StatusXnnErrorOutputBytes
 };
 
 static const TensorLimits _InterleaveTensorLimitsGen0_9 =
@@ -64,7 +64,7 @@ static const TensorLimits _FlatTensorLimitsGen0_9 =
 static const DataModeLimits _ModesGen3 =
 {
     {GNA_INT8, GNA_INT16, GNA_INT32, GNA_DATA_ACTIVATION_DISABLED},
-    XNN_ERR_OUTPUT_BYTES
+    Gna2StatusXnnErrorOutputBytes
 };
 
 static const TensorLimits _InterleaveTensorLimitsGen3 =
@@ -99,21 +99,21 @@ const FullCapabilitiesMap LayerOutput::capabilities =
     {INTEL_CONVOLUTIONAL, {
         {GNA_1_0, std::make_shared<TensorLimits>(TensorLimits{
             { GNA_TENSOR_HN },
-            {{GNA_DIM_N, {1, 1, 1, XNN_ERR_OUTPUT_VOLUME}},
-             {GNA_DIM_H, {1, XNN_N_IN_ELEMS_MAX, 1, XNN_ERR_OUTPUT_VOLUME}}},
+            {{GNA_DIM_N, {1, 1, 1, Gna2StatusXnnErrorOutputVolume}},
+             {GNA_DIM_H, {1, XNN_N_IN_ELEMS_MAX, 1, Gna2StatusXnnErrorOutputVolume}}},
             _ModesGen0_9})},
     }},
     {INTEL_CONVOLUTIONAL_2D, {
         {GNA_1_0, std::make_shared<TensorLimits>(TensorLimits{
             { GNA_TENSOR_HN },
-            {{GNA_DIM_N, {1, 1, 1, XNN_ERR_OUTPUT_VOLUME}},
-             {GNA_DIM_H, {1, XNN_N_IN_ELEMS_MAX, 1, XNN_ERR_OUTPUT_VOLUME}}},
+            {{GNA_DIM_N, {1, 1, 1, Gna2StatusXnnErrorOutputVolume}},
+             {GNA_DIM_H, {1, XNN_N_IN_ELEMS_MAX, 1, Gna2StatusXnnErrorOutputVolume}}},
             _ModesGen0_9})},
         {GNA_3_0, std::make_shared<TensorLimits>(TensorLimits{
             {GNA_TENSOR_WN},
-            {{GNA_DIM_N, {1, 1, 1, XNN_ERR_OUTPUT_VOLUME}},
+            {{GNA_DIM_N, {1, 1, 1, Gna2StatusXnnErrorOutputVolume}},
              {GNA_DIM_W,
-                {1, XNN_N_IN_ELEMS_MAX*XNN_N_IN_ELEMS_MAX/**XNN_N_IN_ELEMS_MAX*/, 1, XNN_ERR_OUTPUT_VOLUME}}},
+                {1, XNN_N_IN_ELEMS_MAX*XNN_N_IN_ELEMS_MAX/**XNN_N_IN_ELEMS_MAX*/, 1, Gna2StatusXnnErrorOutputVolume}}},
                 // use as NxHxW
             _ModesGen3})}
     }},
@@ -128,9 +128,9 @@ const FullCapabilitiesMap LayerOutput::capabilities =
      {INTEL_GMM, {
         {GMM_DEVICE, std::make_shared<TensorLimits>(TensorLimits{
             {GNA_TENSOR_HN}, // H - GMM States, N - grouping
-            {{GNA_DIM_N, {1, XNN_N_GROUP_MAX, 1, XNN_ERR_OUTPUT_VOLUME}},
-             {GNA_DIM_H, {1, GMM_STATES_COUNT_MAX, 1, XNN_ERR_OUTPUT_VOLUME}}},
-            { { GNA_INT32, GNA_DATA_ACTIVATION_DISABLED }, XNN_ERR_OUTPUT_BYTES }})}
+            {{GNA_DIM_N, {1, XNN_N_GROUP_MAX, 1, Gna2StatusXnnErrorOutputVolume}},
+             {GNA_DIM_H, {1, GMM_STATES_COUNT_MAX, 1, Gna2StatusXnnErrorOutputVolume}}},
+            { { GNA_INT32, GNA_DATA_ACTIVATION_DISABLED }, Gna2StatusXnnErrorOutputBytes }})}
     }},
     {INTEL_INTERLEAVE, {
         { GNA_0_9, std::make_shared<TensorLimits>(_InterleaveTensorLimitsGen0_9) },
@@ -139,13 +139,13 @@ const FullCapabilitiesMap LayerOutput::capabilities =
     {INTEL_RECURRENT, {
         {GNA_0_9, std::make_shared<TensorLimits>(TensorLimits{
             {GNA_TENSOR_HN},
-            {{GNA_DIM_N, {1, XNN_N_GROUP_MAX, 1, XNN_ERR_OUTPUT_VOLUME}},
-             {GNA_DIM_H, {RNN_N_OUT_ELEMS_MPLY, XNN_N_IN_ELEMS_MAX, RNN_N_OUT_ELEMS_MPLY, XNN_ERR_OUTPUT_VOLUME}}}, // must be multiple 32 to keep 64B output buffer alignment
+            {{GNA_DIM_N, {1, XNN_N_GROUP_MAX, 1, Gna2StatusXnnErrorOutputVolume}},
+             {GNA_DIM_H, {RNN_N_OUT_ELEMS_MPLY, XNN_N_IN_ELEMS_MAX, RNN_N_OUT_ELEMS_MPLY, Gna2StatusXnnErrorOutputVolume}}}, // must be multiple 32 to keep 64B output buffer alignment
             _ModesGen0_9})},
         {GNA_3_0, std::make_shared<TensorLimits>(TensorLimits{
             {GNA_TENSOR_HN},
-            {{GNA_DIM_N, {1, XNN_N_GROUP_MAX, 1, XNN_ERR_OUTPUT_VOLUME}},
-             {GNA_DIM_H, {RNN_N_OUT_ELEMS_MPLY, XNN_N_IN_ELEMS_MAX, RNN_N_OUT_ELEMS_MPLY, XNN_ERR_OUTPUT_VOLUME}}}, // must be multiple 32 to keep 64B output buffer alignment
+            {{GNA_DIM_N, {1, XNN_N_GROUP_MAX, 1, Gna2StatusXnnErrorOutputVolume}},
+             {GNA_DIM_H, {RNN_N_OUT_ELEMS_MPLY, XNN_N_IN_ELEMS_MAX, RNN_N_OUT_ELEMS_MPLY, Gna2StatusXnnErrorOutputVolume}}}, // must be multiple 32 to keep 64B output buffer alignment
             _ModesGen3})}
     }}
 };
@@ -158,6 +158,6 @@ LayerOutput::LayerOutput(const nn_layer& layer, const LayerValidator& validatorI
         layer.nBytesPerIntermediateOutput, layer.pOutputsIntermediate,
         Validator{ validatorIn, capabilities } }
 {
-    Expect::True(GNA_INT32 == ScratchPad.Mode, XNN_ERR_INT_OUTPUT_BYTES);
+    Expect::True(GNA_INT32 == ScratchPad.Mode, Gna2StatusXnnErrorIntOutputBytes);
     //Expect::ValidBuffer(ScratchPad); // TODO: review when scratch-pad is allocated by gna-lib
 };

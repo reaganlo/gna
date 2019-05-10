@@ -72,7 +72,7 @@ void LinuxDriverInterface::OpenDevice()
     }
 
     if(!found)
-        throw GnaException {GNA_DEVNOTFOUND};
+        throw GnaException {Gna2StatusDeviceNotAvailable};
 
     gnaFileDescriptor = fd;
 
@@ -82,7 +82,7 @@ void LinuxDriverInterface::OpenDevice()
     }
     catch(std::out_of_range &e)
     {
-        throw GnaException { GNA_DEVNOTFOUND };
+        throw GnaException { Gna2StatusDeviceNotAvailable };
     }
     driverCapabilities.hwInBuffSize = params[1].value;
     driverCapabilities.recoveryTimeout = params[2].value;
@@ -107,7 +107,7 @@ uint64_t LinuxDriverInterface::MemoryMap(void *memory, size_t memorySize)
 
     if(ioctl(gnaFileDescriptor, GNA_IOCTL_USERPTR, &userptr))
     {
-        throw GnaException {GNA_IOCTLSENDERR};
+        throw GnaException {Gna2StatusDeviceOutgoingCommunicationError};
     }
 
     return userptr.memory_id;
@@ -117,7 +117,7 @@ void LinuxDriverInterface::MemoryUnmap(uint64_t memoryId)
 {
     if(ioctl(gnaFileDescriptor, GNA_IOCTL_FREE, memoryId))
     {
-        throw GnaException {GNA_IOCTLSENDERR};
+        throw GnaException {Gna2StatusDeviceOutgoingCommunicationError};
     }
 }
 
@@ -130,7 +130,7 @@ void LinuxDriverInterface::IoctlSend(const GnaIoctlCommand command,
                                     void * const inbuf, const uint32_t inlen,
                                     void * const outbuf, const uint32_t outlen)
 {
-    throw GnaException {GNA_IOCTLSENDERR};
+    throw GnaException {Gna2StatusDeviceOutgoingCommunicationError};
 }
 
 RequestResult LinuxDriverInterface::Submit(HardwareRequest& hardwareRequest,
@@ -160,7 +160,7 @@ RequestResult LinuxDriverInterface::Submit(HardwareRequest& hardwareRequest,
     }
     else
     {
-        throw GnaException { XNN_ERR_LYR_CFG };
+        throw GnaException { Gna2StatusXnnErrorLyrCfg };
     }
 
     profilerTscStart(&profiler->ioctlSubmit);
@@ -168,7 +168,7 @@ RequestResult LinuxDriverInterface::Submit(HardwareRequest& hardwareRequest,
     profilerTscStop(&profiler->ioctlSubmit);
     if (ret)
     {
-        throw GnaException { GNA_IOCTLSENDERR };
+        throw GnaException { Gna2StatusDeviceOutgoingCommunicationError };
     }
 
     gna_wait wait_data = {};
@@ -180,7 +180,9 @@ RequestResult LinuxDriverInterface::Submit(HardwareRequest& hardwareRequest,
     profilerTscStop(&profiler->ioctlWaitOn);
     if(!ret)
     {
-        result.status = (wait_data.hw_status & GNA_STS_SATURATE) ? GNA_SSATURATE : GNA_SUCCESS;
+        result.status = (wait_data.hw_status & GNA_STS_SATURATE)
+            ? Gna2StatusWarningArithmeticSaturation
+            : Gna2StatusSuccess;
         result.driverPerf.startHW = wait_data.drv_perf.start_hw;
         result.driverPerf.scoreHW = wait_data.drv_perf.score_hw;
         result.driverPerf.intProc = wait_data.drv_perf.intr_proc;
@@ -193,13 +195,13 @@ RequestResult LinuxDriverInterface::Submit(HardwareRequest& hardwareRequest,
             result.status = parseHwStatus(wait_data.hw_status);
             break;
         case EBUSY:
-            result.status = GNA_DEVICEBUSY;
+            result.status = Gna2StatusWarningDeviceBusy;
             break;
         case ETIME:
-            result.status = GNA_ERR_DEV_FAILURE;
+            result.status = Gna2StatusDeviceCriticalFailure;
             break;
         default:
-            result.status = GNA_IOCTLRESERR;
+            result.status = Gna2StatusDeviceIngoingCommunicationError;
             break;
     }
 
@@ -256,29 +258,29 @@ void LinuxDriverInterface::createRequestDescriptor(HardwareRequest& hardwareRequ
     hardwareRequest.SubmitReady = true;
 }
 
-status_t LinuxDriverInterface::parseHwStatus(__u32 hwStatus) const
+Gna2Status LinuxDriverInterface::parseHwStatus(__u32 hwStatus) const
 {
     if (hwStatus & GNA_STS_PCI_MMU_ERR)
     {
-        return GNA_MMUREQERR;
+        return Gna2StatusDeviceMmuRequestError;
     }
     if (hwStatus & GNA_STS_PCI_DMA_ERR)
     {
-        return GNA_DMAREQERR;
+        return Gna2StatusDeviceDmaRequestError;
     }
     if (hwStatus & GNA_STS_PCI_UNEXCOMPL_ERR)
     {
-        return GNA_UNEXPCOMPL;
+        return Gna2StatusDeviceUnexpectedCompletion;
     }
     if (hwStatus & GNA_STS_VA_OOR)
     {
-        return GNA_VAOUTOFRANGE;
+        return Gna2StatusDeviceVaOutOfRange;
     }
     if (hwStatus & GNA_STS_PARAM_OOR)
     {
-        return GNA_PARAMETEROUTOFRANGE;
+        return Gna2StatusDeviceParameterOutOfRange;
     }
 
-    return GNA_ERR_DEV_FAILURE;
+    return Gna2StatusDeviceCriticalFailure;
 }
 

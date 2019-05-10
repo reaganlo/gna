@@ -188,7 +188,7 @@ void HardwareRequest::generateBufferPatches(const LayerConfiguration& layerConfi
                 //ldOffset = hwLayer.GetLdFeedbackOffset();
                 //break;
             default:
-                throw GnaException { GNA_UNKNOWN_ERROR };
+                throw GnaException { Gna2StatusUnknownError };
         }
 
         ldPatches.push_back({ ldOffset, bufferOffset, sizeof(uint32_t) });

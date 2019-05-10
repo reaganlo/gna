@@ -51,14 +51,14 @@ RequestConfiguration::RequestConfiguration(CompiledModel& model, gna_request_cfg
 
 void RequestConfiguration::AddBuffer(GnaComponentType type, uint32_t layerIndex, void *address)
 {
-    Expect::InRange(type, ComponentTypeCount,  XNN_ERR_LYR_CFG);
+    Expect::InRange(type, ComponentTypeCount,  Gna2StatusXnnErrorLyrCfg);
     Expect::NotNull(address);
 
     auto found = LayerConfigurations.emplace(layerIndex, std::make_unique<LayerConfiguration>());
     auto layerConfiguration = found.first->second.get();
 
     auto emplaced = layerConfiguration->Buffers.emplace(type, address);
-    Expect::True(emplaced.second, GNA_INVALID_REQUEST_CONFIGURATION);
+    Expect::True(emplaced.second, Gna2StatusIdentifierInvalid);
 
     auto layer = Model.GetLayer(layerIndex);
     auto bufferSize = layer->GetOperandSize(type);
@@ -72,7 +72,7 @@ void RequestConfiguration::AddActiveList(uint32_t layerIndex, const ActiveList& 
     const auto& layer = *Model.GetLayer(layerIndex);
     auto operation = layer.Operation;
 
-    Expect::InSet(operation, { INTEL_AFFINE, INTEL_GMM }, XNN_ERR_LYR_OPERATION);
+    Expect::InSet(operation, { INTEL_AFFINE, INTEL_GMM }, Gna2StatusXnnErrorLyrOperation);
 
     auto found = LayerConfigurations.emplace(
         layerIndex, std::make_unique<LayerConfiguration>());
@@ -112,7 +112,7 @@ DeviceVersion RequestConfiguration::GetConsistentDevice() const
 void RequestConfiguration::addMemoryObject(void *buffer, uint32_t bufferSize)
 {
     auto memory = Model.FindBuffer(buffer, bufferSize);
-    Expect::NotNull(memory, GNA_INVALID_REQUEST_CONFIGURATION);
+    Expect::NotNull(memory, Gna2StatusIdentifierInvalid);
 
     if (!Model.IsPartOfModel(memory))
     {

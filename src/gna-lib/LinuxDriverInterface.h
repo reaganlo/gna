@@ -69,7 +69,7 @@ private:
     LinuxDriverInterface(const LinuxDriverInterface &) = delete;
     LinuxDriverInterface& operator=(const LinuxDriverInterface&) = delete;
 
-    status_t parseHwStatus(__u32 hwStatus) const;
+    Gna2Status parseHwStatus(__u32 hwStatus) const;
 
     int gnaFileDescriptor = -1;
 };

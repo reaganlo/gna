@@ -42,7 +42,7 @@ KernelBuffers::KernelBuffers()
     d0 = (int16_t*)_gna_malloc(8 * (UINT16_MAX + 1) * sizeof(int16_t));
     if (nullptr == d0)
     {
-        throw GnaException(GNA_ERR_RESOURCES);
+        throw GnaException(Gna2StatusResourceAllocationError);
     }
     d1 = d0 + UINT16_MAX + 1;
     d2 = d1 + UINT16_MAX + 1;
@@ -56,14 +56,14 @@ KernelBuffers::KernelBuffers()
     if (nullptr == pool)
     {
         this->~KernelBuffers();
-        throw GnaException(GNA_ERR_RESOURCES);
+        throw GnaException(Gna2StatusResourceAllocationError);
     }
 
     cnnFusedBuffer = (int8_t*)_kernel_malloc(5 * 1024 * 1024);
     if (nullptr == cnnFusedBuffer)
     {
         this->~KernelBuffers();
-        throw GnaException(GNA_ERR_RESOURCES);
+        throw GnaException(Gna2StatusResourceAllocationError);
     }
 }
 
@@ -82,7 +82,7 @@ ThreadPool::ThreadPool(uint32_t threadCount) :
     buffers{ threadCount },
     numberOfThreads{ threadCount }
 {
-    Expect::InRange(threadCount, 1U, 127U, GNA_ERR_INVALID_THREAD_COUNT);
+    Expect::InRange(threadCount, 1U, 127U, Gna2StatusDeviceNumberOfThreadsInvalid);
     employWorkers();
 }
 
@@ -105,7 +105,7 @@ uint32_t ThreadPool::GetNumberOfThreads() const
 
 void ThreadPool::SetNumberOfThreads(uint32_t threadCount)
 {
-    Expect::InRange(threadCount, 1U, 127U, GNA_ERR_INVALID_THREAD_COUNT);
+    Expect::InRange(threadCount, 1U, 127U, Gna2StatusDeviceNumberOfThreadsInvalid);
 
     if (threadCount == numberOfThreads)
     {
@@ -123,7 +123,7 @@ void ThreadPool::SetNumberOfThreads(uint32_t threadCount)
         UNREFERENCED_PARAMETER(e);
 
         employWorkers();
-        throw GnaException(GNA_ERR_RESOURCES);
+        throw GnaException(Gna2StatusResourceAllocationError);
     }
 
     numberOfThreads = threadCount;

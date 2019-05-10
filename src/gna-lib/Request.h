@@ -64,7 +64,7 @@ public:
     Request(const Request &) = delete;
     Request& operator=(const Request&) = delete;
 
-    std::future<status_t> GetFuture();
+    std::future<Gna2Status> GetFuture();
 
     void operator()(KernelBuffers *buffers)
     {
@@ -78,7 +78,7 @@ public:
     gna_perf_t *PerfResults;
 
 private:
-    std::packaged_task<status_t(KernelBuffers *buffers, RequestProfiler *profiler)> scoreTask;
+    std::packaged_task<Gna2Status(KernelBuffers *buffers, RequestProfiler *profiler)> scoreTask;
 };
 
 }

@@ -68,7 +68,7 @@ private:
             // no option for inserting same transform type twice
             if (findTransform(transform->Operation) != __TransformList::cend())
             {
-                throw GnaException(XNN_ERR_LYR_CFG);
+                throw GnaException(Gna2StatusXnnErrorLyrCfg);
             }
 
             // transform is disabled

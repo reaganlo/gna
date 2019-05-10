@@ -93,11 +93,11 @@ typedef enum _gna_status_t
     GNA_ERR_RESOURCES,       // Error: Unable to create new resources
     GNA_ERR_NOT_MULTIPLE,    // Error: Value is not multiple of required value
     GNA_ERR_DEV_FAILURE,     // Error: Critical device error occurred, device has been reset
+
     GMM_BADMEANWIDTH,        // Error: Mean vector: width not supported
     GMM_BADMEANOFFSET,       // Error: Mean vector: offset not supported
     GMM_BADMEANSETOFF,       // Error: Mean vector: set offset not supported
     GMM_BADMEANALIGN,        // Error: Mean vector: invalid memory alignment
-
     GMM_BADVARWIDTH,         // Error: Variance vector: width not supported
     GMM_BADVAROFFSET,        // Error: Variance vector: offset not supported
     GMM_BADVARSETOFF,        // Error: Variance vector: set offset not supported

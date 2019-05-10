@@ -41,8 +41,8 @@ RnnLayer::RnnLayer(nn_layer const * const layer, const BaseValidator& validatorI
                     *Affine->Biases, Affine->Biases->Mode.Size, Output.Mode.Size, {Output.at(GNA_DIM_H), &Activation->Pwl}}
 {
     // TODO:3: think of validation functor for this kind of properties or other means to generalize/unify
-    Expect::InRange(FeedbackDelay, ui32_1, Input.at(GNA_DIM_N), XNN_ERR_NO_FEEDBACK);
-    Expect::Equal(Input.at(GNA_DIM_N), Output.at(GNA_DIM_N), XNN_ERR_LYR_CFG);
+    Expect::InRange(FeedbackDelay, ui32_1, Input.at(GNA_DIM_N), Gna2StatusXnnErrorNoFeedback);
+    Expect::Equal(Input.at(GNA_DIM_N), Output.at(GNA_DIM_N), Gna2StatusXnnErrorLyrCfg);
 
     rnnHiddenConfig.feedbackBuffer = CalculateFeedbackBuffer(Output);
 
@@ -103,7 +103,7 @@ const BaseAddress RnnLayer::CalculateFeedbackBuffer(const BaseAddress& outputBuf
         }
         catch (const GnaException&)
         {
-            throw GnaException(XNN_ERR_NO_FEEDBACK);
+            throw GnaException(Gna2StatusXnnErrorNoFeedback);
         }
         return buffer;
     }

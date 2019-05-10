@@ -31,6 +31,7 @@
 #include <stdexcept>
 #include <string>
 #include <stdexcept>
+#include <unordered_map>
 
 namespace GNA
 {
@@ -41,33 +42,34 @@ namespace GNA
 class GnaException : public std::runtime_error
 {
 public:
-
-    template<typename StatusType = status_t>
-    explicit GnaException(StatusType status) :
-        std::runtime_error{ Logger::StatusToString(CAST1_STATUS status) },
-        Status{ CAST1_STATUS status }
+    explicit GnaException(Gna2Status status) :
+        std::runtime_error{ Logger::StatusToString(StatusMap.at(status)) },
+        Status{ status },
+        LegacyStatus { StatusMap.at(status) }
     {}
 
-    inline status_t getStatus() const
+    virtual inline Gna2Status GetStatus() const
     {
-        Log->Error(Status);
         return Status;
     }
 
-    inline ApiStatus GetStatus() const
+    virtual inline gna_status_t GetLegacyStatus() const
     {
-        return CAST2_STATUS Status;
+        Log->Error(LegacyStatus);
+        return LegacyStatus;
     }
 
     inline void Print() const
     {
-        Log->Error(Status, " GnaException");
+        Log->Error(LegacyStatus, " GnaException");
     }
 
     virtual ~GnaException() {};
 
 protected:
-    status_t Status;
+    Gna2Status Status;
+    gna_status_t LegacyStatus;
+
 };
 
 /**
@@ -82,15 +84,15 @@ public:
         Dimension{dimension}
     {}
 
-    inline status_t getStatus() const
+    virtual inline gna_status_t GetLegacyStatus() const override
     {
-        Log->Error(Status, " Tensor build failed on dimension: %u", Dimension); // TODO:3: tensor dims names
-        return Status;
+        Log->Error(LegacyStatus, " Tensor build failed on dimension: %u", Dimension); // TODO:3: tensor dims names
+        return LegacyStatus;
     }
 
     inline void Print() const
     {
-        Log->Error(Status, " GnaTensorException: Tensor build failed on dimension: %u", Dimension); // TODO:3: tensor dims names
+        Log->Error(LegacyStatus, " GnaTensorException: Tensor build failed on dimension: %u", Dimension); // TODO:3: tensor dims names
     }
 
     virtual ~GnaTensorException() = default;
@@ -117,15 +119,15 @@ public:
         LayerId{layerId}
     {}
 
-    inline status_t getStatus() const
+    virtual inline gna_status_t GetLegacyStatus() const override
     {
-        Log->Error(Status, " Model build failed on layer: %d", LayerId);
-        return Status;
+        Log->Error(LegacyStatus, " Model build failed on layer: %d", LayerId);
+        return LegacyStatus;
     }
 
     inline void Print() const
     {
-        Log->Error(Status, " GnaModelException: Model build failed on layer: %d", LayerId);
+        Log->Error(LegacyStatus, " GnaModelException: Model build failed on layer: %d", LayerId);
     }
 
     virtual ~GnaModelException() = default;

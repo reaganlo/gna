@@ -44,7 +44,7 @@ struct RequestResult
 {
     perf_hw_t hardwarePerf;
     perf_drv_t driverPerf;
-    status_t status;
+    Gna2Status status;
 };
 
 enum GnaIoctlCommand
