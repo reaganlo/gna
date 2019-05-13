@@ -28,7 +28,9 @@
 #if defined(__GNUC__)
 #define UNREFERENCED_PARAMETER(P) ((void)(P))
 #else
+#define WIN32_NO_STATUS
 #include <windows.h>
+#undef WIN32_NO_STATUS
 #endif
 
 // Enable safe functions compatibility

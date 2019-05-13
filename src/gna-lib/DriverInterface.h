@@ -99,6 +99,8 @@ protected:
 
     virtual void createRequestDescriptor(HardwareRequest& hardwareRequest) const = 0;
 
+    virtual Gna2Status parseHwStatus(uint32_t hwStatus) const = 0;
+
     bool opened = false;
 
     DriverCapabilities driverCapabilities;

@@ -99,3 +99,4 @@ void DriverInterface::createRequestDescriptor(HardwareRequest& hardwareRequest) 
 
     hardwareRequest.SubmitReady = true;
 }
+

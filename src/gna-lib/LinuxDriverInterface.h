@@ -65,11 +65,11 @@ public:
 protected:
     void createRequestDescriptor(HardwareRequest& hardwareRequest) const override;
 
+    Gna2Status parseHwStatus(uint32_t hwStatus) const override;
+
 private:
     LinuxDriverInterface(const LinuxDriverInterface &) = delete;
     LinuxDriverInterface& operator=(const LinuxDriverInterface&) = delete;
-
-    Gna2Status parseHwStatus(__u32 hwStatus) const;
 
     int gnaFileDescriptor = -1;
 };

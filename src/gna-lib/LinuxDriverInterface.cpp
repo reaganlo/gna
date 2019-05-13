@@ -192,7 +192,7 @@ RequestResult LinuxDriverInterface::Submit(HardwareRequest& hardwareRequest,
     else switch(errno)
     {
         case EIO:
-            result.status = parseHwStatus(wait_data.hw_status);
+            result.status = parseHwStatus(static_cast<uint32_t>(wait_data.hw_status));
             break;
         case EBUSY:
             result.status = Gna2StatusWarningDeviceBusy;
@@ -258,7 +258,7 @@ void LinuxDriverInterface::createRequestDescriptor(HardwareRequest& hardwareRequ
     hardwareRequest.SubmitReady = true;
 }
 
-Gna2Status LinuxDriverInterface::parseHwStatus(__u32 hwStatus) const
+Gna2Status LinuxDriverInterface::parseHwStatus(uint32_t hwStatus) const
 {
     if (hwStatus & GNA_STS_PCI_MMU_ERR)
     {
@@ -283,4 +283,5 @@ Gna2Status LinuxDriverInterface::parseHwStatus(__u32 hwStatus) const
 
     return Gna2StatusDeviceCriticalFailure;
 }
+
 

@@ -30,6 +30,8 @@
 #include "Logger.h"
 #include "Memory.h"
 
+#include "ntstatus.h"
+
 using namespace GNA;
 
 using std::unique_ptr;
@@ -179,6 +181,7 @@ void WindowsDriverInterface::MemoryUnmap(uint64_t memoryId)
 RequestResult WindowsDriverInterface::Submit(HardwareRequest& hardwareRequest,
     RequestProfiler * const profiler) const
 {
+    auto bytesRead = DWORD{0};
     RequestResult result = { 0 };
     auto ioHandle = OVERLAPPED{0};
     ioHandle.hEvent = CreateEvent(nullptr, false, false, nullptr);
@@ -216,12 +219,31 @@ RequestResult WindowsDriverInterface::Submit(HardwareRequest& hardwareRequest,
     profilerTscStop(&profiler->ioctlSubmit);
 
     profilerTscStart(&profiler->ioctlWaitOn);
-    wait(&ioHandle, GNA_REQUEST_TIMEOUT_MAX);
+    GetOverlappedResultEx(deviceHandle, &ioHandle, &bytesRead, GNA_REQUEST_TIMEOUT_MAX, false);
     profilerTscStop(&profiler->ioctlWaitOn);
 
-    result.hardwarePerf = calculationData->hwPerf;
-    result.driverPerf = calculationData->drvPerf;
-    result.status = StatusMapInverted.at(calculationData->status);
+    auto writeStatus = (NTSTATUS)ioHandle.Internal;
+    switch (writeStatus)
+    {
+    case STATUS_SUCCESS:
+        result.hardwarePerf = calculationData->hwPerf;
+        result.driverPerf = calculationData->drvPerf;
+        result.status = (calculationData->status & STS_SATURATION_FLAG)
+            ? Gna2StatusWarningArithmeticSaturation : Gna2StatusSuccess;
+        break;
+    case STATUS_IO_DEVICE_ERROR:
+        result.status = parseHwStatus(calculationData->status);
+        break;
+    case STATUS_MORE_PROCESSING_REQUIRED:
+        result.status = Gna2StatusWarningDeviceBusy;
+        break;
+    case STATUS_IO_TIMEOUT:
+        result.status = Gna2StatusDeviceCriticalFailure;
+        break;
+    default:
+        result.status = Gna2StatusDeviceIngoingCommunicationError;
+        break;
+    }
 
     return result;
 }
@@ -371,3 +393,31 @@ void WindowsDriverInterface::printLastError(DWORD error) const
         LocalFree(lpMsgBuf);
     }
 }
+
+Gna2Status WindowsDriverInterface::parseHwStatus(uint32_t hwStatus) const
+{
+    if (hwStatus & STS_MMUREQERR_FLAG)
+    {
+        return Gna2StatusDeviceMmuRequestError;
+    }
+    if (hwStatus & STS_DMAREQERR_FLAG)
+    {
+        return Gna2StatusDeviceDmaRequestError;
+    }
+    if (hwStatus & STS_UNEXPCOMPL_FLAG)
+    {
+        return Gna2StatusDeviceUnexpectedCompletion;
+    }
+    if (hwStatus & STS_VA_OOR_FLAG)
+    {
+        return Gna2StatusDeviceVaOutOfRange;
+    }
+    if (hwStatus & STS_PARAM_OOR_FLAG)
+    {
+        return Gna2StatusDeviceParameterOutOfRange;
+    }
+
+    return Gna2StatusDeviceCriticalFailure;
+}
+
+

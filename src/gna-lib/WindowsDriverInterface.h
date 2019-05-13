@@ -30,13 +30,16 @@
 #include <map>
 #include <memory>
 
+#define WIN32_NO_STATUS
 #include <Windows.h>
+#undef WIN32_NO_STATUS
 #include <SetupApi.h>
 
 #include "GnaDrvApiWinDebug.h"
-#include "common.h"
 #include "Request.h"
 #include "Expect.h"
+
+#include "common.h"
 
 namespace GNA
 {
@@ -100,6 +103,8 @@ public:
 
 protected:
     void createRequestDescriptor(HardwareRequest& hardwareRequest) const;
+
+    Gna2Status parseHwStatus(uint32_t hwStatus) const override;
 
 private:
     WindowsDriverInterface(const WindowsDriverInterface &) = delete;

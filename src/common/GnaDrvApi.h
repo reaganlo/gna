@@ -67,9 +67,28 @@ typedef UINT8           __1B_RES;   // 1 B of reserved memory
     */
 #define     PT_ENTRY_NO             (0x1000 / PT_ENTRY_SIZE)
 
+/* GNASTS register flags */
+#define STS_SATURATION_FLAG      0x20000 // WARNING: score has reached the saturation, MUST CLEAR
+#define STS_OUTBUFFULL_FLAG      0x10000 // WARNING: hw output buffer is currently full, MUST CLEAR
+#define STS_PARAM_OOR_FLAG       0x100   // ERROR: hw parameter out of range
+#define STS_VA_OOR_FLAG          0x80    // ERROR: VA out of range
+#define STS_UNEXPCOMPL_FLAG      0x40    // ERROR: PCIe error: unexpected completion
+#define STS_DMAREQERR_FLAG       0x20    // ERROR: PCIe error: DMA req
+#define STS_MMUREQERR_FLAG       0x10    // ERROR: PCIe error: MMU req
+#define STS_STATVALID_FLAG       0x08    // compute statistics valid
+#define STS_SDTPASUE_FLAG        0x04    // suspended due to pause
+#define STS_BPPASUE_FLAG         0x02    // suspended breakpoint match
+#define STS_COMPLETED_FLAG       0x01    // scoring completed flag
+
+/* GNA device/driver parameters */
 #define GNA_PARAM_DEVICE_ID         (1LLU << 0)
 #define GNA_PARAM_RECOVERY_TIMEOUT  (1LLU << 1)
 #define GNA_PARAM_IBUFFS            (1LLU << 2)
+#define GNA_PARAM_CE_NUM            (1LLU << 3)
+#define GNA_PARAM_PLE_NUM           (1LLU << 4)
+#define GNA_PARAM_AFE_NUM           (1LLU << 5)
+#define GNA_PARAM_HAS_MMU           (1LLU << 6)
+#define GNA_PARAM_HWVER             (1LLU << 7)
 
 // disable zero-sized array in struct/union warning
 #pragma warning(disable:4200)
@@ -113,7 +132,7 @@ typedef enum _GnaDeviceType
  */
 typedef struct _GNA_CPBLTS
 {
-    UINT32 hwInBuffSize;
+    UINT32 bldValue;
     UINT32 recoveryTimeout;
     GnaDeviceType deviceType;
 } GNA_CPBLTS;
@@ -159,7 +178,7 @@ typedef struct _GNA_CALC_IN
     /* output part*/
     perf_drv_t          drvPerf;          // driver level performance profiling results
     perf_hw_t           hwPerf;           // hardware level performance results
-    status_t            status;           // status of scoring
+    UINT32              status;           // status_t (LEGACY) or GNASTS value after scoring
 
     UINT32              pad;            // 4 B padding to multiple 8 B size
 
