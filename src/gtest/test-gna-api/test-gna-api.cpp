@@ -327,22 +327,48 @@ TEST_F(TestGnaModelApi, Gna2ModelCreateNull)
     ASSERT_NE(GNA_SUCCESS, status);
 }
 
-TEST_F(TestGnaModelApi, Gna2ModelCreateSuccessfull)
+TEST_F(TestGnaModelApi, Gna2ModelCreateEmptyModelUnsuccessfull)
 {
     uint32_t modelId = 0;
     Gna2Model model = {};
     const auto status = Gna2ModelCreate(0, &model, &modelId);
-    ASSERT_TRUE(Gna2StatusIsSuccessful(status));
+    ASSERT_FALSE(Gna2StatusIsSuccessful(status));
 }
 
-TEST_F(TestGnaModelApi, DISABLED_Gna2ModelCreateNullModel)
+TEST_F(TestGnaModelApi, Gna2ModelCreateSingleCopyLayerSuccesfull)
+{
+    uint32_t modelId = 0;
+
+    //TODO:3:P1: Check the proper Dimensions order 16,8 vs 8 16
+    Gna2Tensor input{
+        Gna2Shape{2, { 16, 8 } },
+        Gna2TensorModeDefault,
+        {'\0'},
+        Gna2DataTypeInt16,
+        nullptr };
+
+    Gna2Tensor output{ input };
+    Gna2Shape copyShape{ 2, { 16, 8 } };
+    void * parameters[] = { &copyShape };
+    const Gna2Tensor * inout[] = { &input, &output };
+    Gna2Operation copyOperation{ Gna2OperationTypeCopy ,
+        inout, 2,
+        parameters, 1 };
+
+    Gna2Model model = { 1, &copyOperation, 1 };
+
+    const auto status = Gna2ModelCreate(0, &model, &modelId);
+    ASSERT_EQ(status, Gna2StatusSuccess);
+}
+
+TEST_F(TestGnaModelApi, Gna2ModelCreateNullModel)
 {
     uint32_t modelId = 0;
     const auto status = Gna2ModelCreate(0, nullptr, &modelId);
     ASSERT_FALSE(Gna2StatusIsSuccessful(status));
 }
 
-TEST_F(TestGnaModelApi, DISABLED_Gna2ModelCreateNullModelId)
+TEST_F(TestGnaModelApi, Gna2ModelCreateNullModelId)
 {
     Gna2Model model = {};
     const auto status = Gna2ModelCreate(0, &model, nullptr);

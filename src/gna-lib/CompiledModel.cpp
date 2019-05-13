@@ -34,26 +34,6 @@
 
 using namespace GNA;
 
-CompiledModel::CompiledModel(
-        const gna_model *const userModel,
-        const AccelerationDetector& detectorIn,
-        const HardwareCapabilities& hwCapabilitiesIn,
-        std::vector<std::unique_ptr<Memory>>& memoryObjects) :
-    LayerCount{ userModel->nLayers },
-    GmmCount{ getGmmCount(userModel) },
-    detector { detectorIn },
-    hwCapabilities{ hwCapabilitiesIn },
-    memoryList { memoryObjects },
-    modelMemoryList { },
-    softwareModel
-    {
-        userModel,
-        makeValidator(),
-        detector.GetSupportedCpuAccelerations()
-    }
-{
-}
-
 void CompiledModel::CopyData(void *address, size_t size) const
 {
     auto modelSize = CalculateSize();
@@ -226,20 +206,6 @@ void CompiledModel::IdentifyBuffer(const void *buffer, size_t bufferSize)
     Expect::NotNull(memory, Gna2StatusXnnErrorInvalidBuffer);
 
     AddUniqueMemory(memory);
-}
-
-uint32_t CompiledModel::getGmmCount(const gna_model *const userModel) const
-{
-    uint32_t gmmCount = 0;
-    for (uint32_t i = 0; i < userModel->nLayers; i++)
-    {
-        if (userModel->pLayers[i].operation == INTEL_GMM)
-        {
-            ++gmmCount;
-        }
-    }
-
-    return gmmCount;
 }
 
 BaseValidator CompiledModel::makeValidator()

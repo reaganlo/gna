@@ -31,7 +31,7 @@
 
 using namespace GNA;
 
-CnnLayer::CnnLayer(nn_layer const * const layer, const BaseValidator& validatorIn) :
+CnnLayer::CnnLayer(const nn_layer& layer, const BaseValidator& validatorIn) :
     Layer(layer, validatorIn, {}, BaseAddress())
 {
     Expect::One(Input.at(GNA_DIM_N), Gna2StatusXnnErrorGrouping);
@@ -39,11 +39,11 @@ CnnLayer::CnnLayer(nn_layer const * const layer, const BaseValidator& validatorI
 
     // TODO:3: use Input,Output tensor everywhere
     Convolution = ConvolutionFunction::Create(&Input,
-        ActivationFunction::IsEnabled(layer) ? &Output.ScratchPad : &Output,
-        layer->pLayerStruct, *validator);
+        ActivationFunction::IsEnabled(&layer) ? &Output.ScratchPad : &Output,
+        layer.pLayerStruct, *validator);
     Activation = ActivationFunction::Create({&Output.ScratchPad, &Output, Output.Mode, Output.Buffer,
-        layer->pLayerStruct, *validator}),
-    Pooling = PoolingFunction::Create(layer->pLayerStruct, Convolution->Output, *validator, Input.Mode);
+        layer.pLayerStruct, *validator}),
+    Pooling = PoolingFunction::Create(layer.pLayerStruct, Convolution->Output, *validator, Input.Mode);
 
     if (!Pooling)
     {

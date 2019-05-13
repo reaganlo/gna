@@ -161,3 +161,17 @@ LayerOutput::LayerOutput(const nn_layer& layer, const LayerValidator& validatorI
     Expect::True(GNA_INT32 == ScratchPad.Mode, Gna2StatusXnnErrorIntOutputBytes);
     //Expect::ValidBuffer(ScratchPad); // TODO: review when scratch-pad is allocated by gna-lib
 };
+
+//TODO:3:P1:Find a better way instead of directly addressing outputTensor.Shape.Dimensions[x]
+LayerOutput::LayerOutput(const Gna2Tensor &outputTensor, const LayerValidator& validatorIn) :
+    Tensor{ { capabilities.GetOrder(validatorIn), outputTensor.Shape.Dimensions[0], outputTensor.Shape.Dimensions[1] },
+        outputTensor.Type, outputTensor.Data,
+        Validator{ validatorIn, capabilities } },
+    ScratchPad{ Dimensions,
+        outputTensor.Type, nullptr,
+        Validator{ validatorIn, capabilities } }
+{
+    //TODO:3:P1:Decide what to do with scratch pad in API2
+    //Expect::True(GNA_INT32 == ScratchPad.Mode, XNN_ERR_INT_OUTPUT_BYTES);
+    //Expect::ValidBuffer(ScratchPad); // TODO: review when scratch-pad is allocated by gna-lib
+}

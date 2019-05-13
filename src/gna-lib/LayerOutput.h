@@ -33,6 +33,7 @@ namespace GNA
 struct LayerOutput : public Tensor
 {
     LayerOutput(const nn_layer &layer, const LayerValidator& validatorIn);
+    LayerOutput(const Gna2Tensor &outputTensor, const LayerValidator& validatorIn);
     ~LayerOutput() = default;
 
     const Tensor ScratchPad;

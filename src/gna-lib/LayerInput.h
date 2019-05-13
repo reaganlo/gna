@@ -33,6 +33,7 @@ namespace GNA
 struct LayerInput : public Tensor
 {
     LayerInput(const nn_layer &layer, const LayerValidator& validator);
+    LayerInput(const Gna2Tensor &inputTensor, const LayerValidator& validator);
     ~LayerInput() = default;
 
 protected:

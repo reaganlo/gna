@@ -41,7 +41,7 @@ public:
     const std::unique_ptr<const ActivationFunction> Activation;
 
 protected:
-    AffineBaseLayer(const nn_layer *layer, const BaseValidator& validatorIn);
+    AffineBaseLayer(const nn_layer& layer, const BaseValidator& validatorIn);
 
     virtual DataConfig GetDataMode() const override;
 
@@ -57,7 +57,7 @@ private:
 class AffineLayer : public AffineBaseLayer
 {
 public:
-    AffineLayer(const nn_layer *layer, const BaseValidator& validatorIn);
+    AffineLayer(const nn_layer& layer, const BaseValidator& validatorIn);
     virtual ~AffineLayer() = default;
 
     virtual void UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const override;
@@ -66,7 +66,7 @@ public:
 class AffineDiagonalLayer : public AffineBaseLayer
 {
 public:
-    AffineDiagonalLayer(const nn_layer *layer, const BaseValidator& validatorIn);
+    AffineDiagonalLayer(const nn_layer& layer, const BaseValidator& validatorIn);
     virtual ~AffineDiagonalLayer() = default;
 };
 

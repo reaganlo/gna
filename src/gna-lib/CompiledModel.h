@@ -41,11 +41,25 @@ namespace GNA
 class CompiledModel
 {
 public:
+    template<class T>
     CompiledModel(
-        const gna_model *const userModel,
+        const T & model,
         const AccelerationDetector& detectorIn,
         const HardwareCapabilities& hwCapabilitiesIn,
-        std::vector<std::unique_ptr<Memory>>& memoryObjects);
+        std::vector<std::unique_ptr<Memory>>& memoryObjects) :
+        LayerCount{ GetNumberOfOperations(model) },
+        GmmCount{ getGmmCount(GetFirstOperation(model), LayerCount) },
+        detector{ detectorIn },
+        hwCapabilities{ hwCapabilitiesIn },
+        memoryList{ memoryObjects },
+        softwareModel
+        {
+            model,
+            makeValidator(),
+            detector.GetSupportedCpuAccelerations()
+        }
+    {
+    }
 
     virtual ~CompiledModel() = default;
     CompiledModel(const CompiledModel &) = delete;
@@ -96,9 +110,45 @@ private:
     uint32_t scoreAllSubModels(RequestConfiguration& config,
         RequestProfiler *profiler, KernelBuffers *buffers);
 
-    uint32_t getGmmCount(const gna_model *const userModel) const;
-
     BaseValidator makeValidator();
+    static uint32_t GetNumberOfOperations(const Gna2Model& model)
+    {
+        return model.NumberOfOperations;
+    }
+    static uint32_t GetNumberOfOperations(const gna_model& model)
+    {
+        return model.nLayers;
+    }
+    static Gna2Operation* GetFirstOperation(const Gna2Model& model)
+    {
+        return model.Operations;
+    }
+    static intel_nnet_layer_t* GetFirstOperation(const gna_model& model)
+    {
+        return model.pLayers;
+    }
+    static bool isGmmOperation(const nn_layer& layer)
+    {
+        return layer.operation == INTEL_GMM;
+    }
+    static bool isGmmOperation(const Gna2Operation& operation)
+    {
+        return operation.Type == Gna2OperationTypeGmm;
+    }
+
+    template<class T>
+    uint32_t getGmmCount(const T* firstOperation, uint32_t numberOfOperations)
+    {
+        uint32_t gmmCount = 0;
+        for (uint32_t i = 0; i < numberOfOperations; i++)
+        {
+            if (isGmmOperation(firstOperation[numberOfOperations]))
+            {
+                ++gmmCount;
+            }
+        }
+        return gmmCount;
+    }
 
     const AccelerationDetector& detector;
     const HardwareCapabilities& hwCapabilities;

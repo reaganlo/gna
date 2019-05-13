@@ -57,10 +57,10 @@ GmmParams::GmmParams(const gna_gmm_config &config, const uint32_t inputElementCo
     }
 }
 
-GmmLayer::GmmLayer(const nn_layer *layer, const BaseValidator& validatorIn) :
+GmmLayer::GmmLayer(const nn_layer& layer, const BaseValidator& validatorIn) :
     Layer(layer, validatorIn, {}, BaseAddress()),
-    Config((static_cast<gna_gmm_layer*>(layer->pLayerStruct))->config),
-    Data((static_cast<gna_gmm_layer*>(layer->pLayerStruct))->data),
+    Config((static_cast<gna_gmm_layer*>(layer.pLayerStruct))->config),
+    Data((static_cast<gna_gmm_layer*>(layer.pLayerStruct))->data),
     Params{ Config, Input.at(GNA_DIM_W) },
     gmmKernels{ AccelerationDetector::GetKernelMap<GmmMaxMix>(KERNEL_GMM, Config.mode) },
     gmmActiveListKernels{ AccelerationDetector::GetKernelMap<GmmMaxMixActiveList>(

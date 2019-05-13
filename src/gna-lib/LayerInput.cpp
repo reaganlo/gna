@@ -157,6 +157,13 @@ LayerInput::LayerInput(const nn_layer &layer, const LayerValidator& validatorIn)
 {
 }
 
+LayerInput::LayerInput(const Gna2Tensor &inputTensor, const LayerValidator& validatorIn) :
+    Tensor{ Tensor::GetDimensions(inputTensor, capabilities.GetOrder(validatorIn)),
+        inputTensor.Type, inputTensor.Data,
+        Validator{ validatorIn, capabilities } }
+{
+}
+
 Shape LayerInput::GetDimensions(const nn_layer& layer, gna_tensor_order order)
 {
     switch (layer.operation)

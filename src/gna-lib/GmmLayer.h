@@ -48,7 +48,7 @@ struct GmmParams
 class GmmLayer : public Layer
 {
 public:
-    GmmLayer(const nn_layer *layer, const BaseValidator& validator);
+    GmmLayer(const nn_layer& layer, const BaseValidator& validator);
     virtual ~GmmLayer() = default;
 
     // TODO:3: Low priority: refactor components to Tensors

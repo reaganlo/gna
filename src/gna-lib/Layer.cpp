@@ -38,9 +38,9 @@ using std::unique_ptr;
 
 using namespace GNA;
 
-unique_ptr<Layer> Layer::Create(const nn_layer* layer, const BaseValidator& validatorIn)
+unique_ptr<Layer> Layer::Create(const nn_layer& layer, const BaseValidator& validatorIn)
 {
-    switch (layer->operation)
+    switch (layer.operation)
     {
     case INTEL_AFFINE:
     case INTEL_AFFINE_MULTIBIAS:
@@ -65,13 +65,30 @@ unique_ptr<Layer> Layer::Create(const nn_layer* layer, const BaseValidator& vali
     }
 }
 
-Layer::Layer(const nn_layer *layer, const BaseValidator& validatorIn,
+std::unique_ptr<GNA::Layer> Layer::Create(const Gna2Operation & operation, const BaseValidator & validatorIn)
+{
+    switch (operation.Type)
+    {
+    case Gna2OperationTypeCopy:
+        Expect::NotNull(operation.Operands);
+        Expect::NotNull(operation.Operands[0]);
+        Expect::NotNull(operation.Operands[1]);
+        Expect::NotNull(operation.Parameters);
+        Expect::NotNull(operation.Parameters[0]);
+        return make_unique<CopyLayer>(operation, validatorIn);
+    default:
+        //TODO:3:P1:Add implementation for remaining operation types
+        throw GnaException(Gna2StatusNotImplemented);
+    }
+}
+
+Layer::Layer(const nn_layer& layer, const BaseValidator& validatorIn,
     const std::vector<TransformOperation>& transforms,
     const BaseAddress& intermediateBuffer) :
-    validator{ make_unique<const LayerValidator>(validatorIn, layer->operation) },
-    Operation{ layer->operation },
-    Input{ *layer, *validator },
-    Output{ *layer, *validator }
+    AbstractOperation{ layer.operation },
+    validator{ make_unique<const LayerValidator>(validatorIn, Operation) },
+    Input{ layer, *validator },
+    Output{ layer, *validator }
 {
     Expect::InRange<uint32_t>(Operation, 0, LAYER_OPERATION_TYPE_COUT-1, Gna2StatusXnnErrorLyrOperation);
 
@@ -80,7 +97,7 @@ Layer::Layer(const nn_layer *layer, const BaseValidator& validatorIn,
     if (false == transforms.empty())
     {
         auto&& commonConfig = TransformFactoryConfig(&Input, &Output, Output.Mode, intermediateBuffer,
-            layer->pLayerStruct, *validator);
+            layer.pLayerStruct, *validator);
         for (const auto& transform : transforms)
         {
             outputTransform = Transforms.Emplace(transform, commonConfig);
@@ -91,6 +108,24 @@ Layer::Layer(const nn_layer *layer, const BaseValidator& validatorIn,
         if (Output.Buffer)
             outputTransform->SetOutput(Output.Buffer);
     }
+}
+
+Layer::Layer(const Gna2Operation & operation, const BaseValidator& validatorIn,
+    const std::vector<TransformOperation>& transforms,
+    const BaseAddress& intermediateBuffer) :
+    AbstractOperation{ operation },
+    validator{ make_unique<const LayerValidator>(validatorIn, Operation) },
+    Input{ *operation.Operands[0], *validator },
+    Output{ *operation.Operands[1], *validator }
+{
+    Expect::InRange<uint32_t>(Operation, 0, LAYER_OPERATION_TYPE_COUT - 1, Gna2StatusModelConfigurationInvalid);
+
+    //TODO:3: uncomment when all layers are Transform-based, remove if below
+    //Expect::False(transforms.empty(), status_t::GNA_NULLARGNOTALLOWED); // TODO:3: add error code
+
+    ////TODO:3:P2:Bruno:remove temporal assertion and implement for CNN2D support
+    Expect::True(transforms.empty(), Gna2StatusNotImplemented);
+    UNREFERENCED_PARAMETER(intermediateBuffer);
 }
 
 void Layer::addBufferAs(const BufferMap& source, GnaComponentType sourceType,

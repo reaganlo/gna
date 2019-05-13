@@ -58,7 +58,23 @@ public:
 
     void FreeMemory(void *const buffer);
 
-    void LoadModel(gna_model_id *modelId, const gna_model *userModel);
+    template<class T>
+    uint32_t LoadModel(const T& model)
+    {
+        auto compiledModel = std::make_unique<CompiledModel>(
+            model, accelerationDetector, hardwareCapabilities, memoryObjects);
+
+        if (!compiledModel)
+        {
+            throw GnaException(Gna2StatusResourceAllocationError);
+        }
+
+        auto modelId = modelIdSequence++;
+
+        compiledModel->BuildHardwareModel(*driverInterface);
+        models.emplace(modelId, std::move(compiledModel));
+        return modelId;
+    }
 
     void ReleaseModel(gna_model_id const modelId);
 

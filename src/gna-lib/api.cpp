@@ -55,8 +55,10 @@ GNAAPI gna_status_t GnaModelCreate(
 {
     try
     {
+        Expect::NotNull(modelId);
+        Expect::NotNull(model);
         auto& device = DeviceManager::Get().GetDevice(deviceId);
-        device.LoadModel(modelId, model);
+        *modelId = device.LoadModel(*model);
         return GNA_SUCCESS;
     }
     catch (const GnaModelException &e)

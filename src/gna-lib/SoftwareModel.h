@@ -65,9 +65,12 @@ public:
             Log->Message("Processing using xNN operation mode\n");
         }
     }
-    SoftwareModel(const gna_model *const network,
+    SoftwareModel(const gna_model& network,
                   BaseValidator validator,
                   const std::vector<Gna2AccelerationMode>& supportedCpuAccelerations);
+    SoftwareModel(const Gna2Model& model,
+        BaseValidator validator,
+        const std::vector<Gna2AccelerationMode>& supportedCpuAccelerations);
 
     SoftwareModel(const SoftwareModel &) = delete;
     SoftwareModel& operator=(const SoftwareModel&) = delete;
@@ -85,8 +88,27 @@ public:
     std::vector<std::unique_ptr<Layer>> Layers;
 
 private:
-    void build(const nn_layer* layers, const BaseValidator& validator);
+    template<class T>
+    void build(const T* const operations, const BaseValidator & validator)
+    {
+        for (auto i = uint32_t{ 0 }; i < layerCount; i++)
+        {
+            try
+            {
+                Layers.push_back(Layer::Create(operations[i], validator));
+            }
+            catch (const GnaException& e)
+            {
+                throw GnaModelException(e, i);
+            }
+            catch (...)
+            {
+                throw GnaModelException(GnaException(Gna2StatusXnnErrorLyrCfg), i);
+            }
+        }
+    }
 
+    void CheckModel(uint32_t declaredBatchSize, void * operationPointer) const;
     uint32_t const layerCount;
     const std::vector<Gna2AccelerationMode>& supportedCpuAccelerations;
 };

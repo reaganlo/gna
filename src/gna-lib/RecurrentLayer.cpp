@@ -31,9 +31,9 @@
 
 using namespace GNA;
 
-RnnLayer::RnnLayer(nn_layer const * const layer, const BaseValidator& validatorIn) :
+RnnLayer::RnnLayer(const nn_layer& layer, const BaseValidator& validatorIn) :
     AffineBaseLayer(layer, validatorIn),
-    FeedbackDelay{static_cast<const nn_layer_reccurent * const>(layer->pLayerStruct)->feedbackFrameDelay},
+    FeedbackDelay{static_cast<const nn_layer_reccurent * const>(layer.pLayerStruct)->feedbackFrameDelay},
     recurrentKernels{ AccelerationDetector::GetKernelMap<RecurrentKernel>(
         KERNEL_RECURRENT, {Input.Mode, Affine->Weights->Mode, Affine->Biases->Mode}) },
     rnnHiddenConfig{Output.at(GNA_DIM_H), Input.at(GNA_DIM_N), Input.at(GNA_DIM_W), Input.Buffer, nullptr,

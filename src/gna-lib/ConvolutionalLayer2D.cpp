@@ -34,7 +34,7 @@
 
 using namespace GNA;
 
-ConvolutionalLayer2D::ConvolutionalLayer2D(nn_layer const * const layer, const BaseValidator& validatorIn) :
+ConvolutionalLayer2D::ConvolutionalLayer2D(const nn_layer& layer, const BaseValidator& validatorIn) :
     Layer(layer, validatorIn, {ConvolutionalTransform2D, ActivationTransform, PoolingTransform2D}, BaseAddress())
 {
     Expect::One(Input.at(GNA_DIM_N), Gna2StatusXnnErrorGrouping);

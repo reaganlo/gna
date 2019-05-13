@@ -37,7 +37,7 @@ namespace GNA
 class TransposeLayer : public Layer
 {
 public:
-    TransposeLayer(nn_layer const * const layer, const BaseValidator& validatorIn);
+    TransposeLayer(const nn_layer& layer, const BaseValidator& validatorIn);
     virtual ~TransposeLayer() = default;
 
     virtual void UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const override;
@@ -56,7 +56,10 @@ private:
 class CopyLayer : public Layer
 {
 public:
-    CopyLayer(const nn_layer *layer, const BaseValidator& validatorIn);
+    CopyLayer(const nn_layer& layer, const BaseValidator& validatorIn);
+
+    CopyLayer(const Gna2Operation& operation, const BaseValidator& validatorIn);
+
     virtual ~CopyLayer() = default;
     void UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const override;
 
@@ -66,13 +69,14 @@ public:
 protected:
     virtual DataConfig GetDataMode() const override;
 
+    static const Gna2Shape& GetCopyShape(const Gna2Operation& operation);
+
 private:
     void computeHidden(AccelerationMode accel, ExecutionConfig const & executionConfig) const;
     void compute(const LayerConfiguration& layerConfiguration, AccelerationMode accel, ExecutionConfig const & executionConfig) const;
 
     const KernelMap<CopyKernel>& copyKernels;
     CopyConfig copyHiddenConfig;
-
 };
 
 }

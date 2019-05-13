@@ -58,6 +58,11 @@ struct Tensor : public Component
 
     BaseAddress Buffer;
 
+    static Shape GetDimensions(const Gna2Tensor& operand, gna_tensor_order order)
+    {
+        return Shape::Create(operand.Shape, order);
+    }
+
 protected:
     void validate() const;
 private:

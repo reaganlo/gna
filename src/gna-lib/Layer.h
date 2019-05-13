@@ -38,10 +38,36 @@ namespace GNA
 {
 struct LayerConfiguration;
 
-class Layer
+class AbstractOperation
 {
 public:
-    static std::unique_ptr<Layer> Create(const nn_layer *layer, const BaseValidator& validator);
+    //TODO:3:P3 remove or change name when API2 reliable enough
+    const nn_operation Operation;
+protected:
+    AbstractOperation(const Gna2Operation& operation):
+        Operation{ ToGnaApi1OperationType(operation)}
+    {
+        //TODO:3:P1 Add operation validation
+    }
+
+    AbstractOperation(nn_operation operationType):
+        Operation{ operationType }
+    {
+    }
+private:
+    static nn_operation ToGnaApi1OperationType(const Gna2Operation& operation)
+    {
+        //TODO:3:P1: Add remaining cases
+        Expect::Equal(operation.Type, Gna2OperationTypeCopy, Gna2StatusNotImplemented);
+        return INTEL_COPY;
+    }
+};
+
+class Layer : public AbstractOperation
+{
+public:
+    static std::unique_ptr<Layer> Create(const nn_layer& layer, const BaseValidator& validator);
+    static std::unique_ptr<Layer> Create(const Gna2Operation& operation, const BaseValidator& validator);
 
     template<typename X = const Layer> X* Get() const
     {
@@ -70,19 +96,27 @@ public:
 
     uint32_t GetOperandSize(GnaComponentType componentType) const;
 
+    static uint32_t GetShapeDimension(const Gna2Shape& shape, uint32_t dimensionIndex)
+    {
+        Expect::True(dimensionIndex < shape.NumberOfDimensions,
+            Gna2StatusModelConfigurationInvalid);
+        return shape.Dimensions[dimensionIndex];
+    }
+
 protected:
     std::unique_ptr<const LayerValidator> validator;
 
 public:
-    const nn_operation Operation;
     const LayerInput Input;
     const LayerOutput Output;
 
 protected:
-    Layer(const nn_layer *layer, const BaseValidator& validator,
+    Layer(const nn_layer& layer, const BaseValidator& validator,
         const std::vector<TransformOperation>& transforms,
         const BaseAddress& intermediateBuffer);
-
+    Layer(const Gna2Operation& operation, const BaseValidator& validator,
+        const std::vector<TransformOperation>& transforms,
+        const BaseAddress& intermediateBuffer);
     void compute(const LayerConfiguration* layerConfiguration,
         AccelerationMode accel, ExecutionConfig const & execution) const
     {

@@ -729,30 +729,41 @@ struct Gna2Tensor
 
     /**
     Mode of tensor interpretation.
-     
+
     Default value, when not stated otherwise:
         {::Gna2TensorModeDefault}
     */
     enum Gna2TensorMode Mode;
 
     /**
-     Data layout or format in memory [optional].
+    Data layout or format in memory [optional].
 
-    - Specifies order of dimensions, i.e. how Gna2Shape::Dimensions are interpreted.
-      Size of layout array must be the same as #Shape Gna2Shape::NumberOfDimensions.
-    - Required for Gna2Operation::Type = ::Gna2OperationTypeTransposition and ::Gna2OperationTypeGmm.
-    - Optional for other cases, can be left zeroed, layout as in Shape description is assumed,
+    Denotes the interpretation of the consecutive Gna2Shape::Dimensions.
+    The layout specifier is a table of 8 characters. For n-dimensional case
+    only n first elements from the table should be set to capital letters.
+    The n+1 table element should be set to zero (i.e., '\0') unless 8 dimensions are used.
+
+    However, in most cases can be left empty/zeroed (i.e., ""),
+    then the default layout for specific tensor is assumed.
+    If not empty, the number of elements in array must be the same as Gna2Shape::NumberOfDimensions.
+
+    Setting to non empty value is required for some of the tensors used in
+    Gna2Operation::Type == ::Gna2OperationTypeTransposition or ::Gna2OperationTypeGmm.
+
+    In most cases, the elements of tensor are stored in row-major order
+    (i.e., the dimension denoted by the first letter from the table has the slowest changing address).
+
     - E.g.:
         - [N x W]  N is a number of vectors in a batch (rows) and W is a number of vector
-            elements (columns), where data is stored row-major. Whole vectors
+            elements (columns). Whole vectors
             are stored one after another in memory. Aka flat layout.
             - For example let N=2, W=8:
                 v\\e |  e0 |   e1 |   e2 |   e3 |   e4 |   e5 |   e6 |   e7
                 ---- |---- | ---- | ---- | ---- | ---- | ---- | ---- | ----
                  v0: |v0e0 | v0e1 | v0e2 | v0e3 | v0e4 | v0e5 | v0e6 | v0e7
-                 v1: |v1e0 | v1e1 | v1e2 | v1e3 | v1e4 | v1e5 | v1e6 | v1e7    
+                 v1: |v1e0 | v1e1 | v1e2 | v1e3 | v1e4 | v1e5 | v1e6 | v1e7
         - [W x N] W is a number of vector elements (rows) and N is a number of vectors
-            in a batch (columns), where data is stored row-major, Elements of each vector
+            in a batch (columns), Elements of each vector
             are stored in columns. Aka interleaved layout.
             - For example let W=8, N=2:
                   v0 |   v1
@@ -765,7 +776,7 @@ struct Gna2Tensor
                 v0e5 | v1e5
                 v0e6 | v1e6
                 v0e7 | v1e7
-        
+
         - [N x H x W x C] is Number of tensors in a batch, Height, Width and number
             of Channels of tensor, where the rightmost dimension changes fastest.
     */

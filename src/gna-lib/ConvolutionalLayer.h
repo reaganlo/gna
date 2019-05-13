@@ -37,7 +37,7 @@ namespace GNA
 class CnnLayer : public Layer
 {
 public:
-    CnnLayer(nn_layer const * const layer, const BaseValidator& validatorIn);
+    CnnLayer(const nn_layer& layer, const BaseValidator& validatorIn);
     virtual ~CnnLayer() = default;
     virtual void UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const override;
 

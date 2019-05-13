@@ -33,14 +33,14 @@ using std::make_unique;
 
 using namespace GNA;
 
-AffineBaseLayer::AffineBaseLayer(const nn_layer *layer, const BaseValidator& validatorIn) :
+AffineBaseLayer::AffineBaseLayer(const nn_layer& layer, const BaseValidator& validatorIn) :
     Layer(layer, validatorIn, {}, BaseAddress()),
     Affine(AffineFunction::Create(&Input,
-        ActivationFunction::IsEnabled(layer) ? &Output.ScratchPad : &Output,
-        layer->pLayerStruct, *validator)),
+        ActivationFunction::IsEnabled(&layer) ? &Output.ScratchPad : &Output,
+        layer.pLayerStruct, *validator)),
     // TODO:3: refactor to Transform and to use Affine->Output
     Activation(ActivationFunction::Create({&Output.ScratchPad, &Output, Output.Mode, Output.Buffer,
-        layer->pLayerStruct, *validator}))
+        layer.pLayerStruct, *validator}))
 
 {
     if (Activation)
@@ -125,7 +125,7 @@ DataConfig AffineBaseLayer::GetDataMode() const
     return DataConfig(Input.Mode, weightMode, biasMode, Output.Mode);
 }
 
-AffineLayer::AffineLayer(const nn_layer *layer, const BaseValidator& validatorIn) :
+AffineLayer::AffineLayer(const nn_layer& layer, const BaseValidator& validatorIn) :
     AffineBaseLayer(layer, validatorIn)
 {};
 
@@ -144,7 +144,7 @@ void AffineLayer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration) co
     }
 }
 
-AffineDiagonalLayer::AffineDiagonalLayer(const nn_layer *layer, const BaseValidator& validatorIn) :
+AffineDiagonalLayer::AffineDiagonalLayer(const nn_layer& layer, const BaseValidator& validatorIn) :
     AffineBaseLayer(layer, validatorIn)
 {
     Expect::Equal(Input.at(GNA_DIM_W), Output.at(GNA_DIM_H), Gna2StatusXnnErrorLyrCfg);

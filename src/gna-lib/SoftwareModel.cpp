@@ -44,19 +44,34 @@ using std::make_unique;
 
 using namespace GNA;
 
-SoftwareModel::SoftwareModel(const gna_model *const network,
+void SoftwareModel::CheckModel(uint32_t declaredBatchSize, void * operationPointer) const
+{
+    Expect::InRange(declaredBatchSize, ui32_1, XNN_N_GROUP_MAX,
+        Gna2StatusXnnErrorLyrCfg);
+    Expect::InRange(layerCount, ui32_1,
+        HardwareCapabilities::GetMaximumLayerCount(DefaultDeviceVersion),
+        Gna2StatusXnnErrorNetLyrNo);
+    Expect::NotNull(operationPointer);
+}
+//TODO:3:P2: change to template
+SoftwareModel::SoftwareModel(const gna_model& network,
     BaseValidator validator,
     const std::vector<Gna2AccelerationMode>& supportedCpuAccelerationsIn) :
-    layerCount{ network->nLayers },
+    layerCount{ network.nLayers },
     supportedCpuAccelerations { supportedCpuAccelerationsIn }
 {
-#ifndef NO_ERRCHECK
-    Expect::InRange(network->nGroup, ui32_1, XNN_N_GROUP_MAX, Gna2StatusXnnErrorLyrCfg);
-    Expect::InRange(layerCount, ui32_1,
-        HardwareCapabilities::GetMaximumLayerCount(DefaultDeviceVersion), Gna2StatusXnnErrorNetLyrNo);
-    Expect::NotNull(network->pLayers);
-#endif
-    build(network->pLayers, validator);
+    CheckModel(network.nGroup, network.pLayers);
+    build(network.pLayers, validator);
+}
+
+SoftwareModel::SoftwareModel(const Gna2Model& model,
+    BaseValidator validator,
+    const std::vector<Gna2AccelerationMode>& supportedCpuAccelerationsIn) :
+    layerCount{ model.NumberOfOperations },
+    supportedCpuAccelerations{ supportedCpuAccelerationsIn }
+{
+    CheckModel(model.MaximumBatchSize, model.Operations);
+    build(model.Operations, validator);
 }
 
 uint32_t SoftwareModel::Score(
@@ -101,26 +116,6 @@ uint32_t SoftwareModel::Score(
     return saturationCount;
 }
 
-void SoftwareModel::build(const nn_layer* layers, const BaseValidator& validator)
-{
-    for (auto i = uint32_t{0}; i < layerCount; i++)
-    {
-        try
-        {
-            auto layer = layers + i;
-            Layers.push_back(Layer::Create(layer, validator));
-        }
-        catch (const GnaException& e)
-        {
-            throw GnaModelException(e, i);
-        }
-        catch (...)
-        {
-            throw GnaModelException(GnaException(Gna2StatusXnnErrorLyrCfg), i);
-        }
-    }
-}
-
 void SoftwareModel::validateConfiguration(const RequestConfiguration& configuration) const
 {
     UNREFERENCED_PARAMETER(configuration);
@@ -128,6 +123,3 @@ void SoftwareModel::validateConfiguration(const RequestConfiguration& configurat
     //Expect::True(inputLayerCount == configuration.InputBuffersCount, Gna2StatusXnnErrorNetworkInputs);
     //Expect::True(outputLayerCount == configuration.OutputBuffersCount, Gna2StatusXnnErrorNetworkOutputs);*/
 }
-
-
-

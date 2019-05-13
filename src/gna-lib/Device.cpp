@@ -201,26 +201,6 @@ void Device::ReleaseModel(gna_model_id const modelId)
     models.erase(modelId);
 }
 
-void Device::LoadModel(gna_model_id *modelId, const gna_model *userModel)
-{
-    Expect::NotNull(modelId);
-    Expect::NotNull(userModel);
-    Expect::NotNull(userModel->pLayers);
-
-    auto compiledModel = std::make_unique<CompiledModel>(
-            userModel, accelerationDetector, hardwareCapabilities, memoryObjects);
-
-    if (!compiledModel)
-    {
-        throw GnaException(Gna2StatusResourceAllocationError);
-    }
-
-    *modelId = modelIdSequence++;
-
-    compiledModel->BuildHardwareModel(*driverInterface);
-    models.emplace(*modelId, std::move(compiledModel));
-}
-
 void Device::PropagateRequest(gna_request_cfg_id configId, uint32_t *requestId)
 {
     Expect::NotNull(requestId);

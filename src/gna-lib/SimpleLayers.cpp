@@ -32,7 +32,7 @@
 
 using namespace GNA;
 
-TransposeLayer::TransposeLayer(nn_layer const * const layer, const BaseValidator& validatorIn) :
+TransposeLayer::TransposeLayer(const nn_layer& layer, const BaseValidator& validatorIn) :
     Layer(layer, validatorIn, {}, BaseAddress()),
     transposeKernels{ AccelerationDetector::GetKernelMap<TransposeKernel>(KERNEL_TRANSPOSE,  KernelMode{Input.Mode}) },
     transposeHiddenConfig{ Operation == INTEL_INTERLEAVE ? Input.at(GNA_DIM_N) : Input.at(GNA_DIM_W),
@@ -41,7 +41,8 @@ TransposeLayer::TransposeLayer(nn_layer const * const layer, const BaseValidator
 {
     Expect::Equal(Input.at(GNA_DIM_W), Output.at(GNA_DIM_H), Gna2StatusXnnErrorLyrCfg);
     Expect::Equal(Input.at(GNA_DIM_N), Output.at(GNA_DIM_N), Gna2StatusXnnErrorLyrCfg);
-    Expect::Null(layer->pLayerStruct); // transpose layers do not have layer details
+    Expect::Null(layer.pLayerStruct); // transpose layers do not have layer details
+
     Expect::Null(Output.ScratchPad); // in transpose layer no 4B output array is allowed
 
     ComputeHidden = [this](AccelerationMode accel, ExecutionConfig const & executionConfig)
@@ -93,10 +94,10 @@ void TransposeLayer::compute(const LayerConfiguration& layerConfiguration, Accel
     transposeKernels.at(accel)(transposeConfig);
 }
 
-CopyLayer::CopyLayer(const nn_layer *layer, const BaseValidator& validatorIn) :
+CopyLayer::CopyLayer(const nn_layer& layer, const BaseValidator& validatorIn) :
     Layer(layer, validatorIn, {}, BaseAddress()),
-    ColumnCount{ static_cast<const nn_layer_copy*>(layer->pLayerStruct)->nCopyCols },
-    RowCount{ static_cast<const nn_layer_copy*>(layer->pLayerStruct)->nCopyRows },
+    ColumnCount{ static_cast<const nn_layer_copy*>(layer.pLayerStruct)->nCopyCols },
+    RowCount{ static_cast<const nn_layer_copy*>(layer.pLayerStruct)->nCopyRows },
     copyKernels{ AccelerationDetector::GetKernelMap<CopyKernel>(KERNEL_COPY, KernelMode {Input.Mode}) },
     copyHiddenConfig{ RowCount, ColumnCount, Input.at(GNA_DIM_W), Output.at(GNA_DIM_H), Input.Buffer, Output.Buffer }
 {
@@ -110,6 +111,25 @@ CopyLayer::CopyLayer(const nn_layer *layer, const BaseValidator& validatorIn) :
 
     Compute = [this](LayerConfiguration &layerConfiguration, AccelerationMode accel, ExecutionConfig const & executionConfig)
                     {this->compute(layerConfiguration, accel, executionConfig); };
+}
+
+CopyLayer::CopyLayer(const Gna2Operation& operation, const BaseValidator& validatorIn) :
+    Layer(operation, validatorIn, {}, BaseAddress()),
+    ColumnCount{ GetShapeDimension(GetCopyShape(operation), 0) },
+    RowCount{ GetShapeDimension(GetCopyShape(operation), 1) },
+    copyKernels{ AccelerationDetector::GetKernelMap<CopyKernel>(KERNEL_COPY, KernelMode {Input.Mode}) },
+    copyHiddenConfig{ RowCount, ColumnCount, Input.at(GNA_DIM_W), Output.at(GNA_DIM_H), Input.Buffer, Output.Buffer }
+{
+    // TODO:3: refactor to use scalars/component and validator
+    Expect::MultiplicityOf(ColumnCount, XNN_N_IN_ELEMS_MPLY);
+    Expect::InRange(ColumnCount, XNN_N_IN_ELEMS_MPLY, XNN_N_IN_ELEMS_MAX, Gna2StatusXnnErrorLyrCfg);
+    Expect::True(RowCount <= Input.at(GNA_DIM_N), Gna2StatusXnnErrorLyrCfg);
+
+    ComputeHidden = [this](AccelerationMode accel, ExecutionConfig const & executionConfig)
+    {this->computeHidden(accel, executionConfig); };
+
+    Compute = [this](LayerConfiguration &layerConfiguration, AccelerationMode accel, ExecutionConfig const & executionConfig)
+    {this->compute(layerConfiguration, accel, executionConfig); };
 }
 
 void CopyLayer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const
@@ -152,4 +172,9 @@ void CopyLayer::compute(const LayerConfiguration& layerConfiguration, Accelerati
     UNREFERENCED_PARAMETER(executionConfig);
     auto copyConfig = layerConfiguration.Configs.Copy.get();
     copyKernels.at(accel)(copyConfig);
+}
+
+const Gna2Shape& CopyLayer::GetCopyShape(const Gna2Operation& operation)
+{
+    return *reinterpret_cast<const Gna2Shape *>(operation.Parameters[0]);
 }

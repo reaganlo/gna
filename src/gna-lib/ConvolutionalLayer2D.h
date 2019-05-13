@@ -34,7 +34,7 @@ namespace GNA
 class ConvolutionalLayer2D : public Layer
 {
 public:
-    ConvolutionalLayer2D(nn_layer const * const layer, const BaseValidator& validatorIn);
+    ConvolutionalLayer2D(const nn_layer& layer, const BaseValidator& validatorIn);
     virtual ~ConvolutionalLayer2D() = default;
 
 protected:

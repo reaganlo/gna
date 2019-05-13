@@ -41,15 +41,12 @@ using namespace GNA;
 GNA2_API enum Gna2Status Gna2ModelCreate(uint32_t deviceIndex,
     struct Gna2Model const * model, uint32_t * modelId)
 {
-    UNREFERENCED_PARAMETER(model);
-    UNREFERENCED_PARAMETER(modelId);
-    UNREFERENCED_PARAMETER(deviceIndex);
-
     const std::function<ApiStatus()> command = [&]()
     {
+        Expect::NotNull(model);
+        Expect::NotNull(modelId);
         auto& device = DeviceManager::Get().GetDevice(deviceIndex);
-        //device.LoadModel(modelId, model);
-        UNREFERENCED_PARAMETER(device);
+        *modelId = device.LoadModel(*model);
         return Gna2StatusSuccess;
     };
     return ApiWrapper::ExecuteSafely(command);
