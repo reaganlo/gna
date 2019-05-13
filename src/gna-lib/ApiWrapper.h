@@ -50,16 +50,6 @@ public:
         {
             return command();
         }
-        catch (const GnaModelException &e)
-        {
-            e.Print();
-            return ReturnError<ReturnType>(error...);
-        }
-        catch (const GnaException &e)
-        {
-            e.Print();
-            return ReturnError<ReturnType>(error...);
-        }
         catch (const std::exception& e)
         {
             LogException(e);
@@ -80,34 +70,48 @@ private:
 };
 
 template<>
-    inline ApiStatus ApiWrapper::ReturnError(const GnaModelException &e)
+inline ApiStatus ApiWrapper::ReturnError()
+{
+    return Gna2StatusUnknownError;
+}
+
+template<>
+inline void ApiWrapper::ReturnError()
+{
+    return;
+}
+
+template<>
+inline void ApiWrapper::LogException(const std::exception& e)
+{
+    Log->Error("Unknown error: %s.\n", e.what());
+}
+
+template<>
+inline void ApiWrapper::LogException(const GnaException& e)
+{
+    e.Print();
+}
+
+template<>
+inline Gna2Status ApiWrapper::ExecuteSafely(const std::function<Gna2Status()>& command)
+{
+    try
     {
+        return command();
+    }
+    catch (const GnaException &e)
+    {
+        e.Print();
         return e.GetStatus();
     }
-
-    template<>
-    inline ApiStatus ApiWrapper::ReturnError(const GnaException &e)
+    catch (const std::exception& e)
     {
-        return e.GetStatus();
-    }
-
-    template<>
-    inline ApiStatus ApiWrapper::ReturnError()
-    {
+        LogException(e);
         return Gna2StatusUnknownError;
     }
+}
 
-    template<>
-    inline void ApiWrapper::ReturnError()
-    {
-        return;
-    }
-
-    template<>
-    inline void ApiWrapper::LogException(const std::exception& e)
-    {
-        Log->Error("Unknown error: %s.\n", e.what());
-    }
 }
 
 #endif //ifndef __GNA2_API_WRAPPER_H
