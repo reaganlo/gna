@@ -36,7 +36,7 @@ project(${PROJECT_NAME})
 add_executable(test-gna-api
   test-gna-api.cpp
   test-model-export-legacy-sue.cpp)
-    
+
 target_include_directories(test-gna-api
   PRIVATE ${SRC_DIR} ${COMMON_DIR} ${API_DIR} ${API_IMPL_DIR} ${KERNEL_DIR})
 
@@ -49,12 +49,6 @@ set_target_properties(test-gna-api
   EXCLUDE_FROM_DEFAULT_BUILD_KLOCWORK TRUE
   OUTPUT_NAME test-gna-api)
 set_property(TARGET test-gna-api PROPERTY FOLDER tests)
-
-add_custom_command(TARGET test-gna-api POST_BUILD
-  COMMAND ${CMAKE_COMMAND} -E copy_if_different
-  $<TARGET_FILE:gna-api>
-  $<$<CONFIG:LNX_RELEASE>:$<TARGET_FILE:gna-api>.dbg>
-  $<TARGET_FILE_DIR:test-gna-api>)
 
 add_target_to_postbuild_test_run(test-gna-api)
 

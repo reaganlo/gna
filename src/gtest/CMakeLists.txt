@@ -59,7 +59,11 @@ if(${GNA_BUILD_WITH_GTEST_ENABLED})
   # Enable 'gtest_add_tests' command
   include(GoogleTest)
 
-  add_custom_target(gna_all_tests_to_run_on_posbuild_via_ctest ALL)
+  add_custom_target(gna_all_tests_to_run_on_posbuild_via_ctest ALL
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+      $<TARGET_FILE:gna-api>
+      $<$<CONFIG:LNX_RELEASE>:$<TARGET_FILE:gna-api>.dbg>
+      $<TARGET_FILE_DIR:test-gna-api>)
   set_property(TARGET gna_all_tests_to_run_on_posbuild_via_ctest PROPERTY FOLDER tests/common)
   macro(add_target_to_postbuild_test_run target_test)
     gtest_add_tests(
@@ -86,8 +90,8 @@ if(${GNA_BUILD_WITH_GTEST_ENABLED})
     if(CMAKE_SYSTEM_NAME STREQUAL CMAKE_HOST_SYSTEM_NAME)
       add_custom_command(
         TARGET gna_all_tests_to_run_on_posbuild_via_ctest
-        COMMENT "Run all registered tests via ctest"
         POST_BUILD
+        COMMENT "Run all registered tests via ctest"
         COMMAND ctest ARGS -R GNA_POST_BUILD_ -C "$<CONFIG>" --output-on-failure
         WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
       endif()
