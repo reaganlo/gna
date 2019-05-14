@@ -157,6 +157,7 @@ Shape ConvolutionFunction2D::GetOutputShape(Shape const & inputShape,
         Shape const & filerShape, Shape const & strideShape, Shape const & paddingShape)
 {
     Shape outputShape;
+    outputShape.LayoutOrder = GNA_TENSOR_NHWD;
     outputShape[GNA_DIM_N] = inputShape.at(GNA_DIM_N);
     // save #filters as Depth dimension of output (D in filters is used for 3D convolution)
     outputShape[GNA_DIM_D] = filerShape.at(GNA_DIM_N);
