@@ -585,7 +585,7 @@ void PwlCached::KERNEL(InitializeActivationFunctions)() const
 PwlCached::PwlCached(PwlCached && pwlCached)
 {
     memcpy_s(this, sizeof(*this), &pwlCached, sizeof(pwlCached));
-    memset(&pwlCached, 0, sizeof(pwlCached));
+    pwlCached.pwl.data = nullptr;
 }
 
 PwlCached::PwlCached(const gna_data_mode mode, nn_pwl_seg const * const segments, uint32_t segmentCountIn)

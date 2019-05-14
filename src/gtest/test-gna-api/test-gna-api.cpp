@@ -148,14 +148,13 @@ class TestGnaTensorApi : public TestGnaApi
 protected:
     template<typename ... T>
     static void InitTest(const Gna2Tensor& tensor, enum Gna2DataType type,
-        void * data, T... dimensions)
+        void * data, char const* layout, T... dimensions)
     {
         TestGnaShapeApi::InitTest(tensor.Shape, dimensions...);
         ASSERT_EQ(tensor.Data, data);
-        ASSERT_STREQ(tensor.Layout, "");
+        ASSERT_STREQ(tensor.Layout, layout);
         ASSERT_EQ(tensor.Mode, Gna2TensorModeDefault);
         ASSERT_EQ(tensor.Type, type);
-
     }
 
     int16_t data = 0;
@@ -288,37 +287,42 @@ TEST_F(TestGnaShapeApi, Gna2ShapeInit4DSuccessfull)
 TEST_F(TestGnaTensorApi, Gna2TensorInitDisabledSuccessfull)
 {
     const auto tensor = Gna2TensorInitDisabled();
-    InitTest(tensor, Gna2DataTypeNone, nullptr);
+    InitTest(tensor, Gna2DataTypeNone, nullptr, "");
 }
 
-TEST_F(TestGnaTensorApi, DISABLED_Gna2TensorInit1DSuccessfull)
+TEST_F(TestGnaTensorApi, Gna2TensorInitScalarSuccessfull)
+{
+    const auto tensor = Gna2TensorInitScalar(Gna2DataTypeInt16, &data);
+    InitTest(tensor, Gna2DataTypeInt16, &data, "S");
+}
+TEST_F(TestGnaTensorApi, Gna2TensorInit1DSuccessfull)
 {
     const auto tensor = Gna2TensorInit1D(9, Gna2DataTypeInt16, &data);
-    InitTest(tensor, Gna2DataTypeInt16, &data, 9);
+    InitTest(tensor, Gna2DataTypeInt16, &data, "", 9);
 }
 
-TEST_F(TestGnaTensorApi, DISABLED_Gna2TensorInit2DSuccessfull)
+TEST_F(TestGnaTensorApi, Gna2TensorInit2DSuccessfull)
 {
     const auto tensor = Gna2TensorInit2D(9, 13, Gna2DataTypeInt16, &data);
-    InitTest(tensor, Gna2DataTypeInt16, &data, 9, 13);
+    InitTest(tensor, Gna2DataTypeInt16, &data, "", 9, 13);
 }
 
-TEST_F(TestGnaTensorApi, DISABLED_Gna2TensorInit3DSuccessfull)
+TEST_F(TestGnaTensorApi, Gna2TensorInit3DSuccessfull)
 {
     const auto tensor = Gna2TensorInit3D(9, 13, 42, Gna2DataTypeInt16, &data);
-    InitTest(tensor, Gna2DataTypeInt16, &data, 9, 13, 42);
+    InitTest(tensor, Gna2DataTypeInt16, &data, "", 9, 13, 42);
 }
 
-TEST_F(TestGnaTensorApi, DISABLED_Gna2TensorInit4DSuccessfull)
+TEST_F(TestGnaTensorApi, Gna2TensorInit4DSuccessfull)
 {
     const auto tensor = Gna2TensorInit4D(9, 13, 42, 0, Gna2DataTypeInt16, &data);
-    InitTest(tensor, Gna2DataTypeInt16, &data, 9, 13, 42, 0);
+    InitTest(tensor, Gna2DataTypeInt16, &data, "", 9, 13, 42, 0);
 }
 
 TEST_F(TestGnaTensorApi, Gna2TensorInit1dInvalidType)
 {
     const auto tensor = Gna2TensorInit1D(9, static_cast<Gna2DataType>(Gna2DataTypeWeightScaleFactor + 100), &data);
-    InitTest(tensor, Gna2DataTypeNone, nullptr);
+    InitTest(tensor, Gna2DataTypeNone, nullptr, "");
 }
 
 TEST_F(TestGnaModelApi, Gna2ModelCreateNull)
@@ -355,7 +359,7 @@ TEST_F(TestGnaModelApi, Gna2ModelCreateSingleCopyLayerSuccesfull)
         inout, 2,
         parameters, 1 };
 
-    Gna2Model model = { 1, &copyOperation, 1 };
+    Gna2Model model = { 1, &copyOperation };
 
     const auto status = Gna2ModelCreate(0, &model, &modelId);
     ASSERT_EQ(status, Gna2StatusSuccess);

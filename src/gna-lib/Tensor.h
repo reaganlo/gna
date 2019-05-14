@@ -33,8 +33,13 @@ namespace GNA
 
 struct Tensor : public Component
 {
+    Tensor(const Gna2Tensor& tensor);
+
+    Tensor(const Shape& dimensions, const DataType dataType, const TensorMode tensorMode, void const * buffer);
+
     Tensor(const Shape& dimensions, const DataMode& dataMode, void const * buffer,
         const Validator& validator);
+
     virtual ~Tensor() = default;
 
     void UpdateBuffer(const BaseAddress& outputBuffer);
@@ -51,6 +56,21 @@ struct Tensor : public Component
         return Buffer;
     }
 
+    explicit operator Gna2Tensor() const
+    {
+        Gna2Tensor tensor {};
+        tensor.Shape = Dimensions;
+        tensor.Mode = Mode.Mode;
+        tensor.Type = Mode.Type;
+        tensor.Data = Buffer;
+        if (Layout() != Dimensions.LayoutOrder)
+        {
+            snprintf(tensor.Layout, sizeof(tensor.Layout), "%s", Dimensions.LayoutOrder.c_str());
+        }
+        return tensor;
+    }
+
+    // TODO:3:API: remove and use Type and Mode directly
     const DataMode Mode;
 
     // Total size in bytes of tensor data buffer
@@ -64,6 +84,8 @@ struct Tensor : public Component
     }
 
 protected:
+    Tensor(const Tensor& tensor, const Validator& validator);
+
     void validate() const;
 private:
     void validateDimensions() const;

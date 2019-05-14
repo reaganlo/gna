@@ -29,21 +29,36 @@
 
 using namespace GNA;
 
-Component::Component(const Shape& dimensions, const Validator& validatorIn, bool validateDimensions) :
-    Dimensions{ dimensions.Reshape(validatorIn.Order) }
+Component::Component(const Shape & dimensions) :
+    Dimensions{ dimensions },
+    Count{ Dimensions.GetNumberOfElements() },
+    validator{ nullptr }
 {
-    // TODO:3: what about data disabled? what size and dimensions? leave dimensions as should be and mode=size=0?
-    Count = 1;
-    for (const auto& dim : Dimensions)
-    {
-        Count *= dim.second;
-    }
-    Expect::GtZero(Dimensions.size(), Gna2StatusXnnErrorLyrInvalidTensorDimensions);
+}
 
+Component::Component(const Component & component, const Validator & validatorIn, bool validateDimensions) :
+    Dimensions{ component.Dimensions },
+    Count{ component.Count }
+{
     validator = std::make_unique<const Validator>(validatorIn);
     Expect::NotNull(validator.get());
-    auto caps = validator->Capabilities;
+    Validate(validateDimensions);
+}
+
+Component::Component(const Shape& dimensions, const Validator& validatorIn, bool validateDimensions) :
+    Component{ Component{ dimensions.Reshape(validatorIn.Order) }, validatorIn, validateDimensions }
+{
+}
+
+void Component::Validate(bool validateDimensions) const
+{
+    const auto caps = validator->Capabilities;
     Expect::NotNull(caps);
     if (validateDimensions)
-        Dimensions.Validate(validator->Capabilities);
+    {
+        auto const & limits = *validator->Capabilities;
+        Expect::Equal( Dimensions.LayoutOrder.operator _tensor_order(),
+            limits.Order.Value, limits.Order.Error);
+        Expect::ShapeIsValid(Dimensions, limits.Dimensions);
+    }
 }

@@ -30,6 +30,8 @@
 
 #include "Expect.h"
 #include "GnaException.h"
+#include "Shape.h"
+#include "Tensor.h"
 
 #include <cstdint>
 #include <cstring>
@@ -50,15 +52,24 @@ public:
 
     static ApiShape ShapeInit()
     {
-        auto shape = Shape();
+        const auto shape = Shape(GNA_TENSOR_SCALAR);
         return static_cast<ApiShape>(shape);
     }
 
     template<typename ... T>
-    static ApiShape ShapeInit(gna_tensor_order order, T ... dimensions)
+    static ApiShape ShapeInit(T ... dimensions)
     {
-        auto shape = Shape(order, static_cast<uint32_t>(dimensions)...);
+        const auto shape = Shape(GNA_TENSOR_ORDER_ANY, static_cast<uint32_t>(dimensions)...);
         return static_cast<ApiShape>(shape);
+    }
+
+    template<typename ... T>
+    static ApiTensor TensorInit(const DataType dataType, const TensorMode tensorMode,
+        void const * buffer, T ... dimensions)
+    {
+        auto const shape = Shape(GNA_TENSOR_ORDER_ANY, static_cast<uint32_t>(dimensions)...);
+        auto const tensor = std::make_unique<Tensor>(shape, dataType, tensorMode, buffer);
+        return static_cast<ApiTensor>(*tensor);
     }
 
     // All pointers in source != nullptr, otherwise exception is thrown

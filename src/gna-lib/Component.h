@@ -35,7 +35,12 @@ namespace GNA
 
 struct Component
 {
+    Component(const Shape& dimensions);
+
+    Component(const Component& component, const Validator& validator, bool validateDimensions = true);
+
     Component(const Shape& dimensions, const Validator& validator, bool validateDimensions = true);
+
     virtual ~Component() = default;
 
     /**
@@ -52,6 +57,8 @@ struct Component
     uint32_t Count;
 
 protected:
+    void Validate(bool validateDimensions = true) const;
+
     std::unique_ptr<const Validator> validator;
 };
 

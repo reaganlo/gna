@@ -37,7 +37,7 @@ public:
         const std::vector<std::unique_ptr<Layer>>& layers,
         uint32_t gmmCount, std::unique_ptr<Memory> dumpMemory);
 
-    ~HardwareModelSue1() = default;
+    virtual ~HardwareModelSue1() = default;
 
     const LayerDescriptor& GetDescriptor(uint32_t layerIndex) const;
 

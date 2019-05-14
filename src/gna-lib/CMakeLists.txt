@@ -109,6 +109,7 @@ set(gna_lib_sources
   ${SRC_DIR}/LayerDescriptor.cpp
   ${SRC_DIR}/LayerInput.cpp
   ${SRC_DIR}/LayerOutput.cpp
+  ${SRC_DIR}/Layout.cpp
   ${SRC_DIR}/Logger.cpp
   ${SRC_DIR}/Memory.cpp
   ${SRC_DIR}/ModelDumper.cpp
@@ -185,6 +186,7 @@ set(gna_lib_headers
   ${SRC_DIR}/LayerDescriptor.h
   ${SRC_DIR}/LayerInput.h
   ${SRC_DIR}/LayerOutput.h
+  ${SRC_DIR}/Layout.h
   ${SRC_DIR}/Logger.h
   ${SRC_DIR}/Memory.h
   ${SRC_DIR}/ModelExportConfig.h

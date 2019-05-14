@@ -142,7 +142,7 @@ GNA2_API struct Gna2Shape Gna2ShapeInit1D(uint32_t x)
 {
     const std::function<ApiShape()> command = [&]()
     {
-        return ModelWrapper::ShapeInit(GNA_TENSOR_ORDER_ANY, x);
+        return ModelWrapper::ShapeInit(x);
     };
     return ApiWrapper::ExecuteSafely(command, ApiShape{});
 }
@@ -151,7 +151,7 @@ GNA2_API struct Gna2Shape Gna2ShapeInit2D(uint32_t x, uint32_t y)
 {
     const std::function<ApiShape()> command = [&]()
     {
-        return ModelWrapper::ShapeInit(GNA_TENSOR_ORDER_ANY, x, y);
+        return ModelWrapper::ShapeInit(x, y);
     };
     return ApiWrapper::ExecuteSafely(command, ApiShape{});
 }
@@ -160,7 +160,7 @@ GNA2_API struct Gna2Shape Gna2ShapeInit3D(uint32_t x, uint32_t y, uint32_t z)
 {
     const std::function<ApiShape()> command = [&]()
     {
-        return ModelWrapper::ShapeInit(GNA_TENSOR_ORDER_ANY, x, y, z);
+        return ModelWrapper::ShapeInit(x, y, z);
     };
     return ApiWrapper::ExecuteSafely(command, ApiShape{});
 }
@@ -170,76 +170,13 @@ GNA2_API struct Gna2Shape Gna2ShapeInit4D(uint32_t n, uint32_t x, uint32_t y,
 {
     const std::function<ApiShape()> command = [&]()
     {
-        return ModelWrapper::ShapeInit(GNA_TENSOR_ORDER_ANY, n, x, y, z);
+        return ModelWrapper::ShapeInit(n, x, y, z);
     };
     return ApiWrapper::ExecuteSafely(command, ApiShape{});
 }
 
-GNA2_API struct Gna2Tensor Gna2TensorInit1D(uint32_t x, enum Gna2DataType type,
-    void * data)
-{
-    UNREFERENCED_PARAMETER(x);
-    UNREFERENCED_PARAMETER(type);
-    UNREFERENCED_PARAMETER(data);
-    // TODO:3:API: implement P2
-    const std::function<ApiTensor()> command = [&]()
-    {
-        return ApiTensor{};
-    };
-    return ApiWrapper::ExecuteSafely(command, ApiTensor{});
-}
-
-GNA2_API struct Gna2Tensor Gna2TensorInit2D(uint32_t x, uint32_t y,
-    enum Gna2DataType type, void * data)
-{
-    UNREFERENCED_PARAMETER(x);
-    UNREFERENCED_PARAMETER(y);
-    UNREFERENCED_PARAMETER(type);
-    UNREFERENCED_PARAMETER(data);
-    // TODO:3:API: implement P2
-    const std::function<ApiTensor()> command = [&]()
-    {
-        return ApiTensor{};
-    };
-    return ApiWrapper::ExecuteSafely(command, ApiTensor{});
-}
-
-GNA2_API struct Gna2Tensor Gna2TensorInit3D(uint32_t x, uint32_t y, uint32_t z,
-    enum Gna2DataType type, void * data)
-{
-    UNREFERENCED_PARAMETER(x);
-    UNREFERENCED_PARAMETER(y);
-    UNREFERENCED_PARAMETER(z);
-    UNREFERENCED_PARAMETER(type);
-    UNREFERENCED_PARAMETER(data);
-    // TODO:3:API: implement P2
-    const std::function<ApiTensor()> command = [&]()
-    {
-        return ApiTensor{};
-    };
-    return ApiWrapper::ExecuteSafely(command, ApiTensor{});
-}
-
-GNA2_API struct Gna2Tensor Gna2TensorInit4D(uint32_t n, uint32_t x, uint32_t y,
-    uint32_t z, enum Gna2DataType type, void * data)
-{
-    UNREFERENCED_PARAMETER(n);
-    UNREFERENCED_PARAMETER(x);
-    UNREFERENCED_PARAMETER(y);
-    UNREFERENCED_PARAMETER(z);
-    UNREFERENCED_PARAMETER(type);
-    UNREFERENCED_PARAMETER(data);
-    // TODO:3:API: implement P2
-    const std::function<ApiTensor()> command = [&]()
-    {
-        return ApiTensor{};
-    };
-    return ApiWrapper::ExecuteSafely(command, ApiTensor{});
-}
-
 GNA2_API struct Gna2Tensor Gna2TensorInitDisabled()
 {
-    // TODO:3:API: implement P2
     const std::function<ApiTensor()> command = [&]()
     {
         return ApiTensor{};
@@ -249,12 +186,51 @@ GNA2_API struct Gna2Tensor Gna2TensorInitDisabled()
 
 GNA2_API struct Gna2Tensor Gna2TensorInitScalar(enum Gna2DataType type, void * data)
 {
-    UNREFERENCED_PARAMETER(type);
-    UNREFERENCED_PARAMETER(data);
-    // TODO:3:API: implement P2
     const std::function<ApiTensor()> command = [&]()
     {
-        return ApiTensor{};
+        auto tensor = ModelWrapper::TensorInit(type, {}, data );
+        tensor.Layout[0] = 'S';
+        return tensor;
+    };
+    return ApiWrapper::ExecuteSafely(command, ApiTensor{});
+}
+
+GNA2_API struct Gna2Tensor Gna2TensorInit1D(uint32_t x, enum Gna2DataType type,
+    void * data)
+{
+    const std::function<ApiTensor()> command = [&]()
+    {
+        return ModelWrapper::TensorInit(type, {}, data, x );
+    };
+    return ApiWrapper::ExecuteSafely(command, ApiTensor{});
+}
+
+GNA2_API struct Gna2Tensor Gna2TensorInit2D(uint32_t x, uint32_t y,
+    enum Gna2DataType type, void * data)
+{
+    const std::function<ApiTensor()> command = [&]()
+    {
+        return ModelWrapper::TensorInit(type, {}, data, x, y );
+    };
+    return ApiWrapper::ExecuteSafely(command, ApiTensor{});
+}
+
+GNA2_API struct Gna2Tensor Gna2TensorInit3D(uint32_t x, uint32_t y, uint32_t z,
+    enum Gna2DataType type, void * data)
+{
+    const std::function<ApiTensor()> command = [&]()
+    {
+        return ModelWrapper::TensorInit(type, {}, data, x, y, z );
+    };
+    return ApiWrapper::ExecuteSafely(command, ApiTensor{});
+}
+
+GNA2_API struct Gna2Tensor Gna2TensorInit4D(uint32_t n, uint32_t x, uint32_t y,
+    uint32_t z, enum Gna2DataType type, void * data)
+{
+    const std::function<ApiTensor()> command = [&]()
+    {
+        return ModelWrapper::TensorInit(type, {}, data, n, x, y, z );
     };
     return ApiWrapper::ExecuteSafely(command, ApiTensor{});
 }

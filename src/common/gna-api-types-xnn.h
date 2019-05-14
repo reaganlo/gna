@@ -145,8 +145,10 @@ typedef enum _tensor_dim
     GNA_DIM_H,          // Height
     GNA_DIM_D,          // Depth (for 2D operations same as Channel)
     //GNA_DIM_C,          // Channel (for 2D operations same as Depth)
-    GNA_DIM_X,          // Staring index for higher dimensions
-    // TODO:3: consider extension to higher dimensions - maybe use char dim[4] {"S"=0, "N"=1, "W"=1...., "1", "2", ... "16"}
+
+    GNA_DIM_X,
+    GNA_DIM_Y,
+    GNA_DIM_Z,
 } gna_tensor_dim;
 
 // TODO:3: Subject to change due to naming inconsistency

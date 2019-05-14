@@ -47,7 +47,7 @@ public:
     BaseValidator(
         const HardwareCapabilities hwCapabilities,
         const ValidBoundariesFunctor bufferValidator);
-    ~BaseValidator() = default;
+    virtual ~BaseValidator() = default;
 
     void ValidateBuffer(const void* const buffer, size_t size,
         const AlignLimits& alignLimits = {GNA_MEM_ALIGN, Gna2StatusMemoryAlignmentInvalid}) const;
@@ -69,7 +69,7 @@ class LayerValidator : public BaseValidator
 {
 public:
     LayerValidator(const BaseValidator& validator, nn_operation operation);
-    ~LayerValidator() = default;
+    virtual ~LayerValidator() = default;
 
     const nn_operation Operation;
 };
@@ -78,7 +78,7 @@ class Validator : public LayerValidator
 {
 public:
     Validator(const LayerValidator& validator, const FullCapabilitiesMap& capabilities);
-    ~Validator() = default;
+    virtual ~Validator() = default;
 
     const ComponentLimits * const Capabilities;
     const gna_tensor_order Order;

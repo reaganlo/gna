@@ -29,8 +29,21 @@
 
 using namespace GNA;
 
-Tensor::Tensor(const Shape& dimensions, const DataMode& dataMode, void const * buffer,
-    const Validator& validatorIn) :
+Tensor::Tensor(const ApiTensor & tensor) :
+    Tensor{ Shape::Create(tensor.Shape, Layout{ tensor.Layout }),
+        tensor.Type, tensor.Mode, tensor.Data }
+{
+}
+
+Tensor::Tensor(const Shape & dimensions, const DataType dataType, const TensorMode tensorMode, void const * buffer) :
+    Component{ dimensions },
+    Mode{ dataType, tensorMode },
+    Size{ Count * Mode.Size },
+    Buffer{ buffer }
+{}
+
+Tensor::Tensor(const Shape & dimensions, const DataMode & dataMode, void const * buffer,
+    const Validator & validatorIn) :
     Component{ dimensions, validatorIn, false }, // disable dimension validation as it's performed here with Mode information
     Mode{ dataMode },
     Size{ Count * Mode.Size },
@@ -45,17 +58,21 @@ void Tensor::UpdateBuffer(const BaseAddress & buffer)
     Buffer = buffer;
 }
 
-void Tensor::ValidateBuffer(const void* const buffer) const
+void Tensor::ValidateBuffer(const void * const buffer) const
 {
     auto caps = static_cast<const TensorLimits* const>(validator->Capabilities);
     validator->ValidateBuffer(buffer, Size, caps->Align);
 }
 
+Tensor::Tensor(const Tensor & tensor, const Validator & validator) :
+    Tensor{ tensor.Dimensions, tensor.Mode, tensor.Buffer, validator }
+{}
+
 void Tensor::validate() const
 {
     if (validator)
     {
-        auto caps = static_cast<const TensorLimits* const>(validator->Capabilities);
+        const auto caps = static_cast<const TensorLimits* const>(validator->Capabilities);
         Expect::InSet(Mode, caps->Modes);
         // TODO:3: what about data disabled? what size and dimensions? leave dimensions as should be and mode=size=0?
         if (GNA_DATA_DISABLED != Mode)
@@ -74,14 +91,15 @@ void Tensor::validateDimensions() const
 {
     // update Multiplier when varies for data modes
     auto caps = *validator->Capabilities;
-    for (auto& dim : caps.Dimensions)
+    for (auto & dim : caps.Dimensions)
     {
         int tmp = Mode.Size;
         int log2size = 0;
-        while (tmp >>= 1) ++log2size;
+        while (tmp >>= 1)
+            ++log2size;
         auto sizeIndex = static_cast<uint32_t>(log2size);
         if (dim.second.Multipliers.size() >= sizeIndex + 1)
             dim.second.Multipliers[0] = dim.second.Multipliers.at(sizeIndex);
     }
-    Dimensions.Validate(&caps);
+    Component::Validate(true);
 }

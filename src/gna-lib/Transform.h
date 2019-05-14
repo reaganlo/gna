@@ -46,7 +46,7 @@ struct TransformFactoryConfig
     const Tensor * input;
     const Tensor * output;
     const DataMode outputMode;
-    const BaseAddress& outputBuffer;
+    const BaseAddress outputBuffer;
     void const * layerDetails;
     const LayerValidator& validator;
 

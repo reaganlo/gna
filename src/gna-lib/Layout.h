@@ -25,62 +25,41 @@
 
 #pragma once
 
-#include "gna2-model-impl.h"
-
 #include "gna-api.h"
-#include "gna2-common-impl.h"
 #include "gna2-model-api.h"
-#include "Layout.h"
+#include "ParameterLimits.h"
 
 #include <map>
-#include <vector>
+#include <string>
 
 namespace GNA
 {
-struct ComponentLimits;
 
-using ShapeMap = std::map<gna_tensor_dim, uint32_t>;
-
-struct Shape : public ShapeMap
+class Layout : public std::string
 {
-    static Shape Create(const ApiShape & shape, gna_tensor_order order = GNA_TENSOR_ORDER_ANY);
+public:
+    static constexpr size_type MaximumNumberOfDimension = GNA2_SHAPE_MAXIMUM_NUMBER_OF_DIMENSIONS;
+    //static const std::vector<gna_tensor_dim> & GetVectorIndices(gna_tensor_order order);
+    //static char GetIndex(gna_tensor_dim dim);
+    static gna_tensor_dim GetIndex(char dim);
 
-    // Clang issue workaround @see: https://stackoverflow.com/questions/34494765/interaction-between-default-arguments-and-parameter-pack-gcc-and-clang-disagree
-    Shape() :
-        ShapeMap(),
-        Order{ GNA_TENSOR_ORDER_ANY }
-    { }
+    // Creates default layout as LAYOUT_ANY
+    Layout();
+    Layout(char const * layoutIn);
+    Layout(gna_tensor_order order);
+    ~Layout() = default;
 
-    template<typename ... T>
-    Shape(gna_tensor_order order, T ... dimensions) :
-        Shape{ Create(std::vector<uint32_t>({ static_cast<uint32_t>(dimensions)... }), order), order }
-    { }
+    operator gna_tensor_order() const;
 
-    Shape(gna_3d_dimensions shape);
+    void ValidateNumberOfDimensions(size_type shapeDimensions) const;
 
-    Shape & operator=(const Shape & right);
+    void Reshape(Layout const & newLayout, size_type shapeDimensions);
 
-    using ShapeMap::at;
-    using ShapeMap::operator[];
-    uint32_t& operator[](char dimension);
-    uint32_t at(char dimension) const;
+private:
+    static const std::map<const std::string, gna_tensor_order>& GetOrders();
+    static char const * GetOrderString(gna_tensor_order order);
 
-    operator gna_3d_dimensions const() const;
-
-    operator ApiShape() const;
-
-    Shape Reshape(gna_tensor_order newOrder) const;
-
-    uint32_t GetNumberOfElements() const;
-
-    Layout LayoutOrder;
-
-protected:
-    static ShapeMap Create(const std::vector<uint32_t> && dimensions,
-        gna_tensor_order order = GNA_TENSOR_ORDER_ANY);
-
-    Shape(ShapeMap && map, gna_tensor_order order);
-
-    gna_tensor_order Order;
+    //gna_tensor_order OrderFromLayout() const;
 };
+
 }

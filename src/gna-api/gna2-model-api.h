@@ -109,12 +109,6 @@ struct Gna2Model
      Operations which define the graph.
     */
     struct Gna2Operation * Operations;
-
-    /**
-     Maximal number of input tensors in a batch.
-     Supported values: [1,8], depends on operation used.
-    */
-    uint32_t MaximumBatchSize;
 };
 
 /**
@@ -187,7 +181,7 @@ enum Gna2OperationType
                         - N is a number of filters,
                     - For biasMode ::Gna2BiasModePerStride: [N x H x W] 1D Vector, where
                         - N is a number of filters,
-                        - H is a number of the convolution output rows, 
+                        - H is a number of the convolution output rows,
                         - W is a number of the convolution output columns,
         5. activationFunction [optional]:
             Specifies PWL activation function segment tensor.
@@ -256,7 +250,7 @@ enum Gna2OperationType
             Supported values:
                 - Mode: {::Gna2TensorModeDefault}
                 - Type: {::Gna2DataTypeInt8, ::Gna2DataTypeInt16},
-                - Layout: Default: [N x W] Row-major, (aka flat), 
+                - Layout: Default: [N x W] Row-major, (aka flat),
                 - Shape: [N x W] 2D matrix, where:
                     - N is a batch size (number of vectors),
                     - W is a width of input tensor
@@ -393,7 +387,7 @@ enum Gna2OperationType
     Operation:
         - a) output = GMM(input, means, inverseCovariances, constants)
         - b) output = GMM(input, interleaved{means, inverseCovariances, constants})
-    
+
     Shape dimensions meaning:
         - N is a batch size (number of feature vectors),
         - H is a number of GMM states,
@@ -484,7 +478,7 @@ enum Gna2OperationType
         - output<layoutOut> = transpose(input<layoutIn>)
         .
         Where:
-            - layout[In/Out] specifies transposition direction. 
+            - layout[In/Out] specifies transposition direction.
 
     Operands:
         1. inputs:
@@ -1036,11 +1030,6 @@ enum Gna2ItemType
     Gna2ItemTypeModelOperations = 1,
 
     /**
-     Gna2Model::MaximumBatchSize.
-     */
-    Gna2ItemTypeModelMaximumBatchSize = 2,
-
-    /**
      Gna2Model::Operations[x]->Gna2Operation::Type.
      */
     Gna2ItemTypeOperationType = 3,
@@ -1431,28 +1420,84 @@ GNA2_API struct Gna2Shape Gna2ShapeInit3D(uint32_t x, uint32_t y, uint32_t z);
  @param x Second tensor dimension.
  @param y Third tensor dimension.
  @param z Fourth tensor dimension.
- @return Complete Gna2Shape representing 3D tensor dimensions.
+ @return Complete Gna2Shape representing 4D tensor dimensions.
  */
 GNA2_API struct Gna2Shape Gna2ShapeInit4D(uint32_t n, uint32_t x, uint32_t y,
     uint32_t z);
 
+/**
+ Helper function that simplifies Gna2Tensor creation.
 
+ @return Complete Gna2Tensor representing disabled tensor.
+ */
+GNA2_API struct Gna2Tensor Gna2TensorInitDisabled();
+
+/**
+ Helper function that simplifies Gna2Tensor creation.
+
+ @param type Type of data.
+ @param data Pointer to data buffer. Data must be single scalar value.
+ @return Complete Gna2Tensor representing scalar.
+ */
+GNA2_API struct Gna2Tensor Gna2TensorInitScalar(enum Gna2DataType type, void * data);
+
+/**
+ Helper function that simplifies Gna2Tensor creation.
+
+ @param x Size of a vector.
+ @param type Type of data.
+ @param data Pointer to data buffer.
+ @return Complete Gna2Tensor representing vector.
+ */
 GNA2_API struct Gna2Tensor Gna2TensorInit1D(uint32_t x, enum Gna2DataType type,
     void * data);
 
+/**
+ Helper function that simplifies Gna2Tensor creation.
+
+ @param x First matrix dimension.
+ @param y Second matrix dimension.
+ @param type Type of data.
+ @param data Pointer to data buffer.
+ @return Complete Gna2Tensor representing 2D matrix.
+ */
 GNA2_API struct Gna2Tensor Gna2TensorInit2D(uint32_t x, uint32_t y,
     enum Gna2DataType type, void * data);
 
+/**
+ Helper function that simplifies Gna2Tensor creation.
+
+ @param x First tensor dimension.
+ @param y Second tensor dimension.
+ @param z Third tensor dimension.
+ @param type Type of data.
+ @param data Pointer to data buffer.
+ @return Complete Gna2Tensor representing 3D tensor.
+ */
 GNA2_API struct Gna2Tensor Gna2TensorInit3D(uint32_t x, uint32_t y, uint32_t z,
     enum Gna2DataType type, void * data);
 
+/**
+ Helper function that simplifies Gna2Tensor creation.
+
+ @param n First tensor dimension, usually representing batch size or number of filters.
+ @param x Second tensor dimension.
+ @param y Third tensor dimension.
+ @param z Fourth tensor dimension.
+ @param type Type of data.
+ @param data Pointer to data buffer.
+ @return Complete Gna2Tensor representing 4D tensor.
+ */
 GNA2_API struct Gna2Tensor Gna2TensorInit4D(uint32_t n, uint32_t x, uint32_t y,
     uint32_t z, enum Gna2DataType type, void * data);
 
-GNA2_API struct Gna2Tensor Gna2TensorInitDisabled();
+/**
+ Helper function that simplifies Gna2Tensor creation.
 
-GNA2_API struct Gna2Tensor Gna2TensorInitScalar(enum Gna2DataType type, void * data);
-
+ @param numberOfSegments The number of segments PWL consists of.
+ @param segments Pointer to PWL segments data buffer.
+ @return Complete Gna2Tensor representing PWL activation function tensor.
+ */
 GNA2_API struct Gna2Tensor Gna2TensorInitActivation(uint32_t numberOfSegments,
     struct Gna2PwlSegment * segments);
 

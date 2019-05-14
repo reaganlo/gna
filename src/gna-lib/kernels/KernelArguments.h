@@ -52,7 +52,17 @@ struct KernelBuffers
     KernelBuffers(KernelBuffers&& rhs) noexcept
     {
         memcpy_s(this, sizeof(*this), &rhs, sizeof(rhs));
-        memset(&rhs, 0, sizeof(rhs));
+
+        rhs.d0 = nullptr;
+        rhs.d1 = nullptr;
+        rhs.d2 = nullptr;
+        rhs.d3 = nullptr;
+        rhs.d4 = nullptr;
+        rhs.d5 = nullptr;
+        rhs.d6 = nullptr;
+        rhs.d7 = nullptr;
+        rhs.pool = nullptr;
+        rhs.cnnFusedBuffer = nullptr;
     }
 
     int16_t *d0 = nullptr;
