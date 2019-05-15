@@ -124,5 +124,11 @@ void DeviceManager::OpenDevice(gna_device_id deviceId)
 void DeviceManager::CloseDevice(gna_device_id deviceId)
 {
     VerifyDeviceIndex(deviceId);
+
+    if (!deviceOpenedMap.at(deviceId))
+    {
+        throw GnaException(Gna2StatusIdentifierInvalid);
+    }
+
     deviceOpenedMap[deviceId] = false;
 }

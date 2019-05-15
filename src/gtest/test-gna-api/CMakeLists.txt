@@ -35,6 +35,8 @@ project(${PROJECT_NAME})
 
 add_executable(test-gna-api
   test-gna-api.cpp
+  test-gna-device-api.cpp
+  test-gna-device-api.h
   test-model-export-legacy-sue.cpp)
 
 target_include_directories(test-gna-api

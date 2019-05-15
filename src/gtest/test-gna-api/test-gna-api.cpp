@@ -23,6 +23,8 @@
  in any way.
 */
 
+#include "test-gna-api.h"
+
 #include "gna-api.h"
 #include "../../gna-api/gna2-model-api.h"
 
@@ -33,37 +35,6 @@
 #include <gtest/gtest.h>
 #include <initializer_list>
 #include <vector>
-
-class TestGnaApi : public testing::Test
-{
-protected:
-    int timeout = 300;
-    std::chrono::system_clock::time_point start;
-    std::chrono::system_clock::time_point stop;
-
-    void SetUp() override
-    {
-        start = std::chrono::system_clock::now();
-    }
-
-    void TearDown() override
-    {
-        stop = std::chrono::system_clock::now();
-        auto durationMs = std::chrono::duration_cast<std::chrono::milliseconds>(stop - start).count();
-        EXPECT_LE(durationMs, timeout);
-    }
-
-    void setTimeoutInMs(int set)
-    {
-        timeout = set;
-    };
-
-    auto getTimeoutInMs()
-    {
-        return timeout;
-    }
-
-};
 
 class TestGnaModelApi : public TestGnaApi
 {
