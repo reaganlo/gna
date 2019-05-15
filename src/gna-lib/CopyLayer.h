@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2018 Intel Corporation.
+ Copyright 2019 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -32,27 +32,6 @@ namespace GNA
 {
 
 // TODO:3: Refactor to use tensors and functions
-
-// Transpose Layer descriptor converter
-class TransposeLayer : public Layer
-{
-public:
-    TransposeLayer(const nn_layer& layer, const BaseValidator& validatorIn);
-    virtual ~TransposeLayer() = default;
-
-    virtual void UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const override;
-
-protected:
-    virtual DataConfig GetDataMode() const override;
-
-private:
-    void computeHidden(AccelerationMode accel, ExecutionConfig const & executionConfig) const;
-    void compute(const LayerConfiguration& layerConfiguration, AccelerationMode accel, ExecutionConfig const & executionConfig) const;
-
-    const KernelMap<TransposeKernel>& transposeKernels;
-    TransposeConfig transposeHiddenConfig;
-};
-
 class CopyLayer : public Layer
 {
 public:

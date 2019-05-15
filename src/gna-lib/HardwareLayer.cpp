@@ -28,17 +28,18 @@
 #include <algorithm>
 #include <cmath>
 
-#include "ConvolutionalLayer.h"
 #include "Cnn2DuArch.h"
+#include "ConvolutionalFunctions2D.h"
+#include "ConvolutionalLayer.h"
+#include "CopyLayer.h"
 #include "Expect.h"
 #include "GmmLayer.h"
 #include "HardwareCapabilities.h"
 #include "Macros.h"
+#include "PoolingFunctions2D.h"
 #include "RecurrentLayer.h"
 #include "RequestConfiguration.h"
-#include "SimpleLayers.h"
-#include "ConvolutionalFunctions2D.h"
-#include "PoolingFunctions2D.h"
+#include "TransposeLayer.h"
 
 using std::array;
 using std::make_unique;
@@ -698,4 +699,5 @@ void HardwareLayerGmm::save()
     XnnDescriptor[maxlswidth] = GMM_SCORE_SIZE;
     XnnDescriptor[mvwidth]   = GMM_MEAN_VALUE_SIZE;
 }
+
 

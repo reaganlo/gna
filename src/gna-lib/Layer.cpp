@@ -30,7 +30,8 @@
 #include "GmmLayer.h"
 #include "LayerConfiguration.h"
 #include "RecurrentLayer.h"
-#include "SimpleLayers.h"
+#include "CopyLayer.h"
+#include "TransposeLayer.h"
 #include "Expect.h"
 
 using std::make_unique;

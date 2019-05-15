@@ -487,7 +487,7 @@ enum Gna2OperationType
                 - [N x W] aka "interleave operation"
                 - [W x N] aka "deinterleave operation"
         2. outputs:
-            @see ::Gna2OperationTypeCopy input operand, with notice:
+            @see ::Gna2OperationTypeCopy output operand, with notice:
             @note: Layout:
                 - [W x N] aka "interleave operation"
                 - [N x W] aka "deinterleave operation"

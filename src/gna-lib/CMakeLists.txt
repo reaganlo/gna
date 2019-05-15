@@ -92,6 +92,7 @@ set(gna_lib_sources
   ${SRC_DIR}/ConvolutionalFunctions2D.cpp
   ${SRC_DIR}/ConvolutionalLayer.cpp
   ${SRC_DIR}/ConvolutionalLayer2D.cpp
+  ${SRC_DIR}/CopyLayer.cpp
   ${SRC_DIR}/Cnn2DuArch.cpp
   ${SRC_DIR}/DataMode.cpp
   ${SRC_DIR}/Device.cpp
@@ -124,13 +125,13 @@ set(gna_lib_sources
   ${SRC_DIR}/RequestHandler.cpp
   ${SRC_DIR}/Scalar.cpp
   ${SRC_DIR}/Shape.cpp
-  ${SRC_DIR}/SimpleLayers.cpp
   ${SRC_DIR}/SoftwareModel.cpp
   ${SRC_DIR}/SubModel.cpp
   ${SRC_DIR}/Tensor.cpp
   ${SRC_DIR}/ThreadPool.cpp
   ${SRC_DIR}/Transform.cpp
   ${SRC_DIR}/TransformMap.cpp
+  ${SRC_DIR}/TransposeLayer.cpp
   ${SRC_DIR}/Validator.cpp
   ${SRC_DIR}/Weight.cpp
   ${SRC_DIR}/${IOCTL_SENDER_PREFIX}DriverInterface.cpp)
@@ -164,6 +165,7 @@ set(gna_lib_headers
   ${SRC_DIR}/ConvolutionalFunctions2D.h
   ${SRC_DIR}/ConvolutionalLayer.h
   ${SRC_DIR}/ConvolutionalLayer2D.h
+  ${SRC_DIR}/CopyLayer.h
   ${SRC_DIR}/Cnn2DuArch.h
   ${SRC_DIR}/DataMode.h
   ${SRC_DIR}/Device.h
@@ -201,13 +203,13 @@ set(gna_lib_headers
   ${SRC_DIR}/RequestHandler.h
   ${SRC_DIR}/Scalar.h
   ${SRC_DIR}/Shape.h
-  ${SRC_DIR}/SimpleLayers.h
   ${SRC_DIR}/SoftwareModel.h
   ${SRC_DIR}/SubModel.h
   ${SRC_DIR}/Tensor.h
   ${SRC_DIR}/ThreadPool.h
   ${SRC_DIR}/Transform.h
   ${SRC_DIR}/TransformMap.h
+  ${SRC_DIR}/TransposeLayer.h
   ${SRC_DIR}/Validator.h
   ${SRC_DIR}/Weight.h
   ${SRC_DIR}/${IOCTL_SENDER_PREFIX}DriverInterface.h)
