@@ -286,7 +286,7 @@ GNA2_API enum Gna2Status Gna2OperationInitFullyConnectedBiasGrouping(
     struct Gna2Tensor * weights, struct Gna2Tensor * biases,
     struct Gna2Tensor * activation,
     struct Gna2Tensor * weightScaleFactors,
-    enum Gna2BiasMode* biasMode,    //TODO: 3: Bruno: consider enforcing somehow this param must be == Gna2BiasModeGrouping
+    enum Gna2BiasMode* biasMode,
     uint32_t* biasVectorIndex)
 {
     const std::function<Gna2Status()> command = [&]()
@@ -295,6 +295,7 @@ GNA2_API enum Gna2Status Gna2OperationInitFullyConnectedBiasGrouping(
         ModelWrapper::OperationInit(*operation, Gna2OperationTypeFullyConnectedAffine, userAllocator);
         ModelWrapper::SetOperands(*operation, inputs, outputs, weights, biases, activation, weightScaleFactors);
         ModelWrapper::SetParameters(*operation, biasMode, biasVectorIndex);
+        *biasMode = Gna2BiasModeGrouping;
         return Gna2StatusSuccess;
     };
     return ApiWrapper::ExecuteSafely(command);

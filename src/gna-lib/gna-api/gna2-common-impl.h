@@ -27,6 +27,7 @@
 #define __GNA2_COMMON_IMPL_H
 
 #include "gna-api-status.h"
+#include "gna-api.h"
 #include "../gna-api/gna2-common-api.h"
 
 #include <stdint.h>
@@ -145,6 +146,22 @@ const std::unordered_map<Gna2Status, gna_status_t, EnumHash> StatusMap =
     { Gna2StatusGmmBadNumGmm, GMM_BADNUMGMM },
     { Gna2StatusGmmBadMode, GMM_BADMODE },
     { Gna2StatusGmmCfgInvalidLayout, GMM_CFG_INVALID_LAYOUT },
+};
+
+const std::unordered_map<gna_device_version, Gna2DeviceVersion, EnumHash> DeviceVersionMapInverted =
+{
+    {GNA_SKL, Gna2DeviceVersionSkylake },
+    {GNA_CNL, Gna2DeviceVersionCannonlake },
+    {GNA_GLK, Gna2DeviceVersionGeminilake },
+    {GNA_EHL, Gna2DeviceVersionElkhartLake },
+    {GNA_ICL, Gna2DeviceVersionIcelake },
+    {GNA_TGL, Gna2DeviceVersionTigerlake },
+    {GNA_ADL, Gna2DeviceVersionAlderLake },
+    {GNA_SUE_CREEK, Gna2DeviceVersionSueCreek },
+    {GNA_JELLYFISH, Gna2DeviceVersionJellyfish },
+    {GNA_ACE_EMBEDDED, Gna2DeviceVersionAceEmbedded },
+    {GNA_ACE_ANNA, Gna2DeviceVersionAceAnna },
+    {GNA_SOFTWARE_EMULATION, Gna2DeviceVersionSoftwareEmulation }
 };
 
 }

@@ -207,13 +207,13 @@ AccelerationMode AccelerationMode::GetEffectiveSoftwareAccelerationMode(
         mode == Gna2AccelerationModeAuto)
     {
         //last is fastest
-        return AccelerationMode{ supportedCpuAccelerations.back(),hardwareConsistency };
+        return AccelerationMode{ supportedCpuAccelerations.back(), hardwareConsistency };
     }
     for(const auto& supported: supportedCpuAccelerations)
     {
         if(mode == supported)
         {
-            return AccelerationMode{ supported,hardwareConsistency };
+            return AccelerationMode{ supported, hardwareConsistency };
         }
     }
     throw GnaException(Gna2StatusAccelerationModeNotSupported);

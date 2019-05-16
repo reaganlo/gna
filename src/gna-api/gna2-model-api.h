@@ -1560,7 +1560,7 @@ GNA2_API enum Gna2Status Gna2OperationInitElementWiseAffine(
  @param biases Address of Gna2Tensor structure describing biases.
  @param activation Address of Gna2Tensor structure describing activation.
  @param weightScaleFactors Address of Gna2Tensor structure describing weight Scale Factors.
- @param biasMode Address of Gna2BiasMode parameter.
+ @param biasMode Address of Gna2BiasMode parameter. Function will set it to Gna2BiasModeGrouping.
  @param biasVectorIndex Address of bias vector index parameter.
  @return ::Gna2StatusSuccess on success.
  */

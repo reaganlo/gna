@@ -169,7 +169,8 @@ GNAAPI intel_gna_status_t GnaRequestConfigEnableHardwareConsistency(
     try
     {
         auto& device = DeviceManager::Get().GetDevice(0);
-        device.EnableHardwareConsistency(configId, (DeviceVersion)hardwareVersion);
+        const auto deviceVersion = DeviceVersionMapInverted.at(hardwareVersion);
+        device.EnableHardwareConsistency(configId, deviceVersion);
         return GNA_SUCCESS;
     }
     catch (const GnaException &e)
