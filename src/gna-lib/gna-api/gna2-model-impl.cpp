@@ -175,6 +175,17 @@ GNA2_API struct Gna2Shape Gna2ShapeInit4D(uint32_t n, uint32_t x, uint32_t y,
     return ApiWrapper::ExecuteSafely(command, ApiShape{});
 }
 
+GNA2_API struct Gna2Shape Gna2ShapeInit6D(
+        uint32_t d1, uint32_t d2, uint32_t d3,
+        uint32_t d4, uint32_t d5, uint32_t d6)
+{
+    const std::function<ApiShape()> command = [&]()
+    {
+        return ModelWrapper::ShapeInit(d1, d2, d3, d4, d5, d6);
+    };
+    return ApiWrapper::ExecuteSafely(command, ApiShape{});
+}
+
 GNA2_API struct Gna2Tensor Gna2TensorInitDisabled()
 {
     const std::function<ApiTensor()> command = [&]()

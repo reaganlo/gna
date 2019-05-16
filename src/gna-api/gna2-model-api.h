@@ -1426,6 +1426,25 @@ GNA2_API struct Gna2Shape Gna2ShapeInit4D(uint32_t n, uint32_t x, uint32_t y,
     uint32_t z);
 
 /**
+ Helper function that simplifies common Gna2Shape creation.
+ Useful for initialization of GMM interleaved tensors.
+
+ @note
+ No arguments validation is performed.
+
+ @param d1 First tensor dimension.
+ @param d2 Second tensor dimension.
+ @param d3 Third tensor dimension.
+ @param d4 Fourth tensor dimension.
+ @param d5 Fifth tensor dimension.
+ @param d6 Sixth tensor dimension.
+ @return Complete Gna2Shape representing 6D tensor dimensions.
+ */
+GNA2_API struct Gna2Shape Gna2ShapeInit6D(
+        uint32_t d1, uint32_t d2, uint32_t d3,
+        uint32_t d4, uint32_t d5, uint32_t d6);
+
+/**
  Helper function that simplifies Gna2Tensor creation.
 
  @return Complete Gna2Tensor representing disabled tensor.
