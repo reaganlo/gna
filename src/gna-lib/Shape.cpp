@@ -62,9 +62,10 @@ uint32_t Shape::at(char dimension) const
 
 Shape Shape::Reshape(gna_tensor_order order) const
 {
-    auto layout = LayoutOrder;
-    auto const newLayout = Layout(order);
-    layout.Reshape(newLayout, size());
+    const Layout newLayout{ order };
+    //TODO:3:P1:Check correctness after commenting out the following 2 lines
+    //auto layout = LayoutOrder;
+    //layout.Reshape(newLayout, size());
     ShapeMap dims;
     for (const auto & dim : newLayout)
     {
