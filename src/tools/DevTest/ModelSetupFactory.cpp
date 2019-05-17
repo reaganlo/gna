@@ -48,168 +48,129 @@ IModelSetup::UniquePtr ModelSetupFactory::CreateModel(ModelSetupType ms)
     uint32_t copyRows2 = 2;
     IModelSetup::UniquePtr ptr;
 
+    std::cout << GetModelSetupTypeStr(ms) << ":" << std::endl;
     switch (ms)
     {
     default:
     /* fall through */
     case ModelSetupDnn_1_1B:
         ptr = std::make_unique<SetupDnnModel_1>(deviceController, false, false, false);
-        std::cout << "Test ModelSetupDnn_1_1B: ";
         break;
     case ModelSetupDnn_1_2B:
         ptr = std::make_unique<SetupDnnModel_1>(deviceController, true, false, false);
-        std::cout << "Test ModelSetupDnn_1_2B: ";
         break;
     case ModelSetupDnnAl_1_1B:
         ptr = std::make_unique<SetupDnnModel_1>(deviceController, false, true, false);
-        std::cout << "Test ModelSetupDnnAl_1_1B: ";
         break;
     case ModelSetupDnnAl_1_2B:
         ptr = std::make_unique<SetupDnnModel_1>(deviceController, true, true, false);
-        std::cout << "Test ModelSetupDnnAl_1_2B: ";
         break;
     case ModelSetupDnnPwl_1_1B:
         ptr = std::make_unique<SetupDnnModel_1>(deviceController, false, false, true);
-        std::cout << "Test ModelSetupDnnPwl_1_1B: ";
         break;
     case ModelSetupDnnPwl_1_2B:
         ptr = std::make_unique<SetupDnnModel_1>(deviceController, true, false, true);
-        std::cout << "Test ModelSetupDnnPwl_1_2B: ";
         break;
     case ModelSetupDnnAlPwl_1_1B:
         ptr = std::make_unique<SetupDnnModel_1>(deviceController, false, true, true);
-        std::cout << "Test ModelSetupDnnAlPwl_1_1B: ";
         break;
     case ModelSetupDnnAlPwl_1_2B:
         ptr = std::make_unique<SetupDnnModel_1>(deviceController, true, true, true);
-        std::cout << "Test ModelSetupDnnAlPwl_1_2B: ";
         break;
     case ModelSetupDnn_Multibuffer_1B:
         ptr = std::make_unique<SetupDnnModel_Multibuffer>(deviceController, false, false, false);
-        std::cout << "Test ModelSetupDnn_Multibuffer_1B: ";
         break;
     case ModelSetupDnn_Multibuffer_2B:
         ptr = std::make_unique<SetupDnnModel_Multibuffer>(deviceController, true, false, false);
-        std::cout << "Test ModelSetupDnn_Multibuffer_2B: ";
         break;
     case ModelSetupDnnAl_Multibuffer_1B:
         ptr = std::make_unique<SetupDnnModel_Multibuffer>(deviceController, false, true, false);
-        std::cout << "Test ModelSetupDnnAl_Multibuffer_1B: ";
         break;
     case ModelSetupDnnAl_Multibuffer_2B:
         ptr = std::make_unique<SetupDnnModel_Multibuffer>(deviceController, true, true, false);
-        std::cout << "Test ModelSetupDnnAl_Multibuffer_2B: ";
         break;
     case ModelSetupDnnPwl_Multibuffer_1B:
         ptr = std::make_unique<SetupDnnModel_Multibuffer>(deviceController, false, false, true);
-        std::cout << "Test ModelSetupDnnPwl_Multibuffer_1B: ";
         break;
     case ModelSetupDnnPwl_Multibuffer_2B:
         ptr = std::make_unique<SetupDnnModel_Multibuffer>(deviceController, true, false, true);
-        std::cout << "Test ModelSetupDnnPwl_Multibuffer_2B: ";
         break;
     case ModelSetupDnnAlPwl_Multibuffer_1B:
         ptr = std::make_unique<SetupDnnModel_Multibuffer>(deviceController, false, true, true);
-        std::cout << "Test ModelSetupDnnAlPwl_Multibuffer_1B: ";
         break;
     case ModelSetupDnnAlPwl_Multibuffer_2B:
         ptr = std::make_unique<SetupDnnModel_Multibuffer>(deviceController, true, true, true);
-        std::cout << "Test ModelSetupDnnAlPwl_Multibuffer_2B: ";
         break;
     case ModelSetupMultibias_1_1B:
         ptr = std::make_unique<SetupMultibiasModel_1>(deviceController, false, false);
-        std::cout << "Test ModelSetupMultibias_1_1B: ";
         break;
     case ModelSetupMultibias_1_2B:
         ptr = std::make_unique<SetupMultibiasModel_1>(deviceController, true, false);
-        std::cout << "Test ModelSetupMultibias_1_2B: ";
         break;
     case ModelSetupMultibiasPwl_1_1B:
         ptr = std::make_unique<SetupMultibiasModel_1>(deviceController, false, true);
-        std::cout << "Test ModelSetupMultibiasPwl_1_1B: ";
         break;
     case ModelSetupMultibiasPwl_1_2B:
         ptr = std::make_unique<SetupMultibiasModel_1>(deviceController, true, true);
-        std::cout << "Test ModelSetupMultibiasPwl_1_2B: ";
         break;
     case ModelSetupConvolution_1:
         ptr = std::make_unique<SetupConvolutionModel>(deviceController, false);
-        std::cout << "Test ModelSetupConvolution_1: ";
         break;
     case ModelSetupConvolutionPwl_1:
         ptr = std::make_unique<SetupConvolutionModel>(deviceController, true);
-        std::cout << "Test ModelSetupConvolutionPwl_1: ";
         break;
     case ModelSetupPooling_1:
         ptr = std::make_unique<SetupPoolingModel>(deviceController);
-        std::cout << "Test ModelSetupPooling_1: ";
         break;
     case ModelSetupRecurrent_1_1B:
         ptr = std::make_unique<SetupRecurrentModel>(deviceController, false);
-        std::cout << "Test ModelSetupRecurrent_1_1B: ";
         break;
     case ModelSetupRecurrent_1_2B:
         ptr = std::make_unique<SetupRecurrentModel>(deviceController, true);
-        std::cout << "Test ModelSetupRecurrent_1_2B: ";
         break;
     case ModelSetupDiagonal_1_1B:
         ptr = std::make_unique<SetupDiagonalModel>(deviceController, false, false);
-        std::cout << "Test ModelSetupDiagonal_1_1B: ";
         break;
     case ModelSetupDiagonal_1_2B:
         ptr = std::make_unique<SetupDiagonalModel>(deviceController, true, false);
-        std::cout << "Test ModelSetupDiagonal_1_2B: ";
         break;
     case ModelSetupDiagonalPwl_1_1B:
         ptr = std::make_unique<SetupDiagonalModel>(deviceController, false, true);
-        std::cout << "Test ModelSetupDiagonalPwl_1_1B: ";
         break;
     case ModelSetupDiagonalPwl_1_2B:
         ptr = std::make_unique<SetupDiagonalModel>(deviceController, true, true);
-        std::cout << "Test ModelSetupDiagonalPwl_1_2B: ";
         break;
     case ModelSetupCopy_1:
         ptr = std::make_unique<SetupCopyModel>(deviceController, copyColumns16, copyRows4);
-        std::cout << "Test ModelSetupCopy_1: ";
         break;
     case ModelSetupCopy_2:
         ptr = std::make_unique<SetupCopyModel>(deviceController, copyColumns16, copyRows2);
-        std::cout << "Test ModelSetupCopy_2: ";
         break;
     case ModelSetupCopy_3:
         ptr = std::make_unique<SetupCopyModel>(deviceController, copyColumns8, copyRows4);
-        std::cout << "Test ModelSetupCopy_3: ";
         break;
     case ModelSetupCopy_4:
         ptr = std::make_unique<SetupCopyModel>(deviceController, copyColumns8, copyRows2);
-        std::cout << "Test ModelSetupCopy_4: ";
         break;
     case ModelSetupTranspose_1:
         ptr = std::make_unique<SetupTransposeModel>(deviceController, 0);
-        std::cout << "Test ModelSetupTranspose_1: ";
         break;
     case ModelSetupTranspose_2:
         ptr = std::make_unique<SetupTransposeModel>(deviceController, 1);
-        std::cout << "Test ModelSetupTranspose_2: ";
         break;
     case ModelSetupGmm_1:
         ptr = std::make_unique<SetupGmmModel>(deviceController, false);
-        std::cout << "Test ModelSetupGmm_1: ";
         break;
     case ModelSetupGmmAl_1:
         ptr = std::make_unique<SetupGmmModel>(deviceController, true);
-        std::cout << "Test ModelSetupGmmAl_1: ";
         break;
     case ModelSetupMix:
         ptr = std::make_unique<SetupMixModel>(deviceController);
-        std::cout << "Test ModelSetupMix: ";
         break;
     case ModelSetupSplit_1_1B:
-        std::cout << "ModelSetupSplit_1_1B ";
         ptr = std::make_unique<SetupSplitModel>(deviceController, false, false, false);
         break;
     case ModelSetupSplit_1_2B:
-        std::cout << "ModelSetupSplit_1_2B ";
         ptr = std::make_unique<SetupSplitModel>(deviceController, true, false, false);
         break;
     case ModelSetupConvolution_2D:

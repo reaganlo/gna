@@ -50,6 +50,7 @@ set(devtest_sources
   DevTest/ChainModel.cpp
   DevTest/DeviceController.cpp
   DevTest/DevTest.cpp
+  DevTest/IModelSetup.cpp
   DevTest/ModelSetup.cpp
   DevTest/ModelSetupFactory.cpp
   DevTest/ModelUtilities.cpp

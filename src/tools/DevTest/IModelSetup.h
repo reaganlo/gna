@@ -25,9 +25,10 @@
 
 #pragma once
 
-#include <memory>
-
 #include "gna-api.h"
+
+#include <memory>
+#include <string>
 
 enum ModelSetupType
 {
@@ -86,8 +87,11 @@ enum ModelSetupType
     ModelSetupSplit_1_1B,
     ModelSetupSplit_1_2B,
 
-    ModelSetupConvolution_2D
+    ModelSetupConvolution_2D,
+    ModelSetupTypeCount
 };
+
+std::string GetModelSetupTypeStr(ModelSetupType type);
 
 class IModelSetup
 {

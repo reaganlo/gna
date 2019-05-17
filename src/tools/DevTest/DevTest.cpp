@@ -276,12 +276,24 @@ public:
     {
         ModelSetupFactory msf(deviceController);
         IModelSetup::UniquePtr modelSetup;
-        for (auto action = script.actions.begin(); action != script.actions.end(); ++action)
+        auto overallSuccess = true;
+        for (const auto& action : script.actions)
         {
             // TODO single model scenario support only
             //auto model = script.models[action->modelIndex].get();
+            const bool success = TryRun(action, msf, modelSetup);
+            overallSuccess = overallSuccess && success;
+        }
+        if(!overallSuccess)
+        {
+            throw std::runtime_error("One or more tests were unsuccessful.");
+        }
+    }
 
-            switch (action->actionType)
+    bool TryRun(const Action& action, ModelSetupFactory& msf, IModelSetup::UniquePtr& modelSetup)
+    {
+        try {
+            switch (action.actionType)
             {
             case Action::LoadModel:
                 if (modelSetup)
@@ -289,7 +301,7 @@ public:
                     throw std::runtime_error("Script error: model already loaded");
                 }
 
-                modelSetup = msf.CreateModel(action->modelSetup);
+                modelSetup = msf.CreateModel(action.modelSetup);
                 break;
 
             case Action::CloseModel:
@@ -303,7 +315,11 @@ public:
 
             case Action::Score:
             {
-                auto config = modelSetup->ConfigId(action->modelIndex, action->configIndex);
+                if (!modelSetup)
+                {
+                    throw std::runtime_error("Script error: no model to score");
+                }
+                auto config = modelSetup->ConfigId(action.modelIndex, action.configIndex);
                 deviceController.RequestSetAcceleration(config, gna_acceleration::GNA_AUTO);
                 deviceController.RequestSetConsistency(config, Gna2DeviceVersionAlderLake);
                 gna_request_id requestId;
@@ -312,13 +328,27 @@ public:
                 break;
             }
             case Action::CheckReferenceOutput:
-                modelSetup->checkReferenceOutput(action->modelIndex, action->configIndex);
+                if (!modelSetup)
+                {
+                    throw std::runtime_error("Script error: no model to check scores");
+                }
+                modelSetup->checkReferenceOutput(action.modelIndex, action.configIndex);
                 std::cout << "Test passed" << std::endl;
                 break;
             }
         }
+        catch (std::exception& e)
+        {
+            std::cout << "Error in Action Type = " << action.actionType <<": "<< e.what() << std::endl;
+            return false;
+        }
+        catch (...)
+        {
+            std::cout << "Error in Action Type = " << action.actionType << ": " << "Unknown error" << std::endl;
+            return false;
+        }
+        return true;
     }
-
     void CloseScenario()
     {
     }
