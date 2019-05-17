@@ -42,7 +42,7 @@ Component::Component(const Component & component, const Validator & validatorIn,
 {
     validator = std::make_unique<const Validator>(validatorIn);
     Expect::NotNull(validator.get());
-    Validate(validateDimensions);
+    Validate(*validator->Capabilities, validateDimensions);
 }
 
 Component::Component(const Shape& dimensions, const Validator& validatorIn, bool validateDimensions) :
@@ -50,13 +50,10 @@ Component::Component(const Shape& dimensions, const Validator& validatorIn, bool
 {
 }
 
-void Component::Validate(bool validateDimensions) const
+void Component::Validate(const ComponentLimits& limits, bool validateDimensions) const
 {
-    const auto caps = validator->Capabilities;
-    Expect::NotNull(caps);
     if (validateDimensions)
     {
-        auto const & limits = *validator->Capabilities;
         Expect::Equal( Dimensions.LayoutOrder.operator _tensor_order(),
             limits.Order.Value, limits.Order.Error);
         Expect::ShapeIsValid(Dimensions, limits.Dimensions);

@@ -57,7 +57,7 @@ struct Component
     uint32_t Count;
 
 protected:
-    void Validate(bool validateDimensions = true) const;
+    void Validate(const ComponentLimits& limits, bool validateDimensions = true) const;
 
     std::unique_ptr<const Validator> validator;
 };

@@ -101,5 +101,5 @@ void Tensor::validateDimensions() const
         if (dim.second.Multipliers.size() >= sizeIndex + 1)
             dim.second.Multipliers[0] = dim.second.Multipliers.at(sizeIndex);
     }
-    Component::Validate(true);
+    Component::Validate(caps, true);
 }
