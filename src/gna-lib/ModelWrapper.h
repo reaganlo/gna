@@ -115,6 +115,10 @@ private:
     template<typename Type>
     static Type ** AllocateAndFillZeros(const Gna2UserAllocator userAllocator, uint32_t elementCount)
     {
+        if (elementCount == 0)
+        {
+            return nullptr;
+        }
         Expect::NotNull((void *)(userAllocator));
         const auto size = static_cast<uint32_t>(sizeof(Type *)) * elementCount;
         const auto memory = userAllocator(size);
