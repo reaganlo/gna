@@ -120,7 +120,6 @@ static const std::map<const gna_layer_operation, const Support> FROM_3_0_AFF_RNN
     {INTEL_AFFINE_DIAGONAL,     FROM_3_0},
     {INTEL_AFFINE_MULTIBIAS,    FROM_3_0},
     {INTEL_RECURRENT,           FROM_3_0},  // TODO:3:CAPS: LOW priority in const weight mode
-    {INTEL_CONVOLUTIONAL,       FROM_3_0},
     {INTEL_CONVOLUTIONAL_2D,    FROM_3_0},
 };
 
@@ -137,7 +136,6 @@ static const std::map<const gna_layer_operation, const Support> FROM_3_0_AFF_RNN
     {INTEL_AFFINE_DIAGONAL,     FROM_3_0},
     {INTEL_AFFINE_MULTIBIAS,    FROM_3_0},
     {INTEL_RECURRENT,           FROM_3_0},    // TODO:3:CAPS: LOW priority in const weight mode
-    {INTEL_CONVOLUTIONAL,       FROM_3_0},
     {INTEL_CONVOLUTIONAL_2D,    FROM_3_0},
     {INTEL_COPY,                FROM_0_9_AUX},//FROM_3_0
     {INTEL_DEINTERLEAVE,        FROM_0_9_AUX},//FROM_3_0
@@ -149,7 +147,6 @@ static const std::map<const gna_layer_operation, const Support> FROM_3_0_AFF_CNN
     {INTEL_AFFINE,              FROM_3_0},
     {INTEL_AFFINE_DIAGONAL,     FROM_3_0},
     {INTEL_AFFINE_MULTIBIAS,    FROM_3_0},
-    {INTEL_CONVOLUTIONAL,       FROM_3_0},
     {INTEL_CONVOLUTIONAL_2D,    FROM_3_0},
 };
 
@@ -159,7 +156,6 @@ static const std::map<const gna_layer_operation, const Support> FROM_3_0_AFF_CNN
     {INTEL_AFFINE,              FROM_3_0},
     {INTEL_AFFINE_DIAGONAL,     FROM_3_0},
     {INTEL_AFFINE_MULTIBIAS,    FROM_3_0},
-    {INTEL_CONVOLUTIONAL,       FROM_3_0},
     {INTEL_CONVOLUTIONAL_2D,    FROM_3_0},
 };
 
@@ -168,7 +164,6 @@ static const std::map<const gna_layer_operation, const Support> FROM_3_0_AFF_RNN
     {INTEL_AFFINE,              FROM_3_0},
     {INTEL_AFFINE_DIAGONAL,     FROM_3_0},
     {INTEL_RECURRENT,           FROM_3_0},    // TODO:3:CAPS: LOW priority in const weight mode
-    {INTEL_CONVOLUTIONAL,       FROM_3_0},
     {INTEL_CONVOLUTIONAL_2D,    FROM_3_0},
 };
 
@@ -176,26 +171,22 @@ static const std::map<const gna_layer_operation, const Support> FROM_3_0_AFF_CNN
 {
     {INTEL_AFFINE,              FROM_3_0},
     {INTEL_AFFINE_DIAGONAL,     FROM_3_0},
-    {INTEL_CONVOLUTIONAL,       FROM_3_0},
     {INTEL_CONVOLUTIONAL_2D,    FROM_3_0},
 };
 
 static const std::map<const gna_layer_operation, const Support> FROM_3_0_CNN =
 {
-    {INTEL_CONVOLUTIONAL,       FROM_3_0},
     {INTEL_CONVOLUTIONAL_2D,    FROM_3_0},
 };
 
 static const std::map<const gna_layer_operation, const Support> FROM_3_0_CNN_MB =
 {
     {INTEL_AFFINE_MULTIBIAS,       FROM_3_0},
-    {INTEL_CONVOLUTIONAL,       FROM_3_0},
     {INTEL_CONVOLUTIONAL_2D,    FROM_3_0},
 };
 
 static const std::map<const gna_layer_operation, const Support> FROM_3_0_CNN_AUX =
 {
-    {INTEL_CONVOLUTIONAL,       FROM_3_0},
     {INTEL_CONVOLUTIONAL_2D,    FROM_3_0},
     {INTEL_COPY,                FROM_0_9_AUX},
     {INTEL_DEINTERLEAVE,        FROM_0_9_AUX},
@@ -205,7 +196,6 @@ static const std::map<const gna_layer_operation, const Support> FROM_3_0_CNN_AUX
 static const std::map<const gna_layer_operation, const Support> FROM_3_0_CNN_MB_AUX =
 {
     {INTEL_AFFINE_MULTIBIAS,    FROM_3_0},
-    {INTEL_CONVOLUTIONAL,       FROM_3_0},
     {INTEL_CONVOLUTIONAL_2D,    FROM_3_0},
     {INTEL_COPY,                FROM_0_9_AUX},
     {INTEL_DEINTERLEAVE,        FROM_0_9_AUX},
@@ -218,7 +208,6 @@ static const std::map<const gna_layer_operation, const Support> FROM_3_0_INPUT_D
     {INTEL_AFFINE_DIAGONAL,     FROM_3_0},
     {INTEL_AFFINE_MULTIBIAS,    FROM_3_0},
     //{INTEL_RECURRENT,           FROM_3_0}, // TODO:3:CAPS: Low priority
-    {INTEL_CONVOLUTIONAL,       FROM_3_0},
     {INTEL_CONVOLUTIONAL_2D,    FROM_3_0},
     {INTEL_COPY,                FROM_3_0},
     {INTEL_DEINTERLEAVE,        FROM_3_0},
@@ -231,7 +220,6 @@ static const std::map<const gna_layer_operation, const Support> FROM_3_0_INPUT_D
     //{INTEL_AFFINE_DIAGONAL,     FROM_3_0},  // TODO:3:CAPS: Low priority
     //{INTEL_AFFINE_MULTIBIAS,    FROM_3_0},  // TODO:3:CAPS: Low priority
     //{INTEL_RECURRENT,           FROM_3_0}, // TODO:3:CAPS: Low priority
-    //{INTEL_CONVOLUTIONAL,       FROM_3_0},  // TODO:3:CAPS: Low priority
     //{INTEL_CONVOLUTIONAL_2D,    FROM_3_0},  // TODO:3:CAPS: Low priority
     //{INTEL_COPY,                FROM_3_0},  // TODO:3:CAPS: Low priority
     //{INTEL_DEINTERLEAVE,        FROM_3_0},  // TODO:3:CAPS: Low priority
@@ -287,7 +275,6 @@ const std::map<const DataConfig, std::map<const gna_layer_operation, const Suppo
             {INTEL_AFFINE,              FROM_3_0},
             {INTEL_AFFINE_DIAGONAL,     FROM_3_0},
             {INTEL_AFFINE_MULTIBIAS,    FROM_3_0},
-            {INTEL_CONVOLUTIONAL,       FROM_3_0},
             {INTEL_CONVOLUTIONAL_2D,    FROM_3_0},
             {INTEL_GMM,                 FROM_0_9_S_FALSE},
         }
@@ -342,7 +329,6 @@ const std::map<const DataConfig, std::map<const gna_layer_operation, const Suppo
             {INTEL_AFFINE,              FROM_3_0},
             {INTEL_AFFINE_DIAGONAL,     FROM_3_0},
             {INTEL_AFFINE_MULTIBIAS,    FROM_3_0},
-            {INTEL_CONVOLUTIONAL,       FROM_3_0},
             {INTEL_CONVOLUTIONAL_2D,    FROM_3_0},
             {INTEL_GMM,                 FROM_0_9_S_FALSE},
         }
@@ -408,7 +394,6 @@ const std::map<const DataConfig, std::map<const gna_layer_operation, const Suppo
             {INTEL_AFFINE,              FROM_3_0},
             {INTEL_AFFINE_DIAGONAL,     FROM_3_0},
             {INTEL_RECURRENT,           FROM_3_0},    // TODO:3:CAPS: LOW priority in const weight mode
-            {INTEL_CONVOLUTIONAL,       FROM_3_0},
             {INTEL_CONVOLUTIONAL_2D,    FROM_3_0},
             {INTEL_COPY,                FROM_0_9_AUX},
             {INTEL_DEINTERLEAVE,        FROM_0_9_AUX},
@@ -511,7 +496,6 @@ const std::map<const DataConfig, std::map<const gna_layer_operation, const Suppo
             {INTEL_AFFINE,              FROM_3_0},
             {INTEL_AFFINE_DIAGONAL,     FROM_3_0},
             {INTEL_RECURRENT,           FROM_3_0},    // TODO:3:CAPS: LOW priority in const weight mode
-            {INTEL_CONVOLUTIONAL,       FROM_3_0},
             {INTEL_CONVOLUTIONAL_2D,    FROM_3_0},
             {INTEL_COPY,                FROM_0_9_AUX},
             {INTEL_DEINTERLEAVE,        FROM_0_9_AUX},
