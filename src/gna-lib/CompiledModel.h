@@ -142,7 +142,7 @@ private:
         uint32_t gmmCount = 0;
         for (uint32_t i = 0; i < numberOfOperations; i++)
         {
-            if (isGmmOperation(firstOperation[numberOfOperations]))
+            if (isGmmOperation(firstOperation[i]))
             {
                 ++gmmCount;
             }
