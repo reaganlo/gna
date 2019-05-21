@@ -320,9 +320,9 @@ enum Gna2OperationType
                 - For ::Gna2BiasModeGrouping:
                     - Mode: {::Gna2TensorModeDefault, ::Gna2TensorModeDisabled // TODO:3:verify is applicable}
                     - Type: {::Gna2DataTypeInt32 // TODO:3:verify is applicable},
-                    - Shape: [N x H] 2D Matrix where:
-                        - N is a number of the bias vectors (columns), @see biasVectorIndex,
+                    - Shape: [H x N] 2D Matrix where:
                         - H is a number of the output nodes (rows),
+                        - N is a number of the bias vectors (columns), @see biasVectorIndex,
         5. activationFunction:
             - @see ::Gna2OperationTypeConvolution activationFunction operand
         6. weightScaleFactors:
