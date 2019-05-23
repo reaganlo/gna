@@ -26,8 +26,19 @@
 #include "ActivationFunction.h"
 
 #include "AccelerationDetector.h"
-#include "DeviceLayerSupport.h"
-#include "LayerConfiguration.h"
+#include "Address.h"
+#include "Capabilities.h"
+#include "GnaException.h"
+#include "ParameterLimits.h"
+#include "Shape.h"
+#include "Validator.h"
+
+#include "gna2-common-api.h"
+
+#include "gna-api.h"
+
+#include <algorithm>
+#include <memory>
 
 using namespace GNA;
 
@@ -185,7 +196,9 @@ std::unique_ptr<ActivationFunction> ActivationFunction::Create(const TransformFa
     {
         auto cnn = static_cast<nn_layer_conv const*>(config.layerDetails);
         if (INTEL_NO_POOLING != cnn->poolType)
+        {
             mandatory = true;
+        }
         break;
     }
     case GNA_LAYER_CNN_2D_POOLING:
@@ -210,12 +223,10 @@ std::unique_ptr<ActivationFunction> ActivationFunction::Create(const TransformFa
             AccelerationDetector::GetKernelMap<ActivationKernel>(KERNEL_PWL)}, config.outputMode,
             std::move(pwlFunction));
     }
-    else
-    {
-        auto valuePtr = &(config.output->Mode.Value);
-        *((gna_data_mode*)valuePtr) = GNA_DATA_ACTIVATION_DISABLED;
-        return std::unique_ptr<ActivationFunction>(nullptr);
-    }
+
+    auto valuePtr = &(config.output->Mode.Value);
+    *((gna_data_mode*)valuePtr) = GNA_DATA_ACTIVATION_DISABLED;
+    return std::unique_ptr<ActivationFunction>(nullptr);
 }
 
 nn_func_pwl const * ActivationFunction::getPwl(void const *layerDetails, nn_operation operation)

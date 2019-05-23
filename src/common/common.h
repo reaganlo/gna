@@ -25,6 +25,10 @@
 
 #pragma once
 
+#include "gna-api-types-xnn.h"
+#include "gna-api-types-gmm.h"
+#include "gna-api-instrumentation.h"
+
 #include <cstdio>
 #include <cstdlib>
 #include <functional>
@@ -32,10 +36,6 @@
 #if defined(__GNUC__) && !defined(__INTEL_COMPILER)
 #include <mm_malloc.h>
 #endif
-
-#include "gna-api-types-xnn.h"
-#include "gna-api-types-gmm.h"
-#include "gna-api-instrumentation.h"
 
 /**
  * Data alignment for intrinsics
@@ -99,13 +99,13 @@ typedef enum _TransformOperation
 template<typename T>
 T GnaFloor(T number, T significance)
 {
-    return (T)(number / significance) * significance;
+    return static_cast<T>((number / significance) * significance);
 }
 
 template<typename T>
 T GnaCeilDiv(T number, T divider)
 {
-    return (T)(((number) + divider - 1) / divider);
+    return static_cast<T>(((number) + divider - 1) / divider);
 }
 
 inline int64_t getBias(void* ptr, uint32_t idx, gna_data_mode prec)

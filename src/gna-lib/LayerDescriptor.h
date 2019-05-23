@@ -25,16 +25,24 @@
 
 #pragma once
 
-#include <string.h>
-
-#include "common.h"
-
 #include "Address.h"
+#include "Expect.h"
 #include "GnaConfig.h"
-#include "HardwareCapabilities.h"
+
+#include "gna-api.h"
+#include "gna-api-status.h"
+#include "gna-api-types-xnn.h"
+#include "gna2-common-impl.h"
+
+#include "gna2-common-impl.h"
+
+#include <algorithm>
+#include <memory>
+#include <map>
 
 namespace GNA
 {
+class HardwareCapabilities;
 
 using AddrGmmCfg = Address<GMM_CONFIG *>;
 using AddrGmmCfgC = Address<GMM_CONFIG * const>;
@@ -283,7 +291,7 @@ public:
             return static_cast<uint32_t>(*address.Get<uint16_t>());
         break;
         default:
-            return static_cast<uint32_t>(*address.Get<uint32_t>());
+            return *address.Get<uint32_t>();
         break;
         }
     }
@@ -313,13 +321,13 @@ private:
         }
         else // set bit flags
         {
-            uint8_t newValue = translator->at(value);
+            uint8_t newValue = translator->at(static_cast<uint32_t>(value));
             uint8_t mask = 0xFF;        // FF
-            mask = mask >> (8 - bitCount);// 2: 03
+            mask = static_cast<uint8_t>(mask >> (8 - bitCount));// 2: 03
             newValue &= mask;      // fit value  (03)
-            mask = mask << bitOffset;   // 3: 18 place mask at desired position
-            newValue <<= bitOffset;     // 3: 18 place mask at desired position
-            mask = ~mask;               // E7 neg mask
+            mask = static_cast<uint8_t>(mask << bitOffset);   // 3: 18 place mask at desired position
+            newValue = static_cast<uint8_t>(newValue << bitOffset);     // 3: 18 place mask at desired position
+            mask = static_cast<uint8_t>(~mask);               // E7 neg mask
             *address.Get<uint8_t>() &= mask; // clear old value E7
             *address.Get<uint8_t>() |= newValue; // set new value FF
         }
@@ -331,7 +339,7 @@ class LayerDescriptor
 {
 public:
     // Gets default size of descriptor
-    inline static size_t GetSize()
+    inline static uint32_t GetSize()
     {
         return getSize(DefaultDeviceVersion);
     }
@@ -340,14 +348,14 @@ public:
     inline static uint32_t GetSize(const uint32_t layerCount,
         const DeviceVersion hwId = DefaultDeviceVersion)
     {
-        return static_cast<const uint32_t>(getSize(hwId) * layerCount);
+        return getSize(hwId) * layerCount;
     }
 
     LayerDescriptor() = delete;
 
     LayerDescriptor(const LayerDescriptor&) = default;
 
-    LayerDescriptor(const BaseAddress memoryBase, const BaseAddress& address,
+    LayerDescriptor(const BaseAddress memoryBaseIn, const BaseAddress& addressIn,
                     const HardwareCapabilities& hwCaps);
 
     LayerDescriptor(const LayerDescriptor& base, AddrGmmCfg gmmDescriptor, GetHwOffset getHwOffsetIn);
@@ -356,8 +364,8 @@ public:
 
     void Forward(AddrGmmCfg gmmDescriptor)
     {
-        address = address + static_cast<uint32_t>(Size);
-        offset = offset + static_cast<uint32_t>(Size);
+        address = address + Size;
+        offset = offset + Size;
         GmmDescriptor = gmmDescriptor;
     }
 
@@ -389,15 +397,15 @@ public:
         return address.GetOffset(memoryBase);
     }
 
-    size_t Size;
+    uint32_t Size;
     const HardwareCapabilities& HwCapabilities;
     AddrGmmCfg GmmDescriptor;
 
 private:
-    static size_t getSize(const DeviceVersion hwId);
+    static uint32_t getSize(const DeviceVersion hwId);
     static const std::map<const XnnParameterType, const XnnParameter>& getParameterMap(const DeviceVersion hwId);
 
-    LayerDescriptor(const AddrGmmCfg gmmConfig, const size_t size, const HardwareCapabilities& hwCaps,
+    LayerDescriptor(const AddrGmmCfg gmmConfig, const uint32_t size, const HardwareCapabilities& hwCaps,
         const BaseAddress memoryBaseIn, BaseAddress descriptorBaseIn,
         const std::map<const XnnParameterType, const XnnParameter>& paramsIn,
         GetHwOffset getHwOffsetIn);

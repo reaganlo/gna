@@ -25,7 +25,9 @@
 
 #pragma once
 
-#include "KernelArguments.h"
+#include <stdint.h>
+
+struct GmmConfig;
 
 typedef void (*GmmMaxMix) (GmmConfig const * const gmmConfig);
 

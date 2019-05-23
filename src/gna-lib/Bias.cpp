@@ -25,7 +25,22 @@
 
 #include "Bias.h"
 
+#include "Capabilities.h"
 #include "Expect.h"
+#include "ParameterLimits.h"
+#include "Shape.h"
+#include "Validator.h"
+
+#include "gna2-common-api.h"
+
+#include "common.h"
+#include "gna-api-types-gmm.h"
+#include "gna-api.h"
+
+#include <cstdint>
+#include <map>
+#include <memory>
+#include <utility>
 
 using namespace GNA;
 
@@ -139,5 +154,5 @@ BiasTensor::BiasTensor(const Shape& dimensions, const uint32_t biasVectorIndex, 
     Expect::InRange(VectorIndex, ui32_0, vectorCount - 1, Gna2StatusXnnErrorBiasIndex);
 
     Expect::InSet(BiasMode, modeLimits);
-};
+}
 

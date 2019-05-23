@@ -94,10 +94,7 @@ char const * Layout::GetOrderString(gna_tensor_order order)
     {
         return orderString->first.c_str();
     }
-    else
-    {
-        throw GnaException(Gna2StatusXnnErrorLyrInvalidTensorOrder);
-    }
+    throw GnaException(Gna2StatusXnnErrorLyrInvalidTensorOrder);
 }
 
 Layout::operator gna_tensor_order() const

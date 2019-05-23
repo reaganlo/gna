@@ -28,13 +28,12 @@
 #include "GnaException.h"
 #include "HardwareRequest.h"
 #include "Logger.h"
+#include "Macros.h"
 #include "Memory.h"
 
 #include "ntstatus.h"
 
 using namespace GNA;
-
-using std::unique_ptr;
 
 #define MAX_D0_STATE_PROBES  10
 #define WAIT_PERIOD         200        // in miliseconds
@@ -62,7 +61,7 @@ void WindowsDriverInterface::OpenDevice()
     auto deviceInfo = SetupDiGetClassDevs(&guid, nullptr, nullptr, DIGCF_PRESENT | DIGCF_DEVICEINTERFACE);
     Expect::False(INVALID_HANDLE_VALUE == deviceInfo, Gna2StatusDeviceNotAvailable);
 
-    auto deviceDetailsData = unique_ptr<char[]>();
+    auto deviceDetailsData = std::unique_ptr<char[]>();
     auto deviceDetails = PSP_DEVICE_INTERFACE_DETAIL_DATA{nullptr};
     auto interfaceData = SP_DEVICE_INTERFACE_DATA{0};
     interfaceData.cbSize = sizeof(interfaceData);
@@ -135,7 +134,7 @@ void WindowsDriverInterface::IoctlSend(const GnaIoctlCommand command, void * con
 #endif
 }
 
-uint64_t WindowsDriverInterface::MemoryMap(void *memory, size_t memorySize)
+uint64_t WindowsDriverInterface::MemoryMap(void *memory, uint32_t memorySize)
 {
     auto bytesRead = DWORD{0};
     auto ioResult = BOOL{};

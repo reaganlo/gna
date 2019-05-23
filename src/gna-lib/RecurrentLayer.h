@@ -25,11 +25,21 @@
 
 #pragma once
 
-#include "AffineLayers.h"
 #include "Address.h"
+#include "AffineLayers.h"
+
+#include "KernelArguments.h"
+#include "XnnKernel.h"
+
+#include "common.h"
+
+#include <map>
+#include <cstdint>
 
 namespace GNA
 {
+class BaseValidator;
+struct LayerConfiguration;
 
 class RnnLayer : public AffineBaseLayer
 {

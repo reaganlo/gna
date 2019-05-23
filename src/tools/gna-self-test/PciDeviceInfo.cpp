@@ -40,12 +40,13 @@ std::string _PciDeviceInfo::toString() const
 // Sample input: "00:03.0 \"0100\" \"1af4\" \"1001\" \"virtio-pci\"
 _PciDeviceInfo _PciDeviceInfo::fromLspciString(const std::string & s)
 {
-    int s_bus, s_dev, s_func, s_vendorId, s_devId, s_devClass;
-    int ret = sscanf(s.c_str(), "%x:%x.%d \" %x\" \" %x\" \" %x", &s_bus, &s_dev, &s_func, &s_devClass, &s_vendorId, &s_devId);
+    uint16_t s_vendorId, s_devId, s_devClass;
+    uint8_t s_bus, s_dev, s_func;
+    int ret = sscanf(s.c_str(), "%hhx:%hhx.%hhx \" %hx\" \" %hx\" \" %hx", &s_bus, &s_dev, &s_func, &s_devClass, &s_vendorId, &s_devId);
 
     if (ret != 6)
     {
-        logger.Error("ERROR in fromLspciString: parsing error: <%s>\n", s.c_str());
+        GnaSelfTestLogger::Error("ERROR in fromLspciString: parsing error: <%s>\n", s.c_str());
         throw std::logic_error("ERROR in fromLspciString(): parsing error");
     }
     struct _PciDeviceInfo t;

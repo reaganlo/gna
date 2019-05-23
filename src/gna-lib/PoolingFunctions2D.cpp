@@ -26,11 +26,23 @@
 #include "PoolingFunctions2D.h"
 
 #include "AccelerationDetector.h"
+#include "Capabilities.h"
+#include "DataMode.h"
 #include "Expect.h"
+#include "GnaException.h"
+#include "KernelArguments.h"
+#include "ParameterLimits.h"
+#include "Shape.h"
+#include "Tensor.h"
+#include "Validator.h"
 
-using std::make_unique;
-using std::unique_ptr;
-using std::move;
+#include "gna-api-status.h"
+#include "gna-api-types-xnn.h"
+#include "gna-api.h"
+
+#include <map>
+#include <memory>
+#include <utility>
 
 using namespace GNA;
 
@@ -83,7 +95,7 @@ const FullCapabilitiesMap PoolingFunction2D::outputCapabilities =
     }},
 };
 
-unique_ptr<PoolingFunction2D> PoolingFunction2D::Create(const TransformFactoryConfig& config)
+std::unique_ptr<PoolingFunction2D> PoolingFunction2D::Create(const TransformFactoryConfig& config)
 {
     switch (config.validator.Operation)
     {
@@ -108,19 +120,17 @@ std::unique_ptr<PoolingFunction2D> PoolingFunction2D::create(
 {
     if (INTEL_NO_POOLING != pool->pooling.type)
     {
-        auto stride = make_unique<const Component>(pool->pooling.stride,
+        auto stride = std::make_unique<const Component>(Shape(pool->pooling.stride),
             Validator{ config.validator, strideLimits });
-        auto window = make_unique<const Component>(pool->pooling.window,
+        auto window = std::make_unique<const Component>(Shape(pool->pooling.window),
             Validator{ config.validator, windowLimits });
-        return make_unique<PoolingFunction2D>(
+        return std::make_unique<PoolingFunction2D>(
             BaseTransformConfig<PoolingKernel2D>{config,
                 AccelerationDetector::GetKernelMap<PoolingKernel2D>(KERNEL_POOLING_2D, {config.input->Mode.Value})},
-            pool->pooling.type, move(window), move(stride));
+            pool->pooling.type, std::move(window), std::move(stride));
     }
-    else
-    {
-        return unique_ptr<PoolingFunction2D>(nullptr);
-    }
+
+    return std::unique_ptr<PoolingFunction2D>(nullptr);
 }
 
 // unreachable code warning suppression
@@ -132,8 +142,8 @@ PoolingFunction2D::PoolingFunction2D(const BaseTransformConfig<PoolingKernel2D>&
     std::unique_ptr<const Component> stride) :
     Transform{PoolingTransform2D, &config.kernels, config.input},
     Type{ type },
-    Window{ move(window) },
-    Stride{ move(stride) }
+    Window{ std::move(window) },
+    Stride{ std::move(stride) }
 {
     Expect::InSet<nn_pool_type>(Type, typeLimits);
     Shape outputDims;
@@ -147,7 +157,7 @@ PoolingFunction2D::PoolingFunction2D(const BaseTransformConfig<PoolingKernel2D>&
             + GnaCeilDiv(Input->Dimensions.at(dim) - Window->Dimensions.at(dim), iter.second);
     }
 
-    Output = make_unique<Tensor>(outputDims, Input->Mode, config.outputBuffer,
+    Output = std::make_unique<Tensor>(outputDims, Input->Mode, config.outputBuffer,
         Validator{config.validator, outputCapabilities});
 
     auto out = Output->Dimensions;
@@ -156,6 +166,6 @@ PoolingFunction2D::PoolingFunction2D(const BaseTransformConfig<PoolingKernel2D>&
     auto configuration = nn_layer_pool2d{Input->Dimensions,
         {Type, Stride->Dimensions, Window->Dimensions}};
 
-    hiddenConfig = make_unique<KernelConfig<PoolingConfig2D>>(PoolingConfig2D{configuration},
+    hiddenConfig = std::make_unique<KernelConfig<PoolingConfig2D>>(PoolingConfig2D{configuration},
         BaseConfig{Input->Buffer, Output->Buffer});
 }

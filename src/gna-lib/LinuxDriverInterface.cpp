@@ -27,29 +27,40 @@
 
 #include "GnaException.h"
 #include "HardwareRequest.h"
-#include "Logger.h"
 #include "Memory.h"
+#include "Request.h"
+
+#include "gna.h"
+
+#include "gna-api.h"
+#include "gna-api-status.h"
+#include "profiler.h"
+
 #include "gna2-common-impl.h"
 
 #include <errno.h>
-#include <string.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/ioctl.h>
 
-using namespace GNA;
+#include <cstdint>
+#include <cstdio>
+#include <cstring>
+#include <memory>
+#include <stdexcept>
+#include <vector>
 
-using std::unique_ptr;
+using namespace GNA;
 
 void LinuxDriverInterface::OpenDevice()
 {
-    int found = 0;
+    bool found = false;
     int fd;
     struct gna_getparam params[3] =
     {
-        { .param = GNA_PARAM_DEVICE_ID },
-        { .param = GNA_PARAM_IBUFFS },
-        { .param = GNA_PARAM_RECOVERY_TIMEOUT },
+        { GNA_PARAM_DEVICE_ID, 0 },
+        { GNA_PARAM_IBUFFS, 0 },
+        { GNA_PARAM_RECOVERY_TIMEOUT, 0 },
     };
 
     for(uint8_t i = 0; i < 16; i++)
@@ -62,17 +73,19 @@ void LinuxDriverInterface::OpenDevice()
             continue;
         }
 
-        if(!ioctl(fd, GNA_IOCTL_GETPARAM, &params[0])
-            && !ioctl(fd, GNA_IOCTL_GETPARAM, &params[1])
-            && !ioctl(fd, GNA_IOCTL_GETPARAM, &params[2]))
+        if(ioctl(fd, GNA_IOCTL_GETPARAM, &params[0]) == 0
+            && ioctl(fd, GNA_IOCTL_GETPARAM, &params[1]) == 0
+            && ioctl(fd, GNA_IOCTL_GETPARAM, &params[2]) == 0)
         {
-            found = 1;
+            found = true;
             break;
         }
     }
 
     if(!found)
+    {
         throw GnaException {Gna2StatusDeviceNotAvailable};
+    }
 
     gnaFileDescriptor = fd;
 
@@ -80,12 +93,12 @@ void LinuxDriverInterface::OpenDevice()
     {
         driverCapabilities.hwId = static_cast<DeviceVersion>(params[0].value);
     }
-    catch(std::out_of_range &e)
+    catch(std::out_of_range&)
     {
         throw GnaException { Gna2StatusDeviceNotAvailable };
     }
-    driverCapabilities.hwInBuffSize = params[1].value;
-    driverCapabilities.recoveryTimeout = params[2].value;
+    driverCapabilities.hwInBuffSize = static_cast<uint32_t>(params[2].value);
+    driverCapabilities.recoveryTimeout = static_cast<uint32_t>(params[2].value);
 
     opened = true;
 }
@@ -98,14 +111,14 @@ LinuxDriverInterface::~LinuxDriverInterface()
     }
 }
 
-uint64_t LinuxDriverInterface::MemoryMap(void *memory, size_t memorySize)
+uint64_t LinuxDriverInterface::MemoryMap(void *memory, uint32_t memorySize)
 {
     struct gna_userptr userptr;
 
     userptr.user_address = reinterpret_cast<uint64_t>(memory);
     userptr.user_size = memorySize;
 
-    if(ioctl(gnaFileDescriptor, GNA_IOCTL_USERPTR, &userptr))
+    if(ioctl(gnaFileDescriptor, GNA_IOCTL_USERPTR, &userptr) == 0)
     {
         throw GnaException {Gna2StatusDeviceOutgoingCommunicationError};
     }
@@ -115,7 +128,7 @@ uint64_t LinuxDriverInterface::MemoryMap(void *memory, size_t memorySize)
 
 void LinuxDriverInterface::MemoryUnmap(uint64_t memoryId)
 {
-    if(ioctl(gnaFileDescriptor, GNA_IOCTL_FREE, memoryId))
+    if(ioctl(gnaFileDescriptor, GNA_IOCTL_FREE, memoryId) == 0)
     {
         throw GnaException {Gna2StatusDeviceOutgoingCommunicationError};
     }
@@ -126,17 +139,10 @@ DriverCapabilities LinuxDriverInterface::GetCapabilities() const
     return driverCapabilities;
 }
 
-void LinuxDriverInterface::IoctlSend(const GnaIoctlCommand command,
-                                    void * const inbuf, const uint32_t inlen,
-                                    void * const outbuf, const uint32_t outlen)
-{
-    throw GnaException {Gna2StatusDeviceOutgoingCommunicationError};
-}
-
 RequestResult LinuxDriverInterface::Submit(HardwareRequest& hardwareRequest,
                                         RequestProfiler * const profiler) const
 {
-    RequestResult result = { 0 };
+    RequestResult result = { };
     int ret;
 
     if(!hardwareRequest.SubmitReady)
@@ -146,17 +152,17 @@ RequestResult LinuxDriverInterface::Submit(HardwareRequest& hardwareRequest,
 
     auto scoreConfig = reinterpret_cast<struct gna_score_cfg *>(hardwareRequest.CalculationData.get());
 
-    scoreConfig->ctrl_flags.active_list_on = hardwareRequest.ActiveListOn;
+    scoreConfig->ctrl_flags.active_list_on = hardwareRequest.ActiveListOn ? 1 : 0;
     scoreConfig->ctrl_flags.gna_mode = hardwareRequest.Mode == xNN ? 1 : 0;
-    scoreConfig->layer_count = hardwareRequest.LayerCount;
+    scoreConfig->desc_cfg.xnn_cfg.layer_count = hardwareRequest.LayerCount;
 
     if(xNN == hardwareRequest.Mode)
     {
-        scoreConfig->layer_base = hardwareRequest.LayerBase;
+        scoreConfig->desc_cfg.xnn_cfg.layer_base = hardwareRequest.LayerBase;
     }
     else if(GMM == hardwareRequest.Mode)
     {
-        scoreConfig->layer_base = hardwareRequest.GmmOffset;
+        scoreConfig->desc_cfg.xnn_cfg.layer_base = hardwareRequest.GmmOffset;
     }
     else
     {
@@ -166,7 +172,7 @@ RequestResult LinuxDriverInterface::Submit(HardwareRequest& hardwareRequest,
     profilerTscStart(&profiler->ioctlSubmit);
     ret = ioctl(gnaFileDescriptor, GNA_IOCTL_SCORE, scoreConfig);
     profilerTscStop(&profiler->ioctlSubmit);
-    if (ret)
+    if (ret == -1)
     {
         throw GnaException { Gna2StatusDeviceOutgoingCommunicationError };
     }
@@ -178,9 +184,9 @@ RequestResult LinuxDriverInterface::Submit(HardwareRequest& hardwareRequest,
     profilerTscStart(&profiler->ioctlWaitOn);
     ret = ioctl(gnaFileDescriptor, GNA_IOCTL_WAIT, &wait_data);
     profilerTscStop(&profiler->ioctlWaitOn);
-    if(!ret)
+    if(ret == 0)
     {
-        result.status = (wait_data.hw_status & GNA_STS_SATURATE)
+        result.status = ((wait_data.hw_status & GNA_STS_SATURATE) != 0)
             ? Gna2StatusWarningArithmeticSaturation
             : Gna2StatusSuccess;
         result.driverPerf.startHW = wait_data.drv_perf.start_hw;
@@ -189,8 +195,10 @@ RequestResult LinuxDriverInterface::Submit(HardwareRequest& hardwareRequest,
         result.hardwarePerf.total = wait_data.hw_perf.total;
         result.hardwarePerf.stall = wait_data.hw_perf.stall;
     }
-    else switch(errno)
+    else
     {
+        switch(errno)
+        {
         case EIO:
             result.status = parseHwStatus(static_cast<uint32_t>(wait_data.hw_status));
             break;
@@ -203,6 +211,7 @@ RequestResult LinuxDriverInterface::Submit(HardwareRequest& hardwareRequest,
         default:
             result.status = Gna2StatusDeviceIngoingCommunicationError;
             break;
+        }
     }
 
     return result;
@@ -226,7 +235,7 @@ void LinuxDriverInterface::createRequestDescriptor(HardwareRequest& hardwareRequ
     auto scoreConfig = reinterpret_cast<struct gna_score_cfg *>(
                         hardwareRequest.CalculationData.get());
     memset(scoreConfig, 0, scoreConfigSize);
-    scoreConfig->ctrl_flags.hw_perf_encoding = hardwareRequest.HwPerfEncoding;
+    scoreConfig->ctrl_flags.hw_perf_encoding = static_cast<uint8_t>(hardwareRequest.HwPerfEncoding);
 
     scoreConfig->buffers_ptr = reinterpret_cast<uintptr_t>(
                                 calculationData + sizeof(struct gna_score_cfg));
@@ -260,23 +269,23 @@ void LinuxDriverInterface::createRequestDescriptor(HardwareRequest& hardwareRequ
 
 Gna2Status LinuxDriverInterface::parseHwStatus(uint32_t hwStatus) const
 {
-    if (hwStatus & GNA_STS_PCI_MMU_ERR)
+    if ((hwStatus & GNA_STS_PCI_MMU_ERR) != 0)
     {
         return Gna2StatusDeviceMmuRequestError;
     }
-    if (hwStatus & GNA_STS_PCI_DMA_ERR)
+    if ((hwStatus & GNA_STS_PCI_DMA_ERR) != 0)
     {
         return Gna2StatusDeviceDmaRequestError;
     }
-    if (hwStatus & GNA_STS_PCI_UNEXCOMPL_ERR)
+    if ((hwStatus & GNA_STS_PCI_UNEXCOMPL_ERR) != 0)
     {
         return Gna2StatusDeviceUnexpectedCompletion;
     }
-    if (hwStatus & GNA_STS_VA_OOR)
+    if ((hwStatus & GNA_STS_VA_OOR) != 0)
     {
         return Gna2StatusDeviceVaOutOfRange;
     }
-    if (hwStatus & GNA_STS_PARAM_OOR)
+    if ((hwStatus & GNA_STS_PARAM_OOR) != 0)
     {
         return Gna2StatusDeviceParameterOutOfRange;
     }

@@ -25,14 +25,22 @@
 
 #pragma once
 
-#include <memory>
-
-#include "Capabilities.h"
-#include "Tensor.h"
+#include "KernelArguments.h"
+#include "ParameterLimits.h"
+#include "Shape.h"
 #include "XnnKernel.h"
+
+#include "common.h"
+#include "gna-api-types-xnn.h"
+
+#include <cstdint>
+#include <map>
+#include <memory>
 
 namespace GNA
 {
+class LayerValidator;
+struct PwlCached;
 
 struct PoolingFunction
 {
@@ -41,11 +49,11 @@ struct PoolingFunction
 
     PoolingFunction(nn_operation const operation, const Shape& inputDimensions,
         const Shape& window, const Shape& stride, const nn_pool_type type,
-        const KernelMap<ConvolutionPoolingKernel>& kernels);
+        const KernelMap<ConvolutionPoolingKernel>& kernelsIn);
     ~PoolingFunction() = default;
 
-    void Compute(const ConvolutionConfig * convolutionConfig, AccelerationMode accel, int64_t * poolScratchPad,
-        const PwlCached * Pwl) const;
+    void Compute(const ConvolutionConfig * convolutionConfig, AccelerationMode accel,
+                int64_t * poolScratchPad, const PwlCached * pwl) const;
 
     const nn_pool_type Type;
 

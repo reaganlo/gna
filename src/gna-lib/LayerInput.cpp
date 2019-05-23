@@ -25,7 +25,19 @@
 
 #include "LayerInput.h"
 
-#include "Expect.h"
+#include "Capabilities.h"
+#include "DataMode.h"
+#include "ParameterLimits.h"
+#include "Validator.h"
+
+#include "gna-api-status.h"
+#include "gna-api-types-gmm.h"
+#include "gna-api.h"
+
+#include <algorithm>
+#include <cstdint>
+#include <memory.h>
+#include <vector>
 
 using namespace GNA;
 

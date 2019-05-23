@@ -58,7 +58,7 @@ SetupCopyModel::~SetupCopyModel()
     deviceController.ModelRelease(modelId);
 }
 
-void SetupCopyModel::checkReferenceOutput(int modelIndex, int configIndex) const
+void SetupCopyModel::checkReferenceOutput(uint32_t modelIndex, uint32_t configIndex) const
 {
     UNREFERENCED_PARAMETER(modelIndex);
 
@@ -77,8 +77,8 @@ void SetupCopyModel::checkReferenceOutput(int modelIndex, int configIndex) const
 
 void SetupCopyModel::sampleCopyLayer(uint32_t nCopyColumns, uint32_t nCopyRows)
 {
-    int buf_size_inputs = ALIGN64(sizeof(inputs));
-    int buf_size_outputs = ALIGN64(outVecSz * groupingNum * sizeof(int32_t));
+    uint32_t buf_size_inputs = ALIGN64(sizeof(inputs));
+    uint32_t buf_size_outputs = ALIGN64(outVecSz * groupingNum * sizeof(int32_t));
 
     uint32_t bytes_requested = buf_size_inputs + buf_size_outputs;
     uint32_t bytes_granted;
@@ -91,7 +91,6 @@ void SetupCopyModel::sampleCopyLayer(uint32_t nCopyColumns, uint32_t nCopyRows)
     pinned_mem_ptr += buf_size_inputs;
 
     outputBuffer = pinned_mem_ptr;
-    pinned_mem_ptr += buf_size_outputs;
 
     copy_layer.nCopyCols = nCopyColumns;
     copy_layer.nCopyRows = nCopyRows;

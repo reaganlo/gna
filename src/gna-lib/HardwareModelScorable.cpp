@@ -25,11 +25,21 @@
 
 #include "HardwareModelScorable.h"
 
+#include "DriverInterface.h"
+#include "Expect.h"
+#include "GnaException.h"
+#include "HardwareCapabilities.h"
 #include "Macros.h"
+#include "Memory.h"
 #include "RequestConfiguration.h"
 #include "SoftwareModel.h"
 
-#include <algorithm>
+#include "common.h"
+#include "gna-api-instrumentation.h"
+#include "gna-api-status.h"
+#include "profiler.h"
+
+#include <utility>
 
 using namespace GNA;
 
@@ -126,7 +136,7 @@ uint32_t HardwareModelScorable::Score(
     auto result = driverInterface.Submit(*hwRequest, profiler);
 
     auto perfResults = requestConfiguration.PerfResults;
-    if (perfResults)
+    if (perfResults != nullptr)
     {
         perfResults->drv.startHW += result.driverPerf.startHW;
         perfResults->drv.scoreHW += result.driverPerf.scoreHW;
@@ -140,10 +150,8 @@ uint32_t HardwareModelScorable::Score(
     {
         throw GnaException(result.status);
     }
-    else
-    {
-        return Gna2StatusWarningArithmeticSaturation == result.status;
-    }
+
+    return (Gna2StatusWarningArithmeticSaturation == result.status) ? 1 : 0;
 }
 
 void HardwareModelScorable::ValidateConfigBuffer(

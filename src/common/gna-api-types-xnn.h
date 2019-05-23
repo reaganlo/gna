@@ -52,7 +52,7 @@ extern "C" {
  */
 typedef enum _data_mode
 {
-    GNA_DATA_NOT_SUPPORTED = GNA_NOT_SUPPORTED,
+    GNA_DATA_NOT_SUPPORTED = (int)GNA_NOT_SUPPORTED,
     GNA_INT8 = 1, // TODO:3: refactor as below to GNA_INT8, as if we start supporting unsigned ints this will be ambiguous
     GNA_INT16 = 2,
     GNA_INT32 = 4,
@@ -65,7 +65,7 @@ typedef enum _data_mode
     GNA_DATA_CONSTANT_SCALAR = 32,              // Single 4B (GNA_INT32) signed integer scalar is used instead of tensor.
     GNA_DATA_ACTIVATION_DISABLED = 64,          // Output data only - activation function is disabled, 4B non-activated output is used.
     GNA_DATA_EXTERNAL_IO_BUFFER = 128,          // External Input/output buffer (only for ANNA)
-    GNA_DATA_DISABLED = GNA_DISABLED,           // No data is read
+    GNA_DATA_DISABLED = (int)GNA_DISABLED,           // No data is read
 } gna_data_mode;
 
 // TODO:3: Split into data precision and data mode
@@ -87,10 +87,10 @@ typedef enum _pool_type_t
 // */
 //typedef enum _pooling_mode
 //{
-//    GNA_POOLING_NOT_SUPPORTED = GNA_NOT_SUPPORTED,
+//    GNA_POOLING_NOT_SUPPORTED = (int)GNA_NOT_SUPPORTED,
 //    GNA_POOLING_MAX = 1,
 //    GNA_POOLING_SUM = 2,
-//    GNA_POOLING_DISABLED = GNA_DISABLED,
+//    GNA_POOLING_DISABLED = (int)GNA_DISABLED,
 //} gna_pooling_mode;
 
 /**
@@ -99,7 +99,7 @@ typedef enum _pool_type_t
  */
 typedef enum _bias_mode
 {
-    GNA_BIAS_NOT_SUPPORTED = GNA_NOT_SUPPORTED,
+    GNA_BIAS_NOT_SUPPORTED = (int)GNA_NOT_SUPPORTED,
     GNA_BIAS_PER_KERNEL = 1,
     GNA_BIAS_PER_STRIDE = 2,
 } gna_bias_mode; // TODO:3: incorporate into data type and remove
@@ -381,14 +381,14 @@ typedef struct _convolution_filter
 
     // # of convolution filters // GNA_DIM_N
     uint32_t count;
-    
+
     // Shape of each filter. (3D: WxHxD)
     gna_3d_dimensions dimensions;
 
     // Integer filters' coefficients data buffer.
     // Filters stored one after the other in GNA_TENSOR_NHWD order.
     // Each Kernel must start at address which is 16B aligned.
-    void* filtersData;              
+    void* filtersData;
 
 } gna_convolution_filter;
 

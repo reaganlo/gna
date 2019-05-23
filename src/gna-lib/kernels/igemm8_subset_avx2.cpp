@@ -23,10 +23,17 @@
  in any way.
 */
 
-#include <string.h>
-
 #include "igemv.h"
 #include "igemv8.h"
+
+#include "KernelArguments.h"
+#include "KernelMacros.h"
+
+#include "common.h"
+
+#include <cstdint>
+#include <cstring>
+#include <immintrin.h>
 
 void AffineActiveListKernelImpl1B(AffineConfig const * const config, AffineConfigAl const * const al)
 {
@@ -38,7 +45,7 @@ void AffineActiveListKernelImpl1B(AffineConfig const * const config, AffineConfi
     uint32_t j;
     uint32_t l;
 
-    int8_t const * weight = config->weights1B;
+    int8_t const * weight;
     int32_t * output = config->output;
     nn_bias_c const * bias;
     int16_t const *input_0 = nullptr;
@@ -127,37 +134,72 @@ void AffineActiveListKernelImpl1B(AffineConfig const * const config, AffineConfi
         return;
     }
 
-    switch (config->inputVectorCount)
+    if (config->inputVectorCount == 8)
     {
-    case 8:
-        for (i = 0; i < config->inputElementCount; i++) config->execution->Intermediate->d7[i] = config->input[i*config->inputVectorCount + 7];
+        for (i = 0; i < config->inputElementCount; i++)
+        {
+            config->execution->Intermediate->d7[i] = config->input[i*config->inputVectorCount + 7];
+        }
         input_7 = config->execution->Intermediate->d7 + KK;
         in_ptr7 = (__m256i*)config->execution->Intermediate->d7;
-    case 7:
-        for (i = 0; i < config->inputElementCount; i++) config->execution->Intermediate->d6[i] = config->input[i*config->inputVectorCount + 6];
+    }
+    if (config->inputVectorCount >= 7)
+    {
+        for (i = 0; i < config->inputElementCount; i++)
+        {
+            config->execution->Intermediate->d6[i] = config->input[i*config->inputVectorCount + 6];
+        }
         input_6 = config->execution->Intermediate->d6 + KK;
         in_ptr6 = (__m256i*)config->execution->Intermediate->d6;
-    case 6:
-        for (i = 0; i < config->inputElementCount; i++) config->execution->Intermediate->d5[i] = config->input[i*config->inputVectorCount + 5];
+    }
+    if (config->inputVectorCount >= 6)
+    {
+        for (i = 0; i < config->inputElementCount; i++)
+        {
+            config->execution->Intermediate->d5[i] = config->input[i*config->inputVectorCount + 5];
+        }
         input_5 = config->execution->Intermediate->d5 + KK;
         in_ptr5 = (__m256i*)config->execution->Intermediate->d5;
-    case 5:
-        for (i = 0; i < config->inputElementCount; i++) config->execution->Intermediate->d4[i] = config->input[i*config->inputVectorCount + 4];
+    }
+    if (config->inputVectorCount >= 5)
+    {
+        for (i = 0; i < config->inputElementCount; i++)
+        {
+            config->execution->Intermediate->d4[i] = config->input[i*config->inputVectorCount + 4];
+        }
         input_4 = config->execution->Intermediate->d4 + KK;
         in_ptr4 = (__m256i*)config->execution->Intermediate->d4;
-    case 4:
-        for (i = 0; i < config->inputElementCount; i++) config->execution->Intermediate->d3[i] = config->input[i*config->inputVectorCount + 3];
+    }
+    if (config->inputVectorCount >= 4)
+    {
+        for (i = 0; i < config->inputElementCount; i++)
+        {
+            config->execution->Intermediate->d3[i] = config->input[i*config->inputVectorCount + 3];
+        }
         input_3 = config->execution->Intermediate->d3 + KK;
         in_ptr3 = (__m256i*)config->execution->Intermediate->d3;
-    case 3:
-        for (i = 0; i < config->inputElementCount; i++) config->execution->Intermediate->d2[i] = config->input[i*config->inputVectorCount + 2];
+    }
+    if (config->inputVectorCount >= 3)
+    {
+        for (i = 0; i < config->inputElementCount; i++)
+        {
+            config->execution->Intermediate->d2[i] = config->input[i*config->inputVectorCount + 2];
+        }
         input_2 = config->execution->Intermediate->d2 + KK;
         in_ptr2 = (__m256i*)config->execution->Intermediate->d2;
-    case 2:
-        for (i = 0; i < config->inputElementCount; i++) config->execution->Intermediate->d1[i] = config->input[i*config->inputVectorCount + 1];
+    }
+    if (config->inputVectorCount >= 2)
+    {
+        for (i = 0; i < config->inputElementCount; i++)
+        {
+            config->execution->Intermediate->d1[i] = config->input[i*config->inputVectorCount + 1];
+        }
         input_1 = config->execution->Intermediate->d1 + KK;
         in_ptr1 = (__m256i*)config->execution->Intermediate->d1;
-        for (i = 0; i < config->inputElementCount; i++) config->execution->Intermediate->d0[i] = config->input[i*config->inputVectorCount];
+        for (i = 0; i < config->inputElementCount; i++)
+        {
+            config->execution->Intermediate->d0[i] = config->input[i*config->inputVectorCount];
+        }
         input_0 = config->execution->Intermediate->d0 + KK;
         in_ptr0 = (__m256i*)config->execution->Intermediate->d0;
     }

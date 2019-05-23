@@ -37,9 +37,9 @@
 
 typedef uint8_t     __1B_RES;       // 1B of reserved memory
 
-SetupDnnModel_1::SetupDnnModel_1(DeviceController & deviceCtrl, bool wght2B, bool activeListEn, bool pwlEn)
+SetupDnnModel_1::SetupDnnModel_1(DeviceController & deviceCtrl, bool weight2B, bool activeListEn, bool pwlEn)
     : deviceController{ deviceCtrl },
-    weightsAre2Bytes{ wght2B },
+    weightsAre2Bytes{ weight2B },
     activeListEnabled{ activeListEn },
     pwlEnabled{ pwlEn }
 {
@@ -137,7 +137,7 @@ SetupDnnModel_1::~SetupDnnModel_1()
 }
 
 template <class intel_reference_output_type>
-intel_reference_output_type* SetupDnnModel_1::refOutputAssign(int configIndex) const
+intel_reference_output_type* SetupDnnModel_1::refOutputAssign(uint32_t configIndex) const
 {
     switch (configIndex)
     {
@@ -163,7 +163,7 @@ intel_reference_output_type* SetupDnnModel_1::refOutputAssign(int configIndex) c
 }
 
 template <class intel_reference_output_type>
-void SetupDnnModel_1::compareReferenceValues(unsigned int i, int configIndex) const
+void SetupDnnModel_1::compareReferenceValues(unsigned int i, uint32_t configIndex) const
 {
     intel_reference_output_type outElemVal = static_cast<const intel_reference_output_type*>(outputBuffer)[i];
     const intel_reference_output_type* refOutput = refOutputAssign<intel_reference_output_type>(configIndex);
@@ -175,11 +175,11 @@ void SetupDnnModel_1::compareReferenceValues(unsigned int i, int configIndex) co
 }
 
 
-void SetupDnnModel_1::checkReferenceOutput(int modelIndex, int configIndex) const
+void SetupDnnModel_1::checkReferenceOutput(uint32_t modelIndex, uint32_t configIndex) const
 {
     UNREFERENCED_PARAMETER(modelIndex);
-    unsigned int ref_output_size = refSize[configIndex];
-    for (unsigned int i = 0; i < ref_output_size; ++i)
+    uint32_t ref_output_size = refSize[configIndex];
+    for (uint32_t i = 0; i < ref_output_size; ++i)
     {
         switch (configIndex)
         {
@@ -216,18 +216,25 @@ void SetupDnnModel_1::checkReferenceOutput(int modelIndex, int configIndex) cons
 
 void SetupDnnModel_1::sampleAffineLayer()
 {
-    int buf_size_weights = weightsAre2Bytes ? ALIGN64(sizeof(weights_2B)) : ALIGN64(sizeof(weights_1B));
-    int buf_size_inputs = ALIGN64(sizeof(inputs));
-    int buf_size_biases = weightsAre2Bytes ? ALIGN64(sizeof(regularBiases)) : ALIGN64(sizeof(compoundBiases));
-    int buf_size_outputs = ALIGN64(outVecSz * groupingNum * sizeof(int32_t));
-    int buf_size_tmp_outputs = ALIGN64(outVecSz * groupingNum * sizeof(int32_t));
-    int buf_size_pwl = ALIGN64(nSegments * sizeof(intel_pwl_segment_t));
+    uint32_t buf_size_weights = weightsAre2Bytes
+        ? ALIGN64(static_cast<uint32_t>(sizeof(weights_2B)))
+        : ALIGN64(static_cast<uint32_t>(sizeof(weights_1B)));
+    uint32_t buf_size_inputs = ALIGN64(static_cast<uint32_t>(sizeof(inputs)));
+    uint32_t buf_size_biases = weightsAre2Bytes
+        ? ALIGN64(static_cast<uint32_t>(sizeof(regularBiases)))
+        : ALIGN64(static_cast<uint32_t>(sizeof(compoundBiases)));
+    uint32_t buf_size_outputs = ALIGN64(
+            outVecSz * groupingNum * static_cast<uint32_t>(sizeof(int32_t)));
+    uint32_t buf_size_tmp_outputs = ALIGN64(
+            outVecSz * groupingNum * static_cast<uint32_t>(sizeof(int32_t)));
+    uint32_t buf_size_pwl = ALIGN64(
+            nSegments * static_cast<uint32_t>(sizeof(intel_pwl_segment_t)));
 
     uint32_t bytes_requested = buf_size_weights + buf_size_inputs + buf_size_biases + buf_size_outputs;
     if (activeListEnabled)
     {
         indicesCount = outVecSz / 2;
-        bytes_requested += ALIGN64(indicesCount * sizeof(uint32_t));
+        bytes_requested += ALIGN64(indicesCount * static_cast<uint32_t>(sizeof(uint32_t)));
     }
     if (pwlEnabled)
     {
@@ -269,7 +276,7 @@ void SetupDnnModel_1::sampleAffineLayer()
 
     if (activeListEnabled)
     {
-        size_t indicesSize = ALIGN64(indicesCount * sizeof(uint32_t));
+        size_t indicesSize = ALIGN64(indicesCount * static_cast<uint32_t>(sizeof(uint32_t)));
         indices = (uint32_t*)pinned_mem_ptr;
         memcpy(indices, alIndices, indicesCount * sizeof(uint32_t));
         pinned_mem_ptr += indicesSize;
@@ -282,7 +289,6 @@ void SetupDnnModel_1::sampleAffineLayer()
         pinned_mem_ptr += buf_size_tmp_outputs;
 
         intel_pwl_segment_t *pinned_pwl = reinterpret_cast<intel_pwl_segment_t*>(pinned_mem_ptr);
-        pinned_mem_ptr += buf_size_pwl;
 
         pwl.nSegments = nSegments;
         pwl.pSegments = pinned_pwl;

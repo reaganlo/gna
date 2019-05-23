@@ -25,14 +25,27 @@
 
 #include "AffineFunctions.h"
 
+#include "ActiveList.h"
 #include "AccelerationDetector.h"
 #include "Bias.h"
+#include "Capabilities.h"
+#include "DataMode.h"
+#include "Expect.h"
+#include "GnaException.h"
+#include "Shape.h"
+#include "Validator.h"
 #include "LayerConfiguration.h"
 #include "Weight.h"
 
-using std::make_unique;
-using std::unique_ptr;
-using std::move;
+#include "gna2-common-api.h"
+
+#include "common.h"
+#include "gna-api.h"
+#include "gna-api-types-xnn.h"
+
+#include <algorithm>
+#include <cstdint>
+#include <memory>
 
 using namespace GNA;
 
@@ -50,7 +63,7 @@ const FullCapabilitiesMap AffineFunctionMulti::Capabilities =
 
 
 // Could not split into separate methods for each component as multibias weight scaling is using bias' and weights; tensors...
-unique_ptr<const AffineFunction> AffineFunction::Create(const Tensor* input, const Tensor* output,
+std::unique_ptr<const AffineFunction> AffineFunction::Create(const Tensor* input, const Tensor* output,
         void const * layerDetails, const LayerValidator& validatorIn)
 {
     auto operation = validatorIn.Operation;
@@ -58,9 +71,9 @@ unique_ptr<const AffineFunction> AffineFunction::Create(const Tensor* input, con
         input->at(GNA_DIM_N), input->at(GNA_DIM_W), output->at(GNA_DIM_H));
     auto biasTensorDimensions = dimensions;
     uint32_t biasVectorIndex = 0;
-    unique_ptr<const WeightTensor> weights;
-    unique_ptr<const Tensor> weightScales;
-    unique_ptr<const BiasTensor> biases;
+    std::unique_ptr<const WeightTensor> weights;
+    std::unique_ptr<const Tensor> weightScales;
+    std::unique_ptr<const BiasTensor> biases;
     uint32_t weightMode = 0;
     uint32_t biasMode = 0;
     void* weightsBuffer = nullptr;
@@ -101,7 +114,7 @@ unique_ptr<const AffineFunction> AffineFunction::Create(const Tensor* input, con
         if (GNA_INT8 == static_cast<gna_data_mode>(weightMode)
             && GNA_INT16 == input->Mode)
         {
-            weightScales = make_unique<const Tensor>(Shape(GNA_TENSOR_H, output->at(GNA_DIM_H)), GNA_DATA_RICH_FORMAT,
+            weightScales = std::make_unique<const Tensor>(Shape(GNA_TENSOR_H, output->at(GNA_DIM_H)), GNA_DATA_RICH_FORMAT,
                 affine->weightScaleFactors, Validator{ validatorIn, AffineFunctionMulti::Capabilities });
             Expect::ValidBuffer(*weightScales);
         }
@@ -111,9 +124,9 @@ unique_ptr<const AffineFunction> AffineFunction::Create(const Tensor* input, con
         throw GnaException(Gna2StatusXnnErrorLyrOperation);
     }
 
-    weights = make_unique<const WeightTensor>(dimensions, weightMode,
+    weights = std::make_unique<const WeightTensor>(dimensions, weightMode,
         weightsBuffer, validatorIn);
-    biases = make_unique<const BiasTensor>(biasTensorDimensions, biasVectorIndex,
+    biases = std::make_unique<const BiasTensor>(biasTensorDimensions, biasVectorIndex,
         biasMode, biasesBuffer, validatorIn);
     KernelMode kernelMode = { input->Mode, weights->Mode, biases->Mode };
     auto& affineKernel = AD::GetKernelMap<AffineKernel>(static_cast<kernel_op>(operation), kernelMode);
@@ -125,13 +138,13 @@ unique_ptr<const AffineFunction> AffineFunction::Create(const Tensor* input, con
      case INTEL_AFFINE:
      case INTEL_AFFINE_DIAGONAL:
      case INTEL_RECURRENT:
-         return make_unique<AffineFunctionSingle>(input->Buffer, output->Buffer,
-             input->at(GNA_DIM_N), move(weights), move(biases), affineKernel,
+         return std::make_unique<AffineFunctionSingle>(input->Buffer, output->Buffer,
+             input->at(GNA_DIM_N), std::move(weights), std::move(biases), affineKernel,
              AD::GetKernelMap<AffineActiveListKernel>(KERNEL_AFFINE_AL, kernelMode));
              // TODO:3: pass Input and Output tensors as arguments to Create, use Input->Mode here and create dimensions locally
      case INTEL_AFFINE_MULTIBIAS:
-         return make_unique<AffineFunctionMulti>(input->Buffer, output->Buffer, input->at(GNA_DIM_N),
-             move(weights), move(biases), move(weightScales), affineKernel);
+         return std::make_unique<AffineFunctionMulti>(input->Buffer, output->Buffer, input->at(GNA_DIM_N),
+             std::move(weights), std::move(biases), std::move(weightScales), affineKernel);
      default:
         throw GnaException(Gna2StatusXnnErrorLyrOperation);
      }
@@ -139,15 +152,15 @@ unique_ptr<const AffineFunction> AffineFunction::Create(const Tensor* input, con
 
 AffineFunction::AffineFunction(const KernelMap<AffineKernel>& kernelsIn,
     std::unique_ptr<const WeightTensor> weights, std::unique_ptr<const BiasTensor> biases) :
-    Weights{ move(weights) },
-    Biases{ move(biases) },
+    Weights{ std::move(weights) },
+    Biases{ std::move(biases) },
     kernels{kernelsIn}
 {
 }
 
-unique_ptr<const AffineConfig> AffineFunction::GetRequestConfig(const BaseAddress&inputs, const BaseAddress& outputs) const
+std::unique_ptr<const AffineConfig> AffineFunction::GetRequestConfig(const BaseAddress&inputs, const BaseAddress& outputs) const
 {
-    return make_unique<const AffineConfig>(inputs, outputs, hiddenConfig.get());
+    return std::make_unique<const AffineConfig>(inputs, outputs, hiddenConfig.get());
 }
 
 void AffineFunction::ComputeHidden(AccelerationMode accel, ExecutionConfig const & execution) const
@@ -169,13 +182,13 @@ AffineFunctionSingle::AffineFunctionSingle(const BaseAddress& input, const BaseA
     std::unique_ptr<const WeightTensor> weights, std::unique_ptr<const BiasTensor> biases,
     const KernelMap<AffineKernel>& kernelsIn,
     const KernelMap<AffineActiveListKernel>& kernelsAlIn) :
-    AffineFunction(kernelsIn, move(weights), move(biases)),
+    AffineFunction(kernelsIn, std::move(weights), std::move(biases)),
     kernelsAl{kernelsAlIn}
 {
     //// TODO:3: move to layer/hw capabilities as this differ for hws
     //Expect::True(GNA_INT32 == Biases->Mode, Gna2StatusXnnErrorBiasBytes);
     //Expect::True(GNA_DATA_RICH_FORMAT == Biases->Mode, Gna2StatusXnnErrorBiasBytes);
-     hiddenConfig = make_unique<const AffineConfig>(
+     hiddenConfig = std::make_unique<const AffineConfig>(
          Biases->at(GNA_DIM_H), vectorCount, Weights->at(GNA_DIM_W),
          input, output, *Weights, *Biases, nullptr, 0, Biases->Mode);
 }
@@ -198,13 +211,13 @@ void AffineFunctionSingle::Compute(const LayerConfiguration& layerConfiguration,
 
 AffineFunctionMulti::AffineFunctionMulti(const BaseAddress& input, const BaseAddress& output, const uint32_t vectorCount,
     std::unique_ptr<const WeightTensor> weights, std::unique_ptr<const BiasTensor> biases,
-    unique_ptr<const Tensor> weightScaleFactors,
+    std::unique_ptr<const Tensor> weightScaleFactors,
     const KernelMap<AffineKernel>& kernelsIn) :
-    AffineFunction(kernelsIn, move(weights), move(biases)),
-    WeightScaleFactors{ move(weightScaleFactors) }
+    AffineFunction(kernelsIn, std::move(weights), std::move(biases)),
+    WeightScaleFactors{ std::move(weightScaleFactors) }
 {
-    hiddenConfig = make_unique<const AffineConfig>(AffineConfig(
+    hiddenConfig = std::make_unique<const AffineConfig>(AffineConfig(
         Biases->at(GNA_DIM_H), vectorCount, Weights->at(GNA_DIM_W),
         input, output, *Weights, ( WeightScaleFactors ? static_cast<const void*>(*WeightScaleFactors) : nullptr ),
-        *Biases, Biases->at(GNA_DIM_N), Biases->Mode));
+        *Biases, Biases->at(GNA_DIM_N), Biases->Mode.Size));
 }

@@ -25,7 +25,16 @@
 
 #include "igemv.h"
 #include "igemv8.h"
-#include <string.h>
+
+#include "KernelArguments.h"
+#include "KernelMacros.h"
+
+#include "common.h"
+#include "gna-api-types-xnn.h"
+
+#include <cstdint>
+#include <cstring>
+#include <immintrin.h>
 
 void AffineActiveListKernelImpl1B(AffineConfig const * const config, AffineConfigAl const * const al)
 {
@@ -104,11 +113,10 @@ void AffineActiveListKernelImpl1B(AffineConfig const * const config, AffineConfi
 
     int16_t const * input0;
     int8_t const * weight;
-    nn_bias_c const * bias = config->biasesCompound;
+    nn_bias_c const * bias;
     int32_t * output;
 
     output = config->output;
-    weight = config->weights1B;
 
     if (1 == config->inputVectorCount)
     {
@@ -129,9 +137,6 @@ void AffineActiveListKernelImpl1B(AffineConfig const * const config, AffineConfi
             {
                 acc0 = _mm256_add_epi32(acc0, acc1);
                 sum0 += vec_sum32(acc0) * bias->multiplier;
-
-                acc0 = _mm256_setzero_si256();
-                acc1 = _mm256_setzero_si256();
 
                 saturate_store_out(&sum0, output, config->execution->SaturationCount);
                 niters = kpartial < KK - kk * kpartial ? kpartial : KK - kk * kpartial;
@@ -196,7 +201,7 @@ void AffineActiveListKernelImpl1B(AffineConfig const * const config, AffineConfi
 
             for (j = 0; j < KT; j++, weight++)
             {
-                sum0 += (int32_t)(input0[j] * *weight * bias->multiplier);
+                sum0 += input0[j] * *weight * bias->multiplier;
             }
 
             saturate_store_out(&sum0, output, config->execution->SaturationCount);
@@ -206,37 +211,72 @@ void AffineActiveListKernelImpl1B(AffineConfig const * const config, AffineConfi
         return;
     }
 
-    switch (config->inputVectorCount)
+    if (config->inputVectorCount == 8)
     {
-    case 8: 
-        for (i = 0; i < config->inputElementCount; i++) config->execution->Intermediate->d7[i] = config->input[i*config->inputVectorCount + 7];
+        for (i = 0; i < config->inputElementCount; i++)
+        {
+            config->execution->Intermediate->d7[i] = config->input[i*config->inputVectorCount + 7];
+        }
         input[7] = config->execution->Intermediate->d7 + KK;
         in_ptr7 = (__m256i*)config->execution->Intermediate->d7;
-    case 7: 
-        for (i = 0; i < config->inputElementCount; i++) config->execution->Intermediate->d6[i] = config->input[i*config->inputVectorCount + 6];
+    }
+    if (config->inputVectorCount >= 7)
+    {
+        for (i = 0; i < config->inputElementCount; i++)
+        {
+            config->execution->Intermediate->d6[i] = config->input[i*config->inputVectorCount + 6];
+        }
         input[6] = config->execution->Intermediate->d6 + KK;
         in_ptr6 = (__m256i*)config->execution->Intermediate->d6;
-    case 6: 
-        for (i = 0; i < config->inputElementCount; i++) config->execution->Intermediate->d5[i] = config->input[i*config->inputVectorCount + 5];
+    }
+    if (config->inputVectorCount >= 6)
+    {
+        for (i = 0; i < config->inputElementCount; i++)
+        {
+            config->execution->Intermediate->d5[i] = config->input[i*config->inputVectorCount + 5];
+        }
         input[5] = config->execution->Intermediate->d5 + KK;
         in_ptr5 = (__m256i*)config->execution->Intermediate->d5;
-    case 5: 
-        for (i = 0; i < config->inputElementCount; i++) config->execution->Intermediate->d4[i] = config->input[i*config->inputVectorCount + 4];
+    }
+    if (config->inputVectorCount >= 5)
+    {
+        for (i = 0; i < config->inputElementCount; i++)
+        {
+            config->execution->Intermediate->d4[i] = config->input[i*config->inputVectorCount + 4];
+        }
         input[4] = config->execution->Intermediate->d4 + KK;
         in_ptr4 = (__m256i*)config->execution->Intermediate->d4;
-    case 4: 
-        for (i = 0; i < config->inputElementCount; i++) config->execution->Intermediate->d3[i] = config->input[i*config->inputVectorCount + 3];
+    }
+    if (config->inputVectorCount >= 4)
+    {
+        for (i = 0; i < config->inputElementCount; i++)
+        {
+            config->execution->Intermediate->d3[i] = config->input[i*config->inputVectorCount + 3];
+        }
         input[3] = config->execution->Intermediate->d3 + KK;
         in_ptr3 = (__m256i*)config->execution->Intermediate->d3;
-    case 3: 
-        for (i = 0; i < config->inputElementCount; i++) config->execution->Intermediate->d2[i] = config->input[i*config->inputVectorCount + 2];
+    }
+    if (config->inputVectorCount >= 3)
+    {
+        for (i = 0; i < config->inputElementCount; i++)
+        {
+            config->execution->Intermediate->d2[i] = config->input[i*config->inputVectorCount + 2];
+        }
         input[2] = config->execution->Intermediate->d2 + KK;
         in_ptr2 = (__m256i*)config->execution->Intermediate->d2;
-    case 2: 
-        for (i = 0; i < config->inputElementCount; i++) config->execution->Intermediate->d1[i] = config->input[i*config->inputVectorCount + 1];
+    }
+    if (config->inputVectorCount >= 2)
+    {
+        for (i = 0; i < config->inputElementCount; i++)
+        {
+            config->execution->Intermediate->d1[i] = config->input[i*config->inputVectorCount + 1];
+        }
         input[1] = config->execution->Intermediate->d1 + KK;
         in_ptr1 = (__m256i*)config->execution->Intermediate->d1;
-        for (i = 0; i < config->inputElementCount; i++) config->execution->Intermediate->d0[i] = config->input[i*config->inputVectorCount];
+        for (i = 0; i < config->inputElementCount; i++)
+        {
+            config->execution->Intermediate->d0[i] = config->input[i*config->inputVectorCount];
+        }
         input[0] = config->execution->Intermediate->d0 + KK;
         in_ptr0 = (__m256i*)config->execution->Intermediate->d0;
     }
@@ -331,8 +371,8 @@ void AffineActiveListKernelImpl1B(AffineConfig const * const config, AffineConfi
 
             for (j = 0; j < KT; j++, weight++)
             {
-                sum[0] += (int32_t)(input[0][j] * *weight * bias->multiplier);
-                sum[1] += (int32_t)(input[1][j] * *weight * bias->multiplier);
+                sum[0] += input[0][j] * *weight * bias->multiplier;
+                sum[1] += input[1][j] * *weight * bias->multiplier;
             }
 
             for (i = 0; i < config->inputVectorCount; i++)
@@ -483,7 +523,7 @@ void AffineActiveListKernelImpl1B(AffineConfig const * const config, AffineConfi
             {
                 for (i = 0; i < config->inputVectorCount; i++)
                 {
-                    sum[i] += (int32_t)(input[i][j] * *weight * bias->multiplier);
+                    sum[i] += input[i][j] * *weight * bias->multiplier;
                 }
             }
 
@@ -562,7 +602,7 @@ void AffineActiveListKernelImpl1B(AffineConfig const * const config, AffineConfi
             {
                 for (i = 0; i < config->inputVectorCount; i++)
                 {
-                    sum[i] += (int32_t)(input[i][j] * *weight * bias->multiplier);
+                    sum[i] += input[i][j] * *weight * bias->multiplier;
                 }
             }
 
@@ -643,7 +683,7 @@ void AffineActiveListKernelImpl1B(AffineConfig const * const config, AffineConfi
             {
                 for (i = 0; i < config->inputVectorCount; i++)
                 {
-                    sum[i] += (int32_t)(input[i][j] * *weight * bias->multiplier);
+                    sum[i] += input[i][j] * *weight * bias->multiplier;
                 }
             }
 
@@ -728,7 +768,7 @@ void AffineActiveListKernelImpl1B(AffineConfig const * const config, AffineConfi
             {
                 for (i = 0; i < config->inputVectorCount; i++)
                 {
-                    sum[i] += (int32_t)(input[i][j] * *weight * bias->multiplier);
+                    sum[i] += input[i][j] * *weight * bias->multiplier;
                 }
             }
 
@@ -839,14 +879,14 @@ void AffineActiveListKernelImpl1B(AffineConfig const * const config, AffineConfi
 
             for (j = 0; j < KT; j++, weight++)
             {
-                sum0 += (int32_t)(input[0][j] * *weight * bias->multiplier);
-                sum1 += (int32_t)(input[1][j] * *weight * bias->multiplier);
-                sum2 += (int32_t)(input[2][j] * *weight * bias->multiplier);
-                sum3 += (int32_t)(input[3][j] * *weight * bias->multiplier);
-                sum4 += (int32_t)(input[4][j] * *weight * bias->multiplier);
-                sum5 += (int32_t)(input[5][j] * *weight * bias->multiplier);
-                sum6 += (int32_t)(input[6][j] * *weight * bias->multiplier);
-                sum7 += (int32_t)(input[7][j] * *weight * bias->multiplier);
+                sum0 += input[0][j] * *weight * bias->multiplier;
+                sum1 += input[1][j] * *weight * bias->multiplier;
+                sum2 += input[2][j] * *weight * bias->multiplier;
+                sum3 += input[3][j] * *weight * bias->multiplier;
+                sum4 += input[4][j] * *weight * bias->multiplier;
+                sum5 += input[5][j] * *weight * bias->multiplier;
+                sum6 += input[6][j] * *weight * bias->multiplier;
+                sum7 += input[7][j] * *weight * bias->multiplier;
             }
 
             saturate_store_out(&sum0, &output[0], config->execution->SaturationCount);

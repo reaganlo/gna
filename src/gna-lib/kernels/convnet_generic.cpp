@@ -25,12 +25,18 @@
 
 // TODO: make naming convention consistent with other kernel implementations
 
-#include <cstring>
-#include <cmath>
-
 #include "convnet.h"
 #include "igemv.h"
 #include "pwl.h"
+
+#include "KernelArguments.h"
+#include "KernelMacros.h"
+
+#include "common.h"
+#include "gna-api-types-xnn.h"
+
+#include <cmath>
+#include <cstdint>
 
 __forceinline void saturate64_store_out(int64_t * const out, uint32_t * const saturationCount)
 {
@@ -46,7 +52,7 @@ __forceinline void saturate64_store_out(int64_t * const out, uint32_t * const sa
     }
 }
 
-void SumPartialPoolingFunction(const uint32_t PS, const uint32_t PNE, const uint32_t PSI, int64_t* P, int64_t* V)
+void SumPartialPoolingFunction(const uint32_t PS, const uint32_t PNE, const uint32_t PSI, const int64_t *P, int64_t *V)
 {
     uint32_t k = 0;
     uint32_t index = 0;
@@ -59,7 +65,7 @@ void SumPartialPoolingFunction(const uint32_t PS, const uint32_t PNE, const uint
     }
 }
 
-void MaxPartialPoolingFunction(const uint32_t PS, const uint32_t PNE, const uint32_t PSI, int64_t* P, int64_t* V)
+void MaxPartialPoolingFunction(const uint32_t PS, const uint32_t PNE, const uint32_t PSI, const int64_t *P, int64_t *V)
 {
     uint32_t k = 0;
     uint32_t index = 0;
@@ -75,14 +81,14 @@ void MaxPartialPoolingFunction(const uint32_t PS, const uint32_t PNE, const uint
     }
 }
 
-void ConvolutionKernelImpl(ConvolutionConfig const * const config)
+void ConvolutionKernelImpl(ConvolutionConfig const * const filterConfig)
 {
-    const uint32_t FN = config->filterCount;
-    const uint32_t FC = config->filterCoefficientCount;
-    const int16_t* const I = config->inputs;
-    const int16_t* const F = config->filters;
-    const int8_t * const B = (int8_t *)config->biases;
-    int32_t * const O = config->convolutedOutputs;
+    const uint32_t FN = filterConfig->filterCount;
+    const uint32_t FC = filterConfig->filterCoefficientCount;
+    const int16_t* const I = filterConfig->inputs;
+    const int16_t* const F = filterConfig->filters;
+    const int8_t * const B = (int8_t *)filterConfig->biases;
+    int32_t * const O = filterConfig->convolutedOutputs;
 
     uint32_t i;
     uint32_t j;
@@ -90,8 +96,8 @@ void ConvolutionKernelImpl(ConvolutionConfig const * const config)
 
     gna_sum_t sum = 0;
 
-    uint32_t num_inputs_band_stride = config->inputBandStride;
-    uint32_t num_filter_outputs = config->filterOutputCount;
+    uint32_t num_inputs_band_stride = filterConfig->inputBandStride;
+    uint32_t num_filter_outputs = filterConfig->filterOutputCount;
 
 
     const int16_t* ptr_coef;
@@ -103,12 +109,18 @@ void ConvolutionKernelImpl(ConvolutionConfig const * const config)
         {
             ptr_coef = F + i * FC;
 
-            if (config->bytesPerBias == 1)
+            if (filterConfig->bytesPerBias == 1)
+            {
                 sum = B[i];
-            else if (config->bytesPerBias == 2)
+            }
+            else if (filterConfig->bytesPerBias == 2)
+            {
                 sum = ((int16_t*)B)[i];
-            else if (config->bytesPerBias == 4)
+            }
+            else if (filterConfig->bytesPerBias == 4)
+            {
                 sum = ((int32_t*)B)[i];
+            }
 
             for (k = 0; k < FC; k++)
             {
@@ -119,14 +131,14 @@ void ConvolutionKernelImpl(ConvolutionConfig const * const config)
     }
 }
 
-void ConvolutionKernelImpl1B(ConvolutionConfig const * const config)
+void ConvolutionKernelImpl1B(ConvolutionConfig const * const filterConfig)
 {
-    const uint32_t FN = config->filterCount;
-    const uint32_t FC = config->filterCoefficientCount;
-    const int8_t* const I = (int8_t*)config->inputs;
-    const int8_t* const F = (int8_t*)config->filters;
-    const int8_t * const B = (int8_t *)config->biases;
-    int32_t * const O = config->convolutedOutputs;
+    const uint32_t FN = filterConfig->filterCount;
+    const uint32_t FC = filterConfig->filterCoefficientCount;
+    const int8_t* const I = (int8_t*)filterConfig->inputs;
+    const int8_t* const F = (int8_t*)filterConfig->filters;
+    const int8_t * const B = (int8_t *)filterConfig->biases;
+    int32_t * const O = filterConfig->convolutedOutputs;
 
     uint32_t i;
     uint32_t j;
@@ -134,8 +146,8 @@ void ConvolutionKernelImpl1B(ConvolutionConfig const * const config)
 
     gna_sum_t sum = 0;
 
-    uint32_t num_inputs_band_stride = config->inputBandStride;
-    uint32_t num_filter_outputs = config->filterOutputCount;
+    uint32_t num_inputs_band_stride = filterConfig->inputBandStride;
+    uint32_t num_filter_outputs = filterConfig->filterOutputCount;
 
 
     const int8_t* ptr_coef;
@@ -145,35 +157,45 @@ void ConvolutionKernelImpl1B(ConvolutionConfig const * const config)
         ptr_in = I + j * num_inputs_band_stride;
         for (i = 0; i < FN; i++)
         {
-            ptr_coef = F + i * FC* config->bytesPerFilter;
+            ptr_coef = F + i * FC* filterConfig->bytesPerFilter;
 
-            if (config->bytesPerBias == 1)
+            if (filterConfig->bytesPerBias == 1)
+            {
                 sum = B[i];
-            else if (config->bytesPerBias == 2)
+            }
+            else if (filterConfig->bytesPerBias == 2)
+            {
                 sum = ((int16_t*)B)[i];
-            else if (config->bytesPerBias == 4)
+            }
+            else if (filterConfig->bytesPerBias == 4)
+            {
                 sum = ((int32_t*)B)[i];
+            }
 
             for (k = 0; k < FC; k++)
             {
-                if (config->bytesPerFilter == 1)
+                if (filterConfig->bytesPerFilter == 1)
+                {
                     sum += ptr_in[k] * ptr_coef[k];
-                else if (config->bytesPerFilter == 2)
+                }
+                else if (filterConfig->bytesPerFilter == 2)
+                {
                     sum += ptr_in[k] * ((int16_t*)ptr_coef)[k];
+                }
             }
             O[j * FN + i] = sum;
         }
     }
 }
 
-void ConvolutionKernelImpl2B(ConvolutionConfig const * const config)
+void ConvolutionKernelImpl2B(ConvolutionConfig const * const filterConfig)
 {
-    const uint32_t FN = config->filterCount;
-    const uint32_t FC = config->filterCoefficientCount;
-    const int16_t* const I = config->inputs;
-    const int8_t* const F = (int8_t*)config->filters;
-    const int8_t * const B = (int8_t *)config->biases;
-    int32_t * const O = config->convolutedOutputs;
+    const uint32_t FN = filterConfig->filterCount;
+    const uint32_t FC = filterConfig->filterCoefficientCount;
+    const int16_t* const I = filterConfig->inputs;
+    const int8_t* const F = (int8_t*)filterConfig->filters;
+    const int8_t * const B = (int8_t *)filterConfig->biases;
+    int32_t * const O = filterConfig->convolutedOutputs;
 
     uint32_t i;
     uint32_t j;
@@ -181,8 +203,8 @@ void ConvolutionKernelImpl2B(ConvolutionConfig const * const config)
 
     gna_sum_t sum = 0;
 
-    uint32_t num_inputs_band_stride = config->inputBandStride;
-    uint32_t num_filter_outputs = config->filterOutputCount;
+    uint32_t num_inputs_band_stride = filterConfig->inputBandStride;
+    uint32_t num_filter_outputs = filterConfig->filterOutputCount;
 
 
     const int8_t* ptr_coef;
@@ -192,21 +214,31 @@ void ConvolutionKernelImpl2B(ConvolutionConfig const * const config)
         ptr_in = I + j * num_inputs_band_stride;
         for (i = 0; i < FN; i++)
         {
-            ptr_coef = F + i * FC* config->bytesPerFilter;
+            ptr_coef = F + i * FC* filterConfig->bytesPerFilter;
 
-            if (config->bytesPerBias == 1)
+            if (filterConfig->bytesPerBias == 1)
+            {
                 sum = B[i];
-            else if (config->bytesPerBias == 2)
+            }
+            else if (filterConfig->bytesPerBias == 2)
+            {
                 sum = ((int16_t*)B)[i];
-            else if (config->bytesPerBias == 4)
+            }
+            else if (filterConfig->bytesPerBias == 4)
+            {
                 sum = ((int32_t*)B)[i];
+            }
 
             for (k = 0; k < FC; k++)
             {
-                if (config->bytesPerFilter == 1)
+                if (filterConfig->bytesPerFilter == 1)
+                {
                     sum += ptr_in[k] * ptr_coef[k];
-                else if (config->bytesPerFilter == 2)
+                }
+                else if (filterConfig->bytesPerFilter == 2)
+                {
                     sum += ptr_in[k] * ((int16_t*)ptr_coef)[k];
+                }
             }
             O[j * FN + i] = sum;
         }
@@ -229,9 +261,14 @@ void ConvolutionPoolingKernelImpl(ConvolutionConfig const * const filterConfig,
     const uint32_t PSTEP = poolConfig->step;
     int64_t * const pool = poolConfig->buffer;
 
+    if (PS == 0)
+    {
+        return;
+    }
+
     pwl->KERNEL(InitializeActivationFunctions)();
 
-    void(*func_partial_pooling)(const uint32_t PS, const uint32_t pool_num_entries, const uint32_t pool_start_index, int64_t* P, int64_t *V);
+    void(*func_partial_pooling)(const uint32_t PS, const uint32_t pool_num_entries, const uint32_t pool_start_index, const int64_t* P, int64_t *V);
 
     if (PT == INTEL_SUM_POOLING)
     {
@@ -267,8 +304,8 @@ void ConvolutionPoolingKernelImpl(ConvolutionConfig const * const filterConfig,
     {
         if (j >= output_index * PSTEP)
         {
-            inc = (PS - pool_num_entries < num_filter_outputs - j)
-                ? PS - pool_num_entries
+            inc = (PS - static_cast<uint32_t>(pool_num_entries) < num_filter_outputs - j)
+                ? PS - static_cast<uint32_t>(pool_num_entries)
                 : num_filter_outputs - j;
 
 
@@ -281,11 +318,17 @@ void ConvolutionPoolingKernelImpl(ConvolutionConfig const * const filterConfig,
                     ptr_coef = F + i * FC;
 
                     if (filterConfig->bytesPerBias == 1)
+                    {
                         sum = B[i];
+                    }
                     else if (filterConfig->bytesPerBias == 2)
+                    {
                         sum = ((int16_t*)B)[i];
+                    }
                     else if (filterConfig->bytesPerBias == 4)
+                    {
                         sum = ((int32_t*)B)[i];
+                    }
 
                     for (k = 0; k < FC; k++)
                     {
@@ -319,14 +362,17 @@ void ConvolutionPoolingKernelImpl(ConvolutionConfig const * const filterConfig,
                 output_index++;
             }
         }
-        else j++;
+        else
+        {
+            j++;
+        }
     }
 
     while (pool_num_entries > 0)
     {
         for (i = 0; i < FN; i++)
         {
-            func_partial_pooling(PS, pool_num_entries, pool_start_index, pool + i * CNN_POOL_SIZE_MAX, &value);
+            func_partial_pooling(PS, static_cast<uint32_t>(pool_num_entries), pool_start_index, pool + i * CNN_POOL_SIZE_MAX, &value);
             pwl->ActivateSingle(&pwl->pwl, (int32_t)value, &O[output_index * FN + i], saturationCount);
         }
 
@@ -352,9 +398,14 @@ void ConvolutionPoolingKernelImpl1B(ConvolutionConfig const * const filterConfig
     const uint32_t PSTEP = poolConfig->step;
     int64_t * const pool = poolConfig->buffer;
 
+    if (PS == 0)
+    {
+        return;
+    }
+
     pwl->KERNEL(InitializeActivationFunctions)();
 
-    void(*func_partial_pooling)(const uint32_t PS, const uint32_t pool_num_entries, const uint32_t pool_start_index, int64_t* P, int64_t *V);
+    void(*func_partial_pooling)(const uint32_t PS, const uint32_t pool_num_entries, const uint32_t pool_start_index, const int64_t* P, int64_t *V);
 
     if (PT == INTEL_SUM_POOLING)
     {
@@ -390,8 +441,8 @@ void ConvolutionPoolingKernelImpl1B(ConvolutionConfig const * const filterConfig
     {
         if (j >= output_index * PSTEP)
         {
-            inc = (PS - pool_num_entries < num_filter_outputs - j)
-                ? PS - pool_num_entries
+            inc = (PS - static_cast<uint32_t>(pool_num_entries) < num_filter_outputs - j)
+                ? PS - static_cast<uint32_t>(pool_num_entries)
                 : num_filter_outputs - j;
 
 
@@ -404,18 +455,28 @@ void ConvolutionPoolingKernelImpl1B(ConvolutionConfig const * const filterConfig
                     ptr_coef = F + i * FC * filterConfig->bytesPerFilter;
 
                     if (filterConfig->bytesPerBias == 1)
+                    {
                         sum = B[i];
+                    }
                     else if (filterConfig->bytesPerBias == 2)
+                    {
                         sum = ((int16_t*)B)[i];
+                    }
                     else if (filterConfig->bytesPerBias == 4)
+                    {
                         sum = ((int32_t*)B)[i];
+                    }
 
                     for (k = 0; k < FC; k++)
                     {
                         if (filterConfig->bytesPerFilter == 1)
+                        {
                             sum += ptr_in[k] * ptr_coef[k];
+                        }
                         else if (filterConfig->bytesPerFilter == 2)
+                        {
                             sum += ptr_in[k] * ((int16_t*)ptr_coef)[k];
+                        }
                     }
 
                     pool[i * CNN_POOL_SIZE_MAX + pool_end_index] = sum;
@@ -445,14 +506,17 @@ void ConvolutionPoolingKernelImpl1B(ConvolutionConfig const * const filterConfig
                 output_index++;
             }
         }
-        else j++;
+        else
+        {
+            j++;
+        }
     }
 
     while (pool_num_entries > 0)
     {
         for (i = 0; i < FN; i++)
         {
-            func_partial_pooling(PS, pool_num_entries, pool_start_index, pool + i * CNN_POOL_SIZE_MAX, &value);
+            func_partial_pooling(PS, static_cast<uint32_t>(pool_num_entries), pool_start_index, pool + i * CNN_POOL_SIZE_MAX, &value);
             pwl->ActivateSingle(&pwl->pwl, (int32_t)value, (int16_t*)&O[(output_index * FN + i) * pwl->pwl.bytesPerOutput], saturationCount);
         }
 
@@ -478,9 +542,14 @@ void ConvolutionPoolingKernelImpl2B(ConvolutionConfig const * const filterConfig
     const uint32_t PSTEP = poolConfig->step;
     int64_t * const pool = poolConfig->buffer;
 
+    if (PS == 0)
+    {
+        return;
+    }
+
     pwl->KERNEL(InitializeActivationFunctions)();
 
-    void(*func_partial_pooling)(const uint32_t PS, const uint32_t pool_num_entries, const uint32_t pool_start_index, int64_t* P, int64_t *V);
+    void(*func_partial_pooling)(const uint32_t PS, const uint32_t pool_num_entries, const uint32_t pool_start_index, const int64_t* P, int64_t *V);
 
     if (PT == INTEL_SUM_POOLING)
     {
@@ -516,8 +585,8 @@ void ConvolutionPoolingKernelImpl2B(ConvolutionConfig const * const filterConfig
     {
         if (j >= output_index * PSTEP)
         {
-            inc = (PS - pool_num_entries < num_filter_outputs - j)
-                ? PS - pool_num_entries
+            inc = (PS - static_cast<uint32_t>(pool_num_entries) < num_filter_outputs - j)
+                ? PS - static_cast<uint32_t>(pool_num_entries)
                 : num_filter_outputs - j;
 
 
@@ -530,18 +599,28 @@ void ConvolutionPoolingKernelImpl2B(ConvolutionConfig const * const filterConfig
                     ptr_coef = F + i * FC * filterConfig->bytesPerFilter;
 
                     if (filterConfig->bytesPerBias == 1)
+                    {
                         sum = B[i];
+                    }
                     else if (filterConfig->bytesPerBias == 2)
+                    {
                         sum = ((int16_t*)B)[i];
+                    }
                     else if (filterConfig->bytesPerBias == 4)
+                    {
                         sum = ((int32_t*)B)[i];
+                    }
 
                     for (k = 0; k < FC; k++)
                     {
                         if (filterConfig->bytesPerFilter == 1)
+                        {
                             sum += ptr_in[k] * ptr_coef[k];
+                        }
                         else if (filterConfig->bytesPerFilter == 2)
+                        {
                             sum += ptr_in[k] * ((int16_t*)ptr_coef)[k];
+                        }
                     }
 
                     pool[i * CNN_POOL_SIZE_MAX + pool_end_index] = sum;
@@ -571,14 +650,17 @@ void ConvolutionPoolingKernelImpl2B(ConvolutionConfig const * const filterConfig
                 output_index++;
             }
         }
-        else j++;
+        else
+        {
+            j++;
+        }
     }
 
     while (pool_num_entries > 0)
     {
         for (i = 0; i < FN; i++)
         {
-            func_partial_pooling(PS, pool_num_entries, pool_start_index, pool + i * CNN_POOL_SIZE_MAX, &value);
+            func_partial_pooling(PS, static_cast<uint32_t>(pool_num_entries), pool_start_index, pool + i * CNN_POOL_SIZE_MAX, &value);
             pwl->ActivateSingle(&pwl->pwl, (int32_t)value, (int16_t*)&(O[(output_index * FN + i) * pwl->pwl.bytesPerOutput]), saturationCount);
         }
 
@@ -851,7 +933,7 @@ void Pooling2DKernelImpl4B(ExecutionKernelConfig<PoolingConfig2D> const * const 
                     }
                 }
 
-                O[POH * poolOutW * numFilters + POW * numFilters + OD] = (uint32_t)value;
+                O[POH * poolOutW * numFilters + POW * numFilters + OD] = (int32_t)value;
             }
         }
     }

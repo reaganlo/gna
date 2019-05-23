@@ -25,14 +25,20 @@
 
 #pragma once
 
-#include <mutex>
-#include <map>
+#include "GnaException.h"
 #include "ThreadPool.h"
 
-#include "Request.h"
+#include "gna-api.h"
+
+#include <cstdint>
+#include <memory>
+#include <mutex>
+#include <stdexcept>
+#include <unordered_map>
 
 namespace GNA
 {
+class Request;
 
 class RequestHandler
 {
@@ -60,7 +66,7 @@ private:
 
     void clearRequestMap();
 
-    bool removeRequest(uint32_t requestId);
+    void removeRequest(uint32_t requestId);
 
     Request * get(const uint32_t requestId)
     {
@@ -75,7 +81,7 @@ private:
         }
     }
 
-    std::map<uint32_t, std::unique_ptr<Request>> requests;
+    std::unordered_map<uint32_t, std::unique_ptr<Request>> requests;
     uint32_t nRequests;
     std::mutex lock;
     ThreadPool threadPool;

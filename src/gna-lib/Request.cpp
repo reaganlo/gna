@@ -23,25 +23,24 @@
  in any way.
 */
 
+#include "CompiledModel.h"
 #include "Request.h"
-
-#include <cstring>
-
 #include "RequestConfiguration.h"
 
-using std::function;
-using std::future;
-using std::move;
-using std::unique_ptr;
+#include <algorithm>
+#include <cstring>
+#include <memory>
+
+struct KernelBuffers;
 
 using namespace GNA;
 
 Request::Request(RequestConfiguration& config, std::unique_ptr<RequestProfiler> profiler) :
     Configuration(config),
-    Profiler{move(profiler)},
+    Profiler{std::move(profiler)},
     PerfResults{config.PerfResults}
 {
-    if (PerfResults)
+    if (PerfResults != nullptr)
     {
         memset(PerfResults, 0, sizeof(gna_perf_t));
     }
@@ -52,7 +51,7 @@ Request::Request(RequestConfiguration& config, std::unique_ptr<RequestProfiler> 
     scoreTask = std::packaged_task<Gna2Status(KernelBuffers *buffers, RequestProfiler *profiler)>(callback);
 }
 
-future<Gna2Status> Request::GetFuture()
+std::future<Gna2Status> Request::GetFuture()
 {
     return scoreTask.get_future();
 }

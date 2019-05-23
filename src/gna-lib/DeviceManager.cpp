@@ -30,10 +30,12 @@
 #endif
 
 #include "Expect.h"
-#include "Macros.h"
+#include "GnaException.h"
+#include "Logger.h"
 
-#include <iostream>
-#include <fstream>
+#include "common.h"
+#include "gna2-common-api.h"
+
 #include <memory>
 
 using namespace GNA;

@@ -23,44 +23,44 @@
  in any way.
 */
 
-#include "igemv.h"
 #include "igemv16.h"
+#include "KernelArguments.h"
 
-void TransposeKernelImpl(TransposeConfig const * const cfg)
+#include <cstdint>
+
+void TransposeKernelImpl(TransposeConfig const * const transposeConfig)
 {
     uint32_t i;
     uint32_t j;
-    for (i = 0; i < cfg->rowCount; i++)
+    for (i = 0; i < transposeConfig->rowCount; i++)
     {
-        for (j = 0; j < cfg->columnCount; j++)
+        for (j = 0; j < transposeConfig->columnCount; j++)
         {
-            cfg->output[j * cfg->rowCount + i] = cfg->input[i * cfg->columnCount + j];
+            transposeConfig->output[j * transposeConfig->rowCount + i] = transposeConfig->input[i * transposeConfig->columnCount + j];
         }
     }
 }
 
-
-void TransposeKernelImpl1B(TransposeConfig const * const cfg)
+void TransposeKernelImpl1B(TransposeConfig const * const transposeConfig)
 {
     uint32_t i, j;
-    for (i = 0; i < cfg->rowCount; i++)
+    for (i = 0; i < transposeConfig->rowCount; i++)
     {
-        for (j = 0; j < cfg->columnCount; j++)
+        for (j = 0; j < transposeConfig->columnCount; j++)
         {
-            ((int8_t*)cfg->output)[j * cfg->rowCount + i] = ((int8_t*)cfg->input)[i * cfg->columnCount + j];
+            ((int8_t*)transposeConfig->output)[j * transposeConfig->rowCount + i] = ((int8_t*)transposeConfig->input)[i * transposeConfig->columnCount + j];
         }
     }
 }
 
-
-void TransposeKernelImpl2B(TransposeConfig const * const cfg)
+void TransposeKernelImpl2B(TransposeConfig const * const transposeConfig)
 {
     uint32_t i, j;
-    for (i = 0; i < cfg->rowCount; i++)
+    for (i = 0; i < transposeConfig->rowCount; i++)
     {
-        for (j = 0; j < cfg->columnCount; j++)
+        for (j = 0; j < transposeConfig->columnCount; j++)
         {
-            cfg->output[j * cfg->rowCount + i] = cfg->input[i * cfg->columnCount + j];
+            transposeConfig->output[j * transposeConfig->rowCount + i] = transposeConfig->input[i * transposeConfig->columnCount + j];
         }
     }
 }

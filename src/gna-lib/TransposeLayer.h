@@ -26,10 +26,19 @@
 #pragma once
 
 #include "Layer.h"
+
+#include "KernelArguments.h"
 #include "XnnKernel.h"
+
+#include "common.h"
+
+#include <cstdint>
+#include <map>
 
 namespace GNA
 {
+class BaseValidator;
+struct LayerConfiguration;
 
 // TODO:3: Refactor to use tensors and functions
 

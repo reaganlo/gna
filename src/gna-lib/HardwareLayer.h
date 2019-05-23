@@ -25,19 +25,29 @@
 
 #pragma once
 
-#include <array>
-#include <map>
-#include <set>
-
-#include "AffineLayers.h"
-#include "Layer.h"
+#include "Address.h"
+#include "DataMode.h"
+#include "GnaConfig.h"
+#include "GnaTypes.h"
 #include "LayerDescriptor.h"
-#include "ConvolutionalFunctions.h"
+
+#include "common.h"
+#include "gna-api-types-gmm.h"
+#include "gna2-common-impl.h"
+
+#include <cstdint>
+#include <map>
+#include <memory>
 
 namespace GNA
 {
 
-struct ActiveList;
+class ActivationFunction;
+class Layer;
+class PoolingFunction2D;
+struct AffineFunction;
+struct ConvolutionFunction2D;
+struct FiltersTensor;
 
 struct DescriptorParameters
 {
@@ -205,18 +215,18 @@ public:
     HardwareLayerCnn2D(const DescriptorParameters& parameters);
     virtual ~HardwareLayerCnn2D() = default;
 
-    static uint32_t GetKernelWorkGroupSize(DeviceVersion hwId,
-        ConvolutionFunction2D const * cnn, PoolingFunction2D const * pooling,
+    static uint32_t GetKernelWorkGroupSize(DeviceVersion deviceVersion,
+        ConvolutionFunction2D const * cnnIn, PoolingFunction2D const * poolingIn,
         const DataMode& outputMode);
 
-    static uint32_t GetKernelMemorySize(DeviceVersion hwId,
+    static uint32_t GetKernelMemorySize(DeviceVersion deviceVersion,
         FiltersTensor const * filter);
 
-    static uint32_t GetConvolutionMemorySize(DeviceVersion hwId,
-        ConvolutionFunction2D const * cnn);
+    static uint32_t GetConvolutionMemorySize(DeviceVersion deviceVersion,
+        ConvolutionFunction2D const * cnnIn);
 
-    static uint32_t GetPoolingMemorySize(DeviceVersion hwId,
-        PoolingFunction2D const * pooling, const DataMode& outputMode);
+    static uint32_t GetPoolingMemorySize(DeviceVersion deviceVersion,
+        PoolingFunction2D const * poolingIn, const DataMode& outputMode);
 
 protected:
     void save();

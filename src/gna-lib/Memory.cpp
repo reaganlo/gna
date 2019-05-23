@@ -25,13 +25,15 @@ in any way.
 
 #include "Memory.h"
 
-#include <cstring>
+#include "DriverInterface.h"
+#include "Expect.h"
+#include "GnaException.h"
 
 #include "common.h"
+#include "gna-api-status.h"
+#include "gna-api.h"
 
-#include "AccelerationDetector.h"
-#include "CompiledModel.h"
-#include "Expect.h"
+#include <cstring>
 
 using namespace GNA;
 
@@ -41,24 +43,26 @@ Memory::Memory(void *bufferIn, uint32_t userSize, uint32_t alignment) :
     size{ALIGN(userSize, alignment)}
 {
     deallocate = false;
-};
+}
 
 // allocates and zeros memory
-Memory::Memory(const size_t userSize, uint32_t alignment) :
+Memory::Memory(const uint32_t userSize, uint32_t alignment) :
     size{ALIGN(userSize, alignment)}
 {
     Expect::GtZero(size, Gna2StatusMemorySizeInvalid);
     buffer = _gna_malloc(size);
     Expect::ValidBuffer(buffer);
     memset(buffer, 0, size); // this is costly and probably not needed
-};
+}
 
 Memory::~Memory()
 {
-    if (buffer && deallocate)
+    if (buffer != nullptr && deallocate)
     {
         if (mapped)
+        {
             unmap();
+        }
 
         _gna_free(buffer);
         buffer = nullptr;

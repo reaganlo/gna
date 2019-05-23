@@ -108,7 +108,7 @@ public:
     // If pointer is not aligned to alignment prints error status code and throws exception.
     inline static void AlignedTo(const void* pointer, const AlignLimits& alignLimits)
     {
-        True(0 == (((uintptr_t)pointer) % alignLimits.Value), alignLimits.Error);
+        True(0 == ((reinterpret_cast<uintptr_t>(pointer)) % alignLimits.Value), alignLimits.Error);
     }
 
     // If pointer is not aligned to alignment prints error status code and throws exception.

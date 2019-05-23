@@ -33,7 +33,10 @@ std::vector<PciDeviceInfo> LinuxGnaSelfTestHardwareStatus::getDevicesList()
     std::string s;
     while(std::getline(in,s))
     {
-        if(s.size()<10) continue;  //too short to be 'a proper line' from lspci
+        if(s.size()<10)
+        {
+            continue;  //too short to be 'a proper line' from lspci
+        }
         PciDeviceInfo dev = PciDeviceInfo::fromLspciString(s);
         devList.push_back(dev);
     }

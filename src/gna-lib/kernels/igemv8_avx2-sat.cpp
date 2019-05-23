@@ -26,6 +26,15 @@
 #include "igemv.h"
 #include "igemv8.h"
 
+#include "KernelArguments.h"
+#include "KernelMacros.h"
+
+#include "common.h"
+#include "gna-api-types-xnn.h"
+
+#include <immintrin.h>
+#include <cstdint>
+
 void RecurrentKernelImpl1B(RecurrentConfig const * const config)
 {
     uint32_t kk;
@@ -107,7 +116,7 @@ void RecurrentKernelImpl1B(RecurrentConfig const * const config)
         // compute remainder
         for (k = KK; k < config->inputElementCount; k++)
         {
-            sum += (int32_t)(*input++ * *weight++ * bias->multiplier);
+            sum += *input++ * *weight++ * bias->multiplier;
         }
 
         in = _mm256_lddqu_si256((__m256i*)feedback);
@@ -134,7 +143,7 @@ void RecurrentKernelImpl1B(RecurrentConfig const * const config)
         // there is still config->outputElementCount remainder
         for (; k < mpart_sz; k++)
         {
-            sum += (int32_t)(*feedback++ * *weight++ * bias->multiplier);
+            sum += *feedback++ * *weight++ * bias->multiplier;
         }
 
 

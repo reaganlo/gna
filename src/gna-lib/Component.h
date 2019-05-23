@@ -26,12 +26,15 @@
 #pragma once
 
 #include "Shape.h"
-
 #include "Validator.h"
-#include "DataMode.h"
+
+#include "gna-api-types-xnn.h"
+
+#include <memory>
 
 namespace GNA
 {
+struct ComponentLimits;
 
 struct Component
 {
@@ -62,7 +65,7 @@ protected:
     std::unique_ptr<const Validator> validator;
 };
 
-};
+}
 
 
 

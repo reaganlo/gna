@@ -25,21 +25,19 @@
 
 #pragma once
 
-#include <atomic>
+#include "KernelArguments.h"
+
 #include <condition_variable>
-#include <functional>
-#include <future>
-#include <map>
+#include <cstdint>
 #include <mutex>
 #include <deque>
 #include <thread>
 #include <vector>
 
-#include "common.h"
-#include "Request.h"
-
 namespace GNA
 {
+class Request;
+
 class ThreadPool {
 public:
     explicit ThreadPool(uint32_t threadCount);
@@ -57,7 +55,8 @@ public:
 private:
     void employWorkers();
 
-    std::vector<KernelBuffers> buffers; // NOTE: order is important, buffers have to be destroyed last
+    // NOTE: order is important, buffers have to be destroyed last
+    std::vector<KernelBuffers> buffers;
     std::mutex tpMutex;
     std::deque<Request*> tasks;
     bool stopped = false;

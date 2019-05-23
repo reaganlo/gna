@@ -25,12 +25,16 @@
 
 #pragma once
 
+#include "GnaException.h"
+#include "Transform.h"
+
+#include "common.h"
+#include "gna-api-status.h"
+
 #include <algorithm>
 #include <memory>
+#include <stdexcept>
 #include <vector>
-
-#include "Transform.h"
-#include "GnaException.h"
 
 namespace GNA
 {

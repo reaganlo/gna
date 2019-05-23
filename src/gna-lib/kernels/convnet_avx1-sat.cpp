@@ -25,11 +25,18 @@
 
 // TODO: make naming convention consistent with other kernel implementations
 
-#include <cstring>
-
 #include "convnet.h"
 #include "igemv.h"
 #include "pwl.h"
+
+#include "KernelArguments.h"
+#include "KernelMacros.h"
+
+#include "common.h"
+#include "gna-api-types-xnn.h"
+
+#include <cstdint>
+#include <immintrin.h>
 
 __forceinline void saturate64_store_out(int64_t * const out, uint32_t * const saturationCount)
 {
@@ -45,7 +52,7 @@ __forceinline void saturate64_store_out(int64_t * const out, uint32_t * const sa
     }
 }
 
-void SumPartialPoolingFunction(const uint32_t PS, const uint32_t PNE, const uint32_t PSI, int64_t* P, int64_t* V)
+void SumPartialPoolingFunction(const uint32_t PS, const uint32_t PNE, const uint32_t PSI, const int64_t *P, int64_t* V)
 {
     uint32_t k = 0;
     uint32_t index = 0;
@@ -58,7 +65,7 @@ void SumPartialPoolingFunction(const uint32_t PS, const uint32_t PNE, const uint
     }
 }
 
-void MaxPartialPoolingFunction(const uint32_t PS, const uint32_t PNE, const uint32_t PSI, int64_t* P, int64_t* V)
+void MaxPartialPoolingFunction(const uint32_t PS, const uint32_t PNE, const uint32_t PSI, const int64_t *P, int64_t* V)
 {
     uint32_t k = 0;
     uint32_t index = 0;
@@ -74,23 +81,23 @@ void MaxPartialPoolingFunction(const uint32_t PS, const uint32_t PNE, const uint
     }
 }
 
-void ConvolutionKernelImpl(ConvolutionConfig const * const config)
+void ConvolutionKernelImpl(ConvolutionConfig const * const filterConfig)
 {
-    const uint32_t FN = config->filterCount;
-    const uint32_t FC = config->filterCoefficientCount;
-    const int16_t* const I = config->inputs;
-    const int16_t* const F = config->filters;
-    const nn_bias_s * const B = config->biases;
-    int32_t * const O = config->convolutedOutputs;
-    uint32_t * const saturationCount = config->execution->SaturationCount;
+    const uint32_t FN = filterConfig->filterCount;
+    const uint32_t FC = filterConfig->filterCoefficientCount;
+    const int16_t* const I = filterConfig->inputs;
+    const int16_t* const F = filterConfig->filters;
+    const nn_bias_s * const B = filterConfig->biases;
+    int32_t * const O = filterConfig->convolutedOutputs;
+    uint32_t * const saturationCount = filterConfig->execution->SaturationCount;
 
     uint32_t i;
     uint32_t j;
 
     gna_sum_t sum1, sum2, sum3, sum4, sum5, sum6, sum7, sum8;
 
-    uint32_t num_inputs_band_stride = config->inputBandStride;
-    uint32_t num_filter_outputs = config->filterOutputCount;
+    uint32_t num_inputs_band_stride = filterConfig->inputBandStride;
+    uint32_t num_filter_outputs = filterConfig->filterOutputCount;
 
 #if OPT_LEVEL > 1
     mm_ptr in1, in2, in3, in4, in5, in6, in7, in8, in_end, flt;
@@ -361,9 +368,14 @@ void ConvolutionPoolingKernelImpl(ConvolutionConfig const * const filterConfig,
     const uint32_t PSTEP = poolConfig->step;
     int64_t * const pool = poolConfig->buffer;
 
+    if (PS == 0)
+    {
+        return;
+    }
+
     pwl->KERNEL(InitializeActivationFunctions)();
 
-    void(*func_partial_pooling)(const uint32_t PS, const uint32_t pool_num_entries, const uint32_t pool_start_index, int64_t* P, int64_t *V);
+    void(*func_partial_pooling)(const uint32_t PS, const uint32_t pool_num_entries, const uint32_t pool_start_index, const int64_t *P, int64_t *V);
 
     if (PT == INTEL_SUM_POOLING)
     {
@@ -406,8 +418,8 @@ void ConvolutionPoolingKernelImpl(ConvolutionConfig const * const filterConfig,
     {
         if (j >= output_index * PSTEP)
         {
-            inc = (PS - pool_num_entries < num_filter_outputs - j)
-                ? PS - pool_num_entries
+            inc = (PS - static_cast<uint32_t>(pool_num_entries) < num_filter_outputs - j)
+                ? PS - static_cast<uint32_t>(pool_num_entries)
                 : num_filter_outputs - j;
 
 #if OPT_LEVEL > 1
@@ -930,14 +942,17 @@ void ConvolutionPoolingKernelImpl(ConvolutionConfig const * const filterConfig,
                 output_index++;
             }
         }
-        else j++;
+        else
+        {
+            j++;
+        }
     }
 
     while (pool_num_entries > 0)
     {
         for (i = 0; i < FN; i++)
         {
-            func_partial_pooling(PS, pool_num_entries, pool_start_index, pool + i * CNN_POOL_SIZE_MAX, &value);
+            func_partial_pooling(PS, static_cast<uint32_t>(pool_num_entries), pool_start_index, pool + i * CNN_POOL_SIZE_MAX, &value);
 #if GNA_SAT == 1
             saturate64_store_out(&value, saturationCount);
 #endif

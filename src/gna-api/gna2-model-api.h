@@ -1000,7 +1000,8 @@ GNA2_API enum Gna2Status Gna2ModelGetLastError(struct Gna2ModelError * error);
     @retval ::Gna2StatusResourceAllocationError The messageBuffer is too small. The message was truncated.
     @retval ::Gna2StatusNullArgumentNotAllowed The messageBuffer was NULL or messageBufferSize was 0.
  */
-GNA2_API enum Gna2Status Gna2ModelGetLastErrorMessage(char * messageBuffer,
+GNA2_API enum Gna2Status Gna2ModelGetLastErrorMessage(
+    char const * messageBuffer,
     uint32_t messageBufferSize);
 
 //TODO:3:API:make documentation consistent: nouns vs verbs.
@@ -1589,8 +1590,8 @@ GNA2_API enum Gna2Status Gna2OperationInitFullyConnectedBiasGrouping(
     struct Gna2Tensor * weights, struct Gna2Tensor * biases,
     struct Gna2Tensor * activation,
     struct Gna2Tensor * weightScaleFactors,
-    enum Gna2BiasMode* biasMode,
-    uint32_t* biasVectorIndex);
+    enum Gna2BiasMode * biasMode,
+    uint32_t * biasVectorIndex);
 
 /**
  In the first step, this function initializes operation structure just like Gna2ModelOperationInit function does.
@@ -1614,7 +1615,7 @@ GNA2_API enum Gna2Status Gna2OperationInitRecurrent(
     struct Gna2Tensor * inputs, struct Gna2Tensor * outputs,
     struct Gna2Tensor * weights, struct Gna2Tensor * biases,
     struct Gna2Tensor * activation,
-    uint32_t* delay);
+    uint32_t * delay);
 
 /**
  In the first step, this function initializes operation structure just like Gna2ModelOperationInit function does.
@@ -1642,9 +1643,9 @@ GNA2_API enum Gna2Status Gna2OperationInitConvolution(
     struct Gna2Shape * convolutionStride,
     enum Gna2BiasMode * biasMode);
 
-/**
+/*
  In the first step, this function initializes operation structure just like Gna2ModelOperationInit function does.
- Then it sets operands and parameters for the Convolution Fused operation.
+ Then it sets operands and parameters for the Fused Convolution operation.
 
  @note
  Shallow assignment is performed (i.e., Gna2Tensor structures and parameters must be available after the call).
@@ -1753,7 +1754,7 @@ GNA2_API enum Gna2Status Gna2OperationInitGmm(
     struct Gna2Tensor * inputs, struct Gna2Tensor * outputs,
     struct Gna2Tensor * means,
     struct Gna2Tensor * inverseCovariances,
-    struct Gna2Tensor * constants,
+    struct Gna2Tensor * consts,
     uint32_t * maximumScore);
 
 /**

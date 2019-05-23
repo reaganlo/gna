@@ -27,14 +27,18 @@
 
 #include "Tensor.h"
 
+#include "common.h"
+
 namespace GNA
 {
+class FullCapabilitiesMap;
+class LayerValidator;
 
 struct LayerOutput : public Tensor
 {
     LayerOutput(const nn_layer &layer, const LayerValidator& validatorIn);
     LayerOutput(const Gna2Tensor &outputTensor, const LayerValidator& validatorIn);
-    ~LayerOutput() = default;
+    virtual ~LayerOutput() = default;
 
     const Tensor ScratchPad;
 

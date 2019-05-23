@@ -26,8 +26,15 @@
 #include "Capabilities.h"
 
 #include "GnaException.h"
+#include "HardwareCapabilities.h"
+#include "ParameterLimits.h"
 #include "Validator.h"
-#include "Component.h"
+
+#include "gna2-common-api.h"
+
+#include <iterator>
+#include <stdexcept>
+#include <utility>
 
 using namespace GNA;
 

@@ -25,16 +25,25 @@
 
 #pragma once
 
-#include "gmm.h"
-#include "KernelArguments.h"
-#include "pwl.h"
-
-#include "gna-api/gna2-inference-impl.h"
+#include "gna2-inference-impl.h"
 
 #include <map>
 
+struct ActivationConfig;
+struct AffineConfig;
+struct AffineConfigAl;
+struct ConvolutionConfig2D;
+struct ConvolutionConfig;
+struct CopyConfig;
+struct PoolingConfig2D;
+struct PoolingConfig;
+struct RecurrentConfig;
+struct TransposeConfig;
+template <typename TransformConfig> struct ExecutionKernelConfig;
+
 namespace GNA
 {
+struct PwlCached;
 
 // TODO:3: move to layer/functions base header
 template<typename KernelType>

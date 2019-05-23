@@ -25,7 +25,7 @@
 
 #pragma once
 
-#include <stdint.h>
+#include <cstdint>
 
 namespace GNA
 {
@@ -86,17 +86,17 @@ typedef uint32_t FVWIDTH;
 #endif
 typedef union _GMM_MODE_CTRL
 {
-    struct
+    struct _GMM_MODE_BITS
     {
-    uint32_t read_elimination :01;  // 00:00 Const and Var Read Elimination
-                                    //      Disable the read of the Const and Var array  and force a use of Const = 0 and VAR = 1
-                                    //      0 = normal operation (default)
-                                    //      1 = read elimination enabled
-    uint32_t calculation_mode :02;  // 01:02 Calculation mode
-                                    //      0 = GMM Mode = L2 euclidean Distance (default)
-                                    //      1 = L1 Distance (max(abs()))
-                                    //      2 = Linf Manhattan Distance
-    uint32_t __res_03 : 29;         // 03:31 Reserved
+        uint32_t read_elimination : 1;  // 00:00 Const and Var Read Elimination
+                                        //      Disable the read of the Const and Var array  and force a use of Const = 0 and VAR = 1
+                                        //      0 = normal operation (default)
+                                        //      1 = read elimination enabled
+        uint32_t calculation_mode : 2;  // 01:02 Calculation mode
+                                        //      0 = GMM Mode = L2 euclidean Distance (default)
+                                        //      1 = L1 Distance (max(abs()))
+                                        //      2 = Linf Manhattan Distance
+        uint32_t __res_03 : 29;         // 03:31 Reserved
     };
     uint32_t     _value;            // value of whole register
 } GMM_MODE_CTRL;

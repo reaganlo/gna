@@ -25,15 +25,19 @@
 
 #include "Shape.h"
 
-#include "Expect.h"
+#include "GnaException.h"
+
+#include "gna2-common-api.h"
+#include "gna-api-types-xnn.h"
 
 #include <array>
+#include <cstddef>
 #include <vector>
 
 using namespace GNA;
 
-Shape::Shape(ShapeMap && map, gna_tensor_order order) :
-    ShapeMap{ std::move(map) },
+Shape::Shape(ShapeMap && mapIn, gna_tensor_order order) :
+    ShapeMap{ std::move(mapIn) },
     LayoutOrder{ order },
     Order{ order }
 {}
@@ -74,11 +78,11 @@ Shape Shape::Reshape(gna_tensor_order order) const
     return Shape(std::move(dims), order);
 }
 
-Shape Shape::Create(const ApiShape & shape, const gna_tensor_order order)
+Shape Shape::Create(const ApiShape & apiShape, const gna_tensor_order order)
 {
     // TODO:3:verify if initializer_list can always be constructed using 2 pointers
-    return Shape(Create(std::vector<uint32_t>(shape.Dimensions,
-        &shape.Dimensions[shape.NumberOfDimensions]), order), order);
+    return Shape(Create(std::vector<uint32_t>(apiShape.Dimensions,
+        &apiShape.Dimensions[apiShape.NumberOfDimensions]), order), order);
 }
 
 ShapeMap Shape::Create(const std::vector<uint32_t> && dimensions, const gna_tensor_order order)
@@ -100,19 +104,14 @@ Shape::operator gna_3d_dimensions const() const
 {
     if (this->count(GNA_DIM_W) > 0 && this->count(GNA_DIM_H) > 0)
     {
-        if (this->count(GNA_DIM_D))
+        if (this->count(GNA_DIM_D) > 0)
         {
             return gna_3d_dimensions{at(GNA_DIM_W), at(GNA_DIM_H), at(GNA_DIM_D)};
         }
-        else
-        {
-            return gna_3d_dimensions{at(GNA_DIM_W), at(GNA_DIM_H), 0};
-        }
+        return gna_3d_dimensions{at(GNA_DIM_W), at(GNA_DIM_H), 0};
     }
-    else
-    {
-        throw GnaException(Gna2StatusXnnErrorLyrInvalidTensorOrder);
-    }
+
+    throw GnaException(Gna2StatusXnnErrorLyrInvalidTensorOrder);
 }
 
 Shape::operator ApiShape() const
@@ -129,22 +128,19 @@ Shape::operator ApiShape() const
 
 uint32_t Shape::GetNumberOfElements() const
 {
-    uint32_t count = 1;
+    uint32_t counter = 1;
     uint32_t sum = 0;
     for (const auto & dim : *this)
     {
         sum += dim.second;
         if (0 != dim.second)
         {
-            count *= dim.second;
+            counter *= dim.second;
         }
     }
     if (0 == sum)
     {
         return 0; // TODO:3:API: should scalar return 0?
     }
-    else
-    {
-        return count;
-    }
+    return counter;
 }

@@ -202,7 +202,9 @@ AccelerationMode AccelerationMode::GetEffectiveSoftwareAccelerationMode(
     const std::vector<Gna2AccelerationMode>& supportedCpuAccelerations) const
 {
     if (mode == Gna2AccelerationModeHardware)
+    {
         throw GnaException(Gna2StatusAccelerationModeNotSupported);
+    }
     if (mode == Gna2AccelerationModeSoftware ||
         mode == Gna2AccelerationModeAuto)
     {
@@ -259,7 +261,9 @@ const char* AccelerationMode::GetName() const
 {
     auto item = AccelerationModeNames.find(*this);
     if (item != AccelerationModeNames.end())
+    {
         return item->second;
+    }
     return UNKNOWN_ACCELERATION_MODE_NAME;
 }
 
@@ -276,11 +280,13 @@ Gna2AccelerationMode GNA::AccelerationMode::GetMode() const
 void AccelerationMode::enforceValidity()
 {
     if (mode == Gna2AccelerationModeHardware)
+    {
         hardwareConsistency = true;
+    }
 }
 
 bool AccelerationMode::operator<(const AccelerationMode& right) const
 {
-    auto ret = (mode < right.mode) || ((mode == right.mode) && hardwareConsistency && (false == right.hardwareConsistency));
+    auto ret = (mode < right.mode) || ((mode == right.mode) && hardwareConsistency && (!right.hardwareConsistency));
     return ret;
 }

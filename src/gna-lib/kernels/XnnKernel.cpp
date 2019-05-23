@@ -23,16 +23,19 @@
  in any way.
 */
 
-#include "common.h"
 #include "XnnKernel.h"
-
-#include <string.h>
 
 #include "convnet.h"
 #include "igemv16.h"
 #include "igemv8.h"
+#include "pwl.h"
+
+#include "KernelArguments.h"
 #include "KernelMacros.h"
 #include "Macros.h"
+
+#include <cstdint>
+#include <cstring>
 
 namespace GNA
 {
@@ -119,9 +122,13 @@ void recurrentKernelImpl1B1B(RecurrentConfig const * const config)
         RecurrentKernelImpl1B1B(&runConfig);
         runConfig.input = (int16_t*)((uint64_t)runConfig.input + config->inputElementCount);
         if (config->bytesPerOutput == 1)
+        {
             runConfig.feedbackBuffer = (int16_t*)((uint64_t)runConfig.feedbackBuffer + config->outputElementCount);
+        }
         else
+        {
             runConfig.feedbackBuffer += config->outputElementCount;
+        }
         runConfig.output += config->outputElementCount;
 
         activation.Kernel->InitializeActivationFunctions();
@@ -144,9 +151,13 @@ void recurrentKernelImpl1B2B(RecurrentConfig const * const config)
         RecurrentKernelImpl1B2B(&runConfig);
         runConfig.input += config->inputElementCount;
         if (config->bytesPerOutput == 1)
+        {
             runConfig.feedbackBuffer = (int16_t*)((uint64_t)runConfig.feedbackBuffer + config->outputElementCount);
+        }
         else
+        {
             runConfig.feedbackBuffer += config->outputElementCount;
+        }
         runConfig.output += config->outputElementCount;
 
         activation.Kernel->InitializeActivationFunctions();
@@ -170,9 +181,13 @@ void recurrentKernelImpl2B1B(RecurrentConfig const * const config)
         RecurrentKernelImpl2B1B(&runConfig);
         runConfig.input = (int16_t*)((uint64_t)runConfig.input + config->inputElementCount);
         if (config->bytesPerOutput == 1)
+        {
             runConfig.feedbackBuffer = (int16_t*)((uint64_t)runConfig.feedbackBuffer + config->outputElementCount);
+        }
         else
+        {
             runConfig.feedbackBuffer += config->outputElementCount;
+        }
         runConfig.output += config->outputElementCount;
 
         activation.Kernel->InitializeActivationFunctions();
@@ -196,9 +211,13 @@ void recurrentKernelImpl2B2B(RecurrentConfig const * const config)
         RecurrentKernelImpl2B2B(&runConfig);
         runConfig.input += config->inputElementCount;
         if(config->bytesPerOutput == 1)
+        {
             runConfig.feedbackBuffer = (int16_t*)((uint64_t)runConfig.feedbackBuffer + config->outputElementCount);
+        }
         else
+        {
             runConfig.feedbackBuffer += config->outputElementCount;
+        }
         runConfig.output += config->outputElementCount;
 
         activation.Kernel->InitializeActivationFunctions();
@@ -211,7 +230,7 @@ void recurrentKernelImpl2B2B(RecurrentConfig const * const config)
 void copyKernelImpl(CopyConfig const * const config)
 {
     uint32_t row;
-    uint32_t bytesToCopy = config->columnCount * sizeof(int16_t);
+    uint32_t bytesToCopy = config->columnCount * static_cast<uint32_t>(sizeof(int16_t));
 
     for (row = 0; row < config->rowCount; row++)
     {
@@ -226,7 +245,7 @@ void copyKernelImpl(CopyConfig const * const config)
 void copyKernelImpl1B(CopyConfig const * const config)
 {
     uint32_t row;
-    uint32_t bytesToCopy = config->columnCount * sizeof(int8_t);
+    uint32_t bytesToCopy = config->columnCount * static_cast<uint32_t>(sizeof(int8_t));
 
     for (row = 0; row < config->rowCount; row++)
     {
@@ -241,7 +260,7 @@ void copyKernelImpl1B(CopyConfig const * const config)
 void copyKernelImpl2B(CopyConfig const * const config)
 {
     uint32_t row;
-    uint32_t bytesToCopy = config->columnCount * sizeof(int16_t);
+    uint32_t bytesToCopy = config->columnCount * static_cast<uint32_t>(sizeof(int16_t));
 
     for (row = 0; row < config->rowCount; row++)
     {
@@ -316,6 +335,42 @@ XnnKernel KERNEL(xnnKernel) =
     Pooling2DKernelImpl1B,
     Pooling2DKernelImpl2B,
     Pooling2DKernelImpl4B
+#else
+    nullptr,
+    nullptr,
+    nullptr,
+    nullptr,
+    nullptr,
+    nullptr,
+    nullptr,
+    nullptr,
+    nullptr,
+    nullptr,
+    nullptr,
+    nullptr,
+    nullptr,
+    nullptr,
+    nullptr,
+    nullptr,
+    nullptr,
+    nullptr,
+    nullptr,
+    nullptr,
+    nullptr,
+    nullptr,
+    nullptr,
+    nullptr,
+    nullptr,
+    nullptr,
+    nullptr,
+    nullptr,
+    nullptr,
+    nullptr,
+    nullptr,
+    nullptr,
+    nullptr,
+    nullptr,
+    nullptr
 #endif
 };
 

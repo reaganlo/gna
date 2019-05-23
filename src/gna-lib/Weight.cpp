@@ -25,9 +25,16 @@
 
 #include "Weight.h"
 
-#include <memory>
+#include "Capabilities.h"
+#include "Validator.h"
 
-#include "Expect.h"
+#include "gna-api.h"
+#include "gna-api-status.h"
+#include "gna-api-types-gmm.h"
+#include "gna-api-types-xnn.h"
+
+#include <algorithm>
+#include <memory>
 
 using namespace GNA;
 
@@ -100,9 +107,8 @@ const FullCapabilitiesMap WeightTensor::capabilities =
     }},
 };
 
-
 WeightTensor::WeightTensor(const Shape& dimensions, const DataMode& dataMode,
     void * buffer, const LayerValidator& validatorIn) :
     Tensor{ dimensions, dataMode, buffer, Validator{validatorIn, capabilities} }
 {
-};
+}

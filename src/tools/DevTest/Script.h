@@ -39,7 +39,7 @@ struct Action
         CheckReferenceOutput
     };
 
-    Action(Type a, ModelSetupType ms, int mIdx, int cIdx)
+    Action(Type a, ModelSetupType ms, uint32_t mIdx, uint32_t cIdx)
         : actionType{a},
         modelSetup{ms},
         modelIndex{mIdx},
@@ -48,8 +48,8 @@ struct Action
 
     Type actionType;
     ModelSetupType modelSetup;
-    int modelIndex;
-    int configIndex;
+    uint32_t modelIndex;
+    uint32_t configIndex;
 };
 
 class ActionScript

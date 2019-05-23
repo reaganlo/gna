@@ -25,7 +25,18 @@
 
 #include "HardwareCapabilities.h"
 
+#include "DriverInterface.h"
+#include "Expect.h"
+#include "GnaException.h"
+#include "Logger.h"
+#include "Macros.h"
+
+#include "gna-api-status.h"
+
 #include <algorithm>
+#include <cstddef>
+#include <memory>
+#include <utility>
 
 using namespace GNA;
 
@@ -316,10 +327,8 @@ uint32_t HardwareCapabilities::GetBufferElementCount(
 
         return count;
     }
-    else
-    {
-        return getGenerationCapabilities(hwId).BufferElementCountBackward[grouping - 1];
-    }
+
+    return getGenerationCapabilities(hwId).BufferElementCountBackward[grouping - 1];
 }
 
 HardwareCapabilities::HardwareCapabilities(
@@ -342,7 +351,9 @@ void HardwareCapabilities::DiscoverHardware(DriverInterface &driverInterface)
 
         //TODO:3: remove when ADL bug with input buffer will be fixed
         if (driverCapabilities.hwId == Gna2DeviceVersionAlderLake)
+        {
             driverCapabilities.hwInBuffSize = 32;
+        }
 
         Expect::Equal((size_t)1, gnaCapsMap.count(driverCapabilities.hwId),
                       Gna2StatusDeviceNotAvailable);

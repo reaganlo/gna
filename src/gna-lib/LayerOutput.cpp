@@ -25,7 +25,19 @@
 
 #include "LayerOutput.h"
 
+#include "Capabilities.h"
+#include "DataMode.h"
 #include "Expect.h"
+#include "ParameterLimits.h"
+#include "Validator.h"
+
+#include "gna-api.h"
+#include "gna-api-status.h"
+#include "gna-api-types-gmm.h"
+#include "gna-api-types-xnn.h"
+
+#include <algorithm>
+#include <memory>
 
 using namespace GNA;
 
@@ -160,7 +172,7 @@ LayerOutput::LayerOutput(const nn_layer& layer, const LayerValidator& validatorI
 {
     Expect::True(GNA_INT32 == ScratchPad.Mode, Gna2StatusXnnErrorIntOutputBytes);
     //Expect::ValidBuffer(ScratchPad); // TODO: review when scratch-pad is allocated by gna-lib
-};
+}
 
 //TODO:3:P1:Find a better way instead of directly addressing outputTensor.Shape.Dimensions[x]
 LayerOutput::LayerOutput(const Gna2Tensor &outputTensor, const LayerValidator& validatorIn) :

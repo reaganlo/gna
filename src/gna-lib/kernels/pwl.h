@@ -26,11 +26,14 @@
 
 #pragma once
 
+#include "gna-api-types-xnn.h"
+
 #include "common.h"
-#include "KernelArguments.h"
+
+#include <stdint.h>
 
 template<typename TransformConfig>
-struct KernelConfig;
+struct ExecutionKernelConfig;
 
 struct ActivationConfig;
 
@@ -87,34 +90,34 @@ struct PwlCachedConfig
     uint32_t bytesPerOutput;
     void * data;
 
-        union
+    union PwlCachedParams
+    {
+        struct
         {
-            struct
-            {
-                pwl_x_t xBase0;             // first segment xBase value (Lookup algorithm)
-                pwl_x_t xBase0Neg;          // first segment xBase value x -1 for addition only  (Lookup algorithm)
-                pwl_x_t xBase1diff;         // difference between first and second PWL segment xBases, for lookup
-                int16_t slope0;             // first segment slope value (Lookup algorithm)
-                int16_t shift0;             // first segment extracted shift value (Lookup algorithm)
-                int16_t yBase0;             // first segment yBase value (Lookup algorithm)
-                uint16_t count;             // number of lookup segments (active)
-                uint8_t width;
-                uint8_t _reserved[7];       // padding
-            } Lookup;
-            struct
-            {
-                nn_pwl_seg* source;         // unpacked segments
-                pwl_y_t*  ySeg;             // extracted PWL segments value data
-                pwl_x_t xBase0;             // first segment xBase value (binary search algorithm)
-                int16_t yBase0;             // first segment yBase value (binary search algorithm)
-                uint8_t _reserved[6];       // padding
-            } Binary;
-        };
-    };
+            pwl_x_t xBase0;             // first segment xBase value (Lookup algorithm)
+            pwl_x_t xBase0Neg;          // first segment xBase value x -1 for addition only  (Lookup algorithm)
+            pwl_x_t xBase1diff;         // difference between first and second PWL segment xBases, for lookup
+            int16_t slope0;             // first segment slope value (Lookup algorithm)
+            int16_t shift0;             // first segment extracted shift value (Lookup algorithm)
+            int16_t yBase0;             // first segment yBase value (Lookup algorithm)
+            uint16_t count;             // number of lookup segments (active)
+            uint8_t width;
+            uint8_t _reserved[7];       // padding
+        } Lookup;
+        struct
+        {
+            nn_pwl_seg* source;         // unpacked segments
+            pwl_y_t*  ySeg;             // extracted PWL segments value data
+            pwl_x_t xBase0;             // first segment xBase value (binary search algorithm)
+            int16_t yBase0;             // first segment yBase value (binary search algorithm)
+            uint8_t _reserved[6];       // padding
+        } Binary;
+    } Params;
+};
 
 // Function pointer for apply PWL for single input-output
 typedef void(*PwlApplySingle)(PwlCachedConfig const * const pwl, int32_t I, int16_t * const output,
-    uint32_t * const saturationCount);
+        uint32_t * const saturationCount);
 
 // Function pointer for apply PWL for all inputs-outputs
 typedef void(*PwlApplyAll)(ExecutionKernelConfig<ActivationConfig> const * const config);
@@ -122,6 +125,7 @@ typedef void(*PwlApplyAll)(ExecutionKernelConfig<ActivationConfig> const * const
 // PWL cache and config (constant for given layer)
 struct PwlCached
 {
+public:
     bool useLookup = false;
 
     //TODO: Move PwlCached to lib
@@ -136,8 +140,8 @@ struct PwlCached
 
     // Prepares PWL parameters and auxiliary buffers
     PwlCached(const gna_data_mode mode, nn_pwl_seg const * const segmentsIn, uint32_t segmentCountIn);
-    PwlCached(PwlCached&& pwl_cached);
-    PwlCached(const PwlCached& pwl_cached) = delete;
+    PwlCached(PwlCached&& pwlCached);
+    PwlCached(const PwlCached& pwlCached) = delete;
     ~PwlCached();
 
     // PWL LOOKUP table number of elements
@@ -156,6 +160,7 @@ struct PwlCached
     mutable PwlApplySingle  ActivateSingle;              // algorithm used for PWL for single in-out
     mutable PwlApplyAll     ActivateAll;                 // algorithm used for PWL for all in-outs
     uint32_t bytesPerOutput;
+
 private:
     void allocateLookupCaches();
     void allocateBinaryCaches();

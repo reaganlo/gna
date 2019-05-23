@@ -25,21 +25,25 @@
 
 #include "ThreadPool.h"
 
-#include <cstring>
-#include <stdint.h>
+#include "Expect.h"
+#include "GnaException.h"
+#include "Request.h"
 
-#include "gna-api-status.h"
-#include "common.h"
-#include "RequestConfiguration.h"
-#include "Validator.h"
 #include "KernelArguments.h"
+
+#include "common.h"
+#include "gna-api-status.h"
+#include "gna-api-types-xnn.h"
+
+#include <cstring>
+#include <cstdint>
 
 using namespace GNA;
 
 KernelBuffers::KernelBuffers()
 {
     // TODO: use one allocation for inputs and pool buffer
-    d0 = (int16_t*)_gna_malloc(8 * (UINT16_MAX + 1) * sizeof(int16_t));
+    d0 = static_cast<int16_t*>(_gna_malloc(8 * (UINT16_MAX + 1) * sizeof(int16_t)));
     if (nullptr == d0)
     {
         throw GnaException(Gna2StatusResourceAllocationError);
@@ -52,14 +56,15 @@ KernelBuffers::KernelBuffers()
     d6 = d5 + UINT16_MAX + 1;
     d7 = d6 + UINT16_MAX + 1;
 
-    pool = (int64_t*)_kernel_malloc(CNN_POOL_SIZE_MAX * CNN_N_FLT_MAX * sizeof(int64_t));
+    auto poolSize = CNN_POOL_SIZE_MAX * CNN_N_FLT_MAX * sizeof(int64_t);
+    pool = static_cast<int64_t *>(_kernel_malloc(poolSize));
     if (nullptr == pool)
     {
         this->~KernelBuffers();
         throw GnaException(Gna2StatusResourceAllocationError);
     }
 
-    cnnFusedBuffer = (int8_t*)_kernel_malloc(5 * 1024 * 1024);
+    cnnFusedBuffer = static_cast<int8_t*>(_kernel_malloc(5 * 1024 * 1024));
     if (nullptr == cnnFusedBuffer)
     {
         this->~KernelBuffers();
@@ -70,11 +75,17 @@ KernelBuffers::KernelBuffers()
 KernelBuffers::~KernelBuffers()
 {
     if (nullptr != d0)
+    {
         _gna_free(d0);
+    }
     if (nullptr != pool)
+    {
         _gna_free(pool);
+    }
     if (nullptr != cnnFusedBuffer)
+    {
         _gna_free(cnnFusedBuffer);
+    }
     memset(this, 0, sizeof(*this));
 }
 

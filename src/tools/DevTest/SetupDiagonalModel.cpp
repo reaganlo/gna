@@ -34,9 +34,9 @@
 
 #define UNREFERENCED_PARAMETER(P) ((void)(P))
 
-SetupDiagonalModel::SetupDiagonalModel(DeviceController & deviceCtrl, bool wght2B, bool pwlEn)
+SetupDiagonalModel::SetupDiagonalModel(DeviceController & deviceCtrl, bool weight2B, bool pwlEn)
     : deviceController{deviceCtrl},
-    weightsAre2Bytes{wght2B},
+    weightsAre2Bytes{weight2B},
     pwlEnabled{pwlEn}
 {
     sampleAffineLayer();
@@ -58,7 +58,7 @@ SetupDiagonalModel::~SetupDiagonalModel()
 }
 
 template <class intel_reference_output_type>
-intel_reference_output_type* SetupDiagonalModel::refOutputAssign(int configIndex) const
+intel_reference_output_type* SetupDiagonalModel::refOutputAssign(uint32_t configIndex) const
 {
     switch (configIndex)
     {
@@ -76,7 +76,7 @@ intel_reference_output_type* SetupDiagonalModel::refOutputAssign(int configIndex
 }
 
 template <class intel_reference_output_type>
-void SetupDiagonalModel::compareReferenceValues(unsigned int i, int configIndex) const
+void SetupDiagonalModel::compareReferenceValues(unsigned int i, uint32_t configIndex) const
 {
     intel_reference_output_type outElemVal = static_cast<const intel_reference_output_type*>(outputBuffer)[i];
     const intel_reference_output_type* refOutput = refOutputAssign<intel_reference_output_type>(configIndex);
@@ -88,13 +88,13 @@ void SetupDiagonalModel::compareReferenceValues(unsigned int i, int configIndex)
 }
 
 
-void SetupDiagonalModel::checkReferenceOutput(int modelIndex, int configIndex) const
+void SetupDiagonalModel::checkReferenceOutput(uint32_t modelIndex, uint32_t configIndex) const
 {
     UNREFERENCED_PARAMETER(modelIndex);
     unsigned int ref_output_size = refSize[configIndex];
     for (unsigned int i = 0; i < ref_output_size; ++i)
     {
-        (configIndex == configPwl) ? compareReferenceValues<int16_t>(i, configIndex) : compareReferenceValues<int16_t>(i, configIndex);
+        compareReferenceValues<int16_t>(i, configIndex);
     }
 }
 
@@ -104,15 +104,20 @@ void SetupDiagonalModel::sampleAffineLayer()
     nnet.nLayers = layersNum;
     nnet.pLayers = (intel_nnet_layer_t*)calloc(nnet.nLayers, sizeof(intel_nnet_layer_t));
 
-    int buf_size_weights = weightsAre2Bytes ? ALIGN64(sizeof(weights_2B)) : ALIGN64(sizeof(weights_1B));
-    int buf_size_inputs = ALIGN64(sizeof(inputs));
-    int buf_size_biases = weightsAre2Bytes ? ALIGN64(sizeof(regularBiases)) : ALIGN64(sizeof(compoundBiases));
-    int buf_size_outputs = ALIGN64(outVecSz * groupingNum * sizeof(int32_t));
-    int buf_size_tmp_outputs = ALIGN64(outVecSz * groupingNum * sizeof(int32_t));
-    int buf_size_pwl = ALIGN64(nSegments * sizeof(intel_pwl_segment_t));
+    uint32_t buf_size_weights = static_cast<uint32_t>(weightsAre2Bytes
+                   ? ALIGN64(sizeof(weights_2B)) : ALIGN64(sizeof(weights_1B)));
+    uint32_t buf_size_inputs = ALIGN64(sizeof(inputs));
+    uint32_t buf_size_biases = static_cast<uint32_t>(weightsAre2Bytes
+                   ? ALIGN64(sizeof(regularBiases)) : ALIGN64(sizeof(compoundBiases)));
+    uint32_t buf_size_outputs = ALIGN64(outVecSz * groupingNum * sizeof(int32_t));
+    uint32_t buf_size_tmp_outputs = ALIGN64(outVecSz * groupingNum * sizeof(int32_t));
+    uint32_t buf_size_pwl = static_cast<uint32_t>(ALIGN64(nSegments * sizeof(intel_pwl_segment_t)));
 
     uint32_t bytes_requested = buf_size_weights + buf_size_inputs + buf_size_biases + buf_size_outputs + buf_size_tmp_outputs;
-    if (pwlEnabled) bytes_requested += buf_size_pwl;
+    if (pwlEnabled)
+    {
+        bytes_requested += buf_size_pwl;
+    }
     uint32_t bytes_granted;
 
     memory = deviceController.Alloc(bytes_requested, &bytes_granted);
@@ -154,7 +159,6 @@ void SetupDiagonalModel::sampleAffineLayer()
         pinned_mem_ptr += buf_size_tmp_outputs;
 
         intel_pwl_segment_t *pinned_pwl = reinterpret_cast<intel_pwl_segment_t*>(pinned_mem_ptr);
-        pinned_mem_ptr += buf_size_pwl;
 
         pwl.nSegments = nSegments;
         pwl.pSegments = pinned_pwl;

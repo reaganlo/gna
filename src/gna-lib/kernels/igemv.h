@@ -25,11 +25,11 @@
 
 #pragma once
 
-#include <immintrin.h>
-#include <stdint.h>
-
 #include "common.h"
 #include "KernelMacros.h"
+
+#include <cstdint>
+#include <immintrin.h>
 
 #if defined(__GNUC__) && !defined(__INTEL_COMPILER)
 #define __forceinline inline

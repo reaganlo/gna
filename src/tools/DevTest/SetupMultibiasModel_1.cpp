@@ -34,9 +34,9 @@
 
 #define UNREFERENCED_PARAMETER(P) ((void)(P))
 
-SetupMultibiasModel_1::SetupMultibiasModel_1(DeviceController & deviceCtrl, bool wght2B, bool pwlEn)
+SetupMultibiasModel_1::SetupMultibiasModel_1(DeviceController & deviceCtrl, bool weight2B, bool pwlEn)
     : deviceController{deviceCtrl},
-    weightsAre2Bytes{wght2B},
+    weightsAre2Bytes{weight2B},
     pwlEnabled{pwlEn}
 {
     nSegments = 64;
@@ -63,7 +63,7 @@ SetupMultibiasModel_1::~SetupMultibiasModel_1()
 }
 
 template <class intel_reference_output_type>
-intel_reference_output_type* SetupMultibiasModel_1::refOutputAssign(int configIndex) const
+intel_reference_output_type* SetupMultibiasModel_1::refOutputAssign(uint32_t configIndex) const
 {
     switch (configIndex)
     {
@@ -81,7 +81,7 @@ intel_reference_output_type* SetupMultibiasModel_1::refOutputAssign(int configIn
 }
 
 template <class intel_reference_output_type>
-void SetupMultibiasModel_1::compareReferenceValues(unsigned int i, int configIndex) const
+void SetupMultibiasModel_1::compareReferenceValues(unsigned int i, uint32_t configIndex) const
 {
     intel_reference_output_type outElemVal = static_cast<const intel_reference_output_type*>(outputBuffer)[i];
     const intel_reference_output_type* refOutput = refOutputAssign<intel_reference_output_type>(configIndex);
@@ -92,7 +92,7 @@ void SetupMultibiasModel_1::compareReferenceValues(unsigned int i, int configInd
     }
 }
 
-void SetupMultibiasModel_1::checkReferenceOutput(int modelIndex, int configIndex) const
+void SetupMultibiasModel_1::checkReferenceOutput(uint32_t modelIndex, uint32_t configIndex) const
 {
     UNREFERENCED_PARAMETER(modelIndex);
     unsigned int ref_output_size = refSize[configIndex];
@@ -121,13 +121,19 @@ void SetupMultibiasModel_1::checkReferenceOutput(int modelIndex, int configIndex
 
 void SetupMultibiasModel_1::sampleAffineLayer()
 {
-    int buf_size_weights = weightsAre2Bytes ? ALIGN64(sizeof(weights_2B)) : ALIGN64(sizeof(weights_1B));
-    int buf_size_inputs = ALIGN64(sizeof(inputs));
-    int buf_size_biases = ALIGN64(sizeof(regularBiases));
-    int buf_size_weight_scales = weightsAre2Bytes ? 0 : ALIGN64(sizeof(scaling));
-    int buf_size_outputs = ALIGN64(outVecSz * groupingNum * sizeof(int32_t));
-    int buf_size_tmp_outputs = ALIGN64(outVecSz * groupingNum * sizeof(int32_t));
-    int buf_size_pwl = ALIGN64(nSegments * sizeof(intel_pwl_segment_t));
+    uint32_t buf_size_weights = weightsAre2Bytes
+        ? ALIGN64( static_cast<uint32_t>(sizeof(weights_2B)))
+        : ALIGN64(static_cast<uint32_t>(sizeof(weights_1B)));
+    uint32_t buf_size_inputs = ALIGN64(static_cast<uint32_t>(sizeof(inputs)));
+    uint32_t buf_size_biases = ALIGN64(static_cast<uint32_t>(sizeof(regularBiases)));
+    uint32_t buf_size_weight_scales = weightsAre2Bytes
+        ? 0 : ALIGN64(static_cast<uint32_t>(sizeof(scaling)));
+    uint32_t buf_size_outputs = ALIGN64(
+            outVecSz * groupingNum * static_cast<uint32_t>(sizeof(int32_t)));
+    uint32_t buf_size_tmp_outputs = ALIGN64(
+            outVecSz * groupingNum * static_cast<uint32_t>(sizeof(int32_t)));
+    uint32_t buf_size_pwl = ALIGN64(
+            nSegments * static_cast<uint32_t>(sizeof(intel_pwl_segment_t)));
 
     uint32_t bytes_requested = buf_size_weights + buf_size_inputs + buf_size_biases +
         buf_size_weight_scales + buf_size_outputs + buf_size_tmp_outputs;
@@ -179,7 +185,6 @@ void SetupMultibiasModel_1::sampleAffineLayer()
         pinned_mem_ptr += buf_size_tmp_outputs;
 
         intel_pwl_segment_t *pinned_pwl = reinterpret_cast<intel_pwl_segment_t*>(pinned_mem_ptr);
-        pinned_mem_ptr += buf_size_pwl;
 
         pwl.nSegments = nSegments;
         pwl.pSegments = pinned_pwl;

@@ -25,18 +25,19 @@
 
 #pragma once
 
-#include "Address.h"
-#include "Capabilities.h"
 #include "HardwareCapabilities.h"
+#include "ParameterLimits.h"
 
-#include <memory>
+#include "common.h"
+#include "gna-api-types-xnn.h"
+
+#include <cstddef>
 #include <functional>
 
 namespace GNA
 {
 
 class FullCapabilitiesMap;
-struct ComponentLimits;
 
 // Functor for validating if buffer is within memory boundaries
 using ValidBoundariesFunctor = std::function<void(const void *, size_t)>;
@@ -46,7 +47,7 @@ class BaseValidator
 public:
     BaseValidator(
         const HardwareCapabilities hwCapabilities,
-        const ValidBoundariesFunctor bufferValidator);
+        const ValidBoundariesFunctor validBoundariesIn);
     virtual ~BaseValidator() = default;
 
     void ValidateBuffer(const void* const buffer, size_t size,
@@ -84,4 +85,5 @@ public:
     const gna_tensor_order Order;
 };
 
-};
+}
+

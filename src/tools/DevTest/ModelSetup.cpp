@@ -45,7 +45,7 @@ ModelSetup::~ModelSetup()
     free(nnet.pLayers);
 }
 
-void ModelSetup::checkReferenceOutput(int modelIndex, int configIndex) const
+void ModelSetup::checkReferenceOutput(uint32_t modelIndex, uint32_t configIndex) const
 {
     UNREFERENCED_PARAMETER(modelIndex);
     UNREFERENCED_PARAMETER(configIndex);
@@ -58,19 +58,27 @@ void ModelSetup::checkReferenceOutput(int modelIndex, int configIndex) const
         {
         case sizeof (int8_t):
             if (static_cast<const int8_t*>(referenceOutput)[i] != static_cast<const int8_t*>(outputBuffer)[i])
+            {
                 throw std::runtime_error("Wrong output");
+            }
         break;
         case sizeof (int16_t):
             if (static_cast<const int16_t*>(referenceOutput)[i] != static_cast<const int16_t*>(outputBuffer)[i])
+            {
                 throw std::runtime_error("Wrong output");
+            }
         break;
         case sizeof (int32_t):
             if (static_cast<const int32_t*>(referenceOutput)[i] != static_cast<const int32_t*>(outputBuffer)[i])
+            {
                 throw std::runtime_error("Wrong output");
+            }
         break;
         case sizeof (int64_t):
             if (static_cast<const int64_t*>(referenceOutput)[i] != static_cast<const int64_t*>(outputBuffer)[i])
+            {
                 throw std::runtime_error("Wrong output");
+            }
         break;
         default:
             throw std::runtime_error("Invalid output data mode");

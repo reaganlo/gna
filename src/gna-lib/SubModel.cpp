@@ -31,7 +31,7 @@ SubModel::SubModel(SubmodelType type, uint32_t layerIndex) :
     Type{type},
     LayerIndex{layerIndex},
     layerCount{1}
-{};
+{}
 
 void SubModel::AddLayer()
 {

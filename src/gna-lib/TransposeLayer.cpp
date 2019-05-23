@@ -55,14 +55,14 @@ TransposeLayer::TransposeLayer(const nn_layer& layer, const BaseValidator& valid
 void TransposeLayer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const
 {
     BaseAddress inputBuffer = Input;
-    if (layerConfiguration.Buffers.count(InputComponent))
+    if (layerConfiguration.Buffers.count(InputComponent) == 0)
     {
         inputBuffer = layerConfiguration.Buffers[InputComponent];
         Input.ValidateBuffer(inputBuffer);
     }
 
     BaseAddress outputBuffer = Output;
-    if (layerConfiguration.Buffers.count(OutputComponent))
+    if (layerConfiguration.Buffers.count(OutputComponent) == 0)
     {
         outputBuffer = layerConfiguration.Buffers[OutputComponent];
         Output.ValidateBuffer(outputBuffer);
@@ -70,7 +70,9 @@ void TransposeLayer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration)
 
     auto& configs = layerConfiguration.Configs;
     if(!configs.Transpose)
+    {
         configs.Transpose = std::make_unique<TransposeConfig>(transposeHiddenConfig);
+    }
 
     configs.Transpose->input = inputBuffer;
     configs.Transpose->output = outputBuffer;

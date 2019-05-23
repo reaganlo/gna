@@ -26,14 +26,36 @@
 #include "RecurrentLayer.h"
 
 #include "AccelerationDetector.h"
-#include "LayerConfiguration.h"
+#include "ActivationFunction.h"
+#include "AffineFunctions.h"
+#include "Bias.h"
+#include "DataMode.h"
 #include "Expect.h"
+#include "GnaException.h"
+#include "Layer.h"
+#include "LayerConfiguration.h"
+#include "LayerInput.h"
+#include "LayerOutput.h"
+#include "Tensor.h"
+#include "Weight.h"
+
+#include "gna-api.h"
+#include "gna-api-status.h"
+#include "gna-api-types-xnn.h"
+
+#include <algorithm>
+#include <memory>
+
+namespace GNA
+{
+class BaseValidator;
+}
 
 using namespace GNA;
 
 RnnLayer::RnnLayer(const nn_layer& layer, const BaseValidator& validatorIn) :
     AffineBaseLayer(layer, validatorIn),
-    FeedbackDelay{static_cast<const nn_layer_reccurent * const>(layer.pLayerStruct)->feedbackFrameDelay},
+    FeedbackDelay{static_cast<const nn_layer_reccurent *>(layer.pLayerStruct)->feedbackFrameDelay},
     recurrentKernels{ AccelerationDetector::GetKernelMap<RecurrentKernel>(
         KERNEL_RECURRENT, {Input.Mode, Affine->Weights->Mode, Affine->Biases->Mode}) },
     rnnHiddenConfig{Output.at(GNA_DIM_H), Input.at(GNA_DIM_N), Input.at(GNA_DIM_W), Input.Buffer, nullptr,
@@ -57,16 +79,18 @@ void RnnLayer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const
 {
     AffineBaseLayer::UpdateKernelConfigs(layerConfiguration);
 
-    BaseAddress inputBuffer = layerConfiguration.Buffers.count(InputComponent)
+    BaseAddress inputBuffer = layerConfiguration.Buffers.count(InputComponent) > 0
         ? layerConfiguration.Buffers[InputComponent] : Input;
 
-    BaseAddress outputBuffer = layerConfiguration.Buffers.count(OutputComponent)
+    BaseAddress outputBuffer = layerConfiguration.Buffers.count(OutputComponent) > 0
         ? layerConfiguration.Buffers[OutputComponent] : Output;
 
     auto& configs = layerConfiguration.Configs;
 
     if(!configs.Recurrent)
+    {
         configs.Recurrent = std::make_unique<RecurrentConfig>(rnnHiddenConfig);
+    }
     configs.Recurrent->input = inputBuffer;
     Input.ValidateBuffer(inputBuffer);
 
@@ -95,7 +119,7 @@ const BaseAddress RnnLayer::CalculateFeedbackBuffer(const BaseAddress& outputBuf
 {
     if (outputBuffer)
     {
-        const auto buffer = outputBuffer - (FeedbackDelay * Output.at(GNA_DIM_H) * Output.Mode);
+        const auto buffer = outputBuffer - (FeedbackDelay * Output.at(GNA_DIM_H) * Output.Mode.Size);
 
         try
         {
@@ -107,8 +131,6 @@ const BaseAddress RnnLayer::CalculateFeedbackBuffer(const BaseAddress& outputBuf
         }
         return buffer;
     }
-    else
-    {
-        return BaseAddress();
-    }
+
+    return BaseAddress();
 }

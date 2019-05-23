@@ -48,6 +48,7 @@ class Memory;
 class AccelerationDetector;
 class Layer;
 class RequestConfiguration;
+class WindowsDriverInterface;
 struct RequestProfiler;
 
 class HardwareModelVerbose : public HardwareModelScorable
@@ -106,5 +107,7 @@ private:
 
     static std::map<dbg_action_type const, char const * const> const actionFileNames;
     std::map<dbg_action_type const, uint32_t> actionFileCounters;
+
+    WindowsDriverInterface &windowsDriverInterface;
 };
 }

@@ -25,17 +25,24 @@
 
 #pragma once
 
-#include <memory>
-
+#include "Address.h"
 #include "Bias.h"
-#include "LayerInput.h"
-#include "LayerOutput.h"
+#include "KernelArguments.h"
 #include "Tensor.h"
 #include "Weight.h"
 #include "XnnKernel.h"
 
+#include "gna2-inference-impl.h"
+
+#include <cstdint>
+#include <map>
+#include <memory>
+
 namespace GNA
 {
+
+class FullCapabilitiesMap;
+class LayerValidator;
 
 struct LayerConfiguration;
 
@@ -43,6 +50,8 @@ struct LayerConfiguration;
 struct AffineFunction
 {
 public:
+    virtual ~AffineFunction() = default;
+
     // dimensions: NWH
     static std::unique_ptr<const AffineFunction> Create(const Tensor* input, const Tensor* output,
         void const * layerDetails, const LayerValidator& validatorIn);
@@ -56,10 +65,9 @@ public:
 
     std::unique_ptr<const WeightTensor> Weights;
     std::unique_ptr<const BiasTensor> Biases;
-    virtual ~AffineFunction() = default;
 
 protected:
-    AffineFunction(const KernelMap<AffineKernel>& kernels,
+    AffineFunction(const KernelMap<AffineKernel>& kernelsIn,
         std::unique_ptr<const WeightTensor> weights, std::unique_ptr<const BiasTensor> biases);
 
     const KernelMap<AffineKernel>&  kernels;
@@ -71,9 +79,9 @@ class AffineFunctionSingle : public AffineFunction
 public:
     AffineFunctionSingle(const BaseAddress& input, const BaseAddress& output, const uint32_t vectorCount,
         std::unique_ptr<const WeightTensor> weights, std::unique_ptr<const BiasTensor> biases,
-        const KernelMap<AffineKernel>& kernels,
-        const KernelMap<AffineActiveListKernel>& kernelsAl);
-    ~AffineFunctionSingle() = default;
+        const KernelMap<AffineKernel>& kernelsIn,
+        const KernelMap<AffineActiveListKernel>& kernelsAlIn);
+    virtual ~AffineFunctionSingle() = default;
 
     virtual void Compute(const LayerConfiguration& layerConfiguration, AccelerationMode accel,
         ExecutionConfig const & execution) const override;
@@ -88,8 +96,8 @@ public:
     AffineFunctionMulti(const BaseAddress& input, const BaseAddress& output, const uint32_t vectorCount,
         std::unique_ptr<const WeightTensor> weights, std::unique_ptr<const BiasTensor> biases,
         std::unique_ptr<const Tensor> weightScaleFactors,
-        const KernelMap<AffineKernel>& kernels);
-    ~AffineFunctionMulti() = default;
+        const KernelMap<AffineKernel>& kernelsIn);
+    virtual ~AffineFunctionMulti() = default;
 
     const std::unique_ptr<const Tensor> WeightScaleFactors; // AffineFunctionMulti1B
 

@@ -25,16 +25,19 @@
 
 #include "RequestConfiguration.h"
 
-#include <memory>
-
-#include "Capabilities.h"
+#include "ActiveList.h"
+#include "Address.h"
 #include "CompiledModel.h"
 #include "Expect.h"
-#include "GnaException.h"
-#include "GnaConfig.h"
 #include "HardwareCapabilities.h"
+#include "KernelArguments.h"
+#include "Layer.h"
 #include "LayerConfiguration.h"
 
+#include "gna-api-status.h"
+
+#include <memory>
+#include <utility>
 
 using namespace GNA;
 
@@ -80,7 +83,8 @@ void RequestConfiguration::AddActiveList(uint32_t layerIndex, const ActiveList& 
 
     Expect::Null(layerConfiguration->ActList.get());
 
-    addMemoryObject((void *)activeList.Indices, activeList.IndicesCount * sizeof(uint32_t));
+    addMemoryObject((void *)activeList.Indices,
+            activeList.IndicesCount * static_cast<uint32_t>(sizeof(uint32_t)));
 
     auto activeListPtr = ActiveList::Create(activeList);
     layerConfiguration->ActList.swap(activeListPtr);

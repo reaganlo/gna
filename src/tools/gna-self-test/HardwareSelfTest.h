@@ -29,6 +29,7 @@ public:
     GnaSelfTestHardwareStatus(const GnaSelfTest& gst) :gnaSelfTest{ gst }
     {
     }
+    virtual ~GnaSelfTestHardwareStatus() = default;
     void Initialize()
     {
         logger.Verbose("Detecting device...\n");

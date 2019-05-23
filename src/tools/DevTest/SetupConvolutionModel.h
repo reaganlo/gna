@@ -34,11 +34,11 @@ public:
 
     ~SetupConvolutionModel();
 
-    void checkReferenceOutput(int modelIndex, int configIndex) const override;
+    void checkReferenceOutput(uint32_t modelIndex, uint32_t configIndex) const override;
 
 private:
     void sampleConvolutionLayer();
-    void samplePwl(intel_pwl_segment_t *segments, uint32_t nSegments);
+    void samplePwl(intel_pwl_segment_t *segments, uint32_t numberOfSegments);
 
     DeviceController & deviceController;
 
@@ -52,13 +52,11 @@ private:
     void * outputBuffer = nullptr;
     void * memory = nullptr;
 
-    const int configPwlEnabled = 1;
+    template<class intel_reference_output_type>
+    intel_reference_output_type* refOutputAssign(uint32_t configIndex) const;
 
     template<class intel_reference_output_type>
-    intel_reference_output_type* refOutputAssign(int configIndex) const;
-
-    template<class intel_reference_output_type>
-    void compareReferenceValues(unsigned i, int configIndex) const;
+    void compareReferenceValues(unsigned i, uint32_t configIndex) const;
 
     static const int groupingNum = 1;
     static const int nFilters = 4;

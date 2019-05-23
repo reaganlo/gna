@@ -25,19 +25,24 @@
 
 #include "Device.h"
 
-#include <cstring>
-#include <iostream>
-#include <fstream>
-#include <memory>
-
-#include "Memory.h"
+#include "CompiledModel.h"
+#include "DataMode.h"
 #include "Expect.h"
 #include "HardwareModelSue1.h"
+#include "Layer.h"
+#include "LayerInput.h"
+#include "LayerOutput.h"
+#include "Memory.h"
 
-using std::ofstream;
-using std::make_shared;
-using std::make_unique;
-using std::move;
+#include "gna-api-dumper.h"
+#include "gna-api-status.h"
+#include "gna-api.h"
+
+#include <algorithm>
+#include <cstdint>
+#include <cstring>
+#include <map>
+#include <memory>
 
 using namespace GNA;
 
@@ -47,7 +52,7 @@ void* Device::Dump(gna_model_id modelId, gna_device_generation deviceGeneration,
 
     Expect::NotNull(status);
     Expect::NotNull(modelHeader);
-    Expect::NotNull((void *)customAlloc);
+    Expect::NotNull(reinterpret_cast<void *>(customAlloc));
     Expect::Equal(GNA_1_0_EMBEDDED, deviceGeneration, Gna2StatusAccelerationModeNotSupported); // Temporary limitation
 
     auto& model = models.at(modelId);
@@ -66,7 +71,7 @@ void* Device::Dump(gna_model_id modelId, gna_device_generation deviceGeneration,
     auto dumpMemory = std::make_unique<Memory>(address, ldSize);
 
     // creating HW layer descriptors directly into dump memory
-    auto hwModel = make_unique<HardwareModelSue1>(
+    auto hwModel = std::make_unique<HardwareModelSue1>(
                     model->GetLayers(), model->GmmCount, std::move(dumpMemory));
     hwModel->Build(model->GetModelMemoryList());
 
@@ -81,7 +86,7 @@ void* Device::Dump(gna_model_id modelId, gna_device_generation deviceGeneration,
     uint32_t outputsOffset = hwModel->GetOutputOffset(layerCount - 1);
     uint32_t inputsOffset = hwModel->GetInputOffset(0);
     *modelHeader = { 0, static_cast<uint32_t>(totalSize), 1, layerCount, input.Mode.Size,
-        output.Mode.Size, input.Count, output.Count, inputsOffset, outputsOffset };
+        output.Mode.Size, input.Count, output.Count, inputsOffset, outputsOffset, 0, 0, 0, {} };
 
     *status = Gna2StatusSuccess;
     return address;

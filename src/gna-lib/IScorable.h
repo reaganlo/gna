@@ -25,14 +25,14 @@
 
 #pragma once
 
-#include <memory>
-#include <vector>
-
 #include "HardwareCapabilities.h"
 #include "HardwareLayer.h"
 #include "HardwareRequest.h"
 #include "DriverInterface.h"
 #include "Memory.h"
+
+#include <memory>
+#include <vector>
 
 namespace GNA
 {
@@ -48,6 +48,7 @@ struct RequestProfiler;
 class IScorable
 {
 public:
+    virtual ~IScorable() = default;
     virtual uint32_t Score(
         uint32_t layerIndex,
         uint32_t layerCount,

@@ -25,20 +25,26 @@
 
 #pragma once
 
-#include "gna2-inference-api.h"
+#include "LayerConfiguration.h"
 
-#include <array>
+#include "gna-api.h"
+#include "gna-api-instrumentation.h"
+#include "gna-api-types-xnn.h"
+#include "gna2-inference-api.h"
+#include "gna2-inference-impl.h"
+
+#include "gna2-common-impl.h"
+
 #include <map>
 #include <memory>
 #include <vector>
-
-#include "ActiveList.h"
-#include "common.h"
-#include "CompiledModel.h"
+#include <cstdint>
 
 namespace GNA
 {
-struct LayerConfiguration;
+class CompiledModel;
+class Memory;
+struct ActiveList;
 
 /*
 ** RequestConfiguration is a bunch of request buffers
@@ -52,7 +58,7 @@ public:
 
     void AddBuffer(GnaComponentType type, uint32_t layerIndex, void *address);
     void AddActiveList(uint32_t layerIndex, const ActiveList& activeList);
-    void SetHardwareConsistency(DeviceVersion consistentDevice);
+    void SetHardwareConsistency(DeviceVersion consistentDeviceIn);
     void EnforceAcceleration(Gna2AccelerationMode accelMode)
     {
         Acceleration.SetMode(accelMode);

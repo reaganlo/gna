@@ -23,9 +23,14 @@
  in any way.
 */
 
-#include "igemv.h"
 #include "igemv8.h"
 #include "igemv16.h"
+
+#include "KernelArguments.h"
+
+#include "common.h"
+
+#include <cstdint>
 
 void AffineActiveListKernelImpl1B(AffineConfig const * const config, AffineConfigAl const * const al)
 {

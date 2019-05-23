@@ -52,6 +52,7 @@ extern "C" {
 /** GNA API Status codes */
 typedef enum _gna_status_t
 {
+    GNA_INVALID_STATUS = -1, // Workaround for gcc -Wconversion error
     GNA_SUCCESS,             // Success: Operation successful, no errors or warnings
     GNA_DEVICEBUSY,          // Warning: Device busy - accelerator is still running, can not enqueue more requests
     GNA_SSATURATE,           // Warning: Scoring saturation - an arithmetic operation has resulted in saturation
@@ -169,7 +170,7 @@ static_assert(4 == sizeof(intel_gna_status_t), "Invalid size of intel_gna_status
 #define GNA_DEFAULT (0)
 
 /** Constant indicating that feature is not available. */
-#define GNA_NOT_SUPPORTED (1 << 31)
+#define GNA_NOT_SUPPORTED (0x80000000)
 
 /**
  * Gets printable status name with the description as a c-string

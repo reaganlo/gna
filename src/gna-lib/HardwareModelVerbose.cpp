@@ -23,13 +23,16 @@
  in any way.
 */
 
+#include "HardwareLayer.h"
 #include "HardwareModelVerbose.h"
+#include "Layer.h"
+#include "WindowsDriverInterface.h"
 
 #include <fstream>
+#include <memory>
 #include <string>
 
 using namespace GNA;
-
 
 std::map<dbg_action_type const, char const * const> const HardwareModelVerbose::actionFileNames =
 {
@@ -48,7 +51,8 @@ HardwareModelVerbose::HardwareModelVerbose(const std::vector<std::unique_ptr<Lay
         {GnaReadRegister, 0},
         {GnaDumpMemory, 0},
         {GnaDumpXnnDescriptor, 0},
-        {GnaDumpGmmDescriptor, 0}}
+        {GnaDumpGmmDescriptor, 0}},
+    windowsDriverInterface{dynamic_cast<WindowsDriverInterface&>(ddi)}
 {
 }
 
@@ -95,7 +99,7 @@ UINT32 HardwareModelVerbose::readReg(UINT32 regOffset)
     GNA_READREG_OUT readRegOut;
     ZeroMemory(&readRegOut, sizeof(readRegOut));
 
-    driverInterface.IoctlSend(GNA_COMMAND_READ_REG,
+    windowsDriverInterface.IoctlSend(GNA_COMMAND_READ_REG,
         &readRegIn, sizeof(readRegIn),
         &readRegOut, sizeof(readRegOut));
 
@@ -109,7 +113,7 @@ void HardwareModelVerbose::writeReg(UINT32 regOffset, UINT32 regVal)
     writeRegIn.regOffset = regOffset;
     writeRegIn.regValue = regVal;
 
-    driverInterface.IoctlSend(GNA_COMMAND_WRITE_REG,
+    windowsDriverInterface.IoctlSend(GNA_COMMAND_WRITE_REG,
         &writeRegIn, sizeof(writeRegIn),
         NULL, 0);
 }
@@ -122,21 +126,21 @@ void HardwareModelVerbose::readRegister(FILE *file, UINT32 registerOffset)
 void HardwareModelVerbose::writeRegister(dbg_action regAction)
 {
     uint32_t regValue = 0;
-    switch (regAction.reg_operation)
+    switch (regAction.reg_params.reg_operation)
     {
     case Equal:
-        regValue = regAction.reg_value;
+        regValue = regAction.reg_params.reg_value;
         break;
     case And:
-        regValue = readReg(regAction.gna_register);
-        regValue &= regAction.reg_value;
+        regValue = readReg(regAction.reg_params.gna_register);
+        regValue &= regAction.reg_params.reg_value;
         break;
     case Or:
-        regValue = readReg(regAction.gna_register);
-        regValue |= regAction.reg_value;
+        regValue = readReg(regAction.reg_params.gna_register);
+        regValue |= regAction.reg_params.reg_value;
         break;
     }
-    writeReg(regAction.gna_register, regValue);
+    writeReg(regAction.reg_params.gna_register, regValue);
 }
 
 void HardwareModelVerbose::dumpMemory(FILE *file)
@@ -154,20 +158,22 @@ void HardwareModelVerbose::zeroMemory(void *memoryIn, size_t memorySizeIn)
 
 void HardwareModelVerbose::setXnnDescriptor(dbg_action action)
 {
-    auto xnnParam = hardwareLayers.at(action.layer_number)->XnnDescriptor.GetMemAddress() + action.xnn_offset;
-    setDescriptor(xnnParam, action.xnn_value, action.xnn_value_size);
+    const auto& hwLayer = hardwareLayers.at(action.xnn_params.layer_number);
+    auto xnnParam = hwLayer->XnnDescriptor.GetMemAddress() +
+                        action.xnn_params.xnn_offset;
+    setDescriptor(xnnParam, action.xnn_params.xnn_value, action.xnn_params.xnn_value_size);
 }
 
 void HardwareModelVerbose::setGmmDescriptor(dbg_action action)
 {
-    const auto& hwLayer = hardwareLayers.at(action.layer_number);
+    const auto& hwLayer = hardwareLayers.at(action.xnn_params.layer_number);
     if (hwLayer->SoftwareLayer->Operation != INTEL_GMM)
     {
         throw GnaException{ Gna2StatusXnnErrorLyrOperation };
     }
     auto gmmDescriptor = hwLayer->XnnDescriptor.GmmDescriptor;
-    auto xnnParam = gmmDescriptor.Get<uint8_t>() + action.xnn_offset;
-    setDescriptor(xnnParam, action.xnn_value, action.xnn_value_size);
+    auto xnnParam = gmmDescriptor.Get<uint8_t>() + action.xnn_params.xnn_offset;
+    setDescriptor(xnnParam, action.xnn_params.xnn_value, action.xnn_params.xnn_value_size);
 }
 
 void HardwareModelVerbose::setDescriptor(uint8_t *xnnParam, uint64_t xnnValue, gna_set_size valueSize)
@@ -260,7 +266,7 @@ void HardwareModelVerbose::executeDebugAction(dbg_action& action)
         dumpMmio(file);
         break;
         case GnaReadRegister:
-        readRegister(file, action.gna_register);
+        readRegister(file, action.reg_params.gna_register);
         break;
         case GnaWriteRegister:
         writeRegister(action);
@@ -269,13 +275,13 @@ void HardwareModelVerbose::executeDebugAction(dbg_action& action)
         dumpMemory(file);
         break;
         case GnaZeroMemory:
-        zeroMemory(action.outputs, action.outputs_size);
+        zeroMemory(action.output_params.outputs, action.output_params.outputs_size);
         break;
         case GnaDumpXnnDescriptor:
-        dumpXnnDescriptor(action.layer_number, file);
+        dumpXnnDescriptor(action.xnn_params.layer_number, file);
         break;
         case GnaDumpGmmDescriptor:
-        dumpGmmDescriptor(action.layer_number, file);
+        dumpGmmDescriptor(action.xnn_params.layer_number, file);
         break;
         case GnaSetXnnDescriptor:
         setXnnDescriptor(action);

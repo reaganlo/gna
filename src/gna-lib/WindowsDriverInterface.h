@@ -27,19 +27,19 @@
 
 #include "DriverInterface.h"
 
-#include <map>
-#include <memory>
-
-#define WIN32_NO_STATUS
-#include <Windows.h>
-#undef WIN32_NO_STATUS
-#include <SetupApi.h>
-
-#include "GnaDrvApiWinDebug.h"
 #include "Request.h"
 #include "Expect.h"
 
+#define WIN32_NO_STATUS
+#include "GnaDrvApiWinDebug.h"
+#include <SetupApi.h>
+#include <Windows.h>
+#undef WIN32_NO_STATUS
+
 #include "common.h"
+
+#include <map>
+#include <memory>
 
 namespace GNA
 {
@@ -90,11 +90,11 @@ public:
 
     virtual void IoctlSend(const GnaIoctlCommand command,
         void * const inbuf, const uint32_t inlen,
-        void * const outbuf, const uint32_t outlen) override;
+        void * const outbuf, const uint32_t outlen);
 
     virtual DriverCapabilities GetCapabilities() const override;
 
-    virtual uint64_t MemoryMap(void *memory, size_t memorySize) override;
+    virtual uint64_t MemoryMap(void *memory, uint32_t memorySize) override;
 
     virtual void MemoryUnmap(uint64_t memoryId) override;
 

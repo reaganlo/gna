@@ -25,16 +25,20 @@
 
 #pragma once
 
-#include <memory>
-#include <vector>
+#include "RequestConfiguration.h"
 
 #include "common.h"
-#include "CompiledModel.h"
-#include "RequestConfiguration.h"
-#include "LayerConfiguration.h"
+
+#include <memory>
+#include <cstdint>
+#include <unordered_map>
 
 namespace GNA
 {
+class CompiledModel;
+class Request;
+struct ActiveList;
+
 class RequestBuilder
 {
 public:

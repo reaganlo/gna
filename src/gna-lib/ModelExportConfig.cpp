@@ -62,13 +62,15 @@ void ModelExportConfig::Export(Gna2ModelExportComponent componentType, void ** e
         privateDeAllocator(dump);
         return;
     }
-    else if (componentType == Gna2ModelExportComponentLegacySueCreekDump)
+
+    if (componentType == Gna2ModelExportComponentLegacySueCreekDump)
     {
         intel_gna_model_header header;
         *exportBuffer = device.Dump(sourceModelId, GNA_1_0_EMBEDDED, &header, &status, allocator);
         *exportBufferSize = header.model_size;
         return;
     }
+
     throw GnaException(Gna2StatusNotImplemented);
 }
 
@@ -125,6 +127,8 @@ ModelExportConfig & ModelExportManager::GetConfig(uint32_t exportConfigId)
 {
     auto found = allConfigs.find(exportConfigId);
     if (found == allConfigs.end())
+    {
         throw GnaException(Gna2StatusIdentifierInvalid);
+    }
     return found->second;
 }

@@ -37,9 +37,9 @@
 
 typedef uint8_t     __MultibufferB_RES;       // 1B of reserved memory
 
-SetupDnnModel_Multibuffer::SetupDnnModel_Multibuffer(DeviceController & deviceCtrl, bool wght2B, bool activeListEn, bool pwlEn)
+SetupDnnModel_Multibuffer::SetupDnnModel_Multibuffer(DeviceController & deviceCtrl, bool weight2B, bool activeListEn, bool pwlEn)
     : deviceController{ deviceCtrl },
-    weightsAre2Bytes{ wght2B },
+    weightsAre2Bytes{ weight2B },
     activeListEnabled{ activeListEn },
     pwlEnabled{ pwlEn }
 {
@@ -146,7 +146,7 @@ SetupDnnModel_Multibuffer::~SetupDnnModel_Multibuffer()
 }
 
 template <class intel_reference_output_type>
-intel_reference_output_type* SetupDnnModel_Multibuffer::refOutputAssign(int configIndex) const
+intel_reference_output_type* SetupDnnModel_Multibuffer::refOutputAssign(uint32_t configIndex) const
 {
     switch (configIndex)
     {
@@ -172,7 +172,7 @@ intel_reference_output_type* SetupDnnModel_Multibuffer::refOutputAssign(int conf
 }
 
 template <class intel_reference_output_type>
-void SetupDnnModel_Multibuffer::compareReferenceValues(unsigned int i, int configIndex) const
+void SetupDnnModel_Multibuffer::compareReferenceValues(uint32_t i, uint32_t configIndex) const
 {
     intel_reference_output_type outElemVal = static_cast<const intel_reference_output_type*>(outputBuffer)[i];
     const intel_reference_output_type* refOutput = refOutputAssign<intel_reference_output_type>(configIndex);
@@ -183,11 +183,11 @@ void SetupDnnModel_Multibuffer::compareReferenceValues(unsigned int i, int confi
     }
 }
 
-void SetupDnnModel_Multibuffer::checkReferenceOutput(int modelIndex, int configIndex) const
+void SetupDnnModel_Multibuffer::checkReferenceOutput(uint32_t modelIndex, uint32_t configIndex) const
 {
     UNREFERENCED_PARAMETER(modelIndex);
-    unsigned int ref_output_size = refSize[configIndex];
-    for (unsigned int i = 0; i < ref_output_size; ++i)
+    uint32_t ref_output_size = refSize[configIndex];
+    for (uint32_t i = 0; i < ref_output_size; ++i)
     {
         switch (configIndex)
         {
@@ -224,14 +224,17 @@ void SetupDnnModel_Multibuffer::checkReferenceOutput(int modelIndex, int configI
 
 void SetupDnnModel_Multibuffer::sampleAffineLayer()
 {
-    uint32_t buf_size_weights = weightsAre2Bytes ? ALIGN64(sizeof(weights_2B)) : ALIGN64(sizeof(weights_1B));
+    uint32_t buf_size_weights = static_cast<uint32_t>(weightsAre2Bytes
+                    ? ALIGN64(sizeof(weights_2B)) : ALIGN64(sizeof(weights_1B)));
     uint32_t buf_size_inputs = ALIGN64(sizeof(inputs));
-    uint32_t buf_size_biases = weightsAre2Bytes ? ALIGN64(sizeof(regularBiases)) : ALIGN64(sizeof(compoundBiases));
-    uint32_t buf_size_outputs = ALIGN64(outVecSz * groupingNum * sizeof(int32_t));
-    uint32_t buf_size_tmp_outputs = ALIGN64(outVecSz * groupingNum * sizeof(int32_t));
-    uint32_t buf_size_pwl = ALIGN64(nSegments * sizeof(intel_pwl_segment_t));
+    uint32_t buf_size_biases = weightsAre2Bytes
+        ? ALIGN64(static_cast<uint32_t>(sizeof(regularBiases)))
+        : ALIGN64(static_cast<uint32_t>(sizeof(compoundBiases)));
+    uint32_t buf_size_outputs = static_cast<uint32_t>(ALIGN64(outVecSz * groupingNum * sizeof(int32_t)));
+    uint32_t buf_size_tmp_outputs = static_cast<uint32_t>(ALIGN64(outVecSz * groupingNum * sizeof(int32_t)));
+    uint32_t buf_size_pwl = static_cast<uint32_t>(ALIGN64(nSegments * sizeof(intel_pwl_segment_t)));
 
-    uint32_t bytes_requested_al = ALIGN64(indicesCount * sizeof(uint32_t));
+    uint32_t bytes_requested_al = static_cast<uint32_t>(ALIGN64(indicesCount * sizeof(uint32_t)));
     uint32_t bytes_requested_base = buf_size_weights + buf_size_biases;
     uint32_t bytes_requested_io = buf_size_inputs + buf_size_outputs;
     uint32_t bytes_requested_pwl = buf_size_pwl + buf_size_tmp_outputs;
@@ -270,7 +273,6 @@ void SetupDnnModel_Multibuffer::sampleAffineLayer()
     {
         memcpy(pinned_biases, compoundBiases, sizeof(compoundBiases));
     }
-    baseMemoryPosition += buf_size_biases;
 
     if (activeListEnabled)
     {
@@ -289,7 +291,6 @@ void SetupDnnModel_Multibuffer::sampleAffineLayer()
         pwlMemoryPosition += buf_size_tmp_outputs;
 
         intel_pwl_segment_t *pinned_pwl = reinterpret_cast<intel_pwl_segment_t*>(pwlMemoryPosition);
-        pwlMemoryPosition += buf_size_pwl;
 
         pwl.nSegments = nSegments;
         pwl.pSegments = pinned_pwl;

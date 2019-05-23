@@ -26,6 +26,11 @@
 #include "gmm.h"
 #include "kernel-gmm.h"
 
+#include "KernelArguments.h"
+#include "KernelMacros.h"
+
+#include "gna-api-types-gmm.h"
+
 #define gmmMaxMix8KernelImpl KERNEL(gmmMaxMix8KernelImpl)
 #define gmmMaxMix16KernelImpl KERNEL(gmmMaxMix16KernelImpl)
 #define gmmMaxMix8ActiveListKernelImpl KERNEL(gmmMaxMix8ActiveListKernelImpl)

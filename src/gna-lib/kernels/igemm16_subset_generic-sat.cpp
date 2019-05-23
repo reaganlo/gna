@@ -26,6 +26,12 @@
 #include "igemv.h"
 #include "igemv16.h"
 
+#include "KernelArguments.h"
+
+#include "gna-api-types-xnn.h"
+
+#include <cstdint>
+
 void AffineActiveListKernelImpl2B(AffineConfig const * const config, AffineConfigAl const * const al)
 {
     uint32_t nKpartial;
@@ -36,7 +42,7 @@ void AffineActiveListKernelImpl2B(AffineConfig const * const config, AffineConfi
     uint32_t k;
     uint32_t l;
     kpartial = (config->execution->BufferElementCount[config->inputVectorCount - 1 + XNN_N_GROUP_MAX]) / config->inputVectorCount;
-    nKpartial = (int32_t)config->inputElementCount / kpartial;
+    nKpartial = config->inputElementCount / kpartial;
 
     TransposeConfig transposeConfig = TransposeConfig{ config->inputElementCount, config->inputVectorCount,
         config->input, config->execution->Intermediate->d0 };
@@ -50,13 +56,24 @@ void AffineActiveListKernelImpl2B(AffineConfig const * const config, AffineConfi
         i = al->indices[l];
         for (j = 0; j < config->inputVectorCount; j++) {
 
-            sum = getBias((void*)config->biasesSimple, i, (gna_data_mode)config->bytesPerBias);
+            if (config->bytesPerBias == 1)
+            {
+                sum = ((int8_t*)config->biasesSimple)[i];
+            }
+            else if (config->bytesPerBias == 2)
+            {
+                sum = ((int16_t*)config->biasesSimple)[i];
+            }
+            else if (config->bytesPerBias == 4)
+            {
+                sum = ((int32_t*)config->biasesSimple)[i];
+            }
 
             for (kk = 0; kk < nKpartial + 1; kk++) {
                 input = config->execution->Intermediate->d0 + j*config->inputElementCount + kk * kpartial;
                 weight = config->weights2B + i*config->inputElementCount + kk * kpartial;
                 for (k = 0; (k < kpartial) && (kk*kpartial + k < config->inputElementCount); k++) {
-                    sum += (int32_t)(weight[k] * input[k]);
+                    sum += weight[k] * input[k];
                 }
                 saturate_store_out(&sum, &config->output[l*config->inputVectorCount + j], config->execution->SaturationCount);
                 sum = (int64_t)config->output[l*config->inputVectorCount + j]; // load the temp sum
@@ -75,7 +92,7 @@ void AffineActiveListKernelImpl2B2B(AffineConfig const * const config, AffineCon
     uint32_t kpartial;
     uint32_t nKpartial;
     kpartial = (config->execution->BufferElementCount[config->inputVectorCount - 1 + XNN_N_GROUP_MAX]) / config->inputVectorCount;
-    nKpartial = (int32_t)config->inputElementCount / kpartial;
+    nKpartial = config->inputElementCount / kpartial;
 
     TransposeConfig transposeConfig = TransposeConfig{ config->inputElementCount, config->inputVectorCount,
         config->input, config->execution->Intermediate->d0 };
@@ -88,14 +105,25 @@ void AffineActiveListKernelImpl2B2B(AffineConfig const * const config, AffineCon
     for (l = 0; l < al->count; l++) {
         i = al->indices[l];
         for (j = 0; j < config->inputVectorCount; j++) {
-            
-            sum = getBias((void*)config->biasesSimple, i, (gna_data_mode)config->bytesPerBias);
+
+            if (config->bytesPerBias == 1)
+            {
+                sum = ((int8_t*)config->biasesSimple)[i];
+            }
+            else if (config->bytesPerBias == 2)
+            {
+                sum = ((int16_t*)config->biasesSimple)[i];
+            }
+            else if (config->bytesPerBias == 4)
+            {
+                sum = ((int32_t*)config->biasesSimple)[i];
+            }
 
             for (kk = 0; kk < nKpartial + 1; kk++) {
                 input = config->execution->Intermediate->d0 + j*config->inputElementCount + kk * kpartial;
                 weight = config->weights2B + i*config->inputElementCount + kk * kpartial;
                 for (k = 0; (k < kpartial) && (kk*kpartial + k < config->inputElementCount); k++) {
-                    sum += (int32_t)(weight[k] * input[k]);
+                    sum += weight[k] * input[k];
                 }
                 saturate_store_out(&sum, &config->output[l*config->inputVectorCount + j], config->execution->SaturationCount);
                 sum = (int64_t)config->output[l*config->inputVectorCount + j]; // load the temp sum
@@ -114,7 +142,7 @@ void AffineActiveListKernelImpl2B1B(AffineConfig const * const config, AffineCon
     uint32_t kpartial;
     uint32_t nKpartial;
     kpartial = (config->execution->BufferElementCount[config->inputVectorCount - 1]) / config->inputVectorCount;
-    nKpartial = (int32_t)config->inputElementCount / kpartial;
+    nKpartial = config->inputElementCount / kpartial;
 
     TransposeConfig transposeConfig = TransposeConfig{ config->inputElementCount, config->inputVectorCount,
         config->input, config->execution->Intermediate->d0 };
@@ -128,13 +156,24 @@ void AffineActiveListKernelImpl2B1B(AffineConfig const * const config, AffineCon
         i = al->indices[l];
         for (j = 0; j < config->inputVectorCount; j++) {
 
-            sum = getBias((void*)config->biasesSimple, i, (gna_data_mode)config->bytesPerBias);
+            if (config->bytesPerBias == 1)
+            {
+                sum = ((int8_t*)config->biasesSimple)[i];
+            }
+            else if (config->bytesPerBias == 2)
+            {
+                sum = ((int16_t*)config->biasesSimple)[i];
+            }
+            else if (config->bytesPerBias == 4)
+            {
+                sum = ((int32_t*)config->biasesSimple)[i];
+            }
 
             for (kk = 0; kk < nKpartial + 1; kk++) {
                 input = ((int8_t*)config->execution->Intermediate->d0) + j*config->inputElementCount + kk * kpartial;
                 weight = config->weights2B + i*config->inputElementCount + kk * kpartial;
                 for (k = 0; (k < kpartial) && (kk*kpartial + k < config->inputElementCount); k++) {
-                    sum += (int32_t)(weight[k] * input[k]);
+                    sum += weight[k] * input[k];
                 }
                 saturate_store_out(&sum, &config->output[l*config->inputVectorCount + j], config->execution->SaturationCount);
                 sum = (int64_t)config->output[l*config->inputVectorCount + j]; // load the temp sum

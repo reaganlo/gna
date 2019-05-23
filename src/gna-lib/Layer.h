@@ -34,6 +34,18 @@
 #include "LayerOutput.h"
 #include "TransformMap.h"
 
+#include "Address.h"
+#include "KernelArguments.h"
+#include "Transform.h"
+#include "Validator.h"
+
+#include "common.h"
+#include "gna-api.h"
+
+#include <cstdint>
+#include <memory>
+#include <vector>
+
 namespace GNA
 {
 struct LayerConfiguration;

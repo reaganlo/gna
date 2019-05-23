@@ -26,9 +26,27 @@
 #include "CopyLayer.h"
 
 #include "AccelerationDetector.h"
+#include "Address.h"
+#include "DataMode.h"
 #include "Expect.h"
 #include "LayerConfiguration.h"
+#include "LayerInput.h"
+#include "LayerOutput.h"
 #include "Macros.h"
+
+#include "gna2-common-api.h"
+#include "gna2-model-api.h"
+
+#include "gna-api-types-xnn.h"
+#include "gna-api.h"
+
+#include <algorithm>
+#include <memory>
+
+namespace GNA
+{
+class BaseValidator;
+}
 
 using namespace GNA;
 
@@ -73,14 +91,14 @@ CopyLayer::CopyLayer(const Gna2Operation& operation, const BaseValidator& valida
 void CopyLayer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const
 {
     BaseAddress inputBuffer = Input;
-    if (layerConfiguration.Buffers.count(InputComponent))
+    if (layerConfiguration.Buffers.count(InputComponent) > 0)
     {
         inputBuffer = layerConfiguration.Buffers[InputComponent];
         Input.ValidateBuffer(inputBuffer);
     }
 
     BaseAddress outputBuffer = Output;
-    if (layerConfiguration.Buffers.count(OutputComponent))
+    if (layerConfiguration.Buffers.count(OutputComponent) > 0)
     {
         outputBuffer = layerConfiguration.Buffers[OutputComponent];
         Output.ValidateBuffer(outputBuffer);
@@ -88,7 +106,9 @@ void CopyLayer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration) cons
 
     auto& configs = layerConfiguration.Configs;
     if(!configs.Copy)
+    {
         configs.Copy = std::make_unique<CopyConfig>(copyHiddenConfig);
+    }
 
     configs.Copy->input = inputBuffer;
     configs.Copy->output = outputBuffer;

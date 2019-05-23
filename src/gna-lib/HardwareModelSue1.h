@@ -27,8 +27,20 @@
 
 #include "HardwareModel.h"
 
+#include "Address.h"
+#include "HardwareCapabilities.h"
+
+#include "KernelArguments.h"
+
+#include "gna-api.h"
+
+#include <cstdint>
+#include <memory>
+#include <vector>
+
 namespace GNA
 {
+class LayerDescriptor;
 
 class HardwareModelSue1 : public HardwareModel
 {
@@ -47,7 +59,7 @@ public:
 
     // this override does not add PAGE_SIZE alignment to calculations
     // since memory buffers are copied to one allocated memory buffer
-    virtual uint32_t GetBufferOffset(const BaseAddress& buffer) const override;
+    virtual uint32_t GetBufferOffset(const BaseAddress& address) const override;
 
 protected:
     virtual void allocateLayerDescriptors() override;

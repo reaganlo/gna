@@ -27,6 +27,8 @@
 
 #include "GnaException.h"
 
+#include "common.h"
+
 #include <map>
 #include <vector>
 

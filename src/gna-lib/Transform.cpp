@@ -25,9 +25,5 @@
 
 #include "Transform.h"
 
-using std::make_unique;
-using std::unique_ptr;
-using std::move;
-
 using namespace GNA;
 

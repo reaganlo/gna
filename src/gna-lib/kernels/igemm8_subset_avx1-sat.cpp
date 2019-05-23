@@ -23,52 +23,1208 @@
  in any way.
 */
 
-#include <string.h>
-
 #include "igemv.h"
 #include "igemv8.h"
 
+#include "KernelArguments.h"
+#include "KernelMacros.h"
+
+#include "common.h"
+#include "gna-api-types-xnn.h"
+
+#include <immintrin.h>
+#include <cstdint>
+#include <cstring>
+
+static void initializeVectors(AffineConfig const *config,
+        int16_t const * input[XNN_N_GROUP_MAX], __m128i *in_ptr[XNN_N_GROUP_MAX], uint32_t simdVectorLength);
+
+static void affineActiveListKernelImpl1B_N1(
+    AffineConfig const * config, AffineConfigAl const *al, int16_t const *input[XNN_N_GROUP_MAX], __m128i *in_ptr[XNN_N_GROUP_MAX],
+    uint32_t numberOfElementsPerGroup, uint32_t numberOfIterationsPerGroup, uint32_t vectorTailLength, uint32_t simdVectorLength);
+
+static void affineActiveListKernelImpl1B_N2(
+    AffineConfig const * config, AffineConfigAl const *al, int16_t const *input[XNN_N_GROUP_MAX], __m128i *in_ptr[XNN_N_GROUP_MAX],
+    uint32_t numberOfElementsPerGroup, uint32_t numberOfIterationsPerGroup, uint32_t vectorTailLength, uint32_t simdVectorLength);
+
+static void affineActiveListKernelImpl1B_N3(
+    AffineConfig const * config, AffineConfigAl const *al, int16_t const *input[XNN_N_GROUP_MAX], __m128i *in_ptr[XNN_N_GROUP_MAX],
+    uint32_t numberOfElementsPerGroup, uint32_t numberOfIterationsPerGroup, uint32_t vectorTailLength, uint32_t simdVectorLength);
+
+static void affineActiveListKernelImpl1B_N4(
+    AffineConfig const * config, AffineConfigAl const *al, int16_t const *input[XNN_N_GROUP_MAX], __m128i *in_ptr[XNN_N_GROUP_MAX],
+    uint32_t numberOfElementsPerGroup, uint32_t numberOfIterationsPerGroup, uint32_t vectorTailLength, uint32_t simdVectorLength);
+
+static void affineActiveListKernelImpl1B_N5(
+    AffineConfig const * config, AffineConfigAl const *al, int16_t const *input[XNN_N_GROUP_MAX], __m128i *in_ptr[XNN_N_GROUP_MAX],
+    uint32_t numberOfElementsPerGroup, uint32_t numberOfIterationsPerGroup, uint32_t vectorTailLength, uint32_t simdVectorLength);
+
+static void affineActiveListKernelImpl1B_N6(
+    AffineConfig const * config, AffineConfigAl const *al, int16_t const *input[XNN_N_GROUP_MAX], __m128i *in_ptr[XNN_N_GROUP_MAX],
+    uint32_t numberOfElementsPerGroup, uint32_t numberOfIterationsPerGroup, uint32_t vectorTailLength, uint32_t simdVectorLength);
+
+static void affineActiveListKernelImpl1B_N7(
+    AffineConfig const * config, AffineConfigAl const *al, int16_t const *input[XNN_N_GROUP_MAX], __m128i *in_ptr[XNN_N_GROUP_MAX],
+    uint32_t numberOfElementsPerGroup, uint32_t numberOfIterationsPerGroup, uint32_t vectorTailLength, uint32_t simdVectorLength);
+
+static void affineActiveListKernelImpl1B_N8(
+    AffineConfig const * config, AffineConfigAl const *al, int16_t const *input[XNN_N_GROUP_MAX], __m128i *in_ptr[XNN_N_GROUP_MAX],
+    uint32_t numberOfElementsPerGroup, uint32_t numberOfIterationsPerGroup, uint32_t vectorTailLength, uint32_t simdVectorLength);
+
 void AffineActiveListKernelImpl1B(AffineConfig const * const config, AffineConfigAl const * const al)
 {
-    uint32_t KT = config->inputElementCount % SSE_16CAP; // config->inputElementCount tail for manual processing
-    uint32_t KK = config->inputElementCount - KT; // trimmed config->inputElementCount for AVX2 processing
-    uint32_t nKpartial, niters;
-    uint32_t kpartial;
-    uint32_t acc_iters;
-    uint32_t rem_iters;
+    uint32_t inputBufferSize;
+    uint32_t vectorTailLength; // config->inputElementCount tail for manual processing
+    uint32_t simdVectorLength; // trimmed config->inputElementCount for AVX2 processing
+    uint32_t numberOfIterationsPerGroup;
+    uint32_t numberOfElementsPerGroup;
+
+    inputBufferSize = config->execution->BufferElementCount[config->inputVectorCount - 1 + XNN_N_GROUP_MAX];
+    vectorTailLength = config->inputElementCount % SSE_16CAP;
+    simdVectorLength = config->inputElementCount - vectorTailLength;
+    numberOfElementsPerGroup = inputBufferSize / config->inputVectorCount;
+    numberOfIterationsPerGroup = config->inputElementCount / numberOfElementsPerGroup;
+
+    int16_t const * input[XNN_N_GROUP_MAX];
+    memset(input, 0, sizeof(input));
+
+    // simd input pointers
+    __m128i *in_ptr[XNN_N_GROUP_MAX];
+    memset(in_ptr, 0, sizeof(in_ptr));
+
+    initializeVectors(config, input, in_ptr, simdVectorLength);
+
+    switch (config->inputVectorCount)
+    {
+    case 1:
+            affineActiveListKernelImpl1B_N1(config, al, input, in_ptr,
+                numberOfElementsPerGroup, numberOfIterationsPerGroup, vectorTailLength, simdVectorLength);
+            break;
+    case 2:
+            affineActiveListKernelImpl1B_N2(config, al, input, in_ptr,
+                numberOfElementsPerGroup, numberOfIterationsPerGroup, vectorTailLength, simdVectorLength);
+            break;
+    case 3:
+            affineActiveListKernelImpl1B_N3(config, al, input, in_ptr,
+                numberOfElementsPerGroup, numberOfIterationsPerGroup, vectorTailLength, simdVectorLength);
+            break;
+    case 4:
+            affineActiveListKernelImpl1B_N4(config, al, input, in_ptr,
+                numberOfElementsPerGroup, numberOfIterationsPerGroup, vectorTailLength, simdVectorLength);
+            break;
+    case 5:
+            affineActiveListKernelImpl1B_N5(config, al, input, in_ptr,
+                numberOfElementsPerGroup, numberOfIterationsPerGroup, vectorTailLength, simdVectorLength);
+            break;
+    case 6:
+            affineActiveListKernelImpl1B_N6(config, al, input, in_ptr,
+                numberOfElementsPerGroup, numberOfIterationsPerGroup, vectorTailLength, simdVectorLength);
+            break;
+    case 7:
+            affineActiveListKernelImpl1B_N7(config, al, input, in_ptr,
+                numberOfElementsPerGroup, numberOfIterationsPerGroup, vectorTailLength, simdVectorLength);
+            break;
+    case 8:
+            affineActiveListKernelImpl1B_N8(config, al, input, in_ptr,
+                numberOfElementsPerGroup, numberOfIterationsPerGroup, vectorTailLength, simdVectorLength);
+            break;
+    }
+}
+
+void initializeVectors(AffineConfig const * const config,
+        int16_t const * input[XNN_N_GROUP_MAX], __m128i *in_ptr[XNN_N_GROUP_MAX], uint32_t simdVectorLength)
+{
+    uint32_t i;
+
+    if (config->inputVectorCount == 8)
+    {
+        for (i = 0; i < config->inputElementCount; i++)
+        {
+            config->execution->Intermediate->d7[i] = config->input[i*config->inputVectorCount + 7];
+        }
+        input[7] = config->execution->Intermediate->d7 + simdVectorLength;
+        in_ptr[7] = (__m128i*)config->execution->Intermediate->d7;
+    }
+    if (config->inputVectorCount >= 7)
+    {
+        for (i = 0; i < config->inputElementCount; i++)
+        {
+            config->execution->Intermediate->d6[i] = config->input[i*config->inputVectorCount + 6];
+        }
+        input[6] = config->execution->Intermediate->d6 + simdVectorLength;
+        in_ptr[6] = (__m128i*)config->execution->Intermediate->d6;
+    }
+    if (config->inputVectorCount >= 6)
+    {
+        for (i = 0; i < config->inputElementCount; i++)
+        {
+            config->execution->Intermediate->d5[i] = config->input[i*config->inputVectorCount + 5];
+        }
+        input[5] = config->execution->Intermediate->d5 + simdVectorLength;
+        in_ptr[5] = (__m128i*)config->execution->Intermediate->d5;
+    }
+    if (config->inputVectorCount >= 5)
+    {
+        for (i = 0; i < config->inputElementCount; i++)
+        {
+            config->execution->Intermediate->d4[i] = config->input[i*config->inputVectorCount + 4];
+        }
+        input[4] = config->execution->Intermediate->d4 + simdVectorLength;
+        in_ptr[4] = (__m128i*)config->execution->Intermediate->d4;
+    }
+    if (config->inputVectorCount >= 4)
+    {
+        for (i = 0; i < config->inputElementCount; i++)
+        {
+            config->execution->Intermediate->d3[i] = config->input[i*config->inputVectorCount + 3];
+        }
+        input[3] = config->execution->Intermediate->d3 + simdVectorLength;
+        in_ptr[3] = (__m128i*)config->execution->Intermediate->d3;
+    }
+    if (config->inputVectorCount >= 3)
+    {
+        for (i = 0; i < config->inputElementCount; i++)
+        {
+            config->execution->Intermediate->d2[i] = config->input[i*config->inputVectorCount + 2];
+        }
+        input[2] = config->execution->Intermediate->d2 + simdVectorLength;
+        in_ptr[2] = (__m128i*)config->execution->Intermediate->d2;
+    }
+    if (config->inputVectorCount >= 2)
+    {
+        for (i = 0; i < config->inputElementCount; i++)
+        {
+            config->execution->Intermediate->d1[i] = config->input[i*config->inputVectorCount + 1];
+        }
+        input[1] = config->execution->Intermediate->d1 + simdVectorLength;
+        in_ptr[1] = (__m128i*)config->execution->Intermediate->d1;
+
+        for (i = 0; i < config->inputElementCount; i++)
+        {
+            config->execution->Intermediate->d0[i] = config->input[i*config->inputVectorCount];
+        }
+        input[0] = config->execution->Intermediate->d0 + simdVectorLength;
+        in_ptr[0] = (__m128i*)config->execution->Intermediate->d0;
+    }
+}
+
+void affineActiveListKernelImpl1B_N1(
+    AffineConfig const * config, AffineConfigAl const *al, int16_t const *input[XNN_N_GROUP_MAX], __m128i *in_ptr[XNN_N_GROUP_MAX],
+    uint32_t numberOfElementsPerGroup, uint32_t numberOfIterationsPerGroup, uint32_t vectorTailLength, uint32_t simdVectorLength)
+{
+    uint32_t numberOfSimdIterations;
+    uint32_t remainderOfSimdIterations;
+    uint32_t numberOfIterations;
     uint32_t ix_end;
     uint32_t ix;
     uint32_t kk;
     uint32_t i;
     uint32_t j;
     uint32_t l;
-    kpartial = (config->execution->BufferElementCount[config->inputVectorCount - 1 + XNN_N_GROUP_MAX]) / config->inputVectorCount;
-    nKpartial = config->inputElementCount / kpartial;
-
-    int16_t const * input[8];
-    memset(input, 0, sizeof(input));
 
     int8_t const * weight;
-    nn_bias_c const * bias = config->biasesCompound;
+    nn_bias_c const * bias;
     int32_t * output;
 
-    weight = config->weights1B;
     output = config->output;
 
     // simd weights
+    __m128i w;
     __m128i w0;
     __m128i w1;
+
+    // simd inputs
+    __m128i in0;
+    __m128i in1;
+
+    // simd accumulators
+    __m128i acc0;
+    __m128i acc1;
+
+    // simd accumulators' sums
+    int64_t sum0;
+
+    in_ptr[0] = (__m128i*)config->input;
+    input[0] = config->input+simdVectorLength;
+    for (l = 0; l < al->count; l++)
+    {
+        i = al->indices[l];
+        weight = config->weights1B+i*config->inputElementCount;
+        bias = config->biasesCompound+i;
+
+        ix = 0;
+        acc0 = _mm_setzero_si128();
+        acc1 = _mm_setzero_si128();
+        sum0 = bias->bias;
+
+        for (kk = 0; kk < numberOfIterationsPerGroup + 1; kk++)
+        {
+            acc0 = _mm_add_epi32(acc0, acc1);
+            sum0 += vec_sum32(acc0) * bias->multiplier;
+            saturate_store_out(&sum0, output, config->execution->SaturationCount);
+            sum0 = *output;
+
+            numberOfIterations = numberOfElementsPerGroup < simdVectorLength - kk * numberOfElementsPerGroup ? numberOfElementsPerGroup : simdVectorLength - kk * numberOfElementsPerGroup;
+            numberOfSimdIterations = numberOfIterations / (256 * SSE_16CAP);
+            remainderOfSimdIterations = numberOfIterations % (256 * SSE_16CAP);
+
+            // numberOfElementsPerGroup is 12288
+            // 12288 / 256 = 48
+            // max iters = 48 / SSE_16CAP = 6
+            for (i = 0; i < numberOfSimdIterations; i++)
+            {
+                acc0 = _mm_setzero_si128();
+                acc1 = _mm_setzero_si128();
+
+                ix_end = ix + 256;
+                for (; ix < ix_end; ix += 2)
+                {
+                    in0 = _mm_load_si128(in_ptr[0] + ix);
+                    in1 = _mm_load_si128(in_ptr[0] + ix + 1);
+
+                    w0 = _mm_cvtepi8_epi16(_mm_loadl_epi64((__m128i*)weight));
+                    w1 = _mm_cvtepi8_epi16(_mm_loadl_epi64((__m128i*)(weight + SSE_16CAP)));
+                    weight += 2 * SSE_16CAP;
+
+                    // multiply and add - won't saturate
+                    in0 = _mm_madd_epi16(in0, w0);
+                    in1 = _mm_madd_epi16(in1, w1);
+                    acc0 = _mm_add_epi32(acc0, in0);
+                    acc1 = _mm_add_epi32(acc1, in1);
+                }
+
+                acc0 = _mm_add_epi32(acc0, acc1);
+                sum0 += vec_sum32(acc0) * bias->multiplier;
+            }
+
+            acc0 = _mm_setzero_si128();
+            acc1 = _mm_setzero_si128();
+
+            ix_end = ix + remainderOfSimdIterations / SSE_16CAP;
+            for (; ix < ix_end; ix++)
+            {
+                in0 = _mm_load_si128(in_ptr[0] + ix);
+
+                w = _mm_cvtepi8_epi16(_mm_loadl_epi64((__m128i*)weight));
+                weight += SSE_16CAP;
+
+                // multiply and add - won't saturate
+                in0 = _mm_madd_epi16(in0, w);
+                acc0 = _mm_add_epi32(acc0, in0);
+            }
+
+            sum0 += vec_sum32(acc0) * bias->multiplier;
+            acc0 = _mm_setzero_si128();
+        }
+
+        for (j = 0; j < vectorTailLength; j++, weight++)
+        {
+            sum0 += (*input)[j] * *weight++ * bias->multiplier;
+        }
+
+        saturate_store_out(&sum0, output, config->execution->SaturationCount);
+
+        output++;
+    }
+
+}
+
+void affineActiveListKernelImpl1B_N2(
+    AffineConfig const * config, AffineConfigAl const *al, int16_t const *input[XNN_N_GROUP_MAX], __m128i *in_ptr[XNN_N_GROUP_MAX],
+    uint32_t numberOfElementsPerGroup, uint32_t numberOfIterationsPerGroup, uint32_t vectorTailLength, uint32_t simdVectorLength)
+{
+    uint32_t numberOfSimdIterations;
+    uint32_t remainderOfSimdIterations;
+    uint32_t numberOfIterations;
+    uint32_t ix_end;
+    uint32_t ix;
+    uint32_t kk;
+    uint32_t i;
+    uint32_t j;
+    uint32_t l;
+
+    int8_t const * weight;
+    nn_bias_c const * bias;
+    int32_t * output;
+
+    output = config->output;
+
+    // simd weights
     __m128i w;
 
-    // simd input pointers
-    __m128i *in_ptr0 = nullptr;
-    __m128i *in_ptr1 = nullptr;
-    __m128i *in_ptr2 = nullptr;
-    __m128i *in_ptr3 = nullptr;
-    __m128i *in_ptr4 = nullptr;
-    __m128i *in_ptr5 = nullptr;
-    __m128i *in_ptr6 = nullptr;
-    __m128i *in_ptr7 = nullptr;
+    // simd inputs
+    __m128i in0;
+    __m128i in1;
+
+    // simd accumulators
+    __m128i acc0;
+    __m128i acc1;
+
+    // simd accumulators' sums
+    int64_t sum0;
+    int64_t sum1;
+
+    for (l = 0; l < al->count; l++)
+    {
+        i = al->indices[l];
+        weight = config->weights1B+i*config->inputElementCount;
+        bias = config->biasesCompound+i;
+        ix = 0;
+
+        sum0 = bias->bias;
+        sum1 = bias->bias;
+
+        for (kk = 0; kk < numberOfIterationsPerGroup + 1; kk++)
+        {
+            saturate(&sum0, config->execution->SaturationCount);
+            saturate(&sum1, config->execution->SaturationCount);
+
+            // numberOfElementsPerGroup = 12000 / 5 = 2400
+            // 2016 / (8 * 256) = 1
+            numberOfIterations = numberOfElementsPerGroup < simdVectorLength - kk * numberOfElementsPerGroup ? numberOfElementsPerGroup : simdVectorLength - kk * numberOfElementsPerGroup;
+            numberOfSimdIterations = numberOfIterations / (256 * SSE_16CAP);
+            remainderOfSimdIterations = numberOfIterations % (256 * SSE_16CAP);
+
+            for (i = 0; i < numberOfSimdIterations; i++)
+            {
+                acc0 = _mm_setzero_si128();
+                acc1 = _mm_setzero_si128();
+
+                ix_end = ix + 256;
+                for (; ix < ix_end; ix++)
+                {
+                    in0 = _mm_load_si128(in_ptr[0] + ix);
+                    in1 = _mm_load_si128(in_ptr[1] + ix);
+                    w = _mm_cvtepi8_epi16(_mm_loadl_epi64((__m128i*)weight));
+                    weight += SSE_16CAP;
+
+                    // multiply and add - won't saturate
+                    in0 = _mm_madd_epi16(in0, w);
+                    in1 = _mm_madd_epi16(in1, w);
+
+                    acc0 = _mm_add_epi32(acc0, in0);
+                    acc1 = _mm_add_epi32(acc1, in1);
+                }
+
+                sum0 += vec_sum32(acc0) * bias->multiplier;
+                sum1 += vec_sum32(acc1) * bias->multiplier;
+            }
+
+            acc0 = _mm_setzero_si128();
+            acc1 = _mm_setzero_si128();
+
+            ix_end = ix + remainderOfSimdIterations / SSE_16CAP;
+            for (; ix < ix_end; ix++)
+            {
+                in0 = _mm_load_si128(in_ptr[0] + ix);
+                in1 = _mm_load_si128(in_ptr[1] + ix);
+                w = _mm_cvtepi8_epi16(_mm_loadl_epi64((__m128i*)weight));
+                weight += SSE_16CAP;
+
+                // multiply and add - won't saturate
+                in0 = _mm_madd_epi16(in0, w);
+                in1 = _mm_madd_epi16(in1, w);
+
+                acc0 = _mm_add_epi32(acc0, in0);
+                acc1 = _mm_add_epi32(acc1, in1);
+            }
+
+            sum0 += vec_sum32(acc0) * bias->multiplier;
+            sum1 += vec_sum32(acc1) * bias->multiplier;
+        }
+
+        for (j = 0; j < vectorTailLength; j++, weight++)
+        {
+            sum0 += input[0][j] * *weight * bias->multiplier;
+            sum1 += input[1][j] * *weight * bias->multiplier;
+        }
+
+        saturate_store_out(&sum0, &output[0], config->execution->SaturationCount);
+        saturate_store_out(&sum1, &output[1], config->execution->SaturationCount);
+
+        output += config->inputVectorCount;
+    }
+
+}
+
+void affineActiveListKernelImpl1B_N3(
+    AffineConfig const * config, AffineConfigAl const *al, int16_t const *input[XNN_N_GROUP_MAX], __m128i *in_ptr[XNN_N_GROUP_MAX],
+    uint32_t numberOfElementsPerGroup, uint32_t numberOfIterationsPerGroup, uint32_t vectorTailLength, uint32_t simdVectorLength)
+{
+    uint32_t numberOfSimdIterations;
+    uint32_t remainderOfSimdIterations;
+    uint32_t numberOfIterations;
+    uint32_t ix_end;
+    uint32_t ix;
+    uint32_t kk;
+    uint32_t i;
+    uint32_t j;
+    uint32_t l;
+
+    int8_t const * weight;
+    nn_bias_c const * bias;
+    int32_t * output;
+
+    output = config->output;
+
+    // simd weights
+    __m128i w;
+
+    // simd inputs
+    __m128i in0;
+    __m128i in1;
+    __m128i in2;
+
+    // simd accumulators
+    __m128i acc0;
+    __m128i acc1;
+    __m128i acc2;
+
+    // simd accumulators' sums
+    int64_t sum0;
+    int64_t sum1;
+    int64_t sum2;
+
+    for (l = 0; l < al->count; l++)
+    {
+        i = al->indices[l];
+        weight = config->weights1B+i*config->inputElementCount;
+        bias = config->biasesCompound+i;
+        ix = 0;
+
+        sum0 = bias->bias;
+        sum1 = bias->bias;
+        sum2 = bias->bias;
+
+        for (kk = 0; kk < numberOfIterationsPerGroup + 1; kk++)
+        {
+            saturate(&sum0, config->execution->SaturationCount);
+            saturate(&sum1, config->execution->SaturationCount);
+            saturate(&sum2, config->execution->SaturationCount);
+
+            // numberOfElementsPerGroup = 12000 / 5 = 2400
+            // 2016 / (8 * 256) = 1
+            numberOfIterations = numberOfElementsPerGroup < simdVectorLength - kk * numberOfElementsPerGroup ? numberOfElementsPerGroup : simdVectorLength - kk * numberOfElementsPerGroup;
+            numberOfSimdIterations = numberOfIterations / (256 * SSE_16CAP);
+            remainderOfSimdIterations = numberOfIterations % (256 * SSE_16CAP);
+
+            for (i = 0; i < numberOfSimdIterations; i++)
+            {
+                acc0 = _mm_setzero_si128();
+                acc1 = _mm_setzero_si128();
+                acc2 = _mm_setzero_si128();
+
+                ix_end = ix + 256;
+                for (; ix < ix_end; ix++)
+                {
+                    in0 = _mm_load_si128(in_ptr[0] + ix);
+                    in1 = _mm_load_si128(in_ptr[1] + ix);
+                    in2 = _mm_load_si128(in_ptr[2] + ix);
+                    w = _mm_cvtepi8_epi16(_mm_loadl_epi64((__m128i*)weight));
+                    weight += SSE_16CAP;
+
+                    // multiply and add - won't saturate
+                    in0 = _mm_madd_epi16(in0, w);
+                    in1 = _mm_madd_epi16(in1, w);
+                    in2 = _mm_madd_epi16(in2, w);
+
+                    acc0 = _mm_add_epi32(acc0, in0);
+                    acc1 = _mm_add_epi32(acc1, in1);
+                    acc2 = _mm_add_epi32(acc2, in2);
+                }
+
+                sum0 += vec_sum32(acc0) * bias->multiplier;
+                sum1 += vec_sum32(acc1) * bias->multiplier;
+                sum2 += vec_sum32(acc2) * bias->multiplier;
+            }
+
+            acc0 = _mm_setzero_si128();
+            acc1 = _mm_setzero_si128();
+            acc2 = _mm_setzero_si128();
+
+            ix_end = ix + remainderOfSimdIterations / SSE_16CAP;
+            for (; ix < ix_end; ix++)
+            {
+                in0 = _mm_load_si128(in_ptr[0] + ix);
+                in1 = _mm_load_si128(in_ptr[1] + ix);
+                in2 = _mm_load_si128(in_ptr[2] + ix);
+                w = _mm_cvtepi8_epi16(_mm_loadl_epi64((__m128i*)weight));
+                weight += SSE_16CAP;
+
+                // multiply and add - won't saturate
+                in0 = _mm_madd_epi16(in0, w);
+                in1 = _mm_madd_epi16(in1, w);
+                in2 = _mm_madd_epi16(in2, w);
+
+                acc0 = _mm_add_epi32(acc0, in0);
+                acc1 = _mm_add_epi32(acc1, in1);
+                acc2 = _mm_add_epi32(acc2, in2);
+            }
+
+            sum0 += vec_sum32(acc0) * bias->multiplier;
+            sum1 += vec_sum32(acc1) * bias->multiplier;
+            sum2 += vec_sum32(acc2) * bias->multiplier;
+        }
+
+        for (j = 0; j < vectorTailLength; j++, weight++)
+        {
+            sum0 += input[0][j] * *weight * bias->multiplier;
+            sum1 += input[1][j] * *weight * bias->multiplier;
+            sum2 += input[2][j] * *weight * bias->multiplier;
+        }
+
+        saturate_store_out(&sum0, &output[0], config->execution->SaturationCount);
+        saturate_store_out(&sum1, &output[1], config->execution->SaturationCount);
+        saturate_store_out(&sum2, &output[2], config->execution->SaturationCount);
+
+        output += config->inputVectorCount;
+    }
+
+}
+
+void affineActiveListKernelImpl1B_N4(
+    AffineConfig const * config, AffineConfigAl const *al, int16_t const *input[XNN_N_GROUP_MAX], __m128i *in_ptr[XNN_N_GROUP_MAX],
+    uint32_t numberOfElementsPerGroup, uint32_t numberOfIterationsPerGroup, uint32_t vectorTailLength, uint32_t simdVectorLength)
+{
+    uint32_t numberOfSimdIterations;
+    uint32_t remainderOfSimdIterations;
+    uint32_t numberOfIterations;
+    uint32_t ix_end;
+    uint32_t ix;
+    uint32_t kk;
+    uint32_t i;
+    uint32_t j;
+    uint32_t l;
+
+    int8_t const * weight;
+    nn_bias_c const * bias;
+    int32_t * output;
+
+    output = config->output;
+
+    // simd weights
+    __m128i w;
+
+    // simd inputs
+    __m128i in0;
+    __m128i in1;
+    __m128i in2;
+    __m128i in3;
+
+    // simd accumulators
+    __m128i acc0;
+    __m128i acc1;
+    __m128i acc2;
+    __m128i acc3;
+
+    // simd accumulators' sums
+    int64_t sum0;
+    int64_t sum1;
+    int64_t sum2;
+    int64_t sum3;
+
+    for (l = 0; l < al->count; l++)
+    {
+        i = al->indices[l];
+        weight = config->weights1B+i*config->inputElementCount;
+        bias = config->biasesCompound+i;
+        ix = 0;
+
+        sum0 = bias->bias;
+        sum1 = bias->bias;
+        sum2 = bias->bias;
+        sum3 = bias->bias;
+
+        for (kk = 0; kk < numberOfIterationsPerGroup + 1; kk++)
+        {
+            saturate(&sum0, config->execution->SaturationCount);
+            saturate(&sum1, config->execution->SaturationCount);
+            saturate(&sum2, config->execution->SaturationCount);
+            saturate(&sum3, config->execution->SaturationCount);
+
+            // numberOfElementsPerGroup = 12000 / 5 = 2400
+            // 2016 / (8 * 256) = 1
+            numberOfIterations = numberOfElementsPerGroup < simdVectorLength - kk * numberOfElementsPerGroup ? numberOfElementsPerGroup : simdVectorLength - kk * numberOfElementsPerGroup;
+            numberOfSimdIterations = numberOfIterations / (256 * SSE_16CAP);
+            remainderOfSimdIterations = numberOfIterations % (256 * SSE_16CAP);
+
+            for (i = 0; i < numberOfSimdIterations; i++)
+            {
+                acc0 = _mm_setzero_si128();
+                acc1 = _mm_setzero_si128();
+                acc2 = _mm_setzero_si128();
+                acc3 = _mm_setzero_si128();
+
+                ix_end = ix + 256;
+                for (; ix < ix_end; ix++)
+                {
+                    in0 = _mm_load_si128(in_ptr[0] + ix);
+                    in1 = _mm_load_si128(in_ptr[1] + ix);
+                    in2 = _mm_load_si128(in_ptr[2] + ix);
+                    in3 = _mm_load_si128(in_ptr[3] + ix);
+                    w = _mm_cvtepi8_epi16(_mm_loadl_epi64((__m128i*)weight));
+                    weight += SSE_16CAP;
+
+                    // multiply and add - won't saturate
+                    in0 = _mm_madd_epi16(in0, w);
+                    in1 = _mm_madd_epi16(in1, w);
+                    in2 = _mm_madd_epi16(in2, w);
+                    in3 = _mm_madd_epi16(in3, w);
+
+                    acc0 = _mm_add_epi32(acc0, in0);
+                    acc1 = _mm_add_epi32(acc1, in1);
+                    acc2 = _mm_add_epi32(acc2, in2);
+                    acc3 = _mm_add_epi32(acc3, in3);
+                }
+
+                sum0 += vec_sum32(acc0) * bias->multiplier;
+                sum1 += vec_sum32(acc1) * bias->multiplier;
+                sum2 += vec_sum32(acc2) * bias->multiplier;
+                sum3 += vec_sum32(acc3) * bias->multiplier;
+            }
+
+            acc0 = _mm_setzero_si128();
+            acc1 = _mm_setzero_si128();
+            acc2 = _mm_setzero_si128();
+            acc3 = _mm_setzero_si128();
+
+            ix_end = ix + remainderOfSimdIterations / SSE_16CAP;
+            for (; ix < ix_end; ix++)
+            {
+                in0 = _mm_load_si128(in_ptr[0] + ix);
+                in1 = _mm_load_si128(in_ptr[1] + ix);
+                in2 = _mm_load_si128(in_ptr[2] + ix);
+                in3 = _mm_load_si128(in_ptr[3] + ix);
+                w = _mm_cvtepi8_epi16(_mm_loadl_epi64((__m128i*)weight));
+                weight += SSE_16CAP;
+
+                // multiply and add - won't saturate
+                in0 = _mm_madd_epi16(in0, w);
+                in1 = _mm_madd_epi16(in1, w);
+                in2 = _mm_madd_epi16(in2, w);
+                in3 = _mm_madd_epi16(in3, w);
+
+                acc0 = _mm_add_epi32(acc0, in0);
+                acc1 = _mm_add_epi32(acc1, in1);
+                acc2 = _mm_add_epi32(acc2, in2);
+                acc3 = _mm_add_epi32(acc3, in3);
+            }
+
+            sum0 += vec_sum32(acc0) * bias->multiplier;
+            sum1 += vec_sum32(acc1) * bias->multiplier;
+            sum2 += vec_sum32(acc2) * bias->multiplier;
+            sum3 += vec_sum32(acc3) * bias->multiplier;
+        }
+
+        for (j = 0; j < vectorTailLength; j++, weight++)
+        {
+            sum0 += input[0][j] * *weight * bias->multiplier;
+            sum1 += input[1][j] * *weight * bias->multiplier;
+            sum2 += input[2][j] * *weight * bias->multiplier;
+            sum3 += input[3][j] * *weight * bias->multiplier;
+        }
+
+        saturate_store_out(&sum0, &output[0], config->execution->SaturationCount);
+        saturate_store_out(&sum1, &output[1], config->execution->SaturationCount);
+        saturate_store_out(&sum2, &output[2], config->execution->SaturationCount);
+        saturate_store_out(&sum3, &output[3], config->execution->SaturationCount);
+
+        output += config->inputVectorCount;
+    }
+
+}
+
+void affineActiveListKernelImpl1B_N5(
+    AffineConfig const * config, AffineConfigAl const *al, int16_t const *input[XNN_N_GROUP_MAX], __m128i *in_ptr[XNN_N_GROUP_MAX],
+    uint32_t numberOfElementsPerGroup, uint32_t numberOfIterationsPerGroup, uint32_t vectorTailLength, uint32_t simdVectorLength)
+{
+    uint32_t numberOfSimdIterations;
+    uint32_t remainderOfSimdIterations;
+    uint32_t numberOfIterations;
+    uint32_t ix_end;
+    uint32_t ix;
+    uint32_t kk;
+    uint32_t i;
+    uint32_t j;
+    uint32_t l;
+
+    int8_t const * weight;
+    nn_bias_c const * bias;
+    int32_t * output;
+
+    output = config->output;
+
+    // simd weights
+    __m128i w;
+
+    // simd inputs
+    __m128i in0;
+    __m128i in1;
+    __m128i in2;
+    __m128i in3;
+    __m128i in4;
+
+    // simd accumulators
+    __m128i acc0;
+    __m128i acc1;
+    __m128i acc2;
+    __m128i acc3;
+    __m128i acc4;
+
+    // simd accumulators' sums
+    int64_t sum0;
+    int64_t sum1;
+    int64_t sum2;
+    int64_t sum3;
+    int64_t sum4;
+
+    for (l = 0; l < al->count; l++)
+    {
+        i = al->indices[l];
+        weight = config->weights1B+i*config->inputElementCount;
+        bias = config->biasesCompound+i;
+        ix = 0;
+
+        sum0 = bias->bias;
+        sum1 = bias->bias;
+        sum2 = bias->bias;
+        sum3 = bias->bias;
+        sum4 = bias->bias;
+
+        for (kk = 0; kk < numberOfIterationsPerGroup + 1; kk++)
+        {
+            saturate(&sum0, config->execution->SaturationCount);
+            saturate(&sum1, config->execution->SaturationCount);
+            saturate(&sum2, config->execution->SaturationCount);
+            saturate(&sum3, config->execution->SaturationCount);
+            saturate(&sum4, config->execution->SaturationCount);
+
+            // numberOfElementsPerGroup = 12000 / 5 = 2400
+            // 2016 / (8 * 256) = 1
+            numberOfIterations = numberOfElementsPerGroup < simdVectorLength - kk * numberOfElementsPerGroup ? numberOfElementsPerGroup : simdVectorLength - kk * numberOfElementsPerGroup;
+            numberOfSimdIterations = numberOfIterations / (256 * SSE_16CAP);
+            remainderOfSimdIterations = numberOfIterations % (256 * SSE_16CAP);
+
+            for (i = 0; i < numberOfSimdIterations; i++)
+            {
+                acc0 = _mm_setzero_si128();
+                acc1 = _mm_setzero_si128();
+                acc2 = _mm_setzero_si128();
+                acc3 = _mm_setzero_si128();
+                acc4 = _mm_setzero_si128();
+
+                ix_end = ix + 256;
+                for (; ix < ix_end; ix++)
+                {
+                    in0 = _mm_load_si128(in_ptr[0] + ix);
+                    in1 = _mm_load_si128(in_ptr[1] + ix);
+                    in2 = _mm_load_si128(in_ptr[2] + ix);
+                    in3 = _mm_load_si128(in_ptr[3] + ix);
+                    in4 = _mm_load_si128(in_ptr[4] + ix);
+                    w = _mm_cvtepi8_epi16(_mm_loadl_epi64((__m128i*)weight));
+                    weight += SSE_16CAP;
+
+                    // multiply and add - won't saturate
+                    in0 = _mm_madd_epi16(in0, w);
+                    in1 = _mm_madd_epi16(in1, w);
+                    in2 = _mm_madd_epi16(in2, w);
+                    in3 = _mm_madd_epi16(in3, w);
+                    in4 = _mm_madd_epi16(in4, w);
+
+                    acc0 = _mm_add_epi32(acc0, in0);
+                    acc1 = _mm_add_epi32(acc1, in1);
+                    acc2 = _mm_add_epi32(acc2, in2);
+                    acc3 = _mm_add_epi32(acc3, in3);
+                    acc4 = _mm_add_epi32(acc4, in4);
+                }
+
+                sum0 += vec_sum32(acc0) * bias->multiplier;
+                sum1 += vec_sum32(acc1) * bias->multiplier;
+                sum2 += vec_sum32(acc2) * bias->multiplier;
+                sum3 += vec_sum32(acc3) * bias->multiplier;
+                sum4 += vec_sum32(acc4) * bias->multiplier;
+            }
+
+            acc0 = _mm_setzero_si128();
+            acc1 = _mm_setzero_si128();
+            acc2 = _mm_setzero_si128();
+            acc3 = _mm_setzero_si128();
+            acc4 = _mm_setzero_si128();
+
+            ix_end = ix + remainderOfSimdIterations / SSE_16CAP;
+            for (; ix < ix_end; ix++)
+            {
+                in0 = _mm_load_si128(in_ptr[0] + ix);
+                in1 = _mm_load_si128(in_ptr[1] + ix);
+                in2 = _mm_load_si128(in_ptr[2] + ix);
+                in3 = _mm_load_si128(in_ptr[3] + ix);
+                in4 = _mm_load_si128(in_ptr[4] + ix);
+                w = _mm_cvtepi8_epi16(_mm_loadl_epi64((__m128i*)weight));
+                weight += SSE_16CAP;
+
+                // multiply and add - won't saturate
+                in0 = _mm_madd_epi16(in0, w);
+                in1 = _mm_madd_epi16(in1, w);
+                in2 = _mm_madd_epi16(in2, w);
+                in3 = _mm_madd_epi16(in3, w);
+                in4 = _mm_madd_epi16(in4, w);
+
+                acc0 = _mm_add_epi32(acc0, in0);
+                acc1 = _mm_add_epi32(acc1, in1);
+                acc2 = _mm_add_epi32(acc2, in2);
+                acc3 = _mm_add_epi32(acc3, in3);
+                acc4 = _mm_add_epi32(acc4, in4);
+            }
+
+            sum0 += vec_sum32(acc0) * bias->multiplier;
+            sum1 += vec_sum32(acc1) * bias->multiplier;
+            sum2 += vec_sum32(acc2) * bias->multiplier;
+            sum3 += vec_sum32(acc3) * bias->multiplier;
+            sum4 += vec_sum32(acc4) * bias->multiplier;
+        }
+
+        for (j = 0; j < vectorTailLength; j++, weight++)
+        {
+            sum0 += input[0][j] * *weight * bias->multiplier;
+            sum1 += input[1][j] * *weight * bias->multiplier;
+            sum2 += input[2][j] * *weight * bias->multiplier;
+            sum3 += input[3][j] * *weight * bias->multiplier;
+            sum4 += input[4][j] * *weight * bias->multiplier;
+        }
+
+        saturate_store_out(&sum0, &output[0], config->execution->SaturationCount);
+        saturate_store_out(&sum1, &output[1], config->execution->SaturationCount);
+        saturate_store_out(&sum2, &output[2], config->execution->SaturationCount);
+        saturate_store_out(&sum3, &output[3], config->execution->SaturationCount);
+        saturate_store_out(&sum4, &output[4], config->execution->SaturationCount);
+
+        output += config->inputVectorCount;
+    }
+
+}
+
+void affineActiveListKernelImpl1B_N6(
+    AffineConfig const * config, AffineConfigAl const *al, int16_t const *input[XNN_N_GROUP_MAX], __m128i *in_ptr[XNN_N_GROUP_MAX],
+    uint32_t numberOfElementsPerGroup, uint32_t numberOfIterationsPerGroup, uint32_t vectorTailLength, uint32_t simdVectorLength)
+{
+    uint32_t numberOfIterations;
+    uint32_t ix_end;
+    uint32_t ix;
+    uint32_t kk;
+    uint32_t i;
+    uint32_t j;
+    uint32_t l;
+
+    int8_t const * weight;
+    nn_bias_c const * bias;
+    int32_t * output;
+
+    output = config->output;
+
+    // simd weights
+    __m128i w;
+
+    // simd inputs
+    __m128i in0;
+    __m128i in1;
+    __m128i in2;
+    __m128i in3;
+    __m128i in4;
+    __m128i in5;
+
+    // simd accumulators
+    __m128i acc0;
+    __m128i acc1;
+    __m128i acc2;
+    __m128i acc3;
+    __m128i acc4;
+    __m128i acc5;
+
+    // simd accumulators' sums
+    int64_t sum0;
+    int64_t sum1;
+    int64_t sum2;
+    int64_t sum3;
+    int64_t sum4;
+    int64_t sum5;
+
+    for (l = 0; l < al->count; l++)
+    {
+        i = al->indices[l];
+        weight = config->weights1B+i*config->inputElementCount;
+        bias = config->biasesCompound+i;
+        ix = 0;
+
+        sum0 = bias->bias;
+        sum1 = bias->bias;
+        sum2 = bias->bias;
+        sum3 = bias->bias;
+        sum4 = bias->bias;
+        sum5 = bias->bias;
+
+        acc0 = _mm_setzero_si128();
+        acc1 = _mm_setzero_si128();
+        acc2 = _mm_setzero_si128();
+        acc3 = _mm_setzero_si128();
+        acc4 = _mm_setzero_si128();
+        acc5 = _mm_setzero_si128();
+
+        for (kk = 0; kk < numberOfIterationsPerGroup + 1; kk++)
+        {
+            saturate(&sum0, config->execution->SaturationCount);
+            saturate(&sum1, config->execution->SaturationCount);
+            saturate(&sum2, config->execution->SaturationCount);
+            saturate(&sum3, config->execution->SaturationCount);
+            saturate(&sum4, config->execution->SaturationCount);
+            saturate(&sum5, config->execution->SaturationCount);
+
+            numberOfIterations = numberOfElementsPerGroup < simdVectorLength - kk * numberOfElementsPerGroup ? numberOfElementsPerGroup : simdVectorLength - kk * numberOfElementsPerGroup;
+
+            // numberOfElementsPerGroup = 2016
+            // 2016 / (8 * 256) < 1, acc won't saturate
+            ix_end = ix + numberOfIterations / SSE_16CAP;
+            for (; ix < ix_end; ix++)
+            {
+                in0 = _mm_load_si128(in_ptr[0] + ix);
+                in1 = _mm_load_si128(in_ptr[1] + ix);
+                in2 = _mm_load_si128(in_ptr[2] + ix);
+                in3 = _mm_load_si128(in_ptr[3] + ix);
+                in4 = _mm_load_si128(in_ptr[4] + ix);
+                in5 = _mm_load_si128(in_ptr[5] + ix);
+                w = _mm_cvtepi8_epi16(_mm_loadl_epi64((__m128i*)weight));
+                weight += SSE_16CAP;
+
+                // multiply and add - won't saturate
+                in0 = _mm_madd_epi16(in0, w);
+                in1 = _mm_madd_epi16(in1, w);
+                in2 = _mm_madd_epi16(in2, w);
+                in3 = _mm_madd_epi16(in3, w);
+                in4 = _mm_madd_epi16(in4, w);
+                in5 = _mm_madd_epi16(in5, w);
+
+                acc0 = _mm_add_epi32(acc0, in0);
+                acc1 = _mm_add_epi32(acc1, in1);
+                acc2 = _mm_add_epi32(acc2, in2);
+                acc3 = _mm_add_epi32(acc3, in3);
+                acc4 = _mm_add_epi32(acc4, in4);
+                acc5 = _mm_add_epi32(acc5, in5);
+            }
+
+            sum0 += vec_sum32(acc0) * bias->multiplier;
+            sum1 += vec_sum32(acc1) * bias->multiplier;
+            sum2 += vec_sum32(acc2) * bias->multiplier;
+            sum3 += vec_sum32(acc3) * bias->multiplier;
+            sum4 += vec_sum32(acc4) * bias->multiplier;
+            sum5 += vec_sum32(acc5) * bias->multiplier;
+
+            acc0 = _mm_setzero_si128();
+            acc1 = _mm_setzero_si128();
+            acc2 = _mm_setzero_si128();
+            acc3 = _mm_setzero_si128();
+            acc4 = _mm_setzero_si128();
+            acc5 = _mm_setzero_si128();
+        }
+
+        for (j = 0; j < vectorTailLength; j++, weight++)
+        {
+            sum0 += input[0][j] * *weight * bias->multiplier;
+            sum1 += input[1][j] * *weight * bias->multiplier;
+            sum2 += input[2][j] * *weight * bias->multiplier;
+            sum3 += input[3][j] * *weight * bias->multiplier;
+            sum4 += input[4][j] * *weight * bias->multiplier;
+            sum5 += input[5][j] * *weight * bias->multiplier;
+        }
+
+        saturate_store_out(&sum0, &output[0], config->execution->SaturationCount);
+        saturate_store_out(&sum1, &output[1], config->execution->SaturationCount);
+        saturate_store_out(&sum2, &output[2], config->execution->SaturationCount);
+        saturate_store_out(&sum3, &output[3], config->execution->SaturationCount);
+        saturate_store_out(&sum4, &output[4], config->execution->SaturationCount);
+        saturate_store_out(&sum5, &output[5], config->execution->SaturationCount);
+
+        output += config->inputVectorCount;
+    }
+
+}
+
+void affineActiveListKernelImpl1B_N7(
+    AffineConfig const * config, AffineConfigAl const *al, int16_t const *input[XNN_N_GROUP_MAX], __m128i *in_ptr[XNN_N_GROUP_MAX],
+    uint32_t numberOfElementsPerGroup, uint32_t numberOfIterationsPerGroup, uint32_t vectorTailLength, uint32_t simdVectorLength)
+{
+    uint32_t numberOfIterations;
+    uint32_t ix_end;
+    uint32_t ix;
+    uint32_t kk;
+    uint32_t i;
+    uint32_t j;
+    uint32_t l;
+
+    int8_t const * weight;
+    nn_bias_c const * bias;
+    int32_t * output;
+
+    output = config->output;
+
+    // simd weights
+    __m128i w;
+
+    // simd inputs
+    __m128i in0;
+    __m128i in1;
+    __m128i in2;
+    __m128i in3;
+    __m128i in4;
+    __m128i in5;
+    __m128i in6;
+
+    // simd accumulators
+    __m128i acc0;
+    __m128i acc1;
+    __m128i acc2;
+    __m128i acc3;
+    __m128i acc4;
+    __m128i acc5;
+    __m128i acc6;
+
+    // simd accumulators' sums
+    int64_t sum0;
+    int64_t sum1;
+    int64_t sum2;
+    int64_t sum3;
+    int64_t sum4;
+    int64_t sum5;
+    int64_t sum6;
+
+    for (l = 0; l < al->count; l++)
+    {
+        i = al->indices[l];
+        weight = config->weights1B+i*config->inputElementCount;
+        bias = config->biasesCompound+i;
+        ix = 0;
+
+        sum0 = bias->bias;
+        sum1 = bias->bias;
+        sum2 = bias->bias;
+        sum3 = bias->bias;
+        sum4 = bias->bias;
+        sum5 = bias->bias;
+        sum6 = bias->bias;
+
+        acc0 = _mm_setzero_si128();
+        acc1 = _mm_setzero_si128();
+        acc2 = _mm_setzero_si128();
+        acc3 = _mm_setzero_si128();
+        acc4 = _mm_setzero_si128();
+        acc5 = _mm_setzero_si128();
+        acc6 = _mm_setzero_si128();
+
+        for (kk = 0; kk < numberOfIterationsPerGroup + 1; kk++)
+        {
+            saturate(&sum0, config->execution->SaturationCount);
+            saturate(&sum1, config->execution->SaturationCount);
+            saturate(&sum2, config->execution->SaturationCount);
+            saturate(&sum3, config->execution->SaturationCount);
+            saturate(&sum4, config->execution->SaturationCount);
+            saturate(&sum5, config->execution->SaturationCount);
+            saturate(&sum6, config->execution->SaturationCount);
+
+            numberOfIterations = numberOfElementsPerGroup < simdVectorLength - kk * numberOfElementsPerGroup ? numberOfElementsPerGroup : simdVectorLength - kk * numberOfElementsPerGroup;
+
+            // numberOfElementsPerGroup = 1728
+            // 1728 / 256 = 6.75
+            // 1728 / (8 * 256) < 1, acc won't saturate
+            ix_end = ix + numberOfIterations / SSE_16CAP;
+            for (; ix < ix_end; ix++)
+            {
+                in0 = _mm_load_si128(in_ptr[0] + ix);
+                in1 = _mm_load_si128(in_ptr[1] + ix);
+                in2 = _mm_load_si128(in_ptr[2] + ix);
+                in3 = _mm_load_si128(in_ptr[3] + ix);
+                in4 = _mm_load_si128(in_ptr[4] + ix);
+                in5 = _mm_load_si128(in_ptr[5] + ix);
+                in6 = _mm_load_si128(in_ptr[6] + ix);
+                w = _mm_cvtepi8_epi16(_mm_loadl_epi64((__m128i*)weight));
+                weight += SSE_16CAP;
+
+                // multiply and add - won't saturate
+                in0 = _mm_madd_epi16(in0, w);
+                in1 = _mm_madd_epi16(in1, w);
+                in2 = _mm_madd_epi16(in2, w);
+                in3 = _mm_madd_epi16(in3, w);
+                in4 = _mm_madd_epi16(in4, w);
+                in5 = _mm_madd_epi16(in5, w);
+                in6 = _mm_madd_epi16(in6, w);
+
+                acc0 = _mm_add_epi32(acc0, in0);
+                acc1 = _mm_add_epi32(acc1, in1);
+                acc2 = _mm_add_epi32(acc2, in2);
+                acc3 = _mm_add_epi32(acc3, in3);
+                acc4 = _mm_add_epi32(acc4, in4);
+                acc5 = _mm_add_epi32(acc5, in5);
+                acc6 = _mm_add_epi32(acc6, in6);
+            }
+
+            sum0 += vec_sum32(acc0) * bias->multiplier;
+            sum1 += vec_sum32(acc1) * bias->multiplier;
+            sum2 += vec_sum32(acc2) * bias->multiplier;
+            sum3 += vec_sum32(acc3) * bias->multiplier;
+            sum4 += vec_sum32(acc4) * bias->multiplier;
+            sum5 += vec_sum32(acc5) * bias->multiplier;
+            sum6 += vec_sum32(acc6) * bias->multiplier;
+
+            acc0 = _mm_setzero_si128();
+            acc1 = _mm_setzero_si128();
+            acc2 = _mm_setzero_si128();
+            acc3 = _mm_setzero_si128();
+            acc4 = _mm_setzero_si128();
+            acc5 = _mm_setzero_si128();
+            acc6 = _mm_setzero_si128();
+        }
+
+        for (j = 0; j < vectorTailLength; j++, weight++)
+        {
+            sum0 += input[0][j] * *weight * bias->multiplier;
+            sum1 += input[1][j] * *weight * bias->multiplier;
+            sum2 += input[2][j] * *weight * bias->multiplier;
+            sum3 += input[3][j] * *weight * bias->multiplier;
+            sum4 += input[4][j] * *weight * bias->multiplier;
+            sum5 += input[5][j] * *weight * bias->multiplier;
+            sum6 += input[6][j] * *weight * bias->multiplier;
+        }
+
+        saturate_store_out(&sum0, &output[0], config->execution->SaturationCount);
+        saturate_store_out(&sum1, &output[1], config->execution->SaturationCount);
+        saturate_store_out(&sum2, &output[2], config->execution->SaturationCount);
+        saturate_store_out(&sum3, &output[3], config->execution->SaturationCount);
+        saturate_store_out(&sum4, &output[4], config->execution->SaturationCount);
+        saturate_store_out(&sum5, &output[5], config->execution->SaturationCount);
+        saturate_store_out(&sum6, &output[6], config->execution->SaturationCount);
+
+        output += config->inputVectorCount;
+    }
+
+}
+
+void affineActiveListKernelImpl1B_N8(
+    AffineConfig const * config, AffineConfigAl const *al, int16_t const *input[XNN_N_GROUP_MAX], __m128i *in_ptr[XNN_N_GROUP_MAX],
+    uint32_t numberOfElementsPerGroup, uint32_t numberOfIterationsPerGroup, uint32_t vectorTailLength, uint32_t simdVectorLength)
+{
+    uint32_t numberOfIterations;
+    uint32_t ix_end;
+    uint32_t ix;
+    uint32_t kk;
+    uint32_t i;
+    uint32_t j;
+    uint32_t l;
+
+    int8_t const * weight;
+    nn_bias_c const * bias;
+    int32_t * output;
+
+    output = config->output;
+
+    // simd weights
+    __m128i w;
 
     // simd inputs
     __m128i in0;
@@ -100,796 +1256,89 @@ void AffineActiveListKernelImpl1B(AffineConfig const * const config, AffineConfi
     int64_t sum6;
     int64_t sum7;
 
-    if (1 == config->inputVectorCount)
+    for (l = 0; l < al->count; l++)
     {
-        in_ptr0 = (__m128i*)config->input;
-        input[0] = config->input+KK;
-        for (l = 0; l < al->count; l++)
+        i = al->indices[l];
+        weight = config->weights1B+i*config->inputElementCount;
+        bias = config->biasesCompound+i;
+        ix = 0;
+
+        sum0 = bias->bias;
+        sum1 = bias->bias;
+        sum2 = bias->bias;
+        sum3 = bias->bias;
+        sum4 = bias->bias;
+        sum5 = bias->bias;
+        sum6 = bias->bias;
+        sum7 = bias->bias;
+
+        acc0 = _mm_setzero_si128();
+        acc1 = _mm_setzero_si128();
+        acc2 = _mm_setzero_si128();
+        acc3 = _mm_setzero_si128();
+        acc4 = _mm_setzero_si128();
+        acc5 = _mm_setzero_si128();
+        acc6 = _mm_setzero_si128();
+        acc7 = _mm_setzero_si128();
+
+        for (kk = 0; kk < numberOfIterationsPerGroup + 1; kk++)
         {
-            i = al->indices[l];
-            weight = config->weights1B+i*config->inputElementCount;
-            bias = config->biasesCompound+i;
+            saturate(&sum0, config->execution->SaturationCount);
+            saturate(&sum1, config->execution->SaturationCount);
+            saturate(&sum2, config->execution->SaturationCount);
+            saturate(&sum3, config->execution->SaturationCount);
+            saturate(&sum4, config->execution->SaturationCount);
+            saturate(&sum5, config->execution->SaturationCount);
+            saturate(&sum6, config->execution->SaturationCount);
+            saturate(&sum7, config->execution->SaturationCount);
 
-            ix = 0;
-            acc0 = _mm_setzero_si128();
-            acc1 = _mm_setzero_si128();
-            sum0 = bias->bias;
+            numberOfIterations = numberOfElementsPerGroup < simdVectorLength - kk * numberOfElementsPerGroup ? numberOfElementsPerGroup : simdVectorLength - kk * numberOfElementsPerGroup;
 
-            for (kk = 0; kk < nKpartial + 1; kk++)
+            // numberOfElementsPerGroup = 1536
+            // 1536 / 256 = 6
+            // 1536 / (8 * 256) < 1, acc won't saturate
+            ix_end = ix + numberOfIterations / SSE_16CAP;
+            for (; ix < ix_end; ix++)
             {
-                acc0 = _mm_add_epi32(acc0, acc1);
-                sum0 += vec_sum32(acc0) * bias->multiplier;
-                acc0 = _mm_setzero_si128();
-                acc1 = _mm_setzero_si128();
-                saturate_store_out(&sum0, output, config->execution->SaturationCount);
-                sum0 = *output;
+                in0 = _mm_load_si128(in_ptr[0] + ix);
+                in1 = _mm_load_si128(in_ptr[1] + ix);
+                in2 = _mm_load_si128(in_ptr[2] + ix);
+                in3 = _mm_load_si128(in_ptr[3] + ix);
+                in4 = _mm_load_si128(in_ptr[4] + ix);
+                in5 = _mm_load_si128(in_ptr[5] + ix);
+                in6 = _mm_load_si128(in_ptr[6] + ix);
+                in7 = _mm_load_si128(in_ptr[7] + ix);
+                w = _mm_cvtepi8_epi16(_mm_loadl_epi64((__m128i*)weight));
+                weight += SSE_16CAP;
 
-                niters = kpartial < KK - kk * kpartial ? kpartial : KK - kk * kpartial;
-                acc_iters = niters / (256 * SSE_16CAP);
-                rem_iters = niters % (256 * SSE_16CAP);
+                // multiply and add - won't saturate
+                in0 = _mm_madd_epi16(in0, w);
+                in1 = _mm_madd_epi16(in1, w);
+                in2 = _mm_madd_epi16(in2, w);
+                in3 = _mm_madd_epi16(in3, w);
+                in4 = _mm_madd_epi16(in4, w);
+                in5 = _mm_madd_epi16(in5, w);
+                in6 = _mm_madd_epi16(in6, w);
+                in7 = _mm_madd_epi16(in7, w);
 
-                // kpartial is 12288
-                // 12288 / 256 = 48
-                // max iters = 48 / SSE_16CAP = 6
-                for (i = 0; i < acc_iters; i++)
-                {
-                    acc0 = _mm_setzero_si128();
-                    acc1 = _mm_setzero_si128();
-
-                    ix_end = ix + 256;
-                    for (; ix < ix_end; ix += 2)
-                    {
-                        in0 = _mm_load_si128(in_ptr0 + ix);
-                        in1 = _mm_load_si128(in_ptr0 + ix + 1);
-
-                        w0 = _mm_cvtepi8_epi16(_mm_loadl_epi64((__m128i*)weight));
-                        w1 = _mm_cvtepi8_epi16(_mm_loadl_epi64((__m128i*)(weight + SSE_16CAP)));
-                        weight += 2 * SSE_16CAP;
-
-                        // multiply and add - won't saturate
-                        in0 = _mm_madd_epi16(in0, w0);
-                        in1 = _mm_madd_epi16(in1, w1);
-                        acc0 = _mm_add_epi32(acc0, in0);
-                        acc1 = _mm_add_epi32(acc1, in1);
-                    }
-
-                    acc0 = _mm_add_epi32(acc0, acc1);
-                    sum0 += vec_sum32(acc0) * bias->multiplier;
-                }
-
-                acc0 = _mm_setzero_si128();
-                acc1 = _mm_setzero_si128();
-
-                ix_end = ix + rem_iters / SSE_16CAP;
-                for (; ix < ix_end; ix++)
-                {
-                    in0 = _mm_load_si128(in_ptr0 + ix);
-
-                    w = _mm_cvtepi8_epi16(_mm_loadl_epi64((__m128i*)weight));
-                    weight += SSE_16CAP;
-
-                    // multiply and add - won't saturate
-                    in0 = _mm_madd_epi16(in0, w);
-                    acc0 = _mm_add_epi32(acc0, in0);
-                }
-
-                sum0 += vec_sum32(acc0) * bias->multiplier;
-                acc0 = _mm_setzero_si128();
+                acc0 = _mm_add_epi32(acc0, in0);
+                acc1 = _mm_add_epi32(acc1, in1);
+                acc2 = _mm_add_epi32(acc2, in2);
+                acc3 = _mm_add_epi32(acc3, in3);
+                acc4 = _mm_add_epi32(acc4, in4);
+                acc5 = _mm_add_epi32(acc5, in5);
+                acc6 = _mm_add_epi32(acc6, in6);
+                acc7 = _mm_add_epi32(acc7, in7);
             }
 
-            for (j = 0; j < KT; j++, weight++)
-            {
-                sum0 += (int32_t)((*input)[j] * *weight++ * bias->multiplier);
-            }
-
-            saturate_store_out(&sum0, output, config->execution->SaturationCount);
-
-            output++;
-        }
-        return;
-    }
-
-    switch (config->inputVectorCount)
-    {
-    case 8: 
-        for (i = 0; i < config->inputElementCount; i++) config->execution->Intermediate->d7[i] = config->input[i*config->inputVectorCount + 7];
-        input[7] = config->execution->Intermediate->d7 + KK;
-        in_ptr7 = (__m128i*)config->execution->Intermediate->d7;
-    case 7: 
-        for (i = 0; i < config->inputElementCount; i++) config->execution->Intermediate->d6[i] = config->input[i*config->inputVectorCount + 6];
-        input[6] = config->execution->Intermediate->d6 + KK;
-        in_ptr6 = (__m128i*)config->execution->Intermediate->d6;
-    case 6: 
-        for (i = 0; i < config->inputElementCount; i++) config->execution->Intermediate->d5[i] = config->input[i*config->inputVectorCount + 5];
-        input[5] = config->execution->Intermediate->d5 + KK;
-        in_ptr5 = (__m128i*)config->execution->Intermediate->d5;
-    case 5: 
-        for (i = 0; i < config->inputElementCount; i++) config->execution->Intermediate->d4[i] = config->input[i*config->inputVectorCount + 4];
-        input[4] = config->execution->Intermediate->d4 + KK;
-        in_ptr4 = (__m128i*)config->execution->Intermediate->d4;
-    case 4: 
-        for (i = 0; i < config->inputElementCount; i++) config->execution->Intermediate->d3[i] = config->input[i*config->inputVectorCount + 3];
-        input[3] = config->execution->Intermediate->d3 + KK;
-        in_ptr3 = (__m128i*)config->execution->Intermediate->d3;
-    case 3: 
-        for (i = 0; i < config->inputElementCount; i++) config->execution->Intermediate->d2[i] = config->input[i*config->inputVectorCount + 2];
-        input[2] = config->execution->Intermediate->d2 + KK;
-        in_ptr2 = (__m128i*)config->execution->Intermediate->d2;
-    case 2: 
-        for (i = 0; i < config->inputElementCount; i++) config->execution->Intermediate->d1[i] = config->input[i*config->inputVectorCount + 1];
-        input[1] = config->execution->Intermediate->d1 + KK;
-        in_ptr1 = (__m128i*)config->execution->Intermediate->d1;
-        for (i = 0; i < config->inputElementCount; i++) config->execution->Intermediate->d0[i] = config->input[i*config->inputVectorCount];
-        input[0] = config->execution->Intermediate->d0 + KK;
-        in_ptr0 = (__m128i*)config->execution->Intermediate->d0;
-    }
-
-    if (2 == config->inputVectorCount)
-    {
-        for (l = 0; l < al->count; l++)
-        {
-            i = al->indices[l];
-            weight = config->weights1B+i*config->inputElementCount;
-            bias = config->biasesCompound+i;
-            ix = 0;
-
-            sum0 = bias->bias;
-            sum1 = bias->bias;
-
-            acc0 = _mm_setzero_si128();
-            acc1 = _mm_setzero_si128();
-
-            for (kk = 0; kk < nKpartial + 1; kk++)
-            {
-                saturate(&sum0, config->execution->SaturationCount);
-                saturate(&sum1, config->execution->SaturationCount);
-
-                // kpartial = 12000 / 5 = 2400
-                // 2016 / (8 * 256) = 1
-                niters = kpartial < KK - kk * kpartial ? kpartial : KK - kk * kpartial;
-                acc_iters = niters / (256 * SSE_16CAP);
-                rem_iters = niters % (256 * SSE_16CAP);
-
-                for (i = 0; i < acc_iters; i++)
-                {
-                    acc0 = _mm_setzero_si128();
-                    acc1 = _mm_setzero_si128();
-
-                    ix_end = ix + 256;
-                    for (; ix < ix_end; ix++)
-                    {
-                        in0 = _mm_load_si128(in_ptr0 + ix);
-                        in1 = _mm_load_si128(in_ptr1 + ix);
-                        w = _mm_cvtepi8_epi16(_mm_loadl_epi64((__m128i*)weight));
-                        weight += SSE_16CAP;
-
-                        // multiply and add - won't saturate
-                        in0 = _mm_madd_epi16(in0, w);
-                        in1 = _mm_madd_epi16(in1, w);
-
-                        acc0 = _mm_add_epi32(acc0, in0);
-                        acc1 = _mm_add_epi32(acc1, in1);
-                    }
-
-                    sum0 += vec_sum32(acc0) * bias->multiplier;
-                    sum1 += vec_sum32(acc1) * bias->multiplier;
-                }
-
-                acc0 = _mm_setzero_si128();
-                acc1 = _mm_setzero_si128();
-
-                ix_end = ix + rem_iters / SSE_16CAP;
-                for (; ix < ix_end; ix++)
-                {
-                    in0 = _mm_load_si128(in_ptr0 + ix);
-                    in1 = _mm_load_si128(in_ptr1 + ix);
-                    w = _mm_cvtepi8_epi16(_mm_loadl_epi64((__m128i*)weight));
-                    weight += SSE_16CAP;
-
-                    // multiply and add - won't saturate
-                    in0 = _mm_madd_epi16(in0, w);
-                    in1 = _mm_madd_epi16(in1, w);
-
-                    acc0 = _mm_add_epi32(acc0, in0);
-                    acc1 = _mm_add_epi32(acc1, in1);
-                }
-
-                sum0 += vec_sum32(acc0) * bias->multiplier;
-                sum1 += vec_sum32(acc1) * bias->multiplier;
-            }
-
-            for (j = 0; j < KT; j++, weight++)
-            {
-                sum0 += (int32_t)(input[0][j] * *weight * bias->multiplier);
-                sum1 += (int32_t)(input[1][j] * *weight * bias->multiplier);
-            }
-
-            saturate_store_out(&sum0, &output[0], config->execution->SaturationCount);
-            saturate_store_out(&sum1, &output[1], config->execution->SaturationCount);
-
-            output += config->inputVectorCount;
-        }
-    }
-
-    if (3 == config->inputVectorCount)
-    {
-        for (l = 0; l < al->count; l++)
-        {
-            i = al->indices[l];
-            weight = config->weights1B+i*config->inputElementCount;
-            bias = config->biasesCompound+i;
-            ix = 0;
-
-            sum0 = bias->bias;
-            sum1 = bias->bias;
-            sum2 = bias->bias;
-
-            acc0 = _mm_setzero_si128();
-            acc1 = _mm_setzero_si128();
-            acc2 = _mm_setzero_si128();
-
-            for (kk = 0; kk < nKpartial + 1; kk++)
-            {
-                saturate(&sum0, config->execution->SaturationCount);
-                saturate(&sum1, config->execution->SaturationCount);
-                saturate(&sum2, config->execution->SaturationCount);
-
-                // kpartial = 12000 / 5 = 2400
-                // 2016 / (8 * 256) = 1
-                niters = kpartial < KK - kk * kpartial ? kpartial : KK - kk * kpartial;
-                acc_iters = niters / (256 * SSE_16CAP);
-                rem_iters = niters % (256 * SSE_16CAP);
-
-                for (i = 0; i < acc_iters; i++)
-                {
-                    acc0 = _mm_setzero_si128();
-                    acc1 = _mm_setzero_si128();
-                    acc2 = _mm_setzero_si128();
-
-                    ix_end = ix + 256;
-                    for (; ix < ix_end; ix++)
-                    {
-                        in0 = _mm_load_si128(in_ptr0 + ix);
-                        in1 = _mm_load_si128(in_ptr1 + ix);
-                        in2 = _mm_load_si128(in_ptr2 + ix);
-                        w = _mm_cvtepi8_epi16(_mm_loadl_epi64((__m128i*)weight));
-                        weight += SSE_16CAP;
-
-                        // multiply and add - won't saturate
-                        in0 = _mm_madd_epi16(in0, w);
-                        in1 = _mm_madd_epi16(in1, w);
-                        in2 = _mm_madd_epi16(in2, w);
-
-                        acc0 = _mm_add_epi32(acc0, in0);
-                        acc1 = _mm_add_epi32(acc1, in1);
-                        acc2 = _mm_add_epi32(acc2, in2);
-                    }
-
-                    sum0 += vec_sum32(acc0) * bias->multiplier;
-                    sum1 += vec_sum32(acc1) * bias->multiplier;
-                    sum2 += vec_sum32(acc2) * bias->multiplier;
-                }
-
-                acc0 = _mm_setzero_si128();
-                acc1 = _mm_setzero_si128();
-                acc2 = _mm_setzero_si128();
-
-                ix_end = ix + rem_iters / SSE_16CAP;
-                for (; ix < ix_end; ix++)
-                {
-                    in0 = _mm_load_si128(in_ptr0 + ix);
-                    in1 = _mm_load_si128(in_ptr1 + ix);
-                    in2 = _mm_load_si128(in_ptr2 + ix);
-                    w = _mm_cvtepi8_epi16(_mm_loadl_epi64((__m128i*)weight));
-                    weight += SSE_16CAP;
-
-                    // multiply and add - won't saturate
-                    in0 = _mm_madd_epi16(in0, w);
-                    in1 = _mm_madd_epi16(in1, w);
-                    in2 = _mm_madd_epi16(in2, w);
-
-                    acc0 = _mm_add_epi32(acc0, in0);
-                    acc1 = _mm_add_epi32(acc1, in1);
-                    acc2 = _mm_add_epi32(acc2, in2);
-                }
-
-                sum0 += vec_sum32(acc0) * bias->multiplier;
-                sum1 += vec_sum32(acc1) * bias->multiplier;
-                sum2 += vec_sum32(acc2) * bias->multiplier;
-            }
-
-            for (j = 0; j < KT; j++, weight++)
-            {
-                sum0 += (int32_t)(input[0][j] * *weight * bias->multiplier);
-                sum1 += (int32_t)(input[1][j] * *weight * bias->multiplier);
-                sum2 += (int32_t)(input[2][j] * *weight * bias->multiplier);
-            }
-
-            saturate_store_out(&sum0, &output[0], config->execution->SaturationCount);
-            saturate_store_out(&sum1, &output[1], config->execution->SaturationCount);
-            saturate_store_out(&sum2, &output[2], config->execution->SaturationCount);
-
-            output += config->inputVectorCount;
-        }
-    }
-
-    if (4 == config->inputVectorCount)
-    {
-        for (l = 0; l < al->count; l++)
-        {
-            i = al->indices[l];
-            weight = config->weights1B+i*config->inputElementCount;
-            bias = config->biasesCompound+i;
-            ix = 0;
-
-            sum0 = bias->bias;
-            sum1 = bias->bias;
-            sum2 = bias->bias;
-            sum3 = bias->bias;
-
-            acc0 = _mm_setzero_si128();
-            acc1 = _mm_setzero_si128();
-            acc2 = _mm_setzero_si128();
-            acc3 = _mm_setzero_si128();
-
-            for (kk = 0; kk < nKpartial + 1; kk++)
-            {
-                saturate(&sum0, config->execution->SaturationCount);
-                saturate(&sum1, config->execution->SaturationCount);
-                saturate(&sum2, config->execution->SaturationCount);
-                saturate(&sum3, config->execution->SaturationCount);
-
-                // kpartial = 12000 / 5 = 2400
-                // 2016 / (8 * 256) = 1
-                niters = kpartial < KK - kk * kpartial ? kpartial : KK - kk * kpartial;
-                acc_iters = niters / (256 * SSE_16CAP);
-                rem_iters = niters % (256 * SSE_16CAP);
-
-                for (i = 0; i < acc_iters; i++)
-                {
-                    acc0 = _mm_setzero_si128();
-                    acc1 = _mm_setzero_si128();
-                    acc2 = _mm_setzero_si128();
-                    acc3 = _mm_setzero_si128();
-
-                    ix_end = ix + 256;
-                    for (; ix < ix_end; ix++)
-                    {
-                        in0 = _mm_load_si128(in_ptr0 + ix);
-                        in1 = _mm_load_si128(in_ptr1 + ix);
-                        in2 = _mm_load_si128(in_ptr2 + ix);
-                        in3 = _mm_load_si128(in_ptr3 + ix);
-                        w = _mm_cvtepi8_epi16(_mm_loadl_epi64((__m128i*)weight));
-                        weight += SSE_16CAP;
-
-                        // multiply and add - won't saturate
-                        in0 = _mm_madd_epi16(in0, w);
-                        in1 = _mm_madd_epi16(in1, w);
-                        in2 = _mm_madd_epi16(in2, w);
-                        in3 = _mm_madd_epi16(in3, w);
-
-                        acc0 = _mm_add_epi32(acc0, in0);
-                        acc1 = _mm_add_epi32(acc1, in1);
-                        acc2 = _mm_add_epi32(acc2, in2);
-                        acc3 = _mm_add_epi32(acc3, in3);
-                    }
-
-                    sum0 += vec_sum32(acc0) * bias->multiplier;
-                    sum1 += vec_sum32(acc1) * bias->multiplier;
-                    sum2 += vec_sum32(acc2) * bias->multiplier;
-                    sum3 += vec_sum32(acc3) * bias->multiplier;
-                }
-
-                acc0 = _mm_setzero_si128();
-                acc1 = _mm_setzero_si128();
-                acc2 = _mm_setzero_si128();
-                acc3 = _mm_setzero_si128();
-
-                ix_end = ix + rem_iters / SSE_16CAP;
-                for (; ix < ix_end; ix++)
-                {
-                    in0 = _mm_load_si128(in_ptr0 + ix);
-                    in1 = _mm_load_si128(in_ptr1 + ix);
-                    in2 = _mm_load_si128(in_ptr2 + ix);
-                    in3 = _mm_load_si128(in_ptr3 + ix);
-                    w = _mm_cvtepi8_epi16(_mm_loadl_epi64((__m128i*)weight));
-                    weight += SSE_16CAP;
-
-                    // multiply and add - won't saturate
-                    in0 = _mm_madd_epi16(in0, w);
-                    in1 = _mm_madd_epi16(in1, w);
-                    in2 = _mm_madd_epi16(in2, w);
-                    in3 = _mm_madd_epi16(in3, w);
-
-                    acc0 = _mm_add_epi32(acc0, in0);
-                    acc1 = _mm_add_epi32(acc1, in1);
-                    acc2 = _mm_add_epi32(acc2, in2);
-                    acc3 = _mm_add_epi32(acc3, in3);
-                }
-
-                sum0 += vec_sum32(acc0) * bias->multiplier;
-                sum1 += vec_sum32(acc1) * bias->multiplier;
-                sum2 += vec_sum32(acc2) * bias->multiplier;
-                sum3 += vec_sum32(acc3) * bias->multiplier;
-            }
-
-            for (j = 0; j < KT; j++, weight++)
-            {
-                sum0 += (int32_t)(input[0][j] * *weight * bias->multiplier);
-                sum1 += (int32_t)(input[1][j] * *weight * bias->multiplier);
-                sum2 += (int32_t)(input[2][j] * *weight * bias->multiplier);
-                sum3 += (int32_t)(input[3][j] * *weight * bias->multiplier);
-            }
-
-            saturate_store_out(&sum0, &output[0], config->execution->SaturationCount);
-            saturate_store_out(&sum1, &output[1], config->execution->SaturationCount);
-            saturate_store_out(&sum2, &output[2], config->execution->SaturationCount);
-            saturate_store_out(&sum3, &output[3], config->execution->SaturationCount);
-
-            output += config->inputVectorCount;
-        }
-    }
-
-    if (5 == config->inputVectorCount)
-    {
-        for (l = 0; l < al->count; l++)
-        {
-            i = al->indices[l];
-            weight = config->weights1B+i*config->inputElementCount;
-            bias = config->biasesCompound+i;
-            ix = 0;
-
-            sum0 = bias->bias;
-            sum1 = bias->bias;
-            sum2 = bias->bias;
-            sum3 = bias->bias;
-            sum4 = bias->bias;
-
-            acc0 = _mm_setzero_si128();
-            acc1 = _mm_setzero_si128();
-            acc2 = _mm_setzero_si128();
-            acc3 = _mm_setzero_si128();
-            acc4 = _mm_setzero_si128();
-
-            for (kk = 0; kk < nKpartial + 1; kk++)
-            {
-                saturate(&sum0, config->execution->SaturationCount);
-                saturate(&sum1, config->execution->SaturationCount);
-                saturate(&sum2, config->execution->SaturationCount);
-                saturate(&sum3, config->execution->SaturationCount);
-                saturate(&sum4, config->execution->SaturationCount);
-
-                // kpartial = 12000 / 5 = 2400
-                // 2016 / (8 * 256) = 1
-                niters = kpartial < KK - kk * kpartial ? kpartial : KK - kk * kpartial;
-                acc_iters = niters / (256 * SSE_16CAP);
-                rem_iters = niters % (256 * SSE_16CAP);
-
-                for (i = 0; i < acc_iters; i++)
-                {
-                    acc0 = _mm_setzero_si128();
-                    acc1 = _mm_setzero_si128();
-                    acc2 = _mm_setzero_si128();
-                    acc3 = _mm_setzero_si128();
-                    acc4 = _mm_setzero_si128();
-
-                    ix_end = ix + 256;
-                    for (; ix < ix_end; ix++)
-                    {
-                        in0 = _mm_load_si128(in_ptr0 + ix);
-                        in1 = _mm_load_si128(in_ptr1 + ix);
-                        in2 = _mm_load_si128(in_ptr2 + ix);
-                        in3 = _mm_load_si128(in_ptr3 + ix);
-                        in4 = _mm_load_si128(in_ptr4 + ix);
-                        w = _mm_cvtepi8_epi16(_mm_loadl_epi64((__m128i*)weight));
-                        weight += SSE_16CAP;
-
-                        // multiply and add - won't saturate
-                        in0 = _mm_madd_epi16(in0, w);
-                        in1 = _mm_madd_epi16(in1, w);
-                        in2 = _mm_madd_epi16(in2, w);
-                        in3 = _mm_madd_epi16(in3, w);
-                        in4 = _mm_madd_epi16(in4, w);
-
-                        acc0 = _mm_add_epi32(acc0, in0);
-                        acc1 = _mm_add_epi32(acc1, in1);
-                        acc2 = _mm_add_epi32(acc2, in2);
-                        acc3 = _mm_add_epi32(acc3, in3);
-                        acc4 = _mm_add_epi32(acc4, in4);
-                    }
-
-                    sum0 += vec_sum32(acc0) * bias->multiplier;
-                    sum1 += vec_sum32(acc1) * bias->multiplier;
-                    sum2 += vec_sum32(acc2) * bias->multiplier;
-                    sum3 += vec_sum32(acc3) * bias->multiplier;
-                    sum4 += vec_sum32(acc4) * bias->multiplier;
-                }
-
-                acc0 = _mm_setzero_si128();
-                acc1 = _mm_setzero_si128();
-                acc2 = _mm_setzero_si128();
-                acc3 = _mm_setzero_si128();
-                acc4 = _mm_setzero_si128();
-
-                ix_end = ix + rem_iters / SSE_16CAP;
-                for (; ix < ix_end; ix++)
-                {
-                    in0 = _mm_load_si128(in_ptr0 + ix);
-                    in1 = _mm_load_si128(in_ptr1 + ix);
-                    in2 = _mm_load_si128(in_ptr2 + ix);
-                    in3 = _mm_load_si128(in_ptr3 + ix);
-                    in4 = _mm_load_si128(in_ptr4 + ix);
-                    w = _mm_cvtepi8_epi16(_mm_loadl_epi64((__m128i*)weight));
-                    weight += SSE_16CAP;
-
-                    // multiply and add - won't saturate
-                    in0 = _mm_madd_epi16(in0, w);
-                    in1 = _mm_madd_epi16(in1, w);
-                    in2 = _mm_madd_epi16(in2, w);
-                    in3 = _mm_madd_epi16(in3, w);
-                    in4 = _mm_madd_epi16(in4, w);
-
-                    acc0 = _mm_add_epi32(acc0, in0);
-                    acc1 = _mm_add_epi32(acc1, in1);
-                    acc2 = _mm_add_epi32(acc2, in2);
-                    acc3 = _mm_add_epi32(acc3, in3);
-                    acc4 = _mm_add_epi32(acc4, in4);
-                }
-
-                sum0 += vec_sum32(acc0) * bias->multiplier;
-                sum1 += vec_sum32(acc1) * bias->multiplier;
-                sum2 += vec_sum32(acc2) * bias->multiplier;
-                sum3 += vec_sum32(acc3) * bias->multiplier;
-                sum4 += vec_sum32(acc4) * bias->multiplier;
-            }
-
-            for (j = 0; j < KT; j++, weight++)
-            {
-                sum0 += (int32_t)(input[0][j] * *weight * bias->multiplier);
-                sum1 += (int32_t)(input[1][j] * *weight * bias->multiplier);
-                sum2 += (int32_t)(input[2][j] * *weight * bias->multiplier);
-                sum3 += (int32_t)(input[3][j] * *weight * bias->multiplier);
-                sum4 += (int32_t)(input[4][j] * *weight * bias->multiplier);
-            }
-
-            saturate_store_out(&sum0, &output[0], config->execution->SaturationCount);
-            saturate_store_out(&sum1, &output[1], config->execution->SaturationCount);
-            saturate_store_out(&sum2, &output[2], config->execution->SaturationCount);
-            saturate_store_out(&sum3, &output[3], config->execution->SaturationCount);
-            saturate_store_out(&sum4, &output[4], config->execution->SaturationCount);
-
-            output += config->inputVectorCount;
-        }
-    }
-
-    if (6 == config->inputVectorCount)
-    {
-        for (l = 0; l < al->count; l++)
-        {
-            i = al->indices[l];
-            weight = config->weights1B+i*config->inputElementCount;
-            bias = config->biasesCompound+i;
-            ix = 0;
-
-            sum0 = bias->bias;
-            sum1 = bias->bias;
-            sum2 = bias->bias;
-            sum3 = bias->bias;
-            sum4 = bias->bias;
-            sum5 = bias->bias;
-
-            acc0 = _mm_setzero_si128();
-            acc1 = _mm_setzero_si128();
-            acc2 = _mm_setzero_si128();
-            acc3 = _mm_setzero_si128();
-            acc4 = _mm_setzero_si128();
-            acc5 = _mm_setzero_si128();
-
-            for (kk = 0; kk < nKpartial + 1; kk++)
-            {
-                saturate(&sum0, config->execution->SaturationCount);
-                saturate(&sum1, config->execution->SaturationCount);
-                saturate(&sum2, config->execution->SaturationCount);
-                saturate(&sum3, config->execution->SaturationCount);
-                saturate(&sum4, config->execution->SaturationCount);
-                saturate(&sum5, config->execution->SaturationCount);
-
-                niters = kpartial < KK - kk * kpartial ? kpartial : KK - kk * kpartial;
-
-                // kpartial = 2016
-                // 2016 / (8 * 256) < 1, acc won't saturate
-                ix_end = ix + niters / SSE_16CAP;
-                for (; ix < ix_end; ix++)
-                {
-                    in0 = _mm_load_si128(in_ptr0 + ix);
-                    in1 = _mm_load_si128(in_ptr1 + ix);
-                    in2 = _mm_load_si128(in_ptr2 + ix);
-                    in3 = _mm_load_si128(in_ptr3 + ix);
-                    in4 = _mm_load_si128(in_ptr4 + ix);
-                    in5 = _mm_load_si128(in_ptr5 + ix);
-                    w = _mm_cvtepi8_epi16(_mm_loadl_epi64((__m128i*)weight));
-                    weight += SSE_16CAP;
-
-                    // multiply and add - won't saturate
-                    in0 = _mm_madd_epi16(in0, w);
-                    in1 = _mm_madd_epi16(in1, w);
-                    in2 = _mm_madd_epi16(in2, w);
-                    in3 = _mm_madd_epi16(in3, w);
-                    in4 = _mm_madd_epi16(in4, w);
-                    in5 = _mm_madd_epi16(in5, w);
-
-                    acc0 = _mm_add_epi32(acc0, in0);
-                    acc1 = _mm_add_epi32(acc1, in1);
-                    acc2 = _mm_add_epi32(acc2, in2);
-                    acc3 = _mm_add_epi32(acc3, in3);
-                    acc4 = _mm_add_epi32(acc4, in4);
-                    acc5 = _mm_add_epi32(acc5, in5);
-                }
-
-                sum0 += vec_sum32(acc0) * bias->multiplier;
-                sum1 += vec_sum32(acc1) * bias->multiplier;
-                sum2 += vec_sum32(acc2) * bias->multiplier;
-                sum3 += vec_sum32(acc3) * bias->multiplier;
-                sum4 += vec_sum32(acc4) * bias->multiplier;
-                sum5 += vec_sum32(acc5) * bias->multiplier;
-
-                acc0 = _mm_setzero_si128();
-                acc1 = _mm_setzero_si128();
-                acc2 = _mm_setzero_si128();
-                acc3 = _mm_setzero_si128();
-                acc4 = _mm_setzero_si128();
-                acc5 = _mm_setzero_si128();
-            }
-
-            for (j = 0; j < KT; j++, weight++)
-            {
-                sum0 += (int32_t)(input[0][j] * *weight * bias->multiplier);
-                sum1 += (int32_t)(input[1][j] * *weight * bias->multiplier);
-                sum2 += (int32_t)(input[2][j] * *weight * bias->multiplier);
-                sum3 += (int32_t)(input[3][j] * *weight * bias->multiplier);
-                sum4 += (int32_t)(input[4][j] * *weight * bias->multiplier);
-                sum5 += (int32_t)(input[5][j] * *weight * bias->multiplier);
-            }
-
-            saturate_store_out(&sum0, &output[0], config->execution->SaturationCount);
-            saturate_store_out(&sum1, &output[1], config->execution->SaturationCount);
-            saturate_store_out(&sum2, &output[2], config->execution->SaturationCount);
-            saturate_store_out(&sum3, &output[3], config->execution->SaturationCount);
-            saturate_store_out(&sum4, &output[4], config->execution->SaturationCount);
-            saturate_store_out(&sum5, &output[5], config->execution->SaturationCount);
-
-            output += config->inputVectorCount;
-        }
-    }
-
-    if (7 == config->inputVectorCount)
-    {
-        for (l = 0; l < al->count; l++)
-        {
-            i = al->indices[l];
-            weight = config->weights1B+i*config->inputElementCount;
-            bias = config->biasesCompound+i;
-            ix = 0;
-
-            sum0 = bias->bias;
-            sum1 = bias->bias;
-            sum2 = bias->bias;
-            sum3 = bias->bias;
-            sum4 = bias->bias;
-            sum5 = bias->bias;
-            sum6 = bias->bias;
-
-            acc0 = _mm_setzero_si128();
-            acc1 = _mm_setzero_si128();
-            acc2 = _mm_setzero_si128();
-            acc3 = _mm_setzero_si128();
-            acc4 = _mm_setzero_si128();
-            acc5 = _mm_setzero_si128();
-            acc6 = _mm_setzero_si128();
-
-            for (kk = 0; kk < nKpartial + 1; kk++)
-            {
-                saturate(&sum0, config->execution->SaturationCount);
-                saturate(&sum1, config->execution->SaturationCount);
-                saturate(&sum2, config->execution->SaturationCount);
-                saturate(&sum3, config->execution->SaturationCount);
-                saturate(&sum4, config->execution->SaturationCount);
-                saturate(&sum5, config->execution->SaturationCount);
-                saturate(&sum6, config->execution->SaturationCount);
-
-                niters = kpartial < KK - kk * kpartial ? kpartial : KK - kk * kpartial;
-
-                // kpartial = 1728
-                // 1728 / 256 = 6.75
-                // 1728 / (8 * 256) < 1, acc won't saturate
-                ix_end = ix + niters / SSE_16CAP;
-                for (; ix < ix_end; ix++)
-                {
-                    in0 = _mm_load_si128(in_ptr0 + ix);
-                    in1 = _mm_load_si128(in_ptr1 + ix);
-                    in2 = _mm_load_si128(in_ptr2 + ix);
-                    in3 = _mm_load_si128(in_ptr3 + ix);
-                    in4 = _mm_load_si128(in_ptr4 + ix);
-                    in5 = _mm_load_si128(in_ptr5 + ix);
-                    in6 = _mm_load_si128(in_ptr6 + ix);
-                    w = _mm_cvtepi8_epi16(_mm_loadl_epi64((__m128i*)weight));
-                    weight += SSE_16CAP;
-
-                    // multiply and add - won't saturate
-                    in0 = _mm_madd_epi16(in0, w);
-                    in1 = _mm_madd_epi16(in1, w);
-                    in2 = _mm_madd_epi16(in2, w);
-                    in3 = _mm_madd_epi16(in3, w);
-                    in4 = _mm_madd_epi16(in4, w);
-                    in5 = _mm_madd_epi16(in5, w);
-                    in6 = _mm_madd_epi16(in6, w);
-
-                    acc0 = _mm_add_epi32(acc0, in0);
-                    acc1 = _mm_add_epi32(acc1, in1);
-                    acc2 = _mm_add_epi32(acc2, in2);
-                    acc3 = _mm_add_epi32(acc3, in3);
-                    acc4 = _mm_add_epi32(acc4, in4);
-                    acc5 = _mm_add_epi32(acc5, in5);
-                    acc6 = _mm_add_epi32(acc6, in6);
-                }
-
-                sum0 += vec_sum32(acc0) * bias->multiplier;
-                sum1 += vec_sum32(acc1) * bias->multiplier;
-                sum2 += vec_sum32(acc2) * bias->multiplier;
-                sum3 += vec_sum32(acc3) * bias->multiplier;
-                sum4 += vec_sum32(acc4) * bias->multiplier;
-                sum5 += vec_sum32(acc5) * bias->multiplier;
-                sum6 += vec_sum32(acc6) * bias->multiplier;
-
-                acc0 = _mm_setzero_si128();
-                acc1 = _mm_setzero_si128();
-                acc2 = _mm_setzero_si128();
-                acc3 = _mm_setzero_si128();
-                acc4 = _mm_setzero_si128();
-                acc5 = _mm_setzero_si128();
-                acc6 = _mm_setzero_si128();
-            }
-
-            for (j = 0; j < KT; j++, weight++)
-            {
-                sum0 += (int32_t)(input[0][j] * *weight * bias->multiplier);
-                sum1 += (int32_t)(input[1][j] * *weight * bias->multiplier);
-                sum2 += (int32_t)(input[2][j] * *weight * bias->multiplier);
-                sum3 += (int32_t)(input[3][j] * *weight * bias->multiplier);
-                sum4 += (int32_t)(input[4][j] * *weight * bias->multiplier);
-                sum5 += (int32_t)(input[5][j] * *weight * bias->multiplier);
-                sum6 += (int32_t)(input[6][j] * *weight * bias->multiplier);
-            }
-
-            saturate_store_out(&sum0, &output[0], config->execution->SaturationCount);
-            saturate_store_out(&sum1, &output[1], config->execution->SaturationCount);
-            saturate_store_out(&sum2, &output[2], config->execution->SaturationCount);
-            saturate_store_out(&sum3, &output[3], config->execution->SaturationCount);
-            saturate_store_out(&sum4, &output[4], config->execution->SaturationCount);
-            saturate_store_out(&sum5, &output[5], config->execution->SaturationCount);
-            saturate_store_out(&sum6, &output[6], config->execution->SaturationCount);
-
-            output += config->inputVectorCount;
-        }
-    }
-
-    if (8 == config->inputVectorCount)
-    {
-        for (l = 0; l < al->count; l++)
-        {
-            i = al->indices[l];
-            weight = config->weights1B+i*config->inputElementCount;
-            bias = config->biasesCompound+i;
-            ix = 0;
-
-            sum0 = bias->bias;
-            sum1 = bias->bias;
-            sum2 = bias->bias;
-            sum3 = bias->bias;
-            sum4 = bias->bias;
-            sum5 = bias->bias;
-            sum6 = bias->bias;
-            sum7 = bias->bias;
+            sum0 += vec_sum32(acc0) * bias->multiplier;
+            sum1 += vec_sum32(acc1) * bias->multiplier;
+            sum2 += vec_sum32(acc2) * bias->multiplier;
+            sum3 += vec_sum32(acc3) * bias->multiplier;
+            sum4 += vec_sum32(acc4) * bias->multiplier;
+            sum5 += vec_sum32(acc5) * bias->multiplier;
+            sum6 += vec_sum32(acc6) * bias->multiplier;
+            sum7 += vec_sum32(acc7) * bias->multiplier;
 
             acc0 = _mm_setzero_si128();
             acc1 = _mm_setzero_si128();
@@ -899,98 +1348,31 @@ void AffineActiveListKernelImpl1B(AffineConfig const * const config, AffineConfi
             acc5 = _mm_setzero_si128();
             acc6 = _mm_setzero_si128();
             acc7 = _mm_setzero_si128();
-
-            for (kk = 0; kk < nKpartial + 1; kk++)
-            {
-                saturate(&sum0, config->execution->SaturationCount);
-                saturate(&sum1, config->execution->SaturationCount);
-                saturate(&sum2, config->execution->SaturationCount);
-                saturate(&sum3, config->execution->SaturationCount);
-                saturate(&sum4, config->execution->SaturationCount);
-                saturate(&sum5, config->execution->SaturationCount);
-                saturate(&sum6, config->execution->SaturationCount);
-                saturate(&sum7, config->execution->SaturationCount);
-
-                niters = kpartial < KK - kk * kpartial ? kpartial : KK - kk * kpartial;
-
-                // kpartial = 1536
-                // 1536 / 256 = 6
-                // 1536 / (8 * 256) < 1, acc won't saturate
-                ix_end = ix + niters / SSE_16CAP;
-                for (; ix < ix_end; ix++)
-                {
-                    in0 = _mm_load_si128(in_ptr0 + ix);
-                    in1 = _mm_load_si128(in_ptr1 + ix);
-                    in2 = _mm_load_si128(in_ptr2 + ix);
-                    in3 = _mm_load_si128(in_ptr3 + ix);
-                    in4 = _mm_load_si128(in_ptr4 + ix);
-                    in5 = _mm_load_si128(in_ptr5 + ix);
-                    in6 = _mm_load_si128(in_ptr6 + ix);
-                    in7 = _mm_load_si128(in_ptr7 + ix);
-                    w = _mm_cvtepi8_epi16(_mm_loadl_epi64((__m128i*)weight));
-                    weight += SSE_16CAP;
-
-                    // multiply and add - won't saturate
-                    in0 = _mm_madd_epi16(in0, w);
-                    in1 = _mm_madd_epi16(in1, w);
-                    in2 = _mm_madd_epi16(in2, w);
-                    in3 = _mm_madd_epi16(in3, w);
-                    in4 = _mm_madd_epi16(in4, w);
-                    in5 = _mm_madd_epi16(in5, w);
-                    in6 = _mm_madd_epi16(in6, w);
-                    in7 = _mm_madd_epi16(in7, w);
-
-                    acc0 = _mm_add_epi32(acc0, in0);
-                    acc1 = _mm_add_epi32(acc1, in1);
-                    acc2 = _mm_add_epi32(acc2, in2);
-                    acc3 = _mm_add_epi32(acc3, in3);
-                    acc4 = _mm_add_epi32(acc4, in4);
-                    acc5 = _mm_add_epi32(acc5, in5);
-                    acc6 = _mm_add_epi32(acc6, in6);
-                    acc7 = _mm_add_epi32(acc7, in7);
-                }
-
-                sum0 += vec_sum32(acc0) * bias->multiplier;
-                sum1 += vec_sum32(acc1) * bias->multiplier;
-                sum2 += vec_sum32(acc2) * bias->multiplier;
-                sum3 += vec_sum32(acc3) * bias->multiplier;
-                sum4 += vec_sum32(acc4) * bias->multiplier;
-                sum5 += vec_sum32(acc5) * bias->multiplier;
-                sum6 += vec_sum32(acc6) * bias->multiplier;
-                sum7 += vec_sum32(acc7) * bias->multiplier;
-
-                acc0 = _mm_setzero_si128();
-                acc1 = _mm_setzero_si128();
-                acc2 = _mm_setzero_si128();
-                acc3 = _mm_setzero_si128();
-                acc4 = _mm_setzero_si128();
-                acc5 = _mm_setzero_si128();
-                acc6 = _mm_setzero_si128();
-                acc7 = _mm_setzero_si128();
-            }
-
-            for (j = 0; j < KT; j++, weight++)
-            {
-                sum0 += (int32_t)(input[0][j] * *weight * bias->multiplier);
-                sum1 += (int32_t)(input[1][j] * *weight * bias->multiplier);
-                sum2 += (int32_t)(input[2][j] * *weight * bias->multiplier);
-                sum3 += (int32_t)(input[3][j] * *weight * bias->multiplier);
-                sum4 += (int32_t)(input[4][j] * *weight * bias->multiplier);
-                sum5 += (int32_t)(input[5][j] * *weight * bias->multiplier);
-                sum6 += (int32_t)(input[6][j] * *weight * bias->multiplier);
-                sum7 += (int32_t)(input[7][j] * *weight * bias->multiplier);
-            }
-
-            saturate_store_out(&sum0, &output[0], config->execution->SaturationCount);
-            saturate_store_out(&sum1, &output[1], config->execution->SaturationCount);
-            saturate_store_out(&sum2, &output[2], config->execution->SaturationCount);
-            saturate_store_out(&sum3, &output[3], config->execution->SaturationCount);
-            saturate_store_out(&sum4, &output[4], config->execution->SaturationCount);
-            saturate_store_out(&sum5, &output[5], config->execution->SaturationCount);
-            saturate_store_out(&sum6, &output[6], config->execution->SaturationCount);
-            saturate_store_out(&sum7, &output[7], config->execution->SaturationCount);
-
-            output += config->inputVectorCount;
         }
+
+        for (j = 0; j < vectorTailLength; j++, weight++)
+        {
+            sum0 += input[0][j] * *weight * bias->multiplier;
+            sum1 += input[1][j] * *weight * bias->multiplier;
+            sum2 += input[2][j] * *weight * bias->multiplier;
+            sum3 += input[3][j] * *weight * bias->multiplier;
+            sum4 += input[4][j] * *weight * bias->multiplier;
+            sum5 += input[5][j] * *weight * bias->multiplier;
+            sum6 += input[6][j] * *weight * bias->multiplier;
+            sum7 += input[7][j] * *weight * bias->multiplier;
+        }
+
+        saturate_store_out(&sum0, &output[0], config->execution->SaturationCount);
+        saturate_store_out(&sum1, &output[1], config->execution->SaturationCount);
+        saturate_store_out(&sum2, &output[2], config->execution->SaturationCount);
+        saturate_store_out(&sum3, &output[3], config->execution->SaturationCount);
+        saturate_store_out(&sum4, &output[4], config->execution->SaturationCount);
+        saturate_store_out(&sum5, &output[5], config->execution->SaturationCount);
+        saturate_store_out(&sum6, &output[6], config->execution->SaturationCount);
+        saturate_store_out(&sum7, &output[7], config->execution->SaturationCount);
+
+        output += config->inputVectorCount;
     }
+
 }
+

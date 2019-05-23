@@ -33,22 +33,22 @@
 class ModelSetup : public IModelSetup
 {
 public:
-    gna_model_id ModelId(int /*modelIndex*/) const override
+    gna_model_id ModelId(uint32_t /*modelIndex*/) const override
     {
         return modelId;
     }
 
-    gna_request_cfg_id ConfigId(int /*modelIndex*/, int /*configIndex*/) const override
+    gna_request_cfg_id ConfigId(uint32_t /*modelIndex*/, uint32_t /*configIndex*/) const override
     {
         // this one model setup has only one Request Configuration
         return configId;
     }
 
-    ModelSetup(DeviceController & deviceCtrl, intel_nnet_type_t model, const void* referenceOutput);
+    ModelSetup(DeviceController & deviceCtrl, intel_nnet_type_t model, const void* referenceOutputIn);
 
     virtual ~ModelSetup();
 
-    void checkReferenceOutput(int modelIndex, int configIndex) const override;
+    void checkReferenceOutput(uint32_t modelIndex, uint32_t configIndex) const override;
 
 protected:
 

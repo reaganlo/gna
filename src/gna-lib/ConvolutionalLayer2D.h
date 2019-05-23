@@ -26,10 +26,12 @@
 #pragma once
 
 #include "Layer.h"
-#include "Validator.h"
+
+#include "common.h"
 
 namespace GNA
 {
+class BaseValidator;
 
 class ConvolutionalLayer2D : public Layer
 {

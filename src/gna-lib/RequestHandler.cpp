@@ -25,12 +25,16 @@
 
 #include "RequestHandler.h"
 
-#include "Device.h"
+#include "Expect.h"
 #include "GnaException.h"
+#include "Request.h"
 
-using std::mutex;
-using std::pair;
-using std::unique_ptr;
+#include "gna-api-instrumentation.h"
+#include "profiler.h"
+
+#include <chrono>
+#include <future>
+#include <utility>
 
 using namespace GNA;
 
@@ -56,7 +60,7 @@ void RequestHandler::ChangeNumberOfThreads(uint32_t threadCount)
 
 void RequestHandler::Enqueue(
     gna_request_id *requestId,
-    unique_ptr<Request> request)
+    std::unique_ptr<Request> request)
 {
     Expect::NotNull(requestId);
     auto r = request.get();
@@ -103,7 +107,7 @@ Gna2Status RequestHandler::WaitFor(const gna_request_id requestId, const gna_tim
         auto perfResults = request->PerfResults;
         auto profiler = request->Profiler.get();
         profilerTscStop(&profiler->process);
-        if (perfResults)
+        if (perfResults != nullptr)
         {
             perfResults->lib.preprocess = profilerGetTscPassed(&profiler->preprocess);
             perfResults->lib.process    = profilerGetTscPassed(&profiler->process);
@@ -116,12 +120,7 @@ Gna2Status RequestHandler::WaitFor(const gna_request_id requestId, const gna_tim
             perfResults->total.stop     = profiler->process.stop;
         }
 
-        bool removed = removeRequest(requestId);
-        if (!removed)
-        {
-            return Gna2StatusIdentifierInvalid;
-        }
-
+        removeRequest(requestId);
         return score_status;
     }
     default:
@@ -134,16 +133,14 @@ void RequestHandler::StopRequests()
     threadPool.Stop();
 }
 
-bool RequestHandler::removeRequest(const uint32_t requestId)
+void RequestHandler::removeRequest(const uint32_t requestId)
 {
     std::lock_guard<std::mutex> lockGuard(lock);
-    auto r = requests.find(requestId);
-    if (requests.end() != r)
+    auto erased = requests.erase(requestId);
+    if (erased == 0)
     {
-        requests.erase(requestId);
-        return true;
+        throw GnaException(Gna2StatusIdentifierInvalid);
     }
-    return false;
 }
 
 void RequestHandler::initRequestMap()

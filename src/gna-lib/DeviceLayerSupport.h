@@ -25,11 +25,15 @@
 
 #pragma once
 
-#include <map>
-#include <memory>
-
-#include "common.h"
 #include "Expect.h"
+
+#include "gna2-common-api.h"
+
+#include "gna-api-types-xnn.h"
+#include "gna-api.h"
+
+#include <map>
+#include <utility>
 
 namespace GNA
 {

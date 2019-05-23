@@ -39,7 +39,10 @@ ChainModel::~ChainModel()
 {
     for (auto& layer : layers)
     {
-        if (layer.pLayerStruct) free(layer.pLayerStruct);
+        if (layer.pLayerStruct != nullptr)
+        {
+            free(layer.pLayerStruct);
+        }
     }
 }
 
@@ -48,7 +51,10 @@ ChainModel& ChainModel::Affine(bool weights2B, bool pwlEnabled, bool activeListE
     // TODO: active list
     UNREFERENCED_PARAMETER(activeListEnabled);
 
-    if (locked) throw;
+    if (locked)
+    {
+        throw;
+    }
 
     intel_affine_func_t affine_func;
     affine_func.nBytesPerWeight = weights2B ? GNA_INT16 : GNA_INT8;
@@ -86,7 +92,8 @@ ChainModel& ChainModel::Affine(bool weights2B, bool pwlEnabled, bool activeListE
         nnet_layer.nBytesPerOutput = GNA_INT32;
     }
 
-    modelSize += ModelUtilities::CalculateDnnSize(groupingNum, inVecSz, outVecSz, weights2B ? sizeof(int16_t) : sizeof(int8_t),
+    modelSize += ModelUtilities::CalculateDnnSize(groupingNum, inVecSz, outVecSz,
+        static_cast<uint32_t>(weights2B ? sizeof(int16_t) : sizeof(int8_t)),
         pwlEnabled ? nSegments : 0);
     layers.push_back(nnet_layer);
     return *this;
@@ -94,7 +101,10 @@ ChainModel& ChainModel::Affine(bool weights2B, bool pwlEnabled, bool activeListE
 
 ChainModel& ChainModel::Diagonal(bool weights2B, bool pwlEnabled)
 {
-    if (locked) throw;
+    if (locked)
+    {
+        throw;
+    }
 
     intel_affine_func_t affine_func;
     affine_func.nBytesPerWeight = weights2B ? GNA_INT16 : GNA_INT8;
@@ -132,7 +142,8 @@ ChainModel& ChainModel::Diagonal(bool weights2B, bool pwlEnabled)
         nnet_layer.nBytesPerOutput = GNA_INT32;
     }
 
-    modelSize += ModelUtilities::CalculateDnnSize(groupingNum, inVecSz, outVecSz, weights2B ? sizeof(int16_t) : sizeof(int8_t),
+    modelSize += ModelUtilities::CalculateDnnSize(groupingNum, inVecSz, outVecSz,
+        static_cast<uint32_t>(weights2B ? sizeof(int16_t) : sizeof(int8_t)),
         pwlEnabled ? nSegments : 0);
     layers.push_back(nnet_layer);
     return *this;
@@ -140,7 +151,10 @@ ChainModel& ChainModel::Diagonal(bool weights2B, bool pwlEnabled)
 
 ChainModel& ChainModel::Multibias(bool weights2B, bool pwlEnabled)
 {
-    if (locked) throw;
+    if (locked)
+    {
+        throw;
+    }
 
     intel_affine_multibias_func_t multibias_func;
     multibias_func.nBytesPerWeight = weights2B ? GNA_INT16 : GNA_INT8;
@@ -180,7 +194,8 @@ ChainModel& ChainModel::Multibias(bool weights2B, bool pwlEnabled)
         nnet_layer.nBytesPerOutput = GNA_INT32;
     }
 
-    modelSize += ModelUtilities::CalculateMultibiasSize(groupingNum, inVecSz, outVecSz, weights2B ? sizeof(int16_t) : sizeof(int8_t),
+    modelSize += ModelUtilities::CalculateMultibiasSize(groupingNum, inVecSz, outVecSz,
+        static_cast<uint32_t>(weights2B ? sizeof(int16_t) : sizeof(int8_t)),
         pwlEnabled ? nSegments : 0);
     layers.push_back(nnet_layer);
     return *this;
@@ -188,7 +203,10 @@ ChainModel& ChainModel::Multibias(bool weights2B, bool pwlEnabled)
 
 ChainModel& ChainModel::Convolution(bool pwlEnabled)
 {
-    if (locked) throw;
+    if (locked)
+    {
+        throw;
+    }
 
     auto convolution_layer = static_cast<intel_convolutional_layer_t*>(calloc(1, sizeof(intel_convolutional_layer_t)));
     convolution_layer->nBytesBias = sizeof(intel_bias_t);
@@ -239,7 +257,10 @@ ChainModel& ChainModel::Convolution(bool pwlEnabled)
 
 ChainModel& ChainModel::Pooling(intel_pool_type_t poolingType)
 {
-    if (locked) throw;
+    if (locked)
+    {
+        throw;
+    }
 
     auto convolution_layer = static_cast<intel_convolutional_layer_t*>(calloc(1, sizeof(intel_convolutional_layer_t)));
     convolution_layer->nBytesBias = sizeof(intel_bias_t);
@@ -278,7 +299,10 @@ ChainModel& ChainModel::Pooling(intel_pool_type_t poolingType)
 
 ChainModel& ChainModel::Recurrent(bool weights2B)
 {
-    if (locked) throw;
+    if (locked)
+    {
+        throw;
+    }
 
     intel_affine_func_t affine_func;
     affine_func.nBytesPerWeight = weights2B ? GNA_INT16 : GNA_INT8;
@@ -308,7 +332,10 @@ ChainModel& ChainModel::Recurrent(bool weights2B)
 
 ChainModel& ChainModel::Gmm()
 {
-    if (locked) throw;
+    if (locked)
+    {
+        throw;
+    }
 
     auto gmm = static_cast<gna_gmm_layer*>(calloc(1, sizeof(gna_gmm_layer)));
     gmm->config.layout = GMM_LAYOUT_FLAT;
@@ -338,7 +365,10 @@ ChainModel& ChainModel::Gmm()
 
 ChainModel& ChainModel::Copy()
 {
-    if (locked) throw;
+    if (locked)
+    {
+        throw;
+    }
 
     intel_copy_layer_t *copy_layer = (intel_copy_layer_t*)calloc(1, sizeof(intel_copy_layer_t));
     copy_layer->nCopyCols = inVecSz;
@@ -363,7 +393,10 @@ ChainModel& ChainModel::Copy()
 
 ChainModel& ChainModel::Transpose()
 {
-    if (locked) throw;
+    if (locked)
+    {
+        throw;
+    }
 
     intel_nnet_layer_t nnet_layer;
     nnet_layer.nInputColumns = inVecSz;
@@ -384,7 +417,10 @@ ChainModel& ChainModel::Transpose()
 
 intel_nnet_type_t& ChainModel::Setup(uint8_t *pinned_memory)
 {
-    if (locked) throw;
+    if (locked)
+    {
+        throw;
+    }
 
     nnet.nLayers = static_cast<uint32_t>(layers.size());
     nnet.pLayers = &layers[0];
@@ -441,17 +477,23 @@ uint16_t ChainModel::GetLayerCount() const
 
 uint32_t ChainModel::GetInputBuffersSize()
 {
-    if (!locked) throw;
+    if (!locked)
+    {
+        throw;
+    }
     auto firstLayer = nnet.pLayers;
-    auto inputBufferSize = ALIGN64(firstLayer->nInputRows * firstLayer->nInputColumns * sizeof(int16_t));
+    auto inputBufferSize = ALIGN64(firstLayer->nInputRows * firstLayer->nInputColumns * static_cast<uint32_t>(sizeof(int16_t)));
     return inputBufferSize;
 }
 
 uint32_t ChainModel::GetOutputBuffersSize()
 {
-    if (!locked) throw;
+    if (!locked)
+    {
+        throw;
+    }
     auto lastLayer = nnet.pLayers + nnet.nLayers - 1;
-    auto outputBufferSize = std::uint32_t{ lastLayer->nOutputRows * lastLayer->nOutputColumns };
+    auto outputBufferSize = lastLayer->nOutputRows * lastLayer->nOutputColumns;
     switch (lastLayer->operation)
     {
         case INTEL_INTERLEAVE:
@@ -461,28 +503,28 @@ uint32_t ChainModel::GetOutputBuffersSize()
         case INTEL_COPY:
             /* FALLTHRU */
         case INTEL_RECURRENT:
-            outputBufferSize *= sizeof(int16_t);
+            outputBufferSize *= static_cast<uint32_t>(sizeof(int16_t));
             break;
         case INTEL_GMM:
-            outputBufferSize *= sizeof(int32_t);
+            outputBufferSize *= static_cast<uint32_t>(sizeof(int32_t));
             break;
         case INTEL_AFFINE:
         case INTEL_AFFINE_DIAGONAL:
             {
                 auto affine_layer = static_cast<intel_affine_layer_t*>(lastLayer->pLayerStruct);
-                outputBufferSize *= (affine_layer->pwl.nSegments > 0) ? sizeof(int16_t) : sizeof(int32_t);
+                outputBufferSize *= static_cast<uint32_t>((affine_layer->pwl.nSegments > 0) ? sizeof(int16_t) : sizeof(int32_t));
                 break;
             }
         case INTEL_AFFINE_MULTIBIAS:
             {
                 auto affine_layer = static_cast<intel_affine_multibias_layer_t*>(lastLayer->pLayerStruct);
-                outputBufferSize *= (affine_layer->pwl.nSegments > 0) ? sizeof(int16_t) : sizeof(int32_t);
+                outputBufferSize *= static_cast<uint32_t>((affine_layer->pwl.nSegments > 0) ? sizeof(int16_t) : sizeof(int32_t));
                 break;
             }
         case INTEL_CONVOLUTIONAL:
             {
                 auto convolution_layer = static_cast<intel_convolutional_layer_t*>(lastLayer->pLayerStruct);
-                outputBufferSize *= (convolution_layer->pwl.nSegments > 0) ? sizeof(int16_t) : sizeof(int32_t);
+                outputBufferSize *= static_cast<uint32_t>((convolution_layer->pwl.nSegments > 0) ? sizeof(int16_t) : sizeof(int32_t));
                 break;
             }
         default:
@@ -577,7 +619,9 @@ void ChainModel::setup_multibias_pointers(intel_nnet_layer_t *layer, uint8_t* &p
 
     void *pinned_scales = pinned_memory;
     if (sizeof(int8_t) == affine_layer->affine.nBytesPerWeight)
+    {
         pinned_memory += ALIGN64(layer->nOutputRows * sizeof(intel_compound_bias_t));
+    }
 
     layer->pInputs = pinned_inputs;
     layer->pOutputs = pinned_outputs;
@@ -714,7 +758,7 @@ void ChainModel::setup_gmm_pointers(intel_nnet_layer_t *layer, uint8_t* &pinned_
     }
 
     void *pinned_vars = pinned_memory;
-    auto nBytesPerVars = 0;
+    auto nBytesPerVars = 0u;
     if (GNA_MAXMIX16 == gmm->config.mode)
     {
         gmm->data.inverseCovariances.inverseCovariancesForMaxMix8 = nullptr;
@@ -749,14 +793,14 @@ void ChainModel::setup_gmm_pointers(intel_nnet_layer_t *layer, uint8_t* &pinned_
     gmm->data.meanValues = (uint8_t*)pinned_means;
 }
 
-const int ChainModel::groupingNum = 4;
-const int ChainModel::inVecSz = 16;
-const int ChainModel::cnnInVecSz = 96;
-const int ChainModel::cnnOutVecSz = 4;
-const int ChainModel::outVecSz = 8;
-const int ChainModel::rnnOutVecSz = 32;
-const int ChainModel::nSegments = 64;
-const int ChainModel::gmmInVecSz = 24;
+const uint32_t ChainModel::groupingNum = 4;
+const uint32_t ChainModel::inVecSz = 16;
+const uint32_t ChainModel::cnnInVecSz = 96;
+const uint32_t ChainModel::cnnOutVecSz = 4;
+const uint32_t ChainModel::outVecSz = 8;
+const uint32_t ChainModel::rnnOutVecSz = 32;
+const uint32_t ChainModel::nSegments = 64;
+const uint32_t ChainModel::gmmInVecSz = 24;
 
 const int8_t ChainModel::weights_1B[outVecSz * inVecSz] =
 {

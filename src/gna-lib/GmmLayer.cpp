@@ -26,14 +26,28 @@
 #include "GmmLayer.h"
 
 #include "AccelerationDetector.h"
-#include "LayerConfiguration.h"
+#include "Address.h"
+#include "ActiveList.h"
+#include "DataMode.h"
 #include "Expect.h"
+#include "LayerConfiguration.h"
+#include "LayerInput.h"
+#include "LayerOutput.h"
+#include "Validator.h"
+
+#include "gna-api-types-xnn.h"
+#include "gna-api.h"
+
+#include <algorithm>
+#include <memory>
 
 using namespace GNA;
 
 GmmParams::GmmParams(const gna_gmm_config &config, const uint32_t inputElementCount)
 {
-    VarianceSize = (GNA_MAXMIX16 == config.mode) ? sizeof(uint16_t) : sizeof(uint8_t);
+    VarianceSize = (GNA_MAXMIX16 == config.mode)
+        ? static_cast<uint32_t>(sizeof(uint16_t))
+        : static_cast<uint32_t>(sizeof(uint8_t));
 
     MeanSetOffsetSize = config.mixtureComponentCount * inputElementCount * GMM_MEAN_VALUE_SIZE;
     VarSetOffsetSize = config.mixtureComponentCount * inputElementCount * VarianceSize;
@@ -82,14 +96,14 @@ void GmmLayer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const
     Layer::UpdateKernelConfigs(layerConfiguration);
 
     BaseAddress inputBuffer = Input;
-    if (layerConfiguration.Buffers.count(InputComponent))
+    if (layerConfiguration.Buffers.count(InputComponent) > 0)
     {
         inputBuffer = layerConfiguration.Buffers[InputComponent];
         Input.ValidateBuffer(inputBuffer);
     }
 
     BaseAddress outputBuffer = Output;
-    if (layerConfiguration.Buffers.count(OutputComponent))
+    if (layerConfiguration.Buffers.count(OutputComponent) > 0)
     {
         outputBuffer = layerConfiguration.Buffers[OutputComponent];
         Output.ValidateBuffer(outputBuffer);
@@ -97,7 +111,9 @@ void GmmLayer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const
 
     auto& configs = layerConfiguration.Configs;
     if(!configs.Gmm)
+    {
         configs.Gmm = std::make_unique<GmmConfig>(gmmHiddenConfig);
+    }
     if (layerConfiguration.ActList)
     {
         ValidateActiveList(layerConfiguration.ActList.get());
@@ -134,7 +150,7 @@ void GmmLayer::compute(const LayerConfiguration& layerConfiguration, Acceleratio
 
 void GmmLayer::ValidateActiveList(ActiveList const * const activeList) const
 {
-    if (activeList)
+    if (activeList != nullptr)
     {
         Expect::InRange(activeList->IndicesCount, ui32_1, Config.stateCount, Gna2StatusActiveListIndicesInvalid);
     }

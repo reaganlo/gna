@@ -25,18 +25,36 @@
 
 #pragma once
 
-#include <map>
-#include <memory>
-#include <vector>
-
 #include "AccelerationDetector.h"
-#include "HardwareCapabilities.h"
 #include "HardwareModelScorable.h"
 #include "SoftwareModel.h"
 #include "SubModel.h"
+#include "Validator.h"
+
+#include "gna2-common-api.h"
+#include "gna2-common-impl.h"
+#include "gna2-model-api.h"
+
+#include "common.h"
+#include "gna-api.h"
+#include "gna-api-types-xnn.h"
+
+#include <cstddef>
+#include <cstdint>
+#include <memory>
+#include <vector>
+
+struct KernelBuffers;
 
 namespace GNA
 {
+class DriverInterface;
+class HardwareCapabilities;
+class Layer;
+class Memory;
+class RequestConfiguration;
+struct LayerConfiguration;
+struct RequestProfiler;
 
 class CompiledModel
 {

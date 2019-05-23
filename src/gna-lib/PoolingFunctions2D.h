@@ -25,15 +25,20 @@
 
 #pragma once
 
+#include "Component.h"
+#include "Transform.h"
+#include "XnnKernel.h"
+
+#include "common.h"
+
 #include <memory>
 
-#include "Capabilities.h"
-#include "Tensor.h"
-#include "XnnKernel.h"
-#include "Transform.h"
+struct PoolingConfig2D;
 
 namespace GNA
 {
+class FullCapabilitiesMap;
+template<typename T> struct SetLimits;
 
 class PoolingFunction2D : public Transform<PoolingConfig2D, PoolingKernel2D>
 {

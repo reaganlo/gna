@@ -114,7 +114,8 @@ gna_request_cfg_id DeviceController::ConfigAdd(gna_model_id modelId)
     return configId;
 }
 
-void DeviceController::BufferAdd(gna_request_cfg_id configId, GnaComponentType type, uint32_t layerIndex, void * address)
+void DeviceController::BufferAdd(gna_request_cfg_id configId,
+    GnaComponentType type, uint32_t layerIndex, void * address)
 {
     intel_gna_status_t status = GnaRequestConfigBufferAdd(configId, type, layerIndex, address);
     if (GNA_SUCCESS != status)
@@ -141,9 +142,11 @@ void DeviceController::RequestSetConsistency(gna_request_cfg_id configId, Gna2De
     }
 }
 
-void DeviceController::ActiveListAdd(gna_request_cfg_id configId, uint32_t layerIndex, uint32_t indicesCount, uint32_t* indices)
+void DeviceController::ActiveListAdd(gna_request_cfg_id configId,
+    uint32_t layerIndex, uint32_t indicesCount, uint32_t* indices)
 {
-    intel_gna_status_t status = GnaRequestConfigActiveListAdd(configId, layerIndex, indicesCount, indices);
+    intel_gna_status_t status = GnaRequestConfigActiveListAdd(
+                                    configId, layerIndex, indicesCount, indices);
     if (GNA_SUCCESS != status)
     {
         throw std::runtime_error("ActiveList add failed");

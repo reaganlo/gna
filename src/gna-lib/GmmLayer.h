@@ -25,13 +25,21 @@
 
 #pragma once
 
-#include "ActiveList.h"
+#include "KernelArguments.h"
 #include "Layer.h"
-#include "XnnKernel.h"
 
+#include "common.h"
+#include "gmm.h"
+#include "gna-api-types-gmm.h"
+
+#include <cstdint>
+#include <map>
 
 namespace GNA
 {
+class BaseValidator;
+struct ActiveList;
+struct LayerConfiguration;
 
 // GMM Advanced parameters that are model configuration dependent
 struct GmmParams
@@ -48,7 +56,7 @@ struct GmmParams
 class GmmLayer : public Layer
 {
 public:
-    GmmLayer(const nn_layer& layer, const BaseValidator& validator);
+    GmmLayer(const nn_layer& layer, const BaseValidator& validatorIn);
     virtual ~GmmLayer() = default;
 
     // TODO:3: Low priority: refactor components to Tensors

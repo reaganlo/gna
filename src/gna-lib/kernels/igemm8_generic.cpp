@@ -23,9 +23,14 @@
  in any way.
 */
 
-#include "igemv.h"
 #include "igemv8.h"
 #include "igemv16.h"
+
+#include "KernelArguments.h"
+
+#include "common.h"
+
+#include <cstdint>
 
 void AffineKernelImpl1B(AffineConfig const * const config)
 {
@@ -78,11 +83,17 @@ void AffineKernelImpl1B1B(AffineConfig const * const config)
         for (j = 0; j < config->inputVectorCount; j++)
         {
             if (config->bytesPerBias == 1)
+            {
                 *output = *bias;
+            }
             else if (config->bytesPerBias == 2)
+            {
                 *output = *(int16_t*)bias;
+            }
             else if (config->bytesPerBias == 4)
+            {
                 *output = *(int32_t*)bias;
+            }
 
             for (k = 0; k < config->inputElementCount; k++)
             {
@@ -154,11 +165,17 @@ void AffineMultiBiasKernelImpl1B(AffineConfig const * const config)
             *output *= weightScaleFactors->multiplier;
 
             if (config->bytesPerBias == 1)
+            {
                 *output++ += (uint8_t)*multiBias;
+            }
             else if (config->bytesPerBias == 2)
+            {
                 *output++ += *(int16_t*)multiBias;
+            }
             else if (config->bytesPerBias == 4)
+            {
                 *output++ += *(int32_t*)multiBias;
+            }
         }
         weight += config->inputElementCount;
         multiBias += config->multiBiasVectorCount * config->bytesPerBias;
@@ -193,11 +210,17 @@ void AffineMultiBiasKernelImpl1B2B(AffineConfig const * const config)
             *output *= weightScaleFactors->multiplier;
 
             if (config->bytesPerBias == 1)
+            {
                 *output++ += *multiBias;
+            }
             else if (config->bytesPerBias == 2)
+            {
                 *output++ += *(int16_t*)multiBias;
+            }
             else if (config->bytesPerBias == 4)
+            {
                 *output++ += *(int32_t*)multiBias;
+            }
         }
         weight += config->inputElementCount;
         multiBias += config->multiBiasVectorCount * config->bytesPerBias;
@@ -224,11 +247,17 @@ void AffineMultiBiasKernelImpl1B1B(AffineConfig const * const config)
         for (j = 0; j < config->inputVectorCount; j++)
         {
             if (config->bytesPerBias == 1)
+            {
                 *output = *multiBias;
+            }
             else if (config->bytesPerBias == 2)
+            {
                 *output = *(int16_t*)multiBias;
+            }
             else if (config->bytesPerBias == 4)
+            {
                 *output = *(int32_t*)multiBias;
+            }
 
             for (k = 0; k < config->inputElementCount; k++)
             {

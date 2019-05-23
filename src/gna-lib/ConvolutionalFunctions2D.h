@@ -25,17 +25,23 @@
 
 #pragma once
 
-#include <memory>
-
 #include "Bias.h"
+#include "Component.h"
 #include "ConvolutionalFunctions.h"
-#include "XnnKernel.h"
 #include "Transform.h"
-#include "Weight.h"
-#include "Capabilities.h"
+
+#include "XnnKernel.h"
+
+#include "common.h"
+#include "gna-api-types-xnn.h"
+
+#include <memory>
 
 namespace GNA
 {
+class FullCapabilitiesMap;
+class LayerValidator;
+
 struct ConvolutionFunction2D : public Transform<ConvolutionConfig2D, ConvolutionKernel2D>
 {
     static std::unique_ptr<ConvolutionFunction2D> Create(const TransformFactoryConfig & config);

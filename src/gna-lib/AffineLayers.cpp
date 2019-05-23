@@ -25,11 +25,26 @@
 
 #include "AffineLayers.h"
 
-#include "common.h"
-#include "LayerConfiguration.h"
+#include "ActiveList.h"
+#include "Address.h"
+#include "Bias.h"
+#include "DataMode.h"
 #include "Expect.h"
+#include "KernelArguments.h"
+#include "LayerConfiguration.h"
+#include "LayerInput.h"
+#include "LayerOutput.h"
+#include "Tensor.h"
+#include "Weight.h"
 
-using std::make_unique;
+#include "gna2-common-api.h"
+
+#include "common.h"
+#include "gna-api-types-xnn.h"
+#include "gna-api.h"
+
+#include <algorithm>
+#include <map>
 
 using namespace GNA;
 
@@ -66,14 +81,14 @@ void AffineBaseLayer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration
     Layer::UpdateKernelConfigs(layerConfiguration);
 
     BaseAddress inputBuffer = Input;
-    if (layerConfiguration.Buffers.count(InputComponent))
+    if (layerConfiguration.Buffers.count(InputComponent) > 0)
     {
         inputBuffer = layerConfiguration.Buffers[InputComponent];
         Input.ValidateBuffer(inputBuffer);
     }
 
     BaseAddress outputBuffer = Output;
-    if (layerConfiguration.Buffers.count(OutputComponent))
+    if (layerConfiguration.Buffers.count(OutputComponent) > 0)
     {
         outputBuffer = layerConfiguration.Buffers[OutputComponent];
         Output.ValidateBuffer(layerConfiguration.Buffers[OutputComponent]);
@@ -85,8 +100,10 @@ void AffineBaseLayer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration
     {
         configs.Affine = Affine->GetRequestConfig(inputBuffer, Output.ScratchPad);
         if (outputBuffer)
+        {
             Activation->UpdateConfigBuffers(layerConfiguration.ConfigList,
                 {{OutputComponent, outputBuffer}});
+        }
     }
     else
     {
@@ -127,7 +144,7 @@ DataConfig AffineBaseLayer::GetDataMode() const
 
 AffineLayer::AffineLayer(const nn_layer& layer, const BaseValidator& validatorIn) :
     AffineBaseLayer(layer, validatorIn)
-{};
+{}
 
 void AffineLayer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const
 {

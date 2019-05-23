@@ -25,19 +25,20 @@
 
 #pragma once
 
-#include "gna2-model-impl.h"
-
-#include "gna-api.h"
-#include "gna2-common-impl.h"
-#include "gna2-model-api.h"
 #include "Layout.h"
 
+#include "gna2-model-impl.h"
+
+#include "gna-api-types-xnn.h"
+#include "gna-api.h"
+
+
+#include <cstdint>
 #include <map>
 #include <vector>
 
 namespace GNA
 {
-struct ComponentLimits;
 
 using ShapeMap = std::map<gna_tensor_dim, uint32_t>;
 
@@ -53,10 +54,10 @@ struct Shape : public ShapeMap
 
     template<typename ... T>
     Shape(gna_tensor_order order, T ... dimensions) :
-        Shape{ Create(std::vector<uint32_t>({ static_cast<uint32_t>(dimensions)... }), order), order }
+        Shape{ Create(std::vector<uint32_t>({ std::forward<T>(static_cast<uint32_t>(dimensions))... }), order), order }
     { }
 
-    Shape(gna_3d_dimensions shape);
+    explicit Shape(gna_3d_dimensions shape);
 
     Shape & operator=(const Shape & right);
 

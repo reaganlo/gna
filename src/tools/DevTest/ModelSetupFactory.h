@@ -25,8 +25,9 @@
 
 #pragma once
 
-#include "DeviceController.h"
 #include "IModelSetup.h"
+
+class DeviceController;
 
 class ModelSetupFactory
 {

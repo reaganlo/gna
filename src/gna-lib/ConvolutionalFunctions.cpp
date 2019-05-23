@@ -26,13 +26,19 @@
 #include "ConvolutionalFunctions.h"
 
 #include "AccelerationDetector.h"
-#include "HardwareCapabilities.h"
+#include "Capabilities.h"
 #include "Expect.h"
+#include "GnaException.h"
+#include "HardwareCapabilities.h"
 #include "HardwareLayer.h"
+#include "Tensor.h"
+#include "Validator.h"
 
-using std::make_unique;
-using std::unique_ptr;
-using std::move;
+#include "gna-api-types-xnn.h"
+#include "gna-api.h"
+
+#include <memory>
+#include <utility>
 
 using namespace GNA;
 
@@ -47,7 +53,7 @@ FiltersTensor::FiltersTensor(const Shape& dimensions, const DataMode & dataMode,
     {
         const auto kernelMemorySize = HardwareLayerCnn2D::GetKernelMemorySize(
             validator->HwCapabilities.GetDeviceVersion(), this);
-        auto caps = static_cast<const TensorLimits* const>(validator->Capabilities);
+        const auto caps = static_cast<const TensorLimits *>(validator->Capabilities);
         validator->ValidateBufferIfSet(Buffer, kernelMemorySize * Count, caps->Align);
     }
 }
@@ -61,13 +67,13 @@ const FullCapabilitiesMap ConvolutionFunction::strideLimits
     }},
 };
 
-unique_ptr<const ConvolutionFunction> ConvolutionFunction::Create(const Tensor* input, const Tensor* output,
+std::unique_ptr<const ConvolutionFunction> ConvolutionFunction::Create(const Tensor* input, const Tensor* output,
         void const * layerDetails, const LayerValidator& validatorIn)
 {
     Shape stride;
-    unique_ptr<const FiltersTensor> filters;
-    unique_ptr<const Component> strideComponent;
-    unique_ptr<const BiasTensor> biases;
+    std::unique_ptr<const FiltersTensor> filters;
+    std::unique_ptr<const Component> strideComponent;
+    std::unique_ptr<const BiasTensor> biases;
     uint32_t filterMode = 0;
     uint32_t biasMode = 0;
     void* filtersBuffer = nullptr;
@@ -89,10 +95,10 @@ unique_ptr<const ConvolutionFunction> ConvolutionFunction::Create(const Tensor* 
         Expect::True(featureCount >= CNN_N_FLT_COEFF_MIN, Gna2StatusXnnErrorLyrCfg);
         Expect::InRange(cnn->nFilterRows, ui32_1, CNN_N_FLT_COEFF_MAX, Gna2StatusXnnErrorLyrCfg);
 
-        filters = make_unique<const FiltersTensor>(Shape(GNA_TENSOR_NWH, cnn->nFilters, cnn->nFilterCoefficients, 0),
+        filters = std::make_unique<const FiltersTensor>(Shape(GNA_TENSOR_NWH, cnn->nFilters, cnn->nFilterCoefficients, 0u),
             filterMode, filtersBuffer, validatorIn);
-        strideComponent = make_unique<const Component>(stride, Validator{ validatorIn, strideLimits });
-        biases = make_unique<const BiasTensor>(Shape(GNA_TENSOR_N, cnn->nFilters),
+        strideComponent = std::make_unique<const Component>(Shape(stride), Validator{ validatorIn, strideLimits });
+        biases = std::make_unique<const BiasTensor>(Shape(GNA_TENSOR_N, cnn->nFilters),
             0, biasMode, biasesBuffer, validatorIn);
 
         break;
@@ -104,7 +110,7 @@ unique_ptr<const ConvolutionFunction> ConvolutionFunction::Create(const Tensor* 
     switch (validatorIn.Operation)
      {
      case INTEL_CONVOLUTIONAL:
-         return make_unique<const ConvolutionFunction>(
+         return std::make_unique<const ConvolutionFunction>(
              AccelerationDetector::GetKernelMap<ConvolutionKernel>(
                  static_cast<kernel_op>(validatorIn.Operation), KernelMode { input->Mode.Value }),
              input, output, move(filters), move(biases), move(strideComponent));
@@ -114,8 +120,8 @@ unique_ptr<const ConvolutionFunction> ConvolutionFunction::Create(const Tensor* 
 }
 
 ConvolutionFunction::ConvolutionFunction(const KernelMap<ConvolutionKernel>& kernelsIn,
-    const Tensor* input, const Tensor* output, unique_ptr<const FiltersTensor> filters,
-    unique_ptr<const BiasTensor> biases, std::unique_ptr<const Component> stride) :
+    const Tensor* input, const Tensor* output, std::unique_ptr<const FiltersTensor> filters,
+    std::unique_ptr<const BiasTensor> biases, std::unique_ptr<const Component> stride) :
     Biases{ move(biases) },
     Filters{ move(filters) },
     Stride{ move(stride) },
@@ -141,14 +147,14 @@ ConvolutionFunction::ConvolutionFunction(const KernelMap<ConvolutionKernel>& ker
         }
     }
 
-    hiddenConfig = make_unique<ConvolutionConfig>(Stride->at(GNA_DIM_W), OutputsPerFilterCount,
+    hiddenConfig = std::make_unique<ConvolutionConfig>(Stride->at(GNA_DIM_W), OutputsPerFilterCount,
         Filters->at(GNA_DIM_N), Filters->at(GNA_DIM_W),
         input->Buffer, Filters->Buffer, Biases->Buffer, output->Buffer, Biases->Mode, Filters->Mode);
 }
 
-unique_ptr<const ConvolutionConfig> ConvolutionFunction::GetRequestConfig(const BaseAddress& inputs, const BaseAddress& outputs) const
+std::unique_ptr<const ConvolutionConfig> ConvolutionFunction::GetRequestConfig(const BaseAddress& inputs, const BaseAddress& outputs) const
 {
-    return make_unique<const ConvolutionConfig>(hiddenConfig.get(), inputs, outputs);
+    return std::make_unique<const ConvolutionConfig>(hiddenConfig.get(), inputs, outputs);
 }
 
 void ConvolutionFunction::ComputeHidden(AccelerationMode accel, ExecutionConfig const & execution) const

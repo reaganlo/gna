@@ -23,10 +23,15 @@
  in any way.
 */
 
-#include <string.h>
-
-#include "igemv.h"
 #include "igemv16.h"
+
+#include "KernelArguments.h"
+#include "KernelMacros.h"
+
+#include "common.h"
+
+#include <cstdint>
+#include <immintrin.h>
 
 void AffineActiveListKernelImpl2B(AffineConfig const * const config, AffineConfigAl const * const al)
 {
@@ -40,7 +45,7 @@ void AffineActiveListKernelImpl2B(AffineConfig const * const config, AffineConfi
     uint32_t l;
 
     int32_t * output = config->output;
-    int16_t const * weight = config->weights2B;
+    int16_t const * weight;
     int16_t const *input_0;
     int16_t const *input_1;
     int16_t const *input_2;
@@ -143,10 +148,25 @@ void AffineActiveListKernelImpl2B(AffineConfig const * const config, AffineConfi
 
     switch (config->inputVectorCount)
     {
-    case 4: for (i = 0; i < config->inputElementCount; i++) config->execution->Intermediate->d3[i] = config->input[i*config->inputVectorCount + 3];
-    case 3: for (i = 0; i < config->inputElementCount; i++) config->execution->Intermediate->d2[i] = config->input[i*config->inputVectorCount + 2];
-    case 2: for (i = 0; i < config->inputElementCount; i++) config->execution->Intermediate->d1[i] = config->input[i*config->inputVectorCount + 1];
-        for (i = 0; i < config->inputElementCount; i++) config->execution->Intermediate->d0[i] = config->input[i*config->inputVectorCount];
+    case 4:
+        for (i = 0; i < config->inputElementCount; i++)
+        {
+            config->execution->Intermediate->d3[i] = config->input[i*config->inputVectorCount + 3];
+        }
+    case 3:
+        for (i = 0; i < config->inputElementCount; i++)
+        {
+            config->execution->Intermediate->d2[i] = config->input[i*config->inputVectorCount + 2];
+        }
+    case 2:
+        for (i = 0; i < config->inputElementCount; i++)
+        {
+            config->execution->Intermediate->d1[i] = config->input[i*config->inputVectorCount + 1];
+        }
+        for (i = 0; i < config->inputElementCount; i++)
+        {
+            config->execution->Intermediate->d0[i] = config->input[i*config->inputVectorCount];
+        }
     }
 
     if (2 == config->inputVectorCount)
@@ -369,7 +389,10 @@ void AffineActiveListKernelImpl2B(AffineConfig const * const config, AffineConfi
                 config->execution->Intermediate->d2[j] = config->input[k*config->inputVectorCount + 3];
             }
         }
-        for (i = 0; i < config->inputElementCount; i++) config->execution->Intermediate->d4[i] = config->input[i*config->inputVectorCount + 4];
+        for (i = 0; i < config->inputElementCount; i++)
+        {
+            config->execution->Intermediate->d4[i] = config->input[i*config->inputVectorCount + 4];
+        }
 
         for (l = 0; l < al->count; l++)
         {
@@ -537,7 +560,10 @@ void AffineActiveListKernelImpl2B(AffineConfig const * const config, AffineConfi
             }
         }
 
-        for (i = 0; i < config->inputElementCount; i++) config->execution->Intermediate->d6[i] = config->input[i*config->inputVectorCount + 6];
+        for (i = 0; i < config->inputElementCount; i++)
+        {
+            config->execution->Intermediate->d6[i] = config->input[i*config->inputVectorCount + 6];
+        }
 
         for (l = 0; l < al->count; l++)
         {

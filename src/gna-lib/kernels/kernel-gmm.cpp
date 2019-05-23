@@ -25,6 +25,10 @@
 
 #include "kernel-gmm.h"
 
+#include "KernelMacros.h"
+
+#include <cstdint>
+
 #if defined(_WIN32)
 #pragma warning (disable: 592)
 #endif
@@ -42,25 +46,25 @@
 
 #if OPT_LEVEL == 0 || OPT_LEVEL == 1 // NONE
 
-void gmm_maxmix_8u8u_32u(GmmMaxMixConfig const * const gmm)
+void gmm_maxmix_8u8u_32u(GmmMaxMixConfig const * const config)
 {
-    const uint8_t *mean = gmm->Means;
-    const uint8_t *var = gmm->Vars;
-    const uint32_t *consts = gmm->Gconst;
-    uint32_t minScore = gmm->MinScore;
+    const uint8_t *mean = config->Means;
+    const uint8_t *var = config->Vars;
+    const uint32_t *consts = config->Gconst;
+    uint32_t minScore = config->MinScore;
     uint64_t sum64;
     uint32_t i, j;
 
-    for (i = 0; i < gmm->MixtureCount; i++)
+    for (i = 0; i < config->MixtureCount; i++)
     {
         uint32_t Score32u = 0;
 
-        for (j = 0; j < gmm->InputElementCount; j++)
+        for (j = 0; j < config->InputElementCount; j++)
         {
-            int16_t Diff16s = (int16_t)gmm->Input[j] - (int16_t)mean[j];
-            uint16_t SqrDiff16s = (uint16_t)(Diff16s * Diff16s);
+            int16_t Diff16s = static_cast<int16_t>(config->Input[j] - mean[j]);
+            uint16_t SqrDiff16s = static_cast<uint16_t>(Diff16s * Diff16s);
 
-            Score32u += (uint32_t)SqrDiff16s * (uint32_t)var[j];
+            Score32u += static_cast<uint32_t>(SqrDiff16s * var[j]);
         }
 
         // sum may saturate depending on value of const
@@ -69,34 +73,34 @@ void gmm_maxmix_8u8u_32u(GmmMaxMixConfig const * const gmm)
 
         minScore = (Score32u < minScore) ? Score32u : minScore;
 
-        mean += gmm->InputElementCount;
-        var += gmm->InputElementCount;
+        mean += config->InputElementCount;
+        var += config->InputElementCount;
         consts++;
     }
 
-    (*(gmm->Output)) = minScore;
+    (*(config->Output)) = minScore;
 }
 
-void gmm_maxmix_8u16u_32u(GmmMaxMixConfig const * const gmm)
+void gmm_maxmix_8u16u_32u(GmmMaxMixConfig const * const config)
 {
-    const uint8_t *mean = gmm->Means;
-    const uint16_t *var = gmm->Vars16;
-    const uint32_t *consts = gmm->Gconst;
-    uint32_t minScore = gmm->MinScore;
+    const uint8_t *mean = config->Means;
+    const uint16_t *var = config->Vars16;
+    const uint32_t *consts = config->Gconst;
+    uint32_t minScore = config->MinScore;
     uint64_t sum64;
     uint32_t i, j;
 
-    for (i = 0; i < gmm->MixtureCount; i++)
+    for (i = 0; i < config->MixtureCount; i++)
     {
         uint64_t Score64u = 0;
         uint32_t Score32u;
 
-        for (j = 0; j < gmm->InputElementCount; j++)
+        for (j = 0; j < config->InputElementCount; j++)
         {
-            int16_t Diff16s = (int16_t)gmm->Input[j] - (int16_t)mean[j];
-            uint16_t SqrDiff16s = (uint16_t)(Diff16s * Diff16s);
+            int16_t Diff16s = static_cast<int16_t>(config->Input[j] - mean[j]);
+            uint16_t SqrDiff16s = static_cast<uint16_t>(Diff16s * Diff16s);
 
-            Score64u += (uint64_t)SqrDiff16s * (uint64_t)var[j];
+            Score64u += static_cast<uint64_t>(SqrDiff16s * var[j]);
         }
 
         // sum may saturate depending on value of const
@@ -105,12 +109,12 @@ void gmm_maxmix_8u16u_32u(GmmMaxMixConfig const * const gmm)
 
         minScore = (Score32u < minScore) ? Score32u : minScore;
 
-        mean += gmm->InputElementCount;
-        var += gmm->InputElementCount;
+        mean += config->InputElementCount;
+        var += config->InputElementCount;
         consts++;
     }
 
-    (*(gmm->Output)) = minScore;
+    (*(config->Output)) = minScore;
 }
 
 #endif //#if OPT_LEVEL == 0 || OPT_LEVEL == 1 // NONE
@@ -120,30 +124,31 @@ void gmm_maxmix_8u16u_32u(GmmMaxMixConfig const * const gmm)
 #if defined(_WIN32)
 #pragma warning( disable : 700 )
 #endif
-void gmm_maxmix_8u8u_32u(GmmMaxMixConfig const * const gmm)
+void gmm_maxmix_8u8u_32u(GmmMaxMixConfig const * const config)
 {
-    const uint8_t *mean = gmm->Means;
-    const uint8_t *var = gmm->Vars;
-    const uint32_t *consts = gmm->Gconst;
-    uint64_t minScore = gmm->MinScore;
+    const uint8_t *mean = config->Means;
+    const uint8_t *var = config->Vars;
+    const uint32_t *consts = config->Gconst;
+    uint64_t minScore = config->MinScore;
     uint64_t sum64;
     uint32_t i, j;
 
-    for (i = 0; i < gmm->MixtureCount; i++)
+    for (i = 0; i < config->MixtureCount; i++)
     {
         __m128i sum;
 
-#if defined(__GNUC__)
+#if defined(__INTEL_COMPILER)
+#pragma warning disable 592
+#elif defined(__GNUC__)
 #pragma GCC diagnostic ignored "-Wuninitialized"
-#else
 #endif
         __m128i sum_1 = _mm_xor_si128(sum_1, sum_1);
 
         __m128i sum_2 = sum_1;
 
-        for (j = 0; j < gmm->InputElementCount; j += 8)
+        for (j = 0; j < config->InputElementCount; j += 8)
         {
-            __m128i load1 = CVT64_128(&gmm->Input[j]); // vector load 8x8-bit
+            __m128i load1 = CVT64_128(&config->Input[j]); // vector load 8x8-bit
             __m128i load2 = CVT64_128(&mean[j]); // vector load 8x8-bit
             __m128i load3 = CVT64_128(&var[j]); // vector load 8x8-bit
             __m128i zext1 = _mm_cvtepu8_epi16(load1); // convert to 8x16-bit
@@ -166,26 +171,26 @@ void gmm_maxmix_8u8u_32u(GmmMaxMixConfig const * const gmm)
         sum64 = (uint64_t)_mm_cvtsi128_si32(sum) + (uint64_t)*consts;
         minScore = (sum64 < minScore) ? sum64 : minScore;
 
-        mean += gmm->InputElementCount;
-        var += gmm->InputElementCount;
+        mean += config->InputElementCount;
+        var += config->InputElementCount;
         consts++;
     }
 
-    *gmm->Output = (uint32_t) minScore;
+    *config->Output = (uint32_t) minScore;
 }
 
 //gmm_maxmix_8u8u_32u_grouped_opt_f8_g1_sse4
-void gmm_maxmix_8u8u_32u_g1(GmmMaxMixConfig const * const gmm)
+void gmm_maxmix_8u8u_32u_g1(GmmMaxMixConfig const * const config)
 {
-    const uint8_t *mean = gmm->Means;
-    const uint8_t *var = gmm->Vars;
-    const uint8_t *input = gmm->Input;
-    const uint32_t *consts = gmm->Gconst;
-    uint32_t mixtureCount = gmm->MixtureCount;
+    const uint8_t *mean = config->Means;
+    const uint8_t *var = config->Vars;
+    const uint8_t *input = config->Input;
+    const uint32_t *consts = config->Gconst;
+    uint32_t mixtureCount = config->MixtureCount;
     uint32_t i, j, k;
     uint64_t minScore;
     uint64_t sum64, sum64b;
-    minScore = gmm->MinScore;
+    minScore = config->MinScore;
 
     if ((mixtureCount & 1) == 1)
     {
@@ -195,7 +200,7 @@ void gmm_maxmix_8u8u_32u_g1(GmmMaxMixConfig const * const gmm)
         __m128i load2 = CVT64_128((__m128i*)mean); // vector load 8x8-bit
         __m128i load3 = CVT64_128((__m128i*)var); // vector load 8x8-bit
 
-        for (j = 8; j <= gmm->InputElementCount; j += 8)
+        for (j = 8; j <= config->InputElementCount; j += 8)
         {
             __m128i load1_1 = _mm_cvtepu8_epi16(load1);
             __m128i load2_1 = _mm_cvtepu8_epi16(load2);
@@ -220,8 +225,8 @@ void gmm_maxmix_8u8u_32u_g1(GmmMaxMixConfig const * const gmm)
         sum64 = (uint64_t)_mm_cvtsi128_si32(sum_1) + (uint64_t)*consts;
         minScore = sum64 < minScore ? sum64 : minScore;
 
-        mean += gmm->InputElementCount;
-        var += gmm->InputElementCount;
+        mean += config->InputElementCount;
+        var += config->InputElementCount;
         consts++;
         mixtureCount--;
     }
@@ -234,10 +239,10 @@ void gmm_maxmix_8u8u_32u_g1(GmmMaxMixConfig const * const gmm)
         __m128i load1 = CVT64_128((__m128i*)input);
         __m128i load2 = CVT64_128((__m128i*)mean); // vector load 8x8-bit
         __m128i load3 = CVT64_128((__m128i*)var); // vector load 8x8-bit
-        __m128i load22 = CVT64_128((__m128i*)(mean + gmm->InputElementCount)); // vector load 8x8-bit
-        __m128i load33 = CVT64_128((__m128i*)(var + gmm->InputElementCount)); // vector load 8x8-bit
+        __m128i load22 = CVT64_128((__m128i*)(mean + config->InputElementCount)); // vector load 8x8-bit
+        __m128i load33 = CVT64_128((__m128i*)(var + config->InputElementCount)); // vector load 8x8-bit
 
-        for (j = 8, k = 8 + gmm->InputElementCount; j <= gmm->InputElementCount; j += 8, k += 8)
+        for (j = 8, k = 8 + config->InputElementCount; j <= config->InputElementCount; j += 8, k += 8)
         {
             __m128i load1_1 = _mm_cvtepu8_epi16(load1);
             __m128i load2_1 = _mm_cvtepu8_epi16(load2);
@@ -283,38 +288,38 @@ void gmm_maxmix_8u8u_32u_g1(GmmMaxMixConfig const * const gmm)
         sum64b = (uint64_t)_mm_extract_epi32(horiz1, 1) + (uint64_t)*(consts + 1);
         minScore = sum64b < minScore ? sum64b : minScore;
 
-        mean += (gmm->InputElementCount << 1);
-        var += (gmm->InputElementCount << 1);
+        mean += (config->InputElementCount << 1);
+        var += (config->InputElementCount << 1);
         consts += 2;
     }
 
-    *gmm->Output = (uint32_t) minScore;
+    *config->Output = (uint32_t) minScore;
 }
 
 #endif //#if OPT_LEVEL > 1 // SSE4+
 
 #if (OPT_LEVEL > 1) && (OPT_LEVEL < 6) // SSE4/AVX1 only (same code, different compile options)
 
-void gmm_maxmix_8u16u_32u(GmmMaxMixConfig const * const gmm)
+void gmm_maxmix_8u16u_32u(GmmMaxMixConfig const * const config)
 {
-    const uint8_t  *mean = gmm->Means;
-    const uint16_t *var = gmm->Vars16;
-    const uint32_t *consts = gmm->Gconst;
-    uint64_t minScore = gmm->MinScore;
+    const uint8_t  *mean = config->Means;
+    const uint16_t *var = config->Vars16;
+    const uint32_t *consts = config->Gconst;
+    uint64_t minScore = config->MinScore;
     uint32_t i, j;
 
     __m128i zero = _mm_setzero_si128();
 
-    for (i = 0; i < gmm->MixtureCount; i++)
+    for (i = 0; i < config->MixtureCount; i++)
     {
         uint64_t Score64u;
 
         __m128i sum_lo = zero;
         __m128i sum_hi = zero;
-        __m128i load1 = CVT64_128(gmm->Input); // vector load 8x8-bit
+        __m128i load1 = CVT64_128(config->Input); // vector load 8x8-bit
         __m128i load2 = CVT64_128(mean); // vector load 8x8-bit
 
-        for (j = 8; j <= gmm->InputElementCount; j += 8)
+        for (j = 8; j <= config->InputElementCount; j += 8)
         {
             __m128i zext1 = _mm_cvtepu8_epi16(load1); // convert to 8x16-bit
             __m128i zext2 = _mm_cvtepu8_epi16(load2); // convert to 8x16-bit
@@ -330,7 +335,7 @@ void gmm_maxmix_8u16u_32u(GmmMaxMixConfig const * const gmm)
             __m128i prod_low = _mm_mullo_epi16(sqrdiff16s, load3); // 8x16-bit mult (lo part)
             __m128i prod_high = _mm_mulhi_epu16(sqrdiff16s, load3); // 8x16-bit mul (hi part)
 
-            load1 = CVT64_128(&gmm->Input[j]); // vector load 8x8-bit
+            load1 = CVT64_128(&config->Input[j]); // vector load 8x8-bit
             load2 = CVT64_128(mean); // vector load 8x8-bit
 
             __m128i lower_prods = _mm_unpacklo_epi16(prod_low, zero); // lo 4x32-bit prd
@@ -351,8 +356,8 @@ void gmm_maxmix_8u16u_32u(GmmMaxMixConfig const * const gmm)
         sum_lo = _mm_add_epi32(sum_lo, _mm_shuffle_epi32(sum_lo, 0x55)); // horizontal 32-bit add
         sum_hi = _mm_add_epi32(sum_hi, _mm_shuffle_epi32(sum_hi, 0x55)); // horizontal 32-bit add
 
-        Score64u = _mm_cvtsi128_si32(sum_hi); // convert sum to 1x32-bit
-        Score64u = (Score64u << 16) + _mm_cvtsi128_si32(sum_lo) + *consts; // convert sum to 1x32-bit
+        Score64u = static_cast<uint64_t>(_mm_cvtsi128_si32(sum_hi)); // convert sum to 1x32-bit
+        Score64u = (Score64u << 16) + static_cast<uint64_t>(_mm_cvtsi128_si32(sum_lo)) + *consts; // convert sum to 1x32-bit
 
         // sum may saturate depending on value of const
 
@@ -361,27 +366,27 @@ void gmm_maxmix_8u16u_32u(GmmMaxMixConfig const * const gmm)
         consts++;
     }
 
-    (*(gmm->Output)) = (uint32_t) minScore;
+    (*(config->Output)) = (uint32_t) minScore;
 }
 
 //gmm_maxmix_8u8u_32u_grouped_opt_f8_g2_sse4
-void gmm_maxmix_8u8u_32u_g2(GmmMaxMixConfig const * const gmm)
+void gmm_maxmix_8u8u_32u_g2(GmmMaxMixConfig const * const config)
 {
-    const uint8_t *mean = gmm->Means;
-    const uint8_t *var = gmm->Vars;
-    const uint8_t *input = gmm->Input;
-    const uint32_t *consts = gmm->Gconst;
+    const uint8_t *mean = config->Means;
+    const uint8_t *var = config->Vars;
+    const uint8_t *input;
+    const uint32_t *consts = config->Gconst;
     uint32_t i, j;
     uint64_t  gconst64;
     uint64_t  score[2];
     // init min scores
-    uint64_t  minScore = gmm->MinScore;
+    uint64_t  minScore = config->MinScore;
     __m128i minScores = CVT64_128((__m128i*) &minScore);
     minScores = _mm_shuffle_epi32(minScores, _MM_SHUFFLE(1, 0, 1, 0));
 
-    for (i = 0; i < gmm->MixtureCount; i++)
+    for (i = 0; i < config->MixtureCount; i++)
     {
-        input = gmm->Input;
+        input = config->Input;
 
         __m128i sum_1 = _mm_setzero_si128();
         __m128i sum_2 = _mm_setzero_si128();
@@ -389,7 +394,7 @@ void gmm_maxmix_8u8u_32u_g2(GmmMaxMixConfig const * const gmm)
         __m128i load2 = CVT64_128((__m128i*)mean); // vector load 8x8-bit
         __m128i load3 = CVT64_128((__m128i*)var); // vector load 8x8-bit
 
-        for (j = 8; j <= gmm->InputElementCount; j += 8)
+        for (j = 8; j <= config->InputElementCount; j += 8)
         {
             input += 16;
             __m128i load2_1 = _mm_cvtepu8_epi16(load2);
@@ -433,35 +438,35 @@ void gmm_maxmix_8u8u_32u_g2(GmmMaxMixConfig const * const gmm)
         __m128i res_sum = _mm_and_si128(cmpres, sum_64);
         minScores = _mm_or_si128(res_min, res_sum);
 
-        mean += gmm->InputElementCount;
-        var += gmm->InputElementCount;
+        mean += config->InputElementCount;
+        var += config->InputElementCount;
         consts++;
     }
 
     _mm_storeu_si128((__m128i*)score, minScores);
-    gmm->Output[0] = (uint32_t) score[0];
-    gmm->Output[1] = (uint32_t) score[1];
+    config->Output[0] = (uint32_t) score[0];
+    config->Output[1] = (uint32_t) score[1];
 }
 
 //gmm_maxmix_8u8u_32u_grouped_opt_f8_g3_sse4
-void gmm_maxmix_8u8u_32u_g3(GmmMaxMixConfig const * const gmm)
+void gmm_maxmix_8u8u_32u_g3(GmmMaxMixConfig const * const config)
 {
-    const uint8_t *mean = gmm->Means;
-    const uint8_t *var = gmm->Vars;
-    const uint8_t *input = gmm->Input;
-    const uint32_t *consts = gmm->Gconst;
+    const uint8_t *mean = config->Means;
+    const uint8_t *var = config->Vars;
+    const uint8_t *input;
+    const uint32_t *consts = config->Gconst;
     uint32_t i, j;
     uint64_t sum64;
 
     uint64_t gconst64;
     uint64_t score[2];
-    uint64_t minScore2 = gmm->MinScore;
+    uint64_t minScore2 = config->MinScore;
     __m128i minScores = CVT64_128((__m128i*) &minScore2);
     minScores = _mm_shuffle_epi32(minScores, _MM_SHUFFLE(1, 0, 1, 0));
 
-    for (i = 0; i < gmm->MixtureCount; i++)
+    for (i = 0; i < config->MixtureCount; i++)
     {
-        input = gmm->Input;
+        input = config->Input;
         __m128i sum_1 = _mm_setzero_si128();
         __m128i sum_2 = _mm_setzero_si128();
         __m128i sum_3 = _mm_setzero_si128();
@@ -470,7 +475,7 @@ void gmm_maxmix_8u8u_32u_g3(GmmMaxMixConfig const * const gmm)
         __m128i load2 = CVT64_128((__m128i*)mean); // vector load 8x8-bit
         __m128i load3 = CVT64_128((__m128i*)var); // vector load 8x8-bit
 
-        for (j = 8; j <= gmm->InputElementCount; j += 8)
+        for (j = 8; j <= config->InputElementCount; j += 8)
         {
             input += 24;
             __m128i load2_1 = _mm_cvtepu8_epi16(load2);
@@ -530,35 +535,35 @@ void gmm_maxmix_8u8u_32u_g3(GmmMaxMixConfig const * const gmm)
         sum64 = (uint64_t)_mm_cvtsi128_si32(sum_3) + (uint64_t)*consts;
         minScore2 = sum64 < minScore2 ? sum64 : minScore2;
 
-        mean += gmm->InputElementCount;
-        var += gmm->InputElementCount;
+        mean += config->InputElementCount;
+        var += config->InputElementCount;
         consts++;
     }
     // store results
     _mm_storeu_si128((__m128i*)score, minScores);
-    gmm->Output[0] = (uint32_t) score[0];
-    gmm->Output[1] = (uint32_t) score[1];
-    gmm->Output[2] = (uint32_t) minScore2;
+    config->Output[0] = (uint32_t) score[0];
+    config->Output[1] = (uint32_t) score[1];
+    config->Output[2] = (uint32_t) minScore2;
 }
 
 //gmm_maxmix_8u8u_32u_grouped_opt_f8_g4_sse4
-void gmm_maxmix_8u8u_32u_g4(GmmMaxMixConfig const * const gmm)
+void gmm_maxmix_8u8u_32u_g4(GmmMaxMixConfig const * const config)
 {
-    const uint8_t *mean = gmm->Means;
-    const uint8_t *var = gmm->Vars;
-    const uint8_t *input = gmm->Input;
-    const uint32_t *consts = gmm->Gconst;
+    const uint8_t *mean = config->Means;
+    const uint8_t *var = config->Vars;
+    const uint8_t *input;
+    const uint32_t *consts = config->Gconst;
     uint32_t i, j;
     uint64_t  gconst64;
     uint64_t  score[2];
-    uint64_t  minScore = gmm->MinScore;
+    uint64_t  minScore = config->MinScore;
     __m128i minScores = CVT64_128((__m128i*) &minScore);
     minScores = _mm_shuffle_epi32(minScores, _MM_SHUFFLE(1, 0, 1, 0));
     __m128i minScore2 = minScores;
 
-    for (i = 0; i < gmm->MixtureCount; i++)
+    for (i = 0; i < config->MixtureCount; i++)
     {
-        input = gmm->Input;
+        input = config->Input;
 
         __m128i sum_1 = _mm_setzero_si128();
         __m128i sum_2 = _mm_setzero_si128();
@@ -574,7 +579,7 @@ void gmm_maxmix_8u8u_32u_g4(GmmMaxMixConfig const * const gmm)
         __m128i load2 = CVT64_128((__m128i*)mean); // vector load 8x8-bit
         __m128i load3 = CVT64_128((__m128i*)var); // vector load 8x8-bit
 
-        for (j = 8; j <= gmm->InputElementCount; j += 8)
+        for (j = 8; j <= config->InputElementCount; j += 8)
         {
             __m128i load2_1 = _mm_cvtepu8_epi16(load2);
             __m128i load3_1 = _mm_cvtepu8_epi16(load3);
@@ -652,39 +657,39 @@ void gmm_maxmix_8u8u_32u_g4(GmmMaxMixConfig const * const gmm)
         minScores = _mm_or_si128(res_min_1, res_sum_1);
         minScore2 = _mm_or_si128(res_min_2, res_sum_2);
 
-        mean += gmm->InputElementCount;
-        var += gmm->InputElementCount;
+        mean += config->InputElementCount;
+        var += config->InputElementCount;
         consts++;
     }
     // store results
     _mm_storeu_si128((__m128i*)score, minScores);
-    gmm->Output[0] = (uint32_t) score[0];
-    gmm->Output[1] = (uint32_t) score[1];
+    config->Output[0] = (uint32_t) score[0];
+    config->Output[1] = (uint32_t) score[1];
     _mm_storeu_si128((__m128i*)score, minScore2);
-    gmm->Output[2] = (uint32_t) score[0];
-    gmm->Output[3] = (uint32_t) score[1];
+    config->Output[2] = (uint32_t) score[0];
+    config->Output[3] = (uint32_t) score[1];
 }
 
 //gmm_maxmix_8u8u_32u_grouped_opt_f8_g5_sse4
-void gmm_maxmix_8u8u_32u_g5(GmmMaxMixConfig const * const gmm)
+void gmm_maxmix_8u8u_32u_g5(GmmMaxMixConfig const * const config)
 {
-    const uint8_t *mean = gmm->Means;
-    const uint8_t *var = gmm->Vars;
-    const uint8_t *input = gmm->Input;
-    const uint32_t *consts = gmm->Gconst;
+    const uint8_t *mean = config->Means;
+    const uint8_t *var = config->Vars;
+    const uint8_t *input;
+    const uint32_t *consts = config->Gconst;
     uint32_t i, j;
     uint64_t sum64;
     uint64_t  gconst64;
     uint64_t  score[2];
-    uint64_t  minScores3 = gmm->MinScore;
+    uint64_t  minScores3 = config->MinScore;
     __m128i minScores = CVT64_128((__m128i*) &minScores3);
     minScores = _mm_shuffle_epi32(minScores, _MM_SHUFFLE(1, 0, 1, 0));
     __m128i minScore2 = minScores;
 
 
-    for (i = 0; i < gmm->MixtureCount; i++)
+    for (i = 0; i < config->MixtureCount; i++)
     {
-        input = gmm->Input;
+        input = config->Input;
 
         __m128i sum_1 = _mm_setzero_si128();
         __m128i sum_2 = _mm_setzero_si128();
@@ -695,7 +700,7 @@ void gmm_maxmix_8u8u_32u_g5(GmmMaxMixConfig const * const gmm)
         __m128i load2 = CVT64_128((__m128i*)mean); // vector load 8x8-bit
         __m128i load3 = CVT64_128((__m128i*)var); // vector load 8x8-bit
         __m128i load1_3;
-        for (j = 8; j <= gmm->InputElementCount; j += 8)
+        for (j = 8; j <= config->InputElementCount; j += 8)
         {
             input += 16;
             __m128i load2_1 = _mm_cvtepu8_epi16(load2);
@@ -787,40 +792,40 @@ void gmm_maxmix_8u8u_32u_g5(GmmMaxMixConfig const * const gmm)
         sum64 = (uint64_t)_mm_cvtsi128_si32(sum_5) + (uint64_t)*consts;
         minScores3 = sum64 < minScores3 ? sum64 : minScores3;
 
-        mean += gmm->InputElementCount;
-        var += gmm->InputElementCount;
+        mean += config->InputElementCount;
+        var += config->InputElementCount;
         consts++;
     }
     _mm_storeu_si128((__m128i*)score, minScores);
-    gmm->Output[0] = (uint32_t) score[0];
-    gmm->Output[1] = (uint32_t) score[1];
+    config->Output[0] = (uint32_t) score[0];
+    config->Output[1] = (uint32_t) score[1];
     _mm_storeu_si128((__m128i*)score, minScore2);
-    gmm->Output[2] = (uint32_t) score[0];
-    gmm->Output[3] = (uint32_t) score[1];
-    gmm->Output[4] = (uint32_t) minScores3;
+    config->Output[2] = (uint32_t) score[0];
+    config->Output[3] = (uint32_t) score[1];
+    config->Output[4] = (uint32_t) minScores3;
 }
 
 //gmm_maxmix_8u8u_32u_grouped_opt_f8_g6_sse4
-void gmm_maxmix_8u8u_32u_g6(GmmMaxMixConfig const * const gmm)
+void gmm_maxmix_8u8u_32u_g6(GmmMaxMixConfig const * const config)
 {
-    const uint8_t *mean = gmm->Means;
-    const uint8_t *var = gmm->Vars;
-    const uint8_t *input = gmm->Input;
-    const uint32_t *consts = gmm->Gconst;
+    const uint8_t *mean = config->Means;
+    const uint8_t *var = config->Vars;
+    const uint8_t *input;
+    const uint32_t *consts = config->Gconst;
     uint32_t i, j;
     uint64_t sum64;
     uint64_t minScores[6];
 
-    minScores[0] = gmm->MinScore;
-    minScores[1] = gmm->MinScore;
-    minScores[2] = gmm->MinScore;
-    minScores[3] = gmm->MinScore;
-    minScores[4] = gmm->MinScore;
-    minScores[5] = gmm->MinScore;
+    minScores[0] = config->MinScore;
+    minScores[1] = config->MinScore;
+    minScores[2] = config->MinScore;
+    minScores[3] = config->MinScore;
+    minScores[4] = config->MinScore;
+    minScores[5] = config->MinScore;
 
-    for (i = 0; i < gmm->MixtureCount; i++)
+    for (i = 0; i < config->MixtureCount; i++)
     {
-        input = gmm->Input;
+        input = config->Input;
 
         __m128i sum_1 = _mm_setzero_si128();
         __m128i sum_2 = _mm_setzero_si128();
@@ -835,7 +840,7 @@ void gmm_maxmix_8u8u_32u_g6(GmmMaxMixConfig const * const gmm)
         __m128i load2 = CVT64_128((__m128i*)mean); // vector load 8x8-bit
         __m128i load3 = CVT64_128((__m128i*)var); // vector load 8x8-bit
 
-        for (j = 8; j <= gmm->InputElementCount; j += 8)
+        for (j = 8; j <= config->InputElementCount; j += 8)
         {
             input += 16;
             __m128i load2_1 = _mm_cvtepu8_epi16(load2);
@@ -941,40 +946,40 @@ void gmm_maxmix_8u8u_32u_g6(GmmMaxMixConfig const * const gmm)
         sum64 = (uint64_t)_mm_cvtsi128_si32(sum_6) + (uint64_t)*consts;
         minScores[5] = sum64 < minScores[5] ? sum64 : minScores[5];
 
-        mean += gmm->InputElementCount;
-        var += gmm->InputElementCount;
+        mean += config->InputElementCount;
+        var += config->InputElementCount;
         consts++;
     }
-    gmm->Output[0] = (uint32_t) minScores[0];
-    gmm->Output[1] = (uint32_t) minScores[1];
-    gmm->Output[2] = (uint32_t) minScores[2];
-    gmm->Output[3] = (uint32_t) minScores[3];
-    gmm->Output[4] = (uint32_t) minScores[4];
-    gmm->Output[5] = (uint32_t) minScores[5];
+    config->Output[0] = (uint32_t) minScores[0];
+    config->Output[1] = (uint32_t) minScores[1];
+    config->Output[2] = (uint32_t) minScores[2];
+    config->Output[3] = (uint32_t) minScores[3];
+    config->Output[4] = (uint32_t) minScores[4];
+    config->Output[5] = (uint32_t) minScores[5];
 }
 
 //gmm_maxmix_8u8u_32u_grouped_opt_f8_g7_sse4
-void gmm_maxmix_8u8u_32u_g7(GmmMaxMixConfig const * const gmm)
+void gmm_maxmix_8u8u_32u_g7(GmmMaxMixConfig const * const config)
 {
-    const uint8_t *mean = gmm->Means;
-    const uint8_t *var = gmm->Vars;
-    const uint8_t *input = gmm->Input;
-    const uint32_t *consts = gmm->Gconst;
+    const uint8_t *mean = config->Means;
+    const uint8_t *var = config->Vars;
+    const uint8_t *input;
+    const uint32_t *consts = config->Gconst;
     uint32_t i, j;
     uint64_t sum64;
     uint64_t minScores[8];
 
-    minScores[0] = gmm->MinScore;
-    minScores[1] = gmm->MinScore;
-    minScores[2] = gmm->MinScore;
-    minScores[3] = gmm->MinScore;
-    minScores[4] = gmm->MinScore;
-    minScores[5] = gmm->MinScore;
-    minScores[6] = gmm->MinScore;
+    minScores[0] = config->MinScore;
+    minScores[1] = config->MinScore;
+    minScores[2] = config->MinScore;
+    minScores[3] = config->MinScore;
+    minScores[4] = config->MinScore;
+    minScores[5] = config->MinScore;
+    minScores[6] = config->MinScore;
 
-    for (i = 0; i < gmm->MixtureCount; i++)
+    for (i = 0; i < config->MixtureCount; i++)
     {
-        input = gmm->Input;
+        input = config->Input;
 
         __m128i sum_1 = _mm_setzero_si128();
         __m128i sum_2 = _mm_setzero_si128();
@@ -990,7 +995,7 @@ void gmm_maxmix_8u8u_32u_g7(GmmMaxMixConfig const * const gmm)
         __m128i load2 = CVT64_128((__m128i*)mean); // vector load 8x8-bit
         __m128i load3 = CVT64_128((__m128i*)var); // vector load 8x8-bit
 
-        for (j = 8; j <= gmm->InputElementCount; j += 8)
+        for (j = 8; j <= config->InputElementCount; j += 8)
         {
             input += 16;
             __m128i load2_1 = _mm_cvtepu8_epi16(load2);
@@ -1111,39 +1116,39 @@ void gmm_maxmix_8u8u_32u_g7(GmmMaxMixConfig const * const gmm)
         sum64 = (uint64_t)_mm_cvtsi128_si32(sum_7) + (uint64_t)*consts;
         minScores[6] = sum64 < minScores[6] ? sum64 : minScores[6];
 
-        mean += gmm->InputElementCount;
-        var += gmm->InputElementCount;
+        mean += config->InputElementCount;
+        var += config->InputElementCount;
         consts++;
     }
-    gmm->Output[0] = (uint32_t) minScores[0];
-    gmm->Output[1] = (uint32_t) minScores[1];
-    gmm->Output[2] = (uint32_t) minScores[2];
-    gmm->Output[3] = (uint32_t) minScores[3];
-    gmm->Output[4] = (uint32_t) minScores[4];
-    gmm->Output[5] = (uint32_t) minScores[5];
-    gmm->Output[6] = (uint32_t) minScores[6];
+    config->Output[0] = (uint32_t) minScores[0];
+    config->Output[1] = (uint32_t) minScores[1];
+    config->Output[2] = (uint32_t) minScores[2];
+    config->Output[3] = (uint32_t) minScores[3];
+    config->Output[4] = (uint32_t) minScores[4];
+    config->Output[5] = (uint32_t) minScores[5];
+    config->Output[6] = (uint32_t) minScores[6];
 }
 
 //gmm_maxmix_8u8u_32u_grouped_opt_f8_g8_sse4
-void gmm_maxmix_8u8u_32u_g8(GmmMaxMixConfig const * const gmm)
+void gmm_maxmix_8u8u_32u_g8(GmmMaxMixConfig const * const config)
 {
-    const uint8_t *mean = gmm->Means;
-    const uint8_t *var = gmm->Vars;
-    const uint8_t *input = gmm->Input;
-    const uint32_t *consts = gmm->Gconst;
+    const uint8_t *mean = config->Means;
+    const uint8_t *var = config->Vars;
+    const uint8_t *input;
+    const uint32_t *consts = config->Gconst;
     uint32_t i, j;
     uint64_t  gconst64;
     uint64_t  score[2];
-    uint64_t  minScore = gmm->MinScore;
+    uint64_t  minScore = config->MinScore;
     __m128i minScores = CVT64_128((__m128i*) &minScore);
     minScores = _mm_shuffle_epi32(minScores, _MM_SHUFFLE(1, 0, 1, 0));
     __m128i minScore2 = minScores;
     __m128i minScores3 = minScores;
     __m128i minScores4 = minScores;
 
-    for (i = 0; i < gmm->MixtureCount; i++)
+    for (i = 0; i < config->MixtureCount; i++)
     {
-        input = gmm->Input;
+        input = config->Input;
 
         __m128i sum_1 = _mm_setzero_si128();
         __m128i sum_2 = _mm_setzero_si128();
@@ -1160,7 +1165,7 @@ void gmm_maxmix_8u8u_32u_g8(GmmMaxMixConfig const * const gmm)
         __m128i load2 = CVT64_128((__m128i*)mean); // vector load 8x8-bit
         __m128i load3 = CVT64_128((__m128i*)var); // vector load 8x8-bit
 
-        for (j = 8; j <= gmm->InputElementCount; j += 8)
+        for (j = 8; j <= config->InputElementCount; j += 8)
         {
             input += 16;
             __m128i load2_1 = _mm_cvtepu8_epi16(load2);
@@ -1300,23 +1305,23 @@ void gmm_maxmix_8u8u_32u_g8(GmmMaxMixConfig const * const gmm)
         minScores3 = _mm_or_si128(res_min_3, res_sum_3);
         minScores4 = _mm_or_si128(res_min_4, res_sum_4);
 
-        mean += gmm->InputElementCount;
-        var += gmm->InputElementCount;
+        mean += config->InputElementCount;
+        var += config->InputElementCount;
         consts++;
     }
 
     _mm_storeu_si128((__m128i*)score, minScores);
-    gmm->Output[0] = (uint32_t) score[0];
-    gmm->Output[1] = (uint32_t) score[1];
+    config->Output[0] = (uint32_t) score[0];
+    config->Output[1] = (uint32_t) score[1];
     _mm_storeu_si128((__m128i*)score, minScore2);
-    gmm->Output[2] = (uint32_t) score[0];
-    gmm->Output[3] = (uint32_t) score[1];
+    config->Output[2] = (uint32_t) score[0];
+    config->Output[3] = (uint32_t) score[1];
     _mm_storeu_si128((__m128i*)score, minScores3);
-    gmm->Output[4] = (uint32_t) score[0];
-    gmm->Output[5] = (uint32_t) score[1];
+    config->Output[4] = (uint32_t) score[0];
+    config->Output[5] = (uint32_t) score[1];
     _mm_storeu_si128((__m128i*)score, minScores4);
-    gmm->Output[6] = (uint32_t) score[0];
-    gmm->Output[7] = (uint32_t) score[1];
+    config->Output[6] = (uint32_t) score[0];
+    config->Output[7] = (uint32_t) score[1];
 }
 
 #endif //#if (OPT_LEVEL > 1 && OPT_LEVEL < 6) // SSE4/AVX1 only
@@ -1324,23 +1329,23 @@ void gmm_maxmix_8u8u_32u_g8(GmmMaxMixConfig const * const gmm)
 #if OPT_LEVEL > 5 // AVX2 +
 
 //gmm_maxmix_8u8u_32u_grouped_opt_f8_g2_avx2
-void gmm_maxmix_8u8u_32u_g2(GmmMaxMixConfig const * const gmm)
+void gmm_maxmix_8u8u_32u_g2(GmmMaxMixConfig const * const config)
 {
-    const uint8_t *mean = gmm->Means;
-    const uint8_t *var = gmm->Vars;
-    const uint8_t *input = gmm->Input;
-    const uint32_t *consts = gmm->Gconst;
+    const uint8_t *mean = config->Means;
+    const uint8_t *var = config->Vars;
+    const uint8_t *input;
+    const uint32_t *consts = config->Gconst;
     uint32_t  i, j;
     uint64_t  gconst64;
     uint64_t  score[2];
-    uint64_t  minScore = gmm->MinScore;
+    uint64_t  minScore = config->MinScore;
 
     __m128i minScores = CVT64_128((__m128i*) &minScore);
     minScores = _mm_shuffle_epi32(minScores, _MM_SHUFFLE(1, 0, 1, 0));
 
-    for (i = 0; i < gmm->MixtureCount; i++)
+    for (i = 0; i < config->MixtureCount; i++)
     {
-        input = gmm->Input;
+        input = config->Input;
 
         __m256i sum_1 = _mm256_setzero_si256();
 
@@ -1348,7 +1353,7 @@ void gmm_maxmix_8u8u_32u_g2(GmmMaxMixConfig const * const gmm)
         __m128i load2 = CVT64_128((__m128i*)mean); // vector load 8x8-bit
         __m128i load3 = CVT64_128((__m128i*)var); // vector load 8x8-bit
         __m256i load256_1 = _mm256_cvtepu8_epi16(load1);
-        for (j = 8; j <= gmm->InputElementCount; j += 8)
+        for (j = 8; j <= config->InputElementCount; j += 8)
         {
             input += 16;
             __m256i load256_2 = _mm256_cvtepu8_epi16(load2);
@@ -1388,33 +1393,33 @@ void gmm_maxmix_8u8u_32u_g2(GmmMaxMixConfig const * const gmm)
         __m128i res_sum = _mm_and_si128(cmpres, sum_64);
         minScores = _mm_or_si128(res_min, res_sum);
 
-        mean += gmm->InputElementCount;
-        var += gmm->InputElementCount;
+        mean += config->InputElementCount;
+        var += config->InputElementCount;
         consts++;
     }
     _mm_storeu_si128((__m128i*)score, minScores);
-    gmm->Output[0] = (uint32_t) score[0];
-    gmm->Output[1] = (uint32_t) score[1];
+    config->Output[0] = (uint32_t) score[0];
+    config->Output[1] = (uint32_t) score[1];
 }
 
 //gmm_maxmix_8u8u_32u_grouped_opt_f8_g3_avx2
-void gmm_maxmix_8u8u_32u_g3(GmmMaxMixConfig const * const gmm)
+void gmm_maxmix_8u8u_32u_g3(GmmMaxMixConfig const * const config)
 {
-    const uint8_t *mean = gmm->Means;
-    const uint8_t *var = gmm->Vars;
-    const uint8_t *input = gmm->Input;
-    const uint32_t *consts = gmm->Gconst;
+    const uint8_t *mean = config->Means;
+    const uint8_t *var = config->Vars;
+    const uint8_t *input;
+    const uint32_t *consts = config->Gconst;
     uint32_t i, j;
     uint64_t gconst64;
     uint64_t score[4];
 
     // init min scores
-    uint64_t  minScore = gmm->MinScore;
+    uint64_t  minScore = config->MinScore;
     __m256i minScores = _mm256_broadcastq_epi64(CVT64_128((__m128i*) &minScore));
 
-    for (i = 0; i < gmm->MixtureCount; i++)
+    for (i = 0; i < config->MixtureCount; i++)
     {
-        input = gmm->Input;
+        input = config->Input;
         __m256i sum_1 = _mm256_setzero_si256();
         __m256i sum_2 = _mm256_setzero_si256();
 
@@ -1422,7 +1427,7 @@ void gmm_maxmix_8u8u_32u_g3(GmmMaxMixConfig const * const gmm)
         __m128i load2 = CVT64_128((__m128i*)mean); // vector load 8x8-bit
         __m128i load3 = CVT64_128((__m128i*)var); // vector load 8x8-bit
 
-        for (j = 8; j <= gmm->InputElementCount; j += 8)
+        for (j = 8; j <= config->InputElementCount; j += 8)
         {
             input += 24;
             __m256i load256_1_2 = _mm256_permute4x64_epi64(load1, 0xee);
@@ -1474,34 +1479,34 @@ void gmm_maxmix_8u8u_32u_g3(GmmMaxMixConfig const * const gmm)
         __m256i res_min = _mm256_andnot_si256(cmpres, minScores);
         __m256i res_sum = _mm256_and_si256(cmpres, sum_64);
         minScores = _mm256_or_si256(res_min, res_sum);
-        mean += gmm->InputElementCount;
-        var += gmm->InputElementCount;
+        mean += config->InputElementCount;
+        var += config->InputElementCount;
         consts++;
     }
     _mm256_storeu_si256((__m256i*)score, minScores);
-    gmm->Output[0] = (uint32_t) score[0];
-    gmm->Output[1] = (uint32_t) score[2];
-    gmm->Output[2] = (uint32_t) score[1];
+    config->Output[0] = (uint32_t) score[0];
+    config->Output[1] = (uint32_t) score[2];
+    config->Output[2] = (uint32_t) score[1];
 }
 
 //gmm_maxmix_8u8u_32u_grouped_opt_f8_g4_avx2
-void gmm_maxmix_8u8u_32u_g4(GmmMaxMixConfig const * const gmm)
+void gmm_maxmix_8u8u_32u_g4(GmmMaxMixConfig const * const config)
 {
-    const uint8_t *mean = gmm->Means;
-    const uint8_t *var = gmm->Vars;
-    const uint8_t *input = gmm->Input;
-    const uint32_t *consts = gmm->Gconst;
+    const uint8_t *mean = config->Means;
+    const uint8_t *var = config->Vars;
+    const uint8_t *input;
+    const uint32_t *consts = config->Gconst;
     uint32_t i, j;
     uint64_t gconst64;
     uint64_t score[4];
 
     // init min scores
-    uint64_t  minScore = gmm->MinScore;
+    uint64_t  minScore = config->MinScore;
     __m256i minScores = _mm256_broadcastq_epi64(CVT64_128((__m128i*) &minScore));
 
-    for (i = 0; i < gmm->MixtureCount; i++)
+    for (i = 0; i < config->MixtureCount; i++)
     {
-        input = gmm->Input;
+        input = config->Input;
         __m256i sum_1 = _mm256_setzero_si256();
         __m256i sum_2 = _mm256_setzero_si256();
 
@@ -1509,7 +1514,7 @@ void gmm_maxmix_8u8u_32u_g4(GmmMaxMixConfig const * const gmm)
         __m128i load2 = CVT64_128((__m128i*)mean); // vector load 8x8-bit
         __m128i load3 = CVT64_128((__m128i*)var); // vector load 8x8-bit
 
-        for (j = 8; j <= gmm->InputElementCount; j += 8)
+        for (j = 8; j <= config->InputElementCount; j += 8)
         {
             input += 32;
             __m256i load256_1_2 = _mm256_permute4x64_epi64(load1, 0xee);
@@ -1561,36 +1566,36 @@ void gmm_maxmix_8u8u_32u_g4(GmmMaxMixConfig const * const gmm)
         __m256i res_min = _mm256_andnot_si256(cmpres, minScores);
         __m256i res_sum = _mm256_and_si256(cmpres, sum_64);
         minScores = _mm256_or_si256(res_min, res_sum);
-        mean += gmm->InputElementCount;
-        var += gmm->InputElementCount;
+        mean += config->InputElementCount;
+        var += config->InputElementCount;
         consts++;
     }
 
     _mm256_storeu_si256((__m256i*)score, minScores);
-    gmm->Output[0] = (uint32_t) score[0];
-    gmm->Output[1] = (uint32_t) score[2];
-    gmm->Output[2] = (uint32_t) score[1];
-    gmm->Output[3] = (uint32_t) score[3];
+    config->Output[0] = (uint32_t) score[0];
+    config->Output[1] = (uint32_t) score[2];
+    config->Output[2] = (uint32_t) score[1];
+    config->Output[3] = (uint32_t) score[3];
 }
 
 //gmm_maxmix_8u8u_32u_grouped_opt_f8_g5_avx2
-void gmm_maxmix_8u8u_32u_g5(GmmMaxMixConfig const * const gmm)
+void gmm_maxmix_8u8u_32u_g5(GmmMaxMixConfig const * const config)
 {
-    const uint8_t *mean = gmm->Means;
-    const uint8_t *var = gmm->Vars;
-    const uint8_t *input = gmm->Input;
-    const uint32_t *consts = gmm->Gconst;
+    const uint8_t *mean = config->Means;
+    const uint8_t *var = config->Vars;
+    const uint8_t *input;
+    const uint32_t *consts = config->Gconst;
     uint32_t i, j;
     uint64_t gconst64;
     uint64_t score[4];
     // init min scores
-    uint64_t  minScore = gmm->MinScore;
+    uint64_t  minScore = config->MinScore;
     __m256i minScores = _mm256_broadcastq_epi64(CVT64_128((__m128i*) &minScore));
     __m256i minScore2 = minScores;
 
-    for (i = 0; i < gmm->MixtureCount; i++)
+    for (i = 0; i < config->MixtureCount; i++)
     {
-        input = gmm->Input;
+        input = config->Input;
         __m256i sum_1 = _mm256_setzero_si256();
         __m256i sum_2 = _mm256_setzero_si256();
         __m256i sum_3 = _mm256_setzero_si256();
@@ -1599,7 +1604,7 @@ void gmm_maxmix_8u8u_32u_g5(GmmMaxMixConfig const * const gmm)
         __m128i load2 = CVT64_128((__m128i*)mean); // vector load 8x8-bit
         __m128i load3 = CVT64_128((__m128i*)var); // vector load 8x8-bit
 
-        for (j = 8; j <= gmm->InputElementCount; j += 8)
+        for (j = 8; j <= config->InputElementCount; j += 8)
         {
             input += 32;
             __m256i load256_1_2 = _mm256_permute4x64_epi64(load1, 0xee);
@@ -1672,37 +1677,37 @@ void gmm_maxmix_8u8u_32u_g5(GmmMaxMixConfig const * const gmm)
         minScores = _mm256_or_si256(res_min_1, res_sum_1);
         minScore2 = _mm256_or_si256(res_min_2, res_sum_2);
 
-        mean += gmm->InputElementCount;
-        var += gmm->InputElementCount;
+        mean += config->InputElementCount;
+        var += config->InputElementCount;
         consts++;
     }
 
     _mm256_storeu_si256((__m256i*)score, minScores);
-    gmm->Output[0] = (uint32_t) score[0];
-    gmm->Output[1] = (uint32_t) score[2];
-    gmm->Output[2] = (uint32_t) score[1];
-    gmm->Output[3] = (uint32_t) score[3];
-    gmm->Output[4] = _mm_cvtsi128_si32(_mm256_castsi256_si128(minScore2));
+    config->Output[0] = (uint32_t) score[0];
+    config->Output[1] = (uint32_t) score[2];
+    config->Output[2] = (uint32_t) score[1];
+    config->Output[3] = (uint32_t) score[3];
+    config->Output[4] = static_cast<uint32_t>(_mm_cvtsi128_si32(_mm256_castsi256_si128(minScore2)));
 }
 
 //gmm_maxmix_8u8u_32u_grouped_opt_f8_g6_avx2
-void gmm_maxmix_8u8u_32u_g6(GmmMaxMixConfig const * const gmm)
+void gmm_maxmix_8u8u_32u_g6(GmmMaxMixConfig const * const config)
 {
-    const uint8_t *mean = gmm->Means;
-    const uint8_t *var = gmm->Vars;
-    const uint8_t *input = gmm->Input;
-    const uint32_t *consts = gmm->Gconst;
+    const uint8_t *mean = config->Means;
+    const uint8_t *var = config->Vars;
+    const uint8_t *input;
+    const uint32_t *consts = config->Gconst;
     uint32_t i, j;
     uint64_t gconst64;
     uint64_t score[4];
     // init min scores
-    uint64_t  minScore = gmm->MinScore;
+    uint64_t  minScore = config->MinScore;
     __m256i minScores = _mm256_broadcastq_epi64(CVT64_128((__m128i*) &minScore));
     __m256i minScore2 = minScores;
 
-    for (i = 0; i < gmm->MixtureCount; i++)
+    for (i = 0; i < config->MixtureCount; i++)
     {
-        input = gmm->Input;
+        input = config->Input;
         __m256i sum_1 = _mm256_setzero_si256();
         __m256i sum_2 = _mm256_setzero_si256();
         __m256i sum_3 = _mm256_setzero_si256();
@@ -1711,7 +1716,7 @@ void gmm_maxmix_8u8u_32u_g6(GmmMaxMixConfig const * const gmm)
         __m128i load2 = CVT64_128((__m128i*)mean); // vector load 8x8-bit
         __m128i load3 = CVT64_128((__m128i*)var); // vector load 8x8-bit
 
-        for (j = 8; j <= gmm->InputElementCount; j += 8)
+        for (j = 8; j <= config->InputElementCount; j += 8)
         {
             input += 32;
             __m256i load256_1_2 = _mm256_permute4x64_epi64(load1, 0xee);
@@ -1784,38 +1789,38 @@ void gmm_maxmix_8u8u_32u_g6(GmmMaxMixConfig const * const gmm)
         minScores = _mm256_or_si256(res_min_1, res_sum_1);
         minScore2 = _mm256_or_si256(res_min_2, res_sum_2);
 
-        mean += gmm->InputElementCount;
-        var += gmm->InputElementCount;
+        mean += config->InputElementCount;
+        var += config->InputElementCount;
         consts++;
     }
 
     _mm256_storeu_si256((__m256i*)score, minScores);
-    gmm->Output[0] = (uint32_t) score[0];
-    gmm->Output[1] = (uint32_t) score[2];
-    gmm->Output[2] = (uint32_t) score[1];
-    gmm->Output[3] = (uint32_t) score[3];
+    config->Output[0] = (uint32_t) score[0];
+    config->Output[1] = (uint32_t) score[2];
+    config->Output[2] = (uint32_t) score[1];
+    config->Output[3] = (uint32_t) score[3];
     _mm256_storeu_si256((__m256i*)score, minScore2);
-    gmm->Output[4] = (uint32_t) score[0];
-    gmm->Output[5] = (uint32_t) score[2];
+    config->Output[4] = (uint32_t) score[0];
+    config->Output[5] = (uint32_t) score[2];
 }
 
 //gmm_maxmix_8u8u_32u_grouped_opt_f8_g7_avx2
-void gmm_maxmix_8u8u_32u_g7(GmmMaxMixConfig const * const gmm)
+void gmm_maxmix_8u8u_32u_g7(GmmMaxMixConfig const * const config)
 {
-    const uint8_t *mean = gmm->Means;
-    const uint8_t *var = gmm->Vars;
-    const uint8_t *input = gmm->Input;
-    const uint32_t *consts = gmm->Gconst;
+    const uint8_t *mean = config->Means;
+    const uint8_t *var = config->Vars;
+    const uint8_t *input;
+    const uint32_t *consts = config->Gconst;
     uint32_t i, j;
     uint64_t gconst64;
     uint64_t score[4];
-    uint64_t  minScore = gmm->MinScore;
+    uint64_t  minScore = config->MinScore;
     __m256i minScores = _mm256_broadcastq_epi64(CVT64_128((__m128i*) &minScore));
     __m256i minScore2 = minScores;
 
-    for (i = 0; i < gmm->MixtureCount; i++)
+    for (i = 0; i < config->MixtureCount; i++)
     {
-        input = gmm->Input;
+        input = config->Input;
 
         __m256i sum_1 = _mm256_setzero_si256();
         __m256i sum_2 = _mm256_setzero_si256();
@@ -1826,7 +1831,7 @@ void gmm_maxmix_8u8u_32u_g7(GmmMaxMixConfig const * const gmm)
         __m128i load2 = CVT64_128((__m128i*)mean); // vector load 8x8-bit
         __m128i load3 = CVT64_128((__m128i*)var); // vector load 8x8-bit
 
-        for (j = 8; j <= gmm->InputElementCount; j += 8)
+        for (j = 8; j <= config->InputElementCount; j += 8)
         {
             input += 32;
 
@@ -1925,39 +1930,39 @@ void gmm_maxmix_8u8u_32u_g7(GmmMaxMixConfig const * const gmm)
         minScores = _mm256_or_si256(res_min_1, res_sum_1);
         minScore2 = _mm256_or_si256(res_min_2, res_sum_2);
 
-        mean += gmm->InputElementCount;
-        var += gmm->InputElementCount;
+        mean += config->InputElementCount;
+        var += config->InputElementCount;
         consts++;
     }
 
     _mm256_storeu_si256((__m256i*)score, minScores);
-    gmm->Output[0] = (uint32_t) score[0];
-    gmm->Output[1] = (uint32_t) score[2];
-    gmm->Output[2] = (uint32_t) score[1];
-    gmm->Output[3] = (uint32_t) score[3];
+    config->Output[0] = (uint32_t) score[0];
+    config->Output[1] = (uint32_t) score[2];
+    config->Output[2] = (uint32_t) score[1];
+    config->Output[3] = (uint32_t) score[3];
     _mm256_storeu_si256((__m256i*)score, minScore2);
-    gmm->Output[4] = (uint32_t) score[0];
-    gmm->Output[5] = (uint32_t) score[2];
-    gmm->Output[6] = (uint32_t) score[1];
+    config->Output[4] = (uint32_t) score[0];
+    config->Output[5] = (uint32_t) score[2];
+    config->Output[6] = (uint32_t) score[1];
 }
 
 //gmm_maxmix_8u8u_32u_grouped_opt_f8_g8_avx2
-void gmm_maxmix_8u8u_32u_g8(GmmMaxMixConfig const * const gmm)
+void gmm_maxmix_8u8u_32u_g8(GmmMaxMixConfig const * const config)
 {
-    const uint8_t *mean = gmm->Means;
-    const uint8_t *var = gmm->Vars;
-    const uint8_t *input = gmm->Input;
-    const uint32_t *consts = gmm->Gconst;
+    const uint8_t *mean = config->Means;
+    const uint8_t *var = config->Vars;
+    const uint8_t *input;
+    const uint32_t *consts = config->Gconst;
     uint32_t i, j;
     uint64_t gconst64;
     uint64_t score[4];
-    uint64_t  minScore = gmm->MinScore;
+    uint64_t  minScore = config->MinScore;
     __m256i minScores = _mm256_broadcastq_epi64(CVT64_128((__m128i*) &minScore));
     __m256i minScore2 = minScores;
 
-    for (i = 0; i < gmm->MixtureCount; i++)
+    for (i = 0; i < config->MixtureCount; i++)
     {
-        input = gmm->Input;
+        input = config->Input;
 
         __m256i sum_1 = _mm256_setzero_si256();
         __m256i sum_2 = _mm256_setzero_si256();
@@ -1968,7 +1973,7 @@ void gmm_maxmix_8u8u_32u_g8(GmmMaxMixConfig const * const gmm)
         __m128i load2 = CVT64_128((__m128i*)mean); // vector load 8x8-bit
         __m128i load3 = CVT64_128((__m128i*)var); // vector load 8x8-bit
 
-        for (j = 8; j <= gmm->InputElementCount; j += 8)
+        for (j = 8; j <= config->InputElementCount; j += 8)
         {
             input += 32;
 
@@ -2067,41 +2072,41 @@ void gmm_maxmix_8u8u_32u_g8(GmmMaxMixConfig const * const gmm)
         minScores = _mm256_or_si256(res_min_1, res_sum_1);
         minScore2 = _mm256_or_si256(res_min_2, res_sum_2);
 
-        mean += gmm->InputElementCount;
-        var += gmm->InputElementCount;
+        mean += config->InputElementCount;
+        var += config->InputElementCount;
         consts++;
     }
 
     _mm256_storeu_si256((__m256i*)score, minScores);
-    gmm->Output[0] = (uint32_t) score[0];
-    gmm->Output[1] = (uint32_t) score[2];
-    gmm->Output[2] = (uint32_t) score[1];
-    gmm->Output[3] = (uint32_t) score[3];
+    config->Output[0] = (uint32_t) score[0];
+    config->Output[1] = (uint32_t) score[2];
+    config->Output[2] = (uint32_t) score[1];
+    config->Output[3] = (uint32_t) score[3];
     _mm256_storeu_si256((__m256i*)score, minScore2);
-    gmm->Output[4] = (uint32_t) score[0];
-    gmm->Output[5] = (uint32_t) score[2];
-    gmm->Output[6] = (uint32_t) score[1];
-    gmm->Output[7] = (uint32_t) score[3];
+    config->Output[4] = (uint32_t) score[0];
+    config->Output[5] = (uint32_t) score[2];
+    config->Output[6] = (uint32_t) score[1];
+    config->Output[7] = (uint32_t) score[3];
 }
 
-void gmm_maxmix_8u16u_32u(GmmMaxMixConfig const * const gmm)
+void gmm_maxmix_8u16u_32u(GmmMaxMixConfig const * const config)
 {
-    const uint8_t *mean = gmm->Means;
-    const uint16_t *var = gmm->Vars16;
-    const uint32_t *consts = gmm->Gconst;
+    const uint8_t *mean = config->Means;
+    const uint16_t *var = config->Vars16;
+    const uint32_t *consts = config->Gconst;
     uint64_t score[2];
     uint64_t sum64;
     uint32_t i, j;
-    uint64_t minScore = gmm->MinScore;
+    uint64_t minScore = config->MinScore;
 
-    for (i = 0; i < gmm->MixtureCount; i++)
+    for (i = 0; i < config->MixtureCount; i++)
     {
         __m256i sum_1 = _mm256_setzero_si256();
         __m256i sum_2 = _mm256_setzero_si256();
-        __m128i load1 = CVT64_128((__m128i*)gmm->Input);
+        __m128i load1 = CVT64_128((__m128i*)config->Input);
         __m128i load2 = CVT64_128((__m128i*)mean); // vector load 8x8-bit
         __m128i load3 = _mm_loadu_si128((__m128i*)var); // vector load 8x8-bit
-        for (j = 8; j <= gmm->InputElementCount; j += 8)
+        for (j = 8; j <= config->InputElementCount; j += 8)
         {
 
             __m128i load1_1 = _mm_cvtepu8_epi16(load1);
@@ -2110,7 +2115,7 @@ void gmm_maxmix_8u16u_32u(GmmMaxMixConfig const * const gmm)
 
             __m128i diff16s = _mm_sub_epi16(load1_1, load2_1); // convert to 8x16-bit
             __m128i sqrdiff16s = _mm_mullo_epi16(diff16s, diff16s); // 8x16-bit mul (hi zero)
-            load1 = CVT64_128((__m128i*)&gmm->Input[j]);
+            load1 = CVT64_128((__m128i*)&config->Input[j]);
             load2 = CVT64_128((__m128i*)&mean[j]); // vector load 8x8-bit
 
             __m128i prod_low = _mm_mullo_epi16(sqrdiff16s, load3); // 8x16-bit mult (lo part)
@@ -2135,12 +2140,12 @@ void gmm_maxmix_8u16u_32u(GmmMaxMixConfig const * const gmm)
 
         minScore = sum64 < minScore ? sum64 : minScore;
 
-        mean += gmm->InputElementCount;
-        var += gmm->InputElementCount;
+        mean += config->InputElementCount;
+        var += config->InputElementCount;
         consts++;
     }
 
-    (*(gmm->Output)) = (uint32_t) minScore;
+    (*(config->Output)) = (uint32_t) minScore;
 }
 
 #endif //#if OPT_LEVEL > 5 // AVX2+

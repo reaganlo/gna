@@ -25,22 +25,20 @@
 
 #include "SoftwareModel.h"
 
-#include "AccelerationDetector.h"
-#include "ActiveList.h"
-#include "Layer.h"
-#include "AffineLayers.h"
-#include "ConvolutionalLayer.h"
-#include "RecurrentLayer.h"
-#include "GmmLayer.h"
-#include "LayerConfiguration.h"
-#include "Macros.h"
-#include "Memory.h"
-#include "RecurrentLayer.h"
-#include "Request.h"
-#include "RequestConfiguration.h"
 #include "Expect.h"
+#include "HardwareCapabilities.h"
+#include "KernelArguments.h"
+#include "Layer.h"
+#include "Macros.h"
+#include "RequestConfiguration.h"
+#include "Validator.h"
 
-using std::make_unique;
+#include "gna-api-types-xnn.h"
+
+#include <cstdint>
+#include <functional>
+#include <map>
+#include <utility>
 
 using namespace GNA;
 

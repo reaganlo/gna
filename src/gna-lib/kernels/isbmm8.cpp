@@ -25,6 +25,13 @@
 
 #include "igemv8.h"
 #include "igemv.h"
+
+#include "KernelArguments.h"
+
+#include "common.h"
+
+#include <cstdint>
+
 void DiagonalKernelImpl1B(AffineConfig const * const config)
 {
     uint32_t i;
@@ -82,8 +89,18 @@ void DiagonalKernelImpl1B1B(AffineConfig const * const config)
     {
         for (j = 0; j < config->inputVectorCount; j++)
         {
-            sum = getBias((void*)bias, i, (gna_data_mode)config->bytesPerBias)
-                + (weight[i] * input[i * config->inputVectorCount + j]);
+            if (config->bytesPerBias == 1)
+            {
+                sum = bias[i] + (weight[i] * input[i * config->inputVectorCount + j]);
+            }
+            else if (config->bytesPerBias == 2)
+            {
+                sum = ((int16_t*)bias)[i] + (weight[i] * input[i * config->inputVectorCount + j]);
+            }
+            else if (config->bytesPerBias == 4)
+            {
+                sum = ((int32_t*)bias)[i] + (weight[i] * input[i * config->inputVectorCount + j]);
+            }
 
             saturate_store_out(&sum, &output[i * config->inputVectorCount + j], config->execution->SaturationCount);
         }

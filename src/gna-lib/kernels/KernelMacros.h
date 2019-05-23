@@ -50,25 +50,6 @@
 #define vec_madd16 KERNEL(vec_madd16)
 
 /**
- * Rounds a number up, to the nearest multiple of significance
- * Used for calculating the memory sizes of GNA data buffers
- *
- * @param number        Memory size or a number to round up.
- * @param significance  Informs the function how to round up. The function "ceils"
- *                      the number to the lowest possible value divisible by "significance".
- * @return Rounded integer value.
- * @deprecated          Will be removed in next release.
- */
-#define ALIGN(number, significance)   (((unsigned int)((number) + significance -1) / significance) * significance)
-
-/**
- * Rounds a number up, to the nearest multiple of 64
- * Used for calculating memory sizes of GNA data arrays
- * @deprecated          Will be removed in next release.
- */
-#define ALIGN64(number)   ALIGN(number, 64)
-
-/**
  * Definitions acceleration/optimization macros
  *
  * * OPT_LEVEL      - Build acceleration/optimization mode for numerical comparison

@@ -29,10 +29,10 @@
 #include "gna2-model-export-api.h"
 
 #include <cinttypes>
-#include <cstring>
-#include <fstream>
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
+#include <fstream>
 #if defined(__GNUC__) && !defined(__INTEL_COMPILER)
 #include <mm_malloc.h>
 #endif

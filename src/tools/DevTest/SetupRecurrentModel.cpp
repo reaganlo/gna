@@ -41,7 +41,7 @@ SetupRecurrentModel::SetupRecurrentModel(DeviceController & deviceCtrl, bool wgh
     nnet.nLayers = layersNum;
     nnet.pLayers = (intel_nnet_layer_t*)calloc(nnet.nLayers, sizeof(intel_nnet_layer_t));
 
-    sampleRnnLayer(nnet);
+    sampleRnnLayer();
 
     deviceController.ModelCreate(&nnet, &modelId);
 
@@ -59,7 +59,7 @@ SetupRecurrentModel::~SetupRecurrentModel()
     deviceController.ModelRelease(modelId);
 }
 
-void SetupRecurrentModel::checkReferenceOutput(int modelIndex, int configIndex) const
+void SetupRecurrentModel::checkReferenceOutput(uint32_t modelIndex, uint32_t configIndex) const
 {
     UNREFERENCED_PARAMETER(modelIndex);
     UNREFERENCED_PARAMETER(configIndex);
@@ -77,7 +77,7 @@ void SetupRecurrentModel::checkReferenceOutput(int modelIndex, int configIndex) 
 void SetupRecurrentModel::samplePwl(intel_pwl_segment_t *segments, uint32_t numberOfSegments)
 {
     auto xBase = -200;
-    auto xBaseInc = 2*abs(xBase) / numberOfSegments;
+    auto xBaseInc = 2u * static_cast<uint32_t>(abs(xBase)) / numberOfSegments;
     auto yBase = -200;
     auto yBaseInc = 1;
     for (auto i = uint32_t{0}; i < numberOfSegments; i++, xBase += xBaseInc, yBase += yBaseInc, yBaseInc++)
@@ -88,15 +88,23 @@ void SetupRecurrentModel::samplePwl(intel_pwl_segment_t *segments, uint32_t numb
     }
 }
 
-void SetupRecurrentModel::sampleRnnLayer(intel_nnet_type_t& hNnet)
+void SetupRecurrentModel::sampleRnnLayer()
 {
-    int buf_size_weights = weightsAre2Bytes ? ALIGN64(sizeof(weights_2B)) : ALIGN64(sizeof(weights_1B));
-    int buf_size_inputs = ALIGN64(sizeof(inputs));
-    int buf_size_biases = weightsAre2Bytes ? ALIGN64(sizeof(regularBiases)) : ALIGN64(sizeof(compoundBiases));
-    int buf_size_scratchpad = ALIGN64(outVecSz * groupingNum * sizeof(int32_t));
-    int buf_size_outputs = ALIGN64(outVecSz * groupingNum * sizeof(int16_t));
-    int buf_size_tmp_outputs = ALIGN64(outVecSz * groupingNum * sizeof(int32_t));
-    int buf_size_pwl = ALIGN64(nSegments * sizeof(intel_pwl_segment_t));
+    uint32_t buf_size_weights = weightsAre2Bytes
+        ? ALIGN64(static_cast<uint32_t>(sizeof(weights_2B)))
+        : ALIGN64(static_cast<uint32_t>(sizeof(weights_1B)));
+    uint32_t buf_size_inputs = ALIGN64(static_cast<uint32_t>(sizeof(inputs)));
+    uint32_t buf_size_biases = weightsAre2Bytes
+        ? ALIGN64(static_cast<uint32_t>(sizeof(regularBiases)))
+        : ALIGN64(static_cast<uint32_t>(sizeof(compoundBiases)));
+    uint32_t buf_size_scratchpad = ALIGN64(
+            outVecSz * groupingNum * static_cast<uint32_t>(sizeof(int32_t)));
+    uint32_t buf_size_outputs = ALIGN64(
+            outVecSz * groupingNum * static_cast<uint32_t>(sizeof(int16_t)));
+    uint32_t buf_size_tmp_outputs = ALIGN64(
+            outVecSz * groupingNum * static_cast<uint32_t>(sizeof(int32_t)));
+    uint32_t buf_size_pwl = ALIGN64(
+            nSegments * static_cast<uint32_t>(sizeof(intel_pwl_segment_t)));
 
     uint32_t bytes_requested = buf_size_weights + buf_size_inputs + buf_size_biases + buf_size_scratchpad + buf_size_outputs + buf_size_tmp_outputs + buf_size_pwl;
     uint32_t bytes_granted;
@@ -145,23 +153,22 @@ void SetupRecurrentModel::sampleRnnLayer(intel_nnet_type_t& hNnet)
     pwl.nSegments = nSegments;
     pwl.pSegments = reinterpret_cast<intel_pwl_segment_t*>(pinned_mem_ptr);
     samplePwl(pwl.pSegments, pwl.nSegments);
-    pinned_mem_ptr += buf_size_pwl;
 
     recurrent_layer.affine = affine_func;
     recurrent_layer.pwl = pwl;
     recurrent_layer.feedbackFrameDelay = 3;
 
-    hNnet.pLayers[0].nInputColumns = inVecSz;
-    hNnet.pLayers[0].nInputRows = hNnet.nGroup;
-    hNnet.pLayers[0].nOutputColumns = outVecSz;
-    hNnet.pLayers[0].nOutputRows = hNnet.nGroup;
-    hNnet.pLayers[0].nBytesPerInput = GNA_INT16;
-    hNnet.pLayers[0].nBytesPerOutput = GNA_INT16;
-    hNnet.pLayers[0].nBytesPerIntermediateOutput = GNA_INT32;
-    hNnet.pLayers[0].operation = INTEL_RECURRENT;
-    hNnet.pLayers[0].mode = INTEL_INPUT_OUTPUT;
-    hNnet.pLayers[0].pLayerStruct = &recurrent_layer;
-    hNnet.pLayers[0].pInputs = nullptr;
-    hNnet.pLayers[0].pOutputsIntermediate = scratchpad;
-    hNnet.pLayers[0].pOutputs = nullptr;
+    nnet.pLayers[0].nInputColumns = inVecSz;
+    nnet.pLayers[0].nInputRows = nnet.nGroup;
+    nnet.pLayers[0].nOutputColumns = outVecSz;
+    nnet.pLayers[0].nOutputRows = nnet.nGroup;
+    nnet.pLayers[0].nBytesPerInput = GNA_INT16;
+    nnet.pLayers[0].nBytesPerOutput = GNA_INT16;
+    nnet.pLayers[0].nBytesPerIntermediateOutput = GNA_INT32;
+    nnet.pLayers[0].operation = INTEL_RECURRENT;
+    nnet.pLayers[0].mode = INTEL_INPUT_OUTPUT;
+    nnet.pLayers[0].pLayerStruct = &recurrent_layer;
+    nnet.pLayers[0].pInputs = nullptr;
+    nnet.pLayers[0].pOutputsIntermediate = scratchpad;
+    nnet.pLayers[0].pOutputs = nullptr;
 }

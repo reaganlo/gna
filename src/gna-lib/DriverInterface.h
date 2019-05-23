@@ -25,15 +25,15 @@
 
 #pragma once
 
-#include "gna-api-dumper.h"
-
-#include <map>
-
-#include "common.h"
 #include "Request.h"
 #include "Expect.h"
 
+#include "common.h"
+#include "gna-api-dumper.h"
+
 #include "gna2-common-impl.h"
+
+#include <map>
 
 namespace GNA
 {
@@ -70,10 +70,6 @@ struct DriverCapabilities
 class DriverInterface
 {
 public:
-    virtual void IoctlSend(const GnaIoctlCommand command,
-        void * const inbuf, const uint32_t inlen,
-        void * const outbuf, const uint32_t outlen) = 0;
-
     virtual void OpenDevice() = 0;
 
     bool IsDeviceOpened()
@@ -85,7 +81,7 @@ public:
 
     virtual DriverCapabilities GetCapabilities() const = 0;
 
-    virtual uint64_t MemoryMap(void *memory, size_t memorySize) = 0;
+    virtual uint64_t MemoryMap(void *memory, uint32_t memorySize) = 0;
 
     virtual void MemoryUnmap(uint64_t memoryId) = 0;
 

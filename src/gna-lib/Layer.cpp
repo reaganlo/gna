@@ -27,40 +27,42 @@
 
 #include "AffineLayers.h"
 #include "ConvolutionalLayer.h"
+#include "ConvolutionalLayer2D.h"
+#include "CopyLayer.h"
+#include "DataMode.h"
+#include "Expect.h"
 #include "GmmLayer.h"
 #include "LayerConfiguration.h"
 #include "RecurrentLayer.h"
-#include "CopyLayer.h"
 #include "TransposeLayer.h"
-#include "Expect.h"
 
-using std::make_unique;
-using std::unique_ptr;
+#include <map>
+#include <utility>
 
 using namespace GNA;
 
-unique_ptr<Layer> Layer::Create(const nn_layer& layer, const BaseValidator& validatorIn)
+std::unique_ptr<Layer> Layer::Create(const nn_layer& layer, const BaseValidator& validatorIn)
 {
     switch (layer.operation)
     {
     case INTEL_AFFINE:
     case INTEL_AFFINE_MULTIBIAS:
-        return make_unique<AffineLayer>(layer, validatorIn);
+        return std::make_unique<AffineLayer>(layer, validatorIn);
     case INTEL_AFFINE_DIAGONAL:
-        return make_unique<AffineDiagonalLayer>(layer, validatorIn);
+        return std::make_unique<AffineDiagonalLayer>(layer, validatorIn);
     case INTEL_CONVOLUTIONAL:
-        return make_unique<CnnLayer>(layer, validatorIn);
+        return std::make_unique<CnnLayer>(layer, validatorIn);
     case INTEL_CONVOLUTIONAL_2D:
-        return make_unique<ConvolutionalLayer2D>(layer, validatorIn);
+        return std::make_unique<ConvolutionalLayer2D>(layer, validatorIn);
     case INTEL_COPY:
-        return make_unique<CopyLayer>(layer, validatorIn);
+        return std::make_unique<CopyLayer>(layer, validatorIn);
     case INTEL_INTERLEAVE:/* FALLTHRU */
     case INTEL_DEINTERLEAVE:
-        return make_unique<TransposeLayer>(layer, validatorIn);
+        return std::make_unique<TransposeLayer>(layer, validatorIn);
     case INTEL_GMM:
-        return make_unique<GmmLayer>(layer, validatorIn);
+        return std::make_unique<GmmLayer>(layer, validatorIn);
     case INTEL_RECURRENT:
-        return make_unique<RnnLayer>(layer, validatorIn);
+        return std::make_unique<RnnLayer>(layer, validatorIn);
     default:
         return nullptr;
     }
@@ -76,7 +78,7 @@ std::unique_ptr<GNA::Layer> Layer::Create(const Gna2Operation & operation, const
         Expect::NotNull(operation.Operands[1]);
         Expect::NotNull(operation.Parameters);
         Expect::NotNull(operation.Parameters[0]);
-        return make_unique<CopyLayer>(operation, validatorIn);
+        return std::make_unique<CopyLayer>(operation, validatorIn);
     default:
         //TODO:3:P1:Add implementation for remaining operation types
         throw GnaException(Gna2StatusNotImplemented);
@@ -87,7 +89,7 @@ Layer::Layer(const nn_layer& layer, const BaseValidator& validatorIn,
     const std::vector<TransformOperation>& transforms,
     const BaseAddress& intermediateBuffer) :
     AbstractOperation{ layer.operation },
-    validator{ make_unique<const LayerValidator>(validatorIn, Operation) },
+    validator{ std::make_unique<const LayerValidator>(validatorIn, Operation) },
     Input{ layer, *validator },
     Output{ layer, *validator }
 {
@@ -95,7 +97,7 @@ Layer::Layer(const nn_layer& layer, const BaseValidator& validatorIn,
 
     //TODO:3: uncomment when all layers are Transform-based, remove if below
     //Expect::False(transforms.empty(), Gna2StatusNullArgumentNotAllowed);
-    if (false == transforms.empty())
+    if (!transforms.empty())
     {
         auto&& commonConfig = TransformFactoryConfig(&Input, &Output, Output.Mode, intermediateBuffer,
             layer.pLayerStruct, *validator);
@@ -107,7 +109,9 @@ Layer::Layer(const nn_layer& layer, const BaseValidator& validatorIn,
 
         inputTransform = Transforms.begin()->get();
         if (Output.Buffer)
+        {
             outputTransform->SetOutput(Output.Buffer);
+        }
     }
 }
 
@@ -115,7 +119,7 @@ Layer::Layer(const Gna2Operation & operation, const BaseValidator& validatorIn,
     const std::vector<TransformOperation>& transforms,
     const BaseAddress& intermediateBuffer) :
     AbstractOperation{ operation },
-    validator{ make_unique<const LayerValidator>(validatorIn, Operation) },
+    validator{ std::make_unique<const LayerValidator>(validatorIn, Operation) },
     Input{ *operation.Operands[0], *validator },
     Output{ *operation.Operands[1], *validator }
 {
@@ -133,7 +137,9 @@ void Layer::addBufferAs(const BufferMap& source, GnaComponentType sourceType,
     BufferMap& destination, GnaComponentType destinationType) const
 {
     if (IntermediateOutputComponent == sourceType && Transforms.size() < 2)
+    {
         return;
+    }
 
     auto buffer = source.find(sourceType);
     if (buffer != source.end())
@@ -145,7 +151,7 @@ void Layer::addBufferAs(const BufferMap& source, GnaComponentType sourceType,
 void Layer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const
 {
     //TODO:3: remove condition when all layers use Transforms
-    if (Transforms.size() > 0)
+    if (!Transforms.empty())
     {
         auto nonIoBuffers = layerConfiguration.Buffers;
         nonIoBuffers.erase(InputComponent);

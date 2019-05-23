@@ -26,6 +26,12 @@
 #include "igemv.h"
 #include "igemv16.h"
 
+#include "KernelArguments.h"
+
+#include "gna-api-types-xnn.h"
+
+#include <cstdint>
+
 void RecurrentKernelImpl2B(RecurrentConfig const * const config)
 {
     uint32_t i;
@@ -49,11 +55,17 @@ void RecurrentKernelImpl2B(RecurrentConfig const * const config)
     for (; bias < biasEnd; bias += config->bytesPerBias)
     {
         if (config->bytesPerBias == 1)
+        {
             sum = *bias;
+        }
         else if (config->bytesPerBias == 2)
+        {
             sum = *(int16_t*)bias;
+        }
         else if (config->bytesPerBias == 4)
+        {
             sum = *(int32_t*)bias;
+        }
 
         input = config->input;
         feedback = config->feedbackBuffer;
@@ -125,11 +137,17 @@ void RecurrentKernelImpl2B1B(RecurrentConfig const * const config)
     for (; bias < biasEnd; bias += config->bytesPerBias)
     {
         if (config->bytesPerBias == 1)
+        {
             sum = *bias;
+        }
         else if (config->bytesPerBias == 2)
+        {
             sum = *(int16_t*)bias;
+        }
         else if (config->bytesPerBias == 4)
+        {
             sum = *(int32_t*)bias;
+        }
 
         input = (int8_t*)config->input;
         feedback = (int8_t*)config->feedbackBuffer;
@@ -225,11 +243,17 @@ void RecurrentKernelImpl2B2B(RecurrentConfig const * const config)
     for (; bias < biasEnd; bias += config->bytesPerBias)
     {
         if (config->bytesPerBias == 1)
+        {
             sum = *bias;
+        }
         else if (config->bytesPerBias == 2)
+        {
             sum = *(int16_t*)bias;
+        }
         else if (config->bytesPerBias == 4)
+        {
             sum = *(int32_t*)bias;
+        }
 
         input = config->input;
         feedback = (int8_t*)config->feedbackBuffer;

@@ -33,7 +33,7 @@ public:
 
     ~SetupMixModel();
 
-    void checkReferenceOutput(int modelIndex, int configIndex) const override;
+    void checkReferenceOutput(uint32_t modelIndex, uint32_t configIndex) const override;
 
 private:
     DeviceController & deviceController;

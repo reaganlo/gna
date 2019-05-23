@@ -25,7 +25,11 @@
 #pragma once
 
 #include "gna2-model-export-api.h"
-#include "DeviceManager.h"
+
+#include "gna2-common-api.h"
+#include "gna2-common-impl.h"
+
+#include <map>
 
 namespace GNA
 {

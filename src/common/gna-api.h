@@ -98,7 +98,7 @@ typedef uint32_t gna_device_id; // TODO:3:API redesign: remove and use uint32_t 
  *****************************************************************************/
 typedef enum _api_version
 {
-    GNA_API_NOT_SUPPORTED = GNA_NOT_SUPPORTED,
+    GNA_API_NOT_SUPPORTED = (int)GNA_NOT_SUPPORTED,
     GNA_API_1_0,
     GNA_API_2_0,
     //GNA_API_2_1_S, // TODO: use GNA_API_3_0
@@ -110,7 +110,7 @@ typedef enum _api_version
 // TODO:3: rename to generation or remove and use driver device types
 typedef enum _device_generation
 {
-    GNA_DEVICE_NOT_SUPPORTED = GNA_NOT_SUPPORTED,
+    GNA_DEVICE_NOT_SUPPORTED = (int)GNA_NOT_SUPPORTED,
     GMM_DEVICE,
     GNA_0_9,                // GNA 0.9 Device Cannon Lake (CNL), no CNN support
     GNA_1_0,                // GNA 1.0 Device Gemini Lake (GLK), full featured GNA 1.0
@@ -129,7 +129,7 @@ typedef enum _device_generation
  */
 typedef enum _gna_device_version
 {
-    GNA_UNSUPPORTED  = GNA_NOT_SUPPORTED, // No supported hardware device available.
+    GNA_UNSUPPORTED  = (int)GNA_NOT_SUPPORTED, // No supported hardware device available.
     GNA_SKL          = 0x1911,            // GMM Device Sky Lake
     GNA_KBL          = 0x1911,            // GMM Device Kaby Lake // TODO:3: check KBL HW ID
     GNA_CNL          = 0x5A11,            // GNA 0.9 Device Cannon Lake, no CNN support
@@ -154,7 +154,7 @@ const gna_device_version GNA_DEFAULT_DEVICE_VERSION = GNA_ADL;
 //// Binary flags
 //typedef enum _memory_mode
 //{
-//    GNA_MEMORY_NOT_SUPPORTED = GNA_NOT_SUPPORTED,
+//    GNA_MEMORY_NOT_SUPPORTED = (int)GNA_NOT_SUPPORTED,
 //    GNA_MEMORY_MAPPED = 1,
 //    GNA_MEMORY_DIRECT = 2,
 //    GNA_MEMORY_DEDICATED = 4, // Server device built-in memory
@@ -164,7 +164,7 @@ const gna_device_version GNA_DEFAULT_DEVICE_VERSION = GNA_ADL;
 //// helper to identify returned property type
 //typedef enum _property_type
 //{
-//    GNA_TYPE_NOT_SUPPORTED = GNA_NOT_SUPPORTED, // not supported
+//    GNA_TYPE_NOT_SUPPORTED = (int)GNA_NOT_SUPPORTED, // not supported
 //    GNA_UINT8_T,                                // cast to uint8_t
 //    GNA_UINT16_T,                               // cast to uint16_t
 //    GNA_UINT32_T,                               // cast to uint32_t
@@ -650,13 +650,13 @@ GNAAPI intel_gna_status_t GnaRequestConfigEnableHardwareConsistency(
  */
 typedef enum  _acceleration
 {
-    GNA_HARDWARE = 0xFFFFFFFE,   // GNA Hardware acceleration enforcement
-    GNA_AUTO     = 0x3,          // GNA selects the best available acceleration
-    GNA_SOFTWARE = 0x5,          // GNA selects the best available software acceleration
-    GNA_GENERIC  = 0x7,          // Enforce the usage of generic software mode
-    GNA_SSE4_2   = 0x9,          // Enforce the usage of SSE 4.2 CPU instruction set
-    GNA_AVX1     = 0xB,          // Enforce the usage of AVX1 CPU instruction set
-    GNA_AVX2     = 0xD           // Enforce the usage of AVX2 CPU instruction set
+    GNA_HARDWARE = (int)0xFFFFFFFE, // GNA Hardware acceleration enforcement
+    GNA_AUTO     = 0x3,             // GNA selects the best available acceleration
+    GNA_SOFTWARE = 0x5,             // GNA selects the best available software acceleration
+    GNA_GENERIC  = 0x7,             // Enforce the usage of generic software mode
+    GNA_SSE4_2   = 0x9,             // Enforce the usage of SSE 4.2 CPU instruction set
+    GNA_AVX1     = 0xB,             // Enforce the usage of AVX1 CPU instruction set
+    GNA_AVX2     = 0xD              // Enforce the usage of AVX2 CPU instruction set
 } gna_acceleration;
 
 static_assert(4 == sizeof(gna_acceleration), "Invalid size of gna_acceleration");
@@ -745,7 +745,7 @@ const gna_timeout GNA_REQUEST_TIMEOUT_MAX = 180000;
  * @return Rounded integer value.
  * @deprecated          Will be removed in next release.
  */
-#define ALIGN(number, significance)   (((unsigned int)((number) + significance -1) / significance) * significance)
+#define ALIGN(number, significance)   ((((number) + (significance) - 1) / (significance)) * (significance))
 
 /**
  * Rounds a number up, to the nearest multiple of 64

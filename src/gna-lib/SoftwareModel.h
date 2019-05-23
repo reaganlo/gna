@@ -25,24 +25,21 @@
 
 #pragma once
 
-#include <functional>
+#include "HardwareRequest.h"
+#include "IScorable.h"
+#include "Layer.h"
+#include "Logger.h"
+
+#include "gna-api.h"
+
+#include <cstdint>
 #include <memory>
 #include <vector>
-
-#include "AccelerationDetector.h"
-#include "KernelArguments.h"
-#include "IScorable.h"
-#include "Tensor.h"
-#include "Validator.h"
-
-#include "common.h"
-#include "profiler.h"
 
 namespace GNA
 {
 
-class Layer;
-struct LayerConfiguration;
+class BaseValidator;
 class RequestConfiguration;
 struct RequestProfiler;
 
@@ -74,11 +71,11 @@ public:
 
     SoftwareModel(const SoftwareModel &) = delete;
     SoftwareModel& operator=(const SoftwareModel&) = delete;
-    ~SoftwareModel() = default;
+    virtual ~SoftwareModel() = default;
 
     virtual uint32_t Score(
         uint32_t layerIndex,
-        uint32_t layerCount,
+        uint32_t layerCountIn,
         RequestConfiguration const &requestConfiguration,
         RequestProfiler *profiler,
         KernelBuffers *fvBuffers) override;

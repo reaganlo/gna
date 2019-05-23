@@ -80,9 +80,9 @@ int LinuxGnaSelfTestHardwareStatus::checkDriver()
 
     logger.Verbose("Looking for device node /dev/gna[0-%d]\n",DEFAULT_GNA_DEV_NODE_RANGE-1);
     std::string devEntry = devfsGnaNode(DEFAULT_GNA_DEV_NODE_RANGE);
-    if(devEntry.size()==0)
+    if(devEntry.empty())
     {
-        logger.Error("ERROR Looks like there is no node at /dev/gna[0-%d]\n",DEFAULT_GNA_DEV_NODE_RANGE-1);
+        GnaSelfTestLogger::Error("ERROR Looks like there is no node at /dev/gna[0-%d]\n",DEFAULT_GNA_DEV_NODE_RANGE-1);
         return -1;
     }
     logger.Verbose("INFO GNA Node at <%s> has been found\n",devEntry.c_str());
@@ -95,9 +95,9 @@ std::string LinuxGnaSelfTestHardwareStatus::devfsGnaNode(uint8_t range)
     std::string found;
     struct gna_getparam params[3] =
     {
-        { .param = GNA_PARAM_DEVICE_ID },
-        { .param = GNA_PARAM_IBUFFS },
-        { .param = GNA_PARAM_RECOVERY_TIMEOUT },
+        { GNA_PARAM_DEVICE_ID, 0 },
+        { GNA_PARAM_IBUFFS, 0 },
+        { GNA_PARAM_RECOVERY_TIMEOUT, 0 },
     };
 
     for(uint8_t i = 0; i < range; i++)
@@ -108,9 +108,9 @@ std::string LinuxGnaSelfTestHardwareStatus::devfsGnaNode(uint8_t range)
         {
             continue;
         }
-        if(!ioctl(fd, GNA_IOCTL_GETPARAM, &params[0])
-            && !ioctl(fd, GNA_IOCTL_GETPARAM, &params[1])
-            && !ioctl(fd, GNA_IOCTL_GETPARAM, &params[2]))
+        if(ioctl(fd, GNA_IOCTL_GETPARAM, &params[0]) == 0
+            && ioctl(fd, GNA_IOCTL_GETPARAM, &params[1]) == 0
+            && ioctl(fd, GNA_IOCTL_GETPARAM, &params[2]) == 0)
         {
             logger.Verbose("INFO GNA device of type = %llX found\n", params[0].value);
             found = name;
@@ -151,7 +151,7 @@ std::string LinuxGnaSelfTestHardwareStatus::readCmdOutput(const char* command) c
     }
     else
     {
-        logger.Error("ERROR Can not read output from <%s>\n",command);
+        GnaSelfTestLogger::Error("ERROR Can not read output from <%s>\n",command);
     }
     return output;
 }

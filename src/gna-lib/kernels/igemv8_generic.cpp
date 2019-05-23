@@ -23,8 +23,11 @@
  in any way.
 */
 
-#include "igemv.h"
 #include "igemv8.h"
+
+#include "KernelArguments.h"
+
+#include <cstdint>
 
 void RecurrentKernelImpl1B(RecurrentConfig const * const config)
 {
@@ -112,11 +115,17 @@ void RecurrentKernelImpl1B1B(RecurrentConfig const * const config)
     for (; bias < biasEnd; bias += config->bytesPerBias, output++)
     {
         if (config->bytesPerBias == 1)
+        {
             *output = *(int8_t*)bias;
+        }
         else if (config->bytesPerBias == 2)
+        {
             *output = *(int16_t*)bias;
+        }
         else if (config->bytesPerBias == 4)
+        {
             *output = *(int32_t*)bias;
+        }
 
         input = (int8_t*)config->input;
         feedback = (int8_t*)config->feedbackBuffer;

@@ -153,12 +153,10 @@ set(gna_lib_headers
   ${SRC_DIR}/AccelerationDetector.h
   ${SRC_DIR}/ActivationFunction.h
   ${SRC_DIR}/ActiveList.h
-  ${SRC_DIR}/Address.h
   ${SRC_DIR}/AffineFunctions.h
   ${SRC_DIR}/ApiProperty.h
   ${SRC_DIR}/ApiWrapper.h
   ${SRC_DIR}/Capabilities.h
-  ${SRC_DIR}/common.h
   ${SRC_DIR}/CompiledModel.h
   ${SRC_DIR}/Component.h
   ${SRC_DIR}/ConvolutionalFunctions.h
@@ -174,7 +172,6 @@ set(gna_lib_headers
   ${SRC_DIR}/DriverInterface.h
   ${SRC_DIR}/Expect.h
   ${SRC_DIR}/GmmLayer.h
-  ${SRC_DIR}/GnaException.h
   ${SRC_DIR}/GnaTypes.h
   ${SRC_DIR}/HardwareCapabilities.h
   ${SRC_DIR}/HardwareLayer.h
@@ -254,9 +251,12 @@ set(gna_api_headers_extra_2
   ${API_DIR}/gna2-capability-api.h)
 
 set(common_sources
-  ${COMMON_DIR}/profiler.c
-  ${COMMON_DIR}/profiler.h
-  ${COMMON_DIR}/Macros.h)
+  ${COMMON_DIR}/Address.h
+  ${COMMON_DIR}/common.h
+  ${COMMON_DIR}/GnaException.h
+  ${COMMON_DIR}/Macros.h
+  ${COMMON_DIR}/profiler.cpp
+  ${COMMON_DIR}/profiler.h)
 
 if(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
   set_source_files_properties(${COMMON_DIR}/version.rc PROPERTIES LANGUAGE RC)
@@ -314,7 +314,20 @@ set_target_properties(gna-api
   OUTPUT_NAME gna)
 
 target_compile_definitions(gna-api
-  PRIVATE ${API_EXTRA_DEFS} -DPROFILE -DPROFILE_DETAILED -DHW_VERBOSE=0)
+  PRIVATE
+  ${GNA_COMPILE_DEFS}
+  $<$<CONFIG:${OS_PREFIX}_DEBUG>:${GNA_COMPILE_DEFS_DEBUG}>
+  $<$<CONFIG:${OS_PREFIX}_RELEASE>:${GNA_COMPILE_DEFS_RELEASE}>
+  $<$<CONFIG:KLOCWORK>:${GNA_COMPILE_DEFS_RELEASE}>
+  ${API_EXTRA_DEFS}
+  -DPROFILE -DPROFILE_DETAILED -DHW_VERBOSE=0)
+
+target_compile_options(gna-api
+  PRIVATE
+  ${GNA_COMPILE_FLAGS}
+  $<$<CONFIG:${OS_PREFIX}_DEBUG>:${GNA_COMPILE_FLAGS_DEBUG}>
+  $<$<CONFIG:${OS_PREFIX}_RELEASE>:${GNA_COMPILE_FLAGS_RELEASE}>
+  $<$<CONFIG:KLOCWORK>:${GNA_COMPILE_FLAGS_RELEASE}>)
 
 target_link_libraries(gna-api
   PRIVATE ${CMAKE_THREAD_LIBS_INIT} ${API_EXTRA_LIBS} ${kernel_libraries})
@@ -408,7 +421,19 @@ if(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
   set_property(TARGET gna-api-verbose PROPERTY COMPILE_FLAGS "/WX")
 
   target_compile_definitions(gna-api-verbose
-    PRIVATE ${API_EXTRA_DEFS} -DPROFILE -DPROFILE_DETAILED -DHW_VERBOSE=1 -DDUMP_ENABLED)
+    PRIVATE
+    ${GNA_COMPILE_DEFS}
+    $<$<CONFIG:${OS_PREFIX}_DEBUG>:${GNA_COMPILE_DEFS_DEBUG}>
+    $<$<CONFIG:${OS_PREFIX}_RELEASE>:${GNA_COMPILE_DEFS_RELEASE}>
+    $<$<CONFIG:KLOCWORK>:${GNA_COMPILE_DEFS_RELEASE}>
+    ${API_EXTRA_DEFS} -DPROFILE -DPROFILE_DETAILED -DHW_VERBOSE=1 -DDUMP_ENABLED)
+
+  target_compile_options(gna-api-verbose
+    PRIVATE
+    ${GNA_COMPILE_FLAGS}
+    $<$<CONFIG:${OS_PREFIX}_DEBUG>:${GNA_COMPILE_FLAGS_DEBUG}>
+    $<$<CONFIG:${OS_PREFIX}_RELEASE>:${GNA_COMPILE_FLAGS_RELEASE}>
+    $<$<CONFIG:KLOCWORK>:${GNA_COMPILE_FLAGS_RELEASE}>)
 
   target_link_libraries(gna-api-verbose
     PRIVATE ${CMAKE_THREAD_LIBS_INIT} ${API_EXTRA_LIBS} ${kernel_libraries})

@@ -49,7 +49,7 @@ int getTimeWithMilis(struct timeWithMilis* t)
     struct timeval tv;
     int ret = gettimeofday(&tv, NULL);
     t->time = tv.tv_sec;
-    t->millitm = tv.tv_usec/1000;
+    t->millitm = (short unsigned int)(tv.tv_usec/1000);
     return ret;
 }
 #define rtcGetTime(t) (int)getTimeWithMilis(t)
@@ -113,16 +113,16 @@ uint64_t profilerGetTscPassed(gna_profiler_tsc const * const profiler)
  */
 time_rtc rtcGetTimeDiff(time_rtc* start, time_rtc* stop)
 {
-    time_rtc diff = { 0 };
+    time_rtc diff = { 0, 0 };
 
     if(NULL != start && NULL != stop)
     {
         diff.PROFILER_TSEC = stop->PROFILER_TSEC - start->PROFILER_TSEC;
-        diff.PROFILER_TFRAC = stop->PROFILER_TFRAC - start->PROFILER_TFRAC;
+        diff.PROFILER_TFRAC = (short unsigned int)(stop->PROFILER_TFRAC - start->PROFILER_TFRAC);
         // correct time if fraction value is less than second
         if(stop->PROFILER_TFRAC - start->PROFILER_TFRAC < 0)
         {
-            diff.PROFILER_TFRAC = PROFILER_TFRAC_RES + stop->PROFILER_TFRAC - start->PROFILER_TFRAC;
+            diff.PROFILER_TFRAC = (short unsigned int)(PROFILER_TFRAC_RES + stop->PROFILER_TFRAC - start->PROFILER_TFRAC);
             diff.PROFILER_TSEC -= 1;
         }
     }
@@ -146,13 +146,8 @@ void profilerRtcStop(gna_profiler_rtc * const profiler)
 
 uint64_t profilerRtcGetMilis(gna_profiler_rtc * const profiler)
 {
-    uint64_t milis = TIME_TSC_MAX;
+    uint64_t milis;
 
-    // check for milis overflow
-    if (TIME_TSC_MAX < (profiler->passed.PROFILER_TFRAC / (PROFILER_TFRAC_RES / 1000)))
-    {
-        return TIME_TSC_MAX;
-    }
     milis = profiler->passed.PROFILER_TFRAC / (PROFILER_TFRAC_RES / 1000);
 
     // check for milis overflow (simplyfied equation!)
@@ -160,7 +155,7 @@ uint64_t profilerRtcGetMilis(gna_profiler_rtc * const profiler)
     {
         return TIME_TSC_MAX;
     }
-    milis += 1000 * profiler->passed.PROFILER_TSEC;
+    milis += (uint64_t)(1000 * profiler->passed.PROFILER_TSEC);
     return milis;
 }
 #endif // DRIVER

@@ -23,16 +23,16 @@
  in any way.
 */
 
-#include <memory>
-#include <thread>
+#include "DeviceManager.h"
+#include "Expect.h"
+#include "GnaException.h"
+#include "Logger.h"
 
 #include "gna2-common-impl.h"
 #include "gna-api-dumper.h"
 
-#include "DeviceManager.h"
-#include "GnaException.h"
-#include "Expect.h"
-#include "Logger.h"
+#include <cstddef>
+#include <memory>
 
 using namespace GNA;
 
@@ -164,12 +164,12 @@ GNAAPI gna_status_t GnaRequestConfigActiveListAdd(
 
 GNAAPI intel_gna_status_t GnaRequestConfigEnableHardwareConsistency(
     gna_request_cfg_id configId,
-    gna_device_version hardwareVersion)
+    gna_device_version legacyVersion)
 {
     try
     {
         auto& device = DeviceManager::Get().GetDevice(0);
-        const auto deviceVersion = DeviceVersionMapInverted.at(hardwareVersion);
+        const auto deviceVersion = DeviceVersionMapInverted.at(legacyVersion);
         device.EnableHardwareConsistency(configId, deviceVersion);
         return GNA_SUCCESS;
     }
@@ -186,12 +186,12 @@ GNAAPI intel_gna_status_t GnaRequestConfigEnableHardwareConsistency(
 
 GNAAPI intel_gna_status_t GnaRequestConfigEnforceAcceleration(
     gna_request_cfg_id configId,
-    gna_acceleration accel)
+    gna_acceleration accelerationMode)
 {
     try
     {
         auto& device = DeviceManager::Get().GetDevice(0);
-        device.EnforceAcceleration(configId, AccelerationMode(accel).GetMode());
+        device.EnforceAcceleration(configId, AccelerationMode(accelerationMode).GetMode());
         return GNA_SUCCESS;
     }
     catch (const GnaException &e)
@@ -351,11 +351,11 @@ GNAAPI intel_gna_status_t GnaDeviceGetVersion(uint32_t deviceIndex,
     }
 }
 
-GNAAPI intel_gna_status_t GnaDeviceSetThreadNumber(gna_device_id device, uint32_t threadNumber)
+GNAAPI intel_gna_status_t GnaDeviceSetThreadNumber(gna_device_id deviceIndex, uint32_t threadNumber)
 {
     try
     {
-        DeviceManager::Get().SetThreadCount(device, threadNumber);
+        DeviceManager::Get().SetThreadCount(deviceIndex, threadNumber);
         return GNA_SUCCESS;
     }
     catch (const GnaException &e)
@@ -368,11 +368,11 @@ GNAAPI intel_gna_status_t GnaDeviceSetThreadNumber(gna_device_id device, uint32_
     }
 }
 
-GNAAPI intel_gna_status_t GnaDeviceOpen(gna_device_id device)
+GNAAPI intel_gna_status_t GnaDeviceOpen(gna_device_id deviceIndex)
 {
     try
     {
-        DeviceManager::Get().OpenDevice(device);
+        DeviceManager::Get().OpenDevice(deviceIndex);
         return GNA_SUCCESS;
     }
     catch (const GnaException &e)
@@ -386,11 +386,11 @@ GNAAPI intel_gna_status_t GnaDeviceOpen(gna_device_id device)
 }
 
 GNAAPI gna_status_t GnaDeviceClose(
-    gna_device_id deviceId)
+    gna_device_id deviceIndex)
 {
     try
     {
-        DeviceManager::Get().CloseDevice(deviceId);
+        DeviceManager::Get().CloseDevice(deviceIndex);
         return GNA_SUCCESS;
     }
     catch (const GnaException &e)
@@ -453,3 +453,4 @@ gna_status_t GnaRequestConfigEnablePerf(gna_request_cfg_id configId,
         return HandleUnknownException(e);
     }
 }
+

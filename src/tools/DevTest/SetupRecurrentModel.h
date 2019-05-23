@@ -33,11 +33,11 @@ public:
 
     ~SetupRecurrentModel();
 
-    void checkReferenceOutput(int modelIndex, int configIndex) const override;
+    void checkReferenceOutput(uint32_t modelIndex, uint32_t configIndex) const override;
 
 private:
-    void samplePwl(intel_pwl_segment_t* segments, uint32_t nSegments);
-    void sampleRnnLayer(intel_nnet_type_t& nnet);
+    void samplePwl(intel_pwl_segment_t* segments, uint32_t numberOfSegments);
+    void sampleRnnLayer();
 
     DeviceController & deviceController;
 

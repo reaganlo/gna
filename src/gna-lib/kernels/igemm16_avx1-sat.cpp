@@ -23,10 +23,17 @@
  in any way.
 */
 
-#include <string.h>
-
 #include "igemv.h"
 #include "igemv16.h"
+
+#include "KernelArguments.h"
+#include "KernelMacros.h"
+
+#include "gna-api-types-xnn.h"
+
+#include <cstdint>
+#include <cstring>
+#include <immintrin.h>
 
 // TODO: make all kernel implementations style consistent, use auto and sort local variables, use full names, 1 var. per decl. line
 
@@ -111,7 +118,7 @@ void AffineKernelImpl2B(AffineConfig const * const config)
 
             for (j = 0; j < tailElementCount; j++, weight++)
             {
-                *sum += (int32_t)((*input)[j] * *weight);
+                *sum += (*input)[j] * *weight;
             }
 
             saturate_store_out(sum, output, config->execution->SaturationCount);
@@ -121,37 +128,72 @@ void AffineKernelImpl2B(AffineConfig const * const config)
         return;
     }
 
-    switch (config->inputVectorCount)
+    if (config->inputVectorCount == 8)
     {
-    case 8: 
-        for (i = 0; i < config->inputElementCount; i++) config->execution->Intermediate->d7[i] = config->input[i*config->inputVectorCount + 7];
+        for (i = 0; i < config->inputElementCount; i++)
+        {
+            config->execution->Intermediate->d7[i] = config->input[i*config->inputVectorCount + 7];
+        }
         in_ptr7 = (__m128i*)config->execution->Intermediate->d7;
         input[7] = config->execution->Intermediate->d7 + headElementCount;
-    case 7: 
-        for (i = 0; i < config->inputElementCount; i++) config->execution->Intermediate->d6[i] = config->input[i*config->inputVectorCount + 6];
+    }
+    if (config->inputVectorCount >= 7)
+    {
+        for (i = 0; i < config->inputElementCount; i++)
+        {
+            config->execution->Intermediate->d6[i] = config->input[i*config->inputVectorCount + 6];
+        }
         in_ptr6 = (__m128i*)config->execution->Intermediate->d6;
         input[6] = config->execution->Intermediate->d6 + headElementCount;
-    case 6: 
-        for (i = 0; i < config->inputElementCount; i++) config->execution->Intermediate->d5[i] = config->input[i*config->inputVectorCount + 5];
+    }
+    if (config->inputVectorCount >= 6)
+    {
+        for (i = 0; i < config->inputElementCount; i++)
+        {
+            config->execution->Intermediate->d5[i] = config->input[i*config->inputVectorCount + 5];
+        }
         in_ptr5 = (__m128i*)config->execution->Intermediate->d5;
         input[5] = config->execution->Intermediate->d5 + headElementCount;
-    case 5: 
-        for (i = 0; i < config->inputElementCount; i++) config->execution->Intermediate->d4[i] = config->input[i*config->inputVectorCount + 4];
+    }
+    if (config->inputVectorCount >= 5)
+    {
+        for (i = 0; i < config->inputElementCount; i++)
+        {
+            config->execution->Intermediate->d4[i] = config->input[i*config->inputVectorCount + 4];
+        }
         in_ptr4 = (__m128i*)config->execution->Intermediate->d4;
         input[4] = config->execution->Intermediate->d4 + headElementCount;
-    case 4: 
-        for (i = 0; i < config->inputElementCount; i++) config->execution->Intermediate->d3[i] = config->input[i*config->inputVectorCount + 3];
+    }
+    if (config->inputVectorCount >= 4)
+    {
+        for (i = 0; i < config->inputElementCount; i++)
+        {
+            config->execution->Intermediate->d3[i] = config->input[i*config->inputVectorCount + 3];
+        }
         in_ptr3 = (__m128i*)config->execution->Intermediate->d3;
         input[3] = config->execution->Intermediate->d3 + headElementCount;
-    case 3: 
-        for (i = 0; i < config->inputElementCount; i++) config->execution->Intermediate->d2[i] = config->input[i*config->inputVectorCount + 2];
+    }
+    if (config->inputVectorCount >= 3)
+    {
+        for (i = 0; i < config->inputElementCount; i++)
+        {
+            config->execution->Intermediate->d2[i] = config->input[i*config->inputVectorCount + 2];
+        }
         in_ptr2 = (__m128i*)config->execution->Intermediate->d2;
         input[2] = config->execution->Intermediate->d2 + headElementCount;
-    case 2: 
-        for (i = 0; i < config->inputElementCount; i++) config->execution->Intermediate->d1[i] = config->input[i*config->inputVectorCount + 1];
+    }
+    if (config->inputVectorCount >= 2)
+    {
+        for (i = 0; i < config->inputElementCount; i++)
+        {
+            config->execution->Intermediate->d1[i] = config->input[i*config->inputVectorCount + 1];
+        }
         in_ptr1 = (__m128i*)config->execution->Intermediate->d1;
         input[1] = config->execution->Intermediate->d1 + headElementCount;
-        for (i = 0; i < config->inputElementCount; i++) config->execution->Intermediate->d0[i] = config->input[i*config->inputVectorCount];
+        for (i = 0; i < config->inputElementCount; i++)
+        {
+            config->execution->Intermediate->d0[i] = config->input[i*config->inputVectorCount];
+        }
         in_ptr0 = (__m128i*)config->execution->Intermediate->d0;
         input[0] = config->execution->Intermediate->d0 + headElementCount;
     }
@@ -209,7 +251,7 @@ void AffineKernelImpl2B(AffineConfig const * const config)
             {
                 for (i = 0; i < config->inputVectorCount; i++)
                 {
-                    sum[i] += (int32_t)(input[i][j] * *weight);
+                    sum[i] += input[i][j] * *weight;
                 }
             }
 
@@ -279,7 +321,7 @@ void AffineKernelImpl2B(AffineConfig const * const config)
             {
                 for (i = 0; i < config->inputVectorCount; i++)
                 {
-                    sum[i] += (int32_t)(input[i][j] * *weight);
+                    sum[i] += input[i][j] * *weight;
                 }
             }
 
@@ -359,7 +401,7 @@ void AffineKernelImpl2B(AffineConfig const * const config)
             {
                 for (i = 0; i < config->inputVectorCount; i++)
                 {
-                    sum[i] += (int32_t)(input[i][j] * *weight);
+                    sum[i] += input[i][j] * *weight;
                 }
             }
 
@@ -444,7 +486,7 @@ void AffineKernelImpl2B(AffineConfig const * const config)
             {
                 for (i = 0; i < config->inputVectorCount; i++)
                 {
-                    sum[i] += (int32_t)(input[i][j] * *weight);
+                    sum[i] += input[i][j] * *weight;
                 }
             }
 
@@ -526,7 +568,7 @@ void AffineKernelImpl2B(AffineConfig const * const config)
             {
                 for (i = 0; i < config->inputVectorCount; i++)
                 {
-                    sum[i] += (int32_t)(input[i][j] * *weight);
+                    sum[i] += input[i][j] * *weight;
                 }
             }
 
@@ -612,7 +654,7 @@ void AffineKernelImpl2B(AffineConfig const * const config)
             {
                 for (i = 0; i < config->inputVectorCount; i++)
                 {
-                    sum[i] += (int32_t)(input[i][j] * *weight);
+                    sum[i] += input[i][j] * *weight;
                 }
             }
 
@@ -709,7 +751,7 @@ void AffineKernelImpl2B(AffineConfig const * const config)
             {
                 for (i = 0; i < config->inputVectorCount; i++)
                 {
-                    sum[i] += (int32_t)(input[i][j] * *weight);
+                    sum[i] += input[i][j] * *weight;
                 }
             }
 
@@ -802,7 +844,7 @@ void AffineMultiBiasKernelImpl2B(AffineConfig const * const config)
 
             for (j = 0; j < tailElementCount; j++, weight++)
             {
-                *sum += (int32_t)((*input)[j] * *weight);
+                *sum += (*input)[j] * *weight;
             }
 
             saturate_store_out(sum, output, config->execution->SaturationCount);
@@ -812,37 +854,72 @@ void AffineMultiBiasKernelImpl2B(AffineConfig const * const config)
         return;
     }
 
-    switch (config->inputVectorCount)
+    if (config->inputVectorCount == 8)
     {
-    case 8: 
-        for (i = 0; i < config->inputElementCount; i++) config->execution->Intermediate->d7[i] = config->input[i*config->inputVectorCount + 7];
+        for (i = 0; i < config->inputElementCount; i++)
+        {
+            config->execution->Intermediate->d7[i] = config->input[i*config->inputVectorCount + 7];
+        }
         in_ptr7 = (__m128i*)config->execution->Intermediate->d7;
         input[7] = config->execution->Intermediate->d7 + headElementCount;
-    case 7: 
-        for (i = 0; i < config->inputElementCount; i++) config->execution->Intermediate->d6[i] = config->input[i*config->inputVectorCount + 6];
+    }
+    if (config->inputVectorCount >= 7)
+    {
+        for (i = 0; i < config->inputElementCount; i++)
+        {
+            config->execution->Intermediate->d6[i] = config->input[i*config->inputVectorCount + 6];
+        }
         in_ptr6 = (__m128i*)config->execution->Intermediate->d6;
         input[6] = config->execution->Intermediate->d6 + headElementCount;
-    case 6: 
-        for (i = 0; i < config->inputElementCount; i++) config->execution->Intermediate->d5[i] = config->input[i*config->inputVectorCount + 5];
+    }
+    if (config->inputVectorCount >= 6)
+    {
+        for (i = 0; i < config->inputElementCount; i++)
+        {
+            config->execution->Intermediate->d5[i] = config->input[i*config->inputVectorCount + 5];
+        }
         in_ptr5 = (__m128i*)config->execution->Intermediate->d5;
         input[5] = config->execution->Intermediate->d5 + headElementCount;
-    case 5: 
-        for (i = 0; i < config->inputElementCount; i++) config->execution->Intermediate->d4[i] = config->input[i*config->inputVectorCount + 4];
+    }
+    if (config->inputVectorCount >= 5)
+    {
+        for (i = 0; i < config->inputElementCount; i++)
+        {
+            config->execution->Intermediate->d4[i] = config->input[i*config->inputVectorCount + 4];
+        }
         in_ptr4 = (__m128i*)config->execution->Intermediate->d4;
         input[4] = config->execution->Intermediate->d4 + headElementCount;
-    case 4: 
-        for (i = 0; i < config->inputElementCount; i++) config->execution->Intermediate->d3[i] = config->input[i*config->inputVectorCount + 3];
+    }
+    if (config->inputVectorCount >= 4)
+    {
+        for (i = 0; i < config->inputElementCount; i++)
+        {
+            config->execution->Intermediate->d3[i] = config->input[i*config->inputVectorCount + 3];
+        }
         in_ptr3 = (__m128i*)config->execution->Intermediate->d3;
         input[3] = config->execution->Intermediate->d3 + headElementCount;
-    case 3: 
-        for (i = 0; i < config->inputElementCount; i++) config->execution->Intermediate->d2[i] = config->input[i*config->inputVectorCount + 2];
+    }
+    if (config->inputVectorCount >= 3)
+    {
+        for (i = 0; i < config->inputElementCount; i++)
+        {
+            config->execution->Intermediate->d2[i] = config->input[i*config->inputVectorCount + 2];
+        }
         in_ptr2 = (__m128i*)config->execution->Intermediate->d2;
         input[2] = config->execution->Intermediate->d2 + headElementCount;
-    case 2: 
-        for (i = 0; i < config->inputElementCount; i++) config->execution->Intermediate->d1[i] = config->input[i*config->inputVectorCount + 1];
+    }
+    if (config->inputVectorCount >= 2)
+    {
+        for (i = 0; i < config->inputElementCount; i++)
+        {
+            config->execution->Intermediate->d1[i] = config->input[i*config->inputVectorCount + 1];
+        }
         in_ptr1 = (__m128i*)config->execution->Intermediate->d1;
         input[1] = config->execution->Intermediate->d1 + headElementCount;
-        for (i = 0; i < config->inputElementCount; i++) config->execution->Intermediate->d0[i] = config->input[i*config->inputVectorCount];
+        for (i = 0; i < config->inputElementCount; i++)
+        {
+            config->execution->Intermediate->d0[i] = config->input[i*config->inputVectorCount];
+        }
         in_ptr0 = (__m128i*)config->execution->Intermediate->d0;
         input[0] = config->execution->Intermediate->d0 + headElementCount;
     }
@@ -900,7 +977,7 @@ void AffineMultiBiasKernelImpl2B(AffineConfig const * const config)
             {
                 for (i = 0; i < config->inputVectorCount; i++)
                 {
-                    sum[i] += (int32_t)(input[i][j] * *weight);
+                    sum[i] += input[i][j] * *weight;
                 }
             }
 
@@ -970,7 +1047,7 @@ void AffineMultiBiasKernelImpl2B(AffineConfig const * const config)
             {
                 for (i = 0; i < config->inputVectorCount; i++)
                 {
-                    sum[i] += (int32_t)(input[i][j] * *weight);
+                    sum[i] += input[i][j] * *weight;
                 }
             }
 
@@ -1050,7 +1127,7 @@ void AffineMultiBiasKernelImpl2B(AffineConfig const * const config)
             {
                 for (i = 0; i < config->inputVectorCount; i++)
                 {
-                    sum[i] += (int32_t)(input[i][j] * *weight);
+                    sum[i] += input[i][j] * *weight;
                 }
             }
 
@@ -1135,7 +1212,7 @@ void AffineMultiBiasKernelImpl2B(AffineConfig const * const config)
             {
                 for (i = 0; i < config->inputVectorCount; i++)
                 {
-                    sum[i] += (int32_t)(input[i][j] * *weight);
+                    sum[i] += input[i][j] * *weight;
                 }
             }
 
@@ -1217,7 +1294,7 @@ void AffineMultiBiasKernelImpl2B(AffineConfig const * const config)
             {
                 for (i = 0; i < config->inputVectorCount; i++)
                 {
-                    sum[i] += (int32_t)(input[i][j] * *weight);
+                    sum[i] += input[i][j] * *weight;
                 }
             }
 
@@ -1303,7 +1380,7 @@ void AffineMultiBiasKernelImpl2B(AffineConfig const * const config)
             {
                 for (i = 0; i < config->inputVectorCount; i++)
                 {
-                    sum[i] += (int32_t)(input[i][j] * *weight);
+                    sum[i] += input[i][j] * *weight;
                 }
             }
 
@@ -1400,7 +1477,7 @@ void AffineMultiBiasKernelImpl2B(AffineConfig const * const config)
             {
                 for (i = 0; i < config->inputVectorCount; i++)
                 {
-                    sum[i] += (int32_t)(input[i][j] * *weight);
+                    sum[i] += input[i][j] * *weight;
                 }
             }
 

@@ -25,12 +25,13 @@
 
 #pragma once
 
-#include <map>
-#include <memory>
-
 #include "Device.h"
 
-#include "common.h"
+#include "gna2-common-impl.h"
+
+#include <cstdint>
+#include <memory>
+#include <vector>
 
 namespace GNA
 {
@@ -47,21 +48,21 @@ public:
     DeviceManager(DeviceManager const&) = delete;
     void operator=(DeviceManager const&) = delete;
 
-    Device& GetDevice(gna_device_id deviceId);
+    Device& GetDevice(uint32_t deviceIndex);
 
     uint32_t GetDeviceCount();
 
-    DeviceVersion GetDeviceVersion(gna_device_id deviceId);
+    DeviceVersion GetDeviceVersion(uint32_t deviceIndex);
 
-    void SetThreadCount(gna_device_id deviceId, uint32_t threadCount);
+    void SetThreadCount(uint32_t deviceIndex, uint32_t threadCount);
 
-    uint32_t GetThreadCount(gna_device_id deviceId);
+    uint32_t GetThreadCount(uint32_t deviceIndex);
 
-    void VerifyDeviceIndex(gna_device_id deviceId);
+    void VerifyDeviceIndex(uint32_t deviceIndex);
 
-    void OpenDevice(gna_device_id deviceId);
+    void OpenDevice(uint32_t deviceIndex);
 
-    void CloseDevice(gna_device_id deviceId);
+    void CloseDevice(uint32_t deviceIndex);
 
     static constexpr uint32_t DefaultThreadCount = 1;
 

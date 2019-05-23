@@ -23,8 +23,13 @@
  in any way.
 */
 
+#include "Address.h"
 #include "KernelArguments.h"
-#include "pwl.h"
+
+#include "gna-api.h"
+
+#include <map>
+#include <utility>
 
 BaseConfig::BaseConfig(const BufferMap& buffers) :
     BufferMap{buffers}
@@ -49,10 +54,14 @@ void BaseConfig::Update(const BufferMap& buffers)
 
 void BaseConfig::setPointers()
 {
-    if (count(InputComponent))
+    if (count(InputComponent) > 0)
+    {
         Inputs = at(InputComponent);
-    if (count(OutputComponent))
+    }
+    if (count(OutputComponent) > 0)
+    {
         Outputs = at(OutputComponent);
+    }
 }
 
 ActivationConfig::ActivationConfig(uint32_t elementCount, GNA::PwlCached const * kernel) :
@@ -244,7 +253,7 @@ PoolingConfig::PoolingConfig(nn_pool_type const typeIn, uint32_t const sizeIn, u
     buffer{nullptr}
 {}
 
-GmmConfig::GmmConfig(GmmConfig const * const source, uint8_t *inputScratchPadIn) :
+GmmConfig::GmmConfig(GmmConfig const * const source, const uint8_t *inputScratchPadIn) :
     GmmConfig{*source}
 {
     inputScratchPad = inputScratchPadIn;

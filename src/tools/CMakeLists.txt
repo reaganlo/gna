@@ -104,8 +104,22 @@ set_target_properties(DevTest
   RUNTIME_OUTPUT_DIRECTORY_${OS_PREFIX}_RELEASE ${GNA_DEVTEST_RELEASE_OUT_DIR}
   EXCLUDE_FROM_DEFAULT_BUILD_KLOCWORK TRUE
   OUTPUT_NAME DevTest)
+
+target_compile_definitions(DevTest
+  PRIVATE
+  ${GNA_COMPILE_DEFS}
+  $<$<CONFIG:${OS_PREFIX}_DEBUG>:${GNA_COMPILE_DEFS_DEBUG}>
+  $<$<CONFIG:${OS_PREFIX}_RELEASE>:${GNA_COMPILE_DEFS_RELEASE}>
+  $<$<CONFIG:KLOCWORK>:${GNA_COMPILE_DEFS_RELEASE}>)
+
 target_compile_options(DevTest
-  PRIVATE ${EXTRA_EXE_COMPILE_OPTIONS})
+  PRIVATE
+  ${GNA_COMPILE_FLAGS}
+  $<$<CONFIG:${OS_PREFIX}_DEBUG>:${GNA_COMPILE_FLAGS_DEBUG}>
+  $<$<CONFIG:${OS_PREFIX}_RELEASE>:${GNA_COMPILE_FLAGS_RELEASE}>
+  $<$<CONFIG:KLOCWORK>:${GNA_COMPILE_FLAGS_RELEASE}>
+  ${EXTRA_EXE_COMPILE_OPTIONS})
+
 target_link_libraries(DevTest gna-api)
 
 add_custom_command(TARGET DevTest POST_BUILD
@@ -221,8 +235,20 @@ set_target_properties(gna-self-test
 target_link_libraries(gna-self-test ${GNA_SELF_TEST_LINK_LIBS})
 target_include_directories(gna-self-test PRIVATE ${COMMON_DIR} ${API_DIR})
 
+target_compile_definitions(gna-self-test
+  PRIVATE
+  ${GNA_COMPILE_DEFS}
+  $<$<CONFIG:${OS_PREFIX}_DEBUG>:${GNA_COMPILE_DEFS_DEBUG}>
+  $<$<CONFIG:${OS_PREFIX}_RELEASE>:${GNA_COMPILE_DEFS_RELEASE}>
+  $<$<CONFIG:KLOCWORK>:${GNA_COMPILE_DEFS_RELEASE}>)
+
 target_compile_options(gna-self-test
-  PRIVATE ${EXTRA_EXE_COMPILE_OPTIONS})
+  PRIVATE
+  ${GNA_COMPILE_FLAGS}
+  $<$<CONFIG:${OS_PREFIX}_DEBUG>:${GNA_COMPILE_FLAGS_DEBUG}>
+  $<$<CONFIG:${OS_PREFIX}_RELEASE>:${GNA_COMPILE_FLAGS_RELEASE}>
+  $<$<CONFIG:KLOCWORK>:${GNA_COMPILE_FLAGS_RELEASE}>
+  ${EXTRA_EXE_COMPILE_OPTIONS})
 
 #copy gna library
 add_custom_command(TARGET gna-self-test POST_BUILD

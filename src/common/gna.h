@@ -114,13 +114,13 @@ struct gna_score_cfg {
 
 	__u64 request_id;
 
-	union {
+	union gna_desc_cfg {
 		__u8 descriptor[GNA_CFG_SIZE];
-		struct {
+		struct gna_xnn_config {
 			__u32 layer_base;
 			__u32 layer_count;
-		};
-	};
+		} xnn_cfg;
+	} desc_cfg;
 
 	/* List of GNA memory buffers */
 	__u64 buffers_ptr;

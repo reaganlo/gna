@@ -29,8 +29,14 @@
 #include "AffineFunctions.h"
 #include "Layer.h"
 
+#include "common.h"
+
+#include <memory>
+
 namespace GNA
 {
+class BaseValidator;
+struct LayerConfiguration;
 
 class AffineBaseLayer : public Layer
 {

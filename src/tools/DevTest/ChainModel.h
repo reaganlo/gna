@@ -73,14 +73,14 @@ private:
 
     std::vector<intel_nnet_layer_t> layers;
 
-    static const int nSegments;
-    static const int groupingNum;
-    static const int inVecSz;
-    static const int outVecSz;
-    static const int rnnOutVecSz;
-    static const int cnnInVecSz;
-    static const int cnnOutVecSz;
-    static const int gmmInVecSz;
+    static const uint32_t nSegments;
+    static const uint32_t groupingNum;
+    static const uint32_t inVecSz;
+    static const uint32_t outVecSz;
+    static const uint32_t rnnOutVecSz;
+    static const uint32_t cnnInVecSz;
+    static const uint32_t cnnOutVecSz;
+    static const uint32_t gmmInVecSz;
 
     static const int16_t inputs[];
     static const int16_t cnnInputs[];

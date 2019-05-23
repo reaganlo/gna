@@ -25,13 +25,13 @@
 
 #pragma once
 
-#include "common.h"
+//#include "common.h"
 
 namespace GNA
 {
 
 //struct Scalar : public Component
-//{    
+//{
 //    Scalar(const uint32_t value, const Validator& validator);
 //    ~Scalar() = default;
 //

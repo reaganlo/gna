@@ -25,12 +25,25 @@
 
 #include "ConvolutionalLayer2D.h"
 
+#include "Address.h"
 #include "ConvolutionalFunctions2D.h"
 #include "Expect.h"
 #include "HardwareCapabilities.h"
 #include "HardwareLayer.h"
-#include "LayerConfiguration.h"
+#include "KernelArguments.h"
+#include "LayerInput.h"
+#include "LayerOutput.h"
 #include "PoolingFunctions2D.h"
+#include "Tensor.h"
+#include "Transform.h"
+#include "TransformMap.h"
+#include "Validator.h"
+
+#include "gna-api-types-xnn.h"
+
+#include <algorithm>
+#include <memory>
+#include <stdexcept>
 
 using namespace GNA;
 

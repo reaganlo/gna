@@ -31,14 +31,14 @@
 class SetupTransposeModel : public IModelSetup
 {
 public:
-    SetupTransposeModel(DeviceController & deviceCtrl, int configIndex);
+    SetupTransposeModel(DeviceController & deviceCtrl, uint32_t configIndex);
 
     ~SetupTransposeModel();
 
-    void checkReferenceOutput(int modelIndex, int configIndex) const override;
+    void checkReferenceOutput(uint32_t modelIndex, uint32_t configIndex) const override;
 
 private:
-    void sampleTransposeLayer(int configIndex);
+    void sampleTransposeLayer(uint32_t configIndex);
 
     DeviceController & deviceController;
 
@@ -108,7 +108,7 @@ private:
          -68,    76,    94,  -157,  -13,    172,
     };
     static const uint8_t numberOfTransposeModels = 2;
-    const std::array<int, numberOfTransposeModels> refSize
+    const std::array<uint32_t, numberOfTransposeModels> refSize
     {{
         sizeof(ref_output_1) / sizeof(int16_t),
         sizeof(ref_output_2) / sizeof(int16_t),
@@ -126,13 +126,13 @@ private:
         inputs_2,
     };
 
-    const int16_t inputsSize[numberOfTransposeModels] =
+    const uint32_t inputsSize[numberOfTransposeModels] =
     {
         sizeof(inputs_1),
         sizeof(inputs_2),
     };
 
-    const std::array<int, numberOfTransposeModels> groupingNum
+    const std::array<uint32_t, numberOfTransposeModels> groupingNum
     {{
         groupingNumConfig1,
         groupingNumConfig2

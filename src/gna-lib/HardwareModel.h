@@ -25,27 +25,25 @@
 
 #pragma once
 
+#include "HardwareLayer.h"
+#include "Memory.h"
+#include "Address.h"
+#include "KernelArguments.h"
+#include "LayerDescriptor.h"
+
+#include "gna-api.h"
+
+#include <cstdint>
 #include <memory>
 #include <vector>
-
-#include "HardwareCapabilities.h"
-#include "HardwareLayer.h"
-#include "HardwareRequest.h"
-#include "DriverInterface.h"
-#include "Memory.h"
 
 #include "gna2-common-impl.h"
 
 namespace GNA
 {
 
-class SoftwareModel;
-class Memory;
-class AccelerationDetector;
+class HardwareCapabilities;
 class Layer;
-struct LayerConfiguration;
-class RequestConfiguration;
-struct RequestProfiler;
 
 class HardwareModel
 {
@@ -57,11 +55,11 @@ public:
     HardwareModel(const std::vector<std::unique_ptr<Layer>>& layers, uint32_t gmmCount,
         const HardwareCapabilities& hwCaps);
 
-    ~HardwareModel() = default;
     HardwareModel(const HardwareModel &) = delete;
     HardwareModel& operator=(const HardwareModel&) = delete;
+    virtual ~HardwareModel() = default;
 
-    void Build(const std::vector<Memory* >& memoryObjects);
+    void Build(const std::vector<Memory* >& modelMemoryObjectsIn);
 
     const HardwareLayer* GetLayer(uint32_t layerIndex) const
     {

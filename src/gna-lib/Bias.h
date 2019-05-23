@@ -25,20 +25,31 @@
 
 #pragma once
 
+#include "Address.h"
+#include "DataMode.h"
 #include "Tensor.h"
-#include "Capabilities.h"
+
+#include "gna-api-types-xnn.h"
+
+#include <cstdint>
 
 namespace GNA
 {
+class FullCapabilitiesMap;
+class LayerValidator;
+struct Shape;
+
+template<typename T>
+struct SetLimits;
 
 struct BiasTensor : public Tensor
 {
     BiasTensor(const Shape& dimensions, const uint32_t biasVectorIndex, const DataMode& dataMode,
-        void * buffer, const LayerValidator& validator, gna_bias_mode mode = GNA_BIAS_PER_KERNEL);
+        void * buffer, const LayerValidator& validatorIn, gna_bias_mode mode = GNA_BIAS_PER_KERNEL);
 
-    ~BiasTensor() = default;
+    virtual ~BiasTensor() = default;
 
-    virtual operator const BaseAddress () const
+    virtual operator const BaseAddress () const override
     {
         return Buffer + (VectorIndex * Mode.Size);
     }

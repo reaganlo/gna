@@ -35,17 +35,17 @@ public:
 
     ~SetupDnnModel_Multibuffer();
 
-    void checkReferenceOutput(int modelIndex, int configIndex) const override;
+    void checkReferenceOutput(uint32_t modelIndex, uint32_t configIndex) const override;
 
 private:
     void sampleAffineLayer();
-    void samplePwl(intel_pwl_segment_t *segments, uint32_t nSegments);
+    void samplePwl(intel_pwl_segment_t *segments, uint32_t numberOfSegments);
 
     template <class intel_reference_output_type>
-    intel_reference_output_type* refOutputAssign(int configIndex) const;
+    intel_reference_output_type* refOutputAssign(uint32_t configIndex) const;
 
     template <class intel_reference_output_type>
-    void compareReferenceValues(unsigned int i, int configIndex) const;
+    void compareReferenceValues(uint32_t i, uint32_t configIndex) const;
 
     DeviceController & deviceController;
 
@@ -172,7 +172,7 @@ private:
 
     static const uint8_t numberOfDnnModels = 8;
 
-    const std::array<int, numberOfDnnModels> refSize
+    const std::array<uint32_t, numberOfDnnModels> refSize
     {{
         sizeof(ref_output_model_1) / sizeof(int32_t),
         sizeof(ref_output_model_1) / sizeof(int32_t),

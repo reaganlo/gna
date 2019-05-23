@@ -25,16 +25,20 @@
 
 #pragma once
 
+#include "DataMode.h"
 #include "Tensor.h"
 
 namespace GNA
 {
+class FullCapabilitiesMap;
+class LayerValidator;
+struct Shape;
 
 struct WeightTensor : public Tensor
 {
     WeightTensor(const Shape& dimensions, const DataMode& dataMode,
-        void * buffer, const LayerValidator& validator);
-    ~WeightTensor() = default;
+        void * buffer, const LayerValidator& validatorIn);
+    virtual ~WeightTensor() = default;
 
 protected:
     static const FullCapabilitiesMap capabilities;

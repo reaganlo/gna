@@ -29,10 +29,17 @@
 #include "ConvolutionalFunctions.h"
 #include "Layer.h"
 #include "PoolingFunctions.h"
-#include "ConvolutionalLayer2D.h"
+
+#include "common.h"
+
+#include <memory>
+
+struct ExecutionConfig;
 
 namespace GNA
 {
+class BaseValidator;
+struct LayerConfiguration;
 
 class CnnLayer : public Layer
 {

@@ -1,15 +1,15 @@
 #pragma once
 
-#include <vector>
-
 #include "ActiveList.h"
 #include "Address.h"
 #include "KernelArguments.h"
 
+#include "common.h"
+
+#include <memory>
+
 namespace GNA
 {
-
-using std::unique_ptr;
 
 struct KernelConfigs
 {
@@ -26,6 +26,6 @@ struct LayerConfiguration
     std::unique_ptr<ActiveList> ActList;
     BufferMap Buffers;
     KernelConfigs Configs;
-    unique_ptr<BaseConfig> ConfigList[TransformOperationCount];
+    std::unique_ptr<BaseConfig> ConfigList[TransformOperationCount];
 };
 }

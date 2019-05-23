@@ -37,6 +37,23 @@ include(CTest)
 # main binary path
 set(GNA_BINARY_DIR ${CMAKE_SOURCE_DIR}/bin)
 
+option(GNA_RUN_CPPCHECK "Run cppcheck analysis" OFF)
+if(GNA_RUN_CPPCHECK)
+  set(CMAKE_CXX_CPPCHECK cppcheck)
+  set(CMAKE_C_CPPCHECK cppcheck)
+endif()
+
+option(GNA_RUN_IWYU "Run iwyu analysis" OFF)
+if(GNA_RUN_IWYU)
+  set(CMAKE_CXX_INCLUDE_WHAT_YOU_USE iwyu)
+  set(CMAKE_C_INCLUDE_WHAT_YOU_USE iwyu)
+endif()
+
+option(GNA_RUN_CLANG_TIDY "Run clang-tidy analysis" OFF)
+if(GNA_RUN_CLANG_TIDY)
+  set(CMAKE_CXX_CLANG_TIDY clang-tidy -checks=-*,readability-*,portability-*,clang-analyzer-*)
+endif()
+
 # source path variables
 set(APP_DIR ${CMAKE_SOURCE_DIR}/src)
 set(COMMON_DIR ${APP_DIR}/common)
@@ -71,115 +88,7 @@ elseif(NOT CMAKE_ARCHITECTURE)
   set(CMAKE_ARCHITECTURE "x64")
 endif()
 
-# configuration flags
-if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux" OR
-  ${CMAKE_SYSTEM_NAME} STREQUAL "Android")
-  if(${CMAKE_BUILD_TYPE} STREQUAL "${OS_PREFIX}_RELEASE")
-    add_definitions("-D_FORTIFY_SOURCE=2")
-  endif()
-
-  set(CXX_FLAGS "-Wall -Werror")
-  if(${CMAKE_SYSTEM_NAME} STREQUAL "Android")
-    set(CXX_FLAGS "-Wall")
-  endif()
-
-  if(${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
-    # clang double braces bug: https://bugs.llvm.org/show_bug.cgi?id=21629
-    set(CXX_FLAGS "${CXX_FLAGS} -Wno-missing-braces")
-  endif()
-    set(CXX_FLAGS_DEBUG "-g -DDEBUG=1")
-  if(${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU")
-    set(CXX_FLAGS_DEBUG "${CXX_FLAGS_DEBUG} -Og -DDEBUG=1")
-  endif()
-
-  set(CXX_FLAGS_RELEASE "-fvisibility=hidden -fvisibility-inlines-hidden -fstack-protector-all -O3 -DNDEBUG")
-
-  if(${CMAKE_CXX_COMPILER_ID} STREQUAL "Intel")
-    set(CXX_FLAGS_RELEASE "${CXX_FLAGS_RELEASE} -fbuiltin")
-    if(NOT ${CMAKE_SYSTEM_NAME} STREQUAL "Android")
-      # Intel compiler hangs or crashes when using -inline-forceinline option for Android target
-      # icpc: error #10014: problem during multi-file optimization compilation (code 4)
-
-      # icpc: error #10106: Fatal error ....   (intel64/mcpcom), terminater by kill signal
-      #set(CXX_FLAGS_RELEASE "${CXX_FLAGS_RELEASE} -inline-forceinline")
-    endif()
-  endif()
-  set(CXX_LINKER_FLAGS "-z now")
-  set(CXX_LINKER_FLAGS_RELEASE "-fdata-sections -ffunction-sections -Wl,--gc-sections")
-elseif(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
-  set(CXX_FLAGS "/EHa /DWIN32 /D_WINDOWS /Zi /WX /sdl")
-  if(${CMAKE_CXX_COMPILER_ID} STREQUAL MSVC)
-    set(CXX_FLAGS "${CXX_FLAGS} /W4")
-  else()
-    set(CXX_FLAGS "${CXX_FLAGS} /Wall")
-  endif()
-  set(CXX_FLAGS_DEBUG "/MDd /Od /DDEBUG=1 /RTC1")
-  set(CXX_FLAGS_RELEASE "/MD /Oi /DNDEBUG /Gy")
-  if(${CMAKE_CXX_COMPILER_ID} STREQUAL "Intel")
-    set(CXX_FLAGS_RELEASE "${CXX_FLAGS_RELEASE} /O3 /Qinline-forceinline")
-  endif()
-  if(${CMAKE_CXX_COMPILER_ID} STREQUAL MSVC)
-    set(CXX_FLAGS_RELEASE "${CXX_FLAGS_RELEASE} /O2")
-  endif()
-  set(CXX_LINKER_FLAGS "/DEBUG")
-  set(CXX_LINKER_FLAGS_DEBUG "/INCREMENTAL")
-  set(CXX_LINKER_FLAGS_RELEASE "/INCREMENTAL:NO /NOLOGO /OPT:REF /OPT:ICF /PDBSTRIPPED:$(TargetDir)$(TargetName)Public.pdb")
-endif()
-
-# interprocedural optimization
-include(CheckIPOSupported)
-check_ipo_supported(RESULT result OUTPUT output)
-if(result)
-  set_property(GLOBAL PROPERTY
-    INTERPROCEDURAL_OPTIMIZATION_${OS_PREFIX}_RELEASE TRUE
-    INTERPROCEDURAL_OPTIMIZATION_KLOCWORK TRUE)
-else()
-  message(WARNING "IPO is not supported: ${output}. Setting flags manually")
-
-  if(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
-    if(${CMAKE_CXX_COMPILER_ID} STREQUAL "Intel")
-      set(CXX_FLAGS_RELEASE "${CXX_FLAGS_RELEASE} /Qipo")
-    elseif(${CMAKE_CXX_COMPILER_ID} STREQUAL "MSVC")
-      set(CXX_FLAGS_RELEASE "${CXX_FLAGS_RELEASE} /GL")
-    endif()
-  elseif(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
-    if(${CMAKE_CXX_COMPILER_ID} STREQUAL "Intel")
-      set(CXX_FLAGS_RELEASE "${CXX_FLAGS_RELEASE} -ipo")
-    else()
-      set(CXX_FLAGS_RELEASE "${CXX_FLAGS_RELEASE} -flto -fno-fat-lto-objects")
-    endif()
-  elseif(${CMAKE_SYSTEM_NAME} STREQUAL "Android")
-    if(NOT ${CMAKE_CXX_COMPILER_ID} STREQUAL "Intel")
-      # Intel compiler hangs or crashes when using -ipo option for Android target
-      # icpc: error #10014: problem during multi-file optimization compilation (code 4)
-      set(CXX_FLAGS_RELEASE "${CXX_FLAGS_RELEASE} -flto -fno-fat-lto-objects")
-    endif()
-  endif()
-endif()
-
-# set 32-bit compilation flags
-if(CMAKE_ARCHITECTURE STREQUAL x86)
-  include(${CMAKE_SOURCE_DIR}/build/cmake/set_x86_flags.cmake)
-endif()
-
-# -fvisibility-inlines-hidden is a C++ only flag
-string(REGEX REPLACE " -fvisibility-inlines-hidden" "" C_FLAGS_RELEASE ${CXX_FLAGS_RELEASE})
-set(CMAKE_CXX_FLAGS                                "${CMAKE_CXX_FLAGS} ${CXX_FLAGS}")
-set(CMAKE_CXX_FLAGS_${OS_PREFIX}_DEBUG             ${CXX_FLAGS_DEBUG})
-set(CMAKE_CXX_FLAGS_${OS_PREFIX}_RELEASE           ${CXX_FLAGS_RELEASE})
-set(CMAKE_CXX_FLAGS_KLOCWORK                       ${CXX_FLAGS_RELEASE})
-set(CMAKE_C_FLAGS                                  "${CMAKE_C_FLAGS} ${CXX_FLAGS}")
-set(CMAKE_C_FLAGS_${OS_PREFIX}_DEBUG               ${CXX_FLAGS_DEBUG})
-set(CMAKE_C_FLAGS_${OS_PREFIX}_RELEASE             ${C_FLAGS_RELEASE})
-set(CMAKE_C_FLAGS_KLOCWORK                         ${C_FLAGS_RELEASE})
-set(CMAKE_SHARED_LINKER_FLAGS                      "${CMAKE_SHARED_LINKER_FLAGS} ${CXX_LINKER_FLAGS}")
-set(CMAKE_SHARED_LINKER_FLAGS_${OS_PREFIX}_DEBUG   ${CXX_LINKER_FLAGS_DEBUG})
-set(CMAKE_SHARED_LINKER_FLAGS_${OS_PREFIX}_RELEASE ${CXX_LINKER_FLAGS_RELEASE})
-set(CMAKE_SHARED_LINKER_FLAGS_KLOCWORK             ${CXX_LINKER_FLAGS_RELEASE})
-set(CMAKE_EXE_LINKER_FLAGS                         "${CMAKE_EXE_LINKER_FLAGS} ${CXX_LINKER_FLAGS}")
-set(CMAKE_EXE_LINKER_FLAGS_${OS_PREFIX}_DEBUG      ${CXX_LINKER_FLAGS_DEBUG})
-set(CMAKE_EXE_LINKER_FLAGS_${OS_PREFIX}_RELEASE    ${CXX_LINKER_FLAGS_RELEASE})
-set(CMAKE_EXE_LINKER_FLAGS_KLOCWORK                ${CXX_LINKER_FLAGS_RELEASE})
+include(${CMAKE_SOURCE_DIR}/build/cmake/gna_compile_flags.cmake)
 
 # make samples package
 file(MAKE_DIRECTORY ${GNA_BINARY_DIR}/samples)
@@ -202,13 +111,15 @@ if(CTAGS_PATH)
 
   if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
     execute_process(
-      COMMAND bash -c "echo | gcc -Wp,-v -x c++ - -fsyntax-only 2>&1 | grep ^./usr | xargs"
+      COMMAND
+      bash -c "echo | gcc -Wp,-v -x c++ - -fsyntax-only 2>&1 | grep ^./usr | xargs"
       OUTPUT_VARIABLE CXX_STD_INCLUDE_DIRS)
   else()
     set(CXX_STD_INCLUDE_DIRS "")
   endif()
   add_custom_target(tags
-    COMMAND bash -c "ctags -R --c++-kinds=+p --fields=+iaS --extra=+q ${CMAKE_SOURCE_DIR}/src ${CXX_STD_INCLUDE_DIRS}"
+    COMMAND
+    bash -c "ctags -R --c++-kinds=+p --fields=+iaS --extra=+q ${CMAKE_SOURCE_DIR}/src ${CXX_STD_INCLUDE_DIRS}"
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 endif()
 

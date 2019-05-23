@@ -98,17 +98,17 @@ class IModelSetup
 public:
     typedef std::unique_ptr<IModelSetup> UniquePtr;
 
-    virtual gna_model_id ModelId(int /*modelIndex*/) const
+    virtual gna_model_id ModelId(uint32_t /*modelIndex*/) const
     {
         return modelId;
     }
 
-    virtual gna_request_cfg_id ConfigId(int /*modelIndex*/, int /*configIndex*/) const
+    virtual gna_request_cfg_id ConfigId(uint32_t /*modelIndex*/, uint32_t /*configIndex*/) const
     {
         return configId;
     }
 
-    virtual void checkReferenceOutput(int modelIndex, int configIndex) const = 0;
+    virtual void checkReferenceOutput(uint32_t modelIndex, uint32_t configIndex) const = 0;
 
     virtual ~IModelSetup() = default;
 

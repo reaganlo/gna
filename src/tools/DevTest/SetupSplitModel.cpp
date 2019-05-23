@@ -34,9 +34,9 @@
 
 #define UNREFERENCED_PARAMETER(P) ((void)(P))
 
-SetupSplitModel::SetupSplitModel(DeviceController & deviceCtrl, bool wght2B, bool activeListEn, bool pwlEn)
+SetupSplitModel::SetupSplitModel(DeviceController & deviceCtrl, bool weight2B, bool activeListEn, bool pwlEn)
     : deviceController{ deviceCtrl },
-    weightsAre2Bytes{ wght2B },
+    weightsAre2Bytes{ weight2B },
     pwlEnabled{ pwlEn }
 {
     UNREFERENCED_PARAMETER(activeListEn);
@@ -113,7 +113,7 @@ SetupSplitModel::~SetupSplitModel()
     deviceController.ModelRelease(modelId);
 }
 
-void SetupSplitModel::checkReferenceOutput(int modelIndex, int configIndex) const
+void SetupSplitModel::checkReferenceOutput(uint32_t modelIndex, uint32_t configIndex) const
 {
     std::cout << "(model, configuration) " << modelIndex << " " << configIndex << ": ";
     auto outputCount = (0 == modelIndex) ? affineOutputs.at(configIndex).size() : diagonalOutputs.at(configIndex).size();
@@ -134,14 +134,20 @@ void SetupSplitModel::checkReferenceOutput(int modelIndex, int configIndex) cons
     }
 }
 
-void SetupSplitModel::setupFirstAffineLayer(uint8_t* &pinned_mem_ptr)
+void SetupSplitModel::setupFirstAffineLayer(uint8_t* &pinned_memory)
 {
-    int buf_size_weights = weightsAre2Bytes ? ALIGN64(sizeof(weights_2B)) : ALIGN64(sizeof(weights_1B));
-    int buf_size_biases = weightsAre2Bytes ? ALIGN64(sizeof(regularBiases)) : ALIGN64(sizeof(compoundBiases));
-    int buf_size_tmp_outputs = ALIGN64(outVecSz * groupingNum * sizeof(int32_t));
-    int buf_size_pwl = ALIGN64(nSegments * sizeof(intel_pwl_segment_t));
+    int buf_size_weights = weightsAre2Bytes
+        ? ALIGN64(static_cast<uint32_t>(sizeof(weights_2B)))
+        : ALIGN64(static_cast<uint32_t>(sizeof(weights_1B)));
+    int buf_size_biases = weightsAre2Bytes
+        ? ALIGN64(static_cast<uint32_t>(sizeof(regularBiases)))
+        : ALIGN64(static_cast<uint32_t>(sizeof(compoundBiases)));
+    int buf_size_tmp_outputs = ALIGN64(
+            outVecSz * groupingNum * static_cast<uint32_t>(sizeof(int32_t)));
+    int buf_size_pwl = ALIGN64(
+            nSegments * static_cast<uint32_t>(sizeof(intel_pwl_segment_t)));
 
-    void* pinned_weights = pinned_mem_ptr;
+    void* pinned_weights = pinned_memory;
     if (weightsAre2Bytes)
     {
         memcpy(pinned_weights, weights_2B, sizeof(weights_2B));
@@ -150,10 +156,10 @@ void SetupSplitModel::setupFirstAffineLayer(uint8_t* &pinned_mem_ptr)
     {
         memcpy(pinned_weights, weights_1B, sizeof(weights_1B));
     }
-    pinned_mem_ptr += buf_size_weights;
+    pinned_memory += buf_size_weights;
 
 
-    int32_t *pinned_biases = (int32_t*)pinned_mem_ptr;
+    int32_t *pinned_biases = (int32_t*)pinned_memory;
     if (weightsAre2Bytes)
     {
         memcpy(pinned_biases, regularBiases, sizeof(regularBiases));
@@ -162,16 +168,16 @@ void SetupSplitModel::setupFirstAffineLayer(uint8_t* &pinned_mem_ptr)
     {
         memcpy(pinned_biases, compoundBiases, sizeof(compoundBiases));
     }
-    pinned_mem_ptr += buf_size_biases;
+    pinned_memory += buf_size_biases;
 
     void *tmp_outputs = nullptr;
     if (pwlEnabled)
     {
-        tmp_outputs = pinned_mem_ptr;
-        pinned_mem_ptr += buf_size_tmp_outputs;
+        tmp_outputs = pinned_memory;
+        pinned_memory += buf_size_tmp_outputs;
 
-        intel_pwl_segment_t *pinned_pwl = reinterpret_cast<intel_pwl_segment_t*>(pinned_mem_ptr);
-        pinned_mem_ptr += buf_size_pwl;
+        intel_pwl_segment_t *pinned_pwl = reinterpret_cast<intel_pwl_segment_t*>(pinned_memory);
+        pinned_memory += buf_size_pwl;
 
         firstPwl.nSegments = nSegments;
         firstPwl.pSegments = pinned_pwl;
@@ -217,10 +223,16 @@ void SetupSplitModel::setupFirstAffineLayer(uint8_t* &pinned_mem_ptr)
 
 void SetupSplitModel::setupSecondAffineLayer(uint8_t* &pinned_memory)
 {
-    int buf_size_weights = weightsAre2Bytes ? ALIGN64(sizeof(diagonal_weights_2B)) : ALIGN64(sizeof(diagonal_weights_1B));
-    int buf_size_biases = weightsAre2Bytes ? ALIGN64(sizeof(diagonalRegularBiases)) : ALIGN64(sizeof(diagonalCompoundBiases));
-    int buf_size_tmp_outputs = ALIGN64(outVecSz * groupingNum * sizeof(int32_t));
-    int buf_size_pwl = ALIGN64(nSegments * sizeof(intel_pwl_segment_t));
+    int buf_size_weights = weightsAre2Bytes
+        ? ALIGN64(static_cast<uint32_t>(sizeof(diagonal_weights_2B)))
+        : ALIGN64(static_cast<uint32_t>(sizeof(diagonal_weights_1B)));
+    int buf_size_biases = weightsAre2Bytes
+        ? ALIGN64(static_cast<uint32_t>(sizeof(diagonalRegularBiases)))
+        : ALIGN64(static_cast<uint32_t>(sizeof(diagonalCompoundBiases)));
+    int buf_size_tmp_outputs = ALIGN64(
+            outVecSz * groupingNum * static_cast<uint32_t>(sizeof(int32_t)));
+    int buf_size_pwl = ALIGN64(
+            nSegments * static_cast<uint32_t>(sizeof(intel_pwl_segment_t)));
 
     void* pinned_weights = pinned_memory;
     if (weightsAre2Bytes)
@@ -296,10 +308,16 @@ void SetupSplitModel::setupSecondAffineLayer(uint8_t* &pinned_memory)
 
 size_t SetupSplitModel::getFirstModelSize()
 {
-    int buf_size_weights = weightsAre2Bytes ? ALIGN64(sizeof(weights_2B)) : ALIGN64(sizeof(weights_1B));
-    int buf_size_biases = weightsAre2Bytes ? ALIGN64(sizeof(regularBiases)) : ALIGN64(sizeof(compoundBiases));
-    int buf_size_tmp_outputs = ALIGN64(outVecSz * groupingNum * sizeof(int32_t));
-    int buf_size_pwl = ALIGN64(nSegments * sizeof(intel_pwl_segment_t));
+    uint32_t buf_size_weights = weightsAre2Bytes
+        ? ALIGN64(static_cast<uint32_t>(sizeof(weights_2B)))
+        : ALIGN64(static_cast<uint32_t>(sizeof(weights_1B)));
+    uint32_t buf_size_biases = weightsAre2Bytes
+        ? ALIGN64(static_cast<uint32_t>(sizeof(regularBiases)))
+        : ALIGN64(static_cast<uint32_t>(sizeof(compoundBiases)));
+    uint32_t buf_size_tmp_outputs = ALIGN64(
+            outVecSz * groupingNum * static_cast<uint32_t>(sizeof(int32_t)));
+    uint32_t buf_size_pwl = ALIGN64(
+            nSegments * static_cast<uint32_t>(sizeof(intel_pwl_segment_t)));
 
     uint32_t bytes_requested = buf_size_weights + buf_size_biases + buf_size_tmp_outputs;
 
@@ -313,10 +331,15 @@ size_t SetupSplitModel::getFirstModelSize()
 
 size_t SetupSplitModel::getSecondModelSize()
 {
-    int buf_size_weights = weightsAre2Bytes ? ALIGN64(sizeof(weights_2B)) : ALIGN64(sizeof(weights_1B));
-    int buf_size_biases = weightsAre2Bytes ? ALIGN64(sizeof(regularBiases)) : ALIGN64(sizeof(compoundBiases));
-    int buf_size_tmp_outputs = ALIGN64(diagonalOutVecSz * groupingNum * sizeof(int32_t));
-    int buf_size_pwl = ALIGN64(nSegments * sizeof(intel_pwl_segment_t));
+    uint32_t buf_size_weights = static_cast<uint32_t>(weightsAre2Bytes
+        ? ALIGN64(sizeof(weights_2B))
+        : ALIGN64(static_cast<uint32_t>(sizeof(weights_1B))));
+    uint32_t buf_size_biases = static_cast<uint32_t>(weightsAre2Bytes
+        ? ALIGN64(sizeof(regularBiases)) : ALIGN64(sizeof(compoundBiases)));
+    uint32_t buf_size_tmp_outputs = static_cast<uint32_t>(ALIGN64(
+        diagonalOutVecSz * groupingNum * sizeof(int32_t)));
+    uint32_t buf_size_pwl = static_cast<uint32_t>(
+        ALIGN64(nSegments * sizeof(intel_pwl_segment_t)));
 
     uint32_t bytes_requested = buf_size_weights + buf_size_biases + buf_size_tmp_outputs;
     if (pwlEnabled)
@@ -327,7 +350,7 @@ size_t SetupSplitModel::getSecondModelSize()
     return bytes_requested;
 }
 
-void SetupSplitModel::setupInputBuffer(uint8_t* &pinned_memory, int modelIndex, int configIndex)
+void SetupSplitModel::setupInputBuffer(uint8_t* &pinned_memory, uint32_t modelIndex, uint32_t configIndex)
 {
     modelId = models.at(modelIndex);
 
@@ -345,7 +368,7 @@ void SetupSplitModel::setupInputBuffer(uint8_t* &pinned_memory, int modelIndex, 
     pinned_memory += buf_size_inputs;
 }
 
-void SetupSplitModel::setupOutputBuffer(uint8_t* &pinned_memory, int modelIndex, int configIndex)
+void SetupSplitModel::setupOutputBuffer(uint8_t* &pinned_memory, uint32_t modelIndex, uint32_t configIndex)
 {
     auto modelIdSplit= models.at(modelIndex);
     configId = modelsConfigurations.at(modelIdSplit).at(configIndex);
@@ -355,7 +378,7 @@ void SetupSplitModel::setupOutputBuffer(uint8_t* &pinned_memory, int modelIndex,
     deviceController.BufferAdd(configId, OutputComponent, 0, pinnedOutput);
 
     auto outputsSize = groupingNum * ((0 == modelIndex) ? outVecSz : diagonalOutVecSz);
-    outputsSize *= (pwlEnabled ? sizeof(int16_t) : sizeof(int32_t));
+    outputsSize *= static_cast<uint32_t>(pwlEnabled ? sizeof(int16_t) : sizeof(int32_t));
     auto buf_size_outputs = ALIGN64(outputsSize);
     pinned_memory += buf_size_outputs;
 }

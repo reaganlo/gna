@@ -25,6 +25,16 @@
 
 #include "HardwareModelSue1.h"
 
+#include "GnaException.h"
+#include "HardwareLayer.h"
+#include "LayerDescriptor.h"
+#include "Layer.h"
+#include "Memory.h"
+
+#include "gna-api-status.h"
+
+#include <algorithm>
+
 using namespace GNA;
 
 
@@ -41,19 +51,19 @@ HardwareModelSue1::HardwareModelSue1(
 const LayerDescriptor& HardwareModelSue1::GetDescriptor(uint32_t layerIndex) const
 {
     return hardwareLayers.at(layerIndex)->XnnDescriptor;
-};
+}
 
 uint32_t HardwareModelSue1::GetOutputOffset(uint32_t layerIndex) const
 {
     auto layer = hardwareLayers.at(layerIndex).get();
     return layer->GetLdOutputOffset() - GetDescriptor(0).GetOffset();
-};
+}
 
 uint32_t HardwareModelSue1::GetInputOffset(uint32_t layerIndex) const
 {
     auto layer = hardwareLayers.at(layerIndex).get();
     return layer->GetLdInputOffset () - GetDescriptor(0).GetOffset();
-};
+}
 
 void HardwareModelSue1::allocateLayerDescriptors()
 {
@@ -63,7 +73,7 @@ void HardwareModelSue1::allocateLayerDescriptors()
     {
         throw GnaException{ Gna2StatusResourceAllocationError };
     }
-};
+}
 
 uint32_t HardwareModelSue1::GetBufferOffset(const BaseAddress& address) const
 {

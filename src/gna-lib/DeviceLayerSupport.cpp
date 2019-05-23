@@ -228,7 +228,7 @@ static const std::map<const gna_layer_operation, const Support> FROM_3_0_INPUT_D
 
 bool Support::IsSupported() const
 {
-    return 0 < API_1_0.size() && 0 < HW_0_9.size();
+    return !API_1_0.empty() && !HW_0_9.empty();
 }
 
 const std::map<const DataConfig, std::map<const gna_layer_operation, const Support>> DataConfig::Capabilities =

@@ -33,11 +33,11 @@ public:
 
     ~SetupPoolingModel();
 
-    void checkReferenceOutput(int modelIndex, int configIndex) const override;
+    void checkReferenceOutput(uint32_t modelIndex, uint32_t configIndex) const override;
 
 private:
     void samplePoolingLayer();
-    void samplePwl(intel_pwl_segment_t *segments, uint32_t nSegments);
+    void samplePwl(intel_pwl_segment_t *segments, uint32_t numberOfSegments);
 
     DeviceController & deviceController;
 
@@ -96,4 +96,4 @@ private:
         1170, -410, -39, 1230
     };
 };
-;
+

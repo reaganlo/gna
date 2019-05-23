@@ -25,19 +25,28 @@
 
 #pragma once
 
-#include <memory>
-
+#include "Address.h"
 #include "Bias.h"
-#include "XnnKernel.h"
+#include "Component.h"
+#include "DataMode.h"
+#include "KernelArguments.h"
+#include "Shape.h"
 #include "Weight.h"
+#include "XnnKernel.h"
+
+#include <map>
+#include <memory>
 
 namespace GNA
 {
+class FullCapabilitiesMap;
+class LayerValidator;
+struct Tensor;
 
 struct FiltersTensor : public WeightTensor
 {
-    FiltersTensor(const Shape& dimensions, const DataMode& dataMode, void * buffer, const LayerValidator& validator);
-    ~FiltersTensor() = default;
+    FiltersTensor(const Shape& dimensions, const DataMode& dataMode, void * buffer, const LayerValidator& validatorIn);
+    virtual ~FiltersTensor() = default;
     uint32_t Count;
     uint32_t CoefficientCount;
 };
@@ -47,7 +56,7 @@ struct ConvolutionFunction
     static std::unique_ptr<const ConvolutionFunction> Create(const Tensor* input, const Tensor* output,
         void const * layerDetails, const LayerValidator& validatorIn);
 
-    ConvolutionFunction(const KernelMap<ConvolutionKernel>& kernels,
+    ConvolutionFunction(const KernelMap<ConvolutionKernel>& kernelsIn,
         const Tensor* input, const Tensor* output, std::unique_ptr<const FiltersTensor> filters,
         std::unique_ptr<const BiasTensor> biases, std::unique_ptr<const Component> stride);
     ~ConvolutionFunction() = default;

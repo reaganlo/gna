@@ -58,7 +58,7 @@ SetupPoolingModel::~SetupPoolingModel()
     deviceController.ModelRelease(modelId);
 }
 
-void SetupPoolingModel::checkReferenceOutput(int modelIndex, int configIndex) const
+void SetupPoolingModel::checkReferenceOutput(uint32_t modelIndex, uint32_t configIndex) const
 {
     UNREFERENCED_PARAMETER(modelIndex);
     UNREFERENCED_PARAMETER(configIndex);
@@ -75,7 +75,7 @@ void SetupPoolingModel::checkReferenceOutput(int modelIndex, int configIndex) co
 void SetupPoolingModel::samplePwl(intel_pwl_segment_t *segments, uint32_t numberOfSegments)
 {
     auto xBase = -600;
-    auto xBaseInc = 2*abs(xBase) / numberOfSegments;
+    auto xBaseInc = 2u * static_cast<uint32_t>(abs(xBase)) / numberOfSegments;
     auto yBase = xBase;
     auto yBaseInc = 1;
     for (auto i = uint32_t{0}; i < numberOfSegments; i++, xBase += xBaseInc, yBase += yBaseInc, yBaseInc++)
@@ -88,12 +88,15 @@ void SetupPoolingModel::samplePwl(intel_pwl_segment_t *segments, uint32_t number
 
 void SetupPoolingModel::samplePoolingLayer()
 {
-    int buf_size_filters = ALIGN64(sizeof(filters));
-    int buf_size_inputs = ALIGN64(sizeof(inputs));
-    int buf_size_biases = ALIGN64(sizeof(regularBiases));
-    int buf_size_outputs = ALIGN64(outVecSz * groupingNum * sizeof(int16_t));
-    int buf_size_tmp_outputs = ALIGN64(outVecSz * groupingNum * sizeof(int32_t));
-    int buf_size_pwl = ALIGN64(nSegments * sizeof(intel_pwl_segment_t));
+    uint32_t buf_size_filters = ALIGN64(static_cast<uint32_t>(sizeof(filters)));
+    uint32_t buf_size_inputs = ALIGN64(static_cast<uint32_t>(sizeof(inputs)));
+    uint32_t buf_size_biases = ALIGN64(static_cast<uint32_t>(sizeof(regularBiases)));
+    uint32_t buf_size_outputs = ALIGN64(
+            outVecSz * groupingNum * static_cast<uint32_t>(sizeof(int16_t)));
+    uint32_t buf_size_tmp_outputs = ALIGN64(
+            outVecSz * groupingNum * static_cast<uint32_t>(sizeof(int32_t)));
+    uint32_t buf_size_pwl = ALIGN64(
+            nSegments * static_cast<uint32_t>(sizeof(intel_pwl_segment_t)));
 
     uint32_t bytes_requested = buf_size_filters + buf_size_inputs + buf_size_biases + buf_size_outputs + buf_size_tmp_outputs + buf_size_pwl;
     uint32_t bytes_granted;
@@ -120,7 +123,6 @@ void SetupPoolingModel::samplePoolingLayer()
     pinned_mem_ptr += buf_size_outputs;
 
     void* pinned_pwl = pinned_mem_ptr;
-    pinned_mem_ptr += nSegments * sizeof(intel_pwl_segment_t);
 
     pwl.nSegments = nSegments;
     pwl.pSegments = reinterpret_cast<intel_pwl_segment_t*>(pinned_pwl);

@@ -25,7 +25,11 @@
 
 #pragma once
 
+#include "gna-api.h"
+
 #include "KernelMacros.h"
+
+#include <cstdint>
 
 #define gmm_maxmix_8u8u_32u     KERNEL(gmm_maxmix_8u8u_32u)
 #define gmm_maxmix_8u16u_32u    KERNEL(gmm_maxmix_8u16u_32u)

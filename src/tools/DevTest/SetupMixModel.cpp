@@ -53,7 +53,6 @@ SetupMixModel::SetupMixModel(DeviceController & deviceCtrl)
     inputBuffer = pinned_free_memory;
     pinned_free_memory += inputBufferSize;
     outputBuffer = pinned_free_memory;
-    pinned_free_memory += outputBufferSize;
 
     deviceController.ModelCreate(&nnet, &modelId);
 
@@ -70,7 +69,7 @@ SetupMixModel::~SetupMixModel()
     deviceController.ModelRelease(modelId);
 }
 
-void SetupMixModel::checkReferenceOutput(int modelIndex, int configIndex) const
+void SetupMixModel::checkReferenceOutput(uint32_t modelIndex, uint32_t configIndex) const
 {
     UNREFERENCED_PARAMETER(modelIndex);
     UNREFERENCED_PARAMETER(configIndex);

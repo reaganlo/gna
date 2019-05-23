@@ -25,26 +25,22 @@
 
 #pragma once
 
+#include "HardwareLayer.h"
+
 #include "gna-api.h"
 #include "gna-api-instrumentation.h"
 
-#include<map>
-#include<memory>
-#include<tuple>
-#include<vector>
-
-#include "common.h"
-#include "profiler.h"
-
-#include "GnaConfig.h"
-#include "GnaTypes.h"
-#include "HardwareLayer.h"
-#include "Layer.h"
+#include <cstdint>
+#include <map>
+#include <memory>
+#include <vector>
 
 namespace GNA
 {
 
 class HardwareModelScorable;
+class Layer;
+class Memory;
 class RequestConfiguration;
 struct LayerConfiguration;
 
@@ -115,10 +111,10 @@ public:
     // TODO:3: ldMemory should be on modelMemoryObjects
     HardwareRequest(const HardwareModelScorable& hwModelIn,
         const RequestConfiguration& requestConfigurationIn,
-        Memory *ldMemory, const std::vector<Memory *>& modelMemoryObjectsIn);
+        Memory *ldMemoryIn, const std::vector<Memory *>& modelMemoryObjectsIn);
 
     void Invalidate();
-    void Update(uint32_t layerIndex, uint32_t layerCount, GnaOperationMode operationMode);
+    void Update(uint32_t layerIndex, uint32_t layerCount, GnaOperationMode mode);
 
     /* these fields will not change between request executions */
     const gna_hw_perf_encoding HwPerfEncoding;
@@ -159,4 +155,4 @@ private:
     Memory *ldMemory;
 };
 
-};
+}

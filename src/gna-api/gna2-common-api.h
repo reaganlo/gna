@@ -80,7 +80,7 @@
 #define GNA2_DEFAULT (0)
 
 /** Constant indicating that feature is not available. */
-#define GNA2_NOT_SUPPORTED (1 << 31)
+#define GNA2_NOT_SUPPORTED (1u << 31)
 
 /**
  List of device versions.
@@ -195,16 +195,16 @@ enum Gna2Status
     Gna2StatusSuccess = GNA2_DEFAULT,
 
     /**
-     Warning: Arithmetic saturation.
-     An arithmetic operation has resulted in saturation during calculation.
-     */
-    Gna2StatusWarningArithmeticSaturation = 1,
-
-    /**
      Warning: Device is busy.
      GNA is still running, can not enqueue more requests.
      */
-    Gna2StatusWarningDeviceBusy = 2,
+    Gna2StatusWarningDeviceBusy = 1,
+
+    /**
+     Warning: Arithmetic saturation.
+     An arithmetic operation has resulted in saturation during calculation.
+     */
+    Gna2StatusWarningArithmeticSaturation = 2,
 
     /**
      Error: Unknown error occurred.
@@ -448,7 +448,7 @@ GNA2_API enum Gna2Status Gna2StatusGetMessage(enum Gna2Status status,
 inline uint32_t Gna2RoundUp(uint32_t number, uint32_t significance)
 {
     return ((uint32_t)((number)+significance - 1) / significance) * significance;
-};
+}
 
 /**
  Rounds a number up, to the lowest multiple of 64.
@@ -460,7 +460,7 @@ inline uint32_t Gna2RoundUp(uint32_t number, uint32_t significance)
 inline uint32_t Gna2RoundUpTo64(uint32_t number)
 {
     return Gna2RoundUp(number, 64);
-};
+}
 
 /**
  Definition of callback that is used to allocate "user owned" memory for model definition.

@@ -25,9 +25,23 @@
 
 #include "ConvolutionalLayer.h"
 
+#include "Address.h"
+#include "DataMode.h"
 #include "Expect.h"
+#include "KernelArguments.h"
 #include "LayerConfiguration.h"
+#include "LayerInput.h"
+#include "LayerOutput.h"
 #include "Macros.h"
+#include "Shape.h"
+#include "Tensor.h"
+
+#include "gna-api.h"
+#include "gna-api-types-xnn.h"
+
+#include <algorithm>
+#include <cstdint>
+#include <map>
 
 using namespace GNA;
 
@@ -85,7 +99,7 @@ void CnnLayer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const
     Layer::UpdateKernelConfigs(layerConfiguration);
 
     BaseAddress inputBuffer = Input;
-    if (layerConfiguration.Buffers.count(InputComponent))
+    if (layerConfiguration.Buffers.count(InputComponent) > 0)
     {
         inputBuffer = layerConfiguration.Buffers[InputComponent];
         Input.ValidateBuffer(inputBuffer);
@@ -93,13 +107,13 @@ void CnnLayer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const
 
     // TODO:3: simplify, too fancy logic
     BaseAddress filterOutputBuffer = Activation ? Output.ScratchPad:
-        (layerConfiguration.Buffers.count(OutputComponent) ? layerConfiguration.Buffers[OutputComponent] : Output);
+        (layerConfiguration.Buffers.count(OutputComponent) > 0 ? layerConfiguration.Buffers[OutputComponent] : Output);
 
-    BaseAddress pwlOutputBuffer = layerConfiguration.Buffers.count(OutputComponent)
+    BaseAddress pwlOutputBuffer = layerConfiguration.Buffers.count(OutputComponent) > 0
         ? layerConfiguration.Buffers[OutputComponent]
         : Output;
 
-    if (layerConfiguration.Buffers.count(OutputComponent))
+    if (layerConfiguration.Buffers.count(OutputComponent) > 0)
     {
         if (Activation)
         {

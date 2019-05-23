@@ -93,7 +93,7 @@ public:
         Expect::Equal(operation.NumberOfOperands, GetNumberOfOperands(operation.Type),
             Gna2StatusModelConfigurationInvalid);
         TryAssign(operation.Operands, operation.NumberOfOperands,
-            {operands...});
+                {std::forward<T>(operands)...});
     }
 
     template<class ... T>

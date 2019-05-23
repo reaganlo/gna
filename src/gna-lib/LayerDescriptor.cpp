@@ -25,11 +25,15 @@
 
 #include "LayerDescriptor.h"
 
+#include "HardwareCapabilities.h"
+
+#include "gna-api-types-gmm.h"
+
 using namespace GNA;
 
-size_t LayerDescriptor::getSize(const DeviceVersion hwId)
+uint32_t LayerDescriptor::getSize(const DeviceVersion hwId)
 {
-    static const std::map<const DeviceVersion, const size_t> sizeMap =
+    static const std::map<const DeviceVersion, const uint32_t> sizeMap =
     {
 
         {Gna2DeviceVersionCannonlake, 128},
@@ -281,7 +285,7 @@ LayerDescriptor::LayerDescriptor(const BaseAddress memoryBaseIn, const BaseAddre
         {}
     }
 {
-};
+}
 
 LayerDescriptor::LayerDescriptor(const LayerDescriptor& base, AddrGmmCfg gmmDescriptor, GetHwOffset getHwOffsetIn) :
      LayerDescriptor {
@@ -293,9 +297,9 @@ LayerDescriptor::LayerDescriptor(const LayerDescriptor& base, AddrGmmCfg gmmDesc
         *base.xnnReferenceParams,
         getHwOffsetIn}
 {
-};
+}
 
-LayerDescriptor::LayerDescriptor(const AddrGmmCfg gmmConfig, const size_t size,
+LayerDescriptor::LayerDescriptor(const AddrGmmCfg gmmConfig, const uint32_t size,
         const HardwareCapabilities& hwCaps,
         const BaseAddress memoryBaseIn, BaseAddress descriptorBaseIn,
         const std::map<const XnnParameterType, const XnnParameter>& paramsIn,

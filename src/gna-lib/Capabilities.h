@@ -25,8 +25,11 @@
 
 #pragma once
 
-#include "ParameterLimits.h"
+#include "common.h"
+#include "gna-api.h"
+#include "gna-api-types-xnn.h"
 
+#include <map>
 #include <memory>
 
 namespace GNA

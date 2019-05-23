@@ -25,11 +25,20 @@
 
 #pragma once
 
+#include "Address.h"
 #include "Component.h"
 #include "DataMode.h"
+#include "ParameterLimits.h"
+#include "Shape.h"
+
+#include "gna-api-status.h"
+#include "gna-api-types-xnn.h"
+
+#include <cstdint>
 
 namespace GNA
 {
+class Validator;
 
 struct Tensor : public Component
 {
@@ -38,15 +47,15 @@ struct Tensor : public Component
     Tensor(const Shape& dimensions, const DataType dataType, const TensorMode tensorMode, void const * buffer);
 
     Tensor(const Shape& dimensions, const DataMode& dataMode, void const * buffer,
-        const Validator& validator);
+        const Validator& validatorIn);
 
     virtual ~Tensor() = default;
 
-    void UpdateBuffer(const BaseAddress& outputBuffer);
+    void UpdateBuffer(const BaseAddress& buffer);
 
     void ValidateBuffer(const void* const buffer) const;
 
-    virtual operator const BaseAddress& () const
+    virtual operator const BaseAddress () const
     {
         return Buffer;
     }
@@ -119,7 +128,7 @@ struct TensorLimits : public ComponentLimits
     const AlignLimits Align;
 };
 
-};
+}
 
 
 

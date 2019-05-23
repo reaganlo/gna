@@ -25,9 +25,8 @@
 
 #pragma once
 
+#include <cstdint>
 #include <memory>
-
-#include "common.h"
 
 namespace GNA
 {
@@ -37,7 +36,7 @@ struct ActiveList
 {
     static std::unique_ptr<ActiveList> Create(const ActiveList& activeList);
 
-    ActiveList(const uint32_t indicesCount, const uint32_t* indices);
+    ActiveList(const uint32_t indicesCountIn, const uint32_t* indicesIn);
     ActiveList(const ActiveList& activeList) = default;
     // needed for std vector's emplace_back (MoveInsertable concept)
     ActiveList(ActiveList &&) = default;

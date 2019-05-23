@@ -24,16 +24,16 @@
 */
 
 #pragma once
-#include <stdint.h>
+
+#include "GnaException.h"
+#include "ParameterLimits.h"
 
 #include "gna-api-types-xnn.h"
 
-
-#include "ParameterLimits.h"
+#include <gna2-common-api.h>
 #include <gna2-model-impl.h>
 
-#include <gna2-model-api.h>
-
+#include <cstdint>
 #include <map>
 
 namespace GNA
@@ -82,7 +82,7 @@ protected:
 
     static DataType TypeFromDataMode(const gna_data_mode dataMode); // TODO:3:API remove
     static TensorMode ModeFromDataMode(const gna_data_mode dataMode); // TODO:3:API remove
-    static gna_data_mode ModeFromDataMode(const DataType dataMode); // TODO:3:API remove
+    static gna_data_mode ModeFromDataMode(const DataType dataType); // TODO:3:API remove
 };
 
 bool operator ==(const gna_data_mode &left, const DataMode &right); // TODO:3:API remove

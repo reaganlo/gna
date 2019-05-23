@@ -25,56 +25,57 @@
 
 #pragma once
 
-#include <memory>
-#include <map>
-
-#include "common.h"
 #include "Address.h"
-#include "DriverInterface.h"
+
+#include "KernelArguments.h"
+
+#include <cstdint>
 
 namespace GNA
 {
-    class Memory : public BaseAddress
+class DriverInterface;
+
+class Memory : public BaseAddress
+{
+public:
+    Memory() = default;
+
+    // just makes object from arguments
+    Memory(void * bufferIn, uint32_t userSize, uint32_t alignment = GNA_BUFFER_ALIGNMENT);
+
+    // allocates and zeros memory
+    Memory(const uint32_t userSize, uint32_t alignment = GNA_BUFFER_ALIGNMENT);
+
+    virtual ~Memory();
+
+    void Map(DriverInterface& ddi);
+
+    uint64_t GetId() const;
+
+    uint32_t GetSize() const
     {
-    public:
-        Memory() = default;
+        return size;
+    }
 
-        // just makes object from arguments
-        Memory(void * buffer, uint32_t userSize, uint32_t alignment = GNA_BUFFER_ALIGNMENT);
+    template<class T = void> T * GetBuffer() const
+    {
+        return Get<T>();
+    }
 
-        // allocates and zeros memory
-        Memory(const size_t userSize, uint32_t alignment = GNA_BUFFER_ALIGNMENT);
+    static const uint32_t GNA_BUFFER_ALIGNMENT = 64;
 
-        virtual ~Memory();
+protected:
+    void unmap();
 
-        void Map(DriverInterface& ddi);
+    uint64_t id = 0;
 
-        uint64_t GetId() const;
+    uint32_t size = 0;
 
-        size_t GetSize() const
-        {
-            return size;
-        }
+    DriverInterface *driverInterface;
 
-        template<class T = void> T * GetBuffer() const
-        {
-            return Get<T>();
-        }
+    bool mapped = false;
 
-        static const uint32_t GNA_BUFFER_ALIGNMENT = 64;
-
-    protected:
-        void unmap();
-
-        uint64_t id = 0;
-
-        size_t size = 0;
-
-        DriverInterface *driverInterface;
-
-        bool mapped = false;
-
-        bool deallocate = true;
-    };
+    bool deallocate = true;
+};
 
 }

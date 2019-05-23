@@ -74,7 +74,8 @@ GNA2_API enum Gna2Status Gna2ModelGetLastError(struct Gna2ModelError * error)
     return ApiWrapper::ExecuteSafely(command);
 }
 
-GNA2_API enum Gna2Status Gna2ModelGetLastErrorMessage(char * messageBuffer,
+GNA2_API enum Gna2Status Gna2ModelGetLastErrorMessage(
+    char const * messageBuffer,
     uint32_t messageBufferSize)
 {
     UNREFERENCED_PARAMETER(messageBuffer);
@@ -297,8 +298,8 @@ GNA2_API enum Gna2Status Gna2OperationInitFullyConnectedBiasGrouping(
     struct Gna2Tensor * weights, struct Gna2Tensor * biases,
     struct Gna2Tensor * activation,
     struct Gna2Tensor * weightScaleFactors,
-    enum Gna2BiasMode* biasMode,
-    uint32_t* biasVectorIndex)
+    enum Gna2BiasMode * biasMode,
+    uint32_t * biasVectorIndex)
 {
     const std::function<Gna2Status()> command = [&]()
     {
@@ -317,7 +318,7 @@ GNA2_API enum Gna2Status Gna2OperationInitRecurrent(
     struct Gna2Tensor * inputs, struct Gna2Tensor * outputs,
     struct Gna2Tensor * weights, struct Gna2Tensor * biases,
     struct Gna2Tensor * activation,
-    uint32_t* delay)
+    uint32_t * delay)
 {
     const std::function<Gna2Status()> command = [&]()
     {

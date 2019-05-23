@@ -22,8 +22,8 @@
 # in any way.
 
 if(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
-  set(CXX_FLAGS "${CXX_FLAGS} /Qm32")
-  set(CXX_LINK_FLAGS "${CXX_LINK_FLAGS} /Qm32")
+  set(GNA_COMPILE_FLAGS "${GNA_COMPILE_FLAGS} /Qm32")
+  set(GNA_LINKER_FLAGS "${GNA_LINKER_FLAGS} /Qm32")
 elseif(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
-  set(CXX_FLAGS "${CXX_FLAGS} -L/usr/lib32 -m32")
+  set(GNA_COMPILE_FLAGS "${GNA_COMPILE_FLAGS} -L/usr/lib32 -m32")
 endif()

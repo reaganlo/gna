@@ -25,16 +25,24 @@
 
 #pragma once
 
-#include <memory>
-
 #include "Expect.h"
-#include "pwl.h"
+#include "DataMode.h"
+#include "KernelArguments.h"
+#include "Tensor.h"
 #include "Transform.h"
+#include "XnnKernel.h"
+
+#include "common.h"
+#include "gna-api-types-xnn.h"
+#include "pwl.h"
+
+#include <cstdint>
+#include <memory>
 
 namespace GNA
 {
 
-struct LayerConfiguration;
+class FullCapabilitiesMap;
 
 class ActivationFunction : public Transform<ActivationConfig, ActivationKernel>
 {
@@ -52,7 +60,7 @@ public:
         return IsEnabled(getPwl(layer->pLayerStruct, layer->operation));
     }
 
-    void UpdateActiveOutputCount(unique_ptr<BaseConfig> configs[], uint32_t outputCount) const
+    void UpdateActiveOutputCount(std::unique_ptr<BaseConfig> configs[], uint32_t outputCount) const
     {
         auto config = GetConfig(configs);
         config->Transform.ElementCount = outputCount;

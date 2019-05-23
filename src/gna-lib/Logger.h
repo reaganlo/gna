@@ -25,10 +25,11 @@
 
 #pragma once
 
-#include <memory>
-#include <stdarg.h>
-
 #include "common.h"
+#include "gna-api-status.h"
+
+#include <memory>
+#include <stdio.h>
 
 namespace GNA
 {

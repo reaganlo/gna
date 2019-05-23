@@ -44,7 +44,7 @@ SelfTestDevice::SelfTestDevice(const GnaSelfTest& gst) : gnaSelfTest{ gst }
     logger.Verbose("GnaDeviceOpen: %s\n", statusStr);
     if (status != GNA_SUCCESS)
     {
-        logger.Error("GnaDeviceOpen FAILED\n");
+        GnaSelfTestLogger::Error("GnaDeviceOpen FAILED\n");
         gnaSelfTest.Handle(GSTIT_DEVICE_OPEN_NO_SUCCESS);
     }
     else
@@ -65,7 +65,7 @@ void SelfTestDevice::Alloc(const uint32_t bytesRequested)
 
     if (nullptr == pinned_mem_ptr)
     {
-        logger.Error("GnaAlloc: Memory allocation FAILED\n");
+        GnaSelfTestLogger::Error("GnaAlloc: Memory allocation FAILED\n");
         gnaSelfTest.Handle(GSTIT_GNAALLOC_MEM_ALLOC_FAILED);
     }
 }
@@ -78,15 +78,16 @@ void SelfTestDevice::SampleModelCreate(const SampleModelForGnaSelfTest& model)
     nnet.pLayers = (intel_nnet_layer_t *)calloc(nnet.nLayers, sizeof(intel_nnet_layer_t)); // container for layer definitions
     if (nullptr == nnet.pLayers)
     {
-        logger.Error("calloc: Allocation for nnet.pLayers FAILED.\n");
+        GnaSelfTestLogger::Error("calloc: Allocation for nnet.pLayers FAILED.\n");
         gnaSelfTest.Handle(GSTIT_MALLOC_FAILED);
+        exit(-1);
     }
 
-    int buf_size_weights = ALIGN64(model.GetWeightsByteSize()); // note that buffer alignment to 64-bytes is required by GNA HW
-    int buf_size_inputs = ALIGN64(model.GetInputsByteSize());
-    int buf_size_biases = ALIGN64(model.GetBiasesByteSize());
-    int buf_size_outputs = ALIGN64(model.GetRefScoresByteSize());
-    int buf_size_tmp_outputs = ALIGN64(model.GetRefScoresByteSize());
+    uint32_t buf_size_weights = ALIGN64(model.GetWeightsByteSize()); // note that buffer alignment to 64-bytes is required by GNA HW
+    uint32_t buf_size_inputs = ALIGN64(model.GetInputsByteSize());
+    uint32_t buf_size_biases = ALIGN64(model.GetBiasesByteSize());
+    uint32_t buf_size_outputs = ALIGN64(model.GetRefScoresByteSize());
+    uint32_t buf_size_tmp_outputs = ALIGN64(model.GetRefScoresByteSize());
 
     // prepare params for GNAAlloc
     uint32_t bytes_requested = buf_size_weights + buf_size_inputs + buf_size_biases + buf_size_outputs + buf_size_tmp_outputs;
@@ -161,9 +162,9 @@ void SelfTestDevice::RequestAndWait()
 {
     logger.Verbose("Enqueing GNA request for processing\n");
     auto status = GnaRequestEnqueue(configId, &requestId);
+    gnaSelfTest.HandleGnaStatus(status, "GnaRequestEnqueue");
     // Offload effect: other calculations can be done on CPU here, while nnet decoding runs on GNA HW
     status = GnaRequestWait(requestId, DEFAULT_SELFTEST_TIMEOUT_MS);
-    gnaSelfTest.HandleGnaStatus(status, "GnaRequestEnqueue");
     gnaSelfTest.HandleGnaStatus(status, "GnaRequestWait");
 }
 
@@ -178,17 +179,21 @@ void SelfTestDevice::CompareResults(const SampleModelForGnaSelfTest& model)
             uint32_t idx = j * nnet.nGroup + i;
 
             if (outputs[idx] != model.GetRefScore(idx))
+            {
                 errorCount++;
+            }
         }
     }
 
     if (errorCount != 0)
     {
-        logger.Error("FAILED (%d errors in scores)\n", errorCount);
+        GnaSelfTestLogger::Error("FAILED (%d errors in scores)\n", errorCount);
         gnaSelfTest.Handle(GSTIT_ERRORS_IN_SCORES);
     }
     else
-        logger.Log("SUCCESSFULL\n");
+    {
+        GnaSelfTestLogger::Log("SUCCESSFULL\n");
+    }
 }
 
 SelfTestDevice::~SelfTestDevice()
@@ -218,12 +223,12 @@ SelfTestDevice::~SelfTestDevice()
 
 void GnaSelfTest::askToContinueOrExit(int exitCode) const
 {
-    logger.Log("Do you want to go further anyway? [y/N]");
+    GnaSelfTestLogger::Log("Do you want to go further anyway? [y/N]");
     std::string buf;
     std::getline(std::cin, buf);
-    if (buf.size() == 0 || (buf[0] != 'y' && buf[0] != 'Y'))
+    if (buf.empty() || (buf[0] != 'y' && buf[0] != 'Y'))
     {
-        logger.Log("Bye\n");
+        GnaSelfTestLogger::Log("Bye\n");
         exit(exitCode);
     }
 }
@@ -244,7 +249,8 @@ namespace
     { GSTIT_SETUPDI_ERROR,                                  "GSTIT_SETUPDI_ERROR"},
     { GSTIT_NO_DRIVER,                                      "GSTIT_NO_DRIVER"},
     { GSTIT_ERRORS_IN_SCORES,                               "GSTIT_ERRORS_IN_SCORES"} };
-};
+}
+
 GnaSelfTestIssue::GnaSelfTestIssue(GSTIT type) :issueType{ type }
 {
     //TODO: add more details on the exact place in the Bring up guide
@@ -258,14 +264,14 @@ std::string GnaSelfTestIssue::GetDescription() const
 
 void GnaSelfTest::Handle(const GnaSelfTestIssue& issue) const
 {
-    logger.Error("%s", issue.GetDescription().c_str());
+    GnaSelfTestLogger::Error("%s", issue.GetDescription().c_str());
 
     if (config.ContinueMode())
     {
         if (config.PauseMode()) {
             askToContinueOrExit(issue.ExitCode());
         }
-        logger.Log("WARNING Continuing the execution after the problem\n");
+        GnaSelfTestLogger::Log("WARNING Continuing the execution after the problem\n");
     }
     else
     {

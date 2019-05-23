@@ -32,8 +32,8 @@
 typedef GNA_CALC_IN GnaDriverRequest;
 typedef GNA_MEMORY_PATCH GnaMemoryPatch;
 #else
-#include "string.h"
 #include "gna.h"
+#include <cstring>
 typedef struct gna_score_cfg GnaDriverRequest;
 typedef struct gna_buffer GnaDriverBuffer;
 typedef struct gna_patch GnaDriverPatch;

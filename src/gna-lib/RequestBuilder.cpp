@@ -26,9 +26,20 @@
 #include "RequestBuilder.h"
 
 #include "RequestConfiguration.h"
-#include "LayerConfiguration.h"
+#include "GnaException.h"
+#include "Request.h"
 
-using std::make_unique;
+#include "gna-api-status.h"
+#include "profiler.h"
+
+#include <algorithm>
+#include <stdexcept>
+
+namespace GNA
+{
+class CompiledModel;
+struct ActiveList;
+}
 
 using namespace GNA;
 
@@ -40,7 +51,7 @@ gna_request_cfg_id RequestBuilder::assignConfigId()
 void RequestBuilder::CreateConfiguration(CompiledModel& model, gna_request_cfg_id *configId, DeviceVersion consistentDevice)
 {
     *configId = assignConfigId();
-    configurations.emplace(*configId, make_unique<RequestConfiguration>(model, *configId, consistentDevice));
+    configurations.emplace(*configId, std::make_unique<RequestConfiguration>(model, *configId, consistentDevice));
 }
 
 void RequestBuilder::ReleaseConfiguration(gna_request_cfg_id configId)
@@ -70,7 +81,7 @@ RequestConfiguration& RequestBuilder::GetConfiguration(gna_request_cfg_id config
     try
     {
         auto& config = configurations.at(configId);
-        return *config.get();
+        return *config;
     }
     catch (const std::out_of_range&)
     {

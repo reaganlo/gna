@@ -34,7 +34,7 @@ public:
 
     ~SetupCopyModel();
 
-    void checkReferenceOutput(int modelIndex, int configIndex) const override;
+    void checkReferenceOutput(uint32_t modelIndex, uint32_t configIndex) const override;
 
 private:
     void sampleCopyLayer(uint32_t nCopyColumns, uint32_t nCopyRows);

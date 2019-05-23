@@ -25,16 +25,28 @@
 
 #include "HardwareRequest.h"
 
+#include "ActiveList.h"
+#include "Address.h"
+#include "CompiledModel.h"
+#include "GnaException.h"
+#include "GnaTypes.h"
 #include "HardwareLayer.h"
 #include "HardwareModelScorable.h"
+#include "KernelArguments.h"
+#include "Layer.h"
 #include "LayerConfiguration.h"
 #include "RequestConfiguration.h"
+
+#include "gna-api-status.h"
+#include "gna-api-types-xnn.h"
+
+#include <utility>
 
 using namespace GNA;
 
 HardwareRequest::HardwareRequest(const HardwareModelScorable& hwModelIn,
                                 const RequestConfiguration& requestConfigurationIn,
-                                Memory *ldMemoryIn, const std::vector<Memory *>& modelMemoryObjects)
+                                Memory *ldMemoryIn, const std::vector<Memory *>& modelMemoryObjectsIn)
     : HwPerfEncoding(requestConfigurationIn.HwPerfEncoding),
       RequestConfigId(requestConfigurationIn.Id),
       requestConfiguration(requestConfigurationIn),
@@ -42,7 +54,7 @@ HardwareRequest::HardwareRequest(const HardwareModelScorable& hwModelIn,
       ldMemory(ldMemoryIn)
 {
     DriverMemoryObjects.push_back(DriverBuffer{ ldMemory });
-    for (auto memory : modelMemoryObjects)
+    for (auto memory : modelMemoryObjectsIn)
     {
         DriverMemoryObjects.push_back(DriverBuffer{ memory });
     }
@@ -154,7 +166,7 @@ void HardwareRequest::generateBufferPatches(const LayerConfiguration& layerConfi
                 else if (layer.Operation == INTEL_AFFINE || layer.Operation == INTEL_GMM)
                 {
                     auto nnopTypeOffset = hwLayer.GetLdNnopOffset();
-                    auto nnopTypeValue = hwLayer.GetNnopType(layerConfiguration.ActList.get() != nullptr);
+                    auto nnopTypeValue = hwLayer.GetNnopType(layerConfiguration.ActList != nullptr);
                     ldPatches.push_back({ nnopTypeOffset, nnopTypeValue, sizeof(uint8_t) });
                 }
                 break;

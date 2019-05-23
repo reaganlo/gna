@@ -25,16 +25,19 @@
 
 #include "HardwareModel.h"
 
-#include <algorithm>
-
-#include "AccelerationDetector.h"
+#include "Expect.h"
+#include "GnaConfig.h"
+#include "GnaException.h"
+#include "HardwareCapabilities.h"
 #include "HardwareLayer.h"
-#include "LayerConfiguration.h"
-#include "Macros.h"
+#include "Layer.h"
 #include "Memory.h"
-#include "Request.h"
-#include "RequestConfiguration.h"
-#include "SoftwareModel.h"
+
+#include "common.h"
+#include "gna-api-status.h"
+#include "gna-api-types-xnn.h"
+
+#include <algorithm>
 
 using namespace GNA;
 
@@ -53,9 +56,9 @@ uint32_t HardwareModel::CalculateDescriptorSize(
 
 HardwareModel::HardwareModel(
     const std::vector<std::unique_ptr<Layer>>& layers, uint32_t gmmCount,
-    const HardwareCapabilities& hwCapsIn) :
+    const HardwareCapabilities& hwCaps) :
     softwareLayers{ layers },
-    hwCapabilities{ hwCapsIn },
+    hwCapabilities{ hwCaps },
     gmmDescriptorsSize{ getGmmDescriptorsSize(gmmCount) },
     xnnDescriptorsSize{ getLayerDescriptorsSize(static_cast<uint32_t>(layers.size()),
                                                         hwCapabilities.GetDeviceVersion()) }
@@ -72,7 +75,9 @@ uint64_t HardwareModel::GetMemoryId(const BaseAddress& address) const
         });
 
     if (foundIt != modelMemoryObjects.cend())
+    {
         throw GnaException { Gna2StatusUnknownError };
+    }
 
     return (*foundIt)->GetId();
 }
@@ -134,7 +139,7 @@ uint32_t HardwareModel::GetBufferOffset(const BaseAddress& address) const
         return address.GetOffset(BaseAddress{ ldMemory->GetBuffer() });
     }
 
-    auto offset = ALIGN(ldMemory->GetSize(), PAGE_SIZE);
+    uint32_t offset = ALIGN(ldMemory->GetSize(), PAGE_SIZE);
     for (auto memory : modelMemoryObjects)
     {
         if (address.InRange(memory->GetBuffer(),

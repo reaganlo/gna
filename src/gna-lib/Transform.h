@@ -25,21 +25,25 @@
 
 #pragma once
 
-#include <memory>
-#include <unordered_map>
-
-#include "Bias.h"
-#include "ConvolutionalFunctions.h"
+#include "Address.h"
+#include "DataMode.h"
+#include "GnaException.h"
 #include "LayerConfiguration.h"
+#include "Tensor.h"
+
+#include "KernelArguments.h"
 #include "XnnKernel.h"
-#include "Weight.h"
+
+#include "common.h"
+#include "gna-api-status.h"
+#include "gna-api.h"
+
+#include <memory>
+#include <stdexcept>
 
 namespace GNA
 {
-
-struct ConvolutionFunction2D;
-class ActivationFunction;
-class PoolingFunction2D;
+class LayerValidator;
 
 struct TransformFactoryConfig
 {
@@ -91,7 +95,7 @@ public:
     virtual void Compute(AccelerationMode accel, LayerConfiguration const * layerConfiguration,
         ExecutionConfig const & execution) const = 0;
 
-    virtual void UpdateConfigBuffers(unique_ptr<BaseConfig> configs[], const BufferMap& buffers) const = 0;
+    virtual void UpdateConfigBuffers(std::unique_ptr<BaseConfig> configs[], const BufferMap& buffers) const = 0;
     virtual void SetOutput(const BaseAddress& outputBuffer) = 0;
 
     const Tensor * const Input;
@@ -124,7 +128,7 @@ public:
         }
     }
 
-    virtual void UpdateConfigBuffers(unique_ptr<BaseConfig> configs[], const BufferMap& buffers) const
+    virtual void UpdateConfigBuffers(std::unique_ptr<BaseConfig> configs[], const BufferMap& buffers) const
     {
         auto* config = GetConfig(configs);
         config->Update(buffers);
@@ -152,7 +156,7 @@ protected:
         return std::make_unique<KernelConfig<TransformType>>(*hiddenConfig, buffers);
     }
 
-    inline KernelConfig<TransformType>* GetConfig(unique_ptr<BaseConfig> configs[]) const
+    inline KernelConfig<TransformType>* GetConfig(std::unique_ptr<BaseConfig> configs[]) const
     {
         auto& config = configs[Operation];
         if (!config)
@@ -166,15 +170,15 @@ protected:
     std::unique_ptr<KernelConfig<TransformType>> hiddenConfig;
 
 private:
-   inline unique_ptr<ExecutionKernelConfig<TransformType>> createExecutionConfig(
+   inline std::unique_ptr<ExecutionKernelConfig<TransformType>> createExecutionConfig(
        const LayerConfiguration* layerConfiguration, ExecutionConfig const & execution) const
     {
         if (nullptr == layerConfiguration)
             return std::make_unique<ExecutionKernelConfig<TransformType>>(
                 hiddenConfig.get(), execution);
         else
-            return std::make_unique<ExecutionKernelConfig<TransformType>>
-                ((KernelConfig<TransformType>*)layerConfiguration->ConfigList[Operation].get(),
+            return std::make_unique<ExecutionKernelConfig<TransformType>>(
+                static_cast<KernelConfig<TransformType>*>(layerConfiguration->ConfigList[Operation].get()),
                     execution);
     }
 };

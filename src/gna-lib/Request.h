@@ -25,17 +25,20 @@
 
 #pragma once
 
-#include <functional>
-#include <future>
-
 #include "profiler.h"
 
-#include "GnaException.h"
-#include "KernelArguments.h"
+#include "gna2-common-api.h"
+
+#include "gna-api.h"
+#include "gna-api-instrumentation.h"
+
+#include <future>
+#include <memory>
+
+struct KernelBuffers;
 
 namespace GNA
 {
-
 class RequestConfiguration;
 
 /**

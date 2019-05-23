@@ -25,22 +25,27 @@
 
 #pragma once
 
-#include <memory>
-#include <vector>
-
+#include "Address.h"
 #include "HardwareModel.h"
 #include "HardwareRequest.h"
 #include "IScorable.h"
-#include "DriverInterface.h"
+
+#include "KernelArguments.h"
+
+#include "gna-api.h"
+
+#include <cstdint>
+#include <memory>
+#include <map>
+#include <vector>
 
 namespace GNA
 {
 
-class SoftwareModel;
-class Memory;
-class AccelerationDetector;
+class DriverInterface;
+class HardwareCapabilities;
 class Layer;
-struct LayerConfiguration;
+class Memory;
 class RequestConfiguration;
 struct RequestProfiler;
 

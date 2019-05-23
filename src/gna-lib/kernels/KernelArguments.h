@@ -25,14 +25,14 @@
 
 #pragma once
 
-#include "common.h"
-#include "gna-api-types-gmm.h"
-
 #include "Address.h"
 #include "Macros.h"
+#include "common.h"
 
-#include <stdint.h>
-#include <string.h>
+#include "gna-api-types-gmm.h"
+
+#include <cstdint>
+#include <cstring>
 
 using GNA::BufferMap;
 using GNA::BaseAddress;
@@ -131,13 +131,16 @@ struct ExecutionKernelConfig : public ExecutionConfig
         ExecutionConfig{executioConfig},
         RequestConfig{requestConfig}
     {
-        if (nullptr == RequestConfig->Inputs)
+        if (nullptr != Intermediate && nullptr != Intermediate->cnnFusedBuffer)
         {
-            RequestConfig->Inputs = Intermediate->cnnFusedBuffer;
-        }
-        if (nullptr == RequestConfig->Outputs)
-        {
-            RequestConfig->Outputs = Intermediate->cnnFusedBuffer;
+            if (nullptr == RequestConfig->Inputs)
+            {
+                RequestConfig->Inputs = Intermediate->cnnFusedBuffer;
+            }
+            if (nullptr == RequestConfig->Outputs)
+            {
+                RequestConfig->Outputs = Intermediate->cnnFusedBuffer;
+            }
         }
     }
 
@@ -176,7 +179,7 @@ struct ConvolutionConfig2D
 struct AffineConfig
 {
     AffineConfig(int16_t const * inputIn, int32_t * const outputIn, AffineConfig const * const source);
-    AffineConfig(AffineConfig const * const source, ExecutionConfig const & executionConfig);
+    AffineConfig(AffineConfig const * const source, ExecutionConfig const & executionConfigIn);
     AffineConfig(uint32_t const outputElementCountIn, uint32_t const inputVectorCountIn,
         uint32_t const inputElementCountIn, int16_t const * inputIn, int32_t * const outputIn, void const * weightsIn,
         void const * biases, void const * multiBiasIn, uint32_t const multiBiasVectorCountIn);
@@ -198,7 +201,7 @@ struct AffineConfig
     } ;
     union
     {
-    nn_scaling const * const weightScaleFactors; // [M] Scaling factors for 1B weights or NULL for 2B weights. 
+    nn_scaling const * const weightScaleFactors; // [M] Scaling factors for 1B weights or NULL for 2B weights.
     nn_bias_c const * const biasesCompound;     // B - [M]
     nn_bias_s const * const biasesSimple;       // B - [M]
     };
@@ -217,7 +220,7 @@ struct AffineConfigAl
 
 struct RecurrentConfig
 {
-    RecurrentConfig(RecurrentConfig const * const source, ExecutionConfig const & executionConfig);
+    RecurrentConfig(RecurrentConfig const * const source, ExecutionConfig const & executionConfigIn);
     RecurrentConfig(
         uint32_t const outputElementCountIn, uint32_t const inputVectorCountIn, uint32_t const inputElementCountIn,
         int16_t const * inputIn, int16_t * const feedbackBufferIn, int32_t * const outputIn,
@@ -226,7 +229,7 @@ struct RecurrentConfig
         uint32_t const outputElementCountIn, uint32_t const inputVectorCountIn, uint32_t const inputElementCountIn,
         int16_t const * inputIn, int16_t * const feedbackBufferIn, int32_t * const outputIn,
         int16_t * outputActivatedIn, void const * weightsIn, void const * biases,
-        uint32_t bytesPerBiasIn, uint32_t bytesPerOutput, ActivationConfig const & pwl);
+        uint32_t bytesPerBiasIn, uint32_t bytesPerOutputIn, ActivationConfig const & pwl);
 
     uint32_t const outputElementCount;      // M - cols
     uint32_t const inputVectorCount;        // N - rows
@@ -278,13 +281,13 @@ struct ConvolutionConfig
 {
     ConvolutionConfig(ConvolutionConfig const * const source, int16_t const * const inputsIn,
         int32_t * const outputsIn);
-    ConvolutionConfig(ConvolutionConfig const * const source, ExecutionConfig const & executionConfig);
+    ConvolutionConfig(ConvolutionConfig const * const source, ExecutionConfig const & executionConfigIn);
     ConvolutionConfig(uint32_t const inputBandStrideIn, uint32_t const FilterOutputCountIn, uint32_t const FilterCountIn,
         uint32_t const FilterCoefficientCountIn, int16_t const * const inputsIn, int16_t const * const filtersIn,
         nn_bias_s const * const biasesIn, int32_t * const outputsIn);
     ConvolutionConfig(uint32_t const inputBandStrideIn, uint32_t const FilterOutputCountIn, uint32_t const FilterCountIn,
         uint32_t const FilterCoefficientCountIn, int16_t const * const inputsIn, int16_t const * const filtersIn,
-        nn_bias_s const * const biasesIn, int32_t * const outputsIn, uint32_t bytesPerBiasIn, uint32_t bytesPerFilter);
+        nn_bias_s const * const biasesIn, int32_t * const outputsIn, uint32_t bytesPerBiasIn, uint32_t bytesPerFilterIn);
 
     uint32_t const inputBandStride;
     uint32_t const filterOutputCount;
@@ -318,7 +321,7 @@ struct PoolingConfig
 
 struct GmmConfig
 {
-    GmmConfig(GmmConfig const * const source, uint8_t *inputScratchPadIn);
+    GmmConfig(GmmConfig const * const source, const uint8_t *inputScratchPadIn);
     GmmConfig(uint32_t const inputVectorCountIn, uint32_t const inputElementCountIn, uint32_t const mixCountIn,
         uint32_t const meanSetOffsetSizeIn, uint32_t const varSetOffsetSizeIn, uint32_t const gaussConstSetOffsetSizeIn,
         uint32_t const maxScoreIn, uint32_t const stateCountIn, gna_gmm_data const * const dataIn,

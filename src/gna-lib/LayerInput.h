@@ -25,16 +25,22 @@
 
 #pragma once
 
+#include "Shape.h"
 #include "Tensor.h"
+
+#include "common.h"
+#include "gna-api-types-xnn.h"
 
 namespace GNA
 {
+class FullCapabilitiesMap;
+class LayerValidator;
 
 struct LayerInput : public Tensor
 {
     LayerInput(const nn_layer &layer, const LayerValidator& validator);
     LayerInput(const Gna2Tensor &inputTensor, const LayerValidator& validator);
-    ~LayerInput() = default;
+    virtual ~LayerInput() = default;
 
 protected:
     static Shape GetDimensions(const nn_layer& layer, gna_tensor_order order);

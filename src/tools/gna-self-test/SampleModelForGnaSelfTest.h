@@ -28,26 +28,26 @@ class SampleModelForGnaSelfTest
 {
 public:
     static SampleModelForGnaSelfTest GetDefault();
-    size_t GetWeightsByteSize() const
+    uint32_t GetWeightsByteSize() const
     {
         return byteSize(weights);
     }
-    size_t GetBiasesByteSize() const
+    uint32_t GetBiasesByteSize() const
     {
         return byteSize(biases);
     }
-    size_t GetInputsByteSize() const
+    uint32_t GetInputsByteSize() const
     {
         return byteSize(inputs);
     }
-    size_t GetRefScoresByteSize() const
+    uint32_t GetRefScoresByteSize() const
     {
         return byteSize(refScores);
     }
     void CopyWeights(void * dest) const { arrayCopy(dest,weights); }
     void CopyBiases(void * dest) const { arrayCopy(dest, biases); }
     void CopyInputs(void * dest) const { arrayCopy(dest,inputs); }
-    int32_t GetRefScore(size_t idx) const { return refScores[idx]; }
+    int32_t GetRefScore(uint32_t idx) const { return refScores[idx]; }
 private:
     SampleModelForGnaSelfTest() = default;
 
@@ -67,8 +67,8 @@ private:
         memcpy(dest, a.data(), byteSize(a));
     }
     template<typename Array>
-    static size_t byteSize(const Array& a)
+    static uint32_t byteSize(const Array& a)
     {
-        return a.size() * sizeof(typename Array::value_type);
+        return static_cast<uint32_t>(a.size() * sizeof(typename Array::value_type));
     }
 };

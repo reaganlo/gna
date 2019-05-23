@@ -23,15 +23,15 @@
  in any way.
 */
 
+#include "DeviceManager.h"
+#include "DeviceVerbose.h"
+#include "Logger.h"
+#include "Expect.h"
+
 #include <memory>
 #include <thread>
 
 #include "gna-api-verbose.h"
-
-#include "DeviceManager.h"
-#include "DeviceVerbose.h"
-#include "Expect.h"
-#include "Logger.h"
 
 using namespace GNA;
 

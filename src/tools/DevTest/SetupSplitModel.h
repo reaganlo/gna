@@ -23,23 +23,25 @@
  in any way.
 */
 
+#include "DeviceController.h"
 #include "IModelSetup.h"
 
+#include "gna-api.h"
+
 #include <array>
+#include <cstdint>
 #include <map>
 #include <vector>
-
-#include "DeviceController.h"
 
 class SetupSplitModel : public IModelSetup
 {
 public:
-    gna_model_id ModelId(int modelIndex) const override
+    gna_model_id ModelId(uint32_t modelIndex) const override
     {
         return models.at(modelIndex);
     }
 
-    gna_request_cfg_id ConfigId(int modelIndex, int configIndex) const override
+    gna_request_cfg_id ConfigId(uint32_t modelIndex, uint32_t configIndex) const override
     {
         auto modelIdSplit = ModelId(modelIndex);
         return modelsConfigurations.at(modelIdSplit).at(configIndex);
@@ -49,17 +51,17 @@ public:
 
     ~SetupSplitModel();
 
-    void checkReferenceOutput(int modelIndex, int configIndex) const override;
+    void checkReferenceOutput(uint32_t modelIndex, uint32_t configIndex) const override;
 
 private:
     size_t getFirstModelSize();
     size_t getSecondModelSize();
 
-    void setupSecondAffineLayer(uint8_t* &pinned_mem_ptr);
-    void setupFirstAffineLayer(uint8_t* &pinned_mem_ptr);
+    void setupSecondAffineLayer(uint8_t* &pinned_memory);
+    void setupFirstAffineLayer(uint8_t* &pinned_memory);
 
-    void setupInputBuffer(uint8_t* &pinned_memory, int modelIndex, int configIndex);
-    void setupOutputBuffer(uint8_t* &pinned_memory, int modelIndex, int configIndex);
+    void setupInputBuffer(uint8_t* &pinned_memory, uint32_t modelIndex, uint32_t configIndex);
+    void setupOutputBuffer(uint8_t* &pinned_memory, uint32_t modelIndex, uint32_t configIndex);
 
     DeviceController & deviceController;
 

@@ -145,7 +145,7 @@ void SetupConvolutionModel2D::sampleConvolutionLayer()
     layer.convolution.filters.count = filterN;
     layer.convolution.filters.dataMode = GNA_INT16;
     layer.convolution.filters.dimensions = filterDimensions;
-    layer.convolution.filters.filtersData =  (void*)pinned_filters;
+    layer.convolution.filters.filtersData =  pinned_filters;
     layer.convolution.stride = {1, 1, 0};
     layer.convolution.zeroPadding = {};
     layer.inputDimensions = inputDimensions;

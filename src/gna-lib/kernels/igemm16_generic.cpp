@@ -23,8 +23,11 @@
  in any way.
 */
 
-#include "igemv.h"
 #include "igemv16.h"
+
+#include "KernelArguments.h"
+
+#include <cstdint>
 
 void AffineKernelImpl2B(AffineConfig const * const config)
 {
@@ -45,11 +48,17 @@ void AffineKernelImpl2B(AffineConfig const * const config)
         for (j = 0; j < config->inputVectorCount; j++)
         {
             if (config->bytesPerBias == 1)
+            {
                 *output = *bias;
+            }
             else if (config->bytesPerBias == 2)
+            {
                 *output = *(int16_t*)bias;
+            }
             else if (config->bytesPerBias == 4)
+            {
                 *output = *(int32_t*)bias;
+            }
 
             for (k = 0; k < config->inputElementCount; k++)
             {
@@ -83,11 +92,17 @@ void AffineKernelImpl2B2B(AffineConfig const * const config)
         for (j = 0; j < config->inputVectorCount; j++)
         {
             if (config->bytesPerBias == 1)
+            {
                 *output = *bias;
+            }
             else if (config->bytesPerBias == 2)
+            {
                 *output = *(int16_t*)bias;
+            }
             else if (config->bytesPerBias == 4)
+            {
                 *output = *(int32_t*)bias;
+            }
 
             for (k = 0; k < config->inputElementCount; k++)
             {
@@ -122,11 +137,17 @@ void AffineKernelImpl2B1B(AffineConfig const * const config)
         for (j = 0; j < config->inputVectorCount; j++)
         {
             if (config->bytesPerBias == 1)
+            {
                 *output = *bias;
+            }
             else if (config->bytesPerBias == 2)
+            {
                 *output = *(int16_t*)bias;
+            }
             else if (config->bytesPerBias == 4)
+            {
                 *output = *(int32_t*)bias;
+            }
 
             for (k = 0; k < config->inputElementCount; k++)
             {
@@ -159,11 +180,17 @@ void AffineMultiBiasKernelImpl2B(AffineConfig const * const config)
         for (j = 0; j < config->inputVectorCount; j++)
         {
             if (config->bytesPerBias == 1)
+            {
                 *output = *multiBias;
+            }
             else if (config->bytesPerBias == 2)
+            {
                 *output = *(int16_t*)multiBias;
+            }
             else if (config->bytesPerBias == 4)
+            {
                 *output = *(int32_t*)multiBias;
+            }
 
             for (k = 0; k < config->inputElementCount; k++)
             {
@@ -196,11 +223,17 @@ void AffineMultiBiasKernelImpl2B2B(AffineConfig const * const config)
         for (j = 0; j < config->inputVectorCount; j++)
         {
             if (config->bytesPerBias == 1)
+            {
                 *output = *multiBias;
+            }
             else if (config->bytesPerBias == 2)
+            {
                 *output = *(int16_t*)multiBias;
+            }
             else if (config->bytesPerBias == 4)
+            {
                 *output = *(int32_t*)multiBias;
+            }
 
             for (k = 0; k < config->inputElementCount; k++)
             {
@@ -233,11 +266,17 @@ void AffineMultiBiasKernelImpl2B1B(AffineConfig const * const config)
         for (j = 0; j < config->inputVectorCount; j++)
         {
             if (config->bytesPerBias == 1)
+            {
                 *output = *multiBias;
+            }
             else if (config->bytesPerBias == 2)
+            {
                 *output = *(int16_t*)multiBias;
+            }
             else if (config->bytesPerBias == 4)
+            {
                 *output = *(int32_t*)multiBias;
+            }
 
             for (k = 0; k < config->inputElementCount; k++)
             {

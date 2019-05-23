@@ -25,16 +25,19 @@
 
 #pragma once
 
-#include <array>
-#include <unordered_map>
-
 #include "common.h"
-#include "DriverInterface.h"
+#include "gna-api.h"
+#include "gna-api-types-xnn.h"
+
+#include <array>
+#include <cstdint>
+#include <map>
 
 #include "gna2-common-impl.h"
 
 namespace GNA
 {
+class DriverInterface;
 
 enum GnaFeature
 {
@@ -66,7 +69,7 @@ struct GenerationCapabilities
 class HardwareCapabilities
 {
 public:
-    explicit HardwareCapabilities(DeviceVersion deviceVersion = DefaultDeviceVersion);
+    explicit HardwareCapabilities(DeviceVersion deviceVersionIn = DefaultDeviceVersion);
 
     void DiscoverHardware(DriverInterface &driverInterface);
 

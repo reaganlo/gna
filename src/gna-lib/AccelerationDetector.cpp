@@ -29,7 +29,7 @@ static inline unsigned long long _xgetbv(unsigned int ctr)
 {
     int a, d;
     __asm("xgetbv" : "=a"(a),"=d"(d) : "c"(ctr) : );
-    return a | (((unsigned long long) d) << 32);
+    return static_cast<unsigned long long>(a) | ((static_cast<unsigned long long>(d)) << 32);
 }
 #define cpuid(info, level) __cpuid_count(level, 0, info[0], info[1], info[2], info[3])
 #else
@@ -41,14 +41,15 @@ static inline unsigned long long _xgetbv(unsigned int ctr)
 #define cpuid(info, level) __cpuidex((int*)(info), level, 0)
 #endif // __GNUC__
 
-#include "gna2-inference-impl.h"
+#include "gmm.h"
+
 #include "AccelerationDetector.h"
-#include "GnaException.h"
 #include "Logger.h"
 
-#include <algorithm>
+#include "gna2-inference-impl.h"
+
 #include <map>
-#include <array>
+#include <memory>
 
 using namespace GNA;
 
@@ -91,61 +92,61 @@ AccelerationDetector::Kernels = {
         {
             {GNA_INT16 ,GNA_INT8, GNA_BIAS_MODE_RICH_FORMAT },
             {
-                { { GNA_GEN_SAT },{ (VoidKernel)xnnKernel_generic_sat.affineSingle1B2Bfull } },
-                { { GNA_GEN_FAST },{ (VoidKernel)xnnKernel_generic.affineSingle1B2Bfull } },
-                { { GNA_SSE4_2_SAT },{ (VoidKernel)xnnKernel_sse4_sat.affineSingle1Bfull } },
-                { { GNA_SSE4_2_FAST },{ (VoidKernel)xnnKernel_sse4.affineSingle1Bfull } },
+                { { GNA_GEN_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.affineSingle1B2Bfull) } },
+                { { GNA_GEN_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.affineSingle1B2Bfull) } },
+                { { GNA_SSE4_2_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_sse4_sat.affineSingle1Bfull) } },
+                { { GNA_SSE4_2_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_sse4.affineSingle1Bfull) } },
 
-                { { GNA_AVX1_SAT },{ (VoidKernel)xnnKernel_generic_sat.affineSingle1B2Bfull } },
-                { { GNA_AVX1_FAST },{ (VoidKernel)xnnKernel_generic.affineSingle1B2Bfull } },
-                { { GNA_AVX2_SAT },{ (VoidKernel)xnnKernel_generic_sat.affineSingle1B2Bfull } },
-                { { GNA_AVX2_FAST },{ (VoidKernel)xnnKernel_generic.affineSingle1B2Bfull } }
+                { { GNA_AVX1_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.affineSingle1B2Bfull) } },
+                { { GNA_AVX1_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.affineSingle1B2Bfull) } },
+                { { GNA_AVX2_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.affineSingle1B2Bfull) } },
+                { { GNA_AVX2_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.affineSingle1B2Bfull) } }
 
             }
         },
         {
             { GNA_INT16 ,GNA_INT16, GNA_BIAS_MODE_1_2_4B },
             {
-                { { GNA_GEN_SAT },{ (VoidKernel)xnnKernel_generic_sat.affineSingle2B2Bfull } },
-                { { GNA_GEN_FAST },{ (VoidKernel)xnnKernel_generic.affineSingle2B2Bfull } },
-                { { GNA_SSE4_2_SAT },{ (VoidKernel)xnnKernel_sse4_sat.affineSingle2Bfull } },
-                { { GNA_SSE4_2_FAST },{ (VoidKernel)xnnKernel_sse4.affineSingle2Bfull } },
+                { { GNA_GEN_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.affineSingle2B2Bfull) } },
+                { { GNA_GEN_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.affineSingle2B2Bfull) } },
+                { { GNA_SSE4_2_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_sse4_sat.affineSingle2Bfull) } },
+                { { GNA_SSE4_2_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_sse4.affineSingle2Bfull) } },
 
-                { { GNA_AVX1_SAT },{ (VoidKernel)xnnKernel_generic_sat.affineSingle2B2Bfull } },
-                { { GNA_AVX1_FAST },{ (VoidKernel)xnnKernel_generic.affineSingle2B2Bfull } },
-                { { GNA_AVX2_SAT },{ (VoidKernel)xnnKernel_generic_sat.affineSingle2B2Bfull } },
-                { { GNA_AVX2_FAST },{ (VoidKernel)xnnKernel_generic.affineSingle2B2Bfull } }
+                { { GNA_AVX1_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.affineSingle2B2Bfull) } },
+                { { GNA_AVX1_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.affineSingle2B2Bfull) } },
+                { { GNA_AVX2_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.affineSingle2B2Bfull) } },
+                { { GNA_AVX2_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.affineSingle2B2Bfull) } }
             }
         },
         {
             { GNA_INT8 ,GNA_INT8, GNA_BIAS_MODE_1_2_4B },
             {
-                { { GNA_GEN_SAT },{ (VoidKernel)xnnKernel_generic_sat.affineSingle1B1Bfull } },
-                { { GNA_GEN_FAST },{ (VoidKernel)xnnKernel_generic.affineSingle1B1Bfull } },
+                { { GNA_GEN_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.affineSingle1B1Bfull) } },
+                { { GNA_GEN_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.affineSingle1B1Bfull) } },
 
-                { { GNA_SSE4_2_SAT },{ (VoidKernel)xnnKernel_generic_sat.affineSingle1B1Bfull } },
-                { { GNA_SSE4_2_FAST },{ (VoidKernel)xnnKernel_generic.affineSingle1B1Bfull } },
+                { { GNA_SSE4_2_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.affineSingle1B1Bfull) } },
+                { { GNA_SSE4_2_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.affineSingle1B1Bfull) } },
 
-                { { GNA_AVX1_SAT },{ (VoidKernel)xnnKernel_generic_sat.affineSingle1B1Bfull } },
-                { { GNA_AVX1_FAST },{ (VoidKernel)xnnKernel_generic.affineSingle1B1Bfull } },
-                { { GNA_AVX2_SAT },{ (VoidKernel)xnnKernel_generic_sat.affineSingle1B1Bfull } },
-                { { GNA_AVX2_FAST },{ (VoidKernel)xnnKernel_generic.affineSingle1B1Bfull } }
+                { { GNA_AVX1_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.affineSingle1B1Bfull) } },
+                { { GNA_AVX1_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.affineSingle1B1Bfull) } },
+                { { GNA_AVX2_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.affineSingle1B1Bfull) } },
+                { { GNA_AVX2_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.affineSingle1B1Bfull) } }
 
             }
         },
         {
             { GNA_INT8 ,GNA_INT16, GNA_BIAS_MODE_1_2_4B },
             {
-                { { GNA_GEN_SAT },{ (VoidKernel)xnnKernel_generic_sat.affineSingle2B1Bfull } },
-                { { GNA_GEN_FAST },{ (VoidKernel)xnnKernel_generic.affineSingle2B1Bfull } },
+                { { GNA_GEN_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.affineSingle2B1Bfull) } },
+                { { GNA_GEN_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.affineSingle2B1Bfull) } },
 
-                { { GNA_SSE4_2_SAT },{ (VoidKernel)xnnKernel_generic_sat.affineSingle2B1Bfull } },
-                { { GNA_SSE4_2_FAST },{ (VoidKernel)xnnKernel_generic.affineSingle2B1Bfull } },
+                { { GNA_SSE4_2_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.affineSingle2B1Bfull) } },
+                { { GNA_SSE4_2_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.affineSingle2B1Bfull) } },
 
-                { { GNA_AVX1_SAT },{ (VoidKernel)xnnKernel_generic_sat.affineSingle2B1Bfull } },
-                { { GNA_AVX1_FAST },{ (VoidKernel)xnnKernel_generic.affineSingle2B1Bfull } },
-                { { GNA_AVX2_SAT },{ (VoidKernel)xnnKernel_generic_sat.affineSingle2B1Bfull } },
-                { { GNA_AVX2_FAST },{ (VoidKernel)xnnKernel_generic.affineSingle2B1Bfull } }
+                { { GNA_AVX1_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.affineSingle2B1Bfull) } },
+                { { GNA_AVX1_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.affineSingle2B1Bfull) } },
+                { { GNA_AVX2_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.affineSingle2B1Bfull) } },
+                { { GNA_AVX2_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.affineSingle2B1Bfull) } }
             }
         }
     }
@@ -155,59 +156,59 @@ AccelerationDetector::Kernels = {
         {
             { GNA_INT16 ,GNA_INT8, GNA_BIAS_MODE_RICH_FORMAT },
             {
-                { { GNA_GEN_SAT },{ (VoidKernel)xnnKernel_generic_sat.affineSingle1B2Bal } },
-                { { GNA_GEN_FAST },{ (VoidKernel)xnnKernel_generic.affineSingle1B2Bal } },
-                { { GNA_SSE4_2_SAT },{ (VoidKernel)xnnKernel_sse4_sat.affineSingle1Bal } },
-                { { GNA_SSE4_2_FAST },{ (VoidKernel)xnnKernel_sse4.affineSingle1Bal } },
+                { { GNA_GEN_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.affineSingle1B2Bal) } },
+                { { GNA_GEN_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.affineSingle1B2Bal) } },
+                { { GNA_SSE4_2_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_sse4_sat.affineSingle1Bal) } },
+                { { GNA_SSE4_2_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_sse4.affineSingle1Bal) } },
 
-                { { GNA_AVX1_SAT },{ (VoidKernel)xnnKernel_generic_sat.affineSingle1B2Bal } },
-                { { GNA_AVX1_FAST },{ (VoidKernel)xnnKernel_generic.affineSingle1B2Bal } },
-                { { GNA_AVX2_SAT },{ (VoidKernel)xnnKernel_generic_sat.affineSingle1B2Bal } },
-                { { GNA_AVX2_FAST },{ (VoidKernel)xnnKernel_generic.affineSingle1B2Bal } }
+                { { GNA_AVX1_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.affineSingle1B2Bal) } },
+                { { GNA_AVX1_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.affineSingle1B2Bal) } },
+                { { GNA_AVX2_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.affineSingle1B2Bal) } },
+                { { GNA_AVX2_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.affineSingle1B2Bal) } }
             }
         },
         {
             { GNA_INT16 ,GNA_INT16, GNA_BIAS_MODE_1_2_4B },
             {
-                { { GNA_GEN_SAT },{ (VoidKernel)xnnKernel_generic_sat.affineSingle2B2Bal } },
-                { { GNA_GEN_FAST },{ (VoidKernel)xnnKernel_generic.affineSingle2B2Bal } },
-                { { GNA_SSE4_2_SAT },{ (VoidKernel)xnnKernel_sse4_sat.affineSingle2Bal } },
-                { { GNA_SSE4_2_FAST },{ (VoidKernel)xnnKernel_sse4.affineSingle2Bal } },
+                { { GNA_GEN_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.affineSingle2B2Bal) } },
+                { { GNA_GEN_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.affineSingle2B2Bal) } },
+                { { GNA_SSE4_2_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_sse4_sat.affineSingle2Bal) } },
+                { { GNA_SSE4_2_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_sse4.affineSingle2Bal) } },
 
-                { { GNA_AVX1_SAT },{ (VoidKernel)xnnKernel_generic_sat.affineSingle2B2Bal } },
-                { { GNA_AVX1_FAST },{ (VoidKernel)xnnKernel_generic.affineSingle2B2Bal } },
-                { { GNA_AVX2_SAT },{ (VoidKernel)xnnKernel_generic_sat.affineSingle2B2Bal } },
-                { { GNA_AVX2_FAST },{ (VoidKernel)xnnKernel_generic.affineSingle2B2Bal } }
+                { { GNA_AVX1_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.affineSingle2B2Bal) } },
+                { { GNA_AVX1_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.affineSingle2B2Bal) } },
+                { { GNA_AVX2_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.affineSingle2B2Bal) } },
+                { { GNA_AVX2_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.affineSingle2B2Bal) } }
             }
         },
         {
             { GNA_INT8 ,GNA_INT8, GNA_BIAS_MODE_1_2_4B },
             {
-                { { GNA_GEN_SAT },{ (VoidKernel)xnnKernel_generic_sat.affineSingle1B1Bal } },
-                { { GNA_GEN_FAST },{ (VoidKernel)xnnKernel_generic.affineSingle1B1Bal } },
+                { { GNA_GEN_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.affineSingle1B1Bal) } },
+                { { GNA_GEN_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.affineSingle1B1Bal) } },
 
-                { { GNA_SSE4_2_SAT },{ (VoidKernel)xnnKernel_generic_sat.affineSingle1B1Bal } },
-                { { GNA_SSE4_2_FAST },{ (VoidKernel)xnnKernel_generic.affineSingle1B1Bal } },
+                { { GNA_SSE4_2_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.affineSingle1B1Bal) } },
+                { { GNA_SSE4_2_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.affineSingle1B1Bal) } },
 
-                { { GNA_AVX1_SAT },{ (VoidKernel)xnnKernel_generic_sat.affineSingle1B1Bal } },
-                { { GNA_AVX1_FAST },{ (VoidKernel)xnnKernel_generic.affineSingle1B1Bal } },
-                { { GNA_AVX2_SAT },{ (VoidKernel)xnnKernel_generic_sat.affineSingle1B1Bal } },
-                { { GNA_AVX2_FAST },{ (VoidKernel)xnnKernel_generic.affineSingle1B1Bal } }
+                { { GNA_AVX1_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.affineSingle1B1Bal) } },
+                { { GNA_AVX1_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.affineSingle1B1Bal) } },
+                { { GNA_AVX2_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.affineSingle1B1Bal) } },
+                { { GNA_AVX2_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.affineSingle1B1Bal) } }
             }
         },
         {
             { GNA_INT8 ,GNA_INT16, GNA_BIAS_MODE_1_2_4B },
             {
-                { { GNA_GEN_SAT },{ (VoidKernel)xnnKernel_generic_sat.affineSingle2B1Bal } },
-                { { GNA_GEN_FAST },{ (VoidKernel)xnnKernel_generic.affineSingle2B1Bal } },
+                { { GNA_GEN_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.affineSingle2B1Bal) } },
+                { { GNA_GEN_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.affineSingle2B1Bal) } },
 
-                { { GNA_SSE4_2_SAT },{ (VoidKernel)xnnKernel_generic_sat.affineSingle2B1Bal } },
-                { { GNA_SSE4_2_FAST },{ (VoidKernel)xnnKernel_generic.affineSingle2B1Bal } },
+                { { GNA_SSE4_2_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.affineSingle2B1Bal) } },
+                { { GNA_SSE4_2_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.affineSingle2B1Bal) } },
 
-                { { GNA_AVX1_SAT },{ (VoidKernel)xnnKernel_generic_sat.affineSingle2B1Bal } },
-                { { GNA_AVX1_FAST },{ (VoidKernel)xnnKernel_generic.affineSingle2B1Bal } },
-                { { GNA_AVX2_SAT },{ (VoidKernel)xnnKernel_generic_sat.affineSingle2B1Bal } },
-                { { GNA_AVX2_FAST },{ (VoidKernel)xnnKernel_generic.affineSingle2B1Bal } }
+                { { GNA_AVX1_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.affineSingle2B1Bal) } },
+                { { GNA_AVX1_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.affineSingle2B1Bal) } },
+                { { GNA_AVX2_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.affineSingle2B1Bal) } },
+                { { GNA_AVX2_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.affineSingle2B1Bal) } }
             }
         }
     }
@@ -217,59 +218,59 @@ AccelerationDetector::Kernels = {
         {
             { GNA_INT16 ,GNA_INT8, GNA_BIAS_MODE_1_2_4B },
             {
-                { { GNA_GEN_SAT },{ (VoidKernel)xnnKernel_generic_sat.affineMulti1B2B } },
-                { { GNA_GEN_FAST },{ (VoidKernel)xnnKernel_generic.affineMulti1B2B } },
-                { { GNA_SSE4_2_SAT },{ (VoidKernel)xnnKernel_generic_sat.affineMulti1B2B } },
-                { { GNA_SSE4_2_FAST },{ (VoidKernel)xnnKernel_generic.affineMulti1B2B } },
+                { { GNA_GEN_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.affineMulti1B2B) } },
+                { { GNA_GEN_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.affineMulti1B2B) } },
+                { { GNA_SSE4_2_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.affineMulti1B2B) } },
+                { { GNA_SSE4_2_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.affineMulti1B2B) } },
 
-                { { GNA_AVX1_SAT },{ (VoidKernel)xnnKernel_generic_sat.affineMulti1B2B } },
-                { { GNA_AVX1_FAST },{ (VoidKernel)xnnKernel_generic.affineMulti1B2B } },
-                { { GNA_AVX2_SAT },{ (VoidKernel)xnnKernel_generic_sat.affineMulti1B2B } },
-                { { GNA_AVX2_FAST },{ (VoidKernel)xnnKernel_generic.affineMulti1B2B } }
+                { { GNA_AVX1_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.affineMulti1B2B) } },
+                { { GNA_AVX1_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.affineMulti1B2B) } },
+                { { GNA_AVX2_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.affineMulti1B2B) } },
+                { { GNA_AVX2_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.affineMulti1B2B) } }
             }
         },
         {
             { GNA_INT16 ,GNA_INT16, GNA_BIAS_MODE_1_2_4B },
             {
-                { { GNA_GEN_SAT },{ (VoidKernel)xnnKernel_generic_sat.affineMulti2B2B } },
-                { { GNA_GEN_FAST },{ (VoidKernel)xnnKernel_generic.affineMulti2B2B } },
-                { { GNA_SSE4_2_SAT },{ (VoidKernel)xnnKernel_sse4_sat.affineMulti2B } },
-                { { GNA_SSE4_2_FAST },{ (VoidKernel)xnnKernel_sse4.affineMulti2B } },
+                { { GNA_GEN_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.affineMulti2B2B) } },
+                { { GNA_GEN_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.affineMulti2B2B) } },
+                { { GNA_SSE4_2_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_sse4_sat.affineMulti2B) } },
+                { { GNA_SSE4_2_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_sse4.affineMulti2B) } },
 
-                { { GNA_AVX1_SAT },{ (VoidKernel)xnnKernel_generic_sat.affineMulti2B2B } },
-                { { GNA_AVX1_FAST },{ (VoidKernel)xnnKernel_generic.affineMulti2B2B } },
-                { { GNA_AVX2_SAT },{ (VoidKernel)xnnKernel_generic_sat.affineMulti2B2B } },
-                { { GNA_AVX2_FAST },{ (VoidKernel)xnnKernel_generic.affineMulti2B2B } }
+                { { GNA_AVX1_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.affineMulti2B2B) } },
+                { { GNA_AVX1_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.affineMulti2B2B) } },
+                { { GNA_AVX2_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.affineMulti2B2B) } },
+                { { GNA_AVX2_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.affineMulti2B2B) } }
             }
         },
         {
             { GNA_INT8 ,GNA_INT8, GNA_BIAS_MODE_1_2_4B },
             {
-                { { GNA_GEN_SAT },{ (VoidKernel)xnnKernel_generic_sat.affineMulti1B1B } },
-                { { GNA_GEN_FAST },{ (VoidKernel)xnnKernel_generic.affineMulti1B1B } },
+                { { GNA_GEN_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.affineMulti1B1B) } },
+                { { GNA_GEN_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.affineMulti1B1B) } },
 
-                { { GNA_SSE4_2_SAT },{ (VoidKernel)xnnKernel_generic_sat.affineMulti1B1B } },
-                { { GNA_SSE4_2_FAST },{ (VoidKernel)xnnKernel_generic.affineMulti1B1B } },
+                { { GNA_SSE4_2_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.affineMulti1B1B) } },
+                { { GNA_SSE4_2_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.affineMulti1B1B) } },
 
-                { { GNA_AVX1_SAT },{ (VoidKernel)xnnKernel_generic_sat.affineMulti1B1B } },
-                { { GNA_AVX1_FAST },{ (VoidKernel)xnnKernel_generic.affineMulti1B1B } },
-                { { GNA_AVX2_SAT },{ (VoidKernel)xnnKernel_generic_sat.affineMulti1B1B } },
-                { { GNA_AVX2_FAST },{ (VoidKernel)xnnKernel_generic.affineMulti1B1B } }
+                { { GNA_AVX1_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.affineMulti1B1B) } },
+                { { GNA_AVX1_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.affineMulti1B1B) } },
+                { { GNA_AVX2_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.affineMulti1B1B) } },
+                { { GNA_AVX2_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.affineMulti1B1B) } }
             }
         },
         {
             { GNA_INT8 ,GNA_INT16, GNA_BIAS_MODE_1_2_4B },
             {
-                { { GNA_GEN_SAT },{ (VoidKernel)xnnKernel_generic_sat.affineMulti2B1B } },
-                { { GNA_GEN_FAST },{ (VoidKernel)xnnKernel_generic.affineMulti2B1B } },
+                { { GNA_GEN_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.affineMulti2B1B) } },
+                { { GNA_GEN_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.affineMulti2B1B) } },
 
-                { { GNA_SSE4_2_SAT },{ (VoidKernel)xnnKernel_generic_sat.affineMulti2B } },
-                { { GNA_SSE4_2_FAST },{ (VoidKernel)xnnKernel_generic.affineMulti2B } },
+                { { GNA_SSE4_2_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.affineMulti2B) } },
+                { { GNA_SSE4_2_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.affineMulti2B) } },
 
-                { { GNA_AVX1_SAT },{ (VoidKernel)xnnKernel_generic_sat.affineMulti2B1B } },
-                { { GNA_AVX1_FAST },{ (VoidKernel)xnnKernel_generic.affineMulti2B1B } },
-                { { GNA_AVX2_SAT },{ (VoidKernel)xnnKernel_generic_sat.affineMulti2B1B } },
-                { { GNA_AVX2_FAST },{ (VoidKernel)xnnKernel_generic.affineMulti2B1B } }
+                { { GNA_AVX1_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.affineMulti2B1B) } },
+                { { GNA_AVX1_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.affineMulti2B1B) } },
+                { { GNA_AVX2_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.affineMulti2B1B) } },
+                { { GNA_AVX2_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.affineMulti2B1B) } }
             }
         }
     }
@@ -279,59 +280,59 @@ AccelerationDetector::Kernels = {
         {
             { GNA_INT16 ,GNA_INT8, GNA_BIAS_MODE_RICH_FORMAT },
             {
-                { { GNA_GEN_SAT },{ (VoidKernel)xnnKernel_generic_sat.recurrent1B2B } },
-                { { GNA_GEN_FAST },{ (VoidKernel)xnnKernel_generic.recurrent1B2B } },
-                { { GNA_SSE4_2_SAT },{ (VoidKernel)xnnKernel_sse4_sat.recurrent1B } },
-                { { GNA_SSE4_2_FAST },{ (VoidKernel)xnnKernel_sse4.recurrent1B } },
+                { { GNA_GEN_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.recurrent1B2B) } },
+                { { GNA_GEN_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.recurrent1B2B) } },
+                { { GNA_SSE4_2_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_sse4_sat.recurrent1B) } },
+                { { GNA_SSE4_2_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_sse4.recurrent1B) } },
 
-                { { GNA_AVX1_SAT },{ (VoidKernel)xnnKernel_generic_sat.recurrent1B2B } },
-                { { GNA_AVX1_FAST },{ (VoidKernel)xnnKernel_generic.recurrent1B2B } },
-                { { GNA_AVX2_SAT },{ (VoidKernel)xnnKernel_generic_sat.recurrent1B2B } },
-                { { GNA_AVX2_FAST },{ (VoidKernel)xnnKernel_generic.recurrent1B2B } }
+                { { GNA_AVX1_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.recurrent1B2B) } },
+                { { GNA_AVX1_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.recurrent1B2B) } },
+                { { GNA_AVX2_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.recurrent1B2B) } },
+                { { GNA_AVX2_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.recurrent1B2B) } }
             }
         },
         {
             { GNA_INT16 ,GNA_INT16, GNA_BIAS_MODE_1_2_4B },
             {
-                { { GNA_GEN_SAT },{ (VoidKernel)xnnKernel_generic_sat.recurrent2B2B } },
-                { { GNA_GEN_FAST },{ (VoidKernel)xnnKernel_generic.recurrent2B2B } },
-                { { GNA_SSE4_2_SAT },{ (VoidKernel)xnnKernel_sse4_sat.recurrent2B } },
-                { { GNA_SSE4_2_FAST },{ (VoidKernel)xnnKernel_sse4.recurrent2B } },
+                { { GNA_GEN_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.recurrent2B2B) } },
+                { { GNA_GEN_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.recurrent2B2B) } },
+                { { GNA_SSE4_2_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_sse4_sat.recurrent2B) } },
+                { { GNA_SSE4_2_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_sse4.recurrent2B) } },
 
-                { { GNA_AVX1_SAT },{ (VoidKernel)xnnKernel_generic_sat.recurrent2B2B } },
-                { { GNA_AVX1_FAST },{ (VoidKernel)xnnKernel_generic.recurrent2B2B } },
-                { { GNA_AVX2_SAT },{ (VoidKernel)xnnKernel_generic_sat.recurrent2B2B } },
-                { { GNA_AVX2_FAST },{ (VoidKernel)xnnKernel_generic.recurrent2B2B } }
+                { { GNA_AVX1_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.recurrent2B2B) } },
+                { { GNA_AVX1_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.recurrent2B2B) } },
+                { { GNA_AVX2_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.recurrent2B2B) } },
+                { { GNA_AVX2_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.recurrent2B2B) } }
             }
         },
         {
             { GNA_INT8 ,GNA_INT8, GNA_BIAS_MODE_1_2_4B },
             {
-                { { GNA_GEN_SAT },{ (VoidKernel)xnnKernel_generic_sat.recurrent1B1B } },
-                { { GNA_GEN_FAST },{ (VoidKernel)xnnKernel_generic.recurrent1B1B } },
+                { { GNA_GEN_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.recurrent1B1B) } },
+                { { GNA_GEN_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.recurrent1B1B) } },
 
-                { { GNA_SSE4_2_SAT },{ (VoidKernel)xnnKernel_generic_sat.recurrent1B1B } },
-                { { GNA_SSE4_2_FAST },{ (VoidKernel)xnnKernel_generic.recurrent1B1B } },
+                { { GNA_SSE4_2_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.recurrent1B1B) } },
+                { { GNA_SSE4_2_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.recurrent1B1B) } },
 
-                { { GNA_AVX1_SAT },{ (VoidKernel)xnnKernel_generic_sat.recurrent1B1B } },
-                { { GNA_AVX1_FAST },{ (VoidKernel)xnnKernel_generic.recurrent1B1B } },
-                { { GNA_AVX2_SAT },{ (VoidKernel)xnnKernel_generic_sat.recurrent1B1B } },
-                { { GNA_AVX2_FAST },{ (VoidKernel)xnnKernel_generic.recurrent1B1B } }
+                { { GNA_AVX1_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.recurrent1B1B) } },
+                { { GNA_AVX1_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.recurrent1B1B) } },
+                { { GNA_AVX2_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.recurrent1B1B) } },
+                { { GNA_AVX2_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.recurrent1B1B) } }
             }
         },
         {
             { GNA_INT8 ,GNA_INT16, GNA_BIAS_MODE_1_2_4B },
             {
-                { { GNA_GEN_SAT },{ (VoidKernel)xnnKernel_generic_sat.recurrent2B1B } },
-                { { GNA_GEN_FAST },{ (VoidKernel)xnnKernel_generic.recurrent2B1B } },
+                { { GNA_GEN_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.recurrent2B1B) } },
+                { { GNA_GEN_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.recurrent2B1B) } },
 
-                { { GNA_SSE4_2_SAT },{ (VoidKernel)xnnKernel_generic_sat.recurrent2B1B } },
-                { { GNA_SSE4_2_FAST },{ (VoidKernel)xnnKernel_generic.recurrent2B1B } },
+                { { GNA_SSE4_2_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.recurrent2B1B) } },
+                { { GNA_SSE4_2_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.recurrent2B1B) } },
 
-                { { GNA_AVX1_SAT },{ (VoidKernel)xnnKernel_generic_sat.recurrent2B1B } },
-                { { GNA_AVX1_FAST },{ (VoidKernel)xnnKernel_generic.recurrent2B1B } },
-                { { GNA_AVX2_SAT },{ (VoidKernel)xnnKernel_generic_sat.recurrent2B1B } },
-                { { GNA_AVX2_FAST },{ (VoidKernel)xnnKernel_generic.recurrent2B1B } }
+                { { GNA_AVX1_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.recurrent2B1B) } },
+                { { GNA_AVX1_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.recurrent2B1B) } },
+                { { GNA_AVX2_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.recurrent2B1B) } },
+                { { GNA_AVX2_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.recurrent2B1B) } }
             }
         },
     }
@@ -341,59 +342,59 @@ AccelerationDetector::Kernels = {
         {
             { GNA_INT16 ,GNA_INT8, GNA_BIAS_MODE_RICH_FORMAT },
             {
-                { { GNA_GEN_SAT },{ (VoidKernel)xnnKernel_generic_sat.diagonal1B2B } },
-                { { GNA_GEN_FAST },{ (VoidKernel)xnnKernel_generic.diagonal1B2B } },
-                { { GNA_SSE4_2_SAT },{ (VoidKernel)xnnKernel_sse4_sat.diagonal1B } },
-                { { GNA_SSE4_2_FAST },{ (VoidKernel)xnnKernel_sse4.diagonal1B } },
+                { { GNA_GEN_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.diagonal1B2B) } },
+                { { GNA_GEN_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.diagonal1B2B) } },
+                { { GNA_SSE4_2_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_sse4_sat.diagonal1B) } },
+                { { GNA_SSE4_2_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_sse4.diagonal1B) } },
 
-                { { GNA_AVX1_SAT },{ (VoidKernel)xnnKernel_generic_sat.diagonal1B2B } },
-                { { GNA_AVX1_FAST },{ (VoidKernel)xnnKernel_generic.diagonal1B2B } },
-                { { GNA_AVX2_SAT },{ (VoidKernel)xnnKernel_generic_sat.diagonal1B2B } },
-                { { GNA_AVX2_FAST },{ (VoidKernel)xnnKernel_generic.diagonal1B2B } }
+                { { GNA_AVX1_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.diagonal1B2B) } },
+                { { GNA_AVX1_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.diagonal1B2B) } },
+                { { GNA_AVX2_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.diagonal1B2B) } },
+                { { GNA_AVX2_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.diagonal1B2B) } }
             }
         },
         {
             { GNA_INT16 ,GNA_INT16, GNA_BIAS_MODE_1_2_4B },
             {
-                { { GNA_GEN_SAT },{ (VoidKernel)xnnKernel_generic_sat.diagonal2B2B } },
-                { { GNA_GEN_FAST },{ (VoidKernel)xnnKernel_generic.diagonal2B2B } },
-                { { GNA_SSE4_2_SAT },{ (VoidKernel)xnnKernel_sse4_sat.diagonal2B } },
-                { { GNA_SSE4_2_FAST },{ (VoidKernel)xnnKernel_sse4.diagonal2B } },
+                { { GNA_GEN_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.diagonal2B2B) } },
+                { { GNA_GEN_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.diagonal2B2B) } },
+                { { GNA_SSE4_2_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_sse4_sat.diagonal2B) } },
+                { { GNA_SSE4_2_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_sse4.diagonal2B) } },
 
-                { { GNA_AVX1_SAT },{ (VoidKernel)xnnKernel_generic_sat.diagonal2B2B } },
-                { { GNA_AVX1_FAST },{ (VoidKernel)xnnKernel_generic.diagonal2B2B } },
-                { { GNA_AVX2_SAT },{ (VoidKernel)xnnKernel_generic_sat.diagonal2B2B } },
-                { { GNA_AVX2_FAST },{ (VoidKernel)xnnKernel_generic.diagonal2B2B } }
+                { { GNA_AVX1_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.diagonal2B2B) } },
+                { { GNA_AVX1_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.diagonal2B2B) } },
+                { { GNA_AVX2_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.diagonal2B2B) } },
+                { { GNA_AVX2_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.diagonal2B2B) } }
             }
         },
         {
             { GNA_INT8 ,GNA_INT8, GNA_BIAS_MODE_1_2_4B },
             {
-                { { GNA_GEN_SAT },{ (VoidKernel)xnnKernel_generic_sat.diagonal1B1B } },
-                { { GNA_GEN_FAST },{ (VoidKernel)xnnKernel_generic.diagonal1B1B } },
+                { { GNA_GEN_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.diagonal1B1B) } },
+                { { GNA_GEN_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.diagonal1B1B) } },
 
-                { { GNA_SSE4_2_SAT },{ (VoidKernel)xnnKernel_generic_sat.diagonal1B1B } },
-                { { GNA_SSE4_2_FAST },{ (VoidKernel)xnnKernel_generic.diagonal1B1B } },
+                { { GNA_SSE4_2_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.diagonal1B1B) } },
+                { { GNA_SSE4_2_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.diagonal1B1B) } },
 
-                { { GNA_AVX1_SAT },{ (VoidKernel)xnnKernel_generic_sat.diagonal1B1B } },
-                { { GNA_AVX1_FAST },{ (VoidKernel)xnnKernel_generic.diagonal1B1B } },
-                { { GNA_AVX2_SAT },{ (VoidKernel)xnnKernel_generic_sat.diagonal1B1B } },
-                { { GNA_AVX2_FAST },{ (VoidKernel)xnnKernel_generic.diagonal1B1B } }
+                { { GNA_AVX1_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.diagonal1B1B) } },
+                { { GNA_AVX1_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.diagonal1B1B) } },
+                { { GNA_AVX2_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.diagonal1B1B) } },
+                { { GNA_AVX2_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.diagonal1B1B) } }
             }
         },
         {
             { GNA_INT8 ,GNA_INT16, GNA_BIAS_MODE_1_2_4B },
             {
-                { { GNA_GEN_SAT },{ (VoidKernel)xnnKernel_generic_sat.diagonal2B1B } },
-                { { GNA_GEN_FAST },{ (VoidKernel)xnnKernel_generic.diagonal2B1B } },
+                { { GNA_GEN_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.diagonal2B1B) } },
+                { { GNA_GEN_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.diagonal2B1B) } },
 
-                { { GNA_SSE4_2_SAT },{ (VoidKernel)xnnKernel_generic_sat.diagonal2B1B } },
-                { { GNA_SSE4_2_FAST },{ (VoidKernel)xnnKernel_generic.diagonal2B1B } },
+                { { GNA_SSE4_2_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.diagonal2B1B) } },
+                { { GNA_SSE4_2_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.diagonal2B1B) } },
 
-                { { GNA_AVX1_SAT },{ (VoidKernel)xnnKernel_generic_sat.diagonal2B1B } },
-                { { GNA_AVX1_FAST },{ (VoidKernel)xnnKernel_generic.diagonal2B1B } },
-                { { GNA_AVX2_SAT },{ (VoidKernel)xnnKernel_generic_sat.diagonal2B1B } },
-                { { GNA_AVX2_FAST },{ (VoidKernel)xnnKernel_generic.diagonal2B1B } }
+                { { GNA_AVX1_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.diagonal2B1B) } },
+                { { GNA_AVX1_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.diagonal2B1B) } },
+                { { GNA_AVX2_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.diagonal2B1B) } },
+                { { GNA_AVX2_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.diagonal2B1B) } }
             }
         },
     }
@@ -403,29 +404,29 @@ AccelerationDetector::Kernels = {
         {
             { GNA_INT8},
             {
-                { { GNA_GEN_SAT },{ (VoidKernel)xnnKernel_generic_sat.transpose1B } },
-                { { GNA_GEN_FAST },{ (VoidKernel)xnnKernel_generic.transpose1B } },
-                { { GNA_SSE4_2_SAT },{ (VoidKernel)xnnKernel_generic_sat.transpose1B } },
-                { { GNA_SSE4_2_FAST },{ (VoidKernel)xnnKernel_generic.transpose1B } },
+                { { GNA_GEN_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.transpose1B) } },
+                { { GNA_GEN_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.transpose1B) } },
+                { { GNA_SSE4_2_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.transpose1B) } },
+                { { GNA_SSE4_2_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.transpose1B) } },
 
-                { { GNA_AVX1_SAT },{ (VoidKernel)xnnKernel_generic_sat.transpose1B } },
-                { { GNA_AVX1_FAST },{ (VoidKernel)xnnKernel_generic.transpose1B } },
-                { { GNA_AVX2_SAT },{ (VoidKernel)xnnKernel_generic_sat.transpose1B } },
-                { { GNA_AVX2_FAST },{ (VoidKernel)xnnKernel_generic.transpose1B } }
+                { { GNA_AVX1_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.transpose1B) } },
+                { { GNA_AVX1_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.transpose1B) } },
+                { { GNA_AVX2_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.transpose1B) } },
+                { { GNA_AVX2_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.transpose1B) } }
             }
         },
         {
             { GNA_INT16},
             {
-                { { GNA_GEN_SAT },{ (VoidKernel)xnnKernel_generic_sat.transpose2B } },
-                { { GNA_GEN_FAST },{ (VoidKernel)xnnKernel_generic.transpose2B } },
-                { { GNA_SSE4_2_SAT },{ (VoidKernel)xnnKernel_sse4_sat.transpose } },
-                { { GNA_SSE4_2_FAST },{ (VoidKernel)xnnKernel_sse4.transpose } },
+                { { GNA_GEN_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.transpose2B) } },
+                { { GNA_GEN_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.transpose2B) } },
+                { { GNA_SSE4_2_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_sse4_sat.transpose) } },
+                { { GNA_SSE4_2_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_sse4.transpose) } },
 
-                { { GNA_AVX1_SAT },{ (VoidKernel)xnnKernel_generic_sat.transpose2B } },
-                { { GNA_AVX1_FAST },{ (VoidKernel)xnnKernel_generic.transpose2B } },
-                { { GNA_AVX2_SAT },{ (VoidKernel)xnnKernel_generic_sat.transpose2B } },
-                { { GNA_AVX2_FAST },{ (VoidKernel)xnnKernel_generic.transpose2B } }
+                { { GNA_AVX1_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.transpose2B) } },
+                { { GNA_AVX1_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.transpose2B) } },
+                { { GNA_AVX2_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.transpose2B) } },
+                { { GNA_AVX2_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.transpose2B) } }
             }
         }
     }
@@ -435,29 +436,29 @@ AccelerationDetector::Kernels = {
         {
             { GNA_INT8 },
             {
-                { { GNA_GEN_SAT },{ (VoidKernel)xnnKernel_generic_sat.copy1B } },
-                { { GNA_GEN_FAST },{ (VoidKernel)xnnKernel_generic.copy1B } },
-                { { GNA_SSE4_2_SAT },{ (VoidKernel)xnnKernel_generic_sat.copy1B } },
-                { { GNA_SSE4_2_FAST },{ (VoidKernel)xnnKernel_generic.copy1B } },
+                { { GNA_GEN_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.copy1B) } },
+                { { GNA_GEN_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.copy1B) } },
+                { { GNA_SSE4_2_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.copy1B) } },
+                { { GNA_SSE4_2_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.copy1B) } },
 
-                { { GNA_AVX1_SAT },{ (VoidKernel)xnnKernel_generic_sat.copy1B } },
-                { { GNA_AVX1_FAST },{ (VoidKernel)xnnKernel_generic.copy1B } },
-                { { GNA_AVX2_SAT },{ (VoidKernel)xnnKernel_generic_sat.copy1B } },
-                { { GNA_AVX2_FAST },{ (VoidKernel)xnnKernel_generic.copy1B } }
+                { { GNA_AVX1_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.copy1B) } },
+                { { GNA_AVX1_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.copy1B) } },
+                { { GNA_AVX2_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.copy1B) } },
+                { { GNA_AVX2_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.copy1B) } }
             }
         },
         {
             { GNA_INT16 },
             {
-                { { GNA_GEN_SAT },{ (VoidKernel)xnnKernel_generic_sat.copy2B } },
-                { { GNA_GEN_FAST },{ (VoidKernel)xnnKernel_generic.copy2B } },
-                { { GNA_SSE4_2_SAT },{ (VoidKernel)xnnKernel_sse4_sat.copy } },
-                { { GNA_SSE4_2_FAST },{ (VoidKernel)xnnKernel_sse4.copy } },
+                { { GNA_GEN_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.copy2B) } },
+                { { GNA_GEN_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.copy2B) } },
+                { { GNA_SSE4_2_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_sse4_sat.copy) } },
+                { { GNA_SSE4_2_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_sse4.copy) } },
 
-                { { GNA_AVX1_SAT },{ (VoidKernel)xnnKernel_generic_sat.copy2B } },
-                { { GNA_AVX1_FAST },{ (VoidKernel)xnnKernel_generic.copy2B } },
-                { { GNA_AVX2_SAT },{ (VoidKernel)xnnKernel_generic_sat.copy2B } },
-                { { GNA_AVX2_FAST },{ (VoidKernel)xnnKernel_generic.copy2B } }
+                { { GNA_AVX1_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.copy2B) } },
+                { { GNA_AVX1_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.copy2B) } },
+                { { GNA_AVX2_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.copy2B) } },
+                { { GNA_AVX2_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.copy2B) } }
             }
         }
     }
@@ -467,30 +468,30 @@ AccelerationDetector::Kernels = {
         {
             { GNA_INT16 },
             {
-                { { GNA_GEN_SAT },{ (VoidKernel)xnnKernel_generic_sat.convolution2B } },
-                { { GNA_GEN_FAST },{ (VoidKernel)xnnKernel_generic.convolution2B } },
-                { { GNA_SSE4_2_SAT },{ (VoidKernel)xnnKernel_generic_sat.convolution2B } },
-                { { GNA_SSE4_2_FAST },{ (VoidKernel)xnnKernel_generic.convolution2B } },
+                { { GNA_GEN_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.convolution2B) } },
+                { { GNA_GEN_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.convolution2B) } },
+                { { GNA_SSE4_2_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.convolution2B) } },
+                { { GNA_SSE4_2_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.convolution2B) } },
 
-                { { GNA_AVX1_SAT },{ (VoidKernel)xnnKernel_generic_sat.convolution2B } },
-                { { GNA_AVX1_FAST },{ (VoidKernel)xnnKernel_generic.convolution2B } },
-                { { GNA_AVX2_SAT },{ (VoidKernel)xnnKernel_generic_sat.convolution2B } },
-                { { GNA_AVX2_FAST },{ (VoidKernel)xnnKernel_generic.convolution2B } }
+                { { GNA_AVX1_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.convolution2B) } },
+                { { GNA_AVX1_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.convolution2B) } },
+                { { GNA_AVX2_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.convolution2B) } },
+                { { GNA_AVX2_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.convolution2B) } }
             }
         },
         {
             { GNA_INT8 },
             {
-                { { GNA_GEN_SAT },{ (VoidKernel)xnnKernel_generic_sat.convolution1B } },
-                { { GNA_GEN_FAST },{ (VoidKernel)xnnKernel_generic.convolution1B } },
+                { { GNA_GEN_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.convolution1B) } },
+                { { GNA_GEN_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.convolution1B) } },
 
-                { { GNA_SSE4_2_SAT },{ (VoidKernel)xnnKernel_generic_sat.convolution1B } },
-                { { GNA_SSE4_2_FAST },{ (VoidKernel)xnnKernel_generic.convolution1B } },
+                { { GNA_SSE4_2_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.convolution1B) } },
+                { { GNA_SSE4_2_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.convolution1B) } },
 
-                { { GNA_AVX1_SAT },{ (VoidKernel)xnnKernel_generic_sat.convolution1B } },
-                { { GNA_AVX1_FAST },{ (VoidKernel)xnnKernel_generic.convolution1B } },
-                { { GNA_AVX2_SAT },{ (VoidKernel)xnnKernel_generic_sat.convolution1B } },
-                { { GNA_AVX2_FAST },{ (VoidKernel)xnnKernel_generic.convolution1B } }
+                { { GNA_AVX1_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.convolution1B) } },
+                { { GNA_AVX1_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.convolution1B) } },
+                { { GNA_AVX2_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.convolution1B) } },
+                { { GNA_AVX2_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.convolution1B) } }
             }
         }
     }
@@ -500,61 +501,61 @@ AccelerationDetector::Kernels = {
         {
             { GNA_INT16, GNA_INT8, GNA_BIAS_MODE_1_2_4B },
             {
-                { { GNA_GEN_SAT },{ (VoidKernel)xnnKernel_generic_sat.convolution2D1B2B } },
-                { { GNA_GEN_FAST },{ (VoidKernel)xnnKernel_generic.convolution2D1B2B } },
+                { { GNA_GEN_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.convolution2D1B2B) } },
+                { { GNA_GEN_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.convolution2D1B2B) } },
 
-                { { GNA_SSE4_2_SAT },{ (VoidKernel)xnnKernel_generic_sat.convolution2D1B2B } },
-                { { GNA_SSE4_2_FAST },{ (VoidKernel)xnnKernel_generic.convolution2D1B2B } },
+                { { GNA_SSE4_2_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.convolution2D1B2B) } },
+                { { GNA_SSE4_2_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.convolution2D1B2B) } },
 
-                { { GNA_AVX1_SAT },{ (VoidKernel)xnnKernel_generic_sat.convolution2D1B2B } },
-                { { GNA_AVX1_FAST },{ (VoidKernel)xnnKernel_generic.convolution2D1B2B } },
-                { { GNA_AVX2_SAT },{ (VoidKernel)xnnKernel_generic_sat.convolution2D1B2B } },
-                { { GNA_AVX2_FAST },{ (VoidKernel)xnnKernel_generic.convolution2D1B2B } }
+                { { GNA_AVX1_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.convolution2D1B2B) } },
+                { { GNA_AVX1_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.convolution2D1B2B) } },
+                { { GNA_AVX2_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.convolution2D1B2B) } },
+                { { GNA_AVX2_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.convolution2D1B2B) } }
             }
         },
         {
             { GNA_INT16, GNA_INT16, GNA_BIAS_MODE_1_2_4B },
             {
-                { { GNA_GEN_SAT },{ (VoidKernel)xnnKernel_generic_sat.convolution2D2B2B } },
-               { { GNA_GEN_FAST },{ (VoidKernel)xnnKernel_generic.convolution2D2B2B } },
+                { { GNA_GEN_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.convolution2D2B2B) } },
+               { { GNA_GEN_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.convolution2D2B2B) } },
 
-                { { GNA_SSE4_2_SAT },{ (VoidKernel)xnnKernel_generic_sat.convolution2D2B2B } },
-                { { GNA_SSE4_2_FAST },{ (VoidKernel)xnnKernel_generic.convolution2D2B2B } },
+                { { GNA_SSE4_2_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.convolution2D2B2B) } },
+                { { GNA_SSE4_2_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.convolution2D2B2B) } },
 
-                { { GNA_AVX1_SAT },{ (VoidKernel)xnnKernel_generic_sat.convolution2D2B2B } },
-                { { GNA_AVX1_FAST },{ (VoidKernel)xnnKernel_generic.convolution2D2B2B } },
-                { { GNA_AVX2_SAT },{ (VoidKernel)xnnKernel_generic_sat.convolution2D2B2B } },
-                { { GNA_AVX2_FAST },{ (VoidKernel)xnnKernel_generic.convolution2D2B2B } }
+                { { GNA_AVX1_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.convolution2D2B2B) } },
+                { { GNA_AVX1_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.convolution2D2B2B) } },
+                { { GNA_AVX2_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.convolution2D2B2B) } },
+                { { GNA_AVX2_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.convolution2D2B2B) } }
             }
         },
         {
             { GNA_INT8, GNA_INT8, GNA_BIAS_MODE_1_2_4B },
             {
-                { { GNA_GEN_SAT },{ (VoidKernel)xnnKernel_generic_sat.convolution2D1B1B } },
-                { { GNA_GEN_FAST },{ (VoidKernel)xnnKernel_generic.convolution2D1B1B } },
+                { { GNA_GEN_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.convolution2D1B1B) } },
+                { { GNA_GEN_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.convolution2D1B1B) } },
 
-                { { GNA_SSE4_2_SAT },{ (VoidKernel)xnnKernel_generic_sat.convolution2D1B1B } },
-                { { GNA_SSE4_2_FAST },{ (VoidKernel)xnnKernel_generic.convolution2D1B1B } },
+                { { GNA_SSE4_2_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.convolution2D1B1B) } },
+                { { GNA_SSE4_2_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.convolution2D1B1B) } },
 
-                { { GNA_AVX1_SAT },{ (VoidKernel)xnnKernel_generic_sat.convolution2D1B1B } },
-                { { GNA_AVX1_FAST },{ (VoidKernel)xnnKernel_generic.convolution2D1B1B } },
-                { { GNA_AVX2_SAT },{ (VoidKernel)xnnKernel_generic_sat.convolution2D1B1B } },
-                { { GNA_AVX2_FAST },{ (VoidKernel)xnnKernel_generic.convolution2D1B1B } }
+                { { GNA_AVX1_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.convolution2D1B1B) } },
+                { { GNA_AVX1_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.convolution2D1B1B) } },
+                { { GNA_AVX2_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.convolution2D1B1B) } },
+                { { GNA_AVX2_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.convolution2D1B1B) } }
             }
         },
         {
             { GNA_INT8, GNA_INT16, GNA_BIAS_MODE_1_2_4B },
             {
-                { { GNA_GEN_SAT },{ (VoidKernel)xnnKernel_generic_sat.convolution2D2B1B } },
-                { { GNA_GEN_FAST },{ (VoidKernel)xnnKernel_generic.convolution2D2B1B } },
+                { { GNA_GEN_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.convolution2D2B1B) } },
+                { { GNA_GEN_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.convolution2D2B1B) } },
 
-                { { GNA_SSE4_2_SAT },{ (VoidKernel)xnnKernel_generic_sat.convolution2D2B1B } },
-                { { GNA_SSE4_2_FAST },{ (VoidKernel)xnnKernel_generic.convolution2D2B1B } },
+                { { GNA_SSE4_2_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.convolution2D2B1B) } },
+                { { GNA_SSE4_2_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.convolution2D2B1B) } },
 
-                { { GNA_AVX1_SAT },{ (VoidKernel)xnnKernel_generic_sat.convolution2D2B1B } },
-                { { GNA_AVX1_FAST },{ (VoidKernel)xnnKernel_generic.convolution2D2B1B } },
-                { { GNA_AVX2_SAT },{ (VoidKernel)xnnKernel_generic_sat.convolution2D2B1B } },
-                { { GNA_AVX2_FAST },{ (VoidKernel)xnnKernel_generic.convolution2D2B1B } }
+                { { GNA_AVX1_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.convolution2D2B1B) } },
+                { { GNA_AVX1_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.convolution2D2B1B) } },
+                { { GNA_AVX2_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.convolution2D2B1B) } },
+                { { GNA_AVX2_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.convolution2D2B1B) } }
             }
         }
     }
@@ -565,30 +566,30 @@ AccelerationDetector::Kernels = {
         {
             { GNA_INT16, GNA_INT8, GNA_BIAS_MODE_1_2_4B },
             {
-                { { GNA_GEN_SAT },{ (VoidKernel)xnnKernel_generic_sat.convolutionPooling2B } },
-                { { GNA_GEN_FAST },{ (VoidKernel)xnnKernel_generic.convolutionPooling2B } },
-                { { GNA_SSE4_2_SAT },{ (VoidKernel)xnnKernel_generic_sat.convolutionPooling2B } },
-                { { GNA_SSE4_2_FAST },{ (VoidKernel)xnnKernel_generic.convolutionPooling2B } },
+                { { GNA_GEN_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.convolutionPooling2B) } },
+                { { GNA_GEN_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.convolutionPooling2B) } },
+                { { GNA_SSE4_2_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.convolutionPooling2B) } },
+                { { GNA_SSE4_2_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.convolutionPooling2B) } },
 
-                { { GNA_AVX1_SAT },{ (VoidKernel)xnnKernel_generic_sat.convolutionPooling2B } },
-                { { GNA_AVX1_FAST },{ (VoidKernel)xnnKernel_generic.convolutionPooling2B } },
-                { { GNA_AVX2_SAT },{ (VoidKernel)xnnKernel_generic_sat.convolutionPooling2B } },
-                { { GNA_AVX2_FAST },{ (VoidKernel)xnnKernel_generic.convolutionPooling2B } }
+                { { GNA_AVX1_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.convolutionPooling2B) } },
+                { { GNA_AVX1_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.convolutionPooling2B) } },
+                { { GNA_AVX2_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.convolutionPooling2B) } },
+                { { GNA_AVX2_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.convolutionPooling2B) } }
             }
         },
         {
             { GNA_INT8, GNA_INT8, GNA_BIAS_MODE_1_2_4B },
             {
-                { { GNA_GEN_SAT },{ (VoidKernel)xnnKernel_generic_sat.convolutionPooling1B } },
-                { { GNA_GEN_FAST },{ (VoidKernel)xnnKernel_generic.convolutionPooling1B } },
+                { { GNA_GEN_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.convolutionPooling1B) } },
+                { { GNA_GEN_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.convolutionPooling1B) } },
 
-                { { GNA_SSE4_2_SAT },{ (VoidKernel)xnnKernel_generic_sat.convolutionPooling1B } },
-                { { GNA_SSE4_2_FAST },{ (VoidKernel)xnnKernel_generic.convolutionPooling1B } },
+                { { GNA_SSE4_2_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.convolutionPooling1B) } },
+                { { GNA_SSE4_2_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.convolutionPooling1B) } },
 
-                { { GNA_AVX1_SAT },{ (VoidKernel)xnnKernel_generic_sat.convolutionPooling1B } },
-                { { GNA_AVX1_FAST },{ (VoidKernel)xnnKernel_generic.convolutionPooling1B } },
-                { { GNA_AVX2_SAT },{ (VoidKernel)xnnKernel_generic_sat.convolutionPooling1B } },
-                { { GNA_AVX2_FAST },{ (VoidKernel)xnnKernel_generic.convolutionPooling1B } }
+                { { GNA_AVX1_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.convolutionPooling1B) } },
+                { { GNA_AVX1_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.convolutionPooling1B) } },
+                { { GNA_AVX2_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.convolutionPooling1B) } },
+                { { GNA_AVX2_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.convolutionPooling1B) } }
             }
         }
     }
@@ -598,61 +599,61 @@ AccelerationDetector::Kernels = {
         {
             { GNA_INT8 },
             {
-                { { GNA_GEN_SAT },{ (VoidKernel)xnnKernel_generic_sat.convolutionPooling2D1B } },
-                { { GNA_GEN_FAST },{ (VoidKernel)xnnKernel_generic.convolutionPooling2D1B } },
+                { { GNA_GEN_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.convolutionPooling2D1B) } },
+                { { GNA_GEN_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.convolutionPooling2D1B) } },
 
-                { { GNA_SSE4_2_SAT },{ (VoidKernel)xnnKernel_generic_sat.convolutionPooling2D1B } },
-                { { GNA_SSE4_2_FAST },{ (VoidKernel)xnnKernel_generic.convolutionPooling2D1B } },
+                { { GNA_SSE4_2_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.convolutionPooling2D1B) } },
+                { { GNA_SSE4_2_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.convolutionPooling2D1B) } },
 
-                { { GNA_AVX1_SAT },{ (VoidKernel)xnnKernel_generic_sat.convolutionPooling2D1B } },
-                { { GNA_AVX1_FAST },{ (VoidKernel)xnnKernel_generic.convolutionPooling2D1B } },
-                { { GNA_AVX2_SAT },{ (VoidKernel)xnnKernel_generic_sat.convolutionPooling2D1B } },
-                { { GNA_AVX2_FAST },{ (VoidKernel)xnnKernel_generic.convolutionPooling2D1B } }
+                { { GNA_AVX1_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.convolutionPooling2D1B) } },
+                { { GNA_AVX1_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.convolutionPooling2D1B) } },
+                { { GNA_AVX2_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.convolutionPooling2D1B) } },
+                { { GNA_AVX2_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.convolutionPooling2D1B) } }
             }
         },
         {
             { GNA_INT16 },
             {
-                { { GNA_GEN_SAT },{ (VoidKernel)xnnKernel_generic_sat.convolutionPooling2D2B } },
-                { { GNA_GEN_FAST },{ (VoidKernel)xnnKernel_generic.convolutionPooling2D2B } },
+                { { GNA_GEN_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.convolutionPooling2D2B) } },
+                { { GNA_GEN_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.convolutionPooling2D2B) } },
 
-                { { GNA_SSE4_2_SAT },{ (VoidKernel)xnnKernel_generic_sat.convolutionPooling2D2B } },
-                { { GNA_SSE4_2_FAST },{ (VoidKernel)xnnKernel_generic.convolutionPooling2D2B } },
+                { { GNA_SSE4_2_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.convolutionPooling2D2B) } },
+                { { GNA_SSE4_2_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.convolutionPooling2D2B) } },
 
-                { { GNA_AVX1_SAT },{ (VoidKernel)xnnKernel_generic_sat.convolutionPooling2D2B } },
-                { { GNA_AVX1_FAST },{ (VoidKernel)xnnKernel_generic.convolutionPooling2D2B } },
-                { { GNA_AVX2_SAT },{ (VoidKernel)xnnKernel_generic_sat.convolutionPooling2D2B } },
-                { { GNA_AVX2_FAST },{ (VoidKernel)xnnKernel_generic.convolutionPooling2D2B } }
+                { { GNA_AVX1_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.convolutionPooling2D2B) } },
+                { { GNA_AVX1_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.convolutionPooling2D2B) } },
+                { { GNA_AVX2_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.convolutionPooling2D2B) } },
+                { { GNA_AVX2_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.convolutionPooling2D2B) } }
             }
         },
         {
             { GNA_INT32 },
             {
-                { { GNA_GEN_SAT },{ (VoidKernel)xnnKernel_generic_sat.convolutionPooling2D4B } },
-                { { GNA_GEN_FAST },{ (VoidKernel)xnnKernel_generic.convolutionPooling2D4B } },
+                { { GNA_GEN_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.convolutionPooling2D4B) } },
+                { { GNA_GEN_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.convolutionPooling2D4B) } },
 
-                { { GNA_SSE4_2_SAT },{ (VoidKernel)xnnKernel_generic_sat.convolutionPooling2D4B } },
-                { { GNA_SSE4_2_FAST },{ (VoidKernel)xnnKernel_generic.convolutionPooling2D4B } },
+                { { GNA_SSE4_2_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.convolutionPooling2D4B) } },
+                { { GNA_SSE4_2_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.convolutionPooling2D4B) } },
 
-                { { GNA_AVX1_SAT },{ (VoidKernel)xnnKernel_generic_sat.convolutionPooling2D4B } },
-                { { GNA_AVX1_FAST },{ (VoidKernel)xnnKernel_generic.convolutionPooling2D4B } },
-                { { GNA_AVX2_SAT },{ (VoidKernel)xnnKernel_generic_sat.convolutionPooling2D4B } },
-                { { GNA_AVX2_FAST },{ (VoidKernel)xnnKernel_generic.convolutionPooling2D4B } }
+                { { GNA_AVX1_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.convolutionPooling2D4B) } },
+                { { GNA_AVX1_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.convolutionPooling2D4B) } },
+                { { GNA_AVX2_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.convolutionPooling2D4B) } },
+                { { GNA_AVX2_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.convolutionPooling2D4B) } }
             }
         },
          {
             { GNA_DATA_ACTIVATION_DISABLED },
             {
-                { { GNA_GEN_SAT },{ (VoidKernel)xnnKernel_generic_sat.convolutionPooling2D4B } },
-                { { GNA_GEN_FAST },{ (VoidKernel)xnnKernel_generic.convolutionPooling2D4B } },
+                { { GNA_GEN_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.convolutionPooling2D4B) } },
+                { { GNA_GEN_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.convolutionPooling2D4B) } },
 
-                { { GNA_SSE4_2_SAT },{ (VoidKernel)xnnKernel_generic_sat.convolutionPooling2D4B } },
-                { { GNA_SSE4_2_FAST },{ (VoidKernel)xnnKernel_generic.convolutionPooling2D4B } },
+                { { GNA_SSE4_2_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.convolutionPooling2D4B) } },
+                { { GNA_SSE4_2_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.convolutionPooling2D4B) } },
 
-                { { GNA_AVX1_SAT },{ (VoidKernel)xnnKernel_generic_sat.convolutionPooling2D4B } },
-                { { GNA_AVX1_FAST },{ (VoidKernel)xnnKernel_generic.convolutionPooling2D4B } },
-                { { GNA_AVX2_SAT },{ (VoidKernel)xnnKernel_generic_sat.convolutionPooling2D4B } },
-                { { GNA_AVX2_FAST },{ (VoidKernel)xnnKernel_generic.convolutionPooling2D4B } }
+                { { GNA_AVX1_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.convolutionPooling2D4B) } },
+                { { GNA_AVX1_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.convolutionPooling2D4B) } },
+                { { GNA_AVX2_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.convolutionPooling2D4B) } },
+                { { GNA_AVX2_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.convolutionPooling2D4B) } }
             }
         },
     }
@@ -662,15 +663,15 @@ AccelerationDetector::Kernels = {
         {
             { GNA_INT16 },
             {
-                { { GNA_GEN_SAT },{ (VoidKernel)xnnKernel_generic_sat.pwl } },
-                { { GNA_GEN_FAST },{ (VoidKernel)xnnKernel_generic.pwl } },
-                { { GNA_SSE4_2_SAT },{ (VoidKernel)xnnKernel_generic_sat.pwl } },
-                { { GNA_SSE4_2_FAST },{ (VoidKernel)xnnKernel_generic.pwl } },
+                { { GNA_GEN_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.pwl) } },
+                { { GNA_GEN_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.pwl) } },
+                { { GNA_SSE4_2_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.pwl) } },
+                { { GNA_SSE4_2_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.pwl) } },
 
-                { { GNA_AVX1_SAT },{ (VoidKernel)xnnKernel_generic_sat.pwl } },
-                { { GNA_AVX1_FAST },{ (VoidKernel)xnnKernel_generic.pwl } },
-                { { GNA_AVX2_SAT },{ (VoidKernel)xnnKernel_generic_sat.pwl } },
-                { { GNA_AVX2_FAST },{ (VoidKernel)xnnKernel_generic.pwl } }
+                { { GNA_AVX1_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.pwl) } },
+                { { GNA_AVX1_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.pwl) } },
+                { { GNA_AVX2_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.pwl) } },
+                { { GNA_AVX2_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.pwl) } }
             }
         }
     }
@@ -680,29 +681,29 @@ AccelerationDetector::Kernels = {
         {
             { GNA_INT16 ,GNA_INT8, GNA_BIAS_MODE_1_2_4B },
             {
-                { { GNA_GEN_SAT },{ (VoidKernel)gmmKernel_generic.gmmMaxMix8 } },
-                { { GNA_GEN_FAST },{ (VoidKernel)gmmKernel_generic.gmmMaxMix8 } },
-                { { GNA_SSE4_2_SAT },{ (VoidKernel)gmmKernel_sse4.gmmMaxMix8 } },
-                { { GNA_SSE4_2_FAST },{ (VoidKernel)gmmKernel_sse4.gmmMaxMix8 } },
+                { { GNA_GEN_SAT },{ reinterpret_cast<VoidKernel>(gmmKernel_generic.gmmMaxMix8) } },
+                { { GNA_GEN_FAST },{ reinterpret_cast<VoidKernel>(gmmKernel_generic.gmmMaxMix8) } },
+                { { GNA_SSE4_2_SAT },{ reinterpret_cast<VoidKernel>(gmmKernel_sse4.gmmMaxMix8) } },
+                { { GNA_SSE4_2_FAST },{ reinterpret_cast<VoidKernel>(gmmKernel_sse4.gmmMaxMix8) } },
 
-                { { GNA_AVX1_SAT },{ (VoidKernel)gmmKernel_generic.gmmMaxMix8 } },
-                { { GNA_AVX1_FAST },{ (VoidKernel)gmmKernel_generic.gmmMaxMix8 } },
-                { { GNA_AVX2_SAT },{ (VoidKernel)gmmKernel_generic.gmmMaxMix8 } },
-                { { GNA_AVX2_FAST },{ (VoidKernel)gmmKernel_generic.gmmMaxMix8 } }
+                { { GNA_AVX1_SAT },{ reinterpret_cast<VoidKernel>(gmmKernel_generic.gmmMaxMix8) } },
+                { { GNA_AVX1_FAST },{ reinterpret_cast<VoidKernel>(gmmKernel_generic.gmmMaxMix8) } },
+                { { GNA_AVX2_SAT },{ reinterpret_cast<VoidKernel>(gmmKernel_generic.gmmMaxMix8) } },
+                { { GNA_AVX2_FAST },{ reinterpret_cast<VoidKernel>(gmmKernel_generic.gmmMaxMix8) } }
             }
         },
         {
             { GNA_INT16 ,GNA_INT16, GNA_BIAS_MODE_1_2_4B },
             {
-                { { GNA_GEN_SAT },{ (VoidKernel)gmmKernel_generic.gmmMaxMix16 } },
-                { { GNA_GEN_FAST },{ (VoidKernel)gmmKernel_generic.gmmMaxMix16 } },
-                { { GNA_SSE4_2_SAT },{ (VoidKernel)gmmKernel_sse4.gmmMaxMix16 } },
-                { { GNA_SSE4_2_FAST },{ (VoidKernel)gmmKernel_sse4.gmmMaxMix16 } },
+                { { GNA_GEN_SAT },{ reinterpret_cast<VoidKernel>(gmmKernel_generic.gmmMaxMix16) } },
+                { { GNA_GEN_FAST },{ reinterpret_cast<VoidKernel>(gmmKernel_generic.gmmMaxMix16) } },
+                { { GNA_SSE4_2_SAT },{ reinterpret_cast<VoidKernel>(gmmKernel_sse4.gmmMaxMix16) } },
+                { { GNA_SSE4_2_FAST },{ reinterpret_cast<VoidKernel>(gmmKernel_sse4.gmmMaxMix16) } },
 
-                { { GNA_AVX1_SAT },{ (VoidKernel)gmmKernel_generic.gmmMaxMix16 } },
-                { { GNA_AVX1_FAST },{ (VoidKernel)gmmKernel_generic.gmmMaxMix16 } },
-                { { GNA_AVX2_SAT },{ (VoidKernel)gmmKernel_generic.gmmMaxMix16 } },
-                { { GNA_AVX2_FAST },{ (VoidKernel)gmmKernel_generic.gmmMaxMix16 } }
+                { { GNA_AVX1_SAT },{ reinterpret_cast<VoidKernel>(gmmKernel_generic.gmmMaxMix16) } },
+                { { GNA_AVX1_FAST },{ reinterpret_cast<VoidKernel>(gmmKernel_generic.gmmMaxMix16) } },
+                { { GNA_AVX2_SAT },{ reinterpret_cast<VoidKernel>(gmmKernel_generic.gmmMaxMix16) } },
+                { { GNA_AVX2_FAST },{ reinterpret_cast<VoidKernel>(gmmKernel_generic.gmmMaxMix16) } }
             }
         }
     }
@@ -712,29 +713,29 @@ AccelerationDetector::Kernels = {
         {
             { GNA_INT16 ,GNA_INT8, GNA_BIAS_MODE_1_2_4B },
             {
-                { { GNA_GEN_SAT },{ (VoidKernel)gmmKernel_generic.gmmMaxMix8ActiveList } },
-                { { GNA_GEN_FAST },{ (VoidKernel)gmmKernel_generic.gmmMaxMix8ActiveList } },
-                { { GNA_SSE4_2_SAT },{ (VoidKernel)gmmKernel_sse4.gmmMaxMix8ActiveList } },
-                { { GNA_SSE4_2_FAST },{ (VoidKernel)gmmKernel_sse4.gmmMaxMix8ActiveList } },
+                { { GNA_GEN_SAT },{ reinterpret_cast<VoidKernel>(gmmKernel_generic.gmmMaxMix8ActiveList) } },
+                { { GNA_GEN_FAST },{ reinterpret_cast<VoidKernel>(gmmKernel_generic.gmmMaxMix8ActiveList) } },
+                { { GNA_SSE4_2_SAT },{ reinterpret_cast<VoidKernel>(gmmKernel_sse4.gmmMaxMix8ActiveList) } },
+                { { GNA_SSE4_2_FAST },{ reinterpret_cast<VoidKernel>(gmmKernel_sse4.gmmMaxMix8ActiveList) } },
 
-                { { GNA_AVX1_SAT },{ (VoidKernel)gmmKernel_generic.gmmMaxMix8ActiveList } },
-                { { GNA_AVX1_FAST },{ (VoidKernel)gmmKernel_generic.gmmMaxMix8ActiveList } },
-                { { GNA_AVX2_SAT },{ (VoidKernel)gmmKernel_generic.gmmMaxMix8ActiveList } },
-                { { GNA_AVX2_FAST },{ (VoidKernel)gmmKernel_generic.gmmMaxMix8ActiveList } }
+                { { GNA_AVX1_SAT },{ reinterpret_cast<VoidKernel>(gmmKernel_generic.gmmMaxMix8ActiveList) } },
+                { { GNA_AVX1_FAST },{ reinterpret_cast<VoidKernel>(gmmKernel_generic.gmmMaxMix8ActiveList) } },
+                { { GNA_AVX2_SAT },{ reinterpret_cast<VoidKernel>(gmmKernel_generic.gmmMaxMix8ActiveList) } },
+                { { GNA_AVX2_FAST },{ reinterpret_cast<VoidKernel>(gmmKernel_generic.gmmMaxMix8ActiveList) } }
             }
         },
         {
             { GNA_INT16 ,GNA_INT16, GNA_BIAS_MODE_1_2_4B },
             {
-                { { GNA_GEN_SAT },{ (VoidKernel)gmmKernel_generic.gmmMaxMix16ActiveList } },
-                { { GNA_GEN_FAST },{ (VoidKernel)gmmKernel_generic.gmmMaxMix16ActiveList } },
-                { { GNA_SSE4_2_SAT },{ (VoidKernel)gmmKernel_sse4.gmmMaxMix16ActiveList } },
-                { { GNA_SSE4_2_FAST },{ (VoidKernel)gmmKernel_sse4.gmmMaxMix16ActiveList } },
+                { { GNA_GEN_SAT },{ reinterpret_cast<VoidKernel>(gmmKernel_generic.gmmMaxMix16ActiveList) } },
+                { { GNA_GEN_FAST },{ reinterpret_cast<VoidKernel>(gmmKernel_generic.gmmMaxMix16ActiveList) } },
+                { { GNA_SSE4_2_SAT },{ reinterpret_cast<VoidKernel>(gmmKernel_sse4.gmmMaxMix16ActiveList) } },
+                { { GNA_SSE4_2_FAST },{ reinterpret_cast<VoidKernel>(gmmKernel_sse4.gmmMaxMix16ActiveList) } },
 
-                { { GNA_AVX1_SAT },{ (VoidKernel)gmmKernel_generic.gmmMaxMix16ActiveList } },
-                { { GNA_AVX1_FAST },{ (VoidKernel)gmmKernel_generic.gmmMaxMix16ActiveList } },
-                { { GNA_AVX2_SAT },{ (VoidKernel)gmmKernel_generic.gmmMaxMix16ActiveList } },
-                { { GNA_AVX2_FAST },{ (VoidKernel)gmmKernel_generic.gmmMaxMix16ActiveList } }
+                { { GNA_AVX1_SAT },{ reinterpret_cast<VoidKernel>(gmmKernel_generic.gmmMaxMix16ActiveList) } },
+                { { GNA_AVX1_FAST },{ reinterpret_cast<VoidKernel>(gmmKernel_generic.gmmMaxMix16ActiveList) } },
+                { { GNA_AVX2_SAT },{ reinterpret_cast<VoidKernel>(gmmKernel_generic.gmmMaxMix16ActiveList) } },
+                { { GNA_AVX2_FAST },{ reinterpret_cast<VoidKernel>(gmmKernel_generic.gmmMaxMix16ActiveList) } }
             }
         }
     }
@@ -759,7 +760,7 @@ AccelerationDetector::AccelerationDetector() :
     unsigned long long xcrFeature = 0;
 
     cpuid(cpuId, 0);
-    int largestFunctionId = cpuId[0];
+    auto largestFunctionId = cpuId[0];
 
     // get CPU IDs
     cpuid(cpuId, 1);

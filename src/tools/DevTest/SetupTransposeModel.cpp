@@ -33,7 +33,7 @@
 
 #define UNREFERENCED_PARAMETER(P) ((void)(P))
 
-SetupTransposeModel::SetupTransposeModel(DeviceController & deviceCtrl, int configIndex)
+SetupTransposeModel::SetupTransposeModel(DeviceController & deviceCtrl, uint32_t configIndex)
     : deviceController{ deviceCtrl }
 {
     nnet.nGroup = groupingNum[configIndex];
@@ -58,12 +58,12 @@ SetupTransposeModel::~SetupTransposeModel()
     deviceController.ModelRelease(modelId);
 }
 
-void SetupTransposeModel::checkReferenceOutput(int modelIndex, int configIndex) const
+void SetupTransposeModel::checkReferenceOutput(uint32_t modelIndex, uint32_t configIndex) const
 {
     UNREFERENCED_PARAMETER(modelIndex);
-    int ref_output_size = refSize[configIndex];
+    uint32_t ref_output_size = refSize[configIndex];
     const int16_t * ref_output = refOutputAssign[configIndex];
-    for (int i = 0; i < ref_output_size; ++i)
+    for (uint32_t i = 0; i < ref_output_size; ++i)
     {
         int16_t outElemVal = static_cast<const int16_t*>(outputBuffer)[i];
         if (ref_output[i] != outElemVal)
@@ -74,10 +74,11 @@ void SetupTransposeModel::checkReferenceOutput(int modelIndex, int configIndex) 
     }
 }
 
-void SetupTransposeModel::sampleTransposeLayer(int configIndex)
+void SetupTransposeModel::sampleTransposeLayer(uint32_t configIndex)
 {
-    int buf_size_inputs = ALIGN64(inputsSize[configIndex]);
-    int buf_size_outputs = ALIGN64(outVecSz * groupingNum[configIndex] * sizeof(int32_t));
+    uint32_t buf_size_inputs = ALIGN64(inputsSize[configIndex]);
+    uint32_t buf_size_outputs = ALIGN64(
+            outVecSz * groupingNum[configIndex] * static_cast<uint32_t>(sizeof(int32_t)));
 
     uint32_t bytes_requested = buf_size_inputs + buf_size_outputs;
     uint32_t bytes_granted;
@@ -90,7 +91,6 @@ void SetupTransposeModel::sampleTransposeLayer(int configIndex)
     pinned_mem_ptr += buf_size_inputs;
 
     outputBuffer = pinned_mem_ptr;
-    pinned_mem_ptr += buf_size_outputs;
 
     nnet.pLayers[0].nInputColumns = inVecSz;
     nnet.pLayers[0].nInputRows = nnet.nGroup;

@@ -25,12 +25,12 @@
 
 #include "ModelUtilities.h"
 
-size_t ModelUtilities::CalculateDnnSize(uint32_t vectorCount, uint32_t inputElementCount, uint32_t outputElementCount, 
+size_t ModelUtilities::CalculateDnnSize(uint32_t vectorCount, uint32_t inputElementCount, uint32_t outputElementCount,
                                         uint32_t bytesPerWeight, uint32_t nSegments)
 {
     size_t inputBytes = ALIGN64(vectorCount * inputElementCount * sizeof(int16_t));
     size_t weightBytes = ALIGN64(outputElementCount * inputElementCount * bytesPerWeight);
-    size_t biasBytes = outputElementCount * ((bytesPerWeight == sizeof(int32_t)) 
+    size_t biasBytes = outputElementCount * ((bytesPerWeight == sizeof(int32_t))
                         ? GNA_INT32: GNA_DATA_RICH_FORMAT);
     size_t outputBytes = 0;
     size_t tmpOutputBytes = 0;
@@ -55,7 +55,7 @@ size_t ModelUtilities::CalculateMultibiasSize(uint32_t vectorCount, uint32_t inp
 {
     size_t inputBytes = ALIGN64(vectorCount * inputElementCount * sizeof(int16_t));
     size_t weightBytes = ALIGN64(outputElementCount * inputElementCount * bytesPerWeight);
-    size_t biasBytes = vectorCount * outputElementCount * ((bytesPerWeight == sizeof(int32_t)) 
+    size_t biasBytes = vectorCount * outputElementCount * ((bytesPerWeight == sizeof(int32_t))
                         ? GNA_INT32: GNA_DATA_RICH_FORMAT);
     size_t scaleBytes = (sizeof(int16_t) == bytesPerWeight) ? 0 : outputElementCount * sizeof(intel_compound_bias_t);
     size_t outputBytes = 0;
@@ -76,7 +76,7 @@ size_t ModelUtilities::CalculateMultibiasSize(uint32_t vectorCount, uint32_t inp
     return inputBytes + outputBytes + tmpOutputBytes + biasBytes + scaleBytes + weightBytes + pwlBytes;
 }
 
-size_t ModelUtilities::CalculateCnnSize(uint32_t inputElementCount, uint32_t outputsPerFilter, 
+size_t ModelUtilities::CalculateCnnSize(uint32_t inputElementCount, uint32_t outputsPerFilter,
                                         uint32_t nFilters, uint32_t nFilterCoeficcients, uint32_t nSegments)
 {
     size_t inputBytes = ALIGN64(inputElementCount * sizeof(int16_t));
@@ -100,12 +100,12 @@ size_t ModelUtilities::CalculateCnnSize(uint32_t inputElementCount, uint32_t out
     return inputBytes + filterBytes + outputBytes + tmpOutputBytes + biasBytes + pwlBytes;
 }
 
-size_t ModelUtilities::CalculateRnnSize(uint32_t vectorCount, uint32_t inputElementCount, uint32_t outputElementCount, 
+size_t ModelUtilities::CalculateRnnSize(uint32_t vectorCount, uint32_t inputElementCount, uint32_t outputElementCount,
                                         uint32_t bytesPerWeight, uint32_t nSegments)
 {
     size_t inputBytes = ALIGN64(vectorCount * inputElementCount * sizeof(int16_t));
     size_t weightBytes = ALIGN64((inputElementCount + outputElementCount) * outputElementCount * bytesPerWeight);
-    size_t biasBytes = outputElementCount * ((bytesPerWeight == sizeof(int32_t)) 
+    size_t biasBytes = outputElementCount * ((bytesPerWeight == sizeof(int32_t))
                         ? GNA_INT32: GNA_DATA_RICH_FORMAT);
     size_t outputBytes = 0;
     size_t tmpOutputBytes = 0;
@@ -135,7 +135,7 @@ size_t ModelUtilities::CalculateSimpleSize(uint32_t vectorCount, uint32_t inputE
 
 size_t ModelUtilities::CalculateGmmSize(uint32_t vectorCount, uint32_t stateCount, uint32_t mixtureCount, uint32_t inputElementCount, gna_gmm_mode gmmMode)
 {
-    size_t varsBytes   = 0; 
+    size_t varsBytes   = 0;
     if(GNA_MAXMIX16 == gmmMode)
     {
         varsBytes = ALIGN64(stateCount * mixtureCount * inputElementCount * sizeof(uint16_t));

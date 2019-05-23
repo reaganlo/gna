@@ -26,6 +26,14 @@
 #include "igemv.h"
 #include "igemv16.h"
 
+#include "KernelArguments.h"
+#include "KernelMacros.h"
+
+#include "common.h"
+#include "gna-api-types-xnn.h"
+
+#include <immintrin.h>
+
 void RecurrentKernelImpl2B(RecurrentConfig const * const config)
 {
     uint32_t KK = config->inputElementCount - config->inputElementCount % VEC_16CAP;
@@ -135,7 +143,7 @@ void RecurrentKernelImpl2B(RecurrentConfig const * const config)
         // if part size wasn't reached, but there is still config->outputElementCount remainder
         for (; k < mpart_sz; k++)
         {
-            sum += (int32_t)(*feedback++ * *weight++);
+            sum += *feedback++ * *weight++;
         }
 
         sum += vec_sum(acc);
@@ -173,7 +181,7 @@ void RecurrentKernelImpl2B(RecurrentConfig const * const config)
         // if there's remainder from mparts
         for (; feedback < feedbackEnd;)
         {
-            sum += (int32_t)(*feedback++ * *weight++);
+            sum += *feedback++ * *weight++;
         }
 
         sum += vec_sum(acc);

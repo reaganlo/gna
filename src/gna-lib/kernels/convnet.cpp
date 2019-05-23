@@ -25,11 +25,11 @@
 
 // TODO: make naming convention consistent with other kernel implementations
 
-#include <cstring>
-
 #include "convnet.h"
 #include "igemv.h"
 #include "pwl.h"
+
+#include <cstring>
 
 __forceinline void saturate64_store_out(int64_t * const out, uint32_t * const saturationCount)
 {
@@ -84,7 +84,7 @@ void ConvolutionKernelImpl(ConvolutionConfig const * const config)
     int32_t * const O = config->convolutedOutputs;
 
 #if GNA_SAT == 1
-    uint32_t * const saturationCount = config->saturationCount;
+    uint32_t * const saturationCount = config->execution->SaturationCount;
 #endif
 
     uint32_t i, j;
@@ -358,12 +358,17 @@ void ConvolutionPoolingKernelImpl(ConvolutionConfig const * const filterConfig,
     const int16_t* const F = filterConfig->filters;
     const nn_bias_s * const B = filterConfig->biases;
     int16_t * const O = filterConfig->pooledOutputs;
-    uint32_t * const saturationCount = filterConfig->saturationCount;
+    uint32_t * const saturationCount = filterConfig->execution->SaturationCount;
 
     const nn_pool_type PT = poolConfig->type;
     const uint32_t PS = poolConfig->size;
     const uint32_t PSTEP = poolConfig->step;
     int64_t * const pool = poolConfig->buffer;
+
+    if (PS == 0)
+    {
+        return;
+    }
 
     void(*func_partial_pooling)(const uint32_t PS, const uint32_t pool_num_entries, const uint32_t pool_start_index, const int64_t* P, int64_t *V);
 

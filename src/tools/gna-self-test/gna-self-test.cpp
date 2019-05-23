@@ -43,8 +43,8 @@ int main(int argc, char *argv[])
 
 void GnaSelfTest::StartTest()
 {
-    logger.Log("Starting GNA device self test\n");
-    logger.Log("=============================\n");
+    GnaSelfTestLogger::Log("Starting GNA device self test\n");
+    GnaSelfTestLogger::Log("=============================\n");
     PrintSystemInfo();
     SampleModelForGnaSelfTest sampleNetwork = SampleModelForGnaSelfTest::GetDefault();
     MultiOsGnaSelfTestHardwareStatus hwDrvStatus{*this};
@@ -57,14 +57,14 @@ void GnaSelfTest::StartTest()
     }
     else
     {
-        logger.Log("GNA device and driver are OK\n");
-        logger.Log("============================\n");
+        GnaSelfTestLogger::Log("GNA device and driver are OK\n");
+        GnaSelfTestLogger::Log("============================\n");
     }
 
     //open the default GNA device
     SelfTestDevice gnaDevice(*this);
 
-    logger.Log("Performing basic functionality test...\n");
+    GnaSelfTestLogger::Log("Performing basic functionality test...\n");
 
     logger.Verbose("Sample model creation...\n");
     gnaDevice.SampleModelCreate(sampleNetwork);
@@ -83,7 +83,7 @@ void GnaSelfTest::StartTest()
 
     logger.Verbose("Comparing results...\n");
     gnaDevice.CompareResults(sampleNetwork);
-    logger.Log("GNA device self-test has beed finished\n");
+    GnaSelfTestLogger::Log("GNA device self-test has beed finished\n");
 }
 
 GnaSelfTestConfig::GnaSelfTestConfig(int argc, const char *const argv[])
@@ -91,9 +91,13 @@ GnaSelfTestConfig::GnaSelfTestConfig(int argc, const char *const argv[])
     for (int i = 1; i < argc; i++)
     {
         if (strncmp("-v", argv[i], 2) == 0)
+        {
             verboseMode = true;
+        }
         else if (strncmp("-c", argv[i], 2) == 0)
+        {
             continueAfterError = true;
+        }
         else if (strncmp("-p", argv[i], 2) == 0)
         {
             continueAfterError = true;
@@ -101,11 +105,11 @@ GnaSelfTestConfig::GnaSelfTestConfig(int argc, const char *const argv[])
         }
         else
         {
-            logger.Log("gna-self-test [-v] [-c] [-p] [-h]\n");
-            logger.Log("   -v   verbose mode\n");
-            logger.Log("   -c   ignore errors and continue execution\n");
-            logger.Log("   -p   after the error, ask the user whether to continue\n");
-            logger.Log("   -h   display help\n");
+            GnaSelfTestLogger::Log("gna-self-test [-v] [-c] [-p] [-h]\n");
+            GnaSelfTestLogger::Log("   -v   verbose mode\n");
+            GnaSelfTestLogger::Log("   -c   ignore errors and continue execution\n");
+            GnaSelfTestLogger::Log("   -p   after the error, ask the user whether to continue\n");
+            GnaSelfTestLogger::Log("   -h   display help\n");
             exit(0);
         }
     }

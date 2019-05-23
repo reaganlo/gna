@@ -26,6 +26,13 @@
 #include "igemv.h"
 #include "igemv8.h"
 
+#include "KernelArguments.h"
+
+#include "common.h"
+#include "gna-api-types-xnn.h"
+
+#include <cstdint>
+
 void RecurrentKernelImpl1B(RecurrentConfig const * const config)
 {
     uint32_t i;
@@ -55,7 +62,7 @@ void RecurrentKernelImpl1B(RecurrentConfig const * const config)
         {
             for (j = 0; j < config->execution->BufferElementCount[0 + XNN_N_GROUP_MAX]; j++)
             {
-                sum += (int32_t)(*input++ * *weight++ * bias->multiplier);
+                sum += *input++ * *weight++ * bias->multiplier;
             }
             saturate_store_out(&sum, output, config->execution->SaturationCount);
             sum = *output;
@@ -63,12 +70,12 @@ void RecurrentKernelImpl1B(RecurrentConfig const * const config)
 
         for (i = 0; i < kpart_rem; i++)
         {
-            sum += (int32_t)(*input++ * *weight++ * bias->multiplier);
+            sum += *input++ * *weight++ * bias->multiplier;
         }
 
         for (i = 0; i < middle_part; i++)
         {
-            sum += (int32_t)(*feedback++ * *weight++ * bias->multiplier);
+            sum += *feedback++ * *weight++ * bias->multiplier;
         }
 
         saturate_store_out(&sum, output, config->execution->SaturationCount);
@@ -78,7 +85,7 @@ void RecurrentKernelImpl1B(RecurrentConfig const * const config)
         {
             for (j = 0; j < config->execution->BufferElementCount[0 + XNN_N_GROUP_MAX]; j++)
             {
-                sum += (int32_t)(*feedback++ * *weight++ * bias->multiplier);
+                sum += *feedback++ * *weight++ * bias->multiplier;
             }
 
             saturate_store_out(&sum, output, config->execution->SaturationCount);
@@ -87,7 +94,7 @@ void RecurrentKernelImpl1B(RecurrentConfig const * const config)
 
         for (i = 0; i < mpart_rem; i++)
         {
-            sum += (int32_t)(*feedback++ * *weight++ * bias->multiplier);
+            sum += *feedback++ * *weight++ * bias->multiplier;
         }
 
         saturate_store_out(&sum, output, config->execution->SaturationCount);
@@ -124,7 +131,7 @@ void RecurrentKernelImpl1B2B(RecurrentConfig const * const config)
         {
             for (j = 0; j < config->execution->BufferElementCount[0 + XNN_N_GROUP_MAX]; j++)
             {
-                sum += (int32_t)(*input++ * *weight++ * bias->multiplier);
+                sum += *input++ * *weight++ * bias->multiplier;
             }
             saturate_store_out(&sum, output, config->execution->SaturationCount);
             sum = *output;
@@ -132,18 +139,18 @@ void RecurrentKernelImpl1B2B(RecurrentConfig const * const config)
 
         for(i = 0; i < kpart_rem; i++)
         {
-            sum += (int32_t)(*input++ * *weight++ * bias->multiplier);
+            sum += *input++ * *weight++ * bias->multiplier;
         }
 
         for (i = 0; i < middle_part; i++)
         {
             if (config->bytesPerOutput == 1)
             {
-                sum += (int32_t)(*feedback++ * *weight++ * bias->multiplier);
+                sum += *feedback++ * *weight++ * bias->multiplier;
             }
             else if (config->bytesPerOutput == 2)
             {
-                sum += (int32_t)(*(int16_t*)feedback * *weight++ * bias->multiplier);
+                sum += *(int16_t*)feedback * *weight++ * bias->multiplier;
                 feedback += 2;
             }
         }
@@ -157,11 +164,11 @@ void RecurrentKernelImpl1B2B(RecurrentConfig const * const config)
             {
                 if (config->bytesPerOutput == 1)
                 {
-                    sum += (int32_t)(*feedback++ * *weight++ * bias->multiplier);
+                    sum += *feedback++ * *weight++ * bias->multiplier;
                 }
                 else if (config->bytesPerOutput == 2)
                 {
-                    sum += (int32_t)(*(int16_t*)feedback * *weight++ * bias->multiplier);
+                    sum += *(int16_t*)feedback * *weight++ * bias->multiplier;
                     feedback += 2;
                 }
             }
@@ -174,11 +181,11 @@ void RecurrentKernelImpl1B2B(RecurrentConfig const * const config)
         {
             if (config->bytesPerOutput == 1)
             {
-                sum += (int32_t)(*feedback++ * *weight++ * bias->multiplier);
+                sum += *feedback++ * *weight++ * bias->multiplier;
             }
             else if (config->bytesPerOutput == 2)
             {
-                sum += (int32_t)(*(int16_t*)feedback * *weight++ * bias->multiplier);
+                sum += *(int16_t*)feedback * *weight++ * bias->multiplier;
                 feedback += 2;
             }
         }
@@ -211,11 +218,17 @@ void RecurrentKernelImpl1B1B(RecurrentConfig const * const config)
     for (; bias < biasEnd; bias += config->bytesPerBias)
     {
         if (config->bytesPerBias == 1)
+        {
             sum = *bias;
+        }
         else if (config->bytesPerBias == 2)
+        {
             sum = *(int16_t*)bias;
+        }
         else if (config->bytesPerBias == 4)
+        {
             sum = *(int32_t*)bias;
+        }
 
         input = (int8_t*)config->input;
         feedback = (int8_t*)config->feedbackBuffer;

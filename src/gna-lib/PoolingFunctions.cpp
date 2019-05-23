@@ -27,10 +27,18 @@
 
 #include "AccelerationDetector.h"
 #include "Expect.h"
+#include "GnaException.h"
+#include "Validator.h"
 
-using std::make_unique;
-using std::unique_ptr;
-using std::move;
+#include "gna-api-status.h"
+
+#include <algorithm>
+#include <utility>
+
+namespace GNA
+{
+struct PwlCached;
+}
 
 using namespace GNA;
 
@@ -48,7 +56,7 @@ const std::map<const nn_operation, const ShapeLimits> PoolingFunction::strideLim
     },
 };
 
-unique_ptr<const PoolingFunction> PoolingFunction::Create(void const * layerDetails,
+std::unique_ptr<const PoolingFunction> PoolingFunction::Create(void const * layerDetails,
     const Shape & inputDimensions, const LayerValidator& validatorIn, gna_data_mode inputMode)
 {
     Shape window;
@@ -75,7 +83,7 @@ unique_ptr<const PoolingFunction> PoolingFunction::Create(void const * layerDeta
         switch (validatorIn.Operation)
         {
         case INTEL_CONVOLUTIONAL:
-            return make_unique<const PoolingFunction>(validatorIn.Operation, inputDimensions, window,
+            return std::make_unique<const PoolingFunction>(validatorIn.Operation, inputDimensions, window,
                 stride, type,
                 AccelerationDetector::GetKernelMap<ConvolutionPoolingKernel>(KERNEL_POOLING, inputMode));
         default:
@@ -84,7 +92,7 @@ unique_ptr<const PoolingFunction> PoolingFunction::Create(void const * layerDeta
     }
     else
     {
-       return unique_ptr<const PoolingFunction>(nullptr);
+       return std::unique_ptr<const PoolingFunction>(nullptr);
     }
 }
 
@@ -98,7 +106,7 @@ PoolingFunction::PoolingFunction(nn_operation const operation, const Shape& inpu
     Window{ window },
     Stride{ stride },
     kernels{ kernelsIn },
-    hiddenConfig{ make_unique<PoolingConfig>(Type, Window.at(GNA_DIM_W), Stride.at(GNA_DIM_W)) }
+    hiddenConfig{ std::make_unique<PoolingConfig>(Type, Window.at(GNA_DIM_W), Stride.at(GNA_DIM_W)) }
 {
     Expect::InSet(Type, { INTEL_MAX_POOLING, INTEL_SUM_POOLING }, Gna2StatusCnnErrorPoolType);
     // TODO:3: use ShapeIsValid where applicable

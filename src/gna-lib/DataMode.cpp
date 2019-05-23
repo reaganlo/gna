@@ -25,7 +25,10 @@
 
 #include "DataMode.h"
 
-#include "GnaException.h"
+#include "gna2-model-api.h"
+#include "gna2-model-impl.h"
+
+#include <cstdint>
 
 using namespace GNA;
 
@@ -149,10 +152,10 @@ DataMode::DataMode(const gna_data_mode dataMode) :
     Mode{ ModeFromDataMode(dataMode) },
     Size{ ToSize<uint32_t>(Value) }
 {
-};
+}
 
 DataMode::DataMode(const uint32_t dataMode) :
-    DataMode(static_cast<const gna_data_mode>(dataMode))
+    DataMode(static_cast<gna_data_mode>(dataMode))
 {
 }
 

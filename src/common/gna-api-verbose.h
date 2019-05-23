@@ -75,7 +75,7 @@ typedef enum _gna_register
     GNA_BP_HIGH      = 0xA4,
     GNA_D0i3C        = 0xA8,
     GNA_DESBASE      = 0xB0,
-    GNA_IBUFFS       = 0xB4,
+    GNA_BLD          = 0xB4,
     GNA_SAI1_LOW     = 0x100,
     GNA_SAI1_HIGH    = 0x104,
     GNA_SAI2_LOW     = 0x108,
@@ -99,27 +99,31 @@ typedef enum _gna_set_size
 typedef struct _dbg_action
 {
     dbg_action_type action_type;
-    gna_reg gna_register;
-    union
+    const char *filename;
+    const char *log_message;
+    gna_timeout timeout;
+
+    struct _gna_register_params
     {
-        gna_timeout timeout;
-        const char *log_message;
-        const char *filename;
-        uint64_t xnn_value;
+        gna_reg gna_register;
         uint32_t reg_value;
-        void *outputs;
-    };
-    union
-    {
         register_op reg_operation;
-        struct
-        {
-            uint32_t xnn_offset : 29;
-            gna_set_size xnn_value_size : 3;
-        };
+    } reg_params;
+
+    struct _dbg_output_params
+    {
+        void *outputs;
         uint32_t outputs_size;
-    };
-    uint32_t layer_number;
+    } output_params;
+
+    struct _debug_xnn_params
+    {
+        uint64_t xnn_value;
+        uint32_t xnn_offset;
+        gna_set_size xnn_value_size;
+        uint32_t layer_number;
+    } xnn_params;
+
 } dbg_action;
 
 /**

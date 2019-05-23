@@ -32,8 +32,14 @@
 
 #pragma once
 
-#include "gmm.h"
 #include "XnnKernel.h"
+
+#include "gna2-inference-api.h"
+#include "gna2-inference-impl.h"
+
+#include "gna-api-status.h"
+#include "gna-api-types-gmm.h"
+#include "gna-api-types-xnn.h"
 
 #include <map>
 #include <vector>
@@ -146,7 +152,7 @@ public:
     static const KernelMap<KernelType>&
     GetKernelMap(kernel_op operation, KernelMode dataMode = {GNA_INT16})
     {
-        return (KernelMap<KernelType>&)(
+        return reinterpret_cast<KernelMap<KernelType>&>(
             Kernels.at(operation).at(dataMode));
     }
 

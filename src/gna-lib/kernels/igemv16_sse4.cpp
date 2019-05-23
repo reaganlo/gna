@@ -23,8 +23,15 @@
  in any way.
 */
 
-#include "igemv.h"
 #include "igemv16.h"
+
+#include "KernelArguments.h"
+#include "KernelMacros.h"
+
+#include "common.h"
+#include "gna-api-types-xnn.h"
+
+#include <immintrin.h>
 
 void RecurrentKernelImpl2B(RecurrentConfig const * const config)
 {

@@ -25,7 +25,15 @@
 
 #include "igemv.h"
 #include "igemv16.h"
-#include <string.h>
+
+#include "KernelArguments.h"
+#include "KernelMacros.h"
+
+#include "common.h"
+#include "gna-api-types-xnn.h"
+
+#include <cstring>
+#include <immintrin.h>
 
 void AffineActiveListKernelImpl2B(AffineConfig const * const config, AffineConfigAl const * const al)
 {
@@ -58,13 +66,12 @@ void AffineActiveListKernelImpl2B(AffineConfig const * const config, AffineConfi
     memset(input, 0, sizeof(input));
 
     int16_t const * weight;
-    uint8_t const * bias = (uint8_t*)config->biasesSimple;
+    nn_bias_s const * bias;
     int32_t * output;
     int64_t sum[8];            // 64-bit accumulator buffer
     memset(sum, 0, sizeof(sum));
 
     output = config->output;
-    weight = config->weights2B;
 
     if (1 == config->inputVectorCount)
     {
@@ -74,10 +81,10 @@ void AffineActiveListKernelImpl2B(AffineConfig const * const config, AffineConfi
         {
             i = al->indices[l];
             weight = config->weights2B+i*config->inputElementCount;
-            bias = (uint8_t*)config->biasesSimple + i*config->bytesPerBias;
+            bias = config->biasesSimple+i;
 
             *acc = _mm_setzero_si128();
-            *sum = getBias((void*)bias, 0, (gna_data_mode)config->bytesPerBias);
+            *sum = *bias;
             ix = 0;
 
             for (kk = 0; kk < nKpartial + 1; kk++)
@@ -109,7 +116,7 @@ void AffineActiveListKernelImpl2B(AffineConfig const * const config, AffineConfi
 
             for (j = 0; j < KT; j++, weight++)
             {
-                *sum += (int32_t)((*input)[j] * *weight);
+                *sum += (*input)[j] * *weight;
             }
 
             saturate_store_out(sum, output, config->execution->SaturationCount);
@@ -119,38 +126,73 @@ void AffineActiveListKernelImpl2B(AffineConfig const * const config, AffineConfi
         return;
     }
 
-    switch (config->inputVectorCount)
+    if (config->inputVectorCount == 8)
     {
-    case 8: 
-        for (i = 0; i < config->inputElementCount; i++) config->execution->Intermediate->d7[i] = config->input[i*config->inputVectorCount + 7];
+        for (i = 0; i < config->inputElementCount; i++)
+        {
+            config->execution->Intermediate->d7[i] = config->input[i*config->inputVectorCount + 7];
+        }
         in_ptr7 = (__m128i*)config->execution->Intermediate->d7;
         input[7] = config->execution->Intermediate->d7 + KK;
-    case 7: 
-        for (i = 0; i < config->inputElementCount; i++) config->execution->Intermediate->d6[i] = config->input[i*config->inputVectorCount + 6];
+    }
+    if (config->inputVectorCount >= 7)
+    {
+        for (i = 0; i < config->inputElementCount; i++)
+        {
+            config->execution->Intermediate->d6[i] = config->input[i*config->inputVectorCount + 6];
+        }
         in_ptr6 = (__m128i*)config->execution->Intermediate->d6;
         input[6] = config->execution->Intermediate->d6 + KK;
-    case 6: 
-        for (i = 0; i < config->inputElementCount; i++) config->execution->Intermediate->d5[i] = config->input[i*config->inputVectorCount + 5];
+    }
+    if (config->inputVectorCount >= 6)
+    {
+        for (i = 0; i < config->inputElementCount; i++)
+        {
+            config->execution->Intermediate->d5[i] = config->input[i*config->inputVectorCount + 5];
+        }
         in_ptr5 = (__m128i*)config->execution->Intermediate->d5;
         input[5] = config->execution->Intermediate->d5 + KK;
-    case 5: 
-        for (i = 0; i < config->inputElementCount; i++) config->execution->Intermediate->d4[i] = config->input[i*config->inputVectorCount + 4];
+    }
+    if (config->inputVectorCount >= 5)
+    {
+        for (i = 0; i < config->inputElementCount; i++)
+        {
+            config->execution->Intermediate->d4[i] = config->input[i*config->inputVectorCount + 4];
+        }
         in_ptr4 = (__m128i*)config->execution->Intermediate->d4;
         input[4] = config->execution->Intermediate->d4 + KK;
-    case 4: 
-        for (i = 0; i < config->inputElementCount; i++) config->execution->Intermediate->d3[i] = config->input[i*config->inputVectorCount + 3];
+    }
+    if (config->inputVectorCount >= 4)
+    {
+        for (i = 0; i < config->inputElementCount; i++)
+        {
+            config->execution->Intermediate->d3[i] = config->input[i*config->inputVectorCount + 3];
+        }
         in_ptr3 = (__m128i*)config->execution->Intermediate->d3;
         input[3] = config->execution->Intermediate->d3 + KK;
-    case 3: 
-        for (i = 0; i < config->inputElementCount; i++) config->execution->Intermediate->d2[i] = config->input[i*config->inputVectorCount + 2];
+    }
+    if (config->inputVectorCount >= 3)
+    {
+        for (i = 0; i < config->inputElementCount; i++)
+        {
+            config->execution->Intermediate->d2[i] = config->input[i*config->inputVectorCount + 2];
+        }
         in_ptr2 = (__m128i*)config->execution->Intermediate->d2;
         input[2] = config->execution->Intermediate->d2 + KK;
-    case 2: 
-        for (i = 0; i < config->inputElementCount; i++) config->execution->Intermediate->d1[i] = config->input[i*config->inputVectorCount + 1];
+    }
+    if (config->inputVectorCount >= 2)
+    {
+        for (i = 0; i < config->inputElementCount; i++)
+        {
+            config->execution->Intermediate->d1[i] = config->input[i*config->inputVectorCount + 1];
+        }
         in_ptr1 = (__m128i*)config->execution->Intermediate->d1;
         input[1] = config->execution->Intermediate->d1 + KK;
-        
-        for (i = 0; i < config->inputElementCount; i++) config->execution->Intermediate->d0[i] = config->input[i*config->inputVectorCount];
+
+        for (i = 0; i < config->inputElementCount; i++)
+        {
+            config->execution->Intermediate->d0[i] = config->input[i*config->inputVectorCount];
+        }
         in_ptr0 = (__m128i*)config->execution->Intermediate->d0;
         input[0] = config->execution->Intermediate->d0 + KK;
     }
@@ -161,12 +203,12 @@ void AffineActiveListKernelImpl2B(AffineConfig const * const config, AffineConfi
         {
             i = al->indices[l];
             weight = config->weights2B+i*config->inputElementCount;
-            bias = (uint8_t*)config->biasesSimple + i*config->bytesPerBias;
+            bias = config->biasesSimple+i;
 
             for (i = 0; i < config->inputVectorCount; i++)
             {
                 acc[i] = _mm_setzero_si128();
-                sum[i] = getBias((void*)bias, 0, (gna_data_mode)config->bytesPerBias);
+                sum[i] = *bias;
             }
             ix = 0;
 
@@ -212,7 +254,7 @@ void AffineActiveListKernelImpl2B(AffineConfig const * const config, AffineConfi
             {
                 for (i = 0; i < config->inputVectorCount; i++)
                 {
-                    sum[i] += (int32_t)(input[i][j] * *weight);
+                    sum[i] += input[i][j] * *weight;
                 }
             }
 
@@ -231,12 +273,12 @@ void AffineActiveListKernelImpl2B(AffineConfig const * const config, AffineConfi
         {
             i = al->indices[l];
             weight = config->weights2B+i*config->inputElementCount;
-            bias = (uint8_t*)config->biasesSimple + i*config->bytesPerBias;
+            bias = config->biasesSimple+i;
 
             for (i = 0; i < config->inputVectorCount; i++)
             {
                 acc[i] = _mm_setzero_si128();
-                sum[i] = getBias((void*)bias, 0, (gna_data_mode)config->bytesPerBias);
+                sum[i] = *bias;
             }
             ix = 0;
 
@@ -286,7 +328,7 @@ void AffineActiveListKernelImpl2B(AffineConfig const * const config, AffineConfi
             {
                 for (i = 0; i < config->inputVectorCount; i++)
                 {
-                    sum[i] += (int32_t)(input[i][j] * *weight);
+                    sum[i] += input[i][j] * *weight;
                 }
             }
 
@@ -305,12 +347,12 @@ void AffineActiveListKernelImpl2B(AffineConfig const * const config, AffineConfi
         {
             i = al->indices[l];
             weight = config->weights2B+i*config->inputElementCount;
-            bias = (uint8_t*)config->biasesSimple + i*config->bytesPerBias;
+            bias = config->biasesSimple+i;
 
             for (i = 0; i < config->inputVectorCount; i++)
             {
                 acc[i] = _mm_setzero_si128();
-                sum[i] = getBias((void*)bias, 0, (gna_data_mode)config->bytesPerBias);
+                sum[i] = *bias;
             }
             ix = 0;
 
@@ -370,7 +412,7 @@ void AffineActiveListKernelImpl2B(AffineConfig const * const config, AffineConfi
             {
                 for (i = 0; i < config->inputVectorCount; i++)
                 {
-                    sum[i] += (int32_t)(input[i][j] * *weight);
+                    sum[i] += input[i][j] * *weight;
                 }
             }
 
@@ -389,12 +431,12 @@ void AffineActiveListKernelImpl2B(AffineConfig const * const config, AffineConfi
         {
             i = al->indices[l];
             weight = config->weights2B+i*config->inputElementCount;
-            bias = (uint8_t*)config->biasesSimple + i*config->bytesPerBias;
+            bias = config->biasesSimple+i;
 
             for (i = 0; i < config->inputVectorCount; i++)
             {
                 acc[i] = _mm_setzero_si128();
-                sum[i] = getBias((void*)bias, 0, (gna_data_mode)config->bytesPerBias);
+                sum[i] = *bias;
             }
             ix = 0;
 
@@ -459,7 +501,7 @@ void AffineActiveListKernelImpl2B(AffineConfig const * const config, AffineConfi
             {
                 for (i = 0; i < config->inputVectorCount; i++)
                 {
-                    sum[i] += (int32_t)(input[i][j] * *weight);
+                    sum[i] += input[i][j] * *weight;
                 }
             }
 
@@ -478,12 +520,12 @@ void AffineActiveListKernelImpl2B(AffineConfig const * const config, AffineConfi
         {
             i = al->indices[l];
             weight = config->weights2B+i*config->inputElementCount;
-            bias = (uint8_t*)config->biasesSimple + i*config->bytesPerBias;
+            bias = config->biasesSimple+i;
 
             for (i = 0; i < config->inputVectorCount; i++)
             {
                 acc[i] = _mm_setzero_si128();
-                sum[i] = getBias((void*)bias, 0, (gna_data_mode)config->bytesPerBias);
+                sum[i] = *bias;
             }
             ix = 0;
 
@@ -545,7 +587,7 @@ void AffineActiveListKernelImpl2B(AffineConfig const * const config, AffineConfi
             {
                 for (i = 0; i < config->inputVectorCount; i++)
                 {
-                    sum[i] += (int32_t)(input[i][j] * *weight);
+                    sum[i] += input[i][j] * *weight;
                 }
             }
 
@@ -564,12 +606,12 @@ void AffineActiveListKernelImpl2B(AffineConfig const * const config, AffineConfi
         {
             i = al->indices[l];
             weight = config->weights2B+i*config->inputElementCount;
-            bias = (uint8_t*)config->biasesSimple + i*config->bytesPerBias;
+            bias = config->biasesSimple+i;
 
             for (i = 0; i < config->inputVectorCount; i++)
             {
                 acc[i] = _mm_setzero_si128();
-                sum[i] = getBias((void*)bias, 0, (gna_data_mode)config->bytesPerBias);
+                sum[i] = *bias;
             }
             ix = 0;
 
@@ -635,7 +677,7 @@ void AffineActiveListKernelImpl2B(AffineConfig const * const config, AffineConfi
             {
                 for (i = 0; i < config->inputVectorCount; i++)
                 {
-                    sum[i] += (int32_t)(input[i][j] * *weight);
+                    sum[i] += input[i][j] * *weight;
                 }
             }
 
@@ -654,12 +696,12 @@ void AffineActiveListKernelImpl2B(AffineConfig const * const config, AffineConfi
         {
             i = al->indices[l];
             weight = config->weights2B+i*config->inputElementCount;
-            bias = (uint8_t*)config->biasesSimple + i*config->bytesPerBias;
+            bias = config->biasesSimple+i;
 
             for (i = 0; i < config->inputVectorCount; i++)
             {
                 acc[i] = _mm_setzero_si128();
-                sum[i] = getBias((void*)bias, 0, (gna_data_mode)config->bytesPerBias);
+                sum[i] = *bias;
             }
             ix = 0;
 
@@ -736,7 +778,7 @@ void AffineActiveListKernelImpl2B(AffineConfig const * const config, AffineConfi
             {
                 for (i = 0; i < config->inputVectorCount; i++)
                 {
-                    sum[i] += (int32_t)(input[i][j] * *weight);
+                    sum[i] += input[i][j] * *weight;
                 }
             }
 

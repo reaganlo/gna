@@ -62,9 +62,10 @@ SetupConvolutionModel::~SetupConvolutionModel()
 }
 
 template <class intel_reference_output_type>
-intel_reference_output_type* SetupConvolutionModel::refOutputAssign(int configIndex) const
+intel_reference_output_type* SetupConvolutionModel::refOutputAssign(uint32_t configIndex) const
 {
-    if (configIndex == configPwlEnabled)
+    UNREFERENCED_PARAMETER(configIndex);
+    if (pwlEnabled)
     {
         return (intel_reference_output_type*)ref_outputPwl;
     }
@@ -72,7 +73,7 @@ intel_reference_output_type* SetupConvolutionModel::refOutputAssign(int configIn
 }
 
 template <class intel_reference_output_type>
-void SetupConvolutionModel::compareReferenceValues(unsigned i, int configIndex) const
+void SetupConvolutionModel::compareReferenceValues(unsigned i, uint32_t configIndex) const
 {
     intel_reference_output_type outElemVal = static_cast<const intel_reference_output_type*>(outputBuffer)[i];
     const intel_reference_output_type* refOutput = refOutputAssign<intel_reference_output_type>(configIndex);
@@ -83,14 +84,14 @@ void SetupConvolutionModel::compareReferenceValues(unsigned i, int configIndex) 
     }
 }
 
-void SetupConvolutionModel::checkReferenceOutput(int modelIndex, int configIndex) const
+void SetupConvolutionModel::checkReferenceOutput(uint32_t modelIndex, uint32_t configIndex) const
 {
     UNREFERENCED_PARAMETER(modelIndex);
 
     unsigned int ref_output_size = refSize[configIndex];
     for (unsigned int i = 0; i < ref_output_size; ++i)
     {
-        (configIndex == configPwlEnabled) ? compareReferenceValues<int16_t>(i, configIndex) : compareReferenceValues<int32_t>(i, configIndex);
+        (pwlEnabled) ? compareReferenceValues<int16_t>(i, configIndex) : compareReferenceValues<int32_t>(i, configIndex);
     }
 }
 
@@ -101,16 +102,16 @@ void SetupConvolutionModel::samplePwl(intel_pwl_segment_t *segments, uint32_t nu
 
 void SetupConvolutionModel::sampleConvolutionLayer()
 {
-    int buf_size_filters = ALIGN64(sizeof(filters));
-    int buf_size_inputs = ALIGN64(sizeof(inputs));
-    int buf_size_biases = ALIGN64(sizeof(regularBiases));
-    int buf_size_outputs = ALIGN64(outVecSz * groupingNum * sizeof(int16_t));
-    int buf_size_tmp_outputs = ALIGN64(outVecSz * groupingNum * sizeof(int32_t));
+    uint32_t buf_size_filters = ALIGN64(sizeof(filters));
+    uint32_t buf_size_inputs = ALIGN64(sizeof(inputs));
+    uint32_t buf_size_biases = ALIGN64(sizeof(regularBiases));
+    uint32_t buf_size_outputs = ALIGN64(outVecSz * groupingNum * sizeof(int16_t));
+    uint32_t buf_size_tmp_outputs = ALIGN64(outVecSz * groupingNum * sizeof(int32_t));
 
     uint32_t bytes_requested = buf_size_filters + buf_size_inputs + buf_size_biases + buf_size_outputs + buf_size_tmp_outputs;
     if (pwlEnabled)
     {
-        int buf_size_pwl = ALIGN64(nSegments * sizeof(intel_pwl_segment_t));
+        uint32_t buf_size_pwl = ALIGN64(nSegments * static_cast<uint32_t>(sizeof(intel_pwl_segment_t)));
         bytes_requested += buf_size_pwl;
     }
     uint32_t bytes_granted;
@@ -139,7 +140,6 @@ void SetupConvolutionModel::sampleConvolutionLayer()
     if (pwlEnabled)
     {
         void* pinned_pwl = pinned_mem_ptr;
-        pinned_mem_ptr += nSegments * sizeof(intel_pwl_segment_t);
 
         pwl.nSegments = nSegments;
         pwl.pSegments = reinterpret_cast<intel_pwl_segment_t*>(pinned_pwl);

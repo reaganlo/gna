@@ -28,22 +28,22 @@
 #include "DeviceVerbose.h"
 #endif
 
-#include <iostream>
-#include <fstream>
-#include <memory>
-
 #include "ActiveList.h"
-#include "Macros.h"
-#include "Memory.h"
-#include "RequestConfiguration.h"
-
 #include "Expect.h"
+#include "GnaException.h"
+#include "Memory.h"
+#include "Request.h"
+#include "RequestConfiguration.h"
 
 #if defined(_WIN32)
 #include "WindowsDriverInterface.h"
 #else // linux
 #include "LinuxDriverInterface.h"
 #endif
+
+#include <algorithm>
+#include <cstdint>
+#include <memory>
 
 using namespace GNA;
 
@@ -111,16 +111,16 @@ void Device::ReleaseConfiguration(gna_request_cfg_id configId)
     requestBuilder.ReleaseConfiguration(configId);
 }
 
-void Device::EnableHardwareConsistency(gna_request_cfg_id configId,
-                                    DeviceVersion hardwareVersion)
+void Device::EnableHardwareConsistency(
+    gna_request_cfg_id configId, DeviceVersion deviceVersion)
 {
-    if (Gna2DeviceVersionSoftwareEmulation == hardwareVersion)
+    if (Gna2DeviceVersionSoftwareEmulation == deviceVersion)
     {
         throw GnaException(Gna2StatusDeviceVersionInvalid);
     }
 
     auto& requestConfiguration = requestBuilder.GetConfiguration(configId);
-    requestConfiguration.SetHardwareConsistency(hardwareVersion);
+    requestConfiguration.SetHardwareConsistency(deviceVersion);
 }
 
 void Device::EnforceAcceleration(gna_request_cfg_id configId, Gna2AccelerationMode accelMode)
@@ -180,11 +180,7 @@ void Device::FreeMemory(void *buffer)
     auto memoryIterator = std::find_if(memoryObjects.begin(), memoryObjects.end(),
         [buffer] (std::unique_ptr<Memory>& memory)
         {
-            if (memory->GetBuffer() == buffer)
-            {
-                return true;
-            }
-            return false;
+            return memory->GetBuffer() == buffer;
         });
 
     if (memoryIterator == memoryObjects.end())

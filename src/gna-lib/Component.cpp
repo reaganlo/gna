@@ -24,8 +24,9 @@
 */
 
 #include "Component.h"
-
 #include "Expect.h"
+#include "Layout.h"
+#include "ParameterLimits.h"
 
 using namespace GNA;
 

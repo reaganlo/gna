@@ -26,6 +26,15 @@
 #include "igemv.h"
 #include "igemv16.h"
 
+#include "KernelArguments.h"
+#include "KernelMacros.h"
+
+#include "common.h"
+#include "gna-api-types-xnn.h"
+
+#include <cstdint>
+#include <immintrin.h>
+
 void RecurrentKernelImpl2B(RecurrentConfig const * const config)
 {
     int16_t const * input;
@@ -137,7 +146,7 @@ void RecurrentKernelImpl2B(RecurrentConfig const * const config)
         // compute remainder
         for (k = KK; k < config->inputElementCount; k++)
         {
-            sum += (int32_t)(*input++ * *weight++);
+            sum += *input++ * *weight++;
         }
 
         in = _mm256_lddqu_si256((__m256i*)feedback);
@@ -184,7 +193,7 @@ void RecurrentKernelImpl2B(RecurrentConfig const * const config)
         // if part size wasn't reached, but there is still config->outputElementCount remainder
         for (; k < mpart_sz; k++)
         {
-            sum += (int32_t)(*feedback++ * *weight++);
+            sum += *feedback++ * *weight++;
         }
 
         sum += vec_sum(acc);

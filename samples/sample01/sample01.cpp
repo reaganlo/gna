@@ -23,6 +23,8 @@
  in any way.
 */
 
+#include "gna-api.h"
+
 #include <cstdio>
 #include <cstdlib>
 
@@ -36,8 +38,6 @@
 #endif
 
 #include <cstring>
-
-#include "gna-api.h"
 
 void print_outputs(
     int32_t *outputs,

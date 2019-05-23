@@ -23,10 +23,11 @@
  in any way.
 */
 
-#include <algorithm>
-
 #include "Logger.h"
 #include "Macros.h"
+
+#include <algorithm>
+#include <stdarg.h>
 
 using namespace GNA;
 
@@ -187,9 +188,10 @@ void Logger::Error(const status_t status) const
     UNREFERENCED_PARAMETER(status);
 }
 
-const char * Logger::StatusToString(const intel_gna_status_t status) noexcept
+const char * Logger::StatusToString(intel_gna_status_t status) noexcept
 {
-    const auto statusSafe = std::min<unsigned>(status, NUMGNASTATUS);
+    const auto statusSafe = std::min<unsigned>(
+            static_cast<unsigned int>(status), NUMGNASTATUS);
     return StatusStrings[2 * statusSafe];
 }
 
@@ -294,9 +296,10 @@ template<typename ... X> void DebugLogger::print(FILE * const streamIn, const st
     }
 }
 
-const char * DebugLogger::getStatusDescription(const intel_gna_status_t status) const
+const char * DebugLogger::getStatusDescription(intel_gna_status_t status) const
 {
-    const auto statusSafe = std::min<unsigned>(status, NUMGNASTATUS);
+    const auto statusSafe = std::min<unsigned>(
+            static_cast<unsigned int>(status), NUMGNASTATUS);
     return StatusStrings[2 * statusSafe + 1];
 }
 

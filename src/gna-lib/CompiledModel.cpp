@@ -25,12 +25,22 @@
 
 #include "CompiledModel.h"
 
+#include "Expect.h"
+#include "GnaException.h"
+#include "HardwareCapabilities.h"
+#include "Layer.h"
+#include "Logger.h"
 #include "Macros.h"
 #include "Memory.h"
+#include "Request.h"
 #include "RequestConfiguration.h"
 #include "SubModel.h"
 
-#include <functional>
+#include "gna-api-types-xnn.h"
+#include "profiler.h"
+
+#include <algorithm>
+#include <cstring>
 
 using namespace GNA;
 
@@ -301,8 +311,7 @@ SubmodelType CompiledModel::getSubmodelType(
     }
 
     return SubmodelType::Software;
-};
-
+}
 
 void CompiledModel::createSubmodels(const HardwareCapabilities& hwCaps)
 {

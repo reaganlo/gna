@@ -26,10 +26,10 @@
 
 #pragma once
 
-#include <stdint.h>
-#include <stddef.h>
-
 #include "gna-api.h"
+
+#include <cstdint>
+#include <stddef.h>
 
 class ModelUtilities
 {
@@ -43,7 +43,7 @@ public:
     static size_t CalculateRnnSize(uint32_t vectorCount, uint32_t inputElementCount, uint32_t outputElementCount,
                                    uint32_t bytesPerWeight, uint32_t nSegments);
 
-    static size_t CalculateCnnSize(uint32_t inputElementCount, uint32_t outputsPerFilter, 
+    static size_t CalculateCnnSize(uint32_t inputElementCount, uint32_t outputsPerFilter,
                                    uint32_t nFilters, uint32_t nFilterCoeficcients, uint32_t nSegments);
 
     static size_t CalculateSimpleSize(uint32_t vectorCount, uint32_t inputElementCount, uint32_t outputElementCount);
@@ -51,5 +51,5 @@ public:
     static size_t CalculateGmmSize(uint32_t vectorCount, uint32_t stateCount, uint32_t mixtureCount, uint32_t inputElementCount, gna_gmm_mode gmmMode);
 
     static void GeneratePwlSegments(intel_pwl_segment_t *segments, uint32_t nSegments);
-                            
+
 };

@@ -61,7 +61,7 @@ SetupGmmModel::~SetupGmmModel()
     deviceController.ModelRelease(modelId);
 }
 
-void SetupGmmModel::checkReferenceOutput(int modelIndex, int configIndex) const
+void SetupGmmModel::checkReferenceOutput(uint32_t modelIndex, uint32_t configIndex) const
 {
     UNREFERENCED_PARAMETER(modelIndex);
     unsigned int ref_output_size = refSize[configIndex];
@@ -87,18 +87,18 @@ void SetupGmmModel::sampleGmmLayer(intel_nnet_type_t& hNnet)
     uint32_t stateCount = 8;
     const int elementSize = sizeof(int32_t);
 
-    int buf_size_weights = ALIGN64(sizeof(variance)); // note that buffer alignment to 64-bytes is required by GNA HW
-    int buf_size_inputs = ALIGN64(sizeof(feature_vector));
-    int buf_size_biases = ALIGN64(sizeof(Gconst));
-    int buf_size_outputs = ALIGN64(outVecSz * elementSize);
-    int buf_size_tmp_outputs = ALIGN64(outVecSz * elementSize);
+    uint32_t buf_size_weights = ALIGN64(sizeof(variance)); // note that buffer alignment to 64-bytes is required by GNA HW
+    uint32_t buf_size_inputs = ALIGN64(sizeof(feature_vector));
+    uint32_t buf_size_biases = ALIGN64(sizeof(Gconst));
+    uint32_t buf_size_outputs = ALIGN64(outVecSz * elementSize);
+    uint32_t buf_size_tmp_outputs = ALIGN64(outVecSz * elementSize);
 
                                                               // prepare params for GNAAlloc
     uint32_t bytes_requested = buf_size_weights + buf_size_inputs + buf_size_biases + buf_size_outputs + buf_size_tmp_outputs;
     if (activeListEnabled)
     {
         indicesCount = stateCount / 2;
-        uint32_t buf_size_indices = indicesCount * sizeof(uint32_t);
+        uint32_t buf_size_indices = static_cast<uint32_t>(indicesCount * sizeof(uint32_t));
         bytes_requested += buf_size_indices;
     }
     uint32_t bytes_granted;
@@ -129,7 +129,6 @@ void SetupGmmModel::sampleGmmLayer(intel_nnet_type_t& hNnet)
         size_t indicesSize = indicesCount * sizeof(uint32_t);
         indices = (uint32_t*)pinned_mem_ptr;
         memcpy(indices, alIndices, indicesSize);
-        pinned_mem_ptr += indicesSize;
     }
 
     gna_gmm_layer *gmm = (gna_gmm_layer*)calloc(1, sizeof(gna_gmm_layer));

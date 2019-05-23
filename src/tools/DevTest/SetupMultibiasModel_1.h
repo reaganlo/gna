@@ -35,11 +35,11 @@ public:
 
     ~SetupMultibiasModel_1();
 
-    void checkReferenceOutput(int modelIndex, int configIndex) const override;
+    void checkReferenceOutput(uint32_t modelIndex, uint32_t configIndex) const override;
 
 private:
     void sampleAffineLayer();
-    void samplePwl(intel_pwl_segment_t *segments, uint32_t nSegments);
+    void samplePwl(intel_pwl_segment_t *segments, uint32_t numberOfSegments);
 
     DeviceController & deviceController;
 
@@ -57,15 +57,15 @@ private:
     void * memory = nullptr;
 
     template <class intel_reference_output_type>
-    intel_reference_output_type* refOutputAssign(int configIndex) const;
+    intel_reference_output_type* refOutputAssign(uint32_t configIndex) const;
 
     template <class intel_reference_output_type>
-    void compareReferenceValues(unsigned int i, int configIndex) const;
+    void compareReferenceValues(unsigned int i, uint32_t configIndex) const;
 
     static const int configMultiBias0 = 0;
     static const int configMultiBias1 = 1;
-    static const int configIndexAl_1_1B = 2;
-    static const int configIndexAl_1_2B = 3;
+    static const uint32_t configIndexAl_1_1B = 2;
+    static const uint32_t configIndexAl_1_2B = 3;
 
     const int8_t weights_1B[outVecSz * inVecSz] =
     {
@@ -162,7 +162,7 @@ private:
 
     static const uint8_t numberOfDnnModels = 4;
 
-    const std::array<int, numberOfDnnModels> refSize
+    const std::array<uint32_t, numberOfDnnModels> refSize
     {{
         sizeof(ref_output) / sizeof(int32_t),
         sizeof(ref_output) / sizeof(int32_t),

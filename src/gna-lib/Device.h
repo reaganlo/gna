@@ -25,21 +25,26 @@
 
 #pragma once
 
-#include <map>
-
-#include "gna-api-dumper.h"
-
-#include "common.h"
-
 #include "AccelerationDetector.h"
+#include "CompiledModel.h"
+#include "DriverInterface.h"
 #include "HardwareCapabilities.h"
+#include "Memory.h"
 #include "RequestBuilder.h"
 #include "RequestHandler.h"
+
+#include "gna-api.h"
+#include "gna-api-dumper.h"
+#include "gna-api-instrumentation.h"
+
+#include <cstdint>
+#include <map>
+#include <memory>
+#include <vector>
 
 namespace GNA
 {
 
-class Memory;
 class Device
 {
 public:
@@ -84,7 +89,7 @@ public:
 
     void ReleaseConfiguration(gna_request_cfg_id configId);
 
-    void EnableHardwareConsistency(gna_request_cfg_id configId, DeviceVersion hardwareVersion);
+    void EnableHardwareConsistency(gna_request_cfg_id configId, DeviceVersion deviceVersion);
 
     void EnforceAcceleration(gna_request_cfg_id configId, Gna2AccelerationMode accel);
 
