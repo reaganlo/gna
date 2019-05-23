@@ -107,6 +107,8 @@ public:
 
     static void SetLayout(Gna2Tensor& tensor, const char* layout);
 
+    static GnaComponentType OperandIndexToType(uint32_t operandIndex);
+
 protected:
     static uint32_t GetNumberOfOperands(OperationType operationType);
     static uint32_t GetNumberOfParameters(OperationType operationType);

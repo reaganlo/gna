@@ -29,11 +29,13 @@
 #include "Logger.h"
 #include "DeviceManager.h"
 #include "Macros.h"
+#include "ModelWrapper.h"
 
 #include "gna2-common-impl.h"
 
 #include <stdint.h>
 #include <vector>
+
 
 using namespace GNA;
 
@@ -56,14 +58,11 @@ GNA2_API enum Gna2Status Gna2RequestConfigSetOperandBuffer(
     uint32_t operandIndex,
     void * address)
 {
-    UNREFERENCED_PARAMETER(requestConfigId);
-    UNREFERENCED_PARAMETER(operationIndex);
-    UNREFERENCED_PARAMETER(operandIndex);
-    UNREFERENCED_PARAMETER(address);
     const std::function<ApiStatus()> command = [&]()
     {
-        //TODO:3:implement
-        return Gna2StatusNotImplemented;
+        auto& device = DeviceManager::Get().GetDevice(0);
+        device.AttachBuffer(requestConfigId, ModelWrapper::OperandIndexToType(operandIndex), operationIndex, address);
+        return Gna2StatusSuccess;
     };
     return ApiWrapper::ExecuteSafely(command);
 }

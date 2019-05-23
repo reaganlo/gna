@@ -113,3 +113,17 @@ void ModelWrapper::SetLayout(Gna2Tensor& tensor, const char* layout)
 {
     snprintf(tensor.Layout, sizeof(tensor.Layout), "%s", layout);
 }
+
+GnaComponentType ModelWrapper::OperandIndexToType(uint32_t operandIndex)
+{
+    if( 0 == operandIndex )
+    {
+        return InputComponent;
+    }
+    if ( 1 == operandIndex )
+    {
+        return OutputComponent;
+    }
+    // TODO:3: P2 Implement remaining cases
+    throw GnaException(Gna2StatusNotImplemented);
+}
