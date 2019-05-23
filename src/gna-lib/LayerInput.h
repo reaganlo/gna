@@ -39,7 +39,7 @@ class LayerValidator;
 struct LayerInput : public Tensor
 {
     LayerInput(const nn_layer &layer, const LayerValidator& validator);
-    LayerInput(const Gna2Tensor &inputTensor, const LayerValidator& validator);
+    LayerInput(const Gna2Operation &operation, const LayerValidator& validator);
     virtual ~LayerInput() = default;
 
 protected:

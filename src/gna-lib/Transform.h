@@ -29,6 +29,7 @@
 #include "DataMode.h"
 #include "GnaException.h"
 #include "LayerConfiguration.h"
+#include "ModelWrapper.h"
 #include "Tensor.h"
 
 #include "KernelArguments.h"
@@ -51,17 +52,41 @@ struct TransformFactoryConfig
     const Tensor * output;
     const DataMode outputMode;
     const BaseAddress outputBuffer;
-    void const * layerDetails;
     const LayerValidator& validator;
 
+    template<class T>
     TransformFactoryConfig(const Tensor *inputIn, const Tensor *outputIn, DataMode outputModeIn,
-          BaseAddress outputBufferIn, const void *layerDetailsIn, const LayerValidator& validatorIn) :
-       input{inputIn}, output{outputIn}, outputMode{outputModeIn}, outputBuffer{outputBufferIn},
-       layerDetails{layerDetailsIn}, validator{validatorIn}
-    {}
+        BaseAddress outputBufferIn, const T& operation, const LayerValidator& validatorIn) :
+        input{ inputIn }, output{ outputIn }, outputMode{ outputModeIn }, outputBuffer{ outputBufferIn },
+        validator{ validatorIn }
+    {
+        InitActivation(operation);
+    }
 
     TransformFactoryConfig(const TransformFactoryConfig&) = delete;
     TransformFactoryConfig() = delete;
+    // TODO:P2: Remove Activation and make Transform class generic
+    bool HasMandatoryActivation() const;
+    bool IsActivationNotSupported() const;
+    Gna2Tensor GetActivation() const;
+    static Gna2Tensor GetActivation(const void * layerDetails, nn_operation operationType);
+
+protected:
+    void InitActivation(const nn_layer& layer);
+    void InitActivation(const Gna2Operation& operation);
+private:
+
+    bool HasMandatoryActivation(const void * layerDetails) const;
+
+    static bool HasMandatoryActivation(const Gna2Operation& operation);
+
+    static nn_func_pwl GetActivationImpl(const void * layerDetails, nn_operation operationType);
+
+    //TODO:3:P1:Move to operation/model wrapper
+    static Gna2Tensor GetActivation(const Gna2Operation& operation);
+
+    bool mandatoryActivation;
+    Gna2Tensor activation;
 };
 
 template<typename KernelType>

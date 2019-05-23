@@ -55,7 +55,7 @@ AffineBaseLayer::AffineBaseLayer(const nn_layer& layer, const BaseValidator& val
         layer.pLayerStruct, *validator)),
     // TODO:3: refactor to Transform and to use Affine->Output
     Activation(ActivationFunction::Create({&Output.ScratchPad, &Output, Output.Mode, Output.Buffer,
-        layer.pLayerStruct, *validator}))
+        layer, *validator}))
 
 {
     if (Activation)

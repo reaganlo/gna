@@ -71,9 +71,20 @@ Shape Shape::Reshape(gna_tensor_order order) const
     //auto layout = LayoutOrder;
     //layout.Reshape(newLayout, size());
     ShapeMap dims;
-    for (const auto & dim : newLayout)
+    if (GNA_TENSOR_ORDER_ANY == LayoutOrder)
     {
-        dims[Layout::GetIndex(dim)] = this->at(dim);
+        auto it = LayoutOrder.cbegin();
+        for (const auto & dim : newLayout)
+        {
+            dims[Layout::GetIndex(dim)] = at(*it++);
+        }
+    }
+    else
+    {
+        for (const auto & dim : newLayout)
+        {
+            dims[Layout::GetIndex(dim)] = this->at(dim);
+        }
     }
     return Shape(std::move(dims), order);
 }

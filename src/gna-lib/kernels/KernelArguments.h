@@ -157,24 +157,6 @@ struct ActivationConfig
     GNA::PwlCached const * const Kernel;
 };
 
-struct PoolingConfig2D
-{
-    PoolingConfig2D(PoolingConfig2D const & source) = default;
-    PoolingConfig2D(nn_layer_pool2d const & config);
-
-    nn_layer_pool2d const Pooling;
-};
-
-struct ConvolutionConfig2D
-{
-    ConvolutionConfig2D(ConvolutionConfig2D const & source) = default;
-    ConvolutionConfig2D(gna_3d_dimensions const & inputDimensions,
-        gna_convolution_func const & config);
-
-    gna_3d_dimensions const InputDimensions;
-    gna_convolution_func const Convolution;
-};
-
 // TODO: refactor: consider splitting into run config and basic constant config
 struct AffineConfig
 {

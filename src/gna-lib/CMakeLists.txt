@@ -116,6 +116,7 @@ set(gna_lib_sources
   ${SRC_DIR}/ModelDumper.cpp
   ${SRC_DIR}/ModelExportConfig.cpp
   ${SRC_DIR}/ModelWrapper.cpp
+  ${SRC_DIR}/OperationConfig.cpp
   ${SRC_DIR}/PoolingFunctions.cpp
   ${SRC_DIR}/PoolingFunctions2D.cpp
   ${SRC_DIR}/RecurrentLayer.cpp
@@ -190,6 +191,7 @@ set(gna_lib_headers
   ${SRC_DIR}/Memory.h
   ${SRC_DIR}/ModelExportConfig.h
   ${SRC_DIR}/ModelWrapper.h
+  ${SRC_DIR}/OperationConfig.h
   ${SRC_DIR}/ParameterLimits.h
   ${SRC_DIR}/PoolingFunctions.h
   ${SRC_DIR}/PoolingFunctions2D.h

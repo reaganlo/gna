@@ -54,10 +54,19 @@ public:
         return (nullptr != pwl && nullptr != pwl->pSegments) && (pwl->nSegments > 0);
     }
 
+    static inline bool IsEnabled(const Gna2Tensor& activation)
+    {
+        return activation.Type == Gna2DataTypePwlSegment &&
+            activation.Mode == Gna2TensorModeDefault &&
+            nullptr != activation.Data &&
+            activation.Shape.NumberOfDimensions == 1 &&
+            activation.Shape.Dimensions[0] > 0;
+    }
+
     static inline bool IsEnabled(const nn_layer *layer)
     {
         Expect::NotNull(layer);
-        return IsEnabled(getPwl(layer->pLayerStruct, layer->operation));
+        return IsEnabled(TransformFactoryConfig::GetActivation(layer->pLayerStruct, layer->operation));
     }
 
     void UpdateActiveOutputCount(std::unique_ptr<BaseConfig> configs[], uint32_t outputCount) const
@@ -75,7 +84,6 @@ public:
     PwlCached const Pwl;
 
 protected:
-    static nn_func_pwl const * getPwl(void const *layerDetails, nn_operation operation);
     static PwlCached createPwlCached(const gna_data_mode mode,
         nn_pwl_seg const * const segmentsIn, uint32_t segmentCountIn);
 

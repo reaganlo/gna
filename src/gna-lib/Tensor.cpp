@@ -40,6 +40,14 @@ Tensor::Tensor(const ApiTensor & tensor) :
 {
 }
 
+Tensor::Tensor(const ApiTensor & tensor, gna_tensor_order order, const Validator & validatorIn) :
+    Tensor{ Shape::Create(tensor.Shape, order),
+        tensor.Type,
+        tensor.Data,
+        validatorIn}
+{
+}
+
 Tensor::Tensor(const Shape & dimensions, const DataType dataType, const TensorMode tensorMode, void const * buffer) :
     Component{ dimensions },
     Mode{ dataType, tensorMode },
@@ -68,10 +76,6 @@ void Tensor::ValidateBuffer(const void * const buffer) const
     auto caps = static_cast<const TensorLimits*>(validator->Capabilities);
     validator->ValidateBuffer(buffer, Size, caps->Align);
 }
-
-Tensor::Tensor(const Tensor & tensor, const Validator & validatorIn) :
-    Tensor{ tensor.Dimensions, tensor.Mode, tensor.Buffer, validatorIn }
-{}
 
 void Tensor::validate() const
 {

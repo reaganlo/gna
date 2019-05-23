@@ -26,6 +26,7 @@
 #pragma once
 
 #include "GnaException.h"
+#include "OperationConfig.h"
 #include "Transform.h"
 
 #include "common.h"
@@ -45,7 +46,8 @@ using __TransformList =
 class TransformList : public __TransformList
 {
 public:
-    BaseTransform * Emplace(TransformOperation operation, const TransformFactoryConfig& config);
+    BaseTransform * Emplace(TransformOperation operation, const TransformFactoryConfig& config,
+        const OperationConfig& operationConfig);
 
     template<typename TransformFunction>
     TransformFunction * Get(TransformOperation operation) const

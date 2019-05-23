@@ -40,7 +40,7 @@ typedef enum Gna2OperationType OperationType;
 typedef enum Gna2TensorMode TensorMode;
 typedef enum Gna2DataType DataType;
 typedef enum Gna2BiasMode ApiBiasMode;
-typedef enum Gna2PoolingMode PoolingMode;
+typedef enum Gna2PoolingMode Mode;
 typedef enum Gna2ErrorType ErrorType;
 typedef enum Gna2ItemType ItemType;
 

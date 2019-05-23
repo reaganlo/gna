@@ -189,64 +189,28 @@ const FullCapabilitiesMap ActivationFunction::outputCapabilities =
 
 std::unique_ptr<ActivationFunction> ActivationFunction::Create(const TransformFactoryConfig& config)
 {
-    auto mandatory = false; // TODO:3: use CAPS to determine
-    switch (config.validator.Operation)
-    {
-    case INTEL_CONVOLUTIONAL:
-    {
-        auto cnn = static_cast<nn_layer_conv const*>(config.layerDetails);
-        if (INTEL_NO_POOLING != cnn->poolType)
-        {
-            mandatory = true;
-        }
-        break;
-    }
-    case GNA_LAYER_CNN_2D_POOLING:
+    if(config.IsActivationNotSupported())
     {
         return std::unique_ptr<ActivationFunction>(nullptr);
     }
-    case INTEL_RECURRENT:
-        mandatory = true;
-        break;
-    default:
-        break;
-    }
+    const auto mandatory = config.HasMandatoryActivation(); // TODO:3: use CAPS to determine
 
-    const nn_func_pwl *pwl = getPwl(config.layerDetails, config.validator.Operation);
+    const Gna2Tensor activation = config.GetActivation();
 
-    if (mandatory || IsEnabled(pwl))
+    if (mandatory || IsEnabled(activation))
     {
-        auto pwlFunction = std::make_unique<Tensor>(Shape(GNA_TENSOR_W, pwl->nSegments),
-            GNA_DATA_RICH_FORMAT, pwl->pSegments, Validator{config.validator, capabilities});
+        auto pwlFunction = std::make_unique<Tensor>(
+            Shape(GNA_TENSOR_W, activation.Shape.Dimensions[0]),
+            Gna2DataTypePwlSegment, activation.Data, Validator{config.validator, capabilities});
         return std::make_unique<ActivationFunction>(
             BaseTransformConfig<ActivationKernel>{config,
             AccelerationDetector::GetKernelMap<ActivationKernel>(KERNEL_PWL)}, config.outputMode,
             std::move(pwlFunction));
     }
-
+    // TODO:3 : P2 : this probably is no longer necessary, corresponding logic should be aligned with usage of disabled activation tensor
     auto valuePtr = &(config.output->Mode.Value);
     *((gna_data_mode*)valuePtr) = GNA_DATA_ACTIVATION_DISABLED;
     return std::unique_ptr<ActivationFunction>(nullptr);
-}
-
-nn_func_pwl const * ActivationFunction::getPwl(void const *layerDetails, nn_operation operation)
-{
-    switch (operation)
-    {
-    case INTEL_AFFINE: /* FALLTHRU */
-    case INTEL_AFFINE_DIAGONAL:
-        return &static_cast<nn_layer_affine const*>(layerDetails)->pwl;
-    case INTEL_AFFINE_MULTIBIAS:
-        return &static_cast<nn_layer_affine_multi const*>(layerDetails)->pwl;
-    case INTEL_CONVOLUTIONAL:
-        return &static_cast<nn_layer_conv const*>(layerDetails)->pwl;
-    case INTEL_CONVOLUTIONAL_2D:
-        return &static_cast<nn_layer_cnn2d const*>(layerDetails)->activation;
-    case INTEL_RECURRENT:
-        return &static_cast<nn_layer_reccurent const*>(layerDetails)->pwl;
-    default:
-        throw GnaException{ Gna2StatusXnnErrorLyrOperation };
-    }
 }
 
 PwlCached ActivationFunction::createPwlCached(const gna_data_mode mode,

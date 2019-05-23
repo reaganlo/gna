@@ -25,7 +25,12 @@
 
 #pragma once
 
-#include "gna2-inference-impl.h"
+#include "KernelArguments.h"
+#include "ConvolutionKernelArguments.h"
+#include "PoolingKernelArguments.h"
+#include "pwl.h"
+
+#include "../gna-api/gna2-inference-impl.h"
 
 #include <map>
 

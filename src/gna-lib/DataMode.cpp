@@ -140,7 +140,7 @@ gna_data_mode DataMode::ModeFromDataMode(const DataType dataType)
         {Gna2DataTypeUint32, GNA_UINT32},
         {Gna2DataTypeUint64, GNA_UINT64},
         {Gna2DataTypeCompoundBias, GNA_DATA_RICH_FORMAT},
-        {Gna2DataTypePwlSegment, GNA_DATA_NOT_SUPPORTED},
+        {Gna2DataTypePwlSegment, GNA_DATA_RICH_FORMAT},
         {Gna2DataTypeWeightScaleFactor, GNA_DATA_RICH_FORMAT},
     };
     return types.at(dataType);

@@ -47,8 +47,7 @@
 
 using namespace GNA;
 
-ConvolutionalLayer2D::ConvolutionalLayer2D(const nn_layer& layer, const BaseValidator& validatorIn) :
-    Layer(layer, validatorIn, {ConvolutionalTransform2D, ActivationTransform, PoolingTransform2D}, BaseAddress())
+void ConvolutionalLayer2D::Init()
 {
     Expect::One(Input.at(GNA_DIM_N), Gna2StatusXnnErrorGrouping);
     Expect::One(Output.at(GNA_DIM_N), Gna2StatusXnnErrorGrouping);
@@ -65,10 +64,9 @@ ConvolutionalLayer2D::ConvolutionalLayer2D(const nn_layer& layer, const BaseVali
     {this->compute(nullptr, accel, executionConfig); };
 
     Layer::Compute = [this](LayerConfiguration &layerConfiguration,
-                            AccelerationMode accel,
-                            ExecutionConfig const & executionConfig)
+        AccelerationMode accel,
+        ExecutionConfig const & executionConfig)
     {this->compute(&layerConfiguration, accel, executionConfig); };
-
 }
 
 DataConfig ConvolutionalLayer2D::GetDataMode() const
@@ -78,4 +76,3 @@ DataConfig ConvolutionalLayer2D::GetDataMode() const
     const auto biasMode = convolutionTransform.Biases->Mode.Value;
     return DataConfig(Input.Mode.Value, filterMode, biasMode, Output.Mode.Value);
 }
-

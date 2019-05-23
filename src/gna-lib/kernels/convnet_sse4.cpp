@@ -659,6 +659,7 @@ void ConvolutionPoolingKernelImpl(ConvolutionConfig const * const filterConfig,
 
                     sum1 = B[i];
 
+
                     for (; in1 < in_end; )
                     {
                         in1++;

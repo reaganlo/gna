@@ -45,7 +45,7 @@ struct SetLimits;
 struct BiasTensor : public Tensor
 {
     BiasTensor(const Shape& dimensions, const uint32_t biasVectorIndex, const DataMode& dataMode,
-        void * buffer, const LayerValidator& validatorIn, gna_bias_mode mode = GNA_BIAS_PER_KERNEL);
+        void * buffer, const LayerValidator& validator, Gna2BiasMode mode = Gna2BiasModeDefault);
 
     virtual ~BiasTensor() = default;
 
@@ -60,11 +60,11 @@ struct BiasTensor : public Tensor
     }
 
     const uint32_t VectorIndex;
-    const gna_bias_mode BiasMode;
+    const Gna2BiasMode BiasMode;
 
 protected:
     static const FullCapabilitiesMap capabilities;
-    static const SetLimits<gna_bias_mode> modeLimits;
+    static const SetLimits<Gna2BiasMode> modeLimits;
 };
 
 }

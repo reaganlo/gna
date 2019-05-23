@@ -73,8 +73,10 @@ set(xnn_kernel_headers
   pwl.h)
 
 set(xnn_kernel_api
-  ${KERNEL_DIR}/XnnKernel.h
-  ${KERNEL_DIR}/KernelArguments.h)
+  ${KERNEL_DIR}/ConvolutionKernelArguments.h
+  ${KERNEL_DIR}/KernelArguments.h
+  ${KERNEL_DIR}/PoolingKernelArguments.h
+  ${KERNEL_DIR}/XnnKernel.h)
 
 set(xnn_generic_sources
   convnet_generic.cpp

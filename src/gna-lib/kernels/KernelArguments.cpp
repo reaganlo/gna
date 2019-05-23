@@ -69,16 +69,6 @@ ActivationConfig::ActivationConfig(uint32_t elementCount, GNA::PwlCached const *
     Kernel{kernel}
 {}
 
-PoolingConfig2D::PoolingConfig2D(nn_layer_pool2d const & config) :
-    Pooling{config}
-{}
-
-ConvolutionConfig2D::ConvolutionConfig2D(gna_3d_dimensions const & inputDimensions,
-        gna_convolution_func const & config) :
-    InputDimensions{ inputDimensions },
-    Convolution{config}
-{}
-
 AffineConfig::AffineConfig(int16_t const * inputIn, int32_t * const outputIn,
     AffineConfig const * const source) :
     AffineConfig{*source}

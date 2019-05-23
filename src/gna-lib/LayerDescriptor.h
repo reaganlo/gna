@@ -246,7 +246,7 @@ public:
         set(mode);
     }
 
-    void operator=(const gna_bias_mode mode)
+    void operator=(const Gna2BiasMode mode)
     {
         set(mode);
     }

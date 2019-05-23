@@ -27,6 +27,8 @@
 
 #include "KernelMacros.h"
 #include "KernelArguments.h"
+#include "ConvolutionKernelArguments.h"
+#include "PoolingKernelArguments.h"
 
 #define ConvolutionKernelImpl KERNEL(ConvolutionKernelImpl)
 #define ConvolutionPoolingKernelImpl KERNEL(ConvolutionPoolingKernelImpl)

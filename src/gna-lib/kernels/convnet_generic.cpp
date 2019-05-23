@@ -29,6 +29,8 @@
 #include "igemv.h"
 #include "pwl.h"
 
+
+#include "ConvolutionKernelArguments.h"
 #include "KernelArguments.h"
 #include "KernelMacros.h"
 
@@ -675,14 +677,14 @@ void Pooling2DKernelImpl1B(ExecutionKernelConfig<PoolingConfig2D> const * const 
     int8_t* I = (int8_t*)config->RequestConfig->Inputs;
     int16_t* O = (int16_t*)config->RequestConfig->Outputs;
 
-    uint32_t inputW = config->RequestConfig->Transform.Pooling.inputDimensions.width;
-    uint32_t inputH = config->RequestConfig->Transform.Pooling.inputDimensions.height;
-    uint32_t numFilters = config->RequestConfig->Transform.Pooling.inputDimensions.depth;
+    uint32_t inputW = config->RequestConfig->Transform.InputWidth;
+    uint32_t inputH = config->RequestConfig->Transform.InputHeight;
+    uint32_t numFilters = config->RequestConfig->Transform.InputDepth;
 
-    uint32_t poolStrideH = config->RequestConfig->Transform.Pooling.pooling.stride.height;
-    uint32_t poolStrideW = config->RequestConfig->Transform.Pooling.pooling.stride.width;
-    uint32_t windowHeight = config->RequestConfig->Transform.Pooling.pooling.window.height;
-    uint32_t windowWidth = config->RequestConfig->Transform.Pooling.pooling.window.width;
+    uint32_t poolStrideH = config->RequestConfig->Transform.StrideHeight;
+    uint32_t poolStrideW = config->RequestConfig->Transform.StrideWidth;
+    uint32_t windowHeight = config->RequestConfig->Transform.WindowHeight;
+    uint32_t windowWidth = config->RequestConfig->Transform.WindowWidth;
 
     uint32_t poolOutW = 1 + (uint32_t)std::ceil((float)(inputW - windowWidth) / (float)poolStrideW);
     uint32_t poolOutH = 1 + (uint32_t)std::ceil((float)(inputH - windowHeight) / (float)poolStrideH);
@@ -707,7 +709,7 @@ void Pooling2DKernelImpl1B(ExecutionKernelConfig<PoolingConfig2D> const * const 
 
                         uint32_t winIdxH = numFilters * inputW * OH;
 
-                        if (config->RequestConfig->Transform.Pooling.pooling.type == INTEL_MAX_POOLING)
+                        if (config->RequestConfig->Transform.Mode == KernelPoolingModeMax)
                         {
                             if ((POW * poolStrideW <= (inputW - 1)) && (POH * poolStrideH <= (inputH - 1)))
                             {
@@ -728,7 +730,7 @@ void Pooling2DKernelImpl1B(ExecutionKernelConfig<PoolingConfig2D> const * const 
                                 value = tmpValue;
                             }
                         }
-                        else if (config->RequestConfig->Transform.Pooling.pooling.type == INTEL_SUM_POOLING)
+                        else if (config->RequestConfig->Transform.Mode == KernelPoolingModeSum)
                         {
 
                             if ((POW * poolStrideW + OW <= (inputW - 1)) && (POH * poolStrideH + OH <= (inputH - 1)))
@@ -764,14 +766,14 @@ void Pooling2DKernelImpl2B(ExecutionKernelConfig<PoolingConfig2D> const * const 
     int16_t* I = (int16_t*)config->RequestConfig->Inputs;
     int16_t* O = (int16_t*)config->RequestConfig->Outputs;
 
-    uint32_t inputW = config->RequestConfig->Transform.Pooling.inputDimensions.width;
-    uint32_t inputH = config->RequestConfig->Transform.Pooling.inputDimensions.height;
-    uint32_t numFilters = config->RequestConfig->Transform.Pooling.inputDimensions.depth;
+    uint32_t inputW = config->RequestConfig->Transform.InputWidth;
+    uint32_t inputH = config->RequestConfig->Transform.InputHeight;
+    uint32_t numFilters = config->RequestConfig->Transform.InputDepth;
 
-    uint32_t poolStrideH = config->RequestConfig->Transform.Pooling.pooling.stride.height;
-    uint32_t poolStrideW = config->RequestConfig->Transform.Pooling.pooling.stride.width;
-    uint32_t windowHeight = config->RequestConfig->Transform.Pooling.pooling.window.height;
-    uint32_t windowWidth = config->RequestConfig->Transform.Pooling.pooling.window.width;
+    uint32_t poolStrideH = config->RequestConfig->Transform.StrideHeight;
+    uint32_t poolStrideW = config->RequestConfig->Transform.StrideWidth;
+    uint32_t windowHeight = config->RequestConfig->Transform.WindowHeight;
+    uint32_t windowWidth = config->RequestConfig->Transform.WindowWidth;
 
 
     uint32_t poolOutW = 1 + (uint32_t)std::ceil((float)(inputW - windowWidth) / (float)poolStrideW);
@@ -797,7 +799,7 @@ void Pooling2DKernelImpl2B(ExecutionKernelConfig<PoolingConfig2D> const * const 
 
                         uint32_t winIdxH = numFilters * inputW * OH;
 
-                        if (config->RequestConfig->Transform.Pooling.pooling.type == INTEL_MAX_POOLING)
+                        if (config->RequestConfig->Transform.Mode == KernelPoolingModeMax)
                         {
                             if ((POW * poolStrideW <= (inputW - 1)) && (POH * poolStrideH <= (inputH - 1)))
                             {
@@ -818,7 +820,7 @@ void Pooling2DKernelImpl2B(ExecutionKernelConfig<PoolingConfig2D> const * const 
                                 value = tmpValue;
                             }
                         }
-                        else if (config->RequestConfig->Transform.Pooling.pooling.type == INTEL_SUM_POOLING)
+                        else if (config->RequestConfig->Transform.Mode == KernelPoolingModeSum)
                         {
 
                             if ((POW * poolStrideW + OW <= (inputW - 1)) && (POH * poolStrideH + OH <= (inputH - 1)))
@@ -854,14 +856,14 @@ void Pooling2DKernelImpl4B(ExecutionKernelConfig<PoolingConfig2D> const * const 
     int32_t* I = (int32_t*)config->RequestConfig->Inputs;
     int32_t* O = (int32_t*)config->RequestConfig->Outputs;
 
-    uint32_t inputW = config->RequestConfig->Transform.Pooling.inputDimensions.width;
-    uint32_t inputH = config->RequestConfig->Transform.Pooling.inputDimensions.height;
-    uint32_t numFilters = config->RequestConfig->Transform.Pooling.inputDimensions.depth;
+    uint32_t inputW = config->RequestConfig->Transform.InputWidth;
+    uint32_t inputH = config->RequestConfig->Transform.InputHeight;
+    uint32_t numFilters = config->RequestConfig->Transform.InputDepth;
 
-    uint32_t poolStrideH = config->RequestConfig->Transform.Pooling.pooling.stride.height;
-    uint32_t poolStrideW = config->RequestConfig->Transform.Pooling.pooling.stride.width;
-    uint32_t windowHeight = config->RequestConfig->Transform.Pooling.pooling.window.height;
-    uint32_t windowWidth = config->RequestConfig->Transform.Pooling.pooling.window.width;
+    uint32_t poolStrideH = config->RequestConfig->Transform.StrideHeight;
+    uint32_t poolStrideW = config->RequestConfig->Transform.StrideWidth;
+    uint32_t windowHeight = config->RequestConfig->Transform.WindowHeight;
+    uint32_t windowWidth = config->RequestConfig->Transform.WindowWidth;
 
 
     uint32_t poolOutW = 1 + (uint32_t)std::ceil((float)(inputW - windowWidth) / (float)poolStrideW);
@@ -887,7 +889,7 @@ void Pooling2DKernelImpl4B(ExecutionKernelConfig<PoolingConfig2D> const * const 
 
                         uint32_t winIdxH = numFilters * inputW * OH;
 
-                        if (config->RequestConfig->Transform.Pooling.pooling.type == INTEL_MAX_POOLING)
+                        if (config->RequestConfig->Transform.Mode == KernelPoolingModeMax)
                         {
                             if ((POW * poolStrideW <= (inputW - 1)) && (POH * poolStrideH <= (inputH - 1)))
                             {
@@ -908,7 +910,7 @@ void Pooling2DKernelImpl4B(ExecutionKernelConfig<PoolingConfig2D> const * const 
                                 value = tmpValue;
                             }
                         }
-                        else if (config->RequestConfig->Transform.Pooling.pooling.type == INTEL_SUM_POOLING)
+                        else if (config->RequestConfig->Transform.Mode == KernelPoolingModeSum)
                         {
 
                             if ((POW * poolStrideW + OW <= (inputW - 1)) && (POH * poolStrideH + OH <= (inputH - 1)))
@@ -941,23 +943,23 @@ void Pooling2DKernelImpl4B(ExecutionKernelConfig<PoolingConfig2D> const * const 
 }
 void Convolution2DKernelImpl1B1B(ExecutionKernelConfig<ConvolutionConfig2D> const * const config)
 {
-    uint32_t inputDepth = config->RequestConfig->Transform.InputDimensions.depth;
-    uint32_t inputHeight = config->RequestConfig->Transform.InputDimensions.height;
-    uint32_t inputWidth = config->RequestConfig->Transform.InputDimensions.width;
+    uint32_t inputDepth = config->RequestConfig->Transform.InputDepth;
+    uint32_t inputHeight = config->RequestConfig->Transform.InputHeight;
+    uint32_t inputWidth = config->RequestConfig->Transform.InputWidth;
 
-    uint32_t numFilters = config->RequestConfig->Transform.Convolution.filters.count;
-    uint32_t filterHeight = config->RequestConfig->Transform.Convolution.filters.dimensions.height;
-    uint32_t filterWidth = config->RequestConfig->Transform.Convolution.filters.dimensions.width;
+    uint32_t numFilters = config->RequestConfig->Transform.NumberOfFilters;
+    uint32_t filterHeight = config->RequestConfig->Transform.FilterHeight;
+    uint32_t filterWidth = config->RequestConfig->Transform.FilterWidth;
     uint32_t memForFilter = (filterHeight * filterWidth * inputDepth);
     uint32_t filterPadding = (ALIGN(memForFilter, 16) - memForFilter);
 
-    uint32_t padHeight = config->RequestConfig->Transform.Convolution.zeroPadding.height;
-    uint32_t padWidth = config->RequestConfig->Transform.Convolution.zeroPadding.width;
+    uint32_t padHeight = config->RequestConfig->Transform.ZeroPaddingHeight;
+    uint32_t padWidth = config->RequestConfig->Transform.ZeroPaddingWidth;
 
-    uint32_t strideHeight = config->RequestConfig->Transform.Convolution.stride.height;
-    uint32_t strideWidth = config->RequestConfig->Transform.Convolution.stride.width;
+    uint32_t strideHeight = config->RequestConfig->Transform.StrideHeight;
+    uint32_t strideWidth = config->RequestConfig->Transform.StrideWidth;
 
-    auto biasMode = config->RequestConfig->Transform.Convolution.biases.mode;
+    auto biasMode = config->RequestConfig->Transform.BiasMode;
 
     uint32_t inputHeightWPad = inputHeight + 2 * padHeight;
     uint32_t inputWidthWPad = inputWidth + 2 * padWidth;
@@ -966,10 +968,10 @@ void Convolution2DKernelImpl1B1B(ExecutionKernelConfig<ConvolutionConfig2D> cons
 
     const int8_t* const I = (int8_t*)config->RequestConfig->Inputs;
     int32_t* O = (int32_t*)config->RequestConfig->Outputs;
-    int8_t* F = (int8_t*)config->RequestConfig->Transform.Convolution.filters.filtersData;
+    int8_t* F = (int8_t*)config->RequestConfig->Transform.FilterData;
 
-    auto biasPrecission = config->RequestConfig->Transform.Convolution.biases.dataMode;
-    void* biasData = config->RequestConfig->Transform.Convolution.biases.biasesData;
+    auto biasPrecission = config->RequestConfig->Transform.BiasDataMode;
+    const void* biasData = config->RequestConfig->Transform.BiasData;
 
     uint32_t outWidth = 1 + ((inputWidthWPad - filterWidth) / strideWidth);
     uint32_t outHeight = 1 + ((inputHeightWPad - filterHeight) / strideHeight);
@@ -982,10 +984,10 @@ void Convolution2DKernelImpl1B1B(ExecutionKernelConfig<ConvolutionConfig2D> cons
             for (uint32_t OH = 0; OH < outHeight; OH++) {    //Output height
 
                 int64_t outVal;// = &O[OH * outWidth * numFilters + OW * numFilters + OD]; //NHWC order
-                if (biasMode == GNA_BIAS_PER_KERNEL) {
+                if (biasMode == KernelBiasModePerFilter) {
                     outVal = getBias(biasData, OD, biasPrecission);
                 }
-                else if (biasMode == GNA_BIAS_NOT_SUPPORTED) {
+                else if (biasMode == KernelBiasModeNotSupported) {
                     outVal = 0;
                 }
                 else {
@@ -1021,23 +1023,23 @@ void Convolution2DKernelImpl1B1B(ExecutionKernelConfig<ConvolutionConfig2D> cons
 }
 void Convolution2DKernelImpl1B2B(ExecutionKernelConfig<ConvolutionConfig2D> const * const config)
 {
-    uint32_t inputDepth = config->RequestConfig->Transform.InputDimensions.depth;
-    uint32_t inputHeight = config->RequestConfig->Transform.InputDimensions.height;
-    uint32_t inputWidth = config->RequestConfig->Transform.InputDimensions.width;
+    uint32_t inputDepth = config->RequestConfig->Transform.InputDepth;
+    uint32_t inputHeight = config->RequestConfig->Transform.InputHeight;
+    uint32_t inputWidth = config->RequestConfig->Transform.InputWidth;
 
-    uint32_t numFilters = config->RequestConfig->Transform.Convolution.filters.count;
-    uint32_t filterHeight = config->RequestConfig->Transform.Convolution.filters.dimensions.height;
-    uint32_t filterWidth = config->RequestConfig->Transform.Convolution.filters.dimensions.width;
+    uint32_t numFilters = config->RequestConfig->Transform.NumberOfFilters;
+    uint32_t filterHeight = config->RequestConfig->Transform.FilterHeight;
+    uint32_t filterWidth = config->RequestConfig->Transform.FilterWidth;
     uint32_t memForFilter = (filterHeight * filterWidth * inputDepth);
     uint32_t filterPadding = (ALIGN(memForFilter, 16) - memForFilter);
 
-    uint32_t padHeight = config->RequestConfig->Transform.Convolution.zeroPadding.height;
-    uint32_t padWidth = config->RequestConfig->Transform.Convolution.zeroPadding.width;
+    uint32_t padHeight = config->RequestConfig->Transform.ZeroPaddingHeight;
+    uint32_t padWidth = config->RequestConfig->Transform.ZeroPaddingWidth;
 
-    uint32_t strideHeight = config->RequestConfig->Transform.Convolution.stride.height;
-    uint32_t strideWidth = config->RequestConfig->Transform.Convolution.stride.width;
+    uint32_t strideHeight = config->RequestConfig->Transform.StrideHeight;
+    uint32_t strideWidth = config->RequestConfig->Transform.StrideWidth;
 
-    auto biasMode = config->RequestConfig->Transform.Convolution.biases.mode;
+    auto biasMode = config->RequestConfig->Transform.BiasMode;
 
     uint32_t inputHeightWPad = inputHeight + 2 * padHeight;
     uint32_t inputWidthWPad = inputWidth + 2 * padWidth;
@@ -1046,10 +1048,10 @@ void Convolution2DKernelImpl1B2B(ExecutionKernelConfig<ConvolutionConfig2D> cons
 
     const int16_t* const I = (int16_t*)config->RequestConfig->Inputs;
     int32_t* O = (int32_t*)config->RequestConfig->Outputs;
-    int8_t* F = (int8_t*)config->RequestConfig->Transform.Convolution.filters.filtersData;
+    int8_t* F = (int8_t*)config->RequestConfig->Transform.FilterData;
 
-    auto biasPrecission = config->RequestConfig->Transform.Convolution.biases.dataMode;
-    void* biasData = config->RequestConfig->Transform.Convolution.biases.biasesData;
+    auto biasPrecission = config->RequestConfig->Transform.BiasDataMode;
+    const void* biasData = config->RequestConfig->Transform.BiasData;
 
     uint32_t outWidth = 1 + ((inputWidthWPad - filterWidth) / strideWidth);
     uint32_t outHeight = 1 + ((inputHeightWPad - filterHeight) / strideHeight);
@@ -1062,10 +1064,10 @@ void Convolution2DKernelImpl1B2B(ExecutionKernelConfig<ConvolutionConfig2D> cons
             for (uint32_t OH = 0; OH < outHeight; OH++) {    //Output height
 
                 int64_t outVal;// = &O[OH * outWidth * numFilters + OW * numFilters + OD]; //NHWC order
-                if (biasMode == GNA_BIAS_PER_KERNEL) {
+                if (biasMode == KernelBiasModePerFilter) {
                     outVal = getBias(biasData, OD, biasPrecission);
                 }
-                else if (biasMode == GNA_BIAS_NOT_SUPPORTED) {
+                else if (biasMode == KernelBiasModeNotSupported) {
                     outVal = 0;
                 }
                 else {
@@ -1101,23 +1103,23 @@ void Convolution2DKernelImpl1B2B(ExecutionKernelConfig<ConvolutionConfig2D> cons
 }
 void Convolution2DKernelImpl2B1B(ExecutionKernelConfig<ConvolutionConfig2D> const * const config)
 {
-    uint32_t inputDepth = config->RequestConfig->Transform.InputDimensions.depth;
-    uint32_t inputHeight = config->RequestConfig->Transform.InputDimensions.height;
-    uint32_t inputWidth = config->RequestConfig->Transform.InputDimensions.width;
+    uint32_t inputDepth = config->RequestConfig->Transform.InputDepth;
+    uint32_t inputHeight = config->RequestConfig->Transform.InputHeight;
+    uint32_t inputWidth = config->RequestConfig->Transform.InputWidth;
 
-    uint32_t numFilters = config->RequestConfig->Transform.Convolution.filters.count;
-    uint32_t filterHeight = config->RequestConfig->Transform.Convolution.filters.dimensions.height;
-    uint32_t filterWidth = config->RequestConfig->Transform.Convolution.filters.dimensions.width;
+    uint32_t numFilters = config->RequestConfig->Transform.NumberOfFilters;
+    uint32_t filterHeight = config->RequestConfig->Transform.FilterHeight;
+    uint32_t filterWidth = config->RequestConfig->Transform.FilterWidth;
     uint32_t memForFilter = (filterHeight * filterWidth * inputDepth * 2);
     uint32_t filterPadding = (ALIGN(memForFilter, 16) - memForFilter) / 2;
 
-    uint32_t padHeight = config->RequestConfig->Transform.Convolution.zeroPadding.height;
-    uint32_t padWidth = config->RequestConfig->Transform.Convolution.zeroPadding.width;
+    uint32_t padHeight = config->RequestConfig->Transform.ZeroPaddingHeight;
+    uint32_t padWidth = config->RequestConfig->Transform.ZeroPaddingWidth;
 
-    uint32_t strideHeight = config->RequestConfig->Transform.Convolution.stride.height;
-    uint32_t strideWidth = config->RequestConfig->Transform.Convolution.stride.width;
+    uint32_t strideHeight = config->RequestConfig->Transform.StrideHeight;
+    uint32_t strideWidth = config->RequestConfig->Transform.StrideWidth;
 
-    auto biasMode = config->RequestConfig->Transform.Convolution.biases.mode;
+    auto biasMode = config->RequestConfig->Transform.BiasMode;
 
     uint32_t inputHeightWPad = inputHeight + 2 * padHeight;
     uint32_t inputWidthWPad = inputWidth + 2 * padWidth;
@@ -1126,10 +1128,10 @@ void Convolution2DKernelImpl2B1B(ExecutionKernelConfig<ConvolutionConfig2D> cons
 
     const int8_t* const I = (int8_t*)config->RequestConfig->Inputs;
     int32_t* O = (int32_t*)config->RequestConfig->Outputs;
-    int16_t* F = (int16_t*)config->RequestConfig->Transform.Convolution.filters.filtersData;
+    int16_t* F = (int16_t*)config->RequestConfig->Transform.FilterData;
 
-    auto biasPrecission = config->RequestConfig->Transform.Convolution.biases.dataMode;
-    void* biasData = config->RequestConfig->Transform.Convolution.biases.biasesData;
+    auto biasPrecission = config->RequestConfig->Transform.BiasDataMode;
+    const void* biasData = config->RequestConfig->Transform.BiasData;
 
     uint32_t outWidth = 1 + ((inputWidthWPad - filterWidth) / strideWidth);
     uint32_t outHeight = 1 + ((inputHeightWPad - filterHeight) / strideHeight);
@@ -1142,10 +1144,10 @@ void Convolution2DKernelImpl2B1B(ExecutionKernelConfig<ConvolutionConfig2D> cons
             for (uint32_t OH = 0; OH < outHeight; OH++) {    //Output height
 
                 int64_t outVal;// = &O[OH * outWidth * numFilters + OW * numFilters + OD]; //NHWC order
-                if (biasMode == GNA_BIAS_PER_KERNEL) {
+                if (biasMode == KernelBiasModePerFilter) {
                     outVal = getBias(biasData, OD, biasPrecission);
                 }
-                else if (biasMode == GNA_BIAS_NOT_SUPPORTED) {
+                else if (biasMode == KernelBiasModeNotSupported) {
                     outVal = 0;
                 }
                 else {
@@ -1181,23 +1183,24 @@ void Convolution2DKernelImpl2B1B(ExecutionKernelConfig<ConvolutionConfig2D> cons
 }
 void Convolution2DKernelImpl2B2B(ExecutionKernelConfig<ConvolutionConfig2D> const * const config)
 {
-    uint32_t inputDepth = config->RequestConfig->Transform.InputDimensions.depth;
-    uint32_t inputHeight = config->RequestConfig->Transform.InputDimensions.height;
-    uint32_t inputWidth = config->RequestConfig->Transform.InputDimensions.width;
+    uint32_t inputDepth = config->RequestConfig->Transform.InputDepth;
+    uint32_t inputHeight = config->RequestConfig->Transform.InputHeight;
+    uint32_t inputWidth = config->RequestConfig->Transform.InputWidth;
 
-    uint32_t numFilters = config->RequestConfig->Transform.Convolution.filters.count;
-    uint32_t filterHeight = config->RequestConfig->Transform.Convolution.filters.dimensions.height;
-    uint32_t filterWidth = config->RequestConfig->Transform.Convolution.filters.dimensions.width;
+    uint32_t numFilters = config->RequestConfig->Transform.NumberOfFilters;
+    uint32_t filterHeight = config->RequestConfig->Transform.FilterHeight;
+    uint32_t filterWidth = config->RequestConfig->Transform.FilterWidth;
+
     uint32_t memForFilter = (filterHeight * filterWidth * inputDepth * 2);
     uint32_t filterPadding = (ALIGN(memForFilter, 16) - memForFilter) /2;
 
-    uint32_t padHeight = config->RequestConfig->Transform.Convolution.zeroPadding.height;
-    uint32_t padWidth = config->RequestConfig->Transform.Convolution.zeroPadding.width;
+    uint32_t padHeight = config->RequestConfig->Transform.ZeroPaddingHeight;
+    uint32_t padWidth = config->RequestConfig->Transform.ZeroPaddingWidth;
 
-    uint32_t strideHeight = config->RequestConfig->Transform.Convolution.stride.height;
-    uint32_t strideWidth = config->RequestConfig->Transform.Convolution.stride.width;
+    uint32_t strideHeight = config->RequestConfig->Transform.StrideHeight;
+    uint32_t strideWidth = config->RequestConfig->Transform.StrideWidth;
 
-    auto biasMode = config->RequestConfig->Transform.Convolution.biases.mode;
+    auto biasMode = config->RequestConfig->Transform.BiasMode;
 
     uint32_t inputHeightWPad = inputHeight + 2 * padHeight;
     uint32_t inputWidthWPad = inputWidth + 2 * padWidth;
@@ -1206,10 +1209,10 @@ void Convolution2DKernelImpl2B2B(ExecutionKernelConfig<ConvolutionConfig2D> cons
 
     const int16_t* const I = (int16_t*)config->RequestConfig->Inputs;
     int32_t* O = (int32_t*)config->RequestConfig->Outputs;
-    int16_t* F = (int16_t*)config->RequestConfig->Transform.Convolution.filters.filtersData;
+    int16_t* F = (int16_t*)config->RequestConfig->Transform.FilterData;
 
-    auto biasPrecission = config->RequestConfig->Transform.Convolution.biases.dataMode;
-    void* biasData = config->RequestConfig->Transform.Convolution.biases.biasesData;
+    auto biasPrecission = config->RequestConfig->Transform.BiasDataMode;
+    const void* biasData = config->RequestConfig->Transform.BiasData;
 
     uint32_t outWidth = 1 + ((inputWidthWPad - filterWidth) / strideWidth);
     uint32_t outHeight = 1 + ((inputHeightWPad - filterHeight) / strideHeight);
@@ -1222,10 +1225,10 @@ void Convolution2DKernelImpl2B2B(ExecutionKernelConfig<ConvolutionConfig2D> cons
             for (uint32_t OH = 0; OH < outHeight; OH++) {
 
                 int64_t outVal;// = &O[OH * outWidth * numFilters + OW * numFilters + OD]; //NHWC order
-                if (biasMode == GNA_BIAS_PER_KERNEL) {
+                if (biasMode == KernelBiasModePerFilter) {
                     outVal = getBias(biasData, OD, biasPrecission);
                 }
-                else if (biasMode == GNA_BIAS_NOT_SUPPORTED) {
+                else if (biasMode == KernelBiasModeNotSupported) {
                     outVal = 0;
                 }
                 else {

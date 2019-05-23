@@ -55,14 +55,14 @@ TransposeLayer::TransposeLayer(const nn_layer& layer, const BaseValidator& valid
 void TransposeLayer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const
 {
     BaseAddress inputBuffer = Input;
-    if (layerConfiguration.Buffers.count(InputComponent) == 0)
+    if (0 != layerConfiguration.Buffers.count(InputComponent))
     {
         inputBuffer = layerConfiguration.Buffers[InputComponent];
         Input.ValidateBuffer(inputBuffer);
     }
 
     BaseAddress outputBuffer = Output;
-    if (layerConfiguration.Buffers.count(OutputComponent) == 0)
+    if (0 != layerConfiguration.Buffers.count(OutputComponent))
     {
         outputBuffer = layerConfiguration.Buffers[OutputComponent];
         Output.ValidateBuffer(outputBuffer);

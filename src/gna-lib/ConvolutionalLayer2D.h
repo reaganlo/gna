@@ -36,11 +36,18 @@ class BaseValidator;
 class ConvolutionalLayer2D : public Layer
 {
 public:
-    ConvolutionalLayer2D(const nn_layer& layer, const BaseValidator& validatorIn);
+    template<class T>
+    ConvolutionalLayer2D(const T& layer, const BaseValidator& validatorIn) :
+        Layer(layer, validatorIn, { ConvolutionalTransform2D, ActivationTransform, PoolingTransform2D }, BaseAddress())
+    {
+        Init();
+    }
+
     virtual ~ConvolutionalLayer2D() = default;
 
 protected:
     virtual DataConfig GetDataMode() const override;
+    void Init();
 };
 
 }

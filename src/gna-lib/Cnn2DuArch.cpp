@@ -99,7 +99,7 @@ namespace GNA {
         GNA3_Tensor_t CNV = GNA3_GetCNV(cnnIn, outputMode);
         GNA3_Tensor_t PLV = { };
 
-        if (poolingIn != nullptr && poolingIn->Type != INTEL_NO_POOLING) { // Pooling is enabled:
+        if (poolingIn != nullptr && poolingIn->Type != Gna2PoolingModeDisabled) { // Pooling is enabled:
             PLV.N = 1;
             PLV.H = static_cast<uint16_t>(ceil(1 + double(CNV.H - poolingIn->Window->at(GNA_DIM_H)) / double(poolingIn->Stride->at(GNA_DIM_H))) );
             PLV.W = static_cast<uint16_t>(ceil(1 + double(CNV.W - poolingIn->Window->at(GNA_DIM_W)) / double(poolingIn->Stride->at(GNA_DIM_W))) );
@@ -136,7 +136,9 @@ namespace GNA {
         return Num > 32 ? UINT32_MAX : log2Consts[Num];
     }
     inline uint32_t GNA3_UMemAllocSize(const uint32_t Elmnts, const uint32_t KWG, const uint32_t Prec) {
-        // Funciton: GNA3_UMemAllocSize ; Retunrs Allocation size in UMEM in BYTEs.
+
+        // Function: GNA3_UMemAllocSize ; Returns Allocation size in UMEM in BYTEs.
+
         // Valid for CMEM & PMEM. (Following the UMEM uArch Allocation scheme)
         uint32_t UMemElmtsPerStack = GNA3_UBANK_ROW_SIZE_B / Prec;       // Number of Accumolators in a CMEM-Stack-Row (Single CE)
         uint32_t UMemSlots = GNA3_NUM_CE * UMemElmtsPerStack;
@@ -346,15 +348,17 @@ namespace GNA {
             convConfiguration->Valid = true;               // Initial seting to get into the while loop
         }
         // Extracting CNN Params:
+
         const DataMode& BPrec = cnnIn->Biases->Mode;
-        const gna_bias_mode& BType = cnnIn->Biases->BiasMode;
+        const auto BType = cnnIn->Biases->BiasMode;
         uint32_t KNum = cnnIn->Filters->Count;
         uint32_t MaxKernels;
 
         // Calculating Max-Kernels:
         // In case where BIAS is Per Kernel, there is limitation by the BIAS-MEM size
         // Otherewiese, BIAS-Volume is streamed with no limitaion
-        if ((BPrec.Value == GNA_DATA_DISABLED) || (BType == GNA_BIAS_PER_STRIDE)) {
+        if ((BPrec.Value == GNA_DATA_DISABLED) || (BType == Gna2BiasModePerStride)) {
+
             MaxKernels = KNum;
         }
         else {

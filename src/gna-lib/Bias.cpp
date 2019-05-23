@@ -134,16 +134,16 @@ const FullCapabilitiesMap BiasTensor::capabilities =
     }}
 };
 
-const SetLimits<gna_bias_mode> BiasTensor::modeLimits
+const SetLimits<Gna2BiasMode> BiasTensor::modeLimits
 {
-    { GNA_BIAS_NOT_SUPPORTED, GNA_BIAS_PER_KERNEL, GNA_BIAS_PER_STRIDE }, Gna2StatusXnnErrorBiasMode
+    { Gna2BiasModeDefault, Gna2BiasModePerStride }, Gna2StatusXnnErrorBiasMode
 };
 
 BiasTensor::BiasTensor(const Shape& dimensions, const uint32_t biasVectorIndex, const DataMode& dataMode,
-    void * buffer, const LayerValidator& validatorIn, gna_bias_mode mode) :
+    void * buffer, const LayerValidator& validatorIn, Gna2BiasMode biasMode) :
     Tensor{ dimensions, dataMode, buffer, Validator{ validatorIn, capabilities } },
     VectorIndex{ biasVectorIndex },
-    BiasMode { mode }
+    BiasMode { biasMode }
 {
     const auto vectorCountIter = Dimensions.find(GNA_DIM_N);
     auto vectorCount = ui32_1;

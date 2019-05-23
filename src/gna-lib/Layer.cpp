@@ -79,58 +79,20 @@ std::unique_ptr<GNA::Layer> Layer::Create(const Gna2Operation & operation, const
         Expect::NotNull(operation.Parameters);
         Expect::NotNull(operation.Parameters[0]);
         return std::make_unique<CopyLayer>(operation, validatorIn);
+    case Gna2OperationTypeConvolution:
+        Expect::NotNull(operation.Operands);
+        Expect::NotNull(operation.Operands[0]);
+        Expect::NotNull(operation.Operands[1]);
+        Expect::NotNull(operation.Operands[2]);
+        Expect::NotNull(operation.Operands[3]);
+        Expect::NotNull(operation.Operands[4]);
+        Expect::NotNull(operation.Parameters);
+        Expect::NotNull(operation.Parameters[0]);
+        return std::make_unique<ConvolutionalLayer2D>(operation, validatorIn);
     default:
         //TODO:3:P1:Add implementation for remaining operation types
         throw GnaException(Gna2StatusNotImplemented);
     }
-}
-
-Layer::Layer(const nn_layer& layer, const BaseValidator& validatorIn,
-    const std::vector<TransformOperation>& transforms,
-    const BaseAddress& intermediateBuffer) :
-    AbstractOperation{ layer.operation },
-    validator{ std::make_unique<const LayerValidator>(validatorIn, Operation) },
-    Input{ layer, *validator },
-    Output{ layer, *validator }
-{
-    Expect::InRange<uint32_t>(Operation, 0, LAYER_OPERATION_TYPE_COUT-1, Gna2StatusXnnErrorLyrOperation);
-
-    //TODO:3: uncomment when all layers are Transform-based, remove if below
-    //Expect::False(transforms.empty(), Gna2StatusNullArgumentNotAllowed);
-    if (!transforms.empty())
-    {
-        auto&& commonConfig = TransformFactoryConfig(&Input, &Output, Output.Mode, intermediateBuffer,
-            layer.pLayerStruct, *validator);
-        for (const auto& transform : transforms)
-        {
-            outputTransform = Transforms.Emplace(transform, commonConfig);
-            commonConfig.input = outputTransform->Output.get();
-        }
-
-        inputTransform = Transforms.begin()->get();
-        if (Output.Buffer)
-        {
-            outputTransform->SetOutput(Output.Buffer);
-        }
-    }
-}
-
-Layer::Layer(const Gna2Operation & operation, const BaseValidator& validatorIn,
-    const std::vector<TransformOperation>& transforms,
-    const BaseAddress& intermediateBuffer) :
-    AbstractOperation{ operation },
-    validator{ std::make_unique<const LayerValidator>(validatorIn, Operation) },
-    Input{ *operation.Operands[0], *validator },
-    Output{ *operation.Operands[1], *validator }
-{
-    Expect::InRange<uint32_t>(Operation, 0, LAYER_OPERATION_TYPE_COUT - 1, Gna2StatusModelConfigurationInvalid);
-
-    //TODO:3: uncomment when all layers are Transform-based, remove if below
-    //Expect::False(transforms.empty(), status_t::GNA_NULLARGNOTALLOWED); // TODO:3: add error code
-
-    ////TODO:3:P2:Bruno:remove temporal assertion and implement for CNN2D support
-    Expect::True(transforms.empty(), Gna2StatusNotImplemented);
-    UNREFERENCED_PARAMETER(intermediateBuffer);
 }
 
 void Layer::addBufferAs(const BufferMap& source, GnaComponentType sourceType,
@@ -209,3 +171,30 @@ uint32_t Layer::GetOperandSize(GnaComponentType componentType) const
     }
 }
 
+void Layer::InitTransforms(const std::vector<TransformOperation>& transforms, TransformFactoryConfig & commonConfig, const OperationConfig & operationConfig)
+{
+    for (const auto& transform : transforms)
+    {
+        outputTransform = Transforms.Emplace(transform, commonConfig, operationConfig);
+        commonConfig.input = outputTransform->Output.get();
+    }
+
+    inputTransform = Transforms.begin()->get();
+    if (Output.Buffer)
+        outputTransform->SetOutput(Output.Buffer);
+}
+
+nn_operation AbstractOperation::toLegacy(const Gna2Operation& operation)
+{
+    if (operation.Type == Gna2OperationTypeCopy)
+    {
+        return INTEL_COPY;
+    }
+    if (operation.Type == Gna2OperationTypeConvolution &&
+        operation.Operands[0]->Shape.NumberOfDimensions == 4)
+    {
+        return INTEL_CONVOLUTIONAL_2D;
+    }
+    // TODO:3:P1 add remainig cases
+    throw GnaException(Gna2StatusNotImplemented);
+}

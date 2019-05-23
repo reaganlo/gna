@@ -206,8 +206,9 @@ enum Gna2OperationType
                      - H is a number of elements to move in H dimension
         2. Gna2BiasMode biasMode - Mode of bias operation:
             Supported values: {::Gna2BiasModeDefault, ::Gna2BiasModePerStride}
-        3. Gna2PoolingMode poolingMode in case of fused operation [optional]
-        4. Gna2Shape poolingWindow [optional]:
+        3. Gna2PoolingMode poolingMode in case of fused operation [optional,
+           if enabled poolingWindow and poolingStride should be also provided]
+        4. Gna2Shape poolingWindow [optional, should be provided if poolingMode is enabled]:
             Specifies pooling window shape.
             Supported values:
             - For 1D convolution operation: [ W ] 1D where: //TODO:3:API Redesign: provide shape info
@@ -216,7 +217,7 @@ enum Gna2OperationType
                 - [ W x H ] 2D where:
                     - W is a width of window
                     - H is a height of window
-        5. Gna2Shape poolingStride [optional]:
+        5. Gna2Shape poolingStride [optional, should be provided if poolingMode is enabled]:
             Specifies pooling window stride dimensions.
             Supported values:
                 - For 1D convolution operation: [W] 1D where: //TODO:3:API Redesign: provide shape info

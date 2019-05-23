@@ -25,6 +25,7 @@
 
 #include "PoolingFunctions2D.h"
 
+#include "OperationConfig.h"
 #include "AccelerationDetector.h"
 #include "Capabilities.h"
 #include "DataMode.h"
@@ -77,9 +78,9 @@ const FullCapabilitiesMap PoolingFunction2D::strideLimits
     //}},
 };
 
-const SetLimits<nn_pool_type> PoolingFunction2D::typeLimits =
+const SetLimits<Gna2PoolingMode> PoolingFunction2D::typeLimits =
 {
-    { INTEL_MAX_POOLING, INTEL_SUM_POOLING }, Gna2StatusCnnErrorPoolType
+    { Gna2PoolingModeMax, Gna2PoolingModeSum }, Gna2StatusCnnErrorPoolType
 };
 
 const FullCapabilitiesMap PoolingFunction2D::outputCapabilities =
@@ -95,41 +96,43 @@ const FullCapabilitiesMap PoolingFunction2D::outputCapabilities =
     }},
 };
 
-std::unique_ptr<PoolingFunction2D> PoolingFunction2D::Create(const TransformFactoryConfig& config)
+std::unique_ptr<PoolingFunction2D> PoolingFunction2D::Create(
+    const TransformFactoryConfig& config,
+    const OperationConfig& operation)
 {
-    switch (config.validator.Operation)
-    {
-    case INTEL_CONVOLUTIONAL_2D:
-    {
-        auto cnn = static_cast<const nn_layer_cnn2d*>(config.layerDetails);
-        auto pooling = nn_layer_pool2d{cnn->inputDimensions, cnn->pooling};
-        return create(config, &pooling);
-    }
-    case GNA_LAYER_CNN_2D_POOLING:
-    {
-        auto pooling = static_cast<const nn_layer_pool2d*>(config.layerDetails);
-        return create(config, pooling);
-    }
-    default:
-        throw GnaException(Gna2StatusXnnErrorLyrOperation);
-    }
+    return create(config, operation);
+}
+
+KernelPoolingMode PoolingFunction2D::ToGnaKernelPoolingMode(Gna2PoolingMode mode)
+{
+    static std::map< Gna2PoolingMode, KernelPoolingMode> poolingMap{
+        { Gna2PoolingModeMax, KernelPoolingModeMax },
+        { Gna2PoolingModeSum, KernelPoolingModeSum },
+        { Gna2PoolingModeDisabled, KernelPoolingModeNone }
+    };
+    return poolingMap.at(mode);
 }
 
 std::unique_ptr<PoolingFunction2D> PoolingFunction2D::create(
-    const TransformFactoryConfig& config, nn_layer_pool2d const * pool)
+    const TransformFactoryConfig& config,
+    const OperationConfig& operation)
 {
-    if (INTEL_NO_POOLING != pool->pooling.type)
+    auto strideShape = operation.PoolingStride;
+    auto windowShape = operation.PoolingWindow;
+    auto poolingMode = operation.Mode;
+
+    if (Gna2PoolingModeDisabled != poolingMode)
     {
-        auto stride = std::make_unique<const Component>(Shape(pool->pooling.stride),
+        auto stride = std::make_unique<const Component>(strideShape,
             Validator{ config.validator, strideLimits });
-        auto window = std::make_unique<const Component>(Shape(pool->pooling.window),
+        auto window = std::make_unique<const Component>(windowShape,
+
             Validator{ config.validator, windowLimits });
         return std::make_unique<PoolingFunction2D>(
             BaseTransformConfig<PoolingKernel2D>{config,
                 AccelerationDetector::GetKernelMap<PoolingKernel2D>(KERNEL_POOLING_2D, {config.input->Mode.Value})},
-            pool->pooling.type, std::move(window), std::move(stride));
+            poolingMode, std::move(window), std::move(stride));
     }
-
     return std::unique_ptr<PoolingFunction2D>(nullptr);
 }
 
@@ -138,14 +141,15 @@ std::unique_ptr<PoolingFunction2D> PoolingFunction2D::create(
 #pragma warning(disable : 702)
 #endif
 PoolingFunction2D::PoolingFunction2D(const BaseTransformConfig<PoolingKernel2D>& config,
-    const nn_pool_type type, std::unique_ptr<const Component> window,
+    const Gna2PoolingMode poolingMode, std::unique_ptr<const Component> window,
     std::unique_ptr<const Component> stride) :
     Transform{PoolingTransform2D, &config.kernels, config.input},
-    Type{ type },
+    Type{ poolingMode },
     Window{ std::move(window) },
     Stride{ std::move(stride) }
+
 {
-    Expect::InSet<nn_pool_type>(Type, typeLimits);
+    Expect::InSet<Gna2PoolingMode>(Type, typeLimits);
     Shape outputDims;
     outputDims[GNA_DIM_N] = Input->Dimensions.at(GNA_DIM_N);
     outputDims[GNA_DIM_D] = Input->Dimensions.at(GNA_DIM_D);
@@ -160,12 +164,18 @@ PoolingFunction2D::PoolingFunction2D(const BaseTransformConfig<PoolingKernel2D>&
     Output = std::make_unique<Tensor>(outputDims, Input->Mode, config.outputBuffer,
         Validator{config.validator, outputCapabilities});
 
-    auto out = Output->Dimensions;
-    Expect::Fits(out, Input->Dimensions);
+    const auto output = Output->Dimensions;
+    Expect::Fits(output, Input->Dimensions);
 
-    auto configuration = nn_layer_pool2d{Input->Dimensions,
-        {Type, Stride->Dimensions, Window->Dimensions}};
+    const gna_3d_dimensions input = Input->Dimensions;
+    const gna_3d_dimensions poolingStride = Stride->Dimensions;
+    const gna_3d_dimensions poolingWindow = Window->Dimensions;
+    const KernelPoolingMode kernelPoolingMode = ToGnaKernelPoolingMode(Type);
 
-    hiddenConfig = std::make_unique<KernelConfig<PoolingConfig2D>>(PoolingConfig2D{configuration},
+    PoolingConfig2D kernelPoolingConfiguration{ input.width, input.height, input.depth,
+        kernelPoolingMode, poolingStride.width, poolingStride.height,
+        poolingWindow.width, poolingWindow.height};
+
+    hiddenConfig = std::make_unique<KernelConfig<PoolingConfig2D>>(kernelPoolingConfiguration,
         BaseConfig{Input->Buffer, Output->Buffer});
 }

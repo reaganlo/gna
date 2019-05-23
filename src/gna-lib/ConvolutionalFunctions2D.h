@@ -26,25 +26,26 @@
 #pragma once
 
 #include "Bias.h"
+#include "Capabilities.h"
 #include "Component.h"
 #include "ConvolutionalFunctions.h"
+#include "OperationConfig.h"
 #include "Transform.h"
-
 #include "XnnKernel.h"
-
-#include "common.h"
-#include "gna-api-types-xnn.h"
 
 #include <memory>
 
 namespace GNA
 {
-class FullCapabilitiesMap;
 class LayerValidator;
 
 struct ConvolutionFunction2D : public Transform<ConvolutionConfig2D, ConvolutionKernel2D>
 {
-    static std::unique_ptr<ConvolutionFunction2D> Create(const TransformFactoryConfig & config);
+    static std::unique_ptr<ConvolutionFunction2D> Create(
+        const TransformFactoryConfig & config,
+        const OperationConfig& operationConfig);
+
+    static KernelBiasMode ToKernelBiasMode(Gna2BiasMode mode);
 
     ConvolutionFunction2D(const BaseTransformConfig<ConvolutionKernel2D> & config,
         std::unique_ptr<const FiltersTensor> filters,
@@ -63,13 +64,14 @@ struct ConvolutionFunction2D : public Transform<ConvolutionConfig2D, Convolution
     std::unique_ptr<const Component> Padding;
 
 protected:
-    static std::unique_ptr<ConvolutionFunction2D> create(const TransformFactoryConfig & config,
-        nn_layer_cnn2d const * cnn);
+    static std::unique_ptr<ConvolutionFunction2D> create(
+        const TransformFactoryConfig & config,
+        const OperationConfig& operationConfig);
 
-    static Shape CalculateBiasShape(gna_bias_mode mode, uint32_t filterCount, Shape const & outputShape);
+    static Shape CalculateBiasShape(Gna2BiasMode mode, uint32_t filterCount, Shape const & outputShape);
 
     static std::unique_ptr<const BiasTensor> CreateBiasTensor(
-        gna_convolution_bias const & biases, uint32_t filtersCount,
+        Gna2Tensor const & biases, Gna2BiasMode biasMode, uint32_t filtersCount,
         Shape const & outputShape, const LayerValidator & validatorIn);
 
     static Shape GetOutputShape(Shape const & inputShape,

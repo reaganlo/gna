@@ -107,6 +107,7 @@ void AffineActiveListKernelImpl2B(AffineConfig const * const config, AffineConfi
             }
 
             *output = vec_sum(acc0) + *bias;
+
             for (i = 0; i < KT; i++, weight++)
             {
                 *output += input_0[i] * *weight;

@@ -336,6 +336,57 @@ TEST_F(TestGnaModelApi, Gna2ModelCreateSingleCopyLayerSuccesfull)
     ASSERT_EQ(status, Gna2StatusSuccess);
 }
 
+TEST_F(TestGnaModelApi, Gna2ModelCreateSingleConvolutionalLayerSuccesfull)
+{
+    uint32_t modelId = 0;
+
+    Gna2Tensor input{
+        Gna2Shape{4, { 1, 8, 6, 1 } },  //CNN2D NHWC
+        Gna2TensorModeDefault,
+        {'\0'},
+        Gna2DataTypeInt16,
+        nullptr };
+    Gna2Tensor output{
+        Gna2Shape{4, { 1, 7, 5, 2 } },  //CNN2D NHWC
+        Gna2TensorModeDefault,
+        {'\0'},
+        Gna2DataTypeInt32,
+        nullptr };
+    Gna2Tensor filters{
+        Gna2Shape{4, { 2, 2, 2, 1 } },  //CNN2D NHWC
+        Gna2TensorModeDefault,
+        {'\0'},
+        Gna2DataTypeInt16,
+        nullptr };
+    Gna2Tensor bias{
+        Gna2Shape{1, { 2 } },  //bias per 2 kernels
+        Gna2TensorModeDefault,
+        {'\0'},
+        Gna2DataTypeInt32,
+        nullptr };
+    Gna2Tensor activation{
+    Gna2Shape{1, { 2 } },  //2 segments
+        Gna2TensorModeDefault,
+        {'\0'},
+        Gna2DataTypePwlSegment,
+        nullptr };
+
+    const Gna2Tensor * convolutionTensorSet[] = { &input, &output, &filters, &bias, &activation };
+
+    Gna2Shape convolutionStride = {2, {1,1}};
+    auto biasMode = Gna2BiasModeDefault;
+    void * parameters[] = { &convolutionStride, &biasMode};
+
+    Gna2Operation convolutionOperation{ Gna2OperationTypeConvolution ,
+        convolutionTensorSet, 5,
+        parameters, 2 };
+
+    Gna2Model model = { 1, &convolutionOperation };
+
+    const auto status = Gna2ModelCreate(0, &model, &modelId);
+    ASSERT_EQ(status, Gna2StatusSuccess);
+}
+
 TEST_F(TestGnaModelApi, Gna2ModelCreateNullModel)
 {
     uint32_t modelId = 0;

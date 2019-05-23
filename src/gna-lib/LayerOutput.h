@@ -37,13 +37,16 @@ class LayerValidator;
 struct LayerOutput : public Tensor
 {
     LayerOutput(const nn_layer &layer, const LayerValidator& validatorIn);
-    LayerOutput(const Gna2Tensor &outputTensor, const LayerValidator& validatorIn);
+    LayerOutput(const Gna2Operation &operation, const LayerValidator& validatorIn);
     virtual ~LayerOutput() = default;
 
     const Tensor ScratchPad;
 
 protected:
+    LayerOutput(const Gna2Tensor &inputTensor, const LayerValidator& validatorIn);
     static const FullCapabilitiesMap capabilities;
+private:
+    static Shape ConvertInCaseOfNewApiOrder(gna_tensor_order getOrder, const uint32_t nOutputColumns, const uint32_t nOutputRows);
 };
 
 }

@@ -251,8 +251,8 @@ static const std::map<const XnnParameterType, const XnnParameter> XnnDescriptorG
     {cnn2d_kernel_wg, { 0x3A, 2 }},
     {cnn2d_bias_mode, { 0x0b, 1, 3, 1,
         {
-            { GNA_BIAS_PER_STRIDE, static_cast<uint8_t>(0) },
-            { GNA_BIAS_PER_KERNEL, static_cast<uint8_t>(1) },
+            { Gna2BiasModePerStride, static_cast<uint8_t>(0) },
+            { Gna2BiasModeDefault, static_cast<uint8_t>(1) },
        }}},
 };
 

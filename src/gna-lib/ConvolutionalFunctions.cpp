@@ -58,6 +58,15 @@ FiltersTensor::FiltersTensor(const Shape& dimensions, const DataMode & dataMode,
     }
 }
 
+std::unique_ptr<const FiltersTensor> FiltersTensor::Create(const Gna2Tensor& filtersTensor, const LayerValidator& validatorIn)
+{
+    return std::make_unique<const FiltersTensor>(
+        Shape::Create(filtersTensor.Shape, GNA_TENSOR_NHWD),
+        DataMode{filtersTensor.Type},
+        filtersTensor.Data,
+        validatorIn );
+}
+
 const FullCapabilitiesMap ConvolutionFunction::strideLimits
 {
     {INTEL_CONVOLUTIONAL, {
@@ -70,10 +79,10 @@ const FullCapabilitiesMap ConvolutionFunction::strideLimits
 std::unique_ptr<const ConvolutionFunction> ConvolutionFunction::Create(const Tensor* input, const Tensor* output,
         void const * layerDetails, const LayerValidator& validatorIn)
 {
-    Shape stride;
     std::unique_ptr<const FiltersTensor> filters;
     std::unique_ptr<const Component> strideComponent;
     std::unique_ptr<const BiasTensor> biases;
+
     uint32_t filterMode = 0;
     uint32_t biasMode = 0;
     void* filtersBuffer = nullptr;
@@ -89,7 +98,7 @@ std::unique_ptr<const ConvolutionFunction> ConvolutionFunction::Create(const Ten
         biasMode = cnn->nBytesBias;
         biasesBuffer = cnn->pBiases;
 
-        stride[GNA_DIM_W] = cnn->nFeatureMaps * cnn->nFeatureMapColumns;
+        Shape stride{ GNA_TENSOR_W, cnn->nFeatureMaps * cnn->nFeatureMapColumns };
 
         auto featureCount = cnn->nFeatureMapRows  * stride[GNA_DIM_W];
         Expect::True(featureCount >= CNN_N_FLT_COEFF_MIN, Gna2StatusXnnErrorLyrCfg);

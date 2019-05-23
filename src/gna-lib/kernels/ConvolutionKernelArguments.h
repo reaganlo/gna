@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2018 Intel Corporation.
+ Copyright 2019 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -23,27 +23,50 @@
  in any way.
 */
 
-#include "TransformMap.h"
+#pragma once
+#include <cstdint>
 
-#include "ActivationFunction.h"
-#include "ConvolutionalFunctions2D.h"
-#include "PoolingFunctions2D.h"
-
-using namespace GNA;
-
-BaseTransform * TransformList::Emplace(TransformOperation operation,
-    const TransformFactoryConfig& config,
-    const OperationConfig& operationConfig)
-{
-    switch (operation)
+class KernelDataMode {
+    uint32_t bytesPerElement;
+public:
+    explicit KernelDataMode(uint32_t bytesPerElementIn):bytesPerElement{ bytesPerElementIn }
     {
-    case ActivationTransform:
-        return emplace(ActivationFunction::Create(config));
-    case ConvolutionalTransform2D:
-        return emplace(ConvolutionFunction2D::Create(config, operationConfig));
-    case PoolingTransform2D:
-        return emplace(PoolingFunction2D::Create(config, operationConfig));
-    default:
-        throw GnaException(Gna2StatusXnnErrorLyrOperation);
     }
-}
+    operator uint32_t() const
+    {
+        return bytesPerElement;
+    }
+};
+
+enum KernelBiasMode
+{
+    KernelBiasModePerFilter,
+    KernelBiasModePerStride,
+    KernelBiasModeNotSupported
+};
+
+struct ConvolutionConfig2D
+{
+    const uint32_t InputWidth;
+    const uint32_t InputHeight;
+    const uint32_t InputDepth;
+
+    const uint32_t NumberOfFilters;
+    const uint32_t FilterWidth;
+    const uint32_t FilterHeight;
+    const uint32_t FilterDepth;
+
+    //TODO:3:P1 Check why following field is not referenced
+    const KernelDataMode FilterDataMode;
+    const void* const FilterData;
+
+    const uint32_t StrideWidth;
+    const uint32_t StrideHeight;
+
+    const uint32_t ZeroPaddingWidth;
+    const uint32_t ZeroPaddingHeight;
+
+    const KernelBiasMode BiasMode;
+    const KernelDataMode BiasDataMode;
+    const void* const BiasData;
+};

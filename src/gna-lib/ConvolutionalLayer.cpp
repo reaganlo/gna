@@ -56,7 +56,7 @@ CnnLayer::CnnLayer(const nn_layer& layer, const BaseValidator& validatorIn) :
         ActivationFunction::IsEnabled(&layer) ? &Output.ScratchPad : &Output,
         layer.pLayerStruct, *validator);
     Activation = ActivationFunction::Create({&Output.ScratchPad, &Output, Output.Mode, Output.Buffer,
-        layer.pLayerStruct, *validator}),
+        layer, *validator}),
     Pooling = PoolingFunction::Create(layer.pLayerStruct, Convolution->Output, *validator, Input.Mode);
 
     if (!Pooling)

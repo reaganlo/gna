@@ -57,22 +57,17 @@ public:
     const nn_operation Operation;
 protected:
     AbstractOperation(const Gna2Operation& operation):
-        Operation{ ToGnaApi1OperationType(operation)}
+        Operation{ toLegacy(operation)}
     {
         //TODO:3:P1 Add operation validation
     }
 
-    AbstractOperation(nn_operation operationType):
-        Operation{ operationType }
+    AbstractOperation(const nn_layer& layer):
+        Operation{ layer.operation }
     {
     }
 private:
-    static nn_operation ToGnaApi1OperationType(const Gna2Operation& operation)
-    {
-        //TODO:3:P1: Add remaining cases
-        Expect::Equal(operation.Type, Gna2OperationTypeCopy, Gna2StatusNotImplemented);
-        return INTEL_COPY;
-    }
+    static nn_operation toLegacy(const Gna2Operation& operation);
 };
 
 class Layer : public AbstractOperation
@@ -123,12 +118,31 @@ public:
     const LayerOutput Output;
 
 protected:
-    Layer(const nn_layer& layer, const BaseValidator& validator,
+    template <class T>
+    Layer(const T& layer, const BaseValidator& validatorIn,
         const std::vector<TransformOperation>& transforms,
-        const BaseAddress& intermediateBuffer);
-    Layer(const Gna2Operation& operation, const BaseValidator& validator,
-        const std::vector<TransformOperation>& transforms,
-        const BaseAddress& intermediateBuffer);
+        const BaseAddress& intermediateBuffer) :
+        AbstractOperation{ layer },
+        validator{ std::make_unique<const LayerValidator>(validatorIn, Operation) },
+        Input{ layer, *validator },
+        Output{ layer, *validator }
+    {
+        Expect::InRange<uint32_t>(Operation, 0, LAYER_OPERATION_TYPE_COUT - 1, Gna2StatusXnnErrorLyrOperation);
+
+        //TODO:3: uncomment when all layers are Transform-based, remove if below
+        //Expect::False(transforms.empty(), Gna2StatusNullArgumentNotAllowed);
+        if (false == transforms.empty())
+        {
+            auto&& commonConfig = TransformFactoryConfig(&Input, &Output, Output.Mode, intermediateBuffer,
+                layer, *validator);
+            const OperationConfig operationConfig{ layer };
+            InitTransforms(transforms, commonConfig, operationConfig);
+        }
+    }
+
+    void InitTransforms(const std::vector<TransformOperation>& transforms, TransformFactoryConfig& commonConfig,
+        const OperationConfig& operationConfig);
+
     void compute(const LayerConfiguration* layerConfiguration,
         AccelerationMode accel, ExecutionConfig const & execution) const
     {

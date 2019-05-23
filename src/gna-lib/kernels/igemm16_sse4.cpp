@@ -104,6 +104,7 @@ void AffineKernelImpl2B(AffineConfig const * const config)
             }
 
             *output = vec_sum(acc0) + *bias;
+
             for (i = 0; i < KT; i++, weight++)
             {
                 *output += input_0[i] * *weight;
@@ -251,6 +252,7 @@ void AffineKernelImpl2B(AffineConfig const * const config)
             output[0] = *bias + vec_sum(acc0);
             output[1] = *bias + vec_sum(acc1);
             output[2] = *bias + vec_sum(acc2);
+
 
             for (i = 0; i < KT; i++, weight++)
             {
@@ -524,6 +526,7 @@ void AffineKernelImpl2B(AffineConfig const * const config)
                 acc7 = _mm_add_epi32(acc7, _mm_madd_epi16(_mm_load_si128(in_ptr7 + ix), w));
             }
 
+
             output[0] = *bias + vec_sum(acc0);
             output[1] = *bias + vec_sum(acc1);
             output[2] = *bias + vec_sum(acc2);
@@ -622,6 +625,7 @@ void AffineMultiBiasKernelImpl2B(AffineConfig const * const config)
             }
 
             *output = vec_sum(acc0) + *multiBias;
+
             for (i = 0; i < KT; i++, weight++)
             {
                 *output += input_0[i] * *weight;

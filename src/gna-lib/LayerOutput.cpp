@@ -116,18 +116,13 @@ const FullCapabilitiesMap LayerOutput::capabilities =
             _ModesGen0_9})},
     }},
     {INTEL_CONVOLUTIONAL_2D, {
-        {GNA_1_0, std::make_shared<TensorLimits>(TensorLimits{
-            { GNA_TENSOR_HN },
-            {{GNA_DIM_N, {1, 1, 1, Gna2StatusXnnErrorOutputVolume}},
-             {GNA_DIM_H, {1, XNN_N_IN_ELEMS_MAX, 1, Gna2StatusXnnErrorOutputVolume}}},
-            _ModesGen0_9})},
         {GNA_3_0, std::make_shared<TensorLimits>(TensorLimits{
-            {GNA_TENSOR_WN},
+            {GNA_TENSOR_NHWD},
             {{GNA_DIM_N, {1, 1, 1, Gna2StatusXnnErrorOutputVolume}},
-             {GNA_DIM_W,
-                {1, XNN_N_IN_ELEMS_MAX*XNN_N_IN_ELEMS_MAX/**XNN_N_IN_ELEMS_MAX*/, 1, Gna2StatusXnnErrorOutputVolume}}},
-                // use as NxHxW
-            _ModesGen3})}
+             {GNA_DIM_H, {1, XNN_N_IN_ELEMS_MAX, 1, Gna2StatusXnnErrorOutputVolume}},
+             {GNA_DIM_W, {1, XNN_N_IN_ELEMS_MAX, 1, Gna2StatusXnnErrorOutputVolume}},
+             {GNA_DIM_D, {1, XNN_N_IN_ELEMS_MAX, 1, Gna2StatusXnnErrorOutputVolume}}},
+            {{GNA_INT8, GNA_INT16, GNA_INT32, GNA_DATA_ACTIVATION_DISABLED}, Gna2StatusXnnErrorOutputBytes }})}
     }},
     {INTEL_COPY, {
         {GNA_0_9, std::make_shared<TensorLimits>(_FlatTensorLimitsGen0_9)},
@@ -162,8 +157,18 @@ const FullCapabilitiesMap LayerOutput::capabilities =
     }}
 };
 
+Shape LayerOutput::ConvertInCaseOfNewApiOrder(gna_tensor_order order, const uint32_t nOutputColumns, const uint32_t nOutputRows)
+{
+    if(order == GNA_TENSOR_NHWD)
+    {
+        return Shape{ GNA_TENSOR_NHWD, nOutputRows, nOutputColumns, 1u, 1u };
+    }
+    return Shape(order, nOutputColumns, nOutputRows);
+}
+
 LayerOutput::LayerOutput(const nn_layer& layer, const LayerValidator& validatorIn) :
-    Tensor{ { capabilities.GetOrder(validatorIn), layer.nOutputColumns, layer.nOutputRows },
+    Tensor{
+        ConvertInCaseOfNewApiOrder( capabilities.GetOrder(validatorIn), layer.nOutputColumns, layer.nOutputRows ),
         layer.nBytesPerOutput, layer.pOutputs,
         Validator{ validatorIn, capabilities } },
     ScratchPad{ Dimensions,
@@ -174,16 +179,20 @@ LayerOutput::LayerOutput(const nn_layer& layer, const LayerValidator& validatorI
     //Expect::ValidBuffer(ScratchPad); // TODO: review when scratch-pad is allocated by gna-lib
 }
 
-//TODO:3:P1:Find a better way instead of directly addressing outputTensor.Shape.Dimensions[x]
 LayerOutput::LayerOutput(const Gna2Tensor &outputTensor, const LayerValidator& validatorIn) :
-    Tensor{ { capabilities.GetOrder(validatorIn), outputTensor.Shape.Dimensions[0], outputTensor.Shape.Dimensions[1] },
+    Tensor{ Shape::Create(outputTensor.Shape,  capabilities.GetOrder(validatorIn)),
         outputTensor.Type, outputTensor.Data,
         Validator{ validatorIn, capabilities } },
     ScratchPad{ Dimensions,
-        outputTensor.Type, nullptr,
+        outputTensor.Type, nullptr, //TODO:3:P1 Decide what to do with scratch pad in API2
         Validator{ validatorIn, capabilities } }
 {
     //TODO:3:P1:Decide what to do with scratch pad in API2
-    //Expect::True(GNA_INT32 == ScratchPad.Mode, XNN_ERR_INT_OUTPUT_BYTES);
+    //Expect::True(GNA_INT32 == ScratchPad.Mode, Gna2StatusXnnErrorIntOutputBytes);
     //Expect::ValidBuffer(ScratchPad); // TODO: review when scratch-pad is allocated by gna-lib
+}
+//TODO:3:P1: Generalize instead addressing output at index 1
+LayerOutput::LayerOutput(const Gna2Operation &operation, const LayerValidator& validatorIn) :
+    LayerOutput{ *operation.Operands[1], validatorIn}
+{
 }

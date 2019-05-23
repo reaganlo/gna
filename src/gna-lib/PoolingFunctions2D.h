@@ -33,7 +33,11 @@
 
 #include <memory>
 
-struct PoolingConfig2D;
+#include "Capabilities.h"
+#include "Tensor.h"
+#include "XnnKernel.h"
+#include "Transform.h"
+#include "OperationConfig.h"
 
 namespace GNA
 {
@@ -43,15 +47,19 @@ template<typename T> struct SetLimits;
 class PoolingFunction2D : public Transform<PoolingConfig2D, PoolingKernel2D>
 {
 public:
-    static std::unique_ptr<PoolingFunction2D> Create(const TransformFactoryConfig& config);
+    static std::unique_ptr<PoolingFunction2D> Create(
+        const TransformFactoryConfig& config,
+        const OperationConfig& operation);
+
+    static KernelPoolingMode ToGnaKernelPoolingMode(Gna2PoolingMode mode);
 
     PoolingFunction2D(const BaseTransformConfig<PoolingKernel2D>& config,
-        const nn_pool_type type, std::unique_ptr<const Component> window,
+        const Gna2PoolingMode poolingMode, std::unique_ptr<const Component> window,
         std::unique_ptr<const Component> stride);
 
     ~PoolingFunction2D() = default;
 
-    const nn_pool_type Type;
+    const Gna2PoolingMode Type;
 
     std::unique_ptr<const Component> Window;
 
@@ -61,11 +69,12 @@ public:
 protected:
     static const FullCapabilitiesMap windowLimits;
     static const FullCapabilitiesMap strideLimits;
-    static const SetLimits<nn_pool_type> typeLimits;
+    static const SetLimits<Gna2PoolingMode> typeLimits;
     static const FullCapabilitiesMap outputCapabilities;
 
     static std::unique_ptr<PoolingFunction2D> create(
-        const TransformFactoryConfig& config, nn_layer_pool2d const * pool);
+        const TransformFactoryConfig& config,
+        const OperationConfig& operation);
 };
 
 }
