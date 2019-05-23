@@ -45,10 +45,10 @@ void ModelWrapper::OperationInit(ApiOperation& operation, const OperationType ty
 
     operation.Type = type;
 
-    operation.NumberOfOperands = GetNumberOfOperands(type);
+    operation.NumberOfOperands = GetOperationInfo(type, NumberOfOperandsMax);
     operation.Operands = AllocateAndFillZeros<Gna2Tensor const>(userAllocator, operation.NumberOfOperands);
 
-    operation.NumberOfParameters = GetNumberOfParameters(type);
+    operation.NumberOfParameters = GetOperationInfo(type, NumberOfParametersMax);
     operation.Parameters = AllocateAndFillZeros<void>(userAllocator, operation.NumberOfParameters);
 }
 
@@ -65,21 +65,112 @@ uint32_t ModelWrapper::ShapeGetNumberOfElements(ApiShape const * shape)
     return shapeImpl.GetNumberOfElements();
 }
 
-uint32_t ModelWrapper::GetNumberOfOperands(OperationType operationType)
+inline uint32_t ModelWrapper::GetOperationInfo(OperationType operationType, OperationInfoKey infoType)
 {
-    static std::map<OperationType, uint32_t> numberOfOperands =
+    static std::map<OperationType, std::map<OperationInfoKey, uint32_t> > metaOperationInfo =
     {
-        { Gna2OperationTypeCopy, 2 },
-        { Gna2OperationTypeConvolution, 5 },
-        { Gna2OperationTypeElementWiseAffine, 5 },
-        { Gna2OperationTypeFullyConnectedAffine, 6 },
-        { Gna2OperationTypeGmm, 5 },
-        { Gna2OperationTypeRecurrent, 5 },
-        { Gna2OperationTypeTransposition, 2 },
+        { Gna2OperationTypeCopy,
+            {
+                { NumberOfOperandsMax, 2 },
+                { NumberOfOperandsRequired, 2 },
+                { NumberOfParametersMax, 1 },
+                { NumberOfParametersRequired, 1 },
+                { OperandIndexInput, 0 },
+                { OperandIndexOutput, 1 },
+                { ParameterIndexCopyShape, 0 },
+            }
+        },
+        { Gna2OperationTypeConvolution,
+            {
+                { NumberOfOperandsMax, 5 },
+                { NumberOfOperandsRequired, 4 },
+                { NumberOfParametersMax, 6 },
+                { NumberOfParametersRequired, 2 },
+                { OperandIndexInput, 0 },
+                { OperandIndexOutput, 1 },
+                { OperandIndexFilter, 2 },
+                { OperandIndexBias, 3 },
+                { OperandIndexActivation, 4 },
+                { ParameterIndexConvolutionStride, 0 },
+                { ParameterIndexBiasMode, 1 },
+                { ParameterIndexPoolingMode, 2 },
+                { ParameterIndexPoolingWindow, 3 },
+                { ParameterIndexPoolingStride, 4 },
+                { ParameterIndexZeroPadding, 5 },
+            }
+        },
+        { Gna2OperationTypeElementWiseAffine,
+            {
+                { NumberOfOperandsMax, 5 },
+                { NumberOfOperandsRequired, 4 },
+                { NumberOfParametersMax, 0 },
+                { NumberOfParametersRequired, 0 },
+                { OperandIndexInput, 0 },
+                { OperandIndexOutput, 1 },
+                { OperandIndexWeight, 2 },
+                { OperandIndexBias, 3 },
+                { OperandIndexActivation, 4 },
+            }
+        },
+        { Gna2OperationTypeFullyConnectedAffine,
+            {
+                { NumberOfOperandsMax, 6 },
+                { NumberOfOperandsRequired, 4 },
+                { NumberOfParametersMax, 2 },
+                { NumberOfParametersRequired, 0 },
+                { OperandIndexInput, 0 },
+                { OperandIndexOutput, 1 },
+                { OperandIndexWeight, 2 },
+                { OperandIndexBias, 3 },
+                { OperandIndexActivation, 4 },
+                { OperandIndexWeightScaleFactors, 5 },
+                { ParameterIndexBiasMode, 0 },
+                { ParameterIndexBiasVectorIndex, 1 },
+            }
+        },
+        { Gna2OperationTypeGmm,
+            {
+                { NumberOfOperandsMax, 5 },
+                { NumberOfOperandsRequired, 3 },
+                { NumberOfParametersMax, 1 },
+                { NumberOfParametersRequired, 1 },
+                { OperandIndexInput, 0 },
+                { OperandIndexOutput, 1 },
+                { OperandIndexMeans, 2 },               //"flat" layout
+                { OperandIndexInverseCovariances, 3 },  //"flat" layout
+                { OperandIndexConstants, 4 },           //"flat" layout
+                { OperandIndexInterleaved, 2 },         //"interleaved" layout
+                { ParameterIndexMaximumScore, 0 },
+            }
+        },
+        { Gna2OperationTypeRecurrent,
+            {
+                { NumberOfOperandsMax, 5 },
+                { NumberOfOperandsRequired, 4 },
+                { NumberOfParametersMax, 1 },
+                { NumberOfParametersRequired, 1 },
+                { OperandIndexInput, 0 },
+                { OperandIndexOutput, 1 },
+                { OperandIndexWeight, 2 },
+                { OperandIndexBias, 3 },
+                { OperandIndexActivation, 4 },
+                { ParameterIndexDelay, 0 },
+            }
+        },
+        { Gna2OperationTypeTransposition,
+            {
+                { NumberOfOperandsMax, 2 },
+                { NumberOfOperandsRequired, 2 },
+                { NumberOfParametersMax, 0 },
+                { NumberOfParametersRequired, 0 },
+                { OperandIndexInput, 0 },
+                { OperandIndexOutput, 1 },
+            }
+        },
     };
     try
     {
-        return numberOfOperands.at(operationType);
+        return metaOperationInfo.at(operationType).at(infoType);
     }
     catch (const std::out_of_range &)
     {
@@ -87,31 +178,40 @@ uint32_t ModelWrapper::GetNumberOfOperands(OperationType operationType)
     }
 }
 
-uint32_t ModelWrapper::GetNumberOfParameters(OperationType operationType)
-{
-    static std::map<OperationType, uint32_t> numberOfParameters =
-    {
-        { Gna2OperationTypeCopy, 1 },
-        { Gna2OperationTypeConvolution, 6 },
-        { Gna2OperationTypeElementWiseAffine, 0 },
-        { Gna2OperationTypeFullyConnectedAffine, 2 },
-        { Gna2OperationTypeGmm, 1 },
-        { Gna2OperationTypeRecurrent, 1 },
-        { Gna2OperationTypeTransposition, 0 },
-
-    };
-    try
-    {
-        return numberOfParameters.at(operationType);
-    }
-    catch (const std::out_of_range &)
-    {
-        throw GnaException(Gna2StatusModelConfigurationInvalid);
-    }
-}
 void ModelWrapper::SetLayout(Gna2Tensor& tensor, const char* layout)
 {
     snprintf(tensor.Layout, sizeof(tensor.Layout), "%s", layout);
+}
+template<class T>
+void ExpectPointerArrayValid(T ** ptr , uint32_t arraySize,
+    uint32_t reqNotNull, uint32_t maxSize, Gna2Status error)
+{
+    Expect::InRange(arraySize, reqNotNull, maxSize, error);
+    if (0 == arraySize)
+    {
+        Expect::True(ptr == nullptr, error);
+    }
+    else
+    {
+        Expect::NotNull(ptr, error);
+        for (uint32_t i = 0; i < reqNotNull; i++)
+        {
+            Expect::NotNull(ptr[i], error);
+        }
+    }
+}
+
+void ModelWrapper::ExpectOperationValid(const Gna2Operation & operation)
+{
+    const auto opRequired = GetOperationInfo(operation.Type, NumberOfOperandsRequired);
+    const auto opMax = GetOperationInfo(operation.Type, NumberOfOperandsMax);
+    ExpectPointerArrayValid(operation.Operands, operation.NumberOfOperands,
+        opRequired, opMax, Gna2StatusModelConfigurationInvalid);
+
+    const auto paramRequired = GetOperationInfo(operation.Type, NumberOfParametersRequired);
+    const auto paramMax = GetOperationInfo(operation.Type, NumberOfParametersMax);
+    ExpectPointerArrayValid(operation.Parameters, operation.NumberOfParameters,
+        paramRequired, paramMax, Gna2StatusModelConfigurationInvalid);
 }
 
 GnaComponentType ModelWrapper::OperandIndexToType(uint32_t operandIndex)

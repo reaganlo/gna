@@ -33,6 +33,7 @@
 #include "Expect.h"
 #include "GmmLayer.h"
 #include "LayerConfiguration.h"
+#include "ModelWrapper.h"
 #include "RecurrentLayer.h"
 #include "TransposeLayer.h"
 
@@ -70,24 +71,12 @@ std::unique_ptr<Layer> Layer::Create(const nn_layer& layer, const BaseValidator&
 
 std::unique_ptr<GNA::Layer> Layer::Create(const Gna2Operation & operation, const BaseValidator & validatorIn)
 {
+    ModelWrapper::ExpectOperationValid(operation);
     switch (operation.Type)
     {
     case Gna2OperationTypeCopy:
-        Expect::NotNull(operation.Operands);
-        Expect::NotNull(operation.Operands[0]);
-        Expect::NotNull(operation.Operands[1]);
-        Expect::NotNull(operation.Parameters);
-        Expect::NotNull(operation.Parameters[0]);
         return std::make_unique<CopyLayer>(operation, validatorIn);
     case Gna2OperationTypeConvolution:
-        Expect::NotNull(operation.Operands);
-        Expect::NotNull(operation.Operands[0]);
-        Expect::NotNull(operation.Operands[1]);
-        Expect::NotNull(operation.Operands[2]);
-        Expect::NotNull(operation.Operands[3]);
-        Expect::NotNull(operation.Operands[4]);
-        Expect::NotNull(operation.Parameters);
-        Expect::NotNull(operation.Parameters[0]);
         return std::make_unique<ConvolutionalLayer2D>(operation, validatorIn);
     default:
         //TODO:3:P1:Add implementation for remaining operation types

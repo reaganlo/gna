@@ -40,6 +40,7 @@
 
 namespace GNA
 {
+
 class ModelWrapper
 {
 public:
@@ -90,7 +91,7 @@ public:
     template<class ... T>
     static void SetOperands(ApiOperation & operation, T ... operands)
     {
-        Expect::Equal(operation.NumberOfOperands, GetNumberOfOperands(operation.Type),
+        Expect::Equal(operation.NumberOfOperands, GetOperationInfo(operation.Type, NumberOfOperandsMax),
             Gna2StatusModelConfigurationInvalid);
         TryAssign(operation.Operands, operation.NumberOfOperands,
                 {std::forward<T>(operands)...});
@@ -99,7 +100,7 @@ public:
     template<class ... T>
     static void SetParameters(ApiOperation & operation, T ... parameters)
     {
-        Expect::Equal(operation.NumberOfParameters, GetNumberOfParameters(operation.Type),
+        Expect::Equal(operation.NumberOfParameters, GetOperationInfo(operation.Type, NumberOfParametersMax),
             Gna2StatusModelConfigurationInvalid);
         TryAssign(operation.Parameters, operation.NumberOfParameters,
             {static_cast<void*>(parameters)...});
@@ -107,11 +108,40 @@ public:
 
     static void SetLayout(Gna2Tensor& tensor, const char* layout);
 
+    static void ExpectOperationValid(const Gna2Operation& operation);
     static GnaComponentType OperandIndexToType(uint32_t operandIndex);
 
 protected:
-    static uint32_t GetNumberOfOperands(OperationType operationType);
-    static uint32_t GetNumberOfParameters(OperationType operationType);
+    enum OperationInfoKey
+    {
+        NumberOfOperandsRequired, //must be passed from user as not null
+        NumberOfOperandsMax,
+        NumberOfParametersRequired, //must be passed from user as not null
+        NumberOfParametersMax,
+        OperandIndexInput,
+        OperandIndexOutput,
+        OperandIndexWeight,
+        OperandIndexFilter,
+        OperandIndexBias,
+        OperandIndexActivation,
+        OperandIndexWeightScaleFactors,
+        OperandIndexMeans,
+        OperandIndexInverseCovariances,
+        OperandIndexConstants,
+        OperandIndexInterleaved,
+
+        ParameterIndexCopyShape,
+        ParameterIndexConvolutionStride,
+        ParameterIndexBiasMode,
+        ParameterIndexPoolingMode,
+        ParameterIndexPoolingWindow,
+        ParameterIndexPoolingStride,
+        ParameterIndexZeroPadding,
+        ParameterIndexBiasVectorIndex,
+        ParameterIndexMaximumScore,
+        ParameterIndexDelay,
+    };
+    static uint32_t GetOperationInfo(OperationType operationType, OperationInfoKey infoType);
 
 private:
     template<typename Type>
@@ -129,6 +159,7 @@ private:
         return static_cast<Type **>(memory);
     }
 };
+
 }
 
 #endif //ifndef __GNA2_MODEL_WRAPPER_H
