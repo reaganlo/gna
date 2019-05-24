@@ -86,7 +86,7 @@ class WindowsDriverInterface : public DriverInterface
 public:
     WindowsDriverInterface();
 
-    virtual void OpenDevice() override;
+    virtual bool OpenDevice() override;
 
     virtual void IoctlSend(const GnaIoctlCommand command,
         void * const inbuf, const uint32_t inlen,

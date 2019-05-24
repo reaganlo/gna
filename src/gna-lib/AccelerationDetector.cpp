@@ -742,9 +742,14 @@ AccelerationDetector::Kernels = {
     }
 };
 
-AccelerationDetector::AccelerationDetector() :
-    supportedCpuAccelerations{ Gna2AccelerationModeGeneric }
+AccelerationDetector::AccelerationDetector()
 {
+    DetectSoftwareAccelerationModes();
+}
+
+void AccelerationDetector::DetectSoftwareAccelerationModes()
+{
+    supportedCpuAccelerations = { Gna2AccelerationModeGeneric };
     // generic, fastest software and auto always supported
     accelerationModes[GNA_GEN_SAT] = true;
     accelerationModes[GNA_GEN_FAST] = true;
@@ -752,9 +757,6 @@ AccelerationDetector::AccelerationDetector() :
     accelerationModes[GNA_SW_FAST] = true;
     accelerationModes[GNA_AUTO_SAT] = true;
     accelerationModes[GNA_AUTO_FAST] = true;
-
-    // hardware unsupported, but can be changed afterwards
-    accelerationModes[AccelerationMode{ Gna2AccelerationModeHardware }] = false;
 
     unsigned int cpuId[4];           // cpu id string
     unsigned long long xcrFeature = 0;
@@ -798,10 +800,13 @@ AccelerationDetector::AccelerationDetector() :
             }
         }
     }
+}
 
+void AccelerationDetector::PrintAllAccelerationModes() const
+{
     for (const auto& modeState : accelerationModes)
     {
-        auto name = modeState.first.GetName();
+        const auto name = modeState.first.GetName();
         Log->Message("%s\t%s\n", name, modeState.second ? "Yes" : "No");
     }
 }

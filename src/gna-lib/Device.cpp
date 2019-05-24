@@ -58,20 +58,14 @@ Device::Device(uint32_t threadCount) :
     },
     requestHandler{ threadCount }
 {
-    try
+    const auto success = driverInterface->OpenDevice();
+    if (success)
     {
-        driverInterface->OpenDevice();
         hardwareCapabilities.DiscoverHardware(*driverInterface);
-        accelerationDetector.SetHardwareAcceleration(
-            hardwareCapabilities.IsHardwareSupported());
     }
-    catch (GnaException &e)
-    {
-        if (e.GetStatus() != Gna2StatusDeviceNotAvailable)
-        {
-            throw;
-        }
-    }
+    accelerationDetector.SetHardwareAcceleration(
+        hardwareCapabilities.IsHardwareSupported());
+    accelerationDetector.PrintAllAccelerationModes();
 }
 
 DeviceVersion Device::GetVersion() const

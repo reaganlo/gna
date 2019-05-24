@@ -55,11 +55,14 @@ WindowsDriverInterface::WindowsDriverInterface() :
     ZeroMemory(&overlapped, sizeof(overlapped));
 }
 
-void WindowsDriverInterface::OpenDevice()
+bool WindowsDriverInterface::OpenDevice()
 {
     auto guid = GUID_DEVINTERFACE_GNA_DRV;
-    auto deviceInfo = SetupDiGetClassDevs(&guid, nullptr, nullptr, DIGCF_PRESENT | DIGCF_DEVICEINTERFACE);
-    Expect::False(INVALID_HANDLE_VALUE == deviceInfo, Gna2StatusDeviceNotAvailable);
+    const auto deviceInfo = SetupDiGetClassDevs(&guid, nullptr, nullptr, DIGCF_PRESENT | DIGCF_DEVICEINTERFACE);
+    if(INVALID_HANDLE_VALUE == deviceInfo)
+    {
+        return false;
+    }
 
     auto deviceDetailsData = std::unique_ptr<char[]>();
     auto deviceDetails = PSP_DEVICE_INTERFACE_DETAIL_DATA{nullptr};
@@ -86,7 +89,10 @@ void WindowsDriverInterface::OpenDevice()
         break;
     }
     SetupDiDestroyDeviceInfoList(deviceInfo);
-    Expect::NotNull(deviceDetails, Gna2StatusDeviceNotAvailable);
+    if (nullptr == deviceDetails)
+    {
+        return false;
+    }
 
     deviceHandle.Set(CreateFile(deviceDetails->DevicePath,
         GENERIC_READ | GENERIC_WRITE,
@@ -95,11 +101,14 @@ void WindowsDriverInterface::OpenDevice()
         CREATE_ALWAYS,
         FILE_ATTRIBUTE_NORMAL | FILE_FLAG_OVERLAPPED,
         nullptr));
-    Expect::False(INVALID_HANDLE_VALUE == deviceHandle, Gna2StatusDeviceNotAvailable);
+    if (INVALID_HANDLE_VALUE == deviceHandle)
+    {
+        return false;
+    }
 
     getDeviceCapabilities();
 
-    opened = true;
+    return true;
 }
 
 void WindowsDriverInterface::IoctlSend(const GnaIoctlCommand command, void * const inbuf, const uint32_t inlen,

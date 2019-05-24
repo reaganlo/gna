@@ -45,7 +45,7 @@ public:
 
     virtual ~LinuxDriverInterface() override;
 
-    virtual void OpenDevice() override;
+    virtual bool OpenDevice() override;
 
     virtual DriverCapabilities GetCapabilities() const override;
 

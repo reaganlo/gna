@@ -340,11 +340,6 @@ HardwareCapabilities::HardwareCapabilities(
 
 void HardwareCapabilities::DiscoverHardware(DriverInterface &driverInterface)
 {
-    if (!driverInterface.IsDeviceOpened())
-    {
-        return;
-    }
-
     try
     {
         auto driverCapabilities = driverInterface.GetCapabilities();

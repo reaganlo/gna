@@ -143,7 +143,9 @@ class AccelerationDetector
 {
 
 public:
+
     AccelerationDetector();
+
     ~AccelerationDetector() = default;
 
     const std::vector<Gna2AccelerationMode>& GetSupportedCpuAccelerations() const;
@@ -163,10 +165,12 @@ public:
 
     static std::map<kernel_op, std::map<KernelMode, KernelMap<VoidKernel>>> Kernels;
 
+    void PrintAllAccelerationModes() const;
 protected:
     std::map<AccelerationMode, bool> accelerationModes;
 
 private:
+    void DetectSoftwareAccelerationModes();
     //sorted from slowest to fastest
     std::vector<Gna2AccelerationMode> supportedCpuAccelerations;
 };

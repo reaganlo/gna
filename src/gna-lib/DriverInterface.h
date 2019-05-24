@@ -70,12 +70,7 @@ struct DriverCapabilities
 class DriverInterface
 {
 public:
-    virtual void OpenDevice() = 0;
-
-    bool IsDeviceOpened()
-    {
-        return opened;
-    }
+    virtual bool OpenDevice() = 0;
 
     virtual ~DriverInterface() = default;
 
@@ -96,8 +91,6 @@ protected:
     virtual void createRequestDescriptor(HardwareRequest& hardwareRequest) const = 0;
 
     virtual Gna2Status parseHwStatus(uint32_t hwStatus) const = 0;
-
-    bool opened = false;
 
     DriverCapabilities driverCapabilities;
 };

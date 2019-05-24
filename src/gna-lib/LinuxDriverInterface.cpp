@@ -52,7 +52,7 @@
 
 using namespace GNA;
 
-void LinuxDriverInterface::OpenDevice()
+bool LinuxDriverInterface::OpenDevice()
 {
     bool found = false;
     int fd;
@@ -84,7 +84,7 @@ void LinuxDriverInterface::OpenDevice()
 
     if(!found)
     {
-        throw GnaException {Gna2StatusDeviceNotAvailable};
+        return false;
     }
 
     gnaFileDescriptor = fd;
@@ -95,12 +95,12 @@ void LinuxDriverInterface::OpenDevice()
     }
     catch(std::out_of_range&)
     {
-        throw GnaException { Gna2StatusDeviceNotAvailable };
+        return false;
     }
     driverCapabilities.hwInBuffSize = static_cast<uint32_t>(params[2].value);
     driverCapabilities.recoveryTimeout = static_cast<uint32_t>(params[2].value);
 
-    opened = true;
+    return true;
 }
 
 LinuxDriverInterface::~LinuxDriverInterface()
