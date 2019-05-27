@@ -90,7 +90,7 @@ AccelerationDetector::Kernels = {
     { KERNEL_AFFINE,
     {
         {
-            {GNA_INT16 ,GNA_INT8, GNA_BIAS_MODE_RICH_FORMAT },
+            {GNA_INT16, GNA_INT8, GNA_BIAS_MODE_RICH_FORMAT },
             {
                 { { GNA_GEN_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.affineSingle1B2Bfull) } },
                 { { GNA_GEN_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.affineSingle1B2Bfull) } },
@@ -105,7 +105,7 @@ AccelerationDetector::Kernels = {
             }
         },
         {
-            { GNA_INT16 ,GNA_INT16, GNA_BIAS_MODE_1_2_4B },
+            { GNA_INT16, GNA_INT16, GNA_BIAS_MODE_1_2_4B },
             {
                 { { GNA_GEN_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.affineSingle2B2Bfull) } },
                 { { GNA_GEN_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.affineSingle2B2Bfull) } },
@@ -119,7 +119,7 @@ AccelerationDetector::Kernels = {
             }
         },
         {
-            { GNA_INT8 ,GNA_INT8, GNA_BIAS_MODE_1_2_4B },
+            { GNA_INT8, GNA_INT8, GNA_BIAS_MODE_1_2_4B },
             {
                 { { GNA_GEN_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.affineSingle1B1Bfull) } },
                 { { GNA_GEN_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.affineSingle1B1Bfull) } },
@@ -135,7 +135,7 @@ AccelerationDetector::Kernels = {
             }
         },
         {
-            { GNA_INT8 ,GNA_INT16, GNA_BIAS_MODE_1_2_4B },
+            { GNA_INT8, GNA_INT16, GNA_BIAS_MODE_1_2_4B },
             {
                 { { GNA_GEN_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.affineSingle2B1Bfull) } },
                 { { GNA_GEN_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.affineSingle2B1Bfull) } },
@@ -154,7 +154,7 @@ AccelerationDetector::Kernels = {
     { KERNEL_AFFINE_AL,
     {
         {
-            { GNA_INT16 ,GNA_INT8, GNA_BIAS_MODE_RICH_FORMAT },
+            { GNA_INT16, GNA_INT8, GNA_BIAS_MODE_RICH_FORMAT },
             {
                 { { GNA_GEN_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.affineSingle1B2Bal) } },
                 { { GNA_GEN_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.affineSingle1B2Bal) } },
@@ -168,7 +168,7 @@ AccelerationDetector::Kernels = {
             }
         },
         {
-            { GNA_INT16 ,GNA_INT16, GNA_BIAS_MODE_1_2_4B },
+            { GNA_INT16, GNA_INT16, GNA_BIAS_MODE_1_2_4B },
             {
                 { { GNA_GEN_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.affineSingle2B2Bal) } },
                 { { GNA_GEN_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.affineSingle2B2Bal) } },
@@ -182,7 +182,7 @@ AccelerationDetector::Kernels = {
             }
         },
         {
-            { GNA_INT8 ,GNA_INT8, GNA_BIAS_MODE_1_2_4B },
+            { GNA_INT8, GNA_INT8, GNA_BIAS_MODE_1_2_4B },
             {
                 { { GNA_GEN_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.affineSingle1B1Bal) } },
                 { { GNA_GEN_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.affineSingle1B1Bal) } },
@@ -197,7 +197,7 @@ AccelerationDetector::Kernels = {
             }
         },
         {
-            { GNA_INT8 ,GNA_INT16, GNA_BIAS_MODE_1_2_4B },
+            { GNA_INT8, GNA_INT16, GNA_BIAS_MODE_1_2_4B },
             {
                 { { GNA_GEN_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.affineSingle2B1Bal) } },
                 { { GNA_GEN_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.affineSingle2B1Bal) } },
@@ -216,7 +216,7 @@ AccelerationDetector::Kernels = {
     { KERNEL_AFFINE_MULTIBIAS,
     {
         {
-            { GNA_INT16 ,GNA_INT8, GNA_BIAS_MODE_1_2_4B },
+            { GNA_INT16, GNA_INT8, GNA_BIAS_MODE_1_2_4B },
             {
                 { { GNA_GEN_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.affineMulti1B2B) } },
                 { { GNA_GEN_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.affineMulti1B2B) } },
@@ -230,7 +230,7 @@ AccelerationDetector::Kernels = {
             }
         },
         {
-            { GNA_INT16 ,GNA_INT16, GNA_BIAS_MODE_1_2_4B },
+            { GNA_INT16, GNA_INT16, GNA_BIAS_MODE_1_2_4B },
             {
                 { { GNA_GEN_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.affineMulti2B2B) } },
                 { { GNA_GEN_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.affineMulti2B2B) } },
@@ -244,7 +244,7 @@ AccelerationDetector::Kernels = {
             }
         },
         {
-            { GNA_INT8 ,GNA_INT8, GNA_BIAS_MODE_1_2_4B },
+            { GNA_INT8, GNA_INT8, GNA_BIAS_MODE_1_2_4B },
             {
                 { { GNA_GEN_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.affineMulti1B1B) } },
                 { { GNA_GEN_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.affineMulti1B1B) } },
@@ -259,13 +259,13 @@ AccelerationDetector::Kernels = {
             }
         },
         {
-            { GNA_INT8 ,GNA_INT16, GNA_BIAS_MODE_1_2_4B },
+            { GNA_INT8, GNA_INT16, GNA_BIAS_MODE_1_2_4B },
             {
                 { { GNA_GEN_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.affineMulti2B1B) } },
                 { { GNA_GEN_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.affineMulti2B1B) } },
 
-                { { GNA_SSE4_2_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.affineMulti2B) } },
-                { { GNA_SSE4_2_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.affineMulti2B) } },
+                { { GNA_SSE4_2_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.affineMulti2B1B) } },
+                { { GNA_SSE4_2_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.affineMulti2B1B) } },
 
                 { { GNA_AVX1_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.affineMulti2B1B) } },
                 { { GNA_AVX1_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.affineMulti2B1B) } },
@@ -278,7 +278,7 @@ AccelerationDetector::Kernels = {
     { KERNEL_RECURRENT,
     {
         {
-            { GNA_INT16 ,GNA_INT8, GNA_BIAS_MODE_RICH_FORMAT },
+            { GNA_INT16, GNA_INT8, GNA_BIAS_MODE_RICH_FORMAT },
             {
                 { { GNA_GEN_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.recurrent1B2B) } },
                 { { GNA_GEN_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.recurrent1B2B) } },
@@ -292,7 +292,7 @@ AccelerationDetector::Kernels = {
             }
         },
         {
-            { GNA_INT16 ,GNA_INT16, GNA_BIAS_MODE_1_2_4B },
+            { GNA_INT16, GNA_INT16, GNA_BIAS_MODE_1_2_4B },
             {
                 { { GNA_GEN_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.recurrent2B2B) } },
                 { { GNA_GEN_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.recurrent2B2B) } },
@@ -306,7 +306,7 @@ AccelerationDetector::Kernels = {
             }
         },
         {
-            { GNA_INT8 ,GNA_INT8, GNA_BIAS_MODE_1_2_4B },
+            { GNA_INT8, GNA_INT8, GNA_BIAS_MODE_1_2_4B },
             {
                 { { GNA_GEN_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.recurrent1B1B) } },
                 { { GNA_GEN_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.recurrent1B1B) } },
@@ -321,7 +321,7 @@ AccelerationDetector::Kernels = {
             }
         },
         {
-            { GNA_INT8 ,GNA_INT16, GNA_BIAS_MODE_1_2_4B },
+            { GNA_INT8, GNA_INT16, GNA_BIAS_MODE_1_2_4B },
             {
                 { { GNA_GEN_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.recurrent2B1B) } },
                 { { GNA_GEN_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.recurrent2B1B) } },
@@ -340,7 +340,7 @@ AccelerationDetector::Kernels = {
     { KERNEL_AFFINE_DIAGONAL,
     {
         {
-            { GNA_INT16 ,GNA_INT8, GNA_BIAS_MODE_RICH_FORMAT },
+            { GNA_INT16, GNA_INT8, GNA_BIAS_MODE_RICH_FORMAT },
             {
                 { { GNA_GEN_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.diagonal1B2B) } },
                 { { GNA_GEN_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.diagonal1B2B) } },
@@ -354,7 +354,7 @@ AccelerationDetector::Kernels = {
             }
         },
         {
-            { GNA_INT16 ,GNA_INT16, GNA_BIAS_MODE_1_2_4B },
+            { GNA_INT16, GNA_INT16, GNA_BIAS_MODE_1_2_4B },
             {
                 { { GNA_GEN_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.diagonal2B2B) } },
                 { { GNA_GEN_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.diagonal2B2B) } },
@@ -368,7 +368,7 @@ AccelerationDetector::Kernels = {
             }
         },
         {
-            { GNA_INT8 ,GNA_INT8, GNA_BIAS_MODE_1_2_4B },
+            { GNA_INT8, GNA_INT8, GNA_BIAS_MODE_1_2_4B },
             {
                 { { GNA_GEN_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.diagonal1B1B) } },
                 { { GNA_GEN_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.diagonal1B1B) } },
@@ -383,7 +383,7 @@ AccelerationDetector::Kernels = {
             }
         },
         {
-            { GNA_INT8 ,GNA_INT16, GNA_BIAS_MODE_1_2_4B },
+            { GNA_INT8, GNA_INT16, GNA_BIAS_MODE_1_2_4B },
             {
                 { { GNA_GEN_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.diagonal2B1B) } },
                 { { GNA_GEN_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.diagonal2B1B) } },
@@ -679,7 +679,7 @@ AccelerationDetector::Kernels = {
     { KERNEL_GMM,
     {
         {
-            { GNA_INT16 ,GNA_INT8, GNA_BIAS_MODE_1_2_4B },
+            { GNA_INT16, GNA_INT8, GNA_BIAS_MODE_1_2_4B },
             {
                 { { GNA_GEN_SAT },{ reinterpret_cast<VoidKernel>(gmmKernel_generic.gmmMaxMix8) } },
                 { { GNA_GEN_FAST },{ reinterpret_cast<VoidKernel>(gmmKernel_generic.gmmMaxMix8) } },
@@ -693,7 +693,7 @@ AccelerationDetector::Kernels = {
             }
         },
         {
-            { GNA_INT16 ,GNA_INT16, GNA_BIAS_MODE_1_2_4B },
+            { GNA_INT16, GNA_INT16, GNA_BIAS_MODE_1_2_4B },
             {
                 { { GNA_GEN_SAT },{ reinterpret_cast<VoidKernel>(gmmKernel_generic.gmmMaxMix16) } },
                 { { GNA_GEN_FAST },{ reinterpret_cast<VoidKernel>(gmmKernel_generic.gmmMaxMix16) } },
@@ -711,7 +711,7 @@ AccelerationDetector::Kernels = {
     { KERNEL_GMM_AL,
     {
         {
-            { GNA_INT16 ,GNA_INT8, GNA_BIAS_MODE_1_2_4B },
+            { GNA_INT16, GNA_INT8, GNA_BIAS_MODE_1_2_4B },
             {
                 { { GNA_GEN_SAT },{ reinterpret_cast<VoidKernel>(gmmKernel_generic.gmmMaxMix8ActiveList) } },
                 { { GNA_GEN_FAST },{ reinterpret_cast<VoidKernel>(gmmKernel_generic.gmmMaxMix8ActiveList) } },
@@ -725,7 +725,7 @@ AccelerationDetector::Kernels = {
             }
         },
         {
-            { GNA_INT16 ,GNA_INT16, GNA_BIAS_MODE_1_2_4B },
+            { GNA_INT16, GNA_INT16, GNA_BIAS_MODE_1_2_4B },
             {
                 { { GNA_GEN_SAT },{ reinterpret_cast<VoidKernel>(gmmKernel_generic.gmmMaxMix16ActiveList) } },
                 { { GNA_GEN_FAST },{ reinterpret_cast<VoidKernel>(gmmKernel_generic.gmmMaxMix16ActiveList) } },
