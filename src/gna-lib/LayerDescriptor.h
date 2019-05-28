@@ -29,16 +29,14 @@
 #include "Expect.h"
 #include "GnaConfig.h"
 
+#include "ConvolutionKernelArguments.h"
+
 #include "gna-api.h"
-#include "gna-api-status.h"
 #include "gna-api-types-xnn.h"
 #include "gna2-common-impl.h"
 
-#include "gna2-common-impl.h"
-
-#include <algorithm>
-#include <memory>
 #include <map>
+#include <memory>
 
 namespace GNA
 {
@@ -246,7 +244,7 @@ public:
         set(mode);
     }
 
-    void operator=(const Gna2BiasMode mode)
+    void operator=(const KernelBiasMode mode)
     {
         set(mode);
     }

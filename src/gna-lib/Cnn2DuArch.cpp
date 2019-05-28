@@ -357,7 +357,7 @@ namespace GNA {
         // Calculating Max-Kernels:
         // In case where BIAS is Per Kernel, there is limitation by the BIAS-MEM size
         // Otherewiese, BIAS-Volume is streamed with no limitaion
-        if ((BPrec.Value == GNA_DATA_DISABLED) || (BType == Gna2BiasModePerStride)) {
+        if ((BPrec.Value == GNA_DATA_DISABLED) || (KernelBiasModePerStride == BType)) {
 
             MaxKernels = KNum;
         }

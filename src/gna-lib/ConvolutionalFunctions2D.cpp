@@ -158,7 +158,7 @@ std::unique_ptr<const BiasTensor> ConvolutionFunction2D::CreateBiasTensor(
     return std::make_unique<const BiasTensor>(
         biasDims,
         0,
-        apiTensor.Type,
+        DataMode{ apiTensor.Type, apiTensor.Mode },
         apiTensor.Data,
         validatorIn,
         biasMode);
@@ -183,17 +183,6 @@ Shape ConvolutionFunction2D::GetOutputShape(Shape const & inputShape,
     return outputShape;
 }
 
-
-KernelBiasMode ConvolutionFunction2D::ToKernelBiasMode(Gna2BiasMode mode)
-{
-    static std::map<Gna2BiasMode, KernelBiasMode> biasMap
-    {
-        { Gna2BiasModeDefault, KernelBiasModePerFilter },
-        { Gna2BiasModePerStride, KernelBiasModePerStride }
-    };
-    return biasMap.at(mode);
-}
-
 ConvolutionFunction2D::ConvolutionFunction2D(const BaseTransformConfig<ConvolutionKernel2D>& config,
     std::unique_ptr<const FiltersTensor> filters,
     std::unique_ptr<const BiasTensor> biases,
@@ -205,7 +194,7 @@ ConvolutionFunction2D::ConvolutionFunction2D(const BaseTransformConfig<Convoluti
     Stride{ move(stride) },
     Padding{ move(padding) }
 {
-    if (Gna2BiasModeDefault == Biases->BiasMode)
+    if (KernelBiasModePerFilter == Biases->BiasMode)
     {
         Expect::Equal<uint32_t>(Biases->at(GNA_DIM_H), 1, Gna2StatusXnnErrorBiasMode);
         Expect::Equal<uint32_t>(Biases->at(GNA_DIM_W), 1, Gna2StatusXnnErrorBiasMode);
@@ -226,7 +215,7 @@ ConvolutionFunction2D::ConvolutionFunction2D(const BaseTransformConfig<Convoluti
     gna_3d_dimensions convolutionStride = Stride->Dimensions;
     gna_3d_dimensions zeroPadding = Padding->Dimensions;
 
-    auto kernelBiasMode = ToKernelBiasMode(Biases->BiasMode);
+    auto kernelBiasMode = Biases->BiasMode;
 
     ConvolutionConfig2D kernelConvolutionConfig2D{ input.width, input.height, input.depth,Filters->at(GNA_DIM_N),
         filter.width, filter.height, filter.depth,

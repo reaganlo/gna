@@ -28,11 +28,13 @@
 #include "Capabilities.h"
 #include "Expect.h"
 #include "ParameterLimits.h"
+#include "PoolingFunctions2D.h"
 #include "Shape.h"
 #include "Validator.h"
 
-#include "gna2-common-api.h"
+#include "ConvolutionKernelArguments.h"
 
+#include "gna2-common-api.h"
 #include "common.h"
 #include "gna-api-types-gmm.h"
 #include "gna-api.h"
@@ -134,16 +136,17 @@ const FullCapabilitiesMap BiasTensor::capabilities =
     }}
 };
 
-const SetLimits<Gna2BiasMode> BiasTensor::modeLimits
+const SetLimits<KernelBiasMode> BiasTensor::modeLimits
 {
-    { Gna2BiasModeDefault, Gna2BiasModePerStride }, Gna2StatusXnnErrorBiasMode
+    { KernelBiasModeDisabled, KernelBiasModePerFilter, KernelBiasModePerStride },
+    Gna2StatusXnnErrorBiasMode
 };
 
 BiasTensor::BiasTensor(const Shape& dimensions, const uint32_t biasVectorIndex, const DataMode& dataMode,
     void * buffer, const LayerValidator& validatorIn, Gna2BiasMode biasMode) :
     Tensor{ dimensions, dataMode, buffer, Validator{ validatorIn, capabilities } },
     VectorIndex{ biasVectorIndex },
-    BiasMode { biasMode }
+    BiasMode{ ToKernelBiasMode(biasMode, dataMode.Mode) }
 {
     const auto vectorCountIter = Dimensions.find(GNA_DIM_N);
     auto vectorCount = ui32_1;
@@ -156,3 +159,19 @@ BiasTensor::BiasTensor(const Shape& dimensions, const uint32_t biasVectorIndex, 
     Expect::InSet(BiasMode, modeLimits);
 }
 
+KernelBiasMode BiasTensor::ToKernelBiasMode(Gna2BiasMode mode, Gna2TensorMode tensorMode)
+{
+    //TODO:3:Handle constant scalar when enabled in HW
+    if (Gna2TensorModeDisabled == tensorMode ||
+        Gna2TensorModeConstantScalar == tensorMode)
+    {
+        return KernelBiasModeDisabled;
+    }
+    const static std::map<Gna2BiasMode, KernelBiasMode> biasMap
+    {
+        { Gna2BiasModeDefault, KernelBiasModePerFilter },
+        { Gna2BiasModePerStride, KernelBiasModePerStride },
+        { Gna2BiasModeGrouping, KernelBiasModePerFilter },
+    };
+    return biasMap.at(mode);
+}

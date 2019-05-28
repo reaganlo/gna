@@ -987,7 +987,7 @@ void Convolution2DKernelImpl1B1B(ExecutionKernelConfig<ConvolutionConfig2D> cons
                 if (biasMode == KernelBiasModePerFilter) {
                     outVal = getBias(biasData, OD, biasPrecission);
                 }
-                else if (biasMode == KernelBiasModeNotSupported) {
+                else if (biasMode == KernelBiasModeDisabled) {
                     outVal = 0;
                 }
                 else {
@@ -1067,7 +1067,7 @@ void Convolution2DKernelImpl1B2B(ExecutionKernelConfig<ConvolutionConfig2D> cons
                 if (biasMode == KernelBiasModePerFilter) {
                     outVal = getBias(biasData, OD, biasPrecission);
                 }
-                else if (biasMode == KernelBiasModeNotSupported) {
+                else if (biasMode == KernelBiasModeDisabled) {
                     outVal = 0;
                 }
                 else {
@@ -1147,7 +1147,7 @@ void Convolution2DKernelImpl2B1B(ExecutionKernelConfig<ConvolutionConfig2D> cons
                 if (biasMode == KernelBiasModePerFilter) {
                     outVal = getBias(biasData, OD, biasPrecission);
                 }
-                else if (biasMode == KernelBiasModeNotSupported) {
+                else if (biasMode == KernelBiasModeDisabled) {
                     outVal = 0;
                 }
                 else {
@@ -1228,7 +1228,7 @@ void Convolution2DKernelImpl2B2B(ExecutionKernelConfig<ConvolutionConfig2D> cons
                 if (biasMode == KernelBiasModePerFilter) {
                     outVal = getBias(biasData, OD, biasPrecission);
                 }
-                else if (biasMode == KernelBiasModeNotSupported) {
+                else if (biasMode == KernelBiasModeDisabled) {
                     outVal = 0;
                 }
                 else {

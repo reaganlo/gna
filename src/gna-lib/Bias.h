@@ -29,6 +29,8 @@
 #include "DataMode.h"
 #include "Tensor.h"
 
+#include "ConvolutionKernelArguments.h"
+
 #include "gna-api-types-xnn.h"
 
 #include <cstdint>
@@ -60,11 +62,13 @@ struct BiasTensor : public Tensor
     }
 
     const uint32_t VectorIndex;
-    const Gna2BiasMode BiasMode;
+    const KernelBiasMode BiasMode;
 
 protected:
+    static KernelBiasMode ToKernelBiasMode(Gna2BiasMode mode, Gna2TensorMode tensorMode);
+
     static const FullCapabilitiesMap capabilities;
-    static const SetLimits<Gna2BiasMode> modeLimits;
+    static const SetLimits<KernelBiasMode> modeLimits;
 };
 
 }

@@ -190,6 +190,7 @@ static const std::map<const XnnParameterType, const XnnParameter> XnnDescriptorG
     {cnn_pool_size, { 0x0a, 1 }},
     {bias_precision, { 0x0b, 1, 0, 3,
                          {
+                             {GNA_DATA_DISABLED, static_cast<uint8_t>(0) },
                              {GNA_DATA_CONSTANT_SCALAR, static_cast<uint8_t>(0) },
                              {GNA_INT8, static_cast<uint8_t>(1) },
                              {GNA_INT16, static_cast<uint8_t>(2) },
@@ -251,8 +252,9 @@ static const std::map<const XnnParameterType, const XnnParameter> XnnDescriptorG
     {cnn2d_kernel_wg, { 0x3A, 2 }},
     {cnn2d_bias_mode, { 0x0b, 1, 3, 1,
         {
-            { Gna2BiasModePerStride, static_cast<uint8_t>(0) },
-            { Gna2BiasModeDefault, static_cast<uint8_t>(1) },
+            { KernelBiasModePerStride, static_cast<uint8_t>(0) },
+            { KernelBiasModePerFilter, static_cast<uint8_t>(1) },
+            { KernelBiasModeDisabled, static_cast<uint8_t>(1) },
        }}},
 };
 

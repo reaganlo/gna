@@ -94,7 +94,9 @@ Gna2Tensor OperationConfig::GetBiases(const nn_layer& layer)
     const auto& b = cnn2d->convolution.biases;
     Gna2Tensor t{};
     t.Data = b.biasesData;
-    t.Type = DataMode(b.dataMode).Type;
+    const DataMode dataModeLoc{ b.dataMode };
+    t.Type = dataModeLoc.Type;
+    t.Mode = dataModeLoc.Mode;
     return t;
 }
 
@@ -102,7 +104,8 @@ Gna2BiasMode OperationConfig::GetBiasMode(const nn_layer& layer)
 {
     static std::map<gna_bias_mode, Gna2BiasMode> biasModeMap{
         { GNA_BIAS_PER_KERNEL, Gna2BiasModeDefault },
-    { GNA_BIAS_PER_STRIDE, Gna2BiasModePerStride }
+        { GNA_BIAS_PER_STRIDE, Gna2BiasModePerStride },
+        { GNA_BIAS_NOT_SUPPORTED, Gna2BiasModeDefault },
     };
     const auto cnn2d = GetNnLayerCnn2D_(layer);
     return biasModeMap.at(cnn2d->convolution.biases.mode);

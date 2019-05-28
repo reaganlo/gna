@@ -37,12 +37,12 @@ public:
         return bytesPerElement;
     }
 };
-
+// TODO:3: consider changing to class with c-tor instead of ToKernelBiasMode
 enum KernelBiasMode
 {
     KernelBiasModePerFilter,
     KernelBiasModePerStride,
-    KernelBiasModeNotSupported
+    KernelBiasModeDisabled
 };
 
 struct ConvolutionConfig2D

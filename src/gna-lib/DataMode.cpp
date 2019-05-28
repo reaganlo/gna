@@ -127,7 +127,7 @@ gna_data_mode DataMode::ModeFromDataMode(const DataType dataType)
 {
     static const std::map<const DataType, const gna_data_mode> types =
     {
-        {Gna2DataTypeNone, GNA_DATA_NOT_SUPPORTED},
+        {Gna2DataTypeNone, GNA_DATA_DISABLED},
         {Gna2DataTypeBoolean, GNA_DATA_NOT_SUPPORTED},
         {Gna2DataTypeInt4, GNA_DATA_NOT_SUPPORTED},
         {Gna2DataTypeInt8, GNA_INT8},
@@ -163,7 +163,7 @@ DataMode::DataMode(const DataType dataType) :
     Value{ ModeFromDataMode(dataType) },
     Type{ dataType },
     Mode{ },
-    Size{ ToSize<uint32_t>(Value) }
+    Size{ ToSize<uint32_t>(dataType) }
 {
 }
 
@@ -171,7 +171,7 @@ DataMode::DataMode(const DataType dataType, const TensorMode tensorMode) :
     Value{ ModeFromDataMode(dataType) },
     Type{ dataType },
     Mode{ tensorMode },
-    Size{ ToSize<uint32_t>(Value) }
+    Size{ ToSize<uint32_t>(dataType) }
 {
 }
 

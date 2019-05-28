@@ -45,8 +45,6 @@ struct ConvolutionFunction2D : public Transform<ConvolutionConfig2D, Convolution
         const TransformFactoryConfig & config,
         const OperationConfig& operationConfig);
 
-    static KernelBiasMode ToKernelBiasMode(Gna2BiasMode mode);
-
     ConvolutionFunction2D(const BaseTransformConfig<ConvolutionKernel2D> & config,
         std::unique_ptr<const FiltersTensor> filters,
         std::unique_ptr<const BiasTensor> biases,
