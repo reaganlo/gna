@@ -167,7 +167,7 @@ KernelBiasMode BiasTensor::ToKernelBiasMode(Gna2BiasMode mode, Gna2TensorMode te
     {
         return KernelBiasModeDisabled;
     }
-    const static std::map<Gna2BiasMode, KernelBiasMode> biasMap
+    static const std::map<Gna2BiasMode, KernelBiasMode> biasMap
     {
         { Gna2BiasModeDefault, KernelBiasModePerFilter },
         { Gna2BiasModePerStride, KernelBiasModePerStride },

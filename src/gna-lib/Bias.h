@@ -51,11 +51,13 @@ struct BiasTensor : public Tensor
 
     virtual ~BiasTensor() = default;
 
+    // NOTE: this works only for software mode, HW requires base MB array buffer
     virtual operator const BaseAddress () const override
     {
         return Buffer + (VectorIndex * Mode.Size);
     }
 
+    // NOTE: this works only for software mode, HW requires base MB array buffer
     virtual operator void* () const override
     {
         return Buffer + (VectorIndex * Mode.Size);

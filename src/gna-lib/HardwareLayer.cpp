@@ -351,7 +351,7 @@ void HardwareLayerExt::save()
     {
         XnnDescriptor[weight_size] = affine->Weights->Mode;
         XnnDescriptor[weight_buffer] = *affine->Weights;
-        XnnDescriptor[bias_buffer] = *affine->Biases;
+        XnnDescriptor[bias_buffer] = affine->Biases->Buffer;
         if(XnnDescriptor.HasParameter(bias_precision))
         {
             XnnDescriptor[bias_precision] = affine->Biases->Mode;
@@ -535,10 +535,9 @@ void HardwareLayerCnn::save()
     XnnDescriptor[cnn_n_flt_iters] = filtersIterationCount;
     XnnDescriptor[cnn_n_flt_last] = filtersCountInLastIteration;
     XnnDescriptor[cnn_n_flt_outs] = convOutputElementCount;
-    XnnDescriptor[bias_buffer] = *cnn->Convolution->Biases;
     XnnDescriptor[cnn_n_flt_stride] = cnn->Convolution->Stride->at(GNA_DIM_W);
     XnnDescriptor[cnn_n_out_p_flt] = outputElementCount;
-    XnnDescriptor[bias_buffer] = *cnn->Convolution->Biases;
+    XnnDescriptor[bias_buffer] = cnn->Convolution->Biases->Buffer;
 }
 
 uint32_t HardwareLayerCnn2D::GetKernelWorkGroupSize(DeviceVersion deviceVersion,
@@ -603,7 +602,7 @@ void HardwareLayerCnn2D::save()
     XnnDescriptor[weight_size] = cnn->Filters->Mode;
     XnnDescriptor[weight_buffer] = *cnn->Filters;
     XnnDescriptor[cnn_n_flts] = cnn->Filters->Count;
-    XnnDescriptor[bias_buffer] = *cnn->Biases;
+    XnnDescriptor[bias_buffer] = cnn->Biases->Buffer;
     XnnDescriptor[bias_precision] = cnn->Biases->Mode;
     XnnDescriptor[cnn2d_bias_mode] = cnn->Biases->BiasMode;
     XnnDescriptor[cnn2d_in_dim_d] = cnn->Input->Dimensions.at(GNA_DIM_D);
@@ -651,7 +650,7 @@ HardwareLayerAffineMBias::HardwareLayerAffineMBias(const DescriptorParameters& p
     }
 
     XnnDescriptor[bias_grp_cnt] = affineMulti->Biases->at(GNA_DIM_N);
-    XnnDescriptor[bias_grp_buffer] = *affineMulti->Biases;
+    XnnDescriptor[bias_grp_buffer] = affineMulti->Biases->Buffer;
     XnnDescriptor[bias_grp_value] = affineMulti->Biases->VectorIndex;
 
     if (affineMulti->Weights->Mode == GNA_INT8 && mbiasLayer->Input.Mode == GNA_INT16)
