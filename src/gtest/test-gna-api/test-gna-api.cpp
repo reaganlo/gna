@@ -43,7 +43,10 @@ protected:
     {
         return malloc(size);
     }
-
+    static void Free(void * ptr)
+    {
+        return free(ptr);
+    }
     static void * InvalidAllocator(uint32_t size)
     {
         UNREFERENCED_PARAMETER(size);
@@ -65,6 +68,7 @@ protected:
     //Parameters for Gna2InitOperation???() testing
     Gna2Shape convolutionStride{};
     Gna2Shape poolingStride{};
+    Gna2Shape poolingWindow{};
     Gna2Shape zeroPadding{};
     Gna2BiasMode biasMode{};
     Gna2PoolingMode poolingMode{};
@@ -332,7 +336,9 @@ TEST_F(TestGnaModelApi, Gna2ModelCreateSingleCopyLayerSuccesfull)
 
     Gna2Model model = { 1, &copyOperation };
 
-    const auto status = Gna2ModelCreate(0, &model, &modelId);
+    auto status = Gna2ModelCreate(0, &model, &modelId);
+    ASSERT_EQ(status, Gna2StatusSuccess);
+    status = Gna2ModelRelease(modelId);
     ASSERT_EQ(status, Gna2StatusSuccess);
 }
 
@@ -383,8 +389,22 @@ TEST_F(TestGnaModelApi, Gna2ModelCreateSingleConvolutionalLayerSuccesfull)
 
     Gna2Model model = { 1, &convolutionOperation };
 
-    const auto status = Gna2ModelCreate(0, &model, &modelId);
+    auto status = Gna2ModelCreate(0, &model, &modelId);
     ASSERT_EQ(status, Gna2StatusSuccess);
+
+    status= Gna2ModelRelease(modelId);
+    ASSERT_EQ(status, Gna2StatusSuccess);
+
+    //Checking optional activation and bias
+    for (auto index : { 4, 3 })
+    {
+        convolutionTensorSet[index] = nullptr;
+        status = Gna2ModelCreate(0, &model, &modelId);
+        ASSERT_EQ(status, Gna2StatusSuccess);
+
+        status = Gna2ModelRelease(modelId);
+        ASSERT_EQ(status, Gna2StatusSuccess);
+    }
 }
 
 TEST_F(TestGnaModelApi, Gna2ModelCreateNullModel)
@@ -522,10 +542,21 @@ TEST_F(TestGnaOperationInitApi, Gna2OperationInitOperationsUnsuccesfullInvalidAl
 TEST_F(TestGnaOperationInitApi, Gna2OperationInitOperationsUnsuccesfullNullParameter)
 {
     struct Gna2Operation operation = {};
-    auto status = Gna2OperationInitConvolutionFused(&operation, Allocator,
-        &input, &output, &filters, &biases, &activation,
-        &convolutionStride, &biasMode, &poolingMode, nullptr, &poolingStride, &zeroPadding);
+    const auto status = Gna2OperationInitConvolutionFused(&operation, Allocator,
+        &input, &output, nullptr, &biases, &activation,
+        &convolutionStride, &biasMode, &poolingMode, &poolingWindow, &poolingStride, &zeroPadding);
     EXPECT_NE(status, Gna2StatusSuccess);
+}
+
+TEST_F(TestGnaOperationInitApi, Gna2OperationInitOperationsSuccesfullNullActivation)
+{
+    struct Gna2Operation operation = {};
+    const auto status = Gna2OperationInitConvolutionFused(&operation, Allocator,
+        &input, &output, &filters, &biases, nullptr,
+        &convolutionStride, &biasMode, &poolingMode, &poolingWindow, &poolingStride, &zeroPadding);
+    EXPECT_EQ(status, Gna2StatusSuccess);
+    Free(operation.Operands);
+    Free(operation.Parameters);
 }
 
 int main(int argc, char **argv)

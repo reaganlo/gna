@@ -73,16 +73,22 @@ public:
         return static_cast<ApiTensor>(*tensor);
     }
 
-    // All pointers in source != nullptr, otherwise exception is thrown
+    // The first numberOfRequired pointers in source must not be nullptr, otherwise exception is thrown
     template<class T, class V>
-    static void TryAssign(T ** const destination, const size_t destinationSize, std::initializer_list<V*> source)
+    static void TryAssign(T ** const destination, const size_t destinationSize,
+        uint32_t numberOfRequired, std::initializer_list<V*> source)
     {
         Expect::True(destinationSize >= source.size(),
             Gna2StatusModelConfigurationInvalid);
+        Expect::True(numberOfRequired <= source.size(), Gna2StatusModelConfigurationInvalid);
         int i = 0;
         for (const auto& s : source)
         {
-            Expect::NotNull(s);
+            if (0 < numberOfRequired)
+            {
+                Expect::NotNull(s);
+                --numberOfRequired;
+            }
             destination[i++] = s;
         }
         std::fill(destination + i, destination + destinationSize, nullptr);
@@ -93,8 +99,9 @@ public:
     {
         Expect::Equal(operation.NumberOfOperands, GetOperationInfo(operation.Type, NumberOfOperandsMax),
             Gna2StatusModelConfigurationInvalid);
+        const auto requiredNotNull = GetOperationInfo(operation.Type, NumberOfOperandsRequired);
         TryAssign(operation.Operands, operation.NumberOfOperands,
-                {std::forward<T>(operands)...});
+            requiredNotNull, {std::forward<T>(operands)...});
     }
 
     template<class ... T>
@@ -102,8 +109,9 @@ public:
     {
         Expect::Equal(operation.NumberOfParameters, GetOperationInfo(operation.Type, NumberOfParametersMax),
             Gna2StatusModelConfigurationInvalid);
+        const auto requiredNotNull = GetOperationInfo(operation.Type, NumberOfParametersRequired);
         TryAssign(operation.Parameters, operation.NumberOfParameters,
-            {static_cast<void*>(parameters)...});
+            requiredNotNull, {static_cast<void*>(parameters)...});
     }
 
     static void SetLayout(Gna2Tensor& tensor, const char* layout);
@@ -111,7 +119,6 @@ public:
     static void ExpectOperationValid(const Gna2Operation& operation);
     static GnaComponentType OperandIndexToType(uint32_t operandIndex);
 
-protected:
     enum OperationInfoKey
     {
         NumberOfOperandsRequired, //must be passed from user as not null
@@ -142,7 +149,6 @@ protected:
         ParameterIndexDelay,
     };
     static uint32_t GetOperationInfo(OperationType operationType, OperationInfoKey infoType);
-
 private:
     template<typename Type>
     static Type ** AllocateAndFillZeros(const Gna2UserAllocator userAllocator, uint32_t elementCount)

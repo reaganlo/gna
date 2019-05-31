@@ -304,6 +304,7 @@ GNA2_API enum Gna2Status Gna2OperationInitFullyConnectedBiasGrouping(
     const std::function<Gna2Status()> command = [&]()
     {
         Expect::NotNull(operation);
+        Expect::NotNull(biasMode);
         ModelWrapper::OperationInit(*operation, Gna2OperationTypeFullyConnectedAffine, userAllocator);
         ModelWrapper::SetOperands(*operation, inputs, outputs, weights, biases, activation, weightScaleFactors);
         ModelWrapper::SetParameters(*operation, biasMode, biasVectorIndex);
@@ -345,7 +346,6 @@ GNA2_API enum Gna2Status Gna2OperationInitConvolution(
         ModelWrapper::OperationInit(*operation, Gna2OperationTypeConvolution, userAllocator);
         ModelWrapper::SetOperands(*operation, inputs, outputs, filters, biases, activation);
         ModelWrapper::SetParameters(*operation, convolutionStride, biasMode);
-
         return Gna2StatusSuccess;
     };
     return ApiWrapper::ExecuteSafely(command);
@@ -437,6 +437,8 @@ GNA2_API enum Gna2Status Gna2OperationInitGmm(
     const std::function<Gna2Status()> command = [&]()
     {
         Expect::NotNull(operation);
+        Expect::NotNull(inverseCovariances);
+        Expect::NotNull(consts);
         ModelWrapper::OperationInit(*operation, Gna2OperationTypeGmm, userAllocator);
         ModelWrapper::SetOperands(*operation, inputs, outputs, means, inverseCovariances, consts);
         ModelWrapper::SetParameters(*operation, maximumScore);

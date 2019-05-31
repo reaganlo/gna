@@ -65,9 +65,9 @@ uint32_t ModelWrapper::ShapeGetNumberOfElements(ApiShape const * shape)
     return shapeImpl.GetNumberOfElements();
 }
 
-inline uint32_t ModelWrapper::GetOperationInfo(OperationType operationType, OperationInfoKey infoType)
+uint32_t ModelWrapper::GetOperationInfo(OperationType operationType, OperationInfoKey infoType)
 {
-    static std::map<OperationType, std::map<OperationInfoKey, uint32_t> > metaOperationInfo =
+    const static std::map<OperationType, std::map<OperationInfoKey, uint32_t> > metaOperationInfo =
     {
         { Gna2OperationTypeCopy,
             {
@@ -83,9 +83,9 @@ inline uint32_t ModelWrapper::GetOperationInfo(OperationType operationType, Oper
         { Gna2OperationTypeConvolution,
             {
                 { NumberOfOperandsMax, 5 },
-                { NumberOfOperandsRequired, 4 },
+                { NumberOfOperandsRequired, 3 },
                 { NumberOfParametersMax, 6 },
-                { NumberOfParametersRequired, 2 },
+                { NumberOfParametersRequired, 1 },
                 { OperandIndexInput, 0 },
                 { OperandIndexOutput, 1 },
                 { OperandIndexFilter, 2 },
@@ -146,7 +146,7 @@ inline uint32_t ModelWrapper::GetOperationInfo(OperationType operationType, Oper
         { Gna2OperationTypeRecurrent,
             {
                 { NumberOfOperandsMax, 5 },
-                { NumberOfOperandsRequired, 4 },
+                { NumberOfOperandsRequired, 5 },
                 { NumberOfParametersMax, 1 },
                 { NumberOfParametersRequired, 1 },
                 { OperandIndexInput, 0 },

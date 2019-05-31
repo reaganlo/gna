@@ -60,7 +60,7 @@ protected:
         if (isCNN2D(operation))
         {
             FiltersTensor = GetFilters(operation);
-            ConvolutionStride = GetStrideWHD(operation);
+            ConvolutionStride = GetStride(operation);
             ZeroPadding = GetZeroPadding(operation);
             BiasesTensor = GetBiases(operation);
             BiasMode = GetBiasMode(operation);
@@ -80,27 +80,33 @@ private:
 
     static Shape TryGetParamShape(const Gna2Operation & operation, uint32_t parameterIndex);
 
-    static const nn_layer_cnn2d* GetNnLayerCnn2D_(const nn_layer& layer);
+    static const nn_layer_cnn2d* CastToCnn2DDetails(const nn_layer& layer);
 
     static Gna2Tensor GetFilters(const nn_layer& layer);
     static Gna2Tensor GetFilters(const Gna2Operation& operation);
 
-    static void ExpectParameterAvailable(const Gna2Operation & operation, uint32_t index);
+    static bool IsOperandAvailable(const Gna2Operation & operation, uint32_t index);
+    static bool IsParameterAvailable(const Gna2Operation & operation, uint32_t index);
 
     template<class T>
-    static T GetParameterAs(const Gna2Operation & operation, uint32_t index)
+    static T GetParameterAs(const Gna2Operation & operation, uint32_t index, T defaultValue)
     {
-        ExpectParameterAvailable(operation, index);
-        return *static_cast<T*> (operation.Parameters[index]);
+        if (IsParameterAvailable(operation, index))
+        {
+            return *static_cast<T*> (operation.Parameters[index]);
+        }
+        return defaultValue;
     }
+
+    static Gna2Tensor GetOperand(const Gna2Operation & operation, uint32_t index, Gna2Tensor defaultValue);
 
     static Gna2BiasMode GetBiasMode(const Gna2Operation& operation);
     static Gna2BiasMode GetBiasMode(const nn_layer& layer);
     static Gna2Tensor GetBiases(const Gna2Operation& operation);
     static Gna2Tensor GetBiases(const nn_layer& layer);
 
-    static Shape GetStrideWHD(const Gna2Operation& operation);
-    static Shape GetStrideWHD(const nn_layer& layer);
+    static Shape GetStride(const Gna2Operation& operation);
+    static Shape GetStride(const nn_layer& layer);
 
     static Shape GetZeroPadding(const Gna2Operation& operation);
     static Shape GetZeroPadding(const nn_layer& layer);
