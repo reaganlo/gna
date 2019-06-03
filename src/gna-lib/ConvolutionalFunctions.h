@@ -45,7 +45,7 @@ struct Tensor;
 
 struct FiltersTensor : public WeightTensor
 {
-    static std::unique_ptr<const FiltersTensor> Create(const Gna2Tensor& filterTensor, const LayerValidator& validator);
+    static std::unique_ptr<const FiltersTensor> Create(const Gna2Tensor& filtersTensor, const LayerValidator& validator);
     FiltersTensor(const Shape& dimensions, const DataMode& dataMode, void * buffer, const LayerValidator& validator);
     virtual ~FiltersTensor() = default;
 

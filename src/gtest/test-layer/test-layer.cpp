@@ -23,45 +23,48 @@
  in any way.
 */
 
-#pragma once
+#include "test-layer.h"
 
-#include "Layer.h"
+#include "HardwareCapabilities.h"
+#include "Validator.h"
 
-#include "KernelArguments.h"
-#include "XnnKernel.h"
+#include "gtest/gtest.h"
 
-#include "common.h"
+using namespace GNA;
 
-#include <cstdint>
-#include <map>
-
-namespace GNA
+void *GnaMalloc(uint32_t size)
 {
-class BaseValidator;
-struct LayerConfiguration;
+    return malloc(size);
+}
 
-// TODO:3: Refactor to use tensors and functions
-
-// Transpose Layer descriptor converter
-class TransposeLayer : public Layer
+void TestLayer::samplePwl(intel_pwl_segment_t *segments, uint32_t numberOfSegments)
 {
-public:
-    TransposeLayer(const nn_layer& layer, const BaseValidator& validatorIn);
-    TransposeLayer(const Gna2Operation& apiOperation, const BaseValidator& validatorIn);
-    virtual ~TransposeLayer() = default;
+    auto xBase = -200;
+    auto xBaseInc = 2*abs(xBase) / numberOfSegments;
+    auto yBase = -200;
+    auto yBaseInc = 1;
+    for (auto i = uint32_t{0}; i < numberOfSegments; i++, xBase += xBaseInc, yBase += yBaseInc, yBaseInc++)
+    {
+        segments[i].xBase = xBase;
+        segments[i].yBase = static_cast<int16_t>(yBase);
+        segments[i].slope = 1;
+    }
+}
 
-    virtual void UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const override;
+KernelBuffers TestLayer::kernelBuffers;
 
-protected:
-    virtual DataConfig GetDataMode() const override;
+TestLayer::TestLayer() :
+    emptyValidator
+    {
+        HardwareCapabilities(),
+        ValidBoundariesFunctor { [] (const void *buffer, size_t bufferSize) {} }
+    }
+{
+}
 
-private:
-    void computeHidden(AccelerationMode accel, ExecutionConfig const & executionConfig) const;
-    void compute(const LayerConfiguration& layerConfiguration, AccelerationMode accel, ExecutionConfig const & executionConfig) const;
-
-    const KernelMap<TransposeKernel>& transposeKernels;
-    std::unique_ptr<TransposeConfig> transposeHiddenConfig;
-};
-
+int main(int argc, char* argv[]) {
+    ::testing::InitGoogleTest(&argc, argv);
+    // gtest takes ownership of the TestEnvironment ptr - we don't delete it.
+    return RUN_ALL_TESTS();
 }
 

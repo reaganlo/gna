@@ -71,7 +71,7 @@ typedef intel_pwl_func_t            nn_func_pwl;
 typedef intel_nnet_layer_t          nn_layer;
 typedef intel_affine_layer_t        nn_layer_affine;
 typedef intel_affine_multibias_layer_t nn_layer_affine_multi;
-typedef intel_recurrent_layer_t     nn_layer_reccurent;
+typedef intel_recurrent_layer_t     nn_layer_recurrent;
 typedef gna_convolutional_fused_layer_2d  nn_layer_cnn2d;
 typedef gna_pooling_layer_2d        nn_layer_pool2d;
 typedef intel_copy_layer_t          nn_layer_copy;

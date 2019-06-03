@@ -45,6 +45,7 @@ class RnnLayer : public AffineBaseLayer
 {
 public:
     RnnLayer(const nn_layer& layer, const BaseValidator& validatorIn);
+    RnnLayer(const Gna2Operation& operation, const BaseValidator& validatorIn);
     virtual ~RnnLayer() = default;
     const BaseAddress CalculateFeedbackBuffer(const BaseAddress& outputBuffer) const;
     virtual void UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const override;

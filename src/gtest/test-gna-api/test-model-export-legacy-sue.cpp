@@ -150,7 +150,7 @@ TEST_F(TestSimpleModel, exportSueLegacyTest)
     intel_gna_model_header model_header;
     void* dumped_model = GnaModelDump(model_id, GNA_1_0_EMBEDDED, &model_header, &status, Allocator);
     EXPECT_EQ(status, GNA_SUCCESS);
-    EXPECT_NE(dumped_model, nullptr);
+    ASSERT_NE(dumped_model, nullptr);
 
     model_header.rw_region_size = rw_buffer_size;
 

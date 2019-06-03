@@ -42,13 +42,17 @@ class Validator;
 
 struct Tensor : public Component
 {
-    Tensor(const Gna2Tensor& tensor);
-    Tensor(const Gna2Tensor& tensor, gna_tensor_order order, const Validator& validator);
+    Tensor(const ApiTensor& tensor);
 
-    Tensor(const Shape& dimensions, const DataType dataType, const TensorMode tensorMode, void const * buffer);
+    Tensor(const ApiTensor& tensor, gna_tensor_order order, const Validator& validator);
 
-    Tensor(const Shape& dimensions, const DataMode& dataMode, void const * buffer,
-        const Validator& validatorIn);
+    Tensor(const ApiTensor& apiTensor, const Validator& validatorIn);
+
+    Tensor(const Shape& dimensions, const DataType dataType,
+            const TensorMode tensorMode, void const * buffer);
+
+    Tensor(const Shape& dimensions, const DataMode& dataMode,
+            void const * buffer, const Validator& validatorIn);
 
     virtual ~Tensor() = default;
 
@@ -66,9 +70,9 @@ struct Tensor : public Component
         return Buffer;
     }
 
-    explicit operator Gna2Tensor() const
+    explicit operator ApiTensor() const
     {
-        Gna2Tensor tensor {};
+        ApiTensor tensor {};
         tensor.Shape = Dimensions;
         tensor.Mode = Mode.Mode;
         tensor.Type = Mode.Type;
@@ -88,7 +92,13 @@ struct Tensor : public Component
 
     BaseAddress Buffer;
 
+    static Shape GetDimensions(const ApiTensor& operand, gna_tensor_order order)
+    {
+        return Shape::Create(operand.Shape, order);
+    }
+
 protected:
+    Tensor(const Tensor& tensor, const Validator& validatorIn);
 
     void validate() const;
 private:

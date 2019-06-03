@@ -34,15 +34,45 @@ using namespace GNA;
 
 TransposeLayer::TransposeLayer(const nn_layer& layer, const BaseValidator& validatorIn) :
     Layer(layer, validatorIn, {}, BaseAddress()),
-    transposeKernels{ AccelerationDetector::GetKernelMap<TransposeKernel>(KERNEL_TRANSPOSE,  KernelMode{Input.Mode}) },
-    transposeHiddenConfig{ Operation == INTEL_INTERLEAVE ? Input.at(GNA_DIM_N) : Input.at(GNA_DIM_W),
-                           Operation == INTEL_INTERLEAVE ? Input.at(GNA_DIM_W) : Input.at(GNA_DIM_N),
-                           Input.Buffer, Output.Buffer }
+    transposeKernels{ AccelerationDetector::GetKernelMap<TransposeKernel>(
+                                            KERNEL_TRANSPOSE,  KernelMode{Input.Mode}) },
+    transposeHiddenConfig(std::make_unique<TransposeConfig>(
+                Input.Dimensions.at('H'), Input.Dimensions.at('W'), Input.Buffer, Output.Buffer))
 {
-    Expect::Equal(Input.at(GNA_DIM_W), Output.at(GNA_DIM_H), Gna2StatusXnnErrorLyrCfg);
-    Expect::Equal(Input.at(GNA_DIM_N), Output.at(GNA_DIM_N), Gna2StatusXnnErrorLyrCfg);
+    Expect::Equal(Input.Dimensions.at('W'), Output.Dimensions.at('H'), Gna2StatusXnnErrorLyrCfg);
+    Expect::Equal(Input.Dimensions.at('H'), Output.Dimensions.at('W'), Gna2StatusXnnErrorLyrCfg);
     Expect::Null(layer.pLayerStruct); // transpose layers do not have layer details
 
+    Expect::Null(Output.ScratchPad); // in transpose layer no 4B output array is allowed
+
+    ComputeHidden = [this](AccelerationMode accel, ExecutionConfig const & executionConfig)
+                    {this->computeHidden(accel, executionConfig); };
+
+    Compute = [this](LayerConfiguration &layerConfiguration, AccelerationMode accel, ExecutionConfig const & executionConfig)
+                    {this->compute(layerConfiguration, accel, executionConfig); };
+}
+
+TransposeLayer::TransposeLayer(
+        const Gna2Operation& apiOperation,
+        const BaseValidator& validatorIn) :
+    Layer(apiOperation, validatorIn, {}, BaseAddress{}),
+    transposeKernels{ AccelerationDetector::GetKernelMap<TransposeKernel>(
+                                            KERNEL_TRANSPOSE, KernelMode{Input.Mode}) }
+{
+    auto *inputTensor = reinterpret_cast<const Gna2Tensor *>(apiOperation.Operands[0]);
+    Expect::Equal(inputTensor->Shape.NumberOfDimensions,
+            static_cast<uint32_t>(2), Gna2StatusXnnErrorLyrCfg);
+
+    auto *outputTensor = reinterpret_cast<const Gna2Tensor *>(apiOperation.Operands[1]);
+    Expect::Equal(outputTensor->Shape.NumberOfDimensions,
+            static_cast<uint32_t>(2), Gna2StatusXnnErrorLyrCfg);
+
+    transposeHiddenConfig = std::make_unique<TransposeConfig>(
+            Input.Dimensions.at('H'), Input.Dimensions.at('W'), Input.Buffer, Output.Buffer);
+
+    Expect::Equal(Input.Dimensions.at('W'), Output.Dimensions.at('H'), Gna2StatusXnnErrorLyrCfg);
+    Expect::Equal(Input.Dimensions.at('H'), Output.Dimensions.at('W'), Gna2StatusXnnErrorLyrCfg);
+    Expect::Null(apiOperation.Parameters);
     Expect::Null(Output.ScratchPad); // in transpose layer no 4B output array is allowed
 
     ComputeHidden = [this](AccelerationMode accel, ExecutionConfig const & executionConfig)
@@ -55,14 +85,14 @@ TransposeLayer::TransposeLayer(const nn_layer& layer, const BaseValidator& valid
 void TransposeLayer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const
 {
     BaseAddress inputBuffer = Input;
-    if (0 != layerConfiguration.Buffers.count(InputComponent))
+    if (layerConfiguration.Buffers.count(InputComponent) != 0)
     {
         inputBuffer = layerConfiguration.Buffers[InputComponent];
         Input.ValidateBuffer(inputBuffer);
     }
 
     BaseAddress outputBuffer = Output;
-    if (0 != layerConfiguration.Buffers.count(OutputComponent))
+    if (layerConfiguration.Buffers.count(OutputComponent) != 0)
     {
         outputBuffer = layerConfiguration.Buffers[OutputComponent];
         Output.ValidateBuffer(outputBuffer);
@@ -71,7 +101,7 @@ void TransposeLayer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration)
     auto& configs = layerConfiguration.Configs;
     if(!configs.Transpose)
     {
-        configs.Transpose = std::make_unique<TransposeConfig>(transposeHiddenConfig);
+        configs.Transpose = std::make_unique<TransposeConfig>(*transposeHiddenConfig);
     }
 
     configs.Transpose->input = inputBuffer;
@@ -86,7 +116,7 @@ DataConfig TransposeLayer::GetDataMode() const
 void TransposeLayer::computeHidden(AccelerationMode accel, ExecutionConfig const & executionConfig) const
 {
     UNREFERENCED_PARAMETER(executionConfig);
-    transposeKernels.at(accel)(&transposeHiddenConfig);
+    transposeKernels.at(accel)(transposeHiddenConfig.get());
 }
 
 void TransposeLayer::compute(const LayerConfiguration& layerConfiguration, AccelerationMode accel, ExecutionConfig const & executionConfig) const

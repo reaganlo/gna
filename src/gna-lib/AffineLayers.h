@@ -48,6 +48,7 @@ public:
 
 protected:
     AffineBaseLayer(const nn_layer& layer, const BaseValidator& validatorIn);
+    AffineBaseLayer(const Gna2Operation& operation, const BaseValidator& validatorIn);
 
     virtual DataConfig GetDataMode() const override;
 
@@ -58,12 +59,15 @@ private:
     void computeHiddenPwl(AccelerationMode accel, ExecutionConfig const & execution) const;
     void compute(const LayerConfiguration& layerConfiguration, AccelerationMode accel, ExecutionConfig const & execution) const;
     void computePwl(const LayerConfiguration& layerConfiguration, AccelerationMode accel, ExecutionConfig const & execution) const;
+
+    void initComputeFunctions();
 };
 
 class AffineLayer : public AffineBaseLayer
 {
 public:
     AffineLayer(const nn_layer& layer, const BaseValidator& validatorIn);
+    AffineLayer(const Gna2Operation& operation, const BaseValidator& validatorIn);
     virtual ~AffineLayer() = default;
 
     virtual void UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const override;

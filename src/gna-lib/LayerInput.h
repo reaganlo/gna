@@ -38,14 +38,29 @@ class LayerValidator;
 
 struct LayerInput : public Tensor
 {
-    LayerInput(const nn_layer &layer, const LayerValidator& validator);
-    LayerInput(const Gna2Operation &operation, const LayerValidator& validator);
+    LayerInput(const nn_layer &layer, const LayerValidator& validatorIn);
+    LayerInput(const Gna2Operation &operation, const LayerValidator& validatorIn);
     virtual ~LayerInput() = default;
+
+    static bool IsTensorValid(const Gna2Tensor &apiTensor,
+                       const BaseValidator& validatorIn, nn_operation operation);
+
+    const uint32_t Grouping;
+    const uint32_t ElementCount;
 
 protected:
     static Shape GetDimensions(const nn_layer& layer, gna_tensor_order order);
 
     static const FullCapabilitiesMap capabilities;
+
+private:
+    uint32_t getElementCount(
+        const Gna2Operation& operation, const LayerValidator& validatorIn) const;
+    uint32_t getGrouping(
+        const Gna2Operation& operation, const LayerValidator& validatorIn) const;
+
+    uint32_t getElementCount(const nn_layer& layer) const;
+    uint32_t getGrouping(const nn_layer& layer) const;
 };
 
 }

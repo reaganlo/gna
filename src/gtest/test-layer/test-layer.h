@@ -25,43 +25,40 @@
 
 #pragma once
 
-#include "Layer.h"
+#include "Validator.h"
 
 #include "KernelArguments.h"
-#include "XnnKernel.h"
 
-#include "common.h"
+#include "gna-api-types-xnn.h"
 
-#include <cstdint>
-#include <map>
+#include <gtest/gtest.h>
 
-namespace GNA
-{
-class BaseValidator;
-struct LayerConfiguration;
+#include <stdint.h>
+#include <stdlib.h>
 
-// TODO:3: Refactor to use tensors and functions
+using namespace GNA;
 
-// Transpose Layer descriptor converter
-class TransposeLayer : public Layer
+void *GnaMalloc(uint32_t size);
+
+class TestLayer : public ::testing::Test
 {
 public:
-    TransposeLayer(const nn_layer& layer, const BaseValidator& validatorIn);
-    TransposeLayer(const Gna2Operation& apiOperation, const BaseValidator& validatorIn);
-    virtual ~TransposeLayer() = default;
+    TestLayer();
+    TestLayer(const TestLayer& rhs) = delete;
 
-    virtual void UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const override;
+    static KernelBuffers kernelBuffers;
 
-protected:
-    virtual DataConfig GetDataMode() const override;
+    static void samplePwl(intel_pwl_segment_t *segments, uint32_t numberOfSegments);
 
-private:
-    void computeHidden(AccelerationMode accel, ExecutionConfig const & executionConfig) const;
-    void compute(const LayerConfiguration& layerConfiguration, AccelerationMode accel, ExecutionConfig const & executionConfig) const;
+    template<typename T>
+    static void VerifyOutputs(const T *output, const T *refOutput, uint32_t elementCount)
+    {
+        for (uint32_t i = 0; i < elementCount; i++)
+        {
+            EXPECT_EQ(output[i], refOutput[i]);
+        }
+    }
 
-    const KernelMap<TransposeKernel>& transposeKernels;
-    std::unique_ptr<TransposeConfig> transposeHiddenConfig;
+    const BaseValidator emptyValidator;
 };
-
-}
 

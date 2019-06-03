@@ -25,43 +25,43 @@
 
 #pragma once
 
-#include "Layer.h"
+#include "test-layer.h"
 
-#include "KernelArguments.h"
-#include "XnnKernel.h"
+#include "gtest/gtest.h"
 
-#include "common.h"
+#include "gna2-model-api.h"
+
+#include "gna-api-types-xnn.h"
 
 #include <cstdint>
-#include <map>
 
-namespace GNA
-{
-class BaseValidator;
-struct LayerConfiguration;
+using namespace GNA;
 
-// TODO:3: Refactor to use tensors and functions
-
-// Transpose Layer descriptor converter
-class TransposeLayer : public Layer
+class TestRecurrentLayer : public TestLayer
 {
 public:
-    TransposeLayer(const nn_layer& layer, const BaseValidator& validatorIn);
-    TransposeLayer(const Gna2Operation& apiOperation, const BaseValidator& validatorIn);
-    virtual ~TransposeLayer() = default;
+    TestRecurrentLayer();
+    ~TestRecurrentLayer();
+    TestRecurrentLayer(const TestRecurrentLayer& rhs) = delete;
 
-    virtual void UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const override;
+    static constexpr uint16_t numberOfVectors = 4;
+    static constexpr uint16_t inputVolume = 16;
+    static constexpr uint16_t outputVolume = 32;
+    static constexpr uint16_t numberOfSegments = 64;
 
-protected:
-    virtual DataConfig GetDataMode() const override;
+    static const int16_t input[numberOfVectors * inputVolume];
+    static const int16_t weight[(inputVolume + outputVolume) * outputVolume];
+    static const int32_t bias[outputVolume];
+    static const int16_t refOutput[numberOfVectors * outputVolume];
 
-private:
-    void computeHidden(AccelerationMode accel, ExecutionConfig const & executionConfig) const;
-    void compute(const LayerConfiguration& layerConfiguration, AccelerationMode accel, ExecutionConfig const & executionConfig) const;
+    int16_t *alignedInput = nullptr;
+    int16_t *alignedWeight = nullptr;
+    int32_t *alignedBias = nullptr;
+    int32_t *alignedMultibias = nullptr;
+    int16_t *alignedOutput = nullptr;
+    int32_t *alignedIntermediateOutput = nullptr;
+    void *alignedPwlSegments = nullptr;
 
-    const KernelMap<TransposeKernel>& transposeKernels;
-    std::unique_ptr<TransposeConfig> transposeHiddenConfig;
+    Gna2PwlSegment pwlSegments[numberOfSegments];
 };
-
-}
 

@@ -41,12 +41,25 @@ struct LayerOutput : public Tensor
     virtual ~LayerOutput() = default;
 
     const Tensor ScratchPad;
+    const uint32_t Grouping;
+    const uint32_t ElementCount;
+
+    static bool IsTensorValid(const Gna2Tensor &apiTensor,
+                       const BaseValidator& validatorIn, nn_operation operation);
 
 protected:
     LayerOutput(const Gna2Tensor &inputTensor, const LayerValidator& validatorIn);
     static const FullCapabilitiesMap capabilities;
 private:
     static Shape ConvertInCaseOfNewApiOrder(gna_tensor_order getOrder, const uint32_t nOutputColumns, const uint32_t nOutputRows);
+
+    uint32_t getElementCount(
+        const Gna2Operation& operation, const LayerValidator& validatorIn) const;
+    uint32_t getGrouping(
+        const Gna2Operation& operation, const LayerValidator& validatorIn) const;
+
+    uint32_t getElementCount(const nn_layer& layer) const;
+    uint32_t getGrouping(const nn_layer& layer) const;
 };
 
 }

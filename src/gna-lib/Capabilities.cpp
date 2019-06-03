@@ -63,3 +63,4 @@ ComponentLimits * FullCapabilitiesMap::GetLatestCaps(const LayerValidator& valid
         throw GnaException(Gna2StatusXnnErrorLyrCfg);
     }
 }
+

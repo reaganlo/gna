@@ -55,12 +55,12 @@ CopyLayer::CopyLayer(const nn_layer& layer, const BaseValidator& validatorIn) :
     ColumnCount{ static_cast<const nn_layer_copy*>(layer.pLayerStruct)->nCopyCols },
     RowCount{ static_cast<const nn_layer_copy*>(layer.pLayerStruct)->nCopyRows },
     copyKernels{ AccelerationDetector::GetKernelMap<CopyKernel>(KERNEL_COPY, KernelMode {Input.Mode}) },
-    copyHiddenConfig{ RowCount, ColumnCount, Input.at(GNA_DIM_W), Output.at(GNA_DIM_H), Input.Buffer, Output.Buffer }
+    copyHiddenConfig{ RowCount, ColumnCount, Input.Dimensions.at('W'), Output.Dimensions.at('W'), Input.Buffer, Output.Buffer }
 {
     // TODO:3: refactor to use scalars/component and validator
     Expect::MultiplicityOf(ColumnCount, XNN_N_IN_ELEMS_MPLY);
     Expect::InRange(ColumnCount, XNN_N_IN_ELEMS_MPLY, XNN_N_IN_ELEMS_MAX, Gna2StatusXnnErrorLyrCfg);
-    Expect::True(RowCount <= Input.at(GNA_DIM_N), Gna2StatusXnnErrorLyrCfg);
+    Expect::True(RowCount <= Input.Dimensions.at('H'), Gna2StatusXnnErrorLyrCfg);
 
     ComputeHidden = [this](AccelerationMode accel, ExecutionConfig const & executionConfig)
                     {this->computeHidden(accel, executionConfig); };
@@ -71,15 +71,15 @@ CopyLayer::CopyLayer(const nn_layer& layer, const BaseValidator& validatorIn) :
 
 CopyLayer::CopyLayer(const Gna2Operation& operation, const BaseValidator& validatorIn) :
     Layer(operation, validatorIn, {}, BaseAddress()),
-    ColumnCount{ GetShapeDimension(GetCopyShape(operation), 0) },
-    RowCount{ GetShapeDimension(GetCopyShape(operation), 1) },
+    ColumnCount{ GetShapeDimension(GetCopyShape(operation), 1) },
+    RowCount{ GetShapeDimension(GetCopyShape(operation), 0) },
     copyKernels{ AccelerationDetector::GetKernelMap<CopyKernel>(KERNEL_COPY, KernelMode {Input.Mode}) },
-    copyHiddenConfig{ RowCount, ColumnCount, Input.at(GNA_DIM_W), Output.at(GNA_DIM_H), Input.Buffer, Output.Buffer }
+    copyHiddenConfig{ RowCount, ColumnCount, Input.Dimensions.at('W'), Output.Dimensions.at('W'), Input.Buffer, Output.Buffer }
 {
     // TODO:3: refactor to use scalars/component and validator
     Expect::MultiplicityOf(ColumnCount, XNN_N_IN_ELEMS_MPLY);
     Expect::InRange(ColumnCount, XNN_N_IN_ELEMS_MPLY, XNN_N_IN_ELEMS_MAX, Gna2StatusXnnErrorLyrCfg);
-    Expect::True(RowCount <= Input.at(GNA_DIM_N), Gna2StatusXnnErrorLyrCfg);
+    Expect::True(RowCount <= Input.Dimensions.at('H'), Gna2StatusXnnErrorLyrCfg);
 
     ComputeHidden = [this](AccelerationMode accel, ExecutionConfig const & executionConfig)
     {this->computeHidden(accel, executionConfig); };

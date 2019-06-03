@@ -44,8 +44,8 @@ using namespace GNA;
 
 static const TensorLimits _ActivationLimitsGen0_9 =
 {
-    {{GNA_TENSOR_W},    // W - #inputs, H - #outputs
-    {{GNA_DIM_W, {XNN_N_PWL_SEGS_MIN, XNN_N_PWL_SEGS_MAX, 1, Gna2StatusXnnErrorPwlSegments}}}},
+    {{GNA_TENSOR_H},    // W - #inputs, H - #outputs
+    {{GNA_DIM_H, {XNN_N_PWL_SEGS_MIN, XNN_N_PWL_SEGS_MAX, 1, Gna2StatusXnnErrorPwlSegments}}}},
     {{ GNA_DATA_RICH_FORMAT },
     Gna2StatusXnnErrorOutputBytes}
 };
@@ -75,14 +75,14 @@ const FullCapabilitiesMap ActivationFunction::capabilities =
 // TODO:3: Copy of LayerOuputCapabilities due to unsolved discrepancy in layer architecture
 static const ShapeLimits _FlatLimits =
 {
-    {GNA_DIM_N, {1, XNN_N_GROUP_MAX, 1, Gna2StatusXnnErrorOutputVolume}},
-    {GNA_DIM_H, {XNN_N_IN_ELEMS_MPLY, XNN_N_IN_ELEMS_MAX, XNN_N_IN_ELEMS_MPLY, Gna2StatusXnnErrorOutputVolume}}
+    {GNA_DIM_H, {1, XNN_N_GROUP_MAX, 1, Gna2StatusXnnErrorOutputVolume}},
+    {GNA_DIM_W, {1, XNN_N_IN_ELEMS_MAX, 1, Gna2StatusXnnErrorOutputVolume}}
 };
 
 static const ShapeLimits _InterleaveLimits =
 {
-    {GNA_DIM_N, {1, XNN_N_GROUP_MAX, 1, Gna2StatusXnnErrorOutputVolume}},
-    {GNA_DIM_H, {1, XNN_N_IN_ELEMS_MAX, 1, Gna2StatusXnnErrorOutputVolume}}
+    {GNA_DIM_H, {1, XNN_N_IN_ELEMS_MAX, 1, Gna2StatusXnnErrorOutputVolume}},
+    {GNA_DIM_W, {1, XNN_N_GROUP_MAX, 1, Gna2StatusXnnErrorOutputVolume}}
 };
 
 static const DataModeLimits _ModesGen0_9 =
@@ -93,14 +93,14 @@ static const DataModeLimits _ModesGen0_9 =
 
 static const TensorLimits _InterleaveTensorLimitsGen0_9 =
 {
-    {GNA_TENSOR_NH},
+    {GNA_TENSOR_HW},
     _InterleaveLimits,
     _ModesGen0_9
 };
 
 static const TensorLimits _FlatTensorLimitsGen0_9 =
 {
-    {GNA_TENSOR_HN},
+    {GNA_TENSOR_HW},
     _FlatLimits,
     _ModesGen0_9
 };
@@ -113,14 +113,14 @@ static const DataModeLimits _ModesGen3 =
 
 static const TensorLimits _InterleaveTensorLimitsGen3 =
 {
-    {GNA_TENSOR_NH},
+    {GNA_TENSOR_HW},
     _InterleaveLimits,
     _ModesGen3
 };
 
 static const TensorLimits _FlatTensorLimitsGen3 =
 {
-    {GNA_TENSOR_HN},
+    {GNA_TENSOR_HW},
     _FlatLimits,
     _ModesGen3
 };
@@ -174,14 +174,14 @@ const FullCapabilitiesMap ActivationFunction::outputCapabilities =
     }},
     {INTEL_RECURRENT, {
         {GNA_0_9, std::make_shared<TensorLimits>(TensorLimits{
-            {GNA_TENSOR_HN},
-            {{GNA_DIM_N, {1, XNN_N_GROUP_MAX, 1, Gna2StatusXnnErrorOutputVolume}},
-             {GNA_DIM_H, {RNN_N_OUT_ELEMS_MPLY, XNN_N_IN_ELEMS_MAX, RNN_N_OUT_ELEMS_MPLY, Gna2StatusXnnErrorOutputVolume}}}, // must be multiple 32 to keep 64B output buffer alignment
+            {GNA_TENSOR_HW},
+            {{GNA_DIM_H, {1, XNN_N_GROUP_MAX, 1, Gna2StatusXnnErrorOutputVolume}},
+             {GNA_DIM_W, {RNN_N_OUT_ELEMS_MPLY, XNN_N_IN_ELEMS_MAX, RNN_N_OUT_ELEMS_MPLY, Gna2StatusXnnErrorOutputVolume}}}, // must be multiple 32 to keep 64B output buffer alignment
             _ModesGen0_9})},
         {GNA_3_0, std::make_shared<TensorLimits>(TensorLimits{
-            {GNA_TENSOR_HN},
-            {{GNA_DIM_N, {1, XNN_N_GROUP_MAX, 1, Gna2StatusXnnErrorOutputVolume}},
-             {GNA_DIM_H, {RNN_N_OUT_ELEMS_MPLY, XNN_N_IN_ELEMS_MAX, RNN_N_OUT_ELEMS_MPLY, Gna2StatusXnnErrorOutputVolume}}}, // must be multiple 32 to keep 64B output buffer alignment
+            {GNA_TENSOR_HW},
+            {{GNA_DIM_H, {1, XNN_N_GROUP_MAX, 1, Gna2StatusXnnErrorOutputVolume}},
+             {GNA_DIM_W, {RNN_N_OUT_ELEMS_MPLY, XNN_N_IN_ELEMS_MAX, RNN_N_OUT_ELEMS_MPLY, Gna2StatusXnnErrorOutputVolume}}}, // must be multiple 32 to keep 64B output buffer alignment
             _ModesGen3})}
     }}
 };
@@ -200,7 +200,7 @@ std::unique_ptr<ActivationFunction> ActivationFunction::Create(const TransformFa
     if (mandatory || IsEnabled(activation))
     {
         auto pwlFunction = std::make_unique<Tensor>(
-            Shape(GNA_TENSOR_W, activation.Shape.Dimensions[0]),
+            Shape(GNA_TENSOR_H, activation.Shape.Dimensions[0]),
             Gna2DataTypePwlSegment, activation.Data, Validator{config.validator, capabilities});
         return std::make_unique<ActivationFunction>(
             BaseTransformConfig<ActivationKernel>{config,
@@ -211,6 +211,41 @@ std::unique_ptr<ActivationFunction> ActivationFunction::Create(const TransformFa
     auto valuePtr = &(config.output->Mode.Value);
     *((gna_data_mode*)valuePtr) = GNA_DATA_ACTIVATION_DISABLED;
     return std::unique_ptr<ActivationFunction>(nullptr);
+}
+
+Gna2Tensor const * ActivationFunction::getPwl(const Gna2Operation& operation)
+{
+    switch (operation.Type)
+    {
+    case Gna2OperationTypeConvolution:
+    case Gna2OperationTypeElementWiseAffine:
+    case Gna2OperationTypeFullyConnectedAffine:
+    case Gna2OperationTypeGmm:
+    case Gna2OperationTypeRecurrent:
+        return static_cast<Gna2Tensor const *>(operation.Operands[4]);
+    default:
+        throw GnaException{ Gna2StatusXnnErrorLyrOperation };
+    }
+}
+
+nn_func_pwl const * ActivationFunction::getPwl(void const *layerDetails, nn_operation operation)
+{
+    switch (operation)
+    {
+    case INTEL_AFFINE: /* FALLTHRU */
+    case INTEL_AFFINE_DIAGONAL:
+        return &static_cast<nn_layer_affine const*>(layerDetails)->pwl;
+    case INTEL_AFFINE_MULTIBIAS:
+        return &static_cast<nn_layer_affine_multi const*>(layerDetails)->pwl;
+    case INTEL_CONVOLUTIONAL:
+        return &static_cast<nn_layer_conv const*>(layerDetails)->pwl;
+    case INTEL_CONVOLUTIONAL_2D:
+        return &static_cast<nn_layer_cnn2d const*>(layerDetails)->activation;
+    case INTEL_RECURRENT:
+        return &static_cast<nn_layer_recurrent const*>(layerDetails)->pwl;
+    default:
+        throw GnaException{ Gna2StatusXnnErrorLyrOperation };
+    }
 }
 
 PwlCached ActivationFunction::createPwlCached(const gna_data_mode mode,

@@ -76,6 +76,7 @@ if(${GNA_BUILD_WITH_GTEST_ENABLED})
   option(BUILD_GMOCK "" OFF)
 
   add_subdirectory(test-gna-api)
+  add_subdirectory(test-layer)
   add_subdirectory(test-xnn)
 
   set_property(TARGET gtest PROPERTY FOLDER tests/common)

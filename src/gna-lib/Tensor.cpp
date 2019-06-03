@@ -65,6 +65,14 @@ Tensor::Tensor(const Shape & dimensions, const DataMode & dataMode, void const *
     validate();
 }
 
+Tensor::Tensor(const Tensor & tensor, const Validator & validatorIn) :
+    Tensor{ tensor.Dimensions, tensor.Mode, tensor.Buffer, validatorIn }
+{}
+
+Tensor::Tensor(const ApiTensor& apiTensor, const Validator& validatorIn) :
+    Tensor { Tensor{apiTensor}, validatorIn }
+{}
+
 void Tensor::UpdateBuffer(const BaseAddress & buffer)
 {
     ValidateBuffer(buffer);

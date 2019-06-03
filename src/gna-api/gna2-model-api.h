@@ -187,8 +187,8 @@ enum Gna2OperationType
             Specifies PWL activation function segment tensor.
             - Segments have to be contiguous.
             Supported values:
-                - Shape: [W] 1D vector, where:
-                    W is a number of piecewise-linear segments
+                - Shape: [H] 1D vector, where:
+                    - H is a number of piecewise-linear segments
                 - Mode: {::Gna2TensorModeDefault}
                 - Type: {::Gna2DataTypePwlSegment},
 
@@ -357,7 +357,7 @@ enum Gna2OperationType
     Gna2OperationTypeFullyConnectedAffine = 3,
 
     /**
-    Element wise affine operation composed with activation function and pooling.
+    Element wise affine operation composed with activation function.
     Used e.g. for scaling input tensor.
 
     Operation:
@@ -463,7 +463,13 @@ enum Gna2OperationType
             @note 2. Output data layout has to match overlap with implicit feedback defined by the delay parameter.
             // TODO:3:API: provide I/O data layout requirements
         3. weights [required]:
-            @see ::Gna2OperationTypeFullyConnectedAffine weights operand.
+            Specifies weight tensor.
+            Supported values:
+                - Mode: {::Gna2TensorModeDefault, ::Gna2TensorModeConstantScalar}
+                - Type: {::Gna2DataTypeInt8, ::Gna2DataTypeInt16},
+                - Shape: [H x W] 2D Matrix, where:
+                    - H is a number of input tensor elements + number of output tensor elements
+                    - W is a number of output tensor elements (output Shape H dimension)
         4. biases [required]:
             @see ::Gna2OperationTypeFullyConnectedAffine biases for ::Gna2BiasModeDefault
         5. activationFunction [required]:

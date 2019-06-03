@@ -104,7 +104,7 @@ std::unique_ptr<ConvolutionFunction2D> ConvolutionFunction2D::create(
     auto stride = std::make_unique<const Component>(operation.ConvolutionStride,
         Validator{ config.validator, strideLimits });
     auto paddingShape = operation.ZeroPadding;
-    if(0 == paddingShape.size())
+    if(paddingShape.empty())
     {
         paddingShape = Shape{ GNA_TENSOR_WH, 0u, 0u };
     }

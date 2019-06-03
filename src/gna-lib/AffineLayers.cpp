@@ -50,13 +50,30 @@ using namespace GNA;
 
 AffineBaseLayer::AffineBaseLayer(const nn_layer& layer, const BaseValidator& validatorIn) :
     Layer(layer, validatorIn, {}, BaseAddress()),
-    Affine(AffineFunction::Create(&Input,
-        ActivationFunction::IsEnabled(&layer) ? &Output.ScratchPad : &Output,
+    Affine(AffineFunction::Create(Input,
+        ActivationFunction::IsEnabled(&layer) ? Output.ScratchPad : Output,
         layer.pLayerStruct, *validator)),
     // TODO:3: refactor to Transform and to use Affine->Output
     Activation(ActivationFunction::Create({&Output.ScratchPad, &Output, Output.Mode, Output.Buffer,
         layer, *validator}))
 
+{
+    initComputeFunctions();
+}
+
+AffineBaseLayer::AffineBaseLayer(const Gna2Operation& operation, const BaseValidator& validatorIn) :
+    Layer(operation, validatorIn, {}, BaseAddress()),
+    Affine(AffineFunction::Create(Input, ActivationFunction::IsEnabled(operation)
+            ? Output.ScratchPad : Output, operation, *validator)),
+    // TODO:3: refactor to Transform and to use Affine->Output
+    Activation(ActivationFunction::Create({&Output.ScratchPad, &Output, Output.Mode, Output.Buffer,
+        operation, *validator}))
+
+{
+    initComputeFunctions();
+}
+
+void AffineBaseLayer::initComputeFunctions()
 {
     if (Activation)
     {
@@ -146,6 +163,10 @@ AffineLayer::AffineLayer(const nn_layer& layer, const BaseValidator& validatorIn
     AffineBaseLayer(layer, validatorIn)
 {}
 
+AffineLayer::AffineLayer(const Gna2Operation& operation, const BaseValidator& validatorIn) :
+    AffineBaseLayer(operation, validatorIn)
+{}
+
 void AffineLayer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const
 {
     AffineBaseLayer::UpdateKernelConfigs(layerConfiguration);
@@ -153,17 +174,17 @@ void AffineLayer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration) co
     {
         if (layerConfiguration.ActList)
         {
-            Expect::InRange(layerConfiguration.ActList->IndicesCount, ui32_1, Output.at(GNA_DIM_H), Gna2StatusActiveListIndicesInvalid);
+            Expect::InRange(layerConfiguration.ActList->IndicesCount, ui32_1, Output.Dimensions.at('H'), Gna2StatusActiveListIndicesInvalid);
         }
         auto const outputCount = layerConfiguration.ActList ?
-            layerConfiguration.ActList->IndicesCount : Output.at(GNA_DIM_H);
-        Activation->UpdateActiveOutputCount(layerConfiguration.ConfigList, outputCount * Output.at(GNA_DIM_N));
+            layerConfiguration.ActList->IndicesCount : Output.Dimensions.at('H');
+        Activation->UpdateActiveOutputCount(layerConfiguration.ConfigList, outputCount * Output.Dimensions.at('W'));
     }
 }
 
 AffineDiagonalLayer::AffineDiagonalLayer(const nn_layer& layer, const BaseValidator& validatorIn) :
     AffineBaseLayer(layer, validatorIn)
 {
-    Expect::Equal(Input.at(GNA_DIM_W), Output.at(GNA_DIM_H), Gna2StatusXnnErrorLyrCfg);
-    Expect::Equal(Input.at(GNA_DIM_N), Output.at(GNA_DIM_N), Gna2StatusXnnErrorLyrCfg);
+    Expect::Equal(Input.Dimensions.at('H'), Output.Dimensions.at('H'), Gna2StatusXnnErrorLyrCfg);
+    Expect::Equal(Input.Dimensions.at('W'), Output.Dimensions.at('W'), Gna2StatusXnnErrorLyrCfg);
 }

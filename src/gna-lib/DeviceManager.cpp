@@ -47,7 +47,7 @@ DeviceManager::DeviceManager()
     // TODO:3: use DriverInterface method to determine number of devices
 }
 
-Device& DeviceManager::GetDevice(gna_device_id deviceId)
+Device& DeviceManager::GetDevice(uint32_t deviceIndex)
 {
     try
     {
@@ -64,7 +64,7 @@ Device& DeviceManager::GetDevice(gna_device_id deviceId)
             deviceOpenedMap.emplace_back(false);
         }
 
-        auto& device = *deviceMap.at(deviceId);
+        auto& device = *deviceMap.at(deviceIndex);
         return device;
     }
     catch (const std::out_of_range&)
@@ -78,58 +78,58 @@ uint32_t DeviceManager::GetDeviceCount()
     return 1;
 }
 
-DeviceVersion DeviceManager::GetDeviceVersion(gna_device_id deviceId)
+DeviceVersion DeviceManager::GetDeviceVersion(uint32_t deviceIndex)
 {
-    VerifyDeviceIndex(deviceId);
+    VerifyDeviceIndex(deviceIndex);
 
-    const auto& device = GetDevice(deviceId);
+    const auto& device = GetDevice(deviceIndex);
     return device.GetVersion();
 }
 
-void DeviceManager::SetThreadCount(gna_device_id deviceId, uint32_t threadCount)
+void DeviceManager::SetThreadCount(uint32_t deviceIndex, uint32_t threadCount)
 {
-    VerifyDeviceIndex(deviceId);
+    VerifyDeviceIndex(deviceIndex);
     Expect::InRange(static_cast<uint32_t>(threadCount), 1U, 127U, Gna2StatusDeviceNumberOfThreadsInvalid);
 
-    auto& device = GetDevice(deviceId);
+    auto& device = GetDevice(deviceIndex);
     device.SetNumberOfThreads(threadCount);
 }
 
-uint32_t DeviceManager::GetThreadCount(gna_device_id deviceId)
+uint32_t DeviceManager::GetThreadCount(uint32_t deviceIndex)
 {
-    VerifyDeviceIndex(deviceId);
+    VerifyDeviceIndex(deviceIndex);
 
-    const auto& device = GetDevice(deviceId);
+    const auto& device = GetDevice(deviceIndex);
     return device.GetNumberOfThreads();
 }
 
-void DeviceManager::VerifyDeviceIndex(gna_device_id deviceId)
+void DeviceManager::VerifyDeviceIndex(uint32_t deviceIndex)
 {
-    Expect::InRange(deviceId, ui32_0, GetDeviceCount() - 1, Gna2StatusIdentifierInvalid);
+    Expect::InRange(deviceIndex, ui32_0, GetDeviceCount() - 1, Gna2StatusIdentifierInvalid);
 }
 
-void DeviceManager::OpenDevice(gna_device_id deviceId)
+void DeviceManager::OpenDevice(uint32_t deviceIndex)
 {
-    VerifyDeviceIndex(deviceId);
+    VerifyDeviceIndex(deviceIndex);
 
-    GetDevice(deviceId);
+    GetDevice(deviceIndex);
 
-    if (deviceOpenedMap.at(deviceId))
+    if (deviceOpenedMap.at(deviceIndex))
     {
         Log->Error("GNA Device already opened. Close Device first.\n");
         throw GnaException(Gna2StatusIdentifierInvalid);
     }
 
-    deviceOpenedMap[deviceId] = true;
+    deviceOpenedMap[deviceIndex] = true;
 }
 
-void DeviceManager::CloseDevice(gna_device_id deviceId)
+void DeviceManager::CloseDevice(uint32_t deviceIndex)
 {
-    VerifyDeviceIndex(deviceId);
-    if (!deviceOpenedMap.at(deviceId))
+    VerifyDeviceIndex(deviceIndex);
+    if (!deviceOpenedMap.at(deviceIndex))
     {
         throw GnaException(Gna2StatusIdentifierInvalid);
     }
     //TODO: Release device handle too
-    deviceOpenedMap[deviceId] = false;
+    deviceOpenedMap[deviceIndex] = false;
 }

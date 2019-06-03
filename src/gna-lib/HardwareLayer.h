@@ -117,8 +117,7 @@ public:
     virtual ~HardwareLayerExt() = default;
 
 protected:
-    HardwareLayerExt(const DescriptorParameters& parameters,
-        const uint32_t effectiveGrouping);
+    HardwareLayerExt(const DescriptorParameters& parameters);
 
     void save();
 

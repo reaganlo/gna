@@ -157,7 +157,7 @@ uint32_t HardwareLayerGmm::GetLdInputOffset() const
 uint32_t HardwareLayerGmm::GetScrlen(uint32_t indicesCount) const
 {
     auto gmm = SoftwareLayer->Get<const GmmLayer>();
-    return GMM_SCORE_SIZE * gmm->Input.at(GNA_DIM_N) * indicesCount;
+    return GMM_SCORE_SIZE * gmm->Input.Dimensions.at('N') * indicesCount;
 }
 
 uint32_t HardwareLayerGmm::GetLdScrlenOffset() const
@@ -285,7 +285,8 @@ uint32_t HardwareLayer::GetLdFeedbackOffset() const
 void HardwareLayer::saveCommonPart()
 {
     XnnDescriptor[op] =static_cast<uint8_t>(OperationsMap.at(SoftwareLayer->Operation));
-    XnnDescriptor[n_groups] = SoftwareLayer->Input.at(GNA_DIM_N);
+    XnnDescriptor[n_in_elems] = SoftwareLayer->Input.ElementCount;
+    XnnDescriptor[n_out_elems] = SoftwareLayer->Output.ElementCount;
     XnnDescriptor[in_buffer] = SoftwareLayer->Input;
     if(XnnDescriptor.HasParameter(input_element_precision))
     {
@@ -298,8 +299,6 @@ void HardwareLayer::save()
 {
     saveCommonPart();
 
-    XnnDescriptor[n_in_elems] = SoftwareLayer->Input.at(GNA_DIM_W);
-    XnnDescriptor[n_out_elems] = SoftwareLayer->Output.at(GNA_DIM_H);
     if (GNA_DATA_ACTIVATION_DISABLED == SoftwareLayer->Output.Mode)
     {
         XnnDescriptor[out_sum_buffer] = SoftwareLayer->Output;
@@ -323,16 +322,17 @@ void HardwareLayer::saveActivation(const ActivationFunction* activationIn)
     }
 }
 
-HardwareLayerExt::HardwareLayerExt(const DescriptorParameters& parameters, const uint32_t effectiveGrouping) :
+HardwareLayerExt::HardwareLayerExt(const DescriptorParameters& parameters) :
     HardwareLayer(parameters),
     bufferElementCount { parameters.XnnDescriptor.HwCapabilities.GetBufferElementCount(
-                            effectiveGrouping, SoftwareLayer->Input.Mode.Size) },
-    iterationGrouping{effectiveGrouping}
+                        SoftwareLayer->Input.Grouping, SoftwareLayer->Input.Mode.Size) },
+    iterationGrouping{SoftwareLayer->Input.Grouping}
 {
     Expect::InRange(iterationGrouping, ui32_1, XNN_N_GROUP_MAX, Gna2StatusXnnErrorGrouping);
     // Calculates number of iterations and elements in last iteration
      //#groups for calculation(can be different than network grouping)
-    auto elementsTimesGrouping = SoftwareLayer->Input.at(GNA_DIM_W) * iterationGrouping;
+    auto numberOfElements = SoftwareLayer->Input.ElementCount;
+    auto elementsTimesGrouping = numberOfElements * iterationGrouping;
     iterationCount = ((elementsTimesGrouping - 1) / bufferElementCount) + 1;
     Expect::InRange(iterationCount, ui32_1, ui32_UINT8_MAX, Gna2StatusXnnErrorLyrCfg);
 
@@ -344,6 +344,8 @@ HardwareLayerExt::HardwareLayerExt(const DescriptorParameters& parameters, const
 void HardwareLayerExt::save()
 {
     HardwareLayer::save();
+    XnnDescriptor[n_groups] = iterationGrouping;
+
     XnnDescriptor[n_iters] = iterationCount;
     XnnDescriptor[n_elems_last] = lastIterationElementCount;
 
@@ -360,7 +362,7 @@ void HardwareLayerExt::save()
 }
 
 HardwareLayerAffDiagTrans::HardwareLayerAffDiagTrans(const DescriptorParameters& parameters) :
-    HardwareLayerExt(parameters, parameters.SoftwareLayer->Input.at(GNA_DIM_N))
+    HardwareLayerExt(parameters)
 {
     const ActivationFunction* act = nullptr;
     switch (SoftwareLayer->Operation)
@@ -392,13 +394,14 @@ HardwareLayerCopy::HardwareLayerCopy(const DescriptorParameters& parameters) :
 void HardwareLayerCopy::save()
 {
     HardwareLayer::save();
+
     auto copy = SoftwareLayer->Get<const CopyLayer>();
     XnnDescriptor[cpy_n_elems] = copy->ColumnCount;
     XnnDescriptor[n_groups] = copy->RowCount;
 }
 
 HardwareLayerRnn::HardwareLayerRnn(const DescriptorParameters& parameters) :
-    HardwareLayerExt(parameters, 1),
+    HardwareLayerExt(parameters),
     feedbackIterationsCount{0},
     feedbackFirstIterElementCount{0},
     feedbackLastIterElementCount{0}
@@ -412,7 +415,7 @@ HardwareLayerRnn::HardwareLayerRnn(const DescriptorParameters& parameters) :
 
 void HardwareLayerRnn::convert()
 {
-    auto elementCount = SoftwareLayer->Output.at(GNA_DIM_H);
+    auto elementCount = SoftwareLayer->Output.Dimensions.at('W');
 
     feedbackFirstIterElementCount = (std::min)((bufferElementCount - lastIterationElementCount), elementCount);
     Expect::True(feedbackFirstIterElementCount <= bufferElementCount, Gna2StatusXnnErrorLyrCfg);
@@ -462,7 +465,7 @@ uint32_t HardwareLayerRnn::GetLdFeedbackOffset() const
 }
 
 HardwareLayerCnn::HardwareLayerCnn(const DescriptorParameters& parameters) :
-    HardwareLayerExt(parameters, 1)
+    HardwareLayerExt(parameters)
 {
     auto cnn = SoftwareLayer->Get<const CnnLayer>();
 
@@ -517,8 +520,8 @@ void HardwareLayerCnn::save()
     if (NULL != cnn->Pooling)
     {
         XnnDescriptor[pool_param] = static_cast<uint8_t>(cnn->Pooling->Type);
-        XnnDescriptor[cnn_pool_size] = cnn->Pooling->Window.at(GNA_DIM_W);
-        XnnDescriptor[cnn_pool_stride] = cnn->Pooling->Stride.at(GNA_DIM_W);
+        XnnDescriptor[cnn_pool_size] = cnn->Pooling->Window.at('W');
+        XnnDescriptor[cnn_pool_stride] = cnn->Pooling->Stride.at('W');
     }
 
     if(XnnDescriptor.HasParameter(bias_precision))
@@ -535,7 +538,7 @@ void HardwareLayerCnn::save()
     XnnDescriptor[cnn_n_flt_iters] = filtersIterationCount;
     XnnDescriptor[cnn_n_flt_last] = filtersCountInLastIteration;
     XnnDescriptor[cnn_n_flt_outs] = convOutputElementCount;
-    XnnDescriptor[cnn_n_flt_stride] = cnn->Convolution->Stride->at(GNA_DIM_W);
+    XnnDescriptor[cnn_n_flt_stride] = cnn->Convolution->Stride->Dimensions.at('W');
     XnnDescriptor[cnn_n_out_p_flt] = outputElementCount;
     XnnDescriptor[bias_buffer] = cnn->Convolution->Biases->Buffer;
 }
@@ -563,7 +566,7 @@ uint32_t HardwareLayerCnn2D::GetConvolutionMemorySize(DeviceVersion deviceVersio
     ConvolutionFunction2D const * cnnIn)
 {
     UNREFERENCED_PARAMETER(deviceVersion);
-    return cnnIn->Filters->at(GNA_DIM_H) * cnnIn->Output->at(GNA_DIM_W) * 8;
+    return cnnIn->Filters->Dimensions.at('H') * cnnIn->Output->Dimensions.at('W') * 8;
 }
 
 uint32_t HardwareLayerCnn2D::GetPoolingMemorySize(DeviceVersion deviceVersion,
@@ -599,41 +602,44 @@ HardwareLayerCnn2D::HardwareLayerCnn2D(const DescriptorParameters& parameters) :
 void HardwareLayerCnn2D::save()
 {
     saveCommonPart();
+    XnnDescriptor[n_groups] = SoftwareLayer->Input.Dimensions.at('N');
+    XnnDescriptor[n_in_elems] = SoftwareLayer->Input.Dimensions.at('W');
+    XnnDescriptor[n_out_elems] = SoftwareLayer->Output.Dimensions.at('W');
     XnnDescriptor[weight_size] = cnn->Filters->Mode;
     XnnDescriptor[weight_buffer] = *cnn->Filters;
     XnnDescriptor[cnn_n_flts] = cnn->Filters->Count;
     XnnDescriptor[bias_buffer] = cnn->Biases->Buffer;
     XnnDescriptor[bias_precision] = cnn->Biases->Mode;
     XnnDescriptor[cnn2d_bias_mode] = cnn->Biases->BiasMode;
-    XnnDescriptor[cnn2d_in_dim_d] = cnn->Input->Dimensions.at(GNA_DIM_D);
-    XnnDescriptor[cnn2d_in_dim_w] = cnn->Input->Dimensions.at(GNA_DIM_W);
-    XnnDescriptor[cnn2d_in_dim_h] = cnn->Input->Dimensions.at(GNA_DIM_H);
-    XnnDescriptor[cnn2d_padding_w] = cnn->Padding->Dimensions.at(GNA_DIM_W);
-    XnnDescriptor[cnn2d_padding_h] = cnn->Padding->Dimensions.at(GNA_DIM_H);
-    XnnDescriptor[cnn2d_conv_stride_w] = cnn->Stride->Dimensions.at(GNA_DIM_W);
-    XnnDescriptor[cnn2d_conv_stride_h] = cnn->Stride->Dimensions.at(GNA_DIM_H);
-    XnnDescriptor[cnn2d_conv_out_w] = cnn->Output->Dimensions.at(GNA_DIM_W);
-    XnnDescriptor[cnn2d_conv_out_h] = cnn->Output->Dimensions.at(GNA_DIM_H);
-    XnnDescriptor[cnn2d_conv_kernel_w] = cnn->Filters->Dimensions.at(GNA_DIM_W);
-    XnnDescriptor[cnn2d_conv_kernel_h] = cnn->Filters->Dimensions.at(GNA_DIM_H);
+    XnnDescriptor[cnn2d_in_dim_d] = cnn->Input->Dimensions.at('D');
+    XnnDescriptor[cnn2d_in_dim_w] = cnn->Input->Dimensions.at('W');
+    XnnDescriptor[cnn2d_in_dim_h] = cnn->Input->Dimensions.at('H');
+    XnnDescriptor[cnn2d_padding_w] = cnn->Padding->Dimensions.at('W');
+    XnnDescriptor[cnn2d_padding_h] = cnn->Padding->Dimensions.at('H');
+    XnnDescriptor[cnn2d_conv_stride_w] = cnn->Stride->Dimensions.at('W');
+    XnnDescriptor[cnn2d_conv_stride_h] = cnn->Stride->Dimensions.at('H');
+    XnnDescriptor[cnn2d_conv_out_w] = cnn->Output->Dimensions.at('W');
+    XnnDescriptor[cnn2d_conv_out_h] = cnn->Output->Dimensions.at('H');
+    XnnDescriptor[cnn2d_conv_kernel_w] = cnn->Filters->Dimensions.at('W');
+    XnnDescriptor[cnn2d_conv_kernel_h] = cnn->Filters->Dimensions.at('H');
     XnnDescriptor[cnn2d_kernel_iter] = kernelWorkGroupIterationCount;
     XnnDescriptor[cnn2d_kernel_wg] = kernelWorkGroupSize;
     XnnDescriptor[cnn2d_addaptive] = static_cast<uint32_t>(0);
 
     if (pooling != nullptr)
     {
-        XnnDescriptor[cnn2d_pool_stride_w] = pooling->Stride->Dimensions.at(GNA_DIM_H);
-        XnnDescriptor[cnn2d_pool_stride_h] = pooling->Stride->Dimensions.at(GNA_DIM_H);
-        XnnDescriptor[cnn2d_pool_out_w] = pooling->Output->Dimensions.at(GNA_DIM_W);
-        XnnDescriptor[cnn2d_pool_out_h] = pooling->Output->Dimensions.at(GNA_DIM_H);
-        XnnDescriptor[cnn2d_pool_window_w] = pooling->Window->Dimensions.at(GNA_DIM_W);
-        XnnDescriptor[cnn2d_pool_window_h] = pooling->Window->Dimensions.at(GNA_DIM_H);
+        XnnDescriptor[cnn2d_pool_stride_w] = pooling->Stride->Dimensions.at('H');
+        XnnDescriptor[cnn2d_pool_stride_h] = pooling->Stride->Dimensions.at('H');
+        XnnDescriptor[cnn2d_pool_out_w] = pooling->Output->Dimensions.at('W');
+        XnnDescriptor[cnn2d_pool_out_h] = pooling->Output->Dimensions.at('H');
+        XnnDescriptor[cnn2d_pool_window_w] = pooling->Window->Dimensions.at('W');
+        XnnDescriptor[cnn2d_pool_window_h] = pooling->Window->Dimensions.at('H');
         XnnDescriptor[pool_param] = static_cast<uint8_t>(pooling->Type);
     }
 }
 
 HardwareLayerAffineMBias::HardwareLayerAffineMBias(const DescriptorParameters& parameters) :
-    HardwareLayerExt(parameters, parameters.SoftwareLayer->Input.at(GNA_DIM_N))
+    HardwareLayerExt(parameters)
 {
     auto mbiasLayer = SoftwareLayer->Get<const AffineLayer>();
     auto affineMulti = static_cast<const AffineFunctionMulti*>(mbiasLayer->Affine.get());
@@ -649,7 +655,7 @@ HardwareLayerAffineMBias::HardwareLayerAffineMBias(const DescriptorParameters& p
         XnnDescriptor[bias_precision] = affineMulti->Biases->Mode;
     }
 
-    XnnDescriptor[bias_grp_cnt] = affineMulti->Biases->at(GNA_DIM_N);
+    XnnDescriptor[bias_grp_cnt] = affineMulti->Biases->Dimensions.at('W');
     XnnDescriptor[bias_grp_buffer] = affineMulti->Biases->Buffer;
     XnnDescriptor[bias_grp_value] = affineMulti->Biases->VectorIndex;
 
@@ -675,6 +681,7 @@ HardwareLayerGmm::HardwareLayerGmm(const DescriptorParameters& parameters) :
 void HardwareLayerGmm::save()
 {
     XnnDescriptor[op] = static_cast<uint8_t>(OperationsMap.at(SoftwareLayer->Operation));
+    XnnDescriptor[n_groups] = SoftwareLayer->Input.Dimensions.at('N');
     XnnDescriptor[gmm_descriptor] = XnnDescriptor.GmmDescriptor;
 
     auto gmm = SoftwareLayer->Get<const GmmLayer>();
@@ -683,11 +690,11 @@ void HardwareLayerGmm::save()
     XnnDescriptor[gmmscradd] = gmm->Output;
 
     // GMM Model configuration, will be constant over time for model
-    XnnDescriptor[gmmscrlen] = GMM_SCORE_SIZE * gmm->Input.at(GNA_DIM_N) * gmm->Config.stateCount;; // will be updated when ActiveList is used
-    XnnDescriptor[fvoffset]  = ALIGN64(gmm->Input.at(GNA_DIM_W) * GMM_FV_ELEMENT_SIZE);
+    XnnDescriptor[gmmscrlen] = GMM_SCORE_SIZE * gmm->Input.Dimensions.at('N') * gmm->Config.stateCount;; // will be updated when ActiveList is used
+    XnnDescriptor[fvoffset]  = ALIGN64(gmm->Input.Dimensions.at('W') * GMM_FV_ELEMENT_SIZE);
 
-    XnnDescriptor[numfv]     = gmm->Input.at(GNA_DIM_N);
-    XnnDescriptor[vlength]   = gmm->Input.at(GNA_DIM_W);
+    XnnDescriptor[numfv]     = gmm->Input.Dimensions.at('N');
+    XnnDescriptor[vlength]   = gmm->Input.Dimensions.at('W');
 
     XnnDescriptor[mode]      = GmmModes.at(gmm->Config.mode)._value;
     XnnDescriptor[gcaddr]    = gmm->Data.gaussianConstants;
@@ -698,7 +705,7 @@ void HardwareLayerGmm::save()
     XnnDescriptor[mvsoffset] = gmm->Params.MeanSetOffsetSize;
     XnnDescriptor[vvsoffset] = gmm->Params.VarSetOffsetSize;
     XnnDescriptor[vvwidth]   = gmm->Params.VarianceSize;
-    XnnDescriptor[gmmtelst]  = gmm->Config.mixtureComponentCount * gmm->Input.at(GNA_DIM_W);
+    XnnDescriptor[gmmtelst]  = gmm->Config.mixtureComponentCount * gmm->Input.Dimensions.at('W');
     XnnDescriptor[maxlsscore] = gmm->Config.maximumScore;
     XnnDescriptor[numgmms]   = gmm->Config.stateCount;
     XnnDescriptor[nummcpg]   = gmm->Config.mixtureComponentCount;

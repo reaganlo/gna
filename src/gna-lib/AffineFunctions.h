@@ -25,6 +25,7 @@
 
 #pragma once
 
+#include "AccelerationDetector.h"
 #include "Address.h"
 #include "Bias.h"
 #include "KernelArguments.h"
@@ -53,8 +54,13 @@ public:
     virtual ~AffineFunction() = default;
 
     // dimensions: NWH
-    static std::unique_ptr<const AffineFunction> Create(const Tensor* input, const Tensor* output,
+    static std::unique_ptr<const AffineFunction> Create(const Tensor& input, const Tensor& output,
         void const * layerDetails, const LayerValidator& validatorIn);
+
+    static std::unique_ptr<const AffineFunction> Create(const Tensor& input, const Tensor& output,
+        const Gna2Operation& operation, const LayerValidator& validatorIn);
+
+    static bool HasGroupedBias(const Gna2Operation& operation);
 
     std::unique_ptr<const AffineConfig> GetRequestConfig(const BaseAddress& inputs,
         const BaseAddress& outputs) const;
@@ -72,12 +78,21 @@ protected:
 
     const KernelMap<AffineKernel>&  kernels;
     std::unique_ptr<const AffineConfig> hiddenConfig;
+
+private:
+    static const std::map<Gna2OperationType, kernel_op> kernelOperationMap;
+    static std::unique_ptr<const AffineFunction> createAffineSingleFunction(
+        const Tensor& input, const Tensor& output,
+        const Gna2Operation& operation, const LayerValidator& validatorIn);
+    static std::unique_ptr<const AffineFunction> createAffineMultiFunction(
+        const Tensor& input, const Tensor& output,
+        const Gna2Operation& operation, const LayerValidator& validatorIn);
 };
 
 class AffineFunctionSingle : public AffineFunction
 {
 public:
-    AffineFunctionSingle(const BaseAddress& input, const BaseAddress& output, const uint32_t vectorCount,
+    AffineFunctionSingle(const Tensor& inputTensor, const Tensor& outputTensor,
         std::unique_ptr<const WeightTensor> weights, std::unique_ptr<const BiasTensor> biases,
         const KernelMap<AffineKernel>& kernelsIn,
         const KernelMap<AffineActiveListKernel>& kernelsAlIn);
@@ -93,7 +108,7 @@ protected:
 class AffineFunctionMulti : public AffineFunction
 {
 public:
-    AffineFunctionMulti(const BaseAddress& input, const BaseAddress& output, const uint32_t vectorCount,
+    AffineFunctionMulti(const Tensor& inputTensor, const Tensor& outputTensor,
         std::unique_ptr<const WeightTensor> weights, std::unique_ptr<const BiasTensor> biases,
         std::unique_ptr<const Tensor> weightScaleFactors,
         const KernelMap<AffineKernel>& kernelsIn);

@@ -191,7 +191,9 @@ GNA2_API struct Gna2Tensor Gna2TensorInitDisabled()
 {
     const std::function<ApiTensor()> command = [&]()
     {
-        return ApiTensor{};
+        ApiTensor tensor {};
+        tensor.Mode = Gna2TensorModeDisabled;
+        return tensor;
     };
     return ApiWrapper::ExecuteSafely(command, ApiTensor{});
 }
@@ -250,12 +252,10 @@ GNA2_API struct Gna2Tensor Gna2TensorInit4D(uint32_t n, uint32_t x, uint32_t y,
 GNA2_API struct Gna2Tensor Gna2TensorInitActivation(uint32_t numberOfSegments,
     struct Gna2PwlSegment * segments)
 {
-    UNREFERENCED_PARAMETER(numberOfSegments);
-    UNREFERENCED_PARAMETER(segments);
-    // TODO:3:API: implement P2
     const std::function<ApiTensor()> command = [&]()
     {
-        return ApiTensor{};
+        return ModelWrapper::TensorInit(Gna2DataTypePwlSegment, {},
+                static_cast<void const *>(segments), numberOfSegments);
     };
     return ApiWrapper::ExecuteSafely(command, ApiTensor{});
 }
@@ -307,7 +307,10 @@ GNA2_API enum Gna2Status Gna2OperationInitFullyConnectedBiasGrouping(
         Expect::NotNull(biasMode);
         ModelWrapper::OperationInit(*operation, Gna2OperationTypeFullyConnectedAffine, userAllocator);
         ModelWrapper::SetOperands(*operation, inputs, outputs, weights, biases, activation, weightScaleFactors);
+
+        Expect::NotNull(biasMode);
         ModelWrapper::SetParameters(*operation, biasMode, biasVectorIndex);
+
         *biasMode = Gna2BiasModeGrouping;
         return Gna2StatusSuccess;
     };
@@ -402,8 +405,8 @@ GNA2_API enum Gna2Status Gna2OperationInitInterleave(
         Expect::NotNull(operation);
         ModelWrapper::OperationInit(*operation, Gna2OperationTypeTransposition, userAllocator);
         ModelWrapper::SetOperands(*operation, inputs, outputs);
-        ModelWrapper::SetLayout(*inputs, "NW");
-        ModelWrapper::SetLayout(*outputs, "WN");
+        ModelWrapper::SetLayout(*inputs, "HW");
+        ModelWrapper::SetLayout(*outputs, "HW");
         return Gna2StatusSuccess;
     };
     return ApiWrapper::ExecuteSafely(command);
@@ -419,8 +422,8 @@ GNA2_API enum Gna2Status Gna2OperationInitDeInterleave(
         Expect::NotNull(operation);
         ModelWrapper::OperationInit(*operation, Gna2OperationTypeTransposition, userAllocator);
         ModelWrapper::SetOperands(*operation, inputs, outputs);
-        ModelWrapper::SetLayout(*inputs, "WN");
-        ModelWrapper::SetLayout(*outputs, "NW");
+        ModelWrapper::SetLayout(*inputs, "HW");
+        ModelWrapper::SetLayout(*outputs, "HW");
         return Gna2StatusSuccess;
     };
     return ApiWrapper::ExecuteSafely(command);

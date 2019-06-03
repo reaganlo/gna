@@ -69,7 +69,7 @@ protected:
     static Shape CalculateBiasShape(Gna2BiasMode mode, uint32_t filterCount, Shape const & outputShape);
 
     static std::unique_ptr<const BiasTensor> CreateBiasTensor(
-        Gna2Tensor const & biases, Gna2BiasMode biasMode, uint32_t filtersCount,
+        Gna2Tensor const & apiTensor, Gna2BiasMode biasMode, uint32_t filtersCount,
         Shape const & outputShape, const LayerValidator & validatorIn);
 
     static Shape GetOutputShape(Shape const & inputShape,

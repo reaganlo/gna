@@ -56,8 +56,8 @@ const FullCapabilitiesMap WeightTensor::capabilities =
     }},
     {INTEL_AFFINE_DIAGONAL, {
         {GNA_0_9, std::make_shared<TensorLimits>(TensorLimits{
-            {GNA_TENSOR_W},    // W=H = #outputs
-            {{GNA_DIM_W, {XNN_N_IN_ELEMS_MPLY, XNN_N_IN_ELEMS_MAX, XNN_N_IN_ELEMS_MPLY, Gna2StatusXnnErrorWeightVolume}}},
+            {GNA_TENSOR_H},    // W=H = #outputs
+            {{GNA_DIM_H, {XNN_N_IN_ELEMS_MPLY, XNN_N_IN_ELEMS_MAX, XNN_N_IN_ELEMS_MPLY, Gna2StatusXnnErrorWeightVolume}}},
             _ModesGen0_9})}
     }},
     {INTEL_AFFINE_MULTIBIAS, {
@@ -112,3 +112,9 @@ WeightTensor::WeightTensor(const Shape& dimensions, const DataMode& dataMode,
     Tensor{ dimensions, dataMode, buffer, Validator{validatorIn, capabilities} }
 {
 }
+
+WeightTensor::WeightTensor(const Gna2Tensor &apiTensor, const LayerValidator& validatorIn)
+    : Tensor(apiTensor, Validator{ validatorIn, capabilities })
+{
+}
+

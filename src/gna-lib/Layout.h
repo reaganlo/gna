@@ -56,9 +56,9 @@ public:
     void Reshape(Layout const & newLayout, size_type shapeDimensions);
 
 private:
-    static const std::map<const std::string, gna_tensor_order>& GetOrders();
     static char const * GetOrderString(gna_tensor_order order);
 
+    static const std::map<const std::string, gna_tensor_order> orderStrings;
     //gna_tensor_order OrderFromLayout() const;
 };
 

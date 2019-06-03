@@ -262,7 +262,9 @@ TEST_F(TestGnaShapeApi, Gna2ShapeInit4DSuccessfull)
 TEST_F(TestGnaTensorApi, Gna2TensorInitDisabledSuccessfull)
 {
     const auto tensor = Gna2TensorInitDisabled();
-    InitTest(tensor, Gna2DataTypeNone, nullptr, "");
+    ASSERT_EQ(tensor.Mode, Gna2TensorModeDisabled);
+    ASSERT_EQ(tensor.Type, Gna2DataTypeNone);
+    ASSERT_EQ(tensor.Data, nullptr);
 }
 
 TEST_F(TestGnaTensorApi, Gna2TensorInitScalarSuccessfull)
@@ -320,14 +322,14 @@ TEST_F(TestGnaModelApi, Gna2ModelCreateSingleCopyLayerSuccesfull)
 
     //TODO:3:P1: Check the proper Dimensions order 16,8 vs 8 16
     Gna2Tensor input{
-        Gna2Shape{2, { 16, 8 } },
+        Gna2Shape{2, { 8, 16 } },
         Gna2TensorModeDefault,
         {'\0'},
         Gna2DataTypeInt16,
         nullptr };
 
     Gna2Tensor output{ input };
-    Gna2Shape copyShape{ 2, { 16, 8 } };
+    Gna2Shape copyShape{ 2, { 8, 16 } };
     void * parameters[] = { &copyShape };
     const Gna2Tensor * inout[] = { &input, &output };
     Gna2Operation copyOperation{ Gna2OperationTypeCopy ,

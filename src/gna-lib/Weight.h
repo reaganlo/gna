@@ -37,7 +37,8 @@ struct Shape;
 struct WeightTensor : public Tensor
 {
     WeightTensor(const Shape& dimensions, const DataMode& dataMode,
-        void * buffer, const LayerValidator& validatorIn);
+        void * buffer, const LayerValidator& validator);
+    WeightTensor(const Gna2Tensor &apiTensor, const LayerValidator& validator);
     virtual ~WeightTensor() = default;
 
 protected:

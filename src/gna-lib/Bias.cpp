@@ -87,14 +87,16 @@ const FullCapabilitiesMap BiasTensor::capabilities =
     }},
     {INTEL_AFFINE_MULTIBIAS, {
         {GNA_2_0, std::make_shared<TensorLimits>(TensorLimits{
-            {GNA_TENSOR_NH},
-                {{GNA_DIM_N, {1, XNN_N_GROUP_MAX, 1, Gna2StatusXnnErrorBiasVolume}},
-                {GNA_DIM_H, {1, XNN_N_IN_ELEMS_MAX, 1, Gna2StatusXnnErrorBiasVolume}}},
+            {GNA_TENSOR_HW},
+            {
+                {GNA_DIM_H, {1, XNN_N_IN_ELEMS_MAX, 1, Gna2StatusXnnErrorBiasVolume}},
+                {GNA_DIM_W, {1, XNN_N_GROUP_MAX, 1, Gna2StatusXnnErrorBiasVolume}}
+            },
             _ModesGen0_9})},
         {GNA_3_0, std::make_shared<TensorLimits>(TensorLimits{
-            {GNA_TENSOR_NH},
-                {{GNA_DIM_N, {1, XNN_N_GROUP_MAX, 1, Gna2StatusXnnErrorBiasVolume}},
-                {GNA_DIM_H, {1, XNN_N_IN_ELEMS_MAX, 1, Gna2StatusXnnErrorBiasVolume}}},
+            {GNA_TENSOR_HW},
+            {{GNA_DIM_H, {1, XNN_N_IN_ELEMS_MAX, 1, Gna2StatusXnnErrorBiasVolume}},
+            {GNA_DIM_W, {1, XNN_N_GROUP_MAX, 1, Gna2StatusXnnErrorBiasVolume}}},
             _ModesGen3})}
     }},
     {INTEL_CONVOLUTIONAL, {
@@ -145,10 +147,26 @@ const SetLimits<KernelBiasMode> BiasTensor::modeLimits
 BiasTensor::BiasTensor(const Shape& dimensions, const uint32_t biasVectorIndex, const DataMode& dataMode,
     void * buffer, const LayerValidator& validatorIn, Gna2BiasMode biasMode) :
     Tensor{ dimensions, dataMode, buffer, Validator{ validatorIn, capabilities } },
+    VectorCount{ biasMode == Gna2BiasModeGrouping ? Dimensions.at('W') : 1 },
     VectorIndex{ biasVectorIndex },
     BiasMode{ ToKernelBiasMode(biasMode, dataMode.Mode) }
 {
-    const auto vectorCountIter = Dimensions.find(GNA_DIM_N);
+    validate();
+}
+
+BiasTensor::BiasTensor(const Gna2Tensor &apiTensor, const uint32_t biasVectorIndex,
+        Gna2BiasMode biasMode, const LayerValidator& validatorIn) :
+    Tensor{ apiTensor, Validator { validatorIn, capabilities } },
+    VectorCount{ biasMode == Gna2BiasModeGrouping ? Dimensions.at('W') : 1 },
+    VectorIndex{ biasVectorIndex },
+    BiasMode{ ToKernelBiasMode(biasMode, apiTensor.Mode) }
+{
+    validate();
+}
+
+void BiasTensor::validate() const
+{
+    const auto vectorCountIter = Dimensions.find(GNA_DIM_W);
     auto vectorCount = ui32_1;
     if (Dimensions.end() != vectorCountIter)
     {

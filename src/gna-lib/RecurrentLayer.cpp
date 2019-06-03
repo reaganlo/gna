@@ -55,16 +55,38 @@ using namespace GNA;
 
 RnnLayer::RnnLayer(const nn_layer& layer, const BaseValidator& validatorIn) :
     AffineBaseLayer(layer, validatorIn),
-    FeedbackDelay{static_cast<const nn_layer_reccurent *>(layer.pLayerStruct)->feedbackFrameDelay},
+    FeedbackDelay{static_cast<const nn_layer_recurrent *>(layer.pLayerStruct)->feedbackFrameDelay},
     recurrentKernels{ AccelerationDetector::GetKernelMap<RecurrentKernel>(
         KERNEL_RECURRENT, {Input.Mode, Affine->Weights->Mode, Affine->Biases->Mode}) },
-    rnnHiddenConfig{Output.at(GNA_DIM_H), Input.at(GNA_DIM_N), Input.at(GNA_DIM_W), Input.Buffer, nullptr,
+    rnnHiddenConfig{Output.Dimensions.at('W'), Input.Dimensions.at('H'), Input.Dimensions.at('W'), Input.Buffer, nullptr,
                         Activation->Input->Buffer, Activation->Output->Buffer, *Affine->Weights,
-                    *Affine->Biases, Affine->Biases->Mode.Size, Output.Mode.Size, {Output.at(GNA_DIM_H), &Activation->Pwl}}
+                    *Affine->Biases, Affine->Biases->Mode.Size, Output.Mode.Size, {Output.Dimensions.at('W'), &Activation->Pwl}}
 {
     // TODO:3: think of validation functor for this kind of properties or other means to generalize/unify
-    Expect::InRange(FeedbackDelay, ui32_1, Input.at(GNA_DIM_N), Gna2StatusXnnErrorNoFeedback);
-    Expect::Equal(Input.at(GNA_DIM_N), Output.at(GNA_DIM_N), Gna2StatusXnnErrorLyrCfg);
+    Expect::InRange(FeedbackDelay, ui32_1, Input.Dimensions.at('H'), Gna2StatusXnnErrorNoFeedback);
+    Expect::Equal(Input.Dimensions.at('H'), Output.Dimensions.at('H'), Gna2StatusXnnErrorLyrCfg);
+
+    rnnHiddenConfig.feedbackBuffer = CalculateFeedbackBuffer(Output);
+
+    Layer::ComputeHidden = [this](AccelerationMode accel, ExecutionConfig const & executionConfig)
+                    {this->computeHidden(accel, executionConfig); };
+
+    Layer::Compute = [this](LayerConfiguration &layerConfiguration, AccelerationMode accel, ExecutionConfig const & executionConfig)
+                    {this->compute(layerConfiguration, accel, executionConfig); };
+}
+
+RnnLayer::RnnLayer(const Gna2Operation& operation, const BaseValidator& validatorIn) :
+    AffineBaseLayer(operation, validatorIn),
+    FeedbackDelay{*static_cast<uint32_t *>(operation.Parameters[0])},
+    recurrentKernels{ AccelerationDetector::GetKernelMap<RecurrentKernel>(
+        KERNEL_RECURRENT, {Input.Mode, Affine->Weights->Mode, Affine->Biases->Mode}) },
+    rnnHiddenConfig{Output.Dimensions.at('W'), Input.Dimensions.at('H'), Input.Dimensions.at('W'), Input.Buffer, nullptr,
+                        Activation->Input->Buffer, Activation->Output->Buffer, *Affine->Weights,
+                    *Affine->Biases, Affine->Biases->Mode.Size, Output.Mode.Size, {Output.Dimensions.at('W'), &Activation->Pwl}}
+{
+    // TODO:3: think of validation functor for this kind of properties or other means to generalize/unify
+    Expect::InRange(FeedbackDelay, ui32_1, Input.Dimensions.at('H'), Gna2StatusXnnErrorNoFeedback);
+    Expect::Equal(Input.Dimensions.at('H'), Output.Dimensions.at('H'), Gna2StatusXnnErrorLyrCfg);
 
     rnnHiddenConfig.feedbackBuffer = CalculateFeedbackBuffer(Output);
 
@@ -119,7 +141,8 @@ const BaseAddress RnnLayer::CalculateFeedbackBuffer(const BaseAddress& outputBuf
 {
     if (outputBuffer)
     {
-        const auto buffer = outputBuffer - (FeedbackDelay * Output.at(GNA_DIM_H) * Output.Mode.Size);
+        auto delaySize = (FeedbackDelay * Output.Dimensions.at('W') * Output.Mode.Size);
+        const auto buffer = outputBuffer - delaySize;
 
         try
         {

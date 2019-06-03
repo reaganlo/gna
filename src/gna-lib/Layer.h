@@ -56,18 +56,19 @@ public:
     //TODO:3:P3 remove or change name when API2 reliable enough
     const nn_operation Operation;
 protected:
-    AbstractOperation(const Gna2Operation& operation):
-        Operation{ toLegacy(operation)}
+    AbstractOperation(const Gna2Operation& operation, const BaseValidator& validator):
+        Operation{ toLegacy(operation, validator)}
     {
         //TODO:3:P1 Add operation validation
     }
 
-    AbstractOperation(const nn_layer& layer):
+    AbstractOperation(const nn_layer& layer, const BaseValidator& validator):
         Operation{ layer.operation }
     {
+        UNREFERENCED_PARAMETER(validator);
     }
 private:
-    static nn_operation toLegacy(const Gna2Operation& operation);
+    static nn_operation toLegacy(const Gna2Operation& operation, const BaseValidator& validator);
 };
 
 class Layer : public AbstractOperation
@@ -122,7 +123,7 @@ protected:
     Layer(const T& layer, const BaseValidator& validatorIn,
         const std::vector<TransformOperation>& transforms,
         const BaseAddress& intermediateBuffer) :
-        AbstractOperation{ layer },
+        AbstractOperation{ layer, validatorIn },
         validator{ std::make_unique<const LayerValidator>(validatorIn, Operation) },
         Input{ layer, *validator },
         Output{ layer, *validator }

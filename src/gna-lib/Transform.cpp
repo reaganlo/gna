@@ -108,7 +108,7 @@ inline nn_func_pwl TransformFactoryConfig::GetActivationImpl(const void * layerD
     case INTEL_CONVOLUTIONAL_2D:
         return static_cast<nn_layer_cnn2d const*>(layerDetails)->activation;
     case INTEL_RECURRENT:
-        return static_cast<nn_layer_reccurent const*>(layerDetails)->pwl;
+        return static_cast<nn_layer_recurrent const*>(layerDetails)->pwl;
     default:
         throw GnaException{ Gna2StatusXnnErrorLyrOperation };
     }

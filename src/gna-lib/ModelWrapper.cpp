@@ -28,10 +28,6 @@
 #include "DataMode.h"
 #include "gna2-model-impl.h"
 
-#include <vector>
-
-using std::vector;
-
 using namespace GNA;
 
 void ModelWrapper::OperationInit(ApiOperation& operation, const OperationType type,

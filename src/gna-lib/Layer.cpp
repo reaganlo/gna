@@ -25,6 +25,7 @@
 
 #include "Layer.h"
 
+#include "AffineFunctions.h"
 #include "AffineLayers.h"
 #include "ConvolutionalLayer.h"
 #include "ConvolutionalLayer2D.h"
@@ -74,10 +75,26 @@ std::unique_ptr<GNA::Layer> Layer::Create(const Gna2Operation & operation, const
     ModelWrapper::ExpectOperationValid(operation);
     switch (operation.Type)
     {
+    case Gna2OperationTypeFullyConnectedAffine:
+    {
+        if (operation.Operands[5] != nullptr)
+        {
+            Expect::NotNull(operation.Parameters);
+            Expect::NotNull(operation.Parameters[0]);
+            Expect::NotNull(operation.Parameters[1]);
+        }
+        return std::make_unique<AffineLayer>(operation, validatorIn);
+    }
+    case Gna2OperationTypeElementWiseAffine:
+        return std::make_unique<AffineLayer>(operation, validatorIn);
+    case Gna2OperationTypeRecurrent:
+        return std::make_unique<RnnLayer>(operation, validatorIn);
     case Gna2OperationTypeCopy:
         return std::make_unique<CopyLayer>(operation, validatorIn);
     case Gna2OperationTypeConvolution:
         return std::make_unique<ConvolutionalLayer2D>(operation, validatorIn);
+    case Gna2OperationTypeTransposition:
+        return std::make_unique<TransposeLayer>(operation, validatorIn);
     default:
         //TODO:3:P1:Add implementation for remaining operation types
         throw GnaException(Gna2StatusNotImplemented);
@@ -160,7 +177,8 @@ uint32_t Layer::GetOperandSize(GnaComponentType componentType) const
     }
 }
 
-void Layer::InitTransforms(const std::vector<TransformOperation>& transforms, TransformFactoryConfig & commonConfig, const OperationConfig & operationConfig)
+void Layer::InitTransforms(const std::vector<TransformOperation>& transforms,
+    TransformFactoryConfig & commonConfig, const OperationConfig & operationConfig)
 {
     for (const auto& transform : transforms)
     {
@@ -170,20 +188,49 @@ void Layer::InitTransforms(const std::vector<TransformOperation>& transforms, Tr
 
     inputTransform = Transforms.begin()->get();
     if (Output.Buffer)
+    {
         outputTransform->SetOutput(Output.Buffer);
+    }
 }
 
-nn_operation AbstractOperation::toLegacy(const Gna2Operation& operation)
+nn_operation AbstractOperation::toLegacy(
+    const Gna2Operation& operation, const BaseValidator& validator)
 {
-    if (operation.Type == Gna2OperationTypeCopy)
+    //TODO:3:P1: Add remaining cases
+    switch(operation.Type)
     {
-        return INTEL_COPY;
+        case Gna2OperationTypeElementWiseAffine:
+            return INTEL_AFFINE_DIAGONAL;
+        case Gna2OperationTypeFullyConnectedAffine:
+            if (AffineFunction::HasGroupedBias(operation))
+            {
+                return INTEL_AFFINE_MULTIBIAS;
+            }
+            return INTEL_AFFINE;
+        case Gna2OperationTypeCopy:
+            return INTEL_COPY;
+        case Gna2OperationTypeTransposition:
+        {
+            const Gna2Tensor& inputTensor = *operation.Operands[0];
+            if (LayerInput::IsTensorValid(inputTensor, validator, INTEL_INTERLEAVE))
+            {
+                return INTEL_INTERLEAVE;
+            }
+            if (LayerInput::IsTensorValid(inputTensor, validator, INTEL_DEINTERLEAVE))
+            {
+                return INTEL_DEINTERLEAVE;
+            }
+            throw GnaException { Gna2StatusXnnErrorLyrOperation };
+        }
+        case Gna2OperationTypeRecurrent:
+            return INTEL_RECURRENT;
+        default:
+            if (operation.Type == Gna2OperationTypeConvolution &&
+                operation.Operands[0]->Shape.NumberOfDimensions == 4)
+            {
+                return INTEL_CONVOLUTIONAL_2D;
+            }
+            throw GnaException(Gna2StatusNotImplemented);
     }
-    if (operation.Type == Gna2OperationTypeConvolution &&
-        operation.Operands[0]->Shape.NumberOfDimensions == 4)
-    {
-        return INTEL_CONVOLUTIONAL_2D;
-    }
-    // TODO:3:P1 add remainig cases
-    throw GnaException(Gna2StatusNotImplemented);
 }
+
