@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2018 Intel Corporation.
+ Copyright 2019 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -22,34 +22,30 @@
  or any other notice embedded in Materials by Intel or Intel's suppliers or licensors
  in any way.
 */
+#include "PoolingMode.h"
 
-#pragma once
+#include "gna-api-types-xnn.h"
 
-#include "Layer.h"
+#include <map>
 
-#include "common.h"
+using namespace GNA;
 
-namespace GNA
+KernelPoolingMode PoolingMode::toPoolingMode(intel_pool_type_t const legacyType)
 {
-class BaseValidator;
+    static const std::map<intel_pool_type_t, KernelPoolingMode> poolingModeMap{
+        { INTEL_NO_POOLING, KernelPoolingModeNone },
+        { INTEL_SUM_POOLING, KernelPoolingModeSum },
+        { INTEL_MAX_POOLING, KernelPoolingModeMax },
+    };
+    return poolingModeMap.at(legacyType);
+}
 
-class ConvolutionalLayer2D : public Layer
+KernelPoolingMode PoolingMode::toPoolingMode(Gna2PoolingMode const apiMode)
 {
-public:
-    template<class T>
-    ConvolutionalLayer2D(const T& layer, const BaseValidator& validatorIn) :
-        Layer(layer, validatorIn, { ConvolutionalTransform2D, ActivationTransform, PoolingTransform2D }, BaseAddress())
-    {
-        Init();
-    }
-
-    virtual ~ConvolutionalLayer2D() = default;
-
-    static bool IsSupported(const Gna2Operation & operation);
-
-protected:
-    virtual DataConfig GetDataMode() const override;
-    void Init();
-};
-
+    static const std::map<Gna2PoolingMode, KernelPoolingMode> poolingMap{
+        { Gna2PoolingModeMax, KernelPoolingModeMax },
+        { Gna2PoolingModeSum, KernelPoolingModeSum },
+        { Gna2PoolingModeDisabled, KernelPoolingModeNone }
+    };
+    return poolingMap.at(apiMode);
 }

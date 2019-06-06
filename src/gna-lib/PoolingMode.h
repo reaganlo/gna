@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2018 Intel Corporation.
+ Copyright 2019 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -25,48 +25,39 @@
 
 #pragma once
 
-#include "Capabilities.h"
-#include "Component.h"
-#include "OperationConfig.h"
-#include "PoolingMode.h"
-#include "Transform.h"
-#include "XnnKernel.h"
+#include "PoolingKernelArguments.h"
 
-#include <memory>
+#include "GnaException.h"
+
+#include "gna-api-types-xnn.h"
+#include "gna2-model-api.h"
+
+#include <stdexcept>
 
 namespace GNA
 {
-class FullCapabilitiesMap;
-template<typename T> struct SetLimits;
 
-class PoolingFunction2D : public Transform<PoolingConfig2D, PoolingKernel2D>
+class PoolingMode
 {
 public:
-    static std::unique_ptr<PoolingFunction2D> Create(
-        const TransformFactoryConfig& config,
-        const OperationConfig& operation);
+    template<class T>
+    PoolingMode(const T type) try:
+        mode{toPoolingMode(type)}
+    {
+    }
+    catch (std::out_of_range&)
+    {
+        throw GnaException(Gna2StatusCnnErrorPoolType);
+    }
+    operator KernelPoolingMode() const
+    {
+        return mode;
+    }
 
-    PoolingFunction2D(const BaseTransformConfig<PoolingKernel2D>& config,
-        PoolingMode mode, std::unique_ptr<const Component> window,
-        std::unique_ptr<const Component> stride);
-
-    ~PoolingFunction2D() = default;
-
-    const KernelPoolingMode Mode;
-
-    std::unique_ptr<const Component> Window;
-
-    std::unique_ptr<const Component> Stride;
-
-protected:
-    static const FullCapabilitiesMap windowLimits;
-    static const FullCapabilitiesMap strideLimits;
-    static const SetLimits<KernelPoolingMode> modeLimits;
-    static const FullCapabilitiesMap outputCapabilities;
-
-    static std::unique_ptr<PoolingFunction2D> create(
-        const TransformFactoryConfig& config,
-        const OperationConfig& operation);
+private:
+    static KernelPoolingMode toPoolingMode(intel_pool_type_t const legacyType);
+    static KernelPoolingMode toPoolingMode(Gna2PoolingMode const apiMode);
+    const KernelPoolingMode mode;
 };
 
 }

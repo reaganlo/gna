@@ -92,7 +92,15 @@ std::unique_ptr<GNA::Layer> Layer::Create(const Gna2Operation & operation, const
     case Gna2OperationTypeCopy:
         return std::make_unique<CopyLayer>(operation, validatorIn);
     case Gna2OperationTypeConvolution:
-        return std::make_unique<ConvolutionalLayer2D>(operation, validatorIn);
+        //TODO:3:Replace with elegant dispatcher or cover every case by ConvolutionalLayer2D
+        if (ConvolutionalLayer2D::IsSupported(operation))
+        {
+            return std::make_unique<ConvolutionalLayer2D>(operation, validatorIn);
+        }
+        else
+        {
+            return std::make_unique<CnnLayer>(operation, validatorIn);
+        }
     case Gna2OperationTypeTransposition:
         return std::make_unique<TransposeLayer>(operation, validatorIn);
     default:
@@ -224,13 +232,13 @@ nn_operation AbstractOperation::toLegacy(
         }
         case Gna2OperationTypeRecurrent:
             return INTEL_RECURRENT;
-        default:
-            if (operation.Type == Gna2OperationTypeConvolution &&
-                operation.Operands[0]->Shape.NumberOfDimensions == 4)
+        case Gna2OperationTypeConvolution:
+            if (ConvolutionalLayer2D::IsSupported(operation))
             {
                 return INTEL_CONVOLUTIONAL_2D;
             }
+            return INTEL_CONVOLUTIONAL;
+        default:
             throw GnaException(Gna2StatusNotImplemented);
     }
 }
-

@@ -99,7 +99,7 @@ namespace GNA {
         GNA3_Tensor_t CNV = GNA3_GetCNV(cnnIn, outputMode);
         GNA3_Tensor_t PLV = { };
 
-        if (poolingIn != nullptr && poolingIn->Type != Gna2PoolingModeDisabled) { // Pooling is enabled:
+        if (poolingIn != nullptr && poolingIn->Mode != KernelPoolingModeNone) { // Pooling is enabled:
             PLV.N = 1;
             PLV.H = static_cast<uint16_t>(ceil(1 + double(CNV.H - poolingIn->Window->at(GNA_DIM_H)) / double(poolingIn->Stride->at(GNA_DIM_H))) );
             PLV.W = static_cast<uint16_t>(ceil(1 + double(CNV.W - poolingIn->Window->at(GNA_DIM_W)) / double(poolingIn->Stride->at(GNA_DIM_W))) );

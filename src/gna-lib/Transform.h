@@ -80,8 +80,6 @@ private:
 
     static bool HasMandatoryActivation(const Gna2Operation& operation);
 
-    static nn_func_pwl GetActivationImpl(const void * layerDetails, nn_operation operationType);
-
     //TODO:3:P1:Move to operation/model wrapper
     static Gna2Tensor GetActivation(const Gna2Operation& operation);
 

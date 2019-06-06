@@ -362,10 +362,10 @@ void ConvolutionPoolingKernelImpl(ConvolutionConfig const * const filterConfig,
     int16_t * const O = filterConfig->pooledOutputs;
     uint32_t * const saturationCount = filterConfig->execution->SaturationCount;
 
-    const nn_pool_type PT = poolConfig->type;
-    const uint32_t PS = poolConfig->size;
-    const uint32_t PSTEP = poolConfig->step;
-    int64_t * const pool = poolConfig->buffer;
+    const auto PT = poolConfig->Mode;
+    const uint32_t PS = poolConfig->Size;
+    const uint32_t PSTEP = poolConfig->Step;
+    int64_t * const pool = poolConfig->Buffer;
 
     if (PS == 0)
     {
@@ -376,7 +376,7 @@ void ConvolutionPoolingKernelImpl(ConvolutionConfig const * const filterConfig,
 
     void(*func_partial_pooling)(const uint32_t PS, const uint32_t pool_num_entries, const uint32_t pool_start_index, const int64_t *P, int64_t *V);
 
-    if (PT == INTEL_SUM_POOLING)
+    if (PT == KernelPoolingModeSum)
     {
         func_partial_pooling = SumPartialPoolingFunction;
     }

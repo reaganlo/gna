@@ -30,6 +30,7 @@
 #include "GnaConfig.h"
 
 #include "ConvolutionKernelArguments.h"
+#include "PoolingKernelArguments.h"
 
 #include "gna-api.h"
 #include "gna-api-types-xnn.h"
@@ -245,6 +246,11 @@ public:
     }
 
     void operator=(const KernelBiasMode mode)
+    {
+        set(mode);
+    }
+
+    void operator=(const KernelPoolingMode mode)
     {
         set(mode);
     }

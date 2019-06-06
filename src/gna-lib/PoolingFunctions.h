@@ -27,6 +27,7 @@
 
 #include "KernelArguments.h"
 #include "ParameterLimits.h"
+#include "PoolingMode.h"
 #include "Shape.h"
 #include "XnnKernel.h"
 
@@ -47,15 +48,18 @@ struct PoolingFunction
     static std::unique_ptr<const PoolingFunction> Create(void const * layerDetails,
         const Shape& inputDimensions, const LayerValidator& validatorIn, gna_data_mode inputMode);
 
+    static std::unique_ptr<const PoolingFunction> Create(Gna2Operation const & apiOperation,
+        const Shape & inputDimensions, const LayerValidator & validatorIn, gna_data_mode inputMode);
+
     PoolingFunction(nn_operation const operation, const Shape& inputDimensions,
-        const Shape& window, const Shape& stride, const nn_pool_type type,
+        const Shape& window, const Shape& stride, PoolingMode mode,
         const KernelMap<ConvolutionPoolingKernel>& kernelsIn);
     ~PoolingFunction() = default;
 
     void Compute(const ConvolutionConfig * convolutionConfig, AccelerationMode accel,
                 int64_t * poolScratchPad, const PwlCached * pwl) const;
 
-    const nn_pool_type Type;
+    const KernelPoolingMode Mode;
 
     //TODO:3: refactor to components
     // Pooling window dimensions (in # of elements).
@@ -69,13 +73,11 @@ struct PoolingFunction
 
     // Total number of elements in output tensor per filter after pooling.
     uint32_t OutputsPerFilterCount;
-
 protected:
     const KernelMap<ConvolutionPoolingKernel>& kernels;
     const  std::unique_ptr<PoolingConfig> hiddenConfig;
     static const std::map<const nn_operation, const ShapeLimits> windowLimits;
     static const std::map<const nn_operation, const ShapeLimits> strideLimits;
-
 };
 
 }

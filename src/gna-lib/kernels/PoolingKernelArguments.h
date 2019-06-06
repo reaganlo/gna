@@ -47,3 +47,15 @@ struct PoolingConfig2D
     const uint32_t WindowWidth;
     const uint32_t WindowHeight;
 };
+
+//TODO:3:P2 Remove and reuse PoolingConfig2D
+struct PoolingConfig
+{
+    PoolingConfig(PoolingConfig const * const source, int64_t * const bufferIn);
+    PoolingConfig(KernelPoolingMode const mode, uint32_t const sizeIn, uint32_t const stepIn);
+
+    const KernelPoolingMode Mode;
+    uint32_t const Size;
+    uint32_t const Step;
+    int64_t * Buffer;
+};

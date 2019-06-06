@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2018 Intel Corporation.
+ Copyright 2019 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -25,48 +25,24 @@
 
 #pragma once
 
-#include "Capabilities.h"
-#include "Component.h"
-#include "OperationConfig.h"
-#include "PoolingMode.h"
-#include "Transform.h"
-#include "XnnKernel.h"
-
-#include <memory>
+#include "gna2-model-api.h"
+#include "gna-api-types-xnn.h"
 
 namespace GNA
 {
-class FullCapabilitiesMap;
-template<typename T> struct SetLimits;
 
-class PoolingFunction2D : public Transform<PoolingConfig2D, PoolingKernel2D>
+class ActivationHelper
 {
+    ActivationHelper() = delete;
 public:
-    static std::unique_ptr<PoolingFunction2D> Create(
-        const TransformFactoryConfig& config,
-        const OperationConfig& operation);
+    static bool IsEnabled(const Gna2Operation& apiOperation);
+    static bool IsEnabled(const Gna2Tensor& activation);
 
-    PoolingFunction2D(const BaseTransformConfig<PoolingKernel2D>& config,
-        PoolingMode mode, std::unique_ptr<const Component> window,
-        std::unique_ptr<const Component> stride);
+    static bool IsEnabled(const intel_nnet_layer_t& layer);
+    static bool IsEnabled(const intel_convolutional_layer_t& cnnDetails);
+    static bool IsEnabled(const intel_pwl_func_t& pwl);
 
-    ~PoolingFunction2D() = default;
-
-    const KernelPoolingMode Mode;
-
-    std::unique_ptr<const Component> Window;
-
-    std::unique_ptr<const Component> Stride;
-
-protected:
-    static const FullCapabilitiesMap windowLimits;
-    static const FullCapabilitiesMap strideLimits;
-    static const SetLimits<KernelPoolingMode> modeLimits;
-    static const FullCapabilitiesMap outputCapabilities;
-
-    static std::unique_ptr<PoolingFunction2D> create(
-        const TransformFactoryConfig& config,
-        const OperationConfig& operation);
+    static intel_pwl_func_t const& GetPwl(void const *layerDetails, gna_layer_operation operation);
 };
 
 }

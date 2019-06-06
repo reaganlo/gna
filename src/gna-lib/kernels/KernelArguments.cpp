@@ -230,19 +230,6 @@ ConvolutionConfig::ConvolutionConfig(uint32_t const inputBandStrideIn,
     execution{nullptr}
 {}
 
-PoolingConfig::PoolingConfig(PoolingConfig const * const source, int64_t * const bufferIn) :
-    PoolingConfig{*source}
-{
-    buffer = bufferIn;
-}
-
-PoolingConfig::PoolingConfig(nn_pool_type const typeIn, uint32_t const sizeIn, uint32_t const stepIn) :
-    type{typeIn},
-    size{sizeIn},
-    step{stepIn},
-    buffer{nullptr}
-{}
-
 GmmConfig::GmmConfig(GmmConfig const * const source, const uint8_t *inputScratchPadIn) :
     GmmConfig{*source}
 {

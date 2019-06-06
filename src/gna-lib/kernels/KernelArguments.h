@@ -290,17 +290,6 @@ struct ConvolutionConfig
     ExecutionConfig const * execution;
 };
 
-struct PoolingConfig
-{
-    PoolingConfig(PoolingConfig const * const source, int64_t * const bufferIn);
-    PoolingConfig(nn_pool_type const typeIn, uint32_t const sizeIn, uint32_t const stepIn);
-
-    nn_pool_type const type;
-    uint32_t const size;
-    uint32_t const step;
-    int64_t * buffer;
-};
-
 struct GmmConfig
 {
     GmmConfig(GmmConfig const * const source, const uint8_t *inputScratchPadIn);

@@ -55,6 +55,7 @@ add_executable(test-layer
   ${COMMON_DIR}/profiler.cpp
   ${SRC_DIR}/AccelerationDetector.cpp
   ${SRC_DIR}/ActivationFunction.cpp
+  ${SRC_DIR}/ActivationHelper.cpp
   ${SRC_DIR}/ActiveList.cpp
   ${SRC_DIR}/AffineFunctions.cpp
   ${SRC_DIR}/AffineLayers.cpp
@@ -92,6 +93,7 @@ add_executable(test-layer
   ${SRC_DIR}/ModelExportConfig.cpp
   ${SRC_DIR}/ModelWrapper.cpp
   ${SRC_DIR}/OperationConfig.cpp
+  ${SRC_DIR}/PoolingMode.cpp
   ${SRC_DIR}/PoolingFunctions.cpp
   ${SRC_DIR}/PoolingFunctions2D.cpp
   ${SRC_DIR}/RecurrentLayer.cpp

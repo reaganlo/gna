@@ -45,20 +45,25 @@
 
 using namespace GNA;
 
-CnnLayer::CnnLayer(const nn_layer& layer, const BaseValidator& validatorIn) :
-    Layer(layer, validatorIn, {}, BaseAddress())
+void CnnLayer::ExpectValid() const
 {
+    Expect::Equal(validator->Operation, INTEL_CONVOLUTIONAL, Gna2StatusXnnErrorLyrOperation);
     Expect::One(Input.at(GNA_DIM_N), Gna2StatusXnnErrorGrouping);
-    Expect::Equal(Input.at(GNA_DIM_N), Output.at(GNA_DIM_N), Gna2StatusXnnErrorGrouping);
+    Expect::One(Output.at(GNA_DIM_N), Gna2StatusXnnErrorGrouping);
+}
 
-    // TODO:3: use Input,Output tensor everywhere
-    Convolution = ConvolutionFunction::Create(&Input,
-        ActivationFunction::IsEnabled(&layer) ? &Output.ScratchPad : &Output,
-        layer.pLayerStruct, *validator);
-    Activation = ActivationFunction::Create({&Output.ScratchPad, &Output, Output.Mode, Output.Buffer,
-        layer, *validator}),
-    Pooling = PoolingFunction::Create(layer.pLayerStruct, Convolution->Output, *validator, Input.Mode);
+std::unique_ptr<const PoolingFunction> CnnLayer::GetPooling(const nn_layer& layer) const
+{
+    return PoolingFunction::Create(layer.pLayerStruct, Convolution->Output, *validator, Input.Mode);
+}
 
+std::unique_ptr<const PoolingFunction> CnnLayer::GetPooling(const Gna2Operation& apiOperation) const
+{
+    return PoolingFunction::Create(apiOperation, Convolution->Output, *validator, Input.Mode);
+}
+
+void CnnLayer::Init()
+{
     if (!Pooling)
     {
         if (Activation)
@@ -191,4 +196,15 @@ DataConfig CnnLayer::GetDataMode() const
 {
     return DataConfig(Input.Mode.Value, Convolution->Filters->Mode.Value,
                       Convolution->Biases->Mode.Value, Output.Mode.Value);
+}
+
+const nn_layer_conv & CnnLayer::getDetails(const nn_layer & cnn1DLayer)
+{
+    Expect::NotNull(cnn1DLayer.pLayerStruct);
+    return *reinterpret_cast<const nn_layer_conv*>(cnn1DLayer.pLayerStruct);
+}
+
+const Gna2Operation & CnnLayer::getDetails(const Gna2Operation & operation)
+{
+    return operation;
 }

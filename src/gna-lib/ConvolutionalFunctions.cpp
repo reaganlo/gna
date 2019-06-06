@@ -28,9 +28,9 @@
 #include "AccelerationDetector.h"
 #include "Capabilities.h"
 #include "Expect.h"
-#include "GnaException.h"
 #include "HardwareCapabilities.h"
 #include "HardwareLayer.h"
+#include "ModelWrapper.h"
 #include "Tensor.h"
 #include "Validator.h"
 
@@ -75,58 +75,6 @@ const FullCapabilitiesMap ConvolutionFunction::strideLimits
             { { GNA_DIM_W, { 1, CNN_N_FLT_COEFF_MAX, 1, Gna2StatusCnnErrorConvFltStride}}}))}
     }},
 };
-
-std::unique_ptr<const ConvolutionFunction> ConvolutionFunction::Create(const Tensor* input, const Tensor* output,
-        void const * layerDetails, const LayerValidator& validatorIn)
-{
-    std::unique_ptr<const FiltersTensor> filters;
-    std::unique_ptr<const Component> strideComponent;
-    std::unique_ptr<const BiasTensor> biases;
-
-    uint32_t filterMode = 0;
-    uint32_t biasMode = 0;
-    void* filtersBuffer = nullptr;
-    void* biasesBuffer = nullptr;
-
-    switch (validatorIn.Operation)
-    {
-    case INTEL_CONVOLUTIONAL:
-    {
-        auto cnn = static_cast<const nn_layer_conv*>(layerDetails);
-        filterMode = cnn->nBytesFilterCoefficient;
-        filtersBuffer = cnn->pFilters;
-        biasMode = cnn->nBytesBias;
-        biasesBuffer = cnn->pBiases;
-
-        Shape stride{ GNA_TENSOR_W, cnn->nFeatureMaps * cnn->nFeatureMapColumns };
-
-        auto featureCount = cnn->nFeatureMapRows  * stride[GNA_DIM_W];
-        Expect::True(featureCount >= CNN_N_FLT_COEFF_MIN, Gna2StatusXnnErrorLyrCfg);
-        Expect::InRange(cnn->nFilterRows, ui32_1, CNN_N_FLT_COEFF_MAX, Gna2StatusXnnErrorLyrCfg);
-
-        filters = std::make_unique<const FiltersTensor>(Shape(GNA_TENSOR_NWH, cnn->nFilters, cnn->nFilterCoefficients, 0u),
-            filterMode, filtersBuffer, validatorIn);
-        strideComponent = std::make_unique<const Component>(Shape(stride), Validator{ validatorIn, strideLimits });
-        biases = std::make_unique<const BiasTensor>(Shape(GNA_TENSOR_N, cnn->nFilters),
-            0, biasMode, biasesBuffer, validatorIn);
-
-        break;
-    }
-    default:
-        throw GnaException(Gna2StatusXnnErrorLyrOperation);
-    }
-
-    switch (validatorIn.Operation)
-     {
-     case INTEL_CONVOLUTIONAL:
-         return std::make_unique<const ConvolutionFunction>(
-             AccelerationDetector::GetKernelMap<ConvolutionKernel>(
-                 static_cast<kernel_op>(validatorIn.Operation), KernelMode { input->Mode.Value }),
-             input, output, move(filters), move(biases), move(strideComponent));
-     default:
-        throw GnaException(Gna2StatusXnnErrorLyrOperation);
-     }
-}
 
 ConvolutionFunction::ConvolutionFunction(const KernelMap<ConvolutionKernel>& kernelsIn,
     const Tensor* input, const Tensor* output, std::unique_ptr<const FiltersTensor> filters,
@@ -178,4 +126,83 @@ void ConvolutionFunction::Compute(const ConvolutionConfig* const config, Acceler
     auto convConfig = ConvolutionConfig{ config, execution };
 
     kernels.at(accel)(&convConfig);
+}
+
+std::unique_ptr<const ConvolutionFunction> ConvolutionFunction::finalizeCreation(
+    const Tensor* input, const Tensor* output, std::unique_ptr<const FiltersTensor> filters,
+    std::unique_ptr<const Component> stride, std::unique_ptr<const BiasTensor> biases)
+{
+    return std::make_unique<const ConvolutionFunction>(
+        AccelerationDetector::GetKernelMap<ConvolutionKernel>(
+            static_cast<kernel_op>(INTEL_CONVOLUTIONAL), KernelMode{ input->Mode.Value }),
+        input, output, std::move(filters), std::move(biases), std::move(stride));
+}
+
+std::unique_ptr<const FiltersTensor> ConvolutionFunction::createFilters(const Gna2Operation & apiOperation,
+    const LayerValidator& validatorIn)
+{
+    const auto operandIndexFilters = ModelWrapper::GetOperationInfo(apiOperation.Type,
+        ModelWrapper::OperandIndexFilter);
+    const auto& apiFilters = ModelWrapper::GetOperand(apiOperation, operandIndexFilters);
+    return std::make_unique<const FiltersTensor>(Shape::Create(apiFilters.Shape, GNA_TENSOR_NWH),
+        apiFilters.Type, apiFilters.Data, validatorIn);
+}
+
+std::unique_ptr<const FiltersTensor> ConvolutionFunction::createFilters(const nn_layer_conv& cnn,
+    const LayerValidator& validatorIn)
+{
+    return std::make_unique<const FiltersTensor>(Shape(GNA_TENSOR_NWH, cnn.nFilters, cnn.nFilterCoefficients, 0u),
+        cnn.nBytesFilterCoefficient, cnn.pFilters, validatorIn);
+}
+
+std::unique_ptr<const Component> ConvolutionFunction::createStride(const Gna2Operation & apiOperation,
+    const LayerValidator & validatorIn)
+{
+    const auto parameterIndexStride = ModelWrapper::GetOperationInfo(apiOperation.Type,
+        ModelWrapper::ParameterIndexConvolutionStride);
+    const auto& strideShape = ModelWrapper::GetParameter<Gna2Shape>(apiOperation, parameterIndexStride);
+    const Shape stride{ GNA_TENSOR_W, strideShape.Dimensions[0] };
+    return std::make_unique<const Component>(stride, Validator{ validatorIn, strideLimits });
+}
+
+std::unique_ptr<const Component> ConvolutionFunction::createStride(const nn_layer_conv & cnn,
+    const LayerValidator & validatorIn)
+{
+    const Shape stride{ GNA_TENSOR_W, cnn.nFeatureMaps * cnn.nFeatureMapColumns };
+    return std::make_unique<const Component>(stride, Validator{ validatorIn, strideLimits });
+}
+
+std::unique_ptr<const BiasTensor> ConvolutionFunction::createBiases(const Gna2Operation & apiOperation,
+    const LayerValidator & validatorIn)
+{
+    const auto operandIndexBiases = ModelWrapper::GetOperationInfo(apiOperation.Type,
+        ModelWrapper::OperandIndexBias);
+    const auto& apiBias = ModelWrapper::GetOperand(apiOperation, operandIndexBiases);
+    return std::make_unique<const BiasTensor>(Shape::Create(apiBias.Shape, GNA_TENSOR_N),
+        0, apiBias.Type, apiBias.Data, validatorIn);
+}
+
+std::unique_ptr<const BiasTensor> ConvolutionFunction::createBiases(const nn_layer_conv & cnn,
+    const LayerValidator & validatorIn)
+{
+    return  std::make_unique<const BiasTensor>(Shape(GNA_TENSOR_N, cnn.nFilters),
+        0, cnn.nBytesBias, cnn.pBiases, validatorIn);
+}
+
+void ConvolutionFunction::expectValid(const Gna2Operation& apiOperation)
+{
+    const auto operandIndexInput = ModelWrapper::GetOperationInfo(apiOperation.Type,
+        ModelWrapper::OperandIndexInput);
+    const auto& apiInput = ModelWrapper::GetOperand(apiOperation, operandIndexInput);
+
+    const auto featureCount = ModelWrapper::ShapeGetNumberOfElements(&apiInput.Shape);
+    Expect::True(featureCount >= CNN_N_FLT_COEFF_MIN, Gna2StatusXnnErrorLyrCfg);
+    // TODO:3:P2 Consider validating filterRows API2 equivalent
+}
+
+void ConvolutionFunction::expectValid(const nn_layer_conv& cnn)
+{
+    const auto featureCount = cnn.nFeatureMaps * cnn.nFeatureMapRows * cnn.nFeatureMapColumns;
+    Expect::True(featureCount >= CNN_N_FLT_COEFF_MIN, Gna2StatusXnnErrorLyrCfg);
+    Expect::InRange(cnn.nFilterRows, ui32_1, CNN_N_FLT_COEFF_MAX, Gna2StatusXnnErrorLyrCfg);
 }

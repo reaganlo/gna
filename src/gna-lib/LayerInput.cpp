@@ -166,7 +166,7 @@ const FullCapabilitiesMap LayerInput::capabilities =
 };
 
 LayerInput::LayerInput(const nn_layer &layer, const LayerValidator& validatorIn) :
-    Tensor{GetDimensions(layer,  capabilities.GetOrder(validatorIn)),
+    Tensor{GetDimensions(layer, capabilities.GetOrder(validatorIn)),
         layer.nBytesPerInput, layer.pInputs,
         Validator{ validatorIn, capabilities } },
      Grouping{ getGrouping(layer) },

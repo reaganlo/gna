@@ -55,13 +55,23 @@ struct FiltersTensor : public WeightTensor
 
 struct ConvolutionFunction
 {
-    static std::unique_ptr<const ConvolutionFunction> Create(const Tensor* input, const Tensor* output,
-        void const * layerDetails, const LayerValidator& validatorIn);
+    //TODO:3:P2 Consider passing filters, stride and biases directly
+    template<class T>
+    static std::unique_ptr<const ConvolutionFunction> Create(const Tensor * input, const Tensor * output,
+        const T& operationDetails, const LayerValidator & validatorIn)
+    {
+        expectValid(operationDetails);
+        auto filters = createFilters(operationDetails, validatorIn);
+        auto stride = createStride(operationDetails, validatorIn);
+        auto biases = createBiases(operationDetails, validatorIn);
+
+        return finalizeCreation(input, output,
+            std::move(filters), std::move(stride), std::move(biases));
+    }
 
     ConvolutionFunction(const KernelMap<ConvolutionKernel>& kernelsIn,
         const Tensor* input, const Tensor* output, std::unique_ptr<const FiltersTensor> filters,
         std::unique_ptr<const BiasTensor> biases, std::unique_ptr<const Component> stride);
-    ~ConvolutionFunction() = default;
 
     std::unique_ptr<const ConvolutionConfig> GetRequestConfig(const BaseAddress& inputs, const BaseAddress& outputs) const;
     const ConvolutionConfig * GetHiddenConfig() const
@@ -91,6 +101,29 @@ protected:
     std::unique_ptr<ConvolutionConfig> hiddenConfig;
 
     static const FullCapabilitiesMap strideLimits;
+
+private:
+    static std::unique_ptr<const ConvolutionFunction> finalizeCreation(const Tensor* input,
+        const Tensor* output, std::unique_ptr<const FiltersTensor> filters,
+        std::unique_ptr<const Component> stride, std::unique_ptr<const BiasTensor> biases);
+
+    static std::unique_ptr<const FiltersTensor> createFilters(const Gna2Operation & apiOperation,
+        const LayerValidator & validatorIn);
+    static std::unique_ptr<const FiltersTensor> createFilters(const nn_layer_conv & cnn,
+        const LayerValidator & validatorIn);
+
+    static std::unique_ptr<const Component> createStride(const Gna2Operation & cnn,
+        const LayerValidator & validatorIn);
+    static std::unique_ptr<const Component> createStride(const nn_layer_conv & cnn,
+        const LayerValidator & validatorIn);
+
+    static std::unique_ptr<const BiasTensor> createBiases(const Gna2Operation & apiOperation,
+        const LayerValidator & validatorIn);
+    static std::unique_ptr<const BiasTensor> createBiases(const nn_layer_conv& cnn,
+        const LayerValidator& validatorIn);
+
+    static void expectValid(const Gna2Operation & apiOperation);
+    static void expectValid(const nn_layer_conv & cnn);
 };
 
 }

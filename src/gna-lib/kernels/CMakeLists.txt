@@ -60,7 +60,8 @@ set(xnn_kernel_sources
   isbmm16.cpp
   pwl.cpp
   XnnKernel.cpp
-  KernelArguments.cpp)
+  KernelArguments.cpp
+  PoolingKernelArguments.cpp)
 
 set(xnn_kernel_headers
   ${COMMON_DIR}/GnaException.h

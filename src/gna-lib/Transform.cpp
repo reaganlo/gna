@@ -25,6 +25,7 @@
 
 #include "Transform.h"
 
+#include "ActivationHelper.h"
 #include "OperationConfig.h"
 
 #include <set>
@@ -53,7 +54,7 @@ Gna2Tensor TransformFactoryConfig::GetActivation() const
 
 Gna2Tensor TransformFactoryConfig::GetActivation(const void * layerDetails, nn_operation operationType)
 {
-    auto pwl = GetActivationImpl(layerDetails, operationType);
+    const auto& pwl = ActivationHelper::GetPwl(layerDetails, operationType);
     Gna2Tensor a{};
     a.Type = Gna2DataTypePwlSegment;
     a.Shape = { 1, pwl.nSegments };
@@ -92,26 +93,6 @@ inline bool TransformFactoryConfig::HasMandatoryActivation(const Gna2Operation &
         return Gna2PoolingModeDisabled != OperationConfig::GetPoolingMode(operation);
     }
     return operation.Type == Gna2OperationTypeRecurrent;
-}
-
-inline nn_func_pwl TransformFactoryConfig::GetActivationImpl(const void * layerDetails, nn_operation operationType)
-{
-    switch (operationType)
-    {
-    case INTEL_AFFINE: /* FALLTHRU */
-    case INTEL_AFFINE_DIAGONAL:
-        return static_cast<nn_layer_affine const*>(layerDetails)->pwl;
-    case INTEL_AFFINE_MULTIBIAS:
-        return static_cast<nn_layer_affine_multi const*>(layerDetails)->pwl;
-    case INTEL_CONVOLUTIONAL:
-        return static_cast<nn_layer_conv const*>(layerDetails)->pwl;
-    case INTEL_CONVOLUTIONAL_2D:
-        return static_cast<nn_layer_cnn2d const*>(layerDetails)->activation;
-    case INTEL_RECURRENT:
-        return static_cast<nn_layer_recurrent const*>(layerDetails)->pwl;
-    default:
-        throw GnaException{ Gna2StatusXnnErrorLyrOperation };
-    }
 }
 
 inline Gna2Tensor TransformFactoryConfig::GetActivation(const Gna2Operation & operation)

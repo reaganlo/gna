@@ -26,6 +26,7 @@
 #pragma once
 
 #include "ActivationFunction.h"
+#include "ActivationHelper.h"
 #include "ConvolutionalFunctions.h"
 #include "Layer.h"
 #include "PoolingFunctions.h"
@@ -44,7 +45,18 @@ struct LayerConfiguration;
 class CnnLayer : public Layer
 {
 public:
-    CnnLayer(const nn_layer& layer, const BaseValidator& validatorIn);
+    template<class T>
+    CnnLayer(const T& apiLayer, const BaseValidator& validatorIn) :
+        Layer(apiLayer, validatorIn, {}, BaseAddress())
+    {
+        ExpectValid();
+        Convolution = GetConvolution(getDetails(apiLayer));
+        Activation = ActivationFunction::Create({ &Output.ScratchPad, &Output, Output.Mode, Output.Buffer,
+            apiLayer, *validator });
+        Pooling = GetPooling(apiLayer);
+        Init();
+    }
+
     virtual ~CnnLayer() = default;
     virtual void UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const override;
 
@@ -53,6 +65,26 @@ public:
     std::unique_ptr<const ActivationFunction> Activation;
 
 protected:
+    void Init();
+
+    template<class T>
+    std::unique_ptr<const ConvolutionFunction> GetConvolution(const T& apiOperation) const
+    {
+        const Tensor* convolutionOutput = &Output;
+        // TODO:3: use Input,Output tensor everywhere
+        if (ActivationHelper::IsEnabled(apiOperation))
+        {
+            convolutionOutput = &Output.ScratchPad;
+        }
+        return ConvolutionFunction::Create(&Input, convolutionOutput,
+            apiOperation, *validator);
+    }
+
+    void ExpectValid() const;
+
+    std::unique_ptr<const PoolingFunction> GetPooling(const Gna2Operation & apiOperation) const;
+    std::unique_ptr<const PoolingFunction> GetPooling(const nn_layer & layer) const;
+
     virtual DataConfig GetDataMode() const override;
 
 private:
@@ -62,6 +94,9 @@ private:
     void computeHiddenPwl(AccelerationMode accel, ExecutionConfig const & execution) const;
     void compute(const LayerConfiguration& layerConfiguration, AccelerationMode accel, ExecutionConfig const & execution) const;
     void computePwl(const LayerConfiguration& layerConfiguration, AccelerationMode accel, ExecutionConfig const & execution) const;
+
+    static const nn_layer_conv& getDetails(const nn_layer& cnn1DLayer);
+    static const Gna2Operation& getDetails(const Gna2Operation& operation);
 };
 
 }

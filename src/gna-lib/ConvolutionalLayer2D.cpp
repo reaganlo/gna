@@ -69,6 +69,11 @@ void ConvolutionalLayer2D::Init()
     {this->compute(&layerConfiguration, accel, executionConfig); };
 }
 
+bool ConvolutionalLayer2D::IsSupported(const Gna2Operation & operation)
+{
+    return 4 == operation.Operands[0]->Shape.NumberOfDimensions;
+}
+
 DataConfig ConvolutionalLayer2D::GetDataMode() const
 {
     auto& convolutionTransform = *Transforms.Get<ConvolutionFunction2D>(ConvolutionalTransform2D);

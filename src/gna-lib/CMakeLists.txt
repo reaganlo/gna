@@ -80,6 +80,7 @@ set(gna_lib_sources
   ${SRC_DIR}/api.cpp
   ${SRC_DIR}/AccelerationDetector.cpp
   ${SRC_DIR}/ActivationFunction.cpp
+  ${SRC_DIR}/ActivationHelper.cpp
   ${SRC_DIR}/ActiveList.cpp
   ${SRC_DIR}/AffineFunctions.cpp
   ${SRC_DIR}/AffineLayers.cpp
@@ -117,6 +118,7 @@ set(gna_lib_sources
   ${SRC_DIR}/ModelExportConfig.cpp
   ${SRC_DIR}/ModelWrapper.cpp
   ${SRC_DIR}/OperationConfig.cpp
+  ${SRC_DIR}/PoolingMode.cpp
   ${SRC_DIR}/PoolingFunctions.cpp
   ${SRC_DIR}/PoolingFunctions2D.cpp
   ${SRC_DIR}/RecurrentLayer.cpp
@@ -153,6 +155,7 @@ set(gna_lib_sources
 set(gna_lib_headers
   ${SRC_DIR}/AccelerationDetector.h
   ${SRC_DIR}/ActivationFunction.h
+  ${SRC_DIR}/ActivationHelper.h
   ${SRC_DIR}/ActiveList.h
   ${SRC_DIR}/AffineFunctions.h
   ${SRC_DIR}/ApiProperty.h
@@ -193,6 +196,7 @@ set(gna_lib_headers
   ${SRC_DIR}/ModelWrapper.h
   ${SRC_DIR}/OperationConfig.h
   ${SRC_DIR}/ParameterLimits.h
+  ${SRC_DIR}/PoolingMode.h
   ${SRC_DIR}/PoolingFunctions.h
   ${SRC_DIR}/PoolingFunctions2D.h
   ${SRC_DIR}/RecurrentLayer.h

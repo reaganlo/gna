@@ -28,11 +28,10 @@
 #include "AccelerationDetector.h"
 #include "Expect.h"
 #include "GnaException.h"
+#include "ModelWrapper.h"
+#include "PoolingMode.h"
 #include "Validator.h"
 
-#include "gna-api-status.h"
-
-#include <algorithm>
 #include <utility>
 
 namespace GNA
@@ -90,10 +89,36 @@ std::unique_ptr<const PoolingFunction> PoolingFunction::Create(void const * laye
             throw GnaException(Gna2StatusXnnErrorLyrOperation);
         }
     }
-    else
+    return std::unique_ptr<const PoolingFunction>(nullptr);
+}
+
+std::unique_ptr<const PoolingFunction> PoolingFunction::Create(Gna2Operation const & apiOperation,
+    const Shape & inputDimensions, const LayerValidator& validatorIn, gna_data_mode inputMode)
+{
+    Expect::Equal(INTEL_CONVOLUTIONAL, validatorIn.Operation, Gna2StatusXnnErrorLyrOperation);
+    const auto poolingModeIndex = ModelWrapper::GetOperationInfo(apiOperation.Type,
+        ModelWrapper::ParameterIndexPoolingMode);
+    const auto apiMode = ModelWrapper::GetOptionalParameter<Gna2PoolingMode>(apiOperation, poolingModeIndex,
+        Gna2PoolingModeDisabled);
+    if (Gna2PoolingModeDisabled != apiMode)
     {
-       return std::unique_ptr<const PoolingFunction>(nullptr);
+        const auto poolingStrideIndex = ModelWrapper::GetOperationInfo(apiOperation.Type,
+            ModelWrapper::ParameterIndexPoolingStride);
+        const auto apiStride = ModelWrapper::GetOptionalParameter<Gna2Shape>(
+            apiOperation, poolingStrideIndex, {});
+        const auto strideShape = Shape::Create(apiStride, GNA_TENSOR_W);
+
+        const auto poolingWindowIndex = ModelWrapper::GetOperationInfo(apiOperation.Type,
+            ModelWrapper::ParameterIndexPoolingWindow);
+        const auto apiWindow = ModelWrapper::GetOptionalParameter<Gna2Shape>(
+            apiOperation, poolingWindowIndex, {});
+        const auto windowShape = Shape::Create(apiWindow, GNA_TENSOR_W);
+
+        return std::make_unique<const PoolingFunction>(validatorIn.Operation, inputDimensions, windowShape,
+            strideShape, apiMode,
+            AccelerationDetector::GetKernelMap<ConvolutionPoolingKernel>(KERNEL_POOLING, inputMode));
     }
+    return std::unique_ptr<const PoolingFunction>(nullptr);
 }
 
 // TODO:3: Each transform/function should be independent - have its own input/output component
@@ -101,14 +126,14 @@ std::unique_ptr<const PoolingFunction> PoolingFunction::Create(void const * laye
 // TODO:3: create base Function class
 PoolingFunction::PoolingFunction(nn_operation const operation, const Shape& inputDimensions,
     const Shape& window, const Shape& stride,
-    const nn_pool_type type, const KernelMap<ConvolutionPoolingKernel>& kernelsIn) :
-    Type{ type },
+    const PoolingMode mode, const KernelMap<ConvolutionPoolingKernel>& kernelsIn) :
+    Mode{ mode },
     Window{ window },
     Stride{ stride },
     kernels{ kernelsIn },
-    hiddenConfig{ std::make_unique<PoolingConfig>(Type, Window.at(GNA_DIM_W), Stride.at(GNA_DIM_W)) }
+    hiddenConfig{ std::make_unique<PoolingConfig>(Mode, Window.at(GNA_DIM_W), Stride.at(GNA_DIM_W)) }
 {
-    Expect::InSet(Type, { INTEL_MAX_POOLING, INTEL_SUM_POOLING }, Gna2StatusCnnErrorPoolType);
+    Expect::InSet(Mode, { KernelPoolingModeMax, KernelPoolingModeSum }, Gna2StatusCnnErrorPoolType);
     // TODO:3: use ShapeIsValid where applicable
     Expect::ShapeIsValid(Stride, strideLimits.at(operation));
     Expect::ShapeIsValid(Window, windowLimits.at(operation));
@@ -134,4 +159,3 @@ void PoolingFunction::Compute(const ConvolutionConfig * convolutionConfig, Accel
     auto poolConfig = PoolingConfig{ hiddenConfig.get(), poolScratchPad };
     kernels.at(accel)(convolutionConfig, &poolConfig, pwl);
 }
-

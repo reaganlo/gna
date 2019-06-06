@@ -27,6 +27,8 @@
 
 #include "HardwareCapabilities.h"
 
+#include "PoolingKernelArguments.h"
+
 #include "gna-api-types-gmm.h"
 
 using namespace GNA;
@@ -107,9 +109,9 @@ static const std::map<const XnnParameterType, const XnnParameter> XnnDescriptorG
         }}},
     {pool_param, { 0x01, 1, 3, 2,
          {
-            {INTEL_NO_POOLING, static_cast<uint8_t>(0)},
-            {INTEL_MAX_POOLING, static_cast<uint8_t>(1)},
-            {INTEL_SUM_POOLING, static_cast<uint8_t>(2)},
+            {KernelPoolingModeNone, static_cast<uint8_t>(0)},
+            {KernelPoolingModeMax, static_cast<uint8_t>(1)},
+            {KernelPoolingModeSum, static_cast<uint8_t>(2)},
         }}},
     {n_in_elems, { 0x02, 2 }},
     {n_out_elems, { 0x04, 2 }},
@@ -200,9 +202,9 @@ static const std::map<const XnnParameterType, const XnnParameter> XnnDescriptorG
         //Therefore, NNFlags::BPRC should have no impact on GNA-HW. However this is not true in newest FPGA image.
     { pool_param, { 0x0B, 1, 6, 2,
                       {
-                          { INTEL_NO_POOLING, static_cast<uint8_t>(0) },
-                          { INTEL_MAX_POOLING, static_cast<uint8_t>(1) },
-                          { INTEL_SUM_POOLING, static_cast<uint8_t>(2) },
+                          { KernelPoolingModeNone, static_cast<uint8_t>(0) },
+                          { KernelPoolingModeMax, static_cast<uint8_t>(1) },
+                          { KernelPoolingModeSum, static_cast<uint8_t>(2) },
                       } } },
     {rnn_n_elems_first, { 0x0c, 2 }},
     {cnn_n_flts, { 0x0c, 2 }},

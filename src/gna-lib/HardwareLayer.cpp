@@ -467,10 +467,10 @@ uint32_t HardwareLayerRnn::GetLdFeedbackOffset() const
 HardwareLayerCnn::HardwareLayerCnn(const DescriptorParameters& parameters) :
     HardwareLayerExt(parameters)
 {
-    auto cnn = SoftwareLayer->Get<const CnnLayer>();
+    const auto cnn = SoftwareLayer->Get<const CnnLayer>();
 
-    auto filterCount = cnn->Convolution->Filters->Count;
-    auto filterSize = cnn->Convolution->Filters->CoefficientCount;
+    const auto filterCount = cnn->Convolution->Filters->Count;
+    const auto filterSize = cnn->Convolution->Filters->CoefficientCount;
     filtersCountInFullIteration =
         (std::min)(
             filterCount,
@@ -501,14 +501,13 @@ HardwareLayerCnn::HardwareLayerCnn(const DescriptorParameters& parameters) :
     outputElementCount = cnn->Convolution->OutputsPerFilterCount;
     convOutputElementCount = cnn->Convolution->OutputsPerFilterCount;
     // Pooling enabled
-    if (NULL != cnn->Pooling && INTEL_NO_POOLING != cnn->Pooling->Type) // use pooled outputs per filter
+    if (nullptr != cnn->Pooling && KernelPoolingModeNone != cnn->Pooling->Mode) // use pooled outputs per filter
     {
         outputElementCount = cnn->Pooling->OutputsPerFilterCount;
     }
 
     save();
     saveActivation(cnn->Activation.get());
-
 }
 
 void HardwareLayerCnn::save()
@@ -517,9 +516,9 @@ void HardwareLayerCnn::save()
     // some fields saved by HardwareLayerExt will be overwritten
     auto cnn = SoftwareLayer->Get<const CnnLayer>();
 
-    if (NULL != cnn->Pooling)
+    if (nullptr != cnn->Pooling)
     {
-        XnnDescriptor[pool_param] = static_cast<uint8_t>(cnn->Pooling->Type);
+        XnnDescriptor[pool_param] = cnn->Pooling->Mode;
         XnnDescriptor[cnn_pool_size] = cnn->Pooling->Window.at('W');
         XnnDescriptor[cnn_pool_stride] = cnn->Pooling->Stride.at('W');
     }
@@ -634,7 +633,7 @@ void HardwareLayerCnn2D::save()
         XnnDescriptor[cnn2d_pool_out_h] = pooling->Output->Dimensions.at('H');
         XnnDescriptor[cnn2d_pool_window_w] = pooling->Window->Dimensions.at('W');
         XnnDescriptor[cnn2d_pool_window_h] = pooling->Window->Dimensions.at('H');
-        XnnDescriptor[pool_param] = static_cast<uint8_t>(pooling->Type);
+        XnnDescriptor[pool_param] = pooling->Mode;
     }
 }
 

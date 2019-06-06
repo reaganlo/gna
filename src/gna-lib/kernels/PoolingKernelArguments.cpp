@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2018 Intel Corporation.
+ Copyright 2019 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -23,33 +23,18 @@
  in any way.
 */
 
-#pragma once
+#include "PoolingKernelArguments.h"
 
-#include "Layer.h"
-
-#include "common.h"
-
-namespace GNA
+PoolingConfig::PoolingConfig(PoolingConfig const * const source, int64_t * const bufferIn) :
+    PoolingConfig{ *source }
 {
-class BaseValidator;
+    Buffer = bufferIn;
+}
 
-class ConvolutionalLayer2D : public Layer
+PoolingConfig::PoolingConfig(KernelPoolingMode const mode, uint32_t const sizeIn, uint32_t const stepIn) :
+    Mode{ mode },
+    Size{ sizeIn },
+    Step{ stepIn },
+    Buffer{ nullptr }
 {
-public:
-    template<class T>
-    ConvolutionalLayer2D(const T& layer, const BaseValidator& validatorIn) :
-        Layer(layer, validatorIn, { ConvolutionalTransform2D, ActivationTransform, PoolingTransform2D }, BaseAddress())
-    {
-        Init();
-    }
-
-    virtual ~ConvolutionalLayer2D() = default;
-
-    static bool IsSupported(const Gna2Operation & operation);
-
-protected:
-    virtual DataConfig GetDataMode() const override;
-    void Init();
-};
-
 }

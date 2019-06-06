@@ -174,6 +174,32 @@ uint32_t ModelWrapper::GetOperationInfo(OperationType operationType, OperationIn
     }
 }
 
+Gna2Tensor ModelWrapper::GetOperand(const Gna2Operation & apiOperation, uint32_t operandIndex)
+{
+    Expect::True(apiOperation.NumberOfOperands > operandIndex, Gna2StatusXnnErrorLyrOperation);
+    Expect::NotNull(apiOperation.Operands, Gna2StatusXnnErrorLyrOperation);
+    Expect::NotNull(apiOperation.Operands[operandIndex], Gna2StatusXnnErrorLyrOperation);
+    return *apiOperation.Operands[operandIndex];
+}
+
+Gna2Tensor ModelWrapper::GetOptionalOperand(const Gna2Operation & apiOperation, uint32_t operandIndex, Gna2Tensor defaultTensor)
+{
+    if (apiOperation.NumberOfOperands > operandIndex &&
+        nullptr != apiOperation.Operands &&
+        nullptr != apiOperation.Operands[operandIndex])
+    {
+        return *apiOperation.Operands[operandIndex];
+    }
+    return defaultTensor;
+}
+
+void ModelWrapper::ExpectParameterAvailable(const Gna2Operation & operation, uint32_t index)
+{
+    Expect::NotNull(operation.Parameters, Gna2StatusXnnErrorLyrOperation);
+    Expect::True(index < operation.NumberOfParameters, Gna2StatusXnnErrorLyrOperation);
+    Expect::NotNull(operation.Parameters[index]);
+}
+
 void ModelWrapper::SetLayout(Gna2Tensor& tensor, const char* layout)
 {
     snprintf(tensor.Layout, sizeof(tensor.Layout), "%s", layout);

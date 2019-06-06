@@ -25,6 +25,7 @@
 
 #include "ActivationFunction.h"
 
+#include "ActivationHelper.h"
 #include "AccelerationDetector.h"
 #include "Address.h"
 #include "Capabilities.h"
@@ -197,7 +198,7 @@ std::unique_ptr<ActivationFunction> ActivationFunction::Create(const TransformFa
 
     const Gna2Tensor activation = config.GetActivation();
 
-    if (mandatory || IsEnabled(activation))
+    if (mandatory || ActivationHelper::IsEnabled(activation))
     {
         auto pwlFunction = std::make_unique<Tensor>(
             Shape(GNA_TENSOR_H, activation.Shape.Dimensions[0]),
@@ -211,41 +212,6 @@ std::unique_ptr<ActivationFunction> ActivationFunction::Create(const TransformFa
     auto valuePtr = &(config.output->Mode.Value);
     *((gna_data_mode*)valuePtr) = GNA_DATA_ACTIVATION_DISABLED;
     return std::unique_ptr<ActivationFunction>(nullptr);
-}
-
-Gna2Tensor const * ActivationFunction::getPwl(const Gna2Operation& operation)
-{
-    switch (operation.Type)
-    {
-    case Gna2OperationTypeConvolution:
-    case Gna2OperationTypeElementWiseAffine:
-    case Gna2OperationTypeFullyConnectedAffine:
-    case Gna2OperationTypeGmm:
-    case Gna2OperationTypeRecurrent:
-        return static_cast<Gna2Tensor const *>(operation.Operands[4]);
-    default:
-        throw GnaException{ Gna2StatusXnnErrorLyrOperation };
-    }
-}
-
-nn_func_pwl const * ActivationFunction::getPwl(void const *layerDetails, nn_operation operation)
-{
-    switch (operation)
-    {
-    case INTEL_AFFINE: /* FALLTHRU */
-    case INTEL_AFFINE_DIAGONAL:
-        return &static_cast<nn_layer_affine const*>(layerDetails)->pwl;
-    case INTEL_AFFINE_MULTIBIAS:
-        return &static_cast<nn_layer_affine_multi const*>(layerDetails)->pwl;
-    case INTEL_CONVOLUTIONAL:
-        return &static_cast<nn_layer_conv const*>(layerDetails)->pwl;
-    case INTEL_CONVOLUTIONAL_2D:
-        return &static_cast<nn_layer_cnn2d const*>(layerDetails)->activation;
-    case INTEL_RECURRENT:
-        return &static_cast<nn_layer_recurrent const*>(layerDetails)->pwl;
-    default:
-        throw GnaException{ Gna2StatusXnnErrorLyrOperation };
-    }
 }
 
 PwlCached ActivationFunction::createPwlCached(const gna_data_mode mode,

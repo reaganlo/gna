@@ -28,8 +28,10 @@
 #include "Expect.h"
 #include "ModelWrapper.h"
 
-using namespace GNA;
+#include "gna2-model-api.h"
+#include "common.h"
 
+using namespace GNA;
 
 OperationConfig::OperationConfig(const nn_layer& layer)
 {

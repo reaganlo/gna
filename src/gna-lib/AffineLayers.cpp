@@ -25,6 +25,7 @@
 
 #include "AffineLayers.h"
 
+#include "ActivationHelper.h"
 #include "ActiveList.h"
 #include "Address.h"
 #include "Bias.h"
@@ -51,7 +52,7 @@ using namespace GNA;
 AffineBaseLayer::AffineBaseLayer(const nn_layer& layer, const BaseValidator& validatorIn) :
     Layer(layer, validatorIn, {}, BaseAddress()),
     Affine(AffineFunction::Create(Input,
-        ActivationFunction::IsEnabled(&layer) ? Output.ScratchPad : Output,
+        ActivationHelper::IsEnabled(layer) ? Output.ScratchPad : Output,
         layer.pLayerStruct, *validator)),
     // TODO:3: refactor to Transform and to use Affine->Output
     Activation(ActivationFunction::Create({&Output.ScratchPad, &Output, Output.Mode, Output.Buffer,
@@ -63,7 +64,7 @@ AffineBaseLayer::AffineBaseLayer(const nn_layer& layer, const BaseValidator& val
 
 AffineBaseLayer::AffineBaseLayer(const Gna2Operation& operation, const BaseValidator& validatorIn) :
     Layer(operation, validatorIn, {}, BaseAddress()),
-    Affine(AffineFunction::Create(Input, ActivationFunction::IsEnabled(operation)
+    Affine(AffineFunction::Create(Input, ActivationHelper::IsEnabled(operation)
             ? Output.ScratchPad : Output, operation, *validator)),
     // TODO:3: refactor to Transform and to use Affine->Output
     Activation(ActivationFunction::Create({&Output.ScratchPad, &Output, Output.Mode, Output.Buffer,

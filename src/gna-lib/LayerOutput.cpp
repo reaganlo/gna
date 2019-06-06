@@ -159,11 +159,15 @@ const FullCapabilitiesMap LayerOutput::capabilities =
 
 Shape LayerOutput::ConvertInCaseOfNewApiOrder(gna_tensor_order order, const uint32_t nOutputColumns, const uint32_t nOutputRows)
 {
-    if(order == GNA_TENSOR_NHWD)
+    if (order == GNA_TENSOR_NHWD)
     {
         return Shape{ GNA_TENSOR_NHWD, nOutputRows, nOutputColumns, 1u, 1u };
     }
-    return Shape(order, nOutputRows, nOutputColumns);
+    if (order == GNA_TENSOR_HW)
+    {
+        return Shape(order, nOutputRows, nOutputColumns);
+    }
+    return Shape(order, nOutputColumns, nOutputRows);
 }
 
 LayerOutput::LayerOutput(const nn_layer& layer, const LayerValidator& validatorIn) :

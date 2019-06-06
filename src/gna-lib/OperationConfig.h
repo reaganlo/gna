@@ -25,12 +25,11 @@
 
 #pragma once
 
-#include "gna-api.h"
-#include "gna2-model-api.h"
-#include "common.h"
-
 #include "DataMode.h"
 #include "Shape.h"
+
+#include "gna2-model-api.h"
+#include "common.h"
 
 namespace GNA
 {

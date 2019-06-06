@@ -149,6 +149,30 @@ public:
         ParameterIndexDelay,
     };
     static uint32_t GetOperationInfo(OperationType operationType, OperationInfoKey infoType);
+
+    static Gna2Tensor GetOperand(const Gna2Operation & apiOperation, uint32_t operandIndex);
+    static Gna2Tensor GetOptionalOperand(const Gna2Operation& apiOperation, uint32_t operandIndex, Gna2Tensor defaultTensor);
+
+    static void ExpectParameterAvailable(const Gna2Operation & operation, uint32_t index);
+
+    template<class T>
+    static T GetParameter(const Gna2Operation & operation, uint32_t index)
+    {
+        ExpectParameterAvailable(operation, index);
+        return *static_cast<T*> (operation.Parameters[index]);
+    }
+    template<class T>
+    static T GetOptionalParameter(const Gna2Operation& apiOperation, uint32_t parameterIndex, T defaultValue)
+    {
+        if(apiOperation.Parameters != nullptr &&
+            parameterIndex < apiOperation.NumberOfParameters &&
+            nullptr != apiOperation.Parameters[parameterIndex])
+        {
+            return *static_cast<const T*>(apiOperation.Parameters[parameterIndex]);
+        }
+        return defaultValue;
+    }
+
 private:
     template<typename Type>
     static Type ** AllocateAndFillZeros(const Gna2UserAllocator userAllocator, uint32_t elementCount)
