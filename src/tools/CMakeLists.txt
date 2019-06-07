@@ -151,10 +151,10 @@ if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
   endif()
 endif()
 
-#tests
-if(BUILD_TESTING)
-    enable_testing()
-    add_test(NAME TESTs COMMAND DevTest)
+if(${CMAKE_SYSTEM_NAME} STREQUAL "Windows" OR
+   ${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
+  enable_testing()
+  add_test(NAME GNA_POST_BUILD_DevTest COMMAND DevTest)
 endif()
 
 #Beginning of gna-self-test part COMMON
