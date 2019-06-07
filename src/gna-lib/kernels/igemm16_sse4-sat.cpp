@@ -72,8 +72,7 @@ void AffineKernelImpl2B(AffineConfig const * const config)
     int16_t const * input[8];
     memset(input, 0, sizeof(input));
 
-    nn_bias_s const * bias = config->biasesSimple;
-    nn_bias_s const * const biasEnd = bias + config->outputElementCount;
+    void const * const bias = config->biasesSimple;
     int16_t const * weight;
     int32_t * output;
 
@@ -87,10 +86,10 @@ void AffineKernelImpl2B(AffineConfig const * const config)
     {
         *input = config->input+KK;
         in_ptr0 = (__m128i*)config->input;
-        for (; bias < biasEnd; bias++)
+        for (uint32_t biasIndex = 0; biasIndex < config->outputElementCount; biasIndex++)
         {
             *acc = _mm_setzero_si128();
-            *sum = *bias;
+            *sum = getBias(bias, biasIndex, config->bytesPerBias);
             ix = 0;
 
             for (kk = 0; kk < nKpartial + 1; kk++)
@@ -205,12 +204,12 @@ void AffineKernelImpl2B(AffineConfig const * const config)
 
     if (2 == config->inputVectorCount)
     {
-        for (; bias < biasEnd; bias++)
+        for (uint32_t biasIndex = 0; biasIndex < config->outputElementCount; biasIndex++)
         {
             for (i = 0; i < config->inputVectorCount; i++)
             {
                 acc[i] = _mm_setzero_si128();
-                sum[i] = *bias;
+                sum[i] = getBias(bias, biasIndex, config->bytesPerBias);
             }
             ix = 0;
 
@@ -271,12 +270,12 @@ void AffineKernelImpl2B(AffineConfig const * const config)
 
     if (3 == config->inputVectorCount)
     {
-        for (; bias < biasEnd; bias++)
+        for (uint32_t biasIndex = 0; biasIndex < config->outputElementCount; biasIndex++)
         {
             for (i = 0; i < config->inputVectorCount; i++)
             {
                 acc[i] = _mm_setzero_si128();
-                sum[i] = *bias;
+                sum[i] = getBias(bias, biasIndex, config->bytesPerBias);
             }
             ix = 0;
 
@@ -341,12 +340,12 @@ void AffineKernelImpl2B(AffineConfig const * const config)
 
     if (4 == config->inputVectorCount)
     {
-        for (; bias < biasEnd; bias++)
+        for (uint32_t biasIndex = 0; biasIndex < config->outputElementCount; biasIndex++)
         {
             for (i = 0; i < config->inputVectorCount; i++)
             {
                 acc[i] = _mm_setzero_si128();
-                sum[i] = *bias;
+                sum[i] = getBias(bias, biasIndex, config->bytesPerBias);
             }
             ix = 0;
 
@@ -421,12 +420,12 @@ void AffineKernelImpl2B(AffineConfig const * const config)
 
     if (5 == config->inputVectorCount)
     {
-        for (; bias < biasEnd; bias++)
+        for (uint32_t biasIndex = 0; biasIndex < config->outputElementCount; biasIndex++)
         {
             for (i = 0; i < config->inputVectorCount; i++)
             {
                 acc[i] = _mm_setzero_si128();
-                sum[i] = *bias;
+                sum[i] = getBias(bias, biasIndex, config->bytesPerBias);
             }
             ix = 0;
 
@@ -506,12 +505,12 @@ void AffineKernelImpl2B(AffineConfig const * const config)
 
     if (6 == config->inputVectorCount)
     {
-        for (; bias < biasEnd; bias++)
+        for (uint32_t biasIndex = 0; biasIndex < config->outputElementCount; biasIndex++)
         {
             for (i = 0; i < config->inputVectorCount; i++)
             {
                 acc[i] = _mm_setzero_si128();
-                sum[i] = *bias;
+                sum[i] = getBias(bias, biasIndex, config->bytesPerBias);
             }
             ix = 0;
 
@@ -588,12 +587,12 @@ void AffineKernelImpl2B(AffineConfig const * const config)
 
     if (7 == config->inputVectorCount)
     {
-        for (; bias < biasEnd; bias++)
+        for (uint32_t biasIndex = 0; biasIndex < config->outputElementCount; biasIndex++)
         {
             for (i = 0; i < config->inputVectorCount; i++)
             {
                 acc[i] = _mm_setzero_si128();
-                sum[i] = *bias;
+                sum[i] = getBias(bias, biasIndex, config->bytesPerBias);
             }
             ix = 0;
 
@@ -674,12 +673,12 @@ void AffineKernelImpl2B(AffineConfig const * const config)
 
     if (8 == config->inputVectorCount)
     {
-        for (; bias < biasEnd; bias++)
+        for (uint32_t biasIndex = 0; biasIndex < config->outputElementCount; biasIndex++)
         {
             for (i = 0; i < config->inputVectorCount; i++)
             {
                 acc[i] = _mm_setzero_si128();
-                sum[i] = *bias;
+                sum[i] = getBias(bias, biasIndex, config->bytesPerBias);
             }
             ix = 0;
 
