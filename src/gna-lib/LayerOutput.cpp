@@ -157,6 +157,27 @@ const FullCapabilitiesMap LayerOutput::capabilities =
     }}
 };
 
+//TODO:3:Remove with API1
+FullCapabilitiesMap LayerOutput::PrepareCapabilitiesLegacy()
+{
+    FullCapabilitiesMap capabilitiesLegacy{ capabilities };
+    const auto cnn2dLegacy = std::make_shared<TensorLimits>(TensorLimits{
+            {GNA_TENSOR_NHWD},
+            {{GNA_DIM_N, {1, 1, 1, Gna2StatusXnnErrorOutputVolume}},
+             {GNA_DIM_H, {1, XNN_N_IN_ELEMS_MAX * XNN_N_IN_ELEMS_MAX, 1, Gna2StatusXnnErrorOutputVolume}},
+             {GNA_DIM_W, {1, XNN_N_IN_ELEMS_MAX * XNN_N_IN_ELEMS_MAX, 1, Gna2StatusXnnErrorOutputVolume}},
+             {GNA_DIM_D, {1, XNN_N_IN_ELEMS_MAX * XNN_N_IN_ELEMS_MAX, 1, Gna2StatusXnnErrorOutputVolume}}},
+            {{GNA_INT8, GNA_INT16, GNA_INT32, GNA_DATA_ACTIVATION_DISABLED}, Gna2StatusXnnErrorOutputBytes } });
+    capabilitiesLegacy[INTEL_CONVOLUTIONAL_2D][GNA_3_0] = cnn2dLegacy;
+    return capabilitiesLegacy;
+}
+
+const FullCapabilitiesMap & LayerOutput::GetCapabilitiesLegacy()
+{
+    static const FullCapabilitiesMap capabilitiesLegacy{ PrepareCapabilitiesLegacy() };
+    return capabilitiesLegacy;
+}
+
 Shape LayerOutput::ConvertInCaseOfNewApiOrder(gna_tensor_order order, const uint32_t nOutputColumns, const uint32_t nOutputRows)
 {
     if (order == GNA_TENSOR_NHWD)
@@ -174,10 +195,10 @@ LayerOutput::LayerOutput(const nn_layer& layer, const LayerValidator& validatorI
     Tensor{
         ConvertInCaseOfNewApiOrder( capabilities.GetOrder(validatorIn), layer.nOutputColumns, layer.nOutputRows ),
         layer.nBytesPerOutput, layer.pOutputs,
-        Validator{ validatorIn, capabilities } },
+        Validator{ validatorIn, GetCapabilitiesLegacy() } },
     ScratchPad{ Dimensions,
         layer.nBytesPerIntermediateOutput, layer.pOutputsIntermediate,
-        Validator{ validatorIn, capabilities } },
+        Validator{ validatorIn, GetCapabilitiesLegacy() } },
     Grouping { getGrouping(layer) },
     ElementCount { getElementCount(layer) }
 {

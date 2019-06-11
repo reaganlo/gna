@@ -50,7 +50,10 @@ struct LayerOutput : public Tensor
 protected:
     LayerOutput(const Gna2Tensor &inputTensor, const LayerValidator& validatorIn);
     static const FullCapabilitiesMap capabilities;
+
 private:
+    static FullCapabilitiesMap PrepareCapabilitiesLegacy();
+    static const FullCapabilitiesMap& GetCapabilitiesLegacy();
     static Shape ConvertInCaseOfNewApiOrder(gna_tensor_order getOrder, const uint32_t nOutputColumns, const uint32_t nOutputRows);
 
     uint32_t getElementCount(
