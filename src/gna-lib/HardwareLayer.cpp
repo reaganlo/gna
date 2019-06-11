@@ -542,16 +542,16 @@ void HardwareLayerCnn::save()
     XnnDescriptor[bias_buffer] = cnn->Convolution->Biases->Buffer;
 }
 
-uint32_t HardwareLayerCnn2D::GetKernelWorkGroupSize(DeviceVersion deviceVersion,
+convolutional_fused_configuration HardwareLayerCnn2D::CalculateUArchConfig(DeviceVersion deviceVersion,
     ConvolutionFunction2D const * cnnIn, PoolingFunction2D const * poolingIn,
     const DataMode& outputMode)
 {
     UNREFERENCED_PARAMETER(deviceVersion);
-    convolutional_fused_configuration validationResults;
-    auto status = GNA3_PopulateLD(cnnIn, poolingIn, outputMode, &validationResults);
+    convolutional_fused_configuration uArchConf;
+    auto status = GNA3_PopulateLD(cnnIn, poolingIn, outputMode, &uArchConf);
     Expect::True(status, Gna2StatusXnnErrorLyrCfg);
-    Expect::True(validationResults.Valid, Gna2StatusXnnErrorLyrCfg);
-    return validationResults.KWG;
+    Expect::True(uArchConf.Valid, Gna2StatusXnnErrorLyrCfg);
+    return uArchConf;
 }
 
 uint32_t HardwareLayerCnn2D::GetKernelMemorySize(DeviceVersion deviceVersion,
@@ -588,10 +588,8 @@ HardwareLayerCnn2D::HardwareLayerCnn2D(const DescriptorParameters& parameters) :
     cnn{SoftwareLayer->Get()->Transforms.Get<ConvolutionFunction2D>(ConvolutionalTransform2D)},
     pooling{SoftwareLayer->Get()->Transforms.Get<PoolingFunction2D>(PoolingTransform2D)}
 {
-    kernelWorkGroupSize = GetKernelWorkGroupSize(parameters.XnnDescriptor.HwCapabilities.GetDeviceVersion(),
+    uArchConfig = CalculateUArchConfig(parameters.XnnDescriptor.HwCapabilities.GetDeviceVersion(),
         cnn, pooling, SoftwareLayer->GetOutputTransform()->Output->Mode);
-
-    kernelWorkGroupIterationCount = GnaCeilDiv(cnn->Filters->Count, kernelWorkGroupSize);
 
     save();
     saveActivation(
@@ -621,9 +619,15 @@ void HardwareLayerCnn2D::save()
     XnnDescriptor[cnn2d_conv_out_h] = cnn->Output->Dimensions.at('H');
     XnnDescriptor[cnn2d_conv_kernel_w] = cnn->Filters->Dimensions.at('W');
     XnnDescriptor[cnn2d_conv_kernel_h] = cnn->Filters->Dimensions.at('H');
-    XnnDescriptor[cnn2d_kernel_iter] = kernelWorkGroupIterationCount;
-    XnnDescriptor[cnn2d_kernel_wg] = kernelWorkGroupSize;
-    XnnDescriptor[cnn2d_addaptive] = static_cast<uint32_t>(0);
+    XnnDescriptor[cnn2d_kernel_iter] = static_cast<uint32_t>(uArchConfig.KWGIter);
+    XnnDescriptor[cnn2d_kernel_wg] = static_cast<uint32_t>(uArchConfig.KWG);
+    XnnDescriptor[cnn2d_zp_stride_h] = cnn->Padding->Dimensions.at(GNA_DIM_H) / cnn->Stride->Dimensions.at(GNA_DIM_H);
+    XnnDescriptor[cnn2d_zp_substride_h] = cnn->Padding->Dimensions.at(GNA_DIM_H) % cnn->Stride->Dimensions.at(GNA_DIM_H);
+    
+    XnnDescriptor[cnn2d_uthread_num] = uArchConfig.uT; //from u-arch
+    XnnDescriptor[cnn2d_kmem_base] = uArchConfig.KMemBase;
+    XnnDescriptor[cnn2d_pmem_base] = uArchConfig.PMemBase;
+    XnnDescriptor[cnn2d_cmem_base] = uArchConfig.CMemBase;
 
     if (pooling != nullptr)
     {

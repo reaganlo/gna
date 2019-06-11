@@ -24,17 +24,10 @@
 */
 
 #pragma once
-
+#include <chrono>
 #include <time.h>
-//Instead of obsolete timeb
-struct timeWithMilis
-{
-    time_t time;                //seconds
-    unsigned short int millitm; //miliseconds
-};
-int getTimeWithMilis(struct timeWithMilis* t);
 
-#include "gna-api-instrumentation.h"
+#include "gna2-instrumentation-api.h"
 
 #if defined(_WIN32)
 #if !defined(_MSC_VER)
@@ -46,156 +39,24 @@ int getTimeWithMilis(struct timeWithMilis* t);
 #include <mmintrin.h>
 #endif // os
 
-// enables or disables simple profiling
-#if defined(PROFILE) || defined(PROFILE_DETAILED)
-#undef PROFILE
-#define PROFILE         1
-#define PROFILE_(...)   __VA_ARGS__
-#else
-#define PROFILE_(...)
-// disable basic profiling procedures
-#define profilerTscStart(...)
-#define profilerTscStop(...)
-#define profilerTscGetMicros(...) TIME_TSC_MAX
-#define profilerRtcStart(...)
-#define profilerRtcStop(...)
-#define profilerRtcGetMilis(...)  TIME_TSC_MAX
-#endif // defined(PROFILE) || defined(PROFILE_DETAILED)
+using chronoClock = std::chrono::high_resolution_clock;
+using chronoUs = std::chrono::microseconds;
+using chronoMs = std::chrono::milliseconds;
 
-// enables or disables detailed profiling
-#if defined(PROFILE) && defined(PROFILE_DETAILED)
-#define PROFILE_D_(...) __VA_ARGS__
-// enable detailed profiling procedures
-#define profilerDTscStart        profilerTscStart
-#define profilerDTscStop         profilerTscStop
-#define profilerDTscGetMicros    profilerTscGetMicros
-#if !defined(DRIVER)
-#define profilerDRtcStart        profilerRtcStart
-#define profilerDRtcStop         profilerRtcStop
-#define profilerDRtcGetMilis     profilerRtcGetMilis
-#endif // DRIVER
-#else
-#define PROFILE_D_(...)
-// disable detailed profiling procedures
-#define profilerDTscStart(...)
-#define profilerDTscStop(...)
-#define profilerDTscGetMicros(...) TIME_TSC_MAX
-#if !defined(DRIVER)
-#define profilerDRtcStart(...)
-#define profilerDRtcStop(...)
-#define profilerDRtcGetMilis(...)  TIME_TSC_MAX
-#endif // DRIVER
-#endif // defined(PROFILE) && defined(PROFILE_DETAILED)
+void getTsc(uint64_t * const result);
 
-// enables or disables profile print macro
-#if defined(PROFILE_PRINT)
-#define PROFILE_PRINT_      PROFILE_
-#define PROFILE_PRINT_D_    PROFILE_D_
-#else
-#define PROFILE_PRINT_(...)
-#define PROFILE_PRINT_D_(...)
-#endif // defined(PROFILE_PRINT)
-
-/**
- * max value of uint64_t type
- */
-#define TIME_TSC_MAX ULLONG_MAX
-
-#if !defined(DRIVER)
-/**
- * Real Time Clock time type
- */
-#if defined(_WIN32)
-#include <sys/timeb.h>
-typedef struct __timeb64     time_rtc;
-#else
-typedef struct timeWithMilis time_rtc;
-#endif
-#endif // DRIVER
-
-/**
- * Timestamp counter profiler
- */
 typedef struct
 {
-    uint64_t            start;      // time value on profiler start
-    uint64_t            stop;       // time value on profiler stop
-} gna_profiler_tsc;
+    uint64_t            total;      // # of total cycles spent on scoring in hw
+    uint64_t            stall;      // # of stall cycles spent in hw (since scoring)
+} gna_perf_hw_t;
 
-#if !defined(DRIVER)
-/**
- * Realtime clock profiler
- */
 typedef struct
 {
-    time_rtc            start;      // time value on profiler start
-    time_rtc            stop;       // time value on profiler stop
-    time_rtc            passed;     // time passed between start and stop
-} gna_profiler_rtc;
-#endif //DRIVER
+    uint64_t            startHW;    // time of setting up and issuing HW scoring
+    uint64_t            scoreHW;    // time between HW scoring start and scoring complete interrupt
+    uint64_t            intProc;    // time of processing scoring complete interrupt
+} gna_perf_drv_t;
 
-#if defined(PROFILE) || defined(PROFILE_DETAILED)
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-/**
- * Start TSC profiler
- *
- * @p profiler object to start
- */
-void profilerTscStart(gna_profiler_tsc * const profiler);
-
-/**
-* Stop TSC profiler
-*
-* @p   profiler object to stop
-*/
-void profilerTscStop(gna_profiler_tsc * const profiler);
-
-/**
- * Get TSC profiler ticks passed
- */
-uint64_t profilerGetTscPassed(gna_profiler_tsc const * const profiler);
-
-#if !defined(DRIVER)
-/**
- * Start RTC profiler
- *
- * @note available resolution is 10-15ms
- *
- * @p profiler object to start
- */
-void profilerRtcStart(gna_profiler_rtc * const profiler);
-
-/**
- * Stop RTC profiler
- *
- * @note available resolution is 10-15ms
- *
- * @p   profiler object to stop
- */
-void profilerRtcStop(gna_profiler_rtc * const profiler);
-
-/**
- * Get passed miliseconds
- *
- * @note available resolution is 10-15ms
- *
- * @p       stopped profiler object
- * @return  passed time in miliseconds (or TIME_TSC_MAX if p is invalid)
- */
-uint64_t profilerRtcGetMilis(gna_profiler_rtc * const profiler);
-#ifdef __cplusplus
-}
-#endif
-#endif //DRIVER
-
-#endif //#if defined(PROFILE) || defined(PROFILE_DETAILED)
-
-/******************************************************************************
- * Shorter aliases
- *****************************************************************************/
-typedef gna_profiler_tsc      profiler_tsc;
-typedef gna_perf_drv_t        perf_drv_t;
-typedef gna_perf_hw_t         perf_hw_t;
+typedef gna_perf_hw_t perf_hw_t;
+typedef gna_perf_drv_t perf_drv_t;

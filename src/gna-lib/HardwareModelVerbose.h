@@ -49,7 +49,7 @@ class AccelerationDetector;
 class Layer;
 class RequestConfiguration;
 class WindowsDriverInterface;
-struct RequestProfiler;
+class RequestProfiler;
 
 class HardwareModelVerbose : public HardwareModelScorable
 {

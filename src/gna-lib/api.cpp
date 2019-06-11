@@ -435,22 +435,3 @@ void* GnaModelDump(
     }
 }
 
-gna_status_t GnaRequestConfigEnablePerf(gna_request_cfg_id configId,
-        gna_hw_perf_encoding hwPerfEncoding, gna_perf_t* perfResults)
-{
-    try
-    {
-        auto& device = DeviceManager::Get().GetDevice(0);
-        device.EnableProfiling(configId, hwPerfEncoding, perfResults);
-        return GNA_SUCCESS;
-    }
-    catch (const GnaException &e)
-    {
-        return e.GetLegacyStatus();
-    }
-    catch (const std::exception& e)
-    {
-        return HandleUnknownException(e);
-    }
-}
-

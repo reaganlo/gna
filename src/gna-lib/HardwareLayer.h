@@ -26,12 +26,13 @@
 #pragma once
 
 #include "Address.h"
+#include "Cnn2DuArch.h"
+#include "common.h"
 #include "DataMode.h"
 #include "GnaConfig.h"
 #include "GnaTypes.h"
 #include "LayerDescriptor.h"
 
-#include "common.h"
 #include "gna-api-types-gmm.h"
 #include "gna2-common-impl.h"
 
@@ -214,7 +215,7 @@ public:
     HardwareLayerCnn2D(const DescriptorParameters& parameters);
     virtual ~HardwareLayerCnn2D() = default;
 
-    static uint32_t GetKernelWorkGroupSize(DeviceVersion deviceVersion,
+    static convolutional_fused_configuration CalculateUArchConfig(DeviceVersion deviceVersion,
         ConvolutionFunction2D const * cnnIn, PoolingFunction2D const * poolingIn,
         const DataMode& outputMode);
 
@@ -236,8 +237,7 @@ protected:
 private:
     static const uint32_t CNN_N_FLT_ITER_MAX = 16; // CNN maximum number of filters per iteration
 
-    uint32_t kernelWorkGroupIterationCount;
-    uint32_t kernelWorkGroupSize;
+    convolutional_fused_configuration uArchConfig;
 };
 
 // Hardware GMM Layer descriptor converter

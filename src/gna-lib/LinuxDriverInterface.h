@@ -36,7 +36,7 @@
 namespace GNA
 {
 class HardwareRequest;
-struct RequestProfiler;
+class RequestProfiler;
 
 class LinuxDriverInterface : public DriverInterface
 {

@@ -37,13 +37,8 @@ using namespace GNA;
 
 Request::Request(RequestConfiguration& config, std::unique_ptr<RequestProfiler> profiler) :
     Configuration(config),
-    Profiler{std::move(profiler)},
-    PerfResults{config.PerfResults}
+    Profiler{std::move(profiler)}
 {
-    if (PerfResults != nullptr)
-    {
-        memset(PerfResults, 0, sizeof(gna_perf_t));
-    }
     auto callback = [&](KernelBuffers *buffers, RequestProfiler *profilerPtr)
     {
         return Configuration.Model.Score(Configuration, profilerPtr, buffers);
@@ -54,4 +49,90 @@ Request::Request(RequestConfiguration& config, std::unique_ptr<RequestProfiler> 
 std::future<Gna2Status> Request::GetFuture()
 {
     return scoreTask.get_future();
+}
+
+RequestProfiler::RequestProfiler(bool initialize)
+{   
+    if (initialize)
+    {
+        for (size_t i = 0; i < MAX_INSTRUMENTATION_POINTS; i++)
+        {
+            Points.push_back(0);
+        }
+    }
+}
+
+void RequestProfiler::AddDrvAndHwResults(gna_perf_drv_t &drvPerf, gna_perf_hw_t &hwPerf)
+{
+
+    Points.at(Gna2InstrumentationPointDrvPreprocessing) += drvPerf.startHW;
+    Points.at(Gna2InstrumentationPointDrvProcessing) += drvPerf.intProc;
+    Points.at(Gna2InstrumentationPointDrvDeviceRequestCompleted) += drvPerf.scoreHW;
+    Points.at(Gna2InstrumentationPointDrvPreprocessing) += drvPerf.startHW;
+
+    //TODO: enable Gna2InstrumentationPointDrvCompletion and check if existing measures are correct
+
+    Points.at(Gna2InstrumentationPointHwTotalCycles) += hwPerf.total;
+    Points.at(Gna2InstrumentationPointHwTotalCycles) += hwPerf.stall;
+}
+
+void MillisecondProfiler::Measure(Gna2InstrumentationPoint pointType)
+{
+    Points.at(pointType) = static_cast<uint64_t>(std::chrono::duration_cast<chronoMs>(chronoClock::now().time_since_epoch()).count());
+}
+
+void MicrosecondProfiler::Measure(Gna2InstrumentationPoint pointType)
+{
+    Points.at(pointType) = static_cast<uint64_t>(std::chrono::duration_cast<chronoUs>(chronoClock::now().time_since_epoch()).count());
+}
+
+void CycleProfiler::Measure(Gna2InstrumentationPoint pointType)
+{
+    getTsc(&Points.at(pointType));
+}
+
+void RequestProfiler::SaveResults(ProfilerConfiguration* config)
+{
+    for (size_t i = 0; i < config->NPoints; i++)
+    {
+        Expect::InRange(static_cast<uint32_t>(config->Points[i]), (MAX_INSTRUMENTATION_POINTS - 1), Gna2StatusDeviceParameterOutOfRange);
+        *(config->Results + i) = Points.at(config->Points[i]);
+    }
+}
+
+std::unique_ptr<RequestProfiler> RequestProfiler::Create(ProfilerConfiguration* config)
+{
+    if (nullptr == config)
+    {
+        return std::make_unique<DisabledProfiler>();
+    }
+
+    Expect::NotNull(config->Results);
+    Expect::InRange(config->NPoints, MAX_INSTRUMENTATION_POINTS, Gna2StatusIdentifierInvalid);
+    
+    switch (config->Unit)
+    {
+    case Gna2InstrumentationUnitMicroseconds:
+        return std::make_unique<MicrosecondProfiler>();
+    case Gna2InstrumentationUnitMilliseconds:
+        return std::make_unique<MillisecondProfiler>();
+    case Gna2InstrumentationUnitCycles:
+        return std::make_unique<CycleProfiler>();
+    default:
+        throw GnaException(Gna2StatusIdentifierInvalid);
+    }
+}
+
+void DisabledProfiler::Measure(Gna2InstrumentationPoint point)
+{
+    UNREFERENCED_PARAMETER(point);
+}
+void DisabledProfiler::AddDrvAndHwResults(gna_perf_drv_t &drvPerf, gna_perf_hw_t &hwPerf)
+{
+    UNREFERENCED_PARAMETER(drvPerf);
+    UNREFERENCED_PARAMETER(hwPerf);
+}
+void DisabledProfiler::SaveResults(ProfilerConfiguration* config)
+{
+    UNREFERENCED_PARAMETER(config);
 }

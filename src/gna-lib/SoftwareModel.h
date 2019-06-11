@@ -41,7 +41,7 @@ namespace GNA
 
 class BaseValidator;
 class RequestConfiguration;
-struct RequestProfiler;
+class RequestProfiler;
 
 class SoftwareModel : public IScorable
 {

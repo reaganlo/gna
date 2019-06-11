@@ -91,8 +91,43 @@ RequestConfiguration& RequestBuilder::GetConfiguration(gna_request_cfg_id config
 
 std::unique_ptr<Request> RequestBuilder::CreateRequest(gna_request_cfg_id configId)
 {
-    auto profiler = std::make_unique<RequestProfiler>();
-    profilerTscStart(&profiler->preprocess);
     auto& configuration = GetConfiguration(configId);
-    return std::make_unique<Request>(configuration, move(profiler));
+    auto profiler = RequestProfiler::Create(configuration.GetProfilerConfiguration());
+    profiler->Measure(Gna2InstrumentationPointLibPreprocessing);
+    
+    return std::make_unique<Request>(configuration, std::move(profiler));
+}
+
+gna_request_cfg_id RequestBuilder::AssignProfilerConfigId()
+{
+    return profilerConfigIdSequence++; // TODO:3: add unique id
+}
+
+void RequestBuilder::CreateProfilerConfiguration(uint32_t* profilerConfigId,
+    uint32_t numberOfInstrumentationPoints,
+    Gna2InstrumentationPoint* selectedInstrumentationPoints,
+    uint64_t* results)
+{
+    *profilerConfigId = AssignProfilerConfigId();
+    profilerConfigurations.emplace(*profilerConfigId, 
+        std::make_unique<ProfilerConfiguration>(*profilerConfigId, numberOfInstrumentationPoints, selectedInstrumentationPoints, results));
+}
+
+ProfilerConfiguration& RequestBuilder::GetProfilerConfiguration(uint32_t configId) const
+{
+    try
+    {
+        auto& config = profilerConfigurations.at(configId);
+        return *config.get();
+    }
+    catch (const std::out_of_range&)
+    {
+        throw GnaException(Gna2StatusIdentifierInvalid);
+    }
+}
+
+void RequestBuilder::ReleaseProfilerConfiguration(uint32_t configId)
+{
+    //TODO:3: consider adding thread safty mechanism
+    profilerConfigurations.erase(configId);
 }

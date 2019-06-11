@@ -219,16 +219,18 @@ RequestResult WindowsDriverInterface::Submit(HardwareRequest& hardwareRequest,
         throw GnaException { Gna2StatusXnnErrorLyrCfg };
     }
 
-    profilerTscStart(&profiler->ioctlSubmit);
+    profiler->Measure(Gna2InstrumentationPointLibDeviceRequestReady);
+
     auto ioResult = WriteFile(static_cast<HANDLE>(deviceHandle),
         calculationData, static_cast<DWORD>(hardwareRequest.CalculationSize),
         nullptr, &ioHandle);
     checkStatus(ioResult);
-    profilerTscStop(&profiler->ioctlSubmit);
 
-    profilerTscStart(&profiler->ioctlWaitOn);
+    profiler->Measure(Gna2InstrumentationPointLibDeviceRequestSent);
+
     GetOverlappedResultEx(deviceHandle, &ioHandle, &bytesRead, GNA_REQUEST_TIMEOUT_MAX, false);
-    profilerTscStop(&profiler->ioctlWaitOn);
+
+    profiler->Measure(Gna2InstrumentationPointLibDeviceRequestCompleted);
 
     auto writeStatus = (NTSTATUS)ioHandle.Internal;
     switch (writeStatus)

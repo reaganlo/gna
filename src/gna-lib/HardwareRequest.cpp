@@ -47,7 +47,7 @@ using namespace GNA;
 HardwareRequest::HardwareRequest(const HardwareModelScorable& hwModelIn,
                                 const RequestConfiguration& requestConfigurationIn,
                                 Memory *ldMemoryIn, const std::vector<Memory *>& modelMemoryObjectsIn)
-    : HwPerfEncoding(requestConfigurationIn.HwPerfEncoding),
+    : HwPerfEncoding(requestConfigurationIn.GetProfilerConfiguration()->HwPerfEncoding),
       RequestConfigId(requestConfigurationIn.Id),
       requestConfiguration(requestConfigurationIn),
       hwModel(hwModelIn),

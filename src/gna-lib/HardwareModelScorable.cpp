@@ -35,7 +35,6 @@
 #include "SoftwareModel.h"
 
 #include "common.h"
-#include "gna-api-instrumentation.h"
 #include "gna-api-status.h"
 #include "profiler.h"
 
@@ -135,15 +134,9 @@ uint32_t HardwareModelScorable::Score(
 
     auto result = driverInterface.Submit(*hwRequest, profiler);
 
-    auto perfResults = requestConfiguration.PerfResults;
-    if (perfResults != nullptr)
+    if (profiler != nullptr)    
     {
-        perfResults->drv.startHW += result.driverPerf.startHW;
-        perfResults->drv.scoreHW += result.driverPerf.scoreHW;
-        perfResults->drv.intProc += result.driverPerf.intProc;
-
-        perfResults->hw.stall += result.hardwarePerf.stall;
-        perfResults->hw.total += result.hardwarePerf.total;
+        profiler->AddDrvAndHwResults(result.driverPerf, result.hardwarePerf);
     }
 
     if (result.status != Gna2StatusSuccess && result.status != Gna2StatusWarningArithmeticSaturation)

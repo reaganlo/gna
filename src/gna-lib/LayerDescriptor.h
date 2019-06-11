@@ -183,6 +183,12 @@ typedef enum _XnnParameterType
     cnn2d_padding_w,    // CNN2D Zero-padding Dimension - Width
     cnn2d_padding_h,    // CNN2D Zero-padding Dimension - Height
     cnn2d_addaptive,    // CNN2D Adaptive Hardware [uArch] knobs // TODO:3:CNN2D: Adaptive Hardware PCR?
+    cnn2d_kmem_base,    // CNN2D base of Kernel Memory
+    cnn2d_pmem_base,    // CNN2D base of Pooling Memory
+    cnn2d_cmem_base,    // CNN2D base of Convolution Memory
+    cnn2d_uthread_num,  // CNN2D number of uThreads
+    cnn2d_zp_stride_h,  // CNN2D zero-padding stride height
+    cnn2d_zp_substride_h,// CNN2D zero-padding substride height
     cnn2d_kernel_wg,    // CNN2D Convolution Kernel work group size
     cnn2d_kernel_iter,  // CNN2D Convolution Kernel work group iterations
     cnn2d_kernel_scalar,// CNN2D Convolution Kernel constant scalar

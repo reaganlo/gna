@@ -129,7 +129,7 @@ Gna2Status CompiledModel::Score(
     RequestProfiler *profiler,
     KernelBuffers *buffers)
 {
-    profilerDTscStart(&profiler->scoring);
+    profiler->Measure(Gna2InstrumentationPointLibExecution);
     auto saturationCount = uint32_t{0};
     try
     {
@@ -165,9 +165,6 @@ Gna2Status CompiledModel::Score(
     {
         return e.GetStatus();
     }
-    profilerDTscStop(&profiler->scoring);
-    profilerDTscStop(&profiler->total);
-
     return (saturationCount > 0) ? Gna2StatusWarningArithmeticSaturation : Gna2StatusSuccess;
 }
 

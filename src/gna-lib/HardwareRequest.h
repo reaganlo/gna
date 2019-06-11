@@ -27,8 +27,11 @@
 
 #include "HardwareLayer.h"
 
+#include "DriverInterface.h"
+#include "RequestConfiguration.h"
+
 #include "gna-api.h"
-#include "gna-api-instrumentation.h"
+#include "gna2-instrumentation-api.h"
 
 #include <cstdint>
 #include <map>
@@ -117,7 +120,7 @@ public:
     void Update(uint32_t layerIndex, uint32_t layerCount, GnaOperationMode mode);
 
     /* these fields will not change between request executions */
-    const gna_hw_perf_encoding HwPerfEncoding;
+    const Gna2InstrumentationMode HwPerfEncoding;
     const gna_request_cfg_id RequestConfigId;
 
     /* these fields can change on each request execution */
@@ -139,6 +142,11 @@ public:
 
     /* Hardware request ready for driver submition indicator */
     bool SubmitReady = false;
+
+    ProfilerConfiguration* GetProfilerConfiguration() const
+    {
+        return requestConfiguration.GetProfilerConfiguration();
+    }
 
 private:
 

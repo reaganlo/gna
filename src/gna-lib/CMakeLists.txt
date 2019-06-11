@@ -239,8 +239,7 @@ set(gna_api_headers
   ${COMMON_DIR}/gna-api-status.h)
 
 set(gna_api_extra
-  ${COMMON_DIR}/gna-api-dumper.h
-  ${COMMON_DIR}/gna-api-instrumentation.h)
+  ${COMMON_DIR}/gna-api-dumper.h)
 
 set(gna_api_headers_2
   ${API_DIR}/gna2-api.h

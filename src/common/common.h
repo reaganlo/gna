@@ -27,7 +27,7 @@
 
 #include "gna-api-types-xnn.h"
 #include "gna-api-types-gmm.h"
-#include "gna-api-instrumentation.h"
+#include "gna-api.h"
 
 #include <cstdio>
 #include <cstdlib>

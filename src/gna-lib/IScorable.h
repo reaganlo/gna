@@ -43,7 +43,7 @@ class AccelerationDetector;
 class Layer;
 struct LayerConfiguration;
 class RequestConfiguration;
-struct RequestProfiler;
+class RequestProfiler;
 
 class IScorable
 {

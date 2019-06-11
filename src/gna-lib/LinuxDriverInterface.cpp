@@ -169,9 +169,9 @@ RequestResult LinuxDriverInterface::Submit(HardwareRequest& hardwareRequest,
         throw GnaException { Gna2StatusXnnErrorLyrCfg };
     }
 
-    profilerTscStart(&profiler->ioctlSubmit);
+    profiler->Measure(Gna2InstrumentationPointLibDeviceRequestReady);
+
     ret = ioctl(gnaFileDescriptor, GNA_IOCTL_SCORE, scoreConfig);
-    profilerTscStop(&profiler->ioctlSubmit);
     if (ret == -1)
     {
         throw GnaException { Gna2StatusDeviceOutgoingCommunicationError };
@@ -181,9 +181,9 @@ RequestResult LinuxDriverInterface::Submit(HardwareRequest& hardwareRequest,
     wait_data.request_id = scoreConfig->request_id;
     wait_data.timeout = GNA_REQUEST_TIMEOUT_MAX;
 
-    profilerTscStart(&profiler->ioctlWaitOn);
+    profiler->Measure(Gna2InstrumentationPointLibDeviceRequestSent);
     ret = ioctl(gnaFileDescriptor, GNA_IOCTL_WAIT, &wait_data);
-    profilerTscStop(&profiler->ioctlWaitOn);
+    profiler->Measure(Gna2InstrumentationPointLibDeviceRequestCompleted);
     if(ret == 0)
     {
         result.status = ((wait_data.hw_status & GNA_STS_SATURATE) != 0)

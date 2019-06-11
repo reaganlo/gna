@@ -54,7 +54,7 @@ class Layer;
 class Memory;
 class RequestConfiguration;
 struct LayerConfiguration;
-struct RequestProfiler;
+class RequestProfiler;
 
 class CompiledModel
 {

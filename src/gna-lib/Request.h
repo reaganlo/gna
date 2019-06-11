@@ -30,30 +30,71 @@
 #include "gna2-common-api.h"
 
 #include "gna-api.h"
-#include "gna-api-instrumentation.h"
 
 #include <future>
 #include <memory>
+#include <vector>
 
 struct KernelBuffers;
 
 namespace GNA
 {
-class RequestConfiguration;
+    class ProfilerConfiguration;
+    class RequestConfiguration;
+    class RequestProfiler;
 
 /**
  * Library level request processing profiler
  */
-struct RequestProfiler
+class RequestProfiler
 {
-    profiler_tsc submit;         // score request submit profiler
-    profiler_tsc preprocess;     // preprocessing score request profiler
-    profiler_tsc process;        // processing score request profiler (includes GNAWait)
-    profiler_tsc scoring;        // profiler for computing scores in software mode
-    profiler_tsc total;          // profiler for total processing time (does not include GNAWait)
-    profiler_tsc ioctlSubmit;    // profiler for issuing "start scoring IOCTL"
-    profiler_tsc ioctlWaitOn;    // profiler for waiting for "start scoring IOCTL" completion
+public:
+    static const uint32_t MAX_INSTRUMENTATION_POINTS = 15;
+    static std::unique_ptr<RequestProfiler> Create(ProfilerConfiguration* config);
+
+    RequestProfiler(bool initialize = false);
+    virtual ~RequestProfiler() = default;
+
+    virtual void AddDrvAndHwResults(gna_perf_drv_t &drvPerf, gna_perf_hw_t &hwPerf);
+
+    virtual void Measure(Gna2InstrumentationPoint point) = 0;
+
+    virtual void SaveResults(ProfilerConfiguration* config);
+protected:
+
+    std::vector<uint64_t> Points;
 }; // Library level request processing profiler
+
+class DisabledProfiler : public RequestProfiler
+{
+public:
+    DisabledProfiler() : RequestProfiler(false)
+    {
+        
+    }
+
+    void Measure(Gna2InstrumentationPoint point) override;
+    void AddDrvAndHwResults(gna_perf_drv_t &drvPerf, gna_perf_hw_t &hwPerf) override;
+    void SaveResults(ProfilerConfiguration* config) override;
+};
+
+class MicrosecondProfiler : public RequestProfiler
+{
+public:
+    void Measure(Gna2InstrumentationPoint point) override;
+};
+
+class MillisecondProfiler : public RequestProfiler
+{
+public:
+    void Measure(Gna2InstrumentationPoint point) override;
+};
+
+class CycleProfiler : public RequestProfiler
+{
+public:
+    void Measure(Gna2InstrumentationPoint point) override;
+};
 
 /**
  * Calculation request for single scoring or propagate forward operation
@@ -77,8 +118,8 @@ public:
     // External id (0-GNA_REQUEST_WAIT_ANY)
     gna_request_id Id = 0;
     RequestConfiguration& Configuration;
+
     std::unique_ptr<RequestProfiler> Profiler;
-    gna_perf_t *PerfResults;
 
 private:
     std::packaged_task<Gna2Status(KernelBuffers *buffers, RequestProfiler *profiler)> scoreTask;

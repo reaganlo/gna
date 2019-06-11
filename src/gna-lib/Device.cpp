@@ -123,22 +123,6 @@ void Device::EnforceAcceleration(gna_request_cfg_id configId, Gna2AccelerationMo
     requestConfiguration.EnforceAcceleration(accelMode);
 }
 
-void Device::EnableProfiling(gna_request_cfg_id configId,
-    gna_hw_perf_encoding hwPerfEncoding, gna_perf_t * perfResults)
-{
-    Expect::NotNull(perfResults);
-
-    if (hwPerfEncoding >= DESCRIPTOR_FETCH_TIME
-        && !hardwareCapabilities.HasFeature(NewPerformanceCounters))
-    {
-        throw GnaException(Gna2StatusAccelerationModeNotSupported);
-    }
-
-    auto& requestConfiguration = requestBuilder.GetConfiguration(configId);
-    requestConfiguration.HwPerfEncoding = hwPerfEncoding;
-    requestConfiguration.PerfResults = perfResults;
-}
-
 void Device::AttachActiveList(gna_request_cfg_id configId, uint32_t layerIndex,
         uint32_t indicesCount, const uint32_t* const indices)
 {
@@ -212,4 +196,46 @@ void Device::Stop()
 std::unique_ptr<Memory> Device::createMemoryObject(uint32_t requestedSize)
 {
     return std::make_unique<Memory>(requestedSize);
+}
+
+void Device::SetInstrumentationUnit(gna_request_cfg_id configId, Gna2InstrumentationUnit instrumentationUnit)
+{
+    auto& requestConfiguration = requestBuilder.GetProfilerConfiguration(configId);
+    requestConfiguration.Unit = instrumentationUnit;
+}
+
+void Device::SetHardwareInstrumentation(gna_request_cfg_id configId, Gna2InstrumentationMode instrumentationMode)
+{
+    if (instrumentationMode >= Gna2InstrumentationModeDescriptorFetchTime
+        && !hardwareCapabilities.HasFeature(NewPerformanceCounters))
+    {
+        throw GnaException(Gna2StatusDeviceVersionInvalid);
+    }
+
+    auto& requestConfiguration = requestBuilder.GetProfilerConfiguration(configId);
+    requestConfiguration.HwPerfEncoding = instrumentationMode;
+}
+
+void Device::CreateProfilerConfiguration(uint32_t* configId,
+    uint32_t numberOfInstrumentationPoints,
+    Gna2InstrumentationPoint* selectedInstrumentationPoints,
+    uint64_t* results)
+{
+    Expect::NotNull(selectedInstrumentationPoints);
+    Expect::NotNull(results);
+
+    requestBuilder.CreateProfilerConfiguration(configId, numberOfInstrumentationPoints, selectedInstrumentationPoints, results);
+}
+
+void Device::AssignProfilerConfigToRequestConfig(uint32_t instrumentationConfigId, 
+    uint32_t requestConfigId)
+{
+    auto& requestConfiguration = requestBuilder.GetConfiguration(requestConfigId);
+    auto& profilerConfiguration = requestBuilder.GetProfilerConfiguration(instrumentationConfigId);
+    requestConfiguration.AssignProfilerConfig(&profilerConfiguration);
+}
+
+void Device::ReleaseProfilerConfiguration(uint32_t configId)
+{
+    requestBuilder.ReleaseProfilerConfiguration(configId);
 }

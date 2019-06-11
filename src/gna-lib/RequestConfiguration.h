@@ -26,9 +26,9 @@
 #pragma once
 
 #include "LayerConfiguration.h"
+#include "ProfilerConfiguration.h"
 
 #include "gna-api.h"
-#include "gna-api-instrumentation.h"
 #include "gna-api-types-xnn.h"
 #include "gna2-inference-api.h"
 #include "gna2-inference-impl.h"
@@ -74,9 +74,6 @@ public:
 
     const gna_request_cfg_id Id;
 
-    gna_hw_perf_encoding HwPerfEncoding = PERF_COUNT_DISABLED;
-    gna_perf_t * PerfResults = nullptr;
-
     std::map<uint32_t, std::unique_ptr<LayerConfiguration>> LayerConfigurations;
 
     std::vector<Memory *> MemoryList;
@@ -88,7 +85,19 @@ public:
 
     AccelerationMode Acceleration = Gna2AccelerationModeAuto;
 
+    void AssignProfilerConfig(ProfilerConfiguration* config)
+    {
+        profilerConfiguration = config;
+    }
+
+    ProfilerConfiguration* GetProfilerConfiguration() const
+    {
+        return profilerConfiguration;
+    }
+
 private:
+    ProfilerConfiguration* profilerConfiguration = nullptr;
+
     DeviceVersion consistentDevice;
 
     void addMemoryObject(void *buffer, uint32_t bufferSize);

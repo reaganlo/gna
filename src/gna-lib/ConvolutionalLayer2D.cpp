@@ -54,11 +54,13 @@ void ConvolutionalLayer2D::Init()
     Expect::Equal(Output.Size, GetOutputTransform()->Output->Size, Gna2StatusXnnErrorOutputVolume);
 
     // performed for layer size validation
-    HardwareLayerCnn2D::GetKernelWorkGroupSize(
+    auto uArchConfig = HardwareLayerCnn2D::CalculateUArchConfig(
         validator->HwCapabilities.GetDeviceVersion(),
         Transforms.Get<ConvolutionFunction2D>(ConvolutionalTransform2D),
         Transforms.Get<PoolingFunction2D>(PoolingTransform2D),
         GetOutputTransform()->Output->Mode);
+
+    Expect::True(uArchConfig.Valid, Gna2StatusModelConfigurationInvalid);
 
     Layer::ComputeHidden = [this](AccelerationMode accel, ExecutionConfig const & executionConfig)
     {this->compute(nullptr, accel, executionConfig); };

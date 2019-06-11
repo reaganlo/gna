@@ -23,14 +23,12 @@
  in any way.
 */
 
-#include "RequestHandler.h"
 
 #include "Expect.h"
 #include "GnaException.h"
 #include "Request.h"
-
-#include "gna-api-instrumentation.h"
-#include "profiler.h"
+#include "RequestHandler.h"
+#include "RequestConfiguration.h"
 
 #include <chrono>
 #include <future>
@@ -82,16 +80,11 @@ void RequestHandler::Enqueue(
         nRequests++;
         nRequests = nRequests % GNA_REQUEST_WAIT_ANY;
     }
-    profilerDTscStart(&r->Profiler->total);
-    profilerDTscStart(&r->Profiler->submit);
+    r->Profiler->Measure(Gna2InstrumentationPointLibSubmission);
 
     threadPool.Enqueue(r);
 
-    profilerDTscStop(&r->Profiler->submit);
-    profilerDTscStop(&r->Profiler->preprocess);
-
-    profilerDTscStart(&r->Profiler->process);
-}
+    }
 
 Gna2Status RequestHandler::WaitFor(const gna_request_id requestId, const gna_timeout milliseconds)
 {
@@ -104,22 +97,9 @@ Gna2Status RequestHandler::WaitFor(const gna_request_id requestId, const gna_tim
     case std::future_status::ready:
     {
         auto score_status = future.get();
-        auto perfResults = request->PerfResults;
         auto profiler = request->Profiler.get();
-        profilerTscStop(&profiler->process);
-        if (perfResults != nullptr)
-        {
-            perfResults->lib.preprocess = profilerGetTscPassed(&profiler->preprocess);
-            perfResults->lib.process    = profilerGetTscPassed(&profiler->process);
-            perfResults->lib.submit     = profilerGetTscPassed(&profiler->submit);
-            perfResults->lib.scoring    = profilerGetTscPassed(&profiler->scoring);
-            perfResults->lib.total      = profilerGetTscPassed(&profiler->total);
-            perfResults->lib.ioctlSubmit= profilerGetTscPassed(&profiler->ioctlSubmit);
-            perfResults->lib.ioctlWaitOn= profilerGetTscPassed(&profiler->ioctlWaitOn);
-            perfResults->total.start    = profiler->submit.start;
-            perfResults->total.stop     = profiler->process.stop;
-        }
-
+        profiler->Measure(Gna2InstrumentationPointLibProcessing);
+        profiler->SaveResults(request->Configuration.GetProfilerConfiguration());
         removeRequest(requestId);
         return score_status;
     }

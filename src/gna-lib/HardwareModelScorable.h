@@ -47,7 +47,7 @@ class HardwareCapabilities;
 class Layer;
 class Memory;
 class RequestConfiguration;
-struct RequestProfiler;
+class RequestProfiler;
 
 class HardwareModelScorable : public HardwareModel, public IScorable
 {

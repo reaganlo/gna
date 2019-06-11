@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2017 Intel Corporation.
+ Copyright 2019 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -23,35 +23,32 @@
  in any way.
 */
 
-#include <limits.h>
-#include <stdlib.h>
-#include <stdint.h>
+#pragma once
+#include "gna2-instrumentation-api.h"
 
-#if defined(_WIN32)
-#include <Windows.h>
-#endif
-
-#include "profiler.h"
-
-#if defined(_WIN32)
-
-void getTsc(uint64_t * const result)
+namespace GNA
 {
-    QueryPerformanceCounter(reinterpret_cast<LARGE_INTEGER * const>(result));
-}
+    class ProfilerConfiguration
+    {
 
-#else
-#if defined(__GNUC__) && !defined(__clang__)
-static __inline__ uint64_t __rdtsc(void)
-{
-    unsigned hi, lo;
-    __asm__ __volatile__("rdtsc" : "=a"(lo), "=d"(hi));
-    return (static_cast<uint64_t>(lo)) | ((static_cast<uint64_t>(hi)) << 32);
-}
-#endif
+    public:
+        ProfilerConfiguration(uint32_t configID,
+            uint32_t numberOfPoints,
+            Gna2InstrumentationPoint* selectedPoints,
+            uint64_t* selectedResults) :
+            ID{configID},
+            Points{ selectedPoints },
+            NPoints{ numberOfPoints },
+            Results{ selectedResults }
+        {}
 
-void getTsc(uint64_t * const result)
-{
-    *result = __rdtsc();
+        uint32_t ID;
+        Gna2InstrumentationPoint* Points;
+        uint32_t NPoints;
+        uint64_t* Results;
+
+        Gna2InstrumentationMode HwPerfEncoding = Gna2InstrumentationModeDisabled;
+        Gna2InstrumentationUnit Unit = Gna2InstrumentationUnitMicroseconds;
+    };
+
 }
-#endif

@@ -28,5 +28,71 @@
 
 #include "Logger.h"
 #include "Expect.h"
+#include "DeviceManager.h"
+#include "ApiWrapper.h"
 
 using namespace GNA;
+
+Gna2Status Gna2InstrumentationConfigSetMode(gna_request_cfg_id configId,
+    Gna2InstrumentationMode hwPerfEncoding)
+{
+    const std::function<ApiStatus()> command = [&]()
+    {
+        auto& device = DeviceManager::Get().GetDevice(0);
+        device.SetHardwareInstrumentation(configId, hwPerfEncoding);
+        return Gna2StatusSuccess;
+    };
+    return ApiWrapper::ExecuteSafely(command);
+}
+
+Gna2Status Gna2InstrumentationConfigSetUnit(
+    uint32_t configId,
+    Gna2InstrumentationUnit instrumentationUnit)
+{
+    const std::function<ApiStatus()> command = [&]()
+    {
+        auto& device = DeviceManager::Get().GetDevice(0);
+        device.SetInstrumentationUnit(configId, instrumentationUnit);
+        return Gna2StatusSuccess;
+    };
+    return ApiWrapper::ExecuteSafely(command);
+}
+
+Gna2Status Gna2InstrumentationConfigCreate(
+    uint32_t numberOfInstrumentationPoints,
+    Gna2InstrumentationPoint* selectedInstrumentationPoints,
+    uint64_t* results,
+    uint32_t* configId)
+{
+    const std::function<ApiStatus()> command = [&]()
+    {
+        auto& device = DeviceManager::Get().GetDevice(0);
+        device.CreateProfilerConfiguration(configId, numberOfInstrumentationPoints, selectedInstrumentationPoints, results);
+        return Gna2StatusSuccess;
+    };
+    return ApiWrapper::ExecuteSafely(command);
+}
+
+Gna2Status Gna2InstrumentationConfigAssignToRequestConfig(
+    uint32_t instrumentationConfigId,
+    uint32_t requestConfigId)
+{
+    const std::function<ApiStatus()> command = [&]()
+    {
+        auto& device = DeviceManager::Get().GetDevice(0);
+        device.AssignProfilerConfigToRequestConfig(instrumentationConfigId, requestConfigId);
+        return Gna2StatusSuccess;
+    };
+    return ApiWrapper::ExecuteSafely(command);
+}
+
+Gna2Status Gna2InstrumentationConfigRelease(uint32_t instrumentationConfigId)
+{
+    const std::function<ApiStatus()> command = [&]()
+    {
+        auto& device = DeviceManager::Get().GetDevice(0);
+        device.ReleaseProfilerConfiguration(instrumentationConfigId);
+        return Gna2StatusSuccess;
+    };
+    return ApiWrapper::ExecuteSafely(command);
+}

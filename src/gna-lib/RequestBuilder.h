@@ -25,9 +25,10 @@
 
 #pragma once
 
+#include "ProfilerConfiguration.h"
 #include "RequestConfiguration.h"
 
-#include "common.h"
+#include "gna2-instrumentation-api.h"
 
 #include <memory>
 #include <cstdint>
@@ -54,11 +55,18 @@ public:
     RequestConfiguration& GetConfiguration(gna_request_cfg_id configId) const;
     std::unique_ptr<Request> CreateRequest(gna_request_cfg_id configId);
 
+    void CreateProfilerConfiguration(uint32_t* configId, uint32_t numberOfInstrumentationPoints, Gna2InstrumentationPoint* selectedInstrumentationPoints, uint64_t* results);
+    ProfilerConfiguration& GetProfilerConfiguration(uint32_t configId) const;
+    void ReleaseProfilerConfiguration(uint32_t configId);
 private:
     std::unordered_map<uint32_t, std::unique_ptr<RequestConfiguration>> configurations;
     gna_request_cfg_id assignConfigId();
 
     gna_request_cfg_id configIdSequence = 0;
+
+    std::unordered_map<uint32_t, std::unique_ptr<ProfilerConfiguration>> profilerConfigurations;
+    uint32_t AssignProfilerConfigId();
+    gna_request_cfg_id profilerConfigIdSequence = 0;
 };
 
 }

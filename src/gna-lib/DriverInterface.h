@@ -42,8 +42,8 @@ class HardwareRequest;
 
 struct RequestResult
 {
-    perf_hw_t hardwarePerf;
-    perf_drv_t driverPerf;
+    gna_perf_hw_t hardwarePerf;
+    gna_perf_drv_t driverPerf;
     Gna2Status status;
 };
 

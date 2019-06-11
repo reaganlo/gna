@@ -35,7 +35,7 @@
 
 #include "gna-api.h"
 #include "gna-api-dumper.h"
-#include "gna-api-instrumentation.h"
+#include "gna2-instrumentation-api.h"
 
 #include <cstdint>
 #include <map>
@@ -95,8 +95,6 @@ public:
 
     void AttachActiveList(gna_request_cfg_id configId, uint32_t layerIndex, uint32_t indicesCount, const uint32_t* const indices);
 
-    void EnableProfiling(gna_request_cfg_id configId, gna_hw_perf_encoding hwPerfEncoding, gna_perf_t * perfResults);
-
     void PropagateRequest(gna_request_cfg_id configId, uint32_t *requestId);
 
     Gna2Status WaitForRequest(gna_request_id requestId, gna_timeout milliseconds);
@@ -106,6 +104,16 @@ public:
     void* Dump(gna_model_id modelId, gna_device_generation generation,
             intel_gna_model_header* modelHeader, Gna2Status* status,
             intel_gna_alloc_cb customAlloc);
+
+    void CreateProfilerConfiguration(uint32_t* configId, uint32_t numberOfInstrumentationPoints, Gna2InstrumentationPoint* selectedInstrumentationPoints, uint64_t* results);
+
+    void ReleaseProfilerConfiguration(uint32_t configId);
+
+    void AssignProfilerConfigToRequestConfig(uint32_t instrumentationConfigId, uint32_t requestConfigId);
+
+    void SetInstrumentationUnit(gna_request_cfg_id configId, Gna2InstrumentationUnit instrumentationUnit);
+
+    void SetHardwareInstrumentation(gna_request_cfg_id configId, enum Gna2InstrumentationMode instrumentationMode);
 
 protected:
     virtual std::unique_ptr<Memory> createMemoryObject( const uint32_t requestedSize);
