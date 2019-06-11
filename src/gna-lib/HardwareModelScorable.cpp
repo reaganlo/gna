@@ -97,6 +97,10 @@ uint32_t HardwareModelScorable::Score(
     {
         throw GnaException(Gna2StatusUnknownError);
     }
+    for (auto i = layerIndex; i < layerIndex + layerCount; i++)
+    {
+        Expect::NotNull(hardwareLayers[i].get(), Gna2StatusUnknownError);
+    }
 
     Expect::InRange(layerCount,
         ui32_0, hwCapabilities.GetMaximumLayerCount(),

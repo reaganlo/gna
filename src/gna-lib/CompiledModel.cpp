@@ -78,7 +78,7 @@ void CompiledModel::BuildHardwareModel(DriverInterface &ddi)
     const auto& deviceSubmodels = getSubmodels(hwCapabilities);
 
     auto hasHardwareCompliantLayer =
-        !(1 == submodels.size() && SubmodelType::Software == deviceSubmodels.at(0)->Type);
+        !(1 == deviceSubmodels.size() && SubmodelType::Software == deviceSubmodels.at(0)->Type);
     if(!hasHardwareCompliantLayer)
     {
         Log->Warning("None of model layers is compliant with selected hardware GNA device, "
@@ -92,7 +92,7 @@ void CompiledModel::BuildHardwareModel(DriverInterface &ddi)
 
     if (hardwareModel)
     {
-        hardwareModel->Build(modelMemoryList);
+        hardwareModel->Build(modelMemoryList, deviceSubmodels);
     }
 }
 

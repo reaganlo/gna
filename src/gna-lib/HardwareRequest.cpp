@@ -77,6 +77,11 @@ void HardwareRequest::Invalidate()
     {
         auto layer = model.GetLayer(it->first);
         auto hwLayer = hwModel.GetLayer(it->first);
+        //TODO:3:Remove when HardwareModel per submodel enabled
+        if (hwLayer == nullptr)
+        {
+            continue;
+        }
         auto layerCfg = it->second.get();
 
         generateBufferPatches(*layerCfg, *layer, *hwLayer);

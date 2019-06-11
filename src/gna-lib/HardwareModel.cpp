@@ -32,6 +32,7 @@
 #include "HardwareLayer.h"
 #include "Layer.h"
 #include "Memory.h"
+#include "SubModel.h"
 
 #include "common.h"
 #include "gna-api-status.h"
@@ -82,7 +83,22 @@ uint64_t HardwareModel::GetMemoryId(const BaseAddress& address) const
     return (*foundIt)->GetId();
 }
 
-void HardwareModel::Build(const std::vector<Memory* >& modelMemoryObjectsIn)
+//TODO:3: Remove and use HardwareModel per SubModel
+bool IsSoftwareLayer(const std::vector<std::unique_ptr<SubModel>>& submodels, uint32_t layerIndex)
+{
+    for (const auto& subModel : submodels)
+    {
+        if (layerIndex >= subModel->LayerIndex && layerIndex < subModel->LayerIndex + subModel->GetLayerCount() &&
+            subModel->Type == SubmodelType::Software)
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
+void HardwareModel::Build(const std::vector<Memory* >& modelMemoryObjectsIn,
+    const std::vector<std::unique_ptr<SubModel>>& submodels)
 {
     modelMemoryObjects = modelMemoryObjectsIn;
 
@@ -111,7 +127,14 @@ void HardwareModel::Build(const std::vector<Memory* >& modelMemoryObjectsIn)
         try
         {
             const auto parameters = DescriptorParameters{layer.get(), layerDescriptor };
-            hardwareLayers.push_back(HardwareLayer::Create(parameters));
+            if (IsSoftwareLayer(submodels, i))
+            {
+                hardwareLayers.push_back(nullptr);
+            }
+            else
+            {
+                hardwareLayers.push_back(HardwareLayer::Create(parameters));
+            }
             if (INTEL_GMM == layer->Operation)
             {
                 gmmDescriptor++;

@@ -30,6 +30,7 @@
 #include "Address.h"
 #include "KernelArguments.h"
 #include "LayerDescriptor.h"
+#include "SubModel.h"
 
 #include "gna-api.h"
 
@@ -59,7 +60,8 @@ public:
     HardwareModel& operator=(const HardwareModel&) = delete;
     virtual ~HardwareModel() = default;
 
-    void Build(const std::vector<Memory* >& modelMemoryObjectsIn);
+    void Build(const std::vector<Memory* >& modelMemoryObjectsIn,
+        const std::vector<std::unique_ptr<SubModel>>& submodels);
 
     const HardwareLayer* GetLayer(uint32_t layerIndex) const
     {
