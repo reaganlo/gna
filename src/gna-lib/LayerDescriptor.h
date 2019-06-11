@@ -116,6 +116,7 @@ typedef enum _XnnParameterType
 
     n_groups,           // 0x06; 0x06 Number of input groups used
     cnn_n_flt_last,     // 0x06; 0x06 CNN Number of filters in buffer in last iteration [4,8,12,16)]
+    cpy_n_rows,         // 0x06; 0x06 Number of Rows in Source and Destination [1 - 255]
 
     n_iters,            // 0x07; 0x07 Blocking size used to fit size of input buffer
     cnn_pool_stride,    // 0x07; 0x07 CNN Pool Stride [1-6]
@@ -193,6 +194,11 @@ typedef enum _XnnParameterType
     cnn2d_kernel_iter,  // CNN2D Convolution Kernel work group iterations
     cnn2d_kernel_scalar,// CNN2D Convolution Kernel constant scalar
     cnn2d_bias_mode,    // CNN2D Convolution Bias Mode
+
+    th_bias_src,        // Affine threshold: Bias-Source (BSRC): Applicable only if Autonomous Extension present
+    th_int_mask,        // Affine threshold: Threshold Mask (THM): w.r.t. TH Condition
+    th_op_mode,         // Affine threshold: Threshold Operation Mode (THOM)
+    th_cond,            // Affine threshold: Threshold Region (THR)
 
 } XnnParameterType;
 

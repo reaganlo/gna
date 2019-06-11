@@ -397,7 +397,7 @@ void HardwareLayerCopy::save()
 
     auto copy = SoftwareLayer->Get<const CopyLayer>();
     XnnDescriptor[cpy_n_elems] = copy->ColumnCount;
-    XnnDescriptor[n_groups] = copy->RowCount;
+    XnnDescriptor[cpy_n_rows] = copy->RowCount;
 }
 
 HardwareLayerRnn::HardwareLayerRnn(const DescriptorParameters& parameters) :

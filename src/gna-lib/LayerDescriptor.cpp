@@ -26,6 +26,7 @@
 #include "LayerDescriptor.h"
 
 #include "HardwareCapabilities.h"
+#include "ThresholdParameters.h"
 
 #include "PoolingKernelArguments.h"
 
@@ -117,6 +118,7 @@ static const std::map<const XnnParameterType, const XnnParameter> XnnDescriptorG
     {n_out_elems, { 0x04, 2 }},
     {cnn_n_out_p_flt, { 0x04, 2 }},
     {n_groups, { 0x06, 1 }},
+    {cpy_n_rows, { 0x06, 1 }},
     {cnn_n_flt_last, { 0x06, 1 }},
     {n_iters, { 0x07, 1 }},
     {cnn_pool_stride, { 0x07, 1 }},
@@ -154,11 +156,6 @@ static const std::map<const XnnParameterType, const XnnParameter> XnnDescriptorG
 static const std::map<const XnnParameterType, const XnnParameter> XnnDescriptorGNA_3 =
 {
     {op, { 0x00, 1 }},
-    {active_list_enabled, { 0x00, 1, 0, 1,
-        {
-            { 0, static_cast<uint8_t>(0)},
-            { 1, static_cast<uint8_t>(1) }
-        }}},
     {flags, { 0x01, 1 }},
     {act_fn_precision, { 0x01, 1, 4, 2,
         {
@@ -183,7 +180,7 @@ static const std::map<const XnnParameterType, const XnnParameter> XnnDescriptorG
     {n_out_elems, { 0x04, 2 }},
     {cnn_n_out_p_flt, { 0x04, 2 }},
     {n_groups, { 0x06, 1 }},
-    {cnn_n_flt_last, { 0x06, 1 }},
+    {cpy_n_rows, { 0x06, 1 }},
     {n_iters, { 0x07, 1 }},
     {cnn_pool_stride, { 0x07, 1 }},
     {n_elems_last, { 0x08, 2 }},
@@ -198,9 +195,32 @@ static const std::map<const XnnParameterType, const XnnParameter> XnnDescriptorG
                              {GNA_INT16, static_cast<uint8_t>(2) },
                              {GNA_INT32, static_cast<uint8_t>(3) },
                              {GNA_DATA_RICH_FORMAT, static_cast<uint8_t>(7) },
-        }}}, //When using ‘Rich-Format’, Constants values are bounded to INT-32 precision.
-        //Therefore, NNFlags::BPRC should have no impact on GNA-HW. However this is not true in newest FPGA image.
-    { pool_param, { 0x0B, 1, 6, 2,
+        }}}, //When using 'Rich-Format', Constants values are bounded to INT-32 precision.
+        //Therefore, NNFlagsExt::BPRC should have no impact on GNA-HW. However this is not true in newest FPGA image.
+        // TODO:3:P2 consider providing version for 'newest FPGA image'
+    { th_bias_src, {0x0b, 1, 3, 1,
+        {
+                          { ThresholdBiasSourceDefault, static_cast<uint8_t>(0) },
+                          { ThresholdBiasSourceExternal, static_cast<uint8_t>(1) },
+        }}},
+    { th_int_mask, {0x0b, 1, 4, 1,
+        {
+                          { ThresholdInterruptDefault, static_cast<uint8_t>(0) },
+                          { ThresholdInterruptNotSent, static_cast<uint8_t>(1) },
+        }}},
+    { th_op_mode, {0x0b, 1, 5, 2,
+        {
+                          { ThresholdOperationStop, static_cast<uint8_t>(0) },
+                          { ThresholdOperationContinueIfMet, static_cast<uint8_t>(1) },
+                          { ThresholdOperationContinueIfNotMet, static_cast<uint8_t>(2) },
+                          { ThresholdOperationContinueAllways, static_cast<uint8_t>(3) },
+        }}},
+    { th_cond, {0x0b, 1, 7, 1,
+        {
+                          { ThresholdConditionScoreNegative, static_cast<uint8_t>(0) },
+                          { ThresholdConditionScoreNotNegative, static_cast<uint8_t>(1) },
+        }}},
+    { pool_param, { 0x0b, 1, 6, 2,
                       {
                           { KernelPoolingModeNone, static_cast<uint8_t>(0) },
                           { KernelPoolingModeMax, static_cast<uint8_t>(1) },
@@ -210,16 +230,14 @@ static const std::map<const XnnParameterType, const XnnParameter> XnnDescriptorG
     {cnn_n_flts, { 0x0c, 2 }},
     {rnn_n_elems_last, { 0x0e, 2 }},
     {cnn_n_flt_iters, { 0x0e, 2 }},
-    {pwl_n_segs, { 0x10, 2 }}, //  TODO:3: Activation Function implement ReLUHint and ZeroIndex
+    {pwl_n_segs, { 0x10, 2 }},      //TODO:3: Add entries for ReLUHint and ZeroIndex
     {act_list_n_elems, { 0x12, 2 }},
     {cpy_n_elems, { 0x12, 2 }},
     {cnn_flt_size, { 0x12, 2 }},
     {bias_grp_cnt, { 0x12, 2 }},
-    {cnn_n_flts_iter, { 0x14, 2 }},
+    {cnn_n_flts_iter, { 0x14, 2 }}, //TODO:3: Consider removing
     {bias_grp_value, { 0x14, 2 }},
     {cnn_n_flt_outs, { 0x16, 2 }},
-    {cnn_flt_bf_sz_iter, { 0x18, 2 }},
-    {cnn_flt_bf_sz_last, { 0x1A, 2 }},
     {in_buffer, { 0x20, 4 }},
     {gmm_descriptor, { 0x20, 4 }},
     {out_buffer, { 0x24, 4 }},

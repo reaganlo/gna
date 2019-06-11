@@ -210,6 +210,7 @@ set(gna_lib_headers
   ${SRC_DIR}/SubModel.h
   ${SRC_DIR}/Tensor.h
   ${SRC_DIR}/ThreadPool.h
+  ${SRC_DIR}/ThresholdParameters.h
   ${SRC_DIR}/Transform.h
   ${SRC_DIR}/TransformMap.h
   ${SRC_DIR}/TransposeLayer.h
