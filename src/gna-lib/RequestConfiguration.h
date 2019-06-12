@@ -95,6 +95,15 @@ public:
         return profilerConfiguration;
     }
 
+    Gna2InstrumentationMode GetHwInstrumentationMode() const
+    {
+        if(profilerConfiguration != nullptr)
+        {
+            return profilerConfiguration->HwPerfEncoding;
+        }
+        return Gna2InstrumentationModeDisabled;
+    }
+
 private:
     ProfilerConfiguration* profilerConfiguration = nullptr;
 
