@@ -42,8 +42,8 @@ void RecurrentKernelImpl2B(RecurrentConfig const * const config)
     int16_t const * const inputEnd = input + config->inputElementCount - config->inputElementCount % 8;
     int16_t const * const feedbackEnd = feedback + config->outputElementCount - config->outputElementCount % 8;
 
-    uint8_t const * bias = (uint8_t*)config->biasesSimple;
-    uint8_t const * const biasEnd = bias + (config->outputElementCount*config->bytesPerBias);
+    auto const *bias = (int8_t*)config->biasesSimple;
+    auto const * const biasEnd = bias + (config->outputElementCount * config->bytesPerBias);
     int32_t * output = config->output;
     int16_t const * weight = config->weights2B;
     int16_t const * weight2 = weight + config->inputElementCount;

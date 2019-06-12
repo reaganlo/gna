@@ -309,21 +309,21 @@ TEST_F(TestAffineLayer, AffineTest2B)
 
     auto inputTensor = Gna2TensorInit2D(inputVolume, numberOfVectors, Gna2DataTypeInt16, alignedInput);
     inputTensor.Mode = Gna2TensorModeDefault;
-    strncpy(inputTensor.Layout, "HW", 3);
+    strncpy_s(inputTensor.Layout, GNA2_SHAPE_MAXIMUM_NUMBER_OF_DIMENSIONS, "HW", 3);
     memcpy_s(alignedInput, sizeof(int16_t) * numberOfVectors * inputVolume, input, sizeof(input));
 
     auto outputTensor = Gna2TensorInit2D(outputVolume, numberOfVectors, Gna2DataTypeInt32, alignedOutput);
     outputTensor.Mode = Gna2TensorModeDefault;
-    strncpy(outputTensor.Layout, "HW", 3);
+    strncpy_s(outputTensor.Layout, GNA2_SHAPE_MAXIMUM_NUMBER_OF_DIMENSIONS, "HW", 3);
 
     auto weightTensor = Gna2TensorInit2D(outputVolume, inputVolume, Gna2DataTypeInt16, alignedWeight);
     weightTensor.Mode = Gna2TensorModeDefault;
-    strncpy(weightTensor.Layout, "HW", 3);
+    strncpy_s(weightTensor.Layout, GNA2_SHAPE_MAXIMUM_NUMBER_OF_DIMENSIONS, "HW", 3);
     memcpy_s(alignedWeight, sizeof(int16_t) * inputVolume * outputVolume, weight, sizeof(weight));
 
     auto biasTensor = Gna2TensorInit1D(outputVolume, Gna2DataTypeInt32, alignedBias);
     biasTensor.Mode = Gna2TensorModeDefault;
-    strncpy(biasTensor.Layout, "H", 2);
+    strncpy_s(biasTensor.Layout, GNA2_SHAPE_MAXIMUM_NUMBER_OF_DIMENSIONS, "H", 2);
     memcpy_s(alignedBias, sizeof(int32_t) * outputVolume, bias, sizeof(bias));
 
     auto status = Gna2OperationInitFullyConnectedAffine(&affineOperation, GnaMalloc,
@@ -350,21 +350,21 @@ TEST_F(TestAffineLayer, AffineMultibiasTest2B)
 
     auto inputTensor = Gna2TensorInit2D(inputVolume, numberOfVectors, Gna2DataTypeInt16, alignedInput);
     inputTensor.Mode = Gna2TensorModeDefault;
-    strncpy(inputTensor.Layout, "HW", 3);
+    strncpy_s(inputTensor.Layout, GNA2_SHAPE_MAXIMUM_NUMBER_OF_DIMENSIONS, "HW", 3);
     memcpy_s(alignedInput, sizeof(int16_t) * numberOfVectors * inputVolume, input, sizeof(input));
 
     auto outputTensor = Gna2TensorInit2D(outputVolume, numberOfVectors, Gna2DataTypeInt32, alignedOutput);
     outputTensor.Mode = Gna2TensorModeDefault;
-    strncpy(outputTensor.Layout, "HW", 3);
+    strncpy_s(outputTensor.Layout, GNA2_SHAPE_MAXIMUM_NUMBER_OF_DIMENSIONS, "HW", 3);
 
     auto weightTensor = Gna2TensorInit2D(outputVolume, inputVolume, Gna2DataTypeInt16, alignedWeight);
     weightTensor.Mode = Gna2TensorModeDefault;
-    strncpy(weightTensor.Layout, "HW", 3);
+    strncpy_s(weightTensor.Layout, GNA2_SHAPE_MAXIMUM_NUMBER_OF_DIMENSIONS, "HW", 3);
     memcpy_s(alignedWeight, sizeof(int16_t) * inputVolume * outputVolume, weight, sizeof(weight));
 
     auto biasTensor = Gna2TensorInit2D(outputVolume, multibiasVectorCount, Gna2DataTypeInt32, alignedMultibias);
     biasTensor.Mode = Gna2TensorModeDefault;
-    strncpy(biasTensor.Layout, "HW", 3);
+    strncpy_s(biasTensor.Layout, GNA2_SHAPE_MAXIMUM_NUMBER_OF_DIMENSIONS, "HW", 3);
     auto multibiasSize = sizeof(int32_t) * outputVolume * multibiasVectorCount;
     memcpy_s(alignedMultibias, multibiasSize, multibias, sizeof(multibias));
 

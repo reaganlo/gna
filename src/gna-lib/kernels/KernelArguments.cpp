@@ -95,7 +95,7 @@ AffineConfig::AffineConfig(uint32_t const outputElementCountIn, uint32_t const i
     execution{nullptr},
     weights1B{static_cast<int8_t const *>(weightsIn)},
     biasesCompound{static_cast<nn_bias_c const *>(biases)},
-    multiBias{static_cast<nn_bias_s const *>(multiBiasIn)},
+    multiBias{multiBiasIn},
     multiBiasVectorCount{multiBiasVectorCountIn}
 {}
 
@@ -112,7 +112,7 @@ AffineConfig::AffineConfig(uint32_t const outputElementCountIn, uint32_t const i
     execution{nullptr},
     weights1B{static_cast<int8_t const *>(weightsIn)},
     biasesCompound{static_cast<nn_bias_c const *>(biases)},
-    multiBias{static_cast<nn_bias_s const *>(multiBiasIn)},
+    multiBias{multiBiasIn},
     multiBiasVectorCount{multiBiasVectorCountIn},
     bytesPerBias{bytesPerBiasIn}
 {}

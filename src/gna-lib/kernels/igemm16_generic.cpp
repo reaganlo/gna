@@ -47,18 +47,7 @@ void AffineKernelImpl2B(AffineConfig const * const config)
         input = config->execution->Intermediate->d0;
         for (j = 0; j < config->inputVectorCount; j++)
         {
-            if (config->bytesPerBias == 1)
-            {
-                *output = *bias;
-            }
-            else if (config->bytesPerBias == 2)
-            {
-                *output = *(int16_t*)bias;
-            }
-            else if (config->bytesPerBias == 4)
-            {
-                *output = *(int32_t*)bias;
-            }
+            *output = getBias(bias, config->bytesPerBias);
 
             for (k = 0; k < config->inputElementCount; k++)
             {
@@ -91,18 +80,7 @@ void AffineKernelImpl2B2B(AffineConfig const * const config)
         input = config->execution->Intermediate->d0;
         for (j = 0; j < config->inputVectorCount; j++)
         {
-            if (config->bytesPerBias == 1)
-            {
-                *output = *bias;
-            }
-            else if (config->bytesPerBias == 2)
-            {
-                *output = *(int16_t*)bias;
-            }
-            else if (config->bytesPerBias == 4)
-            {
-                *output = *(int32_t*)bias;
-            }
+            *output = getBias(bias, config->bytesPerBias);
 
             for (k = 0; k < config->inputElementCount; k++)
             {
@@ -136,18 +114,7 @@ void AffineKernelImpl2B1B(AffineConfig const * const config)
         input = (int8_t*)config->execution->Intermediate->d0;
         for (j = 0; j < config->inputVectorCount; j++)
         {
-            if (config->bytesPerBias == 1)
-            {
-                *output = *bias;
-            }
-            else if (config->bytesPerBias == 2)
-            {
-                *output = *(int16_t*)bias;
-            }
-            else if (config->bytesPerBias == 4)
-            {
-                *output = *(int32_t*)bias;
-            }
+            *output = getBias(bias, config->bytesPerBias);
 
             for (k = 0; k < config->inputElementCount; k++)
             {
@@ -168,7 +135,8 @@ void AffineMultiBiasKernelImpl2B(AffineConfig const * const config)
     int16_t const * input;
     int16_t const * weight = config->weights2B;
     int8_t const * multiBias = (int8_t*)config->multiBias;
-    int8_t const * const biasEnd = multiBias + (config->outputElementCount * config->bytesPerBias)*config->multiBiasVectorCount;
+    int8_t const * const biasEnd = multiBias +
+        (config->outputElementCount * config->bytesPerBias * config->multiBiasVectorCount);
 
     TransposeConfig transposeConfig = TransposeConfig{ config->inputElementCount, config->inputVectorCount,
         config->input, config->execution->Intermediate->d0 };
@@ -179,18 +147,7 @@ void AffineMultiBiasKernelImpl2B(AffineConfig const * const config)
         input = config->execution->Intermediate->d0;
         for (j = 0; j < config->inputVectorCount; j++)
         {
-            if (config->bytesPerBias == 1)
-            {
-                *output = *multiBias;
-            }
-            else if (config->bytesPerBias == 2)
-            {
-                *output = *(int16_t*)multiBias;
-            }
-            else if (config->bytesPerBias == 4)
-            {
-                *output = *(int32_t*)multiBias;
-            }
+            *output = getBias(multiBias, config->bytesPerBias);
 
             for (k = 0; k < config->inputElementCount; k++)
             {
@@ -210,8 +167,9 @@ void AffineMultiBiasKernelImpl2B2B(AffineConfig const * const config)
     int32_t * output = config->output;
     int16_t const * input;
     int16_t const * weight = config->weights2B;
-    int8_t const * multiBias = (int8_t*)config->multiBias;
-    int8_t const * const biasEnd = multiBias + (config->outputElementCount * config->bytesPerBias)*config->multiBiasVectorCount;
+    int8_t const * multiBias = static_cast<int8_t const *>(config->multiBias);
+    int8_t const * const biasEnd = multiBias +
+        (config->outputElementCount * config->bytesPerBias * config->multiBiasVectorCount);
 
     TransposeConfig transposeConfig = TransposeConfig{ config->inputElementCount, config->inputVectorCount,
         config->input, config->execution->Intermediate->d0 };
@@ -222,18 +180,7 @@ void AffineMultiBiasKernelImpl2B2B(AffineConfig const * const config)
         input = config->execution->Intermediate->d0;
         for (j = 0; j < config->inputVectorCount; j++)
         {
-            if (config->bytesPerBias == 1)
-            {
-                *output = *multiBias;
-            }
-            else if (config->bytesPerBias == 2)
-            {
-                *output = *(int16_t*)multiBias;
-            }
-            else if (config->bytesPerBias == 4)
-            {
-                *output = *(int32_t*)multiBias;
-            }
+            *output = getBias(multiBias, config->bytesPerBias);
 
             for (k = 0; k < config->inputElementCount; k++)
             {
@@ -254,7 +201,8 @@ void AffineMultiBiasKernelImpl2B1B(AffineConfig const * const config)
     int8_t const * input;
     int16_t const * weight = config->weights2B;
     int8_t const * multiBias = (int8_t*)config->multiBias;
-    int8_t const * const biasEnd = multiBias + (config->outputElementCount * config->bytesPerBias)*config->multiBiasVectorCount;
+    int8_t const * const biasEnd = multiBias +
+        (config->outputElementCount * config->bytesPerBias * config->multiBiasVectorCount);
 
     TransposeConfig transposeConfig = TransposeConfig{ config->inputElementCount, config->inputVectorCount,
         config->input, config->execution->Intermediate->d0 };
@@ -265,18 +213,7 @@ void AffineMultiBiasKernelImpl2B1B(AffineConfig const * const config)
         input = (int8_t*)config->execution->Intermediate->d0;
         for (j = 0; j < config->inputVectorCount; j++)
         {
-            if (config->bytesPerBias == 1)
-            {
-                *output = *multiBias;
-            }
-            else if (config->bytesPerBias == 2)
-            {
-                *output = *(int16_t*)multiBias;
-            }
-            else if (config->bytesPerBias == 4)
-            {
-                *output = *(int32_t*)multiBias;
-            }
+            *output = getBias(multiBias, config->bytesPerBias);
 
             for (k = 0; k < config->inputElementCount; k++)
             {

@@ -42,18 +42,7 @@ void RecurrentKernelImpl2B(RecurrentConfig const * const config)
 
     for (; bias < biasEnd; bias+=config->bytesPerBias, output++)
     {
-        if (config->bytesPerBias == 1)
-        {
-            *output = *(int8_t*)bias;
-        }
-        else if (config->bytesPerBias == 2)
-        {
-            *output = *(int16_t*)bias;
-        }
-        else if (config->bytesPerBias == 4)
-        {
-            *output = *(int32_t*)bias;
-        }
+        *output = getBias(bias, config->bytesPerBias);
 
         input = config->input;
         feedback = config->feedbackBuffer;
@@ -82,18 +71,7 @@ void RecurrentKernelImpl2B2B(RecurrentConfig const * const config)
 
     for (; bias < biasEnd; bias += config->bytesPerBias, output++)
     {
-        if (config->bytesPerBias == 1)
-        {
-            *output = *(int8_t*)bias;
-        }
-        else if (config->bytesPerBias == 2)
-        {
-            *output = *(int16_t*)bias;
-        }
-        else if (config->bytesPerBias == 4)
-        {
-            *output = *(int32_t*)bias;
-        }
+        *output = getBias(bias, config->bytesPerBias);
 
         input = config->input;
         feedback = (int8_t*)config->feedbackBuffer;
@@ -130,18 +108,7 @@ void RecurrentKernelImpl2B1B(RecurrentConfig const * const config)
 
     for (; bias < biasEnd; bias += config->bytesPerBias, output++)
     {
-        if (config->bytesPerBias == 1)
-        {
-            *output = *(int8_t*)bias;
-        }
-        else if (config->bytesPerBias == 2)
-        {
-            *output = *(int16_t*)bias;
-        }
-        else if (config->bytesPerBias == 4)
-        {
-            *output = *(int32_t*)bias;
-        }
+        *output = getBias(bias, config->bytesPerBias);
 
         input = (int8_t*)config->input;
         feedback = (int8_t*)config->feedbackBuffer;

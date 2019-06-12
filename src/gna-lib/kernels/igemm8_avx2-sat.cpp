@@ -945,8 +945,9 @@ void AffineMultiBiasKernelImpl1B(AffineConfig const * const config)
 
     int8_t const * weight;
     int32_t * output;
-    nn_bias_s const * multiBias = config->multiBias;
-    nn_bias_s const * const biasEnd = config->multiBias + config->outputElementCount * config->multiBiasVectorCount;
+    auto const * multiBias = static_cast<int8_t const *>(config->multiBias);
+    auto const * const biasEnd = static_cast<int8_t const *>(config->multiBias) +
+        (config->bytesPerBias * config->outputElementCount * config->multiBiasVectorCount);
     nn_scaling const * weightScaleFactor = config->weightScaleFactors;
 
     output = config->output;
@@ -967,7 +968,7 @@ void AffineMultiBiasKernelImpl1B(AffineConfig const * const config)
             ix = 0;
             acc0 = _mm256_setzero_si256();
             acc1 = _mm256_setzero_si256();
-            sum0 = *multiBias;
+            sum0 = getBias(multiBias, config->bytesPerBias);
 
             for (kk = 0; kk < nKpartial + 1; kk++)
             {
@@ -1127,7 +1128,7 @@ void AffineMultiBiasKernelImpl1B(AffineConfig const * const config)
             for (i = 0; i < config->inputVectorCount; i++)
             {
                 acc[i] = _mm256_setzero_si256();
-                sum[i] = *multiBias;
+                sum[i] = getBias(multiBias, config->bytesPerBias);
             }
 
             for (kk = 0; kk < nKpartial + 1; kk++)
@@ -1227,7 +1228,7 @@ void AffineMultiBiasKernelImpl1B(AffineConfig const * const config)
             for (i = 0; i < config->inputVectorCount; i++)
             {
                 acc[i] = _mm256_setzero_si256();
-                sum[i] = *multiBias;
+                sum[i] = getBias(multiBias, config->bytesPerBias);
             }
 
             for (kk = 0; kk < nKpartial + 1; kk++)
@@ -1298,7 +1299,7 @@ void AffineMultiBiasKernelImpl1B(AffineConfig const * const config)
             for (i = 0; i < config->inputVectorCount; i++)
             {
                 acc[i] = _mm256_setzero_si256();
-                sum[i] = *multiBias;
+                sum[i] = getBias(multiBias, config->bytesPerBias);
             }
 
             for (kk = 0; kk < nKpartial + 1; kk++)
@@ -1373,7 +1374,7 @@ void AffineMultiBiasKernelImpl1B(AffineConfig const * const config)
             for (i = 0; i < config->inputVectorCount; i++)
             {
                 acc[i] = _mm256_setzero_si256();
-                sum[i] = *multiBias;
+                sum[i] = getBias(multiBias, config->bytesPerBias);
             }
 
             for (kk = 0; kk < nKpartial + 1; kk++)
@@ -1449,7 +1450,7 @@ void AffineMultiBiasKernelImpl1B(AffineConfig const * const config)
             for (i = 0; i < config->inputVectorCount; i++)
             {
                 acc[i] = _mm256_setzero_si256();
-                sum[i] = *multiBias;
+                sum[i] = getBias(multiBias, config->bytesPerBias);
             }
 
             for (kk = 0; kk < nKpartial + 1; kk++)
@@ -1527,7 +1528,7 @@ void AffineMultiBiasKernelImpl1B(AffineConfig const * const config)
             for (i = 0; i < config->inputVectorCount; i++)
             {
                 acc[i] = _mm256_setzero_si256();
-                sum[i] = *multiBias;
+                sum[i] = getBias(multiBias, config->bytesPerBias);
             }
 
             for (kk = 0; kk < nKpartial + 1; kk++)
@@ -1606,14 +1607,14 @@ void AffineMultiBiasKernelImpl1B(AffineConfig const * const config)
         {
             ix = 0;
 
-            sum0 = *multiBias;
-            sum1 = *multiBias;
-            sum2 = *multiBias;
-            sum3 = *multiBias;
-            sum4 = *multiBias;
-            sum5 = *multiBias;
-            sum6 = *multiBias;
-            sum7 = *multiBias;
+            sum0 = getBias(multiBias, config->bytesPerBias);
+            sum1 = getBias(multiBias, config->bytesPerBias);
+            sum2 = getBias(multiBias, config->bytesPerBias);
+            sum3 = getBias(multiBias, config->bytesPerBias);
+            sum4 = getBias(multiBias, config->bytesPerBias);
+            sum5 = getBias(multiBias, config->bytesPerBias);
+            sum6 = getBias(multiBias, config->bytesPerBias);
+            sum7 = getBias(multiBias, config->bytesPerBias);
 
             acc0 = _mm256_setzero_si256();
             acc1 = _mm256_setzero_si256();

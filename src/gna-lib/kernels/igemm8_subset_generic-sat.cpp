@@ -182,7 +182,7 @@ void AffineActiveListKernelImpl1B1B(AffineConfig const * const config, AffineCon
         i = al->indices[l];
         for (j = 0; j < config->inputVectorCount; j++) {
 
-            sum = getBias(config->biasesSimple, i, config->bytesPerBias);
+            sum = getBias(config->biasesSimple, config->bytesPerBias, i);
 
             for (kk = 0; kk < nKpartial + 1; kk++) {
                 input = ((int8_t*)config->execution->Intermediate->d0) + j*config->inputElementCount + kk * kpartial;

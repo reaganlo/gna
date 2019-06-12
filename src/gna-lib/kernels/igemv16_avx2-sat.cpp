@@ -46,8 +46,8 @@ void RecurrentKernelImpl2B(RecurrentConfig const * const config)
     int16_t * feedback;
     int16_t *feedbackEnd = config->feedbackBuffer+config->outputElementCount;
 
-    nn_bias_s const * bias = config->biasesSimple;
-    nn_bias_s const * const biasEnd= bias + config->outputElementCount;
+    auto const * bias = reinterpret_cast<int8_t const *>(config->biasesSimple);
+    auto const * const biasEnd = bias + (config->bytesPerBias * config->outputElementCount);
     int32_t * output = config->output;
     int16_t const * weight = config->weights2B;
 
@@ -77,11 +77,11 @@ void RecurrentKernelImpl2B(RecurrentConfig const * const config)
 
     acc = _mm256_setzero_si256();
 
-    for (; bias < biasEnd; bias++)
+    for (; bias < biasEnd; bias += config->bytesPerBias)
     {
         input = config->input;
         feedback = config->feedbackBuffer;
-        sum = *bias;
+        sum = getBias(bias, config->bytesPerBias);
 
         // compute parts using AVX
         // if config->inputElementCount has modulo 16 remainder, leave it

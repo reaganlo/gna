@@ -217,18 +217,7 @@ void RecurrentKernelImpl1B1B(RecurrentConfig const * const config)
 
     for (; bias < biasEnd; bias += config->bytesPerBias)
     {
-        if (config->bytesPerBias == 1)
-        {
-            sum = *bias;
-        }
-        else if (config->bytesPerBias == 2)
-        {
-            sum = *(int16_t*)bias;
-        }
-        else if (config->bytesPerBias == 4)
-        {
-            sum = *(int32_t*)bias;
-        }
+        *output = getBias(bias, config->bytesPerBias);
 
         input = (int8_t*)config->input;
         feedback = (int8_t*)config->feedbackBuffer;

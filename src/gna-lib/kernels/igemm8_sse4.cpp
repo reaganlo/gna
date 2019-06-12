@@ -589,9 +589,11 @@ void AffineMultiBiasKernelImpl1B(AffineConfig const * const config)
 
     int8_t const * weight = config->weights1B;
     int32_t * output = config->output;
-    nn_bias_s const * multiBias;
-    nn_bias_s const * const biasEnd = config->multiBias + config->outputElementCount * config->multiBiasVectorCount;
+    int8_t const * multiBias;
+    auto const * const biasEnd = static_cast<int8_t const *>(config->multiBias) +
+        config->bytesPerBias * config->outputElementCount * config->multiBiasVectorCount;
     nn_scaling const * weightScaleFactor = config->weightScaleFactors;
+    auto biasStride = config->bytesPerBias * config->multiBiasVectorCount;
     int16_t const *input_0 = nullptr;
     int16_t const *input_1 = nullptr;
     int16_t const *input_2 = nullptr;
@@ -643,7 +645,7 @@ void AffineMultiBiasKernelImpl1B(AffineConfig const * const config)
     {
         input_0 = config->input+KK;
         in_ptr0 = (__m128i*) config->input;
-        for (multiBias = config->multiBias; multiBias < biasEnd; multiBias+=config->multiBiasVectorCount)
+        for (multiBias = static_cast<int8_t const *>(config->multiBias); multiBias < biasEnd; multiBias += biasStride)
         {
             acc0 = _mm_setzero_si128();
 
@@ -657,7 +659,7 @@ void AffineMultiBiasKernelImpl1B(AffineConfig const * const config)
                 acc0 = _mm_add_epi32(acc0, in0);
             }
 
-            *output = *multiBias + vec_sum(acc0) * weightScaleFactor->multiplier;
+            *output = getBias(multiBias, config->bytesPerBias) + vec_sum(acc0) * weightScaleFactor->multiplier;
 
             for (j = 0; j < KT; j++, weight++)
             {
@@ -742,7 +744,7 @@ void AffineMultiBiasKernelImpl1B(AffineConfig const * const config)
 
     if (2 == config->inputVectorCount)
     {
-        for (multiBias = config->multiBias; multiBias < biasEnd; multiBias+=config->multiBiasVectorCount)
+        for (multiBias = static_cast<int8_t const *>(config->multiBias); multiBias < biasEnd; multiBias += biasStride)
         {
             acc0 = _mm_setzero_si128();
             acc1 = _mm_setzero_si128();
@@ -762,8 +764,8 @@ void AffineMultiBiasKernelImpl1B(AffineConfig const * const config)
                 acc1 = _mm_add_epi32(acc1, in1);
             }
 
-            output[0] = *multiBias + vec_sum(acc0) * weightScaleFactor->multiplier;
-            output[1] = *multiBias + vec_sum(acc1) * weightScaleFactor->multiplier;
+            output[0] = getBias(multiBias, config->bytesPerBias) + vec_sum(acc0) * weightScaleFactor->multiplier;
+            output[1] = getBias(multiBias, config->bytesPerBias) + vec_sum(acc1) * weightScaleFactor->multiplier;
 
             for (j = 0; j < KT; j++, weight++)
             {
@@ -779,7 +781,7 @@ void AffineMultiBiasKernelImpl1B(AffineConfig const * const config)
 
     if (3 == config->inputVectorCount)
     {
-        for (multiBias = config->multiBias; multiBias < biasEnd; multiBias+=config->multiBiasVectorCount)
+        for (multiBias = static_cast<int8_t const *>(config->multiBias); multiBias < biasEnd; multiBias += biasStride)
         {
             acc0 = _mm_setzero_si128();
             acc1 = _mm_setzero_si128();
@@ -803,9 +805,9 @@ void AffineMultiBiasKernelImpl1B(AffineConfig const * const config)
                 acc2 = _mm_add_epi32(acc2, in2);
             }
 
-            output[0] = *multiBias + vec_sum(acc0) * weightScaleFactor->multiplier;
-            output[1] = *multiBias + vec_sum(acc1) * weightScaleFactor->multiplier;
-            output[2] = *multiBias + vec_sum(acc2) * weightScaleFactor->multiplier;
+            output[0] = getBias(multiBias, config->bytesPerBias) + vec_sum(acc0) * weightScaleFactor->multiplier;
+            output[1] = getBias(multiBias, config->bytesPerBias) + vec_sum(acc1) * weightScaleFactor->multiplier;
+            output[2] = getBias(multiBias, config->bytesPerBias) + vec_sum(acc2) * weightScaleFactor->multiplier;
 
             for (j = 0; j < KT; j++, weight++)
             {
@@ -822,7 +824,7 @@ void AffineMultiBiasKernelImpl1B(AffineConfig const * const config)
 
     if (4 == config->inputVectorCount)
     {
-        for (multiBias = config->multiBias; multiBias < biasEnd; multiBias+=config->multiBiasVectorCount)
+        for (multiBias = static_cast<int8_t const *>(config->multiBias); multiBias < biasEnd; multiBias += biasStride)
         {
             acc0 = _mm_setzero_si128();
             acc1 = _mm_setzero_si128();
@@ -850,10 +852,10 @@ void AffineMultiBiasKernelImpl1B(AffineConfig const * const config)
                 acc3 = _mm_add_epi32(acc3, in3);
             }
 
-            output[0] = *multiBias + vec_sum(acc0) * weightScaleFactor->multiplier;
-            output[1] = *multiBias + vec_sum(acc1) * weightScaleFactor->multiplier;
-            output[2] = *multiBias + vec_sum(acc2) * weightScaleFactor->multiplier;
-            output[3] = *multiBias + vec_sum(acc3) * weightScaleFactor->multiplier;
+            output[0] = getBias(multiBias, config->bytesPerBias) + vec_sum(acc0) * weightScaleFactor->multiplier;
+            output[1] = getBias(multiBias, config->bytesPerBias) + vec_sum(acc1) * weightScaleFactor->multiplier;
+            output[2] = getBias(multiBias, config->bytesPerBias) + vec_sum(acc2) * weightScaleFactor->multiplier;
+            output[3] = getBias(multiBias, config->bytesPerBias) + vec_sum(acc3) * weightScaleFactor->multiplier;
 
             for (j = 0; j < KT; j++, weight++)
             {
@@ -871,7 +873,7 @@ void AffineMultiBiasKernelImpl1B(AffineConfig const * const config)
 
     if (5 == config->inputVectorCount)
     {
-        for (multiBias = config->multiBias; multiBias < biasEnd; multiBias+=config->multiBiasVectorCount)
+        for (multiBias = static_cast<int8_t const *>(config->multiBias); multiBias < biasEnd; multiBias += biasStride)
         {
             acc0 = _mm_setzero_si128();
             acc1 = _mm_setzero_si128();
@@ -903,11 +905,11 @@ void AffineMultiBiasKernelImpl1B(AffineConfig const * const config)
                 acc4 = _mm_add_epi32(acc4, in4);
             }
 
-            output[0] = *multiBias + vec_sum(acc0) * weightScaleFactor->multiplier;
-            output[1] = *multiBias + vec_sum(acc1) * weightScaleFactor->multiplier;
-            output[2] = *multiBias + vec_sum(acc2) * weightScaleFactor->multiplier;
-            output[3] = *multiBias + vec_sum(acc3) * weightScaleFactor->multiplier;
-            output[4] = *multiBias + vec_sum(acc4) * weightScaleFactor->multiplier;
+            output[0] = getBias(multiBias, config->bytesPerBias) + vec_sum(acc0) * weightScaleFactor->multiplier;
+            output[1] = getBias(multiBias, config->bytesPerBias) + vec_sum(acc1) * weightScaleFactor->multiplier;
+            output[2] = getBias(multiBias, config->bytesPerBias) + vec_sum(acc2) * weightScaleFactor->multiplier;
+            output[3] = getBias(multiBias, config->bytesPerBias) + vec_sum(acc3) * weightScaleFactor->multiplier;
+            output[4] = getBias(multiBias, config->bytesPerBias) + vec_sum(acc4) * weightScaleFactor->multiplier;
 
             for (j = 0; j < KT; j++, weight++)
             {
@@ -926,7 +928,7 @@ void AffineMultiBiasKernelImpl1B(AffineConfig const * const config)
 
     if (6 == config->inputVectorCount)
     {
-        for (multiBias = config->multiBias; multiBias < biasEnd; multiBias+=config->multiBiasVectorCount)
+        for (multiBias = static_cast<int8_t const *>(config->multiBias); multiBias < biasEnd; multiBias += biasStride)
         {
             acc0 = _mm_setzero_si128();
             acc1 = _mm_setzero_si128();
@@ -962,12 +964,12 @@ void AffineMultiBiasKernelImpl1B(AffineConfig const * const config)
                 acc5 = _mm_add_epi32(acc5, in5);
             }
 
-            output[0] = *multiBias + vec_sum(acc0) * weightScaleFactor->multiplier;
-            output[1] = *multiBias + vec_sum(acc1) * weightScaleFactor->multiplier;
-            output[2] = *multiBias + vec_sum(acc2) * weightScaleFactor->multiplier;
-            output[3] = *multiBias + vec_sum(acc3) * weightScaleFactor->multiplier;
-            output[4] = *multiBias + vec_sum(acc4) * weightScaleFactor->multiplier;
-            output[5] = *multiBias + vec_sum(acc5) * weightScaleFactor->multiplier;
+            output[0] = getBias(multiBias, config->bytesPerBias) + vec_sum(acc0) * weightScaleFactor->multiplier;
+            output[1] = getBias(multiBias, config->bytesPerBias) + vec_sum(acc1) * weightScaleFactor->multiplier;
+            output[2] = getBias(multiBias, config->bytesPerBias) + vec_sum(acc2) * weightScaleFactor->multiplier;
+            output[3] = getBias(multiBias, config->bytesPerBias) + vec_sum(acc3) * weightScaleFactor->multiplier;
+            output[4] = getBias(multiBias, config->bytesPerBias) + vec_sum(acc4) * weightScaleFactor->multiplier;
+            output[5] = getBias(multiBias, config->bytesPerBias) + vec_sum(acc5) * weightScaleFactor->multiplier;
 
             for (j = 0; j < KT; j++, weight++)
             {
@@ -987,7 +989,7 @@ void AffineMultiBiasKernelImpl1B(AffineConfig const * const config)
 
     if (7 == config->inputVectorCount)
     {
-        for (multiBias = config->multiBias; multiBias < biasEnd; multiBias+=config->multiBiasVectorCount)
+        for (multiBias = static_cast<int8_t const *>(config->multiBias); multiBias < biasEnd; multiBias += biasStride)
         {
             acc0 = _mm_setzero_si128();
             acc1 = _mm_setzero_si128();
@@ -1027,13 +1029,13 @@ void AffineMultiBiasKernelImpl1B(AffineConfig const * const config)
                 acc6 = _mm_add_epi32(acc6, in6);
             }
 
-            output[0] = *multiBias + vec_sum(acc0) * weightScaleFactor->multiplier;
-            output[1] = *multiBias + vec_sum(acc1) * weightScaleFactor->multiplier;
-            output[2] = *multiBias + vec_sum(acc2) * weightScaleFactor->multiplier;
-            output[3] = *multiBias + vec_sum(acc3) * weightScaleFactor->multiplier;
-            output[4] = *multiBias + vec_sum(acc4) * weightScaleFactor->multiplier;
-            output[5] = *multiBias + vec_sum(acc5) * weightScaleFactor->multiplier;
-            output[6] = *multiBias + vec_sum(acc6) * weightScaleFactor->multiplier;
+            output[0] = getBias(multiBias, config->bytesPerBias) + vec_sum(acc0) * weightScaleFactor->multiplier;
+            output[1] = getBias(multiBias, config->bytesPerBias) + vec_sum(acc1) * weightScaleFactor->multiplier;
+            output[2] = getBias(multiBias, config->bytesPerBias) + vec_sum(acc2) * weightScaleFactor->multiplier;
+            output[3] = getBias(multiBias, config->bytesPerBias) + vec_sum(acc3) * weightScaleFactor->multiplier;
+            output[4] = getBias(multiBias, config->bytesPerBias) + vec_sum(acc4) * weightScaleFactor->multiplier;
+            output[5] = getBias(multiBias, config->bytesPerBias) + vec_sum(acc5) * weightScaleFactor->multiplier;
+            output[6] = getBias(multiBias, config->bytesPerBias) + vec_sum(acc6) * weightScaleFactor->multiplier;
 
             for (j = 0; j < KT; j++, weight++)
             {
@@ -1054,7 +1056,7 @@ void AffineMultiBiasKernelImpl1B(AffineConfig const * const config)
 
     if (8 == config->inputVectorCount)
     {
-        for (multiBias = config->multiBias; multiBias < biasEnd; multiBias+=config->multiBiasVectorCount)
+        for (multiBias = static_cast<int8_t const *>(config->multiBias); multiBias < biasEnd; multiBias += biasStride)
         {
             acc0 = _mm_setzero_si128();
             acc1 = _mm_setzero_si128();
@@ -1099,7 +1101,7 @@ void AffineMultiBiasKernelImpl1B(AffineConfig const * const config)
             }
 
             v0 = _mm_set1_epi32(weightScaleFactor->multiplier);
-            v1 = _mm_set1_epi32(*multiBias);
+            v1 = _mm_set1_epi32(getBias(multiBias, config->bytesPerBias));
 
             v2 = _mm_hadd_epi32(acc0, acc1);
             v3 = _mm_hadd_epi32(acc2, acc3);

@@ -89,7 +89,7 @@ void DiagonalKernelImpl1B1B(AffineConfig const * const config)
     {
         for (j = 0; j < config->inputVectorCount; j++)
         {
-            sum = getBias(bias, i, config->bytesPerBias)
+            sum = getBias(bias, config->bytesPerBias, i)
                 + (weight[i] * input[i * config->inputVectorCount + j]);
 
             saturate_store_out(&sum, &output[i * config->inputVectorCount + j], config->execution->SaturationCount);

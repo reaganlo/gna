@@ -87,7 +87,7 @@ void ConvolutionKernelImpl(ConvolutionConfig const * const filterConfig)
     const uint32_t FC = filterConfig->filterCoefficientCount;
     const int16_t* const I = filterConfig->inputs;
     const int16_t* const F = filterConfig->filters;
-    const nn_bias_s * const B = filterConfig->biases;
+    const auto * const B = reinterpret_cast<uint8_t const *>(filterConfig->biases);
     int32_t * const O = filterConfig->convolutedOutputs;
 
     uint32_t i;
@@ -101,7 +101,7 @@ void ConvolutionKernelImpl(ConvolutionConfig const * const filterConfig)
 #if OPT_LEVEL > 1
     mm_ptr in1, in2, in3, in4, in5, in6, in7, in8, in_end, flt;
     int32_t *out1, *out2, *out3, *out4, *out5, *out6, *out7, *out8;
-    const nn_bias_s *bias;
+    const uint8_t *bias;
 
 #if OPT_LEVEL == 4 || OPT_LEVEL == 5
     __m256i f, v1, v2, v3, v4, v5, v6, v7, v8;
@@ -204,16 +204,16 @@ void ConvolutionKernelImpl(ConvolutionConfig const * const filterConfig)
                 f = vec_lddqu(flt);
             }
 
-            sum1 = *bias + vec_sum(acc1);
-            sum2 = *bias + vec_sum(acc2);
-            sum3 = *bias + vec_sum(acc3);
-            sum4 = *bias + vec_sum(acc4);
-            sum5 = *bias + vec_sum(acc5);
-            sum6 = *bias + vec_sum(acc6);
-            sum7 = *bias + vec_sum(acc7);
-            sum8 = *bias + vec_sum(acc8);
+            sum1 = getBias(bias, filterConfig->bytesPerBias) + vec_sum(acc1);
+            sum2 = getBias(bias, filterConfig->bytesPerBias) + vec_sum(acc2);
+            sum3 = getBias(bias, filterConfig->bytesPerBias) + vec_sum(acc3);
+            sum4 = getBias(bias, filterConfig->bytesPerBias) + vec_sum(acc4);
+            sum5 = getBias(bias, filterConfig->bytesPerBias) + vec_sum(acc5);
+            sum6 = getBias(bias, filterConfig->bytesPerBias) + vec_sum(acc6);
+            sum7 = getBias(bias, filterConfig->bytesPerBias) + vec_sum(acc7);
+            sum8 = getBias(bias, filterConfig->bytesPerBias) + vec_sum(acc8);
 
-            bias++;
+            bias += filterConfig->bytesPerBias;
 
 // FC is mply by 8, for AVX load there might be a tail of 8
 #if OPT_LEVEL != 2 && OPT_LEVEL != 3
@@ -308,7 +308,8 @@ void ConvolutionKernelImpl(ConvolutionConfig const * const filterConfig)
                 v1 = vec_lddqu(in1);
             }
 
-            sum1 = *bias++ + vec_sum(acc1);
+            sum1 = getBias(bias, filterConfig->bytesPerBias) + vec_sum(acc1);
+            bias += filterConfig->bytesPerBias;
 #if OPT_LEVEL != 2 && OPT_LEVEL != 3
             if (FC_VEC < FC)
             {

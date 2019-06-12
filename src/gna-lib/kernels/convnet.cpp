@@ -96,7 +96,7 @@ void ConvolutionKernelImpl(ConvolutionConfig const * const config)
     gna_sum_t sum1, sum2, sum3, sum4, sum5, sum6, sum7, sum8;
     mm_ptr in1, in2, in3, in4, in5, in6, in7, in8, in_end, flt;
     int32_t *out1, *out2, *out3, *out4, *out5, *out6, *out7, *out8;
-    const nn_bias_s *bias;
+    int8_t const *bias;
 
 #if OPT_LEVEL == 4 || OPT_LEVEL == 5
     __m256i f, v1, v2, v3, v4, v5, v6, v7, v8;
@@ -199,16 +199,16 @@ void ConvolutionKernelImpl(ConvolutionConfig const * const config)
                 f = vec_lddqu(flt);
             }
 
-            sum1 = *bias + vec_sum(acc1);
-            sum2 = *bias + vec_sum(acc2);
-            sum3 = *bias + vec_sum(acc3);
-            sum4 = *bias + vec_sum(acc4);
-            sum5 = *bias + vec_sum(acc5);
-            sum6 = *bias + vec_sum(acc6);
-            sum7 = *bias + vec_sum(acc7);
-            sum8 = *bias + vec_sum(acc8);
+            sum1 = getBias(bias, config->bytesPerBias) + vec_sum(acc1);
+            sum2 = getBias(bias, config->bytesPerBias) + vec_sum(acc2);
+            sum3 = getBias(bias, config->bytesPerBias) + vec_sum(acc3);
+            sum4 = getBias(bias, config->bytesPerBias) + vec_sum(acc4);
+            sum5 = getBias(bias, config->bytesPerBias) + vec_sum(acc5);
+            sum6 = getBias(bias, config->bytesPerBias) + vec_sum(acc6);
+            sum7 = getBias(bias, config->bytesPerBias) + vec_sum(acc7);
+            sum8 = getBias(bias, config->bytesPerBias) + vec_sum(acc8);
 
-            bias++;
+            bias += config->bytesPerBias;
 
 // FC is mply by 8, for AVX load there might be a tail of 8
 #if OPT_LEVEL != 2 && OPT_LEVEL != 3
@@ -303,7 +303,8 @@ void ConvolutionKernelImpl(ConvolutionConfig const * const config)
                 v1 = vec_lddqu(in1);
             }
 
-            sum1 = *bias++ + vec_sum(acc1);
+            sum1 = getBias(bias, config->bytesPerBias) + vec_sum(acc1);
+            bias += config->bytesPerBias;
 #if OPT_LEVEL != 2 && OPT_LEVEL != 3
             if (FC_VEC < FC)
             {

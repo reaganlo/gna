@@ -88,8 +88,8 @@ void AffineKernelImpl2B(AffineConfig const * const config)
     int16_t const * weight;
     int32_t * output;
 
-    nn_bias_s const * bias = config->biasesSimple;
-    nn_bias_s const * const biasEnd  = bias + config->outputElementCount;
+    auto const * bias = reinterpret_cast<int8_t const *>(config->biasesSimple);
+    auto const * const biasEnd  = bias + (config->bytesPerBias * config->outputElementCount);
 
     output = config->output;
     weight = config->weights2B;
@@ -98,10 +98,10 @@ void AffineKernelImpl2B(AffineConfig const * const config)
     {
         in_ptr0 = (__m256i*)config->input;
         *input = config->input+KK;
-        for (; bias < biasEnd; bias++)
+        for (; bias < biasEnd; bias += config->bytesPerBias)
         {
             *acc = _mm256_setzero_si256();
-            *sum = *bias;
+            *sum = getBias(bias, config->bytesPerBias);
             ix = 0;
 
             for (kk = 0; kk < nKpartial + 1; kk++)
@@ -219,13 +219,13 @@ void AffineKernelImpl2B(AffineConfig const * const config)
 
     if (2 == config->inputVectorCount)
     {
-        for (; bias < biasEnd; bias++)
+        for (; bias < biasEnd; bias += config->bytesPerBias)
         {
             acc[0] = _mm256_setzero_si256();
             acc[1] = _mm256_setzero_si256();
 
-            sum[0] = *bias;
-            sum[1] = *bias;
+            sum[0] = getBias(bias, config->bytesPerBias);
+            sum[1] = getBias(bias, config->bytesPerBias);
 
             ix = 0;
 
@@ -285,15 +285,15 @@ void AffineKernelImpl2B(AffineConfig const * const config)
 
     if (3 == config->inputVectorCount)
     {
-        for (; bias < biasEnd; bias++)
+        for (; bias < biasEnd; bias += config->bytesPerBias)
         {
             acc[0] = _mm256_setzero_si256();
             acc[1] = _mm256_setzero_si256();
             acc[2] = _mm256_setzero_si256();
 
-            sum[0] = *bias;
-            sum[1] = *bias;
-            sum[2] = *bias;
+            sum[0] = getBias(bias, config->bytesPerBias);
+            sum[1] = getBias(bias, config->bytesPerBias);
+            sum[2] = getBias(bias, config->bytesPerBias);
             ix = 0;
 
             for (kk = 0; kk < nKpartial + 1; kk++)
@@ -361,12 +361,12 @@ void AffineKernelImpl2B(AffineConfig const * const config)
 
     if (4 == config->inputVectorCount)
     {
-        for (; bias < biasEnd; bias++)
+        for (; bias < biasEnd; bias += config->bytesPerBias)
         {
             for (i = 0; i < config->inputVectorCount; i++)
             {
                 acc[i] = _mm256_setzero_si256();
-                sum[i] = *bias;
+                sum[i] = getBias(bias, config->bytesPerBias);
             }
             ix = 0;
 
@@ -446,12 +446,12 @@ void AffineKernelImpl2B(AffineConfig const * const config)
 
     if (5 == config->inputVectorCount)
     {
-        for (; bias < biasEnd; bias++)
+        for (; bias < biasEnd; bias += config->bytesPerBias)
         {
             for (i = 0; i < config->inputVectorCount; i++)
             {
                 acc[i] = _mm256_setzero_si256();
-                sum[i] = *bias;
+                sum[i] = getBias(bias, config->bytesPerBias);
             }
             ix = 0;
 
@@ -537,12 +537,12 @@ void AffineKernelImpl2B(AffineConfig const * const config)
 
     if (6 == config->inputVectorCount)
     {
-        for (; bias < biasEnd; bias++)
+        for (; bias < biasEnd; bias += config->bytesPerBias)
         {
             for (i = 0; i < config->inputVectorCount; i++)
             {
                 acc[i] = _mm256_setzero_si256();
-                sum[i] = *bias;
+                sum[i] = getBias(bias, config->bytesPerBias);
             }
             ix = 0;
 
@@ -636,12 +636,12 @@ void AffineKernelImpl2B(AffineConfig const * const config)
 
     if (7 == config->inputVectorCount)
     {
-        for (; bias < biasEnd; bias++)
+        for (; bias < biasEnd; bias += config->bytesPerBias)
         {
             for (i = 0; i < config->inputVectorCount; i++)
             {
                 acc[i] = _mm256_setzero_si256();
-                sum[i] = *bias;
+                sum[i] = getBias(bias, config->bytesPerBias);
             }
             ix = 0;
 
@@ -741,7 +741,7 @@ void AffineKernelImpl2B(AffineConfig const * const config)
 
     if (8 == config->inputVectorCount)
     {
-        for (; bias < biasEnd; bias++)
+        for (; bias < biasEnd; bias += config->bytesPerBias)
         {
             acc[0] = _mm256_setzero_si256();
             acc[1] = _mm256_setzero_si256();
@@ -754,7 +754,7 @@ void AffineKernelImpl2B(AffineConfig const * const config)
 
             for (i = 0; i < config->inputVectorCount; i++)
             {
-                sum[i] = *bias;
+                sum[i] = getBias(bias, config->bytesPerBias);
             }
             ix = 0;
 
@@ -911,8 +911,9 @@ void AffineMultiBiasKernelImpl2B(AffineConfig const * const config)
 
     int16_t const * weight;
     int32_t * output;
-    nn_bias_s const * multiBias = config->multiBias;
-    nn_bias_s const * const biasEnd  = multiBias + config->outputElementCount * config->multiBiasVectorCount;
+    auto const * multiBias = static_cast<int8_t const *>(config->multiBias);
+    auto const * const biasEnd  = multiBias + config->outputElementCount * config->multiBiasVectorCount;
+    auto biasStride = config->bytesPerBias * config->multiBiasVectorCount;
 
     weight = config->weights2B;
     output = config->output;
@@ -924,7 +925,7 @@ void AffineMultiBiasKernelImpl2B(AffineConfig const * const config)
         for (; multiBias < biasEnd; multiBias += config->multiBiasVectorCount)
         {
             *acc = _mm256_setzero_si256();
-            *sum = *multiBias;
+            *sum = getBias(multiBias, config->bytesPerBias);
             ix = 0;
 
             for (kk = 0; kk < nKpartial + 1; kk++)
@@ -1042,13 +1043,13 @@ void AffineMultiBiasKernelImpl2B(AffineConfig const * const config)
 
     if (2 == config->inputVectorCount)
     {
-        for (; multiBias < biasEnd; multiBias+=config->multiBiasVectorCount)
+        for (; multiBias < biasEnd; multiBias += biasStride)
         {
             acc[0] = _mm256_setzero_si256();
             acc[1] = _mm256_setzero_si256();
 
-            sum[0] = *multiBias;
-            sum[1] = *multiBias;
+            sum[0] = getBias(multiBias, config->bytesPerBias);
+            sum[1] = getBias(multiBias, config->bytesPerBias);
 
             ix = 0;
 
@@ -1108,15 +1109,15 @@ void AffineMultiBiasKernelImpl2B(AffineConfig const * const config)
 
     if (3 == config->inputVectorCount)
     {
-        for (; multiBias < biasEnd; multiBias+=config->multiBiasVectorCount)
+        for (; multiBias < biasEnd; multiBias += biasStride)
         {
             acc[0] = _mm256_setzero_si256();
             acc[1] = _mm256_setzero_si256();
             acc[2] = _mm256_setzero_si256();
 
-            sum[0] = *multiBias;
-            sum[1] = *multiBias;
-            sum[2] = *multiBias;
+            sum[0] = getBias(multiBias, config->bytesPerBias);
+            sum[1] = getBias(multiBias, config->bytesPerBias);
+            sum[2] = getBias(multiBias, config->bytesPerBias);
             ix = 0;
 
             for (kk = 0; kk < nKpartial + 1; kk++)
@@ -1184,12 +1185,12 @@ void AffineMultiBiasKernelImpl2B(AffineConfig const * const config)
 
     if (4 == config->inputVectorCount)
     {
-        for (; multiBias < biasEnd; multiBias+=config->multiBiasVectorCount)
+        for (; multiBias < biasEnd; multiBias += biasStride)
         {
             for (i = 0; i < config->inputVectorCount; i++)
             {
                 acc[i] = _mm256_setzero_si256();
-                sum[i] = *multiBias;
+                sum[i] = getBias(multiBias, config->bytesPerBias);
             }
             ix = 0;
 
@@ -1269,12 +1270,12 @@ void AffineMultiBiasKernelImpl2B(AffineConfig const * const config)
 
     if (5 == config->inputVectorCount)
     {
-        for (; multiBias < biasEnd; multiBias+=config->multiBiasVectorCount)
+        for (; multiBias < biasEnd; multiBias += biasStride)
         {
             for (i = 0; i < config->inputVectorCount; i++)
             {
                 acc[i] = _mm256_setzero_si256();
-                sum[i] = *multiBias;
+                sum[i] = getBias(multiBias, config->bytesPerBias);
             }
             ix = 0;
 
@@ -1360,12 +1361,12 @@ void AffineMultiBiasKernelImpl2B(AffineConfig const * const config)
 
     if (6 == config->inputVectorCount)
     {
-        for (; multiBias < biasEnd; multiBias+=config->multiBiasVectorCount)
+        for (; multiBias < biasEnd; multiBias += biasStride)
         {
             for (i = 0; i < config->inputVectorCount; i++)
             {
                 acc[i] = _mm256_setzero_si256();
-                sum[i] = *multiBias;
+                sum[i] = getBias(multiBias, config->bytesPerBias);
             }
             ix = 0;
 
@@ -1459,12 +1460,12 @@ void AffineMultiBiasKernelImpl2B(AffineConfig const * const config)
 
     if (7 == config->inputVectorCount)
     {
-        for (; multiBias < biasEnd; multiBias+=config->multiBiasVectorCount)
+        for (; multiBias < biasEnd; multiBias += biasStride)
         {
             for (i = 0; i < config->inputVectorCount; i++)
             {
                 acc[i] = _mm256_setzero_si256();
-                sum[i] = *multiBias;
+                sum[i] = getBias(multiBias, config->bytesPerBias);
             }
             ix = 0;
 
@@ -1564,7 +1565,7 @@ void AffineMultiBiasKernelImpl2B(AffineConfig const * const config)
 
     if (8 == config->inputVectorCount)
     {
-        for (; multiBias < biasEnd; multiBias+=config->multiBiasVectorCount)
+        for (; multiBias < biasEnd; multiBias += biasStride)
         {
             acc[0] = _mm256_setzero_si256();
             acc[1] = _mm256_setzero_si256();
@@ -1577,7 +1578,7 @@ void AffineMultiBiasKernelImpl2B(AffineConfig const * const config)
 
             for (i = 0; i < config->inputVectorCount; i++)
             {
-                sum[i] = *multiBias;
+                sum[i] = getBias(multiBias, config->bytesPerBias);
             }
             ix = 0;
 

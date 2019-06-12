@@ -42,8 +42,8 @@ void RecurrentKernelImpl2B(RecurrentConfig const * const config)
     int16_t const * const inputEnd = input + config->inputElementCount - config->inputElementCount % 16;
     int16_t const * const feedbackEnd = feedback + config->outputElementCount - config->outputElementCount % 16;
 
-    nn_bias_s const * bias = config->biasesSimple;
-    nn_bias_s const * const biasEnd = bias + config->outputElementCount;
+    auto const * bias = reinterpret_cast<int8_t const *>(config->biasesSimple);
+    auto const * const biasEnd = bias + (config->bytesPerBias * config->outputElementCount);
     int32_t * output = config->output;
     int16_t const * weight = config->weights2B;
     int16_t const * weight2 = weight + config->inputElementCount;
@@ -52,7 +52,7 @@ void RecurrentKernelImpl2B(RecurrentConfig const * const config)
     __m256i v1;
     __m256i v2;
 
-    for (; bias < biasEnd; bias++)
+    for (; bias < biasEnd; bias += config->bytesPerBias)
     {
         v2 = _mm256_setzero_si256();
 
@@ -89,7 +89,7 @@ void RecurrentKernelImpl2B(RecurrentConfig const * const config)
             v1 = _mm256_lddqu_si256((__m256i*)weight2);
         }
 
-        *output = vec_sum(v2) + *bias;
+        *output = vec_sum(v2) + getBias(bias, config->bytesPerBias);
 
         while (input < inputEnd + config->inputElementCount % 16)
         {

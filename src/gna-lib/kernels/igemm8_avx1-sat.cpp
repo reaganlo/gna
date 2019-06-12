@@ -1461,9 +1461,11 @@ void affineMultiBiasKernelImpl1B_N1(
     uint32_t j;
 
     int8_t const * weight;
-    nn_bias_s const * multiBias = config->multiBias;
+    auto const * multiBias = static_cast<int8_t const *>(config->multiBias);
     int32_t * output;
-    nn_bias_s const * const biasEnd = config->multiBias + config->outputElementCount * config->multiBiasVectorCount;
+    auto const * const biasEnd = static_cast<int8_t const *>(config->multiBias) +
+            (config->bytesPerBias * config->outputElementCount * config->multiBiasVectorCount);
+    auto biasStride = config->bytesPerBias * config->multiBiasVectorCount;
     nn_scaling const * weightScaleFactor = config->weightScaleFactors;
 
     weight = config->weights1B;
@@ -1488,12 +1490,12 @@ void affineMultiBiasKernelImpl1B_N1(
     input[0] = config->input+simdVectorLength;
     in_ptr[0] = (__m128i*)config->input;
 
-    for (; multiBias < biasEnd; multiBias+=config->multiBiasVectorCount)
+    for (; multiBias < biasEnd; multiBias += biasStride)
     {
         ix = 0;
         acc0 = _mm_setzero_si128();
         acc1 = _mm_setzero_si128();
-        sum0 = *multiBias;
+        sum0 = getBias(multiBias, config->bytesPerBias);
 
         for (kk = 0; kk < numberOfIterationsPerGroup + 1; kk++)
         {
@@ -1580,9 +1582,11 @@ void affineMultiBiasKernelImpl1B_N2(
     uint32_t j;
 
     int8_t const * weight;
-    nn_bias_s const * multiBias = config->multiBias;
     int32_t * output;
-    nn_bias_s const * const biasEnd = config->multiBias + config->outputElementCount * config->multiBiasVectorCount;
+    auto const * multiBias = static_cast<int8_t const *>(config->multiBias);
+    auto const * const biasEnd = static_cast<int8_t const *>(config->multiBias) +
+        (config->bytesPerBias * config->outputElementCount * config->multiBiasVectorCount);
+    auto biasStride = config->bytesPerBias * config->multiBiasVectorCount;
     nn_scaling const * weightScaleFactor = config->weightScaleFactors;
 
     weight = config->weights1B;
@@ -1603,12 +1607,12 @@ void affineMultiBiasKernelImpl1B_N2(
     int64_t sum0;
     int64_t sum1;
 
-    for (; multiBias < biasEnd; multiBias+=config->multiBiasVectorCount)
+    for (; multiBias < biasEnd; multiBias += biasStride)
     {
         ix = 0;
 
-        sum0 = *multiBias;
-        sum1 = *multiBias;
+        sum0 = getBias(multiBias, config->bytesPerBias);
+        sum1 = getBias(multiBias, config->bytesPerBias);
 
         for (kk = 0; kk < numberOfIterationsPerGroup + 1; kk++)
         {
@@ -1698,9 +1702,11 @@ void affineMultiBiasKernelImpl1B_N3(
     uint32_t j;
 
     int8_t const * weight;
-    nn_bias_s const * multiBias = config->multiBias;
     int32_t * output;
-    nn_bias_s const * const biasEnd = config->multiBias + config->outputElementCount * config->multiBiasVectorCount;
+    auto const * multiBias = static_cast<int8_t const *>(config->multiBias);
+    auto const * const biasEnd = static_cast<int8_t const *>(config->multiBias) +
+        (config->bytesPerBias * config->outputElementCount * config->multiBiasVectorCount);
+    auto biasStride = config->bytesPerBias * config->multiBiasVectorCount;
     nn_scaling const * weightScaleFactor = config->weightScaleFactors;
 
     weight = config->weights1B;
@@ -1724,13 +1730,13 @@ void affineMultiBiasKernelImpl1B_N3(
     int64_t sum1;
     int64_t sum2;
 
-    for (; multiBias < biasEnd; multiBias+=config->multiBiasVectorCount)
+    for (; multiBias < biasEnd; multiBias += biasStride)
     {
         ix = 0;
 
-        sum0 = *multiBias;
-        sum1 = *multiBias;
-        sum2 = *multiBias;
+        sum0 = getBias(multiBias, config->bytesPerBias);
+        sum1 = getBias(multiBias, config->bytesPerBias);
+        sum2 = getBias(multiBias, config->bytesPerBias);
 
         for (kk = 0; kk < numberOfIterationsPerGroup + 1; kk++)
         {
@@ -1833,9 +1839,11 @@ void affineMultiBiasKernelImpl1B_N4(
     uint32_t j;
 
     int8_t const * weight;
-    nn_bias_s const * multiBias = config->multiBias;
     int32_t * output;
-    nn_bias_s const * const biasEnd = config->multiBias + config->outputElementCount * config->multiBiasVectorCount;
+    auto const * multiBias = static_cast<int8_t const *>(config->multiBias);
+    auto const * const biasEnd = static_cast<int8_t const *>(config->multiBias) +
+        (config->bytesPerBias * config->outputElementCount * config->multiBiasVectorCount);
+    auto biasStride = config->bytesPerBias * config->multiBiasVectorCount;
     nn_scaling const * weightScaleFactor = config->weightScaleFactors;
 
     weight = config->weights1B;
@@ -1862,14 +1870,14 @@ void affineMultiBiasKernelImpl1B_N4(
     int64_t sum2;
     int64_t sum3;
 
-    for (; multiBias < biasEnd; multiBias+=config->multiBiasVectorCount)
+    for (; multiBias < biasEnd; multiBias += biasStride)
     {
         ix = 0;
 
-        sum0 = *multiBias;
-        sum1 = *multiBias;
-        sum2 = *multiBias;
-        sum3 = *multiBias;
+        sum0 = getBias(multiBias, config->bytesPerBias);
+        sum1 = getBias(multiBias, config->bytesPerBias);
+        sum2 = getBias(multiBias, config->bytesPerBias);
+        sum3 = getBias(multiBias, config->bytesPerBias);
 
         for (kk = 0; kk < numberOfIterationsPerGroup + 1; kk++)
         {
@@ -1985,9 +1993,11 @@ void affineMultiBiasKernelImpl1B_N5(
     uint32_t j;
 
     int8_t const * weight;
-    nn_bias_s const * multiBias = config->multiBias;
     int32_t * output;
-    nn_bias_s const * const biasEnd = config->multiBias + config->outputElementCount * config->multiBiasVectorCount;
+    auto const * multiBias = static_cast<int8_t const *>(config->multiBias);
+    auto const * const biasEnd = static_cast<int8_t const *>(config->multiBias) +
+        (config->bytesPerBias * config->outputElementCount * config->multiBiasVectorCount);
+    auto biasStride = config->bytesPerBias * config->multiBiasVectorCount;
     nn_scaling const * weightScaleFactor = config->weightScaleFactors;
 
     weight = config->weights1B;
@@ -2017,15 +2027,15 @@ void affineMultiBiasKernelImpl1B_N5(
     int64_t sum3;
     int64_t sum4;
 
-    for (; multiBias < biasEnd; multiBias+=config->multiBiasVectorCount)
+    for (; multiBias < biasEnd; multiBias += biasStride)
     {
         ix = 0;
 
-        sum0 = *multiBias;
-        sum1 = *multiBias;
-        sum2 = *multiBias;
-        sum3 = *multiBias;
-        sum4 = *multiBias;
+        sum0 = getBias(multiBias, config->bytesPerBias);
+        sum1 = getBias(multiBias, config->bytesPerBias);
+        sum2 = getBias(multiBias, config->bytesPerBias);
+        sum3 = getBias(multiBias, config->bytesPerBias);
+        sum4 = getBias(multiBias, config->bytesPerBias);
 
         for (kk = 0; kk < numberOfIterationsPerGroup + 1; kk++)
         {
@@ -2151,9 +2161,11 @@ void affineMultiBiasKernelImpl1B_N6(
     uint32_t j;
 
     int8_t const * weight;
-    nn_bias_s const * multiBias = config->multiBias;
     int32_t * output;
-    nn_bias_s const * const biasEnd = config->multiBias + config->outputElementCount * config->multiBiasVectorCount;
+    auto const * multiBias = static_cast<int8_t const *>(config->multiBias);
+    auto const * const biasEnd = static_cast<int8_t const *>(config->multiBias) +
+        (config->bytesPerBias * config->outputElementCount * config->multiBiasVectorCount);
+    auto biasStride = config->bytesPerBias * config->multiBiasVectorCount;
     nn_scaling const * weightScaleFactor = config->weightScaleFactors;
 
     weight = config->weights1B;
@@ -2186,16 +2198,16 @@ void affineMultiBiasKernelImpl1B_N6(
     int64_t sum4;
     int64_t sum5;
 
-    for (; multiBias < biasEnd; multiBias+=config->multiBiasVectorCount)
+    for (; multiBias < biasEnd; multiBias += biasStride)
     {
         ix = 0;
 
-        sum0 = *multiBias;
-        sum1 = *multiBias;
-        sum2 = *multiBias;
-        sum3 = *multiBias;
-        sum4 = *multiBias;
-        sum5 = *multiBias;
+        sum0 = getBias(multiBias, config->bytesPerBias);
+        sum1 = getBias(multiBias, config->bytesPerBias);
+        sum2 = getBias(multiBias, config->bytesPerBias);
+        sum3 = getBias(multiBias, config->bytesPerBias);
+        sum4 = getBias(multiBias, config->bytesPerBias);
+        sum5 = getBias(multiBias, config->bytesPerBias);
 
         acc0 = _mm_setzero_si128();
         acc1 = _mm_setzero_si128();
@@ -2294,9 +2306,11 @@ void affineMultiBiasKernelImpl1B_N7(
     uint32_t j;
 
     int8_t const * weight;
-    nn_bias_s const * multiBias = config->multiBias;
     int32_t * output;
-    nn_bias_s const * const biasEnd = config->multiBias + config->outputElementCount * config->multiBiasVectorCount;
+    auto const * multiBias = static_cast<int8_t const *>(config->multiBias);
+    auto const * const biasEnd = static_cast<int8_t const *>(config->multiBias) +
+        (config->bytesPerBias * config->outputElementCount * config->multiBiasVectorCount);
+    auto biasStride = config->bytesPerBias * config->multiBiasVectorCount;
     nn_scaling const * weightScaleFactor = config->weightScaleFactors;
 
     weight = config->weights1B;
@@ -2332,17 +2346,17 @@ void affineMultiBiasKernelImpl1B_N7(
     int64_t sum5;
     int64_t sum6;
 
-    for (; multiBias < biasEnd; multiBias+=config->multiBiasVectorCount)
+    for (; multiBias < biasEnd; multiBias += biasStride)
     {
         ix = 0;
 
-        sum0 = *multiBias;
-        sum1 = *multiBias;
-        sum2 = *multiBias;
-        sum3 = *multiBias;
-        sum4 = *multiBias;
-        sum5 = *multiBias;
-        sum6 = *multiBias;
+        sum0 = getBias(multiBias, config->bytesPerBias);
+        sum1 = getBias(multiBias, config->bytesPerBias);
+        sum2 = getBias(multiBias, config->bytesPerBias);
+        sum3 = getBias(multiBias, config->bytesPerBias);
+        sum4 = getBias(multiBias, config->bytesPerBias);
+        sum5 = getBias(multiBias, config->bytesPerBias);
+        sum6 = getBias(multiBias, config->bytesPerBias);
 
         acc0 = _mm_setzero_si128();
         acc1 = _mm_setzero_si128();
@@ -2450,9 +2464,11 @@ void affineMultiBiasKernelImpl1B_N8(
     uint32_t j;
 
     int8_t const * weight;
-    nn_bias_s const * multiBias = config->multiBias;
     int32_t * output;
-    nn_bias_s const * const biasEnd = config->multiBias + config->outputElementCount * config->multiBiasVectorCount;
+    auto const * multiBias = static_cast<int8_t const *>(config->multiBias);
+    auto const * const biasEnd = static_cast<int8_t const *>(config->multiBias) +
+        (config->bytesPerBias * config->outputElementCount * config->multiBiasVectorCount);
+    auto biasStride = config->bytesPerBias * config->multiBiasVectorCount;
     nn_scaling const * weightScaleFactor = config->weightScaleFactors;
 
     weight = config->weights1B;
@@ -2491,18 +2507,18 @@ void affineMultiBiasKernelImpl1B_N8(
     int64_t sum6;
     int64_t sum7;
 
-    for (; multiBias < biasEnd; multiBias+=config->multiBiasVectorCount)
+    for (; multiBias < biasEnd; multiBias += biasStride)
     {
         ix = 0;
 
-        sum0 = *multiBias;
-        sum1 = *multiBias;
-        sum2 = *multiBias;
-        sum3 = *multiBias;
-        sum4 = *multiBias;
-        sum5 = *multiBias;
-        sum6 = *multiBias;
-        sum7 = *multiBias;
+        sum0 = getBias(multiBias, config->bytesPerBias);
+        sum1 = getBias(multiBias, config->bytesPerBias);
+        sum2 = getBias(multiBias, config->bytesPerBias);
+        sum3 = getBias(multiBias, config->bytesPerBias);
+        sum4 = getBias(multiBias, config->bytesPerBias);
+        sum5 = getBias(multiBias, config->bytesPerBias);
+        sum6 = getBias(multiBias, config->bytesPerBias);
+        sum7 = getBias(multiBias, config->bytesPerBias);
 
         acc0 = _mm_setzero_si128();
         acc1 = _mm_setzero_si128();

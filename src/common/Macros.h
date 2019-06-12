@@ -47,4 +47,8 @@
     memmove(_Destination, _Source, _SourceSize);\
     UNREFERENCED_PARAMETER(_DestinationSize);\
 } while(0);
+#define strncpy_s(_Destination, _DestinationSize, _Source, _SourceSize) do {\
+    strncpy(_Destination, _Source, _SourceSize);\
+    UNREFERENCED_PARAMETER(_DestinationSize);\
+} while(0);
 #endif

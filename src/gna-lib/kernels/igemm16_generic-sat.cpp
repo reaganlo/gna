@@ -54,7 +54,7 @@ void AffineKernelImpl2B(AffineConfig const * const config)
     {
         for (j = 0; j < config->inputVectorCount; j++)
         {
-            sum = getBias(config->biasesSimple, i, config->bytesPerBias);
+            sum = getBias(config->biasesSimple, config->bytesPerBias, i);
 
             for (kk = 0; kk < nKpartial + 1; kk++) {
                 input = config->execution->Intermediate->d0 + j*config->inputElementCount + kk * kpartial;
@@ -92,7 +92,7 @@ void AffineKernelImpl2B2B(AffineConfig const * const config)
     {
         for (j = 0; j < config->inputVectorCount; j++)
         {
-            sum = getBias(config->biasesSimple, i, config->bytesPerBias);
+            sum = getBias(config->biasesSimple, config->bytesPerBias, i);
 
             for (kk = 0; kk < nKpartial + 1; kk++) {
                 input = config->execution->Intermediate->d0 + j*config->inputElementCount + kk * kpartial;
@@ -130,7 +130,7 @@ void AffineKernelImpl2B1B(AffineConfig const * const config)
     {
         for (j = 0; j < config->inputVectorCount; j++)
         {
-            sum = getBias(config->biasesSimple, i, config->bytesPerBias);
+            sum = getBias(config->biasesSimple, config->bytesPerBias, i);
 
             for (kk = 0; kk < nKpartial + 1; kk++) {
                 input = ((int8_t*)config->execution->Intermediate->d0) + j*config->inputElementCount + kk * kpartial;
@@ -166,7 +166,7 @@ void AffineMultiBiasKernelImpl2B(AffineConfig const * const config)
     {
         for (j = 0; j < config->inputVectorCount; j++)
         {
-            sum = getBias(config->multiBias, i*config->multiBiasVectorCount, config->bytesPerBias);
+            sum = getBias(config->multiBias, config->bytesPerBias, i*config->multiBiasVectorCount);
 
             for (kk = 0; kk < nKpartial + 1; kk++)
             {
@@ -204,7 +204,7 @@ void AffineMultiBiasKernelImpl2B2B(AffineConfig const * const config)
     {
         for (j = 0; j < config->inputVectorCount; j++)
         {
-            sum = getBias(config->multiBias, i*config->multiBiasVectorCount, config->bytesPerBias);
+            sum = getBias(config->multiBias, config->bytesPerBias, i*config->multiBiasVectorCount);
 
             for (kk = 0; kk < nKpartial + 1; kk++)
             {
@@ -242,7 +242,7 @@ void AffineMultiBiasKernelImpl2B1B(AffineConfig const * const config)
     {
         for (j = 0; j < config->inputVectorCount; j++)
         {
-            sum = getBias(config->multiBias, i*config->multiBiasVectorCount, config->bytesPerBias);
+            sum = getBias(config->multiBias, config->bytesPerBias, i*config->multiBiasVectorCount);
 
             for (kk = 0; kk < nKpartial + 1; kk++)
             {

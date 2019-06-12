@@ -187,7 +187,7 @@ struct AffineConfig
     nn_bias_c const * const biasesCompound;     // B - [M]
     nn_bias_s const * const biasesSimple;       // B - [M]
     };
-    nn_bias_s const * const multiBias;
+    void const * const multiBias;
     uint32_t const multiBiasVectorCount;
     uint32_t const bytesPerBias = 0;
 };

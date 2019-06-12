@@ -29,8 +29,10 @@
 #include "gna-api-types-gmm.h"
 #include "gna-api.h"
 
+#include <climits>
 #include <cstdio>
 #include <cstdlib>
+#include <cstdint>
 #include <functional>
 
 #if defined(__GNUC__) && !defined(__INTEL_COMPILER)
@@ -108,17 +110,9 @@ T GnaCeilDiv(T number, T divider)
     return static_cast<T>(((number) + divider - 1) / divider);
 }
 
-inline int64_t getBias(const void* ptr, uint32_t idx, uint32_t bytesPerElement)
+inline int32_t getBias(const void* ptr, uint32_t bytesPerElement, uint32_t idx = 0)
 {
-    switch (bytesPerElement)
-    {
-    case 1:
-        return ((int8_t*)ptr)[idx];
-    case 2:
-        return ((int16_t*)ptr)[idx];
-    case 4:
-        return ((int32_t*)ptr)[idx];
-    default:
-        return 0;
-    }
+    constexpr size_t maxBytesPerElement = sizeof(uint32_t);
+    return *(int32_t*)((int8_t*)ptr + (idx * bytesPerElement))
+        >> CHAR_BIT * (maxBytesPerElement - bytesPerElement);
 }
