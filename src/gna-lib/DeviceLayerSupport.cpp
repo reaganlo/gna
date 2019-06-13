@@ -351,28 +351,28 @@ const std::map<const DataConfig, std::map<const gna_layer_operation, const Suppo
         FROM_0_9_COPY_TRANSPOSE
     },
     {{GNA_INT16, GNA_INT8, GNA_INT8, GNA_INT8},
-        FROM_3_0_CNN
+        FROM_3_0_CNN_MB
     },
     {{GNA_INT16, GNA_INT8, GNA_INT8, GNA_INT16},
-       FROM_3_0_CNN_AUX
+       FROM_3_0_CNN_MB_AUX
     },
     {{GNA_INT16, GNA_INT8, GNA_INT8, GNA_INT32},
-        FROM_3_0_CNN
+        FROM_3_0_CNN_MB
     },
     {{GNA_INT16, GNA_INT8, GNA_INT8, GNA_DATA_ACTIVATION_DISABLED},
-        FROM_3_0_CNN
+        FROM_3_0_CNN_MB
     },
     {{GNA_INT16, GNA_INT8, GNA_INT16, GNA_INT8},
-        FROM_3_0_CNN
+        FROM_3_0_CNN_MB
     },
     {{GNA_INT16, GNA_INT8, GNA_INT16, GNA_INT16},
-        FROM_3_0_CNN_AUX
+        FROM_3_0_CNN_MB_AUX
     },
     {{GNA_INT16, GNA_INT8, GNA_INT16, GNA_INT32},
-       FROM_3_0_CNN
+       FROM_3_0_CNN_MB
     },
     {{GNA_INT16, GNA_INT8, GNA_INT16, GNA_DATA_ACTIVATION_DISABLED},
-        FROM_3_0_CNN
+        FROM_3_0_CNN_MB
     },
     {{GNA_INT16, GNA_INT8, GNA_INT32, GNA_INT8},
         FROM_3_0_CNN_MB
