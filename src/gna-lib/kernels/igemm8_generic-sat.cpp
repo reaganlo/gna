@@ -176,8 +176,7 @@ void AffineKernelImpl1B1B(AffineConfig const * const config)
     {
         for (j = 0; j < config->inputVectorCount; j++)
         {
-
-            sum = getBias(config->biasesSimple, i, config->bytesPerBias);
+            sum = getBias(config->biasesSimple, config->bytesPerBias, i);
 
             for (kk = 0; kk < nKpartial + 1; kk++) {
                 input = ((int8_t*)config->execution->Intermediate->d0) + j*config->inputElementCount + kk * kpartial;
@@ -218,7 +217,7 @@ void AffineMultiBiasKernelImpl1B(AffineConfig const * const config)
     {
         for (j = 0; j < config->inputVectorCount; ++j)
         {
-            sum = getBias(config->multiBias, i*config->multiBiasVectorCount, config->bytesPerBias);
+            sum = getBias(config->multiBias, config->bytesPerBias, i*config->multiBiasVectorCount);
             //TODO:3: check whether this is correct: sum = config->multiBias[i*config->multiBiasVectorCount];
             for (kk = 0; kk < nKpartial + 1; ++kk) {
                 niters = kpartial < config->inputElementCount - kk * kpartial ? kpartial : config->inputElementCount - kk * kpartial;
@@ -274,7 +273,7 @@ void AffineMultiBiasKernelImpl1B2B(AffineConfig const * const config)
     {
         for (j = 0; j < config->inputVectorCount; ++j)
         {
-            sum = getBias(config->multiBias, i*config->multiBiasVectorCount, config->bytesPerBias);
+            sum = getBias(config->multiBias, config->bytesPerBias, i*config->multiBiasVectorCount);
             //TODO:3: check whether this is correct: sum = config->multiBias[i*config->multiBiasVectorCount];
             for (kk = 0; kk < nKpartial + 1; ++kk) {
                 niters = kpartial < config->inputElementCount - kk * kpartial ? kpartial : config->inputElementCount - kk * kpartial;
@@ -330,7 +329,7 @@ void AffineMultiBiasKernelImpl1B1B(AffineConfig const * const config)
     {
         for (j = 0; j < config->inputVectorCount; j++)
         {
-            sum = getBias(config->multiBias, i*config->multiBiasVectorCount, config->bytesPerBias);
+            sum = getBias(config->multiBias, config->bytesPerBias, i*config->multiBiasVectorCount);
 
             for (kk = 0; kk < nKpartial + 1; kk++)
             {

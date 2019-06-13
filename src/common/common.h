@@ -112,7 +112,15 @@ T GnaCeilDiv(T number, T divider)
 
 inline int32_t getBias(const void* ptr, uint32_t bytesPerElement, uint32_t idx = 0)
 {
-    constexpr size_t maxBytesPerElement = sizeof(uint32_t);
-    return *(int32_t*)((int8_t*)ptr + (idx * bytesPerElement))
-        >> CHAR_BIT * (maxBytesPerElement - bytesPerElement);
+    switch (bytesPerElement)
+    {
+    case 1:
+        return ((int8_t*)ptr)[idx];
+    case 2:
+        return ((int16_t*)ptr)[idx];
+    case 4:
+        return ((int32_t*)ptr)[idx];
+    default:
+        return 0;
+    }
 }
