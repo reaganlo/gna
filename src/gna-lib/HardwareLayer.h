@@ -118,6 +118,7 @@ public:
     virtual ~HardwareLayerExt() = default;
 
 protected:
+    HardwareLayerExt(const DescriptorParameters& parameters, uint32_t iterationGrouping);
     HardwareLayerExt(const DescriptorParameters& parameters);
 
     void save();
@@ -127,7 +128,6 @@ protected:
     const AffineFunction* affine = nullptr;
 
 private:
-    const uint32_t iterationGrouping; // grouping for iteration calculation
     uint32_t iterationCount; // number of iterations = data chunks/parts
 };
 

@@ -100,9 +100,9 @@ const FullCapabilitiesMap WeightTensor::capabilities =
     }},
     {INTEL_RECURRENT, {
         {GNA_0_9, std::make_shared<TensorLimits>(TensorLimits{
-            { GNA_TENSOR_WH },              // W - #inputs, H - #outputs
-            {{GNA_DIM_W, {XNN_N_IN_ELEMS_MPLY, XNN_N_IN_ELEMS_MAX, XNN_N_IN_ELEMS_MPLY, Gna2StatusXnnErrorWeightVolume}},
-                {GNA_DIM_H, {RNN_N_OUT_ELEMS_MPLY, XNN_N_IN_ELEMS_MAX, RNN_N_OUT_ELEMS_MPLY, Gna2StatusXnnErrorWeightVolume}}},
+            { GNA_TENSOR_HW },
+            {{GNA_DIM_H, {RNN_N_OUT_ELEMS_MPLY, XNN_N_IN_ELEMS_MAX, RNN_N_OUT_ELEMS_MPLY, Gna2StatusXnnErrorWeightVolume}},
+            {GNA_DIM_W, {XNN_N_IN_ELEMS_MPLY + RNN_N_OUT_ELEMS_MPLY, XNN_N_IN_ELEMS_MAX + XNN_N_IN_ELEMS_MAX , XNN_N_IN_ELEMS_MPLY, Gna2StatusXnnErrorWeightVolume}}},
             _ModesGen0_9})}
     }},
 };

@@ -61,6 +61,9 @@
 
 using namespace GNA;
 
+//Used in CNN and RNN to overload input grouping for HW iteration calculation
+static const uint32_t IterationGroupingOne = 1;
+
 DescriptorParameters::DescriptorParameters(
         const Layer* softwareLayer,
         const LayerDescriptor& xnnDescriptor) :
@@ -285,6 +288,7 @@ uint32_t HardwareLayer::GetLdFeedbackOffset() const
 void HardwareLayer::saveCommonPart()
 {
     XnnDescriptor[op] =static_cast<uint8_t>(OperationsMap.at(SoftwareLayer->Operation));
+    XnnDescriptor[n_groups] = SoftwareLayer->Input.Grouping;
     XnnDescriptor[n_in_elems] = SoftwareLayer->Input.ElementCount;
     XnnDescriptor[n_out_elems] = SoftwareLayer->Output.ElementCount;
     XnnDescriptor[in_buffer] = SoftwareLayer->Input;
@@ -322,17 +326,16 @@ void HardwareLayer::saveActivation(const ActivationFunction* activationIn)
     }
 }
 
-HardwareLayerExt::HardwareLayerExt(const DescriptorParameters& parameters) :
+HardwareLayerExt::HardwareLayerExt(const DescriptorParameters& parameters, const uint32_t iterationGrouping) :
     HardwareLayer(parameters),
     bufferElementCount { parameters.XnnDescriptor.HwCapabilities.GetBufferElementCount(
-                        SoftwareLayer->Input.Grouping, SoftwareLayer->Input.Mode.Size) },
-    iterationGrouping{SoftwareLayer->Input.Grouping}
+                        iterationGrouping, SoftwareLayer->Input.Mode.Size) }
 {
     Expect::InRange(iterationGrouping, ui32_1, XNN_N_GROUP_MAX, Gna2StatusXnnErrorGrouping);
     // Calculates number of iterations and elements in last iteration
      //#groups for calculation(can be different than network grouping)
-    auto numberOfElements = SoftwareLayer->Input.ElementCount;
-    auto elementsTimesGrouping = numberOfElements * iterationGrouping;
+    const auto numberOfElements = SoftwareLayer->Input.ElementCount;
+    const auto elementsTimesGrouping = numberOfElements * iterationGrouping;
     iterationCount = ((elementsTimesGrouping - 1) / bufferElementCount) + 1;
     Expect::InRange(iterationCount, ui32_1, ui32_UINT8_MAX, Gna2StatusXnnErrorLyrCfg);
 
@@ -341,10 +344,14 @@ HardwareLayerExt::HardwareLayerExt(const DescriptorParameters& parameters) :
     Expect::MultiplicityOf(lastIterationElementCount, XNN_N_IN_ELEMS_MPLY);
 }
 
+HardwareLayerExt::HardwareLayerExt(const DescriptorParameters& parameters) :
+    HardwareLayerExt{ parameters, parameters.SoftwareLayer->Input.Grouping }
+{
+}
+
 void HardwareLayerExt::save()
 {
     HardwareLayer::save();
-    XnnDescriptor[n_groups] = iterationGrouping;
 
     XnnDescriptor[n_iters] = iterationCount;
     XnnDescriptor[n_elems_last] = lastIterationElementCount;
@@ -401,7 +408,7 @@ void HardwareLayerCopy::save()
 }
 
 HardwareLayerRnn::HardwareLayerRnn(const DescriptorParameters& parameters) :
-    HardwareLayerExt(parameters),
+    HardwareLayerExt(parameters, IterationGroupingOne),
     feedbackIterationsCount{0},
     feedbackFirstIterElementCount{0},
     feedbackLastIterElementCount{0}
@@ -465,7 +472,7 @@ uint32_t HardwareLayerRnn::GetLdFeedbackOffset() const
 }
 
 HardwareLayerCnn::HardwareLayerCnn(const DescriptorParameters& parameters) :
-    HardwareLayerExt(parameters)
+    HardwareLayerExt(parameters, IterationGroupingOne)
 {
     const auto cnn = SoftwareLayer->Get<const CnnLayer>();
 
