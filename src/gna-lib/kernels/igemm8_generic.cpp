@@ -187,7 +187,7 @@ void AffineMultiBiasKernelImpl1B2B(AffineConfig const * const config)
             }
             *output *= weightScaleFactors->multiplier;
 
-            *output++ = getBias(multiBias, config->bytesPerBias);
+            *output++ += getBias(multiBias, config->bytesPerBias);
         }
         weight += config->inputElementCount;
         multiBias += config->multiBiasVectorCount * config->bytesPerBias;
