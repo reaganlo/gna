@@ -985,13 +985,13 @@ void Convolution2DKernelImpl1B1B(ExecutionKernelConfig<ConvolutionConfig2D> cons
 
                 int64_t outVal;// = &O[OH * outWidth * numFilters + OW * numFilters + OD]; //NHWC order
                 if (biasMode == KernelBiasModePerFilter) {
-                    outVal = getBias(biasData, OD, biasPrecission);
+                    outVal = getBias(biasData, biasPrecission, OD);
                 }
                 else if (biasMode == KernelBiasModeDisabled) {
                     outVal = 0;
                 }
                 else {
-                    outVal = getBias(biasData, numFilters*outWidth*OH + numFilters * OW + OD, biasPrecission);
+                    outVal = getBias(biasData, biasPrecission, numFilters*outWidth*OH + numFilters * OW + OD);
                 }
 
 
@@ -1065,13 +1065,13 @@ void Convolution2DKernelImpl1B2B(ExecutionKernelConfig<ConvolutionConfig2D> cons
 
                 int64_t outVal;// = &O[OH * outWidth * numFilters + OW * numFilters + OD]; //NHWC order
                 if (biasMode == KernelBiasModePerFilter) {
-                    outVal = getBias(biasData, OD, biasPrecission);
+                    outVal = getBias(biasData, biasPrecission, OD);
                 }
                 else if (biasMode == KernelBiasModeDisabled) {
                     outVal = 0;
                 }
                 else {
-                    outVal = getBias(biasData, numFilters*outWidth*OH + numFilters * OW + OD, biasPrecission);
+                    outVal = getBias(biasData, biasPrecission, numFilters*outWidth*OH + numFilters * OW + OD);
                 }
 
 
@@ -1145,13 +1145,13 @@ void Convolution2DKernelImpl2B1B(ExecutionKernelConfig<ConvolutionConfig2D> cons
 
                 int64_t outVal;// = &O[OH * outWidth * numFilters + OW * numFilters + OD]; //NHWC order
                 if (biasMode == KernelBiasModePerFilter) {
-                    outVal = getBias(biasData, OD, biasPrecission);
+                    outVal = getBias(biasData, biasPrecission, OD);
                 }
                 else if (biasMode == KernelBiasModeDisabled) {
                     outVal = 0;
                 }
                 else {
-                    outVal = getBias(biasData, numFilters*outWidth*OH + numFilters * OW + OD, biasPrecission);
+                    outVal = getBias(biasData, biasPrecission, numFilters*outWidth*OH + numFilters * OW + OD);
                 }
 
 
@@ -1226,13 +1226,13 @@ void Convolution2DKernelImpl2B2B(ExecutionKernelConfig<ConvolutionConfig2D> cons
 
                 int64_t outVal;// = &O[OH * outWidth * numFilters + OW * numFilters + OD]; //NHWC order
                 if (biasMode == KernelBiasModePerFilter) {
-                    outVal = getBias(biasData, OD, biasPrecission);
+                    outVal = getBias(biasData, biasPrecission, OD);
                 }
                 else if (biasMode == KernelBiasModeDisabled) {
                     outVal = 0;
                 }
                 else {
-                    outVal = getBias(biasData, numFilters*outWidth*OH + numFilters * OW + OD, biasPrecission);
+                    outVal = getBias(biasData, biasPrecission, numFilters*outWidth*OH + numFilters * OW + OD);
                 }
 
 

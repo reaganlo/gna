@@ -79,7 +79,7 @@ void RecurrentKernelImpl2B(RecurrentConfig const * const config)
     {
         input = config->input;
         feedback = config->feedbackBuffer;
-        sum = getBias((void*)bias, 0, config->bytesPerBias);
+        sum = getBias((void*)bias, config->bytesPerBias);
 
         // compute parts using SSE
         // if config->inputElementCount has modulo 16 remainder, leave it
