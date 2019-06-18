@@ -209,8 +209,8 @@ void AffineKernelImpl2B(AffineConfig const * const config)
                 acc1 = _mm_add_epi32(acc1, in1);
             }
 
-            output[0] = getBias(bias, config->bytesPerBias);
-            output[1] = getBias(bias, config->bytesPerBias);
+            output[0] = getBias(bias, config->bytesPerBias) + vec_sum(acc0);
+            output[1] = getBias(bias, config->bytesPerBias) + vec_sum(acc1);
 
             for (i = 0; i < KT; i++, weight++)
             {
@@ -250,9 +250,9 @@ void AffineKernelImpl2B(AffineConfig const * const config)
                 acc2 = _mm_add_epi32(acc2, in2);
             }
 
-            output[0] = getBias(bias, config->bytesPerBias);
-            output[1] = getBias(bias, config->bytesPerBias);
-            output[2] = getBias(bias, config->bytesPerBias);
+            output[0] = getBias(bias, config->bytesPerBias) + vec_sum(acc0);
+            output[1] = getBias(bias, config->bytesPerBias) + vec_sum(acc1);
+            output[2] = getBias(bias, config->bytesPerBias) + vec_sum(acc2);
 
 
             for (i = 0; i < KT; i++, weight++)
