@@ -27,6 +27,7 @@
 
 #include "DataMode.h"
 #include "Shape.h"
+#include "ModelWrapper.h"
 
 #include "gna2-model-api.h"
 #include "common.h"
@@ -77,6 +78,7 @@ protected:
     void InitPooling(const nn_layer& layer);
 private:
 
+    static Shape TryGetParamShape(const Gna2Operation & operation, OperationInfoKey parameter);
     static Shape TryGetParamShape(const Gna2Operation & operation, uint32_t parameterIndex);
 
     static const nn_layer_cnn2d* CastToCnn2DDetails(const nn_layer& layer);
@@ -88,6 +90,13 @@ private:
     static bool IsParameterAvailable(const Gna2Operation & operation, uint32_t index);
 
     template<class T>
+    static T GetParameterAs(const Gna2Operation & operation, OperationInfoKey parameter, T defaultValue)
+    {
+        auto const parameterIndex = ModelWrapper::GetOperationInfo(operation.Type, parameter);
+        return GetParameterAs(operation, parameterIndex, defaultValue);
+    }
+
+    template<class T>
     static T GetParameterAs(const Gna2Operation & operation, uint32_t index, T defaultValue)
     {
         if (IsParameterAvailable(operation, index))
@@ -97,6 +106,7 @@ private:
         return defaultValue;
     }
 
+    static Gna2Tensor GetOperand(const Gna2Operation & operation, GnaComponentType operand, Gna2Tensor defaultValue);
     static Gna2Tensor GetOperand(const Gna2Operation & operation, uint32_t index, Gna2Tensor defaultValue);
 
     static Gna2BiasMode GetBiasMode(const Gna2Operation& operation);

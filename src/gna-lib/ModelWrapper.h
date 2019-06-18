@@ -41,6 +41,38 @@
 namespace GNA
 {
 
+enum OperationInfoKey
+{
+    NumberOfOperandsRequired, //must be passed from user as not null
+    NumberOfOperandsMax,
+    NumberOfParametersRequired, //must be passed from user as not null
+    NumberOfParametersMax,
+    OperandIndexInput,
+    OperandIndexOutput,
+    OperandIndexWeight,
+    OperandIndexFilter,
+    OperandIndexBias,
+    OperandIndexActivation,
+    OperandIndexWeightScaleFactors,
+    OperandIndexMeans,
+    OperandIndexInverseCovariances,
+    OperandIndexConstants,
+    OperandIndexInterleaved,
+
+    ParameterIndexCopyShape,
+    ParameterIndexConvolutionStride,
+    ParameterIndexBiasMode,
+    ParameterIndexPoolingMode,
+    ParameterIndexPoolingWindow,
+    ParameterIndexPoolingStride,
+    ParameterIndexZeroPadding,
+    ParameterIndexBiasVectorIndex,
+    ParameterIndexMaximumScore,
+    ParameterIndexDelay,
+};
+
+constexpr uint32_t OperandIndexOutputIntermediate = UINT32_MAX;
+
 class ModelWrapper
 {
 public:
@@ -117,43 +149,27 @@ public:
     static void SetLayout(Gna2Tensor& tensor, const char* layout);
 
     static void ExpectOperationValid(const Gna2Operation& operation);
-    static GnaComponentType OperandIndexToType(uint32_t operandIndex);
+    static uint32_t GetOperandIndex(GnaComponentType operand);
 
-    enum OperationInfoKey
-    {
-        NumberOfOperandsRequired, //must be passed from user as not null
-        NumberOfOperandsMax,
-        NumberOfParametersRequired, //must be passed from user as not null
-        NumberOfParametersMax,
-        OperandIndexInput,
-        OperandIndexOutput,
-        OperandIndexWeight,
-        OperandIndexFilter,
-        OperandIndexBias,
-        OperandIndexActivation,
-        OperandIndexWeightScaleFactors,
-        OperandIndexMeans,
-        OperandIndexInverseCovariances,
-        OperandIndexConstants,
-        OperandIndexInterleaved,
 
-        ParameterIndexCopyShape,
-        ParameterIndexConvolutionStride,
-        ParameterIndexBiasMode,
-        ParameterIndexPoolingMode,
-        ParameterIndexPoolingWindow,
-        ParameterIndexPoolingStride,
-        ParameterIndexZeroPadding,
-        ParameterIndexBiasVectorIndex,
-        ParameterIndexMaximumScore,
-        ParameterIndexDelay,
-    };
     static uint32_t GetOperationInfo(OperationType operationType, OperationInfoKey infoType);
 
+    static Gna2Tensor GetOperand(const Gna2Operation & apiOperation, GnaComponentType operand);
     static Gna2Tensor GetOperand(const Gna2Operation & apiOperation, uint32_t operandIndex);
-    static Gna2Tensor GetOptionalOperand(const Gna2Operation& apiOperation, uint32_t operandIndex, Gna2Tensor defaultTensor);
+
+    static Gna2Tensor GetOptionalOperand(const Gna2Operation& apiOperation,
+        GnaComponentType operand, Gna2Tensor defaultTensor);
+    static Gna2Tensor GetOptionalOperand(const Gna2Operation& apiOperation,
+        uint32_t operandIndex, Gna2Tensor defaultTensor);
 
     static void ExpectParameterAvailable(const Gna2Operation & operation, uint32_t index);
+
+    template<class T>
+    static T GetParameter(const Gna2Operation & operation, OperationInfoKey parameter)
+    {
+        auto const index = GetOperationInfo(operation.Type, parameter);
+        return GetParameter<T>(operation, index);
+    }
 
     template<class T>
     static T GetParameter(const Gna2Operation & operation, uint32_t index)
@@ -161,14 +177,22 @@ public:
         ExpectParameterAvailable(operation, index);
         return *static_cast<T*> (operation.Parameters[index]);
     }
+
     template<class T>
-    static T GetOptionalParameter(const Gna2Operation& apiOperation, uint32_t parameterIndex, T defaultValue)
+    static T GetOptionalParameter(const Gna2Operation& operation, OperationInfoKey parameter, T defaultValue)
     {
-        if(apiOperation.Parameters != nullptr &&
-            parameterIndex < apiOperation.NumberOfParameters &&
-            nullptr != apiOperation.Parameters[parameterIndex])
+        auto const index = GetOperationInfo(operation.Type, parameter);
+        return GetOptionalParameter<T>(operation, index, defaultValue);
+    }
+
+    template<class T>
+    static T GetOptionalParameter(const Gna2Operation& operation, uint32_t parameterIndex, T defaultValue)
+    {
+        if(operation.Parameters != nullptr &&
+            parameterIndex < operation.NumberOfParameters &&
+            nullptr != operation.Parameters[parameterIndex])
         {
-            return *static_cast<const T*>(apiOperation.Parameters[parameterIndex]);
+            return *static_cast<const T*>(operation.Parameters[parameterIndex]);
         }
         return defaultValue;
     }

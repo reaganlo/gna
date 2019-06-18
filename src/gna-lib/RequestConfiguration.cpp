@@ -52,19 +52,21 @@ RequestConfiguration::RequestConfiguration(CompiledModel& model, gna_request_cfg
     HardwareCapabilities::GetHardwareConsistencySettings(BufferElementCount, consistentDevice);
 }
 
-void RequestConfiguration::AddBuffer(GnaComponentType type, uint32_t layerIndex, void *address)
+void RequestConfiguration::AddBuffer(uint32_t operandIndex, uint32_t layerIndex, void *address)
 {
-    Expect::InRange(type, ComponentTypeCount,  Gna2StatusXnnErrorLyrCfg);
+    auto const layer = Model.GetLayer(layerIndex);
+    auto const operandsMax =  ModelWrapper::GetOperationInfo(layer->OperationNew, NumberOfOperandsMax);
+
+    Expect::InRange(operandIndex, operandsMax, Gna2StatusXnnErrorLyrCfg);
     Expect::NotNull(address);
 
-    auto found = LayerConfigurations.emplace(layerIndex, std::make_unique<LayerConfiguration>());
-    auto layerConfiguration = found.first->second.get();
+    auto const found = LayerConfigurations.emplace(layerIndex, std::make_unique<LayerConfiguration>());
+    auto const layerConfiguration = found.first->second.get();
 
-    auto emplaced = layerConfiguration->Buffers.emplace(type, address);
+    auto const emplaced = layerConfiguration->Buffers.emplace(operandIndex, address);
     Expect::True(emplaced.second, Gna2StatusIdentifierInvalid);
 
-    auto layer = Model.GetLayer(layerIndex);
-    auto bufferSize = layer->GetOperandSize(type);
+    auto const bufferSize = layer->GetOperand(operandIndex).Size;
     addMemoryObject(address, bufferSize);
 
     Model.InvalidateConfig(Id, layerConfiguration, layerIndex);

@@ -99,6 +99,31 @@ void CnnLayer::Init()
     }
 }
 
+Tensor const & CnnLayer::GetOperand(uint32_t operandIndex) const
+{
+    // TODO:3:replace with generic solution when all layers are transforms
+    switch (operandIndex)
+    {
+    case 2:
+        if (Convolution)
+        {
+            return BaseTransform::GetOperandIfExistOrThrow(Convolution->Filters);
+        }
+    case 3:
+        if (Convolution)
+        {
+            return BaseTransform::GetOperandIfExistOrThrow(Convolution->Biases);
+        }
+    case 4:
+        if (Activation)
+        {
+            return BaseTransform::GetOperandIfExistOrThrow(Activation->Segments);
+        }
+    default:
+        return Layer::GetOperand(operandIndex);
+    }
+}
+
 void CnnLayer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const
 {
     Layer::UpdateKernelConfigs(layerConfiguration);

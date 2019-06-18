@@ -25,6 +25,7 @@
 
 #include "ConvolutionalLayer2D.h"
 
+#include "ActivationFunction.h"
 #include "Address.h"
 #include "ConvolutionalFunctions2D.h"
 #include "Expect.h"
@@ -69,6 +70,24 @@ void ConvolutionalLayer2D::Init()
         AccelerationMode accel,
         ExecutionConfig const & executionConfig)
     {this->compute(&layerConfiguration, accel, executionConfig); };
+}
+
+Tensor const & ConvolutionalLayer2D::GetOperand(uint32_t operandIndex) const
+{
+    switch (operandIndex)
+    {
+    case 2://[[fallthrough]]
+    case 3:
+    {
+        return getTransformOperand(ConvolutionalTransform2D, operandIndex);
+    }
+    case 4:
+    {
+        return getTransformOperand(ActivationTransform, 2);// TODO:3:Intentional literal, replace with generic solution when all layers are transforms
+    }
+    default:
+        return Layer::GetOperand(operandIndex);
+    }
 }
 
 bool ConvolutionalLayer2D::IsSupported(const Gna2Operation & operation)

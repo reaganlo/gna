@@ -34,7 +34,6 @@
 #include <cstdint>
 #include <cstring>
 
-using GNA::BufferMap;
 using GNA::BaseAddress;
 
 /**
@@ -82,19 +81,13 @@ namespace GNA
 struct PwlCached;
 }
 
-struct BaseConfig: public BufferMap
+struct BaseConfig // TODO:3:revert to use ~BufferMap.Update
 {
-    using BufferMap::BufferMap;
     BaseConfig() = default;
-    BaseConfig(const BufferMap& buffers);
     BaseConfig(const BaseAddress& inputBuffer, const BaseAddress& outputBuffer);
-
-    void Update(const BufferMap& buffers);
 
     int8_t const * Inputs = nullptr;
     int8_t * Outputs = nullptr;
-private:
-    void setPointers(); // TODO:3:remove and use map in kernels?
 };
 
 template<typename TransformConfig>

@@ -64,6 +64,8 @@ public:
     std::unique_ptr<const PoolingFunction> Pooling;
     std::unique_ptr<const ActivationFunction> Activation;
 
+    virtual Tensor const & GetOperand(uint32_t operandIndex) const override;
+
 protected:
     void Init();
 

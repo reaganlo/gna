@@ -30,6 +30,7 @@
 
 #include "gna2-common-impl.h"
 #include "gna-api-dumper.h"
+#include "ModelWrapper.h"
 
 #include <cstddef>
 #include <memory>
@@ -127,7 +128,7 @@ GNAAPI gna_status_t GnaRequestConfigBufferAdd(
     try
     {
         auto& device = DeviceManager::Get().GetDevice(0);
-        device.AttachBuffer(configId, type, layerIndex, address);
+        device.AttachBuffer(configId, ModelWrapper::GetOperandIndex(type), layerIndex, address);
         return GNA_SUCCESS;
     }
     catch (const GnaException &e)

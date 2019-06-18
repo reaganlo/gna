@@ -36,6 +36,7 @@
 #include "Shape.h"
 #include "Tensor.h"
 #include "Validator.h"
+#include "Transform.h"
 
 #include "gna-api.h"
 
@@ -229,4 +230,21 @@ ConvolutionFunction2D::ConvolutionFunction2D(const BaseTransformConfig<Convoluti
     hiddenConfig = std::make_unique<KernelConfig<ConvolutionConfig2D>>(
         kernelConvolutionConfig2D,
         BaseConfig{Input->Buffer, Output->Buffer});
+}
+
+Tensor const & ConvolutionFunction2D::GetOperand(uint32_t operandIndex) const
+{
+    switch (operandIndex)
+    {
+    case 2:
+    {
+        return GetOperandIfExistOrThrow(Filters);
+    }
+    case 3:
+    {
+        return GetOperandIfExistOrThrow(Biases);
+    }
+    default:
+        return Transform::GetOperand(operandIndex);
+    }
 }

@@ -119,7 +119,7 @@ void RnnLayer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const
     if (outputBuffer)
     {
         configs.Recurrent->feedbackBuffer = CalculateFeedbackBuffer(outputBuffer);
-        configs.Recurrent->activation.Update({{OutputComponent, outputBuffer}});
+        configs.Recurrent->activation.Outputs = outputBuffer; // TODO:3:revert to use ~BufferMap.Update
     }
 }
 

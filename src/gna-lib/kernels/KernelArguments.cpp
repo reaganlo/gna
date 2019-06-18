@@ -31,37 +31,10 @@
 #include <map>
 #include <utility>
 
-BaseConfig::BaseConfig(const BufferMap& buffers) :
-    BufferMap{buffers}
-{
-    setPointers();
-}
-
 BaseConfig::BaseConfig(const BaseAddress& inputBuffer, const BaseAddress& outputBuffer) :
-    BufferMap{inputBuffer, outputBuffer}
+    Inputs{inputBuffer},
+    Outputs{outputBuffer}
 {
-    setPointers();
-}
-
-void BaseConfig::Update(const BufferMap& buffers)
-{
-    for (const auto& buffer : buffers)
-    {
-       operator[](buffer.first) = buffer.second;
-    }
-    setPointers();
-}
-
-void BaseConfig::setPointers()
-{
-    if (count(InputComponent) > 0)
-    {
-        Inputs = at(InputComponent);
-    }
-    if (count(OutputComponent) > 0)
-    {
-        Outputs = at(OutputComponent);
-    }
 }
 
 ActivationConfig::ActivationConfig(uint32_t elementCount, GNA::PwlCached const * kernel) :

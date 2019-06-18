@@ -60,11 +60,11 @@ void RequestBuilder::ReleaseConfiguration(gna_request_cfg_id configId)
     configurations.erase(configId);
 }
 
-void RequestBuilder::AttachBuffer(gna_request_cfg_id configId, GnaComponentType type, uint32_t layerIndex,
+void RequestBuilder::AttachBuffer(gna_request_cfg_id configId, uint32_t operandIndex, uint32_t layerIndex,
     void * address) const
 {
     auto& configuration = GetConfiguration(configId);
-    configuration.AddBuffer(type, layerIndex, address);
+    configuration.AddBuffer(operandIndex, layerIndex, address);
 }
 
 void RequestBuilder::AttachActiveList(gna_request_cfg_id configId, uint32_t layerIndex,

@@ -304,7 +304,6 @@ GNA2_API enum Gna2Status Gna2OperationInitFullyConnectedBiasGrouping(
     const std::function<Gna2Status()> command = [&]()
     {
         Expect::NotNull(operation);
-        Expect::NotNull(biasMode);
         ModelWrapper::OperationInit(*operation, Gna2OperationTypeFullyConnectedAffine, userAllocator);
         ModelWrapper::SetOperands(*operation, inputs, outputs, weights, biases, activation, weightScaleFactors);
 

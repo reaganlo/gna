@@ -63,7 +63,7 @@ uint32_t ModelWrapper::ShapeGetNumberOfElements(ApiShape const * shape)
 
 uint32_t ModelWrapper::GetOperationInfo(OperationType operationType, OperationInfoKey infoType)
 {
-    const static std::map<OperationType, std::map<OperationInfoKey, uint32_t> > metaOperationInfo =
+    static const std::map<OperationType, std::map<OperationInfoKey, uint32_t> > metaOperationInfo =
     {
         { Gna2OperationTypeCopy,
             {
@@ -174,6 +174,12 @@ uint32_t ModelWrapper::GetOperationInfo(OperationType operationType, OperationIn
     }
 }
 
+Gna2Tensor ModelWrapper::GetOperand(const Gna2Operation & apiOperation, GnaComponentType operand)
+{
+    const auto operandIndex = GetOperandIndex(operand);
+    return GetOperand(apiOperation, operandIndex);
+}
+
 Gna2Tensor ModelWrapper::GetOperand(const Gna2Operation & apiOperation, uint32_t operandIndex)
 {
     Expect::True(apiOperation.NumberOfOperands > operandIndex, Gna2StatusXnnErrorLyrOperation);
@@ -182,7 +188,15 @@ Gna2Tensor ModelWrapper::GetOperand(const Gna2Operation & apiOperation, uint32_t
     return *apiOperation.Operands[operandIndex];
 }
 
-Gna2Tensor ModelWrapper::GetOptionalOperand(const Gna2Operation & apiOperation, uint32_t operandIndex, Gna2Tensor defaultTensor)
+Gna2Tensor ModelWrapper::GetOptionalOperand(const Gna2Operation & apiOperation,
+    GnaComponentType operand, Gna2Tensor defaultTensor)
+{
+    const auto operandIndex = GetOperandIndex(operand);
+    return GetOptionalOperand(apiOperation, operandIndex, defaultTensor);
+}
+
+Gna2Tensor ModelWrapper::GetOptionalOperand(const Gna2Operation & apiOperation,
+    uint32_t operandIndex, Gna2Tensor defaultTensor)
 {
     if (apiOperation.NumberOfOperands > operandIndex &&
         nullptr != apiOperation.Operands &&
@@ -236,16 +250,29 @@ void ModelWrapper::ExpectOperationValid(const Gna2Operation & operation)
         paramRequired, paramMax, Gna2StatusModelConfigurationInvalid);
 }
 
-GnaComponentType ModelWrapper::OperandIndexToType(uint32_t operandIndex)
+uint32_t ModelWrapper::GetOperandIndex(GnaComponentType operand)
 {
-    if( 0 == operandIndex )
+    static const std::map<GnaComponentType, uint32_t> operandMap =
     {
-        return InputComponent;
-    }
-    if ( 1 == operandIndex )
+        {InputComponent, 0},
+        {OutputComponent, 1},
+        {IntermediateOutputComponent, OperandIndexOutputIntermediate},
+        {WeightComponent, 2},
+        {FilterComponent, 2},
+        {BiasComponent, 3},
+        {PwlComponent, 4},
+        {WeightScaleFactorComponent, 5},
+        //{GmmInterleavedComponent, 2},
+        {GmmMeanComponent, 2},
+        {GmmInverseCovarianceComponent, 3},
+        {GmmGaussianConstantComponent, 4},
+    };
+    try
     {
-        return OutputComponent;
+        return operandMap.at(operand);
     }
-    // TODO:3: P2 Implement remaining cases
-    throw GnaException(Gna2StatusNotImplemented);
+    catch (std::out_of_range&)
+    {
+        throw GnaException(Gna2StatusXnnErrorLyrCfg);
+    }
 }

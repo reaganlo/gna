@@ -53,6 +53,8 @@ struct ConvolutionFunction2D : public Transform<ConvolutionConfig2D, Convolution
 
     virtual ~ConvolutionFunction2D() = default;
 
+    virtual Tensor const & GetOperand(uint32_t operandIndex) const override;
+
     std::unique_ptr<const BiasTensor> Biases;
 
     std::unique_ptr<const FiltersTensor> Filters;

@@ -79,8 +79,9 @@ void recurrentKernelImpl1B(RecurrentConfig const * const config)
 
         activation.Kernel->InitializeActivationFunctions();
         activation.Kernel->ActivateAll(&activationCfg);
-        io->Update(BufferMap{io->Inputs + activation.ElementCount * 4,
-            io->Outputs + activation.ElementCount * config->bytesPerOutput});
+        io->Inputs = io->Inputs + activation.ElementCount * 4;
+        io->Outputs = io->Outputs + activation.ElementCount * config->bytesPerOutput;
+        // TODO:3:revert to use ~BufferMap.Update
     }
 }
 
@@ -102,8 +103,9 @@ void recurrentKernelImpl2B(RecurrentConfig const * const config)
 
         activation.Kernel->InitializeActivationFunctions();
         activation.Kernel->ActivateAll(&activationCfg);
-        io->Update(BufferMap{io->Inputs + activation.ElementCount * 4,
-            io->Outputs + activation.ElementCount * config->bytesPerOutput});
+        io->Inputs = io->Inputs + activation.ElementCount * 4;
+        io->Outputs = io->Outputs + activation.ElementCount * config->bytesPerOutput;
+        // TODO:3:revert to use ~BufferMap.Update
     }
 }
 
@@ -133,8 +135,9 @@ void recurrentKernelImpl1B1B(RecurrentConfig const * const config)
 
         activation.Kernel->InitializeActivationFunctions();
         activation.Kernel->ActivateAll(&activationCfg);
-        io->Update(BufferMap{io->Inputs + activation.ElementCount * 4,
-            io->Outputs + activation.ElementCount * config->bytesPerOutput});
+        io->Inputs = io->Inputs + activation.ElementCount * 4;
+        io->Outputs = io->Outputs + activation.ElementCount * config->bytesPerOutput;
+        // TODO:3:revert to use ~BufferMap.Update
     }
 }
 void recurrentKernelImpl1B2B(RecurrentConfig const * const config)
@@ -162,8 +165,9 @@ void recurrentKernelImpl1B2B(RecurrentConfig const * const config)
 
         activation.Kernel->InitializeActivationFunctions();
         activation.Kernel->ActivateAll(&activationCfg);
-        io->Update(BufferMap{io->Inputs + activation.ElementCount * 4,
-            io->Outputs + activation.ElementCount * config->bytesPerOutput});
+        io->Inputs = io->Inputs + activation.ElementCount * 4;
+        io->Outputs = io->Outputs + activation.ElementCount * config->bytesPerOutput;
+        // TODO:3:revert to use ~BufferMap.Update
     }
 }
 
@@ -192,8 +196,9 @@ void recurrentKernelImpl2B1B(RecurrentConfig const * const config)
 
         activation.Kernel->InitializeActivationFunctions();
         activation.Kernel->ActivateAll(&activationCfg);
-        io->Update(BufferMap{io->Inputs + activation.ElementCount * 4,
-            io->Outputs + activation.ElementCount * config->bytesPerOutput});
+        io->Inputs = io->Inputs + activation.ElementCount * 4,
+        io->Outputs = io->Outputs + activation.ElementCount * config->bytesPerOutput;
+        // TODO:3:revert to use ~BufferMap.Update
     }
 }
 
@@ -222,8 +227,9 @@ void recurrentKernelImpl2B2B(RecurrentConfig const * const config)
 
         activation.Kernel->InitializeActivationFunctions();
         activation.Kernel->ActivateAll(&activationCfg);
-        io->Update(BufferMap{io->Inputs + activation.ElementCount * 4,
-            io->Outputs + activation.ElementCount * config->bytesPerOutput});
+        io->Inputs = io->Inputs + activation.ElementCount * 4;
+        io->Outputs = io->Outputs + activation.ElementCount * config->bytesPerOutput;
+        // TODO:3:revert to use ~BufferMap.Update
     }
 }
 #endif

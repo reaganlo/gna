@@ -26,7 +26,6 @@
 #pragma once
 
 #include "common.h"
-#include <map>
 
 namespace GNA
 {
@@ -198,23 +197,6 @@ public:
 
 // Address Aliases
 using BaseAddress = Address<uint8_t * const>;
-
-class BufferMap : public std::map<GnaComponentType, BaseAddress>
-{
-public:
-    using map::map;
-
-    BufferMap() = default;
-
-    BufferMap(const BaseAddress& inputBuffer, const BaseAddress& outputBuffer) :
-        map()
-    {
-        if (inputBuffer)
-            emplace(InputComponent, inputBuffer);
-        if (outputBuffer)
-            emplace(OutputComponent, outputBuffer);
-    }
-};
 
 // Functor for getting buffer offset for HW
 using GetHwOffset = std::function<uint32_t(const BaseAddress&)>;

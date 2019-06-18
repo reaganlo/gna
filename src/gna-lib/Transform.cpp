@@ -39,7 +39,7 @@ bool TransformFactoryConfig::HasMandatoryActivation() const
 
 bool TransformFactoryConfig::IsActivationNotSupported() const
 {
-    const static std::set<nn_operation> forbiddenActivation{
+    static const std::set<nn_operation> forbiddenActivation{
         GNA_LAYER_CNN_2D_POOLING,
         INTEL_INTERLEAVE,
         INTEL_COPY,
@@ -105,4 +105,21 @@ inline Gna2Tensor TransformFactoryConfig::GetActivation(const Gna2Operation & op
     Gna2Tensor a{};
     a.Mode = Gna2TensorModeDisabled;
     return a;
+}
+
+Tensor const & BaseTransform::GetOperand(uint32_t operandIndex) const
+{
+    switch (operandIndex)
+    {
+    case 0:
+        if (Input)
+        {
+            return *Input;
+        }
+        throw GnaException(Gna2StatusXnnErrorLyrCfg);
+    case 1:
+        return GetOperandIfExistOrThrow(Output);
+    default:
+        throw GnaException(Gna2StatusXnnErrorLyrCfg);
+    }
 }

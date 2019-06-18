@@ -83,7 +83,7 @@ public:
 
     void ReleaseModel(gna_model_id const modelId);
 
-    void AttachBuffer(gna_request_cfg_id configId, GnaComponentType type, uint32_t layerIndex, void *address);
+    void AttachBuffer(gna_request_cfg_id configId, uint32_t operandIndex, uint32_t layerIndex, void *address);
 
     void CreateConfiguration(gna_model_id modelId, gna_request_cfg_id *configId);
 

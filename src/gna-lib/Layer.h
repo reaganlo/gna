@@ -55,20 +55,24 @@ class AbstractOperation
 public:
     //TODO:3:P3 remove or change name when API2 reliable enough
     const nn_operation Operation;
+    const Gna2OperationType OperationNew;
 protected:
     AbstractOperation(const Gna2Operation& operation, const BaseValidator& validator):
-        Operation{ toLegacy(operation, validator)}
+        Operation{ toLegacy(operation, validator)},
+        OperationNew{operation.Type}
     {
         //TODO:3:P1 Add operation validation
     }
 
     AbstractOperation(const nn_layer& layer, const BaseValidator& validator):
-        Operation{ layer.operation }
+        Operation{ layer.operation },
+        OperationNew{fromLegacy(layer.operation)}
     {
         UNREFERENCED_PARAMETER(validator);
     }
 private:
     static nn_operation toLegacy(const Gna2Operation& operation, const BaseValidator& validator);
+    static Gna2OperationType fromLegacy(const nn_operation& layerType);
 };
 
 class Layer : public AbstractOperation
@@ -102,14 +106,7 @@ public:
         return outputTransform;
     };
 
-    uint32_t GetOperandSize(GnaComponentType componentType) const;
-
-    static uint32_t GetShapeDimension(const Gna2Shape& shape, uint32_t dimensionIndex)
-    {
-        Expect::True(dimensionIndex < shape.NumberOfDimensions,
-            Gna2StatusModelConfigurationInvalid);
-        return shape.Dimensions[dimensionIndex];
-    }
+    virtual Tensor const & GetOperand(uint32_t operandIndex) const;
 
 protected:
     std::unique_ptr<const LayerValidator> validator;
@@ -153,6 +150,8 @@ protected:
                 transform->Compute(accel, layerConfiguration, execution);
         }
     }
+
+    Tensor const & getTransformOperand(TransformOperation operation, uint32_t operandIndex) const;
 
 private:
     BaseTransform const * inputTransform = nullptr;

@@ -86,11 +86,11 @@ void Device::SetNumberOfThreads(uint32_t threadCount)
 }
 
 void Device::AttachBuffer(gna_request_cfg_id configId,
-    GnaComponentType type, uint32_t layerIndex, void *address)
+    uint32_t operandIndex, uint32_t layerIndex, void *address)
 {
     Expect::NotNull(address);
 
-    requestBuilder.AttachBuffer(configId, type, layerIndex, address);
+    requestBuilder.AttachBuffer(configId, operandIndex, layerIndex, address);
 }
 
 void Device::CreateConfiguration(gna_model_id modelId, gna_request_cfg_id *configId)

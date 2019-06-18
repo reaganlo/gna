@@ -45,6 +45,8 @@ public:
 
     virtual ~ConvolutionalLayer2D() = default;
 
+    virtual Tensor const & GetOperand(uint32_t operandIndex) const override;
+
     static bool IsSupported(const Gna2Operation & operation);
 
 protected:

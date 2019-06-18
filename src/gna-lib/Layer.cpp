@@ -101,6 +101,8 @@ std::unique_ptr<GNA::Layer> Layer::Create(const Gna2Operation & operation, const
         {
             return std::make_unique<CnnLayer>(operation, validatorIn);
         }
+    /*case Gna2OperationTypeGmm:
+        return std::make_unique<GmmLayer>(operation, validatorIn);*/
     case Gna2OperationTypeTransposition:
         return std::make_unique<TransposeLayer>(operation, validatorIn);
     default:
@@ -117,7 +119,7 @@ void Layer::addBufferAs(const BufferMap& source, GnaComponentType sourceType,
         return;
     }
 
-    auto buffer = source.find(sourceType);
+    const auto buffer = source.find(ModelWrapper::GetOperandIndex(sourceType));
     if (buffer != source.end())
     {
         destination[destinationType] = buffer->second;
@@ -134,7 +136,7 @@ void Layer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const
         nonIoBuffers.erase(OutputComponent);
         nonIoBuffers.erase(IntermediateOutputComponent);
 
-        for (auto transform = Transforms.cbegin(); transform != Transforms.cend(); transform++)
+        for (auto transform = Transforms.cbegin(); transform != Transforms.cend(); ++transform)
         {
             BufferMap buffers = nonIoBuffers;
             if (transform == Transforms.cbegin())
@@ -169,22 +171,6 @@ DataConfig Layer::GetDataMode() const
     return DataConfig(Input.Mode, GNA_INT16, GNA_INT32, Output.Mode);
 }
 
-// TODO:3 support all component types
-uint32_t Layer::GetOperandSize(GnaComponentType componentType) const
-{
-    switch (componentType)
-    {
-    case InputComponent:
-        return Input.Size;
-    case OutputComponent:
-        return Output.Size;
-    case IntermediateOutputComponent:
-        return Output.ScratchPad.Size;
-    default:
-        return 0;
-    }
-}
-
 void Layer::InitTransforms(const std::vector<TransformOperation>& transforms,
     TransformFactoryConfig & commonConfig, const OperationConfig & operationConfig)
 {
@@ -198,6 +184,35 @@ void Layer::InitTransforms(const std::vector<TransformOperation>& transforms,
     if (Output.Buffer)
     {
         outputTransform->SetOutput(Output.Buffer);
+    }
+}
+
+Tensor const & Layer::GetOperand(uint32_t operandIndex) const
+{
+
+    switch (operandIndex)
+    {
+    case OperandIndexOutputIntermediate:
+        return Output.ScratchPad;
+    case 0:
+        return Input;
+    case 1:
+        return Output;
+    default:
+        throw GnaException(Gna2StatusXnnErrorLyrCfg);
+    }
+}
+
+Tensor const & Layer::getTransformOperand(TransformOperation operation, uint32_t operandIndex) const
+{
+    auto const transform = Transforms.Get(operation);
+    if (transform)
+    {
+        return transform->GetOperand(operandIndex);
+    }
+    else
+    {
+        throw GnaException(Gna2StatusXnnErrorLyrCfg);
     }
 }
 
@@ -238,7 +253,35 @@ nn_operation AbstractOperation::toLegacy(
                 return INTEL_CONVOLUTIONAL_2D;
             }
             return INTEL_CONVOLUTIONAL;
-        default:
-            throw GnaException(Gna2StatusNotImplemented);
+	case Gna2OperationTypeGmm:
+         return INTEL_GMM;
+    default:
+        throw GnaException(Gna2StatusNotImplemented);
+    }
+}
+
+Gna2OperationType AbstractOperation::fromLegacy(const nn_operation& layerType)
+{
+    static const std::map<nn_operation, Gna2OperationType> operationTypes =
+    {
+        {INTEL_AFFINE, Gna2OperationTypeFullyConnectedAffine},
+        {INTEL_AFFINE_DIAGONAL, Gna2OperationTypeElementWiseAffine},
+        {INTEL_AFFINE_MULTIBIAS, Gna2OperationTypeFullyConnectedAffine},
+        {INTEL_CONVOLUTIONAL, Gna2OperationTypeConvolution},
+        {INTEL_CONVOLUTIONAL_2D, Gna2OperationTypeConvolution},
+        {INTEL_COPY, Gna2OperationTypeCopy},
+        {INTEL_DEINTERLEAVE, Gna2OperationTypeTransposition},
+        {INTEL_GMM, Gna2OperationTypeGmm},
+        {INTEL_INTERLEAVE, Gna2OperationTypeTransposition},
+        {INTEL_RECURRENT, Gna2OperationTypeRecurrent},
+    };
+
+    try
+    {
+        return operationTypes.at(layerType);
+    }
+    catch (std::out_of_range&)
+    {
+        throw GnaException(Gna2StatusXnnErrorLyrOperation);
     }
 }

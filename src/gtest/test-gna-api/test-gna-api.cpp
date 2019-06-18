@@ -262,9 +262,10 @@ TEST_F(TestGnaShapeApi, Gna2ShapeInit4DSuccessfull)
 TEST_F(TestGnaTensorApi, Gna2TensorInitDisabledSuccessfull)
 {
     const auto tensor = Gna2TensorInitDisabled();
+    ASSERT_EQ(tensor.Data, nullptr);
+    ASSERT_STREQ(tensor.Layout, "");
     ASSERT_EQ(tensor.Mode, Gna2TensorModeDisabled);
     ASSERT_EQ(tensor.Type, Gna2DataTypeNone);
-    ASSERT_EQ(tensor.Data, nullptr);
 }
 
 TEST_F(TestGnaTensorApi, Gna2TensorInitScalarSuccessfull)
@@ -429,6 +430,62 @@ TEST_F(TestGnaModelApi, Gna2ItemTypeModelOperationsodelCreate2InvalidDeviceIndex
     Gna2Model model = {};
     const auto status = Gna2ModelCreate(100, &model, &modelId);
     ASSERT_FALSE(Gna2StatusIsSuccessful(status));
+}
+
+
+TEST_F(TestGnaModelApi, DISABLED_Gna2ModelCreateSingleGMMSuccesfull)
+{
+    uint32_t modelId = 0;
+    uint32_t const batchSize = 1;
+    uint32_t const featureVectorLength = 24;
+    uint32_t const gmmStates = 1;
+    uint32_t const mixtures = 1;
+    auto const dataShape = Gna2Shape{3, { gmmStates, mixtures, featureVectorLength }};  //WHD
+
+    Gna2Tensor input{
+        Gna2Shape{2, { batchSize, featureVectorLength } },  // HW
+        Gna2TensorModeDefault,
+        {'\0'},
+        Gna2DataTypeInt8,
+        nullptr };
+    Gna2Tensor output{
+        Gna2Shape{2, { batchSize, gmmStates } },  // HW
+        Gna2TensorModeDefault,
+        {'\0'},
+        Gna2DataTypeInt32,
+        nullptr };
+    Gna2Tensor means{
+        dataShape,
+        Gna2TensorModeDefault,
+        {'\0'},
+        Gna2DataTypeUint8,
+        nullptr };
+    Gna2Tensor inverseCovariances{
+        dataShape,
+        Gna2TensorModeDefault,
+        {'\0'},
+        Gna2DataTypeUint8,
+        nullptr };
+    Gna2Tensor constants{
+        Gna2Shape{2, { gmmStates, mixtures }},  //WH
+        Gna2TensorModeDefault,
+        {'\0'},
+        Gna2DataTypeUint32,
+        nullptr };
+
+    const Gna2Tensor * tensors[] = { &input, &output, &means, &inverseCovariances, &constants };
+
+    uint32_t maxScore = UINT32_MAX;
+    void * parameters[] = { &maxScore };
+
+    Gna2Operation operation{ Gna2OperationTypeGmm ,
+        tensors, 5,
+        parameters, 1 };
+
+    Gna2Model model = { 1, &operation };
+
+    const auto status = Gna2ModelCreate(0, &model, &modelId);
+    ASSERT_EQ(status, Gna2StatusSuccess);
 }
 
 TEST_F(TestGnaOperationInitApi, Gna2ModelOperationInitSuccessfull)

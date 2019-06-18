@@ -23,40 +23,36 @@
  in any way.
 */
 
-#pragma once
+#include "BufferMap.h"
+#include "ModelWrapper.h"
 
-#include "Layer.h"
-#include "XnnKernel.h"
+using namespace GNA;
 
-namespace GNA
+BufferMap::BufferMap(const BaseAddress& inputBuffer, const BaseAddress& outputBuffer) :
+    map()
 {
+    if (inputBuffer)
+        emplace(InputComponent, inputBuffer);
+    if (outputBuffer)
+        emplace(OutputComponent, outputBuffer);
+}
 
-// TODO:3: Refactor to use tensors and functions
-class CopyLayer : public Layer
+BaseAddress& BufferMap::operator[](GnaComponentType type)
 {
-public:
-    CopyLayer(const nn_layer& layer, const BaseValidator& validatorIn);
+    return BufferMapBase::operator[](ModelWrapper::GetOperandIndex(type));
+}
 
-    CopyLayer(const Gna2Operation& operation, const BaseValidator& validatorIn);
+BaseAddress BufferMap::at(GnaComponentType type) const
+{
+    return BufferMapBase::at(ModelWrapper::GetOperandIndex(type));
+}
 
-    virtual ~CopyLayer() = default;
-    void UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const override;
+BufferMap::size_type BufferMap::count(GnaComponentType type) const
+{
+    return BufferMapBase::count(ModelWrapper::GetOperandIndex(type));
+}
 
-    const uint32_t ColumnCount;
-    const uint32_t RowCount;
-
-protected:
-    virtual DataConfig GetDataMode() const override;
-
-    static Shape GetCopyShape(const Gna2Operation& operation);
-
-private:
-    void computeHidden(AccelerationMode accel, ExecutionConfig const & executionConfig) const;
-    void compute(const LayerConfiguration& layerConfiguration, AccelerationMode accel, ExecutionConfig const & executionConfig) const;
-
-    const KernelMap<CopyKernel>& copyKernels;
-    CopyConfig copyHiddenConfig;
-    static const FullCapabilitiesMap limits;
-};
-
+BufferMap::size_type BufferMap::erase(GnaComponentType type)
+{
+    return BufferMapBase::erase(ModelWrapper::GetOperandIndex(type));
 }

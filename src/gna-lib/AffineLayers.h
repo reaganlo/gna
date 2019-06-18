@@ -46,6 +46,8 @@ public:
     const std::unique_ptr<const AffineFunction> Affine;
     const std::unique_ptr<const ActivationFunction> Activation;
 
+    virtual Tensor const & GetOperand(uint32_t operandIndex) const override;
+
 protected:
     AffineBaseLayer(const nn_layer& layer, const BaseValidator& validatorIn);
     AffineBaseLayer(const Gna2Operation& operation, const BaseValidator& validatorIn);

@@ -91,9 +91,7 @@ Gna2Tensor OperationConfig::GetFilters(const nn_layer& layer)
 
 Gna2Tensor OperationConfig::GetFilters(const Gna2Operation & operation)
 {
-    const auto index = ModelWrapper::GetOperationInfo(operation.Type,
-        ModelWrapper::OperandIndexFilter);
-    return GetOperand(operation, index, {});
+    return GetOperand(operation, FilterComponent, {});
 }
 
 Gna2Tensor OperationConfig::GetBiases(const nn_layer& layer)
@@ -119,6 +117,12 @@ Gna2BiasMode OperationConfig::GetBiasMode(const nn_layer& layer)
     return biasModeMap.at(cnn2d->convolution.biases.mode);
 }
 
+Gna2Tensor OperationConfig::GetOperand(const Gna2Operation & operation, GnaComponentType operand, Gna2Tensor defaultValue)
+{
+    auto const index = ModelWrapper::GetOperandIndex(operand);
+    return  GetOperand(operation, index, defaultValue);
+}
+
 Gna2Tensor OperationConfig::GetOperand(const Gna2Operation & operation, uint32_t index, Gna2Tensor defaultValue)
 {
     if (IsOperandAvailable(operation, index))
@@ -130,25 +134,19 @@ Gna2Tensor OperationConfig::GetOperand(const Gna2Operation & operation, uint32_t
 
 Gna2BiasMode OperationConfig::GetBiasMode(const Gna2Operation & operation)
 {
-    const auto index = ModelWrapper::GetOperationInfo(operation.Type,
-        ModelWrapper::ParameterIndexBiasMode);
-    return GetParameterAs<Gna2BiasMode>(operation, index, Gna2BiasModeDefault);
+    return GetParameterAs<Gna2BiasMode>(operation, ParameterIndexBiasMode, Gna2BiasModeDefault);
 }
 
 Gna2Tensor OperationConfig::GetBiases(const Gna2Operation & operation)
 {
-    const auto biasIndex = ModelWrapper::GetOperationInfo(operation.Type,
-        ModelWrapper::OperandIndexBias);
     Gna2Tensor disabled{};
     disabled.Mode = Gna2TensorModeDisabled;
-    return GetOperand(operation, biasIndex, disabled);
+    return GetOperand(operation, BiasComponent, disabled);
 }
 
 Shape OperationConfig::GetStride(const Gna2Operation & operation)
 {
-    const auto index = ModelWrapper::GetOperationInfo(operation.Type,
-        ModelWrapper::ParameterIndexConvolutionStride);
-    const auto parameter = TryGetParamShape(operation, index);
+    const auto parameter = TryGetParamShape(operation, ParameterIndexConvolutionStride);
     return parameter;
 }
 
@@ -160,9 +158,7 @@ Shape OperationConfig::GetStride(const nn_layer& layer)
 
 Shape OperationConfig::GetZeroPadding(const Gna2Operation& operation)
 {
-    const auto index = ModelWrapper::GetOperationInfo(operation.Type,
-        ModelWrapper::ParameterIndexZeroPadding);
-    const auto parameter = TryGetParamShape(operation, index);
+    const auto parameter = TryGetParamShape(operation, ParameterIndexZeroPadding);
     return parameter;
 }
 
@@ -202,6 +198,13 @@ Shape OperationConfig::GetPoolingWindow(const nn_layer_pool2d & pooling)
 {
     return Shape{ pooling.pooling.window };
 }
+
+Shape OperationConfig::TryGetParamShape(const Gna2Operation & operation, OperationInfoKey parameter)
+{
+    auto const parameterIndex = ModelWrapper::GetOperationInfo(operation.Type, parameter);
+    return TryGetParamShape(operation, parameterIndex);
+}
+
 Shape OperationConfig::TryGetParamShape(const Gna2Operation & operation, uint32_t parameterIndex)
 {
     //TODO:3:P2: Add if(IsRequired(operation, parameterIndex))
@@ -211,15 +214,13 @@ Shape OperationConfig::TryGetParamShape(const Gna2Operation & operation, uint32_
 
 Shape OperationConfig::GetPoolingWindow(const Gna2Operation & operation)
 {
-    const auto index = ModelWrapper::GetOperationInfo(operation.Type, ModelWrapper::ParameterIndexPoolingWindow);
-    const auto parameter = TryGetParamShape(operation, index);
+    const auto parameter = TryGetParamShape(operation, ParameterIndexPoolingWindow);
     return parameter;
 }
 
 Shape OperationConfig::GetPoolingStride(const Gna2Operation & operation)
 {
-    const auto index = ModelWrapper::GetOperationInfo(operation.Type, ModelWrapper::ParameterIndexPoolingStride);
-    const auto parameter = TryGetParamShape(operation, index);
+    const auto parameter = TryGetParamShape(operation, ParameterIndexPoolingStride);
     return parameter;
 }
 
@@ -235,8 +236,7 @@ Gna2PoolingMode OperationConfig::GetPoolingMode(const nn_layer_pool2d & pooling)
 
 Gna2PoolingMode OperationConfig::GetPoolingMode(const Gna2Operation & operation)
 {
-    const auto index = ModelWrapper::GetOperationInfo(operation.Type, ModelWrapper::ParameterIndexPoolingMode);
-    return GetParameterAs<Gna2PoolingMode>(operation, index, Gna2PoolingModeDisabled);
+    return GetParameterAs<Gna2PoolingMode>(operation, ParameterIndexPoolingMode, Gna2PoolingModeDisabled);
 }
 
 void OperationConfig::InitPooling(const Gna2Operation & operation)
@@ -257,11 +257,11 @@ void OperationConfig::InitPooling(const nn_layer& layer)
 bool OperationConfig::hasPooling(const Gna2Operation & operation)
 {
     const auto indexPoolingMode = ModelWrapper::GetOperationInfo(operation.Type,
-        ModelWrapper::ParameterIndexPoolingMode);
+        ParameterIndexPoolingMode);
     const auto indexPoolingStride = ModelWrapper::GetOperationInfo(operation.Type,
-        ModelWrapper::ParameterIndexPoolingStride);
+        ParameterIndexPoolingStride);
     const auto indexPoolingWindow = ModelWrapper::GetOperationInfo(operation.Type,
-        ModelWrapper::ParameterIndexPoolingWindow);
+        ParameterIndexPoolingWindow);
     return IsParameterAvailable(operation, indexPoolingMode) &&
         IsParameterAvailable(operation, indexPoolingStride) &&
         IsParameterAvailable(operation, indexPoolingWindow);

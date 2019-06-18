@@ -49,14 +49,14 @@ public:
     BaseTransform * Emplace(TransformOperation operation, const TransformFactoryConfig& config,
         const OperationConfig& operationConfig);
 
-    template<typename TransformFunction>
+    template<typename TransformFunction = BaseTransform>
     TransformFunction * Get(TransformOperation operation) const
     {
         try
         {
-            auto transform = findTransform(operation);
+            const auto transform = findTransform(operation);
             if (transform != __TransformList::cend())
-                return static_cast<TransformFunction *>((*transform).get());
+                return static_cast<TransformFunction *>(transform->get());
         }
         catch (const std::out_of_range&)
         {

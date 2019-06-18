@@ -61,7 +61,7 @@ GNA2_API enum Gna2Status Gna2RequestConfigSetOperandBuffer(
     const std::function<ApiStatus()> command = [&]()
     {
         auto& device = DeviceManager::Get().GetDevice(0);
-        device.AttachBuffer(requestConfigId, ModelWrapper::OperandIndexToType(operandIndex), operationIndex, address);
+        device.AttachBuffer(requestConfigId, operandIndex, operationIndex, address);
         return Gna2StatusSuccess;
     };
     return ApiWrapper::ExecuteSafely(command);

@@ -88,8 +88,8 @@ CopyLayer::CopyLayer(const nn_layer& layer, const BaseValidator& validatorIn) :
 
 CopyLayer::CopyLayer(const Gna2Operation& operation, const BaseValidator& validatorIn) :
     Layer(operation, validatorIn, {}, BaseAddress()),
-    ColumnCount{ GetShapeDimension(GetCopyShape(operation), 1) },
-    RowCount{ GetShapeDimension(GetCopyShape(operation), 0) },
+    ColumnCount{ GetCopyShape(operation).at('W') },
+    RowCount{ GetCopyShape(operation).at('H') },
     copyKernels{ AccelerationDetector::GetKernelMap<CopyKernel>(KERNEL_COPY, KernelMode {Input.Mode}) },
     copyHiddenConfig{ RowCount, ColumnCount, Input.Dimensions.at('W'), Output.Dimensions.at('W'), Input.Buffer, Output.Buffer }
 {
@@ -148,7 +148,7 @@ void CopyLayer::compute(const LayerConfiguration& layerConfiguration, Accelerati
     copyKernels.at(accel)(copyConfig);
 }
 
-const Gna2Shape& CopyLayer::GetCopyShape(const Gna2Operation& operation)
+Shape CopyLayer::GetCopyShape(const Gna2Operation& operation)
 {
-    return *reinterpret_cast<const Gna2Shape *>(operation.Parameters[0]);
+    return Shape::Create(*reinterpret_cast<const Gna2Shape *>(operation.Parameters[0]), GNA_TENSOR_HW);
 }

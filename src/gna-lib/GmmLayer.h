@@ -59,6 +59,8 @@ public:
     GmmLayer(const nn_layer& layer, const BaseValidator& validatorIn);
     virtual ~GmmLayer() = default;
 
+    virtual Tensor const & GetOperand(uint32_t operandIndex) const override;
+
     // TODO:3: Low priority: refactor components to Tensors
     const gna_gmm_config Config;
     const gna_gmm_data Data;
@@ -70,11 +72,11 @@ public:
     virtual DataConfig GetDataMode() const override;
 
 private:
-    virtual void computeHidden(AccelerationMode accel, ExecutionConfig const & executionConfig) const;
+    virtual void computeHidden(AccelerationMode accel, ExecutionConfig const& executionConfig) const;
     virtual void compute(const LayerConfiguration& layerConfiguration, AccelerationMode accel, ExecutionConfig const & executionConfig) const;
 
-    void checkScoresSaturation(const uint32_t& nGMMs, const uint32_t& nVectors, const uint32_t * pS,
-        const uint32_t& maximumScore, uint32_t& nSaturated) const;
+    void checkScoresSaturation(const uint32_t& nGMMs, const uint32_t& nVectors, const uint32_t* pS,
+                               const uint32_t& maximumScore, uint32_t& nSaturated) const;
     inline void validate();
 
     const KernelMap<GmmMaxMix> gmmKernels;
@@ -82,5 +84,4 @@ private:
 
     GmmConfig gmmHiddenConfig;
 };
-
 }

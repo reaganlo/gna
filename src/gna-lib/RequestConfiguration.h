@@ -56,7 +56,7 @@ class RequestConfiguration
 public:
     RequestConfiguration(CompiledModel& model, gna_request_cfg_id configId, DeviceVersion consistentDeviceIn);
 
-    void AddBuffer(GnaComponentType type, uint32_t layerIndex, void *address);
+    void AddBuffer(uint32_t operandIndex, uint32_t layerIndex, void *address);
     void AddActiveList(uint32_t layerIndex, const ActiveList& activeList);
     void SetHardwareConsistency(DeviceVersion consistentDeviceIn);
     void EnforceAcceleration(Gna2AccelerationMode accelMode)

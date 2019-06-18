@@ -94,6 +94,36 @@ void AffineBaseLayer::initComputeFunctions()
     }
 }
 
+Tensor const & AffineBaseLayer::GetOperand(uint32_t operandIndex) const
+{
+    // TODO:3:replace with generic solution when all layers are transforms
+    switch (operandIndex)
+    {
+    case 2:
+        if (Affine)
+        {
+            return BaseTransform::GetOperandIfExistOrThrow(Affine->Weights);
+        }
+    case 3:
+    if (Affine)
+        {
+            return BaseTransform::GetOperandIfExistOrThrow(Affine->Biases);
+        }
+    case 4:
+        if (Activation)
+        {
+            return Activation->GetOperand(2);// TODO:3:Intentional literal, replace with generic solution when all layers are transforms
+        }
+    /*case 5:
+        if (Affine && Affine->WeightScaleFactors)
+        {
+            return *Affine->WeightScaleFactors;
+        }*/
+    default:
+        return Layer::GetOperand(operandIndex);
+    }
+}
+
 void AffineBaseLayer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const
 {
     Layer::UpdateKernelConfigs(layerConfiguration);

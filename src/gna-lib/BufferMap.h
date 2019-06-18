@@ -25,52 +25,31 @@
 
 #pragma once
 
-#include "Expect.h"
-#include "DataMode.h"
-#include "KernelArguments.h"
-#include "Tensor.h"
-#include "Transform.h"
-#include "XnnKernel.h"
+#include "Address.h"
 
-#include "common.h"
-#include "gna-api-types-xnn.h"
-#include "pwl.h"
-
-#include <cstdint>
-#include <memory>
+#include <map>
 
 namespace GNA
 {
 
-class FullCapabilitiesMap;
+using BufferMapBase = std::map<uint32_t, BaseAddress>;
 
-class ActivationFunction : public Transform<ActivationConfig, ActivationKernel>
+class BufferMap : public BufferMapBase
 {
 public:
-    static std::unique_ptr<ActivationFunction> Create(const TransformFactoryConfig& config);
+    using map::map;
 
-    void UpdateActiveOutputCount(std::unique_ptr<BaseConfig> configs[], uint32_t outputCount) const
-    {
-        auto config = GetConfig(configs);
-        config->Transform.ElementCount = outputCount;
-    }
+    BufferMap() = default;
+    BufferMap(const BaseAddress& inputBuffer, const BaseAddress& outputBuffer);
 
-    ActivationFunction(const BaseTransformConfig<ActivationKernel>& config,
-                        DataMode mode, std::unique_ptr<Tensor> pwl);
-    ActivationFunction() = delete;
-    virtual ~ActivationFunction() = default;
+    BaseAddress& operator[](GnaComponentType type);
 
-    virtual Tensor const & GetOperand(uint32_t operandIndex) const override;
+    BaseAddress at(GnaComponentType type) const;
 
-    std::unique_ptr<Tensor> Segments;
-    PwlCached const Pwl;
+    size_type count(GnaComponentType type) const;
 
-protected:
-    static PwlCached createPwlCached(const gna_data_mode mode,
-        nn_pwl_seg const * const segmentsIn, uint32_t segmentCountIn);
-
-    static const FullCapabilitiesMap capabilities;
-    static const FullCapabilitiesMap outputCapabilities;
+    size_type erase(GnaComponentType type);
 };
 
 }
+

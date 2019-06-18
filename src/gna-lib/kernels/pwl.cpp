@@ -29,20 +29,18 @@
 
 #include "pwl.h"
 
-#include "pwl.h"
-
+#include "common.h"
 #include "KernelArguments.h"
 #include "KernelMacros.h"
 #include "Macros.h"
 
-#include "common.h"
 
 #if defined(__GNUC__)
 #include <limits.h>
 #endif
 
 #include <cstdint>
-#include <cstring>
+#include <stdexcept>
 
 using namespace GNA;
 

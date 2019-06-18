@@ -122,6 +122,7 @@ typedef void(*PwlApplySingle)(PwlCachedConfig const * const pwl, int32_t I, int1
 // Function pointer for apply PWL for all inputs-outputs
 typedef void(*PwlApplyAll)(ExecutionKernelConfig<ActivationConfig> const * const config);
 
+// TODO:3:Move to core library
 // PWL cache and config (constant for given layer)
 struct PwlCached
 {

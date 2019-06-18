@@ -82,6 +82,7 @@ GmmLayer::GmmLayer(const nn_layer& layer, const BaseValidator& validatorIn) :
     gmmHiddenConfig{ Input.at(GNA_DIM_N), Input.at(GNA_DIM_W), Config.mixtureComponentCount, Params.MeanSetOffsetSize, Params.VarSetOffsetSize,
                     Params.GaussConstSetOffsetSize, Config.maximumScore, Config.stateCount, &Data, Input.Buffer, Output.Buffer }
 {
+
     validate();
 
     Layer::ComputeHidden = [this](AccelerationMode accel, ExecutionConfig const & executionConfig)
@@ -89,6 +90,22 @@ GmmLayer::GmmLayer(const nn_layer& layer, const BaseValidator& validatorIn) :
 
     Layer::Compute = [this](LayerConfiguration &layerConfiguration, AccelerationMode accel, ExecutionConfig const & executionConfig)
                     {this->compute(layerConfiguration, accel, executionConfig); };
+}
+
+Tensor const & GmmLayer::GetOperand(uint32_t operandIndex) const
+{
+    // TODO:3:replace with generic solution when all layers are transforms
+    switch (operandIndex)
+    {
+    case 2:
+        throw GnaException(Gna2StatusNotImplemented);
+    case 3:
+        throw GnaException(Gna2StatusNotImplemented);
+    case 4:
+        throw GnaException(Gna2StatusNotImplemented);
+    default:
+        return Layer::GetOperand(operandIndex);
+    }
 }
 
 void GmmLayer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const

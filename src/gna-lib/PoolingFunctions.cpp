@@ -96,22 +96,16 @@ std::unique_ptr<const PoolingFunction> PoolingFunction::Create(Gna2Operation con
     const Shape & inputDimensions, const LayerValidator& validatorIn, gna_data_mode inputMode)
 {
     Expect::Equal(INTEL_CONVOLUTIONAL, validatorIn.Operation, Gna2StatusXnnErrorLyrOperation);
-    const auto poolingModeIndex = ModelWrapper::GetOperationInfo(apiOperation.Type,
-        ModelWrapper::ParameterIndexPoolingMode);
-    const auto apiMode = ModelWrapper::GetOptionalParameter<Gna2PoolingMode>(apiOperation, poolingModeIndex,
+    const auto apiMode = ModelWrapper::GetOptionalParameter<Gna2PoolingMode>(apiOperation, ParameterIndexPoolingMode,
         Gna2PoolingModeDisabled);
     if (Gna2PoolingModeDisabled != apiMode)
     {
-        const auto poolingStrideIndex = ModelWrapper::GetOperationInfo(apiOperation.Type,
-            ModelWrapper::ParameterIndexPoolingStride);
         const auto apiStride = ModelWrapper::GetOptionalParameter<Gna2Shape>(
-            apiOperation, poolingStrideIndex, {});
+            apiOperation, ParameterIndexPoolingStride, {});
         const auto strideShape = Shape::Create(apiStride, GNA_TENSOR_W);
 
-        const auto poolingWindowIndex = ModelWrapper::GetOperationInfo(apiOperation.Type,
-            ModelWrapper::ParameterIndexPoolingWindow);
         const auto apiWindow = ModelWrapper::GetOptionalParameter<Gna2Shape>(
-            apiOperation, poolingWindowIndex, {});
+            apiOperation, ParameterIndexPoolingWindow, {});
         const auto windowShape = Shape::Create(apiWindow, GNA_TENSOR_W);
 
         return std::make_unique<const PoolingFunction>(validatorIn.Operation, inputDimensions, windowShape,

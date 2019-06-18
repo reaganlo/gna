@@ -26,17 +26,16 @@
 #pragma once
 
 #include "Address.h"
+#include "BufferMap.h"
 #include "DataMode.h"
 #include "GnaException.h"
+#include "KernelArguments.h"
 #include "LayerConfiguration.h"
 #include "ModelWrapper.h"
 #include "Tensor.h"
-
-#include "KernelArguments.h"
 #include "XnnKernel.h"
-
 #include "common.h"
-#include "gna-api-status.h"
+
 #include "gna-api.h"
 
 #include <memory>
@@ -120,6 +119,16 @@ public:
 
     virtual void UpdateConfigBuffers(std::unique_ptr<BaseConfig> configs[], const BufferMap& buffers) const = 0;
     virtual void SetOutput(const BaseAddress& outputBuffer) = 0;
+    virtual Tensor const & GetOperand(uint32_t operandIndex) const;
+    template<class T>
+    static T const & GetOperandIfExistOrThrow(std::unique_ptr<T> const & operand)
+    {
+        if (operand)
+        {
+            return *operand;
+        }
+        throw GnaException(Gna2StatusXnnErrorLyrCfg);
+    }
 
     const Tensor * const Input;
     std::unique_ptr<Tensor> Output;
@@ -154,14 +163,22 @@ public:
     virtual void UpdateConfigBuffers(std::unique_ptr<BaseConfig> configs[], const BufferMap& buffers) const
     {
         auto* config = GetConfig(configs);
-        config->Update(buffers);
+        //config->Update(buffers); TODO:3: provide generic buffer update mechanism that does not rely on api library
+        if (buffers.count(InputComponent) > 0)
+        {
+            config->Inputs = buffers.at(InputComponent);
+        }
+        if (buffers.count(OutputComponent) > 0)
+        {
+            config->Outputs = buffers.at(OutputComponent);
+        }
     }
 
     // set output when transform is final layer transform and uses user provided layer output buffer
     virtual void SetOutput(const BaseAddress& outputBuffer)
     {
         Output->UpdateBuffer(outputBuffer);
-        hiddenConfig->Update({{OutputComponent, outputBuffer}});
+        hiddenConfig->Outputs = outputBuffer; // TODO:3:revert to use ~BufferMap.Update
     }
 
 protected:
@@ -172,12 +189,6 @@ protected:
     Transform(const Transform&) = delete;
     Transform(const Transform&&) = delete;
     virtual ~Transform() = default;
-
-    std::unique_ptr<BaseConfig> GetRequestConfig(
-        const BufferMap& buffers) const
-    {
-        return std::make_unique<KernelConfig<TransformType>>(*hiddenConfig, buffers);
-    }
 
     inline KernelConfig<TransformType>* GetConfig(std::unique_ptr<BaseConfig> configs[]) const
     {

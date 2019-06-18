@@ -1,7 +1,7 @@
 #pragma once
 
 #include "ActiveList.h"
-#include "Address.h"
+#include "BufferMap.h"
 #include "KernelArguments.h"
 
 #include "common.h"

@@ -238,5 +238,18 @@ ActivationFunction::ActivationFunction(const BaseTransformConfig<ActivationKerne
         validator);
 
     hiddenConfig = std::make_unique<KernelConfig<ActivationConfig>>(
-        ActivationConfig{Output->Count, &Pwl}, BufferMap{Input->Buffer, config.outputBuffer});
+        ActivationConfig{Output->Count, &Pwl}, BaseConfig{Input->Buffer, config.outputBuffer});
+}
+
+Tensor const & ActivationFunction::GetOperand(uint32_t operandIndex) const
+{
+    switch (operandIndex)
+    {
+    case 2:
+    {
+        return GetOperandIfExistOrThrow(Segments);
+    }
+    default:
+        return Transform::GetOperand(operandIndex);
+    }
 }
