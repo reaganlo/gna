@@ -49,18 +49,13 @@ struct LayerInput : public Tensor
     const uint32_t ElementCount;
 
 protected:
+    static const FullCapabilitiesMap capabilities;
+    
     static Shape GetDimensions(const nn_layer& layer, gna_tensor_order order);
 
-    static const FullCapabilitiesMap capabilities;
-
-private:
-    uint32_t getElementCount(
-        const Gna2Operation& operation, const LayerValidator& validatorIn) const;
-    uint32_t getGrouping(
-        const Gna2Operation& operation, const LayerValidator& validatorIn) const;
-
-    uint32_t getElementCount(const nn_layer& layer) const;
-    uint32_t getGrouping(const nn_layer& layer) const;
+    virtual std::pair<uint32_t, uint32_t> getGroupingAndElements(
+        const Gna2Operation& operation, const LayerValidator& validatorIn) const override;
+    virtual std::pair<uint32_t, uint32_t> getGroupingAndElements(const nn_layer& layer) const override;
 };
 
 }

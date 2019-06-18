@@ -101,6 +101,33 @@ protected:
     Tensor(const Tensor& tensor, const Validator& validatorIn);
 
     void validate() const;
+
+    uint32_t getGrouping(const Gna2Operation& operation, const LayerValidator& validatorIn) const
+    {
+        return getGroupingAndElements(operation, validatorIn).first;
+    }
+
+    uint32_t getGrouping(const nn_layer& layer) const
+    {
+        return getGroupingAndElements(layer).first;
+    }
+
+    uint32_t getElementCount(const Gna2Operation& operation, const LayerValidator& validatorIn) const
+    {
+        return getGroupingAndElements(operation, validatorIn).second;
+    }
+
+    uint32_t getElementCount(const nn_layer& layer) const
+    {
+        return getGroupingAndElements(layer).second;
+    }
+    
+    // Returns pair<grouping, elementCount>
+    virtual std::pair<uint32_t, uint32_t> getGroupingAndElements(
+        const Gna2Operation& operation, const LayerValidator& validatorIn) const;
+    // Returns pair<grouping, elementCount>
+    virtual std::pair<uint32_t, uint32_t> getGroupingAndElements(const nn_layer& layer) const;
+
 private:
     void validateDimensions() const;
 };

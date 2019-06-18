@@ -27,12 +27,13 @@
 
 #include "AccelerationDetector.h"
 #include "Address.h"
-#include "DataMode.h"
+#include "Capabilities.h"
 #include "Expect.h"
 #include "LayerConfiguration.h"
 #include "LayerInput.h"
 #include "LayerOutput.h"
 #include "Macros.h"
+#include "ParameterLimits.h"
 
 #include "gna2-common-api.h"
 #include "gna2-model-api.h"
@@ -50,6 +51,23 @@ class BaseValidator;
 
 using namespace GNA;
 
+static const std::pair<gna_tensor_dim, RangeLimits<uint32_t>> copyShapeWlimit =
+{GNA_DIM_W, {XNN_N_IN_ELEMS_MPLY, XNN_N_IN_ELEMS_MAX, XNN_N_IN_ELEMS_MPLY, Gna2StatusXnnErrorLyrCfg}};
+
+const FullCapabilitiesMap CopyLayer::limits
+{
+    { INTEL_COPY, {
+        { GNA_0_9, std::make_shared<ComponentLimits>(ComponentLimits(
+            {GNA_TENSOR_HW},
+            {{GNA_DIM_H, {1, XNN_N_GROUP_MAX, 1, Gna2StatusXnnErrorLyrCfg}},
+            copyShapeWlimit}))},
+        { GNA_3_0, std::make_shared<ComponentLimits>(ComponentLimits(
+            {GNA_TENSOR_HW},
+            {{GNA_DIM_H, {1, COPY_N_GROUP_MAX, 1, Gna2StatusXnnErrorLyrCfg}},
+            copyShapeWlimit}))},
+    }},
+};
+
 CopyLayer::CopyLayer(const nn_layer& layer, const BaseValidator& validatorIn) :
     Layer(layer, validatorIn, {}, BaseAddress()),
     ColumnCount{ static_cast<const nn_layer_copy*>(layer.pLayerStruct)->nCopyCols },
@@ -57,9 +75,8 @@ CopyLayer::CopyLayer(const nn_layer& layer, const BaseValidator& validatorIn) :
     copyKernels{ AccelerationDetector::GetKernelMap<CopyKernel>(KERNEL_COPY, KernelMode {Input.Mode}) },
     copyHiddenConfig{ RowCount, ColumnCount, Input.Dimensions.at('W'), Output.Dimensions.at('W'), Input.Buffer, Output.Buffer }
 {
-    // TODO:3: refactor to use scalars/component and validator
-    Expect::MultiplicityOf(ColumnCount, XNN_N_IN_ELEMS_MPLY);
-    Expect::InRange(ColumnCount, XNN_N_IN_ELEMS_MPLY, XNN_N_IN_ELEMS_MAX, Gna2StatusXnnErrorLyrCfg);
+    auto copyParams = std::make_unique<const Component>(Shape{GNA_TENSOR_HW, RowCount, ColumnCount},
+        Validator{ *validator, limits });
     Expect::True(RowCount <= Input.Dimensions.at('H'), Gna2StatusXnnErrorLyrCfg);
 
     ComputeHidden = [this](AccelerationMode accel, ExecutionConfig const & executionConfig)
@@ -76,9 +93,8 @@ CopyLayer::CopyLayer(const Gna2Operation& operation, const BaseValidator& valida
     copyKernels{ AccelerationDetector::GetKernelMap<CopyKernel>(KERNEL_COPY, KernelMode {Input.Mode}) },
     copyHiddenConfig{ RowCount, ColumnCount, Input.Dimensions.at('W'), Output.Dimensions.at('W'), Input.Buffer, Output.Buffer }
 {
-    // TODO:3: refactor to use scalars/component and validator
-    Expect::MultiplicityOf(ColumnCount, XNN_N_IN_ELEMS_MPLY);
-    Expect::InRange(ColumnCount, XNN_N_IN_ELEMS_MPLY, XNN_N_IN_ELEMS_MAX, Gna2StatusXnnErrorLyrCfg);
+    auto copyParams = std::make_unique<const Component>(Shape{GNA_TENSOR_HW, ColumnCount, RowCount},
+        Validator{ *validator, limits });
     Expect::True(RowCount <= Input.Dimensions.at('H'), Gna2StatusXnnErrorLyrCfg);
 
     ComputeHidden = [this](AccelerationMode accel, ExecutionConfig const & executionConfig)

@@ -26,6 +26,7 @@
 #include "Tensor.h"
 
 #include "Expect.h"
+#include "Macros.h"
 #include "Validator.h"
 
 #include <memory>
@@ -123,4 +124,30 @@ void Tensor::validateDimensions() const
         }
     }
     Component::Validate(caps, true);
+}
+
+std::pair<uint32_t, uint32_t> Tensor::getGroupingAndElements(
+      const Gna2Operation& operation, const LayerValidator& validatorIn) const
+{
+    UNREFERENCED_PARAMETER(validatorIn);
+    switch (operation.Type)
+    {
+    case Gna2OperationTypeFullyConnectedAffine:
+    case Gna2OperationTypeElementWiseAffine:
+        return {Dimensions.at('W'), Dimensions.at('H')};
+    case Gna2OperationTypeRecurrent:
+    case Gna2OperationTypeCopy:
+    case Gna2OperationTypeGmm:
+        return {Dimensions.at('H'), Dimensions.at('W')};
+    case Gna2OperationTypeConvolution:
+        return {Dimensions.at('N'), Dimensions.at('H')}; // not applicable for 2D CNN
+    default:
+        throw GnaException(Gna2StatusNotImplemented);
+    }
+}
+
+std::pair<uint32_t, uint32_t> Tensor::getGroupingAndElements(const nn_layer& layer) const
+{
+    UNREFERENCED_PARAMETER(layer);
+    throw GnaException(Gna2StatusNotImplemented);
 }

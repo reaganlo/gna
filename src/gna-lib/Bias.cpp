@@ -104,12 +104,13 @@ const FullCapabilitiesMap BiasTensor::capabilities =
             {GNA_TENSOR_N},          // H - #kernel (GNA_BIAS_PER_KERNEL)
             {{GNA_DIM_N, {CNN_N_FLT_COEFF_MPLY, CNN_N_FLT_MAX, CNN_N_FLT_COEFF_MPLY, Gna2StatusXnnErrorBiasVolume}}},
             _ModesGen0_9})},
-
     }},
     {INTEL_CONVOLUTIONAL_2D, {
         {GNA_1_0, std::make_shared<TensorLimits>(TensorLimits{
-            {GNA_TENSOR_N},          // H - #kernel (GNA_BIAS_PER_KERNEL)
-            {{GNA_DIM_N, {CNN_N_FLT_COEFF_MPLY, CNN_N_FLT_MAX, CNN_N_FLT_COEFF_MPLY, Gna2StatusXnnErrorBiasVolume}}},
+            {GNA_TENSOR_NHW},          // N - #kernel (GNA_BIAS_PER_KERNEL)
+            {{GNA_DIM_N, {CNN_N_FLT_COEFF_MPLY, CNN_N_FLT_MAX, CNN_N_FLT_COEFF_MPLY, Gna2StatusXnnErrorBiasVolume}},
+                {GNA_DIM_H, {1, 1, 1, Gna2StatusXnnErrorBiasVolume}},
+                {GNA_DIM_W, {1, 1, 1, Gna2StatusXnnErrorBiasVolume}}},
             _ModesGen0_9})},
         {GNA_3_0, std::make_shared<TensorLimits>(TensorLimits{
             {GNA_TENSOR_NHW},    // N = #kernels + GNA_BIAS_PER_KERNEL (HW=1) or GNA_BIAS_PER_STRIDE (HW conv. out dimensions),

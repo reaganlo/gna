@@ -41,6 +41,9 @@
 
 using namespace GNA;
 
+static const std::vector<uint32_t> _Multipliers =
+{ 2 * XNN_N_IN_ELEMS_MPLY, 1 * XNN_N_IN_ELEMS_MPLY, XNN_N_IN_ELEMS_MPLY / 2};
+
 static const ShapeLimits _FlatLimits =
 {
     {GNA_DIM_H, {1, XNN_N_GROUP_MAX, 1, Gna2StatusXnnErrorOutputVolume}},
@@ -49,14 +52,26 @@ static const ShapeLimits _FlatLimits =
 
 static const ShapeLimits _InterleaveLimits =
 {
-    {GNA_DIM_H, {1, XNN_N_IN_ELEMS_MAX, 1, Gna2StatusXnnErrorOutputVolume}},
-    {GNA_DIM_W, {1, XNN_N_GROUP_MAX, 1, Gna2StatusXnnErrorOutputVolume}}
+    {GNA_DIM_H, _FlatLimits.at(GNA_DIM_W)},
+    {GNA_DIM_W, _FlatLimits.at(GNA_DIM_H)}
 };
 
 static const DataModeLimits _ModesGen0_9 =
 {
     {GNA_INT16, GNA_INT32, GNA_DATA_ACTIVATION_DISABLED},
     Gna2StatusXnnErrorOutputBytes
+};
+
+static const DataModeLimits _ModesGen3 =
+{
+    {GNA_INT8, GNA_INT16, GNA_INT32, GNA_DATA_ACTIVATION_DISABLED},
+    _ModesGen0_9.Error
+};
+
+static const DataModeLimits _ModesCopy =
+{
+    {GNA_INT16},
+    _ModesGen0_9.Error
 };
 
 static const TensorLimits _InterleaveTensorLimitsGen0_9 =
@@ -68,34 +83,27 @@ static const TensorLimits _InterleaveTensorLimitsGen0_9 =
 
 static const TensorLimits _FlatTensorLimitsGen0_9 =
 {
-    {GNA_TENSOR_HW},
+    _InterleaveTensorLimitsGen0_9.Order,
     _FlatLimits,
     _ModesGen0_9
 };
 
-static const DataModeLimits _ModesGen3 =
-{
-    {GNA_INT8, GNA_INT16, GNA_INT32, GNA_DATA_ACTIVATION_DISABLED},
-    Gna2StatusXnnErrorOutputBytes
-};
-
 static const TensorLimits _InterleaveTensorLimitsGen3 =
 {
-    {GNA_TENSOR_HW},
-    _InterleaveLimits,
+    _InterleaveTensorLimitsGen0_9.Order,
+    _InterleaveTensorLimitsGen0_9.Dimensions,
     _ModesGen3
 };
 
 static const TensorLimits _FlatTensorLimitsGen3 =
 {
-    {GNA_TENSOR_HW},
-    _FlatLimits,
+     _FlatTensorLimitsGen0_9.Order,
+    _FlatTensorLimitsGen0_9.Dimensions,
     _ModesGen3
 };
 
 const FullCapabilitiesMap LayerOutput::capabilities =
 {
-    // TODO:3: add caps for previous device versions
     {INTEL_AFFINE, {
         {GNA_0_9, std::make_shared<TensorLimits>(_InterleaveTensorLimitsGen0_9)},
         {GNA_3_0, std::make_shared<TensorLimits>(_InterleaveTensorLimitsGen3)}
@@ -116,17 +124,31 @@ const FullCapabilitiesMap LayerOutput::capabilities =
             _ModesGen0_9})},
     }},
     {INTEL_CONVOLUTIONAL_2D, {
+        {GNA_1_0, std::make_shared<TensorLimits>(TensorLimits{
+            { GNA_TENSOR_NHWD },
+            {{GNA_DIM_N, {1, 1, 1, Gna2StatusXnnErrorOutputVolume}},
+            {GNA_DIM_H, {CNN_N_FLT_COEFF_MPLY, CNN_N_FLT_MAX, CNN_N_FLT_COEFF_MPLY, Gna2StatusXnnErrorOutputVolume}},
+            {GNA_DIM_W, {1, XNN_N_IN_ELEMS_MAX, 1, Gna2StatusXnnErrorOutputVolume}},
+            {GNA_DIM_D, {1, 1, 1, Gna2StatusXnnErrorOutputVolume}}},
+            _ModesGen0_9})},
         {GNA_3_0, std::make_shared<TensorLimits>(TensorLimits{
             {GNA_TENSOR_NHWD},
             {{GNA_DIM_N, {1, 1, 1, Gna2StatusXnnErrorOutputVolume}},
              {GNA_DIM_H, {1, XNN_N_IN_ELEMS_MAX, 1, Gna2StatusXnnErrorOutputVolume}},
              {GNA_DIM_W, {1, XNN_N_IN_ELEMS_MAX, 1, Gna2StatusXnnErrorOutputVolume}},
              {GNA_DIM_D, {1, XNN_N_IN_ELEMS_MAX, 1, Gna2StatusXnnErrorOutputVolume}}},
-            {{GNA_INT8, GNA_INT16, GNA_INT32, GNA_DATA_ACTIVATION_DISABLED}, Gna2StatusXnnErrorOutputBytes }})}
+            _ModesGen3})}
     }},
     {INTEL_COPY, {
-        {GNA_0_9, std::make_shared<TensorLimits>(_FlatTensorLimitsGen0_9)},
-        {GNA_3_0, std::make_shared<TensorLimits>(_FlatTensorLimitsGen3)}
+        {GNA_0_9, std::make_shared<TensorLimits>(TensorLimits{
+            {GNA_TENSOR_HW},
+            _FlatLimits,
+            _ModesCopy})},
+        {GNA_3_0, std::make_shared<TensorLimits>(TensorLimits{
+            {GNA_TENSOR_HW},
+            {{GNA_DIM_H, {1, COPY_N_GROUP_MAX, 1, Gna2StatusXnnErrorOutputVolume}},
+            {GNA_DIM_W, _FlatLimits.at(GNA_DIM_W)}},
+            _ModesCopy})}
     }},
     {INTEL_DEINTERLEAVE, {
         {GNA_0_9, std::make_shared<TensorLimits>(_FlatTensorLimitsGen0_9)},
@@ -158,23 +180,18 @@ const FullCapabilitiesMap LayerOutput::capabilities =
 };
 
 //TODO:3:Remove with API1
-FullCapabilitiesMap LayerOutput::PrepareCapabilitiesLegacy()
+const FullCapabilitiesMap & LayerOutput::GetCapabilitiesLegacy()
 {
-    FullCapabilitiesMap capabilitiesLegacy{ capabilities };
+    static FullCapabilitiesMap capabilitiesLegacy{capabilities};
+    auto& cnnCaps = capabilitiesLegacy[INTEL_CONVOLUTIONAL_2D][GNA_3_0];
     const auto cnn2dLegacy = std::make_shared<TensorLimits>(TensorLimits{
-            {GNA_TENSOR_NHWD},
-            {{GNA_DIM_N, {1, 1, 1, Gna2StatusXnnErrorOutputVolume}},
+            cnnCaps->Order,
+            {{GNA_DIM_N, cnnCaps->Dimensions.at(GNA_DIM_N)},
              {GNA_DIM_H, {1, XNN_N_IN_ELEMS_MAX * XNN_N_IN_ELEMS_MAX, 1, Gna2StatusXnnErrorOutputVolume}},
              {GNA_DIM_W, {1, XNN_N_IN_ELEMS_MAX * XNN_N_IN_ELEMS_MAX, 1, Gna2StatusXnnErrorOutputVolume}},
              {GNA_DIM_D, {1, XNN_N_IN_ELEMS_MAX * XNN_N_IN_ELEMS_MAX, 1, Gna2StatusXnnErrorOutputVolume}}},
-            {{GNA_INT8, GNA_INT16, GNA_INT32, GNA_DATA_ACTIVATION_DISABLED}, Gna2StatusXnnErrorOutputBytes } });
-    capabilitiesLegacy[INTEL_CONVOLUTIONAL_2D][GNA_3_0] = cnn2dLegacy;
-    return capabilitiesLegacy;
-}
-
-const FullCapabilitiesMap & LayerOutput::GetCapabilitiesLegacy()
-{
-    static const FullCapabilitiesMap capabilitiesLegacy{ PrepareCapabilitiesLegacy() };
+            _ModesGen3});
+    cnnCaps = cnn2dLegacy;
     return capabilitiesLegacy;
 }
 
@@ -196,14 +213,13 @@ LayerOutput::LayerOutput(const nn_layer& layer, const LayerValidator& validatorI
         ConvertInCaseOfNewApiOrder( capabilities.GetOrder(validatorIn), layer.nOutputColumns, layer.nOutputRows ),
         layer.nBytesPerOutput, layer.pOutputs,
         Validator{ validatorIn, GetCapabilitiesLegacy() } },
-    ScratchPad{ Dimensions,
-        layer.nBytesPerIntermediateOutput, layer.pOutputsIntermediate,
-        Validator{ validatorIn, GetCapabilitiesLegacy() } },
+        ScratchPad{Dimensions, DataMode{layer.nBytesPerIntermediateOutput}.Type, Gna2TensorModeDefault, layer.pOutputsIntermediate},
     Grouping { getGrouping(layer) },
     ElementCount { getElementCount(layer) }
 {
+    const auto caps = static_cast<const TensorLimits*>(validator->Capabilities);
+    validator->ValidateBufferIfSet(ScratchPad.Buffer, ScratchPad.Size,  caps->Align);
     Expect::True(GNA_INT32 == ScratchPad.Mode, Gna2StatusXnnErrorIntOutputBytes);
-    //Expect::ValidBuffer(ScratchPad); // TODO: review when scratch-pad is allocated by gna-lib
 }
 
 //TODO:3:P1: Generalize instead addressing output at index 1
@@ -211,15 +227,10 @@ LayerOutput::LayerOutput(const Gna2Operation &operation, const LayerValidator& v
     Tensor{ Shape::Create(operation.Operands[1]->Shape,  capabilities.GetOrder(validatorIn)),
         operation.Operands[1]->Type, operation.Operands[1]->Data,
         Validator{ validatorIn, capabilities } },
-    ScratchPad{ Dimensions,
-        operation.Operands[1]->Type, nullptr, //TODO:3:P1 Decide what to do with scratch pad in API2
-        Validator{ validatorIn, capabilities } },
+    ScratchPad{Dimensions, Mode.Type, Mode.Mode, nullptr}, //TODO:3:P1:Decide what to do with scratch pad in API2, disabled validation, as parameters are provided by library
     Grouping{ getGrouping(operation, validatorIn) },
     ElementCount{ getElementCount(operation, validatorIn) }
 {
-    //TODO:3:P1:Decide what to do with scratch pad in API2
-    //Expect::True(GNA_INT32 == ScratchPad.Mode, Gna2StatusXnnErrorIntOutputBytes);
-    //Expect::ValidBuffer(ScratchPad); // TODO: review when scratch-pad is allocated by gna-lib
 }
 
 bool LayerOutput::IsTensorValid(const Gna2Tensor &apiTensor,
@@ -239,107 +250,45 @@ bool LayerOutput::IsTensorValid(const Gna2Tensor &apiTensor,
    }
 }
 
-uint32_t LayerOutput::getGrouping(
+std::pair<uint32_t, uint32_t> LayerOutput::getGroupingAndElements(
       const Gna2Operation& operation, const LayerValidator& validatorIn) const
 {
-   switch (operation.Type)
-   {
-      case Gna2OperationTypeFullyConnectedAffine:
-      case Gna2OperationTypeElementWiseAffine:
-         return Dimensions.at('W');
-      case Gna2OperationTypeRecurrent:
-      case Gna2OperationTypeCopy:
-      case Gna2OperationTypeGmm:
-         return Dimensions.at('H');
-      case Gna2OperationTypeConvolution:
-         return Dimensions.at('N');
-      case Gna2OperationTypeTransposition:
-         {
-            const auto& outputTensor = *operation.Operands[1];
-            if (LayerOutput::IsTensorValid(outputTensor, validatorIn, INTEL_INTERLEAVE))
-            {
-               return Dimensions.at('W');
-            }
-            if (LayerOutput::IsTensorValid(outputTensor, validatorIn, INTEL_DEINTERLEAVE))
-            {
-               return Dimensions.at('H');
-            }
-         }
-      default:
-         throw GnaException(Gna2StatusNotImplemented);
-   }
+    switch (operation.Type)
+    {
+    case Gna2OperationTypeTransposition:
+    {
+        const auto& inputTensor = *operation.Operands[1];
+        if (IsTensorValid(inputTensor, validatorIn, INTEL_INTERLEAVE))
+        {
+            return {Dimensions.at('W'), Dimensions.at('H')};
+        }
+        else if (IsTensorValid(inputTensor, validatorIn, INTEL_DEINTERLEAVE))
+        {
+            return {Dimensions.at('H'), Dimensions.at('W')};
+        }
+    }
+    default:
+        return Tensor::getGroupingAndElements(operation, validatorIn);
+    }
 }
 
-uint32_t LayerOutput::getElementCount(const Gna2Operation& operation,
-      const LayerValidator& validatorIn) const
+std::pair<uint32_t, uint32_t> LayerOutput::getGroupingAndElements(const nn_layer& layer) const
 {
-   switch (operation.Type)
-   {
-      case Gna2OperationTypeFullyConnectedAffine:
-      case Gna2OperationTypeElementWiseAffine:
-      // TODO:3: for Convolution 2D shape without grouping dimensions should be returned
-      case Gna2OperationTypeConvolution:
-         return Dimensions.at('H');
-      case Gna2OperationTypeRecurrent:
-      case Gna2OperationTypeCopy:
-      case Gna2OperationTypeGmm:
-         return Dimensions.at('W');
-      case Gna2OperationTypeTransposition:
-         {
-            const auto& outputTensor = *operation.Operands[1];
-            if (LayerOutput::IsTensorValid(outputTensor, validatorIn, INTEL_INTERLEAVE))
-            {
-               return Dimensions.at('H');
-            }
-            if (LayerOutput::IsTensorValid(outputTensor, validatorIn, INTEL_DEINTERLEAVE))
-            {
-               return Dimensions.at('W');
-            }
-         }
-      default:
-         throw GnaException(Gna2StatusNotImplemented);
-   }
+    switch (layer.operation)
+    {
+    case INTEL_AFFINE:
+    case INTEL_AFFINE_DIAGONAL:
+    case INTEL_AFFINE_MULTIBIAS:
+    case INTEL_DEINTERLEAVE:
+     return {layer.nOutputColumns, layer.nOutputRows};
+    case INTEL_GMM:
+    case INTEL_COPY:
+    case INTEL_RECURRENT:
+    case INTEL_INTERLEAVE:
+    case INTEL_CONVOLUTIONAL:
+    case INTEL_CONVOLUTIONAL_2D:
+        return {layer.nOutputRows, layer.nOutputColumns};
+    default:
+        throw GnaException(Gna2StatusNotImplemented);
+    }
 }
-
-uint32_t LayerOutput::getGrouping(const nn_layer& layer) const
-{
-   switch (layer.operation)
-   {
-      case INTEL_AFFINE:
-      case INTEL_AFFINE_DIAGONAL:
-      case INTEL_AFFINE_MULTIBIAS:
-      case INTEL_INTERLEAVE:
-         return layer.nOutputColumns;
-      case INTEL_GMM:
-      case INTEL_COPY:
-      case INTEL_RECURRENT:
-      case INTEL_DEINTERLEAVE:
-      case INTEL_CONVOLUTIONAL:
-      case INTEL_CONVOLUTIONAL_2D:
-         return layer.nOutputRows;
-      default:
-         throw GnaException(Gna2StatusNotImplemented);
-   }
-}
-
-uint32_t LayerOutput::getElementCount(const nn_layer& layer) const
-{
-   switch (layer.operation)
-   {
-      case INTEL_AFFINE:
-      case INTEL_AFFINE_DIAGONAL:
-      case INTEL_AFFINE_MULTIBIAS:
-      case INTEL_INTERLEAVE:
-         return layer.nOutputRows;
-      case INTEL_GMM:
-      case INTEL_COPY:
-      case INTEL_RECURRENT:
-      case INTEL_DEINTERLEAVE:
-      case INTEL_CONVOLUTIONAL:
-      case INTEL_CONVOLUTIONAL_2D:
-         return layer.nOutputColumns;
-      default:
-         throw GnaException(Gna2StatusNotImplemented);
-   }
-}
-

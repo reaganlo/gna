@@ -56,6 +56,7 @@ private:
 
     const KernelMap<CopyKernel>& copyKernels;
     CopyConfig copyHiddenConfig;
+    static const FullCapabilitiesMap limits;
 };
 
 }
