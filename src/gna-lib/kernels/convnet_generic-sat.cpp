@@ -758,13 +758,13 @@ void Pooling2DKernelImpl1B(ExecutionKernelConfig<PoolingConfig2D> const * const 
                                 tmpValue += I[OD + inIdxW + inIdxH + winIdxW + winIdxH];
                             }
 
-                            if (value > 32767)
+                            if (value > INT8_MAX)
                             {
-                                value = 32767;
+                                value = INT8_MAX;
                             }
-                            else if (value < -32768)
+                            else if (value < INT8_MIN)
                             {
-                                value = -32768;
+                                value = INT8_MIN;
                             }
                             else
                             {
@@ -848,13 +848,13 @@ void Pooling2DKernelImpl2B(ExecutionKernelConfig<PoolingConfig2D> const * const 
                                 tmpValue += I[OD + inIdxW + inIdxH + winIdxW + winIdxH];
                             }
 
-                            if (value > 32767)
+                            if (value > INT16_MAX)
                             {
-                                value = 32767;
+                                value = INT16_MAX;
                             }
-                            else if (value < -32768)
+                            else if (value < INT16_MIN)
                             {
-                                value = -32768;
+                                value = INT16_MIN;
                             }
                             else
                             {
@@ -938,13 +938,13 @@ void Pooling2DKernelImpl4B(ExecutionKernelConfig<PoolingConfig2D> const * const 
                                 tmpValue += I[OD + inIdxW + inIdxH + winIdxW + winIdxH];
                             }
 
-                            if (value > 32767)
+                            if (value > INT32_MAX)
                             {
-                                value = 32767;
+                                value = INT32_MAX;
                             }
-                            else if (value < -32768)
+                            else if (value < INT32_MIN)
                             {
-                                value = -32768;
+                                value = INT32_MIN;
                             }
                             else
                             {
@@ -1075,7 +1075,7 @@ void Convolution2DKernelImpl1B2B(ExecutionKernelConfig<ConvolutionConfig2D> cons
     const void* biasData = config->RequestConfig->Transform.BiasData;
 
     uint32_t outWidth = 1 + ((inputWidthWPad - filterWidth) / strideWidth);
-    uint32_t outHeight = 1 + ((inputHeightWPad - filterWidth) / strideHeight);
+    uint32_t outHeight = 1 + ((inputHeightWPad - filterHeight) / strideHeight);
 
     for (uint32_t OD = 0; OD < numFilters; OD++) { //Output depth or #filters
 
@@ -1156,7 +1156,7 @@ void Convolution2DKernelImpl2B1B(ExecutionKernelConfig<ConvolutionConfig2D> cons
     const void* biasData = config->RequestConfig->Transform.BiasData;
 
     uint32_t outWidth = 1 + ((inputWidthWPad - filterWidth) / strideWidth);
-    uint32_t outHeight = 1 + ((inputHeightWPad - filterWidth) / strideHeight);
+    uint32_t outHeight = 1 + ((inputHeightWPad - filterHeight) / strideHeight);
 
     for (uint32_t OD = 0; OD < numFilters; OD++) { //Output depth or #filters
 
