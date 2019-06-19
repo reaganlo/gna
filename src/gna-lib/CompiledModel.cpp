@@ -143,9 +143,12 @@ Gna2Status CompiledModel::Score(
             }
 
             const auto& deviceSubmodels = getSubmodels(hwCapabilities);
-            if (deviceSubmodels.front()->Type == Software || deviceSubmodels.size() > 1)
+            for (const auto& submodel : deviceSubmodels)
             {
-                return Gna2StatusAccelerationModeNotSupported;
+                if (submodel->Type == Software)
+                {
+                    return Gna2StatusAccelerationModeNotSupported;
+                }
             }
         }
 
