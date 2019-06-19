@@ -74,6 +74,12 @@ static const DataModeLimits _ModesCopy =
     _ModesGen0_9.Error
 };
 
+static const DataModeLimits _ModesCopyGen3 =
+{
+    {GNA_INT8, GNA_INT16},
+    _ModesGen0_9.Error
+};
+
 static const TensorLimits _InterleaveTensorLimitsGen0_9 =
 {
     {GNA_TENSOR_HW},
@@ -148,7 +154,7 @@ const FullCapabilitiesMap LayerOutput::capabilities =
             {GNA_TENSOR_HW},
             {{GNA_DIM_H, {1, COPY_N_GROUP_MAX, 1, Gna2StatusXnnErrorOutputVolume}},
             {GNA_DIM_W, _FlatLimits.at(GNA_DIM_W)}},
-            _ModesCopy})}
+            _ModesCopyGen3})}
     }},
     {INTEL_DEINTERLEAVE, {
         {GNA_0_9, std::make_shared<TensorLimits>(_FlatTensorLimitsGen0_9)},

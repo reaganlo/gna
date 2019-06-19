@@ -148,7 +148,7 @@ const FullCapabilitiesMap LayerInput::capabilities =
             {GNA_TENSOR_HW},
                 {{GNA_DIM_H, {1, COPY_N_GROUP_MAX, 1, Gna2StatusXnnErrorInputVolume}},
                 {GNA_DIM_W, _FlatLimits.at(GNA_DIM_W)}},
-                _ModesGen0_9})}
+                _ModesGen3})}
     }},
     {INTEL_INTERLEAVE, {
         {GNA_0_9, std::make_shared<TensorLimits>(_FlatTensorLimitsGen0_9)},
