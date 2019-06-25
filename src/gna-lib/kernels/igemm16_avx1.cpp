@@ -33,18 +33,19 @@
 #include <cstdint>
 #include <immintrin.h>
 
-void AffineKernelImpl2B(AffineConfig const * const config)
+void AffineKernelImpl2B(ExecutionKernelConfig<AffineConfig> const * const config)
 {
-    uint32_t KT = config->inputElementCount % VEC_16CAP;
-    uint32_t KK = config->inputElementCount - KT;
+    uint32_t KT = config->RequestConfig->Transform.inputElementCount % VEC_16CAP;
+    uint32_t KK = config->RequestConfig->Transform.inputElementCount - KT;
     uint32_t ix_end = KK / VEC_16CAP;
     uint32_t ix;
     uint32_t i;
     uint32_t j;
     uint32_t k;
 
-    int32_t * output = config->output;
-    int16_t const * weight = config->weights2B;
+    int16_t const *inputs = reinterpret_cast<int16_t const *>(config->RequestConfig->Inputs);
+    int32_t * output = reinterpret_cast<int32_t *>(config->RequestConfig->Outputs);
+    int16_t const * weight = config->RequestConfig->Transform.weights2B;
 
     // simd inputs
     __m256i v0;
@@ -75,8 +76,8 @@ void AffineKernelImpl2B(AffineConfig const * const config)
     int16_t const *input_3 = nullptr;
 
     int8_t const *bias;
-    auto const * const biasEnd = reinterpret_cast<int8_t const *>(config->biasesSimple) +
-        (config->bytesPerBias * config->outputElementCount);
+    auto const * const biasEnd = reinterpret_cast<int8_t const *>(config->RequestConfig->Transform.biasesSimple) +
+        (config->RequestConfig->Transform.bytesPerBias * config->RequestConfig->Transform.outputElementCount);
 
     // simd accumulators
     __m128i acc0;
@@ -98,11 +99,11 @@ void AffineKernelImpl2B(AffineConfig const * const config)
     __m128i in6;
     __m128i in7;
 
-    if (1 == config->inputVectorCount)
+    if (1 == config->RequestConfig->Transform.inputVectorCount)
     {
-        input_0 = config->input+KK;
-        in_ptr0 = (__m256i*)config->input;
-        for (bias = reinterpret_cast<int8_t const *>(config->biasesSimple); bias < biasEnd; bias += config->bytesPerBias)
+        input_0 = inputs + KK;
+        in_ptr0 = (__m256i*) inputs;
+        for (bias = reinterpret_cast<int8_t const *>(config->RequestConfig->Transform.biasesSimple); bias < biasEnd; bias += config->RequestConfig->Transform.bytesPerBias)
         {
             acc0 = _mm_setzero_si128();
 
@@ -123,7 +124,7 @@ void AffineKernelImpl2B(AffineConfig const * const config)
                 acc0 = _mm_add_epi32(acc0, in1);
             }
 
-            *output = getBias(bias, config->bytesPerBias) + vec_sum(acc0);
+            *output = getBias(bias, config->RequestConfig->Transform.bytesPerBias) + vec_sum(acc0);
             for (j = 0; j < KT; j++, weight++)
             {
                 *output += input_0[j] * *weight;
@@ -134,42 +135,42 @@ void AffineKernelImpl2B(AffineConfig const * const config)
         return;
     }
 
-    in_ptr0 = (__m256i*)config->execution->Intermediate->d0;
-    in_ptr1 = (__m256i*)config->execution->Intermediate->d1;
-    in_ptr2 = (__m256i*)config->execution->Intermediate->d2;
-    in_ptr3 = (__m256i*)config->execution->Intermediate->d3;
+    in_ptr0 = (__m256i*)config->Intermediate->d0;
+    in_ptr1 = (__m256i*)config->Intermediate->d1;
+    in_ptr2 = (__m256i*)config->Intermediate->d2;
+    in_ptr3 = (__m256i*)config->Intermediate->d3;
 
-    input_0 = config->execution->Intermediate->d0 + KK;
-    input_1 = config->execution->Intermediate->d1 + KK;
-    input_2 = config->execution->Intermediate->d2 + KK;
-    input_3 = config->execution->Intermediate->d3 + KK;
+    input_0 = config->Intermediate->d0 + KK;
+    input_1 = config->Intermediate->d1 + KK;
+    input_2 = config->Intermediate->d2 + KK;
+    input_3 = config->Intermediate->d3 + KK;
 
-    switch (config->inputVectorCount)
+    switch (config->RequestConfig->Transform.inputVectorCount)
     {
     case 4:
-        for (i = 0; i < config->inputElementCount; i++)
+        for (i = 0; i < config->RequestConfig->Transform.inputElementCount; i++)
         {
-            config->execution->Intermediate->d3[i] = config->input[i*config->inputVectorCount + 3];
+            config->Intermediate->d3[i] = inputs[i*config->RequestConfig->Transform.inputVectorCount + 3];
         }
     case 3:
-        for (i = 0; i < config->inputElementCount; i++)
+        for (i = 0; i < config->RequestConfig->Transform.inputElementCount; i++)
         {
-            config->execution->Intermediate->d2[i] = config->input[i*config->inputVectorCount + 2];
+            config->Intermediate->d2[i] = inputs[i*config->RequestConfig->Transform.inputVectorCount + 2];
         }
     case 2:
-        for (i = 0; i < config->inputElementCount; i++)
+        for (i = 0; i < config->RequestConfig->Transform.inputElementCount; i++)
         {
-            config->execution->Intermediate->d1[i] = config->input[i*config->inputVectorCount + 1];
+            config->Intermediate->d1[i] = inputs[i*config->RequestConfig->Transform.inputVectorCount + 1];
         }
-        for (i = 0; i < config->inputElementCount; i++)
+        for (i = 0; i < config->RequestConfig->Transform.inputElementCount; i++)
         {
-            config->execution->Intermediate->d0[i] = config->input[i*config->inputVectorCount];
+            config->Intermediate->d0[i] = inputs[i*config->RequestConfig->Transform.inputVectorCount];
         }
     }
 
-    if (2 == config->inputVectorCount)
+    if (2 == config->RequestConfig->Transform.inputVectorCount)
     {
-        for (bias = reinterpret_cast<int8_t const *>(config->biasesSimple); bias < biasEnd; bias += config->bytesPerBias)
+        for (bias = reinterpret_cast<int8_t const *>(config->RequestConfig->Transform.biasesSimple); bias < biasEnd; bias += config->RequestConfig->Transform.bytesPerBias)
         {
             acc0 = _mm_setzero_si128();
             acc1 = _mm_setzero_si128();
@@ -202,23 +203,23 @@ void AffineKernelImpl2B(AffineConfig const * const config)
                 acc1 = _mm_add_epi32(acc1, in3);
             }
 
-            output[0] = getBias(bias, config->bytesPerBias) + vec_sum(acc0);
-            output[1] = getBias(bias, config->bytesPerBias) + vec_sum(acc1);
+            output[0] = getBias(bias, config->RequestConfig->Transform.bytesPerBias) + vec_sum(acc0);
+            output[1] = getBias(bias, config->RequestConfig->Transform.bytesPerBias) + vec_sum(acc1);
 
             for (j = 0; j < KT; j++, weight++)
             {
                 output[0] += input_0[j] * *weight;
                 output[1] += input_1[j] * *weight;
             }
-            output += config->inputVectorCount;
+            output += config->RequestConfig->Transform.inputVectorCount;
         }
 
         return;
     }
 
-    if (3 == config->inputVectorCount)
+    if (3 == config->RequestConfig->Transform.inputVectorCount)
     {
-        for (bias = reinterpret_cast<int8_t const *>(config->biasesSimple); bias < biasEnd; bias += config->bytesPerBias)
+        for (bias = reinterpret_cast<int8_t const *>(config->RequestConfig->Transform.biasesSimple); bias < biasEnd; bias += config->RequestConfig->Transform.bytesPerBias)
         {
             acc0 = _mm_setzero_si128();
             acc1 = _mm_setzero_si128();
@@ -259,9 +260,9 @@ void AffineKernelImpl2B(AffineConfig const * const config)
                 acc2 = _mm_add_epi32(acc2, in5);
             }
 
-            output[0] = getBias(bias, config->bytesPerBias) + vec_sum(acc0);
-            output[1] = getBias(bias, config->bytesPerBias) + vec_sum(acc1);
-            output[2] = getBias(bias, config->bytesPerBias) + vec_sum(acc2);
+            output[0] = getBias(bias, config->RequestConfig->Transform.bytesPerBias) + vec_sum(acc0);
+            output[1] = getBias(bias, config->RequestConfig->Transform.bytesPerBias) + vec_sum(acc1);
+            output[2] = getBias(bias, config->RequestConfig->Transform.bytesPerBias) + vec_sum(acc2);
 
             for (j = 0; j < KT; j++, weight++)
             {
@@ -269,15 +270,15 @@ void AffineKernelImpl2B(AffineConfig const * const config)
                 output[1] += input_1[j] * *weight;
                 output[2] += input_2[j] * *weight;
             }
-            output += config->inputVectorCount;
+            output += config->RequestConfig->Transform.inputVectorCount;
         }
 
         return;
     }
 
-    if (4 == config->inputVectorCount)
+    if (4 == config->RequestConfig->Transform.inputVectorCount)
     {
-        for (bias = reinterpret_cast<int8_t const *>(config->biasesSimple); bias < biasEnd; bias += config->bytesPerBias)
+        for (bias = reinterpret_cast<int8_t const *>(config->RequestConfig->Transform.biasesSimple); bias < biasEnd; bias += config->RequestConfig->Transform.bytesPerBias)
         {
             acc0 = _mm_setzero_si128();
             acc1 = _mm_setzero_si128();
@@ -327,10 +328,10 @@ void AffineKernelImpl2B(AffineConfig const * const config)
                 acc3 = _mm_add_epi32(acc3, in7);
             }
 
-            output[0] = getBias(bias, config->bytesPerBias) + vec_sum(acc0);
-            output[1] = getBias(bias, config->bytesPerBias) + vec_sum(acc1);
-            output[2] = getBias(bias, config->bytesPerBias) + vec_sum(acc2);
-            output[3] = getBias(bias, config->bytesPerBias) + vec_sum(acc3);
+            output[0] = getBias(bias, config->RequestConfig->Transform.bytesPerBias) + vec_sum(acc0);
+            output[1] = getBias(bias, config->RequestConfig->Transform.bytesPerBias) + vec_sum(acc1);
+            output[2] = getBias(bias, config->RequestConfig->Transform.bytesPerBias) + vec_sum(acc2);
+            output[3] = getBias(bias, config->RequestConfig->Transform.bytesPerBias) + vec_sum(acc3);
 
             for (j = 0; j < KT; j++, weight++)
             {
@@ -345,44 +346,44 @@ void AffineKernelImpl2B(AffineConfig const * const config)
         return;
     }
 
-    KT = config->inputElementCount % SSE_16CAP;
-    KK = config->inputElementCount - KT;
+    KT = config->RequestConfig->Transform.inputElementCount % SSE_16CAP;
+    KK = config->RequestConfig->Transform.inputElementCount - KT;
     ix_end = 2 * KK / VEC_16CAP;
 
-    input_0 = config->execution->Intermediate->d0 + 2 * KK;
-    input_1 = config->execution->Intermediate->d2 + 2 * KK;
-    input_2 = config->execution->Intermediate->d4 + 2 * KK;
-    input_3 = config->execution->Intermediate->d6 + 2 * KK;
+    input_0 = config->Intermediate->d0 + 2 * KK;
+    input_1 = config->Intermediate->d2 + 2 * KK;
+    input_2 = config->Intermediate->d4 + 2 * KK;
+    input_3 = config->Intermediate->d6 + 2 * KK;
 
-    in_ptr0 = (__m256i*) config->execution->Intermediate->d0;
-    in_ptr1 = (__m256i*) config->execution->Intermediate->d2;
-    in_ptr2 = (__m256i*) config->execution->Intermediate->d4;
-    in_ptr3 = (__m256i*) config->execution->Intermediate->d6;
+    in_ptr0 = (__m256i*) config->Intermediate->d0;
+    in_ptr1 = (__m256i*) config->Intermediate->d2;
+    in_ptr2 = (__m256i*) config->Intermediate->d4;
+    in_ptr3 = (__m256i*) config->Intermediate->d6;
 
-    if (5 == config->inputVectorCount)
+    if (5 == config->RequestConfig->Transform.inputVectorCount)
     {
-        for (j = 0; j < 2 * config->inputElementCount;)
+        for (j = 0; j < 2 * config->RequestConfig->Transform.inputElementCount;)
         {
             i = j / 2;
-            for (k = i; k < i + 8 && k < config->inputElementCount; k++, j++)
+            for (k = i; k < i + 8 && k < config->RequestConfig->Transform.inputElementCount; k++, j++)
             {
-                config->execution->Intermediate->d0[j] = config->input[k*config->inputVectorCount];
-                config->execution->Intermediate->d2[j] = config->input[k*config->inputVectorCount + 2];
+                config->Intermediate->d0[j] = inputs[k*config->RequestConfig->Transform.inputVectorCount];
+                config->Intermediate->d2[j] = inputs[k*config->RequestConfig->Transform.inputVectorCount + 2];
             }
-            for (k = i; k < i + 8 && k < config->inputElementCount; k++, j++)
+            for (k = i; k < i + 8 && k < config->RequestConfig->Transform.inputElementCount; k++, j++)
             {
-                config->execution->Intermediate->d0[j] = config->input[k*config->inputVectorCount + 1];
-                config->execution->Intermediate->d2[j] = config->input[k*config->inputVectorCount + 3];
+                config->Intermediate->d0[j] = inputs[k*config->RequestConfig->Transform.inputVectorCount + 1];
+                config->Intermediate->d2[j] = inputs[k*config->RequestConfig->Transform.inputVectorCount + 3];
             }
         }
-        for (i = 0; i < config->inputElementCount; i++)
+        for (i = 0; i < config->RequestConfig->Transform.inputElementCount; i++)
         {
-            config->execution->Intermediate->d4[i] = config->input[i*config->inputVectorCount + 4];
+            config->Intermediate->d4[i] = inputs[i*config->RequestConfig->Transform.inputVectorCount + 4];
         }
 
-        for (bias = reinterpret_cast<int8_t const *>(config->biasesSimple); bias < biasEnd; bias += config->bytesPerBias)
+        for (bias = reinterpret_cast<int8_t const *>(config->RequestConfig->Transform.biasesSimple); bias < biasEnd; bias += config->RequestConfig->Transform.bytesPerBias)
         {
-            input_2 = config->execution->Intermediate->d4;
+            input_2 = config->Intermediate->d4;
 
             acc0 = _mm_setzero_si128();
             acc1 = _mm_setzero_si128();
@@ -417,11 +418,11 @@ void AffineKernelImpl2B(AffineConfig const * const config)
                 acc4 = _mm_add_epi32(acc4, in4);
             }
 
-            output[0] = getBias(bias, config->bytesPerBias) + vec_sum(acc0);
-            output[1] = getBias(bias, config->bytesPerBias) + vec_sum(acc1);
-            output[2] = getBias(bias, config->bytesPerBias) + vec_sum(acc2);
-            output[3] = getBias(bias, config->bytesPerBias) + vec_sum(acc3);
-            output[4] = getBias(bias, config->bytesPerBias) + vec_sum(acc4);
+            output[0] = getBias(bias, config->RequestConfig->Transform.bytesPerBias) + vec_sum(acc0);
+            output[1] = getBias(bias, config->RequestConfig->Transform.bytesPerBias) + vec_sum(acc1);
+            output[2] = getBias(bias, config->RequestConfig->Transform.bytesPerBias) + vec_sum(acc2);
+            output[3] = getBias(bias, config->RequestConfig->Transform.bytesPerBias) + vec_sum(acc3);
+            output[4] = getBias(bias, config->RequestConfig->Transform.bytesPerBias) + vec_sum(acc4);
 
             for (j = 0; j < KT; j++, weight++)
             {
@@ -432,32 +433,32 @@ void AffineKernelImpl2B(AffineConfig const * const config)
                 output[4] += input_2[j] * *weight;
             }
 
-            output += config->inputVectorCount;
+            output += config->RequestConfig->Transform.inputVectorCount;
         }
 
         return;
     }
 
-    if (6 == config->inputVectorCount)
+    if (6 == config->RequestConfig->Transform.inputVectorCount)
     {
-        for (j = 0; j < 2 * config->inputElementCount;)
+        for (j = 0; j < 2 * config->RequestConfig->Transform.inputElementCount;)
         {
             i = j / 2;
-            for (k = i; k < i + 8 && k < config->inputElementCount; k++, j++)
+            for (k = i; k < i + 8 && k < config->RequestConfig->Transform.inputElementCount; k++, j++)
             {
-                config->execution->Intermediate->d0[j] = config->input[k*config->inputVectorCount];
-                config->execution->Intermediate->d2[j] = config->input[k*config->inputVectorCount + 2];
-                config->execution->Intermediate->d4[j] = config->input[k*config->inputVectorCount + 4];
+                config->Intermediate->d0[j] = inputs[k*config->RequestConfig->Transform.inputVectorCount];
+                config->Intermediate->d2[j] = inputs[k*config->RequestConfig->Transform.inputVectorCount + 2];
+                config->Intermediate->d4[j] = inputs[k*config->RequestConfig->Transform.inputVectorCount + 4];
             }
-            for (k = i; k < i + 8 && k < config->inputElementCount; k++, j++)
+            for (k = i; k < i + 8 && k < config->RequestConfig->Transform.inputElementCount; k++, j++)
             {
-                config->execution->Intermediate->d0[j] = config->input[k*config->inputVectorCount + 1];
-                config->execution->Intermediate->d2[j] = config->input[k*config->inputVectorCount + 3];
-                config->execution->Intermediate->d4[j] = config->input[k*config->inputVectorCount + 5];
+                config->Intermediate->d0[j] = inputs[k*config->RequestConfig->Transform.inputVectorCount + 1];
+                config->Intermediate->d2[j] = inputs[k*config->RequestConfig->Transform.inputVectorCount + 3];
+                config->Intermediate->d4[j] = inputs[k*config->RequestConfig->Transform.inputVectorCount + 5];
             }
         }
 
-        for (bias = reinterpret_cast<int8_t const *>(config->biasesSimple); bias < biasEnd; bias += config->bytesPerBias)
+        for (bias = reinterpret_cast<int8_t const *>(config->RequestConfig->Transform.biasesSimple); bias < biasEnd; bias += config->RequestConfig->Transform.bytesPerBias)
         {
             acc0 = _mm_setzero_si128();
             acc1 = _mm_setzero_si128();
@@ -496,12 +497,12 @@ void AffineKernelImpl2B(AffineConfig const * const config)
                 acc5 = _mm_add_epi32(acc5, in5);
             }
 
-            output[0] = getBias(bias, config->bytesPerBias) + vec_sum(acc0);
-            output[1] = getBias(bias, config->bytesPerBias) + vec_sum(acc1);
-            output[2] = getBias(bias, config->bytesPerBias) + vec_sum(acc2);
-            output[3] = getBias(bias, config->bytesPerBias) + vec_sum(acc3);
-            output[4] = getBias(bias, config->bytesPerBias) + vec_sum(acc4);
-            output[5] = getBias(bias, config->bytesPerBias) + vec_sum(acc5);
+            output[0] = getBias(bias, config->RequestConfig->Transform.bytesPerBias) + vec_sum(acc0);
+            output[1] = getBias(bias, config->RequestConfig->Transform.bytesPerBias) + vec_sum(acc1);
+            output[2] = getBias(bias, config->RequestConfig->Transform.bytesPerBias) + vec_sum(acc2);
+            output[3] = getBias(bias, config->RequestConfig->Transform.bytesPerBias) + vec_sum(acc3);
+            output[4] = getBias(bias, config->RequestConfig->Transform.bytesPerBias) + vec_sum(acc4);
+            output[5] = getBias(bias, config->RequestConfig->Transform.bytesPerBias) + vec_sum(acc5);
 
             for (j = 0; j < KT; j++, weight++)
             {
@@ -513,39 +514,39 @@ void AffineKernelImpl2B(AffineConfig const * const config)
                 output[5] += input_2[j + KT] * *weight;
             }
 
-            output += config->inputVectorCount;
+            output += config->RequestConfig->Transform.inputVectorCount;
         }
 
         return;
     }
 
-    if (7 == config->inputVectorCount)
+    if (7 == config->RequestConfig->Transform.inputVectorCount)
     {
-        for (j = 0; j < 2 * config->inputElementCount;)
+        for (j = 0; j < 2 * config->RequestConfig->Transform.inputElementCount;)
         {
             i = j / 2;
-            for (k = i; k < i + 8 && k < config->inputElementCount; k++, j++)
+            for (k = i; k < i + 8 && k < config->RequestConfig->Transform.inputElementCount; k++, j++)
             {
-                config->execution->Intermediate->d0[j] = config->input[k*config->inputVectorCount];
-                config->execution->Intermediate->d2[j] = config->input[k*config->inputVectorCount + 2];
-                config->execution->Intermediate->d4[j] = config->input[k*config->inputVectorCount + 4];
+                config->Intermediate->d0[j] = inputs[k*config->RequestConfig->Transform.inputVectorCount];
+                config->Intermediate->d2[j] = inputs[k*config->RequestConfig->Transform.inputVectorCount + 2];
+                config->Intermediate->d4[j] = inputs[k*config->RequestConfig->Transform.inputVectorCount + 4];
             }
-            for (k = i; k < i + 8 && k < config->inputElementCount; k++, j++)
+            for (k = i; k < i + 8 && k < config->RequestConfig->Transform.inputElementCount; k++, j++)
             {
-                config->execution->Intermediate->d0[j] = config->input[k*config->inputVectorCount + 1];
-                config->execution->Intermediate->d2[j] = config->input[k*config->inputVectorCount + 3];
-                config->execution->Intermediate->d4[j] = config->input[k*config->inputVectorCount + 5];
+                config->Intermediate->d0[j] = inputs[k*config->RequestConfig->Transform.inputVectorCount + 1];
+                config->Intermediate->d2[j] = inputs[k*config->RequestConfig->Transform.inputVectorCount + 3];
+                config->Intermediate->d4[j] = inputs[k*config->RequestConfig->Transform.inputVectorCount + 5];
             }
         }
 
-        for (i = 0; i < config->inputElementCount; i++)
+        for (i = 0; i < config->RequestConfig->Transform.inputElementCount; i++)
         {
-            config->execution->Intermediate->d6[i] = config->input[i*config->inputVectorCount + 6];
+            config->Intermediate->d6[i] = inputs[i*config->RequestConfig->Transform.inputVectorCount + 6];
         }
 
-        for (bias = reinterpret_cast<int8_t const *>(config->biasesSimple); bias < biasEnd; bias += config->bytesPerBias)
+        for (bias = reinterpret_cast<int8_t const *>(config->RequestConfig->Transform.biasesSimple); bias < biasEnd; bias += config->RequestConfig->Transform.bytesPerBias)
         {
-            input_3 = config->execution->Intermediate->d6;
+            input_3 = config->Intermediate->d6;
 
             acc0 = _mm_setzero_si128();
             acc1 = _mm_setzero_si128();
@@ -589,13 +590,13 @@ void AffineKernelImpl2B(AffineConfig const * const config)
                 acc6 = _mm_add_epi32(acc6, in6);
             }
 
-            output[0] = getBias(bias, config->bytesPerBias) + vec_sum(acc0);
-            output[1] = getBias(bias, config->bytesPerBias) + vec_sum(acc1);
-            output[2] = getBias(bias, config->bytesPerBias) + vec_sum(acc2);
-            output[3] = getBias(bias, config->bytesPerBias) + vec_sum(acc3);
-            output[4] = getBias(bias, config->bytesPerBias) + vec_sum(acc4);
-            output[5] = getBias(bias, config->bytesPerBias) + vec_sum(acc5);
-            output[6] = getBias(bias, config->bytesPerBias) + vec_sum(acc6);
+            output[0] = getBias(bias, config->RequestConfig->Transform.bytesPerBias) + vec_sum(acc0);
+            output[1] = getBias(bias, config->RequestConfig->Transform.bytesPerBias) + vec_sum(acc1);
+            output[2] = getBias(bias, config->RequestConfig->Transform.bytesPerBias) + vec_sum(acc2);
+            output[3] = getBias(bias, config->RequestConfig->Transform.bytesPerBias) + vec_sum(acc3);
+            output[4] = getBias(bias, config->RequestConfig->Transform.bytesPerBias) + vec_sum(acc4);
+            output[5] = getBias(bias, config->RequestConfig->Transform.bytesPerBias) + vec_sum(acc5);
+            output[6] = getBias(bias, config->RequestConfig->Transform.bytesPerBias) + vec_sum(acc6);
 
             for (j = 0; j < KT; j++, weight++)
             {
@@ -608,32 +609,32 @@ void AffineKernelImpl2B(AffineConfig const * const config)
                 output[6] += input_3[j] * *weight;
             }
 
-            output += config->inputVectorCount;
+            output += config->RequestConfig->Transform.inputVectorCount;
         }
     }
 
-    if (8 == config->inputVectorCount)
+    if (8 == config->RequestConfig->Transform.inputVectorCount)
     {
-        for (j = 0; j < 2 * config->inputElementCount;)
+        for (j = 0; j < 2 * config->RequestConfig->Transform.inputElementCount;)
         {
             i = j / 2;
-            for (k = i; k < i + 8 && k < config->inputElementCount; k++, j++)
+            for (k = i; k < i + 8 && k < config->RequestConfig->Transform.inputElementCount; k++, j++)
             {
-                config->execution->Intermediate->d0[j] = config->input[k*config->inputVectorCount];
-                config->execution->Intermediate->d2[j] = config->input[k*config->inputVectorCount + 2];
-                config->execution->Intermediate->d4[j] = config->input[k*config->inputVectorCount + 4];
-                config->execution->Intermediate->d6[j] = config->input[k*config->inputVectorCount + 6];
+                config->Intermediate->d0[j] = inputs[k*config->RequestConfig->Transform.inputVectorCount];
+                config->Intermediate->d2[j] = inputs[k*config->RequestConfig->Transform.inputVectorCount + 2];
+                config->Intermediate->d4[j] = inputs[k*config->RequestConfig->Transform.inputVectorCount + 4];
+                config->Intermediate->d6[j] = inputs[k*config->RequestConfig->Transform.inputVectorCount + 6];
             }
-            for (k = i; k < i + 8 && k < config->inputElementCount; k++, j++)
+            for (k = i; k < i + 8 && k < config->RequestConfig->Transform.inputElementCount; k++, j++)
             {
-                config->execution->Intermediate->d0[j] = config->input[k*config->inputVectorCount + 1];
-                config->execution->Intermediate->d2[j] = config->input[k*config->inputVectorCount + 3];
-                config->execution->Intermediate->d4[j] = config->input[k*config->inputVectorCount + 5];
-                config->execution->Intermediate->d6[j] = config->input[k*config->inputVectorCount + 7];
+                config->Intermediate->d0[j] = inputs[k*config->RequestConfig->Transform.inputVectorCount + 1];
+                config->Intermediate->d2[j] = inputs[k*config->RequestConfig->Transform.inputVectorCount + 3];
+                config->Intermediate->d4[j] = inputs[k*config->RequestConfig->Transform.inputVectorCount + 5];
+                config->Intermediate->d6[j] = inputs[k*config->RequestConfig->Transform.inputVectorCount + 7];
             }
         }
 
-        for (bias = reinterpret_cast<int8_t const *>(config->biasesSimple); bias < biasEnd; bias += config->bytesPerBias)
+        for (bias = reinterpret_cast<int8_t const *>(config->RequestConfig->Transform.biasesSimple); bias < biasEnd; bias += config->RequestConfig->Transform.bytesPerBias)
         {
             acc0 = _mm_setzero_si128();
             acc1 = _mm_setzero_si128();
@@ -682,7 +683,7 @@ void AffineKernelImpl2B(AffineConfig const * const config)
                 acc7 = _mm_add_epi32(acc7, in7);
             }
 
-            s1 = _mm_set1_epi32(getBias(bias, config->bytesPerBias));
+            s1 = _mm_set1_epi32(getBias(bias, config->RequestConfig->Transform.bytesPerBias));
 
             s2 = _mm_hadd_epi32(acc0, acc1);
             s3 = _mm_hadd_epi32(acc2, acc3);
@@ -709,25 +710,26 @@ void AffineKernelImpl2B(AffineConfig const * const config)
                 output[7] += input_3[j + KT] * *weight;
             }
 
-            output += config->inputVectorCount;
+            output += config->RequestConfig->Transform.inputVectorCount;
         }
 
         return;
     }
 }
 
-void AffineMultiBiasKernelImpl2B(AffineConfig const * const config)
+void AffineMultiBiasKernelImpl2B(ExecutionKernelConfig<AffineConfig> const * const config)
 {
-    uint32_t KT = config->inputElementCount % VEC_16CAP;
-    uint32_t KK = config->inputElementCount - KT;
+    uint32_t KT = config->RequestConfig->Transform.inputElementCount % VEC_16CAP;
+    uint32_t KK = config->RequestConfig->Transform.inputElementCount - KT;
     uint32_t ix_end = KK / VEC_16CAP;
     uint32_t ix;
     uint32_t i;
     uint32_t j;
     uint32_t k;
 
-    int32_t * output = config->output;
-    int16_t const * weight = config->weights2B;
+    int16_t const *inputs = reinterpret_cast<int16_t const *>(config->RequestConfig->Inputs);
+    int32_t * output = reinterpret_cast<int32_t *>(config->RequestConfig->Outputs);
+    int16_t const * weight = config->RequestConfig->Transform.weights2B;
 
     int16_t const *input_0;
     int16_t const *input_1;
@@ -735,9 +737,9 @@ void AffineMultiBiasKernelImpl2B(AffineConfig const * const config)
     int16_t const *input_3;
 
     int8_t const * multiBias;
-    auto const * const biasEnd = static_cast<int8_t const *>(config->multiBias) +
-        (config->bytesPerBias * config->outputElementCount * config->multiBiasVectorCount);
-    auto biasStride = config->bytesPerBias * config->multiBiasVectorCount;
+    auto const * const biasEnd = static_cast<int8_t const *>(config->RequestConfig->Transform.multiBias) +
+        (config->RequestConfig->Transform.bytesPerBias * config->RequestConfig->Transform.outputElementCount * config->RequestConfig->Transform.multiBiasVectorCount);
+    auto biasStride = config->RequestConfig->Transform.bytesPerBias * config->RequestConfig->Transform.multiBiasVectorCount;
 
     // simd inputs
     __m256i v0;
@@ -782,11 +784,11 @@ void AffineMultiBiasKernelImpl2B(AffineConfig const * const config)
     __m128i in6;
     __m128i in7;
 
-    if (1 == config->inputVectorCount)
+    if (1 == config->RequestConfig->Transform.inputVectorCount)
     {
-        input_0 = config->input+KK;
-        in_ptr0 = (__m256i*)config->input;
-        for (multiBias = static_cast<int8_t const *>(config->multiBias); multiBias < biasEnd; multiBias += biasStride)
+        input_0 = inputs + KK;
+        in_ptr0 = (__m256i*)inputs;
+        for (multiBias = static_cast<int8_t const *>(config->RequestConfig->Transform.multiBias); multiBias < biasEnd; multiBias += biasStride)
         {
             acc0 = _mm_setzero_si128();
 
@@ -807,7 +809,7 @@ void AffineMultiBiasKernelImpl2B(AffineConfig const * const config)
                 acc0 = _mm_add_epi32(acc0, in1);
             }
 
-            *output = getBias(multiBias, config->bytesPerBias) + vec_sum(acc0);
+            *output = getBias(multiBias, config->RequestConfig->Transform.bytesPerBias) + vec_sum(acc0);
             for (j = 0; j < KT; j++, weight++)
             {
                 *output += input_0[j] * *weight;
@@ -818,42 +820,42 @@ void AffineMultiBiasKernelImpl2B(AffineConfig const * const config)
         return;
     }
 
-    in_ptr0 = (__m256i*)config->execution->Intermediate->d0;
-    in_ptr1 = (__m256i*)config->execution->Intermediate->d1;
-    in_ptr2 = (__m256i*)config->execution->Intermediate->d2;
-    in_ptr3 = (__m256i*)config->execution->Intermediate->d3;
+    in_ptr0 = (__m256i*)config->Intermediate->d0;
+    in_ptr1 = (__m256i*)config->Intermediate->d1;
+    in_ptr2 = (__m256i*)config->Intermediate->d2;
+    in_ptr3 = (__m256i*)config->Intermediate->d3;
 
-    input_0 = config->execution->Intermediate->d0 + KK;
-    input_1 = config->execution->Intermediate->d1 + KK;
-    input_2 = config->execution->Intermediate->d2 + KK;
-    input_3 = config->execution->Intermediate->d3 + KK;
+    input_0 = config->Intermediate->d0 + KK;
+    input_1 = config->Intermediate->d1 + KK;
+    input_2 = config->Intermediate->d2 + KK;
+    input_3 = config->Intermediate->d3 + KK;
 
-    switch (config->inputVectorCount)
+    switch (config->RequestConfig->Transform.inputVectorCount)
     {
     case 4:
-        for (i = 0; i < config->inputElementCount; i++)
+        for (i = 0; i < config->RequestConfig->Transform.inputElementCount; i++)
         {
-            config->execution->Intermediate->d3[i] = config->input[i*config->inputVectorCount + 3];
+            config->Intermediate->d3[i] = inputs[i*config->RequestConfig->Transform.inputVectorCount + 3];
         }
     case 3:
-        for (i = 0; i < config->inputElementCount; i++)
+        for (i = 0; i < config->RequestConfig->Transform.inputElementCount; i++)
         {
-            config->execution->Intermediate->d2[i] = config->input[i*config->inputVectorCount + 2];
+            config->Intermediate->d2[i] = inputs[i*config->RequestConfig->Transform.inputVectorCount + 2];
         }
     case 2:
-        for (i = 0; i < config->inputElementCount; i++)
+        for (i = 0; i < config->RequestConfig->Transform.inputElementCount; i++)
         {
-            config->execution->Intermediate->d1[i] = config->input[i*config->inputVectorCount + 1];
+            config->Intermediate->d1[i] = inputs[i*config->RequestConfig->Transform.inputVectorCount + 1];
         }
-        for (i = 0; i < config->inputElementCount; i++)
+        for (i = 0; i < config->RequestConfig->Transform.inputElementCount; i++)
         {
-            config->execution->Intermediate->d0[i] = config->input[i*config->inputVectorCount];
+            config->Intermediate->d0[i] = inputs[i*config->RequestConfig->Transform.inputVectorCount];
         }
     }
 
-    if (2 == config->inputVectorCount)
+    if (2 == config->RequestConfig->Transform.inputVectorCount)
     {
-        for (multiBias = static_cast<int8_t const *>(config->multiBias); multiBias < biasEnd; multiBias += biasStride)
+        for (multiBias = static_cast<int8_t const *>(config->RequestConfig->Transform.multiBias); multiBias < biasEnd; multiBias += biasStride)
         {
             acc0 = _mm_setzero_si128();
             acc1 = _mm_setzero_si128();
@@ -886,23 +888,23 @@ void AffineMultiBiasKernelImpl2B(AffineConfig const * const config)
                 acc1 = _mm_add_epi32(acc1, in3);
             }
 
-            output[0] = getBias(multiBias, config->bytesPerBias) + vec_sum(acc0);
-            output[1] = getBias(multiBias, config->bytesPerBias) + vec_sum(acc1);
+            output[0] = getBias(multiBias, config->RequestConfig->Transform.bytesPerBias) + vec_sum(acc0);
+            output[1] = getBias(multiBias, config->RequestConfig->Transform.bytesPerBias) + vec_sum(acc1);
 
             for (j = 0; j < KT; j++, weight++)
             {
                 output[0] += input_0[j] * *weight;
                 output[1] += input_1[j] * *weight;
             }
-            output += config->inputVectorCount;
+            output += config->RequestConfig->Transform.inputVectorCount;
         }
 
         return;
     }
 
-    if (3 == config->inputVectorCount)
+    if (3 == config->RequestConfig->Transform.inputVectorCount)
     {
-        for (multiBias = static_cast<int8_t const *>(config->multiBias); multiBias < biasEnd; multiBias += biasStride)
+        for (multiBias = static_cast<int8_t const *>(config->RequestConfig->Transform.multiBias); multiBias < biasEnd; multiBias += biasStride)
         {
             acc0 = _mm_setzero_si128();
             acc1 = _mm_setzero_si128();
@@ -943,9 +945,9 @@ void AffineMultiBiasKernelImpl2B(AffineConfig const * const config)
                 acc2 = _mm_add_epi32(acc2, in5);
             }
 
-            output[0] = getBias(multiBias, config->bytesPerBias) + vec_sum(acc0);
-            output[1] = getBias(multiBias, config->bytesPerBias) + vec_sum(acc1);
-            output[2] = getBias(multiBias, config->bytesPerBias) + vec_sum(acc2);
+            output[0] = getBias(multiBias, config->RequestConfig->Transform.bytesPerBias) + vec_sum(acc0);
+            output[1] = getBias(multiBias, config->RequestConfig->Transform.bytesPerBias) + vec_sum(acc1);
+            output[2] = getBias(multiBias, config->RequestConfig->Transform.bytesPerBias) + vec_sum(acc2);
 
             for (j = 0; j < KT; j++, weight++)
             {
@@ -953,15 +955,15 @@ void AffineMultiBiasKernelImpl2B(AffineConfig const * const config)
                 output[1] += input_1[j] * *weight;
                 output[2] += input_2[j] * *weight;
             }
-            output += config->inputVectorCount;
+            output += config->RequestConfig->Transform.inputVectorCount;
         }
 
         return;
     }
 
-    if (4 == config->inputVectorCount)
+    if (4 == config->RequestConfig->Transform.inputVectorCount)
     {
-        for (multiBias = static_cast<int8_t const *>(config->multiBias); multiBias < biasEnd; multiBias += biasStride)
+        for (multiBias = static_cast<int8_t const *>(config->RequestConfig->Transform.multiBias); multiBias < biasEnd; multiBias += biasStride)
         {
             acc0 = _mm_setzero_si128();
             acc1 = _mm_setzero_si128();
@@ -1011,10 +1013,10 @@ void AffineMultiBiasKernelImpl2B(AffineConfig const * const config)
                 acc3 = _mm_add_epi32(acc3, in7);
             }
 
-            output[0] = getBias(multiBias, config->bytesPerBias) + vec_sum(acc0);
-            output[1] = getBias(multiBias, config->bytesPerBias) + vec_sum(acc1);
-            output[2] = getBias(multiBias, config->bytesPerBias) + vec_sum(acc2);
-            output[3] = getBias(multiBias, config->bytesPerBias) + vec_sum(acc3);
+            output[0] = getBias(multiBias, config->RequestConfig->Transform.bytesPerBias) + vec_sum(acc0);
+            output[1] = getBias(multiBias, config->RequestConfig->Transform.bytesPerBias) + vec_sum(acc1);
+            output[2] = getBias(multiBias, config->RequestConfig->Transform.bytesPerBias) + vec_sum(acc2);
+            output[3] = getBias(multiBias, config->RequestConfig->Transform.bytesPerBias) + vec_sum(acc3);
 
             for (j = 0; j < KT; j++, weight++)
             {
@@ -1029,44 +1031,44 @@ void AffineMultiBiasKernelImpl2B(AffineConfig const * const config)
         return;
     }
 
-    KT = config->inputElementCount % SSE_16CAP;
-    KK = config->inputElementCount - KT;
+    KT = config->RequestConfig->Transform.inputElementCount % SSE_16CAP;
+    KK = config->RequestConfig->Transform.inputElementCount - KT;
     ix_end = 2 * KK / VEC_16CAP;
 
-    input_0 = config->execution->Intermediate->d0 + 2 * KK;
-    input_1 = config->execution->Intermediate->d2 + 2 * KK;
-    input_2 = config->execution->Intermediate->d4 + 2 * KK;
-    input_3 = config->execution->Intermediate->d6 + 2 * KK;
+    input_0 = config->Intermediate->d0 + 2 * KK;
+    input_1 = config->Intermediate->d2 + 2 * KK;
+    input_2 = config->Intermediate->d4 + 2 * KK;
+    input_3 = config->Intermediate->d6 + 2 * KK;
 
-    in_ptr0 = (__m256i*) config->execution->Intermediate->d0;
-    in_ptr1 = (__m256i*) config->execution->Intermediate->d2;
-    in_ptr2 = (__m256i*) config->execution->Intermediate->d4;
-    in_ptr3 = (__m256i*) config->execution->Intermediate->d6;
+    in_ptr0 = (__m256i*) config->Intermediate->d0;
+    in_ptr1 = (__m256i*) config->Intermediate->d2;
+    in_ptr2 = (__m256i*) config->Intermediate->d4;
+    in_ptr3 = (__m256i*) config->Intermediate->d6;
 
-    if (5 == config->inputVectorCount)
+    if (5 == config->RequestConfig->Transform.inputVectorCount)
     {
-        for (j = 0; j < 2 * config->inputElementCount;)
+        for (j = 0; j < 2 * config->RequestConfig->Transform.inputElementCount;)
         {
             i = j / 2;
-            for (k = i; k < i + 8 && k < config->inputElementCount; k++, j++)
+            for (k = i; k < i + 8 && k < config->RequestConfig->Transform.inputElementCount; k++, j++)
             {
-                config->execution->Intermediate->d0[j] = config->input[k*config->inputVectorCount];
-                config->execution->Intermediate->d2[j] = config->input[k*config->inputVectorCount + 2];
+                config->Intermediate->d0[j] = inputs[k*config->RequestConfig->Transform.inputVectorCount];
+                config->Intermediate->d2[j] = inputs[k*config->RequestConfig->Transform.inputVectorCount + 2];
             }
-            for (k = i; k < i + 8 && k < config->inputElementCount; k++, j++)
+            for (k = i; k < i + 8 && k < config->RequestConfig->Transform.inputElementCount; k++, j++)
             {
-                config->execution->Intermediate->d0[j] = config->input[k*config->inputVectorCount + 1];
-                config->execution->Intermediate->d2[j] = config->input[k*config->inputVectorCount + 3];
+                config->Intermediate->d0[j] = inputs[k*config->RequestConfig->Transform.inputVectorCount + 1];
+                config->Intermediate->d2[j] = inputs[k*config->RequestConfig->Transform.inputVectorCount + 3];
             }
         }
-        for (i = 0; i < config->inputElementCount; i++)
+        for (i = 0; i < config->RequestConfig->Transform.inputElementCount; i++)
         {
-            config->execution->Intermediate->d4[i] = config->input[i*config->inputVectorCount + 4];
+            config->Intermediate->d4[i] = inputs[i*config->RequestConfig->Transform.inputVectorCount + 4];
         }
 
-        for (multiBias = static_cast<int8_t const *>(config->multiBias); multiBias < biasEnd; multiBias += biasStride)
+        for (multiBias = static_cast<int8_t const *>(config->RequestConfig->Transform.multiBias); multiBias < biasEnd; multiBias += biasStride)
         {
-            input_2 = config->execution->Intermediate->d4;
+            input_2 = config->Intermediate->d4;
 
             acc0 = _mm_setzero_si128();
             acc1 = _mm_setzero_si128();
@@ -1101,11 +1103,11 @@ void AffineMultiBiasKernelImpl2B(AffineConfig const * const config)
                 acc4 = _mm_add_epi32(acc4, in4);
             }
 
-            output[0] = getBias(multiBias, config->bytesPerBias) + vec_sum(acc0);
-            output[1] = getBias(multiBias, config->bytesPerBias) + vec_sum(acc1);
-            output[2] = getBias(multiBias, config->bytesPerBias) + vec_sum(acc2);
-            output[3] = getBias(multiBias, config->bytesPerBias) + vec_sum(acc3);
-            output[4] = getBias(multiBias, config->bytesPerBias) + vec_sum(acc4);
+            output[0] = getBias(multiBias, config->RequestConfig->Transform.bytesPerBias) + vec_sum(acc0);
+            output[1] = getBias(multiBias, config->RequestConfig->Transform.bytesPerBias) + vec_sum(acc1);
+            output[2] = getBias(multiBias, config->RequestConfig->Transform.bytesPerBias) + vec_sum(acc2);
+            output[3] = getBias(multiBias, config->RequestConfig->Transform.bytesPerBias) + vec_sum(acc3);
+            output[4] = getBias(multiBias, config->RequestConfig->Transform.bytesPerBias) + vec_sum(acc4);
 
             for (j = 0; j < KT; j++, weight++)
             {
@@ -1116,32 +1118,32 @@ void AffineMultiBiasKernelImpl2B(AffineConfig const * const config)
                 output[4] += input_2[j] * *weight;
             }
 
-            output += config->inputVectorCount;
+            output += config->RequestConfig->Transform.inputVectorCount;
         }
 
         return;
     }
 
-    if (6 == config->inputVectorCount)
+    if (6 == config->RequestConfig->Transform.inputVectorCount)
     {
-        for (j = 0; j < 2 * config->inputElementCount;)
+        for (j = 0; j < 2 * config->RequestConfig->Transform.inputElementCount;)
         {
             i = j / 2;
-            for (k = i; k < i + 8 && k < config->inputElementCount; k++, j++)
+            for (k = i; k < i + 8 && k < config->RequestConfig->Transform.inputElementCount; k++, j++)
             {
-                config->execution->Intermediate->d0[j] = config->input[k*config->inputVectorCount];
-                config->execution->Intermediate->d2[j] = config->input[k*config->inputVectorCount + 2];
-                config->execution->Intermediate->d4[j] = config->input[k*config->inputVectorCount + 4];
+                config->Intermediate->d0[j] = inputs[k*config->RequestConfig->Transform.inputVectorCount];
+                config->Intermediate->d2[j] = inputs[k*config->RequestConfig->Transform.inputVectorCount + 2];
+                config->Intermediate->d4[j] = inputs[k*config->RequestConfig->Transform.inputVectorCount + 4];
             }
-            for (k = i; k < i + 8 && k < config->inputElementCount; k++, j++)
+            for (k = i; k < i + 8 && k < config->RequestConfig->Transform.inputElementCount; k++, j++)
             {
-                config->execution->Intermediate->d0[j] = config->input[k*config->inputVectorCount + 1];
-                config->execution->Intermediate->d2[j] = config->input[k*config->inputVectorCount + 3];
-                config->execution->Intermediate->d4[j] = config->input[k*config->inputVectorCount + 5];
+                config->Intermediate->d0[j] = inputs[k*config->RequestConfig->Transform.inputVectorCount + 1];
+                config->Intermediate->d2[j] = inputs[k*config->RequestConfig->Transform.inputVectorCount + 3];
+                config->Intermediate->d4[j] = inputs[k*config->RequestConfig->Transform.inputVectorCount + 5];
             }
         }
 
-        for (multiBias = static_cast<int8_t const *>(config->multiBias); multiBias < biasEnd; multiBias += biasStride)
+        for (multiBias = static_cast<int8_t const *>(config->RequestConfig->Transform.multiBias); multiBias < biasEnd; multiBias += biasStride)
         {
             acc0 = _mm_setzero_si128();
             acc1 = _mm_setzero_si128();
@@ -1180,12 +1182,12 @@ void AffineMultiBiasKernelImpl2B(AffineConfig const * const config)
                 acc5 = _mm_add_epi32(acc5, in5);
             }
 
-            output[0] = getBias(multiBias, config->bytesPerBias) + vec_sum(acc0);
-            output[1] = getBias(multiBias, config->bytesPerBias) + vec_sum(acc1);
-            output[2] = getBias(multiBias, config->bytesPerBias) + vec_sum(acc2);
-            output[3] = getBias(multiBias, config->bytesPerBias) + vec_sum(acc3);
-            output[4] = getBias(multiBias, config->bytesPerBias) + vec_sum(acc4);
-            output[5] = getBias(multiBias, config->bytesPerBias) + vec_sum(acc5);
+            output[0] = getBias(multiBias, config->RequestConfig->Transform.bytesPerBias) + vec_sum(acc0);
+            output[1] = getBias(multiBias, config->RequestConfig->Transform.bytesPerBias) + vec_sum(acc1);
+            output[2] = getBias(multiBias, config->RequestConfig->Transform.bytesPerBias) + vec_sum(acc2);
+            output[3] = getBias(multiBias, config->RequestConfig->Transform.bytesPerBias) + vec_sum(acc3);
+            output[4] = getBias(multiBias, config->RequestConfig->Transform.bytesPerBias) + vec_sum(acc4);
+            output[5] = getBias(multiBias, config->RequestConfig->Transform.bytesPerBias) + vec_sum(acc5);
 
             for (j = 0; j < KT; j++, weight++)
             {
@@ -1197,39 +1199,39 @@ void AffineMultiBiasKernelImpl2B(AffineConfig const * const config)
                 output[5] += input_2[j + KT] * *weight;
             }
 
-            output += config->inputVectorCount;
+            output += config->RequestConfig->Transform.inputVectorCount;
         }
 
         return;
     }
 
-    if (7 == config->inputVectorCount)
+    if (7 == config->RequestConfig->Transform.inputVectorCount)
     {
-        for (j = 0; j < 2 * config->inputElementCount;)
+        for (j = 0; j < 2 * config->RequestConfig->Transform.inputElementCount;)
         {
             i = j / 2;
-            for (k = i; k < i + 8 && k < config->inputElementCount; k++, j++)
+            for (k = i; k < i + 8 && k < config->RequestConfig->Transform.inputElementCount; k++, j++)
             {
-                config->execution->Intermediate->d0[j] = config->input[k*config->inputVectorCount];
-                config->execution->Intermediate->d2[j] = config->input[k*config->inputVectorCount + 2];
-                config->execution->Intermediate->d4[j] = config->input[k*config->inputVectorCount + 4];
+                config->Intermediate->d0[j] = inputs[k*config->RequestConfig->Transform.inputVectorCount];
+                config->Intermediate->d2[j] = inputs[k*config->RequestConfig->Transform.inputVectorCount + 2];
+                config->Intermediate->d4[j] = inputs[k*config->RequestConfig->Transform.inputVectorCount + 4];
             }
-            for (k = i; k < i + 8 && k < config->inputElementCount; k++, j++)
+            for (k = i; k < i + 8 && k < config->RequestConfig->Transform.inputElementCount; k++, j++)
             {
-                config->execution->Intermediate->d0[j] = config->input[k*config->inputVectorCount + 1];
-                config->execution->Intermediate->d2[j] = config->input[k*config->inputVectorCount + 3];
-                config->execution->Intermediate->d4[j] = config->input[k*config->inputVectorCount + 5];
+                config->Intermediate->d0[j] = inputs[k*config->RequestConfig->Transform.inputVectorCount + 1];
+                config->Intermediate->d2[j] = inputs[k*config->RequestConfig->Transform.inputVectorCount + 3];
+                config->Intermediate->d4[j] = inputs[k*config->RequestConfig->Transform.inputVectorCount + 5];
             }
         }
 
-        for (i = 0; i < config->inputElementCount; i++)
+        for (i = 0; i < config->RequestConfig->Transform.inputElementCount; i++)
         {
-            config->execution->Intermediate->d6[i] = config->input[i*config->inputVectorCount + 6];
+            config->Intermediate->d6[i] = inputs[i*config->RequestConfig->Transform.inputVectorCount + 6];
         }
 
-        for (multiBias = static_cast<int8_t const *>(config->multiBias); multiBias < biasEnd; multiBias += biasStride)
+        for (multiBias = static_cast<int8_t const *>(config->RequestConfig->Transform.multiBias); multiBias < biasEnd; multiBias += biasStride)
         {
-            input_3 = config->execution->Intermediate->d6;
+            input_3 = config->Intermediate->d6;
 
             acc0 = _mm_setzero_si128();
             acc1 = _mm_setzero_si128();
@@ -1273,13 +1275,13 @@ void AffineMultiBiasKernelImpl2B(AffineConfig const * const config)
                 acc6 = _mm_add_epi32(acc6, in6);
             }
 
-            output[0] = getBias(multiBias, config->bytesPerBias) + vec_sum(acc0);
-            output[1] = getBias(multiBias, config->bytesPerBias) + vec_sum(acc1);
-            output[2] = getBias(multiBias, config->bytesPerBias) + vec_sum(acc2);
-            output[3] = getBias(multiBias, config->bytesPerBias) + vec_sum(acc3);
-            output[4] = getBias(multiBias, config->bytesPerBias) + vec_sum(acc4);
-            output[5] = getBias(multiBias, config->bytesPerBias) + vec_sum(acc5);
-            output[6] = getBias(multiBias, config->bytesPerBias) + vec_sum(acc6);
+            output[0] = getBias(multiBias, config->RequestConfig->Transform.bytesPerBias) + vec_sum(acc0);
+            output[1] = getBias(multiBias, config->RequestConfig->Transform.bytesPerBias) + vec_sum(acc1);
+            output[2] = getBias(multiBias, config->RequestConfig->Transform.bytesPerBias) + vec_sum(acc2);
+            output[3] = getBias(multiBias, config->RequestConfig->Transform.bytesPerBias) + vec_sum(acc3);
+            output[4] = getBias(multiBias, config->RequestConfig->Transform.bytesPerBias) + vec_sum(acc4);
+            output[5] = getBias(multiBias, config->RequestConfig->Transform.bytesPerBias) + vec_sum(acc5);
+            output[6] = getBias(multiBias, config->RequestConfig->Transform.bytesPerBias) + vec_sum(acc6);
 
             for (j = 0; j < KT; j++, weight++)
             {
@@ -1292,32 +1294,32 @@ void AffineMultiBiasKernelImpl2B(AffineConfig const * const config)
                 output[6] += input_3[j] * *weight;
             }
 
-            output += config->inputVectorCount;
+            output += config->RequestConfig->Transform.inputVectorCount;
         }
     }
 
-    if (8 == config->inputVectorCount)
+    if (8 == config->RequestConfig->Transform.inputVectorCount)
     {
-        for (j = 0; j < 2 * config->inputElementCount;)
+        for (j = 0; j < 2 * config->RequestConfig->Transform.inputElementCount;)
         {
             i = j / 2;
-            for (k = i; k < i + 8 && k < config->inputElementCount; k++, j++)
+            for (k = i; k < i + 8 && k < config->RequestConfig->Transform.inputElementCount; k++, j++)
             {
-                config->execution->Intermediate->d0[j] = config->input[k*config->inputVectorCount];
-                config->execution->Intermediate->d2[j] = config->input[k*config->inputVectorCount + 2];
-                config->execution->Intermediate->d4[j] = config->input[k*config->inputVectorCount + 4];
-                config->execution->Intermediate->d6[j] = config->input[k*config->inputVectorCount + 6];
+                config->Intermediate->d0[j] = inputs[k*config->RequestConfig->Transform.inputVectorCount];
+                config->Intermediate->d2[j] = inputs[k*config->RequestConfig->Transform.inputVectorCount + 2];
+                config->Intermediate->d4[j] = inputs[k*config->RequestConfig->Transform.inputVectorCount + 4];
+                config->Intermediate->d6[j] = inputs[k*config->RequestConfig->Transform.inputVectorCount + 6];
             }
-            for (k = i; k < i + 8 && k < config->inputElementCount; k++, j++)
+            for (k = i; k < i + 8 && k < config->RequestConfig->Transform.inputElementCount; k++, j++)
             {
-                config->execution->Intermediate->d0[j] = config->input[k*config->inputVectorCount + 1];
-                config->execution->Intermediate->d2[j] = config->input[k*config->inputVectorCount + 3];
-                config->execution->Intermediate->d4[j] = config->input[k*config->inputVectorCount + 5];
-                config->execution->Intermediate->d6[j] = config->input[k*config->inputVectorCount + 7];
+                config->Intermediate->d0[j] = inputs[k*config->RequestConfig->Transform.inputVectorCount + 1];
+                config->Intermediate->d2[j] = inputs[k*config->RequestConfig->Transform.inputVectorCount + 3];
+                config->Intermediate->d4[j] = inputs[k*config->RequestConfig->Transform.inputVectorCount + 5];
+                config->Intermediate->d6[j] = inputs[k*config->RequestConfig->Transform.inputVectorCount + 7];
             }
         }
 
-        for (multiBias = static_cast<int8_t const *>(config->multiBias); multiBias < biasEnd; multiBias += biasStride)
+        for (multiBias = static_cast<int8_t const *>(config->RequestConfig->Transform.multiBias); multiBias < biasEnd; multiBias += biasStride)
         {
             acc0 = _mm_setzero_si128();
             acc1 = _mm_setzero_si128();
@@ -1366,7 +1368,7 @@ void AffineMultiBiasKernelImpl2B(AffineConfig const * const config)
                 acc7 = _mm_add_epi32(acc7, in7);
             }
 
-            s1 = _mm_set1_epi32(getBias(multiBias, config->bytesPerBias));
+            s1 = _mm_set1_epi32(getBias(multiBias, config->RequestConfig->Transform.bytesPerBias));
 
             s2 = _mm_hadd_epi32(acc0, acc1);
             s3 = _mm_hadd_epi32(acc2, acc3);
@@ -1393,7 +1395,7 @@ void AffineMultiBiasKernelImpl2B(AffineConfig const * const config)
                 output[7] += input_3[j + KT] * *weight;
             }
 
-            output += config->inputVectorCount;
+            output += config->RequestConfig->Transform.inputVectorCount;
         }
 
         return;

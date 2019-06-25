@@ -63,17 +63,17 @@ bool LinuxDriverInterface::OpenDevice()
         { GNA_PARAM_RECOVERY_TIMEOUT, 0 },
     };
 
-    for(uint8_t i = 0; i < 16; i++)
+    for (uint8_t i = 0; i < MAX_GNA_DEVICES; i++)
     {
         char name[12];
         sprintf(name, "/dev/gna%hhu", i);
         fd = open(name, O_RDWR);
-        if(-1 == fd)
+        if (-1 == fd)
         {
             continue;
         }
 
-        if(ioctl(fd, GNA_IOCTL_GETPARAM, &params[0]) == 0
+        if (ioctl(fd, GNA_IOCTL_GETPARAM, &params[0]) == 0
             && ioctl(fd, GNA_IOCTL_GETPARAM, &params[1]) == 0
             && ioctl(fd, GNA_IOCTL_GETPARAM, &params[2]) == 0)
         {
@@ -82,7 +82,7 @@ bool LinuxDriverInterface::OpenDevice()
         }
     }
 
-    if(!found)
+    if (!found)
     {
         return false;
     }

@@ -543,7 +543,7 @@ typedef enum _ComponentType
     GmmMeanComponent,
     GmmInverseCovarianceComponent,
     GmmGaussianConstantComponent,
-    // TODO:3: Recurrent component?
+    RecurrentComponent,
     ComponentTypeCount,
 } GnaComponentType;
 

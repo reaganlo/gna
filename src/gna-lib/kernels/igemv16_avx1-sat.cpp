@@ -35,16 +35,16 @@
 #include <cstdint>
 #include <immintrin.h>
 
-void RecurrentKernelImpl2B(RecurrentConfig const * const config)
+void RecurrentKernelImpl2B(ExecutionKernelConfig<RecurrentConfig> const * const config)
 {
     int16_t const * input;
     int16_t * feedback;
-    int16_t *feedbackEnd = config->feedbackBuffer+config->outputElementCount;
+    int16_t *feedbackEnd = config->RequestConfig->Transform.feedbackBuffer+config->RequestConfig->Transform.outputElementCount;
 
-    auto const * bias = reinterpret_cast<int8_t const *>(config->biasesSimple);
-    auto const * const biasEnd = bias + (config->bytesPerBias * config->outputElementCount);
-    int32_t * output = config->output;
-    int16_t const * weight = config->weights2B;
+    auto const * bias = reinterpret_cast<int8_t const *>(config->RequestConfig->Transform.biasesSimple);
+    auto const * const biasEnd = bias + (config->RequestConfig->Transform.bytesPerBias * config->RequestConfig->Transform.outputElementCount);
+    int32_t * output = reinterpret_cast<int32_t *>(config->RequestConfig->Transform.output);
+    int16_t const * weight = config->RequestConfig->Transform.weights2B;
 
     __m256i in;
     __m256i w;
@@ -71,27 +71,27 @@ void RecurrentKernelImpl2B(RecurrentConfig const * const config)
     uint32_t k;
     int64_t sum;
 
-    uint32_t KK = config->inputElementCount - config->inputElementCount % VEC_16CAP;
-    uint32_t part_sz = config->execution->BufferElementCount[0 + XNN_N_GROUP_MAX];
-    uint32_t kpart_sz = config->inputElementCount % part_sz;
-    uint32_t mpart_sz = config->outputElementCount < part_sz - kpart_sz ? config->outputElementCount
+    uint32_t KK = config->RequestConfig->Transform.inputElementCount - config->RequestConfig->Transform.inputElementCount % VEC_16CAP;
+    uint32_t part_sz = config->BufferElementCount[0 + XNN_N_GROUP_MAX];
+    uint32_t kpart_sz = config->RequestConfig->Transform.inputElementCount % part_sz;
+    uint32_t mpart_sz = config->RequestConfig->Transform.outputElementCount < part_sz - kpart_sz ? config->RequestConfig->Transform.outputElementCount
         : part_sz - kpart_sz;
     uint32_t mm = mpart_sz - mpart_sz % VEC_16CAP;
-    uint32_t MM = config->outputElementCount - (config->outputElementCount - mpart_sz) % VEC_16CAP;
+    uint32_t MM = config->RequestConfig->Transform.outputElementCount - (config->RequestConfig->Transform.outputElementCount - mpart_sz) % VEC_16CAP;
 
-    uint32_t kparts = config->inputElementCount / part_sz;
-    uint32_t mparts = (config->outputElementCount - mpart_sz) / part_sz;
+    uint32_t kparts = config->RequestConfig->Transform.inputElementCount / part_sz;
+    uint32_t mparts = (config->RequestConfig->Transform.outputElementCount - mpart_sz) / part_sz;
 
     acc = _mm_setzero_si128();
 
-    for (; bias < biasEnd; bias += config->bytesPerBias)
+    for (; bias < biasEnd; bias += config->RequestConfig->Transform.bytesPerBias)
     {
-        input = config->input;
-        feedback = config->feedbackBuffer;
-        sum = getBias(bias, config->bytesPerBias);
+        input = reinterpret_cast<int16_t const *>(config->RequestConfig->Inputs);
+        feedback = config->RequestConfig->Transform.feedbackBuffer;
+        sum = getBias(bias, config->RequestConfig->Transform.bytesPerBias);
 
         // compute parts using AVX
-        // if config->inputElementCount has modulo 16 remainder, leave it
+        // if config->RequestConfig->Transform.inputElementCount has modulo 16 remainder, leave it
         for (j = 0; j < kparts + 1; j++)
         {
             in = _mm256_lddqu_si256((__m256i*)input);
@@ -138,13 +138,13 @@ void RecurrentKernelImpl2B(RecurrentConfig const * const config)
             {
                 sum += vec_sum(acc);
                 acc = _mm_setzero_si128();
-                saturate_store_out(&sum, output, config->execution->SaturationCount);
+                saturate_store_out(&sum, output, config->SaturationCount);
                 sum = (int64_t)*output;
             }
         }
 
         // compute remainder
-        for (k = KK; k < config->inputElementCount; k++)
+        for (k = KK; k < config->RequestConfig->Transform.inputElementCount; k++)
         {
             sum += *input++ * *weight++;
         }
@@ -159,7 +159,7 @@ void RecurrentKernelImpl2B(RecurrentConfig const * const config)
         w1 = _mm256_extractf128_si256(w, 1);
 
         // compute using AVX instructions until additions reach part size
-        // or if loop reaches end of config->outputElementCount (without the modulo 16 remainder)
+        // or if loop reaches end of config->RequestConfig->Transform.outputElementCount (without the modulo 16 remainder)
         for (k = 0; k < mm; k += VEC_16CAP)
         {
             feedback += VEC_16CAP;
@@ -190,7 +190,7 @@ void RecurrentKernelImpl2B(RecurrentConfig const * const config)
             w1 = _mm256_extractf128_si256(w, 1);
         }
 
-        // if part size wasn't reached, but there is still config->outputElementCount remainder
+        // if part size wasn't reached, but there is still config->RequestConfig->Transform.outputElementCount remainder
         for (; k < mpart_sz; k++)
         {
             sum += *feedback++ * *weight++;
@@ -198,7 +198,7 @@ void RecurrentKernelImpl2B(RecurrentConfig const * const config)
 
         sum += vec_sum(acc);
         acc = _mm_setzero_si128();
-        saturate_store_out(&sum, output, config->execution->SaturationCount);
+        saturate_store_out(&sum, output, config->SaturationCount);
         sum = (int64_t)*output;
 
         for (j = 0; j < mparts + 1; j++)
@@ -237,7 +237,7 @@ void RecurrentKernelImpl2B(RecurrentConfig const * const config)
             {
                 sum += vec_sum(acc);
                 acc = _mm_setzero_si128();
-                saturate_store_out(&sum, output, config->execution->SaturationCount);
+                saturate_store_out(&sum, output, config->SaturationCount);
                 sum = (int64_t)*output;
             }
         }
@@ -250,7 +250,7 @@ void RecurrentKernelImpl2B(RecurrentConfig const * const config)
 
         sum += vec_sum(acc);
         acc = _mm_setzero_si128();
-        saturate_store_out(&sum, output, config->execution->SaturationCount);
+        saturate_store_out(&sum, output, config->SaturationCount);
         sum = (int64_t)*output;
 
         output++;

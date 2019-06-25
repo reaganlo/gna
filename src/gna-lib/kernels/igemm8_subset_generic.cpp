@@ -32,7 +32,7 @@
 
 #include <cstdint>
 
-void AffineActiveListKernelImpl1B(AffineConfig const * const config, AffineConfigAl const * const al)
+void AffineActiveListKernelImpl1B(ExecutionKernelConfig<AffineConfig> const * const config, AffineConfigAl al)
 {
     uint32_t i;
     uint32_t j;
@@ -40,80 +40,89 @@ void AffineActiveListKernelImpl1B(AffineConfig const * const config, AffineConfi
     uint32_t l;
     int16_t const * input;
     int8_t const * weight;
+    auto *output = reinterpret_cast<int32_t *>(config->RequestConfig->Outputs);
 
-    TransposeConfig transposeConfig = TransposeConfig{ config->inputElementCount, config->inputVectorCount,
-                                                       config->input, config->execution->Intermediate->d0 };
+    auto inputVectorCount = config->RequestConfig->Transform.inputVectorCount;
+    auto inputElementCount = config->RequestConfig->Transform.inputElementCount;
+
+    auto transposeConfig = TransposeConfig::MakeFrom(config);
     TransposeKernelImpl(&transposeConfig);
 
-    for (l = 0; l < al->count; l++)
+    for (l = 0; l < al.count; l++)
     {
-        i = al->indices[l];
-        input = config->execution->Intermediate->d0;
-        weight = config->weights1B+i*config->inputElementCount;
-        for (j = 0; j < config->inputVectorCount; j++)
+        i = al.indices[l];
+        input = config->Intermediate->d0;
+        weight = config->RequestConfig->Transform.weights1B+i*inputElementCount;
+        for (j = 0; j < inputVectorCount; j++)
         {
-            config->output[l*config->inputVectorCount + j] = 0;
-            for (k = 0; k < config->inputElementCount; k++)
+            output[l*inputVectorCount + j] = 0;
+            for (k = 0; k < inputElementCount; k++)
             {
-                config->output[l*config->inputVectorCount + j] += weight[k] * *input++;
+                output[l*inputVectorCount + j] += weight[k] * *input++;
             }
-            config->output[l*config->inputVectorCount + j] *= config->biasesCompound[i].multiplier;
-            config->output[l*config->inputVectorCount + j] += config->biasesCompound[i].bias;
+            output[l*inputVectorCount + j] *= config->RequestConfig->Transform.biasesCompound[i].multiplier;
+            output[l*inputVectorCount + j] += config->RequestConfig->Transform.biasesCompound[i].bias;
         }
     }
 }
 
-void AffineActiveListKernelImpl1B2B(AffineConfig const * const config, AffineConfigAl const * const al)
+void AffineActiveListKernelImpl1B2B(ExecutionKernelConfig<AffineConfig> const * const config, AffineConfigAl al)
 {
     uint32_t i, j, k, l;
     int16_t const * input;
     int8_t const * weight;
+    auto *output = reinterpret_cast<int32_t *>(config->RequestConfig->Outputs);
 
-    TransposeConfig transposeConfig = TransposeConfig{ config->inputElementCount, config->inputVectorCount,
-        config->input, config->execution->Intermediate->d0 };
+    auto inputVectorCount = config->RequestConfig->Transform.inputVectorCount;
+    auto inputElementCount = config->RequestConfig->Transform.inputElementCount;
+
+    auto transposeConfig = TransposeConfig::MakeFrom(config);
     TransposeKernelImpl2B(&transposeConfig);
 
-    for (l = 0; l < al->count; l++)
+    for (l = 0; l < al.count; l++)
     {
-        i = al->indices[l];
-        input = config->execution->Intermediate->d0;
-        weight = config->weights1B + i*config->inputElementCount;
-        for (j = 0; j < config->inputVectorCount; j++)
+        i = al.indices[l];
+        input = config->Intermediate->d0;
+        weight = config->RequestConfig->Transform.weights1B + i*inputElementCount;
+        for (j = 0; j < inputVectorCount; j++)
         {
-            config->output[l*config->inputVectorCount + j] = 0;
-            for (k = 0; k < config->inputElementCount; k++)
+            output[l*inputVectorCount + j] = 0;
+            for (k = 0; k < inputElementCount; k++)
             {
-                config->output[l*config->inputVectorCount + j] += weight[k] * *input++;
+                output[l*inputVectorCount + j] += weight[k] * *input++;
             }
-            config->output[l*config->inputVectorCount + j] *= config->biasesCompound[i].multiplier;
-            config->output[l*config->inputVectorCount + j] += config->biasesCompound[i].bias;
+            output[l*inputVectorCount + j] *= config->RequestConfig->Transform.biasesCompound[i].multiplier;
+            output[l*inputVectorCount + j] += config->RequestConfig->Transform.biasesCompound[i].bias;
         }
     }
 }
-void AffineActiveListKernelImpl1B1B(AffineConfig const * const config, AffineConfigAl const * const al)
+void AffineActiveListKernelImpl1B1B(ExecutionKernelConfig<AffineConfig> const * const config, AffineConfigAl al)
 {
     uint32_t i, j, k, l;
     int8_t const * input;
     int8_t const * weight;
+    auto *output = reinterpret_cast<int32_t *>(config->RequestConfig->Outputs);
 
-    TransposeConfig transposeConfig = TransposeConfig{ config->inputElementCount, config->inputVectorCount,
-        config->input, config->execution->Intermediate->d0 };
+    auto inputVectorCount = config->RequestConfig->Transform.inputVectorCount;
+    auto inputElementCount = config->RequestConfig->Transform.inputElementCount;
+
+    auto transposeConfig = TransposeConfig::MakeFrom(config);
     TransposeKernelImpl1B(&transposeConfig);
 
-    for (l = 0; l < al->count; l++)
+    for (l = 0; l < al.count; l++)
     {
-        i = al->indices[l];
+        i = al.indices[l];
 
-        input = (int8_t*)config->execution->Intermediate->d0;
-        weight = config->weights1B + i*config->inputElementCount;
-        for (j = 0; j < config->inputVectorCount; j++)
+        input = (int8_t*)config->Intermediate->d0;
+        weight = config->RequestConfig->Transform.weights1B + i*inputElementCount;
+        for (j = 0; j < inputVectorCount; j++)
         {
-            auto bias = getBias((void*)config->biasesSimple, config->bytesPerBias, i);
-            config->output[l*config->inputVectorCount + j] = static_cast<int32_t>(bias);
+            auto bias = getBias((void*)config->RequestConfig->Transform.biasesSimple, config->RequestConfig->Transform.bytesPerBias, i);
+            output[l*config->RequestConfig->Transform.inputVectorCount + j] = bias;
 
-            for (k = 0; k < config->inputElementCount; k++)
+            for (k = 0; k < inputElementCount; k++)
             {
-                config->output[l*config->inputVectorCount + j] += weight[k] * *input++;
+                output[l*inputVectorCount + j] += weight[k] * *input++;
             }
         }
     }

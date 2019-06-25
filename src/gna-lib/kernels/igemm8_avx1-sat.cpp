@@ -36,86 +36,86 @@
 #include <cstring>
 #include <immintrin.h>
 
-static void initializeVectors(AffineConfig const *config,
+static void initializeVectors(ExecutionKernelConfig<AffineConfig> const *config,
         int16_t const * input[XNN_N_GROUP_MAX], __m128i *in_ptr[XNN_N_GROUP_MAX], uint32_t simdVectorLength);
 
 static void affineMultiBiasKernelImpl1B_N1(
-    AffineConfig const * config, int16_t const *input[XNN_N_GROUP_MAX], __m128i *in_ptr[XNN_N_GROUP_MAX],
+    ExecutionKernelConfig<AffineConfig> const * config, int16_t const *input[XNN_N_GROUP_MAX], __m128i *in_ptr[XNN_N_GROUP_MAX],
     uint32_t numberOfElementsPerGroup, uint32_t numberOfIterationsPerGroup, uint32_t vectorTailLength, uint32_t simdVectorLength);
 
 static void affineMultiBiasKernelImpl1B_N2(
-    AffineConfig const * config, int16_t const *input[XNN_N_GROUP_MAX], __m128i *in_ptr[XNN_N_GROUP_MAX],
+    ExecutionKernelConfig<AffineConfig> const * config, int16_t const *input[XNN_N_GROUP_MAX], __m128i *in_ptr[XNN_N_GROUP_MAX],
     uint32_t numberOfElementsPerGroup, uint32_t numberOfIterationsPerGroup, uint32_t vectorTailLength, uint32_t simdVectorLength);
 
 static void affineMultiBiasKernelImpl1B_N3(
-    AffineConfig const * config, int16_t const *input[XNN_N_GROUP_MAX], __m128i *in_ptr[XNN_N_GROUP_MAX],
+    ExecutionKernelConfig<AffineConfig> const * config, int16_t const *input[XNN_N_GROUP_MAX], __m128i *in_ptr[XNN_N_GROUP_MAX],
     uint32_t numberOfElementsPerGroup, uint32_t numberOfIterationsPerGroup, uint32_t vectorTailLength, uint32_t simdVectorLength);
 
 static void affineMultiBiasKernelImpl1B_N4(
-    AffineConfig const * config, int16_t const *input[XNN_N_GROUP_MAX], __m128i *in_ptr[XNN_N_GROUP_MAX],
+    ExecutionKernelConfig<AffineConfig> const * config, int16_t const *input[XNN_N_GROUP_MAX], __m128i *in_ptr[XNN_N_GROUP_MAX],
     uint32_t numberOfElementsPerGroup, uint32_t numberOfIterationsPerGroup, uint32_t vectorTailLength, uint32_t simdVectorLength);
 
 static void affineMultiBiasKernelImpl1B_N5(
-    AffineConfig const * config, int16_t const *input[XNN_N_GROUP_MAX], __m128i *in_ptr[XNN_N_GROUP_MAX],
+    ExecutionKernelConfig<AffineConfig> const * config, int16_t const *input[XNN_N_GROUP_MAX], __m128i *in_ptr[XNN_N_GROUP_MAX],
     uint32_t numberOfElementsPerGroup, uint32_t numberOfIterationsPerGroup, uint32_t vectorTailLength, uint32_t simdVectorLength);
 
 static void affineMultiBiasKernelImpl1B_N6(
-    AffineConfig const * config, int16_t const *input[XNN_N_GROUP_MAX], __m128i *in_ptr[XNN_N_GROUP_MAX],
+    ExecutionKernelConfig<AffineConfig> const * config, int16_t const *input[XNN_N_GROUP_MAX], __m128i *in_ptr[XNN_N_GROUP_MAX],
     uint32_t numberOfElementsPerGroup, uint32_t numberOfIterationsPerGroup, uint32_t vectorTailLength, uint32_t simdVectorLength);
 
 static void affineMultiBiasKernelImpl1B_N7(
-    AffineConfig const * config, int16_t const *input[XNN_N_GROUP_MAX], __m128i *in_ptr[XNN_N_GROUP_MAX],
+    ExecutionKernelConfig<AffineConfig> const * config, int16_t const *input[XNN_N_GROUP_MAX], __m128i *in_ptr[XNN_N_GROUP_MAX],
     uint32_t numberOfElementsPerGroup, uint32_t numberOfIterationsPerGroup, uint32_t vectorTailLength, uint32_t simdVectorLength);
 
 static void affineMultiBiasKernelImpl1B_N8(
-    AffineConfig const * config, int16_t const *input[XNN_N_GROUP_MAX], __m128i *in_ptr[XNN_N_GROUP_MAX],
+    ExecutionKernelConfig<AffineConfig> const * config, int16_t const *input[XNN_N_GROUP_MAX], __m128i *in_ptr[XNN_N_GROUP_MAX],
     uint32_t numberOfElementsPerGroup, uint32_t numberOfIterationsPerGroup, uint32_t vectorTailLength, uint32_t simdVectorLength);
 
 static void affineKernelImpl1B_N1(
-    AffineConfig const * config, int16_t const *input[XNN_N_GROUP_MAX], __m128i *in_ptr[XNN_N_GROUP_MAX],
+    ExecutionKernelConfig<AffineConfig> const * config, int16_t const *input[XNN_N_GROUP_MAX], __m128i *in_ptr[XNN_N_GROUP_MAX],
     uint32_t numberOfElementsPerGroup, uint32_t numberOfIterationsPerGroup, uint32_t vectorTailLength, uint32_t simdVectorLength);
 
 static void affineKernelImpl1B_N2(
-    AffineConfig const * config, int16_t const *input[XNN_N_GROUP_MAX], __m128i *in_ptr[XNN_N_GROUP_MAX],
+    ExecutionKernelConfig<AffineConfig> const * config, int16_t const *input[XNN_N_GROUP_MAX], __m128i *in_ptr[XNN_N_GROUP_MAX],
     uint32_t numberOfElementsPerGroup, uint32_t numberOfIterationsPerGroup, uint32_t vectorTailLength, uint32_t simdVectorLength);
 
 static void affineKernelImpl1B_N3(
-    AffineConfig const * config, int16_t const *input[XNN_N_GROUP_MAX], __m128i *in_ptr[XNN_N_GROUP_MAX],
+    ExecutionKernelConfig<AffineConfig> const * config, int16_t const *input[XNN_N_GROUP_MAX], __m128i *in_ptr[XNN_N_GROUP_MAX],
     uint32_t numberOfElementsPerGroup, uint32_t numberOfIterationsPerGroup, uint32_t vectorTailLength, uint32_t simdVectorLength);
 
 static void affineKernelImpl1B_N4(
-    AffineConfig const * config, int16_t const *input[XNN_N_GROUP_MAX], __m128i *in_ptr[XNN_N_GROUP_MAX],
+    ExecutionKernelConfig<AffineConfig> const * config, int16_t const *input[XNN_N_GROUP_MAX], __m128i *in_ptr[XNN_N_GROUP_MAX],
     uint32_t numberOfElementsPerGroup, uint32_t numberOfIterationsPerGroup, uint32_t vectorTailLength, uint32_t simdVectorLength);
 
 static void affineKernelImpl1B_N5(
-    AffineConfig const * config, int16_t const *input[XNN_N_GROUP_MAX], __m128i *in_ptr[XNN_N_GROUP_MAX],
+    ExecutionKernelConfig<AffineConfig> const * config, int16_t const *input[XNN_N_GROUP_MAX], __m128i *in_ptr[XNN_N_GROUP_MAX],
     uint32_t numberOfElementsPerGroup, uint32_t numberOfIterationsPerGroup, uint32_t vectorTailLength, uint32_t simdVectorLength);
 
 static void affineKernelImpl1B_N6(
-    AffineConfig const * config, int16_t const *input[XNN_N_GROUP_MAX], __m128i *in_ptr[XNN_N_GROUP_MAX],
+    ExecutionKernelConfig<AffineConfig> const * config, int16_t const *input[XNN_N_GROUP_MAX], __m128i *in_ptr[XNN_N_GROUP_MAX],
     uint32_t numberOfElementsPerGroup, uint32_t numberOfIterationsPerGroup, uint32_t vectorTailLength, uint32_t simdVectorLength);
 
 static void affineKernelImpl1B_N7(
-    AffineConfig const * config, int16_t const *input[XNN_N_GROUP_MAX], __m128i *in_ptr[XNN_N_GROUP_MAX],
+    ExecutionKernelConfig<AffineConfig> const * config, int16_t const *input[XNN_N_GROUP_MAX], __m128i *in_ptr[XNN_N_GROUP_MAX],
     uint32_t numberOfElementsPerGroup, uint32_t numberOfIterationsPerGroup, uint32_t vectorTailLength, uint32_t simdVectorLength);
 
 static void affineKernelImpl1B_N8(
-    AffineConfig const * config, int16_t const *input[XNN_N_GROUP_MAX], __m128i *in_ptr[XNN_N_GROUP_MAX],
+    ExecutionKernelConfig<AffineConfig> const * config, int16_t const *input[XNN_N_GROUP_MAX], __m128i *in_ptr[XNN_N_GROUP_MAX],
     uint32_t numberOfElementsPerGroup, uint32_t numberOfIterationsPerGroup, uint32_t vectorTailLength, uint32_t simdVectorLength);
 
-void AffineKernelImpl1B(AffineConfig const * const config)
+void AffineKernelImpl1B(ExecutionKernelConfig<AffineConfig> const * const config)
 {
     uint32_t inputBufferSize;
-    uint32_t vectorTailLength; // config->inputElementCount tail for manual processing
-    uint32_t simdVectorLength; // trimmed config->inputElementCount for AVX2 processing
+    uint32_t vectorTailLength; // config->RequestConfig->Transform.inputElementCount tail for manual processing
+    uint32_t simdVectorLength; // trimmed config->RequestConfig->Transform.inputElementCount for AVX2 processing
     uint32_t numberOfIterationsPerGroup;
     uint32_t numberOfElementsPerGroup;
 
-    vectorTailLength = config->inputElementCount % SSE_16CAP;
-    simdVectorLength= config->inputElementCount - vectorTailLength;
-    inputBufferSize = config->execution->BufferElementCount[config->inputVectorCount - 1 + XNN_N_GROUP_MAX];
-    numberOfElementsPerGroup =  inputBufferSize / config->inputVectorCount;
-    numberOfIterationsPerGroup = config->inputElementCount / numberOfElementsPerGroup;
+    vectorTailLength = config->RequestConfig->Transform.inputElementCount % SSE_16CAP;
+    simdVectorLength= config->RequestConfig->Transform.inputElementCount - vectorTailLength;
+    inputBufferSize = config->BufferElementCount[config->RequestConfig->Transform.inputVectorCount - 1 + XNN_N_GROUP_MAX];
+    numberOfElementsPerGroup =  inputBufferSize / config->RequestConfig->Transform.inputVectorCount;
+    numberOfIterationsPerGroup = config->RequestConfig->Transform.inputElementCount / numberOfElementsPerGroup;
 
     __m128i *in_ptr[XNN_N_GROUP_MAX];
     memset(in_ptr, 0, sizeof(in_ptr));
@@ -125,7 +125,7 @@ void AffineKernelImpl1B(AffineConfig const * const config)
 
     initializeVectors(config, input, in_ptr, simdVectorLength);
 
-    switch (config->inputVectorCount)
+    switch (config->RequestConfig->Transform.inputVectorCount)
     {
     case 1:
         affineKernelImpl1B_N1(config, input, in_ptr,
@@ -163,19 +163,19 @@ void AffineKernelImpl1B(AffineConfig const * const config)
     }
 }
 
-void AffineMultiBiasKernelImpl1B(AffineConfig const * const config)
+void AffineMultiBiasKernelImpl1B(ExecutionKernelConfig<AffineConfig> const * const config)
 {
-    uint32_t vectorTailLength; // config->inputElementCount tail for manual processing
-    uint32_t simdVectorLength; // trimmed config->inputElementCount for AVX2 processing
+    uint32_t vectorTailLength; // config->RequestConfig->Transform.inputElementCount tail for manual processing
+    uint32_t simdVectorLength; // trimmed config->RequestConfig->Transform.inputElementCount for AVX2 processing
     uint32_t inputBufferSize;
     uint32_t numberOfIterationsPerGroup;
     uint32_t numberOfElementsPerGroup;
 
-    vectorTailLength = config->inputElementCount % SSE_16CAP;
-    simdVectorLength = config->inputElementCount - vectorTailLength;
-    inputBufferSize = config->execution->BufferElementCount[config->inputVectorCount - 1 + XNN_N_GROUP_MAX];
-    numberOfElementsPerGroup =  inputBufferSize / config->inputVectorCount;
-    numberOfIterationsPerGroup = config->inputElementCount / numberOfElementsPerGroup;
+    vectorTailLength = config->RequestConfig->Transform.inputElementCount % SSE_16CAP;
+    simdVectorLength = config->RequestConfig->Transform.inputElementCount - vectorTailLength;
+    inputBufferSize = config->BufferElementCount[config->RequestConfig->Transform.inputVectorCount - 1 + XNN_N_GROUP_MAX];
+    numberOfElementsPerGroup =  inputBufferSize / config->RequestConfig->Transform.inputVectorCount;
+    numberOfIterationsPerGroup = config->RequestConfig->Transform.inputElementCount / numberOfElementsPerGroup;
 
     int16_t const * input[XNN_N_GROUP_MAX];
     memset(input, 0, sizeof(input));
@@ -186,7 +186,7 @@ void AffineMultiBiasKernelImpl1B(AffineConfig const * const config)
 
     initializeVectors(config, input, in_ptr, simdVectorLength);
 
-    switch (config->inputVectorCount)
+    switch (config->RequestConfig->Transform.inputVectorCount)
     {
     case 1:
             affineMultiBiasKernelImpl1B_N1(config, input, in_ptr,
@@ -223,85 +223,86 @@ void AffineMultiBiasKernelImpl1B(AffineConfig const * const config)
     }
 }
 
-void initializeVectors(AffineConfig const * const config,
+void initializeVectors(ExecutionKernelConfig<AffineConfig> const * const config,
         int16_t const * input[XNN_N_GROUP_MAX], __m128i *in_ptr[XNN_N_GROUP_MAX], uint32_t simdVectorLength)
 {
+    int16_t const *inputs = reinterpret_cast<int16_t const *>(config->RequestConfig->Inputs);
     uint32_t i;
 
-    if (config->inputVectorCount == 8)
+    if (config->RequestConfig->Transform.inputVectorCount == 8)
     {
-        for (i = 0; i < config->inputElementCount; i++)
+        for (i = 0; i < config->RequestConfig->Transform.inputElementCount; i++)
         {
-            config->execution->Intermediate->d7[i] = config->input[i*config->inputVectorCount + 7];
+            config->Intermediate->d7[i] = inputs[i*config->RequestConfig->Transform.inputVectorCount + 7];
         }
-        input[7] = config->execution->Intermediate->d7 + simdVectorLength;
-        in_ptr[7] = (__m128i*)config->execution->Intermediate->d7;
+        input[7] = config->Intermediate->d7 + simdVectorLength;
+        in_ptr[7] = (__m128i*)config->Intermediate->d7;
     }
-    if (config->inputVectorCount >= 7)
+    if (config->RequestConfig->Transform.inputVectorCount >= 7)
     {
-        for (i = 0; i < config->inputElementCount; i++)
+        for (i = 0; i < config->RequestConfig->Transform.inputElementCount; i++)
         {
-            config->execution->Intermediate->d6[i] = config->input[i*config->inputVectorCount + 6];
+            config->Intermediate->d6[i] = inputs[i*config->RequestConfig->Transform.inputVectorCount + 6];
         }
-        input[6] = config->execution->Intermediate->d6 + simdVectorLength;
-        in_ptr[6] = (__m128i*)config->execution->Intermediate->d6;
+        input[6] = config->Intermediate->d6 + simdVectorLength;
+        in_ptr[6] = (__m128i*)config->Intermediate->d6;
     }
-    if (config->inputVectorCount >= 6)
+    if (config->RequestConfig->Transform.inputVectorCount >= 6)
     {
-        for (i = 0; i < config->inputElementCount; i++)
+        for (i = 0; i < config->RequestConfig->Transform.inputElementCount; i++)
         {
-            config->execution->Intermediate->d5[i] = config->input[i*config->inputVectorCount + 5];
+            config->Intermediate->d5[i] = inputs[i*config->RequestConfig->Transform.inputVectorCount + 5];
         }
-        input[5] = config->execution->Intermediate->d5 + simdVectorLength;
-        in_ptr[5] = (__m128i*)config->execution->Intermediate->d5;
+        input[5] = config->Intermediate->d5 + simdVectorLength;
+        in_ptr[5] = (__m128i*)config->Intermediate->d5;
     }
-    if (config->inputVectorCount >= 5)
+    if (config->RequestConfig->Transform.inputVectorCount >= 5)
     {
-        for (i = 0; i < config->inputElementCount; i++)
+        for (i = 0; i < config->RequestConfig->Transform.inputElementCount; i++)
         {
-            config->execution->Intermediate->d4[i] = config->input[i*config->inputVectorCount + 4];
+            config->Intermediate->d4[i] = inputs[i*config->RequestConfig->Transform.inputVectorCount + 4];
         }
-        input[4] = config->execution->Intermediate->d4 + simdVectorLength;
-        in_ptr[4] = (__m128i*)config->execution->Intermediate->d4;
+        input[4] = config->Intermediate->d4 + simdVectorLength;
+        in_ptr[4] = (__m128i*)config->Intermediate->d4;
     }
-    if (config->inputVectorCount >= 4)
+    if (config->RequestConfig->Transform.inputVectorCount >= 4)
     {
-        for (i = 0; i < config->inputElementCount; i++)
+        for (i = 0; i < config->RequestConfig->Transform.inputElementCount; i++)
         {
-            config->execution->Intermediate->d3[i] = config->input[i*config->inputVectorCount + 3];
+            config->Intermediate->d3[i] = inputs[i*config->RequestConfig->Transform.inputVectorCount + 3];
         }
-        input[3] = config->execution->Intermediate->d3 + simdVectorLength;
-        in_ptr[3] = (__m128i*)config->execution->Intermediate->d3;
+        input[3] = config->Intermediate->d3 + simdVectorLength;
+        in_ptr[3] = (__m128i*)config->Intermediate->d3;
     }
-    if (config->inputVectorCount >= 3)
+    if (config->RequestConfig->Transform.inputVectorCount >= 3)
     {
-        for (i = 0; i < config->inputElementCount; i++)
+        for (i = 0; i < config->RequestConfig->Transform.inputElementCount; i++)
         {
-            config->execution->Intermediate->d2[i] = config->input[i*config->inputVectorCount + 2];
+            config->Intermediate->d2[i] = inputs[i*config->RequestConfig->Transform.inputVectorCount + 2];
         }
-        input[2] = config->execution->Intermediate->d2 + simdVectorLength;
-        in_ptr[2] = (__m128i*)config->execution->Intermediate->d2;
+        input[2] = config->Intermediate->d2 + simdVectorLength;
+        in_ptr[2] = (__m128i*)config->Intermediate->d2;
     }
-    if (config->inputVectorCount >= 2)
+    if (config->RequestConfig->Transform.inputVectorCount >= 2)
     {
-        for (i = 0; i < config->inputElementCount; i++)
+        for (i = 0; i < config->RequestConfig->Transform.inputElementCount; i++)
         {
-            config->execution->Intermediate->d1[i] = config->input[i*config->inputVectorCount + 1];
+            config->Intermediate->d1[i] = inputs[i*config->RequestConfig->Transform.inputVectorCount + 1];
         }
-        input[1] = config->execution->Intermediate->d1 + simdVectorLength;
-        in_ptr[1] = (__m128i*)config->execution->Intermediate->d1;
+        input[1] = config->Intermediate->d1 + simdVectorLength;
+        in_ptr[1] = (__m128i*)config->Intermediate->d1;
 
-        for (i = 0; i < config->inputElementCount; i++)
+        for (i = 0; i < config->RequestConfig->Transform.inputElementCount; i++)
         {
-            config->execution->Intermediate->d0[i] = config->input[i*config->inputVectorCount];
+            config->Intermediate->d0[i] = inputs[i*config->RequestConfig->Transform.inputVectorCount];
         }
-        input[0] = config->execution->Intermediate->d0 + simdVectorLength;
-        in_ptr[0] = (__m128i*)config->execution->Intermediate->d0;
+        input[0] = config->Intermediate->d0 + simdVectorLength;
+        in_ptr[0] = (__m128i*)config->Intermediate->d0;
     }
 }
 
 void affineKernelImpl1B_N1(
-    AffineConfig const * const config, int16_t const *input[XNN_N_GROUP_MAX], __m128i *in_ptr[XNN_N_GROUP_MAX],
+    ExecutionKernelConfig<AffineConfig> const * const config, int16_t const *input[XNN_N_GROUP_MAX], __m128i *in_ptr[XNN_N_GROUP_MAX],
     uint32_t numberOfElementsPerGroup, uint32_t numberOfIterationsPerGroup, uint32_t vectorTailLength, uint32_t simdVectorLength)
 {
     uint32_t numberOfIterations;
@@ -319,12 +320,12 @@ void affineKernelImpl1B_N1(
     __m128i w;
 
     int8_t const * weight;
-    nn_bias_c const * bias = config->biasesCompound;
+    nn_bias_c const * bias = config->RequestConfig->Transform.biasesCompound;
     int32_t * output;
-    nn_bias_c const * const biasEnd = bias + config->outputElementCount;// outer loop pointer
+    nn_bias_c const * const biasEnd = bias + config->RequestConfig->Transform.outputElementCount;// outer loop pointer
 
-    weight = config->weights1B;
-    output = config->output;
+    weight = config->RequestConfig->Transform.weights1B;
+    output = reinterpret_cast<int32_t *>(config->RequestConfig->Outputs);
 
     // simd inputs
     __m128i in0;
@@ -337,8 +338,8 @@ void affineKernelImpl1B_N1(
     // simd accumulators' sums
     int64_t sum0;
 
-    input[0] = config->input + simdVectorLength;
-    in_ptr[0] = (__m128i*)config->input;
+    input[0] = reinterpret_cast<int16_t const *>(config->RequestConfig->Inputs) + simdVectorLength;
+    in_ptr[0] = (__m128i*)config->RequestConfig->Inputs;
 
     for (; bias < biasEnd; bias++)
     {
@@ -352,7 +353,7 @@ void affineKernelImpl1B_N1(
             acc0 = _mm_add_epi32(acc0, acc1);
             sum0 += vec_sum32(acc0) * bias->multiplier;
 
-            saturate(&sum0, config->execution->SaturationCount);
+            saturate(&sum0, config->SaturationCount);
 
             numberOfIterations = numberOfElementsPerGroup < simdVectorLength - kk * numberOfElementsPerGroup ? numberOfElementsPerGroup : simdVectorLength - kk * numberOfElementsPerGroup;
             numberOfSimdIterations = numberOfIterations / (256 * SSE_16CAP);
@@ -412,14 +413,14 @@ void affineKernelImpl1B_N1(
             sum0 += (*input)[j] * *weight++ * bias->multiplier;
         }
 
-        saturate_store_out(&sum0, output, config->execution->SaturationCount);
+        saturate_store_out(&sum0, output, config->SaturationCount);
 
         output++;
     }
 }
 
 void affineKernelImpl1B_N2(
-    AffineConfig const * const config, int16_t const *input[XNN_N_GROUP_MAX], __m128i *in_ptr[XNN_N_GROUP_MAX],
+    ExecutionKernelConfig<AffineConfig> const * const config, int16_t const *input[XNN_N_GROUP_MAX], __m128i *in_ptr[XNN_N_GROUP_MAX],
     uint32_t numberOfElementsPerGroup, uint32_t numberOfIterationsPerGroup, uint32_t vectorTailLength, uint32_t simdVectorLength)
 {
     uint32_t numberOfIterations;
@@ -432,13 +433,13 @@ void affineKernelImpl1B_N2(
     uint32_t j;
 
     int8_t const * weight;
-    nn_bias_c const * bias = config->biasesCompound;
+    nn_bias_c const * bias = config->RequestConfig->Transform.biasesCompound;
 
     int32_t * output;
-    nn_bias_c const * const biasEnd = bias + config->outputElementCount;// outer loop pointer
+    nn_bias_c const * const biasEnd = bias + config->RequestConfig->Transform.outputElementCount;// outer loop pointer
 
-    weight = config->weights1B;
-    output = config->output;
+    weight = config->RequestConfig->Transform.weights1B;
+    output = reinterpret_cast<int32_t *>(config->RequestConfig->Outputs);
 
     // simd weights
     __m128i w;
@@ -464,8 +465,8 @@ void affineKernelImpl1B_N2(
 
         for (kk = 0; kk < numberOfIterationsPerGroup + 1; kk++)
         {
-            saturate(&sum0, config->execution->SaturationCount);
-            saturate(&sum1, config->execution->SaturationCount);
+            saturate(&sum0, config->SaturationCount);
+            saturate(&sum1, config->SaturationCount);
 
             // numberOfElementsPerGroup = 12000 / 5 = 2400
             // 2016 / (8 * 256) = 1
@@ -527,16 +528,16 @@ void affineKernelImpl1B_N2(
             sum1 += input[1][j] * *weight * bias->multiplier;
         }
 
-        saturate_store_out(&sum0, &output[0], config->execution->SaturationCount);
-        saturate_store_out(&sum1, &output[1], config->execution->SaturationCount);
+        saturate_store_out(&sum0, &output[0], config->SaturationCount);
+        saturate_store_out(&sum1, &output[1], config->SaturationCount);
 
-        output += config->inputVectorCount;
+        output += config->RequestConfig->Transform.inputVectorCount;
     }
 
 }
 
 void affineKernelImpl1B_N3(
-    AffineConfig const * const config, int16_t const *input[XNN_N_GROUP_MAX], __m128i *in_ptr[XNN_N_GROUP_MAX],
+    ExecutionKernelConfig<AffineConfig> const * const config, int16_t const *input[XNN_N_GROUP_MAX], __m128i *in_ptr[XNN_N_GROUP_MAX],
     uint32_t numberOfElementsPerGroup, uint32_t numberOfIterationsPerGroup, uint32_t vectorTailLength, uint32_t simdVectorLength)
 {
     uint32_t numberOfIterations;
@@ -549,12 +550,12 @@ void affineKernelImpl1B_N3(
     uint32_t j;
 
     int8_t const * weight;
-    nn_bias_c const * bias = config->biasesCompound;
+    nn_bias_c const * bias = config->RequestConfig->Transform.biasesCompound;
     int32_t * output;
-    nn_bias_c const * const biasEnd = bias + config->outputElementCount;// outer loop pointer
+    nn_bias_c const * const biasEnd = bias + config->RequestConfig->Transform.outputElementCount;// outer loop pointer
 
-    weight = config->weights1B;
-    output = config->output;
+    weight = config->RequestConfig->Transform.weights1B;
+    output = reinterpret_cast<int32_t *>(config->RequestConfig->Outputs);
 
     // simd weights
     __m128i w;
@@ -584,9 +585,9 @@ void affineKernelImpl1B_N3(
 
         for (kk = 0; kk < numberOfIterationsPerGroup + 1; kk++)
         {
-            saturate(&sum0, config->execution->SaturationCount);
-            saturate(&sum1, config->execution->SaturationCount);
-            saturate(&sum2, config->execution->SaturationCount);
+            saturate(&sum0, config->SaturationCount);
+            saturate(&sum1, config->SaturationCount);
+            saturate(&sum2, config->SaturationCount);
 
             // numberOfElementsPerGroup = 12000 / 5 = 2400
             // 2016 / (8 * 256) = 1
@@ -659,17 +660,17 @@ void affineKernelImpl1B_N3(
             sum2 += input[2][j] * *weight * bias->multiplier;
         }
 
-        saturate_store_out(&sum0, &output[0], config->execution->SaturationCount);
-        saturate_store_out(&sum1, &output[1], config->execution->SaturationCount);
-        saturate_store_out(&sum2, &output[2], config->execution->SaturationCount);
+        saturate_store_out(&sum0, &output[0], config->SaturationCount);
+        saturate_store_out(&sum1, &output[1], config->SaturationCount);
+        saturate_store_out(&sum2, &output[2], config->SaturationCount);
 
-        output += config->inputVectorCount;
+        output += config->RequestConfig->Transform.inputVectorCount;
     }
 
 }
 
 void affineKernelImpl1B_N4(
-    AffineConfig const * const config, int16_t const *input[XNN_N_GROUP_MAX], __m128i *in_ptr[XNN_N_GROUP_MAX],
+    ExecutionKernelConfig<AffineConfig> const * const config, int16_t const *input[XNN_N_GROUP_MAX], __m128i *in_ptr[XNN_N_GROUP_MAX],
     uint32_t numberOfElementsPerGroup, uint32_t numberOfIterationsPerGroup, uint32_t vectorTailLength, uint32_t simdVectorLength)
 {
     uint32_t numberOfIterations;
@@ -682,12 +683,12 @@ void affineKernelImpl1B_N4(
     uint32_t j;
 
     int8_t const * weight;
-    nn_bias_c const * bias = config->biasesCompound;
+    nn_bias_c const * bias = config->RequestConfig->Transform.biasesCompound;
     int32_t * output;
-    nn_bias_c const * const biasEnd = bias + config->outputElementCount;// outer loop pointer
+    nn_bias_c const * const biasEnd = bias + config->RequestConfig->Transform.outputElementCount;// outer loop pointer
 
-    weight = config->weights1B;
-    output = config->output;
+    weight = config->RequestConfig->Transform.weights1B;
+    output = reinterpret_cast<int32_t *>(config->RequestConfig->Outputs);
 
     // simd weights
     __m128i w;
@@ -721,10 +722,10 @@ void affineKernelImpl1B_N4(
 
         for (kk = 0; kk < numberOfIterationsPerGroup + 1; kk++)
         {
-            saturate(&sum0, config->execution->SaturationCount);
-            saturate(&sum1, config->execution->SaturationCount);
-            saturate(&sum2, config->execution->SaturationCount);
-            saturate(&sum3, config->execution->SaturationCount);
+            saturate(&sum0, config->SaturationCount);
+            saturate(&sum1, config->SaturationCount);
+            saturate(&sum2, config->SaturationCount);
+            saturate(&sum3, config->SaturationCount);
 
             // numberOfElementsPerGroup = 12000 / 5 = 2400
             // 2016 / (8 * 256) = 1
@@ -808,18 +809,18 @@ void affineKernelImpl1B_N4(
             sum3 += input[3][j] * *weight * bias->multiplier;
         }
 
-        saturate_store_out(&sum0, &output[0], config->execution->SaturationCount);
-        saturate_store_out(&sum1, &output[1], config->execution->SaturationCount);
-        saturate_store_out(&sum2, &output[2], config->execution->SaturationCount);
-        saturate_store_out(&sum3, &output[3], config->execution->SaturationCount);
+        saturate_store_out(&sum0, &output[0], config->SaturationCount);
+        saturate_store_out(&sum1, &output[1], config->SaturationCount);
+        saturate_store_out(&sum2, &output[2], config->SaturationCount);
+        saturate_store_out(&sum3, &output[3], config->SaturationCount);
 
-        output += config->inputVectorCount;
+        output += config->RequestConfig->Transform.inputVectorCount;
     }
 
 }
 
 void affineKernelImpl1B_N5(
-    AffineConfig const * const config, int16_t const *input[XNN_N_GROUP_MAX], __m128i *in_ptr[XNN_N_GROUP_MAX],
+    ExecutionKernelConfig<AffineConfig> const * const config, int16_t const *input[XNN_N_GROUP_MAX], __m128i *in_ptr[XNN_N_GROUP_MAX],
     uint32_t numberOfElementsPerGroup, uint32_t numberOfIterationsPerGroup, uint32_t vectorTailLength, uint32_t simdVectorLength)
 {
     uint32_t numberOfIterations;
@@ -832,12 +833,12 @@ void affineKernelImpl1B_N5(
     uint32_t j;
 
     int8_t const * weight;
-    nn_bias_c const * bias = config->biasesCompound;
+    nn_bias_c const * bias = config->RequestConfig->Transform.biasesCompound;
     int32_t * output;
-    nn_bias_c const * const biasEnd = bias + config->outputElementCount;// outer loop pointer
+    nn_bias_c const * const biasEnd = bias + config->RequestConfig->Transform.outputElementCount;// outer loop pointer
 
-    weight = config->weights1B;
-    output = config->output;
+    weight = config->RequestConfig->Transform.weights1B;
+    output = reinterpret_cast<int32_t *>(config->RequestConfig->Outputs);
 
     // simd weights
     __m128i w;
@@ -875,11 +876,11 @@ void affineKernelImpl1B_N5(
 
         for (kk = 0; kk < numberOfIterationsPerGroup + 1; kk++)
         {
-            saturate(&sum0, config->execution->SaturationCount);
-            saturate(&sum1, config->execution->SaturationCount);
-            saturate(&sum2, config->execution->SaturationCount);
-            saturate(&sum3, config->execution->SaturationCount);
-            saturate(&sum4, config->execution->SaturationCount);
+            saturate(&sum0, config->SaturationCount);
+            saturate(&sum1, config->SaturationCount);
+            saturate(&sum2, config->SaturationCount);
+            saturate(&sum3, config->SaturationCount);
+            saturate(&sum4, config->SaturationCount);
 
             // numberOfElementsPerGroup = 12000 / 5 = 2400
             // 2016 / (8 * 256) = 1
@@ -974,19 +975,19 @@ void affineKernelImpl1B_N5(
             sum4 += input[4][j] * *weight * bias->multiplier;
         }
 
-        saturate_store_out(&sum0, &output[0], config->execution->SaturationCount);
-        saturate_store_out(&sum1, &output[1], config->execution->SaturationCount);
-        saturate_store_out(&sum2, &output[2], config->execution->SaturationCount);
-        saturate_store_out(&sum3, &output[3], config->execution->SaturationCount);
-        saturate_store_out(&sum4, &output[4], config->execution->SaturationCount);
+        saturate_store_out(&sum0, &output[0], config->SaturationCount);
+        saturate_store_out(&sum1, &output[1], config->SaturationCount);
+        saturate_store_out(&sum2, &output[2], config->SaturationCount);
+        saturate_store_out(&sum3, &output[3], config->SaturationCount);
+        saturate_store_out(&sum4, &output[4], config->SaturationCount);
 
-        output += config->inputVectorCount;
+        output += config->RequestConfig->Transform.inputVectorCount;
     }
 
 }
 
 void affineKernelImpl1B_N6(
-    AffineConfig const * const config, int16_t const *input[XNN_N_GROUP_MAX], __m128i *in_ptr[XNN_N_GROUP_MAX],
+    ExecutionKernelConfig<AffineConfig> const * const config, int16_t const *input[XNN_N_GROUP_MAX], __m128i *in_ptr[XNN_N_GROUP_MAX],
     uint32_t numberOfElementsPerGroup, uint32_t numberOfIterationsPerGroup, uint32_t vectorTailLength, uint32_t simdVectorLength)
 {
     uint32_t numberOfIterations;
@@ -996,12 +997,12 @@ void affineKernelImpl1B_N6(
     uint32_t j;
 
     int8_t const * weight;
-    nn_bias_c const * bias = config->biasesCompound;
+    nn_bias_c const * bias = config->RequestConfig->Transform.biasesCompound;
     int32_t * output;
-    nn_bias_c const * const biasEnd = bias + config->outputElementCount;// outer loop pointer
+    nn_bias_c const * const biasEnd = bias + config->RequestConfig->Transform.outputElementCount;// outer loop pointer
 
-    weight = config->weights1B;
-    output = config->output;
+    weight = config->RequestConfig->Transform.weights1B;
+    output = reinterpret_cast<int32_t *>(config->RequestConfig->Outputs);
 
     // simd weights
     __m128i w;
@@ -1050,12 +1051,12 @@ void affineKernelImpl1B_N6(
 
         for (kk = 0; kk < numberOfIterationsPerGroup + 1; kk++)
         {
-            saturate(&sum0, config->execution->SaturationCount);
-            saturate(&sum1, config->execution->SaturationCount);
-            saturate(&sum2, config->execution->SaturationCount);
-            saturate(&sum3, config->execution->SaturationCount);
-            saturate(&sum4, config->execution->SaturationCount);
-            saturate(&sum5, config->execution->SaturationCount);
+            saturate(&sum0, config->SaturationCount);
+            saturate(&sum1, config->SaturationCount);
+            saturate(&sum2, config->SaturationCount);
+            saturate(&sum3, config->SaturationCount);
+            saturate(&sum4, config->SaturationCount);
+            saturate(&sum5, config->SaturationCount);
 
             numberOfIterations = numberOfElementsPerGroup < simdVectorLength - kk * numberOfElementsPerGroup ? numberOfElementsPerGroup : simdVectorLength - kk * numberOfElementsPerGroup;
 
@@ -1114,20 +1115,20 @@ void affineKernelImpl1B_N6(
             sum5 += input[5][j] * *weight * bias->multiplier;
         }
 
-        saturate_store_out(&sum0, &output[0], config->execution->SaturationCount);
-        saturate_store_out(&sum1, &output[1], config->execution->SaturationCount);
-        saturate_store_out(&sum2, &output[2], config->execution->SaturationCount);
-        saturate_store_out(&sum3, &output[3], config->execution->SaturationCount);
-        saturate_store_out(&sum4, &output[4], config->execution->SaturationCount);
-        saturate_store_out(&sum5, &output[5], config->execution->SaturationCount);
+        saturate_store_out(&sum0, &output[0], config->SaturationCount);
+        saturate_store_out(&sum1, &output[1], config->SaturationCount);
+        saturate_store_out(&sum2, &output[2], config->SaturationCount);
+        saturate_store_out(&sum3, &output[3], config->SaturationCount);
+        saturate_store_out(&sum4, &output[4], config->SaturationCount);
+        saturate_store_out(&sum5, &output[5], config->SaturationCount);
 
-        output += config->inputVectorCount;
+        output += config->RequestConfig->Transform.inputVectorCount;
     }
 
 }
 
 void affineKernelImpl1B_N7(
-    AffineConfig const * const config, int16_t const *input[XNN_N_GROUP_MAX], __m128i *in_ptr[XNN_N_GROUP_MAX],
+    ExecutionKernelConfig<AffineConfig> const * const config, int16_t const *input[XNN_N_GROUP_MAX], __m128i *in_ptr[XNN_N_GROUP_MAX],
     uint32_t numberOfElementsPerGroup, uint32_t numberOfIterationsPerGroup, uint32_t vectorTailLength, uint32_t simdVectorLength)
 {
     uint32_t numberOfIterations;
@@ -1137,12 +1138,12 @@ void affineKernelImpl1B_N7(
     uint32_t j;
 
     int8_t const * weight;
-    nn_bias_c const * bias = config->biasesCompound;
+    nn_bias_c const * bias = config->RequestConfig->Transform.biasesCompound;
     int32_t * output;
-    nn_bias_c const * const biasEnd = bias + config->outputElementCount;// outer loop pointer
+    nn_bias_c const * const biasEnd = bias + config->RequestConfig->Transform.outputElementCount;// outer loop pointer
 
-    weight = config->weights1B;
-    output = config->output;
+    weight = config->RequestConfig->Transform.weights1B;
+    output = reinterpret_cast<int32_t *>(config->RequestConfig->Outputs);
 
     // simd weights
     __m128i w;
@@ -1196,13 +1197,13 @@ void affineKernelImpl1B_N7(
 
         for (kk = 0; kk < numberOfIterationsPerGroup + 1; kk++)
         {
-            saturate(&sum0, config->execution->SaturationCount);
-            saturate(&sum1, config->execution->SaturationCount);
-            saturate(&sum2, config->execution->SaturationCount);
-            saturate(&sum3, config->execution->SaturationCount);
-            saturate(&sum4, config->execution->SaturationCount);
-            saturate(&sum5, config->execution->SaturationCount);
-            saturate(&sum6, config->execution->SaturationCount);
+            saturate(&sum0, config->SaturationCount);
+            saturate(&sum1, config->SaturationCount);
+            saturate(&sum2, config->SaturationCount);
+            saturate(&sum3, config->SaturationCount);
+            saturate(&sum4, config->SaturationCount);
+            saturate(&sum5, config->SaturationCount);
+            saturate(&sum6, config->SaturationCount);
 
             numberOfIterations = numberOfElementsPerGroup < simdVectorLength - kk * numberOfElementsPerGroup ? numberOfElementsPerGroup : simdVectorLength - kk * numberOfElementsPerGroup;
 
@@ -1268,21 +1269,21 @@ void affineKernelImpl1B_N7(
             sum6 += input[6][j] * *weight * bias->multiplier;
         }
 
-        saturate_store_out(&sum0, &output[0], config->execution->SaturationCount);
-        saturate_store_out(&sum1, &output[1], config->execution->SaturationCount);
-        saturate_store_out(&sum2, &output[2], config->execution->SaturationCount);
-        saturate_store_out(&sum3, &output[3], config->execution->SaturationCount);
-        saturate_store_out(&sum4, &output[4], config->execution->SaturationCount);
-        saturate_store_out(&sum5, &output[5], config->execution->SaturationCount);
-        saturate_store_out(&sum6, &output[6], config->execution->SaturationCount);
+        saturate_store_out(&sum0, &output[0], config->SaturationCount);
+        saturate_store_out(&sum1, &output[1], config->SaturationCount);
+        saturate_store_out(&sum2, &output[2], config->SaturationCount);
+        saturate_store_out(&sum3, &output[3], config->SaturationCount);
+        saturate_store_out(&sum4, &output[4], config->SaturationCount);
+        saturate_store_out(&sum5, &output[5], config->SaturationCount);
+        saturate_store_out(&sum6, &output[6], config->SaturationCount);
 
-        output += config->inputVectorCount;
+        output += config->RequestConfig->Transform.inputVectorCount;
     }
 
 }
 
 void affineKernelImpl1B_N8(
-    AffineConfig const * const config, int16_t const *input[XNN_N_GROUP_MAX], __m128i *in_ptr[XNN_N_GROUP_MAX],
+    ExecutionKernelConfig<AffineConfig> const * const config, int16_t const *input[XNN_N_GROUP_MAX], __m128i *in_ptr[XNN_N_GROUP_MAX],
     uint32_t numberOfElementsPerGroup, uint32_t numberOfIterationsPerGroup, uint32_t vectorTailLength, uint32_t simdVectorLength)
 {
     uint32_t numberOfIterations;
@@ -1292,12 +1293,12 @@ void affineKernelImpl1B_N8(
     uint32_t j;
 
     int8_t const * weight;
-    nn_bias_c const * bias = config->biasesCompound;
+    nn_bias_c const * bias = config->RequestConfig->Transform.biasesCompound;
     int32_t * output;
-    nn_bias_c const * const biasEnd = bias + config->outputElementCount;// outer loop pointer
+    nn_bias_c const * const biasEnd = bias + config->RequestConfig->Transform.outputElementCount;// outer loop pointer
 
-    weight = config->weights1B;
-    output = config->output;
+    weight = config->RequestConfig->Transform.weights1B;
+    output = reinterpret_cast<int32_t *>(config->RequestConfig->Outputs);
 
     // simd weights
     __m128i w;
@@ -1355,14 +1356,14 @@ void affineKernelImpl1B_N8(
 
         for (kk = 0; kk < numberOfIterationsPerGroup + 1; kk++)
         {
-            saturate(&sum0, config->execution->SaturationCount);
-            saturate(&sum1, config->execution->SaturationCount);
-            saturate(&sum2, config->execution->SaturationCount);
-            saturate(&sum3, config->execution->SaturationCount);
-            saturate(&sum4, config->execution->SaturationCount);
-            saturate(&sum5, config->execution->SaturationCount);
-            saturate(&sum6, config->execution->SaturationCount);
-            saturate(&sum7, config->execution->SaturationCount);
+            saturate(&sum0, config->SaturationCount);
+            saturate(&sum1, config->SaturationCount);
+            saturate(&sum2, config->SaturationCount);
+            saturate(&sum3, config->SaturationCount);
+            saturate(&sum4, config->SaturationCount);
+            saturate(&sum5, config->SaturationCount);
+            saturate(&sum6, config->SaturationCount);
+            saturate(&sum7, config->SaturationCount);
 
             numberOfIterations = numberOfElementsPerGroup < simdVectorLength - kk * numberOfElementsPerGroup ? numberOfElementsPerGroup : simdVectorLength - kk * numberOfElementsPerGroup;
 
@@ -1434,21 +1435,21 @@ void affineKernelImpl1B_N8(
             sum7 += input[7][j] * *weight * bias->multiplier;
         }
 
-        saturate_store_out(&sum0, &output[0], config->execution->SaturationCount);
-        saturate_store_out(&sum1, &output[1], config->execution->SaturationCount);
-        saturate_store_out(&sum2, &output[2], config->execution->SaturationCount);
-        saturate_store_out(&sum3, &output[3], config->execution->SaturationCount);
-        saturate_store_out(&sum4, &output[4], config->execution->SaturationCount);
-        saturate_store_out(&sum5, &output[5], config->execution->SaturationCount);
-        saturate_store_out(&sum6, &output[6], config->execution->SaturationCount);
-        saturate_store_out(&sum7, &output[7], config->execution->SaturationCount);
+        saturate_store_out(&sum0, &output[0], config->SaturationCount);
+        saturate_store_out(&sum1, &output[1], config->SaturationCount);
+        saturate_store_out(&sum2, &output[2], config->SaturationCount);
+        saturate_store_out(&sum3, &output[3], config->SaturationCount);
+        saturate_store_out(&sum4, &output[4], config->SaturationCount);
+        saturate_store_out(&sum5, &output[5], config->SaturationCount);
+        saturate_store_out(&sum6, &output[6], config->SaturationCount);
+        saturate_store_out(&sum7, &output[7], config->SaturationCount);
 
-        output += config->inputVectorCount;
+        output += config->RequestConfig->Transform.inputVectorCount;
     }
 }
 
 void affineMultiBiasKernelImpl1B_N1(
-    AffineConfig const * const config, int16_t const *input[XNN_N_GROUP_MAX], __m128i *in_ptr[XNN_N_GROUP_MAX],
+    ExecutionKernelConfig<AffineConfig> const * const config, int16_t const *input[XNN_N_GROUP_MAX], __m128i *in_ptr[XNN_N_GROUP_MAX],
     uint32_t numberOfElementsPerGroup, uint32_t numberOfIterationsPerGroup, uint32_t vectorTailLength, uint32_t simdVectorLength)
 {
     uint32_t numberOfIterations;
@@ -1461,15 +1462,15 @@ void affineMultiBiasKernelImpl1B_N1(
     uint32_t j;
 
     int8_t const * weight;
-    auto const * multiBias = static_cast<int8_t const *>(config->multiBias);
+    auto const * multiBias = static_cast<int8_t const *>(config->RequestConfig->Transform.multiBias);
     int32_t * output;
-    auto const * const biasEnd = static_cast<int8_t const *>(config->multiBias) +
-            (config->bytesPerBias * config->outputElementCount * config->multiBiasVectorCount);
-    auto biasStride = config->bytesPerBias * config->multiBiasVectorCount;
-    nn_scaling const * weightScaleFactor = config->weightScaleFactors;
+    auto const * const biasEnd = static_cast<int8_t const *>(config->RequestConfig->Transform.multiBias) +
+            (config->RequestConfig->Transform.bytesPerBias * config->RequestConfig->Transform.outputElementCount * config->RequestConfig->Transform.multiBiasVectorCount);
+    auto biasStride = config->RequestConfig->Transform.bytesPerBias * config->RequestConfig->Transform.multiBiasVectorCount;
+    nn_scaling const * weightScaleFactor = config->RequestConfig->Transform.weightScaleFactors;
 
-    weight = config->weights1B;
-    output = config->output;
+    weight = config->RequestConfig->Transform.weights1B;
+    output = reinterpret_cast<int32_t *>(config->RequestConfig->Outputs);
 
     // simd weights
     __m128i w0;
@@ -1487,21 +1488,21 @@ void affineMultiBiasKernelImpl1B_N1(
     // simd accumulators' sums
     int64_t sum0;
 
-    input[0] = config->input+simdVectorLength;
-    in_ptr[0] = (__m128i*)config->input;
+    input[0] = reinterpret_cast<int16_t const *>(config->RequestConfig->Inputs) + simdVectorLength;
+    in_ptr[0] = (__m128i*)config->RequestConfig->Inputs;
 
     for (; multiBias < biasEnd; multiBias += biasStride)
     {
         ix = 0;
         acc0 = _mm_setzero_si128();
         acc1 = _mm_setzero_si128();
-        sum0 = getBias(multiBias, config->bytesPerBias);
+        sum0 = getBias(multiBias, config->RequestConfig->Transform.bytesPerBias);
 
         for (kk = 0; kk < numberOfIterationsPerGroup + 1; kk++)
         {
             acc0 = _mm_add_epi32(acc0, acc1);
             sum0 += vec_sum32(acc0) * weightScaleFactor->multiplier;
-            saturate(&sum0, config->execution->SaturationCount);
+            saturate(&sum0, config->SaturationCount);
 
             numberOfIterations = numberOfElementsPerGroup < simdVectorLength - kk * numberOfElementsPerGroup ? numberOfElementsPerGroup : simdVectorLength - kk * numberOfElementsPerGroup;
             numberOfSimdIterations = numberOfIterations / (256 * SSE_16CAP);
@@ -1561,7 +1562,7 @@ void affineMultiBiasKernelImpl1B_N1(
             sum0 += (*input)[j] * *weight++ * weightScaleFactor->multiplier;
         }
 
-        saturate_store_out(&sum0, output, config->execution->SaturationCount);
+        saturate_store_out(&sum0, output, config->SaturationCount);
 
         output++;
         weightScaleFactor++;
@@ -1569,7 +1570,7 @@ void affineMultiBiasKernelImpl1B_N1(
 }
 
 void affineMultiBiasKernelImpl1B_N2(
-    AffineConfig const * const config, int16_t const *input[XNN_N_GROUP_MAX], __m128i *in_ptr[XNN_N_GROUP_MAX],
+    ExecutionKernelConfig<AffineConfig> const * const config, int16_t const *input[XNN_N_GROUP_MAX], __m128i *in_ptr[XNN_N_GROUP_MAX],
     uint32_t numberOfElementsPerGroup, uint32_t numberOfIterationsPerGroup, uint32_t vectorTailLength, uint32_t simdVectorLength)
 {
     uint32_t numberOfIterations;
@@ -1583,14 +1584,14 @@ void affineMultiBiasKernelImpl1B_N2(
 
     int8_t const * weight;
     int32_t * output;
-    auto const * multiBias = static_cast<int8_t const *>(config->multiBias);
-    auto const * const biasEnd = static_cast<int8_t const *>(config->multiBias) +
-        (config->bytesPerBias * config->outputElementCount * config->multiBiasVectorCount);
-    auto biasStride = config->bytesPerBias * config->multiBiasVectorCount;
-    nn_scaling const * weightScaleFactor = config->weightScaleFactors;
+    auto const * multiBias = static_cast<int8_t const *>(config->RequestConfig->Transform.multiBias);
+    auto const * const biasEnd = static_cast<int8_t const *>(config->RequestConfig->Transform.multiBias) +
+        (config->RequestConfig->Transform.bytesPerBias * config->RequestConfig->Transform.outputElementCount * config->RequestConfig->Transform.multiBiasVectorCount);
+    auto biasStride = config->RequestConfig->Transform.bytesPerBias * config->RequestConfig->Transform.multiBiasVectorCount;
+    nn_scaling const * weightScaleFactor = config->RequestConfig->Transform.weightScaleFactors;
 
-    weight = config->weights1B;
-    output = config->output;
+    weight = config->RequestConfig->Transform.weights1B;
+    output = reinterpret_cast<int32_t *>(config->RequestConfig->Outputs);
 
     // simd weights
     __m128i w;
@@ -1611,13 +1612,13 @@ void affineMultiBiasKernelImpl1B_N2(
     {
         ix = 0;
 
-        sum0 = getBias(multiBias, config->bytesPerBias);
-        sum1 = getBias(multiBias, config->bytesPerBias);
+        sum0 = getBias(multiBias, config->RequestConfig->Transform.bytesPerBias);
+        sum1 = getBias(multiBias, config->RequestConfig->Transform.bytesPerBias);
 
         for (kk = 0; kk < numberOfIterationsPerGroup + 1; kk++)
         {
-            saturate(&sum0, config->execution->SaturationCount);
-            saturate(&sum1, config->execution->SaturationCount);
+            saturate(&sum0, config->SaturationCount);
+            saturate(&sum1, config->SaturationCount);
 
             // numberOfElementsPerGroup = 12000 / 5 = 2400
             // 2016 / (8 * 256) = 1
@@ -1679,17 +1680,17 @@ void affineMultiBiasKernelImpl1B_N2(
             sum1 += input[1][j] * *weight * weightScaleFactor->multiplier;
         }
 
-        saturate_store_out(&sum0, &output[0], config->execution->SaturationCount);
-        saturate_store_out(&sum1, &output[1], config->execution->SaturationCount);
+        saturate_store_out(&sum0, &output[0], config->SaturationCount);
+        saturate_store_out(&sum1, &output[1], config->SaturationCount);
 
-        output += config->inputVectorCount;
+        output += config->RequestConfig->Transform.inputVectorCount;
         weightScaleFactor++;
     }
 
 }
 
 void affineMultiBiasKernelImpl1B_N3(
-    AffineConfig const * const config, int16_t const *input[XNN_N_GROUP_MAX], __m128i *in_ptr[XNN_N_GROUP_MAX],
+    ExecutionKernelConfig<AffineConfig> const * const config, int16_t const *input[XNN_N_GROUP_MAX], __m128i *in_ptr[XNN_N_GROUP_MAX],
     uint32_t numberOfElementsPerGroup, uint32_t numberOfIterationsPerGroup, uint32_t vectorTailLength, uint32_t simdVectorLength)
 {
     uint32_t numberOfIterations;
@@ -1703,14 +1704,14 @@ void affineMultiBiasKernelImpl1B_N3(
 
     int8_t const * weight;
     int32_t * output;
-    auto const * multiBias = static_cast<int8_t const *>(config->multiBias);
-    auto const * const biasEnd = static_cast<int8_t const *>(config->multiBias) +
-        (config->bytesPerBias * config->outputElementCount * config->multiBiasVectorCount);
-    auto biasStride = config->bytesPerBias * config->multiBiasVectorCount;
-    nn_scaling const * weightScaleFactor = config->weightScaleFactors;
+    auto const * multiBias = static_cast<int8_t const *>(config->RequestConfig->Transform.multiBias);
+    auto const * const biasEnd = static_cast<int8_t const *>(config->RequestConfig->Transform.multiBias) +
+        (config->RequestConfig->Transform.bytesPerBias * config->RequestConfig->Transform.outputElementCount * config->RequestConfig->Transform.multiBiasVectorCount);
+    auto biasStride = config->RequestConfig->Transform.bytesPerBias * config->RequestConfig->Transform.multiBiasVectorCount;
+    nn_scaling const * weightScaleFactor = config->RequestConfig->Transform.weightScaleFactors;
 
-    weight = config->weights1B;
-    output = config->output;
+    weight = config->RequestConfig->Transform.weights1B;
+    output = reinterpret_cast<int32_t *>(config->RequestConfig->Outputs);
 
     // simd weights
     __m128i w;
@@ -1734,15 +1735,15 @@ void affineMultiBiasKernelImpl1B_N3(
     {
         ix = 0;
 
-        sum0 = getBias(multiBias, config->bytesPerBias);
-        sum1 = getBias(multiBias, config->bytesPerBias);
-        sum2 = getBias(multiBias, config->bytesPerBias);
+        sum0 = getBias(multiBias, config->RequestConfig->Transform.bytesPerBias);
+        sum1 = getBias(multiBias, config->RequestConfig->Transform.bytesPerBias);
+        sum2 = getBias(multiBias, config->RequestConfig->Transform.bytesPerBias);
 
         for (kk = 0; kk < numberOfIterationsPerGroup + 1; kk++)
         {
-            saturate(&sum0, config->execution->SaturationCount);
-            saturate(&sum1, config->execution->SaturationCount);
-            saturate(&sum2, config->execution->SaturationCount);
+            saturate(&sum0, config->SaturationCount);
+            saturate(&sum1, config->SaturationCount);
+            saturate(&sum2, config->SaturationCount);
 
             // numberOfElementsPerGroup = 12000 / 5 = 2400
             // 2016 / (8 * 256) = 1
@@ -1815,18 +1816,18 @@ void affineMultiBiasKernelImpl1B_N3(
             sum2 += input[2][j] * *weight * weightScaleFactor->multiplier;
         }
 
-        saturate_store_out(&sum0, &output[0], config->execution->SaturationCount);
-        saturate_store_out(&sum1, &output[1], config->execution->SaturationCount);
-        saturate_store_out(&sum2, &output[2], config->execution->SaturationCount);
+        saturate_store_out(&sum0, &output[0], config->SaturationCount);
+        saturate_store_out(&sum1, &output[1], config->SaturationCount);
+        saturate_store_out(&sum2, &output[2], config->SaturationCount);
 
-        output += config->inputVectorCount;
+        output += config->RequestConfig->Transform.inputVectorCount;
         weightScaleFactor++;
     }
 
 }
 
 void affineMultiBiasKernelImpl1B_N4(
-    AffineConfig const * const config, int16_t const *input[XNN_N_GROUP_MAX], __m128i *in_ptr[XNN_N_GROUP_MAX],
+    ExecutionKernelConfig<AffineConfig> const * const config, int16_t const *input[XNN_N_GROUP_MAX], __m128i *in_ptr[XNN_N_GROUP_MAX],
     uint32_t numberOfElementsPerGroup, uint32_t numberOfIterationsPerGroup, uint32_t vectorTailLength, uint32_t simdVectorLength)
 {
     uint32_t numberOfIterations;
@@ -1840,14 +1841,14 @@ void affineMultiBiasKernelImpl1B_N4(
 
     int8_t const * weight;
     int32_t * output;
-    auto const * multiBias = static_cast<int8_t const *>(config->multiBias);
-    auto const * const biasEnd = static_cast<int8_t const *>(config->multiBias) +
-        (config->bytesPerBias * config->outputElementCount * config->multiBiasVectorCount);
-    auto biasStride = config->bytesPerBias * config->multiBiasVectorCount;
-    nn_scaling const * weightScaleFactor = config->weightScaleFactors;
+    auto const * multiBias = static_cast<int8_t const *>(config->RequestConfig->Transform.multiBias);
+    auto const * const biasEnd = static_cast<int8_t const *>(config->RequestConfig->Transform.multiBias) +
+        (config->RequestConfig->Transform.bytesPerBias * config->RequestConfig->Transform.outputElementCount * config->RequestConfig->Transform.multiBiasVectorCount);
+    auto biasStride = config->RequestConfig->Transform.bytesPerBias * config->RequestConfig->Transform.multiBiasVectorCount;
+    nn_scaling const * weightScaleFactor = config->RequestConfig->Transform.weightScaleFactors;
 
-    weight = config->weights1B;
-    output = config->output;
+    weight = config->RequestConfig->Transform.weights1B;
+    output = reinterpret_cast<int32_t *>(config->RequestConfig->Outputs);
 
     // simd weights
     __m128i w;
@@ -1874,17 +1875,17 @@ void affineMultiBiasKernelImpl1B_N4(
     {
         ix = 0;
 
-        sum0 = getBias(multiBias, config->bytesPerBias);
-        sum1 = getBias(multiBias, config->bytesPerBias);
-        sum2 = getBias(multiBias, config->bytesPerBias);
-        sum3 = getBias(multiBias, config->bytesPerBias);
+        sum0 = getBias(multiBias, config->RequestConfig->Transform.bytesPerBias);
+        sum1 = getBias(multiBias, config->RequestConfig->Transform.bytesPerBias);
+        sum2 = getBias(multiBias, config->RequestConfig->Transform.bytesPerBias);
+        sum3 = getBias(multiBias, config->RequestConfig->Transform.bytesPerBias);
 
         for (kk = 0; kk < numberOfIterationsPerGroup + 1; kk++)
         {
-            saturate(&sum0, config->execution->SaturationCount);
-            saturate(&sum1, config->execution->SaturationCount);
-            saturate(&sum2, config->execution->SaturationCount);
-            saturate(&sum3, config->execution->SaturationCount);
+            saturate(&sum0, config->SaturationCount);
+            saturate(&sum1, config->SaturationCount);
+            saturate(&sum2, config->SaturationCount);
+            saturate(&sum3, config->SaturationCount);
 
             // numberOfElementsPerGroup = 12000 / 5 = 2400
             // 2016 / (8 * 256) = 1
@@ -1968,19 +1969,19 @@ void affineMultiBiasKernelImpl1B_N4(
             sum3 += input[3][j] * *weight * weightScaleFactor->multiplier;
         }
 
-        saturate_store_out(&sum0, &output[0], config->execution->SaturationCount);
-        saturate_store_out(&sum1, &output[1], config->execution->SaturationCount);
-        saturate_store_out(&sum2, &output[2], config->execution->SaturationCount);
-        saturate_store_out(&sum3, &output[3], config->execution->SaturationCount);
+        saturate_store_out(&sum0, &output[0], config->SaturationCount);
+        saturate_store_out(&sum1, &output[1], config->SaturationCount);
+        saturate_store_out(&sum2, &output[2], config->SaturationCount);
+        saturate_store_out(&sum3, &output[3], config->SaturationCount);
 
-        output += config->inputVectorCount;
+        output += config->RequestConfig->Transform.inputVectorCount;
         weightScaleFactor++;
     }
 
 }
 
 void affineMultiBiasKernelImpl1B_N5(
-    AffineConfig const * const config, int16_t const *input[XNN_N_GROUP_MAX], __m128i *in_ptr[XNN_N_GROUP_MAX],
+    ExecutionKernelConfig<AffineConfig> const * const config, int16_t const *input[XNN_N_GROUP_MAX], __m128i *in_ptr[XNN_N_GROUP_MAX],
     uint32_t numberOfElementsPerGroup, uint32_t numberOfIterationsPerGroup, uint32_t vectorTailLength, uint32_t simdVectorLength)
 {
     uint32_t numberOfIterations;
@@ -1994,14 +1995,14 @@ void affineMultiBiasKernelImpl1B_N5(
 
     int8_t const * weight;
     int32_t * output;
-    auto const * multiBias = static_cast<int8_t const *>(config->multiBias);
-    auto const * const biasEnd = static_cast<int8_t const *>(config->multiBias) +
-        (config->bytesPerBias * config->outputElementCount * config->multiBiasVectorCount);
-    auto biasStride = config->bytesPerBias * config->multiBiasVectorCount;
-    nn_scaling const * weightScaleFactor = config->weightScaleFactors;
+    auto const * multiBias = static_cast<int8_t const *>(config->RequestConfig->Transform.multiBias);
+    auto const * const biasEnd = static_cast<int8_t const *>(config->RequestConfig->Transform.multiBias) +
+        (config->RequestConfig->Transform.bytesPerBias * config->RequestConfig->Transform.outputElementCount * config->RequestConfig->Transform.multiBiasVectorCount);
+    auto biasStride = config->RequestConfig->Transform.bytesPerBias * config->RequestConfig->Transform.multiBiasVectorCount;
+    nn_scaling const * weightScaleFactor = config->RequestConfig->Transform.weightScaleFactors;
 
-    weight = config->weights1B;
-    output = config->output;
+    weight = config->RequestConfig->Transform.weights1B;
+    output = reinterpret_cast<int32_t *>(config->RequestConfig->Outputs);
 
     // simd weights
     __m128i w;
@@ -2031,19 +2032,19 @@ void affineMultiBiasKernelImpl1B_N5(
     {
         ix = 0;
 
-        sum0 = getBias(multiBias, config->bytesPerBias);
-        sum1 = getBias(multiBias, config->bytesPerBias);
-        sum2 = getBias(multiBias, config->bytesPerBias);
-        sum3 = getBias(multiBias, config->bytesPerBias);
-        sum4 = getBias(multiBias, config->bytesPerBias);
+        sum0 = getBias(multiBias, config->RequestConfig->Transform.bytesPerBias);
+        sum1 = getBias(multiBias, config->RequestConfig->Transform.bytesPerBias);
+        sum2 = getBias(multiBias, config->RequestConfig->Transform.bytesPerBias);
+        sum3 = getBias(multiBias, config->RequestConfig->Transform.bytesPerBias);
+        sum4 = getBias(multiBias, config->RequestConfig->Transform.bytesPerBias);
 
         for (kk = 0; kk < numberOfIterationsPerGroup + 1; kk++)
         {
-            saturate(&sum0, config->execution->SaturationCount);
-            saturate(&sum1, config->execution->SaturationCount);
-            saturate(&sum2, config->execution->SaturationCount);
-            saturate(&sum3, config->execution->SaturationCount);
-            saturate(&sum4, config->execution->SaturationCount);
+            saturate(&sum0, config->SaturationCount);
+            saturate(&sum1, config->SaturationCount);
+            saturate(&sum2, config->SaturationCount);
+            saturate(&sum3, config->SaturationCount);
+            saturate(&sum4, config->SaturationCount);
 
             // numberOfElementsPerGroup = 12000 / 5 = 2400
             // 2016 / (8 * 256) = 1
@@ -2138,20 +2139,20 @@ void affineMultiBiasKernelImpl1B_N5(
             sum4 += input[4][j] * *weight * weightScaleFactor->multiplier;
         }
 
-        saturate_store_out(&sum0, &output[0], config->execution->SaturationCount);
-        saturate_store_out(&sum1, &output[1], config->execution->SaturationCount);
-        saturate_store_out(&sum2, &output[2], config->execution->SaturationCount);
-        saturate_store_out(&sum3, &output[3], config->execution->SaturationCount);
-        saturate_store_out(&sum4, &output[4], config->execution->SaturationCount);
+        saturate_store_out(&sum0, &output[0], config->SaturationCount);
+        saturate_store_out(&sum1, &output[1], config->SaturationCount);
+        saturate_store_out(&sum2, &output[2], config->SaturationCount);
+        saturate_store_out(&sum3, &output[3], config->SaturationCount);
+        saturate_store_out(&sum4, &output[4], config->SaturationCount);
 
-        output += config->inputVectorCount;
+        output += config->RequestConfig->Transform.inputVectorCount;
         weightScaleFactor++;
     }
 
 }
 
 void affineMultiBiasKernelImpl1B_N6(
-    AffineConfig const * const config, int16_t const *input[XNN_N_GROUP_MAX], __m128i *in_ptr[XNN_N_GROUP_MAX],
+    ExecutionKernelConfig<AffineConfig> const * const config, int16_t const *input[XNN_N_GROUP_MAX], __m128i *in_ptr[XNN_N_GROUP_MAX],
     uint32_t numberOfElementsPerGroup, uint32_t numberOfIterationsPerGroup, uint32_t vectorTailLength, uint32_t simdVectorLength)
 {
     uint32_t numberOfIterations;
@@ -2162,14 +2163,14 @@ void affineMultiBiasKernelImpl1B_N6(
 
     int8_t const * weight;
     int32_t * output;
-    auto const * multiBias = static_cast<int8_t const *>(config->multiBias);
-    auto const * const biasEnd = static_cast<int8_t const *>(config->multiBias) +
-        (config->bytesPerBias * config->outputElementCount * config->multiBiasVectorCount);
-    auto biasStride = config->bytesPerBias * config->multiBiasVectorCount;
-    nn_scaling const * weightScaleFactor = config->weightScaleFactors;
+    auto const * multiBias = static_cast<int8_t const *>(config->RequestConfig->Transform.multiBias);
+    auto const * const biasEnd = static_cast<int8_t const *>(config->RequestConfig->Transform.multiBias) +
+        (config->RequestConfig->Transform.bytesPerBias * config->RequestConfig->Transform.outputElementCount * config->RequestConfig->Transform.multiBiasVectorCount);
+    auto biasStride = config->RequestConfig->Transform.bytesPerBias * config->RequestConfig->Transform.multiBiasVectorCount;
+    nn_scaling const * weightScaleFactor = config->RequestConfig->Transform.weightScaleFactors;
 
-    weight = config->weights1B;
-    output = config->output;
+    weight = config->RequestConfig->Transform.weights1B;
+    output = reinterpret_cast<int32_t *>(config->RequestConfig->Outputs);
 
     // simd weights
     __m128i w;
@@ -2202,12 +2203,12 @@ void affineMultiBiasKernelImpl1B_N6(
     {
         ix = 0;
 
-        sum0 = getBias(multiBias, config->bytesPerBias);
-        sum1 = getBias(multiBias, config->bytesPerBias);
-        sum2 = getBias(multiBias, config->bytesPerBias);
-        sum3 = getBias(multiBias, config->bytesPerBias);
-        sum4 = getBias(multiBias, config->bytesPerBias);
-        sum5 = getBias(multiBias, config->bytesPerBias);
+        sum0 = getBias(multiBias, config->RequestConfig->Transform.bytesPerBias);
+        sum1 = getBias(multiBias, config->RequestConfig->Transform.bytesPerBias);
+        sum2 = getBias(multiBias, config->RequestConfig->Transform.bytesPerBias);
+        sum3 = getBias(multiBias, config->RequestConfig->Transform.bytesPerBias);
+        sum4 = getBias(multiBias, config->RequestConfig->Transform.bytesPerBias);
+        sum5 = getBias(multiBias, config->RequestConfig->Transform.bytesPerBias);
 
         acc0 = _mm_setzero_si128();
         acc1 = _mm_setzero_si128();
@@ -2218,12 +2219,12 @@ void affineMultiBiasKernelImpl1B_N6(
 
         for (kk = 0; kk < numberOfIterationsPerGroup + 1; kk++)
         {
-            saturate(&sum0, config->execution->SaturationCount);
-            saturate(&sum1, config->execution->SaturationCount);
-            saturate(&sum2, config->execution->SaturationCount);
-            saturate(&sum3, config->execution->SaturationCount);
-            saturate(&sum4, config->execution->SaturationCount);
-            saturate(&sum5, config->execution->SaturationCount);
+            saturate(&sum0, config->SaturationCount);
+            saturate(&sum1, config->SaturationCount);
+            saturate(&sum2, config->SaturationCount);
+            saturate(&sum3, config->SaturationCount);
+            saturate(&sum4, config->SaturationCount);
+            saturate(&sum5, config->SaturationCount);
 
             numberOfIterations = numberOfElementsPerGroup < simdVectorLength - kk * numberOfElementsPerGroup ? numberOfElementsPerGroup : simdVectorLength - kk * numberOfElementsPerGroup;
 
@@ -2282,21 +2283,21 @@ void affineMultiBiasKernelImpl1B_N6(
             sum5 += input[5][j] * *weight * weightScaleFactor->multiplier;
         }
 
-        saturate_store_out(&sum0, &output[0], config->execution->SaturationCount);
-        saturate_store_out(&sum1, &output[1], config->execution->SaturationCount);
-        saturate_store_out(&sum2, &output[2], config->execution->SaturationCount);
-        saturate_store_out(&sum3, &output[3], config->execution->SaturationCount);
-        saturate_store_out(&sum4, &output[4], config->execution->SaturationCount);
-        saturate_store_out(&sum5, &output[5], config->execution->SaturationCount);
+        saturate_store_out(&sum0, &output[0], config->SaturationCount);
+        saturate_store_out(&sum1, &output[1], config->SaturationCount);
+        saturate_store_out(&sum2, &output[2], config->SaturationCount);
+        saturate_store_out(&sum3, &output[3], config->SaturationCount);
+        saturate_store_out(&sum4, &output[4], config->SaturationCount);
+        saturate_store_out(&sum5, &output[5], config->SaturationCount);
 
-        output += config->inputVectorCount;
+        output += config->RequestConfig->Transform.inputVectorCount;
         weightScaleFactor++;
     }
 
 }
 
 void affineMultiBiasKernelImpl1B_N7(
-    AffineConfig const * const config, int16_t const *input[XNN_N_GROUP_MAX], __m128i *in_ptr[XNN_N_GROUP_MAX],
+    ExecutionKernelConfig<AffineConfig> const * const config, int16_t const *input[XNN_N_GROUP_MAX], __m128i *in_ptr[XNN_N_GROUP_MAX],
     uint32_t numberOfElementsPerGroup, uint32_t numberOfIterationsPerGroup, uint32_t vectorTailLength, uint32_t simdVectorLength)
 {
     uint32_t numberOfIterations;
@@ -2307,14 +2308,14 @@ void affineMultiBiasKernelImpl1B_N7(
 
     int8_t const * weight;
     int32_t * output;
-    auto const * multiBias = static_cast<int8_t const *>(config->multiBias);
-    auto const * const biasEnd = static_cast<int8_t const *>(config->multiBias) +
-        (config->bytesPerBias * config->outputElementCount * config->multiBiasVectorCount);
-    auto biasStride = config->bytesPerBias * config->multiBiasVectorCount;
-    nn_scaling const * weightScaleFactor = config->weightScaleFactors;
+    auto const * multiBias = static_cast<int8_t const *>(config->RequestConfig->Transform.multiBias);
+    auto const * const biasEnd = static_cast<int8_t const *>(config->RequestConfig->Transform.multiBias) +
+        (config->RequestConfig->Transform.bytesPerBias * config->RequestConfig->Transform.outputElementCount * config->RequestConfig->Transform.multiBiasVectorCount);
+    auto biasStride = config->RequestConfig->Transform.bytesPerBias * config->RequestConfig->Transform.multiBiasVectorCount;
+    nn_scaling const * weightScaleFactor = config->RequestConfig->Transform.weightScaleFactors;
 
-    weight = config->weights1B;
-    output = config->output;
+    weight = config->RequestConfig->Transform.weights1B;
+    output = reinterpret_cast<int32_t *>(config->RequestConfig->Outputs);
 
     // simd weights
     __m128i w;
@@ -2350,13 +2351,13 @@ void affineMultiBiasKernelImpl1B_N7(
     {
         ix = 0;
 
-        sum0 = getBias(multiBias, config->bytesPerBias);
-        sum1 = getBias(multiBias, config->bytesPerBias);
-        sum2 = getBias(multiBias, config->bytesPerBias);
-        sum3 = getBias(multiBias, config->bytesPerBias);
-        sum4 = getBias(multiBias, config->bytesPerBias);
-        sum5 = getBias(multiBias, config->bytesPerBias);
-        sum6 = getBias(multiBias, config->bytesPerBias);
+        sum0 = getBias(multiBias, config->RequestConfig->Transform.bytesPerBias);
+        sum1 = getBias(multiBias, config->RequestConfig->Transform.bytesPerBias);
+        sum2 = getBias(multiBias, config->RequestConfig->Transform.bytesPerBias);
+        sum3 = getBias(multiBias, config->RequestConfig->Transform.bytesPerBias);
+        sum4 = getBias(multiBias, config->RequestConfig->Transform.bytesPerBias);
+        sum5 = getBias(multiBias, config->RequestConfig->Transform.bytesPerBias);
+        sum6 = getBias(multiBias, config->RequestConfig->Transform.bytesPerBias);
 
         acc0 = _mm_setzero_si128();
         acc1 = _mm_setzero_si128();
@@ -2368,13 +2369,13 @@ void affineMultiBiasKernelImpl1B_N7(
 
         for (kk = 0; kk < numberOfIterationsPerGroup + 1; kk++)
         {
-            saturate(&sum0, config->execution->SaturationCount);
-            saturate(&sum1, config->execution->SaturationCount);
-            saturate(&sum2, config->execution->SaturationCount);
-            saturate(&sum3, config->execution->SaturationCount);
-            saturate(&sum4, config->execution->SaturationCount);
-            saturate(&sum5, config->execution->SaturationCount);
-            saturate(&sum6, config->execution->SaturationCount);
+            saturate(&sum0, config->SaturationCount);
+            saturate(&sum1, config->SaturationCount);
+            saturate(&sum2, config->SaturationCount);
+            saturate(&sum3, config->SaturationCount);
+            saturate(&sum4, config->SaturationCount);
+            saturate(&sum5, config->SaturationCount);
+            saturate(&sum6, config->SaturationCount);
 
             numberOfIterations = numberOfElementsPerGroup < simdVectorLength - kk * numberOfElementsPerGroup ? numberOfElementsPerGroup : simdVectorLength - kk * numberOfElementsPerGroup;
 
@@ -2440,21 +2441,21 @@ void affineMultiBiasKernelImpl1B_N7(
             sum6 += input[6][j] * *weight * weightScaleFactor->multiplier;
         }
 
-        saturate_store_out(&sum0, &output[0], config->execution->SaturationCount);
-        saturate_store_out(&sum1, &output[1], config->execution->SaturationCount);
-        saturate_store_out(&sum2, &output[2], config->execution->SaturationCount);
-        saturate_store_out(&sum3, &output[3], config->execution->SaturationCount);
-        saturate_store_out(&sum4, &output[4], config->execution->SaturationCount);
-        saturate_store_out(&sum5, &output[5], config->execution->SaturationCount);
-        saturate_store_out(&sum6, &output[6], config->execution->SaturationCount);
+        saturate_store_out(&sum0, &output[0], config->SaturationCount);
+        saturate_store_out(&sum1, &output[1], config->SaturationCount);
+        saturate_store_out(&sum2, &output[2], config->SaturationCount);
+        saturate_store_out(&sum3, &output[3], config->SaturationCount);
+        saturate_store_out(&sum4, &output[4], config->SaturationCount);
+        saturate_store_out(&sum5, &output[5], config->SaturationCount);
+        saturate_store_out(&sum6, &output[6], config->SaturationCount);
 
-        output += config->inputVectorCount;
+        output += config->RequestConfig->Transform.inputVectorCount;
         weightScaleFactor++;
     }
 }
 
 void affineMultiBiasKernelImpl1B_N8(
-    AffineConfig const * const config, int16_t const *input[XNN_N_GROUP_MAX], __m128i *in_ptr[XNN_N_GROUP_MAX],
+    ExecutionKernelConfig<AffineConfig> const * const config, int16_t const *input[XNN_N_GROUP_MAX], __m128i *in_ptr[XNN_N_GROUP_MAX],
     uint32_t numberOfElementsPerGroup, uint32_t numberOfIterationsPerGroup, uint32_t vectorTailLength, uint32_t simdVectorLength)
 {
     uint32_t numberOfIterations;
@@ -2465,14 +2466,14 @@ void affineMultiBiasKernelImpl1B_N8(
 
     int8_t const * weight;
     int32_t * output;
-    auto const * multiBias = static_cast<int8_t const *>(config->multiBias);
-    auto const * const biasEnd = static_cast<int8_t const *>(config->multiBias) +
-        (config->bytesPerBias * config->outputElementCount * config->multiBiasVectorCount);
-    auto biasStride = config->bytesPerBias * config->multiBiasVectorCount;
-    nn_scaling const * weightScaleFactor = config->weightScaleFactors;
+    auto const * multiBias = static_cast<int8_t const *>(config->RequestConfig->Transform.multiBias);
+    auto const * const biasEnd = static_cast<int8_t const *>(config->RequestConfig->Transform.multiBias) +
+        (config->RequestConfig->Transform.bytesPerBias * config->RequestConfig->Transform.outputElementCount * config->RequestConfig->Transform.multiBiasVectorCount);
+    auto biasStride = config->RequestConfig->Transform.bytesPerBias * config->RequestConfig->Transform.multiBiasVectorCount;
+    nn_scaling const * weightScaleFactor = config->RequestConfig->Transform.weightScaleFactors;
 
-    weight = config->weights1B;
-    output = config->output;
+    weight = config->RequestConfig->Transform.weights1B;
+    output = reinterpret_cast<int32_t *>(config->RequestConfig->Outputs);
 
     // simd weights
     __m128i w;
@@ -2511,14 +2512,14 @@ void affineMultiBiasKernelImpl1B_N8(
     {
         ix = 0;
 
-        sum0 = getBias(multiBias, config->bytesPerBias);
-        sum1 = getBias(multiBias, config->bytesPerBias);
-        sum2 = getBias(multiBias, config->bytesPerBias);
-        sum3 = getBias(multiBias, config->bytesPerBias);
-        sum4 = getBias(multiBias, config->bytesPerBias);
-        sum5 = getBias(multiBias, config->bytesPerBias);
-        sum6 = getBias(multiBias, config->bytesPerBias);
-        sum7 = getBias(multiBias, config->bytesPerBias);
+        sum0 = getBias(multiBias, config->RequestConfig->Transform.bytesPerBias);
+        sum1 = getBias(multiBias, config->RequestConfig->Transform.bytesPerBias);
+        sum2 = getBias(multiBias, config->RequestConfig->Transform.bytesPerBias);
+        sum3 = getBias(multiBias, config->RequestConfig->Transform.bytesPerBias);
+        sum4 = getBias(multiBias, config->RequestConfig->Transform.bytesPerBias);
+        sum5 = getBias(multiBias, config->RequestConfig->Transform.bytesPerBias);
+        sum6 = getBias(multiBias, config->RequestConfig->Transform.bytesPerBias);
+        sum7 = getBias(multiBias, config->RequestConfig->Transform.bytesPerBias);
 
         acc0 = _mm_setzero_si128();
         acc1 = _mm_setzero_si128();
@@ -2531,14 +2532,14 @@ void affineMultiBiasKernelImpl1B_N8(
 
         for (kk = 0; kk < numberOfIterationsPerGroup + 1; kk++)
         {
-            saturate(&sum0, config->execution->SaturationCount);
-            saturate(&sum1, config->execution->SaturationCount);
-            saturate(&sum2, config->execution->SaturationCount);
-            saturate(&sum3, config->execution->SaturationCount);
-            saturate(&sum4, config->execution->SaturationCount);
-            saturate(&sum5, config->execution->SaturationCount);
-            saturate(&sum6, config->execution->SaturationCount);
-            saturate(&sum7, config->execution->SaturationCount);
+            saturate(&sum0, config->SaturationCount);
+            saturate(&sum1, config->SaturationCount);
+            saturate(&sum2, config->SaturationCount);
+            saturate(&sum3, config->SaturationCount);
+            saturate(&sum4, config->SaturationCount);
+            saturate(&sum5, config->SaturationCount);
+            saturate(&sum6, config->SaturationCount);
+            saturate(&sum7, config->SaturationCount);
 
             numberOfIterations = numberOfElementsPerGroup < simdVectorLength - kk * numberOfElementsPerGroup ? numberOfElementsPerGroup : simdVectorLength - kk * numberOfElementsPerGroup;
 
@@ -2610,16 +2611,16 @@ void affineMultiBiasKernelImpl1B_N8(
             sum7 += input[7][j] * *weight * weightScaleFactor->multiplier;
         }
 
-        saturate_store_out(&sum0, &output[0], config->execution->SaturationCount);
-        saturate_store_out(&sum1, &output[1], config->execution->SaturationCount);
-        saturate_store_out(&sum2, &output[2], config->execution->SaturationCount);
-        saturate_store_out(&sum3, &output[3], config->execution->SaturationCount);
-        saturate_store_out(&sum4, &output[4], config->execution->SaturationCount);
-        saturate_store_out(&sum5, &output[5], config->execution->SaturationCount);
-        saturate_store_out(&sum6, &output[6], config->execution->SaturationCount);
-        saturate_store_out(&sum7, &output[7], config->execution->SaturationCount);
+        saturate_store_out(&sum0, &output[0], config->SaturationCount);
+        saturate_store_out(&sum1, &output[1], config->SaturationCount);
+        saturate_store_out(&sum2, &output[2], config->SaturationCount);
+        saturate_store_out(&sum3, &output[3], config->SaturationCount);
+        saturate_store_out(&sum4, &output[4], config->SaturationCount);
+        saturate_store_out(&sum5, &output[5], config->SaturationCount);
+        saturate_store_out(&sum6, &output[6], config->SaturationCount);
+        saturate_store_out(&sum7, &output[7], config->SaturationCount);
 
-        output += config->inputVectorCount;
+        output += config->RequestConfig->Transform.inputVectorCount;
         weightScaleFactor++;
     }
 

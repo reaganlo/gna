@@ -33,20 +33,20 @@
 #include <immintrin.h>
 #include <cstdint>
 
-void RecurrentKernelImpl1B(RecurrentConfig const * const config)
+void RecurrentKernelImpl1B(ExecutionKernelConfig<RecurrentConfig> const * const config)
 {
-    uint32_t LDA = config->outputElementCount + config->inputElementCount;
-    int16_t const * input = config->input;
-    int16_t * feedback = config->feedbackBuffer;
+    uint32_t LDA = config->RequestConfig->Transform.outputElementCount + config->RequestConfig->Transform.inputElementCount;
+    int16_t const * input = reinterpret_cast<int16_t const *>(config->RequestConfig->Inputs);
+    int16_t * feedback = config->RequestConfig->Transform.feedbackBuffer;
 
-    int16_t const * const inputEnd = input + config->inputElementCount - config->inputElementCount % 16;
-    int16_t const * const feedbackEnd = feedback + config->outputElementCount - config->outputElementCount % 16;
+    int16_t const * const inputEnd = input + config->RequestConfig->Transform.inputElementCount - config->RequestConfig->Transform.inputElementCount % 16;
+    int16_t const * const feedbackEnd = feedback + config->RequestConfig->Transform.outputElementCount - config->RequestConfig->Transform.outputElementCount % 16;
 
-    nn_bias_c const * bias = config->biasesCompound;
-    nn_bias_c const * const biasEnd = bias + config->outputElementCount;
-    int32_t * output = config->output;
-    int8_t const * weight = config->weights1B;
-    int8_t const * weight2 = weight + config->inputElementCount;
+    nn_bias_c const * bias = config->RequestConfig->Transform.biasesCompound;
+    nn_bias_c const * const biasEnd = bias + config->RequestConfig->Transform.outputElementCount;
+    int32_t * output = reinterpret_cast<int32_t *>(config->RequestConfig->Transform.output);
+    int8_t const * weight = config->RequestConfig->Transform.weights1B;
+    int8_t const * weight2 = weight + config->RequestConfig->Transform.inputElementCount;
 
     __m256i v0;
     __m256i v1;
@@ -56,8 +56,8 @@ void RecurrentKernelImpl1B(RecurrentConfig const * const config)
     {
         v2 = _mm256_setzero_si256();
 
-        input = config->input;
-        feedback = config->feedbackBuffer;
+        input = reinterpret_cast<int16_t const *>(config->RequestConfig->Inputs);
+        feedback = config->RequestConfig->Transform.feedbackBuffer;
 
         v0 = _mm256_lddqu_si256((__m256i*)input);
         v1 = _mm256_cvtepi8_epi16(_mm_lddqu_si128((__m128i*)weight));
@@ -91,12 +91,12 @@ void RecurrentKernelImpl1B(RecurrentConfig const * const config)
 
         *output = vec_sum(v2);
 
-        while (input < inputEnd + config->inputElementCount % 16)
+        while (input < inputEnd + config->RequestConfig->Transform.inputElementCount % 16)
         {
             *output += *input++ * *weight++;
         }
 
-        while (feedback < feedbackEnd + config->outputElementCount % 16)
+        while (feedback < feedbackEnd + config->RequestConfig->Transform.outputElementCount % 16)
         {
             *output += *feedback++ * *weight2++;
         }
@@ -104,7 +104,7 @@ void RecurrentKernelImpl1B(RecurrentConfig const * const config)
         *output = *output * bias->multiplier + bias->bias;
         output++;
 
-        weight += LDA - config->inputElementCount;
-        weight2 += LDA - config->outputElementCount;
+        weight += LDA - config->RequestConfig->Transform.inputElementCount;
+        weight2 += LDA - config->RequestConfig->Transform.outputElementCount;
     }
 }

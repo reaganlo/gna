@@ -56,13 +56,14 @@ using KernelMap = std::map<AccelerationMode, KernelType>;
 
 typedef void (*VoidKernel)();
 
-typedef void (*AffineKernel)(AffineConfig const * const config);
+typedef void (*AffineKernel)(ExecutionKernelConfig<AffineConfig> const * const config);
 
-typedef void (*AffineActiveListKernel)(AffineConfig const * const config, AffineConfigAl const * const al);
+typedef void (*AffineActiveListKernel)(
+        ExecutionKernelConfig<AffineConfig> const * const config, AffineConfigAl al);
 
 typedef void (*ActivationKernel)(ExecutionKernelConfig<ActivationConfig> const * const config);
 
-typedef void (*RecurrentKernel)(RecurrentConfig const * const config);
+typedef void (*RecurrentKernel)(ExecutionKernelConfig<RecurrentConfig> const * const config);
 
 typedef void (*ConvolutionKernel)(ConvolutionConfig const * const config);
 

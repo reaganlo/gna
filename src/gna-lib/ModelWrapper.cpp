@@ -63,7 +63,7 @@ uint32_t ModelWrapper::ShapeGetNumberOfElements(ApiShape const * shape)
 
 uint32_t ModelWrapper::GetOperationInfo(OperationType operationType, OperationInfoKey infoType)
 {
-    static const std::map<OperationType, std::map<OperationInfoKey, uint32_t> > metaOperationInfo =
+    static const std::map<OperationType, std::map<OperationInfoKey, uint32_t>> metaOperationInfo =
     {
         { Gna2OperationTypeCopy,
             {

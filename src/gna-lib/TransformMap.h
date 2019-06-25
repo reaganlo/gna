@@ -25,6 +25,7 @@
 
 #pragma once
 
+#include "ActivationFunction.h"
 #include "GnaException.h"
 #include "OperationConfig.h"
 #include "Transform.h"

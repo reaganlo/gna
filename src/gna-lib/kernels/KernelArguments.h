@@ -120,8 +120,8 @@ template<typename TransformConfig>
 struct ExecutionKernelConfig : public ExecutionConfig
 {
     ExecutionKernelConfig(KernelConfig<TransformConfig> * requestConfig,
-        ExecutionConfig const & executioConfig) :
-        ExecutionConfig{executioConfig},
+        ExecutionConfig const & executionConfig) :
+        ExecutionConfig{executionConfig},
         RequestConfig{requestConfig}
     {
         if (nullptr != Intermediate && nullptr != Intermediate->cnnFusedBuffer)
@@ -195,13 +195,14 @@ struct AffineConfigAl
 
 struct RecurrentConfig
 {
-    RecurrentConfig(RecurrentConfig const * const source, ExecutionConfig const & executionConfigIn);
     RecurrentConfig(
         uint32_t const outputElementCountIn, uint32_t const inputVectorCountIn, uint32_t const inputElementCountIn,
         int16_t const * inputIn, int16_t * const feedbackBufferIn, int32_t * const outputIn,
         int16_t * outputActivatedIn, void const * weightsIn, void const * biases, ActivationConfig const & pwl);
+
     RecurrentConfig(
         uint32_t const outputElementCountIn, uint32_t const inputVectorCountIn, uint32_t const inputElementCountIn,
+
         int16_t const * inputIn, int16_t * const feedbackBufferIn, int32_t * const outputIn,
         int16_t * outputActivatedIn, void const * weightsIn, void const * biases,
         uint32_t bytesPerBiasIn, uint32_t bytesPerOutputIn, ActivationConfig const & pwl);
@@ -212,7 +213,6 @@ struct RecurrentConfig
     int16_t const * input;                  // I - (flat) [N;K]
     int16_t * feedbackBuffer;               // (flat) [N,M]
     int32_t * output;                       // O1 - [N,M]
-    ExecutionConfig const * execution;
     uint32_t bytesPerBias = 0;
     uint32_t bytesPerOutput = 0;
     union
@@ -230,8 +230,11 @@ struct RecurrentConfig
 
 struct TransposeConfig
 {
-    TransposeConfig(uint32_t rowCountIn, uint32_t columntCountIn, int16_t const * const inputIn,
-        int16_t * const outputIn);
+    static TransposeConfig MakeFrom(
+        ExecutionKernelConfig<AffineConfig> const *const config);
+
+    TransposeConfig(uint32_t rowCountIn, uint32_t columntCountIn,
+                    int16_t const * const inputIn, int16_t * const outputIn);
 
     uint32_t const rowCount;
     uint32_t const columnCount;

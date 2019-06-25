@@ -54,35 +54,36 @@ extern "C" {
 
 // Calculates affine transform on interleaved input vectors
 // (input vectors in N columns, vector elements in K rows)
-void AffineKernelImpl1B(AffineConfig const * const config);
+void AffineKernelImpl1B(ExecutionKernelConfig<AffineConfig> const * const config);
 
 // Calculates affine transform on interleaved input vectors
 // (input vectors in N columns, vector elements in K rows)
 // uses active outputs list
-void AffineActiveListKernelImpl1B(AffineConfig const * const config, AffineConfigAl const * const al);
+void AffineActiveListKernelImpl1B(
+    ExecutionKernelConfig<AffineConfig> const * const config, AffineConfigAl al);
 
 // Calculates affine transform on interleaved input vectors
 // (input vectors in N columns, vector elements in K rows)
 // handles multi bias
-void AffineMultiBiasKernelImpl1B(AffineConfig const * const config);
+void AffineMultiBiasKernelImpl1B(ExecutionKernelConfig<AffineConfig> const * const config);
 
 // Calculates recurrent transform on flat input vectors
 // (input vectors in N rows, vector elements in K columns)
-void RecurrentKernelImpl1B(RecurrentConfig const * const config);
+void RecurrentKernelImpl1B(ExecutionKernelConfig<RecurrentConfig> const * const config);
 
-void DiagonalKernelImpl1B(AffineConfig const * const config);
+void DiagonalKernelImpl1B(ExecutionKernelConfig<AffineConfig> const * const config);
 
 #if OPT_LEVEL <2
-void AffineKernelImpl1B1B(AffineConfig const * const config);
-void AffineKernelImpl1B2B(AffineConfig const * const config);
-void AffineActiveListKernelImpl1B1B(AffineConfig const * const config, AffineConfigAl const * const al);
-void AffineActiveListKernelImpl1B2B(AffineConfig const * const config, AffineConfigAl const * const al);
-void AffineMultiBiasKernelImpl1B1B(AffineConfig const * const config);
-void AffineMultiBiasKernelImpl1B2B(AffineConfig const * const config);
-void RecurrentKernelImpl1B1B(RecurrentConfig const * const config);
-void RecurrentKernelImpl1B2B(RecurrentConfig const * const config);
-void DiagonalKernelImpl1B1B(AffineConfig const * const config);
-void DiagonalKernelImpl1B2B(AffineConfig const * const config);
+void AffineKernelImpl1B1B(ExecutionKernelConfig<AffineConfig> const * const config);
+void AffineKernelImpl1B2B(ExecutionKernelConfig<AffineConfig> const * const config);
+void AffineActiveListKernelImpl1B1B(ExecutionKernelConfig<AffineConfig> const * const config, AffineConfigAl al);
+void AffineActiveListKernelImpl1B2B(ExecutionKernelConfig<AffineConfig> const * const config, AffineConfigAl al);
+void AffineMultiBiasKernelImpl1B1B(ExecutionKernelConfig<AffineConfig> const * const config);
+void AffineMultiBiasKernelImpl1B2B(ExecutionKernelConfig<AffineConfig> const * const config);
+void RecurrentKernelImpl1B1B(ExecutionKernelConfig<RecurrentConfig> const * const config);
+void RecurrentKernelImpl1B2B(ExecutionKernelConfig<RecurrentConfig> const * const config);
+void DiagonalKernelImpl1B1B(ExecutionKernelConfig<AffineConfig> const * const config);
+void DiagonalKernelImpl1B2B(ExecutionKernelConfig<AffineConfig> const * const config);
 #endif
 #ifdef __cplusplus
 }

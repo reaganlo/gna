@@ -62,14 +62,6 @@ void ConvolutionalLayer2D::Init()
         GetOutputTransform()->Output->Mode);
 
     Expect::True(uArchConfig.Valid, Gna2StatusModelConfigurationInvalid);
-
-    Layer::ComputeHidden = [this](AccelerationMode accel, ExecutionConfig const & executionConfig)
-    {this->compute(nullptr, accel, executionConfig); };
-
-    Layer::Compute = [this](LayerConfiguration &layerConfiguration,
-        AccelerationMode accel,
-        ExecutionConfig const & executionConfig)
-    {this->compute(&layerConfiguration, accel, executionConfig); };
 }
 
 Tensor const & ConvolutionalLayer2D::GetOperand(uint32_t operandIndex) const

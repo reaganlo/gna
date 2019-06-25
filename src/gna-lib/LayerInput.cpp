@@ -246,10 +246,11 @@ std::pair<uint32_t, uint32_t> LayerInput::getGroupingAndElements(
         {
             return {Dimensions.at('H'), Dimensions.at('W')};
         }
-        else if (LayerInput::IsTensorValid(inputTensor, validatorIn, INTEL_DEINTERLEAVE))
+        if (LayerInput::IsTensorValid(inputTensor, validatorIn, INTEL_DEINTERLEAVE))
         {
             return {Dimensions.at('W'), Dimensions.at('H')};
         }
+        throw GnaException(Gna2StatusXnnErrorLyrCfg);
     }
     default:
         return Tensor::getGroupingAndElements(operation, validatorIn);

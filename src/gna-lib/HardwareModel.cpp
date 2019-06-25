@@ -25,6 +25,7 @@
 
 #include "HardwareModel.h"
 
+#include "ActivationFunction.h"
 #include "Expect.h"
 #include "GnaConfig.h"
 #include "GnaException.h"
@@ -33,6 +34,7 @@
 #include "Layer.h"
 #include "Memory.h"
 #include "SubModel.h"
+#include "TransformMap.h"
 
 #include "common.h"
 #include "gna-api-status.h"
@@ -157,7 +159,7 @@ void HardwareModel::Build(const std::vector<Memory* >& modelMemoryObjectsIn,
 uint32_t HardwareModel::GetBufferOffset(const BaseAddress& address) const
 {
     if (address.InRange(ldMemory->GetBuffer(),
-                        static_cast<uint32_t>(ldMemory->GetSize())))
+                static_cast<uint32_t>(ldMemory->GetSize())))
     {
         return address.GetOffset(BaseAddress{ ldMemory->GetBuffer() });
     }
@@ -166,7 +168,7 @@ uint32_t HardwareModel::GetBufferOffset(const BaseAddress& address) const
     for (auto memory : modelMemoryObjects)
     {
         if (address.InRange(memory->GetBuffer(),
-                            static_cast<uint32_t>(memory->GetSize())))
+                    static_cast<uint32_t>(memory->GetSize())))
         {
             return offset + address.GetOffset(BaseAddress{memory->GetBuffer()});
         }

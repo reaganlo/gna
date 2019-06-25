@@ -94,7 +94,7 @@ typedef enum _TransformOperation
     GmmTransform,
     PoolingTranform1D,
     PoolingTransform2D,
-    RecurrentTranform,
+    RecurrentTransform,
     TransformOperationCount,
 } TransformOperation;
 

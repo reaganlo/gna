@@ -105,7 +105,6 @@ struct BaseTransformConfig
         kernels{ kernelsIn }
     {}
 
-    BaseTransformConfig(const BaseTransformConfig&) = delete;
     BaseTransformConfig() = delete;
 };
 
@@ -203,17 +202,20 @@ protected:
     const KernelMap<KernelType>* kernels;
     std::unique_ptr<KernelConfig<TransformType>> hiddenConfig;
 
-private:
-   inline std::unique_ptr<ExecutionKernelConfig<TransformType>> createExecutionConfig(
+    inline std::unique_ptr<ExecutionKernelConfig<TransformType>> createExecutionConfig(
        const LayerConfiguration* layerConfiguration, ExecutionConfig const & execution) const
     {
         if (nullptr == layerConfiguration)
+        {
             return std::make_unique<ExecutionKernelConfig<TransformType>>(
                 hiddenConfig.get(), execution);
+        }
         else
+        {
             return std::make_unique<ExecutionKernelConfig<TransformType>>(
                 static_cast<KernelConfig<TransformType>*>(layerConfiguration->ConfigList[Operation].get()),
                     execution);
+        }
     }
 };
 

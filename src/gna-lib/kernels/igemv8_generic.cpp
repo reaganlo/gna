@@ -29,24 +29,24 @@
 
 #include <cstdint>
 
-void RecurrentKernelImpl1B(RecurrentConfig const * const config)
+void RecurrentKernelImpl1B(ExecutionKernelConfig<RecurrentConfig> const * const config)
 {
-    nn_bias_c const * bias = config->biasesCompound;
-    nn_bias_c const * const biasEnd = bias + config->outputElementCount;
-    int16_t const * input = config->input;
-    int16_t const * const inputEnd = input + config->inputElementCount;
-    int16_t * feedback = config->feedbackBuffer;
-    int16_t const * const feedbackEnd = feedback + config->outputElementCount;
-    int8_t const * weight = config->weights1B;
-    int32_t * output = config->output;
+    nn_bias_c const * bias = config->RequestConfig->Transform.biasesCompound;
+    nn_bias_c const * const biasEnd = bias + config->RequestConfig->Transform.outputElementCount;
+    int16_t const * input = reinterpret_cast<int16_t const *>(config->RequestConfig->Inputs);
+    int16_t const * const inputEnd = input + config->RequestConfig->Transform.inputElementCount;
+    int16_t * feedback = config->RequestConfig->Transform.feedbackBuffer;
+    int16_t const * const feedbackEnd = feedback + config->RequestConfig->Transform.outputElementCount;
+    int8_t const * weight = config->RequestConfig->Transform.weights1B;
+    int32_t * output = reinterpret_cast<int32_t *>(config->RequestConfig->Transform.output);
     int32_t sum;
 
     for (; bias < biasEnd; bias++, output++)
     {
         *output = bias->bias;
         sum = 0;
-        input = config->input;
-        feedback = config->feedbackBuffer;
+        input = reinterpret_cast<int16_t const *>(config->RequestConfig->Inputs);
+        feedback = config->RequestConfig->Transform.feedbackBuffer;
 
         for (; input < inputEnd;)
         {
@@ -61,24 +61,24 @@ void RecurrentKernelImpl1B(RecurrentConfig const * const config)
     }
 }
 
-void RecurrentKernelImpl1B2B(RecurrentConfig const * const config)
+void RecurrentKernelImpl1B2B(ExecutionKernelConfig<RecurrentConfig> const * const config)
 {
-    nn_bias_c const * bias = config->biasesCompound;
-    nn_bias_c const * const biasEnd = bias + config->outputElementCount;
-    int16_t const * input = config->input;
-    int16_t const * const inputEnd = input + config->inputElementCount;
-    int8_t * feedback = (int8_t *)config->feedbackBuffer;
-    int8_t const * const feedbackEnd = feedback + config->outputElementCount * config->bytesPerOutput;
-    int8_t const * weight = config->weights1B;
-    int32_t * output = config->output;
+    nn_bias_c const * bias = config->RequestConfig->Transform.biasesCompound;
+    nn_bias_c const * const biasEnd = bias + config->RequestConfig->Transform.outputElementCount;
+    int16_t const * input = reinterpret_cast<int16_t const *>(config->RequestConfig->Inputs);
+    int16_t const * const inputEnd = input + config->RequestConfig->Transform.inputElementCount;
+    int8_t * feedback = (int8_t *)config->RequestConfig->Transform.feedbackBuffer;
+    int8_t const * const feedbackEnd = feedback + config->RequestConfig->Transform.outputElementCount * config->RequestConfig->Transform.bytesPerOutput;
+    int8_t const * weight = config->RequestConfig->Transform.weights1B;
+    int32_t * output = reinterpret_cast<int32_t *>(config->RequestConfig->Transform.output);
     int32_t sum;
 
     for (; bias < biasEnd; bias++, output++)
     {
         *output = bias->bias;
         sum = 0;
-        input = config->input;
-        feedback = (int8_t *)config->feedbackBuffer;
+        input = reinterpret_cast<int16_t const *>(config->RequestConfig->Inputs);
+        feedback = (int8_t *)config->RequestConfig->Transform.feedbackBuffer;
 
         for (; input < inputEnd;)
         {
@@ -86,11 +86,11 @@ void RecurrentKernelImpl1B2B(RecurrentConfig const * const config)
         }
         for (; feedback < feedbackEnd;)
         {
-            if (config->bytesPerOutput == 1)
+            if (config->RequestConfig->Transform.bytesPerOutput == 1)
             {
                 sum += *feedback++ * *weight++;
             }
-            else if (config->bytesPerOutput == 2)
+            else if (config->RequestConfig->Transform.bytesPerOutput == 2)
             {
                 sum += *(int16_t*)feedback * *weight++;
                 feedback += 2;
@@ -101,34 +101,34 @@ void RecurrentKernelImpl1B2B(RecurrentConfig const * const config)
     }
 }
 
-void RecurrentKernelImpl1B1B(RecurrentConfig const * const config)
+void RecurrentKernelImpl1B1B(ExecutionKernelConfig<RecurrentConfig> const * const config)
 {
-    int8_t const * bias = (int8_t*)config->biasesSimple;
-    int8_t const * const biasEnd = bias + config->outputElementCount * config->bytesPerBias;
-    int8_t const * input = (int8_t*)config->input;
-    int8_t const * const inputEnd = input + config->inputElementCount;
-    int8_t * feedback = (int8_t*)config->feedbackBuffer;
-    int8_t const * const feedbackEnd = feedback + config->outputElementCount * config->bytesPerOutput;
-    int8_t const * weight = config->weights1B;
-    int32_t * output = config->output;
+    int8_t const * bias = (int8_t*)config->RequestConfig->Transform.biasesSimple;
+    int8_t const * const biasEnd = bias + config->RequestConfig->Transform.outputElementCount * config->RequestConfig->Transform.bytesPerBias;
+    int8_t const * input = (int8_t*)config->RequestConfig->Inputs;
+    int8_t const * const inputEnd = input + config->RequestConfig->Transform.inputElementCount;
+    int8_t * feedback = (int8_t*)config->RequestConfig->Transform.feedbackBuffer;
+    int8_t const * const feedbackEnd = feedback + config->RequestConfig->Transform.outputElementCount * config->RequestConfig->Transform.bytesPerOutput;
+    int8_t const * weight = config->RequestConfig->Transform.weights1B;
+    int32_t * output = reinterpret_cast<int32_t *>(config->RequestConfig->Transform.output);
 
-    for (; bias < biasEnd; bias += config->bytesPerBias, output++)
+    for (; bias < biasEnd; bias += config->RequestConfig->Transform.bytesPerBias, output++)
     {
-        if (config->bytesPerBias == 1)
+        if (config->RequestConfig->Transform.bytesPerBias == 1)
         {
             *output = *(int8_t*)bias;
         }
-        else if (config->bytesPerBias == 2)
+        else if (config->RequestConfig->Transform.bytesPerBias == 2)
         {
             *output = *(int16_t*)bias;
         }
-        else if (config->bytesPerBias == 4)
+        else if (config->RequestConfig->Transform.bytesPerBias == 4)
         {
             *output = *(int32_t*)bias;
         }
 
-        input = (int8_t*)config->input;
-        feedback = (int8_t*)config->feedbackBuffer;
+        input = (int8_t*)config->RequestConfig->Inputs;
+        feedback = (int8_t*)config->RequestConfig->Transform.feedbackBuffer;
 
         for (; input < inputEnd;)
         {
@@ -136,11 +136,11 @@ void RecurrentKernelImpl1B1B(RecurrentConfig const * const config)
         }
         for (; feedback < feedbackEnd;)
         {
-            if (config->bytesPerOutput == 1)
+            if (config->RequestConfig->Transform.bytesPerOutput == 1)
             {
                 *output += *feedback++ * *weight++;
             }
-            else if (config->bytesPerOutput == 2)
+            else if (config->RequestConfig->Transform.bytesPerOutput == 2)
             {
                 *output += *(int16_t*)feedback * *weight++;
                 feedback += 2;

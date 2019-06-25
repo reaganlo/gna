@@ -36,42 +36,42 @@
 #include <cstring>
 #include <immintrin.h>
 
-static void initializeVectors(AffineConfig const *config,
+static void initializeVectors(ExecutionKernelConfig<AffineConfig> const *config,
         int16_t const * input[8], __m128i *in_ptr[8], uint32_t simdVectorLength);
 
 static void affineActiveListKernelImpl1B_N1(
-    AffineConfig const *config, AffineConfigAl const *al, int16_t const *input[8], __m128i *in_ptr[8],
+    ExecutionKernelConfig<AffineConfig> const *config, AffineConfigAl al, int16_t const *input[8], __m128i *in_ptr[8],
     uint32_t numberOfElementsPerGroup, uint32_t numberOfIterationsPerGroup, uint32_t vectorTailLength, uint32_t simdVectorLength);
 
 static void affineActiveListKernelImpl1B_N2(
-    AffineConfig const *config, AffineConfigAl const *al, int16_t const *input[8], __m128i *in_ptr[8],
+    ExecutionKernelConfig<AffineConfig> const *config, AffineConfigAl al, int16_t const *input[8], __m128i *in_ptr[8],
     uint32_t numberOfElementsPerGroup, uint32_t numberOfIterationsPerGroup, uint32_t vectorTailLength, uint32_t simdVectorLength);
 
 static void affineActiveListKernelImpl1B_N3(
-    AffineConfig const *config, AffineConfigAl const *al, int16_t const *input[8], __m128i *in_ptr[8],
+    ExecutionKernelConfig<AffineConfig> const *config, AffineConfigAl al, int16_t const *input[8], __m128i *in_ptr[8],
     uint32_t numberOfElementsPerGroup, uint32_t numberOfIterationsPerGroup, uint32_t vectorTailLength, uint32_t simdVectorLength);
 
 static void affineActiveListKernelImpl1B_N4(
-    AffineConfig const *config, AffineConfigAl const *al, int16_t const *input[8], __m128i *in_ptr[8],
+    ExecutionKernelConfig<AffineConfig> const *config, AffineConfigAl al, int16_t const *input[8], __m128i *in_ptr[8],
     uint32_t numberOfElementsPerGroup, uint32_t numberOfIterationsPerGroup, uint32_t vectorTailLength, uint32_t simdVectorLength);
 
 static void affineActiveListKernelImpl1B_N5(
-    AffineConfig const *config, AffineConfigAl const *al, int16_t const *input[8], __m128i *in_ptr[8],
+    ExecutionKernelConfig<AffineConfig> const *config, AffineConfigAl al, int16_t const *input[8], __m128i *in_ptr[8],
     uint32_t numberOfElementsPerGroup, uint32_t numberOfIterationsPerGroup, uint32_t vectorTailLength, uint32_t simdVectorLength);
 
 static void affineActiveListKernelImpl1B_N6(
-    AffineConfig const *config, AffineConfigAl const *al, int16_t const *input[8], __m128i *in_ptr[8],
+    ExecutionKernelConfig<AffineConfig> const *config, AffineConfigAl al, int16_t const *input[8], __m128i *in_ptr[8],
     uint32_t numberOfElementsPerGroup, uint32_t numberOfIterationsPerGroup, uint32_t vectorTailLength, uint32_t simdVectorLength);
 
 static void affineActiveListKernelImpl1B_N7(
-    AffineConfig const *config, AffineConfigAl const *al, int16_t const *input[8], __m128i *in_ptr[8],
+    ExecutionKernelConfig<AffineConfig> const *config, AffineConfigAl al, int16_t const *input[8], __m128i *in_ptr[8],
     uint32_t numberOfElementsPerGroup, uint32_t numberOfIterationsPerGroup, uint32_t vectorTailLength, uint32_t simdVectorLength);
 
 static void affineActiveListKernelImpl1B_N8(
-    AffineConfig const *config, AffineConfigAl const *al, int16_t const *input[8], __m128i *in_ptr[8],
+    ExecutionKernelConfig<AffineConfig> const *config, AffineConfigAl al, int16_t const *input[8], __m128i *in_ptr[8],
     uint32_t numberOfElementsPerGroup, uint32_t numberOfIterationsPerGroup, uint32_t vectorTailLength, uint32_t simdVectorLength);
 
-void AffineActiveListKernelImpl1B(AffineConfig const * const config, AffineConfigAl const * const al)
+void AffineActiveListKernelImpl1B(ExecutionKernelConfig<AffineConfig> const * const config, AffineConfigAl al)
 {
     uint32_t inputBufferSize;
     uint32_t vectorTailLength;
@@ -79,11 +79,11 @@ void AffineActiveListKernelImpl1B(AffineConfig const * const config, AffineConfi
     uint32_t numberOfElementsPerGroup;
     uint32_t numberOfIterationsPerGroup;
 
-    vectorTailLength = config->inputElementCount % SSE_16CAP; // config->inputElementCount tail for manual processing
-    simdVectorLength = config->inputElementCount - vectorTailLength; // trimmed config->inputElementCount for AVX2 processing
-    inputBufferSize = config->execution->BufferElementCount[config->inputVectorCount - 1 + XNN_N_GROUP_MAX];
-    numberOfElementsPerGroup = inputBufferSize / config->inputVectorCount;
-    numberOfIterationsPerGroup = config->inputElementCount / numberOfElementsPerGroup;
+    vectorTailLength = config->RequestConfig->Transform.inputElementCount % SSE_16CAP; // config->RequestConfig->Transform.inputElementCount tail for manual processing
+    simdVectorLength = config->RequestConfig->Transform.inputElementCount - vectorTailLength; // trimmed config->RequestConfig->Transform.inputElementCount for AVX2 processing
+    inputBufferSize = config->BufferElementCount[config->RequestConfig->Transform.inputVectorCount - 1 + XNN_N_GROUP_MAX];
+    numberOfElementsPerGroup = inputBufferSize / config->RequestConfig->Transform.inputVectorCount;
+    numberOfIterationsPerGroup = config->RequestConfig->Transform.inputElementCount / numberOfElementsPerGroup;
 
     int16_t const * input[8];
     memset(input, 0, sizeof(input));
@@ -94,7 +94,7 @@ void AffineActiveListKernelImpl1B(AffineConfig const * const config, AffineConfi
 
     initializeVectors(config, input, in_ptr, simdVectorLength);
 
-    switch (config->inputVectorCount)
+    switch (config->RequestConfig->Transform.inputVectorCount)
     {
     case 1:
         affineActiveListKernelImpl1B_N1(config, al, input, in_ptr, numberOfElementsPerGroup,
@@ -131,85 +131,86 @@ void AffineActiveListKernelImpl1B(AffineConfig const * const config, AffineConfi
     }
 }
 
-void initializeVectors(AffineConfig const * const config,
+void initializeVectors(ExecutionKernelConfig<AffineConfig> const * const config,
         int16_t const * input[8], __m128i *in_ptr[8], uint32_t simdVectorLength)
 {
+    int16_t const *inputs = reinterpret_cast<int16_t const *>(config->RequestConfig->Inputs);
     uint32_t i;
 
-    if (config->inputVectorCount == 8)
+    if (config->RequestConfig->Transform.inputVectorCount == 8)
     {
-        for (i = 0; i < config->inputElementCount; i++)
+        for (i = 0; i < config->RequestConfig->Transform.inputElementCount; i++)
         {
-            config->execution->Intermediate->d7[i] = config->input[i*config->inputVectorCount + 7];
+            config->Intermediate->d7[i] = inputs[i*config->RequestConfig->Transform.inputVectorCount + 7];
         }
-        input[7] = config->execution->Intermediate->d7 + simdVectorLength;
-        in_ptr[7] = (__m128i*)config->execution->Intermediate->d7;
+        input[7] = config->Intermediate->d7 + simdVectorLength;
+        in_ptr[7] = (__m128i*)config->Intermediate->d7;
     }
-    if (config->inputVectorCount >= 7)
+    if (config->RequestConfig->Transform.inputVectorCount >= 7)
     {
-        for (i = 0; i < config->inputElementCount; i++)
+        for (i = 0; i < config->RequestConfig->Transform.inputElementCount; i++)
         {
-            config->execution->Intermediate->d6[i] = config->input[i*config->inputVectorCount + 6];
+            config->Intermediate->d6[i] = inputs[i*config->RequestConfig->Transform.inputVectorCount + 6];
         }
-        input[6] = config->execution->Intermediate->d6 + simdVectorLength;
-        in_ptr[6] = (__m128i*)config->execution->Intermediate->d6;
+        input[6] = config->Intermediate->d6 + simdVectorLength;
+        in_ptr[6] = (__m128i*)config->Intermediate->d6;
     }
-    if (config->inputVectorCount >= 6)
+    if (config->RequestConfig->Transform.inputVectorCount >= 6)
     {
-        for (i = 0; i < config->inputElementCount; i++)
+        for (i = 0; i < config->RequestConfig->Transform.inputElementCount; i++)
         {
-            config->execution->Intermediate->d5[i] = config->input[i*config->inputVectorCount + 5];
+            config->Intermediate->d5[i] = inputs[i*config->RequestConfig->Transform.inputVectorCount + 5];
         }
-        input[5] = config->execution->Intermediate->d5 + simdVectorLength;
-        in_ptr[5] = (__m128i*)config->execution->Intermediate->d5;
+        input[5] = config->Intermediate->d5 + simdVectorLength;
+        in_ptr[5] = (__m128i*)config->Intermediate->d5;
     }
-    if (config->inputVectorCount >= 5)
+    if (config->RequestConfig->Transform.inputVectorCount >= 5)
     {
-        for (i = 0; i < config->inputElementCount; i++)
+        for (i = 0; i < config->RequestConfig->Transform.inputElementCount; i++)
         {
-            config->execution->Intermediate->d4[i] = config->input[i*config->inputVectorCount + 4];
+            config->Intermediate->d4[i] = inputs[i*config->RequestConfig->Transform.inputVectorCount + 4];
         }
-        input[4] = config->execution->Intermediate->d4 + simdVectorLength;
-        in_ptr[4] = (__m128i*)config->execution->Intermediate->d4;
+        input[4] = config->Intermediate->d4 + simdVectorLength;
+        in_ptr[4] = (__m128i*)config->Intermediate->d4;
     }
-    if (config->inputVectorCount >= 4)
+    if (config->RequestConfig->Transform.inputVectorCount >= 4)
     {
-        for (i = 0; i < config->inputElementCount; i++)
+        for (i = 0; i < config->RequestConfig->Transform.inputElementCount; i++)
         {
-            config->execution->Intermediate->d3[i] = config->input[i*config->inputVectorCount + 3];
+            config->Intermediate->d3[i] = inputs[i*config->RequestConfig->Transform.inputVectorCount + 3];
         }
-        input[3] = config->execution->Intermediate->d3 + simdVectorLength;
-        in_ptr[3] = (__m128i*)config->execution->Intermediate->d3;
+        input[3] = config->Intermediate->d3 + simdVectorLength;
+        in_ptr[3] = (__m128i*)config->Intermediate->d3;
     }
-    if (config->inputVectorCount >= 3)
+    if (config->RequestConfig->Transform.inputVectorCount >= 3)
     {
-        for (i = 0; i < config->inputElementCount; i++)
+        for (i = 0; i < config->RequestConfig->Transform.inputElementCount; i++)
         {
-            config->execution->Intermediate->d2[i] = config->input[i*config->inputVectorCount + 2];
+            config->Intermediate->d2[i] = inputs[i*config->RequestConfig->Transform.inputVectorCount + 2];
         }
-        input[2] = config->execution->Intermediate->d2 + simdVectorLength;
-        in_ptr[2] = (__m128i*)config->execution->Intermediate->d2;
+        input[2] = config->Intermediate->d2 + simdVectorLength;
+        in_ptr[2] = (__m128i*)config->Intermediate->d2;
     }
-    if (config->inputVectorCount >= 2)
+    if (config->RequestConfig->Transform.inputVectorCount >= 2)
     {
-        for (i = 0; i < config->inputElementCount; i++)
+        for (i = 0; i < config->RequestConfig->Transform.inputElementCount; i++)
         {
-            config->execution->Intermediate->d1[i] = config->input[i*config->inputVectorCount + 1];
+            config->Intermediate->d1[i] = inputs[i*config->RequestConfig->Transform.inputVectorCount + 1];
         }
-        input[1] = config->execution->Intermediate->d1 + simdVectorLength;
-        in_ptr[1] = (__m128i*)config->execution->Intermediate->d1;
+        input[1] = config->Intermediate->d1 + simdVectorLength;
+        in_ptr[1] = (__m128i*)config->Intermediate->d1;
 
-        for (i = 0; i < config->inputElementCount; i++)
+        for (i = 0; i < config->RequestConfig->Transform.inputElementCount; i++)
         {
-            config->execution->Intermediate->d0[i] = config->input[i*config->inputVectorCount];
+            config->Intermediate->d0[i] = inputs[i*config->RequestConfig->Transform.inputVectorCount];
         }
-        input[0] = config->execution->Intermediate->d0 + simdVectorLength;
-        in_ptr[0] = (__m128i*)config->execution->Intermediate->d0;
+        input[0] = config->Intermediate->d0 + simdVectorLength;
+        in_ptr[0] = (__m128i*)config->Intermediate->d0;
     }
 }
 
 static void affineActiveListKernelImpl1B_N1(
-    AffineConfig const * const config, AffineConfigAl const *const al, int16_t const *input[8], __m128i *in_ptr[8],
+    ExecutionKernelConfig<AffineConfig> const * const config, AffineConfigAl al, int16_t const *input[8], __m128i *in_ptr[8],
     uint32_t numberOfElementsPerGroup, uint32_t numberOfIterationsPerGroup, uint32_t vectorTailLength, uint32_t simdVectorLength)
 {
     uint32_t numberOfIterations;
@@ -222,11 +223,12 @@ static void affineActiveListKernelImpl1B_N1(
     uint32_t j;
     uint32_t l;
 
+    int16_t const *inputs = reinterpret_cast<int16_t const *>(config->RequestConfig->Inputs);
     int8_t const * weight;
     nn_bias_c const * bias;
     int32_t * output;
 
-    output = config->output;
+    output = reinterpret_cast<int32_t *>(config->RequestConfig->Outputs);
 
     // accumulators' sums
     int64_t sum0;
@@ -244,13 +246,13 @@ static void affineActiveListKernelImpl1B_N1(
     __m128i w1;
     __m128i w;
 
-    in_ptr[0] = (__m128i*)config->input;
-    input[0] = config->input+simdVectorLength;
-    for (l = 0; l < al->count; l++)
+    in_ptr[0] = (__m128i*)config->RequestConfig->Inputs;
+    input[0] = inputs + simdVectorLength;
+    for (l = 0; l < al.count; l++)
     {
-        i = al->indices[l];
-        weight = config->weights1B+i*config->inputElementCount;
-        bias = config->biasesCompound+i;
+        i = al.indices[l];
+        weight = config->RequestConfig->Transform.weights1B+i*config->RequestConfig->Transform.inputElementCount;
+        bias = config->RequestConfig->Transform.biasesCompound+i;
 
         ix = 0;
         acc0 = _mm_setzero_si128();
@@ -261,7 +263,7 @@ static void affineActiveListKernelImpl1B_N1(
         {
             acc0 = _mm_add_epi32(acc0, acc1);
             sum0 += vec_sum32(acc0) * bias->multiplier;
-            saturate_store_out(&sum0, output, config->execution->SaturationCount);
+            saturate_store_out(&sum0, output, config->SaturationCount);
             sum0 = *output;
 
             numberOfIterations = numberOfElementsPerGroup < simdVectorLength - kk * numberOfElementsPerGroup ? numberOfElementsPerGroup : simdVectorLength - kk * numberOfElementsPerGroup;
@@ -322,14 +324,14 @@ static void affineActiveListKernelImpl1B_N1(
             sum0 += (*input)[j] * *weight++ * bias->multiplier;
         }
 
-        saturate_store_out(&sum0, output, config->execution->SaturationCount);
+        saturate_store_out(&sum0, output, config->SaturationCount);
 
         output++;
     }
 }
 
 static void affineActiveListKernelImpl1B_N2(
-    AffineConfig const * const config, AffineConfigAl const *const al, int16_t const *input[8], __m128i *in_ptr[8],
+    ExecutionKernelConfig<AffineConfig> const * const config, AffineConfigAl al, int16_t const *input[8], __m128i *in_ptr[8],
     uint32_t numberOfElementsPerGroup, uint32_t numberOfIterationsPerGroup, uint32_t vectorTailLength, uint32_t simdVectorLength)
 {
     uint32_t numberOfIterations;
@@ -346,7 +348,7 @@ static void affineActiveListKernelImpl1B_N2(
     nn_bias_c const * bias;
     int32_t * output;
 
-    output = config->output;
+    output = reinterpret_cast<int32_t *>(config->RequestConfig->Outputs);
 
     // accumulators' sums
     int64_t sum0;
@@ -363,11 +365,11 @@ static void affineActiveListKernelImpl1B_N2(
     // simd weights
     __m128i w;
 
-    for (l = 0; l < al->count; l++)
+    for (l = 0; l < al.count; l++)
     {
-        i = al->indices[l];
-        weight = config->weights1B+i*config->inputElementCount;
-        bias = config->biasesCompound+i;
+        i = al.indices[l];
+        weight = config->RequestConfig->Transform.weights1B+i*config->RequestConfig->Transform.inputElementCount;
+        bias = config->RequestConfig->Transform.biasesCompound+i;
         ix = 0;
 
         sum0 = bias->bias;
@@ -375,8 +377,8 @@ static void affineActiveListKernelImpl1B_N2(
 
         for (kk = 0; kk < numberOfIterationsPerGroup + 1; kk++)
         {
-            saturate(&sum0, config->execution->SaturationCount);
-            saturate(&sum1, config->execution->SaturationCount);
+            saturate(&sum0, config->SaturationCount);
+            saturate(&sum1, config->SaturationCount);
 
             // numberOfElementsPerGroup = 12000 / 5 = 2400
             // 2016 / (8 * 256) = 1
@@ -438,16 +440,16 @@ static void affineActiveListKernelImpl1B_N2(
             sum1 += input[1][j] * *weight * bias->multiplier;
         }
 
-        saturate_store_out(&sum0, &output[0], config->execution->SaturationCount);
-        saturate_store_out(&sum1, &output[1], config->execution->SaturationCount);
+        saturate_store_out(&sum0, &output[0], config->SaturationCount);
+        saturate_store_out(&sum1, &output[1], config->SaturationCount);
 
-        output += config->inputVectorCount;
+        output += config->RequestConfig->Transform.inputVectorCount;
     }
 
 }
 
 static void affineActiveListKernelImpl1B_N3(
-    AffineConfig const * const config, AffineConfigAl const *const al, int16_t const *input[8], __m128i *in_ptr[8],
+    ExecutionKernelConfig<AffineConfig> const * const config, AffineConfigAl al, int16_t const *input[8], __m128i *in_ptr[8],
     uint32_t numberOfElementsPerGroup, uint32_t numberOfIterationsPerGroup, uint32_t vectorTailLength, uint32_t simdVectorLength)
 {
     uint32_t numberOfIterations;
@@ -464,7 +466,7 @@ static void affineActiveListKernelImpl1B_N3(
     nn_bias_c const * bias;
     int32_t * output;
 
-    output = config->output;
+    output = reinterpret_cast<int32_t *>(config->RequestConfig->Outputs);
 
     // accumulators' sums
     int64_t sum0;
@@ -484,11 +486,11 @@ static void affineActiveListKernelImpl1B_N3(
     // simd weights
     __m128i w;
 
-    for (l = 0; l < al->count; l++)
+    for (l = 0; l < al.count; l++)
     {
-        i = al->indices[l];
-        weight = config->weights1B+i*config->inputElementCount;
-        bias = config->biasesCompound+i;
+        i = al.indices[l];
+        weight = config->RequestConfig->Transform.weights1B+i*config->RequestConfig->Transform.inputElementCount;
+        bias = config->RequestConfig->Transform.biasesCompound+i;
         ix = 0;
 
         sum0 = bias->bias;
@@ -497,9 +499,9 @@ static void affineActiveListKernelImpl1B_N3(
 
         for (kk = 0; kk < numberOfIterationsPerGroup + 1; kk++)
         {
-            saturate(&sum0, config->execution->SaturationCount);
-            saturate(&sum1, config->execution->SaturationCount);
-            saturate(&sum2, config->execution->SaturationCount);
+            saturate(&sum0, config->SaturationCount);
+            saturate(&sum1, config->SaturationCount);
+            saturate(&sum2, config->SaturationCount);
 
             // numberOfElementsPerGroup = 12000 / 5 = 2400
             // 2016 / (8 * 256) = 1
@@ -572,17 +574,17 @@ static void affineActiveListKernelImpl1B_N3(
             sum2 += input[2][j] * *weight * bias->multiplier;
         }
 
-        saturate_store_out(&sum0, &output[0], config->execution->SaturationCount);
-        saturate_store_out(&sum1, &output[1], config->execution->SaturationCount);
-        saturate_store_out(&sum2, &output[2], config->execution->SaturationCount);
+        saturate_store_out(&sum0, &output[0], config->SaturationCount);
+        saturate_store_out(&sum1, &output[1], config->SaturationCount);
+        saturate_store_out(&sum2, &output[2], config->SaturationCount);
 
-        output += config->inputVectorCount;
+        output += config->RequestConfig->Transform.inputVectorCount;
     }
 
 }
 
 static void affineActiveListKernelImpl1B_N4(
-    AffineConfig const * const config, AffineConfigAl const *const al, int16_t const *input[8], __m128i *in_ptr[8],
+    ExecutionKernelConfig<AffineConfig> const * const config, AffineConfigAl al, int16_t const *input[8], __m128i *in_ptr[8],
     uint32_t numberOfElementsPerGroup, uint32_t numberOfIterationsPerGroup, uint32_t vectorTailLength, uint32_t simdVectorLength)
 {
     uint32_t numberOfIterations;
@@ -599,7 +601,7 @@ static void affineActiveListKernelImpl1B_N4(
     nn_bias_c const * bias;
     int32_t * output;
 
-    output = config->output;
+    output = reinterpret_cast<int32_t *>(config->RequestConfig->Outputs);
 
     // accumulators' sums
     int64_t sum0;
@@ -622,11 +624,11 @@ static void affineActiveListKernelImpl1B_N4(
     // simd weights
     __m128i w;
 
-    for (l = 0; l < al->count; l++)
+    for (l = 0; l < al.count; l++)
     {
-        i = al->indices[l];
-        weight = config->weights1B+i*config->inputElementCount;
-        bias = config->biasesCompound+i;
+        i = al.indices[l];
+        weight = config->RequestConfig->Transform.weights1B+i*config->RequestConfig->Transform.inputElementCount;
+        bias = config->RequestConfig->Transform.biasesCompound+i;
         ix = 0;
 
         sum0 = bias->bias;
@@ -636,10 +638,10 @@ static void affineActiveListKernelImpl1B_N4(
 
         for (kk = 0; kk < numberOfIterationsPerGroup + 1; kk++)
         {
-            saturate(&sum0, config->execution->SaturationCount);
-            saturate(&sum1, config->execution->SaturationCount);
-            saturate(&sum2, config->execution->SaturationCount);
-            saturate(&sum3, config->execution->SaturationCount);
+            saturate(&sum0, config->SaturationCount);
+            saturate(&sum1, config->SaturationCount);
+            saturate(&sum2, config->SaturationCount);
+            saturate(&sum3, config->SaturationCount);
 
             // numberOfElementsPerGroup = 12000 / 5 = 2400
             // 2016 / (8 * 256) = 1
@@ -723,18 +725,18 @@ static void affineActiveListKernelImpl1B_N4(
             sum3 += input[3][j] * *weight * bias->multiplier;
         }
 
-        saturate_store_out(&sum0, &output[0], config->execution->SaturationCount);
-        saturate_store_out(&sum1, &output[1], config->execution->SaturationCount);
-        saturate_store_out(&sum2, &output[2], config->execution->SaturationCount);
-        saturate_store_out(&sum3, &output[3], config->execution->SaturationCount);
+        saturate_store_out(&sum0, &output[0], config->SaturationCount);
+        saturate_store_out(&sum1, &output[1], config->SaturationCount);
+        saturate_store_out(&sum2, &output[2], config->SaturationCount);
+        saturate_store_out(&sum3, &output[3], config->SaturationCount);
 
-        output += config->inputVectorCount;
+        output += config->RequestConfig->Transform.inputVectorCount;
     }
 
 }
 
 static void affineActiveListKernelImpl1B_N5(
-    AffineConfig const * const config, AffineConfigAl const *const al, int16_t const *input[8], __m128i *in_ptr[8],
+    ExecutionKernelConfig<AffineConfig> const * const config, AffineConfigAl al, int16_t const *input[8], __m128i *in_ptr[8],
     uint32_t numberOfElementsPerGroup, uint32_t numberOfIterationsPerGroup, uint32_t vectorTailLength, uint32_t simdVectorLength)
 {
     uint32_t numberOfIterations;
@@ -751,7 +753,7 @@ static void affineActiveListKernelImpl1B_N5(
     nn_bias_c const * bias;
     int32_t * output;
 
-    output = config->output;
+    output = reinterpret_cast<int32_t *>(config->RequestConfig->Outputs);
 
     // accumulators' sums
     int64_t sum0;
@@ -777,11 +779,11 @@ static void affineActiveListKernelImpl1B_N5(
     // simd weights
     __m128i w;
 
-    for (l = 0; l < al->count; l++)
+    for (l = 0; l < al.count; l++)
     {
-        i = al->indices[l];
-        weight = config->weights1B+i*config->inputElementCount;
-        bias = config->biasesCompound+i;
+        i = al.indices[l];
+        weight = config->RequestConfig->Transform.weights1B+i*config->RequestConfig->Transform.inputElementCount;
+        bias = config->RequestConfig->Transform.biasesCompound+i;
         ix = 0;
 
         sum0 = bias->bias;
@@ -792,11 +794,11 @@ static void affineActiveListKernelImpl1B_N5(
 
         for (kk = 0; kk < numberOfIterationsPerGroup + 1; kk++)
         {
-            saturate(&sum0, config->execution->SaturationCount);
-            saturate(&sum1, config->execution->SaturationCount);
-            saturate(&sum2, config->execution->SaturationCount);
-            saturate(&sum3, config->execution->SaturationCount);
-            saturate(&sum4, config->execution->SaturationCount);
+            saturate(&sum0, config->SaturationCount);
+            saturate(&sum1, config->SaturationCount);
+            saturate(&sum2, config->SaturationCount);
+            saturate(&sum3, config->SaturationCount);
+            saturate(&sum4, config->SaturationCount);
 
             // numberOfElementsPerGroup = 12000 / 5 = 2400
             // 2016 / (8 * 256) = 1
@@ -891,19 +893,19 @@ static void affineActiveListKernelImpl1B_N5(
             sum4 += input[4][j] * *weight * bias->multiplier;
         }
 
-        saturate_store_out(&sum0, &output[0], config->execution->SaturationCount);
-        saturate_store_out(&sum1, &output[1], config->execution->SaturationCount);
-        saturate_store_out(&sum2, &output[2], config->execution->SaturationCount);
-        saturate_store_out(&sum3, &output[3], config->execution->SaturationCount);
-        saturate_store_out(&sum4, &output[4], config->execution->SaturationCount);
+        saturate_store_out(&sum0, &output[0], config->SaturationCount);
+        saturate_store_out(&sum1, &output[1], config->SaturationCount);
+        saturate_store_out(&sum2, &output[2], config->SaturationCount);
+        saturate_store_out(&sum3, &output[3], config->SaturationCount);
+        saturate_store_out(&sum4, &output[4], config->SaturationCount);
 
-        output += config->inputVectorCount;
+        output += config->RequestConfig->Transform.inputVectorCount;
     }
 
 }
 
 static void affineActiveListKernelImpl1B_N6(
-    AffineConfig const * const config, AffineConfigAl const *const al, int16_t const *input[8], __m128i *in_ptr[8],
+    ExecutionKernelConfig<AffineConfig> const * const config, AffineConfigAl al, int16_t const *input[8], __m128i *in_ptr[8],
     uint32_t numberOfElementsPerGroup, uint32_t numberOfIterationsPerGroup, uint32_t vectorTailLength, uint32_t simdVectorLength)
 {
     uint32_t numberOfIterations;
@@ -918,7 +920,7 @@ static void affineActiveListKernelImpl1B_N6(
     nn_bias_c const * bias;
     int32_t * output;
 
-    output = config->output;
+    output = reinterpret_cast<int32_t *>(config->RequestConfig->Outputs);
 
     // accumulators' sums
     int64_t sum0;
@@ -947,11 +949,11 @@ static void affineActiveListKernelImpl1B_N6(
     // simd weights
     __m128i w;
 
-    for (l = 0; l < al->count; l++)
+    for (l = 0; l < al.count; l++)
     {
-        i = al->indices[l];
-        weight = config->weights1B+i*config->inputElementCount;
-        bias = config->biasesCompound+i;
+        i = al.indices[l];
+        weight = config->RequestConfig->Transform.weights1B+i*config->RequestConfig->Transform.inputElementCount;
+        bias = config->RequestConfig->Transform.biasesCompound+i;
         ix = 0;
 
         sum0 = bias->bias;
@@ -970,12 +972,12 @@ static void affineActiveListKernelImpl1B_N6(
 
         for (kk = 0; kk < numberOfIterationsPerGroup + 1; kk++)
         {
-            saturate(&sum0, config->execution->SaturationCount);
-            saturate(&sum1, config->execution->SaturationCount);
-            saturate(&sum2, config->execution->SaturationCount);
-            saturate(&sum3, config->execution->SaturationCount);
-            saturate(&sum4, config->execution->SaturationCount);
-            saturate(&sum5, config->execution->SaturationCount);
+            saturate(&sum0, config->SaturationCount);
+            saturate(&sum1, config->SaturationCount);
+            saturate(&sum2, config->SaturationCount);
+            saturate(&sum3, config->SaturationCount);
+            saturate(&sum4, config->SaturationCount);
+            saturate(&sum5, config->SaturationCount);
 
             numberOfIterations = numberOfElementsPerGroup < simdVectorLength - kk * numberOfElementsPerGroup ? numberOfElementsPerGroup : simdVectorLength - kk * numberOfElementsPerGroup;
 
@@ -1034,20 +1036,20 @@ static void affineActiveListKernelImpl1B_N6(
             sum5 += input[5][j] * *weight * bias->multiplier;
         }
 
-        saturate_store_out(&sum0, &output[0], config->execution->SaturationCount);
-        saturate_store_out(&sum1, &output[1], config->execution->SaturationCount);
-        saturate_store_out(&sum2, &output[2], config->execution->SaturationCount);
-        saturate_store_out(&sum3, &output[3], config->execution->SaturationCount);
-        saturate_store_out(&sum4, &output[4], config->execution->SaturationCount);
-        saturate_store_out(&sum5, &output[5], config->execution->SaturationCount);
+        saturate_store_out(&sum0, &output[0], config->SaturationCount);
+        saturate_store_out(&sum1, &output[1], config->SaturationCount);
+        saturate_store_out(&sum2, &output[2], config->SaturationCount);
+        saturate_store_out(&sum3, &output[3], config->SaturationCount);
+        saturate_store_out(&sum4, &output[4], config->SaturationCount);
+        saturate_store_out(&sum5, &output[5], config->SaturationCount);
 
-        output += config->inputVectorCount;
+        output += config->RequestConfig->Transform.inputVectorCount;
     }
 
 }
 
 static void affineActiveListKernelImpl1B_N7(
-    AffineConfig const * const config, AffineConfigAl const *const al, int16_t const *input[8], __m128i *in_ptr[8],
+    ExecutionKernelConfig<AffineConfig> const * const config, AffineConfigAl al, int16_t const *input[8], __m128i *in_ptr[8],
     uint32_t numberOfElementsPerGroup, uint32_t numberOfIterationsPerGroup, uint32_t vectorTailLength, uint32_t simdVectorLength)
 {
     uint32_t numberOfIterations;
@@ -1062,7 +1064,7 @@ static void affineActiveListKernelImpl1B_N7(
     nn_bias_c const * bias;
     int32_t * output;
 
-    output = config->output;
+    output = reinterpret_cast<int32_t *>(config->RequestConfig->Outputs);
 
     // accumulators' sums
     int64_t sum0;
@@ -1094,11 +1096,11 @@ static void affineActiveListKernelImpl1B_N7(
     // simd weights
     __m128i w;
 
-    for (l = 0; l < al->count; l++)
+    for (l = 0; l < al.count; l++)
     {
-        i = al->indices[l];
-        weight = config->weights1B+i*config->inputElementCount;
-        bias = config->biasesCompound+i;
+        i = al.indices[l];
+        weight = config->RequestConfig->Transform.weights1B+i*config->RequestConfig->Transform.inputElementCount;
+        bias = config->RequestConfig->Transform.biasesCompound+i;
         ix = 0;
 
         sum0 = bias->bias;
@@ -1119,13 +1121,13 @@ static void affineActiveListKernelImpl1B_N7(
 
         for (kk = 0; kk < numberOfIterationsPerGroup + 1; kk++)
         {
-            saturate(&sum0, config->execution->SaturationCount);
-            saturate(&sum1, config->execution->SaturationCount);
-            saturate(&sum2, config->execution->SaturationCount);
-            saturate(&sum3, config->execution->SaturationCount);
-            saturate(&sum4, config->execution->SaturationCount);
-            saturate(&sum5, config->execution->SaturationCount);
-            saturate(&sum6, config->execution->SaturationCount);
+            saturate(&sum0, config->SaturationCount);
+            saturate(&sum1, config->SaturationCount);
+            saturate(&sum2, config->SaturationCount);
+            saturate(&sum3, config->SaturationCount);
+            saturate(&sum4, config->SaturationCount);
+            saturate(&sum5, config->SaturationCount);
+            saturate(&sum6, config->SaturationCount);
 
             numberOfIterations = numberOfElementsPerGroup < simdVectorLength - kk * numberOfElementsPerGroup ? numberOfElementsPerGroup : simdVectorLength - kk * numberOfElementsPerGroup;
 
@@ -1191,21 +1193,21 @@ static void affineActiveListKernelImpl1B_N7(
             sum6 += input[6][j] * *weight * bias->multiplier;
         }
 
-        saturate_store_out(&sum0, &output[0], config->execution->SaturationCount);
-        saturate_store_out(&sum1, &output[1], config->execution->SaturationCount);
-        saturate_store_out(&sum2, &output[2], config->execution->SaturationCount);
-        saturate_store_out(&sum3, &output[3], config->execution->SaturationCount);
-        saturate_store_out(&sum4, &output[4], config->execution->SaturationCount);
-        saturate_store_out(&sum5, &output[5], config->execution->SaturationCount);
-        saturate_store_out(&sum6, &output[6], config->execution->SaturationCount);
+        saturate_store_out(&sum0, &output[0], config->SaturationCount);
+        saturate_store_out(&sum1, &output[1], config->SaturationCount);
+        saturate_store_out(&sum2, &output[2], config->SaturationCount);
+        saturate_store_out(&sum3, &output[3], config->SaturationCount);
+        saturate_store_out(&sum4, &output[4], config->SaturationCount);
+        saturate_store_out(&sum5, &output[5], config->SaturationCount);
+        saturate_store_out(&sum6, &output[6], config->SaturationCount);
 
-        output += config->inputVectorCount;
+        output += config->RequestConfig->Transform.inputVectorCount;
     }
 
 }
 
 static void affineActiveListKernelImpl1B_N8(
-    AffineConfig const * const config, AffineConfigAl const *const al, int16_t const *input[8], __m128i *in_ptr[8],
+    ExecutionKernelConfig<AffineConfig> const * const config, AffineConfigAl al, int16_t const *input[8], __m128i *in_ptr[8],
     uint32_t numberOfElementsPerGroup, uint32_t numberOfIterationsPerGroup, uint32_t vectorTailLength, uint32_t simdVectorLength)
 {
     uint32_t numberOfIterations;
@@ -1220,7 +1222,7 @@ static void affineActiveListKernelImpl1B_N8(
     nn_bias_c const * bias;
     int32_t * output;
 
-    output = config->output;
+    output = reinterpret_cast<int32_t *>(config->RequestConfig->Outputs);
 
     // accumulators' sums
     int64_t sum0;
@@ -1255,11 +1257,11 @@ static void affineActiveListKernelImpl1B_N8(
     // simd weights
     __m128i w;
 
-    for (l = 0; l < al->count; l++)
+    for (l = 0; l < al.count; l++)
     {
-        i = al->indices[l];
-        weight = config->weights1B+i*config->inputElementCount;
-        bias = config->biasesCompound+i;
+        i = al.indices[l];
+        weight = config->RequestConfig->Transform.weights1B+i*config->RequestConfig->Transform.inputElementCount;
+        bias = config->RequestConfig->Transform.biasesCompound+i;
         ix = 0;
 
         sum0 = bias->bias;
@@ -1282,14 +1284,14 @@ static void affineActiveListKernelImpl1B_N8(
 
         for (kk = 0; kk < numberOfIterationsPerGroup + 1; kk++)
         {
-            saturate(&sum0, config->execution->SaturationCount);
-            saturate(&sum1, config->execution->SaturationCount);
-            saturate(&sum2, config->execution->SaturationCount);
-            saturate(&sum3, config->execution->SaturationCount);
-            saturate(&sum4, config->execution->SaturationCount);
-            saturate(&sum5, config->execution->SaturationCount);
-            saturate(&sum6, config->execution->SaturationCount);
-            saturate(&sum7, config->execution->SaturationCount);
+            saturate(&sum0, config->SaturationCount);
+            saturate(&sum1, config->SaturationCount);
+            saturate(&sum2, config->SaturationCount);
+            saturate(&sum3, config->SaturationCount);
+            saturate(&sum4, config->SaturationCount);
+            saturate(&sum5, config->SaturationCount);
+            saturate(&sum6, config->SaturationCount);
+            saturate(&sum7, config->SaturationCount);
 
             numberOfIterations = numberOfElementsPerGroup < simdVectorLength - kk * numberOfElementsPerGroup ? numberOfElementsPerGroup : simdVectorLength - kk * numberOfElementsPerGroup;
 
@@ -1361,16 +1363,16 @@ static void affineActiveListKernelImpl1B_N8(
             sum7 += input[7][j] * *weight * bias->multiplier;
         }
 
-        saturate_store_out(&sum0, &output[0], config->execution->SaturationCount);
-        saturate_store_out(&sum1, &output[1], config->execution->SaturationCount);
-        saturate_store_out(&sum2, &output[2], config->execution->SaturationCount);
-        saturate_store_out(&sum3, &output[3], config->execution->SaturationCount);
-        saturate_store_out(&sum4, &output[4], config->execution->SaturationCount);
-        saturate_store_out(&sum5, &output[5], config->execution->SaturationCount);
-        saturate_store_out(&sum6, &output[6], config->execution->SaturationCount);
-        saturate_store_out(&sum7, &output[7], config->execution->SaturationCount);
+        saturate_store_out(&sum0, &output[0], config->SaturationCount);
+        saturate_store_out(&sum1, &output[1], config->SaturationCount);
+        saturate_store_out(&sum2, &output[2], config->SaturationCount);
+        saturate_store_out(&sum3, &output[3], config->SaturationCount);
+        saturate_store_out(&sum4, &output[4], config->SaturationCount);
+        saturate_store_out(&sum5, &output[5], config->SaturationCount);
+        saturate_store_out(&sum6, &output[6], config->SaturationCount);
+        saturate_store_out(&sum7, &output[7], config->SaturationCount);
 
-        output += config->inputVectorCount;
+        output += config->RequestConfig->Transform.inputVectorCount;
     }
 }
 

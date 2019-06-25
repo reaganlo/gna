@@ -134,12 +134,16 @@ protected:
             auto&& commonConfig = TransformFactoryConfig(&Input, &Output, Output.Mode, intermediateBuffer,
                 layer, *validator);
             const OperationConfig operationConfig{ layer };
-            InitTransforms(transforms, commonConfig, operationConfig);
+            initTransforms(transforms, commonConfig, operationConfig);
         }
+
+        initComputeFunctions();
     }
 
-    void InitTransforms(const std::vector<TransformOperation>& transforms, TransformFactoryConfig& commonConfig,
+    void initTransforms(const std::vector<TransformOperation>& transforms, TransformFactoryConfig& commonConfig,
         const OperationConfig& operationConfig);
+
+    void initComputeFunctions();
 
     void compute(const LayerConfiguration* layerConfiguration,
         AccelerationMode accel, ExecutionConfig const & execution) const
@@ -147,7 +151,9 @@ protected:
         for (const auto& transform : Transforms)
         {
             if (transform)
+            {
                 transform->Compute(accel, layerConfiguration, execution);
+            }
         }
     }
 

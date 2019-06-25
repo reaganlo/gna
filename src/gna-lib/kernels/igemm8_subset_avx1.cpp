@@ -33,10 +33,10 @@
 #include <cstdint>
 #include <immintrin.h>
 
-void AffineActiveListKernelImpl1B(AffineConfig const * const config, AffineConfigAl const * const al)
+void AffineActiveListKernelImpl1B(ExecutionKernelConfig<AffineConfig> const * const config, AffineConfigAl al)
 {
-    uint32_t KT = config->inputElementCount % VEC_16CAP;
-    uint32_t KK = config->inputElementCount - KT;
+    uint32_t KT = config->RequestConfig->Transform.inputElementCount % VEC_16CAP;
+    uint32_t KK = config->RequestConfig->Transform.inputElementCount - KT;
     uint32_t ix_end = KK / VEC_16CAP;
     uint32_t ix;
     uint32_t i;
@@ -44,7 +44,8 @@ void AffineActiveListKernelImpl1B(AffineConfig const * const config, AffineConfi
     uint32_t k;
     uint32_t l;
 
-    int32_t * output = config->output;
+    int16_t const *inputs = reinterpret_cast<int16_t const *>(config->RequestConfig->Inputs);
+    int32_t * output = reinterpret_cast<int32_t *>(config->RequestConfig->Outputs);
     int8_t const * weight;
 
     int16_t const *input_0 = nullptr;
@@ -96,15 +97,15 @@ void AffineActiveListKernelImpl1B(AffineConfig const * const config, AffineConfi
     __m256i *in_ptr2 = nullptr;
     __m256i *in_ptr3 = nullptr;
 
-    if (1 == config->inputVectorCount)
+    if (1 == config->RequestConfig->Transform.inputVectorCount)
     {
-        in_ptr0 = (__m256i*)config->input;
-        input_0 = config->input + KK;
-        for (l = 0; l < al->count; l++)
+        in_ptr0 = (__m256i*)inputs;
+        input_0 = inputs + KK;
+        for (l = 0; l < al.count; l++)
         {
-            i = al->indices[l];
-            weight = config->weights1B + i*config->inputElementCount;
-            bias = config->biasesCompound + i;
+            i = al.indices[l];
+            weight = config->RequestConfig->Transform.weights1B + i*config->RequestConfig->Transform.inputElementCount;
+            bias = config->RequestConfig->Transform.biasesCompound + i;
 
             acc0 = _mm_setzero_si128();
 
@@ -136,51 +137,51 @@ void AffineActiveListKernelImpl1B(AffineConfig const * const config, AffineConfi
         return;
     }
 
-    input_0 = config->execution->Intermediate->d0 + KK;
-    input_1 = config->execution->Intermediate->d1 + KK;
-    input_2 = config->execution->Intermediate->d2 + KK;
-    input_3 = config->execution->Intermediate->d3 + KK;
+    input_0 = config->Intermediate->d0 + KK;
+    input_1 = config->Intermediate->d1 + KK;
+    input_2 = config->Intermediate->d2 + KK;
+    input_3 = config->Intermediate->d3 + KK;
 
-    in_ptr0 = (__m256i*)config->execution->Intermediate->d0;
-    in_ptr1 = (__m256i*)config->execution->Intermediate->d1;
-    in_ptr2 = (__m256i*)config->execution->Intermediate->d2;
-    in_ptr3 = (__m256i*)config->execution->Intermediate->d3;
+    in_ptr0 = (__m256i*)config->Intermediate->d0;
+    in_ptr1 = (__m256i*)config->Intermediate->d1;
+    in_ptr2 = (__m256i*)config->Intermediate->d2;
+    in_ptr3 = (__m256i*)config->Intermediate->d3;
 
-    if (config->inputVectorCount >= 4)
+    if (config->RequestConfig->Transform.inputVectorCount >= 4)
     {
-        for (i = 0; i < config->inputElementCount; i++)
+        for (i = 0; i < config->RequestConfig->Transform.inputElementCount; i++)
         {
-            config->execution->Intermediate->d3[i] = config->input[i*config->inputVectorCount + 3];
+            config->Intermediate->d3[i] = inputs[i*config->RequestConfig->Transform.inputVectorCount + 3];
         }
     }
 
-    if (config->inputVectorCount >= 3)
+    if (config->RequestConfig->Transform.inputVectorCount >= 3)
     {
-        for (i = 0; i < config->inputElementCount; i++)
+        for (i = 0; i < config->RequestConfig->Transform.inputElementCount; i++)
         {
-            config->execution->Intermediate->d2[i] = config->input[i*config->inputVectorCount + 2];
+            config->Intermediate->d2[i] = inputs[i*config->RequestConfig->Transform.inputVectorCount + 2];
         }
     }
 
-    if (config->inputVectorCount >= 2)
+    if (config->RequestConfig->Transform.inputVectorCount >= 2)
     {
-        for (i = 0; i < config->inputElementCount; i++)
+        for (i = 0; i < config->RequestConfig->Transform.inputElementCount; i++)
         {
-            config->execution->Intermediate->d1[i] = config->input[i*config->inputVectorCount + 1];
+            config->Intermediate->d1[i] = inputs[i*config->RequestConfig->Transform.inputVectorCount + 1];
         }
-        for (i = 0; i < config->inputElementCount; i++)
+        for (i = 0; i < config->RequestConfig->Transform.inputElementCount; i++)
         {
-            config->execution->Intermediate->d0[i] = config->input[i*config->inputVectorCount];
+            config->Intermediate->d0[i] = inputs[i*config->RequestConfig->Transform.inputVectorCount];
         }
     }
 
-    if (2 == config->inputVectorCount)
+    if (2 == config->RequestConfig->Transform.inputVectorCount)
     {
-        for (l = 0; l < al->count; l++)
+        for (l = 0; l < al.count; l++)
         {
-            i = al->indices[l];
-            weight = config->weights1B + i*config->inputElementCount;
-            bias = config->biasesCompound + i;
+            i = al.indices[l];
+            weight = config->RequestConfig->Transform.weights1B + i*config->RequestConfig->Transform.inputElementCount;
+            bias = config->RequestConfig->Transform.biasesCompound + i;
 
             acc0 = _mm_setzero_si128();
             acc1 = _mm_setzero_si128();
@@ -219,19 +220,19 @@ void AffineActiveListKernelImpl1B(AffineConfig const * const config, AffineConfi
                 output[0] += input_0[j] * *weight * bias->multiplier;
                 output[1] += input_1[j] * *weight * bias->multiplier;
             }
-            output += config->inputVectorCount;
+            output += config->RequestConfig->Transform.inputVectorCount;
         }
 
         return;
     }
 
-    if (3 == config->inputVectorCount)
+    if (3 == config->RequestConfig->Transform.inputVectorCount)
     {
-        for (l = 0; l < al->count; l++)
+        for (l = 0; l < al.count; l++)
         {
-            i = al->indices[l];
-            weight = config->weights1B + i*config->inputElementCount;
-            bias = config->biasesCompound + i;
+            i = al.indices[l];
+            weight = config->RequestConfig->Transform.weights1B + i*config->RequestConfig->Transform.inputElementCount;
+            bias = config->RequestConfig->Transform.biasesCompound + i;
 
             acc0 = _mm_setzero_si128();
             acc1 = _mm_setzero_si128();
@@ -281,19 +282,19 @@ void AffineActiveListKernelImpl1B(AffineConfig const * const config, AffineConfi
                 output[1] += input_1[j] * *weight * bias->multiplier;
                 output[2] += input_2[j] * *weight * bias->multiplier;
             }
-            output += config->inputVectorCount;
+            output += config->RequestConfig->Transform.inputVectorCount;
         }
 
         return;
     }
 
-    if (4 == config->inputVectorCount)
+    if (4 == config->RequestConfig->Transform.inputVectorCount)
     {
-        for (l = 0; l < al->count; l++)
+        for (l = 0; l < al.count; l++)
         {
-            i = al->indices[l];
-            weight = config->weights1B + i*config->inputElementCount;
-            bias = config->biasesCompound + i;
+            i = al.indices[l];
+            weight = config->RequestConfig->Transform.weights1B + i*config->RequestConfig->Transform.inputElementCount;
+            bias = config->RequestConfig->Transform.biasesCompound + i;
 
             acc0 = _mm_setzero_si128();
             acc1 = _mm_setzero_si128();
@@ -353,59 +354,59 @@ void AffineActiveListKernelImpl1B(AffineConfig const * const config, AffineConfi
                 output[2] += input_2[j] * *weight * bias->multiplier;
                 output[3] += input_3[j] * *weight * bias->multiplier;
             }
-            output += config->inputVectorCount;
+            output += config->RequestConfig->Transform.inputVectorCount;
         }
 
         return;
     }
 
-    KT = config->inputElementCount % SSE_16CAP;
-    KK = config->inputElementCount - KT;
+    KT = config->RequestConfig->Transform.inputElementCount % SSE_16CAP;
+    KK = config->RequestConfig->Transform.inputElementCount - KT;
     ix_end = 2 * KK / VEC_16CAP;
 
-    //config->execution->Intermediate->d1 = config->execution->Intermediate->d0 + 2 * (UINT16_MAX + 1);
-    //config->execution->Intermediate->d2 = config->execution->Intermediate->d0 + 2 * (UINT16_MAX + 1);
-    //config->execution->Intermediate->d3 = config->execution->Intermediate->d0 + 2 * (UINT16_MAX + 1);
-    //config->execution->Intermediate->d4 = config->execution->Intermediate->d0 + 2 * (UINT16_MAX + 1);
+    //config->Intermediate->d1 = config->Intermediate->d0 + 2 * (UINT16_MAX + 1);
+    //config->Intermediate->d2 = config->Intermediate->d0 + 2 * (UINT16_MAX + 1);
+    //config->Intermediate->d3 = config->Intermediate->d0 + 2 * (UINT16_MAX + 1);
+    //config->Intermediate->d4 = config->Intermediate->d0 + 2 * (UINT16_MAX + 1);
 
-    in_ptr0 = (__m256i*)config->execution->Intermediate->d0;
-    in_ptr1 = (__m256i*)config->execution->Intermediate->d2;
-    in_ptr2 = (__m256i*)config->execution->Intermediate->d4;
-    in_ptr3 = (__m256i*)config->execution->Intermediate->d6;
+    in_ptr0 = (__m256i*)config->Intermediate->d0;
+    in_ptr1 = (__m256i*)config->Intermediate->d2;
+    in_ptr2 = (__m256i*)config->Intermediate->d4;
+    in_ptr3 = (__m256i*)config->Intermediate->d6;
 
-    input_0 = config->execution->Intermediate->d0 + 2 * KK;
-    input_1 = config->execution->Intermediate->d2 + 2 * KK;
-    input_2 = config->execution->Intermediate->d4 + 2 * KK;
-    input_3 = config->execution->Intermediate->d6 + 2 * KK;
+    input_0 = config->Intermediate->d0 + 2 * KK;
+    input_1 = config->Intermediate->d2 + 2 * KK;
+    input_2 = config->Intermediate->d4 + 2 * KK;
+    input_3 = config->Intermediate->d6 + 2 * KK;
 
-    if (5 == config->inputVectorCount)
+    if (5 == config->RequestConfig->Transform.inputVectorCount)
     {
-        for (j = 0; j < 2 * config->inputElementCount;)
+        for (j = 0; j < 2 * config->RequestConfig->Transform.inputElementCount;)
         {
             i = j / 2;
-            for (k = i; k < i + 8 && k < config->inputElementCount; k++, j++)
+            for (k = i; k < i + 8 && k < config->RequestConfig->Transform.inputElementCount; k++, j++)
             {
-                config->execution->Intermediate->d0[j] = config->input[k*config->inputVectorCount];
-                config->execution->Intermediate->d2[j] = config->input[k*config->inputVectorCount + 2];
+                config->Intermediate->d0[j] = inputs[k*config->RequestConfig->Transform.inputVectorCount];
+                config->Intermediate->d2[j] = inputs[k*config->RequestConfig->Transform.inputVectorCount + 2];
             }
-            for (k = i; k < i + 8 && k < config->inputElementCount; k++, j++)
+            for (k = i; k < i + 8 && k < config->RequestConfig->Transform.inputElementCount; k++, j++)
             {
-                config->execution->Intermediate->d0[j] = config->input[k*config->inputVectorCount + 1];
-                config->execution->Intermediate->d2[j] = config->input[k*config->inputVectorCount + 3];
+                config->Intermediate->d0[j] = inputs[k*config->RequestConfig->Transform.inputVectorCount + 1];
+                config->Intermediate->d2[j] = inputs[k*config->RequestConfig->Transform.inputVectorCount + 3];
             }
         }
-        for (i = 0; i < config->inputElementCount; i++)
+        for (i = 0; i < config->RequestConfig->Transform.inputElementCount; i++)
         {
-            config->execution->Intermediate->d4[i] = config->input[i*config->inputVectorCount + 4];
+            config->Intermediate->d4[i] = inputs[i*config->RequestConfig->Transform.inputVectorCount + 4];
         }
 
-        for (l = 0; l < al->count; l++)
+        for (l = 0; l < al.count; l++)
         {
-            i = al->indices[l];
-            weight = config->weights1B + i*config->inputElementCount;
-            bias = config->biasesCompound + i;
+            i = al.indices[l];
+            weight = config->RequestConfig->Transform.weights1B + i*config->RequestConfig->Transform.inputElementCount;
+            bias = config->RequestConfig->Transform.biasesCompound + i;
 
-            input_2 = config->execution->Intermediate->d4;
+            input_2 = config->Intermediate->d4;
 
             acc0 = _mm_setzero_si128();
             acc1 = _mm_setzero_si128();
@@ -455,36 +456,36 @@ void AffineActiveListKernelImpl1B(AffineConfig const * const config, AffineConfi
                 output[4] += input_2[j] *     *weight * bias->multiplier;
             }
 
-            output += config->inputVectorCount;
+            output += config->RequestConfig->Transform.inputVectorCount;
         }
 
         return;
     }
 
-    if (6 == config->inputVectorCount)
+    if (6 == config->RequestConfig->Transform.inputVectorCount)
     {
-        for (j = 0; j < 2 * config->inputElementCount;)
+        for (j = 0; j < 2 * config->RequestConfig->Transform.inputElementCount;)
         {
             i = j / 2;
-            for (k = i; k < i + 8 && k < config->inputElementCount; k++, j++)
+            for (k = i; k < i + 8 && k < config->RequestConfig->Transform.inputElementCount; k++, j++)
             {
-                config->execution->Intermediate->d0[j] = config->input[k*config->inputVectorCount];
-                config->execution->Intermediate->d2[j] = config->input[k*config->inputVectorCount + 2];
-                config->execution->Intermediate->d4[j] = config->input[k*config->inputVectorCount + 4];
+                config->Intermediate->d0[j] = inputs[k*config->RequestConfig->Transform.inputVectorCount];
+                config->Intermediate->d2[j] = inputs[k*config->RequestConfig->Transform.inputVectorCount + 2];
+                config->Intermediate->d4[j] = inputs[k*config->RequestConfig->Transform.inputVectorCount + 4];
             }
-            for (k = i; k < i + 8 && k < config->inputElementCount; k++, j++)
+            for (k = i; k < i + 8 && k < config->RequestConfig->Transform.inputElementCount; k++, j++)
             {
-                config->execution->Intermediate->d0[j] = config->input[k*config->inputVectorCount + 1];
-                config->execution->Intermediate->d2[j] = config->input[k*config->inputVectorCount + 3];
-                config->execution->Intermediate->d4[j] = config->input[k*config->inputVectorCount + 5];
+                config->Intermediate->d0[j] = inputs[k*config->RequestConfig->Transform.inputVectorCount + 1];
+                config->Intermediate->d2[j] = inputs[k*config->RequestConfig->Transform.inputVectorCount + 3];
+                config->Intermediate->d4[j] = inputs[k*config->RequestConfig->Transform.inputVectorCount + 5];
             }
         }
 
-        for (l = 0; l < al->count; l++)
+        for (l = 0; l < al.count; l++)
         {
-            i = al->indices[l];
-            weight = config->weights1B + i*config->inputElementCount;
-            bias = config->biasesCompound + i;
+            i = al.indices[l];
+            weight = config->RequestConfig->Transform.weights1B + i*config->RequestConfig->Transform.inputElementCount;
+            bias = config->RequestConfig->Transform.biasesCompound + i;
 
             acc0 = _mm_setzero_si128();
             acc1 = _mm_setzero_si128();
@@ -540,43 +541,43 @@ void AffineActiveListKernelImpl1B(AffineConfig const * const config, AffineConfi
                 output[5] += input_2[j + KT] * *weight * bias->multiplier;
             }
 
-            output += config->inputVectorCount;
+            output += config->RequestConfig->Transform.inputVectorCount;
         }
 
         return;
     }
 
-    if (7 == config->inputVectorCount)
+    if (7 == config->RequestConfig->Transform.inputVectorCount)
     {
-        for (j = 0; j < 2 * config->inputElementCount;)
+        for (j = 0; j < 2 * config->RequestConfig->Transform.inputElementCount;)
         {
             i = j / 2;
-            for (k = i; k < i + 8 && k < config->inputElementCount; k++, j++)
+            for (k = i; k < i + 8 && k < config->RequestConfig->Transform.inputElementCount; k++, j++)
             {
-                config->execution->Intermediate->d0[j] = config->input[k*config->inputVectorCount];
-                config->execution->Intermediate->d2[j] = config->input[k*config->inputVectorCount + 2];
-                config->execution->Intermediate->d4[j] = config->input[k*config->inputVectorCount + 4];
+                config->Intermediate->d0[j] = inputs[k*config->RequestConfig->Transform.inputVectorCount];
+                config->Intermediate->d2[j] = inputs[k*config->RequestConfig->Transform.inputVectorCount + 2];
+                config->Intermediate->d4[j] = inputs[k*config->RequestConfig->Transform.inputVectorCount + 4];
             }
-            for (k = i; k < i + 8 && k < config->inputElementCount; k++, j++)
+            for (k = i; k < i + 8 && k < config->RequestConfig->Transform.inputElementCount; k++, j++)
             {
-                config->execution->Intermediate->d0[j] = config->input[k*config->inputVectorCount + 1];
-                config->execution->Intermediate->d2[j] = config->input[k*config->inputVectorCount + 3];
-                config->execution->Intermediate->d4[j] = config->input[k*config->inputVectorCount + 5];
+                config->Intermediate->d0[j] = inputs[k*config->RequestConfig->Transform.inputVectorCount + 1];
+                config->Intermediate->d2[j] = inputs[k*config->RequestConfig->Transform.inputVectorCount + 3];
+                config->Intermediate->d4[j] = inputs[k*config->RequestConfig->Transform.inputVectorCount + 5];
             }
         }
 
-        for (i = 0; i < config->inputElementCount; i++)
+        for (i = 0; i < config->RequestConfig->Transform.inputElementCount; i++)
         {
-            config->execution->Intermediate->d6[i] = config->input[i*config->inputVectorCount + 6];
+            config->Intermediate->d6[i] = inputs[i*config->RequestConfig->Transform.inputVectorCount + 6];
         }
 
-        for (l = 0; l < al->count; l++)
+        for (l = 0; l < al.count; l++)
         {
-            i = al->indices[l];
-            weight = config->weights1B + i*config->inputElementCount;
-            bias = config->biasesCompound + i;
+            i = al.indices[l];
+            weight = config->RequestConfig->Transform.weights1B + i*config->RequestConfig->Transform.inputElementCount;
+            bias = config->RequestConfig->Transform.biasesCompound + i;
 
-            input_3 = config->execution->Intermediate->d6;
+            input_3 = config->Intermediate->d6;
 
             acc0 = _mm_setzero_si128();
             acc1 = _mm_setzero_si128();
@@ -640,36 +641,36 @@ void AffineActiveListKernelImpl1B(AffineConfig const * const config, AffineConfi
                 output[6] += input_3[j] *      *weight * bias->multiplier;
             }
 
-            output += config->inputVectorCount;
+            output += config->RequestConfig->Transform.inputVectorCount;
         }
     }
 
-    if (8 == config->inputVectorCount)
+    if (8 == config->RequestConfig->Transform.inputVectorCount)
     {
-        for (j = 0; j < 2 * config->inputElementCount;)
+        for (j = 0; j < 2 * config->RequestConfig->Transform.inputElementCount;)
         {
             i = j / 2;
-            for (k = i; k < i + 8 && k < config->inputElementCount; k++, j++)
+            for (k = i; k < i + 8 && k < config->RequestConfig->Transform.inputElementCount; k++, j++)
             {
-                config->execution->Intermediate->d0[j] = config->input[k*config->inputVectorCount];
-                config->execution->Intermediate->d2[j] = config->input[k*config->inputVectorCount + 2];
-                config->execution->Intermediate->d4[j] = config->input[k*config->inputVectorCount + 4];
-                config->execution->Intermediate->d6[j] = config->input[k*config->inputVectorCount + 6];
+                config->Intermediate->d0[j] = inputs[k*config->RequestConfig->Transform.inputVectorCount];
+                config->Intermediate->d2[j] = inputs[k*config->RequestConfig->Transform.inputVectorCount + 2];
+                config->Intermediate->d4[j] = inputs[k*config->RequestConfig->Transform.inputVectorCount + 4];
+                config->Intermediate->d6[j] = inputs[k*config->RequestConfig->Transform.inputVectorCount + 6];
             }
-            for (k = i; k < i + 8 && k < config->inputElementCount; k++, j++)
+            for (k = i; k < i + 8 && k < config->RequestConfig->Transform.inputElementCount; k++, j++)
             {
-                config->execution->Intermediate->d0[j] = config->input[k*config->inputVectorCount + 1];
-                config->execution->Intermediate->d2[j] = config->input[k*config->inputVectorCount + 3];
-                config->execution->Intermediate->d4[j] = config->input[k*config->inputVectorCount + 5];
-                config->execution->Intermediate->d6[j] = config->input[k*config->inputVectorCount + 7];
+                config->Intermediate->d0[j] = inputs[k*config->RequestConfig->Transform.inputVectorCount + 1];
+                config->Intermediate->d2[j] = inputs[k*config->RequestConfig->Transform.inputVectorCount + 3];
+                config->Intermediate->d4[j] = inputs[k*config->RequestConfig->Transform.inputVectorCount + 5];
+                config->Intermediate->d6[j] = inputs[k*config->RequestConfig->Transform.inputVectorCount + 7];
             }
         }
 
-        for (l = 0; l < al->count; l++)
+        for (l = 0; l < al.count; l++)
         {
-            i = al->indices[l];
-            weight = config->weights1B + i*config->inputElementCount;
-            bias = config->biasesCompound + i;
+            i = al.indices[l];
+            weight = config->RequestConfig->Transform.weights1B + i*config->RequestConfig->Transform.inputElementCount;
+            bias = config->RequestConfig->Transform.biasesCompound + i;
 
             acc0 = _mm_setzero_si128();
             acc1 = _mm_setzero_si128();
@@ -747,7 +748,7 @@ void AffineActiveListKernelImpl1B(AffineConfig const * const config, AffineConfi
                 output[7] += input_3[j + KT] * *weight * bias->multiplier;
             }
 
-            output += config->inputVectorCount;
+            output += config->RequestConfig->Transform.inputVectorCount;
         }
 
         return;

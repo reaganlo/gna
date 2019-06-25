@@ -26,8 +26,10 @@
 #include "TransformMap.h"
 
 #include "ActivationFunction.h"
+#include "AffineFunctions.h"
 #include "ConvolutionalFunctions2D.h"
 #include "PoolingFunctions2D.h"
+#include "RecurrentFunction.h"
 
 using namespace GNA;
 
@@ -37,6 +39,11 @@ BaseTransform * TransformList::Emplace(TransformOperation operation,
 {
     switch (operation)
     {
+    case AffineTransform:
+    case AffineDiagonalTransform:
+        return emplace(AffineFunction::Create(config, operationConfig));
+    case RecurrentTransform:
+        return emplace(RecurrentFunction::Create(config, operationConfig));
     case ActivationTransform:
         return emplace(ActivationFunction::Create(config));
     case ConvolutionalTransform2D:

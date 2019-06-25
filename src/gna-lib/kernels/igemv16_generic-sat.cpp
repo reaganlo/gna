@@ -32,40 +32,40 @@
 
 #include <cstdint>
 
-void RecurrentKernelImpl2B(RecurrentConfig const * const config)
+void RecurrentKernelImpl2B(ExecutionKernelConfig<RecurrentConfig> const * const config)
 {
     uint32_t i;
     uint32_t j;
     int64_t sum = 0;
 
-    int8_t const * bias = (int8_t*)config->biasesSimple;
-    int8_t const * const biasEnd = bias + (config->outputElementCount * config->bytesPerBias);
+    int8_t const * bias = (int8_t*)config->RequestConfig->Transform.biasesSimple;
+    int8_t const * const biasEnd = bias + (config->RequestConfig->Transform.outputElementCount * config->RequestConfig->Transform.bytesPerBias);
     int16_t const * input;
     int16_t * feedback;
-    int16_t const * weight = config->weights2B;
-    int32_t * output = config->output;
-    uint32_t kparts = config->inputElementCount / config->execution->BufferElementCount[0 + XNN_N_GROUP_MAX];
-    uint32_t kpart_rem = config->inputElementCount % config->execution->BufferElementCount[0 + XNN_N_GROUP_MAX];
-    uint32_t middle_fill = config->execution->BufferElementCount[0 + XNN_N_GROUP_MAX] - kpart_rem;
-    uint32_t middle_part = (config->outputElementCount < middle_fill) ? config->outputElementCount : middle_fill;
-    uint32_t mm = config->outputElementCount - middle_part;
-    uint32_t mparts = mm / config->execution->BufferElementCount[0 + XNN_N_GROUP_MAX];
-    uint32_t mpart_rem = mm % config->execution->BufferElementCount[0 + XNN_N_GROUP_MAX];
+    int16_t const * weight = config->RequestConfig->Transform.weights2B;
+    int32_t * output = reinterpret_cast<int32_t *>(config->RequestConfig->Transform.output);
+    uint32_t kparts = config->RequestConfig->Transform.inputElementCount / config->BufferElementCount[0 + XNN_N_GROUP_MAX];
+    uint32_t kpart_rem = config->RequestConfig->Transform.inputElementCount % config->BufferElementCount[0 + XNN_N_GROUP_MAX];
+    uint32_t middle_fill = config->BufferElementCount[0 + XNN_N_GROUP_MAX] - kpart_rem;
+    uint32_t middle_part = (config->RequestConfig->Transform.outputElementCount < middle_fill) ? config->RequestConfig->Transform.outputElementCount : middle_fill;
+    uint32_t mm = config->RequestConfig->Transform.outputElementCount - middle_part;
+    uint32_t mparts = mm / config->BufferElementCount[0 + XNN_N_GROUP_MAX];
+    uint32_t mpart_rem = mm % config->BufferElementCount[0 + XNN_N_GROUP_MAX];
 
-    for (; bias < biasEnd; bias += config->bytesPerBias)
+    for (; bias < biasEnd; bias += config->RequestConfig->Transform.bytesPerBias)
     {
-        sum = getBias(bias, config->bytesPerBias);
+        sum = getBias(bias, config->RequestConfig->Transform.bytesPerBias);
 
-        input = config->input;
-        feedback = config->feedbackBuffer;
+        input = reinterpret_cast<int16_t const *>(config->RequestConfig->Inputs);
+        feedback = config->RequestConfig->Transform.feedbackBuffer;
 
         for (i = 0; i < kparts; i++)
         {
-            for (j = 0; j < config->execution->BufferElementCount[0 + XNN_N_GROUP_MAX]; j++)
+            for (j = 0; j < config->BufferElementCount[0 + XNN_N_GROUP_MAX]; j++)
             {
                 sum += *input++ * *weight++;
             }
-            saturate_store_out(&sum, output, config->execution->SaturationCount);
+            saturate_store_out(&sum, output, config->SaturationCount);
             sum = *output;
         }
 
@@ -79,17 +79,17 @@ void RecurrentKernelImpl2B(RecurrentConfig const * const config)
             sum += *feedback++ * *weight++;
         }
 
-        saturate_store_out(&sum, output, config->execution->SaturationCount);
+        saturate_store_out(&sum, output, config->SaturationCount);
         sum = *output;
 
         for (i = 0; i < mparts; i++)
         {
-            for (j = 0; j < config->execution->BufferElementCount[0 + XNN_N_GROUP_MAX]; j++)
+            for (j = 0; j < config->BufferElementCount[0 + XNN_N_GROUP_MAX]; j++)
             {
                 sum += *feedback++ * *weight++;
             }
 
-            saturate_store_out(&sum, output, config->execution->SaturationCount);
+            saturate_store_out(&sum, output, config->SaturationCount);
             sum = *output;
         }
 
@@ -98,45 +98,45 @@ void RecurrentKernelImpl2B(RecurrentConfig const * const config)
             sum += *feedback++ * *weight++;
         }
 
-        saturate_store_out(&sum, output, config->execution->SaturationCount);
+        saturate_store_out(&sum, output, config->SaturationCount);
         output++;
     }
 }
 
-void RecurrentKernelImpl2B1B(RecurrentConfig const * const config)
+void RecurrentKernelImpl2B1B(ExecutionKernelConfig<RecurrentConfig> const * const config)
 {
     uint32_t i;
     uint32_t j;
     int64_t sum = 0;
 
-    int8_t const * bias = (int8_t*)config->biasesSimple;
-    int8_t const * const biasEnd = bias + (config->outputElementCount * config->bytesPerBias);
+    int8_t const * bias = (int8_t*)config->RequestConfig->Transform.biasesSimple;
+    int8_t const * const biasEnd = bias + (config->RequestConfig->Transform.outputElementCount * config->RequestConfig->Transform.bytesPerBias);
     int8_t const * input;
     int8_t * feedback;
-    int16_t const * weight = config->weights2B;
-    int32_t * output = config->output;
-    uint32_t kparts = config->inputElementCount / config->execution->BufferElementCount[0];
-    uint32_t kpart_rem = config->inputElementCount % config->execution->BufferElementCount[0];
-    uint32_t middle_fill = config->execution->BufferElementCount[0] - kpart_rem;
-    uint32_t middle_part = (config->outputElementCount < middle_fill) ? config->outputElementCount : middle_fill;
-    uint32_t mm = config->outputElementCount - middle_part;
-    uint32_t mparts = mm / config->execution->BufferElementCount[0];
-    uint32_t mpart_rem = mm % config->execution->BufferElementCount[0];
+    int16_t const * weight = config->RequestConfig->Transform.weights2B;
+    int32_t * output = reinterpret_cast<int32_t *>(config->RequestConfig->Transform.output);
+    uint32_t kparts = config->RequestConfig->Transform.inputElementCount / config->BufferElementCount[0];
+    uint32_t kpart_rem = config->RequestConfig->Transform.inputElementCount % config->BufferElementCount[0];
+    uint32_t middle_fill = config->BufferElementCount[0] - kpart_rem;
+    uint32_t middle_part = (config->RequestConfig->Transform.outputElementCount < middle_fill) ? config->RequestConfig->Transform.outputElementCount : middle_fill;
+    uint32_t mm = config->RequestConfig->Transform.outputElementCount - middle_part;
+    uint32_t mparts = mm / config->BufferElementCount[0];
+    uint32_t mpart_rem = mm % config->BufferElementCount[0];
 
-    for (; bias < biasEnd; bias += config->bytesPerBias)
+    for (; bias < biasEnd; bias += config->RequestConfig->Transform.bytesPerBias)
     {
-        sum = getBias(bias, config->bytesPerBias);
+        sum = getBias(bias, config->RequestConfig->Transform.bytesPerBias);
 
-        input = (int8_t*)config->input;
-        feedback = (int8_t*)config->feedbackBuffer;
+        input = (int8_t*)config->RequestConfig->Inputs;
+        feedback = (int8_t*)config->RequestConfig->Transform.feedbackBuffer;
 
         for (i = 0; i < kparts; i++)
         {
-            for (j = 0; j < config->execution->BufferElementCount[0]; j++)
+            for (j = 0; j < config->BufferElementCount[0]; j++)
             {
                 sum += *input++ * *weight++;
             }
-            saturate_store_out(&sum, output, config->execution->SaturationCount);
+            saturate_store_out(&sum, output, config->SaturationCount);
             sum = *output;
         }
 
@@ -147,91 +147,91 @@ void RecurrentKernelImpl2B1B(RecurrentConfig const * const config)
 
         for (i = 0; i < middle_part; i++)
         {
-            if (config->bytesPerOutput == 1)
+            if (config->RequestConfig->Transform.bytesPerOutput == 1)
             {
                 sum += *feedback++ * *weight++;
             }
-            else if (config->bytesPerOutput == 2)
+            else if (config->RequestConfig->Transform.bytesPerOutput == 2)
             {
                 sum += *(int16_t*)feedback * *weight++;
                 feedback += 2;
             }
         }
 
-        saturate_store_out(&sum, output, config->execution->SaturationCount);
+        saturate_store_out(&sum, output, config->SaturationCount);
         sum = *output;
 
         for (i = 0; i < mparts; i++)
         {
-            for (j = 0; j < config->execution->BufferElementCount[0]; j++)
+            for (j = 0; j < config->BufferElementCount[0]; j++)
             {
-                if (config->bytesPerOutput == 1)
+                if (config->RequestConfig->Transform.bytesPerOutput == 1)
                 {
                     sum += *feedback++ * *weight++;
                 }
-                else if (config->bytesPerOutput == 2)
+                else if (config->RequestConfig->Transform.bytesPerOutput == 2)
                 {
                     sum += *(int16_t*)feedback * *weight++;
                     feedback += 2;
                 }
             }
 
-            saturate_store_out(&sum, output, config->execution->SaturationCount);
+            saturate_store_out(&sum, output, config->SaturationCount);
             sum = *output;
         }
 
         for (i = 0; i < mpart_rem; i++)
         {
-            if (config->bytesPerOutput == 1)
+            if (config->RequestConfig->Transform.bytesPerOutput == 1)
             {
                 sum += *feedback++ * *weight++;
             }
-            else if (config->bytesPerOutput == 2)
+            else if (config->RequestConfig->Transform.bytesPerOutput == 2)
             {
                 sum += *(int16_t*)feedback * *weight++;
                 feedback += 2;
             }
         }
 
-        saturate_store_out(&sum, output, config->execution->SaturationCount);
+        saturate_store_out(&sum, output, config->SaturationCount);
         output++;
     }
 }
 
-void RecurrentKernelImpl2B2B(RecurrentConfig const * const config)
+void RecurrentKernelImpl2B2B(ExecutionKernelConfig<RecurrentConfig> const * const config)
 {
     uint32_t i;
     uint32_t j;
     int64_t sum = 0;
 
-    int8_t const * bias = (int8_t*)config->biasesSimple;
-    int8_t const * const biasEnd = bias + (config->outputElementCount * config->bytesPerBias);
+    int8_t const * bias = (int8_t*)config->RequestConfig->Transform.biasesSimple;
+    int8_t const * const biasEnd = bias + (config->RequestConfig->Transform.outputElementCount * config->RequestConfig->Transform.bytesPerBias);
     int16_t const * input;
     int8_t * feedback;
-    int16_t const * weight = config->weights2B;
-    int32_t * output = config->output;
-    uint32_t kparts = config->inputElementCount / config->execution->BufferElementCount[0 + XNN_N_GROUP_MAX];
-    uint32_t kpart_rem = config->inputElementCount % config->execution->BufferElementCount[0 + XNN_N_GROUP_MAX];
-    uint32_t middle_fill = config->execution->BufferElementCount[0 + XNN_N_GROUP_MAX] - kpart_rem;
-    uint32_t middle_part = (config->outputElementCount < middle_fill) ? config->outputElementCount : middle_fill;
-    uint32_t mm = config->outputElementCount - middle_part;
-    uint32_t mparts = mm / config->execution->BufferElementCount[0 + XNN_N_GROUP_MAX];
-    uint32_t mpart_rem = mm % config->execution->BufferElementCount[0 + XNN_N_GROUP_MAX];
+    int16_t const * weight = config->RequestConfig->Transform.weights2B;
+    int32_t * output = reinterpret_cast<int32_t *>(config->RequestConfig->Transform.output);
+    uint32_t kparts = config->RequestConfig->Transform.inputElementCount / config->BufferElementCount[0 + XNN_N_GROUP_MAX];
+    uint32_t kpart_rem = config->RequestConfig->Transform.inputElementCount % config->BufferElementCount[0 + XNN_N_GROUP_MAX];
+    uint32_t middle_fill = config->BufferElementCount[0 + XNN_N_GROUP_MAX] - kpart_rem;
+    uint32_t middle_part = (config->RequestConfig->Transform.outputElementCount < middle_fill) ? config->RequestConfig->Transform.outputElementCount : middle_fill;
+    uint32_t mm = config->RequestConfig->Transform.outputElementCount - middle_part;
+    uint32_t mparts = mm / config->BufferElementCount[0 + XNN_N_GROUP_MAX];
+    uint32_t mpart_rem = mm % config->BufferElementCount[0 + XNN_N_GROUP_MAX];
 
-    for (; bias < biasEnd; bias += config->bytesPerBias)
+    for (; bias < biasEnd; bias += config->RequestConfig->Transform.bytesPerBias)
     {
-        sum = getBias(bias, config->bytesPerBias);
+        sum = getBias(bias, config->RequestConfig->Transform.bytesPerBias);
 
-        input = config->input;
-        feedback = (int8_t*)config->feedbackBuffer;
+        input = reinterpret_cast<int16_t const *>(config->RequestConfig->Inputs);
+        feedback = (int8_t*)config->RequestConfig->Transform.feedbackBuffer;
 
         for (i = 0; i < kparts; i++)
         {
-            for (j = 0; j < config->execution->BufferElementCount[0 + XNN_N_GROUP_MAX]; j++)
+            for (j = 0; j < config->BufferElementCount[0 + XNN_N_GROUP_MAX]; j++)
             {
                 sum += *input++ * *weight++;
             }
-            saturate_store_out(&sum, output, config->execution->SaturationCount);
+            saturate_store_out(&sum, output, config->SaturationCount);
             sum = *output;
         }
 
@@ -242,53 +242,54 @@ void RecurrentKernelImpl2B2B(RecurrentConfig const * const config)
 
         for (i = 0; i < middle_part; i++)
         {
-            if (config->bytesPerOutput == 1)
+            if (config->RequestConfig->Transform.bytesPerOutput == 1)
             {
                 sum += *feedback++ * *weight++;
             }
-            else if (config->bytesPerOutput == 2)
+            else if (config->RequestConfig->Transform.bytesPerOutput == 2)
             {
                 sum += *(int16_t*)feedback * *weight++;
                 feedback += 2;
             }
         }
 
-        saturate_store_out(&sum, output, config->execution->SaturationCount);
+        saturate_store_out(&sum, output, config->SaturationCount);
         sum = *output;
 
         for (i = 0; i < mparts; i++)
         {
-            for (j = 0; j < config->execution->BufferElementCount[0 + XNN_N_GROUP_MAX]; j++)
+            for (j = 0; j < config->BufferElementCount[0 + XNN_N_GROUP_MAX]; j++)
             {
-                if (config->bytesPerOutput == 1)
+                if (config->RequestConfig->Transform.bytesPerOutput == 1)
                 {
                     sum += *feedback++ * *weight++;
                 }
-                else if (config->bytesPerOutput == 2)
+                else if (config->RequestConfig->Transform.bytesPerOutput == 2)
                 {
                     sum += *(int16_t*)feedback * *weight++;
                     feedback += 2;
                 }
             }
 
-            saturate_store_out(&sum, output, config->execution->SaturationCount);
+            saturate_store_out(&sum, output, config->SaturationCount);
             sum = *output;
         }
 
         for (i = 0; i < mpart_rem; i++)
         {
-            if (config->bytesPerOutput == 1)
+            if (config->RequestConfig->Transform.bytesPerOutput == 1)
             {
                 sum += *feedback++ * *weight++;
             }
-            else if (config->bytesPerOutput == 2)
+            else if (config->RequestConfig->Transform.bytesPerOutput == 2)
             {
                 sum += *(int16_t*)feedback * *weight++;
                 feedback += 2;
             }
         }
 
-        saturate_store_out(&sum, output, config->execution->SaturationCount);
+        saturate_store_out(&sum, output, config->SaturationCount);
         output++;
     }
 }
+

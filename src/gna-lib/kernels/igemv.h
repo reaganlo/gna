@@ -66,3 +66,4 @@ __forceinline void saturate_store_out(int64_t const * const sum, int32_t * const
         *out = (int32_t)*sum;
     }
 }
+

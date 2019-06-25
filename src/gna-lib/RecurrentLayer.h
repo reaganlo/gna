@@ -41,24 +41,14 @@ namespace GNA
 class BaseValidator;
 struct LayerConfiguration;
 
-class RnnLayer : public AffineBaseLayer
+class RecurrentLayer : public AffineBaseLayer
 {
 public:
-    RnnLayer(const nn_layer& layer, const BaseValidator& validatorIn);
-    RnnLayer(const Gna2Operation& operation, const BaseValidator& validatorIn);
-    virtual ~RnnLayer() = default;
-    const BaseAddress CalculateFeedbackBuffer(const BaseAddress& outputBuffer) const;
-    virtual void UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const override;
+    RecurrentLayer(const nn_layer& layer, const BaseValidator& validatorIn);
+    RecurrentLayer(const Gna2Operation& operation, const BaseValidator& validatorIn);
+    virtual ~RecurrentLayer() = default;
 
-    const uint32_t FeedbackDelay;
-
-private:
-    void computeHidden(AccelerationMode accel, ExecutionConfig const & executionConfig) const;
-    void compute(const LayerConfiguration& layerConfiguration, AccelerationMode accel, ExecutionConfig const & executionConfig) const;
-
-    const KernelMap<RecurrentKernel>& recurrentKernels;
-
-    RecurrentConfig rnnHiddenConfig;
+    virtual DataConfig GetDataMode() const override;
 };
 
 }

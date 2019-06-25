@@ -53,107 +53,19 @@ class BaseValidator;
 
 using namespace GNA;
 
-RnnLayer::RnnLayer(const nn_layer& layer, const BaseValidator& validatorIn) :
-    AffineBaseLayer(layer, validatorIn),
-    FeedbackDelay{static_cast<const nn_layer_recurrent *>(layer.pLayerStruct)->feedbackFrameDelay},
-    recurrentKernels{ AccelerationDetector::GetKernelMap<RecurrentKernel>(
-        KERNEL_RECURRENT, {Input.Mode, Affine->Weights->Mode, Affine->Biases->Mode}) },
-    rnnHiddenConfig{Output.Dimensions.at('W'), Input.Dimensions.at('H'), Input.Dimensions.at('W'), Input.Buffer, nullptr,
-                        Activation->Input->Buffer, Activation->Output->Buffer, *Affine->Weights,
-                    *Affine->Biases, Affine->Biases->Mode.Size, Output.Mode.Size, {Output.Dimensions.at('W'), &Activation->Pwl}}
+RecurrentLayer::RecurrentLayer(const nn_layer& layer, const BaseValidator& validatorIn) :
+    AffineBaseLayer(layer, { RecurrentTransform }, validatorIn)
 {
-    // TODO:3: think of validation functor for this kind of properties or other means to generalize/unify
-    Expect::InRange(FeedbackDelay, ui32_1, Input.Dimensions.at('H'), Gna2StatusXnnErrorNoFeedback);
-    Expect::Equal(Input.Dimensions.at('H'), Output.Dimensions.at('H'), Gna2StatusXnnErrorLyrCfg);
-
-    rnnHiddenConfig.feedbackBuffer = CalculateFeedbackBuffer(Output);
-
-    Layer::ComputeHidden = [this](AccelerationMode accel, ExecutionConfig const & executionConfig)
-                    {this->computeHidden(accel, executionConfig); };
-
-    Layer::Compute = [this](LayerConfiguration &layerConfiguration, AccelerationMode accel, ExecutionConfig const & executionConfig)
-                    {this->compute(layerConfiguration, accel, executionConfig); };
 }
 
-RnnLayer::RnnLayer(const Gna2Operation& operation, const BaseValidator& validatorIn) :
-    AffineBaseLayer(operation, validatorIn),
-    FeedbackDelay{*static_cast<uint32_t *>(operation.Parameters[0])},
-    recurrentKernels{ AccelerationDetector::GetKernelMap<RecurrentKernel>(
-        KERNEL_RECURRENT, {Input.Mode, Affine->Weights->Mode, Affine->Biases->Mode}) },
-    rnnHiddenConfig{Output.Dimensions.at('W'), Input.Dimensions.at('H'), Input.Dimensions.at('W'), Input.Buffer, nullptr,
-                        Activation->Input->Buffer, Activation->Output->Buffer, *Affine->Weights,
-                    *Affine->Biases, Affine->Biases->Mode.Size, Output.Mode.Size, {Output.Dimensions.at('W'), &Activation->Pwl}}
+RecurrentLayer::RecurrentLayer(const Gna2Operation& operation, const BaseValidator& validatorIn) :
+    AffineBaseLayer(operation, { RecurrentTransform }, validatorIn)
 {
-    // TODO:3: think of validation functor for this kind of properties or other means to generalize/unify
-    Expect::InRange(FeedbackDelay, ui32_1, Input.Dimensions.at('H'), Gna2StatusXnnErrorNoFeedback);
-    Expect::Equal(Input.Dimensions.at('H'), Output.Dimensions.at('H'), Gna2StatusXnnErrorLyrCfg);
-
-    rnnHiddenConfig.feedbackBuffer = CalculateFeedbackBuffer(Output);
-
-    Layer::ComputeHidden = [this](AccelerationMode accel, ExecutionConfig const & executionConfig)
-                    {this->computeHidden(accel, executionConfig); };
-
-    Layer::Compute = [this](LayerConfiguration &layerConfiguration, AccelerationMode accel, ExecutionConfig const & executionConfig)
-                    {this->compute(layerConfiguration, accel, executionConfig); };
 }
 
-void RnnLayer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const
+DataConfig RecurrentLayer::GetDataMode() const
 {
-    AffineBaseLayer::UpdateKernelConfigs(layerConfiguration);
-
-    BaseAddress inputBuffer = layerConfiguration.Buffers.count(InputComponent) > 0
-        ? layerConfiguration.Buffers[InputComponent] : Input;
-
-    BaseAddress outputBuffer = layerConfiguration.Buffers.count(OutputComponent) > 0
-        ? layerConfiguration.Buffers[OutputComponent] : Output;
-
-    auto& configs = layerConfiguration.Configs;
-
-    if(!configs.Recurrent)
-    {
-        configs.Recurrent = std::make_unique<RecurrentConfig>(rnnHiddenConfig);
-    }
-    configs.Recurrent->input = inputBuffer;
-    Input.ValidateBuffer(inputBuffer);
-
-    if (outputBuffer)
-    {
-        configs.Recurrent->feedbackBuffer = CalculateFeedbackBuffer(outputBuffer);
-        configs.Recurrent->activation.Outputs = outputBuffer; // TODO:3:revert to use ~BufferMap.Update
-    }
+    auto affineTransform = Transforms.Get<AffineFunction>(RecurrentTransform);
+    return AffineBaseLayer::getDataMode(affineTransform);
 }
 
-void RnnLayer::computeHidden(AccelerationMode accel, ExecutionConfig const & executionConfig) const
-{
-    auto rnnConfig = RecurrentConfig{&rnnHiddenConfig, executionConfig};
-
-    recurrentKernels.at(accel)(&rnnConfig);
-}
-
-void RnnLayer::compute(const LayerConfiguration& layerConfiguration, AccelerationMode accel, ExecutionConfig const & executionConfig) const
-{
-    auto rnnConfig = RecurrentConfig{layerConfiguration.Configs.Recurrent.get(), executionConfig};
-
-    recurrentKernels.at(accel)(&rnnConfig);
-}
-
-const BaseAddress RnnLayer::CalculateFeedbackBuffer(const BaseAddress& outputBuffer) const
-{
-    if (outputBuffer)
-    {
-        auto delaySize = (FeedbackDelay * Output.Dimensions.at('W') * Output.Mode.Size);
-        const auto buffer = outputBuffer - delaySize;
-
-        try
-        {
-            Output.ValidateBuffer(buffer);
-        }
-        catch (const GnaException&)
-        {
-            throw GnaException(Gna2StatusXnnErrorNoFeedback);
-        }
-        return buffer;
-    }
-
-    return BaseAddress();
-}

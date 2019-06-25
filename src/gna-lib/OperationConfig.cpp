@@ -25,6 +25,7 @@
 
 #include "OperationConfig.h"
 
+#include "AccelerationDetector.h"
 #include "Expect.h"
 #include "ModelWrapper.h"
 
@@ -32,6 +33,25 @@
 #include "common.h"
 
 using namespace GNA;
+
+namespace GNA
+{
+
+template<>
+Gna2Tensor OperationConfig::getBiasTensor<intel_affine_multibias_func_t>(
+    const nn_layer& layer, const intel_affine_multibias_func_t& affineFunc)
+{
+    Gna2Tensor a{};
+    ModelWrapper::SetLayout(a, "HW");
+    a.Type = DataMode(affineFunc.nBytesPerBias).Type;
+    a.Data = affineFunc.pBiases;
+    a.Mode = Gna2TensorModeDefault;
+    a.Shape = { 2, layer.nOutputRows, affineFunc.biasVectorCount };
+
+    return a;
+}
+
+}
 
 OperationConfig::OperationConfig(const nn_layer& layer)
 {
@@ -41,6 +61,87 @@ OperationConfig::OperationConfig(const nn_layer& layer)
 OperationConfig::OperationConfig(const Gna2Operation& apiOperation)
 {
     InitOperationConfig(apiOperation);
+}
+
+Gna2OperationType OperationConfig::GetOperationType(const Gna2Operation& apiOperation)
+{
+    return apiOperation.Type;
+}
+
+Gna2OperationType OperationConfig::GetOperationType(const nn_layer& layer)
+{
+    switch (layer.operation)
+    {
+    case INTEL_AFFINE:
+    case INTEL_AFFINE_MULTIBIAS:
+        return Gna2OperationTypeFullyConnectedAffine;
+    case INTEL_AFFINE_DIAGONAL:
+        return Gna2OperationTypeElementWiseAffine;
+    case INTEL_CONVOLUTIONAL:
+    case INTEL_CONVOLUTIONAL_2D:
+        return Gna2OperationTypeConvolution;
+    case INTEL_COPY:
+        return Gna2OperationTypeCopy;
+    case INTEL_DEINTERLEAVE:
+    case INTEL_INTERLEAVE:
+        return Gna2OperationTypeTransposition;
+    case INTEL_GMM:
+        return Gna2OperationTypeGmm;
+    case INTEL_RECURRENT:
+        return Gna2OperationTypeRecurrent;
+    default:
+        throw GnaException(Gna2StatusXnnErrorLyrOperation);
+    }
+}
+
+kernel_op OperationConfig::GetKernelOperation() const
+{
+    switch (OperationType)
+    {
+    case Gna2OperationTypeConvolution:
+        return KERNEL_CONVOLUTIONAL_2D;
+    case Gna2OperationTypeCopy:
+        return KERNEL_COPY;
+    case Gna2OperationTypeElementWiseAffine:
+        return KERNEL_AFFINE_DIAGONAL;
+    case Gna2OperationTypeFullyConnectedAffine:
+        return KERNEL_AFFINE;
+    case Gna2OperationTypeGmm:
+        return KERNEL_GMM;
+    case Gna2OperationTypeRecurrent:
+        return KERNEL_RECURRENT;
+    case Gna2OperationTypeTransposition:
+        return KERNEL_TRANSPOSE;
+    default:
+        throw GnaException(Gna2StatusXnnErrorLyrOperation);
+    }
+}
+
+TransformOperation OperationConfig::GetTransformOperation() const
+{
+    switch(OperationType)
+    {
+    case Gna2OperationTypeConvolution:
+        return ConvolutionalTransform2D;
+    case Gna2OperationTypeCopy:
+        return CopyTransform;
+    case Gna2OperationTypeElementWiseAffine:
+        return AffineDiagonalTransform;
+    case Gna2OperationTypeFullyConnectedAffine:
+        if (HasGroupedBias(BiasesTensor, BiasMode))
+        {
+            return AffineMultibiasTransform;
+        }
+        return AffineTransform;
+    case Gna2OperationTypeGmm:
+        return GmmTransform;
+    case Gna2OperationTypeRecurrent:
+        return RecurrentTransform;
+    case Gna2OperationTypeTransposition:
+        return TransposeTransform;
+    default:
+        throw GnaException(Gna2StatusXnnErrorLyrOperation);
+    }
 }
 
 bool OperationConfig::IsOperandAvailable(const Gna2Operation & operation, uint32_t index)
@@ -76,6 +177,31 @@ const nn_layer_cnn2d * OperationConfig::CastToCnn2DDetails(const nn_layer& layer
     }
 }
 
+Gna2Tensor OperationConfig::GetWeights(const nn_layer& layer)
+{
+    switch (layer.operation)
+    {
+    case INTEL_AFFINE:
+    case INTEL_AFFINE_DIAGONAL:
+        return getWeightsTensor(layer,
+            static_cast<const nn_layer_affine *>(layer.pLayerStruct)->affine);
+    case INTEL_AFFINE_MULTIBIAS:
+        return getWeightsTensor(layer,
+            static_cast<const nn_layer_affine_multi *>(layer.pLayerStruct)->affine);
+    case INTEL_RECURRENT:
+        return getWeightsTensor(layer,
+            static_cast<const nn_layer_recurrent *>(layer.pLayerStruct)->affine);
+    default:
+        throw GnaException(Gna2StatusXnnErrorLyrOperation);
+    }
+}
+
+Gna2Tensor OperationConfig::GetWeights(const Gna2Operation & operation)
+{
+    const auto index = ModelWrapper::GetOperationInfo(operation.Type, OperandIndexWeight);
+    return GetOperand(operation, index, {});
+}
+
 Gna2Tensor OperationConfig::GetFilters(const nn_layer& layer)
 {
     const auto cnn2d = CastToCnn2DDetails(layer);
@@ -96,14 +222,33 @@ Gna2Tensor OperationConfig::GetFilters(const Gna2Operation & operation)
 
 Gna2Tensor OperationConfig::GetBiases(const nn_layer& layer)
 {
-    const auto cnn2d = CastToCnn2DDetails(layer);
-    const auto& b = cnn2d->convolution.biases;
-    Gna2Tensor t{};
-    t.Data = b.biasesData;
-    const DataMode dataModeLoc{ b.dataMode };
-    t.Type = dataModeLoc.Type;
-    t.Mode = dataModeLoc.Mode;
-    return t;
+    if (isCNN2D(layer))
+    {
+        const auto cnn2d = CastToCnn2DDetails(layer);
+        const auto& b = cnn2d->convolution.biases;
+        Gna2Tensor t{};
+        t.Data = b.biasesData;
+        const DataMode dataModeLoc{ b.dataMode };
+        t.Type = dataModeLoc.Type;
+        t.Mode = dataModeLoc.Mode;
+        return t;
+    }
+
+    switch (layer.operation)
+    {
+    case INTEL_AFFINE:
+    case INTEL_AFFINE_DIAGONAL:
+        return getBiasTensor(layer,
+            static_cast<const nn_layer_affine *>(layer.pLayerStruct)->affine);
+    case INTEL_AFFINE_MULTIBIAS:
+        return getBiasTensor(layer,
+            static_cast<const nn_layer_affine_multi *>(layer.pLayerStruct)->affine);
+    case INTEL_RECURRENT:
+        return getBiasTensor(layer,
+            static_cast<const nn_layer_recurrent *>(layer.pLayerStruct)->affine);
+    default:
+        throw GnaException(Gna2StatusXnnErrorLyrOperation);
+    }
 }
 
 Gna2BiasMode OperationConfig::GetBiasMode(const nn_layer& layer)
@@ -113,8 +258,19 @@ Gna2BiasMode OperationConfig::GetBiasMode(const nn_layer& layer)
         { GNA_BIAS_PER_STRIDE, Gna2BiasModePerStride },
         { GNA_BIAS_NOT_SUPPORTED, Gna2BiasModeDefault },
     };
-    const auto cnn2d = CastToCnn2DDetails(layer);
-    return biasModeMap.at(cnn2d->convolution.biases.mode);
+
+    if (isCNN2D(layer))
+    {
+        const auto cnn2d = CastToCnn2DDetails(layer);
+        return biasModeMap.at(cnn2d->convolution.biases.mode);
+    }
+
+    if (layer.operation == INTEL_AFFINE_MULTIBIAS)
+    {
+        return Gna2BiasModeGrouping;
+    }
+
+    return Gna2BiasModeDefault;
 }
 
 Gna2Tensor OperationConfig::GetOperand(const Gna2Operation & operation, GnaComponentType operand, Gna2Tensor defaultValue)
@@ -239,6 +395,40 @@ Gna2PoolingMode OperationConfig::GetPoolingMode(const Gna2Operation & operation)
     return GetParameterAs<Gna2PoolingMode>(operation, ParameterIndexPoolingMode, Gna2PoolingModeDisabled);
 }
 
+void OperationConfig::InitMultibias(const Gna2Operation& operation)
+{
+    auto bmIndex = ModelWrapper::GetOperationInfo(operation.Type, ParameterIndexBiasMode);
+    BiasMode = *static_cast<Gna2BiasMode *>(operation.Parameters[bmIndex]);
+
+    auto bviIndex = ModelWrapper::GetOperationInfo(
+            operation.Type, ParameterIndexBiasVectorIndex);
+    BiasVectorIndex = *static_cast<uint32_t *>(operation.Parameters[bviIndex]);
+
+    auto wsfIndex = ModelWrapper::GetOperationInfo(operation.Type, OperandIndexWeightScaleFactors);
+
+    if (operation.Operands[wsfIndex] != nullptr)
+    {
+        WeightScalesTensor = *operation.Operands[wsfIndex];
+    }
+}
+
+void OperationConfig::InitMultibias(const nn_layer& layer)
+{
+    auto affineMulti = static_cast<const nn_layer_affine_multi *>(layer.pLayerStruct);
+    auto affineMultiFunc = &affineMulti->affine;
+    BiasVectorIndex = affineMultiFunc->biasVectorIndex;
+    BiasMode = Gna2BiasModeGrouping;
+
+    if (affineMultiFunc->nBytesPerWeight == 1)
+    {
+        WeightScalesTensor.Data = affineMultiFunc->weightScaleFactors;
+        WeightScalesTensor.Type = Gna2DataTypeWeightScaleFactor;
+        WeightScalesTensor.Mode = Gna2TensorModeDefault;
+        WeightScalesTensor.Shape = { 1, layer.nOutputRows };
+        ModelWrapper::SetLayout(WeightScalesTensor, "H");
+    }
+}
+
 void OperationConfig::InitPooling(const Gna2Operation & operation)
 {
     PoolingWindow = GetPoolingWindow(operation);
@@ -252,6 +442,19 @@ void OperationConfig::InitPooling(const nn_layer& layer)
     PoolingWindow = GetPoolingWindow(p);
     PoolingStride = GetPoolingStride(p);
     Mode = GetPoolingMode(p);
+}
+
+bool OperationConfig::HasGroupedBias(
+    const Gna2Tensor& biasTensor, const Gna2BiasMode biasMode)
+{
+    return biasTensor.Mode == Gna2TensorModeDefault
+        && biasTensor.Shape.NumberOfDimensions == 2
+        && biasMode == Gna2BiasModeGrouping;
+}
+
+bool OperationConfig::HasGroupedBias() const
+{
+    return HasGroupedBias(BiasesTensor, BiasMode);
 }
 
 bool OperationConfig::hasPooling(const Gna2Operation & operation)
@@ -273,6 +476,45 @@ bool OperationConfig::hasPooling(const nn_layer& layer)
         layer.operation == GNA_LAYER_CNN_2D_POOLING);
 }
 
+bool OperationConfig::isAffine(const nn_layer& layer)
+{
+    return layer.operation == INTEL_AFFINE
+        || layer.operation == INTEL_AFFINE_DIAGONAL
+        || layer.operation == INTEL_AFFINE_MULTIBIAS
+        || layer.operation == INTEL_RECURRENT;
+}
+
+bool OperationConfig::isAffine(const Gna2Operation & operation)
+{
+    return operation.Type == Gna2OperationTypeFullyConnectedAffine
+        || operation.Type == Gna2OperationTypeElementWiseAffine
+        || operation.Type == Gna2OperationTypeRecurrent;
+}
+
+bool OperationConfig::IsMultibias(const nn_layer& layer)
+{
+    return layer.operation == INTEL_AFFINE_MULTIBIAS;
+}
+
+bool OperationConfig::IsMultibias(const Gna2Operation & operation)
+{
+    if (operation.Type != Gna2OperationTypeFullyConnectedAffine)
+    {
+        return false;
+    }
+
+    auto biasModeIndex = ModelWrapper::GetOperationInfo(operation.Type, ParameterIndexBiasMode);
+    if (operation.Parameters[biasModeIndex] == nullptr)
+    {
+        return false;
+    }
+
+    auto biasMode = *static_cast<Gna2BiasMode *>(operation.Parameters[biasModeIndex]);
+    auto biasIndex = ModelWrapper::GetOperationInfo(operation.Type, OperandIndexBias);
+    auto biasTensor = *operation.Operands[biasIndex];
+    return HasGroupedBias(biasTensor, biasMode);
+}
+
 bool OperationConfig::isCNN2D(const nn_layer& layer)
 {
     return INTEL_CONVOLUTIONAL_2D == layer.operation;
@@ -282,3 +524,27 @@ bool OperationConfig::isCNN2D(const Gna2Operation & operation)
 {
     return operation.Type == Gna2OperationTypeConvolution;
 }
+
+bool OperationConfig::isRecurrent(const nn_layer& layer)
+{
+    return layer.operation == INTEL_RECURRENT;
+}
+
+bool OperationConfig::isRecurrent(const Gna2Operation& operation)
+{
+    return operation.Type == Gna2OperationTypeRecurrent;
+}
+
+uint32_t OperationConfig::GetFeedbackDelay(const Gna2Operation& operation)
+{
+    auto delayIndex = ModelWrapper::GetOperationInfo(
+            operation.Type, ParameterIndexDelay);
+    return ModelWrapper::GetParameter<uint32_t>(operation, delayIndex);
+}
+
+uint32_t OperationConfig::GetFeedbackDelay(const nn_layer& layer)
+{
+    auto rnnLayer = reinterpret_cast<intel_recurrent_layer_t *>(layer.pLayerStruct);
+    return rnnLayer->feedbackFrameDelay;
+}
+

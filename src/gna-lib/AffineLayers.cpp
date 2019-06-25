@@ -49,49 +49,71 @@
 
 using namespace GNA;
 
-AffineBaseLayer::AffineBaseLayer(const nn_layer& layer, const BaseValidator& validatorIn) :
-    Layer(layer, validatorIn, {}, BaseAddress()),
-    Affine(AffineFunction::Create(Input,
-        ActivationHelper::IsEnabled(layer) ? Output.ScratchPad : Output,
-        layer.pLayerStruct, *validator)),
-    // TODO:3: refactor to Transform and to use Affine->Output
-    Activation(ActivationFunction::Create({&Output.ScratchPad, &Output, Output.Mode, Output.Buffer,
-        layer, *validator}))
-
+AffineBaseLayer::AffineBaseLayer(
+    const nn_layer& layer, std::vector<TransformOperation> transforms,
+    const BaseValidator& validatorIn) :
+        Layer(layer, validatorIn, transforms, layer.pOutputsIntermediate)
 {
-    initComputeFunctions();
 }
 
-AffineBaseLayer::AffineBaseLayer(const Gna2Operation& operation, const BaseValidator& validatorIn) :
-    Layer(operation, validatorIn, {}, BaseAddress()),
-    Affine(AffineFunction::Create(Input, ActivationHelper::IsEnabled(operation)
-            ? Output.ScratchPad : Output, operation, *validator)),
-    // TODO:3: refactor to Transform and to use Affine->Output
-    Activation(ActivationFunction::Create({&Output.ScratchPad, &Output, Output.Mode, Output.Buffer,
-        operation, *validator}))
-
+AffineBaseLayer::AffineBaseLayer(
+        const Gna2Operation& operation,
+        const std::vector<TransformOperation> transforms,
+        const BaseValidator& validatorIn) :
+    Layer(operation, validatorIn, transforms, BaseAddress())
 {
-    initComputeFunctions();
 }
 
-void AffineBaseLayer::initComputeFunctions()
+DataConfig AffineBaseLayer::GetDataMode() const
 {
-    if (Activation)
-    {
-        Layer::ComputeHidden = [this](AccelerationMode accel, ExecutionConfig const & executionConfig)
-        {this->computeHiddenPwl(accel, executionConfig); };
+    auto affineTransform = static_cast<AffineFunction const *>(GetInputTransform());
+    return AffineBaseLayer::getDataMode(affineTransform);
+}
 
-        Layer::Compute = [this](LayerConfiguration &layerConfiguration, AccelerationMode accel, ExecutionConfig const & executionConfig)
-        {this->computePwl(layerConfiguration, accel, executionConfig); };
-    }
-    else
+void AffineLayer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const
+{
+    AffineBaseLayer::UpdateKernelConfigs(layerConfiguration);
+    auto activation = Transforms.Get<ActivationFunction>(ActivationTransform);
+    if (activation)
     {
-        Layer::ComputeHidden = [this](AccelerationMode accel, ExecutionConfig const & executionConfig)
-        {this->computeHidden(accel, executionConfig); };
-
-        Layer::Compute = [this](LayerConfiguration &layerConfiguration, AccelerationMode accel, ExecutionConfig const & executionConfig)
-        {this->compute(layerConfiguration, accel, executionConfig); };
+        if (layerConfiguration.ActList)
+        {
+            Expect::InRange(layerConfiguration.ActList->IndicesCount,
+                ui32_1, Output.Dimensions.at('H'), Gna2StatusActiveListIndicesInvalid);
+        }
+        auto const outputCount = layerConfiguration.ActList ?
+            layerConfiguration.ActList->IndicesCount : Output.Dimensions.at('H');
+        activation->UpdateActiveOutputCount(layerConfiguration.ConfigList,
+                                            outputCount * Output.Dimensions.at('W'));
     }
+}
+
+AffineLayer::AffineLayer(const nn_layer& layer, const BaseValidator& validatorIn) :
+    AffineBaseLayer(layer, { AffineTransform, ActivationTransform }, validatorIn)
+{}
+
+AffineLayer::AffineLayer(const Gna2Operation& operation, const BaseValidator& validatorIn) :
+    AffineBaseLayer(operation, { AffineTransform, ActivationTransform }, validatorIn)
+{}
+
+AffineDiagonalLayer::AffineDiagonalLayer(const nn_layer& layer, const BaseValidator& validatorIn) :
+    AffineBaseLayer(layer, { AffineDiagonalTransform, ActivationTransform }, validatorIn)
+{
+    Expect::Equal(Input.Dimensions.at('H'), Output.Dimensions.at('H'), Gna2StatusXnnErrorLyrCfg);
+    Expect::Equal(Input.Dimensions.at('W'), Output.Dimensions.at('W'), Gna2StatusXnnErrorLyrCfg);
+}
+
+AffineDiagonalLayer::AffineDiagonalLayer(const Gna2Operation& operation, const BaseValidator& validatorIn) :
+    AffineBaseLayer(operation, { AffineDiagonalTransform, ActivationTransform }, validatorIn)
+{
+    Expect::Equal(Input.Dimensions.at('H'), Output.Dimensions.at('H'), Gna2StatusXnnErrorLyrCfg);
+    Expect::Equal(Input.Dimensions.at('W'), Output.Dimensions.at('W'), Gna2StatusXnnErrorLyrCfg);
+}
+
+DataConfig AffineDiagonalLayer::GetDataMode() const
+{
+    auto affineTransform = Transforms.Get<AffineFunction>(AffineDiagonalTransform);
+    return AffineBaseLayer::getDataMode(affineTransform);
 }
 
 Tensor const & AffineBaseLayer::GetOperand(uint32_t operandIndex) const
@@ -99,21 +121,11 @@ Tensor const & AffineBaseLayer::GetOperand(uint32_t operandIndex) const
     // TODO:3:replace with generic solution when all layers are transforms
     switch (operandIndex)
     {
-    case 2:
-        if (Affine)
-        {
-            return BaseTransform::GetOperandIfExistOrThrow(Affine->Weights);
-        }
+    case 2: //[[fallthrough]]
     case 3:
-    if (Affine)
-        {
-            return BaseTransform::GetOperandIfExistOrThrow(Affine->Biases);
-        }
+        return GetInputTransform()->GetOperand(operandIndex);
     case 4:
-        if (Activation)
-        {
-            return Activation->GetOperand(2);// TODO:3:Intentional literal, replace with generic solution when all layers are transforms
-        }
+        return getTransformOperand(ActivationTransform, 2);// TODO:3:Intentional literal, replace with generic solution when all layers are transforms
     /*case 5:
         if (Affine && Affine->WeightScaleFactors)
         {
@@ -124,98 +136,3 @@ Tensor const & AffineBaseLayer::GetOperand(uint32_t operandIndex) const
     }
 }
 
-void AffineBaseLayer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const
-{
-    Layer::UpdateKernelConfigs(layerConfiguration);
-
-    BaseAddress inputBuffer = Input;
-    if (layerConfiguration.Buffers.count(InputComponent) > 0)
-    {
-        inputBuffer = layerConfiguration.Buffers[InputComponent];
-        Input.ValidateBuffer(inputBuffer);
-    }
-
-    BaseAddress outputBuffer = Output;
-    if (layerConfiguration.Buffers.count(OutputComponent) > 0)
-    {
-        outputBuffer = layerConfiguration.Buffers[OutputComponent];
-        Output.ValidateBuffer(layerConfiguration.Buffers[OutputComponent]);
-    }
-
-    auto& configs = layerConfiguration.Configs;
-
-    if (Activation)
-    {
-        configs.Affine = Affine->GetRequestConfig(inputBuffer, Output.ScratchPad);
-        if (outputBuffer)
-        {
-            Activation->UpdateConfigBuffers(layerConfiguration.ConfigList,
-                {{OutputComponent, outputBuffer}});
-        }
-    }
-    else
-    {
-        configs.Affine = Affine->GetRequestConfig(inputBuffer, outputBuffer);
-    }
-}
-
-void AffineBaseLayer::computeHidden(AccelerationMode accel, ExecutionConfig const & execution) const
-{
-    Affine->ComputeHidden(accel, execution);
-}
-
-void AffineBaseLayer::computeHiddenPwl(AccelerationMode accel, ExecutionConfig const & execution) const
-{
-    Affine->ComputeHidden(accel, execution);
-
-    Activation->Compute(accel, nullptr, execution);
-}
-
-void AffineBaseLayer::compute(const LayerConfiguration& layerConfiguration, AccelerationMode accel, ExecutionConfig const & execution) const
-{
-    Affine->Compute(layerConfiguration, accel, execution);
-}
-
-void AffineBaseLayer::computePwl(const LayerConfiguration& layerConfiguration, AccelerationMode accel, ExecutionConfig const & execution) const
-{
-    Affine->Compute(layerConfiguration, accel, execution);
-
-    Activation->Compute(accel, &layerConfiguration, execution);
-}
-
-DataConfig AffineBaseLayer::GetDataMode() const
-{
-    auto weightMode = this->Affine->Weights->Mode.Value;
-    auto biasMode = this->Affine->Biases->Mode.Value;
-    return DataConfig(Input.Mode, weightMode, biasMode, Output.Mode);
-}
-
-AffineLayer::AffineLayer(const nn_layer& layer, const BaseValidator& validatorIn) :
-    AffineBaseLayer(layer, validatorIn)
-{}
-
-AffineLayer::AffineLayer(const Gna2Operation& operation, const BaseValidator& validatorIn) :
-    AffineBaseLayer(operation, validatorIn)
-{}
-
-void AffineLayer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const
-{
-    AffineBaseLayer::UpdateKernelConfigs(layerConfiguration);
-    if (Activation)
-    {
-        if (layerConfiguration.ActList)
-        {
-            Expect::InRange(layerConfiguration.ActList->IndicesCount, ui32_1, Output.Dimensions.at('H'), Gna2StatusActiveListIndicesInvalid);
-        }
-        auto const outputCount = layerConfiguration.ActList ?
-            layerConfiguration.ActList->IndicesCount : Output.Dimensions.at('H');
-        Activation->UpdateActiveOutputCount(layerConfiguration.ConfigList, outputCount * Output.Dimensions.at('W'));
-    }
-}
-
-AffineDiagonalLayer::AffineDiagonalLayer(const nn_layer& layer, const BaseValidator& validatorIn) :
-    AffineBaseLayer(layer, validatorIn)
-{
-    Expect::Equal(Input.Dimensions.at('H'), Output.Dimensions.at('H'), Gna2StatusXnnErrorLyrCfg);
-    Expect::Equal(Input.Dimensions.at('W'), Output.Dimensions.at('W'), Gna2StatusXnnErrorLyrCfg);
-}

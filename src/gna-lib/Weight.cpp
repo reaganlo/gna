@@ -49,9 +49,9 @@ const FullCapabilitiesMap WeightTensor::capabilities =
     // TODO:3: add caps for previous device versions
     {INTEL_AFFINE, {
         {GNA_0_9, std::make_shared<TensorLimits>(TensorLimits(
-            {GNA_TENSOR_WH},    // W - #inputs, H - #outputs
+            {GNA_TENSOR_HW},    // W - #inputs, H - #outputs
             {{GNA_DIM_W, {XNN_N_IN_ELEMS_MPLY, XNN_N_IN_ELEMS_MAX, XNN_N_IN_ELEMS_MPLY, Gna2StatusXnnErrorWeightVolume}},
-             {GNA_DIM_H, {1, XNN_N_IN_ELEMS_MAX, 1, Gna2StatusXnnErrorWeightVolume}}},
+            {GNA_DIM_H, {1, XNN_N_IN_ELEMS_MAX, 1, Gna2StatusXnnErrorWeightVolume}}},
             _ModesGen0_9))},
     }},
     {INTEL_AFFINE_DIAGONAL, {
@@ -62,7 +62,7 @@ const FullCapabilitiesMap WeightTensor::capabilities =
     }},
     {INTEL_AFFINE_MULTIBIAS, {
         {GNA_2_0, std::make_shared<TensorLimits>(TensorLimits{
-            {GNA_TENSOR_WH},   // W - #inputs, H - #outputs
+            {GNA_TENSOR_HW},   // W - #inputs, H - #outputs
             {{GNA_DIM_W, {XNN_N_IN_ELEMS_MPLY, XNN_N_IN_ELEMS_MAX, XNN_N_IN_ELEMS_MPLY, Gna2StatusXnnErrorWeightVolume}},
             {GNA_DIM_H, {1, XNN_N_IN_ELEMS_MAX, 1, Gna2StatusXnnErrorWeightVolume}}},
             _ModesGen0_9})}

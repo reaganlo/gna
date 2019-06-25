@@ -227,7 +227,7 @@ void Device::CreateProfilerConfiguration(uint32_t* configId,
     requestBuilder.CreateProfilerConfiguration(configId, numberOfInstrumentationPoints, selectedInstrumentationPoints, results);
 }
 
-void Device::AssignProfilerConfigToRequestConfig(uint32_t instrumentationConfigId, 
+void Device::AssignProfilerConfigToRequestConfig(uint32_t instrumentationConfigId,
     uint32_t requestConfigId)
 {
     auto& requestConfiguration = requestBuilder.GetConfiguration(requestConfigId);

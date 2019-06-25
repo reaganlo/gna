@@ -44,6 +44,7 @@
 #include "Macros.h"
 #include "PoolingFunctions.h"
 #include "PoolingFunctions2D.h"
+#include "RecurrentFunction.h"
 #include "RecurrentLayer.h"
 #include "Shape.h"
 #include "CopyLayer.h"
@@ -371,15 +372,21 @@ void HardwareLayerExt::save()
 HardwareLayerAffDiagTrans::HardwareLayerAffDiagTrans(const DescriptorParameters& parameters) :
     HardwareLayerExt(parameters)
 {
+    static const std::map<gna_layer_operation, TransformOperation> operationMapping =
+    {
+        { INTEL_AFFINE, AffineTransform },
+        { INTEL_AFFINE_DIAGONAL, AffineDiagonalTransform }
+    };
     const ActivationFunction* act = nullptr;
     switch (SoftwareLayer->Operation)
     {
         case INTEL_AFFINE:
         case INTEL_AFFINE_DIAGONAL:
             {
-                auto aff = SoftwareLayer->Get<const AffineLayer>();
-                affine = aff->Affine.get();
-                act = aff->Activation.get();
+                auto affineLayer = SoftwareLayer->Get<const AffineLayer>();
+                affine = affineLayer->Transforms.Get<AffineFunction>(
+                            operationMapping.at(SoftwareLayer->Operation));
+                act = affineLayer->Transforms.Get<ActivationFunction>(ActivationTransform);
                 break;
             }
         case INTEL_INTERLEAVE:
@@ -413,11 +420,11 @@ HardwareLayerRnn::HardwareLayerRnn(const DescriptorParameters& parameters) :
     feedbackFirstIterElementCount{0},
     feedbackLastIterElementCount{0}
 {
-    auto rnn = SoftwareLayer->Get<const RnnLayer>();
-    affine = rnn->Affine.get();
+    auto rnn = SoftwareLayer->Get<const RecurrentLayer>();
+    affine = rnn->Transforms.Get<AffineFunction>(AffineTransform);
     convert();
     save();
-    saveActivation(rnn->Activation.get());
+    saveActivation(rnn->Transforms.Get<ActivationFunction>(ActivationTransform));
 }
 
 void HardwareLayerRnn::convert()
@@ -462,8 +469,9 @@ void HardwareLayerRnn::save()
     XnnDescriptor[rnn_n_elems_first] = feedbackFirstIterElementCount;
     XnnDescriptor[rnn_n_elems_last] = feedbackLastIterElementCount;
     // can be negative for non-output layers (if user provides nullptr as output buffer)
-    auto rnn = SoftwareLayer->Get<const RnnLayer>();
-    XnnDescriptor[rnn_out_fb_buffer] = rnn->CalculateFeedbackBuffer(SoftwareLayer->Output);
+    const auto& rnn = SoftwareLayer->Get<const RecurrentLayer>();
+    const auto& rnnTransform = rnn->Transforms.Get<RecurrentFunction>(RecurrentTransform);
+    XnnDescriptor[rnn_out_fb_buffer] = rnnTransform->CalculateFeedbackBuffer(SoftwareLayer->Output);
 }
 
 uint32_t HardwareLayerRnn::GetLdFeedbackOffset() const
@@ -652,10 +660,11 @@ HardwareLayerAffineMBias::HardwareLayerAffineMBias(const DescriptorParameters& p
     HardwareLayerExt(parameters)
 {
     auto mbiasLayer = SoftwareLayer->Get<const AffineLayer>();
-    auto affineMulti = static_cast<const AffineFunctionMulti*>(mbiasLayer->Affine.get());
+    auto affineTransform = mbiasLayer->Transforms.Get<AffineFunction>(AffineTransform);
+    auto affineMulti = static_cast<const AffineFunctionMulti*>(affineTransform);
 
     save();
-    saveActivation(mbiasLayer->Activation.get());
+    saveActivation(mbiasLayer->Transforms.Get<ActivationFunction>(ActivationTransform));
 
     XnnDescriptor[weight_buffer] = *affineMulti->Weights;
     XnnDescriptor[weight_size] = affineMulti->Weights->Mode;

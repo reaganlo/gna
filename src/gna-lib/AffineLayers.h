@@ -43,26 +43,26 @@ class AffineBaseLayer : public Layer
 public:
     virtual ~AffineBaseLayer() = default;
 
-    const std::unique_ptr<const AffineFunction> Affine;
-    const std::unique_ptr<const ActivationFunction> Activation;
-
     virtual Tensor const & GetOperand(uint32_t operandIndex) const override;
 
 protected:
-    AffineBaseLayer(const nn_layer& layer, const BaseValidator& validatorIn);
-    AffineBaseLayer(const Gna2Operation& operation, const BaseValidator& validatorIn);
+    AffineBaseLayer(
+            const nn_layer& layer, std::vector<TransformOperation> transforms,
+            const BaseValidator& validatorIn);
+
+    AffineBaseLayer(
+            const Gna2Operation& operation, std::vector<TransformOperation> transforms,
+            const BaseValidator& validatorIn);
 
     virtual DataConfig GetDataMode() const override;
 
-    virtual void UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const override;
-
-private:
-    void computeHidden(AccelerationMode accel, ExecutionConfig const & execution) const;
-    void computeHiddenPwl(AccelerationMode accel, ExecutionConfig const & execution) const;
-    void compute(const LayerConfiguration& layerConfiguration, AccelerationMode accel, ExecutionConfig const & execution) const;
-    void computePwl(const LayerConfiguration& layerConfiguration, AccelerationMode accel, ExecutionConfig const & execution) const;
-
-    void initComputeFunctions();
+    template<typename TransformFunction>
+    DataConfig getDataMode(TransformFunction transform) const
+    {
+        auto weightMode = transform->Weights->Mode.Value;
+        auto biasMode = transform->Biases->Mode.Value;
+        return DataConfig(Input.Mode, weightMode, biasMode, Output.Mode);
+    }
 };
 
 class AffineLayer : public AffineBaseLayer
@@ -79,7 +79,9 @@ class AffineDiagonalLayer : public AffineBaseLayer
 {
 public:
     AffineDiagonalLayer(const nn_layer& layer, const BaseValidator& validatorIn);
+    AffineDiagonalLayer(const Gna2Operation& operation, const BaseValidator& validatorIn);
     virtual ~AffineDiagonalLayer() = default;
+    virtual DataConfig GetDataMode() const override;
 };
 
 }

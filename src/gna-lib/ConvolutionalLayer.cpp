@@ -109,16 +109,19 @@ Tensor const & CnnLayer::GetOperand(uint32_t operandIndex) const
         {
             return BaseTransform::GetOperandIfExistOrThrow(Convolution->Filters);
         }
+        throw GnaException(Gna2StatusXnnErrorLyrCfg);
     case 3:
         if (Convolution)
         {
             return BaseTransform::GetOperandIfExistOrThrow(Convolution->Biases);
         }
+        throw GnaException(Gna2StatusXnnErrorLyrCfg);
     case 4:
         if (Activation)
         {
             return BaseTransform::GetOperandIfExistOrThrow(Activation->Segments);
         }
+        throw GnaException(Gna2StatusXnnErrorLyrCfg);
     default:
         return Layer::GetOperand(operandIndex);
     }

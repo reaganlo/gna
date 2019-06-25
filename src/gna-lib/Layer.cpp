@@ -64,7 +64,7 @@ std::unique_ptr<Layer> Layer::Create(const nn_layer& layer, const BaseValidator&
     case INTEL_GMM:
         return std::make_unique<GmmLayer>(layer, validatorIn);
     case INTEL_RECURRENT:
-        return std::make_unique<RnnLayer>(layer, validatorIn);
+        return std::make_unique<RecurrentLayer>(layer, validatorIn);
     default:
         return nullptr;
     }
@@ -88,7 +88,7 @@ std::unique_ptr<GNA::Layer> Layer::Create(const Gna2Operation & operation, const
     case Gna2OperationTypeElementWiseAffine:
         return std::make_unique<AffineLayer>(operation, validatorIn);
     case Gna2OperationTypeRecurrent:
-        return std::make_unique<RnnLayer>(operation, validatorIn);
+        return std::make_unique<RecurrentLayer>(operation, validatorIn);
     case Gna2OperationTypeCopy:
         return std::make_unique<CopyLayer>(operation, validatorIn);
     case Gna2OperationTypeConvolution:
@@ -171,22 +171,6 @@ DataConfig Layer::GetDataMode() const
     return DataConfig(Input.Mode, GNA_INT16, GNA_INT32, Output.Mode);
 }
 
-void Layer::InitTransforms(const std::vector<TransformOperation>& transforms,
-    TransformFactoryConfig & commonConfig, const OperationConfig & operationConfig)
-{
-    for (const auto& transform : transforms)
-    {
-        outputTransform = Transforms.Emplace(transform, commonConfig, operationConfig);
-        commonConfig.input = outputTransform->Output.get();
-    }
-
-    inputTransform = Transforms.begin()->get();
-    if (Output.Buffer)
-    {
-        outputTransform->SetOutput(Output.Buffer);
-    }
-}
-
 Tensor const & Layer::GetOperand(uint32_t operandIndex) const
 {
 
@@ -216,6 +200,40 @@ Tensor const & Layer::getTransformOperand(TransformOperation operation, uint32_t
     }
 }
 
+void Layer::initTransforms(const std::vector<TransformOperation>& transforms,
+    TransformFactoryConfig & commonConfig, const OperationConfig & operationConfig)
+{
+    for (const auto& transform : transforms)
+    {
+        outputTransform = Transforms.Emplace(transform, commonConfig, operationConfig);
+        commonConfig.input = outputTransform->Output.get();
+    }
+
+    inputTransform = Transforms.begin()->get();
+    if (Output.Buffer)
+    {
+        outputTransform->SetOutput(Output.Buffer);
+    }
+
+    if (transforms.back() == ActivationTransform
+        && outputTransform->Operation != ActivationTransform)
+    {
+        Expect::Equal(outputTransform->Output->Mode.Type, Gna2DataTypeInt32,
+                Gna2StatusXnnErrorOutputBytes);
+    }
+}
+
+void Layer::initComputeFunctions()
+{
+    ComputeHidden = [this](AccelerationMode accel, ExecutionConfig const & executionConfig)
+    {this->compute(nullptr, accel, executionConfig); };
+
+    Compute = [this](LayerConfiguration &layerConfiguration,
+            AccelerationMode accel,
+            ExecutionConfig const & executionConfig)
+    {this->compute(&layerConfiguration, accel, executionConfig); };
+}
+
 nn_operation AbstractOperation::toLegacy(
     const Gna2Operation& operation, const BaseValidator& validator)
 {
@@ -225,7 +243,7 @@ nn_operation AbstractOperation::toLegacy(
         case Gna2OperationTypeElementWiseAffine:
             return INTEL_AFFINE_DIAGONAL;
         case Gna2OperationTypeFullyConnectedAffine:
-            if (AffineFunction::HasGroupedBias(operation))
+            if (OperationConfig::IsMultibias(operation))
             {
                 return INTEL_AFFINE_MULTIBIAS;
             }
@@ -285,3 +303,4 @@ Gna2OperationType AbstractOperation::fromLegacy(const nn_operation& layerType)
         throw GnaException(Gna2StatusXnnErrorLyrOperation);
     }
 }
+

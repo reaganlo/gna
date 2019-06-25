@@ -66,6 +66,8 @@ private:
     LinuxDriverInterface& operator=(const LinuxDriverInterface&) = delete;
 
     int gnaFileDescriptor = -1;
+
+    const uint8_t MAX_GNA_DEVICES = 16;
 };
 
 }

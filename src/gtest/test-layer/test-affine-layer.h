@@ -49,21 +49,29 @@ public:
     static constexpr uint16_t multibiasVectorCount = 4;
     static constexpr uint16_t numberOfSegments = 64;
 
-    static const int16_t input[numberOfVectors * inputVolume];
-    static const int16_t flatInput[numberOfVectors * inputVolume];
-    static const int16_t weight[outputVolume * inputVolume];
-    static const int16_t weightRecurrent[(inputVolume + outputVolume) * outputVolume];
-    static const int32_t bias[outputVolume];
-    static const int32_t multibias[outputVolume * multibiasVectorCount];
-    static const int32_t refOutput[numberOfVectors * outputVolume];
-    static const int16_t refOutputRecurrent[numberOfVectors * outputVolume];
+    template<typename T>
+    static const T input[numberOfVectors * inputVolume];
 
-    int16_t *alignedInput = nullptr;
-    int16_t *alignedWeight = nullptr;
-    int32_t *alignedBias = nullptr;
-    int32_t *alignedMultibias = nullptr;
-    int16_t *alignedOutput = nullptr;
-    int32_t *alignedIntermediateOutput = nullptr;
+    template<typename T>
+    static const T weight[outputVolume * inputVolume];
+
+    template<typename T>
+    static const T bias[outputVolume];
+
+    static const int32_t multibias[outputVolume * multibiasVectorCount];
+
+    template<typename T>
+    static const T refOutput[numberOfVectors * outputVolume];
+
+    template<typename T>
+    static const T refOutputRecurrent[numberOfVectors * outputVolume];
+
+    void *alignedInput = nullptr;
+    void *alignedWeight = nullptr;
+    void *alignedBias = nullptr;
+    void *alignedMultibias = nullptr;
+    void *alignedOutput = nullptr;
+    void *alignedIntermediateOutput = nullptr;
     intel_pwl_segment_t *alignedPwlSegments = nullptr;
 };
 

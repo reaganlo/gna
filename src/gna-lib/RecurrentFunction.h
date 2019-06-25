@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2018 Intel Corporation.
+ Copyright 2019 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -26,6 +26,7 @@
 #pragma once
 
 #include "AccelerationDetector.h"
+#include "ActivationFunction.h"
 #include "Address.h"
 #include "Bias.h"
 #include "KernelArguments.h"
@@ -49,25 +50,27 @@ class OperationConfig;
 
 struct LayerConfiguration;
 
-// AffineFunction interface
-struct AffineFunction : public Transform<AffineConfig, AffineKernel>
+class RecurrentFunction : public Transform<RecurrentConfig, RecurrentKernel>
 {
 public:
-    virtual ~AffineFunction() = default;
-
-    static std::unique_ptr<AffineFunction> Create(
+    static std::unique_ptr<RecurrentFunction> Create(
         const TransformFactoryConfig& config,
         const OperationConfig& operationConfig);
+
+    RecurrentFunction(const BaseTransformConfig<RecurrentKernel>& config,
+        std::unique_ptr<const PwlCached> pwl,
+        TransformOperation operation, uint32_t delay,
+        std::unique_ptr<const WeightTensor> weights,
+        std::unique_ptr<const BiasTensor> biases);
+
+    virtual ~RecurrentFunction() = default;
+
+    const BaseAddress CalculateFeedbackBuffer(const BaseAddress& outputBuffer) const;
 
     std::unique_ptr<const WeightTensor> Weights;
     std::unique_ptr<const BiasTensor> Biases;
 
 protected:
-    AffineFunction(const BaseTransformConfig<AffineKernel>& config,
-        TransformOperation operation,
-        std::unique_ptr<const WeightTensor> weights,
-        std::unique_ptr<const BiasTensor> biases);
-
     static const ShapeLimits outputDimensionsLimits;
 
     static const DataModeLimits outputModeLimits_0_9;
@@ -79,49 +82,18 @@ protected:
     static const TensorLimits outputLimits_3;
 
 private:
+    static const FullCapabilitiesMap outputCapabilities;
     static const std::map<Gna2OperationType, kernel_op> kernelOperationMap;
-    static std::unique_ptr<AffineFunction> createAffineSingleFunction(
-        const TransformFactoryConfig& config,
-        const OperationConfig& operationConfig);
-    static std::unique_ptr<AffineFunction> createAffineMultiFunction(
-        const TransformFactoryConfig& config,
-        const OperationConfig& operationConfig);
-};
 
-class AffineFunctionSingle : public AffineFunction
-{
-public:
-    AffineFunctionSingle(BaseTransformConfig<AffineKernel> config,
-        TransformOperation transform,
-        std::unique_ptr<const WeightTensor> weights,
-        std::unique_ptr<const BiasTensor> biases);
+    virtual void UpdateConfigBuffers(
+            std::unique_ptr<BaseConfig> configs[],
+            const BufferMap& buffers) const override;
 
-    virtual ~AffineFunctionSingle() = default;
+    const uint32_t FeedbackDelay;
 
-    virtual void Compute(AccelerationMode accel, LayerConfiguration const * layerConfiguration,
-        ExecutionConfig const & execution) const override;
-
-private:
-    static const FullCapabilitiesMap outputCapabilities;
-
-    const KernelMap<AffineActiveListKernel>& kernelsAl;
-};
-
-class AffineFunctionMulti : public AffineFunction
-{
-public:
-    AffineFunctionMulti(BaseTransformConfig<AffineKernel> config,
-        TransformOperation transform,
-        std::unique_ptr<const WeightTensor> weights, std::unique_ptr<const BiasTensor> biases,
-        std::unique_ptr<const Tensor> weightScaleFactors);
-    virtual ~AffineFunctionMulti() = default;
-
-    const std::unique_ptr<const Tensor> WeightScaleFactors; // AffineFunctionMulti1B
-
-    static const FullCapabilitiesMap Capabilities;
-
-private:
-    static const FullCapabilitiesMap outputCapabilities;
+    const std::unique_ptr<const PwlCached> pwl;
+    const ActivationConfig activationConfig;
 };
 
 }
+

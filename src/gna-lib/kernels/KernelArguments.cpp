@@ -95,12 +95,6 @@ AffineConfigAl::AffineConfigAl(uint32_t const * indicesIn, uint32_t const countI
     count{countIn}
 {}
 
-RecurrentConfig::RecurrentConfig(RecurrentConfig const * const source, ExecutionConfig const & executionConfigIn) :
-    RecurrentConfig{*source}
-{
-    execution = &executionConfigIn;
-}
-
 RecurrentConfig::RecurrentConfig(uint32_t const outputElementCountIn,
     uint32_t const inputVectorCountIn, uint32_t const inputElementCountIn, int16_t const * inputIn,
     int16_t * const feedbackBufferIn, int32_t * const outputIn, int16_t * outputActivatedIn,
@@ -111,7 +105,6 @@ RecurrentConfig::RecurrentConfig(uint32_t const outputElementCountIn,
     input{inputIn},
     feedbackBuffer{feedbackBufferIn},
     output{outputIn},
-    execution{nullptr},
     weights1B{static_cast<int8_t const *>(weightsIn)},
     biasesCompound{static_cast<nn_bias_c const *>(biases)},
     activation{pwl, BaseConfig(outputIn, outputActivatedIn)}
@@ -129,7 +122,6 @@ RecurrentConfig::RecurrentConfig(uint32_t const outputElementCountIn,
     input{inputIn},
     feedbackBuffer{feedbackBufferIn},
     output{outputIn},
-    execution{nullptr},
     bytesPerBias{bytesPerBiasIn},
     bytesPerOutput{bytesPerOutputIn},
     weights1B{static_cast<int8_t const *>(weightsIn)},
@@ -144,6 +136,16 @@ TransposeConfig::TransposeConfig(uint32_t rowCountIn, uint32_t columntCountIn,
     input{inputIn},
     output{outputIn}
 {}
+
+TransposeConfig TransposeConfig::MakeFrom(
+        ExecutionKernelConfig<AffineConfig> const *const config)
+{
+    return TransposeConfig {
+        config->RequestConfig->Transform.inputElementCount,
+        config->RequestConfig->Transform.inputVectorCount,
+        reinterpret_cast<int16_t const *>(config->RequestConfig->Inputs),
+        config->Intermediate->d0 };
+}
 
 CopyConfig::CopyConfig(uint32_t rowCountIn, uint32_t columntCountIn, uint32_t inputColumnCountIn,
     uint32_t outputColumnCountIn, int16_t const * const inputIn, int16_t * const outputIn) :

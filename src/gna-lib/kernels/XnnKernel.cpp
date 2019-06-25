@@ -61,177 +61,272 @@ void activationKernelImpl(ExecutionKernelConfig<ActivationConfig> const * const 
     config->RequestConfig->Transform.Kernel->ActivateAll(config);
 }
 
-void recurrentKernelImpl1B(RecurrentConfig const * const config)
+void recurrentKernelImpl1B(ExecutionKernelConfig<RecurrentConfig> const * const config)
 {
-    auto runConfig = RecurrentConfig(*config); // local modifiable copy
+    auto& runConfig = config->RequestConfig->Transform;
     auto activationCfg = ExecutionKernelConfig<ActivationConfig>{
-        &runConfig.activation, *runConfig.execution};
+        &runConfig.activation, *config};
     auto& activation = activationCfg.RequestConfig->Transform;
     auto io = activationCfg.RequestConfig;
+    io->Inputs = reinterpret_cast<int8_t const *>(runConfig.output);
+    io->Outputs = config->RequestConfig->Outputs;
+
+    auto feedback = runConfig.feedbackBuffer;
+    auto outputs = runConfig.output;
+    auto inputs = config->RequestConfig->Inputs;
+
+    auto inputVectorCount = runConfig.inputVectorCount;
+    auto inputElementCount = runConfig.inputElementCount;
+    auto outputElementCount = runConfig.outputElementCount;
 
     // for each input vector
-    for (uint32_t i = 0; i < config->inputVectorCount; i++)
+    for (uint32_t i = 0; i < inputVectorCount; i++)
     {
-        RecurrentKernelImpl1B(&runConfig);
-        runConfig.input += config->inputElementCount;
-        runConfig.feedbackBuffer += config->outputElementCount;
-        runConfig.output += config->outputElementCount;
+        RecurrentKernelImpl1B(config);
+        config->RequestConfig->Inputs += 2 * inputElementCount;
+        runConfig.feedbackBuffer += outputElementCount;
+        runConfig.output += outputElementCount;
 
         activation.Kernel->InitializeActivationFunctions();
         activation.Kernel->ActivateAll(&activationCfg);
         io->Inputs = io->Inputs + activation.ElementCount * 4;
-        io->Outputs = io->Outputs + activation.ElementCount * config->bytesPerOutput;
-        // TODO:3:revert to use ~BufferMap.Update
+        io->Outputs = io->Outputs +
+            activation.ElementCount * config->RequestConfig->Transform.bytesPerOutput;
     }
+
+    // restore pointers in config
+    runConfig.feedbackBuffer = feedback;
+    runConfig.output = outputs;
+    config->RequestConfig->Inputs = inputs;
 }
 
-void recurrentKernelImpl2B(RecurrentConfig const * const config)
+void recurrentKernelImpl2B(ExecutionKernelConfig<RecurrentConfig> const * const config)
 {
-    auto runConfig = RecurrentConfig(*config); // local modifiable copy
+    auto& runConfig = config->RequestConfig->Transform;
     auto activationCfg = ExecutionKernelConfig<ActivationConfig>{
-        &runConfig.activation, *runConfig.execution};
+        &runConfig.activation, *config};
     auto& activation = activationCfg.RequestConfig->Transform;
     auto io = activationCfg.RequestConfig;
+    io->Inputs = reinterpret_cast<int8_t const *>(runConfig.output);
+    io->Outputs = config->RequestConfig->Outputs;
+
+    auto feedback = runConfig.feedbackBuffer;
+    auto outputs = runConfig.output;
+    auto inputs = config->RequestConfig->Inputs;
+
+    auto inputVectorCount = runConfig.inputVectorCount;
+    auto inputElementCount = runConfig.inputElementCount;
+    auto outputElementCount = runConfig.outputElementCount;
 
     // for each input vector
-    for (uint32_t i = 0; i < config->inputVectorCount; i++)
+    for (uint32_t i = 0; i < inputVectorCount; i++)
     {
-        RecurrentKernelImpl2B(&runConfig);
-        runConfig.input += config->inputElementCount;
-        runConfig.feedbackBuffer += config->outputElementCount;
-        runConfig.output += config->outputElementCount;
+        RecurrentKernelImpl2B(config);
+        config->RequestConfig->Inputs += 2 * inputElementCount;
+        runConfig.feedbackBuffer += outputElementCount;
+        runConfig.output += outputElementCount;
 
         activation.Kernel->InitializeActivationFunctions();
         activation.Kernel->ActivateAll(&activationCfg);
         io->Inputs = io->Inputs + activation.ElementCount * 4;
-        io->Outputs = io->Outputs + activation.ElementCount * config->bytesPerOutput;
-        // TODO:3:revert to use ~BufferMap.Update
+        io->Outputs = io->Outputs +
+            activation.ElementCount * config->RequestConfig->Transform.bytesPerOutput;
     }
+
+    // restore pointers in config
+    runConfig.feedbackBuffer = feedback;
+    runConfig.output = outputs;
+    config->RequestConfig->Inputs = inputs;
 }
 
 #if OPT_LEVEL < 2
-void recurrentKernelImpl1B1B(RecurrentConfig const * const config)
+void recurrentKernelImpl1B1B(ExecutionKernelConfig<RecurrentConfig> const * const config)
 {
-    auto runConfig = RecurrentConfig(*config); // local modifiable copy
+    auto& runConfig = config->RequestConfig->Transform;
     auto activationCfg = ExecutionKernelConfig<ActivationConfig>{
-        &runConfig.activation, *runConfig.execution};
+        &runConfig.activation, *config};
     auto& activation = activationCfg.RequestConfig->Transform;
     auto io = activationCfg.RequestConfig;
+    io->Inputs = reinterpret_cast<int8_t const *>(runConfig.output);
+    io->Outputs = config->RequestConfig->Outputs;
+
+    auto feedback = runConfig.feedbackBuffer;
+    auto outputs = runConfig.output;
+    auto inputs = config->RequestConfig->Inputs;
+
+    auto inputVectorCount = runConfig.inputVectorCount;
+    auto inputElementCount = runConfig.inputElementCount;
+    auto outputElementCount = runConfig.outputElementCount;
 
     // for each input vector
-    for (uint32_t i = 0; i < config->inputVectorCount; i++)
+    for (uint32_t i = 0; i < inputVectorCount; i++)
     {
-        RecurrentKernelImpl1B1B(&runConfig);
-        runConfig.input = (int16_t*)((uint64_t)runConfig.input + config->inputElementCount);
-        if (config->bytesPerOutput == 1)
+        RecurrentKernelImpl1B1B(config);
+        config->RequestConfig->Inputs += inputElementCount;
+        if (config->RequestConfig->Transform.bytesPerOutput == 1)
         {
-            runConfig.feedbackBuffer = (int16_t*)((uint64_t)runConfig.feedbackBuffer + config->outputElementCount);
+            runConfig.feedbackBuffer = (int16_t*)((uint64_t)runConfig.feedbackBuffer
+                                        + outputElementCount);
         }
         else
         {
-            runConfig.feedbackBuffer += config->outputElementCount;
+            runConfig.feedbackBuffer += outputElementCount;
         }
-        runConfig.output += config->outputElementCount;
+        runConfig.output += outputElementCount;
 
         activation.Kernel->InitializeActivationFunctions();
         activation.Kernel->ActivateAll(&activationCfg);
         io->Inputs = io->Inputs + activation.ElementCount * 4;
-        io->Outputs = io->Outputs + activation.ElementCount * config->bytesPerOutput;
-        // TODO:3:revert to use ~BufferMap.Update
+        io->Outputs = io->Outputs +
+            activation.ElementCount * config->RequestConfig->Transform.bytesPerOutput;
     }
+
+    // restore pointers in config
+    runConfig.feedbackBuffer = feedback;
+    runConfig.output = outputs;
+    config->RequestConfig->Inputs = inputs;
 }
-void recurrentKernelImpl1B2B(RecurrentConfig const * const config)
+void recurrentKernelImpl1B2B(ExecutionKernelConfig<RecurrentConfig> const * const config)
 {
-     auto runConfig = RecurrentConfig(*config); // local modifiable copy
+    auto& runConfig = config->RequestConfig->Transform;
     auto activationCfg = ExecutionKernelConfig<ActivationConfig>{
-        &runConfig.activation, *runConfig.execution};
+        &runConfig.activation, *config};
     auto& activation = activationCfg.RequestConfig->Transform;
     auto io = activationCfg.RequestConfig;
+    io->Inputs = reinterpret_cast<int8_t const *>(runConfig.output);
+    io->Outputs = config->RequestConfig->Outputs;
+
+    auto feedback = runConfig.feedbackBuffer;
+    auto outputs = runConfig.output;
+    auto inputs = config->RequestConfig->Inputs;
+
+    auto inputVectorCount = runConfig.inputVectorCount;
+    auto inputElementCount = runConfig.inputElementCount;
+    auto outputElementCount = runConfig.outputElementCount;
 
     // for each input vector
-    for (uint32_t i = 0; i < config->inputVectorCount; i++)
+    for (uint32_t i = 0; i < inputVectorCount; i++)
     {
-        RecurrentKernelImpl1B2B(&runConfig);
-        runConfig.input += config->inputElementCount;
-        if (config->bytesPerOutput == 1)
+        RecurrentKernelImpl1B2B(config);
+        config->RequestConfig->Inputs += 2 * inputElementCount;
+        if (config->RequestConfig->Transform.bytesPerOutput == 1)
         {
-            runConfig.feedbackBuffer = (int16_t*)((uint64_t)runConfig.feedbackBuffer + config->outputElementCount);
+            runConfig.feedbackBuffer = (int16_t*)((uint64_t)runConfig.feedbackBuffer
+                                        + outputElementCount);
         }
         else
         {
-            runConfig.feedbackBuffer += config->outputElementCount;
+            runConfig.feedbackBuffer += outputElementCount;
         }
-        runConfig.output += config->outputElementCount;
+        runConfig.output += outputElementCount;
 
         activation.Kernel->InitializeActivationFunctions();
         activation.Kernel->ActivateAll(&activationCfg);
         io->Inputs = io->Inputs + activation.ElementCount * 4;
-        io->Outputs = io->Outputs + activation.ElementCount * config->bytesPerOutput;
-        // TODO:3:revert to use ~BufferMap.Update
+        io->Outputs = io->Outputs +
+            activation.ElementCount * config->RequestConfig->Transform.bytesPerOutput;
     }
+
+    // restore pointers in config
+    runConfig.feedbackBuffer = feedback;
+    runConfig.output = outputs;
+    config->RequestConfig->Inputs = inputs;
 }
 
-void recurrentKernelImpl2B1B(RecurrentConfig const * const config)
+void recurrentKernelImpl2B1B(ExecutionKernelConfig<RecurrentConfig> const * const config)
 {
-    auto runConfig = RecurrentConfig(*config); // local modifiable copy
+    auto& runConfig = config->RequestConfig->Transform;
     auto activationCfg = ExecutionKernelConfig<ActivationConfig>{
-        &runConfig.activation, *runConfig.execution};
+        &runConfig.activation, *config};
     auto& activation = activationCfg.RequestConfig->Transform;
     auto io = activationCfg.RequestConfig;
+    io->Inputs = reinterpret_cast<int8_t const *>(runConfig.output);
+    io->Outputs = config->RequestConfig->Outputs;
+
+    auto feedback = runConfig.feedbackBuffer;
+    auto outputs = runConfig.output;
+    auto inputs = config->RequestConfig->Inputs;
+
+    auto inputVectorCount = runConfig.inputVectorCount;
+    auto inputElementCount = runConfig.inputElementCount;
+    auto outputElementCount = runConfig.outputElementCount;
 
     // for each input vector
-    for (uint32_t i = 0; i < config->inputVectorCount; i++)
+    for (uint32_t i = 0; i < inputVectorCount; i++)
     {
-        RecurrentKernelImpl2B1B(&runConfig);
-        runConfig.input = (int16_t*)((uint64_t)runConfig.input + config->inputElementCount);
-        if (config->bytesPerOutput == 1)
+        RecurrentKernelImpl2B1B(config);
+        config->RequestConfig->Inputs += inputElementCount;
+        if (config->RequestConfig->Transform.bytesPerOutput == 1)
         {
-            runConfig.feedbackBuffer = (int16_t*)((uint64_t)runConfig.feedbackBuffer + config->outputElementCount);
+            runConfig.feedbackBuffer = (int16_t*)((uint64_t)runConfig.feedbackBuffer
+                                        + outputElementCount);
         }
         else
         {
-            runConfig.feedbackBuffer += config->outputElementCount;
+            runConfig.feedbackBuffer += outputElementCount;
         }
-        runConfig.output += config->outputElementCount;
-
-        activation.Kernel->InitializeActivationFunctions();
-        activation.Kernel->ActivateAll(&activationCfg);
-        io->Inputs = io->Inputs + activation.ElementCount * 4,
-        io->Outputs = io->Outputs + activation.ElementCount * config->bytesPerOutput;
-        // TODO:3:revert to use ~BufferMap.Update
-    }
-}
-
-void recurrentKernelImpl2B2B(RecurrentConfig const * const config)
-{
-    auto runConfig = RecurrentConfig(*config); // local modifiable copy
-    auto activationCfg = ExecutionKernelConfig<ActivationConfig>{
-        &runConfig.activation, *runConfig.execution};
-    auto& activation = activationCfg.RequestConfig->Transform;
-    auto io = activationCfg.RequestConfig;
-
-    // for each input vector
-    for (uint32_t i = 0; i < config->inputVectorCount; i++)
-    {
-        RecurrentKernelImpl2B2B(&runConfig);
-        runConfig.input += config->inputElementCount;
-        if(config->bytesPerOutput == 1)
-        {
-            runConfig.feedbackBuffer = (int16_t*)((uint64_t)runConfig.feedbackBuffer + config->outputElementCount);
-        }
-        else
-        {
-            runConfig.feedbackBuffer += config->outputElementCount;
-        }
-        runConfig.output += config->outputElementCount;
+        runConfig.output += outputElementCount;
 
         activation.Kernel->InitializeActivationFunctions();
         activation.Kernel->ActivateAll(&activationCfg);
         io->Inputs = io->Inputs + activation.ElementCount * 4;
-        io->Outputs = io->Outputs + activation.ElementCount * config->bytesPerOutput;
-        // TODO:3:revert to use ~BufferMap.Update
+        io->Outputs = io->Outputs +
+            activation.ElementCount * config->RequestConfig->Transform.bytesPerOutput;
     }
+
+    // restore pointers in config
+    runConfig.feedbackBuffer = feedback;
+    runConfig.output = outputs;
+    config->RequestConfig->Inputs = inputs;
 }
+
+void recurrentKernelImpl2B2B(ExecutionKernelConfig<RecurrentConfig> const * const config)
+{
+    auto& runConfig = config->RequestConfig->Transform;
+    auto activationCfg = ExecutionKernelConfig<ActivationConfig>{
+        &runConfig.activation, *config};
+    auto& activation = activationCfg.RequestConfig->Transform;
+    auto io = activationCfg.RequestConfig;
+    io->Inputs = reinterpret_cast<int8_t const *>(runConfig.output);
+    io->Outputs = config->RequestConfig->Outputs;
+
+    auto feedback = runConfig.feedbackBuffer;
+    auto outputs = runConfig.output;
+    auto inputs = config->RequestConfig->Inputs;
+
+    auto inputVectorCount = runConfig.inputVectorCount;
+    auto inputElementCount = runConfig.inputElementCount;
+    auto outputElementCount = runConfig.outputElementCount;
+
+    // for each input vector
+    for (uint32_t i = 0; i < inputVectorCount; i++)
+    {
+        RecurrentKernelImpl2B2B(config);
+        config->RequestConfig->Inputs += inputElementCount * 2;
+        if(config->RequestConfig->Transform.bytesPerOutput == 1)
+        {
+            runConfig.feedbackBuffer = (int16_t*)((uint64_t)runConfig.feedbackBuffer
+                                        + outputElementCount);
+        }
+        else
+        {
+            runConfig.feedbackBuffer += outputElementCount;
+        }
+        runConfig.output += outputElementCount;
+
+        activation.Kernel->InitializeActivationFunctions();
+        activation.Kernel->ActivateAll(&activationCfg);
+        io->Inputs = io->Inputs + activation.ElementCount * 4;
+        io->Outputs = io->Outputs +
+            activation.ElementCount * config->RequestConfig->Transform.bytesPerOutput;
+    }
+
+    // restore pointers in config
+    runConfig.feedbackBuffer = feedback;
+    runConfig.output = outputs;
+    config->RequestConfig->Inputs = inputs;
+}
+
 #endif
 void copyKernelImpl(CopyConfig const * const config)
 {

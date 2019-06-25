@@ -31,7 +31,7 @@
 #include "common.h"
 #include "gna-api-types-xnn.h"
 
-void AffineKernelImpl2B(AffineConfig const * const config)
+void AffineKernelImpl2B(ExecutionKernelConfig<AffineConfig> const * const config)
 {
     uint32_t nKpartial;
     uint32_t kpartial;
@@ -39,37 +39,44 @@ void AffineKernelImpl2B(AffineConfig const * const config)
     uint32_t j;
     uint32_t k;
     uint32_t kk;
-    int16_t const * input;
     int16_t const * weight;
 
-    kpartial = (config->execution->BufferElementCount[config->inputVectorCount - 1 + XNN_N_GROUP_MAX]) / config->inputVectorCount;
-    nKpartial = config->inputElementCount / kpartial;
+    auto inputVectorCount = config->RequestConfig->Transform.inputVectorCount;
+    auto inputElementCount = config->RequestConfig->Transform.inputElementCount;
+    auto input = reinterpret_cast<int16_t const *>(config->RequestConfig->Inputs);
 
-    TransposeConfig transposeConfig = TransposeConfig{ config->inputElementCount, config->inputVectorCount,
-        config->input, config->execution->Intermediate->d0 };
+    auto weights2B = config->RequestConfig->Transform.weights2B;
+
+    auto outputElementCount = config->RequestConfig->Transform.outputElementCount;
+    auto output = reinterpret_cast<int32_t *>(config->RequestConfig->Outputs);
+
+    kpartial = (config->BufferElementCount[inputVectorCount - 1 + XNN_N_GROUP_MAX]) / inputVectorCount;
+    nKpartial = inputElementCount / kpartial;
+
+    auto transposeConfig = TransposeConfig::MakeFrom(config);
     TransposeKernelImpl(&transposeConfig);
 
     int64_t sum = 0;
-    for (i = 0; i < config->outputElementCount; i++)
+    for (i = 0; i < outputElementCount; i++)
     {
-        for (j = 0; j < config->inputVectorCount; j++)
+        for (j = 0; j < inputVectorCount; j++)
         {
-            sum = getBias(config->biasesSimple, config->bytesPerBias, i);
+            sum = getBias(config->RequestConfig->Transform.biasesSimple, config->RequestConfig->Transform.bytesPerBias, i);
 
             for (kk = 0; kk < nKpartial + 1; kk++) {
-                input = config->execution->Intermediate->d0 + j*config->inputElementCount + kk * kpartial;
-                weight = config->weights2B + i*config->inputElementCount + kk * kpartial;
-                for (k = 0; (k < kpartial) && (kk*kpartial + k < config->inputElementCount); k++) {
+                input = config->Intermediate->d0 + j*inputElementCount + kk * kpartial;
+                weight = weights2B + i*inputElementCount + kk * kpartial;
+                for (k = 0; (k < kpartial) && (kk*kpartial + k < inputElementCount); k++) {
                     sum += weight[k] * input[k];
                 }
-                saturate_store_out(&sum, &config->output[i*config->inputVectorCount + j], config->execution->SaturationCount);
-                sum = (int64_t)config->output[i*config->inputVectorCount + j]; // load the temp sum
+                saturate_store_out(&sum, &output[i*inputVectorCount + j], config->SaturationCount);
+                sum = (int64_t)output[i*inputVectorCount + j]; // load the temp sum
             }
         }
     }
 }
 
-void AffineKernelImpl2B2B(AffineConfig const * const config)
+void AffineKernelImpl2B2B(ExecutionKernelConfig<AffineConfig> const * const config)
 {
     uint32_t nKpartial;
     uint32_t kpartial;
@@ -77,37 +84,44 @@ void AffineKernelImpl2B2B(AffineConfig const * const config)
     uint32_t j;
     uint32_t k;
     uint32_t kk;
-    int16_t const * input;
     int16_t const * weight;
 
-    kpartial = (config->execution->BufferElementCount[config->inputVectorCount - 1 + XNN_N_GROUP_MAX]) / config->inputVectorCount;
-    nKpartial = config->inputElementCount / kpartial;
+    auto inputVectorCount = config->RequestConfig->Transform.inputVectorCount;
+    auto inputElementCount = config->RequestConfig->Transform.inputElementCount;
+    auto input = reinterpret_cast<int16_t const *>(config->RequestConfig->Inputs);
 
-    TransposeConfig transposeConfig = TransposeConfig{ config->inputElementCount, config->inputVectorCount,
-        config->input, config->execution->Intermediate->d0 };
+    auto weights2B = config->RequestConfig->Transform.weights2B;
+
+    auto outputElementCount = config->RequestConfig->Transform.outputElementCount;
+    auto output = reinterpret_cast<int32_t *>(config->RequestConfig->Outputs);
+
+    kpartial = (config->BufferElementCount[inputVectorCount - 1 + XNN_N_GROUP_MAX]) / inputVectorCount;
+    nKpartial = inputElementCount / kpartial;
+
+    auto transposeConfig = TransposeConfig::MakeFrom(config);
     TransposeKernelImpl2B(&transposeConfig);
 
     int64_t sum = 0;
-    for (i = 0; i < config->outputElementCount; i++)
+    for (i = 0; i < outputElementCount; i++)
     {
-        for (j = 0; j < config->inputVectorCount; j++)
+        for (j = 0; j < inputVectorCount; j++)
         {
-            sum = getBias(config->biasesSimple, config->bytesPerBias, i);
+            sum = getBias(config->RequestConfig->Transform.biasesSimple, config->RequestConfig->Transform.bytesPerBias, i);
 
             for (kk = 0; kk < nKpartial + 1; kk++) {
-                input = config->execution->Intermediate->d0 + j*config->inputElementCount + kk * kpartial;
-                weight = config->weights2B + i*config->inputElementCount + kk * kpartial;
-                for (k = 0; (k < kpartial) && (kk*kpartial + k < config->inputElementCount); k++) {
+                input = config->Intermediate->d0 + j*inputElementCount + kk * kpartial;
+                weight = weights2B + i*inputElementCount + kk * kpartial;
+                for (k = 0; (k < kpartial) && (kk*kpartial + k < inputElementCount); k++) {
                     sum += weight[k] * input[k];
                 }
-                saturate_store_out(&sum, &config->output[i*config->inputVectorCount + j], config->execution->SaturationCount);
-                sum = (int64_t)config->output[i*config->inputVectorCount + j]; // load the temp sum
+                saturate_store_out(&sum, &output[i*inputVectorCount + j], config->SaturationCount);
+                sum = (int64_t)output[i*inputVectorCount + j]; // load the temp sum
             }
         }
     }
 }
 
-void AffineKernelImpl2B1B(AffineConfig const * const config)
+void AffineKernelImpl2B1B(ExecutionKernelConfig<AffineConfig> const * const config)
 {
     uint32_t i;
     uint32_t j;
@@ -115,146 +129,175 @@ void AffineKernelImpl2B1B(AffineConfig const * const config)
     uint32_t kk;
     uint32_t kpartial;
     uint32_t nKpartial;
-    int8_t const * input;
     int16_t const * weight;
 
-    TransposeConfig transposeConfig = TransposeConfig{ config->inputElementCount, config->inputVectorCount,
-        config->input, config->execution->Intermediate->d0 };
+    auto inputVectorCount = config->RequestConfig->Transform.inputVectorCount;
+    auto inputElementCount = config->RequestConfig->Transform.inputElementCount;
+    auto input = reinterpret_cast<int8_t const *>(config->RequestConfig->Inputs);
+
+    auto weights2B = config->RequestConfig->Transform.weights2B;
+
+    auto outputElementCount = config->RequestConfig->Transform.outputElementCount;
+    auto output = reinterpret_cast<int32_t *>(config->RequestConfig->Outputs);
+
+    auto transposeConfig = TransposeConfig::MakeFrom(config);
     TransposeKernelImpl1B(&transposeConfig);
 
-    kpartial = (config->execution->BufferElementCount[config->inputVectorCount - 1]) / config->inputVectorCount;
-    nKpartial = config->inputElementCount / kpartial;
+    kpartial = (config->BufferElementCount[inputVectorCount - 1]) / inputVectorCount;
+    nKpartial = inputElementCount / kpartial;
 
     int64_t sum = 0;
-    for (i = 0; i < config->outputElementCount; i++)
+    for (i = 0; i < outputElementCount; i++)
     {
-        for (j = 0; j < config->inputVectorCount; j++)
+        for (j = 0; j < inputVectorCount; j++)
         {
-            sum = getBias(config->biasesSimple, config->bytesPerBias, i);
+            sum = getBias(config->RequestConfig->Transform.biasesSimple, config->RequestConfig->Transform.bytesPerBias, i);
 
             for (kk = 0; kk < nKpartial + 1; kk++) {
-                input = ((int8_t*)config->execution->Intermediate->d0) + j*config->inputElementCount + kk * kpartial;
-                weight = config->weights2B + i*config->inputElementCount + kk * kpartial;
-                for (k = 0; (k < kpartial) && (kk*kpartial + k < config->inputElementCount); k++) {
+                input = ((int8_t*)config->Intermediate->d0) + j*inputElementCount + kk * kpartial;
+                weight = weights2B + i*inputElementCount + kk * kpartial;
+                for (k = 0; (k < kpartial) && (kk*kpartial + k < inputElementCount); k++) {
                     sum += weight[k] * input[k];
                 }
-                saturate_store_out(&sum, &config->output[i*config->inputVectorCount + j], config->execution->SaturationCount);
-                sum = (int64_t)config->output[i*config->inputVectorCount + j]; // load the temp sum
+                saturate_store_out(&sum, &output[i*inputVectorCount + j], config->SaturationCount);
+                sum = (int64_t)output[i*inputVectorCount + j]; // load the temp sum
             }
         }
     }
 }
 
-void AffineMultiBiasKernelImpl2B(AffineConfig const * const config)
+void AffineMultiBiasKernelImpl2B(ExecutionKernelConfig<AffineConfig> const * const config)
 {
     uint32_t i;
     uint32_t j;
     uint32_t k;
     uint32_t kk;
-    const uint32_t kpartial = (config->execution->BufferElementCount[config->inputVectorCount - 1 + XNN_N_GROUP_MAX]) / config->inputVectorCount;
-    const uint32_t nKpartial = config->inputElementCount / kpartial;
 
-    TransposeConfig transposeConfig = TransposeConfig{ config->inputElementCount, config->inputVectorCount,
-        config->input, config->execution->Intermediate->d0 };
+    auto inputVectorCount = config->RequestConfig->Transform.inputVectorCount;
+    auto inputElementCount = config->RequestConfig->Transform.inputElementCount;
+    auto input = reinterpret_cast<int16_t const *>(config->RequestConfig->Inputs);
+
+    auto weights2B = config->RequestConfig->Transform.weights2B;
+
+    auto outputElementCount = config->RequestConfig->Transform.outputElementCount;
+    auto output = reinterpret_cast<int32_t *>(config->RequestConfig->Outputs);
+
+    const uint32_t kpartial = (config->BufferElementCount[inputVectorCount - 1 + XNN_N_GROUP_MAX]) / inputVectorCount;
+    const uint32_t nKpartial = inputElementCount / kpartial;
+
+    auto transposeConfig = TransposeConfig::MakeFrom(config);
     TransposeKernelImpl(&transposeConfig);
 
-    int16_t const * input;
     int16_t const * weight;
-
     int64_t sum = 0;
-    for (i = 0; i < config->outputElementCount; i++)
+    for (i = 0; i < outputElementCount; i++)
     {
-        for (j = 0; j < config->inputVectorCount; j++)
+        for (j = 0; j < inputVectorCount; j++)
         {
-            sum = getBias(config->multiBias, config->bytesPerBias, i*config->multiBiasVectorCount);
+            sum = getBias(config->RequestConfig->Transform.multiBias, config->RequestConfig->Transform.bytesPerBias, i*config->RequestConfig->Transform.multiBiasVectorCount);
 
             for (kk = 0; kk < nKpartial + 1; kk++)
             {
-                input = config->execution->Intermediate->d0 + j*config->inputElementCount + kk*kpartial;
-                weight = config->weights2B + i*config->inputElementCount + kk*kpartial;
-                for (k = 0; (k < kpartial) && (kk*kpartial + k < config->inputElementCount); k++)
+                input = config->Intermediate->d0 + j*inputElementCount + kk*kpartial;
+                weight = weights2B + i*inputElementCount + kk*kpartial;
+                for (k = 0; (k < kpartial) && (kk*kpartial + k < inputElementCount); k++)
                 {
                     sum += weight[k] * input[k];
                 }
-                saturate_store_out(&sum, &config->output[i*config->inputVectorCount + j], config->execution->SaturationCount);
-                sum = config->output[i*config->inputVectorCount + j]; // load the temp sum
+                saturate_store_out(&sum, &output[i*inputVectorCount + j], config->SaturationCount);
+                sum = output[i*inputVectorCount + j]; // load the temp sum
             }
         }
     }
 }
 
-void AffineMultiBiasKernelImpl2B2B(AffineConfig const * const config)
+void AffineMultiBiasKernelImpl2B2B(ExecutionKernelConfig<AffineConfig> const * const config)
 {
     int64_t sum = 0;
     uint32_t i;
     uint32_t j;
     uint32_t k;
     uint32_t kk;
-    const uint32_t kpartial = (config->execution->BufferElementCount[config->inputVectorCount - 1 + XNN_N_GROUP_MAX]) / config->inputVectorCount;
-    const uint32_t nKpartial = config->inputElementCount / kpartial;
 
-    TransposeConfig transposeConfig = TransposeConfig{ config->inputElementCount, config->inputVectorCount,
-        config->input, config->execution->Intermediate->d0 };
+    auto inputVectorCount = config->RequestConfig->Transform.inputVectorCount;
+    auto inputElementCount = config->RequestConfig->Transform.inputElementCount;
+    auto input = reinterpret_cast<int16_t const *>(config->RequestConfig->Inputs);
+
+    auto weights2B = config->RequestConfig->Transform.weights2B;
+
+    auto outputElementCount = config->RequestConfig->Transform.outputElementCount;
+    auto output = reinterpret_cast<int32_t *>(config->RequestConfig->Outputs);
+
+    const uint32_t kpartial = (config->BufferElementCount[inputVectorCount - 1 + XNN_N_GROUP_MAX]) / inputVectorCount;
+    const uint32_t nKpartial = inputElementCount / kpartial;
+
+    auto transposeConfig = TransposeConfig::MakeFrom(config);
     TransposeKernelImpl2B(&transposeConfig);
 
-    int16_t const * input;
     int16_t const * weight;
-
-    for (i = 0; i < config->outputElementCount; i++)
+    for (i = 0; i < outputElementCount; i++)
     {
-        for (j = 0; j < config->inputVectorCount; j++)
+        for (j = 0; j < inputVectorCount; j++)
         {
-            sum = getBias(config->multiBias, config->bytesPerBias, i*config->multiBiasVectorCount);
+            sum = getBias(config->RequestConfig->Transform.multiBias, config->RequestConfig->Transform.bytesPerBias, i*config->RequestConfig->Transform.multiBiasVectorCount);
 
             for (kk = 0; kk < nKpartial + 1; kk++)
             {
-                input = config->execution->Intermediate->d0 + j*config->inputElementCount + kk*kpartial;
-                weight = config->weights2B + i*config->inputElementCount + kk*kpartial;
-                for (k = 0; (k < kpartial) && (kk*kpartial + k < config->inputElementCount); k++)
+                input = config->Intermediate->d0 + j*inputElementCount + kk*kpartial;
+                weight = weights2B + i*inputElementCount + kk*kpartial;
+                for (k = 0; (k < kpartial) && (kk*kpartial + k < inputElementCount); k++)
                 {
                     sum += weight[k] * input[k];
                 }
-                saturate_store_out(&sum, &config->output[i*config->inputVectorCount + j], config->execution->SaturationCount);
-                sum = config->output[i*config->inputVectorCount + j]; // load the temp sum
+                saturate_store_out(&sum, &output[i*inputVectorCount + j], config->SaturationCount);
+                sum = output[i*inputVectorCount + j]; // load the temp sum
             }
         }
     }
 }
 
-void AffineMultiBiasKernelImpl2B1B(AffineConfig const * const config)
+void AffineMultiBiasKernelImpl2B1B(ExecutionKernelConfig<AffineConfig> const * const config)
 {
     uint32_t i;
     uint32_t j;
     uint32_t k;
     uint32_t kk;
-    const uint32_t kpartial = (config->execution->BufferElementCount[config->inputVectorCount - 1]) / config->inputVectorCount;
-    const uint32_t nKpartial = config->inputElementCount / kpartial;
 
-    TransposeConfig transposeConfig = TransposeConfig{ config->inputElementCount, config->inputVectorCount,
-        config->input, config->execution->Intermediate->d0 };
+    auto inputVectorCount = config->RequestConfig->Transform.inputVectorCount;
+    auto inputElementCount = config->RequestConfig->Transform.inputElementCount;
+    auto input = reinterpret_cast<int8_t const *>(config->RequestConfig->Inputs);
+
+    auto weights2B = config->RequestConfig->Transform.weights2B;
+
+    auto outputElementCount = config->RequestConfig->Transform.outputElementCount;
+    auto output = reinterpret_cast<int32_t *>(config->RequestConfig->Outputs);
+
+    const uint32_t kpartial = (config->BufferElementCount[inputVectorCount - 1]) / inputVectorCount;
+    const uint32_t nKpartial = inputElementCount / kpartial;
+
+    auto transposeConfig = TransposeConfig::MakeFrom(config);
     TransposeKernelImpl1B(&transposeConfig);
 
-    int8_t const * input;
     int16_t const * weight;
-
     int64_t sum = 0;
-    for (i = 0; i < config->outputElementCount; i++)
+    for (i = 0; i < outputElementCount; i++)
     {
-        for (j = 0; j < config->inputVectorCount; j++)
+        for (j = 0; j < inputVectorCount; j++)
         {
-            sum = getBias(config->multiBias, config->bytesPerBias, i*config->multiBiasVectorCount);
+            sum = getBias(config->RequestConfig->Transform.multiBias, config->RequestConfig->Transform.bytesPerBias, i*config->RequestConfig->Transform.multiBiasVectorCount);
 
             for (kk = 0; kk < nKpartial + 1; kk++)
             {
-                input = ((int8_t*)config->execution->Intermediate->d0) + j*config->inputElementCount + kk*kpartial;
-                weight = config->weights2B + i*config->inputElementCount + kk*kpartial;
-                for (k = 0; (k < kpartial) && (kk*kpartial + k < config->inputElementCount); k++)
+                input = ((int8_t*)config->Intermediate->d0) + j*inputElementCount + kk*kpartial;
+                weight = weights2B + i*inputElementCount + kk*kpartial;
+                for (k = 0; (k < kpartial) && (kk*kpartial + k < inputElementCount); k++)
                 {
                     sum += weight[k] * input[k];
                 }
-                saturate_store_out(&sum, &config->output[i*config->inputVectorCount + j], config->execution->SaturationCount);
-                sum = config->output[i*config->inputVectorCount + j]; // load the temp sum
+                saturate_store_out(&sum, &output[i*inputVectorCount + j], config->SaturationCount);
+                sum = output[i*inputVectorCount + j]; // load the temp sum
             }
         }
     }
 }
+
