@@ -157,7 +157,7 @@ BiasTensor::BiasTensor(const Shape& dimensions, const uint32_t biasVectorIndex, 
 
 BiasTensor::BiasTensor(const Gna2Tensor &apiTensor, const uint32_t biasVectorIndex,
         Gna2BiasMode biasMode, const LayerValidator& validatorIn) :
-    Tensor{ apiTensor, Validator { validatorIn, capabilities } },
+    Tensor{ apiTensor, capabilities.GetOrder(validatorIn), Validator { validatorIn, capabilities } },
     VectorCount{ biasMode == Gna2BiasModeGrouping ? Dimensions.at('W') : 1 },
     VectorIndex{ biasVectorIndex },
     BiasMode{ ToKernelBiasMode(biasMode, apiTensor.Mode) }

@@ -116,7 +116,7 @@ WeightTensor::WeightTensor(const Shape& dimensions, const DataMode& dataMode,
 }
 
 WeightTensor::WeightTensor(const Gna2Tensor &apiTensor, const LayerValidator& validatorIn)
-    : Tensor(apiTensor, Validator{ validatorIn, capabilities })
+    : Tensor(apiTensor, capabilities.GetOrder(validatorIn), Validator{ validatorIn, capabilities })
 {
 }
 

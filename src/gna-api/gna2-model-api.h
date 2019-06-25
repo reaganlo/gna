@@ -296,7 +296,7 @@ enum Gna2OperationType
                 - Layout:
                     @note [W x N] Row-major (aka interleaved), vectors are columns.
                 - Shape: [W x N] 2D matrix, where:
-                    - W is a width of input tensor
+                    - W is a number of elements of a vector
                     - N is a batch size (number of vectors),
         2. outputs [required]:
             Specifies output tensor.
@@ -311,9 +311,9 @@ enum Gna2OperationType
             Supported values:
                 - Mode: {::Gna2TensorModeDefault, ::Gna2TensorModeConstantScalar}
                 - Type: {::Gna2DataTypeInt8, ::Gna2DataTypeInt16},
-                - Shape: [W x H] 2D Matrix, where:
-                    - W is a number of input tensor elements (input Shape W dimension)
-                    - H is a number of output tensor elements (output Shape H dimension)
+                - Shape: [H x W] 2D Matrix, where:
+                    - H is a number of output vector elements
+                    - W is a number of input vector elements
         4. biases [required]:
             Supported values:
                 - For ::Gna2BiasModeDefault:
