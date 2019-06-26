@@ -255,24 +255,26 @@ enum Gna2OperationType
             Supported values:
                 - Mode: {::Gna2TensorModeDefault}
                 - Type: {::Gna2DataTypeInt8, ::Gna2DataTypeInt16},
-                - Layout: Default: [N x W] Row-major, (aka flat),
-                - Shape: [N x W] 2D matrix, where:
-                    - N is a batch size (number of vectors),
-                    - W is a width of input tensor
+                - Layout: Default: [H x W] Row-major, (aka flat),
+                - Shape: [H x W] 2D matrix, where:
+                    - H is a number of vectors (aka batch size),
+                    - W is a number of elements of input vector
         2. outputs [required]:
             Specifies output tensor.
             @see inputs, with exclusion to:
-                - Shape: [N x W] 2D matrix, where:
-                    - N is a destination batch size (number of vectors),
-                    - W is a width of a destination tensor,
+                - Shape: [H x W] 2D matrix, where:
+                    - H is a number of vectors (aka batch size),
+                    - W is a number of elements of destination vector,
 
     Parameters:
         1. Gna2Shape shape [required]:
              Specifies dimensions of copied sub-tensor.
              Supported values:
-                [W x H] 2D where: //TODO:3:API Redesign: provide shape info
-                 - W is a number of elements to copy in W dimension
-                 - H is a number of elements to copy in H dimension
+                [H x W] 2D where: //TODO:3:API Redesign: provide shape info
+                 - H is a number of vectors to copy
+                     (must be not greater than number of vectors of input and output)
+                 - W is a number of elements to copy in each vector
+                     (must be not greater than size of vectors of input and output)
     */
     Gna2OperationTypeCopy = 2,
 
