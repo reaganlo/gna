@@ -286,12 +286,12 @@ std::pair<uint32_t, uint32_t> LayerOutput::getGroupingAndElements(const nn_layer
     case INTEL_AFFINE:
     case INTEL_AFFINE_DIAGONAL:
     case INTEL_AFFINE_MULTIBIAS:
-    case INTEL_DEINTERLEAVE:
+    case INTEL_INTERLEAVE:
      return {layer.nOutputColumns, layer.nOutputRows};
     case INTEL_GMM:
     case INTEL_COPY:
     case INTEL_RECURRENT:
-    case INTEL_INTERLEAVE:
+    case INTEL_DEINTERLEAVE:
     case INTEL_CONVOLUTIONAL:
     case INTEL_CONVOLUTIONAL_2D:
         return {layer.nOutputRows, layer.nOutputColumns};
