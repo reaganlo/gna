@@ -200,9 +200,9 @@ enum Gna2OperationType
                     [W] 1D where: //TODO:3:API Redesign: provide shape info
                      - W is a number of elements to move in W dimension
                 For 2D convolution operation:
-                    [W x H] 2D where: //TODO:3:API Redesign: provide shape info
-                     - W is a number of elements to move in W dimension
+                    [H x W] 2D where: //TODO:3:API Redesign: provide shape info
                      - H is a number of elements to move in H dimension
+                     - W is a number of elements to move in W dimension
         2. Gna2BiasMode biasMode [optional]:
             Mode of bias operation.
             Assumed ::Gna2BiasModeDefault if not provided.
@@ -217,28 +217,27 @@ enum Gna2OperationType
             - For 1D convolution operation: [ W ] 1D where: //TODO:3:API Redesign: provide shape info
                 - W is a width of window
             - For 2D convolution operation:
-                - [ W x H ] 2D where:
-                    - W is a width of window
+                - [ H x W ] 2D where:
                     - H is a height of window
+                    - W is a width of window
         5. Gna2Shape poolingStride [optional]:
             Required for fused operation (i.e., poolingMode is enabled).
             Specifies pooling window stride dimensions.
             Supported values:
                 - For 1D convolution operation: [W] 1D where: //TODO:3:API Redesign: provide shape info
                     - W is a number of elements to move in W dimension
-                - For 2D convolution operation: [W x H] 2D where:
-                    - W is a number of elements to move in W dimension
+                - For 2D convolution operation: [H x W] 2D where:
                     - H is a number of elements to move in H dimension
-        6. Gna2Shape zeroPadding [optional]:
+                    - W is a number of elements to move in W dimension
+    6. Gna2Shape zeroPadding [optional]:
             Supported only for 2D convolution.
             Specifies automatic input zero-padding dimensions.
             Used to maintain same input-output volume shape
             or when input dimensions have no common natural divider with filter and stride.
             Supported values:
-                [0] When not used
-                [W x H] 2D where: //TODO:3:API Redesign: provide shape info
-                    - W is a number of 0s added each before and after each row of an input
-                    - H is a number of 0s added each before and after each column of an input
+                [H x W] 2D where: //TODO:3:API Redesign: provide shape info
+                    - H is a number of 0s added at the top and bottom of input
+                    - W is a number of 0s added from the left and the right of input
     */
     Gna2OperationTypeConvolution = 1,
 

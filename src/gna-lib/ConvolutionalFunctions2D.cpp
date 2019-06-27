@@ -50,9 +50,9 @@ const FullCapabilitiesMap ConvolutionFunction2D::strideLimits
 {
     { INTEL_CONVOLUTIONAL_2D, {
         { GNA_3_0, std::make_shared<ComponentLimits>(ComponentLimits(
-            {GNA_TENSOR_WH},
-            {{GNA_DIM_W, {1, CNN_N_KERNEL_ELEMENTS_PER_DIMENSION_MAX, 1, Gna2StatusCnnErrorConvFltStride}},
-             {GNA_DIM_H, {1, CNN_N_KERNEL_ELEMENTS_PER_DIMENSION_MAX, 1, Gna2StatusCnnErrorConvFltStride}}}))}
+            {GNA_TENSOR_HW},
+            {{GNA_DIM_H, {1, CNN_N_KERNEL_ELEMENTS_PER_DIMENSION_MAX, 1, Gna2StatusCnnErrorConvFltStride}},
+             {GNA_DIM_W, {1, CNN_N_KERNEL_ELEMENTS_PER_DIMENSION_MAX, 1, Gna2StatusCnnErrorConvFltStride}}}))}
     }}
 };
 
@@ -60,9 +60,9 @@ const FullCapabilitiesMap ConvolutionFunction2D::paddingLimits
 {
     { INTEL_CONVOLUTIONAL_2D, {
         { GNA_3_0, std::make_shared<ComponentLimits>(ComponentLimits(
-            {GNA_TENSOR_WH},
-            {{GNA_DIM_W, {0, CNN_N_KERNEL_ELEMENTS_PER_DIMENSION_MAX, 1, Gna2StatusCnnErrorConvFltPadding}},
-             {GNA_DIM_H, {0, CNN_N_KERNEL_ELEMENTS_PER_DIMENSION_MAX, 1, Gna2StatusCnnErrorConvFltPadding}}}))}
+            {GNA_TENSOR_HW},
+            {{GNA_DIM_H, {0, CNN_N_KERNEL_ELEMENTS_PER_DIMENSION_MAX, 1, Gna2StatusCnnErrorConvFltPadding}},
+             {GNA_DIM_W, {0, CNN_N_KERNEL_ELEMENTS_PER_DIMENSION_MAX, 1, Gna2StatusCnnErrorConvFltPadding}}}))}
     }}
 };
 
@@ -107,7 +107,7 @@ std::unique_ptr<ConvolutionFunction2D> ConvolutionFunction2D::create(
     auto paddingShape = operation.ZeroPadding;
     if(paddingShape.empty())
     {
-        paddingShape = Shape{ GNA_TENSOR_WH, 0u, 0u };
+        paddingShape = Shape{ GNA_TENSOR_HW, 0u, 0u };
     }
     auto padding = std::make_unique<const Component>(paddingShape,
         Validator{ config.validator, paddingLimits });

@@ -46,17 +46,17 @@
 
 using namespace GNA;
 
-static const ComponentLimits __WH_limits=
+static const ComponentLimits __HW_limits=
 {
-    {GNA_TENSOR_WH},
-    {{GNA_DIM_W, {1, CNN_N_KERNEL_ELEMENTS_PER_DIMENSION_MAX, 1, Gna2StatusCnnErrorPoolStride}},
-    {GNA_DIM_H, {1, CNN_N_KERNEL_ELEMENTS_PER_DIMENSION_MAX, 1, Gna2StatusCnnErrorPoolStride}},}
+    {GNA_TENSOR_HW},
+    {{GNA_DIM_H, {1, CNN_N_KERNEL_ELEMENTS_PER_DIMENSION_MAX, 1, Gna2StatusCnnErrorPoolStride}},
+    {GNA_DIM_W, {1, CNN_N_KERNEL_ELEMENTS_PER_DIMENSION_MAX, 1, Gna2StatusCnnErrorPoolStride}},}
 };
 
 const FullCapabilitiesMap PoolingFunction2D::windowLimits
 {
     {INTEL_CONVOLUTIONAL_2D, {
-        { GNA_3_0, std::make_shared<ComponentLimits>(__WH_limits)}
+        { GNA_3_0, std::make_shared<ComponentLimits>(__HW_limits)}
     }},
     //{GNA_LAYER_CNN_2D_POOLING, {
     //   { GNA_3_0, std::make_shared<ComponentLimits>(ComponentLimits(
@@ -68,7 +68,7 @@ const FullCapabilitiesMap PoolingFunction2D::windowLimits
 const FullCapabilitiesMap PoolingFunction2D::strideLimits
 {
     {INTEL_CONVOLUTIONAL_2D, {
-        { GNA_3_0, std::make_shared<ComponentLimits>(__WH_limits)}
+        { GNA_3_0, std::make_shared<ComponentLimits>(__HW_limits)}
     }},
     //{GNA_LAYER_CNN_2D_POOLING, {
     //    { GNA_3_0, std::make_shared<ComponentLimits>(ComponentLimits(
