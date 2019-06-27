@@ -42,6 +42,7 @@ void AffineActiveListKernelImpl1B(ExecutionKernelConfig<AffineConfig> const * co
     uint32_t j;
     uint32_t l;
     int8_t const * weight;
+    auto *inputs = reinterpret_cast<int16_t const *>(config->RequestConfig->Inputs);
     int32_t * output = reinterpret_cast<int32_t *>(config->RequestConfig->Outputs);
     nn_bias_c const * bias;
     int16_t const *input_0 = nullptr;
@@ -93,8 +94,8 @@ void AffineActiveListKernelImpl1B(ExecutionKernelConfig<AffineConfig> const * co
 
     if (1 == config->RequestConfig->Transform.inputVectorCount)
     {
-        input_0 = reinterpret_cast<int16_t const *>(config->RequestConfig->Inputs) + KK;
-        in_ptr0 = (__m128i*) config->RequestConfig->Inputs;
+        input_0 = inputs + KK;
+        in_ptr0 = (__m128i*) inputs;
 
         for (l = 0; l < al.count; l++)
         {
@@ -131,7 +132,7 @@ void AffineActiveListKernelImpl1B(ExecutionKernelConfig<AffineConfig> const * co
     {
         for (i = 0; i < config->RequestConfig->Transform.inputElementCount; i++)
         {
-            config->Intermediate->d7[i] = config->RequestConfig->Inputs[i*config->RequestConfig->Transform.inputVectorCount + 7];
+            config->Intermediate->d7[i] = inputs[i*config->RequestConfig->Transform.inputVectorCount + 7];
         }
         input_7 = config->Intermediate->d7 + KK;
         in_ptr7 = (__m128i*) config->Intermediate->d7;
@@ -140,7 +141,7 @@ void AffineActiveListKernelImpl1B(ExecutionKernelConfig<AffineConfig> const * co
     {
         for (i = 0; i < config->RequestConfig->Transform.inputElementCount; i++)
         {
-            config->Intermediate->d6[i] = config->RequestConfig->Inputs[i*config->RequestConfig->Transform.inputVectorCount + 6];
+            config->Intermediate->d6[i] = inputs[i*config->RequestConfig->Transform.inputVectorCount + 6];
         }
         input_6 = config->Intermediate->d6 + KK;
         in_ptr6 = (__m128i*) config->Intermediate->d6;
@@ -149,7 +150,7 @@ void AffineActiveListKernelImpl1B(ExecutionKernelConfig<AffineConfig> const * co
     {
         for (i = 0; i < config->RequestConfig->Transform.inputElementCount; i++)
         {
-            config->Intermediate->d5[i] = config->RequestConfig->Inputs[i*config->RequestConfig->Transform.inputVectorCount + 5];
+            config->Intermediate->d5[i] = inputs[i*config->RequestConfig->Transform.inputVectorCount + 5];
         }
         input_5 = config->Intermediate->d5 + KK;
         in_ptr5 = (__m128i*) config->Intermediate->d5;
@@ -158,7 +159,7 @@ void AffineActiveListKernelImpl1B(ExecutionKernelConfig<AffineConfig> const * co
     {
         for (i = 0; i < config->RequestConfig->Transform.inputElementCount; i++)
         {
-            config->Intermediate->d4[i] = config->RequestConfig->Inputs[i*config->RequestConfig->Transform.inputVectorCount + 4];
+            config->Intermediate->d4[i] = inputs[i*config->RequestConfig->Transform.inputVectorCount + 4];
         }
         input_4 = config->Intermediate->d4 + KK;
         in_ptr4 = (__m128i*) config->Intermediate->d4;
@@ -167,7 +168,7 @@ void AffineActiveListKernelImpl1B(ExecutionKernelConfig<AffineConfig> const * co
     {
         for (i = 0; i < config->RequestConfig->Transform.inputElementCount; i++)
         {
-            config->Intermediate->d3[i] = config->RequestConfig->Inputs[i*config->RequestConfig->Transform.inputVectorCount + 3];
+            config->Intermediate->d3[i] = inputs[i*config->RequestConfig->Transform.inputVectorCount + 3];
         }
         input_3 = config->Intermediate->d3 + KK;
         in_ptr3 = (__m128i*) config->Intermediate->d3;
@@ -176,7 +177,7 @@ void AffineActiveListKernelImpl1B(ExecutionKernelConfig<AffineConfig> const * co
     {
         for (i = 0; i < config->RequestConfig->Transform.inputElementCount; i++)
         {
-            config->Intermediate->d2[i] = config->RequestConfig->Inputs[i*config->RequestConfig->Transform.inputVectorCount + 2];
+            config->Intermediate->d2[i] = inputs[i*config->RequestConfig->Transform.inputVectorCount + 2];
         }
         input_2 = config->Intermediate->d2 + KK;
         in_ptr2 = (__m128i*) config->Intermediate->d2;
@@ -185,13 +186,13 @@ void AffineActiveListKernelImpl1B(ExecutionKernelConfig<AffineConfig> const * co
     {
         for (i = 0; i < config->RequestConfig->Transform.inputElementCount; i++)
         {
-            config->Intermediate->d1[i] = config->RequestConfig->Inputs[i*config->RequestConfig->Transform.inputVectorCount + 1];
+            config->Intermediate->d1[i] = inputs[i*config->RequestConfig->Transform.inputVectorCount + 1];
         }
         input_1 = config->Intermediate->d1 + KK;
         in_ptr1 = (__m128i*) config->Intermediate->d1;
         for (i = 0; i < config->RequestConfig->Transform.inputElementCount; i++)
         {
-            config->Intermediate->d0[i] = config->RequestConfig->Inputs[i*config->RequestConfig->Transform.inputVectorCount];
+            config->Intermediate->d0[i] = inputs[i*config->RequestConfig->Transform.inputVectorCount];
         }
         input_0 = config->Intermediate->d0 + KK;
         in_ptr0 = (__m128i*) config->Intermediate->d0;
