@@ -141,6 +141,7 @@ PoolingFunction2D::PoolingFunction2D(const BaseTransformConfig<PoolingKernel2D>&
     Shape outputDims;
     outputDims[GNA_DIM_N] = Input->Dimensions.at(GNA_DIM_N);
     outputDims[GNA_DIM_D] = Input->Dimensions.at(GNA_DIM_D);
+    outputDims.LayoutOrder = Input->Dimensions.LayoutOrder;
 
     for (const auto& iter : Stride->Dimensions)
     {
