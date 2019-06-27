@@ -62,13 +62,13 @@ uint32_t HardwareModelSue1::GetOutputOffset(uint32_t layerIndex) const
 uint32_t HardwareModelSue1::GetInputOffset(uint32_t layerIndex) const
 {
     auto layer = hardwareLayers.at(layerIndex).get();
-    return layer->GetLdInputOffset () - GetDescriptor(0).GetOffset();
+    return layer->GetLdInputOffset() - GetDescriptor(0).GetOffset();
 }
 
 void HardwareModelSue1::allocateLayerDescriptors()
 {
     baseDescriptor = std::make_unique<LayerDescriptor>(
-            *ldMemory, ldMemory->GetBuffer(), hwCapabilities);
+        *ldMemory, ldMemory->GetBuffer(), hwCapabilities);
     if (!baseDescriptor)
     {
         throw GnaException{ Gna2StatusResourceAllocationError };
@@ -89,11 +89,17 @@ uint32_t HardwareModelSue1::GetBufferOffset(const BaseAddress& address) const
         if (address.InRange(memory->GetBuffer(),
             static_cast<uint32_t>(memory->GetSize())))
         {
-            return offset + address.GetOffset(BaseAddress{memory->GetBuffer()});
+            return offset + address.GetOffset(BaseAddress{ memory->GetBuffer() });
         }
 
         offset += static_cast<uint32_t>(memory->GetSize());
     }
 
     return 0;
+}
+
+uint32_t HardwareModelSue1::CalculateDescriptorSize(const uint32_t layerCount)
+{
+    auto ldSize = HardwareModel::CalculateDescriptorSize(layerCount, 0);
+    return ALIGN(ldSize, PAGE_SIZE);
 }

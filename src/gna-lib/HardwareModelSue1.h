@@ -40,32 +40,34 @@
 
 namespace GNA
 {
-class LayerDescriptor;
+    class LayerDescriptor;
 
-class HardwareModelSue1 : public HardwareModel
-{
-public:
-    HardwareModelSue1(
-        const std::vector<std::unique_ptr<Layer>>& layers,
-        uint32_t gmmCount, std::unique_ptr<Memory> dumpMemory);
+    class HardwareModelSue1 : public HardwareModel
+    {
+    public:
+        static uint32_t CalculateDescriptorSize(const uint32_t layerCount);
 
-    virtual ~HardwareModelSue1() = default;
+        HardwareModelSue1(
+            const std::vector<std::unique_ptr<Layer>>& layers,
+            uint32_t gmmCount, std::unique_ptr<Memory> dumpMemory);
 
-    const LayerDescriptor& GetDescriptor(uint32_t layerIndex) const;
+        virtual ~HardwareModelSue1() = default;
 
-    uint32_t GetOutputOffset(uint32_t layerIndex) const;
+        const LayerDescriptor& GetDescriptor(uint32_t layerIndex) const;
 
-    uint32_t GetInputOffset(uint32_t layerIndex) const;
+        uint32_t GetOutputOffset(uint32_t layerIndex) const;
 
-    // this override does not add PAGE_SIZE alignment to calculations
-    // since memory buffers are copied to one allocated memory buffer
-    virtual uint32_t GetBufferOffset(const BaseAddress& address) const override;
+        uint32_t GetInputOffset(uint32_t layerIndex) const;
 
-protected:
-    virtual void allocateLayerDescriptors() override;
+        // this override does not add PAGE_SIZE alignment to calculations
+        // since memory buffers are copied to one allocated memory buffer
+        virtual uint32_t GetBufferOffset(const BaseAddress& address) const override;
 
-private:
-    static HardwareCapabilities sueCapabilities;
-};
+    protected:
+        virtual void allocateLayerDescriptors() override;
+
+    private:
+        static HardwareCapabilities sueCapabilities;
+    };
 
 }

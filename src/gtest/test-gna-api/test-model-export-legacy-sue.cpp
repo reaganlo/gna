@@ -96,12 +96,12 @@ protected:
         return _mm_free(mem);
     }
 
-    const uint32_t expectedModelSize = 4544;
+    const uint32_t expectedModelSize = 8512;
     const uint32_t expectedHeaderSize = 64;
 
-    const uint32_t expected_headerHash = 0x50e2e119;
-    const uint32_t expected_modelHash = 0xe99d8e89;
-    const uint32_t expected_fileHash = 0xacd78845;
+    const uint32_t expected_headerHash = 0xef63a03e;
+    const uint32_t expected_modelHash = 0x93759a0d;
+    const uint32_t expected_fileHash = 0xbbea28e9;
 
     // Based on
     // Simple public domain implementation of the standard CRC32 checksum.
@@ -131,7 +131,7 @@ protected:
     }
 
     void SetupNnet();
-    intel_nnet_layer_t nnet_layer ={};
+    intel_nnet_layer_t nnet_layer = {};
     intel_nnet_type_t nnet = { 1,4, &nnet_layer };
     intel_affine_layer_t affine_layer{};
     gna_device_id deviceIndex = 0;

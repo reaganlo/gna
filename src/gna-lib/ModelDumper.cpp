@@ -57,9 +57,8 @@ void* Device::Dump(gna_model_id modelId, gna_device_generation deviceGeneration,
 
     auto& model = models.at(modelId);
     auto const layerCount = model->LayerCount;
-    auto const gmmCount = model->GmmCount;
 
-    auto const ldSize = HardwareModelSue1::CalculateDescriptorSize(layerCount, gmmCount);
+    auto const ldSize = HardwareModelSue1::CalculateDescriptorSize(layerCount);
     auto const modelSize = model->CalculateSize();
     auto const totalSize = ldSize + modelSize;
 
@@ -72,7 +71,7 @@ void* Device::Dump(gna_model_id modelId, gna_device_generation deviceGeneration,
 
     // creating HW layer descriptors directly into dump memory
     auto hwModel = std::make_unique<HardwareModelSue1>(
-                    model->GetLayers(), model->GmmCount, std::move(dumpMemory));
+        model->GetLayers(), model->GmmCount, std::move(dumpMemory));
     hwModel->Build(model->GetModelMemoryList(), {});
 
     // copying data..
