@@ -94,6 +94,7 @@ set(gna_lib_sources
   ${SRC_DIR}/ConvolutionalFunctions2D.cpp
   ${SRC_DIR}/ConvolutionalLayer.cpp
   ${SRC_DIR}/ConvolutionalLayer2D.cpp
+  ${SRC_DIR}/ConvolutionalLayer2DCapabilities.cpp
   ${SRC_DIR}/CopyLayer.cpp
   ${SRC_DIR}/Cnn2DuArch.cpp
   ${SRC_DIR}/DataMode.cpp
@@ -108,6 +109,7 @@ set(gna_lib_sources
   ${SRC_DIR}/HardwareModelSue1.cpp
   ${SRC_DIR}/HardwareRequest.cpp
   ${SRC_DIR}/Layer.cpp
+  ${SRC_DIR}/LayerCapabilities.cpp
   ${SRC_DIR}/LayerConfiguration.cpp
   ${SRC_DIR}/LayerDescriptor.cpp
   ${SRC_DIR}/LayerInput.cpp
@@ -170,6 +172,7 @@ set(gna_lib_headers
   ${SRC_DIR}/ConvolutionalFunctions2D.h
   ${SRC_DIR}/ConvolutionalLayer.h
   ${SRC_DIR}/ConvolutionalLayer2D.h
+  ${SRC_DIR}/ConvolutionalLayer2DCapabilities.h
   ${SRC_DIR}/CopyLayer.h
   ${SRC_DIR}/Cnn2DuArch.h
   ${SRC_DIR}/DataMode.h
@@ -189,6 +192,7 @@ set(gna_lib_headers
   ${SRC_DIR}/IScorable.h
   ${SRC_DIR}/LayerConfiguration.h
   ${SRC_DIR}/Layer.h
+  ${SRC_DIR}/LayerCapabilities.h
   ${SRC_DIR}/LayerDescriptor.h
   ${SRC_DIR}/LayerInput.h
   ${SRC_DIR}/LayerOutput.h

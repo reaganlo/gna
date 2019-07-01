@@ -26,6 +26,7 @@
 #include "LayerOutput.h"
 
 #include "Capabilities.h"
+#include "ConvolutionalLayer2DCapabilities.h"
 #include "DataMode.h"
 #include "Expect.h"
 #include "ParameterLimits.h"
@@ -123,27 +124,10 @@ const FullCapabilitiesMap LayerOutput::capabilities =
         {GNA_3_0, std::make_shared<TensorLimits>(_InterleaveTensorLimitsGen3)}
     }},
     {INTEL_CONVOLUTIONAL, {
-        {GNA_1_0, std::make_shared<TensorLimits>(TensorLimits{
-            { GNA_TENSOR_HN },
-            {{GNA_DIM_N, {1, 1, 1, Gna2StatusXnnErrorOutputVolume}},
-             {GNA_DIM_H, {1, XNN_N_IN_ELEMS_MAX, 1, Gna2StatusXnnErrorOutputVolume}}},
-            _ModesGen0_9})},
+        ConvolutionalLayer2DCapabilities::GetLegacyOperands(OutputOperandIndex)
     }},
     {INTEL_CONVOLUTIONAL_2D, {
-        {GNA_1_0, std::make_shared<TensorLimits>(TensorLimits{
-            { GNA_TENSOR_NHWD },
-            {{GNA_DIM_N, {1, 1, 1, Gna2StatusXnnErrorOutputVolume}},
-            {GNA_DIM_H, {CNN_N_FLT_COEFF_MPLY, CNN_N_FLT_MAX, CNN_N_FLT_COEFF_MPLY, Gna2StatusXnnErrorOutputVolume}},
-            {GNA_DIM_W, {1, XNN_N_IN_ELEMS_MAX, 1, Gna2StatusXnnErrorOutputVolume}},
-            {GNA_DIM_D, {1, 1, 1, Gna2StatusXnnErrorOutputVolume}}},
-            _ModesGen0_9})},
-        {GNA_3_0, std::make_shared<TensorLimits>(TensorLimits{
-            {GNA_TENSOR_NHWD},
-            {{GNA_DIM_N, {1, 1, 1, Gna2StatusXnnErrorOutputVolume}},
-             {GNA_DIM_H, {1, XNN_N_IN_ELEMS_MAX, 1, Gna2StatusXnnErrorOutputVolume}},
-             {GNA_DIM_W, {1, XNN_N_IN_ELEMS_MAX, 1, Gna2StatusXnnErrorOutputVolume}},
-             {GNA_DIM_D, {1, XNN_N_IN_ELEMS_MAX, 1, Gna2StatusXnnErrorOutputVolume}}},
-            _ModesGen3})}
+        ConvolutionalLayer2DCapabilities::GetOperands(OutputOperandIndex)
     }},
     {INTEL_COPY, {
         {GNA_0_9, std::make_shared<TensorLimits>(TensorLimits{

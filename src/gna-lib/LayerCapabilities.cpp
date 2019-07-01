@@ -22,41 +22,35 @@
  or any other notice embedded in Materials by Intel or Intel's suppliers or licensors
  in any way.
 */
-#ifndef __GNA2_MODEL_IMPL_H
-#define __GNA2_MODEL_IMPL_H
 
-#include "gna2-model-api.h"
+#include "LayerCapabilities.h"
 
-namespace GNA
+using namespace GNA;
+
+const std::vector<uint32_t>& LayerCapabilities::Multipliers()
 {
-
-typedef struct Gna2Model ApiModel;
-typedef struct Gna2Operation ApiOperation;
-typedef struct Gna2Shape ApiShape;
-typedef struct Gna2Tensor ApiTensor;
-typedef struct Gna2ModelError ModelError;
-
-typedef enum Gna2OperationType OperationType;
-typedef enum Gna2TensorMode TensorMode;
-typedef enum Gna2DataType DataType;
-typedef enum Gna2BiasMode ApiBiasMode;
-typedef enum Gna2PoolingMode Mode;
-typedef enum Gna2ErrorType ErrorType;
-typedef enum Gna2ItemType ItemType;
-
-constexpr uint32_t InputOperandIndex = 0;
-constexpr uint32_t OutputOperandIndex = 1;
-constexpr uint32_t OutputIntermediateOperandIndex = UINT32_MAX;
-constexpr uint32_t WeightOperandIndex = 2;
-constexpr uint32_t FilterOperandIndex  = 2;
-constexpr uint32_t BiasOperandIndex  = 3;
-constexpr uint32_t PwlOperandIndex  = 4;
-constexpr uint32_t WeightScaleFactorOperandIndex  = 5;
-//constexpr uint32_t GmmInterleavedOperandIndex  = 2;
-constexpr uint32_t GmmMeanOperandIndex  = 2;
-constexpr uint32_t GmmInverseCovarianceOperandIndex  = 3;
-constexpr uint32_t GmmGaussianConstantOperandIndex  = 4;
-
+    static const std::vector<uint32_t> multipliers =
+    {
+        2 * InputElementCountMultiplier,
+        1 * InputElementCountMultiplier,
+        InputElementCountMultiplier / 2
+    };
+    return multipliers;
 }
 
-#endif // __GNA2_MODEL_IMPL_H
+const DataModeLimits& LayerCapabilities::GetModes(uint32_t operandIndex, gna_device_generation generation)
+{
+    static const std::map<uint32_t, std::map<gna_device_generation, DataModeLimits>> modes =
+    {
+        {InputOperandIndex,
+            {{GNA_0_9, {{GNA_INT16}, Gna2StatusXnnErrorInputBytes}},
+            {GNA_3_0, {{GNA_INT8, GNA_INT16}, Gna2StatusXnnErrorInputBytes}},}
+        },
+        {OutputOperandIndex,
+            {{GNA_0_9, {{GNA_INT16, GNA_INT32, GNA_DATA_ACTIVATION_DISABLED}, Gna2StatusXnnErrorOutputBytes}},
+            {GNA_3_0, {{GNA_INT8, GNA_INT16, GNA_INT32, GNA_DATA_ACTIVATION_DISABLED}, Gna2StatusXnnErrorOutputBytes}},}
+        },
+    };
+    return modes.at(operandIndex).at(generation);
+}
+

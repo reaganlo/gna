@@ -254,18 +254,17 @@ uint32_t ModelWrapper::GetOperandIndex(GnaComponentType operand)
 {
     static const std::map<GnaComponentType, uint32_t> operandMap =
     {
-        {InputComponent, 0},
-        {OutputComponent, 1},
-        {IntermediateOutputComponent, OperandIndexOutputIntermediate},
-        {WeightComponent, 2},
-        {FilterComponent, 2},
-        {BiasComponent, 3},
-        {PwlComponent, 4},
-        {WeightScaleFactorComponent, 5},
-        //{GmmInterleavedComponent, 2},
-        {GmmMeanComponent, 2},
-        {GmmInverseCovarianceComponent, 3},
-        {GmmGaussianConstantComponent, 4},
+        {InputComponent, InputOperandIndex},
+        {OutputComponent, OutputOperandIndex},
+        {IntermediateOutputComponent, OutputIntermediateOperandIndex},
+        {WeightComponent, WeightOperandIndex},
+        {FilterComponent, FilterOperandIndex},
+        {BiasComponent, BiasOperandIndex},
+        {PwlComponent, PwlOperandIndex},
+        {WeightScaleFactorComponent, WeightScaleFactorOperandIndex},
+        {GmmMeanComponent, GmmMeanOperandIndex},
+        {GmmInverseCovarianceComponent, GmmInverseCovarianceOperandIndex},
+        {GmmGaussianConstantComponent, GmmGaussianConstantOperandIndex},
     };
     try
     {

@@ -71,8 +71,6 @@ enum OperationInfoKey
     ParameterIndexDelay,
 };
 
-constexpr uint32_t OperandIndexOutputIntermediate = UINT32_MAX;
-
 class ModelWrapper
 {
 public:

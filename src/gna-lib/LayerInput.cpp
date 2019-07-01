@@ -26,6 +26,7 @@
 #include "LayerInput.h"
 
 #include "Capabilities.h"
+#include "ConvolutionalLayer2DCapabilities.h"
 #include "DataMode.h"
 #include "Macros.h"
 #include "ParameterLimits.h"
@@ -39,6 +40,7 @@
 #include <cstdint>
 #include <memory.h>
 #include <vector>
+#include "ModelWrapper.h"
 
 using namespace GNA;
 
@@ -111,36 +113,13 @@ const FullCapabilitiesMap LayerInput::capabilities =
         {GNA_3_0, std::make_shared<TensorLimits>(_InterleaveTensorLimitsGen3)}
     }},
     {INTEL_CONVOLUTIONAL, {
-        {GNA_1_0, std::make_shared<TensorLimits>(TensorLimits{
-            { GNA_TENSOR_WN },
-            {{GNA_DIM_N, {1, 1, 1, Gna2StatusXnnErrorInputVolume}},
-             {GNA_DIM_W, {XNN_N_IN_ELEMS_MPLY, XNN_N_IN_ELEMS_MAX, _Multipliers, Gna2StatusXnnErrorInputVolume}}},
-            _ModesGen0_9})},
+        ConvolutionalLayer2DCapabilities::GetLegacyOperands(InputOperandIndex)
     }},
     {INTEL_CONVOLUTIONAL_2D, {
-        {GNA_1_0, std::make_shared<TensorLimits>(TensorLimits{
-            {GNA_TENSOR_NHWD},    // N = 1
-            {{GNA_DIM_N, {1, 1, 1, Gna2StatusXnnErrorInputVolume}},
-             {GNA_DIM_H, {XNN_N_IN_ELEMS_MPLY, XNN_N_IN_ELEMS_MAX, _Multipliers, Gna2StatusXnnErrorInputVolume}},
-             {GNA_DIM_W, {1, 1, 1, Gna2StatusXnnErrorInputVolume}},
-             {GNA_DIM_D, {1, 1, 1, Gna2StatusXnnErrorInputVolume}}},
-            _ModesGen0_9})},
-        {GNA_3_0, std::make_shared<TensorLimits>(TensorLimits{
-            {GNA_TENSOR_NHWD},    // N = 1
-            {{GNA_DIM_N, {1, 1, 1, Gna2StatusXnnErrorInputVolume}},
-             {GNA_DIM_H, {1, XNN_N_IN_ELEMS_MAX, 1, Gna2StatusXnnErrorInputVolume}},
-             {GNA_DIM_W, {1, XNN_N_IN_ELEMS_MAX, 1, Gna2StatusXnnErrorInputVolume}},
-             {GNA_DIM_D, {1, XNN_N_IN_ELEMS_MAX, 1, Gna2StatusXnnErrorInputVolume}}},
-            _ModesGen3})}
+        ConvolutionalLayer2DCapabilities::GetOperands(InputOperandIndex)
     }},
    {GNA_LAYER_CNN_2D_POOLING, {
-        {GNA_3_0, std::make_shared<TensorLimits>(TensorLimits{
-            {GNA_TENSOR_NHWD},    // N = #kernels + GNA_BIAS_PER_KERNEL (HWD=1) or GNA_BIAS_PER_STRIDE (HWD each filter dimensions),
-            {{GNA_DIM_N, {1, 1, 1, Gna2StatusXnnErrorInputVolume}},
-             {GNA_DIM_H, {1, XNN_N_IN_ELEMS_MAX, 1, Gna2StatusXnnErrorInputVolume}},
-             {GNA_DIM_W, {1, XNN_N_IN_ELEMS_MAX, 1, Gna2StatusXnnErrorInputVolume}},
-             {GNA_DIM_D, {1, XNN_N_IN_ELEMS_MAX, 1, Gna2StatusXnnErrorInputVolume}}},
-             { { GNA_INT8, GNA_INT16 }, Gna2StatusXnnErrorInputBytes }})}
+       {GNA_3_0, ConvolutionalLayer2DCapabilities::GetOperands(InputOperandIndex).at(GNA_3_0)}
     }},
     {INTEL_COPY, {
         {GNA_0_9, std::make_shared<TensorLimits>(_FlatTensorLimitsGen0_9)},

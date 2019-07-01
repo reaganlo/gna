@@ -62,7 +62,7 @@ struct SetLimits : public std::vector<T>
     Gna2Status Error;
 };
 
-template<typename T>
+template<typename T = uint32_t>
 struct RangeLimits
 {
     RangeLimits(T min, Gna2Status minError, T max, Gna2Status maxError, const SetLimits<T>& multipliers) :
@@ -89,6 +89,10 @@ struct RangeLimits
 
     RangeLimits(T min, T max, const std::vector<T>& multipliers, Gna2Status error) :
         RangeLimits{min, error, max, error, SetLimits<T>{multipliers, error}}
+    {}
+
+    RangeLimits(RangeLimits const & base, Gna2Status error) :
+        RangeLimits{base.Min.Value, error, base.Max.Value, error, SetLimits<T>(base.Multipliers, error)}
     {}
 
     ValueLimits<T> Min;

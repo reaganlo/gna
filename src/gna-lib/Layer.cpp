@@ -176,7 +176,7 @@ Tensor const & Layer::GetOperand(uint32_t operandIndex) const
 
     switch (operandIndex)
     {
-    case OperandIndexOutputIntermediate:
+    case OutputIntermediateOperandIndex:
         return Output.ScratchPad;
     case 0:
         return Input;

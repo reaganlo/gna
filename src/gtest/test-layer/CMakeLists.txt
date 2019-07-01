@@ -69,6 +69,7 @@ add_executable(test-layer
   ${SRC_DIR}/ConvolutionalFunctions2D.cpp
   ${SRC_DIR}/ConvolutionalLayer.cpp
   ${SRC_DIR}/ConvolutionalLayer2D.cpp
+  ${SRC_DIR}/ConvolutionalLayer2DCapabilities.cpp
   ${SRC_DIR}/CopyLayer.cpp
   ${SRC_DIR}/Cnn2DuArch.cpp
   ${SRC_DIR}/DataMode.cpp
@@ -83,6 +84,7 @@ add_executable(test-layer
   ${SRC_DIR}/HardwareModelSue1.cpp
   ${SRC_DIR}/HardwareRequest.cpp
   ${SRC_DIR}/Layer.cpp
+  ${SRC_DIR}/LayerCapabilities.cpp
   ${SRC_DIR}/LayerConfiguration.cpp
   ${SRC_DIR}/LayerDescriptor.cpp
   ${SRC_DIR}/LayerInput.cpp
