@@ -420,11 +420,19 @@ HardwareLayerRnn::HardwareLayerRnn(const DescriptorParameters& parameters) :
     feedbackFirstIterElementCount{0},
     feedbackLastIterElementCount{0}
 {
-    auto rnn = SoftwareLayer->Get<const RecurrentLayer>();
-    affine = rnn->Transforms.Get<AffineFunction>(AffineTransform);
+    const auto rnn = SoftwareLayer->Get<const RecurrentLayer>();
     convert();
     save();
-    saveActivation(rnn->Transforms.Get<ActivationFunction>(ActivationTransform));
+    const auto recurrent = rnn->Transforms.Get<RecurrentFunction>(RecurrentTransform);
+    Expect::NotNull(recurrent, Gna2StatusUnknownError);
+    XnnDescriptor[weight_size] = recurrent->Weights->Mode;
+    XnnDescriptor[weight_buffer] = *recurrent->Weights;
+    XnnDescriptor[bias_buffer] = recurrent->Biases->Buffer;
+    if (XnnDescriptor.HasParameter(bias_precision))
+    {
+        XnnDescriptor[bias_precision] = recurrent->Biases->Mode;
+    }
+    saveActivation(&recurrent->GetActivationFunction());
 }
 
 void HardwareLayerRnn::convert()

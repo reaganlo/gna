@@ -62,7 +62,6 @@ struct TransformFactoryConfig
         InitActivation(operation);
     }
 
-    TransformFactoryConfig(const TransformFactoryConfig&) = delete;
     TransformFactoryConfig() = delete;
     // TODO:P2: Remove Activation and make Transform class generic
     bool HasMandatoryActivation() const;

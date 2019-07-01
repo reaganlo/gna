@@ -116,10 +116,19 @@ std::unique_ptr<RecurrentFunction> RecurrentFunction::Create(
     auto kernelMode = KernelMode { config.input->Mode, weights->Mode, biases->Mode };
     const auto& affineKernel = AccelerationDetector::GetKernelMap<RecurrentKernel>(
             static_cast<kernel_op>(kernelOperation), kernelMode);
-    return std::make_unique<RecurrentFunction>(
+
+    auto recurrentFunction = std::make_unique<RecurrentFunction>(
             BaseTransformConfig<RecurrentKernel>{config, affineKernel},
             std::move(pwlCached), operationConfig.GetTransformOperation(),
             delay, std::move(weights), std::move(biases));
+
+    //TODO:3:Simplify to make copying not needed
+    auto configCopy = config;
+    configCopy.input = recurrentFunction->Output.get();
+    auto activation = ActivationFunction::Create(configCopy);
+    Expect::NotNull(activation.get(), Gna2StatusModelConfigurationInvalid);
+    recurrentFunction->SetActivationFunction(std::move(activation));
+    return recurrentFunction;
 }
 
 RecurrentFunction::RecurrentFunction(
@@ -186,5 +195,16 @@ const BaseAddress RecurrentFunction::CalculateFeedbackBuffer(const BaseAddress& 
     }
 
     return BaseAddress();
+}
+
+const ActivationFunction & RecurrentFunction::GetActivationFunction() const
+{
+    Expect::NotNull(Activation.get(), Gna2StatusUnknownError);
+    return *Activation;
+}
+
+void RecurrentFunction::SetActivationFunction(std::unique_ptr<ActivationFunction> activation)
+{
+    Activation = std::move(activation);
 }
 

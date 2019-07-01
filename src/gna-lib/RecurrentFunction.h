@@ -67,6 +67,9 @@ public:
 
     const BaseAddress CalculateFeedbackBuffer(const BaseAddress& outputBuffer) const;
 
+    const ActivationFunction& GetActivationFunction() const;
+    void SetActivationFunction(std::unique_ptr<ActivationFunction> activation);
+
     std::unique_ptr<const WeightTensor> Weights;
     std::unique_ptr<const BiasTensor> Biases;
 
@@ -93,6 +96,7 @@ private:
 
     const std::unique_ptr<const PwlCached> pwl;
     const ActivationConfig activationConfig;
+    std::unique_ptr<ActivationFunction> Activation;
 };
 
 }

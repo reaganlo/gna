@@ -35,6 +35,7 @@
 #include "KernelArguments.h"
 #include "Layer.h"
 #include "LayerConfiguration.h"
+#include "RecurrentFunction.h"
 #include "RequestConfiguration.h"
 
 #include "gna-api-status.h"
@@ -163,8 +164,10 @@ void HardwareRequest::generateBufferPatches(const LayerConfiguration& layerConfi
                 ldOffset = hwLayer.GetLdOutputOffset();
                 if (INTEL_RECURRENT == layer.Operation)
                 {
+                    auto recurrentFunction = layer.Transforms.Get<RecurrentFunction>(RecurrentTransform);
+                    auto newFbAddress = recurrentFunction->CalculateFeedbackBuffer(address);
                     auto feedbackBufferOffset = hwModel.GetBufferOffsetForConfiguration(
-                        layerConfiguration.Configs.Recurrent->feedbackBuffer, requestConfiguration);
+                        newFbAddress, requestConfiguration);
                     auto ldFeedbackOffset = hwLayer.GetLdFeedbackOffset();
                     ldPatches.push_back({ ldFeedbackOffset, feedbackBufferOffset, sizeof(uint32_t) });
                 }
