@@ -668,8 +668,7 @@ HardwareLayerAffineMBias::HardwareLayerAffineMBias(const DescriptorParameters& p
     HardwareLayerExt(parameters)
 {
     auto mbiasLayer = SoftwareLayer->Get<const AffineLayer>();
-    auto affineTransform = mbiasLayer->Transforms.Get<AffineFunction>(AffineTransform);
-    auto affineMulti = static_cast<const AffineFunctionMulti*>(affineTransform);
+    auto affineMulti = mbiasLayer->Transforms.Get<AffineFunctionMulti>(AffineMultibiasTransform);
 
     save();
     saveActivation(mbiasLayer->Transforms.Get<ActivationFunction>(ActivationTransform));
