@@ -28,6 +28,7 @@
 #include "GnaException.h"
 
 #include "common.h"
+#include "gna2-model-api.h"
 
 #include <map>
 #include <vector>
@@ -62,21 +63,74 @@ struct SetLimits : public std::vector<T>
     Gna2Status Error;
 };
 
+using MultiplierMap = std::map<Gna2DataType, uint32_t>;
+
+struct MultiplierLimits : protected  MultiplierMap
+{
+    MultiplierLimits() = delete;
+
+    MultiplierLimits(const MultiplierMap& multipliers, Gna2Status error) :
+        MultiplierMap{multipliers},
+        Error{error}
+    {
+        if (size() <= 0)
+        {
+            throw GnaException(Gna2StatusNullArgumentNotAllowed);
+        }
+    }
+
+
+    MultiplierLimits(const MultiplierLimits& multipliers, Gna2Status error) :
+        MultiplierMap{multipliers},
+        Error{error}
+    {
+    }
+
+    MultiplierLimits(uint32_t multiplier, Gna2Status error) :
+        MultiplierMap{{{Gna2DataTypeNone, multiplier}}},
+        Error{error}
+    {}
+
+    MultiplierLimits(uint32_t multiplierForInt8, uint32_t multiplierForInt16,
+        uint32_t multiplierForInt32, Gna2Status error) :
+        MultiplierMap{{
+            {Gna2DataTypeInt8, multiplierForInt8},
+            {Gna2DataTypeInt16, multiplierForInt16},
+            {Gna2DataTypeInt32, multiplierForInt32},
+        }},
+        Error{error}
+    {}
+
+    void SetEffective(Gna2DataType type)
+    {
+        if (Gna2DataTypeNone != type &&
+            end() != find(type))
+        {
+            (*this)[Gna2DataTypeNone] = at(type);
+        }
+    }
+
+    uint32_t GetEffective() const
+    {
+        return at(Gna2DataTypeNone);
+    }
+
+    Gna2Status Error;
+};
+
 template<typename T = uint32_t>
 struct RangeLimits
 {
-    RangeLimits(T min, Gna2Status minError, T max, Gna2Status maxError, const SetLimits<T>& multipliers) :
+    RangeLimits(T min, Gna2Status minError, T max, Gna2Status maxError, const MultiplierLimits& multipliers) :
         Min{min, minError},
         Max{max, maxError},
         Multipliers{multipliers}
     {
-        if (Multipliers.size() <= 0)
-            throw GnaException(Gna2StatusXnnErrorInputVolume);
     }
 
     RangeLimits(T min, Gna2Status minError, T max, Gna2Status maxError, T multiplier, Gna2Status multiplierError) :
         RangeLimits{min, minError, max, maxError,
-            SetLimits<T>{std::vector<T>{multiplier}, multiplierError}}
+            MultiplierLimits{multiplier, multiplierError}}
     {}
 
     RangeLimits(T min, T max, T multiplier, Gna2Status error) :
@@ -87,20 +141,23 @@ struct RangeLimits
         RangeLimits{min, rangeError, max, rangeError, multiplier, multiplierError}
     {}
 
-    RangeLimits(T min, T max, const std::vector<T>& multipliers, Gna2Status error) :
-        RangeLimits{min, error, max, error, SetLimits<T>{multipliers, error}}
+    RangeLimits(T min, T max, const MultiplierMap& multipliers, Gna2Status error) :
+        RangeLimits{min, error, max, error, MultiplierLimits{multipliers, error}}
+    {}
+
+    RangeLimits(T min, T max, const MultiplierLimits& multipliers, Gna2Status error) :
+        RangeLimits{min, error, max, error, multipliers}
     {}
 
     RangeLimits(RangeLimits const & base, Gna2Status error) :
-        RangeLimits{base.Min.Value, error, base.Max.Value, error, SetLimits<T>(base.Multipliers, error)}
+        RangeLimits{base.Min.Value, error, base.Max.Value, error, MultiplierLimits(base.Multipliers, error)}
     {}
 
     ValueLimits<T> Min;
     ValueLimits<T> Max;
     // multipliers for different data sizes
     // first (index 0) is effective multiplier (either set by component based on mode or the only one)
-    SetLimits<T> Multipliers;
-
+    MultiplierLimits Multipliers;
 };
 
 using ShapeLimits = std::map<const gna_tensor_dim, RangeLimits<uint32_t>>;

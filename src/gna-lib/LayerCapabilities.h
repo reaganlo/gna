@@ -37,7 +37,6 @@ using ComponentCapabilityMap = std::map<const uint32_t, OperationCapabilityMap>;
 
 struct LayerCapabilities
 {
-    
     /** Number of input groups constraint - max */
     static constexpr uint32_t BatchSizeMax = 8;
 
@@ -62,7 +61,7 @@ struct LayerCapabilities
     /** Weight elements size constraint - max size B */
     static constexpr uint32_t WeightElementSizeMax = 2;
 
-    static const std::vector<uint32_t> & Multipliers();
+    static const MultiplierMap & InputElementCountMultipliers();
 
     static const DataModeLimits & GetModes(uint32_t operandIndex, gna_device_generation generation);
 };

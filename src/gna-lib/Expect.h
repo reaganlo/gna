@@ -230,7 +230,7 @@ public:
     inline static void DimensionIsValid(const T& dimension, const RangeLimits<T>& limits)
     {
         Expect::InRange(dimension, limits);
-        Expect::MultiplicityOf(dimension, {limits.Multipliers.at(0), limits.Multipliers.Error});
+        Expect::MultiplicityOf(dimension, {limits.Multipliers.GetEffective(), limits.Multipliers.Error});
     }
 
     // If any dimension in map is invalid prints error status code and throws exception.

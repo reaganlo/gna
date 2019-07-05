@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2018 Intel Corporation.
+ Copyright 2019 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -29,6 +29,7 @@
 #include "Capabilities.h"
 #include "DataMode.h"
 #include "ParameterLimits.h"
+#include "Tensor.h"
 #include "Validator.h"
 
 #include "gna-api-status.h"
@@ -39,27 +40,42 @@
 #include <cstdint>
 #include <memory.h>
 #include <vector>
-#include "Tensor.h"
 
 using namespace GNA;
 
-static const RangeLimits<> shapeLimits_1D_input =
-{1, 1, 1, Gna2StatusXnnErrorInputVolume};
+static const RangeLimits<> limitsForInputShape1D =
+{
+    1,
+    1,
+    1,
+    Gna2StatusXnnErrorInputVolume
+};
 
-static const RangeLimits<> shapeLimits_1D_output =
-{shapeLimits_1D_input, Gna2StatusXnnErrorOutputVolume};
+static const RangeLimits<> limitsForOutputShape1D =
+{
+    limitsForInputShape1D,
+    Gna2StatusXnnErrorOutputVolume
+};
 
-static const RangeLimits<> shapeLimits_2D_input =
-{1, LayerCapabilities::InputElementCountMax, 1, Gna2StatusXnnErrorInputVolume};
+static const RangeLimits<> limitsForInputShape2D =
+{
+    1,
+    LayerCapabilities::InputElementCountMax,
+    1,
+    Gna2StatusXnnErrorInputVolume
+};
 
-static const RangeLimits<> shapeLimits_2D_output =
-{shapeLimits_2D_input, Gna2StatusXnnErrorOutputVolume};
+static const RangeLimits<> limitsForOutputShape2D =
+{
+    limitsForInputShape2D,
+    Gna2StatusXnnErrorOutputVolume
+};
 
-static const RangeLimits<> shapeLimits_1D_legacy =
+static const RangeLimits<> limitsForInputShapeLegacy =
 {
     LayerCapabilities::InputElementCountMultiplier,
     LayerCapabilities::InputElementCountMax,
-    LayerCapabilities::Multipliers(),
+    LayerCapabilities::InputElementCountMultipliers(),
     Gna2StatusXnnErrorInputVolume
 };
 
@@ -70,33 +86,33 @@ const OperationCapabilityMap & ConvolutionalLayer2DCapabilities::GetOperands(uin
         {InputOperandIndex,{
             {GNA_1_0, std::make_shared<TensorLimits>(TensorLimits{
                 {GNA_TENSOR_NHWD},    // N = 1
-                {{GNA_DIM_N, shapeLimits_1D_input},
-                 {GNA_DIM_H, shapeLimits_1D_legacy},
-                 {GNA_DIM_W, shapeLimits_1D_input},
-                 {GNA_DIM_D, shapeLimits_1D_input}},
+                {{GNA_DIM_N, limitsForInputShape1D},
+                 {GNA_DIM_H, limitsForInputShapeLegacy},
+                 {GNA_DIM_W, limitsForInputShape1D},
+                 {GNA_DIM_D, limitsForInputShape1D}},
                 GetModes(InputOperandIndex, GNA_0_9)})},
             {GNA_3_0, std::make_shared<TensorLimits>(TensorLimits{
                 {GNA_TENSOR_NHWD},    // N = 1
-                {{GNA_DIM_N, shapeLimits_1D_input},
-                 {GNA_DIM_H, shapeLimits_2D_input},
-                 {GNA_DIM_W, shapeLimits_2D_input},
-                 {GNA_DIM_D, shapeLimits_2D_input}},
+                {{GNA_DIM_N, limitsForInputShape1D},
+                 {GNA_DIM_H, limitsForInputShape2D},
+                 {GNA_DIM_W, limitsForInputShape2D},
+                 {GNA_DIM_D, limitsForInputShape2D}},
                 GetModes(InputOperandIndex, GNA_3_0)})}
         }},
         {OutputOperandIndex,{
             {GNA_1_0, std::make_shared<TensorLimits>(TensorLimits{
                 { GNA_TENSOR_NHWD },
-                {{GNA_DIM_N, shapeLimits_1D_output},
+                {{GNA_DIM_N, limitsForOutputShape1D},
                 {GNA_DIM_H, {Filter1DElementsMultiplier, Filter1DElementsMax, Filter1DElementsMultiplier, Gna2StatusXnnErrorOutputVolume}},
-                {GNA_DIM_W, shapeLimits_2D_output},
-                {GNA_DIM_D, shapeLimits_1D_output}},
+                {GNA_DIM_W, limitsForOutputShape2D},
+                {GNA_DIM_D, limitsForOutputShape1D}},
                 GetModes(OutputOperandIndex, GNA_0_9)})},
             {GNA_3_0, std::make_shared<TensorLimits>(TensorLimits{
                 {GNA_TENSOR_NHWD},
-                {{GNA_DIM_N, shapeLimits_1D_output},
-                 {GNA_DIM_H, shapeLimits_2D_output},
-                 {GNA_DIM_W, shapeLimits_2D_output},
-                 {GNA_DIM_D, shapeLimits_2D_output}},
+                {{GNA_DIM_N, limitsForOutputShape1D},
+                 {GNA_DIM_H, limitsForOutputShape2D},
+                 {GNA_DIM_W, limitsForOutputShape2D},
+                 {GNA_DIM_D, limitsForOutputShape2D}},
                 GetModes(OutputOperandIndex, GNA_3_0)})}
         }},
     };
@@ -110,15 +126,15 @@ const OperationCapabilityMap & ConvolutionalLayer2DCapabilities::GetLegacyOperan
         {InputOperandIndex,{
             {GNA_1_0, std::make_shared<TensorLimits>(TensorLimits{
                 {GNA_TENSOR_WN},    // N = 1
-                {{GNA_DIM_N, shapeLimits_1D_input},
-                {GNA_DIM_W, shapeLimits_1D_legacy}},
+                {{GNA_DIM_N, limitsForInputShape1D},
+                {GNA_DIM_W, limitsForInputShapeLegacy}},
                 GetModes(InputOperandIndex, GNA_0_9)})},
         }},
         {OutputOperandIndex,{
             {GNA_1_0, std::make_shared<TensorLimits>(TensorLimits{
                 { GNA_TENSOR_HN },
-                {{GNA_DIM_N, shapeLimits_1D_output},
-                {GNA_DIM_H, shapeLimits_2D_output}},
+                {{GNA_DIM_N, limitsForOutputShape1D},
+                {GNA_DIM_H, limitsForOutputShape2D}},
                 GetModes(OutputOperandIndex, GNA_0_9)})},
         }},
     };
@@ -129,6 +145,7 @@ const OperationCapabilityMap & ConvolutionalLayer2DCapabilities::GetParameters(u
 {
     static const ComponentCapabilityMap parameters =
     {
+        // TODO:3:caps:complete GetParameters
     };
     return parameters.at(parameterIndex);
 }

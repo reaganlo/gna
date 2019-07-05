@@ -36,7 +36,6 @@ struct ConvolutionalLayer2DCapabilities : LayerCapabilities
     static const OperationCapabilityMap & GetLegacyOperands(uint32_t operandIndex);
     static const OperationCapabilityMap & GetParameters(uint32_t parameterIndex);
 
-    
     /** CNN minimum number of filter coefficients */
     static constexpr uint32_t Filter1DElementsMin = 8;
 

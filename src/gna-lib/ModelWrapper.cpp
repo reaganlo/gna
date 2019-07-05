@@ -71,8 +71,8 @@ uint32_t ModelWrapper::GetOperationInfo(OperationType operationType, OperationIn
                 { NumberOfOperandsRequired, 2 },
                 { NumberOfParametersMax, 1 },
                 { NumberOfParametersRequired, 1 },
-                { OperandIndexInput, 0 },
-                { OperandIndexOutput, 1 },
+                { OperandIndexInput, InputOperandIndex },
+                { OperandIndexOutput, OutputOperandIndex },
                 { ParameterIndexCopyShape, 0 },
             }
         },
@@ -82,11 +82,11 @@ uint32_t ModelWrapper::GetOperationInfo(OperationType operationType, OperationIn
                 { NumberOfOperandsRequired, 3 },
                 { NumberOfParametersMax, 6 },
                 { NumberOfParametersRequired, 1 },
-                { OperandIndexInput, 0 },
-                { OperandIndexOutput, 1 },
-                { OperandIndexFilter, 2 },
-                { OperandIndexBias, 3 },
-                { OperandIndexActivation, 4 },
+                { OperandIndexInput, InputOperandIndex },
+                { OperandIndexOutput, OutputOperandIndex },
+                { OperandIndexFilter, FilterOperandIndex },
+                { OperandIndexBias, BiasOperandIndex },
+                { OperandIndexActivation, PwlOperandIndex },
                 { ParameterIndexConvolutionStride, 0 },
                 { ParameterIndexBiasMode, 1 },
                 { ParameterIndexPoolingMode, 2 },
@@ -101,11 +101,11 @@ uint32_t ModelWrapper::GetOperationInfo(OperationType operationType, OperationIn
                 { NumberOfOperandsRequired, 4 },
                 { NumberOfParametersMax, 0 },
                 { NumberOfParametersRequired, 0 },
-                { OperandIndexInput, 0 },
-                { OperandIndexOutput, 1 },
-                { OperandIndexWeight, 2 },
-                { OperandIndexBias, 3 },
-                { OperandIndexActivation, 4 },
+                { OperandIndexInput, InputOperandIndex },
+                { OperandIndexOutput, OutputOperandIndex },
+                { OperandIndexWeight, WeightOperandIndex },
+                { OperandIndexBias, BiasOperandIndex },
+                { OperandIndexActivation, PwlOperandIndex},
             }
         },
         { Gna2OperationTypeFullyConnectedAffine,
@@ -114,12 +114,12 @@ uint32_t ModelWrapper::GetOperationInfo(OperationType operationType, OperationIn
                 { NumberOfOperandsRequired, 4 },
                 { NumberOfParametersMax, 2 },
                 { NumberOfParametersRequired, 0 },
-                { OperandIndexInput, 0 },
-                { OperandIndexOutput, 1 },
-                { OperandIndexWeight, 2 },
-                { OperandIndexBias, 3 },
-                { OperandIndexActivation, 4 },
-                { OperandIndexWeightScaleFactors, 5 },
+                { OperandIndexInput, InputOperandIndex },
+                { OperandIndexOutput, OutputOperandIndex },
+                { OperandIndexWeight, WeightOperandIndex },
+                { OperandIndexBias, BiasOperandIndex },
+                { OperandIndexActivation, PwlOperandIndex},
+                { OperandIndexWeightScaleFactors, WeightScaleFactorOperandIndex },
                 { ParameterIndexBiasMode, 0 },
                 { ParameterIndexBiasVectorIndex, 1 },
             }
@@ -130,12 +130,12 @@ uint32_t ModelWrapper::GetOperationInfo(OperationType operationType, OperationIn
                 { NumberOfOperandsRequired, 3 },
                 { NumberOfParametersMax, 1 },
                 { NumberOfParametersRequired, 1 },
-                { OperandIndexInput, 0 },
-                { OperandIndexOutput, 1 },
-                { OperandIndexMeans, 2 },               //"flat" layout
-                { OperandIndexInverseCovariances, 3 },  //"flat" layout
-                { OperandIndexConstants, 4 },           //"flat" layout
-                { OperandIndexInterleaved, 2 },         //"interleaved" layout
+                { OperandIndexInput, InputOperandIndex },
+                { OperandIndexOutput, OutputOperandIndex },
+                { OperandIndexMeans, GmmMeanOperandIndex },               //"flat" layout
+                { OperandIndexInverseCovariances, GmmInverseCovarianceOperandIndex },  //"flat" layout
+                { OperandIndexConstants, GmmGaussianConstantOperandIndex },           //"flat" layout
+                { OperandIndexInterleaved, GmmInterleavedOperandIndex},         //"interleaved" layout
                 { ParameterIndexMaximumScore, 0 },
             }
         },
@@ -145,11 +145,11 @@ uint32_t ModelWrapper::GetOperationInfo(OperationType operationType, OperationIn
                 { NumberOfOperandsRequired, 5 },
                 { NumberOfParametersMax, 1 },
                 { NumberOfParametersRequired, 1 },
-                { OperandIndexInput, 0 },
-                { OperandIndexOutput, 1 },
-                { OperandIndexWeight, 2 },
-                { OperandIndexBias, 3 },
-                { OperandIndexActivation, 4 },
+                { OperandIndexInput, InputOperandIndex },
+                { OperandIndexOutput, OutputOperandIndex },
+                { OperandIndexWeight, WeightOperandIndex },
+                { OperandIndexBias, BiasOperandIndex },
+                { OperandIndexActivation, PwlOperandIndex},
                 { ParameterIndexDelay, 0 },
             }
         },
@@ -159,8 +159,8 @@ uint32_t ModelWrapper::GetOperationInfo(OperationType operationType, OperationIn
                 { NumberOfOperandsRequired, 2 },
                 { NumberOfParametersMax, 0 },
                 { NumberOfParametersRequired, 0 },
-                { OperandIndexInput, 0 },
-                { OperandIndexOutput, 1 },
+                { OperandIndexInput, InputOperandIndex },
+                { OperandIndexOutput, OutputOperandIndex },
             }
         },
     };
@@ -218,6 +218,7 @@ void ModelWrapper::SetLayout(Gna2Tensor& tensor, const char* layout)
 {
     snprintf(tensor.Layout, sizeof(tensor.Layout), "%s", layout);
 }
+
 template<class T>
 void ExpectPointerArrayValid(T ** ptr , uint32_t arraySize,
     uint32_t reqNotNull, uint32_t maxSize, Gna2Status error)

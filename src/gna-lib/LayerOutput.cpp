@@ -42,9 +42,6 @@
 
 using namespace GNA;
 
-static const std::vector<uint32_t> _Multipliers =
-{ 2 * XNN_N_IN_ELEMS_MPLY, 1 * XNN_N_IN_ELEMS_MPLY, XNN_N_IN_ELEMS_MPLY / 2};
-
 static const ShapeLimits _FlatLimits =
 {
     {GNA_DIM_H, {1, XNN_N_GROUP_MAX, 1, Gna2StatusXnnErrorOutputVolume}},

@@ -111,17 +111,7 @@ void Tensor::validateDimensions() const
     auto caps = *validator->Capabilities;
     for (auto & dim : caps.Dimensions)
     {
-        uint32_t tmp = Mode.Size;
-        int log2size = 0;
-        while ((tmp >>= 1) > 0)
-        {
-            ++log2size;
-        }
-        auto sizeIndex = static_cast<uint32_t>(log2size);
-        if (dim.second.Multipliers.size() >= sizeIndex + 1)
-        {
-            dim.second.Multipliers[0] = dim.second.Multipliers.at(sizeIndex);
-        }
+        dim.second.Multipliers.SetEffective(Mode.Type);
     }
     Component::Validate(caps, true);
 }

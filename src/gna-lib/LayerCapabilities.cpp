@@ -27,13 +27,12 @@
 
 using namespace GNA;
 
-const std::vector<uint32_t>& LayerCapabilities::Multipliers()
+const MultiplierMap& LayerCapabilities::InputElementCountMultipliers()
 {
-    static const std::vector<uint32_t> multipliers =
-    {
-        2 * InputElementCountMultiplier,
-        1 * InputElementCountMultiplier,
-        InputElementCountMultiplier / 2
+    static auto const multipliers = MultiplierMap{
+        {Gna2DataTypeInt8, 2 * InputElementCountMultiplier},
+        {Gna2DataTypeInt16, 1 * InputElementCountMultiplier},
+        {Gna2DataTypeInt32, InputElementCountMultiplier / 2},
     };
     return multipliers;
 }

@@ -44,8 +44,13 @@
 
 using namespace GNA;
 
-static const std::vector<uint32_t> _Multipliers =
-{ 2 * XNN_N_IN_ELEMS_MPLY, 1 * XNN_N_IN_ELEMS_MPLY, XNN_N_IN_ELEMS_MPLY / 2};
+static const MultiplierLimits _Multipliers =
+{
+    2 * XNN_N_IN_ELEMS_MPLY,
+    1 * XNN_N_IN_ELEMS_MPLY,
+    XNN_N_IN_ELEMS_MPLY / 2,
+    Gna2StatusXnnErrorInputVolume
+};
 
 static const ShapeLimits _InterleaveLimits =
 {
