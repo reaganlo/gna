@@ -70,7 +70,9 @@ struct DriverCapabilities
 class DriverInterface
 {
 public:
-    virtual bool OpenDevice() = 0;
+    static constexpr uint8_t MAX_GNA_DEVICES = 16;
+
+    virtual bool OpenDevice(uint32_t deviceIndex) = 0;
 
     virtual ~DriverInterface() = default;
 

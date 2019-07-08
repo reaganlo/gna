@@ -106,6 +106,13 @@ public:
 
     DeviceVersion GetDeviceVersion() const;
 
+    DeviceVersion GetHardwareDeviceVersion() const
+    {
+        return IsHardwareSupported()
+            ? GetDeviceVersion()
+            : Gna2DeviceVersionSoftwareEmulation;
+    }
+
     gna_device_generation GetDeviceGeneration() const;
 
     uint32_t GetMaximumLayerCount() const;

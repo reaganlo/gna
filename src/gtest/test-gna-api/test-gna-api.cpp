@@ -27,6 +27,7 @@
 
 #include "gna-api.h"
 #include "../../gna-api/gna2-model-api.h"
+#include "../../gna-api/gna2-device-api.h"
 
 #include "Macros.h"
 
@@ -35,6 +36,7 @@
 #include <gtest/gtest.h>
 #include <initializer_list>
 #include <vector>
+#include "gna2-memory-api.h"
 
 class TestGnaModelApi : public TestGnaApi
 {
@@ -52,6 +54,24 @@ protected:
         UNREFERENCED_PARAMETER(size);
         return nullptr;
     }
+
+    void SetUp() override
+    {
+        TestGnaApi::SetUp();
+        DeviceIndex = 0;
+        auto status = Gna2DeviceOpen(DeviceIndex);
+        ASSERT_EQ(status, Gna2StatusSuccess);
+    }
+
+    void TearDown() override
+    {
+        TestGnaApi::TearDown();
+        auto status = Gna2DeviceClose(DeviceIndex);
+        ASSERT_EQ(status, Gna2StatusSuccess);
+        DeviceIndex = UINT32_MAX;
+    }
+
+    uint32_t DeviceIndex;
 };
 
 class TestGnaOperationInitApi : public TestGnaModelApi
@@ -135,16 +155,22 @@ protected:
     int16_t data = 0;
 };
 
-TEST_F(TestGnaApi, allocateMemory)
+TEST_F(TestGnaApi, Gna2MemoryAllocSuccessful)
 {
     uint32_t sizeRequested = 47;
     uint32_t sizeGranted = 0;
     void * mem = nullptr;
-    gna_status_t status;
-    status = GnaAlloc(sizeRequested, &sizeGranted, &mem);
+
+    auto status = Gna2DeviceOpen(0);
+	ASSERT_EQ(status, Gna2StatusSuccess);
+
+    status = Gna2MemoryAlloc(sizeRequested, &sizeGranted, &mem);
     EXPECT_LE(sizeRequested, sizeGranted);
     ASSERT_EQ(status, GNA_SUCCESS);
-    GnaFree(mem);
+    Gna2MemoryFree(mem);
+
+	status = Gna2DeviceClose(0);
+	ASSERT_EQ(status, Gna2StatusSuccess);
 }
 
 TEST_F(TestGnaModelApi, Gna2DataTypeGetSizeSuccesfull)

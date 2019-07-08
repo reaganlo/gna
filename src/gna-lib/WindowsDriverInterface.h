@@ -85,8 +85,9 @@ class WindowsDriverInterface : public DriverInterface
 {
 public:
     WindowsDriverInterface();
+    virtual ~WindowsDriverInterface() override = default;
 
-    virtual bool OpenDevice() override;
+    virtual bool OpenDevice(uint32_t deviceIndex) override;
 
     virtual void IoctlSend(const GnaIoctlCommand command,
         void * const inbuf, const uint32_t inlen,
@@ -117,6 +118,8 @@ private:
     void checkStatus(BOOL ioResult) const;
 
     void getDeviceCapabilities();
+
+    static std::string discoverDevice(uint32_t deviceIndex);
 
     static const std::map<GnaIoctlCommand, decltype(GNA_IOCTL_NOTIFY)> ioctlCommandsMap;
 

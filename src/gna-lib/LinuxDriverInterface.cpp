@@ -52,10 +52,8 @@
 
 using namespace GNA;
 
-bool LinuxDriverInterface::OpenDevice()
+bool LinuxDriverInterface::OpenDevice(uint32_t deviceIndex)
 {
-    bool found = false;
-    int fd;
     struct gna_getparam params[3] =
     {
         { GNA_PARAM_DEVICE_ID, 0 },
@@ -63,42 +61,23 @@ bool LinuxDriverInterface::OpenDevice()
         { GNA_PARAM_RECOVERY_TIMEOUT, 0 },
     };
 
-    for (uint8_t i = 0; i < MAX_GNA_DEVICES; i++)
-    {
-        char name[12];
-        sprintf(name, "/dev/gna%hhu", i);
-        fd = open(name, O_RDWR);
-        if (-1 == fd)
-        {
-            continue;
-        }
-
-        if (ioctl(fd, GNA_IOCTL_GETPARAM, &params[0]) == 0
-            && ioctl(fd, GNA_IOCTL_GETPARAM, &params[1]) == 0
-            && ioctl(fd, GNA_IOCTL_GETPARAM, &params[2]) == 0)
-        {
-            found = true;
-            break;
-        }
-    }
-
-    if (!found)
+    auto found = discoverDevice(deviceIndex, params);
+    if (found == -1)
     {
         return false;
     }
-
-    gnaFileDescriptor = fd;
+    gnaFileDescriptor = found;
 
     try
     {
         driverCapabilities.hwId = static_cast<DeviceVersion>(params[0].value);
+        driverCapabilities.recoveryTimeout = static_cast<uint32_t>(params[2].value);
+        driverCapabilities.hwInBuffSize = static_cast<uint32_t>(params[1].value);
     }
     catch(std::out_of_range&)
     {
         return false;
     }
-    driverCapabilities.hwInBuffSize = static_cast<uint32_t>(params[2].value);
-    driverCapabilities.recoveryTimeout = static_cast<uint32_t>(params[2].value);
 
     return true;
 }
@@ -293,4 +272,31 @@ Gna2Status LinuxDriverInterface::parseHwStatus(uint32_t hwStatus) const
     return Gna2StatusDeviceCriticalFailure;
 }
 
+int LinuxDriverInterface::discoverDevice(uint32_t deviceIndex, gna_getparam (&params)[3])
+{
+    int fd = -1;
+    uint32_t found = 0;
+    for (uint8_t i = 0; i < MAX_GNA_DEVICES; i++)
+    {
+        char name[12];
+        sprintf(name, "/dev/gna%hhu", i);
+        fd = open(name, O_RDWR);
+        if (-1 == fd)
+        {
+            continue;
+        }
 
+        if (ioctl(fd, GNA_IOCTL_GETPARAM, &params[0]) == 0
+            && ioctl(fd, GNA_IOCTL_GETPARAM, &params[1]) == 0
+            && ioctl(fd, GNA_IOCTL_GETPARAM, &params[2]) == 0)
+        {
+            if (found++ == deviceIndex)
+            {
+                return fd;
+            }
+        }
+        close(fd);
+        fd = -1;
+    }
+    return -1;
+}

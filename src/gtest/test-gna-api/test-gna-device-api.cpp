@@ -63,7 +63,7 @@ TEST_F(TestGnaDeviceApi, openAndCloseDevice)
 
 TEST_F(TestGnaDeviceApi, openDeviceWrongIndex)
 {
-	auto status = Gna2DeviceOpen(INT32_MAX);
+	auto status = Gna2DeviceOpen(UINT32_MAX);
 	ASSERT_EQ(status, Gna2StatusIdentifierInvalid);
 }
 
@@ -74,7 +74,10 @@ TEST_F(TestGnaDeviceApi, closeDeviceWrongIndex)
 	auto status = Gna2DeviceOpen(deviceIndex);
 	ASSERT_EQ(status, Gna2StatusSuccess);
 
-	status = Gna2DeviceClose(INT32_MAX);
+	status = Gna2DeviceClose(UINT32_MAX);
+	ASSERT_EQ(status, Gna2StatusIdentifierInvalid);
+
+    status = Gna2DeviceClose(2);
 	ASSERT_EQ(status, Gna2StatusIdentifierInvalid);
 
 	status = Gna2DeviceClose(deviceIndex);
@@ -89,13 +92,50 @@ TEST_F(TestGnaDeviceApi, openDeviceTwice)
 	ASSERT_EQ(status, Gna2StatusSuccess);
 
 	status = Gna2DeviceOpen(deviceIndex);
-	ASSERT_EQ(status, Gna2StatusIdentifierInvalid);
+	ASSERT_EQ(status, Gna2StatusSuccess);
 
 	status = Gna2DeviceClose(deviceIndex);
 	ASSERT_EQ(status, Gna2StatusSuccess);
+
+    status = Gna2DeviceClose(deviceIndex);
+	ASSERT_EQ(status, Gna2StatusSuccess);
 }
 
-TEST_F(TestGnaDeviceApi, closeDeviceTwice)
+TEST_F(TestGnaDeviceApi, openDeviceMaximumTimes)
+{
+	uint32_t deviceIndex = 0;
+
+    for (int i = 0; i < 1024; ++i)
+    {
+        auto status = Gna2DeviceOpen(deviceIndex);
+	    ASSERT_EQ(status, Gna2StatusSuccess);
+    }
+	for (int i = 0; i < 1024; ++i)
+    {
+        auto status = Gna2DeviceClose(deviceIndex);
+	    ASSERT_EQ(status, Gna2StatusSuccess);
+    }
+}
+
+TEST_F(TestGnaDeviceApi, openDeviceToManyTimes)
+{
+	uint32_t deviceIndex = 0;
+
+    for (int i = 0; i < 1024; ++i)
+    {
+        auto status = Gna2DeviceOpen(deviceIndex);
+	    ASSERT_EQ(status, Gna2StatusSuccess);
+    }
+    auto status = Gna2DeviceOpen(deviceIndex);
+	ASSERT_EQ(status, Gna2StatusDeviceNotAvailable);
+	for (int i = 0; i < 1024; ++i)
+    {
+        auto status = Gna2DeviceClose(deviceIndex);
+	    ASSERT_EQ(status, Gna2StatusSuccess);
+    }
+}
+
+TEST_F(TestGnaDeviceApi, closeDeviceAlreadyClosed)
 {
 	uint32_t deviceIndex = 0;
 
@@ -119,6 +159,7 @@ TEST_F(TestGnaDeviceApi, deviceVersion)
 
 	status = Gna2DeviceGetVersion(deviceIndex, &deviceVersion);
 	ASSERT_EQ(status, Gna2StatusSuccess);
+	ASSERT_EQ(deviceVersion, Gna2DeviceVersionSoftwareEmulation);
 
 	status = Gna2DeviceClose(deviceIndex);
 	ASSERT_EQ(status, Gna2StatusSuccess);
@@ -131,6 +172,7 @@ TEST_F(TestGnaDeviceApi, deviceVersionNoDevice)
 
 	auto status = Gna2DeviceGetVersion(deviceIndex, &deviceVersion);
 	ASSERT_EQ(status, Gna2StatusSuccess);
+	ASSERT_EQ(deviceVersion, Gna2DeviceVersionSoftwareEmulation);
 }
 
 TEST_F(TestGnaDeviceApi, deviceVersionNull)
@@ -183,6 +225,6 @@ TEST_F(TestGnaDeviceApi, setNumberOfThreadsNoDevice)
 	uint32_t numberOfThreads = 10;
 
 	auto status = Gna2DeviceSetNumberOfThreads(deviceIndex, numberOfThreads);
-	ASSERT_EQ(status, Gna2StatusSuccess);
+	ASSERT_EQ(status, Gna2StatusIdentifierInvalid);
 }
 

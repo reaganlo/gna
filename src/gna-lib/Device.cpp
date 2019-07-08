@@ -47,7 +47,7 @@
 
 using namespace GNA;
 
-Device::Device(uint32_t threadCount) :
+Device::Device(uint32_t deviceIndex, uint32_t threadCount) :
     driverInterface
     {
 #if defined(_WIN32)
@@ -58,7 +58,7 @@ Device::Device(uint32_t threadCount) :
     },
     requestHandler{ threadCount }
 {
-    const auto success = driverInterface->OpenDevice();
+    const auto success = driverInterface->OpenDevice(deviceIndex);
     if (success)
     {
         hardwareCapabilities.DiscoverHardware(*driverInterface);
@@ -70,9 +70,7 @@ Device::Device(uint32_t threadCount) :
 
 DeviceVersion Device::GetVersion() const
 {
-    return hardwareCapabilities.IsHardwareSupported()
-        ? hardwareCapabilities.GetDeviceVersion()
-        : Gna2DeviceVersionSoftwareEmulation;
+    return hardwareCapabilities.GetHardwareDeviceVersion();
 }
 
 uint32_t Device::GetNumberOfThreads() const

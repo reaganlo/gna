@@ -48,7 +48,7 @@ namespace GNA
 class Device
 {
 public:
-    Device(uint32_t threadCount = 1);
+    Device(uint32_t deviceIndex, uint32_t threadCount = 1);
     Device(const Device &) = delete;
     Device& operator=(const Device&) = delete;
     virtual ~Device() = default;

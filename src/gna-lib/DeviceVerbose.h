@@ -34,8 +34,8 @@ namespace GNA
     class DeviceVerbose : public Device
     {
     public:
-        DeviceVerbose(uint32_t threadCount = 1) :
-            Device::Device(threadCount)
+        DeviceVerbose(uint32_t deviceIndex, uint32_t threadCount = 1) :
+            Device::Device(deviceIndex, threadCount)
         { }
 
         void SetPrescoreScenario(gna_model_id modelId, uint32_t nActions, dbg_action *actions)

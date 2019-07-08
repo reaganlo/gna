@@ -55,46 +55,15 @@ WindowsDriverInterface::WindowsDriverInterface() :
     ZeroMemory(&overlapped, sizeof(overlapped));
 }
 
-bool WindowsDriverInterface::OpenDevice()
+bool WindowsDriverInterface::OpenDevice(uint32_t deviceIndex)
 {
-    auto guid = GUID_DEVINTERFACE_GNA_DRV;
-    const auto deviceInfo = SetupDiGetClassDevs(&guid, nullptr, nullptr, DIGCF_PRESENT | DIGCF_DEVICEINTERFACE);
-    if(INVALID_HANDLE_VALUE == deviceInfo)
+    auto devicePath = discoverDevice(deviceIndex);
+    if ("" == devicePath)
     {
         return false;
     }
 
-    auto deviceDetailsData = std::unique_ptr<char[]>();
-    auto deviceDetails = PSP_DEVICE_INTERFACE_DETAIL_DATA{nullptr};
-    auto interfaceData = SP_DEVICE_INTERFACE_DATA{0};
-    interfaceData.cbSize = sizeof(interfaceData);
-
-    for (auto i = 0; SetupDiEnumDeviceInterfaces(deviceInfo, nullptr, &guid, i, &interfaceData); ++i)
-    {
-        auto bufferSize = DWORD{0};
-        if (!SetupDiGetDeviceInterfaceDetail(deviceInfo, &interfaceData, nullptr, 0, &bufferSize, nullptr))
-        {
-            auto err = GetLastError();
-            if (ERROR_INSUFFICIENT_BUFFER != err)
-                continue; // proceed to the next device
-        }
-        deviceDetailsData.reset(new char[bufferSize]);
-        deviceDetails = reinterpret_cast<PSP_DEVICE_INTERFACE_DETAIL_DATA>(deviceDetailsData.get());
-        deviceDetails->cbSize = sizeof(SP_DEVICE_INTERFACE_DETAIL_DATA);
-        if (!SetupDiGetDeviceInterfaceDetail(deviceInfo, &interfaceData, deviceDetails, bufferSize, nullptr, nullptr))
-        {
-            //deviceDetailsData.release(); // TODO: verify if data is freed
-            continue;
-        }
-        break;
-    }
-    SetupDiDestroyDeviceInfoList(deviceInfo);
-    if (nullptr == deviceDetails)
-    {
-        return false;
-    }
-
-    deviceHandle.Set(CreateFile(deviceDetails->DevicePath,
+    deviceHandle.Set(CreateFile(devicePath.c_str(),
         GENERIC_READ | GENERIC_WRITE,
         0,
         nullptr,
@@ -346,6 +315,50 @@ void WindowsDriverInterface::getDeviceCapabilities()
     driverCapabilities.recoveryTimeout = static_cast<uint32_t>(values[2]);
 }
 
+std::string WindowsDriverInterface::discoverDevice(uint32_t deviceIndex)
+{
+    auto guid = GUID_DEVINTERFACE_GNA_DRV;
+    const auto deviceInfo = SetupDiGetClassDevs(&guid, nullptr, nullptr, DIGCF_PRESENT | DIGCF_DEVICEINTERFACE);
+    if(INVALID_HANDLE_VALUE == deviceInfo)
+    {
+        return "";
+    }
+
+    auto deviceDetailsData = std::unique_ptr<char[]>();
+    auto deviceDetails = PSP_DEVICE_INTERFACE_DETAIL_DATA{nullptr};
+    auto interfaceData = SP_DEVICE_INTERFACE_DATA{0};
+    interfaceData.cbSize = sizeof(interfaceData);
+
+    uint32_t found = 0;
+    auto bufferSize = DWORD{0};
+    std::string path;
+    for (auto i = 0; SetupDiEnumDeviceInterfaces(deviceInfo, nullptr, &guid, i, &interfaceData); ++i)
+    {
+        bufferSize = DWORD{0};
+        path = "";
+        if (!SetupDiGetDeviceInterfaceDetail(deviceInfo, &interfaceData, nullptr, 0, &bufferSize, nullptr))
+        {
+            auto err = GetLastError();
+            if (ERROR_INSUFFICIENT_BUFFER != err)
+                continue; // proceed to the next device
+        }
+        deviceDetailsData.reset(new char[bufferSize]);
+        deviceDetails = reinterpret_cast<PSP_DEVICE_INTERFACE_DETAIL_DATA>(deviceDetailsData.get());
+        deviceDetails->cbSize = sizeof(SP_DEVICE_INTERFACE_DETAIL_DATA);
+        if (!SetupDiGetDeviceInterfaceDetail(deviceInfo, &interfaceData, deviceDetails, bufferSize, nullptr, nullptr))
+        {
+            continue;
+        }
+        if (found++ == deviceIndex)
+        {
+            path = std::string(deviceDetails->DevicePath, bufferSize - sizeof(deviceDetails->cbSize));
+            break;
+        }
+    }
+    SetupDiDestroyDeviceInfoList(deviceInfo);
+    return path;
+}
+
 void WindowsDriverInterface::wait(LPOVERLAPPED const ioctl, const DWORD timeout) const
 {
     auto bytesRead = DWORD{0};
@@ -399,7 +412,7 @@ void WindowsDriverInterface::printLastError(DWORD error) const
     // Display the error message
     if (nullptr != lpMsgBuf)
     {
-        wprintf(L"%s\n", (wchar_t*)lpMsgBuf);
+        printf("%s\n", static_cast<LPTSTR>(lpMsgBuf));
         LocalFree(lpMsgBuf);
     }
 }
@@ -429,5 +442,4 @@ Gna2Status WindowsDriverInterface::parseHwStatus(uint32_t hwStatus) const
 
     return Gna2StatusDeviceCriticalFailure;
 }
-
 

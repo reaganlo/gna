@@ -45,7 +45,7 @@ public:
 
     virtual ~LinuxDriverInterface() override;
 
-    virtual bool OpenDevice() override;
+    virtual bool OpenDevice(uint32_t deviceIndex) override;
 
     virtual DriverCapabilities GetCapabilities() const override;
 
@@ -64,10 +64,9 @@ protected:
 private:
     LinuxDriverInterface(const LinuxDriverInterface &) = delete;
     LinuxDriverInterface& operator=(const LinuxDriverInterface&) = delete;
+    int discoverDevice(uint32_t deviceIndex, gna_getparam (&params)[3]);
 
     int gnaFileDescriptor = -1;
-
-    const uint8_t MAX_GNA_DEVICES = 16;
 };
 
 }

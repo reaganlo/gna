@@ -50,15 +50,13 @@ public:
 
     Device& GetDevice(uint32_t deviceIndex);
 
-    uint32_t GetDeviceCount();
+    uint32_t GetDeviceCount() const;
 
     DeviceVersion GetDeviceVersion(uint32_t deviceIndex);
 
     void SetThreadCount(uint32_t deviceIndex, uint32_t threadCount);
 
     uint32_t GetThreadCount(uint32_t deviceIndex);
-
-    void VerifyDeviceIndex(uint32_t deviceIndex);
 
     void OpenDevice(uint32_t deviceIndex);
 
@@ -67,11 +65,25 @@ public:
     static constexpr uint32_t DefaultThreadCount = 1;
 
 private:
+    static constexpr uint32_t MaximumReferenceCount = 1024;
+
+    struct DeviceContext
+    {
+        DeviceContext() = default;
+        DeviceContext(std::unique_ptr<Device> handle, uint32_t referenceCount);
+
+        std::unique_ptr<Device> Handle;
+        uint32_t ReferenceCount;
+    };
+
     DeviceManager();
+    void CreateDevice(uint32_t deviceIndex);
+    bool IsOpened(uint32_t deviceIndex);
+    inline DeviceContext& GetDeviceContext(uint32_t deviceIndex);
 
-    std::vector<std::unique_ptr<Device>> deviceMap;
+    std::map<uint32_t, DeviceContext> devices;
 
-    std::vector<bool> deviceOpenedMap;
+    std::map<uint32_t, HardwareCapabilities> capabilities;
 };
 
 }
