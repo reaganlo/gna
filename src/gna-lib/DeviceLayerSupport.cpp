@@ -181,7 +181,13 @@ static const std::map<const gna_layer_operation, const Support> FROM_3_0_CNN =
 
 static const std::map<const gna_layer_operation, const Support> FROM_3_0_CNN_MB =
 {
-    {INTEL_AFFINE_MULTIBIAS,       FROM_3_0},
+    {INTEL_AFFINE_MULTIBIAS,    FROM_3_0},
+    {INTEL_CONVOLUTIONAL_2D,    FROM_3_0},
+};
+
+static const std::map<const gna_layer_operation, const Support> FROM_2_0_MB_3_0_CNN =
+{
+    {INTEL_AFFINE_MULTIBIAS,    FROM_2_0},
     {INTEL_CONVOLUTIONAL_2D,    FROM_3_0},
 };
 
@@ -196,6 +202,15 @@ static const std::map<const gna_layer_operation, const Support> FROM_3_0_CNN_AUX
 static const std::map<const gna_layer_operation, const Support> FROM_3_0_CNN_MB_AUX =
 {
     {INTEL_AFFINE_MULTIBIAS,    FROM_3_0},
+    {INTEL_CONVOLUTIONAL_2D,    FROM_3_0},
+    {INTEL_COPY,                FROM_0_9_AUX},
+    {INTEL_DEINTERLEAVE,        FROM_0_9_AUX},
+    {INTEL_INTERLEAVE,          FROM_0_9_AUX},
+};
+
+static const std::map<const gna_layer_operation, const Support> FROM_0_9_AUX_2_0_MB_3_0_CNN =
+{
+    {INTEL_AFFINE_MULTIBIAS,    FROM_2_0},
     {INTEL_CONVOLUTIONAL_2D,    FROM_3_0},
     {INTEL_COPY,                FROM_0_9_AUX},
     {INTEL_DEINTERLEAVE,        FROM_0_9_AUX},
@@ -378,13 +393,13 @@ const std::map<const DataConfig, std::map<const gna_layer_operation, const Suppo
         FROM_3_0_CNN_MB
     },
     {{GNA_INT16, GNA_INT8, GNA_INT32, GNA_INT16},
-        FROM_3_0_CNN_MB_AUX
+        FROM_0_9_AUX_2_0_MB_3_0_CNN
     },
     {{GNA_INT16, GNA_INT8, GNA_INT32, GNA_INT32},
         FROM_3_0_CNN_MB
     },
     {{GNA_INT16, GNA_INT8, GNA_INT32, GNA_DATA_ACTIVATION_DISABLED},
-        FROM_3_0_CNN_MB
+        FROM_2_0_MB_3_0_CNN
     },
     {{GNA_INT16, GNA_INT8, GNA_DATA_DISABLED, GNA_INT8},
         FROM_3_0_AFF_CNN_MB_FALSE
