@@ -1,4 +1,4 @@
-#ignore thumbnails created by Windows 
+#ignore thumbnails created by Windows
 [Tt]humbs.db
 #Ignore files build by Visual Studio
 *.aps
@@ -54,6 +54,7 @@ obj/
 Obj/
 out/
 Out/
+.bld*/
 #SDV output files
 sdv/
 sdv-map.h

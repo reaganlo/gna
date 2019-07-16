@@ -97,7 +97,7 @@ uint64_t LinuxDriverInterface::MemoryMap(void *memory, uint32_t memorySize)
     userptr.user_address = reinterpret_cast<uint64_t>(memory);
     userptr.user_size = memorySize;
 
-    if(ioctl(gnaFileDescriptor, GNA_IOCTL_USERPTR, &userptr) == 0)
+    if(ioctl(gnaFileDescriptor, GNA_IOCTL_USERPTR, &userptr) != 0)
     {
         throw GnaException {Gna2StatusDeviceOutgoingCommunicationError};
     }
@@ -107,7 +107,7 @@ uint64_t LinuxDriverInterface::MemoryMap(void *memory, uint32_t memorySize)
 
 void LinuxDriverInterface::MemoryUnmap(uint64_t memoryId)
 {
-    if(ioctl(gnaFileDescriptor, GNA_IOCTL_FREE, memoryId) == 0)
+    if(ioctl(gnaFileDescriptor, GNA_IOCTL_FREE, memoryId) != 0)
     {
         throw GnaException {Gna2StatusDeviceOutgoingCommunicationError};
     }
