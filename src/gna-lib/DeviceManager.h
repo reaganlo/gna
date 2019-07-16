@@ -62,6 +62,17 @@ public:
 
     void CloseDevice(uint32_t deviceIndex);
 
+    Device& GetDeviceForModel(uint32_t modelId);
+    Device* TryGetDeviceForModel(uint32_t modelId);
+
+    void FreeMemory(void * memory);
+
+    Device& GetDeviceForRequestConfigId(uint32_t requestConfigId);
+
+    Device * TryGetDeviceForRequestConfigId(uint32_t requestConfigId);
+
+    Device& GetDeviceForRequestId(uint32_t requestId);
+
     static constexpr uint32_t DefaultThreadCount = 1;
 
 private:

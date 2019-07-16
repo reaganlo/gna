@@ -81,8 +81,11 @@ GNAAPI gna_status_t GnaModelRelease(
 {
     try
     {
-        auto& device = DeviceManager::Get().GetDevice(0);
-        device.ReleaseModel(modelId);
+        auto device = DeviceManager::Get().TryGetDeviceForModel(modelId);
+        if(device != nullptr)
+        {
+            device->ReleaseModel(modelId);
+        }
         return GNA_SUCCESS;
     }
     catch (const GnaException &e)
@@ -101,7 +104,7 @@ GNAAPI intel_gna_status_t GnaRequestConfigCreate(
 {
     try
     {
-        auto& device = DeviceManager::Get().GetDevice(0);
+        auto& device = DeviceManager::Get().GetDeviceForModel(modelId);
         device.CreateConfiguration(modelId, configId);
         return GNA_SUCCESS;
     }
@@ -127,7 +130,7 @@ GNAAPI gna_status_t GnaRequestConfigBufferAdd(
 {
     try
     {
-        auto& device = DeviceManager::Get().GetDevice(0);
+        auto& device = DeviceManager::Get().GetDeviceForRequestConfigId(configId);
         device.AttachBuffer(configId, ModelWrapper::GetOperandIndex(type), layerIndex, address);
         return GNA_SUCCESS;
     }
@@ -149,7 +152,7 @@ GNAAPI gna_status_t GnaRequestConfigActiveListAdd(
 {
     try
     {
-        auto& device = DeviceManager::Get().GetDevice(0);
+        auto& device = DeviceManager::Get().GetDeviceForRequestConfigId(configId);
         device.AttachActiveList(configId, layerIndex, indicesCount, indices);
         return GNA_SUCCESS;
     }
@@ -169,7 +172,7 @@ GNAAPI intel_gna_status_t GnaRequestConfigEnableHardwareConsistency(
 {
     try
     {
-        auto& device = DeviceManager::Get().GetDevice(0);
+        auto& device = DeviceManager::Get().GetDeviceForRequestConfigId(configId);
         const auto deviceVersion = DeviceVersionMapInverted.at(legacyVersion);
         device.EnableHardwareConsistency(configId, deviceVersion);
         return GNA_SUCCESS;
@@ -191,7 +194,7 @@ GNAAPI intel_gna_status_t GnaRequestConfigEnforceAcceleration(
 {
     try
     {
-        auto& device = DeviceManager::Get().GetDevice(0);
+        auto& device = DeviceManager::Get().GetDeviceForRequestConfigId(configId);
         device.EnforceAcceleration(configId, AccelerationMode(accelerationMode).GetMode());
         return GNA_SUCCESS;
     }
@@ -209,8 +212,11 @@ GNAAPI intel_gna_status_t GnaRequestConfigRelease(gna_request_cfg_id configId)
 {
     try
     {
-        auto& device = DeviceManager::Get().GetDevice(0);
-        device.ReleaseConfiguration(configId);
+        auto device = DeviceManager::Get().TryGetDeviceForRequestConfigId(configId);
+        if (device != nullptr)
+        {
+            device->ReleaseConfiguration(configId);
+        }
         return GNA_SUCCESS;
     }
     catch (const GnaException &e)
@@ -229,7 +235,7 @@ GNAAPI intel_gna_status_t GnaRequestEnqueue(
 {
     try
     {
-        auto& device = DeviceManager::Get().GetDevice(0);
+        auto& device = DeviceManager::Get().GetDeviceForRequestConfigId(configId);
         device.PropagateRequest(configId, requestId);
         return GNA_SUCCESS;
     }
@@ -249,7 +255,7 @@ GNAAPI gna_status_t GnaRequestWait(
 {
     try
     {
-        auto& device = DeviceManager::Get().GetDevice(0);
+        auto& device = DeviceManager::Get().GetDeviceForRequestId(requestId);
         auto status = device.WaitForRequest(requestId, milliseconds);
         return StatusMap.at(status);
     }
@@ -301,8 +307,7 @@ GNAAPI gna_status_t GnaFree(
 {
     try
     {
-        auto& device = DeviceManager::Get().GetDevice(0);
-        device.FreeMemory(memory);
+        DeviceManager::Get().FreeMemory(memory);
         return GNA_SUCCESS;
     }
     catch (const GnaException &e)

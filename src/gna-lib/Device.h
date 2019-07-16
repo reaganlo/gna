@@ -115,6 +115,14 @@ public:
 
     void SetHardwareInstrumentation(gna_request_cfg_id configId, enum Gna2InstrumentationMode instrumentationMode);
 
+    bool HasModel(uint32_t modelId) const;
+
+    bool HasMemory(void * memory) const;
+
+    bool HasRequestConfigId(uint32_t requestConfigId) const;
+
+    bool HasRequestId(uint32_t requestId) const;
+
 protected:
     virtual std::unique_ptr<Memory> createMemoryObject( const uint32_t requestedSize);
 
@@ -122,7 +130,7 @@ protected:
 
     gna_device_id id;
 
-    uint32_t modelIdSequence = 0;
+    static uint32_t modelIdSequence;
 
     std::unique_ptr<DriverInterface> driverInterface;
 

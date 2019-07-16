@@ -47,6 +47,8 @@
 
 using namespace GNA;
 
+uint32_t Device::modelIdSequence = 0;
+
 Device::Device(uint32_t deviceIndex, uint32_t threadCount) :
     driverInterface
     {
@@ -149,6 +151,27 @@ Gna2Status Device::AllocateMemory(uint32_t requestedSize,
     return Gna2StatusSuccess;
 }
 
+bool Device::HasMemory(void * buffer) const
+{
+    auto memoryIterator = std::find_if(memoryObjects.cbegin(), memoryObjects.cend(),
+        [buffer](const std::unique_ptr<Memory>& memory)
+    {
+        return memory->GetBuffer() == buffer;
+    });
+
+    return memoryIterator != memoryObjects.end();
+}
+
+bool Device::HasRequestConfigId(uint32_t requestConfigId) const
+{
+    return requestBuilder.HasConfiguration(requestConfigId);
+}
+
+bool Device::HasRequestId(uint32_t requestId) const
+{
+    return requestHandler.HasRequest(requestId);
+}
+
 void Device::FreeMemory(void *buffer)
 {
     Expect::NotNull(buffer);
@@ -212,6 +235,11 @@ void Device::SetHardwareInstrumentation(gna_request_cfg_id configId, Gna2Instrum
 
     auto& requestConfiguration = requestBuilder.GetProfilerConfiguration(configId);
     requestConfiguration.HwPerfEncoding = instrumentationMode;
+}
+
+bool Device::HasModel(uint32_t modelId) const
+{
+    return models.count(modelId) > 0;
 }
 
 void Device::CreateProfilerConfiguration(uint32_t* configId,

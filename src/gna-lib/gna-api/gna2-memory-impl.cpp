@@ -54,8 +54,7 @@ GNA2_API enum Gna2Status Gna2MemoryFree(
 {
     const std::function<ApiStatus()> command = [&]()
     {
-        auto& device = DeviceManager::Get().GetDevice(0);
-        device.FreeMemory(memory);
+        DeviceManager::Get().FreeMemory(memory);
         return Gna2StatusSuccess;
     };
     return ApiWrapper::ExecuteSafely(command);

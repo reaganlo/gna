@@ -38,7 +38,7 @@
 class TestGnaApi : public testing::Test
 {
 protected:
-    int timeout = 500;
+    int timeout = 5000;
     std::chrono::system_clock::time_point start;
     std::chrono::system_clock::time_point stop;
 

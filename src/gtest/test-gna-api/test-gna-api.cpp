@@ -458,6 +458,13 @@ TEST_F(TestGnaModelApi, Gna2ItemTypeModelOperationsodelCreate2InvalidDeviceIndex
     ASSERT_FALSE(Gna2StatusIsSuccessful(status));
 }
 
+TEST_F(TestGnaModelApi, Gna2ModelReleaseInvalidIdentifier)
+{
+    const uint32_t invalidModelId = 1000000;
+    const auto status = Gna2ModelRelease(invalidModelId);
+    ASSERT_EQ(status, Gna2StatusIdentifierInvalid);
+}
+
 
 TEST_F(TestGnaModelApi, DISABLED_Gna2ModelCreateSingleGMMSuccesfull)
 {

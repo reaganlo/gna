@@ -45,6 +45,7 @@ using namespace GNA;
 
 gna_request_cfg_id RequestBuilder::assignConfigId()
 {
+    static gna_request_cfg_id configIdSequence = 0;
     return configIdSequence++; // TODO:3: add unique id
 }
 
@@ -130,4 +131,9 @@ void RequestBuilder::ReleaseProfilerConfiguration(uint32_t configId)
 {
     //TODO:3: consider adding thread safty mechanism
     profilerConfigurations.erase(configId);
+}
+
+bool RequestBuilder::HasConfiguration(uint32_t configId) const
+{
+    return configurations.count(configId) > 0;
 }

@@ -60,9 +60,9 @@ public:
 
     void StopRequests();
 
-private:
+    bool HasRequest(uint32_t requestId) const;
 
-    void initRequestMap();
+private:
 
     void clearRequestMap();
 
@@ -81,8 +81,9 @@ private:
         }
     }
 
+    static uint32_t assignRequestId();
+
     std::unordered_map<uint32_t, std::unique_ptr<Request>> requests;
-    uint32_t nRequests;
     std::mutex lock;
     ThreadPool threadPool;
 };

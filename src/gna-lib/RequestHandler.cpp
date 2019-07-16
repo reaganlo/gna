@@ -38,7 +38,6 @@ using namespace GNA;
 
 RequestHandler::RequestHandler(uint32_t threadCount) : threadPool(threadCount)
 {
-    initRequestMap();
 }
 
 RequestHandler::~RequestHandler()
@@ -70,21 +69,18 @@ void RequestHandler::Enqueue(
             throw GnaException(Gna2StatusDeviceQueueError);
         }
 
-        *requestId = nRequests;
+        *requestId = assignRequestId();
         r->Id = *requestId;
         auto insert = requests.emplace(*requestId, move(request));
         if (!insert.second)
         {
             throw GnaException(Gna2StatusResourceAllocationError);
         }
-        nRequests++;
-        nRequests = nRequests % GNA_REQUEST_WAIT_ANY;
     }
     r->Profiler->Measure(Gna2InstrumentationPointLibSubmission);
 
     threadPool.Enqueue(r);
-
-    }
+}
 
 Gna2Status RequestHandler::WaitFor(const gna_request_id requestId, const gna_timeout milliseconds)
 {
@@ -113,6 +109,11 @@ void RequestHandler::StopRequests()
     threadPool.Stop();
 }
 
+bool RequestHandler::HasRequest(uint32_t requestId) const
+{
+    return requests.count(requestId) > 0;
+}
+
 void RequestHandler::removeRequest(const uint32_t requestId)
 {
     std::lock_guard<std::mutex> lockGuard(lock);
@@ -123,9 +124,10 @@ void RequestHandler::removeRequest(const uint32_t requestId)
     }
 }
 
-void RequestHandler::initRequestMap()
+uint32_t RequestHandler::assignRequestId()
 {
-    nRequests = 0;
+    static uint32_t id;
+    return id++;
 }
 
 void RequestHandler::clearRequestMap()

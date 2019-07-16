@@ -45,7 +45,7 @@ GNA2_API enum Gna2Status Gna2RequestConfigCreate(
 {
     const std::function<ApiStatus()> command = [&]()
     {
-        auto& device = DeviceManager::Get().GetDevice(0);
+        auto& device = DeviceManager::Get().GetDeviceForModel(modelId);
         device.CreateConfiguration(modelId, requestConfigId);
         return Gna2StatusSuccess;
     };
@@ -60,7 +60,7 @@ GNA2_API enum Gna2Status Gna2RequestConfigSetOperandBuffer(
 {
     const std::function<ApiStatus()> command = [&]()
     {
-        auto& device = DeviceManager::Get().GetDevice(0);
+        auto& device = DeviceManager::Get().GetDeviceForRequestConfigId(requestConfigId);
         device.AttachBuffer(requestConfigId, operandIndex, operationIndex, address);
         return Gna2StatusSuccess;
     };
@@ -75,7 +75,7 @@ GNA2_API enum Gna2Status Gna2RequestConfigEnableActiveList(
 {
     const std::function<ApiStatus()> command = [&]()
     {
-        auto& device = DeviceManager::Get().GetDevice(0);
+        auto& device = DeviceManager::Get().GetDeviceForRequestConfigId(requestConfigId);
         device.AttachActiveList(requestConfigId, operationIndex, numberOfIndices, indices);
         return Gna2StatusSuccess;
     };
@@ -88,7 +88,7 @@ GNA2_API enum Gna2Status Gna2RequestConfigEnableHardwareConsistency(
 {
     const std::function<ApiStatus()> command = [&]()
     {
-        auto& device = DeviceManager::Get().GetDevice(0);
+        auto& device = DeviceManager::Get().GetDeviceForRequestConfigId(requestConfigId);
         device.EnableHardwareConsistency(requestConfigId, deviceVersion);
         return Gna2StatusSuccess;
     };
@@ -101,7 +101,7 @@ GNA2_API enum Gna2Status Gna2RequestConfigSetAccelerationMode(
 {
     const std::function<ApiStatus()> command = [&]()
     {
-        auto& device = DeviceManager::Get().GetDevice(0);
+        auto& device = DeviceManager::Get().GetDeviceForRequestConfigId(requestConfigId);
         device.EnforceAcceleration(requestConfigId, accelerationMode);
         return Gna2StatusSuccess;
     };
@@ -113,7 +113,7 @@ GNA2_API enum Gna2Status Gna2RequestConfigRelease(
 {
     const std::function<ApiStatus()> command = [&]()
     {
-        auto& device = DeviceManager::Get().GetDevice(0);
+        auto& device = DeviceManager::Get().GetDeviceForRequestConfigId(requestConfigId);
         device.ReleaseConfiguration(requestConfigId);
         return Gna2StatusSuccess;
     };
@@ -126,7 +126,7 @@ GNA2_API enum Gna2Status Gna2RequestEnqueue(
 {
     const std::function<ApiStatus()> command = [&]()
     {
-        auto& device = DeviceManager::Get().GetDevice(0);
+        auto& device = DeviceManager::Get().GetDeviceForRequestConfigId(requestConfigId);
         device.PropagateRequest(requestConfigId, requestId);
         return Gna2StatusSuccess;
     };
@@ -139,7 +139,7 @@ GNA2_API enum Gna2Status Gna2RequestWait(
 {
     const std::function<ApiStatus()> command = [&]()
     {
-        auto& device = DeviceManager::Get().GetDevice(0);
+        auto& device = DeviceManager::Get().GetDeviceForRequestId(requestId);
         return device.WaitForRequest(requestId, timeoutMilliseconds);
     };
     return ApiWrapper::ExecuteSafely(command);

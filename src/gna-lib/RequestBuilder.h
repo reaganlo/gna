@@ -58,11 +58,12 @@ public:
     void CreateProfilerConfiguration(uint32_t* configId, uint32_t numberOfInstrumentationPoints, Gna2InstrumentationPoint* selectedInstrumentationPoints, uint64_t* results);
     ProfilerConfiguration& GetProfilerConfiguration(uint32_t configId) const;
     void ReleaseProfilerConfiguration(uint32_t configId);
+
+    bool HasConfiguration(uint32_t configId) const;
+
 private:
     std::unordered_map<uint32_t, std::unique_ptr<RequestConfiguration>> configurations;
-    gna_request_cfg_id assignConfigId();
-
-    gna_request_cfg_id configIdSequence = 0;
+    static gna_request_cfg_id assignConfigId();
 
     std::unordered_map<uint32_t, std::unique_ptr<ProfilerConfiguration>> profilerConfigurations;
     uint32_t AssignProfilerConfigId();

@@ -56,7 +56,7 @@ GNA2_API enum Gna2Status Gna2ModelRelease(uint32_t modelId)
 {
     const std::function<ApiStatus()> command = [&]()
     {
-        auto& device = DeviceManager::Get().GetDevice(0);
+        auto& device = DeviceManager::Get().GetDeviceForModel(modelId);
         device.ReleaseModel(modelId);
         return Gna2StatusSuccess;
     };

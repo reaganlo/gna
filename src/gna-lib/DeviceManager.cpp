@@ -191,3 +191,65 @@ void DeviceManager::CloseDevice(uint32_t deviceIndex)
         throw GnaException(Gna2StatusIdentifierInvalid);
     }
 }
+
+Device & DeviceManager::GetDeviceForModel(uint32_t modelId)
+{
+    const auto device = TryGetDeviceForModel(modelId);
+    Expect::NotNull(device, Gna2StatusIdentifierInvalid);
+    return *device;
+}
+
+Device* DeviceManager::TryGetDeviceForModel(uint32_t modelId)
+{
+    for(const auto& device : devices)
+    {
+       if(device.second.Handle && device.second.Handle->HasModel(modelId))
+       {
+           return device.second.Handle.get();
+       }
+    }
+    return nullptr;
+}
+
+void DeviceManager::FreeMemory(void * memory)
+{
+    for (const auto& device : devices)
+    {
+        if (device.second.Handle && device.second.Handle->HasMemory(memory))
+        {
+            device.second.Handle->FreeMemory(memory);
+            return;
+        }
+    }
+}
+
+Device & DeviceManager::GetDeviceForRequestConfigId(uint32_t requestConfigId)
+{
+    const auto device = TryGetDeviceForRequestConfigId(requestConfigId);
+    Expect::NotNull(device, Gna2StatusIdentifierInvalid);
+    return *device;
+}
+
+Device* DeviceManager::TryGetDeviceForRequestConfigId(uint32_t requestConfigId)
+{
+    for (const auto& device : devices)
+    {
+        if (device.second.Handle && device.second.Handle->HasRequestConfigId(requestConfigId))
+        {
+            return device.second.Handle.get();
+        }
+    }
+    return nullptr;
+}
+
+Device & DeviceManager::GetDeviceForRequestId(uint32_t requestId)
+{
+    for (const auto& device : devices)
+    {
+        if (device.second.Handle && device.second.Handle->HasRequestId(requestId))
+        {
+            return *device.second.Handle;
+        }
+    }
+    throw GnaException(Gna2StatusIdentifierInvalid);
+}
