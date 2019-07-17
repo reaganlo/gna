@@ -53,18 +53,18 @@ public:
     }
     static void LogOperationMode(GnaOperationMode mode)
     {
-        if(mode == GMM)
+        if (mode == GMM)
         {
             Log->Message("Processing using GMM operation mode\n");
         }
-        else if(mode == xNN)
+        else if (mode == xNN)
         {
             Log->Message("Processing using xNN operation mode\n");
         }
     }
     SoftwareModel(const gna_model& network,
-                  BaseValidator validator,
-                  const std::vector<Gna2AccelerationMode>& supportedCpuAccelerations);
+        BaseValidator validator,
+        const std::vector<Gna2AccelerationMode>& supportedCpuAccelerations);
     SoftwareModel(const Gna2Model& model,
         BaseValidator validator,
         const std::vector<Gna2AccelerationMode>& supportedCpuAccelerations);
@@ -108,6 +108,36 @@ private:
     void CheckModel(uint32_t declaredBatchSize, void * operationPointer) const;
     uint32_t const layerCount;
     const std::vector<Gna2AccelerationMode>& supportedCpuAccelerations;
+};
+
+struct InferenceConfig
+{
+    typedef ExecutionConfig& (InferenceConfig::*GetEffectiveMethod)(Layer& layer) const;
+
+    InferenceConfig(KernelBuffers *fvBuffers, RequestConfiguration const &requestConfiguration);
+
+    ExecutionConfig& GetEffective(Layer& layer) const
+    {
+        return (this->*getEffective)(layer);
+    }
+
+    // scoring saturation counter
+    uint32_t SaturationCount;
+
+private:
+    GetEffectiveMethod getEffective;
+
+    ExecutionConfig& getNormal(Layer& layer) const;
+    ExecutionConfig& getForAdlFix(Layer& layer) const;
+
+    // if ADL consistency is active
+    bool hasAdlConsistency = false;
+
+    // config for usual inference request
+    std::unique_ptr<ExecutionConfig> executionConfig;
+
+    // config for inference request with ADL consistency workaround
+    std::unique_ptr<ExecutionConfig> executionConfigAdl;
 };
 
 }

@@ -52,12 +52,12 @@ struct FiltersTensor;
 
 struct DescriptorParameters
 {
-    DescriptorParameters(const Layer* softwareLayer,
+    DescriptorParameters(Layer* softwareLayer,
                         const LayerDescriptor& xnnDescriptor);
 
     virtual ~DescriptorParameters() = default;
 
-    const Layer* SoftwareLayer;
+    Layer* SoftwareLayer;
     LayerDescriptor XnnDescriptor;
     const AddrGmmCfg GmmDescriptor;
     GetHwOffset GetBufferOffset;
@@ -121,6 +121,7 @@ protected:
     HardwareLayerExt(const DescriptorParameters& parameters, uint32_t iterationGrouping);
     HardwareLayerExt(const DescriptorParameters& parameters);
 
+    static uint32_t calculateEffectiveInputSizeForAdl(const DescriptorParameters& parameters);
     void save();
 
     const uint32_t bufferElementCount;

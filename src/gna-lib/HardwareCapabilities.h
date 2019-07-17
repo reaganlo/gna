@@ -53,6 +53,10 @@ enum GnaFeature
     CNN2D,
 };
 
+// buffer array size for single precision
+static constexpr uint32_t BufferArraySizeSingle = XNN_N_GROUP_MAX;
+static constexpr uint32_t BufferArraySize = 2 * BufferArraySizeSingle;
+
 struct GenerationCapabilities
 {
     gna_device_generation Generation;
@@ -63,7 +67,8 @@ struct GenerationCapabilities
     uint32_t BufferSizesPerCEInKB;
     uint32_t PoolingEngineCountPerCE;
     uint32_t ActivationEngineCount;
-    std::array<uint32_t, XNN_N_GROUP_MAX> BufferElementCountBackward;
+    std::array<uint32_t, BufferArraySize> BufferElementCount;
+    std::array<uint32_t, BufferArraySize> BufferElementCountAdlWorkaround;
 };
 
 class HardwareCapabilities
@@ -73,12 +78,15 @@ public:
 
     void DiscoverHardware(DriverInterface &driverInterface);
 
-    static void GetHardwareConsistencySettings(
-        uint32_t bufferElementCount[2 * XNN_N_GROUP_MAX], DeviceVersion hwId);
+    static uint32_t const * GetHardwareConsistencySettings(DeviceVersion hwId);
+    static uint32_t const * GetHardwareConsistencySettingsForAdl(DeviceVersion hwId);
 
     // For now all hardware generations share the same maximum model size
     // in the future it's possible to integrate it as GenerationCapabilities field
     static const uint32_t MaximumModelSize;
+
+    static bool IsAdlGeneration(gna_device_generation generation);
+    static bool IsAdlDevice(DeviceVersion deviceVersion);
 
     static DeviceVersion GetDeviceVersion(gna_device_generation generation);
 
@@ -86,18 +94,9 @@ public:
 
     static uint32_t GetComputeEngineCount(DeviceVersion hwId);
 
-    static uint32_t GetBufferSizeInKB(DeviceVersion hwId);
-
-    static uint32_t GetBufferSizeInKB(gna_device_generation generation)
-    {
-        return GetBufferSizeInKB(GetDeviceVersion(generation));
-    }
-
     // Gets the number of data elements that may be stored in hw buffer
     static uint32_t GetBufferElementCount(DeviceVersion hwId,
         uint32_t grouping, uint32_t inputPrecision = GNA_INT16);
-
-    uint32_t GetBufferSizeInKB() const;
 
     uint32_t GetBufferElementCount(uint32_t grouping, uint32_t inputPrecision = GNA_INT16) const
     {
@@ -115,6 +114,8 @@ public:
 
     gna_device_generation GetDeviceGeneration() const;
 
+    bool IsAdlGeneration() const;
+
     uint32_t GetMaximumLayerCount() const;
 
     bool IsLayerSupported(nn_operation operation) const;
@@ -127,9 +128,18 @@ public:
     bool HasFeature(GnaFeature feature) const;
 
 private:
-    static std::map<DeviceVersion, const GenerationCapabilities> gnaCapsMap;
+    static std::map<DeviceVersion, const GenerationCapabilities>& getCapsMap();
 
     static const GenerationCapabilities& getGenerationCapabilities(DeviceVersion deviceVersionIn);
+
+    static void initHardwareConsistencySettingsAdl(GenerationCapabilities& caps, bool isWorkaround = false);
+
+    static uint32_t getBufferElementCountAdl(uint32_t ceCount, uint32_t bufferSizeInKB,
+        uint32_t grouping, uint32_t inputPrecision = GNA_INT16);
+
+    uint32_t GetBufferSizeInKB() const;
+
+    static uint32_t GetBufferSizeInKB(DeviceVersion hwId);
 
     bool hardwareSupported = false;
 

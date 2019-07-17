@@ -45,11 +45,9 @@ RequestConfiguration::RequestConfiguration(CompiledModel& model, gna_request_cfg
     DeviceVersion consistentDeviceIn) :
     Model{model},
     Id{configId},
-    BufferElementCount{},
+    BufferElementCount{HardwareCapabilities::GetHardwareConsistencySettings(consistentDeviceIn)},
     consistentDevice{consistentDeviceIn}
 {
-    // TODO:3: optimize and store precalculated values if applicable for all layers
-    HardwareCapabilities::GetHardwareConsistencySettings(BufferElementCount, consistentDevice);
 }
 
 void RequestConfiguration::AddBuffer(uint32_t operandIndex, uint32_t layerIndex, void *address)
@@ -100,7 +98,8 @@ void RequestConfiguration::SetHardwareConsistency(
 {
     if (Gna2DeviceVersionSoftwareEmulation != consistentDevice)
     {
-        HardwareCapabilities::GetHardwareConsistencySettings(BufferElementCount, consistentDeviceIn);
+        BufferElementCount = HardwareCapabilities::GetHardwareConsistencySettings(consistentDeviceIn);
+        BufferElementCountForAdl = HardwareCapabilities::GetHardwareConsistencySettingsForAdl(consistentDeviceIn);
         Acceleration.EnableHwConsistency();
         consistentDevice = consistentDeviceIn;
     }

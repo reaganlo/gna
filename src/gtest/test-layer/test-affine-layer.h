@@ -28,6 +28,7 @@
 #include "test-layer.h"
 
 #include "HardwareCapabilities.h"
+#include "ModelWrapper.h"
 #include "Validator.h"
 
 #include "gtest/gtest.h"
@@ -66,6 +67,11 @@ public:
     template<typename T>
     static const T refOutputRecurrent[numberOfVectors * outputVolume];
 
+    Gna2Operation operation = {};
+    Gna2Tensor inputTensor = {};
+    Gna2Tensor outputTensor = {};
+    Gna2Tensor weightTensor = {};
+    Gna2Tensor biasTensor = {};
     void *alignedInput = nullptr;
     void *alignedWeight = nullptr;
     void *alignedBias = nullptr;
@@ -73,5 +79,70 @@ public:
     void *alignedOutput = nullptr;
     void *alignedIntermediateOutput = nullptr;
     intel_pwl_segment_t *alignedPwlSegments = nullptr;
-};
 
+protected:
+    template<typename InputType, typename WeightType, typename BiasType>
+    void RunAffineTest(Gna2DataType inputType, Gna2DataType weightType, Gna2DataType biasType)
+    {
+        PrepareAffineTest<InputType, WeightType, BiasType>(inputType, weightType, biasType);
+
+        ExecuteAffineTest();
+    }
+
+    template<typename InputType, typename WeightType, typename BiasType>
+    void PrepareAffineTest(Gna2DataType inputType, Gna2DataType weightType, Gna2DataType biasType)
+    {
+        inputTensor = PrepareInput<InputType>(inputType);
+
+        outputTensor = PrepareOutput(Gna2DataTypeInt32);
+
+        weightTensor = PrepareWeight<WeightType>(weightType);
+
+        biasTensor = PrepareBias<BiasType>(biasType);
+
+
+        auto status = Gna2OperationInitFullyConnectedAffine(&operation, GnaMalloc,
+            &inputTensor, &outputTensor, &weightTensor, &biasTensor, nullptr);
+        ASSERT_EQ(status, Gna2StatusSuccess);
+    }
+
+    template<typename T = int16_t>
+    const Gna2Tensor PrepareInput(Gna2DataType DataType = Gna2DataTypeInt16) const
+    {
+        auto tensor = PrepareTensor(DataType, alignedInput, "HW", inputVolume, numberOfVectors);
+        memcpy_s(alignedInput, sizeof(T) * numberOfVectors * inputVolume, input<T>, sizeof(input<T>));
+        return tensor;
+    }
+
+    const Gna2Tensor PrepareOutput(Gna2DataType DataType = Gna2DataTypeInt16) const
+    {
+        auto tensor = PrepareTensor(DataType, alignedOutput, "HW", outputVolume, numberOfVectors);
+        return tensor;
+    }
+
+    template<typename WeightType = int16_t>
+    const Gna2Tensor PrepareWeight(Gna2DataType DataType = Gna2DataTypeInt16) const
+    {
+        auto tensor = PrepareTensor(DataType, alignedWeight, "HW", outputVolume, inputVolume);
+        memcpy_s(alignedWeight, sizeof(WeightType) * inputVolume * outputVolume, weight<WeightType>, sizeof(weight<WeightType>));
+        return tensor;
+    }
+
+    template<typename BiasType = int16_t>
+    const Gna2Tensor PrepareBias(Gna2DataType DataType = Gna2DataTypeInt16) const
+    {
+        auto tensor = PrepareTensor(DataType, alignedBias, "H", outputVolume);
+        memcpy_s(alignedBias, sizeof(BiasType) * outputVolume, bias<BiasType>, sizeof(bias<BiasType>));
+        return tensor;
+    }
+
+    template<typename ... T>
+    const Gna2Tensor PrepareTensor(enum Gna2DataType type, void * data, std::string layout, T ... dimensions) const
+    {
+        auto tensor = ModelWrapper::TensorInit(type, Gna2TensorModeDefault, data, dimensions...);
+        strncpy_s(tensor.Layout, GNA2_SHAPE_MAXIMUM_NUMBER_OF_DIMENSIONS, layout.c_str(), layout.size());
+        return tensor;
+    }
+
+    void ExecuteAffineTest() const;
+};

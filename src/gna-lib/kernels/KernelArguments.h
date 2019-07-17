@@ -105,6 +105,7 @@ struct KernelConfig : public BaseConfig
 
 struct ExecutionConfig
 {
+    ExecutionConfig() = default;
     ExecutionConfig(KernelBuffers const * intermediate, uint32_t * saturationCount, uint32_t const * bufferElementCount) :
         Intermediate{intermediate},
         SaturationCount{saturationCount},

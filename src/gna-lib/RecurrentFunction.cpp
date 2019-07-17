@@ -100,27 +100,27 @@ const FullCapabilitiesMap RecurrentFunction::outputCapabilities =
 
 // Could not split into separate methods for each component as multibias weight scaling is using bias' and weights; tensors...
 std::unique_ptr<RecurrentFunction> RecurrentFunction::Create(
-        const TransformFactoryConfig& config,
-        const OperationConfig& operationConfig)
+    const TransformFactoryConfig& config,
+    const OperationConfig& operationConfig)
 {
     auto delay = operationConfig.FeedbackDelay;
     auto activationTensor = config.GetActivation();
     auto pwlCached = std::make_unique<const PwlCached>(config.outputMode, reinterpret_cast<nn_pwl_seg *>(activationTensor.Data),
-                           activationTensor.Shape.Dimensions[0]);
+        activationTensor.Shape.Dimensions[0]);
     auto kernelOperation = operationConfig.GetKernelOperation();
     auto weightTensor = operationConfig.WeightsTensor;
     auto biasTensor = operationConfig.BiasesTensor;
     auto weights = std::make_unique<const WeightTensor>(weightTensor, config.validator);
     auto biases = std::make_unique<const BiasTensor>(
-            biasTensor, 0, Gna2BiasModeDefault, config.validator);
-    auto kernelMode = KernelMode { config.input->Mode, weights->Mode, biases->Mode };
+        biasTensor, 0, Gna2BiasModeDefault, config.validator);
+    auto kernelMode = KernelMode{ config.input->Mode, weights->Mode, biases->Mode };
     const auto& affineKernel = AccelerationDetector::GetKernelMap<RecurrentKernel>(
-            static_cast<kernel_op>(kernelOperation), kernelMode);
+        static_cast<kernel_op>(kernelOperation), kernelMode);
 
     auto recurrentFunction = std::make_unique<RecurrentFunction>(
-            BaseTransformConfig<RecurrentKernel>{config, affineKernel},
-            std::move(pwlCached), operationConfig.GetTransformOperation(),
-            delay, std::move(weights), std::move(biases));
+        BaseTransformConfig<RecurrentKernel>{config, affineKernel},
+        std::move(pwlCached), operationConfig.GetTransformOperation(),
+        delay, std::move(weights), std::move(biases));
 
     //TODO:3:Simplify to make copying not needed
     auto configCopy = config;
@@ -137,34 +137,34 @@ RecurrentFunction::RecurrentFunction(
     TransformOperation transform, uint32_t delay,
     std::unique_ptr<const WeightTensor> weights,
     std::unique_ptr<const BiasTensor> biases) :
-    Transform{transform, &config.kernels, config.input},
+    Transform{ transform, &config.kernels, config.input },
     Weights{ std::move(weights) },
     Biases{ std::move(biases) },
     FeedbackDelay{ delay },
     pwl{ std::move(pwlIn) },
-    activationConfig {config.output->Dimensions.at('W'), pwl.get()}
+    activationConfig{ config.output->Dimensions.at('W'), pwl.get() }
 {
     Expect::InRange(FeedbackDelay, ui32_1, Input->Dimensions.at('H'), Gna2StatusXnnErrorNoFeedback);
 
     Output = std::make_unique<Tensor>(
-        Shape{GNA_TENSOR_HW, config.output->Dimensions.at('H'), config.output->Dimensions.at('W')},
+        Shape{ GNA_TENSOR_HW, config.output->Dimensions.at('H'), config.output->Dimensions.at('W') },
         config.output->Mode, config.outputBuffer,
-        Validator{config.validator, outputCapabilities});
+        Validator{ config.validator, outputCapabilities });
     Expect::Equal(Input->Dimensions.at('H'), Output->Dimensions.at('H'), Gna2StatusXnnErrorLyrCfg);
 
     auto feedbackBuffer = CalculateFeedbackBuffer(config.output->Buffer);
-    auto kernelRecurrentConfig = RecurrentConfig { config.output->Dimensions.at('W'),
+    auto kernelRecurrentConfig = RecurrentConfig{ config.output->Dimensions.at('W'),
         config.input->Dimensions.at('H'), config.input->Dimensions.at('W'),
         config.input->Buffer, feedbackBuffer, config.outputBuffer, config.output->Buffer,
         *Weights, *Biases, Biases->Mode.Size, config.output->Mode.Size, activationConfig };
 
     hiddenConfig = std::make_unique<KernelConfig<RecurrentConfig>>(kernelRecurrentConfig,
-            BaseConfig { Input->Buffer, Output->Buffer });
+        BaseConfig{ Input->Buffer, Output->Buffer });
 }
 
 void RecurrentFunction::UpdateConfigBuffers(
-        std::unique_ptr<BaseConfig> configs[],
-        const BufferMap& buffers) const
+    std::unique_ptr<BaseConfig> configs[],
+    const BufferMap& buffers) const
 {
     Transform::UpdateConfigBuffers(configs, buffers);
 
@@ -208,3 +208,19 @@ void RecurrentFunction::SetActivationFunction(std::unique_ptr<ActivationFunction
     Activation = std::move(activation);
 }
 
+Tensor const& RecurrentFunction::GetOperand(uint32_t operandIndex) const
+{
+    switch (operandIndex)
+    {
+    case 2:
+    {
+        return GetOperandIfExistOrThrow(Weights);
+    }
+    case 3:
+    {
+        return GetOperandIfExistOrThrow(Biases);
+    }
+    default:
+        return Transform::GetOperand(operandIndex);
+    }
+}

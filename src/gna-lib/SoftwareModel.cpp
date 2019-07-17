@@ -83,35 +83,32 @@ uint32_t SoftwareModel::Score(
 
     validateConfiguration(requestConfiguration);
 
-    auto accel = requestConfiguration.Acceleration.GetEffectiveSoftwareAccelerationMode(supportedCpuAccelerations);
+    const auto accel = requestConfiguration.Acceleration.GetEffectiveSoftwareAccelerationMode(supportedCpuAccelerations);
 
     LogAcceleration(accel);
 
-    auto saturationCount = uint32_t{ 0 };   // scoring saturation counter
-    auto executionConfig = ExecutionConfig{const_cast<KernelBuffers const *>(fvBuffers),
-        &saturationCount, requestConfiguration.BufferElementCount};
-
+    auto config = InferenceConfig{fvBuffers, requestConfiguration};
     auto iter = Layers.begin() + layerIndex;
     auto end = iter + layerCountIn;
     for (; iter < end; ++iter)
     {
-        const auto& layer = *iter;
+        auto& layer = *iter;
         auto found = requestConfiguration.LayerConfigurations.find(layerIndex);
         if (found == requestConfiguration.LayerConfigurations.end())
         {
             // TODO:3:simplify to single Compute as in Cnn2D
-            layer->ComputeHidden(accel, executionConfig);
+            layer->ComputeHidden(accel, config.GetEffective(*layer));
         }
         else
         {
             auto layerConfiguration = found->second.get();
-            layer->Compute(*layerConfiguration, accel, executionConfig);
+            layer->Compute(*layerConfiguration, accel, config.GetEffective(*layer));
         }
 
         ++layerIndex;
     }
 
-    return saturationCount;
+    return config.SaturationCount;
 }
 
 void SoftwareModel::validateConfiguration(const RequestConfiguration& configuration) const
@@ -120,4 +117,40 @@ void SoftwareModel::validateConfiguration(const RequestConfiguration& configurat
     //TODO:3:review and remove
     //Expect::True(inputLayerCount == configuration.InputBuffersCount, Gna2StatusXnnErrorNetworkInputs);
     //Expect::True(outputLayerCount == configuration.OutputBuffersCount, Gna2StatusXnnErrorNetworkOutputs);*/
+}
+
+InferenceConfig::InferenceConfig(KernelBuffers* fvBuffers,
+    RequestConfiguration const& requestConfiguration) :
+    SaturationCount{0}
+{
+    auto buffers = const_cast<KernelBuffers const *>(fvBuffers);
+    executionConfig = std::make_unique<ExecutionConfig>(buffers,
+        &SaturationCount, requestConfiguration.BufferElementCount);
+    auto const isAdl = HardwareCapabilities::IsAdlDevice(requestConfiguration.GetConsistentDevice());
+    hasAdlConsistency = isAdl && requestConfiguration.Acceleration.GetHwConsistency();
+    if (hasAdlConsistency)
+    {
+        executionConfigAdl = std::make_unique<ExecutionConfig>(buffers,
+            &SaturationCount, requestConfiguration.BufferElementCountForAdl);
+        getEffective = &InferenceConfig::getForAdlFix;
+    }
+    else
+    {
+        getEffective = &InferenceConfig::getNormal;
+    }
+}
+
+ExecutionConfig& InferenceConfig::getForAdlFix(Layer& layer) const
+{
+    if (layer.VerifyHas1BInputAnd2BWeight())
+    {
+        return *executionConfigAdl;
+    }
+    return *executionConfig;
+}
+
+ExecutionConfig& InferenceConfig::getNormal(Layer& layer) const
+{
+    UNREFERENCED_PARAMETER(layer);
+    return *executionConfig;
 }

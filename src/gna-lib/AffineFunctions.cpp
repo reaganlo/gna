@@ -196,6 +196,23 @@ AffineFunction::AffineFunction(const BaseTransformConfig<AffineKernel>& config,
 {
 }
 
+Tensor const& AffineFunction::GetOperand(uint32_t operandIndex) const
+{
+    switch (operandIndex)
+    {
+    case 2:
+    {
+        return GetOperandIfExistOrThrow(Weights);
+    }
+    case 3:
+    {
+        return GetOperandIfExistOrThrow(Biases);
+    }
+    default:
+        return Transform::GetOperand(operandIndex);
+    }
+}
+
 AffineFunctionSingle::AffineFunctionSingle(
     BaseTransformConfig<AffineKernel> config, TransformOperation transform,
     std::unique_ptr<const WeightTensor> weights, std::unique_ptr<const BiasTensor> biases)
@@ -265,3 +282,15 @@ AffineFunctionMulti::AffineFunctionMulti(BaseTransformConfig<AffineKernel> confi
             BaseConfig { Input->Buffer, Output->Buffer });
 }
 
+Tensor const& AffineFunctionMulti::GetOperand(uint32_t operandIndex) const
+{
+    switch (operandIndex)
+    {
+    case 5:
+    {
+        return GetOperandIfExistOrThrow(WeightScaleFactors);
+    }
+    default:
+        return AffineFunction::GetOperand(operandIndex);
+    }
+}

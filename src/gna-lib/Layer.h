@@ -57,16 +57,16 @@ public:
     const nn_operation Operation;
     const Gna2OperationType OperationNew;
 protected:
-    AbstractOperation(const Gna2Operation& operation, const BaseValidator& validator):
-        Operation{ toLegacy(operation, validator)},
-        OperationNew{operation.Type}
+    AbstractOperation(const Gna2Operation& operation, const BaseValidator& validator) :
+        Operation{ toLegacy(operation, validator) },
+        OperationNew{ operation.Type }
     {
         //TODO:3:P1 Add operation validation
     }
 
-    AbstractOperation(const nn_layer& layer, const BaseValidator& validator):
+    AbstractOperation(const nn_layer& layer, const BaseValidator& validator) :
         Operation{ layer.operation },
-        OperationNew{fromLegacy(layer.operation)}
+        OperationNew{ fromLegacy(layer.operation) }
     {
         UNREFERENCED_PARAMETER(validator);
     }
@@ -107,6 +107,10 @@ public:
     };
 
     virtual Tensor const & GetOperand(uint32_t operandIndex) const;
+    Tensor const * TryGetOperand(uint32_t operandIndex) const;
+
+    // verifies and stores info if layer has ADL bug workaround needed
+    bool VerifyHas1BInputAnd2BWeight();
 
 protected:
     std::unique_ptr<const LayerValidator> validator;
@@ -162,6 +166,11 @@ protected:
 private:
     BaseTransform const * inputTransform = nullptr;
     BaseTransform * outputTransform = nullptr;
+
+    // defines layer as ADL bug workaround enabled
+    bool has1BInputAnd2BWeight = false;
+    // defines ADL bug workaround has been already verified
+    bool is1BInputAnd2BWeightVerified = false;
 
     void addBufferAs(const BufferMap& source, GnaComponentType sourceType,
         BufferMap& destination, GnaComponentType destinationType) const;

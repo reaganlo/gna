@@ -187,6 +187,40 @@ Tensor const & Layer::GetOperand(uint32_t operandIndex) const
     }
 }
 
+Tensor const * Layer::TryGetOperand(uint32_t operandIndex) const
+{
+    try
+    {
+        return &GetOperand(operandIndex);
+    }
+    catch (const GnaException&)
+    {
+        return nullptr;
+    }
+}
+
+bool Layer::VerifyHas1BInputAnd2BWeight()
+{
+    if (is1BInputAnd2BWeightVerified)
+    {
+        return has1BInputAnd2BWeight;
+    }
+
+    is1BInputAnd2BWeightVerified = true;
+
+    auto const input = TryGetOperand(InputOperandIndex);
+    auto const weight = TryGetOperand(WeightOperandIndex);
+    if (input &&
+        weight &&
+        Gna2DataTypeInt8 == input->Mode &&
+        Gna2DataTypeInt16 == weight->Mode)
+    {
+        has1BInputAnd2BWeight = true;
+        return has1BInputAnd2BWeight;
+    }
+    return false;
+}
+
 Tensor const & Layer::getTransformOperand(TransformOperation operation, uint32_t operandIndex) const
 {
     auto const transform = Transforms.Get(operation);
@@ -219,7 +253,7 @@ void Layer::initTransforms(const std::vector<TransformOperation>& transforms,
         && outputTransform->Operation != ActivationTransform)
     {
         Expect::Equal(outputTransform->Output->Mode.Type, Gna2DataTypeInt32,
-                Gna2StatusXnnErrorOutputBytes);
+            Gna2StatusXnnErrorOutputBytes);
     }
 }
 
@@ -229,8 +263,8 @@ void Layer::initComputeFunctions()
     {this->compute(nullptr, accel, executionConfig); };
 
     Compute = [this](LayerConfiguration &layerConfiguration,
-            AccelerationMode accel,
-            ExecutionConfig const & executionConfig)
+        AccelerationMode accel,
+        ExecutionConfig const & executionConfig)
     {this->compute(&layerConfiguration, accel, executionConfig); };
 }
 
@@ -238,41 +272,41 @@ nn_operation AbstractOperation::toLegacy(
     const Gna2Operation& operation, const BaseValidator& validator)
 {
     //TODO:3:P1: Add remaining cases
-    switch(operation.Type)
+    switch (operation.Type)
     {
-        case Gna2OperationTypeElementWiseAffine:
-            return INTEL_AFFINE_DIAGONAL;
-        case Gna2OperationTypeFullyConnectedAffine:
-            if (OperationConfig::IsMultibias(operation))
-            {
-                return INTEL_AFFINE_MULTIBIAS;
-            }
-            return INTEL_AFFINE;
-        case Gna2OperationTypeCopy:
-            return INTEL_COPY;
-        case Gna2OperationTypeTransposition:
+    case Gna2OperationTypeElementWiseAffine:
+        return INTEL_AFFINE_DIAGONAL;
+    case Gna2OperationTypeFullyConnectedAffine:
+        if (OperationConfig::IsMultibias(operation))
         {
-            const Gna2Tensor& inputTensor = *operation.Operands[0];
-            if (LayerInput::IsTensorValid(inputTensor, validator, INTEL_INTERLEAVE))
-            {
-                return INTEL_INTERLEAVE;
-            }
-            if (LayerInput::IsTensorValid(inputTensor, validator, INTEL_DEINTERLEAVE))
-            {
-                return INTEL_DEINTERLEAVE;
-            }
-            throw GnaException { Gna2StatusXnnErrorLyrOperation };
+            return INTEL_AFFINE_MULTIBIAS;
         }
-        case Gna2OperationTypeRecurrent:
-            return INTEL_RECURRENT;
-        case Gna2OperationTypeConvolution:
-            if (ConvolutionalLayer2D::IsSupported(operation))
-            {
-                return INTEL_CONVOLUTIONAL_2D;
-            }
-            return INTEL_CONVOLUTIONAL;
-	case Gna2OperationTypeGmm:
-         return INTEL_GMM;
+        return INTEL_AFFINE;
+    case Gna2OperationTypeCopy:
+        return INTEL_COPY;
+    case Gna2OperationTypeTransposition:
+    {
+        const Gna2Tensor& inputTensor = *operation.Operands[0];
+        if (LayerInput::IsTensorValid(inputTensor, validator, INTEL_INTERLEAVE))
+        {
+            return INTEL_INTERLEAVE;
+        }
+        if (LayerInput::IsTensorValid(inputTensor, validator, INTEL_DEINTERLEAVE))
+        {
+            return INTEL_DEINTERLEAVE;
+        }
+        throw GnaException{ Gna2StatusXnnErrorLyrOperation };
+    }
+    case Gna2OperationTypeRecurrent:
+        return INTEL_RECURRENT;
+    case Gna2OperationTypeConvolution:
+        if (ConvolutionalLayer2D::IsSupported(operation))
+        {
+            return INTEL_CONVOLUTIONAL_2D;
+        }
+        return INTEL_CONVOLUTIONAL;
+    case Gna2OperationTypeGmm:
+        return INTEL_GMM;
     default:
         throw GnaException(Gna2StatusNotImplemented);
     }

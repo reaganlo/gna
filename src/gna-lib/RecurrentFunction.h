@@ -70,6 +70,8 @@ public:
     const ActivationFunction& GetActivationFunction() const;
     void SetActivationFunction(std::unique_ptr<ActivationFunction> activation);
 
+    virtual Tensor const & GetOperand(uint32_t operandIndex) const override;
+
     std::unique_ptr<const WeightTensor> Weights;
     std::unique_ptr<const BiasTensor> Biases;
 

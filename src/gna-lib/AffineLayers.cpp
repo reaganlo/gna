@@ -122,15 +122,11 @@ Tensor const & AffineBaseLayer::GetOperand(uint32_t operandIndex) const
     switch (operandIndex)
     {
     case 2: //[[fallthrough]]
-    case 3:
+    case 3: //[[fallthrough]]
+    case 5:
         return GetInputTransform()->GetOperand(operandIndex);
     case 4:
         return getTransformOperand(ActivationTransform, 2);// TODO:3:Intentional literal, replace with generic solution when all layers are transforms
-    /*case 5:
-        if (Affine && Affine->WeightScaleFactors)
-        {
-            return *Affine->WeightScaleFactors;
-        }*/
     default:
         return Layer::GetOperand(operandIndex);
     }

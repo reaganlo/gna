@@ -184,3 +184,13 @@ bool GNA::operator !=(const gna_data_mode& left, const DataMode& right)
 {
     return right.Value != left;
 }
+
+bool GNA::operator ==(Gna2DataType left, const DataMode& right)
+{
+    return right.Type == left;
+}
+
+bool GNA::operator !=(Gna2DataType left, const DataMode& right)
+{
+    return right.Type != left;
+}

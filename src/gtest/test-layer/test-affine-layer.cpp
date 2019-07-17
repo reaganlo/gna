@@ -54,7 +54,7 @@ TestAffineLayer::TestAffineLayer()
     }
 
     alignedIntermediateOutput = _kernel_malloc(
-            sizeof(int32_t) * numberOfVectors * outputVolume);
+        sizeof(int32_t) * numberOfVectors * outputVolume);
     if (alignedIntermediateOutput == nullptr)
     {
         this->~TestAffineLayer();
@@ -134,6 +134,17 @@ TestAffineLayer::~TestAffineLayer()
         _gna_free(alignedPwlSegments);
         alignedPwlSegments = nullptr;
     }
+
+    if (operation.Operands != nullptr)
+    {
+        free(operation.Operands);
+    }
+
+    if (operation.Parameters != nullptr)
+    {
+        free(operation.Parameters);
+    }
+    memset(&operation, 0, sizeof(operation));
 }
 
 template<typename T>
@@ -198,6 +209,21 @@ const T TestAffineLayer::refOutput[TestAffineLayer::numberOfVectors * TestAffine
     67,  -9, -80,   70
 };
 
+void TestAffineLayer::ExecuteAffineTest() const
+{
+    auto const affineLayer = Layer::Create(operation, emptyValidator);
+    ASSERT_NE(affineLayer, nullptr);
+
+    uint32_t saturationCount;
+    auto const executionConfig = ExecutionConfig{ &kernelBuffers, &saturationCount, 0 };
+    auto const acceleration = AccelerationMode(Gna2AccelerationModeGeneric, false);
+
+    affineLayer->ComputeHidden(acceleration, executionConfig);
+
+    VerifyOutputs(reinterpret_cast<int32_t*>(alignedOutput), refOutput<int32_t>,
+        numberOfVectors * outputVolume);
+}
+
 /* Tests 1B native patch - 1B input, weight and bias */
 TEST_F(TestAffineLayer, AffineTest1BLegacy)
 {
@@ -212,7 +238,7 @@ TEST_F(TestAffineLayer, AffineTest1BLegacy)
     apiLayer.nInputColumns = numberOfVectors;
     apiLayer.pInputs = alignedInput;
     memcpy_s(alignedInput, sizeof(int8_t) * numberOfVectors * inputVolume,
-            input<int8_t>, sizeof(input<int8_t>));
+        input<int8_t>, sizeof(input<int8_t>));
 
     apiLayer.nBytesPerOutput = 4;
     apiLayer.nBytesPerIntermediateOutput = 4;
@@ -251,7 +277,7 @@ TEST_F(TestAffineLayer, AffineTest1BLegacy)
     EXPECT_EQ(saturationCount, 0);
 
     VerifyOutputs(static_cast<int32_t*>(alignedOutput), refOutput<int32_t>,
-                             numberOfVectors * outputVolume);
+        numberOfVectors * outputVolume);
 }
 
 TEST_F(TestAffineLayer, AffineTest2BLegacy)
@@ -267,7 +293,7 @@ TEST_F(TestAffineLayer, AffineTest2BLegacy)
     apiLayer.nInputColumns = numberOfVectors;
     apiLayer.pInputs = alignedInput;
     memcpy_s(alignedInput, sizeof(int16_t) * numberOfVectors * inputVolume,
-            input<int16_t>, sizeof(input<int16_t>));
+        input<int16_t>, sizeof(input<int16_t>));
 
     apiLayer.nBytesPerOutput = 4;
     apiLayer.nBytesPerIntermediateOutput = 4;
@@ -304,7 +330,7 @@ TEST_F(TestAffineLayer, AffineTest2BLegacy)
     affineLayer->ComputeHidden(acceleration, executionConfig);
 
     VerifyOutputs(reinterpret_cast<int32_t*>(alignedOutput), refOutput<int32_t>,
-                             numberOfVectors * outputVolume);
+        numberOfVectors * outputVolume);
 }
 
 TEST_F(TestAffineLayer, AffineMultibiasTest2BLegacy)
@@ -320,7 +346,7 @@ TEST_F(TestAffineLayer, AffineMultibiasTest2BLegacy)
     apiLayer.nInputColumns = numberOfVectors;
     apiLayer.pInputs = alignedInput;
     memcpy_s(alignedInput, sizeof(int16_t) * numberOfVectors * inputVolume,
-             input<int16_t>, sizeof(input<int16_t>));
+        input<int16_t>, sizeof(input<int16_t>));
 
     apiLayer.nBytesPerOutput = 4;
     apiLayer.nBytesPerIntermediateOutput = 4;
@@ -361,138 +387,53 @@ TEST_F(TestAffineLayer, AffineMultibiasTest2BLegacy)
     affineLayer->ComputeHidden(acceleration, executionConfig);
 
     VerifyOutputs(reinterpret_cast<int32_t*>(alignedOutput), refOutput<int32_t>,
-                  numberOfVectors * outputVolume);
+        numberOfVectors * outputVolume);
 }
 
 TEST_F(TestAffineLayer, AffineTest1B)
 {
-    Gna2Operation affineOperation;
-    memset(&affineOperation, 0, sizeof(affineOperation));
-
-    auto inputTensor = Gna2TensorInit2D(inputVolume, numberOfVectors, Gna2DataTypeInt8, alignedInput);
-    inputTensor.Mode = Gna2TensorModeDefault;
-    strncpy(inputTensor.Layout, "HW", 3);
-    memcpy_s(alignedInput, sizeof(int8_t) * numberOfVectors * inputVolume,
-             input<int8_t>, sizeof(input<int8_t>));
-
-    auto outputTensor = Gna2TensorInit2D(outputVolume, numberOfVectors, Gna2DataTypeInt32, alignedOutput);
-    outputTensor.Mode = Gna2TensorModeDefault;
-    strncpy(outputTensor.Layout, "HW", 3);
-
-    auto weightTensor = Gna2TensorInit2D(outputVolume, inputVolume, Gna2DataTypeInt8, alignedWeight);
-    weightTensor.Mode = Gna2TensorModeDefault;
-    strncpy(weightTensor.Layout, "HW", 3);
-    memcpy_s(alignedWeight, sizeof(int8_t) * inputVolume * outputVolume, weight<int8_t>, sizeof(weight<int8_t>));
-
-    auto biasTensor = Gna2TensorInit1D(outputVolume, Gna2DataTypeInt8, alignedBias);
-    biasTensor.Mode = Gna2TensorModeDefault;
-    strncpy(biasTensor.Layout, "H", 2);
-    memcpy_s(alignedBias, sizeof(int8_t) * outputVolume, bias<int8_t>, sizeof(bias<int8_t>));
-
-    auto status = Gna2OperationInitFullyConnectedAffine(&affineOperation, GnaMalloc,
-            &inputTensor, &outputTensor, &weightTensor, &biasTensor, nullptr);
-    ASSERT_EQ(status, Gna2StatusSuccess);
-
-    auto affineLayer = Layer::Create(affineOperation, emptyValidator);
-    ASSERT_NE(affineLayer, nullptr);
-
-    uint32_t saturationCount;
-    auto executionConfig = ExecutionConfig{ &kernelBuffers, &saturationCount, 0 };
-    auto acceleration = AccelerationMode(Gna2AccelerationModeGeneric, false);
-
-    affineLayer->ComputeHidden(acceleration, executionConfig);
-
-    VerifyOutputs(reinterpret_cast<int32_t*>(alignedOutput), refOutput<int32_t>,
-                  numberOfVectors * outputVolume);
+    RunAffineTest<int8_t, int8_t, int8_t>(Gna2DataTypeInt8, Gna2DataTypeInt8, Gna2DataTypeInt8);
 }
 
 TEST_F(TestAffineLayer, AffineTest2B)
 {
-    Gna2Operation affineOperation;
-    memset(&affineOperation, 0, sizeof(affineOperation));
+    RunAffineTest<int16_t, int16_t, int32_t>(Gna2DataTypeInt16, Gna2DataTypeInt16, Gna2DataTypeInt32);
+}
 
-    auto inputTensor = Gna2TensorInit2D(inputVolume, numberOfVectors, Gna2DataTypeInt16, alignedInput);
-    inputTensor.Mode = Gna2TensorModeDefault;
-    strncpy_s(inputTensor.Layout, GNA2_SHAPE_MAXIMUM_NUMBER_OF_DIMENSIONS, "HW", 3);
-    memcpy_s(alignedInput, sizeof(int16_t) * numberOfVectors * inputVolume,
-             input<int16_t>, sizeof(input<int16_t>));
-
-    auto outputTensor = Gna2TensorInit2D(outputVolume, numberOfVectors, Gna2DataTypeInt32, alignedOutput);
-    outputTensor.Mode = Gna2TensorModeDefault;
-    strncpy_s(outputTensor.Layout, GNA2_SHAPE_MAXIMUM_NUMBER_OF_DIMENSIONS, "HW", 3);
-
-    auto weightTensor = Gna2TensorInit2D(outputVolume, inputVolume, Gna2DataTypeInt16, alignedWeight);
-    weightTensor.Mode = Gna2TensorModeDefault;
-    strncpy_s(weightTensor.Layout, GNA2_SHAPE_MAXIMUM_NUMBER_OF_DIMENSIONS, "HW", 3);
-    memcpy_s(alignedWeight, sizeof(int16_t) * inputVolume * outputVolume, weight<int16_t>, sizeof(weight<int16_t>));
-
-    auto biasTensor = Gna2TensorInit1D(outputVolume, Gna2DataTypeInt32, alignedBias);
-    biasTensor.Mode = Gna2TensorModeDefault;
-    strncpy_s(biasTensor.Layout, GNA2_SHAPE_MAXIMUM_NUMBER_OF_DIMENSIONS, "H", 2);
-    memcpy_s(alignedBias, sizeof(int32_t) * outputVolume, bias<int32_t>, sizeof(bias<int32_t>));
-
-    auto status = Gna2OperationInitFullyConnectedAffine(&affineOperation, GnaMalloc,
-            &inputTensor, &outputTensor, &weightTensor, &biasTensor, nullptr);
-    ASSERT_EQ(status, Gna2StatusSuccess);
-
-    auto affineLayer = Layer::Create(affineOperation, emptyValidator);
-    ASSERT_NE(affineLayer, nullptr);
-
-    uint32_t saturationCount;
-    auto executionConfig = ExecutionConfig{ &kernelBuffers, &saturationCount, 0 };
-    auto acceleration = AccelerationMode(Gna2AccelerationModeGeneric, false);
-
-    affineLayer->ComputeHidden(acceleration, executionConfig);
-
-    VerifyOutputs(reinterpret_cast<int32_t*>(alignedOutput), refOutput<int32_t>,
-                  numberOfVectors * outputVolume);
+TEST_F(TestAffineLayer, AffineTest1BInput2BWeight)
+{
+    RunAffineTest<int8_t, int16_t, int32_t>(Gna2DataTypeInt8, Gna2DataTypeInt16, Gna2DataTypeInt32);
 }
 
 TEST_F(TestAffineLayer, AffineMultibiasTest2B)
 {
-    Gna2Operation affineOperation;
-    memset(&affineOperation, 0, sizeof(affineOperation));
+    inputTensor = PrepareInput<int16_t>(Gna2DataTypeInt16);
 
-    auto inputTensor = Gna2TensorInit2D(inputVolume, numberOfVectors, Gna2DataTypeInt16, alignedInput);
-    inputTensor.Mode = Gna2TensorModeDefault;
-    strncpy_s(inputTensor.Layout, GNA2_SHAPE_MAXIMUM_NUMBER_OF_DIMENSIONS, "HW", 3);
-    memcpy_s(alignedInput, sizeof(int16_t) * numberOfVectors * inputVolume,
-             input<int16_t>, sizeof(input<int16_t>));
+    outputTensor = PrepareOutput(Gna2DataTypeInt32);
 
-    auto outputTensor = Gna2TensorInit2D(outputVolume, numberOfVectors, Gna2DataTypeInt32, alignedOutput);
-    outputTensor.Mode = Gna2TensorModeDefault;
-    strncpy_s(outputTensor.Layout, GNA2_SHAPE_MAXIMUM_NUMBER_OF_DIMENSIONS, "HW", 3);
+    weightTensor = PrepareWeight<int16_t>(Gna2DataTypeInt16);
 
-    auto weightTensor = Gna2TensorInit2D(outputVolume, inputVolume, Gna2DataTypeInt16, alignedWeight);
-    weightTensor.Mode = Gna2TensorModeDefault;
-    strncpy_s(weightTensor.Layout, GNA2_SHAPE_MAXIMUM_NUMBER_OF_DIMENSIONS, "HW", 3);
-    strncpy(weightTensor.Layout, "HW", 3);
-    memcpy_s(alignedWeight, sizeof(int16_t) * inputVolume * outputVolume, weight<int16_t>, sizeof(weight<int16_t>));
-
-    auto biasTensor = Gna2TensorInit2D(outputVolume, multibiasVectorCount, Gna2DataTypeInt32, alignedMultibias);
-    biasTensor.Mode = Gna2TensorModeDefault;
-    strncpy_s(biasTensor.Layout, GNA2_SHAPE_MAXIMUM_NUMBER_OF_DIMENSIONS, "HW", 3);
-    auto multibiasSize = sizeof(int32_t) * outputVolume * multibiasVectorCount;
+    biasTensor = PrepareTensor(Gna2DataTypeInt32, alignedMultibias, "HW", outputVolume, multibiasVectorCount);
+    const auto multibiasSize = sizeof(int32_t) * outputVolume * multibiasVectorCount;
     memcpy_s(alignedMultibias, multibiasSize, multibias, sizeof(multibias));
 
     Gna2BiasMode biasMode;
     uint32_t biasVectorIndex = 2;
 
-    auto status = Gna2OperationInitFullyConnectedBiasGrouping(&affineOperation, GnaMalloc,
-            &inputTensor, &outputTensor, &weightTensor, &biasTensor, nullptr,
-            nullptr, &biasMode, &biasVectorIndex);
+    auto const status = Gna2OperationInitFullyConnectedBiasGrouping(&operation, GnaMalloc,
+        &inputTensor, &outputTensor, &weightTensor, &biasTensor, nullptr,
+        nullptr, &biasMode, &biasVectorIndex);
     ASSERT_EQ(status, Gna2StatusSuccess);
 
-    auto affineLayer = Layer::Create(affineOperation, emptyValidator);
-    ASSERT_NE(affineLayer, nullptr);
-
-    uint32_t saturationCount;
-    auto executionConfig = ExecutionConfig{ &kernelBuffers, &saturationCount, 0 };
-    auto acceleration = AccelerationMode(Gna2AccelerationModeGeneric, false);
-
-    affineLayer->ComputeHidden(acceleration, executionConfig);
-
-    VerifyOutputs(reinterpret_cast<int32_t*>(alignedOutput), refOutput<int32_t>,
-                  numberOfVectors * outputVolume);
+    ExecuteAffineTest();
 }
 
+TEST_F(TestAffineLayer, AffineTestAdlWorkaround)
+{
+    PrepareAffineTest<int8_t, int16_t, int32_t>(Gna2DataTypeInt8, Gna2DataTypeInt16, Gna2DataTypeInt32);
+    auto affineLayer = Layer::Create(operation, emptyValidator);
+    ASSERT_NE(affineLayer, nullptr);
+
+    auto is1B2B = affineLayer->VerifyHas1BInputAnd2BWeight();
+    ASSERT_EQ(true, is1B2B);
+}

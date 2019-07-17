@@ -89,6 +89,10 @@ bool operator ==(const gna_data_mode &left, const DataMode &right); // TODO:3:AP
 
 bool operator !=(const gna_data_mode &left, const DataMode &right); // TODO:3:API remove
 
+bool operator ==(Gna2DataType left, const DataMode &right);
+
+bool operator !=(Gna2DataType left, const DataMode &right);
+
 using DataModeLimits = SetLimits<DataMode>;
 
 }

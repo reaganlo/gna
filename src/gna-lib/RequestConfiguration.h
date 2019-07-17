@@ -81,7 +81,8 @@ public:
     uint32_t ActiveListCount = 0;
 
     // Number of elements in buffer per input precision and per grouping
-    uint32_t BufferElementCount[2 * XNN_N_GROUP_MAX];
+    uint32_t const * BufferElementCount;
+    uint32_t const * BufferElementCountForAdl;
 
     AccelerationMode Acceleration = Gna2AccelerationModeAuto;
 
