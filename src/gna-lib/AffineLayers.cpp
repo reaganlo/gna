@@ -39,6 +39,7 @@
 #include "Weight.h"
 
 #include "gna2-common-api.h"
+#include "gna2-memory-api.h"
 
 #include "common.h"
 #include "gna-api-types-xnn.h"
@@ -48,6 +49,22 @@
 #include <map>
 
 using namespace GNA;
+
+//TODO:3:provide better mechanism for scratchpad
+void *getGlobal2MBScratchpad()
+{
+    static void* ptr = nullptr;
+    uint32_t sizeGranted;
+    if (ptr == nullptr)
+    {
+        const auto status = Gna2MemoryAlloc(1 << 21, &sizeGranted, &ptr);
+        if (status != Gna2StatusSuccess || ptr == nullptr)
+        {
+            Log->Error("Unsuccessful Scratchpad allocation\n");
+        }
+    }
+    return ptr;
+}
 
 AffineBaseLayer::AffineBaseLayer(
     const nn_layer& layer, std::vector<TransformOperation> transforms,
@@ -60,7 +77,7 @@ AffineBaseLayer::AffineBaseLayer(
         const Gna2Operation& operation,
         const std::vector<TransformOperation> transforms,
         const BaseValidator& validatorIn) :
-    Layer(operation, validatorIn, transforms, BaseAddress())
+    Layer(operation, validatorIn, transforms, BaseAddress(getGlobal2MBScratchpad()))
 {
 }
 

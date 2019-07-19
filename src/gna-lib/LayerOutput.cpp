@@ -194,6 +194,8 @@ Shape LayerOutput::ConvertInCaseOfNewApiOrder(gna_tensor_order order, const uint
     }
     return Shape(order, nOutputColumns, nOutputRows);
 }
+//TODO:3:remove when final scratchpad impl provided
+void *getGlobal2MBScratchpad();
 
 LayerOutput::LayerOutput(const nn_layer& layer, const LayerValidator& validatorIn) :
     Tensor{
@@ -214,7 +216,7 @@ LayerOutput::LayerOutput(const Gna2Operation &operation, const LayerValidator& v
     Tensor{ Shape::Create(operation.Operands[1]->Shape,  capabilities.GetOrder(validatorIn)),
         operation.Operands[1]->Type, operation.Operands[1]->Data,
         Validator{ validatorIn, capabilities } },
-    ScratchPad{Dimensions, Mode.Type, Mode.Mode, nullptr}, //TODO:3:P1:Decide what to do with scratch pad in API2, disabled validation, as parameters are provided by library
+    ScratchPad{Dimensions, Mode.Type, Mode.Mode, getGlobal2MBScratchpad()}, //TODO:3:P1:Decide what to do with scratch pad in API2, disabled validation, as parameters are provided by library
     Grouping{ getGrouping(operation, validatorIn) },
     ElementCount{ getElementCount(operation, validatorIn) }
 {
