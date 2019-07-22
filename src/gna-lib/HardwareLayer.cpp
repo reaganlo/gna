@@ -720,7 +720,6 @@ HardwareLayerGmm::HardwareLayerGmm(const DescriptorParameters& parameters) :
 void HardwareLayerGmm::save()
 {
     XnnDescriptor[op] = static_cast<uint8_t>(OperationsMap.at(SoftwareLayer->Operation));
-    XnnDescriptor[n_groups] = SoftwareLayer->Input.Dimensions.at('N');
     XnnDescriptor[gmm_descriptor] = XnnDescriptor.GmmDescriptor;
 
     auto gmm = SoftwareLayer->Get<const GmmLayer>();
