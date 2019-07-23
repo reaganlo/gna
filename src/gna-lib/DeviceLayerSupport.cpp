@@ -125,9 +125,16 @@ static const std::map<const gna_layer_operation, const Support> FROM_3_0_AFF_RNN
 
 static const std::map<const gna_layer_operation, const Support> FROM_0_9_COPY_TRANSPOSE =
 {
-    {INTEL_COPY,                FROM_0_9_AUX},//FROM_3_0
-    {INTEL_DEINTERLEAVE,        FROM_0_9_AUX},//FROM_3_0
-    {INTEL_INTERLEAVE,          FROM_0_9_AUX},//FROM_3_0
+    {INTEL_COPY,                FROM_0_9_AUX},
+    {INTEL_DEINTERLEAVE,        FROM_0_9_AUX},
+    {INTEL_INTERLEAVE,          FROM_0_9_AUX},
+};
+
+static const std::map<const gna_layer_operation, const Support> FROM_3_0_COPY_TRANSPOSE =
+{
+    {INTEL_COPY,                FROM_3_0},
+    {INTEL_DEINTERLEAVE,        FROM_3_0},
+    {INTEL_INTERLEAVE,          FROM_3_0},
 };
 
 static const std::map<const gna_layer_operation, const Support> FROM_3_0_AFF_RNN_CNN_AUX =
@@ -250,7 +257,7 @@ const std::map<const DataConfig, std::map<const gna_layer_operation, const Suppo
 {
     // input, weight/filter/mean, bias/covariance, output
     {{GNA_INT8, GNA_DATA_DISABLED, GNA_DATA_DISABLED, GNA_INT8},
-        FROM_0_9_COPY_TRANSPOSE
+        FROM_3_0_COPY_TRANSPOSE
     },
     {{GNA_INT8, GNA_INT8, GNA_INT8, GNA_INT8},
         FROM_3_0_AFF_RNN_CNN
