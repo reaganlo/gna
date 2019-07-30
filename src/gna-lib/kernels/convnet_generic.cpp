@@ -675,7 +675,7 @@ void ConvolutionPoolingKernelImpl2B(ConvolutionConfig const * const filterConfig
 void Pooling2DKernelImpl1B(ExecutionKernelConfig<PoolingConfig2D> const * const config)
 {
     int8_t* I = (int8_t*)config->RequestConfig->Inputs;
-    int16_t* O = (int16_t*)config->RequestConfig->Outputs;
+    int8_t* O = config->RequestConfig->Outputs;
 
     uint32_t inputW = config->RequestConfig->Transform.InputWidth;
     uint32_t inputH = config->RequestConfig->Transform.InputHeight;
@@ -755,7 +755,7 @@ void Pooling2DKernelImpl1B(ExecutionKernelConfig<PoolingConfig2D> const * const 
                     }
                 }
 
-                O[POH * poolOutW * numFilters + POW * numFilters + OD] = (int16_t)value;
+                O[POH * poolOutW * numFilters + POW * numFilters + OD] = (int8_t)value;
             }
         }
     }
