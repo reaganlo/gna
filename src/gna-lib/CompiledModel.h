@@ -27,6 +27,7 @@
 
 #include "AccelerationDetector.h"
 #include "HardwareModelScorable.h"
+#include "MemoryContainer.h"
 #include "SoftwareModel.h"
 #include "SubModel.h"
 #include "Validator.h"
@@ -64,20 +65,19 @@ public:
         const T & model,
         const AccelerationDetector& detectorIn,
         const HardwareCapabilities& hwCapabilitiesIn,
-        std::vector<std::unique_ptr<Memory>>& memoryObjects) :
+        std::vector<std::unique_ptr<Memory>>& deviceAllocationsIn) :
         LayerCount{ GetNumberOfOperations(model) },
         GmmCount{ getGmmCount(GetFirstOperation(model), LayerCount) },
         detector{ detectorIn },
         hwCapabilities{ hwCapabilitiesIn },
-        memoryList{ memoryObjects },
+        deviceAllocations{ deviceAllocationsIn },
         softwareModel
-        {
-            model,
-            makeValidator(),
-            detector.GetSupportedCpuAccelerations()
-        }
     {
+        model,
+        makeValidator(),
+        detector.GetSupportedCpuAccelerations()
     }
+    {}
 
     virtual ~CompiledModel() = default;
     CompiledModel(const CompiledModel &) = delete;
@@ -85,33 +85,45 @@ public:
 
     void BuildHardwareModel(DriverInterface &ddi);
 
-    const std::vector<std::unique_ptr<Layer>>& GetLayers() const;
-    const Layer* GetLayer(uint32_t layerIndex) const;
+    std::vector<std::unique_ptr<Layer>> const & GetLayers() const
+    {
+        return softwareModel.GetLayers();
+    }
 
-    void AddUniqueMemory(Memory *memory);
-    Memory * FindBuffer(const void *buffer, const size_t bufferSize) const;
-    void IdentifyBuffer(const void *buffer, size_t bufferSize);
-    uint32_t CalculateSize() const;
+    Layer const & GetLayer(uint32_t layerIndex) const
+    {
+        return softwareModel.GetLayer(layerIndex);
+    }
+
+    uint32_t GetMaximumOperandSize(uint32_t operandIndex);
+
+    void VerifyBufferAndStoreMemory(const void *buffer, size_t bufferSize);
+
+    uint32_t GetSize() const
+    {
+        return allocations.GetMemorySize();
+    }
+
     void CopyData(void *address, size_t size) const;
 
-    void InvalidateConfig(gna_request_cfg_id configId,
-            LayerConfiguration *layerConfiguration, uint32_t layerIndex) const;
+    void InvalidateHardwareRequestConfig(gna_request_cfg_id configId) const;
 
-    bool IsPartOfModel(Memory *memory) const;
+    Memory const * GetMemoryIfNotPartOfModel(const void *buffer, size_t bufferSize) const;
 
     Gna2Status Score(
         RequestConfiguration& config,
         RequestProfiler *profiler,
         KernelBuffers *buffers);
 
-    void ValidateBuffer(std::vector<Memory *> &configMemoryList, Memory *memory) const;
+    void ValidateBuffer(MemoryContainer const & requestAllocations, Memory const & memory) const;
+
+    MemoryContainer const & GetAllocations() const
+    {
+        return allocations;
+    }
 
     const uint32_t LayerCount;
     const uint32_t GmmCount;
-    const std::vector<Memory *>& GetModelMemoryList() const
-    {
-        return modelMemoryList;
-    }
 
 protected:
     std::unique_ptr<HardwareModelScorable> hardwareModel;
@@ -123,7 +135,7 @@ private:
     void createSubmodels(const HardwareCapabilities& hwCaps);
 
     SubmodelType getSubmodelType(
-            const HardwareCapabilities &hwCaps, const Layer& layer) const;
+        const HardwareCapabilities &hwCaps, uint32_t layerIndex) const;
 
     uint32_t scoreAllSubModels(RequestConfiguration& config,
         RequestProfiler *profiler, KernelBuffers *buffers);
@@ -168,13 +180,15 @@ private:
         return gmmCount;
     }
 
+    Memory const & getMemoryFromDeviceAllocations(const void *buffer, const size_t bufferSize) const;
+
     const AccelerationDetector& detector;
     const HardwareCapabilities& hwCapabilities;
-    std::vector<std::unique_ptr<Memory>>& memoryList;
-    std::vector<Memory *> modelMemoryList;
+    std::vector<std::unique_ptr<Memory>>& deviceAllocations;
+    MemoryContainer allocations;
     SoftwareModel softwareModel;
     std::map<DeviceVersion,
-            std::vector<std::unique_ptr<SubModel>>> submodels;
+        std::vector<std::unique_ptr<SubModel>>> submodels;
 
 };
 

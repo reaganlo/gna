@@ -25,12 +25,14 @@
 
 #include "HardwareModelScorable.h"
 
+#include "CompiledModel.h"
 #include "DriverInterface.h"
 #include "Expect.h"
 #include "GnaException.h"
 #include "HardwareCapabilities.h"
 #include "Macros.h"
 #include "Memory.h"
+#include "MemoryContainer.h"
 #include "RequestConfiguration.h"
 #include "SoftwareModel.h"
 
@@ -42,10 +44,9 @@
 
 using namespace GNA;
 
-HardwareModelScorable::HardwareModelScorable(
-    const std::vector<std::unique_ptr<Layer>>& layers, uint32_t gmmCount,
+HardwareModelScorable::HardwareModelScorable(CompiledModel const & softwareModel,
     DriverInterface &ddi, const HardwareCapabilities& hwCapsIn) :
-    HardwareModel(layers, gmmCount, hwCapsIn),
+    HardwareModel(softwareModel, hwCapsIn),
     driverInterface{ ddi }
 {
 }
@@ -60,25 +61,15 @@ uint32_t HardwareModelScorable::GetBufferOffsetForConfiguration(
         return offset;
     }
 
-    offset = modelSize;
-    // TODO:3: collect offsets during buffer validation
-    for (auto memory : requestConfiguration.MemoryList)
-    {
-        if (address.InRange(memory->GetBuffer(),
-                            static_cast<uint32_t>(memory->GetSize())))
-        {
-            return offset + address.GetOffset(BaseAddress{memory->GetBuffer()});
-        }
-
-        offset += ALIGN(memory->GetSize(), PAGE_SIZE);
-    }
-
-    throw GnaException(Gna2StatusUnknownError);
+    auto const modelSize = allocations.GetMemorySizeAlignedToPage();
+    offset = requestConfiguration.GetAllocations().GetBufferOffset(address, PAGE_SIZE, modelSize);
+    Expect::GtZero(offset, Gna2StatusMemoryBufferInvalid);
+    return offset;
 }
 
 void HardwareModelScorable::InvalidateConfig(gna_request_cfg_id configId)
 {
-    if(hardwareRequests.find(configId) != hardwareRequests.end())
+    if (hardwareRequests.find(configId) != hardwareRequests.end())
     {
         hardwareRequests[configId]->Invalidate();
     }
@@ -95,11 +86,11 @@ uint32_t HardwareModelScorable::Score(
 
     if (layerIndex + layerCount > hardwareLayers.size())
     {
-        throw GnaException(Gna2StatusUnknownError);
+        throw GnaException(Gna2StatusXnnErrorNetLyrNo);
     }
     for (auto i = layerIndex; i < layerIndex + layerCount; i++)
     {
-        Expect::NotNull(hardwareLayers[i].get(), Gna2StatusUnknownError);
+        Expect::NotNull(TryGetLayer(i), Gna2StatusXnnErrorNetLyrNo);
     }
 
     Expect::InRange(layerCount,
@@ -108,15 +99,15 @@ uint32_t HardwareModelScorable::Score(
 
     auto operationMode = xNN;
 
-    const auto& layer = *softwareLayers.at(layerIndex);
+    auto const & layer = model.GetLayer(layerIndex);
     if (layer.Operation == INTEL_GMM && layerCount == 1
-            && !hwCapabilities.IsLayerSupported(layer.Operation)
-            && hwCapabilities.HasFeature(LegacyGMM))
+        && !hwCapabilities.IsLayerSupported(layer.Operation)
+        && hwCapabilities.HasFeature(LegacyGMM))
     {
         operationMode = GMM;
     }
 
-    SoftwareModel::LogAcceleration(AccelerationMode{Gna2AccelerationModeHardware,true});
+    SoftwareModel::LogAcceleration(AccelerationMode{ Gna2AccelerationModeHardware,true });
     SoftwareModel::LogOperationMode(operationMode);
 
     auto configId = requestConfiguration.Id;
@@ -126,7 +117,7 @@ uint32_t HardwareModelScorable::Score(
     {
         auto inserted = hardwareRequests.emplace(
             configId,
-            std::make_unique<HardwareRequest>(*this, requestConfiguration, ldMemory.get(), modelMemoryObjects));
+            std::make_unique<HardwareRequest>(*this, requestConfiguration, allocations));
         hwRequest = inserted.first->second.get();
     }
     else
@@ -138,7 +129,7 @@ uint32_t HardwareModelScorable::Score(
 
     auto result = driverInterface.Submit(*hwRequest, profiler);
 
-    if (profiler != nullptr)    
+    if (profiler != nullptr)
     {
         profiler->AddDrvAndHwResults(result.driverPerf, result.hardwarePerf);
     }
@@ -151,19 +142,15 @@ uint32_t HardwareModelScorable::Score(
     return (Gna2StatusWarningArithmeticSaturation == result.status) ? 1 : 0;
 }
 
-void HardwareModelScorable::ValidateConfigBuffer(
-    std::vector<Memory *> configMemoryList, Memory *bufferMemory) const
+void HardwareModelScorable::ValidateConfigBuffer(MemoryContainer const & requestAllocations,
+    Memory const & bufferMemory) const
 {
-    auto configModelSize = modelSize;
-    for (const auto memory : configMemoryList)
-    {
-        configModelSize += ALIGN(memory->GetSize(), PAGE_SIZE);
-    }
-
-    configModelSize += ALIGN(bufferMemory->GetSize(), PAGE_SIZE);
+    auto configModelSize = allocations.GetMemorySizeAlignedToPage();
+    configModelSize += requestAllocations.GetMemorySizeAlignedToPage();
+    configModelSize += RoundUp(bufferMemory.GetSize(), PAGE_SIZE);
 
     Expect::InRange(configModelSize, HardwareCapabilities::MaximumModelSize,
-                    Gna2StatusMemoryTotalSizeExceeded);
+        Gna2StatusMemoryTotalSizeExceeded);
 }
 
 void HardwareModelScorable::allocateLayerDescriptors()

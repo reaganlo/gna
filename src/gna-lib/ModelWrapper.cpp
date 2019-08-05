@@ -87,6 +87,7 @@ uint32_t ModelWrapper::GetOperationInfo(OperationType operationType, OperationIn
                 { OperandIndexFilter, FilterOperandIndex },
                 { OperandIndexBias, BiasOperandIndex },
                 { OperandIndexActivation, PwlOperandIndex },
+                { OperandIndexScratchPad, ScratchpadOperandIndex },
                 { ParameterIndexConvolutionStride, 0 },
                 { ParameterIndexBiasMode, 1 },
                 { ParameterIndexPoolingMode, 2 },
@@ -106,6 +107,7 @@ uint32_t ModelWrapper::GetOperationInfo(OperationType operationType, OperationIn
                 { OperandIndexWeight, WeightOperandIndex },
                 { OperandIndexBias, BiasOperandIndex },
                 { OperandIndexActivation, PwlOperandIndex},
+                { OperandIndexScratchPad, ScratchpadOperandIndex },
             }
         },
         { Gna2OperationTypeFullyConnectedAffine,
@@ -122,6 +124,7 @@ uint32_t ModelWrapper::GetOperationInfo(OperationType operationType, OperationIn
                 { OperandIndexWeightScaleFactors, WeightScaleFactorOperandIndex },
                 { ParameterIndexBiasMode, 0 },
                 { ParameterIndexBiasVectorIndex, 1 },
+                { OperandIndexScratchPad, ScratchpadOperandIndex },
             }
         },
         { Gna2OperationTypeGmm,
@@ -151,6 +154,7 @@ uint32_t ModelWrapper::GetOperationInfo(OperationType operationType, OperationIn
                 { OperandIndexBias, BiasOperandIndex },
                 { OperandIndexActivation, PwlOperandIndex},
                 { ParameterIndexDelay, 0 },
+                { OperandIndexScratchPad, ScratchpadOperandIndex },
             }
         },
         { Gna2OperationTypeTransposition,
@@ -174,25 +178,12 @@ uint32_t ModelWrapper::GetOperationInfo(OperationType operationType, OperationIn
     }
 }
 
-Gna2Tensor ModelWrapper::GetOperand(const Gna2Operation & apiOperation, GnaComponentType operand)
-{
-    const auto operandIndex = GetOperandIndex(operand);
-    return GetOperand(apiOperation, operandIndex);
-}
-
 Gna2Tensor ModelWrapper::GetOperand(const Gna2Operation & apiOperation, uint32_t operandIndex)
 {
     Expect::True(apiOperation.NumberOfOperands > operandIndex, Gna2StatusXnnErrorLyrOperation);
     Expect::NotNull(apiOperation.Operands, Gna2StatusXnnErrorLyrOperation);
     Expect::NotNull(apiOperation.Operands[operandIndex], Gna2StatusXnnErrorLyrOperation);
     return *apiOperation.Operands[operandIndex];
-}
-
-Gna2Tensor ModelWrapper::GetOptionalOperand(const Gna2Operation & apiOperation,
-    GnaComponentType operand, Gna2Tensor defaultTensor)
-{
-    const auto operandIndex = GetOperandIndex(operand);
-    return GetOptionalOperand(apiOperation, operandIndex, defaultTensor);
 }
 
 Gna2Tensor ModelWrapper::GetOptionalOperand(const Gna2Operation & apiOperation,
@@ -220,7 +211,7 @@ void ModelWrapper::SetLayout(Gna2Tensor& tensor, const char* layout)
 }
 
 template<class T>
-void ExpectPointerArrayValid(T ** ptr , uint32_t arraySize,
+void ExpectPointerArrayValid(T ** ptr, uint32_t arraySize,
     uint32_t reqNotNull, uint32_t maxSize, Gna2Status error)
 {
     Expect::InRange(arraySize, reqNotNull, maxSize, error);
@@ -257,7 +248,7 @@ uint32_t ModelWrapper::GetOperandIndex(GnaComponentType operand)
     {
         {InputComponent, InputOperandIndex},
         {OutputComponent, OutputOperandIndex},
-        {IntermediateOutputComponent, OutputIntermediateOperandIndex},
+        {IntermediateOutputComponent, ScratchpadOperandIndex},
         {WeightComponent, WeightOperandIndex},
         {FilterComponent, FilterOperandIndex},
         {BiasComponent, BiasOperandIndex},

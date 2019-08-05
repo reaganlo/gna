@@ -162,13 +162,13 @@ public:
     {
         auto* config = GetConfig(configs);
         //config->Update(buffers); TODO:3: provide generic buffer update mechanism that does not rely on api library
-        if (buffers.count(InputComponent) > 0)
+        if (buffers.count(InputOperandIndex) > 0)
         {
-            config->Inputs = buffers.at(InputComponent);
+            config->Inputs = buffers.at(InputOperandIndex);
         }
-        if (buffers.count(OutputComponent) > 0)
+        if (buffers.count(OutputOperandIndex) > 0)
         {
-            config->Outputs = buffers.at(OutputComponent);
+            config->Outputs = buffers.at(OutputOperandIndex);
         }
     }
 

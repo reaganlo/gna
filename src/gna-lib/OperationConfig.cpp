@@ -161,7 +161,7 @@ bool OperationConfig::IsParameterAvailable(const Gna2Operation & operation, uint
 bool OperationConfig::IsCNN1D(const Gna2Operation & operation)
 {
     return Gna2OperationTypeConvolution == operation.Type &&
-        2 == operation.Operands[0]->Shape.NumberOfDimensions;
+        2 == operation.Operands[InputOperandIndex]->Shape.NumberOfDimensions;
 }
 
 const nn_layer_cnn2d * OperationConfig::CastToCnn2DDetails(const nn_layer& layer)
@@ -217,7 +217,7 @@ Gna2Tensor OperationConfig::GetFilters(const nn_layer& layer)
 
 Gna2Tensor OperationConfig::GetFilters(const Gna2Operation & operation)
 {
-    return GetOperand(operation, FilterComponent, {});
+    return GetOperand(operation, FilterOperandIndex, {});
 }
 
 Gna2Tensor OperationConfig::GetBiases(const nn_layer& layer)
@@ -273,12 +273,6 @@ Gna2BiasMode OperationConfig::GetBiasMode(const nn_layer& layer)
     return Gna2BiasModeDefault;
 }
 
-Gna2Tensor OperationConfig::GetOperand(const Gna2Operation & operation, GnaComponentType operand, Gna2Tensor defaultValue)
-{
-    auto const index = ModelWrapper::GetOperandIndex(operand);
-    return  GetOperand(operation, index, defaultValue);
-}
-
 Gna2Tensor OperationConfig::GetOperand(const Gna2Operation & operation, uint32_t index, Gna2Tensor defaultValue)
 {
     if (IsOperandAvailable(operation, index))
@@ -297,7 +291,7 @@ Gna2Tensor OperationConfig::GetBiases(const Gna2Operation & operation)
 {
     Gna2Tensor disabled{};
     disabled.Mode = Gna2TensorModeDisabled;
-    return GetOperand(operation, BiasComponent, disabled);
+    return GetOperand(operation, BiasOperandIndex, disabled);
 }
 
 Shape OperationConfig::GetStride(const Gna2Operation & operation)

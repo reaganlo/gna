@@ -27,3 +27,12 @@
 
 using namespace GNA;
 
+void LayerConfiguration::EmplaceBuffer(uint32_t operandIndex, void *address)
+{
+    Buffers.emplace(operandIndex, address);
+}
+
+void LayerConfiguration::RemoveBuffer(uint32_t operandIndex)
+{
+    Buffers.erase(operandIndex);
+}

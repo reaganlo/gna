@@ -200,11 +200,11 @@ Tensor const& AffineFunction::GetOperand(uint32_t operandIndex) const
 {
     switch (operandIndex)
     {
-    case 2:
+    case WeightOperandIndex:
     {
         return GetOperandIfExistOrThrow(Weights);
     }
-    case 3:
+    case BiasOperandIndex:
     {
         return GetOperandIfExistOrThrow(Biases);
     }
@@ -286,7 +286,7 @@ Tensor const& AffineFunctionMulti::GetOperand(uint32_t operandIndex) const
 {
     switch (operandIndex)
     {
-    case 5:
+    case WeightScaleFactorOperandIndex:
     {
         return GetOperandIfExistOrThrow(WeightScaleFactors);
     }

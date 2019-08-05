@@ -431,9 +431,11 @@ TEST_F(TestAffineLayer, AffineMultibiasTest2B)
 TEST_F(TestAffineLayer, AffineTestAdlWorkaround)
 {
     PrepareAffineTest<int8_t, int16_t, int32_t>(Gna2DataTypeInt8, Gna2DataTypeInt16, Gna2DataTypeInt32);
-    auto affineLayer = Layer::Create(operation, emptyValidator);
+    auto const affineLayer = Layer::Create(operation, emptyValidator);
     ASSERT_NE(affineLayer, nullptr);
 
-    auto is1B2B = affineLayer->VerifyHas1BInputAnd2BWeight();
+    affineLayer->VerifyHas1BInputAnd2BWeight();
+
+    auto const is1B2B = affineLayer->Is1BInputAnd2BWeight();
     ASSERT_EQ(true, is1B2B);
 }

@@ -107,16 +107,16 @@ CopyLayer::CopyLayer(const Gna2Operation& operation, const BaseValidator& valida
 void CopyLayer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const
 {
     BaseAddress inputBuffer = Input;
-    if (layerConfiguration.Buffers.count(InputComponent) > 0)
+    if (layerConfiguration.Buffers.count(InputOperandIndex) > 0)
     {
-        inputBuffer = layerConfiguration.Buffers[InputComponent];
+        inputBuffer = layerConfiguration.Buffers[InputOperandIndex];
         Input.ValidateBuffer(inputBuffer);
     }
 
     BaseAddress outputBuffer = Output;
-    if (layerConfiguration.Buffers.count(OutputComponent) > 0)
+    if (layerConfiguration.Buffers.count(OutputOperandIndex) > 0)
     {
-        outputBuffer = layerConfiguration.Buffers[OutputComponent];
+        outputBuffer = layerConfiguration.Buffers[OutputOperandIndex];
         Output.ValidateBuffer(outputBuffer);
     }
 

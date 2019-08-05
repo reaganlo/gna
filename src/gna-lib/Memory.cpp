@@ -25,29 +25,25 @@ in any way.
 
 #include "Memory.h"
 
+#include "common.h"
 #include "DriverInterface.h"
 #include "Expect.h"
 #include "GnaException.h"
-
-#include "common.h"
-#include "gna-api-status.h"
-#include "gna-api.h"
-
-#include <cstring>
+#include "KernelArguments.h"
 
 using namespace GNA;
 
 // just makes object from arguments
-Memory::Memory(void *bufferIn, uint32_t userSize, uint32_t alignment) :
-    Address{bufferIn},
-    size{ALIGN(userSize, alignment)}
+Memory::Memory(void* bufferIn, uint32_t userSize, uint32_t alignment) :
+    Address{ bufferIn },
+    size{ RoundUp(userSize, alignment) }
 {
     deallocate = false;
 }
 
 // allocates and zeros memory
 Memory::Memory(const uint32_t userSize, uint32_t alignment) :
-    size{ALIGN(userSize, alignment)}
+    size{ RoundUp(userSize, alignment) }
 {
     Expect::GtZero(size, Gna2StatusMemorySizeInvalid);
     buffer = _gna_malloc(size);
@@ -98,4 +94,3 @@ uint64_t Memory::GetId() const
 
     return id;
 }
-

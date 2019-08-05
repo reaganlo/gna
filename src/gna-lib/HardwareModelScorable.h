@@ -29,6 +29,7 @@
 #include "HardwareModel.h"
 #include "HardwareRequest.h"
 #include "IScorable.h"
+#include "MemoryContainer.h"
 
 #include "KernelArguments.h"
 
@@ -45,7 +46,6 @@ namespace GNA
 class DriverInterface;
 class HardwareCapabilities;
 class Layer;
-class Memory;
 class RequestConfiguration;
 class RequestProfiler;
 
@@ -53,9 +53,8 @@ class HardwareModelScorable : public HardwareModel, public IScorable
 {
 public:
 
-    HardwareModelScorable(
-        const std::vector<std::unique_ptr<Layer>>& layers, uint32_t gmmCount,
-        DriverInterface &ddi, const HardwareCapabilities& hwCapsIn);
+    HardwareModelScorable(CompiledModel const & softwareModel, DriverInterface &ddi,
+        const HardwareCapabilities& hwCapsIn);
     virtual ~HardwareModelScorable() = default;
 
     void InvalidateConfig(gna_request_cfg_id configId);
@@ -71,8 +70,8 @@ public:
         const BaseAddress& address,
         const RequestConfiguration& requestConfiguration) const;
 
-    void ValidateConfigBuffer(
-        std::vector<Memory *> configMemoryList, Memory *bufferMemory) const;
+    void ValidateConfigBuffer(MemoryContainer const & requestAllocations,
+        Memory const & bufferMemory) const;
 
 protected:
     DriverInterface &driverInterface;

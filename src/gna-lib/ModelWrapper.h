@@ -49,6 +49,7 @@ enum OperationInfoKey
     NumberOfParametersMax,
     OperandIndexInput,
     OperandIndexOutput,
+    OperandIndexScratchPad,
     OperandIndexWeight,
     OperandIndexFilter,
     OperandIndexBias,
@@ -152,11 +153,8 @@ public:
 
     static uint32_t GetOperationInfo(OperationType operationType, OperationInfoKey infoType);
 
-    static Gna2Tensor GetOperand(const Gna2Operation & apiOperation, GnaComponentType operand);
     static Gna2Tensor GetOperand(const Gna2Operation & apiOperation, uint32_t operandIndex);
 
-    static Gna2Tensor GetOptionalOperand(const Gna2Operation& apiOperation,
-        GnaComponentType operand, Gna2Tensor defaultTensor);
     static Gna2Tensor GetOptionalOperand(const Gna2Operation& apiOperation,
         uint32_t operandIndex, Gna2Tensor defaultTensor);
 

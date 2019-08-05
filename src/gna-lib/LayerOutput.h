@@ -50,8 +50,6 @@ struct LayerOutput : public Tensor
 protected:
     static const FullCapabilitiesMap capabilities;
     
-    LayerOutput(const Gna2Tensor &inputTensor, const LayerValidator& validatorIn);
-
     virtual std::pair<uint32_t, uint32_t> getGroupingAndElements(
         const Gna2Operation& operation, const LayerValidator& validatorIn) const override;
     virtual std::pair<uint32_t, uint32_t> getGroupingAndElements(const nn_layer& layer) const override;

@@ -98,26 +98,26 @@ inline bool TransformFactoryConfig::HasMandatoryActivation(const Gna2Operation &
 inline Gna2Tensor TransformFactoryConfig::GetActivation(const Gna2Operation & operation)
 {
     if (operation.NumberOfOperands >= 5 && operation.Type != Gna2OperationTypeGmm &&
-        operation.Operands != nullptr && operation.Operands[4] != nullptr)
+        operation.Operands != nullptr && operation.Operands[PwlOperandIndex] != nullptr)
     {
         return *operation.Operands[4];
     }
-    Gna2Tensor a{};
-    a.Mode = Gna2TensorModeDisabled;
-    return a;
+    Gna2Tensor disabled{};
+    disabled.Mode = Gna2TensorModeDisabled;
+    return disabled;
 }
 
 Tensor const & BaseTransform::GetOperand(uint32_t operandIndex) const
 {
     switch (operandIndex)
     {
-    case 0:
+    case InputOperandIndex:
         if (Input)
         {
             return *Input;
         }
         throw GnaException(Gna2StatusXnnErrorLyrCfg);
-    case 1:
+    case OutputOperandIndex:
         return GetOperandIfExistOrThrow(Output);
     default:
         throw GnaException(Gna2StatusXnnErrorLyrCfg);

@@ -41,14 +41,6 @@ public:
 
     BufferMap() = default;
     BufferMap(const BaseAddress& inputBuffer, const BaseAddress& outputBuffer);
-
-    BaseAddress& operator[](GnaComponentType type);
-
-    BaseAddress at(GnaComponentType type) const;
-
-    size_type count(GnaComponentType type) const;
-
-    size_type erase(GnaComponentType type);
 };
 
 }

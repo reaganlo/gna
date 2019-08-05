@@ -43,18 +43,19 @@
 namespace GNA
 {
 
-class SoftwareModel;
-class Memory;
 class AccelerationDetector;
+class CompiledModel;
 class Layer;
+class Memory;
 class RequestConfiguration;
-class WindowsDriverInterface;
 class RequestProfiler;
+class SoftwareModel;
+class WindowsDriverInterface;
 
 class HardwareModelVerbose : public HardwareModelScorable
 {
 public:
-    HardwareModelVerbose(const std::vector<std::unique_ptr<Layer>>& layers, uint32_t gmmCount,
+    HardwareModelVerbose(CompiledModel const & softwareModel,
         DriverInterface &ddi, const HardwareCapabilities& hwCaps);
     virtual ~HardwareModelVerbose() = default;
     HardwareModelVerbose(const HardwareModelVerbose &) = delete;

@@ -25,14 +25,7 @@
 
 #pragma once
 
-#include "HardwareCapabilities.h"
-#include "HardwareLayer.h"
-#include "HardwareRequest.h"
 #include "DriverInterface.h"
-#include "Memory.h"
-
-#include <memory>
-#include <vector>
 
 namespace GNA
 {

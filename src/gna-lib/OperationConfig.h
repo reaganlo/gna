@@ -192,7 +192,6 @@ private:
         return defaultValue;
     }
 
-    static Gna2Tensor GetOperand(const Gna2Operation & operation, GnaComponentType operand, Gna2Tensor defaultValue);
     static Gna2Tensor GetOperand(const Gna2Operation & operation, uint32_t index, Gna2Tensor defaultValue);
 
     static Gna2BiasMode GetBiasMode(const Gna2Operation& operation);

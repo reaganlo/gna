@@ -82,17 +82,28 @@ public:
 
     void validateConfiguration(const RequestConfiguration& configuration) const;
 
-    std::vector<std::unique_ptr<Layer>> Layers;
+    uint32_t GetMaximumOperandSize(uint32_t operandIndex);
+
+    Layer const& GetLayer(uint32_t layerIndex) const;
+
+    std::vector<std::unique_ptr<Layer>> const& GetLayers() const
+    {
+        return layers;
+    }
 
 private:
     template<class T>
     void build(const T* const operations, const BaseValidator & validator)
     {
+        auto maxScratchPadSizeIter = maximumOperandSizes.emplace(ScratchpadOperandIndex, 0).first;
+        auto & maxScratchPadSize = maxScratchPadSizeIter->second;
+
         for (auto i = uint32_t{ 0 }; i < layerCount; i++)
         {
             try
             {
-                Layers.push_back(Layer::Create(operations[i], validator));
+                auto layer = Layer::Create(operations[i], validator);
+                buildSingleLayer(layer, maxScratchPadSize);
             }
             catch (const GnaException& e)
             {
@@ -105,14 +116,22 @@ private:
         }
     }
 
+    void buildSingleLayer(std::unique_ptr<Layer> & layer, uint32_t & maxScratchPadSize);
+
     void CheckModel(uint32_t declaredBatchSize, void * operationPointer) const;
+
+    std::vector<std::unique_ptr<Layer>> layers;
+
     uint32_t const layerCount;
+
     const std::vector<Gna2AccelerationMode>& supportedCpuAccelerations;
+
+    std::map<uint32_t /* operandIndex */, uint32_t> maximumOperandSizes;
 };
 
 struct InferenceConfig
 {
-    typedef ExecutionConfig& (InferenceConfig::*GetEffectiveMethod)(Layer& layer) const;
+    typedef ExecutionConfig& (InferenceConfig::*GetEffectiveMethod)(Layer const & layer) const;
 
     InferenceConfig(KernelBuffers *fvBuffers, RequestConfiguration const &requestConfiguration);
 
@@ -127,8 +146,8 @@ struct InferenceConfig
 private:
     GetEffectiveMethod getEffective;
 
-    ExecutionConfig& getNormal(Layer& layer) const;
-    ExecutionConfig& getForAdlFix(Layer& layer) const;
+    ExecutionConfig& getNormal(Layer const & layer) const;
+    ExecutionConfig& getForAdlFix(Layer const & layer) const;
 
     // if ADL consistency is active
     bool hasAdlConsistency = false;

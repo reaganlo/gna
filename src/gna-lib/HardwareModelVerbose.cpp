@@ -23,9 +23,12 @@
  in any way.
 */
 
+#include "CompiledModel.h"
 #include "HardwareLayer.h"
 #include "HardwareModelVerbose.h"
 #include "Layer.h"
+#include "Memory.h"
+#include "MemoryContainer.h"
 #include "WindowsDriverInterface.h"
 
 #include <fstream>
@@ -43,9 +46,9 @@ std::map<dbg_action_type const, char const * const> const HardwareModelVerbose::
     {GnaDumpGmmDescriptor, "gmmdesc_"}
 };
 
-HardwareModelVerbose::HardwareModelVerbose(const std::vector<std::unique_ptr<Layer>>& layers, uint32_t gmmCount,
+HardwareModelVerbose::HardwareModelVerbose(CompiledModel const & softwareModel,
         DriverInterface &ddi, const HardwareCapabilities& hwCaps) :
-    HardwareModelScorable(layers, gmmCount, ddi, hwCaps),
+    HardwareModelScorable(softwareModel, ddi, hwCaps),
     actionFileCounters{
         {GnaDumpMmio, 0},
         {GnaReadRegister, 0},
@@ -145,10 +148,7 @@ void HardwareModelVerbose::writeRegister(dbg_action regAction)
 
 void HardwareModelVerbose::dumpMemory(FILE *file)
 {
-    for (const auto &memory : modelMemoryObjects)
-    {
-        fwrite(memory->GetBuffer(), memory->GetSize(), sizeof(uint8_t), file);
-    }
+    allocations.WriteData(file);
 }
 
 void HardwareModelVerbose::zeroMemory(void *memoryIn, size_t memorySizeIn)
@@ -158,21 +158,21 @@ void HardwareModelVerbose::zeroMemory(void *memoryIn, size_t memorySizeIn)
 
 void HardwareModelVerbose::setXnnDescriptor(dbg_action action)
 {
-    const auto& hwLayer = hardwareLayers.at(action.xnn_params.layer_number);
-    auto xnnParam = hwLayer->XnnDescriptor.GetMemAddress() +
+    auto & hwLayer = GetLayer(action.xnn_params.layer_number);
+    auto const xnnParam = hwLayer.XnnDescriptor.GetMemAddress() +
                         action.xnn_params.xnn_offset;
     setDescriptor(xnnParam, action.xnn_params.xnn_value, action.xnn_params.xnn_value_size);
 }
 
 void HardwareModelVerbose::setGmmDescriptor(dbg_action action)
 {
-    const auto& hwLayer = hardwareLayers.at(action.xnn_params.layer_number);
-    if (hwLayer->SoftwareLayer->Operation != INTEL_GMM)
+    auto & hwLayer = GetLayer(action.xnn_params.layer_number);
+    if (hwLayer.SoftwareLayer.Operation != INTEL_GMM)
     {
         throw GnaException{ Gna2StatusXnnErrorLyrOperation };
     }
-    auto gmmDescriptor = hwLayer->XnnDescriptor.GmmDescriptor;
-    auto xnnParam = gmmDescriptor.Get<uint8_t>() + action.xnn_params.xnn_offset;
+    auto const gmmDescriptor = hwLayer.XnnDescriptor.GmmDescriptor;
+    auto const xnnParam = gmmDescriptor.Get<uint8_t>() + action.xnn_params.xnn_offset;
     setDescriptor(xnnParam, action.xnn_params.xnn_value, action.xnn_params.xnn_value_size);
 }
 
@@ -318,7 +318,7 @@ void HardwareModelVerbose::executeDebugAction(dbg_action& action)
 
 void HardwareModelVerbose::dumpXnnDescriptor(uint32_t layerNumber, FILE *file)
 {
-    auto lyrDsc = hardwareLayers.at(layerNumber)->XnnDescriptor;
+    auto & lyrDsc = GetLayer(layerNumber).XnnDescriptor;
     fprintf(file, "\nDescriptor space\n");
     fprintf(file, "-----------------------------------------------------------------\n");
     fprintf(file, "---                   values (dwords  MSB->LSB)               ---\n");
@@ -365,7 +365,7 @@ void HardwareModelVerbose::dumpGmmDescriptor(uint32_t layerNumber, FILE *file)
     fprintf(file, "-----------------------------------------------------------------\n");
     fprintf(file, "---                   values (dwords  MSB->LSB)               ---\n");
 
-    auto gmmConfig = hardwareLayers.at(layerNumber)->GmmDescriptor;
+    auto const & gmmConfig = GetLayer(layerNumber).GmmDescriptor;
     for (size_t i = 0; i < sizeof(GMM_CONFIG) / sizeof(uint32_t); i++)
     {
         DUMP_GMM_ADDR(file, (gmmConfig.Get()->_value[i]));

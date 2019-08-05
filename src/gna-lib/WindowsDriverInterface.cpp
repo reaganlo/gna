@@ -248,7 +248,7 @@ void WindowsDriverInterface::createRequestDescriptor(HardwareRequest& hardwareRe
         }
     }
 
-    scoreConfigSize = ALIGN(scoreConfigSize, sizeof(uint64_t));
+    scoreConfigSize = RoundUp(scoreConfigSize, sizeof(uint64_t));
     hardwareRequest.CalculationData.reset(new uint8_t[scoreConfigSize]);
 
     uint8_t *calculationData = static_cast<uint8_t *>(hardwareRequest.CalculationData.get());
@@ -267,9 +267,9 @@ void WindowsDriverInterface::createRequestDescriptor(HardwareRequest& hardwareRe
 
     for (const auto &driverBuffer : hardwareRequest.DriverMemoryObjects)
     {
-        buffer->memoryId = driverBuffer.Buffer->GetId();
+        buffer->memoryId = driverBuffer.Buffer.GetId();
         buffer->offset = 0;
-        buffer->size = driverBuffer.Buffer->GetSize();
+        buffer->size = driverBuffer.Buffer.GetSize();
         buffer->patchCount = driverBuffer.Patches.size();
 
         for (const auto &driverPatch : driverBuffer.Patches)

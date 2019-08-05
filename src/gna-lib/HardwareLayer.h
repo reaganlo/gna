@@ -52,12 +52,12 @@ struct FiltersTensor;
 
 struct DescriptorParameters
 {
-    DescriptorParameters(Layer* softwareLayer,
+    DescriptorParameters(Layer const & softwareLayer,
                         const LayerDescriptor& xnnDescriptor);
 
     virtual ~DescriptorParameters() = default;
 
-    Layer* SoftwareLayer;
+    Layer const & SoftwareLayer;
     LayerDescriptor XnnDescriptor;
     const AddrGmmCfg GmmDescriptor;
     GetHwOffset GetBufferOffset;

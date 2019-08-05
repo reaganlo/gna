@@ -25,6 +25,7 @@
 
 #include "HardwareModelSue1.h"
 
+#include "CompiledModel.h"
 #include "GnaException.h"
 #include "HardwareLayer.h"
 #include "LayerDescriptor.h"
@@ -40,66 +41,89 @@ using namespace GNA;
 
 HardwareCapabilities HardwareModelSue1::sueCapabilities = HardwareCapabilities{ Gna2DeviceVersionSueCreek };
 
-HardwareModelSue1::HardwareModelSue1(
-    const std::vector<std::unique_ptr<Layer>>& layers, uint32_t gmmCount,
-    std::unique_ptr<Memory> dumpMemory) :
-    HardwareModel(layers, gmmCount, sueCapabilities)
+HardwareModelSue1::HardwareModelSue1(CompiledModel const & softwareModel, intel_gna_alloc_cb customAllocIn) :
+    HardwareModel(softwareModel, sueCapabilities),
+    customAlloc{ customAllocIn }
 {
-    ldMemory = std::move(dumpMemory);
 }
 
 const LayerDescriptor& HardwareModelSue1::GetDescriptor(uint32_t layerIndex) const
 {
-    return hardwareLayers.at(layerIndex)->XnnDescriptor;
+    return GetLayer(layerIndex).XnnDescriptor;
 }
 
 uint32_t HardwareModelSue1::GetOutputOffset(uint32_t layerIndex) const
 {
-    auto layer = hardwareLayers.at(layerIndex).get();
-    return layer->GetLdOutputOffset() - GetDescriptor(0).GetOffset();
+    auto layer = GetLayer(layerIndex);
+    return layer.GetLdOutputOffset() - GetDescriptor(0).GetOffset();
 }
 
 uint32_t HardwareModelSue1::GetInputOffset(uint32_t layerIndex) const
 {
-    auto layer = hardwareLayers.at(layerIndex).get();
-    return layer->GetLdInputOffset() - GetDescriptor(0).GetOffset();
+    auto layer = GetLayer(layerIndex);
+    return layer.GetLdInputOffset() - GetDescriptor(0).GetOffset();
 }
 
 void HardwareModelSue1::allocateLayerDescriptors()
 {
-    baseDescriptor = std::make_unique<LayerDescriptor>(
-        *ldMemory, ldMemory->GetBuffer(), hwCapabilities);
-    if (!baseDescriptor)
+    auto const ldMemorySize = RoundUp(HardwareModel::calculateDescriptorSize(false), PAGE_SIZE);
+    auto const modelSize = model.GetSize();
+    totalModelSize = ldMemorySize + modelSize;
+
+    exportMemory = customAlloc(totalModelSize);
+    if (!exportMemory)
     {
         throw GnaException{ Gna2StatusResourceAllocationError };
     }
+    memset(exportMemory, 0, totalModelSize);
+
+    ldMemory = std::make_unique<Memory>(exportMemory, ldMemorySize);
+    if (!ldMemory)
+    {
+        throw GnaException{ Gna2StatusResourceAllocationError };
+    }
+
+    prepareBaseDescriptor();
 }
 
 uint32_t HardwareModelSue1::GetBufferOffset(const BaseAddress& address) const
 {
-    if (address.InRange(ldMemory->GetBuffer(),
-        static_cast<uint32_t>(ldMemory->GetSize())))
-    {
-        return address.GetOffset(BaseAddress{ ldMemory->GetBuffer() });
-    }
-
-    auto offset = static_cast<uint32_t>(ldMemory->GetSize());
-    for (auto memory : modelMemoryObjects)
-    {
-        if (address.InRange(memory->GetBuffer(),
-            static_cast<uint32_t>(memory->GetSize())))
-        {
-            return offset + address.GetOffset(BaseAddress{ memory->GetBuffer() });
-        }
-
-        offset += static_cast<uint32_t>(memory->GetSize());
-    }
-
-    return 0;
+    return allocations.GetBufferOffset(address);
 }
 
-uint32_t HardwareModelSue1::CalculateDescriptorSize(const uint32_t layerCount)
+void * HardwareModelSue1::Export()
 {
-    auto ldSize = HardwareModel::CalculateDescriptorSize(layerCount, 0);
-    return ALIGN(ldSize, PAGE_SIZE);
+    Build({});
+
+    // copying data..
+    void * data = static_cast<uint8_t*>(exportMemory) + ldMemory->GetSize();
+    model.CopyData(data, model.GetSize());
+
+    return exportMemory;
+}
+
+void HardwareModelSue1::PopulateHeader(intel_gna_model_header & modelHeader) const
+{
+    // TODO:3: review
+    auto const &input = model.GetLayer(0).Input;
+    auto const &output = model.GetLayer(model.LayerCount - 1).Output;
+    uint32_t outputsOffset = GetOutputOffset(model.LayerCount - 1);
+    uint32_t inputsOffset = GetInputOffset(0);
+    modelHeader =
+    {
+        0,
+        static_cast<uint32_t>(totalModelSize),
+        1,
+        model.LayerCount,
+        input.Mode.Size,
+        output.Mode.Size,
+        input.Count,
+        output.Count,
+        inputsOffset,
+        outputsOffset,
+        0,
+        0,
+        0,
+        {}
+    };
 }

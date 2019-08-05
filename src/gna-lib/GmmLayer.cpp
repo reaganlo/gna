@@ -51,7 +51,7 @@ GmmParams::GmmParams(const gna_gmm_config &config, const uint32_t inputElementCo
 
     MeanSetOffsetSize = config.mixtureComponentCount * inputElementCount * GMM_MEAN_VALUE_SIZE;
     VarSetOffsetSize = config.mixtureComponentCount * inputElementCount * VarianceSize;
-    GaussConstSetOffsetSize = ALIGN(config.mixtureComponentCount, 2) * GMM_CONSTANTS_SIZE;
+    GaussConstSetOffsetSize = RoundUp(config.mixtureComponentCount, 2) * GMM_CONSTANTS_SIZE;
     if (GMM_LAYOUT_INTERLEAVED == config.layout)
     {
         MeanSetOffsetSize = MeanSetOffsetSize + VarSetOffsetSize + GaussConstSetOffsetSize;
@@ -97,11 +97,11 @@ Tensor const & GmmLayer::GetOperand(uint32_t operandIndex) const
     // TODO:3:replace with generic solution when all layers are transforms
     switch (operandIndex)
     {
-    case 2:
+    case GmmMeanOperandIndex: // or GmmInterleavedOperandIndex
         throw GnaException(Gna2StatusNotImplemented);
-    case 3:
+    case GmmInverseCovarianceOperandIndex:
         throw GnaException(Gna2StatusNotImplemented);
-    case 4:
+    case GmmGaussianConstantOperandIndex:
         throw GnaException(Gna2StatusNotImplemented);
     default:
         return Layer::GetOperand(operandIndex);
@@ -113,16 +113,16 @@ void GmmLayer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const
     Layer::UpdateKernelConfigs(layerConfiguration);
 
     BaseAddress inputBuffer = Input;
-    if (layerConfiguration.Buffers.count(InputComponent) > 0)
+    if (layerConfiguration.Buffers.count(InputOperandIndex) > 0)
     {
-        inputBuffer = layerConfiguration.Buffers[InputComponent];
+        inputBuffer = layerConfiguration.Buffers[InputOperandIndex];
         Input.ValidateBuffer(inputBuffer);
     }
 
     BaseAddress outputBuffer = Output;
-    if (layerConfiguration.Buffers.count(OutputComponent) > 0)
+    if (layerConfiguration.Buffers.count(OutputOperandIndex) > 0)
     {
-        outputBuffer = layerConfiguration.Buffers[OutputComponent];
+        outputBuffer = layerConfiguration.Buffers[OutputOperandIndex];
         Output.ValidateBuffer(outputBuffer);
     }
 

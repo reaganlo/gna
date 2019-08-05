@@ -44,18 +44,21 @@ typedef enum Gna2PoolingMode Mode;
 typedef enum Gna2ErrorType ErrorType;
 typedef enum Gna2ItemType ItemType;
 
+constexpr uint32_t ScratchpadOperandIndex = UINT32_MAX;
 constexpr uint32_t InputOperandIndex = 0;
 constexpr uint32_t OutputOperandIndex = 1;
-constexpr uint32_t OutputIntermediateOperandIndex = UINT32_MAX;
 constexpr uint32_t WeightOperandIndex = 2;
-constexpr uint32_t FilterOperandIndex  = 2;
-constexpr uint32_t BiasOperandIndex  = 3;
-constexpr uint32_t PwlOperandIndex  = 4;
-constexpr uint32_t WeightScaleFactorOperandIndex  = 5;
-constexpr uint32_t GmmInterleavedOperandIndex  = 2;
-constexpr uint32_t GmmMeanOperandIndex  = 2;
-constexpr uint32_t GmmInverseCovarianceOperandIndex  = 3;
-constexpr uint32_t GmmGaussianConstantOperandIndex  = 4;
+constexpr uint32_t FilterOperandIndex = 2;
+constexpr uint32_t BiasOperandIndex = 3;
+constexpr uint32_t PwlOperandIndex = 4;
+constexpr uint32_t WeightScaleFactorOperandIndex = 5;
+constexpr uint32_t GmmInterleavedOperandIndex = 2;
+constexpr uint32_t GmmMeanOperandIndex = 2;
+constexpr uint32_t GmmInverseCovarianceOperandIndex = 3;
+constexpr uint32_t GmmGaussianConstantOperandIndex = 4;
+
+// NOTE: temporary solution for simple and fast kernel buffer indexing, always set as last + 1 operand index 
+constexpr uint32_t ScratchpadOperandKernelIndex = 6;
 
 }
 

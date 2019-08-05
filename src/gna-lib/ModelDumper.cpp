@@ -49,43 +49,26 @@ using namespace GNA;
 void* Device::Dump(gna_model_id modelId, gna_device_generation deviceGeneration, intel_gna_model_header* modelHeader, Gna2Status* status, intel_gna_alloc_cb customAlloc)
 {
     // Validate parameters
-
     Expect::NotNull(status);
     Expect::NotNull(modelHeader);
     Expect::NotNull(reinterpret_cast<void *>(customAlloc));
     Expect::Equal(GNA_1_0_EMBEDDED, deviceGeneration, Gna2StatusAccelerationModeNotSupported); // Temporary limitation
 
-    auto& model = models.at(modelId);
-    auto const layerCount = model->LayerCount;
-
-    auto const ldSize = HardwareModelSue1::CalculateDescriptorSize(layerCount);
-    auto const modelSize = model->CalculateSize();
-    auto const totalSize = ldSize + modelSize;
-
-    void * address = customAlloc(totalSize);
-
-    Expect::NotNull(address);
-    memset(address, 0, totalSize);
-
-    auto dumpMemory = std::make_unique<Memory>(address, ldSize);
+    auto const & model = *models.at(modelId);
 
     // creating HW layer descriptors directly into dump memory
-    auto hwModel = std::make_unique<HardwareModelSue1>(
-        model->GetLayers(), model->GmmCount, std::move(dumpMemory));
-    hwModel->Build(model->GetModelMemoryList(), {});
+    auto hwModel = std::make_unique<HardwareModelSue1>(model, customAlloc);
+    if (!hwModel)
+    {
+        throw GnaException{ Gna2StatusResourceAllocationError };
+    }
+    auto const address = hwModel->Export();
+    if (!address)
+    {
+        throw GnaException{ Gna2StatusResourceAllocationError };
+    }
 
-    // copying data..
-    void *data = static_cast<uint8_t*>(address) + ldSize;
-    model->CopyData(data, modelSize);
-
-    // TODO:3: review
-    // filling model header
-    auto const &input = model->GetLayer(0)->Input;
-    auto const &output = model->GetLayer(layerCount - 1)->Output;
-    uint32_t outputsOffset = hwModel->GetOutputOffset(layerCount - 1);
-    uint32_t inputsOffset = hwModel->GetInputOffset(0);
-    *modelHeader = { 0, static_cast<uint32_t>(totalSize), 1, layerCount, input.Mode.Size,
-        output.Mode.Size, input.Count, output.Count, inputsOffset, outputsOffset, 0, 0, 0, {} };
+    hwModel->PopulateHeader(*modelHeader);
 
     *status = Gna2StatusSuccess;
     return address;

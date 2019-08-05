@@ -32,27 +32,7 @@ BufferMap::BufferMap(const BaseAddress& inputBuffer, const BaseAddress& outputBu
     map()
 {
     if (inputBuffer)
-        emplace(InputComponent, inputBuffer);
+        emplace(InputOperandIndex, inputBuffer);
     if (outputBuffer)
-        emplace(OutputComponent, outputBuffer);
-}
-
-BaseAddress& BufferMap::operator[](GnaComponentType type)
-{
-    return BufferMapBase::operator[](ModelWrapper::GetOperandIndex(type));
-}
-
-BaseAddress BufferMap::at(GnaComponentType type) const
-{
-    return BufferMapBase::at(ModelWrapper::GetOperandIndex(type));
-}
-
-BufferMap::size_type BufferMap::count(GnaComponentType type) const
-{
-    return BufferMapBase::count(ModelWrapper::GetOperandIndex(type));
-}
-
-BufferMap::size_type BufferMap::erase(GnaComponentType type)
-{
-    return BufferMapBase::erase(ModelWrapper::GetOperandIndex(type));
+        emplace(OutputOperandIndex, outputBuffer);
 }

@@ -98,6 +98,20 @@ typedef enum _TransformOperation
     TransformOperationCount,
 } TransformOperation;
 
+template<typename T, typename X>
+T RoundUp(T number, X significanceIn)
+{
+    auto const significance = static_cast<T>(significanceIn);
+    if (0 == significance)
+    {
+        return number;
+    }
+    else
+    {
+        return ((number + significance - 1) / significance) * significance;
+    }
+}
+
 template<typename T>
 T GnaFloor(T number, T significance)
 {

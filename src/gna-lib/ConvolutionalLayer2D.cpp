@@ -68,12 +68,14 @@ Tensor const & ConvolutionalLayer2D::GetOperand(uint32_t operandIndex) const
 {
     switch (operandIndex)
     {
-    case 2://[[fallthrough]]
-    case 3:
+    case ScratchpadOperandIndex:
+        return Output.ScratchPad;
+    case FilterOperandIndex://[[fallthrough]]
+    case BiasOperandIndex:
     {
         return getTransformOperand(ConvolutionalTransform2D, operandIndex);
     }
-    case 4:
+    case PwlOperandIndex:
     {
         return getTransformOperand(ActivationTransform, 2);// TODO:3:Intentional literal, replace with generic solution when all layers are transforms
     }
@@ -84,7 +86,7 @@ Tensor const & ConvolutionalLayer2D::GetOperand(uint32_t operandIndex) const
 
 bool ConvolutionalLayer2D::IsSupported(const Gna2Operation & operation)
 {
-    return 4 == operation.Operands[0]->Shape.NumberOfDimensions;
+    return 4 == operation.Operands[InputOperandIndex]->Shape.NumberOfDimensions;
 }
 
 DataConfig ConvolutionalLayer2D::GetDataMode() const

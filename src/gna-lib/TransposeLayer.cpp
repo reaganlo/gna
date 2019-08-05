@@ -59,11 +59,11 @@ TransposeLayer::TransposeLayer(
     transposeKernels{ AccelerationDetector::GetKernelMap<TransposeKernel>(
                                             KERNEL_TRANSPOSE, KernelMode{Input.Mode}) }
 {
-    auto *inputTensor = reinterpret_cast<const Gna2Tensor *>(apiOperation.Operands[0]);
+    auto *inputTensor = reinterpret_cast<const Gna2Tensor *>(apiOperation.Operands[InputOperandIndex]);
     Expect::Equal(inputTensor->Shape.NumberOfDimensions,
             static_cast<uint32_t>(2), Gna2StatusXnnErrorLyrCfg);
 
-    auto *outputTensor = reinterpret_cast<const Gna2Tensor *>(apiOperation.Operands[1]);
+    auto *outputTensor = reinterpret_cast<const Gna2Tensor *>(apiOperation.Operands[OutputOperandIndex]);
     Expect::Equal(outputTensor->Shape.NumberOfDimensions,
             static_cast<uint32_t>(2), Gna2StatusXnnErrorLyrCfg);
 
@@ -85,16 +85,16 @@ TransposeLayer::TransposeLayer(
 void TransposeLayer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const
 {
     BaseAddress inputBuffer = Input;
-    if (layerConfiguration.Buffers.count(InputComponent) != 0)
+    if (layerConfiguration.Buffers.count(InputOperandIndex) != 0)
     {
-        inputBuffer = layerConfiguration.Buffers[InputComponent];
+        inputBuffer = layerConfiguration.Buffers[InputOperandIndex];
         Input.ValidateBuffer(inputBuffer);
     }
 
     BaseAddress outputBuffer = Output;
-    if (layerConfiguration.Buffers.count(OutputComponent) != 0)
+    if (layerConfiguration.Buffers.count(OutputOperandIndex) != 0)
     {
-        outputBuffer = layerConfiguration.Buffers[OutputComponent];
+        outputBuffer = layerConfiguration.Buffers[OutputOperandIndex];
         Output.ValidateBuffer(outputBuffer);
     }
 

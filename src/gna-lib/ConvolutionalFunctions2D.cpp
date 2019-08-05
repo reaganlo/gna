@@ -236,11 +236,11 @@ Tensor const & ConvolutionFunction2D::GetOperand(uint32_t operandIndex) const
 {
     switch (operandIndex)
     {
-    case 2:
+    case FilterOperandIndex:
     {
         return GetOperandIfExistOrThrow(Filters);
     }
-    case 3:
+    case BiasOperandIndex:
     {
         return GetOperandIfExistOrThrow(Biases);
     }

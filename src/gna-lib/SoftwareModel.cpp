@@ -42,6 +42,21 @@
 
 using namespace GNA;
 
+void SoftwareModel::buildSingleLayer(std::unique_ptr<Layer> & layer, uint32_t& maxScratchPadSize)
+{
+    if (!layer)
+    {
+        throw GnaException(Gna2StatusXnnErrorLyrCfg);
+    }
+
+    auto operandSize = layer->TryGetOperandSize(ScratchpadOperandIndex);
+    maxScratchPadSize = ((maxScratchPadSize) > (operandSize)) ? (maxScratchPadSize) : (operandSize);
+
+    layer->VerifyHas1BInputAnd2BWeight();
+
+    layers.push_back(std::move(layer));
+}
+
 void SoftwareModel::CheckModel(uint32_t declaredBatchSize, void * operationPointer) const
 {
     Expect::InRange(declaredBatchSize, ui32_1, XNN_N_GROUP_MAX,
@@ -56,7 +71,7 @@ SoftwareModel::SoftwareModel(const gna_model& network,
     BaseValidator validator,
     const std::vector<Gna2AccelerationMode>& supportedCpuAccelerationsIn) :
     layerCount{ network.nLayers },
-    supportedCpuAccelerations { supportedCpuAccelerationsIn }
+    supportedCpuAccelerations{ supportedCpuAccelerationsIn }
 {
     CheckModel(network.nGroup, network.pLayers);
     build(network.pLayers, validator);
@@ -87,13 +102,13 @@ uint32_t SoftwareModel::Score(
 
     LogAcceleration(accel);
 
-    auto config = InferenceConfig{fvBuffers, requestConfiguration};
-    auto iter = Layers.begin() + layerIndex;
-    auto end = iter + layerCountIn;
-    for (; iter < end; ++iter)
+    auto config = InferenceConfig{ fvBuffers, requestConfiguration };
+    auto layerIter = layers.cbegin() + layerIndex;
+    auto const layerEnd = layerIter + layerCountIn;
+    for (; layerIter < layerEnd; ++layerIter)
     {
-        auto& layer = *iter;
-        auto found = requestConfiguration.LayerConfigurations.find(layerIndex);
+        auto const & layer = *layerIter;
+        auto const found = requestConfiguration.LayerConfigurations.find(layerIndex);
         if (found == requestConfiguration.LayerConfigurations.end())
         {
             // TODO:3:simplify to single Compute as in Cnn2D
@@ -101,7 +116,7 @@ uint32_t SoftwareModel::Score(
         }
         else
         {
-            auto layerConfiguration = found->second.get();
+            auto const layerConfiguration = found->second.get();
             layer->Compute(*layerConfiguration, accel, config.GetEffective(*layer));
         }
 
@@ -119,9 +134,44 @@ void SoftwareModel::validateConfiguration(const RequestConfiguration& configurat
     //Expect::True(outputLayerCount == configuration.OutputBuffersCount, Gna2StatusXnnErrorNetworkOutputs);*/
 }
 
+uint32_t SoftwareModel::GetMaximumOperandSize(uint32_t operandIndex)
+{
+    auto const & found = maximumOperandSizes.find(operandIndex);
+    if (maximumOperandSizes.cend() != found)
+    {
+        return found->second;
+    }
+
+    uint32_t maxSize = 0;
+    for (auto const & layer : layers)
+    {
+        auto const operand = layer->TryGetOperand(operandIndex);
+        if (nullptr != operand)
+        {
+            auto const bufferSize = operand->Size;
+            maxSize = ((maxSize) > (bufferSize)) ? (maxSize) : (bufferSize);
+        }
+    }
+    maximumOperandSizes.emplace(operandIndex, maxSize);
+    return maxSize;
+}
+
+Layer const& SoftwareModel::GetLayer(uint32_t layerIndex) const
+{
+    try
+    {
+        auto const & layer = layers.at(layerIndex);
+        return *layer;
+    }
+    catch (const std::out_of_range&)
+    {
+        throw GnaException(Gna2StatusIdentifierInvalid);
+    }
+}
+
 InferenceConfig::InferenceConfig(KernelBuffers* fvBuffers,
     RequestConfiguration const& requestConfiguration) :
-    SaturationCount{0}
+    SaturationCount{ 0 }
 {
     auto buffers = const_cast<KernelBuffers const *>(fvBuffers);
     executionConfig = std::make_unique<ExecutionConfig>(buffers,
@@ -140,16 +190,16 @@ InferenceConfig::InferenceConfig(KernelBuffers* fvBuffers,
     }
 }
 
-ExecutionConfig& InferenceConfig::getForAdlFix(Layer& layer) const
+ExecutionConfig& InferenceConfig::getForAdlFix(Layer const & layer) const
 {
-    if (layer.VerifyHas1BInputAnd2BWeight())
+    if (layer.Is1BInputAnd2BWeight())
     {
         return *executionConfigAdl;
     }
     return *executionConfig;
 }
 
-ExecutionConfig& InferenceConfig::getNormal(Layer& layer) const
+ExecutionConfig& InferenceConfig::getNormal(Layer const & layer) const
 {
     UNREFERENCED_PARAMETER(layer);
     return *executionConfig;

@@ -25,50 +25,44 @@
 
 #pragma once
 
-#include "HardwareLayer.h"
-#include "Memory.h"
 #include "Address.h"
+#include "HardwareLayer.h"
 #include "KernelArguments.h"
 #include "LayerDescriptor.h"
+#include "MemoryContainer.h"
 #include "SubModel.h"
 
 #include "gna-api.h"
 
 #include <cstdint>
+#include <map>
 #include <memory>
-#include <vector>
 
 #include "gna2-common-impl.h"
 
 namespace GNA
 {
 
+class CompiledModel;
+
 class HardwareCapabilities;
+
 class Layer;
 
 class HardwareModel
 {
 public:
-    static uint32_t CalculateDescriptorSize(
-        const uint32_t layerCount,
-        const uint32_t gmmLayersCount);
-
-    HardwareModel(const std::vector<std::unique_ptr<Layer>>& layers, uint32_t gmmCount,
-        const HardwareCapabilities& hwCaps);
+    HardwareModel(CompiledModel const & softwareModel, const HardwareCapabilities& hwCaps);
 
     HardwareModel(const HardwareModel &) = delete;
     HardwareModel& operator=(const HardwareModel&) = delete;
     virtual ~HardwareModel() = default;
 
-    void Build(const std::vector<Memory* >& modelMemoryObjectsIn,
-        const std::vector<std::unique_ptr<SubModel>>& submodels);
+    void Build(const std::vector<std::unique_ptr<SubModel>>& submodels);
 
-    const HardwareLayer* GetLayer(uint32_t layerIndex) const
-    {
-        return hardwareLayers.at(layerIndex).get();
-    }
+    HardwareLayer const & GetLayer(uint32_t layerIndex) const;
 
-    uint64_t GetMemoryId(const BaseAddress& address) const;
+    HardwareLayer const * TryGetLayer(uint32_t layerIndex) const;
 
     /* Calculates offset proper for GNA hardware
      * Few assumptions here:
@@ -79,26 +73,32 @@ public:
     virtual uint32_t GetBufferOffset(const BaseAddress& address) const;
 
 protected:
+    uint32_t calculateDescriptorSize(bool includeGmms) const;
+
     static uint32_t getLayerDescriptorsSize(const uint32_t layerCount,
         DeviceVersion hwId = DefaultDeviceVersion);
     static uint32_t getGmmDescriptorsSize(const uint32_t gmmLayersCount);
 
     virtual void allocateLayerDescriptors();
 
+    void prepareBaseDescriptor();
+
     std::unique_ptr<LayerDescriptor> baseDescriptor;
 
-    const std::vector<std::unique_ptr<Layer>>& softwareLayers;
-    std::vector<std::unique_ptr<HardwareLayer>> hardwareLayers;
+    CompiledModel const & model;
 
     const HardwareCapabilities& hwCapabilities;
 
     const uint32_t gmmDescriptorsSize;
+
     const uint32_t xnnDescriptorsSize;
 
-    std::unique_ptr<Memory> ldMemory;
-    std::vector<Memory *> modelMemoryObjects;
+    std::vector<std::unique_ptr<HardwareLayer>> hardwareLayers;
 
-    uint32_t modelSize = 0;
+    std::unique_ptr<Memory> ldMemory;
+
+    // hardware model (ldMemory) + software model allocations
+    MemoryContainer allocations;
 };
 
 }

@@ -168,10 +168,10 @@ void RecurrentFunction::UpdateConfigBuffers(
 {
     Transform::UpdateConfigBuffers(configs, buffers);
 
-    if (buffers.count(OutputComponent) != 0)
+    if (buffers.count(OutputOperandIndex) != 0)
     {
         auto config = GetConfig(configs);
-        config->Transform.feedbackBuffer = CalculateFeedbackBuffer(buffers.at(OutputComponent));
+        config->Transform.feedbackBuffer = CalculateFeedbackBuffer(buffers.at(OutputOperandIndex));
         config->Transform.output = hiddenConfig->Transform.output;
     }
 }
@@ -212,11 +212,11 @@ Tensor const& RecurrentFunction::GetOperand(uint32_t operandIndex) const
 {
     switch (operandIndex)
     {
-    case 2:
+    case WeightOperandIndex:
     {
         return GetOperandIfExistOrThrow(Weights);
     }
-    case 3:
+    case BiasOperandIndex:
     {
         return GetOperandIfExistOrThrow(Biases);
     }

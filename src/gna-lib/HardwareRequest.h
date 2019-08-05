@@ -28,6 +28,7 @@
 #include "HardwareLayer.h"
 
 #include "DriverInterface.h"
+#include "MemoryContainer.h"
 #include "RequestConfiguration.h"
 
 #include "gna-api.h"
@@ -37,6 +38,7 @@
 #include <map>
 #include <memory>
 #include <vector>
+#include "HardwareModel.h"
 
 namespace GNA
 {
@@ -100,21 +102,20 @@ struct DriverPatch
 
 struct DriverBuffer
 {
-    explicit DriverBuffer(Memory *memoryIn) :
-        Buffer (memoryIn)
+    explicit DriverBuffer(Memory const & memoryIn) :
+        Buffer(memoryIn)
     {}
 
-    Memory *Buffer;
+    Memory const & Buffer;
     std::vector<DriverPatch> Patches = {};
 };
 
 class HardwareRequest
 {
 public:
-    // TODO:3: ldMemory should be on modelMemoryObjects
     HardwareRequest(const HardwareModelScorable& hwModelIn,
         const RequestConfiguration& requestConfigurationIn,
-        Memory *ldMemoryIn, const std::vector<Memory *>& modelMemoryObjectsIn);
+        MemoryContainer const & modelAllocations);
 
     void Invalidate();
     void Update(uint32_t layerIndex, uint32_t layerCount, GnaOperationMode mode);
@@ -158,9 +159,7 @@ private:
     void updateActiveLists(uint32_t layerIndex, uint32_t layerCount);
 
     void generateBufferPatches(const LayerConfiguration& layerConfiguration,
-                               const Layer &layer, const HardwareLayer &hwLayer);
-
-    Memory *ldMemory;
+        const Layer &layer, const HardwareLayer &hwLayer);
 };
 
 }

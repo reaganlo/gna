@@ -87,7 +87,7 @@ void ModelExportConfig::SetTarget(Gna2DeviceVersion version)
 
 void ModelExportConfig::ValidateState() const
 {
-    Expect::NotNull((void *) allocator);
+    Expect::NotNull((void *)allocator);
     //TODO:3:Consider adding ~Gna2StatusInvalidState/NotInitialized
     Expect::True(sourceDeviceId != Gna2DisabledU32, Gna2StatusIdentifierInvalid);
     Expect::True(sourceModelId != Gna2DisabledU32, Gna2StatusIdentifierInvalid);

@@ -35,7 +35,7 @@ using namespace GNA;
 
 bool ActivationHelper::IsEnabled(const Gna2Operation & apiOperation)
 {
-    const auto activation = ModelWrapper::GetOptionalOperand(apiOperation, PwlComponent, {});
+    const auto activation = ModelWrapper::GetOptionalOperand(apiOperation, PwlOperandIndex, {});
     return IsEnabled(activation);
 }
 

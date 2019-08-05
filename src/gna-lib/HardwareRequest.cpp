@@ -46,23 +46,15 @@
 using namespace GNA;
 
 HardwareRequest::HardwareRequest(const HardwareModelScorable& hwModelIn,
-                                const RequestConfiguration& requestConfigurationIn,
-                                Memory *ldMemoryIn, const std::vector<Memory *>& modelMemoryObjectsIn)
-    : HwPerfEncoding(requestConfigurationIn.GetHwInstrumentationMode()),
-      RequestConfigId(requestConfigurationIn.Id),
-      requestConfiguration(requestConfigurationIn),
-      hwModel(hwModelIn),
-      ldMemory(ldMemoryIn)
+    const RequestConfiguration& requestConfigurationIn,
+    MemoryContainer const & modelAllocations) :
+    HwPerfEncoding(requestConfigurationIn.GetHwInstrumentationMode()),
+    RequestConfigId(requestConfigurationIn.Id),
+    requestConfiguration(requestConfigurationIn),
+    hwModel(hwModelIn)
 {
-    DriverMemoryObjects.push_back(DriverBuffer{ ldMemory });
-    for (auto memory : modelMemoryObjectsIn)
-    {
-        DriverMemoryObjects.push_back(DriverBuffer{ memory });
-    }
-    for (auto memory : requestConfiguration.MemoryList)
-    {
-        DriverMemoryObjects.push_back(DriverBuffer{ memory });
-    }
+    modelAllocations.CopyEntriesTo(DriverMemoryObjects);
+    requestConfiguration.GetAllocations().CopyEntriesTo(DriverMemoryObjects);
     Invalidate();
 }
 
@@ -76,8 +68,8 @@ void HardwareRequest::Invalidate()
 
     for (auto it = layerConfigurations.cbegin(); it != layerConfigurations.cend(); ++it)
     {
-        auto layer = model.GetLayer(it->first);
-        auto hwLayer = hwModel.GetLayer(it->first);
+        auto const & layer = model.GetLayer(it->first);
+        auto const hwLayer = hwModel.TryGetLayer(it->first);
         //TODO:3:Remove when HardwareModel per submodel enabled
         if (hwLayer == nullptr)
         {
@@ -85,17 +77,17 @@ void HardwareRequest::Invalidate()
         }
         auto layerCfg = it->second.get();
 
-        generateBufferPatches(*layerCfg, *layer, *hwLayer);
+        generateBufferPatches(*layerCfg, layer, *hwLayer);
 
         if (layerCfg->ActList)
         {
-            if (INTEL_GMM != layer->Operation)
+            if (INTEL_GMM != layer.Operation)
             {
                 auto activeList = it->second->ActList.get();
 
                 auto ldActlistOffset = hwLayer->GetLdActlistOffset();
                 auto actlistOffset = hwModel.GetBufferOffsetForConfiguration(
-                                    activeList->Indices, requestConfiguration);
+                    activeList->Indices, requestConfiguration);
 
                 auto ldActlenOffset = hwLayer->GetLdActlenOffset();
                 uint16_t indices = static_cast<uint16_t>(activeList->IndicesCount);
@@ -109,7 +101,7 @@ void HardwareRequest::Invalidate()
 
                 auto ldActlistOffset = hwLayer->GetLdActlistOffset();
                 auto asladdr = hwModel.GetBufferOffsetForConfiguration(
-                                    activeList->Indices, requestConfiguration);
+                    activeList->Indices, requestConfiguration);
 
                 auto ldActlenOffset = hwLayer->GetLdActlenOffset();
                 auto indices = activeList->IndicesCount;
@@ -117,9 +109,9 @@ void HardwareRequest::Invalidate()
                 auto ldScrlenOffset = hwLayer->GetLdScrlenOffset();
                 auto scrlen = hwLayer->GetScrlen(activeList->IndicesCount);
 
-                ldPatches.push_back({ldActlistOffset, asladdr, sizeof(ASLADDR)});
-                ldPatches.push_back({ldActlenOffset, indices, sizeof(ASTLISTLEN)});
-                ldPatches.push_back({ldScrlenOffset, scrlen, sizeof(GMMSCRLEN)});
+                ldPatches.push_back({ ldActlistOffset, asladdr, sizeof(ASLADDR) });
+                ldPatches.push_back({ ldActlenOffset, indices, sizeof(ASTLISTLEN) });
+                ldPatches.push_back({ ldScrlenOffset, scrlen, sizeof(GMMSCRLEN) });
             }
         }
     }
@@ -127,13 +119,13 @@ void HardwareRequest::Invalidate()
 
 void HardwareRequest::Update(uint32_t layerIndex, uint32_t layerCount, GnaOperationMode mode)
 {
-    auto hwLayer = hwModel.GetLayer(layerIndex);
+    auto const & hwLayer = hwModel.GetLayer(layerIndex);
 
     Mode = mode;
-    LayerBase = hwLayer->GetXnnDescriptorOffset();
-    if(GMM == mode)
+    LayerBase = hwLayer.GetXnnDescriptorOffset();
+    if (GMM == mode)
     {
-        GmmOffset = hwLayer->GetGmmDescriptorOffset();
+        GmmOffset = hwLayer.GetGmmDescriptorOffset();
     }
     LayerCount = layerCount;
 
@@ -142,7 +134,7 @@ void HardwareRequest::Update(uint32_t layerIndex, uint32_t layerCount, GnaOperat
 }
 
 void HardwareRequest::generateBufferPatches(const LayerConfiguration& layerConfiguration,
-        const Layer &layer, const HardwareLayer &hwLayer)
+    const Layer &layer, const HardwareLayer &hwLayer)
 {
     const auto& buffers = layerConfiguration.Buffers;
     auto& ldPatches = DriverMemoryObjects.front().Patches;
@@ -156,32 +148,32 @@ void HardwareRequest::generateBufferPatches(const LayerConfiguration& layerConfi
         uint32_t ldOffset = 0;
         switch (componentType)
         {
-            case InputComponent:
-                ldOffset = hwLayer.GetLdInputOffset();
-                break;
-            case OutputComponent:
+        case InputOperandIndex:
+            ldOffset = hwLayer.GetLdInputOffset();
+            break;
+        case OutputOperandIndex:
+        {
+            ldOffset = hwLayer.GetLdOutputOffset();
+            if (INTEL_RECURRENT == layer.Operation)
             {
-                ldOffset = hwLayer.GetLdOutputOffset();
-                if (INTEL_RECURRENT == layer.Operation)
-                {
-                    auto recurrentFunction = layer.Transforms.Get<RecurrentFunction>(RecurrentTransform);
-                    auto newFbAddress = recurrentFunction->CalculateFeedbackBuffer(address);
-                    auto feedbackBufferOffset = hwModel.GetBufferOffsetForConfiguration(
-                        newFbAddress, requestConfiguration);
-                    auto ldFeedbackOffset = hwLayer.GetLdFeedbackOffset();
-                    ldPatches.push_back({ ldFeedbackOffset, feedbackBufferOffset, sizeof(uint32_t) });
-                }
-                else if (layer.Operation == INTEL_AFFINE || layer.Operation == INTEL_GMM)
-                {
-                    auto nnopTypeOffset = hwLayer.GetLdNnopOffset();
-                    auto nnopTypeValue = hwLayer.GetNnopType(layerConfiguration.ActList != nullptr);
-                    ldPatches.push_back({ nnopTypeOffset, nnopTypeValue, sizeof(uint8_t) });
-                }
-                break;
+                auto recurrentFunction = layer.Transforms.Get<RecurrentFunction>(RecurrentTransform);
+                auto newFbAddress = recurrentFunction->CalculateFeedbackBuffer(address);
+                auto feedbackBufferOffset = hwModel.GetBufferOffsetForConfiguration(
+                    newFbAddress, requestConfiguration);
+                auto ldFeedbackOffset = hwLayer.GetLdFeedbackOffset();
+                ldPatches.push_back({ ldFeedbackOffset, feedbackBufferOffset, sizeof(uint32_t) });
             }
-            case IntermediateOutputComponent:
-                ldOffset = hwLayer.GetLdIntermediateOutputOffset();
-                break;
+            else if (layer.Operation == INTEL_AFFINE || layer.Operation == INTEL_GMM)
+            {
+                auto nnopTypeOffset = hwLayer.GetLdNnopOffset();
+                auto nnopTypeValue = hwLayer.GetNnopType(layerConfiguration.ActList != nullptr);
+                ldPatches.push_back({ nnopTypeOffset, nnopTypeValue, sizeof(uint8_t) });
+            }
+            break;
+        }
+        case ScratchpadOperandIndex:
+            ldOffset = hwLayer.GetLdIntermediateOutputOffset();
+            break;
             // TODO:3: support updating below components
             //case WeightComponent:
             //    ldOffset = hwLayer.GetLdWeightOffset();
@@ -207,8 +199,8 @@ void HardwareRequest::generateBufferPatches(const LayerConfiguration& layerConfi
             //case RecurrentComponent:
                 //ldOffset = hwLayer.GetLdFeedbackOffset();
                 //break;
-            default:
-                throw GnaException { Gna2StatusUnknownError };
+        default:
+            throw GnaException{ Gna2StatusUnknownError };
         }
 
         ldPatches.push_back({ ldOffset, bufferOffset, sizeof(uint32_t) });
@@ -226,8 +218,8 @@ void HardwareRequest::updateActiveLists(uint32_t layerIndex, uint32_t layerCount
         auto upperBound = layerConfigurations.upper_bound(layerIndex + layerCount);
         for (auto it = lowerBound; it != upperBound; ++it)
         {
-            auto layer = model.GetLayer(it->first);
-            if (it->second->ActList && INTEL_GMM == layer->Operation)
+            auto const & layer = model.GetLayer(it->first);
+            if (it->second->ActList && INTEL_GMM == layer.Operation)
             {
                 activeLists[layerIndex] = true;
                 break;
@@ -235,4 +227,3 @@ void HardwareRequest::updateActiveLists(uint32_t layerIndex, uint32_t layerCount
         }
     }
 }
-

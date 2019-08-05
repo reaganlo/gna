@@ -43,54 +43,111 @@ using namespace GNA;
 
 RequestConfiguration::RequestConfiguration(CompiledModel& model, gna_request_cfg_id configId,
     DeviceVersion consistentDeviceIn) :
-    Model{model},
-    Id{configId},
-    BufferElementCount{HardwareCapabilities::GetHardwareConsistencySettings(consistentDeviceIn)},
-    consistentDevice{consistentDeviceIn}
+    Model{ model },
+    Id{ configId },
+    BufferElementCount{ HardwareCapabilities::GetHardwareConsistencySettings(consistentDeviceIn) },
+    consistentDevice{ consistentDeviceIn }
 {
 }
 
 void RequestConfiguration::AddBuffer(uint32_t operandIndex, uint32_t layerIndex, void *address)
 {
-    auto const layer = Model.GetLayer(layerIndex);
-    auto const operandsMax =  ModelWrapper::GetOperationInfo(layer->OperationNew, NumberOfOperandsMax);
+    auto context = AddBufferContext(Model, operandIndex, layerIndex, address);
+    storeAllocationIfNew(context.Address, context.Size);
 
-    Expect::InRange(operandIndex, operandsMax, Gna2StatusXnnErrorLyrCfg);
-    Expect::NotNull(address);
+    if (ScratchpadOperandIndex == layerIndex)
+    {
+        addBufferForMultipleLayers(context);
+    }
+    else
+    {
+        addBufferForSingleLayer(context);
 
+    }
+    Model.InvalidateHardwareRequestConfig(Id);
+}
+
+RequestConfiguration::AddBufferContext::AddBufferContext(CompiledModel & model,
+    uint32_t operandIndexIn, uint32_t layerIndexIn, void * addressIn) :
+    SoftwareLayer{ nullptr },
+    Operand{ nullptr },
+    OperandIndex{ operandIndexIn },
+    LayerIndex{ layerIndexIn },
+    Address{ addressIn }
+{
+    Expect::NotNull(Address);
+
+    if (ScratchpadOperandIndex == LayerIndex)
+    {
+        Size = model.GetMaximumOperandSize(OperandIndex);
+    }
+    else
+    {
+        SoftwareLayer = &model.GetLayer(LayerIndex);
+        Operand = &SoftwareLayer->GetOperand(OperandIndex);
+        Size = Operand->Size;
+    }
+}
+
+void RequestConfiguration::addBufferForMultipleLayers(AddBufferContext & context)
+{
+    context.LayerIndex = 0;
+    for (auto const & layerIter : Model.GetLayers())
+    {
+        context.SoftwareLayer = layerIter.get(); // not null assured
+        context.Operand = context.SoftwareLayer->TryGetOperand(context.OperandIndex);
+
+        applyBufferForSingleLayer(context);
+        context.LayerIndex++;
+    }
+}
+
+void RequestConfiguration::addBufferForSingleLayer(AddBufferContext & context)
+{
+    context.SoftwareLayer = &Model.GetLayer(context.LayerIndex);
+    Expect::NotNull(context.Operand, Gna2StatusXnnErrorLyrCfg);
+    applyBufferForSingleLayer(context);
+}
+
+
+void RequestConfiguration::applyBufferForSingleLayer(AddBufferContext & context)
+{
+    if (nullptr != context.Operand)
+    {
+        auto & layerConfiguration = getLayerConfiguration(context.LayerIndex);
+        layerConfiguration.EmplaceBuffer(context.OperandIndex, context.Address);
+
+        // if invalidate fails, we don't know if it's already been used thus no recovery from this
+        context.SoftwareLayer->UpdateKernelConfigs(layerConfiguration);
+    }
+}
+
+LayerConfiguration & RequestConfiguration::getLayerConfiguration(uint32_t layerIndex)
+{
     auto const found = LayerConfigurations.emplace(layerIndex, std::make_unique<LayerConfiguration>());
-    auto const layerConfiguration = found.first->second.get();
-
-    auto const emplaced = layerConfiguration->Buffers.emplace(operandIndex, address);
-    Expect::True(emplaced.second, Gna2StatusIdentifierInvalid);
-
-    auto const bufferSize = layer->GetOperand(operandIndex).Size;
-    addMemoryObject(address, bufferSize);
-
-    Model.InvalidateConfig(Id, layerConfiguration, layerIndex);
+    auto & layerConfiguration = *found.first->second;
+    return layerConfiguration;
 }
 
 void RequestConfiguration::AddActiveList(uint32_t layerIndex, const ActiveList& activeList)
 {
-    const auto& layer = *Model.GetLayer(layerIndex);
-    auto operation = layer.Operation;
+    const auto& layer = Model.GetLayer(layerIndex);
 
-    Expect::InSet(operation, { INTEL_AFFINE, INTEL_GMM }, Gna2StatusXnnErrorLyrOperation);
+    Expect::InSet(layer.Operation, { INTEL_AFFINE, INTEL_GMM }, Gna2StatusXnnErrorLyrOperation);
 
-    auto found = LayerConfigurations.emplace(
-        layerIndex, std::make_unique<LayerConfiguration>());
-    auto layerConfiguration = found.first->second.get();
+    auto & layerConfiguration = getLayerConfiguration(layerIndex);
 
-    Expect::Null(layerConfiguration->ActList.get());
+    Expect::Null(layerConfiguration.ActList.get());
 
-    addMemoryObject((void *)activeList.Indices,
-            activeList.IndicesCount * static_cast<uint32_t>(sizeof(uint32_t)));
+    storeAllocationIfNew(activeList.Indices,
+        activeList.IndicesCount * static_cast<uint32_t>(sizeof(uint32_t)));
 
     auto activeListPtr = ActiveList::Create(activeList);
-    layerConfiguration->ActList.swap(activeListPtr);
+    layerConfiguration.ActList.swap(activeListPtr);
     ++ActiveListCount;
 
-    Model.InvalidateConfig(Id, layerConfiguration, layerIndex);
+    layer.UpdateKernelConfigs(layerConfiguration);
+    Model.InvalidateHardwareRequestConfig(Id);
 }
 
 void RequestConfiguration::SetHardwareConsistency(
@@ -114,14 +171,14 @@ DeviceVersion RequestConfiguration::GetConsistentDevice() const
     return consistentDevice;
 }
 
-void RequestConfiguration::addMemoryObject(void *buffer, uint32_t bufferSize)
+void RequestConfiguration::storeAllocationIfNew(void const *buffer, uint32_t bufferSize)
 {
-    auto memory = Model.FindBuffer(buffer, bufferSize);
-    Expect::NotNull(memory, Gna2StatusIdentifierInvalid);
-
-    if (!Model.IsPartOfModel(memory))
+    // add buffer memory if is not already included in model memory
+    auto const memory = Model.GetMemoryIfNotPartOfModel(buffer, bufferSize);
+    if (nullptr != memory)
     {
-        Model.ValidateBuffer(MemoryList, memory);
-        MemoryList.push_back(memory);
+        Model.ValidateBuffer(allocations, *memory);
+        allocations.Emplace(*memory);
     }
+    // else buffer already in model memory
 }

@@ -109,8 +109,16 @@ public:
     virtual Tensor const & GetOperand(uint32_t operandIndex) const;
     Tensor const * TryGetOperand(uint32_t operandIndex) const;
 
+    uint32_t TryGetOperandSize(uint32_t operandIndex) const;
+
+    // verifies if layer has ADL bug workaround needed
+    bool Is1BInputAnd2BWeight() const
+    {
+        return has1BInputAnd2BWeight;
+    }
+
     // verifies and stores info if layer has ADL bug workaround needed
-    bool VerifyHas1BInputAnd2BWeight();
+    void VerifyHas1BInputAnd2BWeight();
 
 protected:
     std::unique_ptr<const LayerValidator> validator;
@@ -164,6 +172,9 @@ protected:
     Tensor const & getTransformOperand(TransformOperation operation, uint32_t operandIndex) const;
 
 private:
+    void addBufferAs(const BufferMap& source, uint32_t sourceType,
+        BufferMap& destination, uint32_t destinationType) const;
+
     BaseTransform const * inputTransform = nullptr;
     BaseTransform * outputTransform = nullptr;
 
@@ -171,9 +182,6 @@ private:
     bool has1BInputAnd2BWeight = false;
     // defines ADL bug workaround has been already verified
     bool is1BInputAnd2BWeightVerified = false;
-
-    void addBufferAs(const BufferMap& source, GnaComponentType sourceType,
-        BufferMap& destination, GnaComponentType destinationType) const;
 };
 
 }

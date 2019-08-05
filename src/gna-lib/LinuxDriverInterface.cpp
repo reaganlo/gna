@@ -207,7 +207,7 @@ void LinuxDriverInterface::createRequestDescriptor(HardwareRequest& hardwareRequ
             buffer.Patches.size() * sizeof(struct gna_patch);
     }
 
-    scoreConfigSize = ALIGN(scoreConfigSize, sizeof(uint64_t));
+    scoreConfigSize = RoundUp(scoreConfigSize, sizeof(uint64_t));
     hardwareRequest.CalculationData.reset(new uint8_t[scoreConfigSize]);
 
     uint8_t *calculationData = static_cast<uint8_t *>(hardwareRequest.CalculationData.get());
@@ -226,9 +226,9 @@ void LinuxDriverInterface::createRequestDescriptor(HardwareRequest& hardwareRequ
 
     for (const auto &driverBuffer : hardwareRequest.DriverMemoryObjects)
     {
-        buffer->memory_id = driverBuffer.Buffer->GetId();
+        buffer->memory_id = driverBuffer.Buffer.GetId();
         buffer->offset = 0;
-        buffer->size = driverBuffer.Buffer->GetSize();
+        buffer->size = driverBuffer.Buffer.GetSize();
         buffer->patches_ptr = reinterpret_cast<uintptr_t>(patch);
         buffer->patch_count = driverBuffer.Patches.size();
 

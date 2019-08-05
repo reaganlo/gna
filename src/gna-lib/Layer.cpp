@@ -66,7 +66,7 @@ std::unique_ptr<Layer> Layer::Create(const nn_layer& layer, const BaseValidator&
     case INTEL_RECURRENT:
         return std::make_unique<RecurrentLayer>(layer, validatorIn);
     default:
-        return nullptr;
+        throw GnaException(Gna2StatusXnnErrorLyrCfg);
     }
 }
 
@@ -77,7 +77,7 @@ std::unique_ptr<GNA::Layer> Layer::Create(const Gna2Operation & operation, const
     {
     case Gna2OperationTypeFullyConnectedAffine:
     {
-        if (operation.Operands[5] != nullptr)
+        if (operation.Operands[WeightScaleFactorOperandIndex] != nullptr)
         {
             Expect::NotNull(operation.Parameters);
             Expect::NotNull(operation.Parameters[0]);
@@ -101,8 +101,8 @@ std::unique_ptr<GNA::Layer> Layer::Create(const Gna2Operation & operation, const
         {
             return std::make_unique<CnnLayer>(operation, validatorIn);
         }
-    /*case Gna2OperationTypeGmm:
-        return std::make_unique<GmmLayer>(operation, validatorIn);*/
+        /*case Gna2OperationTypeGmm:
+            return std::make_unique<GmmLayer>(operation, validatorIn);*/
     case Gna2OperationTypeTransposition:
         return std::make_unique<TransposeLayer>(operation, validatorIn);
     default:
@@ -111,15 +111,15 @@ std::unique_ptr<GNA::Layer> Layer::Create(const Gna2Operation & operation, const
     }
 }
 
-void Layer::addBufferAs(const BufferMap& source, GnaComponentType sourceType,
-    BufferMap& destination, GnaComponentType destinationType) const
+void Layer::addBufferAs(const BufferMap& source, uint32_t sourceType,
+    BufferMap& destination, uint32_t destinationType) const
 {
-    if (IntermediateOutputComponent == sourceType && Transforms.size() < 2)
+    if (ScratchpadOperandIndex == sourceType && Transforms.size() < 2)
     {
         return;
     }
 
-    const auto buffer = source.find(ModelWrapper::GetOperandIndex(sourceType));
+    const auto buffer = source.find(sourceType);
     if (buffer != source.end())
     {
         destination[destinationType] = buffer->second;
@@ -132,33 +132,33 @@ void Layer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const
     if (!Transforms.empty())
     {
         auto nonIoBuffers = layerConfiguration.Buffers;
-        nonIoBuffers.erase(InputComponent);
-        nonIoBuffers.erase(OutputComponent);
-        nonIoBuffers.erase(IntermediateOutputComponent);
+        nonIoBuffers.erase(InputOperandIndex);
+        nonIoBuffers.erase(OutputOperandIndex);
+        nonIoBuffers.erase(ScratchpadOperandIndex);
 
         for (auto transform = Transforms.cbegin(); transform != Transforms.cend(); ++transform)
         {
             BufferMap buffers = nonIoBuffers;
             if (transform == Transforms.cbegin())
             {
-                addBufferAs(layerConfiguration.Buffers, InputComponent,
-                    buffers, InputComponent);
-                addBufferAs(layerConfiguration.Buffers, IntermediateOutputComponent,
-                    buffers, OutputComponent);
+                addBufferAs(layerConfiguration.Buffers, InputOperandIndex,
+                    buffers, InputOperandIndex);
+                addBufferAs(layerConfiguration.Buffers, ScratchpadOperandIndex,
+                    buffers, OutputOperandIndex);
             }
             if (transform == --Transforms.cend())
             {
-                addBufferAs(layerConfiguration.Buffers, OutputComponent,
-                    buffers, OutputComponent);
-                addBufferAs(layerConfiguration.Buffers, IntermediateOutputComponent,
-                    buffers, InputComponent);
+                addBufferAs(layerConfiguration.Buffers, OutputOperandIndex,
+                    buffers, OutputOperandIndex);
+                addBufferAs(layerConfiguration.Buffers, ScratchpadOperandIndex,
+                    buffers, InputOperandIndex);
             }
             if (transform != Transforms.cbegin() && transform != --Transforms.cend())
             {
-                addBufferAs(layerConfiguration.Buffers, IntermediateOutputComponent,
-                    buffers, InputComponent);
-                addBufferAs(layerConfiguration.Buffers, IntermediateOutputComponent,
-                    buffers, OutputComponent);
+                addBufferAs(layerConfiguration.Buffers, ScratchpadOperandIndex,
+                    buffers, InputOperandIndex);
+                addBufferAs(layerConfiguration.Buffers, ScratchpadOperandIndex,
+                    buffers, OutputOperandIndex);
             }
             transform->get()->UpdateConfigBuffers(layerConfiguration.ConfigList, buffers);
         }
@@ -176,11 +176,9 @@ Tensor const & Layer::GetOperand(uint32_t operandIndex) const
 
     switch (operandIndex)
     {
-    case OutputIntermediateOperandIndex:
-        return Output.ScratchPad;
-    case 0:
+    case InputOperandIndex:
         return Input;
-    case 1:
+    case OutputOperandIndex:
         return Output;
     default:
         throw GnaException(Gna2StatusXnnErrorLyrCfg);
@@ -199,11 +197,21 @@ Tensor const * Layer::TryGetOperand(uint32_t operandIndex) const
     }
 }
 
-bool Layer::VerifyHas1BInputAnd2BWeight()
+uint32_t Layer::TryGetOperandSize(uint32_t operandIndex) const
+{
+    auto const operand = TryGetOperand(operandIndex);
+    if (nullptr != operand)
+    {
+        return operand->Size;
+    }
+    return 0;
+}
+
+void Layer::VerifyHas1BInputAnd2BWeight()
 {
     if (is1BInputAnd2BWeightVerified)
     {
-        return has1BInputAnd2BWeight;
+        return;
     }
 
     is1BInputAnd2BWeightVerified = true;
@@ -216,9 +224,7 @@ bool Layer::VerifyHas1BInputAnd2BWeight()
         Gna2DataTypeInt16 == weight->Mode)
     {
         has1BInputAnd2BWeight = true;
-        return has1BInputAnd2BWeight;
     }
-    return false;
 }
 
 Tensor const & Layer::getTransformOperand(TransformOperation operation, uint32_t operandIndex) const
@@ -286,7 +292,7 @@ nn_operation AbstractOperation::toLegacy(
         return INTEL_COPY;
     case Gna2OperationTypeTransposition:
     {
-        const Gna2Tensor& inputTensor = *operation.Operands[0];
+        const Gna2Tensor& inputTensor = *operation.Operands[InputOperandIndex];
         if (LayerInput::IsTensorValid(inputTensor, validator, INTEL_INTERLEAVE))
         {
             return INTEL_INTERLEAVE;

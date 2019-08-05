@@ -26,8 +26,7 @@
 #pragma once
 
 #include "Address.h"
-
-#include "KernelArguments.h"
+#include "Macros.h"
 
 #include <cstdint>
 
@@ -71,7 +70,7 @@ protected:
 
     uint32_t size = 0;
 
-    DriverInterface *driverInterface;
+    DriverInterface * driverInterface = nullptr;
 
     bool mapped = false;
 

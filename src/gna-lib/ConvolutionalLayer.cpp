@@ -104,19 +104,21 @@ Tensor const & CnnLayer::GetOperand(uint32_t operandIndex) const
     // TODO:3:replace with generic solution when all layers are transforms
     switch (operandIndex)
     {
-    case 2:
+    case ScratchpadOperandIndex:
+        return Output.ScratchPad;
+    case FilterOperandIndex:
         if (Convolution)
         {
             return BaseTransform::GetOperandIfExistOrThrow(Convolution->Filters);
         }
         throw GnaException(Gna2StatusXnnErrorLyrCfg);
-    case 3:
+    case BiasOperandIndex:
         if (Convolution)
         {
             return BaseTransform::GetOperandIfExistOrThrow(Convolution->Biases);
         }
         throw GnaException(Gna2StatusXnnErrorLyrCfg);
-    case 4:
+    case PwlOperandIndex:
         if (Activation)
         {
             return BaseTransform::GetOperandIfExistOrThrow(Activation->Segments);
@@ -132,21 +134,21 @@ void CnnLayer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const
     Layer::UpdateKernelConfigs(layerConfiguration);
 
     BaseAddress inputBuffer = Input;
-    if (layerConfiguration.Buffers.count(InputComponent) > 0)
+    if (layerConfiguration.Buffers.count(InputOperandIndex) > 0)
     {
-        inputBuffer = layerConfiguration.Buffers[InputComponent];
+        inputBuffer = layerConfiguration.Buffers[InputOperandIndex];
         Input.ValidateBuffer(inputBuffer);
     }
 
     // TODO:3: simplify, too fancy logic
-    BaseAddress filterOutputBuffer = Activation ? Output.ScratchPad:
-        (layerConfiguration.Buffers.count(OutputComponent) > 0 ? layerConfiguration.Buffers[OutputComponent] : Output);
+    BaseAddress filterOutputBuffer = Activation ? Output.ScratchPad :
+        (layerConfiguration.Buffers.count(OutputOperandIndex) > 0 ? layerConfiguration.Buffers[OutputOperandIndex] : Output);
 
-    BaseAddress pwlOutputBuffer = layerConfiguration.Buffers.count(OutputComponent) > 0
-        ? layerConfiguration.Buffers[OutputComponent]
+    BaseAddress pwlOutputBuffer = layerConfiguration.Buffers.count(OutputOperandIndex) > 0
+        ? layerConfiguration.Buffers[OutputOperandIndex]
         : Output;
 
-    if (layerConfiguration.Buffers.count(OutputComponent) > 0)
+    if (layerConfiguration.Buffers.count(OutputOperandIndex) > 0)
     {
         if (Activation)
         {
@@ -165,7 +167,7 @@ void CnnLayer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const
         if (Activation)
         {
             Activation->UpdateConfigBuffers(layerConfiguration.ConfigList,
-                {Output.ScratchPad, pwlOutputBuffer});
+                { Output.ScratchPad, pwlOutputBuffer });
         }
     }
     else
@@ -206,7 +208,7 @@ void CnnLayer::computePwl(const LayerConfiguration& layerConfiguration, Accelera
 
 void CnnLayer::computeHiddenPool(AccelerationMode accel, ExecutionConfig const & execution) const
 {
-    auto convConfig = ConvolutionConfig{Convolution->GetHiddenConfig(), execution};
+    auto convConfig = ConvolutionConfig{ Convolution->GetHiddenConfig(), execution };
 
     //TODO:3: Refactor
     convConfig.pooledOutputs = Output.Buffer;
@@ -216,14 +218,14 @@ void CnnLayer::computeHiddenPool(AccelerationMode accel, ExecutionConfig const &
 
 void CnnLayer::computePool(LayerConfiguration& layerConfiguration, AccelerationMode accel, ExecutionConfig const & execution) const
 {
-    auto convConfig = ConvolutionConfig{layerConfiguration.Configs.Convolution.get(), execution};
+    auto convConfig = ConvolutionConfig{ layerConfiguration.Configs.Convolution.get(), execution };
     Pooling->Compute(&convConfig, accel, execution.Intermediate->pool, &Activation->Pwl);
 }
 
 DataConfig CnnLayer::GetDataMode() const
 {
     return DataConfig(Input.Mode.Value, Convolution->Filters->Mode.Value,
-                      Convolution->Biases->Mode.Value, Output.Mode.Value);
+        Convolution->Biases->Mode.Value, Output.Mode.Value);
 }
 
 const nn_layer_conv & CnnLayer::getDetails(const nn_layer & cnn1DLayer)

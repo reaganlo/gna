@@ -165,7 +165,7 @@ LayerInput::LayerInput(const nn_layer &layer, const LayerValidator& validatorIn)
 }
 
 LayerInput::LayerInput(const Gna2Operation &operation, const LayerValidator& validatorIn) :
-    Tensor{ *operation.Operands[0], capabilities.GetOrder(validatorIn),
+    Tensor{ *operation.Operands[InputOperandIndex], capabilities.GetOrder(validatorIn),
         Validator{ validatorIn, capabilities } },
     Grouping{ getGrouping(operation, validatorIn) },
     ElementCount{ getElementCount(operation, validatorIn) }
@@ -225,7 +225,7 @@ std::pair<uint32_t, uint32_t> LayerInput::getGroupingAndElements(
     {
     case Gna2OperationTypeTransposition:
     {
-        const auto& inputTensor = *operation.Operands[0];
+        const auto& inputTensor = *operation.Operands[InputOperandIndex];
         if (LayerInput::IsTensorValid(inputTensor, validatorIn, INTEL_INTERLEAVE))
         {
             return {Dimensions.at('H'), Dimensions.at('W')};

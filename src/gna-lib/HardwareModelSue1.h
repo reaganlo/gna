@@ -30,9 +30,7 @@
 #include "Address.h"
 #include "HardwareCapabilities.h"
 
-#include "KernelArguments.h"
-
-#include "gna-api.h"
+#include "gna-api-dumper.h"
 
 #include <cstdint>
 #include <memory>
@@ -45,11 +43,8 @@ namespace GNA
     class HardwareModelSue1 : public HardwareModel
     {
     public:
-        static uint32_t CalculateDescriptorSize(const uint32_t layerCount);
 
-        HardwareModelSue1(
-            const std::vector<std::unique_ptr<Layer>>& layers,
-            uint32_t gmmCount, std::unique_ptr<Memory> dumpMemory);
+        HardwareModelSue1(CompiledModel const & softwareModel, intel_gna_alloc_cb customAlloc);
 
         virtual ~HardwareModelSue1() = default;
 
@@ -63,11 +58,21 @@ namespace GNA
         // since memory buffers are copied to one allocated memory buffer
         virtual uint32_t GetBufferOffset(const BaseAddress& address) const override;
 
+        void * Export();
+
+        void PopulateHeader(intel_gna_model_header& modelHeader) const;
+
     protected:
         virtual void allocateLayerDescriptors() override;
 
     private:
         static HardwareCapabilities sueCapabilities;
+
+        intel_gna_alloc_cb customAlloc = nullptr;
+
+        void * exportMemory = nullptr;
+
+        uint32_t totalModelSize;
     };
 
 }

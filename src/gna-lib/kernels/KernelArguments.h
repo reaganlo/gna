@@ -30,7 +30,9 @@
 #include "common.h"
 
 #include "gna-api-types-gmm.h"
+#include "gna2-model-impl.h"
 
+#include <array>
 #include <cstdint>
 #include <cstring>
 
@@ -88,6 +90,7 @@ struct BaseConfig // TODO:3:revert to use ~BufferMap.Update
 
     int8_t const * Inputs = nullptr;
     int8_t * Outputs = nullptr;
+    std::array<int8_t *, GNA::ScratchpadOperandKernelIndex> Buffers;
 };
 
 template<typename TransformConfig>
@@ -96,8 +99,8 @@ struct KernelConfig : public BaseConfig
     using BaseConfig::BaseConfig;
     KernelConfig(KernelConfig const & source) = default;
     KernelConfig(TransformConfig const & source, BaseConfig const & io) :
-        BaseConfig{io},
-        Transform{source}
+        BaseConfig{ io },
+        Transform{ source }
     {}
 
     TransformConfig Transform;
@@ -107,9 +110,9 @@ struct ExecutionConfig
 {
     ExecutionConfig() = default;
     ExecutionConfig(KernelBuffers const * intermediate, uint32_t * saturationCount, uint32_t const * bufferElementCount) :
-        Intermediate{intermediate},
-        SaturationCount{saturationCount},
-        BufferElementCount{bufferElementCount}
+        Intermediate{ intermediate },
+        SaturationCount{ saturationCount },
+        BufferElementCount{ bufferElementCount }
     {};
 
     KernelBuffers const * const Intermediate;
@@ -122,8 +125,8 @@ struct ExecutionKernelConfig : public ExecutionConfig
 {
     ExecutionKernelConfig(KernelConfig<TransformConfig> * requestConfig,
         ExecutionConfig const & executionConfig) :
-        ExecutionConfig{executionConfig},
-        RequestConfig{requestConfig}
+        ExecutionConfig{ executionConfig },
+        RequestConfig{ requestConfig }
     {
         if (nullptr != Intermediate && nullptr != Intermediate->cnnFusedBuffer)
         {
@@ -172,14 +175,14 @@ struct AffineConfig
     ExecutionConfig const * execution;
     union
     {
-    int8_t const * const weights1B;     // W - [M;K]
-    int16_t const * const weights2B;    // W - [M;K]
-    } ;
+        int8_t const * const weights1B;     // W - [M;K]
+        int16_t const * const weights2B;    // W - [M;K]
+    };
     union
     {
-    nn_scaling const * const weightScaleFactors; // [M] Scaling factors for 1B weights or NULL for 2B weights.
-    nn_bias_c const * const biasesCompound;     // B - [M]
-    nn_bias_s const * const biasesSimple;       // B - [M]
+        nn_scaling const * const weightScaleFactors; // [M] Scaling factors for 1B weights or NULL for 2B weights.
+        nn_bias_c const * const biasesCompound;     // B - [M]
+        nn_bias_s const * const biasesSimple;       // B - [M]
     };
     void const * const multiBias;
     uint32_t const multiBiasVectorCount;
@@ -218,13 +221,13 @@ struct RecurrentConfig
     uint32_t bytesPerOutput = 0;
     union
     {
-    int8_t const * const weights1B;         // W - [M,K+M]
-    int16_t const * const weights2B;        // W - [M,K+M]
-    } ;
+        int8_t const * const weights1B;         // W - [M,K+M]
+        int16_t const * const weights2B;        // W - [M,K+M]
+    };
     union
     {
-    nn_bias_c const * const biasesCompound; // B - [M]
-    nn_bias_s const * const biasesSimple;   // B - [M]
+        nn_bias_c const * const biasesCompound; // B - [M]
+        nn_bias_s const * const biasesSimple;   // B - [M]
     };
     KernelConfig<ActivationConfig> activation;
 };
@@ -235,7 +238,7 @@ struct TransposeConfig
         ExecutionKernelConfig<AffineConfig> const *const config);
 
     TransposeConfig(uint32_t rowCountIn, uint32_t columntCountIn,
-                    int16_t const * const inputIn, int16_t * const outputIn);
+        int16_t const * const inputIn, int16_t * const outputIn);
 
     uint32_t const rowCount;
     uint32_t const columnCount;

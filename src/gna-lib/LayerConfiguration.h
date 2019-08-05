@@ -27,5 +27,8 @@ struct LayerConfiguration
     BufferMap Buffers;
     KernelConfigs Configs;
     std::unique_ptr<BaseConfig> ConfigList[TransformOperationCount];
+
+    void EmplaceBuffer(uint32_t operandIndex, void * address);
+    void RemoveBuffer(uint32_t operandIndex);
 };
 }

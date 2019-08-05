@@ -138,11 +138,13 @@ Tensor const & AffineBaseLayer::GetOperand(uint32_t operandIndex) const
     // TODO:3:replace with generic solution when all layers are transforms
     switch (operandIndex)
     {
-    case 2: //[[fallthrough]]
-    case 3: //[[fallthrough]]
-    case 5:
+    case ScratchpadOperandIndex:
+        return Output.ScratchPad;
+    case WeightOperandIndex: //[[fallthrough]]
+    case BiasOperandIndex: //[[fallthrough]]
+    case WeightScaleFactorOperandIndex:
         return GetInputTransform()->GetOperand(operandIndex);
-    case 4:
+    case PwlOperandIndex:
         return getTransformOperand(ActivationTransform, 2);// TODO:3:Intentional literal, replace with generic solution when all layers are transforms
     default:
         return Layer::GetOperand(operandIndex);

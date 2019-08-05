@@ -46,31 +46,7 @@ using namespace GNA;
 
 void CompiledModel::CopyData(void *address, size_t size) const
 {
-    auto modelSize = CalculateSize();
-    if (size < modelSize)
-    {
-        throw GnaException{ Gna2StatusResourceAllocationError };
-    }
-
-    for (const auto &memory : modelMemoryList)
-    {
-        auto memorySize = memory->GetSize();
-        memcpy_s(address, size, memory->GetBuffer(), memorySize);
-        size -= memorySize;
-        address = static_cast<void *>(
-            static_cast<uint8_t *>(address) + memorySize);
-    }
-}
-
-uint32_t CompiledModel::CalculateSize() const
-{
-    uint32_t modelSize = 0;
-    for (const auto &memory : modelMemoryList)
-    {
-        modelSize += static_cast<uint32_t>(memory->GetSize());
-    }
-
-    return modelSize;
+    allocations.CopyData(address, size);
 }
 
 void CompiledModel::BuildHardwareModel(DriverInterface &ddi)
@@ -79,49 +55,33 @@ void CompiledModel::BuildHardwareModel(DriverInterface &ddi)
 
     auto hasHardwareCompliantLayer =
         !(1 == deviceSubmodels.size() && SubmodelType::Software == deviceSubmodels.at(0)->Type);
-    if(!hasHardwareCompliantLayer)
+    if (!hasHardwareCompliantLayer)
     {
         Log->Warning("None of model layers is compliant with selected hardware GNA device, "
             "only software processing is available for this model.\n");
     }
     else if (hwCapabilities.IsHardwareSupported())
     {
-        hardwareModel = std::make_unique<HardwareModelScorable>(
-                                softwareModel.Layers, GmmCount, ddi, hwCapabilities);
+        hardwareModel = std::make_unique<HardwareModelScorable>(*this, ddi, hwCapabilities);
     }
 
     if (hardwareModel)
     {
-        hardwareModel->Build(modelMemoryList, deviceSubmodels);
+        hardwareModel->Build(deviceSubmodels);
     }
 }
 
-const std::vector<std::unique_ptr<Layer>>& CompiledModel::GetLayers() const
+uint32_t CompiledModel::GetMaximumOperandSize(uint32_t operandIndex)
 {
-    return softwareModel.Layers;
+    return softwareModel.GetMaximumOperandSize(operandIndex);
 }
 
-const Layer* CompiledModel::GetLayer(uint32_t layerIndex) const
-{
-    try
-    {
-        return softwareModel.Layers.at(layerIndex).get();
-    }
-    catch (const std::exception&)
-    {
-        throw GnaException(Gna2StatusXnnErrorLyrCfg);
-    }
-}
-
-void CompiledModel::InvalidateConfig(gna_request_cfg_id configId, LayerConfiguration *layerConfiguration, uint32_t layerIndex) const
+void CompiledModel::InvalidateHardwareRequestConfig(gna_request_cfg_id configId) const
 {
     if (hardwareModel)
     {
         hardwareModel->InvalidateConfig(configId);
     }
-
-    auto layer = GetLayer(layerIndex);
-    layer->UpdateKernelConfigs(*layerConfiguration);
 }
 
 Gna2Status CompiledModel::Score(
@@ -130,7 +90,7 @@ Gna2Status CompiledModel::Score(
     KernelBuffers *buffers)
 {
     profiler->Measure(Gna2InstrumentationPointLibExecution);
-    auto saturationCount = uint32_t{0};
+    auto saturationCount = uint32_t{ 0 };
     try
     {
         const auto isHardwareEnforced = config.Acceleration.IsHardwareEnforced();
@@ -171,51 +131,50 @@ Gna2Status CompiledModel::Score(
     return (saturationCount > 0) ? Gna2StatusWarningArithmeticSaturation : Gna2StatusSuccess;
 }
 
-void CompiledModel::ValidateBuffer(
-        std::vector<Memory *> &configMemoryList, Memory *memory) const
+void CompiledModel::ValidateBuffer(MemoryContainer const & requestAllocations, Memory const & memory) const
 {
     if (hardwareModel)
     {
-        hardwareModel->ValidateConfigBuffer(configMemoryList, memory);
+        hardwareModel->ValidateConfigBuffer(requestAllocations, memory);
     }
 }
 
 // TODO:3: count buffer use in model to minimize redundant mapping
-Memory * CompiledModel::FindBuffer(const void *buffer, size_t bufferSize) const
+Memory const & CompiledModel::getMemoryFromDeviceAllocations(const void *buffer, size_t bufferSize) const
 {
-    for(const auto &memory : memoryList)
+    for (auto const & memory : deviceAllocations)
     {
-        auto memoryBuffer = memory->GetBuffer();
-        auto memorySize = memory->GetSize();
+        Expect::NotNull(memory.get(), Gna2StatusXnnErrorInvalidBuffer);
+
+        auto const memoryBuffer = memory->GetBuffer();
+        Expect::NotNull(memoryBuffer, Gna2StatusXnnErrorInvalidBuffer);
+
+        auto const memorySize = memory->GetSize();
         if (Expect::InMemoryRange(buffer, bufferSize, memoryBuffer, memorySize))
         {
-            return memory.get();
+            return *memory;
         }
     }
-
-    return nullptr;
+    throw GnaException(Gna2StatusXnnErrorInvalidBuffer);
 }
 
-bool CompiledModel::IsPartOfModel(Memory *memory) const
+Memory const * CompiledModel::GetMemoryIfNotPartOfModel(const void *buffer, size_t bufferSize) const
 {
-    auto foundIt = std::find(modelMemoryList.cbegin(), modelMemoryList.cend(), memory);
-    return foundIt != modelMemoryList.cend();
-}
-
-void CompiledModel::AddUniqueMemory(Memory *memory)
-{
-    if (!IsPartOfModel(memory))
+    if (allocations.Contains(buffer, bufferSize)) // already part of a model allocations, no further action is needed
     {
-        modelMemoryList.push_back(memory);
+        return nullptr;
     }
+
+    return &getMemoryFromDeviceAllocations(buffer, bufferSize);
 }
 
-void CompiledModel::IdentifyBuffer(const void *buffer, size_t bufferSize)
+void CompiledModel::VerifyBufferAndStoreMemory(const void *buffer, size_t bufferSize)
 {
-    auto memory = FindBuffer(buffer, bufferSize);
-    Expect::NotNull(memory, Gna2StatusXnnErrorInvalidBuffer);
-
-    AddUniqueMemory(memory);
+    if (!allocations.Contains(buffer, bufferSize))
+    {
+        auto const & memory = getMemoryFromDeviceAllocations(buffer, bufferSize);
+        allocations.Emplace(memory);
+    }
 }
 
 BaseValidator CompiledModel::makeValidator()
@@ -224,9 +183,9 @@ BaseValidator CompiledModel::makeValidator()
     {
         HardwareCapabilities(),
         ValidBoundariesFunctor {
-            [this] (const void *buffer, size_t bufferSize)
+            [this](const void *buffer, size_t bufferSize)
             {
-                IdentifyBuffer(buffer, bufferSize);
+                VerifyBufferAndStoreMemory(buffer, bufferSize);
             }
         }
     };
@@ -236,7 +195,7 @@ uint32_t CompiledModel::scoreAllSubModels(RequestConfiguration& config,
     RequestProfiler *profiler, KernelBuffers *buffers)
 {
     const auto& deviceSubmodels = getSubmodels(hwCapabilities);
-    auto saturationCount = uint32_t{0};
+    auto saturationCount = uint32_t{ 0 };
     for (const auto& submodel : deviceSubmodels)
     {
         uint32_t layerIndex = submodel->LayerIndex;
@@ -244,15 +203,15 @@ uint32_t CompiledModel::scoreAllSubModels(RequestConfiguration& config,
         switch (submodel->Type)
         {
         case Software:
-        saturationCount += softwareModel.Score(layerIndex, layerCount, config, profiler, buffers);
-        break;
+            saturationCount += softwareModel.Score(layerIndex, layerCount, config, profiler, buffers);
+            break;
         case Hardware:
-        saturationCount += hardwareModel->Score(layerIndex, layerCount, config, profiler, buffers);
-        break;
-        // TODO: 3: HardwareModel should identify if device is a GMM device
+            saturationCount += hardwareModel->Score(layerIndex, layerCount, config, profiler, buffers);
+            break;
+            // TODO: 3: HardwareModel should identify if device is a GMM device
         case GMMHardware:
-        saturationCount += hardwareModel->Score(layerIndex, 1, config, profiler, buffers);
-        break;
+            saturationCount += hardwareModel->Score(layerIndex, 1, config, profiler, buffers);
+            break;
         }
     }
     return saturationCount;
@@ -270,8 +229,9 @@ CompiledModel::getSubmodels(const HardwareCapabilities& hwCaps)
 }
 
 SubmodelType CompiledModel::getSubmodelType(
-        const HardwareCapabilities &hwCaps, const Layer& layer) const
+    const HardwareCapabilities &hwCaps, uint32_t layerIndex) const
 {
+    auto const & layer = softwareModel.GetLayer(layerIndex);
     auto deviceGeneration = hwCaps.GetDeviceGeneration();
     auto dataConfig = layer.GetDataMode();
     auto supportMapIterator = DataConfig::Capabilities.find(dataConfig);
@@ -315,32 +275,31 @@ SubmodelType CompiledModel::getSubmodelType(
 
 void CompiledModel::createSubmodels(const HardwareCapabilities& hwCaps)
 {
-    auto deviceVersion = hwCaps.GetDeviceVersion();
+    auto const deviceVersion = hwCaps.GetDeviceVersion();
     auto& deviceSubmodels = submodels[deviceVersion];
 
-    auto layerIndex = uint32_t { 0 };
-    auto &layers = softwareModel.Layers;
+    auto layerIndex = uint32_t{ 0 };
 
-    auto submodelType = getSubmodelType(hwCaps, *layers.at(layerIndex));
+    auto submodelType = getSubmodelType(hwCaps, layerIndex);
 
     deviceSubmodels.emplace_back(std::make_unique<SubModel>(submodelType, 0));
     auto currentSubmodel = deviceSubmodels.back().get();
+    Expect::NotNull(currentSubmodel);
     layerIndex++;
 
     for (; layerIndex < LayerCount; ++layerIndex)
     {
-        const auto& layer = *layers.at(layerIndex);
-        submodelType = getSubmodelType(hwCaps, layer);
+        submodelType = getSubmodelType(hwCaps, layerIndex);
 
         auto doSplit = false;
 
         if (GMMHardware == submodelType
-                || currentSubmodel->Type != submodelType)
+            || currentSubmodel->Type != submodelType)
         {
             doSplit = true;
         }
         else if (Hardware == submodelType
-                && currentSubmodel->GetLayerCount() == hwCaps.GetMaximumLayerCount())
+            && currentSubmodel->GetLayerCount() == hwCaps.GetMaximumLayerCount())
         {
             doSplit = true;
         }
@@ -348,8 +307,9 @@ void CompiledModel::createSubmodels(const HardwareCapabilities& hwCaps)
         if (doSplit)
         {
             deviceSubmodels.emplace_back(
-                    std::make_unique<SubModel>(submodelType, layerIndex));
+                std::make_unique<SubModel>(submodelType, layerIndex));
             currentSubmodel = deviceSubmodels.back().get();
+            Expect::NotNull(currentSubmodel);
         }
         else
         {

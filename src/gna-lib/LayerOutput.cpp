@@ -213,10 +213,10 @@ LayerOutput::LayerOutput(const nn_layer& layer, const LayerValidator& validatorI
 
 //TODO:3:P1: Generalize instead addressing output at index 1
 LayerOutput::LayerOutput(const Gna2Operation &operation, const LayerValidator& validatorIn) :
-    Tensor{ Shape::Create(operation.Operands[1]->Shape,  capabilities.GetOrder(validatorIn)),
-        operation.Operands[1]->Type, operation.Operands[1]->Data,
+    Tensor{ Shape::Create(operation.Operands[OutputOperandIndex]->Shape,  capabilities.GetOrder(validatorIn)),
+        operation.Operands[OutputOperandIndex]->Type, operation.Operands[OutputOperandIndex]->Data,
         Validator{ validatorIn, capabilities } },
-    ScratchPad{Dimensions, Mode.Type, Mode.Mode, getGlobal2MBScratchpad()}, //TODO:3:P1:Decide what to do with scratch pad in API2, disabled validation, as parameters are provided by library
+    ScratchPad{Dimensions, Gna2DataTypeInt32, Gna2TensorModeDefault, getGlobal2MBScratchpad()}, //TODO:3:P1:Decide what to do with scratch pad in API2, disabled validation, as parameters are provided by library
     Grouping{ getGrouping(operation, validatorIn) },
     ElementCount{ getElementCount(operation, validatorIn) }
 {
@@ -246,7 +246,7 @@ std::pair<uint32_t, uint32_t> LayerOutput::getGroupingAndElements(
     {
     case Gna2OperationTypeTransposition:
     {
-        const auto& inputTensor = *operation.Operands[1];
+        const auto& inputTensor = *operation.Operands[OutputOperandIndex];
         if (IsTensorValid(inputTensor, validatorIn, INTEL_INTERLEAVE))
         {
             return {Dimensions.at('W'), Dimensions.at('H')};
