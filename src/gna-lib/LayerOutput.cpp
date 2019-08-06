@@ -211,12 +211,21 @@ LayerOutput::LayerOutput(const nn_layer& layer, const LayerValidator& validatorI
     Expect::True(GNA_INT32 == ScratchPad.Mode, Gna2StatusXnnErrorIntOutputBytes);
 }
 
+void * getScratchpadForOperation(const Gna2Operation &operation)
+{
+    if(operation.Type == Gna2OperationTypeTransposition)
+    {
+        return nullptr;
+    }
+    return getGlobal2MBScratchpad();
+}
+
 //TODO:3:P1: Generalize instead addressing output at index 1
 LayerOutput::LayerOutput(const Gna2Operation &operation, const LayerValidator& validatorIn) :
     Tensor{ Shape::Create(operation.Operands[OutputOperandIndex]->Shape,  capabilities.GetOrder(validatorIn)),
         operation.Operands[OutputOperandIndex]->Type, operation.Operands[OutputOperandIndex]->Data,
         Validator{ validatorIn, capabilities } },
-    ScratchPad{Dimensions, Gna2DataTypeInt32, Gna2TensorModeDefault, getGlobal2MBScratchpad()}, //TODO:3:P1:Decide what to do with scratch pad in API2, disabled validation, as parameters are provided by library
+    ScratchPad{Dimensions, Gna2DataTypeInt32, Gna2TensorModeDefault, getScratchpadForOperation(operation)}, //TODO:3:P1:Decide what to do with scratch pad in API2, disabled validation, as parameters are provided by library
     Grouping{ getGrouping(operation, validatorIn) },
     ElementCount{ getElementCount(operation, validatorIn) }
 {

@@ -403,6 +403,7 @@ void OperationConfig::InitMultibias(const Gna2Operation& operation)
     if (operation.Operands[wsfIndex] != nullptr)
     {
         WeightScalesTensor = *operation.Operands[wsfIndex];
+        ModelWrapper::SetLayout(WeightScalesTensor, "H");
     }
 }
 
