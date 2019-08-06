@@ -263,6 +263,7 @@ uint32_t HardwareLayer::GetLdOutputOffset() const
 {
     if (GNA_DATA_ACTIVATION_DISABLED != SoftwareLayer.Output.Mode
         || INTEL_CONVOLUTIONAL == SoftwareLayer.Operation
+        || INTEL_CONVOLUTIONAL_2D == SoftwareLayer.Operation
         || INTEL_INTERLEAVE == SoftwareLayer.Operation
         || INTEL_DEINTERLEAVE == SoftwareLayer.Operation
         || INTEL_COPY == SoftwareLayer.Operation)
