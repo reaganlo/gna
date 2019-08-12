@@ -394,9 +394,7 @@ void HardwareCapabilities::DiscoverHardware(DriverInterface &driverInterface)
 uint32_t const * HardwareCapabilities::GetHardwareConsistencySettings(
     DeviceVersion hwId)
 {
-    // forward pointer to inputPrecision=2 for legacy devices
-    auto const start = (IsAdlDevice(hwId)) ? 0 : BufferArraySizeSingle;
-    return getGenerationCapabilities(hwId).BufferElementCount.data() + start;
+    return getGenerationCapabilities(hwId).BufferElementCount.data();
 }
 
 uint32_t const * HardwareCapabilities::GetHardwareConsistencySettingsForAdl(DeviceVersion hwId)
