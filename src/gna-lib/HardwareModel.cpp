@@ -47,9 +47,6 @@ using namespace GNA;
 
 uint32_t HardwareModel::calculateDescriptorSize(bool includeGmms) const
 {
-    Expect::InRange(model.LayerCount, ui32_1, hwCapabilities.GetMaximumLayerCount(),
-        Gna2StatusXnnErrorNetLyrNo);
-
     auto const gmmDescriptorsSizeTmp = includeGmms ? gmmDescriptorsSize : 0;
 
     return xnnDescriptorsSize + gmmDescriptorsSizeTmp;
@@ -171,6 +168,8 @@ uint32_t HardwareModel::getGmmDescriptorsSize(const uint32_t gmmLayersCount)
 
 void HardwareModel::allocateLayerDescriptors()
 {
+    Expect::InRange(model.LayerCount, ui32_1, HardwareCapabilities::GetMaximumLayerCount(DefaultDeviceVersion),
+        Gna2StatusXnnErrorNetLyrNo);
     auto ldMemorySize = calculateDescriptorSize(true);
     auto ldSize = LayerDescriptor::GetSize(1, hwCapabilities.GetDeviceVersion());
 

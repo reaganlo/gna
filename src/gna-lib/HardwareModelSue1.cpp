@@ -66,6 +66,8 @@ uint32_t HardwareModelSue1::GetInputOffset(uint32_t layerIndex) const
 
 void HardwareModelSue1::allocateLayerDescriptors()
 {
+    Expect::InRange(model.LayerCount, ui32_1, hwCapabilities.GetMaximumLayerCount(),
+        Gna2StatusXnnErrorNetLyrNo);
     auto const ldMemorySize = RoundUp(HardwareModel::calculateDescriptorSize(false), PAGE_SIZE);
     auto const modelSize = model.GetSize();
     totalModelSize = ldMemorySize + modelSize;
