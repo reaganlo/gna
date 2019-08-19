@@ -78,8 +78,8 @@ public:
 
     void DiscoverHardware(DriverInterface &driverInterface);
 
-    static uint32_t const * GetHardwareConsistencySettings(DeviceVersion hwId);
-    static uint32_t const * GetHardwareConsistencySettingsForAdl(DeviceVersion hwId);
+    static uint32_t const * GetHardwareConsistencySettings(DeviceVersion deviceVersion);
+    static uint32_t const * GetHardwareConsistencySettingsForAdl(DeviceVersion deviceVersion);
 
     // For now all hardware generations share the same maximum model size
     // in the future it's possible to integrate it as GenerationCapabilities field
@@ -90,12 +90,12 @@ public:
 
     static DeviceVersion GetDeviceVersion(gna_device_generation generation);
 
-    static uint32_t GetMaximumLayerCount(DeviceVersion hwId);
+    static uint32_t GetMaximumLayerCount(DeviceVersion deviceVersion);
 
-    static uint32_t GetComputeEngineCount(DeviceVersion hwId);
+    static uint32_t GetComputeEngineCount(DeviceVersion deviceVersion);
 
     // Gets the number of data elements that may be stored in hw buffer
-    static uint32_t GetBufferElementCount(DeviceVersion hwId,
+    static uint32_t GetBufferElementCount(DeviceVersion deviceVersion,
         uint32_t grouping, uint32_t inputPrecision = GNA_INT16);
 
     uint32_t GetBufferElementCount(uint32_t grouping, uint32_t inputPrecision = GNA_INT16) const
@@ -139,7 +139,7 @@ private:
 
     uint32_t GetBufferSizeInKB() const;
 
-    static uint32_t GetBufferSizeInKB(DeviceVersion hwId);
+    static uint32_t GetBufferSizeInKB(DeviceVersion deviceVersion);
 
     bool hardwareSupported = false;
 

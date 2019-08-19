@@ -52,58 +52,42 @@ const HwSupport HW_GMM =
     {GMM_DEVICE, true},
     {GNA_0_9, true},
     {GNA_1_0, true},
-    {GNA_1_0_EMBEDDED, true},
     {GNA_2_0, true},
     {GNA_3_0, true},
-    {GNA_3_0_EMBEDDED, true},
-    {GNA_3_1_AUTONOMUS, true},
 };
 
 const HwSupport HW_0_9 =
 {
     {GNA_0_9, true},
     {GNA_1_0, true},
-    {GNA_1_0_EMBEDDED, true},
     {GNA_2_0, true},
     {GNA_3_0, true},
-    {GNA_3_0_EMBEDDED, true},
-    {GNA_3_1_AUTONOMUS, true},
 };
 
 const HwSupport HW_0_9_S_FALSE =
 {
     {GNA_0_9, true},
     {GNA_1_0, true},
-    {GNA_1_0_EMBEDDED, true},
     {GNA_2_0, true},
     {GNA_3_0, true},
-    {GNA_3_0_EMBEDDED, true},
-    {GNA_3_1_AUTONOMUS, true},
 };
 
 const HwSupport HW_1_0 =
 {
     {GNA_1_0, true},
-    {GNA_1_0_EMBEDDED, true},
     {GNA_2_0, true},
     {GNA_3_0, true},
-    {GNA_3_0_EMBEDDED, true},
-    {GNA_3_1_AUTONOMUS, true},
 };
 
 const HwSupport HW_2_0 =
 {
     {GNA_2_0, true},
     {GNA_3_0, true},
-    {GNA_3_0_EMBEDDED, true},
-    {GNA_3_1_AUTONOMUS, true},
 };
 
 const HwSupport HW_3_0 =
 {
     {GNA_3_0, true},
-    {GNA_3_0_EMBEDDED, true},
-    {GNA_3_1_AUTONOMUS, true},
 };
 
 static const Support FROM_GMM = { API_1_0, HW_GMM};

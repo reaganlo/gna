@@ -420,7 +420,8 @@ void* GnaModelDump(
     {
         Gna2Status newStatus;
         auto& device = DeviceManager::Get().GetDevice(0);
-        auto dump = device.Dump(modelId, deviceGeneration, modelHeader, &newStatus, customAlloc);
+        Expect::Equal(GNA_1_0_EMBEDDED, deviceGeneration, Gna2StatusAccelerationModeNotSupported); // Temporary limitation
+        auto dump = device.Dump(modelId, modelHeader, &newStatus, customAlloc);
         *status = StatusMap.at(newStatus);
         return dump;
     }

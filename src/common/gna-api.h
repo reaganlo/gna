@@ -130,25 +130,21 @@ typedef enum _device_generation
 typedef enum _gna_device_version
 {
     GNA_UNSUPPORTED  = (int)GNA_NOT_SUPPORTED, // No supported hardware device available.
-    GNA_SKL          = 0x1911,            // GMM Device Sky Lake
-    GNA_KBL          = 0x1911,            // GMM Device Kaby Lake // TODO:3: check KBL HW ID
-    GNA_CNL          = 0x5A11,            // GNA 0.9 Device Cannon Lake, no CNN support
-    GNA_GLK          = 0x3190,            // GNA 1.0 Device Gemini Lake, full featured GNA 1.0
-    GNA_EHL          = 0x4511,            // GNA 1.0 Device Elkhartlake, same function set as GLK
-    GNA_ICL          = 0x8A11,            // GNA 1.0 Device Ice Lake, same function set as GLK
-    GNA_TGL          = 0x9A11,            // GNA 2.0 Device Tiger Lake, full featured GNA 2.0
-    GNA_ADL          = 0x46AD,            // GNA 3.0 Device Alder Lake, full featured GNA 3.0
-    GNA_SUE_CREEK    = 0xFFFF1,           // GNA 1.0 Embedded Sue Creek
-    GNA_JELLYFISH    = 0xFFFF2,           // GNA 2.1 Embedded Jelly Fish
-    GNA_ACE_EMBEDDED = 0xFFFF3,           // GNA 3.0 Embedded on Alder Lake PCH/ACE
-    GNA_ACE_ANNA     = 0xFFFF4,           // GNA 3.1 ANNA Autonomous Embedded on Alder Lake PCH/ACE,
-
+    GNA_GMM          = 0x01,            // GMM Device
+    GNA_0x9          = 0x09,            // GNA 0.9 Device, no CNN support
+    GNA_1x0          = 0x10,            // GNA 1.0 Device, full featured GNA 1.0
+    GNA_2x0          = 0x20,            // GNA 2.0 Device, full featured GNA 2.0
+    GNA_3x0          = 0x30,            // GNA 3.0 Device, full featured GNA 3.0
+    GNA_EMBEDDED_1x0 = 0x10E,           // GNA 1.0 Embedded
+    GNA_EMBEDDED_2x1 = 0x20E,           // GNA 2.1 Embedded
+    GNA_EMBEDDED_3x0 = 0x30E,           // GNA 3.0 Embedded PCH
+    GNA_EMBEDDED_3x1 = 0x31A,           // GNA 3.1 Autonomous Embedded on PCH,
     GNA_SOFTWARE_EMULATION = GNA_DEFAULT, // Software emulation fall-back will be used.
 
 } gna_device_version;
 
 // Latest GNA version which can be used for inference using this library
-const gna_device_version GNA_DEFAULT_DEVICE_VERSION = GNA_ADL;
+const gna_device_version GNA_DEFAULT_DEVICE_VERSION = GNA_3x0;
 
 //
 //// Binary flags

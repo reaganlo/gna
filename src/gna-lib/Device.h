@@ -101,8 +101,7 @@ public:
 
     void Stop();
 
-    void* Dump(gna_model_id modelId, gna_device_generation generation,
-            intel_gna_model_header* modelHeader, Gna2Status* status,
+    void* Dump(gna_model_id modelId, intel_gna_model_header* modelHeader, Gna2Status* status,
             intel_gna_alloc_cb customAlloc);
 
     void CreateProfilerConfiguration(uint32_t* configId, uint32_t numberOfInstrumentationPoints, Gna2InstrumentationPoint* selectedInstrumentationPoints, uint64_t* results);

@@ -40,18 +40,18 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-/**
- C-linkage macro.
- */
+ /**
+  C-linkage macro.
+  */
 #ifdef __cplusplus
 #define GNA2_API_C extern "C"
 #else
 #define GNA2_API_C
 #endif
 
-/**
- Library API import/export macro.
- */
+  /**
+   Library API import/export macro.
+   */
 #if !defined(GNA2_API_EXPORT)
 #    if 1 == _WIN32
 #       if 1 == INTEL_GNA_DLLEXPORT
@@ -68,12 +68,12 @@
 #    endif
 #endif
 
-/**
- Library C-API import/export macro.
- */
+   /**
+    Library C-API import/export macro.
+    */
 #define GNA2_API GNA2_API_C GNA2_API_EXPORT
 
-/** Constant indicating that feature is disabled. */
+    /** Constant indicating that feature is disabled. */
 #define GNA2_DISABLED (-1)
 
 /** Constant indicating that value is default. */
@@ -95,71 +95,66 @@ enum Gna2DeviceVersion
 {
     /**
      Gaussian Mixture Models device.
-     Including Skyake and derivatives, e.g. KabyLake, CoffeLake,
-     with the same feature set.
      A ::Gna2DeviceGenerationGmm generation device.
+     Code names: SkyLake (SKL), KabyLake (KBL), CoffeeLake (CFL).
      */
-    Gna2DeviceVersionSkylake = 0x1911,
+    Gna2DeviceVersionGMM = 0x01,
 
     /**
-     GNA CannonLake (CNL) device.
+     GNA 0.9 device.
      A ::Gna2DeviceGeneration0x9 generation device.
+     Code names: CannonLake (CNL).
      */
-    Gna2DeviceVersionCannonlake = 0x5A11,
+    Gna2DeviceVersion0x9 = 0x09,
 
     /**
-     GNA GeminiLake (GLK) device.
+     GNA 1.0 device.
      A ::Gna2DeviceGeneration1x0 generation device.
+     Code names: GeminiLake (GLK), ElkhartLake (EHL), IceLake (ICL).
      */
-    Gna2DeviceVersionGeminilake = 0x3190,
+    Gna2DeviceVersion1x0 = 0x10,
 
     /**
-     GNA ElkhartLake (EHL) device.
-     A ::Gna2DeviceGeneration1x0 generation device.
-     */
-    Gna2DeviceVersionElkhartLake = 0x4511,
-
-    /**
-     GNA IceLake (ICL) device.
-     A ::Gna2DeviceGeneration1x0 generation device.
-     */
-    Gna2DeviceVersionIcelake = 0x8A11,
-
-    /**
-     GNA TigerLake (TGL) device.
+     GNA 2.0 device.
      A ::Gna2DeviceGeneration2x0 generation device.
+     Code names: TigerLake (TGL).
      */
-    Gna2DeviceVersionTigerlake = 0x9A11,
+    Gna2DeviceVersion2x0 = 0x20,
 
     /**
-     GNA AlderLake (ADL) device.
+     GNA 3.0 device.
      A ::Gna2DeviceGeneration3x0 generation device.
+     Code names: AlderLake (ADL).
      */
-    Gna2DeviceVersionAlderLake = 0x46AD,
+    Gna2DeviceVersion3x0 = 0x30,
 
     /**
-     GNA SueCreek (SUE) embedded device.
-     A ::Gna2DeviceGenerationEmbedded1x0 generation device.
+     GNA 1.0 embedded device.
+     A ::Gna2DeviceGeneration1x0 generation device.
+     Code names: SueCreek (SUE).
      */
-    Gna2DeviceVersionSueCreek = 0xFFFF0001,
+    Gna2DeviceVersionEmbedded1x0 = 0x10E,
 
     /**
-     GNA JellyFish (JLF) embedded device.
+     GNA 2.1 embedded device.
      A ::Gna2DeviceGeneration2x0 generation device.
+     Code names: JellyFish (JLF).
      */
-    Gna2DeviceVersionJellyfish = 0xFFFF0002,
+    Gna2DeviceVersionEmbedded2x1 = 0x20E,
 
     /**
-     GNA AlderLake (JLF) embedded device on PCH/ACE.
-     A ::Gna2DeviceGenerationEmbedded3x0 generation device.
+     GNA 3.0 embedded device on PCH/ACE.
+     A ::Gna2DeviceGeneration3x0 generation device.
+     Code names: AlderLake (ADL).
      */
-    Gna2DeviceVersionAceEmbedded = 0xFFFF0003,
+    Gna2DeviceVersionEmbedded3x0 = 0x30E,
 
     /**
-     GNA ANNA autonomous embedded device on Alder Lake PCH/ACE.
-     A ::Gna2DeviceGenerationAutonomus3x1 generation device.
+     GNA ANNA autonomous embedded device on ACE.
+     A ::Gna2DeviceGeneration3x0 generation device.
+     Code names: AlderLake (ADL).
      */
-    Gna2DeviceVersionAceAnna = 0xFFFF0004,
+    Gna2DeviceVersionEmbedded3x1 = 0x31A,
 
     /**
      Value indicating no supported hardware device available.
@@ -182,11 +177,11 @@ enum Gna2DeviceVersion
  Usually it will be the latest existing GNA device (excluding embedded)
  on the time of publishing the library, value may change with new release.
  */
-#define GNA2_DEFAULT_DEVICE_VERSION Gna2DeviceVersionAlderLake
+#define GNA2_DEFAULT_DEVICE_VERSION Gna2DeviceVersion3x0
 
-/**
- GNA API Status codes.
- */
+ /**
+  GNA API Status codes.
+  */
 enum Gna2Status
 {
     /**
@@ -222,9 +217,9 @@ enum Gna2Status
     */
     Gna2StatusIdentifierInvalid = -5,
 
-     /**
-     Error: NULL argument is not allowed.
-    */
+    /**
+    Error: NULL argument is not allowed.
+   */
     Gna2StatusNullArgumentNotAllowed = -6,
 
     /**
@@ -327,9 +322,9 @@ enum Gna2Status
     */
     Gna2StatusRequestWaitError = -26,
 
-     /**
-     Error: Invalid number of active indices.
-    */
+    /**
+    Error: Invalid number of active indices.
+   */
     Gna2StatusActiveListIndicesInvalid = -27,
 
     /**

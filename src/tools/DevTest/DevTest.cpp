@@ -321,7 +321,7 @@ public:
                 }
                 auto config = modelSetup->ConfigId(action.modelIndex, action.configIndex);
                 deviceController.RequestSetAcceleration(config, gna_acceleration::GNA_AUTO);
-                deviceController.RequestSetConsistency(config, Gna2DeviceVersionAlderLake);
+                deviceController.RequestSetConsistency(config, Gna2DeviceVersion3x0);
                 gna_request_id requestId;
                 deviceController.RequestEnqueue(config, &requestId);
                 deviceController.RequestWait(requestId);

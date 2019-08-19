@@ -64,7 +64,7 @@ struct DriverCapabilities
 {
     uint32_t hwInBuffSize;
     uint32_t recoveryTimeout;
-    DeviceVersion hwId;
+    DeviceVersion deviceVersion;
 };
 
 class DriverInterface

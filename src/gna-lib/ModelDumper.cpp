@@ -46,13 +46,12 @@
 
 using namespace GNA;
 
-void* Device::Dump(gna_model_id modelId, gna_device_generation deviceGeneration, intel_gna_model_header* modelHeader, Gna2Status* status, intel_gna_alloc_cb customAlloc)
+void* Device::Dump(gna_model_id modelId, intel_gna_model_header* modelHeader, Gna2Status* status, intel_gna_alloc_cb customAlloc)
 {
     // Validate parameters
     Expect::NotNull(status);
     Expect::NotNull(modelHeader);
     Expect::NotNull(reinterpret_cast<void *>(customAlloc));
-    Expect::Equal(GNA_1_0_EMBEDDED, deviceGeneration, Gna2StatusAccelerationModeNotSupported); // Temporary limitation
 
     auto const & model = *models.at(modelId);
 

@@ -57,7 +57,7 @@ void ModelExportConfig::Export(Gna2ModelExportComponent componentType, void ** e
         *exportBufferSize = sizeof(Gna2ModelSueCreekHeader);
         const auto header = static_cast<Gna2ModelSueCreekHeader *>(allocator(*exportBufferSize));
         *exportBuffer = header;
-        const auto dump = device.Dump(sourceModelId, GNA_1_0_EMBEDDED,
+        const auto dump = device.Dump(sourceModelId,
             reinterpret_cast<intel_gna_model_header*>(header), &status, privateAllocator);
         privateDeAllocator(dump);
         return;
@@ -66,7 +66,7 @@ void ModelExportConfig::Export(Gna2ModelExportComponent componentType, void ** e
     if (componentType == Gna2ModelExportComponentLegacySueCreekDump)
     {
         intel_gna_model_header header;
-        *exportBuffer = device.Dump(sourceModelId, GNA_1_0_EMBEDDED, &header, &status, allocator);
+        *exportBuffer = device.Dump(sourceModelId, &header, &status, allocator);
         *exportBufferSize = header.model_size;
         return;
     }
@@ -91,8 +91,12 @@ void ModelExportConfig::ValidateState() const
     //TODO:3:Consider adding ~Gna2StatusInvalidState/NotInitialized
     Expect::True(sourceDeviceId != Gna2DisabledU32, Gna2StatusIdentifierInvalid);
     Expect::True(sourceModelId != Gna2DisabledU32, Gna2StatusIdentifierInvalid);
+    // TODO:3: remove when toolchain is consistent with API.
+    auto legacySueCreekVersionNumber = static_cast<Gna2DeviceVersion>(0xFFFF0001);
+    auto const is1x0Embedded = Gna2DeviceVersionEmbedded1x0 == targetDeviceVersion
+    || legacySueCreekVersionNumber == targetDeviceVersion;
     //TODO:3:Remove when other devices supported
-    Expect::True(targetDeviceVersion == Gna2DeviceVersionSueCreek, Gna2StatusDeviceVersionInvalid);
+    Expect::True(is1x0Embedded, Gna2StatusAccelerationModeNotSupported);
 }
 
 inline void * ModelExportConfig::privateAllocator(uint32_t size)

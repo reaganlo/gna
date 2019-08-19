@@ -106,25 +106,16 @@ typedef UINT8           __1B_RES;   // 1 B of reserved memory
  *****************************************************************************/
 
 /**
- *  Enumeration of device flavors
- *  Hides gna_device_generation
+ *  Enumeration of device types
  */
 typedef enum _GnaDeviceType
 {
     GNA_HW_NO_DEVICE   = 0x0000,   // No supported device available
-    GNA_HW_SKL     = 0x1911,   // GMM Device Sky Lake
-    GNA_HW_KBL     = 0x1911,   // GMM Device Kaby Lake // TODO:3: check KBL HW ID
-    GNA_HW_CNL     = 0x5A11,   // GNA 0.9 Device Cannon Lake, no CNN support
-    GNA_HW_GLK     = 0x3190,   // GNA 1.0 Device Gemini Lake, full featured GNA 1.0
-    GNA_HW_EHL     = 0x4511,   // GNA 1.0 Device Elkhartlake, same function set as GLK
-    GNA_HW_ICL     = 0x8A11,   // GNA 1.0 Device Ice Lake, same function set as GLK
-    GNA_HW_TGL     = 0x9A11,   // GNA 2.0 Device Tiger Lake, full featured GNA 2.0
-    GNA_HW_ADL     = 0x46AD,   // GNA 3.0 Device Alder Lake, full featured GNA 3.0
-    GNA_HW_SUE_CREEK   = 0xFFFF1,  // GNA 1.0 Embedded Sue Creek
-    GNA_HW_JELLYFISH   = 0xFFFF2,  // GNA 2.1 Embedded Jelly Fish
-    GNA_HW_ACE_EMBEDDED= 0xFFFF3,  // GNA 3.0 Embedded on Alder Lake PCH/ACE
-    GNA_HW_ACE_ANNA    = 0xFFFF4,  // GNA 3.1 ANNA Autonomous Embedded on Alder Lake PCH/ACE
-
+    GNA_HW_GMM     = 0x01,   // GMM Device
+    GNA_HW_0x9     = 0x09,   // GNA 0.9 Device, no CNN support
+    GNA_HW_1x0     = 0x10,   // GNA 1.0 Device, full featured GNA 1.0
+    GNA_HW_2x0     = 0x20,   // GNA 2.0 Device, full featured GNA 2.0
+    GNA_HW_3x0     = 0x30,   // GNA 3.0 Device, full featured GNA 3.0
 } GnaDeviceType;
 
 /**

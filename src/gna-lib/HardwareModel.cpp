@@ -154,9 +154,9 @@ uint32_t HardwareModel::GetBufferOffset(const BaseAddress& address) const
 }
 
 uint32_t HardwareModel::getLayerDescriptorsSize(
-    const uint32_t layerCount, const DeviceVersion hwId)
+    const uint32_t layerCount, const DeviceVersion deviceVersion)
 {
-    auto layerDescriptorsSizeTmp = LayerDescriptor::GetSize(layerCount, hwId);
+    auto layerDescriptorsSizeTmp = LayerDescriptor::GetSize(layerCount, deviceVersion);
     return layerDescriptorsSizeTmp;
 }
 

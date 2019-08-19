@@ -756,7 +756,7 @@ void HardwareLayerGmm::save()
     XnnDescriptor[mvwidth] = GMM_MEAN_VALUE_SIZE;
 
     //Workaround for TGL MB-GMM-MB configurations
-    if (XnnDescriptor.HwCapabilities.GetDeviceVersion() == Gna2DeviceVersionTigerlake)
+    if (XnnDescriptor.HwCapabilities.GetDeviceVersion() == Gna2DeviceVersion2x0)
     {
         XnnDescriptor[n_groups] = static_cast<uint32_t>(1);
     }

@@ -79,3 +79,4 @@ src/drv-linux/source/gmm_drv.ver
 build/projects/
 tags
 doc/gna-api-doxygen/out
+build/msvc/

@@ -362,9 +362,9 @@ public:
 
     // Gets total size of all layers' descriptors for given hw
     inline static uint32_t GetSize(const uint32_t layerCount,
-        const DeviceVersion hwId = DefaultDeviceVersion)
+        const DeviceVersion deviceVersion = DefaultDeviceVersion)
     {
-        return getSize(hwId) * layerCount;
+        return getSize(deviceVersion) * layerCount;
     }
 
     LayerDescriptor() = delete;
@@ -418,8 +418,8 @@ public:
     AddrGmmCfg GmmDescriptor;
 
 private:
-    static uint32_t getSize(const DeviceVersion hwId);
-    static const std::map<const XnnParameterType, const XnnParameter>& getParameterMap(const DeviceVersion hwId);
+    static uint32_t getSize(const DeviceVersion deviceVersion);
+    static const std::map<const XnnParameterType, const XnnParameter>& getParameterMap(const DeviceVersion deviceVersion);
 
     LayerDescriptor(const AddrGmmCfg gmmConfig, const uint32_t size, const HardwareCapabilities& hwCaps,
         const BaseAddress memoryBaseIn, BaseAddress descriptorBaseIn,

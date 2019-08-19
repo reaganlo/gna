@@ -76,7 +76,7 @@ protected:
     uint32_t calculateDescriptorSize(bool includeGmms) const;
 
     static uint32_t getLayerDescriptorsSize(const uint32_t layerCount,
-        DeviceVersion hwId = DefaultDeviceVersion);
+        DeviceVersion deviceVersion = DefaultDeviceVersion);
     static uint32_t getGmmDescriptorsSize(const uint32_t gmmLayersCount);
 
     virtual void allocateLayerDescriptors();

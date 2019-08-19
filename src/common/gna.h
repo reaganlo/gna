@@ -43,12 +43,10 @@ extern "C" {
  */
 enum gna_device_t {
 	GNA_NO_DEVICE	= 0x0000,
-	GNA_DEV_CNL	= 0x5A11,
-	GNA_DEV_GLK	= 0x3190,
-	GNA_DEV_EHL	= 0x4511,
-	GNA_DEV_ICL	= 0x8A11,
-	GNA_DEV_TGL	= 0x9A11,
-	GNA_DEV_ADL	= 0x46AD
+	GNA_DEV_CNL	= 0x09,
+	GNA_DEV_GLK	= 0x10,
+	GNA_DEV_TGL	= 0x20,
+	GNA_DEV_ADL	= 0x30
 };
 
 struct gna_userptr {

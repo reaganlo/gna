@@ -270,7 +270,7 @@ int main(int argc, char *argv[])
         GnaDeviceClose(deviceIndex);
         exit(-status);
     }
-    status = GnaRequestConfigEnableHardwareConsistency(config_id, GNA_SUE_CREEK);
+    status = GnaRequestConfigEnableHardwareConsistency(config_id, GNA_EMBEDDED_1x0);
     if (GNA_SUCCESS!= status)
     {
         printf("GnaRequestConfigEnableHardwareConsistency for GNA_SUE_CREEK failed: %s\n", GnaStatusToString(status));
@@ -372,7 +372,7 @@ void *DumpLegacySueImage(
 
     exportConfig = InitExportConfig(sourceDeviceIndex, modelId,
         customAlloc,
-        Gna2DeviceVersionSueCreek);
+        Gna2DeviceVersionEmbedded1x0);
 
     auto status = Gna2ModelExport(exportConfig,
         Gna2ModelExportComponentLegacySueCreekHeader,
@@ -398,7 +398,7 @@ void *DumpLegacySueImage(
 
     exportConfig = InitExportConfig(sourceDeviceIndex, modelId,
         userAlloc,
-        Gna2DeviceVersionSueCreek);
+        Gna2DeviceVersionEmbedded1x0);
 
     status = Gna2ModelExport(exportConfig,
         Gna2ModelExportComponentLegacySueCreekDump,

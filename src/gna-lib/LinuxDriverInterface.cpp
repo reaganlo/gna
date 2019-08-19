@@ -70,7 +70,7 @@ bool LinuxDriverInterface::OpenDevice(uint32_t deviceIndex)
 
     try
     {
-        driverCapabilities.hwId = static_cast<DeviceVersion>(params[0].value);
+        driverCapabilities.deviceVersion = static_cast<DeviceVersion>(params[0].value);
         driverCapabilities.recoveryTimeout = static_cast<uint32_t>(params[2].value);
         driverCapabilities.hwInBuffSize = static_cast<uint32_t>(params[1].value);
     }

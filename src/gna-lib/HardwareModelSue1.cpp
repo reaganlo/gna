@@ -39,7 +39,7 @@
 using namespace GNA;
 
 
-HardwareCapabilities HardwareModelSue1::sueCapabilities = HardwareCapabilities{ Gna2DeviceVersionSueCreek };
+HardwareCapabilities HardwareModelSue1::sueCapabilities = HardwareCapabilities{ Gna2DeviceVersionEmbedded1x0 };
 
 HardwareModelSue1::HardwareModelSue1(CompiledModel const & softwareModel, intel_gna_alloc_cb customAllocIn) :
     HardwareModel(softwareModel, sueCapabilities),

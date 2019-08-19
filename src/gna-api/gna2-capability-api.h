@@ -67,37 +67,16 @@ enum Gna2DeviceGeneration
     Gna2DeviceGeneration1x0 = 0x100,
 
     /**
-     Embedded device with same feature set as ::Gna2DeviceGenerationEmbedded1x0.
-     */
-    Gna2DeviceGenerationEmbedded1x0 = 0x10E,
-
-    /**
      Fully featured second GNA device generation.
-     Backward compatible with ::Gna2DeviceGenerationEmbedded1x0.
+     Backward compatible with ::Gna2DeviceGeneration1x0.
      */
     Gna2DeviceGeneration2x0 = 0x200,
-
-    /**
-     Embedded device with same feature set as ::Gna2DeviceGeneration2x0.
-     */
-    Gna2DeviceGenerationEmbedded2x1 = 0x21E,
 
     /**
      Fully featured third GNA device generation.
      Partially compatible with ::Gna2DeviceGeneration2x0.
      */
     Gna2DeviceGeneration3x0 = 0x300,
-
-    /**
-     Devices embedded on PCH/ACE, with same feature set as ::Gna2DeviceGeneration3x0.
-     */
-    Gna2DeviceGenerationEmbedded3x0 = 0x30E,
-
-    /**
-     Devices embedded on PCH/ACE, with same feature set as ::Gna2DeviceGeneration3x0
-     and autonomous extension.
-     */
-    Gna2DeviceGenerationAutonomus3x1 = 0x31F,
 };
 
 /**
