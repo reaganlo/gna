@@ -456,18 +456,24 @@ enum Gna2OperationType
     Fully connected affine operation with recurrence composed with activation function.
 
      Operation:
-        - output = activation((((input[t], output[t-delay]) x weights) + bias), activationFunction)
+        - for each t in set of vectors for processing:
+              output[t] = activation((((input[t], output[t-delay]) x weights) + bias), activationFunction)
         .
         Where:
             - output[t-delay] - recurrent input (feedback) from t-delay output vector of current request.
 
      Operands:
         1. inputs [required]:
+            Multiple input vectors are provided using flat layout (no interleave).
             @see ::Gna2OperationTypeCopy input operand.
         2. outputs [required]:
+            Multiple output vectors are stored using flat layout (no interleave).
             @see ::Gna2OperationTypeCopy output operand, with notice:
             @note 1. Output type has to match input types.
             @note 2. Output data layout has to match overlap with implicit feedback defined by the delay parameter.
+                     User provided ::Gna2Tensor::Data indicates where the operation stores the results.
+                     However, data will also be read from implicitly defined feedback buffer (FB).
+                     FB address precedes ::Gna2Tensor::Data by (delay x sizeof(output vector)) bytes.
             // TODO:3:API: provide I/O data layout requirements
         3. weights [required]:
             Specifies weight tensor.
@@ -475,8 +481,8 @@ enum Gna2OperationType
                 - Mode: {::Gna2TensorModeDefault, ::Gna2TensorModeConstantScalar}
                 - Type: {::Gna2DataTypeInt8, ::Gna2DataTypeInt16},
                 - Shape: [H x W] 2D Matrix, where:
-                    - H is a number of input tensor elements + number of output tensor elements
-                    - W is a number of output tensor elements (output Shape H dimension)
+                    - H is a number of output vector elements (output Shape W dimension)
+                    - W is a number of input vector elements + number of output vector elements
         4. biases [required]:
             @see ::Gna2OperationTypeFullyConnectedAffine biases for ::Gna2BiasModeDefault
         5. activationFunction [required]:
