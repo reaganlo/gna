@@ -281,7 +281,6 @@ if(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
     ${COMMON_DIR}/version.rc)
   set(windows_ddi
     ${COMMON_DIR}/GnaDrvApi.h
-    ${COMMON_DIR}/GnaDrvApiWin.h
     ${COMMON_DIR}/GnaDrvApiWinDebug.h)
   list(APPEND common_sources ${gna_rc_files} ${windows_ddi})
 endif()

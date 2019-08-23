@@ -72,7 +72,7 @@ std::map<DeviceVersion, const GenerationCapabilities>& HardwareCapabilities::get
                 12288, 12288, 12096, 12288, 12000, 12096, 12096, 12288},
             {}},
         },
-        { Gna2DeviceVersion0x9,
+        { Gna2DeviceVersion0_9,
             {GNA_0_9,
             1023,
             {
@@ -96,7 +96,7 @@ std::map<DeviceVersion, const GenerationCapabilities>& HardwareCapabilities::get
                 12288, 12288, 12096, 12288, 12000, 12096, 12096, 12288},
             {}},
         },
-        { Gna2DeviceVersion1x0,
+        { Gna2DeviceVersion1_0,
             {GNA_1_0,
             1023,
             {
@@ -120,7 +120,7 @@ std::map<DeviceVersion, const GenerationCapabilities>& HardwareCapabilities::get
                 12288, 12288, 12096, 12288, 12000, 12096, 12096, 12288},
             {}},
         },
-        { Gna2DeviceVersionEmbedded1x0,
+        { Gna2DeviceVersionEmbedded1_0,
             {GNA_1_0,
             1023,
             {
@@ -144,7 +144,7 @@ std::map<DeviceVersion, const GenerationCapabilities>& HardwareCapabilities::get
                 6144, 6144, 6048, 6144, 5760, 6048, 6048, 6144},
             {}},
         },
-        { Gna2DeviceVersion2x0,
+        { Gna2DeviceVersion2_0,
             {GNA_2_0,
             4096,
             {
@@ -168,7 +168,7 @@ std::map<DeviceVersion, const GenerationCapabilities>& HardwareCapabilities::get
                 12288, 12288, 12096, 12288, 12000, 12096, 12096, 12288},
             {}},
         },
-        { Gna2DeviceVersionEmbedded2x1,
+        { Gna2DeviceVersionEmbedded2_1,
             {GNA_2_0,
             4096,
             {
@@ -192,7 +192,7 @@ std::map<DeviceVersion, const GenerationCapabilities>& HardwareCapabilities::get
                 12288, 12288, 12096, 12288, 12000, 12096, 12096, 12288},
             {}},
         },
-        { Gna2DeviceVersion3x0,
+        { Gna2DeviceVersion3_0,
             {GNA_3_0,
             8191,
             {
@@ -215,7 +215,7 @@ std::map<DeviceVersion, const GenerationCapabilities>& HardwareCapabilities::get
             {},
             {}},
         },
-        { Gna2DeviceVersionEmbedded3x0,
+        { Gna2DeviceVersionEmbedded3_0,
             {GNA_3_0,
             8191,
             {
@@ -238,7 +238,7 @@ std::map<DeviceVersion, const GenerationCapabilities>& HardwareCapabilities::get
             {},
             {}},
         },
-        { Gna2DeviceVersionEmbedded3x1,
+        { Gna2DeviceVersionEmbedded3_1,
             {GNA_3_0,
             8191,
             {
@@ -264,14 +264,14 @@ std::map<DeviceVersion, const GenerationCapabilities>& HardwareCapabilities::get
     };
 
     // initialize remaining items that depend on capsMap values
-    if (capsMap.at(Gna2DeviceVersion3x0).BufferElementCount[0] == 0)
+    if (capsMap.at(Gna2DeviceVersion3_0).BufferElementCount[0] == 0)
     {
-        initHardwareConsistencySettingsAdl(const_cast<GenerationCapabilities&>(capsMap.at(Gna2DeviceVersion3x0)));
-        initHardwareConsistencySettingsAdl(const_cast<GenerationCapabilities&>(capsMap.at(Gna2DeviceVersion3x0)), true);
-        initHardwareConsistencySettingsAdl(const_cast<GenerationCapabilities&>(capsMap.at(Gna2DeviceVersionEmbedded3x0)));
-        initHardwareConsistencySettingsAdl(const_cast<GenerationCapabilities&>(capsMap.at(Gna2DeviceVersionEmbedded3x0)), true);
-        initHardwareConsistencySettingsAdl(const_cast<GenerationCapabilities&>(capsMap.at(Gna2DeviceVersionEmbedded3x1)));
-        initHardwareConsistencySettingsAdl(const_cast<GenerationCapabilities&>(capsMap.at(Gna2DeviceVersionEmbedded3x1)), true);
+        initHardwareConsistencySettingsAdl(const_cast<GenerationCapabilities&>(capsMap.at(Gna2DeviceVersion3_0)));
+        initHardwareConsistencySettingsAdl(const_cast<GenerationCapabilities&>(capsMap.at(Gna2DeviceVersion3_0)), true);
+        initHardwareConsistencySettingsAdl(const_cast<GenerationCapabilities&>(capsMap.at(Gna2DeviceVersionEmbedded3_0)));
+        initHardwareConsistencySettingsAdl(const_cast<GenerationCapabilities&>(capsMap.at(Gna2DeviceVersionEmbedded3_0)), true);
+        initHardwareConsistencySettingsAdl(const_cast<GenerationCapabilities&>(capsMap.at(Gna2DeviceVersionEmbedded3_1)));
+        initHardwareConsistencySettingsAdl(const_cast<GenerationCapabilities&>(capsMap.at(Gna2DeviceVersionEmbedded3_1)), true);
     }
 
     return capsMap;
@@ -342,7 +342,7 @@ void HardwareCapabilities::DiscoverHardware(DriverInterface &driverInterface)
         auto driverCapabilities = driverInterface.GetCapabilities();
 
         //TODO:3: remove when ADL bug with input buffer will be fixed
-        if (driverCapabilities.deviceVersion == Gna2DeviceVersion3x0)
+        if (driverCapabilities.deviceVersion == Gna2DeviceVersion3_0)
         {
             driverCapabilities.hwInBuffSize = 32;
         }

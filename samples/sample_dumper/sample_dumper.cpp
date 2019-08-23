@@ -372,7 +372,7 @@ void *DumpLegacySueImage(
 
     exportConfig = InitExportConfig(sourceDeviceIndex, modelId,
         customAlloc,
-        Gna2DeviceVersionEmbedded1x0);
+        Gna2DeviceVersionEmbedded1_0);
 
     auto status = Gna2ModelExport(exportConfig,
         Gna2ModelExportComponentLegacySueCreekHeader,
@@ -398,7 +398,7 @@ void *DumpLegacySueImage(
 
     exportConfig = InitExportConfig(sourceDeviceIndex, modelId,
         userAlloc,
-        Gna2DeviceVersionEmbedded1x0);
+        Gna2DeviceVersionEmbedded1_0);
 
     status = Gna2ModelExport(exportConfig,
         Gna2ModelExportComponentLegacySueCreekDump,

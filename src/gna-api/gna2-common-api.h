@@ -102,59 +102,59 @@ enum Gna2DeviceVersion
 
     /**
      GNA 0.9 device.
-     A ::Gna2DeviceGeneration0x9 generation device.
+     A ::Gna2DeviceGeneration0_9 generation device.
      Code names: CannonLake (CNL).
      */
-    Gna2DeviceVersion0x9 = 0x09,
+    Gna2DeviceVersion0_9 = 0x09,
 
     /**
      GNA 1.0 device.
-     A ::Gna2DeviceGeneration1x0 generation device.
+     A ::Gna2DeviceGeneration1_0 generation device.
      Code names: GeminiLake (GLK), ElkhartLake (EHL), IceLake (ICL).
      */
-    Gna2DeviceVersion1x0 = 0x10,
+    Gna2DeviceVersion1_0 = 0x10,
 
     /**
      GNA 2.0 device.
-     A ::Gna2DeviceGeneration2x0 generation device.
+     A ::Gna2DeviceGeneration2_0 generation device.
      Code names: TigerLake (TGL).
      */
-    Gna2DeviceVersion2x0 = 0x20,
+    Gna2DeviceVersion2_0 = 0x20,
 
     /**
      GNA 3.0 device.
-     A ::Gna2DeviceGeneration3x0 generation device.
+     A ::Gna2DeviceGeneration3_0 generation device.
      Code names: AlderLake (ADL).
      */
-    Gna2DeviceVersion3x0 = 0x30,
+    Gna2DeviceVersion3_0 = 0x30,
 
     /**
      GNA 1.0 embedded device.
-     A ::Gna2DeviceGeneration1x0 generation device.
+     A ::Gna2DeviceGeneration1_0 generation device.
      Code names: SueCreek (SUE).
      */
-    Gna2DeviceVersionEmbedded1x0 = 0x10E,
+    Gna2DeviceVersionEmbedded1_0 = 0x10E,
 
     /**
      GNA 2.1 embedded device.
-     A ::Gna2DeviceGeneration2x0 generation device.
+     A ::Gna2DeviceGeneration2_0 generation device.
      Code names: JellyFish (JLF).
      */
-    Gna2DeviceVersionEmbedded2x1 = 0x20E,
+    Gna2DeviceVersionEmbedded2_1 = 0x20E,
 
     /**
      GNA 3.0 embedded device on PCH/ACE.
-     A ::Gna2DeviceGeneration3x0 generation device.
+     A ::Gna2DeviceGeneration3_0 generation device.
      Code names: AlderLake (ADL).
      */
-    Gna2DeviceVersionEmbedded3x0 = 0x30E,
+    Gna2DeviceVersionEmbedded3_0 = 0x30E,
 
     /**
      GNA ANNA autonomous embedded device on ACE.
-     A ::Gna2DeviceGeneration3x0 generation device.
+     A ::Gna2DeviceGeneration3_0 generation device.
      Code names: AlderLake (ADL).
      */
-    Gna2DeviceVersionEmbedded3x1 = 0x31A,
+    Gna2DeviceVersionEmbedded3_1 = 0x31A,
 
     /**
      Value indicating no supported hardware device available.
@@ -177,7 +177,7 @@ enum Gna2DeviceVersion
  Usually it will be the latest existing GNA device (excluding embedded)
  on the time of publishing the library, value may change with new release.
  */
-#define GNA2_DEFAULT_DEVICE_VERSION Gna2DeviceVersion3x0
+#define GNA2_DEFAULT_DEVICE_VERSION Gna2DeviceVersion3_0
 
  /**
   GNA API Status codes.

@@ -39,14 +39,14 @@ uint32_t LayerDescriptor::getSize(const DeviceVersion deviceVersion)
     static const std::map<const DeviceVersion, const uint32_t> sizeMap =
     {
 
-        {Gna2DeviceVersion0x9, 128},
-        {Gna2DeviceVersion1x0, 128},
-        {Gna2DeviceVersion2x0, 128},
-        {Gna2DeviceVersion3x0, 128},
-        {Gna2DeviceVersionEmbedded1x0, 128},
-        {Gna2DeviceVersionEmbedded2x1, 128},
-        {Gna2DeviceVersionEmbedded3x0, 128}, // TODO:3: verify the actual size
-        {Gna2DeviceVersionEmbedded3x1, 128},
+        {Gna2DeviceVersion0_9, 128},
+        {Gna2DeviceVersion1_0, 128},
+        {Gna2DeviceVersion2_0, 128},
+        {Gna2DeviceVersion3_0, 128},
+        {Gna2DeviceVersionEmbedded1_0, 128},
+        {Gna2DeviceVersionEmbedded2_1, 128},
+        {Gna2DeviceVersionEmbedded3_0, 128}, // TODO:3: verify the actual size
+        {Gna2DeviceVersionEmbedded3_1, 128},
     };
     return sizeMap.at(deviceVersion);
 }
@@ -286,14 +286,14 @@ const std::map<const XnnParameterType, const XnnParameter>& LayerDescriptor::get
 {
     static const std::map<const DeviceVersion, const std::map<const XnnParameterType, const XnnParameter>&> parameterMap =
     {
-        {Gna2DeviceVersion0x9, XnnDescriptorGNA_1},
-        {Gna2DeviceVersion1x0, XnnDescriptorGNA_1},
-        {Gna2DeviceVersion2x0, XnnDescriptorGNA_1},
-        {Gna2DeviceVersion3x0, XnnDescriptorGNA_3},
-        {Gna2DeviceVersionEmbedded1x0, XnnDescriptorGNA_1},
-        {Gna2DeviceVersionEmbedded2x1, XnnDescriptorGNA_1},
-        {Gna2DeviceVersionEmbedded3x0, XnnDescriptorGNA_3},
-        {Gna2DeviceVersionEmbedded3x1, XnnDescriptorGNA_3},
+        {Gna2DeviceVersion0_9, XnnDescriptorGNA_1},
+        {Gna2DeviceVersion1_0, XnnDescriptorGNA_1},
+        {Gna2DeviceVersion2_0, XnnDescriptorGNA_1},
+        {Gna2DeviceVersion3_0, XnnDescriptorGNA_3},
+        {Gna2DeviceVersionEmbedded1_0, XnnDescriptorGNA_1},
+        {Gna2DeviceVersionEmbedded2_1, XnnDescriptorGNA_1},
+        {Gna2DeviceVersionEmbedded3_0, XnnDescriptorGNA_3},
+        {Gna2DeviceVersionEmbedded3_1, XnnDescriptorGNA_3},
     };
     return parameterMap.at(deviceVersion);
 }

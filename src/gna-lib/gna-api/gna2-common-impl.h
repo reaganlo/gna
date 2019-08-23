@@ -151,14 +151,14 @@ const std::unordered_map<Gna2Status, gna_status_t, EnumHash> StatusMap =
 const std::unordered_map<gna_device_version, Gna2DeviceVersion, EnumHash> DeviceVersionMapInverted =
 {
     {GNA_GMM, Gna2DeviceVersionGMM },
-    {GNA_0x9, Gna2DeviceVersion0x9 },
-    {GNA_1x0, Gna2DeviceVersion1x0 },
-    {GNA_2x0, Gna2DeviceVersion2x0 },
-    {GNA_3x0, Gna2DeviceVersion3x0 },
-    {GNA_EMBEDDED_1x0, Gna2DeviceVersionEmbedded1x0 },
-    {GNA_EMBEDDED_2x1, Gna2DeviceVersionEmbedded2x1 },
-    {GNA_EMBEDDED_3x0, Gna2DeviceVersionEmbedded3x0 },
-    {GNA_EMBEDDED_3x1, Gna2DeviceVersionEmbedded3x1 },
+    {GNA_0x9, Gna2DeviceVersion0_9 },
+    {GNA_1x0, Gna2DeviceVersion1_0 },
+    {GNA_2x0, Gna2DeviceVersion2_0 },
+    {GNA_3x0, Gna2DeviceVersion3_0 },
+    {GNA_EMBEDDED_1x0, Gna2DeviceVersionEmbedded1_0 },
+    {GNA_EMBEDDED_2x1, Gna2DeviceVersionEmbedded2_1 },
+    {GNA_EMBEDDED_3x0, Gna2DeviceVersionEmbedded3_0 },
+    {GNA_EMBEDDED_3x1, Gna2DeviceVersionEmbedded3_1 },
     {GNA_SOFTWARE_EMULATION, Gna2DeviceVersionSoftwareEmulation }
 };
 

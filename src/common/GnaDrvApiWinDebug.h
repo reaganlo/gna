@@ -31,7 +31,7 @@
  *
  *****************************************************************************/
 
-#include "GnaDrvApiWin.h"
+#include "GnaDrvApi.h"
 
 #if defined(_DEBUG) || !defined(DRIVER)
 #define DRV_DEBUG_INTERFACE

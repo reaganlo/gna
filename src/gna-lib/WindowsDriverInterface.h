@@ -30,16 +30,11 @@
 #include "Request.h"
 #include "Expect.h"
 
-#define WIN32_NO_STATUS
-#include "GnaDrvApiWinDebug.h"
-#include <SetupApi.h>
-#include <Windows.h>
-#undef WIN32_NO_STATUS
-
-#include "common.h"
-
 #include <map>
 #include <memory>
+#define WIN32_NO_STATUS
+#include <Windows.h>
+#undef WIN32_NO_STATUS
 
 namespace GNA
 {
@@ -121,7 +116,7 @@ private:
 
     static std::string discoverDevice(uint32_t deviceIndex);
 
-    static const std::map<GnaIoctlCommand, decltype(GNA_IOCTL_NOTIFY)> ioctlCommandsMap;
+    static const std::map<GnaIoctlCommand, DWORD> ioctlCommandsMap;
 
     std::map<uint64_t, std::unique_ptr<OVERLAPPED>> memoryMapRequests;
 
@@ -129,7 +124,7 @@ private:
     WinHandle deviceEvent;
     OVERLAPPED overlapped;
 
-    UINT32 recoveryTimeout = DRV_RECOVERY_TIMEOUT;
+    UINT32 recoveryTimeout;
 };
 
 }

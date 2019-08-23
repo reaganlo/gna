@@ -92,9 +92,9 @@ void ModelExportConfig::ValidateState() const
     Expect::True(sourceDeviceId != Gna2DisabledU32, Gna2StatusIdentifierInvalid);
     Expect::True(sourceModelId != Gna2DisabledU32, Gna2StatusIdentifierInvalid);
     // TODO:3: remove when toolchain is consistent with API.
-    auto legacySueCreekVersionNumber = static_cast<Gna2DeviceVersion>(0xFFFF0001);
-    auto const is1x0Embedded = Gna2DeviceVersionEmbedded1x0 == targetDeviceVersion
-    || legacySueCreekVersionNumber == targetDeviceVersion;
+    uint32_t const legacySueCreekVersionNumber = 0xFFFF0001;
+    auto const is1x0Embedded = Gna2DeviceVersionEmbedded1_0 == targetDeviceVersion
+    || legacySueCreekVersionNumber == static_cast<uint32_t>(targetDeviceVersion);
     //TODO:3:Remove when other devices supported
     Expect::True(is1x0Embedded, Gna2StatusAccelerationModeNotSupported);
 }

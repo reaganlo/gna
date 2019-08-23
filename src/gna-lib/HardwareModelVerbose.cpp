@@ -31,6 +31,14 @@
 #include "MemoryContainer.h"
 #include "WindowsDriverInterface.h"
 
+#if defined(_WIN32)
+#if HW_VERBOSE == 1
+#include "GnaDrvApiWinDebug.h"
+#endif
+#else
+#error Verbose version of library available only on Windows OS
+#endif
+
 #include <fstream>
 #include <memory>
 #include <string>

@@ -58,25 +58,25 @@ enum Gna2DeviceGeneration
      Initial GNA device generation with no CNN support.
      Backward compatible with ::Gna2DeviceGenerationGmm.
      */
-    Gna2DeviceGeneration0x9 = 0x090,
+    Gna2DeviceGeneration0_9 = 0x090,
 
     /**
      First fully featured GNA device generation.
-     Backward compatible with ::Gna2DeviceGeneration0x9.
+     Backward compatible with ::Gna2DeviceGeneration0_9.
      */
-    Gna2DeviceGeneration1x0 = 0x100,
+    Gna2DeviceGeneration1_0 = 0x100,
 
     /**
      Fully featured second GNA device generation.
-     Backward compatible with ::Gna2DeviceGeneration1x0.
+     Backward compatible with ::Gna2DeviceGeneration1_0.
      */
-    Gna2DeviceGeneration2x0 = 0x200,
+    Gna2DeviceGeneration2_0 = 0x200,
 
     /**
      Fully featured third GNA device generation.
-     Partially compatible with ::Gna2DeviceGeneration2x0.
+     Partially compatible with ::Gna2DeviceGeneration2_0.
      */
-    Gna2DeviceGeneration3x0 = 0x300,
+    Gna2DeviceGeneration3_0 = 0x300,
 };
 
 /**
@@ -90,7 +90,7 @@ enum Gna2DeviceGeneration
  Usually it will be the latest existing GNA generation (excluding embedded)
  on the time of publishing the library, value may change with new release.
  */
-#define GNA2_DEFAULT_DEVICE_GENERATION Gna2DeviceGeneration3x0
+#define GNA2_DEFAULT_DEVICE_GENERATION Gna2DeviceGeneration3_0
 
 #endif // __GNA2_CAPABILITY_API_H
 

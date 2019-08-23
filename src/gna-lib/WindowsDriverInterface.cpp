@@ -31,14 +31,25 @@
 #include "Macros.h"
 #include "Memory.h"
 
-#include "ntstatus.h"
+#if defined(_WIN32)
+#if HW_VERBOSE == 1
+#include "GnaDrvApiWinDebug.h"
+#else
+#include "GnaDrvApi.h"
+#endif
+#else
+#error Verbose version of library available only on Windows OS
+#endif
+
+#include <SetupApi.h>
+#include <ntstatus.h>
 
 using namespace GNA;
 
 #define MAX_D0_STATE_PROBES  10
-#define WAIT_PERIOD         200        // in miliseconds
+#define WAIT_PERIOD         200 // in miliseconds
 
-const std::map<GnaIoctlCommand, decltype(GNA_IOCTL_NOTIFY)> WindowsDriverInterface::ioctlCommandsMap =
+const std::map<GnaIoctlCommand, DWORD> WindowsDriverInterface::ioctlCommandsMap =
 {
     { GNA_COMMAND_GET_PARAM, GNA_IOCTL_GET_PARAM },
     { GNA_COMMAND_MAP, GNA_IOCTL_MEM_MAP2 },
@@ -50,7 +61,8 @@ const std::map<GnaIoctlCommand, decltype(GNA_IOCTL_NOTIFY)> WindowsDriverInterfa
 };
 
 WindowsDriverInterface::WindowsDriverInterface() :
-    deviceEvent{CreateEvent(nullptr, false, false, nullptr)}
+    deviceEvent{CreateEvent(nullptr, false, false, nullptr)},
+    recoveryTimeout{ DRV_RECOVERY_TIMEOUT }
 {
     ZeroMemory(&overlapped, sizeof(overlapped));
 }
@@ -205,8 +217,10 @@ RequestResult WindowsDriverInterface::Submit(HardwareRequest& hardwareRequest,
     switch (writeStatus)
     {
     case STATUS_SUCCESS:
-        result.hardwarePerf = calculationData->hwPerf;
-        result.driverPerf = calculationData->drvPerf;
+         memcpy_s(&result.hardwarePerf, sizeof(result.hardwarePerf),
+            &calculationData->hwPerf, sizeof(calculationData->hwPerf));
+        memcpy_s(&result.driverPerf, sizeof(result.driverPerf),
+            &calculationData->drvPerf, sizeof(calculationData->drvPerf));
         result.status = (calculationData->status & STS_SATURATION_FLAG)
             ? Gna2StatusWarningArithmeticSaturation : Gna2StatusSuccess;
         break;
@@ -292,7 +306,7 @@ void WindowsDriverInterface::getDeviceCapabilities()
     auto bytesRead = DWORD{0};
     UINT64 params[3] = {
         GNA_PARAM_DEVICE_ID,
-        GNA_PARAM_IBUFFS,
+        GNA_PARAM_INPUT_BUFFER_S,
         GNA_PARAM_RECOVERY_TIMEOUT
     };
 
@@ -313,6 +327,7 @@ void WindowsDriverInterface::getDeviceCapabilities()
     driverCapabilities.deviceVersion = static_cast<DeviceVersion>(values[0]);
     driverCapabilities.hwInBuffSize = static_cast<uint32_t>(values[1]);
     driverCapabilities.recoveryTimeout = static_cast<uint32_t>(values[2]);
+    recoveryTimeout = driverCapabilities.recoveryTimeout;
 }
 
 std::string WindowsDriverInterface::discoverDevice(uint32_t deviceIndex)

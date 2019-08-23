@@ -28,16 +28,6 @@
 #include "HardwareModelScorable.h"
 #include "gna-api-verbose.h"
 
-#if defined(_WIN32)
-#if HW_VERBOSE == 1
-#include "GnaDrvApiWinDebug.h"
-#else
-#include "GnaDrvApiWin.h"
-#endif
-#else
-#error Verbose version of library available only on Windows OS
-#endif
-
 #include <vector>
 
 namespace GNA

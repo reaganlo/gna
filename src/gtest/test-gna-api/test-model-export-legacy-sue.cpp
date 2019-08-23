@@ -188,7 +188,7 @@ TEST_F(TestSimpleModel, exportSueLegacyTestUsingApi2)
     EXPECT_EQ(status2, Gna2StatusSuccess);
     status2 = Gna2ModelExportConfigSetSource(exportConfig, deviceIndex, model_id);
     EXPECT_EQ(status2, Gna2StatusSuccess);
-    status2 = Gna2ModelExportConfigSetTarget(exportConfig, Gna2DeviceVersionEmbedded1x0);
+    status2 = Gna2ModelExportConfigSetTarget(exportConfig, Gna2DeviceVersionEmbedded1_0);
     EXPECT_EQ(status2, Gna2StatusSuccess);
 
     void * bufferLdHeader;
