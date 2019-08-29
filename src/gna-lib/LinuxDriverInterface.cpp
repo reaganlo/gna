@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2018 Intel Corporation.
+ Copyright 2018-2019 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -30,7 +30,7 @@
 #include "Memory.h"
 #include "Request.h"
 
-#include "gna.h"
+#include "gna-h-wrapper.h"
 
 #include "gna-api.h"
 #include "gna-api-status.h"
@@ -54,14 +54,15 @@ using namespace GNA;
 
 bool LinuxDriverInterface::OpenDevice(uint32_t deviceIndex)
 {
-    struct gna_getparam params[3] =
+    struct gna_getparam params[] =
     {
-        { GNA_PARAM_DEVICE_ID, 0 },
-        { GNA_PARAM_IBUFFS, 0 },
+        { GNA_PARAM_DEVICE_TYPE, 0 },
+        { GNA_PARAM_INPUT_BUFFER_S, 0 },
         { GNA_PARAM_RECOVERY_TIMEOUT, 0 },
     };
+    constexpr size_t paramsNum = sizeof(params)/sizeof(params[0]);
 
-    auto found = discoverDevice(deviceIndex, params);
+    const auto found = discoverDevice(deviceIndex, params, paramsNum);
     if (found == -1)
     {
         return false;
@@ -133,15 +134,15 @@ RequestResult LinuxDriverInterface::Submit(HardwareRequest& hardwareRequest,
 
     scoreConfig->ctrl_flags.active_list_on = hardwareRequest.ActiveListOn ? 1 : 0;
     scoreConfig->ctrl_flags.gna_mode = hardwareRequest.Mode == xNN ? 1 : 0;
-    scoreConfig->desc_cfg.xnn_cfg.layer_count = hardwareRequest.LayerCount;
+    scoreConfig->layer_count = hardwareRequest.LayerCount;
 
     if(xNN == hardwareRequest.Mode)
     {
-        scoreConfig->desc_cfg.xnn_cfg.layer_base = hardwareRequest.LayerBase;
+        scoreConfig->layer_base = hardwareRequest.LayerBase;
     }
     else if(GMM == hardwareRequest.Mode)
     {
-        scoreConfig->desc_cfg.xnn_cfg.layer_base = hardwareRequest.GmmOffset;
+        scoreConfig->layer_base = hardwareRequest.GmmOffset;
     }
     else
     {
@@ -272,7 +273,7 @@ Gna2Status LinuxDriverInterface::parseHwStatus(uint32_t hwStatus) const
     return Gna2StatusDeviceCriticalFailure;
 }
 
-int LinuxDriverInterface::discoverDevice(uint32_t deviceIndex, gna_getparam (&params)[3])
+int LinuxDriverInterface::discoverDevice(uint32_t deviceIndex, gna_getparam *params, size_t paramsNum)
 {
     int fd = -1;
     uint32_t found = 0;
@@ -286,15 +287,16 @@ int LinuxDriverInterface::discoverDevice(uint32_t deviceIndex, gna_getparam (&pa
             continue;
         }
 
-        if (ioctl(fd, GNA_IOCTL_GETPARAM, &params[0]) == 0
-            && ioctl(fd, GNA_IOCTL_GETPARAM, &params[1]) == 0
-            && ioctl(fd, GNA_IOCTL_GETPARAM, &params[2]) == 0)
+        bool paramsValid = true;
+        for (size_t p = 0; p < paramsNum && paramsValid; p++)
         {
-            if (found++ == deviceIndex)
-            {
-                return fd;
-            }
+            paramsValid &= ioctl(fd, GNA_IOCTL_GETPARAM, &params[p]) == 0;
         }
+        if (paramsValid && found++ == deviceIndex)
+        {
+            return fd;
+        }
+
         close(fd);
         fd = -1;
     }

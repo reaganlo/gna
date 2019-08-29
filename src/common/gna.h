@@ -1,5 +1,5 @@
-// SPDX-License-Identifier: GPL-2.0
-// Copyright(c) 2017-18 Intel Corporation
+/* SPDX-License-Identifier: GPL-2.0 WITH Linux-syscall-note */
+/* Copyright(c) 2017-19 Intel Corporation */
 
 #ifndef _UAPI_GNA_H_
 #define _UAPI_GNA_H_
@@ -15,9 +15,15 @@ extern "C" {
 #define GNA_SCORE_COPY_DESCRIPTOR	(1 <<  0)
 
 /* GNA parameters */
-#define GNA_PARAM_DEVICE_ID		(1 <<  0)
-#define GNA_PARAM_RECOVERY_TIMEOUT	(1 <<  1)
-#define GNA_PARAM_IBUFFS		(1 <<  2)
+#define GNA_PARAM_DEVICE_ID		1
+#define GNA_PARAM_RECOVERY_TIMEOUT	2
+#define GNA_PARAM_DEVICE_TYPE		3
+#define GNA_PARAM_INPUT_BUFFER_S	4
+#define GNA_PARAM_CE_NUM		5
+#define GNA_PARAM_PLE_NUM		6
+#define GNA_PARAM_AFE_NUM		7
+#define GNA_PARAM_HAS_MMU		8
+#define GNA_PARAM_HW_VER		9
 
 #define GNA_CFG_SIZE 256
 
@@ -37,17 +43,14 @@ extern "C" {
 		GNA_STS_PARAM_OOR | \
 		GNA_STS_VA_OOR)
 
-/**
- *  Enumeration of device flavors
- *  Hides gna_device_kind
- */
-enum gna_device_t {
-	GNA_NO_DEVICE	= 0x0000,
-	GNA_DEV_CNL	= 0x09,
-	GNA_DEV_GLK	= 0x10,
-	GNA_DEV_TGL	= 0x20,
-	GNA_DEV_ADL	= 0x30
-};
+#define GNA_NO_DEVICE	0x0
+
+/* Device types */
+#define GNA_DEV_TYPE_GMM	0x01
+#define GNA_DEV_TYPE_0_9	0x09
+#define GNA_DEV_TYPE_1_0	0x10
+#define GNA_DEV_TYPE_2_0	0x20
+#define GNA_DEV_TYPE_3_0	0x30
 
 struct gna_userptr {
 	__u64 memory_id;
@@ -77,7 +80,7 @@ struct gna_patch {
 	__u64 size;
 	union {
 		__u64 value;
-		void *user_ptr;
+		void __user *user_ptr;
 	};
 } __attribute__((packed));
 
@@ -112,13 +115,13 @@ struct gna_score_cfg {
 
 	__u64 request_id;
 
-	union gna_desc_cfg {
+	union {
 		__u8 descriptor[GNA_CFG_SIZE];
-		struct gna_xnn_config {
+		struct {
 			__u32 layer_base;
 			__u32 layer_count;
-		} xnn_cfg;
-	} desc_cfg;
+		};
+	};
 
 	/* List of GNA memory buffers */
 	__u64 buffers_ptr;
@@ -148,4 +151,3 @@ struct gna_wait {
 #endif
 
 #endif /* _UAPI_GNA_H_ */
-

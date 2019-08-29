@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2018 Intel Corporation.
+ Copyright 2018-2019 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -27,11 +27,11 @@
 
 #include "DriverInterface.h"
 
-#include "gna.h"
-
 #include "common.h"
 
 #include <cstdint>
+
+struct gna_getparam;
 
 namespace GNA
 {
@@ -64,7 +64,7 @@ protected:
 private:
     LinuxDriverInterface(const LinuxDriverInterface &) = delete;
     LinuxDriverInterface& operator=(const LinuxDriverInterface&) = delete;
-    int discoverDevice(uint32_t deviceIndex, gna_getparam (&params)[3]);
+    int discoverDevice(uint32_t deviceIndex, gna_getparam *params, size_t paramsNum);
 
     int gnaFileDescriptor = -1;
 };

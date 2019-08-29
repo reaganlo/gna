@@ -29,7 +29,7 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <cstring>
-#include "gna.h"
+#include "gna-h-wrapper.h"
 
 static const std::map<std::pair<u_int16_t,u_int16_t>, std::string> knownGNADevsIds
 {
@@ -96,7 +96,7 @@ std::string LinuxGnaSelfTestHardwareStatus::devfsGnaNode(uint8_t range)
     struct gna_getparam params[3] =
     {
         { GNA_PARAM_DEVICE_ID, 0 },
-        { GNA_PARAM_IBUFFS, 0 },
+        { GNA_PARAM_INPUT_BUFFER_S , 0 },
         { GNA_PARAM_RECOVERY_TIMEOUT, 0 },
     };
 
