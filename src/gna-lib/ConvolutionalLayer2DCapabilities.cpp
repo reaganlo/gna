@@ -43,7 +43,7 @@
 
 using namespace GNA;
 
-static const RangeLimits<> limitsForInputShape1D =
+static const RangeLimits<> limitsForInputEqual1 =
 {
     1,
     1,
@@ -51,13 +51,13 @@ static const RangeLimits<> limitsForInputShape1D =
     Gna2StatusXnnErrorInputVolume
 };
 
-static const RangeLimits<> limitsForOutputShape1D =
+static const RangeLimits<> limitsForOutputEqual1 =
 {
-    limitsForInputShape1D,
+    limitsForInputEqual1,
     Gna2StatusXnnErrorOutputVolume
 };
 
-static const RangeLimits<> limitsForInputShape2D =
+static const RangeLimits<> limitsForInputUInt16Max =
 {
     1,
     LayerCapabilities::InputElementCountMax,
@@ -65,9 +65,9 @@ static const RangeLimits<> limitsForInputShape2D =
     Gna2StatusXnnErrorInputVolume
 };
 
-static const RangeLimits<> limitsForOutputShape2D =
+static const RangeLimits<> limitsForOutputUInt16Max =
 {
-    limitsForInputShape2D,
+    limitsForInputUInt16Max,
     Gna2StatusXnnErrorOutputVolume
 };
 
@@ -86,33 +86,33 @@ const OperationCapabilityMap & ConvolutionalLayer2DCapabilities::GetOperands(uin
         {InputOperandIndex,{
             {GNA_1_0, std::make_shared<TensorLimits>(TensorLimits{
                 {GNA_TENSOR_NHWD},    // N = 1
-                {{GNA_DIM_N, limitsForInputShape1D},
+                {{GNA_DIM_N, limitsForInputEqual1},
                  {GNA_DIM_H, limitsForInputShapeLegacy},
-                 {GNA_DIM_W, limitsForInputShape1D},
-                 {GNA_DIM_D, limitsForInputShape1D}},
+                 {GNA_DIM_W, limitsForInputEqual1},
+                 {GNA_DIM_D, limitsForInputEqual1}},
                 GetModes(InputOperandIndex, GNA_0_9)})},
             {GNA_3_0, std::make_shared<TensorLimits>(TensorLimits{
                 {GNA_TENSOR_NHWD},    // N = 1
-                {{GNA_DIM_N, limitsForInputShape1D},
-                 {GNA_DIM_H, limitsForInputShape2D},
-                 {GNA_DIM_W, limitsForInputShape2D},
-                 {GNA_DIM_D, limitsForInputShape2D}},
+                {{GNA_DIM_N, limitsForInputEqual1},
+                 {GNA_DIM_H, limitsForInputUInt16Max},
+                 {GNA_DIM_W, limitsForInputUInt16Max},
+                 {GNA_DIM_D, limitsForInputUInt16Max}},
                 GetModes(InputOperandIndex, GNA_3_0)})}
         }},
         {OutputOperandIndex,{
             {GNA_1_0, std::make_shared<TensorLimits>(TensorLimits{
                 { GNA_TENSOR_NHWD },
-                {{GNA_DIM_N, limitsForOutputShape1D},
+                {{GNA_DIM_N, limitsForOutputEqual1},
                 {GNA_DIM_H, {Filter1DElementsMultiplier, Filter1DElementsMax, Filter1DElementsMultiplier, Gna2StatusXnnErrorOutputVolume}},
-                {GNA_DIM_W, limitsForOutputShape2D},
-                {GNA_DIM_D, limitsForOutputShape1D}},
+                {GNA_DIM_W, limitsForOutputUInt16Max},
+                {GNA_DIM_D, limitsForOutputEqual1}},
                 GetModes(OutputOperandIndex, GNA_0_9)})},
             {GNA_3_0, std::make_shared<TensorLimits>(TensorLimits{
                 {GNA_TENSOR_NHWD},
-                {{GNA_DIM_N, limitsForOutputShape1D},
-                 {GNA_DIM_H, limitsForOutputShape2D},
-                 {GNA_DIM_W, limitsForOutputShape2D},
-                 {GNA_DIM_D, limitsForOutputShape2D}},
+                {{GNA_DIM_N, limitsForOutputEqual1},
+                 {GNA_DIM_H, limitsForOutputUInt16Max},
+                 {GNA_DIM_W, limitsForOutputUInt16Max},
+                 {GNA_DIM_D, limitsForOutputUInt16Max}},
                 GetModes(OutputOperandIndex, GNA_3_0)})}
         }},
     };
@@ -125,16 +125,16 @@ const OperationCapabilityMap & ConvolutionalLayer2DCapabilities::GetLegacyOperan
     {
         {InputOperandIndex,{
             {GNA_1_0, std::make_shared<TensorLimits>(TensorLimits{
-                {GNA_TENSOR_WN},    // N = 1
-                {{GNA_DIM_N, limitsForInputShape1D},
+                {GNA_TENSOR_HW},    // N = 1
+                {{GNA_DIM_H, limitsForInputEqual1},
                 {GNA_DIM_W, limitsForInputShapeLegacy}},
                 GetModes(InputOperandIndex, GNA_0_9)})},
         }},
         {OutputOperandIndex,{
             {GNA_1_0, std::make_shared<TensorLimits>(TensorLimits{
-                { GNA_TENSOR_HN },
-                {{GNA_DIM_N, limitsForOutputShape1D},
-                {GNA_DIM_H, limitsForOutputShape2D}},
+                { GNA_TENSOR_HW },
+                {{GNA_DIM_H, limitsForOutputEqual1},
+                {GNA_DIM_W, limitsForOutputUInt16Max}},
                 GetModes(OutputOperandIndex, GNA_0_9)})},
         }},
     };

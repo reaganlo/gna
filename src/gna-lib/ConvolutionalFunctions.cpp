@@ -142,7 +142,7 @@ std::unique_ptr<const FiltersTensor> ConvolutionFunction::createFilters(const Gn
     const LayerValidator& validatorIn)
 {
     const auto& apiFilters = ModelWrapper::GetOperand(apiOperation, FilterOperandIndex);
-    return std::make_unique<const FiltersTensor>(Shape::Create(apiFilters.Shape, GNA_TENSOR_NWH),
+    return std::make_unique<const FiltersTensor>(Shape::Create(apiFilters.Shape, GNA_TENSOR_NW),
         apiFilters.Type, apiFilters.Data, validatorIn);
 }
 

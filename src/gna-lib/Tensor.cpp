@@ -130,7 +130,7 @@ std::pair<uint32_t, uint32_t> Tensor::getGroupingAndElements(
     case Gna2OperationTypeGmm:
         return {Dimensions.at('H'), Dimensions.at('W')};
     case Gna2OperationTypeConvolution:
-        return {Dimensions.at('N'), Dimensions.at('H')}; // not applicable for 2D CNN
+        return {1, Count}; // not applicable for 2D CNN
     default:
         throw GnaException(Gna2StatusNotImplemented);
     }

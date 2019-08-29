@@ -200,8 +200,8 @@ Shape LayerInput::GetDimensions(const nn_layer& layer, gna_tensor_order order)
     case INTEL_DEINTERLEAVE:
     case INTEL_INTERLEAVE:
     case INTEL_RECURRENT:
-        return {order, layer.nInputRows, layer.nInputColumns};
     case INTEL_CONVOLUTIONAL:
+        return {order, layer.nInputRows, layer.nInputColumns};
     case INTEL_GMM:
         return {order, layer.nInputColumns, layer.nInputRows};
     case INTEL_CONVOLUTIONAL_2D:

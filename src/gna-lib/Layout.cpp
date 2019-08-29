@@ -196,12 +196,11 @@ gna_tensor_dim Layout::GetIndex(char dim)
 
 void Layout::ValidateNumberOfDimensions(size_type shapeDimensions) const
 {
-    auto condition = true;
     if (LAYOUT_ANY != *this)
     {
-        condition = shapeDimensions == size();
+        Expect::True(shapeDimensions == size(), Gna2StatusModelConfigurationInvalid);
     }
-    Expect::True(shapeDimensions <= MaximumNumberOfDimension && condition,
+    Expect::True(shapeDimensions <= MaximumNumberOfDimension,
         Gna2StatusModelConfigurationInvalid); // TODO:3: add error code
 }
 

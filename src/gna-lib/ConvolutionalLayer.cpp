@@ -48,8 +48,8 @@ using namespace GNA;
 void CnnLayer::ExpectValid() const
 {
     Expect::Equal(validator->Operation, INTEL_CONVOLUTIONAL, Gna2StatusXnnErrorLyrOperation);
-    Expect::One(Input.at(GNA_DIM_N), Gna2StatusXnnErrorGrouping);
-    Expect::One(Output.at(GNA_DIM_N), Gna2StatusXnnErrorGrouping);
+    Expect::One(Input.Grouping, Gna2StatusXnnErrorGrouping);
+    Expect::One(Output.Grouping, Gna2StatusXnnErrorGrouping);
 }
 
 std::unique_ptr<const PoolingFunction> CnnLayer::GetPooling(const nn_layer& layer) const
