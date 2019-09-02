@@ -287,8 +287,8 @@ GNAAPI gna_status_t GnaAlloc(
 {
     try
     {
-        auto& device = DeviceManager::Get().GetDevice(0);
-        auto status = device.AllocateMemory(sizeRequested, sizeGranted, memoryAddress);
+        auto& deviceManager = DeviceManager::Get();
+        const auto status = deviceManager.AllocateMemory(sizeRequested, sizeGranted, memoryAddress);
         return StatusMap.at(status);
     }
     catch (const GnaException& e)

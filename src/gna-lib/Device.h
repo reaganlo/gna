@@ -59,15 +59,11 @@ public:
 
     void SetNumberOfThreads(uint32_t threadCount);
 
-    Gna2Status AllocateMemory(uint32_t requestedSize, uint32_t * sizeGranted, void **memoryAddress);
-
-    void FreeMemory(void *const buffer);
-
     template<class T>
     uint32_t LoadModel(const T& model)
     {
         auto compiledModel = std::make_unique<CompiledModel>(
-            model, accelerationDetector, hardwareCapabilities, memoryObjects);
+            model, accelerationDetector, hardwareCapabilities);
 
         if (!compiledModel)
         {
@@ -122,9 +118,9 @@ public:
 
     bool HasRequestId(uint32_t requestId) const;
 
-protected:
-    virtual std::unique_ptr<Memory> createMemoryObject( const uint32_t requestedSize);
+    void MapMemory(Memory& memoryObject);
 
+protected:
     static const std::map<const gna_device_generation, const DeviceVersion> deviceDictionary;
 
     gna_device_id id;
@@ -138,8 +134,6 @@ protected:
     AccelerationDetector accelerationDetector;
 
     std::map<gna_model_id, std::unique_ptr<CompiledModel>> models;
-
-    std::vector<std::unique_ptr<Memory>> memoryObjects;
 
     RequestBuilder requestBuilder;
 

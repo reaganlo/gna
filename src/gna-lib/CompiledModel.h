@@ -64,13 +64,11 @@ public:
     CompiledModel(
         const T & model,
         const AccelerationDetector& detectorIn,
-        const HardwareCapabilities& hwCapabilitiesIn,
-        std::vector<std::unique_ptr<Memory>>& deviceAllocationsIn) :
+        const HardwareCapabilities& hwCapabilitiesIn) :
         LayerCount{ GetNumberOfOperations(model) },
         GmmCount{ getGmmCount(GetFirstOperation(model), LayerCount) },
         detector{ detectorIn },
         hwCapabilities{ hwCapabilitiesIn },
-        deviceAllocations{ deviceAllocationsIn },
         softwareModel
     {
         model,
@@ -184,7 +182,6 @@ private:
 
     const AccelerationDetector& detector;
     const HardwareCapabilities& hwCapabilities;
-    std::vector<std::unique_ptr<Memory>>& deviceAllocations;
     MemoryContainer allocations;
     SoftwareModel softwareModel;
     std::map<DeviceVersion,

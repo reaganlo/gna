@@ -132,36 +132,6 @@ void Device::AttachActiveList(gna_request_cfg_id configId, uint32_t layerIndex,
     requestBuilder.AttachActiveList(configId, layerIndex, activeList);
 }
 
-Gna2Status Device::AllocateMemory(uint32_t requestedSize,
-        uint32_t *sizeGranted, void **memoryAddress)
-{
-    Expect::NotNull(sizeGranted);
-    *sizeGranted = 0;
-
-    auto memoryObject = createMemoryObject(requestedSize);
-
-    if (hardwareCapabilities.IsHardwareSupported())
-    {
-        memoryObject->Map(*driverInterface);
-    }
-
-    *memoryAddress = memoryObject->GetBuffer();
-    *sizeGranted = (uint32_t)memoryObject->GetSize();
-    memoryObjects.emplace_back(std::move(memoryObject));
-    return Gna2StatusSuccess;
-}
-
-bool Device::HasMemory(void * buffer) const
-{
-    auto memoryIterator = std::find_if(memoryObjects.cbegin(), memoryObjects.cend(),
-        [buffer](const std::unique_ptr<Memory>& memory)
-    {
-        return memory->GetBuffer() == buffer;
-    });
-
-    return memoryIterator != memoryObjects.end();
-}
-
 bool Device::HasRequestConfigId(uint32_t requestConfigId) const
 {
     return requestBuilder.HasConfiguration(requestConfigId);
@@ -172,23 +142,12 @@ bool Device::HasRequestId(uint32_t requestId) const
     return requestHandler.HasRequest(requestId);
 }
 
-void Device::FreeMemory(void *buffer)
+void Device::MapMemory(Memory & memoryObject)
 {
-    Expect::NotNull(buffer);
-
-    auto memoryIterator = std::find_if(memoryObjects.begin(), memoryObjects.end(),
-        [buffer] (std::unique_ptr<Memory>& memory)
-        {
-            return memory->GetBuffer() == buffer;
-        });
-
-    if (memoryIterator == memoryObjects.end())
+    if (hardwareCapabilities.IsHardwareSupported())
     {
-        throw GnaException(Gna2StatusIdentifierInvalid);
+        memoryObject.Map(*driverInterface);
     }
-
-    // TODO:3: mechanism to detect if memory is used in some model
-    memoryObjects.erase(memoryIterator);
 }
 
 void Device::ReleaseModel(gna_model_id const modelId)
@@ -212,11 +171,6 @@ Gna2Status Device::WaitForRequest(gna_request_id requestId, gna_timeout millisec
 void Device::Stop()
 {
     requestHandler.StopRequests();
-}
-
-std::unique_ptr<Memory> Device::createMemoryObject(uint32_t requestedSize)
-{
-    return std::make_unique<Memory>(requestedSize);
 }
 
 void Device::SetInstrumentationUnit(gna_request_cfg_id configId, Gna2InstrumentationUnit instrumentationUnit)

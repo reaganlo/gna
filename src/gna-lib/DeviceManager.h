@@ -65,6 +65,8 @@ public:
     Device& GetDeviceForModel(uint32_t modelId);
     Device* TryGetDeviceForModel(uint32_t modelId);
 
+    Gna2Status AllocateMemory(uint32_t requestedSize, uint32_t * sizeGranted, void **memoryAddress);
+    std::pair<bool, std::vector<std::unique_ptr<Memory>>::const_iterator> HasMemory(void * buffer) const;
     void FreeMemory(void * memory);
 
     Device& GetDeviceForRequestConfigId(uint32_t requestConfigId);
@@ -73,9 +75,13 @@ public:
 
     Device& GetDeviceForRequestId(uint32_t requestId);
 
+    const std::vector<std::unique_ptr<Memory>>& GetAllAllocated() const;
+
     static constexpr uint32_t DefaultThreadCount = 1;
 
 private:
+    static std::unique_ptr<Memory> createMemoryObject(const uint32_t requestedSize);
+
     static constexpr uint32_t MaximumReferenceCount = 1024;
 
     struct DeviceContext
@@ -95,6 +101,8 @@ private:
     std::map<uint32_t, DeviceContext> devices;
 
     std::map<uint32_t, HardwareCapabilities> capabilities;
+
+    std::vector<std::unique_ptr<Memory>> memoryObjects;
 };
 
 }

@@ -36,9 +36,8 @@ class CompiledModelVerbose : public CompiledModel
 public:
     CompiledModelVerbose(const gna_model& userModel,
         const AccelerationDetector& detectorIn,
-        const HardwareCapabilities& hwCapabilitiesIn,
-        std::vector<std::unique_ptr<Memory>>& memoryObjects) :
-        CompiledModel(userModel, detectorIn, hwCapabilitiesIn, memoryObjects)
+        const HardwareCapabilities& hwCapabilitiesIn) :
+        CompiledModel(userModel, detectorIn, hwCapabilitiesIn)
     {
     };
 

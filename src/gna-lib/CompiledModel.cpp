@@ -25,6 +25,7 @@
 
 #include "CompiledModel.h"
 
+#include "DeviceManager.h"
 #include "Expect.h"
 #include "GnaException.h"
 #include "HardwareCapabilities.h"
@@ -142,7 +143,9 @@ void CompiledModel::ValidateBuffer(MemoryContainer const & requestAllocations, M
 // TODO:3: count buffer use in model to minimize redundant mapping
 Memory const & CompiledModel::getMemoryFromDeviceAllocations(const void *buffer, size_t bufferSize) const
 {
-    for (auto const & memory : deviceAllocations)
+    const auto& allAllocations = DeviceManager::Get().GetAllAllocated();
+
+    for (auto const & memory : allAllocations)
     {
         Expect::NotNull(memory.get(), Gna2StatusXnnErrorInvalidBuffer);
 

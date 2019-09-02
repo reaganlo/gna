@@ -158,7 +158,7 @@ uint32_t DeviceManager::GetThreadCount(uint32_t deviceIndex)
 void DeviceManager::OpenDevice(uint32_t deviceIndex)
 {
     Expect::InRange(deviceIndex, GetDeviceCount() - 1, Gna2StatusIdentifierInvalid);
-    
+
     CreateDevice(deviceIndex);
 
     auto & deviceRefCount = GetDeviceContext(deviceIndex).ReferenceCount;
@@ -211,16 +211,52 @@ Device* DeviceManager::TryGetDeviceForModel(uint32_t modelId)
     return nullptr;
 }
 
-void DeviceManager::FreeMemory(void * memory)
+Gna2Status DeviceManager::AllocateMemory(uint32_t requestedSize,
+    uint32_t *sizeGranted, void **memoryAddress)
 {
-    for (const auto& device : devices)
+    Expect::NotNull(sizeGranted);
+    *sizeGranted = 0;
+
+    auto memoryObject = createMemoryObject(requestedSize);
+
+    for(auto& device : devices)
     {
-        if (device.second.Handle && device.second.Handle->HasMemory(memory))
+        if(device.second.Handle.get() != nullptr)
         {
-            device.second.Handle->FreeMemory(memory);
-            return;
+            device.second.Handle.get()->MapMemory(*memoryObject.get());
         }
     }
+
+    *memoryAddress = memoryObject->GetBuffer();
+    *sizeGranted = (uint32_t)memoryObject->GetSize();
+    memoryObjects.emplace_back(std::move(memoryObject));
+    return Gna2StatusSuccess;
+}
+
+std::pair<bool, std::vector<std::unique_ptr<Memory>>::const_iterator> DeviceManager::HasMemory(void * buffer) const
+{
+    auto memoryIterator = std::find_if(memoryObjects.cbegin(), memoryObjects.cend(),
+        [buffer](const std::unique_ptr<Memory>& memory)
+    {
+        return memory->GetBuffer() == buffer;
+    });
+
+    return { memoryIterator != memoryObjects.end(), memoryIterator };
+}
+
+void DeviceManager::FreeMemory(void *buffer)
+{
+    Expect::NotNull(buffer);
+
+    auto found = HasMemory(buffer);
+
+    if (!found.first)
+    {
+        throw GnaException(Gna2StatusIdentifierInvalid);
+    }
+
+    // TODO:3: mechanism to detect if memory is used in some model
+    memoryObjects.erase(found.second);
 }
 
 Device & DeviceManager::GetDeviceForRequestConfigId(uint32_t requestConfigId)
@@ -252,4 +288,14 @@ Device & DeviceManager::GetDeviceForRequestId(uint32_t requestId)
         }
     }
     throw GnaException(Gna2StatusIdentifierInvalid);
+}
+
+const std::vector<std::unique_ptr<Memory>> & DeviceManager::GetAllAllocated() const
+{
+    return memoryObjects;
+}
+
+std::unique_ptr<Memory> DeviceManager::createMemoryObject(uint32_t requestedSize)
+{
+    return std::make_unique<Memory>(requestedSize);
 }
