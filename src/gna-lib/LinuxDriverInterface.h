@@ -47,8 +47,6 @@ public:
 
     virtual bool OpenDevice(uint32_t deviceIndex) override;
 
-    virtual DriverCapabilities GetCapabilities() const override;
-
     virtual uint64_t MemoryMap(void *memory, uint32_t memorySize) override;
 
     virtual void MemoryUnmap(uint64_t memoryId) override;

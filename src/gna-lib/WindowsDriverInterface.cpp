@@ -243,11 +243,6 @@ RequestResult WindowsDriverInterface::Submit(HardwareRequest& hardwareRequest,
     return result;
 }
 
-DriverCapabilities WindowsDriverInterface::GetCapabilities() const
-{
-    return driverCapabilities;
-}
-
 void WindowsDriverInterface::createRequestDescriptor(HardwareRequest& hardwareRequest) const
 {
     auto& totalConfigSize = hardwareRequest.CalculationSize;

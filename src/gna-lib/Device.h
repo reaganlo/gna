@@ -120,6 +120,8 @@ public:
 
     void MapMemory(Memory& memoryObject);
 
+    void UnMapMemory(Memory & memoryObject);
+
 protected:
     static const std::map<const gna_device_generation, const DeviceVersion> deviceDictionary;
 

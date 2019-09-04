@@ -48,6 +48,7 @@ public:
     virtual ~Memory();
 
     void Map(DriverInterface& ddi);
+    void Unmap(DriverInterface& ddi);
 
     uint64_t GetId() const;
 
@@ -64,13 +65,9 @@ public:
     static const uint32_t GNA_BUFFER_ALIGNMENT = 64;
 
 protected:
-    void unmap();
-
     uint64_t id = 0;
 
     uint32_t size = 0;
-
-    DriverInterface * driverInterface = nullptr;
 
     bool mapped = false;
 

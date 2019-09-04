@@ -88,8 +88,6 @@ public:
         void * const inbuf, const uint32_t inlen,
         void * const outbuf, const uint32_t outlen);
 
-    virtual DriverCapabilities GetCapabilities() const override;
-
     virtual uint64_t MemoryMap(void *memory, uint32_t memorySize) override;
 
     virtual void MemoryUnmap(uint64_t memoryId) override;

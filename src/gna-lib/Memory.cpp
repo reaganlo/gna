@@ -26,6 +26,7 @@ in any way.
 #include "Memory.h"
 
 #include "common.h"
+#include "DeviceManager.h"
 #include "DriverInterface.h"
 #include "Expect.h"
 #include "GnaException.h"
@@ -57,7 +58,9 @@ Memory::~Memory()
     {
         if (mapped)
         {
-            unmap();
+            DeviceManager::Get().UnMapMemoryFromAll(*this);
+            mapped = false;
+            id = 0;
         }
 
         _gna_free(buffer);
@@ -68,20 +71,22 @@ Memory::~Memory()
 
 void Memory::Map(DriverInterface& ddi)
 {
-    driverInterface = &ddi;
     if (mapped)
     {
         throw GnaException(Gna2StatusUnknownError);
     }
 
-    id = driverInterface->MemoryMap(buffer, size);
+    id = ddi.MemoryMap(buffer, size);
 
     mapped = true;
 }
-
-void Memory::unmap()
+void Memory::Unmap(DriverInterface& ddi)
 {
-    driverInterface->MemoryUnmap(id);
+    if (!mapped)
+    {
+        throw GnaException(Gna2StatusUnknownError);
+    }
+    ddi.MemoryUnmap(id);
     mapped = false;
 }
 

@@ -101,6 +101,7 @@ set(gna_lib_sources
   ${SRC_DIR}/Device.cpp
   ${SRC_DIR}/DeviceLayerSupport.cpp
   ${SRC_DIR}/DeviceManager.cpp
+  ${SRC_DIR}/DriverInterface.cpp
   ${SRC_DIR}/GmmLayer.cpp
   ${SRC_DIR}/HardwareCapabilities.cpp
   ${SRC_DIR}/HardwareLayer.cpp

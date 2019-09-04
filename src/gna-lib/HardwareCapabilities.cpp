@@ -335,34 +335,26 @@ HardwareCapabilities::HardwareCapabilities(
 {
 }
 
-void HardwareCapabilities::DiscoverHardware(DriverInterface &driverInterface)
+void HardwareCapabilities::DiscoverHardware(const DriverCapabilities& discoveredDriver)
 {
-    try
+    //TODO:3: remove when ADL bug with input buffer will be fixed
+    auto hwInBuffSize = discoveredDriver.hwInBuffSize;
+    if (discoveredDriver.deviceVersion == Gna2DeviceVersion3_0)
     {
-        auto driverCapabilities = driverInterface.GetCapabilities();
-
-        //TODO:3: remove when ADL bug with input buffer will be fixed
-        if (driverCapabilities.deviceVersion == Gna2DeviceVersion3_0)
-        {
-            driverCapabilities.hwInBuffSize = 32;
-        }
-
-        Expect::Equal((size_t)1, getCapsMap().count(driverCapabilities.deviceVersion),
-            Gna2StatusDeviceNotAvailable);
-
-        Expect::Equal(driverCapabilities.hwInBuffSize, GetBufferSizeInKB(driverCapabilities.deviceVersion),
-            Gna2StatusDeviceVersionInvalid);
-
-        deviceVersion = driverCapabilities.deviceVersion;
-        bufferSize = driverCapabilities.hwInBuffSize;
-        driverRecoveryTimeout = driverCapabilities.recoveryTimeout;
-
-        hardwareSupported = true;
+        hwInBuffSize = 32;
     }
-    catch (GnaException&)
+    if (1 != getCapsMap().count(discoveredDriver.deviceVersion) ||
+        hwInBuffSize != GetBufferSizeInKB(discoveredDriver.deviceVersion))
     {
         Log->Message("No compatible hardware detected.\n");
+        return;
     }
+
+    deviceVersion = discoveredDriver.deviceVersion;
+    bufferSize = hwInBuffSize;
+    driverRecoveryTimeout = discoveredDriver.recoveryTimeout;
+
+    hardwareSupported = true;
 }
 
 uint32_t const * HardwareCapabilities::GetHardwareConsistencySettings(

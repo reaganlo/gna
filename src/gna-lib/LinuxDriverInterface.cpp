@@ -114,11 +114,6 @@ void LinuxDriverInterface::MemoryUnmap(uint64_t memoryId)
     }
 }
 
-DriverCapabilities LinuxDriverInterface::GetCapabilities() const
-{
-    return driverCapabilities;
-}
-
 RequestResult LinuxDriverInterface::Submit(HardwareRequest& hardwareRequest,
                                         RequestProfiler * const profiler) const
 {

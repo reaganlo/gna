@@ -63,7 +63,7 @@ Device::Device(uint32_t deviceIndex, uint32_t threadCount) :
     const auto success = driverInterface->OpenDevice(deviceIndex);
     if (success)
     {
-        hardwareCapabilities.DiscoverHardware(*driverInterface);
+        hardwareCapabilities.DiscoverHardware(driverInterface->GetCapabilities());
     }
     accelerationDetector.SetHardwareAcceleration(
         hardwareCapabilities.IsHardwareSupported());
@@ -147,6 +147,14 @@ void Device::MapMemory(Memory & memoryObject)
     if (hardwareCapabilities.IsHardwareSupported())
     {
         memoryObject.Map(*driverInterface);
+    }
+}
+
+void Device::UnMapMemory(Memory & memoryObject)
+{
+    if (hardwareCapabilities.IsHardwareSupported())
+    {
+        memoryObject.Unmap(*driverInterface);
     }
 }
 

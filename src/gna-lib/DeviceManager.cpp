@@ -64,7 +64,7 @@ DeviceManager::DeviceManager()
             i == 0)
         {
             auto caps = HardwareCapabilities{};
-            caps.DiscoverHardware(*driverInterface);
+            caps.DiscoverHardware(driverInterface->GetCapabilities());
             if (caps.IsHardwareSupported() ||
                 i == 0)
             {
@@ -91,6 +91,7 @@ void DeviceManager::CreateDevice(uint32_t deviceIndex)
             std::make_unique<DeviceVerbose>(deviceIndex, DeviceManager::DefaultThreadCount),
 #endif
         0});
+        MapAllToDevice(GetDevice(deviceIndex));
     }
 }
 
@@ -183,6 +184,7 @@ void DeviceManager::CloseDevice(uint32_t deviceIndex)
 
         if (deviceRefCount == 0)
         {
+            UnMapAllFromDevice(GetDevice(deviceIndex));
             devices.erase(deviceIndex);
         }
     }
@@ -211,26 +213,20 @@ Device* DeviceManager::TryGetDeviceForModel(uint32_t modelId)
     return nullptr;
 }
 
-Gna2Status DeviceManager::AllocateMemory(uint32_t requestedSize,
+void DeviceManager::AllocateMemory(uint32_t requestedSize,
     uint32_t *sizeGranted, void **memoryAddress)
 {
     Expect::NotNull(sizeGranted);
+    Expect::NotNull(memoryAddress);
     *sizeGranted = 0;
 
     auto memoryObject = createMemoryObject(requestedSize);
 
-    for(auto& device : devices)
-    {
-        if(device.second.Handle.get() != nullptr)
-        {
-            device.second.Handle.get()->MapMemory(*memoryObject.get());
-        }
-    }
+    MapMemoryToAll(*memoryObject);
 
     *memoryAddress = memoryObject->GetBuffer();
     *sizeGranted = (uint32_t)memoryObject->GetSize();
     memoryObjects.emplace_back(std::move(memoryObject));
-    return Gna2StatusSuccess;
 }
 
 std::pair<bool, std::vector<std::unique_ptr<Memory>>::const_iterator> DeviceManager::HasMemory(void * buffer) const
@@ -259,7 +255,26 @@ void DeviceManager::FreeMemory(void *buffer)
     memoryObjects.erase(found.second);
 }
 
-Device & DeviceManager::GetDeviceForRequestConfigId(uint32_t requestConfigId)
+void DeviceManager::MapMemoryToAll(Memory& memoryObject)
+{
+    for (auto& device : devices)
+    {
+        if (device.second.Handle != nullptr)
+        {
+            device.second.Handle->MapMemory(memoryObject);
+        }
+    }
+}
+
+void DeviceManager::UnMapMemoryFromAll(Memory& memoryObject)
+{
+    for (const auto& device : devices)
+    {
+        device.second.Handle->UnMapMemory(memoryObject);
+    }
+}
+
+Device& DeviceManager::GetDeviceForRequestConfigId(uint32_t requestConfigId)
 {
     const auto device = TryGetDeviceForRequestConfigId(requestConfigId);
     Expect::NotNull(device, Gna2StatusIdentifierInvalid);
@@ -293,6 +308,22 @@ Device & DeviceManager::GetDeviceForRequestId(uint32_t requestId)
 const std::vector<std::unique_ptr<Memory>> & DeviceManager::GetAllAllocated() const
 {
     return memoryObjects;
+}
+
+void DeviceManager::UnMapAllFromDevice(Device& device)
+{
+    for (auto& m : memoryObjects)
+    {
+        device.UnMapMemory(*m);
+    }
+}
+
+void DeviceManager::MapAllToDevice(Device& device)
+{
+    for (auto& m : memoryObjects)
+    {
+        device.MapMemory(*m);
+    }
 }
 
 std::unique_ptr<Memory> DeviceManager::createMemoryObject(uint32_t requestedSize)

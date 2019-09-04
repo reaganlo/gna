@@ -37,7 +37,7 @@
 
 namespace GNA
 {
-class DriverInterface;
+struct DriverCapabilities;
 
 enum GnaFeature
 {
@@ -76,7 +76,7 @@ class HardwareCapabilities
 public:
     explicit HardwareCapabilities(DeviceVersion deviceVersionIn = DefaultDeviceVersion);
 
-    void DiscoverHardware(DriverInterface &driverInterface);
+    void DiscoverHardware(const DriverCapabilities& discoveredDriver);
 
     static uint32_t const * GetHardwareConsistencySettings(DeviceVersion deviceVersion);
     static uint32_t const * GetHardwareConsistencySettingsForAdl(DeviceVersion deviceVersion);

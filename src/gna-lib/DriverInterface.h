@@ -105,7 +105,7 @@ public:
 
     virtual ~DriverInterface() = default;
 
-    virtual DriverCapabilities GetCapabilities() const = 0;
+    const DriverCapabilities& GetCapabilities() const;
 
     virtual uint64_t MemoryMap(void *memory, uint32_t memorySize) = 0;
 
