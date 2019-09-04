@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2017 Intel Corporation.
+ Copyright 2019 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -52,10 +52,10 @@ public:
     static const uint32_t MAX_INSTRUMENTATION_POINTS = 15;
     static std::unique_ptr<RequestProfiler> Create(ProfilerConfiguration* config);
 
-    RequestProfiler(bool initialize = false);
+    RequestProfiler(bool initialize = true);
     virtual ~RequestProfiler() = default;
 
-    virtual void AddDrvAndHwResults(gna_perf_drv_t &drvPerf, gna_perf_hw_t &hwPerf);
+    virtual void AddResults(Gna2InstrumentationPoint point, uint64_t result);
 
     virtual void Measure(Gna2InstrumentationPoint point) = 0;
 
@@ -74,7 +74,7 @@ public:
     }
 
     void Measure(Gna2InstrumentationPoint point) override;
-    void AddDrvAndHwResults(gna_perf_drv_t &drvPerf, gna_perf_hw_t &hwPerf) override;
+    void AddResults(Gna2InstrumentationPoint point, uint64_t result) override;
     void SaveResults(ProfilerConfiguration* config) override;
 };
 

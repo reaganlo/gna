@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2017 Intel Corporation.
+ Copyright 2019 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -169,7 +169,7 @@ typedef struct
 
     // time between HW scoring start and scoring complete interrupt
     TIME_TSC scoreHW;
-    
+
     // time of processing scoring complete interrupt
     TIME_TSC intProc;
 
@@ -183,50 +183,100 @@ static_assert(24 == sizeof(GNA_PERF_DRV), "Invalid size of GNA_PERF_DRV");
 #define CFG_SIZE 256
 
 /**
- CALCULATE request data with output information.
+ Legacy CALCULATE request data with output information.
+ Size:    312 B
  NOTE: always include performance results
  this allow to use PROFILED library with NON-PROFILED driver and vice versa
  */
+typedef struct _GNA_CALC_IN
+{
+    CTRL_FLAGS          ctrlFlags;  // scoring mode
+    UINT8               config[CFG_SIZE];// configuration data for GMM or xNN
+    GNA_PERF_DRV        drvPerf;    // driver level performance profiling results
+    GNA_PERF_HW         hwPerf;     // hardware level performance results
+    UINT32              status;     // status of scoring
+    UINT32              __res;      // 4 B padding to multiple 8 B size
+
+} GNA_CALC_IN, *PGNA_CALC_IN;       // CALCULATE IOCTL - Input data
+
+static_assert(312 == sizeof(GNA_CALC_IN), "Invalid size of GNA_CALC_IN");
+
+/**
+ Driver instrumentation results
+ */
 typedef struct
 {
-    /* input part */
+    /**
+     Request preprocessing start
+     */
+    TIME_TSC Gna2InstrumentationPointDrvPreprocessing;
+
+    /**
+     Request processing started by hardware
+     */
+    TIME_TSC Gna2InstrumentationPointDrvProcessing;
+
+    /**
+     Request completed interrupt triggered by hardware
+     */
+    TIME_TSC Gna2InstrumentationPointDrvDeviceRequestCompleted;
+
+    /**
+     Driver completed interrupt and request handling.
+     */
+    TIME_TSC Gna2InstrumentationPointDrvCompletion;
+
+} GNA_DRIVER_INSTRUMENTATION;
+
+static_assert(32 == sizeof(GNA_DRIVER_INSTRUMENTATION), "Invalid size of GNA_DRIVER_INSTRUMENTATION");
+
+typedef struct _INFERENCE_CONFIG_IN
+{
     // scoring mode
+    // @note This must be first field as it's required to be compatible with legacy GNA_CALC_IN
     CTRL_FLAGS ctrlFlags;
 
-    union
-    {
-    // configuration data for GMM or xNN
-    UINT8 config[CFG_SIZE];
-
-    struct
-    {
     // layer base / offset to gmm descriptor
     UINT32 configBase;
 
+    UINT32 _reserved;
+
     // number of buffers lying outside this structure
     UINT64 bufferCount;
-    };
-    };
-
-    /* output part*/
-    // driver level performance profiling results
-    GNA_PERF_DRV drvPerf;
-    
-    // hardware level performance results
-    GNA_PERF_HW hwPerf;
-    
-    // status_t (LEGACY) or GNASTS value after scoring
-    UINT32 status;
-
-    // 4 B padding to multiple 8 B size
-    UINT32 pad;
 
     // memory buffers with patches
     UINT8 buffers[];
 
-} GNA_CALC_IN, *PGNA_CALC_IN;
+} GNA_INFERENCE_CONFIG_IN, * PGNA_INFERENCE_CONFIG_IN;
 
-static_assert(312 == sizeof(GNA_CALC_IN), "Invalid size of GNA_CALC_IN");
+static_assert(24 == sizeof(GNA_INFERENCE_CONFIG_IN), "Invalid size of GNA_INFERENCE_CONFIG_IN");
+
+typedef struct _INFERENCE_CONFIG_OUT
+{
+    GNA_DRIVER_INSTRUMENTATION driverInstrumentation;
+
+    GNA_PERF_HW hardwareInstrumentation;
+
+    UINT32 _reserved;
+
+    UINT32 status;
+
+} GNA_INFERENCE_CONFIG_OUT, *PGNA_INFERENCE_CONFIG_OUT;
+
+static_assert(56 == sizeof(GNA_INFERENCE_CONFIG_OUT), "Invalid size of GNA_INFERENCE_CONFIG_OUT");
+
+/**
+ Inference config
+ */
+typedef union
+{
+    GNA_INFERENCE_CONFIG_IN input;
+
+    GNA_INFERENCE_CONFIG_OUT output;
+
+} GNA_INFERENCE_CONFIG, * PGNA_INFERENCE_CONFIG;
+
+static_assert(56 == sizeof(GNA_INFERENCE_CONFIG), "Invalid size of GNA_INFERENCE_CONFIG");
 
 /**
  User buffer identified by memory id

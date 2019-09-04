@@ -40,10 +40,39 @@ namespace GNA
 
 class HardwareRequest;
 
+struct HardwarePerfResults
+{
+    uint64_t total; // # of total cycles spent on scoring in hw
+    uint64_t stall; // # of stall cycles spent in hw (since scoring)
+};
+
+struct DriverPerfResults
+{
+    /**
+     Request preprocessing start
+     */
+    uint64_t Preprocessing;
+
+    /**
+     Request processing started by hardware
+     */
+    uint64_t Processing;
+
+    /**
+     Request completed interrupt triggered by hardware
+     */
+    uint64_t DeviceRequestCompleted;
+
+    /**
+     Driver completed interrupt and request handling.
+     */
+    uint64_t Completion;
+};
+
 struct RequestResult
 {
-    gna_perf_hw_t hardwarePerf;
-    gna_perf_drv_t driverPerf;
+    HardwarePerfResults hardwarePerf;
+    DriverPerfResults driverPerf;
     Gna2Status status;
 };
 

@@ -131,7 +131,13 @@ uint32_t HardwareModelScorable::Score(
 
     if (profiler != nullptr)
     {
-        profiler->AddDrvAndHwResults(result.driverPerf, result.hardwarePerf);
+        profiler->AddResults(Gna2InstrumentationPointDrvPreprocessing, result.driverPerf.Preprocessing);
+        profiler->AddResults(Gna2InstrumentationPointDrvProcessing, result.driverPerf.Processing);
+        profiler->AddResults(Gna2InstrumentationPointDrvDeviceRequestCompleted, result.driverPerf.DeviceRequestCompleted);
+        profiler->AddResults(Gna2InstrumentationPointDrvCompletion, result.driverPerf.Completion);
+
+        profiler->AddResults(Gna2InstrumentationPointHwTotalCycles, result.hardwarePerf.total);
+        profiler->AddResults(Gna2InstrumentationPointHwStallCycles, result.hardwarePerf.stall);
     }
 
     if (result.status != Gna2StatusSuccess && result.status != Gna2StatusWarningArithmeticSaturation)

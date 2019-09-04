@@ -169,9 +169,9 @@ RequestResult LinuxDriverInterface::Submit(HardwareRequest& hardwareRequest,
         result.status = ((wait_data.hw_status & GNA_STS_SATURATE) != 0)
             ? Gna2StatusWarningArithmeticSaturation
             : Gna2StatusSuccess;
-        result.driverPerf.startHW = wait_data.drv_perf.start_hw;
+        /*result.driverPerf.startHW = wait_data.drv_perf.start_hw;
         result.driverPerf.scoreHW = wait_data.drv_perf.score_hw;
-        result.driverPerf.intProc = wait_data.drv_perf.intr_proc;
+        result.driverPerf.intProc = wait_data.drv_perf.intr_proc;*/
         result.hardwarePerf.total = wait_data.hw_perf.total;
         result.hardwarePerf.stall = wait_data.hw_perf.stall;
     }

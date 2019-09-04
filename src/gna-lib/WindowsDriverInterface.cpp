@@ -61,7 +61,7 @@ const std::map<GnaIoctlCommand, DWORD> WindowsDriverInterface::ioctlCommandsMap 
 };
 
 WindowsDriverInterface::WindowsDriverInterface() :
-    deviceEvent{CreateEvent(nullptr, false, false, nullptr)},
+    deviceEvent{ CreateEvent(nullptr, false, false, nullptr) },
     recoveryTimeout{ DRV_RECOVERY_TIMEOUT }
 {
     ZeroMemory(&overlapped, sizeof(overlapped));
@@ -102,31 +102,31 @@ void WindowsDriverInterface::IoctlSend(const GnaIoctlCommand command, void * con
     UNREFERENCED_PARAMETER(outlen);
 
 #if HW_VERBOSE == 1
-    auto bytesRead = DWORD{0};
+    auto bytesRead = DWORD{ 0 };
     auto ioResult = BOOL{};
 
     overlapped.hEvent = deviceEvent;
 
     uint32_t code;
-    switch(command)
+    switch (command)
     {
-        case GNA_COMMAND_READ_REG:
-            /* FALLTHRU */
-        case GNA_COMMAND_WRITE_REG:
-            code = ioctlCommandsMap.at(command);
-            ioResult = DeviceIoControl(deviceHandle, code, inbuf, inlen, outbuf, outlen, &bytesRead, &overlapped);
-            checkStatus(ioResult);
-            wait(&overlapped, (recoveryTimeout + 15) * 1000);
-            break;
-        default:
-            throw GnaException { Gna2StatusDeviceOutgoingCommunicationError };
+    case GNA_COMMAND_READ_REG:
+        /* FALLTHRU */
+    case GNA_COMMAND_WRITE_REG:
+        code = ioctlCommandsMap.at(command);
+        ioResult = DeviceIoControl(deviceHandle, code, inbuf, inlen, outbuf, outlen, &bytesRead, &overlapped);
+        checkStatus(ioResult);
+        wait(&overlapped, (recoveryTimeout + 15) * 1000);
+        break;
+    default:
+        throw GnaException{ Gna2StatusDeviceOutgoingCommunicationError };
     }
 #endif
 }
 
 uint64_t WindowsDriverInterface::MemoryMap(void *memory, uint32_t memorySize)
 {
-    auto bytesRead = DWORD{0};
+    auto bytesRead = DWORD{ 0 };
     auto ioResult = BOOL{};
     uint64_t memoryId;
 
@@ -152,7 +152,7 @@ uint64_t WindowsDriverInterface::MemoryMap(void *memory, uint32_t memorySize)
 
 void WindowsDriverInterface::MemoryUnmap(uint64_t memoryId)
 {
-    auto bytesRead = DWORD{0};
+    auto bytesRead = DWORD{ 0 };
     auto ioResult = BOOL{};
 
     // TODO: remove ummap IOCTL in favor of CancelIoEx (cancel handler in driver, cancel requests)
@@ -170,40 +170,40 @@ void WindowsDriverInterface::MemoryUnmap(uint64_t memoryId)
 RequestResult WindowsDriverInterface::Submit(HardwareRequest& hardwareRequest,
     RequestProfiler * const profiler) const
 {
-    auto bytesRead = DWORD{0};
+    auto bytesRead = DWORD{ 0 };
     RequestResult result = { 0 };
-    auto ioHandle = OVERLAPPED{0};
+    auto ioHandle = OVERLAPPED{ 0 };
     ioHandle.hEvent = CreateEvent(nullptr, false, false, nullptr);
 
-    if(!hardwareRequest.SubmitReady)
+    if (!hardwareRequest.SubmitReady)
     {
         createRequestDescriptor(hardwareRequest);
     }
 
-    auto calculationData = reinterpret_cast<PGNA_CALC_IN>(hardwareRequest.CalculationData.get());
+    auto input = reinterpret_cast<PGNA_INFERENCE_CONFIG_IN>(hardwareRequest.CalculationData.get());
+    auto * const ctrlFlags = &input->ctrlFlags;
+    ctrlFlags->ddiVersion = 2;
+    ctrlFlags->activeListOn = hardwareRequest.ActiveListOn;
+    ctrlFlags->gnaMode = hardwareRequest.Mode;
+    ctrlFlags->layerCount = hardwareRequest.LayerCount;
 
-    calculationData->ctrlFlags.ddiVersion = 2;
-    calculationData->ctrlFlags.activeListOn = hardwareRequest.ActiveListOn;
-    calculationData->ctrlFlags.gnaMode = hardwareRequest.Mode;
-    calculationData->ctrlFlags.layerCount = hardwareRequest.LayerCount;
-
-    if(xNN == hardwareRequest.Mode)
+    if (xNN == hardwareRequest.Mode)
     {
-        calculationData->configBase = hardwareRequest.LayerBase;
+        input->configBase = hardwareRequest.LayerBase;
     }
-    else if(GMM == hardwareRequest.Mode)
+    else if (GMM == hardwareRequest.Mode)
     {
-        calculationData->configBase = hardwareRequest.GmmOffset;
+        input->configBase = hardwareRequest.GmmOffset;
     }
     else
     {
-        throw GnaException { Gna2StatusXnnErrorLyrCfg };
+        throw GnaException{ Gna2StatusXnnErrorLyrCfg };
     }
 
     profiler->Measure(Gna2InstrumentationPointLibDeviceRequestReady);
 
     auto ioResult = WriteFile(static_cast<HANDLE>(deviceHandle),
-        calculationData, static_cast<DWORD>(hardwareRequest.CalculationSize),
+        input, static_cast<DWORD>(hardwareRequest.CalculationSize),
         nullptr, &ioHandle);
     checkStatus(ioResult);
 
@@ -213,19 +213,21 @@ RequestResult WindowsDriverInterface::Submit(HardwareRequest& hardwareRequest,
 
     profiler->Measure(Gna2InstrumentationPointLibDeviceRequestCompleted);
 
-    auto writeStatus = (NTSTATUS)ioHandle.Internal;
+    auto const output = reinterpret_cast<PGNA_INFERENCE_CONFIG_OUT>(input);
+    auto const status = output->status;
+    auto const writeStatus = (NTSTATUS)ioHandle.Internal;
     switch (writeStatus)
     {
     case STATUS_SUCCESS:
-         memcpy_s(&result.hardwarePerf, sizeof(result.hardwarePerf),
-            &calculationData->hwPerf, sizeof(calculationData->hwPerf));
+        memcpy_s(&result.hardwarePerf, sizeof(result.hardwarePerf),
+            &output->hardwareInstrumentation, sizeof(GNA_PERF_HW));
         memcpy_s(&result.driverPerf, sizeof(result.driverPerf),
-            &calculationData->drvPerf, sizeof(calculationData->drvPerf));
-        result.status = (calculationData->status & STS_SATURATION_FLAG)
+            &output->driverInstrumentation, sizeof(GNA_DRIVER_INSTRUMENTATION));
+        result.status = (status & STS_SATURATION_FLAG)
             ? Gna2StatusWarningArithmeticSaturation : Gna2StatusSuccess;
         break;
     case STATUS_IO_DEVICE_ERROR:
-        result.status = parseHwStatus(calculationData->status);
+        result.status = parseHwStatus(status);
         break;
     case STATUS_MORE_PROCESSING_REQUIRED:
         result.status = Gna2StatusWarningDeviceBusy;
@@ -248,36 +250,34 @@ DriverCapabilities WindowsDriverInterface::GetCapabilities() const
 
 void WindowsDriverInterface::createRequestDescriptor(HardwareRequest& hardwareRequest) const
 {
-    auto& scoreConfigSize = hardwareRequest.CalculationSize;
-    scoreConfigSize = sizeof(GNA_CALC_IN) +
-        hardwareRequest.DriverMemoryObjects.size() * sizeof(GNA_MEMORY_BUFFER);
+    auto& totalConfigSize = hardwareRequest.CalculationSize;
+    auto const bufferCount = hardwareRequest.DriverMemoryObjects.size();
+    totalConfigSize = sizeof(GNA_INFERENCE_CONFIG_IN) + bufferCount * sizeof(GNA_MEMORY_BUFFER);
 
     for (const auto &buffer : hardwareRequest.DriverMemoryObjects)
     {
-        scoreConfigSize += buffer.Patches.size() * sizeof(GNA_MEMORY_PATCH);
+        totalConfigSize += buffer.Patches.size() * sizeof(GNA_MEMORY_PATCH);
 
         for (const auto &patch : buffer.Patches)
         {
-            scoreConfigSize += patch.Size;
+            totalConfigSize += patch.Size;
         }
     }
 
-    scoreConfigSize = RoundUp(scoreConfigSize, sizeof(uint64_t));
-    hardwareRequest.CalculationData.reset(new uint8_t[scoreConfigSize]);
+    totalConfigSize = (((totalConfigSize) > (sizeof(GNA_INFERENCE_CONFIG))) ?
+        (totalConfigSize) : (sizeof(GNA_INFERENCE_CONFIG)));
+    totalConfigSize = RoundUp(totalConfigSize, sizeof(uint64_t));
 
-    uint8_t *calculationData = static_cast<uint8_t *>(hardwareRequest.CalculationData.get());
-    auto scoreConfig = reinterpret_cast<GNA_CALC_IN *>(
-                        hardwareRequest.CalculationData.get());
-    memset(scoreConfig, 0, scoreConfigSize);
-    scoreConfig->ctrlFlags.hwPerfEncoding = hardwareRequest.HwPerfEncoding;
 
-    scoreConfig->bufferCount = hardwareRequest.DriverMemoryObjects.size();
+    hardwareRequest.CalculationData.reset(new uint8_t[totalConfigSize]);
 
-    auto buffer = reinterpret_cast<GNA_MEMORY_BUFFER *>(
-        reinterpret_cast<uintptr_t>(calculationData + sizeof(GNA_CALC_IN)));
+    auto * const input = reinterpret_cast<GNA_INFERENCE_CONFIG_IN *>(hardwareRequest.CalculationData.get());
+    memset(input, 0, totalConfigSize);
+    input->ctrlFlags.hwPerfEncoding = hardwareRequest.HwPerfEncoding;
+    input->bufferCount = bufferCount;
 
-    auto patch = reinterpret_cast<GNA_MEMORY_PATCH *>(
-        reinterpret_cast<uintptr_t>(buffer) + scoreConfig->bufferCount * sizeof(GNA_MEMORY_BUFFER));
+    auto buffer = reinterpret_cast<GNA_MEMORY_BUFFER *>(input + 1);
+    auto patch = reinterpret_cast<GNA_MEMORY_PATCH *>(buffer + bufferCount);
 
     for (const auto &driverBuffer : hardwareRequest.DriverMemoryObjects)
     {
@@ -292,7 +292,7 @@ void WindowsDriverInterface::createRequestDescriptor(HardwareRequest& hardwareRe
             patch->size = driverPatch.Size;
             memcpy_s(patch->data, driverPatch.Size, &driverPatch.Value, driverPatch.Size);
             patch = reinterpret_cast<GNA_MEMORY_PATCH *>(
-                reinterpret_cast<uintptr_t>(patch) + sizeof(GNA_MEMORY_PATCH) + patch->size);
+                reinterpret_cast<uint8_t*>(patch) + sizeof(GNA_MEMORY_PATCH) + patch->size);
         }
 
         buffer++;
@@ -303,16 +303,16 @@ void WindowsDriverInterface::createRequestDescriptor(HardwareRequest& hardwareRe
 
 void WindowsDriverInterface::getDeviceCapabilities()
 {
-    auto bytesRead = DWORD{0};
+    auto bytesRead = DWORD{ 0 };
     UINT64 params[3] = {
-        GNA_PARAM_DEVICE_ID,
+        GNA_PARAM_DEVICE_TYPE,
         GNA_PARAM_INPUT_BUFFER_S,
         GNA_PARAM_RECOVERY_TIMEOUT
     };
 
     UINT64 values[3];
 
-    for (uint32_t i = 0; i < sizeof(params)/sizeof(UINT64); i++)
+    for (uint32_t i = 0; i < sizeof(params) / sizeof(UINT64); i++)
     {
         auto ioResult = DeviceIoControl(deviceHandle,
             static_cast<DWORD>(GNA_IOCTL_GET_PARAM),
@@ -334,22 +334,22 @@ std::string WindowsDriverInterface::discoverDevice(uint32_t deviceIndex)
 {
     auto guid = GUID_DEVINTERFACE_GNA_DRV;
     const auto deviceInfo = SetupDiGetClassDevs(&guid, nullptr, nullptr, DIGCF_PRESENT | DIGCF_DEVICEINTERFACE);
-    if(INVALID_HANDLE_VALUE == deviceInfo)
+    if (INVALID_HANDLE_VALUE == deviceInfo)
     {
         return "";
     }
 
     auto deviceDetailsData = std::unique_ptr<char[]>();
-    auto deviceDetails = PSP_DEVICE_INTERFACE_DETAIL_DATA{nullptr};
-    auto interfaceData = SP_DEVICE_INTERFACE_DATA{0};
+    auto deviceDetails = PSP_DEVICE_INTERFACE_DETAIL_DATA{ nullptr };
+    auto interfaceData = SP_DEVICE_INTERFACE_DATA{ 0 };
     interfaceData.cbSize = sizeof(interfaceData);
 
     uint32_t found = 0;
-    auto bufferSize = DWORD{0};
+    auto bufferSize = DWORD{ 0 };
     std::string path;
     for (auto i = 0; SetupDiEnumDeviceInterfaces(deviceInfo, nullptr, &guid, i, &interfaceData); ++i)
     {
-        bufferSize = DWORD{0};
+        bufferSize = DWORD{ 0 };
         path = "";
         if (!SetupDiGetDeviceInterfaceDetail(deviceInfo, &interfaceData, nullptr, 0, &bufferSize, nullptr))
         {
@@ -376,15 +376,15 @@ std::string WindowsDriverInterface::discoverDevice(uint32_t deviceIndex)
 
 void WindowsDriverInterface::wait(LPOVERLAPPED const ioctl, const DWORD timeout) const
 {
-    auto bytesRead = DWORD{0};
+    auto bytesRead = DWORD{ 0 };
 
     auto ioResult = GetOverlappedResultEx(deviceHandle, ioctl, &bytesRead, timeout, false);
     if (ioResult == 0) // io not completed
     {
         auto error = GetLastError();
-        if ((ERROR_IO_INCOMPLETE == error && 0 == timeout )||
-             WAIT_IO_COMPLETION  == error ||
-             WAIT_TIMEOUT        == error)
+        if ((ERROR_IO_INCOMPLETE == error && 0 == timeout) ||
+            WAIT_IO_COMPLETION == error ||
+            WAIT_TIMEOUT == error)
         {
             throw GnaException(Gna2StatusWarningDeviceBusy); // not completed yet
         }
@@ -406,7 +406,7 @@ void WindowsDriverInterface::checkStatus(BOOL ioResult) const
     if (ioResult == 0 && ERROR_IO_PENDING != lastError)
     {
 #if DEBUG == 1
-            printLastError(lastError);
+        printLastError(lastError);
 #endif
         throw GnaException(Gna2StatusDeviceOutgoingCommunicationError);
     }

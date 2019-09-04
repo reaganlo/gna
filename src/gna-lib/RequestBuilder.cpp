@@ -129,7 +129,7 @@ ProfilerConfiguration& RequestBuilder::GetProfilerConfiguration(uint32_t configI
 
 void RequestBuilder::ReleaseProfilerConfiguration(uint32_t configId)
 {
-    //TODO:3: consider adding thread safty mechanism
+    //TODO:3: consider adding thread safety mechanism
     profilerConfigurations.erase(configId);
 }
 

@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2017 Intel Corporation.
+ Copyright 2019 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -45,18 +45,3 @@ using chronoMs = std::chrono::milliseconds;
 
 void getTsc(uint64_t * const result);
 
-typedef struct
-{
-    uint64_t            total;      // # of total cycles spent on scoring in hw
-    uint64_t            stall;      // # of stall cycles spent in hw (since scoring)
-} gna_perf_hw_t;
-
-typedef struct
-{
-    uint64_t            startHW;    // time of setting up and issuing HW scoring
-    uint64_t            scoreHW;    // time between HW scoring start and scoring complete interrupt
-    uint64_t            intProc;    // time of processing scoring complete interrupt
-} gna_perf_drv_t;
-
-typedef gna_perf_hw_t perf_hw_t;
-typedef gna_perf_drv_t perf_drv_t;

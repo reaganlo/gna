@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2017 Intel Corporation.
+ Copyright 2019 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -62,18 +62,9 @@ RequestProfiler::RequestProfiler(bool initialize)
     }
 }
 
-void RequestProfiler::AddDrvAndHwResults(gna_perf_drv_t &drvPerf, gna_perf_hw_t &hwPerf)
+void RequestProfiler::AddResults(Gna2InstrumentationPoint point, uint64_t result)
 {
-
-    Points.at(Gna2InstrumentationPointDrvPreprocessing) += drvPerf.startHW;
-    Points.at(Gna2InstrumentationPointDrvProcessing) += drvPerf.intProc;
-    Points.at(Gna2InstrumentationPointDrvDeviceRequestCompleted) += drvPerf.scoreHW;
-    Points.at(Gna2InstrumentationPointDrvPreprocessing) += drvPerf.startHW;
-
-    //TODO: enable Gna2InstrumentationPointDrvCompletion and check if existing measures are correct
-
-    Points.at(Gna2InstrumentationPointHwTotalCycles) += hwPerf.total;
-    Points.at(Gna2InstrumentationPointHwTotalCycles) += hwPerf.stall;
+    Points.at(point) += result;
 }
 
 void MillisecondProfiler::Measure(Gna2InstrumentationPoint pointType)
@@ -127,10 +118,10 @@ void DisabledProfiler::Measure(Gna2InstrumentationPoint point)
 {
     UNREFERENCED_PARAMETER(point);
 }
-void DisabledProfiler::AddDrvAndHwResults(gna_perf_drv_t &drvPerf, gna_perf_hw_t &hwPerf)
+void DisabledProfiler::AddResults(Gna2InstrumentationPoint point, uint64_t result)
 {
-    UNREFERENCED_PARAMETER(drvPerf);
-    UNREFERENCED_PARAMETER(hwPerf);
+    UNREFERENCED_PARAMETER(point);
+    UNREFERENCED_PARAMETER(result);
 }
 void DisabledProfiler::SaveResults(ProfilerConfiguration* config)
 {

@@ -146,7 +146,7 @@ void DeviceController::ActiveListAdd(gna_request_cfg_id configId,
     uint32_t layerIndex, uint32_t indicesCount, uint32_t* indices)
 {
     intel_gna_status_t status = GnaRequestConfigActiveListAdd(
-                                    configId, layerIndex, indicesCount, indices);
+        configId, layerIndex, indicesCount, indices);
     if (GNA_SUCCESS != status)
     {
         throw std::runtime_error("ActiveList add failed");
