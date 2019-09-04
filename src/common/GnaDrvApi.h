@@ -140,20 +140,15 @@ typedef struct
 static_assert(8 == sizeof(CTRL_FLAGS), "Invalid size of CTRL_FLAGS");
 
 /**
- Time Stamp Counter time type
- */
-typedef unsigned long long TIME_TSC;
-
-/**
  Accelerator (hardware level) scoring request performance results
  */
 typedef struct
 {
     // # of total cycles spent on scoring in hw
-    TIME_TSC total;
+    UINT64 total;
 
     // # of stall cycles spent in hw (since scoring)
-    TIME_TSC stall;
+    UINT64 stall;
 
 } GNA_PERF_HW;
 
@@ -165,13 +160,13 @@ static_assert(16 == sizeof(GNA_PERF_HW), "Invalid size of GNA_PERF_HW");
 typedef struct
 {
     // time of setting up and issuing HW scoring
-    TIME_TSC startHW;
+    UINT64 startHW;
 
     // time between HW scoring start and scoring complete interrupt
-    TIME_TSC scoreHW;
+    UINT64 scoreHW;
 
     // time of processing scoring complete interrupt
-    TIME_TSC intProc;
+    UINT64 intProc;
 
 } GNA_PERF_DRV;
 
@@ -209,22 +204,22 @@ typedef struct
     /**
      Request preprocessing start
      */
-    TIME_TSC Gna2InstrumentationPointDrvPreprocessing;
+    UINT64 Preprocessing;
 
     /**
      Request processing started by hardware
      */
-    TIME_TSC Gna2InstrumentationPointDrvProcessing;
+    UINT64 Processing;
 
     /**
      Request completed interrupt triggered by hardware
      */
-    TIME_TSC Gna2InstrumentationPointDrvDeviceRequestCompleted;
+    UINT64 DeviceRequestCompleted;
 
     /**
      Driver completed interrupt and request handling.
      */
-    TIME_TSC Gna2InstrumentationPointDrvCompletion;
+    UINT64 Completion;
 
 } GNA_DRIVER_INSTRUMENTATION;
 
