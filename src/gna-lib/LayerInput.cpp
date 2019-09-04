@@ -172,10 +172,10 @@ LayerInput::LayerInput(const Gna2Operation &operation, const LayerValidator& val
 {
 }
 
-bool LayerInput::IsTensorValid(const Gna2Tensor &apiTensor,
-      const BaseValidator& validatorIn, nn_operation operation)
+bool LayerInput::IsInputInterleave(const Gna2Tensor &apiTensor,
+      const BaseValidator& validatorIn)
 {
-   auto layerValidator = LayerValidator{validatorIn, operation};
+   auto layerValidator = LayerValidator{validatorIn, INTEL_INTERLEAVE};
    try
    {
       Tensor {
@@ -225,12 +225,11 @@ std::pair<uint32_t, uint32_t> LayerInput::getGroupingAndElements(
     {
     case Gna2OperationTypeTransposition:
     {
-        const auto& inputTensor = *operation.Operands[InputOperandIndex];
-        if (LayerInput::IsTensorValid(inputTensor, validatorIn, INTEL_INTERLEAVE))
+        if (validatorIn.Operation == INTEL_INTERLEAVE)
         {
             return {Dimensions.at('H'), Dimensions.at('W')};
         }
-        if (LayerInput::IsTensorValid(inputTensor, validatorIn, INTEL_DEINTERLEAVE))
+        if (validatorIn.Operation == INTEL_DEINTERLEAVE)
         {
             return {Dimensions.at('W'), Dimensions.at('H')};
         }

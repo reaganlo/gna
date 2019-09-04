@@ -245,23 +245,6 @@ LayerOutput::LayerOutput(const Gna2Operation &operation, const LayerValidator& v
 {
 }
 
-bool LayerOutput::IsTensorValid(const Gna2Tensor &apiTensor,
-      const BaseValidator& validatorIn, nn_operation operation)
-{
-   auto layerValidator = LayerValidator{validatorIn, operation};
-   try
-   {
-      Tensor {
-         apiTensor, capabilities.GetOrder(layerValidator),
-         Validator{ layerValidator, capabilities } };
-      return true;
-   }
-   catch (const GnaException&)
-   {
-      return false;
-   }
-}
-
 std::pair<uint32_t, uint32_t> LayerOutput::getGroupingAndElements(
       const Gna2Operation& operation, const LayerValidator& validatorIn) const
 {
@@ -269,12 +252,11 @@ std::pair<uint32_t, uint32_t> LayerOutput::getGroupingAndElements(
     {
     case Gna2OperationTypeTransposition:
     {
-        const auto& inputTensor = *operation.Operands[OutputOperandIndex];
-        if (IsTensorValid(inputTensor, validatorIn, INTEL_INTERLEAVE))
+        if (validatorIn.Operation == INTEL_INTERLEAVE)
         {
             return {Dimensions.at('W'), Dimensions.at('H')};
         }
-        if (IsTensorValid(inputTensor, validatorIn, INTEL_DEINTERLEAVE))
+        if (validatorIn.Operation == INTEL_DEINTERLEAVE)
         {
             return {Dimensions.at('H'), Dimensions.at('W')};
         }

@@ -42,8 +42,8 @@ struct LayerInput : public Tensor
     LayerInput(const Gna2Operation &operation, const LayerValidator& validatorIn);
     virtual ~LayerInput() = default;
 
-    static bool IsTensorValid(const Gna2Tensor &apiTensor,
-                       const BaseValidator& validatorIn, nn_operation operation);
+    static bool IsInputInterleave(const Gna2Tensor &apiTensor,
+                       const BaseValidator& validatorIn);
 
     const uint32_t Grouping;
     const uint32_t ElementCount;

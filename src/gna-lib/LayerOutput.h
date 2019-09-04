@@ -44,9 +44,6 @@ struct LayerOutput : public Tensor
     const uint32_t Grouping;
     const uint32_t ElementCount;
 
-    static bool IsTensorValid(const Gna2Tensor &apiTensor,
-                       const BaseValidator& validatorIn, nn_operation operation);
-
 protected:
     static const FullCapabilitiesMap capabilities;
 

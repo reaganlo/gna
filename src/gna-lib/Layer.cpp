@@ -293,15 +293,11 @@ nn_operation AbstractOperation::toLegacy(
     case Gna2OperationTypeTransposition:
     {
         const Gna2Tensor& inputTensor = *operation.Operands[InputOperandIndex];
-        if (LayerInput::IsTensorValid(inputTensor, validator, INTEL_INTERLEAVE))
+        if (LayerInput::IsInputInterleave(inputTensor, validator))
         {
             return INTEL_INTERLEAVE;
         }
-        if (LayerInput::IsTensorValid(inputTensor, validator, INTEL_DEINTERLEAVE))
-        {
-            return INTEL_DEINTERLEAVE;
-        }
-        throw GnaException{ Gna2StatusXnnErrorLyrOperation };
+        return INTEL_DEINTERLEAVE;
     }
     case Gna2OperationTypeRecurrent:
         return INTEL_RECURRENT;
