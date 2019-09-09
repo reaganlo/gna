@@ -175,10 +175,8 @@ RequestResult WindowsDriverInterface::Submit(HardwareRequest& hardwareRequest,
     auto ioHandle = OVERLAPPED{ 0 };
     ioHandle.hEvent = CreateEvent(nullptr, false, false, nullptr);
 
-    if (!hardwareRequest.SubmitReady)
-    {
-        createRequestDescriptor(hardwareRequest);
-    }
+    // TODO:kj:3: add working optimization mechanism to reduce recalculation for same request config
+    createRequestDescriptor(hardwareRequest);
 
     auto input = reinterpret_cast<PGNA_INFERENCE_CONFIG_IN>(hardwareRequest.CalculationData.get());
     auto * const ctrlFlags = &input->ctrlFlags;

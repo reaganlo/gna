@@ -85,6 +85,50 @@ void CompiledModel::InvalidateHardwareRequestConfig(gna_request_cfg_id configId)
     }
 }
 
+bool CompiledModel::verifyHardwareMode(RequestConfiguration& config)
+{
+    const auto isHardwareEnforced = config.Acceleration.IsHardwareEnforced();
+    if (isHardwareEnforced)
+    {
+        if (!hardwareModel)
+        {
+            return false;
+        }
+
+        const auto& deviceSubmodels = getSubmodels(hwCapabilities);
+        for (const auto& submodel : deviceSubmodels)
+        {
+            if (submodel->Type == Software)
+            {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
+CompiledModel::AccelerationType CompiledModel::getEffectiveAccelerationMode(RequestConfiguration& config)
+{
+    auto const isHardwareModeValid = verifyHardwareMode(config);
+    if (false == isHardwareModeValid)
+        return Unsupported;
+
+    // TODO: 3: we need to store information about consistency between devices
+    // https://idc-tfs-01.devtools.intel.com:8088/tfs/DefaultCollection/Omega/_workitems?_a=edit&id=17703
+
+    const auto isSoftwareEffective = config.Acceleration.IsSoftwareEnforced() ||
+        !hwCapabilities.IsHardwareSupported() ||
+        (config.GetConsistentDevice() != hwCapabilities.GetDeviceVersion());
+    if (isSoftwareEffective )
+    {
+        return EnforcedSoftware;
+    }
+    else
+    {
+        return Auto;
+    }
+}
+
 Gna2Status CompiledModel::Score(
     RequestConfiguration& config,
     RequestProfiler *profiler,
@@ -94,35 +138,18 @@ Gna2Status CompiledModel::Score(
     auto saturationCount = uint32_t{ 0 };
     try
     {
-        const auto isHardwareEnforced = config.Acceleration.IsHardwareEnforced();
-        const auto isSoftwareEnforced = config.Acceleration.IsSoftwareEnforced();
-        if (isHardwareEnforced)
+        auto const effectiveAcceleration = getEffectiveAccelerationMode(config);
+        switch (effectiveAcceleration)
         {
-            if (!hardwareModel)
-            {
-                return Gna2StatusAccelerationModeNotSupported;
-            }
-
-            const auto& deviceSubmodels = getSubmodels(hwCapabilities);
-            for (const auto& submodel : deviceSubmodels)
-            {
-                if (submodel->Type == Software)
-                {
-                    return Gna2StatusAccelerationModeNotSupported;
-                }
-            }
-        }
-
-        // TODO: 3: we need to store information about consistency between devices
-        // https://idc-tfs-01.devtools.intel.com:8088/tfs/DefaultCollection/Omega/_workitems?_a=edit&id=17703
-        if (isSoftwareEnforced || !hwCapabilities.IsHardwareSupported() ||
-            (config.GetConsistentDevice() != hwCapabilities.GetDeviceVersion()))
-        {
+        case EnforcedSoftware:
             saturationCount = softwareModel.Score(0, LayerCount, config, profiler, buffers);
-        }
-        else
-        {
+            break;
+        case Auto:
             saturationCount = scoreAllSubModels(config, profiler, buffers);
+            break;
+        default:
+            return Gna2StatusAccelerationModeNotSupported;
+            break;
         }
     }
     catch (const GnaException& e)
@@ -209,11 +236,8 @@ uint32_t CompiledModel::scoreAllSubModels(RequestConfiguration& config,
             saturationCount += softwareModel.Score(layerIndex, layerCount, config, profiler, buffers);
             break;
         case Hardware:
-            saturationCount += hardwareModel->Score(layerIndex, layerCount, config, profiler, buffers);
-            break;
-            // TODO: 3: HardwareModel should identify if device is a GMM device
         case GMMHardware:
-            saturationCount += hardwareModel->Score(layerIndex, 1, config, profiler, buffers);
+            saturationCount += hardwareModel->Score(layerIndex, layerCount, config, profiler, buffers);
             break;
         }
     }

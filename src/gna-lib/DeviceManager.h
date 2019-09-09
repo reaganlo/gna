@@ -90,13 +90,11 @@ private:
 
     static constexpr uint32_t MaximumReferenceCount = 1024;
 
-    struct DeviceContext
+    struct DeviceContext : std::unique_ptr<Device>
     {
         DeviceContext() = default;
         DeviceContext(std::unique_ptr<Device> handle, uint32_t referenceCount);
 
-        // TODO:3:kj:add -> operator to access handle.
-        std::unique_ptr<Device> Handle;
         uint32_t ReferenceCount;
     };
 

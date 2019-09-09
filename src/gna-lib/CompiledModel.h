@@ -127,6 +127,14 @@ protected:
     std::unique_ptr<HardwareModelScorable> hardwareModel;
 
 private:
+
+    enum AccelerationType
+    {
+        Unsupported,
+        Auto,
+        EnforcedSoftware,
+    };
+
     const std::vector<std::unique_ptr<SubModel>>&
         getSubmodels(const HardwareCapabilities& hwCaps);
 
@@ -134,6 +142,10 @@ private:
 
     SubmodelType getSubmodelType(
         const HardwareCapabilities &hwCaps, uint32_t layerIndex) const;
+
+    AccelerationType getEffectiveAccelerationMode(RequestConfiguration& config);
+
+    bool verifyHardwareMode(RequestConfiguration& config);
 
     uint32_t scoreAllSubModels(RequestConfiguration& config,
         RequestProfiler *profiler, KernelBuffers *buffers);

@@ -76,7 +76,7 @@ DeviceManager::DeviceManager()
 
 Device& DeviceManager::GetDevice(uint32_t deviceIndex)
 {
-    auto& device = *GetDeviceContext(deviceIndex).Handle;
+    auto& device = *GetDeviceContext(deviceIndex);
     return device;
 }
 
@@ -84,14 +84,14 @@ void DeviceManager::CreateDevice(uint32_t deviceIndex)
 {
     if (!IsOpened(deviceIndex))
     {
-        devices.emplace(deviceIndex, DeviceContext{
+        auto const emplaced = devices.emplace(deviceIndex, DeviceContext{
 #if HW_VERBOSE == 0
            std::make_unique<Device>(deviceIndex, DeviceManager::DefaultThreadCount),
 #else
             std::make_unique<DeviceVerbose>(deviceIndex, DeviceManager::DefaultThreadCount),
 #endif
         0});
-        MapAllToDevice(GetDevice(deviceIndex));
+        MapAllToDevice(*emplaced.first->second);
     }
 }
 
@@ -114,7 +114,7 @@ DeviceManager::DeviceContext& DeviceManager::GetDeviceContext(uint32_t deviceInd
 }
 
 DeviceManager::DeviceContext::DeviceContext(std::unique_ptr<Device> handle, uint32_t referenceCount) :
-    Handle{std::move(handle)},
+    std::unique_ptr<Device>{ std::move(handle) },
     ReferenceCount{referenceCount}
 {
 }
@@ -205,9 +205,9 @@ Device* DeviceManager::TryGetDeviceForModel(uint32_t modelId)
 {
     for(const auto& device : devices)
     {
-       if(device.second.Handle && device.second.Handle->HasModel(modelId))
+       if(device.second->HasModel(modelId))
        {
-           return device.second.Handle.get();
+           return device.second.get();
        }
     }
     return nullptr;
@@ -259,10 +259,7 @@ void DeviceManager::MapMemoryToAll(Memory& memoryObject)
 {
     for (auto& device : devices)
     {
-        if (device.second.Handle != nullptr)
-        {
-            device.second.Handle->MapMemory(memoryObject);
-        }
+        device.second->MapMemory(memoryObject);
     }
 }
 
@@ -270,7 +267,7 @@ void DeviceManager::UnMapMemoryFromAll(Memory& memoryObject)
 {
     for (const auto& device : devices)
     {
-        device.second.Handle->UnMapMemory(memoryObject);
+        device.second->UnMapMemory(memoryObject);
     }
 }
 
@@ -285,9 +282,9 @@ Device* DeviceManager::TryGetDeviceForRequestConfigId(uint32_t requestConfigId)
 {
     for (const auto& device : devices)
     {
-        if (device.second.Handle && device.second.Handle->HasRequestConfigId(requestConfigId))
+        if (device.second->HasRequestConfigId(requestConfigId))
         {
-            return device.second.Handle.get();
+            return device.second.get();
         }
     }
     return nullptr;
@@ -297,9 +294,9 @@ Device & DeviceManager::GetDeviceForRequestId(uint32_t requestId)
 {
     for (const auto& device : devices)
     {
-        if (device.second.Handle && device.second.Handle->HasRequestId(requestId))
+        if (device.second->HasRequestId(requestId))
         {
-            return *device.second.Handle;
+            return *device.second;
         }
     }
     throw GnaException(Gna2StatusIdentifierInvalid);

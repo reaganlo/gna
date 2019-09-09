@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2018 Intel Corporation.
+ Copyright 2019 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -93,19 +93,20 @@ uint32_t HardwareModelScorable::Score(
         Expect::NotNull(TryGetLayer(i), Gna2StatusXnnErrorNetLyrNo);
     }
 
-    Expect::InRange(layerCount,
-        ui32_0, hwCapabilities.GetMaximumLayerCount(),
-        Gna2StatusXnnErrorNetLyrNo);
-
     auto operationMode = xNN;
 
     auto const & layer = model.GetLayer(layerIndex);
-    if (layer.Operation == INTEL_GMM && layerCount == 1
+    if (layer.Operation == INTEL_GMM
         && !hwCapabilities.IsLayerSupported(layer.Operation)
         && hwCapabilities.HasFeature(LegacyGMM))
     {
+        Expect::InRange(layerCount, ui32_1, Gna2StatusXnnErrorNetLyrNo);
         operationMode = GMM;
     }
+
+    Expect::InRange(layerCount,
+        ui32_1, hwCapabilities.GetMaximumLayerCount(),
+        Gna2StatusXnnErrorNetLyrNo);
 
     SoftwareModel::LogAcceleration(AccelerationMode{ Gna2AccelerationModeHardware,true });
     SoftwareModel::LogOperationMode(operationMode);
@@ -115,7 +116,7 @@ uint32_t HardwareModelScorable::Score(
 
     if (hardwareRequests.find(configId) == hardwareRequests.end())
     {
-        auto inserted = hardwareRequests.emplace(
+        auto const inserted = hardwareRequests.emplace(
             configId,
             std::make_unique<HardwareRequest>(*this, requestConfiguration, allocations));
         hwRequest = inserted.first->second.get();

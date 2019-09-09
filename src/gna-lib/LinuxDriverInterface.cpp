@@ -120,10 +120,8 @@ RequestResult LinuxDriverInterface::Submit(HardwareRequest& hardwareRequest,
     RequestResult result = { };
     int ret;
 
-    if(!hardwareRequest.SubmitReady)
-    {
-        createRequestDescriptor(hardwareRequest);
-    }
+    // TODO:kj:3: add working optimization mechanism to reduce recalculation for same request config
+    createRequestDescriptor(hardwareRequest);
 
     auto scoreConfig = reinterpret_cast<struct gna_score_cfg *>(hardwareRequest.CalculationData.get());
 

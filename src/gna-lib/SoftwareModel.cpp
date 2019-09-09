@@ -83,7 +83,7 @@ SoftwareModel::SoftwareModel(const Gna2Model& model,
     layerCount{ model.NumberOfOperations },
     supportedCpuAccelerations{ supportedCpuAccelerationsIn }
 {
-    Expect::NotNull(model.Operations);
+    CheckModel(1, model.Operations);
     build(model.Operations, validator);
 }
 
