@@ -44,10 +44,13 @@ void MemoryContainer::Append(MemoryContainer const & source)
 
 void MemoryContainer::Emplace(Memory const & value)
 {
-    offsets.emplace(size(), std::make_pair(totalMemorySize, totalMemorySizeAlignedToPage));
-    emplace(size(), value);
-    totalMemorySizeAlignedToPage += RoundUp(value.GetSize(), PAGE_SIZE);
-    totalMemorySize += value.GetSize();
+    if (!Contains(value, value.GetSize()))
+    {
+        offsets.emplace(size(), std::make_pair(totalMemorySize, totalMemorySizeAlignedToPage));
+        emplace(size(), value);
+        totalMemorySizeAlignedToPage += RoundUp(value.GetSize(), PAGE_SIZE);
+        totalMemorySize += value.GetSize();
+    }
 }
 
 MemoryContainer::iterator MemoryContainer::erase(const_iterator where)
