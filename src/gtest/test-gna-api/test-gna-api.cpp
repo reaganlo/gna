@@ -651,6 +651,24 @@ TEST_F(TestGnaOperationInitApi, Gna2OperationInitOperationsSuccesfullNullActivat
     Free(operation.Parameters);
 }
 
+TEST_F(TestGnaApi, Gna2StatusGetMessage_positive_and_negative)
+{
+    char buffer[1024] = {0};
+    EXPECT_LE(Gna2StatusGetMaxMessageLength(), sizeof(buffer));
+    auto s = Gna2StatusGetMessage(Gna2StatusAccelerationModeNotSupported, buffer, sizeof(buffer));
+    EXPECT_EQ(s, Gna2StatusSuccess);
+    EXPECT_NE(buffer[0], '\0');
+    buffer[0] = '\0';
+    s = Gna2StatusGetMessage(Gna2StatusAccelerationModeNotSupported, nullptr, sizeof(buffer));
+    EXPECT_EQ(s, Gna2StatusNullArgumentNotAllowed);
+    s = Gna2StatusGetMessage(Gna2StatusAccelerationModeNotSupported, buffer, 0);
+    EXPECT_EQ(s, Gna2StatusMemorySizeInvalid);
+    EXPECT_EQ(buffer[0], '\0');
+    s = Gna2StatusGetMessage(Gna2StatusAccelerationModeNotSupported, buffer, 2);
+    EXPECT_EQ(s, Gna2StatusMemorySizeInvalid);
+    EXPECT_EQ(buffer[0], '\0');
+}
+
 int main(int argc, char **argv)
 {
     testing::InitGoogleTest(&argc, argv);

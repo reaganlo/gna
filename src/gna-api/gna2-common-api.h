@@ -412,21 +412,26 @@ GNA2_API inline bool Gna2StatusIsSuccessful(enum Gna2Status status)
 /**
  Gets message with detailed description of given status.
 
- @note
- TODO:3:API: provide maximum message size
-
  @param status The status code returned from API function.
  @param [out] messageBuffer User allocated buffer for the message.
  @param [in] messageBufferSize The size of the messageBuffer in bytes.
-        The message is maximum X characters/bytes long.
-        Message is truncated to messageBufferSize if it is longer than messageBufferSize characters.
+        The message length varies depending on the status,
+        the buffer of size Gna2StatusGetMaxMessageLength() is sufficient for every status.
  @return Status of fetching the message.
     @retval Gna2StatusSuccess The status was fully serialized into the messageBuffer.
-    @retval Gna2StatusUnknownError The messageBuffer is too small. Message was truncated.
-    @retval Gna2StatusNullArgumentNotAllowed The messageBuffer was NULL or messageBufferSize was 0.
+    @retval Gna2StatusMemorySizeInvalid The messageBuffer is too small.
+    @retval Gna2StatusNullArgumentNotAllowed The messageBuffer was NULL.
+    @retval Gna2StatusIdentifierInvalid The status code is unknown.
  */
 GNA2_API enum Gna2Status Gna2StatusGetMessage(enum Gna2Status status,
     char * messageBuffer, uint32_t messageBufferSize);
+
+/**
+ Gets maximal length of buffer needed by Gna2StatusGetMessage().
+
+ @return Size [in bytes] of buffer needed.
+ */
+GNA2_API uint32_t Gna2StatusGetMaxMessageLength();
 
 /**
  Rounds a number up, to the lowest multiple of significance.

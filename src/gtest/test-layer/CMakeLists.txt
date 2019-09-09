@@ -47,6 +47,7 @@ endif()
 # TODO: consider making gna-api target an object library
 # to avoid compiling sources twice
 add_executable(test-layer
+  test-internal.cpp
   test-layer.cpp
   test-transpose-layer.cpp
   test-affine-layer.cpp
