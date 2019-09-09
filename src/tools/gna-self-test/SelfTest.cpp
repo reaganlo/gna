@@ -57,17 +57,18 @@ SelfTestDevice::SelfTestDevice(const GnaSelfTest& gst) : gnaSelfTest{ gst }
 void SelfTestDevice::Alloc(const uint32_t bytesRequested)
 {
     uint32_t sizeGranted;
-    void *memory = static_cast<void *>(pinned_mem_ptr);
+    void * memory;
     GnaAlloc(bytesRequested, &sizeGranted, &memory);
     pinned_mem_ptr = static_cast<uint8_t *>(memory);
 
-    logger.Verbose("Requested: %i Granted: %i\n", (int)bytesRequested, (int)sizeGranted);
+    logger.Verbose("Requested: %i Granted: %i Address: %p\n", (int)bytesRequested, (int)sizeGranted, memory);
 
     if (nullptr == pinned_mem_ptr)
     {
         GnaSelfTestLogger::Error("GnaAlloc: Memory allocation FAILED\n");
         gnaSelfTest.Handle(GSTIT_GNAALLOC_MEM_ALLOC_FAILED);
     }
+    allocated_mems.push_back(memory);
 }
 
 void SelfTestDevice::SampleModelCreate(const SampleModelForGnaSelfTest& model)
@@ -201,12 +202,14 @@ SelfTestDevice::~SelfTestDevice()
     // free the pinned memory
     if (deviceOpened)
     {
-        if (pinned_mem_ptr != nullptr)
+        for(const auto mem : allocated_mems)
         {
-            logger.Verbose("releasing the gna allocated memory...\n");
-            auto status = GnaFree(pinned_mem_ptr);
-            gnaSelfTest.HandleGnaStatus(status, "GnaFree");
-            pinned_mem_ptr = nullptr;
+            if (mem != nullptr)
+            {
+                logger.Verbose("releasing the gna allocated memory, at %p ...\n", mem);
+                auto status = GnaFree(mem);
+                gnaSelfTest.HandleGnaStatus(status, "GnaFree");
+            }
         }
         logger.Verbose("releasing the device...\n");
         auto status = GnaDeviceClose(deviceId);

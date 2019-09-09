@@ -20,10 +20,14 @@
 // be express and approved by Intel in writing.
 //*****************************************************************************
 #pragma once
+
+#include "SampleModelForGnaSelfTest.h"
+
+#include "gna-api.h"
+
 #include <cstdio>
 #include <string>
-#include "gna-api.h"
-#include "SampleModelForGnaSelfTest.h"
+#include <vector>
 
 class GnaSelfTestLogger
 {
@@ -119,6 +123,7 @@ private:
     int16_t *pinned_inputs;
     gna_request_id requestId;
     const GnaSelfTest& gnaSelfTest;
+    std::vector<void*> allocated_mems;
 };
 
 // Types and exit codes of GnaSelfTestIssue
