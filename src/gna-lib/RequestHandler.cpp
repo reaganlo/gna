@@ -106,7 +106,7 @@ Gna2Status RequestHandler::WaitFor(const gna_request_id requestId, const gna_tim
 
 void RequestHandler::StopRequests()
 {
-    threadPool.Stop();
+    threadPool.StopAndJoin();
 }
 
 bool RequestHandler::HasRequest(uint32_t requestId) const

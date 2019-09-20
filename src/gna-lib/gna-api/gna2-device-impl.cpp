@@ -67,8 +67,8 @@ enum Gna2Status Gna2DeviceSetNumberOfThreads(
 {
     const std::function<ApiStatus()> command = [&]()
     {
-        auto& device = DeviceManager::Get().GetDevice(deviceIndex);
-        device.SetNumberOfThreads(numberOfThreads);
+        auto& deviceManager = DeviceManager::Get();
+        deviceManager.SetThreadCount(deviceIndex, numberOfThreads);
         return Gna2StatusSuccess;
     };
     return ApiWrapper::ExecuteSafely(command);

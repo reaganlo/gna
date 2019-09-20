@@ -50,7 +50,7 @@ public:
     void SetNumberOfThreads(uint32_t threadCount);
 
     void Enqueue(Request *request);
-    void Stop();
+    void StopAndJoin();
 
 private:
     void employWorkers();

@@ -99,14 +99,7 @@ ThreadPool::ThreadPool(uint32_t threadCount) :
 
 ThreadPool::~ThreadPool()
 {
-#if defined(_WIN32)
-    for (auto& w : workers)
-    {
-        w.detach();
-    }
-#else
-    Stop();
-#endif
+    StopAndJoin();
 }
 
 uint32_t ThreadPool::GetNumberOfThreads() const
@@ -123,7 +116,7 @@ void ThreadPool::SetNumberOfThreads(uint32_t threadCount)
         return;
     }
 
-    Stop();
+    StopAndJoin();
 
     try
     {
@@ -132,8 +125,6 @@ void ThreadPool::SetNumberOfThreads(uint32_t threadCount)
     catch (std::exception& e)
     {
         UNREFERENCED_PARAMETER(e);
-
-        employWorkers();
         throw GnaException(Gna2StatusResourceAllocationError);
     }
 
@@ -141,7 +132,16 @@ void ThreadPool::SetNumberOfThreads(uint32_t threadCount)
     employWorkers();
 }
 
-void ThreadPool::Stop()
+
+
+void ThreadPool::Enqueue(Request *request)
+{
+    std::lock_guard<std::mutex> lock(tpMutex);
+    tasks.emplace_back(request);
+    condition.notify_one();
+}
+
+void ThreadPool::StopAndJoin()
 {
     {
         std::unique_lock<std::mutex> lock(tpMutex);
@@ -155,13 +155,6 @@ void ThreadPool::Stop()
     }
 
     workers.clear();
-}
-
-void ThreadPool::Enqueue(Request *request)
-{
-    std::lock_guard<std::mutex> lock(tpMutex);
-    tasks.emplace_back(request);
-    condition.notify_one();
 }
 
 void ThreadPool::employWorkers()
