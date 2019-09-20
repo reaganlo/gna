@@ -763,6 +763,13 @@ static_assert(1 == sizeof(uint8_t), "Invalid size of uint8_t");
 static_assert(2 == sizeof(uint16_t), "Invalid size of uint16_t");
 static_assert(4 == sizeof(uint32_t), "Invalid size of uint32_t");
 
+/**
+ * Provides access to simple GNA library version string.
+ * NOTE: Function may change or be replaced in future releases.
+ */
+
+GNAAPI const char* GnaGetLibraryVersion();
+
 #ifdef __cplusplus
 }
 #endif

@@ -45,6 +45,7 @@ void GnaSelfTest::StartTest()
 {
     GnaSelfTestLogger::Log("Starting GNA device self test\n");
     GnaSelfTestLogger::Log("=============================\n");
+    PrintLibraryVersion();
     PrintSystemInfo();
     SampleModelForGnaSelfTest sampleNetwork = SampleModelForGnaSelfTest::GetDefault();
     MultiOsGnaSelfTestHardwareStatus hwDrvStatus{*this};
@@ -84,6 +85,11 @@ void GnaSelfTest::StartTest()
     logger.Verbose("Comparing results...\n");
     gnaDevice.CompareResults(sampleNetwork);
     GnaSelfTestLogger::Log("GNA device self-test has beed finished\n");
+}
+
+void GnaSelfTest::PrintLibraryVersion()
+{
+    logger.Log("Detected GNA Library version: %s\n", GnaGetLibraryVersion());
 }
 
 GnaSelfTestConfig::GnaSelfTestConfig(int argc, const char *const argv[])

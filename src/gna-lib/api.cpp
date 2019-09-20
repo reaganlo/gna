@@ -442,3 +442,11 @@ void* GnaModelDump(
     }
 }
 
+GNAAPI const char* GnaGetLibraryVersion()
+{
+#ifndef GNA_LIBRARY_VERSION_STRING
+    static const char version[] = "GNA_LIBRARY_VERSION_STRING not defined";
+#endif
+    static const char version[] = GNA_LIBRARY_VERSION_STRING;
+    return version;
+}

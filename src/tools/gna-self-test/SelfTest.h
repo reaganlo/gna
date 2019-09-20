@@ -92,6 +92,7 @@ public:
 private:
     void askToContinueOrExit(int exitCode) const;
     GnaSelfTestConfig config;
+    void PrintLibraryVersion();
 };
 
 #define DEFAULT_SELFTEST_TIMEOUT_MS 10000
