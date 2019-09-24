@@ -97,6 +97,9 @@ struct MultiplierLimits : protected  MultiplierMap
             {Gna2DataTypeInt8, multiplierForInt8},
             {Gna2DataTypeInt16, multiplierForInt16},
             {Gna2DataTypeInt32, multiplierForInt32},
+            {Gna2DataTypeUint8, multiplierForInt8},
+            {Gna2DataTypeUint16, multiplierForInt16},
+            {Gna2DataTypeUint32, multiplierForInt32},
         }},
         Error{error}
     {}

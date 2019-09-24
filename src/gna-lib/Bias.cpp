@@ -121,10 +121,10 @@ const FullCapabilitiesMap BiasTensor::capabilities =
     }},
     {INTEL_GMM, {
         {GMM_DEVICE, std::make_shared<TensorLimits>(TensorLimits{
-            {GNA_TENSOR_HD},                   // H - GMM states, D - #mixtures
-            {{GNA_DIM_H, {1, GMM_MIXTURE_COMP_COUNT_MAX, 1, Gna2StatusGmmBadMixCnum}},
-                {GNA_DIM_D, {1, GMM_STATES_COUNT_MAX, 1, Gna2StatusGmmBadNumGmm}}},
-            { {GNA_INT32}, Gna2StatusGmmBadMode},
+            {GNA_TENSOR_HW},                   // H - GMM states, W - #mixtures
+            {{GNA_DIM_W, {1, GMM_MIXTURE_COMP_COUNT_MAX, 2, Gna2StatusGmmBadMixCnum}},
+                {GNA_DIM_H, {1, GMM_STATES_COUNT_MAX, 1, Gna2StatusGmmBadNumGmm}}},
+            { {GNA_UINT32}, Gna2StatusGmmBadMode},
             {GMM_MEM_ALIGNMENT, Gna2StatusGmmBadGconstAlign}})}
     }},
     {INTEL_RECURRENT, {

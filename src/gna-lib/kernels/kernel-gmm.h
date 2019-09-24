@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2017 Intel Corporation.
+ Copyright 2019 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -44,55 +44,27 @@
 #define gmm_maxmix_8u8u_32u_g8  KERNEL(gmm_maxmix_8u8u_32u_g8)
 #endif
 
-// GMM kernel implementation arguments
-struct GmmMaxMixConfig
-{
-    GmmMaxMixConfig(uint32_t const scoreLimit, uint32_t const inputElementCount, uint32_t const mixtureCount) :
-        MinScore{scoreLimit},
-        InputElementCount{inputElementCount},
-        InputElementOffset(ALIGN64(InputElementCount)),
-        MixtureCount{mixtureCount},
-        Means{nullptr},
-        Vars{nullptr},
-        Gconst{nullptr},
-        Input{nullptr},
-        Output{nullptr}
-    {}
-
-    uint32_t const MinScore;
-    uint32_t const InputElementCount;
-    uint32_t const InputElementOffset;
-    uint32_t const MixtureCount;
-    uint8_t const * Means;
-    union
-    {
-    uint8_t const * Vars;
-    uint16_t const * Vars16;
-    };
-    uint32_t const * Gconst;
-    uint8_t const * Input;
-    uint32_t * Output;
-};
+struct GmmConfig;
 
 
-void gmm_maxmix_8u8u_32u(GmmMaxMixConfig const * const config);
+void gmm_maxmix_8u8u_32u(GmmConfig const * const config);
 
-void gmm_maxmix_8u16u_32u(GmmMaxMixConfig const * const config);
+void gmm_maxmix_8u16u_32u(GmmConfig const * const config);
 
 #if OPT_LEVEL > 1
-void gmm_maxmix_8u8u_32u_g1(GmmMaxMixConfig const * const config);
+void gmm_maxmix_8u8u_32u_g1(GmmConfig const * const config);
 
-void gmm_maxmix_8u8u_32u_g2(GmmMaxMixConfig const * const config);
+void gmm_maxmix_8u8u_32u_g2(GmmConfig const * const config);
 
-void gmm_maxmix_8u8u_32u_g3(GmmMaxMixConfig const * const config);
+void gmm_maxmix_8u8u_32u_g3(GmmConfig const * const config);
 
-void gmm_maxmix_8u8u_32u_g4(GmmMaxMixConfig const * const config);
+void gmm_maxmix_8u8u_32u_g4(GmmConfig const * const config);
 
-void gmm_maxmix_8u8u_32u_g5(GmmMaxMixConfig const * const config);
+void gmm_maxmix_8u8u_32u_g5(GmmConfig const * const config);
 
-void gmm_maxmix_8u8u_32u_g6(GmmMaxMixConfig const * const config);
+void gmm_maxmix_8u8u_32u_g6(GmmConfig const * const config);
 
-void gmm_maxmix_8u8u_32u_g7(GmmMaxMixConfig const * const config);
+void gmm_maxmix_8u8u_32u_g7(GmmConfig const * const config);
 
-void gmm_maxmix_8u8u_32u_g8(GmmMaxMixConfig const * const config);
+void gmm_maxmix_8u8u_32u_g8(GmmConfig const * const config);
 #endif

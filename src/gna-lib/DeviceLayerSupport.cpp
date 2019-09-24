@@ -31,14 +31,12 @@ const ApiSupport API_1_0 =
 {
     {GNA_API_1_0, true},
     {GNA_API_2_0, true},
-    //{GNA_API_2_1_S, true},
     {GNA_API_3_0, true},
 };
 
 const ApiSupport API_2_0 =
 {
     {GNA_API_2_0, true},
-    //{GNA_API_2_1_S, true},
     {GNA_API_3_0, true},
 };
 
@@ -98,6 +96,11 @@ static const Support FROM_1_0 = { API_1_0, HW_1_0 };
 static const Support FROM_2_0 = { API_2_0, HW_2_0 };
 static const Support FROM_3_0 = { API_3_0, HW_3_0 };
 
+static const std::map<const gna_layer_operation, const Support> FROM_1_0_GMM =
+{
+    {INTEL_GMM,                 FROM_GMM},
+};
+
 static const std::map<const gna_layer_operation, const Support> FROM_3_0_AFF_RNN_CNN =
 {
     {INTEL_AFFINE,              FROM_3_0},
@@ -143,7 +146,6 @@ static const std::map<const gna_layer_operation, const Support> FROM_3_0_AFF_CNN
 
 static const std::map<const gna_layer_operation, const Support> FROM_3_0_AFF_CNN_GMM =
 {
-    {INTEL_GMM,                 FROM_GMM},
     {INTEL_AFFINE,              FROM_3_0},
     {INTEL_AFFINE_DIAGONAL,     FROM_3_0},
     {INTEL_AFFINE_MULTIBIAS,    FROM_3_0},
@@ -240,6 +242,12 @@ bool Support::IsSupported() const
 const std::map<const DataConfig, std::map<const gna_layer_operation, const Support>> DataConfig::Capabilities =
 {
     // input, weight/filter/mean, bias/covariance, output
+    {{GNA_UINT8, GNA_UINT8, GNA_UINT32, GNA_UINT32},
+        FROM_1_0_GMM
+    },
+    {{GNA_UINT8, GNA_UINT16, GNA_UINT32, GNA_UINT32},
+        FROM_1_0_GMM
+    },
     {{GNA_INT8, GNA_DATA_DISABLED, GNA_DATA_DISABLED, GNA_INT8},
         FROM_3_0_COPY_TRANSPOSE
     },
@@ -282,7 +290,6 @@ const std::map<const DataConfig, std::map<const gna_layer_operation, const Suppo
             {INTEL_AFFINE_DIAGONAL,     FROM_3_0},
             {INTEL_AFFINE_MULTIBIAS,    FROM_3_0},
             {INTEL_CONVOLUTIONAL_2D,    FROM_3_0},
-            {INTEL_GMM,                 FROM_0_9_S_FALSE},
         }
     },
     {{GNA_INT8, GNA_INT8, GNA_DATA_DISABLED, GNA_INT8},
@@ -336,7 +343,6 @@ const std::map<const DataConfig, std::map<const gna_layer_operation, const Suppo
             {INTEL_AFFINE_DIAGONAL,     FROM_3_0},
             {INTEL_AFFINE_MULTIBIAS,    FROM_3_0},
             {INTEL_CONVOLUTIONAL_2D,    FROM_3_0},
-            {INTEL_GMM,                 FROM_0_9_S_FALSE},
         }
     },
     {{GNA_INT8, GNA_INT16, GNA_DATA_DISABLED, GNA_INT8},

@@ -25,8 +25,10 @@
 
 #pragma once
 
+#include "Bias.h"
 #include "KernelArguments.h"
 #include "Layer.h"
+#include "Weight.h"
 
 #include "common.h"
 #include "gmm.h"
@@ -41,47 +43,92 @@ class BaseValidator;
 struct ActiveList;
 struct LayerConfiguration;
 
-// GMM Advanced parameters that are model configuration dependent
-struct GmmParams
-{
-    GmmParams(const gna_gmm_config &config, const uint32_t inputElementCount);
-
-    uint32_t MeanSetOffsetSize;
-    uint32_t VarSetOffsetSize;
-    uint32_t GaussConstSetOffsetSize;
-    uint32_t VarianceSize;
-};
-
 // GMM Calculation configuration
-class GmmLayer : public Layer
+class GmmOperation : public Layer
 {
 public:
-    GmmLayer(const nn_layer& layer, const BaseValidator& validatorIn);
-    virtual ~GmmLayer() = default;
+    template<class T>
+    GmmOperation(const T& layer, const BaseValidator& validatorIn) :
+        Layer(layer, validatorIn, { GmmTransform }, BaseAddress())
+    {}
+
+    virtual ~GmmOperation() = default;
 
     virtual Tensor const & GetOperand(uint32_t operandIndex) const override;
 
-    // TODO:3: Low priority: refactor components to Tensors
-    const gna_gmm_config Config;
-    const gna_gmm_data Data;
-    const GmmParams Params;
-
-    virtual void UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const override;
-    void ValidateActiveList(ActiveList const * const activeList) const;
+    virtual void VerifyHas1BInputAnd2BWeight() override;
 
     virtual DataConfig GetDataMode() const override;
-
-private:
-    virtual void computeHidden(AccelerationMode accel, ExecutionConfig const& executionConfig) const;
-    virtual void compute(const LayerConfiguration& layerConfiguration, AccelerationMode accel, ExecutionConfig const & executionConfig) const;
-
-    void checkScoresSaturation(const uint32_t& nGMMs, const uint32_t& nVectors, const uint32_t* pS,
-                               const uint32_t& maximumScore, uint32_t& nSaturated) const;
-    inline void validate();
-
-    const KernelMap<GmmMaxMix> gmmKernels;
-    const KernelMap<GmmMaxMixActiveList> gmmActiveListKernels;
-
-    GmmConfig gmmHiddenConfig;
 };
+
+class GmmFunction : public TransformAl<GmmConfig, GmmMaxMix, GmmMaxMixActiveList>
+{
+public:
+    static std::unique_ptr<GmmFunction> Create(
+        const TransformFactoryConfig& config,
+        const OperationConfig& operation);
+
+    virtual ~GmmFunction() = default;
+
+    Tensor const& GetOperand(uint32_t operandIndex) const override;
+
+    void ValidateActiveList(ActiveList const & activeList) const override;
+
+    virtual DataConfig GetDataMode() const = 0;
+
+    std::unique_ptr<const WeightTensor> Means;
+    std::unique_ptr<const WeightTensor> InverseCovariances;
+    std::unique_ptr<const BiasTensor> GaussianConstants;
+
+    BaseAddress MeanBuffer;
+    BaseAddress InverseCovarianceBuffer;
+    BaseAddress GaussianConstantBuffer;
+
+    uint32_t InverseCovarianceSize;
+    uint32_t const MaximumScore;
+    uint32_t MeanSetOffsetSize;
+    uint32_t VarSetOffsetSize;
+    uint32_t GaussConstSetOffsetSize;
+    uint32_t StateCount;
+
+protected:
+    GmmFunction(const BaseTransformConfig<GmmMaxMix>& config,
+        std::unique_ptr<const WeightTensor> means,
+        std::unique_ptr<const WeightTensor> inverseCovariances,
+        std::unique_ptr<const BiasTensor> gaussianConstants,
+        uint32_t const maximumScore,
+        const KernelMap<GmmMaxMixActiveList>& kernelsAl);
+
+    void InitHiddenConfig();
+};
+
+class GmmFunctionFlat : public GmmFunction
+{
+public:
+    GmmFunctionFlat(const BaseTransformConfig<GmmMaxMix>& config,
+        std::unique_ptr<const WeightTensor> means,
+        std::unique_ptr<const WeightTensor> inverseCovariances,
+        std::unique_ptr<const BiasTensor> gaussianConstants,
+        uint32_t const maximumScore,
+        const KernelMap<GmmMaxMixActiveList>& kernelsAl);
+
+    virtual ~GmmFunctionFlat() = default;
+
+    virtual DataConfig GetDataMode() const override;
+};
+
+class GmmFunctionInterleaved : public GmmFunction
+{
+public:
+    GmmFunctionInterleaved(const BaseTransformConfig<GmmMaxMix>& config,
+        std::unique_ptr<const WeightTensor> interleavedData,
+        uint32_t const maximumScore,
+        const KernelMap<GmmMaxMixActiveList>& kernelsAl);
+
+    virtual ~GmmFunctionInterleaved() = default;
+
+    virtual DataConfig GetDataMode() const override;
+};
+
+
 }

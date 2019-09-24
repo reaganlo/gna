@@ -99,6 +99,8 @@ public:
 
     virtual ~AffineFunctionSingle() = default;
 
+    void ValidateActiveList(ActiveList const & activeList) const override;
+
     void Compute(AccelerationMode accel, LayerConfiguration const* layerConfiguration,
                  ExecutionConfig const& execution) const override;
 

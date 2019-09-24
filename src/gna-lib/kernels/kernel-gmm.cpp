@@ -25,6 +25,7 @@
 
 #include "kernel-gmm.h"
 
+#include "KernelArguments.h"
 #include "KernelMacros.h"
 
 #include <cstdint>
@@ -46,12 +47,12 @@
 
 #if OPT_LEVEL == 0 || OPT_LEVEL == 1 // NONE
 
-void gmm_maxmix_8u8u_32u(GmmMaxMixConfig const * const config)
+void gmm_maxmix_8u8u_32u(GmmConfig const * const config)
 {
     const uint8_t *mean = config->Means;
     const uint8_t *var = config->Vars;
     const uint32_t *consts = config->Gconst;
-    uint32_t minScore = config->MinScore;
+    uint32_t minScore = config->MaxScore;
     uint64_t sum64;
     uint32_t i, j;
 
@@ -81,12 +82,12 @@ void gmm_maxmix_8u8u_32u(GmmMaxMixConfig const * const config)
     (*(config->Output)) = minScore;
 }
 
-void gmm_maxmix_8u16u_32u(GmmMaxMixConfig const * const config)
+void gmm_maxmix_8u16u_32u(GmmConfig const * const config)
 {
     const uint8_t *mean = config->Means;
     const uint16_t *var = config->Vars16;
     const uint32_t *consts = config->Gconst;
-    uint32_t minScore = config->MinScore;
+    uint32_t minScore = config->MaxScore;
     uint64_t sum64;
     uint32_t i, j;
 
@@ -124,12 +125,12 @@ void gmm_maxmix_8u16u_32u(GmmMaxMixConfig const * const config)
 #if defined(_WIN32)
 #pragma warning( disable : 700 )
 #endif
-void gmm_maxmix_8u8u_32u(GmmMaxMixConfig const * const config)
+void gmm_maxmix_8u8u_32u(GmmConfig const * const config)
 {
     const uint8_t *mean = config->Means;
     const uint8_t *var = config->Vars;
     const uint32_t *consts = config->Gconst;
-    uint64_t minScore = config->MinScore;
+    uint64_t minScore = config->MaxScore;
     uint64_t sum64;
     uint32_t i, j;
 
@@ -180,7 +181,7 @@ void gmm_maxmix_8u8u_32u(GmmMaxMixConfig const * const config)
 }
 
 //gmm_maxmix_8u8u_32u_grouped_opt_f8_g1_sse4
-void gmm_maxmix_8u8u_32u_g1(GmmMaxMixConfig const * const config)
+void gmm_maxmix_8u8u_32u_g1(GmmConfig const * const config)
 {
     const uint8_t *mean = config->Means;
     const uint8_t *var = config->Vars;
@@ -190,7 +191,7 @@ void gmm_maxmix_8u8u_32u_g1(GmmMaxMixConfig const * const config)
     uint32_t i, j, k;
     uint64_t minScore;
     uint64_t sum64, sum64b;
-    minScore = config->MinScore;
+    minScore = config->MaxScore;
 
     if ((mixtureCount & 1) == 1)
     {
@@ -300,12 +301,12 @@ void gmm_maxmix_8u8u_32u_g1(GmmMaxMixConfig const * const config)
 
 #if (OPT_LEVEL > 1) && (OPT_LEVEL < 6) // SSE4/AVX1 only (same code, different compile options)
 
-void gmm_maxmix_8u16u_32u(GmmMaxMixConfig const * const config)
+void gmm_maxmix_8u16u_32u(GmmConfig const * const config)
 {
     const uint8_t  *mean = config->Means;
     const uint16_t *var = config->Vars16;
     const uint32_t *consts = config->Gconst;
-    uint64_t minScore = config->MinScore;
+    uint64_t minScore = config->MaxScore;
     uint32_t i, j;
 
     __m128i zero = _mm_setzero_si128();
@@ -370,7 +371,7 @@ void gmm_maxmix_8u16u_32u(GmmMaxMixConfig const * const config)
 }
 
 //gmm_maxmix_8u8u_32u_grouped_opt_f8_g2_sse4
-void gmm_maxmix_8u8u_32u_g2(GmmMaxMixConfig const * const config)
+void gmm_maxmix_8u8u_32u_g2(GmmConfig const * const config)
 {
     const uint8_t *mean = config->Means;
     const uint8_t *var = config->Vars;
@@ -380,7 +381,7 @@ void gmm_maxmix_8u8u_32u_g2(GmmMaxMixConfig const * const config)
     uint64_t  gconst64;
     uint64_t  score[2];
     // init min scores
-    uint64_t  minScore = config->MinScore;
+    uint64_t  minScore = config->MaxScore;
     __m128i minScores = CVT64_128((__m128i*) &minScore);
     minScores = _mm_shuffle_epi32(minScores, _MM_SHUFFLE(1, 0, 1, 0));
 
@@ -449,7 +450,7 @@ void gmm_maxmix_8u8u_32u_g2(GmmMaxMixConfig const * const config)
 }
 
 //gmm_maxmix_8u8u_32u_grouped_opt_f8_g3_sse4
-void gmm_maxmix_8u8u_32u_g3(GmmMaxMixConfig const * const config)
+void gmm_maxmix_8u8u_32u_g3(GmmConfig const * const config)
 {
     const uint8_t *mean = config->Means;
     const uint8_t *var = config->Vars;
@@ -460,7 +461,7 @@ void gmm_maxmix_8u8u_32u_g3(GmmMaxMixConfig const * const config)
 
     uint64_t gconst64;
     uint64_t score[2];
-    uint64_t minScore2 = config->MinScore;
+    uint64_t minScore2 = config->MaxScore;
     __m128i minScores = CVT64_128((__m128i*) &minScore2);
     minScores = _mm_shuffle_epi32(minScores, _MM_SHUFFLE(1, 0, 1, 0));
 
@@ -547,7 +548,7 @@ void gmm_maxmix_8u8u_32u_g3(GmmMaxMixConfig const * const config)
 }
 
 //gmm_maxmix_8u8u_32u_grouped_opt_f8_g4_sse4
-void gmm_maxmix_8u8u_32u_g4(GmmMaxMixConfig const * const config)
+void gmm_maxmix_8u8u_32u_g4(GmmConfig const * const config)
 {
     const uint8_t *mean = config->Means;
     const uint8_t *var = config->Vars;
@@ -556,7 +557,7 @@ void gmm_maxmix_8u8u_32u_g4(GmmMaxMixConfig const * const config)
     uint32_t i, j;
     uint64_t  gconst64;
     uint64_t  score[2];
-    uint64_t  minScore = config->MinScore;
+    uint64_t  minScore = config->MaxScore;
     __m128i minScores = CVT64_128((__m128i*) &minScore);
     minScores = _mm_shuffle_epi32(minScores, _MM_SHUFFLE(1, 0, 1, 0));
     __m128i minScore2 = minScores;
@@ -671,7 +672,7 @@ void gmm_maxmix_8u8u_32u_g4(GmmMaxMixConfig const * const config)
 }
 
 //gmm_maxmix_8u8u_32u_grouped_opt_f8_g5_sse4
-void gmm_maxmix_8u8u_32u_g5(GmmMaxMixConfig const * const config)
+void gmm_maxmix_8u8u_32u_g5(GmmConfig const * const config)
 {
     const uint8_t *mean = config->Means;
     const uint8_t *var = config->Vars;
@@ -681,7 +682,7 @@ void gmm_maxmix_8u8u_32u_g5(GmmMaxMixConfig const * const config)
     uint64_t sum64;
     uint64_t  gconst64;
     uint64_t  score[2];
-    uint64_t  minScores3 = config->MinScore;
+    uint64_t  minScores3 = config->MaxScore;
     __m128i minScores = CVT64_128((__m128i*) &minScores3);
     minScores = _mm_shuffle_epi32(minScores, _MM_SHUFFLE(1, 0, 1, 0));
     __m128i minScore2 = minScores;
@@ -806,7 +807,7 @@ void gmm_maxmix_8u8u_32u_g5(GmmMaxMixConfig const * const config)
 }
 
 //gmm_maxmix_8u8u_32u_grouped_opt_f8_g6_sse4
-void gmm_maxmix_8u8u_32u_g6(GmmMaxMixConfig const * const config)
+void gmm_maxmix_8u8u_32u_g6(GmmConfig const * const config)
 {
     const uint8_t *mean = config->Means;
     const uint8_t *var = config->Vars;
@@ -816,12 +817,12 @@ void gmm_maxmix_8u8u_32u_g6(GmmMaxMixConfig const * const config)
     uint64_t sum64;
     uint64_t minScores[6];
 
-    minScores[0] = config->MinScore;
-    minScores[1] = config->MinScore;
-    minScores[2] = config->MinScore;
-    minScores[3] = config->MinScore;
-    minScores[4] = config->MinScore;
-    minScores[5] = config->MinScore;
+    minScores[0] = config->MaxScore;
+    minScores[1] = config->MaxScore;
+    minScores[2] = config->MaxScore;
+    minScores[3] = config->MaxScore;
+    minScores[4] = config->MaxScore;
+    minScores[5] = config->MaxScore;
 
     for (i = 0; i < config->MixtureCount; i++)
     {
@@ -959,7 +960,7 @@ void gmm_maxmix_8u8u_32u_g6(GmmMaxMixConfig const * const config)
 }
 
 //gmm_maxmix_8u8u_32u_grouped_opt_f8_g7_sse4
-void gmm_maxmix_8u8u_32u_g7(GmmMaxMixConfig const * const config)
+void gmm_maxmix_8u8u_32u_g7(GmmConfig const * const config)
 {
     const uint8_t *mean = config->Means;
     const uint8_t *var = config->Vars;
@@ -969,13 +970,13 @@ void gmm_maxmix_8u8u_32u_g7(GmmMaxMixConfig const * const config)
     uint64_t sum64;
     uint64_t minScores[8];
 
-    minScores[0] = config->MinScore;
-    minScores[1] = config->MinScore;
-    minScores[2] = config->MinScore;
-    minScores[3] = config->MinScore;
-    minScores[4] = config->MinScore;
-    minScores[5] = config->MinScore;
-    minScores[6] = config->MinScore;
+    minScores[0] = config->MaxScore;
+    minScores[1] = config->MaxScore;
+    minScores[2] = config->MaxScore;
+    minScores[3] = config->MaxScore;
+    minScores[4] = config->MaxScore;
+    minScores[5] = config->MaxScore;
+    minScores[6] = config->MaxScore;
 
     for (i = 0; i < config->MixtureCount; i++)
     {
@@ -1130,7 +1131,7 @@ void gmm_maxmix_8u8u_32u_g7(GmmMaxMixConfig const * const config)
 }
 
 //gmm_maxmix_8u8u_32u_grouped_opt_f8_g8_sse4
-void gmm_maxmix_8u8u_32u_g8(GmmMaxMixConfig const * const config)
+void gmm_maxmix_8u8u_32u_g8(GmmConfig const * const config)
 {
     const uint8_t *mean = config->Means;
     const uint8_t *var = config->Vars;
@@ -1139,7 +1140,7 @@ void gmm_maxmix_8u8u_32u_g8(GmmMaxMixConfig const * const config)
     uint32_t i, j;
     uint64_t  gconst64;
     uint64_t  score[2];
-    uint64_t  minScore = config->MinScore;
+    uint64_t  minScore = config->MaxScore;
     __m128i minScores = CVT64_128((__m128i*) &minScore);
     minScores = _mm_shuffle_epi32(minScores, _MM_SHUFFLE(1, 0, 1, 0));
     __m128i minScore2 = minScores;
@@ -1329,7 +1330,7 @@ void gmm_maxmix_8u8u_32u_g8(GmmMaxMixConfig const * const config)
 #if OPT_LEVEL > 5 // AVX2 +
 
 //gmm_maxmix_8u8u_32u_grouped_opt_f8_g2_avx2
-void gmm_maxmix_8u8u_32u_g2(GmmMaxMixConfig const * const config)
+void gmm_maxmix_8u8u_32u_g2(GmmConfig const * const config)
 {
     const uint8_t *mean = config->Means;
     const uint8_t *var = config->Vars;
@@ -1338,7 +1339,7 @@ void gmm_maxmix_8u8u_32u_g2(GmmMaxMixConfig const * const config)
     uint32_t  i, j;
     uint64_t  gconst64;
     uint64_t  score[2];
-    uint64_t  minScore = config->MinScore;
+    uint64_t  minScore = config->MaxScore;
 
     __m128i minScores = CVT64_128((__m128i*) &minScore);
     minScores = _mm_shuffle_epi32(minScores, _MM_SHUFFLE(1, 0, 1, 0));
@@ -1403,7 +1404,7 @@ void gmm_maxmix_8u8u_32u_g2(GmmMaxMixConfig const * const config)
 }
 
 //gmm_maxmix_8u8u_32u_grouped_opt_f8_g3_avx2
-void gmm_maxmix_8u8u_32u_g3(GmmMaxMixConfig const * const config)
+void gmm_maxmix_8u8u_32u_g3(GmmConfig const * const config)
 {
     const uint8_t *mean = config->Means;
     const uint8_t *var = config->Vars;
@@ -1414,7 +1415,7 @@ void gmm_maxmix_8u8u_32u_g3(GmmMaxMixConfig const * const config)
     uint64_t score[4];
 
     // init min scores
-    uint64_t  minScore = config->MinScore;
+    uint64_t  minScore = config->MaxScore;
     __m256i minScores = _mm256_broadcastq_epi64(CVT64_128((__m128i*) &minScore));
 
     for (i = 0; i < config->MixtureCount; i++)
@@ -1490,7 +1491,7 @@ void gmm_maxmix_8u8u_32u_g3(GmmMaxMixConfig const * const config)
 }
 
 //gmm_maxmix_8u8u_32u_grouped_opt_f8_g4_avx2
-void gmm_maxmix_8u8u_32u_g4(GmmMaxMixConfig const * const config)
+void gmm_maxmix_8u8u_32u_g4(GmmConfig const * const config)
 {
     const uint8_t *mean = config->Means;
     const uint8_t *var = config->Vars;
@@ -1501,7 +1502,7 @@ void gmm_maxmix_8u8u_32u_g4(GmmMaxMixConfig const * const config)
     uint64_t score[4];
 
     // init min scores
-    uint64_t  minScore = config->MinScore;
+    uint64_t  minScore = config->MaxScore;
     __m256i minScores = _mm256_broadcastq_epi64(CVT64_128((__m128i*) &minScore));
 
     for (i = 0; i < config->MixtureCount; i++)
@@ -1579,7 +1580,7 @@ void gmm_maxmix_8u8u_32u_g4(GmmMaxMixConfig const * const config)
 }
 
 //gmm_maxmix_8u8u_32u_grouped_opt_f8_g5_avx2
-void gmm_maxmix_8u8u_32u_g5(GmmMaxMixConfig const * const config)
+void gmm_maxmix_8u8u_32u_g5(GmmConfig const * const config)
 {
     const uint8_t *mean = config->Means;
     const uint8_t *var = config->Vars;
@@ -1589,7 +1590,7 @@ void gmm_maxmix_8u8u_32u_g5(GmmMaxMixConfig const * const config)
     uint64_t gconst64;
     uint64_t score[4];
     // init min scores
-    uint64_t  minScore = config->MinScore;
+    uint64_t  minScore = config->MaxScore;
     __m256i minScores = _mm256_broadcastq_epi64(CVT64_128((__m128i*) &minScore));
     __m256i minScore2 = minScores;
 
@@ -1691,7 +1692,7 @@ void gmm_maxmix_8u8u_32u_g5(GmmMaxMixConfig const * const config)
 }
 
 //gmm_maxmix_8u8u_32u_grouped_opt_f8_g6_avx2
-void gmm_maxmix_8u8u_32u_g6(GmmMaxMixConfig const * const config)
+void gmm_maxmix_8u8u_32u_g6(GmmConfig const * const config)
 {
     const uint8_t *mean = config->Means;
     const uint8_t *var = config->Vars;
@@ -1701,7 +1702,7 @@ void gmm_maxmix_8u8u_32u_g6(GmmMaxMixConfig const * const config)
     uint64_t gconst64;
     uint64_t score[4];
     // init min scores
-    uint64_t  minScore = config->MinScore;
+    uint64_t  minScore = config->MaxScore;
     __m256i minScores = _mm256_broadcastq_epi64(CVT64_128((__m128i*) &minScore));
     __m256i minScore2 = minScores;
 
@@ -1805,7 +1806,7 @@ void gmm_maxmix_8u8u_32u_g6(GmmMaxMixConfig const * const config)
 }
 
 //gmm_maxmix_8u8u_32u_grouped_opt_f8_g7_avx2
-void gmm_maxmix_8u8u_32u_g7(GmmMaxMixConfig const * const config)
+void gmm_maxmix_8u8u_32u_g7(GmmConfig const * const config)
 {
     const uint8_t *mean = config->Means;
     const uint8_t *var = config->Vars;
@@ -1814,7 +1815,7 @@ void gmm_maxmix_8u8u_32u_g7(GmmMaxMixConfig const * const config)
     uint32_t i, j;
     uint64_t gconst64;
     uint64_t score[4];
-    uint64_t  minScore = config->MinScore;
+    uint64_t  minScore = config->MaxScore;
     __m256i minScores = _mm256_broadcastq_epi64(CVT64_128((__m128i*) &minScore));
     __m256i minScore2 = minScores;
 
@@ -1947,7 +1948,7 @@ void gmm_maxmix_8u8u_32u_g7(GmmMaxMixConfig const * const config)
 }
 
 //gmm_maxmix_8u8u_32u_grouped_opt_f8_g8_avx2
-void gmm_maxmix_8u8u_32u_g8(GmmMaxMixConfig const * const config)
+void gmm_maxmix_8u8u_32u_g8(GmmConfig const * const config)
 {
     const uint8_t *mean = config->Means;
     const uint8_t *var = config->Vars;
@@ -1956,7 +1957,7 @@ void gmm_maxmix_8u8u_32u_g8(GmmMaxMixConfig const * const config)
     uint32_t i, j;
     uint64_t gconst64;
     uint64_t score[4];
-    uint64_t  minScore = config->MinScore;
+    uint64_t  minScore = config->MaxScore;
     __m256i minScores = _mm256_broadcastq_epi64(CVT64_128((__m128i*) &minScore));
     __m256i minScore2 = minScores;
 
@@ -2089,7 +2090,7 @@ void gmm_maxmix_8u8u_32u_g8(GmmMaxMixConfig const * const config)
     config->Output[7] = (uint32_t) score[3];
 }
 
-void gmm_maxmix_8u16u_32u(GmmMaxMixConfig const * const config)
+void gmm_maxmix_8u16u_32u(GmmConfig const * const config)
 {
     const uint8_t *mean = config->Means;
     const uint16_t *var = config->Vars16;
@@ -2097,7 +2098,7 @@ void gmm_maxmix_8u16u_32u(GmmMaxMixConfig const * const config)
     uint64_t score[2];
     uint64_t sum64;
     uint32_t i, j;
-    uint64_t minScore = config->MinScore;
+    uint64_t minScore = config->MaxScore;
 
     for (i = 0; i < config->MixtureCount; i++)
     {

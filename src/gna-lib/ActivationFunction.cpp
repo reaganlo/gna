@@ -190,7 +190,7 @@ const FullCapabilitiesMap ActivationFunction::outputCapabilities =
 
 std::unique_ptr<ActivationFunction> ActivationFunction::Create(const TransformFactoryConfig& config)
 {
-    if(config.IsActivationNotSupported())
+    if (config.IsActivationNotSupported())
     {
         return std::unique_ptr<ActivationFunction>(nullptr);
     }
@@ -202,7 +202,7 @@ std::unique_ptr<ActivationFunction> ActivationFunction::Create(const TransformFa
     {
         auto pwlFunction = std::make_unique<Tensor>(
             Shape(GNA_TENSOR_H, activation.Shape.Dimensions[0]),
-            Gna2DataTypePwlSegment, activation.Data, Validator{config.validator, capabilities});
+            Gna2DataTypePwlSegment, activation.Data, Validator{ config.validator, capabilities });
         return std::make_unique<ActivationFunction>(
             BaseTransformConfig<ActivationKernel>{config,
             AccelerationDetector::GetKernelMap<ActivationKernel>(KERNEL_PWL)}, config.outputMode,
@@ -213,6 +213,14 @@ std::unique_ptr<ActivationFunction> ActivationFunction::Create(const TransformFa
     *((gna_data_mode*)valuePtr) = GNA_DATA_ACTIVATION_DISABLED;
     return std::unique_ptr<ActivationFunction>(nullptr);
 }
+
+void ActivationFunction::UpdateActiveOutputCount(
+    std::unique_ptr<BaseConfig> configs[TransformOperationCount], uint32_t outputCount) const
+{
+    auto config = GetConfig(configs);
+    config->Transform.ElementCount = outputCount;
+}
+
 
 PwlCached ActivationFunction::createPwlCached(const gna_data_mode mode,
     nn_pwl_seg const * const segmentsIn, uint32_t segmentCountIn)
@@ -229,16 +237,16 @@ PwlCached ActivationFunction::createPwlCached(const gna_data_mode mode,
 
 ActivationFunction::ActivationFunction(const BaseTransformConfig<ActivationKernel>& config,
     DataMode mode, std::unique_ptr<Tensor> pwl) :
-    Transform{ActivationTransform, &config.kernels, config.input},
+    Transform{ ActivationTransform, &config.kernels, config.input },
     Segments{ std::move(pwl) },
     Pwl{ createPwlCached(config.outputMode, Segments->Buffer, Segments->Count) }
 {
-    const auto validator = Validator{config.validator, outputCapabilities};
+    const auto validator = Validator{ config.validator, outputCapabilities };
     Output = std::make_unique<Tensor>(config.input->Dimensions, mode, config.outputBuffer,
         validator);
 
     hiddenConfig = std::make_unique<KernelConfig<ActivationConfig>>(
-        ActivationConfig{Output->Count, &Pwl}, BaseConfig{Input->Buffer, config.outputBuffer});
+        ActivationConfig{ Output->Count, &Pwl }, BaseConfig{ Input->Buffer, config.outputBuffer });
 }
 
 Tensor const & ActivationFunction::GetOperand(uint32_t operandIndex) const
@@ -252,4 +260,10 @@ Tensor const & ActivationFunction::GetOperand(uint32_t operandIndex) const
     default:
         return Transform::GetOperand(operandIndex);
     }
+}
+
+void ActivationFunction::ValidateActiveList(ActiveList const& activeList) const
+{
+    Expect::InRange(activeList.IndicesCount,
+        ui32_1, Output->at(GNA_DIM_H), Gna2StatusActiveListIndicesInvalid);
 }

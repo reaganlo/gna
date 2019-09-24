@@ -439,6 +439,7 @@ GNA2_API enum Gna2Status Gna2OperationInitGmm(
     const std::function<Gna2Status()> command = [&]()
     {
         Expect::NotNull(operation);
+        Expect::NotNull(means);
         Expect::NotNull(inverseCovariances);
         Expect::NotNull(consts);
         ModelWrapper::OperationInit(*operation, Gna2OperationTypeGmm, userAllocator);

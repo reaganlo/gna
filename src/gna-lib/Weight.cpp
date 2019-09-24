@@ -100,11 +100,11 @@ const FullCapabilitiesMap WeightTensor::capabilities =
     }},
      {INTEL_GMM, {
         {GMM_DEVICE, std::make_shared<TensorLimits>(TensorLimits{
-            { GNA_TENSOR_HDW },                  // H - GMM states, D - #mixtures, W - #inputs
+            { GNA_TENSOR_HWD },                  // H - GMM states, W - #mixtures, D - #inputs
             {{GNA_DIM_H, {1, GMM_STATES_COUNT_MAX, 1, Gna2StatusGmmBadNumGmm}},
-            {GNA_DIM_D, {1, GMM_MIXTURE_COMP_COUNT_MAX, 1, Gna2StatusGmmBadMixCnum}},
+            {GNA_DIM_W, {1, GMM_MIXTURE_COMP_COUNT_MAX, 1, Gna2StatusGmmBadMixCnum}},
             {GNA_DIM_D, {GMM_FV_ELEMENT_COUNT_MIN, GMM_FV_ELEMENT_COUNT_MAX, GMM_FV_ELEMENT_COUNT_MULTIPLE_OF, Gna2StatusBadFeatLength}}},
-            { { GNA_INT8, GNA_INT16}, Gna2StatusGmmBadMode},
+            { { GNA_UINT8, GNA_UINT16}, Gna2StatusGmmBadMode},
             {GMM_MEM_ALIGNMENT, Gna2StatusGmmBadVarsAlign}})}
     }},
     {INTEL_RECURRENT, {

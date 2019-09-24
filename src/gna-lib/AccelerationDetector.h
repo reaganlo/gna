@@ -77,7 +77,7 @@ struct KernelMode
     {}
 
     KernelMode(gna_gmm_mode gmmMode) :
-        KernelMode{GNA_INT16, _data_mode(gmmMode + 1), GNA_BIAS_MODE_1_2_4B}
+        KernelMode{GNA_UINT8, _data_mode(gmmMode + 1), GNA_UINT32}
     {}
 
     ~KernelMode() = default;

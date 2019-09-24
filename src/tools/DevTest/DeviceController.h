@@ -28,7 +28,7 @@
 #include "gna-api.h"
 #include "gna-api-verbose.h"
 
-#include "gna2-common-api.h"
+#include "gna2-api.h"
 
 class DeviceController
 {
@@ -41,6 +41,7 @@ public:
     void Free(void *memory);
 
     void ModelCreate(const gna_model *model, gna_model_id *modelId);
+    void ModelCreate(const Gna2Model *model, gna_model_id *modelId);
     void ModelRelease(gna_model_id modelId) const;
 
     gna_request_cfg_id ConfigAdd(gna_model_id modelId);

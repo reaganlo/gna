@@ -26,6 +26,7 @@
 #pragma once
 
 #include "gna-api.h"
+#include "gna2-api.h"
 
 #include <memory>
 #include <string>
@@ -112,11 +113,20 @@ public:
 
     virtual ~IModelSetup() = default;
 
+    static void * Allocator(uint32_t size)
+    {
+        return malloc(size);
+    }
+
 protected:
     gna_model_id modelId;
     gna_request_cfg_id configId;
 
     intel_nnet_type_t nnet;
+    Gna2Model model;
+    Gna2Operation * operations = nullptr;
+    Gna2Tensor * tensors = nullptr;
+    void * parameters = nullptr;
     static const int layersNum = 1;
     static const int groupingNum = 4;
     static const int inVecSz = 16;

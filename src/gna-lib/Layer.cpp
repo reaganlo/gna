@@ -61,8 +61,6 @@ std::unique_ptr<Layer> Layer::Create(const nn_layer& layer, const BaseValidator&
     case INTEL_INTERLEAVE:/* FALLTHRU */
     case INTEL_DEINTERLEAVE:
         return std::make_unique<TransposeLayer>(layer, validatorIn);
-    case INTEL_GMM:
-        return std::make_unique<GmmLayer>(layer, validatorIn);
     case INTEL_RECURRENT:
         return std::make_unique<RecurrentLayer>(layer, validatorIn);
     default:
@@ -101,13 +99,12 @@ std::unique_ptr<GNA::Layer> Layer::Create(const Gna2Operation & operation, const
         {
             return std::make_unique<CnnLayer>(operation, validatorIn);
         }
-        /*case Gna2OperationTypeGmm:
-            return std::make_unique<GmmLayer>(operation, validatorIn);*/
+    case Gna2OperationTypeGmm:
+        return std::make_unique<GmmOperation>(operation, validatorIn);
     case Gna2OperationTypeTransposition:
         return std::make_unique<TransposeLayer>(operation, validatorIn);
     default:
-        //TODO:3:P1:Add implementation for remaining operation types
-        throw GnaException(Gna2StatusNotImplemented);
+        throw GnaException(Gna2StatusModelConfigurationInvalid);
     }
 }
 
@@ -161,6 +158,11 @@ void Layer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const
                     buffers, OutputOperandIndex);
             }
             transform->get()->UpdateConfigBuffers(layerConfiguration.ConfigList, buffers);
+        }
+
+        if (layerConfiguration.ActList)
+        {
+            outputTransform->ValidateActiveList(*layerConfiguration.ActList);
         }
     }
 }
@@ -272,6 +274,18 @@ void Layer::initComputeFunctions()
         AccelerationMode accel,
         ExecutionConfig const & executionConfig)
     {this->compute(&layerConfiguration, accel, executionConfig); };
+}
+
+void Layer::compute(const LayerConfiguration* layerConfiguration, AccelerationMode accel,
+    ExecutionConfig const& execution) const
+{
+    for (const auto& transform : Transforms)
+    {
+        if (transform)
+        {
+            transform->Compute(accel, layerConfiguration, execution);
+        }
+    }
 }
 
 nn_operation AbstractOperation::toLegacy(

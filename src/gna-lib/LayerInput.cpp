@@ -144,10 +144,10 @@ const FullCapabilitiesMap LayerInput::capabilities =
     }},
      {INTEL_GMM, {
         {GMM_DEVICE, std::make_shared<TensorLimits>(TensorLimits{
-            {GNA_TENSOR_WN},                   // H - GMM states, D - #mixtures
-            {{GNA_DIM_N, {1, XNN_N_GROUP_MAX, 1, Gna2StatusXnnErrorInputVolume}},
+            {GNA_TENSOR_HW},
+            {{GNA_DIM_H, {1, XNN_N_GROUP_MAX, 1, Gna2StatusXnnErrorInputVolume}},
              {GNA_DIM_W, {GMM_FV_ELEMENT_COUNT_MIN, GMM_FV_ELEMENT_COUNT_MAX, GMM_FV_ELEMENT_COUNT_MULTIPLE_OF, Gna2StatusBadFeatLength}}},
-            { { GNA_INT8}, Gna2StatusXnnErrorInputBytes }})}
+            { { GNA_UINT8}, Gna2StatusXnnErrorInputBytes }})}
     }},
     {INTEL_RECURRENT, {
         {GNA_0_9, std::make_shared<TensorLimits>(_FlatTensorLimitsGen0_9)},

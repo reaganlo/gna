@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2017 Intel Corporation.
+ Copyright 2019 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -68,9 +68,9 @@ static const uint32_t IterationGroupingOne = 1;
 DescriptorParameters::DescriptorParameters(
     Layer const & softwareLayer,
     const LayerDescriptor& xnnDescriptor) :
-    SoftwareLayer{softwareLayer},
-    XnnDescriptor{xnnDescriptor},
-    GmmDescriptor{xnnDescriptor.GmmDescriptor}
+    SoftwareLayer{ softwareLayer },
+    XnnDescriptor{ xnnDescriptor },
+    GmmDescriptor{ xnnDescriptor.GmmDescriptor }
 {
 }
 
@@ -96,31 +96,30 @@ std::unique_ptr<HardwareLayer> HardwareLayer::Create(const DescriptorParameters&
     switch (OperationsMap.at(parameters.SoftwareLayer.Operation))
     {
     case NN_CNN:
-    return std::make_unique<HardwareLayerCnn>(parameters);
+        return std::make_unique<HardwareLayerCnn>(parameters);
     case NN_COPY:
-    return std::make_unique<HardwareLayerCopy>(parameters);
+        return std::make_unique<HardwareLayerCopy>(parameters);
     case NN_GMM:
-    return std::make_unique<HardwareLayerGmm>(parameters);
+        return std::make_unique<HardwareLayerGmm>(parameters);
     case NN_RNN:
-    return std::make_unique<HardwareLayerRnn>(parameters);
+        return std::make_unique<HardwareLayerRnn>(parameters);
     case NN_AFF_MB:
-    return std::make_unique<HardwareLayerAffineMBias>(parameters);
+        return std::make_unique<HardwareLayerAffineMBias>(parameters);
     case NN_CNN2D_FUSED:
-    return std::make_unique<HardwareLayerCnn2D>(parameters);
+        return std::make_unique<HardwareLayerCnn2D>(parameters);
     default:
-    return std::make_unique<HardwareLayerAffDiagTrans>(parameters);
+        return std::make_unique<HardwareLayerAffDiagTrans>(parameters);
     }
 }
 
 HardwareLayer::HardwareLayer(const DescriptorParameters& parameters) :
-    DescriptorParameters{parameters}
-{
-}
+    DescriptorParameters{ parameters }
+{}
 
 NN_OP_TYPE HardwareLayer::GetNnopType(bool hasActiveList) const
 {
     UNREFERENCED_PARAMETER(hasActiveList);
-    throw GnaException{Gna2StatusXnnErrorLyrCfg};
+    throw GnaException{ Gna2StatusXnnErrorLyrCfg };
 }
 
 NN_OP_TYPE HardwareLayerAffDiagTrans::GetNnopType(bool hasActiveList) const
@@ -140,7 +139,7 @@ uint32_t HardwareLayer::GetXnnDescriptorOffset() const
 
 uint32_t HardwareLayer::GetGmmDescriptorOffset() const
 {
-    throw GnaException{Gna2StatusXnnErrorLyrCfg};
+    throw GnaException{ Gna2StatusXnnErrorLyrCfg };
 }
 
 uint32_t HardwareLayerGmm::GetGmmDescriptorOffset() const
@@ -160,8 +159,8 @@ uint32_t HardwareLayerGmm::GetLdInputOffset() const
 
 uint32_t HardwareLayerGmm::GetScrlen(uint32_t indicesCount) const
 {
-    auto gmm = SoftwareLayer.Get<const GmmLayer>();
-    return GMM_SCORE_SIZE * gmm->Input.Dimensions.at('N') * indicesCount;
+    auto gmm = SoftwareLayer.Get<const GmmOperation>();
+    return GMM_SCORE_SIZE * gmm->Input.Dimensions.at('H') * indicesCount;
 }
 
 uint32_t HardwareLayerGmm::GetLdScrlenOffset() const
@@ -284,7 +283,7 @@ uint32_t HardwareLayer::GetLdFeedbackOffset() const
     //if (descriptor.List->IndicesCount != 0) XnnDescriptor[AL_bit] = (uint8_t)1; //FOR Debug purposes only
     //XnnDescriptor[act_list_buffer] = XnnDescriptor[act_list_buffer].GetBufferOffset(descriptor.List->Indices);
     //XnnDescriptor[act_list_n_elems] = descriptor.List->IndicesCount;
-    throw GnaException{Gna2StatusXnnErrorLyrCfg};
+    throw GnaException{ Gna2StatusXnnErrorLyrCfg };
 }
 
 void HardwareLayer::saveCommonPart()
@@ -343,8 +342,8 @@ uint32_t HardwareLayerExt::calculateEffectiveInputSizeForAdl(const DescriptorPar
 
 HardwareLayerExt::HardwareLayerExt(const DescriptorParameters& parameters, const uint32_t iterationGrouping) :
     HardwareLayer(parameters),
-    bufferElementCount{parameters.XnnDescriptor.HwCapabilities.GetBufferElementCount(
-                        iterationGrouping, calculateEffectiveInputSizeForAdl(parameters))}
+    bufferElementCount{ parameters.XnnDescriptor.HwCapabilities.GetBufferElementCount(
+                        iterationGrouping, calculateEffectiveInputSizeForAdl(parameters)) }
 {
     Expect::InRange(iterationGrouping, ui32_1, XNN_N_GROUP_MAX, Gna2StatusXnnErrorGrouping);
     // Calculates number of iterations and elements in last iteration
@@ -360,9 +359,8 @@ HardwareLayerExt::HardwareLayerExt(const DescriptorParameters& parameters, const
 }
 
 HardwareLayerExt::HardwareLayerExt(const DescriptorParameters& parameters) :
-    HardwareLayerExt{parameters, parameters.SoftwareLayer.Input.Grouping}
-{
-}
+    HardwareLayerExt{ parameters, parameters.SoftwareLayer.Input.Grouping }
+{}
 
 void HardwareLayerExt::save()
 {
@@ -405,9 +403,9 @@ HardwareLayerAffDiagTrans::HardwareLayerAffDiagTrans(const DescriptorParameters&
     }
     case INTEL_INTERLEAVE:
     case INTEL_DEINTERLEAVE:
-    break;
+        break;
     default:
-    throw GnaException{Gna2StatusXnnErrorLyrOperation};
+        throw GnaException{ Gna2StatusXnnErrorLyrOperation };
     }
     save();
     saveActivation(act);
@@ -430,9 +428,9 @@ void HardwareLayerCopy::save()
 
 HardwareLayerRnn::HardwareLayerRnn(const DescriptorParameters& parameters) :
     HardwareLayerExt(parameters, IterationGroupingOne),
-    feedbackIterationsCount{0},
-    feedbackFirstIterElementCount{0},
-    feedbackLastIterElementCount{0}
+    feedbackIterationsCount{ 0 },
+    feedbackFirstIterElementCount{ 0 },
+    feedbackLastIterElementCount{ 0 }
 {
     const auto rnn = SoftwareLayer.Get<const RecurrentLayer>();
     convert();
@@ -512,11 +510,11 @@ HardwareLayerCnn::HardwareLayerCnn(const DescriptorParameters& parameters) :
         (std::min)(
             filterCount,
             (filterSize <= bufferElementCount / 6 / 3) ?
-            uint32_t{16} :
+            uint32_t{ 16 } :
             (filterSize <= bufferElementCount / 6 / 2) ?
-            uint32_t{12} :
+            uint32_t{ 12 } :
             (filterSize <= bufferElementCount / 6) ?
-            uint32_t{4} : uint32_t{0});
+            uint32_t{ 4 } : uint32_t{ 0 });
 
     Expect::InRange(filtersCountInFullIteration, CNN_N_FLT_COEFF_MPLY, CNN_N_FLT_ITER_MAX, Gna2StatusXnnErrorLyrCfg);
     Expect::MultiplicityOf(filtersCountInFullIteration, CNN_N_FLT_COEFF_MPLY);
@@ -622,8 +620,8 @@ uint32_t HardwareLayerCnn2D::GetPoolingMemorySize(DeviceVersion deviceVersion,
 
 HardwareLayerCnn2D::HardwareLayerCnn2D(const DescriptorParameters& parameters) :
     HardwareLayer(parameters),
-    cnn{SoftwareLayer.Get()->Transforms.Get<ConvolutionFunction2D>(ConvolutionalTransform2D)},
-    pooling{SoftwareLayer.Get()->Transforms.Get<PoolingFunction2D>(PoolingTransform2D)}
+    cnn{ SoftwareLayer.Get()->Transforms.Get<ConvolutionFunction2D>(ConvolutionalTransform2D) },
+    pooling{ SoftwareLayer.Get()->Transforms.Get<PoolingFunction2D>(PoolingTransform2D) }
 {
     uArchConfig = CalculateUArchConfig(parameters.XnnDescriptor.HwCapabilities.GetDeviceVersion(),
         cnn, pooling, SoftwareLayer.GetOutputTransform()->Output->Mode);
@@ -723,31 +721,35 @@ void HardwareLayerGmm::save()
     XnnDescriptor[op] = static_cast<uint8_t>(OperationsMap.at(SoftwareLayer.Operation));
     XnnDescriptor[gmm_descriptor] = XnnDescriptor.GmmDescriptor;
 
-    auto gmm = SoftwareLayer.Get<const GmmLayer>();
+    auto const gmmLayer = SoftwareLayer.Get<const GmmOperation>();
+    auto const gmm = gmmLayer->Transforms.Get<GmmFunction>(GmmTransform);
     // can be updated per request
-    XnnDescriptor[fvaddr] = gmm->Input;
-    XnnDescriptor[gmmscradd] = gmm->Output;
+    XnnDescriptor[fvaddr] = gmm->Input->Buffer;
+    XnnDescriptor[gmmscradd] = gmm->Output->Buffer;
 
     // GMM Model configuration, will be constant over time for model
-    XnnDescriptor[gmmscrlen] = GMM_SCORE_SIZE * gmm->Input.Dimensions.at('N') * gmm->Config.stateCount;; // will be updated when ActiveList is used
-    XnnDescriptor[fvoffset] = ALIGN64(gmm->Input.Dimensions.at('W') * GMM_FV_ELEMENT_SIZE);
+    // will be updated when ActiveList is used
+    XnnDescriptor[gmmscrlen] = GMM_SCORE_SIZE *
+        gmm->Input->at(GNA_DIM_H) * gmm->StateCount;
+    XnnDescriptor[fvoffset] = ALIGN64(gmm->Input->at(GNA_DIM_W) * GMM_FV_ELEMENT_SIZE);
 
-    XnnDescriptor[numfv] = gmm->Input.Dimensions.at('N');
-    XnnDescriptor[vlength] = gmm->Input.Dimensions.at('W');
+    XnnDescriptor[numfv] = gmm->Input->at(GNA_DIM_H);
+    XnnDescriptor[vlength] = gmm->Input->at(GNA_DIM_W);
 
-    XnnDescriptor[mode] = GmmModes.at(gmm->Config.mode)._value;
-    XnnDescriptor[gcaddr] = gmm->Data.gaussianConstants;
-    XnnDescriptor[mvaddr] = gmm->Data.meanValues;
-    XnnDescriptor[vvaddr] = gmm->Data.inverseCovariances.inverseCovariancesForMaxMix16;
+    XnnDescriptor[mode] = GmmModes.at(GNA_MAXMIX8)._value;
 
-    XnnDescriptor[gcsoffset] = gmm->Params.GaussConstSetOffsetSize;
-    XnnDescriptor[mvsoffset] = gmm->Params.MeanSetOffsetSize;
-    XnnDescriptor[vvsoffset] = gmm->Params.VarSetOffsetSize;
-    XnnDescriptor[vvwidth] = gmm->Params.VarianceSize;
-    XnnDescriptor[gmmtelst] = gmm->Config.mixtureComponentCount * gmm->Input.Dimensions.at('W');
-    XnnDescriptor[maxlsscore] = gmm->Config.maximumScore;
-    XnnDescriptor[numgmms] = gmm->Config.stateCount;
-    XnnDescriptor[nummcpg] = gmm->Config.mixtureComponentCount;
+    XnnDescriptor[gcaddr] = gmm->GaussianConstantBuffer;
+    XnnDescriptor[mvaddr] = gmm->MeanBuffer;
+    XnnDescriptor[vvaddr] = gmm->InverseCovarianceBuffer;
+
+    XnnDescriptor[gcsoffset] = gmm->GaussConstSetOffsetSize;
+    XnnDescriptor[mvsoffset] = gmm->MeanSetOffsetSize;
+    XnnDescriptor[vvsoffset] = gmm->VarSetOffsetSize;
+    XnnDescriptor[vvwidth] = gmm->InverseCovarianceSize;
+    XnnDescriptor[gmmtelst] = gmm->Means->at(GNA_DIM_W) * gmm->Input->at(GNA_DIM_W);
+    XnnDescriptor[maxlsscore] = gmm->MaximumScore;
+    XnnDescriptor[numgmms] = gmm->StateCount;
+    XnnDescriptor[nummcpg] = gmm->Means->at(GNA_DIM_W);
 
     XnnDescriptor[fvwidth] = GMM_FV_ELEMENT_SIZE;
     XnnDescriptor[gcwidth] = GMM_CONSTANTS_SIZE;

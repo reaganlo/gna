@@ -25,13 +25,16 @@
 
 #pragma once
 
+#include "KernelArguments.h"
+
 #include <stdint.h>
 
 struct GmmConfig;
 
-typedef void (*GmmMaxMix) (GmmConfig const * const gmmConfig);
+typedef void (*GmmMaxMix)(ExecutionKernelConfig<GmmConfig> const * const config);
 
-typedef void (*GmmMaxMixActiveList) (GmmConfig const * const gmmConfig, uint32_t const * const indices);
+typedef void (*GmmMaxMixActiveList)(
+        ExecutionKernelConfig<GmmConfig> const * const config, AffineConfigAl al);
 
 struct GmmKernel
 {

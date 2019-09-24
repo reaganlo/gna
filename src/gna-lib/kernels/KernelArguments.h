@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2018 Intel Corporation.
+ Copyright 2019 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -88,9 +88,27 @@ struct BaseConfig // TODO:3:revert to use ~BufferMap.Update
     BaseConfig() = default;
     BaseConfig(const BaseAddress& inputBuffer, const BaseAddress& outputBuffer);
 
+    bool SetBuffer(uint32_t operandIndex, const BaseAddress& buffer)
+    {
+        if (operandIndex > GNA::ScratchpadOperandKernelIndex)
+        {
+            return false;
+        }
+        Buffers[operandIndex] = buffer;
+        if (GNA::InputOperandIndex == operandIndex)
+        {
+            Inputs = buffer;
+        }
+        else if (GNA::OutputOperandIndex == operandIndex)
+        {
+            Outputs = buffer;
+        }
+        return  true;
+    }
+
     int8_t const * Inputs = nullptr;
     int8_t * Outputs = nullptr;
-    std::array<int8_t *, GNA::ScratchpadOperandKernelIndex> Buffers;
+    std::array<int8_t *, GNA::ScratchpadOperandKernelIndex + 1> Buffers;
 };
 
 template<typename TransformConfig>
@@ -189,6 +207,7 @@ struct AffineConfig
     uint32_t const bytesPerBias = 0;
 };
 
+//TODO:3:KJ:rename to ActiveListConfig
 struct AffineConfigAl
 {
     AffineConfigAl(uint32_t const * indicesIn, uint32_t const countIn);
@@ -292,22 +311,29 @@ struct ConvolutionConfig
 
 struct GmmConfig
 {
-    GmmConfig(GmmConfig const * const source, const uint8_t *inputScratchPadIn);
     GmmConfig(uint32_t const inputVectorCountIn, uint32_t const inputElementCountIn, uint32_t const mixCountIn,
         uint32_t const meanSetOffsetSizeIn, uint32_t const varSetOffsetSizeIn, uint32_t const gaussConstSetOffsetSizeIn,
-        uint32_t const maxScoreIn, uint32_t const stateCountIn, gna_gmm_data const * const dataIn,
-        uint8_t const * const inputIn, uint32_t * const outputIn);
+        uint32_t const maxScoreIn, uint32_t const stateCountIn,
+        uint8_t const * means, uint8_t const * vars, uint32_t const * gconst);
 
-    uint32_t const inputVectorCount;
-    uint32_t const inputElementCount;
-    uint32_t const mixtureComponentCount;
-    uint32_t const meanSetOffsetSize;
-    uint32_t const varSetOffsetSize;
-    uint32_t const gaussConstSetOffsetSize;
-    uint32_t const maximumScore;
-    uint32_t stateCount;
-    gna_gmm_data const * const data;
-    uint8_t const * input;
-    uint8_t const * inputScratchPad;
-    uint32_t * output;
+    uint32_t const InputVectorCount;
+    uint32_t const InputElementCount;
+    uint32_t const InputElementOffset;
+    uint32_t const MixtureCount;
+    uint32_t const MeanSetOffsetSize;
+    uint32_t const VarSetOffsetSize;
+    uint32_t const GaussConstSetOffsetSize;
+    uint32_t const MaxScore;
+    uint32_t StateCount;
+
+    uint8_t const * Means;
+    union
+    {
+        uint8_t const * Vars;
+        uint16_t const * Vars16;
+    };
+    uint32_t const * Gconst;
+
+    uint8_t const * Input;
+    uint32_t * Output;
 };

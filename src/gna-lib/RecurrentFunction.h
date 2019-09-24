@@ -91,7 +91,7 @@ private:
     static const std::map<Gna2OperationType, kernel_op> kernelOperationMap;
 
     virtual void UpdateConfigBuffers(
-            std::unique_ptr<BaseConfig> configs[],
+            std::unique_ptr<BaseConfig> configs[TransformOperationCount],
             const BufferMap& buffers) const override;
 
     const uint32_t FeedbackDelay;

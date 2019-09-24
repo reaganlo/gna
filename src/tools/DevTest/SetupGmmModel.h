@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2017 Intel Corporation.
+ Copyright 2019 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -33,17 +33,17 @@ class SetupGmmModel : public IModelSetup
 public:
     SetupGmmModel(DeviceController & deviceCtrl, bool activeListEn);
 
-    ~SetupGmmModel();
+    virtual ~SetupGmmModel();
 
     void checkReferenceOutput(uint32_t modelIndex, uint32_t configIndex) const override;
 
 private:
-    void sampleGmmLayer(intel_nnet_type_t& hNnet);
+    void sampleGmmLayer();
 
     DeviceController & deviceController;
 
     bool activeListEnabled;
-    uint32_t indicesCount;
+    static const uint32_t indicesCount = 4;
     uint32_t* indices;
 
     void * inputBuffer = nullptr;
@@ -52,54 +52,57 @@ private:
 
     static const int groupingNum = 1;
     static const int inVecSz = 32;
-    static const int inVecSzRow = 2;
-    static const int outVecSzAl = 4;
+    static const uint32_t gmmStates = outVecSz;
+    static const uint32_t mixtures = 1;
 
 
-    int16_t variance[outVecSzAl * inVecSz] =
-    {                                          // sample weight matrix (8 rows, 16 cols)
-        1, 1, 1, 1,1, 1, 1, 1,1, 1, 1, 1,1, 1, 1, 1,1, 1, 1, 1,1, 1, 1, 1,1, 1, 1, 1,1, 1, 1, 1,
-        1, 1, 1, 1,1, 1, 1, 1,1, 1, 1, 1,1, 1, 1, 1,1, 1, 1, 1,1, 1, 1, 1,1, 1, 1, 1,1, 1, 1, 1,
-        1, 1, 1, 1,1, 1, 1, 1,1, 1, 1, 1,1, 1, 1, 1,1, 1, 1, 1,1, 1, 1, 1,1, 1, 1, 1,1, 1, 1, 1,
-        1, 1, 1, 1,1, 1, 1, 1,1, 1, 1, 1,1, 1, 1, 1,1, 1, 1, 1,1, 1, 1, 1,1, 1, 1, 1,1, 1, 1, 1,
-    };
-
-    uint8_t feature_vector[inVecSzRow * inVecSz] =
+    uint8_t variance[gmmStates * mixtures * inVecSz] =
     {
         1, 1, 1, 1,1, 1, 1, 1,1, 1, 1, 1,1, 1, 1, 1,1, 1, 1, 1,1, 1, 1, 1,1, 1, 1, 1,1, 1, 1, 1,
         1, 1, 1, 1,1, 1, 1, 1,1, 1, 1, 1,1, 1, 1, 1,1, 1, 1, 1,1, 1, 1, 1,1, 1, 1, 1,1, 1, 1, 1,
-
-    };
-
-    int32_t Gconst[inVecSz] =
-    {      // sample bias vector, will get added to each of the four output vectors
+        1, 1, 1, 1,1, 1, 1, 1,1, 1, 1, 1,1, 1, 1, 1,1, 1, 1, 1,1, 1, 1, 1,1, 1, 1, 1,1, 1, 1, 1,
+        1, 1, 1, 1,1, 1, 1, 1,1, 1, 1, 1,1, 1, 1, 1,1, 1, 1, 1,1, 1, 1, 1,1, 1, 1, 1,1, 1, 1, 1,
+        1, 1, 1, 1,1, 1, 1, 1,1, 1, 1, 1,1, 1, 1, 1,1, 1, 1, 1,1, 1, 1, 1,1, 1, 1, 1,1, 1, 1, 1,
+        1, 1, 1, 1,1, 1, 1, 1,1, 1, 1, 1,1, 1, 1, 1,1, 1, 1, 1,1, 1, 1, 1,1, 1, 1, 1,1, 1, 1, 1,
+        1, 1, 1, 1,1, 1, 1, 1,1, 1, 1, 1,1, 1, 1, 1,1, 1, 1, 1,1, 1, 1, 1,1, 1, 1, 1,1, 1, 1, 1,
         1, 1, 1, 1,1, 1, 1, 1,1, 1, 1, 1,1, 1, 1, 1,1, 1, 1, 1,1, 1, 1, 1,1, 1, 1, 1,1, 1, 1, 1,
     };
 
-    const uint32_t alIndices[outVecSzAl]
+    uint8_t feature_vector[groupingNum * inVecSz] =
+    {
+        1, 1, 1, 1,1, 1, 1, 1,1, 1, 1, 1,1, 1, 1, 1,1, 1, 1, 1,1, 1, 1, 1,1, 1, 1, 1,1, 1, 1, 1,
+    };
+
+    uint32_t Gconst[gmmStates * mixtures * 2] =
+    {
+        2, 0, 2, 0, 2, 0, 2, 0, // zeros are 8B padding
+        4, 0, 4, 0, 4, 0, 4, 0,
+    };
+
+    const uint32_t alIndices[indicesCount]
     {
         0, 2, 4, 7
     };
 
-    const int32_t ref_output_[outVecSz * groupingNum] =
+    const uint32_t ref_output_[gmmStates * groupingNum] =
     {
-        1, 1, 1, 1, 1, 1, 1, 1,
+        2, 2, 2, 2, 4, 4, 4, 4,
     };
 
-    const int32_t ref_output_Al[outVecSzAl * groupingNum] =
+    const uint32_t ref_output_Al[indicesCount * groupingNum] =
     {
-        1, 1, 1, 1
+        2, 2, 4, 4,
     };
 
     static const uint8_t numberOfGmmModels = 2;
 
     std::array<unsigned int, numberOfGmmModels> refSize
-    {{
-        sizeof(ref_output_) / sizeof(int32_t),
-        sizeof(ref_output_Al) / sizeof(int32_t)
-    }};
+    { {
+        sizeof(ref_output_) / sizeof(uint32_t),
+        sizeof(ref_output_Al) / sizeof(uint32_t)
+    } };
 
-    const int32_t* refOutputAssign[numberOfGmmModels] =
+    const uint32_t* refOutputAssign[numberOfGmmModels] =
     {
         ref_output_,
         ref_output_Al,

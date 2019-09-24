@@ -129,6 +129,7 @@ typedef enum _tensor_order
     GNA_TENSOR_ORDER_ANY = -1,  // ordering as in gna_tensor_dim beginning with GNA_DIM_N
     GNA_TENSOR_NHW = 4097,     // Temporary value for Bias Shape
     GNA_TENSOR_N = 3,     // Temporary value for Bias Shape
+    GNA_TENSOR_HWD = 513,
 
     // TODO:3:change to char tensor_format[16?] and implement ~~ uint32 tensor_format.Value...
 

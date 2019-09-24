@@ -143,10 +143,10 @@ const FullCapabilitiesMap LayerOutput::capabilities =
     }},
     {INTEL_GMM, {
         {GMM_DEVICE, std::make_shared<TensorLimits>(TensorLimits{
-            {GNA_TENSOR_HN}, // H - GMM States, N - grouping
-            {{GNA_DIM_N, {1, XNN_N_GROUP_MAX, 1, Gna2StatusXnnErrorOutputVolume}},
+            {GNA_TENSOR_HW}, // H - GMM States, W - grouping
+            {{GNA_DIM_W, {1, XNN_N_GROUP_MAX, 1, Gna2StatusXnnErrorOutputVolume}},
              {GNA_DIM_H, {1, GMM_STATES_COUNT_MAX, 1, Gna2StatusXnnErrorOutputVolume}}},
-            { { GNA_INT32, GNA_DATA_ACTIVATION_DISABLED }, Gna2StatusXnnErrorOutputBytes }})}
+            { { GNA_UINT32, GNA_DATA_ACTIVATION_DISABLED }, Gna2StatusXnnErrorOutputBytes }})}
     }},
     {INTEL_INTERLEAVE, {
         { GNA_0_9, std::make_shared<TensorLimits>(_InterleaveTensorLimitsGen0_9) },
@@ -262,6 +262,8 @@ std::pair<uint32_t, uint32_t> LayerOutput::getGroupingAndElements(
         }
         throw GnaException(Gna2StatusXnnErrorLyrCfg);
     }
+    case Gna2OperationTypeGmm:
+        return {Dimensions.at('W'), Dimensions.at('H')};
     default:
         return Tensor::getGroupingAndElements(operation, validatorIn);
     }

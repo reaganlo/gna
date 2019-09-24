@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2018 Intel Corporation.
+ Copyright 2019 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -32,8 +32,9 @@
 #include <utility>
 
 BaseConfig::BaseConfig(const BaseAddress& inputBuffer, const BaseAddress& outputBuffer) :
-    Inputs{inputBuffer},
-    Outputs{outputBuffer}
+    Inputs{ inputBuffer },
+    Outputs{ outputBuffer },
+    Buffers{ inputBuffer, outputBuffer }
 {
 }
 
@@ -205,27 +206,23 @@ ConvolutionConfig::ConvolutionConfig(uint32_t const inputBandStrideIn,
     execution{nullptr}
 {}
 
-GmmConfig::GmmConfig(GmmConfig const * const source, const uint8_t *inputScratchPadIn) :
-    GmmConfig{*source}
-{
-    inputScratchPad = inputScratchPadIn;
-}
-
 GmmConfig::GmmConfig(uint32_t const inputVectorCountIn, uint32_t const inputElementCountIn,
     uint32_t const mixCountIn, uint32_t const meanSetOffsetSizeIn,
     uint32_t const varSetOffsetSizeIn, uint32_t const gaussConstSetOffsetSizeIn,
-    uint32_t const maxScoreIn, uint32_t const stateCountIn, gna_gmm_data const * const dataIn,
-    uint8_t const * const inputIn, uint32_t * const outputIn) :
-    inputVectorCount{inputVectorCountIn},
-    inputElementCount{inputElementCountIn},
-    mixtureComponentCount{mixCountIn},
-    meanSetOffsetSize{meanSetOffsetSizeIn},
-    varSetOffsetSize{varSetOffsetSizeIn},
-    gaussConstSetOffsetSize{gaussConstSetOffsetSizeIn},
-    maximumScore{maxScoreIn},
-    stateCount{stateCountIn},
-    data{dataIn},
-    input{inputIn},
-    inputScratchPad{nullptr},
-    output{outputIn}
+    uint32_t const maxScoreIn, uint32_t const stateCountIn,
+    uint8_t const * means, uint8_t const * vars, uint32_t const * gconst) :
+    InputVectorCount{ inputVectorCountIn },
+    InputElementCount{ inputElementCountIn },
+    InputElementOffset(ALIGN64(InputElementCount)),
+    MixtureCount{ mixCountIn },
+    MeanSetOffsetSize{ meanSetOffsetSizeIn },
+    VarSetOffsetSize{ varSetOffsetSizeIn },
+    GaussConstSetOffsetSize{ gaussConstSetOffsetSizeIn },
+    MaxScore{ maxScoreIn },
+    StateCount{ stateCountIn },
+    Means{ means },
+    Vars{ vars },
+    Gconst{ gconst },
+    Input{ nullptr },
+    Output{ nullptr }
 {}

@@ -49,18 +49,17 @@ class ActivationFunction : public Transform<ActivationConfig, ActivationKernel>
 public:
     static std::unique_ptr<ActivationFunction> Create(const TransformFactoryConfig& config);
 
-    void UpdateActiveOutputCount(std::unique_ptr<BaseConfig> configs[], uint32_t outputCount) const
-    {
-        auto config = GetConfig(configs);
-        config->Transform.ElementCount = outputCount;
-    }
+    void UpdateActiveOutputCount(std::unique_ptr<BaseConfig> configs[TransformOperationCount],
+        uint32_t outputCount) const;
 
     ActivationFunction(const BaseTransformConfig<ActivationKernel>& config,
-                        DataMode mode, std::unique_ptr<Tensor> pwl);
+        DataMode mode, std::unique_ptr<Tensor> pwl);
     ActivationFunction() = delete;
     virtual ~ActivationFunction() = default;
 
     virtual Tensor const & GetOperand(uint32_t operandIndex) const override;
+
+    void ValidateActiveList(ActiveList const & activeList) const override;
 
     std::unique_ptr<Tensor> Segments;
     PwlCached const Pwl;

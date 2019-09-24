@@ -466,7 +466,7 @@ TEST_F(TestGnaModelApi, Gna2ModelReleaseInvalidIdentifier)
 }
 
 
-TEST_F(TestGnaModelApi, DISABLED_Gna2ModelCreateSingleGMMSuccesfull)
+TEST_F(TestGnaModelApi, Gna2ModelCreateSingleGMMSuccesfull)
 {
     uint32_t modelId = 0;
     uint32_t const batchSize = 1;
@@ -479,13 +479,13 @@ TEST_F(TestGnaModelApi, DISABLED_Gna2ModelCreateSingleGMMSuccesfull)
         Gna2Shape{2, { batchSize, featureVectorLength } },  // HW
         Gna2TensorModeDefault,
         {'\0'},
-        Gna2DataTypeInt8,
+        Gna2DataTypeUint8,
         nullptr };
     Gna2Tensor output{
-        Gna2Shape{2, { batchSize, gmmStates } },  // HW
+        Gna2Shape{2, { gmmStates, batchSize } },  // HW
         Gna2TensorModeDefault,
         {'\0'},
-        Gna2DataTypeInt32,
+        Gna2DataTypeUint32,
         nullptr };
     Gna2Tensor means{
         dataShape,
@@ -500,7 +500,7 @@ TEST_F(TestGnaModelApi, DISABLED_Gna2ModelCreateSingleGMMSuccesfull)
         Gna2DataTypeUint8,
         nullptr };
     Gna2Tensor constants{
-        Gna2Shape{2, { gmmStates, mixtures }},  //WH
+        Gna2Shape{2, { gmmStates, Gna2RoundUp(mixtures, 2) }},  //HW
         Gna2TensorModeDefault,
         {'\0'},
         Gna2DataTypeUint32,

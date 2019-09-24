@@ -59,6 +59,19 @@ public:
 
     bool HasGroupedBias() const;
 
+    Gna2Tensor GetOperand(uint32_t index) const;
+
+    template<typename T>
+    T GetParameterAs(uint32_t index) const
+    {
+        Expect::NotNull(Operation);
+        if (IsParameterAvailable(*Operation, index))
+        {
+            return *static_cast<T*> (Operation->Parameters[index]);
+        }
+        throw GnaException(Gna2StatusModelConfigurationInvalid);
+    }
+
     Gna2OperationType OperationType;
     Gna2Tensor WeightsTensor;
     Gna2Tensor FiltersTensor;
@@ -73,6 +86,8 @@ public:
 
     Gna2Tensor WeightScalesTensor;
     uint32_t BiasVectorIndex;
+
+    Gna2Operation const * const Operation;
 
 protected:
     template<class T>
@@ -99,7 +114,7 @@ protected:
             ConvolutionStride = GetStride(operation);
             ZeroPadding = GetZeroPadding(operation);
             BiasMode = GetBiasMode(operation);
-            if(hasPooling(operation))
+            if (hasPooling(operation))
             {
                 InitPooling(operation);
             }

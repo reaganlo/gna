@@ -237,6 +237,12 @@ AffineFunctionSingle::AffineFunctionSingle(
             BaseConfig { Input->Buffer, Output->Buffer });
 }
 
+void AffineFunctionSingle::ValidateActiveList(ActiveList const& activeList) const
+{
+    Expect::InRange(activeList.IndicesCount,
+        ui32_1, Output->at(GNA_DIM_H), Gna2StatusActiveListIndicesInvalid);
+}
+
 void AffineFunctionSingle::Compute(AccelerationMode accel,
     LayerConfiguration const * layerConfiguration, ExecutionConfig const & execution) const
 {

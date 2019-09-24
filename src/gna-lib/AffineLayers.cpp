@@ -93,11 +93,6 @@ void AffineLayer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration) co
     auto activation = Transforms.Get<ActivationFunction>(ActivationTransform);
     if (activation)
     {
-        if (layerConfiguration.ActList)
-        {
-            Expect::InRange(layerConfiguration.ActList->IndicesCount,
-                ui32_1, Output.Dimensions.at('H'), Gna2StatusActiveListIndicesInvalid);
-        }
         auto const outputCount = layerConfiguration.ActList ?
             layerConfiguration.ActList->IndicesCount : Output.Dimensions.at('H');
         activation->UpdateActiveOutputCount(layerConfiguration.ConfigList,

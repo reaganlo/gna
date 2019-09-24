@@ -679,7 +679,7 @@ AccelerationDetector::Kernels = {
     { KERNEL_GMM,
     {
         {
-            { GNA_INT16, GNA_INT8, GNA_BIAS_MODE_1_2_4B },
+            { GNA_UINT8, GNA_UINT8, GNA_UINT32 },
             {
                 { { GNA_GEN_SAT },{ reinterpret_cast<VoidKernel>(gmmKernel_generic.gmmMaxMix8) } },
                 { { GNA_GEN_FAST },{ reinterpret_cast<VoidKernel>(gmmKernel_generic.gmmMaxMix8) } },
@@ -693,7 +693,7 @@ AccelerationDetector::Kernels = {
             }
         },
         {
-            { GNA_INT16, GNA_INT16, GNA_BIAS_MODE_1_2_4B },
+            { GNA_UINT8, GNA_UINT16, GNA_UINT32 },
             {
                 { { GNA_GEN_SAT },{ reinterpret_cast<VoidKernel>(gmmKernel_generic.gmmMaxMix16) } },
                 { { GNA_GEN_FAST },{ reinterpret_cast<VoidKernel>(gmmKernel_generic.gmmMaxMix16) } },
@@ -711,7 +711,7 @@ AccelerationDetector::Kernels = {
     { KERNEL_GMM_AL,
     {
         {
-            { GNA_INT16, GNA_INT8, GNA_BIAS_MODE_1_2_4B },
+            { GNA_UINT8, GNA_UINT8, GNA_UINT32 },
             {
                 { { GNA_GEN_SAT },{ reinterpret_cast<VoidKernel>(gmmKernel_generic.gmmMaxMix8ActiveList) } },
                 { { GNA_GEN_FAST },{ reinterpret_cast<VoidKernel>(gmmKernel_generic.gmmMaxMix8ActiveList) } },
@@ -725,7 +725,7 @@ AccelerationDetector::Kernels = {
             }
         },
         {
-            { GNA_INT16, GNA_INT16, GNA_BIAS_MODE_1_2_4B },
+            { GNA_UINT8, GNA_UINT16, GNA_UINT32 },
             {
                 { { GNA_GEN_SAT },{ reinterpret_cast<VoidKernel>(gmmKernel_generic.gmmMaxMix16ActiveList) } },
                 { { GNA_GEN_FAST },{ reinterpret_cast<VoidKernel>(gmmKernel_generic.gmmMaxMix16ActiveList) } },

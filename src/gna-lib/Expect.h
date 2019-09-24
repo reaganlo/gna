@@ -105,6 +105,13 @@ public:
         True(nullptr == pointer, Gna2StatusNullArgumentRequired);
     }
 
+    // If pointer is nullptr prints error status code and throws exception.
+    template<typename T>
+    inline static void NotNull(std::unique_ptr<T> const & pointer)
+    {
+        True(pointer.operator bool(), Gna2StatusNullArgumentNotAllowed);
+    }
+
     // If pointer is not aligned to alignment prints error status code and throws exception.
     inline static void AlignedTo(const void* pointer, const AlignLimits& alignLimits)
     {

@@ -37,9 +37,11 @@ SetupGmmModel::SetupGmmModel(DeviceController & deviceCtrl, bool activeListEn)
     : deviceController{deviceCtrl},
       activeListEnabled{activeListEn}
 {
-    sampleGmmLayer(nnet);
+    memset(&nnet, 0, sizeof(nnet));
+    memset(&model, 0, sizeof(model));
+    sampleGmmLayer();
 
-    deviceController.ModelCreate(&nnet, &modelId);
+    deviceController.ModelCreate(&model, &modelId);
 
     configId = deviceController.ConfigAdd(modelId);
 
@@ -55,8 +57,26 @@ SetupGmmModel::SetupGmmModel(DeviceController & deviceCtrl, bool activeListEn)
 SetupGmmModel::~SetupGmmModel()
 {
     deviceController.Free(memory);
-    free(nnet.pLayers->pLayerStruct);
-    free(nnet.pLayers);
+    if (nnet.pLayers)
+    {
+        if(nnet.pLayers->pLayerStruct)
+        {
+            free(nnet.pLayers->pLayerStruct);
+        }
+        free(nnet.pLayers);
+    }
+    if (operations)
+    {
+        free(operations);
+    }
+    if (tensors)
+    {
+        free(tensors);
+    }
+    if (parameters)
+    {
+        free(parameters);
+    }
 
     deviceController.ModelRelease(modelId);
 }
@@ -64,11 +84,11 @@ SetupGmmModel::~SetupGmmModel()
 void SetupGmmModel::checkReferenceOutput(uint32_t modelIndex, uint32_t configIndex) const
 {
     UNREFERENCED_PARAMETER(modelIndex);
-    unsigned int ref_output_size = refSize[configIndex];
-    const int32_t* ref_output = refOutputAssign[configIndex];
+    auto const ref_output_size = refSize[configIndex];
+    const auto * const ref_output = refOutputAssign[configIndex];
     for (unsigned int i = 0; i < ref_output_size; ++i)
     {
-        int32_t outElemVal = static_cast<const int32_t*>(outputBuffer)[i];
+        auto const outElemVal = static_cast<const uint32_t*>(outputBuffer)[i];
         if (ref_output[i] != outElemVal)
         {
             // TODO: how it should notified? return or throw
@@ -77,82 +97,80 @@ void SetupGmmModel::checkReferenceOutput(uint32_t modelIndex, uint32_t configInd
     }
 }
 
-
-void SetupGmmModel::sampleGmmLayer(intel_nnet_type_t& hNnet)
+void SetupGmmModel::sampleGmmLayer()
 {
-    hNnet.nGroup = groupingNum;
-    hNnet.nLayers = layersNum;
-    hNnet.pLayers = (intel_nnet_layer_t*)calloc(nnet.nLayers, sizeof(intel_nnet_layer_t));
+    uint32_t const batchSize = groupingNum;
+    uint32_t const featureVectorLength = inVecSz;
+    auto const dataShape = Gna2Shape{3, { gmmStates, mixtures, featureVectorLength }};  //WHD
 
-    uint32_t stateCount = 8;
-    const int elementSize = sizeof(int32_t);
+    auto const buf_size_weights = ALIGN64(sizeof(variance)); // note that buffer alignment to 64-bytes is required by GNA HW
+    auto const buf_size_inputs = ALIGN64(sizeof(feature_vector));
+    auto const buf_size_biases = ALIGN64(sizeof(Gconst));
+    auto const buf_size_outputs = ALIGN64(sizeof(ref_output_));
+    auto const indicesSize = static_cast<uint32_t>(indicesCount * sizeof(uint32_t));
 
-    uint32_t buf_size_weights = ALIGN64(sizeof(variance)); // note that buffer alignment to 64-bytes is required by GNA HW
-    uint32_t buf_size_inputs = ALIGN64(sizeof(feature_vector));
-    uint32_t buf_size_biases = ALIGN64(sizeof(Gconst));
-    uint32_t buf_size_outputs = ALIGN64(outVecSz * elementSize);
-    uint32_t buf_size_tmp_outputs = ALIGN64(outVecSz * elementSize);
-
-                                                              // prepare params for GNAAlloc
-    uint32_t bytes_requested = buf_size_weights + buf_size_inputs + buf_size_biases + buf_size_outputs + buf_size_tmp_outputs;
+    uint32_t bytes_requested = buf_size_weights + buf_size_inputs + buf_size_biases + buf_size_outputs;
     if (activeListEnabled)
     {
-        indicesCount = stateCount / 2;
-        uint32_t buf_size_indices = static_cast<uint32_t>(indicesCount * sizeof(uint32_t));
-        bytes_requested += buf_size_indices;
+        bytes_requested += indicesSize;
     }
     uint32_t bytes_granted;
 
     // call GNAAlloc (obtains pinned memory shared with the device)
     memory = deviceController.Alloc(bytes_requested, &bytes_granted);
-    uint8_t* pinned_mem_ptr = static_cast<uint8_t*>(memory);
+    auto * pinned_mem_ptr = static_cast<uint8_t*>(memory);
+    memset(pinned_mem_ptr, 0, bytes_granted);
 
-    int16_t *pinned_weights = (int16_t*)pinned_mem_ptr;
+    auto * const pinned_weights = pinned_mem_ptr;
     memcpy(pinned_weights, variance, sizeof(variance));   // puts the weights into the pinned memory
     pinned_mem_ptr += buf_size_weights;                 // fast-forwards current pinned memory pointer to the next free block
 
-    inputBuffer = (int16_t*)pinned_mem_ptr;
+    inputBuffer = pinned_mem_ptr;
     memcpy(inputBuffer, feature_vector, sizeof(feature_vector));      // puts the inputs into the pinned memory
     pinned_mem_ptr += buf_size_inputs;                  // fast-forwards current pinned memory pointer to the next free block
 
-    int32_t *pinned_biases = (int32_t*)pinned_mem_ptr;
+    auto * const pinned_biases = pinned_mem_ptr;
     memcpy(pinned_biases, Gconst, sizeof(Gconst));      // puts the biases into the pinned memory
     pinned_mem_ptr += buf_size_biases;                  // fast-forwards current pinned memory pointer to the next free block
 
-    outputBuffer = ((int16_t*)pinned_mem_ptr) + 32;
+    outputBuffer = pinned_mem_ptr;
     pinned_mem_ptr += buf_size_outputs;                 // fast-forwards the current pinned memory pointer by the space needed for outputs
-
-    pinned_mem_ptr += buf_size_tmp_outputs;
 
     if (activeListEnabled)
     {
-        size_t indicesSize = indicesCount * sizeof(uint32_t);
         indices = (uint32_t*)pinned_mem_ptr;
         memcpy(indices, alIndices, indicesSize);
+        pinned_mem_ptr += indicesSize;
     }
 
-    gna_gmm_layer *gmm = (gna_gmm_layer*)calloc(1, sizeof(gna_gmm_layer));
-    gmm->data.gaussianConstants = (uint32_t*)pinned_biases;
-    gmm->data.inverseCovariances.inverseCovariancesForMaxMix16 = (uint16_t*)pinned_weights;
-    gmm->data.meanValues = (uint8_t*)pinned_weights;
-    gmm->config.layout = GMM_LAYOUT_FLAT;
-    gmm->config.maximumScore = UINT32_MAX;
-    gmm->config.mixtureComponentCount = 1;
-    //gmm->config.mode = GNA_MAXMIX16;
-    gmm->config.mode = GNA_MAXMIX8;
-    gmm->config.stateCount = stateCount;
+    operations = static_cast<Gna2Operation*>(calloc(1, sizeof(Gna2Operation)));
+    tensors = static_cast<Gna2Tensor*>(calloc(5, sizeof(Gna2Tensor)));
 
-    hNnet.pLayers[0].nInputColumns = inVecSz;
-    hNnet.pLayers[0].nInputRows = hNnet.nGroup;
-    hNnet.pLayers[0].nOutputColumns = outVecSz;
-    hNnet.pLayers[0].nOutputRows = hNnet.nGroup;
-    hNnet.pLayers[0].nBytesPerInput = GNA_INT8;
-    hNnet.pLayers[0].nBytesPerOutput = GNA_INT32;             // 4 bytes since we are not using PWL (would be 2 bytes otherwise)
-    hNnet.pLayers[0].nBytesPerIntermediateOutput = GNA_INT32; // this is always 4 bytes
-    hNnet.pLayers[0].mode = INTEL_INPUT_OUTPUT;
-    hNnet.pLayers[0].operation = INTEL_GMM;
-    hNnet.pLayers[0].pLayerStruct = gmm;
-    hNnet.pLayers[0].pInputs = nullptr;
-    hNnet.pLayers[0].pOutputsIntermediate = nullptr;
-    hNnet.pLayers[0].pOutputs = nullptr;
+    tensors[0] = Gna2TensorInit2D(batchSize, featureVectorLength,
+        Gna2DataTypeUint8, nullptr);
+    tensors[1] = Gna2TensorInit2D(gmmStates, batchSize,
+        Gna2DataTypeUint32, nullptr);
+    tensors[2] = Gna2TensorInit3D(dataShape.Dimensions[0],
+        dataShape.Dimensions[1], dataShape.Dimensions[2],
+        Gna2DataTypeUint8,
+        pinned_weights);
+    tensors[3] = Gna2TensorInit3D(dataShape.Dimensions[0],
+        dataShape.Dimensions[1], dataShape.Dimensions[2],
+        Gna2DataTypeUint8,
+        pinned_weights);
+    tensors[4] = Gna2TensorInit2D(dataShape.Dimensions[0],
+            Gna2RoundUp(dataShape.Dimensions[1], 2),
+            Gna2DataTypeUint32,
+            pinned_biases);
+    
+    parameters = calloc(1, sizeof(uint32_t));
+    auto const maxScore = static_cast<uint32_t*>(parameters);
+    *maxScore = UINT32_MAX;
+
+    Gna2OperationInitGmm(operations, &Allocator,
+        &tensors[0], &tensors[1],
+        &tensors[2], &tensors[3], &tensors[4],
+        maxScore);
+
+    model = { 1, operations };
 }

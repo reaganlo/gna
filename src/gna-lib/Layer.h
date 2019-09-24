@@ -32,11 +32,11 @@
 #include "DeviceLayerSupport.h"
 #include "LayerInput.h"
 #include "LayerOutput.h"
+#include "Transform.h"
 #include "TransformMap.h"
 
 #include "Address.h"
 #include "KernelArguments.h"
-#include "Transform.h"
 #include "Validator.h"
 
 #include "common.h"
@@ -48,6 +48,8 @@
 
 namespace GNA
 {
+
+class BufferMap;
 struct LayerConfiguration;
 
 class AbstractOperation
@@ -118,7 +120,7 @@ public:
     }
 
     // verifies and stores info if layer has ADL bug workaround needed
-    void VerifyHas1BInputAnd2BWeight();
+    virtual void VerifyHas1BInputAnd2BWeight();
 
 protected:
     std::unique_ptr<const LayerValidator> validator;
@@ -158,25 +160,16 @@ protected:
     void initComputeFunctions();
 
     void compute(const LayerConfiguration* layerConfiguration,
-        AccelerationMode accel, ExecutionConfig const & execution) const
-    {
-        for (const auto& transform : Transforms)
-        {
-            if (transform)
-            {
-                transform->Compute(accel, layerConfiguration, execution);
-            }
-        }
-    }
+        AccelerationMode accel, ExecutionConfig const & execution) const;
 
     Tensor const & getTransformOperand(TransformOperation operation, uint32_t operandIndex) const;
+
+    BaseTransform const * inputTransform = nullptr;
+    BaseTransform * outputTransform = nullptr;
 
 private:
     void addBufferAs(const BufferMap& source, uint32_t sourceType,
         BufferMap& destination, uint32_t destinationType) const;
-
-    BaseTransform const * inputTransform = nullptr;
-    BaseTransform * outputTransform = nullptr;
 
     // defines layer as ADL bug workaround enabled
     bool has1BInputAnd2BWeight = false;

@@ -397,11 +397,24 @@ enum Gna2OperationType
     Operands:
     a) "flat" layout:
         1. inputs [required]:
-           @see ::Gna2OperationTypeCopy input operand.
-           - W shape dimension represents number of features here.
+            Specifies input tensor.
+            Each input (feature) vector must be padded to the next 64B.
+            Supported values:
+                - Mode: {::Gna2TensorModeDefault}
+                - Type: {::Gna2DataTypeUint8},
+                - Layout: Default: [H x W] Row-major, (aka flat),
+                - Shape: [H x W] 2D matrix, where:
+                    - H is a number of vectors (aka batch size),
+                    - W is a number of elements (features) of input vector
         2. outputs [required]:
-            @see ::Gna2OperationTypeCopy output operand.
-           - W shape dimension represents number of GMM states here.
+            Specifies output score tensor.
+            Supported values:
+                - Mode: {::Gna2TensorModeDefault}
+                - Type: {::Gna2DataTypeUint32},
+                - Layout: Default: [H x W] Row-major, (aka interleaved),
+                - Shape: [H x W] 2D matrix, where:
+                    - H is a number of GMM states
+                    - W is a number of vectors (aka batch size),
         3. means [required]:
             Specifies mean data tensor.
             Data pointer has to be 8B aligned.
@@ -422,11 +435,15 @@ enum Gna2OperationType
         5. constants [required]:
             Specifies gaussian constants data tensor.
             Data pointer has to be 8B aligned.
+            Constants for each GMM state has to be zero-padded to 8B in case W dimension
+            (number of mixtures) is odd.
             Supported values:
                 - Mode: {::Gna2TensorModeDefault}
                 - Type: {::Gna2DataTypeUint32},
-                - Shape and Layout: [H x W] 3D tensor, where:
-                    - H and W same as in means
+                - Shape and Layout: [H x W'] 2D tensor, where:
+                    - H same as in means
+                    - W' is a number of mixtures, as in means, dividable by 2
+                        to accomodate 8B zer-padding.
     b) "interleaved" layout:
         1. inputs [required]:
             Same as in Operands a.
@@ -435,15 +452,16 @@ enum Gna2OperationType
         3. interleaved [required]:
             Specifies data tensor with interleaved mean, inverse covariances and gaussian constants data
             for optimized memory bandwidth usage and performance.
+            Type specifies type of inverseCovariances.
             Supported values:
                 - Mode: {::Gna2TensorModeDefault}
-                - Type: {::Gna2DataTypeNone},
+                - Type: {::Gna2DataTypeUint8, ::Gna2DataTypeUint16},
                 - Shape: [H x W x D], same as in Operands a. means,
-                - Physical data layout: [H x ((W x D) + (W x D) + W)] :
+                - Physical data layout: [H x ((W x D) + (W x D) + W')] :
                     - For each GMM state [H]:
                         - means for each mixture and feature [W x D],
                         - inverseCovariances for each mixture and feature [W x D],
-                        - constants for each mixture [W],
+                        - constants for each mixture [W'], padded to 8B, @see constants operand a-5,
                         - @note each interleaved data tensor has to be 8B aligned,
 
     Parameters:

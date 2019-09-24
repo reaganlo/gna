@@ -94,14 +94,17 @@ struct BaseTransformConfig
     const BaseAddress& outputBuffer; // transform output buffer, usually layer intermediate buffer
     const LayerValidator& validator;
     const KernelMap<KernelType>& kernels;
+    const KernelMap<KernelType>* kernelsAl;
 
-    BaseTransformConfig(const TransformFactoryConfig& config, const KernelMap<KernelType>& kernelsIn) :
+    BaseTransformConfig(const TransformFactoryConfig& config, const KernelMap<KernelType>& kernelsIn,
+        const KernelMap<KernelType>* kernelsAlIn = nullptr) :
         input{ config.input },
         output{ config.output },
         outputMode{ config.output->Mode },
         outputBuffer{ config.outputBuffer },
         validator{ config.validator },
-        kernels{ kernelsIn }
+        kernels{ kernelsIn },
+        kernelsAl{ kernelsAlIn }
     {}
 
     BaseTransformConfig() = delete;
@@ -115,7 +118,15 @@ public:
     virtual void Compute(AccelerationMode accel, LayerConfiguration const * layerConfiguration,
         ExecutionConfig const & execution) const = 0;
 
-    virtual void UpdateConfigBuffers(std::unique_ptr<BaseConfig> configs[], const BufferMap& buffers) const = 0;
+    virtual void UpdateConfigBuffers(std::unique_ptr<BaseConfig> configs[TransformOperationCount],
+        const BufferMap& buffers) const = 0;
+
+    virtual void ValidateActiveList(ActiveList const & activeList) const
+    {
+        UNREFERENCED_PARAMETER(activeList);
+        throw GnaException(Gna2StatusActiveListIndicesInvalid);
+    }
+
     virtual void SetOutput(const BaseAddress& outputBuffer) = 0;
     virtual Tensor const & GetOperand(uint32_t operandIndex) const;
     template<class T>
@@ -134,18 +145,20 @@ public:
 
 protected:
     BaseTransform(TransformOperation operation, Tensor const * input) :
-        Input{input},
-        Operation{operation}
+        Input{ input },
+        Operation{ operation }
     {};
     BaseTransform(const BaseTransform&) = delete;
     BaseTransform(const BaseTransform&&) = delete;
 };
 
-template<typename TransformType, typename KernelType> class Transform : public BaseTransform
+template<typename TransformType, typename KernelType>
+class Transform : public BaseTransform
 {
 public:
     virtual void Compute(AccelerationMode accel,
-        LayerConfiguration const * layerConfiguration, ExecutionConfig const & execution) const
+        LayerConfiguration const * layerConfiguration,
+        ExecutionConfig const & execution) const override
     {
         auto executionConfig = createExecutionConfig(layerConfiguration, execution);
         try
@@ -158,37 +171,38 @@ public:
         }
     }
 
-    virtual void UpdateConfigBuffers(std::unique_ptr<BaseConfig> configs[], const BufferMap& buffers) const
+    virtual void UpdateConfigBuffers(std::unique_ptr<BaseConfig> configs[TransformOperationCount],
+        const BufferMap& buffers) const override
     {
         auto* config = GetConfig(configs);
-        //config->Update(buffers); TODO:3: provide generic buffer update mechanism that does not rely on api library
-        if (buffers.count(InputOperandIndex) > 0)
+        for (auto const & buff : buffers)
         {
-            config->Inputs = buffers.at(InputOperandIndex);
-        }
-        if (buffers.count(OutputOperandIndex) > 0)
-        {
-            config->Outputs = buffers.at(OutputOperandIndex);
+            auto const result = config->SetBuffer(buff.first, buff.second);
+            if (!result)
+            {
+                throw GnaException(Gna2StatusIdentifierInvalid);
+            }
         }
     }
 
     // set output when transform is final layer transform and uses user provided layer output buffer
-    virtual void SetOutput(const BaseAddress& outputBuffer)
+    virtual void SetOutput(const BaseAddress& outputBuffer) override
     {
         Output->UpdateBuffer(outputBuffer);
-        hiddenConfig->Outputs = outputBuffer; // TODO:3:revert to use ~BufferMap.Update
+        hiddenConfig->SetBuffer(OutputOperandIndex, outputBuffer);
     }
 
 protected:
     Transform(TransformOperation operation, const KernelMap<KernelType>* kernelsIn, Tensor const * input) :
-        BaseTransform{operation, input},
-        kernels{kernelsIn}
+        BaseTransform{ operation, input },
+        kernels{ kernelsIn }
     {};
     Transform(const Transform&) = delete;
     Transform(const Transform&&) = delete;
     virtual ~Transform() = default;
 
-    inline KernelConfig<TransformType>* GetConfig(std::unique_ptr<BaseConfig> configs[]) const
+    inline KernelConfig<TransformType>* GetConfig(
+        std::unique_ptr<BaseConfig> configs[TransformOperationCount]) const
     {
         auto& config = configs[Operation];
         if (!config)
@@ -199,10 +213,11 @@ protected:
     }
 
     const KernelMap<KernelType>* kernels;
+
     std::unique_ptr<KernelConfig<TransformType>> hiddenConfig;
 
     inline std::unique_ptr<ExecutionKernelConfig<TransformType>> createExecutionConfig(
-       const LayerConfiguration* layerConfiguration, ExecutionConfig const & execution) const
+        const LayerConfiguration* layerConfiguration, ExecutionConfig const & execution) const
     {
         if (nullptr == layerConfiguration)
         {
@@ -213,10 +228,56 @@ protected:
         {
             return std::make_unique<ExecutionKernelConfig<TransformType>>(
                 static_cast<KernelConfig<TransformType>*>(layerConfiguration->ConfigList[Operation].get()),
-                    execution);
+                execution);
         }
     }
 };
+
+template<typename TransformType, typename KernelType, typename KernelTypeAl>
+class TransformAl : public Transform<TransformType, KernelType>
+{
+public:
+    TransformAl(const TransformAl&) = delete;
+    TransformAl(const TransformAl&&) = delete;
+    virtual ~TransformAl() = default;
+
+    virtual void Compute(AccelerationMode accel,
+        LayerConfiguration const * layerConfiguration,
+        ExecutionConfig const & execution) const override
+    {
+        auto executionConfig = Transform<TransformType, KernelType>::createExecutionConfig(
+            layerConfiguration, execution);
+        try
+        {
+            if (layerConfiguration != nullptr && layerConfiguration->ActList)
+            {
+                kernelsAl->at(accel)(executionConfig.get(), AffineConfigAl{
+                                    layerConfiguration->ActList->Indices,
+                                    layerConfiguration->ActList->IndicesCount });
+            }
+            else
+            {
+                Transform<TransformType, KernelType>::kernels->at(accel)(executionConfig.get());
+            }
+        }
+        catch (const std::out_of_range&)
+        {
+            throw GnaException(Gna2StatusNotImplemented);
+        }
+    }
+
+protected:
+    TransformAl(TransformOperation operation,
+        const KernelMap<KernelType>* kernelsIn,
+        const KernelMap<KernelTypeAl>* kernelsAlIn,
+        Tensor const * input) :
+        Transform<TransformType, KernelType>{ operation, kernelsIn, input },
+        kernelsAl{ kernelsAlIn }
+    {};
+
+    const KernelMap<KernelTypeAl>* kernelsAl;
+};
+
 
 }
 

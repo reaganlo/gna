@@ -163,7 +163,7 @@ RecurrentFunction::RecurrentFunction(
 }
 
 void RecurrentFunction::UpdateConfigBuffers(
-    std::unique_ptr<BaseConfig> configs[],
+    std::unique_ptr<BaseConfig> configs[TransformOperationCount],
     const BufferMap& buffers) const
 {
     Transform::UpdateConfigBuffers(configs, buffers);

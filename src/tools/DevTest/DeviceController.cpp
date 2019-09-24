@@ -72,6 +72,15 @@ void DeviceController::ModelCreate(const gna_model * model, gna_model_id * model
     }
 }
 
+void DeviceController::ModelCreate(const Gna2Model* model, gna_model_id* modelId)
+{
+    auto const status = Gna2ModelCreate(gnaHandle, model, modelId);
+    if (Gna2StatusSuccess != status)
+    {
+        throw std::runtime_error("Model create2 failed");
+    }
+}
+
 void DeviceController::ModelRelease(gna_model_id modelId) const
 {
     intel_gna_status_t status = GnaModelRelease(modelId);

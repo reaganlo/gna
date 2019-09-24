@@ -31,10 +31,10 @@
 
 #define UNREFERENCED_PARAMETER(P) ((void)(P))
 
-ModelSetup::ModelSetup(DeviceController & deviceCtrl, intel_nnet_type_t model,
+ModelSetup::ModelSetup(DeviceController & deviceCtrl, intel_nnet_type_t nnetModel,
     const void* referenceOutputIn) :
     deviceController{deviceCtrl},
-    nnet{model},
+    nnet{nnetModel},
     referenceOutput{referenceOutputIn}
 {
     nnet.pLayers = (intel_nnet_layer_t*)calloc(nnet.nLayers, sizeof(intel_nnet_layer_t));

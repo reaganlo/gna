@@ -50,6 +50,7 @@ const std::map<const std::string, gna_tensor_order> Layout::orderStrings
     { "HN", GNA_TENSOR_HN },
     { "HD", GNA_TENSOR_HD },
     { "HW", GNA_TENSOR_HW },
+    { "HWD", GNA_TENSOR_HWD },
     { "HDW", GNA_TENSOR_HDW },
     { "NWH", GNA_TENSOR_NWH },
     { "NHW", GNA_TENSOR_NHW },

@@ -53,12 +53,14 @@ Gna2Tensor OperationConfig::getBiasTensor<intel_affine_multibias_func_t>(
 
 }
 
-OperationConfig::OperationConfig(const nn_layer& layer)
+OperationConfig::OperationConfig(const nn_layer& layer) :
+    Operation{nullptr}
 {
     InitOperationConfig(layer);
 }
 
-OperationConfig::OperationConfig(const Gna2Operation& apiOperation)
+OperationConfig::OperationConfig(const Gna2Operation& apiOperation) :
+    Operation{&apiOperation}
 {
     InitOperationConfig(apiOperation);
 }
@@ -450,6 +452,16 @@ bool OperationConfig::HasGroupedBias(
 bool OperationConfig::HasGroupedBias() const
 {
     return HasGroupedBias(BiasesTensor, BiasMode);
+}
+
+Gna2Tensor OperationConfig::GetOperand(uint32_t index) const
+{
+    Expect::NotNull(Operation);
+    if (IsOperandAvailable(*Operation, index))
+    {
+        return *(Operation->Operands[index]);
+    }
+    throw GnaException(Gna2StatusModelConfigurationInvalid);
 }
 
 bool OperationConfig::hasPooling(const Gna2Operation & operation)
