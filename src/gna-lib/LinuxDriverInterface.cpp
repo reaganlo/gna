@@ -208,7 +208,7 @@ void LinuxDriverInterface::createRequestDescriptor(HardwareRequest& hardwareRequ
     auto scoreConfig = reinterpret_cast<struct gna_score_cfg *>(
                         hardwareRequest.CalculationData.get());
     memset(scoreConfig, 0, scoreConfigSize);
-    scoreConfig->ctrl_flags.hw_perf_encoding = static_cast<uint8_t>(hardwareRequest.HwPerfEncoding);
+    scoreConfig->ctrl_flags.hw_perf_encoding = hardwareRequest.HwPerfEncoding;
 
     scoreConfig->buffers_ptr = reinterpret_cast<uintptr_t>(
                                 calculationData + sizeof(struct gna_score_cfg));

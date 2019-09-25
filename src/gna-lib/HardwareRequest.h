@@ -121,7 +121,7 @@ public:
     void Update(uint32_t layerIndex, uint32_t layerCount, GnaOperationMode mode);
 
     /* these fields will not change between request executions */
-    const Gna2InstrumentationMode HwPerfEncoding;
+    const uint8_t HwPerfEncoding;
     const gna_request_cfg_id RequestConfigId;
 
     /* these fields can change on each request execution */

@@ -86,13 +86,13 @@ public:
         return profilerConfiguration;
     }
 
-    Gna2InstrumentationMode GetHwInstrumentationMode() const
+    uint8_t GetHwInstrumentationMode() const
     {
         if (profilerConfiguration != nullptr)
         {
-            return profilerConfiguration->HwPerfEncoding;
+            return static_cast<uint8_t>(profilerConfiguration->HwPerfEncoding) + 1;
         }
-        return Gna2InstrumentationModeDisabled;
+        return 0;
     }
 
     MemoryContainer const & GetAllocations() const

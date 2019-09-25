@@ -47,7 +47,7 @@ namespace GNA
         uint32_t NPoints;
         uint64_t* Results;
 
-        Gna2InstrumentationMode HwPerfEncoding = Gna2InstrumentationModeDisabled;
+        Gna2InstrumentationMode HwPerfEncoding = Gna2InstrumentationModeTotalStall;
         Gna2InstrumentationUnit Unit = Gna2InstrumentationUnitMicroseconds;
     };
 
