@@ -51,6 +51,7 @@ gna_request_cfg_id RequestBuilder::assignConfigId()
 
 void RequestBuilder::CreateConfiguration(CompiledModel& model, gna_request_cfg_id *configId, DeviceVersion consistentDevice)
 {
+    Expect::NotNull(configId);
     *configId = assignConfigId();
     configurations.emplace(*configId, std::make_unique<RequestConfiguration>(model, *configId, consistentDevice));
 }

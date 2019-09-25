@@ -374,7 +374,13 @@ TEST_F(TestGnaModelApi, Gna2ModelCreateSingleCopyLayerSuccesfull)
 TEST_F(TestGnaModelApi, Gna2ModelCreateSingleConvolutionalLayerSuccesfull)
 {
     uint32_t modelId = 0;
-
+    uint32_t granted;
+    const uint32_t requested = 1024;
+    void* temporalMemory;
+    auto statusMemory = Gna2MemoryAlloc(requested, &granted, &temporalMemory);
+    ASSERT_GE(granted, requested);
+    ASSERT_EQ(statusMemory, Gna2StatusSuccess);
+    ASSERT_NE(temporalMemory, nullptr);
     Gna2Tensor input{
         Gna2Shape{4, { 1, 8, 6, 1 } },  //CNN2D NHWC
         Gna2TensorModeDefault,
@@ -392,19 +398,19 @@ TEST_F(TestGnaModelApi, Gna2ModelCreateSingleConvolutionalLayerSuccesfull)
         Gna2TensorModeDefault,
         {'\0'},
         Gna2DataTypeInt16,
-        nullptr };
+        temporalMemory };
     Gna2Tensor bias{
         Gna2Shape{1, { 2 } },  //bias per 2 kernels
         Gna2TensorModeDefault,
         {'\0'},
         Gna2DataTypeInt32,
-        nullptr };
+        temporalMemory };
     Gna2Tensor activation{
     Gna2Shape{1, { 2 } },  //2 segments
         Gna2TensorModeDefault,
         {'\0'},
         Gna2DataTypePwlSegment,
-        nullptr };
+        temporalMemory };
 
     const Gna2Tensor * convolutionTensorSet[] = { &input, &output, &filters, &bias, &activation };
 
@@ -434,6 +440,9 @@ TEST_F(TestGnaModelApi, Gna2ModelCreateSingleConvolutionalLayerSuccesfull)
         status = Gna2ModelRelease(modelId);
         ASSERT_EQ(status, Gna2StatusSuccess);
     }
+
+    statusMemory = Gna2MemoryFree(temporalMemory);
+    ASSERT_EQ(statusMemory, Gna2StatusSuccess);
 }
 
 TEST_F(TestGnaModelApi, Gna2ModelCreateNullModel)

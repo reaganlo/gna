@@ -293,6 +293,10 @@ Gna2Tensor OperationConfig::GetBiases(const Gna2Operation & operation)
 {
     Gna2Tensor disabled{};
     disabled.Mode = Gna2TensorModeDisabled;
+    if (operation.Type == Gna2OperationTypeGmm)
+    {
+        return disabled;
+    }
     return GetOperand(operation, BiasOperandIndex, disabled);
 }
 

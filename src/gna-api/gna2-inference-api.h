@@ -62,6 +62,9 @@
                 Request configuration cannot be shared with other models.
  @param [out] requestConfigId Request configuration created by GNA.
  @return Status of the operation.
+    @retval Gna2StatusSuccess On success.
+    @retval Gna2StatusNullArgumentNotAllowed On requestConfigId == nullptr.
+    @retval Gna2StatusIdentifierInvalid On invalid modelId.
  */
 GNA2_API enum Gna2Status Gna2RequestConfigCreate(
     uint32_t modelId,

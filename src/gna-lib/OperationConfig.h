@@ -95,9 +95,15 @@ protected:
     {
         OperationType = GetOperationType(operation);
         BiasesTensor = GetBiases(operation);
+        // TODO: 3: Remove when full (e.g., bias) buffer addition and late sanity checking implemented
+        Expect::True((BiasesTensor.Mode == Gna2TensorModeDisabled && BiasesTensor.Data == nullptr) ||
+            BiasesTensor.Data != nullptr, Gna2StatusModelConfigurationInvalid);
+
         if (isAffine(operation))
         {
             WeightsTensor = GetWeights(operation);
+            // TODO: 3: Remove when full (e.g., weights) buffer addition and late sanity checking implemented
+            Expect::NotNull(WeightsTensor.Data, Gna2StatusModelConfigurationInvalid);
 
             if (IsMultibias(operation))
             {
@@ -111,6 +117,8 @@ protected:
         if (isCNN2D(operation))
         {
             FiltersTensor = GetFilters(operation);
+            // TODO: 3: Remove when full (e.g., filers) buffer addition and late sanity checking implemented
+            Expect::NotNull(FiltersTensor.Data, Gna2StatusModelConfigurationInvalid);
             ConvolutionStride = GetStride(operation);
             ZeroPadding = GetZeroPadding(operation);
             BiasMode = GetBiasMode(operation);
