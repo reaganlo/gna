@@ -36,6 +36,21 @@ enum KernelPoolingMode
 
 struct PoolingConfig2D
 {
+    PoolingConfig2D(const uint32_t InputWidthIn, const uint32_t InputHeightIn,
+        const uint32_t InputDepthIn, KernelPoolingMode ModeIn,
+        const uint32_t StrideWidthIn, const uint32_t StrideHeightIn,
+        const uint32_t WindowWidthIn, const uint32_t WindowHeightIn) :
+        InputWidth{ InputWidthIn },
+        InputHeight{ InputHeightIn },
+        InputDepth{ InputDepthIn },
+        Mode{ ModeIn },
+        StrideWidth{ StrideWidthIn },
+        StrideHeight{ StrideHeightIn },
+        WindowWidth{ WindowWidthIn },
+        WindowHeight{ WindowHeightIn }
+    {
+    }
+
     const uint32_t InputWidth;
     const uint32_t InputHeight;
     const uint32_t InputDepth;

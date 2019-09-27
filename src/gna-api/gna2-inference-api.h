@@ -75,7 +75,7 @@ GNA2_API enum Gna2Status Gna2RequestConfigCreate(
 
  @note
  - Buffer addresses need to be within the memory allocated previously by Gna2MemoryAlloc.
- - Buffers are deleted by GNA during corresponding request configuration release. // TODO:3: is this true?
+ - Buffers are deleted by GNA during corresponding request configuration release.
 
  @param requestConfigId Identifier of affected request configuration.
  @param operationIndex Index of the affected operation.

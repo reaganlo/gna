@@ -221,42 +221,42 @@ GNA2_API enum Gna2Status Gna2InstrumentationConfigSetUnit(
 enum Gna2InstrumentationMode
 {
     /**
-     TODO:3:API: add comment
+     Total Stall cycles.
      */
     Gna2InstrumentationModeTotalStall = GNA2_DEFAULT,
 
     /**
-     TODO:3:API: add comment
+     Wait For Dma Completion cycles.
      */
     Gna2InstrumentationModeWaitForDmaCompletion = 1,
 
     /**
-     TODO:3:API: add comment
+     Wait For Mmu Translation cycles.
      */
     Gna2InstrumentationModeWaitForMmuTranslation = 2,
 
     /**
-     TODO:3:API: add comment
+     Descriptor Fetch Time cycles.
      */
     Gna2InstrumentationModeDescriptorFetchTime = 3,
 
     /**
-     TODO:3:API: add comment
+     Input Buffer Fill From Memory cycles.
      */
     Gna2InstrumentationModeInputBufferFillFromMemory = 4,
 
     /**
-     TODO:3:API: add comment
+     Output Buffer Full Stall cycles.
      */
     Gna2InstrumentationModeOutputBufferFullStall = 5,
 
     /**
-     TODO:3:API: add comment
+     Output Buffer Wait For IOSF Stall cycles.
      */
     Gna2InstrumentationModeOutputBufferWaitForIosfStall = 6,
 
     /**
-     TODO:3:API: add comment
+     Hardware performance counters are disabled.
      */
     Gna2InstrumentationModeDisabled = GNA2_DISABLED,
 };

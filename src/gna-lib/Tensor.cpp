@@ -52,7 +52,7 @@ Tensor::Tensor(const ApiTensor & tensor, gna_tensor_order order, const Validator
 Tensor::Tensor(const Shape & dimensions, const DataType dataType, const TensorMode tensorMode, void const * buffer) :
     Component{ dimensions },
     Mode{ dataType, tensorMode },
-    Size{ Count * Mode.Size },
+    Size{ getEffectiveSize(Mode, Count) },
     Buffer{ buffer }
 {}
 
@@ -60,7 +60,7 @@ Tensor::Tensor(const Shape & dimensions, const DataMode & dataMode, void const *
     const Validator & validatorIn) :
     Component{ dimensions, validatorIn, false }, // disable dimension validation as it's performed here with Mode information
     Mode{ dataMode },
-    Size{ Count * Mode.Size },
+    Size{ getEffectiveSize(Mode, Count) },
     Buffer{ buffer }
 {
     validate();
@@ -114,6 +114,11 @@ void Tensor::validateDimensions() const
         dim.second.Multipliers.SetEffective(Mode.Type);
     }
     Component::Validate(caps, true);
+}
+
+uint32_t Tensor::getEffectiveSize(const DataMode& mode, uint32_t count)
+{
+    return Gna2TensorModeConstantScalar == mode.Mode ? mode.Size : count * mode.Size;
 }
 
 std::pair<uint32_t, uint32_t> Tensor::getGroupingAndElements(

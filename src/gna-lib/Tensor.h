@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2018 Intel Corporation.
+ Copyright 2019 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -49,10 +49,10 @@ struct Tensor : public Component
     Tensor(const ApiTensor& apiTensor, const Validator& validatorIn);
 
     Tensor(const Shape& dimensions, const DataType dataType,
-            const TensorMode tensorMode, void const * buffer);
+        const TensorMode tensorMode, void const * buffer);
 
     Tensor(const Shape& dimensions, const DataMode& dataMode,
-            void const * buffer, const Validator& validatorIn);
+        void const * buffer, const Validator& validatorIn);
 
     virtual ~Tensor() = default;
 
@@ -60,7 +60,7 @@ struct Tensor : public Component
 
     void ValidateBuffer(const void* const buffer) const;
 
-    virtual operator const BaseAddress () const
+    virtual operator const BaseAddress() const
     {
         return Buffer;
     }
@@ -72,7 +72,7 @@ struct Tensor : public Component
 
     explicit operator ApiTensor() const
     {
-        ApiTensor tensor {};
+        ApiTensor tensor{};
         tensor.Shape = Dimensions;
         tensor.Mode = Mode.Mode;
         tensor.Type = Mode.Type;
@@ -121,7 +121,7 @@ protected:
     {
         return getGroupingAndElements(layer).second;
     }
-    
+
     // Returns pair<grouping, elementCount>
     virtual std::pair<uint32_t, uint32_t> getGroupingAndElements(
         const Gna2Operation& operation, const LayerValidator& validatorIn) const;
@@ -129,6 +129,8 @@ protected:
     virtual std::pair<uint32_t, uint32_t> getGroupingAndElements(const nn_layer& layer) const;
 
 private:
+    static uint32_t getEffectiveSize(const DataMode& mode, uint32_t count);
+
     void validateDimensions() const;
 };
 

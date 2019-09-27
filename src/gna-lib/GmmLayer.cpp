@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2018 Intel Corporation.
+ Copyright 2019 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -185,20 +185,8 @@ GmmFunction::GmmFunction(const BaseTransformConfig<GmmMaxMix>& config,
         GMM_MIXTURE_COMP_COUNT_MAX * GMM_CONSTANTS_SIZE, Gna2StatusGmmBadGconstOffset);
     Expect::MultiplicityOf(GaussConstSetOffsetSize, GMM_MEM_ALIGNMENT);
 
-    // TODO:3:KJ: move to new GmmOperationCapabilities
-    const FullCapabilitiesMap capabilities =
-    {
-     {INTEL_GMM, {
-        {GMM_DEVICE, std::make_shared<TensorLimits>(TensorLimits{
-            {GNA_TENSOR_HW}, // H - GMM States, W - grouping
-            {{GNA_DIM_W, {1, XNN_N_GROUP_MAX, 1, Gna2StatusXnnErrorOutputVolume}},
-             {GNA_DIM_H, {1, GMM_STATES_COUNT_MAX, 1, Gna2StatusXnnErrorOutputVolume}}},
-            { { GNA_UINT32, GNA_DATA_ACTIVATION_DISABLED }, Gna2StatusXnnErrorOutputBytes }})}
-    }},
-    };
-
     Output = std::make_unique<Tensor>(config.output->Dimensions, config.output->Mode,
-        config.output->Buffer, Validator{ config.validator, capabilities });
+        config.output->Buffer, Validator{ config.validator, getOutputCapabilities() });
 }
 
 void GmmFunction::InitHiddenConfig()
@@ -217,6 +205,22 @@ void GmmFunction::InitHiddenConfig()
     };
     hiddenConfig = std::make_unique<KernelConfig<GmmConfig>>(gmmConfig,
         BaseConfig{ Input->Buffer, Output->Buffer });
+}
+
+const FullCapabilitiesMap& GmmFunction::getOutputCapabilities()
+{
+    // TODO:3:KJ: move to new GmmOperationCapabilities
+    static const FullCapabilitiesMap capabilities =
+    {
+     {INTEL_GMM, {
+        {GMM_DEVICE, std::make_shared<TensorLimits>(TensorLimits{
+            {GNA_TENSOR_HW}, // H - GMM States, W - grouping
+            {{GNA_DIM_W, {1, XNN_N_GROUP_MAX, 1, Gna2StatusXnnErrorOutputVolume}},
+             {GNA_DIM_H, {1, GMM_STATES_COUNT_MAX, 1, Gna2StatusXnnErrorOutputVolume}}},
+            { { GNA_UINT32, GNA_DATA_ACTIVATION_DISABLED }, Gna2StatusXnnErrorOutputBytes }})}
+    }},
+    };
+    return capabilities;
 }
 
 GmmFunctionFlat::GmmFunctionFlat(

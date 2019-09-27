@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2017 Intel Corporation.
+ Copyright 2019 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -59,6 +59,8 @@ class RequestConfiguration
 public:
     RequestConfiguration(CompiledModel& model, gna_request_cfg_id configId, DeviceVersion consistentDeviceIn);
 
+    ~RequestConfiguration() = default;
+
     void AddBuffer(uint32_t operandIndex, uint32_t layerIndex, void *address);
 
     void AddActiveList(uint32_t layerIndex, const ActiveList& activeList);
@@ -114,8 +116,6 @@ public:
     uint32_t const * BufferElementCountForAdl = nullptr;
 
     AccelerationMode Acceleration = Gna2AccelerationModeAuto;
-
-
 
 private:
     struct AddBufferContext

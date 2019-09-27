@@ -31,7 +31,7 @@
 using namespace GNA;
 
 void ModelWrapper::OperationInit(ApiOperation& operation, const OperationType type,
-    const Gna2UserAllocator userAllocator)
+    const Gna2UserAllocator userAllocator, bool initOnlyRequiredOperands)
 {
     Expect::Equal(operation.Type, Gna2OperationTypeNone, Gna2StatusModelConfigurationInvalid);
     Expect::Equal(operation.NumberOfParameters, static_cast<uint32_t>(0), Gna2StatusModelConfigurationInvalid);
@@ -41,7 +41,8 @@ void ModelWrapper::OperationInit(ApiOperation& operation, const OperationType ty
 
     operation.Type = type;
 
-    operation.NumberOfOperands = GetOperationInfo(type, NumberOfOperandsMax);
+    operation.NumberOfOperands = GetOperationInfo(type,
+        initOnlyRequiredOperands ? NumberOfOperandsRequired : NumberOfOperandsMax);
     operation.Operands = AllocateAndFillZeros<Gna2Tensor const>(userAllocator, operation.NumberOfOperands);
 
     operation.NumberOfParameters = GetOperationInfo(type, NumberOfParametersMax);

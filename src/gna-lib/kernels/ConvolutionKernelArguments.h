@@ -47,6 +47,32 @@ enum KernelBiasMode
 
 struct ConvolutionConfig2D
 {
+    ConvolutionConfig2D(const uint32_t InputWidthIn, const uint32_t InputHeightIn,
+        const uint32_t InputDepthIn, const uint32_t NumberOfFiltersIn,
+        const uint32_t FilterWidthIn, const uint32_t FilterHeightIn,
+        const uint32_t FilterDepthIn, const KernelDataMode FilterDataModeIn,
+        const void* const FilterDataIn, const uint32_t StrideWidthIn,
+        const uint32_t StrideHeightIn, const uint32_t ZeroPaddingWidthIn,
+        const uint32_t ZeroPaddingHeightIn, const KernelBiasMode BiasModeIn,
+        const KernelDataMode BiasDataModeIn, const void* const BiasDataIn) :
+    InputWidth{ InputWidthIn },
+        InputHeight{ InputHeightIn },
+        InputDepth{ InputDepthIn },
+        NumberOfFilters{ NumberOfFiltersIn },
+        FilterWidth{ FilterWidthIn },
+        FilterHeight{ FilterHeightIn },
+        FilterDepth{ FilterDepthIn },
+        FilterDataMode{ FilterDataModeIn },
+        FilterData{ FilterDataIn },
+        StrideWidth{ StrideWidthIn },
+        StrideHeight{ StrideHeightIn },
+        ZeroPaddingWidth{ ZeroPaddingWidthIn },
+        ZeroPaddingHeight{ ZeroPaddingHeightIn },
+        BiasMode{ BiasModeIn },
+        BiasDataMode{ BiasDataModeIn },
+        BiasData{ BiasDataIn }
+    {
+    }
     const uint32_t InputWidth;
     const uint32_t InputHeight;
     const uint32_t InputDepth;

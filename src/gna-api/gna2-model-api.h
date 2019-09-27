@@ -318,13 +318,13 @@ enum Gna2OperationType
         4. biases [required]:
             Supported values:
                 - For ::Gna2BiasModeDefault:
-                    - Mode: {::Gna2TensorModeDefault, ::Gna2TensorModeDisabled}
+                    - Mode: {::Gna2TensorModeDefault}
                     - Type: {::Gna2DataTypeInt8, ::Gna2DataTypeInt16, ::Gna2DataTypeInt32, ::Gna2DataTypeCompoundBias},
                     - Shape: can be set 0, as is calculated by GNA,
                         - [H] 1D Vector, where
                             - H is a number of the output nodes (rows),
                 - For ::Gna2BiasModeGrouping:
-                    - Mode: {::Gna2TensorModeDefault, ::Gna2TensorModeDisabled // TODO:3:verify is applicable}
+                    - Mode: {::Gna2TensorModeDefault}
                     - Type: {::Gna2DataTypeInt32 // TODO:3:verify is applicable},
                     - Shape: [H x N] 2D Matrix where:
                         - H is a number of the output nodes (rows),
@@ -422,7 +422,7 @@ enum Gna2OperationType
                 - Mode: {::Gna2TensorModeDefault}
                 - Type: {::Gna2DataTypeUint8},
                 - Shape and Layout: [H x W x D] 3D tensor, where:
-                    - H is a number of GMM states, same as outputs' W dimension
+                    - H is a number of GMM states, same as outputs' H dimension
                     - W is a number of mixtures,
                     - D is a number of feature elements in single vector, same as inputs' W dimension
         4. inverseCovariances [required]:
@@ -442,8 +442,8 @@ enum Gna2OperationType
                 - Type: {::Gna2DataTypeUint32},
                 - Shape and Layout: [H x W'] 2D tensor, where:
                     - H same as in means
-                    - W' is a number of mixtures, as in means, dividable by 2
-                        to accomodate 8B zer-padding.
+                    - W' is a number of mixtures, rounded up to the nearest multiple of 2,
+                        to accomodate 8B zero-padding.
     b) "interleaved" layout:
         1. inputs [required]:
             Same as in Operands a.

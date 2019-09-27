@@ -76,7 +76,7 @@ class ModelWrapper
 {
 public:
     static void OperationInit(ApiOperation& operation,
-        OperationType type, Gna2UserAllocator userAllocator);
+        OperationType type, Gna2UserAllocator userAllocator, bool initOnlyRequiredOperands = false);
 
     static uint32_t DataTypeGetSize(DataType type);
 
@@ -128,7 +128,7 @@ public:
     template<class ... T>
     static void SetOperands(ApiOperation & operation, T ... operands)
     {
-        Expect::Equal(operation.NumberOfOperands, GetOperationInfo(operation.Type, NumberOfOperandsMax),
+        Expect::True(operation.NumberOfOperands >= GetOperationInfo(operation.Type, NumberOfOperandsRequired),
             Gna2StatusModelConfigurationInvalid);
         const auto requiredNotNull = GetOperationInfo(operation.Type, NumberOfOperandsRequired);
         TryAssign(operation.Operands, operation.NumberOfOperands,

@@ -123,9 +123,9 @@ GNA2_API uint32_t Gna2TensorGetSize(struct Gna2Tensor const * tensor)
 {
     const std::function<uint32_t()> command = [&]()
     {
-         // TODO:3:API: implement P1
-        UNREFERENCED_PARAMETER(tensor);
-        return Gna2DefaultU32;
+        Expect::NotNull(tensor);
+        auto const apiTensor = std::make_unique<Tensor>(*tensor);
+        return apiTensor->Size;
     };
     return ApiWrapper::ExecuteSafely(command, Gna2NotSupportedU32);
 }
@@ -462,7 +462,7 @@ GNA2_API enum Gna2Status Gna2OperationInitGmmInterleaved(
     const std::function<Gna2Status()> command = [&]()
     {
         Expect::NotNull(operation);
-        ModelWrapper::OperationInit(*operation, Gna2OperationTypeGmm, userAllocator);
+        ModelWrapper::OperationInit(*operation, Gna2OperationTypeGmm, userAllocator, true);
         ModelWrapper::SetOperands(*operation, inputs, outputs, interleavedTensors);
         ModelWrapper::SetParameters(*operation, maximumScore);
         ModelWrapper::SetLayout(*interleavedTensors, "HCWCWC");

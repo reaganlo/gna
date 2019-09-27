@@ -54,12 +54,16 @@ static const DataModeLimits _ModesWithRichGen0_9 = {
     { GNA_INT32, GNA_DATA_RICH_FORMAT },
     Gna2StatusXnnErrorBiasBytes };
 
-static const DataModeLimits _ModesGen3 = {
+static const DataModeLimits _ModesGen3Cnn2D = {
     { GNA_INT8, GNA_INT16, GNA_INT32, GNA_DATA_DISABLED },
     Gna2StatusXnnErrorBiasBytes };
 
+static const DataModeLimits _ModesGen3 = {
+    { GNA_INT8, GNA_INT16, GNA_INT32 },
+    Gna2StatusXnnErrorBiasBytes };
+
 static const DataModeLimits _ModesWithRichGen3 = {
-    { GNA_INT8, GNA_INT16, GNA_INT32, GNA_DATA_DISABLED, GNA_DATA_RICH_FORMAT },
+    { GNA_INT8, GNA_INT16, GNA_INT32, GNA_DATA_RICH_FORMAT },
     Gna2StatusXnnErrorBiasBytes };
 
 const FullCapabilitiesMap BiasTensor::capabilities =
@@ -117,7 +121,7 @@ const FullCapabilitiesMap BiasTensor::capabilities =
                 {{GNA_DIM_N, {1, CNN_N_FLT_MAX, 1, Gna2StatusXnnErrorBiasVolume}},
                 {GNA_DIM_H, {1, XNN_N_IN_ELEMS_MAX, 1, Gna2StatusXnnErrorBiasVolume}},
                 {GNA_DIM_W, {1, XNN_N_IN_ELEMS_MAX, 1, Gna2StatusXnnErrorBiasVolume}}},
-            _ModesGen3})}
+            _ModesGen3Cnn2D})}
     }},
     {INTEL_GMM, {
         {GMM_DEVICE, std::make_shared<TensorLimits>(TensorLimits{
