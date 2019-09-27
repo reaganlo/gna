@@ -150,7 +150,10 @@ namespace GNA
     }
     inline uint32_t GNA3_UMemAllocSize(const uint32_t Elmnts, const uint32_t KWG, const uint32_t Prec)
     {
-
+        if(Elmnts == 0)
+        {
+            return 0;
+        }
         // Function: GNA3_UMemAllocSize ; Returns Allocation size in UMEM in BYTEs.
 
         // Valid for CMEM & PMEM. (Following the UMEM uArch Allocation scheme)
@@ -574,7 +577,6 @@ namespace GNA
         // Otherewiese, BIAS-Volume is streamed with no limitaion
         if ((BPrec.Value == GNA_DATA_DISABLED) || (KernelBiasModePerStride == BType))
         {
-
             MaxKernels = KNum;
         }
         else
