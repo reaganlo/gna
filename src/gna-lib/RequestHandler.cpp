@@ -37,8 +37,7 @@
 using namespace GNA;
 
 RequestHandler::RequestHandler(uint32_t threadCount) : threadPool(threadCount)
-{
-}
+{}
 
 RequestHandler::~RequestHandler()
 {
@@ -94,7 +93,7 @@ Gna2Status RequestHandler::WaitFor(const gna_request_id requestId, const gna_tim
     {
         auto score_status = future.get();
         auto profiler = request->Profiler.get();
-        profiler->Measure(Gna2InstrumentationPointLibProcessing);
+        profiler->Measure(Gna2InstrumentationPointLibReceived);
         profiler->SaveResults(request->Configuration.GetProfilerConfiguration());
         removeRequest(requestId);
         return score_status;

@@ -161,8 +161,6 @@ GmmFunction::GmmFunction(const BaseTransformConfig<GmmMaxMix>& config,
     MaximumScore{ maximumScore }
 {
     Expect::NotNull(Means);
-    // TODO:3:KJ:move this to mode capabilities of Means->inherit WeightTensor
-    Expect::Equal(Means->Mode.Type, Gna2DataTypeUint8, Gna2StatusDataModeInvalid);
 
     MeanBuffer = Means->Buffer;
     StateCount = Means->at(GNA_DIM_H);
@@ -232,6 +230,9 @@ GmmFunctionFlat::GmmFunctionFlat(
 {
     Expect::NotNull(GaussianConstants);
     Expect::NotNull(InverseCovariances);
+
+    // TODO:3:KJ:move this to mode capabilities of Means->inherit WeightTensor
+    Expect::Equal(Means->Mode.Type, Gna2DataTypeUint8, Gna2StatusDataModeInvalid);
 
     InverseCovarianceBuffer = InverseCovariances->Buffer;
     GaussianConstantBuffer = GaussianConstants->Buffer;

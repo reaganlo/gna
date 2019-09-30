@@ -119,7 +119,7 @@ CompiledModel::AccelerationType CompiledModel::getEffectiveAccelerationMode(Requ
     const auto isSoftwareEffective = config.Acceleration.IsSoftwareEnforced() ||
         !hwCapabilities.IsHardwareSupported() ||
         (config.GetConsistentDevice() != hwCapabilities.GetDeviceVersion());
-    if (isSoftwareEffective )
+    if (isSoftwareEffective)
     {
         return EnforcedSoftware;
     }
@@ -134,7 +134,7 @@ Gna2Status CompiledModel::Score(
     RequestProfiler *profiler,
     KernelBuffers *buffers)
 {
-    profiler->Measure(Gna2InstrumentationPointLibExecution);
+    profiler->Measure(Gna2InstrumentationPointLibProcessing);
     auto saturationCount = uint32_t{ 0 };
     try
     {
@@ -151,6 +151,7 @@ Gna2Status CompiledModel::Score(
             return Gna2StatusAccelerationModeNotSupported;
             break;
         }
+        profiler->Measure(Gna2InstrumentationPointLibCompletion);
     }
     catch (const GnaException& e)
     {

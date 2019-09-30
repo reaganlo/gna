@@ -128,7 +128,9 @@ uint32_t HardwareModelScorable::Score(
 
     hwRequest->Update(layerIndex, layerCount, operationMode);
 
-    auto result = driverInterface.Submit(*hwRequest, profiler);
+    profiler->Measure(Gna2InstrumentationPointLibExecution);
+
+    auto const result = driverInterface.Submit(*hwRequest, profiler);
 
     if (profiler != nullptr)
     {
@@ -165,5 +167,3 @@ void HardwareModelScorable::allocateLayerDescriptors()
     HardwareModel::allocateLayerDescriptors();
     ldMemory->Map(driverInterface);
 }
-
-

@@ -88,14 +88,7 @@ public:
         return profilerConfiguration;
     }
 
-    uint8_t GetHwInstrumentationMode() const
-    {
-        if (profilerConfiguration != nullptr)
-        {
-            return static_cast<uint8_t>(profilerConfiguration->HwPerfEncoding) + 1;
-        }
-        return 0;
-    }
+    uint8_t GetHwInstrumentationMode() const;
 
     MemoryContainer const & GetAllocations() const
     {

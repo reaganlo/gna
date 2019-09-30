@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2017 Intel Corporation.
+ Copyright 2019 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -169,6 +169,17 @@ void RequestConfiguration::SetHardwareConsistency(
 DeviceVersion RequestConfiguration::GetConsistentDevice() const
 {
     return consistentDevice;
+}
+
+uint8_t RequestConfiguration::GetHwInstrumentationMode() const
+{
+    if (profilerConfiguration != nullptr)
+    {
+        auto const encoding = static_cast<int>(
+            profilerConfiguration->HwPerfEncoding) + 1;
+        return static_cast<uint8_t>(encoding & 0xFF);
+    }
+    return 0;
 }
 
 void RequestConfiguration::storeAllocationIfNew(void const *buffer, uint32_t bufferSize)

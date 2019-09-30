@@ -58,7 +58,6 @@ enum Gna2InstrumentationPoint
 
     /**
      Request processing start, from library instrumentation.
-
      */
     Gna2InstrumentationPointLibProcessing = 2,
 
@@ -74,7 +73,7 @@ enum Gna2InstrumentationPoint
     Gna2InstrumentationPointLibDeviceRequestReady = 4,
 
     /**
-     Request ready to send to device, from library instrumentation.
+     Request sent to device, from library instrumentation.
      */
     Gna2InstrumentationPointLibDeviceRequestSent = 5,
 

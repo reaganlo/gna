@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2017 Intel Corporation.
+ Copyright 2019 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -94,8 +94,6 @@ uint32_t SoftwareModel::Score(
     RequestProfiler *profiler,
     KernelBuffers *fvBuffers)
 {
-    UNREFERENCED_PARAMETER(profiler);
-
     validateConfiguration(requestConfiguration);
 
     const auto accel = requestConfiguration.Acceleration.GetEffectiveSoftwareAccelerationMode(supportedCpuAccelerations);
@@ -105,6 +103,9 @@ uint32_t SoftwareModel::Score(
     auto config = InferenceConfig{ fvBuffers, requestConfiguration };
     auto layerIter = layers.cbegin() + layerIndex;
     auto const layerEnd = layerIter + layerCountIn;
+
+    profiler->Measure(Gna2InstrumentationPointLibExecution);
+
     for (; layerIter < layerEnd; ++layerIter)
     {
         auto const & layer = *layerIter;
