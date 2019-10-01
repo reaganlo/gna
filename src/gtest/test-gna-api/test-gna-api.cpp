@@ -25,18 +25,20 @@
 
 #include "test-gna-api.h"
 
-#include "gna-api.h"
-#include "../../gna-api/gna2-model-api.h"
-#include "../../gna-api/gna2-device-api.h"
-
 #include "Macros.h"
+
+#include "gna-api.h"
+
+#include "gna2-api.h"
+#include "gna2-device-api.h"
+#include "gna2-memory-api.h"
+#include "gna2-model-api.h"
 
 #include <array>
 #include <chrono>
 #include <gtest/gtest.h>
 #include <initializer_list>
 #include <vector>
-#include "gna2-memory-api.h"
 
 class TestGnaModelApi : public TestGnaApi
 {
@@ -71,7 +73,9 @@ protected:
         DeviceIndex = UINT32_MAX;
     }
 
-    uint32_t DeviceIndex;
+    uint32_t DeviceIndex = UINT32_MAX;
+
+    static void createSimpleCopyModel(uint32_t & modelIdOut);
 };
 
 class TestGnaOperationInitApi : public TestGnaModelApi
@@ -343,11 +347,8 @@ TEST_F(TestGnaModelApi, Gna2ModelCreateEmptyModelUnsuccessfull)
     ASSERT_FALSE(Gna2StatusIsSuccessful(status));
 }
 
-TEST_F(TestGnaModelApi, Gna2ModelCreateSingleCopyLayerSuccesfull)
+void TestGnaModelApi::createSimpleCopyModel(uint32_t &modelIdOut)
 {
-    uint32_t modelId = 0;
-
-    //TODO:3:P1: Check the proper Dimensions order 16,8 vs 8 16
     Gna2Tensor input{
         Gna2Shape{2, { 8, 16 } },
         Gna2TensorModeDefault,
@@ -365,9 +366,15 @@ TEST_F(TestGnaModelApi, Gna2ModelCreateSingleCopyLayerSuccesfull)
 
     Gna2Model model = { 1, &copyOperation };
 
-    auto status = Gna2ModelCreate(0, &model, &modelId);
+    const auto status = Gna2ModelCreate(0, &model, &modelIdOut);
     ASSERT_EQ(status, Gna2StatusSuccess);
-    status = Gna2ModelRelease(modelId);
+}
+
+TEST_F(TestGnaModelApi, Gna2ModelCreateSingleCopyLayerSuccesfull)
+{
+    uint32_t modelId = 0;
+    createSimpleCopyModel(modelId);
+    auto const status = Gna2ModelRelease(modelId);
     ASSERT_EQ(status, Gna2StatusSuccess);
 }
 
@@ -605,6 +612,44 @@ TEST_F(TestGnaOperationInitApi, Gna2OperationInitFullyConnectedAffine)
 
     free(operation.Parameters);
     free(operation.Operands);
+}
+
+TEST_F(TestGnaOperationInitApi, Gna2OperationInitConvolutionFused_filters_Data_null)
+{
+    struct Gna2Operation operation = {};
+    filters.Data = nullptr;
+    const auto status = Gna2OperationInitConvolutionFused(&operation, Allocator,
+        &input, &output, &filters, &biases, &activation,
+        &convolutionStride, &biasMode, & poolingMode, &poolingWindow, &poolingStride, &zeroPadding);
+    ASSERT_EQ(Gna2StatusSuccess, status);
+    EXPECT_EQ(operation.Type, Gna2OperationTypeConvolution);
+
+    Free(operation.Parameters);
+    Free(operation.Operands);
+}
+
+TEST_F(TestGnaModelApi, Gna2RequestEnqueue_negative_fakeId)
+{
+    const uint32_t fakeId = 12345;
+    uint32_t id;
+    const auto status = Gna2RequestEnqueue(fakeId, &id);
+    ASSERT_EQ(Gna2StatusIdentifierInvalid, status);
+}
+
+TEST_F(TestGnaModelApi, Gna2RequestEnqueue_negative_nullptr)
+{
+    uint32_t modelId = 0;
+    createSimpleCopyModel(modelId);
+    uint32_t requestConfigId;
+
+    auto status = Gna2RequestConfigCreate(modelId, &requestConfigId);
+    ASSERT_EQ(status, Gna2StatusSuccess);
+
+    status = Gna2RequestEnqueue(requestConfigId, nullptr);
+    ASSERT_EQ(Gna2StatusNullArgumentNotAllowed, status);
+
+    status = Gna2ModelRelease(modelId);
+    ASSERT_EQ(status, Gna2StatusSuccess);
 }
 
 TEST_F(TestGnaOperationInitApi, Gna2OperationInitConvolution)

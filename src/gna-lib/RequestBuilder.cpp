@@ -96,7 +96,7 @@ std::unique_ptr<Request> RequestBuilder::CreateRequest(gna_request_cfg_id config
     auto& configuration = GetConfiguration(configId);
     auto profiler = RequestProfiler::Create(configuration.GetProfilerConfiguration());
     profiler->Measure(Gna2InstrumentationPointLibPreprocessing);
-    
+
     return std::make_unique<Request>(configuration, std::move(profiler));
 }
 

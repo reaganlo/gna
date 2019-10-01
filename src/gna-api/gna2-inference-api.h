@@ -253,8 +253,10 @@ GNA2_API enum Gna2Status Gna2RequestConfigRelease(
 
  @param requestConfigId The request configuration.
  @param [out] requestId Identifier of the enqueued request.
- @return Status of request preparation and queuing only. To retrieve
-         the results and processing status call Gna2RequestWait.
+ @return Status of request preparation and queuing only.
+    To retrieve the results and processing status call Gna2RequestWait.
+    @retval Gna2StatusIdentifierInvalid in case of invalid requestConfigId.
+    @retval Gna2StatusNullArgumentNotAllowed in case of requestId == nullptr.
  */
 GNA2_API enum Gna2Status Gna2RequestEnqueue(
     uint32_t requestConfigId,
