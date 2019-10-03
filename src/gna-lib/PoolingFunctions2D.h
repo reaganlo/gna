@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2018 Intel Corporation.
+ Copyright 2019 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -52,6 +52,11 @@ public:
 
     ~PoolingFunction2D() = default;
 
+    virtual bool Is1D() const override
+    {
+        return is1D;
+    }
+
     const KernelPoolingMode Mode;
 
     std::unique_ptr<const Component> Window;
@@ -67,6 +72,8 @@ protected:
     static std::unique_ptr<PoolingFunction2D> create(
         const TransformFactoryConfig& config,
         const OperationConfig& operation);
+
+    bool is1D = false;
 };
 
 }

@@ -55,6 +55,11 @@ struct ConvolutionFunction2D : public Transform<ConvolutionConfig2D, Convolution
 
     virtual Tensor const & GetOperand(uint32_t operandIndex) const override;
 
+    virtual bool Is1D() const override
+    {
+        return is1D;
+    }
+
     std::unique_ptr<const BiasTensor> Biases;
 
     std::unique_ptr<const FiltersTensor> Filters;
@@ -80,5 +85,8 @@ protected:
     static const FullCapabilitiesMap strideLimits;
     static const FullCapabilitiesMap paddingLimits;
     static const FullCapabilitiesMap outputCapabilities;
+
+    bool is1D = false;
+
 };
 }

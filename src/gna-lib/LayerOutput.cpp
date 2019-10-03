@@ -186,7 +186,7 @@ Shape LayerOutput::ConvertInCaseOfNewApiOrder(gna_tensor_order order, const uint
 {
     if (order == GNA_TENSOR_NHWD)
     {
-        return Shape{ GNA_TENSOR_NHWD, nOutputRows, nOutputColumns, 1u, 1u };
+        return Shape{ GNA_TENSOR_NHWD, nOutputRows, 1u, nOutputColumns, 1u };
     }
     if (order == GNA_TENSOR_HW)
     {
@@ -221,22 +221,24 @@ void * getScratchpadForOperation(const Gna2Operation &operation)
     return getGlobal2MBScratchpad();
 }
 
-ApiShape LayerOutput::GetOutputShapeSimplified(const Gna2Operation & operation)
+ApiShape LayerOutput::GetShape(const Gna2Operation & operation)
 {
     ApiShape s{ operation.Operands[OutputOperandIndex]->Shape };
     if (operation.Type == Gna2OperationTypeConvolution &&
         s.NumberOfDimensions == 3)
     {
-        s.NumberOfDimensions = 2;
-        s.Dimensions[1] *= s.Dimensions[2];
-        s.Dimensions[2] = 0;
+        s.NumberOfDimensions = 4;
+        s.Dimensions[3] = s.Dimensions[2];
+        s.Dimensions[2] = s.Dimensions[1];
+        s.Dimensions[1] = 1;
+
     }
     return s;
 }
 
 //TODO:3:P1: Generalize instead addressing output at index 1
 LayerOutput::LayerOutput(const Gna2Operation &operation, const LayerValidator& validatorIn) :
-    Tensor{ Shape::Create(GetOutputShapeSimplified(operation), capabilities.GetOrder(validatorIn)),
+    Tensor{ Shape::Create(GetShape(operation), capabilities.GetOrder(validatorIn)),
         operation.Operands[OutputOperandIndex]->Type, operation.Operands[OutputOperandIndex]->Data,
         Validator{ validatorIn, capabilities } },
     ScratchPad{Dimensions, Gna2DataTypeInt32, Gna2TensorModeDefault, getScratchpadForOperation(operation)}, //TODO:3:P1:Decide what to do with scratch pad in API2, disabled validation, as parameters are provided by library

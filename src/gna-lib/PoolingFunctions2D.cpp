@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2018 Intel Corporation.
+ Copyright 2019 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -46,10 +46,17 @@
 
 using namespace GNA;
 
-static const ComponentLimits __HW_limits=
+static const ComponentLimits __HW_limits =
 {
     {GNA_TENSOR_HW},
     {{GNA_DIM_H, {1, CNN_N_KERNEL_ELEMENTS_PER_DIMENSION_MAX, 1, Gna2StatusCnnErrorPoolStride}},
+    {GNA_DIM_W, {1, CNN_N_KERNEL_ELEMENTS_PER_DIMENSION_MAX, 1, Gna2StatusCnnErrorPoolStride}},}
+};
+
+static const ComponentLimits __HW_limits1D =
+{
+    {GNA_TENSOR_HW},
+    {{GNA_DIM_H, {0, 0, 1, Gna2StatusCnnErrorPoolStride}},
     {GNA_DIM_W, {1, CNN_N_KERNEL_ELEMENTS_PER_DIMENSION_MAX, 1, Gna2StatusCnnErrorPoolStride}},}
 };
 
@@ -57,6 +64,9 @@ const FullCapabilitiesMap PoolingFunction2D::windowLimits
 {
     {INTEL_CONVOLUTIONAL_2D, {
         { GNA_3_0, std::make_shared<ComponentLimits>(__HW_limits)}
+    }},
+    {INTEL_CONVOLUTIONAL_1D, {
+        { GNA_3_0, std::make_shared<ComponentLimits>(__HW_limits1D)}
     }},
     //{GNA_LAYER_CNN_2D_POOLING, {
     //   { GNA_3_0, std::make_shared<ComponentLimits>(ComponentLimits(
@@ -69,6 +79,9 @@ const FullCapabilitiesMap PoolingFunction2D::strideLimits
 {
     {INTEL_CONVOLUTIONAL_2D, {
         { GNA_3_0, std::make_shared<ComponentLimits>(__HW_limits)}
+    }},
+    {INTEL_CONVOLUTIONAL_1D, {
+        { GNA_3_0, std::make_shared<ComponentLimits>(__HW_limits1D)}
     }},
     //{GNA_LAYER_CNN_2D_POOLING, {
     //    { GNA_3_0, std::make_shared<ComponentLimits>(ComponentLimits(
@@ -89,8 +102,17 @@ const FullCapabilitiesMap PoolingFunction2D::outputCapabilities =
             {GNA_TENSOR_NHWD},
             {{GNA_DIM_N, {1, CNN_N_KERNELS_MAX, 1, Gna2StatusXnnErrorOutputVolume}},
              {GNA_DIM_H, {1, XNN_N_IN_ELEMS_MAX, 1, Gna2StatusXnnErrorOutputVolume}},
-             {GNA_DIM_W, {1, XNN_N_IN_ELEMS_MAX, 1, Gna2StatusXnnErrorOutputVolume}},
+            {GNA_DIM_W, {1, XNN_N_IN_ELEMS_MAX, 1, Gna2StatusXnnErrorOutputVolume}},
              {GNA_DIM_D, {1, XNN_N_IN_ELEMS_MAX, 1, Gna2StatusXnnErrorOutputVolume}}},
+            {{GNA_INT8, GNA_INT16, GNA_INT32, GNA_DATA_ACTIVATION_DISABLED}, Gna2StatusXnnErrorOutputBytes }})}
+    }},
+    {INTEL_CONVOLUTIONAL_1D, {
+         {GNA_3_0, std::make_shared<TensorLimits>(TensorLimits{
+            {GNA_TENSOR_NHWD},
+            {{GNA_DIM_N, {1, 1, 1, Gna2StatusXnnErrorOutputVolume}},
+             {GNA_DIM_H, {1, 1, 1, Gna2StatusXnnErrorOutputVolume}},
+             {GNA_DIM_W, {1, XNN_N_IN_ELEMS_MAX, 1, Gna2StatusXnnErrorOutputVolume}},
+             {GNA_DIM_D, {1, CNN_1D_N_KERNELS_MAX, 1, Gna2StatusXnnErrorOutputVolume}}},
             {{GNA_INT8, GNA_INT16, GNA_INT32, GNA_DATA_ACTIVATION_DISABLED}, Gna2StatusXnnErrorOutputBytes }})}
     }},
 };
@@ -106,20 +128,18 @@ std::unique_ptr<PoolingFunction2D> PoolingFunction2D::create(
     const TransformFactoryConfig& config,
     const OperationConfig& operation)
 {
-    auto strideShape = operation.PoolingStride;
-    auto windowShape = operation.PoolingWindow;
     auto poolingMode = operation.Mode;
 
     if (Gna2PoolingModeDisabled != poolingMode)
     {
-        auto stride = std::make_unique<const Component>(strideShape,
-            Validator{ config.validator, strideLimits });
-        auto window = std::make_unique<const Component>(windowShape,
+        auto stride = OperationConfig::CreateCnnComponent(operation.PoolingStride,
+            config.validator, strideLimits);
+        auto window = OperationConfig::CreateCnnComponent(operation.PoolingWindow,
+            config.validator, windowLimits);
 
-            Validator{ config.validator, windowLimits });
         return std::make_unique<PoolingFunction2D>(
             BaseTransformConfig<PoolingKernel2D>{config,
-                AccelerationDetector::GetKernelMap<PoolingKernel2D>(KERNEL_POOLING_2D, {config.input->Mode.Value})},
+            AccelerationDetector::GetKernelMap<PoolingKernel2D>(KERNEL_POOLING_2D, { config.input->Mode.Value })},
             poolingMode, std::move(window), std::move(stride));
     }
     return std::unique_ptr<PoolingFunction2D>(nullptr);
@@ -132,12 +152,22 @@ std::unique_ptr<PoolingFunction2D> PoolingFunction2D::create(
 PoolingFunction2D::PoolingFunction2D(const BaseTransformConfig<PoolingKernel2D>& config,
     const PoolingMode mode, std::unique_ptr<const Component> window,
     std::unique_ptr<const Component> stride) :
-    Transform{PoolingTransform2D, &config.kernels, config.input},
+    Transform{ PoolingTransform2D, &config.kernels, config.input },
     Mode{ mode },
     Window{ std::move(window) },
     Stride{ std::move(stride) }
 {
     Expect::InSet(Mode, modeLimits);
+
+    Expect::InRange(Window->at(GNA_DIM_W), Input->at(GNA_DIM_W), Gna2StatusCnnErrorPoolSize);
+    Expect::InRange(Stride->at(GNA_DIM_W), Window->at(GNA_DIM_W), Gna2StatusCnnErrorPoolStride);
+
+    if (INTEL_CONVOLUTIONAL_1D == Window->GetEffectiveOperationType() ||
+        INTEL_CONVOLUTIONAL_1D == Stride->GetEffectiveOperationType())
+    {
+        is1D = true;
+    }
+
     Shape outputDims;
     outputDims[GNA_DIM_N] = Input->Dimensions.at(GNA_DIM_N);
     outputDims[GNA_DIM_D] = Input->Dimensions.at(GNA_DIM_D);
@@ -151,7 +181,7 @@ PoolingFunction2D::PoolingFunction2D(const BaseTransformConfig<PoolingKernel2D>&
     }
 
     Output = std::make_unique<Tensor>(outputDims, Input->Mode, config.outputBuffer,
-        Validator{config.validator, outputCapabilities});
+        Validator{ config.validator, outputCapabilities });
 
     const auto output = Output->Dimensions;
     Expect::Fits(output, Input->Dimensions);
@@ -162,8 +192,8 @@ PoolingFunction2D::PoolingFunction2D(const BaseTransformConfig<PoolingKernel2D>&
 
     PoolingConfig2D kernelPoolingConfiguration{ input.width, input.height, input.depth,
         Mode, poolingStride.width, poolingStride.height,
-        poolingWindow.width, poolingWindow.height};
+        poolingWindow.width, poolingWindow.height };
 
     hiddenConfig = std::make_unique<KernelConfig<PoolingConfig2D>>(kernelPoolingConfiguration,
-        BaseConfig{Input->Buffer, Output->Buffer});
+        BaseConfig{ Input->Buffer, Output->Buffer });
 }

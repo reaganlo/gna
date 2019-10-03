@@ -45,6 +45,13 @@ static const MultiplierLimits shapeLimitMultipliersForCnnLegacy =
         Gna2StatusCnnErrorConvFltVolume
 };
 
+static const MultiplierLimits shapeLimitMultipliersFor1D =
+{
+    {{Gna2DataTypeInt8, 2 * 8},
+        {Gna2DataTypeInt16, 8 }},
+        Gna2StatusCnnErrorConvFltVolume
+};
+
 /* GNA_DATA_DISABLED may be supported in next generation */
 static const DataModeLimits _ModesGen0_9 =
 {
@@ -97,6 +104,23 @@ const FullCapabilitiesMap WeightTensor::capabilities =
                 {GNA_DIM_D, {CNN_N_KERNEL_ELEMENTS_PER_DIMENSION_MIN, XNN_N_IN_ELEMS_MAX, 1, Gna2StatusCnnErrorConvFltVolume}}},
                 // Padding to 16B is required for each Kernel
             {{ GNA_INT8, GNA_INT16, GNA_DATA_CONSTANT_SCALAR }, Gna2StatusXnnErrorConvFltBytes }})}
+    }},
+    {INTEL_CONVOLUTIONAL_1D, {
+        {GNA_1_0, std::make_shared<TensorLimits>(TensorLimits{
+            {GNA_TENSOR_NHWD},    // N - # filters, H - # filter coefficients
+            {{GNA_DIM_N, {CNN_N_FLT_COEFF_MPLY, CNN_N_FLT_MAX, CNN_N_FLT_COEFF_MPLY, Gna2StatusCnnErrorConvFltCount}},
+                {GNA_DIM_H, {CNN_N_FLT_COEFF_MIN, CNN_N_FLT_COEFF_MAX, shapeLimitMultipliersForCnnLegacy, Gna2StatusCnnErrorConvFltVolume}},
+                {GNA_DIM_W, {1, 1, 1, Gna2StatusCnnErrorConvFltVolume}},
+                {GNA_DIM_D, {1, 1, 1, Gna2StatusCnnErrorConvFltVolume}}},
+            {{ GNA_INT8, GNA_INT16 }, Gna2StatusXnnErrorConvFltBytes }})},
+        {GNA_3_0, std::make_shared<TensorLimits>(TensorLimits{
+            { GNA_TENSOR_NHWD },    // N - # filters, HWD each filter dimensions
+            {{GNA_DIM_N, {1, CNN_1D_N_KERNELS_MAX, 1, Gna2StatusCnnErrorConvFltCount}},
+                {GNA_DIM_H, {CNN_N_KERNEL_ELEMENTS_PER_DIMENSION_MIN, CNN_N_KERNEL_ELEMENTS_PER_DIMENSION_MIN, 1, Gna2StatusCnnErrorConvFltVolume}},
+                {GNA_DIM_W, {CNN_N_KERNEL_ELEMENTS_PER_DIMENSION_MIN, CNN_1D_N_KERNEL_ELEMENTS_PER_DIMENSION_MAX, shapeLimitMultipliersFor1D, Gna2StatusCnnErrorConvFltVolume}},
+                {GNA_DIM_D, {CNN_N_KERNEL_ELEMENTS_PER_DIMENSION_MIN, CNN_N_KERNEL_ELEMENTS_PER_DIMENSION_MIN, 1, Gna2StatusCnnErrorConvFltVolume}}},
+                // Padding to 16B is required for each Kernel
+            {{ GNA_INT8, GNA_INT16 }, Gna2StatusXnnErrorConvFltBytes }})}
     }},
      {INTEL_GMM, {
         {GMM_DEVICE, std::make_shared<TensorLimits>(TensorLimits{

@@ -54,7 +54,7 @@ protected:
 private:
     static const FullCapabilitiesMap& GetCapabilitiesLegacy();
     static Shape ConvertInCaseOfNewApiOrder(gna_tensor_order getOrder, const uint32_t nOutputColumns, const uint32_t nOutputRows);
-    static ApiShape GetOutputShapeSimplified(const Gna2Operation & operation);
+    static ApiShape GetShape(const Gna2Operation & operation);
 };
 
 }

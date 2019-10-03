@@ -29,7 +29,7 @@ class SetupConvolutionModel2D : public ModelSetup
 {
 public:
     SetupConvolutionModel2D(DeviceController & deviceCtrl, bool pwlEn);
-    virtual ~SetupConvolutionModel2D();
+    virtual ~SetupConvolutionModel2D() override;
 
 private:
     void sampleConvolutionLayer();

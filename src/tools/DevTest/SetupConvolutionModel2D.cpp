@@ -33,43 +33,29 @@
 
 #include "Macros.h"
 
-constexpr uint32_t layerCount = 2;
+constexpr uint32_t layerCount = 1;
 constexpr uint32_t grouping = 1;
 
-constexpr gna_3d_dimensions inputDimensions = {7, 7, 2};
+constexpr gna_3d_dimensions inputDimensions = {16, 1, 1};
 constexpr uint32_t totalInputCount = inputDimensions.width * inputDimensions.height * inputDimensions.depth;
-constexpr gna_3d_dimensions filterDimensions = {3, 3, 2};
+constexpr gna_3d_dimensions filterDimensions = {8, 1, 1};
 constexpr uint32_t filterN = 3;
 //constexpr gna_3d_dimensions outputDimensions = {5, 5, filterN};
-constexpr gna_3d_dimensions outputDimensions = {3, 3, filterN};
+constexpr gna_3d_dimensions outputDimensions = {7, 1, filterN};
 constexpr uint32_t totalOutputCount = outputDimensions.width * outputDimensions.height * outputDimensions.depth;
 
 const int16_t filters[filterN * ALIGN(filterDimensions.width * filterDimensions.height * filterDimensions.depth, (16/sizeof(int16_t)))] =
 {
-    1,2,    1,2,    1,2,
-    1,2,    1,2,    1,2,
-    1,2,    1,2,    1,2,
-    0,0,0,0,0,0,
+    1, 1, 1, 1, 1, 1, 1, 1,
 
-    1,2,    1,2,    1,2,
-    1,2,    1,2,    1,2,
-    1,2,    1,2,    1,2,
-    0,0,0,0,0,0,
+    2, 2, 2, 2, 2, 2, 2, 2,
 
-    1,2,    1,2,    1,2,
-    1,2,    1,2,    1,2,
-    1,2,    1,2,    1,2,
-    0,0,0,0,0,0
+    3, 3, 3, 3, 3, 3, 3, 3,
 };
 
 const int16_t inputs[grouping * totalInputCount] = {
-   1, 1,    2,2,    3,3,    4,4,    5,5,     6,6,   7,7,
-   1, 1,    2,2,    3,3,    4,4,    5,5,     6,6,   7,7,
-   1, 1,    2,2,    3,3,    4,4,    5,5,     6,6,   7,7,
-   1, 1,    2,2,    3,3,    4,4,    5,5,     6,6,   7,7,
-   1, 1,    2,2,    3,3,    4,4,    5,5,     6,6,   7,7,
-   1, 1,    2,2,    3,3,    4,4,    5,5,     6,6,   7,7,
-   1, 1,    2,2,    3,3,    4,4,    5,5,     6,6,   7,7,
+    1, 1, 1, 1, 1, 1, 1, 1,
+    2, 2, 2, 2, 2, 2, 2, 2,
 };
 
 const intel_bias_t regularBiases[filterN] = {
@@ -86,9 +72,9 @@ const intel_bias_t regularBiases[filterN] = {
 
 
 const int32_t ref_output[grouping * totalOutputCount] = {
-   1,1,1,    2,2,2,    3,3,3,
-   1,1,1,    2,2,2,    3,3,3,
-   1,1,1,    2,2,2,    3,3,3,
+   1,1,1,1,1,1,1,
+   1,1,1,1,1,1,1,
+   1,1,1,1,1,1,1,
 };
 
 SetupConvolutionModel2D::SetupConvolutionModel2D(DeviceController & deviceCtrl, bool pwlEn)
@@ -151,7 +137,7 @@ void SetupConvolutionModel2D::sampleConvolutionLayer()
     layer.inputDimensions = inputDimensions;
     layer.pooling.type = INTEL_MAX_POOLING;
     layer.pooling.stride = {1, 1, 0};
-    layer.pooling.window = {3, 3, 0};
+    layer.pooling.window = {3, 1, 0};
 
 
     nnet.pLayers[0].nInputColumns = totalInputCount;
@@ -167,6 +153,4 @@ void SetupConvolutionModel2D::sampleConvolutionLayer()
     nnet.pLayers[0].pLayerStruct = &layer;
     nnet.pLayers[0].pInputs = nullptr;
     nnet.pLayers[0].pOutputs = nullptr;
-
-    memcpy_s(&nnet.pLayers[1], sizeof(intel_nnet_layer_t), &nnet.pLayers[0], sizeof(intel_nnet_layer_t));
 }

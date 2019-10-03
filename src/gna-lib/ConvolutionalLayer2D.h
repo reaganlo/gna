@@ -47,8 +47,6 @@ public:
 
     virtual Tensor const & GetOperand(uint32_t operandIndex) const override;
 
-    static bool IsSupported(const Gna2Operation & operation);
-
 protected:
     virtual DataConfig GetDataMode() const override;
     void Init();

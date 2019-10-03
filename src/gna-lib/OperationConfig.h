@@ -72,6 +72,38 @@ public:
         throw GnaException(Gna2StatusModelConfigurationInvalid);
     }
 
+    template<typename Target, typename Source>
+    static std::unique_ptr<const Target> CreateCnnTarget(
+        const Source& source, const LayerValidator& validator, const FullCapabilitiesMap& caps)
+    {
+        try // 1D CNN in new arch
+        {
+            auto const validator1D = LayerValidator{ validator, INTEL_CONVOLUTIONAL_1D };
+            return std::make_unique<const Target>(source,
+                Validator{ validator1D, caps });
+
+        }
+        catch (const GnaException&) // try 2D CNN in new arch
+        {
+            return std::make_unique<const Target>(source,
+                Validator{ validator, caps });
+        }
+    }
+
+    static std::unique_ptr<const Component> CreateCnnComponent(const Shape& shape,
+        const LayerValidator& validator, const FullCapabilitiesMap & caps)
+    {
+        if (shape.empty())
+        {
+            return CreateCnnTarget<Component, Shape>(
+                Shape{ GNA_TENSOR_HW, 0u, 0u }, validator, caps);
+        }
+        else
+        {
+            return CreateCnnTarget<Component, Shape>(shape, validator, caps);
+        }
+    }
+
     Gna2OperationType OperationType;
     Gna2Tensor WeightsTensor;
     Gna2Tensor FiltersTensor;

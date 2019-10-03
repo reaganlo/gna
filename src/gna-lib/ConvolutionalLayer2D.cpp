@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2018 Intel Corporation.
+ Copyright 2019 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -28,6 +28,7 @@
 #include "ActivationFunction.h"
 #include "Address.h"
 #include "ConvolutionalFunctions2D.h"
+#include "ConvolutionalLayer2DCapabilities.h"
 #include "Expect.h"
 #include "HardwareCapabilities.h"
 #include "HardwareLayer.h"
@@ -50,6 +51,18 @@ using namespace GNA;
 
 void ConvolutionalLayer2D::Init()
 {
+    if(inputTransform->Is1D() ||
+        outputTransform->Is1D())
+    {
+        auto const & caps = ConvolutionalLayer1DCapabilities::GetOperands(InputOperandIndex);
+        auto const & limits = caps.at(validator->HwCapabilities.GetDeviceGeneration());
+        Input.Validate(*limits, true);
+
+        auto const & capsOut = ConvolutionalLayer1DCapabilities::GetOperands(OutputOperandIndex);
+        auto const & limitsOut = capsOut.at(validator->HwCapabilities.GetDeviceGeneration());
+        Output.Validate(*limitsOut, true);
+    }
+
     Expect::One(Input.at(GNA_DIM_N), Gna2StatusXnnErrorGrouping);
     Expect::One(Output.at(GNA_DIM_N), Gna2StatusXnnErrorGrouping);
     Expect::Equal(Output.Size, GetOutputTransform()->Output->Size, Gna2StatusXnnErrorOutputVolume);
@@ -82,11 +95,6 @@ Tensor const & ConvolutionalLayer2D::GetOperand(uint32_t operandIndex) const
     default:
         return Layer::GetOperand(operandIndex);
     }
-}
-
-bool ConvolutionalLayer2D::IsSupported(const Gna2Operation & operation)
-{
-    return 4 == operation.Operands[InputOperandIndex]->Shape.NumberOfDimensions;
 }
 
 DataConfig ConvolutionalLayer2D::GetDataMode() const

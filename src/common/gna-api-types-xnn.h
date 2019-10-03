@@ -170,6 +170,7 @@ typedef enum _layer_operation
     INTEL_AFFINE_MULTIBIAS,         // Fully connected affine transform (with grouped bias vectors) (deep feed forward) with activation function. Cast pLayerStruct to intel_affine_multibias_layer_t.
     INTEL_CONVOLUTIONAL,            // Convolutional transform with activation function and pooling. Cast pLayerStruct to intel_convolutional_layer_t.
     INTEL_CONVOLUTIONAL_2D,         // Convolutional transform with activation function and pooling. Cast pLayerStruct to nn_layer_cnn2d.
+    INTEL_CONVOLUTIONAL_1D,         // FOR INTERNAL USE ONLY
     INTEL_COPY,                     // Auxiliary data copy operation. Cast pLayerStruct to intel_copy_layer_t.
     INTEL_DEINTERLEAVE,             // Auxiliary 2D tensor transpose operation (interleave to flat). No casting, always set pLayerStruct to null.
     INTEL_GMM,                      // Gaussian Mixture Model operation. Cast pLayerStruct to intel_gmm_layer_t.
@@ -533,6 +534,9 @@ const uint32_t CNN_N_KERNEL_ELEMENTS_PER_DIMENSION_MIN = 1;
 /** CNN 2D maximum number of kernel elements in one dimension */
 const uint32_t CNN_N_KERNEL_ELEMENTS_PER_DIMENSION_MAX = 256;
 
+/** CNN 1D maximum number of kernel elements in one dimension For int8_t */
+const uint32_t CNN_1D_N_KERNEL_ELEMENTS_PER_DIMENSION_MAX = 2048;
+
 /** CNN number of filter coefficients constraint - must be multiple of */
 const uint32_t CNN_N_FLT_COEFF_MPLY = 4;
 
@@ -541,6 +545,9 @@ const uint32_t CNN_N_FLT_MAX = ((UINT16_MAX + 1) - 4);
 
 /** CNN 2D maximum number of kernels */
 const uint32_t CNN_N_KERNELS_MAX = UINT16_MAX;
+
+/** CNN D maximum number of kernels */
+const uint32_t CNN_1D_N_KERNELS_MAX = 8192;
 
 /** CNN minimum size of pooling window */
 const uint32_t CNN_POOL_SIZE_MIN = 1;

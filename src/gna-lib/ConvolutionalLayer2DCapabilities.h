@@ -64,4 +64,9 @@ struct ConvolutionalLayer2DCapabilities : LayerCapabilities
     static constexpr uint32_t PoolingWindowSizeMax = 6;
 };
 
+struct ConvolutionalLayer1DCapabilities : ConvolutionalLayer2DCapabilities
+{
+    static const OperationCapabilityMap & GetOperands(uint32_t operandIndex);
+};
+
 }

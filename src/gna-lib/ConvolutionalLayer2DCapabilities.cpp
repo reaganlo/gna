@@ -149,3 +149,29 @@ const OperationCapabilityMap & ConvolutionalLayer2DCapabilities::GetParameters(u
     };
     return parameters.at(parameterIndex);
 }
+
+const OperationCapabilityMap & ConvolutionalLayer1DCapabilities::GetOperands(uint32_t operandIndex)
+{
+    static const ComponentCapabilityMap operands =
+    {
+        {InputOperandIndex,{
+            {GNA_3_0, std::make_shared<TensorLimits>(TensorLimits{
+                {GNA_TENSOR_NHWD},    // N = 1
+                {{GNA_DIM_N, limitsForInputEqual1},
+                 {GNA_DIM_H, limitsForInputEqual1},
+                 {GNA_DIM_W, limitsForInputUInt16Max},
+                 {GNA_DIM_D, limitsForInputEqual1}},
+                GetModes(InputOperandIndex, GNA_3_0)})}
+        }},
+        {OutputOperandIndex,{
+            {GNA_3_0, std::make_shared<TensorLimits>(TensorLimits{
+                {GNA_TENSOR_NHWD},
+                {{GNA_DIM_N, limitsForOutputEqual1},
+                 {GNA_DIM_H, limitsForInputEqual1},
+                 {GNA_DIM_W, limitsForOutputUInt16Max},
+                {GNA_DIM_D, {1, CNN_1D_N_KERNELS_MAX, 1, Gna2StatusXnnErrorOutputVolume}}},
+                GetModes(OutputOperandIndex, GNA_3_0)})}
+        }},
+    };
+    return operands.at(operandIndex);
+}

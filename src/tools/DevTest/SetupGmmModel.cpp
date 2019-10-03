@@ -105,11 +105,10 @@ void SetupGmmModel::sampleGmmLayer()
 
     auto const buf_size_weights = ALIGN64(sizeof(variance)); // note that buffer alignment to 64-bytes is required by GNA HW
     auto const buf_size_inputs = ALIGN64(sizeof(feature_vector));
-    auto const buf_size_biases = ALIGN64(sizeof(Gconst));
     auto const buf_size_outputs = ALIGN64(sizeof(ref_output_));
     auto const indicesSize = static_cast<uint32_t>(indicesCount * sizeof(uint32_t));
 
-    uint32_t bytes_requested = buf_size_weights + buf_size_inputs + buf_size_biases + buf_size_outputs;
+    uint32_t bytes_requested = buf_size_weights + buf_size_inputs + buf_size_outputs;
     if (activeListEnabled)
     {
         bytes_requested += indicesSize;
@@ -128,10 +127,6 @@ void SetupGmmModel::sampleGmmLayer()
     inputBuffer = pinned_mem_ptr;
     memcpy(inputBuffer, feature_vector, sizeof(feature_vector));      // puts the inputs into the pinned memory
     pinned_mem_ptr += buf_size_inputs;                  // fast-forwards current pinned memory pointer to the next free block
-
-    auto * const pinned_biases = pinned_mem_ptr;
-    memcpy(pinned_biases, Gconst, sizeof(Gconst));      // puts the biases into the pinned memory
-    pinned_mem_ptr += buf_size_biases;                  // fast-forwards current pinned memory pointer to the next free block
 
     outputBuffer = pinned_mem_ptr;
     pinned_mem_ptr += buf_size_outputs;                 // fast-forwards the current pinned memory pointer by the space needed for outputs
@@ -154,22 +149,14 @@ void SetupGmmModel::sampleGmmLayer()
         dataShape.Dimensions[1], dataShape.Dimensions[2],
         Gna2DataTypeUint8,
         pinned_weights);
-    tensors[3] = Gna2TensorInit3D(dataShape.Dimensions[0],
-        dataShape.Dimensions[1], dataShape.Dimensions[2],
-        Gna2DataTypeUint8,
-        pinned_weights);
-    tensors[4] = Gna2TensorInit2D(dataShape.Dimensions[0],
-            Gna2RoundUp(dataShape.Dimensions[1], 2),
-            Gna2DataTypeUint32,
-            pinned_biases);
     
     parameters = calloc(1, sizeof(uint32_t));
     auto const maxScore = static_cast<uint32_t*>(parameters);
     *maxScore = UINT32_MAX;
 
-    Gna2OperationInitGmm(operations, &Allocator,
+    Gna2OperationInitGmmInterleaved(operations, &Allocator,
         &tensors[0], &tensors[1],
-        &tensors[2], &tensors[3], &tensors[4],
+        &tensors[2],
         maxScore);
 
     model = { 1, operations };

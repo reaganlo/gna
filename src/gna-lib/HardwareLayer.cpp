@@ -626,7 +626,15 @@ HardwareLayerCnn2D::HardwareLayerCnn2D(const DescriptorParameters& parameters) :
     uArchConfig = CalculateUArchConfig(parameters.XnnDescriptor.HwCapabilities.GetDeviceVersion(),
         cnn, pooling, SoftwareLayer.GetOutputTransform()->Output->Mode);
 
-    save();
+    if (cnn->Is1D() ||
+        pooling->Is1D())
+    {
+        save1D();
+    }
+    else
+    {
+        save();
+    }
     saveActivation(
         SoftwareLayer.Get()->Transforms.Get<ActivationFunction>(ActivationTransform));
 }
@@ -634,6 +642,7 @@ HardwareLayerCnn2D::HardwareLayerCnn2D(const DescriptorParameters& parameters) :
 void HardwareLayerCnn2D::save()
 {
     saveCommonPart();
+    XnnDescriptor[op] = static_cast<uint8_t>(NN_CNN2D_FUSED);
     XnnDescriptor[n_groups] = SoftwareLayer.Input.Dimensions.at('N');
     XnnDescriptor[n_in_elems] = SoftwareLayer.Input.Dimensions.at('W');
     XnnDescriptor[n_out_elems] = SoftwareLayer.Output.Dimensions.at('W');
@@ -672,6 +681,39 @@ void HardwareLayerCnn2D::save()
         XnnDescriptor[cnn2d_pool_out_h] = pooling->Output->Dimensions.at('H');
         XnnDescriptor[cnn2d_pool_window_w] = pooling->Window->Dimensions.at('W');
         XnnDescriptor[cnn2d_pool_window_h] = pooling->Window->Dimensions.at('H');
+        XnnDescriptor[pool_param] = pooling->Mode;
+    }
+}
+
+void HardwareLayerCnn2D::save1D()
+{
+    saveCommonPart();
+    XnnDescriptor[op] = static_cast<uint8_t>(NN_CNN);
+    XnnDescriptor[weight_size] = cnn->Filters->Mode;
+    XnnDescriptor[n_in_elems] = SoftwareLayer.Input.Dimensions.at('W');
+    XnnDescriptor[n_out_elems] = SoftwareLayer.Output.Dimensions.at('W');
+    XnnDescriptor[n_groups] = ui32_0;
+    // 07:pooling
+    XnnDescriptor[cnn_n_flt_stride] = cnn->Stride->Dimensions.at('W');
+    // 0a:pool size
+    XnnDescriptor[cnn2d_bias_mode] = cnn->Biases->BiasMode;
+    XnnDescriptor[bias_precision] = cnn->Biases->Mode;
+    XnnDescriptor[cnn_n_flts] = cnn->Filters->Count;
+    XnnDescriptor[cnn2d_kernel_iter] = static_cast<uint32_t>(uArchConfig.KWGIter);
+    XnnDescriptor[cnn_flt_size] = cnn->Filters->Dimensions.at('W');
+    XnnDescriptor[cnn2d_kernel_wg] = static_cast<uint32_t>(uArchConfig.KWG);
+    XnnDescriptor[cnn2d_conv_out_w] = cnn->Output->Dimensions.at('W');
+    XnnDescriptor[cnn2d_uthread_num] = uArchConfig.uT; //from u-arch
+    XnnDescriptor[cnn2d_kmem_base] = uArchConfig.KMemBase;
+    XnnDescriptor[cnn2d_pmem_base] = uArchConfig.PMemBase;
+    XnnDescriptor[cnn2d_cmem_base] = uArchConfig.CMemBase;
+    XnnDescriptor[weight_buffer] = *cnn->Filters;
+    XnnDescriptor[bias_buffer] = cnn->Biases->Buffer;
+
+    if (pooling != nullptr)
+    {
+        XnnDescriptor[cnn_pool_stride] = pooling->Stride->Dimensions.at('W');
+        XnnDescriptor[cnn_pool_size] = pooling->Window->Dimensions.at('W');
         XnnDescriptor[pool_param] = pooling->Mode;
     }
 }
@@ -763,5 +805,3 @@ void HardwareLayerGmm::save()
         XnnDescriptor[n_groups] = static_cast<uint32_t>(1);
     }
 }
-
-

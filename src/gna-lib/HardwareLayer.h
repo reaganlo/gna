@@ -232,6 +232,8 @@ public:
 protected:
     void save();
 
+    void save1D();
+
     ConvolutionFunction2D const * const cnn;
     PoolingFunction2D const * const pooling;
 

@@ -219,7 +219,15 @@ Gna2Tensor OperationConfig::GetFilters(const nn_layer& layer)
 
 Gna2Tensor OperationConfig::GetFilters(const Gna2Operation & operation)
 {
-    return GetOperand(operation, FilterOperandIndex, {});
+    auto filter = GetOperand(operation, FilterOperandIndex, {});
+    if (2 == filter.Shape.NumberOfDimensions)
+    {
+        filter.Shape.NumberOfDimensions = 4;
+        filter.Shape.Dimensions[2] = filter.Shape.Dimensions[1];
+        filter.Shape.Dimensions[1] = 1;
+        filter.Shape.Dimensions[3] = 1;
+    }
+    return filter;
 }
 
 Gna2Tensor OperationConfig::GetBiases(const nn_layer& layer)
@@ -302,7 +310,14 @@ Gna2Tensor OperationConfig::GetBiases(const Gna2Operation & operation)
 
 Shape OperationConfig::GetStride(const Gna2Operation & operation)
 {
-    const auto parameter = TryGetParamShape(operation, ParameterIndexConvolutionStride);
+    auto parameter = TryGetParamShape(operation, ParameterIndexConvolutionStride);
+    if (parameter.size() == 1)
+    {
+        parameter.LayoutOrder = Layout("HW");
+        parameter['W'] = parameter['N'];
+        parameter.erase(GNA_DIM_N);
+        parameter['H'] = 0;
+    }
     return parameter;
 }
 
@@ -314,7 +329,11 @@ Shape OperationConfig::GetStride(const nn_layer& layer)
 
 Shape OperationConfig::GetZeroPadding(const Gna2Operation& operation)
 {
-    const auto parameter = TryGetParamShape(operation, ParameterIndexZeroPadding);
+    auto parameter = TryGetParamShape(operation, ParameterIndexZeroPadding);
+    if(parameter.size() == 1)
+    {
+        parameter = Shape();
+    }
     return parameter;
 }
 
@@ -433,7 +452,21 @@ void OperationConfig::InitMultibias(const nn_layer& layer)
 void OperationConfig::InitPooling(const Gna2Operation & operation)
 {
     PoolingWindow = GetPoolingWindow(operation);
+    if(PoolingWindow.size() == 1)
+    {
+        PoolingWindow.LayoutOrder = Layout("HW");
+        PoolingWindow['W'] = PoolingWindow['N'];
+        PoolingWindow.erase(GNA_DIM_N);
+        PoolingWindow['H'] = 0;
+    }
     PoolingStride = GetPoolingStride(operation);
+    if(PoolingStride.size() == 1)
+    {
+        PoolingStride.LayoutOrder = Layout("HW");
+        PoolingStride['W'] = PoolingStride['N'];
+        PoolingStride.erase(GNA_DIM_N);
+        PoolingStride['H'] = 0;
+    }
     Mode = GetPoolingMode(operation);
 }
 
@@ -441,6 +474,7 @@ void OperationConfig::InitPooling(const nn_layer& layer)
 {
     const auto p = GetPoolingImpl(layer);
     PoolingWindow = GetPoolingWindow(p);
+    
     PoolingStride = GetPoolingStride(p);
     Mode = GetPoolingMode(p);
 }

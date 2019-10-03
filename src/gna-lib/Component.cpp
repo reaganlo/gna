@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2018 Intel Corporation.
+ Copyright 2019 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -48,14 +48,22 @@ Component::Component(const Component & component, const Validator & validatorIn,
 
 Component::Component(const Shape& dimensions, const Validator& validatorIn, bool validateDimensions) :
     Component{ Component{ dimensions.Reshape(validatorIn.Order) }, validatorIn, validateDimensions }
+{}
+
+nn_operation Component::GetEffectiveOperationType() const
 {
+    if (validator)
+    {
+        return validator->Operation;
+    }
+    return LAYER_OPERATION_TYPE_COUT;
 }
 
 void Component::Validate(const ComponentLimits& limits, bool validateDimensions) const
 {
     if (validateDimensions)
     {
-        Expect::Equal( Dimensions.LayoutOrder.operator _tensor_order(),
+        Expect::Equal(Dimensions.LayoutOrder.operator _tensor_order(),
             limits.Order.Value, limits.Order.Error);
         Expect::ShapeIsValid(Dimensions, limits.Dimensions);
     }

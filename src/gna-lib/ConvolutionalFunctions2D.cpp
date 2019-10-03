@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2018 Intel Corporation.
+ Copyright 2019 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -53,7 +53,13 @@ const FullCapabilitiesMap ConvolutionFunction2D::strideLimits
             {GNA_TENSOR_HW},
             {{GNA_DIM_H, {1, CNN_N_KERNEL_ELEMENTS_PER_DIMENSION_MAX, 1, Gna2StatusCnnErrorConvFltStride}},
              {GNA_DIM_W, {1, CNN_N_KERNEL_ELEMENTS_PER_DIMENSION_MAX, 1, Gna2StatusCnnErrorConvFltStride}}}))}
-    }}
+    }},
+    { INTEL_CONVOLUTIONAL_1D, {
+        { GNA_3_0, std::make_shared<ComponentLimits>(ComponentLimits(
+            {GNA_TENSOR_HW},
+            {{GNA_DIM_H, {0, 0, 1, Gna2StatusCnnErrorConvFltStride}},
+             {GNA_DIM_W, {1, CNN_N_KERNEL_ELEMENTS_PER_DIMENSION_MAX, 1, Gna2StatusCnnErrorConvFltStride}}}))}
+    }},
 };
 
 const FullCapabilitiesMap ConvolutionFunction2D::paddingLimits
@@ -63,6 +69,12 @@ const FullCapabilitiesMap ConvolutionFunction2D::paddingLimits
             {GNA_TENSOR_HW},
             {{GNA_DIM_H, {0, CNN_N_KERNEL_ELEMENTS_PER_DIMENSION_MAX, 1, Gna2StatusCnnErrorConvFltPadding}},
              {GNA_DIM_W, {0, CNN_N_KERNEL_ELEMENTS_PER_DIMENSION_MAX, 1, Gna2StatusCnnErrorConvFltPadding}}}))}
+    }},
+    { INTEL_CONVOLUTIONAL_1D, {
+        { GNA_3_0, std::make_shared<ComponentLimits>(ComponentLimits(
+            {GNA_TENSOR_HW},
+            {{GNA_DIM_H, {0, 0, 1, Gna2StatusCnnErrorConvFltPadding}},
+             {GNA_DIM_W, {0, 0, 1, Gna2StatusCnnErrorConvFltPadding}}}))}
     }}
 };
 
@@ -75,6 +87,15 @@ const FullCapabilitiesMap ConvolutionFunction2D::outputCapabilities
              {GNA_DIM_H, {1, XNN_N_IN_ELEMS_MAX, 1, Gna2StatusXnnErrorOutputVolume}},
              {GNA_DIM_W, {1, XNN_N_IN_ELEMS_MAX, 1, Gna2StatusXnnErrorOutputVolume}},
              {GNA_DIM_D, {1, XNN_N_IN_ELEMS_MAX, 1, Gna2StatusXnnErrorOutputVolume}}},
+            {{GNA_INT8, GNA_INT16, GNA_INT32, GNA_DATA_ACTIVATION_DISABLED}, Gna2StatusXnnErrorOutputBytes }})}
+    }},
+    {INTEL_CONVOLUTIONAL_1D, {
+        {GNA_3_0, std::make_shared<TensorLimits>(TensorLimits{
+            {GNA_TENSOR_NHWD},
+            {{GNA_DIM_N, {1, 1, 1, Gna2StatusXnnErrorOutputVolume}},
+             {GNA_DIM_H, {1, 1, 1, Gna2StatusXnnErrorOutputVolume}},
+             {GNA_DIM_W, {1, XNN_N_IN_ELEMS_MAX, 1, Gna2StatusXnnErrorOutputVolume}},
+             {GNA_DIM_D, {1, CNN_1D_N_KERNELS_MAX, 1, Gna2StatusXnnErrorOutputVolume}}},
             {{GNA_INT8, GNA_INT16, GNA_INT32, GNA_DATA_ACTIVATION_DISABLED}, Gna2StatusXnnErrorOutputBytes }})}
     }},
 };
@@ -99,18 +120,14 @@ std::unique_ptr<ConvolutionFunction2D> ConvolutionFunction2D::create(
 {
     // TODO:3: P2: simplify to auto FiltersTensor = config.GetOperand(OperandTypeFilter);
     // TODO:3: P2: convert api types to internal so that transforms rely only on internal data types
-    const auto filtersTensor = operation.FiltersTensor;
-    auto filters = FiltersTensor::Create(filtersTensor, config.validator);
+    auto filters = FiltersTensor::Create(operation.FiltersTensor,
+        config.validator);
 
-    auto stride = std::make_unique<const Component>(operation.ConvolutionStride,
-        Validator{ config.validator, strideLimits });
-    auto paddingShape = operation.ZeroPadding;
-    if(paddingShape.empty())
-    {
-        paddingShape = Shape{ GNA_TENSOR_HW, 0u, 0u };
-    }
-    auto padding = std::make_unique<const Component>(paddingShape,
-        Validator{ config.validator, paddingLimits });
+    auto stride = OperationConfig::CreateCnnComponent(operation.ConvolutionStride,
+        config.validator, strideLimits);
+
+    auto padding = OperationConfig::CreateCnnComponent(operation.ZeroPadding,
+        config.validator, paddingLimits);
 
     const Shape outputDims = GetOutputShape(config.input->Dimensions,
         filters->Dimensions, stride->Dimensions, padding->Dimensions);
@@ -123,7 +140,7 @@ std::unique_ptr<ConvolutionFunction2D> ConvolutionFunction2D::create(
 
     return std::make_unique<ConvolutionFunction2D>(BaseTransformConfig<ConvolutionKernel2D>{config,
         AccelerationDetector::GetKernelMap<ConvolutionKernel2D>(
-            KERNEL_CONVOLUTIONAL_2D,  { config.input->Mode, filters->Mode, (biases ? static_cast<gna_data_mode>(biases->Mode): GNA_DATA_DISABLED) })},
+            KERNEL_CONVOLUTIONAL_2D, { config.input->Mode, filters->Mode, (biases ? static_cast<gna_data_mode>(biases->Mode) : GNA_DATA_DISABLED) })},
         move(filters), move(biases), move(stride), move(padding));
 }
 
@@ -156,17 +173,31 @@ std::unique_ptr<const BiasTensor> ConvolutionFunction2D::CreateBiasTensor(
 {
     Shape biasDims = CalculateBiasShape(biasMode, filtersCount, outputShape);
     // TODO:3: assert calculated bias shape matches one in apiTensor if provided by user (API2)
-    return std::make_unique<const BiasTensor>(
-        biasDims,
-        0,
-        DataMode{ apiTensor.Type, apiTensor.Mode },
-        apiTensor.Data,
-        validatorIn,
-        biasMode);
+    try // 1D CNN in new arch
+    {
+        auto const validator1D = LayerValidator{ validatorIn, INTEL_CONVOLUTIONAL_1D };
+        return std::make_unique<const BiasTensor>(
+            biasDims,
+            0,
+            DataMode{ apiTensor.Type, apiTensor.Mode },
+            apiTensor.Data,
+            validator1D,
+            biasMode);
+    }
+    catch (const GnaException&) // try 2D CNN in new arch
+    {
+        return std::make_unique<const BiasTensor>(
+            biasDims,
+            0,
+            DataMode{ apiTensor.Type, apiTensor.Mode },
+            apiTensor.Data,
+            validatorIn,
+            biasMode);
+    }
 }
 
 Shape ConvolutionFunction2D::GetOutputShape(Shape const & inputShape,
-        Shape const & filerShape, Shape const & strideShape, Shape const & paddingShape)
+    Shape const & filerShape, Shape const & strideShape, Shape const & paddingShape)
 {
     Shape outputShape;
     outputShape.LayoutOrder = GNA_TENSOR_NHWD;
@@ -189,7 +220,7 @@ ConvolutionFunction2D::ConvolutionFunction2D(const BaseTransformConfig<Convoluti
     std::unique_ptr<const BiasTensor> biases,
     std::unique_ptr<const Component> stride,
     std::unique_ptr<const Component> padding) :
-    Transform{ConvolutionalTransform2D, &config.kernels, config.input},
+    Transform{ ConvolutionalTransform2D, &config.kernels, config.input },
     Biases{ move(biases) },
     Filters{ move(filters) },
     Stride{ move(stride) },
@@ -201,11 +232,20 @@ ConvolutionFunction2D::ConvolutionFunction2D(const BaseTransformConfig<Convoluti
         Expect::Equal<uint32_t>(Biases->at(GNA_DIM_W), 1, Gna2StatusXnnErrorBiasMode);
     }
 
+    if (INTEL_CONVOLUTIONAL_1D == Filters->GetEffectiveOperationType() ||
+        INTEL_CONVOLUTIONAL_1D == Stride->GetEffectiveOperationType())
+    {
+        is1D = true;
+    }
+
     Shape outputDims = GetOutputShape(Input->Dimensions, Filters->Dimensions,
         Stride->Dimensions, Padding->Dimensions);
 
-    Output = std::make_unique<Tensor>(outputDims, DataMode{GNA_INT32}, config.outputBuffer,
-        Validator{config.validator, outputCapabilities});
+    Expect::InRange(Filters->at(GNA_DIM_W), Input->at(GNA_DIM_W), Gna2StatusCnnErrorConvFltVolume);
+    Expect::InRange(Stride->at(GNA_DIM_W), Filters->at(GNA_DIM_W), Gna2StatusCnnErrorConvFltVolume);
+
+    Output = std::make_unique<Tensor>(outputDims, DataMode{ GNA_INT32 }, config.outputBuffer,
+        Validator{ config.validator, outputCapabilities });
 
     auto out = Output->Dimensions;
     out.erase(GNA_DIM_D);
@@ -229,7 +269,7 @@ ConvolutionFunction2D::ConvolutionFunction2D(const BaseTransformConfig<Convoluti
 
     hiddenConfig = std::make_unique<KernelConfig<ConvolutionConfig2D>>(
         kernelConvolutionConfig2D,
-        BaseConfig{Input->Buffer, Output->Buffer});
+        BaseConfig{ Input->Buffer, Output->Buffer });
 }
 
 Tensor const & ConvolutionFunction2D::GetOperand(uint32_t operandIndex) const

@@ -139,6 +139,11 @@ public:
         throw GnaException(Gna2StatusXnnErrorLyrCfg);
     }
 
+    virtual bool Is1D() const
+    {
+        return false;
+    }
+
     const Tensor * const Input;
     std::unique_ptr<Tensor> Output;
     TransformOperation const Operation;

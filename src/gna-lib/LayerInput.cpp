@@ -156,37 +156,52 @@ const FullCapabilitiesMap LayerInput::capabilities =
 };
 
 LayerInput::LayerInput(const nn_layer &layer, const LayerValidator& validatorIn) :
-    Tensor{GetDimensions(layer, capabilities.GetOrder(validatorIn)),
+    Tensor{ GetDimensions(layer, capabilities.GetOrder(validatorIn)),
         layer.nBytesPerInput, layer.pInputs,
         Validator{ validatorIn, capabilities } },
-     Grouping{ getGrouping(layer) },
-     ElementCount{ getElementCount(layer) }
+    Grouping{ getGrouping(layer) },
+    ElementCount{ getElementCount(layer) }
 {
 }
 
-LayerInput::LayerInput(const Gna2Operation &operation, const LayerValidator& validatorIn) :
-    Tensor{ *operation.Operands[InputOperandIndex], capabilities.GetOrder(validatorIn),
-        Validator{ validatorIn, capabilities } },
+ApiShape GetShape(const Gna2Operation & operation)
+{
+    ApiShape shape{ operation.Operands[InputOperandIndex]->Shape };
+    if (Gna2OperationTypeConvolution == operation.Type &&
+        shape.NumberOfDimensions == 3)
+    {
+        shape.Dimensions[2] = shape.Dimensions[1];
+        shape.Dimensions[1] = 1;
+        shape.Dimensions[3] = 1;
+        shape.NumberOfDimensions = 4;
+    }
+    return shape;
+}
+
+LayerInput::LayerInput(const Gna2Operation& operation, const LayerValidator& validatorIn) :
+    Tensor{ Shape::Create(GetShape(operation), capabilities.GetOrder(validatorIn)),
+       operation.Operands[InputOperandIndex]->Type, operation.Operands[InputOperandIndex]->Data,
+       Validator{ validatorIn, capabilities } },
     Grouping{ getGrouping(operation, validatorIn) },
     ElementCount{ getElementCount(operation, validatorIn) }
 {
 }
 
 bool LayerInput::IsInputInterleave(const Gna2Tensor &apiTensor,
-      const BaseValidator& validatorIn)
+    const BaseValidator& validatorIn)
 {
-   auto layerValidator = LayerValidator{validatorIn, INTEL_INTERLEAVE};
-   try
-   {
-      Tensor {
-         apiTensor, capabilities.GetOrder(layerValidator),
-         Validator{ layerValidator, capabilities } };
-      return true;
-   }
-   catch (const GnaException&)
-   {
-      return false;
-   }
+    auto layerValidator = LayerValidator{ validatorIn, INTEL_INTERLEAVE };
+    try
+    {
+        Tensor{
+           apiTensor, capabilities.GetOrder(layerValidator),
+           Validator{ layerValidator, capabilities } };
+        return true;
+    }
+    catch (const GnaException&)
+    {
+        return false;
+    }
 }
 
 Shape LayerInput::GetDimensions(const nn_layer& layer, gna_tensor_order order)
@@ -201,17 +216,17 @@ Shape LayerInput::GetDimensions(const nn_layer& layer, gna_tensor_order order)
     case INTEL_INTERLEAVE:
     case INTEL_RECURRENT:
     case INTEL_CONVOLUTIONAL:
-        return {order, layer.nInputRows, layer.nInputColumns};
+        return { order, layer.nInputRows, layer.nInputColumns };
     case INTEL_GMM:
-        return {order, layer.nInputColumns, layer.nInputRows};
+        return { order, layer.nInputColumns, layer.nInputRows };
     case INTEL_CONVOLUTIONAL_2D:
     {
         auto const config = static_cast<nn_layer_cnn2d*>(layer.pLayerStruct);
-        return {order,
+        return { order,
             layer.nInputRows,
             config->inputDimensions.height,
             config->inputDimensions.width,
-            config->inputDimensions.depth}; // GNA_TENSOR_NHWD
+            config->inputDimensions.depth }; // GNA_TENSOR_NHWD
     }
     default:
         return {};
@@ -219,7 +234,7 @@ Shape LayerInput::GetDimensions(const nn_layer& layer, gna_tensor_order order)
 }
 
 std::pair<uint32_t, uint32_t> LayerInput::getGroupingAndElements(
-      const Gna2Operation& operation, const LayerValidator& validatorIn) const
+    const Gna2Operation& operation, const LayerValidator& validatorIn) const
 {
     switch (operation.Type)
     {
@@ -227,11 +242,11 @@ std::pair<uint32_t, uint32_t> LayerInput::getGroupingAndElements(
     {
         if (validatorIn.Operation == INTEL_INTERLEAVE)
         {
-            return {Dimensions.at('H'), Dimensions.at('W')};
+            return { Dimensions.at('H'), Dimensions.at('W') };
         }
         if (validatorIn.Operation == INTEL_DEINTERLEAVE)
         {
-            return {Dimensions.at('W'), Dimensions.at('H')};
+            return { Dimensions.at('W'), Dimensions.at('H') };
         }
         throw GnaException(Gna2StatusXnnErrorLyrCfg);
     }
@@ -248,14 +263,14 @@ std::pair<uint32_t, uint32_t> LayerInput::getGroupingAndElements(const nn_layer&
     case INTEL_AFFINE_DIAGONAL:
     case INTEL_AFFINE_MULTIBIAS:
     case INTEL_DEINTERLEAVE:
-     return {layer.nInputColumns, layer.nInputRows};
+        return { layer.nInputColumns, layer.nInputRows };
     case INTEL_GMM:
     case INTEL_COPY:
     case INTEL_RECURRENT:
     case INTEL_INTERLEAVE:
     case INTEL_CONVOLUTIONAL:
     case INTEL_CONVOLUTIONAL_2D:
-        return {layer.nInputRows, layer.nInputColumns};
+        return { layer.nInputRows, layer.nInputColumns };
     default:
         throw GnaException(Gna2StatusNotImplemented);
     }
