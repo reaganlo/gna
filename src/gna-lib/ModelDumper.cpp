@@ -28,6 +28,7 @@
 #include "CompiledModel.h"
 #include "DataMode.h"
 #include "Expect.h"
+#include "HardwareModelNoMMU.h"
 #include "HardwareModelSue1.h"
 #include "Layer.h"
 #include "LayerInput.h"
@@ -71,4 +72,24 @@ void* Device::Dump(gna_model_id modelId, intel_gna_model_header* modelHeader, Gn
 
     *status = Gna2StatusSuccess;
     return address;
+}
+
+void Device::DumpLdNoMMu(gna_model_id modelId, intel_gna_alloc_cb customAlloc,
+    void *& exportData, uint32_t & exportDataSize)
+{
+    Expect::NotNull(reinterpret_cast<void *>(customAlloc));
+    auto const & model = *models.at(modelId);
+
+    // creating HW layer descriptors directly into dump memory
+    auto hwModel = std::make_unique<HardwareModelNoMMU>(model, customAlloc);
+    if (!hwModel)
+    {
+        throw GnaException{ Gna2StatusResourceAllocationError };
+    }
+    const auto& allocations = model.GetAllocations();
+    hwModel->ROBeginAddress = allocations.begin()->second.GetBuffer();
+
+
+    hwModel->ExportLd(exportData, exportDataSize);
+    Expect::NotNull(exportData, Gna2StatusResourceAllocationError);
 }

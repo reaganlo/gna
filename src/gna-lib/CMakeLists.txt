@@ -114,6 +114,7 @@ set(gna_lib_sources
   ${SRC_DIR}/HardwareCapabilities.cpp
   ${SRC_DIR}/HardwareLayer.cpp
   ${SRC_DIR}/HardwareModel.cpp
+  ${SRC_DIR}/HardwareModelNoMMU.cpp
   ${SRC_DIR}/HardwareModelScorable.cpp
   ${SRC_DIR}/HardwareModelSue1.cpp
   ${SRC_DIR}/HardwareRequest.cpp
@@ -196,6 +197,7 @@ set(gna_lib_headers
   ${SRC_DIR}/HardwareCapabilities.h
   ${SRC_DIR}/HardwareLayer.h
   ${SRC_DIR}/HardwareModel.h
+  ${SRC_DIR}/HardwareModelNoMMU.h
   ${SRC_DIR}/HardwareModelScorable.h
   ${SRC_DIR}/HardwareModelSue1.h
   ${SRC_DIR}/HardwareRequest.h

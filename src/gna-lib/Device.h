@@ -100,6 +100,9 @@ public:
     void* Dump(gna_model_id modelId, intel_gna_model_header* modelHeader, Gna2Status* status,
             intel_gna_alloc_cb customAlloc);
 
+    void DumpLdNoMMu(gna_model_id modelId, intel_gna_alloc_cb customAlloc,
+        void *& exportData, uint32_t & exportDataSize);
+
     void CreateProfilerConfiguration(uint32_t* configId, uint32_t numberOfInstrumentationPoints, Gna2InstrumentationPoint* selectedInstrumentationPoints, uint64_t* results);
 
     void ReleaseProfilerConfiguration(uint32_t configId);

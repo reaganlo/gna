@@ -548,8 +548,8 @@ bool OperationConfig::IsMultibias(const Gna2Operation & operation)
         return false;
     }
 
-    auto biasModeIndex = ModelWrapper::GetOperationInfo(operation.Type, ParameterIndexBiasMode);
-    if (operation.Parameters[biasModeIndex] == nullptr)
+    const auto biasModeIndex = ModelWrapper::GetOperationInfo(operation.Type, ParameterIndexBiasMode);
+    if (!ModelWrapper::HasParameter(operation, biasModeIndex))
     {
         return false;
     }

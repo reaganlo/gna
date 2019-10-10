@@ -82,6 +82,7 @@ add_executable(test-layer
   ${SRC_DIR}/HardwareCapabilities.cpp
   ${SRC_DIR}/HardwareLayer.cpp
   ${SRC_DIR}/HardwareModel.cpp
+  ${SRC_DIR}/HardwareModelNoMMU.cpp
   ${SRC_DIR}/HardwareModelScorable.cpp
   ${SRC_DIR}/HardwareModelSue1.cpp
   ${SRC_DIR}/HardwareRequest.cpp

@@ -152,11 +152,14 @@ public:
 
 
     static uint32_t GetOperationInfo(OperationType operationType, OperationInfoKey infoType);
+    static bool HasOperand(const Gna2Operation& apiOperation, uint32_t operandIndex);
 
     static Gna2Tensor GetOperand(const Gna2Operation & apiOperation, uint32_t operandIndex);
 
     static Gna2Tensor GetOptionalOperand(const Gna2Operation& apiOperation,
         uint32_t operandIndex, Gna2Tensor defaultTensor);
+
+    static bool HasParameter(const Gna2Operation& operation, uint32_t parameterIndex);
 
     static void ExpectParameterAvailable(const Gna2Operation & operation, uint32_t index);
 

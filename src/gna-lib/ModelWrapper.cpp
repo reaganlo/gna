@@ -179,31 +179,39 @@ uint32_t ModelWrapper::GetOperationInfo(OperationType operationType, OperationIn
     }
 }
 
+bool ModelWrapper::HasOperand(const Gna2Operation & apiOperation, uint32_t operandIndex)
+{
+    return apiOperation.NumberOfOperands > operandIndex &&
+        nullptr != apiOperation.Operands &&
+        nullptr != apiOperation.Operands[operandIndex];
+}
+
 Gna2Tensor ModelWrapper::GetOperand(const Gna2Operation & apiOperation, uint32_t operandIndex)
 {
-    Expect::True(apiOperation.NumberOfOperands > operandIndex, Gna2StatusXnnErrorLyrOperation);
-    Expect::NotNull(apiOperation.Operands, Gna2StatusXnnErrorLyrOperation);
-    Expect::NotNull(apiOperation.Operands[operandIndex], Gna2StatusXnnErrorLyrOperation);
+    Expect::True(HasOperand(apiOperation, operandIndex), Gna2StatusXnnErrorLyrOperation);
     return *apiOperation.Operands[operandIndex];
 }
 
 Gna2Tensor ModelWrapper::GetOptionalOperand(const Gna2Operation & apiOperation,
     uint32_t operandIndex, Gna2Tensor defaultTensor)
 {
-    if (apiOperation.NumberOfOperands > operandIndex &&
-        nullptr != apiOperation.Operands &&
-        nullptr != apiOperation.Operands[operandIndex])
+    if (HasOperand(apiOperation, operandIndex))
     {
         return *apiOperation.Operands[operandIndex];
     }
     return defaultTensor;
 }
 
+bool ModelWrapper::HasParameter(const Gna2Operation& operation, uint32_t parameterIndex)
+{
+    return operation.Parameters != nullptr &&
+        parameterIndex < operation.NumberOfParameters &&
+        operation.Parameters[parameterIndex] != nullptr;
+}
+
 void ModelWrapper::ExpectParameterAvailable(const Gna2Operation & operation, uint32_t index)
 {
-    Expect::NotNull(operation.Parameters, Gna2StatusXnnErrorLyrOperation);
-    Expect::True(index < operation.NumberOfParameters, Gna2StatusXnnErrorLyrOperation);
-    Expect::NotNull(operation.Parameters[index]);
+    Expect::True(HasParameter(operation, index), Gna2StatusXnnErrorLyrOperation);
 }
 
 void ModelWrapper::SetLayout(Gna2Tensor& tensor, const char* layout)

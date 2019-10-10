@@ -75,7 +75,7 @@ std::unique_ptr<GNA::Layer> Layer::Create(const Gna2Operation & operation, const
     {
     case Gna2OperationTypeFullyConnectedAffine:
     {
-        if (operation.Operands[WeightScaleFactorOperandIndex] != nullptr)
+        if (ModelWrapper::HasOperand(operation, WeightScaleFactorOperandIndex))
         {
             Expect::NotNull(operation.Parameters);
             Expect::NotNull(operation.Parameters[0]);

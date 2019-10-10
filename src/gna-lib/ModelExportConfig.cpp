@@ -71,6 +71,12 @@ void ModelExportConfig::Export(Gna2ModelExportComponent componentType, void ** e
         return;
     }
 
+    if (componentType == Gna2ModelExportComponentLayerDescriptors)
+    {
+        device.DumpLdNoMMu(sourceModelId, allocator, *exportBuffer, *exportBufferSize);
+        return;
+    }
+
     throw GnaException(Gna2StatusNotImplemented);
 }
 
@@ -95,8 +101,9 @@ void ModelExportConfig::ValidateState() const
     uint32_t const legacySueCreekVersionNumber = 0xFFFF0001;
     auto const is1x0Embedded = Gna2DeviceVersionEmbedded1_0 == targetDeviceVersion
     || legacySueCreekVersionNumber == static_cast<uint32_t>(targetDeviceVersion);
+    auto const is3x0Embedded = targetDeviceVersion == Gna2DeviceVersionEmbedded3_0;
     //TODO:3:Remove when other devices supported
-    Expect::True(is1x0Embedded, Gna2StatusAccelerationModeNotSupported);
+    Expect::True(is1x0Embedded || is3x0Embedded, Gna2StatusAccelerationModeNotSupported);
 }
 
 inline void * ModelExportConfig::privateAllocator(uint32_t size)
