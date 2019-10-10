@@ -165,7 +165,7 @@ typedef enum _XnnParameterType
 
     pwl_seg_def_buffer, // 0x3c; 0x3f Pointer to array that holds the activation function section definition [8B elements]
 
-
+    // TODO:3:HW: review names and fix when HW is stable
     cnn2d_in_dim_d,     // CNN2D Input Volume Dimension - Depth
     cnn2d_in_dim_w,     // CNN2D Input Volume Dimension - Width
     cnn2d_in_dim_h,     // CNN2D Input Volume Dimension - Height

@@ -28,6 +28,7 @@
 #include "OperationConfig.h"
 #include "AccelerationDetector.h"
 #include "Capabilities.h"
+#include "ConvolutionalLayer2DCapabilities.h"
 #include "DataMode.h"
 #include "Expect.h"
 #include "KernelArguments.h"
@@ -46,75 +47,9 @@
 
 using namespace GNA;
 
-static const ComponentLimits __HW_limits =
-{
-    {GNA_TENSOR_HW},
-    {{GNA_DIM_H, {1, CNN_N_KERNEL_ELEMENTS_PER_DIMENSION_MAX, 1, Gna2StatusCnnErrorPoolStride}},
-    {GNA_DIM_W, {1, CNN_N_KERNEL_ELEMENTS_PER_DIMENSION_MAX, 1, Gna2StatusCnnErrorPoolStride}},}
-};
-
-static const ComponentLimits __HW_limits1D =
-{
-    {GNA_TENSOR_HW},
-    {{GNA_DIM_H, {0, 0, 1, Gna2StatusCnnErrorPoolStride}},
-    {GNA_DIM_W, {1, CNN_N_KERNEL_ELEMENTS_PER_DIMENSION_MAX, 1, Gna2StatusCnnErrorPoolStride}},}
-};
-
-const FullCapabilitiesMap PoolingFunction2D::windowLimits
-{
-    {INTEL_CONVOLUTIONAL_2D, {
-        { GNA_3_0, std::make_shared<ComponentLimits>(__HW_limits)}
-    }},
-    {INTEL_CONVOLUTIONAL_1D, {
-        { GNA_3_0, std::make_shared<ComponentLimits>(__HW_limits1D)}
-    }},
-    //{GNA_LAYER_CNN_2D_POOLING, {
-    //   { GNA_3_0, std::make_shared<ComponentLimits>(ComponentLimits(
-    //        {GNA_TENSOR_WHD},
-    //        __WH_limits))}
-    //}},
-};
-
-const FullCapabilitiesMap PoolingFunction2D::strideLimits
-{
-    {INTEL_CONVOLUTIONAL_2D, {
-        { GNA_3_0, std::make_shared<ComponentLimits>(__HW_limits)}
-    }},
-    {INTEL_CONVOLUTIONAL_1D, {
-        { GNA_3_0, std::make_shared<ComponentLimits>(__HW_limits1D)}
-    }},
-    //{GNA_LAYER_CNN_2D_POOLING, {
-    //    { GNA_3_0, std::make_shared<ComponentLimits>(ComponentLimits(
-    //        {GNA_TENSOR_WHD},
-    //        __WH_limits))}
-    //}},
-};
-
 const SetLimits<KernelPoolingMode> PoolingFunction2D::modeLimits =
 {
     { KernelPoolingModeMax, KernelPoolingModeSum }, Gna2StatusCnnErrorPoolType
-};
-
-const FullCapabilitiesMap PoolingFunction2D::outputCapabilities =
-{
-    {INTEL_CONVOLUTIONAL_2D, {
-        {GNA_3_0, std::make_shared<TensorLimits>(TensorLimits{
-            {GNA_TENSOR_NHWD},
-            {{GNA_DIM_N, {1, CNN_N_KERNELS_MAX, 1, Gna2StatusXnnErrorOutputVolume}},
-             {GNA_DIM_H, {1, XNN_N_IN_ELEMS_MAX, 1, Gna2StatusXnnErrorOutputVolume}},
-            {GNA_DIM_W, {1, XNN_N_IN_ELEMS_MAX, 1, Gna2StatusXnnErrorOutputVolume}},
-             {GNA_DIM_D, {1, XNN_N_IN_ELEMS_MAX, 1, Gna2StatusXnnErrorOutputVolume}}},
-            {{GNA_INT8, GNA_INT16, GNA_INT32, GNA_DATA_ACTIVATION_DISABLED}, Gna2StatusXnnErrorOutputBytes }})}
-    }},
-    {INTEL_CONVOLUTIONAL_1D, {
-         {GNA_3_0, std::make_shared<TensorLimits>(TensorLimits{
-            {GNA_TENSOR_NHWD},
-            {{GNA_DIM_N, {1, 1, 1, Gna2StatusXnnErrorOutputVolume}},
-             {GNA_DIM_H, {1, 1, 1, Gna2StatusXnnErrorOutputVolume}},
-             {GNA_DIM_W, {1, XNN_N_IN_ELEMS_MAX, 1, Gna2StatusXnnErrorOutputVolume}},
-             {GNA_DIM_D, {1, CNN_1D_N_KERNELS_MAX, 1, Gna2StatusXnnErrorOutputVolume}}},
-            {{GNA_INT8, GNA_INT16, GNA_INT32, GNA_DATA_ACTIVATION_DISABLED}, Gna2StatusXnnErrorOutputBytes }})}
-    }},
 };
 
 std::unique_ptr<PoolingFunction2D> PoolingFunction2D::Create(
@@ -133,9 +68,9 @@ std::unique_ptr<PoolingFunction2D> PoolingFunction2D::create(
     if (Gna2PoolingModeDisabled != poolingMode)
     {
         auto stride = OperationConfig::CreateCnnComponent(operation.PoolingStride,
-            config.validator, strideLimits);
+            config.validator, ConvolutionalLayer2DCapabilities::GetParameters(PoolingStrideParamIndex));
         auto window = OperationConfig::CreateCnnComponent(operation.PoolingWindow,
-            config.validator, windowLimits);
+            config.validator, ConvolutionalLayer2DCapabilities::GetParameters(PoolingWindowParamIndex));
 
         return std::make_unique<PoolingFunction2D>(
             BaseTransformConfig<PoolingKernel2D>{config,
@@ -159,13 +94,14 @@ PoolingFunction2D::PoolingFunction2D(const BaseTransformConfig<PoolingKernel2D>&
 {
     Expect::InSet(Mode, modeLimits);
 
-    Expect::InRange(Window->at(GNA_DIM_W), Input->at(GNA_DIM_W), Gna2StatusCnnErrorPoolSize);
-    Expect::InRange(Stride->at(GNA_DIM_W), Window->at(GNA_DIM_W), Gna2StatusCnnErrorPoolStride);
-
     if (INTEL_CONVOLUTIONAL_1D == Window->GetEffectiveOperationType() ||
         INTEL_CONVOLUTIONAL_1D == Stride->GetEffectiveOperationType())
     {
         is1D = true;
+        Expect::InRange(Window->at(GNA_DIM_W), Input->at(GNA_DIM_W),
+            Gna2StatusCnnErrorPoolSize);
+        /*Expect::InRange(Stride->at(GNA_DIM_W), Window->at(GNA_DIM_W),
+            Gna2StatusCnnErrorPoolStride);*/
     }
 
     Shape outputDims;
@@ -181,7 +117,7 @@ PoolingFunction2D::PoolingFunction2D(const BaseTransformConfig<PoolingKernel2D>&
     }
 
     Output = std::make_unique<Tensor>(outputDims, Input->Mode, config.outputBuffer,
-        Validator{ config.validator, outputCapabilities });
+        Validator{ config.validator, ConvolutionalLayer2DCapabilities::GetOperands(OutputOperandIndex) });
 
     const auto output = Output->Dimensions;
     Expect::Fits(output, Input->Dimensions);

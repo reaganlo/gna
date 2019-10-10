@@ -34,6 +34,7 @@ namespace GNA
 {
 
 using ComponentCapabilityMap = std::map<const uint32_t, OperationCapabilityMap>;
+using ComponentFullCapabilityMap = std::map<const uint32_t, FullCapabilitiesMap>;
 
 struct LayerCapabilities
 {

@@ -76,15 +76,16 @@ public:
     static std::unique_ptr<const Target> CreateCnnTarget(
         const Source& source, const LayerValidator& validator, const FullCapabilitiesMap& caps)
     {
-        try // 1D CNN in new arch
+        try
         {
+            // 1D CNN in new arch
             auto const validator1D = LayerValidator{ validator, INTEL_CONVOLUTIONAL_1D };
             return std::make_unique<const Target>(source,
                 Validator{ validator1D, caps });
-
         }
-        catch (const GnaException&) // try 2D CNN in new arch
+        catch (const GnaException&)
         {
+            // try 2D CNN in new arch
             return std::make_unique<const Target>(source,
                 Validator{ validator, caps });
         }

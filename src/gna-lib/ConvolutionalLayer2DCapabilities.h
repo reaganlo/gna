@@ -32,9 +32,11 @@ namespace GNA
 
 struct ConvolutionalLayer2DCapabilities : LayerCapabilities
 {
-    static const OperationCapabilityMap & GetOperands(uint32_t operandIndex);
-    static const OperationCapabilityMap & GetLegacyOperands(uint32_t operandIndex);
-    static const OperationCapabilityMap & GetParameters(uint32_t parameterIndex);
+    static const FullCapabilitiesMap & GetOperands(uint32_t operandIndex);
+    static const FullCapabilitiesMap & GetParameters(uint32_t parameterIndex);
+
+    static const OperationCapabilityMap & GetOperands(uint32_t operandIndex, nn_operation operation);
+    static const OperationCapabilityMap & GetParameters(uint32_t parameterIndex, nn_operation operation);
 
     /** CNN minimum number of filter coefficients */
     static constexpr uint32_t Filter1DElementsMin = 8;
@@ -55,18 +57,13 @@ struct ConvolutionalLayer2DCapabilities : LayerCapabilities
     static constexpr uint32_t Filter1DCountMax = ((UINT16_MAX + 1) - 4);
 
     /** CNN 2D maximum number of kernels */
-    static constexpr uint32_t Filter2DCountMax = UINT16_MAX;
+    static constexpr uint32_t Filter2DCountMax = 2048;
 
     /** CNN minimum size of pooling window */
     static constexpr uint32_t PoolingWindowSizeMin = 1;
 
     /** CNN maximum size of pooling window */
     static constexpr uint32_t PoolingWindowSizeMax = 6;
-};
-
-struct ConvolutionalLayer1DCapabilities : ConvolutionalLayer2DCapabilities
-{
-    static const OperationCapabilityMap & GetOperands(uint32_t operandIndex);
 };
 
 }

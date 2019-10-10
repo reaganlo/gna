@@ -24,6 +24,8 @@
 */
 
 #include "Component.h"
+
+#include "Capabilities.h"
 #include "Expect.h"
 #include "Layout.h"
 #include "ParameterLimits.h"
@@ -57,6 +59,13 @@ nn_operation Component::GetEffectiveOperationType() const
         return validator->Operation;
     }
     return LAYER_OPERATION_TYPE_COUT;
+}
+
+void Component::Validate(const FullCapabilitiesMap& caps, nn_operation operation) const
+{
+    auto const validatorOpt = LayerValidator{ *validator, operation };
+    auto const & limits = caps.GetLatestCaps(validatorOpt);
+    Validate(*limits, true);
 }
 
 void Component::Validate(const ComponentLimits& limits, bool validateDimensions) const

@@ -150,11 +150,11 @@ struct ExecutionKernelConfig : public ExecutionConfig
         {
             if (nullptr == RequestConfig->Inputs)
             {
-                RequestConfig->Inputs = Intermediate->cnnFusedBuffer;
+                RequestConfig->SetBuffer(GNA::InputOperandIndex, Intermediate->cnnFusedBuffer);
             }
             if (nullptr == RequestConfig->Outputs)
             {
-                RequestConfig->Outputs = Intermediate->cnnFusedBuffer;
+                RequestConfig->SetBuffer(GNA::OutputOperandIndex, Intermediate->cnnFusedBuffer);
             }
         }
     }

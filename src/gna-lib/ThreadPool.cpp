@@ -43,11 +43,13 @@ using namespace GNA;
 KernelBuffers::KernelBuffers()
 {
     // TODO: use one allocation for inputs and pool buffer
-    d0 = static_cast<int16_t*>(_gna_malloc(8 * (UINT16_MAX + 1) * sizeof(int16_t)));
+    auto const size = 8 * (UINT16_MAX + 1) * sizeof(int16_t);
+    d0 = static_cast<int16_t*>(_gna_malloc(size));
     if (nullptr == d0)
     {
         throw GnaException(Gna2StatusResourceAllocationError);
     }
+    memset(d0, 0, size);
     d1 = d0 + UINT16_MAX + 1;
     d2 = d1 + UINT16_MAX + 1;
     d3 = d2 + UINT16_MAX + 1;
@@ -56,20 +58,23 @@ KernelBuffers::KernelBuffers()
     d6 = d5 + UINT16_MAX + 1;
     d7 = d6 + UINT16_MAX + 1;
 
-    auto poolSize = CNN_POOL_SIZE_MAX * CNN_N_FLT_MAX * sizeof(int64_t);
+    auto const poolSize = CNN_POOL_SIZE_MAX * CNN_N_FLT_MAX * sizeof(int64_t);
     pool = static_cast<int64_t *>(_kernel_malloc(poolSize));
     if (nullptr == pool)
     {
         this->~KernelBuffers();
         throw GnaException(Gna2StatusResourceAllocationError);
     }
+    memset(pool, 0, poolSize);
 
-    cnnFusedBuffer = static_cast<int8_t*>(_kernel_malloc(5 * 1024 * 1024));
+    auto const cnnScratchSize = 256 * 1024 * 1024;
+    cnnFusedBuffer = static_cast<int8_t*>(_kernel_malloc(cnnScratchSize));
     if (nullptr == cnnFusedBuffer)
     {
         this->~KernelBuffers();
         throw GnaException(Gna2StatusResourceAllocationError);
     }
+    memset(cnnFusedBuffer, 0, cnnScratchSize);
 }
 
 KernelBuffers::~KernelBuffers()

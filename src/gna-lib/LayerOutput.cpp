@@ -121,10 +121,13 @@ const FullCapabilitiesMap LayerOutput::capabilities =
         {GNA_3_0, std::make_shared<TensorLimits>(_InterleaveTensorLimitsGen3)}
     }},
     {INTEL_CONVOLUTIONAL, {
-        ConvolutionalLayer2DCapabilities::GetLegacyOperands(OutputOperandIndex)
+        ConvolutionalLayer2DCapabilities::GetOperands(OutputOperandIndex).at(INTEL_CONVOLUTIONAL)
     }},
     {INTEL_CONVOLUTIONAL_2D, {
-        ConvolutionalLayer2DCapabilities::GetOperands(OutputOperandIndex)
+        ConvolutionalLayer2DCapabilities::GetOperands(OutputOperandIndex).at(INTEL_CONVOLUTIONAL_2D)
+    }},
+    {INTEL_CONVOLUTIONAL_1D, {
+        ConvolutionalLayer2DCapabilities::GetOperands(OutputOperandIndex).at(INTEL_CONVOLUTIONAL_1D)
     }},
     {INTEL_COPY, {
         {GNA_0_9, std::make_shared<TensorLimits>(TensorLimits{
@@ -225,7 +228,7 @@ ApiShape LayerOutput::GetShape(const Gna2Operation & operation)
 {
     ApiShape s{ operation.Operands[OutputOperandIndex]->Shape };
     if (operation.Type == Gna2OperationTypeConvolution &&
-        s.NumberOfDimensions == 3)
+        s.NumberOfDimensions < 4)
     {
         s.NumberOfDimensions = 4;
         s.Dimensions[3] = s.Dimensions[2];

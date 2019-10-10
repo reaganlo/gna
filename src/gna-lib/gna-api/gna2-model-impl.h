@@ -60,6 +60,14 @@ constexpr uint32_t GmmGaussianConstantOperandIndex = 4;
 // NOTE: temporary solution for simple and fast kernel buffer indexing, always set as last + 1 operand index 
 constexpr uint32_t ScratchpadOperandKernelIndex = 6;
 
+
+constexpr uint32_t ConvolutionStrideParamIndex = 0;
+constexpr uint32_t BiasModeParamIndex = 1;
+constexpr uint32_t PoolingModeParamIndex = 2;
+constexpr uint32_t PoolingWindowParamIndex = 3;
+constexpr uint32_t PoolingStrideParamIndex = 4;
+constexpr uint32_t ZeroPaddingParamIndex = 5;
+
 }
 
 #endif // __GNA2_MODEL_IMPL_H

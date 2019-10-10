@@ -28,6 +28,7 @@
 #include "AccelerationDetector.h"
 #include "Address.h"
 #include "Capabilities.h"
+#include "ConvolutionalLayer2DCapabilities.h"
 #include "DataMode.h"
 #include "Expect.h"
 #include "GnaException.h"
@@ -45,60 +46,6 @@
 #include <utility>
 
 using namespace GNA;
-
-const FullCapabilitiesMap ConvolutionFunction2D::strideLimits
-{
-    { INTEL_CONVOLUTIONAL_2D, {
-        { GNA_3_0, std::make_shared<ComponentLimits>(ComponentLimits(
-            {GNA_TENSOR_HW},
-            {{GNA_DIM_H, {1, CNN_N_KERNEL_ELEMENTS_PER_DIMENSION_MAX, 1, Gna2StatusCnnErrorConvFltStride}},
-             {GNA_DIM_W, {1, CNN_N_KERNEL_ELEMENTS_PER_DIMENSION_MAX, 1, Gna2StatusCnnErrorConvFltStride}}}))}
-    }},
-    { INTEL_CONVOLUTIONAL_1D, {
-        { GNA_3_0, std::make_shared<ComponentLimits>(ComponentLimits(
-            {GNA_TENSOR_HW},
-            {{GNA_DIM_H, {0, 0, 1, Gna2StatusCnnErrorConvFltStride}},
-             {GNA_DIM_W, {1, CNN_N_KERNEL_ELEMENTS_PER_DIMENSION_MAX, 1, Gna2StatusCnnErrorConvFltStride}}}))}
-    }},
-};
-
-const FullCapabilitiesMap ConvolutionFunction2D::paddingLimits
-{
-    { INTEL_CONVOLUTIONAL_2D, {
-        { GNA_3_0, std::make_shared<ComponentLimits>(ComponentLimits(
-            {GNA_TENSOR_HW},
-            {{GNA_DIM_H, {0, CNN_N_KERNEL_ELEMENTS_PER_DIMENSION_MAX, 1, Gna2StatusCnnErrorConvFltPadding}},
-             {GNA_DIM_W, {0, CNN_N_KERNEL_ELEMENTS_PER_DIMENSION_MAX, 1, Gna2StatusCnnErrorConvFltPadding}}}))}
-    }},
-    { INTEL_CONVOLUTIONAL_1D, {
-        { GNA_3_0, std::make_shared<ComponentLimits>(ComponentLimits(
-            {GNA_TENSOR_HW},
-            {{GNA_DIM_H, {0, 0, 1, Gna2StatusCnnErrorConvFltPadding}},
-             {GNA_DIM_W, {0, 0, 1, Gna2StatusCnnErrorConvFltPadding}}}))}
-    }}
-};
-
-const FullCapabilitiesMap ConvolutionFunction2D::outputCapabilities
-{
-    {INTEL_CONVOLUTIONAL_2D, {
-        {GNA_3_0, std::make_shared<TensorLimits>(TensorLimits{
-            {GNA_TENSOR_NHWD},
-            {{GNA_DIM_N, {1, 1, 1, Gna2StatusXnnErrorOutputVolume}},
-             {GNA_DIM_H, {1, XNN_N_IN_ELEMS_MAX, 1, Gna2StatusXnnErrorOutputVolume}},
-             {GNA_DIM_W, {1, XNN_N_IN_ELEMS_MAX, 1, Gna2StatusXnnErrorOutputVolume}},
-             {GNA_DIM_D, {1, XNN_N_IN_ELEMS_MAX, 1, Gna2StatusXnnErrorOutputVolume}}},
-            {{GNA_INT8, GNA_INT16, GNA_INT32, GNA_DATA_ACTIVATION_DISABLED}, Gna2StatusXnnErrorOutputBytes }})}
-    }},
-    {INTEL_CONVOLUTIONAL_1D, {
-        {GNA_3_0, std::make_shared<TensorLimits>(TensorLimits{
-            {GNA_TENSOR_NHWD},
-            {{GNA_DIM_N, {1, 1, 1, Gna2StatusXnnErrorOutputVolume}},
-             {GNA_DIM_H, {1, 1, 1, Gna2StatusXnnErrorOutputVolume}},
-             {GNA_DIM_W, {1, XNN_N_IN_ELEMS_MAX, 1, Gna2StatusXnnErrorOutputVolume}},
-             {GNA_DIM_D, {1, CNN_1D_N_KERNELS_MAX, 1, Gna2StatusXnnErrorOutputVolume}}},
-            {{GNA_INT8, GNA_INT16, GNA_INT32, GNA_DATA_ACTIVATION_DISABLED}, Gna2StatusXnnErrorOutputBytes }})}
-    }},
-};
 
 std::unique_ptr<ConvolutionFunction2D> ConvolutionFunction2D::Create(
     const TransformFactoryConfig& config, const OperationConfig& operationConfig)
@@ -124,10 +71,10 @@ std::unique_ptr<ConvolutionFunction2D> ConvolutionFunction2D::create(
         config.validator);
 
     auto stride = OperationConfig::CreateCnnComponent(operation.ConvolutionStride,
-        config.validator, strideLimits);
+        config.validator, ConvolutionalLayer2DCapabilities::GetParameters(ConvolutionStrideParamIndex));
 
     auto padding = OperationConfig::CreateCnnComponent(operation.ZeroPadding,
-        config.validator, paddingLimits);
+        config.validator, ConvolutionalLayer2DCapabilities::GetParameters(ZeroPaddingParamIndex));
 
     const Shape outputDims = GetOutputShape(config.input->Dimensions,
         filters->Dimensions, stride->Dimensions, padding->Dimensions);
@@ -173,8 +120,9 @@ std::unique_ptr<const BiasTensor> ConvolutionFunction2D::CreateBiasTensor(
 {
     Shape biasDims = CalculateBiasShape(biasMode, filtersCount, outputShape);
     // TODO:3: assert calculated bias shape matches one in apiTensor if provided by user (API2)
-    try // 1D CNN in new arch
+    try
     {
+         // try 2D CNN in new arch
         auto const validator1D = LayerValidator{ validatorIn, INTEL_CONVOLUTIONAL_1D };
         return std::make_unique<const BiasTensor>(
             biasDims,
@@ -184,8 +132,9 @@ std::unique_ptr<const BiasTensor> ConvolutionFunction2D::CreateBiasTensor(
             validator1D,
             biasMode);
     }
-    catch (const GnaException&) // try 2D CNN in new arch
+    catch (const GnaException&)
     {
+        // 2D CNN in new arch
         return std::make_unique<const BiasTensor>(
             biasDims,
             0,
@@ -232,20 +181,24 @@ ConvolutionFunction2D::ConvolutionFunction2D(const BaseTransformConfig<Convoluti
         Expect::Equal<uint32_t>(Biases->at(GNA_DIM_W), 1, Gna2StatusXnnErrorBiasMode);
     }
 
+    auto effectiveOperation = INTEL_CONVOLUTIONAL_2D;
     if (INTEL_CONVOLUTIONAL_1D == Filters->GetEffectiveOperationType() ||
         INTEL_CONVOLUTIONAL_1D == Stride->GetEffectiveOperationType())
     {
         is1D = true;
+        effectiveOperation = INTEL_CONVOLUTIONAL_1D;
+        Expect::InRange(Filters->at(GNA_DIM_W), Input->at(GNA_DIM_W),
+            Gna2StatusCnnErrorConvFltVolume);
+        Expect::InRange(Stride->at(GNA_DIM_W), Filters->at(GNA_DIM_W),
+            Gna2StatusCnnErrorConvFltVolume);
     }
 
     Shape outputDims = GetOutputShape(Input->Dimensions, Filters->Dimensions,
         Stride->Dimensions, Padding->Dimensions);
 
-    Expect::InRange(Filters->at(GNA_DIM_W), Input->at(GNA_DIM_W), Gna2StatusCnnErrorConvFltVolume);
-    Expect::InRange(Stride->at(GNA_DIM_W), Filters->at(GNA_DIM_W), Gna2StatusCnnErrorConvFltVolume);
-
+    auto const validatorOut = LayerValidator{ config.validator, effectiveOperation};
     Output = std::make_unique<Tensor>(outputDims, DataMode{ GNA_INT32 }, config.outputBuffer,
-        Validator{ config.validator, outputCapabilities });
+        Validator{ validatorOut, ConvolutionalLayer2DCapabilities::GetOperands(OutputOperandIndex) });
 
     auto out = Output->Dimensions;
     out.erase(GNA_DIM_D);

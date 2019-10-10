@@ -54,13 +54,11 @@ void ConvolutionalLayer2D::Init()
     if(inputTransform->Is1D() ||
         outputTransform->Is1D())
     {
-        auto const & caps = ConvolutionalLayer1DCapabilities::GetOperands(InputOperandIndex);
-        auto const & limits = caps.at(validator->HwCapabilities.GetDeviceGeneration());
-        Input.Validate(*limits, true);
+        auto const & capsMapIn = ConvolutionalLayer2DCapabilities::GetOperands(InputOperandIndex);
+        Input.Validate(capsMapIn, INTEL_CONVOLUTIONAL_1D);
 
-        auto const & capsOut = ConvolutionalLayer1DCapabilities::GetOperands(OutputOperandIndex);
-        auto const & limitsOut = capsOut.at(validator->HwCapabilities.GetDeviceGeneration());
-        Output.Validate(*limitsOut, true);
+        auto const & capsMapOut = ConvolutionalLayer2DCapabilities::GetOperands(OutputOperandIndex);
+        Output.Validate(capsMapOut, INTEL_CONVOLUTIONAL_1D);
     }
 
     Expect::One(Input.at(GNA_DIM_N), Gna2StatusXnnErrorGrouping);

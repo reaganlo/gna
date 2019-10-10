@@ -82,10 +82,6 @@ protected:
     static Shape GetOutputShape(Shape const & inputShape,
         Shape const & filerShape, Shape const & strideShape, Shape const & paddingShape);
 
-    static const FullCapabilitiesMap strideLimits;
-    static const FullCapabilitiesMap paddingLimits;
-    static const FullCapabilitiesMap outputCapabilities;
-
     bool is1D = false;
 
 };

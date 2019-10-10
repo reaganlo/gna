@@ -54,13 +54,13 @@ Gna2Tensor OperationConfig::getBiasTensor<intel_affine_multibias_func_t>(
 }
 
 OperationConfig::OperationConfig(const nn_layer& layer) :
-    Operation{nullptr}
+    Operation{ nullptr }
 {
     InitOperationConfig(layer);
 }
 
 OperationConfig::OperationConfig(const Gna2Operation& apiOperation) :
-    Operation{&apiOperation}
+    Operation{ &apiOperation }
 {
     InitOperationConfig(apiOperation);
 }
@@ -121,7 +121,7 @@ kernel_op OperationConfig::GetKernelOperation() const
 
 TransformOperation OperationConfig::GetTransformOperation() const
 {
-    switch(OperationType)
+    switch (OperationType)
     {
     case Gna2OperationTypeConvolution:
         return ConvolutionalTransform2D;
@@ -316,7 +316,7 @@ Shape OperationConfig::GetStride(const Gna2Operation & operation)
         parameter.LayoutOrder = Layout("HW");
         parameter['W'] = parameter['N'];
         parameter.erase(GNA_DIM_N);
-        parameter['H'] = 0;
+        parameter['H'] = 1;
     }
     return parameter;
 }
@@ -330,7 +330,7 @@ Shape OperationConfig::GetStride(const nn_layer& layer)
 Shape OperationConfig::GetZeroPadding(const Gna2Operation& operation)
 {
     auto parameter = TryGetParamShape(operation, ParameterIndexZeroPadding);
-    if(parameter.size() == 1)
+    if (parameter.size() == 1)
     {
         parameter = Shape();
     }
@@ -420,7 +420,7 @@ void OperationConfig::InitMultibias(const Gna2Operation& operation)
     BiasMode = *static_cast<Gna2BiasMode *>(operation.Parameters[bmIndex]);
 
     auto bviIndex = ModelWrapper::GetOperationInfo(
-            operation.Type, ParameterIndexBiasVectorIndex);
+        operation.Type, ParameterIndexBiasVectorIndex);
     BiasVectorIndex = *static_cast<uint32_t *>(operation.Parameters[bviIndex]);
 
     auto wsfIndex = ModelWrapper::GetOperationInfo(operation.Type, OperandIndexWeightScaleFactors);
@@ -452,20 +452,20 @@ void OperationConfig::InitMultibias(const nn_layer& layer)
 void OperationConfig::InitPooling(const Gna2Operation & operation)
 {
     PoolingWindow = GetPoolingWindow(operation);
-    if(PoolingWindow.size() == 1)
+    if (PoolingWindow.size() == 1)
     {
         PoolingWindow.LayoutOrder = Layout("HW");
         PoolingWindow['W'] = PoolingWindow['N'];
         PoolingWindow.erase(GNA_DIM_N);
-        PoolingWindow['H'] = 0;
+        PoolingWindow['H'] = 1;
     }
     PoolingStride = GetPoolingStride(operation);
-    if(PoolingStride.size() == 1)
+    if (PoolingStride.size() == 1)
     {
         PoolingStride.LayoutOrder = Layout("HW");
         PoolingStride['W'] = PoolingStride['N'];
         PoolingStride.erase(GNA_DIM_N);
-        PoolingStride['H'] = 0;
+        PoolingStride['H'] = 1;
     }
     Mode = GetPoolingMode(operation);
 }
@@ -474,7 +474,7 @@ void OperationConfig::InitPooling(const nn_layer& layer)
 {
     const auto p = GetPoolingImpl(layer);
     PoolingWindow = GetPoolingWindow(p);
-    
+
     PoolingStride = GetPoolingStride(p);
     Mode = GetPoolingMode(p);
 }
@@ -583,7 +583,7 @@ bool OperationConfig::isRecurrent(const Gna2Operation& operation)
 uint32_t OperationConfig::GetFeedbackDelay(const Gna2Operation& operation)
 {
     auto delayIndex = ModelWrapper::GetOperationInfo(
-            operation.Type, ParameterIndexDelay);
+        operation.Type, ParameterIndexDelay);
     return ModelWrapper::GetParameter<uint32_t>(operation, delayIndex);
 }
 
@@ -592,4 +592,3 @@ uint32_t OperationConfig::GetFeedbackDelay(const nn_layer& layer)
     auto rnnLayer = reinterpret_cast<intel_recurrent_layer_t *>(layer.pLayerStruct);
     return rnnLayer->feedbackFrameDelay;
 }
-

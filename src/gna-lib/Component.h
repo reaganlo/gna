@@ -61,14 +61,12 @@ struct Component
     // Total number of elements
     uint32_t Count;
 
-    void Validate(const ComponentLimits& limits, bool validateDimensions = true) const;
+    void Validate(const FullCapabilitiesMap & caps, nn_operation operation) const;
 
 protected:
+    void Validate(const ComponentLimits& limits, bool validateDimensions = true) const;
+
     std::unique_ptr<const Validator> validator;
 };
 
 }
-
-
-
-

@@ -29,6 +29,7 @@
 #include "AccelerationDetector.h"
 #include "Address.h"
 #include "Capabilities.h"
+#include "ConvolutionalLayer2DCapabilities.h"
 #include "GnaException.h"
 #include "ParameterLimits.h"
 #include "Shape.h"
@@ -51,25 +52,27 @@ static const TensorLimits _ActivationLimitsGen0_9 =
     Gna2StatusXnnErrorOutputBytes}
 };
 
+static const auto pwlLimit = std::make_shared<TensorLimits>(_ActivationLimitsGen0_9);
+
 const FullCapabilitiesMap ActivationFunction::capabilities =
 {
     {INTEL_AFFINE,{
-        {GNA_0_9, std::make_shared<TensorLimits>(_ActivationLimitsGen0_9)},
+        {GNA_0_9, pwlLimit},
     }},
     {INTEL_AFFINE_DIAGONAL,{
-        {GNA_0_9, std::make_shared<TensorLimits>(_ActivationLimitsGen0_9)},
+        {GNA_0_9, pwlLimit},
     }},
     {INTEL_AFFINE_MULTIBIAS,{
-        {GNA_2_0, std::make_shared<TensorLimits>(_ActivationLimitsGen0_9)},
+        {GNA_2_0, pwlLimit},
     }},
     {INTEL_CONVOLUTIONAL,{
-        {GNA_1_0, std::make_shared<TensorLimits>(_ActivationLimitsGen0_9)},
+        {GNA_1_0, pwlLimit},
     }},
     {INTEL_CONVOLUTIONAL_2D,{
-        {GNA_3_0, std::make_shared<TensorLimits>(_ActivationLimitsGen0_9)}
+        {GNA_3_0, pwlLimit}
     }},
     {INTEL_RECURRENT,{
-        {GNA_0_9, std::make_shared<TensorLimits>(_ActivationLimitsGen0_9)},
+        {GNA_0_9, pwlLimit},
     }}
 };
 
@@ -141,25 +144,13 @@ const FullCapabilitiesMap ActivationFunction::outputCapabilities =
         {GNA_3_0, std::make_shared<TensorLimits>(_InterleaveTensorLimitsGen3)}
     }},
     {INTEL_CONVOLUTIONAL, {
-        {GNA_1_0, std::make_shared<TensorLimits>(TensorLimits{
-            { GNA_TENSOR_HW },
-            {{GNA_DIM_H, {1, 1, 1, Gna2StatusXnnErrorOutputVolume}},
-             {GNA_DIM_W, {1, XNN_N_IN_ELEMS_MAX, 1, Gna2StatusXnnErrorOutputVolume}}},
-            _ModesGen0_9})},
-        {GNA_3_0, std::make_shared<TensorLimits>(TensorLimits{
-            { GNA_TENSOR_HW },
-            {{GNA_DIM_H, {1, 1, 1, Gna2StatusXnnErrorOutputVolume}},
-             {GNA_DIM_W, {1, XNN_N_IN_ELEMS_MAX, 1, Gna2StatusXnnErrorOutputVolume}}},
-            _ModesGen3})},
+        ConvolutionalLayer2DCapabilities::GetOperands(OutputOperandIndex).at(INTEL_CONVOLUTIONAL)
     }},
     {INTEL_CONVOLUTIONAL_2D, {
-        {GNA_3_0, std::make_shared<TensorLimits>(TensorLimits{
-            {GNA_TENSOR_NHWD},
-            {{GNA_DIM_N, {1, 1, 1, Gna2StatusXnnErrorOutputVolume}},
-             {GNA_DIM_H, {1, XNN_N_IN_ELEMS_MAX, 1, Gna2StatusXnnErrorOutputVolume}},
-             {GNA_DIM_W, {1, XNN_N_IN_ELEMS_MAX, 1, Gna2StatusXnnErrorOutputVolume}},
-             {GNA_DIM_D, {1, XNN_N_IN_ELEMS_MAX, 1, Gna2StatusXnnErrorOutputVolume}}},
-            {{GNA_INT8, GNA_INT16, GNA_INT32, GNA_DATA_ACTIVATION_DISABLED}, Gna2StatusXnnErrorOutputBytes }})}
+        ConvolutionalLayer2DCapabilities::GetOperands(OutputOperandIndex).at(INTEL_CONVOLUTIONAL_2D)
+    }},
+    {INTEL_CONVOLUTIONAL_1D, {
+        ConvolutionalLayer2DCapabilities::GetOperands(OutputOperandIndex).at(INTEL_CONVOLUTIONAL_1D)
     }},
     {INTEL_COPY, {
         {GNA_0_9, std::make_shared<TensorLimits>(_FlatTensorLimitsGen0_9)},

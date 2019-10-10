@@ -64,10 +64,7 @@ public:
     std::unique_ptr<const Component> Stride;
 
 protected:
-    static const FullCapabilitiesMap windowLimits;
-    static const FullCapabilitiesMap strideLimits;
     static const SetLimits<KernelPoolingMode> modeLimits;
-    static const FullCapabilitiesMap outputCapabilities;
 
     static std::unique_ptr<PoolingFunction2D> create(
         const TransformFactoryConfig& config,

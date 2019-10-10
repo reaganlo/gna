@@ -38,8 +38,11 @@
 #include <cstdint>
 #include <memory>
 
-#define uintDivCeil(dividend,divisor) (uint32_t)ceil((double)(dividend)/(double)(divisor))
-
+template<typename T = uint32_t, typename X, typename Y>
+T uintDivCeil(X dividend, Y divisor)
+{
+    return (T)ceil((double)(dividend) / (double)(divisor));
+}
 
 namespace GNA
 {
@@ -53,7 +56,7 @@ namespace GNA
     static uint32_t  GNA3_NUM_CE = 8;      // Number of CE(s)
     static uint32_t  GNA3_UMEM_SIZE_KB = 32;     // Total Unified-Memory Size in KB
     static uint32_t  GNA3_NMEM_SIZE_KB = 2;      // Total Narrow-Mem Size in KB
-    static float GNA3_BMEM_SIZE_KB = 0.5;    // Total Bias-Memory Size in KB
+    static uint32_t GNA3_BMEM_SIZE_KB = 2;    // Total Bias-Memory Size in KB
                                              // uArch Global Variables:
     static uint32_t GNA3_UBANK_ROW_SIZE_B = 16;     // Unified Memory Row Size (Bytes per EBB/RF Entry)
     static uint32_t GNA3_CONST_KB = 1024;   // 1KB = 1024 Bytes
@@ -61,9 +64,8 @@ namespace GNA
     static bool GNA3_2DCNN_ALIST_EN = false;  // Enables Active-List as memory for 2D-CNN
     static bool GNA3_2DCNN_CNFLCT_EN = false;  // Allows conflicts in UMEM between KMEM and CMEM
     static bool GNA3_2DCNN_PLUPACK_EN = false;  // Enables Packing of PLU Elements, basically using size of ACTx, rather than 4B
-    static bool GNA3_2DCNN_C1MEM_EN = false;  // CMEM_Elements = CNVw * 1 ; instead of CMEM_Elements = CNVw * Kh ; Only if (Kh * IFVw * IFVc) feets in Narrow-MEM
 
-// uArch Hacks/Limitation Knobs(s):
+    // uArch Hacks/Limitation Knobs(s):
     static bool GNA3_2DCNN_NMADJ = true;   // Narrow-Memory Adjusemt: When TRUE - Narrow-Mem is 16B Smaller (GNa-3.0 uArch RTL Rev 1.0)
     static bool GNA3_2DCNN_DMACNPREC = false;  // Dynamic-Mac-Precision: When TRUE - We can simulate with 4B per MAC
                                               // GNA UMEM Static Constatn(s):
@@ -78,7 +80,7 @@ namespace GNA
 
 
     typedef struct GNA3_Tensor // NHWC
-    { 
+    {
         uint16_t    N;    // Number of 3D-Tensors (Used as 4th diemension)
         uint16_t    H;    // Height (Horizontal) Dimension
         uint16_t    W;    // Width (Vertical) Dimension
@@ -86,16 +88,14 @@ namespace GNA
         gna_data_mode Prec; // Precision
     } GNA3_Tensor_t;
 
-    static const GNA3_UMemAlloc GNA3_UMemAlloc_def;
     static const convolutional_fused_configuration gna_convolutional_fused_configuration_def;
 
     inline GNA3_Tensor_t GNA3_GetCNV(ConvolutionFunction2D const * cnnIn, const DataMode& outputMode)
     {
-        GNA3_Tensor_t CNV = { };
-
+        GNA3_Tensor_t CNV;
         CNV.N = 1;
-        CNV.H = static_cast<uint16_t>( 1 + (cnnIn->Input->at(GNA_DIM_H) + (2 * cnnIn->Padding->at(GNA_DIM_H)) - cnnIn->Filters->at(GNA_DIM_H)) / cnnIn->Stride->at(GNA_DIM_H) ); // Note: Using '/' operator for flooring
-        CNV.W = static_cast<uint16_t>( 1 + (cnnIn->Input->at(GNA_DIM_W) + (2 * cnnIn->Padding->at(GNA_DIM_W)) - cnnIn->Filters->at(GNA_DIM_W)) / cnnIn->Stride->at(GNA_DIM_W) ); // Note: Using '/' operator for flooring
+        CNV.H = 1; // Note: Using '/' operator for flooring
+        CNV.W = static_cast<uint16_t>( 1 + (cnnIn->Input->at(GNA_DIM_W) - cnnIn->Filters->at(GNA_DIM_W)) / cnnIn->Stride->at(GNA_DIM_W) ); // Note: Using '/' operator for flooring
         CNV.C = static_cast<uint16_t>( cnnIn->Filters->Count);
         CNV.Prec = outputMode;
         return CNV;
@@ -104,13 +104,13 @@ namespace GNA
     inline GNA3_Tensor_t GNA3_GetPLV(ConvolutionFunction2D const * cnnIn, PoolingFunction2D const * poolingIn, const DataMode& outputMode)
     {
         GNA3_Tensor_t CNV = GNA3_GetCNV(cnnIn, outputMode);
-        GNA3_Tensor_t PLV = { };
+        GNA3_Tensor_t PLV;
 
         if (poolingIn != nullptr && poolingIn->Mode != KernelPoolingModeNone)
         { // Pooling is enabled:
             PLV.N = 1;
-            PLV.H = static_cast<uint16_t>(ceil(1 + double(CNV.H - poolingIn->Window->at(GNA_DIM_H)) / double(poolingIn->Stride->at(GNA_DIM_H))) );
-            PLV.W = static_cast<uint16_t>(ceil(1 + double(CNV.W - poolingIn->Window->at(GNA_DIM_W)) / double(poolingIn->Stride->at(GNA_DIM_W))) );
+            PLV.H = 1;
+            PLV.W = (CNV.W > poolingIn->Window->at(GNA_DIM_W)) ? static_cast<uint16_t>(ceil(1 + double(CNV.W - poolingIn->Window->at(GNA_DIM_W)) / double(poolingIn->Stride->at(GNA_DIM_W)))) : 1;
             PLV.C = CNV.C;
             PLV.Prec = outputMode; //TODO: Check if valid
         }
@@ -132,16 +132,16 @@ namespace GNA
 
         // Extracting CNN Params:
         uint32_t KPrec = cnnIn->Filters->Mode.Size;
-        uint32_t KDimH = cnnIn->Filters->at(GNA_DIM_H);
+        uint32_t KDimH = 1;
         uint32_t KDimW = cnnIn->Filters->at(GNA_DIM_W);
 
-        if ((KPrec == 1) && (inPrec == 2)) 
+        if ((KPrec == 1) && (inPrec == 2))
         {
             KPrec = 2;
         }
 
         uint32_t KSizeB = ALIGN(KPrec * KDimH * KDimW * cnnIn->Input->at(GNA_DIM_D) , KMemRowSizeB); // Net Kernel Size in Byte(s)
-        return convConfiguration->KWG * KSizeB;
+        return ALIGN(convConfiguration->KWG, convConfiguration->uT) * KSizeB;
     }
     inline uint32_t uintFloorPwr2(const uint32_t Num) {
         // Static Mapping for Log2    Inp = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32 }
@@ -160,7 +160,7 @@ namespace GNA
         uint32_t UMemElmtsPerStack = GNA3_UBANK_ROW_SIZE_B / Prec;       // Number of Accumolators in a CMEM-Stack-Row (Single CE)
         uint32_t UMemSlots = GNA3_NUM_CE * UMemElmtsPerStack;
 
-        uint32_t UMemAllocRows = 0;
+        uint32_t UMemAllocRows;
         if (KWG <= UMemSlots / 2)
         { // AKA Stride-Packing (More than one stride in Physical UMEM-Row)
                                     // In Stride-Packing scheme, there are mulitple CNV strides in a single UMEM Row
@@ -175,16 +175,20 @@ namespace GNA
         return UMemRowSize * UMemAllocRows;
     }
 
-    inline uint32_t GNA3_GetCnMemElmts(ConvolutionFunction2D const * cnnIn, const DataMode& outputMode)
+    inline uint32_t GNA3_GetCnMemElmts(ConvolutionFunction2D const * cnnIn,
+        const DataMode& outputMode)
     {
-        GNA3_Tensor_t CNV = GNA3_GetCNV(cnnIn, outputMode);
+        UNREFERENCED_PARAMETER(cnnIn);
+        UNREFERENCED_PARAMETER(outputMode);
+        return 2;
+        //GNA3_Tensor_t CNV = GNA3_GetCNV(cnnIn, outputMode);
 
 
-        if ((GNA3_2DCNN_C1MEM_EN) && ((uint32_t)(cnnIn->Input->at(GNA_DIM_W) * cnnIn->Input->at(GNA_DIM_D) * cnnIn->Filters->at(GNA_DIM_H)) <= (uint32_t)(GNA3_NMEM_SIZE_KB * GNA3_CONST_KB)))
-        {
-            return CNV.W;
-        }
-        return CNV.W * cnnIn->Filters->at(GNA_DIM_H);
+        //if ((GNA3_2DCNN_C1MEM_EN) && ((uint32_t)(cnnIn->Input->at(GNA_DIM_W) * cnnIn->Input->at(GNA_DIM_D) * cnnIn->Filters->at(GNA_DIM_H)) <= (uint32_t)(GNA3_NMEM_SIZE_KB * GNA3_CONST_KB)))
+        //{
+        //    return CNV.W;
+        //}
+        //return CNV.W * cnnIn->Filters->at(GNA_DIM_H);
     }
 
     inline uint32_t GNA3_CMemAllocSize(ConvolutionFunction2D const * cnnIn, const DataMode& outputMode, convolutional_fused_configuration* const convConfiguration)
@@ -198,9 +202,11 @@ namespace GNA
 
     inline uint32_t GNA3_GetPnMemElmts(ConvolutionFunction2D const * cnnIn, PoolingFunction2D const * poolingIn, const DataMode& outputMode)
     {
-        GNA3_Tensor_t PLV = GNA3_GetPLV(cnnIn, poolingIn, outputMode);
+        //GNA3_Tensor_t PLV = GNA3_GetPLV(cnnIn, poolingIn, outputMode);
+        UNREFERENCED_PARAMETER(cnnIn);
+        UNREFERENCED_PARAMETER(outputMode);
 
-        return PLV.W * (poolingIn != nullptr ? poolingIn->Window->at(GNA_DIM_H) : 0);
+        return (poolingIn != nullptr ? poolingIn->Window->at(GNA_DIM_W) : 0);
     }
 
     inline uint32_t GNA3_GetPLUEffPrec(PoolingFunction2D const * poolingIn, const DataMode& outputMode)
@@ -248,9 +254,7 @@ namespace GNA
         // Function: GNA3_PMemAllocSize
         // Returns the PMemEmts, meaning the number of Elements in a single Pn allocation.
         uint32_t        PnMemElmts = GNA3_GetPnMemElmts(cnnIn, poolingIn, outputMode);
-        uint32_t ACTx, PLUPrec;
-
-        ACTx = outputMode.Size;
+        uint32_t PLUPrec;
 
         if (!GNA3_2DCNN_PLUPACK_EN)
         { // TODO check if valid
@@ -258,7 +262,6 @@ namespace GNA
         }
         else
         {
-            PLUPrec = ACTx;
             PLUPrec = GNA3_GetPLUEffPrec(poolingIn, outputMode);
         }
         return GNA3_UMemAllocSize(PnMemElmts, convConfiguration->KWG, PLUPrec);
@@ -400,7 +403,7 @@ namespace GNA
             }
         }
         else // KMEM+CMEM+PMEM CANNOT Fit !
-        { 
+        {
             AListMemAtmpt = true;
         }
 
@@ -441,7 +444,7 @@ namespace GNA
             convConfiguration->PMemBase = static_cast<uint8_t>(GNA3_UMEM_SEC_ALLOC(PMemSec, PMemAlloc, 0));
         }
         else if (CgtK) // CMEM >= KMEM !!!
-        { 
+        {
             if ((0 < KMemAlloc) && (KMemAlloc <= XYSize) == false)  return false;
             if ((0 < CMemAlloc) && (CMemAlloc <= ZYSize) == false)  return false;
 
@@ -490,14 +493,14 @@ namespace GNA
 
                 convConfiguration->PMemBase = static_cast<uint8_t>(GNA3_UMEM_SEC_ALLOC(ZtoX, PMemAlloc, CMemAlloc));
             }
-            else 
+            else
             {
                 return false;
             }
         }
         else if (CltK) // CMEM < KMEM !!!
-        { 
-            if (PMemAlloc == 0) 
+        {
+            if (PMemAlloc == 0)
             {
                 // No PMEM Allocation is needed
             }
@@ -506,15 +509,15 @@ namespace GNA
                 // CMEM allocated only onto X Segment
                 // KMEM allocated only onto Z Segment
                 if (PMemAlloc <= YSize) // PMEM allocated fully only onto Y Segment
-                { 
+                {
                     convConfiguration->PMemBase = static_cast<uint8_t>(GNA3_UMEM_SEC_ALLOC(XtoZ, PMemAlloc, YStrtOfst));
                 }
                 else if (CPMemAlloc <= XYSize) // PMEM allocated NOT only onto Y Segment !
-                { 
+                {
                     // PMEM is allocated onto Y Segment, and its residue onto X Segment (with CMEM)
                     convConfiguration->PMemBase = static_cast<uint8_t>(GNA3_UMEM_SEC_ALLOC(ZtoX, PMemAlloc, YEndOfst));
                 }
-                else 
+                else
                 {
                     // PMEM is allocated in this order:
                     // 1. Whatever space left in X Segement (Shares X Segment with CMEM)
@@ -549,13 +552,42 @@ namespace GNA
         return true;
     }
 
-    bool GNA3_GenAdaptHW_KWG(ConvolutionFunction2D const * cnnIn, PoolingFunction2D const * poolingIn, const DataMode& outputMode, convolutional_fused_configuration* const convConfiguration, uint32_t inPrec) 
+    bool GNA3_GenAdaptHW_KWGCnsts(ConvolutionFunction2D const * cnnIn, 
+        PoolingFunction2D const * poolingIn, const DataMode& outputMode,
+        convolutional_fused_configuration* const convConfiguration)
+    {
+        UNREFERENCED_PARAMETER(poolingIn);
+
+        uint32_t ACTx = outputMode.Size;
+        uint32_t KNum = cnnIn->Filters->Count;
+
+        uint16_t KWG = convConfiguration->KWG;
+        uint16_t KWGres = static_cast<uint16_t>(KNum % KWG);
+
+        // Following Constaraints are ADL-CPU Specific:
+        // - Assuming (KNum % 4 == 0) !
+        switch (ACTx) {
+        case GNA_INT8:
+            return ((KWG == 0) || (KWG == 1) || (KWG == 2) || (KWG % 4 == 0)) &&
+                ((KWGres == 0) || (KWGres == 1) || (KWGres == 2) || (KWGres % 4 == 0));
+        case GNA_INT16:
+            return ((KWG == 0) || (KWG == 1) || (KWG % 2 == 0)) &&
+                ((KWGres == 0) || (KWGres == 1) || (KWGres % 2 == 0));
+        case GNA_INT32:
+            return true;
+        default:
+            return false;
+        }
+    }
+
+
+    bool GNA3_GenAdaptHW_KWG(ConvolutionFunction2D const * cnnIn, PoolingFunction2D const * poolingIn, const DataMode& outputMode, convolutional_fused_configuration* const convConfiguration, uint32_t inPrec)
     {
         bool ForceReCalc = false;
 
         // Temporary storage for Iterations and setting initial values:
         convolutional_fused_configuration AdaptHWRef = *convConfiguration;
-        if (!convConfiguration->Valid) 
+        if (!convConfiguration->Valid)
         {
             *convConfiguration = gna_convolutional_fused_configuration_def;   // Reseting AdptHW Struct
             convConfiguration->uT = AdaptHWRef.uT;      // Restoing the uT
@@ -583,7 +615,7 @@ namespace GNA
         {
             // Max-Kernel-Cap is function of the BIAS volume, is case of Bias-Per-Kernel
             // In this case, all BIAS are pre-loaded onto the BIAS-Memory (and is not streamed in)
-            uint32_t MaxKernelsCap = uintDivCeil(GNA3_BMEM_SIZE_KB * (float)GNA3_CONST_KB, BPrec.Size);
+            uint32_t MaxKernelsCap = uintDivCeil(GNA3_CONST_KB / GNA3_BMEM_SIZE_KB, BPrec.Size);
             MaxKernels = (KNum <= MaxKernelsCap) ? KNum : MaxKernelsCap;
         }
 
@@ -597,10 +629,18 @@ namespace GNA
             {
                 ForceReCalc = false;
             }
-            else 
+            else
             {
                 convConfiguration->KWG++;
             }
+
+            if (GNA3_GenAdaptHW_KWGCnsts(cnnIn, poolingIn, outputMode, convConfiguration) == false) {
+                // Not a Valid KWG Value
+                // We still mark as Valid, but 'jump' to next iteration
+                convConfiguration->Valid = true;
+                continue;
+            }
+
             // Calculating UMEM Allocation needed:(KMEM + CMEM + PMEM):
             convConfiguration->UMemAlloc.KMemAlloc = GNA3_KMemAllocSize(cnnIn, convConfiguration, inPrec);
             convConfiguration->UMemAlloc.CMemAlloc = GNA3_CMemAllocSize(cnnIn, outputMode, convConfiguration);
@@ -627,16 +667,36 @@ namespace GNA
         }
 
         // Update KWG-Iterations:
-        convConfiguration->KWGIter = static_cast<uint8_t>(uintDivCeil(cnnIn->Filters->Count, convConfiguration->KWG));
+        convConfiguration->KWGIter = uintDivCeil<uint16_t>(cnnIn->Filters->Count, convConfiguration->KWG);
 
         return convConfiguration->Valid;
     }
 
+    inline bool GNA3_ChkLDConstraints(ConvolutionFunction2D const * cnnIn,
+        PoolingFunction2D const * poolingIn, const DataMode& outputMode,
+        convolutional_fused_configuration* const convConfiguration)
+    {
+        UNREFERENCED_PARAMETER(poolingIn);
+        UNREFERENCED_PARAMETER(outputMode);
+
+        // This function checks the LD is following the GNA-3.0 Arch/uArch Limitation
+        // Currently, and CPkg is main use-case is Adaptive-HW, the checks are applied on 1D-CNN/2D-CNN
+
+        // Checking NMEM Constraints for CNNs:
+        uint32_t NMEffSize = GNA3_NMEM_SIZE_KB * GNA3_CONST_KB - 16;
+
+        uint32_t KRow = (cnnIn->Filters->at(GNA_DIM_W)) * 2;
+            if (KRow > NMEffSize) {
+                convConfiguration->Valid = false;
+                return false;
+            }
+        // All check passed:
+        return true;
+    }
+
     bool GNA3_PopulateLD(ConvolutionFunction2D const * cnnIn, PoolingFunction2D const * poolingIn, const DataMode& outputMode, convolutional_fused_configuration* const convConfiguration)
     {
-        uint32_t KDimW;
-
-        KDimW = cnnIn->Filters->at(GNA_DIM_W);
+        uint32_t KDimW = cnnIn->Filters->at(GNA_DIM_W);
 
         // Following Check validates the IFV limitation w.r.t Narrow-Mem
         // It is must that a Kernel-Row can be allocated fully within Narow-Mem
@@ -677,6 +737,6 @@ namespace GNA
             return false;
         }
 
-        return true;
+        return GNA3_ChkLDConstraints(cnnIn, poolingIn, outputMode, convConfiguration);
     }
 }

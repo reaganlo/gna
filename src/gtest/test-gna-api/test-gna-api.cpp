@@ -378,7 +378,8 @@ TEST_F(TestGnaModelApi, Gna2ModelCreateSingleCopyLayerSuccesfull)
     ASSERT_EQ(status, Gna2StatusSuccess);
 }
 
-TEST_F(TestGnaModelApi, Gna2ModelCreateSingleConvolutionalLayerSuccesfull)
+// TODO:3:CNN2D: enable when CNN1D ADL validation is complete and refactor 1D/2D switch to favor 2D.
+TEST_F(TestGnaModelApi, DISABLED_Gna2ModelCreateSingleConvolutionalLayerSuccesfull)
 {
     uint32_t modelId = 0;
     uint32_t granted;

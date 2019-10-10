@@ -50,7 +50,7 @@ struct convolutional_fused_configuration {
     {}
     bool             Valid;     // Indiacates Valid AdaptHW Configuration
     uint16_t         KWG;       // GNA-3.0 HAS : Kernel-Working-Group (Number of Kernels in IFV Iteration)
-    uint8_t          KWGIter;   // GNA-3.0 HAS : Kernel-Working-Group Iterations
+    uint16_t         KWGIter;   // GNA-3.0 HAS : Kernel-Working-Group Iterations
     uint8_t          uT;        // GNA-3.0 HAS : Micro-Threads (4-bits)
     uint8_t          KMemBase;  // GNA-3.0 HAS : GNA Descriptor
     uint8_t          CMemBase;  // GNA-3.0 HAS : GNA Descriptor
