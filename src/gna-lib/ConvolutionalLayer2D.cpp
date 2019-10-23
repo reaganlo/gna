@@ -90,6 +90,14 @@ Tensor const & ConvolutionalLayer2D::GetOperand(uint32_t operandIndex) const
     {
         return getTransformOperand(ActivationTransform, 2);// TODO:3:Intentional literal, replace with generic solution when all layers are transforms
     }
+    case SoftwareScratchpadOperandIndex:
+    {
+        if (Transforms.size() > 1)
+        {
+            return inputTransform->GetOperand(OutputOperandIndex);
+        }
+        throw GnaException(Gna2StatusXnnErrorLyrCfg);
+    }
     default:
         return Layer::GetOperand(operandIndex);
     }

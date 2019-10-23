@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2017 Intel Corporation.
+ Copyright 2019 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -75,7 +75,7 @@ void MaxPartialPoolingFunction(const uint32_t PS, const uint32_t PNE, const uint
     for (k = 0; k < PNE; k++)
     {
         index = (PSI + k) % PS;
-        if (P[index]>(*V))
+        if (P[index] > (*V))
         {
             *V = P[index];
         }
@@ -125,11 +125,11 @@ void ConvolutionKernelImpl(ConvolutionConfig const * const filterConfig)
 
             for (k = 0; k < FC; k++)
             {
-                if(filterConfig->bytesPerFilter == 1)
+                if (filterConfig->bytesPerFilter == 1)
                 {
                     sum += ptr_in[k] * ptr_coef[k];
                 }
-                else if(filterConfig->bytesPerFilter == 2)
+                else if (filterConfig->bytesPerFilter == 2)
                 {
                     sum += ptr_in[k] * ((int16_t*)ptr_coef)[k];
                 }
@@ -709,8 +709,6 @@ void Pooling2DKernelImpl1B(ExecutionKernelConfig<PoolingConfig2D> const * const 
     uint32_t poolOutW = 1 + (uint32_t)std::ceil((float)(inputW - windowWidth) / (float)poolStrideW);
     uint32_t poolOutH = 1 + (uint32_t)std::ceil((float)(inputH - windowHeight) / (float)poolStrideH);
 
-    int64_t tmpValue = 0;
-    int64_t value = 0;
     for (uint32_t OD = 0; OD < numFilters; OD++)
     {
         for (uint32_t POW = 0; POW < poolOutW; POW++)
@@ -719,13 +717,15 @@ void Pooling2DKernelImpl1B(ExecutionKernelConfig<PoolingConfig2D> const * const 
             for (uint32_t POH = 0; POH < poolOutH; POH++)
             {
                 uint32_t inIdxH = numFilters * inputW * POH * poolStrideH;
-                tmpValue = 0;
+                int64_t tmpValue = 0;
+                int64_t value = 0;
 
                 for (uint32_t OW = 0; OW < windowWidth; OW++)
                 {
                     uint32_t winIdxW = numFilters * OW;
 
-                    for (uint32_t OH = 0; OH < windowHeight; OH++) {
+                    for (uint32_t OH = 0; OH < windowHeight; OH++)
+                    {
 
                         uint32_t winIdxH = numFilters * inputW * OH;
 
@@ -755,7 +755,7 @@ void Pooling2DKernelImpl1B(ExecutionKernelConfig<PoolingConfig2D> const * const 
 
                             if ((POW * poolStrideW + OW <= (inputW - 1)) && (POH * poolStrideH + OH <= (inputH - 1)))
                             {
-                                tmpValue += I[OD + inIdxW + inIdxH + winIdxW + winIdxH];
+                                value += I[OD + inIdxW + inIdxH + winIdxW + winIdxH];
                             }
 
                             if (value > INT8_MAX)
@@ -766,16 +766,10 @@ void Pooling2DKernelImpl1B(ExecutionKernelConfig<PoolingConfig2D> const * const 
                             {
                                 value = INT8_MIN;
                             }
-                            else
-                            {
-                                value = tmpValue;
-                            }
                         }
-
                     }
                 }
-
-                O[POH * poolOutW * numFilters + POW * numFilters + OD] = (int8_t)value;
+                O[POH * poolOutW * numFilters + POW * numFilters + OD] = static_cast<int8_t>(value);
             }
         }
     }
@@ -799,8 +793,6 @@ void Pooling2DKernelImpl2B(ExecutionKernelConfig<PoolingConfig2D> const * const 
     uint32_t poolOutW = 1 + (uint32_t)std::ceil((float)(inputW - windowWidth) / (float)poolStrideW);
     uint32_t poolOutH = 1 + (uint32_t)std::ceil((float)(inputH - windowHeight) / (float)poolStrideH);
 
-    int64_t tmpValue = 0;
-    int64_t value = 0;
     for (uint32_t OD = 0; OD < numFilters; OD++)
     {
         for (uint32_t POW = 0; POW < poolOutW; POW++)
@@ -809,13 +801,14 @@ void Pooling2DKernelImpl2B(ExecutionKernelConfig<PoolingConfig2D> const * const 
             for (uint32_t POH = 0; POH < poolOutH; POH++)
             {
                 uint32_t inIdxH = numFilters * inputW * POH * poolStrideH;
-                tmpValue = 0;
-
+                int64_t tmpValue = 0;
+                int64_t value = 0;
                 for (uint32_t OW = 0; OW < windowWidth; OW++)
                 {
                     uint32_t winIdxW = numFilters * OW;
 
-                    for (uint32_t OH = 0; OH < windowHeight; OH++) {
+                    for (uint32_t OH = 0; OH < windowHeight; OH++)
+                    {
 
                         uint32_t winIdxH = numFilters * inputW * OH;
 
@@ -845,7 +838,7 @@ void Pooling2DKernelImpl2B(ExecutionKernelConfig<PoolingConfig2D> const * const 
 
                             if ((POW * poolStrideW + OW <= (inputW - 1)) && (POH * poolStrideH + OH <= (inputH - 1)))
                             {
-                                tmpValue += I[OD + inIdxW + inIdxH + winIdxW + winIdxH];
+                                value += I[OD + inIdxW + inIdxH + winIdxW + winIdxH];
                             }
 
                             if (value > INT16_MAX)
@@ -856,16 +849,10 @@ void Pooling2DKernelImpl2B(ExecutionKernelConfig<PoolingConfig2D> const * const 
                             {
                                 value = INT16_MIN;
                             }
-                            else
-                            {
-                                value = tmpValue;
-                            }
                         }
-
                     }
                 }
-
-                O[POH * poolOutW * numFilters + POW * numFilters + OD] = (int16_t)value;
+                O[POH * poolOutW * numFilters + POW * numFilters + OD] = static_cast<int16_t>(value);
             }
         }
     }
@@ -889,8 +876,6 @@ void Pooling2DKernelImpl4B(ExecutionKernelConfig<PoolingConfig2D> const * const 
     uint32_t poolOutW = 1 + (uint32_t)std::ceil((float)(inputW - windowWidth) / (float)poolStrideW);
     uint32_t poolOutH = 1 + (uint32_t)std::ceil((float)(inputH - windowHeight) / (float)poolStrideH);
 
-    int64_t tmpValue = 0;
-    int64_t value = 0;
     for (uint32_t OD = 0; OD < numFilters; OD++)
     {
         for (uint32_t POW = 0; POW < poolOutW; POW++)
@@ -899,13 +884,15 @@ void Pooling2DKernelImpl4B(ExecutionKernelConfig<PoolingConfig2D> const * const 
             for (uint32_t POH = 0; POH < poolOutH; POH++)
             {
                 uint32_t inIdxH = numFilters * inputW * POH * poolStrideH;
-                tmpValue = 0;
+                int64_t tmpValue = 0;
+                int64_t value = 0;
 
                 for (uint32_t OW = 0; OW < windowWidth; OW++)
                 {
                     uint32_t winIdxW = numFilters * OW;
 
-                    for (uint32_t OH = 0; OH < windowHeight; OH++) {
+                    for (uint32_t OH = 0; OH < windowHeight; OH++)
+                    {
 
                         uint32_t winIdxH = numFilters * inputW * OH;
 
@@ -932,10 +919,9 @@ void Pooling2DKernelImpl4B(ExecutionKernelConfig<PoolingConfig2D> const * const 
                         }
                         else if (config->RequestConfig->Transform.Mode == KernelPoolingModeSum)
                         {
-
                             if ((POW * poolStrideW + OW <= (inputW - 1)) && (POH * poolStrideH + OH <= (inputH - 1)))
                             {
-                                tmpValue += I[OD + inIdxW + inIdxH + winIdxW + winIdxH];
+                                value += I[OD + inIdxW + inIdxH + winIdxW + winIdxH];
                             }
 
                             if (value > INT32_MAX)
@@ -946,16 +932,10 @@ void Pooling2DKernelImpl4B(ExecutionKernelConfig<PoolingConfig2D> const * const 
                             {
                                 value = INT32_MIN;
                             }
-                            else
-                            {
-                                value = tmpValue;
-                            }
                         }
-
                     }
                 }
-
-                O[POH * poolOutW * numFilters + POW * numFilters + OD] = (int32_t)value;
+                O[POH * poolOutW * numFilters + POW * numFilters + OD] = static_cast<int32_t>(value);
             }
         }
     }
@@ -996,39 +976,49 @@ void Convolution2DKernelImpl1B1B(ExecutionKernelConfig<ConvolutionConfig2D> cons
     uint32_t outWidth = 1 + ((inputWidthWPad - filterWidth) / strideWidth);
     uint32_t outHeight = 1 + ((inputHeightWPad - filterHeight) / strideHeight);
 
-    for (uint32_t OD = 0; OD < numFilters; OD++) { //Output depth or #filters
+    for (uint32_t OD = 0; OD < numFilters; OD++)
+    { //Output depth or #filters
 
         uint32_t fIdxN = (OD * (inputDepth * filterWidth * filterHeight + filterPadding));
 
-        for (uint32_t OW = 0; OW < outWidth; OW++) { //Output width
-            for (uint32_t OH = 0; OH < outHeight; OH++) {    //Output height
+        for (uint32_t OW = 0; OW < outWidth; OW++)
+        { //Output width
+            for (uint32_t OH = 0; OH < outHeight; OH++)
+            {    //Output height
 
                 int64_t outVal;// = &O[OH * outWidth * numFilters + OW * numFilters + OD]; //NHWC order
-                if (biasMode == KernelBiasModePerFilter) {
+                if (biasMode == KernelBiasModePerFilter)
+                {
                     outVal = getBias(biasData, biasPrecission, OD);
                 }
-                else if (biasMode == KernelBiasModeDisabled) {
+                else if (biasMode == KernelBiasModeDisabled)
+                {
                     outVal = 0;
                 }
-                else {
+                else
+                {
                     outVal = getBias(biasData, biasPrecission, numFilters*outWidth*OH + numFilters * OW + OD);
                 }
 
 
-                for (uint32_t z = 0; z < inputDepth; z++) {   //Input depth
-                    for (uint32_t w = 0; w < filterWidth; w++) { //input height
+                for (uint32_t z = 0; z < inputDepth; z++)
+                {   //Input depth
+                    for (uint32_t w = 0; w < filterWidth; w++)
+                    { //input height
 
                         uint32_t wIdx = OW * strideWidth + w;
                         uint32_t fIdxW = inputDepth * w;
                         uint32_t inIdxW = (((OW*strideWidth) + w - padWidth) * (inputDepth));
 
-                        for (uint32_t h = 0; h < filterHeight; h++) { //input width
+                        for (uint32_t h = 0; h < filterHeight; h++)
+                        { //input width
 
                             uint32_t inIdxH = (((OH*strideHeight) + h - padHeight) * (inputDepth*inputWidth));
                             uint32_t fIdxH = inputDepth * filterWidth * h;
                             uint32_t hIdx = OH * strideHeight + h;
 
-                            if (wIdx < padWidth || wIdx > inWidthMax || hIdx < padHeight || hIdx > inHeightMax) { //padding
+                            if (wIdx < padWidth || wIdx > inWidthMax || hIdx < padHeight || hIdx > inHeightMax)
+                            { //padding
                                 continue;
                             }
                             outVal += (int64_t)(I[inIdxH + inIdxW + z]) * F[fIdxN + fIdxH + fIdxW + z];
@@ -1077,39 +1067,49 @@ void Convolution2DKernelImpl1B2B(ExecutionKernelConfig<ConvolutionConfig2D> cons
     uint32_t outWidth = 1 + ((inputWidthWPad - filterWidth) / strideWidth);
     uint32_t outHeight = 1 + ((inputHeightWPad - filterHeight) / strideHeight);
 
-    for (uint32_t OD = 0; OD < numFilters; OD++) { //Output depth or #filters
+    for (uint32_t OD = 0; OD < numFilters; OD++)
+    { //Output depth or #filters
 
         uint32_t fIdxN = (OD * (inputDepth * filterWidth * filterHeight + filterPadding));
 
-        for (uint32_t OW = 0; OW < outWidth; OW++) { //Output width
-            for (uint32_t OH = 0; OH < outHeight; OH++) {    //Output height
+        for (uint32_t OW = 0; OW < outWidth; OW++)
+        { //Output width
+            for (uint32_t OH = 0; OH < outHeight; OH++)
+            {    //Output height
 
                 int64_t outVal;// = &O[OH * outWidth * numFilters + OW * numFilters + OD]; //NHWC order
-                if (biasMode == KernelBiasModePerFilter) {
+                if (biasMode == KernelBiasModePerFilter)
+                {
                     outVal = getBias(biasData, biasPrecission, OD);
                 }
-                else if (biasMode == KernelBiasModeDisabled) {
+                else if (biasMode == KernelBiasModeDisabled)
+                {
                     outVal = 0;
                 }
-                else {
+                else
+                {
                     outVal = getBias(biasData, biasPrecission, numFilters*outWidth*OH + numFilters * OW + OD);
                 }
 
 
-                for (uint32_t z = 0; z < inputDepth; z++) {   //Input depth
-                    for (uint32_t w = 0; w < filterWidth; w++) { //input height
+                for (uint32_t z = 0; z < inputDepth; z++)
+                {   //Input depth
+                    for (uint32_t w = 0; w < filterWidth; w++)
+                    { //input height
 
                         uint32_t wIdx = OW * strideWidth + w;
                         uint32_t fIdxW = inputDepth * w;
                         uint32_t inIdxW = (((OW*strideWidth) + w - padWidth) * (inputDepth));
 
-                        for (uint32_t h = 0; h < filterHeight; h++) { //input width
+                        for (uint32_t h = 0; h < filterHeight; h++)
+                        { //input width
 
                             uint32_t inIdxH = (((OH*strideHeight) + h - padHeight) * (inputDepth*inputWidth));
                             uint32_t fIdxH = inputDepth * filterWidth * h;
                             uint32_t hIdx = OH * strideHeight + h;
 
-                            if (wIdx < padWidth || wIdx > inWidthMax || hIdx < padHeight || hIdx > inHeightMax) { //padding
+                            if (wIdx < padWidth || wIdx > inWidthMax || hIdx < padHeight || hIdx > inHeightMax)
+                            { //padding
                                 continue;
                             }
                             outVal += (int64_t)(I[inIdxH + inIdxW + z]) * F[fIdxN + fIdxH + fIdxW + z];
@@ -1158,39 +1158,49 @@ void Convolution2DKernelImpl2B1B(ExecutionKernelConfig<ConvolutionConfig2D> cons
     uint32_t outWidth = 1 + ((inputWidthWPad - filterWidth) / strideWidth);
     uint32_t outHeight = 1 + ((inputHeightWPad - filterHeight) / strideHeight);
 
-    for (uint32_t OD = 0; OD < numFilters; OD++) { //Output depth or #filters
+    for (uint32_t OD = 0; OD < numFilters; OD++)
+    { //Output depth or #filters
 
         uint32_t fIdxN = (OD * (inputDepth * filterWidth * filterHeight + filterPadding));
 
-        for (uint32_t OW = 0; OW < outWidth; OW++) { //Output width
-            for (uint32_t OH = 0; OH < outHeight; OH++) {    //Output height
+        for (uint32_t OW = 0; OW < outWidth; OW++)
+        { //Output width
+            for (uint32_t OH = 0; OH < outHeight; OH++)
+            {    //Output height
 
                 int64_t outVal;// = &O[OH * outWidth * numFilters + OW * numFilters + OD]; //NHWC order
-                if (biasMode == KernelBiasModePerFilter) {
+                if (biasMode == KernelBiasModePerFilter)
+                {
                     outVal = getBias(biasData, biasPrecission, OD);
                 }
-                else if (biasMode == KernelBiasModeDisabled) {
+                else if (biasMode == KernelBiasModeDisabled)
+                {
                     outVal = 0;
                 }
-                else {
+                else
+                {
                     outVal = getBias(biasData, biasPrecission, numFilters*outWidth*OH + numFilters * OW + OD);
                 }
 
 
-                for (uint32_t z = 0; z < inputDepth; z++) {   //Input depth
-                    for (uint32_t w = 0; w < filterWidth; w++) { //input height
+                for (uint32_t z = 0; z < inputDepth; z++)
+                {   //Input depth
+                    for (uint32_t w = 0; w < filterWidth; w++)
+                    { //input height
 
                         uint32_t wIdx = OW * strideWidth + w;
                         uint32_t fIdxW = inputDepth * w;
                         uint32_t inIdxW = (((OW*strideWidth) + w - padWidth) * (inputDepth));
 
-                        for (uint32_t h = 0; h < filterHeight; h++) { //input width
+                        for (uint32_t h = 0; h < filterHeight; h++)
+                        { //input width
 
                             uint32_t inIdxH = (((OH*strideHeight) + h - padHeight) * (inputDepth*inputWidth));
                             uint32_t fIdxH = inputDepth * filterWidth * h;
                             uint32_t hIdx = OH * strideHeight + h;
 
-                            if (wIdx < padWidth || wIdx > inWidthMax || hIdx < padHeight || hIdx > inHeightMax) { //padding
+                            if (wIdx < padWidth || wIdx > inWidthMax || hIdx < padHeight || hIdx > inHeightMax)
+                            { //padding
                                 continue;
                             }
                             outVal += (int64_t)(I[inIdxH + inIdxW + z]) * F[fIdxN + fIdxH + fIdxW + z];
@@ -1204,6 +1214,7 @@ void Convolution2DKernelImpl2B1B(ExecutionKernelConfig<ConvolutionConfig2D> cons
         }
     }
 }
+
 void Convolution2DKernelImpl2B2B(ExecutionKernelConfig<ConvolutionConfig2D> const * const config)
 {
     uint32_t inputDepth = config->RequestConfig->Transform.InputDepth;
@@ -1239,39 +1250,49 @@ void Convolution2DKernelImpl2B2B(ExecutionKernelConfig<ConvolutionConfig2D> cons
     uint32_t outWidth = 1 + ((inputWidthWPad - filterWidth) / strideWidth);
     uint32_t outHeight = 1 + ((inputHeightWPad - filterHeight) / strideHeight);
 
-    for (uint32_t OD = 0; OD < numFilters; OD++) { //Output depth or #filters
+    for (uint32_t OD = 0; OD < numFilters; OD++)
+    { //Output depth or #filters
 
         uint32_t fIdxN = (OD * (inputDepth * filterWidth * filterHeight + filterPadding));
 
-        for (uint32_t OW = 0; OW < outWidth; OW++) { //Output width
-            for (uint32_t OH = 0; OH < outHeight; OH++) {    //Output height
+        for (uint32_t OW = 0; OW < outWidth; OW++)
+        { //Output width
+            for (uint32_t OH = 0; OH < outHeight; OH++)
+            {    //Output height
 
                 int64_t outVal;// = &O[OH * outWidth * numFilters + OW * numFilters + OD]; //NHWC order
-                if (biasMode == KernelBiasModePerFilter) {
+                if (biasMode == KernelBiasModePerFilter)
+                {
                     outVal = getBias(biasData, biasPrecission, OD);
                 }
-                else if (biasMode == KernelBiasModeDisabled) {
+                else if (biasMode == KernelBiasModeDisabled)
+                {
                     outVal = 0;
                 }
-                else {
+                else
+                {
                     outVal = getBias(biasData, biasPrecission, numFilters*outWidth*OH + numFilters * OW + OD);
                 }
 
 
-                for (uint32_t z = 0; z < inputDepth; z++) {   //Input depth
-                    for (uint32_t w = 0; w < filterWidth; w++) { //input height
+                for (uint32_t z = 0; z < inputDepth; z++)
+                {   //Input depth
+                    for (uint32_t w = 0; w < filterWidth; w++)
+                    { //input height
 
                         uint32_t wIdx = OW * strideWidth + w;
                         uint32_t fIdxW = inputDepth * w;
                         uint32_t inIdxW = (((OW*strideWidth) + w - padWidth) * (inputDepth));
 
-                        for (uint32_t h = 0; h < filterHeight; h++) { //input width
+                        for (uint32_t h = 0; h < filterHeight; h++)
+                        { //input width
 
                             uint32_t inIdxH = (((OH*strideHeight) + h - padHeight) * (inputDepth*inputWidth));
                             uint32_t fIdxH = inputDepth * filterWidth * h;
                             uint32_t hIdx = OH * strideHeight + h;
 
-                            if (wIdx < padWidth || wIdx > inWidthMax || hIdx < padHeight || hIdx > inHeightMax) { //padding
+                            if (wIdx < padWidth || wIdx > inWidthMax || hIdx < padHeight || hIdx > inHeightMax)
+                            { //padding
                                 continue;
                             }
                             outVal += (int64_t)(I[inIdxH + inIdxW + z]) * F[fIdxN + fIdxH + fIdxW + z];

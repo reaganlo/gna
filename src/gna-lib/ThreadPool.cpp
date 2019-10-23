@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2017 Intel Corporation.
+ Copyright 2019 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -40,6 +40,18 @@
 
 using namespace GNA;
 
+// will set memory only in DEBUG configuration
+template<typename M, typename S>
+static void clearMemoryInDebug(M* memory, S size)
+{
+#if DEBUG == 1
+    memset(memory, 0, size);
+#else
+    ((void)(memory));
+    ((void)(size));
+#endif
+}
+
 KernelBuffers::KernelBuffers()
 {
     // TODO: use one allocation for inputs and pool buffer
@@ -49,7 +61,7 @@ KernelBuffers::KernelBuffers()
     {
         throw GnaException(Gna2StatusResourceAllocationError);
     }
-    memset(d0, 0, size);
+    clearMemoryInDebug(d0, size);
     d1 = d0 + UINT16_MAX + 1;
     d2 = d1 + UINT16_MAX + 1;
     d3 = d2 + UINT16_MAX + 1;
@@ -65,16 +77,10 @@ KernelBuffers::KernelBuffers()
         this->~KernelBuffers();
         throw GnaException(Gna2StatusResourceAllocationError);
     }
-    memset(pool, 0, poolSize);
+    clearMemoryInDebug(pool, poolSize);
 
-    auto const cnnScratchSize = 256 * 1024 * 1024;
-    cnnFusedBuffer = static_cast<int8_t*>(_kernel_malloc(cnnScratchSize));
-    if (nullptr == cnnFusedBuffer)
-    {
-        this->~KernelBuffers();
-        throw GnaException(Gna2StatusResourceAllocationError);
-    }
-    memset(cnnFusedBuffer, 0, cnnScratchSize);
+    auto const cnnScratchSize = 1 * 1024 * 1024;
+    ReallocateCnnScratchPad(cnnScratchSize);
 }
 
 KernelBuffers::~KernelBuffers()
@@ -92,6 +98,27 @@ KernelBuffers::~KernelBuffers()
         _gna_free(cnnFusedBuffer);
     }
     memset(this, 0, sizeof(*this));
+}
+
+void KernelBuffers::ReallocateCnnScratchPad(uint32_t cnnScratchSize)
+{
+    if(cnnScratchSize > cnnFusedBufferSize)
+    {
+        if (nullptr != cnnFusedBuffer)
+        {
+            _gna_free(cnnFusedBuffer);
+            cnnFusedBuffer = nullptr;
+            cnnFusedBufferSize = 0;
+        }
+        cnnFusedBuffer = static_cast<int8_t*>(_kernel_malloc(cnnScratchSize));
+        if (nullptr == cnnFusedBuffer)
+        {
+            throw GnaException(Gna2StatusResourceAllocationError);
+        }
+        cnnFusedBufferSize = cnnScratchSize;
+
+        clearMemoryInDebug(cnnFusedBuffer, cnnScratchSize);
+    }
 }
 
 ThreadPool::ThreadPool(uint32_t threadCount) :

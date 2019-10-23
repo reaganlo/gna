@@ -166,6 +166,7 @@ public:
         ExecutionConfig const & execution) const override
     {
         auto executionConfig = createExecutionConfig(layerConfiguration, execution);
+        updateExecutionKernelConfig(*executionConfig);
         try
         {
             kernels->at(accel)(executionConfig.get());
@@ -234,6 +235,26 @@ protected:
             return std::make_unique<ExecutionKernelConfig<TransformType>>(
                 static_cast<KernelConfig<TransformType>*>(layerConfiguration->ConfigList[Operation].get()),
                 execution);
+        }
+    }
+
+    virtual void updateExecutionKernelConfig(ExecutionKernelConfig<TransformType> & config) const
+    {
+        UNREFERENCED_PARAMETER(config);
+    }
+
+    static void setSoftwareScratchPad(ExecutionKernelConfig<TransformType> & config)
+    {
+        if (nullptr != config.Intermediate && nullptr != config.Intermediate->cnnFusedBuffer)
+        {
+            if (nullptr == config.RequestConfig->Inputs)
+            {
+                config.RequestConfig->SetBuffer(GNA::InputOperandIndex, config.Intermediate->cnnFusedBuffer);
+            }
+            if (nullptr == config.RequestConfig->Outputs)
+            {
+                config.RequestConfig->SetBuffer(GNA::OutputOperandIndex, config.Intermediate->cnnFusedBuffer);
+            }
         }
     }
 };

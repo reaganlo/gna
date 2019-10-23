@@ -68,6 +68,12 @@ protected:
     static PwlCached createPwlCached(const gna_data_mode mode,
         nn_pwl_seg const * const segmentsIn, uint32_t segmentCountIn);
 
+    virtual void updateExecutionKernelConfig(ExecutionKernelConfig<ActivationConfig> & config)
+        const override
+    {
+        setSoftwareScratchPad(config);
+    }
+
     static const FullCapabilitiesMap capabilities;
     static const FullCapabilitiesMap outputCapabilities;
 };

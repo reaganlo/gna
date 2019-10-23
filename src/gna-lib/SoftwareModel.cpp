@@ -42,15 +42,17 @@
 
 using namespace GNA;
 
-void SoftwareModel::buildSingleLayer(std::unique_ptr<Layer> & layer, uint32_t& maxScratchPadSize)
+void SoftwareModel::buildSingleLayer(std::unique_ptr<Layer> & layer)
 {
     if (!layer)
     {
         throw GnaException(Gna2StatusXnnErrorLyrCfg);
     }
 
-    auto operandSize = layer->TryGetOperandSize(ScratchpadOperandIndex);
-    maxScratchPadSize = ((maxScratchPadSize) > (operandSize)) ? (maxScratchPadSize) : (operandSize);
+    for (auto && operand : maximumOperandSizes)
+    {
+        FindMaximumOperandSizeForSingleLayer(*layer, operand.first, operand.second);
+    }
 
     layer->VerifyHas1BInputAnd2BWeight();
 
@@ -66,6 +68,29 @@ void SoftwareModel::CheckModel(uint32_t declaredBatchSize, void * operationPoint
         Gna2StatusXnnErrorNetLyrNo);
     Expect::NotNull(operationPointer);
 }
+
+uint32_t SoftwareModel::FindMaximumOperandSize(uint32_t operandIndex) const
+{
+    uint32_t maxSize = 0;
+    for (auto const & layer : layers)
+    {
+        auto const operand = layer->TryGetOperand(operandIndex);
+        if (nullptr != operand)
+        {
+            auto const bufferSize = operand->Size;
+            maxSize = ((maxSize) > (bufferSize)) ? (maxSize) : (bufferSize);
+        }
+    }
+    return maxSize;
+}
+
+void SoftwareModel::FindMaximumOperandSizeForSingleLayer(Layer const & layer,
+    uint32_t operandIndex, uint32_t& maxSize)
+{
+    auto operandSize = layer.TryGetOperandSize(operandIndex);
+    maxSize = ((maxSize) > (operandSize)) ? (maxSize) : (operandSize);
+}
+
 //TODO:3:P2: change to template
 SoftwareModel::SoftwareModel(const gna_model& network,
     BaseValidator validator,
@@ -100,6 +125,7 @@ uint32_t SoftwareModel::Score(
 
     LogAcceleration(accel);
 
+    fvBuffers->ReallocateCnnScratchPad(maximumOperandSizes.at(SoftwareScratchpadOperandIndex));
     auto config = InferenceConfig{ fvBuffers, requestConfiguration };
     auto layerIter = layers.cbegin() + layerIndex;
     auto const layerEnd = layerIter + layerCountIn;
@@ -143,16 +169,7 @@ uint32_t SoftwareModel::GetMaximumOperandSize(uint32_t operandIndex)
         return found->second;
     }
 
-    uint32_t maxSize = 0;
-    for (auto const & layer : layers)
-    {
-        auto const operand = layer->TryGetOperand(operandIndex);
-        if (nullptr != operand)
-        {
-            auto const bufferSize = operand->Size;
-            maxSize = ((maxSize) > (bufferSize)) ? (maxSize) : (bufferSize);
-        }
-    }
+    uint32_t maxSize = FindMaximumOperandSize(operandIndex);
     maximumOperandSizes.emplace(operandIndex, maxSize);
     return maxSize;
 }
@@ -174,14 +191,13 @@ InferenceConfig::InferenceConfig(KernelBuffers* fvBuffers,
     RequestConfiguration const& requestConfiguration) :
     SaturationCount{ 0 }
 {
-    auto buffers = const_cast<KernelBuffers const *>(fvBuffers);
-    executionConfig = std::make_unique<ExecutionConfig>(buffers,
+    executionConfig = std::make_unique<ExecutionConfig>(fvBuffers,
         &SaturationCount, requestConfiguration.BufferElementCount);
     auto const isAdl = HardwareCapabilities::IsAdlDevice(requestConfiguration.GetConsistentDevice());
     hasAdlConsistency = isAdl && requestConfiguration.Acceleration.GetHwConsistency();
     if (hasAdlConsistency)
     {
-        executionConfigAdl = std::make_unique<ExecutionConfig>(buffers,
+        executionConfigAdl = std::make_unique<ExecutionConfig>(fvBuffers,
             &SaturationCount, requestConfiguration.BufferElementCountForAdl);
         getEffective = &InferenceConfig::getForAdlFix;
     }

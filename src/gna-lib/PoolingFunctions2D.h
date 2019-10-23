@@ -70,6 +70,12 @@ protected:
         const TransformFactoryConfig& config,
         const OperationConfig& operation);
 
+    virtual void updateExecutionKernelConfig(ExecutionKernelConfig<PoolingConfig2D> & config)
+        const override
+    {
+        setSoftwareScratchPad(config);
+    }
+
     bool is1D = false;
 };
 

@@ -66,6 +66,8 @@ struct KernelBuffers
         rhs.cnnFusedBuffer = nullptr;
     }
 
+    void ReallocateCnnScratchPad(uint32_t cnnScratchSize);
+
     int16_t *d0 = nullptr;
     int16_t *d1 = nullptr;
     int16_t *d2 = nullptr;
@@ -76,6 +78,7 @@ struct KernelBuffers
     int16_t *d7 = nullptr;
     int64_t *pool = nullptr;
     int8_t *cnnFusedBuffer = nullptr;
+    uint32_t cnnFusedBufferSize = 0;
 };
 
 namespace GNA
@@ -127,13 +130,13 @@ struct KernelConfig : public BaseConfig
 struct ExecutionConfig
 {
     ExecutionConfig() = default;
-    ExecutionConfig(KernelBuffers const * intermediate, uint32_t * saturationCount, uint32_t const * bufferElementCount) :
+    ExecutionConfig(KernelBuffers * intermediate, uint32_t * saturationCount, uint32_t const * bufferElementCount) :
         Intermediate{ intermediate },
         SaturationCount{ saturationCount },
         BufferElementCount{ bufferElementCount }
     {};
 
-    KernelBuffers const * const Intermediate;
+    KernelBuffers * const Intermediate;
     uint32_t * const SaturationCount;
     uint32_t const * const BufferElementCount;
 };
@@ -145,19 +148,7 @@ struct ExecutionKernelConfig : public ExecutionConfig
         ExecutionConfig const & executionConfig) :
         ExecutionConfig{ executionConfig },
         RequestConfig{ requestConfig }
-    {
-        if (nullptr != Intermediate && nullptr != Intermediate->cnnFusedBuffer)
-        {
-            if (nullptr == RequestConfig->Inputs)
-            {
-                RequestConfig->SetBuffer(GNA::InputOperandIndex, Intermediate->cnnFusedBuffer);
-            }
-            if (nullptr == RequestConfig->Outputs)
-            {
-                RequestConfig->SetBuffer(GNA::OutputOperandIndex, Intermediate->cnnFusedBuffer);
-            }
-        }
-    }
+    {}
 
     KernelConfig<TransformConfig> * const RequestConfig;
 };

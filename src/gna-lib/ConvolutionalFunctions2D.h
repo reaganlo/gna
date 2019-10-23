@@ -82,6 +82,12 @@ protected:
     static Shape GetOutputShape(Shape const & inputShape,
         Shape const & filerShape, Shape const & strideShape, Shape const & paddingShape);
 
+    virtual void updateExecutionKernelConfig(ExecutionKernelConfig<ConvolutionConfig2D> & config)
+        const override
+    {
+        setSoftwareScratchPad(config);
+    }
+
     bool is1D = false;
 
 };

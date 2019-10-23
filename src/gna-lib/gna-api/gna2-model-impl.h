@@ -60,6 +60,9 @@ constexpr uint32_t GmmGaussianConstantOperandIndex = 4;
 // NOTE: temporary solution for simple and fast kernel buffer indexing, always set as last + 1 operand index 
 constexpr uint32_t ScratchpadOperandKernelIndex = 6;
 
+// NOTE: helper for calculating SW-only scratchpad, currently only used by cnnFusedBuffer size
+constexpr uint32_t SoftwareScratchpadOperandIndex = 7;
+
 
 constexpr uint32_t ConvolutionStrideParamIndex = 0;
 constexpr uint32_t BiasModeParamIndex = 1;

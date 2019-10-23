@@ -95,15 +95,15 @@ private:
     template<class T>
     void build(const T* const operations, const BaseValidator & validator)
     {
-        auto maxScratchPadSizeIter = maximumOperandSizes.emplace(ScratchpadOperandIndex, 0).first;
-        auto & maxScratchPadSize = maxScratchPadSizeIter->second;
+        maximumOperandSizes.emplace(ScratchpadOperandIndex, 0);
+        maximumOperandSizes.emplace(SoftwareScratchpadOperandIndex, 0);
 
         for (auto i = uint32_t{ 0 }; i < layerCount; i++)
         {
             try
             {
                 auto layer = Layer::Create(operations[i], validator);
-                buildSingleLayer(layer, maxScratchPadSize);
+                buildSingleLayer(layer);
             }
             catch (const GnaException& e)
             {
@@ -116,9 +116,14 @@ private:
         }
     }
 
-    void buildSingleLayer(std::unique_ptr<Layer> & layer, uint32_t & maxScratchPadSize);
+    void buildSingleLayer(std::unique_ptr<Layer> & layer);
 
     void CheckModel(uint32_t declaredBatchSize, void * operationPointer) const;
+
+    uint32_t FindMaximumOperandSize(uint32_t operandIndex) const;
+
+    static void FindMaximumOperandSizeForSingleLayer(Layer const & layer, uint32_t operandIndex,
+        uint32_t & maxSize);
 
     std::vector<std::unique_ptr<Layer>> layers;
 

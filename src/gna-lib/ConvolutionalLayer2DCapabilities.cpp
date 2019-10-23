@@ -77,6 +77,18 @@ static const RangeLimits<> & limitsForInputUInt16Max()
     return _limitsForInputUInt16Max;
 }
 
+static const RangeLimits<> & limitsForInputUInt16Max1D()
+{
+    static const RangeLimits<> _limitsForInputUInt16Max =
+    {
+        1,
+        LayerCapabilities::InputElementCountMax,
+        8,
+        Gna2StatusXnnErrorInputVolume
+    };
+    return _limitsForInputUInt16Max;
+}
+
 static const RangeLimits<> & limitsForOutputUInt16Max()
 {
     static const RangeLimits<> _limitsForOutputUInt16Max =
@@ -173,7 +185,7 @@ const FullCapabilitiesMap & ConvolutionalLayer2DCapabilities::GetOperands(uint32
                     {GNA_TENSOR_NHWD},    // N = 1
                     {{GNA_DIM_N, limitsForInputEqual1()},
                     {GNA_DIM_H, limitsForInputEqual1()},
-                    {GNA_DIM_W, limitsForInputUInt16Max()},
+                    {GNA_DIM_W, limitsForInputUInt16Max1D()},
                     {GNA_DIM_D, limitsForInputEqual1()}},
                     {{GNA_INT16}, Gna2StatusXnnErrorInputBytes}})}
             }},
@@ -242,10 +254,9 @@ const FullCapabilitiesMap & ConvolutionalLayer2DCapabilities::GetOperands(uint32
                     {{ GNA_INT8, GNA_INT16 }, Gna2StatusXnnErrorConvFltBytes }})},
                 {GNA_3_0, std::make_shared<TensorLimits>(TensorLimits{
                     { GNA_TENSOR_NHWD },    // N - # filters, HWD each filter dimensions
-                    {{GNA_DIM_N, {1, CNN_1D_N_KERNELS_MAX, 4, Gna2StatusCnnErrorConvFltCount}},
+                    {{GNA_DIM_N, {CNN_N_FLT_COEFF_MPLY, CNN_1D_N_KERNELS_MAX, CNN_N_FLT_COEFF_MPLY, Gna2StatusCnnErrorConvFltCount}},
                         {GNA_DIM_H, {CNN_N_KERNEL_ELEMENTS_PER_DIMENSION_MIN, CNN_N_KERNEL_ELEMENTS_PER_DIMENSION_MIN, 1, Gna2StatusCnnErrorConvFltVolume}},
-                        // TODO:3:CNN1D: was shapeLimitMultipliersFor1D(), ask Marcin for source
-                        {GNA_DIM_W, {CNN_N_KERNEL_ELEMENTS_PER_DIMENSION_MIN, CNN_1D_N_KERNEL_ELEMENTS_PER_DIMENSION_MAX, 1, Gna2StatusCnnErrorConvFltVolume}},
+                        {GNA_DIM_W, {CNN_N_FLT_COEFF_MIN, CNN_N_FLT_COEFF_MAX, CNN_N_FLT_COEFF_MIN, Gna2StatusCnnErrorConvFltVolume}},
                         {GNA_DIM_D, {CNN_N_KERNEL_ELEMENTS_PER_DIMENSION_MIN, CNN_N_KERNEL_ELEMENTS_PER_DIMENSION_MIN, 1, Gna2StatusCnnErrorConvFltVolume}}},
                         // Padding to 16B is required for each Kernel
                     {{ GNA_INT16 }, Gna2StatusXnnErrorConvFltBytes }})}
@@ -312,7 +323,7 @@ const FullCapabilitiesMap & ConvolutionalLayer2DCapabilities::GetParameters(uint
                 { GNA_3_0, std::make_shared<ComponentLimits>(ComponentLimits(
                     {GNA_TENSOR_HW},
                     {{GNA_DIM_H, {1, 1, 1, Gna2StatusCnnErrorConvFltStride}},
-                    {GNA_DIM_W, {1, CNN_N_KERNEL_ELEMENTS_PER_DIMENSION_MAX, 1, Gna2StatusCnnErrorConvFltStride}}}))}
+                    {GNA_DIM_W, {1, CNN_N_FLT_COEFF_MAX, 1, Gna2StatusCnnErrorConvFltStride}}}))}
             }},
         }},
         {ZeroPaddingParamIndex,{
