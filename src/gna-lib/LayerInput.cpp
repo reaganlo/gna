@@ -26,9 +26,11 @@
 #include "LayerInput.h"
 
 #include "Capabilities.h"
+#include "ConvolutionalLayer.h"
 #include "ConvolutionalLayer2DCapabilities.h"
 #include "DataMode.h"
 #include "Macros.h"
+#include "ModelWrapper.h"
 #include "ParameterLimits.h"
 #include "Validator.h"
 
@@ -40,7 +42,7 @@
 #include <cstdint>
 #include <memory.h>
 #include <vector>
-#include "ModelWrapper.h"
+
 
 using namespace GNA;
 
@@ -168,7 +170,8 @@ ApiShape GetShape(const Gna2Operation & operation)
 {
     ApiShape shape{ operation.Operands[InputOperandIndex]->Shape };
     if (Gna2OperationTypeConvolution == operation.Type &&
-        shape.NumberOfDimensions < 4)
+        shape.NumberOfDimensions < 4 &&
+        !CnnLayer::IsForced(operation))
     {
         shape.Dimensions[2] = shape.Dimensions[1];
         shape.Dimensions[1] = 1;

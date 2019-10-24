@@ -175,6 +175,23 @@ void CnnLayer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const
         configs.Convolution = Convolution->GetRequestConfig(inputBuffer, pwlOutputBuffer);
     }
 }
+const char * enforcingOutputTensorLayout = "GNA1";
+std::unique_ptr<GNA::Layer> CnnLayer::CreateEnforced(const Gna2Operation& operation,
+    const BaseValidator& validatorIn)
+{
+    // TODO: GNA2: Enforce without following const cast
+    auto & outputTensor = *const_cast<Gna2Tensor*>(operation.Operands[OutputOperandIndex]);
+    const auto outputTensorCopy = outputTensor;
+    ModelWrapper::SetLayout(outputTensor, enforcingOutputTensorLayout);
+    auto enforcedLayer = std::make_unique<CnnLayer>(operation, validatorIn);
+    outputTensor = outputTensorCopy;
+    return enforcedLayer;
+}
+
+bool CnnLayer::IsForced(const Gna2Operation& operation)
+{
+    return strncmp(operation.Operands[OutputOperandIndex]->Layout, enforcingOutputTensorLayout, 4) == 0;
+}
 
 void CnnLayer::computeHidden(AccelerationMode accel, ExecutionConfig const & execution) const
 {

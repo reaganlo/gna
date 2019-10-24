@@ -60,6 +60,10 @@ public:
     virtual ~CnnLayer() = default;
     virtual void UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const override;
 
+    static std::unique_ptr<Layer> CreateEnforced(const Gna2Operation& operation, const BaseValidator& base_validator);
+
+    static bool IsForced(const Gna2Operation& operation);
+
     std::unique_ptr<const ConvolutionFunction> Convolution;
     std::unique_ptr<const PoolingFunction> Pooling;
     std::unique_ptr<const ActivationFunction> Activation;

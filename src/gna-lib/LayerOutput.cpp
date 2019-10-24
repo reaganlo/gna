@@ -26,6 +26,7 @@
 #include "LayerOutput.h"
 
 #include "Capabilities.h"
+#include "ConvolutionalLayer.h"
 #include "ConvolutionalLayer2DCapabilities.h"
 #include "DataMode.h"
 #include "Expect.h"
@@ -227,14 +228,24 @@ void * getScratchpadForOperation(const Gna2Operation &operation)
 ApiShape LayerOutput::GetShape(const Gna2Operation & operation)
 {
     ApiShape s{ operation.Operands[OutputOperandIndex]->Shape };
-    if (operation.Type == Gna2OperationTypeConvolution &&
-        s.NumberOfDimensions < 4)
+    if (operation.Type != Gna2OperationTypeConvolution ||
+        s.NumberOfDimensions >= 4)
+    {
+        return s;
+    }
+    if (!CnnLayer::IsForced(operation))
     {
         s.NumberOfDimensions = 4;
         s.Dimensions[3] = s.Dimensions[2];
         s.Dimensions[2] = s.Dimensions[1];
         s.Dimensions[1] = 1;
 
+    }
+    else if (s.NumberOfDimensions == 3)
+    {
+        s.NumberOfDimensions = 2;
+        s.Dimensions[1] *= s.Dimensions[2];
+        s.Dimensions[2] = 0;
     }
     return s;
 }
