@@ -51,7 +51,7 @@ using namespace GNA;
 
 void ConvolutionalLayer2D::Init()
 {
-    if(inputTransform->Is1D() ||
+    if(inputTransform->Is1D() &&
         outputTransform->Is1D())
     {
         auto const & capsMapIn = ConvolutionalLayer2DCapabilities::GetOperands(InputOperandIndex);
