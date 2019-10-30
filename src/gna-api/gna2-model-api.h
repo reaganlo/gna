@@ -160,6 +160,7 @@ enum Gna2OperationType
                     - H is a height of result tensor
                     - W is a width of result tensor
                     - C is a depth of result tensor, same as the number of filters (filter N dimension)
+                 - Layout: When set to "GNA1" the GNA 1.0 1D convolution (aka legacy CNN1D) will be enforced.
         3. filters [required]:
             Specifies filters (kernels) tensor. Filters are stored one after the other.
             @note: For 2D ::Gna2OperationTypeConvolution operation each filter must start
