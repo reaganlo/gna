@@ -183,7 +183,8 @@ ConvolutionFunction2D::ConvolutionFunction2D(const BaseTransformConfig<Convoluti
 
     auto effectiveOperation = INTEL_CONVOLUTIONAL_2D;
     if (INTEL_CONVOLUTIONAL_1D == Filters->GetEffectiveOperationType() &&
-        INTEL_CONVOLUTIONAL_1D == Stride->GetEffectiveOperationType())
+        INTEL_CONVOLUTIONAL_1D == Stride->GetEffectiveOperationType() &&
+        INTEL_CONVOLUTIONAL_1D == config.input->GetEffectiveOperationType())
     {
         is1D = true;
         effectiveOperation = INTEL_CONVOLUTIONAL_1D;
