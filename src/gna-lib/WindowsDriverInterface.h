@@ -25,6 +25,8 @@
 
 #pragma once
 
+#ifdef WIN32
+
 #include "DriverInterface.h"
 
 #include "Request.h"
@@ -126,3 +128,5 @@ private:
 };
 
 }
+
+#endif // WIN32

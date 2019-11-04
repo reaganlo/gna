@@ -23,6 +23,8 @@
  in any way.
 */
 
+#ifdef WIN32
+
 #include "WindowsDriverInterface.h"
 
 #include "GnaException.h"
@@ -451,3 +453,4 @@ Gna2Status WindowsDriverInterface::parseHwStatus(uint32_t hwStatus) const
     return Gna2StatusDeviceCriticalFailure;
 }
 
+#endif // WIN32

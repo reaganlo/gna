@@ -60,12 +60,9 @@ endif()
 
 project(${PROJECT_NAME})
 
-set(IOCTL_SENDER_PREFIX ${CMAKE_SYSTEM_NAME})
-
 if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux" OR ${CMAKE_SYSTEM_NAME} STREQUAL "Android")
   set(API_EXTRA_LIBS "")
   set(API_EXTRA_DEFS "")
-  set(IOCTL_SENDER_PREFIX "Linux")
 elseif(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
   set(API_EXTRA_LIBS "setupapi.lib")
   set(API_EXTRA_DEFS "-DINTEL_GNA_DLLEXPORT=1")
@@ -151,8 +148,11 @@ set(gna_lib_sources
   ${SRC_DIR}/TransformMap.cpp
   ${SRC_DIR}/TransposeLayer.cpp
   ${SRC_DIR}/Validator.cpp
-  ${SRC_DIR}/Weight.cpp
-  ${SRC_DIR}/${IOCTL_SENDER_PREFIX}DriverInterface.cpp)
+  ${SRC_DIR}/Weight.cpp)
+
+set(gna_driver_interface_src
+  ${SRC_DIR}/LinuxDriverInterface.cpp
+  ${SRC_DIR}/WindowsDriverInterface.cpp)
 
 set(gna_api_impl_src_2
   ${API_IMPL_DIR}/gna2-common-impl.cpp
@@ -165,7 +165,7 @@ set(gna_api_impl_src_2
   ${API_IMPL_DIR}/gna2-capability-impl.cpp)
 
 set(gna_lib_sources
-  ${gna_lib_sources} ${gna_api_impl_src_2})
+  ${gna_lib_sources} ${gna_api_impl_src_2} ${gna_driver_interface_src})
 
 set(gna_lib_headers
   ${SRC_DIR}/AccelerationDetector.h
@@ -236,8 +236,11 @@ set(gna_lib_headers
   ${SRC_DIR}/TransformMap.h
   ${SRC_DIR}/TransposeLayer.h
   ${SRC_DIR}/Validator.h
-  ${SRC_DIR}/Weight.h
-  ${SRC_DIR}/${IOCTL_SENDER_PREFIX}DriverInterface.h)
+  ${SRC_DIR}/Weight.h)
+
+set(gna_driver_interface_headers
+  ${SRC_DIR}/LinuxDriverInterface.h
+  ${SRC_DIR}/WindowsDriverInterface.h)
 
 set(gna_api_impl_headers_2
   ${API_IMPL_DIR}/gna2-impl.h
@@ -252,7 +255,7 @@ set(gna_api_impl_headers_2
   ${API_IMPL_DIR}/gna2-validation-impl.h)
 
 set(gna_lib_headers
-  ${gna_lib_headers} ${gna_api_impl_headers_2})
+  ${gna_lib_headers} ${gna_api_impl_headers_2} ${gna_driver_interface_headers})
 
 set(gna_api_headers
   ${COMMON_DIR}/gna-api.h

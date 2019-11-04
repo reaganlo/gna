@@ -23,6 +23,8 @@
  in any way.
 */
 
+#ifndef WIN32
+
 #include "LinuxDriverInterface.h"
 
 #include "GnaException.h"
@@ -295,3 +297,5 @@ int LinuxDriverInterface::discoverDevice(uint32_t deviceIndex, gna_getparam *par
     }
     return -1;
 }
+
+#endif // not defined WIN32

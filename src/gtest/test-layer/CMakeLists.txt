@@ -33,12 +33,9 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 project(${PROJECT_NAME})
 
-set(IOCTL_SENDER_PREFIX ${CMAKE_SYSTEM_NAME})
-
 if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux" OR ${CMAKE_SYSTEM_NAME} STREQUAL "Android")
   set(EXTRA_LIBS "")
   set(EXTRA_DEFS "")
-  set(IOCTL_SENDER_PREFIX "Linux")
 elseif(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
   set(EXTRA_LIBS "setupapi.lib")
   set(EXTRA_DEFS "INTEL_GNA_DLLEXPORT=1")
@@ -120,7 +117,8 @@ add_executable(test-layer
   ${SRC_DIR}/TransposeLayer.cpp
   ${SRC_DIR}/Validator.cpp
   ${SRC_DIR}/Weight.cpp
-  ${SRC_DIR}/${IOCTL_SENDER_PREFIX}DriverInterface.cpp
+  ${SRC_DIR}/LinuxDriverInterface.cpp
+  ${SRC_DIR}/WindowsDriverInterface.cpp
   ${API_IMPL_DIR}/gna2-common-impl.cpp
   ${API_IMPL_DIR}/gna2-device-impl.cpp
   ${API_IMPL_DIR}/gna2-inference-impl.cpp
