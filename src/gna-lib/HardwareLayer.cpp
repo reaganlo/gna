@@ -627,7 +627,7 @@ HardwareLayerCnn2D::HardwareLayerCnn2D(const DescriptorParameters& parameters) :
         cnn, pooling, SoftwareLayer.GetOutputTransform()->Output->Mode);
 
     if (cnn->Is1D() ||
-        pooling->Is1D())
+        (pooling != nullptr && pooling->Is1D()))
     {
         save1D();
         Log->Message("Using new uArch CNN 1D");
