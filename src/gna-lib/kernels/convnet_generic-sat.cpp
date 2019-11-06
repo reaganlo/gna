@@ -39,20 +39,6 @@
 #include <cmath>
 #include <cstdint>
 
-__forceinline void saturate64_store_out(int64_t * const out, uint32_t * const saturationCount)
-{
-    if (*out > INT32_MAX)
-    {
-        *out = INT32_MAX;
-        (*saturationCount)++;
-    }
-    else if (*out < INT32_MIN)
-    {
-        *out = INT32_MIN;
-        (*saturationCount)++;
-    }
-}
-
 void SumPartialPoolingFunction(const uint32_t PS, const uint32_t PNE, const uint32_t PSI, const int64_t *P, int64_t *V)
 {
     uint32_t k = 0;
@@ -363,7 +349,7 @@ void ConvolutionPoolingKernelImpl(ConvolutionConfig const * const filterConfig,
                 for (i = 0; i < FN; i++)
                 {
                     func_partial_pooling(PS, PS, 0, pool + i * CNN_POOL_SIZE_MAX, &value);
-                    saturate64_store_out(&value, saturationCount);
+                    gna_saturate_cast(value, *saturationCount);
                     pwl->ActivateSingle(&pwl->pwl, (int32_t)value, &O[output_index * FN + i], saturationCount);
                 }
 
@@ -389,7 +375,7 @@ void ConvolutionPoolingKernelImpl(ConvolutionConfig const * const filterConfig,
         for (i = 0; i < FN; i++)
         {
             func_partial_pooling(PS, static_cast<uint32_t>(pool_num_entries), pool_start_index, pool + i * CNN_POOL_SIZE_MAX, &value);
-            saturate64_store_out(&value, saturationCount);
+            gna_saturate_cast(value, *saturationCount);
             pwl->ActivateSingle(&pwl->pwl, (int32_t)value, &O[output_index * FN + i], saturationCount);
         }
 
@@ -509,7 +495,7 @@ void ConvolutionPoolingKernelImpl1B(ConvolutionConfig const * const filterConfig
                 for (i = 0; i < FN; i++)
                 {
                     func_partial_pooling(PS, PS, 0, pool + i * CNN_POOL_SIZE_MAX, &value);
-                    saturate64_store_out(&value, saturationCount);
+                    gna_saturate_cast(value, *saturationCount);
                     pwl->ActivateSingle(&pwl->pwl, (int32_t)value, (int16_t*)&(O[(output_index * FN + i) * pwl->pwl.bytesPerOutput]), saturationCount);
                 }
 
@@ -535,7 +521,7 @@ void ConvolutionPoolingKernelImpl1B(ConvolutionConfig const * const filterConfig
         for (i = 0; i < FN; i++)
         {
             func_partial_pooling(PS, static_cast<uint32_t>(pool_num_entries), pool_start_index, pool + i * CNN_POOL_SIZE_MAX, &value);
-            saturate64_store_out(&value, saturationCount);
+            gna_saturate_cast(value, *saturationCount);
             pwl->ActivateSingle(&pwl->pwl, (int32_t)value, (int16_t*)&(O[(output_index * FN + i) * pwl->pwl.bytesPerOutput]), saturationCount);
         }
 
@@ -655,7 +641,7 @@ void ConvolutionPoolingKernelImpl2B(ConvolutionConfig const * const filterConfig
                 for (i = 0; i < FN; i++)
                 {
                     func_partial_pooling(PS, PS, 0, pool + i * CNN_POOL_SIZE_MAX, &value);
-                    saturate64_store_out(&value, saturationCount);
+                    gna_saturate_cast(value, *saturationCount);
                     pwl->ActivateSingle(&pwl->pwl, (int32_t)value, (int16_t*)&(O[(output_index * FN + i) * pwl->pwl.bytesPerOutput]), saturationCount);
                 }
 
@@ -681,7 +667,7 @@ void ConvolutionPoolingKernelImpl2B(ConvolutionConfig const * const filterConfig
         for (i = 0; i < FN; i++)
         {
             func_partial_pooling(PS, static_cast<uint32_t>(pool_num_entries), pool_start_index, pool + i * CNN_POOL_SIZE_MAX, &value);
-            saturate64_store_out(&value, saturationCount);
+            gna_saturate_cast(value, *saturationCount);
             pwl->ActivateSingle(&pwl->pwl, (int32_t)value, (int16_t*)&(O[(output_index * FN + i) * pwl->pwl.bytesPerOutput]), saturationCount);
         }
 
@@ -757,18 +743,10 @@ void Pooling2DKernelImpl1B(ExecutionKernelConfig<PoolingConfig2D> const * const 
                             {
                                 value += I[OD + inIdxW + inIdxH + winIdxW + winIdxH];
                             }
-
-                            if (value > INT8_MAX)
-                            {
-                                value = INT8_MAX;
-                            }
-                            else if (value < INT8_MIN)
-                            {
-                                value = INT8_MIN;
-                            }
                         }
                     }
                 }
+                gna_saturate_cast<int8_t>(value, *config->SaturationCount);
                 O[POH * poolOutW * numFilters + POW * numFilters + OD] = static_cast<int8_t>(value);
             }
         }
@@ -840,18 +818,10 @@ void Pooling2DKernelImpl2B(ExecutionKernelConfig<PoolingConfig2D> const * const 
                             {
                                 value += I[OD + inIdxW + inIdxH + winIdxW + winIdxH];
                             }
-
-                            if (value > INT16_MAX)
-                            {
-                                value = INT16_MAX;
-                            }
-                            else if (value < INT16_MIN)
-                            {
-                                value = INT16_MIN;
-                            }
                         }
                     }
                 }
+                gna_saturate_cast<int16_t>(value, *config->SaturationCount);
                 O[POH * poolOutW * numFilters + POW * numFilters + OD] = static_cast<int16_t>(value);
             }
         }
@@ -923,18 +893,10 @@ void Pooling2DKernelImpl4B(ExecutionKernelConfig<PoolingConfig2D> const * const 
                             {
                                 value += I[OD + inIdxW + inIdxH + winIdxW + winIdxH];
                             }
-
-                            if (value > INT32_MAX)
-                            {
-                                value = INT32_MAX;
-                            }
-                            else if (value < INT32_MIN)
-                            {
-                                value = INT32_MIN;
-                            }
                         }
                     }
                 }
+                gna_saturate_cast(value, *config->SaturationCount);
                 O[POH * poolOutW * numFilters + POW * numFilters + OD] = static_cast<int32_t>(value);
             }
         }
@@ -1026,7 +988,7 @@ void Convolution2DKernelImpl1B1B(ExecutionKernelConfig<ConvolutionConfig2D> cons
                     }
                 }
 
-                saturate64_store_out(&outVal, config->SaturationCount);
+                gna_saturate_cast(outVal, *config->SaturationCount);
                 O[OH * outWidth * numFilters + OW * numFilters + OD] = (int32_t)outVal;
             }
         }
@@ -1117,7 +1079,7 @@ void Convolution2DKernelImpl1B2B(ExecutionKernelConfig<ConvolutionConfig2D> cons
                     }
                 }
 
-                saturate64_store_out(&outVal, config->SaturationCount);
+                gna_saturate_cast(outVal, *config->SaturationCount);
                 O[OH * outWidth * numFilters + OW * numFilters + OD] = (int32_t)outVal;
             }
         }
@@ -1208,7 +1170,7 @@ void Convolution2DKernelImpl2B1B(ExecutionKernelConfig<ConvolutionConfig2D> cons
                     }
                 }
 
-                saturate64_store_out(&outVal, config->SaturationCount);
+                gna_saturate_cast(outVal, *config->SaturationCount);
                 O[OH * outWidth * numFilters + OW * numFilters + OD] = (int32_t)outVal;
             }
         }
@@ -1300,7 +1262,7 @@ void Convolution2DKernelImpl2B2B(ExecutionKernelConfig<ConvolutionConfig2D> cons
                     }
                 }
 
-                saturate64_store_out(&outVal, config->SaturationCount);
+                gna_saturate_cast(outVal, *config->SaturationCount);
                 O[OH * outWidth * numFilters + OW * numFilters + OD] = (int32_t)outVal;
             }
         }

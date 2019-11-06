@@ -37,20 +37,6 @@
 
 #include <cstdint>
 
-__forceinline void saturate64_store_out(int64_t * const out, uint32_t * const saturationCount)
-{
-    if (*out > INT32_MAX)
-    {
-        *out = INT32_MAX;
-        (*saturationCount)++;
-    }
-    else if (*out < INT32_MIN)
-    {
-        *out = INT32_MIN;
-        (*saturationCount)++;
-    }
-}
-
 void SumPartialPoolingFunction(const uint32_t PS, const uint32_t PNE, const uint32_t PSI, const int64_t *P, int64_t *V)
 {
     uint32_t k = 0;

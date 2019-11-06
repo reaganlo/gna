@@ -30,6 +30,8 @@
 #include "ConvolutionKernelArguments.h"
 #include "PoolingKernelArguments.h"
 
+#include <limits>
+
 #define ConvolutionKernelImpl KERNEL(ConvolutionKernelImpl)
 #define ConvolutionPoolingKernelImpl KERNEL(ConvolutionPoolingKernelImpl)
 #define ConvolutionKernelImpl1B KERNEL(ConvolutionKernelImpl1B)
@@ -94,9 +96,21 @@ void MaxPartialPoolingFunction(const uint32_t PS, const uint32_t PNE, const uint
 */
 void SumPartialPoolingFunction(const uint32_t PS, const uint32_t PNE, const uint32_t PSI, const int64_t* P, int64_t* V);
 
-
-
-
 #ifdef __cplusplus
 }
 #endif
+
+template<class T = int32_t>
+__forceinline void gna_saturate_cast(int64_t & val, uint32_t & saturationCount)
+{
+    if (val > (std::numeric_limits<T>::max)())
+    {
+        saturationCount++;
+        val = (std::numeric_limits<T>::max)();
+    }
+    else if (val < (std::numeric_limits<T>::min)())
+    {
+        saturationCount++;
+        val = (std::numeric_limits<T>::min)();
+    }
+}

@@ -37,20 +37,6 @@
 
 #include <cstdint>
 
-__forceinline void saturate64_store_out(int64_t * const out, uint32_t * const saturationCount)
-{
-    if (*out > INT32_MAX)
-    {
-        *out = INT32_MAX;
-        (*saturationCount)++;
-    }
-    else if (*out < INT32_MIN)
-    {
-        *out = INT32_MIN;
-        (*saturationCount)++;
-    }
-}
-
 void SumPartialPoolingFunction(const uint32_t PS, const uint32_t PNE, const uint32_t PSI, const int64_t *P, int64_t* V)
 {
     uint32_t k = 0;
@@ -688,7 +674,7 @@ void ConvolutionPoolingKernelImpl(ConvolutionConfig const * const filterConfig,
                 for (i = 0; i < FN; i++)
                 {
                     func_partial_pooling(PS, PS, 0, pool + i * CNN_POOL_SIZE_MAX, &value);
-                    saturate64_store_out(&value, saturationCount);
+                    gna_saturate_cast(value, *saturationCount);
                     pwl->ActivateSingle(&pwl->pwl, (int32_t)value, &O[output_index * FN + i], saturationCount);
                 }
 
@@ -714,7 +700,7 @@ void ConvolutionPoolingKernelImpl(ConvolutionConfig const * const filterConfig,
         for (i = 0; i < FN; i++)
         {
             func_partial_pooling(PS, static_cast<uint32_t>(pool_num_entries), pool_start_index, pool + i * CNN_POOL_SIZE_MAX, &value);
-            saturate64_store_out(&value, saturationCount);
+            gna_saturate_cast(value, *saturationCount);
 
             pwl->ActivateSingle(&pwl->pwl, (int32_t)value, &O[output_index * FN + i], saturationCount);
         }
