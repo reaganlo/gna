@@ -362,7 +362,7 @@ auto GNA3_UMEM_SEC_ALLOC(SectionMap Sec, X AllocSize, Y Ofst)
     }
 
 
-    bool GNA3_GenAdaptHW_UMemBase(convolutional_fused_configuration* const convConfiguration)
+    bool GNA3_GenAdaptHW_UMemBase(ConvolutionFunction2D const * cnnIn, PoolingFunction2D const * poolingIn, const DataMode& outputMode, convolutional_fused_configuration* const convConfiguration, uint32_t inPrec)
     {
         // uArch: UMEM is constructed by 3 Sections (Separate EBBs implemented as RF, 16-Bytes Words), lets refer then as A,B,C
         // UMEM is splited into: UMEM = X + Y + Z = 1/4 + 1/4 + 1/2 (Repectively)
@@ -389,7 +389,12 @@ auto GNA3_UMEM_SEC_ALLOC(SectionMap Sec, X AllocSize, Y Ofst)
         uint64_t const            YEndOfst = ZSize;
         auto                  CgtK = false; // CMem >= KMem (greater or equal)
         auto                  CltK = false; // CMem >= KMem (less than)
-
+        convConfiguration->UMemAlloc.KMemAlloc = GNA3_KMemAllocSize(cnnIn, convConfiguration, inPrec);
+        convConfiguration->UMemAlloc.CMemAlloc = GNA3_CMemAllocSize(cnnIn, outputMode, convConfiguration);
+        convConfiguration->UMemAlloc.PMemAlloc = GNA3_PMemAllocSize(cnnIn, poolingIn, outputMode, convConfiguration);
+        convConfiguration->UMemAlloc.UMemAlloc = convConfiguration->UMemAlloc.KMemAlloc +
+            convConfiguration->UMemAlloc.CMemAlloc +
+            convConfiguration->UMemAlloc.PMemAlloc;
         // Const UMEM Allocation:
         const uint64_t KMemAlloc = convConfiguration->UMemAlloc.KMemAlloc;
         const uint64_t CMemAlloc = convConfiguration->UMemAlloc.CMemAlloc;
@@ -636,6 +641,7 @@ auto GNA3_UMEM_SEC_ALLOC(SectionMap Sec, X AllocSize, Y Ofst)
         else
         {
             ForceReCalc = true;
+            convConfiguration->Valid = false;
         }
         // Extracting CNN Params:
 
@@ -665,32 +671,27 @@ auto GNA3_UMEM_SEC_ALLOC(SectionMap Sec, X AllocSize, Y Ofst)
         {
             // Adding additional Kernel to Kernel-Working-Group:
             convConfiguration->Valid = false;
-            if (ForceReCalc == true)
-            {
-                ForceReCalc = false;
-            }
-            else
+            if (ForceReCalc == false)
             {
                 convConfiguration->KWG++;
             }
 
-            if (GNA3_GenAdaptHW_KWGCnsts(cnnIn, poolingIn, outputMode, convConfiguration) == false) {
+            if (GNA3_GenAdaptHW_KWGCnsts(cnnIn, poolingIn, outputMode, convConfiguration) == false && !ForceReCalc) {
                 // Not a Valid KWG Value
                 // We still mark as Valid, but 'jump' to next iteration
                 convConfiguration->Valid = true;
                 continue;
             }
 
-            // Calculating UMEM Allocation needed:(KMEM + CMEM + PMEM):
-            convConfiguration->UMemAlloc.KMemAlloc = GNA3_KMemAllocSize(cnnIn, convConfiguration, inPrec);
-            convConfiguration->UMemAlloc.CMemAlloc = GNA3_CMemAllocSize(cnnIn, outputMode, convConfiguration);
-            convConfiguration->UMemAlloc.PMemAlloc = GNA3_PMemAllocSize(cnnIn, poolingIn, outputMode, convConfiguration);
-            convConfiguration->UMemAlloc.UMemAlloc = convConfiguration->UMemAlloc.KMemAlloc +
-                convConfiguration->UMemAlloc.CMemAlloc +
-                convConfiguration->UMemAlloc.PMemAlloc;
             // Mapping UMEM Allocation onto Physical-Memories:
 
-            convConfiguration->Valid = GNA3_GenAdaptHW_UMemBase(convConfiguration);
+            convConfiguration->Valid = GNA3_GenAdaptHW_UMemBase(cnnIn, poolingIn, outputMode, convConfiguration, inPrec);
+
+            if (ForceReCalc == true)
+            {
+                ForceReCalc = false;
+                if (convConfiguration->Valid == false) AdaptHWRef.Valid = convConfiguration->Valid;
+            }
 
             // Storing last Valid mapping as REF
             if (convConfiguration->Valid)
@@ -772,7 +773,7 @@ auto GNA3_UMEM_SEC_ALLOC(SectionMap Sec, X AllocSize, Y Ofst)
 
         // Step (3) : Attempting another KWG Iteration, as uThreads has hopefully gone up
         //            In addition his step re-calculates the UMEM Allocation with new Value of uThreads
-        if (!GNA3_GenAdaptHW_KWG(cnnIn, poolingIn, outputMode, convConfiguration, cnnIn->Input->Mode.Size))
+        if (convConfiguration->uT != 1 && !GNA3_GenAdaptHW_KWG(cnnIn, poolingIn, outputMode, convConfiguration, cnnIn->Input->Mode.Size))
         {
             return false;
         }
