@@ -189,7 +189,7 @@ void Device::SetInstrumentationUnit(gna_request_cfg_id configId, Gna2Instrumenta
 
 void Device::SetHardwareInstrumentation(gna_request_cfg_id configId, Gna2InstrumentationMode instrumentationMode)
 {
-    if (instrumentationMode > Gna2InstrumentationModeOutputBufferWaitForIosfStall
+    if (instrumentationMode > Gna2InstrumentationModeWaitForMmuTranslation
         && !hardwareCapabilities.HasFeature(NewPerformanceCounters))
     {
         throw GnaException(Gna2StatusDeviceVersionInvalid);
