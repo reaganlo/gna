@@ -62,19 +62,10 @@ const HwSupport HW_0_9 =
     {GNA_3_0, true},
 };
 
-const HwSupport HW_0_9_S_FALSE =
-{
-    {GNA_0_9, true},
-    {GNA_1_0, true},
-    {GNA_2_0, true},
-    {GNA_3_0, true},
-};
-
-const HwSupport HW_1_0 =
+const HwSupport HW_1_0_AND_2_0 =
 {
     {GNA_1_0, true},
     {GNA_2_0, true},
-    {GNA_3_0, true},
 };
 
 const HwSupport HW_2_0 =
@@ -91,8 +82,7 @@ const HwSupport HW_3_0 =
 static const Support FROM_GMM = { API_1_0, HW_GMM};
 static const Support FROM_0_9 = { API_1_0, HW_0_9};
 static const Support FROM_0_9_AUX = FROM_0_9; // Helper for changes of AUX layers
-static const Support FROM_0_9_S_FALSE = { API_1_0, HW_0_9_S_FALSE};
-static const Support FROM_1_0 = { API_1_0, HW_1_0 };
+static const Support FROM_1_0_TILL_2_0 = { API_1_0, HW_1_0_AND_2_0 };
 static const Support FROM_2_0 = { API_2_0, HW_2_0 };
 static const Support FROM_3_0 = { API_3_0, HW_3_0 };
 
@@ -481,7 +471,7 @@ const std::map<const DataConfig, std::map<const gna_layer_operation, const Suppo
             {INTEL_AFFINE_DIAGONAL,     FROM_0_9},
             {INTEL_AFFINE_MULTIBIAS,    FROM_2_0},
             {INTEL_RECURRENT,           FROM_0_9},
-            {INTEL_CONVOLUTIONAL,       FROM_1_0},
+            {INTEL_CONVOLUTIONAL,       FROM_1_0_TILL_2_0},
             {INTEL_CONVOLUTIONAL_2D,    FROM_3_0},
             {INTEL_COPY,                FROM_0_9_AUX},
             {INTEL_DEINTERLEAVE,        FROM_0_9_AUX},
@@ -496,7 +486,7 @@ const std::map<const DataConfig, std::map<const gna_layer_operation, const Suppo
             {INTEL_AFFINE,              FROM_0_9},
             {INTEL_AFFINE_DIAGONAL,     FROM_0_9},
             {INTEL_AFFINE_MULTIBIAS,    FROM_2_0},
-            {INTEL_CONVOLUTIONAL,       FROM_1_0},
+            {INTEL_CONVOLUTIONAL,       FROM_1_0_TILL_2_0},
             {INTEL_CONVOLUTIONAL_2D,    FROM_3_0}
         }
     },
