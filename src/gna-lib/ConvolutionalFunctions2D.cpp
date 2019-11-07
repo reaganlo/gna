@@ -164,6 +164,18 @@ Shape ConvolutionFunction2D::GetOutputShape(Shape const & inputShape,
     return outputShape;
 }
 
+bool IsInput1D(const Shape& inputShape)
+{
+    try
+    {
+        return inputShape.at('N') == 1 && inputShape.at('H') == 1 && inputShape.at('D') == 1;
+    }
+    catch (...)
+    {
+        throw GnaException(Gna2StatusModelConfigurationInvalid);
+    }
+}
+
 ConvolutionFunction2D::ConvolutionFunction2D(const BaseTransformConfig<ConvolutionKernel2D>& config,
     std::unique_ptr<const FiltersTensor> filters,
     std::unique_ptr<const BiasTensor> biases,
@@ -184,7 +196,7 @@ ConvolutionFunction2D::ConvolutionFunction2D(const BaseTransformConfig<Convoluti
     auto effectiveOperation = INTEL_CONVOLUTIONAL_2D;
     if (INTEL_CONVOLUTIONAL_1D == Filters->GetEffectiveOperationType() &&
         INTEL_CONVOLUTIONAL_1D == Stride->GetEffectiveOperationType() &&
-        INTEL_CONVOLUTIONAL_1D == config.input->GetEffectiveOperationType())
+        IsInput1D(config.input->Dimensions))
     {
         is1D = true;
         effectiveOperation = INTEL_CONVOLUTIONAL_1D;
