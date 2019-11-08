@@ -105,6 +105,11 @@ std::unique_ptr<RecurrentFunction> RecurrentFunction::Create(
 {
     auto delay = operationConfig.FeedbackDelay;
     auto activationTensor = config.GetActivation();
+
+    // TODO: 3: remove when ActivationFunction created before PwlCached
+    Expect::True(activationTensor.Shape.Dimensions[0] <= XNN_N_PWL_SEGS_MAX, Gna2StatusXnnErrorLyrCfg);
+    Expect::NotNull(activationTensor.Data, Gna2StatusXnnErrorLyrCfg);
+
     auto pwlCached = std::make_unique<const PwlCached>(config.outputMode, reinterpret_cast<nn_pwl_seg *>(activationTensor.Data),
         activationTensor.Shape.Dimensions[0]);
     auto kernelOperation = operationConfig.GetKernelOperation();
