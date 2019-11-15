@@ -51,6 +51,13 @@ using namespace GNA;
 
 void ConvolutionalLayer2D::Init()
 {
+    bool is1D = false;
+
+    if(inputTransform->Is1D())
+    {
+        is1D = true;
+    }
+
     if(inputTransform->Is1D() &&
         outputTransform->Is1D())
     {
@@ -70,7 +77,7 @@ void ConvolutionalLayer2D::Init()
         validator->HwCapabilities.GetDeviceVersion(),
         Transforms.Get<ConvolutionFunction2D>(ConvolutionalTransform2D),
         Transforms.Get<PoolingFunction2D>(PoolingTransform2D),
-        GetOutputTransform()->Output->Mode);
+        GetOutputTransform()->Output->Mode, is1D);
 
     Expect::True(uArchConfig.Valid, Gna2StatusModelConfigurationInvalid);
 }

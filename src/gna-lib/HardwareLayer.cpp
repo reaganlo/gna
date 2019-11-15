@@ -579,11 +579,11 @@ void HardwareLayerCnn::save()
 
 convolutional_fused_configuration HardwareLayerCnn2D::CalculateUArchConfig(DeviceVersion deviceVersion,
     ConvolutionFunction2D const * cnnIn, PoolingFunction2D const * poolingIn,
-    const DataMode& outputMode)
+    const DataMode& outputMode, bool is1D)
 {
     UNREFERENCED_PARAMETER(deviceVersion);
     convolutional_fused_configuration uArchConf;
-    auto status = GNA3_PopulateLD(cnnIn, poolingIn, outputMode, &uArchConf);
+    auto status = GNA3_PopulateLD(cnnIn, poolingIn, outputMode, &uArchConf, is1D);
     Expect::True(status, Gna2StatusXnnErrorLyrCfg);
     Expect::True(uArchConf.Valid, Gna2StatusXnnErrorLyrCfg);
     return uArchConf;
@@ -624,7 +624,7 @@ HardwareLayerCnn2D::HardwareLayerCnn2D(const DescriptorParameters& parameters) :
     pooling{ SoftwareLayer.Get()->Transforms.Get<PoolingFunction2D>(PoolingTransform2D) }
 {
     uArchConfig = CalculateUArchConfig(parameters.XnnDescriptor.HwCapabilities.GetDeviceVersion(),
-        cnn, pooling, SoftwareLayer.GetOutputTransform()->Output->Mode);
+        cnn, pooling, SoftwareLayer.GetOutputTransform()->Output->Mode, cnn->Is1D());
 
     if (cnn->Is1D() ||
         (pooling != nullptr && pooling->Is1D()))

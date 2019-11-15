@@ -218,7 +218,7 @@ public:
 
     static convolutional_fused_configuration CalculateUArchConfig(DeviceVersion deviceVersion,
         ConvolutionFunction2D const * cnnIn, PoolingFunction2D const * poolingIn,
-        const DataMode& outputMode);
+        const DataMode& outputMode, bool const is1D = false);
 
     static uint32_t GetKernelMemorySize(DeviceVersion deviceVersion,
         FiltersTensor const * filter);

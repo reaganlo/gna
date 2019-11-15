@@ -59,6 +59,6 @@ struct convolutional_fused_configuration {
     GNA3_UMemAlloc   UMemAlloc;         // MetaData
 };
 
-bool GNA3_PopulateLD(ConvolutionFunction2D const * cnnIn, PoolingFunction2D const * poolingIn, const DataMode& outputMode, convolutional_fused_configuration* const convConfiguration);
+bool GNA3_PopulateLD(ConvolutionFunction2D const * cnnIn, PoolingFunction2D const * poolingIn, const DataMode& outputMode, convolutional_fused_configuration* const convConfiguration, bool is1D);
 
 }
