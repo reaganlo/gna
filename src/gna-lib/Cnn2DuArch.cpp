@@ -338,7 +338,14 @@ auto GNA3_UMEM_SEC_ALLOC(SectionMap Sec, X AllocSize, Y Ofst)
         // in the same Physical-Row of UMEM. Two arguments will dictate weather or not Stride-Packing is applicable:
         // - PLU Effective Precision
         // - KWG Value
-        uint32_t PMemElmtsPerRow = UMemRowSize / GNA3_GetPLUEffPrec(poolingIn, outputMode);
+        auto PluEffPrec = GNA3_GetPLUEffPrec(poolingIn, outputMode);
+
+        if(PluEffPrec == 0)
+        {
+            return false;
+        }
+
+        uint32_t PMemElmtsPerRow = UMemRowSize / PluEffPrec;
 
         if (convConfiguration->KWG % PMemElmtsPerRow != 0)
         {
