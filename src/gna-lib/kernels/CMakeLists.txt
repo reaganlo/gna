@@ -43,7 +43,7 @@ if(${CMAKE_CXX_COMPILER_ID} STREQUAL "Intel")
     set(CXX_AVX_FLAG "/arch:AVX")
     set(CXX_SSE4_FLAG "/arch:SSE4.2")
   endif()
-elseif(${CMAKE_CXX_COMPILER_ID} STREQUAL "MSCV")
+elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
   set(CXX_AVX2_FLAG "/arch:AVX2")
   set(CXX_AVX_FLAG "/arch:AVX")
 elseif(${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU" OR ${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
@@ -159,187 +159,37 @@ set(xnn_avx2_sat_sources
   igemv8_avx2-sat.cpp
   transpose16_avx2.cpp)
 
-add_library(xnn_kernel_generic STATIC)
-target_include_directories(xnn_kernel_generic
-  PRIVATE ${COMMON_DIR} ${API_DIR} ${KERNEL_DIR} ${API_IMPL_DIR})
-target_sources(xnn_kernel_generic
-  PRIVATE ${xnn_kernel_sources} ${xnn_generic_sources} ${xnn_kernel_headers}
-  PUBLIC ${xnn_kernel_api})
+macro(gna_add_xnn_kernel_library KERNEL_SUFIX EXTRA_DEFS EXTRA_OPTIONS)
+  add_library(xnn_kernel_${KERNEL_SUFIX} STATIC ${xnn_kernel_sources})
+  target_include_directories(xnn_kernel_${KERNEL_SUFIX}
+    PRIVATE ${COMMON_DIR} ${API_DIR} ${KERNEL_DIR} ${API_IMPL_DIR})
+  target_sources(xnn_kernel_${KERNEL_SUFIX}
+    PRIVATE "${xnn_${KERNEL_SUFIX}_sources}" ${xnn_kernel_headers}
+    PUBLIC ${xnn_kernel_api})
+  target_compile_definitions(xnn_kernel_${KERNEL_SUFIX}
+    PRIVATE
+    ${GNA_COMPILE_DEFS}
+    $<$<CONFIG:${OS_PREFIX}_DEBUG>:${GNA_COMPILE_DEFS_DEBUG}>
+    $<$<CONFIG:${OS_PREFIX}_RELEASE>:${GNA_COMPILE_DEFS_RELEASE}>
+    $<$<CONFIG:KLOCWORK>:${GNA_COMPILE_DEFS_RELEASE}>
+    ${EXTRA_DEFS})
+  target_compile_options(xnn_kernel_${KERNEL_SUFIX}
+    PRIVATE
+    ${GNA_COMPILE_FLAGS}
+    $<$<CONFIG:${OS_PREFIX}_DEBUG>:${GNA_COMPILE_FLAGS_DEBUG}>
+    $<$<CONFIG:${OS_PREFIX}_RELEASE>:${GNA_COMPILE_FLAGS_RELEASE}>
+    $<$<CONFIG:KLOCWORK>:${GNA_COMPILE_FLAGS_RELEASE}>
+    ${EXTRA_OPTIONS})
+endmacro()
 
-add_library(xnn_kernel_generic_sat STATIC)
-target_include_directories(xnn_kernel_generic_sat
-  PRIVATE ${COMMON_DIR} ${API_DIR} ${KERNEL_DIR} ${API_IMPL_DIR})
-target_sources(xnn_kernel_generic_sat
-  PRIVATE ${xnn_kernel_sources} ${xnn_generic_sat_sources} ${xnn_kernel_headers}
-  PUBLIC ${xnn_kernel_api})
-
-add_library(xnn_kernel_sse4 STATIC)
-target_include_directories(xnn_kernel_sse4
-  PRIVATE ${COMMON_DIR} ${API_DIR} ${KERNEL_DIR} ${API_IMPL_DIR})
-target_sources(xnn_kernel_sse4
-  PRIVATE ${xnn_kernel_sources} ${xnn_sse4_sources} ${xnn_kernel_headers}
-  PUBLIC ${xnn_kernel_api})
-
-add_library(xnn_kernel_sse4_sat STATIC)
-target_include_directories(xnn_kernel_sse4_sat
-  PRIVATE ${COMMON_DIR} ${API_DIR} ${KERNEL_DIR} ${API_IMPL_DIR})
-target_sources(xnn_kernel_sse4_sat
-  PRIVATE ${xnn_kernel_sources} ${xnn_sse4_sat_sources} ${xnn_kernel_headers}
-  PUBLIC ${xnn_kernel_api})
-
-add_library(xnn_kernel_avx1 STATIC)
-target_include_directories(xnn_kernel_avx1
-  PRIVATE ${COMMON_DIR} ${API_DIR} ${KERNEL_DIR} ${API_IMPL_DIR})
-target_sources(xnn_kernel_avx1
-  PRIVATE ${xnn_kernel_sources} ${xnn_avx1_sources} ${xnn_kernel_headers}
-  PUBLIC ${xnn_kernel_api})
-
-add_library(xnn_kernel_avx1_sat STATIC)
-target_include_directories(xnn_kernel_avx1_sat
-  PRIVATE ${COMMON_DIR} ${API_DIR} ${KERNEL_DIR} ${API_IMPL_DIR})
-target_sources(xnn_kernel_avx1_sat
-  PRIVATE ${xnn_kernel_sources} ${xnn_avx1_sat_sources} ${xnn_kernel_headers}
-  PUBLIC ${xnn_kernel_api})
-
-add_library(xnn_kernel_avx2 STATIC)
-target_include_directories(xnn_kernel_avx2
-  PRIVATE ${COMMON_DIR} ${API_DIR} ${KERNEL_DIR} ${API_IMPL_DIR})
-target_sources(xnn_kernel_avx2
-  PRIVATE ${xnn_kernel_sources} ${xnn_avx2_sources} ${xnn_kernel_headers}
-  PUBLIC ${xnn_kernel_api})
-
-add_library(xnn_kernel_avx2_sat STATIC)
-target_include_directories(xnn_kernel_avx2_sat
-  PRIVATE ${COMMON_DIR} ${API_DIR} ${KERNEL_DIR} ${API_IMPL_DIR})
-target_sources(xnn_kernel_avx2_sat
-  PRIVATE ${xnn_kernel_sources} ${xnn_avx2_sat_sources} ${xnn_kernel_headers}
-  PUBLIC ${xnn_kernel_api})
-
-target_compile_definitions(xnn_kernel_generic
-  PRIVATE
-  ${GNA_COMPILE_DEFS}
-  $<$<CONFIG:${OS_PREFIX}_DEBUG>:${GNA_COMPILE_DEFS_DEBUG}>
-  $<$<CONFIG:${OS_PREFIX}_RELEASE>:${GNA_COMPILE_DEFS_RELEASE}>
-  $<$<CONFIG:KLOCWORK>:${GNA_COMPILE_DEFS_RELEASE}>
-  OPTGEN)
-
-target_compile_definitions(xnn_kernel_generic_sat
-  PRIVATE
-  ${GNA_COMPILE_DEFS}
-  $<$<CONFIG:${OS_PREFIX}_DEBUG>:${GNA_COMPILE_DEFS_DEBUG}>
-  $<$<CONFIG:${OS_PREFIX}_RELEASE>:${GNA_COMPILE_DEFS_RELEASE}>
-  $<$<CONFIG:KLOCWORK>:${GNA_COMPILE_DEFS_RELEASE}>
-  OPTGEN_SAT)
-
-target_compile_definitions(xnn_kernel_sse4
-  PRIVATE
-  ${GNA_COMPILE_DEFS}
-  $<$<CONFIG:${OS_PREFIX}_DEBUG>:${GNA_COMPILE_DEFS_DEBUG}>
-  $<$<CONFIG:${OS_PREFIX}_RELEASE>:${GNA_COMPILE_DEFS_RELEASE}>
-  $<$<CONFIG:KLOCWORK>:${GNA_COMPILE_DEFS_RELEASE}>
-  OPTSSE4)
-
-target_compile_definitions(xnn_kernel_sse4_sat
-  PRIVATE
-  ${GNA_COMPILE_DEFS}
-  $<$<CONFIG:${OS_PREFIX}_DEBUG>:${GNA_COMPILE_DEFS_DEBUG}>
-  $<$<CONFIG:${OS_PREFIX}_RELEASE>:${GNA_COMPILE_DEFS_RELEASE}>
-  $<$<CONFIG:KLOCWORK>:${GNA_COMPILE_DEFS_RELEASE}>
-  OPTSSE4_SAT)
-
-target_compile_definitions(xnn_kernel_avx1
-  PRIVATE
-  ${GNA_COMPILE_DEFS}
-  $<$<CONFIG:${OS_PREFIX}_DEBUG>:${GNA_COMPILE_DEFS_DEBUG}>
-  $<$<CONFIG:${OS_PREFIX}_RELEASE>:${GNA_COMPILE_DEFS_RELEASE}>
-  $<$<CONFIG:KLOCWORK>:${GNA_COMPILE_DEFS_RELEASE}>
-  OPTAVX1)
-
-target_compile_definitions(xnn_kernel_avx1_sat
-  PRIVATE
-  ${GNA_COMPILE_DEFS}
-  $<$<CONFIG:${OS_PREFIX}_DEBUG>:${GNA_COMPILE_DEFS_DEBUG}>
-  $<$<CONFIG:${OS_PREFIX}_RELEASE>:${GNA_COMPILE_DEFS_RELEASE}>
-  $<$<CONFIG:KLOCWORK>:${GNA_COMPILE_DEFS_RELEASE}>
-  OPTAVX1_SAT)
-
-target_compile_definitions(xnn_kernel_avx2
-  PRIVATE
-  ${GNA_COMPILE_DEFS}
-  $<$<CONFIG:${OS_PREFIX}_DEBUG>:${GNA_COMPILE_DEFS_DEBUG}>
-  $<$<CONFIG:${OS_PREFIX}_RELEASE>:${GNA_COMPILE_DEFS_RELEASE}>
-  $<$<CONFIG:KLOCWORK>:${GNA_COMPILE_DEFS_RELEASE}>
-  OPTAVX2)
-
-target_compile_definitions(xnn_kernel_avx2_sat
-  PRIVATE
-  ${GNA_COMPILE_DEFS}
-  $<$<CONFIG:${OS_PREFIX}_DEBUG>:${GNA_COMPILE_DEFS_DEBUG}>
-  $<$<CONFIG:${OS_PREFIX}_RELEASE>:${GNA_COMPILE_DEFS_RELEASE}>
-  $<$<CONFIG:KLOCWORK>:${GNA_COMPILE_DEFS_RELEASE}>
-  OPTAVX2_SAT)
-
-target_compile_options(xnn_kernel_generic
-  PRIVATE
-  ${GNA_COMPILE_FLAGS}
-  $<$<CONFIG:${OS_PREFIX}_DEBUG>:${GNA_COMPILE_FLAGS_DEBUG}>
-  $<$<CONFIG:${OS_PREFIX}_RELEASE>:${GNA_COMPILE_FLAGS_RELEASE}>
-  $<$<CONFIG:KLOCWORK>:${GNA_COMPILE_FLAGS_RELEASE}>)
-
-target_compile_options(xnn_kernel_generic_sat
-  PRIVATE
-  ${GNA_COMPILE_FLAGS}
-  $<$<CONFIG:${OS_PREFIX}_DEBUG>:${GNA_COMPILE_FLAGS_DEBUG}>
-  $<$<CONFIG:${OS_PREFIX}_RELEASE>:${GNA_COMPILE_FLAGS_RELEASE}>
-  $<$<CONFIG:KLOCWORK>:${GNA_COMPILE_FLAGS_RELEASE}>)
-
-target_compile_options(xnn_kernel_sse4
-  PRIVATE
-  ${GNA_COMPILE_FLAGS}
-  $<$<CONFIG:${OS_PREFIX}_DEBUG>:${GNA_COMPILE_FLAGS_DEBUG}>
-  $<$<CONFIG:${OS_PREFIX}_RELEASE>:${GNA_COMPILE_FLAGS_RELEASE}>
-  $<$<CONFIG:KLOCWORK>:${GNA_COMPILE_FLAGS_RELEASE}>
-  ${CXX_SSE4_FLAG})
-
-target_compile_options(xnn_kernel_sse4_sat
-  PRIVATE
-  ${GNA_COMPILE_FLAGS}
-  $<$<CONFIG:${OS_PREFIX}_DEBUG>:${GNA_COMPILE_FLAGS_DEBUG}>
-  $<$<CONFIG:${OS_PREFIX}_RELEASE>:${GNA_COMPILE_FLAGS_RELEASE}>
-  $<$<CONFIG:KLOCWORK>:${GNA_COMPILE_FLAGS_RELEASE}>
-  ${CXX_SSE4_FLAG})
-
-target_compile_options(xnn_kernel_avx1
-  PRIVATE
-  ${GNA_COMPILE_FLAGS}
-  $<$<CONFIG:${OS_PREFIX}_DEBUG>:${GNA_COMPILE_FLAGS_DEBUG}>
-  $<$<CONFIG:${OS_PREFIX}_RELEASE>:${GNA_COMPILE_FLAGS_RELEASE}>
-  $<$<CONFIG:KLOCWORK>:${GNA_COMPILE_FLAGS_RELEASE}>
-  ${CXX_AVX_FLAG})
-
-target_compile_options(xnn_kernel_avx1_sat
-  PRIVATE
-  ${GNA_COMPILE_FLAGS}
-  $<$<CONFIG:${OS_PREFIX}_DEBUG>:${GNA_COMPILE_FLAGS_DEBUG}>
-  $<$<CONFIG:${OS_PREFIX}_RELEASE>:${GNA_COMPILE_FLAGS_RELEASE}>
-  $<$<CONFIG:KLOCWORK>:${GNA_COMPILE_FLAGS_RELEASE}>
-  ${CXX_AVX_FLAG})
-
-target_compile_options(xnn_kernel_avx2
-  PRIVATE
-  ${GNA_COMPILE_FLAGS}
-  $<$<CONFIG:${OS_PREFIX}_DEBUG>:${GNA_COMPILE_FLAGS_DEBUG}>
-  $<$<CONFIG:${OS_PREFIX}_RELEASE>:${GNA_COMPILE_FLAGS_RELEASE}>
-  $<$<CONFIG:KLOCWORK>:${GNA_COMPILE_FLAGS_RELEASE}>
-  ${CXX_AVX2_FLAG})
-
-target_compile_options(xnn_kernel_avx2_sat
-  PRIVATE
-  ${GNA_COMPILE_FLAGS}
-  $<$<CONFIG:${OS_PREFIX}_DEBUG>:${GNA_COMPILE_FLAGS_DEBUG}>
-  $<$<CONFIG:${OS_PREFIX}_RELEASE>:${GNA_COMPILE_FLAGS_RELEASE}>
-  $<$<CONFIG:KLOCWORK>:${GNA_COMPILE_FLAGS_RELEASE}>
-  ${CXX_AVX2_FLAG})
+gna_add_xnn_kernel_library(generic OPTGEN "")
+gna_add_xnn_kernel_library(generic_sat OPTGEN_SAT "")
+gna_add_xnn_kernel_library(sse4 OPTSSE4 "${CXX_SSE4_FLAG}")
+gna_add_xnn_kernel_library(sse4_sat OPTSSE4_SAT "${CXX_SSE4_FLAG}")
+gna_add_xnn_kernel_library(avx1 OPTAVX1 "${CXX_AVX_FLAG}")
+gna_add_xnn_kernel_library(avx1_sat OPTAVX1_SAT "${CXX_AVX_FLAG}")
+gna_add_xnn_kernel_library(avx2 OPTAVX2 "${CXX_AVX2_FLAG}")
+gna_add_xnn_kernel_library(avx2_sat OPTAVX2_SAT "${CXX_AVX2_FLAG}")
 
 set(xnn_kernel_libraries
   xnn_kernel_generic
@@ -370,96 +220,33 @@ set(gmm_kernel_api
   ${KERNEL_DIR}/gmm.h
   ${KERNEL_DIR}/KernelArguments.h)
 
-add_library(gmm_kernel_generic STATIC)
-target_include_directories(gmm_kernel_generic
-  PRIVATE ${COMMON_DIR} ${API_DIR} ${KERNEL_DIR} ${API_IMPL_DIR})
-target_sources(gmm_kernel_generic
-  PRIVATE ${gmm_kernel_sources} ${gmm_kernel_headers}
-  PUBLIC ${gmm_kernel_api})
+macro(gna_add_gmm_kernel_library KERNEL_SUFIX EXTRA_DEFS EXTRA_OPTIONS)
+  add_library(gmm_kernel_${KERNEL_SUFIX} STATIC ${gmm_kernel_sources})
+  target_include_directories(gmm_kernel_${KERNEL_SUFIX}
+    PRIVATE ${COMMON_DIR} ${API_DIR} ${KERNEL_DIR} ${API_IMPL_DIR})
+  target_sources(gmm_kernel_${KERNEL_SUFIX}
+    PRIVATE ${gmm_kernel_headers}
+    PUBLIC ${gmm_kernel_api})
+  target_compile_definitions(gmm_kernel_${KERNEL_SUFIX}
+    PRIVATE
+    ${GNA_COMPILE_DEFS}
+    $<$<CONFIG:${OS_PREFIX}_DEBUG>:${GNA_COMPILE_DEFS_DEBUG}>
+    $<$<CONFIG:${OS_PREFIX}_RELEASE>:${GNA_COMPILE_DEFS_RELEASE}>
+    $<$<CONFIG:KLOCWORK>:${GNA_COMPILE_DEFS_RELEASE}>
+    ${EXTRA_DEFS})
+  target_compile_options(gmm_kernel_${KERNEL_SUFIX}
+    PRIVATE
+    ${GNA_COMPILE_FLAGS}
+    $<$<CONFIG:${OS_PREFIX}_DEBUG>:${GNA_COMPILE_FLAGS_DEBUG}>
+    $<$<CONFIG:${OS_PREFIX}_RELEASE>:${GNA_COMPILE_FLAGS_RELEASE}>
+    $<$<CONFIG:KLOCWORK>:${GNA_COMPILE_FLAGS_RELEASE}>
+    ${EXTRA_OPTIONS})
+endmacro()
 
-add_library(gmm_kernel_sse4    STATIC)
-target_include_directories(gmm_kernel_sse4
-  PRIVATE ${COMMON_DIR} ${API_DIR} ${KERNEL_DIR} ${API_IMPL_DIR})
-target_sources(gmm_kernel_sse4
-  PRIVATE ${gmm_kernel_sources} ${gmm_kernel_headers}
-  PUBLIC ${gmm_kernel_api})
-
-add_library(gmm_kernel_avx1    STATIC)
-target_include_directories(gmm_kernel_avx1
-  PRIVATE ${COMMON_DIR} ${API_DIR} ${KERNEL_DIR} ${API_IMPL_DIR})
-target_sources(gmm_kernel_avx1
-  PRIVATE ${gmm_kernel_sources} ${gmm_kernel_headers}
-  PUBLIC ${gmm_kernel_api})
-
-add_library(gmm_kernel_avx2    STATIC)
-target_include_directories(gmm_kernel_avx2
-  PRIVATE ${COMMON_DIR} ${API_DIR} ${KERNEL_DIR} ${API_IMPL_DIR})
-target_sources(gmm_kernel_avx2
-  PRIVATE ${gmm_kernel_sources} ${gmm_kernel_headers}
-  PUBLIC ${gmm_kernel_api})
-
-target_compile_definitions(gmm_kernel_generic
-  PRIVATE
-  ${GNA_COMPILE_DEFS}
-  $<$<CONFIG:${OS_PREFIX}_DEBUG>:${GNA_COMPILE_DEFS_DEBUG}>
-  $<$<CONFIG:${OS_PREFIX}_RELEASE>:${GNA_COMPILE_DEFS_RELEASE}>
-  $<$<CONFIG:KLOCWORK>:${GNA_COMPILE_DEFS_RELEASE}>
-  OPTGEN)
-
-target_compile_options(gmm_kernel_generic
-  PRIVATE
-  $<$<CONFIG:${OS_PREFIX}_DEBUG>:${GNA_COMPILE_FLAGS_DEBUG}>
-  $<$<CONFIG:${OS_PREFIX}_RELEASE>:${GNA_COMPILE_FLAGS_RELEASE}>
-  $<$<CONFIG:KLOCWORK>:${GNA_COMPILE_FLAGS_RELEASE}>
-  ${GNA_COMPILE_FLAGS})
-
-target_compile_definitions(gmm_kernel_sse4
-  PRIVATE
-  ${GNA_COMPILE_DEFS}
-  $<$<CONFIG:${OS_PREFIX}_DEBUG>:${GNA_COMPILE_DEFS_DEBUG}>
-  $<$<CONFIG:${OS_PREFIX}_RELEASE>:${GNA_COMPILE_DEFS_RELEASE}>
-  $<$<CONFIG:KLOCWORK>:${GNA_COMPILE_DEFS_RELEASE}>
-  OPTSSE4)
-
-target_compile_options(gmm_kernel_sse4
-  PRIVATE
-  ${GNA_COMPILE_FLAGS}
-  $<$<CONFIG:${OS_PREFIX}_DEBUG>:${GNA_COMPILE_FLAGS_DEBUG}>
-  $<$<CONFIG:${OS_PREFIX}_RELEASE>:${GNA_COMPILE_FLAGS_RELEASE}>
-  $<$<CONFIG:KLOCWORK>:${GNA_COMPILE_FLAGS_RELEASE}>
-  ${CXX_SSE4_FLAG})
-
-target_compile_definitions(gmm_kernel_avx1
-  PRIVATE
-  ${GNA_COMPILE_DEFS}
-  $<$<CONFIG:${OS_PREFIX}_DEBUG>:${GNA_COMPILE_DEFS_DEBUG}>
-  $<$<CONFIG:${OS_PREFIX}_RELEASE>:${GNA_COMPILE_DEFS_RELEASE}>
-  $<$<CONFIG:KLOCWORK>:${GNA_COMPILE_DEFS_RELEASE}>
-  OPTAVX1)
-
-target_compile_options(gmm_kernel_avx1
-  PRIVATE
-  ${GNA_COMPILE_FLAGS}
-  $<$<CONFIG:${OS_PREFIX}_DEBUG>:${GNA_COMPILE_FLAGS_DEBUG}>
-  $<$<CONFIG:${OS_PREFIX}_RELEASE>:${GNA_COMPILE_FLAGS_RELEASE}>
-  $<$<CONFIG:KLOCWORK>:${GNA_COMPILE_FLAGS_RELEASE}>
-  ${CXX_AVX_FLAG})
-
-target_compile_definitions(gmm_kernel_avx2
-  PRIVATE
-  ${GNA_COMPILE_DEFS}
-  $<$<CONFIG:${OS_PREFIX}_DEBUG>:${GNA_COMPILE_DEFS_DEBUG}>
-  $<$<CONFIG:${OS_PREFIX}_RELEASE>:${GNA_COMPILE_DEFS_RELEASE}>
-  $<$<CONFIG:KLOCWORK>:${GNA_COMPILE_DEFS_RELEASE}>
-  OPTAVX2)
-
-target_compile_options(gmm_kernel_avx2
-  PRIVATE
-  ${GNA_COMPILE_FLAGS}
-  $<$<CONFIG:${OS_PREFIX}_DEBUG>:${GNA_COMPILE_FLAGS_DEBUG}>
-  $<$<CONFIG:${OS_PREFIX}_RELEASE>:${GNA_COMPILE_FLAGS_RELEASE}>
-  $<$<CONFIG:KLOCWORK>:${GNA_COMPILE_FLAGS_RELEASE}>
-  ${CXX_AVX2_FLAG})
+gna_add_gmm_kernel_library(generic OPTGEN "")
+gna_add_gmm_kernel_library(sse4 OPTSSE4 "${CXX_SSE4_FLAG}")
+gna_add_gmm_kernel_library(avx1 OPTAVX1 "${CXX_AVX_FLAG}")
+gna_add_gmm_kernel_library(avx2 OPTAVX2 "${CXX_AVX2_FLAG}")
 
 set(gmm_kernel_libraries
   gmm_kernel_generic
