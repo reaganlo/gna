@@ -102,6 +102,6 @@ set_gna_target_properties(gna-self-test)
 set_gna_compile_definitions(gna-self-test)
 set_gna_compile_options(gna-self-test)
 
-copy_gna_api(gna-self-test)
+copy_gna_api(gna-self-test NOT_USED)
 copy_pdb_windows(gna-self-test)
 strip_symbols(gna-self-test)

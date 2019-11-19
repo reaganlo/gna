@@ -51,12 +51,18 @@ function (copy_pdb_windows TARG_NAME)
   endif()
 endfunction(copy_pdb_windows)
 
-function (copy_gna_api TARG_NAME)
-  add_custom_command(TARGET ${TARG_NAME} POST_BUILD
+function (copy_gna_api DST_TARGET OUT_NEW_TARGET)
+  set(NEW_TARGET "copy-gna-api-to-${DST_TARGET}")
+  set(${OUT_NEW_TARGET} "${NEW_TARGET}" PARENT_SCOPE)
+  add_custom_target(${NEW_TARGET} ALL
+    COMMENT "Running target: ${NEW_TARGET}"
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
     $<TARGET_FILE:gna-api>
     $<$<CONFIG:LNX_RELEASE>:$<TARGET_FILE:gna-api>.dbg>
-    $<TARGET_FILE_DIR:${TARG_NAME}>)
+    $<TARGET_FILE_DIR:${DST_TARGET}>)
+  set_target_properties(${NEW_TARGET}
+    PROPERTIES
+    FOLDER tools/${DST_TARGET})
 endfunction(copy_gna_api)
 
 function (set_gna_compile_options TARG_NAME)
@@ -84,5 +90,6 @@ function (set_gna_target_properties TARG_NAME)
     RUNTIME_OUTPUT_DIRECTORY_${OS_PREFIX}_DEBUG ${GNA_TOOLS_DEBUG_OUT_DIR}/${TARG_NAME}/${CMAKE_ARCHITECTURE}
     RUNTIME_OUTPUT_DIRECTORY_${OS_PREFIX}_RELEASE ${GNA_TOOLS_RELEASE_OUT_DIR}/${TARG_NAME}/${CMAKE_ARCHITECTURE}
     EXCLUDE_FROM_DEFAULT_BUILD_KLOCWORK TRUE
-    OUTPUT_NAME ${TARG_NAME})
+    OUTPUT_NAME ${TARG_NAME}
+    FOLDER tools/${TARG_NAME})
 endfunction(set_gna_target_properties)

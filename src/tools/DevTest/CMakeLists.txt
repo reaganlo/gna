@@ -86,7 +86,7 @@ set_gna_target_properties(DevTest)
 set_gna_compile_definitions(DevTest)
 set_gna_compile_options(DevTest)
 
-copy_gna_api(DevTest)
+copy_gna_api(DevTest NEW_TARGET_NAME)
 copy_pdb_windows(DevTest)
 strip_symbols(DevTest)
 
@@ -94,6 +94,8 @@ if(${CMAKE_SYSTEM_NAME} STREQUAL "Windows" OR
    ${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
   enable_testing()
   add_test(NAME GNA_POST_BUILD_DevTest COMMAND DevTest)
+  list(APPEND GNA_ALL_TESTS_REGISTERED_TARGETS ${NEW_TARGET_NAME})
+  set(GNA_ALL_TESTS_REGISTERED_TARGETS "${GNA_ALL_TESTS_REGISTERED_TARGETS}" PARENT_SCOPE)
 endif()
 
 if(${CMAKE_SYSTEM_NAME} STREQUAL "Android")

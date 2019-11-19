@@ -65,6 +65,10 @@ if(${GNA_BUILD_WITH_GTEST_ENABLED})
       $<$<CONFIG:LNX_RELEASE>:$<TARGET_FILE:gna-api>.dbg>
       $<TARGET_FILE_DIR:test-gna-api>)
   set_property(TARGET gna_all_tests_to_run_on_posbuild_via_ctest PROPERTY FOLDER tests/common)
+  if(NOT "${GNA_ALL_TESTS_REGISTERED_TARGETS}" STREQUAL "")
+    add_dependencies(gna_all_tests_to_run_on_posbuild_via_ctest ${GNA_ALL_TESTS_REGISTERED_TARGETS})
+  endif()
+
   macro(add_target_to_postbuild_test_run target_test)
     gtest_add_tests(
       TARGET ${target_test}

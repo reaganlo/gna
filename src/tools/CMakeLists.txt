@@ -37,3 +37,5 @@ endif()
 if (${GNA_BUILD_WITH_GNA_SELF_TEST_ENABLED})
   add_subdirectory(gna-self-test)
 endif()
+
+set(GNA_ALL_TESTS_REGISTERED_TARGETS "${GNA_ALL_TESTS_REGISTERED_TARGETS}" PARENT_SCOPE)
