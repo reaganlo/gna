@@ -112,8 +112,12 @@ PoolingFunction2D::PoolingFunction2D(const BaseTransformConfig<PoolingKernel2D>&
     for (const auto& iter : Stride->Dimensions)
     {
         auto const dim = iter.first;
-        outputDims[dim] = 1
-            + GnaCeilDiv(Input->Dimensions.at(dim) - Window->Dimensions.at(dim), iter.second);
+        auto const diff = Input->Dimensions.at(dim) - Window->Dimensions.at(dim);
+        outputDims[dim] = 1;
+        if (diff > 0)
+        {
+            outputDims[dim] += GnaCeilDiv(diff, iter.second);
+        }
     }
 
     Output = std::make_unique<Tensor>(outputDims, Input->Mode, config.outputBuffer,
