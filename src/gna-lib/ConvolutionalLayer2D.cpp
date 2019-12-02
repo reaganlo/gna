@@ -53,12 +53,12 @@ void ConvolutionalLayer2D::Init()
 {
     bool is1D = false;
 
-    if(inputTransform->Is1D())
+    if (inputTransform->Is1D())
     {
         is1D = true;
     }
 
-    if(inputTransform->Is1D() &&
+    if (inputTransform->Is1D() &&
         outputTransform->Is1D())
     {
         auto const & capsMapIn = ConvolutionalLayer2DCapabilities::GetOperands(InputOperandIndex);
@@ -66,6 +66,20 @@ void ConvolutionalLayer2D::Init()
 
         auto const & capsMapOut = ConvolutionalLayer2DCapabilities::GetOperands(OutputOperandIndex);
         Output.Validate(capsMapOut, INTEL_CONVOLUTIONAL_1D);
+    }
+    else
+    {
+        auto const precision = Output.Mode.Size;
+        if (precision < 4)
+        {
+            auto const & filters = getTransformOperand(ConvolutionalTransform2D, FilterOperandIndex);
+            auto const filterCount = filters.at(GNA_DIM_N);
+            if (filterCount > 2)
+            {
+                Expect::MultiplicityOf(filterCount, 4 / precision,
+                    Gna2StatusCnnErrorConvFltCount);
+            }
+        }
     }
 
     Expect::One(Input.at(GNA_DIM_N), Gna2StatusXnnErrorGrouping);

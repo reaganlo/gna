@@ -112,11 +112,11 @@ PoolingFunction2D::PoolingFunction2D(const BaseTransformConfig<PoolingKernel2D>&
     for (const auto& iter : Stride->Dimensions)
     {
         auto const dim = iter.first;
-        auto const diff = Input->Dimensions.at(dim) - Window->Dimensions.at(dim);
         outputDims[dim] = 1;
-        if (diff > 0)
+        if (Input->Dimensions.at(dim) > Window->Dimensions.at(dim))
         {
-            outputDims[dim] += GnaCeilDiv(diff, iter.second);
+            outputDims[dim] += GnaCeilDiv(Input->Dimensions.at(dim) - Window->Dimensions.at(dim),
+                iter.second);
         }
     }
 

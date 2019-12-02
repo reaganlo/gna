@@ -57,7 +57,7 @@ struct ConvolutionalLayer2DCapabilities : LayerCapabilities
     static constexpr uint32_t Filter1DCountMax = ((UINT16_MAX + 1) - 4);
 
     /** CNN 2D maximum number of kernels */
-    static constexpr uint32_t Filter2DCountMax = 2048;
+    static constexpr uint32_t Filter2DCountMax = 8192;
 
     /** CNN minimum size of pooling window */
     static constexpr uint32_t PoolingWindowSizeMin = 1;

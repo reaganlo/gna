@@ -212,7 +212,7 @@ const FullCapabilitiesMap & ConvolutionalLayer2DCapabilities::GetOperands(uint32
                     {GNA_DIM_H, limitsForOutputUInt16Max()},
                     {GNA_DIM_W, limitsForOutputUInt16Max()},
                     {GNA_DIM_D, {1,
-                        CNN_1D_N_KERNELS_MAX /* bigger limit to workaround lack of 1D/2D differentiation */,
+                        Filter2DCountMax /* bigger limit to workaround lack of 1D/2D differentiation */,
                         1, Gna2StatusXnnErrorOutputVolume}}},
                     GetModes(OutputOperandIndex, GNA_3_0)})}
             }},
@@ -240,7 +240,7 @@ const FullCapabilitiesMap & ConvolutionalLayer2DCapabilities::GetOperands(uint32
                     {{GNA_DIM_N, {1, Filter2DCountMax, 1, Gna2StatusCnnErrorConvFltCount}},
                         {GNA_DIM_H, {CNN_N_KERNEL_ELEMENTS_PER_DIMENSION_MIN, CNN_N_KERNEL_ELEMENTS_PER_DIMENSION_MAX, 1, Gna2StatusCnnErrorConvFltVolume}},
                         {GNA_DIM_W, {CNN_N_KERNEL_ELEMENTS_PER_DIMENSION_MIN, CNN_N_KERNEL_ELEMENTS_PER_DIMENSION_MAX, 1, Gna2StatusCnnErrorConvFltVolume}},
-                        {GNA_DIM_D, {CNN_N_KERNEL_ELEMENTS_PER_DIMENSION_MIN, XNN_N_IN_ELEMS_MAX, 1, Gna2StatusCnnErrorConvFltVolume}}},
+                        {GNA_DIM_D, {CNN_N_KERNEL_ELEMENTS_PER_DIMENSION_MIN, 2048, 1, Gna2StatusCnnErrorConvFltVolume}}},
                         // Padding to 16B is required for each Kernel
                     {{ GNA_INT8, GNA_INT16, GNA_DATA_CONSTANT_SCALAR }, Gna2StatusXnnErrorConvFltBytes }})}
             }},

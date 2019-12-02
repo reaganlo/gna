@@ -671,9 +671,11 @@ void Pooling2DKernelImpl1B(ExecutionKernelConfig<PoolingConfig2D> const * const 
     uint32_t poolStrideW = config->RequestConfig->Transform.StrideWidth;
     uint32_t windowHeight = config->RequestConfig->Transform.WindowHeight;
     uint32_t windowWidth = config->RequestConfig->Transform.WindowWidth;
-
-    uint32_t poolOutW = 1 + (uint32_t)std::ceil((float)(inputW - windowWidth) / (float)poolStrideW);
-    uint32_t poolOutH = 1 + (uint32_t)std::ceil((float)(inputH - windowHeight) / (float)poolStrideH);
+    
+    uint32_t wDimPartial = (inputW < windowWidth) ? 0 : inputW - windowWidth;
+    uint32_t hDimPartial = (inputH < windowHeight) ? 0 : inputH - windowHeight;
+    uint32_t poolOutW = 1 + (uint32_t)std::ceil((float)(wDimPartial) / (float)poolStrideW);
+    uint32_t poolOutH = 1 + (uint32_t)std::ceil((float)(hDimPartial) / (float)poolStrideH);
 
     int64_t tmpValue = 0;
     int64_t value = 0;
@@ -760,9 +762,10 @@ void Pooling2DKernelImpl2B(ExecutionKernelConfig<PoolingConfig2D> const * const 
     uint32_t windowHeight = config->RequestConfig->Transform.WindowHeight;
     uint32_t windowWidth = config->RequestConfig->Transform.WindowWidth;
 
-
-    uint32_t poolOutW = 1 + (uint32_t)std::ceil((float)(inputW - windowWidth) / (float)poolStrideW);
-    uint32_t poolOutH = 1 + (uint32_t)std::ceil((float)(inputH - windowHeight) / (float)poolStrideH);
+    uint32_t wDimPartial = (inputW < windowWidth) ? 0 : inputW - windowWidth;
+    uint32_t hDimPartial = (inputH < windowHeight) ? 0 : inputH - windowHeight;
+    uint32_t poolOutW = 1 + (uint32_t)std::ceil((float)(wDimPartial) / (float)poolStrideW);
+    uint32_t poolOutH = 1 + (uint32_t)std::ceil((float)(hDimPartial) / (float)poolStrideH);
 
     int64_t tmpValue = 0;
     int64_t value = 0;
@@ -849,9 +852,10 @@ void Pooling2DKernelImpl4B(ExecutionKernelConfig<PoolingConfig2D> const * const 
     uint32_t windowHeight = config->RequestConfig->Transform.WindowHeight;
     uint32_t windowWidth = config->RequestConfig->Transform.WindowWidth;
 
-
-    uint32_t poolOutW = 1 + (uint32_t)std::ceil((float)(inputW - windowWidth) / (float)poolStrideW);
-    uint32_t poolOutH = 1 + (uint32_t)std::ceil((float)(inputH - windowHeight) / (float)poolStrideH);
+    uint32_t wDimPartial = (inputW < windowWidth) ? 0 : inputW - windowWidth;
+    uint32_t hDimPartial = (inputH < windowHeight) ? 0 : inputH - windowHeight;
+    uint32_t poolOutW = 1 + (uint32_t)std::ceil((float)(wDimPartial) / (float)poolStrideW);
+    uint32_t poolOutH = 1 + (uint32_t)std::ceil((float)(hDimPartial) / (float)poolStrideH);
 
     int64_t tmpValue = 0;
     int64_t value = 0;
