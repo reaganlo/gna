@@ -23,7 +23,8 @@
 
 #include "SampleModelForGnaSelfTest.h"
 
-#include "gna-api.h"
+#include "gna2-common-api.h"
+#include "gna2-model-api.h"
 
 #include <cstdio>
 #include <string>
@@ -88,7 +89,7 @@ public:
     GnaSelfTest(GnaSelfTestConfig configIn) :config{configIn}{}
     void StartTest();
     void Handle(const GnaSelfTestIssue& issue) const;
-    void HandleGnaStatus(const intel_gna_status_t &status, const char *what = "") const;
+    void HandleGnaStatus(const Gna2Status &status, const char *what) const;
 private:
     void askToContinueOrExit(int exitCode) const;
     GnaSelfTestConfig config;
@@ -102,7 +103,7 @@ class SelfTestDevice
 public:
     SelfTestDevice(const GnaSelfTest& gst);
     // obtains pinned memory shared with the device
-    void Alloc(const uint32_t bytesRequested);
+    uint8_t * Alloc(const uint32_t bytesRequested);
 
     void SampleModelCreate(const SampleModelForGnaSelfTest &model);
 
@@ -114,15 +115,18 @@ public:
     void CompareResults(const SampleModelForGnaSelfTest &model);
     ~SelfTestDevice();
 private:
-    gna_device_id deviceId = 0;
+    uint32_t deviceId = 0;
     bool deviceOpened = false;
-    uint8_t *pinned_mem_ptr = nullptr;
-    gna_model_id sampleModelId;
-    gna_request_cfg_id configId;
-    intel_nnet_type_t nnet; // main neural network container
+    Gna2DeviceVersion deviceVersion = Gna2DeviceVersionSoftwareEmulation;
+    uint32_t sampleModelId;
+    uint32_t configId;
+    Gna2Tensor gnaInput, gnaOutput, gnaWeights, gnaBiases;
+    const Gna2Tensor* tensorPointers[4] = { &gnaInput, &gnaOutput, &gnaWeights, &gnaBiases };
+    Gna2Operation gnaOperation = {Gna2OperationTypeFullyConnectedAffine, tensorPointers, 4, nullptr, 0};
+    Gna2Model gnaModel; // main neural network container
     int16_t *pinned_outputs;
     int16_t *pinned_inputs;
-    gna_request_id requestId;
+    uint32_t requestId;
     const GnaSelfTest& gnaSelfTest;
     std::vector<void*> allocated_mems;
 };
@@ -141,7 +145,8 @@ enum GSTIT
     GSTIT_MALLOC_FAILED,
     GSTIT_SETUPDI_ERROR,
     GSTIT_NO_DRIVER,
-    GSTIT_ERRORS_IN_SCORES
+    GSTIT_ERRORS_IN_SCORES,
+    GSTIT_NO_DEVICE_DETECTED_BY_GNA_LIB
 };
 
 class GnaSelfTestIssue

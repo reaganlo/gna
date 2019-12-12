@@ -27,6 +27,10 @@
 class SampleModelForGnaSelfTest
 {
 public:
+    static constexpr uint32_t NoOfInputs = 16;
+    static constexpr uint32_t NoOfOutputs = 8;
+    static constexpr uint32_t NoOfGroups = 4; // grouping factor (1-8), specifies how many input vectors are simultaneously run
+
     static SampleModelForGnaSelfTest GetDefault();
     uint32_t GetWeightsByteSize() const
     {
@@ -53,14 +57,14 @@ private:
 
     // sample weight matrix (8 rows, 16 cols)
     // in case of affine layer this is the left operand of matrix mul
-    std::array<int16_t, 8 * 16> weights;
+    std::array<int16_t, NoOfOutputs * NoOfInputs> weights;
     // sample input matrix (16 rows, 4 cols), consists of 4 input vectors (grouping of 4 is used)
     // in case of affine layer this is the right operand of matrix mul
-    std::array<int16_t, 16 * 4> inputs;
+    std::array<int16_t, NoOfInputs * NoOfGroups> inputs;
     // sample bias vector, will get added to each of the four output vectors
-    std::array<int32_t, 8> biases;
+    std::array<int32_t, NoOfOutputs> biases;
 
-    std::array<int32_t, 8 * 4> refScores;
+    std::array<int32_t, NoOfOutputs * NoOfGroups> refScores;
     template<typename Array>
     static void arrayCopy(void * dest, Array& a)
     {

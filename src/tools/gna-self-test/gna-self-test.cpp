@@ -20,15 +20,11 @@
 // be express and approved by Intel in writing.
 //*****************************************************************************
 
-#include <cstdio>
-#include <cstdlib>
-#include <cstring>
-#include <string>
-#include <malloc.h>
-
-#include "gna-api.h"
 #include "SelfTest.h"
 #include "MultiOsHardwareSelfTest.h"
+
+#include <cstdlib>
+#include <cstring>
 
 GnaSelfTestLogger logger;
 
@@ -84,9 +80,9 @@ void GnaSelfTest::StartTest()
 
     logger.Verbose("Comparing results...\n");
     gnaDevice.CompareResults(sampleNetwork);
-    GnaSelfTestLogger::Log("GNA device self-test has beed finished\n");
+    GnaSelfTestLogger::Log("GNA device self-test has been finished\n");
 }
-
+extern "C" const char* GnaGetLibraryVersion();
 void GnaSelfTest::PrintLibraryVersion()
 {
     logger.Log("Detected GNA Library version: %s\n", GnaGetLibraryVersion());
