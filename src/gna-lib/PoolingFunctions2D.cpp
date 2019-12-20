@@ -92,14 +92,15 @@ PoolingFunction2D::PoolingFunction2D(const BaseTransformConfig<PoolingKernel2D>&
     Window{ std::move(window) },
     Stride{ std::move(stride) }
 {
+    // TODO:3:refactor as validator functions within capabilities
     Expect::InSet(Mode, modeLimits);
+    Expect::InRange(Window->at(GNA_DIM_W), Input->at(GNA_DIM_W),
+        Gna2StatusCnnErrorPoolSize);
 
     if (INTEL_CONVOLUTIONAL_1D == Window->GetEffectiveOperationType() ||
         INTEL_CONVOLUTIONAL_1D == Stride->GetEffectiveOperationType())
     {
         is1D = true;
-        Expect::InRange(Window->at(GNA_DIM_W), Input->at(GNA_DIM_W),
-            Gna2StatusCnnErrorPoolSize);
         /*Expect::InRange(Stride->at(GNA_DIM_W), Window->at(GNA_DIM_W),
             Gna2StatusCnnErrorPoolStride);*/
     }
@@ -113,11 +114,8 @@ PoolingFunction2D::PoolingFunction2D(const BaseTransformConfig<PoolingKernel2D>&
     {
         auto const dim = iter.first;
         outputDims[dim] = 1;
-        if (Input->Dimensions.at(dim) > Window->Dimensions.at(dim))
-        {
-            outputDims[dim] += GnaCeilDiv(Input->Dimensions.at(dim) - Window->Dimensions.at(dim),
-                iter.second);
-        }
+        outputDims[dim] += GnaCeilDiv(Input->Dimensions.at(dim) - Window->Dimensions.at(dim),
+            iter.second);
     }
 
     Output = std::make_unique<Tensor>(outputDims, Input->Mode, config.outputBuffer,
