@@ -154,7 +154,7 @@ RequestResult LinuxDriverInterface::Submit(HardwareRequest& hardwareRequest,
 
     gna_wait wait_data = {};
     wait_data.request_id = scoreConfig->request_id;
-    wait_data.timeout = GNA_REQUEST_TIMEOUT_MAX;
+    wait_data.timeout = driverCapabilities.recoveryTimeout + 1;
 
     profiler->Measure(Gna2InstrumentationPointLibDeviceRequestSent);
     ret = ioctl(gnaFileDescriptor, GNA_IOCTL_WAIT, &wait_data);

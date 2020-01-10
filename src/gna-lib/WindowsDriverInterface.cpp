@@ -64,7 +64,7 @@ const std::map<GnaIoctlCommand, DWORD> WindowsDriverInterface::ioctlCommandsMap 
 
 WindowsDriverInterface::WindowsDriverInterface() :
     deviceEvent{ CreateEvent(nullptr, false, false, nullptr) },
-    recoveryTimeout{ DRV_RECOVERY_TIMEOUT }
+    recoveryTimeout{ (DRV_RECOVERY_TIMEOUT + 1) * 1000 }
 {
     ZeroMemory(&overlapped, sizeof(overlapped));
 }
@@ -118,7 +118,7 @@ void WindowsDriverInterface::IoctlSend(const GnaIoctlCommand command, void * con
         code = ioctlCommandsMap.at(command);
         ioResult = DeviceIoControl(deviceHandle, code, inbuf, inlen, outbuf, outlen, &bytesRead, &overlapped);
         checkStatus(ioResult);
-        wait(&overlapped, (recoveryTimeout + 15) * 1000);
+        wait(&overlapped, recoveryTimeout);
         break;
     default:
         throw GnaException{ Gna2StatusDeviceOutgoingCommunicationError };
@@ -145,7 +145,7 @@ uint64_t WindowsDriverInterface::MemoryMap(void *memory, uint32_t memorySize)
         static_cast<DWORD>(memorySize), &bytesRead, memoryMapOverlapped.get());
     checkStatus(ioResult);
 
-    wait(&overlapped, (recoveryTimeout + 15) * 1000);
+    wait(&overlapped, recoveryTimeout);
 
     memoryMapRequests[memoryId] = std::move(memoryMapOverlapped);
 
@@ -162,10 +162,10 @@ void WindowsDriverInterface::MemoryUnmap(uint64_t memoryId)
         static_cast<DWORD>(GNA_IOCTL_MEM_UNMAP2), &memoryId, sizeof(memoryId),
         nullptr, 0, &bytesRead, &overlapped);
     checkStatus(ioResult);
-    wait(&overlapped, (recoveryTimeout + 15) * 1000);
+    wait(&overlapped, recoveryTimeout);
 
     auto memoryMapOverlapped = memoryMapRequests.at(memoryId).get();
-    wait(memoryMapOverlapped, (recoveryTimeout + 15) * 1000);
+    wait(memoryMapOverlapped, recoveryTimeout);
     memoryMapRequests.erase(memoryId);
 }
 
@@ -209,7 +209,7 @@ RequestResult WindowsDriverInterface::Submit(HardwareRequest& hardwareRequest,
 
     profiler->Measure(Gna2InstrumentationPointLibDeviceRequestSent);
 
-    GetOverlappedResultEx(deviceHandle, &ioHandle, &bytesRead, GNA_REQUEST_TIMEOUT_MAX, false);
+    GetOverlappedResultEx(deviceHandle, &ioHandle, &bytesRead, recoveryTimeout , false);
 
     profiler->Measure(Gna2InstrumentationPointLibDeviceRequestCompleted);
 
@@ -316,13 +316,13 @@ void WindowsDriverInterface::getDeviceCapabilities()
             &bytesRead, &overlapped);
 
         checkStatus(ioResult);
-        wait(&overlapped, (recoveryTimeout + 15) * 1000);
+        wait(&overlapped, recoveryTimeout);
     }
 
     driverCapabilities.deviceVersion = static_cast<DeviceVersion>(values[0]);
     driverCapabilities.hwInBuffSize = static_cast<uint32_t>(values[1]);
     driverCapabilities.recoveryTimeout = static_cast<uint32_t>(values[2]);
-    recoveryTimeout = driverCapabilities.recoveryTimeout;
+    recoveryTimeout = (driverCapabilities.recoveryTimeout + 1 ) * 1000;
 }
 
 std::string WindowsDriverInterface::discoverDevice(uint32_t deviceIndex)
