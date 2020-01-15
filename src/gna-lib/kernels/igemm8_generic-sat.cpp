@@ -77,8 +77,8 @@ void AffineKernelImpl1B(ExecutionKernelConfig<AffineConfig> const * const config
                 acc = 0;
                 for (k = 0; k < acc_iters; k++)
                 {
-                    input = config->Intermediate->d0 + j*inputElementCount + kk * kpartial + k * 512;
-                    weight = config->RequestConfig->Transform.weights1B + i*inputElementCount + kk * kpartial + k * 512;
+                    input = config->Intermediate->d0 + j * inputElementCount + kk * kpartial + k * 512;
+                    weight = config->RequestConfig->Transform.weights1B + i * inputElementCount + kk * kpartial + k * 512;
                     for (l = 0; l < 512; l++)
                     {
                         acc += weight[l] * input[l];
@@ -87,8 +87,8 @@ void AffineKernelImpl1B(ExecutionKernelConfig<AffineConfig> const * const config
                     acc = 0;
                 }
 
-                input = config->Intermediate->d0 + j*inputElementCount + kk * kpartial + acc_iters * 512;
-                weight = config->RequestConfig->Transform.weights1B + i*inputElementCount + kk * kpartial + acc_iters * 512;
+                input = config->Intermediate->d0 + j * inputElementCount + kk * kpartial + acc_iters * 512;
+                weight = config->RequestConfig->Transform.weights1B + i * inputElementCount + kk * kpartial + acc_iters * 512;
                 for (k = 0; k < rem_iters; k++)
                 {
                     acc += weight[k] * input[k];

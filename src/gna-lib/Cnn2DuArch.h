@@ -25,40 +25,14 @@
 
 #pragma once
 
+#include "ConvolutionalFunctions2D.h"
+#include "PoolingFunctions2D.h"
+#include "GNA_ArchCPkg.h"
 #include "DataMode.h"
 
-#include <cstdint>
-
 namespace GNA {
-class PoolingFunction2D;
-struct ConvolutionFunction2D;
 
-struct GNA3_UMemAlloc {
-    GNA3_UMemAlloc()
-        :KMemAlloc{0}, CMemAlloc{0}, PMemAlloc{0}, UMemAlloc{0}
-    {}
-    uint32_t KMemAlloc; // KMEM Allocation in Bytes (Gross)
-    uint32_t CMemAlloc; // CMEM Allocation in Bytes (Gross)
-    uint32_t PMemAlloc; // PMEM Allocation in Bytes (Gross)
-    uint32_t UMemAlloc; // UMEM Allocation in Bytes (Gross) ; Total of K+C+P
-};
-
-struct convolutional_fused_configuration {
-    convolutional_fused_configuration()
-        : Valid{ false }, KWG{ 0 }, KWGIter{ 0 }, uT{ 0 },
-        KMemBase{ 0 }, CMemBase{ 0 }, PMemBase{ 0 }, AListMem{ false }
-    {}
-    bool             Valid;     // Indiacates Valid AdaptHW Configuration
-    uint16_t         KWG;       // GNA-3.0 HAS : Kernel-Working-Group (Number of Kernels in IFV Iteration)
-    uint16_t         KWGIter;   // GNA-3.0 HAS : Kernel-Working-Group Iterations
-    uint8_t          uT;        // GNA-3.0 HAS : Micro-Threads (4-bits)
-    uint8_t          KMemBase;  // GNA-3.0 HAS : GNA Descriptor
-    uint8_t          CMemBase;  // GNA-3.0 HAS : GNA Descriptor
-    uint8_t          PMemBase;  // GNA-3.0 HAS : GNA Descriptor
-    bool             AListMem;  // TODO
-    GNA3_UMemAlloc   UMemAlloc;         // MetaData
-};
-
-bool GNA3_PopulateLD(ConvolutionFunction2D const * cnnIn, PoolingFunction2D const * poolingIn, const DataMode& outputMode, convolutional_fused_configuration* const convConfiguration, bool is1D);
+    GNA3_AdaptHW_t getUArchConfig2D(ConvolutionFunction2D const * cnnIn, PoolingFunction2D const * poolingIn, const DataMode& outputMode);
+    GNA3_AdaptHW_t getUArchConfig1D(ConvolutionFunction2D const * cnnIn, PoolingFunction2D const * poolingIn, const DataMode& outputMode);
 
 }

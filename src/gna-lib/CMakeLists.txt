@@ -63,9 +63,11 @@ project(${PROJECT_NAME})
 if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux" OR ${CMAKE_SYSTEM_NAME} STREQUAL "Android")
   set(API_EXTRA_LIBS "")
   set(API_EXTRA_DEFS "")
+  set(CPKG_LIB_PATH ${CMAKE_SOURCE_DIR}/src/cpkg/libarch-cpkg-lib.a)
 elseif(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
   set(API_EXTRA_LIBS "setupapi.lib")
   set(API_EXTRA_DEFS "-DINTEL_GNA_DLLEXPORT=1")
+  set(CPKG_LIB_PATH ${CMAKE_SOURCE_DIR}/src/cpkg/libarch-cpkg-lib.lib)
 endif()
 
 set(GNA_API_INCL_DIR ${GNA_BINARY_DIR}/gna-lib/include)
@@ -360,7 +362,7 @@ target_compile_options(gna-api
   $<$<CONFIG:KLOCWORK>:${GNA_COMPILE_FLAGS_RELEASE}>)
 
 target_link_libraries(gna-api
-  PRIVATE ${CMAKE_THREAD_LIBS_INIT} ${API_EXTRA_LIBS} ${kernel_libraries})
+  PRIVATE ${CMAKE_THREAD_LIBS_INIT} ${API_EXTRA_LIBS} ${kernel_libraries} ${CPKG_LIB_PATH})
 
 add_dependencies(gna-api ${kernel_libraries})
 
@@ -467,7 +469,7 @@ if(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
     $<$<CONFIG:KLOCWORK>:${GNA_COMPILE_FLAGS_RELEASE}>)
 
   target_link_libraries(gna-api-verbose
-    PRIVATE ${CMAKE_THREAD_LIBS_INIT} ${API_EXTRA_LIBS} ${kernel_libraries})
+    PRIVATE ${CMAKE_THREAD_LIBS_INIT} ${API_EXTRA_LIBS} ${kernel_libraries} ${CPKG_LIB_PATH})
 
   add_dependencies(gna-api-verbose ${kernel_libraries})
 

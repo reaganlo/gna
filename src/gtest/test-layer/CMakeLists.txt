@@ -36,9 +36,11 @@ project(${PROJECT_NAME})
 if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux" OR ${CMAKE_SYSTEM_NAME} STREQUAL "Android")
   set(EXTRA_LIBS "")
   set(EXTRA_DEFS "")
+  set(CPKG_LIB_PATH ${CMAKE_SOURCE_DIR}/src/cpkg/libarch-cpkg-lib.a)
 elseif(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
   set(EXTRA_LIBS "setupapi.lib")
   set(EXTRA_DEFS "INTEL_GNA_DLLEXPORT=1")
+  set(CPKG_LIB_PATH ${CMAKE_SOURCE_DIR}/src/cpkg/libarch-cpkg-lib.lib)
 endif()
 
 # TODO: consider making gna-api target an object library
@@ -134,7 +136,8 @@ target_compile_definitions(test-layer
 target_link_libraries(test-layer
   gtest
   ${EXTRA_LIBS}
-  ${kernel_libraries})
+  ${kernel_libraries}
+  ${CPKG_LIB_PATH})
 
 add_dependencies(test-layer ${kernel_libraries})
 

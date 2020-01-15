@@ -706,6 +706,7 @@ void Pooling2DKernelImpl1B(ExecutionKernelConfig<PoolingConfig2D> const * const 
                 uint32_t inIdxH = numFilters * inputW * POH * poolStrideH;
                 int64_t tmpValue = 0;
                 int64_t value = 0;
+                int16_t accValue = 0;
 
                 for (uint32_t OW = 0; OW < windowWidth; OW++)
                 {
@@ -730,11 +731,11 @@ void Pooling2DKernelImpl1B(ExecutionKernelConfig<PoolingConfig2D> const * const 
 
                             if ((OW == 0) && (OH == 0))
                             {
-                                value = tmpValue;
+                                accValue = static_cast<int16_t>(tmpValue);
                             }
-                            else if (value < tmpValue)
+                            else if (accValue < tmpValue)
                             {
-                                value = tmpValue;
+                                accValue = static_cast<int16_t>(tmpValue);
                             }
                         }
                         else if (config->RequestConfig->Transform.Mode == KernelPoolingModeSum)
@@ -742,11 +743,12 @@ void Pooling2DKernelImpl1B(ExecutionKernelConfig<PoolingConfig2D> const * const 
 
                             if ((POW * poolStrideW + OW <= (inputW - 1)) && (POH * poolStrideH + OH <= (inputH - 1)))
                             {
-                                value += I[OD + inIdxW + inIdxH + winIdxW + winIdxH];
+                                accValue += I[OD + inIdxW + inIdxH + winIdxW + winIdxH];
                             }
                         }
                     }
                 }
+                value = accValue;
                 gna_saturate_cast<int8_t>(value, *config->SaturationCount);
                 O[POH * poolOutW * numFilters + POW * numFilters + OD] = static_cast<int8_t>(value);
             }
@@ -783,6 +785,8 @@ void Pooling2DKernelImpl2B(ExecutionKernelConfig<PoolingConfig2D> const * const 
                 uint32_t inIdxH = numFilters * inputW * POH * poolStrideH;
                 int64_t tmpValue = 0;
                 int64_t value = 0;
+                int32_t accValue = 0;
+
                 for (uint32_t OW = 0; OW < windowWidth; OW++)
                 {
                     uint32_t winIdxW = numFilters * OW;
@@ -806,11 +810,11 @@ void Pooling2DKernelImpl2B(ExecutionKernelConfig<PoolingConfig2D> const * const 
 
                             if ((OW == 0) && (OH == 0))
                             {
-                                value = tmpValue;
+                                accValue = static_cast<int32_t>(tmpValue);
                             }
-                            else if (value < tmpValue)
+                            else if (accValue < tmpValue)
                             {
-                                value = tmpValue;
+                                accValue = static_cast<int32_t>(tmpValue);
                             }
                         }
                         else if (config->RequestConfig->Transform.Mode == KernelPoolingModeSum)
@@ -818,11 +822,12 @@ void Pooling2DKernelImpl2B(ExecutionKernelConfig<PoolingConfig2D> const * const 
 
                             if ((POW * poolStrideW + OW <= (inputW - 1)) && (POH * poolStrideH + OH <= (inputH - 1)))
                             {
-                                value += I[OD + inIdxW + inIdxH + winIdxW + winIdxH];
+                                accValue += I[OD + inIdxW + inIdxH + winIdxW + winIdxH];
                             }
                         }
                     }
                 }
+                value = accValue;
                 gna_saturate_cast<int16_t>(value, *config->SaturationCount);
                 O[POH * poolOutW * numFilters + POW * numFilters + OD] = static_cast<int16_t>(value);
             }
@@ -859,6 +864,7 @@ void Pooling2DKernelImpl4B(ExecutionKernelConfig<PoolingConfig2D> const * const 
                 uint32_t inIdxH = numFilters * inputW * POH * poolStrideH;
                 int64_t tmpValue = 0;
                 int64_t value = 0;
+                int32_t accValue = 0;
 
                 for (uint32_t OW = 0; OW < windowWidth; OW++)
                 {
@@ -883,22 +889,23 @@ void Pooling2DKernelImpl4B(ExecutionKernelConfig<PoolingConfig2D> const * const 
 
                             if ((OW == 0) && (OH == 0))
                             {
-                                value = tmpValue;
+                                accValue = static_cast<int32_t>(tmpValue);
                             }
-                            else if (value < tmpValue)
+                            else if (accValue < tmpValue)
                             {
-                                value = tmpValue;
+                                accValue = static_cast<int32_t>(tmpValue);
                             }
                         }
                         else if (config->RequestConfig->Transform.Mode == KernelPoolingModeSum)
                         {
                             if ((POW * poolStrideW + OW <= (inputW - 1)) && (POH * poolStrideH + OH <= (inputH - 1)))
                             {
-                                value += I[OD + inIdxW + inIdxH + winIdxW + winIdxH];
+                                accValue += I[OD + inIdxW + inIdxH + winIdxW + winIdxH];
                             }
                         }
                     }
                 }
+                value = accValue;
                 gna_saturate_cast(value, *config->SaturationCount);
                 O[POH * poolOutW * numFilters + POW * numFilters + OD] = static_cast<int32_t>(value);
             }

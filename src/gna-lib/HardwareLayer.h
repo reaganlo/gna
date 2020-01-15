@@ -216,7 +216,7 @@ public:
     HardwareLayerCnn2D(const DescriptorParameters& parameters);
     virtual ~HardwareLayerCnn2D() = default;
 
-    static convolutional_fused_configuration CalculateUArchConfig(DeviceVersion deviceVersion,
+    static GNA3_AdaptHW CalculateUArchConfig(DeviceVersion deviceVersion,
         ConvolutionFunction2D const * cnnIn, PoolingFunction2D const * poolingIn,
         const DataMode& outputMode, bool const is1D = false);
 
@@ -240,7 +240,7 @@ protected:
 private:
     static const uint32_t CNN_N_FLT_ITER_MAX = 16; // CNN maximum number of filters per iteration
 
-    convolutional_fused_configuration uArchConfig;
+    GNA3_AdaptHW uArchConfig;
 };
 
 // Hardware GMM Layer descriptor converter

@@ -577,16 +577,15 @@ void HardwareLayerCnn::save()
     XnnDescriptor[bias_buffer] = cnn->Convolution->Biases->Buffer;
 }
 
-convolutional_fused_configuration HardwareLayerCnn2D::CalculateUArchConfig(DeviceVersion deviceVersion,
+GNA3_AdaptHW HardwareLayerCnn2D::CalculateUArchConfig(DeviceVersion deviceVersion,
     ConvolutionFunction2D const * cnnIn, PoolingFunction2D const * poolingIn,
     const DataMode& outputMode, bool is1D)
 {
     UNREFERENCED_PARAMETER(deviceVersion);
-    convolutional_fused_configuration uArchConf;
-    auto status = GNA3_PopulateLD(cnnIn, poolingIn, outputMode, &uArchConf, is1D);
-    Expect::True(status, Gna2StatusXnnErrorLyrCfg);
-    Expect::True(uArchConf.Valid, Gna2StatusXnnErrorLyrCfg);
-    return uArchConf;
+    UNREFERENCED_PARAMETER(is1D);
+    auto config = getUArchConfig2D(cnnIn, poolingIn, outputMode);
+    Expect::True(config.Valid, Gna2StatusXnnErrorLyrCfg);
+    return config;
 }
 
 uint32_t HardwareLayerCnn2D::GetKernelMemorySize(DeviceVersion deviceVersion,
@@ -626,7 +625,7 @@ HardwareLayerCnn2D::HardwareLayerCnn2D(const DescriptorParameters& parameters) :
     uArchConfig = CalculateUArchConfig(parameters.XnnDescriptor.HwCapabilities.GetDeviceVersion(),
         cnn, pooling, SoftwareLayer.GetOutputTransform()->Output->Mode, cnn->Is1D());
 
-    if (cnn->Is1D() ||
+    if (cnn->Is1D() &&
         (pooling != nullptr && pooling->Is1D()))
     {
         save1D();
@@ -677,7 +676,7 @@ void HardwareLayerCnn2D::save()
 
     if (pooling != nullptr)
     {
-        XnnDescriptor[cnn2d_pool_stride_w] = pooling->Stride->Dimensions.at('H');
+        XnnDescriptor[cnn2d_pool_stride_w] = pooling->Stride->Dimensions.at('W');
         XnnDescriptor[cnn2d_pool_stride_h] = pooling->Stride->Dimensions.at('H');
         XnnDescriptor[cnn2d_pool_out_w] = pooling->Output->Dimensions.at('W');
         XnnDescriptor[cnn2d_pool_out_h] = pooling->Output->Dimensions.at('H');

@@ -97,7 +97,7 @@ PoolingFunction2D::PoolingFunction2D(const BaseTransformConfig<PoolingKernel2D>&
     Expect::InRange(Window->at(GNA_DIM_W), Input->at(GNA_DIM_W),
         Gna2StatusCnnErrorPoolSize);
 
-    if (INTEL_CONVOLUTIONAL_1D == Window->GetEffectiveOperationType() ||
+    if (INTEL_CONVOLUTIONAL_1D == Window->GetEffectiveOperationType() &&
         INTEL_CONVOLUTIONAL_1D == Stride->GetEffectiveOperationType())
     {
         is1D = true;
