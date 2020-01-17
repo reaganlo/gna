@@ -58,7 +58,7 @@ void ConvolutionalLayer2D::Init()
         is1D = true;
     }
 
-    if (inputTransform->Is1D() && 
+    if (inputTransform->Is1D() &&
         (Transforms.Get<PoolingFunction2D>(PoolingTransform2D) == nullptr ||outputTransform->Is1D()))
     {
         auto const & capsMapIn = ConvolutionalLayer2DCapabilities::GetOperands(InputOperandIndex);

@@ -87,7 +87,7 @@ namespace GNA
     GNA3_AdaptHW_t getUArchConfig2D(ConvolutionFunction2D const * cnnIn, PoolingFunction2D const * poolingIn, const DataMode& outputMode)
     {
         GNA3_LyrDesc_t* const LD_2DCNN = GNA3_NewLD();
-    
+
         LD_2DCNN->IFV.N = 1; // Must set to 1, for IFVs
         LD_2DCNN->IFV.H = static_cast<uint16_t>(cnnIn->Input->at(GNA_DIM_H));
         LD_2DCNN->IFV.W = static_cast<uint16_t>(cnnIn->Input->at(GNA_DIM_W));
@@ -125,16 +125,16 @@ namespace GNA
         // Activation @ Setting 2DCNNc Parameters
         LD_2DCNN->OpStruct.GNA3_OP_2DCNNc.ACTx = static_cast<GNA3_Prec_t>(outputMode.Size);
         LD_2DCNN->OpStruct.GNA3_OP_2DCNNc.NSegs = 0;
-    
+
         auto validationResult = GNA3_PopLD(LD_2DCNN);
         auto adaptHW = GNA3_AdaptHW_t{ LD_2DCNN->AdaptHW };
         GNA3_FreeLD(LD_2DCNN);
-    
+
         if (!validationResult)
         {
             adaptHW.Valid = false;
         }
-    
+
         return adaptHW;
     }
 }
