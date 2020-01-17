@@ -583,7 +583,15 @@ GNA3_AdaptHW HardwareLayerCnn2D::CalculateUArchConfig(DeviceVersion deviceVersio
 {
     UNREFERENCED_PARAMETER(deviceVersion);
     UNREFERENCED_PARAMETER(is1D);
-    auto config = getUArchConfig2D(cnnIn, poolingIn, outputMode);
+    GNA3_AdaptHW config;
+    if(is1D)
+    {
+        config = getUArchConfig1D(cnnIn, poolingIn, outputMode);
+    }
+    else
+    {
+        config = getUArchConfig2D(cnnIn, poolingIn, outputMode);
+    }
     Expect::True(config.Valid, Gna2StatusXnnErrorLyrCfg);
     return config;
 }
@@ -623,10 +631,10 @@ HardwareLayerCnn2D::HardwareLayerCnn2D(const DescriptorParameters& parameters) :
     pooling{ SoftwareLayer.Get()->Transforms.Get<PoolingFunction2D>(PoolingTransform2D) }
 {
     uArchConfig = CalculateUArchConfig(parameters.XnnDescriptor.HwCapabilities.GetDeviceVersion(),
-        cnn, pooling, SoftwareLayer.GetOutputTransform()->Output->Mode, cnn->Is1D());
+        cnn, pooling, SoftwareLayer.GetOutputTransform()->Output->Mode, cnn->Is1D() && (pooling == nullptr || pooling->Is1D()));
 
     if (cnn->Is1D() &&
-        (pooling != nullptr && pooling->Is1D()))
+        (pooling == nullptr || pooling->Is1D()))
     {
         save1D();
         Log->Message("Using new uArch CNN 1D");
