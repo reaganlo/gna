@@ -502,7 +502,7 @@ const uint32_t GNA_MEM_ALIGN = 64;
 const uint32_t XNN_N_GROUP_MAX = 8;
 
 /** Number of input groups constraint for Copy layer 3.0- max */
-const uint32_t COPY_N_GROUP_MAX = 255;
+const uint32_t COPY_N_GROUP_MAX = 8;
 
 /** Total number of input elements constraint - must be multiple of */
 const uint32_t XNN_N_IN_ELEMS_MPLY = 8;

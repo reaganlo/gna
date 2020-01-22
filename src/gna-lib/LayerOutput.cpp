@@ -137,8 +137,7 @@ const FullCapabilitiesMap LayerOutput::capabilities =
             _ModesCopy})},
         {GNA_3_0, std::make_shared<TensorLimits>(TensorLimits{
             {GNA_TENSOR_HW},
-            {{GNA_DIM_H, {1, COPY_N_GROUP_MAX, 1, Gna2StatusXnnErrorOutputVolume}},
-            {GNA_DIM_W, _FlatLimits.at(GNA_DIM_W)}},
+            _FlatLimits,
             _ModesCopyGen3})}
     }},
     {INTEL_DEINTERLEAVE, {

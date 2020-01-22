@@ -80,3 +80,5 @@ build/projects/
 tags
 doc/gna-api-doxygen/out
 build/msvc/
+build/intel/
+build/icc/
