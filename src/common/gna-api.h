@@ -723,7 +723,6 @@ const uint32_t GNA_REQUEST_QUEUE_LENGTH = 64;
 /** Request Id indicating that GnaRequestWait should wait until any request completes. */
 const gna_request_id GNA_REQUEST_WAIT_ANY = 0xffffffff;
 
-
 /******************************************************************************
  * GNA Utilities API
  *****************************************************************************/

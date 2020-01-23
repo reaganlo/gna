@@ -268,10 +268,11 @@ GNA2_API enum Gna2Status Gna2RequestEnqueue(
  @note
  - If processing is completed before the timeout expires, the request object is released.
    Otherwise processing status is returned.
- - Unretrieved requests are released by GNA during corresponding model release.
- - Maximum supported time of waiting for a request is 180000 milliseconds.
+ - Not retrieved requests are released by GNA during corresponding model release.
+ - User is responsible for retrieving all enqueued requests
+   by calling Gna2RequestWait for each request.
 
- @param requestId The request to wait for, use ::GNA2_DISABLED to wait for any.
+ @param requestId The request to wait for.
  @param timeoutMilliseconds Timeout duration in milliseconds.
  @return Status of request processing.
  */
