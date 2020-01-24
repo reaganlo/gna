@@ -132,9 +132,9 @@ struct gna_score_cfg {
 struct gna_wait {
 	/* user input */
 	__u64 request_id;
-    
+
 	/* timeount in miliseconds */
-    __u32 timeout;
+	__u32 timeout;
 
 	/* user output */
 	__u32 hw_status;

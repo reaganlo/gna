@@ -75,42 +75,35 @@ void HardwareRequest::Invalidate()
         {
             continue;
         }
-        auto layerCfg = it->second.get();
+        auto const layerCfg = it->second.get();
 
         generateBufferPatches(*layerCfg, layer, *hwLayer);
 
+        // TODO:4:KJ: optimize to eliminate nnop patch for every request
+        if (layer.Operation == INTEL_AFFINE || layer.Operation == INTEL_GMM)
+        {
+            auto const nnopTypeOffset = hwLayer->GetLdNnopOffset();
+            auto const nnopTypeValue = hwLayer->GetNnopType(layerCfg->ActList != nullptr);
+            ldPatches.push_back({ nnopTypeOffset, nnopTypeValue, sizeof(uint8_t) });
+        }
+
         if (layerCfg->ActList)
         {
-            if (INTEL_GMM != layer.Operation)
+            const auto activeList = it->second->ActList.get();
+
+            const auto ldActlistOffset = hwLayer->GetLdActlistOffset();
+            const auto actlistOffset = hwModel.GetBufferOffsetForConfiguration(
+                activeList->Indices, requestConfiguration);
+            const auto ldActlenOffset = hwLayer->GetLdActlenOffset();
+
+            ldPatches.push_back({ ldActlistOffset, actlistOffset, sizeof(ASLADDR) });
+            ldPatches.push_back({ ldActlenOffset, activeList->IndicesCount, sizeof(ASTLISTLEN) });
+
+            if (INTEL_GMM == layer.Operation)
             {
-                auto activeList = it->second->ActList.get();
+                const auto ldScrlenOffset = hwLayer->GetLdScrlenOffset();
+                const auto scrlen = hwLayer->GetScrlen(activeList->IndicesCount);
 
-                auto ldActlistOffset = hwLayer->GetLdActlistOffset();
-                auto actlistOffset = hwModel.GetBufferOffsetForConfiguration(
-                    activeList->Indices, requestConfiguration);
-
-                auto ldActlenOffset = hwLayer->GetLdActlenOffset();
-                uint16_t indices = static_cast<uint16_t>(activeList->IndicesCount);
-
-                ldPatches.push_back({ ldActlistOffset, actlistOffset, sizeof(uint32_t) });
-                ldPatches.push_back({ ldActlenOffset, indices, sizeof(uint32_t) });
-            }
-            else
-            {
-                auto activeList = it->second->ActList.get();
-
-                auto ldActlistOffset = hwLayer->GetLdActlistOffset();
-                auto asladdr = hwModel.GetBufferOffsetForConfiguration(
-                    activeList->Indices, requestConfiguration);
-
-                auto ldActlenOffset = hwLayer->GetLdActlenOffset();
-                auto indices = activeList->IndicesCount;
-
-                auto ldScrlenOffset = hwLayer->GetLdScrlenOffset();
-                auto scrlen = hwLayer->GetScrlen(activeList->IndicesCount);
-
-                ldPatches.push_back({ ldActlistOffset, asladdr, sizeof(ASLADDR) });
-                ldPatches.push_back({ ldActlenOffset, indices, sizeof(ASTLISTLEN) });
                 ldPatches.push_back({ ldScrlenOffset, scrlen, sizeof(GMMSCRLEN) });
             }
         }
@@ -122,15 +115,14 @@ void HardwareRequest::Update(uint32_t layerIndex, uint32_t layerCount, GnaOperat
     auto const & hwLayer = hwModel.GetLayer(layerIndex);
 
     Mode = mode;
+    LayerCount = layerCount;
     LayerBase = hwLayer.GetXnnDescriptorOffset();
     if (GMM == mode)
     {
         GmmOffset = hwLayer.GetGmmDescriptorOffset();
+        updateGmmModeActiveLists(layerIndex, layerCount);
+        GmmModeActiveListOn = gmmModeActiveLists.at(layerIndex);
     }
-    LayerCount = layerCount;
-
-    updateActiveLists(layerIndex, layerCount);
-    ActiveListOn = activeLists.at(layerIndex);
 }
 
 void HardwareRequest::generateBufferPatches(const LayerConfiguration& layerConfiguration,
@@ -162,12 +154,6 @@ void HardwareRequest::generateBufferPatches(const LayerConfiguration& layerConfi
                     newFbAddress, requestConfiguration);
                 auto ldFeedbackOffset = hwLayer.GetLdFeedbackOffset();
                 ldPatches.push_back({ ldFeedbackOffset, feedbackBufferOffset, sizeof(uint32_t) });
-            }
-            else if (layer.Operation == INTEL_AFFINE || layer.Operation == INTEL_GMM)
-            {
-                auto nnopTypeOffset = hwLayer.GetLdNnopOffset();
-                auto nnopTypeValue = hwLayer.GetNnopType(layerConfiguration.ActList != nullptr);
-                ldPatches.push_back({ nnopTypeOffset, nnopTypeValue, sizeof(uint8_t) });
             }
             break;
         }
@@ -207,13 +193,13 @@ void HardwareRequest::generateBufferPatches(const LayerConfiguration& layerConfi
     }
 }
 
-void HardwareRequest::updateActiveLists(uint32_t layerIndex, uint32_t layerCount)
+void HardwareRequest::updateGmmModeActiveLists(uint32_t layerIndex, uint32_t layerCount)
 {
     auto& layerConfigurations = requestConfiguration.LayerConfigurations;
     auto& model = requestConfiguration.Model;
-    if (activeLists.find(layerIndex) == activeLists.end())
+    if (gmmModeActiveLists.find(layerIndex) == gmmModeActiveLists.end())
     {
-        activeLists[layerIndex] = false;
+        gmmModeActiveLists[layerIndex] = false;
         auto lowerBound = layerConfigurations.lower_bound(layerIndex);
         auto upperBound = layerConfigurations.upper_bound(layerIndex + layerCount);
         for (auto it = lowerBound; it != upperBound; ++it)
@@ -221,7 +207,7 @@ void HardwareRequest::updateActiveLists(uint32_t layerIndex, uint32_t layerCount
             auto const & layer = model.GetLayer(it->first);
             if (it->second->ActList && INTEL_GMM == layer.Operation)
             {
-                activeLists[layerIndex] = true;
+                gmmModeActiveLists[layerIndex] = true;
                 break;
             }
         }

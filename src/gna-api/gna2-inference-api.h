@@ -268,7 +268,7 @@ GNA2_API enum Gna2Status Gna2RequestEnqueue(
  @note
  - If processing is completed before the timeout expires, the request object is released.
    Otherwise processing status is returned.
- - Not retrieved requests are released by GNA during corresponding model release.
+ - Not retrieved requests are released by GNA during corresponding device release.
  - User is responsible for retrieving all enqueued requests
    by calling Gna2RequestWait for each request.
 

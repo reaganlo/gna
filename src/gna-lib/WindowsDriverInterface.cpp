@@ -183,7 +183,6 @@ RequestResult WindowsDriverInterface::Submit(HardwareRequest& hardwareRequest,
     auto input = reinterpret_cast<PGNA_INFERENCE_CONFIG_IN>(hardwareRequest.CalculationData.get());
     auto * const ctrlFlags = &input->ctrlFlags;
     ctrlFlags->ddiVersion = 2;
-    ctrlFlags->activeListOn = hardwareRequest.ActiveListOn;
     ctrlFlags->gnaMode = hardwareRequest.Mode;
     ctrlFlags->layerCount = hardwareRequest.LayerCount;
 
@@ -194,6 +193,7 @@ RequestResult WindowsDriverInterface::Submit(HardwareRequest& hardwareRequest,
     else if (GMM == hardwareRequest.Mode)
     {
         input->configBase = hardwareRequest.GmmOffset;
+        ctrlFlags->activeListOn = hardwareRequest.GmmModeActiveListOn;
     }
     else
     {
@@ -239,6 +239,8 @@ RequestResult WindowsDriverInterface::Submit(HardwareRequest& hardwareRequest,
         result.status = Gna2StatusDeviceIngoingCommunicationError;
         break;
     }
+
+    CloseHandle(ioHandle.hEvent);
 
     return result;
 }

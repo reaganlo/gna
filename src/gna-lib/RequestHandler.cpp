@@ -36,6 +36,7 @@
 
 using namespace GNA;
 
+// TODO:4:KJ: refactor to have ThreadPool per device and RequestHandler per model
 RequestHandler::RequestHandler(uint32_t threadCount) : threadPool(threadCount)
 {}
 

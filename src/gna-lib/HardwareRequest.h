@@ -133,7 +133,7 @@ public:
 
     /* GMM fields */
     uint32_t GmmOffset;
-    bool ActiveListOn;
+    bool GmmModeActiveListOn;
 
     std::vector<DriverBuffer> DriverMemoryObjects;
 
@@ -154,9 +154,9 @@ private:
     const RequestConfiguration& requestConfiguration;
     const HardwareModelScorable& hwModel;
 
-    std::map<uint32_t, bool> activeLists;
+    std::map<uint32_t, bool> gmmModeActiveLists;
 
-    void updateActiveLists(uint32_t layerIndex, uint32_t layerCount);
+    void updateGmmModeActiveLists(uint32_t layerIndex, uint32_t layerCount);
 
     void generateBufferPatches(const LayerConfiguration& layerConfiguration,
         const Layer &layer, const HardwareLayer &hwLayer);

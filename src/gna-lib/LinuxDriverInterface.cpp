@@ -127,7 +127,6 @@ RequestResult LinuxDriverInterface::Submit(HardwareRequest& hardwareRequest,
 
     auto scoreConfig = reinterpret_cast<struct gna_score_cfg *>(hardwareRequest.CalculationData.get());
 
-    scoreConfig->ctrl_flags.active_list_on = hardwareRequest.ActiveListOn ? 1 : 0;
     scoreConfig->ctrl_flags.gna_mode = hardwareRequest.Mode == xNN ? 1 : 0;
     scoreConfig->layer_count = hardwareRequest.LayerCount;
 
@@ -138,6 +137,7 @@ RequestResult LinuxDriverInterface::Submit(HardwareRequest& hardwareRequest,
     else if(GMM == hardwareRequest.Mode)
     {
         scoreConfig->layer_base = hardwareRequest.GmmOffset;
+        scoreConfig->ctrl_flags.active_list_on = hardwareRequest.GmmModeActiveListOn ? 1 : 0;
     }
     else
     {
