@@ -237,9 +237,9 @@ GmmFunctionFlat::GmmFunctionFlat(
     InverseCovarianceBuffer = InverseCovariances->Buffer;
     GaussianConstantBuffer = GaussianConstants->Buffer;
 
-    config.validator.ValidateBufferIfSet(GaussianConstants->Buffer, StateCount * GaussConstSetOffsetSize);
-    config.validator.ValidateBufferIfSet(Means->Buffer, StateCount * MeanSetOffsetSize);
-    config.validator.ValidateBufferIfSet(InverseCovariances->Buffer, StateCount * VarSetOffsetSize);
+    config.validator.ValidateBufferIfSet(GaussianConstants->Buffer, StateCount * GaussConstSetOffsetSize, {8, Gna2StatusMemoryAlignmentInvalid });
+    config.validator.ValidateBufferIfSet(Means->Buffer, StateCount * MeanSetOffsetSize, { 8, Gna2StatusMemoryAlignmentInvalid });
+    config.validator.ValidateBufferIfSet(InverseCovariances->Buffer, StateCount * VarSetOffsetSize, { 8, Gna2StatusMemoryAlignmentInvalid });
 
     InitHiddenConfig();
 }
