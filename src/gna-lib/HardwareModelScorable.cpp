@@ -114,18 +114,20 @@ uint32_t HardwareModelScorable::Score(
     auto configId = requestConfiguration.Id;
     HardwareRequest *hwRequest = nullptr;
 
-    if (hardwareRequests.find(configId) == hardwareRequests.end())
     {
-        auto const inserted = hardwareRequests.emplace(
-            configId,
-            std::make_unique<HardwareRequest>(*this, requestConfiguration, allocations));
-        hwRequest = inserted.first->second.get();
+        std::lock_guard<std::mutex> lockGuard(hardwareRequestsLock);
+        if (hardwareRequests.find(configId) == hardwareRequests.end())
+        {
+            auto const inserted = hardwareRequests.emplace(
+                configId,
+                std::make_unique<HardwareRequest>(*this, requestConfiguration, allocations));
+            hwRequest = inserted.first->second.get();
+        }
+        else
+        {
+            hwRequest = hardwareRequests.at(configId).get();
+        }
     }
-    else
-    {
-        hwRequest = hardwareRequests.at(configId).get();
-    }
-
     hwRequest->Update(layerIndex, layerCount, operationMode);
 
     profiler->Measure(Gna2InstrumentationPointLibExecution);

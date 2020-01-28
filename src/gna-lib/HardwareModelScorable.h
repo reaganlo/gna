@@ -77,6 +77,7 @@ protected:
     DriverInterface &driverInterface;
 
     std::map<gna_request_cfg_id, std::unique_ptr<HardwareRequest>> hardwareRequests;
+    std::mutex hardwareRequestsLock;
 
     virtual void allocateLayerDescriptors() override;
 };
