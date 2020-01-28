@@ -743,7 +743,7 @@ void Pooling2DKernelImpl1B(ExecutionKernelConfig<PoolingConfig2D> const * const 
 
                             if ((POW * poolStrideW + OW <= (inputW - 1)) && (POH * poolStrideH + OH <= (inputH - 1)))
                             {
-                                accValue += I[OD + inIdxW + inIdxH + winIdxW + winIdxH];
+                                accValue = static_cast<int16_t>(accValue + I[OD + inIdxW + inIdxH + winIdxW + winIdxH]);
                             }
                         }
                     }
