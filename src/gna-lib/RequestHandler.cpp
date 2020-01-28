@@ -71,20 +71,25 @@ void RequestHandler::Enqueue(
 
         *requestId = assignRequestId();
         r->Id = *requestId;
-        auto insert = requests.emplace(*requestId, move(request));
-        if (!insert.second)
-        {
-            throw GnaException(Gna2StatusResourceAllocationError);
-        }
+        addRequest(std::move(request));
     }
     r->Profiler->Measure(Gna2InstrumentationPointLibSubmission);
 
     threadPool.Enqueue(r);
 }
 
+void RequestHandler::addRequest(std::unique_ptr<Request> request)
+{
+    auto insert = requests.emplace(request->Id, move(request));
+    if (!insert.second)
+    {
+        throw GnaException(Gna2StatusResourceAllocationError);
+    }
+}
+
 Gna2Status RequestHandler::WaitFor(const gna_request_id requestId, const gna_timeout milliseconds)
 {
-    auto request = get(requestId);
+    auto request = extractRequestLocked(requestId);
     auto future = request->GetFuture();
 
     auto future_status = future.wait_for(std::chrono::milliseconds(milliseconds));
@@ -96,10 +101,10 @@ Gna2Status RequestHandler::WaitFor(const gna_request_id requestId, const gna_tim
         auto profiler = request->Profiler.get();
         profiler->Measure(Gna2InstrumentationPointLibReceived);
         profiler->SaveResults(request->Configuration.GetProfilerConfiguration());
-        removeRequest(requestId);
         return score_status;
     }
     default:
+        addRequestLocked(std::move(request));
         return Gna2StatusWarningDeviceBusy;
     }
 }
@@ -114,14 +119,23 @@ bool RequestHandler::HasRequest(uint32_t requestId) const
     return requests.count(requestId) > 0;
 }
 
-void RequestHandler::removeRequest(const uint32_t requestId)
+std::unique_ptr<Request> RequestHandler::extractRequestLocked(const uint32_t requestId)
 {
     std::lock_guard<std::mutex> lockGuard(lock);
-    auto erased = requests.erase(requestId);
-    if (erased == 0)
+    auto found = requests.find(requestId);
+    if(found == requests.end())
     {
         throw GnaException(Gna2StatusIdentifierInvalid);
     }
+    auto extracted = std::move(found->second);
+    requests.erase(found);
+    return extracted;
+}
+
+void RequestHandler::addRequestLocked(std::unique_ptr<Request> request)
+{
+    std::lock_guard<std::mutex> lockGuard(lock);
+    addRequest(std::move(request));
 }
 
 uint32_t RequestHandler::assignRequestId()

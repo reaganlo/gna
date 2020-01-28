@@ -66,20 +66,9 @@ private:
 
     void clearRequestMap();
 
-    void removeRequest(uint32_t requestId);
-
-    Request * get(const uint32_t requestId)
-    {
-        try
-        {
-            auto& request = requests.at(requestId);
-            return request.get();
-        }
-        catch (const std::out_of_range&)
-        {
-            throw GnaException(Gna2StatusIdentifierInvalid);
-        }
-    }
+    std::unique_ptr<Request> extractRequestLocked(uint32_t requestId);
+    void addRequestLocked(std::unique_ptr<Request> request);
+    void addRequest(std::unique_ptr<Request> request);
 
     static uint32_t assignRequestId();
 
