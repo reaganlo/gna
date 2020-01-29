@@ -41,6 +41,12 @@ struct LayerCapabilities
     /** Number of input groups constraint - max */
     static constexpr uint32_t BatchSizeMax = 8;
 
+    /** Number of input groups constraint - max */
+    static constexpr uint32_t InputGroupsCountMax = 8;
+
+    /** Total number of input elements constraint - must be multiple of */
+    static constexpr uint32_t InputElementsMultipllier = 8;
+
     /** Number of input groups constraint for Copy layer 3.0- max */
     static constexpr uint32_t CopyRowsMax = 255;
 
@@ -65,6 +71,12 @@ struct LayerCapabilities
     static const MultiplierMap & InputElementCountMultipliers();
 
     static const DataModeLimits & GetModes(uint32_t operandIndex, gna_device_generation generation);
+
+    static const RangeLimits<>& limitsForInput();
+
+    static const RangeLimits<>& limitsForOutput();
+
+    static const RangeLimits<>& limitsForInputShapeLegacy();
 };
 
 }

@@ -90,6 +90,7 @@ set(gna_lib_sources
   ${SRC_DIR}/ActivationHelper.cpp
   ${SRC_DIR}/ActiveList.cpp
   ${SRC_DIR}/AffineFunctions.cpp
+  ${SRC_DIR}/AffineLayerCapabilities.cpp
   ${SRC_DIR}/AffineLayers.cpp
   ${SRC_DIR}/ApiProperty.cpp
   ${SRC_DIR}/Bias.cpp
@@ -110,6 +111,7 @@ set(gna_lib_sources
   ${SRC_DIR}/DeviceManager.cpp
   ${SRC_DIR}/DriverInterface.cpp
   ${SRC_DIR}/GmmLayer.cpp
+  ${SRC_DIR}/GmmLayerCapabilities.cpp
   ${SRC_DIR}/HardwareCapabilities.cpp
   ${SRC_DIR}/HardwareLayer.cpp
   ${SRC_DIR}/HardwareModel.cpp
@@ -175,6 +177,7 @@ set(gna_lib_headers
   ${SRC_DIR}/ActivationHelper.h
   ${SRC_DIR}/ActiveList.h
   ${SRC_DIR}/AffineFunctions.h
+   ${SRC_DIR}/AffineLayerCapabilities.h
   ${SRC_DIR}/ApiProperty.h
   ${SRC_DIR}/ApiWrapper.h
   ${SRC_DIR}/BufferMap.h
@@ -195,6 +198,7 @@ set(gna_lib_headers
   ${SRC_DIR}/DriverInterface.h
   ${SRC_DIR}/Expect.h
   ${SRC_DIR}/GmmLayer.h
+  ${SRC_DIR}/GmmLayerCapabilities.h
   ${SRC_DIR}/GnaTypes.h
   ${SRC_DIR}/HardwareCapabilities.h
   ${SRC_DIR}/HardwareLayer.h

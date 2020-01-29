@@ -25,11 +25,13 @@
 
 #include "LayerOutput.h"
 
+#include "AffineLayerCapabilities.h"
 #include "Capabilities.h"
 #include "ConvolutionalLayer.h"
 #include "ConvolutionalLayer2DCapabilities.h"
 #include "DataMode.h"
 #include "Expect.h"
+#include "GmmLayerCapabilities.h"
 #include "ParameterLimits.h"
 #include "Validator.h"
 
@@ -110,16 +112,13 @@ static const TensorLimits _FlatTensorLimitsGen3 =
 const FullCapabilitiesMap LayerOutput::capabilities =
 {
     {INTEL_AFFINE, {
-        {GNA_0_9, std::make_shared<TensorLimits>(_InterleaveTensorLimitsGen0_9)},
-        {GNA_3_0, std::make_shared<TensorLimits>(_InterleaveTensorLimitsGen3)}
+        AffineLayerCapabilities::GetOperands(OutputOperandIndex).at(INTEL_AFFINE)
     }},
     {INTEL_AFFINE_DIAGONAL, {
-        {GNA_0_9, std::make_shared<TensorLimits>(_InterleaveTensorLimitsGen0_9)},
-        {GNA_3_0, std::make_shared<TensorLimits>(_InterleaveTensorLimitsGen3)}
+        AffineLayerCapabilities::GetOperands(OutputOperandIndex).at(INTEL_AFFINE_DIAGONAL)
     }},
     {INTEL_AFFINE_MULTIBIAS, {
-        {GNA_2_0, std::make_shared<TensorLimits>(_InterleaveTensorLimitsGen0_9)},
-        {GNA_3_0, std::make_shared<TensorLimits>(_InterleaveTensorLimitsGen3)}
+        AffineLayerCapabilities::GetOperands(OutputOperandIndex).at(INTEL_AFFINE_MULTIBIAS)
     }},
     {INTEL_CONVOLUTIONAL, {
         ConvolutionalLayer2DCapabilities::GetOperands(OutputOperandIndex).at(INTEL_CONVOLUTIONAL)
@@ -145,27 +144,14 @@ const FullCapabilitiesMap LayerOutput::capabilities =
         {GNA_3_0, std::make_shared<TensorLimits>(_FlatTensorLimitsGen3)}
     }},
     {INTEL_GMM, {
-        {GMM_DEVICE, std::make_shared<TensorLimits>(TensorLimits{
-            {GNA_TENSOR_HW}, // H - GMM States, W - grouping
-            {{GNA_DIM_W, {1, XNN_N_GROUP_MAX, 1, Gna2StatusXnnErrorOutputVolume}},
-             {GNA_DIM_H, {1, GMM_STATES_COUNT_MAX, 1, Gna2StatusXnnErrorOutputVolume}}},
-            { { GNA_UINT32, GNA_DATA_ACTIVATION_DISABLED }, Gna2StatusXnnErrorOutputBytes }})}
+        GmmLayerCapabilities::GetOperands(OutputOperandIndex).at(INTEL_GMM)
     }},
-    {INTEL_INTERLEAVE, {
+       {INTEL_INTERLEAVE, {
         { GNA_0_9, std::make_shared<TensorLimits>(_InterleaveTensorLimitsGen0_9) },
         { GNA_3_0, std::make_shared<TensorLimits>(_InterleaveTensorLimitsGen3) }
     }},
     {INTEL_RECURRENT, {
-        {GNA_0_9, std::make_shared<TensorLimits>(TensorLimits{
-            {GNA_TENSOR_HW},
-            {{GNA_DIM_H, {1, XNN_N_GROUP_MAX, 1, Gna2StatusXnnErrorOutputVolume}},
-             {GNA_DIM_W, {RNN_N_OUT_ELEMS_MPLY, XNN_N_IN_ELEMS_MAX, RNN_N_OUT_ELEMS_MPLY, Gna2StatusXnnErrorOutputVolume}}}, // must be multiple 32 to keep 64B output buffer alignment
-            _ModesGen0_9})},
-        {GNA_3_0, std::make_shared<TensorLimits>(TensorLimits{
-            {GNA_TENSOR_HW},
-            {{GNA_DIM_H, {1, XNN_N_GROUP_MAX, 1, Gna2StatusXnnErrorOutputVolume}},
-             {GNA_DIM_W, {RNN_N_OUT_ELEMS_MPLY, XNN_N_IN_ELEMS_MAX, RNN_N_OUT_ELEMS_MPLY, Gna2StatusXnnErrorOutputVolume}}}, // must be multiple 32 to keep 64B output buffer alignment
-            _ModesGen3})}
+        AffineLayerCapabilities::GetOperands(OutputOperandIndex).at(INTEL_RECURRENT)
     }}
 };
 

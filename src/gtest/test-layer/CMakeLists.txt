@@ -58,6 +58,7 @@ add_executable(test-layer
   ${SRC_DIR}/ActivationHelper.cpp
   ${SRC_DIR}/ActiveList.cpp
   ${SRC_DIR}/AffineFunctions.cpp
+  ${SRC_DIR}/AffineLayerCapabilities.cpp
   ${SRC_DIR}/AffineLayers.cpp
   ${SRC_DIR}/ApiProperty.cpp
   ${SRC_DIR}/Bias.cpp
@@ -78,6 +79,7 @@ add_executable(test-layer
   ${SRC_DIR}/DeviceManager.cpp
   ${SRC_DIR}/DriverInterface.cpp
   ${SRC_DIR}/GmmLayer.cpp
+  ${SRC_DIR}/GmmLayerCapabilities.cpp
   ${SRC_DIR}/HardwareCapabilities.cpp
   ${SRC_DIR}/HardwareLayer.cpp
   ${SRC_DIR}/HardwareModel.cpp

@@ -27,6 +27,7 @@
 
 #include "AccelerationDetector.h"
 #include "ActiveList.h"
+#include "AffineLayerCapabilities.h"
 #include "Bias.h"
 #include "Capabilities.h"
 #include "DataMode.h"
@@ -50,78 +51,32 @@
 
 using namespace GNA;
 
-const ShapeLimits AffineFunction::outputDimensionsLimits =
-{
-    {GNA_DIM_H, {1, XNN_N_IN_ELEMS_MAX, 1, Gna2StatusXnnErrorOutputVolume}},
-    {GNA_DIM_W, {1, XNN_N_GROUP_MAX, 1, Gna2StatusXnnErrorOutputVolume}}
-};
-
-const DataModeLimits AffineFunction::outputModeLimits_0_9 =
-{
-    {GNA_INT16, GNA_INT32, GNA_DATA_ACTIVATION_DISABLED},
-    Gna2StatusXnnErrorOutputBytes
-};
-
-const TensorLimits AffineFunction::outputLimits_0_9 =
-{
-    {GNA_TENSOR_HW},
-    outputDimensionsLimits,
-    outputModeLimits_0_9
-};
-
-const DataModeLimits AffineFunction::outputModeLimits_3 =
-{
-    {GNA_INT8, GNA_INT16, GNA_INT32, GNA_DATA_ACTIVATION_DISABLED},
-    Gna2StatusXnnErrorOutputBytes
-};
-
-const TensorLimits AffineFunction::outputLimits_3 =
-{
-    {GNA_TENSOR_HW},
-    outputDimensionsLimits,
-    outputModeLimits_3
-};
-
 const FullCapabilitiesMap AffineFunctionSingle::outputCapabilities =
 {
     {INTEL_AFFINE, {
-        {GNA_0_9, std::make_shared<TensorLimits>(outputLimits_0_9)},
-        {GNA_3_0, std::make_shared<TensorLimits>(outputLimits_3)}
+        AffineLayerCapabilities::GetOperands(OutputOperandIndex).at(INTEL_AFFINE)
     }},
     {INTEL_AFFINE_DIAGONAL, {
-        {GNA_0_9, std::make_shared<TensorLimits>(outputLimits_0_9)},
-        {GNA_3_0, std::make_shared<TensorLimits>(outputLimits_3)}
+        AffineLayerCapabilities::GetOperands(OutputOperandIndex).at(INTEL_AFFINE_DIAGONAL)
     }},
     {INTEL_RECURRENT, {
-        {GNA_0_9, std::make_shared<TensorLimits>(TensorLimits{
-            {GNA_TENSOR_HW},
-            {{GNA_DIM_H, {1, XNN_N_GROUP_MAX, 1, Gna2StatusXnnErrorOutputVolume}},
-             {GNA_DIM_W, {RNN_N_OUT_ELEMS_MPLY, XNN_N_IN_ELEMS_MAX, RNN_N_OUT_ELEMS_MPLY, Gna2StatusXnnErrorOutputVolume}}}, // must be multiple 32 to keep 64B output buffer alignment
-             outputModeLimits_0_9})},
-        {GNA_3_0, std::make_shared<TensorLimits>(TensorLimits{
-            {GNA_TENSOR_HW},
-            {{GNA_DIM_H, {1, XNN_N_GROUP_MAX, 1, Gna2StatusXnnErrorOutputVolume}},
-             {GNA_DIM_W, {RNN_N_OUT_ELEMS_MPLY, XNN_N_IN_ELEMS_MAX, RNN_N_OUT_ELEMS_MPLY, Gna2StatusXnnErrorOutputVolume}}}, // must be multiple 32 to keep 64B output buffer alignment
-            outputModeLimits_3})}
+        AffineLayerCapabilities::GetOperands(OutputOperandIndex).at(INTEL_RECURRENT)
     }}
 };
 
 const FullCapabilitiesMap AffineFunctionMulti::outputCapabilities =
 {
     {INTEL_AFFINE_MULTIBIAS, {
-        {GNA_2_0, std::make_shared<TensorLimits>(outputLimits_0_9)},
-        {GNA_3_0, std::make_shared<TensorLimits>(outputLimits_3)}
-    }}
+        AffineLayerCapabilities::GetOperands(OutputOperandIndex).at(INTEL_AFFINE_MULTIBIAS)
+    }},
 };
 
 const FullCapabilitiesMap AffineFunctionMulti::Capabilities =
 {
     {INTEL_AFFINE_MULTIBIAS, {
-        {GNA_2_0, std::make_shared<TensorLimits>(TensorLimits{
-            {GNA_TENSOR_H},
-            {{GNA_DIM_H, {1, XNN_N_IN_ELEMS_MAX, 1, Gna2StatusXnnErrorBiasVolume}}},
-            {{ GNA_DATA_RICH_FORMAT }, Gna2StatusXnnErrorBiasBytes }})}
-    }}
+        AffineLayerCapabilities::GetOperands(BiasOperandIndex).at(INTEL_AFFINE_MULTIBIAS)
+    }},
+
 };
 
 // Could not split into separate methods for each component as multibias weight scaling is using bias' and weights; tensors...

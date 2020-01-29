@@ -25,9 +25,11 @@
 
 #include "Bias.h"
 
+#include "AffineLayerCapabilities.h"
 #include "Capabilities.h"
 #include "ConvolutionalLayer2DCapabilities.h"
 #include "Expect.h"
+#include "GmmLayerCapabilities.h"
 #include "ParameterLimits.h"
 #include "PoolingFunctions2D.h"
 #include "Shape.h"
@@ -47,58 +49,16 @@
 
 using namespace GNA;
 
-static const DataModeLimits _ModesGen0_9 = {
-    { GNA_INT32 },
-    Gna2StatusXnnErrorBiasBytes };
-
-static const DataModeLimits _ModesWithRichGen0_9 = {
-    { GNA_INT32, GNA_DATA_RICH_FORMAT },
-    Gna2StatusXnnErrorBiasBytes };
-
-static const DataModeLimits _ModesGen3 = {
-    { GNA_INT8, GNA_INT16, GNA_INT32 },
-    Gna2StatusXnnErrorBiasBytes };
-
-static const DataModeLimits _ModesWithRichGen3 = {
-    { GNA_INT8, GNA_INT16, GNA_INT32, GNA_DATA_RICH_FORMAT },
-    Gna2StatusXnnErrorBiasBytes };
-
 const FullCapabilitiesMap BiasTensor::capabilities =
 {
     {INTEL_AFFINE, {
-        {GNA_0_9,std::make_shared<TensorLimits>(TensorLimits{
-            {GNA_TENSOR_H},
-            {{GNA_DIM_H, {1, XNN_N_IN_ELEMS_MAX, 1, Gna2StatusXnnErrorBiasVolume}}},
-            _ModesWithRichGen0_9}),
-        },
-        {GNA_3_0, std::make_shared<TensorLimits>(TensorLimits{
-            {GNA_TENSOR_H},
-            {{GNA_DIM_H, {1, XNN_N_IN_ELEMS_MAX, 1, Gna2StatusXnnErrorBiasVolume}}},
-            _ModesWithRichGen3})}
+        AffineLayerCapabilities::GetOperands(BiasOperandIndex).at(INTEL_AFFINE)
     }},
     {INTEL_AFFINE_DIAGONAL, {
-        {GNA_0_9, std::make_shared<TensorLimits>(TensorLimits{
-            {GNA_TENSOR_H},
-            {{GNA_DIM_H, {1, XNN_N_IN_ELEMS_MAX, 1, Gna2StatusXnnErrorBiasVolume}}},
-            _ModesWithRichGen0_9})},
-        {GNA_3_0, std::make_shared<TensorLimits>(TensorLimits{
-            {GNA_TENSOR_H},
-            {{GNA_DIM_H, {1, XNN_N_IN_ELEMS_MAX, 1, Gna2StatusXnnErrorBiasVolume}}},
-            _ModesWithRichGen3})}
+        AffineLayerCapabilities::GetOperands(BiasOperandIndex).at(INTEL_AFFINE_DIAGONAL)
     }},
     {INTEL_AFFINE_MULTIBIAS, {
-        {GNA_2_0, std::make_shared<TensorLimits>(TensorLimits{
-            {GNA_TENSOR_HW},
-            {
-                {GNA_DIM_H, {1, XNN_N_IN_ELEMS_MAX, 1, Gna2StatusXnnErrorBiasVolume}},
-                {GNA_DIM_W, {1, XNN_N_GROUP_MAX, 1, Gna2StatusXnnErrorBiasVolume}}
-            },
-            _ModesGen0_9})},
-        {GNA_3_0, std::make_shared<TensorLimits>(TensorLimits{
-            {GNA_TENSOR_HW},
-            {{GNA_DIM_H, {1, XNN_N_IN_ELEMS_MAX, 1, Gna2StatusXnnErrorBiasVolume}},
-            {GNA_DIM_W, {1, XNN_N_GROUP_MAX, 1, Gna2StatusXnnErrorBiasVolume}}},
-            _ModesGen3})}
+        AffineLayerCapabilities::GetOperands(BiasOperandIndex).at(INTEL_AFFINE_MULTIBIAS)
     }},
     {INTEL_CONVOLUTIONAL, {
         ConvolutionalLayer2DCapabilities::GetOperands(BiasOperandIndex).at(INTEL_CONVOLUTIONAL)
@@ -110,22 +70,10 @@ const FullCapabilitiesMap BiasTensor::capabilities =
         ConvolutionalLayer2DCapabilities::GetOperands(BiasOperandIndex).at(INTEL_CONVOLUTIONAL_1D)
     }},
     {INTEL_GMM, {
-        {GMM_DEVICE, std::make_shared<TensorLimits>(TensorLimits{
-            {GNA_TENSOR_HW},                   // H - GMM states, W - #mixtures
-            {{GNA_DIM_W, {1, GMM_MIXTURE_COMP_COUNT_MAX, 2, Gna2StatusGmmBadMixCnum}},
-                {GNA_DIM_H, {1, GMM_STATES_COUNT_MAX, 1, Gna2StatusGmmBadNumGmm}}},
-            { {GNA_UINT32}, Gna2StatusGmmBadMode},
-            {GMM_MEM_ALIGNMENT, Gna2StatusGmmBadGconstAlign}})}
+        GmmLayerCapabilities::GetOperands(BiasOperandIndex).at(INTEL_GMM)
     }},
     {INTEL_RECURRENT, {
-        {GNA_0_9, std::make_shared<TensorLimits>(TensorLimits{
-            {GNA_TENSOR_H},
-            {{GNA_DIM_H, {RNN_N_OUT_ELEMS_MPLY, XNN_N_IN_ELEMS_MAX, RNN_N_OUT_ELEMS_MPLY, Gna2StatusXnnErrorBiasVolume}}},
-            _ModesWithRichGen0_9})},
-        {GNA_3_0, std::make_shared<TensorLimits>(TensorLimits{
-            {GNA_TENSOR_H},
-            {{GNA_DIM_H, {RNN_N_OUT_ELEMS_MPLY, XNN_N_IN_ELEMS_MAX, RNN_N_OUT_ELEMS_MPLY, Gna2StatusXnnErrorBiasVolume}}},
-            _ModesWithRichGen3})}
+        AffineLayerCapabilities::GetOperands(BiasOperandIndex).at(INTEL_RECURRENT)
     }}
 };
 

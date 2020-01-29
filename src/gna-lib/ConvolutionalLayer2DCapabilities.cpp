@@ -65,16 +65,14 @@ static const RangeLimits<> & limitsForOutputEqual1()
     return _limitsForOutputEqual1;
 }
 
-static const RangeLimits<> & limitsForInputUInt16Max()
+static const RangeLimits<>& limitsForBiasEqual1()
 {
-    static const RangeLimits<> _limitsForInputUInt16Max =
+    static const RangeLimits<> _limitsForOutputEqual1 =
     {
-        1,
-        LayerCapabilities::InputElementCountMax,
-        1,
-        Gna2StatusXnnErrorInputVolume
+        limitsForInputEqual1(),
+        Gna2StatusXnnErrorBiasVolume
     };
-    return _limitsForInputUInt16Max;
+    return _limitsForOutputEqual1;
 }
 
 static const RangeLimits<> & limitsForInputUInt16Max1D()
@@ -89,28 +87,6 @@ static const RangeLimits<> & limitsForInputUInt16Max1D()
     return _limitsForInputUInt16Max;
 }
 
-static const RangeLimits<> & limitsForOutputUInt16Max()
-{
-    static const RangeLimits<> _limitsForOutputUInt16Max =
-    {
-        limitsForInputUInt16Max(),
-        Gna2StatusXnnErrorOutputVolume
-    };
-    return _limitsForOutputUInt16Max;
-}
-
-static const RangeLimits<> & limitsForInputShapeLegacy()
-{
-    static const RangeLimits<> _limitsForInputShapeLegacy =
-    {
-        LayerCapabilities::InputElementCountMultiplier,
-        LayerCapabilities::InputElementCountMax,
-        LayerCapabilities::InputElementCountMultipliers(),
-        Gna2StatusXnnErrorInputVolume
-    };
-    return _limitsForInputShapeLegacy;
-}
-
 static const MultiplierLimits & shapeLimitMultipliersForCnnLegacy()
 {
     static const MultiplierLimits _shapeLimitMultipliersForCnnLegacy =
@@ -121,17 +97,6 @@ static const MultiplierLimits & shapeLimitMultipliersForCnnLegacy()
     };
     return _shapeLimitMultipliersForCnnLegacy;
 }
-//
-//static const MultiplierLimits & shapeLimitMultipliersFor1D()
-//{
-//    static const MultiplierLimits _shapeLimitMultipliersFor1D =
-//    {
-//        {{Gna2DataTypeInt8, 2 * 8},
-//            {Gna2DataTypeInt16, 8 }},
-//            Gna2StatusCnnErrorConvFltVolume
-//    };
-//    return _shapeLimitMultipliersFor1D;
-//}
 
 static const DataModeLimits & _ModesGen0_9()
 {
@@ -175,9 +140,9 @@ const FullCapabilitiesMap & ConvolutionalLayer2DCapabilities::GetOperands(uint32
                 {GNA_3_0, std::make_shared<TensorLimits>(TensorLimits{
                     {GNA_TENSOR_NHWD},    // N = 1
                     {{GNA_DIM_N, limitsForInputEqual1()},
-                    {GNA_DIM_H, limitsForInputUInt16Max()},
-                    {GNA_DIM_W, limitsForInputUInt16Max()},
-                    {GNA_DIM_D, limitsForInputUInt16Max()}},
+                    {GNA_DIM_H, limitsForInput()},
+                    {GNA_DIM_W, limitsForInput()},
+                    {GNA_DIM_D, limitsForInput()}},
                     GetModes(InputOperandIndex, GNA_3_0)})}
             }},
             {INTEL_CONVOLUTIONAL_1D,{
@@ -195,7 +160,7 @@ const FullCapabilitiesMap & ConvolutionalLayer2DCapabilities::GetOperands(uint32
                 {GNA_1_0, std::make_shared<TensorLimits>(TensorLimits{
                 { GNA_TENSOR_HW },
                 {{GNA_DIM_H, limitsForOutputEqual1()},
-                {GNA_DIM_W, limitsForOutputUInt16Max()}},
+                {GNA_DIM_W, limitsForOutput()}},
                 GetModes(OutputOperandIndex, GNA_0_9)})},
             }},
             {INTEL_CONVOLUTIONAL_2D,{
@@ -203,14 +168,14 @@ const FullCapabilitiesMap & ConvolutionalLayer2DCapabilities::GetOperands(uint32
                     { GNA_TENSOR_NHWD },
                     {{GNA_DIM_N, limitsForOutputEqual1()},
                     {GNA_DIM_H, {Filter1DElementsMultiplier, Filter1DElementsMax, Filter1DElementsMultiplier, Gna2StatusXnnErrorOutputVolume}},
-                    {GNA_DIM_W, limitsForOutputUInt16Max()},
+                    {GNA_DIM_W, limitsForOutput()},
                     {GNA_DIM_D, limitsForOutputEqual1()}},
                     GetModes(OutputOperandIndex, GNA_0_9)})},
                 {GNA_3_0, std::make_shared<TensorLimits>(TensorLimits{
                     {GNA_TENSOR_NHWD},
-                    {{GNA_DIM_N, limitsForOutputUInt16Max()},
-                    {GNA_DIM_H, limitsForOutputUInt16Max()},
-                    {GNA_DIM_W, limitsForOutputUInt16Max()},
+                    {{GNA_DIM_N, limitsForOutput()},
+                    {GNA_DIM_H, limitsForOutput()},
+                    {GNA_DIM_W, limitsForOutput()},
                     {GNA_DIM_D, {1,
                         Filter2DCountMax /* bigger limit to workaround lack of 1D/2D differentiation */,
                         1, Gna2StatusXnnErrorOutputVolume}}},
@@ -221,7 +186,7 @@ const FullCapabilitiesMap & ConvolutionalLayer2DCapabilities::GetOperands(uint32
                     {GNA_TENSOR_NHWD},
                     {{GNA_DIM_N, limitsForOutputEqual1()},
                     {GNA_DIM_H, limitsForOutputEqual1()},
-                    {GNA_DIM_W, limitsForOutputUInt16Max()},
+                    {GNA_DIM_W, limitsForOutput()},
                     {GNA_DIM_D, {1, CNN_1D_N_KERNELS_MAX, 1, Gna2StatusXnnErrorOutputVolume}}},
                     {{GNA_INT16, GNA_INT32, GNA_DATA_ACTIVATION_DISABLED}, Gna2StatusXnnErrorOutputBytes}})}
             }},
@@ -273,8 +238,8 @@ const FullCapabilitiesMap & ConvolutionalLayer2DCapabilities::GetOperands(uint32
                 {GNA_1_0, std::make_shared<TensorLimits>(TensorLimits{
                     {GNA_TENSOR_NHW},          // N - #kernel (GNA_BIAS_PER_KERNEL)
                     {{GNA_DIM_N, {CNN_N_FLT_COEFF_MPLY, CNN_N_FLT_MAX, CNN_N_FLT_COEFF_MPLY, Gna2StatusXnnErrorBiasVolume}},
-                        {GNA_DIM_H, {1, 1, 1, Gna2StatusXnnErrorBiasVolume}},
-                        {GNA_DIM_W, {1, 1, 1, Gna2StatusXnnErrorBiasVolume}}},
+                        {GNA_DIM_H, limitsForBiasEqual1()},
+                        {GNA_DIM_W, limitsForBiasEqual1()}},
                     _ModesGen0_9()})},
                 {GNA_3_0, std::make_shared<TensorLimits>(TensorLimits{
                     {GNA_TENSOR_NHW},    // N = #kernels + GNA_BIAS_PER_KERNEL (HW=1) or GNA_BIAS_PER_STRIDE (HW conv. out dimensions),
@@ -287,14 +252,14 @@ const FullCapabilitiesMap & ConvolutionalLayer2DCapabilities::GetOperands(uint32
                 {GNA_1_0, std::make_shared<TensorLimits>(TensorLimits{
                     {GNA_TENSOR_NHW},          // N - #kernel (GNA_BIAS_PER_KERNEL)
                     {{GNA_DIM_N, {CNN_N_FLT_COEFF_MPLY, CNN_N_FLT_MAX, CNN_N_FLT_COEFF_MPLY, Gna2StatusXnnErrorBiasVolume}},
-                        {GNA_DIM_H, {1, 1, 1, Gna2StatusXnnErrorBiasVolume}},
-                        {GNA_DIM_W, {1, 1, 1, Gna2StatusXnnErrorBiasVolume}}},
+                        {GNA_DIM_H, limitsForBiasEqual1()},
+                        {GNA_DIM_W, limitsForBiasEqual1()}},
                     _ModesGen0_9()})},
                 {GNA_3_0, std::make_shared<TensorLimits>(TensorLimits{
                     {GNA_TENSOR_NHW},    // N = #kernels + GNA_BIAS_PER_KERNEL (HW=1) or GNA_BIAS_PER_STRIDE (HW conv. out dimensions),
                         {{GNA_DIM_N, {1, CNN_N_FLT_MAX, 1, Gna2StatusXnnErrorBiasVolume}},
-                        {GNA_DIM_H, {1, 1, 1, Gna2StatusXnnErrorBiasVolume}},
-                        {GNA_DIM_W, {1, 1, 1, Gna2StatusXnnErrorBiasVolume}}},
+                        {GNA_DIM_H, limitsForBiasEqual1()},
+                        {GNA_DIM_W, limitsForBiasEqual1()}},
                     _ModesGen0_9()})}
             }},
         }},

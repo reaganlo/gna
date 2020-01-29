@@ -25,8 +25,10 @@
 
 #include "Weight.h"
 
+#include "AffineLayerCapabilities.h"
 #include "Capabilities.h"
 #include "ConvolutionalLayer2DCapabilities.h"
+#include "GmmLayerCapabilities.h"
 #include "Validator.h"
 
 #include "gna-api.h"
@@ -39,34 +41,17 @@
 
 using namespace GNA;
 
-/* GNA_DATA_DISABLED may be supported in next generation */
-static const DataModeLimits _ModesGen0_9 =
-{
-    { GNA_INT8, GNA_INT16, }, Gna2StatusXnnErrorWeightBytes
-};
-
 const FullCapabilitiesMap WeightTensor::capabilities =
 {
     // TODO:3: add caps for previous device versions
     {INTEL_AFFINE, {
-        {GNA_0_9, std::make_shared<TensorLimits>(TensorLimits(
-            {GNA_TENSOR_HW},    // W - #inputs, H - #outputs
-            {{GNA_DIM_W, {XNN_N_IN_ELEMS_MPLY, XNN_N_IN_ELEMS_MAX, XNN_N_IN_ELEMS_MPLY, Gna2StatusXnnErrorWeightVolume}},
-            {GNA_DIM_H, {1, XNN_N_IN_ELEMS_MAX, 1, Gna2StatusXnnErrorWeightVolume}}},
-            _ModesGen0_9))},
+        AffineLayerCapabilities::GetOperands(FilterOperandIndex).at(INTEL_AFFINE)
     }},
     {INTEL_AFFINE_DIAGONAL, {
-        {GNA_0_9, std::make_shared<TensorLimits>(TensorLimits{
-            {GNA_TENSOR_H},    // W=H = #outputs
-            {{GNA_DIM_H, {XNN_N_IN_ELEMS_MPLY, XNN_N_IN_ELEMS_MAX, XNN_N_IN_ELEMS_MPLY, Gna2StatusXnnErrorWeightVolume}}},
-            _ModesGen0_9})}
+        AffineLayerCapabilities::GetOperands(FilterOperandIndex).at(INTEL_AFFINE_DIAGONAL)
     }},
     {INTEL_AFFINE_MULTIBIAS, {
-        {GNA_2_0, std::make_shared<TensorLimits>(TensorLimits{
-            {GNA_TENSOR_HW},   // W - #inputs, H - #outputs
-            {{GNA_DIM_W, {XNN_N_IN_ELEMS_MPLY, XNN_N_IN_ELEMS_MAX, XNN_N_IN_ELEMS_MPLY, Gna2StatusXnnErrorWeightVolume}},
-            {GNA_DIM_H, {1, XNN_N_IN_ELEMS_MAX, 1, Gna2StatusXnnErrorWeightVolume}}},
-            _ModesGen0_9})}
+        AffineLayerCapabilities::GetOperands(FilterOperandIndex).at(INTEL_AFFINE_MULTIBIAS)
     }},
     {INTEL_CONVOLUTIONAL, {
         ConvolutionalLayer2DCapabilities::GetOperands(FilterOperandIndex).at(INTEL_CONVOLUTIONAL)
@@ -77,21 +62,11 @@ const FullCapabilitiesMap WeightTensor::capabilities =
     {INTEL_CONVOLUTIONAL_1D, {
         ConvolutionalLayer2DCapabilities::GetOperands(FilterOperandIndex).at(INTEL_CONVOLUTIONAL_1D)
     }},
-     {INTEL_GMM, {
-        {GMM_DEVICE, std::make_shared<TensorLimits>(TensorLimits{
-            { GNA_TENSOR_HWD },                  // H - GMM states, W - #mixtures, D - #inputs
-            {{GNA_DIM_H, {1, GMM_STATES_COUNT_MAX, 1, Gna2StatusGmmBadNumGmm}},
-            {GNA_DIM_W, {1, GMM_MIXTURE_COMP_COUNT_MAX, 1, Gna2StatusGmmBadMixCnum}},
-            {GNA_DIM_D, {GMM_FV_ELEMENT_COUNT_MIN, GMM_FV_ELEMENT_COUNT_MAX, GMM_FV_ELEMENT_COUNT_MULTIPLE_OF, Gna2StatusBadFeatLength}}},
-            { { GNA_UINT8, GNA_UINT16}, Gna2StatusGmmBadMode},
-            {GMM_MEM_ALIGNMENT, Gna2StatusGmmBadVarsAlign}})}
+    {INTEL_GMM, {
+        GmmLayerCapabilities::GetOperands(WeightOperandIndex).at(INTEL_GMM)
     }},
     {INTEL_RECURRENT, {
-        {GNA_0_9, std::make_shared<TensorLimits>(TensorLimits{
-            { GNA_TENSOR_HW },
-            {{GNA_DIM_H, {RNN_N_OUT_ELEMS_MPLY, XNN_N_IN_ELEMS_MAX, RNN_N_OUT_ELEMS_MPLY, Gna2StatusXnnErrorWeightVolume}},
-            {GNA_DIM_W, {XNN_N_IN_ELEMS_MPLY + RNN_N_OUT_ELEMS_MPLY, XNN_N_IN_ELEMS_MAX + XNN_N_IN_ELEMS_MAX , XNN_N_IN_ELEMS_MPLY, Gna2StatusXnnErrorWeightVolume}}},
-            _ModesGen0_9})}
+        AffineLayerCapabilities::GetOperands(WeightOperandIndex).at(INTEL_RECURRENT)
     }},
 };
 

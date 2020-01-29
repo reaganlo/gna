@@ -53,3 +53,36 @@ const DataModeLimits& LayerCapabilities::GetModes(uint32_t operandIndex, gna_dev
     return modes.at(operandIndex).at(generation);
 }
 
+const RangeLimits<>& LayerCapabilities::limitsForInput()
+{
+    static const RangeLimits<> _limitsForInputElementsMax =
+    {
+        1,
+        InputElementCountMax,
+        1,
+        Gna2StatusXnnErrorInputVolume
+    };
+    return _limitsForInputElementsMax;
+}
+
+const RangeLimits<>& LayerCapabilities::limitsForOutput()
+{
+    static const RangeLimits<> _limitsForOutputElementsMax =
+    {
+        limitsForInput(),
+        Gna2StatusXnnErrorOutputVolume
+    };
+    return _limitsForOutputElementsMax;
+}
+
+const RangeLimits<>& LayerCapabilities::limitsForInputShapeLegacy()
+{
+    static const RangeLimits<> _limitsForInputShapeLegacy =
+    {
+        InputElementCountMultiplier,
+        InputElementCountMax,
+        InputElementCountMultipliers(),
+        Gna2StatusXnnErrorInputVolume
+    };
+    return _limitsForInputShapeLegacy;
+}
