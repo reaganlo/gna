@@ -36,13 +36,27 @@ namespace GNA
 
 class Memory;
 
-using MemoryContainerType = std::map<size_t /* allocation order */, Memory const &>;
+class MemoryContainerElement
+{
+public:
+    MemoryContainerElement(Memory const& memoryIn, uint32_t notAlignedIn, uint32_t pageAlignedIn);
+    operator Memory const & () const;
+    void * GetBuffer() const;
+    uint32_t GetSize() const;
+    uint32_t GetNotAligned() const;
+    uint32_t GetPageAligned() const;
+    void ResetOffsets(uint32_t notAlignedIn, uint32_t pageAlignedIn);
+private:
+    std::reference_wrapper<Memory const> memory;
+    uint32_t notAligned;
+    uint32_t pageAligned;
+};
+
+using MemoryContainerType = std::vector< MemoryContainerElement >;
 
 class MemoryContainer : public MemoryContainerType
 {
 public:
-    using MemoryContainerType::MemoryContainerType;
-
     void Append(MemoryContainer const & source);
 
     void Emplace(Memory const & value);
@@ -71,17 +85,11 @@ public:
     void WriteData(FILE *file) const;
 
 protected:
-    iterator erase(const_iterator where);
-
-    size_type erase(key_type const & key);
-
     void invalidateOffsets();
 
     uint32_t totalMemorySizeAlignedToPage = 0;
 
     uint32_t totalMemorySize = 0;
-
-    std::map<key_type, std::pair<uint32_t /* not aligned */, uint32_t /*page aligned*/>> offsets;
 };
 
 template <typename T>
@@ -89,7 +97,7 @@ void MemoryContainer::CopyEntriesTo(std::vector<T> & destination) const
 {
     for (auto const & memory : *this)
     {
-        destination.emplace_back(memory.second);
+        destination.emplace_back(memory);
     }
 }
 

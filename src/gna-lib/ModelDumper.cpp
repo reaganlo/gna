@@ -87,7 +87,7 @@ void Device::DumpLdNoMMu(gna_model_id modelId, intel_gna_alloc_cb customAlloc,
         throw GnaException{ Gna2StatusResourceAllocationError };
     }
     const auto& allocations = model.GetAllocations();
-    hwModel->ROBeginAddress = allocations.begin()->second.GetBuffer();
+    hwModel->ROBeginAddress = allocations.begin()->GetBuffer();
 
 
     hwModel->ExportLd(exportData, exportDataSize);

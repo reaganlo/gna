@@ -34,11 +34,49 @@ in any way.
 
 using namespace GNA;
 
+MemoryContainerElement::MemoryContainerElement(Memory const& memoryIn, uint32_t notAlignedIn, uint32_t pageAlignedIn) :
+    memory{ memoryIn },
+    notAligned{ notAlignedIn },
+    pageAligned{ pageAlignedIn }
+{
+}
+
+MemoryContainerElement::operator Memory const&() const
+{
+    return memory.get();
+}
+
+void * MemoryContainerElement::GetBuffer() const
+{
+    return memory.get().GetBuffer();
+}
+
+uint32_t MemoryContainerElement::GetSize() const
+{
+    return memory.get().GetSize();
+}
+
+inline uint32_t MemoryContainerElement::GetNotAligned() const
+{
+    return notAligned;
+}
+
+inline uint32_t MemoryContainerElement::GetPageAligned() const
+{
+    return pageAligned;
+}
+
+inline void MemoryContainerElement::ResetOffsets(uint32_t notAlignedIn, uint32_t pageAlignedIn)
+{
+    notAligned = notAlignedIn;
+    pageAligned = pageAlignedIn;
+}
+
 void MemoryContainer::Append(MemoryContainer const & source)
 {
     for (auto const & value : source)
     {
-        Emplace(value.second);
+        Emplace(value);
     }
 }
 
@@ -46,31 +84,10 @@ void MemoryContainer::Emplace(Memory const & value)
 {
     if (!Contains(value, value.GetSize()))
     {
-        offsets.emplace(size(), std::make_pair(totalMemorySize, totalMemorySizeAlignedToPage));
-        emplace(size(), value);
+        emplace_back(value, totalMemorySize, totalMemorySizeAlignedToPage);
         totalMemorySizeAlignedToPage += RoundUp(value.GetSize(), PAGE_SIZE);
         totalMemorySize += value.GetSize();
     }
-}
-
-MemoryContainer::iterator MemoryContainer::erase(const_iterator where)
-{
-    auto const size = where->second.GetSize();
-    auto const & erased = MemoryContainerType::erase(where);
-    if (where != cend())
-    {
-        totalMemorySizeAlignedToPage -= RoundUp(size, PAGE_SIZE);
-        totalMemorySize -= size;
-        invalidateOffsets();
-    }
-    return erased;
-}
-
-MemoryContainer::size_type MemoryContainer::erase(key_type const& key)
-{
-    auto const & where = find(key);
-    erase(where);
-    return 1;
 }
 
 MemoryContainer::const_iterator MemoryContainer::FindByAddress(BaseAddress const& address) const
@@ -78,7 +95,7 @@ MemoryContainer::const_iterator MemoryContainer::FindByAddress(BaseAddress const
     auto const foundIt = std::find_if(cbegin(), cend(),
         [&address](auto const & memory)
     {
-        return address.InRange(memory.second.GetBuffer(), memory.second.GetSize());
+        return address.InRange(memory.GetBuffer(), memory.GetSize());
     });
 
     return foundIt;
@@ -88,7 +105,7 @@ bool MemoryContainer::Contains(const void* buffer, const size_t bufferSize) cons
 {
     auto const & memory = FindByAddress(buffer);
     if (cend() != memory &&
-        Expect::InMemoryRange(buffer, bufferSize, memory->second.GetBuffer(), memory->second.GetSize()))
+        Expect::InMemoryRange(buffer, bufferSize, memory->GetBuffer(), memory->GetSize()))
     {
         return true;
     }
@@ -100,15 +117,14 @@ uint32_t MemoryContainer::GetBufferOffset(const BaseAddress& address, uint32_t a
     auto const foundIt = FindByAddress(address);
     if (cend() != foundIt)
     {
-        auto const internalOffset = address.GetOffset(BaseAddress{ foundIt->second.GetBuffer() });
-        auto const containerOffset = offsets.at(foundIt->first);
+        auto const internalOffset = address.GetOffset(BaseAddress{ foundIt->GetBuffer() });
         if (1 == alignment)
         {
-            return initialOffset + containerOffset.first + internalOffset;;
+            return initialOffset + foundIt->GetNotAligned() + internalOffset;
         }
         if (PAGE_SIZE == alignment)
         {
-            return initialOffset + containerOffset.second + internalOffset;
+            return initialOffset + foundIt->GetPageAligned() + internalOffset;
         }
     }
     return 0;
@@ -124,8 +140,8 @@ void MemoryContainer::CopyData(void* destination, size_t destinationSize) const
     auto address = static_cast<uint8_t *>(destination);
     for (const auto & memory : *this)
     {
-        auto const memorySize = memory.second.GetSize();
-        auto const memoryBuffer = memory.second.GetBuffer();
+        auto const memorySize = memory.GetSize();
+        auto const memoryBuffer = memory.GetBuffer();
         memcpy_s(address, destinationSize, memoryBuffer, memorySize);
         destinationSize -= memorySize;
         address += memorySize;
@@ -137,23 +153,22 @@ void MemoryContainer::WriteData(FILE* file) const
     Expect::NotNull(file);
     for (const auto & memory : *this)
     {
-        auto const memorySize = memory.second.GetSize();
-        auto const memoryBuffer = memory.second.GetBuffer();
+        auto const memorySize = memory.GetSize();
+        auto const memoryBuffer = memory.GetBuffer();
         fwrite(memoryBuffer, memorySize, sizeof(uint8_t), file);
     }
 }
 
 void MemoryContainer::invalidateOffsets()
 {
-    offsets.clear();
     uint32_t offset = 0;
     uint32_t offsetPageAligned = 0;
     //for (auto && memoryIter = cbegin(); memoryIter != cend(); ++memoryIter)
-    for (auto const & memoryIter : *this)
+    for (auto & memoryIter : *this)
     {
-        offsets[memoryIter.first] = std::make_pair(offset, offsetPageAligned);
+        memoryIter.ResetOffsets(offset, offsetPageAligned);
 
-        auto const memorySize = memoryIter.second.GetSize();
+        auto const memorySize = memoryIter.GetSize();
         offset += memorySize;
         offsetPageAligned += RoundUp(memorySize, PAGE_SIZE);
     }
