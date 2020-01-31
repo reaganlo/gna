@@ -27,6 +27,7 @@
 
 #include "AccelerationDetector.h"
 #include "ActivationFunction.h"
+#include "AffineLayerCapabilities.h"
 #include "Bias.h"
 #include "Capabilities.h"
 #include "DataMode.h"
@@ -50,51 +51,10 @@
 
 using namespace GNA;
 
-const ShapeLimits RecurrentFunction::outputDimensionsLimits =
-{
-    {GNA_DIM_H, {1, XNN_N_IN_ELEMS_MAX, 1, Gna2StatusXnnErrorOutputVolume}},
-    {GNA_DIM_W, {1, XNN_N_GROUP_MAX, 1, Gna2StatusXnnErrorOutputVolume}}
-};
-
-const DataModeLimits RecurrentFunction::outputModeLimits_0_9 =
-{
-    {GNA_INT16, GNA_INT32, GNA_DATA_ACTIVATION_DISABLED},
-    Gna2StatusXnnErrorOutputBytes
-};
-
-const TensorLimits RecurrentFunction::outputLimits_0_9 =
-{
-    {GNA_TENSOR_HW},
-    outputDimensionsLimits,
-    outputModeLimits_0_9
-};
-
-const DataModeLimits RecurrentFunction::outputModeLimits_3 =
-{
-    {GNA_INT8, GNA_INT16, GNA_INT32, GNA_DATA_ACTIVATION_DISABLED},
-    Gna2StatusXnnErrorOutputBytes
-};
-
-const TensorLimits RecurrentFunction::outputLimits_3 =
-{
-    {GNA_TENSOR_HW},
-    outputDimensionsLimits,
-    outputModeLimits_3
-};
-
 const FullCapabilitiesMap RecurrentFunction::outputCapabilities =
 {
     {INTEL_RECURRENT, {
-        {GNA_0_9, std::make_shared<TensorLimits>(TensorLimits{
-            {GNA_TENSOR_HW},
-            {{GNA_DIM_H, {1, XNN_N_GROUP_MAX, 1, Gna2StatusXnnErrorOutputVolume}},
-             {GNA_DIM_W, {RNN_N_OUT_ELEMS_MPLY, XNN_N_IN_ELEMS_MAX, RNN_N_OUT_ELEMS_MPLY, Gna2StatusXnnErrorOutputVolume}}}, // must be multiple 32 to keep 64B output buffer alignment
-             outputModeLimits_0_9})},
-        {GNA_3_0, std::make_shared<TensorLimits>(TensorLimits{
-            {GNA_TENSOR_HW},
-            {{GNA_DIM_H, {1, XNN_N_GROUP_MAX, 1, Gna2StatusXnnErrorOutputVolume}},
-             {GNA_DIM_W, {RNN_N_OUT_ELEMS_MPLY, XNN_N_IN_ELEMS_MAX, RNN_N_OUT_ELEMS_MPLY, Gna2StatusXnnErrorOutputVolume}}}, // must be multiple 32 to keep 64B output buffer alignment
-            outputModeLimits_3})}
+        AffineLayerCapabilities::GetOperands(OutputOperandIndex).at(INTEL_RECURRENT)
     }}
 };
 

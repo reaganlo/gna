@@ -61,6 +61,7 @@ add_executable(test-layer
   ${SRC_DIR}/AffineLayerCapabilities.cpp
   ${SRC_DIR}/AffineLayers.cpp
   ${SRC_DIR}/ApiProperty.cpp
+  ${SRC_DIR}/AuxiliaryCapabilities.cpp
   ${SRC_DIR}/Bias.cpp
   ${SRC_DIR}/BufferMap.cpp
   ${SRC_DIR}/Capabilities.cpp

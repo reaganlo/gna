@@ -93,6 +93,7 @@ set(gna_lib_sources
   ${SRC_DIR}/AffineLayerCapabilities.cpp
   ${SRC_DIR}/AffineLayers.cpp
   ${SRC_DIR}/ApiProperty.cpp
+  ${SRC_DIR}/AuxiliaryCapabilities.cpp
   ${SRC_DIR}/Bias.cpp
   ${SRC_DIR}/BufferMap.cpp
   ${SRC_DIR}/Capabilities.cpp
@@ -180,6 +181,7 @@ set(gna_lib_headers
    ${SRC_DIR}/AffineLayerCapabilities.h
   ${SRC_DIR}/ApiProperty.h
   ${SRC_DIR}/ApiWrapper.h
+  ${SRC_DIR}/AuxiliaryCapabilities.h
   ${SRC_DIR}/BufferMap.h
   ${SRC_DIR}/Capabilities.h
   ${SRC_DIR}/CompiledModel.h

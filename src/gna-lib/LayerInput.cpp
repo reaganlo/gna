@@ -26,6 +26,7 @@
 #include "LayerInput.h"
 
 #include "AffineLayerCapabilities.h"
+#include "AuxiliaryCapabilities.h"
 #include "Capabilities.h"
 #include "ConvolutionalLayer.h"
 #include "ConvolutionalLayer2DCapabilities.h"
@@ -48,65 +49,6 @@
 
 using namespace GNA;
 
-static const MultiplierLimits _Multipliers =
-{
-    2 * XNN_N_IN_ELEMS_MPLY,
-    1 * XNN_N_IN_ELEMS_MPLY,
-    XNN_N_IN_ELEMS_MPLY / 2,
-    Gna2StatusXnnErrorInputVolume
-};
-
-static const ShapeLimits _InterleaveLimits =
-{
-    {GNA_DIM_H, {XNN_N_IN_ELEMS_MPLY, XNN_N_IN_ELEMS_MAX, _Multipliers, Gna2StatusXnnErrorInputVolume}},
-    {GNA_DIM_W, {1, XNN_N_GROUP_MAX, 1, Gna2StatusXnnErrorInputVolume}}
-};
-
-static const ShapeLimits _FlatLimits =
-{
-    {GNA_DIM_H, {1, XNN_N_GROUP_MAX, 1, Gna2StatusXnnErrorInputVolume}},
-    {GNA_DIM_W, {XNN_N_IN_ELEMS_MPLY, XNN_N_IN_ELEMS_MAX, _Multipliers, Gna2StatusXnnErrorInputVolume}}
-};
-
-static const DataModeLimits _ModesGen0_9 = {
-    { GNA_INT16 },
-    Gna2StatusXnnErrorInputBytes
-};
-
-static const TensorLimits _InterleaveTensorLimitsGen0_9 =
-{
-    {GNA_TENSOR_HW},
-    _InterleaveLimits,
-    _ModesGen0_9
-};
-
-static const TensorLimits _FlatTensorLimitsGen0_9 =
-{
-    {GNA_TENSOR_HW},
-    _FlatLimits,
-    _ModesGen0_9
-};
-
-/* GNA_DATA_DISABLED may be supported in next generation */
-static const DataModeLimits _ModesGen3 = {
-    { GNA_INT8, GNA_INT16 },
-    Gna2StatusXnnErrorInputBytes
-};
-
-static const TensorLimits _InterleaveTensorLimitsGen3 =
-{
-    {GNA_TENSOR_HW},
-    _InterleaveLimits,
-    _ModesGen3
-};
-
-static const TensorLimits _FlatTensorLimitsGen3 =
-{
-    {GNA_TENSOR_HW},
-    _FlatLimits,
-    _ModesGen3
-};
-
 const FullCapabilitiesMap LayerInput::capabilities =
 {
     {INTEL_AFFINE, {
@@ -128,19 +70,13 @@ const FullCapabilitiesMap LayerInput::capabilities =
         ConvolutionalLayer2DCapabilities::GetOperands(InputOperandIndex).at(INTEL_CONVOLUTIONAL_1D)
     }},
     {INTEL_COPY, {
-        {GNA_0_9, std::make_shared<TensorLimits>(_FlatTensorLimitsGen0_9)},
-        {GNA_3_0, std::make_shared<TensorLimits>(TensorLimits{
-            {GNA_TENSOR_HW},
-                _FlatLimits,
-                _ModesGen3})}
+        AuxiliaryCapabilities::GetOperands(InputOperandIndex).at(INTEL_COPY)
     }},
     {INTEL_INTERLEAVE, {
-        {GNA_0_9, std::make_shared<TensorLimits>(_FlatTensorLimitsGen0_9)},
-        {GNA_3_0, std::make_shared<TensorLimits>(_FlatTensorLimitsGen3)}
+        AuxiliaryCapabilities::GetOperands(InputOperandIndex).at(INTEL_INTERLEAVE)
     }},
     {INTEL_DEINTERLEAVE, {
-        {GNA_0_9, std::make_shared<TensorLimits>(_InterleaveTensorLimitsGen0_9)},
-        {GNA_3_0, std::make_shared<TensorLimits>(_InterleaveTensorLimitsGen3)}
+        AuxiliaryCapabilities::GetOperands(InputOperandIndex).at(INTEL_DEINTERLEAVE)
     }},
     {INTEL_GMM, {
         GmmLayerCapabilities::GetOperands(InputOperandIndex).at(INTEL_GMM)

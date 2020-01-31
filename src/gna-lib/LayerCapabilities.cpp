@@ -55,24 +55,25 @@ const DataModeLimits& LayerCapabilities::GetModes(uint32_t operandIndex, gna_dev
 
 const RangeLimits<>& LayerCapabilities::limitsForInput()
 {
-    static const RangeLimits<> _limitsForInputElementsMax =
+    static const RangeLimits<> _limitsForInput =
+
     {
         1,
         InputElementCountMax,
         1,
         Gna2StatusXnnErrorInputVolume
     };
-    return _limitsForInputElementsMax;
+    return _limitsForInput;
 }
 
 const RangeLimits<>& LayerCapabilities::limitsForOutput()
 {
-    static const RangeLimits<> _limitsForOutputElementsMax =
+    static const RangeLimits<> _limitsForOutput =
     {
         limitsForInput(),
         Gna2StatusXnnErrorOutputVolume
     };
-    return _limitsForOutputElementsMax;
+    return _limitsForOutput;
 }
 
 const RangeLimits<>& LayerCapabilities::limitsForInputShapeLegacy()
@@ -85,4 +86,38 @@ const RangeLimits<>& LayerCapabilities::limitsForInputShapeLegacy()
         Gna2StatusXnnErrorInputVolume
     };
     return _limitsForInputShapeLegacy;
+}
+
+const RangeLimits<>& LayerCapabilities::limitsForOutputShapeLegacy()
+{
+    static const RangeLimits<> _limitsForOutputShapeLegacy =
+    {
+        limitsForInputShapeLegacy(),
+        Gna2StatusXnnErrorOutputVolume
+    };
+    return _limitsForOutputShapeLegacy;
+}
+
+const RangeLimits<>& LayerCapabilities::limitsForInputGroupsMax()
+{
+    static const RangeLimits<> _limitsForInputGroupsMax =
+    {
+        1,
+        InputGroupsCountMax,
+        1,
+        Gna2StatusXnnErrorInputVolume
+    };
+    return _limitsForInputGroupsMax;
+}
+
+const RangeLimits<>& LayerCapabilities::limitsForOutputGroupsMax()
+{
+    static const RangeLimits<> _limitsForInputGroupsMax =
+    {
+        1,
+        InputGroupsCountMax,
+        1,
+        Gna2StatusXnnErrorOutputVolume
+    };
+    return _limitsForInputGroupsMax;
 }

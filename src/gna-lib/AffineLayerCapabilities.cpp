@@ -95,53 +95,31 @@ const RangeLimits<>& limitsForWeightMultiplierElemMaxMultiplier()
     return _limitsForWeightMultiplyElemMaxMultiply;
 }
 
-const RangeLimits<>& limitsForWeightElementsMax()
+const RangeLimits<>& limitsForWeight()
 {
-    static const RangeLimits<> _limitsForWeightElementsMax =
+    static const RangeLimits<> _limitsForWeight =
     {
         LayerCapabilities::limitsForInput(),
         Gna2StatusXnnErrorWeightVolume
     };
-    return _limitsForWeightElementsMax;
+    return _limitsForWeight;
 }
 
-const RangeLimits<>& limitsForBiasElementsMax()
+const RangeLimits<>& limitsForBias()
 {
-    static const RangeLimits<> _limitsForBiasElementsMax =
+    static const RangeLimits<> _limitsForBias =
     {
         LayerCapabilities::limitsForInput(),
         Gna2StatusXnnErrorBiasVolume
     };
-    return _limitsForBiasElementsMax;
-}
-
-static const RangeLimits<>& limitsForInputGroupsMax()
-{
-    static const RangeLimits<> _limitsForInputGroupsMax =
-    {
-        1,
-        LayerCapabilities::InputGroupsCountMax,
-        1,
-        Gna2StatusXnnErrorInputVolume
-    };
-    return _limitsForInputGroupsMax;
-}
-
-static const RangeLimits<>& limitsForOutputGroupsMax()
-{
-    static const RangeLimits<> _limitsForOutputGroupsMax =
-    {
-        limitsForInputGroupsMax(),
-        Gna2StatusXnnErrorOutputVolume
-    };
-    return _limitsForOutputGroupsMax;
+    return _limitsForBias;
 }
 
 static const RangeLimits<>& limitsForBiasGroupsMax()
 {
     static const RangeLimits<> _limitsForBiasGroupsMax =
     {
-        limitsForInputGroupsMax(),
+        LayerCapabilities::limitsForInputGroupsMax(),
         Gna2StatusXnnErrorBiasVolume
     };
     return _limitsForBiasGroupsMax;
@@ -161,12 +139,12 @@ static const RangeLimits<>& limitsForOutputRnn()
 
 static const RangeLimits<>& limitsForWeightRnnHeight()
 {
-    static const RangeLimits<> _limitsForWeightRnn =
+    static const RangeLimits<> _limitsForWeightRnnHeight =
     {
         limitsForOutputRnn(),
         Gna2StatusXnnErrorWeightVolume
     };
-    return _limitsForWeightRnn;
+    return _limitsForWeightRnnHeight;
 }
 
 static const RangeLimits<>& limitsForWeightRnnWidth()
@@ -298,7 +276,7 @@ const FullCapabilitiesMap& AffineLayerCapabilities::GetOperands(uint32_t operand
                 {GNA_0_9, std::make_shared<TensorLimits>(TensorLimits{
                     {GNA_TENSOR_HW},    // W - #inputs, H - #outputs
                     {{GNA_DIM_W, limitsForWeightMultiplierElemMaxMultiplier()},
-                    {GNA_DIM_H, limitsForWeightElementsMax()}},
+                    {GNA_DIM_H, limitsForWeight()}},
                     _ModesWeightGen0_9()})}
             }},
             {INTEL_AFFINE_DIAGONAL, {
@@ -311,7 +289,7 @@ const FullCapabilitiesMap& AffineLayerCapabilities::GetOperands(uint32_t operand
                 {GNA_2_0, std::make_shared<TensorLimits>(TensorLimits{
                     {GNA_TENSOR_HW},   // W - #inputs, H - #outputs
                     {{GNA_DIM_W, limitsForWeightMultiplierElemMaxMultiplier()},
-                    {GNA_DIM_H, limitsForWeightElementsMax()}},
+                    {GNA_DIM_H, limitsForWeight()}},
                     _ModesWeightGen0_9()})}
             }},
             {INTEL_RECURRENT, {
@@ -326,32 +304,32 @@ const FullCapabilitiesMap& AffineLayerCapabilities::GetOperands(uint32_t operand
             {INTEL_AFFINE, {
                 {GNA_0_9,std::make_shared<TensorLimits>(TensorLimits{
                     {GNA_TENSOR_H},
-                    {{GNA_DIM_H, limitsForBiasElementsMax()}},
+                    {{GNA_DIM_H, limitsForBias()}},
                     _ModesBiasGen0_9()})},
                 {GNA_3_0, std::make_shared<TensorLimits>(TensorLimits{
                     {GNA_TENSOR_H},
-                    {{GNA_DIM_H, limitsForBiasElementsMax()}},
+                    {{GNA_DIM_H, limitsForBias()}},
                     _ModesBiasGen3()})},
             }},
             {INTEL_AFFINE_DIAGONAL, {
                 {GNA_0_9, std::make_shared<TensorLimits>(TensorLimits{
                     {GNA_TENSOR_H},
-                    {{GNA_DIM_H, limitsForBiasElementsMax()}},
+                    {{GNA_DIM_H, limitsForBias()}},
                     _ModesBiasGen0_9()})},
                 {GNA_3_0, std::make_shared<TensorLimits>(TensorLimits{
                     {GNA_TENSOR_H},
-                    {{GNA_DIM_H, limitsForBiasElementsMax()}},
+                    {{GNA_DIM_H, limitsForBias()}},
                     _ModesBiasGen3()})},
             }},
             {INTEL_AFFINE_MULTIBIAS, {
                 {GNA_2_0, std::make_shared<TensorLimits>(TensorLimits{
                     {GNA_TENSOR_HW},
-                    {{GNA_DIM_H, limitsForBiasElementsMax()},
+                    {{GNA_DIM_H, limitsForBias()},
                     {GNA_DIM_W, limitsForBiasGroupsMax()}},
                     _ModesBiasGen0_9Multibias()})},
                 {GNA_3_0, std::make_shared<TensorLimits>(TensorLimits{
                     {GNA_TENSOR_HW},
-                    {{GNA_DIM_H, limitsForBiasElementsMax()},
+                    {{GNA_DIM_H, limitsForBias()},
                     {GNA_DIM_W, limitsForBiasGroupsMax()}},
                     _ModesBiasGen3Multibias()})}
             }},

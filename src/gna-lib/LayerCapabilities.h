@@ -77,6 +77,12 @@ struct LayerCapabilities
     static const RangeLimits<>& limitsForOutput();
 
     static const RangeLimits<>& limitsForInputShapeLegacy();
+
+    static const RangeLimits<>& limitsForOutputShapeLegacy();
+
+    static const RangeLimits<>& limitsForInputGroupsMax();
+
+    static const RangeLimits<>& limitsForOutputGroupsMax();
 };
 
 }

@@ -44,7 +44,7 @@ const FullCapabilitiesMap& GmmLayerCapabilities::GetOperands(uint32_t operandInd
                     {GNA_TENSOR_HW},
                     {{GNA_DIM_H, {1, XNN_N_GROUP_MAX, 1, Gna2StatusXnnErrorInputVolume}},
                     {GNA_DIM_W, {GMM_FV_ELEMENT_COUNT_MIN, GMM_FV_ELEMENT_COUNT_MAX, GMM_FV_ELEMENT_COUNT_MULTIPLE_OF, Gna2StatusBadFeatLength}}},
-                    {{GNA_UINT8}, Gna2StatusXnnErrorInputBytes }})}
+                    {{ GNA_UINT8}, Gna2StatusXnnErrorInputBytes }})}
                 }},
         }},
         {OutputOperandIndex, {
