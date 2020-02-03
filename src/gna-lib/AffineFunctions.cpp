@@ -74,9 +74,8 @@ const FullCapabilitiesMap AffineFunctionMulti::outputCapabilities =
 const FullCapabilitiesMap AffineFunctionMulti::Capabilities =
 {
     {INTEL_AFFINE_MULTIBIAS, {
-        AffineLayerCapabilities::GetOperands(BiasOperandIndex).at(INTEL_AFFINE_MULTIBIAS)
+        AffineLayerCapabilities::GetOperands(WeightScaleFactorOperandIndex).at(INTEL_AFFINE_MULTIBIAS)
     }},
-
 };
 
 // Could not split into separate methods for each component as multibias weight scaling is using bias' and weights; tensors...

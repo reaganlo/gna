@@ -56,7 +56,6 @@ const DataModeLimits& LayerCapabilities::GetModes(uint32_t operandIndex, gna_dev
 const RangeLimits<>& LayerCapabilities::limitsForInput()
 {
     static const RangeLimits<> _limitsForInput =
-
     {
         1,
         InputElementCountMax,

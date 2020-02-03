@@ -344,6 +344,14 @@ const FullCapabilitiesMap& AffineLayerCapabilities::GetOperands(uint32_t operand
                     _ModesBiasGen3()})},
             }},
         }},
+        { WeightScaleFactorOperandIndex,{
+            {INTEL_AFFINE_MULTIBIAS, {
+                {GNA_2_0, std::make_shared<TensorLimits>(TensorLimits{
+            {GNA_TENSOR_H},
+            {{GNA_DIM_H, {1, XNN_N_IN_ELEMS_MAX, 1, Gna2StatusXnnErrorBiasVolume}}},
+            {{ GNA_DATA_RICH_FORMAT }, Gna2StatusXnnErrorBiasBytes }})}
+        }},
+    }}
     };
 
     return operands.at(operandIndex);
