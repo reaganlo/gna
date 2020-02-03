@@ -638,9 +638,6 @@ PwlCached::PwlCached(const gna_data_mode mode, nn_pwl_seg const * const segments
         case GNA_INT32:
             pwl.bytesPerOutput = 4;
             break;
-        //case GNA_INT64:
-            //pwl.bytesPerOutput = 8;
-            //break;
         case GNA_UINT8:
             pwl.bytesPerOutput = 1;
             break;

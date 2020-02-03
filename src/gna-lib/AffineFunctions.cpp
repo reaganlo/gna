@@ -196,6 +196,10 @@ void AffineFunctionSingle::ValidateActiveList(ActiveList const& activeList) cons
 {
     Expect::InRange(activeList.IndicesCount,
         ui32_1, Output->at(GNA_DIM_H), Gna2StatusActiveListIndicesInvalid);
+    // Only Int32 is supported with active list
+    Expect::InSet(Biases->Mode.Type,
+        { Gna2DataTypeInt32, Gna2DataTypeCompoundBias },
+        Gna2StatusModelConfigurationInvalid);
 }
 
 void AffineFunctionSingle::Compute(AccelerationMode accel,
