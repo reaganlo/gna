@@ -21,26 +21,34 @@
 #or any other notice embedded in Materials by Intel or Intel's suppliers or licensors
 #in any way.
 
-set(GNA_TOOLS_OUT_DIR ${GNA_BINARY_DIR}/tools)
-set(GNA_TOOLS_DEBUG_OUT_DIR ${GNA_BINARY_DIR}/tools/${OS_PREFIX}-DEBUG)
-set(GNA_TOOLS_RELEASE_OUT_DIR ${GNA_BINARY_DIR}/tools/${OS_PREFIX}-RELEASE)
+# minimum version of CMake
+cmake_minimum_required(VERSION 3.10)
 
-option(GNA_BUILD_WITH_DEVTEST_ENABLED "" ON)
-option(GNA_BUILD_WITH_GNA_SELF_TEST_ENABLED "" ON)
+# global variables
+unset(PREFIX)
+set(PROJECT_NAME test-tlv)
+set(CMAKE_CXX_STANDARD 14)
+set(CXX_STANDARD_REQUIRED ON)
+set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
-include(${CMAKE_SOURCE_DIR}/build/cmake/gna_cmake_tools.cmake)
+project(${PROJECT_NAME})
 
-if(${GNA_BUILD_WITH_DEVTEST_ENABLED})
-  add_subdirectory(DevTest)
-endif()
+add_executable(test-tlv
+  ${APP_DIR}/tools/tlv/TlvApi.h
+  test-tlv-read.cpp
+  test-tlv-write.cpp
+  test-tlv-write.h)
 
-if (${GNA_BUILD_WITH_GNA_SELF_TEST_ENABLED})
-  add_subdirectory(gna-self-test)
-endif()
+target_include_directories(test-tlv
+  PUBLIC ${APP_DIR}/tools/tlv)
 
-option(GNA_BUILD_WITH_TLV_ENABLED "" ON)
-if(${GNA_BUILD_WITH_TLV_ENABLED})
-  add_subdirectory(tlv)
-endif()
+target_link_libraries(test-tlv
+  gtest tlv)
 
-set(GNA_ALL_TESTS_REGISTERED_TARGETS "${GNA_ALL_TESTS_REGISTERED_TARGETS}" PARENT_SCOPE)
+set_target_properties(test-tlv
+  PROPERTIES
+  EXCLUDE_FROM_DEFAULT_BUILD_KLOCWORK TRUE
+  OUTPUT_NAME test-tlv)
+set_property(TARGET test-tlv PROPERTY FOLDER tests/tlv)
+
+add_target_to_postbuild_test_run(test-tlv)

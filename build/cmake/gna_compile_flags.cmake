@@ -62,8 +62,7 @@ else()
   # All compilers warnings
   set(GNA_COMPILE_FLAGS ${GNA_COMPILE_FLAGS}
       -Wall -Werror
-      -Wextra -Wshadow -Wunused -Wformat
-      -Woverloaded-virtual -Wnon-virtual-dtor)
+      -Wextra -Wshadow -Wunused -Wformat)
 
   # GCC & Clang warnings
   if(${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang"
@@ -98,8 +97,7 @@ else()
   set(GNA_COMPILE_FLAGS_DEBUG ${GNA_COMPILE_FLAGS_DEBUG}
       -g -O0)
   set(GNA_COMPILE_FLAGS_RELEASE ${GNA_COMPILE_FLAGS_RELEASE}
-      -fvisibility=hidden -fvisibility-inlines-hidden
-      -fstack-protector-all -O3)
+      -fvisibility=hidden -fstack-protector-all -O3)
 
   # ICC intrinsics inline expansion
   if(${CMAKE_CXX_COMPILER_ID} STREQUAL "Intel")
@@ -109,6 +107,13 @@ else()
   # linker security and optimization flags
   set(GNA_LINKER_FLAGS "-z now")
   set(GNA_LINKER_FLAGS_RELEASE "-fdata-sections -ffunction-sections -Wl,--gc-sections")
+
+  set(GNA_CC_COMPILE_FLAGS ${GNA_COMPILE_FLAGS})
+  set(GNA_CC_COMPILE_FLAGS_RELEASE ${GNA_COMPILE_FLAGS_RELEASE})
+  set(GNA_COMPILE_FLAGS ${GNA_COMPILE_FLAGS}
+      -Woverloaded-virtual -Wnon-virtual-dtor)
+  set(GNA_COMPILE_FLAGS_RELEASE ${GNA_COMPILE_FLAGS_RELEASE}
+      -fvisibility-inlines-hidden)
 endif()
 
 # interprocedural optimization
