@@ -58,12 +58,9 @@ public:
 
     void SetMode(Gna2AccelerationMode newMode);
 
-    void EnableHwConsistency();
-
-    void DisableHwConsistency();
-
     Gna2AccelerationMode GetMode() const;
 
+    void SetHwConsistency(bool consistencyEnabled);
     bool GetHwConsistency() const;
 
     const char* GetName() const;

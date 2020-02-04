@@ -67,10 +67,7 @@ public:
 
     void SetHardwareConsistency(DeviceVersion consistentDeviceIn);
 
-    void EnforceAcceleration(Gna2AccelerationMode accelMode)
-    {
-        Acceleration.SetMode(accelMode);
-    }
+    void EnforceAcceleration(Gna2AccelerationMode accelMode);
 
     bool HasConsistencyMode() const
     {

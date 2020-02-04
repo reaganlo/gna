@@ -226,18 +226,6 @@ void AccelerationMode::SetMode(Gna2AccelerationMode newMode)
     enforceValidity();
 }
 
-void AccelerationMode::EnableHwConsistency()
-{
-    hardwareConsistency = true;
-    enforceValidity();
-}
-
-void AccelerationMode::DisableHwConsistency()
-{
-    hardwareConsistency = false;
-    enforceValidity();
-}
-
 static std::map<AccelerationMode, const char*> AccelerationModeNames{
     {AccelerationMode{ Gna2AccelerationModeHardware },"GNA_HW"},
     {AccelerationMode{ Gna2AccelerationModeAuto,true },"GNA_AUTO_SAT"},
@@ -264,6 +252,12 @@ const char* AccelerationMode::GetName() const
         return item->second;
     }
     return UNKNOWN_ACCELERATION_MODE_NAME;
+}
+
+void AccelerationMode::SetHwConsistency(bool consistencyEnabled)
+{
+    hardwareConsistency = consistencyEnabled;
+    enforceValidity();
 }
 
 bool AccelerationMode::GetHwConsistency() const

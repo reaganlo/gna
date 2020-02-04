@@ -120,6 +120,9 @@ public:
         return allocations;
     }
 
+    bool IsHardwareEnforcedModeValid();
+    bool IsFullyHardwareCompatible(const HardwareCapabilities& targetDevice);
+
     const uint32_t LayerCount;
     const uint32_t GmmCount;
 
@@ -144,8 +147,6 @@ private:
         const HardwareCapabilities &hwCaps, uint32_t layerIndex) const;
 
     AccelerationType getEffectiveAccelerationMode(RequestConfiguration& config);
-
-    bool verifyHardwareMode(RequestConfiguration& config);
 
     uint32_t scoreAllSubModels(RequestConfiguration& config,
         RequestProfiler *profiler, KernelBuffers *buffers);

@@ -24,6 +24,7 @@ in any way.
 */
 
 #include <iostream>
+#include <map>
 #include <stdexcept>
 #include <vector>
 #include <string>
@@ -290,6 +291,23 @@ public:
         }
     }
 
+    void ParseCmd(int argc, char** argv)
+    {
+        const std::map<std::string, Gna2DeviceVersion> consistencyModes = {
+            {"GNA1", Gna2DeviceVersion1_0},
+            {"GNA2", Gna2DeviceVersion2_0},
+            {"GNA3", Gna2DeviceVersion3_0},
+        };
+        if(argc > 1)
+        {
+            const auto found = consistencyModes.find(argv[1]);
+            if(found != consistencyModes.end())
+            {
+                enforcedConsistentDevice = found->second;
+            }
+        }
+    }
+
     bool TryRun(const Action& action, ModelSetupFactory& msf, IModelSetup::UniquePtr& modelSetup)
     {
         try {
@@ -321,7 +339,10 @@ public:
                 }
                 auto config = modelSetup->ConfigId(action.modelIndex, action.configIndex);
                 deviceController.RequestSetAcceleration(config, gna_acceleration::GNA_AUTO);
-                deviceController.RequestSetConsistency(config, Gna2DeviceVersion3_0);
+                if (enforcedConsistentDevice != Gna2DeviceVersionSoftwareEmulation)
+                {
+                    deviceController.RequestSetConsistency(config, enforcedConsistentDevice);
+                }
                 gna_request_id requestId;
                 deviceController.RequestEnqueue(config, &requestId);
                 deviceController.RequestWait(requestId);
@@ -359,13 +380,14 @@ public:
 
 private:
 
+    Gna2DeviceVersion enforcedConsistentDevice = Gna2DeviceVersionSoftwareEmulation;
     DeviceController deviceController;
 
     std::vector<ActionScript> scripts;
     ActionScript script;
 };
 
-int main()
+int main(int argc, char** argv)
 {
     const int retCode = 0;
     const int retError = -1;
@@ -373,6 +395,7 @@ int main()
     try
     {
         ApplicationWrapper app;
+        app.ParseCmd(argc, argv);
         app.PrepareScenario();
         app.PrepareModels();
         app.Run();

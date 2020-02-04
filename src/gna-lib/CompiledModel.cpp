@@ -85,23 +85,24 @@ void CompiledModel::InvalidateHardwareRequestConfig(gna_request_cfg_id configId)
     }
 }
 
-bool CompiledModel::verifyHardwareMode(RequestConfiguration& config)
+bool CompiledModel::IsHardwareEnforcedModeValid()
 {
-    const auto isHardwareEnforced = config.Acceleration.IsHardwareEnforced();
-    if (isHardwareEnforced)
+    if (!hardwareModel)
     {
-        if (!hardwareModel)
+        return false;
+    }
+
+    return IsFullyHardwareCompatible(hwCapabilities);
+}
+
+bool CompiledModel::IsFullyHardwareCompatible(const HardwareCapabilities& targetDevice)
+{
+    const auto& deviceSubmodels = getSubmodels(targetDevice);
+    for (const auto& submodel : deviceSubmodels)
+    {
+        if (submodel->Type == Software)
         {
             return false;
-        }
-
-        const auto& deviceSubmodels = getSubmodels(hwCapabilities);
-        for (const auto& submodel : deviceSubmodels)
-        {
-            if (submodel->Type == Software)
-            {
-                return false;
-            }
         }
     }
     return true;
@@ -109,10 +110,6 @@ bool CompiledModel::verifyHardwareMode(RequestConfiguration& config)
 
 CompiledModel::AccelerationType CompiledModel::getEffectiveAccelerationMode(RequestConfiguration& config)
 {
-    auto const isHardwareModeValid = verifyHardwareMode(config);
-    if (false == isHardwareModeValid)
-        return Unsupported;
-
     // TODO: 3: we need to store information about consistency between devices
     // https://idc-tfs-01.devtools.intel.com:8088/tfs/DefaultCollection/Omega/_workitems?_a=edit&id=17703
 
@@ -123,10 +120,7 @@ CompiledModel::AccelerationType CompiledModel::getEffectiveAccelerationMode(Requ
     {
         return EnforcedSoftware;
     }
-    else
-    {
-        return Auto;
-    }
+    return Auto;
 }
 
 Gna2Status CompiledModel::Score(

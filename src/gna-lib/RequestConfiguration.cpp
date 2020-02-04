@@ -153,17 +153,23 @@ void RequestConfiguration::AddActiveList(uint32_t layerIndex, const ActiveList& 
 void RequestConfiguration::SetHardwareConsistency(
     DeviceVersion consistentDeviceIn)
 {
-    if (Gna2DeviceVersionSoftwareEmulation != consistentDevice)
+    if (Gna2DeviceVersionSoftwareEmulation != consistentDeviceIn)
     {
+        Expect::True(Model.IsFullyHardwareCompatible(HardwareCapabilities{ consistentDeviceIn }), Gna2StatusAccelerationModeNotSupported);
         BufferElementCount = HardwareCapabilities::GetHardwareConsistencySettings(consistentDeviceIn);
         BufferElementCountForAdl = HardwareCapabilities::GetHardwareConsistencySettingsForAdl(consistentDeviceIn);
-        Acceleration.EnableHwConsistency();
-        consistentDevice = consistentDeviceIn;
     }
-    else
+    Acceleration.SetHwConsistency(Gna2DeviceVersionSoftwareEmulation != consistentDeviceIn);
+    consistentDevice = consistentDeviceIn;
+}
+
+void RequestConfiguration::EnforceAcceleration(Gna2AccelerationMode accelMode)
+{
+    if (accelMode == Gna2AccelerationModeHardware)
     {
-        Acceleration.DisableHwConsistency();
+        Expect::True(Model.IsHardwareEnforcedModeValid(), Gna2StatusAccelerationModeNotSupported);
     }
+    Acceleration.SetMode(accelMode);
 }
 
 DeviceVersion RequestConfiguration::GetConsistentDevice() const
