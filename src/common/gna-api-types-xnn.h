@@ -531,9 +531,6 @@ const uint32_t CNN_N_FLT_COEFF_MAX = 768;
 /** CNN 2D minimum number of kernel elements in one dimension */
 const uint32_t CNN_N_KERNEL_ELEMENTS_PER_DIMENSION_MIN = 1;
 
-/** CNN 2D maximum number of kernel elements in one dimension */
-const uint32_t CNN_N_KERNEL_ELEMENTS_PER_DIMENSION_MAX = 256;
-
 /** CNN 1D maximum number of kernel elements in one dimension For int8_t */
 const uint32_t CNN_1D_N_KERNEL_ELEMENTS_PER_DIMENSION_MAX = 2048;
 

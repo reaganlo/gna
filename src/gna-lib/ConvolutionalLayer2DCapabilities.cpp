@@ -203,8 +203,8 @@ const FullCapabilitiesMap & ConvolutionalLayer2DCapabilities::GetOperands(uint32
                 {GNA_3_0, std::make_shared<TensorLimits>(TensorLimits{
                     { GNA_TENSOR_NHWD },    // N - # filters, HWD each filter dimensions
                     {{GNA_DIM_N, {1, Filter2DCountMax, 1, Gna2StatusCnnErrorConvFltCount}},
-                        {GNA_DIM_H, {CNN_N_KERNEL_ELEMENTS_PER_DIMENSION_MIN, CNN_N_KERNEL_ELEMENTS_PER_DIMENSION_MAX, 1, Gna2StatusCnnErrorConvFltVolume}},
-                        {GNA_DIM_W, {CNN_N_KERNEL_ELEMENTS_PER_DIMENSION_MIN, CNN_N_KERNEL_ELEMENTS_PER_DIMENSION_MAX, 1, Gna2StatusCnnErrorConvFltVolume}},
+                        {GNA_DIM_H, {CNN_N_KERNEL_ELEMENTS_PER_DIMENSION_MIN, Filter2DElementsMax, 1, Gna2StatusCnnErrorConvFltVolume}},
+                        {GNA_DIM_W, {CNN_N_KERNEL_ELEMENTS_PER_DIMENSION_MIN, Filter2DElementsMax, 1, Gna2StatusCnnErrorConvFltVolume}},
                         {GNA_DIM_D, {CNN_N_KERNEL_ELEMENTS_PER_DIMENSION_MIN, 2048, 1, Gna2StatusCnnErrorConvFltVolume}}},
                         // Padding to 16B is required for each Kernel
                     {{ GNA_INT8, GNA_INT16, GNA_DATA_CONSTANT_SCALAR }, Gna2StatusXnnErrorConvFltBytes }})}
@@ -281,8 +281,8 @@ const FullCapabilitiesMap & ConvolutionalLayer2DCapabilities::GetParameters(uint
             {INTEL_CONVOLUTIONAL_2D,{
                 { GNA_3_0, std::make_shared<ComponentLimits>(ComponentLimits(
                     {GNA_TENSOR_HW},
-                    {{GNA_DIM_H, {1, CNN_N_KERNEL_ELEMENTS_PER_DIMENSION_MAX, 1, Gna2StatusCnnErrorConvFltStride}},
-                    {GNA_DIM_W, {1, CNN_N_KERNEL_ELEMENTS_PER_DIMENSION_MAX, 1, Gna2StatusCnnErrorConvFltStride}}}))}
+                    {{GNA_DIM_H, {1, Filter2DElementsMax, 1, Gna2StatusCnnErrorConvFltStride}},
+                    {GNA_DIM_W, {1, Filter2DElementsMax, 1, Gna2StatusCnnErrorConvFltStride}}}))}
             }},
             {INTEL_CONVOLUTIONAL_1D,{
                 { GNA_3_0, std::make_shared<ComponentLimits>(ComponentLimits(
@@ -295,8 +295,8 @@ const FullCapabilitiesMap & ConvolutionalLayer2DCapabilities::GetParameters(uint
             {INTEL_CONVOLUTIONAL_2D,{
                 { GNA_3_0, std::make_shared<ComponentLimits>(ComponentLimits(
                     {GNA_TENSOR_HW},
-                        {{GNA_DIM_H, {0, CNN_N_KERNEL_ELEMENTS_PER_DIMENSION_MAX, 1, Gna2StatusCnnErrorConvFltPadding}},
-                        {GNA_DIM_W, {0, CNN_N_KERNEL_ELEMENTS_PER_DIMENSION_MAX, 1, Gna2StatusCnnErrorConvFltPadding}}}))},
+                        {{GNA_DIM_H, {0, Filter2DElementsMax, 1, Gna2StatusCnnErrorConvFltPadding}},
+                        {GNA_DIM_W, {0, Filter2DElementsMax, 1, Gna2StatusCnnErrorConvFltPadding}}}))},
             }},
             {INTEL_CONVOLUTIONAL_1D,{
                 { GNA_3_0, std::make_shared<ComponentLimits>(ComponentLimits(
@@ -309,8 +309,8 @@ const FullCapabilitiesMap & ConvolutionalLayer2DCapabilities::GetParameters(uint
             {INTEL_CONVOLUTIONAL_2D, {
                 { GNA_3_0, std::make_shared<ComponentLimits>(ComponentLimits(
                     {GNA_TENSOR_HW},
-                    {{GNA_DIM_H, {1, CNN_N_KERNEL_ELEMENTS_PER_DIMENSION_MAX, 1, Gna2StatusCnnErrorPoolStride}},
-                    {GNA_DIM_W, {1, CNN_N_KERNEL_ELEMENTS_PER_DIMENSION_MAX, 1, Gna2StatusCnnErrorPoolStride}}}))}
+                    {{GNA_DIM_H, {1, Filter2DElementsMax, 1, Gna2StatusCnnErrorPoolStride}},
+                    {GNA_DIM_W, {1, Filter2DElementsMax, 1, Gna2StatusCnnErrorPoolStride}}}))}
             }},
             {INTEL_CONVOLUTIONAL_1D, {
                 { GNA_3_0, std::make_shared<ComponentLimits>(ComponentLimits(
@@ -323,8 +323,8 @@ const FullCapabilitiesMap & ConvolutionalLayer2DCapabilities::GetParameters(uint
             {INTEL_CONVOLUTIONAL_2D, {
                 { GNA_3_0, std::make_shared<ComponentLimits>(ComponentLimits(
                     {GNA_TENSOR_HW},
-                    {{GNA_DIM_H, {1, CNN_N_KERNEL_ELEMENTS_PER_DIMENSION_MAX, 1, Gna2StatusCnnErrorPoolSize}},
-                    {GNA_DIM_W, {1, CNN_N_KERNEL_ELEMENTS_PER_DIMENSION_MAX, 1, Gna2StatusCnnErrorPoolSize}}}))}
+                    {{GNA_DIM_H, {1, Filter2DElementsMax, 1, Gna2StatusCnnErrorPoolSize}},
+                    {GNA_DIM_W, {1, Filter2DElementsMax, 1, Gna2StatusCnnErrorPoolSize}}}))}
             }},
             {INTEL_CONVOLUTIONAL_1D, {
                 { GNA_3_0, std::make_shared<ComponentLimits>(ComponentLimits(

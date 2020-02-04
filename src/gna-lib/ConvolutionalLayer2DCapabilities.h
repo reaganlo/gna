@@ -48,7 +48,7 @@ struct ConvolutionalLayer2DCapabilities : LayerCapabilities
     static constexpr uint32_t Filter2DElementsMin = 1;
 
     /** CNN 2D maximum number of kernel elements in one dimension */
-    static constexpr uint32_t Filter2DElementsMax = 256;
+    static constexpr uint32_t Filter2DElementsMax = 255;
 
     /** CNN number of filter coefficients constraint - must be multiple of */
     static constexpr uint32_t Filter1DElementsMultiplier = 4;
