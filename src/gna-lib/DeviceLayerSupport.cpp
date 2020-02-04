@@ -27,24 +27,6 @@
 
 using namespace GNA;
 
-const ApiSupport API_1_0 =
-{
-    {GNA_API_1_0, true},
-    {GNA_API_2_0, true},
-    {GNA_API_3_0, true},
-};
-
-const ApiSupport API_2_0 =
-{
-    {GNA_API_2_0, true},
-    {GNA_API_3_0, true},
-};
-
-const ApiSupport API_3_0 =
-{
-    {GNA_API_3_0, true},
-};
-
 const HwSupport HW_GMM =
 {
     {GMM_DEVICE, true},
@@ -79,12 +61,12 @@ const HwSupport HW_3_0 =
     {GNA_3_0, true},
 };
 
-static const Support FROM_GMM = { API_1_0, HW_GMM};
-static const Support FROM_0_9 = { API_1_0, HW_0_9};
+static const Support FROM_GMM = { std::move(HW_GMM) };
+static const Support FROM_0_9 = { std::move(HW_0_9) };
 static const Support FROM_0_9_AUX = FROM_0_9; // Helper for changes of AUX layers
-static const Support FROM_1_0_TILL_2_0 = { API_1_0, HW_1_0_AND_2_0 };
-static const Support FROM_2_0 = { API_2_0, HW_2_0 };
-static const Support FROM_3_0 = { API_3_0, HW_3_0 };
+static const Support FROM_1_0_TILL_2_0 = { std::move(HW_1_0_AND_2_0) };
+static const Support FROM_2_0 = { std::move(HW_2_0) };
+static const Support FROM_3_0 = { std::move(HW_3_0) };
 
 static const std::map<const gna_layer_operation, const Support> FROM_1_0_GMM =
 {
@@ -165,35 +147,6 @@ static const std::map<const gna_layer_operation, const Support> FROM_2_0_MB_3_0_
     {INTEL_AFFINE_MULTIBIAS,    FROM_2_0},
     {INTEL_CONVOLUTIONAL_2D,    FROM_3_0},
 };
-
-static const std::map<const gna_layer_operation, const Support> FROM_3_0_INPUT_DISABLED =
-{
-    //{INTEL_AFFINE,              FROM_3_0}, // TODO:3:CAPS: Low priority
-    {INTEL_AFFINE_DIAGONAL,     FROM_3_0},
-    {INTEL_AFFINE_MULTIBIAS,    FROM_3_0},
-    //{INTEL_RECURRENT,           FROM_3_0}, // TODO:3:CAPS: Low priority
-    {INTEL_CONVOLUTIONAL_2D,    FROM_3_0},
-    {INTEL_COPY,                FROM_3_0},
-    {INTEL_DEINTERLEAVE,        FROM_3_0},
-    {INTEL_INTERLEAVE,          FROM_3_0},
-};
-
-static const std::map<const gna_layer_operation, const Support> FROM_3_0_INPUT_DISABLED_BIAS_DISABLED =
-{
-    //{INTEL_AFFINE,              FROM_3_0}, // TODO:3:CAPS: Low priority
-    //{INTEL_AFFINE_DIAGONAL,     FROM_3_0},  // TODO:3:CAPS: Low priority
-    //{INTEL_AFFINE_MULTIBIAS,    FROM_3_0},  // TODO:3:CAPS: Low priority
-    //{INTEL_RECURRENT,           FROM_3_0}, // TODO:3:CAPS: Low priority
-    //{INTEL_CONVOLUTIONAL_2D,    FROM_3_0},  // TODO:3:CAPS: Low priority
-    //{INTEL_COPY,                FROM_3_0},  // TODO:3:CAPS: Low priority
-    //{INTEL_DEINTERLEAVE,        FROM_3_0},  // TODO:3:CAPS: Low priority
-    //{INTEL_INTERLEAVE,          FROM_3_0},  // TODO:3:CAPS: Low priority
-};
-
-bool Support::IsSupported() const
-{
-    return !API_1_0.empty() && !HW_0_9.empty();
-}
 
 const std::map<const DataConfig, std::map<const gna_layer_operation, const Support>> DataConfig::Capabilities =
 {
@@ -309,28 +262,28 @@ const std::map<const DataConfig, std::map<const gna_layer_operation, const Suppo
         FROM_0_9_COPY_TRANSPOSE
     },
     {{GNA_INT16, GNA_INT8, GNA_INT8, GNA_INT8},
-        FROM_3_0_CNN
+        FROM_3_0_CNN_MB
     },
     {{GNA_INT16, GNA_INT8, GNA_INT8, GNA_INT16},
-       FROM_3_0_CNN
+       FROM_3_0_CNN_MB
     },
     {{GNA_INT16, GNA_INT8, GNA_INT8, GNA_INT32},
-        FROM_3_0_CNN
+        FROM_3_0_CNN_MB
     },
     {{GNA_INT16, GNA_INT8, GNA_INT8, GNA_DATA_ACTIVATION_DISABLED},
-        FROM_3_0_CNN
+        FROM_3_0_CNN_MB
     },
     {{GNA_INT16, GNA_INT8, GNA_INT16, GNA_INT8},
-        FROM_3_0_CNN
+        FROM_3_0_CNN_MB
     },
     {{GNA_INT16, GNA_INT8, GNA_INT16, GNA_INT16},
-        FROM_3_0_CNN
+        FROM_3_0_CNN_MB
     },
     {{GNA_INT16, GNA_INT8, GNA_INT16, GNA_INT32},
-       FROM_3_0_CNN
+       FROM_3_0_CNN_MB
     },
     {{GNA_INT16, GNA_INT8, GNA_INT16, GNA_DATA_ACTIVATION_DISABLED},
-        FROM_3_0_CNN
+        FROM_3_0_CNN_MB
     },
     {{GNA_INT16, GNA_INT8, GNA_INT32, GNA_INT8},
         FROM_3_0_CNN_MB
@@ -366,6 +319,7 @@ const std::map<const DataConfig, std::map<const gna_layer_operation, const Suppo
         {
             {INTEL_AFFINE,              FROM_0_9},
             {INTEL_AFFINE_DIAGONAL,     FROM_0_9},
+            {INTEL_AFFINE_MULTIBIAS,    FROM_2_0},
             {INTEL_RECURRENT,           FROM_0_9},
         }
     },
@@ -379,6 +333,7 @@ const std::map<const DataConfig, std::map<const gna_layer_operation, const Suppo
          {
             {INTEL_AFFINE,              FROM_0_9},
             {INTEL_AFFINE_DIAGONAL,     FROM_0_9},
+            {INTEL_AFFINE_MULTIBIAS,    FROM_2_0},
         }
     },
     {{GNA_INT16, GNA_INT16, GNA_INT8, GNA_INT8},

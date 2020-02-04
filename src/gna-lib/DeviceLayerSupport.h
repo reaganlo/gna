@@ -44,24 +44,17 @@ typedef std::map<gna_device_generation, bool> HwSupport;
 class Support
 {
 public:
-    Support() :
-        Api{},
-        Hw{}
-    {
-    }
-
-    Support(ApiSupport api, HwSupport hw) :
-        Api{api},
+    Support (HwSupport const && hw) :
         Hw{hw}
     {
         // FIXME: change to InSet
         //Expect::InRange<size_t>(api.size(), GNA_API_NOT_SUPPORTED, GNA_API_VERSION_COUNT, Gna2StatusXnnErrorLyrCfg);
         //Expect::InRange<size_t>(hw.size(), GNA_DEVICE_NOT_SUPPORTED, GNA_DEVICE_COUNT, Gna2StatusXnnErrorLyrCfg);
-        for (auto apiSupport : Api)
+        for (auto const apiSupport : Api)
         {
             Expect::True(apiSupport.second, Gna2StatusNullArgumentRequired);
         }
-        for (auto hwSupport : Hw)
+        for (auto const hwSupport : Hw)
         {
             Expect::True(hwSupport.second, Gna2StatusNullArgumentRequired);
         }
@@ -69,9 +62,7 @@ public:
 
     ~Support() = default;
 
-    bool IsSupported() const;
-
-    const ApiSupport Api;
+    const ApiSupport Api = { {GNA_API_3_0, true} };
     const HwSupport Hw;
 };
 
