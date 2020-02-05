@@ -92,7 +92,7 @@ std::unique_ptr<GNA::Layer> Layer::Create(const Gna2Operation & operation, const
     case Gna2OperationTypeConvolution:
         if (CnnLayer::IsForced(operation))
         {
-            Log->Message("Processing in Legacy CNN1D enforced mode.");
+            Log->Message("Processing in Legacy CNN1D enforced mode.\n");
             return std::make_unique<CnnLayer>(operation, validatorIn);
         }
         try
@@ -102,7 +102,7 @@ std::unique_ptr<GNA::Layer> Layer::Create(const Gna2Operation & operation, const
         catch (GnaException& e)
         {
             Log->Message(e.GetLegacyStatus());
-            Log->Message("Processing in Legacy CNN1D enforced mode.");
+            Log->Message("Processing in Legacy CNN1D enforced mode.\n");
             return CnnLayer::CreateEnforced(operation, validatorIn);
         }
     case Gna2OperationTypeGmm:
