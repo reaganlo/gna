@@ -41,6 +41,7 @@ endif()
 option(GNA_BUILD_WITH_TLV_ENABLED "" ON)
 if(${GNA_BUILD_WITH_TLV_ENABLED})
   add_subdirectory(tlv)
+  set_gna_target_properties(tlv)
 endif()
 
 set(GNA_ALL_TESTS_REGISTERED_TARGETS "${GNA_ALL_TESTS_REGISTERED_TARGETS}" PARENT_SCOPE)

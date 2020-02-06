@@ -37,7 +37,7 @@ static LinkStruct* linkList = NULL;
 
 static uint32_t linkListSize = 0;
 
-inline void TlvCheckNotNull(const void* ptr, int* status)
+inline void TlvCheckNotNull(const void* ptr, enum TlvStatus* status)
 {
     if (ptr == NULL)
     {
@@ -45,7 +45,7 @@ inline void TlvCheckNotNull(const void* ptr, int* status)
     }
 }
 
-inline void TlvCheckIfNotZero(const uint32_t number, int* status)
+inline void TlvCheckIfNotZero(const uint32_t number, enum TlvStatus* status)
 {
     if (number == 0)
     {
@@ -53,7 +53,7 @@ inline void TlvCheckIfNotZero(const uint32_t number, int* status)
     }
 }
 
-void TlvCheckIfExceedsMax(const uint32_t id, int* status)
+void TlvCheckIfExceedsMax(const uint32_t id, enum TlvStatus* status)
 {
     if (id >= tlvFrameListSize)
     {
@@ -260,7 +260,7 @@ static void getSizeOfChildren(uint32_t id, uint32_t* recordSizeOut)
 
 enum TlvStatus TlvRecordGetSize(uint32_t id, uint32_t* recordSizeOut)
 {
-    enum TlvStatus status = (enum TlvStatus)0;
+    enum TlvStatus status = TLV_SUCCESS;
     TlvCheckIfExceedsMax(id, &status);
     CHECK_ERROR(status);
 
