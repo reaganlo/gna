@@ -302,7 +302,7 @@ enum TlvStatus TlvDecode(void* data, uint32_t size, struct TlvFrame* memory,
 }
 
 enum TlvStatus TlvLoadOwnRawList(const TlvTypeId ownRawTypeList[],
-    const uint32_t numberOfRawElements)
+    uint32_t numberOfRawElements)
 {
     currentRawTypesList = &ownRawTypeList[0];
     rawTypesListSize = numberOfRawElements;

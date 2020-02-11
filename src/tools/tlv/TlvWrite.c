@@ -137,7 +137,7 @@ static enum TlvStatus* determineCurrentRecord(struct TlvFrame** frame,
     return status;
 }
 
-enum TlvStatus TlvRecordInit(const TlvTypeId type, uint32_t* id)
+enum TlvStatus TlvRecordInit(TlvTypeId type, uint32_t* id)
 {
     enum TlvStatus status = TLV_SUCCESS;
 
@@ -158,7 +158,7 @@ enum TlvStatus TlvRecordInit(const TlvTypeId type, uint32_t* id)
     return status;
 }
 
-enum TlvStatus TlvRecordInitRaw(const TlvTypeId type, uint32_t length,
+enum TlvStatus TlvRecordInitRaw(TlvTypeId type, uint32_t length,
     const void* value, uint32_t* id)
 {
     enum TlvStatus status = TLV_SUCCESS;
@@ -355,7 +355,7 @@ static enum TlvStatus RecordSerializeWriteFrame(uint32_t id, void* data,
     return TLV_SUCCESS;
 }
 
-enum TlvStatus TlvSerialize(uint32_t id, void* data, const uint32_t dataSize)
+enum TlvStatus TlvSerialize(uint32_t id, void* data, uint32_t dataSize)
 {
     enum TlvStatus status = TLV_SUCCESS;
     TlvCheckIfExceedsMax(id, &status);
