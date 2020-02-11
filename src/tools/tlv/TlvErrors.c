@@ -56,7 +56,7 @@ enum TlvStatus TlvGetStatusMessage(int from, const char** dest)
         case TLV_ERROR_EXCEEDED_MAX:
             *dest = "Tlv: No more frames could be allocated. Not enought space\n";
             break;
-        case TLV_ERROR_MEMORY_OVERUN:
+        case TLV_ERROR_MEMORY_OVERRUN:
             *dest = "Tlv: Memory overrun\n";
             break;
     }

@@ -185,7 +185,7 @@ TEST_F(RecordSerializeTest, 1Parent1ChildMemoryOverrun)
     mem = malloc(dataSize);
     enum TlvStatus status = TlvSerialize(id1, mem, dataSize - 15);
 
-    EXPECT_EQ(status, TLV_ERROR_MEMORY_OVERUN);
+    EXPECT_EQ(status, TLV_ERROR_MEMORY_OVERRUN);
 
     free(mem);
     TlvRecordsRelease(id1);

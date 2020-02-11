@@ -41,7 +41,7 @@ typedef union TlvTypeIdImplementation
     /**
     TlvFrame structure:
      ->type->TlvTypeId*
-        -size of the type is provided by TLV_TYPE_SIZE constantaw
+        -size of the type is provided by TLV_TYPE_SIZE constant
         -ends without '\0' at the end
      ->length->uint32_t:
         -describes number of bytes in data sect
@@ -89,15 +89,15 @@ extern "C"
     void TlvLibraryInit();
 
     /**
-    Passes messasge of last error in string format.
+    Passes message of last error in string format.
     */
     void TlvGetStatusMessage(int from, const char** dest);
 
     /**
      Determines size needed to allocate memory for frames.
-     @param [in] pointer to data which will be decoded
-     @param [in] size of data provided by the user
-     @param [out] calculated size needed for returning read TLV frames
+     @param [in] data pointer to data which will be decoded
+     @param [in] inputSize size of data provided by the user
+     @param [out] returnedSize calculated size needed for returning read TLV frames
      @return TlvStatus - the status code returned from function
      */
     enum TlvStatus TlvGetSize(void* data, uint32_t inputSize, uint32_t* returnedSize);
@@ -105,15 +105,16 @@ extern "C"
     /**
      Reads Tlv frames from data provided by the user.
 
-     @param [in] pointer to data which should be decoded
-     @param [in] size of data provided by the user
-     @param [out] pointer to data to which decoded frames will be written.
+     @param [in] data pointer to data which should be decoded
+     @param [in] size size of data provided by the user
+     @param [out] memory pointer to data to which decoded frames will be written.
         User should provide proper size of a memory. Use TlvGetSize to\
         determine required size.
+     @param [out] numberOfReadFrames Number of frames read.
      @return TlvStatus - the status code returned from function
     */
     enum TlvStatus TlvDecode(void* data, uint32_t size, struct TlvFrame* memory,
-        uint32_t* numbberOfreadFrames);
+        uint32_t* numberOfReadFrames);
 
     /**
      Adds Tlv record/layer, to which later user is expected to add other
@@ -121,58 +122,58 @@ extern "C"
      the hierarchy of the tlv frame or just simply carry information using
      header.
 
-     @param [in] type name, should be the same length as TLV_TYPE_NAME_SIZE,
-     @param [out] returns id to which current record was written
+     @param [in] type type name, should be the same length as TLV_TYPE_NAME_SIZE,
+     @param [out] id returns id to which current record was written
      @return TlvStatus - the status code returned from function
      */
-    enum TlvStatus TlvRecordInit(const TlvTypeId type, uint32_t* id);
+    enum TlvStatus TlvRecordInit(TlvTypeId type, uint32_t* id);
 
     /**
      Adds Tlv record which is the smallest unit. See the description
      of leaf TLV frame at the begging of the file.
 
-     @param [in] type name, should be the same length as TLV_TYPE_NAME_SIZE,
-     @param [in] size of data, provided by the user to be assigned to the record
-     @param [in] pointer to data to be assigned to the record
-     @param [out] returns id to which current record was written
+     @param [in] type type name, should be the same length as TLV_TYPE_NAME_SIZE,
+     @param [in] length size of data, provided by the user to be assigned to the record
+     @param [in] value pointer to data to be assigned to the record
+     @param [out] id returns id to which current record was written
      @return TlvStatus - the status code returned from function
      */
-    enum TlvStatus TlvRecordInitRaw(const TlvTypeId type, uint32_t length,
+    enum TlvStatus TlvRecordInitRaw(TlvTypeId type, uint32_t length,
         const void* value, uint32_t* id);
 
     /**
      Makes link between two records. It allows to assign lower records/layers
      to upper ones.
 
-     @param [in] id of the parent record
-     @param [in] id of the child reccord
+     @param [in] parentRecordId id of the parent record
+     @param [in] childRecordId id of the child record
      @return TlvStatus - the status code returned from function
      */
     enum TlvStatus TlvRecordAdd(uint32_t parentRecordId, uint32_t childRecordId);
 
     /**
      Calculates size of the the pointed record and all records assigned to it
-     @param [in] id of the record
-     @param [out] calculated size
+     @param [in] id id of the record
+     @param [out] recordSizeOut calculated size
      @return TlvStatus - the status code returned from function
      */
     enum TlvStatus TlvRecordGetSize(uint32_t id, uint32_t* recordSizeOut);
 
     /**
      Saves data prepared by the user to the pointed memory
-     @param [in] id of the record on the highest layer
-     @param [in] size of allocated memory
-     @param [out] ] pointer to data to which ready tlv will be written.
+     @param [in] id id of the record on the highest layer
+     @param [in] data size of allocated memory
+     @param [out] dataSize pointer to data to which ready tlv will be written.
         User should provide proper size of a memory. Use TlvRecordGetSize to\
         determine required size.
      @return TlvStatus - the status code returned from function
      */
-    enum TlvStatus TlvSerialize(uint32_t id, void* data, const uint32_t dataSize);
+    enum TlvStatus TlvSerialize(uint32_t id, void* data, uint32_t dataSize);
 
     /**
      Releases record as well as child records. This function
-     will delte children only if the link between records exists.
-     @param [in] id of the node to release, and its children Nodes
+     will delete children only if the link between records exists.
+     @param [in] id id of the node to release, and its children Nodes
      @return TlvStatus - the status code returned from function
      */
     enum TlvStatus TlvRecordsRelease(uint32_t id);
@@ -182,11 +183,11 @@ extern "C"
      Leaf TLV type is a type of frame that only provides data,
      it cannot be the parent to another frame.
      Every type on the list should be terminated with '\0'
-     @param [in] pointer to data /list with params
-     @param [in] number of elemements on the list
+     @param [in] ownRawTypeList pointer to data /list with params
+     @param [in] numberOfRawElements number of elements on the list
      */
     enum TlvStatus TlvLoadOwnRawList(const TlvTypeId ownRawTypeList[],
-        const uint32_t numberOfRawElements);
+        uint32_t numberOfRawElements);
 
 
 #ifdef __cplusplus

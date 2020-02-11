@@ -29,16 +29,16 @@
 
 #include "gtest/gtest.h"
 
-static const TlvTypeId GNAI =  { 'G', 'N', 'A', 'I'};
-static const TlvTypeId GNAM = { 'G', 'N', 'A', 'M' };
-static const TlvTypeId IN = { 'I', 'N'};
-static const TlvTypeId OUT = { 'O', 'U', 'T' };
-static const TlvTypeId SCRA = { 'S', 'C', 'R', 'A' };
-static const TlvTypeId LDT = { 'L', 'D', 'T' };
-static const TlvTypeId RORW = { 'R', 'O', 'R', 'W' };
-static const TlvTypeId DBG = { 'D', 'B', 'G' };
-static const TlvTypeId SIZE = { 'S', 'I', 'Z', 'E' };
-static const TlvTypeId DATA_TYPE = { 'D', 'A', 'T', 'A' };
+static const TlvTypeId GNAI = { {'G', 'N', 'A', 'I'} };
+static const TlvTypeId GNAM = { {'G', 'N', 'A', 'M'} };
+static const TlvTypeId IN = { {'I', 'N'} };
+static const TlvTypeId OUT = { {'O', 'U', 'T'} };
+static const TlvTypeId SCRA = { {'S', 'C', 'R', 'A'} };
+static const TlvTypeId LDT = { {'L', 'D', 'T' } };
+static const TlvTypeId RORW = { { 'R', 'O', 'R', 'W' } };
+static const TlvTypeId DBG = { { 'D', 'B', 'G' } };
+static const TlvTypeId SIZE = { { 'S', 'I', 'Z', 'E' } };
+static const TlvTypeId DATA_TYPE = { { 'D', 'A', 'T', 'A' } };
 
 class RecordInitTest : public ::testing::Test
 {

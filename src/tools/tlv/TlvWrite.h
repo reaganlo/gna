@@ -30,7 +30,9 @@
 #include <stdbool.h>
 #include <stdio.h>
 
-#define CHECK_ERROR(status) if (status != 0) return status;
+#define CHECK_ERROR(status) if (status != TLV_SUCCESS) return status;
+
+extern void TlvExitOnNull(const void* ptr);
 
 extern void TlvCheckNotNull(const void* ptr, enum TlvStatus* status);
 

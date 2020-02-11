@@ -41,6 +41,9 @@ static void TlvReadTypeAndLength(void* data, uint32_t* size,
 {
     TlvCheckNotNull(data, status);
     TlvCheckNotNull(size, status);
+    TlvCheckNotNull(readType, status);
+    TlvCheckNotNull(readOffset, status);
+    TlvCheckNotNull(currentFrame, status);
 
     if (*size < TLV_TYPE_AND_LENGTH_FIELDS_SIZE)
     {
@@ -70,6 +73,7 @@ static void TlvReadTypeAndLength(void* data, uint32_t* size,
 
 bool isRawType(const TlvTypeId* value)
 {
+    TlvExitOnNull(value);
     for (uint32_t i = 0; i < rawTypesListSize; ++i)
     {
         if (value->numberValue == currentRawTypesList[i].numberValue)
@@ -83,8 +87,9 @@ bool isRawType(const TlvTypeId* value)
 enum TlvStatus TlvGetSize(void* data, uint32_t inputSize,
     uint32_t* returnedSize)
 {
-    enum TlvStatus status = (enum TlvStatus)0;
+    enum TlvStatus status = TLV_SUCCESS;
     TlvCheckNotNull(data, &status);
+    TlvCheckNotNull(returnedSize, &status);
     if (inputSize < (uint32_t)TLV_TYPE_AND_LENGTH_FIELDS_SIZE)
     {
         status = TLV_ERROR_INVALID_SIZE;
@@ -121,6 +126,7 @@ enum TlvStatus TlvGetSize(void* data, uint32_t inputSize,
 
 void UpdateChildren(struct TlvFrame* frame)
 {
+    TlvExitOnNull(frame);
     for (uint32_t frameIndex = 0; frameIndex < nReadFrames; ++frameIndex)
     {
         frame = readFrames + frameIndex;
@@ -139,6 +145,7 @@ void UpdateChildren(struct TlvFrame* frame)
 
 bool ifNodeFull(struct TlvFrame* parent)
 {
+    TlvExitOnNull(parent);
     uint32_t countSize = 0;
     for (uint32_t i = 0; i < parent->numberOfChildrenNodes; ++i)
     {
@@ -150,6 +157,7 @@ bool ifNodeFull(struct TlvFrame* parent)
 
 static int insertAndShiftFrames(struct TlvFrame* parentNode, uint32_t offset)
 {
+    TlvExitOnNull(parentNode);
     offset++;
     struct TlvFrame * insertFrame = readFrames + offset;
     while (insertFrame->parentNode == parentNode)
@@ -160,11 +168,11 @@ static int insertAndShiftFrames(struct TlvFrame* parentNode, uint32_t offset)
 
     if ((nReadFrames - offset) > 0)
     {
-        uint32_t allocSize = (nReadFrames - offset) * (uint32_t)sizeof(struct TlvFrame);
+        const uint32_t allocSize = (nReadFrames - offset) * (uint32_t)sizeof(struct TlvFrame);
         void* tmpMem = malloc(allocSize);
         if (tmpMem == NULL)
         {
-            printf("Tlv: cannot alloc tmp memory");
+            printf("Tlv: cannot alloc tmp memory.\n");
             return TLV_ERROR_MEMORY_ALLOC;
         }
 
@@ -181,6 +189,7 @@ static int insertAndShiftFrames(struct TlvFrame* parentNode, uint32_t offset)
 
 void updateChildrenNodes()
 {
+    TlvExitOnNull(readFrames);
     struct TlvFrame* frame;
     for (uint32_t i = 0; i < nReadFrames; ++i)
     {
@@ -202,8 +211,9 @@ void updateChildrenNodes()
 
 void TlvAddChildToParentFrame(struct TlvFrame* currentFrame)
 {
-    uint32_t parrentOffset = nReadFrames - 1;
-    struct TlvFrame* parentNode = readFrames + parrentOffset;
+    TlvExitOnNull(readFrames);
+    uint32_t parentOffset = nReadFrames - 1;
+    struct TlvFrame* parentNode = readFrames + parentOffset;
     bool shift = false;
 
     while (true)
@@ -220,14 +230,14 @@ void TlvAddChildToParentFrame(struct TlvFrame* currentFrame)
             if (shift)
             {
 
-                insertAndShiftFrames(parentNode, parrentOffset);
+                insertAndShiftFrames(parentNode, parentOffset);
                 updateChildrenNodes();
             }
             break;
         }
         shift = true;
-        parrentOffset -= 1;
-        parentNode = readFrames + parrentOffset;
+        parentOffset -= 1;
+        parentNode = readFrames + parentOffset;
     }
 }
 
@@ -245,7 +255,8 @@ static void copyData(const void* data, uint32_t* size, uint32_t* readOffset,
 static enum TlvStatus TlvReadFrame(void* data, uint32_t* size, uint32_t frameOffset,
     uint32_t* readOffset)
 {
-    enum TlvStatus status = (enum TlvStatus)0;
+    enum TlvStatus status = TLV_SUCCESS;
+    TlvCheckNotNull(readFrames, &status);
     struct TlvFrame* currentFrame = currentFrame = readFrames + nReadFrames;
     static TlvTypeId readType;
     TlvCheckNotNull(data, &status);
@@ -275,15 +286,18 @@ static enum TlvStatus TlvReadFrame(void* data, uint32_t* size, uint32_t frameOff
     return status;
 }
 
-int TlvDecode(void* data, uint32_t size, struct TlvFrame* memory,
-    uint32_t* numbberOfreadFrames)
+enum TlvStatus TlvDecode(void* data, uint32_t size, struct TlvFrame* memory,
+    uint32_t* numberOfReadFrames)
 {
+    TlvExitOnNull(data);
+    TlvExitOnNull(memory);
+    TlvExitOnNull(numberOfReadFrames);
     nReadFrames = 0;
     readFrames = memory;
-    uint32_t frameOffset = 0;
+    const uint32_t frameOffset = 0;
     uint32_t readOffset = 0;
-    int status = TlvReadFrame(data, &size, frameOffset, &readOffset);
-    *numbberOfreadFrames = nReadFrames;
+    const enum TlvStatus status = TlvReadFrame(data, &size, frameOffset, &readOffset);
+    *numberOfReadFrames = nReadFrames;
     return status;
 }
 

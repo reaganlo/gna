@@ -37,16 +37,28 @@ static LinkStruct* linkList = NULL;
 
 static uint32_t linkListSize = 0;
 
-inline void TlvCheckNotNull(const void* ptr, enum TlvStatus* status)
+inline void TlvExitOnNull(const void* ptr)
 {
     if (ptr == NULL)
     {
+        printf("Tlv: NULL pointer argument was provided.\n");
+        exit(-1);
+    }
+}
+
+inline void TlvCheckNotNull(const void* ptr, enum TlvStatus* status)
+{
+    TlvExitOnNull(status);
+    if (ptr == NULL)
+    {
+        printf("Tlv: NULL pointer argument was provided.\n");
         *status = TLV_ERROR_DATA_NULL;
     }
 }
 
 inline void TlvCheckIfNotZero(const uint32_t number, enum TlvStatus* status)
 {
+    TlvExitOnNull(status);
     if (number == 0)
     {
         *status = TLV_ERROR_ZERO_LENGTH;
@@ -55,6 +67,7 @@ inline void TlvCheckIfNotZero(const uint32_t number, enum TlvStatus* status)
 
 void TlvCheckIfExceedsMax(const uint32_t id, enum TlvStatus* status)
 {
+    TlvExitOnNull(status);
     if (id >= tlvFrameListSize)
     {
         *status = TLV_ERROR_ARGS_OUT_OF_RANGE;
@@ -94,6 +107,12 @@ static inline uint32_t checkIfEmptyFrame()
 static enum TlvStatus* determineCurrentRecord(struct TlvFrame** frame,
     uint32_t* id, enum TlvStatus* status)
 {
+    TlvCheckNotNull(id, status);
+    if (*status != TLV_SUCCESS)
+    {
+        return status;
+    }
+
     uint32_t emptyIndex = checkIfEmptyFrame();
     if (emptyIndex == UINT32_MAX)
     {
@@ -120,7 +139,7 @@ static enum TlvStatus* determineCurrentRecord(struct TlvFrame** frame,
 
 enum TlvStatus TlvRecordInit(const TlvTypeId type, uint32_t* id)
 {
-    enum TlvStatus status = (enum TlvStatus)0;
+    enum TlvStatus status = TLV_SUCCESS;
 
     TlvCheckNotNull(type.stringValue, &status);
     TlvCheckNotNull(id, &status);
@@ -139,10 +158,10 @@ enum TlvStatus TlvRecordInit(const TlvTypeId type, uint32_t* id)
     return status;
 }
 
-int TlvRecordInitRaw(const TlvTypeId type, uint32_t length,
+enum TlvStatus TlvRecordInitRaw(const TlvTypeId type, uint32_t length,
     const void* value, uint32_t* id)
 {
-    enum TlvStatus status = (enum TlvStatus)0;
+    enum TlvStatus status = TLV_SUCCESS;
 
     TlvCheckNotNull(type.stringValue, &status);
     TlvCheckIfNotZero(length, &status);
@@ -169,9 +188,9 @@ struct TlvFrame* TlvGetRecord(uint32_t id)
     return tlvFrameList + id;
 }
 
-int TlvRecordAdd(uint32_t parentRecordId, uint32_t childRecordId)
+enum TlvStatus TlvRecordAdd(uint32_t parentRecordId, uint32_t childRecordId)
 {
-    enum TlvStatus status = (enum TlvStatus)0;
+    enum TlvStatus status = TLV_SUCCESS;
     if (parentRecordId >= tlvFrameListSize || childRecordId >= tlvFrameListSize)
     {
         status = TLV_ERROR_ARGS_OUT_OF_RANGE;
@@ -196,7 +215,7 @@ int TlvRecordAdd(uint32_t parentRecordId, uint32_t childRecordId)
 
 int TlvAssign()
 {
-    enum TlvStatus status = (enum TlvStatus)0;
+    enum TlvStatus status = TLV_SUCCESS;
     struct TlvFrame *parent, *child;
     LinkStruct* currentLink;
 
@@ -237,6 +256,7 @@ int TlvAssign()
 
 static void getSizeOfChildren(uint32_t id, uint32_t* recordSizeOut)
 {
+    TlvExitOnNull(recordSizeOut);
     LinkStruct* currentCheck;
     for (uint32_t i = 0; i < linkListSize; ++i)
     {
@@ -262,6 +282,7 @@ enum TlvStatus TlvRecordGetSize(uint32_t id, uint32_t* recordSizeOut)
 {
     enum TlvStatus status = TLV_SUCCESS;
     TlvCheckIfExceedsMax(id, &status);
+    TlvCheckNotNull(recordSizeOut, &status);
     CHECK_ERROR(status);
 
     *recordSizeOut = TLV_TYPE_AND_LENGTH_FIELDS_SIZE;
@@ -279,11 +300,19 @@ static enum TlvStatus RecordSerializeWriteFrame(uint32_t id, void* data,
     uint32_t* offset, const uint32_t dataSize)
 {
     struct TlvFrame* frame = tlvFrameList + id;
+    if (data == NULL)
+    {
+        return TLV_ERROR_DATA_NULL;
+    }
+    if (offset == NULL)
+    {
+        return TLV_ERROR_DATA_NULL;
+    }
     memcpy_s((char*)data + *offset, TLV_TYPE_ID_SIZE, frame,
         TLV_TYPE_ID_SIZE);
     if ((*offset += TLV_TYPE_ID_SIZE) > dataSize)
     {
-       return TLV_ERROR_MEMORY_OVERUN;
+       return TLV_ERROR_MEMORY_OVERRUN;
     }
 
     if (frame->length > 0)
@@ -292,14 +321,14 @@ static enum TlvStatus RecordSerializeWriteFrame(uint32_t id, void* data,
             sizeof(frame->length));
         if ((*offset += TLV_LENGTH_SIZE) > dataSize)
         {
-            return TLV_ERROR_MEMORY_OVERUN;
+            return TLV_ERROR_MEMORY_OVERRUN;
         }
         memcpy_s((char*)data + *offset, frame->length, frame->value,
             frame->length);
 
         if ((*offset += frame->length) > dataSize)
         {
-            return TLV_ERROR_MEMORY_OVERUN;
+            return TLV_ERROR_MEMORY_OVERRUN;
         }
     }
     else
@@ -310,7 +339,7 @@ static enum TlvStatus RecordSerializeWriteFrame(uint32_t id, void* data,
             sizeof(childrenSize));
         if ((*offset += TLV_LENGTH_SIZE) > dataSize)
         {
-            return TLV_ERROR_MEMORY_OVERUN;
+            return TLV_ERROR_MEMORY_OVERRUN;
         }
 
         for (uint32_t i = 0; i < linkListSize; ++i)
@@ -331,6 +360,7 @@ enum TlvStatus TlvSerialize(uint32_t id, void* data, const uint32_t dataSize)
     enum TlvStatus status = TLV_SUCCESS;
     TlvCheckIfExceedsMax(id, &status);
     TlvCheckNotNull(data, &status);
+
     if (dataSize == 0)
     {
         status = TLV_ERROR_INVALID_SIZE;
@@ -350,6 +380,8 @@ enum TlvStatus TlvSerialize(uint32_t id, void* data, const uint32_t dataSize)
 static bool findLastChildNode(uint32_t searchedId, uint32_t* idOfLastChild,
     uint32_t* linkIdToDelete)
 {
+    TlvExitOnNull(idOfLastChild);
+    TlvExitOnNull(linkIdToDelete);
     for (uint32_t i = linkListSize - 1; i != UINT32_MAX; i--)
     {
         if (linkList[i].parentRecordId == searchedId)
@@ -374,6 +406,7 @@ static bool checkIfFrameEmpty(uint32_t id)
 
 static enum TlvStatus releaseRecord(uint32_t id, enum TlvStatus* status)
 {
+    TlvExitOnNull(status);
     void* tmp;
     if (tlvFrameListSize == 1 && id == 0)
     {
@@ -433,6 +466,7 @@ static enum TlvStatus releaseRecord(uint32_t id, enum TlvStatus* status)
 
 static int releaseLinkRecord(uint32_t id, enum TlvStatus* status)
 {
+    TlvExitOnNull(status);
     void* tmp;
     if (linkListSize == 1 && id == 0)
     {
@@ -481,7 +515,7 @@ static bool doesRecordContainChildren(uint32_t id)
 
 static enum TlvStatus deleteLinkIfChildForAFrame(uint32_t id)
 {
-    enum TlvStatus status = (enum TlvStatus)0;
+    enum TlvStatus status = TLV_SUCCESS;
     LinkStruct* link;
     for (uint32_t i = 0; i < linkListSize; ++i)
     {
@@ -496,7 +530,7 @@ static enum TlvStatus deleteLinkIfChildForAFrame(uint32_t id)
 
 enum TlvStatus TlvRecordsRelease(uint32_t id)
 {
-    enum TlvStatus status = (enum TlvStatus)0;
+    enum TlvStatus status = TLV_SUCCESS;
     TlvCheckIfExceedsMax(id, &status);
     CHECK_ERROR(status);
     uint32_t currentSearch = id;
