@@ -21,32 +21,50 @@
 #or any other notice embedded in Materials by Intel or Intel's suppliers or licensors
 #in any way.
 
-set(GNA_TOOLS_OUT_DIR ${GNA_BINARY_DIR}/tools)
-set(GNA_TOOLS_DEBUG_OUT_DIR ${GNA_BINARY_DIR}/tools/${OS_PREFIX}-DEBUG)
-set(GNA_TOOLS_RELEASE_OUT_DIR ${GNA_BINARY_DIR}/tools/${OS_PREFIX}-RELEASE)
+# minimum version of CMake
+cmake_minimum_required(VERSION 3.10)
 
-option(GNA_BUILD_WITH_DEVTEST_ENABLED "" ON)
-option(GNA_BUILD_WITH_GNA_SELF_TEST_ENABLED "" ON)
-option(GNA_BUILD_WITH_GNA_DRIVER_UTIL_ENABLED "" ON)
-option(GNA_BUILD_WITH_TLV_ENABLED "" ON)
+set(GNA_DRIVER_UTIL_DEBUG_OUT_DIR
+  ${GNA_TOOLS_DEBUG_OUT_DIR}/gna-driver-util/${CMAKE_ARCHITECTURE})
+set(GNA_DRIVER_UTIL_RELEASE_OUT_DIR
+  ${GNA_TOOLS_RELEASE_OUT_DIR}/gna-driver-util/${CMAKE_ARCHITECTURE})
 
-include(${CMAKE_SOURCE_DIR}/build/cmake/gna_cmake_tools.cmake)
+set(gna_driver_util_sources
+  GnaUtilConfig.cpp
+  gna-driver-util.cpp)
 
-if(${GNA_BUILD_WITH_DEVTEST_ENABLED})
-  add_subdirectory(DevTest)
-endif()
+set(gna_driver_util_headers
+  Memory.h
+  GnaUtilConfig.h
+  DriverInterface.h)
 
-if (${GNA_BUILD_WITH_GNA_SELF_TEST_ENABLED})
-  add_subdirectory(gna-self-test)
-endif()
+set(gna_driver_util_sources
+  ${gna_driver_util_sources}
+  WindowsDriverInterface.cpp
+  LinuxDriverInterface.cpp)
 
-if (${GNA_BUILD_WITH_GNA_DRIVER_UTIL_ENABLED})
-  add_subdirectory(gna-driver-util)
-endif()
+set(gna_driver_util_headers
+  ${gna_driver_util_headers}
+  WindowsDriverInterface.h
+  LinuxDriverInterface.h)
 
-if(${GNA_BUILD_WITH_TLV_ENABLED})
-  add_subdirectory(tlv)
-  set_gna_target_properties(tlv)
-endif()
+set(gna_driver_util_common_headers
+  ${COMMON_DIR}/GnaDrvApi.h
+  ${COMMON_DIR}/gna-api.h
+  ${COMMON_DIR}/gna-api-status.h
+  ${COMMON_DIR}/gna.h
+  ${COMMON_DIR}/gna-h-wrapper.h)
 
-set(GNA_ALL_TESTS_REGISTERED_TARGETS "${GNA_ALL_TESTS_REGISTERED_TARGETS}" PARENT_SCOPE)
+add_executable(gna-driver-util
+  ${gna_driver_util_common_headers}
+  ${gna_driver_util_sources}
+  ${gna_driver_util_headers})
+
+target_include_directories(gna-driver-util
+  PRIVATE ${COMMON_DIR} ${API_DIR})
+
+set_gna_target_properties(gna-driver-util)
+set_gna_compile_definitions(gna-driver-util)
+set_gna_compile_options(gna-driver-util)
+
+strip_symbols(gna-driver-util)
