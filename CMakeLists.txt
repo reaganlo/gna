@@ -60,7 +60,6 @@ set(COMMON_DIR ${APP_DIR}/common)
 set(API_DIR ${APP_DIR}/gna-api)
 set(SRC_DIR ${APP_DIR}/gna-lib)
 set(API_IMPL_DIR ${APP_DIR}/gna-lib/gna-api)
-set(SAMPLES_DIR ${CMAKE_SOURCE_DIR}/samples)
 set(KERNEL_DIR ${SRC_DIR}/kernels)
 set(BUILD_DIR ${CMAKE_SOURCE_DIR}/build)
 
@@ -90,18 +89,6 @@ endif()
 
 include(${CMAKE_SOURCE_DIR}/build/cmake/gna_compile_flags.cmake)
 
-# make samples package
-file(MAKE_DIRECTORY ${GNA_BINARY_DIR}/samples)
-file(MAKE_DIRECTORY ${GNA_BINARY_DIR}/samples/gna-lib)
-file(MAKE_DIRECTORY ${GNA_BINARY_DIR}/samples/gna-lib/include)
-file(MAKE_DIRECTORY ${GNA_BINARY_DIR}/samples/gna-lib/x64)
-file(MAKE_DIRECTORY ${GNA_BINARY_DIR}/samples/gna-lib/x86)
-file(COPY samples/CMakeLists.txt
-          samples/gna-samples.sln
-          samples/readme.txt
-          samples/sample01
-          samples/sample_dumper
-    DESTINATION ${GNA_BINARY_DIR}/samples)
 file(COPY readme.txt
     DESTINATION ${GNA_BINARY_DIR}/)
 

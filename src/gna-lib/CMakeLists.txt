@@ -172,6 +172,13 @@ set(gna_api_impl_src_2
 set(gna_lib_sources
   ${gna_lib_sources} ${gna_api_impl_src_2} ${gna_driver_interface_src})
 
+set(gna_api_headers
+  ${COMMON_DIR}/gna-api.h
+  ${COMMON_DIR}/gna-api-types-xnn.h
+  ${COMMON_DIR}/gna-api-types-gmm.h
+  ${COMMON_DIR}/gna-api-status.h
+  ${COMMON_DIR}/gna-api-dumper.h)
+
 set(gna_lib_headers
   ${SRC_DIR}/AccelerationDetector.h
   ${SRC_DIR}/ActivationFunction.h
@@ -263,16 +270,7 @@ set(gna_api_impl_headers_2
   ${API_IMPL_DIR}/gna2-validation-impl.h)
 
 set(gna_lib_headers
-  ${gna_lib_headers} ${gna_api_impl_headers_2} ${gna_driver_interface_headers})
-
-set(gna_api_headers
-  ${COMMON_DIR}/gna-api.h
-  ${COMMON_DIR}/gna-api-types-xnn.h
-  ${COMMON_DIR}/gna-api-types-gmm.h
-  ${COMMON_DIR}/gna-api-status.h)
-
-set(gna_api_extra
-  ${COMMON_DIR}/gna-api-dumper.h)
+  ${gna_api_headers} ${gna_lib_headers} ${gna_api_impl_headers_2} ${gna_driver_interface_headers})
 
 set(gna_api_headers_2
   ${API_DIR}/gna2-api.h
@@ -307,15 +305,11 @@ if(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
   list(APPEND common_sources ${gna_rc_files} ${windows_ddi})
 endif()
 
-set(api_headers ${gna_api_headers} ${gna_api_extra})
-source_group(Api FILES ${api_headers})
 
-set(api_headers_2 ${gna_api_headers_2} ${gna_api_headers_extra_2})
-source_group(Api2 FILES ${api_headers_2})
+set(api_headers ${gna_api_headers_2} ${gna_api_headers_extra_2})
+source_group(Api2 FILES ${api_headers})
 
 source_group("Api2 Source Files" FILES ${gna_api_impl_src_2})
-
-set(api_headers ${api_headers} ${api_headers_2})
 
 add_library(gna-api SHARED)
 
@@ -378,29 +372,13 @@ add_custom_command(TARGET gna-api POST_BUILD
   ${api_headers}
   ${GNA_API_INCL_DIR})
 
-add_custom_command(TARGET gna-api POST_BUILD
-  COMMAND ${CMAKE_COMMAND} -E copy_if_different
-  ${api_headers}
-  ${CMAKE_SOURCE_DIR}/samples/gna-lib/include)
-
 if(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
   add_custom_command(TARGET gna-api POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-    $<TARGET_FILE:gna-api>
-    $<TARGET_LINKER_FILE:gna-api>
-    $<$<CONFIG:${OS_PREFIX}_RELEASE>:$<TARGET_FILE_DIR:gna-api>/gnaPublic.pdb>
-    $<$<CONFIG:${OS_PREFIX}_DEBUG>:$<TARGET_PDB_FILE:gna-api>>
-    ${CMAKE_SOURCE_DIR}/samples/gna-lib/${CMAKE_ARCHITECTURE}
-    COMMAND ${CMAKE_COMMAND}
-      -DPDB_PUBLIC=${GNA_API_PDB_STRIPPED}
-      -DPDB_PATH=${GNA_LIB_RELEASE_OUT_DIR}
-      -DFILE_NAME=gna.pdb
-      -P ${CMAKE_SOURCE_DIR}/build/cmake/pdb_public.cmake)
-else()
-  add_custom_command(TARGET gna-api POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-    $<TARGET_SONAME_FILE:gna-api>
-    ${CMAKE_SOURCE_DIR}/samples/gna-lib/${CMAKE_ARCHITECTURE})
+	COMMAND ${CMAKE_COMMAND}
+	-DPDB_PUBLIC=${GNA_API_PDB_STRIPPED}
+    -DPDB_PATH=${GNA_LIB_RELEASE_OUT_DIR}
+    -DFILE_NAME=gna.pdb
+    -P ${CMAKE_SOURCE_DIR}/build/cmake/pdb_public.cmake)
 endif()
 
 if(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
