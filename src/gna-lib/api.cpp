@@ -173,7 +173,7 @@ GNAAPI intel_gna_status_t GnaRequestConfigEnableHardwareConsistency(
     try
     {
         auto& device = DeviceManager::Get().GetDeviceForRequestConfigId(configId);
-        const auto deviceVersion = DeviceVersionMapInverted.at(legacyVersion);
+        const auto deviceVersion = Gna2GetVersionForLegacy(legacyVersion);
         device.EnableHardwareConsistency(configId, deviceVersion);
         return GNA_SUCCESS;
     }
@@ -257,7 +257,7 @@ GNAAPI gna_status_t GnaRequestWait(
     {
         auto& device = DeviceManager::Get().GetDeviceForRequestId(requestId);
         auto status = device.WaitForRequest(requestId, milliseconds);
-        return StatusMap.at(status);
+        return Gna2GetLegacyStatus(status);
     }
     catch (const GnaModelException &e)
     {
@@ -422,7 +422,7 @@ void* GnaModelDump(
         auto& device = DeviceManager::Get().GetDevice(0);
         Expect::Equal(GNA_1_0_EMBEDDED, deviceGeneration, Gna2StatusAccelerationModeNotSupported); // Temporary limitation
         auto dump = device.Dump(modelId, modelHeader, &newStatus, customAlloc);
-        *status = StatusMap.at(newStatus);
+        *status = Gna2GetLegacyStatus(newStatus);
         return dump;
     }
     catch (const GnaModelException &e)

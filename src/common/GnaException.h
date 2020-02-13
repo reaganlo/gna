@@ -43,9 +43,9 @@ class GnaException : public std::runtime_error
 {
 public:
     explicit GnaException(Gna2Status status) :
-        std::runtime_error{ Logger::StatusToString(StatusMap.at(status)) },
+        std::runtime_error{ Logger::StatusToString(Gna2GetLegacyStatus((status))) },
         Status{ status },
-        LegacyStatus { StatusMap.at(status) }
+        LegacyStatus { Gna2GetLegacyStatus(status) }
     {}
 
     virtual inline Gna2Status GetStatus() const

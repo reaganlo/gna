@@ -42,13 +42,13 @@ if(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
 
   # Debug/Release Multithreaded libraries
   set(GNA_COMPILE_FLAGS_DEBUG ${GNA_COMPILE_FLAGS_DEBUG} /MDd /Od /RTC1)
-  set(GNA_COMPILE_FLAGS_RELEASE ${GNA_COMPILE_FLAGS_RELEASE} /MD /Od /Oi)
+  set(GNA_COMPILE_FLAGS_RELEASE ${GNA_COMPILE_FLAGS_RELEASE} /MD /Oi /Gy)
 
   # Optimization level
   if(${CMAKE_CXX_COMPILER_ID} STREQUAL "Intel")
-    set(GNA_COMPILE_FLAGS_RELEASE ${GNA_COMPILE_FLAGS_RELEASE} /Qinline-forceinline)
+    set(GNA_COMPILE_FLAGS_RELEASE ${GNA_COMPILE_FLAGS_RELEASE} /O3 /Qinline-forceinline)
   elseif(${CMAKE_CXX_COMPILER_ID} STREQUAL MSVC)
-    set(GNA_COMPILE_FLAGS_RELEASE ${GNA_COMPILE_FLAGS_RELEASE})
+    set(GNA_COMPILE_FLAGS_RELEASE ${GNA_COMPILE_FLAGS_RELEASE} /O2)
   endif()
 
   # Linker options
@@ -97,7 +97,7 @@ else()
   set(GNA_COMPILE_FLAGS_DEBUG ${GNA_COMPILE_FLAGS_DEBUG}
       -g -O0)
   set(GNA_COMPILE_FLAGS_RELEASE ${GNA_COMPILE_FLAGS_RELEASE}
-      -fvisibility=hidden -fstack-protector-all -O0)
+      -fvisibility=hidden -fstack-protector-all -O3)
 
   # ICC intrinsics inline expansion
   if(${CMAKE_CXX_COMPILER_ID} STREQUAL "Intel")
