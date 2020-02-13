@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2017 Intel Corporation.
+ Copyright 2020 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -43,7 +43,7 @@
 #error Verbose version of library available only on Windows OS
 #endif
 
-#include <SetupApi.h>
+#include <Cfgmgr32.h>
 #include <ntstatus.h>
 
 using namespace GNA;
@@ -76,14 +76,22 @@ bool WindowsDriverInterface::OpenDevice(uint32_t deviceIndex)
     {
         return false;
     }
+    std::wstring gnaFileName(devicePath.begin(), devicePath.end());
 
-    deviceHandle.Set(CreateFile(devicePath.c_str(),
+    CREATEFILE2_EXTENDED_PARAMETERS createFileParams;
+    createFileParams.dwSize = sizeof(createFileParams);
+    createFileParams.dwFileAttributes = FILE_ATTRIBUTE_NORMAL;
+    createFileParams.dwFileFlags = FILE_FLAG_OVERLAPPED;
+    createFileParams.dwSecurityQosFlags = SECURITY_IMPERSONATION;
+    createFileParams.lpSecurityAttributes = nullptr;
+    createFileParams.hTemplateFile = nullptr;
+
+    const auto handleForGna = CreateFile2(gnaFileName.data(),
         GENERIC_READ | GENERIC_WRITE,
         0,
-        nullptr,
         CREATE_ALWAYS,
-        FILE_ATTRIBUTE_NORMAL | FILE_FLAG_OVERLAPPED,
-        nullptr));
+        &createFileParams);
+    deviceHandle.Set(handleForGna);
     if (INVALID_HANDLE_VALUE == deviceHandle)
     {
         return false;
@@ -327,48 +335,70 @@ void WindowsDriverInterface::getDeviceCapabilities()
     recoveryTimeout = (driverCapabilities.recoveryTimeout + 1 ) * 1000;
 }
 
+template<class T>
+std::vector<std::vector<T> > splitIntoNonEmpty(std::vector<T> delimitedList, T delimiter)
+{
+    std::vector<std::vector<T> > split;
+    std::vector<T> candidate;
+    for (const auto v : delimitedList)
+    {
+        if (v != delimiter)
+        {
+            candidate.push_back(v);
+        }
+        else if(!candidate.empty())
+        {
+            split.push_back(candidate);
+            candidate.clear();
+        }
+    }
+    if (!candidate.empty())
+    {
+        split.push_back(candidate);
+    }
+    return split;
+}
+
 std::string WindowsDriverInterface::discoverDevice(uint32_t deviceIndex)
 {
-    auto guid = GUID_DEVINTERFACE_GNA_DRV;
-    const auto deviceInfo = SetupDiGetClassDevs(&guid, nullptr, nullptr, DIGCF_PRESENT | DIGCF_DEVICEINTERFACE);
-    if (INVALID_HANDLE_VALUE == deviceInfo)
+    auto gnaGuid = GUID_DEVINTERFACE_GNA_DRV;
+    CONFIGRET crStatus;
+    std::vector<WCHAR> gnaFileName;
+
+    do
+    {
+        ULONG cmDeviceInterfaceSize = 0;
+        crStatus = CM_Get_Device_Interface_List_SizeW(&cmDeviceInterfaceSize,
+            &gnaGuid,
+            nullptr,
+            CM_GET_DEVICE_INTERFACE_LIST_PRESENT);
+
+        if (crStatus != CR_SUCCESS)
+        {
+            return "";
+        }
+
+        gnaFileName.resize(cmDeviceInterfaceSize);
+
+        crStatus = CM_Get_Device_Interface_ListW(&gnaGuid,
+            nullptr,
+            gnaFileName.data(),
+            cmDeviceInterfaceSize,
+            CM_GET_DEVICE_INTERFACE_LIST_PRESENT);
+    } while (crStatus == CR_BUFFER_SMALL); // handle changes btw CM_[*]_List_Size() and CM_[*]_List() calls
+
+    if (crStatus != CR_SUCCESS)
     {
         return "";
     }
+    auto allDevices = splitIntoNonEmpty(gnaFileName, L'\0');
 
-    auto deviceDetailsData = std::unique_ptr<char[]>();
-    auto deviceDetails = PSP_DEVICE_INTERFACE_DETAIL_DATA{ nullptr };
-    auto interfaceData = SP_DEVICE_INTERFACE_DATA{ 0 };
-    interfaceData.cbSize = sizeof(interfaceData);
-
-    uint32_t found = 0;
-    auto bufferSize = DWORD{ 0 };
-    std::string path;
-    for (auto i = 0; SetupDiEnumDeviceInterfaces(deviceInfo, nullptr, &guid, i, &interfaceData); ++i)
+    if(deviceIndex >= allDevices.size())
     {
-        bufferSize = DWORD{ 0 };
-        path = "";
-        if (!SetupDiGetDeviceInterfaceDetail(deviceInfo, &interfaceData, nullptr, 0, &bufferSize, nullptr))
-        {
-            auto err = GetLastError();
-            if (ERROR_INSUFFICIENT_BUFFER != err)
-                continue; // proceed to the next device
-        }
-        deviceDetailsData.reset(new char[bufferSize]);
-        deviceDetails = reinterpret_cast<PSP_DEVICE_INTERFACE_DETAIL_DATA>(deviceDetailsData.get());
-        deviceDetails->cbSize = sizeof(SP_DEVICE_INTERFACE_DETAIL_DATA);
-        if (!SetupDiGetDeviceInterfaceDetail(deviceInfo, &interfaceData, deviceDetails, bufferSize, nullptr, nullptr))
-        {
-            continue;
-        }
-        if (found++ == deviceIndex)
-        {
-            path = std::string(deviceDetails->DevicePath, bufferSize - sizeof(deviceDetails->cbSize));
-            break;
-        }
+        return "";
     }
-    SetupDiDestroyDeviceInfoList(deviceInfo);
-    return path;
+    std::wstring device(allDevices[deviceIndex].begin(), allDevices[deviceIndex].end());
+    return std::string(device.begin(), device.end());
 }
 
 void WindowsDriverInterface::wait(LPOVERLAPPED const ioctl, const DWORD timeout) const
