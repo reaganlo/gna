@@ -193,11 +193,11 @@
 ////        {UINT32_MAX, GNA_UINT32_T, "UNKNOWN GNA_API_PROPERTY"}},
 ////};
 ////
-////status_t ApiProperty::GnaGetApiProperty(gna_api_property property, void * poropertyValue, gna_property_type * propertyValueType)
+////status_t ApiProperty::GnaGetApiProperty(gna_api_property property, void * propertyValue, gna_property_type * propertyValueType)
 ////{
-////    if (static_cast<size_t>(property) < ApiProperties.size() && nullptr != poropertyValue && nullptr != propertyValueType)
+////    if (static_cast<size_t>(property) < ApiProperties.size() && nullptr != propertyValue && nullptr != propertyValueType)
 ////    {
-////        auto value = static_cast<uint32_t*>(poropertyValue);
+////        auto value = static_cast<uint32_t*>(propertyValue);
 ////        *value = ApiProperties[property].value;
 ////        *propertyValueType = ApiProperties[property].type;
 ////
@@ -209,11 +209,11 @@
 ////
 ////
 ////
-//////GNAAPI status_t GnaGetApiProperty(gna_api_property property, void * poropertyValue, gna_property_type * propertyValueType)
+//////GNAAPI status_t GnaGetApiProperty(gna_api_property property, void * propertyValue, gna_property_type * propertyValueType)
 //////{
-//////    if (property < ApiProperties.size() && nullptr != poropertyValue && nullptr != propertyValueType)
+//////    if (property < ApiProperties.size() && nullptr != propertyValue && nullptr != propertyValueType)
 //////    {
-//////        auto value = static_cast<uint32_t*>(poropertyValue);
+//////        auto value = static_cast<uint32_t*>(propertyValue);
 //////        *value = ApiProperties[property];
 //////        *propertyValueType = ApiPropertiesTypes[property];
 //////
@@ -223,11 +223,11 @@
 //////    return  GNA_NULLARGNOTALLOWED;
 //////}
 //////
-//////GNAAPI status_t GnaSetApiProperty(gna_api_property property, void * poropertyValue)
+//////GNAAPI status_t GnaSetApiProperty(gna_api_property property, void * propertyValue)
 //////{
-//////    if (property < ApiProperties.size() && nullptr != poropertyValue)
+//////    if (property < ApiProperties.size() && nullptr != propertyValue)
 //////    {
-//////        auto value = GetApiVersionFromValue(poropertyValue);
+//////        auto value = GetApiVersionFromValue(propertyValue);
 //////        ApiProperties[property] = value;
 //////
 //////        return GNA_SUCCESS;
@@ -255,18 +255,18 @@
 ////////    GnaIsFlagSet()
 ////////}
 //////
-//////GNAAPI status_t GnaApiPropertyValueToString(gna_api_property property, void * poropertyValue, char const ** propertyString)
+//////GNAAPI status_t GnaApiPropertyValueToString(gna_api_property property, void * propertyValue, char const ** propertyString)
 //////{
-//////    if (property < ApiProperties.size() && nullptr != poropertyValue && nullptr != propertyString)
+//////    if (property < ApiProperties.size() && nullptr != propertyValue && nullptr != propertyString)
 //////    {
 //////        if (GNA_API_VERSION == property)
 //////        {
-//////            auto value = GetApiVersionFromValue(poropertyValue);
+//////            auto value = GetApiVersionFromValue(propertyValue);
 //////            *propertyString = ApiVersionNames[value].c_str();
 //////        }
 //////        else
 //////        {
-//////            auto value = static_cast<uint32_t*>(poropertyValue);
+//////            auto value = static_cast<uint32_t*>(propertyValue);
 //////            sprintf_s()
 //////            *propertyString =  *value;
 //////        }

@@ -96,63 +96,54 @@ enum Gna2DeviceVersion
     /**
      Gaussian Mixture Models device.
      A ::Gna2DeviceGenerationGmm generation device.
-     Code names: SkyLake (SKL), KabyLake (KBL), CoffeeLake (CFL).
      */
     Gna2DeviceVersionGMM = 0x01,
 
     /**
      GNA 0.9 device.
      A ::Gna2DeviceGeneration0_9 generation device.
-     Code names: CannonLake (CNL).
      */
     Gna2DeviceVersion0_9 = 0x09,
 
     /**
      GNA 1.0 device.
      A ::Gna2DeviceGeneration1_0 generation device.
-     Code names: GeminiLake (GLK), ElkhartLake (EHL), IceLake (ICL).
      */
     Gna2DeviceVersion1_0 = 0x10,
 
     /**
      GNA 2.0 device.
      A ::Gna2DeviceGeneration2_0 generation device.
-     Code names: TigerLake (TGL).
      */
     Gna2DeviceVersion2_0 = 0x20,
 
     /**
      GNA 3.0 device.
      A ::Gna2DeviceGeneration3_0 generation device.
-     Code names: AlderLake (ADL).
      */
     Gna2DeviceVersion3_0 = 0x30,
 
     /**
      GNA 1.0 embedded device.
      A ::Gna2DeviceGeneration1_0 generation device.
-     Code names: SueCreek (SUE).
      */
     Gna2DeviceVersionEmbedded1_0 = 0x10E,
 
     /**
      GNA 2.1 embedded device.
      A ::Gna2DeviceGeneration2_0 generation device.
-     Code names: JellyFish (JLF).
      */
     Gna2DeviceVersionEmbedded2_1 = 0x20E,
 
     /**
      GNA 3.0 embedded device on PCH/ACE.
      A ::Gna2DeviceGeneration3_0 generation device.
-     Code names: AlderLake (ADL).
      */
     Gna2DeviceVersionEmbedded3_0 = 0x30E,
 
     /**
      GNA ANNA autonomous embedded device on ACE.
      A ::Gna2DeviceGeneration3_0 generation device.
-     Code names: AlderLake (ADL).
      */
     Gna2DeviceVersionEmbedded3_1 = 0x31A,
 
@@ -402,11 +393,11 @@ enum Gna2Status
     @retval true The status indicates success or warning.
     @retval false The status indicates some error.
  */
-GNA2_API inline bool Gna2StatusIsSuccessful(enum Gna2Status status)
+GNA2_API inline bool Gna2StatusIsSuccessful(const enum Gna2Status status)
 {
-    return (Gna2StatusSuccess == status
+    return Gna2StatusSuccess == status
         || Gna2StatusWarningArithmeticSaturation == status
-        || Gna2StatusWarningDeviceBusy == status);
+        || Gna2StatusWarningDeviceBusy == status;
 }
 
 /**
@@ -445,9 +436,9 @@ GNA2_API uint32_t Gna2StatusGetMaxMessageLength();
  @return Rounded integer value.
  */
 
-inline uint32_t Gna2RoundUp(uint32_t number, uint32_t significance)
+inline uint32_t Gna2RoundUp(const uint32_t number, const uint32_t significance)
 {
-    return ((uint32_t)((number)+significance - 1) / significance) * significance;
+    return (uint32_t)(number + significance - 1) / significance * significance;
 }
 
 /**
@@ -457,7 +448,7 @@ inline uint32_t Gna2RoundUp(uint32_t number, uint32_t significance)
  @param number Memory size or a number to round up.
  @return Rounded integer value.
  */
-inline uint32_t Gna2RoundUpTo64(uint32_t number)
+inline uint32_t Gna2RoundUpTo64(const uint32_t number)
 {
     return Gna2RoundUp(number, 64);
 }

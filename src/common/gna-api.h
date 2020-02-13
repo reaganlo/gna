@@ -322,13 +322,13 @@ const gna_device_version GNA_DEFAULT_DEVICE_VERSION = GNA_3x0;
 //// dedicated query functions
 //GNAAPI gna_status_t GnaGetApiProperty(
 //    gna_api_property property,
-//    void* poropertyValue,                       // [out] value of returned property, pointer to allocated 8Byte memory region
+//    void* propertyValue,                       // [out] value of returned property, pointer to allocated 8Byte memory region
 //    gna_property_type* propertyValueType);      // [out] type of returned property
 //
 //// optional
 //GNAAPI gna_status_t GnaSetApiProperty(
 //    gna_api_property property,
-//    void* poropertyValue);                      // [in] value of property, pointer to allocated 8Byte memory region
+//    void* propertyValue);                      // [in] value of property, pointer to allocated 8Byte memory region
 //
 //// e,g,     propertyString = "GNA_LAYER_POOLING_MODE"
 //GNAAPI gna_status_t GnaApiPropertyNameToString(
@@ -338,19 +338,19 @@ const gna_device_version GNA_DEFAULT_DEVICE_VERSION = GNA_3x0;
 //// e,g,     propertyString = "GNA_POOLING_MAX | GNA_POOLING_SUM"
 //GNAAPI gna_status_t GnaApiPropertyValueToString(
 //    gna_api_property property,
-//    void* poropertyValue,                       // [in] value of property
+//    void* propertyValue,                       // [in] value of property
 //    char const ** propertyString);               // [out] c-string containing property value, allocated by GNA
 //
 //GNAAPI gna_status_t GnaGetDeviceProperty(
 //    gna_device_version deviceVersion,                       // id/index of device <0;GNA_DEVICE_AVAILABLE_COUNT-1>
 //    gna_device_property property,
-//    void* poropertyValue,                       // [out] value of returned property, pointer to allocated 8Byte memory region
+//    void* propertyValue,                       // [out] value of returned property, pointer to allocated 8Byte memory region
 //    gna_property_type* propertyValueType);      // [out] type of returned property
 //
 //GNAAPI gna_status_t GnaSetDeviceProperty(
 //    gna_device_version deviceVersion,
 //    gna_device_property property,
-//    void* poropertyValue);                      // [in] value of property, pointer to allocated 8Byte memory region
+//    void* propertyValue);                      // [in] value of property, pointer to allocated 8Byte memory region
 //
 //// e,g,     propertyString = "GNA_LAYER_POOLING_MODE"
 //GNAAPI gna_status_t GnaDevicePropertyNameToString(
@@ -360,21 +360,21 @@ const gna_device_version GNA_DEFAULT_DEVICE_VERSION = GNA_3x0;
 //// e,g,     propertyString = "GNA_POOLING_MAX | GNA_POOLING_SUM"
 //GNAAPI gna_status_t GnaDevicePropertyValueToString(
 //    gna_device_property property,
-//    void* poropertyValue,                       // [in] value of property
+//    void* propertyValue,                       // [in] value of property
 //    char const * propertyString);               // [out] c-string containing property value, allocated by GNA
 //
 //GNAAPI intel_gna_status_t GnaGetLayerProperty(
 //    gna_device_version deviceVersion,
 //    gna_layer_operation layerOperation,
 //    gna_layer_property property,
-//    void* poropertyValue,                       // [out] value of returned property, pointer to allocated 8Byte memory region
+//    void* propertyValue,                       // [out] value of returned property, pointer to allocated 8Byte memory region
 //    gna_property_type* propertyValueType);      // [out] type of returned property
 //
 //GNAAPI intel_gna_status_t GnaSetLayerProperty(
 //    gna_device_version deviceVersion,
 //    gna_layer_operation layerOperation,
 //    gna_layer_property property,
-//    void* poropertyValue);                      // [in] value of property, pointer to allocated 8Byte memory region
+//    void* propertyValue);                      // [in] value of property, pointer to allocated 8Byte memory region
 //
 //// e,g,     propertyString = "GNA_LAYER_POOLING_MODE"
 //GNAAPI gna_status_t GnaLayerPropertyNameToString(
@@ -384,7 +384,7 @@ const gna_device_version GNA_DEFAULT_DEVICE_VERSION = GNA_3x0;
 //// e,g,     propertyString = "GNA_POOLING_MAX | GNA_POOLING_SUM"
 //GNAAPI gna_status_t GnaLayerPropertyValueToString(
 //    gna_layer_property property,
-//    void* poropertyValue,                       // [in] value of property
+//    void* propertyValue,                       // [in] value of property
 //    char const * propertyString);               // [out] c-string containing property value, allocated by GNA
 //
 

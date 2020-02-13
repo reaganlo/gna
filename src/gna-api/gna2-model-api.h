@@ -326,7 +326,7 @@ enum Gna2OperationType
                             - H is a number of the output nodes (rows),
                 - For ::Gna2BiasModeGrouping:
                     - Mode: {::Gna2TensorModeDefault}
-                    - Type: {::Gna2DataTypeInt32 // TODO:3:verify is applicable},
+                    - Type: {::Gna2DataTypeInt8, ::Gna2DataTypeInt16, ::Gna2DataTypeInt32},
                     - Shape: [H x N] 2D Matrix where:
                         - H is a number of the output nodes (rows),
                         - N is a number of the bias vectors (columns), @see biasVectorIndex,
@@ -1232,77 +1232,77 @@ struct Gna2ModelItem
 enum Gna2ErrorType
 {
     /**
-     TODO:3:API: document
+     No error detected.
      */
     Gna2ErrorTypeNone = GNA2_DEFAULT,
 
     /**
-     TODO:3:API: document
+     Item value was expected to be true.
      */
     Gna2ErrorTypeNotTrue = -1,
 
     /**
-     TODO:3:API: document
+     Item value was expected to be false.
      */
     Gna2ErrorTypeNotFalse = -2,
 
     /**
-     TODO:3:API: document
+     Item value was expected to be not null.
      */
     Gna2ErrorTypeNullNotAllowed = -3,
 
     /**
-     TODO:3:API: document
+     Item value was expected to be null.
      */
     Gna2ErrorTypeNullRequired = -4,
 
     /**
-     TODO:3:API: document
+     Item value was below supported range.
      */
     Gna2ErrorTypeBelowRange = -5,
 
     /**
-     TODO:3:API: document
+     Item value was above supported range.
      */
     Gna2ErrorTypeAboveRange = -6,
 
     /**
-     TODO:3:API: document
+     Item value was not equal supported one.
      */
     Gna2ErrorTypeNotEqual = -7,
 
     /**
-     TODO:3:API: document
+     Item value was below zero.
      */
     Gna2ErrorTypeNotGtZero = -8,
 
     /**
-     TODO:3:API: document
+     Item value was not equal zero.
      */
     Gna2ErrorTypeNotZero = -9,
 
     /**
-     TODO:3:API: document
+     Item value was not equal one.
      */
     Gna2ErrorTypeNotOne = -10,
 
     /**
-     TODO:3:API: document
+     Item value was not in supported set of values.
      */
     Gna2ErrorTypeNotInSet = -11,
 
     /**
-     TODO:3:API: document
+     Item value was not multiple of supported value.
      */
     Gna2ErrorTypeNotMultiplicity = -12,
 
     /**
-     TODO:3:API: document
+     Item value was invalid, no detailed information available.
      */
     Gna2ErrorTypeNotSuccess = -13,
 
     /**
-     TODO:3:API: document
+     Item value was not aligned to supported value.
      */
     Gna2ErrorTypeNotAligned = -14,
 
@@ -1806,7 +1806,7 @@ GNA2_API enum Gna2Status Gna2OperationInitGmm(
     struct Gna2Tensor * inputs, struct Gna2Tensor * outputs,
     struct Gna2Tensor * means,
     struct Gna2Tensor * inverseCovariances,
-    struct Gna2Tensor * consts,
+    struct Gna2Tensor * constants,
     uint32_t * maximumScore);
 
 /**

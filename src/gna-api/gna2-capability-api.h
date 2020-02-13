@@ -37,10 +37,6 @@
 #ifndef __GNA2_CAPABILITY_API_H
 #define __GNA2_CAPABILITY_API_H
 
-#include "gna2-common-api.h"
-
-#include <stdint.h>
-
 /**
  List of device generations.
 
@@ -175,7 +171,7 @@ enum Gna2DeviceGeneration
 //
 //     A single char value, where 0 stands for False and 1 for True.
 //     */
-//    GNA2_PROPERTY_IS_SUPORTED = 0,
+//    GNA2_PROPERTY_IS_SUPPORTED = 0,
 //
 //    /**
 //     Current value of the property
@@ -276,13 +272,13 @@ enum Gna2DeviceGeneration
 // dedicated query functions
 //GNA2_API enum Gna2Status Gna2GetApiProperty(
 //    gna_api_property property,
-//    void* poropertyValue,                       // [out] value of returned property, pointer to allocated 8Byte memory region
+//    void* propertyValue,                       // [out] value of returned property, pointer to allocated 8Byte memory region
 //    gna_property_type* propertyValueType);      // [out] type of returned property
 //
 //// optional
 //GNA2_API enum Gna2Status Gna2SetApiProperty(
 //    gna_api_property property,
-//    void* poropertyValue);                      // value of property, pointer to allocated 8Byte memory region
+//    void* propertyValue);                      // value of property, pointer to allocated 8Byte memory region
 //
 //// e,g,     propertyString = "GNA2_LAYER_POOLING_MODE"
 //GNA2_API enum Gna2Status Gna2ApiPropertyNameToString(
@@ -292,7 +288,7 @@ enum Gna2DeviceGeneration
 //// e,g,     propertyString = "GNA2_POOLING_MAX | GNA2_POOLING_SUM"
 //GNA2_API enum Gna2Status Gna2ApiPropertyValueToString(
 //    gna_api_property property,
-//    void* poropertyValue,                       // value of property
+//    void* propertyValue,                       // value of property
 //    char const ** propertyString);               // [out] c-string containing property value, allocated by GNA
 
 //GNA2_API enum Gna2Status Gna2GetDeviceProperty(
@@ -309,7 +305,7 @@ enum Gna2DeviceGeneration
 //GNA2_API enum Gna2Status Gna2SetDeviceProperty(
 //    uint32_t device,
 //    gna_device_property property,
-//    void* poropertyValue);                      // value of property, pointer to allocated 8Byte memory region
+//    void* propertyValue);                      // value of property, pointer to allocated 8Byte memory region
 //
 //// e,g,     propertyString = "GNA2_LAYER_POOLING_MODE"
 //GNA2_API enum Gna2Status Gna2DevicePropertyNameToString(
@@ -319,21 +315,21 @@ enum Gna2DeviceGeneration
 //// e,g,     propertyString = "GNA2_POOLING_MAX | GNA2_POOLING_SUM"
 //GNA2_API enum Gna2Status Gna2DevicePropertyValueToString(
 //    gna_device_property property,
-//    void* poropertyValue,                       // value of property
+//    void* propertyValue,                       // value of property
 //    char const * propertyString);               // [out] c-string containing property value, allocated by GNA
 //
 //GNA2_API enum Gna2Status Gna2GetLayerProperty(
 //    uint32_t device,
 //    Gna2OperationMode layerOperation,
 //    gna_layer_property property,
-//    void* poropertyValue,                       // [out] value of returned property, pointer to allocated 8Byte memory region
+//    void* propertyValue,                       // [out] value of returned property, pointer to allocated 8Byte memory region
 //    gna_property_type* propertyValueType);      // [out] type of returned property
 //
 //GNA2_API enum Gna2Status Gna2SetLayerProperty(
 //    uint32_t device,
 //    Gna2OperationMode layerOperation,
 //    gna_layer_property property,
-//    void* poropertyValue);                      // value of property, pointer to allocated 8Byte memory region
+//    void* propertyValue);                      // value of property, pointer to allocated 8Byte memory region
 //
 //// e,g,     propertyString = "GNA2_LAYER_POOLING_MODE"
 //GNA2_API enum Gna2Status Gna2LayerPropertyNameToString(
@@ -343,7 +339,7 @@ enum Gna2DeviceGeneration
 //// e,g,     propertyString = "GNA2_POOLING_MAX | GNA2_POOLING_SUM"
 //GNA2_API enum Gna2Status Gna2LayerPropertyValueToString(
 //    gna_layer_property property,
-//    void* poropertyValue,                       // value of property
+//    void* propertyValue,                       // value of property
 //    char const * propertyString);               // [out] c-string containing property value, allocated by GNA
 //
 //
@@ -351,12 +347,12 @@ enum Gna2DeviceGeneration
 //GNA2_API enum Gna2Status Gna2GetHardwareDeviceProperty(
 //    enum Gna2DeviceGeneration generation,         // hardware device generation identifier, for not present devices
 //    gna_device_property property,
-//    void* poropertyValue,                       // [out] value of returned property, pointer to allocated 8Byte memory region
+//    void* propertyValue,                       // [out] value of returned property, pointer to allocated 8Byte memory region
 //    gna_property_type* propertyValueType);      // [out] type of returned property
 //
 //GNA2_API enum Gna2Status Gna2GetHardwareLayerProperty(
 //    enum Gna2DeviceGeneration generation,         // hardware device generation identifier, for not present devices
 //    Gna2OperationMode layerOperation,
 //    gna_layer_property property,
-//    void* poropertyValue,                       // [out] value of returned property, pointer to allocated 8Byte memory region
+//    void* propertyValue,                       // [out] value of returned property, pointer to allocated 8Byte memory region
 //    gna_property_type* propertyValueType);      // [out] type of returned property
