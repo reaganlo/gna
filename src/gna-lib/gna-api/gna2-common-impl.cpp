@@ -163,7 +163,7 @@ GNA2_API uint32_t Gna2StatusGetMaxMessageLength()
 
 gna_status_t GNA::Gna2GetLegacyStatus(Gna2Status newStatus)
 {
-    const static std::unordered_map<Gna2Status, gna_status_t, GNA::EnumHash> StatusMap =
+    static const std::unordered_map<Gna2Status, gna_status_t, GNA::EnumHash> StatusMap =
     {
         { Gna2StatusSuccess, GNA_SUCCESS },
         { Gna2StatusWarningArithmeticSaturation, GNA_SSATURATE },
@@ -250,7 +250,7 @@ gna_status_t GNA::Gna2GetLegacyStatus(Gna2Status newStatus)
 
 Gna2DeviceVersion GNA::Gna2GetVersionForLegacy(gna_device_version legacyVersion)
 {
-    const static std::unordered_map<gna_device_version, Gna2DeviceVersion, GNA::EnumHash> DeviceVersionMapInverted =
+    static const std::unordered_map<gna_device_version, Gna2DeviceVersion, GNA::EnumHash> DeviceVersionMapInverted =
     {
         {GNA_GMM, Gna2DeviceVersionGMM },
         {GNA_0x9, Gna2DeviceVersion0_9 },

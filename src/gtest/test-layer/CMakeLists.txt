@@ -40,12 +40,18 @@ if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux" OR ${CMAKE_SYSTEM_NAME} STREQUAL "Andro
 elseif(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
   set(EXTRA_LIBS "setupapi.lib")
   set(EXTRA_DEFS "INTEL_GNA_DLLEXPORT=1")
+  set(gna_test_layer_compile_options )
   set(CPKG_LIB_PATH ${CMAKE_SOURCE_DIR}/src/cpkg/libarch-cpkg-lib.lib)
+    if(${GNA_WINDOWS_RUNTIME_LINKAGE_STATIC})
+    set(CPKG_LIB_PATH)
+    set(gna_test_layer_sources   ${SRC_DIR}/InternalCnn2DuArch.cpp)
+  endif()
 endif()
 
 # TODO: consider making gna-api target an object library
 # to avoid compiling sources twice
 add_executable(test-layer
+  ${gna_test_layer_sources}
   test-internal.cpp
   test-layer.cpp
   test-transpose-layer.cpp

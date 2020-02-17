@@ -76,7 +76,6 @@ if(${GNA_BUILD_WITH_GTEST_ENABLED})
     add_dependencies(gna_all_tests_to_run_on_posbuild_via_ctest ${target_test})
   endmacro(add_target_to_postbuild_test_run)
 
-  option(gtest_force_shared_crt "" ON)
   option(BUILD_GMOCK "" OFF)
 
   add_subdirectory(test-gna-api)

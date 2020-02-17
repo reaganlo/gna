@@ -68,6 +68,10 @@ elseif(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
   set(API_EXTRA_LIBS "setupapi.lib")
   set(API_EXTRA_DEFS "-DINTEL_GNA_DLLEXPORT=1")
   set(CPKG_LIB_PATH ${CMAKE_SOURCE_DIR}/src/cpkg/libarch-cpkg-lib.lib)
+  if(${GNA_WINDOWS_RUNTIME_LINKAGE_STATIC})
+    set(CPKG_LIB_PATH)
+    set(gna_lib_sources   ${gna_lib_sources} ${SRC_DIR}/InternalCnn2DuArch.cpp)
+  endif()
 endif()
 
 set(GNA_API_INCL_DIR ${GNA_BINARY_DIR}/gna-lib/include)
@@ -83,7 +87,7 @@ set(GNA_LIB_VERBOSE_RELEASE_OUT_DIR ${GNA_LIB_VERBOSE_OUT_DIR}/${OS_PREFIX}-RELE
 set(GNA_API_PDB_STRIPPED ${GNA_LIB_RELEASE_OUT_DIR}/gnaPublic.pdb)
 set(GNA_API_VERBOSE_PDB_STRIPPED ${GNA_LIB_VERBOSE_RELEASE_OUT_DIR}/gna-verbosePublic.pdb)
 
-set(gna_lib_sources
+set(gna_lib_sources ${gna_lib_sources}
   ${SRC_DIR}/api.cpp
   ${SRC_DIR}/AccelerationDetector.cpp
   ${SRC_DIR}/ActivationFunction.cpp
