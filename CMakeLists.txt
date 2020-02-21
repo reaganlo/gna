@@ -1,5 +1,5 @@
 #INTEL CONFIDENTIAL
-#Copyright 2018 Intel Corporation.
+#Copyright 2020 Intel Corporation.
 
 #The source code contained or described herein and all documents related
 #to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -126,3 +126,19 @@ add_subdirectory(src/tools)
 
 # Set up gtest unit testing engine
 add_subdirectory(src/gtest)
+
+# HW C-package module
+option(GNA_BUILD_WITH_3_0_HW_MODULE_ENABLED "" ON)
+if(${GNA_BUILD_WITH_3_0_HW_MODULE_ENABLED})
+  set(HW_MODULE_3_0_PATH ${BUILD_DIR}/hw_module_3_0)
+  message("Enabling GNA 3.0 HW Module for GNA library")
+  if(NOT EXISTS "${HW_MODULE_3_0_PATH}/CMakeLists.txt")
+
+	message(FATAL_ERROR "CPKG submodule was not initialized properly.\n"
+		"File <${HW_MODULE_3_0_PATH}/CMakeLists.txt> not found.\n"
+		"Try using 'git submodule update --init --recursive' to load all submodules.")
+  endif()
+  add_subdirectory(${HW_MODULE_3_0_PATH})
+else()
+	message("CPGK for GNA library will NOT be used.")
+endif()

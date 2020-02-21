@@ -1,5 +1,5 @@
 # INTEL CONFIDENTIAL
-# Copyright 2019 Intel Corporation.
+# Copyright 2020 Intel Corporation.
 
 # The source code contained or described herein and all documents related
 # to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -22,6 +22,7 @@
 # in any way.
 
 set(GNA_COMPILE_FLAGS)
+set(GNA_COMPILE_ERROR_FLAGS)
 set(GNA_COMPILE_FLAGS_DEBUG)
 set(GNA_COMPILE_FLAGS_RELEASE)
 
@@ -31,13 +32,14 @@ set(GNA_COMPILE_DEFS_RELEASE DEBUG=0)
 
 if(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
   set(GNA_COMPILE_DEFS ${GNA_COMPILE_DEFS} /DWIN32 /D_WINDOWS)
-  set(GNA_COMPILE_FLAGS ${GNA_COMPILE_FLAGS} /EHa /Zi /WX /sdl)
+  set(GNA_COMPILE_FLAGS ${GNA_COMPILE_FLAGS} /EHa /Zi /sdl)
+  set(GNA_COMPILE_ERROR_FLAGS /WX)
 
   # Warnings
   if(${CMAKE_CXX_COMPILER_ID} STREQUAL MSVC)
-    set(GNA_COMPILE_FLAGS ${GNA_COMPILE_FLAGS} /W4)
+    set(GNA_COMPILE_ERROR_FLAGS ${GNA_COMPILE_ERROR_FLAGS} /W4)
   else()
-    set(GNA_COMPILE_FLAGS ${GNA_COMPILE_FLAGS} /Wall)
+    set(GNA_COMPILE_ERROR_FLAGS ${GNA_COMPILE_ERROR_FLAGS} /Wall)
   endif()
 
   set(GNA_COMPILE_FLAGS_DEBUG ${GNA_COMPILE_FLAGS_DEBUG} /Od /RTC1)
@@ -73,37 +75,37 @@ else()
   set(GNA_COMPILE_DEFS_RELEASE ${GNA_COMPILE_DEFS_RELEASE} _FORTIFY_SOURCE=2)
 
   # All compilers warnings
-  set(GNA_COMPILE_FLAGS ${GNA_COMPILE_FLAGS}
+  set(GNA_COMPILE_ERROR_FLAGS ${GNA_COMPILE_ERROR_FLAGS}
       -Wall -Werror
       -Wextra -Wshadow -Wunused -Wformat)
 
   # GCC & Clang warnings
   if(${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang"
       OR ${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU")
-    set(GNA_COMPILE_FLAGS ${GNA_COMPILE_FLAGS}
+    set(GNA_COMPILE_ERROR_FLAGS ${GNA_COMPILE_ERROR_FLAGS}
         -Wpedantic -Wconversion -Wdouble-promotion)
 
     # Clang double braces bug: https://bugs.llvm.org/show_bug.cgi?id=21629
-    set(GNA_COMPILE_FLAGS ${GNA_COMPILE_FLAGS} -Wno-missing-braces)
+    set(GNA_COMPILE_ERROR_FLAGS ${GNA_COMPILE_ERROR_FLAGS} -Wno-missing-braces)
   endif()
 
   # GCC only warnings
   if(${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU")
     # -Wuseless-cast not applicable - _mm256_i32gather_epi32 implemetation generates warning
-    set(GNA_COMPILE_FLAGS ${GNA_COMPILE_FLAGS} -Wlogical-op)
+    set(GNA_COMPILE_ERROR_FLAGS ${GNA_COMPILE_ERROR_FLAGS} -Wlogical-op)
     if(${CMAKE_CXX_COMPILER_VERSION} VERSION_GREATER_EQUAL "6.0")
-      set(GNA_COMPILE_FLAGS ${GNA_COMPILE_FLAGS}
+      set(GNA_COMPILE_ERROR_FLAGS ${GNA_COMPILE_ERROR_FLAGS}
           -Wnull-dereference -Wduplicated-cond)
     endif()
     if(${CMAKE_CXX_COMPILER_VERSION} VERSION_GREATER_EQUAL "7.0")
-      set(GNA_COMPILE_FLAGS ${GNA_COMPILE_FLAGS}
+      set(GNA_COMPILE_ERROR_FLAGS ${GNA_COMPILE_ERROR_FLAGS}
           -Wduplicated-branches)
     endif()
   endif()
 
   # Clang only warnings
   if(${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
-    set(GNA_COMPILE_FLAGS ${GNA_COMPILE_FLAGS} -Wno-\#pragma-messages)
+    set(GNA_COMPILE_ERROR_FLAGS ${GNA_COMPILE_ERROR_FLAGS} -Wno-\#pragma-messages)
   endif()
 
   # Optimization and symbols
@@ -122,11 +124,15 @@ else()
   set(GNA_LINKER_FLAGS_RELEASE "-fdata-sections -ffunction-sections -Wl,--gc-sections")
 
   set(GNA_CC_COMPILE_FLAGS ${GNA_COMPILE_FLAGS})
-  set(GNA_CC_COMPILE_FLAGS_RELEASE ${GNA_COMPILE_FLAGS_RELEASE})
-  set(GNA_COMPILE_FLAGS ${GNA_COMPILE_FLAGS}
+  set(GNA_COMPILE_ERROR_FLAGS ${GNA_COMPILE_ERROR_FLAGS}
       -Woverloaded-virtual -Wnon-virtual-dtor)
+  set(GNA_COMPILE_COMMON_FLAGS ${GNA_COMPILE_FLAGS})
+  set(GNA_COMPILE_FLAGS ${GNA_COMPILE_FLAGS} ${GNA_COMPILE_ERROR_FLAGS})
+
+  set(GNA_CC_COMPILE_FLAGS_RELEASE ${GNA_COMPILE_FLAGS_RELEASE})
   set(GNA_COMPILE_FLAGS_RELEASE ${GNA_COMPILE_FLAGS_RELEASE}
       -fvisibility-inlines-hidden)
+
 endif()
 
 # interprocedural optimization
