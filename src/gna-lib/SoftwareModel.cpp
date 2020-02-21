@@ -30,6 +30,7 @@
 #include "KernelArguments.h"
 #include "Layer.h"
 #include "Macros.h"
+#include "ModelError.h"
 #include "RequestConfiguration.h"
 #include "Validator.h"
 
@@ -63,6 +64,8 @@ void SoftwareModel::CheckModel(uint32_t declaredBatchSize, void * operationPoint
 {
     Expect::InRange(declaredBatchSize, ui32_1, XNN_N_GROUP_MAX,
         Gna2StatusXnnErrorLyrCfg);
+
+    ModelErrorHelper::ExpectGtZero(layerCount, Gna2ItemTypeModelNumberOfOperations);
     Expect::InRange(layerCount, ui32_1,
         HardwareCapabilities::GetMaximumLayerCount(DefaultDeviceVersion),
         Gna2StatusXnnErrorNetLyrNo);

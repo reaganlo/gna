@@ -63,7 +63,11 @@ if(${GNA_BUILD_WITH_GTEST_ENABLED})
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
       $<TARGET_FILE:gna-api>
       $<$<CONFIG:LNX_RELEASE>:$<TARGET_FILE:gna-api>.dbg>
-      $<TARGET_FILE_DIR:test-gna-api>)
+      $<TARGET_FILE_DIR:test-gna-api>
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+      $<TARGET_FILE:gna-api>
+      $<$<CONFIG:LNX_RELEASE>:$<TARGET_FILE:gna-api>.dbg>
+      $<TARGET_FILE_DIR:test-model-error>)
   set_property(TARGET gna_all_tests_to_run_on_posbuild_via_ctest PROPERTY FOLDER tests/common)
   if(NOT "${GNA_ALL_TESTS_REGISTERED_TARGETS}" STREQUAL "")
     add_dependencies(gna_all_tests_to_run_on_posbuild_via_ctest ${GNA_ALL_TESTS_REGISTERED_TARGETS})
@@ -80,6 +84,7 @@ if(${GNA_BUILD_WITH_GTEST_ENABLED})
 
   add_subdirectory(test-gna-api)
   add_subdirectory(test-layer)
+  add_subdirectory(test-model-error)
   add_subdirectory(test-xnn)
   if (${GNA_BUILD_WITH_TLV_ENABLED})
     add_subdirectory(test-tlv)

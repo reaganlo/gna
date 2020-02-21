@@ -226,7 +226,7 @@ void ExpectPointerArrayValid(T ** ptr, uint32_t arraySize,
     Expect::InRange(arraySize, reqNotNull, maxSize, error);
     if (0 == arraySize)
     {
-        Expect::True(ptr == nullptr, error);
+        Log->Warning("Not null pointer provided although number of elements set to zero.\n");
     }
     else
     {

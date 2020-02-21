@@ -131,7 +131,10 @@ public:
     }
 
     virtual ~GnaModelException() = default;
-
+    uint32_t GetLayerId() const
+    {
+        return LayerId;
+    }
 protected:
     uint32_t LayerId;
 };

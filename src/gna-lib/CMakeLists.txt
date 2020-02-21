@@ -135,6 +135,7 @@ set(gna_lib_sources ${gna_lib_sources}
   ${SRC_DIR}/Memory.cpp
   ${SRC_DIR}/MemoryContainer.cpp
   ${SRC_DIR}/ModelDumper.cpp
+  ${SRC_DIR}/ModelError.cpp
   ${SRC_DIR}/ModelExportConfig.cpp
   ${SRC_DIR}/ModelWrapper.cpp
   ${SRC_DIR}/OperationConfig.cpp
@@ -231,6 +232,7 @@ set(gna_lib_headers
   ${SRC_DIR}/Logger.h
   ${SRC_DIR}/Memory.h
   ${SRC_DIR}/MemoryContainer.h
+  ${SRC_DIR}/ModelError.h
   ${SRC_DIR}/ModelExportConfig.h
   ${SRC_DIR}/ModelWrapper.h
   ${SRC_DIR}/OperationConfig.h

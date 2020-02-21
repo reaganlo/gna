@@ -1179,13 +1179,6 @@ struct Gna2ModelItem
      Index (0 based) of an operation.
 
      ::GNA2_DISABLED if not applicable.
-     */
-    enum Gna2OperationType Operation;
-
-    /**
-     Index (0 based) of an operation.
-
-     ::GNA2_DISABLED if not applicable.
 
      @note Not applicable for Capability querying.
      */

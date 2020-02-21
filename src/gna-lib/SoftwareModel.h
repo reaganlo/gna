@@ -29,6 +29,7 @@
 #include "IScorable.h"
 #include "Layer.h"
 #include "Logger.h"
+#include "ModelError.h"
 
 #include "gna-api.h"
 
@@ -107,11 +108,11 @@ private:
             }
             catch (const GnaException& e)
             {
-                throw GnaModelException(e, i);
+                throw GnaModelErrorException::CreateFromLayerAndCode(i, e.GetStatus());
             }
             catch (...)
             {
-                throw GnaModelException(GnaException(Gna2StatusXnnErrorLyrCfg), i);
+                GnaModelErrorException::CreateFromLayerUnknown(i);
             }
         }
     }

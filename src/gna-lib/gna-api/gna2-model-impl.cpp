@@ -29,6 +29,7 @@
 #include "ApiWrapper.h"
 #include "Device.h"
 #include "DeviceManager.h"
+#include "ModelError.h"
 #include "ModelWrapper.h"
 
 #include "gna2-model-api.h"
@@ -49,7 +50,7 @@ GNA2_API enum Gna2Status Gna2ModelCreate(uint32_t deviceIndex,
         *modelId = device.LoadModel(*model);
         return Gna2StatusSuccess;
     };
-    return ApiWrapper::ExecuteSafely(command);
+    return ModelErrorHelper::ExecuteSafelyAndStoreLastError(command);
 }
 
 GNA2_API enum Gna2Status Gna2ModelRelease(uint32_t modelId)
@@ -65,11 +66,12 @@ GNA2_API enum Gna2Status Gna2ModelRelease(uint32_t modelId)
 
 GNA2_API enum Gna2Status Gna2ModelGetLastError(struct Gna2ModelError * error)
 {
-    UNREFERENCED_PARAMETER(error);
-    // TODO:3:API: implement P2
+    // TODO:3:API: implement feature fully P2
     const std::function<ApiStatus()> command = [&]()
     {
-        return Gna2StatusNotImplemented;
+        Expect::NotNull(error);
+        ModelErrorHelper::PopLastError(*error);
+        return Gna2StatusSuccess;
     };
     return ApiWrapper::ExecuteSafely(command);
 }

@@ -40,41 +40,9 @@
 #include <initializer_list>
 #include <vector>
 
-class TestGnaModelApi : public TestGnaApi
+class TestGnaModelApi : public TestGnaApiEx
 {
 protected:
-    static void * Allocator(uint32_t size)
-    {
-        return malloc(size);
-    }
-    static void Free(void * ptr)
-    {
-        return free(ptr);
-    }
-    static void * InvalidAllocator(uint32_t size)
-    {
-        UNREFERENCED_PARAMETER(size);
-        return nullptr;
-    }
-
-    void SetUp() override
-    {
-        TestGnaApi::SetUp();
-        DeviceIndex = 0;
-        auto status = Gna2DeviceOpen(DeviceIndex);
-        ASSERT_EQ(status, Gna2StatusSuccess);
-    }
-
-    void TearDown() override
-    {
-        TestGnaApi::TearDown();
-        auto status = Gna2DeviceClose(DeviceIndex);
-        ASSERT_EQ(status, Gna2StatusSuccess);
-        DeviceIndex = UINT32_MAX;
-    }
-
-    uint32_t DeviceIndex = UINT32_MAX;
-
     static void createSimpleCopyModel(uint32_t & modelIdOut);
 };
 

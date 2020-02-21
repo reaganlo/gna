@@ -105,6 +105,7 @@ add_executable(test-layer
   ${SRC_DIR}/Memory.cpp
   ${SRC_DIR}/MemoryContainer.cpp
   ${SRC_DIR}/ModelDumper.cpp
+  ${SRC_DIR}/ModelError.cpp
   ${SRC_DIR}/ModelExportConfig.cpp
   ${SRC_DIR}/ModelWrapper.cpp
   ${SRC_DIR}/OperationConfig.cpp
