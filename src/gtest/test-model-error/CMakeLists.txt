@@ -38,7 +38,7 @@ add_executable(${TARGET_NAME}
   test-model-error.hpp)
 
 target_include_directories(${TARGET_NAME}
-  PRIVATE ${SRC_DIR} ${COMMON_DIR} ${API_DIR} ${API_IMPL_DIR} ${KERNEL_DIR})
+  PRIVATE ${SRC_DIR} ${COMMON_DIR} ${API_DIR} ${API_IMPL_DIR} ${KERNEL_DIR} ${GNA_HW_LIB_INCLUDE_PATH})
 
 target_compile_definitions(${TARGET_NAME} PRIVATE -DOPTGEN)
 
@@ -48,7 +48,7 @@ set_target_properties(${TARGET_NAME}
   PROPERTIES
   EXCLUDE_FROM_DEFAULT_BUILD_KLOCWORK TRUE
   OUTPUT_NAME ${TARGET_NAME})
-set_property(TARGET ${TARGET_NAME} PROPERTY FOLDER tests)
+set_property(TARGET ${TARGET_NAME} PROPERTY FOLDER tests/gna-lib)
 
 add_target_to_postbuild_test_run(${TARGET_NAME})
 

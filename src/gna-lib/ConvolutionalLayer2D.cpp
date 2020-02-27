@@ -51,13 +51,6 @@ using namespace GNA;
 
 void ConvolutionalLayer2D::Init()
 {
-    bool is1D = false;
-
-    if (inputTransform->Is1D())
-    {
-        is1D = true;
-    }
-
     if (inputTransform->Is1D() &&
         (Transforms.Get<PoolingFunction2D>(PoolingTransform2D) == nullptr ||outputTransform->Is1D()))
     {
@@ -85,15 +78,6 @@ void ConvolutionalLayer2D::Init()
     Expect::One(Input.at(GNA_DIM_N), Gna2StatusXnnErrorGrouping);
     Expect::One(Output.at(GNA_DIM_N), Gna2StatusXnnErrorGrouping);
     Expect::Equal(Output.Size, GetOutputTransform()->Output->Size, Gna2StatusXnnErrorOutputVolume);
-
-    // performed for layer size validation
-    auto uArchConfig = HardwareLayerCnn2D::CalculateUArchConfig(
-        validator->HwCapabilities.GetDeviceVersion(),
-        Transforms.Get<ConvolutionFunction2D>(ConvolutionalTransform2D),
-        Transforms.Get<PoolingFunction2D>(PoolingTransform2D),
-        GetOutputTransform()->Output->Mode, is1D);
-
-    Expect::True(uArchConfig.Valid, Gna2StatusModelConfigurationInvalid);
 }
 
 Tensor const & ConvolutionalLayer2D::GetOperand(uint32_t operandIndex) const

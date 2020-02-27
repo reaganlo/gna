@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2019 Intel Corporation.
+ Copyright 2020 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -33,11 +33,11 @@
 #include "ConvolutionalFunctions.h"
 #include "ConvolutionalFunctions2D.h"
 #include "ConvolutionalLayer.h"
-#include "Cnn2DuArch.h"
 #include "Expect.h"
 #include "GmmLayer.h"
 #include "GnaException.h"
 #include "HardwareCapabilities.h"
+#include "HwModuleInterface.hpp"
 #include "Layer.h"
 #include "LayerInput.h"
 #include "LayerOutput.h"
@@ -51,7 +51,6 @@
 #include "Tensor.h"
 #include "Transform.h"
 #include "TransformMap.h"
-#include "Weight.h"
 
 #include "gna-api-types-xnn.h"
 
@@ -67,10 +66,12 @@ static const uint32_t IterationGroupingOne = 1;
 
 DescriptorParameters::DescriptorParameters(
     Layer const & softwareLayer,
-    const LayerDescriptor& xnnDescriptor) :
+    const LayerDescriptor& xnnDescriptor,
+    HwModuleInterface const & hwModule) :
     SoftwareLayer{ softwareLayer },
     XnnDescriptor{ xnnDescriptor },
-    GmmDescriptor{ xnnDescriptor.GmmDescriptor }
+    GmmDescriptor{ xnnDescriptor.GmmDescriptor },
+    HwModule{ hwModule }
 {
 }
 
@@ -577,21 +578,10 @@ void HardwareLayerCnn::save()
     XnnDescriptor[bias_buffer] = cnn->Convolution->Biases->Buffer;
 }
 
-GNA3_AdaptHW HardwareLayerCnn2D::CalculateUArchConfig(DeviceVersion deviceVersion,
-    ConvolutionFunction2D const * cnnIn, PoolingFunction2D const * poolingIn,
-    const DataMode& outputMode, bool is1D)
+HwUarchParams HardwareLayerCnn2D::CalculateUArchConfig() const
 {
-    UNREFERENCED_PARAMETER(deviceVersion);
-    UNREFERENCED_PARAMETER(is1D);
-    GNA3_AdaptHW config;
-    if(is1D)
-    {
-        config = getUArchConfig1D(cnnIn, poolingIn, outputMode);
-    }
-    else
-    {
-        config = getUArchConfig2D(cnnIn, poolingIn, outputMode);
-    }
+    auto const config = HwModule.GetCnnParams(cnn, pooling,
+        SoftwareLayer.GetOutputTransform()->Output->Mode, is1D);
     Expect::True(config.Valid, Gna2StatusXnnErrorLyrCfg);
     return config;
 }
@@ -628,13 +618,11 @@ uint32_t HardwareLayerCnn2D::GetPoolingMemorySize(DeviceVersion deviceVersion,
 HardwareLayerCnn2D::HardwareLayerCnn2D(const DescriptorParameters& parameters) :
     HardwareLayer(parameters),
     cnn{ SoftwareLayer.Get()->Transforms.Get<ConvolutionFunction2D>(ConvolutionalTransform2D) },
-    pooling{ SoftwareLayer.Get()->Transforms.Get<PoolingFunction2D>(PoolingTransform2D) }
+    pooling{ SoftwareLayer.Get()->Transforms.Get<PoolingFunction2D>(PoolingTransform2D) },
+    is1D{ cnn->Is1D() && (pooling == nullptr || pooling->Is1D()) },
+    uArchConfig{ CalculateUArchConfig() }
 {
-    uArchConfig = CalculateUArchConfig(parameters.XnnDescriptor.HwCapabilities.GetDeviceVersion(),
-        cnn, pooling, SoftwareLayer.GetOutputTransform()->Output->Mode, cnn->Is1D() && (pooling == nullptr || pooling->Is1D()));
-
-    if (cnn->Is1D() &&
-        (pooling == nullptr || pooling->Is1D()))
+    if (is1D)
     {
         save1D();
         Log->Message("Using new uArch CNN 1D");

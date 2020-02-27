@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2018 Intel Corporation.
+ Copyright 2020 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -27,6 +27,7 @@
 
 #include "Address.h"
 #include "HardwareLayer.h"
+#include "HwModuleInterface.hpp"
 #include "KernelArguments.h"
 #include "LayerDescriptor.h"
 #include "MemoryContainer.h"
@@ -99,6 +100,8 @@ protected:
 
     // hardware model (ldMemory) + software model allocations
     MemoryContainer allocations;
+
+    std::unique_ptr<HwModuleInterface const> const HwModule;
 };
 
 }

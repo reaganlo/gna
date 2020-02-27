@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2017 Intel Corporation.
+ Copyright 2020 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -26,11 +26,11 @@
 #pragma once
 
 #include "Address.h"
-#include "Cnn2DuArch.h"
 #include "common.h"
 #include "DataMode.h"
 #include "GnaConfig.h"
 #include "GnaTypes.h"
+#include "HwModuleInterface.hpp"
 #include "LayerDescriptor.h"
 
 #include "gna-api-types-gmm.h"
@@ -53,7 +53,8 @@ struct FiltersTensor;
 struct DescriptorParameters
 {
     DescriptorParameters(Layer const & softwareLayer,
-                        const LayerDescriptor& xnnDescriptor);
+        const LayerDescriptor& xnnDescriptor,
+        HwModuleInterface const & hwModule);
 
     virtual ~DescriptorParameters() = default;
 
@@ -61,6 +62,7 @@ struct DescriptorParameters
     LayerDescriptor XnnDescriptor;
     const AddrGmmCfg GmmDescriptor;
     GetHwOffset GetBufferOffset;
+    HwModuleInterface const & HwModule;
 };
 
 // Hardware Layer descriptor converter
@@ -216,10 +218,6 @@ public:
     HardwareLayerCnn2D(const DescriptorParameters& parameters);
     virtual ~HardwareLayerCnn2D() = default;
 
-    static GNA3_AdaptHW CalculateUArchConfig(DeviceVersion deviceVersion,
-        ConvolutionFunction2D const * cnnIn, PoolingFunction2D const * poolingIn,
-        const DataMode& outputMode, bool const is1D = false);
-
     static uint32_t GetKernelMemorySize(DeviceVersion deviceVersion,
         FiltersTensor const * filter);
 
@@ -234,13 +232,16 @@ protected:
 
     void save1D();
 
+    HwUarchParams CalculateUArchConfig() const;
+
     ConvolutionFunction2D const * const cnn;
     PoolingFunction2D const * const pooling;
+    bool const is1D = false;
 
 private:
     static const uint32_t CNN_N_FLT_ITER_MAX = 16; // CNN maximum number of filters per iteration
 
-    GNA3_AdaptHW uArchConfig;
+    HwUarchParams uArchConfig;
 };
 
 // Hardware GMM Layer descriptor converter

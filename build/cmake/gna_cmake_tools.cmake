@@ -56,9 +56,8 @@ function (copy_gna_api DST_TARGET OUT_NEW_TARGET)
   set(${OUT_NEW_TARGET} "${NEW_TARGET}" PARENT_SCOPE)
   add_custom_target(${NEW_TARGET} ALL
     COMMENT "Running target: ${NEW_TARGET}"
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-    $<TARGET_FILE:gna-api>
-    $<$<CONFIG:LNX_RELEASE>:$<TARGET_FILE:gna-api>.dbg>
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+    $<TARGET_FILE_DIR:gna-api>
     $<TARGET_FILE_DIR:${DST_TARGET}>)
   set_target_properties(${NEW_TARGET}
     PROPERTIES

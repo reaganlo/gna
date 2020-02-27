@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2018 Intel Corporation.
+ Copyright 2020 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -56,7 +56,8 @@ HardwareModel::HardwareModel(CompiledModel const & softwareModel, const Hardware
     model{ softwareModel },
     hwCapabilities{ hwCaps },
     gmmDescriptorsSize{ getGmmDescriptorsSize(model.GmmCount) },
-    xnnDescriptorsSize{ getLayerDescriptorsSize(model.LayerCount, hwCapabilities.GetDeviceVersion()) }
+    xnnDescriptorsSize{ getLayerDescriptorsSize(model.LayerCount, hwCapabilities.GetDeviceVersion()) },
+    HwModule{ HwModuleInterface::Create("gna_hw") }
 {
 }
 
@@ -98,7 +99,7 @@ void HardwareModel::Build(const std::vector<std::unique_ptr<SubModel>>& submodel
         try
         {
             auto const & layer = *layerIter;
-            const auto parameters = DescriptorParameters{layer, layerDescriptor };
+            const auto parameters = DescriptorParameters{layer, layerDescriptor, *HwModule };
             if (IsSoftwareLayer(submodels, i))
             {
                 hardwareLayers.push_back(nullptr);

@@ -23,44 +23,40 @@
  in any way.
 */
 
-#include "GNA_ArchCPkg.h"
+#pragma once
 
-#include "gna2-device-api.h"
-#include "Expect.h"
+#include "HwModuleInterface.hpp"
 
-// Assuming cpackage required if any device is HW
-bool IsCpackageRequired()
+#include "GnaException.h"
+#include "gna2-model-api.h"
+#include "DataMode.h"
+
+#include "gtest/gtest.h"
+
+class HwModuleInterfaceTest : public testing::Test
 {
-    Gna2DeviceVersion deviceVersion;
-    uint32_t devCount;
-    auto status = Gna2DeviceGetCount(&devCount);
-    GNA::Expect::Success(status);
-    while(devCount-- > 0)
+protected:
+    void SetUp() override
+    {}
+
+    void ExpectGnaException(void* arg1, void* arg2, bool is1D)
     {
-        status = Gna2DeviceGetVersion(devCount, &deviceVersion);
-        GNA::Expect::Success(status);
-        if (deviceVersion != Gna2DeviceVersionSoftwareEmulation)
-        {
-            return true;
-        }
+        hwModule = GNA::HwModuleInterface::Create("gna_hw");
+        ASSERT_FALSE(!hwModule);
+        auto const cnnIn =
+            reinterpret_cast<GNA::ConvolutionFunction2D const*>(arg1);
+        auto const poolingIn =
+            reinterpret_cast<GNA::PoolingFunction2D const*>(arg2);
+        EXPECT_THROW(
+            hwModule->GetCnnParams(cnnIn, poolingIn, GNA::DataMode{ Gna2DataTypeInt8 }, is1D),
+            GNA::GnaException);
     }
-    return false;
-}
 
-GNA3_LyrDesc_t* GNA3_NewLD()
-{
-    static GNA3_LyrDesc_t t{};
-    return &t;
-}
-void GNA3_FreeLD(GNA3_LyrDesc_t* const t)
-{
-    const GNA3_LyrDesc_t empty{};
-    *t = empty;
-}
+    std::unique_ptr<GNA::HwModuleInterface const> hwModule;
+};
 
-bool GNA3_PopLD(GNA3_LyrDesc_t* const t)
+int main(int argc, char* argv[])
 {
-    static const auto required = IsCpackageRequired();
-    t->AdaptHW.Valid = !required;
-    return t->AdaptHW.Valid;
+    testing::InitGoogleTest(&argc, argv);
+    return RUN_ALL_TESTS();
 }

@@ -61,17 +61,11 @@ endif()
 project(${PROJECT_NAME})
 
 if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux" OR ${CMAKE_SYSTEM_NAME} STREQUAL "Android")
-  set(API_EXTRA_LIBS "")
+  set(API_EXTRA_LIBS ${CMAKE_DL_LIBS})
   set(API_EXTRA_DEFS "")
-  set(CPKG_LIB_PATH ${CMAKE_SOURCE_DIR}/src/cpkg/libarch-cpkg-lib.a)
 elseif(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
   set(API_EXTRA_LIBS "setupapi.lib")
   set(API_EXTRA_DEFS "-DINTEL_GNA_DLLEXPORT=1")
-  set(CPKG_LIB_PATH ${CMAKE_SOURCE_DIR}/src/cpkg/libarch-cpkg-lib.lib)
-  if(${GNA_WINDOWS_RUNTIME_LINKAGE_STATIC})
-    set(CPKG_LIB_PATH)
-    set(gna_lib_sources   ${gna_lib_sources} ${SRC_DIR}/InternalCnn2DuArch.cpp)
-  endif()
 endif()
 
 set(GNA_API_INCL_DIR ${GNA_BINARY_DIR}/gna-lib/include)
@@ -109,7 +103,6 @@ set(gna_lib_sources ${gna_lib_sources}
   ${SRC_DIR}/ConvolutionalLayer2D.cpp
   ${SRC_DIR}/ConvolutionalLayer2DCapabilities.cpp
   ${SRC_DIR}/CopyLayer.cpp
-  ${SRC_DIR}/Cnn2DuArch.cpp
   ${SRC_DIR}/DataMode.cpp
   ${SRC_DIR}/Device.cpp
   ${SRC_DIR}/DeviceLayerSupport.cpp
@@ -204,7 +197,6 @@ set(gna_lib_headers
   ${SRC_DIR}/ConvolutionalLayer2D.h
   ${SRC_DIR}/ConvolutionalLayer2DCapabilities.h
   ${SRC_DIR}/CopyLayer.h
-  ${SRC_DIR}/Cnn2DuArch.h
   ${SRC_DIR}/DataMode.h
   ${SRC_DIR}/Device.h
   ${SRC_DIR}/DeviceLayerSupport.h
@@ -263,6 +255,15 @@ set(gna_driver_interface_headers
   ${SRC_DIR}/LinuxDriverInterface.h
   ${SRC_DIR}/WindowsDriverInterface.h)
 
+set(gna_hw_module_interface_sources
+  ${SRC_DIR}/HwModuleInterface.hpp
+  ${SRC_DIR}/WindowsHwModuleInterface.hpp
+  ${SRC_DIR}/LinuxHwModuleInterface.hpp
+  ${SRC_DIR}/HwModuleInterface.cpp
+  ${SRC_DIR}/WindowsHwModuleInterface.cpp
+  ${SRC_DIR}/LinuxHwModuleInterface.cpp
+  )
+  
 set(gna_api_impl_headers_2
   ${API_IMPL_DIR}/gna2-impl.h
   ${API_IMPL_DIR}/gna2-capability-impl.h
@@ -324,14 +325,15 @@ if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux" OR ${CMAKE_SYSTEM_NAME} STREQUAL "Andro
 endif()
 
 target_include_directories(gna-api
-  PRIVATE ${SRC_DIR} ${API_DIR} ${API_IMPL_DIR} ${KERNEL_DIR})
+  PRIVATE ${SRC_DIR} ${API_DIR} ${API_IMPL_DIR} ${KERNEL_DIR} ${GNA_HW_LIB_INCLUDE_PATH})
 
 target_include_directories(gna-api PUBLIC
   $<BUILD_INTERFACE:${COMMON_DIR}>
   $<INSTALL_INTERFACE:include/gna${GNA_VERSION_MAJOR}>)
 
 target_sources(gna-api
-  PRIVATE ${common_sources} ${gna_lib_sources} ${gna_lib_headers} ${kernel_api_headers})
+  PRIVATE ${common_sources} ${gna_lib_sources} ${gna_lib_headers} ${kernel_api_headers}
+  ${gna_hw_module_interface_sources})
 
 target_sources(gna-api PUBLIC
   $<BUILD_INTERFACE:${api_headers}>)
@@ -368,7 +370,7 @@ target_compile_options(gna-api
   $<$<CONFIG:KLOCWORK>:${GNA_COMPILE_FLAGS_RELEASE}>)
 
 target_link_libraries(gna-api
-  PRIVATE ${CMAKE_THREAD_LIBS_INIT} ${API_EXTRA_LIBS} ${kernel_libraries} ${CPKG_LIB_PATH})
+  PRIVATE ${CMAKE_THREAD_LIBS_INIT} ${API_EXTRA_LIBS} ${kernel_libraries})
 
 add_dependencies(gna-api ${kernel_libraries})
 
@@ -424,7 +426,7 @@ if(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
     PUBLIC ${COMMON_DIR})
 
   target_sources(gna-api-verbose
-    PRIVATE ${common_sources} ${gna_lib_sources} ${gna_lib_headers} ${api_headers_verbose} ${kernel_api_headers} ${verbose_sources}
+    PRIVATE ${common_sources} ${gna_lib_sources} ${gna_lib_headers} ${api_headers_verbose} ${kernel_api_headers} ${verbose_sources} ${gna_hw_module_interface_sources}
     PUBLIC ${api_headers_verbose})
 
   set_target_properties(gna-api-verbose
@@ -459,7 +461,7 @@ if(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
     $<$<CONFIG:KLOCWORK>:${GNA_COMPILE_FLAGS_RELEASE}>)
 
   target_link_libraries(gna-api-verbose
-    PRIVATE ${CMAKE_THREAD_LIBS_INIT} ${API_EXTRA_LIBS} ${kernel_libraries} ${CPKG_LIB_PATH})
+    PRIVATE ${CMAKE_THREAD_LIBS_INIT} ${API_EXTRA_LIBS} ${kernel_libraries})
 
   add_dependencies(gna-api-verbose ${kernel_libraries})
 

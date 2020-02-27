@@ -34,19 +34,22 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 project(${PROJECT_NAME})
 
 if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux" OR ${CMAKE_SYSTEM_NAME} STREQUAL "Android")
-  set(EXTRA_LIBS "")
+  set(EXTRA_LIBS ${CMAKE_DL_LIBS})
   set(EXTRA_DEFS "")
-  set(CPKG_LIB_PATH ${CMAKE_SOURCE_DIR}/src/cpkg/libarch-cpkg-lib.a)
 elseif(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
   set(EXTRA_LIBS "setupapi.lib")
   set(EXTRA_DEFS "INTEL_GNA_DLLEXPORT=1")
   set(gna_test_layer_compile_options )
-  set(CPKG_LIB_PATH ${CMAKE_SOURCE_DIR}/src/cpkg/libarch-cpkg-lib.lib)
-    if(${GNA_WINDOWS_RUNTIME_LINKAGE_STATIC})
-    set(CPKG_LIB_PATH)
-    set(gna_test_layer_sources   ${SRC_DIR}/InternalCnn2DuArch.cpp)
-  endif()
 endif()
+
+set(gna_hw_module_interface_sources
+  ${SRC_DIR}/HwModuleInterface.hpp
+  ${SRC_DIR}/WindowsHwModuleInterface.hpp
+  ${SRC_DIR}/LinuxHwModuleInterface.hpp
+  ${SRC_DIR}/HwModuleInterface.cpp
+  ${SRC_DIR}/WindowsHwModuleInterface.cpp
+  ${SRC_DIR}/LinuxHwModuleInterface.cpp
+  )
 
 # TODO: consider making gna-api target an object library
 # to avoid compiling sources twice
@@ -79,7 +82,6 @@ add_executable(test-layer
   ${SRC_DIR}/ConvolutionalLayer2D.cpp
   ${SRC_DIR}/ConvolutionalLayer2DCapabilities.cpp
   ${SRC_DIR}/CopyLayer.cpp
-  ${SRC_DIR}/Cnn2DuArch.cpp
   ${SRC_DIR}/DataMode.cpp
   ${SRC_DIR}/Device.cpp
   ${SRC_DIR}/DeviceLayerSupport.cpp
@@ -138,7 +140,8 @@ add_executable(test-layer
   ${API_IMPL_DIR}/gna2-memory-impl.cpp
   ${API_IMPL_DIR}/gna2-model-impl.cpp
   ${API_IMPL_DIR}/gna2-model-export-impl.cpp
-  ${API_IMPL_DIR}/gna2-capability-impl.cpp)
+  ${API_IMPL_DIR}/gna2-capability-impl.cpp
+  ${gna_hw_module_interface_sources})  
 
 target_compile_definitions(test-layer
   PRIVATE ${EXTRA_DEFS} PROFILE PROFILE_DETAILED HW_VERBOSE=0)
@@ -146,18 +149,17 @@ target_compile_definitions(test-layer
 target_link_libraries(test-layer
   gtest
   ${EXTRA_LIBS}
-  ${kernel_libraries}
-  ${CPKG_LIB_PATH})
+  ${kernel_libraries})
 
 add_dependencies(test-layer ${kernel_libraries})
 
 target_include_directories(test-layer
-  PRIVATE ${SRC_DIR} ${COMMON_DIR} ${API_DIR} ${API_IMPL_DIR} ${KERNEL_DIR})
+  PRIVATE ${SRC_DIR} ${COMMON_DIR} ${API_DIR} ${API_IMPL_DIR} ${KERNEL_DIR} ${GNA_HW_LIB_INCLUDE_PATH})
 
 set_target_properties(test-layer
   PROPERTIES
   EXCLUDE_FROM_DEFAULT_BUILD_KLOCWORK TRUE
   OUTPUT_NAME test-layer)
-set_property(TARGET test-layer PROPERTY FOLDER tests/layer)
+set_property(TARGET test-layer PROPERTY FOLDER tests/gna-lib)
 
 add_target_to_postbuild_test_run(test-layer)

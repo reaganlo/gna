@@ -42,6 +42,6 @@ set_target_properties(test-xnn-generic
   PROPERTIES
   EXCLUDE_FROM_DEFAULT_BUILD_KLOCWORK TRUE
   OUTPUT_NAME test-xnn-generic)
-set_property(TARGET test-xnn-generic PROPERTY FOLDER tests/xnn)
+set_property(TARGET test-xnn-generic PROPERTY FOLDER tests/gna-lib)
 
 add_target_to_postbuild_test_run(test-xnn-generic)

@@ -120,17 +120,17 @@ if(CSCOPE_PATH)
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 endif()
 
-add_subdirectory(src/gna-lib/kernels)
-add_subdirectory(src/gna-lib)
-add_subdirectory(src/tools)
-
-# Set up gtest unit testing engine
-add_subdirectory(src/gtest)
-
 # HW C-package module
 option(GNA_BUILD_WITH_3_0_HW_MODULE_ENABLED "" ON)
+
+set(HW_MODULE_3_0_PATH)
+set(GNA_HW_LIB_INCLUDE_PATH)
+set(GNA_HW_LIB_ENABLED )
+
 if(${GNA_BUILD_WITH_3_0_HW_MODULE_ENABLED})
   set(HW_MODULE_3_0_PATH ${BUILD_DIR}/hw_module_3_0)
+  set(GNA_HW_LIB_INCLUDE_PATH "${HW_MODULE_3_0_PATH}/GNA-3d0_ArchCPkg_Lib/Include/")
+  set(GNA_HW_LIB_ENABLED "-DGNA_HW_LIB_ENABLED=1")
   message("Enabling GNA 3.0 HW Module for GNA library")
   if(NOT EXISTS "${HW_MODULE_3_0_PATH}/CMakeLists.txt")
 
@@ -142,3 +142,10 @@ if(${GNA_BUILD_WITH_3_0_HW_MODULE_ENABLED})
 else()
 	message("CPGK for GNA library will NOT be used.")
 endif()
+
+add_subdirectory(src/gna-lib/kernels)
+add_subdirectory(src/gna-lib)
+add_subdirectory(src/tools)
+
+# Set up gtest unit testing engine
+add_subdirectory(src/gtest)

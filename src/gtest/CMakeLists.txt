@@ -1,5 +1,5 @@
 #INTEL CONFIDENTIAL
-#Copyright 2019 Intel Corporation.
+#Copyright 2020 Intel Corporation.
 
 #The source code contained or described herein and all documents related
 #to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -86,6 +86,7 @@ if(${GNA_BUILD_WITH_GTEST_ENABLED})
   add_subdirectory(test-layer)
   add_subdirectory(test-model-error)
   add_subdirectory(test-xnn)
+  add_subdirectory(test-class)
   if (${GNA_BUILD_WITH_TLV_ENABLED})
     add_subdirectory(test-tlv)
   endif()

@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2019 Intel Corporation.
+ Copyright 2020 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -23,16 +23,40 @@
  in any way.
 */
 
-#pragma once
+#ifndef WIN32
 
-#include "ConvolutionalFunctions2D.h"
-#include "PoolingFunctions2D.h"
-#include "GNA_ArchCPkg.h"
-#include "DataMode.h"
+#include "LinuxHwModuleInterface.hpp"
 
-namespace GNA {
+#include "Expect.h"
 
-    GNA3_AdaptHW_t getUArchConfig2D(ConvolutionFunction2D const * cnnIn, PoolingFunction2D const * poolingIn, const DataMode& outputMode);
-    GNA3_AdaptHW_t getUArchConfig1D(ConvolutionFunction2D const * cnnIn, PoolingFunction2D const * poolingIn, const DataMode& outputMode);
+#include <dlfcn.h>
 
+using namespace GNA;
+
+LinuxHwModuleInterface::LinuxHwModuleInterface(char const * moduleName)
+{
+    auto fullName = std::string(moduleName);
+    fullName.append(".so");
+    hwModule = dlopen(fullName.c_str(), RTLD_LAZY);
+    if (nullptr != hwModule)
+    {
+        CreateLD = reinterpret_cast<CreateLDFunction>(dlsym(hwModule, "GNA3_NewLD"));
+        FillLD = reinterpret_cast<FillLDFunction>(dlsym(hwModule, "GNA3_PopLD"));
+        FreeLD = reinterpret_cast<FreeLDFunction>(dlsym(hwModule, "GNA3_FreeLD"));
+        Validate();
+    }
 }
+
+LinuxHwModuleInterface::~LinuxHwModuleInterface()
+{
+    if (nullptr != hwModule)
+    {
+        auto const error = dlclose(hwModule);
+        if (error)
+        {
+            Log->Error("FreeLibrary failed!");
+        }
+    }
+}
+
+#endif

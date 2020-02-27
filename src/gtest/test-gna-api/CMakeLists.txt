@@ -43,7 +43,7 @@ add_executable(test-gna-api
   test-gna-multithread.h)
 
 target_include_directories(test-gna-api
-  PRIVATE ${SRC_DIR} ${COMMON_DIR} ${API_DIR} ${API_IMPL_DIR} ${KERNEL_DIR})
+  PRIVATE ${SRC_DIR} ${COMMON_DIR} ${API_DIR} ${API_IMPL_DIR} ${KERNEL_DIR} ${GNA_HW_LIB_INCLUDE_PATH})
 
 target_compile_definitions(test-gna-api PRIVATE -DOPTGEN)
 
@@ -53,21 +53,6 @@ set_target_properties(test-gna-api
   PROPERTIES
   EXCLUDE_FROM_DEFAULT_BUILD_KLOCWORK TRUE
   OUTPUT_NAME test-gna-api)
-set_property(TARGET test-gna-api PROPERTY FOLDER tests)
+set_property(TARGET test-gna-api PROPERTY FOLDER tests/gna-lib)
 
 add_target_to_postbuild_test_run(test-gna-api)
-
-if(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
-  add_executable(test-gna-api-verbose
-      test-gna-api-verbose.cpp
-  )
-
-  target_link_libraries(test-gna-api-verbose gtest gna-api-verbose)
-  set_target_properties(test-gna-api-verbose
-    PROPERTIES
-    FOLDER tests
-    EXCLUDE_FROM_DEFAULT_BUILD_KLOCWORK TRUE
-    OUTPUT_NAME test-gna-api-verbose)
-
-  add_target_to_postbuild_test_run(test-gna-api-verbose)
-endif()
