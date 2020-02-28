@@ -29,15 +29,10 @@
 #include "Capabilities.h"
 #include "ConvolutionalLayer2DCapabilities.h"
 #include "GmmLayerCapabilities.h"
+#include "ModelError.h"
 #include "Validator.h"
 
-#include "gna-api.h"
-#include "gna-api-status.h"
-#include "gna-api-types-gmm.h"
 #include "gna-api-types-xnn.h"
-
-#include <algorithm>
-#include <memory>
 
 using namespace GNA;
 
@@ -71,13 +66,22 @@ const FullCapabilitiesMap WeightTensor::capabilities =
 };
 
 WeightTensor::WeightTensor(const Shape& dimensions, const DataMode& dataMode,
-    void * buffer, const LayerValidator& validatorIn) :
+    void * buffer, const LayerValidator& validatorIn)
+try :
     Tensor{ dimensions, dataMode, buffer, Validator{validatorIn, capabilities} }
 {
 }
-
-WeightTensor::WeightTensor(const Gna2Tensor &apiTensor, const LayerValidator& validatorIn)
-    : Tensor(apiTensor, capabilities.GetOrder(validatorIn), Validator{ validatorIn, capabilities })
+catch (GnaException& e)
 {
+    ModelErrorHelper::SetOperandIndexRethrow(e, WeightOperandIndex);
 }
 
+WeightTensor::WeightTensor(const Gna2Tensor &apiTensor, const LayerValidator& validatorIn)
+try :
+    Tensor(apiTensor, capabilities.GetOrder(validatorIn), Validator{ validatorIn, capabilities })
+{
+}
+catch (GnaException& e)
+{
+    ModelErrorHelper::SetOperandIndexRethrow(e, WeightOperandIndex);
+}

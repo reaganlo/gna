@@ -128,9 +128,9 @@ PoolingFunction::PoolingFunction(nn_operation const operation, const Shape& inpu
     hiddenConfig{ std::make_unique<PoolingConfig>(Mode, Window.at(GNA_DIM_W), Stride.at(GNA_DIM_W)) }
 {
     Expect::InSet(Mode, { KernelPoolingModeMax, KernelPoolingModeSum }, Gna2StatusCnnErrorPoolType);
-    // TODO:3: use ShapeIsValid where applicable
-    Expect::ShapeIsValid(Stride, strideLimits.at(operation));
-    Expect::ShapeIsValid(Window, windowLimits.at(operation));
+    // TODO:3: use ExpectShapeIsValid where applicable
+    GNA::ExpectShapeIsValid(Stride, strideLimits.at(operation));
+    GNA::ExpectShapeIsValid(Window, windowLimits.at(operation));
 
     OutputsPerFilterCount = 1;
     OutputDimensions[GNA_DIM_D] = inputDimensions.at(GNA_DIM_D);

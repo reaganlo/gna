@@ -24,81 +24,121 @@
 */
 
 #include "test-model-error.hpp"
+#include "gna2-model-impl.h"
+
+void TestModelError::WithOperations(std::vector< OperationCreationFunction > operations)
+{
+    withNumberOfOperations(operations.size());
+    for (unsigned i = 0; i < operations.size(); i++)
+    {
+        gnaOperations[i] = (this->*operations[i])();
+    }
+}
 
 TEST_F(TestModelError, ZeroNumberOfOperations)
 {
-    withNumberOfOperations(0);
-    Gna2ModelError e = GetCleanedError();
+    WithOperations({});
     e.Source.Type = Gna2ItemTypeModelNumberOfOperations;
-    e.Reason = Gna2ErrorTypeNotGtZero;
-    expectModelError(e);
+    expectModelError(Gna2ErrorTypeNotGtZero);
+}
+
+void TestModelError::WrongShapeDimensions(int32_t operationIndex,
+    int32_t operandIndex,
+    int32_t shapeDimensionIndex,
+    int badValue,
+    Gna2ErrorType errorType)
+{
+    e.Source.OperationIndex = operationIndex;
+    e.Source.OperandIndex = operandIndex;
+    e.Source.ShapeDimensionIndex = shapeDimensionIndex;
+    update(Gna2ItemTypeShapeDimensions, badValue);
+    expectModelError(errorType);
 }
 
 TEST_F(TestModelError, WrongInput)
 {
-    withNumberOfOperations(3);
-    gnaOperations[0] = GetSimpleCopy();
-    gnaOperations[1] = GetSimpleCopyWrong();
-    gnaOperations[2] = GetSimpleCopy();
-    Gna2ModelError e = GetCleanedError();
-    e.Source.Type = Gna2ItemTypeInternal;
-    e.Value = Gna2StatusXnnErrorInputVolume;
-    e.Source.OperationIndex = 1;
-    expectModelError(e);
+    WrongShapeDimensions(1, GNA::InputOperandIndex, 0, 9, Gna2ErrorTypeAboveRange);
 }
 
 TEST_F(TestModelError, WrongOutput)
 {
-    withNumberOfOperations(3);
-    gnaOperations[0] = CreateSimpleCopy();
-    gnaOperations[1] = CreateSimpleCopy();
-    gnaOperations[2] = CreateSimpleCopy();
-    const_cast<uint32_t&>(gnaOperations[2].Operands[1]->Shape.Dimensions[0]) = 123;
-    Gna2ModelError e = GetCleanedError();
-    e.Source.Type = Gna2ItemTypeInternal;
-    e.Value = Gna2StatusXnnErrorOutputVolume;
-    e.Source.OperationIndex = 2;
-    expectModelError(e);
+    WrongShapeDimensions(2, GNA::OutputOperandIndex, 0, 123, Gna2ErrorTypeAboveRange);
+}
+
+TEST_F(TestModelError, WrongInputMulti)
+{
+    WrongShapeDimensions(2, GNA::InputOperandIndex, 1, 123, Gna2ErrorTypeNotMultiplicity);
 }
 
 TEST_F(TestModelError, WrongWeights)
 {
-    withNumberOfOperations(3);
-    gnaOperations[0] = CreateSimpleCopy();
-    gnaOperations[1] = CreateSimpleCopy();
-    gnaOperations[2] = CreateSimpleDiagonal();
-    const_cast<uint32_t&>(gnaOperations[2].Operands[2]->Shape.Dimensions[0]) = 123;
-    Gna2ModelError e = GetCleanedError();
-    e.Source.Type = Gna2ItemTypeInternal;
-    e.Value = Gna2StatusXnnErrorWeightVolume;
-    e.Source.OperationIndex = 2;
-    expectModelError(e);
+    WithOperations({ SimpleCopy, SimpleCopy, SimpleDiagonal });
+    WrongShapeDimensions(2, GNA::WeightOperandIndex, 0, 123, Gna2ErrorTypeNotMultiplicity);
 }
 
 TEST_F(TestModelError, WrongWeightDataType)
 {
-    withNumberOfOperations(3);
-    gnaOperations[0] = CreateSimpleCopy();
-    gnaOperations[1] = CreateSimpleCopy();
-    gnaOperations[2] = CreateSimpleDiagonal();
-    const_cast<Gna2DataType&>(gnaOperations[2].Operands[2]->Type ) = Gna2DataTypeInt32;
-    Gna2ModelError e = GetCleanedError();
-    e.Source.Type = Gna2ItemTypeInternal;
-    e.Value = Gna2StatusXnnErrorWeightBytes;
     e.Source.OperationIndex = 2;
-    expectModelError(e);
+    e.Source.OperandIndex = GNA::WeightOperandIndex;
+    WithOperations({ SimpleCopy, SimpleCopy, SimpleDiagonal });
+    update(Gna2ItemTypeOperandType, Gna2DataTypeInt32);
+    expectModelError(Gna2ErrorTypeNotInSet);
 }
 
 TEST_F(TestModelError, DISABLED_TooSmalWeightVolume)
 {
-    withNumberOfOperations(3);
-    gnaOperations[0] = CreateSimpleCopy();
-    gnaOperations[1] = CreateSimpleCopy();
-    gnaOperations[2] = CreateSimpleDiagonal();
-    const_cast<uint32_t&>(gnaOperations[2].Operands[2]->Shape.Dimensions[0]) = 16;
-    Gna2ModelError e = GetCleanedError();
-    e.Source.Type = Gna2ItemTypeInternal;
-    e.Value = Gna2StatusXnnErrorWeightVolume;
+    WithOperations({ SimpleCopy, SimpleCopy, SimpleDiagonal });
+    WrongShapeDimensions(2, GNA::WeightOperandIndex, 0, 16, Gna2ErrorTypeBelowRange);
+}
+
+TEST_F(TestModelError, WrongBiasDimNumber)
+{
     e.Source.OperationIndex = 2;
-    expectModelError(e);
+    e.Source.OperandIndex = GNA::BiasOperandIndex;
+    WithOperations({ SimpleCopy, SimpleCopy,SimpleDiagonal });
+    update(Gna2ItemTypeShapeNumberOfDimensions, 2);
+    expectModelError(Gna2ErrorTypeNotEqual);
+}
+
+TEST_F(TestModelError, WrongOperationType)
+{
+    e.Source.OperationIndex = 1;
+    WithOperations({ SimpleDiagonal, SimpleCopy, SimpleDiagonal });
+    update(Gna2ItemTypeOperationType, 123);
+    expectModelError(Gna2ErrorTypeNotInSet);
+}
+
+TEST_F(TestModelError, WrongPwl)
+{
+    WithOperations({ SimpleCopy, SimpleDiagonalPwl, SimpleCopy });
+    WrongShapeDimensions(1, GNA::PwlOperandIndex, 0, 256, Gna2ErrorTypeAboveRange);
+}
+
+void TestModelError::ExpectOperandDataError(int32_t operationIndex, const uint32_t operandIndex, void * badPointer, Gna2ErrorType errorType)
+{
+    WithOperations({ SimpleDiagonalPwl, SimpleDiagonalPwl, SimpleCopy });
+    e.Source.OperationIndex = operationIndex;
+    e.Source.OperandIndex = operandIndex;
+    update(Gna2ItemTypeOperandData, badPointer);
+    expectModelError(errorType);
+}
+
+TEST_F(TestModelError, WrongBufferAllign)
+{
+    ExpectOperandDataError(1, GNA::WeightOperandIndex, static_cast<int8_t*>(gnaMemory) + 1, Gna2ErrorTypeNotAligned);
+}
+
+TEST_F(TestModelError, DISABLED_WrongBufferNullPwl)
+{
+    ExpectOperandDataError(1, GNA::PwlOperandIndex);
+}
+
+TEST_F(TestModelError, WrongBufferNullBias)
+{
+    ExpectOperandDataError(1, GNA::BiasOperandIndex);
+}
+
+TEST_F(TestModelError, WrongBufferNullWeight)
+{
+    ExpectOperandDataError(1, GNA::WeightOperandIndex);
 }

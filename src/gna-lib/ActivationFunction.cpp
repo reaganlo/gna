@@ -31,6 +31,7 @@
 #include "Capabilities.h"
 #include "ConvolutionalLayer2DCapabilities.h"
 #include "GnaException.h"
+#include "ModelError.h"
 #include "ParameterLimits.h"
 #include "Shape.h"
 #include "Validator.h"
@@ -191,13 +192,21 @@ std::unique_ptr<ActivationFunction> ActivationFunction::Create(const TransformFa
 
     if (mandatory || ActivationHelper::IsEnabled(activation))
     {
-        auto pwlFunction = std::make_unique<Tensor>(
-            Shape(GNA_TENSOR_H, activation.Shape.Dimensions[0]),
-            Gna2DataTypePwlSegment, activation.Data, Validator{ config.validator, capabilities });
-        return std::make_unique<ActivationFunction>(
-            BaseTransformConfig<ActivationKernel>{config,
-            AccelerationDetector::GetKernelMap<ActivationKernel>(KERNEL_PWL)}, config.outputMode,
-            std::move(pwlFunction));
+        try
+        {
+
+            auto pwlFunction = std::make_unique<Tensor>(
+                Shape(GNA_TENSOR_H, activation.Shape.Dimensions[0]),
+                Gna2DataTypePwlSegment, activation.Data, Validator{ config.validator, capabilities });
+            return std::make_unique<ActivationFunction>(
+                BaseTransformConfig<ActivationKernel>{config,
+                AccelerationDetector::GetKernelMap<ActivationKernel>(KERNEL_PWL)}, config.outputMode,
+                std::move(pwlFunction));
+        }
+        catch (GnaException& e)
+        {
+            ModelErrorHelper::SetOperandIndexRethrow(e, PwlOperandIndex);
+        }
     }
     // TODO:3 : P2 : this probably is no longer necessary, corresponding logic should be aligned with usage of disabled activation tensor
     auto valuePtr = &(config.output->Mode.Value);

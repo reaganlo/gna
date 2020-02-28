@@ -33,6 +33,7 @@
 #include "DataMode.h"
 #include "Expect.h"
 #include "GmmLayerCapabilities.h"
+#include "ModelError.h"
 #include "ParameterLimits.h"
 #include "Validator.h"
 
@@ -176,7 +177,8 @@ ApiShape LayerOutput::GetShape(const Gna2Operation & operation)
 }
 
 //TODO:3:P1: Generalize instead addressing output at index 1
-LayerOutput::LayerOutput(const Gna2Operation &operation, const LayerValidator& validatorIn) :
+LayerOutput::LayerOutput(const Gna2Operation &operation, const LayerValidator& validatorIn)
+try :
     Tensor{ Shape::Create(GetShape(operation), capabilities.GetOrder(validatorIn)),
         operation.Operands[OutputOperandIndex]->Type, operation.Operands[OutputOperandIndex]->Data,
         Validator{ validatorIn, capabilities } },
@@ -184,6 +186,10 @@ LayerOutput::LayerOutput(const Gna2Operation &operation, const LayerValidator& v
     Grouping{ getGrouping(operation, validatorIn) },
     ElementCount{ getElementCount(operation, validatorIn) }
 {
+}
+catch (GnaException& e)
+{
+    ModelErrorHelper::SetOperandIndexRethrow(e, OutputOperandIndex);
 }
 
 std::pair<uint32_t, uint32_t> LayerOutput::getGroupingAndElements(

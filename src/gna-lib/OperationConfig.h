@@ -28,6 +28,7 @@
 #include "AccelerationDetector.h"
 #include "DataMode.h"
 #include "Shape.h"
+#include "ModelError.h"
 #include "ModelWrapper.h"
 
 #include "gna2-model-api.h"
@@ -129,14 +130,16 @@ protected:
         OperationType = GetOperationType(operation);
         BiasesTensor = GetBiases(operation);
         // TODO: 3: Remove when full (e.g., bias) buffer addition and late sanity checking implemented
-        Expect::True((BiasesTensor.Mode == Gna2TensorModeDisabled && BiasesTensor.Data == nullptr) ||
-            BiasesTensor.Data != nullptr, Gna2StatusModelConfigurationInvalid);
+        if (BiasesTensor.Mode != Gna2TensorModeDisabled)
+        {
+            ModelErrorHelper::ExpectBufferNotNull(BiasesTensor.Data, BiasOperandIndex);
+        }
 
         if (isAffine(operation))
         {
             WeightsTensor = GetWeights(operation);
             // TODO: 3: Remove when full (e.g., weights) buffer addition and late sanity checking implemented
-            Expect::NotNull(WeightsTensor.Data, Gna2StatusModelConfigurationInvalid);
+            ModelErrorHelper::ExpectBufferNotNull(WeightsTensor.Data, WeightOperandIndex);
 
             if (IsMultibias(operation))
             {
@@ -151,7 +154,7 @@ protected:
         {
             FiltersTensor = GetFilters(operation);
             // TODO: 3: Remove when full (e.g., filers) buffer addition and late sanity checking implemented
-            Expect::NotNull(FiltersTensor.Data, Gna2StatusModelConfigurationInvalid);
+            ModelErrorHelper::ExpectBufferNotNull(FiltersTensor.Data, FilterOperandIndex);
             ConvolutionStride = GetStride(operation);
             ZeroPadding = GetZeroPadding(operation);
             BiasMode = GetBiasMode(operation);

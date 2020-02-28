@@ -34,6 +34,7 @@
 #include "Expect.h"
 #include "GmmLayer.h"
 #include "LayerConfiguration.h"
+#include "ModelError.h"
 #include "ModelWrapper.h"
 #include "RecurrentLayer.h"
 #include "TransposeLayer.h"
@@ -110,7 +111,10 @@ std::unique_ptr<GNA::Layer> Layer::Create(const Gna2Operation & operation, const
     case Gna2OperationTypeTransposition:
         return std::make_unique<TransposeLayer>(operation, validatorIn);
     default:
-        throw GnaException(Gna2StatusModelConfigurationInvalid);
+        throw GnaModelErrorException(
+            Gna2ItemTypeOperationType,
+            Gna2ErrorTypeNotInSet,
+            operation.Type);
     }
 }
 

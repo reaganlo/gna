@@ -56,7 +56,7 @@ FiltersTensor::FiltersTensor(const Shape& dimensions, const DataMode & dataMode,
         const auto caps = static_cast<const TensorLimits *>(validator->Capabilities);
         validator->ValidateBufferIfSet(Buffer, kernelMemorySize * Count, caps->Align);
     }
-    
+
     if (INTEL_CONVOLUTIONAL_1D == validator->Operation &&
         Gna2DataTypeInt16 == Mode.Type)
     {

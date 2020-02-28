@@ -73,7 +73,7 @@ void Component::Validate(const ComponentLimits& limits, bool validateDimensions)
     if (validateDimensions)
     {
         Expect::Equal(Dimensions.LayoutOrder.operator _tensor_order(),
-            limits.Order.Value, limits.Order.Error);
-        Expect::ShapeIsValid(Dimensions, limits.Dimensions);
+            limits.Order.Value, Gna2StatusXnnErrorLyrInvalidTensorOrder);
+        GNA::ExpectShapeIsValid(Dimensions, limits.Dimensions);
     }
 }

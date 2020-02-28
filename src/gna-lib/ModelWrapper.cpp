@@ -27,6 +27,7 @@
 
 #include "DataMode.h"
 #include "gna2-model-impl.h"
+#include "ModelError.h"
 
 using namespace GNA;
 
@@ -171,11 +172,22 @@ uint32_t ModelWrapper::GetOperationInfo(OperationType operationType, OperationIn
     };
     try
     {
-        return metaOperationInfo.at(operationType).at(infoType);
+        const auto & o = metaOperationInfo.at(operationType);
+        try
+        {
+            return o.at(infoType);
+        }
+        catch (const std::out_of_range &)
+        {
+            throw GnaException(Gna2StatusUnknownError);
+        }
     }
     catch (const std::out_of_range &)
     {
-        throw GnaException(Gna2StatusModelConfigurationInvalid);
+        throw GnaModelErrorException(
+            Gna2ItemTypeOperationType,
+            Gna2ErrorTypeNotInSet,
+            operationType);
     }
 }
 

@@ -106,13 +106,18 @@ private:
                 auto layer = Layer::Create(operations[i], validator);
                 buildSingleLayer(layer);
             }
+            catch (GnaModelErrorException& e)
+            {
+                e.SetLayerIndex(i);
+                throw;
+            }
             catch (const GnaException& e)
             {
-                throw GnaModelErrorException::CreateFromLayerAndCode(i, e.GetStatus());
+                throw GnaModelErrorException(i, e.GetStatus());
             }
             catch (...)
             {
-                GnaModelErrorException::CreateFromLayerUnknown(i);
+                throw GnaModelErrorException(i);
             }
         }
     }

@@ -30,6 +30,7 @@
 #include "ConvolutionalLayer2DCapabilities.h"
 #include "Expect.h"
 #include "GmmLayerCapabilities.h"
+#include "ModelError.h"
 #include "ParameterLimits.h"
 #include "PoolingFunctions2D.h"
 #include "Shape.h"
@@ -94,13 +95,18 @@ BiasTensor::BiasTensor(const Shape& dimensions, const uint32_t biasVectorIndex, 
 }
 
 BiasTensor::BiasTensor(const Gna2Tensor &apiTensor, const uint32_t biasVectorIndex,
-        Gna2BiasMode biasMode, const LayerValidator& validatorIn) :
+        Gna2BiasMode biasMode, const LayerValidator& validatorIn)
+try :
     Tensor{ apiTensor, capabilities.GetOrder(validatorIn), Validator { validatorIn, capabilities } },
     VectorCount{ biasMode == Gna2BiasModeGrouping ? Dimensions.at('W') : 1 },
     VectorIndex{ biasVectorIndex },
     BiasMode{ ToKernelBiasMode(biasMode, apiTensor.Mode) }
 {
     validate();
+}
+catch (GnaException& e)
+{
+    ModelErrorHelper::SetOperandIndexRethrow(e, BiasOperandIndex);
 }
 
 void BiasTensor::validate() const

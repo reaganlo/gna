@@ -33,6 +33,7 @@
 #include "DataMode.h"
 #include "GmmLayerCapabilities.h"
 #include "Macros.h"
+#include "ModelError.h"
 #include "ModelWrapper.h"
 #include "ParameterLimits.h"
 #include "Validator.h"
@@ -110,13 +111,18 @@ ApiShape GetShape(const Gna2Operation & operation)
     return shape;
 }
 
-LayerInput::LayerInput(const Gna2Operation& operation, const LayerValidator& validatorIn) :
+LayerInput::LayerInput(const Gna2Operation& operation, const LayerValidator& validatorIn)
+try :
     Tensor{ Shape::Create(GetShape(operation), capabilities.GetOrder(validatorIn)),
        operation.Operands[InputOperandIndex]->Type, operation.Operands[InputOperandIndex]->Data,
        Validator{ validatorIn, capabilities } },
     Grouping{ getGrouping(operation, validatorIn) },
     ElementCount{ getElementCount(operation, validatorIn) }
 {
+}
+catch (GnaException& e)
+{
+    ModelErrorHelper::SetOperandIndexRethrow(e, InputOperandIndex);
 }
 
 bool LayerInput::IsInputInterleave(const Gna2Tensor &apiTensor,

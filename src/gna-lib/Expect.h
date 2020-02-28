@@ -131,13 +131,6 @@ public:
         AlignedTo(pointer, alignment);
     }
 
-    // If pointer is not 64 B aligned prints error status code and throws exception.
-    inline static void ValidBuffer(const void* pointer, const AlignLimits& alignLimits)
-    {
-        NotNull(pointer);
-        AlignedTo(pointer, alignLimits);
-    }
-
     inline static bool InMemoryRange(
         const void* buffer, const size_t bufferSize,
         const void *memory, const size_t memorySize)
@@ -230,32 +223,6 @@ public:
             }
         }
         throw GnaException(error);
-    }
-
-    // If any dimension in map is invalid prints error status code and throws exception.
-    template<typename T>
-    inline static void DimensionIsValid(const T& dimension, const RangeLimits<T>& limits)
-    {
-        Expect::InRange(dimension, limits);
-        Expect::MultiplicityOf(dimension, {limits.Multipliers.GetEffective(), limits.Multipliers.Error});
-    }
-
-    // If any dimension in map is invalid prints error status code and throws exception.
-    inline static void ShapeIsValid(const Shape& dimensions,
-        const ShapeLimits& limits)
-    {
-        for (const auto& dim : dimensions)
-        {
-            try
-            {
-                auto limit = limits.at(dim.first);
-                Expect::DimensionIsValid(dim.second, limit);
-            }
-            catch (GnaException& e)
-            {
-                throw GnaTensorException{e, dim.first};
-            }
-        }
     }
 
     // If any dimension in a is greater than in b prints error status code and throws exception.

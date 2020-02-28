@@ -32,16 +32,6 @@
 
 using namespace GNA;
 
-static const DataModeLimits& _ModesInputDeinterleaveGen0_9()
-{
-    static const DataModeLimits __ModesInputDeinterleaveGen0_9 =
-    {
-        {GNA_INT16},
-        Gna2StatusXnnErrorInputBytes
-    };
-    return __ModesInputDeinterleaveGen0_9;
-}
-
 static const DataModeLimits& _ModesOutputCopyGen0_9()
 {
     static const DataModeLimits __ModesOutputCopyGen0_9 =
@@ -96,7 +86,7 @@ const FullCapabilitiesMap& AuxiliaryCapabilities::GetOperands(uint32_t operandIn
                     {GNA_TENSOR_HW},
                     {{GNA_DIM_H, limitsForInputShapeLegacy()},
                     {GNA_DIM_W, limitsForInputGroupsMax()}},
-                    _ModesInputDeinterleaveGen0_9()})},
+                    GetModes(InputOperandIndex, GNA_0_9)})},
                 {GNA_3_0, std::make_shared<TensorLimits>(TensorLimits{
                     {GNA_TENSOR_HW},
                     {{GNA_DIM_H, limitsForInputShapeLegacy()},

@@ -27,6 +27,7 @@
 
 #include "Expect.h"
 #include "GnaException.h"
+#include "ModelError.h"
 
 #include <algorithm>
 #include <map>
@@ -102,75 +103,6 @@ Layout::operator gna_tensor_order() const
         throw GnaException(Gna2StatusXnnErrorLyrInvalidTensorOrder);
     }
 }
-//
-//const std::vector<gna_tensor_dim> & Layout::GetVectorIndices(gna_tensor_order order)
-//{
-//    static const std::unordered_map<gna_tensor_order, const std::vector<gna_tensor_dim>, TensorDimHash>
-//        vectorIndices =
-//    {
-//        { GNA_TENSOR_SCALAR, {} },
-//        { GNA_TENSOR_N, { GNA_DIM_N } },
-//        { GNA_TENSOR_W, { GNA_DIM_W } },
-//        { GNA_TENSOR_H, { GNA_DIM_H } },
-//        { GNA_TENSOR_NW, { GNA_DIM_N, GNA_DIM_W } },
-//        { GNA_TENSOR_NH, { GNA_DIM_N, GNA_DIM_H } },
-//        { GNA_TENSOR_WN, { GNA_DIM_W, GNA_DIM_N } },
-//        { GNA_TENSOR_WH, { GNA_DIM_W, GNA_DIM_H } },
-//        { GNA_TENSOR_HN, { GNA_DIM_H, GNA_DIM_N } },
-//        { GNA_TENSOR_HD, { GNA_DIM_H, GNA_DIM_D } },
-//        { GNA_TENSOR_HDW, { GNA_DIM_H, GNA_DIM_D, GNA_DIM_W } },
-//        { GNA_TENSOR_NWH, { GNA_DIM_N, GNA_DIM_W, GNA_DIM_H } },
-//        { GNA_TENSOR_NHW, { GNA_DIM_N, GNA_DIM_H, GNA_DIM_W } },
-//        { GNA_TENSOR_WHD, { GNA_DIM_W, GNA_DIM_H, GNA_DIM_D } },
-//        { GNA_TENSOR_NHWD, { GNA_DIM_N, GNA_DIM_H, GNA_DIM_W, GNA_DIM_D } },
-//        { GNA_TENSOR_NDHW, { GNA_DIM_N, GNA_DIM_D, GNA_DIM_H, GNA_DIM_W } },
-//        {
-//            GNA_TENSOR_ORDER_ANY,
-//            {
-//                GNA_DIM_N,
-//                GNA_DIM_W,
-//                GNA_DIM_H,
-//                GNA_DIM_D,
-//                GNA_DIM_X,
-//                gna_tensor_dim(GNA_DIM_X + 1),
-//                gna_tensor_dim(GNA_DIM_X + 2),
-//                gna_tensor_dim(GNA_DIM_X + 3)
-//            }
-//        },
-//    };
-//
-//    try
-//    {
-//        return vectorIndices.at(order);
-//    }
-//    catch (const std::out_of_range&)
-//    {
-//        throw GnaException(Gna2StatusXnnErrorLyrInvalidTensorOrder);
-//    }
-//}
-
-//char Layout::GetIndex(gna_tensor_dim dim)
-//{
-//    static const std::unordered_map<gna_tensor_dim, char> indices =
-//    {
-//        { GNA_DIM_N, 'N' },
-//        { GNA_DIM_W, 'W' },
-//        { GNA_DIM_H, 'H' },
-//        { GNA_DIM_D, 'D' },
-//        { GNA_DIM_X, 'X' },
-//        { GNA_DIM_Y, 'Y' },
-//        { GNA_DIM_Z, 'Z' },
-//    };
-//
-//    try
-//    {
-//        return indices.at(dim);
-//    }
-//    catch (const std::out_of_range&)
-//    {
-//        throw GnaException(Gna2StatusXnnErrorLyrInvalidTensorOrder);
-//    }
-//}
 
 gna_tensor_dim Layout::GetIndex(char dim)
 {
@@ -199,20 +131,32 @@ void Layout::ValidateNumberOfDimensions(size_type shapeDimensions) const
 {
     if (LAYOUT_ANY != *this)
     {
-        Expect::True(shapeDimensions == size(), Gna2StatusModelConfigurationInvalid);
+        ModelErrorHelper::ExpectEqual(shapeDimensions, size(), Gna2ItemTypeShapeNumberOfDimensions);
     }
-    Expect::True(shapeDimensions <= MaximumNumberOfDimension,
-        Gna2StatusModelConfigurationInvalid); // TODO:3: add error code
+    ModelErrorHelper::ExpectBelowEq(shapeDimensions, MaximumNumberOfDimension,
+        Gna2ItemTypeShapeNumberOfDimensions);
 }
 
 void Layout::Reshape(Layout const & newLayout, size_type shapeDimensions)
 {
-    auto condition = true;
     if (LAYOUT_ANY != newLayout)
     {
-        condition = shapeDimensions >= size();
+        ModelErrorHelper::ExpectAboveEq(shapeDimensions, size(),
+            Gna2ItemTypeShapeNumberOfDimensions);
     }
-    Expect::True(shapeDimensions <= MaximumNumberOfDimension && condition,
-        Gna2StatusModelConfigurationInvalid); // TODO:3: add error code
+    ModelErrorHelper::ExpectBelowEq(shapeDimensions, MaximumNumberOfDimension,
+        Gna2ItemTypeShapeNumberOfDimensions);
     *this = newLayout;
+}
+
+int32_t Layout::GetApiIndex(gna_tensor_dim dim) const
+{
+    for(unsigned index = 0; index < size(); index++)
+    {
+        if(GetIndex(at(index)) == dim)
+        {
+            return static_cast<int32_t>(index);
+        }
+    }
+    return GNA2_DISABLED;
 }

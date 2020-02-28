@@ -98,6 +98,13 @@ public:
         tensors[2] = Gna2TensorInit1D(inputs, Gna2DataTypeInt16, weight);
         tensors[3] = Gna2TensorInit1D(inputs, Gna2DataTypeInt32, bias);
     }
+
+    void InitDiagonalPwl(uint32_t inputs, uint32_t batches, uint32_t pwlSegments, void * input, void * output, void * weight, void * bias, void * pwl)
+    {
+        InitDiagonal(inputs, batches, input, output, weight, bias);
+        operation.NumberOfOperands = 5;
+        tensors[4] = Gna2TensorInit1D(pwlSegments, Gna2DataTypePwlSegment, pwl);
+    }
 };
 
 class TestModelError : public TestGnaApiEx
@@ -108,11 +115,12 @@ protected:
     Gna2Operation gnaOperations[MaxNumberOfLayers] = {};
     Gna2Model gnaModel{ 1, gnaOperations };
     std::list<Gna2OperationHolder> createdOperations;
+    bool expectValueMatches = true;
 
     uint32_t modelId;
     Gna2ModelError lastError;
     void * gnaMemory = nullptr;
-
+    Gna2ModelError e = GetCleanedError();
     void SetUp() override
     {
         TestGnaApiEx::SetUp();
@@ -121,6 +129,7 @@ protected:
         ASSERT_EQ(status, Gna2StatusSuccess);
         ASSERT_EQ(grantedMemory, MemoryToUse);
         ASSERT_NE(gnaMemory, nullptr);
+        WithOperations({ SimpleCopy, SimpleCopy, SimpleCopy });
     }
 
     void TearDown() override
@@ -129,13 +138,6 @@ protected:
         const auto status = Gna2MemoryFree(gnaMemory);
         ASSERT_EQ(status, Gna2StatusSuccess);
         gnaMemory = nullptr;
-    }
-
-    Gna2Operation GetSimpleCopy()
-    {
-        static Gna2OperationHolder copy;
-        copy.InitCopy(8, 8, 8, 8, gnaMemory, gnaMemory);
-        return copy.GetOperation();
     }
 
     Gna2Operation CreateSimpleCopy()
@@ -152,11 +154,11 @@ protected:
         return createdOperations.back().GetOperation();
     }
 
-    Gna2Operation GetSimpleCopyWrong()
+    Gna2Operation CreateSimpleDiagonalPwl()
     {
-        static Gna2OperationHolder copyWrong;
-        copyWrong.InitCopy(9, 16, 16, 16, gnaMemory, gnaMemory);
-        return copyWrong.GetOperation();
+        createdOperations.emplace_back();
+        createdOperations.back().InitDiagonalPwl(32, 8, 4, gnaMemory, gnaMemory, gnaMemory, gnaMemory, gnaMemory);
+        return createdOperations.back().GetOperation();
     }
 
     void expectEquivalent(const Gna2ModelError& refError)
@@ -172,7 +174,10 @@ protected:
         EXPECT_EQ(lastError.Source.ShapeDimensionIndex, refError.Source.ShapeDimensionIndex);
 
         EXPECT_EQ(lastError.Reason, refError.Reason);
-        EXPECT_EQ(lastError.Value, refError.Value);
+        if (expectValueMatches)
+        {
+            EXPECT_EQ(lastError.Value, refError.Value);
+        }
     }
     void expectModelError(const Gna2ModelError& refError)
     {
@@ -183,6 +188,13 @@ protected:
 
         expectEquivalent(refError);
     }
+
+    void expectModelError(const Gna2ErrorType reason)
+    {
+        e.Reason = reason;
+        expectModelError(e);
+    }
+
     void withNumberOfOperations(uint32_t numberOfOperations)
     {
         gnaModel.NumberOfOperations = numberOfOperations;
@@ -191,9 +203,9 @@ protected:
     static Gna2ModelError GetCleanedError()
     {
         Gna2ModelError e = {};
-        e.Reason = Gna2ErrorTypeNone;
+        e.Reason = Gna2ErrorTypeOther;
         e.Value = 0;
-        e.Source.Type = Gna2ItemTypeNone;
+        e.Source.Type = Gna2ItemTypeInternal;
         e.Source.OperationIndex = GNA2_DISABLED;
         e.Source.OperandIndex = GNA2_DISABLED;
         e.Source.ParameterIndex = GNA2_DISABLED;
@@ -204,5 +216,58 @@ protected:
         }
         return e;
     }
+
+    template<class T>
+    void update(const Gna2ItemType what, const T newValue)
+    {
+        e.Source.Type = what;
+        e.Value = (int64_t)(newValue);
+        if( what == Gna2ItemTypeShapeDimensions && e.Source.OperandIndex >=0 )
+        {
+            const_cast<uint32_t&>(
+                gnaOperations[e.Source.OperationIndex].
+                Operands[e.Source.OperandIndex]->Shape.
+                Dimensions[e.Source.ShapeDimensionIndex]) = static_cast<uint32_t>(e.Value);
+        }
+        else if(what == Gna2ItemTypeOperationType)
+        {
+            gnaOperations[e.Source.OperationIndex].Type = reinterpret_cast<const Gna2OperationType&>(e.Value);
+        }
+        else if (what == Gna2ItemTypeOperandType)
+        {
+            const_cast<Gna2DataType&>(
+                gnaOperations[e.Source.OperationIndex].
+                Operands[e.Source.OperandIndex]->Type) = reinterpret_cast<const Gna2DataType&>(e.Value);
+        }
+        else if(what == Gna2ItemTypeShapeNumberOfDimensions && e.Source.OperandIndex >= 0)
+        {
+            auto& shape = const_cast<Gna2Shape&>(
+                gnaOperations[e.Source.OperationIndex].
+                Operands[e.Source.OperandIndex]->Shape);
+            shape.NumberOfDimensions = static_cast<uint32_t>(e.Value);
+        }
+        else if (what == Gna2ItemTypeOperandData)
+        {
+            const_cast<void*&>(
+                gnaOperations[e.Source.OperationIndex].
+                Operands[e.Source.OperandIndex]->Data) = reinterpret_cast<void*>(e.Value);
+        }
+    }
+
+    void WrongShapeDimensions(int32_t operationIndex,
+        int32_t operandIndex,
+        int32_t shapeDimensionIndex,
+        int badValue,
+        Gna2ErrorType errorType);
+
+    void ExpectOperandDataError(int32_t operationIndex, const uint32_t operandIndex,
+        void * badPointer = nullptr, Gna2ErrorType errorType = Gna2ErrorTypeNullNotAllowed);
+
+    typedef Gna2Operation(::TestModelError::*OperationCreationFunction)();
+    const OperationCreationFunction SimpleCopy = &TestModelError::CreateSimpleCopy;
+    const OperationCreationFunction SimpleDiagonal = &TestModelError::CreateSimpleDiagonal;
+    const OperationCreationFunction SimpleDiagonalPwl = &TestModelError::CreateSimpleDiagonalPwl;
+
+    void WithOperations(std::vector< OperationCreationFunction > operations);
 
 };

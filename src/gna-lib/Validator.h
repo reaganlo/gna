@@ -50,14 +50,15 @@ public:
         const ValidBoundariesFunctor validBoundariesIn);
     virtual ~BaseValidator() = default;
 
-    void ValidateBuffer(const void* const buffer, size_t size,
-        const AlignLimits& alignLimits = {GNA_MEM_ALIGN, Gna2StatusMemoryAlignmentInvalid}) const;
+    void ValidateBuffer(const void* const buffer, size_t size, const uint32_t alignment) const;
 
     inline void ValidateBufferIfSet(const void* const buffer, size_t size,
         const AlignLimits& alignLimits = {GNA_MEM_ALIGN, Gna2StatusMemoryAlignmentInvalid}) const
     {
         if (buffer)
-            ValidateBuffer(buffer, size, alignLimits);
+        {
+            ValidateBuffer(buffer, size, alignLimits.Value);
+        }
     }
 
     const HardwareCapabilities HwCapabilities;

@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2019 Intel Corporation.
+ Copyright 2020 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -23,43 +23,37 @@
  in any way.
 */
 
-#include "Capabilities.h"
-#include "Expect.h"
-#include "ModelError.h"
 #include "ParameterLimits.h"
-#include "Validator.h"
 
-#include "common.h"
-#include "gna-api.h"
-
-#include <cstddef>
+#include "ModelError.h"
+#include "Shape.h"
 
 using namespace GNA;
 
-BaseValidator::BaseValidator(
-    const HardwareCapabilities hwCapabilities,
-    const ValidBoundariesFunctor validBoundariesIn) :
-    HwCapabilities{ hwCapabilities },
-    bufferValidator{ validBoundariesIn }
+// If any dimension in map is invalid prints error status code and throws exception.
+template<typename T>
+inline static void DimensionIsValid(const T& dimension, const RangeLimits<T>& limits)
 {
+    ModelErrorHelper::ExpectBelowEq(dimension, limits.Max.Value, Gna2ItemTypeShapeDimensions);
+    ModelErrorHelper::ExpectAboveEq(dimension, limits.Min.Value, Gna2ItemTypeShapeDimensions);
+
+    ModelErrorHelper::ExpectMultiplicityOf(dimension, limits.Multipliers.GetEffective(), Gna2ItemTypeShapeDimensions);
 }
 
-void BaseValidator::ValidateBuffer(const void * const buffer, size_t size, const uint32_t alignment) const
+void GNA::ExpectShapeIsValid(const Shape& dimensions, const ShapeLimits& limits)
 {
-    ModelErrorHelper::ExpectBufferNotNull(buffer);
-    ModelErrorHelper::ExpectBufferAligned(buffer, alignment);
-    bufferValidator(buffer, size);
-}
-
-LayerValidator::LayerValidator(const BaseValidator& validator, nn_operation operation) :
-    BaseValidator{ validator },
-    Operation{ operation }
-{
-}
-
-Validator::Validator(const LayerValidator & validator, const FullCapabilitiesMap & capabilities) :
-    LayerValidator{ validator },
-    Capabilities{ capabilities.GetLatestCaps(validator) },
-    Order{ Capabilities->Order.Value }
-{
+    for (const auto& dim : dimensions)
+    {
+        try
+        {
+            auto limit = limits.at(dim.first);
+            DimensionIsValid(dim.second, limit);
+        }
+        catch (GnaModelErrorException& e)
+        {
+            const auto index = dimensions.LayoutOrder.GetApiIndex(dim.first);
+            e.SetDimensionIndex(index);
+            throw;
+        }
+    }
 }

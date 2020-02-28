@@ -27,6 +27,7 @@
 
 #include "Expect.h"
 #include "Macros.h"
+#include "ModelError.h"
 #include "Validator.h"
 
 #include <memory>
@@ -83,7 +84,7 @@ void Tensor::UpdateBuffer(const BaseAddress & buffer)
 void Tensor::ValidateBuffer(const void * const buffer) const
 {
     auto caps = static_cast<const TensorLimits*>(validator->Capabilities);
-    validator->ValidateBuffer(buffer, Size, caps->Align);
+    validator->ValidateBuffer(buffer, Size, caps->Align.Value);
 }
 
 void Tensor::validate() const
@@ -91,7 +92,17 @@ void Tensor::validate() const
     if (validator)
     {
         const auto caps = static_cast<const TensorLimits*>(validator->Capabilities);
-        Expect::InSet(Mode, caps->Modes);
+        try
+        {
+            Expect::InSet(Mode, caps->Modes);
+        }
+        catch(GnaException&)
+        {
+            throw GnaModelErrorException(
+                Gna2ItemTypeOperandType,
+                Gna2ErrorTypeNotInSet,
+                Mode.Type);
+        }
         // TODO:3: what about data disabled? what size and dimensions? leave dimensions as should be and mode=size=0?
         if (GNA_DATA_DISABLED != Mode)
         {
