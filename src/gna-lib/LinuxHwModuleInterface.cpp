@@ -35,15 +35,27 @@ using namespace GNA;
 
 LinuxHwModuleInterface::LinuxHwModuleInterface(char const * moduleName)
 {
-    auto fullName = std::string(moduleName);
+    auto fullName = std::string("./");
+    fullName.append(moduleName);
+    auto debugName = fullName;
     fullName.append(".so");
-    hwModule = dlopen(fullName.c_str(), RTLD_LAZY);
+    hwModule = dlopen(fullName.c_str(), RTLD_NOW);
+    if (nullptr != hwModule)
+    {
+        Log->Warning("HwModule release library not found, trying to load debug library.");
+        debugName.append("d.so");
+        hwModule = dlopen(debugName.c_str(), RTLD_NOW);
+    }
     if (nullptr != hwModule)
     {
         CreateLD = reinterpret_cast<CreateLDFunction>(dlsym(hwModule, "GNA3_NewLD"));
         FillLD = reinterpret_cast<FillLDFunction>(dlsym(hwModule, "GNA3_PopLD"));
         FreeLD = reinterpret_cast<FreeLDFunction>(dlsym(hwModule, "GNA3_FreeLD"));
         Validate();
+    }
+    else
+    {
+        Log->Warning("HwModule library not found.");
     }
 }
 

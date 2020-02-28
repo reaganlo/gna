@@ -27,6 +27,7 @@
 #include "test-hw-module-interface.hpp"
 
 using namespace GNA;
+
 TEST_F(HwModuleInterfaceTest, CreateNullName)
 {
     EXPECT_THROW(

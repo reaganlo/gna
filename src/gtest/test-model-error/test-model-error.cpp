@@ -28,7 +28,7 @@
 
 void TestModelError::WithOperations(std::vector< OperationCreationFunction > operations)
 {
-    withNumberOfOperations(operations.size());
+    withNumberOfOperations(static_cast<uint32_t>(operations.size()));
     for (unsigned i = 0; i < operations.size(); i++)
     {
         gnaOperations[i] = (this->*operations[i])();

@@ -43,6 +43,10 @@ WindowsHwModuleInterface::WindowsHwModuleInterface(char const* moduleName)
         FreeLD = reinterpret_cast<FreeLDFunction>(GetProcAddress(hwModule, "GNA3_FreeLD"));
         Validate();
     }
+    else
+    {
+        Log->Warning("HwModule library not found.");
+    }
 }
 
 WindowsHwModuleInterface::~WindowsHwModuleInterface()

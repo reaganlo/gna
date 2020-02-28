@@ -72,7 +72,15 @@ std::unique_ptr<HwModuleInterface const> HwModuleInterface::Create(char const* m
 {
     Expect::NotNull(moduleName);
     Expect::False(std::string(moduleName).empty(), Gna2StatusAccelerationModeNotSupported);
-    return std::make_unique<GNA_HW_MODULE_CLASS const>(moduleName);
+    try
+    {
+        return std::make_unique<GNA_HW_MODULE_CLASS const>(moduleName);
+    }
+    catch (GnaException & e)
+    {
+        Log->Warning("HwModule library load failed.");
+        throw e;
+    }
 }
 
 HwUarchParams HwModuleInterface::GetCnnParams(ConvolutionFunction2D const* cnnIn, PoolingFunction2D const* poolingIn,
@@ -215,4 +223,5 @@ void HwModuleInterface::Validate() const
     Expect::NotNull(reinterpret_cast<const void*>(CreateLD));
     Expect::NotNull(reinterpret_cast<const void*>(FreeLD));
     Expect::NotNull(reinterpret_cast<const void*>(FillLD));
+    Log->Message("HwModule library loaded successfully.");
 }
