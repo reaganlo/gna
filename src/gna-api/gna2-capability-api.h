@@ -75,19 +75,6 @@ enum Gna2DeviceGeneration
     Gna2DeviceGeneration3_0 = 0x300,
 };
 
-/**
- Generation of device that is used by default by GNA Library in software mode,
- when no hardware device is available.
-
- @see
- GNA2_DEFAULT_DEVICE_VERSION.
-
- @note
- Usually it will be the latest existing GNA generation (excluding embedded)
- on the time of publishing the library, value may change with new release.
- */
-#define GNA2_DEFAULT_DEVICE_GENERATION Gna2DeviceGeneration3_0
-
 #endif // __GNA2_CAPABILITY_API_H
 
 /**

@@ -37,6 +37,19 @@ namespace GNA
 
 typedef enum Gna2DeviceGeneration DeviceGeneration;
 
+/**
+ Generation of device that is used by default by GNA Library in software mode,
+ when no hardware device is available.
+
+ @see
+ Gna2DeviceVersion.
+
+ @note
+ Usually it will be the latest existing GNA generation (excluding embedded)
+ on the time of publishing the library, value may change with new release.
+ */
+#define GNA2_DEFAULT_DEVICE_GENERATION Gna2DeviceGeneration3_0
+
 DeviceGeneration const DefaultDeviceGeneration = GNA2_DEFAULT_DEVICE_GENERATION;
 
 }

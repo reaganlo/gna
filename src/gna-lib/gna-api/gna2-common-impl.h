@@ -38,6 +38,20 @@ namespace GNA
 
 typedef enum Gna2DeviceVersion DeviceVersion;
 
+/**
+ Version of device that is used by default by GNA Library in software mode,
+ when no hardware device is available.
+
+ @see
+ Gna2RequestConfigEnableHardwareConsistency() to change hardware device
+ version in software mode.
+
+ @note
+ Usually it will be the latest existing GNA device (excluding embedded)
+ on the time of publishing the library, value may change with new release.
+ */
+#define GNA2_DEFAULT_DEVICE_VERSION Gna2DeviceVersion3_0
+
 DeviceVersion const DefaultDeviceVersion = GNA2_DEFAULT_DEVICE_VERSION;
 
 typedef enum Gna2Status ApiStatus;

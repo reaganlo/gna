@@ -89,6 +89,14 @@
  Devices of the same version are always single generation and have the same
  properties e.g. frequency, bandwidth.
 
+ @note
+ ::Gna2DeviceVersion3_0 is used by default by GNA Library (current version) in software mode,
+ when no hardware device is available.
+
+ @see
+ Gna2RequestConfigEnableHardwareConsistency() to change hardware device
+ version in software mode.
+
  @see Gna2DeviceGeneration
  */
 enum Gna2DeviceVersion
@@ -151,24 +159,11 @@ enum Gna2DeviceVersion
      Value indicating no supported hardware device available.
      Software emulation (fall-back) will be used.
 
-     @see ::GNA2_DEFAULT_DEVICE_VERSION and Gna2RequestConfigEnableHardwareConsistency().
+     @see Gna2RequestConfigEnableHardwareConsistency().
      */
     Gna2DeviceVersionSoftwareEmulation = GNA2_DEFAULT,
 };
 
-/**
- Version of device that is used by default by GNA Library in software mode,
- when no hardware device is available.
-
- @see
- Gna2RequestConfigEnableHardwareConsistency() to change hardware device
- version in software mode.
-
- @note
- Usually it will be the latest existing GNA device (excluding embedded)
- on the time of publishing the library, value may change with new release.
- */
-#define GNA2_DEFAULT_DEVICE_VERSION Gna2DeviceVersion3_0
 
  /**
   GNA API Status codes.

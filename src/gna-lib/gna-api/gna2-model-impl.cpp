@@ -77,7 +77,7 @@ GNA2_API enum Gna2Status Gna2ModelGetLastError(struct Gna2ModelError * error)
 }
 
 GNA2_API enum Gna2Status Gna2ModelGetLastErrorMessage(
-    char const * messageBuffer,
+    char * messageBuffer,
     uint32_t messageBufferSize)
 {
     UNREFERENCED_PARAMETER(messageBuffer);
