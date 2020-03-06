@@ -55,7 +55,7 @@ LinuxHwModuleInterface::LinuxHwModuleInterface(char const * moduleName)
     }
     else
     {
-        Log->Warning("HwModule library not found.");
+        Log->Warning("HwModule library not found.\n");
     }
 }
 
