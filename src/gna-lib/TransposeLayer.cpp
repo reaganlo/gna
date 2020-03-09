@@ -70,9 +70,9 @@ TransposeLayer::TransposeLayer(
     transposeHiddenConfig = std::make_unique<TransposeConfig>(
             Input.Dimensions.at('H'), Input.Dimensions.at('W'), Input.Buffer, Output.Buffer);
 
-    Expect::Equal(Input.Dimensions.at('W'), Output.Dimensions.at('H'), Gna2StatusXnnErrorLyrCfg);
-    Expect::Equal(Input.Dimensions.at('H'), Output.Dimensions.at('W'), Gna2StatusXnnErrorLyrCfg);
-    Expect::Null(apiOperation.Parameters);
+    ModelErrorHelper::ExpectEqual(Output.AsModelValue('H'), Input.AsModelValue('W'));
+    ModelErrorHelper::ExpectEqual(Output.AsModelValue('W'), Input.AsModelValue('H'));
+
     Expect::Null(Output.ScratchPad); // in transpose layer no 4B output array is allowed
 
     ComputeHidden = [this](AccelerationMode accel, ExecutionConfig const & executionConfig)
@@ -125,4 +125,3 @@ void TransposeLayer::compute(const LayerConfiguration& layerConfiguration, Accel
     auto transposeConfig = layerConfiguration.Configs.Transpose.get();
     transposeKernels.at(accel)(transposeConfig);
 }
-

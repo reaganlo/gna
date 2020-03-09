@@ -225,35 +225,6 @@ public:
         throw GnaException(error);
     }
 
-    // If any dimension in a is greater than in b prints error status code and throws exception.
-    inline static void Compare(const Shape& a, const Shape& b, std::function<void(uint32_t,uint32_t)>&& comapre)
-    {
-        for (const auto& dimA : a)
-        {
-            try
-            {
-                auto dimB = b.at(dimA.first);
-                comapre(dimA.second, dimB);
-            }
-            catch (GnaException& e)
-            {
-                throw GnaTensorException{e, dimA.first};
-            }
-        }
-    }
-
-    // If any dimension in a is different than in b prints error status code and throws exception.
-    inline static void ShapesAreEqual(const Shape& a, const Shape& b)
-    {
-        Compare(a, b, [](uint32_t x, uint32_t y) {Expect::True(x == y, Gna2StatusXnnErrorLyrInvalidTensorDimensions);});
-    }
-
-    // If any dimension in a is greater than in b prints error status code and throws exception.
-    inline static void Fits(const Shape& a, const Shape& b)
-    {
-        Compare(a, b, [](uint32_t x, uint32_t y) {Expect::True(x <= y, Gna2StatusXnnErrorLyrInvalidTensorDimensions);});
-    }
-
 protected:
     Expect() = delete;
     Expect(const Expect &) = delete;

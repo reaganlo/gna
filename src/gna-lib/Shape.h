@@ -27,11 +27,11 @@
 
 #include "Layout.h"
 
+#include "ModelError.h"
+
 #include "gna2-model-impl.h"
 
 #include "gna-api-types-xnn.h"
-#include "gna-api.h"
-
 
 #include <cstdint>
 #include <map>
@@ -61,6 +61,8 @@ struct Shape : public ShapeMap
 
     Shape & operator=(const Shape & right);
 
+    ModelValue AsModelValue(char dimension) const;
+
     using ShapeMap::at;
     using ShapeMap::operator[];
     uint32_t& operator[](char dimension);
@@ -76,6 +78,24 @@ struct Shape : public ShapeMap
 
     Layout LayoutOrder;
 
+    // If any dimension is greater than in envelope throws exception.
+    inline void ExpectFits(const Shape& envelope) const
+    {
+        for (const auto& dimVal : *this)
+        {
+            try
+            {
+                const auto envelopeVal = envelope.at(dimVal.first);
+                ModelErrorHelper::ExpectBelowEq(dimVal.second, envelopeVal, Gna2ItemTypeShapeDimensions);
+            }
+            catch (GnaModelErrorException& e)
+            {
+                e.SetDimensionIndex(LayoutOrder.GetApiIndex(dimVal.first));
+                throw;
+            }
+        }
+    }
+
 protected:
     static ShapeMap Create(const std::vector<uint32_t> && dimensions,
         gna_tensor_order order = GNA_TENSOR_ORDER_ANY);
@@ -83,5 +103,6 @@ protected:
     Shape(ShapeMap && map, gna_tensor_order order);
 
     gna_tensor_order Order;
+
 };
 }

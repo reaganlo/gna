@@ -26,6 +26,7 @@
 #include "Shape.h"
 
 #include "GnaException.h"
+#include "ModelError.h"
 
 #include "gna2-common-api.h"
 #include "gna-api-types-xnn.h"
@@ -154,4 +155,10 @@ uint32_t Shape::GetNumberOfElements() const
         return 0; // TODO:3:API: should scalar return 0?
     }
     return counter;
+}
+
+ModelValue Shape::AsModelValue(char dimension) const
+{
+    ModelValue mv{ at(dimension) };
+    return mv.SetDimension(LayoutOrder.GetApiIndex(dimension));
 }

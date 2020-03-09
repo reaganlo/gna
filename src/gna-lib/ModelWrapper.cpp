@@ -191,23 +191,24 @@ uint32_t ModelWrapper::GetOperationInfo(OperationType operationType, OperationIn
     }
 }
 
-bool ModelWrapper::HasOperand(const Gna2Operation & apiOperation, uint32_t operandIndex)
+bool ModelWrapper::HasEnabledOperand(const Gna2Operation & apiOperation, uint32_t operandIndex)
 {
     return apiOperation.NumberOfOperands > operandIndex &&
         nullptr != apiOperation.Operands &&
-        nullptr != apiOperation.Operands[operandIndex];
+        nullptr != apiOperation.Operands[operandIndex] &&
+        Gna2TensorModeDisabled != apiOperation.Operands[operandIndex]->Mode;
 }
 
-Gna2Tensor ModelWrapper::GetOperand(const Gna2Operation & apiOperation, uint32_t operandIndex)
+Gna2Tensor ModelWrapper::GetEnabledOperand(const Gna2Operation & apiOperation, uint32_t operandIndex)
 {
-    Expect::True(HasOperand(apiOperation, operandIndex), Gna2StatusXnnErrorLyrOperation);
+    Expect::True(HasEnabledOperand(apiOperation, operandIndex), Gna2StatusXnnErrorLyrOperation);
     return *apiOperation.Operands[operandIndex];
 }
 
 Gna2Tensor ModelWrapper::GetOptionalOperand(const Gna2Operation & apiOperation,
     uint32_t operandIndex, Gna2Tensor defaultTensor)
 {
-    if (HasOperand(apiOperation, operandIndex))
+    if (HasEnabledOperand(apiOperation, operandIndex))
     {
         return *apiOperation.Operands[operandIndex];
     }

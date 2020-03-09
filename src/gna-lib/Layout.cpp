@@ -149,11 +149,16 @@ void Layout::Reshape(Layout const & newLayout, size_type shapeDimensions)
     *this = newLayout;
 }
 
+int32_t Layout::GetApiIndex(char dim) const
+{
+    return GetApiIndex(GetIndex(dim));
+}
+
 int32_t Layout::GetApiIndex(gna_tensor_dim dim) const
 {
-    for(unsigned index = 0; index < size(); index++)
+    for (unsigned index = 0; index < size(); index++)
     {
-        if(GetIndex(at(index)) == dim)
+        if (GetIndex(at(index))== dim)
         {
             return static_cast<int32_t>(index);
         }

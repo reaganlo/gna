@@ -38,6 +38,8 @@ class Gna2OperationHolder
     union Gna2Parameter {
         Gna2Shape shape;
         uint32_t uint32;
+        Gna2BiasMode biasMode;
+        Gna2PoolingMode poolingMode;
     } parameters[MaxTensorsParams] = {};
     Gna2Tensor* pTensors[MaxTensorsParams];
     void* pParams[MaxTensorsParams];
@@ -105,6 +107,42 @@ public:
         operation.NumberOfOperands = 5;
         tensors[4] = Gna2TensorInit1D(pwlSegments, Gna2DataTypePwlSegment, pwl);
     }
+
+    uint32_t Cnn2DOut(uint32_t input, uint32_t filter, uint32_t stride, uint32_t poolWin)
+    {
+        return (input - filter + 1) / stride - poolWin + 1;
+    }
+
+    void InitCnn2DPool(uint32_t inputH, uint32_t inputW, uint32_t inputC,
+        uint32_t filterN, uint32_t filterH, uint32_t filterW,
+        uint32_t strideH, uint32_t strideW,
+        uint32_t poolWinH, uint32_t poolWinW,
+        Gna2DataType type, void * input, void * filters, void * output)
+    {
+        const uint32_t poolStride = 1;
+        operation.Type = Gna2OperationTypeConvolution;
+        operation.NumberOfOperands = 3;
+        operation.NumberOfParameters = 5;
+        tensors[0] = Gna2TensorInit4D(1, inputH, inputW, inputC, type, input);
+        tensors[1] = Gna2TensorInit4D(1,
+            Cnn2DOut(inputH, filterH, strideH, poolWinH),
+            Cnn2DOut(inputW, filterW, strideW, poolWinW),
+            filterN, type, output);
+        tensors[2] = Gna2TensorInit3D(filterN, filterH, filterW, type, filters);
+        parameters[0].shape = Gna2ShapeInit2D(strideH, strideW);
+        parameters[1].biasMode = Gna2BiasModeDefault;
+        parameters[2].poolingMode = Gna2PoolingModeMax;
+        parameters[3].shape = Gna2ShapeInit2D(poolWinH, poolWinW);
+        parameters[4].shape = Gna2ShapeInit2D(poolStride, poolStride);
+    }
+
+    void InitTranspose(uint32_t rows, uint32_t cols, Gna2DataType type, void * input, void * output)
+    {
+        operation.Type = Gna2OperationTypeTransposition;
+        operation.NumberOfOperands = 2;
+        tensors[0] = Gna2TensorInit2D(rows, cols, type, input);
+        tensors[1] = Gna2TensorInit2D(cols, rows, type, output);
+    }
 };
 
 class TestModelError : public TestGnaApiEx
@@ -121,6 +159,7 @@ protected:
     Gna2ModelError lastError;
     void * gnaMemory = nullptr;
     Gna2ModelError e = GetCleanedError();
+
     void SetUp() override
     {
         TestGnaApiEx::SetUp();
@@ -140,24 +179,58 @@ protected:
         gnaMemory = nullptr;
     }
 
-    Gna2Operation CreateSimpleCopy()
+    Gna2OperationHolder& allocateNewOperation()
     {
         createdOperations.emplace_back();
-        createdOperations.back().InitCopy(8, 8, 8, 8, gnaMemory, gnaMemory);
+        return createdOperations.back();
+    }
+
+    Gna2Operation CreateSimpleCopy()
+    {
+        auto& op = allocateNewOperation();
+        op.InitCopy(8, 8, 8, 8, gnaMemory, gnaMemory);
+        return createdOperations.back().GetOperation();
+    }
+
+    Gna2Operation CreateSimpleCopyBig()
+    {
+        auto& op = allocateNewOperation();
+        op.InitCopy(8, 80, 40, 160, gnaMemory, gnaMemory);
         return createdOperations.back().GetOperation();
     }
 
     Gna2Operation CreateSimpleDiagonal()
     {
-        createdOperations.emplace_back();
-        createdOperations.back().InitDiagonal(32, 8, gnaMemory, gnaMemory, gnaMemory, gnaMemory);
+        auto& op = allocateNewOperation();
+        op.InitDiagonal(32, 8, gnaMemory, gnaMemory, gnaMemory, gnaMemory);
         return createdOperations.back().GetOperation();
     }
 
     Gna2Operation CreateSimpleDiagonalPwl()
     {
-        createdOperations.emplace_back();
-        createdOperations.back().InitDiagonalPwl(32, 8, 4, gnaMemory, gnaMemory, gnaMemory, gnaMemory, gnaMemory);
+        auto& op = allocateNewOperation();
+        op.InitDiagonalPwl(32, 8, 4, gnaMemory, gnaMemory, gnaMemory, gnaMemory, gnaMemory);
+        return createdOperations.back().GetOperation();
+    }
+
+    Gna2Operation CreateSimpleTranspose()
+    {
+        auto& op = allocateNewOperation();
+        op.InitTranspose(32, 8, Gna2DataTypeInt16, gnaMemory, gnaMemory);
+        return op.GetOperation();
+    }
+
+    Gna2Operation CreateSimpleTranspose2()
+    {
+        auto& op = allocateNewOperation();
+        op.InitTranspose(6, 32, Gna2DataTypeInt16, gnaMemory, gnaMemory);
+        return createdOperations.back().GetOperation();
+    }
+
+    Gna2Operation CreateSimpleCnn2DPool()
+    {
+        auto& op = allocateNewOperation();
+        op.InitCnn2DPool(16, 32, 3, 10, 3, 3, 2, 2, 3, 3, Gna2DataTypeInt16, gnaMemory, gnaMemory, gnaMemory);
         return createdOperations.back().GetOperation();
     }
 
@@ -229,6 +302,13 @@ protected:
                 Operands[e.Source.OperandIndex]->Shape.
                 Dimensions[e.Source.ShapeDimensionIndex]) = static_cast<uint32_t>(e.Value);
         }
+        else if( what == Gna2ItemTypeShapeDimensions && e.Source.ParameterIndex >= 0 )
+        {
+            reinterpret_cast<Gna2Shape*>(
+                gnaOperations[e.Source.OperationIndex].
+                Parameters[e.Source.ParameterIndex])->
+                Dimensions[e.Source.ShapeDimensionIndex] = static_cast<uint32_t>(e.Value);
+        }
         else if(what == Gna2ItemTypeOperationType)
         {
             gnaOperations[e.Source.OperationIndex].Type = reinterpret_cast<const Gna2OperationType&>(e.Value);
@@ -260,6 +340,12 @@ protected:
         int badValue,
         Gna2ErrorType errorType);
 
+    void WrongShapeParamsDimensions(int32_t operationIndex,
+        int32_t parameterIndex,
+        int32_t shapeDimensionIndex,
+        int badValue,
+        Gna2ErrorType errorType);
+
     void ExpectOperandDataError(int32_t operationIndex, const uint32_t operandIndex,
         void * badPointer = nullptr, Gna2ErrorType errorType = Gna2ErrorTypeNullNotAllowed);
 
@@ -267,7 +353,10 @@ protected:
     const OperationCreationFunction SimpleCopy = &TestModelError::CreateSimpleCopy;
     const OperationCreationFunction SimpleDiagonal = &TestModelError::CreateSimpleDiagonal;
     const OperationCreationFunction SimpleDiagonalPwl = &TestModelError::CreateSimpleDiagonalPwl;
-
+    const OperationCreationFunction SimpleTranspose = &TestModelError::CreateSimpleTranspose;
+    const OperationCreationFunction SimpleTranspose2 = &TestModelError::CreateSimpleTranspose2;
+    const OperationCreationFunction SimpleCnn2DPool = &TestModelError::CreateSimpleCnn2DPool;
+    const OperationCreationFunction SimpleCopyBig = &TestModelError::CreateSimpleCopyBig;
     void WithOperations(std::vector< OperationCreationFunction > operations);
 
 };

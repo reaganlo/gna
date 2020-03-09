@@ -58,6 +58,16 @@ void ModelErrorHelper::ExpectEqual(int64_t val, int64_t ref, Gna2ItemType valTyp
     ExpectTrue(val == ref, e);
 }
 
+void ModelErrorHelper::ExpectEqual(int64_t val, int64_t ref, Gna2ModelItem item)
+{
+    ExpectTrue(val == ref, { item, Gna2ErrorTypeNotEqual, val });
+}
+
+void ModelErrorHelper::ExpectEqual(const ModelValue& val, const ModelValue& ref)
+{
+    ExpectEqual(val.GetValue(), ref.GetValue(), val.GetSource());
+}
+
 void ModelErrorHelper::ExpectBelowEq(int64_t val, int64_t ref, Gna2ItemType valType)
 {
     Gna2ModelError e = GetCleanedError();
@@ -189,4 +199,19 @@ void ModelErrorHelper::SetOperandIndexRethrow(GnaException& e, uint32_t index)
     GnaModelErrorException n(e);
     n.SetOperandIndex(index);
     throw n;
+}
+
+ModelValue::ModelValue(int64_t valueIn)
+    : Value{valueIn}
+{
+}
+
+int64_t ModelValue::GetValue() const
+{
+    return Value;
+}
+
+Gna2ModelItem ModelValue::GetSource() const
+{
+    return Source;
 }

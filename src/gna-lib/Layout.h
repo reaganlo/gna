@@ -55,6 +55,7 @@ public:
 
     void Reshape(Layout const & newLayout, size_type shapeDimensions);
     int32_t GetApiIndex(gna_tensor_dim dim) const;
+    int32_t GetApiIndex(char dim) const;
 private:
     static char const * GetOrderString(gna_tensor_order order);
 

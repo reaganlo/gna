@@ -35,22 +35,15 @@ using namespace GNA;
 
 bool ActivationHelper::IsEnabled(const Gna2Operation & apiOperation)
 {
-    const auto activation = ModelWrapper::GetOptionalOperand(apiOperation, PwlOperandIndex, {});
-    return IsEnabled(activation);
+    return ModelWrapper::HasEnabledOperand(apiOperation, PwlOperandIndex);
 }
 
-bool ActivationHelper::IsEnabled(const Gna2Tensor & activation)
+void ActivationHelper::ExpectProper(const Gna2Tensor & activation)
 {
-    return activation.Type == Gna2DataTypePwlSegment &&
-        activation.Mode == Gna2TensorModeDefault &&
-        nullptr != activation.Data &&
-        activation.Shape.NumberOfDimensions == 1 &&
-        activation.Shape.Dimensions[0] > 0;
-}
-
-bool ActivationHelper::IsEnabled(const nn_layer & layer)
-{
-    return IsEnabled(TransformFactoryConfig::GetActivation(layer.pLayerStruct, layer.operation));
+    ModelErrorHelper::ExpectEqual(activation.Type, Gna2DataTypePwlSegment, Gna2ItemTypeOperandType);
+    ModelErrorHelper::ExpectEqual(activation.Mode, Gna2TensorModeDefault, Gna2ItemTypeOperandMode);
+    ModelErrorHelper::ExpectBufferNotNull(activation.Data, PwlOperandIndex);
+    ModelErrorHelper::ExpectEqual(activation.Shape.NumberOfDimensions, 1, Gna2ItemTypeShapeNumberOfDimensions);
 }
 
 bool ActivationHelper::IsEnabled(const nn_layer_conv & cnnDetails)
@@ -58,7 +51,7 @@ bool ActivationHelper::IsEnabled(const nn_layer_conv & cnnDetails)
     return IsEnabled(cnnDetails.pwl);
 }
 
-inline bool ActivationHelper::IsEnabled(const intel_pwl_func_t & pwl)
+bool ActivationHelper::IsEnabled(const intel_pwl_func_t & pwl)
 {
     return nullptr != pwl.pSegments && pwl.nSegments > 0;
 }

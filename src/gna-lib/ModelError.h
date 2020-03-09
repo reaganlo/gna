@@ -34,6 +34,7 @@ in any way.
 
 namespace GNA
 {
+class ModelValue;
 
 class ModelErrorHelper
 {
@@ -41,11 +42,14 @@ public:
     static void ExpectTrue(bool val, Gna2ModelError error);
     static void ExpectGtZero(int64_t val, Gna2ItemType valType);
     static void ExpectEqual(int64_t val, int64_t ref, Gna2ItemType valType);
+    static void ExpectEqual(int64_t val, int64_t ref, Gna2ModelItem item);
     static void ExpectBelowEq(int64_t val, int64_t ref, Gna2ItemType valType);
     static void ExpectAboveEq(int64_t val, int64_t ref, Gna2ItemType valType);
     static void ExpectMultiplicityOf(int64_t val, int64_t factor, Gna2ItemType valType);
     static void ExpectBufferNotNull(const void * const buffer, int32_t operandIndex = GNA2_DISABLED);
     static void ExpectBufferAligned(const void * const buffer, const uint32_t alignment);
+
+    static void ExpectEqual(const ModelValue& val, const ModelValue& ref);
 
     template<class A, class B>
     static void ExpectEqual(A val, B ref, Gna2ItemType valType)
@@ -83,6 +87,29 @@ private:
     static Gna2ModelError lastError;
 };
 
+class ModelValue
+{
+public:
+    ModelValue(int64_t valueIn);
+
+    ModelValue& SetOperand(int32_t index)
+    {
+        Source.OperandIndex = index;
+        return *this;
+    }
+    ModelValue& SetDimension(int32_t index)
+    {
+        Source.Type = Gna2ItemTypeShapeDimensions;
+        Source.ShapeDimensionIndex = index;
+        return *this;
+    }
+    int64_t GetValue() const;
+    Gna2ModelItem GetSource() const;
+protected:
+    int64_t Value;
+    Gna2ModelItem Source = ModelErrorHelper::GetCleanedError().Source;
+};
+
 class GnaModelErrorException : public GnaException
 {
 public:
@@ -111,12 +138,17 @@ public:
     {
         error.Source.OperandIndex = static_cast<int32_t>(operandIndex);
     }
+    void SetParameterIndex(uint32_t parameterIndex)
+    {
+        error.Source.ParameterIndex = static_cast<int32_t>(parameterIndex);
+    }
     void SetDimensionIndex(int32_t dimensionIndex)
     {
         error.Source.ShapeDimensionIndex = dimensionIndex;
     }
 
     virtual ~GnaModelErrorException() = default;
+
 private:
     Gna2ModelError error;
 };

@@ -77,3 +77,8 @@ void Component::Validate(const ComponentLimits& limits, bool validateDimensions)
         GNA::ExpectShapeIsValid(Dimensions, limits.Dimensions);
     }
 }
+
+ModelValue Component::AsModelValue(char dimension) const
+{
+    return Dimensions.AsModelValue(dimension);
+}

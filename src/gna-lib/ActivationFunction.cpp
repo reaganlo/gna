@@ -27,7 +27,6 @@
 
 #include "ActivationHelper.h"
 #include "AccelerationDetector.h"
-#include "Address.h"
 #include "Capabilities.h"
 #include "ConvolutionalLayer2DCapabilities.h"
 #include "GnaException.h"
@@ -190,11 +189,11 @@ std::unique_ptr<ActivationFunction> ActivationFunction::Create(const TransformFa
 
     const Gna2Tensor activation = config.GetActivation();
 
-    if (mandatory || ActivationHelper::IsEnabled(activation))
+    if (mandatory || activation.Mode != Gna2TensorModeDisabled)
     {
         try
         {
-
+            ActivationHelper::ExpectProper(activation);
             auto pwlFunction = std::make_unique<Tensor>(
                 Shape(GNA_TENSOR_H, activation.Shape.Dimensions[0]),
                 Gna2DataTypePwlSegment, activation.Data, Validator{ config.validator, capabilities });

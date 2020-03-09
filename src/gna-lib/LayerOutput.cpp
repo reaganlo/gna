@@ -236,3 +236,10 @@ std::pair<uint32_t, uint32_t> LayerOutput::getGroupingAndElements(const nn_layer
         throw GnaException(Gna2StatusNotImplemented);
     }
 }
+
+ModelValue LayerOutput::AsModelValue(char dimension) const
+{
+    auto mv = Component::AsModelValue(dimension);
+    mv.SetOperand(OutputOperandIndex);
+    return mv;
+}

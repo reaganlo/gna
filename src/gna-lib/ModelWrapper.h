@@ -152,9 +152,9 @@ public:
 
 
     static uint32_t GetOperationInfo(OperationType operationType, OperationInfoKey infoType);
-    static bool HasOperand(const Gna2Operation& apiOperation, uint32_t operandIndex);
+    static bool HasEnabledOperand(const Gna2Operation& apiOperation, uint32_t operandIndex);
 
-    static Gna2Tensor GetOperand(const Gna2Operation & apiOperation, uint32_t operandIndex);
+    static Gna2Tensor GetEnabledOperand(const Gna2Operation & apiOperation, uint32_t operandIndex);
 
     static Gna2Tensor GetOptionalOperand(const Gna2Operation& apiOperation,
         uint32_t operandIndex, Gna2Tensor defaultTensor);

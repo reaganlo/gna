@@ -106,26 +106,12 @@ AffineLayer::AffineLayer(const nn_layer& layer, const BaseValidator& validatorIn
 
 AffineLayer::AffineLayer(const Gna2Operation& operation, const BaseValidator& validatorIn) :
     AffineBaseLayer(operation, { AffineTransform, ActivationTransform }, validatorIn)
-{}
-
-AffineDiagonalLayer::AffineDiagonalLayer(const nn_layer& layer, const BaseValidator& validatorIn) :
-    AffineBaseLayer(layer, { AffineDiagonalTransform, ActivationTransform }, validatorIn)
 {
-    Expect::Equal(Input.Dimensions.at('H'), Output.Dimensions.at('H'), Gna2StatusXnnErrorLyrCfg);
-    Expect::Equal(Input.Dimensions.at('W'), Output.Dimensions.at('W'), Gna2StatusXnnErrorLyrCfg);
-}
-
-AffineDiagonalLayer::AffineDiagonalLayer(const Gna2Operation& operation, const BaseValidator& validatorIn) :
-    AffineBaseLayer(operation, { AffineDiagonalTransform, ActivationTransform }, validatorIn)
-{
-    Expect::Equal(Input.Dimensions.at('H'), Output.Dimensions.at('H'), Gna2StatusXnnErrorLyrCfg);
-    Expect::Equal(Input.Dimensions.at('W'), Output.Dimensions.at('W'), Gna2StatusXnnErrorLyrCfg);
-}
-
-DataConfig AffineDiagonalLayer::GetDataMode() const
-{
-    auto affineTransform = Transforms.Get<AffineFunction>(AffineDiagonalTransform);
-    return AffineBaseLayer::getDataMode(affineTransform);
+    if(operation.Type == Gna2OperationTypeElementWiseAffine)
+    {
+        ModelErrorHelper::ExpectEqual(Output.AsModelValue('H'), Input.AsModelValue('H'));
+        ModelErrorHelper::ExpectEqual(Output.AsModelValue('W'), Input.AsModelValue('W'));
+    }
 }
 
 Tensor const & AffineBaseLayer::GetOperand(uint32_t operandIndex) const
@@ -145,4 +131,3 @@ Tensor const & AffineBaseLayer::GetOperand(uint32_t operandIndex) const
         return Layer::GetOperand(operandIndex);
     }
 }
-

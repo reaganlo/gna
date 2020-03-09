@@ -36,9 +36,8 @@ class ActivationHelper
     ActivationHelper() = delete;
 public:
     static bool IsEnabled(const Gna2Operation& apiOperation);
-    static bool IsEnabled(const Gna2Tensor& activation);
+    static void ExpectProper(const Gna2Tensor& activation);
 
-    static bool IsEnabled(const intel_nnet_layer_t& layer);
     static bool IsEnabled(const intel_convolutional_layer_t& cnnDetails);
     static bool IsEnabled(const intel_pwl_func_t& pwl);
 

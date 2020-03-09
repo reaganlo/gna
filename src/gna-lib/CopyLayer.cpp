@@ -93,10 +93,18 @@ CopyLayer::CopyLayer(const Gna2Operation& operation, const BaseValidator& valida
     copyKernels{ AccelerationDetector::GetKernelMap<CopyKernel>(KERNEL_COPY, KernelMode {Input.Mode}) },
     copyHiddenConfig{ RowCount, ColumnCount, Input.Dimensions.at('W'), Output.Dimensions.at('W'), Input.Buffer, Output.Buffer }
 {
-    auto copyParams = std::make_unique<const Component>(Shape{GNA_TENSOR_HW, RowCount, ColumnCount},
-        Validator{ *validator, limits });
-    Expect::True(RowCount <= Input.Dimensions.at('H'), Gna2StatusXnnErrorLyrCfg);
-
+    // TODO : 4: Try to remove try/catch from here
+    try
+    {
+        auto copyParams = std::make_unique<const Component>(Shape{ GNA_TENSOR_HW, RowCount, ColumnCount },
+            Validator{ *validator, limits });
+        ModelErrorHelper::ExpectBelowEq(RowCount, Input.Dimensions.at('H'), Gna2ItemTypeShapeDimensions);
+    }
+    catch(GnaModelErrorException& e)
+    {
+        e.SetParameterIndex(0);
+        throw;
+    }
     ComputeHidden = [this](AccelerationMode accel, ExecutionConfig const & executionConfig)
     {this->computeHidden(accel, executionConfig); };
 

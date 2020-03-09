@@ -122,7 +122,7 @@ PoolingFunction2D::PoolingFunction2D(const BaseTransformConfig<PoolingKernel2D>&
         Validator{ config.validator, ConvolutionalLayer2DCapabilities::GetOperands(OutputOperandIndex) });
 
     const auto output = Output->Dimensions;
-    Expect::Fits(output, Input->Dimensions);
+    output.ExpectFits(Input->Dimensions);
 
     const gna_3d_dimensions input = Input->Dimensions;
     const gna_3d_dimensions poolingStride = Stride->Dimensions;

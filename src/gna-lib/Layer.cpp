@@ -49,10 +49,9 @@ std::unique_ptr<Layer> Layer::Create(const nn_layer& layer, const BaseValidator&
     switch (layer.operation)
     {
     case INTEL_AFFINE:
+    case INTEL_AFFINE_DIAGONAL:
     case INTEL_AFFINE_MULTIBIAS:
         return std::make_unique<AffineLayer>(layer, validatorIn);
-    case INTEL_AFFINE_DIAGONAL:
-        return std::make_unique<AffineDiagonalLayer>(layer, validatorIn);
     case INTEL_CONVOLUTIONAL:
         return std::make_unique<CnnLayer>(layer, validatorIn);
     case INTEL_CONVOLUTIONAL_2D:
@@ -76,7 +75,7 @@ std::unique_ptr<GNA::Layer> Layer::Create(const Gna2Operation & operation, const
     {
     case Gna2OperationTypeFullyConnectedAffine:
     {
-        if (ModelWrapper::HasOperand(operation, WeightScaleFactorOperandIndex))
+        if (ModelWrapper::HasEnabledOperand(operation, WeightScaleFactorOperandIndex))
         {
             Expect::NotNull(operation.Parameters);
             Expect::NotNull(operation.Parameters[0]);

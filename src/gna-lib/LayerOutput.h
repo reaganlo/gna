@@ -44,6 +44,8 @@ struct LayerOutput : public Tensor
     const uint32_t Grouping;
     const uint32_t ElementCount;
 
+    ModelValue AsModelValue(char dimension) const override;
+
 protected:
     static const FullCapabilitiesMap capabilities;
 

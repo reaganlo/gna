@@ -55,6 +55,19 @@ void TestModelError::WrongShapeDimensions(int32_t operationIndex,
     expectModelError(errorType);
 }
 
+void TestModelError::WrongShapeParamsDimensions(int32_t operationIndex,
+    int32_t parameterIndex,
+    int32_t shapeDimensionIndex,
+    int badValue,
+    Gna2ErrorType errorType)
+{
+    e.Source.OperationIndex = operationIndex;
+    e.Source.ParameterIndex = parameterIndex;
+    e.Source.ShapeDimensionIndex = shapeDimensionIndex;
+    update(Gna2ItemTypeShapeDimensions, badValue);
+    expectModelError(errorType);
+}
+
 TEST_F(TestModelError, WrongInput)
 {
     WrongShapeDimensions(1, GNA::InputOperandIndex, 0, 9, Gna2ErrorTypeAboveRange);
@@ -68,6 +81,18 @@ TEST_F(TestModelError, WrongOutput)
 TEST_F(TestModelError, WrongInputMulti)
 {
     WrongShapeDimensions(2, GNA::InputOperandIndex, 1, 123, Gna2ErrorTypeNotMultiplicity);
+}
+
+
+TEST_F(TestModelError, DISABLED_OutputCopyNotMultiplicity)
+{
+    WrongShapeDimensions(1, GNA::OutputOperandIndex, 1, 50, Gna2ErrorTypeNotEqual);
+}
+
+TEST_F(TestModelError, CopyElemsNotMultiplicity)
+{
+    WithOperations({ SimpleCopy, SimpleCopyBig, SimpleDiagonal });
+    WrongShapeParamsDimensions(1, 0, 1, 10, Gna2ErrorTypeNotMultiplicity);
 }
 
 TEST_F(TestModelError, WrongWeights)
@@ -93,11 +118,38 @@ TEST_F(TestModelError, DISABLED_TooSmalWeightVolume)
 
 TEST_F(TestModelError, WrongBiasDimNumber)
 {
+    WithOperations({ SimpleCopy, SimpleCopy,SimpleDiagonal });
     e.Source.OperationIndex = 2;
     e.Source.OperandIndex = GNA::BiasOperandIndex;
-    WithOperations({ SimpleCopy, SimpleCopy,SimpleDiagonal });
     update(Gna2ItemTypeShapeNumberOfDimensions, 2);
     expectModelError(Gna2ErrorTypeNotEqual);
+}
+
+TEST_F(TestModelError, WrongActivationNumberOfDimension)
+{
+    WithOperations({ SimpleDiagonalPwl, SimpleDiagonal, SimpleDiagonal });
+    e.Source.OperationIndex = 0;
+    e.Source.OperandIndex = GNA::PwlOperandIndex;
+    update(Gna2ItemTypeShapeNumberOfDimensions, 5);
+    expectModelError(Gna2ErrorTypeNotEqual);
+}
+
+TEST_F(TestModelError, WrongActivationNumberOfDimension0)
+{
+    WithOperations({ SimpleDiagonalPwl, SimpleDiagonal, SimpleDiagonal });
+    e.Source.OperationIndex = 0;
+    e.Source.OperandIndex = GNA::PwlOperandIndex;
+    update(Gna2ItemTypeShapeNumberOfDimensions, 0);
+    expectModelError(Gna2ErrorTypeNotEqual);
+}
+
+TEST_F(TestModelError, WrongActivationDataNull)
+{
+    WithOperations({ SimpleDiagonalPwl, SimpleDiagonal, SimpleDiagonal });
+    e.Source.OperationIndex = 0;
+    e.Source.OperandIndex = GNA::PwlOperandIndex;
+    update(Gna2ItemTypeOperandData, nullptr);
+    expectModelError(Gna2ErrorTypeNullNotAllowed);
 }
 
 TEST_F(TestModelError, WrongOperationType)
@@ -141,4 +193,65 @@ TEST_F(TestModelError, WrongBufferNullBias)
 TEST_F(TestModelError, WrongBufferNullWeight)
 {
     ExpectOperandDataError(1, GNA::WeightOperandIndex);
+}
+
+TEST_F(TestModelError, WrongTransOut)
+{
+    WithOperations({ SimpleDiagonal, SimpleTranspose, SimpleDiagonal });
+    WrongShapeDimensions(1, GNA::OutputOperandIndex, 0, 9, Gna2ErrorTypeAboveRange);
+}
+
+TEST_F(TestModelError, WrongTransOut2)
+{
+    WithOperations({ SimpleDiagonal, SimpleTranspose, SimpleDiagonal });
+    WrongShapeDimensions(1, GNA::OutputOperandIndex, 0, 7, Gna2ErrorTypeNotEqual);
+}
+
+TEST_F(TestModelError, WrongTransOut3)
+{
+    WithOperations({ SimpleDiagonal, SimpleTranspose, SimpleDiagonal });
+    WrongShapeDimensions(1, GNA::OutputOperandIndex, 1, 64, Gna2ErrorTypeNotEqual);
+}
+
+TEST_F(TestModelError, WrongTransOut4)
+{
+    WithOperations({ SimpleDiagonal, SimpleTranspose2, SimpleDiagonal });
+    WrongShapeDimensions(1, GNA::OutputOperandIndex, 0, 7, Gna2ErrorTypeBelowRange);
+}
+
+TEST_F(TestModelError, WrongTransOut5)
+{
+    WithOperations({ SimpleDiagonal, SimpleTranspose2, SimpleDiagonal });
+    WrongShapeDimensions(1, GNA::OutputOperandIndex, 1, 64, Gna2ErrorTypeAboveRange);
+}
+
+TEST_F(TestModelError, WrongTransOut6)
+{
+    WithOperations({ SimpleDiagonal, SimpleTranspose2, SimpleDiagonal });
+    WrongShapeDimensions(1, GNA::OutputOperandIndex, 0, 128, Gna2ErrorTypeNotEqual);
+}
+
+TEST_F(TestModelError, WrongTransOut7)
+{
+    WithOperations({ SimpleDiagonal, SimpleTranspose2, SimpleDiagonal });
+    WrongShapeDimensions(1, GNA::OutputOperandIndex, 1, 4, Gna2ErrorTypeNotEqual);
+}
+
+TEST_F(TestModelError, WrongDiagMatch)
+{
+    WithOperations({ SimpleDiagonal, SimpleTranspose2, SimpleDiagonal });
+    WrongShapeDimensions(0, GNA::OutputOperandIndex, 0, 128, Gna2ErrorTypeNotEqual);
+}
+
+TEST_F(TestModelError, WrongDiagMatch2)
+{
+    WithOperations({ SimpleDiagonal, SimpleTranspose2, SimpleDiagonal });
+    WrongShapeDimensions(2, GNA::OutputOperandIndex, 1, 3, Gna2ErrorTypeNotEqual);
+}
+
+// TODO: 4: enable when CNN dispatch mechanism cleaned
+TEST_F(TestModelError, DISABLED_WrongDnn2DPoolOut)
+{
+    WithOperations({ SimpleDiagonal, SimpleCnn2DPool, SimpleDiagonal });
+    WrongShapeDimensions(1, GNA::OutputOperandIndex, 1, 32, Gna2ErrorTypeNotEqual);
 }

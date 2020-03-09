@@ -56,6 +56,8 @@ struct Component
         return Dimensions.at(dimension);
     }
 
+    virtual ModelValue AsModelValue(char dimension) const;
+
     Shape Dimensions;
 
     // Total number of elements

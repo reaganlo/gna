@@ -59,6 +59,10 @@ Gna2Tensor TransformFactoryConfig::GetActivation(const void * layerDetails, nn_o
     a.Type = Gna2DataTypePwlSegment;
     a.Shape = { 1, pwl.nSegments };
     a.Data = pwl.pSegments;
+    if(!ActivationHelper::IsEnabled(pwl))
+    {
+        a.Mode = Gna2TensorModeDisabled;
+    }
     return a;
 }
 
@@ -97,10 +101,10 @@ inline bool TransformFactoryConfig::HasMandatoryActivation(const Gna2Operation &
 
 inline Gna2Tensor TransformFactoryConfig::GetActivation(const Gna2Operation & operation)
 {
-    if (operation.NumberOfOperands >= 5 && operation.Type != Gna2OperationTypeGmm &&
+    if (operation.NumberOfOperands > PwlOperandIndex && operation.Type != Gna2OperationTypeGmm &&
         operation.Operands != nullptr && operation.Operands[PwlOperandIndex] != nullptr)
     {
-        return *operation.Operands[4];
+        return *operation.Operands[PwlOperandIndex];
     }
     Gna2Tensor disabled{};
     disabled.Mode = Gna2TensorModeDisabled;

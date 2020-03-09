@@ -25,7 +25,6 @@
 
 #pragma once
 
-#include "Expect.h"
 #include "DataMode.h"
 #include "KernelArguments.h"
 #include "Tensor.h"

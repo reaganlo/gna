@@ -75,13 +75,4 @@ public:
     virtual void UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const override;
 };
 
-class AffineDiagonalLayer : public AffineBaseLayer
-{
-public:
-    AffineDiagonalLayer(const nn_layer& layer, const BaseValidator& validatorIn);
-    AffineDiagonalLayer(const Gna2Operation& operation, const BaseValidator& validatorIn);
-    virtual ~AffineDiagonalLayer() = default;
-    virtual DataConfig GetDataMode() const override;
-};
-
 }

@@ -162,7 +162,7 @@ std::unique_ptr<const ConvolutionFunction> ConvolutionFunction::finalizeCreation
 std::unique_ptr<const FiltersTensor> ConvolutionFunction::createFilters(const Gna2Operation & apiOperation,
     const LayerValidator& validatorIn)
 {
-    const auto& apiFilters = ModelWrapper::GetOperand(apiOperation, FilterOperandIndex);
+    const auto& apiFilters = ModelWrapper::GetEnabledOperand(apiOperation, FilterOperandIndex);
     return std::make_unique<const FiltersTensor>(Shape::Create(apiFilters.Shape, GNA_TENSOR_NW),
         apiFilters.Type, apiFilters.Data, validatorIn);
 }
@@ -192,7 +192,7 @@ std::unique_ptr<const Component> ConvolutionFunction::createStride(const nn_laye
 std::unique_ptr<const BiasTensor> ConvolutionFunction::createBiases(const Gna2Operation & apiOperation,
     const LayerValidator & validatorIn)
 {
-    const auto& apiBias = ModelWrapper::GetOperand(apiOperation, BiasOperandIndex);
+    const auto& apiBias = ModelWrapper::GetEnabledOperand(apiOperation, BiasOperandIndex);
     return std::make_unique<const BiasTensor>(Shape::Create(apiBias.Shape, GNA_TENSOR_N),
         0, apiBias.Type, apiBias.Data, validatorIn);
 }
@@ -206,7 +206,7 @@ std::unique_ptr<const BiasTensor> ConvolutionFunction::createBiases(const nn_lay
 
 void ConvolutionFunction::expectValid(const Gna2Operation& apiOperation)
 {
-    const auto& apiInput = ModelWrapper::GetOperand(apiOperation, InputOperandIndex);
+    const auto& apiInput = ModelWrapper::GetEnabledOperand(apiOperation, InputOperandIndex);
 
     const auto featureCount = ModelWrapper::ShapeGetNumberOfElements(&apiInput.Shape);
     Expect::True(featureCount >= CNN_N_FLT_COEFF_MIN, Gna2StatusXnnErrorLyrCfg);
