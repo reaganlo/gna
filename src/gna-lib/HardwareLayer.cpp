@@ -625,12 +625,12 @@ HardwareLayerCnn2D::HardwareLayerCnn2D(const DescriptorParameters& parameters) :
     if (is1D)
     {
         save1D();
-        Log->Message("Using new uArch CNN 1D");
+        Log->Message("Using new uArch CNN 1D.\n");
     }
     else
     {
         save();
-        Log->Message("Using new uArch CNN 2D");
+        Log->Message("Using new uArch CNN 2D.\n");
     }
     saveActivation(
         SoftwareLayer.Get()->Transforms.Get<ActivationFunction>(ActivationTransform));

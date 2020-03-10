@@ -223,5 +223,5 @@ void HwModuleInterface::Validate() const
     Expect::NotNull(reinterpret_cast<const void*>(CreateLD));
     Expect::NotNull(reinterpret_cast<const void*>(FreeLD));
     Expect::NotNull(reinterpret_cast<const void*>(FillLD));
-    Log->Message("HwModule library loaded successfully.");
+    Log->Message("HwModule library loaded successfully.\n");
 }

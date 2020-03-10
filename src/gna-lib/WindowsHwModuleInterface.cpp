@@ -56,7 +56,7 @@ WindowsHwModuleInterface::~WindowsHwModuleInterface()
         auto const status = FreeLibrary(hwModule);
         if (!status)
         {
-            Log->Error("FreeLibrary failed!");
+            Log->Error("FreeLibrary failed!\n");
         }
     }
 }

@@ -42,7 +42,7 @@ LinuxHwModuleInterface::LinuxHwModuleInterface(char const * moduleName)
     hwModule = dlopen(fullName.c_str(), RTLD_NOW);
     if (nullptr != hwModule)
     {
-        Log->Warning("HwModule release library not found, trying to load debug library.");
+        Log->Warning("HwModule release library not found, trying to load debug library.\n");
         debugName.append("d.so");
         hwModule = dlopen(debugName.c_str(), RTLD_NOW);
     }
@@ -66,7 +66,7 @@ LinuxHwModuleInterface::~LinuxHwModuleInterface()
         auto const error = dlclose(hwModule);
         if (error)
         {
-            Log->Error("FreeLibrary failed!");
+            Log->Error("FreeLibrary failed!\n");
         }
     }
 }

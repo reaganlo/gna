@@ -68,6 +68,8 @@ elseif(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
   set(API_EXTRA_DEFS "-DINTEL_GNA_DLLEXPORT=1")
 endif()
 
+set(API_EXTRA_DEFS ${API_EXTRA_DEFS} ${GNA_HW_LIB_ENABLED})
+
 set(GNA_API_INCL_DIR ${GNA_BINARY_DIR}/gna-lib/include)
 set(GNA_LIB_OUT_DIR ${GNA_BINARY_DIR}/gna-lib)
 set(GNA_LIB_DEBUG_OUT_DIR ${GNA_LIB_OUT_DIR}/${OS_PREFIX}-DEBUG/${CMAKE_ARCHITECTURE})
@@ -264,7 +266,7 @@ set(gna_hw_module_interface_sources
   ${SRC_DIR}/WindowsHwModuleInterface.cpp
   ${SRC_DIR}/LinuxHwModuleInterface.cpp
   )
-  
+
 set(gna_api_impl_headers_2
   ${API_IMPL_DIR}/gna2-impl.h
   ${API_IMPL_DIR}/gna2-capability-impl.h
@@ -423,7 +425,7 @@ if(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
   add_library(gna-api-verbose SHARED)
 
   target_include_directories(gna-api-verbose
-    PRIVATE ${SRC_DIR} ${API_DIR} ${API_IMPL_DIR} ${KERNEL_DIR}
+    PRIVATE ${SRC_DIR} ${API_DIR} ${API_IMPL_DIR} ${KERNEL_DIR} ${GNA_HW_LIB_INCLUDE_PATH}
     PUBLIC ${COMMON_DIR})
 
   target_sources(gna-api-verbose
