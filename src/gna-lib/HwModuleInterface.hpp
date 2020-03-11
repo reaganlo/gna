@@ -76,6 +76,7 @@ protected:
         const DataMode& outputMode) const;
     HwUarchParams Get2DParams(ConvolutionFunction2D const* cnnIn, PoolingFunction2D const* poolingIn,
         const DataMode& outputMode) const;
+    static int32_t GetPoolingMode(PoolingFunction2D const* poolingIn);
 
     typedef struct GNA3_LyrDesc* (*CreateLDFunction)();
     typedef void(*FreeLDFunction)(struct GNA3_LyrDesc* LD);

@@ -89,13 +89,21 @@ HwUarchParams HwModuleInterface::GetCnnParams(ConvolutionFunction2D const* cnnIn
     Expect::NotNull(reinterpret_cast<const void*>(CreateLD),
                     Gna2StatusAccelerationModeNotSupported);
     Expect::NotNull(cnnIn);
-    Expect::NotNull(poolingIn);
 
     if (is1D)
     {
         return Get1DParams(cnnIn, poolingIn, outputMode);
     }
     return Get2DParams(cnnIn, poolingIn, outputMode);
+}
+
+int32_t HwModuleInterface::GetPoolingMode(PoolingFunction2D const* poolingIn)
+{
+    if (poolingIn == nullptr)
+    {
+        return static_cast<int32_t>(KernelPoolingModeNone);
+    }
+    return static_cast<int32_t>(poolingIn->Mode);
 }
 
 HwUarchParams HwModuleInterface::Get1DParams(ConvolutionFunction2D const* cnnIn, PoolingFunction2D const* poolingIn,
@@ -119,9 +127,7 @@ HwUarchParams HwModuleInterface::Get1DParams(ConvolutionFunction2D const* cnnIn,
     LD_2DCNN->OpStruct.GNA3_OP_1DCNN.BPrec = static_cast<GNA3_Prec_t>(cnnIn->Biases->Mode.Size);
     LD_2DCNN->OpStruct.GNA3_OP_1DCNN.BType = GNA3_BIASperKERNEL; //other modes not supported
     // Pooling @ Setting 2DCNNc Parameters
-    LD_2DCNN->OpStruct.GNA3_OP_1DCNN.PType = poolingIn == nullptr || poolingIn->Mode == KernelPoolingModeNone
-                                                 ? GNA3_POOL_DIS
-                                                 : static_cast<GNA3_PoolType_t>(poolingIn->Mode);
+    LD_2DCNN->OpStruct.GNA3_OP_1DCNN.PType = static_cast<GNA3_PoolType_t>(GetPoolingMode(poolingIn));
     if (LD_2DCNN->OpStruct.GNA3_OP_1DCNN.PType != GNA3_POOL_DIS)
     {
         LD_2DCNN->OpStruct.GNA3_OP_1DCNN.PWin = static_cast<uint8_t>(poolingIn->Window->at(GNA_DIM_W));
@@ -179,9 +185,7 @@ HwUarchParams HwModuleInterface::Get2DParams(ConvolutionFunction2D const* cnnIn,
     LD_2DCNN->OpStruct.GNA3_OP_2DCNNc.BPrec = static_cast<GNA3_Prec_t>(cnnIn->Biases->Mode.Size);
     LD_2DCNN->OpStruct.GNA3_OP_2DCNNc.BType = GNA3_BIASperKERNEL; //other modes not supported
     // Pooling @ Setting 2DCNNc Parameters
-    LD_2DCNN->OpStruct.GNA3_OP_2DCNNc.PType = poolingIn == nullptr || poolingIn->Mode == KernelPoolingModeNone
-                                                  ? GNA3_POOL_DIS
-                                                  : static_cast<GNA3_PoolType_t>(poolingIn->Mode);
+    LD_2DCNN->OpStruct.GNA3_OP_2DCNNc.PType = static_cast<GNA3_PoolType_t>(GetPoolingMode(poolingIn));
     if (LD_2DCNN->OpStruct.GNA3_OP_2DCNNc.PType != GNA3_POOL_DIS)
     {
         LD_2DCNN->OpStruct.GNA3_OP_2DCNNc.PWin.H = static_cast<uint16_t>(poolingIn->Window->at(GNA_DIM_H));
