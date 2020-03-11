@@ -84,6 +84,8 @@ struct Tensor : public Component
         return tensor;
     }
 
+    static DataMode GetDataMode(const Gna2Tensor& tensor);
+
     // TODO:3:API: remove and use Type and Mode directly
     const DataMode Mode;
 

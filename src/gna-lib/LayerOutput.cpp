@@ -180,7 +180,7 @@ ApiShape LayerOutput::GetShape(const Gna2Operation & operation)
 LayerOutput::LayerOutput(const Gna2Operation &operation, const LayerValidator& validatorIn)
 try :
     Tensor{ Shape::Create(GetShape(operation), capabilities.GetOrder(validatorIn)),
-        operation.Operands[OutputOperandIndex]->Type, operation.Operands[OutputOperandIndex]->Data,
+        GetDataMode(*operation.Operands[OutputOperandIndex]), operation.Operands[OutputOperandIndex]->Data,
         Validator{ validatorIn, capabilities } },
     ScratchPad{Dimensions, Gna2DataTypeInt32, Gna2TensorModeDefault, getScratchpadForOperation(operation)}, //TODO:3:P1:Decide what to do with scratch pad in API2, disabled validation, as parameters are provided by library
     Grouping{ getGrouping(operation, validatorIn) },

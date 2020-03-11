@@ -68,6 +68,11 @@ void ModelErrorHelper::ExpectEqual(const ModelValue& val, const ModelValue& ref)
     ExpectEqual(val.GetValue(), ref.GetValue(), val.GetSource());
 }
 
+void ModelErrorHelper::ExpectBelowEq(const ModelValue& val, const ModelValue& ref)
+{
+    ExpectBelowEq(val.GetValue(), ref.GetValue(), val.GetSource());
+}
+
 void ModelErrorHelper::ExpectBelowEq(int64_t val, int64_t ref, Gna2ItemType valType)
 {
     Gna2ModelError e = GetCleanedError();
@@ -77,6 +82,11 @@ void ModelErrorHelper::ExpectBelowEq(int64_t val, int64_t ref, Gna2ItemType valT
     ExpectTrue(val <= ref, e);
 }
 
+void ModelErrorHelper::ExpectBelowEq(int64_t val, int64_t ref, Gna2ModelItem item)
+{
+    ExpectTrue(val <= ref, { item, Gna2ErrorTypeAboveRange, val });
+}
+
 void ModelErrorHelper::ExpectAboveEq(int64_t val, int64_t ref, Gna2ItemType valType)
 {
     Gna2ModelError e = GetCleanedError();
@@ -84,6 +94,16 @@ void ModelErrorHelper::ExpectAboveEq(int64_t val, int64_t ref, Gna2ItemType valT
     e.Value = val;
     e.Reason = Gna2ErrorTypeBelowRange;
     ExpectTrue(val >= ref, e);
+}
+
+void ModelErrorHelper::ExpectAboveEq(int64_t val, int64_t ref, Gna2ModelItem item)
+{
+    ExpectTrue(val >= ref, { item, Gna2ErrorTypeBelowRange, val });
+}
+
+void ModelErrorHelper::ExpectAboveEq(const ModelValue& val, const ModelValue& ref)
+{
+    ExpectAboveEq(val.GetValue(), ref.GetValue(), val.GetSource());
 }
 
 void ModelErrorHelper::ExpectMultiplicityOf(int64_t val, int64_t factor, Gna2ItemType valType)

@@ -176,7 +176,7 @@ enum Gna2OperationType
                     - C is a depth of each filter
         + 3: biases [optional]:
             Supported values:
-                - Mode: {::Gna2TensorModeDefault, ::Gna2TensorModeDisabled}
+                - Mode: {::Gna2TensorModeDefault}
                 - Type: {::Gna2DataTypeInt8, ::Gna2DataTypeInt16, ::Gna2DataTypeInt32},
                 - Shape: (@see biasMode parameter), can be set 0, as is calculated by GNA,
                     - For biasMode ::Gna2BiasModeDefault: [N] 1D Vector, where
@@ -580,7 +580,7 @@ struct Gna2Operation
     struct Gna2Tensor const ** Operands;
 
     /**
-     Number of Operands that are actually provided.
+     Number of pointers in the Operands array. Pointer can be NULL if operand is [optional].
      */
     uint32_t NumberOfOperands;
 
@@ -597,7 +597,7 @@ struct Gna2Operation
     void ** Parameters;
 
     /**
-     Number of Parameters that are actually provided.
+     Number of pointers in the Parameters array. Pointer can be NULL if parameter is [optional].
      */
     uint32_t NumberOfParameters;
 };
@@ -648,18 +648,16 @@ enum Gna2TensorMode
 
     /**
      Data interpreted as single constant scalar of type specified by Gna2DataType.
+     @warning Reserved for future purposes.
      */
     Gna2TensorModeConstantScalar = 0x010000,
 
     /**
-     Data not used, set buffer to NULL.
+     To disable optional tensors.
+     @warning Reserved for future purposes.
      */
     Gna2TensorModeDisabled = GNA2_DISABLED,
 
-    ///**
-    // Indicates Data Mode property is not supported for given entity.
-    // */
-    //Gna2TensorModeNotSupported = GNA2_NOT_SUPPORTED,
 };
 
 /**

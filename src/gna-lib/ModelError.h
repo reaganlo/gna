@@ -44,12 +44,16 @@ public:
     static void ExpectEqual(int64_t val, int64_t ref, Gna2ItemType valType);
     static void ExpectEqual(int64_t val, int64_t ref, Gna2ModelItem item);
     static void ExpectBelowEq(int64_t val, int64_t ref, Gna2ItemType valType);
+    static void ExpectBelowEq(int64_t val, int64_t ref, Gna2ModelItem item);
     static void ExpectAboveEq(int64_t val, int64_t ref, Gna2ItemType valType);
+    static void ExpectAboveEq(int64_t val, int64_t ref, Gna2ModelItem item);
     static void ExpectMultiplicityOf(int64_t val, int64_t factor, Gna2ItemType valType);
     static void ExpectBufferNotNull(const void * const buffer, int32_t operandIndex = GNA2_DISABLED);
     static void ExpectBufferAligned(const void * const buffer, const uint32_t alignment);
 
     static void ExpectEqual(const ModelValue& val, const ModelValue& ref);
+    static void ExpectBelowEq(const ModelValue& val, const ModelValue& ref);
+    static void ExpectAboveEq(const ModelValue& val, const ModelValue& ref);
 
     template<class A, class B>
     static void ExpectEqual(A val, B ref, Gna2ItemType valType)
@@ -103,8 +107,20 @@ public:
         Source.ShapeDimensionIndex = index;
         return *this;
     }
+    ModelValue& SetParameter(int32_t index)
+    {
+        Source.Type = Gna2ItemTypeParameter;
+        Source.ParameterIndex = index;
+        return *this;
+    }
+    ModelValue& SetItem(Gna2ItemType itemType)
+    {
+        Source.Type = itemType;
+        return *this;
+    }
     int64_t GetValue() const;
     Gna2ModelItem GetSource() const;
+
 protected:
     int64_t Value;
     Gna2ModelItem Source = ModelErrorHelper::GetCleanedError().Source;

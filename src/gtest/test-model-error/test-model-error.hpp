@@ -108,6 +108,36 @@ public:
         tensors[4] = Gna2TensorInit1D(pwlSegments, Gna2DataTypePwlSegment, pwl);
     }
 
+    void InitMB(uint32_t inputs, uint32_t outputs, uint32_t batches,
+        uint32_t pwlSegments, uint32_t biasIndex, uint32_t biasGrouping,
+        void * input, void * output, void * weight, void * bias, void * pwl)
+    {
+        operation.Type = Gna2OperationTypeFullyConnectedAffine;
+        operation.NumberOfOperands = 5;
+        tensors[0] = Gna2TensorInit2D(inputs, batches, Gna2DataTypeInt16, input);
+        tensors[1] = Gna2TensorInit2D(outputs, batches, Gna2DataTypeInt16, output);
+        tensors[2] = Gna2TensorInit2D(outputs, inputs, Gna2DataTypeInt16, weight);
+        tensors[3] = Gna2TensorInit2D(outputs, biasGrouping, Gna2DataTypeInt32, bias);
+        tensors[4] = Gna2TensorInit1D(pwlSegments, Gna2DataTypePwlSegment, pwl);
+        operation.NumberOfParameters = 2;
+        parameters[0].biasMode = Gna2BiasModeGrouping;
+        parameters[1].uint32 = biasIndex;
+    }
+
+    void InitRnn(uint32_t inputs, uint32_t outputs, uint32_t delay, uint32_t pwlSegments, void * input, void * output, void * weight, void * bias, void * pwl)
+    {
+        operation.Type = Gna2OperationTypeRecurrent;
+        operation.NumberOfOperands = 5;
+        const uint32_t inputVectors = 4;
+        tensors[0] = Gna2TensorInit2D(inputVectors, inputs, Gna2DataTypeInt16, input);
+        tensors[1] = Gna2TensorInit2D(inputVectors, outputs, Gna2DataTypeInt16, output);
+        tensors[2] = Gna2TensorInit2D(outputs, outputs+inputs, Gna2DataTypeInt16, weight);
+        tensors[3] = Gna2TensorInit1D(outputs, Gna2DataTypeInt32, bias);
+        tensors[4] = Gna2TensorInit1D(pwlSegments, Gna2DataTypePwlSegment, pwl);
+        operation.NumberOfParameters = 1;
+        parameters[0].uint32 = delay;
+    }
+
     uint32_t Cnn2DOut(uint32_t input, uint32_t filter, uint32_t stride, uint32_t poolWin)
     {
         return (input - filter + 1) / stride - poolWin + 1;
@@ -148,7 +178,7 @@ public:
 class TestModelError : public TestGnaApiEx
 {
 protected:
-    const uint32_t MemoryToUse = 8192;
+    const uint32_t DefaultMemoryToUse = 8192;
     static const uint32_t MaxNumberOfLayers = 8192;
     Gna2Operation gnaOperations[MaxNumberOfLayers] = {};
     Gna2Model gnaModel{ 1, gnaOperations };
@@ -160,14 +190,29 @@ protected:
     void * gnaMemory = nullptr;
     Gna2ModelError e = GetCleanedError();
 
+    void allocGnaMem(const uint32_t required)
+    {
+        uint32_t grantedMemory;
+        const auto status = Gna2MemoryAlloc(required, &grantedMemory, &gnaMemory);
+        ASSERT_EQ(status, Gna2StatusSuccess);
+        ASSERT_EQ(grantedMemory, required);
+        ASSERT_NE(gnaMemory, nullptr);
+    }
+
+    void ReAllocGnaMem(const uint32_t required)
+    {
+        ASSERT_NE(gnaMemory, nullptr);
+        const auto status = Gna2MemoryFree(gnaMemory);
+        ASSERT_EQ(status, Gna2StatusSuccess);
+        gnaMemory = nullptr;
+        allocGnaMem(required);
+        WithOperations({});
+    }
+
     void SetUp() override
     {
         TestGnaApiEx::SetUp();
-        uint32_t grantedMemory;
-        const auto status = Gna2MemoryAlloc(MemoryToUse, &grantedMemory, &gnaMemory);
-        ASSERT_EQ(status, Gna2StatusSuccess);
-        ASSERT_EQ(grantedMemory, MemoryToUse);
-        ASSERT_NE(gnaMemory, nullptr);
+        allocGnaMem(DefaultMemoryToUse);
         WithOperations({ SimpleCopy, SimpleCopy, SimpleCopy });
     }
 
@@ -210,6 +255,20 @@ protected:
     {
         auto& op = allocateNewOperation();
         op.InitDiagonalPwl(32, 8, 4, gnaMemory, gnaMemory, gnaMemory, gnaMemory, gnaMemory);
+        return createdOperations.back().GetOperation();
+    }
+
+    Gna2Operation CreateSimpleMB()
+    {
+        auto& op = allocateNewOperation();
+        op.InitMB(32, 8, 4, 7, 1, 6, gnaMemory, gnaMemory, gnaMemory, gnaMemory, gnaMemory);
+        return createdOperations.back().GetOperation();
+    }
+
+    Gna2Operation CreateSimpleRnn()
+    {
+        auto& op = allocateNewOperation();
+        op.InitRnn(32, 32, 1, 5, gnaMemory, static_cast<uint8_t*>(gnaMemory) + 1024, gnaMemory, gnaMemory, gnaMemory);
         return createdOperations.back().GetOperation();
     }
 
@@ -313,6 +372,12 @@ protected:
         {
             gnaOperations[e.Source.OperationIndex].Type = reinterpret_cast<const Gna2OperationType&>(e.Value);
         }
+        else if(what == Gna2ItemTypeOperandMode)
+        {
+            const_cast<Gna2TensorMode&>(
+                gnaOperations[e.Source.OperationIndex].
+                Operands[e.Source.OperandIndex]->Mode) = reinterpret_cast<const Gna2TensorMode&>(e.Value);
+        }
         else if (what == Gna2ItemTypeOperandType)
         {
             const_cast<Gna2DataType&>(
@@ -332,6 +397,18 @@ protected:
                 gnaOperations[e.Source.OperationIndex].
                 Operands[e.Source.OperandIndex]->Data) = reinterpret_cast<void*>(e.Value);
         }
+        else if (what == Gna2ItemTypeParameter)
+        {
+            *reinterpret_cast<int64_t*>(const_cast<void*>(
+                gnaOperations[e.Source.OperationIndex].
+                Parameters[e.Source.ParameterIndex])) = e.Value;
+        }
+        else if(what == Gna2ItemTypeOperationOperands && e.Source.OperandIndex >= 0)
+        {
+            const_cast<Gna2Tensor*&>(
+                gnaOperations[e.Source.OperationIndex].
+                Operands[e.Source.OperandIndex]) = reinterpret_cast<Gna2Tensor * >(e.Value);
+        }
     }
 
     void WrongShapeDimensions(int32_t operationIndex,
@@ -346,6 +423,11 @@ protected:
         int badValue,
         Gna2ErrorType errorType);
 
+    void WrongType(int32_t operationIndex,
+        int32_t operandIndex,
+        int32_t badValue,
+        Gna2ErrorType errorType);
+
     void ExpectOperandDataError(int32_t operationIndex, const uint32_t operandIndex,
         void * badPointer = nullptr, Gna2ErrorType errorType = Gna2ErrorTypeNullNotAllowed);
 
@@ -357,6 +439,8 @@ protected:
     const OperationCreationFunction SimpleTranspose2 = &TestModelError::CreateSimpleTranspose2;
     const OperationCreationFunction SimpleCnn2DPool = &TestModelError::CreateSimpleCnn2DPool;
     const OperationCreationFunction SimpleCopyBig = &TestModelError::CreateSimpleCopyBig;
+    const OperationCreationFunction SimpleRnn = &TestModelError::CreateSimpleRnn;
+    const OperationCreationFunction SimpleMB = &TestModelError::CreateSimpleMB;
     void WithOperations(std::vector< OperationCreationFunction > operations);
 
 };

@@ -217,7 +217,7 @@ const FullCapabilitiesMap & ConvolutionalLayer2DCapabilities::GetOperands(uint32
                         {GNA_DIM_W, {CNN_N_KERNEL_ELEMENTS_PER_DIMENSION_MIN, Filter2DElementsMax, 1, Gna2StatusCnnErrorConvFltVolume}},
                         {GNA_DIM_D, {CNN_N_KERNEL_ELEMENTS_PER_DIMENSION_MIN, 2048, 1, Gna2StatusCnnErrorConvFltVolume}}},
                         // Padding to 16B is required for each Kernel
-                    {{ GNA_INT8, GNA_INT16, GNA_DATA_CONSTANT_SCALAR }, Gna2StatusXnnErrorConvFltBytes }})}
+                    {{ GNA_INT8, GNA_INT16 }, Gna2StatusXnnErrorConvFltBytes }})}
             }},
             {INTEL_CONVOLUTIONAL_1D, {
                 {GNA_1_0, std::make_shared<TensorLimits>(TensorLimits{

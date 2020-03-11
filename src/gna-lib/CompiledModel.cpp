@@ -210,7 +210,15 @@ BaseValidator CompiledModel::makeValidator()
         ValidBoundariesFunctor {
             [this](const void *buffer, size_t bufferSize)
             {
-                VerifyBufferAndStoreMemory(buffer, bufferSize);
+                try
+                {
+                    VerifyBufferAndStoreMemory(buffer, bufferSize);
+                }
+                catch (GnaException&)
+                {
+                    throw GnaModelErrorException(Gna2ItemTypeOperandData,
+                        Gna2ErrorTypeArgumentInvalid, reinterpret_cast<int64_t>(buffer));
+                }
             }
         }
     };

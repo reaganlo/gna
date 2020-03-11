@@ -114,7 +114,7 @@ ApiShape GetShape(const Gna2Operation & operation)
 LayerInput::LayerInput(const Gna2Operation& operation, const LayerValidator& validatorIn)
 try :
     Tensor{ Shape::Create(GetShape(operation), capabilities.GetOrder(validatorIn)),
-       operation.Operands[InputOperandIndex]->Type, operation.Operands[InputOperandIndex]->Data,
+       GetDataMode(*operation.Operands[InputOperandIndex]), operation.Operands[InputOperandIndex]->Data,
        Validator{ validatorIn, capabilities } },
     Grouping{ getGrouping(operation, validatorIn) },
     ElementCount{ getElementCount(operation, validatorIn) }

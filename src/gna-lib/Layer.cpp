@@ -269,8 +269,10 @@ void Layer::initTransforms(const std::vector<TransformOperation>& transforms,
     if (transforms.back() == ActivationTransform
         && outputTransform->Operation != ActivationTransform)
     {
-        Expect::Equal(outputTransform->Output->Mode.Type, Gna2DataTypeInt32,
-            Gna2StatusXnnErrorOutputBytes);
+        ModelValue mv{ outputTransform->Output->Mode.Type };
+        mv.SetOperand(OutputOperandIndex);
+        mv.SetItem(Gna2ItemTypeOperandType);
+        ModelErrorHelper::ExpectEqual(mv, Gna2DataTypeInt32);
     }
 }
 

@@ -155,14 +155,6 @@ DataMode::DataMode(const uint32_t dataMode) :
 {
 }
 
-DataMode::DataMode(const DataType dataType) :
-    Value{ ModeFromDataMode(dataType) },
-    Type{ dataType },
-    Mode{ },
-    Size{ ToSize<uint32_t>(dataType) }
-{
-}
-
 DataMode::DataMode(const DataType dataType, const TensorMode tensorMode) :
     Value{ ModeFromDataMode(dataType) },
     Type{ dataType },

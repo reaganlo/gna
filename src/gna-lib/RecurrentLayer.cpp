@@ -61,6 +61,13 @@ RecurrentLayer::RecurrentLayer(const nn_layer& layer, const BaseValidator& valid
 RecurrentLayer::RecurrentLayer(const Gna2Operation& operation, const BaseValidator& validatorIn) :
     AffineBaseLayer(operation, { RecurrentTransform }, validatorIn)
 {
+    auto s = Shape::Create(operation.Operands[WeightOperandIndex]->Shape, GNA_TENSOR_HW);
+    auto mv = s.AsModelValue('H');
+    mv.SetOperand(WeightOperandIndex);
+    ModelErrorHelper::ExpectEqual(mv, Output.Dimensions.at('W'));
+    mv = s.AsModelValue('W');
+    mv.SetOperand(WeightOperandIndex);
+    ModelErrorHelper::ExpectEqual(mv, Output.Dimensions.at('W') + Input.Dimensions.at('W'));
 }
 
 DataConfig RecurrentLayer::GetDataMode() const
@@ -68,4 +75,3 @@ DataConfig RecurrentLayer::GetDataMode() const
     auto affineTransform = Transforms.Get<AffineFunction>(RecurrentTransform);
     return AffineBaseLayer::getDataMode(affineTransform);
 }
-

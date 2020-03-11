@@ -42,9 +42,21 @@ Tensor::Tensor(const ApiTensor & tensor) :
 {
 }
 
+DataMode Tensor::GetDataMode(const Gna2Tensor& tensor)
+{
+    try
+    {
+        return DataMode{ tensor.Type, tensor.Mode };
+    }
+    catch(...)
+    {
+        throw GnaModelErrorException(Gna2ItemTypeOperandType, Gna2ErrorTypeNotInSet, tensor.Type);
+    }
+}
+
 Tensor::Tensor(const ApiTensor & tensor, gna_tensor_order order, const Validator & validatorIn) :
     Tensor{ Shape::Create(tensor.Shape, order),
-        tensor.Type,
+        GetDataMode(tensor),
         tensor.Data,
         validatorIn}
 {

@@ -67,8 +67,11 @@ std::unique_ptr<RecurrentFunction> RecurrentFunction::Create(
     auto activationTensor = config.GetActivation();
 
     // TODO: 3: remove when ActivationFunction created before PwlCached
-    Expect::True(activationTensor.Shape.Dimensions[0] <= XNN_N_PWL_SEGS_MAX, Gna2StatusXnnErrorLyrCfg);
-    Expect::NotNull(activationTensor.Data, Gna2StatusXnnErrorLyrCfg);
+    auto s = Shape::Create(activationTensor.Shape, GNA_TENSOR_N);
+    auto mv = s.AsModelValue('N');
+    mv.SetOperand(PwlOperandIndex);
+    ModelErrorHelper::ExpectBelowEq(mv, XNN_N_PWL_SEGS_MAX);
+    ModelErrorHelper::ExpectBufferNotNull(activationTensor.Data, PwlOperandIndex);
 
     auto pwlCached = std::make_unique<const PwlCached>(config.outputMode, reinterpret_cast<nn_pwl_seg *>(activationTensor.Data),
         activationTensor.Shape.Dimensions[0]);
@@ -109,7 +112,10 @@ RecurrentFunction::RecurrentFunction(
     pwl{ std::move(pwlIn) },
     activationConfig{ config.output->Dimensions.at('W'), pwl.get() }
 {
-    Expect::InRange(FeedbackDelay, ui32_1, Input->Dimensions.at('H'), Gna2StatusXnnErrorNoFeedback);
+    ModelValue mv{ FeedbackDelay };
+    mv.SetParameter(0);
+    ModelErrorHelper::ExpectAboveEq(mv, ui32_1);
+    ModelErrorHelper::ExpectBelowEq(mv, Input->Dimensions.at('H'));
 
     Output = std::make_unique<Tensor>(
         Shape{ GNA_TENSOR_HW, config.output->Dimensions.at('H'), config.output->Dimensions.at('W') },

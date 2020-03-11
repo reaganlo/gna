@@ -68,6 +68,17 @@ void TestModelError::WrongShapeParamsDimensions(int32_t operationIndex,
     expectModelError(errorType);
 }
 
+void TestModelError::WrongType(int32_t operationIndex,
+    int32_t operandIndex,
+    int32_t badValue,
+    Gna2ErrorType errorType)
+{
+    e.Source.OperationIndex = operationIndex;
+    e.Source.OperandIndex = operandIndex;
+    update(Gna2ItemTypeOperandType, badValue);
+    expectModelError(errorType);
+}
+
 TEST_F(TestModelError, WrongInput)
 {
     WrongShapeDimensions(1, GNA::InputOperandIndex, 0, 9, Gna2ErrorTypeAboveRange);
@@ -166,6 +177,15 @@ TEST_F(TestModelError, WrongPwl)
     WrongShapeDimensions(1, GNA::PwlOperandIndex, 0, 256, Gna2ErrorTypeAboveRange);
 }
 
+TEST_F(TestModelError, DISABLED_WrongPwlTensorModeDisabled)
+{
+    WithOperations({ SimpleCopy, SimpleDiagonalPwl, SimpleCopy });
+    e.Source.OperationIndex = 1;
+    e.Source.OperandIndex = GNA::PwlOperandIndex;
+    update(Gna2ItemTypeOperandMode, Gna2TensorModeDisabled);
+    expectModelError(Gna2ErrorTypeNotEqual);
+}
+
 void TestModelError::ExpectOperandDataError(int32_t operationIndex, const uint32_t operandIndex, void * badPointer, Gna2ErrorType errorType)
 {
     WithOperations({ SimpleDiagonalPwl, SimpleDiagonalPwl, SimpleCopy });
@@ -254,4 +274,89 @@ TEST_F(TestModelError, DISABLED_WrongDnn2DPoolOut)
 {
     WithOperations({ SimpleDiagonal, SimpleCnn2DPool, SimpleDiagonal });
     WrongShapeDimensions(1, GNA::OutputOperandIndex, 1, 32, Gna2ErrorTypeNotEqual);
+}
+
+TEST_F(TestModelError, WrongTransWrongType)
+{
+    WithOperations({ SimpleDiagonal, SimpleTranspose, SimpleDiagonal });
+    WrongType(1, GNA::InputOperandIndex, (Gna2DataType)99, Gna2ErrorTypeNotInSet);
+}
+
+TEST_F(TestModelError, WrongRnnOutSize)
+{
+    WithOperations({ SimpleDiagonal, SimpleRnn, SimpleDiagonal });
+    WrongShapeDimensions(1, GNA::OutputOperandIndex, 1, 8, Gna2ErrorTypeBelowRange);
+}
+
+TEST_F(TestModelError, WrongRnnAct)
+{
+    WithOperations({ SimpleDiagonal, SimpleRnn, SimpleDiagonal });
+    WrongShapeDimensions(1, GNA::PwlOperandIndex, 0, 65536, Gna2ErrorTypeAboveRange);
+}
+
+TEST_F(TestModelError, WrongRnnDelay5)
+{
+    WithOperations({ SimpleDiagonal, SimpleRnn, SimpleDiagonal });
+    e.Source.OperationIndex = 1;
+    e.Source.ParameterIndex = 0;
+    update(Gna2ItemTypeParameter, 5);
+    expectModelError(Gna2ErrorTypeAboveRange);
+}
+
+TEST_F(TestModelError, WrongRnnDelay0)
+{
+    WithOperations({ SimpleDiagonal, SimpleRnn, SimpleDiagonal });
+    e.Source.OperationIndex = 1;
+    e.Source.ParameterIndex = 0;
+    update(Gna2ItemTypeParameter, 0);
+    expectModelError(Gna2ErrorTypeBelowRange);
+}
+
+TEST_F(TestModelError, WrongRnnWeightsNotMatch)
+{
+    ReAllocGnaMem(1 << 20);
+    WithOperations({ SimpleDiagonal, SimpleRnn, SimpleDiagonal });
+    WrongShapeDimensions(1, GNA::WeightOperandIndex, 1, 256, Gna2ErrorTypeNotEqual);
+}
+
+TEST_F(TestModelError, WrongRnnWeightsAboveRange)
+{
+    ReAllocGnaMem(1 << 20);
+    WithOperations({ SimpleDiagonal, SimpleRnn, SimpleDiagonal });
+    WrongShapeDimensions(1, GNA::WeightOperandIndex, 0, 128, Gna2ErrorTypeNotEqual);
+}
+
+TEST_F(TestModelError, WrongRnnWeightsBufferOutOfMemory)
+{
+    WithOperations({ SimpleDiagonal, SimpleRnn, SimpleDiagonal });
+    e.Source.OperationIndex = 1;
+    e.Source.OperandIndex = GNA::WeightOperandIndex;
+    e.Source.ShapeDimensionIndex = 1;
+    update(Gna2ItemTypeShapeDimensions, 2048);
+    e.Source.Type = Gna2ItemTypeOperandData;
+    e.Source.ShapeDimensionIndex = -1;
+    e.Value = reinterpret_cast<int64_t>(gnaMemory);
+    expectModelError(Gna2ErrorTypeArgumentInvalid);
+}
+
+TEST_F(TestModelError, WrongMBPwlDataNull)
+{
+    WithOperations({ SimpleMB, SimpleMB, SimpleMB });
+    e.Source.OperationIndex = 1;
+    e.Source.OperandIndex = GNA::PwlOperandIndex;
+    update(Gna2ItemTypeOperandData, nullptr);
+    expectModelError(Gna2ErrorTypeNullNotAllowed);
+}
+
+TEST_F(TestModelError, WrongMBPwlNull)
+{
+    WithOperations({ SimpleMB, SimpleMB, SimpleMB });
+    e.Source.OperationIndex = 1;
+    e.Source.OperandIndex = GNA::PwlOperandIndex;
+    // Disabling activation is OK for MB but does not work with output type != int32
+    update(Gna2ItemTypeOperationOperands, nullptr);
+    e.Source.OperandIndex = GNA::OutputOperandIndex;
+    // No actual model update but error description for Expect update
+    update(Gna2ItemTypeOperandType, Gna2DataTypeInt16);
+    expectModelError(Gna2ErrorTypeNotEqual);
 }

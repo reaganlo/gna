@@ -58,8 +58,7 @@ struct DataMode
     DataMode(const DataMode&) = default;
     DataMode(const gna_data_mode dataMode); // TODO:3:API remove
     DataMode(const uint32_t dataMode); // TODO:3:API remove
-    DataMode(const DataType dataType);
-    DataMode(const DataType dataType, const TensorMode tensorMode);
+    DataMode(const DataType dataType, const TensorMode tensorMode = Gna2TensorModeDefault);
     ~DataMode() = default;
 
     operator gna_data_mode() const // TODO:3:API remove
