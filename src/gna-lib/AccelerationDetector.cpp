@@ -220,13 +220,13 @@ AccelerationDetector::Kernels = {
             {
                 { { GNA_GEN_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.affineMulti1B2B) } },
                 { { GNA_GEN_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.affineMulti1B2B) } },
-                { { GNA_SSE4_2_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.affineMulti1B2B) } },
-                { { GNA_SSE4_2_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.affineMulti1B2B) } },
+                { { GNA_SSE4_2_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_sse4_sat.affineMulti1B) } },
+                { { GNA_SSE4_2_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_sse4.affineMulti1B) } },
 
-                { { GNA_AVX1_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.affineMulti1B2B) } },
-                { { GNA_AVX1_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.affineMulti1B2B) } },
-                { { GNA_AVX2_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_generic_sat.affineMulti1B2B) } },
-                { { GNA_AVX2_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_generic.affineMulti1B2B) } }
+                { { GNA_AVX1_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_avx1_sat.affineMulti1B) } },
+                { { GNA_AVX1_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_avx1.affineMulti1B) } },
+                { { GNA_AVX2_SAT },{ reinterpret_cast<VoidKernel>(xnnKernel_avx2_sat.affineMulti1B) } },
+                { { GNA_AVX2_FAST },{ reinterpret_cast<VoidKernel>(xnnKernel_avx2.affineMulti1B) } }
             }
         },
         {

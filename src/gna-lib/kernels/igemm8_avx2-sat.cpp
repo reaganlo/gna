@@ -948,8 +948,9 @@ void AffineMultiBiasKernelImpl1B(ExecutionKernelConfig<AffineConfig> const * con
     int8_t const * weight;
     int32_t * output;
     auto const * multiBias = static_cast<int8_t const *>(config->RequestConfig->Transform.multiBias);
+    const auto biasStrideInBytes = config->RequestConfig->Transform.multiBiasVectorCount * config->RequestConfig->Transform.bytesPerBias;
     auto const * const biasEnd = static_cast<int8_t const *>(config->RequestConfig->Transform.multiBias) +
-        (config->RequestConfig->Transform.bytesPerBias * config->RequestConfig->Transform.outputElementCount * config->RequestConfig->Transform.multiBiasVectorCount);
+        (config->RequestConfig->Transform.outputElementCount * biasStrideInBytes);
     nn_scaling const * weightScaleFactor = config->RequestConfig->Transform.weightScaleFactors;
 
     output = reinterpret_cast<int32_t *>(config->RequestConfig->Outputs);
@@ -965,7 +966,7 @@ void AffineMultiBiasKernelImpl1B(ExecutionKernelConfig<AffineConfig> const * con
     {
         input0 = inputs + KK;
         in_ptr = (__m256i*)config->RequestConfig->Inputs;
-        for (; multiBias < biasEnd; multiBias+=config->RequestConfig->Transform.multiBiasVectorCount)
+        for (; multiBias < biasEnd; multiBias+=biasStrideInBytes)
         {
             ix = 0;
             acc0 = _mm256_setzero_si256();
@@ -1123,7 +1124,7 @@ void AffineMultiBiasKernelImpl1B(ExecutionKernelConfig<AffineConfig> const * con
 
     if (2 == config->RequestConfig->Transform.inputVectorCount)
     {
-        for (; multiBias < biasEnd; multiBias+=config->RequestConfig->Transform.multiBiasVectorCount)
+        for (; multiBias < biasEnd; multiBias+= biasStrideInBytes)
         {
             ix = 0;
 
@@ -1223,7 +1224,7 @@ void AffineMultiBiasKernelImpl1B(ExecutionKernelConfig<AffineConfig> const * con
 
     if (3 == config->RequestConfig->Transform.inputVectorCount)
     {
-        for (; multiBias < biasEnd; multiBias+=config->RequestConfig->Transform.multiBiasVectorCount)
+        for (; multiBias < biasEnd; multiBias+= biasStrideInBytes)
         {
             ix = 0;
 
@@ -1294,7 +1295,7 @@ void AffineMultiBiasKernelImpl1B(ExecutionKernelConfig<AffineConfig> const * con
 
     if (4 == config->RequestConfig->Transform.inputVectorCount)
     {
-        for (; multiBias < biasEnd; multiBias+=config->RequestConfig->Transform.multiBiasVectorCount)
+        for (; multiBias < biasEnd; multiBias+= biasStrideInBytes)
         {
             ix = 0;
 
@@ -1369,7 +1370,7 @@ void AffineMultiBiasKernelImpl1B(ExecutionKernelConfig<AffineConfig> const * con
 
     if (5 == config->RequestConfig->Transform.inputVectorCount)
     {
-        for (; multiBias < biasEnd; multiBias+=config->RequestConfig->Transform.multiBiasVectorCount)
+        for (; multiBias < biasEnd; multiBias+= biasStrideInBytes)
         {
             ix = 0;
 
@@ -1445,7 +1446,7 @@ void AffineMultiBiasKernelImpl1B(ExecutionKernelConfig<AffineConfig> const * con
 
     if (6 == config->RequestConfig->Transform.inputVectorCount)
     {
-        for (; multiBias < biasEnd; multiBias+=config->RequestConfig->Transform.multiBiasVectorCount)
+        for (; multiBias < biasEnd; multiBias+= biasStrideInBytes)
         {
             ix = 0;
 
@@ -1523,7 +1524,7 @@ void AffineMultiBiasKernelImpl1B(ExecutionKernelConfig<AffineConfig> const * con
 
     if (7 == config->RequestConfig->Transform.inputVectorCount)
     {
-        for (; multiBias < biasEnd; multiBias+=config->RequestConfig->Transform.multiBiasVectorCount)
+        for (; multiBias < biasEnd; multiBias+= biasStrideInBytes)
         {
             ix = 0;
 
@@ -1605,7 +1606,7 @@ void AffineMultiBiasKernelImpl1B(ExecutionKernelConfig<AffineConfig> const * con
 
     if (8 == config->RequestConfig->Transform.inputVectorCount)
     {
-        for (; multiBias < biasEnd; multiBias+=config->RequestConfig->Transform.multiBiasVectorCount)
+        for (; multiBias < biasEnd; multiBias+= biasStrideInBytes)
         {
             ix = 0;
 
