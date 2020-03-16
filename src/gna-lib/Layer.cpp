@@ -95,16 +95,8 @@ std::unique_ptr<GNA::Layer> Layer::Create(const Gna2Operation & operation, const
             Log->Message("Processing in Legacy CNN1D enforced mode.\n");
             return std::make_unique<CnnLayer>(operation, validatorIn);
         }
-        try
-        {
-            return std::make_unique<ConvolutionalLayer2D>(operation, validatorIn);
-        }
-        catch (GnaException& e)
-        {
-            Log->Message(e.GetLegacyStatus());
-            Log->Message("Processing in Legacy CNN1D enforced mode.\n");
-            return CnnLayer::CreateEnforced(operation, validatorIn);
-        }
+        Log->Message("Processing in New CNN2D mode.\n");
+        return std::make_unique<ConvolutionalLayer2D>(operation, validatorIn);
     case Gna2OperationTypeGmm:
         return std::make_unique<GmmOperation>(operation, validatorIn);
     case Gna2OperationTypeTransposition:

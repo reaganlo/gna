@@ -58,6 +58,17 @@ const FullCapabilitiesMap RecurrentFunction::outputCapabilities =
     }}
 };
 
+void RecurrentFunction::ValidateActivation(const Gna2Tensor& activationTensor)
+{
+    const std::function<void()> command = [&]()
+    {
+        auto pwlShape = Shape::Create(activationTensor.Shape, GNA_TENSOR_N);
+        pwlShape.ExpectFits({ GNA_TENSOR_N, XNN_N_PWL_SEGS_MAX });
+        ModelErrorHelper::ExpectBufferNotNull(activationTensor.Data);
+    };
+    ModelErrorHelper::ExecuteForModelItem(command, PwlOperandIndex);
+}
+
 // Could not split into separate methods for each component as multibias weight scaling is using bias' and weights; tensors...
 std::unique_ptr<RecurrentFunction> RecurrentFunction::Create(
     const TransformFactoryConfig& config,
@@ -67,11 +78,7 @@ std::unique_ptr<RecurrentFunction> RecurrentFunction::Create(
     auto activationTensor = config.GetActivation();
 
     // TODO: 3: remove when ActivationFunction created before PwlCached
-    auto s = Shape::Create(activationTensor.Shape, GNA_TENSOR_N);
-    auto mv = s.AsModelValue('N');
-    mv.SetOperand(PwlOperandIndex);
-    ModelErrorHelper::ExpectBelowEq(mv, XNN_N_PWL_SEGS_MAX);
-    ModelErrorHelper::ExpectBufferNotNull(activationTensor.Data, PwlOperandIndex);
+    ValidateActivation(activationTensor);
 
     auto pwlCached = std::make_unique<const PwlCached>(config.outputMode, reinterpret_cast<nn_pwl_seg *>(activationTensor.Data),
         activationTensor.Shape.Dimensions[0]);
@@ -99,6 +106,16 @@ std::unique_ptr<RecurrentFunction> RecurrentFunction::Create(
     return recurrentFunction;
 }
 
+void RecurrentFunction::ValidateFeedbackDelay() const
+{
+    const std::function<void()> command = [&]()
+    {
+        ModelErrorHelper::ExpectAboveEq(FeedbackDelay, ui32_1);
+        ModelErrorHelper::ExpectBelowEq(FeedbackDelay, Input->Dimensions.at('H'));
+    };
+    ModelErrorHelper::ExecuteForModelItem(command, GNA2_DISABLED, 0);
+}
+
 RecurrentFunction::RecurrentFunction(
     const BaseTransformConfig<RecurrentKernel>& config,
     std::unique_ptr<const PwlCached> pwlIn,
@@ -112,10 +129,7 @@ RecurrentFunction::RecurrentFunction(
     pwl{ std::move(pwlIn) },
     activationConfig{ config.output->Dimensions.at('W'), pwl.get() }
 {
-    ModelValue mv{ FeedbackDelay };
-    mv.SetParameter(0);
-    ModelErrorHelper::ExpectAboveEq(mv, ui32_1);
-    ModelErrorHelper::ExpectBelowEq(mv, Input->Dimensions.at('H'));
+    ValidateFeedbackDelay();
 
     Output = std::make_unique<Tensor>(
         Shape{ GNA_TENSOR_HW, config.output->Dimensions.at('H'), config.output->Dimensions.at('W') },

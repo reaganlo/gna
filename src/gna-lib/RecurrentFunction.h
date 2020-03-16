@@ -94,6 +94,9 @@ private:
             std::unique_ptr<BaseConfig> configs[TransformOperationCount],
             const BufferMap& buffers) const override;
 
+    static void ValidateActivation(const Gna2Tensor& activationTensor);
+    void ValidateFeedbackDelay() const;
+
     const uint32_t FeedbackDelay;
 
     const std::unique_ptr<const PwlCached> pwl;

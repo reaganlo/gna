@@ -78,23 +78,11 @@ struct Shape : public ShapeMap
 
     Layout LayoutOrder;
 
-    // If any dimension is greater than in envelope throws exception.
-    inline void ExpectFits(const Shape& envelope) const
-    {
-        for (const auto& dimVal : *this)
-        {
-            try
-            {
-                const auto envelopeVal = envelope.at(dimVal.first);
-                ModelErrorHelper::ExpectBelowEq(dimVal.second, envelopeVal, Gna2ItemTypeShapeDimensions);
-            }
-            catch (GnaModelErrorException& e)
-            {
-                e.SetDimensionIndex(LayoutOrder.GetApiIndex(dimVal.first));
-                throw;
-            }
-        }
-    }
+    // If any dimension is greater than in envelope throws model exception.
+    void ExpectFits(const Shape& envelope) const;
+
+    // If any dimension is different than in right throws model exception.
+    void ExpectEqual(const Shape& right) const;
 
 protected:
     static ShapeMap Create(const std::vector<uint32_t> && dimensions,
@@ -104,5 +92,6 @@ protected:
 
     gna_tensor_order Order;
 
+    void ProcessEachDimension(const Shape& right, const std::function<void(uint32_t, uint32_t)>& process) const;
 };
 }

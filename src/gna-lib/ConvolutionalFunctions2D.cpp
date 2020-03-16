@@ -68,7 +68,7 @@ std::unique_ptr<ConvolutionFunction2D> ConvolutionFunction2D::create(
     // TODO:3: P2: simplify to auto FiltersTensor = config.GetOperand(OperandTypeFilter);
     // TODO:3: P2: convert api types to internal so that transforms rely only on internal data types
     auto filters = FiltersTensor::Create(operation.FiltersTensor,
-        config.validator);
+            config.validator);
 
     auto stride = OperationConfig::CreateCnnComponent(operation.ConvolutionStride,
         config.validator, ConvolutionalLayer2DCapabilities::GetParameters(ConvolutionStrideParamIndex));

@@ -86,7 +86,10 @@ public:
     static Gna2ModelError GetCleanedError();
     static Gna2ModelError GetStatusError(Gna2Status status);
 
-    static void SetOperandIndexRethrow(GnaException& e, uint32_t index);
+    static void SetOperandIndexRethrow(GnaException& e, int32_t index);
+
+    static void ExecuteForModelItem(const std::function<void()>& command,
+        int32_t operandIndexContext, int32_t parameterIndexContext = GNA2_DISABLED);
 private:
     static Gna2ModelError lastError;
 };
@@ -150,16 +153,24 @@ public:
     {
         error.Source.OperationIndex = static_cast<int32_t>(index);
     }
-    void SetOperandIndex(uint32_t operandIndex)
+    void SetOperandIndex(int32_t operandIndex)
     {
-        error.Source.OperandIndex = static_cast<int32_t>(operandIndex);
+        error.Source.OperandIndex = operandIndex;
     }
-    void SetParameterIndex(uint32_t parameterIndex)
+    void SetParameterIndex(int32_t parameterIndex)
     {
-        error.Source.ParameterIndex = static_cast<int32_t>(parameterIndex);
+        if(error.Source.Type == Gna2ItemTypeNone)
+        {
+            error.Source.Type = Gna2ItemTypeParameter;
+        }
+        error.Source.ParameterIndex = parameterIndex;
     }
     void SetDimensionIndex(int32_t dimensionIndex)
     {
+        if (error.Source.Type == Gna2ItemTypeNone)
+        {
+            error.Source.Type = Gna2ItemTypeShapeDimensions;
+        }
         error.Source.ShapeDimensionIndex = dimensionIndex;
     }
 

@@ -162,3 +162,40 @@ ModelValue Shape::AsModelValue(char dimension) const
     ModelValue mv{ at(dimension) };
     return mv.SetDimension(LayoutOrder.GetApiIndex(dimension));
 }
+
+void Shape::ExpectFits(const Shape& envelope) const
+{
+    ProcessEachDimension(envelope, [](auto l, auto r)
+    {
+        ModelErrorHelper::ExpectBelowEq(l, r, Gna2ItemTypeShapeDimensions);
+    });
+}
+
+void Shape::ExpectEqual(const Shape& right) const
+{
+    ProcessEachDimension(right, [](auto l, auto r)
+    {
+        ModelErrorHelper::ExpectEqual(l, r, Gna2ItemTypeShapeDimensions);
+    });
+}
+
+void Shape::ProcessEachDimension(const Shape& right, const std::function<void(uint32_t, uint32_t)>& process) const
+{
+    const auto command = [&](key_type dimension, mapped_type value)
+    {
+        try
+        {
+            const auto envelopeVal = right.at(dimension);
+            process(value, envelopeVal);
+        }
+        catch (GnaModelErrorException& e)
+        {
+            e.SetDimensionIndex(LayoutOrder.GetApiIndex(dimension));
+            throw;
+        }
+    };
+    for(const auto& element : *this)
+    {
+        command(element.first, element.second);
+    }
+}

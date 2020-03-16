@@ -208,7 +208,7 @@ GnaModelErrorException::GnaModelErrorException(uint32_t layerIndex, Gna2Status c
     SetLayerIndex(layerIndex);
 }
 
-void ModelErrorHelper::SetOperandIndexRethrow(GnaException& e, uint32_t index)
+void ModelErrorHelper::SetOperandIndexRethrow(GnaException& e, int32_t index)
 {
     auto x = dynamic_cast<GnaModelErrorException*>(&e);
     if(x != nullptr)
@@ -219,6 +219,28 @@ void ModelErrorHelper::SetOperandIndexRethrow(GnaException& e, uint32_t index)
     GnaModelErrorException n(e);
     n.SetOperandIndex(index);
     throw n;
+}
+
+void ModelErrorHelper::ExecuteForModelItem(const std::function<void()>& command,
+    int32_t operandIndexContext, int32_t parameterIndexContext)
+{
+    try
+    {
+        command();
+    }
+    catch (GnaModelErrorException& e)
+    {
+        e.SetOperandIndex(operandIndexContext);
+        e.SetParameterIndex(parameterIndexContext);
+        throw;
+    }
+    catch (GnaException& e)
+    {
+        GnaModelErrorException n(e);
+        n.SetOperandIndex(operandIndexContext);
+        n.SetParameterIndex(parameterIndexContext);
+        throw n;
+    }
 }
 
 ModelValue::ModelValue(int64_t valueIn)

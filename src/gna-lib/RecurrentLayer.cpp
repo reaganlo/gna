@@ -61,13 +61,13 @@ RecurrentLayer::RecurrentLayer(const nn_layer& layer, const BaseValidator& valid
 RecurrentLayer::RecurrentLayer(const Gna2Operation& operation, const BaseValidator& validatorIn) :
     AffineBaseLayer(operation, { RecurrentTransform }, validatorIn)
 {
-    auto s = Shape::Create(operation.Operands[WeightOperandIndex]->Shape, GNA_TENSOR_HW);
-    auto mv = s.AsModelValue('H');
-    mv.SetOperand(WeightOperandIndex);
-    ModelErrorHelper::ExpectEqual(mv, Output.Dimensions.at('W'));
-    mv = s.AsModelValue('W');
-    mv.SetOperand(WeightOperandIndex);
-    ModelErrorHelper::ExpectEqual(mv, Output.Dimensions.at('W') + Input.Dimensions.at('W'));
+    const std::function<void()> command = [&]()
+    {
+        const auto weights = Shape::Create(operation.Operands[WeightOperandIndex]->Shape, GNA_TENSOR_HW);
+        const auto expectedWeights = Shape{ GNA_TENSOR_HW, Output.Dimensions.at('W'), Output.Dimensions.at('W') + Input.Dimensions.at('W') };
+        weights.ExpectEqual(expectedWeights);
+    };
+    ModelErrorHelper::ExecuteForModelItem(command, WeightOperandIndex);
 }
 
 DataConfig RecurrentLayer::GetDataMode() const

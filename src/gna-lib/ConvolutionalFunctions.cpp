@@ -69,23 +69,29 @@ FiltersTensor::FiltersTensor(const Shape& dimensions, const DataMode & dataMode,
 
 std::unique_ptr<const FiltersTensor> FiltersTensor::Create(const Gna2Tensor& filtersTensor, const LayerValidator& validatorIn)
 {
-    try // 1D CNN in new arch
+    std::unique_ptr<const FiltersTensor> filters;
+    const std::function<void()> command = [&]()
     {
-        auto const validator1D = LayerValidator{ validatorIn, INTEL_CONVOLUTIONAL_1D };
-        return std::make_unique<const FiltersTensor>(
-            Shape::Create(filtersTensor.Shape, GNA_TENSOR_NHWD),
-            DataMode{ filtersTensor.Type },
-            filtersTensor.Data,
-            validator1D);
-    }
-    catch (const GnaException&) // try 2D CNN in new arch
-    {
-        return std::make_unique<const FiltersTensor>(
-            Shape::Create(filtersTensor.Shape, GNA_TENSOR_NHWD),
-            DataMode{ filtersTensor.Type },
-            filtersTensor.Data,
-            validatorIn);
-    }
+        try // 1D CNN in new arch
+        {
+            auto const validator1D = LayerValidator{ validatorIn, INTEL_CONVOLUTIONAL_1D };
+            filters = std::make_unique<const FiltersTensor>(
+                Shape::Create(filtersTensor.Shape, GNA_TENSOR_NHWD),
+                GetDataMode(filtersTensor),
+                filtersTensor.Data,
+                validator1D);
+        }
+        catch (const GnaException&) // try 2D CNN in new arch
+        {
+            filters = std::make_unique<const FiltersTensor>(
+                Shape::Create(filtersTensor.Shape, GNA_TENSOR_NHWD),
+                GetDataMode(filtersTensor),
+                filtersTensor.Data,
+                validatorIn);
+        }
+    };
+    ModelErrorHelper::ExecuteForModelItem(command, FilterOperandIndex);
+    return filters;
 }
 
 const FullCapabilitiesMap ConvolutionFunction::strideLimits
