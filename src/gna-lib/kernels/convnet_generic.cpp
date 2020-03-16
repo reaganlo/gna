@@ -981,23 +981,23 @@ void Convolution2DKernelImpl1B1B(ExecutionKernelConfig<ConvolutionConfig2D> cons
                     outVal = getBias(biasData, biasPrecission, numFilters*outWidth*OH + numFilters * OW + OD);
                 }
 
+                for (uint32_t w = 0; w < filterWidth; w++) { //input height
 
-                for (uint32_t z = 0; z < inputDepth; z++) {   //Input depth
-                    for (uint32_t w = 0; w < filterWidth; w++) { //input height
+                    uint32_t wIdx = OW * strideWidth + w;
+                    uint32_t fIdxW = inputDepth * w;
+                    uint32_t inIdxW = (((OW*strideWidth) + w - padWidth) * (inputDepth));
 
-                        uint32_t wIdx = OW * strideWidth + w;
-                        uint32_t fIdxW = inputDepth * w;
-                        uint32_t inIdxW = (((OW*strideWidth) + w - padWidth) * (inputDepth));
+                    for (uint32_t h = 0; h < filterHeight; h++) { //input width
 
-                        for (uint32_t h = 0; h < filterHeight; h++) { //input width
+                        uint32_t inIdxH = (((OH*strideHeight) + h - padHeight) * (inputDepth*inputWidth));
+                        uint32_t fIdxH = inputDepth * filterWidth * h;
+                        uint32_t hIdx = OH * strideHeight + h;
 
-                            uint32_t inIdxH = (((OH*strideHeight) + h - padHeight) * (inputDepth*inputWidth));
-                            uint32_t fIdxH = inputDepth * filterWidth * h;
-                            uint32_t hIdx = OH * strideHeight + h;
-
-                            if (wIdx < padWidth || wIdx > inWidthMax || hIdx < padHeight || hIdx > inHeightMax) { //padding
-                                continue;
-                            }
+                        if (wIdx < padWidth || wIdx > inWidthMax || hIdx < padHeight || hIdx > inHeightMax) { //padding
+                            continue;
+                        }
+                        for (uint32_t z = 0; z < inputDepth; z++)
+                        {
                             outVal += (int64_t)(I[inIdxH + inIdxW + z]) * F[fIdxN + fIdxH + fIdxW + z];
                         }
                     }
@@ -1061,23 +1061,23 @@ void Convolution2DKernelImpl1B2B(ExecutionKernelConfig<ConvolutionConfig2D> cons
                     outVal = getBias(biasData, biasPrecission, numFilters*outWidth*OH + numFilters * OW + OD);
                 }
 
+                for (uint32_t w = 0; w < filterWidth; w++) { //input height
 
-                for (uint32_t z = 0; z < inputDepth; z++) {   //Input depth
-                    for (uint32_t w = 0; w < filterWidth; w++) { //input height
+                    uint32_t wIdx = OW * strideWidth + w;
+                    uint32_t fIdxW = inputDepth * w;
+                    uint32_t inIdxW = (((OW*strideWidth) + w - padWidth) * (inputDepth));
 
-                        uint32_t wIdx = OW * strideWidth + w;
-                        uint32_t fIdxW = inputDepth * w;
-                        uint32_t inIdxW = (((OW*strideWidth) + w - padWidth) * (inputDepth));
+                    for (uint32_t h = 0; h < filterHeight; h++) { //input width
 
-                        for (uint32_t h = 0; h < filterHeight; h++) { //input width
+                        uint32_t inIdxH = (((OH*strideHeight) + h - padHeight) * (inputDepth*inputWidth));
+                        uint32_t fIdxH = inputDepth * filterWidth * h;
+                        uint32_t hIdx = OH * strideHeight + h;
 
-                            uint32_t inIdxH = (((OH*strideHeight) + h - padHeight) * (inputDepth*inputWidth));
-                            uint32_t fIdxH = inputDepth * filterWidth * h;
-                            uint32_t hIdx = OH * strideHeight + h;
-
-                            if (wIdx < padWidth || wIdx > inWidthMax || hIdx < padHeight || hIdx > inHeightMax) { //padding
-                                continue;
-                            }
+                        if (wIdx < padWidth || wIdx > inWidthMax || hIdx < padHeight || hIdx > inHeightMax) { //padding
+                            continue;
+                        }
+                        for (uint32_t z = 0; z < inputDepth; z++)
+                        {
                             outVal += (int64_t)(I[inIdxH + inIdxW + z]) * F[fIdxN + fIdxH + fIdxW + z];
                         }
                     }
@@ -1141,23 +1141,23 @@ void Convolution2DKernelImpl2B1B(ExecutionKernelConfig<ConvolutionConfig2D> cons
                     outVal = getBias(biasData, biasPrecission, numFilters*outWidth*OH + numFilters * OW + OD);
                 }
 
+                for (uint32_t w = 0; w < filterWidth; w++) { //input height
 
-                for (uint32_t z = 0; z < inputDepth; z++) {   //Input depth
-                    for (uint32_t w = 0; w < filterWidth; w++) { //input height
+                    uint32_t wIdx = OW * strideWidth + w;
+                    uint32_t fIdxW = inputDepth * w;
+                    uint32_t inIdxW = (((OW*strideWidth) + w - padWidth) * (inputDepth));
 
-                        uint32_t wIdx = OW * strideWidth + w;
-                        uint32_t fIdxW = inputDepth * w;
-                        uint32_t inIdxW = (((OW*strideWidth) + w - padWidth) * (inputDepth));
+                    for (uint32_t h = 0; h < filterHeight; h++) { //input width
 
-                        for (uint32_t h = 0; h < filterHeight; h++) { //input width
+                        uint32_t inIdxH = (((OH*strideHeight) + h - padHeight) * (inputDepth*inputWidth));
+                        uint32_t fIdxH = inputDepth * filterWidth * h;
+                        uint32_t hIdx = OH * strideHeight + h;
 
-                            uint32_t inIdxH = (((OH*strideHeight) + h - padHeight) * (inputDepth*inputWidth));
-                            uint32_t fIdxH = inputDepth * filterWidth * h;
-                            uint32_t hIdx = OH * strideHeight + h;
-
-                            if (wIdx < padWidth || wIdx > inWidthMax || hIdx < padHeight || hIdx > inHeightMax) { //padding
-                                continue;
-                            }
+                        if (wIdx < padWidth || wIdx > inWidthMax || hIdx < padHeight || hIdx > inHeightMax) { //padding
+                            continue;
+                        }
+                        for (uint32_t z = 0; z < inputDepth; z++)
+                        {
                             outVal += (int64_t)(I[inIdxH + inIdxW + z]) * F[fIdxN + fIdxH + fIdxW + z];
                         }
                     }
@@ -1222,23 +1222,23 @@ void Convolution2DKernelImpl2B2B(ExecutionKernelConfig<ConvolutionConfig2D> cons
                     outVal = getBias(biasData, biasPrecission, numFilters*outWidth*OH + numFilters * OW + OD);
                 }
 
+                for (uint32_t w = 0; w < filterWidth; w++) { //input height
 
-                for (uint32_t z = 0; z < inputDepth; z++) {
-                    for (uint32_t w = 0; w < filterWidth; w++) { //input height
+                    uint32_t wIdx = OW * strideWidth + w;
+                    uint32_t fIdxW = inputDepth * w;
+                    uint32_t inIdxW = (((OW*strideWidth) + w - padWidth) * (inputDepth));
 
-                        uint32_t wIdx = OW * strideWidth + w;
-                        uint32_t fIdxW = inputDepth * w;
-                        uint32_t inIdxW = (((OW*strideWidth) + w - padWidth) * (inputDepth));
+                    for (uint32_t h = 0; h < filterHeight; h++) {
 
-                        for (uint32_t h = 0; h < filterHeight; h++) {
+                        uint32_t inIdxH = (((OH*strideHeight) + h - padHeight) * (inputDepth*inputWidth));
+                        uint32_t fIdxH = inputDepth * filterWidth * h;
+                        uint32_t hIdx = OH * strideHeight + h;
 
-                            uint32_t inIdxH = (((OH*strideHeight) + h - padHeight) * (inputDepth*inputWidth));
-                            uint32_t fIdxH = inputDepth * filterWidth * h;
-                            uint32_t hIdx = OH * strideHeight + h;
-
-                            if (wIdx < padWidth || wIdx > inWidthMax || hIdx < padHeight || hIdx > inHeightMax) { //padding
-                                continue;
-                            }
+                        if (wIdx < padWidth || wIdx > inWidthMax || hIdx < padHeight || hIdx > inHeightMax) { //padding
+                            continue;
+                        }
+                        for (uint32_t z = 0; z < inputDepth; z++)
+                        {
                             outVal += (int64_t)(I[inIdxH + inIdxW + z]) * F[fIdxN + fIdxH + fIdxW + z];
                         }
                     }
