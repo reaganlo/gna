@@ -30,8 +30,6 @@ option(GNA_BUILD_WITH_GNA_SELF_TEST_ENABLED "" ON)
 option(GNA_BUILD_WITH_GNA_DRIVER_UTIL_ENABLED "" ON)
 option(GNA_BUILD_WITH_TLV_ENABLED "" ON)
 
-include(${CMAKE_SOURCE_DIR}/build/cmake/gna_cmake_tools.cmake)
-
 if(${GNA_BUILD_WITH_DEVTEST_ENABLED})
   add_subdirectory(DevTest)
 endif()

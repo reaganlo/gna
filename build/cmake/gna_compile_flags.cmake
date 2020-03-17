@@ -120,8 +120,9 @@ else()
   endif()
 
   # linker security and optimization flags
+  # relro - Hardening ELF binaries using Relocation Read-Only
   set(GNA_LINKER_FLAGS "-z now")
-  set(GNA_LINKER_FLAGS_RELEASE "-fdata-sections -ffunction-sections -Wl,--gc-sections")
+  set(GNA_LINKER_FLAGS_RELEASE "-fdata-sections -ffunction-sections -Wl,--gc-sections -z relro")
 
   set(GNA_CC_COMPILE_FLAGS ${GNA_COMPILE_FLAGS})
   set(GNA_COMPILE_ERROR_FLAGS ${GNA_COMPILE_ERROR_FLAGS}

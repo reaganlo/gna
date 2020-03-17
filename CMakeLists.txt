@@ -89,6 +89,8 @@ endif()
 
 include(${CMAKE_SOURCE_DIR}/build/cmake/gna_compile_flags.cmake)
 
+include(${CMAKE_SOURCE_DIR}/build/cmake/gna_cmake_tools.cmake)
+
 file(COPY readme.txt
     DESTINATION ${GNA_BINARY_DIR}/)
 
@@ -139,6 +141,7 @@ if(${GNA_BUILD_WITH_3_0_HW_MODULE_ENABLED})
 		"Try using 'git submodule update --init --recursive' to load all submodules.")
   endif()
   add_subdirectory(${HW_MODULE_3_0_PATH})
+  set_gna_compile_definitions(gna_hw)
 else()
 	message("CPGK for GNA library will NOT be used.")
 endif()
