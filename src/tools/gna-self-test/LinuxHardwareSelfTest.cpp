@@ -31,18 +31,6 @@
 #include <cstring>
 #include "gna-h-wrapper.h"
 
-static const std::map<std::pair<u_int16_t,u_int16_t>, std::string> knownGNADevsIds
-{
-    {{0x8086,0x5A11}, "GNA 0.9 CNL"},
-    {{0x8086,0x3190}, "GNA 1.0 GLK"},
-    {{0x8086,0x4511}, "GNA 1.0 EHL"},
-    {{0x8086,0x8A11}, "GNA 1.0 ICL"},
-    {{0x8086,0x9A11}, "GNA 2.0 TGL"}
-//  uncomment for testing purposes then gns-self-test will discover these devices as GNAs
-//  {{0x10ec,0x8168}, "r8169 pseudo GNA device - for testing"}, // Realtek's 8169 Ethernet Controller
-//  {{0x8086,0x2668}, "Android emulator's pseudo GNA device - for testing"}, // Some random Android emulator's device
-};
-
 void LinuxGnaSelfTestHardwareStatus::initHardwareInfo()
 {
     hardwareAvailable = (checkHWId() == 0);
@@ -59,7 +47,7 @@ int LinuxGnaSelfTestHardwareStatus::checkHWId()
     auto devList = getDevicesList();
     for(auto dev : devList)
     {
-        for(auto known: knownGNADevsIds)
+        for(const auto& known: GetKnownGNADevsIds())
         {
             if(known.first.first == dev.vendorId && known.first.second == dev.deviceId)
             {

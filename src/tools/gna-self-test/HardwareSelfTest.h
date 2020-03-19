@@ -21,8 +21,12 @@
 //*****************************************************************************
 #pragma once
 #include "SelfTest.h"
-#include <iostream>
+
+#include <iomanip>
+#include <map>
 #include <sstream>
+#include <string>
+
 class GnaSelfTestHardwareStatus
 {
 public:
@@ -56,3 +60,13 @@ private:
     virtual void initHardwareInfo() = 0;
     virtual void initDriverInfo() = 0;
 };
+
+const std::map<std::pair<uint16_t, uint16_t>, std::string>& GetKnownGNADevsIds();
+
+template<class T>
+std::string ToHexString(const T value)
+{
+    std::stringstream out;
+    out << std::setfill('0') << std::setw(sizeof(T) * 2) << std::uppercase << std::hex << value;
+    return out.str();
+}

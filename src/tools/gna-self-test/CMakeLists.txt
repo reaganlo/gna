@@ -31,6 +31,7 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 set(gna_self_test_sources
     gna-self-test.cpp
+    HardwareSelfTest.cpp
     SelfTest.cpp
     SampleModelForGnaSelfTest.cpp)
 set(gna_self_test_headers

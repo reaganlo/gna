@@ -20,13 +20,6 @@
 // be express and approved by Intel in writing.
 //*****************************************************************************
 #include "WindowsHardwareSelfTest.h"
-#include <map>
-static const std::map<std::string, std::string> validHwIds{
-    {"5A11", "GNA 0.9 CNL"},
-    {"3190", "GNA 1.0 GLK"},
-    {"4511", "GNA 1.0 EHL"},
-    {"8A11", "GNA 1.0 ICL"},
-    {"9A11", "GNA 2.0 TGL"} };
 
 void WindowsGnaSelfTestHardwareStatus::initHardwareInfo()
 {
@@ -64,8 +57,8 @@ int WindowsGnaSelfTestHardwareStatus::checkHWId()
         std::string devHwId(buffer);
         delete[] buffer;
 
-        for (auto vHwId : validHwIds) {
-            if (devHwId.rfind(vHwId.first) != std::string::npos) {
+        for (const auto& vHwId : GetKnownGNADevsIds()) {
+            if (devHwId.rfind(ToHexString(vHwId.first.second)) != std::string::npos) {
                 fullHwId = vHwId.second;
                 break;
             }
