@@ -56,6 +56,8 @@ constexpr uint32_t GmmInterleavedOperandIndex = 2;
 constexpr uint32_t GmmMeanOperandIndex = 2;
 constexpr uint32_t GmmInverseCovarianceOperandIndex = 3;
 constexpr uint32_t GmmGaussianConstantOperandIndex = 4;
+constexpr uint32_t GmmCommonMeansInterleavedOperandIndex = GmmMeanOperandIndex;
+static_assert(GmmMeanOperandIndex == GmmInterleavedOperandIndex, "");
 
 // NOTE: temporary solution for simple and fast kernel buffer indexing, always set as last + 1 operand index 
 constexpr uint32_t ScratchpadOperandKernelIndex = 6;

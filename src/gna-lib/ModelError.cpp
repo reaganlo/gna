@@ -115,14 +115,24 @@ void ModelErrorHelper::ExpectMultiplicityOf(int64_t val, int64_t factor, Gna2Ite
     ExpectTrue(val == 0 || (factor != 0 && (val % factor) == 0), e);
 }
 
-void ModelErrorHelper::ExpectBufferNotNull(const void * const buffer, int32_t operandIndex)
+void ModelErrorHelper::ExpectNotNull(const void * const ptr,
+    const Gna2ItemType ptrType,
+    const int32_t ptrIndex,
+    const bool indexForParameter)
 {
     Gna2ModelError e = GetCleanedError();
-    e.Source.Type = Gna2ItemTypeOperandData;
-    e.Source.OperandIndex = operandIndex;
+    e.Source.Type = ptrType;
+    if (indexForParameter)
+    {
+        e.Source.ParameterIndex = ptrIndex;
+    }
+    else
+    {
+        e.Source.OperandIndex = ptrIndex;
+    }
     e.Value = 0;
     e.Reason = Gna2ErrorTypeNullNotAllowed;
-    ExpectTrue(buffer != nullptr, e);
+    ExpectTrue(ptr != nullptr, e);
 }
 
 void ModelErrorHelper::ExpectBufferAligned(const void * const buffer, const uint32_t alignment)

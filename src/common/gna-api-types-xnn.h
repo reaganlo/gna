@@ -130,6 +130,7 @@ typedef enum _tensor_order
     GNA_TENSOR_NHW = 4097,     // Temporary value for Bias Shape
     GNA_TENSOR_N = 3,     // Temporary value for Bias Shape
     GNA_TENSOR_HWD = 513,
+    GNA_TENSOR_NWD = 514,       // Used for Legacy Convolution output
 
     // TODO:3:change to char tensor_format[16?] and implement ~~ uint32 tensor_format.Value...
 

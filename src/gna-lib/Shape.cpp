@@ -171,12 +171,18 @@ void Shape::ExpectFits(const Shape& envelope) const
     });
 }
 
-void Shape::ExpectEqual(const Shape& right) const
+void Shape::ExpectEqual(const Shape& reference) const
 {
-    ProcessEachDimension(right, [](auto l, auto r)
+    ProcessEachDimension(reference, [](auto l, auto r)
     {
         ModelErrorHelper::ExpectEqual(l, r, Gna2ItemTypeShapeDimensions);
     });
+}
+
+void Shape::ExpectEqualInverted(const ApiShape & source) const
+{
+    const auto sourceShape = Create(source, this->Order);
+    sourceShape.ExpectEqual(*this);
 }
 
 void Shape::ProcessEachDimension(const Shape& right, const std::function<void(uint32_t, uint32_t)>& process) const

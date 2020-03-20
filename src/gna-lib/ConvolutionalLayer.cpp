@@ -64,39 +64,30 @@ std::unique_ptr<const PoolingFunction> CnnLayer::GetPooling(const Gna2Operation&
 
 void CnnLayer::Init()
 {
-    if (!Pooling)
+    uint32_t outputsPerFilter = Convolution->OutputsPerFilterCount;
+    auto effectiveComputeHidden =  &CnnLayer::computeHidden;
+    auto effectiveCompute = &CnnLayer::compute;
+    if (Pooling)
     {
-        if (Activation)
-        {
-            Layer::ComputeHidden = [this](AccelerationMode accel, ExecutionConfig const & executionConfig)
-            {this->computeHiddenPwl(accel, executionConfig); };
-
-            Layer::Compute = [this](LayerConfiguration &layerConfiguration, AccelerationMode accel, ExecutionConfig const & executionConfig)
-            {this->computePwl(layerConfiguration, accel, executionConfig); };
-        }
-        else
-        {
-            Layer::ComputeHidden = [this](AccelerationMode accel, ExecutionConfig const & executionConfig)
-            {this->computeHidden(accel, executionConfig); };
-
-            Layer::Compute = [this](LayerConfiguration &layerConfiguration, AccelerationMode accel, ExecutionConfig const & executionConfig)
-            {this->compute(layerConfiguration, accel, executionConfig); };
-        }
-        Expect::Equal(Convolution->OutputsPerFilterCount, Output.Count / Convolution->Output.at(GNA_DIM_D),
-            Gna2StatusXnnErrorLyrInvalidTensorDimensions);
+        outputsPerFilter = Pooling->OutputsPerFilterCount;
+        // Activation is required for cnn with pooling
+        ModelErrorHelper::ExpectNotNull(Activation.get(), Gna2ItemTypeOperationOperands, PwlOperandIndex);
+        effectiveComputeHidden = &CnnLayer::computeHiddenPool;
+        effectiveCompute = &CnnLayer::computePool;
     }
-    else
+    else if (Activation)
     {
-        Expect::NotNull(Activation.get(), Gna2StatusXnnErrorPwlSegments); // Activation is required for cnn with pooling
-        Expect::Equal(Pooling->OutputsPerFilterCount, Output.Count / Convolution->Output.at(GNA_DIM_D), Gna2StatusXnnErrorLyrInvalidTensorDimensions);
-        // TODO:3: new error
-
-        Layer::ComputeHidden = [this](AccelerationMode accel, ExecutionConfig const & executionConfig)
-        {this->computeHiddenPool(accel, executionConfig); };
-
-        Layer::Compute = [this](LayerConfiguration &layerConfiguration, AccelerationMode accel, ExecutionConfig const & executionConfig)
-        {this->computePool(layerConfiguration, accel, executionConfig); };
+        effectiveComputeHidden = &CnnLayer::computeHiddenPwl;
+        effectiveCompute = &CnnLayer::computePwl;
     }
+    const auto& declaredOutputPerFilter = Output.AsModelValue('W').SetOperand(OutputOperandIndex);
+    ModelErrorHelper::ExpectEqual(declaredOutputPerFilter, outputsPerFilter);
+
+    Layer::ComputeHidden = [this, effectiveComputeHidden](AccelerationMode accel, ExecutionConfig const & executionConfig)
+    {(this->*effectiveComputeHidden)(accel, executionConfig); };
+
+    Layer::Compute = [this, effectiveCompute](LayerConfiguration &layerConfiguration, AccelerationMode accel, ExecutionConfig const & executionConfig)
+    {(this->*effectiveCompute)(layerConfiguration, accel, executionConfig); };
 }
 
 Tensor const & CnnLayer::GetOperand(uint32_t operandIndex) const
@@ -233,7 +224,7 @@ void CnnLayer::computeHiddenPool(AccelerationMode accel, ExecutionConfig const &
     Pooling->Compute(&convConfig, accel, execution.Intermediate->pool, &Activation->Pwl);
 }
 
-void CnnLayer::computePool(LayerConfiguration& layerConfiguration, AccelerationMode accel, ExecutionConfig const & execution) const
+void CnnLayer::computePool(const LayerConfiguration& layerConfiguration, AccelerationMode accel, ExecutionConfig const & execution) const
 {
     auto convConfig = ConvolutionConfig{ layerConfiguration.Configs.Convolution.get(), execution };
     Pooling->Compute(&convConfig, accel, execution.Intermediate->pool, &Activation->Pwl);

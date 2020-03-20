@@ -85,13 +85,18 @@ const SetLimits<KernelBiasMode> BiasTensor::modeLimits
 };
 
 BiasTensor::BiasTensor(const Shape& dimensions, const uint32_t biasVectorIndex, const DataMode& dataMode,
-    void * buffer, const LayerValidator& validatorIn, Gna2BiasMode biasMode) :
+    void * buffer, const LayerValidator& validatorIn, Gna2BiasMode biasMode)
+try :
     Tensor{ dimensions, dataMode, buffer, Validator{ validatorIn, capabilities } },
     VectorCount{ biasMode == Gna2BiasModeGrouping ? Dimensions.at('W') : 1 },
     VectorIndex{ biasVectorIndex },
     BiasMode{ ToKernelBiasMode(biasMode, dataMode.Mode) }
 {
     validate();
+}
+catch (GnaException& e)
+{
+    ModelErrorHelper::SetOperandIndexRethrow(e, BiasOperandIndex);
 }
 
 BiasTensor::BiasTensor(const Gna2Tensor &apiTensor, const uint32_t biasVectorIndex,

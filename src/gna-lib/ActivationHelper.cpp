@@ -42,7 +42,7 @@ void ActivationHelper::ExpectProper(const Gna2Tensor & activation)
 {
     ModelErrorHelper::ExpectEqual(activation.Type, Gna2DataTypePwlSegment, Gna2ItemTypeOperandType);
     ModelErrorHelper::ExpectEqual(activation.Mode, Gna2TensorModeDefault, Gna2ItemTypeOperandMode);
-    ModelErrorHelper::ExpectBufferNotNull(activation.Data, PwlOperandIndex);
+    ModelErrorHelper::ExpectNotNull(activation.Data, Gna2ItemTypeOperandData, PwlOperandIndex);
     ModelErrorHelper::ExpectEqual(activation.Shape.NumberOfDimensions, 1, Gna2ItemTypeShapeNumberOfDimensions);
 }
 

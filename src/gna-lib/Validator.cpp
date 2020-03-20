@@ -46,7 +46,7 @@ BaseValidator::BaseValidator(
 
 void BaseValidator::ValidateBuffer(const void * const buffer, size_t size, const uint32_t alignment) const
 {
-    ModelErrorHelper::ExpectBufferNotNull(buffer);
+    ModelErrorHelper::ExpectNotNull(buffer);
     ModelErrorHelper::ExpectBufferAligned(buffer, alignment);
     bufferValidator(buffer, size);
 }

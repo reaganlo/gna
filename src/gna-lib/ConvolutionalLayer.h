@@ -94,7 +94,7 @@ protected:
     virtual DataConfig GetDataMode() const override;
 
 private:
-    void computePool(LayerConfiguration& layerConfiguration, AccelerationMode accel, ExecutionConfig const & execution) const;
+    void computePool(const LayerConfiguration& layerConfiguration, AccelerationMode accel, ExecutionConfig const & execution) const;
     void computeHiddenPool(AccelerationMode accel, ExecutionConfig const & execution) const;
     void computeHidden(AccelerationMode accel, ExecutionConfig const & execution) const;
     void computeHiddenPwl(AccelerationMode accel, ExecutionConfig const & execution) const;

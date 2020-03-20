@@ -78,6 +78,8 @@ protected:
     const  std::unique_ptr<PoolingConfig> hiddenConfig;
     static const std::map<const nn_operation, const ShapeLimits> windowLimits;
     static const std::map<const nn_operation, const ShapeLimits> strideLimits;
+
+    static void ExpectValid(Gna2Operation const & apiOperation);
 };
 
 }

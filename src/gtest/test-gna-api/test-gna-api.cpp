@@ -44,6 +44,25 @@ class TestGnaModelApi : public TestGnaApiEx
 {
 protected:
     static void createSimpleCopyModel(uint32_t & modelIdOut);
+    void * gnaMemory128kB = nullptr;
+    void SetUp() override
+    {
+        TestGnaApiEx::SetUp();
+        uint32_t granted;
+        const uint32_t requested = 128 * 1024;
+        const auto status = Gna2MemoryAlloc(requested, &granted, &gnaMemory128kB);
+        ASSERT_EQ(status, Gna2StatusSuccess);
+        ASSERT_EQ(requested, granted);
+        ASSERT_NE(gnaMemory128kB, nullptr);
+    }
+
+    void TearDown() override
+    {
+        TestGnaApiEx::TearDown();
+        const auto status = Gna2MemoryFree(gnaMemory128kB);
+        ASSERT_EQ(status, Gna2StatusSuccess);
+        gnaMemory128kB = nullptr;
+    }
 };
 
 class TestGnaOperationInitApi : public TestGnaModelApi
@@ -477,19 +496,19 @@ TEST_F(TestGnaModelApi, Gna2ModelCreateSingleGMMSuccesfull)
         Gna2TensorModeDefault,
         {'\0'},
         Gna2DataTypeUint8,
-        nullptr };
+        gnaMemory128kB };
     Gna2Tensor inverseCovariances{
         dataShape,
         Gna2TensorModeDefault,
         {'\0'},
         Gna2DataTypeUint8,
-        nullptr };
+        gnaMemory128kB };
     Gna2Tensor constants{
         Gna2Shape{2, { gmmStates, Gna2RoundUp(mixtures, 2) }},  //HW
         Gna2TensorModeDefault,
         {'\0'},
         Gna2DataTypeUint32,
-        nullptr };
+        gnaMemory128kB };
 
     const Gna2Tensor * tensors[] = { &input, &output, &means, &inverseCovariances, &constants };
 

@@ -77,25 +77,43 @@ std::unique_ptr<GmmFunction> GmmFunction::Create(const TransformFactoryConfig& c
     std::unique_ptr<const WeightTensor> inverseCovariances;
     std::unique_ptr<const BiasTensor> gaussianConstants;
 
+    Shape expectedMeans = Shape{ GNA_TENSOR_HWD, config.output->Dimensions.at('H'), 1u, config.input->Dimensions.at('W') };
+
+    std::function<void()> command = [&]()   // Common for flat and interleaved
+    {
+        auto const meanTensor = operation.GetEnabledOperand(GmmCommonMeansInterleavedOperandIndex);
+        expectedMeans['W'] = meanTensor.Shape.Dimensions[1];
+        expectedMeans.ExpectEqualInverted(meanTensor.Shape);
+        means = std::make_unique<const WeightTensor>(meanTensor, config.validator);
+    };
+    ModelErrorHelper::ExecuteForModelItem(command, GmmCommonMeansInterleavedOperandIndex);
+
     if (!isInterleaved)
     {
-        auto const meanTensor = operation.GetOperand(GmmMeanOperandIndex);
-        means = std::make_unique<const WeightTensor>(meanTensor, config.validator);
+        const auto expectedGaussianConstants = Shape{ GNA_TENSOR_HW,
+            config.output->Dimensions.at('H'),
+            Gna2RoundUp(expectedMeans.at('W'), 2) };
 
-        auto const inverseCovariancesTensor = operation.GetOperand(GmmInverseCovarianceOperandIndex);
-        inverseCovariances = std::make_unique<const WeightTensor>(inverseCovariancesTensor, config.validator);
-
-        auto const gaussianConstantsTensor = operation.GetOperand(GmmGaussianConstantOperandIndex);
-        gaussianConstants = std::make_unique<const BiasTensor>(
-            gaussianConstantsTensor, 0, Gna2BiasModeDefault, config.validator);
+        command = [&]()
+        {
+            auto const inverseCovariancesTensor = operation.GetEnabledOperand(GmmInverseCovarianceOperandIndex);
+            expectedMeans.ExpectEqualInverted(inverseCovariancesTensor.Shape);
+            inverseCovariances = std::make_unique<const WeightTensor>(inverseCovariancesTensor, config.validator);
+        };
+        ModelErrorHelper::ExecuteForModelItem(command, GmmInverseCovarianceOperandIndex);
+        command = [&]()
+        {
+            auto const gaussianConstantsTensor = operation.GetEnabledOperand(GmmGaussianConstantOperandIndex);
+            expectedGaussianConstants.ExpectEqualInverted(gaussianConstantsTensor.Shape);
+            gaussianConstants = std::make_unique<const BiasTensor>(
+                gaussianConstantsTensor, 0, Gna2BiasModeDefault, config.validator);
+        };
+        ModelErrorHelper::ExecuteForModelItem(command, GmmGaussianConstantOperandIndex);
 
         varMode = inverseCovariances->Mode.Value;
     }
     else
     {
-        auto const meanTensor = operation.GetOperand(GmmInterleavedOperandIndex);
-        means = std::make_unique<const WeightTensor>(meanTensor, config.validator);
-
         varMode = means->Mode.Value;
     }
 

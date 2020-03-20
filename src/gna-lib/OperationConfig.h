@@ -60,7 +60,7 @@ public:
 
     bool HasGroupedBias() const;
 
-    Gna2Tensor GetOperand(uint32_t index) const;
+    Gna2Tensor GetEnabledOperand(uint32_t index) const;
 
     template<typename T>
     T GetParameterAs(uint32_t index) const
@@ -132,14 +132,14 @@ protected:
         // TODO: 3: Remove when full (e.g., bias) buffer addition and late sanity checking implemented
         if (BiasesTensor.Mode != Gna2TensorModeDisabled)
         {
-            ModelErrorHelper::ExpectBufferNotNull(BiasesTensor.Data, BiasOperandIndex);
+            ModelErrorHelper::ExpectNotNull(BiasesTensor.Data, Gna2ItemTypeOperandData, BiasOperandIndex);
         }
 
         if (isAffine(operation))
         {
             WeightsTensor = GetWeights(operation);
             // TODO: 3: Remove when full (e.g., weights) buffer addition and late sanity checking implemented
-            ModelErrorHelper::ExpectBufferNotNull(WeightsTensor.Data, WeightOperandIndex);
+            ModelErrorHelper::ExpectNotNull(WeightsTensor.Data, Gna2ItemTypeOperandData, WeightOperandIndex);
 
             if (IsMultibias(operation))
             {
@@ -154,7 +154,7 @@ protected:
         {
             FiltersTensor = GetFilters(operation);
             // TODO: 3: Remove when full (e.g., filers) buffer addition and late sanity checking implemented
-            ModelErrorHelper::ExpectBufferNotNull(FiltersTensor.Data, FilterOperandIndex);
+            ModelErrorHelper::ExpectNotNull(FiltersTensor.Data, Gna2ItemTypeOperandData, FilterOperandIndex);
             ConvolutionStride = GetStride(operation);
             ZeroPadding = GetZeroPadding(operation);
             BiasMode = GetBiasMode(operation);

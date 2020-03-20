@@ -122,6 +122,11 @@ Shape LayerOutput::ConvertInCaseOfNewApiOrder(gna_tensor_order order, const uint
     {
         return Shape(order, nOutputRows, nOutputColumns);
     }
+    if (order == GNA_TENSOR_NWD)
+    {
+        // Workaround for Old API due to DevTest
+        return Shape(order, nOutputRows, nOutputColumns/ CNN_N_FLT_COEFF_MPLY, CNN_N_FLT_COEFF_MPLY);
+    }
     return Shape(order, nOutputColumns, nOutputRows);
 }
 
@@ -166,12 +171,6 @@ ApiShape LayerOutput::GetShape(const Gna2Operation & operation)
         s.Dimensions[2] = s.Dimensions[1];
         s.Dimensions[1] = 1;
 
-    }
-    else if (s.NumberOfDimensions == 3)
-    {
-        s.NumberOfDimensions = 2;
-        s.Dimensions[1] *= s.Dimensions[2];
-        s.Dimensions[2] = 0;
     }
     return s;
 }

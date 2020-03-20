@@ -492,14 +492,10 @@ bool OperationConfig::HasGroupedBias() const
     return HasGroupedBias(BiasesTensor, BiasMode);
 }
 
-Gna2Tensor OperationConfig::GetOperand(uint32_t index) const
+Gna2Tensor OperationConfig::GetEnabledOperand(uint32_t index) const
 {
     Expect::NotNull(Operation);
-    if (IsOperandAvailable(*Operation, index))
-    {
-        return *(Operation->Operands[index]);
-    }
-    throw GnaException(Gna2StatusModelConfigurationInvalid);
+    return ModelWrapper::GetEnabledOperand(*Operation, index);
 }
 
 bool OperationConfig::hasPooling(const Gna2Operation & operation)

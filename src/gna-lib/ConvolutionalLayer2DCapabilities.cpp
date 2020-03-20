@@ -127,6 +127,29 @@ static const DataModeLimits & _ModesGen3Cnn2D()
     };
     return __ModesGen3Cnn2D;
 }
+
+static const RangeLimits<> & limitsForFilterNumber()
+{
+    static const RangeLimits<> _limits =
+    {
+        CNN_N_FLT_COEFF_MPLY,
+        CNN_N_FLT_MAX,
+        CNN_N_FLT_COEFF_MPLY,
+        Gna2StatusCnnErrorConvFltCount
+    };
+    return _limits;
+}
+
+static const RangeLimits<> & limitsForOutputDepth()
+{
+    static const RangeLimits<> _limits =
+    {
+        limitsForFilterNumber(),
+        Gna2StatusXnnErrorOutputVolume
+    };
+    return _limits;
+}
+
 const FullCapabilitiesMap & ConvolutionalLayer2DCapabilities::GetOperands(uint32_t operandIndex)
 {
     static const ComponentFullCapabilityMap operands =
@@ -168,9 +191,10 @@ const FullCapabilitiesMap & ConvolutionalLayer2DCapabilities::GetOperands(uint32
         {OutputOperandIndex,{
             {INTEL_CONVOLUTIONAL,{
                 {GNA_1_0, std::make_shared<TensorLimits>(TensorLimits{
-                { GNA_TENSOR_HW },
-                {{GNA_DIM_H, limitsForOutputEqual1()},
-                {GNA_DIM_W, limitsForOutput()}},
+                { GNA_TENSOR_NWD },
+                {{GNA_DIM_N, limitsForOutputEqual1()},
+                {GNA_DIM_W, limitsForOutput()},
+                {GNA_DIM_D, limitsForOutputDepth()}},
                 GetModes(OutputOperandIndex, GNA_0_9)})},
             }},
             {INTEL_CONVOLUTIONAL_2D,{
@@ -205,7 +229,7 @@ const FullCapabilitiesMap & ConvolutionalLayer2DCapabilities::GetOperands(uint32
             {INTEL_CONVOLUTIONAL,{
                 {GNA_1_0, std::make_shared<TensorLimits>(TensorLimits{
                     {GNA_TENSOR_NW},    // N - # filters, W - # filter coefficients
-                    {{GNA_DIM_N, {CNN_N_FLT_COEFF_MPLY, CNN_N_FLT_MAX, CNN_N_FLT_COEFF_MPLY, Gna2StatusCnnErrorConvFltCount}},
+                    {{GNA_DIM_N, limitsForFilterNumber()},
                     {GNA_DIM_W, {CNN_N_FLT_COEFF_MIN, CNN_N_FLT_COEFF_MAX, shapeLimitMultipliersForCnnLegacy(), Gna2StatusCnnErrorConvFltVolume}}},
                     {{ GNA_INT16 }, Gna2StatusXnnErrorConvFltBytes }})}
             }},
@@ -222,7 +246,7 @@ const FullCapabilitiesMap & ConvolutionalLayer2DCapabilities::GetOperands(uint32
             {INTEL_CONVOLUTIONAL_1D, {
                 {GNA_1_0, std::make_shared<TensorLimits>(TensorLimits{
                     {GNA_TENSOR_NHWD},    // N - # filters, H - # filter coefficients
-                    {{GNA_DIM_N, {CNN_N_FLT_COEFF_MPLY, CNN_N_FLT_MAX, CNN_N_FLT_COEFF_MPLY, Gna2StatusCnnErrorConvFltCount}},
+                    {{GNA_DIM_N, limitsForFilterNumber()},
                         {GNA_DIM_H, {CNN_N_FLT_COEFF_MIN, CNN_N_FLT_COEFF_MAX, shapeLimitMultipliersForCnn1D(), Gna2StatusCnnErrorConvFltVolume}},
                         {GNA_DIM_W, {1, 1, 1, Gna2StatusCnnErrorConvFltVolume}},
                         {GNA_DIM_D, {1, 1, 1, Gna2StatusCnnErrorConvFltVolume}}},

@@ -81,8 +81,10 @@ struct Shape : public ShapeMap
     // If any dimension is greater than in envelope throws model exception.
     void ExpectFits(const Shape& envelope) const;
 
-    // If any dimension is different than in right throws model exception.
-    void ExpectEqual(const Shape& right) const;
+    // If any dimension is different than in reference throws model exception.
+    void ExpectEqual(const Shape& reference) const;
+
+    void ExpectEqualInverted(const ApiShape & source) const;
 
 protected:
     static ShapeMap Create(const std::vector<uint32_t> && dimensions,

@@ -154,6 +154,9 @@ public:
     static uint32_t GetOperationInfo(OperationType operationType, OperationInfoKey infoType);
     static bool HasEnabledOperand(const Gna2Operation& apiOperation, uint32_t operandIndex);
 
+    static void ExpectOperandModeDefault(const Gna2Operation & operation, int32_t index);
+    static void ExpectOperandDataNotNull(const Gna2Operation & operation, int32_t index);
+
     static Gna2Tensor GetEnabledOperand(const Gna2Operation & apiOperation, uint32_t operandIndex);
 
     static Gna2Tensor GetOptionalOperand(const Gna2Operation& apiOperation,
@@ -204,7 +207,6 @@ private:
         {
             return nullptr;
         }
-        Expect::NotNull((void *)(userAllocator));
         const auto size = static_cast<uint32_t>(sizeof(Type *)) * elementCount;
         const auto memory = userAllocator(size);
         Expect::NotNull(memory, Gna2StatusResourceAllocationError);

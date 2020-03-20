@@ -48,7 +48,10 @@ public:
     static void ExpectAboveEq(int64_t val, int64_t ref, Gna2ItemType valType);
     static void ExpectAboveEq(int64_t val, int64_t ref, Gna2ModelItem item);
     static void ExpectMultiplicityOf(int64_t val, int64_t factor, Gna2ItemType valType);
-    static void ExpectBufferNotNull(const void * const buffer, int32_t operandIndex = GNA2_DISABLED);
+    static void ExpectNotNull(const void * const ptr,
+        Gna2ItemType ptrType = Gna2ItemTypeOperandData,
+        int32_t ptrIndex = GNA2_DISABLED,
+        bool indexForParameter = false);
     static void ExpectBufferAligned(const void * const buffer, const uint32_t alignment);
 
     static void ExpectEqual(const ModelValue& val, const ModelValue& ref);
@@ -159,7 +162,7 @@ public:
     }
     void SetParameterIndex(int32_t parameterIndex)
     {
-        if(error.Source.Type == Gna2ItemTypeNone)
+        if(error.Source.Type == Gna2ItemTypeNone && parameterIndex != GNA2_DISABLED)
         {
             error.Source.Type = Gna2ItemTypeParameter;
         }

@@ -64,7 +64,7 @@ void RecurrentFunction::ValidateActivation(const Gna2Tensor& activationTensor)
     {
         auto pwlShape = Shape::Create(activationTensor.Shape, GNA_TENSOR_N);
         pwlShape.ExpectFits({ GNA_TENSOR_N, XNN_N_PWL_SEGS_MAX });
-        ModelErrorHelper::ExpectBufferNotNull(activationTensor.Data);
+        ModelErrorHelper::ExpectNotNull(activationTensor.Data);
     };
     ModelErrorHelper::ExecuteForModelItem(command, PwlOperandIndex);
 }

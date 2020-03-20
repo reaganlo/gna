@@ -92,26 +92,47 @@ std::unique_ptr<const PoolingFunction> PoolingFunction::Create(void const * laye
     return std::unique_ptr<const PoolingFunction>(nullptr);
 }
 
+void PoolingFunction::ExpectValid(Gna2Operation const & apiOperation)
+{
+    auto const hasPoolingWindow = ModelWrapper::HasParameter(apiOperation, PoolingWindowParamIndex);
+    auto const hasPoolingStride = ModelWrapper::HasParameter(apiOperation, PoolingStrideParamIndex);
+
+    if (hasPoolingWindow || hasPoolingStride)
+    {
+        ModelWrapper::ExpectParameterAvailable(apiOperation, PoolingModeParamIndex);
+        ModelWrapper::ExpectParameterAvailable(apiOperation, PoolingWindowParamIndex);
+        ModelWrapper::ExpectParameterAvailable(apiOperation, PoolingStrideParamIndex);
+    }
+}
+
 std::unique_ptr<const PoolingFunction> PoolingFunction::Create(Gna2Operation const & apiOperation,
     const Shape & inputDimensions, const LayerValidator& validatorIn, gna_data_mode inputMode)
 {
     Expect::Equal(INTEL_CONVOLUTIONAL, validatorIn.Operation, Gna2StatusXnnErrorLyrOperation);
-    const auto apiMode = ModelWrapper::GetOptionalParameter<Gna2PoolingMode>(apiOperation, ParameterIndexPoolingMode,
+    ExpectValid(apiOperation);
+
+    const auto poolingMode = ModelWrapper::GetOptionalParameter<Gna2PoolingMode>(apiOperation, PoolingModeParamIndex,
         Gna2PoolingModeDisabled);
-    if (Gna2PoolingModeDisabled != apiMode)
+
+    if (Gna2PoolingModeMax == poolingMode || Gna2PoolingModeSum == poolingMode)
     {
-        const auto apiStride = ModelWrapper::GetOptionalParameter<Gna2Shape>(
-            apiOperation, ParameterIndexPoolingStride, {});
+        const auto apiStride = ModelWrapper::GetParameter<Gna2Shape>(
+            apiOperation, PoolingStrideParamIndex);
         const auto strideShape = Shape::Create(apiStride, GNA_TENSOR_W);
 
-        const auto apiWindow = ModelWrapper::GetOptionalParameter<Gna2Shape>(
-            apiOperation, ParameterIndexPoolingWindow, {});
+        const auto apiWindow = ModelWrapper::GetParameter<Gna2Shape>(
+            apiOperation, PoolingWindowParamIndex);
         const auto windowShape = Shape::Create(apiWindow, GNA_TENSOR_W);
 
         return std::make_unique<const PoolingFunction>(validatorIn.Operation, inputDimensions, windowShape,
-            strideShape, apiMode,
+            strideShape, poolingMode,
             AccelerationDetector::GetKernelMap<ConvolutionPoolingKernel>(KERNEL_POOLING, inputMode));
     }
+    const std::function<void()> command = [&]()
+    {
+        ModelErrorHelper::ExpectEqual(poolingMode, Gna2PoolingModeDisabled, Gna2ItemTypeParameter);
+    };
+    ModelErrorHelper::ExecuteForModelItem(command, GNA2_DISABLED, PoolingModeParamIndex);
     return std::unique_ptr<const PoolingFunction>(nullptr);
 }
 
@@ -129,8 +150,16 @@ PoolingFunction::PoolingFunction(nn_operation const operation, const Shape& inpu
 {
     Expect::InSet(Mode, { KernelPoolingModeMax, KernelPoolingModeSum }, Gna2StatusCnnErrorPoolType);
     // TODO:3: use ExpectShapeIsValid where applicable
-    GNA::ExpectShapeIsValid(Stride, strideLimits.at(operation));
-    GNA::ExpectShapeIsValid(Window, windowLimits.at(operation));
+    const std::function<void()> poolingStrideValidation = [&]()
+    {
+        GNA::ExpectShapeIsValid(Stride, strideLimits.at(operation));
+    };
+    const std::function<void()> poolingWindowValidation = [&]()
+    {
+        GNA::ExpectShapeIsValid(Window, windowLimits.at(operation));
+    };
+    ModelErrorHelper::ExecuteForModelItem(poolingStrideValidation, GNA2_DISABLED, PoolingStrideParamIndex);
+    ModelErrorHelper::ExecuteForModelItem(poolingWindowValidation, GNA2_DISABLED, PoolingWindowParamIndex);
 
     OutputsPerFilterCount = 1;
     OutputDimensions[GNA_DIM_D] = inputDimensions.at(GNA_DIM_D);
