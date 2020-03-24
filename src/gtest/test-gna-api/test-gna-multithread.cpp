@@ -147,7 +147,7 @@ TEST_F(TestGnaApi, multipleDiagModelCreateRunWithThreads1)
     RunWithThreads(1);
 }
 
-TEST_F(TestGnaApi, DISABLED_multipleDiagModelCreateRunWithThreads2)
+TEST_F(TestGnaApi, multipleDiagModelCreateRunWithThreads2)
 {
     RunWithThreads(2);
 }

@@ -208,7 +208,6 @@ void ThreadPool::employWorkers()
                 {
                     auto request_task = tasks.front();
                     tasks.pop_front();
-                    lock.unlock();
                     request_task->operator()(buff);
                 }
             }
