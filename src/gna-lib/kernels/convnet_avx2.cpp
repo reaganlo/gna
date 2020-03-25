@@ -277,10 +277,10 @@ void ConvolutionKernelImpl(ConvolutionConfig const * const filterConfig)
             in1 = (mm_ptr)(I + j * num_inputs_band_stride);
             flt = (mm_ptr)(F + i * FC);
 
-            f = vec_lddqu(flt);
-            v1 = vec_lddqu(in1);
+            f = _mm256_lddqu_si256(flt);
+            v1 = _mm256_lddqu_si256(in1);
 
-            acc1 = vec_setzero();
+            acc1 = _mm256_setzero_si256();
 
             for (; in1 < in_end; )
             {
@@ -290,8 +290,8 @@ void ConvolutionKernelImpl(ConvolutionConfig const * const filterConfig)
                 im1 = vec_madd16(v1, f);
                 acc1 = vec_accumulate(acc1, im1);
 
-                f = vec_lddqu(flt);
-                v1 = vec_lddqu(in1);
+                f = _mm256_lddqu_si256(flt);
+                v1 = _mm256_lddqu_si256(in1);
             }
 
             sum1 = getBias(bias, filterConfig->bytesPerBias) + vec_sum(acc1);
@@ -784,12 +784,12 @@ void ConvolutionPoolingKernelImpl(ConvolutionConfig const * const filterConfig,
                     in2 = (mm_ptr)const_cast<int16_t*>(I + (j + 1) * num_inputs_band_stride);
                     flt = (mm_ptr)(F + i * FC);
 
-                    v1 = vec_lddqu(in1);
-                    v2 = vec_lddqu(in2);
-                    f  = vec_lddqu(flt);
+                    v1 = _mm256_lddqu_si256(in1);
+                    v2 = _mm256_lddqu_si256(in2);
+                    f  = _mm256_lddqu_si256(flt);
 
-                    acc1 = vec_setzero();
-                    acc2 = vec_setzero();
+                    acc1 = _mm256_setzero_si256();
+                    acc2 = _mm256_setzero_si256();
 
                     sum1 = B[i];
                     sum2 = B[i];
@@ -806,9 +806,9 @@ void ConvolutionPoolingKernelImpl(ConvolutionConfig const * const filterConfig,
                         acc1 = vec_accumulate(acc1, im1);
                         acc2 = vec_accumulate(acc2, im2);
 
-                        v1 = vec_lddqu(in1);
-                        v2 = vec_lddqu(in2);
-                        f  = vec_lddqu(flt);
+                        v1 = _mm256_lddqu_si256(in1);
+                        v2 = _mm256_lddqu_si256(in2);
+                        f  = _mm256_lddqu_si256(flt);
                     }
 
 #if OPT_LEVEL != 2 && OPT_LEVEL != 3
