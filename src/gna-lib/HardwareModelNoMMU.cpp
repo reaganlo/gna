@@ -32,12 +32,45 @@ using namespace GNA;
 
 HardwareCapabilities HardwareModelNoMMU::noMMUCapabilities = HardwareCapabilities{ Gna2DeviceVersionEmbedded3_0 };
 
+class MemoryOfUndefinedSize : public Memory
+{
+public:
+    MemoryOfUndefinedSize(void* address) :
+    Memory(address ,1, 1)
+    {
+    }
+};
+
 HardwareModelNoMMU::HardwareModelNoMMU(CompiledModel const & softwareModel, intel_gna_alloc_cb customAllocIn) :
     HardwareModel(softwareModel, noMMUCapabilities),
     customAlloc{ customAllocIn }
 {
-    InputAddress = softwareModel.GetLayers().front()->Input.Buffer.Get();
-    OutputAddress = softwareModel.GetLayers().back()->Output.Buffer.Get();
+    for(const auto& memElement : softwareModel.GetAllocations())
+    {
+        const Memory& buffer = memElement;
+        switch (buffer.GetTag())
+        {
+        case MemoryTagInput:
+            InputAllocations.Emplace(buffer);
+            break;
+        case MemoryTagOutput:
+            OutputAllocations.Emplace(buffer);
+            break;
+        case MemoryTagReadOnly:
+        default:
+            ROAllocations.Emplace(buffer);
+        }
+    }
+    if(InputAllocations.empty())
+    {
+        guessedInput = std::make_unique<MemoryOfUndefinedSize>(softwareModel.GetLayers().front()->Input.Buffer.Get());
+        InputAllocations.Emplace(*guessedInput);
+    }
+    if (OutputAllocations.empty())
+    {
+        guessedOutput = std::make_unique<MemoryOfUndefinedSize>(softwareModel.GetLayers().back()->Output.Buffer.Get());
+        OutputAllocations.Emplace(*guessedOutput);
+    }
 }
 
 const LayerDescriptor& HardwareModelNoMMU::GetDescriptor(uint32_t layerIndex) const
@@ -88,20 +121,23 @@ uint32_t HardwareModelNoMMU::GetBufferOffset(const BaseAddress& address) const
         // Global scratchpad region starts after GnaDescriptor (32bytes) at BAR0
         return SetBarIndex(GnaDescritorSize, BarIndexGnaBar);
     }
-    if (address == InputAddress)
+    if (InputAllocations.Contains(address))
     {
-        return  SetBarIndex(0, BarIndexInput);
+        return SetBarIndex(InputAllocations.GetBufferOffset(address), BarIndexInput);
     }
-    if (address == OutputAddress)
+    if (OutputAllocations.Contains(address))
     {
-        return SetBarIndex(0, BarIndexOutput);
+        return SetBarIndex(OutputAllocations.GetBufferOffset(address), BarIndexOutput);
     }
-    return SetBarIndex(ldMemory->GetSize() + address.GetOffset( BaseAddress(ROBeginAddress)), BarIndexRo);
+    if (ROAllocations.Contains(address))
+    {
+        return SetBarIndex(ldMemory->GetSize() + ROAllocations.GetBufferOffset(address), BarIndexRo);
+    }
+    throw GnaException(Gna2StatusMemoryBufferInvalid);
 }
 
 void HardwareModelNoMMU::ExportLd(void *& exportData, uint32_t & exportDataSize)
 {
-    Expect::NotNull(ROBeginAddress);
     Build({});
 
     exportData = ldMemory->GetBuffer();

@@ -229,9 +229,9 @@ void DeviceManager::AllocateMemory(uint32_t requestedSize,
     memoryObjects.emplace_back(std::move(memoryObject));
 }
 
-std::pair<bool, std::vector<std::unique_ptr<Memory>>::const_iterator> DeviceManager::HasMemory(void * buffer) const
+std::pair<bool, std::vector<std::unique_ptr<Memory>>::iterator> DeviceManager::FindMemory(void * buffer)
 {
-    auto memoryIterator = std::find_if(memoryObjects.cbegin(), memoryObjects.cend(),
+    auto memoryIterator = std::find_if(memoryObjects.begin(), memoryObjects.end(),
         [buffer](const std::unique_ptr<Memory>& memory)
     {
         return memory->GetBuffer() == buffer;
@@ -244,7 +244,7 @@ void DeviceManager::FreeMemory(void *buffer)
 {
     Expect::NotNull(buffer);
 
-    auto found = HasMemory(buffer);
+    const auto found = FindMemory(buffer);
 
     if (!found.first)
     {
@@ -305,6 +305,13 @@ Device & DeviceManager::GetDeviceForRequestId(uint32_t requestId)
 const std::vector<std::unique_ptr<Memory>> & DeviceManager::GetAllAllocated() const
 {
     return memoryObjects;
+}
+
+void DeviceManager::TagMemory(void* memory, uint32_t tag)
+{
+    const auto found = FindMemory(memory);
+    Expect::True(found.first, Gna2StatusMemoryBufferInvalid);
+    found.second->get()->SetTag(tag);
 }
 
 void DeviceManager::UnMapAllFromDevice(Device& device)

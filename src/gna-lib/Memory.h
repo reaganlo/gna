@@ -62,12 +62,17 @@ public:
         return Get<T>();
     }
 
+    void SetTag(uint32_t newTag);
+    uint32_t GetTag() const;
+
     static const uint32_t GNA_BUFFER_ALIGNMENT = 64;
 
 protected:
     uint64_t id = 0;
 
     uint32_t size = 0;
+
+    uint32_t tag = 0;
 
     bool mapped = false;
 

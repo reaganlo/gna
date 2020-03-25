@@ -61,9 +61,9 @@ public:
 
     void ExportLd(void *& exportData, uint32_t & exportDataSize);
 
-    void * ROBeginAddress = nullptr;
-    void * InputAddress = nullptr;
-    void * OutputAddress = nullptr;
+    static constexpr uint32_t MemoryTagInput = 1;
+    static constexpr uint32_t MemoryTagOutput = 2;
+    static constexpr uint32_t MemoryTagReadOnly = 3;
 
     static constexpr uint32_t GnaDescritorSize = 32;
     static constexpr uint32_t BarIndexGnaBar = 0;
@@ -78,6 +78,13 @@ private:
     static HardwareCapabilities noMMUCapabilities;
 
     intel_gna_alloc_cb customAlloc = nullptr;
+
+    std::unique_ptr<Memory> guessedInput;
+    std::unique_ptr<Memory> guessedOutput;
+
+    MemoryContainer ROAllocations;
+    MemoryContainer InputAllocations;
+    MemoryContainer OutputAllocations;
 };
 
 }

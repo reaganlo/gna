@@ -82,6 +82,7 @@ void GnaSelfTest::StartTest()
     gnaDevice.CompareResults(sampleNetwork);
     GnaSelfTestLogger::Log("GNA device self-test has been finished\n");
 }
+
 extern "C" const char* GnaGetLibraryVersion();
 void GnaSelfTest::PrintLibraryVersion()
 {
@@ -116,6 +117,7 @@ GnaSelfTestConfig::GnaSelfTestConfig(int argc, const char *const argv[])
         }
     }
 }
+
 GnaSelfTestConfig GnaSelfTestConfig::ReadConfigFromCmdLine(int argc, const char *const argv[])
 {
     return GnaSelfTestConfig(argc, argv);

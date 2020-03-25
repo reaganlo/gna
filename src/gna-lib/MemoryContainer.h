@@ -63,7 +63,7 @@ public:
 
     const_iterator FindByAddress(BaseAddress const & address) const;
 
-    bool Contains(const void *buffer, const size_t bufferSize) const;
+    bool Contains(const void *buffer, const size_t bufferSize = 1) const;
 
     uint32_t GetMemorySize() const
     {

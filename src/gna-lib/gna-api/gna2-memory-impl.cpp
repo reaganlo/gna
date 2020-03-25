@@ -60,3 +60,15 @@ GNA2_API enum Gna2Status Gna2MemoryFree(
     };
     return ApiWrapper::ExecuteSafely(command);
 }
+
+GNA2_API enum Gna2Status Gna2MemorySetTag(
+    void * memory,
+    uint32_t tag)
+{
+    const std::function<ApiStatus()> command = [&]()
+    {
+        DeviceManager::Get().TagMemory(memory, tag);
+        return Gna2StatusSuccess;
+    };
+    return ApiWrapper::ExecuteSafely(command);
+}

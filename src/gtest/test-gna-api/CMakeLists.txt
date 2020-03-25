@@ -38,9 +38,11 @@ add_executable(test-gna-api
   test-gna-api.h
   test-gna-device-api.cpp
   test-gna-device-api.h
-  test-model-export-legacy-sue.cpp
   test-gna-multithread.cpp
-  test-gna-multithread.h)
+  test-gna-multithread.h
+  test-model-export-legacy-sue.cpp
+  test-model-export-legacy-sue.h
+  test-model-export-tlv.cpp)
 
 target_include_directories(test-gna-api
   PRIVATE ${SRC_DIR} ${COMMON_DIR} ${API_DIR} ${API_IMPL_DIR} ${KERNEL_DIR} ${GNA_HW_LIB_INCLUDE_PATH})

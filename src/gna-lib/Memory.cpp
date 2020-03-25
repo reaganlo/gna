@@ -99,3 +99,13 @@ uint64_t Memory::GetId() const
 
     return id;
 }
+
+void Memory::SetTag(uint32_t newTag)
+{
+    tag = newTag;
+}
+
+uint32_t Memory::GetTag() const
+{
+    return tag;
+}

@@ -26,367 +26,125 @@
 // Enable safe functions compatibility
 #define __STDC_WANT_SECURE_LIB__ 1
 
+#include "test-model-export-legacy-sue.h"
+
 #include "common.h"
 #include "gna-api.h"
 #include "gna-api-dumper.h"
-#include "gna2-model-export-impl.h"
 
 #include "gna2-device-api.h"
-
-#include <gtest/gtest.h>
-#include <cstring>
 #include "gna2-memory-api.h"
 #include "gna2-model-api.h"
+#include "gna2-model-export-impl.h"
+
+#include <cstring>
+#include <gtest/gtest.h>
+#include <fstream>
+
+#include "HardwareModelNoMMU.h"
 
 
 #ifndef __STDC_LIB_EXT1__
 #define memcpy_s(_Destination, _DestinationSize, _Source, _SourceSize) memcpy(_Destination, _Source, _SourceSize)
 #endif
 
-class TestSimpleModel : public testing::Test
+void TestSimpleModel::FreeAndClose()
 {
-protected:
-    int16_t weights[8 * 16] = {                                          // sample weight matrix (8 rows, 16 cols)
-    -6, -2, -1, -1, -2,  9,  6,  5,  2,  4, -1,  5, -2, -4,  0,  9,  // in case of affine layer this is the left operand of matrix mul
-    -8,  8, -4,  6,  5,  3, -7, -9,  7,  0, -4, -1,  1,  7,  6, -6,  // in this sample the numbers are random and meaningless
-     2, -8,  6,  5, -1, -2,  7,  5, -1,  4,  8,  7, -9, -1,  7,  1,
-     0, -2,  1,  0,  6, -6,  7,  4, -6,  0,  3, -2,  1,  8, -6, -2,
-    -6, -3,  4, -2, -8, -6,  6,  5,  6, -9, -5, -2, -5, -8, -6, -2,
-    -7,  0,  6, -3, -1, -6,  4,  1, -4, -5, -3,  7,  9, -9,  9,  9,
-     0, -2,  6, -3,  5, -2, -1, -3, -5,  7,  6,  6, -8,  0, -4,  9,
-     2,  7, -8, -7,  8, -6, -6,  1,  7, -4, -4,  9, -6, -6,  5, -7
-    };
-    int16_t inputs[16 * 4] = {      // sample input matrix (16 rows, 4 cols), consists of 4 input vectors (grouping of 4 is used)
-        -5,  9, -7,  4,             // in case of affine layer this is the right operand of matrix mul
-         5, -4, -7,  4,             // in this sample the numbers are random and meaningless
-         0,  7,  1, -7,
-         1,  6,  7,  9,
-         2, -4,  9,  8,
-        -5, -1,  2,  9,
-        -8, -8,  8,  1,
-        -7,  2, -1, -1,
-        -9, -5, -8,  5,
-         0, -1,  3,  9,
-         0,  8,  1, -2,
-        -9,  8,  0, -7,
-        -9, -8, -1, -4,
-        -3, -7, -2,  3,
-        -8,  0,  1,  3,
-        -4, -6, -8, -2
-    };
-    int32_t biases[8] = {      // sample bias vector, will get added to each of the four output vectors
-         5,                    // in this sample the numbers are random and meaningless
-         4,
-        -2,
-         5,
-        -7,
-        -5,
-         4,
-        -1
-    };
+    EXPECT_EQ(GnaFree(memory), GNA_SUCCESS);
+    EXPECT_EQ(GnaDeviceClose(deviceIndex), GNA_SUCCESS);
+}
 
-    const uint8_t refAdlNoMmuLd[128] = {
-        0x00, 0x0A, 0x10, 0x00, 0x08, 0x00, 0x04, 0x01,     // 0x00
-        0x10, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00, 0x00,
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,     // 0x10
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-        0x02, 0x00, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00,     // 0x20
-        0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-        0x81, 0x10, 0x00, 0x00, 0x81, 0x11, 0x00, 0x00,     // 0x30
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,     // 0x40
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,     // 0x50
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,     // 0x60
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,     // 0x70
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, };
+void TestSimpleModel::FreeAndClose2()
+{
+    EXPECT_EQ(Gna2MemoryFree(memory), Gna2StatusSuccess);
+    EXPECT_EQ(Gna2DeviceClose(deviceIndex), Gna2StatusSuccess);
+}
 
-    void ExpectEqualToRefAdlNoMmuLd(const uint8_t* dump, uint32_t dumpSize) const;
+void TestSimpleModel::PrepareExportConfig(Gna2DeviceVersion deviceVersion)
+{
+    GNA_OK(Gna2ModelExportConfigCreate(AllocatorAlignedPage, &exportConfig));
+    GNA_OK(Gna2ModelExportConfigSetSource(exportConfig, 0, gnaModelId))
+    GNA_OK(Gna2ModelExportConfigSetTarget(exportConfig, deviceVersion));
+}
 
-    const int buf_size_weights = ALIGN64(sizeof(weights));
-    const int buf_size_inputs = ALIGN64(sizeof(inputs));
-    const int buf_size_biases = ALIGN64(sizeof(biases));
-    const int buf_size_outputs = ALIGN64(8 * 4 * 4);
-    const int buf_size_tmp_outputs = ALIGN64(8 * 4 * 4);
+void TestSimpleModel::ExportComponent(std::vector<char> & destination, Gna2DeviceVersion deviceVersion, Gna2ModelExportComponent component)
+{
+    PrepareExportConfig(deviceVersion);
 
-    static void * Allocator(uint32_t size)
+    void * ldNoMmu = nullptr;
+    uint32_t ldNoMmuSize = 0;
+
+    GNA_OK(Gna2ModelExport(exportConfig,
+        component,
+        &ldNoMmu, &ldNoMmuSize));
+    EXPECT_NE(ldNoMmu, nullptr);
+    destination.resize(ldNoMmuSize);
+    memcpy(destination.data(), static_cast<char*>(ldNoMmu), ldNoMmuSize);
+    Free(ldNoMmu);
+    GNA_OK(Gna2ModelExportConfigRelease(exportConfig));
+}
+
+void TestSimpleModel::ExportSueLegacyUsingGnaApi2(Gna2ModelSueCreekHeader& modelHeader, std::vector<char>& dump)
+{
+    ExportComponentAs(modelHeader, Gna2DeviceVersionEmbedded1_0, Gna2ModelExportComponentLegacySueCreekHeader);
+
+    ExportComponent(dump, Gna2DeviceVersionEmbedded1_0, Gna2ModelExportComponentLegacySueCreekDump);
+    EXPECT_EQ(dump.size(), expectedModelSize);
+}
+
+void TestSimpleModel::ExpectMemEqual(const uint8_t* dump, uint32_t dumpSize, const uint8_t* ref, uint32_t refSize)
+{
+    EXPECT_NE(dump, nullptr);
+    EXPECT_EQ(dumpSize, refSize);
+
+    for (uint32_t i = 0; i < dumpSize; i++)
     {
-        return _mm_malloc(size, 4096);
+        EXPECT_EQ(dump[i], ref[i]) << " Mismatch in mem at index: 0x" << std::hex << i << std::dec;
     }
-
-    static void Free(void * mem)
-    {
-        return _mm_free(mem);
-    }
-
-    const uint32_t expectedModelSize = 8512;
-    const uint32_t expectedHeaderSize = 64;
-
-    const uint32_t expected_headerHash = 0xef63a03e;
-    const uint32_t expected_modelHash = 0x93759a0d;
-    const uint32_t expected_fileHash = 0xbbea28e9;
-
-    // Based on
-    // Simple public domain implementation of the standard CRC32 checksum.
-    // source: http://home.thep.lu.se/~bjorn/crc/
-
-    static uint32_t crc32_for_byte(uint32_t r) {
-        for (int j = 0; j < 8; ++j)
-        {
-            r = ((r & 1) > 0 ? 0 : (uint32_t)0xEDB88320L) ^ r >> 1;
-        }
-        return r ^ (uint32_t)0xFF000000L;
-    }
-
-    static void crc32(const void *data, size_t n_bytes, uint32_t* crc) {
-        static uint32_t table[0x100];
-        if (*table == 0)
-        {
-            for (uint32_t i = 0; i < 0x100; ++i)
-            {
-                table[i] = crc32_for_byte(i);
-            }
-        }
-        for (size_t i = 0; i < n_bytes; ++i)
-        {
-            *crc = table[(uint8_t)*crc ^ ((uint8_t*)data)[i]] ^ *crc >> 8;
-        }
-    }
-
-    void CopyDataToGnaMem();
-    void SetupNnet();
-    intel_nnet_layer_t nnet_layer = {};
-    intel_nnet_type_t nnet = { 1,4, &nnet_layer };
-    intel_affine_layer_t affine_layer{};
-
-    Gna2Tensor inputTensor{ {2, {16,4}}, Gna2TensorModeDefault, {}, Gna2DataTypeInt16, nullptr };
-    Gna2Tensor outputTensor{ {2, {8,4}}, Gna2TensorModeDefault, {}, Gna2DataTypeInt32, nullptr };
-    Gna2Tensor weightTensor{ {2, {8,16}}, Gna2TensorModeDefault, {}, Gna2DataTypeInt16, nullptr };
-    Gna2Tensor biasTensor{ {1, {8}}, Gna2TensorModeDefault, {}, Gna2DataTypeInt32, nullptr };
-    static const uint32_t numberOfTensors = 4;
-    const Gna2Tensor* gnaOperands[numberOfTensors] = { &inputTensor, &outputTensor , &weightTensor , &biasTensor };
-
-    Gna2Operation gnaOperations = { Gna2OperationTypeFullyConnectedAffine,
-        gnaOperands, numberOfTensors,
-        nullptr,0 };
-
-    Gna2Model gnaModel{ 1, &gnaOperations };
-
-    void SetupGnaModel();
-    gna_device_id deviceIndex = 0;
-    uint32_t rw_buffer_size = 0;
-    void *memory = nullptr;
-private:
-    int16_t* gnamem_pinned_inputs = nullptr;
-    int16_t* gnamem_pinned_outputs = nullptr;
-    int32_t* gnamem_tmp_outputs_buffer = nullptr;
-    int16_t* gnamem_weights_buffer = nullptr;
-    int32_t* gnamem_biases_buffer = nullptr;
-};
-
-TEST_F(TestSimpleModel, exportSueLegacyTest)
-{
-    SetupNnet();
-
-    gna_model_id model_id;
-    auto status = GnaModelCreate(deviceIndex, &nnet, &model_id);
-    EXPECT_EQ(status, GNA_SUCCESS);
-
-    intel_gna_model_header model_header;
-    void* dumped_model = GnaModelDump(model_id, GNA_1_0_EMBEDDED, &model_header, &status, Allocator);
-    EXPECT_EQ(status, GNA_SUCCESS);
-    ASSERT_NE(dumped_model, nullptr);
-
-    model_header.rw_region_size = rw_buffer_size;
-
-    EXPECT_EQ(sizeof(intel_gna_model_header), expectedHeaderSize);
-    EXPECT_EQ(model_header.model_size, expectedModelSize);
-
-    uint32_t headerHash = 0;
-    crc32(&model_header, expectedHeaderSize, &headerHash);
-
-    uint32_t modelHash = 0;
-    crc32(dumped_model, expectedModelSize, &modelHash);
-
-    uint32_t fileHash = headerHash;
-    crc32(dumped_model, expectedModelSize, &fileHash);
-
-    EXPECT_EQ(expected_fileHash, fileHash);
-    EXPECT_EQ(expected_headerHash, headerHash);
-    EXPECT_EQ(expected_modelHash, modelHash);
-
-    Free(dumped_model);
-    status = GnaFree(memory);
-    status = GnaDeviceClose(deviceIndex);
-}
-
-TEST_F(TestSimpleModel, exportSueLegacyTestUsingApi2)
-{
-    SetupNnet();
-
-    gna_model_id model_id;
-    auto status = GnaModelCreate(deviceIndex, &nnet, &model_id);
-    EXPECT_EQ(status, GNA_SUCCESS);
-
-    uint32_t exportConfig;
-    auto status2 = Gna2ModelExportConfigCreate(Allocator, &exportConfig);
-    EXPECT_EQ(status2, Gna2StatusSuccess);
-    status2 = Gna2ModelExportConfigSetSource(exportConfig, deviceIndex, model_id);
-    EXPECT_EQ(status2, Gna2StatusSuccess);
-    status2 = Gna2ModelExportConfigSetTarget(exportConfig, Gna2DeviceVersionEmbedded1_0);
-    EXPECT_EQ(status2, Gna2StatusSuccess);
-
-    void * bufferLdHeader;
-    uint32_t bufferLdHeaderSize;
-    status2 = Gna2ModelExport(exportConfig,
-        Gna2ModelExportComponentLegacySueCreekHeader,
-        &bufferLdHeader, &bufferLdHeaderSize);
-
-    EXPECT_EQ(status2, Gna2StatusSuccess);
-    EXPECT_EQ(bufferLdHeaderSize, expectedHeaderSize);
-
-    auto modelHeader = *(reinterpret_cast<Gna2ModelSueCreekHeader*>(bufferLdHeader));
-    EXPECT_EQ(modelHeader.ModelSize, expectedModelSize);
-
-    void * bufferDump;
-    uint32_t bufferDumpSize;
-    status2 = Gna2ModelExport(exportConfig,
-        Gna2ModelExportComponentLegacySueCreekDump,
-        &bufferDump,
-        &bufferDumpSize);
-    EXPECT_EQ(status2, Gna2StatusSuccess);
-    EXPECT_NE(bufferDump, nullptr);
-    EXPECT_EQ(bufferDumpSize, expectedModelSize);
-
-    status2 = Gna2ModelExportConfigRelease(exportConfig);
-    EXPECT_EQ(status2, Gna2StatusSuccess);
-
-    modelHeader.RwRegionSize = rw_buffer_size;
-
-    uint32_t headerHash = 0;
-    crc32(&modelHeader, expectedHeaderSize, &headerHash);
-
-    uint32_t modelHash = 0;
-    crc32(bufferDump, expectedModelSize, &modelHash);
-
-    uint32_t fileHash = headerHash;
-    crc32(bufferDump, expectedModelSize, &fileHash);
-
-    EXPECT_EQ(expected_fileHash, fileHash);
-    EXPECT_EQ(expected_headerHash, headerHash);
-    EXPECT_EQ(expected_modelHash, modelHash);
-
-    Free(bufferLdHeader);
-    Free(bufferDump);
-    status = GnaFree(memory);
-    EXPECT_EQ(status, Gna2StatusSuccess);
-    status = GnaDeviceClose(deviceIndex);
-    EXPECT_EQ(status, Gna2StatusSuccess);
-}
-
-TEST_F(TestSimpleModel, exportNoMmu)
-{
-    SetupNnet();
-
-    gna_model_id model_id;
-    auto status = GnaModelCreate(deviceIndex, &nnet, &model_id);
-    EXPECT_EQ(status, GNA_SUCCESS);
-
-    uint32_t exportConfig;
-    auto status2 = Gna2ModelExportConfigCreate(Allocator, &exportConfig);
-    EXPECT_EQ(status2, Gna2StatusSuccess);
-    status2 = Gna2ModelExportConfigSetSource(exportConfig, deviceIndex, model_id);
-    EXPECT_EQ(status2, Gna2StatusSuccess);
-    status2 = Gna2ModelExportConfigSetTarget(exportConfig, Gna2DeviceVersionEmbedded3_0);
-    EXPECT_EQ(status2, Gna2StatusSuccess);
-
-    void * bufferLd;
-    uint32_t bufferLdSize;
-    status2 = Gna2ModelExport(exportConfig,
-        Gna2ModelExportComponentLayerDescriptors,
-        &bufferLd, &bufferLdSize);
-    EXPECT_EQ(status2, Gna2StatusSuccess);
-
-    ExpectEqualToRefAdlNoMmuLd(static_cast<uint8_t*>(bufferLd), bufferLdSize);
-
-    status2 = Gna2ModelExportConfigRelease(exportConfig);
-    EXPECT_EQ(status2, Gna2StatusSuccess);
-
-    status = GnaFree(memory);
-    EXPECT_EQ(status, Gna2StatusSuccess);
-    status = GnaDeviceClose(deviceIndex);
-    EXPECT_EQ(status, Gna2StatusSuccess);
-}
-
-TEST_F(TestSimpleModel, exportNoMmuApi2)
-{
-    SetupGnaModel();
-
-    uint32_t model_id;
-    auto status = Gna2ModelCreate(deviceIndex, &gnaModel, &model_id);
-    EXPECT_EQ(status, Gna2StatusSuccess);
-
-    uint32_t exportConfig;
-    auto status2 = Gna2ModelExportConfigCreate(Allocator, &exportConfig);
-    EXPECT_EQ(status2, Gna2StatusSuccess);
-    status2 = Gna2ModelExportConfigSetSource(exportConfig, deviceIndex, model_id);
-    EXPECT_EQ(status2, Gna2StatusSuccess);
-    status2 = Gna2ModelExportConfigSetTarget(exportConfig, Gna2DeviceVersionEmbedded3_0);
-    EXPECT_EQ(status2, Gna2StatusSuccess);
-
-    void * bufferLd;
-    uint32_t bufferLdSize;
-    status2 = Gna2ModelExport(exportConfig,
-        Gna2ModelExportComponentLayerDescriptors,
-        &bufferLd, &bufferLdSize);
-    EXPECT_EQ(status2, Gna2StatusSuccess);
-
-    ExpectEqualToRefAdlNoMmuLd(static_cast<uint8_t*>(bufferLd), bufferLdSize);
-
-    status2 = Gna2ModelExportConfigRelease(exportConfig);
-    EXPECT_EQ(status2, Gna2StatusSuccess);
-
-    status = Gna2MemoryFree(memory);
-    EXPECT_EQ(status, Gna2StatusSuccess);
-    status = Gna2DeviceClose(deviceIndex);
-    EXPECT_EQ(status, Gna2StatusSuccess);
 }
 
 void TestSimpleModel::ExpectEqualToRefAdlNoMmuLd(const uint8_t* dump, uint32_t dumpSize) const
 {
-    EXPECT_NE(dump, nullptr);
-    EXPECT_EQ(dumpSize, sizeof(refAdlNoMmuLd));
+    ExpectMemEqual(dump, dumpSize, refAdlNoMmuLd, sizeof(refAdlNoMmuLd));
+}
 
-    for (uint32_t i = 0; i < dumpSize; i++)
+void TestSimpleModel::SetupGnaMemPointers(const bool setupPwl, const bool setupInputsOutputs)
+{
+    if (setupInputsOutputs)
     {
-        EXPECT_EQ(dump[i], refAdlNoMmuLd[i]) << " Mismatch in LD at index: 0x" <<std::hex << i <<std::dec;
+        uint8_t *rw_buffers = (uint8_t*)memory;
+        gnamem_pinned_inputs = (int16_t*)rw_buffers;
+        rw_buffers += buf_size_inputs;
+        gnamem_pinned_outputs = (int16_t*)rw_buffers;
+        rw_buffers += buf_size_outputs;
+        gnamem_tmp_outputs_buffer = (int32_t*)rw_buffers;
+    }
+
+    uint8_t *model_memory = (uint8_t*)memory;
+    model_memory += rw_buffer_size;
+    gnamem_weights_buffer = (int16_t*)model_memory;
+    model_memory += buf_size_weights;
+    gnamem_biases_buffer = (int32_t*)model_memory;
+    if (setupPwl)
+    {
+        model_memory += buf_size_biases;
+        gnamem_pwl_buffer = (Gna2PwlSegment*)model_memory;
     }
 }
 
-void TestSimpleModel::CopyDataToGnaMem()
+void TestSimpleModel::CopyDataToGnaMem(const bool copyPwl, const bool copyInputs)
 {
-    uint8_t *model_memory = (uint8_t*)memory;
-
-    uint8_t *rw_buffers = model_memory;
-
-    gnamem_pinned_inputs = (int16_t*)rw_buffers;
-    memcpy_s(gnamem_pinned_inputs, buf_size_inputs, inputs, sizeof(inputs));
-    rw_buffers += buf_size_inputs;
-
-    gnamem_pinned_outputs = (int16_t*)rw_buffers;
-    rw_buffers += buf_size_outputs;
-
-    gnamem_tmp_outputs_buffer = (int32_t*)rw_buffers;
-
-    model_memory += rw_buffer_size;
-    gnamem_weights_buffer = (int16_t*)model_memory;
+    if (copyInputs)
+    {
+        memcpy_s(gnamem_pinned_inputs, buf_size_inputs, inputs, sizeof(inputs));
+    }
     memcpy_s(gnamem_weights_buffer, buf_size_weights, weights, sizeof(weights));
-    model_memory += buf_size_weights;
-
-    gnamem_biases_buffer = (int32_t*)model_memory;
     memcpy_s(gnamem_biases_buffer, buf_size_biases, biases, sizeof(biases));
+
+    if (copyPwl)
+    {
+        memcpy_s(gnamem_pwl_buffer, buf_size_identity_pwl, identityPwl, sizeof(identityPwl));
+    }
 }
 
 void TestSimpleModel::SetupNnet()
@@ -407,7 +165,9 @@ void TestSimpleModel::SetupNnet()
     EXPECT_EQ(GNA_SUCCESS, status);
     EXPECT_NE(memory, nullptr);
 
-    CopyDataToGnaMem();
+    SetupGnaMemPointers(false, true);
+
+    CopyDataToGnaMem(false, true);
 
     intel_affine_func_t affine_func;
     affine_func.nBytesPerWeight = GNA_INT16;
@@ -448,19 +208,162 @@ void TestSimpleModel::SetupGnaModel()
     status = Gna2DeviceOpen(deviceIndex);
 
     EXPECT_EQ(Gna2StatusSuccess, status);
+
     rw_buffer_size = ALIGN(buf_size_inputs + buf_size_outputs + buf_size_tmp_outputs, 0x1000);
+    if(minimizeRw)
+    {
+        rw_buffer_size = buf_size_inputs + buf_size_outputs;
+    }
+    if(separateInputAndOutput)
+    {
+        rw_buffer_size = 0;
+        status = Gna2MemoryAlloc(buf_size_inputs, &gnamem_pinned_inputs_size, reinterpret_cast<void**>(&gnamem_pinned_inputs));
+        EXPECT_EQ(Gna2StatusSuccess, status);
+        status = Gna2MemoryAlloc(buf_size_outputs, &gnamem_pinned_outputs_size, reinterpret_cast<void**>(&gnamem_pinned_outputs));
+        EXPECT_EQ(Gna2StatusSuccess, status);
+        status = Gna2MemorySetTag(gnamem_pinned_inputs, GNA::HardwareModelNoMMU::MemoryTagInput);
+        EXPECT_EQ(Gna2StatusSuccess, status);
+        status = Gna2MemorySetTag(gnamem_pinned_outputs, GNA::HardwareModelNoMMU::MemoryTagOutput);
+        EXPECT_EQ(Gna2StatusSuccess, status);
+    }
     uint32_t bytes_requested = rw_buffer_size + buf_size_weights + buf_size_biases;
-
-    uint32_t bytes_granted;
-
-    status = Gna2MemoryAlloc(bytes_requested, &bytes_granted, &memory);
+    if(enablePwl)
+    {
+        bytes_requested += buf_size_identity_pwl;
+    }
+    status = Gna2MemoryAlloc(bytes_requested, &memorySize, &memory);
     EXPECT_EQ(Gna2StatusSuccess, status);
     EXPECT_NE(memory, nullptr);
+    const bool copyInputs = !minimizeRw;
+    const bool setupInOut = !separateInputAndOutput;
 
-    CopyDataToGnaMem();
+    SetupGnaMemPointers(enablePwl, setupInOut);
+    CopyDataToGnaMem(enablePwl, copyInputs);
 
     weightTensor.Data = gnamem_weights_buffer;
     biasTensor.Data = gnamem_biases_buffer;
     inputTensor.Data = gnamem_pinned_inputs;
     outputTensor.Data = gnamem_pinned_outputs;
+    if(enablePwl)
+    {
+        optionalPwlTensor.Data = gnamem_pwl_buffer;
+        gnaOperations.NumberOfOperands = 5;
+    }
+    CreateGnaModel();
+}
+
+void TestSimpleModel::CreateGnaModel()
+{
+    const auto status = Gna2ModelCreate(deviceIndex, &gnaModel, &gnaModelId);
+    EXPECT_EQ(status, Gna2StatusSuccess);
+}
+
+TEST_F(TestSimpleModel, exportSueLegacyTest)
+{
+    SetupNnet();
+
+    gna_model_id model_id;
+    auto status = GnaModelCreate(deviceIndex, &nnet, &model_id);
+    EXPECT_EQ(status, GNA_SUCCESS);
+
+    intel_gna_model_header model_header;
+    void* dumped_model = GnaModelDump(model_id, GNA_1_0_EMBEDDED, &model_header, &status, AllocatorAlignedPage);
+    EXPECT_EQ(status, GNA_SUCCESS);
+    ASSERT_NE(dumped_model, nullptr);
+
+    model_header.rw_region_size = rw_buffer_size;
+
+    EXPECT_EQ(sizeof(intel_gna_model_header), expectedHeaderSize);
+    EXPECT_EQ(model_header.model_size, expectedModelSize);
+
+    uint32_t headerHash = 0;
+    crc32(&model_header, expectedHeaderSize, &headerHash);
+
+    uint32_t modelHash = 0;
+    crc32(dumped_model, expectedModelSize, &modelHash);
+
+    uint32_t fileHash = headerHash;
+    crc32(dumped_model, expectedModelSize, &fileHash);
+
+    EXPECT_EQ(expected_fileHash, fileHash);
+    EXPECT_EQ(expected_headerHash, headerHash);
+    EXPECT_EQ(expected_modelHash, modelHash);
+
+    Free(dumped_model);
+    FreeAndClose();
+}
+
+TEST_F(TestSimpleModel, exportSueLegacyTestUsingApi2)
+{
+    SetupNnet();
+
+    auto status = GnaModelCreate(deviceIndex, &nnet, &gnaModelId);
+    EXPECT_EQ(status, GNA_SUCCESS);
+
+    Gna2ModelSueCreekHeader modelHeader;
+    std::vector<char> dump;
+    ExportSueLegacyUsingGnaApi2(modelHeader, dump);
+    EXPECT_EQ(modelHeader.ModelSize, expectedModelSize);
+
+    modelHeader.RwRegionSize = rw_buffer_size;
+
+    uint32_t headerHash = 0;
+    crc32(&modelHeader, expectedHeaderSize, &headerHash);
+
+    uint32_t modelHash = 0;
+    crc32(dump.data(), expectedModelSize, &modelHash);
+
+    uint32_t fileHash = headerHash;
+    crc32(dump.data(), expectedModelSize, &fileHash);
+
+    EXPECT_EQ(expected_fileHash, fileHash);
+    EXPECT_EQ(expected_headerHash, headerHash);
+    EXPECT_EQ(expected_modelHash, modelHash);
+
+    FreeAndClose();
+}
+
+TEST_F(TestSimpleModel, exportNoMmu)
+{
+    SetupNnet();
+
+    auto status = GnaModelCreate(deviceIndex, &nnet, &gnaModelId);
+    EXPECT_EQ(status, GNA_SUCCESS);
+
+    PrepareExportConfig(Gna2DeviceVersionEmbedded3_0);
+
+    void * bufferLd;
+    uint32_t bufferLdSize;
+    auto status2 = Gna2ModelExport(exportConfig,
+        Gna2ModelExportComponentLayerDescriptors,
+        &bufferLd, &bufferLdSize);
+    EXPECT_EQ(status2, Gna2StatusSuccess);
+
+    ExpectEqualToRefAdlNoMmuLd(static_cast<uint8_t*>(bufferLd), bufferLdSize);
+
+    status2 = Gna2ModelExportConfigRelease(exportConfig);
+    EXPECT_EQ(status2, Gna2StatusSuccess);
+
+    FreeAndClose();
+}
+
+TEST_F(TestSimpleModel, exportNoMmuApi2)
+{
+    SetupGnaModel();
+
+    PrepareExportConfig(Gna2DeviceVersionEmbedded3_0);
+
+    void * bufferLd;
+    uint32_t bufferLdSize;
+    auto status2 = Gna2ModelExport(exportConfig,
+        Gna2ModelExportComponentLayerDescriptors,
+        &bufferLd, &bufferLdSize);
+    EXPECT_EQ(status2, Gna2StatusSuccess);
+
+    ExpectEqualToRefAdlNoMmuLd(static_cast<uint8_t*>(bufferLd), bufferLdSize);
+
+    status2 = Gna2ModelExportConfigRelease(exportConfig);
+    EXPECT_EQ(status2, Gna2StatusSuccess);
+
+    FreeAndClose2();
 }

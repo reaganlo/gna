@@ -66,7 +66,7 @@ public:
     Device* TryGetDeviceForModel(uint32_t modelId);
 
     void AllocateMemory(uint32_t requestedSize, uint32_t * sizeGranted, void **memoryAddress);
-    std::pair<bool, std::vector<std::unique_ptr<Memory>>::const_iterator> HasMemory(void * buffer) const;
+    std::pair<bool, std::vector<std::unique_ptr<Memory>>::iterator> FindMemory(void * buffer);
     void FreeMemory(void * memory);
 
     void MapMemoryToAll(Memory& memoryObject);
@@ -79,6 +79,7 @@ public:
     Device& GetDeviceForRequestId(uint32_t requestId);
 
     const std::vector<std::unique_ptr<Memory>>& GetAllAllocated() const;
+    void TagMemory(void* memory, uint32_t tag);
 
     static constexpr uint32_t DefaultThreadCount = 1;
 

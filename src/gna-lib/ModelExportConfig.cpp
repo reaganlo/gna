@@ -73,6 +73,7 @@ void ModelExportConfig::Export(Gna2ModelExportComponent componentType, void ** e
 
     if (componentType == Gna2ModelExportComponentLayerDescriptors)
     {
+        Expect::True(targetDeviceVersion == Gna2DeviceVersionEmbedded3_0, Gna2StatusAccelerationModeNotSupported);
         device.DumpLdNoMMu(sourceModelId, allocator, *exportBuffer, *exportBufferSize);
         return;
     }

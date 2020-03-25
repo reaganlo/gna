@@ -64,6 +64,24 @@ GNA2_API enum Gna2Status Gna2MemoryAlloc(
 GNA2_API enum Gna2Status Gna2MemoryFree(
     void * memory);
 
+/**
+ Adds special designation for the memory buffer.
+ The buffer can be one of the previously obtained with Gna2MemoryAlloc.
+ @note
+ - This is for embedded model export only.
+ - In case of some doubts, probably should not use this function.
+
+ @param memory Starting address of the memory buffer to tag.
+ @param tag Special purpose tag. Use zero to reset to default.
+ @return Status of the operation.
+    @retval Gna2StatusSuccess On success.
+    @retval Gna2StatusMemoryBufferInvalid If memory address is invalid.
+ */
+GNA2_API enum Gna2Status Gna2MemorySetTag(
+    void * memory,
+    uint32_t tag);
+
+
 #endif // __GNA2_MEMORY_API_H
 
 /**
