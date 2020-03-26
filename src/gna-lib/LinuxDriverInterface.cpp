@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2018-2019 Intel Corporation.
+ Copyright 2018-2020 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -56,11 +56,11 @@ using namespace GNA;
 
 bool LinuxDriverInterface::OpenDevice(uint32_t deviceIndex)
 {
-    struct gna_getparam params[] =
+    union gna_parameter params[] =
     {
-        { GNA_PARAM_DEVICE_TYPE, 0 },
-        { GNA_PARAM_INPUT_BUFFER_S, 0 },
-        { GNA_PARAM_RECOVERY_TIMEOUT, 0 },
+        { GNA_PARAM_DEVICE_TYPE },
+        { GNA_PARAM_INPUT_BUFFER_S },
+        { GNA_PARAM_RECOVERY_TIMEOUT },
     };
     constexpr size_t paramsNum = sizeof(params)/sizeof(params[0]);
 
@@ -73,9 +73,9 @@ bool LinuxDriverInterface::OpenDevice(uint32_t deviceIndex)
 
     try
     {
-        driverCapabilities.deviceVersion = static_cast<DeviceVersion>(params[0].value);
-        driverCapabilities.recoveryTimeout = static_cast<uint32_t>(params[2].value);
-        driverCapabilities.hwInBuffSize = static_cast<uint32_t>(params[1].value);
+        driverCapabilities.deviceVersion = static_cast<DeviceVersion>(params[0].out.value);
+        driverCapabilities.recoveryTimeout = static_cast<uint32_t>(params[2].out.value);
+        driverCapabilities.hwInBuffSize = static_cast<uint32_t>(params[1].out.value);
     }
     catch(std::out_of_range&)
     {
@@ -95,22 +95,22 @@ LinuxDriverInterface::~LinuxDriverInterface()
 
 uint64_t LinuxDriverInterface::MemoryMap(void *memory, uint32_t memorySize)
 {
-    struct gna_userptr userptr;
+    union gna_memory_map memory_map;
 
-    userptr.user_address = reinterpret_cast<uint64_t>(memory);
-    userptr.user_size = memorySize;
+    memory_map.in.address = reinterpret_cast<uint64_t>(memory);
+    memory_map.in.size = memorySize;
 
-    if(ioctl(gnaFileDescriptor, GNA_IOCTL_USERPTR, &userptr) != 0)
+    if(ioctl(gnaFileDescriptor, GNA_IOCTL_MEMORY_MAP, &memory_map) != 0)
     {
         throw GnaException {Gna2StatusDeviceOutgoingCommunicationError};
     }
 
-    return userptr.memory_id;
+    return memory_map.out.memory_id;
 }
 
 void LinuxDriverInterface::MemoryUnmap(uint64_t memoryId)
 {
-    if(ioctl(gnaFileDescriptor, GNA_IOCTL_FREE, memoryId) != 0)
+    if(ioctl(gnaFileDescriptor, GNA_IOCTL_MEMORY_UNMAP, memoryId) != 0)
     {
         throw GnaException {Gna2StatusDeviceOutgoingCommunicationError};
     }
@@ -125,19 +125,21 @@ RequestResult LinuxDriverInterface::Submit(HardwareRequest& hardwareRequest,
     // TODO:kj:3: add working optimization mechanism to reduce recalculation for same request config
     createRequestDescriptor(hardwareRequest);
 
-    auto scoreConfig = reinterpret_cast<struct gna_score_cfg *>(hardwareRequest.CalculationData.get());
+    gna_compute computeArgs;
+    computeArgs.in.config = *reinterpret_cast<struct gna_compute_cfg *>(hardwareRequest.CalculationData.get());
+    auto computeConfig = &computeArgs.in.config;
 
-    scoreConfig->ctrl_flags.gna_mode = hardwareRequest.Mode == xNN ? 1 : 0;
-    scoreConfig->layer_count = hardwareRequest.LayerCount;
+    computeConfig->gna_mode = hardwareRequest.Mode == xNN ? GNA_MODE_XNN : GNA_MODE_GMM;
+    computeConfig->layer_count = hardwareRequest.LayerCount;
 
     if(xNN == hardwareRequest.Mode)
     {
-        scoreConfig->layer_base = hardwareRequest.LayerBase;
+        computeConfig->layer_base = hardwareRequest.LayerBase;
     }
     else if(GMM == hardwareRequest.Mode)
     {
-        scoreConfig->layer_base = hardwareRequest.GmmOffset;
-        scoreConfig->ctrl_flags.active_list_on = hardwareRequest.GmmModeActiveListOn ? 1 : 0;
+        computeConfig->layer_base = hardwareRequest.GmmOffset;
+        computeConfig->active_list_on = hardwareRequest.GmmModeActiveListOn ? 1 : 0;
     }
     else
     {
@@ -146,36 +148,37 @@ RequestResult LinuxDriverInterface::Submit(HardwareRequest& hardwareRequest,
 
     profiler->Measure(Gna2InstrumentationPointLibDeviceRequestReady);
 
-    ret = ioctl(gnaFileDescriptor, GNA_IOCTL_SCORE, scoreConfig);
+    ret = ioctl(gnaFileDescriptor, GNA_IOCTL_COMPUTE, &computeArgs);
     if (ret == -1)
     {
         throw GnaException { Gna2StatusDeviceOutgoingCommunicationError };
     }
 
     gna_wait wait_data = {};
-    wait_data.request_id = scoreConfig->request_id;
-    wait_data.timeout = (driverCapabilities.recoveryTimeout + 1) * 1000;
+    wait_data.in.request_id = computeArgs.out.request_id;
+    wait_data.in.timeout = (driverCapabilities.recoveryTimeout + 1) * 1000;
 
     profiler->Measure(Gna2InstrumentationPointLibDeviceRequestSent);
     ret = ioctl(gnaFileDescriptor, GNA_IOCTL_WAIT, &wait_data);
     profiler->Measure(Gna2InstrumentationPointLibDeviceRequestCompleted);
     if(ret == 0)
     {
-        result.status = ((wait_data.hw_status & GNA_STS_SATURATE) != 0)
+        result.status = ((wait_data.out.hw_status & GNA_STS_SATURATE) != 0)
             ? Gna2StatusWarningArithmeticSaturation
             : Gna2StatusSuccess;
-        /*result.driverPerf.startHW = wait_data.drv_perf.start_hw;
-        result.driverPerf.scoreHW = wait_data.drv_perf.score_hw;
-        result.driverPerf.intProc = wait_data.drv_perf.intr_proc;*/
-        result.hardwarePerf.total = wait_data.hw_perf.total;
-        result.hardwarePerf.stall = wait_data.hw_perf.stall;
+        result.driverPerf.Preprocessing = wait_data.out.drv_perf.pre_processing;
+        result.driverPerf.Processing = wait_data.out.drv_perf.processing;
+        result.driverPerf.DeviceRequestCompleted = wait_data.out.drv_perf.hw_completed;
+        result.driverPerf.Completion = wait_data.out.drv_perf.completion;
+        result.hardwarePerf.total = wait_data.out.hw_perf.total;
+        result.hardwarePerf.stall = wait_data.out.hw_perf.stall;
     }
     else
     {
         switch(errno)
         {
         case EIO:
-            result.status = parseHwStatus(static_cast<uint32_t>(wait_data.hw_status));
+            result.status = parseHwStatus(static_cast<uint32_t>(wait_data.out.hw_status));
             break;
         case EBUSY:
             result.status = Gna2StatusWarningDeviceBusy;
@@ -195,30 +198,30 @@ RequestResult LinuxDriverInterface::Submit(HardwareRequest& hardwareRequest,
 void LinuxDriverInterface::createRequestDescriptor(HardwareRequest& hardwareRequest) const
 {
     auto& scoreConfigSize = hardwareRequest.CalculationSize;
-    scoreConfigSize = sizeof(struct gna_score_cfg);
+    scoreConfigSize = sizeof(struct gna_compute_cfg);
 
     for (const auto &buffer : hardwareRequest.DriverMemoryObjects)
     {
         scoreConfigSize += sizeof(struct gna_buffer) +
-            buffer.Patches.size() * sizeof(struct gna_patch);
+            buffer.Patches.size() * sizeof(struct gna_memory_patch);
     }
 
     scoreConfigSize = RoundUp(scoreConfigSize, sizeof(uint64_t));
     hardwareRequest.CalculationData.reset(new uint8_t[scoreConfigSize]);
 
     uint8_t *calculationData = static_cast<uint8_t *>(hardwareRequest.CalculationData.get());
-    auto scoreConfig = reinterpret_cast<struct gna_score_cfg *>(
+    auto computeConfig = reinterpret_cast<struct gna_compute_cfg *>(
                         hardwareRequest.CalculationData.get());
-    memset(scoreConfig, 0, scoreConfigSize);
-    scoreConfig->ctrl_flags.hw_perf_encoding = hardwareRequest.HwPerfEncoding;
+    memset(computeConfig, 0, scoreConfigSize);
+    computeConfig->hw_perf_encoding = hardwareRequest.HwPerfEncoding;
 
-    scoreConfig->buffers_ptr = reinterpret_cast<uintptr_t>(
-                                calculationData + sizeof(struct gna_score_cfg));
-    scoreConfig->buffer_count = hardwareRequest.DriverMemoryObjects.size();
+    computeConfig->buffers_ptr = reinterpret_cast<uintptr_t>(
+                                calculationData + sizeof(struct gna_compute_cfg));
+    computeConfig->buffer_count = hardwareRequest.DriverMemoryObjects.size();
 
-    auto buffer = reinterpret_cast<struct gna_buffer *>(scoreConfig->buffers_ptr);
-    auto patch = reinterpret_cast<struct gna_patch *>(scoreConfig->buffers_ptr +
-                    scoreConfig->buffer_count * sizeof(struct gna_buffer));
+    auto buffer = reinterpret_cast<struct gna_buffer *>(computeConfig->buffers_ptr);
+    auto patch = reinterpret_cast<struct gna_memory_patch *>(computeConfig->buffers_ptr +
+                    computeConfig->buffer_count * sizeof(struct gna_buffer));
 
     for (const auto &driverBuffer : hardwareRequest.DriverMemoryObjects)
     {
@@ -268,7 +271,7 @@ Gna2Status LinuxDriverInterface::parseHwStatus(uint32_t hwStatus) const
     return Gna2StatusDeviceCriticalFailure;
 }
 
-int LinuxDriverInterface::discoverDevice(uint32_t deviceIndex, gna_getparam *params, size_t paramsNum)
+int LinuxDriverInterface::discoverDevice(uint32_t deviceIndex, gna_parameter *params, size_t paramsNum)
 {
     int fd = -1;
     uint32_t found = 0;
@@ -285,7 +288,7 @@ int LinuxDriverInterface::discoverDevice(uint32_t deviceIndex, gna_getparam *par
         bool paramsValid = true;
         for (size_t p = 0; p < paramsNum && paramsValid; p++)
         {
-            paramsValid &= ioctl(fd, GNA_IOCTL_GETPARAM, &params[p]) == 0;
+            paramsValid &= ioctl(fd, GNA_IOCTL_PARAM_GET, &params[p]) == 0;
         }
         if (paramsValid && found++ == deviceIndex)
         {

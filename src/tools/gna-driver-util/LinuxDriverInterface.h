@@ -56,7 +56,7 @@ public:
     RequestResult Submit(HardwareRequest& hardwareRequest,
         const GnaUtilConfig& file) const override;
 
-    int discover(uint32_t deviceIndex, gna_getparam *params, size_t paramsNum);
+    int discover(uint32_t deviceIndex, gna_parameter *params, size_t paramsNum);
     bool discoverDevice(uint32_t deviceIndex) override;
 
 protected:

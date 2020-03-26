@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2018 Intel Corporation.
+ Copyright 2018-2020 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -138,7 +138,7 @@ public:
     std::vector<DriverBuffer> DriverMemoryObjects;
 
     /* Driver specific request data*/
-    std::unique_ptr<uint8_t[]> CalculationData = nullptr;
+    std::unique_ptr<uint8_t[]> CalculationData;
     size_t CalculationSize;
 
     /* Hardware request ready for driver submition indicator */

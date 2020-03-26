@@ -1,5 +1,5 @@
 /*
-    Copyright 2019 Intel Corporation.
+    Copyright 2019-2020 Intel Corporation.
     This software and the related documents are Intel copyrighted materials,
     and your use of them is governed by the express license under which they
     were provided to you (Intel OBL Software License Agreement (OEM/IHV/ISV
@@ -12,13 +12,11 @@
     stated in the License.
 */
 
+#pragma once
+
 #if defined __GNUC__
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wpedantic"
-#endif
-
-#ifndef __user
-#define __user
 #endif
 
 #include "gna.h"

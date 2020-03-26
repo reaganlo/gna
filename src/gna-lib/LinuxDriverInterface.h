@@ -31,7 +31,7 @@
 
 #include <cstdint>
 
-struct gna_getparam;
+union gna_parameter;
 
 namespace GNA
 {
@@ -62,7 +62,7 @@ protected:
 private:
     LinuxDriverInterface(const LinuxDriverInterface &) = delete;
     LinuxDriverInterface& operator=(const LinuxDriverInterface&) = delete;
-    int discoverDevice(uint32_t deviceIndex, gna_getparam *params, size_t paramsNum);
+    int discoverDevice(uint32_t deviceIndex, gna_parameter *params, size_t paramsNum);
 
     int gnaFileDescriptor = -1;
 };

@@ -81,11 +81,11 @@ std::string LinuxGnaSelfTestHardwareStatus::devfsGnaNode(uint8_t range)
 {
     int fd;
     std::string found;
-    struct gna_getparam params[3] =
+    union gna_parameter params[3] =
     {
-        { GNA_PARAM_DEVICE_ID, 0 },
-        { GNA_PARAM_INPUT_BUFFER_S , 0 },
-        { GNA_PARAM_RECOVERY_TIMEOUT, 0 },
+        { GNA_PARAM_DEVICE_ID },
+        { GNA_PARAM_INPUT_BUFFER_S },
+        { GNA_PARAM_RECOVERY_TIMEOUT },
     };
 
     for(uint8_t i = 0; i < range; i++)
@@ -96,11 +96,11 @@ std::string LinuxGnaSelfTestHardwareStatus::devfsGnaNode(uint8_t range)
         {
             continue;
         }
-        if(ioctl(fd, GNA_IOCTL_GETPARAM, &params[0]) == 0
-            && ioctl(fd, GNA_IOCTL_GETPARAM, &params[1]) == 0
-            && ioctl(fd, GNA_IOCTL_GETPARAM, &params[2]) == 0)
+        if(ioctl(fd, GNA_IOCTL_PARAM_GET, &params[0]) == 0
+            && ioctl(fd, GNA_IOCTL_PARAM_GET, &params[1]) == 0
+            && ioctl(fd, GNA_IOCTL_PARAM_GET, &params[2]) == 0)
         {
-            logger.Verbose("INFO GNA device of type = %llX found\n", params[0].value);
+            logger.Verbose("INFO GNA device of type = %llX found\n", params[0].out.value);
             found = name;
             close(fd);
             break;
