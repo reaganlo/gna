@@ -50,6 +50,9 @@ class RequestProfiler
 {
 public:
     static const uint32_t MAX_INSTRUMENTATION_POINTS = 15;
+    static const uint64_t MICROSECOND_MULTIPLIER = 1000000;
+    static const uint64_t MILLISECOND_MULTIPLIER = 1000;
+
     static std::unique_ptr<RequestProfiler> Create(ProfilerConfiguration* config);
 
     RequestProfiler(bool initialize = true);
@@ -60,6 +63,9 @@ public:
     virtual void Measure(Gna2InstrumentationPoint point) = 0;
 
     virtual void SaveResults(ProfilerConfiguration* config);
+
+    static uint64_t ConvertElapsedTime(uint64_t frequency, uint64_t multiplier,
+        uint64_t start, uint64_t stop);
 protected:
 
     std::vector<uint64_t> Points;

@@ -106,13 +106,15 @@ private:
     WindowsDriverInterface(const WindowsDriverInterface &) = delete;
     WindowsDriverInterface& operator=(const WindowsDriverInterface&) = delete;
 
-    inline void printLastError(DWORD error) const;
+    inline static void printLastError(DWORD error);
 
     void wait(LPOVERLAPPED const ioctl, const DWORD timeout) const;
 
-    void checkStatus(BOOL ioResult) const;
+    static void checkStatus(BOOL ioResult);
 
     void getDeviceCapabilities();
+
+    static uint64_t getPerfCounterFrequency();
 
     static std::string discoverDevice(uint32_t deviceIndex);
 

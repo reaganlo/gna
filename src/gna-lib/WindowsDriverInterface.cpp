@@ -231,6 +231,8 @@ RequestResult WindowsDriverInterface::Submit(HardwareRequest& hardwareRequest,
             &output->hardwareInstrumentation, sizeof(GNA_PERF_HW));
         memcpy_s(&result.driverPerf, sizeof(result.driverPerf),
             &output->driverInstrumentation, sizeof(GNA_DRIVER_INSTRUMENTATION));
+        convertPerfResultUnit(result.driverPerf, hardwareRequest.GetProfilerConfiguration()->Unit);
+
         result.status = (status & STS_SATURATION_FLAG)
             ? Gna2StatusWarningArithmeticSaturation : Gna2StatusSuccess;
         break;
@@ -333,6 +335,15 @@ void WindowsDriverInterface::getDeviceCapabilities()
     driverCapabilities.hwInBuffSize = static_cast<uint32_t>(values[1]);
     driverCapabilities.recoveryTimeout = static_cast<uint32_t>(values[2]);
     recoveryTimeout = (driverCapabilities.recoveryTimeout + 1 ) * 1000;
+    driverCapabilities.perfCounterFrequency = getPerfCounterFrequency();
+}
+
+uint64_t WindowsDriverInterface::getPerfCounterFrequency()
+{
+    uint64_t frequency = 0;
+    QueryPerformanceFrequency(
+        reinterpret_cast<LARGE_INTEGER*>(&frequency));
+    return frequency;
 }
 
 template<class T>
@@ -427,7 +438,7 @@ void WindowsDriverInterface::wait(LPOVERLAPPED const ioctl, const DWORD timeout)
     // io completed successfully
 }
 
-void WindowsDriverInterface::checkStatus(BOOL ioResult) const
+void WindowsDriverInterface::checkStatus(BOOL ioResult)
 {
     auto lastError = GetLastError();
     if (ioResult == 0 && ERROR_IO_PENDING != lastError)
@@ -439,7 +450,7 @@ void WindowsDriverInterface::checkStatus(BOOL ioResult) const
     }
 }
 
-void WindowsDriverInterface::printLastError(DWORD error) const
+void WindowsDriverInterface::printLastError(DWORD error)
 {
     LPVOID lpMsgBuf;
     FormatMessage(
@@ -454,7 +465,7 @@ void WindowsDriverInterface::printLastError(DWORD error) const
     // Display the error message
     if (nullptr != lpMsgBuf)
     {
-        printf("%s\n", static_cast<LPTSTR>(lpMsgBuf));
+        Log->Error("%s\n", static_cast<LPTSTR>(lpMsgBuf));
         LocalFree(lpMsgBuf);
     }
 }

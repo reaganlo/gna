@@ -94,6 +94,11 @@ struct DriverCapabilities
     uint32_t hwInBuffSize;
     uint32_t recoveryTimeout;
     DeviceVersion deviceVersion;
+
+    /**
+     Number of ticks of driver performance counter per second.
+     */
+    uint64_t perfCounterFrequency;
 };
 
 class DriverInterface
@@ -122,6 +127,12 @@ protected:
     virtual void createRequestDescriptor(HardwareRequest& hardwareRequest) const = 0;
 
     virtual Gna2Status parseHwStatus(uint32_t hwStatus) const = 0;
+
+    void convertPerfResultUnit(DriverPerfResults & driverPerf,
+        Gna2InstrumentationUnit targetUnit) const;
+
+    static void convertPerfResultUnit(DriverPerfResults & driverPerf,
+        uint64_t frequency, uint64_t multiplier);
 
     DriverCapabilities driverCapabilities;
 };

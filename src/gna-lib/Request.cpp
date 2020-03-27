@@ -114,6 +114,15 @@ std::unique_ptr<RequestProfiler> RequestProfiler::Create(ProfilerConfiguration* 
     }
 }
 
+uint64_t RequestProfiler::ConvertElapsedTime(uint64_t frequency, uint64_t multiplier,
+    uint64_t start, uint64_t stop)
+{
+    auto const elapsedCycles = stop - start;
+    auto elapsedMicroseconds = elapsedCycles * multiplier;
+    elapsedMicroseconds /= frequency;
+    return elapsedMicroseconds;
+}
+
 void DisabledProfiler::Measure(Gna2InstrumentationPoint point)
 {
     UNREFERENCED_PARAMETER(point);
