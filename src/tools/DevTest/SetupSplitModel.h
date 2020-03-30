@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2017 Intel Corporation.
+ Copyright 2020 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -23,15 +23,15 @@
  in any way.
 */
 
-#include "DeviceController.h"
-#include "IModelSetup.h"
-
-#include "gna-api.h"
-
 #include <array>
 #include <cstdint>
 #include <map>
 #include <vector>
+
+#include "DeviceController.h"
+#include "IModelSetup.h"
+
+#include "gna-api.h"
 
 class SetupSplitModel : public IModelSetup
 {
@@ -57,8 +57,8 @@ private:
     size_t getFirstModelSize();
     size_t getSecondModelSize();
 
-    void setupSecondAffineLayer(uint8_t* &pinned_memory);
-    void setupFirstAffineLayer(uint8_t* &pinned_memory);
+    void setupSecondAffineLayer(uint8_t*& pinned_memory);
+    void setupFirstAffineLayer(uint8_t*& pinned_memory);
 
     void setupInputBuffer(uint8_t* &pinned_memory, uint32_t modelIndex, uint32_t configIndex);
     void setupOutputBuffer(uint8_t* &pinned_memory, uint32_t modelIndex, uint32_t configIndex);
@@ -71,18 +71,8 @@ private:
     void * memory = nullptr;
 
     uint32_t nSegments = 64;
-
-    intel_nnet_type_t& firstNnet = nnet;
-    intel_nnet_type_t secondNnet;
-
-    intel_affine_func_t firstAffineFunc;
-    intel_affine_func_t secondAffineFunc;
-
-    intel_pwl_func_t firstPwl;
-    intel_pwl_func_t secondPwl;
-
-    intel_affine_layer_t firstAffineLayer;
-    intel_affine_layer_t secondAffineLayer;
+    Gna2Model firstModel;
+    Gna2Model secondModel;
 
     std::vector<gna_model_id> models;
     std::map<gna_model_id, std::vector<gna_request_cfg_id>> modelsConfigurations;

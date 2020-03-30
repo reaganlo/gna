@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2017 Intel Corporation.
+ Copyright 2020 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -40,8 +40,6 @@ private:
     void sampleCopyLayer(uint32_t nCopyColumns, uint32_t nCopyRows);
 
     DeviceController & deviceController;
-
-    intel_copy_layer_t copy_layer;
 
     void * inputBuffer = nullptr;
     void * outputBuffer = nullptr;

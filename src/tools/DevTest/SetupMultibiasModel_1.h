@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2017 Intel Corporation.
+ Copyright 2020 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -31,7 +31,7 @@
 class SetupMultibiasModel_1 : public IModelSetup
 {
 public:
-    SetupMultibiasModel_1(DeviceController & deviceCtrl, bool weight2B, bool pwlEn);
+    SetupMultibiasModel_1(DeviceController& deviceCtrl, bool weight2B, bool pwlEn);
 
     ~SetupMultibiasModel_1();
 
@@ -39,22 +39,18 @@ public:
 
 private:
     void sampleAffineLayer();
-    void samplePwl(intel_pwl_segment_t *segments, uint32_t numberOfSegments);
+    void samplePwl(Gna2PwlSegment* segments, uint32_t numberOfSegments);
 
-    DeviceController & deviceController;
+    DeviceController& deviceController;
 
     bool weightsAre2Bytes;
     bool pwlEnabled;
 
-    uint32_t nSegments;
+    static const uint32_t nSegments = 64;
 
-    intel_affine_multibias_func_t multibias_func;
-    intel_pwl_func_t pwl;
-    intel_affine_multibias_layer_t multibias_layer;
-
-    void * inputBuffer = nullptr;
-    void * outputBuffer = nullptr;
-    void * memory = nullptr;
+    void* inputBuffer = nullptr;
+    void* outputBuffer = nullptr;
+    void* memory = nullptr;
 
     template <class intel_reference_output_type>
     intel_reference_output_type* refOutputAssign(uint32_t configIndex) const;
@@ -66,6 +62,7 @@ private:
     static const int configMultiBias1 = 1;
     static const uint32_t configIndexAl_1_1B = 2;
     static const uint32_t configIndexAl_1_2B = 3;
+
 
     const int8_t weights_1B[outVecSz * inVecSz] =
     {
@@ -163,12 +160,12 @@ private:
     static const uint8_t numberOfDnnModels = 4;
 
     const std::array<uint32_t, numberOfDnnModels> refSize
-    {{
+    { {
         sizeof(ref_output) / sizeof(int32_t),
         sizeof(ref_output) / sizeof(int32_t),
         sizeof(ref_output_pwl) / sizeof(int16_t),
         sizeof(ref_output_pwl) / sizeof(int16_t),
-    }};
+    } };
 
     static const int confiMultiBias_1_1B = 0;
     static const int confiMultiBias_1_2B = 1;

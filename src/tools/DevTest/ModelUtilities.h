@@ -1,7 +1,7 @@
 
 /*
  INTEL CONFIDENTIAL
- Copyright 2017 Intel Corporation.
+ Copyright 2020 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -27,6 +27,7 @@
 #pragma once
 
 #include "gna-api.h"
+#include "gna2-model-api.h"
 
 #include <cstdint>
 #include <stddef.h>
@@ -51,5 +52,7 @@ public:
     static size_t CalculateGmmSize(uint32_t vectorCount, uint32_t stateCount, uint32_t mixtureCount, uint32_t inputElementCount, gna_gmm_mode gmmMode);
 
     static void GeneratePwlSegments(intel_pwl_segment_t *segments, uint32_t nSegments);
+
+    static void GeneratePwlSegments(Gna2PwlSegment* segments, uint32_t nSegments);
 
 };

@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2017 Intel Corporation.
+ Copyright 2020 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -23,10 +23,11 @@
  in any way.
 */
 
-#include <memory>
-#include <array>
 #include "IModelSetup.h"
 #include "DeviceController.h"
+
+#include <array>
+#include <memory>
 
 class SetupDnnModel_Multibuffer : public IModelSetup
 {
@@ -39,7 +40,7 @@ public:
 
 private:
     void sampleAffineLayer();
-    void samplePwl(intel_pwl_segment_t *segments, uint32_t numberOfSegments);
+    void samplePwl(Gna2PwlSegment* segments, uint32_t numberOfSegments);
 
     template <class intel_reference_output_type>
     intel_reference_output_type* refOutputAssign(uint32_t configIndex) const;
@@ -58,12 +59,9 @@ private:
 
     uint32_t nSegments = 64;
 
-    intel_affine_func_t affine_func;
-    intel_pwl_func_t pwl;
-    intel_affine_layer_t affine_layer;
-
     void *inputBuffer = nullptr;
     void *outputBuffer = nullptr;
+    void* tmpOutputs = nullptr;
 
     void *baseMemory = nullptr;
     void *ioMemory = nullptr;

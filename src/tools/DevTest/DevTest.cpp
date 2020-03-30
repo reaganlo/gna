@@ -1,6 +1,6 @@
 /*
 INTEL CONFIDENTIAL
-Copyright 2019 Intel Corporation.
+Copyright 2020 Intel Corporation.
 
 The source code contained or described herein and all documents related
 to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -23,17 +23,17 @@ or any other notice embedded in Materials by Intel or Intel's suppliers or licen
 in any way.
 */
 
-#include <iostream>
 #include <map>
-#include <stdexcept>
-#include <vector>
-#include <string>
-
 #include "Script.h"
 #include "DeviceController.h"
 #include "ModelSetupFactory.h"
 
 #include "gna2-common-api.h"
+
+#include <iostream>
+#include <stdexcept>
+#include <vector>
+#include <string>
 
 class ApplicationWrapper
 {
@@ -54,25 +54,25 @@ public:
         //script.actions.emplace_back(Action::CheckReferenceOutput, ModelSetupMix, 0, 0);
         //script.actions.emplace_back(Action::CloseModel, ModelSetupMix, 0, 0);
 
-        //script.actions.emplace_back(Action::LoadModel, ModelSetupMultibias_1_1B, 0, 0);
-        //script.actions.emplace_back(Action::Score, ModelSetupMultibias_1_1B, 0, 0);
-        //script.actions.emplace_back(Action::CheckReferenceOutput, ModelSetupMultibias_1_1B, 0, 0);
-        //script.actions.emplace_back(Action::CloseModel, ModelSetupMultibias_1_1B, 0, 0);
+        script.actions.emplace_back(Action::LoadModel, ModelSetupMultibias_1_1B, 0, 0);
+        script.actions.emplace_back(Action::Score, ModelSetupMultibias_1_1B, 0, 0);
+        script.actions.emplace_back(Action::CheckReferenceOutput, ModelSetupMultibias_1_1B, 0, 0);
+        script.actions.emplace_back(Action::CloseModel, ModelSetupMultibias_1_1B, 0, 0);
 
-        //script.actions.emplace_back(Action::LoadModel, ModelSetupMultibias_1_2B, 0, 0);
-        //script.actions.emplace_back(Action::Score, ModelSetupMultibias_1_2B, 0, 0);
-        //script.actions.emplace_back(Action::CheckReferenceOutput, ModelSetupMultibias_1_2B, 0, 1);
-        //script.actions.emplace_back(Action::CloseModel, ModelSetupMultibias_1_2B, 0, 0);
+        script.actions.emplace_back(Action::LoadModel, ModelSetupMultibias_1_2B, 0, 0);
+        script.actions.emplace_back(Action::Score, ModelSetupMultibias_1_2B, 0, 0);
+        script.actions.emplace_back(Action::CheckReferenceOutput, ModelSetupMultibias_1_2B, 0, 1);
+        script.actions.emplace_back(Action::CloseModel, ModelSetupMultibias_1_2B, 0, 0);
 
-        //script.actions.emplace_back(Action::LoadModel, ModelSetupMultibiasPwl_1_1B, 0, 0);
-        //script.actions.emplace_back(Action::Score, ModelSetupMultibiasPwl_1_1B, 0, 0);
-        //script.actions.emplace_back(Action::CheckReferenceOutput, ModelSetupMultibiasPwl_1_1B, 0, 2);
-        //script.actions.emplace_back(Action::CloseModel, ModelSetupMultibiasPwl_1_1B, 0, 0);
+        script.actions.emplace_back(Action::LoadModel, ModelSetupMultibiasPwl_1_1B, 0, 0);
+        script.actions.emplace_back(Action::Score, ModelSetupMultibiasPwl_1_1B, 0, 0);
+        script.actions.emplace_back(Action::CheckReferenceOutput, ModelSetupMultibiasPwl_1_1B, 0, 2);
+        script.actions.emplace_back(Action::CloseModel, ModelSetupMultibiasPwl_1_1B, 0, 0);
 
-        //script.actions.emplace_back(Action::LoadModel, ModelSetupMultibiasPwl_1_2B, 0, 0);
-        //script.actions.emplace_back(Action::Score, ModelSetupMultibiasPwl_1_2B, 0, 0);
-        //script.actions.emplace_back(Action::CheckReferenceOutput, ModelSetupMultibiasPwl_1_2B, 0, 3);
-        //script.actions.emplace_back(Action::CloseModel, ModelSetupMultibiasPwl_1_2B, 0, 0);
+        script.actions.emplace_back(Action::LoadModel, ModelSetupMultibiasPwl_1_2B, 0, 0);
+        script.actions.emplace_back(Action::Score, ModelSetupMultibiasPwl_1_2B, 0, 0);
+        script.actions.emplace_back(Action::CheckReferenceOutput, ModelSetupMultibiasPwl_1_2B, 0, 3);
+        script.actions.emplace_back(Action::CloseModel, ModelSetupMultibiasPwl_1_2B, 0, 0);
 
         script.actions.emplace_back(Action::LoadModel, ModelSetupDnn_1_1B, 0, 0);
         script.actions.emplace_back(Action::Score, ModelSetupDnn_1_1B, 0, 0);

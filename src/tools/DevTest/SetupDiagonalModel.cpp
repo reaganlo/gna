@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2017 Intel Corporation.
+ Copyright 2020 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -23,14 +23,14 @@
  in any way.
 */
 
-#include <cstring>
-#include <cstdlib>
-#include <iostream>
+#include "SetupDiagonalModel.h"
+#include "ModelUtilities.h"
 
 #include "gna-api.h"
 
-#include "SetupDiagonalModel.h"
-#include "ModelUtilities.h"
+#include <cstring>
+#include <cstdlib>
+#include <iostream>
 
 #define UNREFERENCED_PARAMETER(P) ((void)(P))
 
@@ -41,7 +41,7 @@ SetupDiagonalModel::SetupDiagonalModel(DeviceController & deviceCtrl, bool weigh
 {
     sampleAffineLayer();
 
-    deviceController.ModelCreate(&nnet, &modelId);
+    deviceController.ModelCreate(&model, &modelId);
 
     configId = deviceController.ConfigAdd(modelId);
 
@@ -52,7 +52,6 @@ SetupDiagonalModel::SetupDiagonalModel(DeviceController & deviceCtrl, bool weigh
 SetupDiagonalModel::~SetupDiagonalModel()
 {
     deviceController.Free(memory);
-    free(nnet.pLayers);
 
     deviceController.ModelRelease(modelId);
 }
@@ -100,20 +99,15 @@ void SetupDiagonalModel::checkReferenceOutput(uint32_t modelIndex, uint32_t conf
 
 void SetupDiagonalModel::sampleAffineLayer()
 {
-    nnet.nGroup = groupingNum;
-    nnet.nLayers = layersNum;
-    nnet.pLayers = (intel_nnet_layer_t*)calloc(nnet.nLayers, sizeof(intel_nnet_layer_t));
-
     uint32_t buf_size_weights = static_cast<uint32_t>(weightsAre2Bytes
-                   ? ALIGN64(sizeof(weights_2B)) : ALIGN64(sizeof(weights_1B)));
+        ? ALIGN64(sizeof(weights_2B)) : ALIGN64(sizeof(weights_1B)));
     uint32_t buf_size_inputs = ALIGN64(sizeof(inputs));
     uint32_t buf_size_biases = static_cast<uint32_t>(weightsAre2Bytes
-                   ? ALIGN64(sizeof(regularBiases)) : ALIGN64(sizeof(compoundBiases)));
+        ? ALIGN64(sizeof(regularBiases)) : ALIGN64(sizeof(compoundBiases)));
     uint32_t buf_size_outputs = ALIGN64(outVecSz * groupingNum * sizeof(int32_t));
-    uint32_t buf_size_tmp_outputs = ALIGN64(outVecSz * groupingNum * sizeof(int32_t));
     uint32_t buf_size_pwl = static_cast<uint32_t>(ALIGN64(nSegments * sizeof(intel_pwl_segment_t)));
 
-    uint32_t bytes_requested = buf_size_weights + buf_size_inputs + buf_size_biases + buf_size_outputs + buf_size_tmp_outputs;
+    uint32_t bytes_requested = buf_size_weights + buf_size_inputs + buf_size_biases + buf_size_outputs;
     if (pwlEnabled)
     {
         bytes_requested += buf_size_pwl;
@@ -138,7 +132,7 @@ void SetupDiagonalModel::sampleAffineLayer()
     memcpy(inputBuffer, inputs, sizeof(inputs));
     pinned_mem_ptr += buf_size_inputs;
 
-    int32_t *pinned_biases = (int32_t*)pinned_mem_ptr;
+    int32_t* pinned_biases = (int32_t*)pinned_mem_ptr;
     if (weightsAre2Bytes)
     {
         memcpy(pinned_biases, regularBiases, sizeof(regularBiases));
@@ -152,56 +146,42 @@ void SetupDiagonalModel::sampleAffineLayer()
     outputBuffer = pinned_mem_ptr;
     pinned_mem_ptr += buf_size_outputs;
 
-    void *tmp_outputs = nullptr;
+    operations = static_cast<Gna2Operation*>(calloc(1, sizeof(Gna2Operation)));
+    tensors = static_cast<Gna2Tensor*>(calloc(5, sizeof(Gna2Tensor)));
+
+    tensors[0] = Gna2TensorInit2D(inVecSz, groupingNum,
+        Gna2DataTypeInt16, nullptr);
+    tensors[1] = Gna2TensorInit2D(outVecSz, groupingNum,
+        Gna2DataTypeInt32, nullptr);
+
+    tensors[2] = Gna2TensorInit1D(inVecSz,
+        weightsAre2Bytes ? Gna2DataTypeInt16 : Gna2DataTypeInt8,
+        pinned_weights);
+    tensors[3] = Gna2TensorInit1D(inVecSz,
+        weightsAre2Bytes ? Gna2DataTypeInt32 : Gna2DataTypeCompoundBias,
+        pinned_biases);
+    tensors[4] = Gna2TensorInitDisabled();
+
     if (pwlEnabled)
     {
-        tmp_outputs = pinned_mem_ptr;
-        pinned_mem_ptr += buf_size_tmp_outputs;
+        Gna2PwlSegment* pinned_pwl = reinterpret_cast<Gna2PwlSegment*>(pinned_mem_ptr);
 
-        intel_pwl_segment_t *pinned_pwl = reinterpret_cast<intel_pwl_segment_t*>(pinned_mem_ptr);
-
-        pwl.nSegments = nSegments;
-        pwl.pSegments = pinned_pwl;
-        samplePwl(pwl.pSegments, pwl.nSegments);
-    }
-    else
-    {
-        pwl.nSegments = 0;
-        pwl.pSegments = nullptr;
+        samplePwl(pinned_pwl, nSegments);
+        tensors[1] = Gna2TensorInit2D(outVecSz, groupingNum, Gna2DataTypeInt16, nullptr);
+        tensors[4] = Gna2TensorInit1D(nSegments, Gna2DataTypePwlSegment, pinned_pwl);
     }
 
-    affine_func.nBytesPerWeight = weightsAre2Bytes ? GNA_INT16 : GNA_INT8;
-    affine_func.nBytesPerBias = weightsAre2Bytes ? GNA_INT32: GNA_DATA_RICH_FORMAT;
-    affine_func.pWeights = pinned_weights;
-    affine_func.pBiases = pinned_biases;
+    Gna2OperationInitElementWiseAffine(
+        operations, &Allocator,
+        &tensors[0], &tensors[1],
+        &tensors[2], &tensors[3],
+        &tensors[4]
+    );
 
-    affine_layer.affine = affine_func;
-    affine_layer.pwl = pwl;
-
-    nnet.pLayers[0].nInputColumns = nnet.nGroup;
-    nnet.pLayers[0].nInputRows = inVecSz;
-    nnet.pLayers[0].nOutputColumns = nnet.nGroup;
-    nnet.pLayers[0].nOutputRows = outVecSz;
-    nnet.pLayers[0].nBytesPerInput = GNA_INT16;
-    if (pwlEnabled)
-    {
-        nnet.pLayers[0].pOutputsIntermediate = tmp_outputs;
-        nnet.pLayers[0].nBytesPerOutput = GNA_INT16;
-    }
-    else
-    {
-        nnet.pLayers[0].pOutputsIntermediate = nullptr;
-        nnet.pLayers[0].nBytesPerOutput = GNA_INT32;
-    }
-    nnet.pLayers[0].nBytesPerIntermediateOutput = 4;
-    nnet.pLayers[0].operation = INTEL_AFFINE_DIAGONAL;
-    nnet.pLayers[0].mode = INTEL_INPUT_OUTPUT;
-    nnet.pLayers[0].pLayerStruct = &affine_layer;
-    nnet.pLayers[0].pInputs = nullptr;
-    nnet.pLayers[0].pOutputs = nullptr;
+    model = { 1, operations };
 }
 
-void SetupDiagonalModel::samplePwl(intel_pwl_segment_t *segments, uint32_t numberOfSegments)
+void SetupDiagonalModel::samplePwl(Gna2PwlSegment* segments, uint32_t numberOfSegments)
 {
     ModelUtilities::GeneratePwlSegments(segments, numberOfSegments);
 }

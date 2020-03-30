@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2017 Intel Corporation.
+ Copyright 2020 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -23,14 +23,14 @@
  in any way.
 */
 
-#include <cstring>
-#include <cstdlib>
-#include <iostream>
+#include "ModelUtilities.h"
+#include "SetupSplitModel.h"
 
 #include "gna-api.h"
 
-#include "ModelUtilities.h"
-#include "SetupSplitModel.h"
+#include <cstring>
+#include <cstdlib>
+#include <iostream>
 
 #define UNREFERENCED_PARAMETER(P) ((void)(P))
 
@@ -40,14 +40,6 @@ SetupSplitModel::SetupSplitModel(DeviceController & deviceCtrl, bool weight2B, b
     pwlEnabled{ pwlEn }
 {
     UNREFERENCED_PARAMETER(activeListEn);
-
-    firstNnet.nGroup = groupingNum;
-    firstNnet.nLayers = 1;
-    firstNnet.pLayers = (intel_nnet_layer_t*)calloc(firstNnet.nLayers, sizeof(intel_nnet_layer_t));
-
-    secondNnet.nGroup = groupingNum;
-    secondNnet.nLayers = 1;
-    secondNnet.pLayers = (intel_nnet_layer_t*)calloc(secondNnet.nLayers, sizeof(intel_nnet_layer_t));
 
     auto firstModelSize = getFirstModelSize();
     auto secondModelSize = getSecondModelSize();
@@ -75,7 +67,7 @@ SetupSplitModel::SetupSplitModel(DeviceController & deviceCtrl, bool weight2B, b
 
     gna_model_id modelIdSplit;
 
-    deviceController.ModelCreate(&firstNnet, &modelIdSplit);
+    deviceController.ModelCreate(&firstModel, &modelIdSplit);
     models.push_back(modelIdSplit);
 
     configId = deviceController.ConfigAdd(modelIdSplit);
@@ -89,7 +81,7 @@ SetupSplitModel::SetupSplitModel(DeviceController & deviceCtrl, bool weight2B, b
     setupOutputBuffer(pinned_memory, 0, 0);
     setupOutputBuffer(pinned_memory, 0, 1);
 
-    deviceController.ModelCreate(&secondNnet, &modelIdSplit);
+    deviceController.ModelCreate(&secondModel, &modelIdSplit);
     models.push_back(modelIdSplit);
 
     configId = deviceController.ConfigAdd(modelIdSplit);
@@ -107,8 +99,6 @@ SetupSplitModel::SetupSplitModel(DeviceController & deviceCtrl, bool weight2B, b
 SetupSplitModel::~SetupSplitModel()
 {
     deviceController.Free(memory);
-    free(firstNnet.pLayers);
-    free(secondNnet.pLayers);
 
     deviceController.ModelRelease(modelId);
 }
@@ -134,7 +124,7 @@ void SetupSplitModel::checkReferenceOutput(uint32_t modelIndex, uint32_t configI
     }
 }
 
-void SetupSplitModel::setupFirstAffineLayer(uint8_t* &pinned_memory)
+void SetupSplitModel::setupFirstAffineLayer(uint8_t*& pinned_memory)
 {
     int buf_size_weights = weightsAre2Bytes
         ? ALIGN64(static_cast<uint32_t>(sizeof(weights_2B)))
@@ -142,11 +132,6 @@ void SetupSplitModel::setupFirstAffineLayer(uint8_t* &pinned_memory)
     int buf_size_biases = weightsAre2Bytes
         ? ALIGN64(static_cast<uint32_t>(sizeof(regularBiases)))
         : ALIGN64(static_cast<uint32_t>(sizeof(compoundBiases)));
-    int buf_size_tmp_outputs = ALIGN64(
-            outVecSz * groupingNum * static_cast<uint32_t>(sizeof(int32_t)));
-    int buf_size_pwl = ALIGN64(
-            nSegments * static_cast<uint32_t>(sizeof(intel_pwl_segment_t)));
-
     void* pinned_weights = pinned_memory;
     if (weightsAre2Bytes)
     {
@@ -159,7 +144,7 @@ void SetupSplitModel::setupFirstAffineLayer(uint8_t* &pinned_memory)
     pinned_memory += buf_size_weights;
 
 
-    int32_t *pinned_biases = (int32_t*)pinned_memory;
+    int32_t* pinned_biases = (int32_t*)pinned_memory;
     if (weightsAre2Bytes)
     {
         memcpy(pinned_biases, regularBiases, sizeof(regularBiases));
@@ -170,58 +155,41 @@ void SetupSplitModel::setupFirstAffineLayer(uint8_t* &pinned_memory)
     }
     pinned_memory += buf_size_biases;
 
-    void *tmp_outputs = nullptr;
+    operations = static_cast<Gna2Operation*>(calloc(1, sizeof(Gna2Operation)));
+    tensors = static_cast<Gna2Tensor*>(calloc(5, sizeof(Gna2Tensor)));
+
+    tensors[0] = Gna2TensorInit2D(inVecSz, groupingNum,
+        Gna2DataTypeInt16, nullptr);
+    tensors[1] = Gna2TensorInit2D(outVecSz, groupingNum,
+        Gna2DataTypeInt32, nullptr);
+
+    tensors[2] = Gna2TensorInit2D(outVecSz, inVecSz,
+        weightsAre2Bytes ? Gna2DataTypeInt16 : Gna2DataTypeInt8,
+        pinned_weights);
+    tensors[3] = Gna2TensorInit1D(inVecSz,
+        weightsAre2Bytes ? Gna2DataTypeInt32 : Gna2DataTypeCompoundBias,
+        pinned_biases);
+    tensors[4] = Gna2TensorInitDisabled();
     if (pwlEnabled)
     {
-        tmp_outputs = pinned_memory;
-        pinned_memory += buf_size_tmp_outputs;
+        Gna2PwlSegment* pinned_pwl = reinterpret_cast<Gna2PwlSegment*>(pinned_memory);
 
-        intel_pwl_segment_t *pinned_pwl = reinterpret_cast<intel_pwl_segment_t*>(pinned_memory);
-        pinned_memory += buf_size_pwl;
-
-        firstPwl.nSegments = nSegments;
-        firstPwl.pSegments = pinned_pwl;
-        ModelUtilities::GeneratePwlSegments(firstPwl.pSegments, firstPwl.nSegments);
-    }
-    else
-    {
-        firstPwl.nSegments = 0;
-        firstPwl.pSegments = nullptr;
+        ModelUtilities::GeneratePwlSegments(pinned_pwl, nSegments);
+        tensors[1] = Gna2TensorInit2D(outVecSz, groupingNum, Gna2DataTypeInt16, nullptr);
+        tensors[4] = Gna2TensorInit1D(nSegments, Gna2DataTypePwlSegment, pinned_pwl);
     }
 
-    firstAffineFunc.nBytesPerWeight = weightsAre2Bytes ? GNA_INT16 : GNA_INT8;
-    firstAffineFunc.nBytesPerBias = weightsAre2Bytes ? GNA_INT32: GNA_DATA_RICH_FORMAT;
-    firstAffineFunc.pWeights = pinned_weights;
-    firstAffineFunc.pBiases = pinned_biases;
+    Gna2OperationInitFullyConnectedAffine(
+        operations, &Allocator,
+        &tensors[0], &tensors[1],
+        &tensors[2], &tensors[3],
+        &tensors[4]
+    );
 
-    firstAffineLayer.affine = firstAffineFunc;
-    firstAffineLayer.pwl = firstPwl;
-
-    firstNnet.pLayers[0].nInputColumns = firstNnet.nGroup;
-    firstNnet.pLayers[0].nInputRows = inVecSz;
-    firstNnet.pLayers[0].nOutputColumns = firstNnet.nGroup;
-    firstNnet.pLayers[0].nOutputRows = outVecSz;
-    firstNnet.pLayers[0].nBytesPerInput = GNA_INT16;
-    firstNnet.pLayers[0].nBytesPerIntermediateOutput = GNA_INT32;
-    firstNnet.pLayers[0].operation = INTEL_AFFINE;
-    firstNnet.pLayers[0].mode = INTEL_INPUT_OUTPUT;
-    firstNnet.pLayers[0].pLayerStruct = &firstAffineLayer;
-    firstNnet.pLayers[0].pInputs = nullptr;
-    firstNnet.pLayers[0].pOutputs = nullptr;
-
-    if (pwlEnabled)
-    {
-        firstNnet.pLayers[0].pOutputsIntermediate = tmp_outputs;
-        firstNnet.pLayers[0].nBytesPerOutput = GNA_INT16;
-    }
-    else
-    {
-        firstNnet.pLayers[0].pOutputsIntermediate = nullptr;
-        firstNnet.pLayers[0].nBytesPerOutput = GNA_INT32;
-    }
+    firstModel = { 1, operations };
 }
 
-void SetupSplitModel::setupSecondAffineLayer(uint8_t* &pinned_memory)
+void SetupSplitModel::setupSecondAffineLayer(uint8_t*& pinned_memory)
 {
     int buf_size_weights = weightsAre2Bytes
         ? ALIGN64(static_cast<uint32_t>(sizeof(diagonal_weights_2B)))
@@ -229,10 +197,6 @@ void SetupSplitModel::setupSecondAffineLayer(uint8_t* &pinned_memory)
     int buf_size_biases = weightsAre2Bytes
         ? ALIGN64(static_cast<uint32_t>(sizeof(diagonalRegularBiases)))
         : ALIGN64(static_cast<uint32_t>(sizeof(diagonalCompoundBiases)));
-    int buf_size_tmp_outputs = ALIGN64(
-            outVecSz * groupingNum * static_cast<uint32_t>(sizeof(int32_t)));
-    int buf_size_pwl = ALIGN64(
-            nSegments * static_cast<uint32_t>(sizeof(intel_pwl_segment_t)));
 
     void* pinned_weights = pinned_memory;
     if (weightsAre2Bytes)
@@ -245,7 +209,7 @@ void SetupSplitModel::setupSecondAffineLayer(uint8_t* &pinned_memory)
     }
     pinned_memory += buf_size_weights;
 
-    int32_t *pinned_biases = (int32_t*)pinned_memory;
+    int32_t* pinned_biases = (int32_t*)pinned_memory;
     if (weightsAre2Bytes)
     {
         memcpy(pinned_biases, diagonalRegularBiases, sizeof(diagonalRegularBiases));
@@ -256,54 +220,38 @@ void SetupSplitModel::setupSecondAffineLayer(uint8_t* &pinned_memory)
     }
     pinned_memory += buf_size_biases;
 
-    void *tmp_outputs = nullptr;
+    operations = static_cast<Gna2Operation*>(calloc(1, sizeof(Gna2Operation)));
+    tensors = static_cast<Gna2Tensor*>(calloc(5, sizeof(Gna2Tensor)));
+
+    tensors[0] = Gna2TensorInit2D(inVecSz, groupingNum,
+        Gna2DataTypeInt16, nullptr);
+    tensors[1] = Gna2TensorInit2D(outVecSizeDiagonal, groupingNum,
+        Gna2DataTypeInt32, nullptr);
+
+    tensors[2] = Gna2TensorInit1D(inVecSz,
+        weightsAre2Bytes ? Gna2DataTypeInt16 : Gna2DataTypeInt8,
+        pinned_weights);
+    tensors[3] = Gna2TensorInit1D(inVecSz,
+        weightsAre2Bytes ? Gna2DataTypeInt32 : Gna2DataTypeCompoundBias,
+        pinned_biases);
+    tensors[4] = Gna2TensorInitDisabled();
+
     if (pwlEnabled)
     {
-        tmp_outputs = pinned_memory;
-        pinned_memory += buf_size_tmp_outputs;
+        Gna2PwlSegment* pinned_pwl = reinterpret_cast<Gna2PwlSegment*>(pinned_memory);
 
-        intel_pwl_segment_t *pinned_pwl = reinterpret_cast<intel_pwl_segment_t*>(pinned_memory);
-        pinned_memory += buf_size_pwl;
-
-        secondPwl.nSegments = nSegments;
-        secondPwl.pSegments = pinned_pwl;
-        ModelUtilities::GeneratePwlSegments(secondPwl.pSegments, secondPwl.nSegments);
+        ModelUtilities::GeneratePwlSegments(pinned_pwl, nSegments);
+        tensors[1] = Gna2TensorInit2D(outVecSz, groupingNum, Gna2DataTypeInt16, nullptr);
+        tensors[4] = Gna2TensorInit1D(nSegments, Gna2DataTypePwlSegment, pinned_pwl);
     }
-    else
-    {
-        secondPwl.nSegments = 0;
-        secondPwl.pSegments = nullptr;
-    }
+    Gna2OperationInitElementWiseAffine(
+        operations, &Allocator,
+        &tensors[0], &tensors[1],
+        &tensors[2], &tensors[3],
+        &tensors[4]
+    );
 
-    secondAffineFunc.nBytesPerWeight = weightsAre2Bytes ? GNA_INT16 : GNA_INT8;
-    secondAffineFunc.nBytesPerBias = weightsAre2Bytes ? GNA_INT32: GNA_DATA_RICH_FORMAT;
-    secondAffineFunc.pWeights = pinned_weights;
-    secondAffineFunc.pBiases = pinned_biases;
-
-    secondAffineLayer.affine = secondAffineFunc;
-    secondAffineLayer.pwl = secondPwl;
-
-    secondNnet.pLayers[0].nInputColumns = secondNnet.nGroup;
-    secondNnet.pLayers[0].nInputRows = diagonalInVecSz;
-    secondNnet.pLayers[0].nOutputColumns = secondNnet.nGroup;
-    secondNnet.pLayers[0].nOutputRows = diagonalOutVecSz;
-    secondNnet.pLayers[0].nBytesPerInput = GNA_INT16;
-    if (pwlEnabled)
-    {
-        secondNnet.pLayers[0].pOutputsIntermediate = tmp_outputs;
-        secondNnet.pLayers[0].nBytesPerOutput = GNA_INT16;
-    }
-    else
-    {
-        secondNnet.pLayers[0].pOutputsIntermediate = nullptr;
-        secondNnet.pLayers[0].nBytesPerOutput = GNA_INT32;
-    }
-    secondNnet.pLayers[0].nBytesPerIntermediateOutput = GNA_INT32;
-    secondNnet.pLayers[0].operation = INTEL_AFFINE_DIAGONAL;
-    secondNnet.pLayers[0].mode = INTEL_INPUT_OUTPUT;
-    secondNnet.pLayers[0].pLayerStruct = &secondAffineLayer;
-    secondNnet.pLayers[0].pInputs = nullptr;
-    secondNnet.pLayers[0].pOutputs = nullptr;
+    secondModel = { 1, operations };
 }
 
 size_t SetupSplitModel::getFirstModelSize()

@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2017 Intel Corporation.
+ Copyright 2020 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -23,15 +23,15 @@
  in any way.
 */
 
-#include <cstring>
-#include <cstdlib>
-#include <iostream>
+#include "SetupDnnModel_1.h"
+#include "ModelUtilities.h"
 
 #include "gna-api.h"
 #include "gna-api-verbose.h"
 
-#include "SetupDnnModel_1.h"
-#include "ModelUtilities.h"
+#include <cstring>
+#include <cstdlib>
+#include <iostream>
 
 #define UNREFERENCED_PARAMETER(P) ((void)(P))
 
@@ -43,13 +43,10 @@ SetupDnnModel_1::SetupDnnModel_1(DeviceController & deviceCtrl, bool weight2B, b
     activeListEnabled{ activeListEn },
     pwlEnabled{ pwlEn }
 {
-    nnet.nGroup = groupingNum;
-    nnet.nLayers = layersNum;
-    nnet.pLayers = (intel_nnet_layer_t*)calloc(nnet.nLayers, sizeof(intel_nnet_layer_t));
 
     sampleAffineLayer();
 
-    deviceController.ModelCreate(&nnet, &modelId);
+    deviceController.ModelCreate(&model, &modelId);
 
     configId = deviceController.ConfigAdd(modelId);
 
@@ -131,7 +128,6 @@ SetupDnnModel_1::SetupDnnModel_1(DeviceController & deviceCtrl, bool weight2B, b
 SetupDnnModel_1::~SetupDnnModel_1()
 {
     deviceController.Free(memory);
-    free(nnet.pLayers);
 
     deviceController.ModelRelease(modelId);
 }
@@ -224,11 +220,9 @@ void SetupDnnModel_1::sampleAffineLayer()
         ? ALIGN64(static_cast<uint32_t>(sizeof(regularBiases)))
         : ALIGN64(static_cast<uint32_t>(sizeof(compoundBiases)));
     uint32_t buf_size_outputs = ALIGN64(
-            outVecSz * groupingNum * static_cast<uint32_t>(sizeof(int32_t)));
-    uint32_t buf_size_tmp_outputs = ALIGN64(
-            outVecSz * groupingNum * static_cast<uint32_t>(sizeof(int32_t)));
+        outVecSz * groupingNum * static_cast<uint32_t>(sizeof(int32_t)));
     uint32_t buf_size_pwl = ALIGN64(
-            nSegments * static_cast<uint32_t>(sizeof(intel_pwl_segment_t)));
+        nSegments * static_cast<uint32_t>(sizeof(intel_pwl_segment_t)));
 
     uint32_t bytes_requested = buf_size_weights + buf_size_inputs + buf_size_biases + buf_size_outputs;
     if (activeListEnabled)
@@ -238,7 +232,7 @@ void SetupDnnModel_1::sampleAffineLayer()
     }
     if (pwlEnabled)
     {
-        bytes_requested += buf_size_pwl + buf_size_tmp_outputs;
+        bytes_requested += buf_size_pwl;
     }
     uint32_t bytes_granted;
 
@@ -260,7 +254,7 @@ void SetupDnnModel_1::sampleAffineLayer()
     memcpy(inputBuffer, inputs, sizeof(inputs));
     pinned_mem_ptr += buf_size_inputs;
 
-    int32_t *pinned_biases = (int32_t*)pinned_mem_ptr;
+    int32_t* pinned_biases = (int32_t*)pinned_mem_ptr;
     if (weightsAre2Bytes)
     {
         memcpy(pinned_biases, regularBiases, sizeof(regularBiases));
@@ -282,57 +276,42 @@ void SetupDnnModel_1::sampleAffineLayer()
         pinned_mem_ptr += indicesSize;
     }
 
-    void *tmp_outputs = nullptr;
-    if (pwlEnabled)
-    {
-        tmp_outputs = pinned_mem_ptr;
-        pinned_mem_ptr += buf_size_tmp_outputs;
+    operations = static_cast<Gna2Operation*>(calloc(1, sizeof(Gna2Operation)));
+    tensors = static_cast<Gna2Tensor*>(calloc(5, sizeof(Gna2Tensor)));
 
-        intel_pwl_segment_t *pinned_pwl = reinterpret_cast<intel_pwl_segment_t*>(pinned_mem_ptr);
+    tensors[0] = Gna2TensorInit2D(inVecSz, groupingNum,
+        Gna2DataTypeInt16, nullptr);
+    tensors[1] = Gna2TensorInit2D(outVecSz, groupingNum,
+        Gna2DataTypeInt32, nullptr);
 
-        pwl.nSegments = nSegments;
-        pwl.pSegments = pinned_pwl;
-        samplePwl(pwl.pSegments, pwl.nSegments);
-    }
-    else
-    {
-        pwl.nSegments = 0;
-        pwl.pSegments = nullptr;
-    }
-
-    affine_func.nBytesPerWeight = weightsAre2Bytes ? GNA_INT16 : GNA_INT8;
-    affine_func.nBytesPerBias = weightsAre2Bytes ? GNA_INT32: GNA_DATA_RICH_FORMAT;
-    affine_func.pWeights = pinned_weights;
-    affine_func.pBiases = pinned_biases;
-
-    affine_layer.affine = affine_func;
-    affine_layer.pwl = pwl;
-
-    nnet.pLayers[0].nInputColumns = nnet.nGroup;
-    nnet.pLayers[0].nInputRows = inVecSz;
-    nnet.pLayers[0].nOutputColumns = nnet.nGroup;
-    nnet.pLayers[0].nOutputRows = outVecSz;
-    nnet.pLayers[0].nBytesPerInput = GNA_INT16;
-    nnet.pLayers[0].nBytesPerIntermediateOutput = GNA_INT32;
-    nnet.pLayers[0].operation = INTEL_AFFINE;
-    nnet.pLayers[0].mode = INTEL_INPUT_OUTPUT;
-    nnet.pLayers[0].pLayerStruct = &affine_layer;
-    nnet.pLayers[0].pInputs = nullptr;
-    nnet.pLayers[0].pOutputs = nullptr;
+    tensors[2] = Gna2TensorInit2D(outVecSz, inVecSz,
+        weightsAre2Bytes ? Gna2DataTypeInt16 : Gna2DataTypeInt8,
+        pinned_weights);
+    tensors[3] = Gna2TensorInit1D(inVecSz,
+        weightsAre2Bytes ? Gna2DataTypeInt32 : Gna2DataTypeCompoundBias,
+        pinned_biases);
+    tensors[4] = Gna2TensorInitDisabled();
 
     if (pwlEnabled)
     {
-        nnet.pLayers[0].pOutputsIntermediate = tmp_outputs;
-        nnet.pLayers[0].nBytesPerOutput = GNA_INT16;
+        Gna2PwlSegment* pinned_pwl = reinterpret_cast<Gna2PwlSegment*>(pinned_mem_ptr);
+
+        samplePwl(pinned_pwl, nSegments);
+        tensors[1] = Gna2TensorInit2D(outVecSz, groupingNum, Gna2DataTypeInt16, nullptr);
+        tensors[4] = Gna2TensorInit1D(nSegments, Gna2DataTypePwlSegment, pinned_pwl);
     }
-    else
-    {
-        nnet.pLayers[0].pOutputsIntermediate = nullptr;
-        nnet.pLayers[0].nBytesPerOutput = GNA_INT32;
-    }
+
+    Gna2OperationInitFullyConnectedAffine(
+        operations, &Allocator,
+        &tensors[0], &tensors[1],
+        &tensors[2], &tensors[3],
+        &tensors[4]
+    );
+
+    model = { 1, operations };
 }
 
-void SetupDnnModel_1::samplePwl(intel_pwl_segment_t *segments, uint32_t numberOfSegments)
+void SetupDnnModel_1::samplePwl(Gna2PwlSegment* segments, uint32_t numberOfSegments)
 {
     ModelUtilities::GeneratePwlSegments(segments, numberOfSegments);
 }

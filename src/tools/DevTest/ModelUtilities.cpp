@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2017 Intel Corporation.
+ Copyright 2020 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -165,5 +165,19 @@ void ModelUtilities::GeneratePwlSegments(intel_pwl_segment_t *segments, uint32_t
         segments[i].xBase = xBase;
         segments[i].yBase = static_cast<int16_t>(yBase);
         segments[i].slope = static_cast<int16_t>(1);
+    }
+}
+
+void ModelUtilities::GeneratePwlSegments(Gna2PwlSegment* segments, uint32_t nSegments)
+{
+    auto xBase = INT32_MIN;
+    auto xBaseInc = UINT32_MAX / nSegments;
+    auto yBase = INT32_MAX;
+    auto yBaseInc = UINT16_MAX / nSegments;
+    for (auto i = uint32_t{ 0 }; i < nSegments; i++, xBase += xBaseInc, yBase += yBaseInc)
+    {
+        segments[i].xBase = xBase;
+        segments[i].yBase = static_cast<int16_t>(yBase);
+        segments[i].Slope = static_cast<int16_t>(1);
     }
 }

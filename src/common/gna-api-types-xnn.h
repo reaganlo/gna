@@ -292,6 +292,14 @@ typedef struct _pwl_func_t
 
 } intel_pwl_func_t;
 
+/** Piecewise-linear activation function (PWL) details */
+typedef struct _pwl_func_tGna2
+{
+    uint32_t nSegments;             // Number of segments, set to 0 to disable activation function.
+    struct Gna2PwlSegment* pSegments; // Activation function segments data or NULL if disabled.
+
+} intel_pwl_func_tGna2;
+
 // TODO:3:GNA-4/next proposal
 ///** Piecewise-linear activation function (PWL) details */
 //typedef struct _activation_function

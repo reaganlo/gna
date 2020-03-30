@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2017 Intel Corporation.
+ Copyright 2020 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -36,7 +36,7 @@ public:
     void checkReferenceOutput(uint32_t modelIndex, uint32_t configIndex) const override;
 
 private:
-    void samplePwl(intel_pwl_segment_t* segments, uint32_t numberOfSegments);
+    void samplePwl(Gna2PwlSegment* segments, uint32_t numberOfSegments);
     void sampleRnnLayer();
 
     DeviceController & deviceController;
@@ -45,12 +45,9 @@ private:
 
     uint32_t nSegments = 64;
 
-    intel_affine_func_t affine_func;
-    intel_pwl_func_t pwl;
-    intel_recurrent_layer_t recurrent_layer;
+    intel_pwl_func_tGna2 pwl;
 
     void * inputBuffer = nullptr;
-    void * scratchpad = nullptr;
     void * outputBuffer = nullptr;
     void * memory = nullptr;
 

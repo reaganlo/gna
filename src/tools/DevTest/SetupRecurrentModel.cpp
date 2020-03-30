@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2017 Intel Corporation.
+ Copyright 2020 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -23,13 +23,13 @@
  in any way.
 */
 
-#include <cstring>
-#include <cstdlib>
-#include <iostream>
+#include "SetupRecurrentModel.h"
 
 #include "gna-api.h"
 
-#include "SetupRecurrentModel.h"
+#include <cstring>
+#include <cstdlib>
+#include <iostream>
 
 #define UNREFERENCED_PARAMETER(P) ((void)(P))
 
@@ -37,13 +37,9 @@ SetupRecurrentModel::SetupRecurrentModel(DeviceController & deviceCtrl, bool wgh
     : deviceController{deviceCtrl},
     weightsAre2Bytes{wght2B}
 {
-    nnet.nGroup = groupingNum;
-    nnet.nLayers = layersNum;
-    nnet.pLayers = (intel_nnet_layer_t*)calloc(nnet.nLayers, sizeof(intel_nnet_layer_t));
-
     sampleRnnLayer();
 
-    deviceController.ModelCreate(&nnet, &modelId);
+    deviceController.ModelCreate(&model, &modelId);
 
     configId = deviceController.ConfigAdd(modelId);
 
@@ -54,7 +50,6 @@ SetupRecurrentModel::SetupRecurrentModel(DeviceController & deviceCtrl, bool wgh
 SetupRecurrentModel::~SetupRecurrentModel()
 {
     deviceController.Free(memory);
-    free(nnet.pLayers);
 
     deviceController.ModelRelease(modelId);
 }
@@ -74,22 +69,26 @@ void SetupRecurrentModel::checkReferenceOutput(uint32_t modelIndex, uint32_t con
     }
 }
 
-void SetupRecurrentModel::samplePwl(intel_pwl_segment_t *segments, uint32_t numberOfSegments)
+void SetupRecurrentModel::samplePwl(Gna2PwlSegment* segments, uint32_t numberOfSegments)
 {
     auto xBase = -200;
     auto xBaseInc = 2u * static_cast<uint32_t>(abs(xBase)) / numberOfSegments;
     auto yBase = -200;
     auto yBaseInc = 1;
-    for (auto i = uint32_t{0}; i < numberOfSegments; i++, xBase += xBaseInc, yBase += yBaseInc, yBaseInc++)
+    for (auto i = uint32_t{ 0 }; i < numberOfSegments; i++, xBase += xBaseInc, yBase += yBaseInc, yBaseInc++)
     {
         segments[i].xBase = xBase;
         segments[i].yBase = static_cast<int16_t>(yBase);
-        segments[i].slope = 1;
+        segments[i].Slope = 1;
     }
 }
 
 void SetupRecurrentModel::sampleRnnLayer()
 {
+    parameters = calloc(1, sizeof(uint32_t));
+    auto const delay = static_cast<uint32_t*>(parameters);
+    *delay = 3;
+
     uint32_t buf_size_weights = weightsAre2Bytes
         ? ALIGN64(static_cast<uint32_t>(sizeof(weights_2B)))
         : ALIGN64(static_cast<uint32_t>(sizeof(weights_1B)));
@@ -97,16 +96,14 @@ void SetupRecurrentModel::sampleRnnLayer()
     uint32_t buf_size_biases = weightsAre2Bytes
         ? ALIGN64(static_cast<uint32_t>(sizeof(regularBiases)))
         : ALIGN64(static_cast<uint32_t>(sizeof(compoundBiases)));
-    uint32_t buf_size_scratchpad = ALIGN64(
-            outVecSz * groupingNum * static_cast<uint32_t>(sizeof(int32_t)));
     uint32_t buf_size_outputs = ALIGN64(
-            outVecSz * groupingNum * static_cast<uint32_t>(sizeof(int16_t)));
+        outVecSz * groupingNum * static_cast<uint32_t>(sizeof(int16_t)));
     uint32_t buf_size_tmp_outputs = ALIGN64(
-            outVecSz * groupingNum * static_cast<uint32_t>(sizeof(int32_t)));
+        (*delay + 1) * outVecSz * groupingNum * static_cast<uint32_t>(sizeof(int32_t)));
     uint32_t buf_size_pwl = ALIGN64(
-            nSegments * static_cast<uint32_t>(sizeof(intel_pwl_segment_t)));
+        nSegments * static_cast<uint32_t>(sizeof(Gna2PwlSegment)));
 
-    uint32_t bytes_requested = buf_size_weights + buf_size_inputs + buf_size_biases + buf_size_scratchpad + buf_size_outputs + buf_size_tmp_outputs + buf_size_pwl;
+    uint32_t bytes_requested = buf_size_weights + buf_size_inputs + buf_size_biases + buf_size_outputs + buf_size_tmp_outputs + buf_size_pwl;
     uint32_t bytes_granted;
 
     memory = deviceController.Alloc(bytes_requested, &bytes_granted);
@@ -127,7 +124,7 @@ void SetupRecurrentModel::sampleRnnLayer()
     memcpy(inputBuffer, inputs, sizeof(inputs));
     pinned_mem_ptr += buf_size_inputs;
 
-    int32_t *pinned_biases = (int32_t*)pinned_mem_ptr;
+    int32_t* pinned_biases = (int32_t*)pinned_mem_ptr;
     if (weightsAre2Bytes)
     {
         memcpy(pinned_biases, regularBiases, sizeof(regularBiases));
@@ -138,37 +135,37 @@ void SetupRecurrentModel::sampleRnnLayer()
     }
     pinned_mem_ptr += buf_size_biases;
 
-    scratchpad = pinned_mem_ptr;
-    memset(scratchpad, 0, buf_size_scratchpad);
-    pinned_mem_ptr += buf_size_scratchpad;
-
     outputBuffer = pinned_mem_ptr;
     pinned_mem_ptr += buf_size_outputs;
 
-    affine_func.nBytesPerWeight = weightsAre2Bytes ? GNA_INT16 : GNA_INT8;
-    affine_func.nBytesPerBias = weightsAre2Bytes ? GNA_INT32: GNA_DATA_RICH_FORMAT;
-    affine_func.pWeights = pinned_weights;
-    affine_func.pBiases = pinned_biases;
-
     pwl.nSegments = nSegments;
-    pwl.pSegments = reinterpret_cast<intel_pwl_segment_t*>(pinned_mem_ptr);
+    pwl.pSegments = reinterpret_cast<struct Gna2PwlSegment*>(pinned_mem_ptr);
     samplePwl(pwl.pSegments, pwl.nSegments);
 
-    recurrent_layer.affine = affine_func;
-    recurrent_layer.pwl = pwl;
-    recurrent_layer.feedbackFrameDelay = 3;
+    operations = static_cast<Gna2Operation*>(calloc(1, sizeof(Gna2Operation)));
+    tensors = static_cast<Gna2Tensor*>(calloc(5, sizeof(Gna2Tensor)));
 
-    nnet.pLayers[0].nInputColumns = inVecSz;
-    nnet.pLayers[0].nInputRows = nnet.nGroup;
-    nnet.pLayers[0].nOutputColumns = outVecSz;
-    nnet.pLayers[0].nOutputRows = nnet.nGroup;
-    nnet.pLayers[0].nBytesPerInput = GNA_INT16;
-    nnet.pLayers[0].nBytesPerOutput = GNA_INT16;
-    nnet.pLayers[0].nBytesPerIntermediateOutput = GNA_INT32;
-    nnet.pLayers[0].operation = INTEL_RECURRENT;
-    nnet.pLayers[0].mode = INTEL_INPUT_OUTPUT;
-    nnet.pLayers[0].pLayerStruct = &recurrent_layer;
-    nnet.pLayers[0].pInputs = nullptr;
-    nnet.pLayers[0].pOutputsIntermediate = scratchpad;
-    nnet.pLayers[0].pOutputs = nullptr;
+    tensors[0] = Gna2TensorInit2D(groupingNum, 8,
+        Gna2DataTypeInt16, nullptr);
+    tensors[1] = Gna2TensorInit2D(groupingNum, outVecSz,
+        Gna2DataTypeInt16, nullptr);
+
+    tensors[2] = Gna2TensorInit2D(32, 40,
+        weightsAre2Bytes ? Gna2DataTypeInt16 : Gna2DataTypeInt8,
+        pinned_weights);
+
+    tensors[3] = Gna2TensorInit1D(outVecSz * 4,
+        weightsAre2Bytes ? Gna2DataTypeInt32 : Gna2DataTypeCompoundBias,
+        pinned_biases);
+
+    tensors[4] = Gna2TensorInitActivation(nSegments, pwl.pSegments);
+
+
+    Gna2OperationInitRecurrent(
+        operations, &Allocator,
+        &tensors[0], &tensors[1],
+        &tensors[2], &tensors[3],
+        &tensors[4], delay);
+
+    model = { 1, operations };
 }

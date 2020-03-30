@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2017 Intel Corporation.
+ Copyright 2020 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -27,6 +27,8 @@
 
 #include "gna-api.h"
 #include "gna2-api.h"
+
+#include "DeviceController.h"
 
 #include <memory>
 #include <string>
@@ -131,4 +133,5 @@ protected:
     static const int groupingNum = 4;
     static const int inVecSz = 16;
     static const int outVecSz = 8;
+    static const int outVecSizeDiagonal = 16;
 };

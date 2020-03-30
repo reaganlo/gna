@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2017 Intel Corporation.
+ Copyright 2020 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -23,13 +23,13 @@
  in any way.
 */
 
-#include <cstring>
-#include <cstdlib>
-#include <iostream>
+#include "SetupGmmModel.h"
 
 #include "gna-api.h"
 
-#include "SetupGmmModel.h"
+#include <cstring>
+#include <cstdlib>
+#include <iostream>
 
 #define UNREFERENCED_PARAMETER(P) ((void)(P))
 
@@ -37,7 +37,6 @@ SetupGmmModel::SetupGmmModel(DeviceController & deviceCtrl, bool activeListEn)
     : deviceController{deviceCtrl},
       activeListEnabled{activeListEn}
 {
-    memset(&nnet, 0, sizeof(nnet));
     memset(&model, 0, sizeof(model));
     sampleGmmLayer();
 
@@ -57,14 +56,6 @@ SetupGmmModel::SetupGmmModel(DeviceController & deviceCtrl, bool activeListEn)
 SetupGmmModel::~SetupGmmModel()
 {
     deviceController.Free(memory);
-    if (nnet.pLayers)
-    {
-        if(nnet.pLayers->pLayerStruct)
-        {
-            free(nnet.pLayers->pLayerStruct);
-        }
-        free(nnet.pLayers);
-    }
     if (operations)
     {
         free(operations);

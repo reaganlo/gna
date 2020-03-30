@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2017 Intel Corporation.
+ Copyright 2020 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -23,26 +23,22 @@
  in any way.
 */
 
-#include <cstring>
-#include <cstdlib>
-#include <iostream>
+#include "SetupCopyModel.h"
 
 #include "gna-api.h"
 
-#include "SetupCopyModel.h"
+#include <cstring>
+#include <cstdlib>
+#include <iostream>
 
 #define UNREFERENCED_PARAMETER(P) ((void)(P))
 
 SetupCopyModel::SetupCopyModel(DeviceController & deviceCtrl, uint32_t nCopyColumns, uint32_t nCopyRows)
     : deviceController{deviceCtrl}
 {
-    nnet.nGroup = groupingNum;
-    nnet.nLayers = layersNum;
-    nnet.pLayers = (intel_nnet_layer_t*)calloc(nnet.nLayers, sizeof(intel_nnet_layer_t));
-
     sampleCopyLayer(nCopyColumns, nCopyRows);
 
-    deviceController.ModelCreate(&nnet, &modelId);
+    deviceController.ModelCreate(&model, &modelId);
 
     configId = deviceController.ConfigAdd(modelId);
 
@@ -53,7 +49,6 @@ SetupCopyModel::SetupCopyModel(DeviceController & deviceCtrl, uint32_t nCopyColu
 SetupCopyModel::~SetupCopyModel()
 {
     deviceController.Free(memory);
-    free(nnet.pLayers);
 
     deviceController.ModelRelease(modelId);
 }
@@ -92,20 +87,21 @@ void SetupCopyModel::sampleCopyLayer(uint32_t nCopyColumns, uint32_t nCopyRows)
 
     outputBuffer = pinned_mem_ptr;
 
-    copy_layer.nCopyCols = nCopyColumns;
-    copy_layer.nCopyRows = nCopyRows;
+    operations = static_cast<Gna2Operation*>(calloc(1, sizeof(Gna2Operation)));
+    tensors = static_cast<Gna2Tensor*>(calloc(2, sizeof(Gna2Tensor)));
 
-    nnet.pLayers[0].nInputColumns = inVecSz;
-    nnet.pLayers[0].nInputRows = nnet.nGroup;
-    nnet.pLayers[0].nOutputColumns = outVecSz;
-    nnet.pLayers[0].nOutputRows = nnet.nGroup;
-    nnet.pLayers[0].nBytesPerInput = GNA_INT16;
-    nnet.pLayers[0].nBytesPerOutput = GNA_INT16;
-    nnet.pLayers[0].nBytesPerIntermediateOutput = GNA_INT32;
-    nnet.pLayers[0].operation = INTEL_COPY;
-    nnet.pLayers[0].mode = INTEL_INPUT_OUTPUT;
-    nnet.pLayers[0].pLayerStruct = &copy_layer;
-    nnet.pLayers[0].pInputs = nullptr;
-    nnet.pLayers[0].pOutputsIntermediate = nullptr;
-    nnet.pLayers[0].pOutputs = nullptr;
+    tensors[0] = Gna2TensorInit2D(groupingNum, inVecSz,
+        Gna2DataTypeInt16, nullptr);
+    tensors[1] = Gna2TensorInit2D(groupingNum, outVecSz,
+        Gna2DataTypeInt16, nullptr);
+
+    parameters = calloc(1, sizeof(Gna2Shape));
+    auto const copyShape = static_cast<Gna2Shape*>(parameters);
+    *copyShape = Gna2Shape{ 2, { nCopyRows, nCopyColumns } };
+
+    Gna2OperationInitCopy(operations, &Allocator,
+        &tensors[0], &tensors[1],
+        copyShape);
+
+    model = { 1, operations };
 }

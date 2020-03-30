@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2017 Intel Corporation.
+ Copyright 2020 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -34,19 +34,14 @@
 
 #define UNREFERENCED_PARAMETER(P) ((void)(P))
 
-SetupMultibiasModel_1::SetupMultibiasModel_1(DeviceController & deviceCtrl, bool weight2B, bool pwlEn)
-    : deviceController{deviceCtrl},
-    weightsAre2Bytes{weight2B},
-    pwlEnabled{pwlEn}
+SetupMultibiasModel_1::SetupMultibiasModel_1(DeviceController& deviceCtrl, bool weight2B, bool pwlEn)
+    : deviceController{ deviceCtrl },
+    weightsAre2Bytes{ weight2B },
+    pwlEnabled{ pwlEn }
 {
-    nSegments = 64;
-    nnet.nGroup = groupingNum;
-    nnet.nLayers = layersNum;
-    nnet.pLayers = (intel_nnet_layer_t*)calloc(nnet.nLayers, sizeof(intel_nnet_layer_t));
-
     sampleAffineLayer();
 
-    deviceController.ModelCreate(&nnet, &modelId);
+    deviceController.ModelCreate(&model, &modelId);
 
     configId = deviceController.ConfigAdd(modelId);
 
@@ -57,7 +52,6 @@ SetupMultibiasModel_1::SetupMultibiasModel_1(DeviceController & deviceCtrl, bool
 SetupMultibiasModel_1::~SetupMultibiasModel_1()
 {
     deviceController.Free(memory);
-    free(nnet.pLayers);
 
     deviceController.ModelRelease(modelId);
 }
@@ -105,7 +99,7 @@ void SetupMultibiasModel_1::checkReferenceOutput(uint32_t modelIndex, uint32_t c
             break;
         case confiMultiBias_1_2B:
             compareReferenceValues<int32_t>(i, configIndex);
-        break;
+            break;
         case confiMultiBiasPwl_1_1B:
             compareReferenceValues<int16_t>(i, configIndex);
             break;
@@ -122,21 +116,19 @@ void SetupMultibiasModel_1::checkReferenceOutput(uint32_t modelIndex, uint32_t c
 void SetupMultibiasModel_1::sampleAffineLayer()
 {
     uint32_t buf_size_weights = weightsAre2Bytes
-        ? ALIGN64( static_cast<uint32_t>(sizeof(weights_2B)))
+        ? ALIGN64(static_cast<uint32_t>(sizeof(weights_2B)))
         : ALIGN64(static_cast<uint32_t>(sizeof(weights_1B)));
     uint32_t buf_size_inputs = ALIGN64(static_cast<uint32_t>(sizeof(inputs)));
     uint32_t buf_size_biases = ALIGN64(static_cast<uint32_t>(sizeof(regularBiases)));
     uint32_t buf_size_weight_scales = weightsAre2Bytes
         ? 0 : ALIGN64(static_cast<uint32_t>(sizeof(scaling)));
     uint32_t buf_size_outputs = ALIGN64(
-            outVecSz * groupingNum * static_cast<uint32_t>(sizeof(int32_t)));
-    uint32_t buf_size_tmp_outputs = ALIGN64(
-            outVecSz * groupingNum * static_cast<uint32_t>(sizeof(int32_t)));
+        outVecSz * groupingNum * static_cast<uint32_t>(sizeof(int32_t)));
     uint32_t buf_size_pwl = ALIGN64(
-            nSegments * static_cast<uint32_t>(sizeof(intel_pwl_segment_t)));
+        nSegments * static_cast<uint32_t>(sizeof(Gna2PwlSegment)));
 
     uint32_t bytes_requested = buf_size_weights + buf_size_inputs + buf_size_biases +
-        buf_size_weight_scales + buf_size_outputs + buf_size_tmp_outputs;
+        buf_size_weight_scales + buf_size_outputs;
 
     if (pwlEnabled)
     {
@@ -162,12 +154,12 @@ void SetupMultibiasModel_1::sampleAffineLayer()
     memcpy(inputBuffer, inputs, sizeof(inputs));
     pinned_mem_ptr += buf_size_inputs;
 
-    int32_t *pinned_biases = (int32_t*)pinned_mem_ptr;
+    int32_t* pinned_biases = (int32_t*)pinned_mem_ptr;
     memcpy(pinned_biases, regularBiases, sizeof(regularBiases));
 
     pinned_mem_ptr += buf_size_biases;
 
-    intel_weight_scaling_factor_t *pinned_weight_scales = nullptr;
+    intel_weight_scaling_factor_t* pinned_weight_scales = nullptr;
     if (!weightsAre2Bytes)
     {
         pinned_weight_scales = (intel_weight_scaling_factor_t*)pinned_mem_ptr;
@@ -178,61 +170,55 @@ void SetupMultibiasModel_1::sampleAffineLayer()
     outputBuffer = pinned_mem_ptr;
     pinned_mem_ptr += buf_size_outputs;
 
-    void *tmp_outputs;
-    if (pwlEnabled)
-    {
-        tmp_outputs = pinned_mem_ptr;
-        pinned_mem_ptr += buf_size_tmp_outputs;
+    operations = static_cast<Gna2Operation*>(calloc(1, sizeof(Gna2Operation)));
+    tensors = static_cast<Gna2Tensor*>(calloc(6, sizeof(Gna2Tensor)));
 
-        intel_pwl_segment_t *pinned_pwl = reinterpret_cast<intel_pwl_segment_t*>(pinned_mem_ptr);
+    tensors[0] = Gna2TensorInit2D(inVecSz, groupingNum,
+        Gna2DataTypeInt16, nullptr);
+    tensors[1] = Gna2TensorInit2D(outVecSz, groupingNum,
+        Gna2DataTypeInt32, nullptr);
 
-        pwl.nSegments = nSegments;
-        pwl.pSegments = pinned_pwl;
-        samplePwl(pwl.pSegments, pwl.nSegments);
+    tensors[2] = Gna2TensorInit2D(outVecSz, inVecSz,
+        weightsAre2Bytes ? Gna2DataTypeInt16 : Gna2DataTypeInt8,
+        pinned_weights);
+    tensors[3] = Gna2TensorInit2D(outVecSz, groupingNum,
+        Gna2DataTypeInt32,
+        pinned_biases);
+    tensors[4] = Gna2TensorInitDisabled();
+    if (weightsAre2Bytes) {
+        tensors[5] = Gna2TensorInitDisabled();
     }
     else
     {
-        tmp_outputs = NULL;
-        pwl.nSegments = 0;
-        pwl.pSegments = NULL;
+        tensors[5] = Gna2TensorInit1D(outVecSz, Gna2DataTypeWeightScaleFactor, pinned_weight_scales);
     }
-
-    multibias_func.nBytesPerWeight = weightsAre2Bytes ? GNA_INT16 : GNA_INT8;
-    multibias_func.pWeights = pinned_weights;
-    multibias_func.pBiases = pinned_biases;
-    multibias_func.biasVectorCount = 4;
-    multibias_func.biasVectorIndex = 3;
-    multibias_func.nBytesPerBias = GNA_INT32;
-    multibias_func.weightScaleFactors = pinned_weight_scales;
-
-    multibias_layer.affine = multibias_func;
-    multibias_layer.pwl = pwl;
-
-    nnet.pLayers[0].nInputColumns = nnet.nGroup;
-    nnet.pLayers[0].nInputRows = inVecSz;
-    nnet.pLayers[0].nOutputColumns = nnet.nGroup;
-    nnet.pLayers[0].nOutputRows = outVecSz;
-    nnet.pLayers[0].nBytesPerInput = GNA_INT16;
-    nnet.pLayers[0].nBytesPerIntermediateOutput = GNA_INT32;
-    nnet.pLayers[0].operation = INTEL_AFFINE_MULTIBIAS;
-    nnet.pLayers[0].mode = INTEL_INPUT_OUTPUT;
-    nnet.pLayers[0].pLayerStruct = &multibias_layer;
-    nnet.pLayers[0].pInputs = nullptr;
-    nnet.pLayers[0].pOutputs = nullptr;
 
     if (pwlEnabled)
     {
-        nnet.pLayers[0].pOutputsIntermediate = tmp_outputs;
-        nnet.pLayers[0].nBytesPerOutput = GNA_INT16;
+        Gna2PwlSegment* pinned_pwl = reinterpret_cast<Gna2PwlSegment*>(pinned_mem_ptr);
+
+        samplePwl(pinned_pwl, nSegments);
+        tensors[1] = Gna2TensorInit2D(outVecSz, groupingNum, Gna2DataTypeInt16, nullptr);
+        tensors[4] = Gna2TensorInit1D(nSegments, Gna2DataTypePwlSegment, pinned_pwl);
     }
-    else
-    {
-        nnet.pLayers[0].pOutputsIntermediate = nullptr;
-        nnet.pLayers[0].nBytesPerOutput = GNA_INT32;
-    }
+
+    parameters = calloc(2, sizeof(uint32_t));
+    auto const multibiasParameters = static_cast<uint32_t*>(parameters);
+    multibiasParameters[0] = Gna2BiasModeGrouping;
+    multibiasParameters[1] = 3; //biasVectorIndex;
+
+    Gna2OperationInitFullyConnectedBiasGrouping(
+        operations, &Allocator,
+        &tensors[0], &tensors[1],
+        &tensors[2], &tensors[3],
+        &tensors[4], &tensors[5],
+        (Gna2BiasMode*)&multibiasParameters[0], &multibiasParameters[1]
+    );
+
+    model = { 1, operations };
 }
 
-void SetupMultibiasModel_1::samplePwl(intel_pwl_segment_t *segments, uint32_t numberOfSegments)
+void SetupMultibiasModel_1::samplePwl(Gna2PwlSegment* segments, uint32_t numberOfSegments)
 {
     ModelUtilities::GeneratePwlSegments(segments, numberOfSegments);
 }
