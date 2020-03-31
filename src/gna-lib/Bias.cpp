@@ -116,14 +116,12 @@ catch (GnaException& e)
 
 void BiasTensor::validate() const
 {
-    const auto vectorCountIter = Dimensions.find(GNA_DIM_W);
-    auto vectorCount = ui32_1;
-    if (Dimensions.end() != vectorCountIter)
+    const std::function<void()> command = [&]()
     {
-        vectorCount = vectorCountIter->second;
-    }
-    Expect::InRange(VectorIndex, ui32_0, vectorCount - 1, Gna2StatusXnnErrorBiasIndex);
-
+        ModelErrorHelper::ExpectAboveEq(VectorIndex, ui32_0);
+        ModelErrorHelper::ExpectBelowEq(VectorIndex, VectorCount - 1);
+    };
+    ModelErrorHelper::ExecuteForModelItem(command, GNA2_DISABLED, BiasVectorParamIndex);
     Expect::InSet(BiasMode, modeLimits);
 }
 

@@ -83,7 +83,7 @@ std::unique_ptr<AffineFunction> AffineFunction::Create(
         const TransformFactoryConfig& config,
         const OperationConfig& operationConfig)
 {
-    if (operationConfig.HasGroupedBias())
+    if (operationConfig.BiasMode == Gna2BiasModeGrouping)
     {
         return createAffineMultiFunction(config, operationConfig);
     }
@@ -120,14 +120,15 @@ std::unique_ptr<AffineFunction> AffineFunction::createAffineMultiFunction(
     auto biases = std::make_unique<const BiasTensor>(biasTensor, biasVectorIndex,
             Gna2BiasModeGrouping, config.validator);
 
-    // GNA 2.0 backward compatibility only
-    if (Gna2DataTypeInt8 == weightTensor.Type
-            && Gna2DataTypeInt16 == config.input->Mode.Type)
+    if (operationConfig.WeightScalesTensor.Mode != Gna2TensorModeDisabled)
     {
-        auto weightScalesTensor = operationConfig.WeightScalesTensor;
-        weightScales = std::make_unique<const Tensor>(weightScalesTensor,
+        const std::function<void()> command = [&]()
+        {
+            weightScales = std::make_unique<const Tensor>(operationConfig.WeightScalesTensor,
                 Validator{ config.validator, AffineFunctionMulti::Capabilities });
-        Expect::ValidBuffer(*weightScales);
+            ModelErrorHelper::ExpectNotNull(*weightScales);
+        };
+        ModelErrorHelper::ExecuteForModelItem(command, WeightScaleFactorOperandIndex);
     }
 
     auto kernelOperation = KERNEL_AFFINE_MULTIBIAS;

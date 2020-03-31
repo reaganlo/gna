@@ -28,7 +28,9 @@
 
 #include "test-model-export-legacy-sue.h"
 
-#include "common.h"
+#include "test-activation-helper.h"
+#include "test-gna-api.h"
+
 #include "gna-api.h"
 #include "gna-api-dumper.h"
 
@@ -43,8 +45,7 @@
 
 #include "HardwareModelNoMMU.h"
 
-
-#ifndef __STDC_LIB_EXT1__
+#if !defined(__STDC_LIB_EXT1__) && !defined(memcpy_s)
 #define memcpy_s(_Destination, _DestinationSize, _Source, _SourceSize) memcpy(_Destination, _Source, _SourceSize)
 #endif
 
@@ -90,17 +91,6 @@ void TestSimpleModel::ExportSueLegacyUsingGnaApi2(Gna2ModelSueCreekHeader& model
 
     ExportComponent(dump, Gna2DeviceVersionEmbedded1_0, Gna2ModelExportComponentLegacySueCreekDump);
     EXPECT_EQ(dump.size(), expectedModelSize);
-}
-
-void TestSimpleModel::ExpectMemEqual(const uint8_t* dump, uint32_t dumpSize, const uint8_t* ref, uint32_t refSize)
-{
-    EXPECT_NE(dump, nullptr);
-    EXPECT_EQ(dumpSize, refSize);
-
-    for (uint32_t i = 0; i < dumpSize; i++)
-    {
-        EXPECT_EQ(dump[i], ref[i]) << " Mismatch in mem at index: 0x" << std::hex << i << std::dec;
-    }
 }
 
 void TestSimpleModel::ExpectEqualToRefAdlNoMmuLd(const uint8_t* dump, uint32_t dumpSize) const

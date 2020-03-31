@@ -279,11 +279,10 @@ void SetupDnnModel_Multibuffer::sampleAffineLayer()
 
     operations = static_cast<Gna2Operation*>(calloc(1, sizeof(Gna2Operation)));
     tensors = static_cast<Gna2Tensor*>(calloc(5, sizeof(Gna2Tensor)));
-
     tensors[0] = Gna2TensorInit2D(inVecSz, groupingNum,
-        Gna2DataTypeInt16, nullptr);
+        Gna2DataTypeInt16, inputBuffer);
     tensors[1] = Gna2TensorInit2D(outVecSz, groupingNum,
-        Gna2DataTypeInt32, nullptr);
+        Gna2DataTypeInt32, outputBuffer);
 
     tensors[2] = Gna2TensorInit2D(outVecSz, inVecSz,
         weightsAre2Bytes ? Gna2DataTypeInt16 : Gna2DataTypeInt8,

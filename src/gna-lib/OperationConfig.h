@@ -52,13 +52,8 @@ public:
     static Gna2OperationType GetOperationType(const Gna2Operation& operation);
     static Gna2OperationType GetOperationType(const nn_layer& layer);
 
-    static bool HasGroupedBias(
-        const Gna2Tensor& biasTensor, const Gna2BiasMode biasMode);
-
     kernel_op GetKernelOperation() const;
     TransformOperation GetTransformOperation() const;
-
-    bool HasGroupedBias() const;
 
     Gna2Tensor GetEnabledOperand(uint32_t index) const;
 
@@ -66,11 +61,7 @@ public:
     T GetParameterAs(uint32_t index) const
     {
         Expect::NotNull(Operation);
-        if (IsParameterAvailable(*Operation, index))
-        {
-            return *static_cast<T*> (Operation->Parameters[index]);
-        }
-        throw GnaException(Gna2StatusModelConfigurationInvalid);
+        return ModelWrapper::GetParameter<T>(*Operation, index);
     }
 
     template<typename Target, typename Source>
@@ -117,8 +108,7 @@ public:
     Gna2Tensor BiasesTensor;
     Gna2BiasMode BiasMode = Gna2BiasModeDefault;
     uint32_t FeedbackDelay;
-
-    Gna2Tensor WeightScalesTensor;
+    Gna2Tensor WeightScalesTensor = ModelWrapper::GetDisabledOperand();
     uint32_t BiasVectorIndex;
 
     Gna2Operation const * const Operation;
@@ -138,9 +128,6 @@ protected:
         if (isAffine(operation))
         {
             WeightsTensor = GetWeights(operation);
-            // TODO: 3: Remove when full (e.g., weights) buffer addition and late sanity checking implemented
-            ModelErrorHelper::ExpectNotNull(WeightsTensor.Data, Gna2ItemTypeOperandData, WeightOperandIndex);
-
             if (IsMultibias(operation))
             {
                 InitMultibias(operation);
@@ -153,8 +140,6 @@ protected:
         if (isCNN2D(operation))
         {
             FiltersTensor = GetFilters(operation);
-            // TODO: 3: Remove when full (e.g., filers) buffer addition and late sanity checking implemented
-            ModelErrorHelper::ExpectNotNull(FiltersTensor.Data, Gna2ItemTypeOperandData, FilterOperandIndex);
             ConvolutionStride = GetStride(operation);
             ZeroPadding = GetZeroPadding(operation);
             BiasMode = GetBiasMode(operation);
@@ -184,16 +169,6 @@ private:
     static Gna2Tensor GetWeights(const Gna2Operation& operation);
     static Gna2Tensor GetFilters(const nn_layer& layer);
     static Gna2Tensor GetFilters(const Gna2Operation& operation);
-
-    static bool IsOperandAvailable(const Gna2Operation & operation, uint32_t index);
-    static bool IsParameterAvailable(const Gna2Operation & operation, uint32_t index);
-
-    template<typename T>
-    static T GetParameterAs(const Gna2Operation & operation, OperationInfoKey parameter, T defaultValue)
-    {
-        auto const parameterIndex = ModelWrapper::GetOperationInfo(operation.Type, parameter);
-        return GetParameterAs(operation, parameterIndex, defaultValue);
-    }
 
     template<typename T>
     static Gna2Tensor getWeightsTensor(const nn_layer& layer, const T& affineFunc)
@@ -240,18 +215,6 @@ private:
 
         return a;
     }
-
-    template<typename T>
-    static T GetParameterAs(const Gna2Operation & operation, uint32_t index, T defaultValue)
-    {
-        if (IsParameterAvailable(operation, index))
-        {
-            return *static_cast<T*> (operation.Parameters[index]);
-        }
-        return defaultValue;
-    }
-
-    static Gna2Tensor GetOperand(const Gna2Operation & operation, uint32_t index, Gna2Tensor defaultValue);
 
     static Gna2BiasMode GetBiasMode(const Gna2Operation& operation);
     static Gna2BiasMode GetBiasMode(const nn_layer& layer);

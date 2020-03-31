@@ -82,12 +82,12 @@ class TestSimpleModelTlv : public TestSimpleModel
 protected:
     std::vector<char> Gna3DumpNoMmuTlv();
 
-    void ExpectLdEqual(const std::vector<char>& tlv, const std::vector<uint8_t>& ref)
+    static void ExpectLdEqual(const std::vector<char>& tlv, const std::vector<uint8_t>& ref)
     {
-        TestSimpleModel::ExpectMemEqual(reinterpret_cast<const uint8_t*>(tlv.data()) + 0x5C,
+        ExpectMemEqual(reinterpret_cast<const uint8_t*>(tlv.data()) + 0x5C,
             128,
             ref.data(),
-            ref.size());
+            static_cast<uint32_t>(ref.size()));
     }
 };
 
@@ -103,7 +103,7 @@ std::vector<char> TestSimpleModelTlv::Gna3DumpNoMmuTlv()
 
     struct DebugExtra {
         const char extraString[24] = "Gna2ModelSueCreekHeader";
-        Gna2ModelSueCreekHeader sueHeader;
+        Gna2ModelSueCreekHeader sueHeader = {};
     } dbgExtra;
 
     ExportComponentAs(dbgExtra.sueHeader, Gna2DeviceVersionEmbedded1_0, Gna2ModelExportComponentLegacySueCreekHeader);

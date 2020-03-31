@@ -40,10 +40,21 @@
 #include <initializer_list>
 #include <vector>
 
+void TestGnaApi::ExpectMemEqual(const uint8_t* dump, uint32_t dumpSize, const uint8_t* ref, uint32_t refSize)
+{
+    EXPECT_NE(dump, nullptr);
+    EXPECT_EQ(dumpSize, refSize);
+
+    for (uint32_t i = 0; i < dumpSize; i++)
+    {
+        EXPECT_EQ(dump[i], ref[i]) << " Mismatch in mem at index: 0x" << std::hex << i << std::dec;
+    }
+}
+
 class TestGnaModelApi : public TestGnaApiEx
 {
 protected:
-    static void createSimpleCopyModel(uint32_t & modelIdOut);
+    void createSimpleCopyModel(uint32_t & modelIdOut);
     void * gnaMemory128kB = nullptr;
     void SetUp() override
     {
@@ -341,7 +352,7 @@ void TestGnaModelApi::createSimpleCopyModel(uint32_t &modelIdOut)
         Gna2TensorModeDefault,
         {'\0'},
         Gna2DataTypeInt16,
-        nullptr };
+        gnaMemory128kB };
 
     Gna2Tensor output{ input };
     Gna2Shape copyShape{ 2, { 8, 16 } };
@@ -484,13 +495,13 @@ TEST_F(TestGnaModelApi, Gna2ModelCreateSingleGMMSuccesfull)
         Gna2TensorModeDefault,
         {'\0'},
         Gna2DataTypeUint8,
-        nullptr };
+        gnaMemory128kB };
     Gna2Tensor output{
         Gna2Shape{2, { gmmStates, batchSize } },  // HW
         Gna2TensorModeDefault,
         {'\0'},
         Gna2DataTypeUint32,
-        nullptr };
+        gnaMemory128kB };
     Gna2Tensor means{
         dataShape,
         Gna2TensorModeDefault,

@@ -26,6 +26,7 @@
 #pragma once
 
 #include "../test-gna-api/test-gna-api.h"
+
 #include "gna2-memory-api.h"
 #include "gna2-model-api.h"
 
@@ -175,10 +176,9 @@ public:
     }
 };
 
-class TestModelError : public TestGnaApiEx
+class TestModelError : public TestGnaModel
 {
 protected:
-    const uint32_t DefaultMemoryToUse = 8192;
     static const uint32_t MaxNumberOfLayers = 8192;
     Gna2Operation gnaOperations[MaxNumberOfLayers] = {};
     Gna2Model gnaModel{ 1, gnaOperations };
@@ -187,41 +187,23 @@ protected:
 
     uint32_t modelId;
     Gna2ModelError lastError;
-    void * gnaMemory = nullptr;
+
     Gna2ModelError e = GetCleanedError();
 
-    void allocGnaMem(const uint32_t required)
-    {
-        uint32_t grantedMemory;
-        const auto status = Gna2MemoryAlloc(required, &grantedMemory, &gnaMemory);
-        ASSERT_EQ(status, Gna2StatusSuccess);
-        ASSERT_EQ(grantedMemory, required);
-        ASSERT_NE(gnaMemory, nullptr);
-    }
-
-    void ReAllocGnaMem(const uint32_t required)
+    void ReAllocateGnaMemory(const uint32_t required)
     {
         ASSERT_NE(gnaMemory, nullptr);
         const auto status = Gna2MemoryFree(gnaMemory);
         ASSERT_EQ(status, Gna2StatusSuccess);
         gnaMemory = nullptr;
-        allocGnaMem(required);
+        AllocateGnaMemory(required, gnaMemory);
         WithOperations({});
     }
 
     void SetUp() override
     {
-        TestGnaApiEx::SetUp();
-        allocGnaMem(DefaultMemoryToUse);
+        TestGnaModel::SetUp();
         WithOperations({ SimpleCopy, SimpleCopy, SimpleCopy });
-    }
-
-    void TearDown() override
-    {
-        TestGnaApiEx::TearDown();
-        const auto status = Gna2MemoryFree(gnaMemory);
-        ASSERT_EQ(status, Gna2StatusSuccess);
-        gnaMemory = nullptr;
     }
 
     Gna2OperationHolder& allocateNewOperation()

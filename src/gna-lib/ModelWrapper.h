@@ -153,17 +153,17 @@ public:
 
     static uint32_t GetOperationInfo(OperationType operationType, OperationInfoKey infoType);
     static bool HasEnabledOperand(const Gna2Operation& apiOperation, uint32_t operandIndex);
+    static bool IsOperandAvailable(const Gna2Operation & operation, uint32_t index);
 
     static void ExpectOperandModeDefault(const Gna2Operation & operation, int32_t index);
     static void ExpectOperandDataNotNull(const Gna2Operation & operation, int32_t index);
 
+    static Gna2Tensor GetOperand(const Gna2Operation & operation, uint32_t index, Gna2Tensor defaultValue);
     static Gna2Tensor GetEnabledOperand(const Gna2Operation & apiOperation, uint32_t operandIndex);
 
-    static Gna2Tensor GetOptionalOperand(const Gna2Operation& apiOperation,
-        uint32_t operandIndex, Gna2Tensor defaultTensor);
+    static Gna2Tensor GetDisabledOperand();
 
     static bool HasParameter(const Gna2Operation& operation, uint32_t parameterIndex);
-
     static void ExpectParameterAvailable(const Gna2Operation & operation, uint32_t index);
 
     template<class T>
@@ -190,9 +190,7 @@ public:
     template<class T>
     static T GetOptionalParameter(const Gna2Operation& operation, uint32_t parameterIndex, T defaultValue)
     {
-        if(operation.Parameters != nullptr &&
-            parameterIndex < operation.NumberOfParameters &&
-            nullptr != operation.Parameters[parameterIndex])
+        if(HasParameter(operation, parameterIndex))
         {
             return *static_cast<const T*>(operation.Parameters[parameterIndex]);
         }

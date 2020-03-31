@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2019 Intel Corporation.
+ Copyright 2020 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -22,30 +22,25 @@
  or any other notice embedded in Materials by Intel or Intel's suppliers or licensors
  in any way.
 */
-#pragma once
 
-enum ThresholdBiasSource
-{
-    ThresholdBiasSourceDefault,
-    ThresholdBiasSourceExternal
-};
+#include "test-activation-helper.h"
 
-enum ThresholdInterrupt
-{
-    ThresholdInterruptDefault,
-    ThresholdInterruptNotSent
-};
+#include "gna2-model-api.h"
+#include <limits>
+#include <vector>
 
-enum ThresholdOperation
+const std::vector<Gna2PwlSegment>& TestActivationHelper::GetIdentityPwl()
 {
-    ThresholdOperationStop,
-    ThresholdOperationContinueIfMet,
-    ThresholdOperationContinueIfNotMet,
-    ThresholdOperationContinueAllways
-};
+    static const std::vector<Gna2PwlSegment> identityPwl{
+    {(std::numeric_limits<int16_t>::min)(), (std::numeric_limits<int16_t>::min)(), 0x100},
+    {0, 0, 0x100} };
+    return identityPwl;
+}
 
-enum ThresholdCondition
+const std::vector<Gna2PwlSegment>& TestActivationHelper::GetConversionPwl()
 {
-    ThresholdConditionScoreNegative,
-    ThresholdConditionScoreNotNegative
-};
+    static const std::vector<Gna2PwlSegment> conversionPwl{
+    {(std::numeric_limits<int16_t>::min)(), (std::numeric_limits<int16_t>::min)(), 0x100},
+    {0, 0, 0x100} };
+    return conversionPwl;
+}

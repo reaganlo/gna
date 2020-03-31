@@ -49,6 +49,7 @@
 #include "Shape.h"
 #include "CopyLayer.h"
 #include "Tensor.h"
+#include "ThresholdParameters.h"
 #include "Transform.h"
 #include "TransformMap.h"
 
@@ -732,7 +733,7 @@ HardwareLayerAffineMBias::HardwareLayerAffineMBias(const DescriptorParameters& p
         XnnDescriptor[bias_precision] = affineMulti->Biases->Mode;
     }
 
-    XnnDescriptor[bias_grp_cnt] = affineMulti->Biases->Dimensions.at('W');
+    XnnDescriptor[bias_grp_cnt] = affineMulti->Biases->VectorCount;
     XnnDescriptor[bias_grp_buffer] = affineMulti->Biases->Buffer;
     XnnDescriptor[bias_grp_value] = affineMulti->Biases->VectorIndex;
 

@@ -26,14 +26,14 @@
 #pragma once
 
 #include "gna2-device-api.h"
-#include "gna2-model-api.h"
+#include "gna2-memory-api.h"
 
+#include "common.h"
 #include "Macros.h"
 
 #include <array>
 #include <chrono>
 #include <gtest/gtest.h>
-#include <vector>
 
 class TestGnaApi : public testing::Test
 {
@@ -64,6 +64,7 @@ protected:
         return timeout;
     }
 
+    static void ExpectMemEqual(const uint8_t* dump, uint32_t dumpSize, const uint8_t* ref, uint32_t refSize);
 };
 
 class TestGnaApiEx : public TestGnaApi
@@ -77,6 +78,16 @@ protected:
     {
         return free(ptr);
     }
+
+    static void * PageAllocator(uint32_t size)
+    {
+        return _mm_malloc(size, PAGE_SIZE);
+    }
+    static void PageFree(void * ptr)
+    {
+        return _mm_free(ptr);
+    }
+
     static void * InvalidAllocator(uint32_t size)
     {
         UNREFERENCED_PARAMETER(size);
@@ -100,4 +111,35 @@ protected:
     }
 
     uint32_t DeviceIndex = UINT32_MAX;
+};
+
+class TestGnaModel : public TestGnaApiEx
+{
+protected:
+    const uint32_t DefaultMemoryToUse = 8192;
+    void * gnaMemory = nullptr;
+
+    static void AllocateGnaMemory(const uint32_t required, void* & grantedMemory)
+    {
+        uint32_t grantedSize = 0;
+        ASSERT_EQ(grantedMemory, nullptr);
+        const auto status = Gna2MemoryAlloc(required, &grantedSize, &grantedMemory);
+        ASSERT_EQ(status, Gna2StatusSuccess);
+        ASSERT_NE(grantedMemory, nullptr);
+        ASSERT_EQ(grantedSize, required);
+    }
+
+    void SetUp() override
+    {
+        TestGnaApiEx::SetUp();
+        AllocateGnaMemory(DefaultMemoryToUse, gnaMemory);
+    }
+
+    void TearDown() override
+    {
+        TestGnaApiEx::TearDown();
+        const auto status = Gna2MemoryFree(gnaMemory);
+        ASSERT_EQ(status, Gna2StatusSuccess);
+        gnaMemory = nullptr;
+    }
 };

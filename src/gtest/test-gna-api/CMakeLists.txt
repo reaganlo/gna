@@ -34,6 +34,8 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 project(${PROJECT_NAME})
 
 add_executable(test-gna-api
+  test-activation-helper.cpp
+  test-activation-helper.h
   test-gna-api.cpp
   test-gna-api.h
   test-gna-device-api.cpp

@@ -31,6 +31,7 @@
 
 #include "ConvolutionKernelArguments.h"
 #include "PoolingKernelArguments.h"
+#include "ThresholdParameters.h"
 
 #include "gna-api.h"
 #include "gna-api-types-xnn.h"

@@ -314,14 +314,14 @@ TEST_F(TestModelError, WrongRnnDelay0)
 
 TEST_F(TestModelError, WrongRnnWeightsNotMatch)
 {
-    ReAllocGnaMem(1 << 20);
+    ReAllocateGnaMemory(1 << 20);
     WithOperations({ SimpleDiagonal, SimpleRnn, SimpleDiagonal });
     WrongShapeDimensions(1, GNA::WeightOperandIndex, 1, 256, Gna2ErrorTypeNotEqual);
 }
 
 TEST_F(TestModelError, WrongRnnWeightsAboveRange)
 {
-    ReAllocGnaMem(1 << 20);
+    ReAllocateGnaMemory(1 << 20);
     WithOperations({ SimpleDiagonal, SimpleRnn, SimpleDiagonal });
     WrongShapeDimensions(1, GNA::WeightOperandIndex, 0, 128, Gna2ErrorTypeNotEqual);
 }

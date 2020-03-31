@@ -36,7 +36,7 @@ namespace GNA
 class ModelExportConfig
 {
 public:
-    explicit ModelExportConfig(Gna2UserAllocator userAllocator);
+    explicit ModelExportConfig(Gna2UserAllocator userAllocatorIn);
     void SetSource(uint32_t deviceId, uint32_t modelId);
     void SetTarget(Gna2DeviceVersion version);
     void Export(enum Gna2ModelExportComponent componentType,
@@ -47,7 +47,7 @@ protected:
     void ValidateState() const;
 
 private:
-    Gna2UserAllocator allocator = nullptr;
+    Gna2UserAllocator userAllocator = nullptr;
     uint32_t sourceDeviceId = Gna2DisabledU32;
     uint32_t sourceModelId = Gna2DisabledU32;
     Gna2DeviceVersion targetDeviceVersion = Gna2DeviceVersionSoftwareEmulation;

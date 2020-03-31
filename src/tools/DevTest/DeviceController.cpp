@@ -72,8 +72,24 @@ void DeviceController::ModelCreate(const gna_model * model, gna_model_id * model
     }
 }
 
+void SetupTemporalInputOutput(const Gna2Model* model, void * memory)
+{
+    for (uint32_t i = 0; i < model->NumberOfOperations; i++)
+    {
+        for (uint32_t j = 0; j < 2; j++)
+        {
+            if (model->Operations[i].Operands[j]->Data == nullptr)
+            {
+                // TODO: 4: remove temporal assignment when Gna2ModelCreate accepts such tensors
+                const_cast<void*&>(model->Operations[i].Operands[j]->Data) = memory;
+            }
+        }
+    }
+}
+
 void DeviceController::ModelCreate(const Gna2Model* model, gna_model_id* modelId)
 {
+    SetupTemporalInputOutput(model, gnaMemory);
     auto const status = Gna2ModelCreate(gnaHandle, model, modelId);
     if (Gna2StatusSuccess != status)
     {
@@ -92,14 +108,13 @@ void DeviceController::ModelRelease(gna_model_id modelId) const
 
 uint8_t * DeviceController::Alloc(uint32_t sizeRequested, uint32_t * sizeGranted)
 {
-    void *memory;
-    GnaAlloc(sizeRequested, sizeGranted, &memory);
-    if (nullptr == memory)
+    GnaAlloc(sizeRequested, sizeGranted, &gnaMemory);
+    if (nullptr == gnaMemory)
     {
         throw std::runtime_error("GnaAlloc failed");
     }
 
-    return static_cast<uint8_t *>(memory);
+    return static_cast<uint8_t *>(gnaMemory);
 }
 
 void DeviceController::Free(void *memory)

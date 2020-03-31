@@ -38,12 +38,13 @@ using namespace GNA;
 
 Tensor::Tensor(const ApiTensor & tensor) :
     Tensor{ Shape::Create(tensor.Shape, Layout{ tensor.Layout }),
-        tensor.Type, tensor.Mode, tensor.Data }
+        GetDataMode(tensor).Type, GetDataMode(tensor).Mode, tensor.Data }
 {
 }
 
 DataMode Tensor::GetDataMode(const Gna2Tensor& tensor)
 {
+    ModelErrorHelper::ExpectEqual(tensor.Mode, Gna2TensorModeDefault, Gna2ItemTypeOperandMode);
     try
     {
         return DataMode{ tensor.Type, tensor.Mode };

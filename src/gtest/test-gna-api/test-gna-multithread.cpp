@@ -23,6 +23,7 @@
  in any way.
 */
 
+#include "test-activation-helper.h"
 #include "test-gna-multithread.h"
 #include "test-gna-api.h"
 
@@ -42,9 +43,6 @@ static void GnaDeAllocator(void * ptr)
     return free(ptr);
 }
 
-const Gna2PwlSegment identityPwl[] = {
-    {(std::numeric_limits<int16_t>::min)(), (std::numeric_limits<int16_t>::min)(), 0x100},
-    {0, 0, 0x100} };
 
 constexpr uint32_t inputDiagonalSize = 0xf000;
 constexpr uint32_t nModels = 4;
@@ -82,9 +80,14 @@ Gna2Model simpleModel(void* gnaMemory, int modelIndex)
     const auto biases = reinterpret_cast<int32_t *>(weights + inputDiagonalSize);
     std::fill_n(biases, inputDiagonalSize, modelValue(modelIndex));
     const auto pwl = reinterpret_cast<Gna2PwlSegment *>(biases + inputDiagonalSize);
-    const auto pwlSize = sizeof(identityPwl) / sizeof(Gna2PwlSegment);
-    std::copy_n(identityPwl, pwlSize, pwl);
+    const auto& pwlIdentity = TestActivationHelper::GetIdentityPwl();
+    int i = 0;
+    for(const auto& segment: pwlIdentity)
+    {
+        pwl[i++] = segment;
+    }
     const Gna2Model model{ 1, static_cast<Gna2Operation*>(GnaAllocator(sizeof(Gna2Operation))) };
+    const auto pwlSize = static_cast<uint32_t>(pwlIdentity.size());
     *model.Operations = simpleDiagonalOperation(input, output, weights, biases, pwl, inputDiagonalSize, pwlSize);
     return model;
 }

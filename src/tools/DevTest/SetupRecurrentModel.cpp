@@ -146,9 +146,9 @@ void SetupRecurrentModel::sampleRnnLayer()
     tensors = static_cast<Gna2Tensor*>(calloc(5, sizeof(Gna2Tensor)));
 
     tensors[0] = Gna2TensorInit2D(groupingNum, 8,
-        Gna2DataTypeInt16, nullptr);
+        Gna2DataTypeInt16, inputBuffer);
     tensors[1] = Gna2TensorInit2D(groupingNum, outVecSz,
-        Gna2DataTypeInt16, nullptr);
+        Gna2DataTypeInt16, outputBuffer);
 
     tensors[2] = Gna2TensorInit2D(32, 40,
         weightsAre2Bytes ? Gna2DataTypeInt16 : Gna2DataTypeInt8,

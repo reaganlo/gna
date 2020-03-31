@@ -133,14 +133,14 @@ void SetupGmmModel::sampleGmmLayer()
     tensors = static_cast<Gna2Tensor*>(calloc(5, sizeof(Gna2Tensor)));
 
     tensors[0] = Gna2TensorInit2D(batchSize, featureVectorLength,
-        Gna2DataTypeUint8, nullptr);
+        Gna2DataTypeUint8, memory);     // address will be changed for request config
     tensors[1] = Gna2TensorInit2D(gmmStates, batchSize,
-        Gna2DataTypeUint32, nullptr);
+        Gna2DataTypeUint32, memory);    // address will be changed for request config
     tensors[2] = Gna2TensorInit3D(dataShape.Dimensions[0],
         dataShape.Dimensions[1], dataShape.Dimensions[2],
         Gna2DataTypeUint8,
         pinned_weights);
-    
+
     parameters = calloc(1, sizeof(uint32_t));
     auto const maxScore = static_cast<uint32_t*>(parameters);
     *maxScore = UINT32_MAX;

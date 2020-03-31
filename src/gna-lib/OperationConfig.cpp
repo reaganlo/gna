@@ -130,7 +130,7 @@ TransformOperation OperationConfig::GetTransformOperation() const
     case Gna2OperationTypeElementWiseAffine:
         return AffineDiagonalTransform;
     case Gna2OperationTypeFullyConnectedAffine:
-        if (HasGroupedBias(BiasesTensor, BiasMode))
+        if (BiasMode == Gna2BiasModeGrouping)
         {
             return AffineMultibiasTransform;
         }
@@ -144,20 +144,6 @@ TransformOperation OperationConfig::GetTransformOperation() const
     default:
         throw GnaException(Gna2StatusXnnErrorLyrOperation);
     }
-}
-
-bool OperationConfig::IsOperandAvailable(const Gna2Operation & operation, uint32_t index)
-{
-    return nullptr != operation.Operands &&
-        index < operation.NumberOfOperands &&
-        nullptr != operation.Operands[index];
-}
-
-bool OperationConfig::IsParameterAvailable(const Gna2Operation & operation, uint32_t index)
-{
-    return nullptr != operation.Parameters &&
-        index < operation.NumberOfParameters &&
-        nullptr != operation.Parameters[index];
 }
 
 bool OperationConfig::IsCNN1D(const Gna2Operation & operation)
@@ -201,7 +187,7 @@ Gna2Tensor OperationConfig::GetWeights(const nn_layer& layer)
 Gna2Tensor OperationConfig::GetWeights(const Gna2Operation & operation)
 {
     const auto index = ModelWrapper::GetOperationInfo(operation.Type, OperandIndexWeight);
-    return GetOperand(operation, index, {});
+    return ModelWrapper::GetOperand(operation, index, {});
 }
 
 Gna2Tensor OperationConfig::GetFilters(const nn_layer& layer)
@@ -219,7 +205,7 @@ Gna2Tensor OperationConfig::GetFilters(const nn_layer& layer)
 
 Gna2Tensor OperationConfig::GetFilters(const Gna2Operation & operation)
 {
-    auto filter = GetOperand(operation, FilterOperandIndex, {});
+    auto filter = ModelWrapper::GetOperand(operation, FilterOperandIndex, {});
     if (2 == filter.Shape.NumberOfDimensions)
     {
         filter.Shape.NumberOfDimensions = 4;
@@ -283,29 +269,18 @@ Gna2BiasMode OperationConfig::GetBiasMode(const nn_layer& layer)
     return Gna2BiasModeDefault;
 }
 
-Gna2Tensor OperationConfig::GetOperand(const Gna2Operation & operation, uint32_t index, Gna2Tensor defaultValue)
-{
-    if (IsOperandAvailable(operation, index))
-    {
-        return *(operation.Operands[index]);
-    }
-    return defaultValue;
-}
-
 Gna2BiasMode OperationConfig::GetBiasMode(const Gna2Operation & operation)
 {
-    return GetParameterAs<Gna2BiasMode>(operation, ParameterIndexBiasMode, Gna2BiasModeDefault);
+    return ModelWrapper::GetOptionalParameter<Gna2BiasMode>(operation, ParameterIndexBiasMode, Gna2BiasModeDefault);
 }
 
 Gna2Tensor OperationConfig::GetBiases(const Gna2Operation & operation)
 {
-    Gna2Tensor disabled{};
-    disabled.Mode = Gna2TensorModeDisabled;
     if (operation.Type == Gna2OperationTypeGmm)
     {
-        return disabled;
+        return ModelWrapper::GetDisabledOperand();
     }
-    return GetOperand(operation, BiasOperandIndex, disabled);
+    return ModelWrapper::GetOperand(operation, BiasOperandIndex, ModelWrapper::GetDisabledOperand());
 }
 
 Shape OperationConfig::GetStride(const Gna2Operation & operation)
@@ -383,7 +358,7 @@ Shape OperationConfig::TryGetParamShape(const Gna2Operation & operation, Operati
 Shape OperationConfig::TryGetParamShape(const Gna2Operation & operation, uint32_t parameterIndex)
 {
     //TODO:3:P2: Add if(IsRequired(operation, parameterIndex))
-    const Gna2Shape shape = GetParameterAs<Gna2Shape>(operation, parameterIndex, {});
+    const Gna2Shape shape = ModelWrapper::GetOptionalParameter<Gna2Shape>(operation, parameterIndex, {});
     return Shape::Create(shape, GNA_TENSOR_ORDER_ANY);
 }
 
@@ -411,23 +386,25 @@ Gna2PoolingMode OperationConfig::GetPoolingMode(const nn_layer_pool2d & pooling)
 
 Gna2PoolingMode OperationConfig::GetPoolingMode(const Gna2Operation & operation)
 {
-    return GetParameterAs<Gna2PoolingMode>(operation, ParameterIndexPoolingMode, Gna2PoolingModeDisabled);
+    return ModelWrapper::GetOptionalParameter<Gna2PoolingMode>(operation, ParameterIndexPoolingMode, Gna2PoolingModeDisabled);
 }
 
 void OperationConfig::InitMultibias(const Gna2Operation& operation)
 {
     auto bmIndex = ModelWrapper::GetOperationInfo(operation.Type, ParameterIndexBiasMode);
-    BiasMode = *static_cast<Gna2BiasMode *>(operation.Parameters[bmIndex]);
+    BiasMode = ModelWrapper::GetParameter<Gna2BiasMode>(operation, bmIndex);
 
     auto bviIndex = ModelWrapper::GetOperationInfo(
         operation.Type, ParameterIndexBiasVectorIndex);
-    BiasVectorIndex = *static_cast<uint32_t *>(operation.Parameters[bviIndex]);
+    BiasVectorIndex = ModelWrapper::GetParameter<uint32_t>(operation, bviIndex);
 
     auto wsfIndex = ModelWrapper::GetOperationInfo(operation.Type, OperandIndexWeightScaleFactors);
 
-    if (operation.Operands[wsfIndex] != nullptr)
+    // GNA 2.0 backward compatibility only
+    if (Gna2DataTypeInt8 == WeightsTensor.Type
+        && Gna2DataTypeInt16 == operation.Operands[InputOperandIndex]->Type)
     {
-        WeightScalesTensor = *operation.Operands[wsfIndex];
+        WeightScalesTensor = ModelWrapper::GetEnabledOperand(operation, wsfIndex);
         ModelWrapper::SetLayout(WeightScalesTensor, "H");
     }
 }
@@ -479,19 +456,6 @@ void OperationConfig::InitPooling(const nn_layer& layer)
     Mode = GetPoolingMode(p);
 }
 
-bool OperationConfig::HasGroupedBias(
-    const Gna2Tensor& biasTensor, const Gna2BiasMode biasMode)
-{
-    return biasTensor.Mode == Gna2TensorModeDefault
-        && biasTensor.Shape.NumberOfDimensions == 2
-        && biasMode == Gna2BiasModeGrouping;
-}
-
-bool OperationConfig::HasGroupedBias() const
-{
-    return HasGroupedBias(BiasesTensor, BiasMode);
-}
-
 Gna2Tensor OperationConfig::GetEnabledOperand(uint32_t index) const
 {
     Expect::NotNull(Operation);
@@ -506,9 +470,9 @@ bool OperationConfig::hasPooling(const Gna2Operation & operation)
         ParameterIndexPoolingStride);
     const auto indexPoolingWindow = ModelWrapper::GetOperationInfo(operation.Type,
         ParameterIndexPoolingWindow);
-    return IsParameterAvailable(operation, indexPoolingMode) &&
-        IsParameterAvailable(operation, indexPoolingStride) &&
-        IsParameterAvailable(operation, indexPoolingWindow);
+    return ModelWrapper::HasParameter(operation, indexPoolingMode) &&
+        ModelWrapper::HasParameter(operation, indexPoolingStride) &&
+        ModelWrapper::HasParameter(operation, indexPoolingWindow);
 }
 
 bool OperationConfig::hasPooling(const nn_layer& layer)
@@ -550,10 +514,8 @@ bool OperationConfig::IsMultibias(const Gna2Operation & operation)
         return false;
     }
 
-    auto biasMode = *static_cast<Gna2BiasMode *>(operation.Parameters[biasModeIndex]);
-    auto biasIndex = ModelWrapper::GetOperationInfo(operation.Type, OperandIndexBias);
-    auto biasTensor = *operation.Operands[biasIndex];
-    return HasGroupedBias(biasTensor, biasMode);
+    const auto biasMode = *static_cast<Gna2BiasMode *>(operation.Parameters[biasModeIndex]);
+    return biasMode == Gna2BiasModeGrouping;
 }
 
 bool OperationConfig::isCNN2D(const nn_layer& layer)

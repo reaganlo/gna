@@ -36,7 +36,7 @@
 
 using namespace GNA;
 
-ModelExportConfig::ModelExportConfig(Gna2UserAllocator userAllocator) : allocator{ userAllocator }
+ModelExportConfig::ModelExportConfig(Gna2UserAllocator userAllocatorIn) : userAllocator{ userAllocatorIn }
 {
     Expect::NotNull((void *)userAllocator);
 }
@@ -55,7 +55,7 @@ void ModelExportConfig::Export(Gna2ModelExportComponent componentType, void ** e
     if (componentType == Gna2ModelExportComponentLegacySueCreekHeader)
     {
         *exportBufferSize = sizeof(Gna2ModelSueCreekHeader);
-        const auto header = static_cast<Gna2ModelSueCreekHeader *>(allocator(*exportBufferSize));
+        const auto header = static_cast<Gna2ModelSueCreekHeader *>(userAllocator(*exportBufferSize));
         *exportBuffer = header;
         const auto dump = device.Dump(sourceModelId,
             reinterpret_cast<intel_gna_model_header*>(header), &status, privateAllocator);
@@ -66,7 +66,7 @@ void ModelExportConfig::Export(Gna2ModelExportComponent componentType, void ** e
     if (componentType == Gna2ModelExportComponentLegacySueCreekDump)
     {
         intel_gna_model_header header;
-        *exportBuffer = device.Dump(sourceModelId, &header, &status, allocator);
+        *exportBuffer = device.Dump(sourceModelId, &header, &status, userAllocator);
         *exportBufferSize = header.model_size;
         return;
     }
@@ -74,7 +74,7 @@ void ModelExportConfig::Export(Gna2ModelExportComponent componentType, void ** e
     if (componentType == Gna2ModelExportComponentLayerDescriptors)
     {
         Expect::True(targetDeviceVersion == Gna2DeviceVersionEmbedded3_0, Gna2StatusAccelerationModeNotSupported);
-        device.DumpLdNoMMu(sourceModelId, allocator, *exportBuffer, *exportBufferSize);
+        device.DumpLdNoMMu(sourceModelId, userAllocator, *exportBuffer, *exportBufferSize);
         return;
     }
 
@@ -94,7 +94,7 @@ void ModelExportConfig::SetTarget(Gna2DeviceVersion version)
 
 void ModelExportConfig::ValidateState() const
 {
-    Expect::NotNull((void *)allocator);
+    Expect::NotNull((void *)userAllocator);
     //TODO:3:Consider adding ~Gna2StatusInvalidState/NotInitialized
     Expect::True(sourceDeviceId != Gna2DisabledU32, Gna2StatusIdentifierInvalid);
     Expect::True(sourceModelId != Gna2DisabledU32, Gna2StatusIdentifierInvalid);

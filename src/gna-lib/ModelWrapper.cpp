@@ -201,6 +201,22 @@ bool ModelWrapper::HasEnabledOperand(const Gna2Operation & apiOperation, uint32_
         Gna2TensorModeDisabled != apiOperation.Operands[operandIndex]->Mode;
 }
 
+bool ModelWrapper::IsOperandAvailable(const Gna2Operation & operation, uint32_t index)
+{
+    return nullptr != operation.Operands &&
+        index < operation.NumberOfOperands &&
+        nullptr != operation.Operands[index];
+}
+
+Gna2Tensor ModelWrapper::GetOperand(const Gna2Operation & operation, uint32_t index, Gna2Tensor defaultValue)
+{
+    if (IsOperandAvailable(operation, index))
+    {
+        return *(operation.Operands[index]);
+    }
+    return defaultValue;
+}
+
 void ModelWrapper::ExpectOperandModeDefault(const Gna2Operation & operation, int32_t index)
 {
     const std::function<void()> command = [&]()
@@ -233,14 +249,9 @@ Gna2Tensor ModelWrapper::GetEnabledOperand(const Gna2Operation & apiOperation, u
     return *apiOperation.Operands[operandIndex];
 }
 
-Gna2Tensor ModelWrapper::GetOptionalOperand(const Gna2Operation & apiOperation,
-    uint32_t operandIndex, Gna2Tensor defaultTensor)
+Gna2Tensor ModelWrapper::GetDisabledOperand()
 {
-    if (HasEnabledOperand(apiOperation, operandIndex))
-    {
-        return *apiOperation.Operands[operandIndex];
-    }
-    return defaultTensor;
+    return { {}, Gna2TensorModeDisabled, {}, Gna2DataTypeNone, nullptr };
 }
 
 bool ModelWrapper::HasParameter(const Gna2Operation& operation, uint32_t parameterIndex)
@@ -292,10 +303,8 @@ void ModelWrapper::ExpectOperationValid(const Gna2Operation & operation)
     for (uint32_t i = 0; i < opRequired; i++)
     {
         ExpectOperandModeDefault(operation, static_cast<int32_t>(i));
-        if (i >= 2)
-        {
-            ExpectOperandDataNotNull(operation, static_cast<int32_t>(i));
-        }
+        // TODO: 3: Remove when full (e.g., inputs, weights) buffer addition and late sanity checking implemented
+        ExpectOperandDataNotNull(operation, static_cast<int32_t>(i));
     }
     const auto paramRequired = GetOperationInfo(operation.Type, NumberOfParametersRequired);
     const auto paramMax = GetOperationInfo(operation.Type, NumberOfParametersMax);

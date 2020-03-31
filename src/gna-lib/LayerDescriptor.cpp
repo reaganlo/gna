@@ -26,9 +26,8 @@
 #include "LayerDescriptor.h"
 
 #include "HardwareCapabilities.h"
-#include "ThresholdParameters.h"
-
 #include "PoolingKernelArguments.h"
+#include "ThresholdParameters.h"
 
 #include "gna-api-types-gmm.h"
 

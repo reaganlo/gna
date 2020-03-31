@@ -24,6 +24,8 @@
 */
 #pragma once
 
+#include "test-gna-api.h"
+
 #include "common.h"
 #include "gna-api.h"
 #include "gna2-model-api.h"
@@ -44,7 +46,7 @@ static void GNA_OK_helper(const char* what, Gna2Status status)
         GNA_OK_helper(#what, status);                   \
     }
 
-class TestSimpleModel : public testing::Test
+class TestSimpleModel : public TestGnaApi
 {
 protected:
     int16_t weights[8 * 16] = {                                          // sample weight matrix (8 rows, 16 cols)
@@ -108,8 +110,6 @@ protected:
     const Gna2PwlSegment identityPwl[2] = {
         {(std::numeric_limits<int16_t>::min)(), (std::numeric_limits<int16_t>::min)(), 0x100},
         {0, 0, 0x100} };
-
-    static void ExpectMemEqual(const uint8_t* dump, uint32_t dumpSize, const uint8_t* ref, uint32_t refSize);
 
     void ExpectEqualToRefAdlNoMmuLd(const uint8_t* dump, uint32_t dumpSize) const;
 
