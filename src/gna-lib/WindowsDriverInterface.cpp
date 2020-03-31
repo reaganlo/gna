@@ -51,6 +51,10 @@ using namespace GNA;
 #define MAX_D0_STATE_PROBES  10
 #define WAIT_PERIOD         200 // in miliseconds
 
+const int WindowsDriverInterface::WAIT_FOR_MAP_ITERATIONS = 200;
+const int WindowsDriverInterface::WAIT_FOR_MAP_MILLISECONDS = 15;
+const uint64_t WindowsDriverInterface::FORBIDDEN_MEMORY_ID = 0;
+
 const std::map<GnaIoctlCommand, DWORD> WindowsDriverInterface::ioctlCommandsMap =
 {
     { GNA_COMMAND_GET_PARAM, GNA_IOCTL_GET_PARAM },
@@ -137,26 +141,39 @@ void WindowsDriverInterface::IoctlSend(const GnaIoctlCommand command, void * con
 uint64_t WindowsDriverInterface::MemoryMap(void *memory, uint32_t memorySize)
 {
     auto bytesRead = DWORD{ 0 };
-    auto ioResult = BOOL{};
-    uint64_t memoryId;
 
     auto memoryMapOverlapped = std::make_unique<OVERLAPPED>();
     memoryMapOverlapped->hEvent = CreateEvent(nullptr, false, false, nullptr);
 
-    ioResult = DeviceIoControl(deviceHandle, static_cast<DWORD>(GNA_IOCTL_NOTIFY),
-        nullptr, static_cast<DWORD>(0),
-        &memoryId, sizeof(memoryId), &bytesRead, &overlapped);
-    checkStatus(ioResult);
-
-    ioResult = DeviceIoControl(deviceHandle, static_cast<DWORD>(GNA_IOCTL_MEM_MAP2),
-        nullptr, static_cast<DWORD>(0), memory,
-        static_cast<DWORD>(memorySize), &bytesRead, memoryMapOverlapped.get());
-    checkStatus(ioResult);
-
-    wait(&overlapped, recoveryTimeout);
-
+    // Memory id is reported form Windows driver at the beginning of mapped memory
+    // so we copy it before modifications to restore afterwards
+    volatile uint64_t& outMemoryId = *static_cast<uint64_t*>(memory);
+    const auto bufferCopy = outMemoryId;
+    outMemoryId = FORBIDDEN_MEMORY_ID;
+    try
+    {
+        const auto ioResult = DeviceIoControl(deviceHandle, static_cast<DWORD>(GNA_IOCTL_MEM_MAP2),
+            nullptr, static_cast<DWORD>(0), memory,
+            static_cast<DWORD>(memorySize), &bytesRead, memoryMapOverlapped.get());
+        checkStatus(ioResult);
+        int totalWaitForMapMilliseconds = 0;
+        for (int i = 0; outMemoryId == FORBIDDEN_MEMORY_ID && i < WAIT_FOR_MAP_ITERATIONS; i++)
+        {
+            Sleep(WAIT_FOR_MAP_MILLISECONDS);
+            totalWaitForMapMilliseconds += WAIT_FOR_MAP_MILLISECONDS;
+        }
+        Log->Message("Waited %i milliseconds for memory mapping\n", totalWaitForMapMilliseconds);
+    }
+    catch (...)
+    {
+        outMemoryId = bufferCopy;
+        throw;
+    }
+    const auto memoryId = outMemoryId;
+    outMemoryId = bufferCopy;
+    Expect::True(memoryId != FORBIDDEN_MEMORY_ID, Gna2StatusDeviceIngoingCommunicationError);
+    Log->Message("Memory mapped with id = %llX\n", memoryId);
     memoryMapRequests[memoryId] = std::move(memoryMapOverlapped);
-
     return memoryId;
 }
 

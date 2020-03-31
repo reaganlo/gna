@@ -41,6 +41,11 @@
 class WindowsDriverInterface : public DriverInterface
 {
 public:
+
+    static const int WAIT_FOR_MAP_ITERATIONS = 200;
+    static const int WAIT_FOR_MAP_MILLISECONDS = 15;
+    static const uint64_t FORBIDDEN_MEMORY_ID = 0;
+
     HANDLE deviceHandle;
     DriverCapabilities driverCapabilities;
     OVERLAPPED overlapped;

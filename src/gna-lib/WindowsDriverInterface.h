@@ -80,6 +80,9 @@ private:
 
 class WindowsDriverInterface : public DriverInterface
 {
+    static const int WAIT_FOR_MAP_ITERATIONS;
+    static const int WAIT_FOR_MAP_MILLISECONDS;
+    static const uint64_t FORBIDDEN_MEMORY_ID;
 public:
     WindowsDriverInterface();
     virtual ~WindowsDriverInterface() override = default;
