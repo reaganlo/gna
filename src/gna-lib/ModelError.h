@@ -31,6 +31,7 @@ in any way.
 #include "gna2-model-api.h"
 
 #include <functional>
+#include <set>
 
 namespace GNA
 {
@@ -62,6 +63,25 @@ public:
     static void ExpectEqual(A val, B ref, Gna2ItemType valType)
     {
         ExpectEqual(static_cast<int64_t>(val), static_cast<int64_t>(ref), valType);
+    }
+
+    static void ExpectInSet(const Gna2TensorMode val, const std::set<Gna2TensorMode>& ref)
+    {
+        Gna2ModelError e = GetCleanedError();
+        e.Source.Type = Gna2ItemTypeOperandMode;
+        e.Value = static_cast<int64_t>(val);
+        e.Reason = Gna2ErrorTypeNotInSet;
+        ExpectTrue(ref.find(val) != ref.end(), e);
+    }
+
+    template<class T>
+    static void ExpectParameterInSet(const T val, const std::set<T>& ref)
+    {
+        Gna2ModelError e = GetCleanedError();
+        e.Source.Type = Gna2ItemTypeParameter;
+        e.Value = static_cast<int64_t>(val);
+        e.Reason = Gna2ErrorTypeNotInSet;
+        ExpectTrue(ref.find(val) != ref.end(), e);
     }
 
     template<class A, class B>

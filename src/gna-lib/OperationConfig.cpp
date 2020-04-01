@@ -508,13 +508,18 @@ bool OperationConfig::IsMultibias(const Gna2Operation & operation)
         return false;
     }
 
-    const auto biasModeIndex = ModelWrapper::GetOperationInfo(operation.Type, ParameterIndexBiasMode);
-    if (!ModelWrapper::HasParameter(operation, biasModeIndex))
+    if (!ModelWrapper::HasParameter(operation, BiasModeAffineParamIndex))
     {
         return false;
     }
+    const auto biasMode = *static_cast<Gna2BiasMode *>(operation.Parameters[BiasModeAffineParamIndex]);
 
-    const auto biasMode = *static_cast<Gna2BiasMode *>(operation.Parameters[biasModeIndex]);
+    const std::function<void()> command = [&]()
+    {
+        ModelErrorHelper::ExpectParameterInSet(biasMode, { Gna2BiasModeDefault, Gna2BiasModeGrouping });
+    };
+    ModelErrorHelper::ExecuteForModelItem(command, GNA2_DISABLED, BiasModeAffineParamIndex);
+
     return biasMode == Gna2BiasModeGrouping;
 }
 

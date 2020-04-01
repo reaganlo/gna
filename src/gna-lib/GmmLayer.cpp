@@ -71,7 +71,7 @@ DataConfig GmmOperation::GetDataMode() const
 std::unique_ptr<GmmFunction> GmmFunction::Create(const TransformFactoryConfig& config,
     const OperationConfig& operation)
 {
-    auto const isInterleaved = operation.Operation->NumberOfOperands == 3;
+    auto const isFlat = operation.Operation->NumberOfOperands != 3;
     auto varMode = GNA_UINT8;
     std::unique_ptr<const WeightTensor> means;
     std::unique_ptr<const WeightTensor> inverseCovariances;
@@ -81,14 +81,15 @@ std::unique_ptr<GmmFunction> GmmFunction::Create(const TransformFactoryConfig& c
 
     std::function<void()> command = [&]()   // Common for flat and interleaved
     {
-        auto const meanTensor = operation.GetEnabledOperand(GmmCommonMeansInterleavedOperandIndex);
+        auto const meanTensor = operation.GetEnabledOperand(GmmMeanOperandIndex);
         expectedMeans['W'] = meanTensor.Shape.Dimensions[1];
         expectedMeans.ExpectEqualInverted(meanTensor.Shape);
         means = std::make_unique<const WeightTensor>(meanTensor, config.validator);
     };
-    ModelErrorHelper::ExecuteForModelItem(command, GmmCommonMeansInterleavedOperandIndex);
+    static_assert(GmmMeanOperandIndex == GmmInterleavedOperandIndex, "");
+    ModelErrorHelper::ExecuteForModelItem(command, GmmMeanOperandIndex);
 
-    if (!isInterleaved)
+    if (isFlat)
     {
         const auto expectedGaussianConstants = Shape{ GNA_TENSOR_HW,
             config.output->Dimensions.at('H'),
@@ -122,20 +123,17 @@ std::unique_ptr<GmmFunction> GmmFunction::Create(const TransformFactoryConfig& c
     const auto& gmmKernelsAl = AccelerationDetector::GetKernelMap<GmmMaxMixActiveList>(KERNEL_GMM_AL, kernelMode);
     auto const maximumScore = operation.GetParameterAs<uint32_t>(0);
 
-    if (!isInterleaved)
+    if (isFlat)
     {
         return std::make_unique<GmmFunctionFlat>(
             BaseTransformConfig<GmmMaxMix>{config, gmmKernels},
             std::move(means), std::move(inverseCovariances), std::move(gaussianConstants),
             maximumScore, gmmKernelsAl);
     }
-    else
-    {
-        return std::make_unique<GmmFunctionInterleaved>(
-            BaseTransformConfig<GmmMaxMix>{config, gmmKernels},
-            std::move(means),
-            maximumScore, gmmKernelsAl);
-    }
+    return std::make_unique<GmmFunctionInterleaved>(
+        BaseTransformConfig<GmmMaxMix>{config, gmmKernels},
+        std::move(means),
+        maximumScore, gmmKernelsAl);
 }
 
 Tensor const& GmmFunction::GetOperand(uint32_t operandIndex) const

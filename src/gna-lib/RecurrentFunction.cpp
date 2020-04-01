@@ -85,6 +85,15 @@ std::unique_ptr<RecurrentFunction> RecurrentFunction::Create(
     auto kernelOperation = operationConfig.GetKernelOperation();
     auto weightTensor = operationConfig.WeightsTensor;
     auto biasTensor = operationConfig.BiasesTensor;
+
+    const std::function<void()> command = [&]()
+    {
+        const auto weights = Shape::Create(weightTensor.Shape, GNA_TENSOR_HW);
+        const auto expectedWeights = Shape{ GNA_TENSOR_HW, config.output->Dimensions.at('W'), config.output->Dimensions.at('W') + config.input->Dimensions.at('W') };
+        weights.ExpectEqual(expectedWeights);
+    };
+    ModelErrorHelper::ExecuteForModelItem(command, WeightOperandIndex);
+
     auto weights = std::make_unique<const WeightTensor>(weightTensor, config.validator);
     auto biases = std::make_unique<const BiasTensor>(
         biasTensor, 0, Gna2BiasModeDefault, config.validator);

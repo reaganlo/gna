@@ -188,7 +188,7 @@ TEST_F(TestModelError, DISABLED_WrongPwlTensorModeDisabled)
 
 void TestModelError::ExpectOperandDataError(int32_t operationIndex, const uint32_t operandIndex, void * badPointer, Gna2ErrorType errorType)
 {
-    WithOperations({ SimpleDiagonalPwl, SimpleDiagonalPwl, SimpleCopy });
+    WithOperations({ SimpleDiagonalPwl, SimpleDiagonalPwl, SimpleRnn });
     e.Source.OperationIndex = operationIndex;
     e.Source.OperandIndex = operandIndex;
     update(Gna2ItemTypeOperandData, badPointer);
@@ -213,6 +213,12 @@ TEST_F(TestModelError, WrongBufferNullBias)
 TEST_F(TestModelError, WrongBufferNullWeight)
 {
     ExpectOperandDataError(1, GNA::WeightOperandIndex);
+}
+
+TEST_F(TestModelError, WrongRnnWeightsBufferOutOfMemory)
+{
+    const auto ptr = static_cast<uint8_t*>(gnaMemory) + (DefaultMemoryToUse - 64);
+    ExpectOperandDataError(2, GNA::WeightOperandIndex, ptr, Gna2ErrorTypeArgumentInvalid);
 }
 
 TEST_F(TestModelError, WrongTransOut)
@@ -326,17 +332,14 @@ TEST_F(TestModelError, WrongRnnWeightsAboveRange)
     WrongShapeDimensions(1, GNA::WeightOperandIndex, 0, 128, Gna2ErrorTypeNotEqual);
 }
 
-TEST_F(TestModelError, WrongRnnWeightsBufferOutOfMemory)
+TEST_F(TestModelError, WrongRnnWeightsMismatch)
 {
     WithOperations({ SimpleDiagonal, SimpleRnn, SimpleDiagonal });
     e.Source.OperationIndex = 1;
     e.Source.OperandIndex = GNA::WeightOperandIndex;
     e.Source.ShapeDimensionIndex = 1;
     update(Gna2ItemTypeShapeDimensions, 2048);
-    e.Source.Type = Gna2ItemTypeOperandData;
-    e.Source.ShapeDimensionIndex = -1;
-    e.Value = reinterpret_cast<int64_t>(gnaMemory);
-    expectModelError(Gna2ErrorTypeArgumentInvalid);
+    expectModelError(Gna2ErrorTypeNotEqual);
 }
 
 TEST_F(TestModelError, WrongMBPwlDataNull)

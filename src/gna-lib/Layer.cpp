@@ -77,9 +77,8 @@ std::unique_ptr<GNA::Layer> Layer::Create(const Gna2Operation & operation, const
     {
         if (ModelWrapper::HasEnabledOperand(operation, WeightScaleFactorOperandIndex))
         {
-            Expect::NotNull(operation.Parameters);
-            Expect::NotNull(operation.Parameters[0]);
-            Expect::NotNull(operation.Parameters[1]);
+            ModelWrapper::ExpectParameterAvailable(operation, BiasModeAffineParamIndex);
+            ModelWrapper::ExpectParameterAvailable(operation, BiasVectorParamIndex);
         }
         return std::make_unique<AffineLayer>(operation, validatorIn);
     }
