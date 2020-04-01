@@ -128,10 +128,10 @@ Gna2Status CompiledModel::Score(
     RequestProfiler *profiler,
     KernelBuffers *buffers)
 {
-    profiler->Measure(Gna2InstrumentationPointLibProcessing);
     auto saturationCount = uint32_t{ 0 };
     try
     {
+        profiler->Measure(Gna2InstrumentationPointLibProcessing);
         auto const effectiveAcceleration = getEffectiveAccelerationMode(config);
         switch (effectiveAcceleration)
         {
@@ -150,6 +150,11 @@ Gna2Status CompiledModel::Score(
     catch (const GnaException& e)
     {
         return e.GetStatus();
+    }
+    catch (...)
+    {
+        Log->Error("Unknown Exception in CompiledModel::Score()\n");
+        return Gna2StatusUnknownError;
     }
     return (saturationCount > 0) ? Gna2StatusWarningArithmeticSaturation : Gna2StatusSuccess;
 }

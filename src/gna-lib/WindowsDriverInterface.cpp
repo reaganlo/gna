@@ -241,6 +241,7 @@ RequestResult WindowsDriverInterface::Submit(HardwareRequest& hardwareRequest,
     auto const output = reinterpret_cast<PGNA_INFERENCE_CONFIG_OUT>(input);
     auto const status = output->status;
     auto const writeStatus = (NTSTATUS)ioHandle.Internal;
+    ProfilerConfiguration * profilerConfiguration;
     switch (writeStatus)
     {
     case STATUS_SUCCESS:
@@ -248,8 +249,11 @@ RequestResult WindowsDriverInterface::Submit(HardwareRequest& hardwareRequest,
             &output->hardwareInstrumentation, sizeof(GNA_PERF_HW));
         memcpy_s(&result.driverPerf, sizeof(result.driverPerf),
             &output->driverInstrumentation, sizeof(GNA_DRIVER_INSTRUMENTATION));
-        convertPerfResultUnit(result.driverPerf, hardwareRequest.GetProfilerConfiguration()->Unit);
-
+        profilerConfiguration = hardwareRequest.GetProfilerConfiguration();
+        if (profilerConfiguration != nullptr)
+        {
+            convertPerfResultUnit(result.driverPerf, profilerConfiguration->Unit);
+        }
         result.status = (status & STS_SATURATION_FLAG)
             ? Gna2StatusWarningArithmeticSaturation : Gna2StatusSuccess;
         break;
