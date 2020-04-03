@@ -56,6 +56,8 @@ public:
 
     AccelerationMode GetEffectiveSoftwareAccelerationMode(const std::vector<Gna2AccelerationMode>& supportedCpuAccelerations) const;
 
+    static void ExpectValid(Gna2AccelerationMode mode);
+
     void SetMode(Gna2AccelerationMode newMode);
 
     Gna2AccelerationMode GetMode() const;

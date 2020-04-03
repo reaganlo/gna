@@ -146,9 +146,9 @@ GNA2_API enum Gna2Status Gna2RequestWait(
 }
 
 AccelerationMode::AccelerationMode(Gna2AccelerationMode basicMode, bool hardwareConsistencyEnabled)
-    :mode{ basicMode },
-    hardwareConsistency{ hardwareConsistencyEnabled }
+    : hardwareConsistency{ hardwareConsistencyEnabled }
 {
+    SetMode(basicMode);
     enforceValidity();
 }
 
@@ -220,8 +220,23 @@ AccelerationMode AccelerationMode::GetEffectiveSoftwareAccelerationMode(
     throw GnaException(Gna2StatusAccelerationModeNotSupported);
 }
 
+void AccelerationMode::ExpectValid(Gna2AccelerationMode modeIn)
+{
+    static const std::vector<Gna2AccelerationMode> existingModes = {
+        Gna2AccelerationModeAuto,
+        Gna2AccelerationModeSoftware,
+        Gna2AccelerationModeHardware,
+        Gna2AccelerationModeAvx2,
+        Gna2AccelerationModeAvx1,
+        Gna2AccelerationModeSse4x2,
+        Gna2AccelerationModeGeneric,
+    };
+    Expect::InSet(modeIn, existingModes, Gna2StatusAccelerationModeNotSupported);
+}
+
 void AccelerationMode::SetMode(Gna2AccelerationMode newMode)
 {
+    ExpectValid(newMode);
     mode = newMode;
     enforceValidity();
 }
@@ -280,6 +295,6 @@ void AccelerationMode::enforceValidity()
 
 bool AccelerationMode::operator<(const AccelerationMode& right) const
 {
-    auto ret = (mode < right.mode) || ((mode == right.mode) && hardwareConsistency && (!right.hardwareConsistency));
+    const auto ret = (mode < right.mode) || ((mode == right.mode) && hardwareConsistency && (!right.hardwareConsistency));
     return ret;
 }
