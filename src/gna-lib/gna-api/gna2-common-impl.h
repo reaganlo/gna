@@ -82,6 +82,13 @@ gna_status_t Gna2GetLegacyStatus(Gna2Status newStatus);
 
 Gna2DeviceVersion Gna2GetVersionForLegacy(gna_device_version legacyVersion);
 
+template<typename T>
+inline Gna2DeviceVersion Gna2DeviceVersionFromInt(T value)
+{
+    static_assert(sizeof(Gna2DeviceVersion) <= sizeof(T), "");
+    return *reinterpret_cast<Gna2DeviceVersion*>(&value);
+}
+
 }
 
 #endif //ifndef __GNA2_COMMON_IMPL_H

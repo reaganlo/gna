@@ -142,8 +142,7 @@ uint64_t WindowsDriverInterface::MemoryMap(void *memory, uint32_t memorySize)
 {
     auto bytesRead = DWORD{ 0 };
 
-    auto memoryMapOverlapped = std::make_unique<OVERLAPPED>();
-    memoryMapOverlapped->hEvent = CreateEvent(nullptr, false, false, nullptr);
+    auto memoryMapOverlapped = std::make_unique<OverlappedWithEvent>();
 
     // Memory id is reported form Windows driver at the beginning of mapped memory
     // so we copy it before modifications to restore afterwards
@@ -154,7 +153,7 @@ uint64_t WindowsDriverInterface::MemoryMap(void *memory, uint32_t memorySize)
     {
         const auto ioResult = DeviceIoControl(deviceHandle, static_cast<DWORD>(GNA_IOCTL_MEM_MAP2),
             nullptr, static_cast<DWORD>(0), memory,
-            static_cast<DWORD>(memorySize), &bytesRead, memoryMapOverlapped.get());
+            static_cast<DWORD>(memorySize), &bytesRead, *memoryMapOverlapped);
         checkStatus(ioResult);
         int totalWaitForMapMilliseconds = 0;
         for (int i = 0; outMemoryId == FORBIDDEN_MEMORY_ID && i < WAIT_FOR_MAP_ITERATIONS; i++)
@@ -180,17 +179,16 @@ uint64_t WindowsDriverInterface::MemoryMap(void *memory, uint32_t memorySize)
 void WindowsDriverInterface::MemoryUnmap(uint64_t memoryId)
 {
     auto bytesRead = DWORD{ 0 };
-    auto ioResult = BOOL{};
 
     // TODO: remove ummap IOCTL in favor of CancelIoEx (cancel handler in driver, cancel requests)
-    ioResult = DeviceIoControl(static_cast<HANDLE>(deviceHandle),
+    const auto ioResult = DeviceIoControl(static_cast<HANDLE>(deviceHandle),
         static_cast<DWORD>(GNA_IOCTL_MEM_UNMAP2), &memoryId, sizeof(memoryId),
         nullptr, 0, &bytesRead, &overlapped);
     checkStatus(ioResult);
     wait(&overlapped, recoveryTimeout);
 
-    auto memoryMapOverlapped = memoryMapRequests.at(memoryId).get();
-    wait(memoryMapOverlapped, recoveryTimeout);
+    const auto& memoryMapOverlapped = memoryMapRequests.at(memoryId);
+    wait(*memoryMapOverlapped, recoveryTimeout);
     memoryMapRequests.erase(memoryId);
 }
 
@@ -199,8 +197,7 @@ RequestResult WindowsDriverInterface::Submit(HardwareRequest& hardwareRequest,
 {
     auto bytesRead = DWORD{ 0 };
     RequestResult result = { 0 };
-    auto ioHandle = OVERLAPPED{ 0 };
-    ioHandle.hEvent = CreateEvent(nullptr, false, false, nullptr);
+    OverlappedWithEvent ioHandle;
 
     // TODO:kj:3: add working optimization mechanism to reduce recalculation for same request config
     createRequestDescriptor(hardwareRequest);
@@ -229,18 +226,18 @@ RequestResult WindowsDriverInterface::Submit(HardwareRequest& hardwareRequest,
 
     auto ioResult = WriteFile(static_cast<HANDLE>(deviceHandle),
         input, static_cast<DWORD>(hardwareRequest.CalculationSize),
-        nullptr, &ioHandle);
+        nullptr, ioHandle);
     checkStatus(ioResult);
 
     profiler->Measure(Gna2InstrumentationPointLibDeviceRequestSent);
 
-    GetOverlappedResultEx(deviceHandle, &ioHandle, &bytesRead, recoveryTimeout , false);
+    GetOverlappedResultEx(deviceHandle, ioHandle, &bytesRead, recoveryTimeout , false);
 
     profiler->Measure(Gna2InstrumentationPointLibDeviceRequestCompleted);
 
     auto const output = reinterpret_cast<PGNA_INFERENCE_CONFIG_OUT>(input);
     auto const status = output->status;
-    auto const writeStatus = (NTSTATUS)ioHandle.Internal;
+    auto const writeStatus = (NTSTATUS)static_cast<OVERLAPPED*>(ioHandle)->Internal;
     ProfilerConfiguration * profilerConfiguration;
     switch (writeStatus)
     {
@@ -270,8 +267,6 @@ RequestResult WindowsDriverInterface::Submit(HardwareRequest& hardwareRequest,
         result.status = Gna2StatusDeviceIngoingCommunicationError;
         break;
     }
-
-    CloseHandle(ioHandle.hEvent);
 
     return result;
 }
@@ -515,6 +510,21 @@ Gna2Status WindowsDriverInterface::parseHwStatus(uint32_t hwStatus) const
     }
 
     return Gna2StatusDeviceCriticalFailure;
+}
+
+OverlappedWithEvent::OverlappedWithEvent()
+{
+    overlapped.hEvent = CreateEvent(nullptr, false, false, nullptr);
+    Expect::NotNull(overlapped.hEvent, Gna2StatusResourceAllocationError);
+}
+
+OverlappedWithEvent::~OverlappedWithEvent()
+{
+    const auto success = CloseHandle(overlapped.hEvent);
+    if (!success)
+    {
+        Log->Error("CloseHandle() failed\n");
+    }
 }
 
 #endif // WIN32

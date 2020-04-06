@@ -78,6 +78,23 @@ private:
     HANDLE deviceHandle;
 };
 
+class OverlappedWithEvent
+{
+public:
+    OverlappedWithEvent();
+    OverlappedWithEvent(const OverlappedWithEvent&) = delete;
+    OverlappedWithEvent(OverlappedWithEvent&&) = delete;
+    OverlappedWithEvent& operator = (const OverlappedWithEvent&) = delete;
+    OverlappedWithEvent& operator = (OverlappedWithEvent&&) = delete;
+    ~OverlappedWithEvent();
+    operator OVERLAPPED*()
+    {
+        return &overlapped;
+    }
+private:
+    OVERLAPPED overlapped = {};
+};
+
 class WindowsDriverInterface : public DriverInterface
 {
     static const int WAIT_FOR_MAP_ITERATIONS;
@@ -123,7 +140,7 @@ private:
 
     static const std::map<GnaIoctlCommand, DWORD> ioctlCommandsMap;
 
-    std::map<uint64_t, std::unique_ptr<OVERLAPPED>> memoryMapRequests;
+    std::map<uint64_t, std::unique_ptr<OverlappedWithEvent>> memoryMapRequests;
 
     WinHandle deviceHandle;
     WinHandle deviceEvent;

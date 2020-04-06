@@ -76,11 +76,13 @@ public:
     bool VerboseMode() const { return verboseMode; }
     bool PauseMode() const { return pauseAfterError; }
     bool ContinueMode() const { return continueAfterError; }
+    int GetRepeatCount() const { return repeatCount; }
 private:
     GnaSelfTestConfig(int argc, const char * const argv[]);
     bool verboseMode = false;
     bool continueAfterError = false;
     bool pauseAfterError = false;
+    int repeatCount = 1;
 };
 
 class GnaSelfTestIssue;
@@ -94,6 +96,7 @@ private:
     void askToContinueOrExit(int exitCode) const;
     GnaSelfTestConfig config;
     void PrintLibraryVersion();
+    void DoIteration();
 };
 
 #define DEFAULT_SELFTEST_TIMEOUT_MS 10000

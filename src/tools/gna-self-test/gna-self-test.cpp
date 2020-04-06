@@ -43,8 +43,7 @@ void GnaSelfTest::StartTest()
     GnaSelfTestLogger::Log("=============================\n");
     PrintLibraryVersion();
     PrintSystemInfo();
-    SampleModelForGnaSelfTest sampleNetwork = SampleModelForGnaSelfTest::GetDefault();
-    MultiOsGnaSelfTestHardwareStatus hwDrvStatus{*this};
+    MultiOsGnaSelfTestHardwareStatus hwDrvStatus{ *this };
     hwDrvStatus.Initialize();
 
     if (!hwDrvStatus.IsOK())
@@ -58,6 +57,15 @@ void GnaSelfTest::StartTest()
         GnaSelfTestLogger::Log("============================\n");
     }
 
+    for (int iteration = 0; iteration < config.GetRepeatCount(); iteration++)
+    {
+        DoIteration();
+    }
+}
+
+void GnaSelfTest::DoIteration()
+{
+    SampleModelForGnaSelfTest sampleNetwork = SampleModelForGnaSelfTest::GetDefault();
     //open the default GNA device
     SelfTestDevice gnaDevice(*this);
 
@@ -106,13 +114,22 @@ GnaSelfTestConfig::GnaSelfTestConfig(int argc, const char *const argv[])
             continueAfterError = true;
             pauseAfterError = true;
         }
+        else if (strncmp("-r", argv[i], 2) == 0)
+        {
+            if (i + 1 < argc)
+            {
+                repeatCount = atoi(argv[i + 1]);
+                i++;
+            }
+        }
         else
         {
-            GnaSelfTestLogger::Log("gna-self-test [-v] [-c] [-p] [-h]\n");
-            GnaSelfTestLogger::Log("   -v   verbose mode\n");
-            GnaSelfTestLogger::Log("   -c   ignore errors and continue execution\n");
-            GnaSelfTestLogger::Log("   -p   after the error, ask the user whether to continue\n");
-            GnaSelfTestLogger::Log("   -h   display help\n");
+            GnaSelfTestLogger::Log("gna-self-test [-v] [-c] [-p] [-r N ] [-h]\n");
+            GnaSelfTestLogger::Log("   -v     verbose mode\n");
+            GnaSelfTestLogger::Log("   -c     ignore errors and continue execution\n");
+            GnaSelfTestLogger::Log("   -p     after the error, ask the user whether to continue\n");
+            GnaSelfTestLogger::Log("   -r N   repeat the processing N times\n");
+            GnaSelfTestLogger::Log("   -h     display help\n");
             exit(0);
         }
     }
