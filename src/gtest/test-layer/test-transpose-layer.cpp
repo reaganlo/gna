@@ -156,7 +156,7 @@ TEST_F(TestTransposeLayer, InterleaveTest2B)
     outputTensor.Type = Gna2DataTypeInt16;
     outputTensor.Shape = outputShape;
 
-    Gna2Status status = Gna2OperationInitInterleave(
+    Gna2Status status = Gna2OperationInitTransposition(
                     &interleaveOperation, GnaMalloc, &inputTensor, &outputTensor);
     ASSERT_EQ(status, Gna2StatusSuccess);
 
@@ -195,7 +195,7 @@ TEST_F(TestTransposeLayer, DeinterleaveTest2B)
     outputTensor.Type = Gna2DataTypeInt16;
     outputTensor.Shape = outputShape;
 
-    Gna2Status status = Gna2OperationInitDeInterleave(
+    Gna2Status status = Gna2OperationInitTransposition(
                     &deinterleaveOperation, GnaMalloc, &inputTensor, &outputTensor);
     ASSERT_EQ(status, Gna2StatusSuccess);
 

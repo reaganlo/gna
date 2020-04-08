@@ -517,25 +517,23 @@ enum Gna2OperationType
     Gna2OperationTypeRecurrent = 6,
 
     /**
-    Tensor transposition operation.
+    Two dimensional array transposition operation.
 
     Operation:
-        - output<layoutOut> = transpose(input<layoutIn>)
+        - output = transpose(input)
         .
-        Where:
-            - layout[In/Out] specifies transposition direction.
 
     Operands:
         + 0: inputs [required]:
             @see ::Gna2OperationTypeCopy input operand, with notice:
-            @note: Layout:
-                - [N x W] aka "interleave operation"
-                - [W x N] aka "deinterleave operation"
+            @note: Shape: [H x W] 2D matrix, where:
+                    - H is a number of vectors (slow changing dimension),
+                    - W is a number of elements of vector (fast changing dimension),
         + 1: outputs [required]:
             @see ::Gna2OperationTypeCopy output operand, with notice:
-            @note: Layout:
-                - [W x N] aka "interleave operation"
-                - [N x W] aka "deinterleave operation"
+            @note: Shape: [H x W] 2D matrix, where:
+                    - H is a number of output vectors, same as inputs [W],
+                    - W is a number of elements of output vector, same as inputs [H],
 
     Parameters: none.
     */
@@ -1742,7 +1740,7 @@ GNA2_API enum Gna2Status Gna2OperationInitCopy(
 
 /**
  In the first step, this function initializes operation structure just like Gna2ModelOperationInit function does.
- Then it sets operands and parameters for the Interleave operation.
+ Then it sets operands and parameters for the Transposition operation.
 
  @note
  Shallow assignment is performed (i.e., Gna2Tensor structures and parameters must be available after the call).
@@ -1754,25 +1752,7 @@ GNA2_API enum Gna2Status Gna2OperationInitCopy(
  @param outputs Address of Gna2Tensor structure describing outputs.
  @return ::Gna2StatusSuccess on success.
  */
-GNA2_API enum Gna2Status Gna2OperationInitInterleave(
-    struct Gna2Operation * operation, Gna2UserAllocator userAllocator,
-    struct Gna2Tensor * inputs, struct Gna2Tensor * outputs);
-
-/**
- In the first step, this function initializes operation structure just like Gna2ModelOperationInit function does.
- Then it sets operands and parameters for the De Interleave operation.
-
- @note
- Shallow assignment is performed (i.e., Gna2Tensor structures and parameters must be available after the call).
- Additionally the Gna2Tensor::Layout of the input and output tensors is set appropriately.
-
- @param operation Address of Gna2Operation structure. Must be zeroed before tha call.
- @param userAllocator User allocator for operands and parameters.
- @param inputs Address of Gna2Tensor structure describing inputs.
- @param outputs Address of Gna2Tensor structure describing outputs.
- @return ::Gna2StatusSuccess on success.
- */
-GNA2_API enum Gna2Status Gna2OperationInitDeInterleave(
+GNA2_API enum Gna2Status Gna2OperationInitTransposition(
     struct Gna2Operation * operation, Gna2UserAllocator userAllocator,
     struct Gna2Tensor * inputs, struct Gna2Tensor * outputs);
 

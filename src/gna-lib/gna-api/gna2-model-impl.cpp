@@ -397,7 +397,7 @@ GNA2_API enum Gna2Status Gna2OperationInitCopy(
     return ApiWrapper::ExecuteSafely(command);
 }
 
-GNA2_API enum Gna2Status Gna2OperationInitInterleave(
+GNA2_API enum Gna2Status Gna2OperationInitTransposition(
     struct Gna2Operation * operation, Gna2UserAllocator userAllocator,
     struct Gna2Tensor * inputs, struct Gna2Tensor * outputs)
 {
@@ -406,25 +406,6 @@ GNA2_API enum Gna2Status Gna2OperationInitInterleave(
         Expect::NotNull(operation);
         ModelWrapper::OperationInit(*operation, Gna2OperationTypeTransposition, userAllocator);
         ModelWrapper::SetOperands(*operation, inputs, outputs);
-        ModelWrapper::SetLayout(*inputs, "HW");
-        ModelWrapper::SetLayout(*outputs, "HW");
-        return Gna2StatusSuccess;
-    };
-    return ApiWrapper::ExecuteSafely(command);
-}
-
-
-GNA2_API enum Gna2Status Gna2OperationInitDeInterleave(
-    struct Gna2Operation * operation, Gna2UserAllocator userAllocator,
-    struct Gna2Tensor * inputs, struct Gna2Tensor * outputs)
-{
-    const std::function<Gna2Status()> command = [&]()
-    {
-        Expect::NotNull(operation);
-        ModelWrapper::OperationInit(*operation, Gna2OperationTypeTransposition, userAllocator);
-        ModelWrapper::SetOperands(*operation, inputs, outputs);
-        ModelWrapper::SetLayout(*inputs, "HW");
-        ModelWrapper::SetLayout(*outputs, "HW");
         return Gna2StatusSuccess;
     };
     return ApiWrapper::ExecuteSafely(command);
