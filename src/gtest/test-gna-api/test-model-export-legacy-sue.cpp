@@ -49,12 +49,6 @@
 #define memcpy_s(_Destination, _DestinationSize, _Source, _SourceSize) memcpy(_Destination, _Source, _SourceSize)
 #endif
 
-void TestSimpleModel::FreeAndClose()
-{
-    EXPECT_EQ(GnaFree(memory), GNA_SUCCESS);
-    EXPECT_EQ(GnaDeviceClose(deviceIndex), GNA_SUCCESS);
-}
-
 void TestSimpleModel::FreeAndClose2()
 {
     EXPECT_EQ(Gna2MemoryFree(memory), Gna2StatusSuccess);
@@ -139,7 +133,7 @@ void TestSimpleModel::CopyDataToGnaMem(const bool copyPwl, const bool copyInputs
 
 void TestSimpleModel::SetupNnet()
 {
-    uint32_t deviceNumber;
+   /* uint32_t deviceNumber;
     auto status = GnaDeviceGetCount(&deviceNumber);
     EXPECT_EQ(GNA_SUCCESS, status);
 
@@ -185,7 +179,7 @@ void TestSimpleModel::SetupNnet()
 
     nnet_layer.pInputs = gnamem_pinned_inputs;
     nnet_layer.pOutputsIntermediate = gnamem_tmp_outputs_buffer;
-    nnet_layer.pOutputs = gnamem_pinned_outputs;
+    nnet_layer.pOutputs = gnamem_pinned_outputs;*/
 }
 
 void TestSimpleModel::SetupGnaModel()
@@ -248,44 +242,9 @@ void TestSimpleModel::CreateGnaModel()
     EXPECT_EQ(status, Gna2StatusSuccess);
 }
 
-TEST_F(TestSimpleModel, exportSueLegacyTest)
-{
-    SetupNnet();
-
-    gna_model_id model_id;
-    auto status = GnaModelCreate(deviceIndex, &nnet, &model_id);
-    EXPECT_EQ(status, GNA_SUCCESS);
-
-    intel_gna_model_header model_header;
-    void* dumped_model = GnaModelDump(model_id, GNA_1_0_EMBEDDED, &model_header, &status, AllocatorAlignedPage);
-    EXPECT_EQ(status, GNA_SUCCESS);
-    ASSERT_NE(dumped_model, nullptr);
-
-    model_header.rw_region_size = rw_buffer_size;
-
-    EXPECT_EQ(sizeof(intel_gna_model_header), expectedHeaderSize);
-    EXPECT_EQ(model_header.model_size, expectedModelSize);
-
-    uint32_t headerHash = 0;
-    crc32(&model_header, expectedHeaderSize, &headerHash);
-
-    uint32_t modelHash = 0;
-    crc32(dumped_model, expectedModelSize, &modelHash);
-
-    uint32_t fileHash = headerHash;
-    crc32(dumped_model, expectedModelSize, &fileHash);
-
-    EXPECT_EQ(expected_fileHash, fileHash);
-    EXPECT_EQ(expected_headerHash, headerHash);
-    EXPECT_EQ(expected_modelHash, modelHash);
-
-    Free(dumped_model);
-    FreeAndClose();
-}
-
 TEST_F(TestSimpleModel, exportSueLegacyTestUsingApi2)
 {
-    SetupNnet();
+    /*SetupNnet();
 
     auto status = GnaModelCreate(deviceIndex, &nnet, &gnaModelId);
     EXPECT_EQ(status, GNA_SUCCESS);
@@ -310,31 +269,7 @@ TEST_F(TestSimpleModel, exportSueLegacyTestUsingApi2)
     EXPECT_EQ(expected_headerHash, headerHash);
     EXPECT_EQ(expected_modelHash, modelHash);
 
-    FreeAndClose();
-}
-
-TEST_F(TestSimpleModel, exportNoMmu)
-{
-    SetupNnet();
-
-    auto status = GnaModelCreate(deviceIndex, &nnet, &gnaModelId);
-    EXPECT_EQ(status, GNA_SUCCESS);
-
-    PrepareExportConfig(Gna2DeviceVersionEmbedded3_0);
-
-    void * bufferLd;
-    uint32_t bufferLdSize;
-    auto status2 = Gna2ModelExport(exportConfig,
-        Gna2ModelExportComponentLayerDescriptors,
-        &bufferLd, &bufferLdSize);
-    EXPECT_EQ(status2, Gna2StatusSuccess);
-
-    ExpectEqualToRefAdlNoMmuLd(static_cast<uint8_t*>(bufferLd), bufferLdSize);
-
-    status2 = Gna2ModelExportConfigRelease(exportConfig);
-    EXPECT_EQ(status2, Gna2StatusSuccess);
-
-    FreeAndClose();
+    FreeAndClose2();*/
 }
 
 TEST_F(TestSimpleModel, exportNoMmuApi2)

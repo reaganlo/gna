@@ -122,7 +122,7 @@ public:
     }
 
     // External id (0-GNA_REQUEST_WAIT_ANY)
-    gna_request_id Id = 0;
+    uint32_t Id = 0;
     RequestConfiguration& Configuration;
 
     std::unique_ptr<RequestProfiler> Profiler;

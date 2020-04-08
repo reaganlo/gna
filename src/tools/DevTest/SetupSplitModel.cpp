@@ -65,7 +65,7 @@ SetupSplitModel::SetupSplitModel(DeviceController & deviceCtrl, bool weight2B, b
     setupFirstAffineLayer(pinned_memory);
     setupSecondAffineLayer(pinned_memory);
 
-    gna_model_id modelIdSplit;
+    uint32_t modelIdSplit;
 
     deviceController.ModelCreate(&firstModel, &modelIdSplit);
     models.push_back(modelIdSplit);
@@ -310,7 +310,7 @@ void SetupSplitModel::setupInputBuffer(uint8_t* &pinned_memory, uint32_t modelIn
 
     auto inputsSize = srcBuffer.size() * sizeof(int16_t);
     memcpy(pinnedInput, srcBuffer.data(), inputsSize);
-    deviceController.BufferAdd(configId, InputComponent, 0, pinnedInput);
+    DeviceController::BufferAdd(configId, 0, InputOperandIndex, pinnedInput);
 
     auto buf_size_inputs = ALIGN64(inputsSize);
     pinned_memory += buf_size_inputs;
@@ -323,7 +323,7 @@ void SetupSplitModel::setupOutputBuffer(uint8_t* &pinned_memory, uint32_t modelI
 
     auto& pinnedOutput = configurationBuffers[modelIdSplit][configId].second;
     pinnedOutput = pinned_memory;
-    deviceController.BufferAdd(configId, OutputComponent, 0, pinnedOutput);
+    DeviceController::BufferAdd(configId, 0, OutputOperandIndex, pinnedOutput);
 
     auto outputsSize = groupingNum * ((0 == modelIndex) ? outVecSz : diagonalOutVecSz);
     outputsSize *= static_cast<uint32_t>(pwlEnabled ? sizeof(int16_t) : sizeof(int32_t));

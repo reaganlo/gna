@@ -77,30 +77,30 @@ public:
         return modelId;
     }
 
-    void ReleaseModel(gna_model_id const modelId);
+    void ReleaseModel(uint32_t const modelId);
 
-    void AttachBuffer(gna_request_cfg_id configId, uint32_t operandIndex, uint32_t layerIndex, void *address);
+    void AttachBuffer(uint32_t configId, uint32_t operandIndex, uint32_t layerIndex, void *address);
 
-    void CreateConfiguration(gna_model_id modelId, gna_request_cfg_id *configId);
+    void CreateConfiguration(uint32_t modelId, uint32_t *configId);
 
-    void ReleaseConfiguration(gna_request_cfg_id configId);
+    void ReleaseConfiguration(uint32_t configId);
 
-    void EnableHardwareConsistency(gna_request_cfg_id configId, DeviceVersion deviceVersion);
+    void EnableHardwareConsistency(uint32_t configId, DeviceVersion deviceVersion);
 
-    void EnforceAcceleration(gna_request_cfg_id configId, Gna2AccelerationMode accel);
+    void EnforceAcceleration(uint32_t configId, Gna2AccelerationMode accel);
 
-    void AttachActiveList(gna_request_cfg_id configId, uint32_t layerIndex, uint32_t indicesCount, const uint32_t* const indices);
+    void AttachActiveList(uint32_t configId, uint32_t layerIndex, uint32_t indicesCount, const uint32_t* const indices);
 
-    void PropagateRequest(gna_request_cfg_id configId, uint32_t *requestId);
+    void PropagateRequest(uint32_t configId, uint32_t *requestId);
 
-    Gna2Status WaitForRequest(gna_request_id requestId, gna_timeout milliseconds);
+    Gna2Status WaitForRequest(uint32_t requestId, uint32_t milliseconds);
 
     void Stop();
 
-    void* Dump(gna_model_id modelId, intel_gna_model_header* modelHeader, Gna2Status* status,
+    void* Dump(uint32_t modelId, intel_gna_model_header* modelHeader, Gna2Status* status,
             intel_gna_alloc_cb customAlloc);
 
-    void DumpLdNoMMu(gna_model_id modelId, intel_gna_alloc_cb customAlloc,
+    void DumpLdNoMMu(uint32_t modelId, intel_gna_alloc_cb customAlloc,
         void *& exportData, uint32_t & exportDataSize);
 
     void CreateProfilerConfiguration(uint32_t* configId, uint32_t numberOfInstrumentationPoints, Gna2InstrumentationPoint* selectedInstrumentationPoints, uint64_t* results);
@@ -109,9 +109,9 @@ public:
 
     void AssignProfilerConfigToRequestConfig(uint32_t instrumentationConfigId, uint32_t requestConfigId);
 
-    void SetInstrumentationUnit(gna_request_cfg_id configId, Gna2InstrumentationUnit instrumentationUnit);
+    void SetInstrumentationUnit(uint32_t configId, Gna2InstrumentationUnit instrumentationUnit);
 
-    void SetHardwareInstrumentation(gna_request_cfg_id configId, enum Gna2InstrumentationMode instrumentationMode);
+    void SetHardwareInstrumentation(uint32_t configId, enum Gna2InstrumentationMode instrumentationMode);
 
     bool HasModel(uint32_t modelId) const;
 
@@ -128,7 +128,7 @@ public:
 protected:
     static const std::map<const gna_device_generation, const DeviceVersion> deviceDictionary;
 
-    gna_device_id id;
+    uint32_t id;
 
     static uint32_t modelIdSequence;
 
@@ -138,7 +138,7 @@ protected:
 
     AccelerationDetector accelerationDetector;
 
-    std::map<gna_model_id, std::unique_ptr<CompiledModel>> models;
+    std::map<uint32_t, std::unique_ptr<CompiledModel>> models;
 
     RequestBuilder requestBuilder;
 

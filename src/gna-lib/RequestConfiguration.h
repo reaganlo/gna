@@ -57,7 +57,7 @@ struct ActiveList;
 class RequestConfiguration
 {
 public:
-    RequestConfiguration(CompiledModel& model, gna_request_cfg_id configId, DeviceVersion consistentDeviceIn);
+    RequestConfiguration(CompiledModel& model, uint32_t configId, DeviceVersion consistentDeviceIn);
 
     ~RequestConfiguration() = default;
 
@@ -94,7 +94,7 @@ public:
 
     CompiledModel & Model;
 
-    const gna_request_cfg_id Id;
+    const uint32_t Id;
 
     std::map<uint32_t, std::unique_ptr<LayerConfiguration>> LayerConfigurations;
 

@@ -51,7 +51,7 @@
 using namespace GNA;
 
 //TODO:3:provide better mechanism for scratchpad
-void *getGlobal2MBScratchpad()
+void *AffineBaseLayer::GetGlobal2MBScratchpad()
 {
     static void* ptr = nullptr;
     uint32_t sizeGranted;
@@ -77,7 +77,7 @@ AffineBaseLayer::AffineBaseLayer(
         const Gna2Operation& operation,
         const std::vector<TransformOperation> transforms,
         const BaseValidator& validatorIn) :
-    Layer(operation, validatorIn, transforms, BaseAddress(getGlobal2MBScratchpad()))
+    Layer(operation, validatorIn, transforms, BaseAddress(GetGlobal2MBScratchpad()))
 {
 }
 

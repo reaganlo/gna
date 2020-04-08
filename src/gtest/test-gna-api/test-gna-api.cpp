@@ -25,16 +25,11 @@
 
 #include "test-gna-api.h"
 
+#include "gna-api.h"
+#include "gna2-api.h"
+#include "gna2-capability-api.h"
 #include "Macros.h"
 
-#include "gna-api.h"
-
-#include "gna2-api.h"
-#include "gna2-device-api.h"
-#include "gna2-memory-api.h"
-#include "gna2-model-api.h"
-
-#include <array>
 #include <chrono>
 #include <gtest/gtest.h>
 #include <initializer_list>
@@ -333,8 +328,8 @@ TEST_F(TestGnaTensorApi, Gna2TensorInit1dInvalidType)
 
 TEST_F(TestGnaModelApi, Gna2ModelCreateNull)
 {
-    const auto status = GnaModelCreate(0, nullptr, nullptr);
-    ASSERT_NE(GNA_SUCCESS, status);
+    const auto status = Gna2ModelCreate(0, nullptr, nullptr);
+    ASSERT_NE(Gna2StatusSuccess, status);
 }
 
 TEST_F(TestGnaModelApi, Gna2ModelCreateEmptyModelUnsuccessfull)
@@ -722,8 +717,44 @@ TEST_F(TestGnaApi, Gna2StatusGetMessage_positive_and_negative)
     EXPECT_EQ(buffer[0], '\0');
 }
 
+TEST_F(TestGnaApi, Gna2GetLibraryVersionSuccessfull)
+{
+    GetLibraryVersionTest(true, true,
+        Gna2StatusSuccess, '2');
+}
+
+TEST_F(TestGnaApi, Gna2GetLibraryVersionNullBuffer)
+{
+    GetLibraryVersionTest(false, true,
+        Gna2StatusNullArgumentNotAllowed, '\0');
+}
+
+TEST_F(TestGnaApi, Gna2GetLibraryVersionSizeInvalid)
+{
+    GetLibraryVersionTest(true, false,
+        Gna2StatusMemorySizeInvalid, '\0');
+}
+
+TEST_F(TestGnaApi, Gna2GetLibraryVersionNullParams)
+{
+    GetLibraryVersionTest(false, false,
+        Gna2StatusNullArgumentNotAllowed, '\0');
+}
+
+void TestGnaApi::GetLibraryVersionTest(bool versionBufferValid, bool versionBufferSizeValid,
+    Gna2Status expectedStatus, char expectedChar0) const
+{
+    char buffer[64] = {0};
+    auto const versionBuffer = versionBufferValid ? buffer : nullptr;
+    auto const versionBufferSize = versionBufferSizeValid ? sizeof(buffer) : 3;
+    auto const status = Gna2GetLibraryVersion(versionBuffer, static_cast<uint32_t>(versionBufferSize));
+    EXPECT_EQ(status, expectedStatus);
+    EXPECT_EQ(buffer[0], expectedChar0);
+}
+
 int main(int argc, char **argv)
 {
     testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();
 }
+

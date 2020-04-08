@@ -30,42 +30,30 @@
 
 DeviceController::DeviceController()
 {
-    Gna2DeviceVersion deviceVersion;
-    gna_device_id deviceNumber = 0;
-    auto status = GnaDeviceGetCount(&deviceNumber);
-    if (GNA_SUCCESS != status)
-    {
-        throw std::runtime_error("GnaDeviceGetCount failed");
-    }
+    auto deviceVersion = Gna2DeviceVersion{};
+    auto deviceNumber = 0u;
+    auto status = Gna2DeviceGetCount(&deviceNumber);
+    ThrowOnStatusUnsuccessful(status, "GnaDeviceGetCount failed");
+
     gnaHandle = 0;
     // open the device
-    status = GnaDeviceOpen(gnaHandle);
-    if (GNA_SUCCESS != status)
-    {
-        throw std::runtime_error("GnaDeviceOpen failed");
-    }
+    status = Gna2DeviceOpen(gnaHandle);
+    ThrowOnStatusUnsuccessful(status, "GnaDeviceOpen failed");
 
-    status = GnaDeviceGetVersion(gnaHandle, (gna_device_version*)&deviceVersion);
-    if (GNA_SUCCESS != status)
-    {
-        throw std::runtime_error("GnaDeviceGetVersion failed");
-    }
+    status = Gna2DeviceGetVersion(gnaHandle, &deviceVersion);
+    ThrowOnStatusUnsuccessful(status, "GnaDeviceGetVersion failed");
 
     std::cout << "Device version: " << std::hex << deviceVersion << std::endl;
 }
 
 DeviceController::~DeviceController()
 {
-    intel_gna_status_t status = GnaDeviceClose(gnaHandle);
-    if (GNA_SUCCESS != status)
-    {
-        // TODO log it, dtor should not throw
-    }
+    Gna2DeviceClose(gnaHandle);
 }
 
-void DeviceController::ModelCreate(const gna_model * model, gna_model_id * modelId)
+void DeviceController::ModelCreate(const gna_model * model, uint32_t * modelId)
 {
-    intel_gna_status_t status = GnaModelCreate(gnaHandle, model, modelId);
+    auto const status = GnaModelCreate(gnaHandle, model, modelId);
     if (GNA_SUCCESS != status)
     {
         throw std::runtime_error("Model create failed");
@@ -87,29 +75,23 @@ void SetupTemporalInputOutput(const Gna2Model* model, void * memory)
     }
 }
 
-void DeviceController::ModelCreate(const Gna2Model* model, gna_model_id* modelId)
+void DeviceController::ModelCreate(const Gna2Model* model, uint32_t* modelId) const
 {
     SetupTemporalInputOutput(model, gnaMemory);
     auto const status = Gna2ModelCreate(gnaHandle, model, modelId);
-    if (Gna2StatusSuccess != status)
-    {
-        throw std::runtime_error("Model create2 failed");
-    }
+    ThrowOnStatusUnsuccessful(status, "Model create2 failed");
 }
 
-void DeviceController::ModelRelease(gna_model_id modelId) const
+void DeviceController::ModelRelease(uint32_t modelId) const
 {
-    intel_gna_status_t status = GnaModelRelease(modelId);
-    if (GNA_SUCCESS != status)
-    {
-        throw std::runtime_error("Model create failed");
-    }
+    auto const status = Gna2ModelRelease(modelId);
+    ThrowOnStatusUnsuccessful(status, "Model create failed");
 }
 
 uint8_t * DeviceController::Alloc(uint32_t sizeRequested, uint32_t * sizeGranted)
 {
-    GnaAlloc(sizeRequested, sizeGranted, &gnaMemory);
-    if (nullptr == gnaMemory)
+    auto const status = Gna2MemoryAlloc(sizeRequested, sizeGranted, &gnaMemory);
+    if (!Gna2StatusIsSuccessful(status) || nullptr == gnaMemory || sizeRequested > *sizeGranted)
     {
         throw std::runtime_error("GnaAlloc failed");
     }
@@ -119,99 +101,83 @@ uint8_t * DeviceController::Alloc(uint32_t sizeRequested, uint32_t * sizeGranted
 
 void DeviceController::Free(void *memory)
 {
-    intel_gna_status_t status = GnaFree(memory);
-    if (GNA_SUCCESS != status)
-    {
-        throw std::runtime_error("Config add failed");
-    }
+    auto const status = Gna2MemoryFree(memory);
+    ThrowOnStatusUnsuccessful(status, "Config add failed");
 }
 
-gna_request_cfg_id DeviceController::ConfigAdd(gna_model_id modelId)
+uint32_t DeviceController::ConfigAdd(uint32_t modelId)
 {
-    gna_request_cfg_id configId;
-    intel_gna_status_t status = GnaRequestConfigCreate(modelId, &configId);
-    if (GNA_SUCCESS != status)
-    {
-        throw std::runtime_error("Config add failed");
-    }
+    uint32_t configId = 0;
+    auto const status = Gna2RequestConfigCreate(modelId, &configId);
+    ThrowOnStatusUnsuccessful(status, "Config add failed");
 
     return configId;
 }
 
-void DeviceController::BufferAdd(gna_request_cfg_id configId,
-    GnaComponentType type, uint32_t layerIndex, void * address)
+void DeviceController::BufferAdd(uint32_t configId, uint32_t operationIndex,
+    uint32_t operandIndex, void * address)
 {
-    intel_gna_status_t status = GnaRequestConfigBufferAdd(configId, type, layerIndex, address);
-    if (GNA_SUCCESS != status)
-    {
-        throw std::runtime_error("Buffer add failed");
-    }
+    auto const status = Gna2RequestConfigSetOperandBuffer(configId, operationIndex, operandIndex, address);
+    ThrowOnStatusUnsuccessful(status, "Buffer add failed");
 }
 
-void DeviceController::RequestSetAcceleration(gna_request_cfg_id configId, gna_acceleration accel)
+void DeviceController::RequestSetAcceleration(uint32_t configId, Gna2AccelerationMode accel)
 {
-    intel_gna_status_t status = GnaRequestConfigEnforceAcceleration(configId, accel);
-    if (GNA_SUCCESS != status)
-    {
-        throw std::runtime_error("RequestSetAcceleration add failed");
-    }
+    auto const status = Gna2RequestConfigSetAccelerationMode(configId, accel);
+    ThrowOnStatusUnsuccessful(status, "RequestSetAcceleration add failed");
 }
 
-void DeviceController::RequestSetConsistency(gna_request_cfg_id configId, Gna2DeviceVersion version)
+void DeviceController::RequestSetConsistency(uint32_t configId, Gna2DeviceVersion version)
 {
-    intel_gna_status_t status = GnaRequestConfigEnableHardwareConsistency(configId, (gna_device_version)version);
-    if (GNA_SUCCESS != status)
-    {
-        throw std::runtime_error("RequestSetConsistency add failed");
-    }
+    auto const status = Gna2RequestConfigEnableHardwareConsistency(configId, version);
+    ThrowOnStatusUnsuccessful(status, "RequestSetConsistency add failed");
 }
 
-void DeviceController::ActiveListAdd(gna_request_cfg_id configId,
+void DeviceController::BufferAddIO(uint32_t configId, uint32_t outputOperationIndex, void* input, void* output)
+{
+    BufferAdd(configId, 0, InputOperandIndex, input);
+    BufferAdd(configId, outputOperationIndex, OutputOperandIndex, output);
+}
+
+void DeviceController::ActiveListAdd(uint32_t configId,
     uint32_t layerIndex, uint32_t indicesCount, uint32_t* indices)
 {
-    intel_gna_status_t status = GnaRequestConfigActiveListAdd(
+    auto const status = Gna2RequestConfigEnableActiveList(
         configId, layerIndex, indicesCount, indices);
-    if (GNA_SUCCESS != status)
-    {
-        throw std::runtime_error("ActiveList add failed");
-    }
+    ThrowOnStatusUnsuccessful(status, "ActiveList add failed");
 }
 
-void DeviceController::RequestEnqueue(gna_request_cfg_id configId, gna_request_id * requestId)
+void DeviceController::RequestEnqueue(uint32_t configId, uint32_t * requestId)
 {
-    intel_gna_status_t status = GnaRequestEnqueue(configId, requestId);
-    if (GNA_SUCCESS != status)
-    {
-        throw std::runtime_error("Request enqueue failed");
-    }
+    auto const status = Gna2RequestEnqueue(configId, requestId);
+    ThrowOnStatusUnsuccessful(status, "Request enqueue failed");
 }
 
-void DeviceController::RequestWait(gna_request_id requestId)
+void DeviceController::RequestWait(uint32_t requestId)
 {
-    intel_gna_status_t status = GnaRequestWait(requestId, 5 * 60 * 1000);
-    if (GNA_SUCCESS != status)
-    {
-        throw std::runtime_error("Request wait failed");
-    }
+    auto const status = Gna2RequestWait(requestId, 5 * 60 * 1000);
+    ThrowOnStatusUnsuccessful(status, "Request wait failed");
 }
 
 
 #if HW_VERBOSE == 1
-void DeviceController::AfterscoreDebug(gna_model_id modelId, uint32_t nActions, dbg_action *actions)
+void DeviceController::AfterscoreDebug(uint32_t modelId, uint32_t nActions, dbg_action *actions)
 {
-    intel_gna_status_t status = GnaModelSetAfterscoreScenario(modelId, nActions, actions);
-    if (GNA_SUCCESS != status)
-    {
-        throw std::runtime_error("Setting after score scenario failed");
-    }
+    auto const status = GnaModelSetAfterscoreScenario(modelId, nActions, actions);
+    ThrowOnStatusUnsuccessful(status, "Setting after score scenario failed");
 }
 
-void DeviceController::PrescoreDebug(gna_model_id modelId, uint32_t nActions, dbg_action *actions)
+void DeviceController::PrescoreDebug(uint32_t modelId, uint32_t nActions, dbg_action *actions)
 {
-    intel_gna_status_t status = GnaModelSetPrescoreScenario(modelId, nActions, actions);
-    if (GNA_SUCCESS != status)
-    {
-        throw std::runtime_error("Setting pre score scenario failed");
-    }
+    auto const status = GnaModelSetPrescoreScenario(modelId, nActions, actions);
+    ThrowOnStatusUnsuccessful(status, "Setting pre score scenario failed");
 }
 #endif
+
+void DeviceController::ThrowOnStatusUnsuccessful(Gna2Status const status, char const* message)
+{
+    if (!Gna2StatusIsSuccessful(status))
+    {
+        throw std::runtime_error(message);
+    }
+}

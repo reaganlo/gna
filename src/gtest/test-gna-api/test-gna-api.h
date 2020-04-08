@@ -65,6 +65,8 @@ protected:
     }
 
     static void ExpectMemEqual(const uint8_t* dump, uint32_t dumpSize, const uint8_t* ref, uint32_t refSize);
+    void GetLibraryVersionTest(bool versionBufferValid, bool versionBufferSizeValid,
+        Gna2Status expectedStatus, char expectedChar0) const;
 };
 
 class TestGnaApiEx : public TestGnaApi

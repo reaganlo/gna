@@ -95,7 +95,7 @@ public:
 private:
     void askToContinueOrExit(int exitCode) const;
     GnaSelfTestConfig config;
-    void PrintLibraryVersion();
+    static void PrintLibraryVersion();
     void DoIteration();
 };
 

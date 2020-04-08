@@ -23,6 +23,8 @@
 #include "SelfTest.h"
 #include "MultiOsHardwareSelfTest.h"
 
+#include "gna2-capability-api.h"
+
 #include <cstdlib>
 #include <cstring>
 
@@ -91,10 +93,18 @@ void GnaSelfTest::DoIteration()
     GnaSelfTestLogger::Log("GNA device self-test has been finished\n");
 }
 
-extern "C" const char* GnaGetLibraryVersion();
 void GnaSelfTest::PrintLibraryVersion()
 {
-    logger.Log("Detected GNA Library version: %s\n", GnaGetLibraryVersion());
+    char buffer[32];
+    auto const status = Gna2GetLibraryVersion(buffer, 32);
+    if(Gna2StatusIsSuccessful(status))
+    {
+        logger.Log("Detected GNA Library version: %s\n", buffer);
+    }
+    else
+    {
+        logger.Error("GNA Library version: UNKNOWN\n");
+    }
 }
 
 GnaSelfTestConfig::GnaSelfTestConfig(int argc, const char *const argv[])

@@ -53,10 +53,10 @@ public:
     void ChangeNumberOfThreads(uint32_t threadCount);
 
     void Enqueue(
-        gna_request_id *requestId,
+        uint32_t *requestId,
         std::unique_ptr<Request> request);
 
-    Gna2Status WaitFor(const gna_request_id requestId, const gna_timeout milliseconds);
+    Gna2Status WaitFor(const uint32_t requestId, const uint32_t milliseconds);
 
     void StopRequests();
 

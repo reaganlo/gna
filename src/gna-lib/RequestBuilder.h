@@ -47,13 +47,13 @@ public:
     RequestBuilder(const RequestBuilder &) = delete;
     RequestBuilder& operator=(const RequestBuilder&) = delete;
 
-    void CreateConfiguration(CompiledModel& model, gna_request_cfg_id *configId, DeviceVersion consistentDevice);
-    void ReleaseConfiguration(gna_request_cfg_id configId);
+    void CreateConfiguration(CompiledModel& model, uint32_t *configId, DeviceVersion consistentDevice);
+    void ReleaseConfiguration(uint32_t configId);
 
-    void AttachBuffer(gna_request_cfg_id configId, uint32_t operandIndex, uint32_t layerIndex, void * address) const;
-    void AttachActiveList(gna_request_cfg_id configId, uint32_t layerIndex, const ActiveList& activeList) const;
-    RequestConfiguration& GetConfiguration(gna_request_cfg_id configId) const;
-    std::unique_ptr<Request> CreateRequest(gna_request_cfg_id configId);
+    void AttachBuffer(uint32_t configId, uint32_t operandIndex, uint32_t layerIndex, void * address) const;
+    void AttachActiveList(uint32_t configId, uint32_t layerIndex, const ActiveList& activeList) const;
+    RequestConfiguration& GetConfiguration(uint32_t configId) const;
+    std::unique_ptr<Request> CreateRequest(uint32_t configId);
 
     void CreateProfilerConfiguration(uint32_t* configId, uint32_t numberOfInstrumentationPoints, Gna2InstrumentationPoint* selectedInstrumentationPoints, uint64_t* results);
     ProfilerConfiguration& GetProfilerConfiguration(uint32_t configId) const;
@@ -63,11 +63,11 @@ public:
 
 private:
     std::unordered_map<uint32_t, std::unique_ptr<RequestConfiguration>> configurations;
-    static gna_request_cfg_id assignConfigId();
+    static uint32_t assignConfigId();
 
     std::unordered_map<uint32_t, std::unique_ptr<ProfilerConfiguration>> profilerConfigurations;
     uint32_t AssignProfilerConfigId();
-    gna_request_cfg_id profilerConfigIdSequence = 0;
+    uint32_t profilerConfigIdSequence = 0;
 };
 
 }

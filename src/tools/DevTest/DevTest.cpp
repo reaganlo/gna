@@ -338,12 +338,12 @@ public:
                     throw std::runtime_error("Script error: no model to score");
                 }
                 auto config = modelSetup->ConfigId(action.modelIndex, action.configIndex);
-                deviceController.RequestSetAcceleration(config, gna_acceleration::GNA_AUTO);
+                deviceController.RequestSetAcceleration(config, Gna2AccelerationModeAuto);
                 if (enforcedConsistentDevice != Gna2DeviceVersionSoftwareEmulation)
                 {
                     deviceController.RequestSetConsistency(config, enforcedConsistentDevice);
                 }
-                gna_request_id requestId;
+                uint32_t requestId;
                 deviceController.RequestEnqueue(config, &requestId);
                 deviceController.RequestWait(requestId);
                 break;

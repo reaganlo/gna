@@ -25,6 +25,7 @@
 
 #include "test-model-export-legacy-sue.h"
 
+#include "gna2-capability-api.h"
 #include "gna2-common-api.h"
 #include "gna2-model-export-api.h"
 #include "gna2-model-suecreek-header.h"
@@ -96,7 +97,18 @@ std::vector<char> TestSimpleModelTlv::Gna3DumpNoMmuTlv()
     std::vector<char> outVector;
     std::stringstream debugStream;
     debugStream << "test-model-export-tlv.cpp ";
-    debugStream << " GnaLibrary " << GnaGetLibraryVersion();
+    debugStream << " GnaLibrary ";
+    char version[32];
+    auto const status = Gna2GetLibraryVersion(version, 32);
+    if (Gna2StatusIsSuccessful(status))
+    {
+        debugStream << version;
+    }
+    else
+    {
+        debugStream << "UNKNOWN";
+    }
+
 
     auto debugString = debugStream.str();
     debugString.resize(Gna2RoundUp(static_cast<uint32_t>(debugString.size()), 4), ' ');

@@ -33,12 +33,12 @@
 class ModelSetup : public IModelSetup
 {
 public:
-    gna_model_id ModelId(uint32_t /*modelIndex*/) const override
+    uint32_t ModelId(uint32_t /*modelIndex*/) const override
     {
         return modelId;
     }
 
-    gna_request_cfg_id ConfigId(uint32_t /*modelIndex*/, uint32_t /*configIndex*/) const override
+    uint32_t ConfigId(uint32_t /*modelIndex*/, uint32_t /*configIndex*/) const override
     {
         // this one model setup has only one Request Configuration
         return configId;
@@ -53,8 +53,8 @@ public:
 protected:
 
     DeviceController & deviceController;
-    gna_model_id modelId;
-    gna_request_cfg_id configId;
+    uint32_t modelId;
+    uint32_t configId;
 
     intel_nnet_type_t nnet;
 

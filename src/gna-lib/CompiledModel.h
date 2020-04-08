@@ -104,7 +104,7 @@ public:
 
     void CopyData(void *address, size_t size) const;
 
-    void InvalidateHardwareRequestConfig(gna_request_cfg_id configId) const;
+    void InvalidateHardwareRequestConfig(uint32_t configId) const;
 
     Memory const * GetMemoryIfNotPartOfModel(const void *buffer, size_t bufferSize) const;
 

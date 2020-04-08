@@ -58,8 +58,7 @@ SetupMixModel::SetupMixModel(DeviceController & deviceCtrl)
 
     configId = deviceController.ConfigAdd(modelId);
 
-    deviceController.BufferAdd(configId, InputComponent, 0, inputBuffer);
-    deviceController.BufferAdd(configId, OutputComponent, nnet.nLayers - 1, outputBuffer);
+    DeviceController::BufferAddIO(configId, nnet.nLayers - 1, inputBuffer, outputBuffer);
 }
 
 SetupMixModel::~SetupMixModel()

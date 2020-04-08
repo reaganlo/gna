@@ -56,7 +56,7 @@ void RequestHandler::ChangeNumberOfThreads(uint32_t threadCount)
 }
 
 void RequestHandler::Enqueue(
-    gna_request_id *requestId,
+    uint32_t *requestId,
     std::unique_ptr<Request> request)
 {
     Expect::NotNull(requestId);
@@ -87,7 +87,7 @@ void RequestHandler::addRequest(std::unique_ptr<Request> request)
     }
 }
 
-Gna2Status RequestHandler::WaitFor(const gna_request_id requestId, const gna_timeout milliseconds)
+Gna2Status RequestHandler::WaitFor(const uint32_t requestId, const uint32_t milliseconds)
 {
     auto request = extractRequestLocked(requestId);
     auto future = request->GetFuture();

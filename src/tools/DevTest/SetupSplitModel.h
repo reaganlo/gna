@@ -36,12 +36,12 @@
 class SetupSplitModel : public IModelSetup
 {
 public:
-    gna_model_id ModelId(uint32_t modelIndex) const override
+    uint32_t ModelId(uint32_t modelIndex) const override
     {
         return models.at(modelIndex);
     }
 
-    gna_request_cfg_id ConfigId(uint32_t modelIndex, uint32_t configIndex) const override
+    uint32_t ConfigId(uint32_t modelIndex, uint32_t configIndex) const override
     {
         auto modelIdSplit = ModelId(modelIndex);
         return modelsConfigurations.at(modelIdSplit).at(configIndex);
@@ -74,10 +74,10 @@ private:
     Gna2Model firstModel;
     Gna2Model secondModel;
 
-    std::vector<gna_model_id> models;
-    std::map<gna_model_id, std::vector<gna_request_cfg_id>> modelsConfigurations;
+    std::vector<uint32_t> models;
+    std::map<uint32_t, std::vector<uint32_t>> modelsConfigurations;
 
-    std::map<gna_model_id, std::map<gna_request_cfg_id, std::pair<void*, void*>>> configurationBuffers;
+    std::map<uint32_t, std::map<uint32_t, std::pair<void*, void*>>> configurationBuffers;
 
     const int8_t weights_1B[outVecSz * inVecSz] =
     {

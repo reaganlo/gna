@@ -26,9 +26,30 @@
 #pragma once
 
 #include "gna-api.h"
-#include "gna-api-verbose.h"
 
 #include "gna2-api.h"
+
+constexpr uint32_t InputOperandIndex = 0;
+constexpr uint32_t OutputOperandIndex = 1;
+constexpr uint32_t WeightOperandIndex = 2;
+constexpr uint32_t FilterOperandIndex = 2;
+constexpr uint32_t BiasOperandIndex = 3;
+constexpr uint32_t PwlOperandIndex = 4;
+constexpr uint32_t WeightScaleFactorOperandIndex = 5;
+constexpr uint32_t GmmInterleavedOperandIndex = 2;
+constexpr uint32_t GmmMeanOperandIndex = 2;
+constexpr uint32_t GmmInverseCovarianceOperandIndex = 3;
+constexpr uint32_t GmmGaussianConstantOperandIndex = 4;
+
+constexpr uint32_t ConvolutionStrideParamIndex = 0;
+constexpr uint32_t BiasModeConvolutionParamIndex = 1;
+constexpr uint32_t PoolingModeParamIndex = 2;
+constexpr uint32_t PoolingWindowParamIndex = 3;
+constexpr uint32_t PoolingStrideParamIndex = 4;
+constexpr uint32_t ZeroPaddingParamIndex = 5;
+
+constexpr uint32_t BiasModeAffineParamIndex = 0;
+constexpr uint32_t BiasVectorParamIndex = 1;
 
 class DeviceController
 {
@@ -40,30 +61,32 @@ public:
 
     void Free(void *memory);
 
-    void ModelCreate(const gna_model *model, gna_model_id *modelId);
-    void ModelCreate(const Gna2Model *model, gna_model_id *modelId);
-    void ModelRelease(gna_model_id modelId) const;
+    void ModelCreate(const gna_model *model, uint32_t *modelId);
+    void ModelCreate(const Gna2Model *model, uint32_t *modelId) const;
+    void ModelRelease(uint32_t modelId) const;
 
-    gna_request_cfg_id ConfigAdd(gna_model_id modelId);
+    static uint32_t ConfigAdd(uint32_t modelId);
+    static void BufferAdd(uint32_t configId, uint32_t operationIndex, uint32_t operandIndex, void * address);
+    static void RequestSetAcceleration(uint32_t, Gna2AccelerationMode);
+    static void RequestSetConsistency(uint32_t, Gna2DeviceVersion);
+    static void BufferAddIO(uint32_t configId,  uint32_t outputOperationIndex, void * input, void * output);
 
-    void BufferAdd(gna_request_cfg_id, GnaComponentType, uint32_t layerIndex, void * address);
-    void RequestSetAcceleration(gna_request_cfg_id, gna_acceleration);
-    void RequestSetConsistency(gna_request_cfg_id, Gna2DeviceVersion);
 
+    static void RequestEnqueue(uint32_t, uint32_t *);
+    static void RequestWait(uint32_t);
 
-    void RequestEnqueue(gna_request_cfg_id, gna_request_id *);
-    void RequestWait(gna_request_id);
-
-    void ActiveListAdd(gna_request_cfg_id configId, uint32_t layerIndex, uint32_t indicesCount, uint32_t* indices);
+    static void ActiveListAdd(uint32_t configId, uint32_t layerIndex, uint32_t indicesCount, uint32_t* indices);
 
 #if HW_VERBOSE == 1
-    void AfterscoreDebug(gna_model_id modelId, uint32_t nActions, dbg_action *actions);
+    void AfterscoreDebug(uint32_t modelId, uint32_t nActions, dbg_action *actions);
 
-    void PrescoreDebug(gna_model_id modelId, uint32_t nActions, dbg_action *actions);
+    void PrescoreDebug(uint32_t modelId, uint32_t nActions, dbg_action *actions);
 #endif
 
 private:
-    gna_device_id gnaHandle;
+    uint32_t gnaHandle;
 
     void *gnaMemory = nullptr;
+
+    static void ThrowOnStatusUnsuccessful(Gna2Status status, char const* message);
 };

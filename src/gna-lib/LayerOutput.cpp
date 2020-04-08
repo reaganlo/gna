@@ -26,6 +26,7 @@
 #include "LayerOutput.h"
 
 #include "AffineLayerCapabilities.h"
+#include "AffineLayers.h"
 #include "AuxiliaryCapabilities.h"
 #include "Capabilities.h"
 #include "ConvolutionalLayer.h"
@@ -130,9 +131,6 @@ Shape LayerOutput::ConvertInCaseOfNewApiOrder(gna_tensor_order order, const uint
     return Shape(order, nOutputColumns, nOutputRows);
 }
 
-//TODO:3:remove when final scratchpad impl provided
-void *getGlobal2MBScratchpad();
-
 LayerOutput::LayerOutput(const nn_layer& layer, const LayerValidator& validatorIn) :
     Tensor{
         ConvertInCaseOfNewApiOrder( capabilities.GetOrder(validatorIn), layer.nOutputColumns, layer.nOutputRows ),
@@ -153,7 +151,8 @@ void * getScratchpadForOperation(const Gna2Operation &operation)
     {
         return nullptr;
     }
-    return getGlobal2MBScratchpad();
+//TODO:3:remove when final scratchpad impl provided
+    return AffineBaseLayer::GetGlobal2MBScratchpad();
 }
 
 ApiShape LayerOutput::GetShape(const Gna2Operation & operation)

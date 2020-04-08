@@ -77,7 +77,7 @@ uint32_t CompiledModel::GetMaximumOperandSize(uint32_t operandIndex)
     return softwareModel.GetMaximumOperandSize(operandIndex);
 }
 
-void CompiledModel::InvalidateHardwareRequestConfig(gna_request_cfg_id configId) const
+void CompiledModel::InvalidateHardwareRequestConfig(uint32_t configId) const
 {
     if (hardwareModel)
     {

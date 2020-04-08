@@ -54,6 +54,12 @@ if(GNA_RUN_CLANG_TIDY)
   set(CMAKE_CXX_CLANG_TIDY clang-tidy -checks=-*,readability-*,portability-*,clang-analyzer-*)
 endif()
 
+if(DEFINED ENV{GNA_LIBRARY_VERSION})
+  set(GNA_LIBRARY_VER -DGNA_LIBRARY_VERSION_STRING=\"$ENV{GNA_LIBRARY_VERSION}\")
+elseif(NOT DEFINED GNA_LIBRARY_VER)
+  set(GNA_LIBRARY_VER -DGNA_LIBRARY_VERSION_STRING=\"2.X.0.0\")
+endif()
+
 # source path variables
 set(APP_DIR ${CMAKE_SOURCE_DIR}/src)
 set(COMMON_DIR ${APP_DIR}/common)

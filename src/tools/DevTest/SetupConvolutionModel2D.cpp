@@ -87,8 +87,7 @@ SetupConvolutionModel2D::SetupConvolutionModel2D(DeviceController & deviceCtrl, 
 
     configId = deviceController.ConfigAdd(modelId);
 
-    deviceController.BufferAdd(configId, InputComponent, 0, inputBuffer);
-    deviceController.BufferAdd(configId, OutputComponent, 0, outputBuffer);
+    DeviceController::BufferAddIO(configId, 0, inputBuffer, outputBuffer);
 }
 
 SetupConvolutionModel2D::~SetupConvolutionModel2D()

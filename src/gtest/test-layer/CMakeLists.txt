@@ -42,6 +42,8 @@ elseif(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
   set(gna_test_layer_compile_options )
 endif()
 
+set(EXTRA_DEFS ${GNA_LIBRARY_VER} ${EXTRA_DEFS})
+
 set(gna_hw_module_interface_sources
   ${SRC_DIR}/HwModuleInterface.hpp
   ${SRC_DIR}/WindowsHwModuleInterface.hpp

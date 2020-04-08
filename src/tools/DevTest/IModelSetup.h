@@ -101,12 +101,12 @@ class IModelSetup
 public:
     typedef std::unique_ptr<IModelSetup> UniquePtr;
 
-    virtual gna_model_id ModelId(uint32_t /*modelIndex*/) const
+    virtual uint32_t ModelId(uint32_t /*modelIndex*/) const
     {
         return modelId;
     }
 
-    virtual gna_request_cfg_id ConfigId(uint32_t /*modelIndex*/, uint32_t /*configIndex*/) const
+    virtual uint32_t ConfigId(uint32_t /*modelIndex*/, uint32_t /*configIndex*/) const
     {
         return configId;
     }
@@ -121,8 +121,8 @@ public:
     }
 
 protected:
-    gna_model_id modelId;
-    gna_request_cfg_id configId;
+    uint32_t modelId;
+    uint32_t configId;
 
     intel_nnet_type_t nnet;
     Gna2Model model;

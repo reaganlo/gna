@@ -25,18 +25,13 @@
 
 #include "DeviceManager.h"
 #include "DeviceVerbose.h"
-#include "Logger.h"
-#include "Expect.h"
-
-#include <memory>
-#include <thread>
 
 #include "gna-api-verbose.h"
 
 using namespace GNA;
 
-intel_gna_status_t GnaModelSetPrescoreScenario(
-    gna_model_id modelId,
+GNA2_API intel_gna_status_t GnaModelSetPrescoreScenario(
+    uint32_t modelId,
     uint32_t nActions,
     dbg_action *pActions)
 {
@@ -56,8 +51,8 @@ intel_gna_status_t GnaModelSetPrescoreScenario(
     }
 }
 
-intel_gna_status_t GnaModelSetAfterscoreScenario(
-    gna_model_id modelId,
+GNA2_API intel_gna_status_t GnaModelSetAfterscoreScenario(
+    uint32_t modelId,
     uint32_t nActions,
     dbg_action *pActions)
 {

@@ -122,7 +122,7 @@ public:
 
     /* these fields will not change between request executions */
     const uint8_t HwPerfEncoding;
-    const gna_request_cfg_id RequestConfigId;
+    const uint32_t RequestConfigId;
 
     /* these fields can change on each request execution */
     GnaOperationMode Mode;

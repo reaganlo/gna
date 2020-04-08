@@ -67,7 +67,7 @@ uint32_t HardwareModelScorable::GetBufferOffsetForConfiguration(
     return offset;
 }
 
-void HardwareModelScorable::InvalidateConfig(gna_request_cfg_id configId)
+void HardwareModelScorable::InvalidateConfig(uint32_t configId)
 {
     if (hardwareRequests.find(configId) != hardwareRequests.end())
     {

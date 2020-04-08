@@ -46,8 +46,7 @@ SetupTransposeModel::SetupTransposeModel(DeviceController & deviceCtrl, uint32_t
 
     configId = deviceController.ConfigAdd(modelId);
 
-    deviceController.BufferAdd(configId, InputComponent, 0, inputBuffer);
-    deviceController.BufferAdd(configId, OutputComponent, 0, outputBuffer);
+    DeviceController::BufferAddIO(configId, 0, inputBuffer, outputBuffer);
 }
 
 SetupTransposeModel::~SetupTransposeModel()

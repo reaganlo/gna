@@ -171,7 +171,7 @@ protected:
     void SetupGnaMemPointers(bool setupPwl, bool setupInputsOutputs);
     void CopyDataToGnaMem(bool copyPwl, bool copyInputs);
     void SetupNnet();
-    void FreeAndClose();
+    void FreeAndClose2();
     intel_nnet_layer_t nnet_layer = {};
     intel_nnet_type_t nnet = { 1,4, &nnet_layer };
     intel_affine_layer_t affine_layer{};
@@ -209,10 +209,9 @@ protected:
         destination = *reinterpret_cast<T*>(out.data());
     }
 
-    void FreeAndClose2();
     uint32_t exportConfig = 0;
 
-    gna_device_id deviceIndex = 0;
+    uint32_t deviceIndex = 0;
     uint32_t rw_buffer_size = 0;
     void *memory = nullptr;
     uint32_t memorySize = 0;

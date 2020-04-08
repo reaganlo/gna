@@ -37,6 +37,8 @@
 #ifndef __GNA2_CAPABILITY_API_H
 #define __GNA2_CAPABILITY_API_H
 
+#include "gna2-common-api.h"
+
 /**
  List of device generations.
 
@@ -74,6 +76,19 @@ enum Gna2DeviceGeneration
      */
     Gna2DeviceGeneration3_0 = 0x300,
 };
+
+/**
+ Gets library version string.
+
+ @param [out] versionBuffer User allocated buffer for the version string
+ @param [in] versionBufferSize The size of the versionBuffer in bytes.
+        Must be at least 32 bytes long.
+ @return Status of fetching the version.
+    @retval Gna2StatusSuccess The version was fully serialized into the versionBuffer.
+    @retval Gna2StatusMemorySizeInvalid The versionBuffer is too small.
+    @retval Gna2StatusNullArgumentNotAllowed The versionBuffer was NULL.
+ */
+GNA2_API enum Gna2Status Gna2GetLibraryVersion(char * versionBuffer, uint32_t versionBufferSize);
 
 #endif // __GNA2_CAPABILITY_API_H
 

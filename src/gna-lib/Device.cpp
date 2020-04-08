@@ -85,7 +85,7 @@ void Device::SetNumberOfThreads(uint32_t threadCount)
     requestHandler.ChangeNumberOfThreads(threadCount);
 }
 
-void Device::AttachBuffer(gna_request_cfg_id configId,
+void Device::AttachBuffer(uint32_t configId,
     uint32_t operandIndex, uint32_t layerIndex, void *address)
 {
     Expect::NotNull(address);
@@ -93,20 +93,20 @@ void Device::AttachBuffer(gna_request_cfg_id configId,
     requestBuilder.AttachBuffer(configId, operandIndex, layerIndex, address);
 }
 
-void Device::CreateConfiguration(gna_model_id modelId, gna_request_cfg_id *configId)
+void Device::CreateConfiguration(uint32_t modelId, uint32_t *configId)
 {
     auto &model = *models.at(modelId);
     requestBuilder.CreateConfiguration(model, configId,
                     hardwareCapabilities.GetDeviceVersion());
 }
 
-void Device::ReleaseConfiguration(gna_request_cfg_id configId)
+void Device::ReleaseConfiguration(uint32_t configId)
 {
     requestBuilder.ReleaseConfiguration(configId);
 }
 
 void Device::EnableHardwareConsistency(
-    gna_request_cfg_id configId, DeviceVersion deviceVersion)
+    uint32_t configId, DeviceVersion deviceVersion)
 {
     if (Gna2DeviceVersionSoftwareEmulation == deviceVersion)
     {
@@ -117,13 +117,13 @@ void Device::EnableHardwareConsistency(
     requestConfiguration.SetHardwareConsistency(deviceVersion);
 }
 
-void Device::EnforceAcceleration(gna_request_cfg_id configId, Gna2AccelerationMode accelMode)
+void Device::EnforceAcceleration(uint32_t configId, Gna2AccelerationMode accelMode)
 {
     auto& requestConfiguration = requestBuilder.GetConfiguration(configId);
     requestConfiguration.EnforceAcceleration(accelMode);
 }
 
-void Device::AttachActiveList(gna_request_cfg_id configId, uint32_t layerIndex,
+void Device::AttachActiveList(uint32_t configId, uint32_t layerIndex,
         uint32_t indicesCount, const uint32_t* const indices)
 {
     Expect::NotNull(indices);
@@ -158,12 +158,12 @@ void Device::UnMapMemory(Memory & memoryObject)
     }
 }
 
-void Device::ReleaseModel(gna_model_id const modelId)
+void Device::ReleaseModel(uint32_t const modelId)
 {
     models.erase(modelId);
 }
 
-void Device::PropagateRequest(gna_request_cfg_id configId, uint32_t *requestId)
+void Device::PropagateRequest(uint32_t configId, uint32_t *requestId)
 {
     Expect::NotNull(requestId);
 
@@ -171,7 +171,7 @@ void Device::PropagateRequest(gna_request_cfg_id configId, uint32_t *requestId)
     requestHandler.Enqueue(requestId, std::move(request));
 }
 
-Gna2Status Device::WaitForRequest(gna_request_id requestId, gna_timeout milliseconds)
+Gna2Status Device::WaitForRequest(uint32_t requestId, uint32_t milliseconds)
 {
     return requestHandler.WaitFor(requestId, milliseconds);
 }
@@ -181,13 +181,13 @@ void Device::Stop()
     requestHandler.StopRequests();
 }
 
-void Device::SetInstrumentationUnit(gna_request_cfg_id configId, Gna2InstrumentationUnit instrumentationUnit)
+void Device::SetInstrumentationUnit(uint32_t configId, Gna2InstrumentationUnit instrumentationUnit)
 {
     auto& requestConfiguration = requestBuilder.GetProfilerConfiguration(configId);
     requestConfiguration.Unit = instrumentationUnit;
 }
 
-void Device::SetHardwareInstrumentation(gna_request_cfg_id configId, Gna2InstrumentationMode instrumentationMode)
+void Device::SetHardwareInstrumentation(uint32_t configId, Gna2InstrumentationMode instrumentationMode)
 {
     if (instrumentationMode > Gna2InstrumentationModeWaitForMmuTranslation
         && !hardwareCapabilities.HasFeature(NewPerformanceCounters))

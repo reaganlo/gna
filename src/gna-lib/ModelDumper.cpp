@@ -47,7 +47,7 @@
 
 using namespace GNA;
 
-void* Device::Dump(gna_model_id modelId, intel_gna_model_header* modelHeader, Gna2Status* status, intel_gna_alloc_cb customAlloc)
+void* Device::Dump(uint32_t modelId, intel_gna_model_header* modelHeader, Gna2Status* status, intel_gna_alloc_cb customAlloc)
 {
     // Validate parameters
     Expect::NotNull(status);
@@ -74,7 +74,7 @@ void* Device::Dump(gna_model_id modelId, intel_gna_model_header* modelHeader, Gn
     return address;
 }
 
-void Device::DumpLdNoMMu(gna_model_id modelId, intel_gna_alloc_cb customAlloc,
+void Device::DumpLdNoMMu(uint32_t modelId, intel_gna_alloc_cb customAlloc,
     void *& exportData, uint32_t & exportDataSize)
 {
     Expect::NotNull(reinterpret_cast<void *>(customAlloc));

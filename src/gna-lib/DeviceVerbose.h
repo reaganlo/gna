@@ -38,13 +38,13 @@ namespace GNA
             Device::Device(deviceIndex, threadCount)
         { }
 
-        void SetPrescoreScenario(gna_model_id modelId, uint32_t nActions, dbg_action *actions)
+        void SetPrescoreScenario(uint32_t modelId, uint32_t nActions, dbg_action *actions)
         {
             auto& model = dynamic_cast<CompiledModelVerbose&>(*models.at(modelId));
             model.SetPrescoreScenario(nActions, actions);
         }
 
-        void SetAfterscoreScenario(gna_model_id modelId, uint32_t nActions, dbg_action *actions)
+        void SetAfterscoreScenario(uint32_t modelId, uint32_t nActions, dbg_action *actions)
         {
             auto& model = dynamic_cast<CompiledModelVerbose&>(*models.at(modelId));
             model.SetAfterscoreScenario(nActions, actions);

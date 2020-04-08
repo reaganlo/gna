@@ -43,33 +43,33 @@ struct ActiveList;
 
 using namespace GNA;
 
-gna_request_cfg_id RequestBuilder::assignConfigId()
+uint32_t RequestBuilder::assignConfigId()
 {
-    static gna_request_cfg_id configIdSequence = 0;
+    static uint32_t configIdSequence = 0;
     return configIdSequence++; // TODO:3: add unique id
 }
 
-void RequestBuilder::CreateConfiguration(CompiledModel& model, gna_request_cfg_id *configId, DeviceVersion consistentDevice)
+void RequestBuilder::CreateConfiguration(CompiledModel& model, uint32_t *configId, DeviceVersion consistentDevice)
 {
     Expect::NotNull(configId);
     *configId = assignConfigId();
     configurations.emplace(*configId, std::make_unique<RequestConfiguration>(model, *configId, consistentDevice));
 }
 
-void RequestBuilder::ReleaseConfiguration(gna_request_cfg_id configId)
+void RequestBuilder::ReleaseConfiguration(uint32_t configId)
 {
     //TODO:3: consider adding thread safty mechanism
     configurations.erase(configId);
 }
 
-void RequestBuilder::AttachBuffer(gna_request_cfg_id configId, uint32_t operandIndex, uint32_t layerIndex,
+void RequestBuilder::AttachBuffer(uint32_t configId, uint32_t operandIndex, uint32_t layerIndex,
     void * address) const
 {
     auto& configuration = GetConfiguration(configId);
     configuration.AddBuffer(operandIndex, layerIndex, address);
 }
 
-void RequestBuilder::AttachActiveList(gna_request_cfg_id configId, uint32_t layerIndex,
+void RequestBuilder::AttachActiveList(uint32_t configId, uint32_t layerIndex,
     const ActiveList& activeList) const
 {
     auto& configuration = GetConfiguration(configId);
@@ -78,7 +78,7 @@ void RequestBuilder::AttachActiveList(gna_request_cfg_id configId, uint32_t laye
 
 // TODO:3: RequestBuilder inconsistent usage, some request methods are called directly, some via RequestBuilder
 
-RequestConfiguration& RequestBuilder::GetConfiguration(gna_request_cfg_id configId) const
+RequestConfiguration& RequestBuilder::GetConfiguration(uint32_t configId) const
 {
     try
     {
@@ -91,7 +91,7 @@ RequestConfiguration& RequestBuilder::GetConfiguration(gna_request_cfg_id config
     }
 }
 
-std::unique_ptr<Request> RequestBuilder::CreateRequest(gna_request_cfg_id configId)
+std::unique_ptr<Request> RequestBuilder::CreateRequest(uint32_t configId)
 {
     auto& configuration = GetConfiguration(configId);
     auto profiler = RequestProfiler::Create(configuration.GetProfilerConfiguration());
@@ -100,7 +100,7 @@ std::unique_ptr<Request> RequestBuilder::CreateRequest(gna_request_cfg_id config
     return std::make_unique<Request>(configuration, std::move(profiler));
 }
 
-gna_request_cfg_id RequestBuilder::AssignProfilerConfigId()
+uint32_t RequestBuilder::AssignProfilerConfigId()
 {
     return profilerConfigIdSequence++; // TODO:3: add unique id
 }

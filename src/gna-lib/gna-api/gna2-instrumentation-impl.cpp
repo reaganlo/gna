@@ -33,7 +33,7 @@
 
 using namespace GNA;
 
-Gna2Status Gna2InstrumentationConfigSetMode(gna_request_cfg_id configId,
+Gna2Status Gna2InstrumentationConfigSetMode(uint32_t configId,
     Gna2InstrumentationMode hwPerfEncoding)
 {
     const std::function<ApiStatus()> command = [&]()

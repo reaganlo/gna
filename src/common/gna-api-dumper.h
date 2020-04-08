@@ -73,25 +73,6 @@ static_assert(64 == sizeof(intel_gna_model_header), "Invalid size of intel_gna_m
  */
 typedef void* (*intel_gna_alloc_cb)(uint32_t size);
 
-/**
- * Dumps the hardware-consumable model to the memory allocated by customAlloc
- * Model should be created through standard API GnaModelCreate function
- * Model will be validated against device kind provided as function argument
- *
- * @param modelId       Id of model created previously with call to GnaModelCreate function.
- * @param deviceVersion    Device on which model will be used
- * @param modelHeader   (out) Header describing parameters of model being dumped.
- * @param status        (out) Status of conversion and dumping.
- * @param customAlloc   Pointer to a function with custom memory allocation. Total model size needs to be passed as parameter.
- * @return Pointer to memory allocated by customAlloc with binary dumped model
- */
-GNAAPI void* GnaModelDump(
-    gna_model_id modelId,
-    gna_device_generation deviceGeneration,
-    intel_gna_model_header* modelHeader,
-    intel_gna_status_t* status,
-    intel_gna_alloc_cb customAlloc);
-
 #ifdef __cplusplus
 }
 #endif

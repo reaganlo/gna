@@ -45,6 +45,8 @@ public:
 
     virtual Tensor const & GetOperand(uint32_t operandIndex) const override;
 
+    static void *GetGlobal2MBScratchpad();
+
 protected:
     AffineBaseLayer(
             const nn_layer& layer, std::vector<TransformOperation> transforms,

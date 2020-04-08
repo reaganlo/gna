@@ -41,7 +41,7 @@
 
 using namespace GNA;
 
-RequestConfiguration::RequestConfiguration(CompiledModel& model, gna_request_cfg_id configId,
+RequestConfiguration::RequestConfiguration(CompiledModel& model, uint32_t configId,
     DeviceVersion consistentDeviceIn) :
     Model{ model },
     Id{ configId },

@@ -27,6 +27,7 @@
 
 #include "CompiledModel.h"
 #include "Memory.h"
+#include <AffineLayers.h>
 
 using namespace GNA;
 
@@ -112,11 +113,9 @@ uint32_t HardwareModelNoMMU::SetBarIndex(uint32_t offsetFromBar, uint32_t barInd
     return offsetFromBar | barIndex;
 }
 
-void *getGlobal2MBScratchpad();
-
 uint32_t HardwareModelNoMMU::GetBufferOffset(const BaseAddress& address) const
 {
-    if (address == getGlobal2MBScratchpad())
+    if (address == AffineBaseLayer::GetGlobal2MBScratchpad())
     {
         // Global scratchpad region starts after GnaDescriptor (32bytes) at BAR0
         return SetBarIndex(GnaDescritorSize, BarIndexGnaBar);
