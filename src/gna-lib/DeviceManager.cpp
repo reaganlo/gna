@@ -218,8 +218,8 @@ void DeviceManager::AllocateMemory(uint32_t requestedSize,
 {
     Expect::NotNull(sizeGranted);
     Expect::NotNull(memoryAddress);
-    *sizeGranted = 0;
 
+    *sizeGranted = 0;
     auto memoryObject = createMemoryObject(requestedSize);
 
     MapMemoryToAll(*memoryObject);

@@ -52,13 +52,10 @@ std::future<Gna2Status> Request::GetFuture()
 }
 
 RequestProfiler::RequestProfiler(bool initialize)
-{   
+{
     if (initialize)
     {
-        for (size_t i = 0; i < MAX_INSTRUMENTATION_POINTS; i++)
-        {
-            Points.push_back(0);
-        }
+        Points.resize(ProfilerConfiguration::GetMaxNumberOfInstrumentationPoints(), 0);
     }
 }
 
@@ -84,10 +81,9 @@ void CycleProfiler::Measure(Gna2InstrumentationPoint pointType)
 
 void RequestProfiler::SaveResults(ProfilerConfiguration* config)
 {
-    for (size_t i = 0; i < config->NPoints; i++)
+    for (auto i = 0u; i < config->NPoints; i++)
     {
-        Expect::InRange(static_cast<uint32_t>(config->Points[i]), (MAX_INSTRUMENTATION_POINTS - 1), Gna2StatusDeviceParameterOutOfRange);
-        *(config->Results + i) = Points.at(config->Points[i]);
+        config->SetResult(i, Points.at(config->Points[i]));
     }
 }
 
@@ -98,10 +94,7 @@ std::unique_ptr<RequestProfiler> RequestProfiler::Create(ProfilerConfiguration* 
         return std::make_unique<DisabledProfiler>();
     }
 
-    Expect::NotNull(config->Results);
-    Expect::InRange(config->NPoints, MAX_INSTRUMENTATION_POINTS, Gna2StatusIdentifierInvalid);
-    
-    switch (config->Unit)
+    switch (config->GetUnit())
     {
     case Gna2InstrumentationUnitMicroseconds:
         return std::make_unique<MicrosecondProfiler>();

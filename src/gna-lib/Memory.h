@@ -66,6 +66,7 @@ public:
     uint32_t GetTag() const;
 
     static const uint32_t GNA_BUFFER_ALIGNMENT = 64;
+    static constexpr uint32_t GNA_MAX_MEMORY_FOR_SINGLE_ALLOC = 1 << 28;
 
 protected:
     uint64_t id = 0;

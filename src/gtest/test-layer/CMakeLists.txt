@@ -117,6 +117,7 @@ add_executable(test-layer
   ${SRC_DIR}/PoolingMode.cpp
   ${SRC_DIR}/PoolingFunctions.cpp
   ${SRC_DIR}/PoolingFunctions2D.cpp
+  ${SRC_DIR}/ProfilerConfiguration.cpp
   ${SRC_DIR}/RecurrentFunction.cpp
   ${SRC_DIR}/RecurrentLayer.cpp
   ${SRC_DIR}/RequestBuilder.cpp

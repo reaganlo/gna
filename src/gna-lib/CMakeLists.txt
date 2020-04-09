@@ -138,6 +138,7 @@ set(gna_lib_sources ${gna_lib_sources}
   ${SRC_DIR}/PoolingMode.cpp
   ${SRC_DIR}/PoolingFunctions.cpp
   ${SRC_DIR}/PoolingFunctions2D.cpp
+  ${SRC_DIR}/ProfilerConfiguration.cpp
   ${SRC_DIR}/RecurrentFunction.cpp
   ${SRC_DIR}/RecurrentLayer.cpp
   ${SRC_DIR}/RequestBuilder.cpp
@@ -235,6 +236,7 @@ set(gna_lib_headers
   ${SRC_DIR}/PoolingMode.h
   ${SRC_DIR}/PoolingFunctions.h
   ${SRC_DIR}/PoolingFunctions2D.h
+  ${SRC_DIR}/ProfilerConfiguration.h
   ${SRC_DIR}/RecurrentFunction.h
   ${SRC_DIR}/RecurrentLayer.h
   ${SRC_DIR}/RequestBuilder.h

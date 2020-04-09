@@ -181,9 +181,7 @@ uint8_t RequestConfiguration::GetHwInstrumentationMode() const
 {
     if (profilerConfiguration != nullptr)
     {
-        auto const encoding = static_cast<int>(
-            profilerConfiguration->HwPerfEncoding) + 1;
-        return static_cast<uint8_t>(encoding & 0xFF);
+        return profilerConfiguration->GetHwPerfEncoding();
     }
     return 0;
 }

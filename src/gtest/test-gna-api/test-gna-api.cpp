@@ -170,6 +170,16 @@ TEST_F(TestGnaApi, Gna2MemoryAllocSuccessful)
 	ASSERT_EQ(status, Gna2StatusSuccess);
 }
 
+TEST_F(TestGnaApi, Gna2MemoryAllocTooBig)
+{
+    void* mem = nullptr;
+    uint32_t sizeGranted = 0;;
+    const auto status = Gna2MemoryAlloc(256*1024*1024 + 1, &sizeGranted, &mem);
+    ASSERT_EQ(status, Gna2StatusMemorySizeInvalid);
+    ASSERT_EQ(mem, nullptr);
+    ASSERT_EQ(sizeGranted, 0);
+}
+
 TEST_F(TestGnaModelApi, Gna2DataTypeGetSizeSuccesfull)
 {
     auto size = Gna2DataTypeGetSize(Gna2DataTypeNone);

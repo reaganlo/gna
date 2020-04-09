@@ -26,29 +26,39 @@
 #pragma once
 #include "gna2-instrumentation-api.h"
 
+#include <set>
+
 namespace GNA
 {
-    class ProfilerConfiguration
-    {
+class ProfilerConfiguration
+{
+public:
 
-    public:
-        ProfilerConfiguration(uint32_t configID,
-            uint32_t numberOfPoints,
-            Gna2InstrumentationPoint* selectedPoints,
-            uint64_t* selectedResults) :
-            ID{configID},
-            Points{ selectedPoints },
-            NPoints{ numberOfPoints },
-            Results{ selectedResults }
-        {}
+    static uint32_t GetMaxNumberOfInstrumentationPoints();
+    static const std::set<Gna2InstrumentationPoint>& GetSupportedInstrumentationPoints();
 
-        uint32_t ID;
-        Gna2InstrumentationPoint* Points;
-        uint32_t NPoints;
-        uint64_t* Results;
+    ProfilerConfiguration(uint32_t configID,
+        uint32_t numberOfPoints,
+        const Gna2InstrumentationPoint* selectedPoints,
+        uint64_t* selectedResults);
 
-        Gna2InstrumentationMode HwPerfEncoding = Gna2InstrumentationModeTotalStall;
-        Gna2InstrumentationUnit Unit = Gna2InstrumentationUnitMicroseconds;
-    };
+    const uint32_t ID;
+    const Gna2InstrumentationPoint* const Points;
+    const uint32_t NPoints;
+
+    void SetUnit(Gna2InstrumentationUnit unitIn);
+    Gna2InstrumentationUnit GetUnit() const;
+
+    void SetHwPerfEncoding(Gna2InstrumentationMode encodingIn);
+    uint8_t GetHwPerfEncoding() const;
+
+    void SetResult(uint32_t index, uint64_t value);
+
+private:
+    uint64_t* const Results;
+
+    Gna2InstrumentationMode HwPerfEncoding = Gna2InstrumentationModeTotalStall;
+    Gna2InstrumentationUnit Unit = Gna2InstrumentationUnitMicroseconds;
+};
 
 }

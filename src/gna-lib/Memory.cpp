@@ -46,7 +46,7 @@ Memory::Memory(void* bufferIn, uint32_t userSize, uint32_t alignment) :
 Memory::Memory(const uint32_t userSize, uint32_t alignment) :
     size{ RoundUp(userSize, alignment) }
 {
-    Expect::GtZero(size, Gna2StatusMemorySizeInvalid);
+    Expect::InRange(size, 1u, GNA_MAX_MEMORY_FOR_SINGLE_ALLOC, Gna2StatusMemorySizeInvalid);
     buffer = _gna_malloc(size);
     Expect::ValidBuffer(buffer);
     memset(buffer, 0, size); // this is costly and probably not needed

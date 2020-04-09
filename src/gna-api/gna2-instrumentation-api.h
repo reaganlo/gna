@@ -143,7 +143,7 @@ enum Gna2InstrumentationPoint
  @see Gna2RequestConfigSetInstrumentationMode and Gna2InstrumentationMode
     for description of hardware instrumentation.
 
- @param numberOfInstrumentationPoints A number of selected instrumentation points.
+ @param numberOfInstrumentationPoints A number of selected instrumentation points. Must be in range <1, 15>.
  @param selectedInstrumentationPoints An array of selected instrumentation points.
  @param results Buffer to save instrumentation results to.
     Result buffer size have to be at least numberOfInstrumentationPoints * sizeof(uint64_t).

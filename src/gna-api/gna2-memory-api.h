@@ -44,11 +44,13 @@
 /**
  Allocates memory buffer, that can be used with GNA device.
 
- @param sizeRequested Buffer size desired by the caller.
+ @param sizeRequested Buffer size desired by the caller. Must be within range <1, 2^28>.
  @param [out] sizeGranted Buffer size granted by GNA,
                       can be more then requested due to HW constraints.
  @param [out] memoryAddress Address of memory buffer
  @return Status of the operation.
+    @retval Gna2StatusSuccess On success.
+    @retval Gna2StatusMemorySizeInvalid If sizeRequested is invalid.
  */
 GNA2_API enum Gna2Status Gna2MemoryAlloc(
     uint32_t sizeRequested,

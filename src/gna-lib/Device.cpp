@@ -184,7 +184,7 @@ void Device::Stop()
 void Device::SetInstrumentationUnit(uint32_t configId, Gna2InstrumentationUnit instrumentationUnit)
 {
     auto& requestConfiguration = requestBuilder.GetProfilerConfiguration(configId);
-    requestConfiguration.Unit = instrumentationUnit;
+    requestConfiguration.SetUnit(instrumentationUnit);
 }
 
 void Device::SetHardwareInstrumentation(uint32_t configId, Gna2InstrumentationMode instrumentationMode)
@@ -196,7 +196,7 @@ void Device::SetHardwareInstrumentation(uint32_t configId, Gna2InstrumentationMo
     }
 
     auto& requestConfiguration = requestBuilder.GetProfilerConfiguration(configId);
-    requestConfiguration.HwPerfEncoding = instrumentationMode;
+    requestConfiguration.SetHwPerfEncoding(instrumentationMode);
 }
 
 bool Device::HasModel(uint32_t modelId) const

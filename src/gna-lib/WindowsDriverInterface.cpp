@@ -249,7 +249,7 @@ RequestResult WindowsDriverInterface::Submit(HardwareRequest& hardwareRequest,
         profilerConfiguration = hardwareRequest.GetProfilerConfiguration();
         if (profilerConfiguration != nullptr)
         {
-            convertPerfResultUnit(result.driverPerf, profilerConfiguration->Unit);
+            convertPerfResultUnit(result.driverPerf, profilerConfiguration->GetUnit());
         }
         result.status = (status & STS_SATURATION_FLAG)
             ? Gna2StatusWarningArithmeticSaturation : Gna2StatusSuccess;
