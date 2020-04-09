@@ -166,10 +166,18 @@ RequestResult LinuxDriverInterface::Submit(HardwareRequest& hardwareRequest,
         result.status = ((wait_data.out.hw_status & GNA_STS_SATURATE) != 0)
             ? Gna2StatusWarningArithmeticSaturation
             : Gna2StatusSuccess;
+
         result.driverPerf.Preprocessing = wait_data.out.drv_perf.pre_processing;
         result.driverPerf.Processing = wait_data.out.drv_perf.processing;
         result.driverPerf.DeviceRequestCompleted = wait_data.out.drv_perf.hw_completed;
         result.driverPerf.Completion = wait_data.out.drv_perf.completion;
+
+        const auto profilerConfiguration = hardwareRequest.GetProfilerConfiguration();
+        if (profilerConfiguration)
+        {
+            convertDriverPerfResult(profilerConfiguration->GetUnit(), result.driverPerf);
+        }
+
         result.hardwarePerf.total = wait_data.out.hw_perf.total;
         result.hardwarePerf.stall = wait_data.out.hw_perf.stall;
     }
@@ -299,6 +307,34 @@ int LinuxDriverInterface::discoverDevice(uint32_t deviceIndex, gna_parameter *pa
         fd = -1;
     }
     return -1;
+}
+
+ void LinuxDriverInterface::convertDriverPerfResult(
+     const Gna2InstrumentationUnit targetUnit, DriverPerfResults & driverPerf)
+{
+    uint64_t divider = 1;
+
+    switch (targetUnit)
+    {
+    case Gna2InstrumentationUnitMicroseconds:
+        divider = 1000;
+        break;
+    case Gna2InstrumentationUnitMilliseconds:
+        divider = 1000000;
+        break;
+    case Gna2InstrumentationUnitCycles:
+        // Linux driver of GNA does not provide this data in cycles
+        driverPerf.Completion = 0;
+        driverPerf.DeviceRequestCompleted = 0;
+        driverPerf.Preprocessing = 0;
+        driverPerf.Processing = 0;
+        return;
+    }
+
+    driverPerf.Completion /= divider;
+    driverPerf.DeviceRequestCompleted /= divider;
+    driverPerf.Preprocessing /= divider;
+    driverPerf.Processing /= divider;
 }
 
 #endif // not defined WIN32

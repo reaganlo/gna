@@ -54,14 +54,16 @@ public:
     virtual RequestResult Submit(HardwareRequest& hardwareRequest,
                                 RequestProfiler * const profiler) const override;
 
-protected:
+    LinuxDriverInterface(const LinuxDriverInterface &) = delete;
+    LinuxDriverInterface& operator=(const LinuxDriverInterface&) = delete;
+
+private:
+    static void convertDriverPerfResult(Gna2InstrumentationUnit targetUnit, DriverPerfResults & driverPerf);
+
     void createRequestDescriptor(HardwareRequest& hardwareRequest) const override;
 
     Gna2Status parseHwStatus(uint32_t hwStatus) const override;
 
-private:
-    LinuxDriverInterface(const LinuxDriverInterface &) = delete;
-    LinuxDriverInterface& operator=(const LinuxDriverInterface&) = delete;
     int discoverDevice(uint32_t deviceIndex, gna_parameter *params, size_t paramsNum);
 
     int gnaFileDescriptor = -1;
