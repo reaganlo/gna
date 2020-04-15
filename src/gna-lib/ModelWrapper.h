@@ -147,6 +147,7 @@ public:
 
     static void SetLayout(Gna2Tensor& tensor, const char* layout);
 
+    static std::set<Gna2TensorMode> GetValidTensorModes(const Gna2Operation & operation, uint32_t operandIndex);
     static void ExpectOperationValid(const Gna2Operation& operation);
     static uint32_t GetOperandIndex(GnaComponentType operand);
 
@@ -155,10 +156,8 @@ public:
     static bool HasEnabledOperand(const Gna2Operation& apiOperation, uint32_t operandIndex);
     static bool IsOperandAvailable(const Gna2Operation & operation, uint32_t index);
 
-    static void ExpectOperandModeDefault(const Gna2Operation & operation, int32_t index);
-    static void ExpectOperandDataNotNull(const Gna2Operation & operation, int32_t index);
-
     static Gna2Tensor GetOperand(const Gna2Operation & operation, uint32_t index, Gna2Tensor defaultValue);
+    static Gna2Tensor GetOperand(const Gna2Operation & apiOperation, uint32_t operandIndex);
     static Gna2Tensor GetEnabledOperand(const Gna2Operation & apiOperation, uint32_t operandIndex);
 
     static Gna2Tensor GetDisabledOperand();

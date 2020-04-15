@@ -65,22 +65,13 @@ public:
         ExpectEqual(static_cast<int64_t>(val), static_cast<int64_t>(ref), valType);
     }
 
-    static void ExpectInSet(const Gna2TensorMode val, const std::set<Gna2TensorMode>& ref)
-    {
-        Gna2ModelError e = GetCleanedError();
-        e.Source.Type = Gna2ItemTypeOperandMode;
-        e.Value = static_cast<int64_t>(val);
-        e.Reason = Gna2ErrorTypeNotInSet;
-        ExpectTrue(ref.find(val) != ref.end(), e);
-    }
-
     template<class T>
-    static void ExpectParameterInSet(const T val, const std::set<T>& ref)
+    static void ExpectInSet(const T val, const std::set<T>& ref, Gna2ItemType itemType)
     {
         Gna2ModelError e = GetCleanedError();
-        e.Source.Type = Gna2ItemTypeParameter;
+        e.Source.Type = itemType;
         e.Value = static_cast<int64_t>(val);
-        e.Reason = Gna2ErrorTypeNotInSet;
+        e.Reason = ref.size() == 1 ? Gna2ErrorTypeNotEqual : Gna2ErrorTypeNotInSet;
         ExpectTrue(ref.find(val) != ref.end(), e);
     }
 

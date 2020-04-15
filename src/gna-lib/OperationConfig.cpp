@@ -516,7 +516,7 @@ bool OperationConfig::IsMultibias(const Gna2Operation & operation)
 
     const std::function<void()> command = [&]()
     {
-        ModelErrorHelper::ExpectParameterInSet(biasMode, { Gna2BiasModeDefault, Gna2BiasModeGrouping });
+        ModelErrorHelper::ExpectInSet(biasMode, { Gna2BiasModeDefault, Gna2BiasModeGrouping }, Gna2ItemTypeParameter);
     };
     ModelErrorHelper::ExecuteForModelItem(command, GNA2_DISABLED, BiasModeAffineParamIndex);
 

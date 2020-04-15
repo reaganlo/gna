@@ -217,25 +217,7 @@ Gna2Tensor ModelWrapper::GetOperand(const Gna2Operation & operation, uint32_t in
     return defaultValue;
 }
 
-void ModelWrapper::ExpectOperandModeDefault(const Gna2Operation & operation, int32_t index)
-{
-    const std::function<void()> command = [&]()
-    {
-        ModelErrorHelper::ExpectEqual(operation.Operands[index]->Mode, Gna2TensorModeDefault, Gna2ItemTypeOperandMode);
-    };
-    ModelErrorHelper::ExecuteForModelItem(command, index);
-}
-
-void ModelWrapper::ExpectOperandDataNotNull(const Gna2Operation & operation, int32_t index)
-{
-    const std::function<void()> command = [&]()
-    {
-        ModelErrorHelper::ExpectNotNull(operation.Operands[index]->Data);
-    };
-    ModelErrorHelper::ExecuteForModelItem(command, static_cast<int32_t>(index));
-}
-
-Gna2Tensor ModelWrapper::GetEnabledOperand(const Gna2Operation & apiOperation, uint32_t operandIndex)
+Gna2Tensor ModelWrapper::GetOperand(const Gna2Operation & apiOperation, uint32_t operandIndex)
 {
     ModelErrorHelper::ExpectNotNull(apiOperation.Operands, Gna2ItemTypeOperationOperands);
     ModelErrorHelper::ExpectAboveEq(apiOperation.NumberOfOperands, operandIndex + 1, Gna2ItemTypeOperationNumberOfOperands);
@@ -244,9 +226,30 @@ Gna2Tensor ModelWrapper::GetEnabledOperand(const Gna2Operation & apiOperation, u
         ModelErrorHelper::ExpectNotNull(apiOperation.Operands[operandIndex], Gna2ItemTypeOperationOperands);
     };
     ModelErrorHelper::ExecuteForModelItem(command, static_cast<int32_t>(operandIndex));
-    ExpectOperandModeDefault(apiOperation, static_cast<int32_t>(operandIndex));
-    ExpectOperandDataNotNull(apiOperation, static_cast<int32_t>(operandIndex));
     return *apiOperation.Operands[operandIndex];
+}
+
+void ExpectOperandModeAndDataValid(const Gna2Tensor & operand, const std::set<Gna2TensorMode>& validModes,uint32_t operandIndex)
+{
+    const std::function<void()> command = [&]()
+    {
+        ModelErrorHelper::ExpectInSet(operand.Mode, validModes, Gna2ItemTypeOperandMode);
+        if (operand.Mode != Gna2TensorModeDisabled)
+        {
+            // TODO: 3: Remove when full (e.g., inputs, weights) buffer addition and late sanity checking implemented
+            ModelErrorHelper::ExpectNotNull(operand.Data);
+        }
+    };
+    ModelErrorHelper::ExecuteForModelItem(command, static_cast<int32_t>(operandIndex));
+}
+
+Gna2Tensor ModelWrapper::GetEnabledOperand(const Gna2Operation & apiOperation, uint32_t operandIndex)
+{
+    const auto& operand = GetOperand(apiOperation, operandIndex);
+    auto validModes = GetValidTensorModes(apiOperation, operandIndex);
+    validModes.erase(Gna2TensorModeDisabled);
+    ExpectOperandModeAndDataValid(operand, validModes, operandIndex);
+    return operand;
 }
 
 Gna2Tensor ModelWrapper::GetDisabledOperand()
@@ -294,18 +297,29 @@ void ExpectPointerArrayValid(T ** ptr, uint32_t arraySize,
     }
 }
 
+std::set<Gna2TensorMode> ModelWrapper::GetValidTensorModes(const Gna2Operation & operation, uint32_t operandIndex)
+{
+    std::set<Gna2TensorMode> validSet = { Gna2TensorModeDefault };
+    const auto opRequired = GetOperationInfo(operation.Type, NumberOfOperandsRequired);
+    if (operandIndex >= opRequired)
+    {
+        validSet.insert(Gna2TensorModeDisabled);
+    }
+    return validSet;
+}
+
 void ModelWrapper::ExpectOperationValid(const Gna2Operation & operation)
 {
     const auto opRequired = GetOperationInfo(operation.Type, NumberOfOperandsRequired);
     const auto opMax = GetOperationInfo(operation.Type, NumberOfOperandsMax);
     ExpectPointerArrayValid(operation.Operands, operation.NumberOfOperands,
         opRequired, opMax);
-    for (uint32_t i = 0; i < opRequired; i++)
+    for (uint32_t index = 0; index < operation.NumberOfOperands; index++)
     {
-        ExpectOperandModeDefault(operation, static_cast<int32_t>(i));
-        // TODO: 3: Remove when full (e.g., inputs, weights) buffer addition and late sanity checking implemented
-        ExpectOperandDataNotNull(operation, static_cast<int32_t>(i));
+        const auto& operand = GetOperand(operation, index, GetDisabledOperand());
+        ExpectOperandModeAndDataValid(operand, GetValidTensorModes(operation, index), index);
     }
+
     const auto paramRequired = GetOperationInfo(operation.Type, NumberOfParametersRequired);
     const auto paramMax = GetOperationInfo(operation.Type, NumberOfParametersMax);
     ExpectPointerArrayValid(operation.Parameters, operation.NumberOfParameters,
