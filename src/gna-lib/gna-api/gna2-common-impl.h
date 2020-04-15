@@ -86,7 +86,13 @@ template<typename T>
 inline Gna2DeviceVersion Gna2DeviceVersionFromInt(T value)
 {
     static_assert(sizeof(Gna2DeviceVersion) <= sizeof(T), "");
-    return *reinterpret_cast<Gna2DeviceVersion*>(&value);
+    union DeviceVersionOrInt
+    {
+        T number;
+        Gna2DeviceVersion version;
+    } out;
+    out.number = value;
+    return out.version;
 }
 
 }
