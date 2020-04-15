@@ -234,8 +234,8 @@ try
      * Single FullyConnectedAffine layer in this example. */
 
     /* Prepare and initialize FullyConnectedAffine operation operands with GNA API helpers */
-    auto inputTensor = Gna2TensorInit2D(W, B, Gna2DataTypeInt16, nullptr);
-    auto outputTensor = Gna2TensorInit2D(H, B, Gna2DataTypeInt32, nullptr);
+    auto inputTensor = Gna2TensorInit2D(W, B, Gna2DataTypeInt16, pinned_inputs);
+    auto outputTensor = Gna2TensorInit2D(H, B, Gna2DataTypeInt32, pinned_outputs);
     auto weightTensor = Gna2TensorInit2D(H, W, Gna2DataTypeInt16, weights_buffer);
     auto biasTensor = Gna2TensorInit1D(H, Gna2DataTypeInt32, biases_buffer);
     auto activationTensor = Gna2TensorInitDisabled();
