@@ -27,6 +27,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <fstream>
+#include <memory>
 #if defined(__GNUC__) && !defined(__INTEL_COMPILER)
 #include <mm_malloc.h>
 #endif
