@@ -25,11 +25,8 @@
 
 #include "SetupRecurrentModel.h"
 
-#include "gna-api.h"
-
 #include <cstring>
 #include <cstdlib>
-#include <iostream>
 
 #define UNREFERENCED_PARAMETER(P) ((void)(P))
 
@@ -84,22 +81,19 @@ void SetupRecurrentModel::samplePwl(Gna2PwlSegment* segments, uint32_t numberOfS
 
 void SetupRecurrentModel::sampleRnnLayer()
 {
-    parameters = calloc(1, sizeof(uint32_t));
-    auto const delay = static_cast<uint32_t*>(parameters);
-    *delay = 3;
-
+    const uint32_t delay = 3;
     uint32_t buf_size_weights = weightsAre2Bytes
-        ? ALIGN64(static_cast<uint32_t>(sizeof(weights_2B)))
-        : ALIGN64(static_cast<uint32_t>(sizeof(weights_1B)));
-    uint32_t buf_size_inputs = ALIGN64(static_cast<uint32_t>(sizeof(inputs)));
+        ? Gna2RoundUpTo64(static_cast<uint32_t>(sizeof(weights_2B)))
+        : Gna2RoundUpTo64(static_cast<uint32_t>(sizeof(weights_1B)));
+    uint32_t buf_size_inputs = Gna2RoundUpTo64(static_cast<uint32_t>(sizeof(inputs)));
     uint32_t buf_size_biases = weightsAre2Bytes
-        ? ALIGN64(static_cast<uint32_t>(sizeof(regularBiases)))
-        : ALIGN64(static_cast<uint32_t>(sizeof(compoundBiases)));
-    uint32_t buf_size_outputs = ALIGN64(
+        ? Gna2RoundUpTo64(static_cast<uint32_t>(sizeof(regularBiases)))
+        : Gna2RoundUpTo64(static_cast<uint32_t>(sizeof(compoundBiases)));
+    uint32_t buf_size_outputs = Gna2RoundUpTo64(
         outVecSz * groupingNum * static_cast<uint32_t>(sizeof(int16_t)));
-    uint32_t buf_size_tmp_outputs = ALIGN64(
-        (*delay + 1) * outVecSz * groupingNum * static_cast<uint32_t>(sizeof(int32_t)));
-    uint32_t buf_size_pwl = ALIGN64(
+    uint32_t buf_size_tmp_outputs = Gna2RoundUpTo64(
+        (delay + 1) * outVecSz * groupingNum * static_cast<uint32_t>(sizeof(int32_t)));
+    uint32_t buf_size_pwl = Gna2RoundUpTo64(
         nSegments * static_cast<uint32_t>(sizeof(Gna2PwlSegment)));
 
     uint32_t bytes_requested = buf_size_weights + buf_size_inputs + buf_size_biases + buf_size_outputs + buf_size_tmp_outputs + buf_size_pwl;
@@ -137,34 +131,12 @@ void SetupRecurrentModel::sampleRnnLayer()
     outputBuffer = pinned_mem_ptr;
     pinned_mem_ptr += buf_size_outputs;
 
-    pwl.nSegments = nSegments;
-    pwl.pSegments = reinterpret_cast<struct Gna2PwlSegment*>(pinned_mem_ptr);
-    samplePwl(pwl.pSegments, pwl.nSegments);
+    samplePwl(reinterpret_cast<struct Gna2PwlSegment*>(pinned_mem_ptr), nSegments);
 
-    operations = static_cast<Gna2Operation*>(calloc(1, sizeof(Gna2Operation)));
-    tensors = static_cast<Gna2Tensor*>(calloc(5, sizeof(Gna2Tensor)));
+    operationHolder.InitRnnEx(groupingNum, inVecSz, outVecSz, delay, nSegments, inputBuffer, outputBuffer,
+        pinned_weights, weightsAre2Bytes ? Gna2DataTypeInt16 : Gna2DataTypeInt8,
+        pinned_biases, weightsAre2Bytes ? Gna2DataTypeInt32 : Gna2DataTypeCompoundBias,
+        pinned_mem_ptr);
 
-    tensors[0] = Gna2TensorInit2D(groupingNum, 8,
-        Gna2DataTypeInt16, inputBuffer);
-    tensors[1] = Gna2TensorInit2D(groupingNum, outVecSz,
-        Gna2DataTypeInt16, outputBuffer);
-
-    tensors[2] = Gna2TensorInit2D(32, 40,
-        weightsAre2Bytes ? Gna2DataTypeInt16 : Gna2DataTypeInt8,
-        pinned_weights);
-
-    tensors[3] = Gna2TensorInit1D(outVecSz * 4,
-        weightsAre2Bytes ? Gna2DataTypeInt32 : Gna2DataTypeCompoundBias,
-        pinned_biases);
-
-    tensors[4] = Gna2TensorInitActivation(nSegments, pwl.pSegments);
-
-
-    Gna2OperationInitRecurrent(
-        operations, &Allocator,
-        &tensors[0], &tensors[1],
-        &tensors[2], &tensors[3],
-        &tensors[4], delay);
-
-    model = { 1, operations };
+    model = { 1, &operationHolder.Get() };
 }

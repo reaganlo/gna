@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2017 Intel Corporation.
+ Copyright 2017-2020 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -25,9 +25,9 @@
 
 #pragma once
 
-#include <vector>
-
 #include "IModelSetup.h"
+
+#include <vector>
 
 struct Action
 {

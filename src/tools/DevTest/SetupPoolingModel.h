@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2017 Intel Corporation.
+ Copyright 2017-2020 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -23,8 +23,10 @@
  in any way.
 */
 
-#include "IModelSetup.h"
+#pragma once
+
 #include "DeviceController.h"
+#include "IModelSetup.h"
 
 class SetupPoolingModel : public IModelSetup
 {
@@ -37,14 +39,11 @@ public:
 
 private:
     void samplePoolingLayer();
-    void samplePwl(intel_pwl_segment_t *segments, uint32_t numberOfSegments);
+    void samplePwl(Gna2PwlSegment *segments, uint32_t numberOfSegments);
 
     DeviceController & deviceController;
 
     uint32_t nSegments = 64;
-
-    intel_pwl_func_t pwl;
-    intel_convolutional_layer_t convolution_layer;
 
     void * inputBuffer = nullptr;
     void * outputBuffer = nullptr;
@@ -86,7 +85,7 @@ private:
          2, -4,  9,  8, -5, -1,  2,  9, -8, -8,  8,  1, -7,  2, -1, -1
     };
 
-    const intel_bias_t regularBiases[outVecSz * groupingNum] =
+    const int32_t regularBiases[outVecSz * groupingNum] =
     {
         5, 4, -2, 5
     };

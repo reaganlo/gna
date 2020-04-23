@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2017 Intel Corporation.
+ Copyright 2017-2020 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -23,10 +23,10 @@
  in any way.
 */
 
-#include <stdexcept>
-#include <iostream>
-
 #include "DeviceController.h"
+
+#include <iostream>
+#include <stdexcept>
 
 DeviceController::DeviceController()
 {
@@ -49,15 +49,6 @@ DeviceController::DeviceController()
 DeviceController::~DeviceController()
 {
     Gna2DeviceClose(gnaHandle);
-}
-
-void DeviceController::ModelCreate(const gna_model * model, uint32_t * modelId)
-{
-    auto const status = GnaModelCreate(gnaHandle, model, modelId);
-    if (GNA_SUCCESS != status)
-    {
-        throw std::runtime_error("Model create failed");
-    }
 }
 
 void SetupTemporalInputOutput(const Gna2Model* model, void * memory)
@@ -93,7 +84,7 @@ uint8_t * DeviceController::Alloc(uint32_t sizeRequested, uint32_t * sizeGranted
     auto const status = Gna2MemoryAlloc(sizeRequested, sizeGranted, &gnaMemory);
     if (!Gna2StatusIsSuccessful(status) || nullptr == gnaMemory || sizeRequested > *sizeGranted)
     {
-        throw std::runtime_error("GnaAlloc failed");
+        throw std::runtime_error("Gna2MemoryAlloc failed");
     }
 
     return static_cast<uint8_t *>(gnaMemory);

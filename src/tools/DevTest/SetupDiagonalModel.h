@@ -23,8 +23,10 @@
  in any way.
 */
 
-#include "IModelSetup.h"
+#pragma once
+
 #include "DeviceController.h"
+#include "IModelSetup.h"
 
 #include <array>
 
@@ -138,12 +140,12 @@ private:
         -4, -6, -8, -2
     };
 
-    const intel_bias_t regularBiases[outVecSz] =
+    const int32_t regularBiases[outVecSz] =
     {
         5, 4, -2, 5, -7, -5, 4, -1, 5, 4, -2, 5, -7, -5, 4, -1
     };
 
-    const  intel_compound_bias_t compoundBiases[outVecSz * groupingNum] =
+    const  Gna2CompoundBias compoundBiases[outVecSz * groupingNum] =
     {
     { 5,1,{ 0 } },
     { 4,1,{ 0 } },

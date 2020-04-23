@@ -335,7 +335,7 @@ GNA2_API enum Gna2Status Gna2OperationInitRecurrent(
     };
     return ApiWrapper::ExecuteSafely(command);
 }
-
+// TODO: 4: make tensors const
 GNA2_API enum Gna2Status Gna2OperationInitConvolution(
     struct Gna2Operation * operation, Gna2UserAllocator userAllocator,
     struct Gna2Tensor * inputs, struct Gna2Tensor * outputs,

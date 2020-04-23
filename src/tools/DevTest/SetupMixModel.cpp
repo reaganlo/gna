@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2017 Intel Corporation.
+ Copyright 2017-2020 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -23,13 +23,8 @@
  in any way.
 */
 
-#include <cstring>
-#include <cstdlib>
-#include <iostream>
-
-#include "gna-api.h"
-
 #include "SetupMixModel.h"
+
 #include "ChainModel.h"
 
 #define UNREFERENCED_PARAMETER(P) ((void)(P))
@@ -38,13 +33,13 @@ SetupMixModel::SetupMixModel(DeviceController & deviceCtrl)
     : deviceController{deviceCtrl}
 {
     ChainModel chainModel;
-    chainModel.Affine(true, true, false).Affine(true, true, false).Multibias(false, true).Convolution(true).Pooling(INTEL_SUM_POOLING).Recurrent(true).Copy().Gmm().Transpose().Transpose();
+    chainModel.Affine(true, true, false).Affine(true, true, false).Multibias(false, true).Convolution(true).Pooling(Gna2PoolingModeSum).Recurrent(true).Copy().Gmm().Transpose().Transpose();
     uint32_t modelSize = chainModel.GetModelSize();
     uint32_t bytesGranted;
 
     memory = deviceController.Alloc(modelSize, &bytesGranted);
     uint8_t* pinned_memory = static_cast<uint8_t*>(memory);
-    nnet = chainModel.Setup(pinned_memory);
+    model = chainModel.Setup(pinned_memory);
 
     auto inputBufferSize = chainModel.GetInputBuffersSize();
     auto outputBufferSize = chainModel.GetOutputBuffersSize();
@@ -54,11 +49,11 @@ SetupMixModel::SetupMixModel(DeviceController & deviceCtrl)
     pinned_free_memory += inputBufferSize;
     outputBuffer = pinned_free_memory;
 
-    deviceController.ModelCreate(&nnet, &modelId);
+    deviceController.ModelCreate(&model, &modelId);
 
     configId = deviceController.ConfigAdd(modelId);
 
-    DeviceController::BufferAddIO(configId, nnet.nLayers - 1, inputBuffer, outputBuffer);
+    DeviceController::BufferAddIO(configId, model.NumberOfOperations - 1, inputBuffer, outputBuffer);
 }
 
 SetupMixModel::~SetupMixModel()

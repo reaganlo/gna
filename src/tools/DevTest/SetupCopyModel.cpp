@@ -25,11 +25,7 @@
 
 #include "SetupCopyModel.h"
 
-#include "gna-api.h"
-
 #include <cstring>
-#include <cstdlib>
-#include <iostream>
 
 #define UNREFERENCED_PARAMETER(P) ((void)(P))
 
@@ -71,8 +67,8 @@ void SetupCopyModel::checkReferenceOutput(uint32_t modelIndex, uint32_t configIn
 
 void SetupCopyModel::sampleCopyLayer(uint32_t nCopyColumns, uint32_t nCopyRows)
 {
-    uint32_t buf_size_inputs = ALIGN64(sizeof(inputs));
-    uint32_t buf_size_outputs = ALIGN64(outVecSz * groupingNum * sizeof(int32_t));
+    uint32_t buf_size_inputs = Gna2RoundUpTo64(sizeof(inputs));
+    uint32_t buf_size_outputs = Gna2RoundUpTo64(outVecSz * groupingNum * sizeof(int32_t));
 
     uint32_t bytes_requested = buf_size_inputs + buf_size_outputs;
     uint32_t bytes_granted;
@@ -86,21 +82,7 @@ void SetupCopyModel::sampleCopyLayer(uint32_t nCopyColumns, uint32_t nCopyRows)
 
     outputBuffer = pinned_mem_ptr;
 
-    operations = static_cast<Gna2Operation*>(calloc(1, sizeof(Gna2Operation)));
-    tensors = static_cast<Gna2Tensor*>(calloc(2, sizeof(Gna2Tensor)));
+    operationHolder.InitCopyEx(groupingNum, groupingNum, nCopyRows, inVecSz, nCopyColumns, outVecSz, nullptr, nullptr);
 
-    tensors[0] = Gna2TensorInit2D(groupingNum, inVecSz,
-        Gna2DataTypeInt16, nullptr);
-    tensors[1] = Gna2TensorInit2D(groupingNum, outVecSz,
-        Gna2DataTypeInt16, nullptr);
-
-    parameters = calloc(1, sizeof(Gna2Shape));
-    auto const copyShape = static_cast<Gna2Shape*>(parameters);
-    *copyShape = Gna2Shape{ 2, { nCopyRows, nCopyColumns } };
-
-    Gna2OperationInitCopy(operations, &Allocator,
-        &tensors[0], &tensors[1],
-        copyShape);
-
-    model = { 1, operations };
+    model = { 1, &operationHolder.Get() };
 }

@@ -79,7 +79,7 @@ add_executable(DevTest
   ${devtest_sources}
   ${devtest_headers})
 
-target_include_directories(DevTest PRIVATE ${COMMON_DIR} ${API_DIR})
+target_include_directories(DevTest PRIVATE ${API_DIR} ${COMMON_TOOLS_DIR})
 target_link_libraries(DevTest gna-api)
 
 set_gna_target_properties(DevTest)

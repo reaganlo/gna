@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2017 Intel Corporation.
+ Copyright 2017-2020 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -23,21 +23,18 @@
  in any way.
 */
 
+#pragma once
+
 #include "ModelSetup.h"
 
 class SetupConvolutionModel2D : public ModelSetup
 {
 public:
-    SetupConvolutionModel2D(DeviceController & deviceCtrl, bool pwlEn);
+    SetupConvolutionModel2D(DeviceController & deviceCtrl);
     virtual ~SetupConvolutionModel2D() override;
 
 private:
     void sampleConvolutionLayer();
-    void samplePwl(intel_pwl_segment_t *segments, uint32_t nSegments);
-
-    gna_convolutional_fused_layer_2d layer = {};
-    bool pwlEnabled;
-    uint32_t nSegments = 64;
 
     void * memory = nullptr;
 };

@@ -26,10 +26,7 @@
 #include "ModelUtilities.h"
 #include "SetupSplitModel.h"
 
-#include "gna-api.h"
-
 #include <cstring>
-#include <cstdlib>
 #include <iostream>
 
 #define UNREFERENCED_PARAMETER(P) ((void)(P))
@@ -44,12 +41,12 @@ SetupSplitModel::SetupSplitModel(DeviceController & deviceCtrl, bool weight2B, b
     auto firstModelSize = getFirstModelSize();
     auto secondModelSize = getSecondModelSize();
 
-    auto inputsSize = 2 * ALIGN64(inputs.at(0).at(0).size() * sizeof(int16_t));
-    auto outputsSize = 2 * ALIGN64(affineOutputs.at(0).size() * sizeof(int32_t));
+    auto inputsSize = 2 * ModelUtilities::CastAndRoundUpTo64(static_cast<uint32_t>(inputs.at(0).at(0).size() * sizeof(int16_t)));
+    auto outputsSize = 2 * ModelUtilities::CastAndRoundUpTo64(static_cast<uint32_t>(affineOutputs.at(0).size() * sizeof(int32_t)));
     auto firstModelConfigSize = inputsSize + outputsSize;
 
-    inputsSize = 2 * ALIGN64(inputs.at(1).at(0).size() * sizeof(int16_t));
-    outputsSize = 2 * ALIGN64(diagonalOutputs.at(0).size() * sizeof(int32_t));
+    inputsSize = 2 * ModelUtilities::CastAndRoundUpTo64(static_cast<uint32_t>(inputs.at(1).at(0).size() * sizeof(int16_t)));
+    outputsSize = 2 * ModelUtilities::CastAndRoundUpTo64(static_cast<uint32_t>(diagonalOutputs.at(0).size() * sizeof(int32_t)));
     auto secondModelConfigSize = inputsSize + outputsSize;
 
     auto wholeSize = firstModelSize + firstModelConfigSize + secondModelSize + secondModelConfigSize;
@@ -57,10 +54,6 @@ SetupSplitModel::SetupSplitModel(DeviceController & deviceCtrl, bool weight2B, b
     auto grantedSize = uint32_t{0};
     memory = deviceController.Alloc(static_cast<uint32_t>(wholeSize), &grantedSize);
     auto pinned_memory = static_cast<uint8_t*>(memory);
-    if (NULL == pinned_memory || grantedSize < wholeSize)
-    {
-        throw GNA_ERR_RESOURCES;
-    }
 
     setupFirstAffineLayer(pinned_memory);
     setupSecondAffineLayer(pinned_memory);
@@ -126,12 +119,12 @@ void SetupSplitModel::checkReferenceOutput(uint32_t modelIndex, uint32_t configI
 
 void SetupSplitModel::setupFirstAffineLayer(uint8_t*& pinned_memory)
 {
-    int buf_size_weights = weightsAre2Bytes
-        ? ALIGN64(static_cast<uint32_t>(sizeof(weights_2B)))
-        : ALIGN64(static_cast<uint32_t>(sizeof(weights_1B)));
-    int buf_size_biases = weightsAre2Bytes
-        ? ALIGN64(static_cast<uint32_t>(sizeof(regularBiases)))
-        : ALIGN64(static_cast<uint32_t>(sizeof(compoundBiases)));
+    const auto buf_size_weights = weightsAre2Bytes
+        ? ModelUtilities::CastAndRoundUpTo64(static_cast<uint32_t>(sizeof(weights_2B)))
+        : ModelUtilities::CastAndRoundUpTo64(static_cast<uint32_t>(sizeof(weights_1B)));
+    const auto buf_size_biases = weightsAre2Bytes
+        ? ModelUtilities::CastAndRoundUpTo64(static_cast<uint32_t>(sizeof(regularBiases)))
+        : ModelUtilities::CastAndRoundUpTo64(static_cast<uint32_t>(sizeof(compoundBiases)));
     void* pinned_weights = pinned_memory;
     if (weightsAre2Bytes)
     {
@@ -155,48 +148,29 @@ void SetupSplitModel::setupFirstAffineLayer(uint8_t*& pinned_memory)
     }
     pinned_memory += buf_size_biases;
 
-    operations = static_cast<Gna2Operation*>(calloc(1, sizeof(Gna2Operation)));
-    tensors = static_cast<Gna2Tensor*>(calloc(5, sizeof(Gna2Tensor)));
+    operationHolder.InitAffineEx(inVecSz, outVecSz, groupingNum, nullptr, nullptr,
+        pinned_weights, weightsAre2Bytes ? Gna2DataTypeInt16 : Gna2DataTypeInt8,
+        pinned_biases, weightsAre2Bytes ? Gna2DataTypeInt32 : Gna2DataTypeCompoundBias);
 
-    tensors[0] = Gna2TensorInit2D(inVecSz, groupingNum,
-        Gna2DataTypeInt16, nullptr);
-    tensors[1] = Gna2TensorInit2D(outVecSz, groupingNum,
-        Gna2DataTypeInt32, nullptr);
-
-    tensors[2] = Gna2TensorInit2D(outVecSz, inVecSz,
-        weightsAre2Bytes ? Gna2DataTypeInt16 : Gna2DataTypeInt8,
-        pinned_weights);
-    tensors[3] = Gna2TensorInit1D(inVecSz,
-        weightsAre2Bytes ? Gna2DataTypeInt32 : Gna2DataTypeCompoundBias,
-        pinned_biases);
-    tensors[4] = Gna2TensorInitDisabled();
     if (pwlEnabled)
     {
         Gna2PwlSegment* pinned_pwl = reinterpret_cast<Gna2PwlSegment*>(pinned_memory);
 
         ModelUtilities::GeneratePwlSegments(pinned_pwl, nSegments);
-        tensors[1] = Gna2TensorInit2D(outVecSz, groupingNum, Gna2DataTypeInt16, nullptr);
-        tensors[4] = Gna2TensorInit1D(nSegments, Gna2DataTypePwlSegment, pinned_pwl);
+        operationHolder.AddPwl(nSegments, pinned_pwl, Gna2DataTypeInt16);
     }
 
-    Gna2OperationInitFullyConnectedAffine(
-        operations, &Allocator,
-        &tensors[0], &tensors[1],
-        &tensors[2], &tensors[3],
-        &tensors[4]
-    );
-
-    firstModel = { 1, operations };
+    firstModel = { 1, &operationHolder.Get() };
 }
 
 void SetupSplitModel::setupSecondAffineLayer(uint8_t*& pinned_memory)
 {
-    int buf_size_weights = weightsAre2Bytes
-        ? ALIGN64(static_cast<uint32_t>(sizeof(diagonal_weights_2B)))
-        : ALIGN64(static_cast<uint32_t>(sizeof(diagonal_weights_1B)));
-    int buf_size_biases = weightsAre2Bytes
-        ? ALIGN64(static_cast<uint32_t>(sizeof(diagonalRegularBiases)))
-        : ALIGN64(static_cast<uint32_t>(sizeof(diagonalCompoundBiases)));
+    const auto buf_size_weights = weightsAre2Bytes
+        ? ModelUtilities::CastAndRoundUpTo64(static_cast<uint32_t>(sizeof(diagonal_weights_2B)))
+        : ModelUtilities::CastAndRoundUpTo64(static_cast<uint32_t>(sizeof(diagonal_weights_1B)));
+    const auto buf_size_biases = weightsAre2Bytes
+        ? ModelUtilities::CastAndRoundUpTo64(static_cast<uint32_t>(sizeof(diagonalRegularBiases)))
+        : ModelUtilities::CastAndRoundUpTo64(static_cast<uint32_t>(sizeof(diagonalCompoundBiases)));
 
     void* pinned_weights = pinned_memory;
     if (weightsAre2Bytes)
@@ -220,52 +194,32 @@ void SetupSplitModel::setupSecondAffineLayer(uint8_t*& pinned_memory)
     }
     pinned_memory += buf_size_biases;
 
-    operations = static_cast<Gna2Operation*>(calloc(1, sizeof(Gna2Operation)));
-    tensors = static_cast<Gna2Tensor*>(calloc(5, sizeof(Gna2Tensor)));
-
-    tensors[0] = Gna2TensorInit2D(inVecSz, groupingNum,
-        Gna2DataTypeInt16, nullptr);
-    tensors[1] = Gna2TensorInit2D(outVecSizeDiagonal, groupingNum,
-        Gna2DataTypeInt32, nullptr);
-
-    tensors[2] = Gna2TensorInit1D(inVecSz,
-        weightsAre2Bytes ? Gna2DataTypeInt16 : Gna2DataTypeInt8,
-        pinned_weights);
-    tensors[3] = Gna2TensorInit1D(inVecSz,
-        weightsAre2Bytes ? Gna2DataTypeInt32 : Gna2DataTypeCompoundBias,
-        pinned_biases);
-    tensors[4] = Gna2TensorInitDisabled();
+    operation2Holder.InitDiagonalEx(inVecSz, outVecSizeDiagonal, groupingNum, nullptr, nullptr,
+        pinned_weights, weightsAre2Bytes ? Gna2DataTypeInt16 : Gna2DataTypeInt8,
+        pinned_biases, weightsAre2Bytes ? Gna2DataTypeInt32 : Gna2DataTypeCompoundBias);
 
     if (pwlEnabled)
     {
         Gna2PwlSegment* pinned_pwl = reinterpret_cast<Gna2PwlSegment*>(pinned_memory);
 
         ModelUtilities::GeneratePwlSegments(pinned_pwl, nSegments);
-        tensors[1] = Gna2TensorInit2D(outVecSz, groupingNum, Gna2DataTypeInt16, nullptr);
-        tensors[4] = Gna2TensorInit1D(nSegments, Gna2DataTypePwlSegment, pinned_pwl);
+        operation2Holder.AddPwl(nSegments, pinned_pwl, Gna2DataTypeInt16);
     }
-    Gna2OperationInitElementWiseAffine(
-        operations, &Allocator,
-        &tensors[0], &tensors[1],
-        &tensors[2], &tensors[3],
-        &tensors[4]
-    );
-
-    secondModel = { 1, operations };
+    secondModel = { 1, &operation2Holder.Get() };
 }
 
 size_t SetupSplitModel::getFirstModelSize()
 {
     uint32_t buf_size_weights = weightsAre2Bytes
-        ? ALIGN64(static_cast<uint32_t>(sizeof(weights_2B)))
-        : ALIGN64(static_cast<uint32_t>(sizeof(weights_1B)));
+        ? ModelUtilities::CastAndRoundUpTo64(static_cast<uint32_t>(sizeof(weights_2B)))
+        : ModelUtilities::CastAndRoundUpTo64(static_cast<uint32_t>(sizeof(weights_1B)));
     uint32_t buf_size_biases = weightsAre2Bytes
-        ? ALIGN64(static_cast<uint32_t>(sizeof(regularBiases)))
-        : ALIGN64(static_cast<uint32_t>(sizeof(compoundBiases)));
-    uint32_t buf_size_tmp_outputs = ALIGN64(
+        ? ModelUtilities::CastAndRoundUpTo64(static_cast<uint32_t>(sizeof(regularBiases)))
+        : ModelUtilities::CastAndRoundUpTo64(static_cast<uint32_t>(sizeof(compoundBiases)));
+    uint32_t buf_size_tmp_outputs = ModelUtilities::CastAndRoundUpTo64(
             outVecSz * groupingNum * static_cast<uint32_t>(sizeof(int32_t)));
-    uint32_t buf_size_pwl = ALIGN64(
-            nSegments * static_cast<uint32_t>(sizeof(intel_pwl_segment_t)));
+    uint32_t buf_size_pwl = ModelUtilities::CastAndRoundUpTo64(
+            nSegments * static_cast<uint32_t>(sizeof(Gna2PwlSegment)));
 
     uint32_t bytes_requested = buf_size_weights + buf_size_biases + buf_size_tmp_outputs;
 
@@ -280,14 +234,14 @@ size_t SetupSplitModel::getFirstModelSize()
 size_t SetupSplitModel::getSecondModelSize()
 {
     uint32_t buf_size_weights = static_cast<uint32_t>(weightsAre2Bytes
-        ? ALIGN64(sizeof(weights_2B))
-        : ALIGN64(static_cast<uint32_t>(sizeof(weights_1B))));
+        ? ModelUtilities::CastAndRoundUpTo64(sizeof(weights_2B))
+        : ModelUtilities::CastAndRoundUpTo64(static_cast<uint32_t>(sizeof(weights_1B))));
     uint32_t buf_size_biases = static_cast<uint32_t>(weightsAre2Bytes
-        ? ALIGN64(sizeof(regularBiases)) : ALIGN64(sizeof(compoundBiases)));
-    uint32_t buf_size_tmp_outputs = static_cast<uint32_t>(ALIGN64(
+        ? ModelUtilities::CastAndRoundUpTo64(sizeof(regularBiases)) : ModelUtilities::CastAndRoundUpTo64(sizeof(compoundBiases)));
+    uint32_t buf_size_tmp_outputs = static_cast<uint32_t>(ModelUtilities::CastAndRoundUpTo64(
         diagonalOutVecSz * groupingNum * sizeof(int32_t)));
     uint32_t buf_size_pwl = static_cast<uint32_t>(
-        ALIGN64(nSegments * sizeof(intel_pwl_segment_t)));
+        ModelUtilities::CastAndRoundUpTo64(nSegments * sizeof(Gna2PwlSegment)));
 
     uint32_t bytes_requested = buf_size_weights + buf_size_biases + buf_size_tmp_outputs;
     if (pwlEnabled)
@@ -308,11 +262,11 @@ void SetupSplitModel::setupInputBuffer(uint8_t* &pinned_memory, uint32_t modelIn
     pinnedInput = pinned_memory;
     auto& srcBuffer = inputs.at(modelIndex).at(configIndex);
 
-    auto inputsSize = srcBuffer.size() * sizeof(int16_t);
+    const auto inputsSize = static_cast<uint32_t>(srcBuffer.size() * sizeof(int16_t));
     memcpy(pinnedInput, srcBuffer.data(), inputsSize);
     DeviceController::BufferAdd(configId, 0, InputOperandIndex, pinnedInput);
 
-    auto buf_size_inputs = ALIGN64(inputsSize);
+    auto buf_size_inputs = ModelUtilities::CastAndRoundUpTo64(inputsSize);
     pinned_memory += buf_size_inputs;
 }
 
@@ -327,6 +281,6 @@ void SetupSplitModel::setupOutputBuffer(uint8_t* &pinned_memory, uint32_t modelI
 
     auto outputsSize = groupingNum * ((0 == modelIndex) ? outVecSz : diagonalOutVecSz);
     outputsSize *= static_cast<uint32_t>(pwlEnabled ? sizeof(int16_t) : sizeof(int32_t));
-    auto buf_size_outputs = ALIGN64(outputsSize);
+    auto buf_size_outputs = ModelUtilities::CastAndRoundUpTo64(outputsSize);
     pinned_memory += buf_size_outputs;
 }

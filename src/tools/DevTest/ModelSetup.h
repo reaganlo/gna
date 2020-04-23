@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2017 Intel Corporation.
+ Copyright 2017-2020 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -25,8 +25,6 @@
 
 #pragma once
 
-#include <memory>
-
 #include "IModelSetup.h"
 #include "DeviceController.h"
 
@@ -44,19 +42,17 @@ public:
         return configId;
     }
 
-    ModelSetup(DeviceController & deviceCtrl, intel_nnet_type_t model, const void* referenceOutputIn);
+    ModelSetup(DeviceController & deviceCtrl, const void* referenceOutputIn);
 
-    virtual ~ModelSetup();
-
-    void checkReferenceOutput(uint32_t modelIndex, uint32_t configIndex) const override;
+    virtual ~ModelSetup() = default;
 
 protected:
+
+    void checkReferenceOutput(uint32_t modelIndex, uint32_t configIndex) const override;
 
     DeviceController & deviceController;
     uint32_t modelId;
     uint32_t configId;
-
-    intel_nnet_type_t nnet;
 
     void * inputBuffer = nullptr;
     void * outputBuffer = nullptr;

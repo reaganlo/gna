@@ -23,11 +23,12 @@
  in any way.
 */
 
-#include "IModelSetup.h"
+#pragma once
+
 #include "DeviceController.h"
+#include "IModelSetup.h"
 
 #include <array>
-#include <memory>
 
 class SetupDnnModel_Multibuffer : public IModelSetup
 {
@@ -61,7 +62,6 @@ private:
 
     void *inputBuffer = nullptr;
     void *outputBuffer = nullptr;
-    void* tmpOutputs = nullptr;
 
     void *baseMemory = nullptr;
     void *ioMemory = nullptr;
@@ -112,13 +112,13 @@ private:
         -4, -6, -8, -2
     };
 
-    const intel_bias_t regularBiases[outVecSz * groupingNum] =
+    const int32_t regularBiases[outVecSz * groupingNum] =
     {
          5, 4, -2, 5,
         -7, -5, 4, -1
     };
 
-    const  intel_compound_bias_t compoundBiases[outVecSz * groupingNum] =
+    const  Gna2CompoundBias compoundBiases[outVecSz * groupingNum] =
     {
         { 5,1,{ 0 } },{ 4,1,{ 0 } },{ -2,1,{ 0 } },{ 5,1,{ 0 } },
         { -7,1,{ 0 } },{ -5,1,{ 0 } },{ 4,1,{ 0 } },{ -1,1,{ 0 } },

@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2017 Intel Corporation.
+ Copyright 2017-2020 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -23,9 +23,12 @@
  in any way.
 */
 
-#include <array>
-#include "IModelSetup.h"
+#pragma once
+
 #include "DeviceController.h"
+#include "IModelSetup.h"
+
+#include <array>
 
 class SetupConvolutionModel : public IModelSetup
 {
@@ -38,15 +41,12 @@ public:
 
 private:
     void sampleConvolutionLayer();
-    void samplePwl(intel_pwl_segment_t *segments, uint32_t numberOfSegments);
+    void samplePwl(Gna2PwlSegment *segments, uint32_t numberOfSegments);
 
     DeviceController & deviceController;
 
     bool pwlEnabled;
     uint32_t nSegments = 64;
-
-    intel_pwl_func_t pwl;
-    intel_convolutional_layer_t convolution_layer;
 
     void * inputBuffer = nullptr;
     void * outputBuffer = nullptr;
@@ -62,6 +62,8 @@ private:
     static const int nFilters = 4;
     static const int nFilterCoefficients = 48;
     static const int inVecSz = 96;
+
+    static const uint32_t convStride = 48;
 
     const int16_t filters[nFilters * nFilterCoefficients] =
     {
@@ -93,7 +95,7 @@ private:
          2, -4,  9,  8, -5, -1,  2,  9, -8, -8,  8,  1, -7,  2, -1, -1
     };
 
-    const intel_bias_t regularBiases[outVecSz * groupingNum] =
+    const int32_t regularBiases[outVecSz * groupingNum] =
     {
         5, 4, -2, 5
     };

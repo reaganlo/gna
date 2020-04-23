@@ -1,7 +1,6 @@
-
 /*
  INTEL CONFIDENTIAL
- Copyright 2017 Intel Corporation.
+ Copyright 2017-2020 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -26,52 +25,48 @@
 
 #pragma once
 
-#include "gna-api.h"
+#include "Gna2OperationHolder.hpp"
 
-#include <memory>
+#include <list>
 #include <vector>
 
 class ChainModel
 {
 public:
-    ChainModel();
+    ChainModel() = default;
     ChainModel(ChainModel& rhs) = delete;
     ChainModel operator=(ChainModel&& rhs) = delete;
-    ~ChainModel();
+    ~ChainModel() = default;
 
     ChainModel& Affine(bool weights2B, bool pwlEnabled, bool activeListEnabled);
     ChainModel& Diagonal(bool weights2B, bool pwlEnabled);
     ChainModel& Multibias(bool weights2B, bool pwlEnabled);
     ChainModel& Convolution(bool pwlEnabled);
-    ChainModel& Pooling(intel_pool_type_t poolingType);
+    ChainModel& Pooling(Gna2PoolingMode poolingType);
     ChainModel& Recurrent(bool weights2B);
     ChainModel& Gmm();
     ChainModel& Copy();
     ChainModel& Transpose();
 
-    intel_nnet_type_t& Setup(uint8_t * pinned_memory);
+    Gna2Model& Setup(uint8_t * pinned_memory);
 
     uint16_t GetLayerCount() const;
     uint32_t GetModelSize();
-    uint32_t GetInputBuffersSize();
-    uint32_t GetOutputBuffersSize();
+    uint32_t GetInputBuffersSize() const;
+    uint32_t GetOutputBuffersSize() const;
 
     uint16_t GmmCount = 0;
 
 private:
-    void setup_dnn_pointers(intel_nnet_layer_t *layer, uint8_t* &pinned_memory);
-    void setup_multibias_pointers(intel_nnet_layer_t *layer, uint8_t* &pinned_memory);
-    void setup_cnn_pointers(intel_nnet_layer_t *layer, uint8_t* &pinned_memory);
-    void setup_rnn_pointers(intel_nnet_layer_t *layer, uint8_t* &pinned_memory);
-    void setup_simple_pointers(intel_nnet_layer_t *layer, uint8_t* &pinned_memory);
-    void setup_gmm_pointers(intel_nnet_layer_t *layer, uint8_t* &pinned_memory);
+    static void setup_simple_pointers(Gna2Operation& operation, uint8_t* &pinned_memory);
 
     bool locked = false;
 
-    intel_nnet_type_t nnet;
+    Gna2Model model;
     size_t modelSize = 0;
 
-    std::vector<intel_nnet_layer_t> layers;
+    std::vector<Gna2Operation> operations;
+    std::list<Gna2OperationHolder> operationHolders;
 
     static const uint32_t nSegments;
     static const uint32_t groupingNum;
@@ -86,6 +81,6 @@ private:
     static const int16_t cnnInputs[];
     static const int16_t weights_2B[];
     static const int8_t weights_1B[];
-    static const intel_bias_t regularBiases[];
-    static const intel_compound_bias_t compoundBiases[];
+    static const int32_t regularBiases[];
+    static const Gna2CompoundBias compoundBiases[];
 };

@@ -23,10 +23,12 @@
  in any way.
 */
 
-#include <array>
+#pragma once
 
-#include "IModelSetup.h"
 #include "DeviceController.h"
+#include "IModelSetup.h"
+
+#include <array>
 
 class SetupMultibiasModel_1 : public IModelSetup
 {
@@ -108,7 +110,7 @@ private:
         -4, -6, -8, -2
     };
 
-    const intel_bias_t regularBiases[outVecSz * groupingNum] =
+    const int32_t regularBiases[outVecSz * groupingNum] =
     {
          -74,  165,   164,   81,
         -123,   84,  -150,  -93,
@@ -120,7 +122,7 @@ private:
           80, -234,   134,   -1,
     };
 
-    const  intel_weight_scaling_factor_t scaling[outVecSz * groupingNum] =
+    const  Gna2WeightScaleFactor scaling[outVecSz * groupingNum] =
     {
         {{0},1,{0}},{{0},1,{0}},{{0},1,{0}},{{0},1,{0}},
         {{0},1,{0}},{{0},1,{0}},{{0},1,{0}},{{0},1,{0}},

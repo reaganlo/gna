@@ -25,10 +25,9 @@
 
 #pragma once
 
-#include "gna-api.h"
-#include "gna2-api.h"
+#include "Gna2OperationHolder.hpp"
 
-#include "DeviceController.h"
+#include "gna2-api.h"
 
 #include <memory>
 #include <string>
@@ -123,13 +122,11 @@ public:
 protected:
     uint32_t modelId;
     uint32_t configId;
+    static const int defaultNumberOfLayers = 1;
 
-    intel_nnet_type_t nnet;
     Gna2Model model;
-    Gna2Operation * operations = nullptr;
-    Gna2Tensor * tensors = nullptr;
-    void * parameters = nullptr;
-    static const int layersNum = 1;
+    Gna2OperationHolder operationHolder;
+
     static const int groupingNum = 4;
     static const int inVecSz = 16;
     static const int outVecSz = 8;

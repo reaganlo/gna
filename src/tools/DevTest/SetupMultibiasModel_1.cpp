@@ -23,14 +23,11 @@
  in any way.
 */
 
-#include <cstring>
-#include <cstdlib>
-#include <iostream>
-
-#include "gna-api.h"
-
 #include "SetupMultibiasModel_1.h"
+
 #include "ModelUtilities.h"
+
+#include <cstring>
 
 #define UNREFERENCED_PARAMETER(P) ((void)(P))
 
@@ -115,15 +112,15 @@ void SetupMultibiasModel_1::checkReferenceOutput(uint32_t modelIndex, uint32_t c
 void SetupMultibiasModel_1::sampleAffineLayer()
 {
     uint32_t buf_size_weights = weightsAre2Bytes
-        ? ALIGN64(static_cast<uint32_t>(sizeof(weights_2B)))
-        : ALIGN64(static_cast<uint32_t>(sizeof(weights_1B)));
-    uint32_t buf_size_inputs = ALIGN64(static_cast<uint32_t>(sizeof(inputs)));
-    uint32_t buf_size_biases = ALIGN64(static_cast<uint32_t>(sizeof(regularBiases)));
+        ? Gna2RoundUpTo64(static_cast<uint32_t>(sizeof(weights_2B)))
+        : Gna2RoundUpTo64(static_cast<uint32_t>(sizeof(weights_1B)));
+    uint32_t buf_size_inputs = Gna2RoundUpTo64(static_cast<uint32_t>(sizeof(inputs)));
+    uint32_t buf_size_biases = Gna2RoundUpTo64(static_cast<uint32_t>(sizeof(regularBiases)));
     uint32_t buf_size_weight_scales = weightsAre2Bytes
-        ? 0 : ALIGN64(static_cast<uint32_t>(sizeof(scaling)));
-    uint32_t buf_size_outputs = ALIGN64(
+        ? 0 : Gna2RoundUpTo64(static_cast<uint32_t>(sizeof(scaling)));
+    uint32_t buf_size_outputs = Gna2RoundUpTo64(
         outVecSz * groupingNum * static_cast<uint32_t>(sizeof(int32_t)));
-    uint32_t buf_size_pwl = ALIGN64(
+    uint32_t buf_size_pwl = Gna2RoundUpTo64(
         nSegments * static_cast<uint32_t>(sizeof(Gna2PwlSegment)));
 
     uint32_t bytes_requested = buf_size_weights + buf_size_inputs + buf_size_biases +
@@ -158,10 +155,10 @@ void SetupMultibiasModel_1::sampleAffineLayer()
 
     pinned_mem_ptr += buf_size_biases;
 
-    intel_weight_scaling_factor_t* pinned_weight_scales = nullptr;
+    Gna2WeightScaleFactor* pinned_weight_scales = nullptr;
     if (!weightsAre2Bytes)
     {
-        pinned_weight_scales = (intel_weight_scaling_factor_t*)pinned_mem_ptr;
+        pinned_weight_scales = (Gna2WeightScaleFactor*)pinned_mem_ptr;
         memcpy(pinned_weight_scales, scaling, sizeof(scaling));
         pinned_mem_ptr += buf_size_weight_scales;
     }
@@ -169,27 +166,12 @@ void SetupMultibiasModel_1::sampleAffineLayer()
     outputBuffer = pinned_mem_ptr;
     pinned_mem_ptr += buf_size_outputs;
 
-    operations = static_cast<Gna2Operation*>(calloc(1, sizeof(Gna2Operation)));
-    tensors = static_cast<Gna2Tensor*>(calloc(6, sizeof(Gna2Tensor)));
+    operationHolder.InitAffineEx(inVecSz, outVecSz, groupingNum, nullptr, nullptr,
+        pinned_weights, weightsAre2Bytes ? Gna2DataTypeInt16 : Gna2DataTypeInt8,
+        pinned_biases, Gna2DataTypeInt32);
 
-    tensors[0] = Gna2TensorInit2D(inVecSz, groupingNum,
-        Gna2DataTypeInt16, nullptr);
-    tensors[1] = Gna2TensorInit2D(outVecSz, groupingNum,
-        Gna2DataTypeInt32, nullptr);
-
-    tensors[2] = Gna2TensorInit2D(outVecSz, inVecSz,
-        weightsAre2Bytes ? Gna2DataTypeInt16 : Gna2DataTypeInt8,
-        pinned_weights);
-    tensors[3] = Gna2TensorInit2D(outVecSz, groupingNum,
-        Gna2DataTypeInt32,
-        pinned_biases);
-    tensors[4] = Gna2TensorInitDisabled();
-    if (weightsAre2Bytes) {
-        tensors[5] = Gna2TensorInitDisabled();
-    }
-    else
-    {
-        tensors[5] = Gna2TensorInit1D(outVecSz, Gna2DataTypeWeightScaleFactor, pinned_weight_scales);
+    if (!weightsAre2Bytes) {
+        operationHolder.AddWeightScaleFactor(outVecSz, pinned_weight_scales);
     }
 
     if (pwlEnabled)
@@ -197,24 +179,11 @@ void SetupMultibiasModel_1::sampleAffineLayer()
         Gna2PwlSegment* pinned_pwl = reinterpret_cast<Gna2PwlSegment*>(pinned_mem_ptr);
 
         samplePwl(pinned_pwl, nSegments);
-        tensors[1] = Gna2TensorInit2D(outVecSz, groupingNum, Gna2DataTypeInt16, nullptr);
-        tensors[4] = Gna2TensorInit1D(nSegments, Gna2DataTypePwlSegment, pinned_pwl);
+        operationHolder.AddPwl(nSegments, pinned_pwl, Gna2DataTypeInt16);
     }
+    operationHolder.AddMBParameters(3, groupingNum);
 
-    parameters = calloc(2, sizeof(uint32_t));
-    auto const multibiasParameters = static_cast<uint32_t*>(parameters);
-    multibiasParameters[0] = Gna2BiasModeGrouping;
-    multibiasParameters[1] = 3; //biasVectorIndex;
-
-    Gna2OperationInitFullyConnectedBiasGrouping(
-        operations, &Allocator,
-        &tensors[0], &tensors[1],
-        &tensors[2], &tensors[3],
-        &tensors[4], &tensors[5],
-        (Gna2BiasMode*)&multibiasParameters[0], &multibiasParameters[1]
-    );
-
-    model = { 1, operations };
+    model = { 1, &operationHolder.Get() };
 }
 
 void SetupMultibiasModel_1::samplePwl(Gna2PwlSegment* segments, uint32_t numberOfSegments)

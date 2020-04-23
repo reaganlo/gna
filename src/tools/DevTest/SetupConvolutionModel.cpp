@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2017 Intel Corporation.
+ Copyright 2017-2020 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -23,15 +23,11 @@
  in any way.
 */
 
-#include <cstring>
-#include <cstdlib>
-#include <iostream>
-
-#include "gna-api.h"
-
 #include "SetupConvolutionModel.h"
 
 #include "ModelUtilities.h"
+
+#include <cstring>
 
 #define UNREFERENCED_PARAMETER(P) ((void)(P))
 
@@ -39,13 +35,10 @@ SetupConvolutionModel::SetupConvolutionModel(DeviceController & deviceCtrl, bool
     : deviceController{deviceCtrl},
       pwlEnabled{pwlEn}
 {
-    nnet.nGroup = groupingNum;
-    nnet.nLayers = layersNum;
-    nnet.pLayers = (intel_nnet_layer_t*)calloc(nnet.nLayers, sizeof(intel_nnet_layer_t));
 
     sampleConvolutionLayer();
 
-    deviceController.ModelCreate(&nnet, &modelId);
+    deviceController.ModelCreate(&model, &modelId);
 
     configId = DeviceController::ConfigAdd(modelId);
 
@@ -55,7 +48,6 @@ SetupConvolutionModel::SetupConvolutionModel(DeviceController & deviceCtrl, bool
 SetupConvolutionModel::~SetupConvolutionModel()
 {
     deviceController.Free(memory);
-    free(nnet.pLayers);
 
     deviceController.ModelRelease(modelId);
 }
@@ -94,23 +86,23 @@ void SetupConvolutionModel::checkReferenceOutput(uint32_t modelIndex, uint32_t c
     }
 }
 
-void SetupConvolutionModel::samplePwl(intel_pwl_segment_t *segments, uint32_t numberOfSegments)
+void SetupConvolutionModel::samplePwl(Gna2PwlSegment *segments, uint32_t numberOfSegments)
 {
     ModelUtilities::GeneratePwlSegments(segments, numberOfSegments);
 }
 
 void SetupConvolutionModel::sampleConvolutionLayer()
 {
-    uint32_t buf_size_filters = ALIGN64(sizeof(filters));
-    uint32_t buf_size_inputs = ALIGN64(sizeof(inputs));
-    uint32_t buf_size_biases = ALIGN64(sizeof(regularBiases));
-    uint32_t buf_size_outputs = ALIGN64(outVecSz * groupingNum * sizeof(int16_t));
-    uint32_t buf_size_tmp_outputs = ALIGN64(outVecSz * groupingNum * sizeof(int32_t));
+    uint32_t buf_size_filters = Gna2RoundUpTo64(sizeof(filters));
+    uint32_t buf_size_inputs = Gna2RoundUpTo64(sizeof(inputs));
+    uint32_t buf_size_biases = Gna2RoundUpTo64(sizeof(regularBiases));
+    uint32_t buf_size_outputs = Gna2RoundUpTo64(outVecSz * groupingNum * sizeof(int16_t));
+    uint32_t buf_size_tmp_outputs = Gna2RoundUpTo64(outVecSz * groupingNum * sizeof(int32_t));
 
     uint32_t bytes_requested = buf_size_filters + buf_size_inputs + buf_size_biases + buf_size_outputs + buf_size_tmp_outputs;
     if (pwlEnabled)
     {
-        uint32_t buf_size_pwl = ALIGN64(nSegments * static_cast<uint32_t>(sizeof(intel_pwl_segment_t)));
+        uint32_t buf_size_pwl = Gna2RoundUpTo64(nSegments * static_cast<uint32_t>(sizeof(Gna2PwlSegment)));
         bytes_requested += buf_size_pwl;
     }
     uint32_t bytes_granted;
@@ -130,58 +122,24 @@ void SetupConvolutionModel::sampleConvolutionLayer()
     memcpy(pinned_biases, regularBiases, sizeof(regularBiases));
     pinned_mem_ptr += buf_size_biases;
 
-    void *tmp_outputs = pinned_mem_ptr;
     pinned_mem_ptr += buf_size_tmp_outputs;
 
     outputBuffer = pinned_mem_ptr;
     pinned_mem_ptr += buf_size_outputs;
 
+    const auto outputsPerFilter = (inVecSz - nFilterCoefficients)
+        / (convStride) + 1;
+
+    operationHolder.InitCnnLegacy(groupingNum, inVecSz, outputsPerFilter, nFilters, nFilterCoefficients, convStride,
+        nullptr, nullptr, pinned_filters, pinned_biases);
+
     if (pwlEnabled)
     {
         void* pinned_pwl = pinned_mem_ptr;
 
-        pwl.nSegments = nSegments;
-        pwl.pSegments = reinterpret_cast<intel_pwl_segment_t*>(pinned_pwl);
-        samplePwl(pwl.pSegments, pwl.nSegments);
-    }
-    else
-    {
-        pwl.nSegments = 0;
-        pwl.pSegments = NULL;
+        samplePwl(reinterpret_cast<Gna2PwlSegment*>(pinned_pwl), nSegments);
+        operationHolder.AddPwl(nSegments, pinned_pwl, Gna2DataTypeInt16);
     }
 
-    convolution_layer.nBytesBias = sizeof(intel_bias_t);
-    convolution_layer.pBiases = pinned_biases;
-    convolution_layer.pwl = pwl;
-    convolution_layer.nBytesFilterCoefficient = sizeof(int16_t);
-    convolution_layer.nFeatureMaps = 1;
-    convolution_layer.nFeatureMapRows = 1;
-    convolution_layer.nFeatureMapColumns = 48;
-    convolution_layer.pFilters = pinned_filters;
-    convolution_layer.nFilters = 4;
-    convolution_layer.nFilterRows = 1;
-    convolution_layer.nFilterCoefficients = 48;
-    convolution_layer.poolType = INTEL_NO_POOLING;
-
-    nnet.pLayers[0].nInputColumns = inVecSz;
-    nnet.pLayers[0].nInputRows = nnet.nGroup;
-    nnet.pLayers[0].nOutputColumns = outVecSz;
-    nnet.pLayers[0].nOutputRows = nnet.nGroup;
-    if (pwlEnabled)
-    {
-        nnet.pLayers[0].pOutputsIntermediate = tmp_outputs;
-        nnet.pLayers[0].nBytesPerOutput = GNA_INT16; // activated
-    }
-    else
-    {
-        nnet.pLayers[0].pOutputsIntermediate = nullptr;
-        nnet.pLayers[0].nBytesPerOutput = GNA_INT32;
-    }
-    nnet.pLayers[0].nBytesPerInput = GNA_INT16;
-    nnet.pLayers[0].nBytesPerIntermediateOutput = GNA_INT32;
-    nnet.pLayers[0].operation = INTEL_CONVOLUTIONAL;
-    nnet.pLayers[0].mode = INTEL_INPUT_OUTPUT;
-    nnet.pLayers[0].pLayerStruct = &convolution_layer;
-    nnet.pLayers[0].pInputs = nullptr;
-    nnet.pLayers[0].pOutputs = nullptr;
+    model = { 1, &operationHolder.Get() };
 }

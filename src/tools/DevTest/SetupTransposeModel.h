@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2017 Intel Corporation.
+ Copyright 2017-2020 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -23,10 +23,12 @@
  in any way.
 */
 
-#include <array>
-#include "IModelSetup.h"
-#include "DeviceController.h"
+#pragma once
 
+#include "DeviceController.h"
+#include "IModelSetup.h"
+
+#include <array>
 
 class SetupTransposeModel : public IModelSetup
 {

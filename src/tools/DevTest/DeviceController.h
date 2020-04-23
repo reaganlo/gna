@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2017 Intel Corporation.
+ Copyright 2017-2020 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -24,8 +24,6 @@
 */
 
 #pragma once
-
-#include "gna-api.h"
 
 #include "gna2-api.h"
 
@@ -61,7 +59,6 @@ public:
 
     void Free(void *memory);
 
-    void ModelCreate(const gna_model *model, uint32_t *modelId);
     void ModelCreate(const Gna2Model *model, uint32_t *modelId) const;
     void ModelRelease(uint32_t modelId) const;
 

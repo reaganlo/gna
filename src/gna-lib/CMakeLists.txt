@@ -329,11 +329,11 @@ if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux" OR ${CMAKE_SYSTEM_NAME} STREQUAL "Andro
   set(gna_lib_headers ${gna_lib_headers} ${COMMON_DIR}/gna.h)
 endif()
 
-target_include_directories(gna-api
-  PRIVATE ${SRC_DIR} ${API_DIR} ${API_IMPL_DIR} ${KERNEL_DIR} ${GNA_HW_LIB_INCLUDE_PATH})
+target_include_directories(gna-api PRIVATE
+  ${SRC_DIR} ${API_DIR} ${API_IMPL_DIR} ${KERNEL_DIR} ${GNA_HW_LIB_INCLUDE_PATH}
+  $<BUILD_INTERFACE:${COMMON_DIR}>)
 
 target_include_directories(gna-api PUBLIC
-  $<BUILD_INTERFACE:${COMMON_DIR}>
   $<INSTALL_INTERFACE:include/gna${GNA_VERSION_MAJOR}>)
 
 target_sources(gna-api

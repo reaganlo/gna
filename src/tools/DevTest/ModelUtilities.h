@@ -1,4 +1,3 @@
-
 /*
  INTEL CONFIDENTIAL
  Copyright 2020 Intel Corporation.
@@ -26,33 +25,35 @@
 
 #pragma once
 
-#include "gna-api.h"
 #include "gna2-model-api.h"
 
 #include <cstdint>
-#include <stddef.h>
 
 class ModelUtilities
 {
 public:
-    static size_t CalculateDnnSize(uint32_t vectorCount, uint32_t inputElementCount, uint32_t outputElementCount,
+    static uint32_t CalculateDnnSize(uint32_t vectorCount, uint32_t inputElementCount, uint32_t outputElementCount,
                                    uint32_t bytesPerWeight, uint32_t nSegments);
 
-    static size_t CalculateMultibiasSize(uint32_t vectorCount, uint32_t inputElementCount, uint32_t outputElementCount,
+    static uint32_t CalculateMultibiasSize(uint32_t vectorCount, uint32_t inputElementCount, uint32_t outputElementCount,
                                    uint32_t bytesPerWeight, uint32_t nSegments);
 
-    static size_t CalculateRnnSize(uint32_t vectorCount, uint32_t inputElementCount, uint32_t outputElementCount,
+    static uint32_t CalculateRnnSize(uint32_t vectorCount, uint32_t inputElementCount, uint32_t outputElementCount,
                                    uint32_t bytesPerWeight, uint32_t nSegments);
 
-    static size_t CalculateCnnSize(uint32_t inputElementCount, uint32_t outputsPerFilter,
+    static uint32_t CalculateCnnSize(uint32_t inputElementCount, uint32_t outputsPerFilter,
                                    uint32_t nFilters, uint32_t nFilterCoeficcients, uint32_t nSegments);
 
-    static size_t CalculateSimpleSize(uint32_t vectorCount, uint32_t inputElementCount, uint32_t outputElementCount);
+    static uint32_t CalculateSimpleSize(uint32_t vectorCount, uint32_t inputElementCount, uint32_t outputElementCount);
 
-    static size_t CalculateGmmSize(uint32_t vectorCount, uint32_t stateCount, uint32_t mixtureCount, uint32_t inputElementCount, gna_gmm_mode gmmMode);
-
-    static void GeneratePwlSegments(intel_pwl_segment_t *segments, uint32_t nSegments);
+    static uint32_t CalculateGmmSize(uint32_t vectorCount, uint32_t stateCount, uint32_t mixtureCount, uint32_t inputElementCount, uint32_t bytesPerMaxMix);
 
     static void GeneratePwlSegments(Gna2PwlSegment* segments, uint32_t nSegments);
+
+    template <class T>
+    static uint32_t CastAndRoundUpTo64(const T value)
+    {
+        return Gna2RoundUpTo64(static_cast<uint32_t>(value));
+    }
 
 };

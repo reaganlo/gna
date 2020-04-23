@@ -23,8 +23,8 @@
  in any way.
 */
 
-#include "IModelSetup.h"
 #include "DeviceController.h"
+#include "IModelSetup.h"
 
 class SetupRecurrentModel : public IModelSetup
 {
@@ -44,8 +44,6 @@ private:
     bool weightsAre2Bytes;
 
     uint32_t nSegments = 64;
-
-    intel_pwl_func_tGna2 pwl;
 
     void * inputBuffer = nullptr;
     void * outputBuffer = nullptr;
@@ -131,12 +129,12 @@ private:
         -5,  9, -7,  4, 5, -4, -7,  4
     };
 
-    const intel_bias_t regularBiases[outVecSz * groupingNum] =
+    const int32_t regularBiases[outVecSz * groupingNum] =
     {
         5, 4, -2, 5, 5, 4, -2, 5, 5, 4, -2, 5, 5, 4, -2, 5, 5, 4, -2, 5, 5, 4, -2, 5, 5, 4, -2, 5, 5, 4, -2, 5
     };
 
-    const  intel_compound_bias_t compoundBiases[outVecSz * groupingNum] =
+    const  Gna2CompoundBias compoundBiases[outVecSz * groupingNum] =
     {
         { 5,1,{ 0 } },{ 4,1,{ 0 } },{ -2,1,{ 0 } },{ 5,1,{ 0 } },{ 5,1,{ 0 } },{ 4,1,{ 0 } },{ -2,1,{ 0 } },{ 5,1,{ 0 } },
         { 5,1,{ 0 } },{ 4,1,{ 0 } },{ -2,1,{ 0 } },{ 5,1,{ 0 } },{ 5,1,{ 0 } },{ 4,1,{ 0 } },{ -2,1,{ 0 } },{ 5,1,{ 0 } },

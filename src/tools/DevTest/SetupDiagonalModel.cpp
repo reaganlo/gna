@@ -24,13 +24,10 @@
 */
 
 #include "SetupDiagonalModel.h"
+
 #include "ModelUtilities.h"
 
-#include "gna-api.h"
-
 #include <cstring>
-#include <cstdlib>
-#include <iostream>
 
 #define UNREFERENCED_PARAMETER(P) ((void)(P))
 
@@ -99,12 +96,12 @@ void SetupDiagonalModel::checkReferenceOutput(uint32_t modelIndex, uint32_t conf
 void SetupDiagonalModel::sampleAffineLayer()
 {
     uint32_t buf_size_weights = static_cast<uint32_t>(weightsAre2Bytes
-        ? ALIGN64(sizeof(weights_2B)) : ALIGN64(sizeof(weights_1B)));
-    uint32_t buf_size_inputs = ALIGN64(sizeof(inputs));
+        ? ModelUtilities::CastAndRoundUpTo64(sizeof(weights_2B)) : ModelUtilities::CastAndRoundUpTo64(sizeof(weights_1B)));
+    uint32_t buf_size_inputs = ModelUtilities::CastAndRoundUpTo64(sizeof(inputs));
     uint32_t buf_size_biases = static_cast<uint32_t>(weightsAre2Bytes
-        ? ALIGN64(sizeof(regularBiases)) : ALIGN64(sizeof(compoundBiases)));
-    uint32_t buf_size_outputs = ALIGN64(outVecSz * groupingNum * sizeof(int32_t));
-    uint32_t buf_size_pwl = static_cast<uint32_t>(ALIGN64(nSegments * sizeof(intel_pwl_segment_t)));
+        ? ModelUtilities::CastAndRoundUpTo64(sizeof(regularBiases)) : ModelUtilities::CastAndRoundUpTo64(sizeof(compoundBiases)));
+    uint32_t buf_size_outputs = ModelUtilities::CastAndRoundUpTo64(outVecSz * groupingNum * sizeof(int32_t));
+    uint32_t buf_size_pwl = static_cast<uint32_t>(ModelUtilities::CastAndRoundUpTo64(nSegments * sizeof(Gna2PwlSegment)));
 
     uint32_t bytes_requested = buf_size_weights + buf_size_inputs + buf_size_biases + buf_size_outputs;
     if (pwlEnabled)
@@ -145,39 +142,18 @@ void SetupDiagonalModel::sampleAffineLayer()
     outputBuffer = pinned_mem_ptr;
     pinned_mem_ptr += buf_size_outputs;
 
-    operations = static_cast<Gna2Operation*>(calloc(1, sizeof(Gna2Operation)));
-    tensors = static_cast<Gna2Tensor*>(calloc(5, sizeof(Gna2Tensor)));
-
-    tensors[0] = Gna2TensorInit2D(inVecSz, groupingNum,
-        Gna2DataTypeInt16, nullptr);
-    tensors[1] = Gna2TensorInit2D(outVecSz, groupingNum,
-        Gna2DataTypeInt32, nullptr);
-
-    tensors[2] = Gna2TensorInit1D(inVecSz,
-        weightsAre2Bytes ? Gna2DataTypeInt16 : Gna2DataTypeInt8,
-        pinned_weights);
-    tensors[3] = Gna2TensorInit1D(inVecSz,
-        weightsAre2Bytes ? Gna2DataTypeInt32 : Gna2DataTypeCompoundBias,
-        pinned_biases);
-    tensors[4] = Gna2TensorInitDisabled();
+    operationHolder.InitDiagonalEx(inVecSz, outVecSz, groupingNum, nullptr, nullptr,
+        pinned_weights, weightsAre2Bytes ? Gna2DataTypeInt16 : Gna2DataTypeInt8,
+        pinned_biases, weightsAre2Bytes ? Gna2DataTypeInt32 : Gna2DataTypeCompoundBias);
 
     if (pwlEnabled)
     {
         Gna2PwlSegment* pinned_pwl = reinterpret_cast<Gna2PwlSegment*>(pinned_mem_ptr);
-
         samplePwl(pinned_pwl, nSegments);
-        tensors[1] = Gna2TensorInit2D(outVecSz, groupingNum, Gna2DataTypeInt16, nullptr);
-        tensors[4] = Gna2TensorInit1D(nSegments, Gna2DataTypePwlSegment, pinned_pwl);
+        operationHolder.AddPwl(nSegments, pinned_pwl, Gna2DataTypeInt16);
     }
 
-    Gna2OperationInitElementWiseAffine(
-        operations, &Allocator,
-        &tensors[0], &tensors[1],
-        &tensors[2], &tensors[3],
-        &tensors[4]
-    );
-
-    model = { 1, operations };
+    model = { 1, &operationHolder.Get() };
 }
 
 void SetupDiagonalModel::samplePwl(Gna2PwlSegment* segments, uint32_t numberOfSegments)

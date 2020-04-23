@@ -23,17 +23,17 @@ or any other notice embedded in Materials by Intel or Intel's suppliers or licen
 in any way.
 */
 
-#include <map>
-#include "Script.h"
 #include "DeviceController.h"
 #include "ModelSetupFactory.h"
+#include "Script.h"
 
 #include "gna2-common-api.h"
 
 #include <iostream>
+#include <map>
 #include <stdexcept>
-#include <vector>
 #include <string>
+#include <vector>
 
 class ApplicationWrapper
 {

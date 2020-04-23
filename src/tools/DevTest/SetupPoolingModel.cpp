@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2017 Intel Corporation.
+ Copyright 2017-2020 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -23,26 +23,19 @@
  in any way.
 */
 
-#include <cstring>
-#include <cstdlib>
-#include <iostream>
-
-#include "gna-api.h"
-
 #include "SetupPoolingModel.h"
+
+#include <cstdlib>
+#include <cstring>
 
 #define UNREFERENCED_PARAMETER(P) ((void)(P))
 
 SetupPoolingModel::SetupPoolingModel(DeviceController & deviceCtrl)
     : deviceController{deviceCtrl}
 {
-    nnet.nGroup = groupingNum;
-    nnet.nLayers = layersNum;
-    nnet.pLayers = (intel_nnet_layer_t*)calloc(nnet.nLayers, sizeof(intel_nnet_layer_t));
-
     samplePoolingLayer();
 
-    deviceController.ModelCreate(&nnet, &modelId);
+    deviceController.ModelCreate(&model, &modelId);
 
     configId = deviceController.ConfigAdd(modelId);
 
@@ -52,7 +45,6 @@ SetupPoolingModel::SetupPoolingModel(DeviceController & deviceCtrl)
 SetupPoolingModel::~SetupPoolingModel()
 {
     deviceController.Free(memory);
-    free(nnet.pLayers);
 
     deviceController.ModelRelease(modelId);
 }
@@ -71,7 +63,7 @@ void SetupPoolingModel::checkReferenceOutput(uint32_t modelIndex, uint32_t confi
     }
 }
 
-void SetupPoolingModel::samplePwl(intel_pwl_segment_t *segments, uint32_t numberOfSegments)
+void SetupPoolingModel::samplePwl(Gna2PwlSegment *segments, uint32_t numberOfSegments)
 {
     auto xBase = -600;
     auto xBaseInc = 2u * static_cast<uint32_t>(abs(xBase)) / numberOfSegments;
@@ -81,21 +73,21 @@ void SetupPoolingModel::samplePwl(intel_pwl_segment_t *segments, uint32_t number
     {
         segments[i].xBase = xBase;
         segments[i].yBase = static_cast<int16_t>(yBase);
-        segments[i].slope = 1;
+        segments[i].Slope = 1;
     }
 }
 
 void SetupPoolingModel::samplePoolingLayer()
 {
-    uint32_t buf_size_filters = ALIGN64(static_cast<uint32_t>(sizeof(filters)));
-    uint32_t buf_size_inputs = ALIGN64(static_cast<uint32_t>(sizeof(inputs)));
-    uint32_t buf_size_biases = ALIGN64(static_cast<uint32_t>(sizeof(regularBiases)));
-    uint32_t buf_size_outputs = ALIGN64(
+    uint32_t buf_size_filters = Gna2RoundUpTo64(static_cast<uint32_t>(sizeof(filters)));
+    uint32_t buf_size_inputs = Gna2RoundUpTo64(static_cast<uint32_t>(sizeof(inputs)));
+    uint32_t buf_size_biases = Gna2RoundUpTo64(static_cast<uint32_t>(sizeof(regularBiases)));
+    uint32_t buf_size_outputs = Gna2RoundUpTo64(
             outVecSz * groupingNum * static_cast<uint32_t>(sizeof(int16_t)));
-    uint32_t buf_size_tmp_outputs = ALIGN64(
+    uint32_t buf_size_tmp_outputs = Gna2RoundUpTo64(
             outVecSz * groupingNum * static_cast<uint32_t>(sizeof(int32_t)));
-    uint32_t buf_size_pwl = ALIGN64(
-            nSegments * static_cast<uint32_t>(sizeof(intel_pwl_segment_t)));
+    uint32_t buf_size_pwl = Gna2RoundUpTo64(
+            nSegments * static_cast<uint32_t>(sizeof(Gna2PwlSegment)));
 
     uint32_t bytes_requested = buf_size_filters + buf_size_inputs + buf_size_biases + buf_size_outputs + buf_size_tmp_outputs + buf_size_pwl;
     uint32_t bytes_granted;
@@ -115,7 +107,6 @@ void SetupPoolingModel::samplePoolingLayer()
     memcpy(pinned_biases, regularBiases, sizeof(regularBiases));
     pinned_mem_ptr += buf_size_biases;
 
-    void *tmp_outputs = pinned_mem_ptr;
     pinned_mem_ptr += buf_size_tmp_outputs;
 
     outputBuffer = pinned_mem_ptr;
@@ -123,37 +114,14 @@ void SetupPoolingModel::samplePoolingLayer()
 
     void* pinned_pwl = pinned_mem_ptr;
 
-    pwl.nSegments = nSegments;
-    pwl.pSegments = reinterpret_cast<intel_pwl_segment_t*>(pinned_pwl);
-    samplePwl(pwl.pSegments, pwl.nSegments);
+    const uint32_t cnnStride = 48;
+    operationHolder.InitCnnLegacy(groupingNum, inVecSz, 1, nFilters,
+        nFilterCoefficients, cnnStride, nullptr, nullptr,
+        pinned_filters, pinned_biases);
+    operationHolder.AddPooling(Gna2PoolingModeSum, 6, 6);
 
-    convolution_layer.nBytesBias = sizeof(intel_bias_t);
-    convolution_layer.pBiases = pinned_biases;
-    convolution_layer.pwl = pwl;
-    convolution_layer.nBytesFilterCoefficient = sizeof(int16_t);
-    convolution_layer.nFeatureMaps = 1;
-    convolution_layer.nFeatureMapRows = 1;
-    convolution_layer.nFeatureMapColumns = 48;
-    convolution_layer.pFilters = pinned_filters;
-    convolution_layer.nFilters = 4;
-    convolution_layer.nFilterRows = 1;
-    convolution_layer.nFilterCoefficients = 48;
-    convolution_layer.poolType = INTEL_SUM_POOLING;
-    convolution_layer.nPoolSize = 6;
-    convolution_layer.nPoolStride = 6;
-
-    nnet.pLayers[0].nInputColumns = inVecSz;
-    nnet.pLayers[0].nInputRows = nnet.nGroup;
-    nnet.pLayers[0].nOutputColumns = outVecSz;
-    nnet.pLayers[0].nOutputRows = nnet.nGroup;
-    nnet.pLayers[0].nBytesPerInput = GNA_INT16;
-    nnet.pLayers[0].nBytesPerOutput = GNA_INT16; // activated
-    nnet.pLayers[0].nBytesPerIntermediateOutput = GNA_INT32;
-    nnet.pLayers[0].operation = INTEL_CONVOLUTIONAL;
-    nnet.pLayers[0].mode = INTEL_INPUT_OUTPUT;
-    nnet.pLayers[0].pLayerStruct = &convolution_layer;
-    nnet.pLayers[0].pInputs = nullptr;
-    nnet.pLayers[0].pOutputsIntermediate = tmp_outputs;
-    nnet.pLayers[0].pOutputs = nullptr;
+    operationHolder.AddPwl(nSegments, pinned_pwl);
+    samplePwl(static_cast<Gna2PwlSegment*>(pinned_pwl), nSegments);
+    model = { 1, &operationHolder.Get() };
 }
 

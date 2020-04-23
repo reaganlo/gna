@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2017 Intel Corporation.
+ Copyright 2017-2020 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -23,26 +23,18 @@
  in any way.
 */
 
-#include <cstring>
-#include <cstdlib>
-#include <iostream>
-
-#include "gna-api.h"
-
 #include "SetupTransposeModel.h"
+
+#include <cstring>
 
 #define UNREFERENCED_PARAMETER(P) ((void)(P))
 
 SetupTransposeModel::SetupTransposeModel(DeviceController & deviceCtrl, uint32_t configIndex)
     : deviceController{ deviceCtrl }
 {
-    nnet.nGroup = groupingNum[configIndex];
-    nnet.nLayers = layersNum;
-    nnet.pLayers = (intel_nnet_layer_t*)calloc(nnet.nLayers, sizeof(intel_nnet_layer_t));
-
     sampleTransposeLayer(configIndex);
 
-    deviceController.ModelCreate(&nnet, &modelId);
+    deviceController.ModelCreate(&model, &modelId);
 
     configId = deviceController.ConfigAdd(modelId);
 
@@ -52,7 +44,6 @@ SetupTransposeModel::SetupTransposeModel(DeviceController & deviceCtrl, uint32_t
 SetupTransposeModel::~SetupTransposeModel()
 {
     deviceController.Free(memory);
-    free(nnet.pLayers);
 
     deviceController.ModelRelease(modelId);
 }
@@ -75,9 +66,9 @@ void SetupTransposeModel::checkReferenceOutput(uint32_t modelIndex, uint32_t con
 
 void SetupTransposeModel::sampleTransposeLayer(uint32_t configIndex)
 {
-    uint32_t buf_size_inputs = ALIGN64(inputsSize[configIndex]);
-    uint32_t buf_size_outputs = ALIGN64(
-            outVecSz * groupingNum[configIndex] * static_cast<uint32_t>(sizeof(int32_t)));
+    uint32_t buf_size_inputs = Gna2RoundUpTo64(inputsSize[configIndex]);
+    uint32_t buf_size_outputs = Gna2RoundUpTo64(
+        outVecSz * groupingNum[configIndex] * static_cast<uint32_t>(sizeof(int32_t)));
 
     uint32_t bytes_requested = buf_size_inputs + buf_size_outputs;
     uint32_t bytes_granted;
@@ -91,16 +82,7 @@ void SetupTransposeModel::sampleTransposeLayer(uint32_t configIndex)
 
     outputBuffer = pinned_mem_ptr;
 
-    nnet.pLayers[0].nInputColumns = inVecSz;
-    nnet.pLayers[0].nInputRows = nnet.nGroup;
-    nnet.pLayers[0].nOutputColumns = nnet.nGroup;
-    nnet.pLayers[0].nOutputRows = outVecSz;
-    nnet.pLayers[0].nBytesPerInput = GNA_INT16;
-    nnet.pLayers[0].nBytesPerOutput = GNA_INT16;
-    nnet.pLayers[0].nBytesPerIntermediateOutput = GNA_INT32;
-    nnet.pLayers[0].operation = INTEL_INTERLEAVE;
-    nnet.pLayers[0].mode = INTEL_INPUT_OUTPUT;
-    nnet.pLayers[0].pInputs = nullptr;
-    nnet.pLayers[0].pOutputsIntermediate = nullptr;
-    nnet.pLayers[0].pOutputs = nullptr;
+    operationHolder.InitTranspose(groupingNum[configIndex], inVecSz, Gna2DataTypeInt16,
+        nullptr, nullptr);
+    model = { 1, &operationHolder.Get() };
 }

@@ -23,15 +23,15 @@
  in any way.
 */
 
-#include <array>
-#include <cstdint>
-#include <map>
-#include <vector>
+#pragma once
 
 #include "DeviceController.h"
 #include "IModelSetup.h"
 
-#include "gna-api.h"
+#include <array>
+#include <cstdint>
+#include <map>
+#include <vector>
 
 class SetupSplitModel : public IModelSetup
 {
@@ -72,6 +72,7 @@ private:
 
     uint32_t nSegments = 64;
     Gna2Model firstModel;
+    Gna2OperationHolder operation2Holder;
     Gna2Model secondModel;
 
     std::vector<uint32_t> models;
@@ -103,12 +104,12 @@ private:
          2,  7, -8, -7,  8, -6, -6,  1,  7, -4, -4,  9, -6, -6,  5, -7
     };
 
-    const intel_bias_t regularBiases[outVecSz*groupingNum] =
+    const int32_t regularBiases[outVecSz*groupingNum] =
     {
         5, 4, -2, 5, -7, -5, 4, -1
     };
 
-    const  intel_compound_bias_t compoundBiases[outVecSz*groupingNum] =
+    const Gna2CompoundBias compoundBiases[outVecSz*groupingNum] =
     {
         { 5,1,{0} }, {4,1,{0}}, {-2,1,{0}}, {5,1,{0}},
         {-7,1,{0}}, {-5,1,{0}}, {4,1,{0}}, {-1,1,{0}},
@@ -127,12 +128,12 @@ private:
         -6, -2, -1, -1, -2,  9,  6,  5,  2,  4, -1,  5, -2, -4,  0,  9,
     };
 
-    const intel_bias_t diagonalRegularBiases[diagonalOutVecSz] =
+    const int32_t diagonalRegularBiases[diagonalOutVecSz] =
     {
         5, 4, -2, 5, -7, -5, 4, -1, 5, 4, -2, 5, -7, -5, 4, -1
     };
 
-    const  intel_compound_bias_t diagonalCompoundBiases[diagonalOutVecSz * groupingNum] =
+    const  Gna2CompoundBias diagonalCompoundBiases[diagonalOutVecSz * groupingNum] =
     {
         { 5,1,{0} }, {4,1,{0}}, {-2,1,{0}}, {5,1,{0}}, {-7,1,{0}}, {-5,1,{0}}, {4,1,{0}}, {-1,1,{0}},
         { 5,1,{ 0 } },{ 4,1,{ 0 } },{ -2,1,{ 0 } },{ 5,1,{ 0 } },{ -7,1,{ 0 } },{ -5,1,{ 0 } },{ 4,1,{ 0 } },{ -1,1,{ 0 } },

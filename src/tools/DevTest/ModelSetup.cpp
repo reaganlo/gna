@@ -23,26 +23,17 @@
  in any way.
 */
 
-#include <cstring>
-#include <cstdlib>
-#include <iostream>
-
 #include "ModelSetup.h"
+
+#include <cstdint>
 
 #define UNREFERENCED_PARAMETER(P) ((void)(P))
 
-ModelSetup::ModelSetup(DeviceController & deviceCtrl, intel_nnet_type_t nnetModel,
+ModelSetup::ModelSetup(DeviceController & deviceCtrl,
     const void* referenceOutputIn) :
     deviceController{deviceCtrl},
-    nnet{nnetModel},
     referenceOutput{referenceOutputIn}
 {
-    nnet.pLayers = (intel_nnet_layer_t*)calloc(nnet.nLayers, sizeof(intel_nnet_layer_t));
-}
-
-ModelSetup::~ModelSetup()
-{
-    free(nnet.pLayers);
 }
 
 void ModelSetup::checkReferenceOutput(uint32_t modelIndex, uint32_t configIndex) const
@@ -50,39 +41,38 @@ void ModelSetup::checkReferenceOutput(uint32_t modelIndex, uint32_t configIndex)
     UNREFERENCED_PARAMETER(modelIndex);
     UNREFERENCED_PARAMETER(configIndex);
 
-    auto& outputLayer = nnet.pLayers[nnet.nLayers - 1];
-    auto outputSize = outputLayer.nOutputRows * outputLayer.nOutputColumns;
+    const auto& outputOperand = *model.Operations[model.NumberOfOperations - 1].Operands[1];
+    const auto outputSize = Gna2ShapeGetNumberOfElements(&outputOperand.Shape);
     for (unsigned i = 0; i < outputSize; ++i)
     {
-        switch (outputLayer.nBytesPerOutput)
+        switch (Gna2DataTypeGetSize(outputOperand.Type))
         {
         case sizeof (int8_t):
-            if (static_cast<const int8_t*>(referenceOutput)[i] != static_cast<const int8_t*>(outputBuffer)[i])
+            if (static_cast<const int8_t*>(referenceOutput)[i] != static_cast<const int8_t*>(outputOperand.Data)[i])
             {
                 throw std::runtime_error("Wrong output");
             }
         break;
         case sizeof (int16_t):
-            if (static_cast<const int16_t*>(referenceOutput)[i] != static_cast<const int16_t*>(outputBuffer)[i])
+            if (static_cast<const int16_t*>(referenceOutput)[i] != static_cast<const int16_t*>(outputOperand.Data)[i])
             {
                 throw std::runtime_error("Wrong output");
             }
         break;
         case sizeof (int32_t):
-            if (static_cast<const int32_t*>(referenceOutput)[i] != static_cast<const int32_t*>(outputBuffer)[i])
+            if (static_cast<const int32_t*>(referenceOutput)[i] != static_cast<const int32_t*>(outputOperand.Data)[i])
             {
                 throw std::runtime_error("Wrong output");
             }
         break;
         case sizeof (int64_t):
-            if (static_cast<const int64_t*>(referenceOutput)[i] != static_cast<const int64_t*>(outputBuffer)[i])
+            if (static_cast<const int64_t*>(referenceOutput)[i] != static_cast<const int64_t*>(outputOperand.Data)[i])
             {
                 throw std::runtime_error("Wrong output");
             }
         break;
         default:
             throw std::runtime_error("Invalid output data mode");
-        break;
         }
     }
 }

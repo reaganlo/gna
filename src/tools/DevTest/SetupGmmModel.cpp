@@ -25,11 +25,7 @@
 
 #include "SetupGmmModel.h"
 
-#include "gna-api.h"
-
 #include <cstring>
-#include <cstdlib>
-#include <iostream>
 
 #define UNREFERENCED_PARAMETER(P) ((void)(P))
 
@@ -55,18 +51,6 @@ SetupGmmModel::SetupGmmModel(DeviceController & deviceCtrl, bool activeListEn)
 SetupGmmModel::~SetupGmmModel()
 {
     deviceController.Free(memory);
-    if (operations)
-    {
-        free(operations);
-    }
-    if (tensors)
-    {
-        free(tensors);
-    }
-    if (parameters)
-    {
-        free(parameters);
-    }
 
     deviceController.ModelRelease(modelId);
 }
@@ -91,11 +75,10 @@ void SetupGmmModel::sampleGmmLayer()
 {
     uint32_t const batchSize = groupingNum;
     uint32_t const featureVectorLength = inVecSz;
-    auto const dataShape = Gna2Shape{3, { gmmStates, mixtures, featureVectorLength }};  //WHD
 
-    auto const buf_size_weights = ALIGN64(sizeof(variance)); // note that buffer alignment to 64-bytes is required by GNA HW
-    auto const buf_size_inputs = ALIGN64(sizeof(feature_vector));
-    auto const buf_size_outputs = ALIGN64(sizeof(ref_output_));
+    auto const buf_size_weights = Gna2RoundUpTo64(sizeof(variance)); // note that buffer alignment to 64-bytes is required by GNA HW
+    auto const buf_size_inputs = Gna2RoundUpTo64(sizeof(feature_vector));
+    auto const buf_size_outputs = Gna2RoundUpTo64(sizeof(ref_output_));
     auto const indicesSize = static_cast<uint32_t>(indicesCount * sizeof(uint32_t));
 
     uint32_t bytes_requested = buf_size_weights + buf_size_inputs + buf_size_outputs;
@@ -128,26 +111,6 @@ void SetupGmmModel::sampleGmmLayer()
         pinned_mem_ptr += indicesSize;
     }
 
-    operations = static_cast<Gna2Operation*>(calloc(1, sizeof(Gna2Operation)));
-    tensors = static_cast<Gna2Tensor*>(calloc(5, sizeof(Gna2Tensor)));
-
-    tensors[0] = Gna2TensorInit2D(batchSize, featureVectorLength,
-        Gna2DataTypeUint8, memory);     // address will be changed for request config
-    tensors[1] = Gna2TensorInit2D(gmmStates, batchSize,
-        Gna2DataTypeUint32, memory);    // address will be changed for request config
-    tensors[2] = Gna2TensorInit3D(dataShape.Dimensions[0],
-        dataShape.Dimensions[1], dataShape.Dimensions[2],
-        Gna2DataTypeUint8,
-        pinned_weights);
-
-    parameters = calloc(1, sizeof(uint32_t));
-    auto const maxScore = static_cast<uint32_t*>(parameters);
-    *maxScore = UINT32_MAX;
-
-    Gna2OperationInitGmmInterleaved(operations, &Allocator,
-        &tensors[0], &tensors[1],
-        &tensors[2],
-        maxScore);
-
-    model = { 1, operations };
+    operationHolder.InitGmm(batchSize, featureVectorLength, gmmStates, mixtures, memory, memory, pinned_weights, UINT32_MAX);
+    model = { 1, &operationHolder.Get() };
 }

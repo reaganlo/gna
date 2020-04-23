@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2017 Intel Corporation.
+ Copyright 2017-2020 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -23,28 +23,11 @@
  in any way.
 */
 
-#include <cstring>
-#include <cstdlib>
-#include <iostream>
-
-#include "gna-api.h"
-
 #include "SetupConvolutionModel2D.h"
 
-#include "Macros.h"
+#include <cstring>
 
-constexpr uint32_t layerCount = 1;
-constexpr uint32_t grouping = 1;
-
-constexpr gna_3d_dimensions inputDimensions = {16, 1, 1};
-constexpr uint32_t totalInputCount = inputDimensions.width * inputDimensions.height * inputDimensions.depth;
-constexpr gna_3d_dimensions filterDimensions = {8, 1, 1};
-constexpr uint32_t filterN = 3;
-//constexpr gna_3d_dimensions outputDimensions = {5, 5, filterN};
-constexpr gna_3d_dimensions outputDimensions = {7, 1, filterN};
-constexpr uint32_t totalOutputCount = outputDimensions.width * outputDimensions.height * outputDimensions.depth;
-
-const int16_t filters[filterN * ALIGN(filterDimensions.width * filterDimensions.height * filterDimensions.depth, (16/sizeof(int16_t)))] =
+const int16_t filters[] =
 {
     1, 1, 1, 1, 1, 1, 1, 1,
 
@@ -53,12 +36,12 @@ const int16_t filters[filterN * ALIGN(filterDimensions.width * filterDimensions.
     3, 3, 3, 3, 3, 3, 3, 3,
 };
 
-const int16_t inputs[grouping * totalInputCount] = {
+const int16_t inputs[] = {
     1, 1, 1, 1, 1, 1, 1, 1,
     2, 2, 2, 2, 2, 2, 2, 2,
 };
 
-const intel_bias_t regularBiases[filterN] = {
+const int32_t regularBiases[] = {
     1, 2, 3,
 };
 //
@@ -71,19 +54,18 @@ const intel_bias_t regularBiases[filterN] = {
 //};
 
 
-const int32_t ref_output[grouping * totalOutputCount] = {
+const int32_t ref_output[] = {
    1,1,1,1,1,1,1,
    1,1,1,1,1,1,1,
    1,1,1,1,1,1,1,
 };
 
-SetupConvolutionModel2D::SetupConvolutionModel2D(DeviceController & deviceCtrl, bool pwlEn)
-    : ModelSetup{deviceCtrl, {layerCount, grouping, nullptr}, ref_output},
-    pwlEnabled{pwlEn}
+SetupConvolutionModel2D::SetupConvolutionModel2D(DeviceController & deviceCtrl)
+    : ModelSetup{deviceCtrl, ref_output}
 {
     sampleConvolutionLayer();
 
-    deviceController.ModelCreate(&nnet, &modelId);
+    deviceController.ModelCreate(&model, &modelId);
 
     configId = deviceController.ConfigAdd(modelId);
 
@@ -99,10 +81,11 @@ SetupConvolutionModel2D::~SetupConvolutionModel2D()
 
 void SetupConvolutionModel2D::sampleConvolutionLayer()
 {
-    uint32_t buf_size_filters = ALIGN64(sizeof(filters));
-    uint32_t buf_size_inputs = ALIGN64(sizeof(inputs));
-    uint32_t buf_size_biases = ALIGN64(sizeof(regularBiases));
-    uint32_t buf_size_outputs = ALIGN64(sizeof(ref_output));
+    constexpr uint32_t filterN = 4;
+    uint32_t buf_size_filters = Gna2RoundUpTo64(sizeof(filters));
+    uint32_t buf_size_inputs = Gna2RoundUpTo64(sizeof(inputs));
+    uint32_t buf_size_biases = Gna2RoundUpTo64(sizeof(regularBiases));
+    uint32_t buf_size_outputs = Gna2RoundUpTo64(sizeof(ref_output));
 
     uint32_t bytes_requested = buf_size_filters + buf_size_inputs + buf_size_biases + buf_size_outputs;
     uint32_t bytes_granted;
@@ -122,34 +105,11 @@ void SetupConvolutionModel2D::sampleConvolutionLayer()
     pinned_mem_ptr += buf_size_inputs;
     outputBuffer = pinned_mem_ptr;
 
-    layer.activation.nSegments = 0;
-    layer.activation.pSegments = nullptr;
-    layer.convolution.biases.biasesData = pinned_biases;
-    layer.convolution.biases.dataMode = GNA_INT32;
-    layer.convolution.biases.mode = GNA_BIAS_PER_KERNEL;
-    layer.convolution.filters.count = filterN;
-    layer.convolution.filters.dataMode = GNA_INT16;
-    layer.convolution.filters.dimensions = filterDimensions;
-    layer.convolution.filters.filtersData =  pinned_filters;
-    layer.convolution.stride = {1, 1, 0};
-    layer.convolution.zeroPadding = {};
-    layer.inputDimensions = inputDimensions;
-    layer.pooling.type = INTEL_MAX_POOLING;
-    layer.pooling.stride = {1, 1, 0};
-    layer.pooling.window = {3, 1, 0};
+    operationHolder.InitCnn2DPool(16, 1, 1,
+        filterN, 8, 1,
+        1, 1,
+        3, 1,
+        Gna2DataTypeInt16, Gna2DataTypeInt32, nullptr, nullptr, pinned_filters, pinned_biases, Gna2PoolingModeMax);
 
-
-    nnet.pLayers[0].nInputColumns = totalInputCount;
-    nnet.pLayers[0].nInputRows = nnet.nGroup;
-    nnet.pLayers[0].nOutputColumns = totalOutputCount;
-    nnet.pLayers[0].nOutputRows = nnet.nGroup;
-    nnet.pLayers[0].pOutputsIntermediate = nullptr;
-    nnet.pLayers[0].nBytesPerOutput = GNA_INT32;
-    nnet.pLayers[0].nBytesPerInput = GNA_INT16;
-    nnet.pLayers[0].nBytesPerIntermediateOutput = GNA_INT32;
-    nnet.pLayers[0].operation = INTEL_CONVOLUTIONAL_2D;
-    nnet.pLayers[0].mode = INTEL_INPUT_OUTPUT;
-    nnet.pLayers[0].pLayerStruct = &layer;
-    nnet.pLayers[0].pInputs = nullptr;
-    nnet.pLayers[0].pOutputs = nullptr;
+    model = { 1, &operationHolder.Get() };
 }

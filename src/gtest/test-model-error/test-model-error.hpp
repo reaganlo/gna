@@ -24,157 +24,14 @@
 */
 
 #pragma once
-
 #include "../test-gna-api/test-gna-api.h"
+
+#include "Gna2OperationHolder.hpp"
 
 #include "gna2-memory-api.h"
 #include "gna2-model-api.h"
 
 #include <list>
-
-class Gna2OperationHolder
-{
-    static const int MaxTensorsParams = 6;
-    Gna2Tensor tensors[MaxTensorsParams] = {};
-    union Gna2Parameter {
-        Gna2Shape shape;
-        uint32_t uint32;
-        Gna2BiasMode biasMode;
-        Gna2PoolingMode poolingMode;
-    } parameters[MaxTensorsParams] = {};
-    Gna2Tensor* pTensors[MaxTensorsParams];
-    void* pParams[MaxTensorsParams];
-
-    Gna2Operation operation;
-
-    void Init()
-    {
-        for (int i = 0; i < MaxTensorsParams; i++)
-        {
-            pTensors[i] = tensors + i;
-            pParams[i] = parameters + i;
-        }
-        operation = { Gna2OperationTypeNone, const_cast<const Gna2Tensor**>(pTensors), 0, pParams, 0 };
-    }
-public:
-
-    Gna2OperationHolder()
-    {
-        Init();
-    }
-
-    Gna2OperationHolder(const Gna2OperationHolder& from)
-    {
-        Init();
-        for (int i = 0; i < MaxTensorsParams; i++)
-        {
-            tensors[i] = from.tensors[i];
-            parameters[i] = from.parameters[i];
-        }
-        operation.Type = from.operation.Type;
-        operation.NumberOfOperands = from.operation.NumberOfOperands;
-        operation.NumberOfParameters = from.operation.NumberOfParameters;
-    }
-
-    Gna2Operation GetOperation() const
-    {
-        return operation;
-    }
-
-    void InitCopy(uint32_t rows, uint32_t inputColumns, uint32_t copyColumns, uint32_t outputColumns, void * input, void * output)
-    {
-        operation.Type = Gna2OperationTypeCopy;
-        operation.NumberOfParameters = 1;
-        operation.NumberOfOperands = 2;
-
-        parameters[0].shape = Gna2ShapeInit2D(rows, copyColumns);
-        tensors[0] = Gna2TensorInit2D(rows, inputColumns, Gna2DataTypeInt16, input);
-        tensors[1] = Gna2TensorInit2D(rows, outputColumns, Gna2DataTypeInt16, output);
-    }
-    void InitDiagonal(uint32_t inputs, uint32_t batches, void * input, void * output, void * weight, void * bias)
-    {
-        operation.Type = Gna2OperationTypeElementWiseAffine;
-        operation.NumberOfOperands = 4;
-
-        tensors[0] = Gna2TensorInit2D(inputs, batches, Gna2DataTypeInt16, input);
-        tensors[1] = Gna2TensorInit2D(inputs, batches, Gna2DataTypeInt32, output);
-        tensors[2] = Gna2TensorInit1D(inputs, Gna2DataTypeInt16, weight);
-        tensors[3] = Gna2TensorInit1D(inputs, Gna2DataTypeInt32, bias);
-    }
-
-    void InitDiagonalPwl(uint32_t inputs, uint32_t batches, uint32_t pwlSegments, void * input, void * output, void * weight, void * bias, void * pwl)
-    {
-        InitDiagonal(inputs, batches, input, output, weight, bias);
-        operation.NumberOfOperands = 5;
-        tensors[4] = Gna2TensorInit1D(pwlSegments, Gna2DataTypePwlSegment, pwl);
-    }
-
-    void InitMB(uint32_t inputs, uint32_t outputs, uint32_t batches,
-        uint32_t pwlSegments, uint32_t biasIndex, uint32_t biasGrouping,
-        void * input, void * output, void * weight, void * bias, void * pwl)
-    {
-        operation.Type = Gna2OperationTypeFullyConnectedAffine;
-        operation.NumberOfOperands = 5;
-        tensors[0] = Gna2TensorInit2D(inputs, batches, Gna2DataTypeInt16, input);
-        tensors[1] = Gna2TensorInit2D(outputs, batches, Gna2DataTypeInt16, output);
-        tensors[2] = Gna2TensorInit2D(outputs, inputs, Gna2DataTypeInt16, weight);
-        tensors[3] = Gna2TensorInit2D(outputs, biasGrouping, Gna2DataTypeInt32, bias);
-        tensors[4] = Gna2TensorInit1D(pwlSegments, Gna2DataTypePwlSegment, pwl);
-        operation.NumberOfParameters = 2;
-        parameters[0].biasMode = Gna2BiasModeGrouping;
-        parameters[1].uint32 = biasIndex;
-    }
-
-    void InitRnn(uint32_t inputs, uint32_t outputs, uint32_t delay, uint32_t pwlSegments, void * input, void * output, void * weight, void * bias, void * pwl)
-    {
-        operation.Type = Gna2OperationTypeRecurrent;
-        operation.NumberOfOperands = 5;
-        const uint32_t inputVectors = 4;
-        tensors[0] = Gna2TensorInit2D(inputVectors, inputs, Gna2DataTypeInt16, input);
-        tensors[1] = Gna2TensorInit2D(inputVectors, outputs, Gna2DataTypeInt16, output);
-        tensors[2] = Gna2TensorInit2D(outputs, outputs+inputs, Gna2DataTypeInt16, weight);
-        tensors[3] = Gna2TensorInit1D(outputs, Gna2DataTypeInt32, bias);
-        tensors[4] = Gna2TensorInit1D(pwlSegments, Gna2DataTypePwlSegment, pwl);
-        operation.NumberOfParameters = 1;
-        parameters[0].uint32 = delay;
-    }
-
-    uint32_t Cnn2DOut(uint32_t input, uint32_t filter, uint32_t stride, uint32_t poolWin)
-    {
-        return (input - filter + 1) / stride - poolWin + 1;
-    }
-
-    void InitCnn2DPool(uint32_t inputH, uint32_t inputW, uint32_t inputC,
-        uint32_t filterN, uint32_t filterH, uint32_t filterW,
-        uint32_t strideH, uint32_t strideW,
-        uint32_t poolWinH, uint32_t poolWinW,
-        Gna2DataType type, void * input, void * filters, void * output)
-    {
-        const uint32_t poolStride = 1;
-        operation.Type = Gna2OperationTypeConvolution;
-        operation.NumberOfOperands = 3;
-        operation.NumberOfParameters = 5;
-        tensors[0] = Gna2TensorInit4D(1, inputH, inputW, inputC, type, input);
-        tensors[1] = Gna2TensorInit4D(1,
-            Cnn2DOut(inputH, filterH, strideH, poolWinH),
-            Cnn2DOut(inputW, filterW, strideW, poolWinW),
-            filterN, type, output);
-        tensors[2] = Gna2TensorInit3D(filterN, filterH, filterW, type, filters);
-        parameters[0].shape = Gna2ShapeInit2D(strideH, strideW);
-        parameters[1].biasMode = Gna2BiasModeDefault;
-        parameters[2].poolingMode = Gna2PoolingModeMax;
-        parameters[3].shape = Gna2ShapeInit2D(poolWinH, poolWinW);
-        parameters[4].shape = Gna2ShapeInit2D(poolStride, poolStride);
-    }
-
-    void InitTranspose(uint32_t rows, uint32_t cols, Gna2DataType type, void * input, void * output)
-    {
-        operation.Type = Gna2OperationTypeTransposition;
-        operation.NumberOfOperands = 2;
-        tensors[0] = Gna2TensorInit2D(rows, cols, type, input);
-        tensors[1] = Gna2TensorInit2D(cols, rows, type, output);
-    }
-};
 
 class TestModelError : public TestGnaModel
 {
@@ -271,7 +128,9 @@ protected:
     Gna2Operation CreateSimpleCnn2DPool()
     {
         auto& op = allocateNewOperation();
-        op.InitCnn2DPool(16, 32, 3, 10, 3, 3, 2, 2, 3, 3, Gna2DataTypeInt16, gnaMemory, gnaMemory, gnaMemory);
+        op.InitCnn2DPool(16, 32, 3, 10, 3, 3, 2, 2, 3, 3,
+            Gna2DataTypeInt16, Gna2DataTypeInt16,   // TODO: 4: Check whether configuration valid
+            gnaMemory, gnaMemory, gnaMemory, gnaMemory);
         return createdOperations.back().GetOperation();
     }
 

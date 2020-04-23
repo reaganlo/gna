@@ -23,22 +23,22 @@
  in any way.
 */
 
-#include <iostream>
-
 #include "ModelSetupFactory.h"
 #include "SetupConvolutionModel.h"
 #include "SetupConvolutionModel2D.h"
 #include "SetupCopyModel.h"
 #include "SetupDiagonalModel.h"
-#include "SetupGmmModel.h"
-#include "SetupMixModel.h"
 #include "SetupDnnModel_1.h"
 #include "SetupDnnModel_Multibuffer.h"
+#include "SetupGmmModel.h"
+#include "SetupMixModel.h"
 #include "SetupMultibiasModel_1.h"
 #include "SetupPoolingModel.h"
 #include "SetupRecurrentModel.h"
-#include "SetupTransposeModel.h"
 #include "SetupSplitModel.h"
+#include "SetupTransposeModel.h"
+
+#include <iostream>
 
 IModelSetup::UniquePtr ModelSetupFactory::CreateModel(ModelSetupType ms)
 {
@@ -174,7 +174,7 @@ IModelSetup::UniquePtr ModelSetupFactory::CreateModel(ModelSetupType ms)
         ptr = std::make_unique<SetupSplitModel>(deviceController, true, false, false);
         break;
     case ModelSetupConvolution_2D:
-        ptr = std::make_unique<SetupConvolutionModel2D>(deviceController, false);
+        ptr = std::make_unique<SetupConvolutionModel2D>(deviceController);
         break;
     }
     return ptr;

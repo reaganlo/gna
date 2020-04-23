@@ -23,9 +23,12 @@
  in any way.
 */
 
-#include <array>
-#include "IModelSetup.h"
+#pragma once
+
 #include "DeviceController.h"
+#include "IModelSetup.h"
+
+#include <array>
 
 class SetupCopyModel : public IModelSetup
 {

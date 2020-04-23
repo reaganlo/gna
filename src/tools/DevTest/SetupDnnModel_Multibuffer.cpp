@@ -24,14 +24,10 @@
 */
 
 #include "SetupDnnModel_Multibuffer.h"
+
 #include "ModelUtilities.h"
 
-#include "gna-api.h"
-#include "gna-api-verbose.h"
-
 #include <cstring>
-#include <cstdlib>
-#include <iostream>
 
 #define UNREFERENCED_PARAMETER(P) ((void)(P))
 
@@ -219,16 +215,16 @@ void SetupDnnModel_Multibuffer::checkReferenceOutput(uint32_t modelIndex, uint32
 void SetupDnnModel_Multibuffer::sampleAffineLayer()
 {
     uint32_t buf_size_weights = static_cast<uint32_t>(weightsAre2Bytes
-        ? ALIGN64(sizeof(weights_2B)) : ALIGN64(sizeof(weights_1B)));
-    uint32_t buf_size_inputs = ALIGN64(sizeof(inputs));
+        ? ModelUtilities::CastAndRoundUpTo64(sizeof(weights_2B)) : ModelUtilities::CastAndRoundUpTo64(sizeof(weights_1B)));
+    uint32_t buf_size_inputs = ModelUtilities::CastAndRoundUpTo64(sizeof(inputs));
     uint32_t buf_size_biases = weightsAre2Bytes
-        ? ALIGN64(static_cast<uint32_t>(sizeof(regularBiases)))
-        : ALIGN64(static_cast<uint32_t>(sizeof(compoundBiases)));
-    uint32_t buf_size_outputs = static_cast<uint32_t>(ALIGN64(outVecSz * groupingNum * sizeof(int32_t)));
-    uint32_t buf_size_tmp_outputs = static_cast<uint32_t>(ALIGN64(outVecSz * groupingNum * sizeof(int32_t)));
-    uint32_t buf_size_pwl = static_cast<uint32_t>(ALIGN64(nSegments * sizeof(Gna2PwlSegment)));
+        ? ModelUtilities::CastAndRoundUpTo64(static_cast<uint32_t>(sizeof(regularBiases)))
+        : ModelUtilities::CastAndRoundUpTo64(static_cast<uint32_t>(sizeof(compoundBiases)));
+    uint32_t buf_size_outputs = static_cast<uint32_t>(ModelUtilities::CastAndRoundUpTo64(outVecSz * groupingNum * sizeof(int32_t)));
+    uint32_t buf_size_tmp_outputs = static_cast<uint32_t>(ModelUtilities::CastAndRoundUpTo64(outVecSz * groupingNum * sizeof(int32_t)));
+    uint32_t buf_size_pwl = static_cast<uint32_t>(ModelUtilities::CastAndRoundUpTo64(nSegments * sizeof(Gna2PwlSegment)));
 
-    uint32_t bytes_requested_al = static_cast<uint32_t>(ALIGN64(indicesCount * sizeof(uint32_t)));
+    uint32_t bytes_requested_al = static_cast<uint32_t>(ModelUtilities::CastAndRoundUpTo64(indicesCount * sizeof(uint32_t)));
     uint32_t bytes_requested_base = buf_size_weights + buf_size_biases;
     uint32_t bytes_requested_io = buf_size_inputs + buf_size_outputs;
     uint32_t bytes_requested_pwl = buf_size_pwl + buf_size_tmp_outputs;
@@ -276,42 +272,21 @@ void SetupDnnModel_Multibuffer::sampleAffineLayer()
         memcpy(indices, alIndices, indicesCount * sizeof(uint32_t));
     }
 
-    operations = static_cast<Gna2Operation*>(calloc(1, sizeof(Gna2Operation)));
-    tensors = static_cast<Gna2Tensor*>(calloc(5, sizeof(Gna2Tensor)));
-    tensors[0] = Gna2TensorInit2D(inVecSz, groupingNum,
-        Gna2DataTypeInt16, inputBuffer);
-    tensors[1] = Gna2TensorInit2D(outVecSz, groupingNum,
-        Gna2DataTypeInt32, outputBuffer);
+    operationHolder.InitAffineEx(inVecSz, outVecSz, groupingNum, inputBuffer, outputBuffer,
+        pinned_weights, weightsAre2Bytes ? Gna2DataTypeInt16 : Gna2DataTypeInt8,
+        pinned_biases, weightsAre2Bytes ? Gna2DataTypeInt32 : Gna2DataTypeCompoundBias);
 
-    tensors[2] = Gna2TensorInit2D(outVecSz, inVecSz,
-        weightsAre2Bytes ? Gna2DataTypeInt16 : Gna2DataTypeInt8,
-        pinned_weights);
-    tensors[3] = Gna2TensorInit1D(inVecSz,
-        weightsAre2Bytes ? Gna2DataTypeInt32 : Gna2DataTypeCompoundBias,
-        pinned_biases);
-    tensors[4] = Gna2TensorInitDisabled();
     if (pwlEnabled)
     {
         pwlMemory = deviceController.Alloc(bytes_requested_pwl, &bytes_granted);
-        uint8_t* pwlMemoryPosition = static_cast<uint8_t*>(pwlMemory);
-        tmpOutputs = pwlMemoryPosition;
-        pwlMemoryPosition += buf_size_tmp_outputs;
 
-        Gna2PwlSegment* pinned_pwl = reinterpret_cast<Gna2PwlSegment*>(pwlMemoryPosition);
+        Gna2PwlSegment* pinned_pwl = reinterpret_cast<Gna2PwlSegment*>(pwlMemory);
 
         samplePwl(pinned_pwl, nSegments);
-        tensors[1] = Gna2TensorInit2D(outVecSz, groupingNum, Gna2DataTypeInt16, nullptr);
-        tensors[4] = Gna2TensorInit1D(nSegments, Gna2DataTypePwlSegment, pinned_pwl);
+        operationHolder.AddPwl(nSegments, pinned_pwl, Gna2DataTypeInt16);
     }
 
-    Gna2OperationInitFullyConnectedAffine(
-        operations, &Allocator,
-        &tensors[0], &tensors[1],
-        &tensors[2], &tensors[3],
-        &tensors[4]
-    );
-
-    model = { 1, operations };
+    model = { 1, &operationHolder.Get() };
 }
 
 void SetupDnnModel_Multibuffer::samplePwl(Gna2PwlSegment* segments, uint32_t numberOfSegments)

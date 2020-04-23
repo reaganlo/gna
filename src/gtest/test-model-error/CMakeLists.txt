@@ -38,7 +38,7 @@ add_executable(${TARGET_NAME}
   test-model-error.hpp)
 
 target_include_directories(${TARGET_NAME}
-  PRIVATE ${SRC_DIR} ${COMMON_DIR} ${API_DIR} ${API_IMPL_DIR} ${KERNEL_DIR} ${GNA_HW_LIB_INCLUDE_PATH})
+  PRIVATE ${SRC_DIR} ${COMMON_DIR} ${API_DIR} ${API_IMPL_DIR} ${KERNEL_DIR} ${GNA_HW_LIB_INCLUDE_PATH} ${COMMON_TOOLS_DIR})
 
 target_compile_definitions(${TARGET_NAME} PRIVATE -DOPTGEN)
 
