@@ -224,10 +224,20 @@ typedef struct
 
 static_assert(32 == sizeof(GNA_DRIVER_INSTRUMENTATION), "Invalid size of GNA_DRIVER_INSTRUMENTATION");
 
+/**
+ \brief Windows OS's inference configuration structure.
+
+ Describes request for GNA computation.
+ Used in GNA Library 2.0.
+ Actual structure has variable size dependent on the bufferCount and GNA_MEMORY_BUFFER::patchCount
+ and the actual sizes of the patches.
+ */
 typedef struct _INFERENCE_CONFIG_IN
 {
-    // scoring mode
-    // @note This must be first field as it's required to be compatible with legacy GNA_CALC_IN
+    /**
+     scoring mode
+     @note This must be first field as it's required to be compatible with legacy GNA_CALC_IN
+     */
     CTRL_FLAGS ctrlFlags;
 
     // layer base / offset to gmm descriptor

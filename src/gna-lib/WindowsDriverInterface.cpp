@@ -191,7 +191,15 @@ void WindowsDriverInterface::MemoryUnmap(uint64_t memoryId)
     wait(*memoryMapOverlapped, recoveryTimeout);
     memoryMapRequests.erase(memoryId);
 }
+/**
+ Send workload to GNA driver for computation.
+ The workload is sent in a form of Write Request.
+ Write Request is done in a synchronous manner.
+ For request description #GNA_INFERENCE_CONFIG_IN is used.
 
+ @param hardwareRequest Description of request.
+ @param profiler Request profiling information to be filled.
+ */
 RequestResult WindowsDriverInterface::Submit(HardwareRequest& hardwareRequest,
     RequestProfiler * const profiler) const
 {
