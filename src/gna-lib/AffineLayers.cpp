@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2019 Intel Corporation.
+ Copyright 2019-2020 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -120,7 +120,11 @@ Tensor const & AffineBaseLayer::GetOperand(uint32_t operandIndex) const
     switch (operandIndex)
     {
     case ScratchpadOperandIndex:
-        return Output.ScratchPad;
+        if (Transforms.Get(ActivationTransform))
+        {
+            return Output.ScratchPad;
+        }
+        throw GnaException(Gna2StatusXnnErrorLyrCfg);
     case WeightOperandIndex: //[[fallthrough]]
     case BiasOperandIndex: //[[fallthrough]]
     case WeightScaleFactorOperandIndex:

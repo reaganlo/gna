@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2019 Intel Corporation.
+ Copyright 2019-2020 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -72,7 +72,7 @@ public:
     static constexpr uint32_t BarIndexOutput = 3;
 
 protected:
-    virtual void allocateLayerDescriptors() override;
+    virtual void prepareAllocationsAndModel() override;
 
 private:
     static HardwareCapabilities noMMUCapabilities;

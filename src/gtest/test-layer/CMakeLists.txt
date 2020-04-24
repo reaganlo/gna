@@ -1,5 +1,5 @@
 #INTEL CONFIDENTIAL
-#Copyright 2019 Intel Corporation.
+#Copyright 2019-2020 Intel Corporation.
 
 #The source code contained or described herein and all documents related
 #to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -38,7 +38,7 @@ if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux" OR ${CMAKE_SYSTEM_NAME} STREQUAL "Andro
   set(EXTRA_DEFS "")
 elseif(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
   set(EXTRA_LIBS "setupapi.lib")
-  set(EXTRA_DEFS "INTEL_GNA_DLLEXPORT=1")
+  set(EXTRA_DEFS "INTEL_GNA_DLLEXPORT=1" -DGNA_LIBRARY_VERSION_STRING=\"2.1.0.0\")
   set(gna_test_layer_compile_options )
 endif()
 

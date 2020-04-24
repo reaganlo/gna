@@ -22,12 +22,9 @@
 #ifndef __GNA_DEBUG_API_H
 #define __GNA_DEBUG_API_H
 
-#include <stdint.h>
-
-#include "gna-api.h"
 #include "gna-api-status.h"
-#include "gna-api-types-gmm.h"
-#include "gna-api-types-xnn.h"
+
+#include <stdint.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -101,7 +98,7 @@ typedef struct _dbg_action
     dbg_action_type action_type;
     const char *filename;
     const char *log_message;
-    gna_timeout timeout;
+    uint32_t timeout;
 
     struct _gna_register_params
     {
@@ -134,13 +131,13 @@ typedef struct _dbg_action
  * @param nActions
  * @param pActions
  */
-GNAAPI intel_gna_status_t GnaModelSetPrescoreScenario(
-    gna_model_id modelId,
+GNA2_API intel_gna_status_t GnaModelSetPrescoreScenario(
+    uint32_t modelId,
     uint32_t nActions,
     dbg_action *pActions);
 
-GNAAPI intel_gna_status_t GnaModelSetAfterscoreScenario(
-    gna_model_id modelId,
+GNA2_API intel_gna_status_t GnaModelSetAfterscoreScenario(
+    uint32_t modelId,
     uint32_t nActions,
     dbg_action *pActions);
 

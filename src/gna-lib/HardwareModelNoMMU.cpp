@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2019 Intel Corporation.
+ Copyright 2019-2020 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -91,7 +91,7 @@ uint32_t HardwareModelNoMMU::GetInputOffset(uint32_t layerIndex) const
     return layer.GetLdInputOffset() - GetDescriptor(0).GetOffset();
 }
 
-void HardwareModelNoMMU::allocateLayerDescriptors()
+void HardwareModelNoMMU::prepareAllocationsAndModel()
 {
     Expect::InRange(model.LayerCount, ui32_1, hwCapabilities.GetMaximumLayerCount(),
         Gna2StatusXnnErrorNetLyrNo);
@@ -106,6 +106,8 @@ void HardwareModelNoMMU::allocateLayerDescriptors()
     memset(ldMemory->GetBuffer(), 0, ldMemorySize);
 
     prepareBaseDescriptor();
+
+    getHwOffsetFunction = [this](const BaseAddress& buffer) { return GetBufferOffset(buffer); };
 }
 
 uint32_t HardwareModelNoMMU::SetBarIndex(uint32_t offsetFromBar, uint32_t barIndex)

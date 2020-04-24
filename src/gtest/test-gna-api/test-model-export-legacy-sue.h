@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2019 Intel Corporation.
+ Copyright 2019-2020 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -49,6 +49,13 @@ static void GNA_OK_helper(const char* what, Gna2Status status)
 class TestSimpleModel : public TestGnaApi
 {
 protected:
+
+    void TearDown() override
+    {
+        FreeAndClose();
+        TestGnaApi::TearDown();
+    }
+
     int16_t weights[8 * 16] = {                                          // sample weight matrix (8 rows, 16 cols)
     -6, -2, -1, -1, -2,  9,  6,  5,  2,  4, -1,  5, -2, -4,  0,  9,  // in case of affine layer this is the left operand of matrix mul
     -8,  8, -4,  6,  5,  3, -7, -9,  7,  0, -4, -1,  1,  7,  6, -6,  // in this sample the numbers are random and meaningless
@@ -117,7 +124,6 @@ protected:
     const int buf_size_inputs = ALIGN64(sizeof(inputs));
     const int buf_size_biases = ALIGN64(sizeof(biases));
     const int buf_size_outputs = ALIGN64(8 * 4 * 4);
-    const int buf_size_tmp_outputs = ALIGN64(8 * 4 * 4);
     const int buf_size_identity_pwl = ALIGN64(sizeof(identityPwl));
 
     void* AllocatorAligned64(uint32_t size) {
@@ -137,9 +143,9 @@ protected:
     const uint32_t expectedModelSize = 8512;
     const uint32_t expectedHeaderSize = 64;
 
-    const uint32_t expected_headerHash = 0xef63a03e;
+    const uint32_t expected_headerHash = 0xecf42aea;
     const uint32_t expected_modelHash = 0x93759a0d;
-    const uint32_t expected_fileHash = 0xbbea28e9;
+    const uint32_t expected_fileHash = 0xc8f5660a;
 
     // Based on
     // Simple public domain implementation of the standard CRC32 checksum.
@@ -169,9 +175,8 @@ protected:
     }
 
     void SetupGnaMemPointers(bool setupPwl, bool setupInputsOutputs);
-    void CopyDataToGnaMem(bool copyPwl, bool copyInputs);
-    void SetupNnet();
-    void FreeAndClose2();
+    void CopyDataToGnaMem(bool copyPwl, bool copyInputs) const;
+    void FreeAndClose();
     intel_nnet_layer_t nnet_layer = {};
     intel_nnet_type_t nnet = { 1,4, &nnet_layer };
     intel_affine_layer_t affine_layer{};
@@ -193,6 +198,7 @@ protected:
     bool minimizeRw = false;
     bool separateInputAndOutput = false;
     void SetupGnaModel();
+    void SetupGnaModelSue();
     void CreateGnaModel();
 
     void ExportSueLegacyUsingGnaApi2(Gna2ModelSueCreekHeader& modelHeader, std::vector<char>& dump);
@@ -213,15 +219,14 @@ protected:
 
     uint32_t deviceIndex = 0;
     uint32_t rw_buffer_size = 0;
+    uint32_t ro_buffer_size = 0;
     void *memory = nullptr;
     uint32_t memorySize = 0;
-private:
     uint32_t gnamem_pinned_inputs_size = 0;
     uint32_t gnamem_pinned_outputs_size = 0;
 
     int16_t* gnamem_pinned_inputs = nullptr;
     int16_t* gnamem_pinned_outputs = nullptr;
-    int32_t* gnamem_tmp_outputs_buffer = nullptr;
     int16_t* gnamem_weights_buffer = nullptr;
     int32_t* gnamem_biases_buffer = nullptr;
     Gna2PwlSegment* gnamem_pwl_buffer = nullptr;

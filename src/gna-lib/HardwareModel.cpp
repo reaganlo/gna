@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2020 Intel Corporation.
+ Copyright 2018-2020 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -62,7 +62,7 @@ HardwareModel::HardwareModel(CompiledModel const & softwareModel, const Hardware
 }
 
 //TODO:3: Remove and use HardwareModel per SubModel
-bool IsSoftwareLayer(const std::vector<std::unique_ptr<SubModel>>& submodels, uint32_t layerIndex)
+bool HardwareModel::IsSoftwareLayer(const std::vector<std::unique_ptr<SubModel>>& submodels, uint32_t layerIndex)
 {
     for (const auto& subModel : submodels)
     {
@@ -77,13 +77,7 @@ bool IsSoftwareLayer(const std::vector<std::unique_ptr<SubModel>>& submodels, ui
 
 void HardwareModel::Build(const std::vector<std::unique_ptr<SubModel>>& submodels)
 {
-    allocateLayerDescriptors();
-    allocations.Append(model.GetAllocations());
-
-    // TODO:3:Validation is not correct for embedded platforms, fixme
-    auto const modelSize = allocations.GetMemorySizeAlignedToPage();
-    Expect::InRange(modelSize, hwCapabilities.MaximumModelSize,
-                    Gna2StatusMemoryTotalSizeExceeded);
+    prepareAllocationsAndModel();
 
     auto gmmDescriptor = AddrGmmCfg();
     if (0 != gmmDescriptorsSize)
@@ -92,7 +86,7 @@ void HardwareModel::Build(const std::vector<std::unique_ptr<SubModel>>& submodel
                 LayerDescriptor::GetSize(model.LayerCount, hwCapabilities.GetDeviceVersion()));
     }
     auto layerDescriptor = LayerDescriptor(*baseDescriptor, gmmDescriptor,
-        [this](const BaseAddress& buffer) { return GetBufferOffset(buffer); });
+        getHwOffsetFunction);
     auto i = uint32_t { 0 };
     for (auto const & layerIter : model.GetLayers())
     {
@@ -167,7 +161,7 @@ uint32_t HardwareModel::getGmmDescriptorsSize(const uint32_t gmmLayersCount)
     return static_cast<uint32_t>(gmmDescriptorsSizeTmp);
 }
 
-void HardwareModel::allocateLayerDescriptors()
+void HardwareModel::prepareAllocationsAndModel()
 {
     Expect::InRange(model.LayerCount, ui32_1, HardwareCapabilities::GetMaximumLayerCount(DefaultDeviceVersion),
         Gna2StatusXnnErrorNetLyrNo);
@@ -181,6 +175,15 @@ void HardwareModel::allocateLayerDescriptors()
     }
 
     prepareBaseDescriptor();
+
+    allocations.Append(model.GetAllocations());
+
+    // TODO:3:Validation is not correct for embedded platforms, fixme
+    auto const modelSize = allocations.GetMemorySizeAlignedToPage();
+    Expect::InRange(modelSize, hwCapabilities.MaximumModelSize,
+        Gna2StatusMemoryTotalSizeExceeded);
+
+    getHwOffsetFunction = [this](const BaseAddress& buffer) { return GetBufferOffset(buffer); };
 }
 
 void HardwareModel::prepareBaseDescriptor()

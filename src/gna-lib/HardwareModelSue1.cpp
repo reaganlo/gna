@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2018 Intel Corporation.
+ Copyright 2018-2020 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -25,16 +25,13 @@
 
 #include "HardwareModelSue1.h"
 
+#include <AffineLayers.h>
 #include "CompiledModel.h"
 #include "GnaException.h"
 #include "HardwareLayer.h"
 #include "LayerDescriptor.h"
 #include "Layer.h"
 #include "Memory.h"
-
-#include "gna-api-status.h"
-
-#include <algorithm>
 
 using namespace GNA;
 
@@ -64,13 +61,26 @@ uint32_t HardwareModelSue1::GetInputOffset(uint32_t layerIndex) const
     return layer.GetLdInputOffset() - GetDescriptor(0).GetOffset();
 }
 
-void HardwareModelSue1::allocateLayerDescriptors()
+void HardwareModelSue1::prepareAllocationsAndModel()
 {
     Expect::InRange(model.LayerCount, ui32_1, hwCapabilities.GetMaximumLayerCount(),
         Gna2StatusXnnErrorNetLyrNo);
-    auto const ldMemorySize = RoundUp(HardwareModel::calculateDescriptorSize(false), PAGE_SIZE);
-    auto const modelSize = model.GetSize();
-    totalModelSize = ldMemorySize + modelSize;
+
+    auto const ldMemorySize = RoundUp(calculateDescriptorSize(false), PAGE_SIZE);
+
+    uint32_t scratchPadSize = 0;
+    for (auto const & layer : model.GetLayers())
+    {
+        auto const scratchPad = layer->TryGetOperand(ScratchpadOperandIndex);
+        if (scratchPad)
+        {
+            scratchPadSize += scratchPad->Size;
+        }
+    }
+
+    auto const rw = model.GetAllocations()[0];
+    auto const ro = model.GetAllocations()[1];
+    totalModelSize = ldMemorySize + rw.GetSize() + scratchPadSize + ro.GetSize();
 
     exportMemory = customAlloc(totalModelSize);
     if (!exportMemory)
@@ -84,12 +94,34 @@ void HardwareModelSue1::allocateLayerDescriptors()
     {
         throw GnaException{ Gna2StatusResourceAllocationError };
     }
-
     prepareBaseDescriptor();
+
+    allocations.Emplace(rw);
+
+    if (scratchPadSize > 0)
+    {
+        scratchPadMemory = std::make_unique<Memory>(
+            static_cast<uint8_t*>(exportMemory) + allocations.GetMemorySize(), scratchPadSize);
+        if (!scratchPadMemory)
+        {
+            throw GnaException{ Gna2StatusResourceAllocationError };
+        }
+        allocations.Emplace(*scratchPadMemory);
+    }
+
+    allocations.Emplace(ro);
+
+    Expect::InRange(totalModelSize, static_cast<uint32_t>(2 * 1024 * 1024),
+                    Gna2StatusMemoryTotalSizeExceeded);
+    getHwOffsetFunction = [this](const BaseAddress& buffer) { return GetBufferOffset(buffer); };
 }
 
 uint32_t HardwareModelSue1::GetBufferOffset(const BaseAddress& address) const
 {
+    if (address == AffineBaseLayer::GetGlobal2MBScratchpad())
+    {
+        return static_cast<uint32_t>(scratchPadMemory->GetBuffer<uint8_t>() - static_cast<uint8_t*>(exportMemory));
+    }
     return allocations.GetBufferOffset(address);
 }
 
@@ -98,8 +130,13 @@ void * HardwareModelSue1::Export()
     Build({});
 
     // copying data..
-    void * data = static_cast<uint8_t*>(exportMemory) + ldMemory->GetSize();
-    model.CopyData(data, model.GetSize());
+    auto const & rw = allocations[1];
+    auto const & ro = allocations.back();
+    void * destination = static_cast<uint8_t*>(exportMemory) + ldMemory->GetSize();
+    memcpy_s(destination, totalModelSize, rw.GetBuffer(), rw.GetSize());
+    auto const roSize = ro.GetSize();
+    destination = static_cast<uint8_t*>(exportMemory) + totalModelSize - roSize;
+    memcpy_s(destination, totalModelSize, ro.GetBuffer(), roSize);
 
     return exportMemory;
 }

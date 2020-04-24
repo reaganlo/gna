@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2020 Intel Corporation.
+ Copyright 2018-2020 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -80,9 +80,11 @@ protected:
         DeviceVersion deviceVersion = DefaultDeviceVersion);
     static uint32_t getGmmDescriptorsSize(const uint32_t gmmLayersCount);
 
-    virtual void allocateLayerDescriptors();
+    virtual void prepareAllocationsAndModel();
 
     void prepareBaseDescriptor();
+
+    bool IsSoftwareLayer(const std::vector<std::unique_ptr<SubModel>>& submodels, uint32_t layerIndex);
 
     std::unique_ptr<LayerDescriptor> baseDescriptor;
 
@@ -102,6 +104,8 @@ protected:
     MemoryContainer allocations;
 
     std::unique_ptr<HwModuleInterface const> const HwModule;
+
+    GetHwOffset getHwOffsetFunction;
 };
 
 }

@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2019 Intel Corporation.
+ Copyright 2019-2020 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -25,10 +25,9 @@
 
 #include "test-model-export-legacy-sue.h"
 
+#include "gna2-api.h"
 #include "gna2-capability-api.h"
-#include "gna2-common-api.h"
 #include "gna2-model-export-api.h"
-#include "gna2-model-suecreek-header.h"
 
 #include <cstdint>
 #include <fstream>
@@ -81,6 +80,15 @@ const std::vector<uint8_t> refLDFromTlvNoMmuApi2_TagMemory = {
 class TestSimpleModelTlv : public TestSimpleModel
 {
 protected:
+    struct DebugExtra
+    {
+        char extraString[24];
+        uint32_t InputElementSize;
+        uint32_t OutputElementSize;
+        uint32_t NumberOfInputNodes;
+        uint32_t NumberOfOutputNodes;
+    };
+
     std::vector<char> Gna3DumpNoMmuTlv();
 
     static void ExpectLdEqual(const std::vector<char>& tlv, const std::vector<uint8_t>& ref)
@@ -113,12 +121,14 @@ std::vector<char> TestSimpleModelTlv::Gna3DumpNoMmuTlv()
     auto debugString = debugStream.str();
     debugString.resize(Gna2RoundUp(static_cast<uint32_t>(debugString.size()), 4), ' ');
 
-    struct DebugExtra {
-        const char extraString[24] = "Gna2ModelSueCreekHeader";
-        Gna2ModelSueCreekHeader sueHeader = {};
-    } dbgExtra;
-
-    ExportComponentAs(dbgExtra.sueHeader, Gna2DeviceVersionEmbedded1_0, Gna2ModelExportComponentLegacySueCreekHeader);
+    DebugExtra dbgExtra =
+    {
+        "Gna2ModelSueCreekHeader",
+        Gna2DataTypeGetSize(inputTensor.Type),
+        Gna2DataTypeGetSize(outputTensor.Type),
+        inputTensor.Shape.Dimensions[0],
+        outputTensor.Shape.Dimensions[0]
+    };
 
     const uint32_t additionalScratchBufferSize = 0x2000;
 
@@ -132,8 +142,8 @@ std::vector<char> TestSimpleModelTlv::Gna3DumpNoMmuTlv()
     const uint32_t recordWithSizeInTlvSize = tlvHeaderSize + sizeInTlvSize;
 
     const std::vector<std::pair<const char *, uint32_t> > recordsWithSizeOnly = {
-        { "IN", dbgExtra.sueHeader.InputElementSize * dbgExtra.sueHeader.NumberOfInputNodes },
-        { "OUT", dbgExtra.sueHeader.OutputElementSize * dbgExtra.sueHeader.NumberOfOutputNodes},
+        { "IN", dbgExtra.InputElementSize * dbgExtra.NumberOfInputNodes },
+        { "OUT", dbgExtra.OutputElementSize * dbgExtra.NumberOfOutputNodes},
         { "SCRA", additionalScratchBufferSize} };
 
     // TODO: GNA2: remove DBG
@@ -186,7 +196,11 @@ TEST_F(TestSimpleModelTlv, exportTlvNoMmuApi2)
     const auto out = Gna3DumpNoMmuTlv();
     // DumpToFile(test_info_->name() + std::string(".tlv"), out);
     ExpectLdEqual(out, refLDFromTlvNoMmuApi2);
-    FreeAndClose2();
+    if (!separateInputAndOutput)
+    {
+        gnamem_pinned_inputs = nullptr;
+        gnamem_pinned_outputs = nullptr;
+    }
 }
 
 TEST_F(TestSimpleModelTlv, exportTlvNoMmuApi2_TagMemory)
@@ -198,5 +212,9 @@ TEST_F(TestSimpleModelTlv, exportTlvNoMmuApi2_TagMemory)
     const auto out = Gna3DumpNoMmuTlv();
     // DumpToFile(test_info_->name() + std::string(".tlv"), out);
     ExpectLdEqual(out, refLDFromTlvNoMmuApi2_TagMemory);
-    FreeAndClose2();
+    if (!separateInputAndOutput)
+    {
+        gnamem_pinned_inputs = nullptr;
+        gnamem_pinned_outputs = nullptr;
+    }
 }

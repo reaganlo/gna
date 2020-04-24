@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2018 Intel Corporation.
+ Copyright 2018-2020 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -34,7 +34,6 @@
 
 #include <cstdint>
 #include <memory>
-#include <vector>
 
 namespace GNA
 {
@@ -63,7 +62,7 @@ namespace GNA
         void PopulateHeader(intel_gna_model_header& modelHeader) const;
 
     protected:
-        virtual void allocateLayerDescriptors() override;
+        virtual void prepareAllocationsAndModel() override;
 
     private:
         static HardwareCapabilities sueCapabilities;
@@ -73,6 +72,9 @@ namespace GNA
         void * exportMemory = nullptr;
 
         uint32_t totalModelSize;
+
+        std::unique_ptr<Memory> scratchPadMemory;
+
     };
 
 }

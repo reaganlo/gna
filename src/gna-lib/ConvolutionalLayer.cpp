@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2018 Intel Corporation.
+ Copyright 2018-2020 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -96,7 +96,11 @@ Tensor const & CnnLayer::GetOperand(uint32_t operandIndex) const
     switch (operandIndex)
     {
     case ScratchpadOperandIndex:
-        return Output.ScratchPad;
+        if (Activation)
+        {
+            return Output.ScratchPad;
+        }
+        throw GnaException(Gna2StatusXnnErrorLyrCfg);
     case FilterOperandIndex:
         if (Convolution)
         {

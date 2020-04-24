@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2018 Intel Corporation.
+ Copyright 2018-2020 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -79,7 +79,7 @@ protected:
     std::map<uint32_t, std::unique_ptr<HardwareRequest>> hardwareRequests;
     std::mutex hardwareRequestsLock;
 
-    virtual void allocateLayerDescriptors() override;
+    virtual void prepareAllocationsAndModel() override;
 };
 
 }

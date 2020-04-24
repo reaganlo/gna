@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2019 Intel Corporation.
+ Copyright 2019-2020 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -164,8 +164,9 @@ void HardwareModelScorable::ValidateConfigBuffer(MemoryContainer const & request
         Gna2StatusMemoryTotalSizeExceeded);
 }
 
-void HardwareModelScorable::allocateLayerDescriptors()
+void HardwareModelScorable::prepareAllocationsAndModel()
 {
-    HardwareModel::allocateLayerDescriptors();
+    HardwareModel::prepareAllocationsAndModel();
     ldMemory->Map(driverInterface);
+    getHwOffsetFunction = [this](const BaseAddress& buffer) { return GetBufferOffset(buffer); };
 }

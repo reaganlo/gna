@@ -32,23 +32,6 @@
 extern "C" {
 #endif
 
-/** Library API import/export macros */
-#if !defined(GNAAPI)
-#    if 1 == _WIN32
-#       if 1 == INTEL_GNA_DLLEXPORT
-#           define GNAAPI __declspec(dllexport)
-#       else
-#           define GNAAPI __declspec(dllimport)
-#       endif
-#    else
-#        if __GNUC__ >= 4
-#           define GNAAPI __attribute__ ((visibility ("default")))
-#        else
-#           define GNAAPI
-#        endif
-#    endif
-#endif
-
 /** GNA API Status codes */
 typedef enum _gna_status_t
 {
@@ -171,15 +154,6 @@ static_assert(4 == sizeof(intel_gna_status_t), "Invalid size of intel_gna_status
 
 /** Constant indicating that feature is not available. */
 #define GNA_NOT_SUPPORTED (0x80000000)
-
-/**
- * Gets printable status name with the description as a c-string
- *
- * @param status        A status to translate.
- * @return A c-string status with the description.
- */
-GNAAPI char const * GnaStatusToString(
-    intel_gna_status_t status);
 
 #ifdef __cplusplus
 }
