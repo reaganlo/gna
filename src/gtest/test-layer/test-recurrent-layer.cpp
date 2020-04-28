@@ -138,61 +138,6 @@ const int16_t TestRecurrentLayer::refOutput[numberOfVectors * outputVolume]
 {
 };
 
-TEST_F(TestRecurrentLayer, RecurrentTest2BLegacy)
-{
-    intel_nnet_layer_t apiLayer;
-    memset(&apiLayer, 0, sizeof(apiLayer));
-
-    apiLayer.mode = INTEL_HIDDEN;
-    apiLayer.operation = INTEL_RECURRENT;
-
-    apiLayer.nBytesPerInput = 2;
-    apiLayer.nInputRows = numberOfVectors;
-    apiLayer.nInputColumns = inputVolume;
-    apiLayer.pInputs = alignedInput;
-    memcpy_s(alignedInput, sizeof(int16_t) * numberOfVectors * inputVolume, input, sizeof(input));
-
-    apiLayer.nBytesPerOutput = 2;
-    apiLayer.nBytesPerIntermediateOutput = 4;
-    apiLayer.nOutputRows = numberOfVectors;
-    apiLayer.nOutputColumns = outputVolume;
-    apiLayer.pOutputsIntermediate = alignedIntermediateOutput;
-    apiLayer.pOutputs = alignedOutput;
-
-    intel_affine_func_t affineFunc;
-    affineFunc.nBytesPerWeight = 2;
-    affineFunc.pWeights = alignedWeight;
-    auto weightSize = sizeof(int16_t) * (inputVolume + outputVolume) * outputVolume;
-    memcpy_s(alignedWeight, weightSize, weight, sizeof(weight));
-    affineFunc.nBytesPerBias = 4;
-    affineFunc.pBiases = alignedBias;
-    memcpy_s(alignedBias, sizeof(int32_t) * outputVolume, bias, sizeof(bias));
-
-    intel_pwl_func_t pwl;
-    pwl.nSegments = numberOfSegments;
-    pwl.pSegments = static_cast<intel_pwl_segment_t *>(alignedPwlSegments);
-    samplePwl(static_cast<intel_pwl_segment_t *>(alignedPwlSegments), numberOfSegments);
-
-    intel_recurrent_layer_t layer;
-    layer.feedbackFrameDelay = 2;
-    layer.affine = affineFunc;
-    layer.pwl = pwl;
-
-    apiLayer.pLayerStruct = &layer;
-
-    auto rnnLayer = Layer::Create(apiLayer, emptyValidator);
-    ASSERT_NE(rnnLayer, nullptr);
-
-    uint32_t saturationCount;
-    auto executionConfig = ExecutionConfig{ &kernelBuffers, &saturationCount, 0 };
-    auto acceleration = AccelerationMode(Gna2AccelerationModeGeneric, false);
-
-    rnnLayer->ComputeHidden(acceleration, executionConfig);
-
-    // TODO: compute reference outputs
-    //VerifyOutputs(alignedOutput, refOutputRecurrent);
-}
-
 TEST_F(TestRecurrentLayer, RecurrentTest2B)
 {
     Gna2Operation affineOperation;

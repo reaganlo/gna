@@ -94,17 +94,6 @@ void SoftwareModel::FindMaximumOperandSizeForSingleLayer(Layer const & layer,
     maxSize = ((maxSize) > (operandSize)) ? (maxSize) : (operandSize);
 }
 
-//TODO:3:P2: change to template
-SoftwareModel::SoftwareModel(const gna_model& network,
-    BaseValidator validator,
-    const std::vector<Gna2AccelerationMode>& supportedCpuAccelerationsIn) :
-    layerCount{ network.nLayers },
-    supportedCpuAccelerations{ supportedCpuAccelerationsIn }
-{
-    CheckModel(network.nGroup, network.pLayers);
-    build(network.pLayers, validator);
-}
-
 SoftwareModel::SoftwareModel(const Gna2Model& model,
     BaseValidator validator,
     const std::vector<Gna2AccelerationMode>& supportedCpuAccelerationsIn) :

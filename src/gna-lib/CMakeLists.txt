@@ -84,7 +84,6 @@ set(GNA_API_PDB_STRIPPED ${GNA_LIB_RELEASE_OUT_DIR}/gnaPublic.pdb)
 set(GNA_API_VERBOSE_PDB_STRIPPED ${GNA_LIB_VERBOSE_RELEASE_OUT_DIR}/gna-verbosePublic.pdb)
 
 set(gna_lib_sources ${gna_lib_sources}
-  ${SRC_DIR}/api.cpp
   ${SRC_DIR}/AccelerationDetector.cpp
   ${SRC_DIR}/ActivationFunction.cpp
   ${SRC_DIR}/ActivationHelper.cpp
@@ -178,8 +177,7 @@ set(gna_api_headers
   ${COMMON_DIR}/gna-api.h
   ${COMMON_DIR}/gna-api-types-xnn.h
   ${COMMON_DIR}/gna-api-types-gmm.h
-  ${COMMON_DIR}/gna-api-status.h
-  ${COMMON_DIR}/gna-api-dumper.h)
+  ${COMMON_DIR}/gna-api-status.h)
 
 set(gna_lib_headers
   ${SRC_DIR}/AccelerationDetector.h
@@ -398,92 +396,6 @@ if(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
   add_custom_command(TARGET gna-api POST_BUILD
     COMMAND
     echo $(API_DLL) version: $(VERSION_QB_A) ($(VERSION_FILE_A)) > $(OutDir)$(API_DLL).ver)
-endif()
-
-if(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
-
-  set(verbose_sources
-    ${SRC_DIR}/CompiledModelVerbose.h
-    ${SRC_DIR}/DeviceVerbose.h
-    ${SRC_DIR}/HardwareModelVerbose.h
-    ${SRC_DIR}/HardwareModelVerbose.cpp
-    ${SRC_DIR}/MemoryVerbose.h
-    ${SRC_DIR}/api-verbose.cpp
-    ${API_IMPL_DIR}/gna2-validation-impl.cpp)
-
-  source_group("Verbose Source Files" FILES ${verbose_sources})
-
-  set(api_headers_verbose_only
-    ${COMMON_DIR}/gna-api-verbose.h
-    ${API_DIR}/gna2-validation-api.h)
-
-  set(api_headers_verbose
-    ${api_headers}
-    ${api_headers_verbose_only})
-
-  source_group("Api2 Verbose" FILES ${api_headers_verbose_only})
-
-
-  add_library(gna-api-verbose SHARED)
-
-  target_include_directories(gna-api-verbose
-    PRIVATE ${SRC_DIR} ${API_DIR} ${API_IMPL_DIR} ${KERNEL_DIR} ${GNA_HW_LIB_INCLUDE_PATH}
-    PUBLIC ${COMMON_DIR})
-
-  target_sources(gna-api-verbose
-    PRIVATE ${common_sources} ${gna_lib_sources} ${gna_lib_headers} ${api_headers_verbose} ${kernel_api_headers} ${verbose_sources} ${gna_hw_module_interface_sources}
-    PUBLIC ${api_headers_verbose})
-
-  set_target_properties(gna-api-verbose
-    PROPERTIES
-    FOLDER library
-    LIBRARY_OUTPUT_DIRECTORY_${OS_PREFIX}_DEBUG ${GNA_LIB_VERBOSE_DEBUG_OUT_DIR}
-    LIBRARY_OUTPUT_DIRECTORY_${OS_PREFIX}_RELEASE ${GNA_LIB_VERBOSE_RELEASE_OUT_DIR}
-    ARCHIVE_OUTPUT_DIRECTORY_${OS_PREFIX}_DEBUG ${GNA_LIB_VERBOSE_DEBUG_OUT_DIR}
-    ARCHIVE_OUTPUT_DIRECTORY_${OS_PREFIX}_RELEASE ${GNA_LIB_VERBOSE_RELEASE_OUT_DIR}
-    RUNTIME_OUTPUT_DIRECTORY_${OS_PREFIX}_DEBUG ${GNA_LIB_VERBOSE_DEBUG_OUT_DIR}
-    RUNTIME_OUTPUT_DIRECTORY_${OS_PREFIX}_RELEASE ${GNA_LIB_VERBOSE_RELEASE_OUT_DIR}
-    VS_USER_PROPS ${CMAKE_SOURCE_DIR}/build/common/version-dll.props
-    EXCLUDE_FROM_DEFAULT_BUILD_KLOCWORK TRUE
-    OUTPUT_NAME gna-verbose)
-
-  set_property(TARGET gna-api-verbose PROPERTY COMPILE_FLAGS "/WX")
-
-  target_compile_definitions(gna-api-verbose
-    PRIVATE
-    ${GNA_COMPILE_DEFS}
-    $<$<CONFIG:${OS_PREFIX}_DEBUG>:${GNA_COMPILE_DEFS_DEBUG}>
-    $<$<CONFIG:${OS_PREFIX}_RELEASE>:${GNA_COMPILE_DEFS_RELEASE}>
-    $<$<CONFIG:KLOCWORK>:${GNA_COMPILE_DEFS_RELEASE}>
-    ${GNA_LIBRARY_VER}
-    ${API_EXTRA_DEFS} -DPROFILE -DPROFILE_DETAILED -DHW_VERBOSE=1 -DDUMP_ENABLED)
-
-  target_compile_options(gna-api-verbose
-    PRIVATE
-    ${GNA_COMPILE_FLAGS}
-    $<$<CONFIG:${OS_PREFIX}_DEBUG>:${GNA_COMPILE_FLAGS_DEBUG}>
-    $<$<CONFIG:${OS_PREFIX}_RELEASE>:${GNA_COMPILE_FLAGS_RELEASE}>
-    $<$<CONFIG:KLOCWORK>:${GNA_COMPILE_FLAGS_RELEASE}>)
-
-  target_link_libraries(gna-api-verbose
-    PRIVATE ${CMAKE_THREAD_LIBS_INIT} ${API_EXTRA_LIBS} ${kernel_libraries})
-
-  add_dependencies(gna-api-verbose ${kernel_libraries})
-
-  file(MAKE_DIRECTORY ${GNA_API_VERBOSE_INCL_DIR})
-  add_custom_command(TARGET gna-api POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-    ${api_headers_verbose}
-    ${GNA_API_VERBOSE_INCL_DIR})
-
-  add_custom_command(TARGET gna-api-verbose POST_BUILD
-    COMMAND
-    echo $(API_DLL) version: $(VERSION_QB_A) ($(VERSION_FILE_A)) > $(OutDir)$(API_DLL).ver
-    COMMAND ${CMAKE_COMMAND}
-      -DPDB_PUBLIC=${GNA_API_VERBOSE_PDB_STRIPPED}
-      -DPDB_PATH=${GNA_LIB_VERBOSE_RELEASE_OUT_DIR}
-      -DFILE_NAME=gna-verbose.pdb
-      -P ${CMAKE_SOURCE_DIR}/build/cmake/pdb_public.cmake)
 endif()
 
 #strip symbols on linux

@@ -29,7 +29,6 @@
 #include "Expect.h"
 
 #include "common.h"
-#include "gna-api-dumper.h"
 
 #include "gna2-common-impl.h"
 

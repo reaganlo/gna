@@ -30,10 +30,10 @@
 #include "Address.h"
 #include "HardwareCapabilities.h"
 
-#include "gna-api-dumper.h"
-
 #include <cstdint>
 #include <memory>
+
+struct Gna2ModelSueCreekHeader;
 
 namespace GNA
 {
@@ -43,7 +43,7 @@ namespace GNA
     {
     public:
 
-        HardwareModelSue1(CompiledModel const & softwareModel, intel_gna_alloc_cb customAlloc);
+        HardwareModelSue1(CompiledModel const & softwareModel, Gna2UserAllocator customAlloc);
 
         virtual ~HardwareModelSue1() = default;
 
@@ -59,7 +59,7 @@ namespace GNA
 
         void * Export();
 
-        void PopulateHeader(intel_gna_model_header& modelHeader) const;
+        void PopulateHeader(Gna2ModelSueCreekHeader& modelHeader) const;
 
     protected:
         virtual void prepareAllocationsAndModel() override;
@@ -67,11 +67,11 @@ namespace GNA
     private:
         static HardwareCapabilities sueCapabilities;
 
-        intel_gna_alloc_cb customAlloc = nullptr;
+        Gna2UserAllocator customAlloc = nullptr;
 
         void * exportMemory = nullptr;
 
-        uint32_t totalModelSize;
+        uint32_t totalModelSize = 0;
 
         std::unique_ptr<Memory> scratchPadMemory;
 

@@ -28,10 +28,6 @@
 #include <assert.h>
 #endif
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /** GNA API Status codes */
 typedef enum _gna_status_t
 {
@@ -154,9 +150,5 @@ static_assert(4 == sizeof(intel_gna_status_t), "Invalid size of intel_gna_status
 
 /** Constant indicating that feature is not available. */
 #define GNA_NOT_SUPPORTED (0x80000000)
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif //infndef __GNA_API_STATUS_H

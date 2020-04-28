@@ -31,9 +31,6 @@
 #include "test-activation-helper.h"
 #include "test-gna-api.h"
 
-#include "gna-api.h"
-#include "gna-api-dumper.h"
-
 #include "gna2-device-api.h"
 #include "gna2-memory-api.h"
 #include "gna2-model-api.h"

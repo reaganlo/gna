@@ -149,8 +149,6 @@ public:
 
     static std::set<Gna2TensorMode> GetValidTensorModes(const Gna2Operation & operation, uint32_t operandIndex);
     static void ExpectOperationValid(const Gna2Operation& operation);
-    static uint32_t GetOperandIndex(GnaComponentType operand);
-
 
     static uint32_t GetOperationInfo(OperationType operationType, OperationInfoKey infoType);
     static bool HasEnabledOperand(const Gna2Operation& apiOperation, uint32_t operandIndex);

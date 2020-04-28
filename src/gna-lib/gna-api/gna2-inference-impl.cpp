@@ -152,37 +152,6 @@ AccelerationMode::AccelerationMode(Gna2AccelerationMode basicMode, bool hardware
     enforceValidity();
 }
 
-AccelerationMode::AccelerationMode(gna_acceleration legacyMode)
-{
-    switch (legacyMode)
-    {
-    case GNA_HARDWARE:
-        mode = Gna2AccelerationModeHardware;
-        break;
-    case GNA_AUTO:
-        mode = Gna2AccelerationModeAuto;
-        break;
-    case GNA_SOFTWARE:
-        mode = Gna2AccelerationModeSoftware;
-        break;
-    case GNA_GENERIC:
-        mode = Gna2AccelerationModeGeneric;
-        break;
-    case GNA_SSE4_2:
-        mode = Gna2AccelerationModeSse4x2;
-        break;
-    case GNA_AVX1:
-        mode = Gna2AccelerationModeAvx1;
-        break;
-    case GNA_AVX2:
-        mode = Gna2AccelerationModeAvx2;
-        break;
-    default:
-        mode = Gna2AccelerationModeAuto;
-    }
-    enforceValidity();
-}
-
 bool AccelerationMode::IsHardwareEnforced() const
 {
     return mode == Gna2AccelerationModeHardware;

@@ -325,29 +325,3 @@ void ModelWrapper::ExpectOperationValid(const Gna2Operation & operation)
     ExpectPointerArrayValid(operation.Parameters, operation.NumberOfParameters,
         paramRequired, paramMax, Gna2ItemTypeOperationParameters);
 }
-
-uint32_t ModelWrapper::GetOperandIndex(GnaComponentType operand)
-{
-    static const std::map<GnaComponentType, uint32_t> operandMap =
-    {
-        {InputComponent, InputOperandIndex},
-        {OutputComponent, OutputOperandIndex},
-        {IntermediateOutputComponent, ScratchpadOperandIndex},
-        {WeightComponent, WeightOperandIndex},
-        {FilterComponent, FilterOperandIndex},
-        {BiasComponent, BiasOperandIndex},
-        {PwlComponent, PwlOperandIndex},
-        {WeightScaleFactorComponent, WeightScaleFactorOperandIndex},
-        {GmmMeanComponent, GmmMeanOperandIndex},
-        {GmmInverseCovarianceComponent, GmmInverseCovarianceOperandIndex},
-        {GmmGaussianConstantComponent, GmmGaussianConstantOperandIndex},
-    };
-    try
-    {
-        return operandMap.at(operand);
-    }
-    catch (std::out_of_range&)
-    {
-        throw GnaException(Gna2StatusXnnErrorLyrCfg);
-    }
-}

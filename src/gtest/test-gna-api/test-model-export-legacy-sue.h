@@ -177,9 +177,6 @@ protected:
     void SetupGnaMemPointers(bool setupPwl, bool setupInputsOutputs);
     void CopyDataToGnaMem(bool copyPwl, bool copyInputs) const;
     void FreeAndClose();
-    intel_nnet_layer_t nnet_layer = {};
-    intel_nnet_type_t nnet = { 1,4, &nnet_layer };
-    intel_affine_layer_t affine_layer{};
 
     Gna2Tensor inputTensor{ {2, {16,4}}, Gna2TensorModeDefault, {}, Gna2DataTypeInt16, nullptr };
     Gna2Tensor outputTensor{ {2, {8,4}}, Gna2TensorModeDefault, {}, Gna2DataTypeInt32, nullptr };

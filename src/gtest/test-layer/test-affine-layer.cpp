@@ -39,6 +39,8 @@ using namespace GNA;
 
 TestAffineLayer::TestAffineLayer()
 {
+    auto const i = &input<int8_t>;
+    auto const i2 = &input<int16_t>;
     alignedInput = _kernel_malloc(sizeof(input<int16_t>));
     if (alignedInput == nullptr)
     {
@@ -60,7 +62,8 @@ TestAffineLayer::TestAffineLayer()
         this->~TestAffineLayer();
         throw;
     }
-
+    auto const w = &weight<int8_t>;
+    auto const w2 = &weight<int16_t>;
     alignedWeight = _kernel_malloc(sizeof(weight<int16_t>));
     if (alignedWeight == nullptr)
     {
@@ -68,7 +71,10 @@ TestAffineLayer::TestAffineLayer()
         throw;
     }
 
-    alignedBias = _kernel_malloc(sizeof(bias<Gna2CompoundBias>));
+    auto const b = &bias<int8_t>;
+    auto const b2 = &bias<int16_t>;
+    auto const b3 = &bias<int32_t>;
+    alignedBias = _kernel_malloc(sizeof(bias<int32_t>));
     if (alignedBias == nullptr)
     {
         this->~TestAffineLayer();
@@ -217,172 +223,6 @@ void TestAffineLayer::ExecuteAffineTest() const
     uint32_t saturationCount;
     auto const executionConfig = ExecutionConfig{ &kernelBuffers, &saturationCount, 0 };
     auto const acceleration = AccelerationMode(Gna2AccelerationModeGeneric, false);
-
-    affineLayer->ComputeHidden(acceleration, executionConfig);
-
-    VerifyOutputs(reinterpret_cast<int32_t*>(alignedOutput), refOutput<int32_t>,
-        numberOfVectors * outputVolume);
-}
-
-/* Tests 1B native patch - 1B input, weight and bias */
-TEST_F(TestAffineLayer, AffineTest1BLegacy)
-{
-    intel_nnet_layer_t apiLayer;
-    memset(&apiLayer, 0, sizeof(apiLayer));
-
-    apiLayer.mode = INTEL_HIDDEN;
-    apiLayer.operation = INTEL_AFFINE;
-
-    apiLayer.nBytesPerInput = 1;
-    apiLayer.nInputRows = inputVolume;
-    apiLayer.nInputColumns = numberOfVectors;
-    apiLayer.pInputs = alignedInput;
-    memcpy_s(alignedInput, sizeof(int8_t) * numberOfVectors * inputVolume,
-        input<int8_t>, sizeof(input<int8_t>));
-
-    apiLayer.nBytesPerOutput = 4;
-    apiLayer.nBytesPerIntermediateOutput = 4;
-    apiLayer.nOutputRows = outputVolume;
-    apiLayer.nOutputColumns = numberOfVectors;
-    apiLayer.pOutputsIntermediate = alignedIntermediateOutput;
-    apiLayer.pOutputs = alignedOutput;
-
-    intel_affine_func_t affineFunc;
-    affineFunc.nBytesPerWeight = 1;
-    affineFunc.pWeights = alignedWeight;
-    memcpy_s(alignedWeight, sizeof(int8_t) * inputVolume * outputVolume, weight<int8_t>, sizeof(weight<int8_t>));
-    affineFunc.nBytesPerBias = 1;
-    affineFunc.pBiases = alignedBias;
-    memcpy_s(alignedBias, sizeof(int8_t) * outputVolume, bias<int8_t>, sizeof(bias<int8_t>));
-
-    intel_pwl_func_t pwl;
-    pwl.nSegments = 0;
-    pwl.pSegments = nullptr;
-
-    intel_affine_layer_t layer;
-    layer.affine = affineFunc;
-    layer.pwl = pwl;
-
-    apiLayer.pLayerStruct = &layer;
-
-    auto affineLayer = Layer::Create(apiLayer, emptyValidator);
-    ASSERT_NE(affineLayer, nullptr);
-
-    uint32_t saturationCount = 0;
-    auto executionConfig = ExecutionConfig{ &kernelBuffers, &saturationCount, 0 };
-    auto acceleration = AccelerationMode(Gna2AccelerationModeGeneric, false);
-
-    affineLayer->ComputeHidden(acceleration, executionConfig);
-
-    EXPECT_EQ(saturationCount, 0);
-
-    VerifyOutputs(static_cast<int32_t*>(alignedOutput), refOutput<int32_t>,
-        numberOfVectors * outputVolume);
-}
-
-TEST_F(TestAffineLayer, AffineTest2BLegacy)
-{
-    intel_nnet_layer_t apiLayer;
-    memset(&apiLayer, 0, sizeof(apiLayer));
-
-    apiLayer.mode = INTEL_HIDDEN;
-    apiLayer.operation = INTEL_AFFINE;
-
-    apiLayer.nBytesPerInput = 2;
-    apiLayer.nInputRows = inputVolume;
-    apiLayer.nInputColumns = numberOfVectors;
-    apiLayer.pInputs = alignedInput;
-    memcpy_s(alignedInput, sizeof(int16_t) * numberOfVectors * inputVolume,
-        input<int16_t>, sizeof(input<int16_t>));
-
-    apiLayer.nBytesPerOutput = 4;
-    apiLayer.nBytesPerIntermediateOutput = 4;
-    apiLayer.nOutputRows = outputVolume;
-    apiLayer.nOutputColumns = numberOfVectors;
-    apiLayer.pOutputsIntermediate = alignedIntermediateOutput;
-    apiLayer.pOutputs = alignedOutput;
-
-    intel_affine_func_t affineFunc;
-    affineFunc.nBytesPerWeight = 2;
-    affineFunc.pWeights = alignedWeight;
-    memcpy_s(alignedWeight, sizeof(int16_t) * inputVolume * outputVolume, weight<int16_t>, sizeof(weight<int16_t>));
-    affineFunc.nBytesPerBias = 4;
-    affineFunc.pBiases = alignedBias;
-    memcpy_s(alignedBias, sizeof(int32_t) * outputVolume, bias<int32_t>, sizeof(bias<int32_t>));
-
-    intel_pwl_func_t pwl;
-    pwl.nSegments = 0;
-    pwl.pSegments = nullptr;
-
-    intel_affine_layer_t layer;
-    layer.affine = affineFunc;
-    layer.pwl = pwl;
-
-    apiLayer.pLayerStruct = &layer;
-
-    auto affineLayer = Layer::Create(apiLayer, emptyValidator);
-    ASSERT_NE(affineLayer, nullptr);
-
-    uint32_t saturationCount;
-    auto executionConfig = ExecutionConfig{ &kernelBuffers, &saturationCount, 0 };
-    auto acceleration = AccelerationMode(Gna2AccelerationModeGeneric, false);
-
-    affineLayer->ComputeHidden(acceleration, executionConfig);
-
-    VerifyOutputs(reinterpret_cast<int32_t*>(alignedOutput), refOutput<int32_t>,
-        numberOfVectors * outputVolume);
-}
-
-TEST_F(TestAffineLayer, AffineMultibiasTest2BLegacy)
-{
-    intel_nnet_layer_t apiLayer;
-    memset(&apiLayer, 0, sizeof(apiLayer));
-
-    apiLayer.mode = INTEL_HIDDEN;
-    apiLayer.operation = INTEL_AFFINE_MULTIBIAS;
-
-    apiLayer.nBytesPerInput = 2;
-    apiLayer.nInputRows = inputVolume;
-    apiLayer.nInputColumns = numberOfVectors;
-    apiLayer.pInputs = alignedInput;
-    memcpy_s(alignedInput, sizeof(int16_t) * numberOfVectors * inputVolume,
-        input<int16_t>, sizeof(input<int16_t>));
-
-    apiLayer.nBytesPerOutput = 4;
-    apiLayer.nBytesPerIntermediateOutput = 4;
-    apiLayer.nOutputRows = outputVolume;
-    apiLayer.nOutputColumns = numberOfVectors;
-    apiLayer.pOutputsIntermediate = alignedIntermediateOutput;
-    apiLayer.pOutputs = alignedOutput;
-
-    intel_affine_multibias_func_t affineFunc;
-    affineFunc.nBytesPerWeight = 2;
-    affineFunc.pWeights = alignedWeight;
-    memcpy_s(alignedWeight, sizeof(int16_t) * inputVolume * outputVolume, weight<int16_t>, sizeof(weight<int16_t>));
-    affineFunc.nBytesPerBias = 4;
-    affineFunc.pBiases = alignedMultibias;
-    auto multibiasSize = sizeof(int32_t) * outputVolume * multibiasVectorCount;
-    memcpy_s(alignedMultibias, multibiasSize, multibias, sizeof(multibias));
-    affineFunc.biasVectorCount = multibiasVectorCount;
-    affineFunc.biasVectorIndex = 2;
-    affineFunc.weightScaleFactors = nullptr;
-
-    intel_pwl_func_t pwl;
-    pwl.nSegments = 0;
-    pwl.pSegments = nullptr;
-
-    intel_affine_multibias_layer_t layer;
-    layer.affine = affineFunc;
-    layer.pwl = pwl;
-
-    apiLayer.pLayerStruct = &layer;
-
-    auto affineLayer = Layer::Create(apiLayer, emptyValidator);
-    ASSERT_NE(affineLayer, nullptr);
-
-    uint32_t saturationCount;
-    auto executionConfig = ExecutionConfig{ &kernelBuffers, &saturationCount, 0 };
-    auto acceleration = AccelerationMode(Gna2AccelerationModeGeneric, false);
 
     affineLayer->ComputeHidden(acceleration, executionConfig);
 

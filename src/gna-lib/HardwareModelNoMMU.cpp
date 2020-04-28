@@ -42,7 +42,7 @@ public:
     }
 };
 
-HardwareModelNoMMU::HardwareModelNoMMU(CompiledModel const & softwareModel, intel_gna_alloc_cb customAllocIn) :
+HardwareModelNoMMU::HardwareModelNoMMU(CompiledModel const & softwareModel, Gna2UserAllocator customAllocIn) :
     HardwareModel(softwareModel, noMMUCapabilities),
     customAlloc{ customAllocIn }
 {

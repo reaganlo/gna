@@ -34,13 +34,14 @@
 #include "RequestHandler.h"
 
 #include "gna-api.h"
-#include "gna-api-dumper.h"
 #include "gna2-instrumentation-api.h"
 
 #include <cstdint>
 #include <map>
 #include <memory>
 #include <vector>
+
+struct Gna2ModelSueCreekHeader;
 
 namespace GNA
 {
@@ -97,10 +98,10 @@ public:
 
     void Stop();
 
-    void* Dump(uint32_t modelId, intel_gna_model_header* modelHeader, Gna2Status* status,
-            intel_gna_alloc_cb customAlloc);
+    void* Dump(uint32_t modelId, Gna2ModelSueCreekHeader* modelHeader, Gna2Status* status,
+            Gna2UserAllocator customAlloc);
 
-    void DumpLdNoMMu(uint32_t modelId, intel_gna_alloc_cb customAlloc,
+    void DumpLdNoMMu(uint32_t modelId, Gna2UserAllocator customAlloc,
         void *& exportData, uint32_t & exportDataSize);
 
     void CreateProfilerConfiguration(uint32_t* configId, uint32_t numberOfInstrumentationPoints, Gna2InstrumentationPoint* selectedInstrumentationPoints, uint64_t* results);

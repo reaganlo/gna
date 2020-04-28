@@ -106,11 +106,11 @@ protected:
         ASSERT_EQ(status, Gna2StatusSuccess);
     }
 
-    template<typename T = int16_t>
+    template<typename T>
     const Gna2Tensor PrepareInput(Gna2DataType DataType = Gna2DataTypeInt16) const
     {
         auto tensor = PrepareTensor(DataType, alignedInput, "HW", inputVolume, numberOfVectors);
-        memcpy_s(alignedInput, sizeof(T) * numberOfVectors * inputVolume, input<T>, sizeof(input<T>));
+        memcpy_s(alignedInput, sizeof(int16_t) * numberOfVectors * inputVolume, input<T>, sizeof(input<T>));
         return tensor;
     }
 
@@ -120,19 +120,19 @@ protected:
         return tensor;
     }
 
-    template<typename WeightType = int16_t>
+    template<typename WeightType>
     const Gna2Tensor PrepareWeight(Gna2DataType DataType = Gna2DataTypeInt16) const
     {
         auto tensor = PrepareTensor(DataType, alignedWeight, "HW", outputVolume, inputVolume);
-        memcpy_s(alignedWeight, sizeof(WeightType) * inputVolume * outputVolume, weight<WeightType>, sizeof(weight<WeightType>));
+        memcpy_s(alignedWeight, sizeof(int16_t) * inputVolume * outputVolume, weight<WeightType>, sizeof(weight<WeightType>));
         return tensor;
     }
 
-    template<typename BiasType = int16_t>
+    template<typename BiasType>
     const Gna2Tensor PrepareBias(Gna2DataType DataType = Gna2DataTypeInt16) const
     {
         auto tensor = PrepareTensor(DataType, alignedBias, "H", outputVolume);
-        memcpy_s(alignedBias, sizeof(BiasType) * outputVolume, bias<BiasType>, sizeof(bias<BiasType>));
+        memcpy_s(alignedBias, sizeof(int32_t) * outputVolume, bias<BiasType>, sizeof(bias<BiasType>));
         return tensor;
     }
 

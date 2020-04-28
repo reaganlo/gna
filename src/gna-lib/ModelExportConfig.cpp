@@ -36,7 +36,8 @@
 
 using namespace GNA;
 
-ModelExportConfig::ModelExportConfig(Gna2UserAllocator userAllocatorIn) : userAllocator{ userAllocatorIn }
+ModelExportConfig::ModelExportConfig(Gna2UserAllocator userAllocatorIn) :
+    userAllocator{ userAllocatorIn }
 {
     Expect::NotNull((void *)userAllocator);
 }
@@ -58,16 +59,16 @@ void ModelExportConfig::Export(Gna2ModelExportComponent componentType, void ** e
         const auto header = static_cast<Gna2ModelSueCreekHeader *>(userAllocator(*exportBufferSize));
         *exportBuffer = header;
         const auto dump = device.Dump(sourceModelId,
-            reinterpret_cast<intel_gna_model_header*>(header), &status, privateAllocator);
+            header, &status, privateAllocator);
         privateDeAllocator(dump);
         return;
     }
 
     if (componentType == Gna2ModelExportComponentLegacySueCreekDump)
     {
-        intel_gna_model_header header;
+        Gna2ModelSueCreekHeader header = {};
         *exportBuffer = device.Dump(sourceModelId, &header, &status, userAllocator);
-        *exportBufferSize = header.model_size;
+        *exportBufferSize = header.ModelSize;
         return;
     }
 

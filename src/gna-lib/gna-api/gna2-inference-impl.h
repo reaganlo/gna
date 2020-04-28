@@ -45,8 +45,6 @@ class AccelerationMode
 public:
     AccelerationMode(Gna2AccelerationMode basicMode, bool hardwareConsistencyEnabled = false);
 
-    AccelerationMode(gna_acceleration legacyMode);
-
     bool IsHardwareEnforced() const;
 
     bool IsSoftwareEnforced() const;

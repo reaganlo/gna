@@ -156,17 +156,9 @@ private:
     {
         return model.NumberOfOperations;
     }
-    static uint32_t GetNumberOfOperations(const gna_model& model)
-    {
-        return model.nLayers;
-    }
     static Gna2Operation* GetFirstOperation(const Gna2Model& model)
     {
         return model.Operations;
-    }
-    static intel_nnet_layer_t* GetFirstOperation(const gna_model& model)
-    {
-        return model.pLayers;
     }
     static bool isGmmOperation(const nn_layer& layer)
     {

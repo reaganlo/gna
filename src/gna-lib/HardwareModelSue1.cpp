@@ -25,7 +25,7 @@
 
 #include "HardwareModelSue1.h"
 
-#include <AffineLayers.h>
+#include "AffineLayers.h"
 #include "CompiledModel.h"
 #include "GnaException.h"
 #include "HardwareLayer.h"
@@ -33,12 +33,14 @@
 #include "Layer.h"
 #include "Memory.h"
 
+#include "gna2-model-suecreek-header.h"
+
 using namespace GNA;
 
 
 HardwareCapabilities HardwareModelSue1::sueCapabilities = HardwareCapabilities{ Gna2DeviceVersionEmbedded1_0 };
 
-HardwareModelSue1::HardwareModelSue1(CompiledModel const & softwareModel, intel_gna_alloc_cb customAllocIn) :
+HardwareModelSue1::HardwareModelSue1(CompiledModel const & softwareModel, Gna2UserAllocator customAllocIn) :
     HardwareModel(softwareModel, sueCapabilities),
     customAlloc{ customAllocIn }
 {
@@ -141,7 +143,7 @@ void * HardwareModelSue1::Export()
     return exportMemory;
 }
 
-void HardwareModelSue1::PopulateHeader(intel_gna_model_header & modelHeader) const
+void HardwareModelSue1::PopulateHeader(Gna2ModelSueCreekHeader & modelHeader) const
 {
     // TODO:3: review
     auto const &input = model.GetLayer(0).Input;

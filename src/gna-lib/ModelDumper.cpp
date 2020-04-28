@@ -35,7 +35,6 @@
 #include "LayerOutput.h"
 #include "Memory.h"
 
-#include "gna-api-dumper.h"
 #include "gna-api-status.h"
 #include "gna-api.h"
 
@@ -47,7 +46,7 @@
 
 using namespace GNA;
 
-void* Device::Dump(uint32_t modelId, intel_gna_model_header* modelHeader, Gna2Status* status, intel_gna_alloc_cb customAlloc)
+void* Device::Dump(uint32_t modelId, Gna2ModelSueCreekHeader* modelHeader, Gna2Status* status, Gna2UserAllocator customAlloc)
 {
     // Validate parameters
     Expect::NotNull(status);
@@ -74,7 +73,7 @@ void* Device::Dump(uint32_t modelId, intel_gna_model_header* modelHeader, Gna2St
     return address;
 }
 
-void Device::DumpLdNoMMu(uint32_t modelId, intel_gna_alloc_cb customAlloc,
+void Device::DumpLdNoMMu(uint32_t modelId, Gna2UserAllocator customAlloc,
     void *& exportData, uint32_t & exportDataSize)
 {
     Expect::NotNull(reinterpret_cast<void *>(customAlloc));

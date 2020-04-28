@@ -30,7 +30,6 @@
 #include "Address.h"
 #include "HardwareCapabilities.h"
 
-#include "gna-api-dumper.h"
 
 #include <cstdint>
 #include <memory>
@@ -44,7 +43,7 @@ class HardwareModelNoMMU : public HardwareModel
 {
 public:
 
-    HardwareModelNoMMU(CompiledModel const & softwareModel, intel_gna_alloc_cb customAlloc);
+    HardwareModelNoMMU(CompiledModel const & softwareModel, Gna2UserAllocator customAlloc);
 
     virtual ~HardwareModelNoMMU() = default;
 
@@ -77,7 +76,7 @@ protected:
 private:
     static HardwareCapabilities noMMUCapabilities;
 
-    intel_gna_alloc_cb customAlloc = nullptr;
+    Gna2UserAllocator customAlloc = nullptr;
 
     std::unique_ptr<Memory> guessedInput;
     std::unique_ptr<Memory> guessedOutput;

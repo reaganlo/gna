@@ -174,58 +174,6 @@ const int16_t TestDiagonalLayer::input[numberOfVectors * inputVolume] =
     -4, -6, -8, -2
 };
 
-TEST_F(TestDiagonalLayer, AffineDiagonalTest2BLegacy)
-{
-    intel_nnet_layer_t apiLayer;
-    memset(&apiLayer, 0, sizeof(apiLayer));
-
-    apiLayer.mode = INTEL_HIDDEN;
-    apiLayer.operation = INTEL_AFFINE_DIAGONAL;
-
-    apiLayer.nBytesPerInput = 2;
-    apiLayer.nInputRows = inputVolume;
-    apiLayer.nInputColumns = numberOfVectors;
-    apiLayer.pInputs = alignedInput;
-    memcpy_s(alignedInput, sizeof(int16_t) * numberOfVectors * inputVolume, input, sizeof(input));
-
-    apiLayer.nBytesPerOutput = 4;
-    apiLayer.nBytesPerIntermediateOutput = 4;
-    apiLayer.nOutputRows = outputVolume;
-    apiLayer.nOutputColumns = numberOfVectors;
-    apiLayer.pOutputsIntermediate = alignedIntermediateOutput;
-    apiLayer.pOutputs = alignedOutput;
-
-    intel_affine_func_t affineFunc;
-    affineFunc.nBytesPerWeight = 2;
-    affineFunc.pWeights = alignedWeight;
-    memcpy_s(alignedWeight, sizeof(int16_t) * outputVolume, weight, sizeof(weight));
-    affineFunc.nBytesPerBias = 4;
-    affineFunc.pBiases = alignedBias;
-    memcpy_s(alignedBias, sizeof(int32_t) * outputVolume, bias, sizeof(bias));
-
-    intel_pwl_func_t pwl;
-    pwl.nSegments = 0;
-    pwl.pSegments = nullptr;
-
-    intel_affine_layer_t layer;
-    layer.affine = affineFunc;
-    layer.pwl = pwl;
-
-    apiLayer.pLayerStruct = &layer;
-
-    auto affineLayer = Layer::Create(apiLayer, emptyValidator);
-    ASSERT_NE(affineLayer, nullptr);
-
-    uint32_t saturationCount;
-    auto executionConfig = ExecutionConfig{ &kernelBuffers, &saturationCount, 0 };
-    auto acceleration = AccelerationMode(Gna2AccelerationModeGeneric, false);
-
-    affineLayer->ComputeHidden(acceleration, executionConfig);
-
-    VerifyOutputs(reinterpret_cast<int32_t*>(alignedOutput), refOutput,
-                    numberOfVectors * outputVolume);
-}
-
 TEST_F(TestDiagonalLayer, AffineDiagonalTest2B)
 {
     Gna2Operation affineOperation;

@@ -32,15 +32,6 @@
 
 #include "gna-api-status.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-
-    // TODO:3:API redesign: split old structures into transforms and components Like CNN2D
-
-
-
 /******************************************************************************
  * GNA Enumerations
  *****************************************************************************/
@@ -68,8 +59,6 @@ typedef enum _data_mode
     GNA_DATA_DISABLED = (int)GNA_DISABLED,           // No data is read
 } gna_data_mode;
 
-// TODO:3: Split into data precision and data mode
-
 /** Pooling function types */
 typedef enum _pool_type_t
 {
@@ -79,19 +68,6 @@ typedef enum _pool_type_t
     NUM_POOLING_TYPES               // Number of Pooling function types.
 
 } intel_pool_type_t;
-
-//TODO:3: use new type for naming and value consistency
-///**
-// * Mode of pooling operation.
-// * Used as (OR'ed) binary flags for reporting capabilities, e.g. (GNA_POOLING_SUM | GNA_POOLING_MAX);
-// */
-//typedef enum _pooling_mode
-//{
-//    GNA_POOLING_NOT_SUPPORTED = (int)GNA_NOT_SUPPORTED,
-//    GNA_POOLING_MAX = 1,
-//    GNA_POOLING_SUM = 2,
-//    GNA_POOLING_DISABLED = (int)GNA_DISABLED,
-//} gna_pooling_mode;
 
 /**
  * Mode of bias for convolution operation.
@@ -104,7 +80,6 @@ typedef enum _bias_mode
     GNA_BIAS_PER_STRIDE = 2,
 } gna_bias_mode; // TODO:3: incorporate into data type and remove
 
-// TODO:3: Currently used only internally
 /**
  * Order of data tensor used by inputs, outputs, biases, weights etc.
  * Used as (OR'ed) binary flags for reporting capabilities, e.g. (GNA_TENSOR_NHWD | GNA_TENSOR_NDHW);
@@ -131,12 +106,8 @@ typedef enum _tensor_order
     GNA_TENSOR_N = 3,     // Temporary value for Bias Shape
     GNA_TENSOR_HWD = 513,
     GNA_TENSOR_NWD = 514,       // Used for Legacy Convolution output
-
-    // TODO:3:change to char tensor_format[16?] and implement ~~ uint32 tensor_format.Value...
-
 } gna_tensor_order;
 
-// TODO:3: Currently used only internally
 /**
  * Helper Tensor dimension selector for dimension map.
  */
@@ -154,7 +125,6 @@ typedef enum _tensor_dim
     GNA_DIM_Z,
 } gna_tensor_dim;
 
-// TODO:3: Subject to change due to naming inconsistency
 /**
  * Layer operation type.
  * Defines type of layer "core" operation.
@@ -182,29 +152,8 @@ typedef enum _layer_operation
     GNA_LAYER_CNN_2D_CONVERSION,// TODO:3: add layer support + capabilities
     GNA_LAYER_CNN_2D_POOLING,   // TODO:3: add layer support + capabilities
     LAYER_OPERATION_TYPE_COUT,      // Number of Layer operation types.
-
-    //// GNA-next names
-    //GNA_LAYER_GMM,
-    //GNA_LAYER_AFFINE,
-    //GNA_LAYER_AFFINE_MULTIBIAS,
-    //GNA_LAYER_AFFINE_DIAGONAL,
-    //GNA_LAYER_CNN_1D,
-    //GNA_LAYER_CNN_2D,
-    //GNA_LAYER_CNN_2D_ADDITION,
-    //GNA_LAYER_CNN_2D_POOLING,
-    //GNA_LAYER_CNN_2D_CONVERSION,
-    //GNA_LAYER_RECURRENT,
-    //GNA_LAYER_DEINTERLEAVE,
-    //GNA_LAYER_INTERLEAVE,
-    //GNA_LAYER_COPY,
-    //GNA_LAYER_TRESHOLD,             // ANNA only
-    //GNA_LAYER_OPERATION_COUNT
-
 } gna_layer_operation;
 
-/**
- TODO:3:remove
- */
 typedef enum _layer_mode
 {
     INTEL_INPUT,            // Layer serves as model input layer (usually first layer)
@@ -292,28 +241,6 @@ typedef struct _pwl_func_t
 
 } intel_pwl_func_t;
 
-/** Piecewise-linear activation function (PWL) details */
-typedef struct _pwl_func_tGna2
-{
-    uint32_t nSegments;             // Number of segments, set to 0 to disable activation function.
-    struct Gna2PwlSegment* pSegments; // Activation function segments data or NULL if disabled.
-
-} intel_pwl_func_tGna2;
-
-// TODO:3:GNA-4/next proposal
-///** Piecewise-linear activation function (PWL) details */
-//typedef struct _activation_function
-//{
-//    gna_data_mode mode;             // Activation function mode and precision. Valid values: {GNA_INT8, GNA_INT16, GNA_INT32, GNA_DATA_ACTIVATION_DISABLED}
-//    bool isReLuFunction;        // Set to true to indicate ReLu function is used in PWL.
-//    uint32_t zeroSegmentIndex;      // Index of first PWL segment with positive xBase value. Set when isReLuFunction=true.
-//    uint32_t segmentCount;          // Number of segments.
-//    uint32_t* segmentXpoints;       // Array of segment starting points.
-//    uint16_t* segmentValues;        // Array of segment values.
-//    uint16_t* segmentSlopes;        // Array of segment function slopes.
-//    uint32_t* segmentShifts;        // Array of segment value shift. // TODO: provide function calculation recipe.
-//} gna_activation_function;
-
 /** Fully connected affine layer detailed descriptor */
 typedef struct _affine_layer_t
 {
@@ -372,16 +299,6 @@ typedef struct _3d_dimensions
     uint32_t depth;
 
 } gna_3d_dimensions;
-
-///** 4D Tensor dimensions (shape) */
-//typedef struct _4d_dimensions
-//{
-//    uint32_t width;                 // Number of elements in dimension W // GNA_DIM_W
-//    uint32_t height;                // Number of in elements in dimension H // GNA_DIM_H
-//    uint32_t depth;                 // Number of in elements in dimension D // GNA_DIM_D
-//    uint32_t channels;              // Number of in channels per element  // GNA_DIM_C
-//
-//} gna_4d_dimensions;
 
 /** Convolution filter details */
 typedef struct _convolution_filter
@@ -489,14 +406,6 @@ typedef struct _nnet_layer_t
 
 } intel_nnet_layer_t;
 
-/** GNA Network descriptor */
-typedef struct _nnet_type_t
-{
-    uint32_t nLayers;               // The number of layers in the network.
-    uint32_t nGroup;                // Input vector grouping level.
-    intel_nnet_layer_t *pLayers;    // Layer configurations.
-
-} intel_nnet_type_t;
 
 /******************************************************************************
  * GNA Constant values
@@ -562,8 +471,5 @@ const uint32_t CNN_POOL_SIZE_MIN = 1;
 const uint32_t CNN_POOL_SIZE_MAX = 6;
 
 const uint32_t GNA_COVARIANCE_SIZE_MIN = 1;
-#ifdef __cplusplus
-}
-#endif
 
 #endif  // ifndef __GNA_API_TYPES_XNN_H

@@ -63,9 +63,7 @@ public:
             Log->Message("Processing using xNN operation mode\n");
         }
     }
-    SoftwareModel(const gna_model& network,
-        BaseValidator validator,
-        const std::vector<Gna2AccelerationMode>& supportedCpuAccelerations);
+    
     SoftwareModel(const Gna2Model& model,
         BaseValidator validator,
         const std::vector<Gna2AccelerationMode>& supportedCpuAccelerations);
