@@ -331,10 +331,16 @@ int LinuxDriverInterface::discoverDevice(uint32_t deviceIndex, gna_parameter *pa
         return;
     }
 
-    driverPerf.Completion /= divider;
-    driverPerf.DeviceRequestCompleted /= divider;
-    driverPerf.Preprocessing /= divider;
-    driverPerf.Processing /= divider;
+    const auto cmpl = driverPerf.Completion;
+    const auto devreq = driverPerf.DeviceRequestCompleted;
+    const auto prepr = driverPerf.Preprocessing;
+    const auto proc = driverPerf.Processing;
+    const auto round = divider/2;
+
+    driverPerf.Preprocessing = 0;
+    driverPerf.Processing = (proc - prepr + round) / divider;
+    driverPerf.DeviceRequestCompleted = (devreq - prepr + round) / divider;
+    driverPerf.Completion = (cmpl - prepr + round) / divider;
 }
 
 #endif // not defined WIN32

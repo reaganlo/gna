@@ -111,8 +111,8 @@ uint64_t RequestProfiler::ConvertElapsedTime(uint64_t frequency, uint64_t multip
     uint64_t start, uint64_t stop)
 {
     auto const elapsedCycles = stop - start;
-    auto elapsedMicroseconds = elapsedCycles * multiplier;
-    elapsedMicroseconds /= frequency;
+    auto const round = frequency / 2;
+    auto elapsedMicroseconds = (elapsedCycles * multiplier + round) / frequency;
     return elapsedMicroseconds;
 }
 
