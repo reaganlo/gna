@@ -20,15 +20,18 @@
 // be express and approved by Intel in writing.
 //*****************************************************************************
 #include "LinuxHardwareSelfTest.h"
+
+#include <csignal>
+#include <cstring>
+#include <fcntl.h>
 #include <map>
 #include <string>
-#include <vector>
 #include <sys/ioctl.h>
 #include <sys/stat.h>
-#include <fcntl.h>
-#include <unistd.h>
 #include <sys/types.h>
-#include <cstring>
+#include <unistd.h>
+#include <vector>
+
 #include "gna-h-wrapper.h"
 
 void LinuxGnaSelfTestHardwareStatus::initHardwareInfo()
@@ -152,4 +155,21 @@ void LinuxGnaSelfTestHardwareStatus::determineUserIdentity() const
     {
         logger.Verbose("Consider running as Administrator [sudo gna-self-test]\n");
     }
+}
+
+void SegfaultSigaction(int signal, siginfo_t *si, void * argv)
+{
+    GnaSelfTestLogger::Error("Caught signal [%d] at address [%p] with args [%p]\n", signal, si->si_addr, argv);
+    throw GnaSelfTestException(GSTIT_UNHANDLED_SIGNAL);
+}
+
+void MultiOs::Init()
+{
+    static struct sigaction sa;
+
+    sigemptyset(&sa.sa_mask);
+    sa.sa_sigaction = SegfaultSigaction;
+    sa.sa_flags   = SA_SIGINFO;
+
+    sigaction(SIGSEGV, &sa, NULL);
 }

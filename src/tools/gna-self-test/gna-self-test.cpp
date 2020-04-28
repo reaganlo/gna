@@ -1,7 +1,7 @@
 //*****************************************************************************
 //
 // INTEL CONFIDENTIAL
-// Copyright 2018 Intel Corporation
+// Copyright 2018-2020 Intel Corporation
 //
 // The source code contained or described herein and all documents related
 // to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -31,12 +31,23 @@
 GnaSelfTestLogger logger;
 
 int main(int argc, char *argv[])
+try
 {
+    MultiOs::Init();
     auto config = GnaSelfTestConfig::ReadConfigFromCmdLine(argc, argv);
     logger.SetVerbose(config.VerboseMode());
     GnaSelfTest gnaSelfTest{ config };
     gnaSelfTest.StartTest();
     return 0;
+}
+catch (const GnaSelfTestException& e)
+{
+    return e.GetExitCode();
+}
+catch (...)
+{
+    GnaSelfTestLogger::Error("Unknown exception in main()\n");
+    return GSTIT_UNHANDLED_EXCEPTION;
 }
 
 void GnaSelfTest::StartTest()
@@ -93,6 +104,16 @@ void GnaSelfTest::DoIteration()
     GnaSelfTestLogger::Log("GNA device self-test has been finished\n");
 }
 
+std::string GnaSelfTest::GetBuildTimeLibraryVersionString()
+{
+#ifdef GNA_LIBRARY_VERSION_STRING
+    static const char versionString[] = GNA_LIBRARY_VERSION_STRING;
+#else
+    static const char versionString[] = "Unknown build time version";
+#endif
+    return versionString;
+}
+
 void GnaSelfTest::PrintLibraryVersion()
 {
     char buffer[32];
@@ -105,6 +126,7 @@ void GnaSelfTest::PrintLibraryVersion()
     {
         logger.Error("GNA Library version: UNKNOWN\n");
     }
+    logger.Log("Build time GNA library version: %s\n", GetBuildTimeLibraryVersionString().c_str());
 }
 
 GnaSelfTestConfig::GnaSelfTestConfig(int argc, const char *const argv[])

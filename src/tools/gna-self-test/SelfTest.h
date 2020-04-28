@@ -27,6 +27,7 @@
 #include "gna2-model-api.h"
 
 #include <cstdio>
+#include <exception>
 #include <string>
 #include <vector>
 
@@ -93,8 +94,9 @@ public:
     void Handle(const GnaSelfTestIssue& issue) const;
     void HandleGnaStatus(const Gna2Status &status, const char *what) const;
 private:
-    void askToContinueOrExit(int exitCode) const;
+    static bool userWantsGoFurther();
     GnaSelfTestConfig config;
+    static std::string GetBuildTimeLibraryVersionString();
     static void PrintLibraryVersion();
     void DoIteration();
 };
@@ -138,30 +140,57 @@ private:
 enum GSTIT
 {
     GSTIT_GENERAL_GNA_NO_SUCCESS = 1,
-    GSTIT_DRV_1_INSTEAD_2,
-    GSTIT_NO_HARDWARE,
-    GSTIT_NUL_DRIVER,
-    GSTIT_DEVICE_OPEN_NO_SUCCESS,
-    GSTIT_HARDWARE_OR_DRIVER_NOT_INITIALIZED_PROPERLY,
-    GSTIT_GNAALLOC_MEM_ALLOC_FAILED,
-    GSTIT_UNKNOWN_DRIVER,
-    GSTIT_MALLOC_FAILED,
-    GSTIT_SETUPDI_ERROR,
-    GSTIT_NO_DRIVER,
-    GSTIT_ERRORS_IN_SCORES,
-    GSTIT_NO_DEVICE_DETECTED_BY_GNA_LIB
+    GSTIT_DRV_1_INSTEAD_2 = 2,
+    GSTIT_NO_HARDWARE = 3,
+    GSTIT_NUL_DRIVER = 4,
+    GSTIT_DEVICE_OPEN_NO_SUCCESS = 5,
+    GSTIT_HARDWARE_OR_DRIVER_NOT_INITIALIZED_PROPERLY = 6,
+    GSTIT_GNAALLOC_MEM_ALLOC_FAILED = 7,
+    GSTIT_UNKNOWN_DRIVER = 8,
+    GSTIT_MALLOC_FAILED = 9,
+    GSTIT_SETUPDI_ERROR = 10,
+    GSTIT_NO_DRIVER = 11,
+    GSTIT_ERRORS_IN_SCORES = 12,
+    GSTIT_NO_DEVICE_DETECTED_BY_GNA_LIB = 13,
+    GSTIT_UNHANDLED_EXCEPTION = 14,
+    GSTIT_UNHANDLED_SIGNAL = 15
+};
+
+class GnaSelfTestException : public std::exception
+{
+public:
+    GnaSelfTestException(int codeIn) : code{codeIn}
+    {
+    }
+    int GetExitCode() const
+    {
+        return code;
+    }
+private:
+    int code;
 };
 
 class GnaSelfTestIssue
 {
 public:
     GnaSelfTestIssue(GSTIT);
-    std::string GetDescription() const;
-    int ExitCode() const
+
+    int GetExitCode() const
     {
         return issueType;
     }
+
+    void Log() const;
+
 private:
+    std::string GetDescription() const;
+
     GSTIT issueType;
     std::string symbol;
+};
+
+class MultiOs
+{
+public:
+    static void Init();
 };

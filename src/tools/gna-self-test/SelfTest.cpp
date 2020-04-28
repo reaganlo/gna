@@ -26,10 +26,10 @@
 #include "gna2-device-api.h"
 #include "gna2-memory-api.h"
 
-#include <cstdlib>
 #include <iostream>
-#include <string>
 #include <map>
+#include <string>
+#include <locale>
 
 void LogGnaStatus(const Gna2Status &status, const char *what)
 {
@@ -213,16 +213,12 @@ SelfTestDevice::~SelfTestDevice()
     }
 }
 
-void GnaSelfTest::askToContinueOrExit(int exitCode) const
+bool GnaSelfTest::userWantsGoFurther()
 {
     GnaSelfTestLogger::Log("Do you want to go further anyway? [y/N]");
     std::string buf;
     std::getline(std::cin, buf);
-    if (buf.empty() || (buf[0] != 'y' && buf[0] != 'Y'))
-    {
-        GnaSelfTestLogger::Log("Bye\n");
-        exit(exitCode);
-    }
+    return buf == "y" || buf == "Y";
 }
 
 namespace
@@ -240,7 +236,9 @@ namespace
     { GSTIT_SETUPDI_ERROR,                                  "GSTIT_SETUPDI_ERROR"},
     { GSTIT_NO_DRIVER,                                      "GSTIT_NO_DRIVER"},
     { GSTIT_ERRORS_IN_SCORES,                               "GSTIT_ERRORS_IN_SCORES"},
-    { GSTIT_NO_DEVICE_DETECTED_BY_GNA_LIB,                  "GSTIT_NO_DEVICE_DETECTED_BY_GNA_LIB"} };
+    { GSTIT_NO_DEVICE_DETECTED_BY_GNA_LIB,                  "GSTIT_NO_DEVICE_DETECTED_BY_GNA_LIB"},
+    { GSTIT_UNHANDLED_EXCEPTION,                            "GSTIT_UNHANDLED_EXCEPTION"},
+    { GSTIT_UNHANDLED_SIGNAL,                               "GSTIT_UNHANDLED_SIGNAL"} };
 }
 
 GnaSelfTestIssue::GnaSelfTestIssue(GSTIT type) :issueType{ type }
@@ -248,26 +246,31 @@ GnaSelfTestIssue::GnaSelfTestIssue(GSTIT type) :issueType{ type }
     //TODO: add more details on the exact place in the Bring up guide
     symbol = issueSymbols.at(type);
 }
+
 std::string GnaSelfTestIssue::GetDescription() const
 {
     std::string desc = "ERROR Issue " + symbol + ": Find additional instructions in Bring up guide\n";
     return desc;
 }
 
+void GnaSelfTestIssue::Log() const
+{
+    GnaSelfTestLogger::Error("%s", GetDescription().c_str());
+}
+
 void GnaSelfTest::Handle(const GnaSelfTestIssue& issue) const
 {
-    GnaSelfTestLogger::Error("%s", issue.GetDescription().c_str());
+    issue.Log();
 
-    if (config.ContinueMode())
-    {
-        if (config.PauseMode()) {
-            askToContinueOrExit(issue.ExitCode());
-        }
-        GnaSelfTestLogger::Log("WARNING Continuing the execution after the problem\n");
-    }
-    else
+    if (!config.ContinueMode())
     {
         logger.Verbose("You can run \"gna-self-test -c\" to continue gna-self-test despite the problem\n");
-        exit(issue.ExitCode());
     }
+    else if (!config.PauseMode() || userWantsGoFurther())
+    {
+        GnaSelfTestLogger::Log("WARNING Continuing the execution after the problem\n");
+        return;
+    }
+
+    throw GnaSelfTestException(issue.GetExitCode());
 }

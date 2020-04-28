@@ -135,3 +135,7 @@ int WindowsGnaSelfTestHardwareStatus::checkDriver()
 
     return 0;
 }
+
+void MultiOs::Init()
+{
+}

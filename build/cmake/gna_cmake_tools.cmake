@@ -80,7 +80,8 @@ function (set_gna_compile_definitions TARG_NAME)
     ${GNA_COMPILE_DEFS}
     $<$<CONFIG:${OS_PREFIX}_DEBUG>:${GNA_COMPILE_DEFS_DEBUG}>
     $<$<CONFIG:${OS_PREFIX}_RELEASE>:${GNA_COMPILE_DEFS_RELEASE}>
-    $<$<CONFIG:KLOCWORK>:${GNA_COMPILE_DEFS_RELEASE}>)
+    $<$<CONFIG:KLOCWORK>:${GNA_COMPILE_DEFS_RELEASE}>
+    ${GNA_LIBRARY_VER})
 endfunction(set_gna_compile_definitions)
 
 function (set_gna_target_properties TARG_NAME)
