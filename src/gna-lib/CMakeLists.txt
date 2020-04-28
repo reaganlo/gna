@@ -64,7 +64,7 @@ if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux" OR ${CMAKE_SYSTEM_NAME} STREQUAL "Andro
   set(API_EXTRA_LIBS ${CMAKE_DL_LIBS})
   set(API_EXTRA_DEFS "")
 elseif(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
-  set(API_EXTRA_LIBS "setupapi.lib")
+  set(API_EXTRA_LIBS "Cfgmgr32.lib")
   set(API_EXTRA_DEFS "-DINTEL_GNA_DLLEXPORT=1")
 endif()
 
