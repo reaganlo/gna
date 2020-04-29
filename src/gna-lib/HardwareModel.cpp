@@ -42,6 +42,7 @@
 #include "gna-api-types-xnn.h"
 
 #include <algorithm>
+#include <inttypes.h>
 
 using namespace GNA;
 
@@ -101,6 +102,19 @@ void HardwareModel::Build(const std::vector<std::unique_ptr<SubModel>>& submodel
             else
             {
                 hardwareLayers.push_back(HardwareLayer::Create(parameters));
+#if DEBUG == 1
+                Log->Message("Layer %d descriptor:\n", i);
+                const auto addr = hardwareLayers.back().get()->XnnDescriptor.GetMemAddress().Get();
+                for (unsigned line = 0; line < 4; line++)
+                {
+                    Log->Message("%011" PRIX64 " ", reinterpret_cast<uint64_t>(addr + line * 16));
+                    for (int byte = 15; byte >= 0; byte--)
+                    {
+                        Log->Message("%02X", *(addr + line * 16 + static_cast<unsigned>(byte)));
+                    }
+                    Log->Message("\n");
+                }
+#endif // DEBUG == 1
             }
             if (INTEL_GMM == layer.Operation)
             {
