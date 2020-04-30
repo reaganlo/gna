@@ -1,5 +1,5 @@
 #INTEL CONFIDENTIAL
-#Copyright 2019 Intel Corporation.
+#Copyright 2019-2020 Intel Corporation.
 
 #The source code contained or described herein and all documents related
 #to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -47,7 +47,7 @@ add_executable(test-gna-api
   test-model-export-tlv.cpp)
 
 target_include_directories(test-gna-api
-  PRIVATE ${SRC_DIR} ${COMMON_DIR} ${API_DIR} ${API_IMPL_DIR} ${KERNEL_DIR} ${GNA_HW_LIB_INCLUDE_PATH})
+  PRIVATE ${SRC_DIR} ${COMMON_DIR} ${API_DIR} ${API_IMPL_DIR} ${KERNEL_DIR} ${GNA_HW_LIB_INCLUDE_PATH} ${COMMON_TOOLS_DIR})
 
 target_compile_definitions(test-gna-api PRIVATE -DOPTGEN)
 

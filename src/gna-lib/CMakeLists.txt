@@ -305,16 +305,11 @@ set(common_sources
   ${COMMON_DIR}/profiler.h)
 
 if(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
-  set_source_files_properties(${COMMON_DIR}/version.rc PROPERTIES LANGUAGE RC)
-  set(gna_rc_files
-    ${COMMON_DIR}/resource.h
-    ${COMMON_DIR}/version.rc)
   set(windows_ddi
     ${COMMON_DIR}/GnaDrvApi.h
     ${COMMON_DIR}/GnaDrvApiWinDebug.h)
-  list(APPEND common_sources ${gna_rc_files} ${windows_ddi})
+  list(APPEND common_sources ${windows_ddi})
 endif()
-
 
 set(api_headers ${gna_api_headers_2} ${gna_api_headers_extra_2})
 source_group(Api2 FILES ${api_headers})
@@ -352,8 +347,8 @@ set_target_properties(gna-api
   ARCHIVE_OUTPUT_DIRECTORY_${OS_PREFIX}_RELEASE ${GNA_LIB_RELEASE_OUT_DIR}
   RUNTIME_OUTPUT_DIRECTORY_${OS_PREFIX}_DEBUG ${GNA_LIB_DEBUG_OUT_DIR}
   RUNTIME_OUTPUT_DIRECTORY_${OS_PREFIX}_RELEASE ${GNA_LIB_RELEASE_OUT_DIR}
-  VS_USER_PROPS ${CMAKE_SOURCE_DIR}/build/common/version-dll.props
   OUTPUT_NAME gna)
+  gna_add_shared_library_rc_properties(gna-api "Main module")
 
 target_compile_definitions(gna-api
   PRIVATE

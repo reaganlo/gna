@@ -1,5 +1,5 @@
 // INTEL CONFIDENTIAL
-// Copyright 2017 Intel Corporation.
+// Copyright 2017-2020 Intel Corporation.
 //
 // The source code contained or described herein and all documents related
 // to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -40,27 +40,13 @@ LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
 #define OWNFILEFLAGS    0x0L
 #endif
 
-#ifdef DRIVER
-#define OWNFILETYPE     VFT_DRV
-#define OWNFILESUBTYPE  VFT2_DRV_SYSTEM
-#define OWNORGFILENAME  DRV_NAME ".sys"
-#define OWNFILEDESC     "Intel " PRODUCT_S " device driver"
-#elif defined(TESTTOOL)
-#define OWNFILETYPE     VFT_APP
-#define OWNFILESUBTYPE  VFT2_UNKNOWN
-#define OWNORGFILENAME  PRODUCT_S ".exe"
-#define OWNFILEDESC     "Intel " PRODUCT_S " test application"
-#else
 #define OWNFILETYPE     VFT_DLL
 #define OWNFILESUBTYPE  VFT2_UNKNOWN
-#define OWNORGFILENAME  API_DLL ".dll"
-#define OWNFILEDESC     "Intel " PRODUCT_S " device module library"
-#endif
-
+#define OWNFILEDESC     PRODUCT_NAME ", Dynamic-link library (" GNA_TARGET_DESCRIPTION ")"
 
 VS_VERSION_INFO         VERSIONINFO
-FILEVERSION             VERSION_FILE_B
-PRODUCTVERSION          PRODUCT_VERSION_B
+FILEVERSION             VERSION_FILE_ID
+PRODUCTVERSION          PRODUCT_VERSION_ID
 FILEFLAGSMASK           0x0L
 FILEFLAGS               OWNFILEFLAGS
 FILEOS                  VOS__WINDOWS32
@@ -71,14 +57,14 @@ BEGIN
     BEGIN
         BLOCK "040904e4"
         BEGIN
-            VALUE "CompanyName",    "Intel Corporation"
-            VALUE "FileDescription",OWNFILEDESC
-            VALUE "FileVersion",    VERSION_FILE_A
-            VALUE "InternalName",   PRODUCT_S
-            VALUE "LegalCopyright", "Copyright (c) 2015, Intel Corporation."
-            VALUE "ProductName",    "Intel Neural Network and Gaussian Mixture Model Scoring Accelerator Module"
-            VALUE "ProductVersion", PRODUCT_VERSION_A
-            VALUE "OriginalFilename",OWNORGFILENAME
+            VALUE "CompanyName",      "Intel Corporation"
+            VALUE "FileDescription",  OWNFILEDESC
+            VALUE "FileVersion",      VERSION_FILE_STR
+            VALUE "InternalName",     OWNFILEDESC
+            VALUE "LegalCopyright",   PRODUCT_COPYRIGHT
+            VALUE "ProductName",      PRODUCT_NAME_LONG
+            VALUE "ProductVersion",   PRODUCT_VERSION_STR
+            VALUE "OriginalFilename", GNA_TARGET_OUTPUT_NAME ".dll"
         END
     END
     BLOCK "VarFileInfo"

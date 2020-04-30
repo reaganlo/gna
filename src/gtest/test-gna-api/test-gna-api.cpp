@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2019 Intel Corporation.
+ Copyright 2019-2020 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -25,7 +25,8 @@
 
 #include "test-gna-api.h"
 
-#include "gna-api.h"
+#include "Gna2Utilities.hpp"
+
 #include "gna2-api.h"
 #include "gna2-capability-api.h"
 #include "Macros.h"
@@ -730,36 +731,59 @@ TEST_F(TestGnaApi, Gna2StatusGetMessage_positive_and_negative)
 TEST_F(TestGnaApi, Gna2GetLibraryVersionSuccessfull)
 {
     GetLibraryVersionTest(true, true,
-        Gna2StatusSuccess, '2');
+        Gna2StatusSuccess, "2");
 }
 
 TEST_F(TestGnaApi, Gna2GetLibraryVersionNullBuffer)
 {
     GetLibraryVersionTest(false, true,
-        Gna2StatusNullArgumentNotAllowed, '\0');
+        Gna2StatusNullArgumentNotAllowed, "");
 }
 
 TEST_F(TestGnaApi, Gna2GetLibraryVersionSizeInvalid)
 {
     GetLibraryVersionTest(true, false,
-        Gna2StatusMemorySizeInvalid, '\0');
+        Gna2StatusMemorySizeInvalid, "");
 }
 
 TEST_F(TestGnaApi, Gna2GetLibraryVersionNullParams)
 {
     GetLibraryVersionTest(false, false,
-        Gna2StatusNullArgumentNotAllowed, '\0');
+        Gna2StatusNullArgumentNotAllowed, "");
+}
+
+TEST_F(TestGnaApi, Gna2VersionParse1)
+{
+    const Gna2Version v("2.X.01.0233");
+    EXPECT_EQ(v.GetUnPadded(0), std::string("2"));
+    EXPECT_EQ(v.GetUnPadded(1), std::string("X"));
+    EXPECT_EQ(v.GetUnPadded(2), std::string("1"));
+    EXPECT_EQ(v.GetUnPadded(3), std::string("233"));
+    EXPECT_EQ(v.GetUnPadded(4), std::string(""));
+    EXPECT_EQ(v.Size(), 4);
+
+    const Gna2Version v2(".2.0X.0010..02033..");
+    EXPECT_EQ(v2.GetUnPadded(0), std::string(""));
+    EXPECT_EQ(v2.GetUnPadded(1), std::string("2"));
+    EXPECT_EQ(v2.GetUnPadded(2), std::string("X"));
+    EXPECT_EQ(v2.GetUnPadded(3), std::string("10"));
+    EXPECT_EQ(v2.GetUnPadded(4), std::string(""));
+    EXPECT_EQ(v2.GetUnPadded(5), std::string("2033"));
+    EXPECT_EQ(v2.GetUnPadded(6), std::string(""));
+    EXPECT_EQ(v2.GetUnPadded(7), std::string(""));
+    EXPECT_EQ(v2.Size(), 6);
 }
 
 void TestGnaApi::GetLibraryVersionTest(bool versionBufferValid, bool versionBufferSizeValid,
-    Gna2Status expectedStatus, char expectedChar0) const
+    Gna2Status expectedStatus, const std::string& expected0) const
 {
     char buffer[64] = {0};
     auto const versionBuffer = versionBufferValid ? buffer : nullptr;
     auto const versionBufferSize = versionBufferSizeValid ? sizeof(buffer) : 3;
     auto const status = Gna2GetLibraryVersion(versionBuffer, static_cast<uint32_t>(versionBufferSize));
     EXPECT_EQ(status, expectedStatus);
-    EXPECT_EQ(buffer[0], expectedChar0);
+    const Gna2Version v(buffer);
+    EXPECT_EQ(v.GetMajor(), expected0);
 }
 
 int main(int argc, char **argv)

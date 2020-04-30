@@ -143,14 +143,15 @@ if(${GNA_BUILD_WITH_3_0_HW_MODULE_ENABLED})
   message("Enabling GNA 3.0 HW Module for GNA library")
   if(NOT EXISTS "${HW_MODULE_3_0_PATH}/CMakeLists.txt")
 
-	message(FATAL_ERROR "CPKG submodule was not initialized properly.\n"
-		"File <${HW_MODULE_3_0_PATH}/CMakeLists.txt> not found.\n"
-		"Try using 'git submodule update --init --recursive' to load all submodules.")
+    message(FATAL_ERROR "CPKG submodule was not initialized properly.\n"
+        "File <${HW_MODULE_3_0_PATH}/CMakeLists.txt> not found.\n"
+        "Try using 'git submodule update --init --recursive' to load all submodules.")
   endif()
   add_subdirectory(${HW_MODULE_3_0_PATH})
   set_gna_compile_definitions(gna_hw)
+  gna_add_shared_library_rc_properties(gna_hw "Hardware support module")
 else()
-	message("CPGK for GNA library will NOT be used.")
+  message("CPGK for GNA library will NOT be used.")
 endif()
 
 add_subdirectory(src/gna-lib/kernels)

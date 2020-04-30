@@ -1,5 +1,5 @@
 #INTEL CONFIDENTIAL
-#Copyright 2019 Intel Corporation.
+#Copyright 2019-2020 Intel Corporation.
 
 #The source code contained or described herein and all documents related
 #to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -93,3 +93,24 @@ function (set_gna_target_properties TARG_NAME)
     OUTPUT_NAME ${TARG_NAME}
     FOLDER tools/${TARG_NAME})
 endfunction(set_gna_target_properties)
+
+macro(gna_add_shared_library_rc_properties TARGET_NAME TARGET_DESCRIPTION)
+  if(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
+    set(gna_rc_files
+      ${COMMON_DIR}/resource.h
+      ${COMMON_DIR}/version.rc)
+    set_source_files_properties(${gna_rc_files}PROPERTIES LANGUAGE RC)
+    set_target_properties(${TARGET_NAME}
+      PROPERTIES
+      VS_USER_PROPS ${CMAKE_SOURCE_DIR}/build/common/version.props)
+    target_sources(${TARGET_NAME} PRIVATE ${gna_rc_files})
+    get_target_property(GNA_TARGET_OUTPUT_NAME ${TARGET_NAME} OUTPUT_NAME)
+    if(NOT GNA_TARGET_OUTPUT_NAME)
+      set(GNA_TARGET_OUTPUT_NAME ${TARGET_NAME})
+    endif(NOT GNA_TARGET_OUTPUT_NAME)
+    target_compile_definitions(${TARGET_NAME}
+      PRIVATE
+      -DGNA_TARGET_OUTPUT_NAME="${GNA_TARGET_OUTPUT_NAME}"
+      -DGNA_TARGET_DESCRIPTION="${TARGET_DESCRIPTION}")
+  endif(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
+endmacro()

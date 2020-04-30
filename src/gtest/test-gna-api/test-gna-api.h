@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2019 Intel Corporation.
+ Copyright 2019-2020 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -66,7 +66,7 @@ protected:
 
     static void ExpectMemEqual(const uint8_t* dump, uint32_t dumpSize, const uint8_t* ref, uint32_t refSize);
     void GetLibraryVersionTest(bool versionBufferValid, bool versionBufferSizeValid,
-        Gna2Status expectedStatus, char expectedChar0) const;
+        Gna2Status expectedStatus, const std::string& expected0) const;
 };
 
 class TestGnaApiEx : public TestGnaApi
