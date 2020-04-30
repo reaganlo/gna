@@ -66,8 +66,9 @@ Gna2Status Gna2InstrumentationConfigCreate(
 {
     const std::function<ApiStatus()> command = [&]()
     {
+        Expect::NotNull(configId);
         auto& device = DeviceManager::Get().GetDevice(0);
-        device.CreateProfilerConfiguration(configId, numberOfInstrumentationPoints, selectedInstrumentationPoints, results);
+        *configId = device.CreateProfilerConfiguration(numberOfInstrumentationPoints, selectedInstrumentationPoints, results);
         return Gna2StatusSuccess;
     };
     return ApiWrapper::ExecuteSafely(command);

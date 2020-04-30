@@ -36,6 +36,9 @@ public:
 
     static uint32_t GetMaxNumberOfInstrumentationPoints();
     static const std::set<Gna2InstrumentationPoint>& GetSupportedInstrumentationPoints();
+    static const std::set<Gna2InstrumentationUnit>& GetSupportedInstrumentationUnits();
+    static const std::set<Gna2InstrumentationMode>& GetSupportedInstrumentationModes();
+    static void ExpectValid(Gna2InstrumentationMode encodingIn);
 
     ProfilerConfiguration(uint32_t configID,
         uint32_t numberOfPoints,

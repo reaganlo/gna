@@ -104,7 +104,7 @@ public:
     void DumpLdNoMMu(uint32_t modelId, Gna2UserAllocator customAlloc,
         void *& exportData, uint32_t & exportDataSize);
 
-    void CreateProfilerConfiguration(uint32_t* configId, uint32_t numberOfInstrumentationPoints, Gna2InstrumentationPoint* selectedInstrumentationPoints, uint64_t* results);
+    uint32_t CreateProfilerConfiguration(uint32_t numberOfInstrumentationPoints, Gna2InstrumentationPoint* selectedInstrumentationPoints, uint64_t* results);
 
     void ReleaseProfilerConfiguration(uint32_t configId);
 

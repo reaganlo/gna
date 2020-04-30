@@ -189,6 +189,7 @@ void Device::SetInstrumentationUnit(uint32_t configId, Gna2InstrumentationUnit i
 
 void Device::SetHardwareInstrumentation(uint32_t configId, Gna2InstrumentationMode instrumentationMode)
 {
+    ProfilerConfiguration::ExpectValid(instrumentationMode);
     if (instrumentationMode > Gna2InstrumentationModeWaitForMmuTranslation
         && !hardwareCapabilities.HasFeature(NewPerformanceCounters))
     {
@@ -204,7 +205,7 @@ bool Device::HasModel(uint32_t modelId) const
     return models.count(modelId) > 0;
 }
 
-void Device::CreateProfilerConfiguration(uint32_t* configId,
+uint32_t Device::CreateProfilerConfiguration(
     uint32_t numberOfInstrumentationPoints,
     Gna2InstrumentationPoint* selectedInstrumentationPoints,
     uint64_t* results)
@@ -212,7 +213,7 @@ void Device::CreateProfilerConfiguration(uint32_t* configId,
     Expect::NotNull(selectedInstrumentationPoints);
     Expect::NotNull(results);
 
-    requestBuilder.CreateProfilerConfiguration(configId, numberOfInstrumentationPoints, selectedInstrumentationPoints, results);
+    return requestBuilder.CreateProfilerConfiguration(numberOfInstrumentationPoints, selectedInstrumentationPoints, results);
 }
 
 void Device::AssignProfilerConfigToRequestConfig(uint32_t instrumentationConfigId,

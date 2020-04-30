@@ -55,6 +55,33 @@ const std::set<Gna2InstrumentationPoint>& ProfilerConfiguration::GetSupportedIns
     return supportedInstrumentationPoints;
 }
 
+const std::set<Gna2InstrumentationUnit>& ProfilerConfiguration::GetSupportedInstrumentationUnits()
+{
+    static const std::set<Gna2InstrumentationUnit> supportedInstrumentationUnits
+    {
+        Gna2InstrumentationUnitCycles,
+        Gna2InstrumentationUnitMilliseconds,
+        Gna2InstrumentationUnitMicroseconds,
+    };
+    return supportedInstrumentationUnits;
+}
+
+const std::set<Gna2InstrumentationMode>& ProfilerConfiguration::GetSupportedInstrumentationModes()
+{
+    static const std::set<Gna2InstrumentationMode> supportedInstrumentationModes
+    {
+        Gna2InstrumentationModeTotalStall,
+        Gna2InstrumentationModeWaitForDmaCompletion,
+        Gna2InstrumentationModeWaitForMmuTranslation,
+        Gna2InstrumentationModeDescriptorFetchTime,
+        Gna2InstrumentationModeInputBufferFillFromMemory,
+        Gna2InstrumentationModeOutputBufferFullStall,
+        Gna2InstrumentationModeOutputBufferWaitForIosfStall,
+        Gna2InstrumentationModeDisabled,
+    };
+    return supportedInstrumentationModes;
+}
+
 uint32_t ProfilerConfiguration::GetMaxNumberOfInstrumentationPoints()
 {
     return static_cast<uint32_t>(GetSupportedInstrumentationPoints().size());
@@ -81,12 +108,18 @@ ProfilerConfiguration::ProfilerConfiguration(const uint32_t configID,
 
 void ProfilerConfiguration::SetUnit(Gna2InstrumentationUnit unitIn)
 {
+    Expect::True(GetSupportedInstrumentationUnits().count(unitIn) > 0, Gna2StatusIdentifierInvalid);
     Unit = unitIn;
 }
 
 Gna2InstrumentationUnit ProfilerConfiguration::GetUnit() const
 {
     return Unit;
+}
+
+void ProfilerConfiguration::ExpectValid(Gna2InstrumentationMode encodingIn)
+{
+    Expect::True(GetSupportedInstrumentationModes().count(encodingIn) > 0, Gna2StatusIdentifierInvalid);
 }
 
 void ProfilerConfiguration::SetHwPerfEncoding(Gna2InstrumentationMode encodingIn)

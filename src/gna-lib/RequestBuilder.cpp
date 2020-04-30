@@ -105,14 +105,15 @@ uint32_t RequestBuilder::AssignProfilerConfigId()
     return profilerConfigIdSequence++; // TODO:3: add unique id
 }
 
-void RequestBuilder::CreateProfilerConfiguration(uint32_t* profilerConfigId,
+uint32_t RequestBuilder::CreateProfilerConfiguration(
     uint32_t numberOfInstrumentationPoints,
     Gna2InstrumentationPoint* selectedInstrumentationPoints,
     uint64_t* results)
 {
-    *profilerConfigId = AssignProfilerConfigId();
-    profilerConfigurations.emplace(*profilerConfigId, 
-        std::make_unique<ProfilerConfiguration>(*profilerConfigId, numberOfInstrumentationPoints, selectedInstrumentationPoints, results));
+    auto const profilerConfigId = AssignProfilerConfigId();
+    profilerConfigurations.emplace(profilerConfigId,
+        std::make_unique<ProfilerConfiguration>(profilerConfigId, numberOfInstrumentationPoints, selectedInstrumentationPoints, results));
+    return profilerConfigId;
 }
 
 ProfilerConfiguration& RequestBuilder::GetProfilerConfiguration(uint32_t configId) const

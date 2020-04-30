@@ -55,7 +55,7 @@ public:
     RequestConfiguration& GetConfiguration(uint32_t configId) const;
     std::unique_ptr<Request> CreateRequest(uint32_t configId);
 
-    void CreateProfilerConfiguration(uint32_t* configId, uint32_t numberOfInstrumentationPoints, Gna2InstrumentationPoint* selectedInstrumentationPoints, uint64_t* results);
+    uint32_t CreateProfilerConfiguration(uint32_t numberOfInstrumentationPoints, Gna2InstrumentationPoint* selectedInstrumentationPoints, uint64_t* results);
     ProfilerConfiguration& GetProfilerConfiguration(uint32_t configId) const;
     void ReleaseProfilerConfiguration(uint32_t configId);
 
