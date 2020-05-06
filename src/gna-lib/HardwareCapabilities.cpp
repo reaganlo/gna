@@ -194,7 +194,7 @@ std::map<DeviceVersion, const GenerationCapabilities>& HardwareCapabilities::get
         },
         { Gna2DeviceVersion3_0,
             {GNA_3_0,
-            8191,
+            8192,
             {
                 { BaseFunctionality, true},
                 { CNN, true },
@@ -217,7 +217,7 @@ std::map<DeviceVersion, const GenerationCapabilities>& HardwareCapabilities::get
         },
         { Gna2DeviceVersionEmbedded3_0,
             {GNA_3_0,
-            8191,
+            8192,
             {
                 { BaseFunctionality, true},
                 { CNN, true },
@@ -240,7 +240,7 @@ std::map<DeviceVersion, const GenerationCapabilities>& HardwareCapabilities::get
         },
         { Gna2DeviceVersionEmbedded3_1,
             {GNA_3_0,
-            8191,
+            8192,
             {
                 { BaseFunctionality, true},
                 { CNN, true },
