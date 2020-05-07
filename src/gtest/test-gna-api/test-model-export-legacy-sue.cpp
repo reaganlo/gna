@@ -92,7 +92,6 @@ void TestSimpleModel::ExportSueLegacyUsingGnaApi2(Gna2ModelSueCreekHeader& model
     ExportComponentAs(modelHeader, Gna2DeviceVersionEmbedded1_0, Gna2ModelExportComponentLegacySueCreekHeader);
 
     ExportComponent(dump, Gna2DeviceVersionEmbedded1_0, Gna2ModelExportComponentLegacySueCreekDump);
-    EXPECT_EQ(dump.size(), expectedModelSize);
 }
 
 void TestSimpleModel::ExpectEqualToRefAdlNoMmuLd(const uint8_t* dump, uint32_t dumpSize) const
@@ -193,7 +192,7 @@ void TestSimpleModel::SetupGnaModel()
     CreateGnaModel();
 }
 
-void TestSimpleModel::SetupGnaModelSue()
+void TestSimpleModel::SetupGnaModelSue(bool separateRO)
 {
     uint32_t deviceCount;
     auto status = Gna2DeviceGetCount(&deviceCount);
@@ -204,34 +203,47 @@ void TestSimpleModel::SetupGnaModelSue()
 
     ASSERT_EQ(Gna2StatusSuccess, status);
 
-    auto const rwSize = Gna2RoundUp(buf_size_inputs + buf_size_outputs, 4096);
-    status = Gna2MemoryAlloc(rwSize, &rw_buffer_size,
-        reinterpret_cast<void**>(&gnamem_pinned_inputs));
-    ASSERT_EQ(Gna2StatusSuccess, status);
-    gnamem_pinned_outputs = gnamem_pinned_inputs + (buf_size_inputs / sizeof(*gnamem_pinned_outputs));
-
+    auto rwSize = buf_size_inputs + buf_size_outputs;
+    
     ro_buffer_size = buf_size_weights + buf_size_biases;
     if(enablePwl)
     {
         ro_buffer_size += buf_size_identity_pwl;
     }
-    status = Gna2MemoryAlloc(ro_buffer_size, &memorySize, &memory);
+    if (!separateRO)
+    {
+        rwSize += ro_buffer_size;
+    }
+
+    rwSize = Gna2RoundUp(rwSize, 4096);
+    status = Gna2MemoryAlloc(rwSize, &rw_buffer_size,
+        reinterpret_cast<void**>(&gnamem_pinned_inputs));
     ASSERT_EQ(Gna2StatusSuccess, status);
-    EXPECT_NE(memory, nullptr);
-    const bool copyInputs = !minimizeRw;
-    const bool setupInOut = !separateInputAndOutput;
+    gnamem_pinned_outputs = gnamem_pinned_inputs + (buf_size_inputs / sizeof(*gnamem_pinned_outputs));
 
+    uint8_t *model_memory = nullptr;
+    if (separateRO)
+    {
+        status = Gna2MemoryAlloc(ro_buffer_size, &memorySize, &memory);
+        ASSERT_EQ(Gna2StatusSuccess, status);
+        EXPECT_NE(memory, nullptr);
+        model_memory = static_cast<uint8_t*>(memory);
+    }
+    else
+    {
+        model_memory = reinterpret_cast<uint8_t*>(gnamem_pinned_outputs
+            + (buf_size_outputs / sizeof(*gnamem_pinned_outputs)));
+    }
 
-    uint8_t *model_memory = (uint8_t*)memory;
-    gnamem_weights_buffer = (int16_t*)model_memory;
+    gnamem_weights_buffer = reinterpret_cast<int16_t*>(model_memory);
     model_memory += buf_size_weights;
-    gnamem_biases_buffer = (int32_t*)model_memory;
+    gnamem_biases_buffer = reinterpret_cast<int32_t*>(model_memory);
     if (enablePwl)
     {
         model_memory += buf_size_biases;
-        gnamem_pwl_buffer = (Gna2PwlSegment*)model_memory;
+        gnamem_pwl_buffer = reinterpret_cast<Gna2PwlSegment*>(model_memory);
     }
-    CopyDataToGnaMem(enablePwl, copyInputs);
+    CopyDataToGnaMem(enablePwl, true);
     weightTensor.Data = gnamem_weights_buffer;
     biasTensor.Data = gnamem_biases_buffer;
     inputTensor.Data = gnamem_pinned_inputs;
@@ -252,7 +264,7 @@ void TestSimpleModel::CreateGnaModel()
 
 TEST_F(TestSimpleModel, exportSueLegacyTestUsingApi2)
 {
-    SetupGnaModelSue();
+    SetupGnaModelSue(true);
 
     Gna2ModelSueCreekHeader modelHeader = {};
     std::vector<char> dump;
@@ -299,4 +311,30 @@ TEST_F(TestSimpleModel, exportNoMmuApi2)
         gnamem_pinned_inputs = nullptr;
         gnamem_pinned_outputs = nullptr;
     }
+}
+
+TEST_F(TestSimpleModel, exportSueLegacyTestUsingApi2WithSingleAlloc)
+{
+    SetupGnaModelSue(false);
+
+    Gna2ModelSueCreekHeader modelHeader = {};
+    std::vector<char> dump;
+    ExportSueLegacyUsingGnaApi2(modelHeader, dump);
+    EXPECT_EQ(modelHeader.ModelSize, 8192);
+
+    modelHeader.RwRegionSize = modelHeader.ModelSize;
+
+    uint32_t headerHash = 0;
+    crc32(&modelHeader, expectedHeaderSize, &headerHash);
+
+    uint32_t modelHash = 0;
+    crc32(dump.data(), 8192, &modelHash);
+
+    uint32_t fileHash = headerHash;
+    crc32(dump.data(), 8192, &fileHash);
+
+    EXPECT_EQ(0xe9376ff7, headerHash);
+    EXPECT_EQ(0xaaec148d, modelHash);
+    EXPECT_EQ(0xd11e2f44, fileHash);
+    gnamem_pinned_outputs = nullptr;
 }

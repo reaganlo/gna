@@ -81,8 +81,14 @@ void HardwareModelSue1::prepareAllocationsAndModel()
     }
 
     auto const rw = model.GetAllocations()[0];
-    auto const ro = model.GetAllocations()[1];
-    totalModelSize = ldMemorySize + rw.GetSize() + scratchPadSize + ro.GetSize();
+    totalModelSize = ldMemorySize + rw.GetSize() + scratchPadSize;
+
+    MemoryContainerElement const * ro = nullptr;
+    if (model.GetAllocations().size() >= 3)
+    {
+        ro = &model.GetAllocations()[1];
+        totalModelSize += ro->GetSize();
+    }
 
     exportMemory = customAlloc(totalModelSize);
     if (!exportMemory)
@@ -111,7 +117,10 @@ void HardwareModelSue1::prepareAllocationsAndModel()
         allocations.Emplace(*scratchPadMemory);
     }
 
-    allocations.Emplace(ro);
+    if (nullptr != ro)
+    {
+        allocations.Emplace(*ro);
+    }
 
     Expect::InRange(totalModelSize, static_cast<uint32_t>(2 * 1024 * 1024),
                     Gna2StatusMemoryTotalSizeExceeded);
@@ -136,9 +145,12 @@ void * HardwareModelSue1::Export()
     auto const & ro = allocations.back();
     void * destination = static_cast<uint8_t*>(exportMemory) + ldMemory->GetSize();
     memcpy_s(destination, totalModelSize, rw.GetBuffer(), rw.GetSize());
-    auto const roSize = ro.GetSize();
-    destination = static_cast<uint8_t*>(exportMemory) + totalModelSize - roSize;
-    memcpy_s(destination, totalModelSize, ro.GetBuffer(), roSize);
+    if (allocations.size() >= 3)
+    {
+        auto const roSize = ro.GetSize();
+        destination = static_cast<uint8_t*>(exportMemory) + totalModelSize - roSize;
+        memcpy_s(destination, totalModelSize, ro.GetBuffer(), roSize);
+    }
 
     return exportMemory;
 }

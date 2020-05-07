@@ -19,8 +19,6 @@
 #define __STDC_WANT_LIB_EXT1__ 1
 
 #include "gna2-api.h"
-#include "gna2-model-suecreek-header.h"
-#include "gna2-model-export-api.h"
 
 #include <cinttypes>
 #include <cstdio>
@@ -82,9 +80,6 @@ void* customAlloc(uint32_t dumpedModelSize)
     }
     return _mm_malloc(dumpedModelSize, 4096);
 }
-
-void DumpLegacySueImageToFile(const char* dumpFileName, uint32_t sourceDeviceIndex, uint32_t sourceModelId,
-                              uint32_t RwRegionSize);
 
 void CleanupOrError(Gna2Status status, unsigned deviceIndex, void* memory, uint32_t modelId, uint32_t requestConfigId,
                     const char* where, const char* statusFrom)
@@ -256,9 +251,6 @@ try
     CleanupOrError(status, deviceIndex, memory, modelId, GNA2_DISABLED,
                    "main", "Gna2ModelCreate()");
 
-    // [optional] Export/dump model for GNA embedded device
-    DumpLegacySueImageToFile("model.bin", deviceIndex, modelId, rw_buffer_size);
-
     // Create request configuration used for queueing inference requests
     uint32_t configId = GNA2_DISABLED;
     status = Gna2RequestConfigCreate(modelId, &configId);
@@ -338,110 +330,4 @@ catch (...)
 {
     printf("Unhandled exception was thrown.\n");
     return -1;
-}
-
-uint32_t InitExportConfig(
-    uint32_t sourceDeviceIndex,
-    uint32_t sourceModelId,
-    Gna2UserAllocator exportAllocator,
-    Gna2DeviceVersion targetDevice)
-{
-    uint32_t exportConfigId;
-    auto status = Gna2ModelExportConfigCreate(exportAllocator, &exportConfigId);
-    HandleGnaStatus(status, "InitExportConfig()",
-                    "GnaModelExportConfigCreate()");
-    status = Gna2ModelExportConfigSetSource(exportConfigId, sourceDeviceIndex, sourceModelId);
-    HandleGnaStatus(status, "InitExportConfig()",
-                    "GnaModelExportConfigSetSource()");
-    status = Gna2ModelExportConfigSetTarget(exportConfigId, targetDevice);
-    HandleGnaStatus(status, "InitExportConfig()",
-                    "GnaModelExportConfigSetTarget()");
-    return exportConfigId;
-}
-
-void* DumpLegacySueImage(
-    uint32_t sourceDeviceIndex,
-    uint32_t modelId,
-    Gna2ModelSueCreekHeader* modelHeader,
-    Gna2UserAllocator userAlloc)
-{
-    void* bufferLdHeader;
-    uint32_t bufferLdHeaderSize;
-    void* bufferLd;
-    uint32_t bufferLdSize;
-
-    /* Export Legacy Sue Creek Header */
-
-    auto exportConfig = InitExportConfig(sourceDeviceIndex, modelId,
-                                         customAlloc,
-                                         Gna2DeviceVersionEmbedded1_0);
-
-    auto status = Gna2ModelExport(exportConfig,
-                                  Gna2ModelExportComponentLegacySueCreekHeader,
-                                  &bufferLdHeader, &bufferLdHeaderSize);
-
-    HandleGnaStatus(status,
-                    "DumpLegacySueImage()",
-                    "GnaModelExport(Gna2ModelExportComponentLegacySueCreekHeader)");
-
-    if (bufferLdHeaderSize != sizeof(Gna2ModelSueCreekHeader))
-    {
-        throw std::runtime_error(
-            "In: DumpLegacySueImage(): "
-            "Inconsistent size of Sue Creek image header");
-    }
-    *modelHeader = *(reinterpret_cast<Gna2ModelSueCreekHeader*>(bufferLdHeader));
-    _mm_free(bufferLdHeader);
-    status = Gna2ModelExportConfigRelease(exportConfig);
-    HandleGnaStatus(status, "DumpLegacySueImage()",
-                    "GnaModelExportConfigRelease()");
-
-    /* Export Legacy Sue Creek Image */
-
-    exportConfig = InitExportConfig(sourceDeviceIndex, modelId,
-                                    userAlloc,
-                                    Gna2DeviceVersionEmbedded1_0);
-
-    status = Gna2ModelExport(exportConfig,
-                             Gna2ModelExportComponentLegacySueCreekDump,
-                             &bufferLd,
-                             &bufferLdSize);
-    HandleGnaStatus(status, "DumpLegacySueImage()",
-                    "GnaModelExport(Gna2ModelExportComponentLegacySueCreekDump)");
-
-    if (bufferLdSize != modelHeader->ModelSize)
-    {
-        throw std::runtime_error(
-            "In: DumpLegacySueImage(): Inconsistent size of Sue Creek image");
-    }
-
-    status = Gna2ModelExportConfigRelease(exportConfig);
-    HandleGnaStatus(status, "DumpLegacySueImage()",
-                    "GnaModelExportConfigRelease()");
-
-    return bufferLd;
-}
-
-void DumpLegacySueImageToFile(
-    const char* dumpFileName,
-    uint32_t sourceDeviceIndex,
-    uint32_t sourceModelId,
-    const uint32_t RwRegionSize)
-{
-    Gna2ModelSueCreekHeader sueHeader = {};
-    auto const ldAndData = DumpLegacySueImage(sourceDeviceIndex, sourceModelId,
-                                              &sueHeader,
-                                              customAlloc);
-
-    sueHeader.RwRegionSize = RwRegionSize;
-
-    /* Save dumped model with header to stream or file. */
-    std::ofstream dumpStream(dumpFileName, std::ios::out | std::ios::binary);
-    dumpStream.write(reinterpret_cast<const char*>(&sueHeader),
-                     sizeof(Gna2ModelSueCreekHeader));
-    dumpStream.write(reinterpret_cast<const char*>(ldAndData),
-                     sueHeader.ModelSize);
-
-    /* Release dump memory if no longer needed. */
-    _mm_free(ldAndData);
 }

@@ -125,12 +125,19 @@ enum Gna2ModelExportComponent
 
     /**
      Hardware layer descriptors and model data in legacy SueCreek format will be exported.
+
+     @note:
+     To support RW and RO data separation 2 allocations
+     for RW and RO memory (in order) are required.
      */
     Gna2ModelExportComponentLegacySueCreekDump = 2,
 
     /**
      Header describing layer descriptors in legacy SueCreek format will be exported.
-     */
+     @note:
+     To support RW and RO data separation 2 allocations
+     for RW and RO memory (in order) are required.
+    */
     Gna2ModelExportComponentLegacySueCreekHeader = 3,
 };
 

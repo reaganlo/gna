@@ -195,7 +195,7 @@ protected:
     bool minimizeRw = false;
     bool separateInputAndOutput = false;
     void SetupGnaModel();
-    void SetupGnaModelSue();
+    void SetupGnaModelSue(bool separateRO);
     void CreateGnaModel();
 
     void ExportSueLegacyUsingGnaApi2(Gna2ModelSueCreekHeader& modelHeader, std::vector<char>& dump);
