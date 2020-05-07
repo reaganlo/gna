@@ -139,11 +139,11 @@ protected:
 
     AccelerationDetector accelerationDetector;
 
-    std::map<uint32_t, std::unique_ptr<CompiledModel>> models;
-
     RequestBuilder requestBuilder;
 
     RequestHandler requestHandler;
+
+    std::map<uint32_t, std::unique_ptr<CompiledModel>> models;
 
 private:
     uint32_t numberOfThreads;
