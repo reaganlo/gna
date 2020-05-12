@@ -8,3 +8,7 @@
 	url = ssh://git@gitlab.devtools.intel.com:29418/gna/sdk/hw/gna-3.0-arch-cpkg.git
 	branch = master
 #forwarded to ff8648c5506f89d51423ecf5e92732f3ae95a886
+[submodule "build/hw_module_3_5"]
+	path = build/hw_module_3_5
+	url = ssh://git@gitlab.devtools.intel.com:29418/gna/sdk/hw/gna-3.0-arch-cpkg.git
+	branch = ArchCPkg.Gen3p5.MTL-SoC-M.RTL-0p5.release

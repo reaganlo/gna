@@ -133,17 +133,17 @@ endif()
 option(GNA_BUILD_WITH_3_0_HW_MODULE_ENABLED "" ON)
 
 set(HW_MODULE_3_0_PATH)
-set(GNA_HW_LIB_INCLUDE_PATH)
+set(GNA_HW_LIB_3_0_INCLUDE_PATH)
 set(GNA_HW_LIB_ENABLED )
 
 if(${GNA_BUILD_WITH_3_0_HW_MODULE_ENABLED})
   set(HW_MODULE_3_0_PATH ${BUILD_DIR}/hw_module_3_0)
-  set(GNA_HW_LIB_INCLUDE_PATH "${HW_MODULE_3_0_PATH}/GNA-3d0_ArchCPkg_Lib/Include/")
+  set(GNA_HW_LIB_3_0_INCLUDE_PATH "${HW_MODULE_3_0_PATH}/GNA-3d0_ArchCPkg_Lib/Include/")
   set(GNA_HW_LIB_ENABLED "-DGNA_HW_LIB_ENABLED=1")
   message("Enabling GNA 3.0 HW Module for GNA library")
   if(NOT EXISTS "${HW_MODULE_3_0_PATH}/CMakeLists.txt")
 
-    message(FATAL_ERROR "CPKG submodule was not initialized properly.\n"
+    message(FATAL_ERROR "HW 3.0 submodule was not initialized properly.\n"
         "File <${HW_MODULE_3_0_PATH}/CMakeLists.txt> not found.\n"
         "Try using 'git submodule update --init --recursive' to load all submodules.")
   endif()
@@ -151,8 +151,34 @@ if(${GNA_BUILD_WITH_3_0_HW_MODULE_ENABLED})
   set_gna_compile_definitions(gna_hw)
   gna_add_shared_library_rc_properties(gna_hw "Hardware support module")
 else()
-  message("CPGK for GNA library will NOT be used.")
+  message("HW Module 3.0 for GNA library will NOT be used.")
 endif()
+
+option(GNA_BUILD_WITH_3_5_HW_MODULE_ENABLED "" ON)
+set(HW_MODULE_3_5_PATH)
+set(GNA_HW_LIB_3_5_INCLUDE_PATH)
+set(GNA_HW_LIB_3_5_ENABLED )
+
+
+if(${GNA_BUILD_WITH_3_5_HW_MODULE_ENABLED})
+  set(HW_MODULE_3_5_PATH ${BUILD_DIR}/hw_module_3_5)
+  set(GNA_HW_LIB_3_5_INCLUDE_PATH "${HW_MODULE_3_5_PATH}/GNA-3d0_ArchCPkg/GNA-3d0_ArchCPkg_Lib/Include/")
+  set(GNA_HW_LIB_ENABLED "-DGNA_HW_LIB_ENABLED=1")
+  message("Enabling GNA 3.5 HW Module for GNA library")
+  if(NOT EXISTS "${HW_MODULE_3_5_PATH}/CMakeLists.txt")
+
+    message(FATAL_ERROR "HW 3.5 submodule was not initialized properly.\n"
+        "File <${HW_MODULE_3_5_PATH}/CMakeLists.txt> not found.\n"
+        "Try using 'git submodule update --init --recursive' to load all submodules.")
+  endif()
+  add_subdirectory(${HW_MODULE_3_5_PATH})
+  set_gna_compile_definitions(gna-hw-3-5)
+  gna_add_shared_library_rc_properties(gna-hw-3-5 "Hardware support module")
+else()
+  message("HW Module 3.5 for GNA library will NOT be used.")
+endif()
+
+set(GNA_HW_LIB_INCLUDE_PATH ${GNA_HW_LIB_3_0_INCLUDE_PATH} ${GNA_HW_LIB_3_5_INCLUDE_PATH})
 
 add_subdirectory(src/gna-lib/kernels)
 add_subdirectory(src/gna-lib)
