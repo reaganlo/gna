@@ -54,7 +54,7 @@ FiltersTensor::FiltersTensor(const Shape& dimensions, const DataMode & dataMode,
         const auto kernelMemorySize = HardwareLayerCnn2D::GetKernelMemorySize(
             validator->HwCapabilities.GetDeviceVersion(), this);
         const auto caps = static_cast<const TensorLimits *>(validator->Capabilities);
-        validator->ValidateBufferIfSet(Buffer, kernelMemorySize * Count, caps->Align);
+        validator->ValidateBufferIfSet(Buffer, kernelMemorySize * Count, caps->GetAddressAlign());
     }
 
     if (INTEL_CONVOLUTIONAL_1D == validator->Operation &&

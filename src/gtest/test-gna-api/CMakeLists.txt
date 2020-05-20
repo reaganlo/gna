@@ -42,6 +42,7 @@ add_executable(test-gna-api
   test-gna-device-api.h
   test-gna-multithread.cpp
   test-gna-multithread.h
+  test-microphone-selection-model.cpp
   test-model-export-legacy-sue.cpp
   test-model-export-legacy-sue.h
   test-model-export-tlv.cpp)

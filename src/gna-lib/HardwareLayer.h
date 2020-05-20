@@ -49,6 +49,7 @@ class PoolingFunction2D;
 struct AffineFunction;
 struct ConvolutionFunction2D;
 struct FiltersTensor;
+struct Tensor;
 
 struct DescriptorParameters
 {
@@ -108,6 +109,8 @@ protected:
 
     void saveCommonPart();
     void save();
+
+    void saveThresholdExternal(const Tensor& tensor, const XnnParameterType& externalParameter);
     void saveActivation(const ActivationFunction* activationIn);
 };
 

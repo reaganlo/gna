@@ -89,6 +89,7 @@ add_executable(test-layer
   ${SRC_DIR}/DeviceLayerSupport.cpp
   ${SRC_DIR}/DeviceManager.cpp
   ${SRC_DIR}/DriverInterface.cpp
+  ${SRC_DIR}/ExternalBuffer.cpp
   ${SRC_DIR}/GmmLayer.cpp
   ${SRC_DIR}/GmmLayerCapabilities.cpp
   ${SRC_DIR}/HardwareCapabilities.cpp

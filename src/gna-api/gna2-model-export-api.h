@@ -161,6 +161,14 @@ GNA2_API enum Gna2Status Gna2ModelExport(
     void ** exportBuffer,
     uint32_t * exportBufferSize);
 
+/**
+ Can be called before Gna2ModelCreate to change memory alignment requirements.
+ For ANNA newAlignment can be set to 16.
+ */
+GNA2_API enum Gna2Status Gna2ModelOverrideAlignment(
+    uint32_t newAlignment);
+
+
 #endif // __GNA2_MODEL_EXPORT_API_H
 
 /**

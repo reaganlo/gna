@@ -141,14 +141,14 @@ struct TensorLimits : public ComponentLimits
     TensorLimits(const ComponentLimits limits, const DataModeLimits& modes) :
         ComponentLimits{ limits },
         Modes{ modes },
-        Align{ GNA_MEM_ALIGN, Gna2StatusMemoryAlignmentInvalid }
+        addressAlign{ GNA_MEM_ALIGN, Gna2StatusMemoryAlignmentInvalid }
     {
     }
 
     TensorLimits(const OrderLimits order, const ShapeLimits& dimensions, const DataModeLimits& modes) :
         ComponentLimits{ order, dimensions },
         Modes{ modes },
-        Align{ GNA_MEM_ALIGN, Gna2StatusMemoryAlignmentInvalid }
+        addressAlign{ GNA_MEM_ALIGN, Gna2StatusMemoryAlignmentInvalid }
     {
     }
 
@@ -156,12 +156,16 @@ struct TensorLimits : public ComponentLimits
         const AlignLimits& align) :
         ComponentLimits{ order, dimensions },
         Modes{ modes },
-        Align{ align }
+        addressAlign{ align }
     {
     }
 
+    const AlignLimits& GetAddressAlign() const;
+    static void OverrideAlign(const uint32_t newAlign);
     const DataModeLimits Modes;
-    const AlignLimits Align;
+private:
+    const AlignLimits addressAlign;
+    static const AlignLimits* overridenAlign;
 };
 
 }

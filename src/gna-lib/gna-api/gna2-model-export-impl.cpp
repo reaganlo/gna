@@ -98,3 +98,14 @@ GNA2_API enum Gna2Status Gna2ModelExport(
     };
     return ApiWrapper::ExecuteSafely(command);
 }
+
+GNA2_API enum Gna2Status Gna2ModelOverrideAlignment(
+    uint32_t newAlignment)
+{
+    const std::function<ApiStatus()> command = [&]()
+    {
+        TensorLimits::OverrideAlign(newAlignment);
+        return Gna2StatusSuccess;
+    };
+    return ApiWrapper::ExecuteSafely(command);
+}

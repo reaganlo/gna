@@ -71,7 +71,7 @@ public:
      * b) layer descriptor memory is added first to MMU
      * c) other memory buffers are added to MMU in order they are provided
      */
-    virtual uint32_t GetBufferOffset(const BaseAddress& address) const;
+    virtual LdaOffset GetBufferOffset(const BaseAddress& address) const;
 
 protected:
     uint32_t calculateDescriptorSize(bool includeGmms) const;

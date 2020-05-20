@@ -44,7 +44,7 @@ Tensor::Tensor(const ApiTensor & tensor) :
 
 DataMode Tensor::GetDataMode(const Gna2Tensor& tensor)
 {
-    ModelErrorHelper::ExpectEqual(tensor.Mode, Gna2TensorModeDefault, Gna2ItemTypeOperandMode);
+    ModelErrorHelper::ExpectInSet(tensor.Mode, { Gna2TensorModeDefault, Gna2TensorModeExternalBuffer }, Gna2ItemTypeOperandMode);
     try
     {
         return DataMode{ tensor.Type, tensor.Mode };
@@ -97,7 +97,7 @@ void Tensor::UpdateBuffer(const BaseAddress & buffer)
 void Tensor::ValidateBuffer(const void * const buffer) const
 {
     auto caps = static_cast<const TensorLimits*>(validator->Capabilities);
-    validator->ValidateBuffer(buffer, Size, caps->Align.Value);
+    validator->ValidateBuffer(buffer, Size, caps->GetAddressAlign().Value);
 }
 
 void Tensor::validate() const
@@ -120,7 +120,7 @@ void Tensor::validate() const
         if (GNA_DATA_DISABLED != Mode)
         {
             validateDimensions();
-            validator->ValidateBufferIfSet(Buffer, Size, caps->Align);
+            validator->ValidateBufferIfSet(Buffer, Size, caps->GetAddressAlign());
         }
         else
         {
@@ -169,4 +169,26 @@ std::pair<uint32_t, uint32_t> Tensor::getGroupingAndElements(const nn_layer& lay
 {
     UNREFERENCED_PARAMETER(layer);
     throw GnaException(Gna2StatusNotImplemented);
+}
+
+const AlignLimits* TensorLimits::overridenAlign = nullptr;
+
+void TensorLimits::OverrideAlign(const uint32_t newAlign)
+{
+    static AlignLimits overriden{ 1, Gna2StatusMemoryAlignmentInvalid };
+    if (newAlign == 0)
+    {
+        overridenAlign = nullptr;
+    }
+    overriden.Value = newAlign;
+    overridenAlign = &overriden;
+}
+
+const AlignLimits& TensorLimits::GetAddressAlign() const
+{
+    if(overridenAlign != nullptr)
+    {
+        return *overridenAlign;
+    }
+    return addressAlign;
 }

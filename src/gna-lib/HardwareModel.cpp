@@ -157,7 +157,7 @@ HardwareLayer const * HardwareModel::TryGetLayer(uint32_t layerIndex) const
 }
 
 // TODO:3: throw exception if not found, but NULL in nnet should be handled
-uint32_t HardwareModel::GetBufferOffset(const BaseAddress& address) const
+LdaOffset HardwareModel::GetBufferOffset(const BaseAddress& address) const
 {
     return allocations.GetBufferOffset(address, PAGE_SIZE);
 }

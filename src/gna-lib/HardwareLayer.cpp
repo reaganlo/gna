@@ -60,6 +60,7 @@
 #include <cstddef>
 #include <stdexcept>
 
+
 using namespace GNA;
 
 //Used in CNN and RNN to overload input grouping for HW iteration calculation
@@ -295,25 +296,28 @@ void HardwareLayer::saveCommonPart()
     XnnDescriptor[n_in_elems] = SoftwareLayer.Input.ElementCount;
     XnnDescriptor[n_out_elems] = SoftwareLayer.Output.ElementCount;
     XnnDescriptor[in_buffer] = SoftwareLayer.Input;
+    saveThresholdExternal(SoftwareLayer.Input, th_input_src);
     if (XnnDescriptor.HasParameter(input_element_precision))
     {
         XnnDescriptor[input_element_precision] = SoftwareLayer.Input.Mode;
     }
     XnnDescriptor[out_buffer] = SoftwareLayer.Output;
+    saveThresholdExternal(SoftwareLayer.Output, th_output_src);
 }
 
 void HardwareLayer::save()
 {
     saveCommonPart();
-
+    const Tensor * outTensor;
     if (GNA_DATA_ACTIVATION_DISABLED == SoftwareLayer.Output.Mode)
     {
-        XnnDescriptor[out_sum_buffer] = SoftwareLayer.Output;
+         outTensor = &SoftwareLayer.Output;
     }
     else
     {
-        XnnDescriptor[out_sum_buffer] = SoftwareLayer.Output.ScratchPad;
+        outTensor = &SoftwareLayer.Output.ScratchPad;
     }
+    XnnDescriptor[out_sum_buffer] = *outTensor;
 }
 
 void HardwareLayer::saveActivation(const ActivationFunction* activationIn)
@@ -380,6 +384,18 @@ void HardwareLayerExt::save()
         {
             XnnDescriptor[bias_precision] = affine->Biases->Mode;
         }
+
+        saveThresholdExternal(*affine->Biases, th_bias_src);
+    }
+}
+
+void HardwareLayer::saveThresholdExternal(const Tensor& tensor, const XnnParameterType& externalParameter)
+{
+    if (XnnDescriptor.HasParameter(externalParameter) &&
+        tensor.Mode.Mode == Gna2TensorModeExternalBuffer &&
+        XnnDescriptor.IsExternalBuffer(tensor.Buffer))
+    {
+        XnnDescriptor[externalParameter] = ThresholdSourceExternal;
     }
 }
 
@@ -446,6 +462,7 @@ HardwareLayerRnn::HardwareLayerRnn(const DescriptorParameters& parameters) :
     {
         XnnDescriptor[bias_precision] = recurrent->Biases->Mode;
     }
+    saveThresholdExternal(*recurrent->Biases, th_bias_src);
     saveActivation(&recurrent->GetActivationFunction());
 }
 
@@ -577,6 +594,7 @@ void HardwareLayerCnn::save()
     XnnDescriptor[cnn_n_flt_stride] = cnn->Convolution->Stride->Dimensions.at('W');
     XnnDescriptor[cnn_n_out_p_flt] = outputElementCount;
     XnnDescriptor[bias_buffer] = cnn->Convolution->Biases->Buffer;
+    saveThresholdExternal(*cnn->Convolution->Biases, th_bias_src);
 }
 
 HwUarchParams HardwareLayerCnn2D::CalculateUArchConfig() const
@@ -633,6 +651,7 @@ HardwareLayerCnn2D::HardwareLayerCnn2D(const DescriptorParameters& parameters) :
         save();
         Log->Message("Using new uArch CNN 2D.\n");
     }
+    saveThresholdExternal(*cnn->Biases, th_bias_src);
     saveActivation(
         SoftwareLayer.Get()->Transforms.Get<ActivationFunction>(ActivationTransform));
 }
@@ -741,6 +760,8 @@ HardwareLayerAffineMBias::HardwareLayerAffineMBias(const DescriptorParameters& p
     {
         XnnDescriptor[bias_buffer] = *affineMulti->WeightScaleFactors;
     }
+
+    saveThresholdExternal(*affineMulti->Biases, th_bias_src);
 }
 
 const std::map<const gna_gmm_mode, const GMM_MODE_CTRL> HardwareLayerGmm::GmmModes =

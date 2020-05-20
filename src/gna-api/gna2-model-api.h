@@ -650,6 +650,9 @@ enum Gna2TensorMode
      */
     Gna2TensorModeConstantScalar = 0x010000,
 
+
+    Gna2TensorModeExternalBuffer = 0x001000,
+
     /**
      To disable optional tensors.
      @warning Reserved for future purposes.

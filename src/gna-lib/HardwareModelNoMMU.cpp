@@ -57,10 +57,22 @@ HardwareModelNoMMU::HardwareModelNoMMU(CompiledModel const & softwareModel, Gna2
         case MemoryTagOutput:
             OutputAllocations.Emplace(buffer);
             break;
+        case MemoryTagExternalBufferInput:
+            ExternalBufferInputAllocations.Emplace(buffer);
+            break;
+        case MemoryTagExternalBufferOutput:
+            ExternalBufferOutputAllocations.Emplace(buffer);
+            break;
         case MemoryTagReadOnly:
         default:
             ROAllocations.Emplace(buffer);
         }
+    }
+    // If there are regions tagged as External do not try guess
+    if(!ExternalBufferInputAllocations.empty() ||
+       !ExternalBufferOutputAllocations.empty())
+    {
+        return;
     }
     if(InputAllocations.empty())
     {
@@ -115,7 +127,7 @@ uint32_t HardwareModelNoMMU::SetBarIndex(uint32_t offsetFromBar, uint32_t barInd
     return offsetFromBar | barIndex;
 }
 
-uint32_t HardwareModelNoMMU::GetBufferOffset(const BaseAddress& address) const
+LdaOffset HardwareModelNoMMU::GetBufferOffset(const BaseAddress& address) const
 {
     if (address == AffineBaseLayer::GetGlobal2MBScratchpad())
     {
@@ -133,6 +145,22 @@ uint32_t HardwareModelNoMMU::GetBufferOffset(const BaseAddress& address) const
     if (ROAllocations.Contains(address))
     {
         return SetBarIndex(ldMemory->GetSize() + ROAllocations.GetBufferOffset(address), BarIndexRo);
+    }
+    if (ExternalBufferInputAllocations.Contains(address))
+    {
+        LdaOffset out{ ExternalBufferInputAllocations.GetBufferOffset(address) };
+        out.SetExternalInput();
+        return out;
+    }
+    if (ExternalBufferOutputAllocations.Contains(address))
+    {
+        LdaOffset out{ ExternalBufferOutputAllocations.GetBufferOffset(address) };
+        out.SetExternalOutput();
+        return out;
+    }
+    if (!address)
+    {
+        return 0;
     }
     throw GnaException(Gna2StatusMemoryBufferInvalid);
 }

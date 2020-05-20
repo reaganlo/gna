@@ -196,6 +196,8 @@ typedef enum _XnnParameterType
     cnn2d_kernel_scalar,// CNN2D Convolution Kernel constant scalar
     cnn2d_bias_mode,    // CNN2D Convolution Bias Mode
 
+    th_input_src,       // Affine threshold: Input-Source: Applicable only if Autonomous Extension present
+    th_output_src,      // Affine threshold: Output-Source: Applicable only if Autonomous Extension present
     th_bias_src,        // Affine threshold: Bias-Source (BSRC): Applicable only if Autonomous Extension present
     th_int_mask,        // Affine threshold: Threshold Mask (THM): w.r.t. TH Condition
     th_op_mode,         // Affine threshold: Threshold Operation Mode (THOM)
@@ -268,6 +270,11 @@ public:
         set(mode);
     }
 
+    void operator=(const ThresholdSource mode)
+    {
+        set(mode);
+    }
+
     void operator=(const uint32_t& value)
     {
         switch (Size)
@@ -288,7 +295,8 @@ public:
     void operator=(const BaseAddress& buffer)
     {
         Expect::True(4 == Size && 0 == bitCount, Gna2StatusUnknownError);
-        *address.Get<uint32_t>() = getBufferOffset(buffer);
+        const auto ldaOffset = getBufferOffset(buffer);
+        *address.Get<uint32_t>() = ldaOffset;
     }
 
     uint8_t* operator&() const
@@ -412,6 +420,11 @@ public:
     uint32_t GetOffset() const
     {
         return address.GetOffset(memoryBase);
+    }
+
+    bool IsExternalBuffer(void * addressIn) const
+    {
+        return getHwOffset(addressIn).IsExternalInput() || getHwOffset(addressIn).IsExternalOutput();
     }
 
     uint32_t Size;

@@ -198,7 +198,40 @@ public:
 // Address Aliases
 using BaseAddress = Address<uint8_t * const>;
 
+class LdaOffset
+{
+public:
+    LdaOffset(uint32_t offsetIn):
+    offset{offsetIn}
+    {
+    }
+    operator uint32_t() const
+    {
+        return offset;
+    }
+    bool IsExternalInput() const
+    {
+        return externalInput;
+    }
+    bool IsExternalOutput() const
+    {
+        return externalOutput;
+    }
+    void SetExternalInput()
+    {
+        externalInput = true;
+    }
+    void SetExternalOutput()
+    {
+        externalOutput = true;
+    }
+private:
+    uint32_t offset = 0;
+    bool externalInput = false;
+    bool externalOutput = false;
+};
+
 // Functor for getting buffer offset for HW
-using GetHwOffset = std::function<uint32_t(const BaseAddress&)>;
+using GetHwOffset = std::function<LdaOffset(const BaseAddress&)>;
 
 }

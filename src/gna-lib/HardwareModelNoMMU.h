@@ -56,13 +56,15 @@ public:
     static uint32_t SetBarIndex(uint32_t offsetFromBar, uint32_t barIndex);
 
     // Adds BAR index at low 2 bits
-    virtual uint32_t GetBufferOffset(const BaseAddress& address) const override;
+    virtual LdaOffset GetBufferOffset(const BaseAddress& address) const override;
 
     void ExportLd(void *& exportData, uint32_t & exportDataSize);
 
     static constexpr uint32_t MemoryTagInput = 1;
     static constexpr uint32_t MemoryTagOutput = 2;
     static constexpr uint32_t MemoryTagReadOnly = 3;
+    static constexpr uint32_t MemoryTagExternalBufferInput = 4;
+    static constexpr uint32_t MemoryTagExternalBufferOutput = 5;
 
     static constexpr uint32_t GnaDescritorSize = 32;
     static constexpr uint32_t BarIndexGnaBar = 0;
@@ -84,6 +86,8 @@ private:
     MemoryContainer ROAllocations;
     MemoryContainer InputAllocations;
     MemoryContainer OutputAllocations;
+    MemoryContainer ExternalBufferInputAllocations;
+    MemoryContainer ExternalBufferOutputAllocations;
 };
 
 }

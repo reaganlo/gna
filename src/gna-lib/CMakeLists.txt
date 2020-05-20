@@ -109,6 +109,7 @@ set(gna_lib_sources ${gna_lib_sources}
   ${SRC_DIR}/DeviceLayerSupport.cpp
   ${SRC_DIR}/DeviceManager.cpp
   ${SRC_DIR}/DriverInterface.cpp
+  ${SRC_DIR}/ExternalBuffer.cpp
   ${SRC_DIR}/GmmLayer.cpp
   ${SRC_DIR}/GmmLayerCapabilities.cpp
   ${SRC_DIR}/HardwareCapabilities.cpp
@@ -205,6 +206,7 @@ set(gna_lib_headers
   ${SRC_DIR}/DeviceManager.h
   ${SRC_DIR}/DriverInterface.h
   ${SRC_DIR}/Expect.h
+  ${SRC_DIR}/ExternalBuffer.h
   ${SRC_DIR}/GmmLayer.h
   ${SRC_DIR}/GmmLayerCapabilities.h
   ${SRC_DIR}/GnaTypes.h

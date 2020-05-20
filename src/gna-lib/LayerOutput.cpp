@@ -141,7 +141,7 @@ LayerOutput::LayerOutput(const nn_layer& layer, const LayerValidator& validatorI
     ElementCount { getElementCount(layer) }
 {
     const auto caps = static_cast<const TensorLimits*>(validator->Capabilities);
-    validator->ValidateBufferIfSet(ScratchPad.Buffer, ScratchPad.Size,  caps->Align);
+    validator->ValidateBufferIfSet(ScratchPad.Buffer, ScratchPad.Size,  caps->GetAddressAlign());
     Expect::True(GNA_INT32 == ScratchPad.Mode, Gna2StatusXnnErrorIntOutputBytes);
 }
 

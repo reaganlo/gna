@@ -26,8 +26,12 @@
 #include "ModelWrapper.h"
 
 #include "DataMode.h"
-#include "gna2-model-impl.h"
+#include "ExternalBuffer.h"
 #include "ModelError.h"
+
+#include "gna2-model-impl.h"
+
+#include <set>
 
 using namespace GNA;
 
@@ -300,8 +304,12 @@ void ExpectPointerArrayValid(T ** ptr, uint32_t arraySize,
 std::set<Gna2TensorMode> ModelWrapper::GetValidTensorModes(const Gna2Operation & operation, uint32_t operandIndex)
 {
     std::set<Gna2TensorMode> validSet = { Gna2TensorModeDefault };
+    if (ExternalBuffer::IsSupported(operation, operandIndex))
+    {
+        validSet.insert(Gna2TensorModeExternalBuffer);
+    }
     const auto opRequired = GetOperationInfo(operation.Type, NumberOfOperandsRequired);
-    if (operandIndex >= opRequired)
+    if(operandIndex >= opRequired)
     {
         validSet.insert(Gna2TensorModeDisabled);
     }

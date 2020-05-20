@@ -127,7 +127,7 @@ void HardwareModelSue1::prepareAllocationsAndModel()
     getHwOffsetFunction = [this](const BaseAddress& buffer) { return GetBufferOffset(buffer); };
 }
 
-uint32_t HardwareModelSue1::GetBufferOffset(const BaseAddress& address) const
+LdaOffset HardwareModelSue1::GetBufferOffset(const BaseAddress& address) const
 {
     if (address == AffineBaseLayer::GetGlobal2MBScratchpad())
     {

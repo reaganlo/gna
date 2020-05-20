@@ -198,8 +198,18 @@ static const std::map<const XnnParameterType, const XnnParameter> XnnDescriptorG
         // TODO:3:P2 consider providing version for 'newest FPGA image'
     { th_bias_src, {0x0b, 1, 3, 1,
         {
-                          { ThresholdBiasSourceDefault, static_cast<uint8_t>(0) },
-                          { ThresholdBiasSourceExternal, static_cast<uint8_t>(1) },
+                          { ThresholdSourceDefault, static_cast<uint8_t>(0) },
+                          { ThresholdSourceExternal, static_cast<uint8_t>(1) },
+        }}},
+    { th_input_src, {0x01, 1, 6, 1,
+    {
+                      { ThresholdSourceDefault, static_cast<uint8_t>(0) },
+                      { ThresholdSourceExternal, static_cast<uint8_t>(1) },
+        }}},
+    { th_output_src, {0x01, 1, 7, 1,
+    {
+                      { ThresholdSourceDefault, static_cast<uint8_t>(0) },
+                      { ThresholdSourceExternal, static_cast<uint8_t>(1) },
         }}},
     { th_int_mask, {0x0b, 1, 4, 1,
         {

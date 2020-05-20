@@ -55,7 +55,7 @@ namespace GNA
 
         // this override does not add PAGE_SIZE alignment to calculations
         // since memory buffers are copied to one allocated memory buffer
-        virtual uint32_t GetBufferOffset(const BaseAddress& address) const override;
+        virtual LdaOffset GetBufferOffset(const BaseAddress& address) const override;
 
         void * Export();
 

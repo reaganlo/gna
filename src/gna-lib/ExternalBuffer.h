@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2019 Intel Corporation.
+ Copyright 2020 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -24,28 +24,16 @@
 */
 #pragma once
 
-enum ThresholdSource
+#include "gna2-model-api.h"
+
+#include <cstdint>
+
+namespace GNA
 {
-    ThresholdSourceDefault,
-    ThresholdSourceExternal
+class ExternalBuffer
+{
+public:
+    static bool IsSupported(const Gna2Operation& operation, uint32_t operandIndex);
 };
 
-enum ThresholdInterrupt
-{
-    ThresholdInterruptDefault,
-    ThresholdInterruptNotSent
-};
-
-enum ThresholdOperation
-{
-    ThresholdOperationStop,
-    ThresholdOperationContinueIfMet,
-    ThresholdOperationContinueIfNotMet,
-    ThresholdOperationContinueAllways
-};
-
-enum ThresholdCondition
-{
-    ThresholdConditionScoreNegative,
-    ThresholdConditionScoreNotNegative
-};
+}
