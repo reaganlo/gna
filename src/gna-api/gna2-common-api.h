@@ -378,6 +378,10 @@ enum Gna2Status
     Gna2StatusGmmBadNumGmm = -77,
     Gna2StatusGmmBadMode = -78,
     Gna2StatusGmmCfgInvalidLayout = -79,
+    /**
+     Error: Request was aborted due to QoS timeout
+    */
+    Gna2StatusDriverQoSTimeoutExceeded = -80,
 };
 
 /**

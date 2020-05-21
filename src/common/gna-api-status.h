@@ -137,6 +137,7 @@ typedef enum _gna_status_t
     GNA_ERR_INVALID_DATA_MODE,  // Error: Data mode value is invalid
     GNA_ERR_NOT_IMPLEMENTED,    // Error: Functionality not implemented yet
 
+    GNA_ERR_QOS_TIMEOUT,
     NUMGNASTATUS
 } intel_gna_status_t, gna_status_t;       // GNA API Status codes
 

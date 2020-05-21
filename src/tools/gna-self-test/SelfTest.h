@@ -70,7 +70,7 @@ private:
 };
 extern GnaSelfTestLogger logger;
 
-class GnaSelfTestConfig
+class GnaSelfTestConfig : public ModelConfig
 {
 public:
     static GnaSelfTestConfig ReadConfigFromCmdLine(int argc, const char *const argv[]);
@@ -78,12 +78,16 @@ public:
     bool PauseMode() const { return pauseAfterError; }
     bool ContinueMode() const { return continueAfterError; }
     int GetRepeatCount() const { return repeatCount; }
+    uint32_t GetRequestWaitMs() const { return  requestWaitMs; }
+    int GetRequestRepeatCount();
 private:
     GnaSelfTestConfig(int argc, const char * const argv[]);
     bool verboseMode = false;
     bool continueAfterError = false;
     bool pauseAfterError = false;
     int repeatCount = 1;
+    int requestRepeatCount = 1;
+    uint32_t requestWaitMs = 10000;
 };
 
 class GnaSelfTestIssue;
@@ -101,7 +105,7 @@ private:
     void DoIteration();
 };
 
-#define DEFAULT_SELFTEST_TIMEOUT_MS 10000
+#define DEFAULT_SELFTEST_TIMEOUT_MS 1000
 
 class SelfTestDevice
 {
@@ -110,12 +114,12 @@ public:
     // obtains pinned memory shared with the device
     uint8_t * Alloc(const uint32_t bytesRequested);
 
-    void SampleModelCreate(const SampleModelForGnaSelfTest &model);
+    void SampleModelCreate(SampleModelForGnaSelfTest &model);
 
     void BuildSampleRequest();
     void ConfigRequestBuffer();
 
-    void RequestAndWait();
+    void RequestAndWait(uint32_t requestWaitMs);
 
     void CompareResults(const SampleModelForGnaSelfTest &model);
     ~SelfTestDevice();
@@ -125,9 +129,6 @@ private:
     Gna2DeviceVersion deviceVersion = Gna2DeviceVersionSoftwareEmulation;
     uint32_t sampleModelId;
     uint32_t configId;
-    Gna2Tensor gnaInput, gnaOutput, gnaWeights, gnaBiases;
-    const Gna2Tensor* tensorPointers[4] = { &gnaInput, &gnaOutput, &gnaWeights, &gnaBiases };
-    Gna2Operation gnaOperation = {Gna2OperationTypeFullyConnectedAffine, tensorPointers, 4, nullptr, 0};
     Gna2Model gnaModel; // main neural network container
     int16_t *pinned_outputs;
     int16_t *pinned_inputs;
@@ -153,7 +154,8 @@ enum GSTIT
     GSTIT_ERRORS_IN_SCORES = 12,
     GSTIT_NO_DEVICE_DETECTED_BY_GNA_LIB = 13,
     GSTIT_UNHANDLED_EXCEPTION = 14,
-    GSTIT_UNHANDLED_SIGNAL = 15
+    GSTIT_UNHANDLED_SIGNAL = 15,
+    GSTIT_PRINT_HELP_ONLY = 16
 };
 
 class GnaSelfTestException : public std::exception

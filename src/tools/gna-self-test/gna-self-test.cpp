@@ -78,7 +78,8 @@ void GnaSelfTest::StartTest()
 
 void GnaSelfTest::DoIteration()
 {
-    SampleModelForGnaSelfTest sampleNetwork = SampleModelForGnaSelfTest::GetDefault();
+    SampleModelForGnaSelfTest sampleNetwork{ config };
+
     //open the default GNA device
     SelfTestDevice gnaDevice(*this);
 
@@ -93,14 +94,18 @@ void GnaSelfTest::DoIteration()
     logger.Verbose("Request configuration...\n");
     gnaDevice.ConfigRequestBuffer();
 
-    // calculate on GNA HW (blocking call)
-    // wait for HW calculations (blocks until the results are ready)
-    // after this call, outputs can be inspected under nnet.pLayers->pOutputs
-    logger.Verbose("Sending request...\n");
-    gnaDevice.RequestAndWait();
 
-    logger.Verbose("Comparing results...\n");
-    gnaDevice.CompareResults(sampleNetwork);
+    for (int i = 0; i < config.GetRequestRepeatCount();i++)
+    {
+        // calculate on GNA HW (blocking call)
+        // wait for HW calculations (blocks until the results are ready)
+        // after this call, outputs can be inspected under nnet.pLayers->pOutputs
+        logger.Verbose("Sending request...\n");
+        gnaDevice.RequestAndWait(config.GetRequestWaitMs());
+
+        logger.Verbose("Comparing results...\n");
+        gnaDevice.CompareResults(sampleNetwork);
+    }
     GnaSelfTestLogger::Log("GNA device self-test has been finished\n");
 }
 
@@ -129,6 +134,11 @@ void GnaSelfTest::PrintLibraryVersion()
     logger.Log("Build time GNA library version: %s\n", GetBuildTimeLibraryVersionString().c_str());
 }
 
+int GnaSelfTestConfig::GetRequestRepeatCount()
+{
+    return requestRepeatCount;
+}
+
 GnaSelfTestConfig::GnaSelfTestConfig(int argc, const char *const argv[])
 {
     for (int i = 1; i < argc; i++)
@@ -154,15 +164,46 @@ GnaSelfTestConfig::GnaSelfTestConfig(int argc, const char *const argv[])
                 i++;
             }
         }
+        else if (strncmp("-e", argv[i], 2) == 0)
+        {
+            if (i + 1 < argc)
+            {
+                requestRepeatCount = atoi(argv[i + 1]);
+                i++;
+            }
+        }
+        else if (strncmp("-w", argv[i], 2) == 0)
+        {
+            if (i + 1 < argc)
+            {
+                requestWaitMs = static_cast<uint32_t>(atoi(argv[i + 1]));
+                i++;
+            }
+        }
+        else if (strncmp("-m", argv[i], 2) == 0)
+        {
+            if (i + 4 < argc)
+            {
+                defaultFC = false;
+                modelCustomFCNumberOfOperations = static_cast<uint32_t>(atoi(argv[i + 1]));
+                modelCustomFCInputSize = static_cast<uint32_t>(atoi(argv[i + 2]));
+                modelCustomFCGrouping = static_cast<uint32_t>(atoi(argv[i + 3]));
+                modelCustomFCOutputSize = static_cast<uint32_t>(atoi(argv[i + 4]));
+                i += 4;
+            }
+        }
         else
         {
-            GnaSelfTestLogger::Log("gna-self-test [-v] [-c] [-p] [-r N ] [-h]\n");
-            GnaSelfTestLogger::Log("   -v     verbose mode\n");
-            GnaSelfTestLogger::Log("   -c     ignore errors and continue execution\n");
-            GnaSelfTestLogger::Log("   -p     after the error, ask the user whether to continue\n");
-            GnaSelfTestLogger::Log("   -r N   repeat the processing N times\n");
-            GnaSelfTestLogger::Log("   -h     display help\n");
-            exit(0);
+            GnaSelfTestLogger::Log("gna-self-test [-v] [-c] [-p] [-e K] [-r N ] [-m L I G O] [-w M] [-h]\n");
+            GnaSelfTestLogger::Log("   -v          verbose mode\n");
+            GnaSelfTestLogger::Log("   -c          ignore errors and continue execution\n");
+            GnaSelfTestLogger::Log("   -p          after the error, ask the user whether to continue\n");
+            GnaSelfTestLogger::Log("   -e K        send request K times\n");
+            GnaSelfTestLogger::Log("   -r N        repeat the flow N times\n");
+            GnaSelfTestLogger::Log("   -m L I G O  use model of L FC layers with I inputs G groups and O outputs\n");
+            GnaSelfTestLogger::Log("   -w M        set M milliseconds as wait timeout\n");
+            GnaSelfTestLogger::Log("   -h          display help\n");
+            throw GnaSelfTestIssue{ GSTIT_PRINT_HELP_ONLY };
         }
     }
 }

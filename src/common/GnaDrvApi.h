@@ -60,21 +60,27 @@ DEFINE_GUID(GUID_DEVINTERFACE_GNA_DRV,
 #define STS_COMPLETED_FLAG  0x01    // scoring completed flag
 
 /* GNA device/driver parameters */
-#define GNA_PARAM_DEVICE_ID        1
-#define GNA_PARAM_RECOVERY_TIMEOUT 2
-#define GNA_PARAM_DEVICE_TYPE      3
-#define GNA_PARAM_INPUT_BUFFER_S   4
-#define GNA_PARAM_CE_NUM           5
-#define GNA_PARAM_PLE_NUM          6
-#define GNA_PARAM_AFE_NUM          7
-#define GNA_PARAM_HAS_MMU          8
-#define GNA_PARAM_HW_VER           9
+#define GNA_PARAM_DEVICE_ID             1
+#define GNA_PARAM_RECOVERY_TIMEOUT      2
+#define GNA_PARAM_DEVICE_TYPE           3
+#define GNA_PARAM_INPUT_BUFFER_S        4
+#define GNA_PARAM_CE_NUM                5
+#define GNA_PARAM_PLE_NUM               6
+#define GNA_PARAM_AFE_NUM               7
+#define GNA_PARAM_HAS_MMU               8
+#define GNA_PARAM_HW_VER                9
+#define GNA_PARAM_QOS_HARD_TIMEOUT_MS   10
 
 /**
  Default time in seconds after which driver will try to auto recover
  from hardware hang
 */
 #define DRV_RECOVERY_TIMEOUT 60
+/**
+ Default time in milliseconds after which the driver will abort request
+ if other request are waiting in the queue
+*/
+#define DRV_QOS_HARD_TIMEOUT_MS 60000
 
 /******************************************************************************
 

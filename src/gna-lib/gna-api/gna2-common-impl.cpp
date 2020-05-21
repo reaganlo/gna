@@ -130,7 +130,8 @@ extern const std::map<Gna2Status, std::string> Gna2StatusToStringMap
     { Gna2StatusGmmBadMixCnum, "Gna2StatusGmmBadMixCnum" },
     { Gna2StatusGmmBadNumGmm, "Gna2StatusGmmBadNumGmm" },
     { Gna2StatusGmmBadMode, "Gna2StatusGmmBadMode" },
-    { Gna2StatusGmmCfgInvalidLayout, "Gna2StatusGmmCfgInvalidLayout" }
+    { Gna2StatusGmmCfgInvalidLayout, "Gna2StatusGmmCfgInvalidLayout" },
+    { Gna2StatusDriverQoSTimeoutExceeded, "Gna2StatusDriverQoSTimeoutExceeded" },
 };
 
 GNA2_API enum Gna2Status Gna2StatusGetMessage(
@@ -245,6 +246,7 @@ gna_status_t GNA::Gna2GetLegacyStatus(Gna2Status newStatus)
         { Gna2StatusGmmBadNumGmm, GMM_BADNUMGMM },
         { Gna2StatusGmmBadMode, GMM_BADMODE },
         { Gna2StatusGmmCfgInvalidLayout, GMM_CFG_INVALID_LAYOUT },
+        { Gna2StatusDriverQoSTimeoutExceeded, GNA_ERR_QOS_TIMEOUT },
     };
     return StatusMap.at(newStatus);
 }

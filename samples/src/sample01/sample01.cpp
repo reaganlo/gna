@@ -144,9 +144,6 @@ try
         -8, 0, 1, 3,
         -4, -6, -8, -2
     };
-    /* Dump binary inputs (for reference only) */
-    std::ofstream inputStream("inputs.bin", std::ios::out | std::ios::binary);
-    inputStream.write(reinterpret_cast<const char*>(inputs), W * 4 * sizeof(int16_t));
 
     int32_t biases[H] = {
         // sample bias vector, will get added to each of the four output vectors
@@ -267,13 +264,8 @@ try
     CleanupOrError(status, deviceIndex, memory, modelId, configId,
                    "main", "Gna2RequestConfigSetOperandBuffer(0, 1)");
 
-    // [optional] Enable software emulation consistency with Gna2DeviceVersionEmbedded1_0 device
-    status = Gna2RequestConfigEnableHardwareConsistency(configId, Gna2DeviceVersionEmbedded1_0);
-    CleanupOrError(status, deviceIndex, memory, modelId, configId,
-                   "main", "Gna2RequestConfigEnableHardwareConsistency(Gna2DeviceVersion2_0)");
-
-    // [optional] Set acceleration mode to generic software emulation (no acceleration used)
-    status = Gna2RequestConfigSetAccelerationMode(configId, Gna2AccelerationModeGeneric);
+    // [optional] Set acceleration mode automatic (software emulation used if no hardware detected)
+    status = Gna2RequestConfigSetAccelerationMode(configId, Gna2AccelerationModeAuto);
     CleanupOrError(status, deviceIndex, memory, modelId, configId,
                    "main", "Gna2RequestConfigSetAccelerationMode(Gna2AccelerationModeAuto)");
 
@@ -303,10 +295,6 @@ try
     //   99  144   38  -63
     //   20   56 -103   10
     print_outputs(reinterpret_cast<int32_t*>(pinned_outputs), H, B);
-
-    /* Dump binary outputs (for reference only) */
-    std::ofstream outputsStream("outputs.bin", std::ios::out | std::ios::binary);
-    outputsStream.write(reinterpret_cast<const char*>(pinned_outputs), buf_size_outputs);
 
     status = Gna2RequestConfigRelease(configId);
     CleanupOrError(status, deviceIndex, memory, modelId, GNA2_DISABLED,

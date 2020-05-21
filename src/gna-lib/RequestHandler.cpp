@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2017 Intel Corporation.
+ Copyright 2017-2020 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -90,23 +90,13 @@ void RequestHandler::addRequest(std::unique_ptr<Request> request)
 Gna2Status RequestHandler::WaitFor(const uint32_t requestId, const uint32_t milliseconds)
 {
     auto request = extractRequestLocked(requestId);
-    auto future = request->GetFuture();
 
-    auto future_status = future.wait_for(std::chrono::milliseconds(milliseconds));
-    switch (future_status)
+    auto const status = request->WaitFor(milliseconds);
+    if (Gna2StatusWarningDeviceBusy == status)
     {
-    case std::future_status::ready:
-    {
-        auto score_status = future.get();
-        auto profiler = request->Profiler.get();
-        profiler->Measure(Gna2InstrumentationPointLibReceived);
-        profiler->SaveResults(request->Configuration.GetProfilerConfiguration());
-        return score_status;
-    }
-    default:
         addRequestLocked(std::move(request));
-        return Gna2StatusWarningDeviceBusy;
     }
+    return status;
 }
 
 void RequestHandler::StopRequests()

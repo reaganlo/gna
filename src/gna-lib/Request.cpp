@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2019 Intel Corporation.
+ Copyright 2019-2020 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -44,11 +44,24 @@ Request::Request(RequestConfiguration& config, std::unique_ptr<RequestProfiler> 
         return Configuration.Model.Score(Configuration, profilerPtr, buffers);
     };
     scoreTask = std::packaged_task<Gna2Status(KernelBuffers *buffers, RequestProfiler *profiler)>(callback);
+    future = scoreTask.get_future();
 }
 
-std::future<Gna2Status> Request::GetFuture()
+Gna2Status Request::WaitFor(uint64_t milliseconds)
 {
-    return scoreTask.get_future();
+    auto const future_status = future.wait_for(std::chrono::milliseconds(milliseconds));
+    switch (future_status)
+    {
+    case std::future_status::ready:
+    {
+        auto const score_status = future.get();
+        Profiler->Measure(Gna2InstrumentationPointLibReceived);
+        Profiler->SaveResults(Configuration.GetProfilerConfiguration());
+        return score_status;
+    }
+    default:
+        return Gna2StatusWarningDeviceBusy;
+    }
 }
 
 RequestProfiler::RequestProfiler(bool initialize)

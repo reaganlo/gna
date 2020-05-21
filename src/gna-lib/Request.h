@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2019 Intel Corporation.
+ Copyright 2019-2020 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -113,7 +113,7 @@ public:
     Request(const Request &) = delete;
     Request& operator=(const Request&) = delete;
 
-    std::future<Gna2Status> GetFuture();
+    Gna2Status WaitFor(uint64_t milliseconds);
 
     void operator()(KernelBuffers *buffers)
     {
@@ -128,6 +128,8 @@ public:
 
 private:
     std::packaged_task<Gna2Status(KernelBuffers *buffers, RequestProfiler *profiler)> scoreTask;
+
+    std::future<Gna2Status> future;
 };
 
 }

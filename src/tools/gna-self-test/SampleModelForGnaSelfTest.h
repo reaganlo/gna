@@ -1,7 +1,7 @@
 //*****************************************************************************
 //
 // INTEL CONFIDENTIAL
-// Copyright 2018 Intel Corporation
+// Copyright 2018-2020 Intel Corporation
 //
 // The source code contained or described herein and all documents related
 // to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -20,18 +20,27 @@
 // be express and approved by Intel in writing.
 //*****************************************************************************
 #pragma once
+
+#include "gna2-model-api.h"
+
 #include <cstdint>
-#include <array>
+#include <vector>
 #include <cstring>
 
-class SampleModelForGnaSelfTest
+struct ModelConfig
+{
+    bool defaultFC = true;
+    uint32_t modelCustomFCNumberOfOperations = 1;
+    uint32_t modelCustomFCInputSize = 16;
+    uint32_t modelCustomFCOutputSize = 8;
+    uint32_t modelCustomFCGrouping = 4;
+};
+
+class SampleModelForGnaSelfTest : public ModelConfig
 {
 public:
-    static constexpr uint32_t NoOfInputs = 16;
-    static constexpr uint32_t NoOfOutputs = 8;
-    static constexpr uint32_t NoOfGroups = 4; // grouping factor (1-8), specifies how many input vectors are simultaneously run
+    SampleModelForGnaSelfTest(const ModelConfig& config);
 
-    static SampleModelForGnaSelfTest GetDefault();
     uint32_t GetWeightsByteSize() const
     {
         return byteSize(weights);
@@ -52,19 +61,20 @@ public:
     void CopyBiases(void * dest) const { arrayCopy(dest, biases); }
     void CopyInputs(void * dest) const { arrayCopy(dest,inputs); }
     int32_t GetRefScore(uint32_t idx) const { return refScores[idx]; }
+    Gna2Model GetGnaModel(void * gnaInputPtr, void * gnaOutputPtr, void * gnaWeightPtr, void * gnaBiasPtr);
+    int CountErrors() const;
 private:
-    SampleModelForGnaSelfTest() = default;
+    void SetupDefault();
+    void SetupSimple();
 
-    // sample weight matrix (8 rows, 16 cols)
-    // in case of affine layer this is the left operand of matrix mul
-    std::array<int16_t, NoOfOutputs * NoOfInputs> weights;
-    // sample input matrix (16 rows, 4 cols), consists of 4 input vectors (grouping of 4 is used)
-    // in case of affine layer this is the right operand of matrix mul
-    std::array<int16_t, NoOfInputs * NoOfGroups> inputs;
-    // sample bias vector, will get added to each of the four output vectors
-    std::array<int32_t, NoOfOutputs> biases;
-
-    std::array<int32_t, NoOfOutputs * NoOfGroups> refScores;
+    // weight matrix (out x in)
+    std::vector<int16_t> weights;
+    // input matrix (in x gr),
+    std::vector<int16_t> inputs;
+    // bias vector (out)
+    std::vector<int32_t> biases;
+    // ref scores vector (out x gr)
+    std::vector<int32_t> refScores;
     template<typename Array>
     static void arrayCopy(void * dest, Array& a)
     {
@@ -75,4 +85,8 @@ private:
     {
         return static_cast<uint32_t>(a.size() * sizeof(typename Array::value_type));
     }
+
+    Gna2Tensor gnaInput, gnaOutput, gnaWeights, gnaBiases;
+    const Gna2Tensor* gnaOperationOperands[4] = { &gnaInput, &gnaOutput, &gnaWeights, &gnaBiases };
+    std::vector<Gna2Operation> gnaModelOperations;
 };

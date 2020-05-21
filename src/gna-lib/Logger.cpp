@@ -134,6 +134,7 @@ const char* const Logger::StatusStrings[] =
     "GNA_ERR_INVALID_DATA_MODE", " - Data mode value is invalid",
     "GNA_ERR_NOT_IMPLEMENTED", " - Functionality not implemented yet",
 
+    "GNA_ERR_QOS_TIMEOUT", " - Request was aborted due to QoS timeout",
     "UNKNOWN STATUS", " - Status code is invalid"
 };
 

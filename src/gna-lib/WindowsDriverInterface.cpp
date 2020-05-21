@@ -268,6 +268,9 @@ RequestResult WindowsDriverInterface::Submit(HardwareRequest& hardwareRequest,
     case STATUS_MORE_PROCESSING_REQUIRED:
         result.status = Gna2StatusWarningDeviceBusy;
         break;
+    case STATUS_TOO_MANY_SESSIONS:
+        result.status = Gna2StatusDriverQoSTimeoutExceeded;
+        break;
     case STATUS_IO_TIMEOUT:
         result.status = Gna2StatusDeviceCriticalFailure;
         break;
