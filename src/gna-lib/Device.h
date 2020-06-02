@@ -35,6 +35,7 @@
 
 #include "gna-api.h"
 #include "gna2-instrumentation-api.h"
+#include "gna2-model-export-api.h"
 
 #include <cstdint>
 #include <map>
@@ -101,8 +102,9 @@ public:
     void* Dump(uint32_t modelId, Gna2ModelSueCreekHeader* modelHeader, Gna2Status* status,
             Gna2UserAllocator customAlloc);
 
-    void DumpLdNoMMu(uint32_t modelId, Gna2UserAllocator customAlloc,
-        void *& exportData, uint32_t & exportDataSize);
+    void DumpComponentNoMMu(uint32_t modelId, Gna2UserAllocator customAlloc,
+        void *& exportData, uint32_t & exportDataSize, Gna2ModelExportComponent component,
+        Gna2DeviceVersion targetDevice);
 
     uint32_t CreateProfilerConfiguration(uint32_t numberOfInstrumentationPoints, Gna2InstrumentationPoint* selectedInstrumentationPoints, uint64_t* results);
 

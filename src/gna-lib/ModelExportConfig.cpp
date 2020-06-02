@@ -72,13 +72,10 @@ void ModelExportConfig::Export(Gna2ModelExportComponent componentType, void ** e
         return;
     }
 
-    if (componentType == Gna2ModelExportComponentLayerDescriptors)
+    if (targetDeviceVersion == Gna2DeviceVersionEmbedded3_0 ||
+        targetDeviceVersion == Gna2DeviceVersionEmbedded3_1)
     {
-        Expect::True(
-            targetDeviceVersion == Gna2DeviceVersionEmbedded3_0 ||
-            targetDeviceVersion == Gna2DeviceVersionEmbedded3_1,
-            Gna2StatusAccelerationModeNotSupported);
-        device.DumpLdNoMMu(sourceModelId, userAllocator, *exportBuffer, *exportBufferSize);
+        device.DumpComponentNoMMu(sourceModelId, userAllocator, *exportBuffer, *exportBufferSize, componentType, targetDeviceVersion);
         return;
     }
 

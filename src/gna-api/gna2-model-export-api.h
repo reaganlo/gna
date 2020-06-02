@@ -139,6 +139,17 @@ enum Gna2ModelExportComponent
      for RW and RO memory (in order) are required.
     */
     Gna2ModelExportComponentLegacySueCreekHeader = 3,
+
+    Gna2ModelExportComponentReadOnlyDump = 4,
+
+    Gna2ModelExportComponentScratchDump = 6,
+    Gna2ModelExportComponentStateDump = 7,
+
+    Gna2ModelExportComponentInputDump = 11,
+    Gna2ModelExportComponentOutputDump = 12,
+
+    Gna2ModelExportComponentExternalBufferInputDump = 21,
+    Gna2ModelExportComponentExternalBufferOutputDump = 22,
 };
 
 /**

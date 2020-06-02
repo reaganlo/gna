@@ -31,7 +31,11 @@
 
 #include "gna2-model-export-api.h"
 
+#include "gna2-tlv-anna-writer.h"
+#include "gna2-tlv-anna-reader.h"
+
 #include <cstdint>
+
 
 class TestMicrophoneSelectionModel : public TestGnaModel
 {
@@ -55,7 +59,7 @@ public:
     uint8_t expectedLda[128] = {
         0x09, 0x2a, 0x08, 0x00, 0x00, 0x04, 0x01, 0x01, 0x08, 0x00, 0x00, 0x0b, 0x00, 0x00, 0x00, 0x00,
         0x02, 0x00, 0x04, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-        0x81, 0x00, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00, 0x20, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x81, 0x00, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
         0x81, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x81, 0x40, 0x00, 0x00,
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -78,6 +82,44 @@ public:
 
 };
 
+
+void TestTlvReader(const char* tlvBlob, uint32_t tlvSize, bool outAsExternal, std::string userSignature)
+{
+    std::vector<Gna2TlvType> TlvTypes =
+    {
+        TlvTypeLayerDescriptorArraySize,
+        TlvTypeLayerDescriptorAndRoArrayData,
+        TlvTypeStateData,
+        TlvTypeScratchSize,
+        TlvTypeExternalInputBufferSize,
+        TlvTypeExternalOutputBufferSize,
+        TlvTypeUserSignatureData,
+   };
+
+    for(auto type: TlvTypes)
+    {
+        void * value = nullptr;
+        uint32_t valueSize = 0;;
+        const auto tlvStatus = Gna2TlvFindInArray(tlvBlob, tlvSize, type, &valueSize, &value);
+        EXPECT_EQ(tlvStatus, Gna2TlvStatusSuccess);
+        if(type == TlvTypeLayerDescriptorAndRoArrayData ||
+            type == TlvTypeStateData)
+        {
+            EXPECT_TRUE((((char*)value) - tlvBlob) % TLV_ANNA_REQUIRED_ALIGNEMENT == 0);
+        }
+        if(type == TlvTypeUserSignatureData)
+        {
+            EXPECT_TRUE(userSignature == ((char*)value));
+        }
+        if (!outAsExternal)
+        {
+            EXPECT_NE(valueSize, 0);
+        }
+        EXPECT_NE(value, (void*)NULL);
+    }
+
+}
+
 void TestMicrophoneSelectionModel::exportForAnna(bool outAsExternal, bool inputAlsoFromExternal, uint32_t inputExternalOffset)
 {
     const auto& conversionPwl = TestActivationHelper::GetConversionPwl();
@@ -97,7 +139,7 @@ void TestMicrophoneSelectionModel::exportForAnna(bool outAsExternal, bool inputA
     }
     else
     {
-        GnaAllocAndTag(gnaMemoryOutput, memoryOutputSize, GNA::HardwareModelNoMMU::MemoryTagOutput);
+        GnaAllocAndTag(gnaMemoryOutput, memoryOutputSize, GNA::HardwareModelNoMMU::MemoryTagState);
     }
 
     GnaAllocAndTag(mockedExternalBuffer, externalBufferSize, GNA::HardwareModelNoMMU::MemoryTagExternalBufferInput);
@@ -111,14 +153,14 @@ void TestMicrophoneSelectionModel::exportForAnna(bool outAsExternal, bool inputA
 
     auto inputOperand = Gna2TensorInit2D(minimalMBInputVectorSize, inputGroups, Gna2DataTypeInt16, gnaMemoryZeroed);
 
-    if(inputAlsoFromExternal)
+    if (inputAlsoFromExternal)
     {
         inputOperand.Data = static_cast<uint8_t*>(mockedExternalBuffer) + inputExternalOffset;
         inputOperand.Mode = Gna2TensorModeExternalBuffer;
     }
 
     auto outputOperand = Gna2TensorInit2D(numberOfElementsFromMic, inputGroups, Gna2DataTypeInt16, gnaMemoryOutput);
-    if(outAsExternal)
+    if (outAsExternal)
     {
         outputOperand.Mode = Gna2TensorModeExternalBuffer;
     }
@@ -136,14 +178,83 @@ void TestMicrophoneSelectionModel::exportForAnna(bool outAsExternal, bool inputA
     ASSERT_EQ(Gna2StatusSuccess, Gna2ModelExportConfigCreate(PageAllocator, &exportConfigId));
     ASSERT_EQ(Gna2StatusSuccess, Gna2ModelExportConfigSetSource(exportConfigId, DeviceIndex, modelId));
     ASSERT_EQ(Gna2StatusSuccess, Gna2ModelExportConfigSetTarget(exportConfigId, Gna2DeviceVersionEmbedded3_1));
-    void * exportBuffer;
-    uint32_t exportBufferSize = 0;
+    void * exportBufferLda;
+    uint32_t exportBufferSizeLda = 0;
     ASSERT_EQ(Gna2StatusSuccess, Gna2ModelExport(exportConfigId,
         Gna2ModelExportComponentLayerDescriptors,
-        &exportBuffer, &exportBufferSize));
+        &exportBufferLda, &exportBufferSizeLda));
 
-    ExpectMemEqual(static_cast<uint8_t*>(exportBuffer), exportBufferSize, expectedLda, expectedLdaSize);
-    PageFree(exportBuffer);
+    ExpectMemEqual(static_cast<uint8_t*>(exportBufferLda), exportBufferSizeLda, expectedLda, expectedLdaSize);
+
+    void * exportBufferRO;
+    uint32_t exportBufferSizeRO = 0;
+    ASSERT_EQ(Gna2StatusSuccess, Gna2ModelExport(exportConfigId,
+        Gna2ModelExportComponentReadOnlyDump,
+        &exportBufferRO, &exportBufferSizeRO));
+
+    void * exportBufferState;
+    uint32_t exportBufferSizeState = 0;
+    ASSERT_EQ(Gna2StatusSuccess, Gna2ModelExport(exportConfigId,
+        Gna2ModelExportComponentStateDump,
+        &exportBufferState, &exportBufferSizeState));
+
+    void * exportBufferScratch;
+    uint32_t exportBufferSizeScratch = 0;
+    ASSERT_EQ(Gna2StatusSuccess, Gna2ModelExport(exportConfigId,
+        Gna2ModelExportComponentScratchDump,
+        &exportBufferScratch, &exportBufferSizeScratch));
+
+    void * exportBufferExIn;
+    uint32_t exportBufferExInSize = 0;
+    ASSERT_EQ(Gna2StatusSuccess, Gna2ModelExport(exportConfigId,
+        Gna2ModelExportComponentExternalBufferInputDump,
+        &exportBufferExIn, &exportBufferExInSize));
+
+    void * exportBufferExOut;
+    uint32_t exportBufferExOutSize = 0;
+    ASSERT_EQ(Gna2StatusSuccess, Gna2ModelExport(exportConfigId,
+        Gna2ModelExportComponentExternalBufferOutputDump,
+        &exportBufferExOut, &exportBufferExOutSize));
+
+    void * exportBufferIn;
+    uint32_t exportBufferExSize = 0;
+    ASSERT_EQ(Gna2StatusMemoryBufferInvalid, Gna2ModelExport(exportConfigId,
+        Gna2ModelExportComponentInputDump,
+        &exportBufferIn, &exportBufferExSize));
+
+    void * exportBufferOut;
+    uint32_t exportBufferOutSize = 0;
+    ASSERT_EQ(Gna2StatusMemoryBufferInvalid, Gna2ModelExport(exportConfigId,
+        Gna2ModelExportComponentOutputDump,
+        &exportBufferOut, &exportBufferOutSize));
+
+
+    char *outTlvVector = nullptr;
+    uint32_t outTlvSize = 0;
+    const char userSignature[] = "ANNA Microphone Selection Model";
+    const auto tlvStatus = Gna2ExportAnnaTlv(
+        Allocator,
+        &outTlvVector,
+        &outTlvSize,
+        static_cast<char*>(exportBufferLda), exportBufferSizeLda,
+        static_cast<char*>(exportBufferRO), exportBufferSizeRO,
+        static_cast<char*>(exportBufferState), exportBufferSizeState,
+        exportBufferSizeScratch,
+        exportBufferExInSize,
+        exportBufferExOutSize,
+        userSignature, sizeof(userSignature)
+    );
+    EXPECT_EQ(Gna2TlvStatusSuccess, tlvStatus);
+
+    TestTlvReader(outTlvVector, outTlvSize, outAsExternal, userSignature);
+
+    Free(outTlvVector);
+    PageFree(exportBufferExOut);
+    PageFree(exportBufferExIn);
+    PageFree(exportBufferScratch);
+    PageFree(exportBufferState);
+    PageFree(exportBufferRO);
+    PageFree(exportBufferLda);
 }
 
 TEST_F(TestMicrophoneSelectionModel, exportForAnnaDefault)

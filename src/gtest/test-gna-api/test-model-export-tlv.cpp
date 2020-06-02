@@ -43,17 +43,11 @@ void TlvWriteL(std::vector<char> & outVector, TlvLType l) {
     outVector.insert(outVector.end(), reinterpret_cast<char*>(&l), reinterpret_cast<char*>(&l) + sizeof(l));
 }
 
-void TlvWriteT(std::vector<char> & outVector, const char* t) {
-    ASSERT_NE(t, nullptr) << "Bad TLV type pointer (nullptr)";
-
-    int i = 0;
-    while (t[i] != '\0' && i < 4) {
-        outVector.push_back(t[i]);
-        i++;
-    }
-    while (i < 4) {
-        outVector.push_back('\0');
-        i++;
+void TlvWriteT(std::vector<char> & outVector, const std::string& type)
+{
+    for (unsigned i = 0; i < 4; i++)
+    {
+        outVector.push_back(i < type.size() ? type[i] : '\0');
     }
 }
 
@@ -141,13 +135,13 @@ std::vector<char> TestSimpleModelTlv::Gna3DumpNoMmuTlv()
     const uint32_t sizeInTlvSize = tlvHeaderSize + lInTlvSize;
     const uint32_t recordWithSizeInTlvSize = tlvHeaderSize + sizeInTlvSize;
 
-    const std::vector<std::pair<const char *, uint32_t> > recordsWithSizeOnly = {
+    const std::vector<std::pair<const std::string, uint32_t> > recordsWithSizeOnly = {
         { "IN", dbgExtra.InputElementSize * dbgExtra.NumberOfInputNodes },
         { "OUT", dbgExtra.OutputElementSize * dbgExtra.NumberOfOutputNodes},
         { "SCRA", additionalScratchBufferSize} };
 
     // TODO: GNA2: remove DBG
-    const std::vector < std::tuple<const char*, uint32_t, const char *> > recordsWithDataOnly = {
+    const std::vector < std::tuple<const std::string, uint32_t, const char *> > recordsWithDataOnly = {
         std::make_tuple("LDA", static_cast<uint32_t>(ldaData.size()), static_cast<const char*>(ldaData.data())),
         std::make_tuple("RORW", static_cast<uint32_t>(memorySize), static_cast<const char*>(memory)),
         std::make_tuple("DBG", static_cast<uint32_t>(sizeof(dbgExtra)), reinterpret_cast<const char*>(&dbgExtra)),

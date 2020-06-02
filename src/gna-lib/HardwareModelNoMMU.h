@@ -29,7 +29,7 @@
 
 #include "Address.h"
 #include "HardwareCapabilities.h"
-
+#include "ModelExportConfig.h"
 
 #include <cstdint>
 #include <memory>
@@ -43,7 +43,7 @@ class HardwareModelNoMMU : public HardwareModel
 {
 public:
 
-    HardwareModelNoMMU(CompiledModel const & softwareModel, Gna2UserAllocator customAlloc);
+    HardwareModelNoMMU(CompiledModel const & softwareModel, Gna2UserAllocator customAlloc, Gna2DeviceVersion targetDevice);
 
     virtual ~HardwareModelNoMMU() = default;
 
@@ -58,17 +58,30 @@ public:
     // Adds BAR index at low 2 bits
     virtual LdaOffset GetBufferOffset(const BaseAddress& address) const override;
 
-    void ExportLd(void *& exportData, uint32_t & exportDataSize);
+    void ExportComponent(void *& exportData, uint32_t & exportDataSize, Gna2ModelExportComponent component);
 
+    static constexpr uint32_t MemoryTagReadWrite = 0;
     static constexpr uint32_t MemoryTagInput = 1;
     static constexpr uint32_t MemoryTagOutput = 2;
     static constexpr uint32_t MemoryTagReadOnly = 3;
     static constexpr uint32_t MemoryTagExternalBufferInput = 4;
     static constexpr uint32_t MemoryTagExternalBufferOutput = 5;
+    static constexpr uint32_t MemoryTagScratch = 6;
+    static constexpr uint32_t MemoryTagState = 7;
+
+    static constexpr uint32_t GNADSCBARIndex = 0;
+    static constexpr uint32_t BAR0Index = 1;
+    static constexpr uint32_t BAR1Index = 2;
+    static constexpr uint32_t BAR2Index = 3;
+
+    static constexpr uint32_t StateBarIndex = BAR2Index;
+    static constexpr uint32_t ScratchBarIndex = BAR1Index;
+
+    static constexpr uint32_t BarIndexLda = BAR0Index;
+    static constexpr uint32_t BarIndexGnaDescriptor = GNADSCBARIndex;
+
 
     static constexpr uint32_t GnaDescritorSize = 32;
-    static constexpr uint32_t BarIndexGnaBar = 0;
-    static constexpr uint32_t BarIndexRo = 1;
     static constexpr uint32_t BarIndexInput = 2;
     static constexpr uint32_t BarIndexOutput = 3;
 
@@ -76,18 +89,32 @@ protected:
     virtual void prepareAllocationsAndModel() override;
 
 private:
-    static HardwareCapabilities noMMUCapabilities;
+    void ExportLd(void *& exportData, uint32_t & exportDataSize);
+    static const HardwareCapabilities& GetHwCaps(Gna2DeviceVersion targetDevice);
 
-    Gna2UserAllocator customAlloc = nullptr;
+    static HardwareCapabilities noMMUCapabilities30;
+    static HardwareCapabilities noMMUCapabilities31Anna;
+
+    Gna2UserAllocator customUserAlloc = nullptr;
+
+    void* customAllocSafe(uint32_t size)
+    {
+        Expect::NotNull((void*)customUserAlloc);
+        auto o = customUserAlloc(size);
+        Expect::NotNull(o, Gna2StatusResourceAllocationError);
+        return o;
+    }
 
     std::unique_ptr<Memory> guessedInput;
     std::unique_ptr<Memory> guessedOutput;
 
-    MemoryContainer ROAllocations;
+    MemoryContainer FollowingLdaAllocations;
     MemoryContainer InputAllocations;
     MemoryContainer OutputAllocations;
     MemoryContainer ExternalBufferInputAllocations;
     MemoryContainer ExternalBufferOutputAllocations;
+    MemoryContainer ScratchAllocations;
+    MemoryContainer StateAllocations;
 };
 
 }

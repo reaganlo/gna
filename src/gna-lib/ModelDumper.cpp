@@ -73,19 +73,19 @@ void* Device::Dump(uint32_t modelId, Gna2ModelSueCreekHeader* modelHeader, Gna2S
     return address;
 }
 
-void Device::DumpLdNoMMu(uint32_t modelId, Gna2UserAllocator customAlloc,
-    void *& exportData, uint32_t & exportDataSize)
+void Device::DumpComponentNoMMu(uint32_t modelId, Gna2UserAllocator customAlloc,
+    void *& exportData, uint32_t & exportDataSize, const Gna2ModelExportComponent component,
+    const Gna2DeviceVersion targetDevice)
 {
     Expect::NotNull(reinterpret_cast<void *>(customAlloc));
     auto const & model = *models.at(modelId);
 
     // creating HW layer descriptors directly into dump memory
-    auto hwModel = std::make_unique<HardwareModelNoMMU>(model, customAlloc);
+    auto hwModel = std::make_unique<HardwareModelNoMMU>(model, customAlloc, targetDevice);
     if (!hwModel)
     {
         throw GnaException{ Gna2StatusResourceAllocationError };
     }
 
-    hwModel->ExportLd(exportData, exportDataSize);
-    Expect::NotNull(exportData, Gna2StatusResourceAllocationError);
+    hwModel->ExportComponent(exportData, exportDataSize, component);
 }
