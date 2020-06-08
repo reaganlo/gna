@@ -105,6 +105,8 @@ public:
 
     DeviceVersion GetDeviceVersion() const;
 
+    const char* GetHwModuleName() const;
+
     DeviceVersion GetHardwareDeviceVersion() const
     {
         return IsHardwareSupported()

@@ -51,26 +51,29 @@ using namespace GNA;
 
 void ConvolutionalLayer2D::Init()
 {
-    if (inputTransform->Is1D() &&
-        (Transforms.Get<PoolingFunction2D>(PoolingTransform2D) == nullptr ||outputTransform->Is1D()))
+    if (GNA_3_5 != validator.get()->HwCapabilities.GetDeviceGeneration())
     {
-        auto const & capsMapIn = ConvolutionalLayer2DCapabilities::GetOperands(InputOperandIndex);
-        Input.Validate(capsMapIn, INTEL_CONVOLUTIONAL_1D);
-
-        auto const & capsMapOut = ConvolutionalLayer2DCapabilities::GetOperands(OutputOperandIndex);
-        Output.Validate(capsMapOut, INTEL_CONVOLUTIONAL_1D);
-    }
-    else
-    {
-        auto const precision = Output.Mode.Size;
-        if (precision < 4)
+        if (inputTransform->Is1D() &&
+            (Transforms.Get<PoolingFunction2D>(PoolingTransform2D) == nullptr || outputTransform->Is1D()))
         {
-            auto const & filters = getTransformOperand(ConvolutionalTransform2D, FilterOperandIndex);
-            auto const filterCount = filters.at(GNA_DIM_N);
-            if (filterCount > 2)
+            auto const& capsMapIn = ConvolutionalLayer2DCapabilities::GetOperands(InputOperandIndex);
+            Input.Validate(capsMapIn, INTEL_CONVOLUTIONAL_1D);
+
+            auto const& capsMapOut = ConvolutionalLayer2DCapabilities::GetOperands(OutputOperandIndex);
+            Output.Validate(capsMapOut, INTEL_CONVOLUTIONAL_1D);
+        }
+        else
+        {
+            auto const precision = Output.Mode.Size;
+            if (precision < 4)
             {
-                Expect::MultiplicityOf(filterCount, 4 / precision,
-                    Gna2StatusCnnErrorConvFltCount);
+                auto const& filters = getTransformOperand(ConvolutionalTransform2D, FilterOperandIndex);
+                auto const filterCount = filters.at(GNA_DIM_N);
+                if (filterCount > 2)
+                {
+                    Expect::MultiplicityOf(filterCount, 4 / precision,
+                        Gna2StatusCnnErrorConvFltCount);
+                }
             }
         }
     }

@@ -194,7 +194,8 @@ ConvolutionFunction2D::ConvolutionFunction2D(const BaseTransformConfig<Convoluti
     }
 
     auto effectiveOperation = INTEL_CONVOLUTIONAL_2D;
-    if (INTEL_CONVOLUTIONAL_1D == Filters->GetEffectiveOperationType() &&
+    if (GNA_3_5 != config.validator.HwCapabilities.GetDeviceGeneration() &&
+        INTEL_CONVOLUTIONAL_1D == Filters->GetEffectiveOperationType() &&
         INTEL_CONVOLUTIONAL_1D == Stride->GetEffectiveOperationType() &&
         IsInput1D(config.input->Dimensions))
     {

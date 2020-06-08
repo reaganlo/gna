@@ -121,6 +121,9 @@ DEFINE_GUID(GUID_DEVINTERFACE_GNA_DRV,
 // GNA 3.0 Device, full featured GNA 3.0
 #define GNA_HW_3_0 0x30
 
+// GNA 3.5 Device, full featured GNA 3.5
+#define GNA_HW_3_5 0x35
+
 /**
  Calculate Control flags
  */

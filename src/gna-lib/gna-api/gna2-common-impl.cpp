@@ -260,6 +260,7 @@ Gna2DeviceVersion GNA::Gna2GetVersionForLegacy(gna_device_version legacyVersion)
         {GNA_1x0, Gna2DeviceVersion1_0 },
         {GNA_2x0, Gna2DeviceVersion2_0 },
         {GNA_3x0, Gna2DeviceVersion3_0 },
+        {GNA_3x5, Gna2DeviceVersion3_5 },
         {GNA_EMBEDDED_1x0, Gna2DeviceVersionEmbedded1_0 },
         {GNA_EMBEDDED_2x1, Gna2DeviceVersionEmbedded2_1 },
         {GNA_EMBEDDED_3x0, Gna2DeviceVersionEmbedded3_0 },

@@ -132,6 +132,12 @@ enum Gna2DeviceVersion
     Gna2DeviceVersion3_0 = 0x30,
 
     /**
+     GNA 3.5 device.
+     A ::Gna2DeviceGeneration3_5 generation device.
+     */
+    Gna2DeviceVersion3_5 = 0x35,
+
+    /**
      GNA 1.0 embedded device.
      A ::Gna2DeviceGeneration1_0 generation device.
      */

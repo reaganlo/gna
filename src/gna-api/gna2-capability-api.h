@@ -75,6 +75,12 @@ enum Gna2DeviceGeneration
      Partially compatible with ::Gna2DeviceGeneration2_0.
      */
     Gna2DeviceGeneration3_0 = 0x300,
+
+    /**
+     Fully featured fourth GNA device generation.
+     Partially compatible with ::Gna2DeviceGeneration2_0 and ::Gna2DeviceGeneration3_0.
+     */
+    Gna2DeviceGeneration3_5 = 0x350,
 };
 
 /**

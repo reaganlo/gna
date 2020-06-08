@@ -41,7 +41,7 @@ enum ThresholdOperation
     ThresholdOperationStop,
     ThresholdOperationContinueIfMet,
     ThresholdOperationContinueIfNotMet,
-    ThresholdOperationContinueAllways
+    ThresholdOperationContinueAlways
 };
 
 enum ThresholdCondition

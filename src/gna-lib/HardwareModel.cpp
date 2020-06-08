@@ -42,7 +42,9 @@
 #include "gna-api-types-xnn.h"
 
 #include <algorithm>
+#include <sstream>
 #include <inttypes.h>
+#include <iomanip>
 
 using namespace GNA;
 
@@ -58,7 +60,7 @@ HardwareModel::HardwareModel(CompiledModel const & softwareModel, const Hardware
     hwCapabilities{ hwCaps },
     gmmDescriptorsSize{ getGmmDescriptorsSize(model.GmmCount) },
     xnnDescriptorsSize{ getLayerDescriptorsSize(model.LayerCount, hwCapabilities.GetDeviceVersion()) },
-    HwModule{ HwModuleInterface::Create("gna_hw") }
+    HwModule{ HwModuleInterface::Create(hwCapabilities.GetHwModuleName()) }
 {
 }
 
@@ -103,17 +105,20 @@ void HardwareModel::Build(const std::vector<std::unique_ptr<SubModel>>& submodel
             {
                 hardwareLayers.push_back(HardwareLayer::Create(parameters));
 #if DEBUG == 1
-                Log->Message("Layer %d descriptor:\n", i);
+                std::stringstream descriptorStream;
+                Log->Message("Layer %d descriptor :\n", i);
+                descriptorStream << "\n";
                 const auto addr = hardwareLayers.back().get()->XnnDescriptor.GetMemAddress().Get();
-                for (unsigned line = 0; line < 4; line++)
+                for (unsigned line = 0; line < 8; line++)
                 {
-                    Log->Message("%011" PRIX64 " ", reinterpret_cast<uint64_t>(addr + line * 16));
-                    for (int byte = 15; byte >= 0; byte--)
+                    descriptorStream << std::hex << std::setw(11) << reinterpret_cast<uint64_t>(addr + line * 8) << " ";
+                    for (int byte = 0; byte <8; byte++)
                     {
-                        Log->Message("%02X", *(addr + line * 16 + static_cast<unsigned>(byte)));
+                        descriptorStream << std::hex << std::setfill('0') << std::setw(2) << static_cast<int>(*(addr + line * 8 + static_cast<unsigned>(byte))) << " ";
                     }
-                    Log->Message("\n");
+                    descriptorStream << "\n";
                 }
+                Log->Message(descriptorStream.str().c_str());
 #endif // DEBUG == 1
             }
             if (INTEL_GMM == layer.Operation)

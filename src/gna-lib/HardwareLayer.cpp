@@ -682,8 +682,12 @@ void HardwareLayerCnn2D::save()
     XnnDescriptor[cnn2d_conv_kernel_h] = cnn->Filters->Dimensions.at('H');
     XnnDescriptor[cnn2d_kernel_iter] = static_cast<uint32_t>(uArchConfig.KWGIter);
     XnnDescriptor[cnn2d_kernel_wg] = static_cast<uint32_t>(uArchConfig.KWG);
-    XnnDescriptor[cnn2d_zp_stride_h] = cnn->Padding->Dimensions.at(GNA_DIM_H) / cnn->Stride->Dimensions.at(GNA_DIM_H);
-    XnnDescriptor[cnn2d_zp_substride_h] = cnn->Padding->Dimensions.at(GNA_DIM_H) % cnn->Stride->Dimensions.at(GNA_DIM_H);
+
+    if (XnnDescriptor.HasParameter(cnn2d_zp_stride_h) && XnnDescriptor.HasParameter(cnn2d_zp_substride_h))
+    {
+        XnnDescriptor[cnn2d_zp_stride_h] = cnn->Padding->Dimensions.at(GNA_DIM_H) / cnn->Stride->Dimensions.at(GNA_DIM_H);
+        XnnDescriptor[cnn2d_zp_substride_h] = cnn->Padding->Dimensions.at(GNA_DIM_H) % cnn->Stride->Dimensions.at(GNA_DIM_H);
+    }
 
     XnnDescriptor[cnn2d_uthread_num] = uArchConfig.uT; //from u-arch
     XnnDescriptor[cnn2d_kmem_base] = uArchConfig.KMemBase;

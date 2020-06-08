@@ -34,6 +34,7 @@ const HwSupport HW_GMM =
     {GNA_1_0, true},
     {GNA_2_0, true},
     {GNA_3_0, true},
+    {GNA_3_5, true},
 };
 
 const HwSupport HW_0_9 =
@@ -42,6 +43,7 @@ const HwSupport HW_0_9 =
     {GNA_1_0, true},
     {GNA_2_0, true},
     {GNA_3_0, true},
+    {GNA_3_5, true},
 };
 
 const HwSupport HW_1_0_AND_2_0 =
@@ -54,11 +56,13 @@ const HwSupport HW_2_0 =
 {
     {GNA_2_0, true},
     {GNA_3_0, true},
+    {GNA_3_5, true},
 };
 
 const HwSupport HW_3_0 =
 {
     {GNA_3_0, true},
+    {GNA_3_5, true},
 };
 
 static const Support FROM_GMM = { std::move(HW_GMM) };

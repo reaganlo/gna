@@ -215,6 +215,29 @@ std::map<DeviceVersion, const GenerationCapabilities>& HardwareCapabilities::get
             {},
             {}},
         },
+        { Gna2DeviceVersion3_5,
+            {GNA_3_5,
+            8192,
+            {
+                { BaseFunctionality, true},
+                { CNN, true },
+                { LegacyGMM, true },
+                { GMMLayer, true },
+                { MultiBias, true },
+                { L1Distance, false },
+                { L2Distance, false },
+                { ComputerVision, false },
+                { NewPerformanceCounters, true },
+                { CNN2D, true }
+            },
+            8,
+            {{1, 16}, {2, 8}},
+            4,
+            2,
+            16,
+            {},
+            {}},
+        },
         { Gna2DeviceVersionEmbedded3_0,
             {GNA_3_0,
             8192,
@@ -268,6 +291,8 @@ std::map<DeviceVersion, const GenerationCapabilities>& HardwareCapabilities::get
     {
         initHardwareConsistencySettingsAdl(const_cast<GenerationCapabilities&>(capsMap.at(Gna2DeviceVersion3_0)));
         initHardwareConsistencySettingsAdl(const_cast<GenerationCapabilities&>(capsMap.at(Gna2DeviceVersion3_0)), true);
+        initHardwareConsistencySettingsAdl(const_cast<GenerationCapabilities&>(capsMap.at(Gna2DeviceVersion3_5)));
+        initHardwareConsistencySettingsAdl(const_cast<GenerationCapabilities&>(capsMap.at(Gna2DeviceVersion3_5)), true);
         initHardwareConsistencySettingsAdl(const_cast<GenerationCapabilities&>(capsMap.at(Gna2DeviceVersionEmbedded3_0)));
         initHardwareConsistencySettingsAdl(const_cast<GenerationCapabilities&>(capsMap.at(Gna2DeviceVersionEmbedded3_0)), true);
         initHardwareConsistencySettingsAdl(const_cast<GenerationCapabilities&>(capsMap.at(Gna2DeviceVersionEmbedded3_1)));
@@ -292,7 +317,7 @@ HardwareCapabilities::getGenerationCapabilities(DeviceVersion deviceVersionIn)
 
 bool HardwareCapabilities::IsAdlGeneration(gna_device_generation generation)
 {
-    return GNA_3_0 == generation;
+    return GNA_3_0 == generation || GNA_3_5 == generation;
 }
 
 bool HardwareCapabilities::IsAdlDevice(DeviceVersion deviceVersionIn)
@@ -339,7 +364,7 @@ void HardwareCapabilities::DiscoverHardware(const DriverCapabilities& discovered
 {
     //TODO:3: remove when ADL bug with input buffer will be fixed
     auto hwInBuffSize = discoveredDriver.hwInBuffSize;
-    if (discoveredDriver.deviceVersion == Gna2DeviceVersion3_0)
+    if (discoveredDriver.deviceVersion == Gna2DeviceVersion3_0 || discoveredDriver.deviceVersion == Gna2DeviceVersion3_5)
     {
         hwInBuffSize = 32;
     }
@@ -375,6 +400,19 @@ uint32_t const * HardwareCapabilities::GetHardwareConsistencySettingsForAdl(Devi
 DeviceVersion HardwareCapabilities::GetDeviceVersion() const
 {
     return deviceVersion;
+}
+
+const char* HardwareCapabilities::GetHwModuleName() const
+{
+    switch (deviceVersion)
+    {
+    case Gna2DeviceVersion3_0:
+        return "gna_hw";
+    case Gna2DeviceVersion3_5:
+        return "gna-hw-3-5";
+    default:
+        return "gna-hw-3-5";
+    }
 }
 
 gna_device_generation HardwareCapabilities::GetDeviceGeneration() const
