@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2019 Intel Corporation.
+ Copyright 2020 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -23,46 +23,38 @@
  in any way.
 */
 
-#include "gna2-common-api.h"
-#include "gna2-model-api.h"
+#pragma once
 
-#include "gna2-common-impl.h"
+#include "Expect.h"
 
-#include "ModelError.h"
-
-#include "gtest/gtest.h"
+#include <cstdint>
 #include <map>
 #include <string>
 
-class TestInternal : public ::testing::Test
+namespace GNA
 {
-public:
-    TestInternal(){}
-    TestInternal(const TestInternal& rhs) = delete;
+struct StringHelper
+{
+    static void Copy(char& dstBegin, const uint32_t dstSize, const std::string& source);
 
-protected:
-    template<class T>
-    void TestStringMapLength(const uint32_t maxLenFromApi, const std::map<T, std::string> & container)
+    template <class T>
+    static uint32_t GetMaxLength(const std::map<T, std::string>& container)
     {
-        for (const auto& item : container)
+        uint32_t maxLen = 0;
+        for (const auto & s : container)
         {
-            // any message should be longer than 1024
-            ASSERT_LT(item.second.size(), 1024);
-            ASSERT_LT(item.second.size(), maxLenFromApi);
+            maxLen = (std::max)(maxLen, static_cast<uint32_t>(s.second.size()));
         }
+        return maxLen + 1;
+    }
+
+    template <class T>
+    static std::string GetFromMap(const std::map<T, std::string>& container, T containerKey)
+    {
+        const auto found = container.find(containerKey);
+        GNA::Expect::True(found != container.end(), Gna2StatusIdentifierInvalid);
+        return found->second;
     }
 };
 
-TEST_F(TestInternal, Gna2StatusToStringMap_desc_sizes)
-{
-    TestStringMapLength(
-        Gna2StatusGetMaxMessageLength(),
-        GNA::GetGna2StatusToStringMap());
-}
-
-TEST_F(TestInternal, Gna2ErrorTypeToStringMap_desc_sizes)
-{
-    TestStringMapLength(
-        Gna2ErrorTypeGetMaxMessageLength(),
-        GNA::ModelErrorHelper::GetAllErrorTypeStrings());
 }

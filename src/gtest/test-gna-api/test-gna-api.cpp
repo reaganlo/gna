@@ -710,21 +710,90 @@ TEST_F(TestGnaOperationInitApi, Gna2OperationInitOperationsSuccesfullNullActivat
     Free(operation.Parameters);
 }
 
-TEST_F(TestGnaApi, Gna2StatusGetMessage_positive_and_negative)
+template<class T, class F>
+void TestMessageApi(const uint32_t maxMessageLength, F getMesssageFunction, T sampleValidValue, T sampleInvalidValue)
 {
     char buffer[1024] = {0};
-    EXPECT_LE(Gna2StatusGetMaxMessageLength(), sizeof(buffer));
-    auto s = Gna2StatusGetMessage(Gna2StatusAccelerationModeNotSupported, buffer, sizeof(buffer));
+    EXPECT_LE(maxMessageLength, sizeof(buffer));
+    auto s = getMesssageFunction(sampleValidValue, buffer, sizeof(buffer));
     EXPECT_EQ(s, Gna2StatusSuccess);
     EXPECT_NE(buffer[0], '\0');
     buffer[0] = '\0';
-    s = Gna2StatusGetMessage(Gna2StatusAccelerationModeNotSupported, nullptr, sizeof(buffer));
+    s = getMesssageFunction(sampleValidValue, nullptr, sizeof(buffer));
     EXPECT_EQ(s, Gna2StatusNullArgumentNotAllowed);
-    s = Gna2StatusGetMessage(Gna2StatusAccelerationModeNotSupported, buffer, 0);
+    s = getMesssageFunction(sampleValidValue, buffer, 0);
     EXPECT_EQ(s, Gna2StatusMemorySizeInvalid);
     EXPECT_EQ(buffer[0], '\0');
-    s = Gna2StatusGetMessage(Gna2StatusAccelerationModeNotSupported, buffer, 2);
+    s = getMesssageFunction(sampleValidValue, buffer, 2);
     EXPECT_EQ(s, Gna2StatusMemorySizeInvalid);
+    EXPECT_EQ(buffer[0], '\0');
+    s = getMesssageFunction(sampleInvalidValue, buffer, sizeof(buffer));
+    EXPECT_EQ(s, Gna2StatusIdentifierInvalid);
+    EXPECT_EQ(buffer[0], '\0');
+}
+
+TEST_F(TestGnaApi, Gna2StatusGetMessage_positive_and_negative)
+{
+    TestMessageApi(Gna2StatusGetMaxMessageLength(),
+        Gna2StatusGetMessage,
+        Gna2StatusAccelerationModeNotSupported,
+        (Gna2Status)(-81));
+}
+
+TEST_F(TestGnaApi, Gna2ErrorTypeGetMessage_positive_and_negative)
+{
+    TestMessageApi(Gna2ErrorTypeGetMaxMessageLength(),
+        Gna2ErrorTypeGetMessage,
+        Gna2ErrorTypeNotMultiplicity,
+        (Gna2ErrorType)(-18));
+}
+
+TEST_F(TestGnaApi, Gna2ItemTypeGetMessage_positive_and_negative)
+{
+    TestMessageApi(Gna2ItemTypeGetMaxMessageLength(),
+        Gna2ItemTypeGetMessage,
+        Gna2ItemTypeModelOperations,
+        (Gna2ItemType)(16));
+}
+
+TEST_F(TestGnaApi, Gna2ModelErrorGetMessage)
+{
+    char buffer[226];
+    const std::string refValue = "Value:9223372036854775807;"
+        "ErrorType:Gna2ErrorTypeArgumentMissing;"
+        "ItemType:Gna2ItemTypeOperationNumberOfParameters;"
+        "Gna2Model:model.Operations[2147483647].Operands[2147483647]."
+        "Parameters[2147483647].Shape.Dimensions[2147483647]";
+    const auto maxLength = Gna2ModelErrorGetMaxMessageLength();
+    const auto errorTypeMaxLength = Gna2ErrorTypeGetMaxMessageLength();
+    const auto itemTypeMaxLength = Gna2ItemTypeGetMaxMessageLength();
+    int64_t remLength = maxLength;
+    remLength -= errorTypeMaxLength;
+    remLength -= itemTypeMaxLength;
+
+    EXPECT_EQ(refValue.size() + 1, sizeof(buffer));
+    EXPECT_EQ(remLength, 187);
+    EXPECT_LT(sizeof(buffer), maxLength);
+    EXPECT_EQ(maxLength, 256);
+    Gna2ModelError error{};
+    error.Value = (std::numeric_limits<int64_t>::max)();
+    error.Reason = Gna2ErrorTypeArgumentMissing;
+    error.Source.Type = Gna2ItemTypeOperationNumberOfParameters;
+    error.Source.OperandIndex = (std::numeric_limits<int32_t>::max)();
+    error.Source.OperationIndex = (std::numeric_limits<int32_t>::max)();
+    error.Source.ParameterIndex = (std::numeric_limits<int32_t>::max)();
+    error.Source.ShapeDimensionIndex = (std::numeric_limits<int32_t>::max)();
+    auto status = Gna2ModelErrorGetMessage(&error, buffer, sizeof(buffer));
+    EXPECT_EQ(status, Gna2StatusSuccess);
+    EXPECT_EQ(refValue, buffer);
+    buffer[0] = '\0';
+    status = Gna2ModelErrorGetMessage(&error, buffer, sizeof(buffer)-1);
+    EXPECT_EQ(status, Gna2StatusMemorySizeInvalid);
+    EXPECT_EQ(buffer[0], '\0');
+    status = Gna2ModelErrorGetMessage(&error, nullptr, sizeof(buffer));
+    EXPECT_EQ(status, Gna2StatusNullArgumentNotAllowed);
+    status = Gna2ModelErrorGetMessage(nullptr, buffer, sizeof(buffer));
+    EXPECT_EQ(status, Gna2StatusNullArgumentNotAllowed);
     EXPECT_EQ(buffer[0], '\0');
 }
 

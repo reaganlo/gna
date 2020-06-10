@@ -31,6 +31,7 @@
 #include "DeviceManager.h"
 #include "ModelError.h"
 #include "ModelWrapper.h"
+#include "StringHelper.h"
 
 #include "gna2-model-api.h"
 #include "gna2-common-api.h"
@@ -76,19 +77,65 @@ GNA2_API enum Gna2Status Gna2ModelGetLastError(struct Gna2ModelError * error)
     return ApiWrapper::ExecuteSafely(command);
 }
 
-GNA2_API enum Gna2Status Gna2ModelGetLastErrorMessage(
+GNA2_API enum Gna2Status Gna2ModelErrorGetMessage(
+    struct Gna2ModelError const * const error,
     char * messageBuffer,
     uint32_t messageBufferSize)
 {
-    UNREFERENCED_PARAMETER(messageBuffer);
-    UNREFERENCED_PARAMETER(messageBufferSize);
-
-    // TODO:3:API: implement P2
     const std::function<ApiStatus()> command = [&]()
     {
-        return Gna2StatusNotImplemented;
+        GNA::Expect::NotNull(messageBuffer);
+        GNA::Expect::NotNull(error);
+        const auto& message = ModelErrorHelper::GetErrorString(*error);
+        GNA::StringHelper::Copy(*messageBuffer, messageBufferSize, message);
+        return Gna2StatusSuccess;
     };
     return ApiWrapper::ExecuteSafely(command);
+}
+
+GNA2_API uint32_t Gna2ModelErrorGetMaxMessageLength()
+{
+    return ModelErrorHelper::GetErrorStringMaxLength();
+}
+
+GNA2_API enum Gna2Status Gna2ErrorTypeGetMessage(
+    enum Gna2ErrorType type,
+    char * messageBuffer,
+    uint32_t messageBufferSize)
+{
+    const std::function<Gna2Status()> command = [&]()
+    {
+        GNA::Expect::NotNull(messageBuffer);
+        const auto message = GNA::StringHelper::GetFromMap(ModelErrorHelper::GetAllErrorTypeStrings(), type);
+        GNA::StringHelper::Copy(*messageBuffer, messageBufferSize, message);
+        return Gna2StatusSuccess;
+    };
+    return GNA::ApiWrapper::ExecuteSafely(command);
+}
+
+GNA2_API uint32_t Gna2ErrorTypeGetMaxMessageLength()
+{
+    return StringHelper::GetMaxLength(ModelErrorHelper::GetAllErrorTypeStrings());
+}
+
+GNA2_API enum Gna2Status Gna2ItemTypeGetMessage(
+    enum Gna2ItemType type,
+    char * messageBuffer,
+    uint32_t messageBufferSize)
+{
+    const std::function<Gna2Status()> command = [&]()
+    {
+        GNA::Expect::NotNull(messageBuffer);
+        const auto message = GNA::StringHelper::GetFromMap(ModelErrorHelper::GetAllItemTypeStrings(), type);
+        GNA::StringHelper::Copy(*messageBuffer, messageBufferSize, message);
+        return Gna2StatusSuccess;
+    };
+    return GNA::ApiWrapper::ExecuteSafely(command);
+}
+
+GNA2_API uint32_t Gna2ItemTypeGetMaxMessageLength()
+{
+    return StringHelper::GetMaxLength(ModelErrorHelper::GetAllItemTypeStrings());
 }
 
 GNA2_API enum Gna2Status Gna2ModelOperationInit(struct Gna2Operation * operation,

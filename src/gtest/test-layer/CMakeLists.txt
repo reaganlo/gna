@@ -128,6 +128,7 @@ add_executable(test-layer
   ${SRC_DIR}/Scalar.cpp
   ${SRC_DIR}/Shape.cpp
   ${SRC_DIR}/SoftwareModel.cpp
+  ${SRC_DIR}/StringHelper.cpp
   ${SRC_DIR}/SubModel.cpp
   ${SRC_DIR}/Tensor.cpp
   ${SRC_DIR}/ThreadPool.cpp

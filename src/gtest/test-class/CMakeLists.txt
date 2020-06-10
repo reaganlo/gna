@@ -47,6 +47,7 @@ file(GLOB lib_sources
   "${SRC_DIR}/Expect.*"
   "${SRC_DIR}/GnaException.*"
   "${SRC_DIR}/DataMode.*"
+  "${SRC_DIR}/StringHelper.*"
   )
 
 file(GLOB sources

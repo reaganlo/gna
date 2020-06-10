@@ -31,6 +31,7 @@ in any way.
 #include "gna2-model-api.h"
 
 #include <functional>
+#include <map>
 #include <set>
 
 namespace GNA
@@ -104,7 +105,13 @@ public:
 
     static void ExecuteForModelItem(const std::function<void()>& command,
         int32_t operandIndexContext, int32_t parameterIndexContext = GNA2_DISABLED);
+
+    static const std::map<enum Gna2ErrorType, std::string>& GetAllErrorTypeStrings();
+    static const std::map<enum Gna2ItemType, std::string>& GetAllItemTypeStrings();
+    static std::string GetErrorString(const Gna2ModelError& error);
+    static uint32_t GetErrorStringMaxLength();
 private:
+    static void AppendNotDisabled(std::string& toAppend, int32_t index, const std::string& arrayName);
     static Gna2ModelError lastError;
 };
 

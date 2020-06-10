@@ -1037,28 +1037,33 @@ struct Gna2ModelError;
 GNA2_API enum Gna2Status Gna2ModelGetLastError(struct Gna2ModelError * error);
 
 /**
- Gets message with description of the last model error.
- @attention Not yet implemented.
+ Gets message with description of the model error.
 
- @note
- TODO:3:API: provide maximum message size
-
+ @param [in] error Description obtained from Gna2ModelGetLastError()
  @param [out] messageBuffer User allocated buffer for the message.
  @param [in] messageBufferSize The size of the messageBuffer in bytes.
-        The message is maximum X characters/bytes long.
-        Message is truncated to messageBufferSize if it is longer than messageBufferSize characters.
- @return Status of fetching the model error.
-    @retval ::Gna2StatusSuccess The error was fully serialized into the messageBuffer.
-    @retval ::Gna2StatusUnknownError No issue to report.
-    @retval ::Gna2StatusResourceAllocationError The messageBuffer is too small. The message was truncated.
-    @retval ::Gna2StatusNullArgumentNotAllowed The messageBuffer was NULL or messageBufferSize was 0.
+        The message length varies depending on the model error,
+        the buffer of size Gna2ModelErrorGetMaxMessageLength() is sufficient for every model error.
+ @return Status of fetching the message.
+    @retval Gna2StatusSuccess The model error was fully serialized into the messageBuffer.
+    @retval Gna2StatusMemorySizeInvalid The messageBuffer is too small.
+    @retval Gna2StatusNullArgumentNotAllowed The messageBuffer or error was NULL.
+    @retval Gna2StatusIdentifierInvalid The model error is unknown.
  */
-GNA2_API enum Gna2Status Gna2ModelGetLastErrorMessage(
+GNA2_API enum Gna2Status Gna2ModelErrorGetMessage(
+    struct Gna2ModelError const * error,
     char * messageBuffer,
     uint32_t messageBufferSize);
 
+
 //TODO:3:API:make documentation consistent: nouns vs verbs.
 
+/**
+ Gets maximal length of buffer needed by Gna2ModelErrorGetMessage().
+
+ @return Size [in bytes] of buffer needed.
+ */
+GNA2_API uint32_t Gna2ModelErrorGetMaxMessageLength();
 
 /**
  Determines the type of a model item i.e. model or operand property.
@@ -1804,6 +1809,58 @@ GNA2_API enum Gna2Status Gna2OperationInitGmmInterleaved(
     struct Gna2Tensor * inputs, struct Gna2Tensor * outputs,
     struct Gna2Tensor * interleavedTensors,
     uint32_t * maximumScore);
+
+/**
+ Gets message with description of given error type.
+
+ @param type The error type returned from API function.
+ @param [out] messageBuffer User allocated buffer for the message.
+ @param [in] messageBufferSize The size of the messageBuffer in bytes.
+        The message length varies depending on the error type,
+        the buffer of size Gna2ErrorTypeGetMaxMessageLength() is sufficient for every error type.
+ @return Status of fetching the message.
+    @retval Gna2StatusSuccess The error type was fully serialized into the messageBuffer.
+    @retval Gna2StatusMemorySizeInvalid The messageBuffer is too small.
+    @retval Gna2StatusNullArgumentNotAllowed The messageBuffer was NULL.
+    @retval Gna2StatusIdentifierInvalid The error type is unknown.
+ */
+GNA2_API enum Gna2Status Gna2ErrorTypeGetMessage(
+    enum Gna2ErrorType type,
+    char * messageBuffer,
+    uint32_t messageBufferSize);
+
+/**
+ Gets maximal length of buffer needed by Gna2ErrorTypeGetMessage().
+
+ @return Size [in bytes] of buffer needed.
+ */
+GNA2_API uint32_t Gna2ErrorTypeGetMaxMessageLength();
+
+/**
+ Gets message with description of given model item type.
+
+ @param type The model item type returned from API function.
+ @param [out] messageBuffer User allocated buffer for the message.
+ @param [in] messageBufferSize The size of the messageBuffer in bytes.
+        The message length varies depending on the item type,
+        the buffer of size Gna2ItemTypeGetMaxMessageLength() is sufficient for every item type.
+ @return Status of fetching the message.
+    @retval Gna2StatusSuccess The item type was fully serialized into the messageBuffer.
+    @retval Gna2StatusMemorySizeInvalid The messageBuffer is too small.
+    @retval Gna2StatusNullArgumentNotAllowed The messageBuffer was NULL.
+    @retval Gna2StatusIdentifierInvalid The item type is unknown.
+ */
+GNA2_API enum Gna2Status Gna2ItemTypeGetMessage(
+    enum Gna2ItemType type,
+    char * messageBuffer,
+    uint32_t messageBufferSize);
+
+/**
+ Gets maximal length of buffer needed by Gna2ItemTypeGetMessage().
+
+ @return Size [in bytes] of buffer needed.
+ */
+GNA2_API uint32_t Gna2ItemTypeGetMaxMessageLength();
 
 #endif // __GNA2_MODEL_API_H
 

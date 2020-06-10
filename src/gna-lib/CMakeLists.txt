@@ -148,6 +148,7 @@ set(gna_lib_sources ${gna_lib_sources}
   ${SRC_DIR}/Scalar.cpp
   ${SRC_DIR}/Shape.cpp
   ${SRC_DIR}/SoftwareModel.cpp
+  ${SRC_DIR}/StringHelper.cpp
   ${SRC_DIR}/SubModel.cpp
   ${SRC_DIR}/Tensor.cpp
   ${SRC_DIR}/ThreadPool.cpp
@@ -246,6 +247,7 @@ set(gna_lib_headers
   ${SRC_DIR}/Scalar.h
   ${SRC_DIR}/Shape.h
   ${SRC_DIR}/SoftwareModel.h
+  ${SRC_DIR}/StringHelper.h
   ${SRC_DIR}/SubModel.h
   ${SRC_DIR}/Tensor.h
   ${SRC_DIR}/ThreadPool.h

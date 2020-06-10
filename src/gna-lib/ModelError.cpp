@@ -27,6 +27,7 @@ in any way.
 
 #include "ApiWrapper.h"
 #include "Expect.h"
+#include "StringHelper.h"
 
 using namespace GNA;
 
@@ -183,9 +184,9 @@ Gna2ModelError ModelErrorHelper::GetCleanedError()
     e.Source.OperandIndex = GNA2_DISABLED;
     e.Source.ParameterIndex = GNA2_DISABLED;
     e.Source.ShapeDimensionIndex = GNA2_DISABLED;
-    for (unsigned i = 0; i < sizeof(e.Source.Properties) / sizeof(e.Source.Properties[0]); i++)
+    for (auto& property : e.Source.Properties)
     {
-        e.Source.Properties[0] = GNA2_DISABLED;
+        property = GNA2_DISABLED;
     }
     return e;
 }
@@ -250,6 +251,87 @@ void ModelErrorHelper::ExecuteForModelItem(const std::function<void()>& command,
         n.SetOperandIndex(operandIndexContext);
         n.SetParameterIndex(parameterIndexContext);
         throw n;
+    }
+}
+
+const std::map<enum Gna2ErrorType, std::string>& ModelErrorHelper::GetAllErrorTypeStrings()
+{
+    static const std::map<enum Gna2ErrorType, std::string> ErrorTypeStrings =
+    {
+        {Gna2ErrorTypeNone,            "Gna2ErrorTypeNone" },
+        {Gna2ErrorTypeNotTrue,         "Gna2ErrorTypeNotTrue" },
+        {Gna2ErrorTypeNotFalse,        "Gna2ErrorTypeNotFalse" },
+        {Gna2ErrorTypeNullNotAllowed,  "Gna2ErrorTypeNullNotAllowed" },
+        {Gna2ErrorTypeNullRequired,    "Gna2ErrorTypeNullRequired" },
+        {Gna2ErrorTypeBelowRange,      "Gna2ErrorTypeBelowRange" },
+        {Gna2ErrorTypeAboveRange,      "Gna2ErrorTypeAboveRange" },
+        {Gna2ErrorTypeNotEqual,        "Gna2ErrorTypeNotEqual" },
+        {Gna2ErrorTypeNotGtZero,       "Gna2ErrorTypeNotGtZero" },
+        {Gna2ErrorTypeNotZero,         "Gna2ErrorTypeNotZero" },
+        {Gna2ErrorTypeNotOne,          "Gna2ErrorTypeNotOne" },
+        {Gna2ErrorTypeNotInSet,        "Gna2ErrorTypeNotInSet" },
+        {Gna2ErrorTypeNotMultiplicity, "Gna2ErrorTypeNotMultiplicity" },
+        {Gna2ErrorTypeNotSuccess,      "Gna2ErrorTypeNotSuccess" },
+        {Gna2ErrorTypeNotAligned,      "Gna2ErrorTypeNotAligned" },
+        {Gna2ErrorTypeArgumentMissing, "Gna2ErrorTypeArgumentMissing" },
+        {Gna2ErrorTypeArgumentInvalid, "Gna2ErrorTypeArgumentInvalid" },
+        {Gna2ErrorTypeRuntime,         "Gna2ErrorTypeRuntime" },
+        {Gna2ErrorTypeOther,           "Gna2ErrorTypeOther" },
+    };
+    return ErrorTypeStrings;
+}
+
+const std::map<enum Gna2ItemType, std::string>& ModelErrorHelper::GetAllItemTypeStrings()
+{
+    static const std::map<enum Gna2ItemType, std::string> itemTypeStrings =
+    {
+        { Gna2ItemTypeNone,                        "Gna2ItemTypeNone"},
+        { Gna2ItemTypeModelNumberOfOperations,     "Gna2ItemTypeModelNumberOfOperations"},
+        { Gna2ItemTypeModelOperations,             "Gna2ItemTypeModelOperations"},
+        { Gna2ItemTypeOperationType,               "Gna2ItemTypeOperationType"},
+        { Gna2ItemTypeOperationOperands ,          "Gna2ItemTypeOperationOperands"},
+        { Gna2ItemTypeOperationNumberOfOperands ,  "Gna2ItemTypeOperationNumberOfOperands"},
+        { Gna2ItemTypeOperationParameters ,        "Gna2ItemTypeOperationParameters"},
+        { Gna2ItemTypeOperationNumberOfParameters, "Gna2ItemTypeOperationNumberOfParameters"},
+        { Gna2ItemTypeOperandMode ,                "Gna2ItemTypeOperandMode"},
+        { Gna2ItemTypeOperandLayout,               "Gna2ItemTypeOperandLayout"},
+        { Gna2ItemTypeOperandType,                 "Gna2ItemTypeOperandType"},
+        { Gna2ItemTypeOperandData ,                "Gna2ItemTypeOperandData"},
+        { Gna2ItemTypeParameter,                   "Gna2ItemTypeParameter"},
+        { Gna2ItemTypeShapeNumberOfDimensions,     "Gna2ItemTypeShapeNumberOfDimensions"},
+        { Gna2ItemTypeShapeDimensions,             "Gna2ItemTypeShapeDimensions"},
+        { Gna2ItemTypeInternal,                    "Gna2ItemTypeInternal"},
+    };
+    return itemTypeStrings;
+}
+
+// keep following define up to date if GetErrorString() changes
+#define MAX_MODEL_ERROR_MESSAGE_LENGTH 256
+std::string ModelErrorHelper::GetErrorString(const Gna2ModelError& error)
+{
+    std::string message = "Value:" + std::to_string(error.Value);
+    const auto errorType = GNA::StringHelper::GetFromMap(GetAllErrorTypeStrings(), error.Reason);
+    message += ";ErrorType:" + errorType;
+    const auto itemType = GNA::StringHelper::GetFromMap(GetAllItemTypeStrings(), error.Source.Type);
+    message += ";ItemType:" + itemType;
+    message += ";Gna2Model:model";
+    AppendNotDisabled(message, error.Source.OperationIndex, "Operations");
+    AppendNotDisabled(message, error.Source.OperandIndex, "Operands");
+    AppendNotDisabled(message, error.Source.ParameterIndex, "Parameters");
+    AppendNotDisabled(message, error.Source.ShapeDimensionIndex, "Shape.Dimensions");
+    return message;
+}
+
+uint32_t ModelErrorHelper::GetErrorStringMaxLength()
+{
+    return MAX_MODEL_ERROR_MESSAGE_LENGTH;
+}
+
+void ModelErrorHelper::AppendNotDisabled(std::string& toAppend, int32_t index, const std::string& arrayName)
+{
+    if (index != GNA2_DISABLED)
+    {
+        toAppend += "." + arrayName + "[" + std::to_string(index) + "]";
     }
 }
 

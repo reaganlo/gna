@@ -30,7 +30,10 @@
 #include "gna-api.h"
 #include "../gna-api/gna2-common-api.h"
 
+#include <algorithm>
+#include <map>
 #include <stdint.h>
+#include <string>
 #include <unordered_map>
 
 namespace GNA
@@ -95,6 +98,7 @@ inline Gna2DeviceVersion Gna2DeviceVersionFromInt(T value)
     return out.version;
 }
 
-}
+const std::map<Gna2Status, std::string>& GetGna2StatusToStringMap();
 
+}
 #endif //ifndef __GNA2_COMMON_IMPL_H

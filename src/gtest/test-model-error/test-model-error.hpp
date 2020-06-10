@@ -176,16 +176,16 @@ protected:
     static Gna2ModelError GetCleanedError()
     {
         Gna2ModelError e = {};
-        e.Reason = Gna2ErrorTypeOther;
+        e.Reason = Gna2ErrorTypeNone;
         e.Value = 0;
-        e.Source.Type = Gna2ItemTypeInternal;
+        e.Source.Type = Gna2ItemTypeNone;
         e.Source.OperationIndex = GNA2_DISABLED;
         e.Source.OperandIndex = GNA2_DISABLED;
         e.Source.ParameterIndex = GNA2_DISABLED;
         e.Source.ShapeDimensionIndex = GNA2_DISABLED;
         for (unsigned i = 0; i < sizeof(e.Source.Properties) / sizeof(e.Source.Properties[0]); i++)
         {
-            e.Source.Properties[0] = GNA2_DISABLED;
+            e.Source.Properties[i] = GNA2_DISABLED;
         }
         return e;
     }

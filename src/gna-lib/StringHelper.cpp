@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2019 Intel Corporation.
+ Copyright 2020 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -23,46 +23,18 @@
  in any way.
 */
 
-#include "gna2-common-api.h"
-#include "gna2-model-api.h"
+#include "StringHelper.h"
 
-#include "gna2-common-impl.h"
+#include "Expect.h"
 
-#include "ModelError.h"
+#include <cstdint>
 
-#include "gtest/gtest.h"
-#include <map>
-#include <string>
+using namespace GNA;
 
-class TestInternal : public ::testing::Test
+void GNA::StringHelper::Copy(char& dstBegin, const uint32_t dstSize, const std::string& source)
 {
-public:
-    TestInternal(){}
-    TestInternal(const TestInternal& rhs) = delete;
-
-protected:
-    template<class T>
-    void TestStringMapLength(const uint32_t maxLenFromApi, const std::map<T, std::string> & container)
-    {
-        for (const auto& item : container)
-        {
-            // any message should be longer than 1024
-            ASSERT_LT(item.second.size(), 1024);
-            ASSERT_LT(item.second.size(), maxLenFromApi);
-        }
-    }
-};
-
-TEST_F(TestInternal, Gna2StatusToStringMap_desc_sizes)
-{
-    TestStringMapLength(
-        Gna2StatusGetMaxMessageLength(),
-        GNA::GetGna2StatusToStringMap());
-}
-
-TEST_F(TestInternal, Gna2ErrorTypeToStringMap_desc_sizes)
-{
-    TestStringMapLength(
-        Gna2ErrorTypeGetMaxMessageLength(),
-        GNA::ModelErrorHelper::GetAllErrorTypeStrings());
+    GNA::Expect::True(source.size() + 1 <= dstSize, Gna2StatusMemorySizeInvalid);
+    const auto reqSize = snprintf(&dstBegin, dstSize, "%s", source.c_str());
+    GNA::Expect::True(reqSize >= 0 && static_cast<unsigned>(reqSize) + 1 <= dstSize,
+        Gna2StatusMemorySizeInvalid);
 }
