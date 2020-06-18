@@ -30,8 +30,9 @@
 #include "ParameterLimits.h"
 #include "Shape.h"
 
-#include <vector>
 #include <functional>
+#include <memory>
+#include <vector>
 
 namespace GNA
 {

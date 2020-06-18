@@ -27,7 +27,6 @@
 
 #include "GnaException.h"
 
-#include "common.h"
 #include "gna2-model-api.h"
 
 #include <map>

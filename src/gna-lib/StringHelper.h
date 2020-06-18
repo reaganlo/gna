@@ -27,6 +27,7 @@
 
 #include "Expect.h"
 
+#include <algorithm>
 #include <cstdint>
 #include <map>
 #include <string>
@@ -49,7 +50,7 @@ struct StringHelper
     }
 
     template <class T>
-    static std::string GetFromMap(const std::map<T, std::string>& container, T containerKey)
+    static const std::string& GetFromMap(const std::map<T, std::string>& container, T containerKey)
     {
         const auto found = container.find(containerKey);
         GNA::Expect::True(found != container.end(), Gna2StatusIdentifierInvalid);

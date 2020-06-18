@@ -41,6 +41,7 @@
 #include "Layer.h"
 #include "LayerInput.h"
 #include "LayerOutput.h"
+#include "Logger.h"
 #include "Macros.h"
 #include "PoolingFunctions.h"
 #include "PoolingFunctions2D.h"

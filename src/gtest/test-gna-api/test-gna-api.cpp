@@ -164,7 +164,7 @@ TEST_F(TestGnaApi, Gna2MemoryAllocSuccessful)
 
     status = Gna2MemoryAlloc(sizeRequested, &sizeGranted, &mem);
     EXPECT_LE(sizeRequested, sizeGranted);
-    ASSERT_EQ(status, GNA_SUCCESS);
+    ASSERT_EQ(status, Gna2StatusSuccess);
     Gna2MemoryFree(mem);
 
 	status = Gna2DeviceClose(0);

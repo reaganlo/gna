@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2017 Intel Corporation.
+ Copyright 2017-2020 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -25,13 +25,9 @@
 
 #pragma once
 
-#include "Logger.h"
 #include "gna2-common-impl.h"
 
 #include <stdexcept>
-#include <string>
-#include <stdexcept>
-#include <unordered_map>
 
 namespace GNA
 {
@@ -43,100 +39,20 @@ class GnaException : public std::runtime_error
 {
 public:
     explicit GnaException(Gna2Status status) :
-        std::runtime_error{ Logger::StatusToString(Gna2GetLegacyStatus((status))) },
-        Status{ status },
-        LegacyStatus { Gna2GetLegacyStatus(status) }
+        std::runtime_error{ StatusHelper::ToString(status) },
+        Status{ status }
     {}
 
-    virtual inline Gna2Status GetStatus() const
+    Gna2Status GetStatus() const
     {
         return Status;
     }
 
-    virtual inline gna_status_t GetLegacyStatus() const
-    {
-        Log->Error(LegacyStatus);
-        return LegacyStatus;
-    }
-
-    inline void Print() const
-    {
-        Log->Error(LegacyStatus, " GnaException");
-    }
-
-    virtual ~GnaException() {};
+    virtual ~GnaException() = default;
 
 protected:
     Gna2Status Status;
-    gna_status_t LegacyStatus;
 
-};
-
-/**
- * Custom exception for tensor build errors
- */
-class GnaTensorException : public GnaException
-{
-public:
-
-    GnaTensorException(const GnaException& e, gna_tensor_dim dimension) :
-        GnaException{e},
-        Dimension{dimension}
-    {}
-
-    virtual inline gna_status_t GetLegacyStatus() const override
-    {
-        Log->Error(LegacyStatus, " Tensor build failed on dimension: %u", Dimension); // TODO:3: tensor dims names
-        return LegacyStatus;
-    }
-
-    inline void Print() const
-    {
-        Log->Error(LegacyStatus, " GnaTensorException: Tensor build failed on dimension: %u", Dimension); // TODO:3: tensor dims names
-    }
-
-    virtual ~GnaTensorException() = default;
-
-protected:
-    gna_tensor_dim Dimension;
-};
-
-
-/**
- * Custom exception for model build errors
- */
-class GnaModelException : public GnaTensorException
-{
-public:
-
-    GnaModelException(const GnaException& e, uint32_t layerId) :
-        GnaTensorException{e, GNA_DIM_S},
-        LayerId{layerId}
-    {}
-
-    GnaModelException(const GnaTensorException& e, uint32_t layerId) :
-        GnaTensorException{e},
-        LayerId{layerId}
-    {}
-
-    virtual inline gna_status_t GetLegacyStatus() const override
-    {
-        Log->Error(LegacyStatus, " Model build failed on layer: %d", LayerId);
-        return LegacyStatus;
-    }
-
-    inline void Print() const
-    {
-        Log->Error(LegacyStatus, " GnaModelException: Model build failed on layer: %d", LayerId);
-    }
-
-    virtual ~GnaModelException() = default;
-    uint32_t GetLayerId() const
-    {
-        return LayerId;
-    }
-protected:
-    uint32_t LayerId;
 };
 
 }

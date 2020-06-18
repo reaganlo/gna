@@ -28,6 +28,7 @@
 #include "LinuxHwModuleInterface.hpp"
 
 #include "Expect.h"
+#include "Logger.h"
 
 #include <dlfcn.h>
 

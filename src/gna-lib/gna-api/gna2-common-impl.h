@@ -26,11 +26,9 @@
 #ifndef __GNA2_COMMON_IMPL_H
 #define __GNA2_COMMON_IMPL_H
 
-#include "gna-api-status.h"
 #include "gna-api.h"
-#include "../gna-api/gna2-common-api.h"
+#include "gna2-common-api.h"
 
-#include <algorithm>
 #include <map>
 #include <stdint.h>
 #include <string>
@@ -81,8 +79,6 @@ struct EnumHash
     }
 };
 
-gna_status_t Gna2GetLegacyStatus(Gna2Status newStatus);
-
 Gna2DeviceVersion Gna2GetVersionForLegacy(gna_device_version legacyVersion);
 
 template<typename T>
@@ -98,7 +94,15 @@ inline Gna2DeviceVersion Gna2DeviceVersionFromInt(T value)
     return out.version;
 }
 
-const std::map<Gna2Status, std::string>& GetGna2StatusToStringMap();
+class StatusHelper
+{
+public:
+
+    static const std::map<Gna2Status, std::string>& GetStringMap();
+    static const std::map<Gna2Status, std::string>& GetDescriptionMap();
+
+    static std::string ToString(Gna2Status statusIn);
+};
 
 }
 #endif //ifndef __GNA2_COMMON_IMPL_H

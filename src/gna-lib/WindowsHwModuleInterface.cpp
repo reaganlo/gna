@@ -28,6 +28,7 @@
 #include "WindowsHwModuleInterface.hpp"
 
 #include "Expect.h"
+#include "Logger.h"
 
 using namespace GNA;
 

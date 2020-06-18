@@ -57,7 +57,7 @@ TEST_F(TestInternal, Gna2StatusToStringMap_desc_sizes)
 {
     TestStringMapLength(
         Gna2StatusGetMaxMessageLength(),
-        GNA::GetGna2StatusToStringMap());
+        GNA::StatusHelper::GetStringMap());
 }
 
 TEST_F(TestInternal, Gna2ErrorTypeToStringMap_desc_sizes)

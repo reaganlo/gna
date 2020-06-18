@@ -29,11 +29,9 @@
 #include "gna2-common-impl.h"
 
 #include "GnaException.h"
+#include "Logger.h"
 
 #include <functional>
-#include <stdexcept>
-#include <stdint.h>
-#include <algorithm>
 
 namespace GNA
 {
@@ -90,7 +88,7 @@ inline void ApiWrapper::LogException(const std::exception& e)
 template<>
 inline void ApiWrapper::LogException(const GnaException& e)
 {
-    e.Print();
+    Log->Error(e.GetStatus(), " GnaException");
 }
 
 template<>
@@ -102,7 +100,7 @@ inline Gna2Status ApiWrapper::ExecuteSafely(const std::function<Gna2Status()>& c
     }
     catch (const GnaException &e)
     {
-        e.Print();
+        LogException(e);
         return e.GetStatus();
     }
     catch (const std::exception& e)

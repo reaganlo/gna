@@ -50,7 +50,7 @@ static_assert(1 == sizeof(uint8_t), "Invalid size of uint8_t");
 static_assert(2 == sizeof(uint16_t), "Invalid size of uint16_t");
 static_assert(4 == sizeof(uint32_t), "Invalid size of uint32_t");
 
-const std::map<Gna2Status, std::string>& GNA::GetGna2StatusToStringMap()
+const std::map<Gna2Status, std::string>& GNA::StatusHelper::GetStringMap()
 {
     static const std::map<Gna2Status, std::string> Gna2StatusToStringMap
     {
@@ -139,6 +139,17 @@ const std::map<Gna2Status, std::string>& GNA::GetGna2StatusToStringMap()
     return Gna2StatusToStringMap;
 }
 
+std::string GNA::StatusHelper::ToString(const Gna2Status statusIn)
+{
+    const auto& allKnown = GetStringMap();
+    const auto found = allKnown.find(statusIn);
+    if (found == allKnown.end())
+    {
+        return std::string{ "Gna2Status[" } +std::to_string(statusIn) + "]";
+    }
+    return found->second;
+}
+
 GNA2_API enum Gna2Status Gna2StatusGetMessage(
     enum Gna2Status status,
     char * messageBuffer,
@@ -147,7 +158,7 @@ GNA2_API enum Gna2Status Gna2StatusGetMessage(
     const std::function<Gna2Status()> command = [&]()
     {
         GNA::Expect::NotNull(messageBuffer);
-        const auto found = GNA::StringHelper::GetFromMap(GNA::GetGna2StatusToStringMap(), status);
+        const auto& found = GNA::StringHelper::GetFromMap(GNA::StatusHelper::GetStringMap(), status);
         GNA::StringHelper::Copy(*messageBuffer, messageBufferSize, found);
         return Gna2StatusSuccess;
     };
@@ -156,95 +167,7 @@ GNA2_API enum Gna2Status Gna2StatusGetMessage(
 
 GNA2_API uint32_t Gna2StatusGetMaxMessageLength()
 {
-    return GNA::StringHelper::GetMaxLength(GNA::GetGna2StatusToStringMap());
-}
-
-gna_status_t GNA::Gna2GetLegacyStatus(Gna2Status newStatus)
-{
-    static const std::unordered_map<Gna2Status, gna_status_t, GNA::EnumHash> StatusMap =
-    {
-        { Gna2StatusSuccess, GNA_SUCCESS },
-        { Gna2StatusWarningArithmeticSaturation, GNA_SSATURATE },
-        { Gna2StatusWarningDeviceBusy, GNA_DEVICEBUSY },
-        { Gna2StatusUnknownError, GNA_UNKNOWN_ERROR },
-        { Gna2StatusNotImplemented, GNA_ERR_NOT_IMPLEMENTED },
-        { Gna2StatusIdentifierInvalid, GNA_INVALIDHANDLE },
-        { Gna2StatusNullArgumentNotAllowed, GNA_NULLARGNOTALLOWED },
-        { Gna2StatusNullArgumentRequired, GNA_NULLARGREQUIRED },
-        { Gna2StatusResourceAllocationError, GNA_ERR_RESOURCES },
-        { Gna2StatusDeviceNotAvailable, GNA_DEVNOTFOUND },
-        { Gna2StatusDeviceNumberOfThreadsInvalid, GNA_ERR_INVALID_THREAD_COUNT },
-        { Gna2StatusDeviceVersionInvalid, GNA_ERR_INVALID_DEVICE_VERSION },
-        { Gna2StatusDeviceQueueError, GNA_ERR_QUEUE },
-        { Gna2StatusDeviceIngoingCommunicationError, GNA_IOCTLRESERR },
-        { Gna2StatusDeviceOutgoingCommunicationError, GNA_IOCTLSENDERR },
-        { Gna2StatusDeviceParameterOutOfRange, GNA_PARAMETEROUTOFRANGE },
-        { Gna2StatusDeviceVaOutOfRange, GNA_VAOUTOFRANGE },
-        { Gna2StatusDeviceUnexpectedCompletion, GNA_UNEXPCOMPL },
-        { Gna2StatusDeviceDmaRequestError, GNA_DMAREQERR },
-        { Gna2StatusDeviceMmuRequestError, GNA_MMUREQERR },
-        { Gna2StatusDeviceBreakPointHit, GNA_BREAKPOINTPAUSE },
-        { Gna2StatusDeviceCriticalFailure, GNA_ERR_DEV_FAILURE },
-        { Gna2StatusMemoryAlignmentInvalid, GNA_BADMEMALIGN },
-        { Gna2StatusMemorySizeInvalid, GNA_INVALIDMEMSIZE },
-        { Gna2StatusMemoryTotalSizeExceeded, GNA_MODELSIZEEXCEEDED },
-        { Gna2StatusMemoryBufferInvalid, GNA_INVALID_REQUEST_CONFIGURATION },
-        { Gna2StatusRequestWaitError, GNA_WAITFAULT },
-        { Gna2StatusActiveListIndicesInvalid, GNA_INVALIDINDICES },
-        { Gna2StatusAccelerationModeNotSupported, GNA_CPUTYPENOTSUPPORTED },
-        { Gna2StatusModelConfigurationInvalid, GNA_INVALID_MODEL },
-        { Gna2StatusNotMultipleOf, GNA_ERR_NOT_MULTIPLE },
-        { Gna2StatusBadFeatLength, GNA_BADFEATLENGTH },
-        { Gna2StatusXnnErrorNetLyrNo, XNN_ERR_NET_LYR_NO },
-        { Gna2StatusXnnErrorNetworkInputs, XNN_ERR_NETWORK_INPUTS },
-        { Gna2StatusXnnErrorNetworkOutputs, XNN_ERR_NETWORK_OUTPUTS },
-        { Gna2StatusXnnErrorLyrOperation, XNN_ERR_LYR_OPERATION },
-        { Gna2StatusXnnErrorLyrCfg, XNN_ERR_LYR_CFG },
-        { Gna2StatusXnnErrorLyrInvalidTensorOrder, XNN_ERR_LYR_INVALID_TENSOR_ORDER },
-        { Gna2StatusXnnErrorLyrInvalidTensorDimensions, XNN_ERR_LYR_INVALID_TENSOR_DIMENSIONS },
-        { Gna2StatusXnnErrorInvalidBuffer, XNN_ERR_INVALID_BUFFER },
-        { Gna2StatusXnnErrorNoFeedback, XNN_ERR_NO_FEEDBACK },
-        { Gna2StatusXnnErrorNoLayers, XNN_ERR_NO_LAYERS },
-        { Gna2StatusXnnErrorGrouping, XNN_ERR_GROUPING },
-        { Gna2StatusXnnErrorInputBytes, XNN_ERR_INPUT_BYTES },
-        { Gna2StatusXnnErrorInputVolume, XNN_ERR_INPUT_VOLUME },
-        { Gna2StatusXnnErrorOutputVolume, XNN_ERR_OUTPUT_VOLUME },
-        { Gna2StatusXnnErrorIntOutputBytes, XNN_ERR_INT_OUTPUT_BYTES },
-        { Gna2StatusXnnErrorOutputBytes, XNN_ERR_OUTPUT_BYTES },
-        { Gna2StatusXnnErrorWeightBytes, XNN_ERR_WEIGHT_BYTES },
-        { Gna2StatusXnnErrorWeightVolume, XNN_ERR_WEIGHT_VOLUME },
-        { Gna2StatusXnnErrorBiasBytes, XNN_ERR_BIAS_BYTES },
-        { Gna2StatusXnnErrorBiasVolume, XNN_ERR_BIAS_VOLUME },
-        { Gna2StatusXnnErrorBiasMode, XNN_ERR_BIAS_MODE },
-        { Gna2StatusXnnErrorBiasMultiplier, XNN_ERR_BIAS_MULTIPLIER },
-        { Gna2StatusXnnErrorBiasIndex, XNN_ERR_BIAS_INDEX },
-        { Gna2StatusXnnErrorPwlSegments, XNN_ERR_PWL_SEGMENTS },
-        { Gna2StatusXnnErrorPwlData, XNN_ERR_PWL_DATA },
-        { Gna2StatusXnnErrorConvFltBytes, XNN_ERR_CONV_FLT_BYTES },
-        { Gna2StatusCnnErrorConvFltCount, CNN_ERR_CONV_FLT_COUNT },
-        { Gna2StatusCnnErrorConvFltVolume, CNN_ERR_CONV_FLT_VOLUME },
-        { Gna2StatusCnnErrorConvFltStride, CNN_ERR_CONV_FLT_STRIDE },
-        { Gna2StatusCnnErrorConvFltPadding, CNN_ERR_CONV_FLT_PADDING },
-        { Gna2StatusCnnErrorPoolStride, CNN_ERR_POOL_STRIDE },
-        { Gna2StatusCnnErrorPoolSize, CNN_ERR_POOL_SIZE },
-        { Gna2StatusCnnErrorPoolType, CNN_ERR_POOL_TYPE },
-        { Gna2StatusGmmBadMeanWidth, GMM_BADMEANWIDTH },
-        { Gna2StatusGmmBadMeanOffset, GMM_BADMEANOFFSET },
-        { Gna2StatusGmmBadMeanSetoff, GMM_BADMEANSETOFF },
-        { Gna2StatusGmmBadMeanAlign, GMM_BADMEANALIGN },
-        { Gna2StatusGmmBadVarWidth, GMM_BADVARWIDTH },
-        { Gna2StatusGmmBadVarOffset, GMM_BADVAROFFSET },
-        { Gna2StatusGmmBadVarSetoff, GMM_BADVARSETOFF },
-        { Gna2StatusGmmBadVarsAlign, GMM_BADVARSALIGN },
-        { Gna2StatusGmmBadGconstOffset, GMM_BADGCONSTOFFSET },
-        { Gna2StatusGmmBadGconstAlign, GMM_BADGCONSTALIGN },
-        { Gna2StatusGmmBadMixCnum, GMM_BADMIXCNUM },
-        { Gna2StatusGmmBadNumGmm, GMM_BADNUMGMM },
-        { Gna2StatusGmmBadMode, GMM_BADMODE },
-        { Gna2StatusGmmCfgInvalidLayout, GMM_CFG_INVALID_LAYOUT },
-        { Gna2StatusDriverQoSTimeoutExceeded, GNA_ERR_QOS_TIMEOUT },
-    };
-    return StatusMap.at(newStatus);
+    return GNA::StringHelper::GetMaxLength(GNA::StatusHelper::GetStringMap());
 }
 
 Gna2DeviceVersion GNA::Gna2GetVersionForLegacy(gna_device_version legacyVersion)

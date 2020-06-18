@@ -27,6 +27,7 @@
 
 #include "DataMode.h"
 #include "ExternalBuffer.h"
+#include "Logger.h"
 #include "ModelError.h"
 
 #include "gna2-model-impl.h"

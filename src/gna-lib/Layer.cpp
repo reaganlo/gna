@@ -34,6 +34,7 @@
 #include "Expect.h"
 #include "GmmLayer.h"
 #include "LayerConfiguration.h"
+#include "Logger.h"
 #include "ModelError.h"
 #include "ModelWrapper.h"
 #include "RecurrentLayer.h"

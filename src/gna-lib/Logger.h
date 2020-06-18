@@ -25,11 +25,11 @@
 
 #pragma once
 
-#include "common.h"
-#include "gna-api-status.h"
+#include "gna2-common-api.h"
 
+#include <cstdio>
 #include <memory>
-#include <stdio.h>
+#include <string>
 
 namespace GNA
 {
@@ -43,21 +43,17 @@ struct Logger
     virtual void LineBreak() const;
     virtual void HorizontalSpacer() const;
 
-    virtual void Message(const status_t status) const;
-    virtual void Message(const status_t status, const char * const format, ...) const;
+    virtual void Message(const Gna2Status status) const;
+    virtual void Message(const Gna2Status status, const char * const format, ...) const;
     virtual void Message(const char * const format, ...) const;
 
     virtual void Warning(const char * const format, ...) const;
 
     virtual void Error(const char * const format, ...) const;
-    virtual void Error(const status_t status, const char * const format, ...) const;
-    virtual void Error(const status_t status) const;
-
-    static const char * StatusToString(const intel_gna_status_t status) noexcept;
+    virtual void Error(const Gna2Status status, const char * const format, ...) const;
+    virtual void Error(const Gna2Status status) const;
 
 protected:
-    static const char * const StatusStrings[2 * (NUMGNASTATUS + 1)];
-
     Logger(FILE * const defaultStreamIn, const char * const componentIn, const char * const levelMessageIn,
         const char * const levelErrorIn);
 
@@ -66,6 +62,7 @@ protected:
     const char * const levelMessage = "INFO: ";
     const char * const levelWarning = "WARNING: ";
     const char * const levelError = "ERROR: ";
+
 };
 
 // Logger for debug builds
@@ -78,31 +75,30 @@ struct DebugLogger : public Logger
 
     virtual void LineBreak() const override;
 
-    virtual void Message(const status_t status) const override;
-    virtual void Message(const status_t status, const char * const format, ...) const override;
+    virtual void Message(const Gna2Status status) const override;
+    virtual void Message(const Gna2Status status, const char * const format, ...) const override;
     virtual void Message(const char * const format, ...) const override;
 
     virtual void Warning(const char * const format, ...) const override;
 
 
-    virtual void Error(const status_t status) const override;
+    virtual void Error(const Gna2Status status) const override;
     virtual void Error(const char * const format, ...) const override;
-    virtual void Error(const status_t status, const char * const format, ...) const override;
+    virtual void Error(const Gna2Status status, const char * const format, ...) const override;
 
 protected:
     template<typename ... X> void printMessage(
-        const status_t * const status, const char * const format, X... args) const;
+        const Gna2Status * const status, const char * const format, X... args) const;
     template<typename ... X> void printWarning(const char * const format, X... args) const;
     template<typename ... X>  void printError(
-        const status_t * const status, const char * const format, X... args) const;
+        const Gna2Status * const status, const char * const format, X... args) const;
     inline void printHeader(FILE * const streamIn, const char * const level) const;
     template<typename ... X>  void print(
-        FILE * const streamIn, const status_t * const status, const char * const format, X... args) const;
+        FILE * const streamIn, const Gna2Status * const status, const char * const format, X... args) const;
 
     DebugLogger(FILE * const defaultStreamIn, const char * const componentIn, const char * const levelMessageIn,
         const char * const levelErrorIn);
 
-    virtual const char * getStatusDescription(const intel_gna_status_t status) const;
 };
 
 // Verbose logger for validation purposes
@@ -115,8 +111,6 @@ struct VerboseLogger : public DebugLogger
 
     virtual void HorizontalSpacer() const override;
 
-protected:
-    virtual const char * getStatusDescription(const intel_gna_status_t status) const override;
 };
 
 extern std::unique_ptr<Logger> Log;

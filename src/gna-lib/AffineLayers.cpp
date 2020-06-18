@@ -28,25 +28,18 @@
 #include "ActivationHelper.h"
 #include "ActiveList.h"
 #include "Address.h"
-#include "Bias.h"
-#include "DataMode.h"
-#include "Expect.h"
 #include "KernelArguments.h"
 #include "LayerConfiguration.h"
-#include "LayerInput.h"
 #include "LayerOutput.h"
+#include "Logger.h"
 #include "Tensor.h"
-#include "Weight.h"
 
 #include "gna2-common-api.h"
 #include "gna2-memory-api.h"
 
 #include "common.h"
 #include "gna-api-types-xnn.h"
-#include "gna-api.h"
 
-#include <algorithm>
-#include <map>
 
 using namespace GNA;
 

@@ -29,10 +29,9 @@
 #include "ConvolutionalFunctions2D.h"
 #include "DataMode.h"
 #include "LinuxHwModuleInterface.hpp"
+#include "Logger.h"
 #include "PoolingFunctions2D.h"
 #include "WindowsHwModuleInterface.hpp"
-
-#include "gna-api-types-xnn.h"
 
 #if 1 == GNA_HW_LIB_ENABLED
 #include "GNA_ArchCPkg.h"

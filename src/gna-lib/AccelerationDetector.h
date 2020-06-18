@@ -34,10 +34,12 @@
 
 #include "XnnKernel.h"
 
+#include "Expect.h"
+#include "ModelError.h"
+
 #include "gna2-inference-api.h"
 #include "gna2-inference-impl.h"
 
-#include "gna-api-status.h"
 #include "gna-api-types-gmm.h"
 #include "gna-api-types-xnn.h"
 
@@ -154,8 +156,15 @@ public:
     static const KernelMap<KernelType>&
     GetKernelMap(kernel_op operation, KernelMode dataMode = {GNA_INT16})
     {
-        return reinterpret_cast<KernelMap<KernelType>&>(
-            Kernels.at(operation).at(dataMode));
+        try
+        {
+            return reinterpret_cast<KernelMap<KernelType>&>(
+                Kernels.at(operation).at(dataMode));
+        }
+        catch(std::out_of_range)
+        {
+            throw GnaModelErrorException{ Gna2ItemTypeOperandType, Gna2ErrorTypeNotInSet, 0};
+        }
     }
 
     void SetHardwareAcceleration(bool isHardwareSupported)

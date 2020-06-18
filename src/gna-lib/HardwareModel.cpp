@@ -130,11 +130,11 @@ void HardwareModel::Build(const std::vector<std::unique_ptr<SubModel>>& submodel
         }
         catch (const GnaException& e)
         {
-            throw GnaModelException(e, i);
+            throw GnaModelErrorException(i, e.GetStatus());
         }
         catch (...)
         {
-            throw GnaModelException(GnaException(Gna2StatusXnnErrorLyrCfg), i);
+            throw GnaModelErrorException(i);
         }
     }
 }
