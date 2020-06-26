@@ -147,11 +147,12 @@ LayerOutput::LayerOutput(const nn_layer& layer, const LayerValidator& validatorI
 
 void * getScratchpadForOperation(const Gna2Operation &operation)
 {
-    if(operation.Type == Gna2OperationTypeTransposition)
+    if(operation.Type == Gna2OperationTypeTransposition ||
+       operation.Type == Gna2OperationTypeCopy)
     {
         return nullptr;
     }
-//TODO:3:remove when final scratchpad impl provided
+    //TODO:3:remove when final scratchpad impl provided
     return AffineBaseLayer::GetGlobal2MBScratchpad();
 }
 
