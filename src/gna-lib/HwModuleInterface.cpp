@@ -124,7 +124,7 @@ HwUarchParams HwModuleInterface::Get1DParams(ConvolutionFunction2D const* cnnIn,
     LD_2DCNN->OpStruct.GNA3_OP_1DCNN.InputConvStride = static_cast<uint16_t>(cnnIn->Stride->at(GNA_DIM_W));
     // BIAS @ Setting 2DCNNc Parameters
     LD_2DCNN->OpStruct.GNA3_OP_1DCNN.BPrec = static_cast<GNA3_Prec_t>(cnnIn->Biases->Mode.Size);
-    LD_2DCNN->OpStruct.GNA3_OP_1DCNN.BType = GNA3_BIASperKERNEL; //other modes not supported
+    LD_2DCNN->OpStruct.GNA3_OP_1DCNN.BType = GNA3_BIASperKERNEL; // other modes not supported
     // Pooling @ Setting 2DCNNc Parameters
     LD_2DCNN->OpStruct.GNA3_OP_1DCNN.PType = static_cast<GNA3_PoolType_t>(GetPoolingMode(poolingIn));
     if (LD_2DCNN->OpStruct.GNA3_OP_1DCNN.PType != GNA3_POOL_DIS)
@@ -182,7 +182,7 @@ HwUarchParams HwModuleInterface::Get2DParams(ConvolutionFunction2D const* cnnIn,
     LD_2DCNN->OpStruct.GNA3_OP_2DCNNc.CZPad.W = static_cast<uint16_t>(cnnIn->Padding->at(GNA_DIM_W));
     // BIAS @ Setting 2DCNNc Parameters
     LD_2DCNN->OpStruct.GNA3_OP_2DCNNc.BPrec = static_cast<GNA3_Prec_t>(cnnIn->Biases->Mode.Size);
-    LD_2DCNN->OpStruct.GNA3_OP_2DCNNc.BType = GNA3_BIASperKERNEL; //other modes not supported
+    LD_2DCNN->OpStruct.GNA3_OP_2DCNNc.BType = GNA3_BIASperKERNEL; // other modes not supported
     // Pooling @ Setting 2DCNNc Parameters
     LD_2DCNN->OpStruct.GNA3_OP_2DCNNc.PType = static_cast<GNA3_PoolType_t>(GetPoolingMode(poolingIn));
     if (LD_2DCNN->OpStruct.GNA3_OP_2DCNNc.PType != GNA3_POOL_DIS)

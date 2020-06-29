@@ -2,7 +2,7 @@
 	path = build/googletest
 	url = https://github.com/google/googletest.git
 	branch = v1.10.x
-
+#forwarded to f5a9c5eb5b7885547f143e67659e03acfd828082
 [submodule "build/hw_module_3_0"]
 	path = build/hw_module_3_0
 	url = ssh://git@gitlab.devtools.intel.com:29418/gna/sdk/hw/gna-3.0-arch-cpkg.git
