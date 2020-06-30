@@ -62,6 +62,8 @@ if(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
     set(GNA_COMPILE_FLAGS_RELEASE ${GNA_COMPILE_FLAGS_RELEASE} /O3 /Qinline-forceinline)
     # workaround for bug https://software.intel.com/en-us/forums/intel-c-compiler/topic/798645
     set(GNA_ICL_DEBUG_WORKAROUND "/NODEFAULTLIB:\"libcpmt.lib\"")
+    # remove debug_opt_report section from dll
+    set(GNA_COMPILE_FLAGS_RELEASE ${GNA_COMPILE_FLAGS_RELEASE} /Qopt-report-embed-)
   elseif(${CMAKE_CXX_COMPILER_ID} STREQUAL MSVC)
     set(GNA_COMPILE_FLAGS_RELEASE ${GNA_COMPILE_FLAGS_RELEASE} /O2)
   endif()
