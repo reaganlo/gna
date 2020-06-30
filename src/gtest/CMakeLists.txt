@@ -105,7 +105,8 @@ if(${GNA_BUILD_WITH_GTEST_ENABLED})
         TARGET gna_all_tests_to_run_on_posbuild_via_ctest
         POST_BUILD
         COMMENT "Run all registered tests via ctest"
-        COMMAND ctest ARGS -R GNA_POST_BUILD_ -C "$<CONFIG>" --output-on-failure
+        # TODO: remove 'rem' option when security team provides tool for INTEGRITYCHECK W/A
+        COMMAND "$<IF:$<BOOL:${GNA_DISABLE_TEST_RUN}>,rem,ctest>" ARGS -R GNA_POST_BUILD_ -C "$<CONFIG>" --output-on-failure
         WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
       endif()
   endif()

@@ -73,6 +73,16 @@ if(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
   set(GNA_LINKER_FLAGS_DEBUG "/INCREMENTAL ${GNA_ICL_DEBUG_WORKAROUND}")
   set(GNA_LINKER_FLAGS_RELEASE "/INCREMENTAL:NO /NOLOGO /OPT:REF /OPT:ICF
                                /PDBSTRIPPED:$(TargetDir)$(TargetName)Public.pdb")
+  # Integrity check due to security review
+  option(GNA_LINKER_FLAGS_ALWAYS_RELEASE_INTEGRITYCHECK "Enables /INTEGRITYCHECK linker flag in release builds" OFF)
+  option(GNA_LINKER_FLAGS_ICC_RELEASE_INTEGRITYCHECK "Enables /INTEGRITYCHECK linker flag in release builds using Intel C++ Compiler" ON)
+  if(GNA_LINKER_FLAGS_ALWAYS_RELEASE_INTEGRITYCHECK
+    OR (GNA_LINKER_FLAGS_ICC_RELEASE_INTEGRITYCHECK
+    AND ${CMAKE_CXX_COMPILER_ID} STREQUAL "Intel"))
+    # have to be set as can not run tests before binary image signed
+    set(GNA_DISABLE_TEST_RUN $<NOT:$<CONFIG:WIN_DEBUG>>)
+    set(GNA_LINKER_FLAGS_RELEASE "${GNA_LINKER_FLAGS_RELEASE} /INTEGRITYCHECK")
+  endif()
 else()
   set(GNA_COMPILE_DEFS_RELEASE ${GNA_COMPILE_DEFS_RELEASE} _FORTIFY_SOURCE=2)
 
