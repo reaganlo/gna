@@ -99,9 +99,9 @@ std::string LinuxGnaSelfTestHardwareStatus::devfsGnaNode(uint8_t range)
         {
             continue;
         }
-        if(ioctl(fd, GNA_IOCTL_PARAM_GET, &params[0]) == 0
-            && ioctl(fd, GNA_IOCTL_PARAM_GET, &params[1]) == 0
-            && ioctl(fd, GNA_IOCTL_PARAM_GET, &params[2]) == 0)
+        if(ioctl(fd, GNA_GET_PARAMETER, &params[0]) == 0
+            && ioctl(fd, GNA_GET_PARAMETER, &params[1]) == 0
+            && ioctl(fd, GNA_GET_PARAMETER, &params[2]) == 0)
         {
             logger.Verbose("INFO GNA device of type = %llX found\n", params[0].out.value);
             found = name;

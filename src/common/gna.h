@@ -8,8 +8,8 @@
 extern "C" {
 #endif
 
-#include <linux/types.h>
 #include <linux/ioctl.h>
+#include <linux/types.h>
 
 #ifndef __user
 #define __user
@@ -149,11 +149,11 @@ union gna_wait {
 	} out;
 };
 
-#define GNA_IOCTL_PARAM_GET	_IOWR('C', 0x01, union gna_parameter)
-#define GNA_IOCTL_MEMORY_MAP	_IOWR('C', 0x02, union gna_memory_map)
-#define GNA_IOCTL_MEMORY_UNMAP	_IOWR('C', 0x03, __u64)
-#define GNA_IOCTL_COMPUTE	_IOWR('C', 0x04, union gna_compute)
-#define GNA_IOCTL_WAIT		_IOWR('C', 0x05, union gna_wait)
+#define GNA_GET_PARAMETER	_IOWR('C', 0x01, union gna_parameter)
+#define GNA_MAP_MEMORY		_IOWR('C', 0x02, union gna_memory_map)
+#define GNA_UNMAP_MEMORY	_IOWR('C', 0x03, __u64)
+#define GNA_COMPUTE		_IOWR('C', 0x04, union gna_compute)
+#define GNA_WAIT		_IOWR('C', 0x05, union gna_wait)
 
 #if defined(__cplusplus)
 }

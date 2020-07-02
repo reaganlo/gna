@@ -93,7 +93,7 @@ uint64_t LinuxDriverInterface::MemoryMap(void *memory, uint32_t memorySize)
     memory_map.in.address = reinterpret_cast<uint64_t>(memory);
     memory_map.in.size = memorySize;
 
-    if(ioctl(gnaFileDescriptor, GNA_IOCTL_MEMORY_MAP, &memory_map) != 0)
+    if(ioctl(gnaFileDescriptor, GNA_MAP_MEMORY, &memory_map) != 0)
     {
         throw GNA_IOCTLSENDERR;
     }
@@ -103,7 +103,7 @@ uint64_t LinuxDriverInterface::MemoryMap(void *memory, uint32_t memorySize)
 
 void LinuxDriverInterface::MemoryUnmap(uint64_t memoryId)
 {
-    if(ioctl(gnaFileDescriptor, GNA_IOCTL_MEMORY_UNMAP, memoryId) != 0)
+    if(ioctl(gnaFileDescriptor, GNA_UNMAP_MEMORY, memoryId) != 0)
     {
         throw GNA_IOCTLSENDERR;
     }
@@ -141,7 +141,7 @@ RequestResult LinuxDriverInterface::Submit(HardwareRequest& hardwareRequest,
     gna_compute computeArgs;
     computeArgs.in.config = *reinterpret_cast<struct gna_compute_cfg *>(hardwareRequest.CalculationData.get());
 
-    ret = ioctl(gnaFileDescriptor, GNA_IOCTL_COMPUTE, &computeArgs);
+    ret = ioctl(gnaFileDescriptor, GNA_COMPUTE, &computeArgs);
     if (ret == -1)
     {
         throw GNA_IOCTLSENDERR;
@@ -151,7 +151,7 @@ RequestResult LinuxDriverInterface::Submit(HardwareRequest& hardwareRequest,
     wait_data.in.request_id = computeArgs.out.request_id;
     wait_data.in.timeout = (driverCapabilities.recoveryTimeout + 1) * 1000;
 
-    ret = ioctl(gnaFileDescriptor, GNA_IOCTL_WAIT, &wait_data);
+    ret = ioctl(gnaFileDescriptor, GNA_WAIT, &wait_data);
 
     if(ret == 0)
     {
@@ -226,7 +226,7 @@ int LinuxDriverInterface::discover(uint32_t deviceIndex, gna_parameter *params, 
         bool paramsValid = true;
         for (size_t p = 0; p < paramsNum && paramsValid; p++)
         {
-            paramsValid &= ioctl(fd, GNA_IOCTL_PARAM_GET, &params[p]) == 0;
+            paramsValid &= ioctl(fd, GNA_GET_PARAMETER, &params[p]) == 0;
         }
         if (paramsValid && found++ == deviceIndex)
         {

@@ -100,7 +100,7 @@ uint64_t LinuxDriverInterface::MemoryMap(void *memory, uint32_t memorySize)
     memory_map.in.address = reinterpret_cast<uint64_t>(memory);
     memory_map.in.size = memorySize;
 
-    if(ioctl(gnaFileDescriptor, GNA_IOCTL_MEMORY_MAP, &memory_map) != 0)
+    if(ioctl(gnaFileDescriptor, GNA_MAP_MEMORY, &memory_map) != 0)
     {
         throw GnaException {Gna2StatusDeviceOutgoingCommunicationError};
     }
@@ -110,7 +110,7 @@ uint64_t LinuxDriverInterface::MemoryMap(void *memory, uint32_t memorySize)
 
 void LinuxDriverInterface::MemoryUnmap(uint64_t memoryId)
 {
-    if(ioctl(gnaFileDescriptor, GNA_IOCTL_MEMORY_UNMAP, memoryId) != 0)
+    if(ioctl(gnaFileDescriptor, GNA_UNMAP_MEMORY, memoryId) != 0)
     {
         throw GnaException {Gna2StatusDeviceOutgoingCommunicationError};
     }
@@ -148,7 +148,7 @@ RequestResult LinuxDriverInterface::Submit(HardwareRequest& hardwareRequest,
 
     profiler->Measure(Gna2InstrumentationPointLibDeviceRequestReady);
 
-    ret = ioctl(gnaFileDescriptor, GNA_IOCTL_COMPUTE, &computeArgs);
+    ret = ioctl(gnaFileDescriptor, GNA_COMPUTE, &computeArgs);
     if (ret == -1)
     {
         throw GnaException { Gna2StatusDeviceOutgoingCommunicationError };
@@ -159,7 +159,7 @@ RequestResult LinuxDriverInterface::Submit(HardwareRequest& hardwareRequest,
     wait_data.in.timeout = (driverCapabilities.recoveryTimeout + 1) * 1000;
 
     profiler->Measure(Gna2InstrumentationPointLibDeviceRequestSent);
-    ret = ioctl(gnaFileDescriptor, GNA_IOCTL_WAIT, &wait_data);
+    ret = ioctl(gnaFileDescriptor, GNA_WAIT, &wait_data);
     profiler->Measure(Gna2InstrumentationPointLibDeviceRequestCompleted);
     if(ret == 0)
     {
@@ -296,7 +296,7 @@ int LinuxDriverInterface::discoverDevice(uint32_t deviceIndex, gna_parameter *pa
         bool paramsValid = true;
         for (size_t p = 0; p < paramsNum && paramsValid; p++)
         {
-            paramsValid &= ioctl(fd, GNA_IOCTL_PARAM_GET, &params[p]) == 0;
+            paramsValid &= ioctl(fd, GNA_GET_PARAMETER, &params[p]) == 0;
         }
         if (paramsValid && found++ == deviceIndex)
         {
