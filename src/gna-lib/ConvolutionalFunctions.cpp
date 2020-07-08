@@ -235,7 +235,7 @@ void ConvolutionFunction::expectValid(const Gna2Operation& apiOperation)
     const auto biasMode = ModelWrapper::GetOptionalParameter<Gna2BiasMode>(apiOperation, biasModeIndex, Gna2BiasModeDefault);
     const std::function<void()> command = [&]()
     {
-        ModelErrorHelper::ExpectEqual(biasMode, Gna2BiasModeDefault, Gna2ItemTypeParameter);
+        ModelErrorHelper::ExpectInSet(biasMode, { Gna2BiasModeDefault }, Gna2ItemTypeParameter);
     };
     ModelErrorHelper::ExecuteForModelItem(command, GNA2_DISABLED, static_cast<int32_t>(biasModeIndex));
 

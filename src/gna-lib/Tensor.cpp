@@ -44,7 +44,7 @@ Tensor::Tensor(const ApiTensor & tensor) :
 
 DataMode Tensor::GetDataMode(const Gna2Tensor& tensor)
 {
-    ModelErrorHelper::ExpectInSet(tensor.Mode, { Gna2TensorModeDefault, Gna2TensorModeExternalBuffer }, Gna2ItemTypeOperandMode);
+    ModelErrorHelper::ExpectInSet(tensor.Mode, { Gna2TensorModeDefault, Gna2TensorModeExternalBuffer });
     try
     {
         return DataMode{ tensor.Type, tensor.Mode };

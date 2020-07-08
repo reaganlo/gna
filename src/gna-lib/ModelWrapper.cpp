@@ -238,7 +238,7 @@ void ExpectOperandModeAndDataValid(const Gna2Tensor & operand, const std::set<Gn
 {
     const std::function<void()> command = [&]()
     {
-        ModelErrorHelper::ExpectInSet(operand.Mode, validModes, Gna2ItemTypeOperandMode);
+        ModelErrorHelper::ExpectInSet(operand.Mode, validModes);
         if (operand.Mode != Gna2TensorModeDisabled)
         {
             // TODO: 3: Remove when full (e.g., inputs, weights) buffer addition and late sanity checking implemented

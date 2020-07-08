@@ -130,7 +130,7 @@ std::unique_ptr<const PoolingFunction> PoolingFunction::Create(Gna2Operation con
     }
     const std::function<void()> command = [&]()
     {
-        ModelErrorHelper::ExpectEqual(poolingMode, Gna2PoolingModeDisabled, Gna2ItemTypeParameter);
+        ModelErrorHelper::ExpectInSet(poolingMode, { Gna2PoolingModeDisabled }, Gna2ItemTypeParameter);
     };
     ModelErrorHelper::ExecuteForModelItem(command, GNA2_DISABLED, PoolingModeParamIndex);
     return std::unique_ptr<const PoolingFunction>(nullptr);

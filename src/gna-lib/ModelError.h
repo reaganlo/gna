@@ -72,8 +72,18 @@ public:
         Gna2ModelError e = GetCleanedError();
         e.Source.Type = itemType;
         e.Value = static_cast<int64_t>(val);
-        e.Reason = ref.size() == 1 ? Gna2ErrorTypeNotEqual : Gna2ErrorTypeNotInSet;
+        e.Reason = Gna2ErrorTypeNotInSet;
         ExpectTrue(ref.find(val) != ref.end(), e);
+    }
+
+    static void ExpectInSet(const Gna2DataType val, const std::set<Gna2DataType>& ref)
+    {
+        ExpectInSet(val, ref, Gna2ItemTypeOperandType);
+    }
+
+    static void ExpectInSet(const Gna2TensorMode val, const std::set<Gna2TensorMode>& ref)
+    {
+        ExpectInSet(val, ref, Gna2ItemTypeOperandMode);
     }
 
     template<class A, class B>

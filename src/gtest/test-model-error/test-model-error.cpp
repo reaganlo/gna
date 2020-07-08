@@ -361,5 +361,5 @@ TEST_F(TestModelError, WrongMBPwlNull)
     e.Source.OperandIndex = GNA::OutputOperandIndex;
     // No actual model update but error description for Expect update
     update(Gna2ItemTypeOperandType, Gna2DataTypeInt16);
-    expectModelError(Gna2ErrorTypeNotEqual);
+    expectModelError(Gna2ErrorTypeNotInSet);
 }

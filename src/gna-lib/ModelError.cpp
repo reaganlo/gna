@@ -54,9 +54,7 @@ void ModelErrorHelper::ExpectEqual(int64_t val, int64_t ref, Gna2ItemType valTyp
 {
     Gna2ModelError e = GetCleanedError();
     e.Source.Type = valType;
-    e.Value = val;
-    e.Reason = Gna2ErrorTypeNotEqual;
-    ExpectTrue(val == ref, e);
+    ExpectEqual(val, ref, e.Source);
 }
 
 void ModelErrorHelper::ExpectEqual(int64_t val, int64_t ref, Gna2ModelItem item)

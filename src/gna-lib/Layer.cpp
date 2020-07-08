@@ -261,10 +261,12 @@ void Layer::initTransforms(const std::vector<TransformOperation>& transforms,
     if (transforms.back() == ActivationTransform
         && outputTransform->Operation != ActivationTransform)
     {
-        ModelValue mv{ outputTransform->Output->Mode.Type };
-        mv.SetOperand(OutputOperandIndex);
-        mv.SetItem(Gna2ItemTypeOperandType);
-        ModelErrorHelper::ExpectEqual(mv, Gna2DataTypeInt32);
+        const auto outType = outputTransform->Output->Mode.Type;
+        const std::function<void()> command = [=]()
+        {
+            ModelErrorHelper::ExpectInSet(outType, { Gna2DataTypeInt32 });
+        };
+        ModelErrorHelper::ExecuteForModelItem(command, OutputOperandIndex);
     }
 }
 
