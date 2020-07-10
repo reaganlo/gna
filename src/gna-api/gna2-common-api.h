@@ -388,6 +388,8 @@ enum Gna2Status
      Error: Request was aborted due to QoS timeout
     */
     Gna2StatusDriverQoSTimeoutExceeded = -80,
+
+    Gna2StatusDriverCommunicationMemoryMapError = -200,
 };
 
 /**

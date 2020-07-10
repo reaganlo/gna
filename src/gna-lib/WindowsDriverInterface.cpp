@@ -48,9 +48,6 @@
 
 using namespace GNA;
 
-#define MAX_D0_STATE_PROBES  10
-#define WAIT_PERIOD         200 // in miliseconds
-
 const int WindowsDriverInterface::WAIT_FOR_MAP_ITERATIONS = 200;
 const int WindowsDriverInterface::WAIT_FOR_MAP_MILLISECONDS = 15;
 const uint64_t WindowsDriverInterface::FORBIDDEN_MEMORY_ID = 0;
@@ -170,7 +167,7 @@ uint64_t WindowsDriverInterface::MemoryMap(void *memory, uint32_t memorySize)
     }
     const auto memoryId = outMemoryId;
     outMemoryId = bufferCopy;
-    Expect::True(memoryId != FORBIDDEN_MEMORY_ID, Gna2StatusDeviceIngoingCommunicationError);
+    Expect::True(memoryId != FORBIDDEN_MEMORY_ID, Gna2StatusDriverCommunicationMemoryMapError);
     Log->Message("Memory mapped with id = %llX\n", memoryId);
     memoryMapRequests[memoryId] = std::move(memoryMapOverlapped);
     return memoryId;
@@ -185,10 +182,10 @@ void WindowsDriverInterface::MemoryUnmap(uint64_t memoryId)
         static_cast<DWORD>(GNA_IOCTL_MEM_UNMAP2), &memoryId, sizeof(memoryId),
         nullptr, 0, &bytesRead, &overlapped);
     checkStatus(ioResult);
-    wait(&overlapped, recoveryTimeout);
+    wait(&overlapped);
 
     const auto& memoryMapOverlapped = memoryMapRequests.at(memoryId);
-    wait(*memoryMapOverlapped, recoveryTimeout);
+    wait(*memoryMapOverlapped);
     memoryMapRequests.erase(memoryId);
 }
 /**
@@ -355,7 +352,7 @@ void WindowsDriverInterface::getDeviceCapabilities()
             &bytesRead, &overlapped);
 
         checkStatus(ioResult);
-        wait(&overlapped, recoveryTimeout);
+        wait(&overlapped);
     }
 
     driverCapabilities.deviceVersion = static_cast<DeviceVersion>(values[0]);
@@ -439,62 +436,59 @@ std::string WindowsDriverInterface::discoverDevice(uint32_t deviceIndex)
     return std::string(device.begin(), device.end());
 }
 
-void WindowsDriverInterface::wait(LPOVERLAPPED const ioctl, const DWORD timeout) const
+void WindowsDriverInterface::wait(LPOVERLAPPED const ioctl) const
 {
+    static std::string errorDescription;
     auto bytesRead = DWORD{ 0 };
 
-    auto ioResult = GetOverlappedResultEx(deviceHandle, ioctl, &bytesRead, timeout, false);
+    auto ioResult = GetOverlappedResultEx(deviceHandle, ioctl, &bytesRead, recoveryTimeout, false);
     if (ioResult == 0) // io not completed
     {
-        auto error = GetLastError();
-        if ((ERROR_IO_INCOMPLETE == error && 0 == timeout) ||
-            WAIT_IO_COMPLETION == error ||
-            WAIT_TIMEOUT == error)
-        {
-            throw GnaException(Gna2StatusWarningDeviceBusy); // not completed yet
-        }
-        else // other wait error
-        {
-            Log->Error("GetOverlappedResult failed, error: \n");
+        const auto error = GetLastError();
+        errorDescription = lastErrorToString(error);
+
+        Log->Error("GetOverlappedResult failed, error: \n");
 #if DEBUG == 1
-            printLastError(error);
+        Log->Error("%s\n", errorDescription.c_str());
 #endif
-            throw GnaException(Gna2StatusDeviceIngoingCommunicationError);
-        }
+        throw GnaException(Gna2StatusDeviceIngoingCommunicationError);
     }
     // io completed successfully
 }
 
 void WindowsDriverInterface::checkStatus(BOOL ioResult)
 {
-    auto lastError = GetLastError();
+    const auto lastError = GetLastError();
+
     if (ioResult == 0 && ERROR_IO_PENDING != lastError)
     {
 #if DEBUG == 1
-        printLastError(lastError);
+        const auto desc = lastErrorToString(lastError);
+        Log->Error("%s\n", desc.c_str());
 #endif
         throw GnaException(Gna2StatusDeviceOutgoingCommunicationError);
     }
 }
 
-void WindowsDriverInterface::printLastError(DWORD error)
+std::string WindowsDriverInterface::lastErrorToString(DWORD lastError)
 {
+    std::string errorDescription = "GetLastError==[" + std::to_string(lastError) + "] ";
     LPVOID lpMsgBuf;
     FormatMessage(
         FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
         nullptr,
-        error,
+        lastError,
         MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
         (LPTSTR)&lpMsgBuf,
         0,
         nullptr);
 
-    // Display the error message
     if (nullptr != lpMsgBuf)
     {
-        Log->Error("%s\n", static_cast<LPTSTR>(lpMsgBuf));
+        errorDescription += static_cast<LPTSTR>(lpMsgBuf);
         LocalFree(lpMsgBuf);
     }
+    return errorDescription;
 }
 
 Gna2Status WindowsDriverInterface::parseHwStatus(uint32_t hwStatus) const

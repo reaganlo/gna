@@ -126,9 +126,9 @@ private:
     WindowsDriverInterface(const WindowsDriverInterface &) = delete;
     WindowsDriverInterface& operator=(const WindowsDriverInterface&) = delete;
 
-    inline static void printLastError(DWORD error);
+    inline static std::string lastErrorToString(DWORD error);
 
-    void wait(LPOVERLAPPED const ioctl, const DWORD timeout) const;
+    void wait(LPOVERLAPPED const ioctl) const;
 
     static void checkStatus(BOOL ioResult);
 

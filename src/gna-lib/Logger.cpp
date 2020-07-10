@@ -118,6 +118,7 @@ const std::map<Gna2Status, std::string>& GNA::StatusHelper::GetDescriptionMap()
         { Gna2StatusGmmBadMode, "Gna2StatusGmmBadMode" },
         { Gna2StatusGmmCfgInvalidLayout, "Gna2StatusGmmCfgInvalidLayout" },
         { Gna2StatusDriverQoSTimeoutExceeded, " - Request was aborted due to QoS timeout" },
+        { Gna2StatusDriverCommunicationMemoryMapError, "Gna2StatusDriverCommunicationMemoryMapError"}
     };
     return Gna2StatusToStringMap;
 }
