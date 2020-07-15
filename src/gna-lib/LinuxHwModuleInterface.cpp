@@ -36,27 +36,22 @@ using namespace GNA;
 
 LinuxHwModuleInterface::LinuxHwModuleInterface(char const * moduleName)
 {
-    auto fullName = std::string("./");
-    fullName.append(moduleName);
-    auto debugName = fullName;
-    fullName.append(".so");
+    const auto prefixName = std::string("./") + moduleName;
+    fullName = prefixName + ".so";
     hwModule = dlopen(fullName.c_str(), RTLD_NOW);
-    if (nullptr != hwModule)
+    if (nullptr == hwModule)
     {
-        Log->Warning("HwModule release library not found, trying to load debug library.\n");
-        debugName.append("d.so");
-        hwModule = dlopen(debugName.c_str(), RTLD_NOW);
+        Log->Warning("HwModule release library (%s) not found, trying to load debug library.\n", fullName.c_str());
+        fullName = prefixName + "d.so";
+        hwModule = dlopen(fullName.c_str(), RTLD_NOW);
     }
     if (nullptr != hwModule)
     {
-        CreateLD = reinterpret_cast<CreateLDFunction>(dlsym(hwModule, "GNA3_NewLD"));
-        FillLD = reinterpret_cast<FillLDFunction>(dlsym(hwModule, "GNA3_PopLD"));
-        FreeLD = reinterpret_cast<FreeLDFunction>(dlsym(hwModule, "GNA3_FreeLD"));
-        Validate();
+        ImportAllSymbols();
     }
     else
     {
-        Log->Warning("HwModule library not found.\n");
+        Log->Warning("HwModule (%s) library not found.\n", fullName.c_str());
     }
 }
 
@@ -70,6 +65,11 @@ LinuxHwModuleInterface::~LinuxHwModuleInterface()
             Log->Error("FreeLibrary failed!\n");
         }
     }
+}
+
+void* LinuxHwModuleInterface::getSymbolAddress(const std::string& symbolName)
+{
+    return dlsym(hwModule, symbolName.c_str());
 }
 
 #endif

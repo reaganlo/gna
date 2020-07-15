@@ -128,8 +128,18 @@ void HardwareModel::Build(const std::vector<std::unique_ptr<SubModel>>& submodel
             layerDescriptor.Forward(gmmDescriptor);
             i++;
         }
+        catch (GnaModelErrorException& e)
+        {
+            e.SetLayerIndex(i);
+            throw;
+        }
         catch (const GnaException& e)
         {
+            if (e.GetStatus() == Gna2StatusHardwareModuleNotFound ||
+                e.GetStatus() == Gna2StatusHardwareModuleSymbolNotFound)
+            {
+                throw;
+            }
             throw GnaModelErrorException(i, e.GetStatus());
         }
         catch (...)

@@ -602,7 +602,10 @@ HwUarchParams HardwareLayerCnn2D::CalculateUArchConfig() const
 {
     auto const config = HwModule.GetCnnParams(cnn, pooling,
         SoftwareLayer.GetOutputTransform()->Output->Mode, is1D);
-    Expect::True(config.Valid, Gna2StatusXnnErrorLyrCfg);
+    if (!config.Valid)
+    {
+        throw GnaModelErrorException(Gna2ItemTypeOperationHardwareDescriptor, Gna2ErrorTypeArgumentInvalid, 0);
+    }
     return config;
 }
 

@@ -135,7 +135,9 @@ const std::map<Gna2Status, std::string>& GNA::StatusHelper::GetStringMap()
         { Gna2StatusGmmBadMode, "Gna2StatusGmmBadMode" },
         { Gna2StatusGmmCfgInvalidLayout, "Gna2StatusGmmCfgInvalidLayout" },
         { Gna2StatusDriverQoSTimeoutExceeded, "Gna2StatusDriverQoSTimeoutExceeded" },
-        { Gna2StatusDriverCommunicationMemoryMapError, "Gna2StatusDriverCommunicationMemoryMapError" }
+        { Gna2StatusHardwareModuleNotFound, "Gna2StatusHardwareModuleNotFound" },
+        { Gna2StatusHardwareModuleSymbolNotFound, "Gna2StatusHardwareModuleSymbolNotFound" },
+        { Gna2StatusDriverCommunicationMemoryMapError, "Gna2StatusDriverCommunicationMemoryMapError" },
     };
     return Gna2StatusToStringMap;
 }

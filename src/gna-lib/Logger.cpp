@@ -118,7 +118,9 @@ const std::map<Gna2Status, std::string>& GNA::StatusHelper::GetDescriptionMap()
         { Gna2StatusGmmBadMode, "Gna2StatusGmmBadMode" },
         { Gna2StatusGmmCfgInvalidLayout, "Gna2StatusGmmCfgInvalidLayout" },
         { Gna2StatusDriverQoSTimeoutExceeded, " - Request was aborted due to QoS timeout" },
-        { Gna2StatusDriverCommunicationMemoryMapError, "Gna2StatusDriverCommunicationMemoryMapError"}
+        { Gna2StatusHardwareModuleNotFound, " - Hardware module shared library matching current device not found" },
+        { Gna2StatusHardwareModuleSymbolNotFound, " - Hardware module shared library matching current device does not contain required symbol" },
+        { Gna2StatusDriverCommunicationMemoryMapError, " - Unsuccessful mapping of the memory" },
     };
     return Gna2StatusToStringMap;
 }

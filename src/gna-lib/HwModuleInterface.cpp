@@ -85,8 +85,8 @@ std::unique_ptr<HwModuleInterface const> HwModuleInterface::Create(char const* m
 HwUarchParams HwModuleInterface::GetCnnParams(ConvolutionFunction2D const* cnnIn, PoolingFunction2D const* poolingIn,
                                               const DataMode& outputMode, bool is1D) const
 {
-    Expect::NotNull(reinterpret_cast<const void*>(CreateLD),
-                    Gna2StatusAccelerationModeNotSupported);
+    Expect::True(libraryLoadSuccess, Gna2StatusHardwareModuleNotFound);
+    Expect::True(symbolImportSuccess, Gna2StatusHardwareModuleSymbolNotFound);
     Expect::NotNull(cnnIn);
 
     if (is1D)
@@ -221,10 +221,23 @@ HwUarchParams HwModuleInterface::Get2DParams(ConvolutionFunction2D const* cnnIn,
 #endif
 }
 
-void HwModuleInterface::Validate() const
+void HwModuleInterface::ImportAllSymbols()
 {
-    Expect::NotNull(reinterpret_cast<const void*>(CreateLD));
-    Expect::NotNull(reinterpret_cast<const void*>(FreeLD));
-    Expect::NotNull(reinterpret_cast<const void*>(FillLD));
-    Log->Message("HwModule library loaded successfully.\n");
+    libraryLoadSuccess = true;
+    symbolImportSuccess = true;
+    Log->Message("HwModule library (%s) loaded successfully.\n", fullName.c_str());
+    CreateLD = reinterpret_cast<CreateLDFunction>(GetSymbolAddress("GNA3_NewLD"));
+    FillLD = reinterpret_cast<FillLDFunction>(GetSymbolAddress("GNA3_PopLD"));
+    FreeLD = reinterpret_cast<FreeLDFunction>(GetSymbolAddress("GNA3_FreeLD"));
+}
+
+void* HwModuleInterface::GetSymbolAddress(const std::string& symbolName)
+{
+    const auto ptr = getSymbolAddress(symbolName);
+    if(ptr == nullptr)
+    {
+        Log->Warning("HwModule library (%s), symbol (%s) not found.\n", fullName.c_str(), symbolName.c_str());
+        symbolImportSuccess = false;
+    }
+    return ptr;
 }

@@ -299,6 +299,7 @@ const std::map<enum Gna2ItemType, std::string>& ModelErrorHelper::GetAllItemType
         { Gna2ItemTypeShapeNumberOfDimensions,     "Gna2ItemTypeShapeNumberOfDimensions"},
         { Gna2ItemTypeShapeDimensions,             "Gna2ItemTypeShapeDimensions"},
         { Gna2ItemTypeInternal,                    "Gna2ItemTypeInternal"},
+        { Gna2ItemTypeOperationHardwareDescriptor, "Gna2ItemTypeOperationHardwareDescriptor"},
     };
     return itemTypeStrings;
 }

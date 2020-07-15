@@ -1156,6 +1156,14 @@ enum Gna2ItemType
      via error message.
      */
     Gna2ItemTypeInternal = 15,
+
+    /**
+     Derivative of multiple operands and parameters of operation computed by hardware module (separate gna_hw library).
+     When reported inside Gna2ModelError is caused by the micro architectural memory limitations.
+
+     Used only for model debugging.
+     */
+    Gna2ItemTypeOperationHardwareDescriptor = 100,
 };
 
 /**

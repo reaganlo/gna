@@ -43,6 +43,7 @@ private:
     LinuxHwModuleInterface& operator=(const LinuxHwModuleInterface&) = delete;
 
     void * hwModule;
+    void* getSymbolAddress(const std::string& symbolName) override;
 };
 
 }

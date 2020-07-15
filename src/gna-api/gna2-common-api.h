@@ -384,11 +384,25 @@ enum Gna2Status
     Gna2StatusGmmBadNumGmm = -77,
     Gna2StatusGmmBadMode = -78,
     Gna2StatusGmmCfgInvalidLayout = -79,
+
     /**
-     Error: Request was aborted due to QoS timeout
+     Error: Request was aborted due to QoS timeout.
     */
     Gna2StatusDriverQoSTimeoutExceeded = -80,
 
+    /**
+     Error: Hardware module shared library matching current device not found.
+    */
+    Gna2StatusHardwareModuleNotFound = -90,
+
+    /**
+     Error: Hardware module shared library matching current device does not contain required symbol.
+    */
+    Gna2StatusHardwareModuleSymbolNotFound = -91,
+
+    /**
+     Error: Unsuccessful mapping of the memory.
+     */
     Gna2StatusDriverCommunicationMemoryMapError = -200,
 };
 

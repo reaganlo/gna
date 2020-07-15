@@ -27,6 +27,7 @@
 
 #include <cstdint>
 #include <memory>
+#include <string>
 
 struct GNA3_AdaptHW;
 struct GNA3_LyrDesc;
@@ -86,6 +87,13 @@ protected:
     FreeLDFunction FreeLD = nullptr;
     FillLDFunction FillLD = nullptr;
 
-    void Validate() const;
+    std::string fullName;
+
+    void ImportAllSymbols();
+    void* GetSymbolAddress(const std::string& symbolName);
+    bool libraryLoadSuccess = false;
+    bool symbolImportSuccess = false;
+private:
+    virtual void* getSymbolAddress(const std::string& symbolName) = 0;
 };
 }

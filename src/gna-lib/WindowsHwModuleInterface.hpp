@@ -43,6 +43,7 @@ public:
 
 private:
     HINSTANCE hwModule;
+    void* getSymbolAddress(const std::string& symbolName) override;
 };
 }
 

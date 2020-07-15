@@ -34,19 +34,16 @@ using namespace GNA;
 
 WindowsHwModuleInterface::WindowsHwModuleInterface(char const* moduleName)
 {
-    auto fullName = std::string(moduleName);
+    fullName = moduleName;
     fullName.append(".dll");
     hwModule = LoadLibrary(fullName.c_str());
     if (nullptr != hwModule)
     {
-        CreateLD = reinterpret_cast<CreateLDFunction>(GetProcAddress(hwModule, "GNA3_NewLD"));
-        FillLD = reinterpret_cast<FillLDFunction>(GetProcAddress(hwModule, "GNA3_PopLD"));
-        FreeLD = reinterpret_cast<FreeLDFunction>(GetProcAddress(hwModule, "GNA3_FreeLD"));
-        Validate();
+        ImportAllSymbols();
     }
     else
     {
-        Log->Warning("HwModule library not found.\n");
+        Log->Warning("HwModule (%s) library not found.\n", fullName.c_str());
     }
 }
 
@@ -60,6 +57,11 @@ WindowsHwModuleInterface::~WindowsHwModuleInterface()
             Log->Error("FreeLibrary failed!\n");
         }
     }
+}
+
+void* WindowsHwModuleInterface::getSymbolAddress(const std::string& symbolName)
+{
+    return reinterpret_cast<void*>(GetProcAddress(hwModule, symbolName.c_str()));
 }
 
 #endif
