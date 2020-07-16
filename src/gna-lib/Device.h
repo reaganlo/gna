@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2018 Intel Corporation.
+ Copyright 2018-2020 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -106,7 +106,7 @@ public:
         void *& exportData, uint32_t & exportDataSize, Gna2ModelExportComponent component,
         Gna2DeviceVersion targetDevice);
 
-    uint32_t CreateProfilerConfiguration(uint32_t numberOfInstrumentationPoints, Gna2InstrumentationPoint* selectedInstrumentationPoints, uint64_t* results);
+    uint32_t CreateProfilerConfiguration(std::vector<Gna2InstrumentationPoint>&& selectedInstrumentationPoints, uint64_t* results);
 
     void ReleaseProfilerConfiguration(uint32_t configId);
 

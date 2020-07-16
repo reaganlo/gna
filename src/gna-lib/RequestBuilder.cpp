@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2017 Intel Corporation.
+ Copyright 2017-2020 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -106,13 +106,12 @@ uint32_t RequestBuilder::AssignProfilerConfigId()
 }
 
 uint32_t RequestBuilder::CreateProfilerConfiguration(
-    uint32_t numberOfInstrumentationPoints,
-    Gna2InstrumentationPoint* selectedInstrumentationPoints,
+    std::vector<Gna2InstrumentationPoint>&& selectedInstrumentationPoints,
     uint64_t* results)
 {
     auto const profilerConfigId = AssignProfilerConfigId();
     profilerConfigurations.emplace(profilerConfigId,
-        std::make_unique<ProfilerConfiguration>(profilerConfigId, numberOfInstrumentationPoints, selectedInstrumentationPoints, results));
+        std::make_unique<ProfilerConfiguration>(profilerConfigId, std::move(selectedInstrumentationPoints), results));
     return profilerConfigId;
 }
 

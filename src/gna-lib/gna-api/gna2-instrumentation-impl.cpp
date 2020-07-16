@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2019 Intel Corporation.
+ Copyright 2019-2020 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -67,8 +67,13 @@ Gna2Status Gna2InstrumentationConfigCreate(
     const std::function<ApiStatus()> command = [&]()
     {
         Expect::NotNull(configId);
+        Expect::NotNull(selectedInstrumentationPoints);
+        Expect::NotNull(results);
+        Expect::GtZero(numberOfInstrumentationPoints, Gna2StatusIdentifierInvalid);
         auto& device = DeviceManager::Get().GetDevice(0);
-        *configId = device.CreateProfilerConfiguration(numberOfInstrumentationPoints, selectedInstrumentationPoints, results);
+        *configId = device.CreateProfilerConfiguration(
+            { selectedInstrumentationPoints, selectedInstrumentationPoints + numberOfInstrumentationPoints },
+            results);
         return Gna2StatusSuccess;
     };
     return ApiWrapper::ExecuteSafely(command);

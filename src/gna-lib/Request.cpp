@@ -94,9 +94,10 @@ void CycleProfiler::Measure(Gna2InstrumentationPoint pointType)
 
 void RequestProfiler::SaveResults(ProfilerConfiguration* config)
 {
-    for (auto i = 0u; i < config->NPoints; i++)
+    uint32_t i = 0;
+    for (const auto& selectedPoint: config->Points)
     {
-        config->SetResult(i, Points.at(config->Points[i]));
+        config->SetResult(i++, Points.at(selectedPoint));
     }
 }
 

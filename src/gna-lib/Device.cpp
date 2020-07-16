@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2017 Intel Corporation.
+ Copyright 2017-2020 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -206,14 +206,10 @@ bool Device::HasModel(uint32_t modelId) const
 }
 
 uint32_t Device::CreateProfilerConfiguration(
-    uint32_t numberOfInstrumentationPoints,
-    Gna2InstrumentationPoint* selectedInstrumentationPoints,
+    std::vector<Gna2InstrumentationPoint>&& selectedInstrumentationPoints,
     uint64_t* results)
 {
-    Expect::NotNull(selectedInstrumentationPoints);
-    Expect::NotNull(results);
-
-    return requestBuilder.CreateProfilerConfiguration(numberOfInstrumentationPoints, selectedInstrumentationPoints, results);
+    return requestBuilder.CreateProfilerConfiguration(std::move(selectedInstrumentationPoints), results);
 }
 
 void Device::AssignProfilerConfigToRequestConfig(uint32_t instrumentationConfigId,

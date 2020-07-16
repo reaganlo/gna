@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2019 Intel Corporation.
+ Copyright 2019-2020 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -27,6 +27,7 @@
 #include "gna2-instrumentation-api.h"
 
 #include <set>
+#include <vector>
 
 namespace GNA
 {
@@ -41,13 +42,11 @@ public:
     static void ExpectValid(Gna2InstrumentationMode encodingIn);
 
     ProfilerConfiguration(uint32_t configID,
-        uint32_t numberOfPoints,
-        const Gna2InstrumentationPoint* selectedPoints,
-        uint64_t* selectedResults);
+        std::vector<Gna2InstrumentationPoint>&& selectedPoints,
+        uint64_t* results);
 
     const uint32_t ID;
-    const Gna2InstrumentationPoint* const Points;
-    const uint32_t NPoints;
+    const std::vector<Gna2InstrumentationPoint> Points;
 
     void SetUnit(Gna2InstrumentationUnit unitIn);
     Gna2InstrumentationUnit GetUnit() const;
@@ -55,10 +54,10 @@ public:
     void SetHwPerfEncoding(Gna2InstrumentationMode encodingIn);
     uint8_t GetHwPerfEncoding() const;
 
-    void SetResult(uint32_t index, uint64_t value);
+    void SetResult(uint32_t index, uint64_t value) const;
 
 private:
-    uint64_t* const Results;
+    uint64_t* Results = nullptr;
 
     Gna2InstrumentationMode HwPerfEncoding = Gna2InstrumentationModeTotalStall;
     Gna2InstrumentationUnit Unit = Gna2InstrumentationUnitMicroseconds;

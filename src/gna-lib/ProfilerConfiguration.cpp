@@ -29,6 +29,7 @@
 #include "Request.h"
 
 #include <cstdint>
+#include <utility>
 
 using namespace GNA;
 
@@ -88,20 +89,18 @@ uint32_t ProfilerConfiguration::GetMaxNumberOfInstrumentationPoints()
 }
 
 ProfilerConfiguration::ProfilerConfiguration(const uint32_t configID,
-    uint32_t numberOfPoints,
-    const Gna2InstrumentationPoint* const selectedPoints,
-    uint64_t* const selectedResults) :
+    std::vector<Gna2InstrumentationPoint>&& selectedPoints,
+    uint64_t* resultsIn) :
     ID{configID},
-    Points{ selectedPoints },
-    NPoints{ numberOfPoints },
-    Results{ selectedResults }
+    Points{std::move(selectedPoints)},
+    Results{ resultsIn }
 {
     Expect::NotNull(Results);
-    Expect::InRange(NPoints, 1u, GetMaxNumberOfInstrumentationPoints(), Gna2StatusIdentifierInvalid);
+    Expect::True(Points.size() <= GetMaxNumberOfInstrumentationPoints(), Gna2StatusIdentifierInvalid);
     auto leftToUse = GetSupportedInstrumentationPoints();
-    while (numberOfPoints--)
+    for (const auto& selectedPoint: Points)
     {
-        const auto numberOfErased = leftToUse.erase(Points[numberOfPoints]);
+        const auto numberOfErased = leftToUse.erase(selectedPoint);
         Expect::True(numberOfErased == 1, Gna2StatusDeviceParameterOutOfRange);
     }
 }
@@ -133,7 +132,7 @@ uint8_t ProfilerConfiguration::GetHwPerfEncoding() const
     return static_cast<uint8_t>(encoding & 0xFF);
 }
 
-void ProfilerConfiguration::SetResult(uint32_t index, uint64_t value)
+void ProfilerConfiguration::SetResult(uint32_t const index, uint64_t const value) const
 {
     Results[index] = value;
 }
