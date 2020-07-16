@@ -36,6 +36,7 @@
 
 #include <cstdint>
 #include <cstring>
+#include <stdexcept>
 
 namespace GNA
 {
@@ -372,6 +373,12 @@ void copyKernelImpl2B(CopyConfig const * const config)
             bytesToCopy);
     }
 }
+#if OPT_LEVEL >=2
+static void CodeCaveMitigationFakeKernel()
+{
+    throw std::logic_error("Call to not defined GNA kernel found!");
+}
+#endif
 
 XnnKernel KERNEL(xnnKernel) =
 {
@@ -437,41 +444,41 @@ XnnKernel KERNEL(xnnKernel) =
     Pooling2DKernelImpl2B,
     Pooling2DKernelImpl4B
 #else
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr
+    (AffineKernel)CodeCaveMitigationFakeKernel,
+    (AffineKernel)CodeCaveMitigationFakeKernel,
+    (AffineKernel)CodeCaveMitigationFakeKernel,
+    (AffineKernel)CodeCaveMitigationFakeKernel,
+    (AffineActiveListKernel)CodeCaveMitigationFakeKernel,
+    (AffineActiveListKernel)CodeCaveMitigationFakeKernel,
+    (AffineActiveListKernel)CodeCaveMitigationFakeKernel,
+    (AffineActiveListKernel)CodeCaveMitigationFakeKernel,
+    (AffineKernel)CodeCaveMitigationFakeKernel,
+    (AffineKernel)CodeCaveMitigationFakeKernel,
+    (AffineKernel)CodeCaveMitigationFakeKernel,
+    (AffineKernel)CodeCaveMitigationFakeKernel,
+    (AffineKernel)CodeCaveMitigationFakeKernel,
+    (AffineKernel)CodeCaveMitigationFakeKernel,
+    (AffineKernel)CodeCaveMitigationFakeKernel,
+    (AffineKernel)CodeCaveMitigationFakeKernel,
+    (RecurrentKernel)CodeCaveMitigationFakeKernel,
+    (RecurrentKernel)CodeCaveMitigationFakeKernel,
+    (RecurrentKernel)CodeCaveMitigationFakeKernel,
+    (RecurrentKernel)CodeCaveMitigationFakeKernel,
+    (ConvolutionKernel)CodeCaveMitigationFakeKernel,
+    (ConvolutionPoolingKernel)CodeCaveMitigationFakeKernel,
+    (ConvolutionKernel)CodeCaveMitigationFakeKernel,
+    (ConvolutionPoolingKernel)CodeCaveMitigationFakeKernel,
+    (TransposeKernel)CodeCaveMitigationFakeKernel,
+    (TransposeKernel)CodeCaveMitigationFakeKernel,
+    (CopyKernel)CodeCaveMitigationFakeKernel,
+    (CopyKernel)CodeCaveMitigationFakeKernel,
+    (ConvolutionKernel2D)CodeCaveMitigationFakeKernel,
+    (ConvolutionKernel2D)CodeCaveMitigationFakeKernel,
+    (ConvolutionKernel2D)CodeCaveMitigationFakeKernel,
+    (ConvolutionKernel2D)CodeCaveMitigationFakeKernel,
+    (PoolingKernel2D)CodeCaveMitigationFakeKernel,
+    (PoolingKernel2D)CodeCaveMitigationFakeKernel,
+    (PoolingKernel2D)CodeCaveMitigationFakeKernel
 #endif
 };
 

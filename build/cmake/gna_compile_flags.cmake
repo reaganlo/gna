@@ -43,7 +43,7 @@ if(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
   endif()
 
   set(GNA_COMPILE_FLAGS_DEBUG ${GNA_COMPILE_FLAGS_DEBUG} /Od /RTC1)
-  set(GNA_COMPILE_FLAGS_RELEASE ${GNA_COMPILE_FLAGS_RELEASE} /Oi /Gy)
+  set(GNA_COMPILE_FLAGS_RELEASE ${GNA_COMPILE_FLAGS_RELEASE} /Oi /Gy /guard:cf)
 
   set(GNA_WINDOWS_RUNTIME_LINKAGE /MD)
   option(GNA_WINDOWS_RUNTIME_LINKAGE_STATIC "For UWP compliance" ON)
@@ -59,7 +59,9 @@ if(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
 
   # Optimization level
   if(${CMAKE_CXX_COMPILER_ID} STREQUAL "Intel")
-    set(GNA_COMPILE_FLAGS_RELEASE ${GNA_COMPILE_FLAGS_RELEASE} /O3 /Qinline-forceinline)
+    set(GNA_COMPILE_FLAGS_RELEASE ${GNA_COMPILE_FLAGS_RELEASE} /O3)
+    # Qinline-forceinline disabled due to compilation hang when IPO disabled (IPO is dusabled due to guard:cf).
+    # set(GNA_COMPILE_FLAGS_RELEASE ${GNA_COMPILE_FLAGS_RELEASE} /Qinline-forceinline)
     # workaround for bug https://software.intel.com/en-us/forums/intel-c-compiler/topic/798645
     set(GNA_ICL_DEBUG_WORKAROUND "/NODEFAULTLIB:\"libcpmt.lib\"")
     # remove debug_opt_report section from dll
@@ -71,7 +73,7 @@ if(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
   # Linker options
   set(GNA_LINKER_FLAGS "/DEBUG")
   set(GNA_LINKER_FLAGS_DEBUG "/INCREMENTAL ${GNA_ICL_DEBUG_WORKAROUND}")
-  set(GNA_LINKER_FLAGS_RELEASE "/INCREMENTAL:NO /NOLOGO /OPT:REF /OPT:ICF
+  set(GNA_LINKER_FLAGS_RELEASE "/INCREMENTAL:NO /NOLOGO /OPT:REF /OPT:ICF /guard:cf
                                /PDBSTRIPPED:$(TargetDir)$(TargetName)Public.pdb")
   # Integrity check due to security review
   option(GNA_LINKER_FLAGS_ALWAYS_RELEASE_INTEGRITYCHECK "Enables /INTEGRITYCHECK linker flag in release builds" OFF)
@@ -169,7 +171,12 @@ else()
 
   if(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
     if(${CMAKE_CXX_COMPILER_ID} STREQUAL "Intel")
-      set(GNA_COMPILE_FLAGS_RELEASE ${GNA_COMPILE_FLAGS_RELEASE} /Qipo)
+      message(WARNING "IPO disabled as causes compiler failure with guard:cf.")
+      #       error : ** The compiler has encountered an unexpected problem.
+      #       ** Segmentation violation signal raised. **
+      #       Access violation or stack overflow. Please contact Intel Support for assistance.
+      #       xilink: : error #10014: problem during multi-file optimization compilation (code 4)
+      # set(GNA_COMPILE_FLAGS_RELEASE ${GNA_COMPILE_FLAGS_RELEASE} /Qipo)
     elseif(${CMAKE_CXX_COMPILER_ID} STREQUAL "MSVC")
       set(GNA_COMPILE_FLAGS_RELEASE ${GNA_COMPILE_FLAGS_RELEASE} /GL)
     endif()
