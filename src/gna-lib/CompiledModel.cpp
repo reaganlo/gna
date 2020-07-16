@@ -211,7 +211,7 @@ BaseValidator CompiledModel::makeValidator()
 {
     return BaseValidator
     {
-        HardwareCapabilities(),
+        HardwareCapabilities(hwCapabilities.GetDeviceVersion()),
         ValidBoundariesFunctor {
             [this](const void *buffer, size_t bufferSize)
             {
