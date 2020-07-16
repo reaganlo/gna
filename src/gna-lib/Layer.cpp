@@ -101,6 +101,8 @@ std::unique_ptr<GNA::Layer> Layer::Create(const Gna2Operation & operation, const
         return std::make_unique<GmmOperation>(operation, validatorIn);
     case Gna2OperationTypeTransposition:
         return std::make_unique<TransposeLayer>(operation, validatorIn);
+    case Gna2OperationTypeThreshold:
+        return std::make_unique<AffineThresholdLayer>(operation, validatorIn);
     default:
         throw GnaModelErrorException(
             Gna2ItemTypeOperationType,
@@ -306,6 +308,9 @@ nn_operation AbstractOperation::toLegacy(
         {
             return INTEL_AFFINE_MULTIBIAS;
         }
+        return INTEL_AFFINE;
+    case Gna2OperationTypeThreshold:
+        // TODO: 3: return INTEL_AFFINE_THRESHOLD when separate  caps added
         return INTEL_AFFINE;
     case Gna2OperationTypeCopy:
         return INTEL_COPY;

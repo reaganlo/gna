@@ -442,7 +442,7 @@ const std::map<const XnnParameterType, const XnnParameter>& LayerDescriptor::get
         {Gna2DeviceVersionEmbedded1_0, XnnDescriptorGNA_1},
         {Gna2DeviceVersionEmbedded2_1, XnnDescriptorGNA_1},
         {Gna2DeviceVersionEmbedded3_0, XnnDescriptorGNA_3},
-        {Gna2DeviceVersionEmbedded3_1, XnnDescriptorGNA_3},
+        {Gna2DeviceVersionEmbedded3_1, XnnDescriptorGNA_3_5},
     };
     return parameterMap.at(deviceVersion);
 }

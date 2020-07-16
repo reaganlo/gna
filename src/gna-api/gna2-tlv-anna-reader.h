@@ -38,88 +38,86 @@
 
 #include "gna2-tlv-anna.h"
 
+#include <stddef.h>
 #include <stdint.h>
 
-
-Gna2TlvStatus Gna2TlvImplGetLength(const char * tlvRecord, const uint32_t tlvBlobSize, uint32_t * outLength)
+GNA2_TLV_LINKAGE Gna2TlvStatus Gna2TlvCheckValid(const Gna2TlvRecord * tlvRecord, const char* tlvBlobEnd)
 {
-    if (tlvRecord == NULL || outLength == NULL)
-    {
-        Gna2TlvStatusNullNotAllowed;
-    }
-    if (tlvBlobSize < TLV_EMPTY_RECORD_SIZE)
+    GNA2_TLV_EXPECT_NOT_NULL(tlvRecord);
+
+    if (tlvBlobEnd < tlvRecord->value)
     {
         return Gna2TlvStatusOutOfBuffer;
     }
-    const uint32_t length = *(Gna2TlvLength*)(tlvRecord + sizeof(Gna2TlvType));
-    if(tlvBlobSize - TLV_EMPTY_RECORD_SIZE < *outLength)
+    if((size_t)(tlvBlobEnd - tlvRecord->value) < tlvRecord->length)
     {
         return Gna2TlvStatusOutOfBuffer;
     }
-    *outLength = length;
     return Gna2TlvStatusSuccess;
 }
 
-Gna2TlvStatus Gna2TlvImplGetNextOffset(const char * tlvRecord,
-    uint32_t tlvBlobSize,
-    uint32_t* tlvNextRecordOffset)
-{
-    if (tlvNextRecordOffset == NULL)
-    {
-        return Gna2TlvStatusNullNotAllowed;
-    }
-    uint32_t currentRecordLength = 0;
-    const Gna2TlvStatus status = Gna2TlvImplGetLength(tlvRecord, tlvBlobSize, &currentRecordLength);
-
-    if (Gna2TlvStatusSuccess != status)
-    {
-        return status;
-    }
-
-    *tlvNextRecordOffset = currentRecordLength + TLV_EMPTY_RECORD_SIZE;
-    return Gna2TlvStatusSuccess;
-}
-
-inline Gna2TlvStatus Gna2TlvFindInArray(
-    const char* tlvArrayBegin,          // Address of the first TLV record e.g. TLV formated GNA model address
+GNA2_TLV_LINKAGE Gna2TlvStatus Gna2TlvFindInArray(
+    const char* tlvArrayBegin,          // Address of the first TLV record e.g. TLV formatted GNA model address
     uint32_t tlvArraySize,              // Byte size of TLV records in memory e.g., size of the TLV formatted GNA model
     const Gna2TlvType tlvTypeToFind,    // TLV type of the record to find
     uint32_t *outValueLength,           // TLV length of the record found
     void **outValue                     // TLV value address of the record found
 )
 {
-    if(tlvArrayBegin == NULL || outValueLength == NULL || outValue == NULL)
-    {
-        return Gna2TlvStatusNullNotAllowed;
-    }
+    GNA2_TLV_EXPECT_NOT_NULL(tlvArrayBegin);
+    GNA2_TLV_EXPECT_NOT_NULL(outValueLength);
+    GNA2_TLV_EXPECT_NOT_NULL(outValue);
 
-    while (tlvArraySize >= TLV_EMPTY_RECORD_SIZE)
+    const char* const tlvArrayEnd = tlvArrayBegin + tlvArraySize;
+    while (tlvArrayBegin < tlvArrayEnd)
     {
-        if (tlvTypeToFind == *((Gna2TlvTypeC*)tlvArrayBegin))
+        const Gna2TlvRecord* const currentRecord = (const Gna2TlvRecord*)tlvArrayBegin;
+        if (Gna2TlvStatusSuccess != Gna2TlvCheckValid(currentRecord, tlvArrayEnd))
         {
-            uint32_t length = 0;
-            if (Gna2TlvStatusSuccess != Gna2TlvImplGetLength(tlvArrayBegin, tlvArraySize, &length))
-            {
-                return Gna2TlvStatusOutOfBuffer;
-            }
-            *outValue = (void *)(tlvArrayBegin + TLV_EMPTY_RECORD_SIZE);
-            *outValueLength = length;
+            return Gna2TlvStatusTlvReadError;
+        }
+        if (tlvTypeToFind == currentRecord->type)
+        {
+            *outValue = (void *)(currentRecord->value);
+            *outValueLength = currentRecord->length;
             return Gna2TlvStatusSuccess;
         }
-        uint32_t nextRecordOffset = 0;
-        if(Gna2TlvStatusSuccess != Gna2TlvImplGetNextOffset(tlvArrayBegin, tlvArraySize, &nextRecordOffset))
-        {
-            break;
-        }
-        tlvArraySize -= nextRecordOffset;
-        tlvArrayBegin += nextRecordOffset;
+        tlvArrayBegin = currentRecord->value + currentRecord->length;
     }
     *outValue = NULL;
     *outValueLength = 0;
     return Gna2TlvStatusNotFound;
 }
 
-
+GNA2_TLV_LINKAGE Gna2TlvStatus Gna2TlvVerifyVersionAndCohesion(
+    const char* tlvArrayBegin,          // Address of the first TLV record e.g. TLV formatted GNA model address
+    uint32_t tlvArraySize               // Byte size of TLV records in memory e.g., size of the TLV formatted GNA model
+)
+{
+    void * version = NULL;
+    uint32_t length = 0;
+    Gna2TlvStatus status = Gna2TlvFindInArray(tlvArrayBegin, tlvArraySize, Gna2TlvTypeTlvVersion, &length, &version);
+    if (status != Gna2TlvStatusSuccess)
+    {
+        return status == Gna2TlvStatusNotFound ? Gna2TlvStatusVersionNotFound : status;
+    }
+    if(length != GNA2_TLV_VERSION_VALUE_LENGTH || (*(uint32_t*)version) != GNA2_TLV_VERSION)
+    {
+        return Gna2TlvStatusVersionNotSupported;
+    }
+    tlvArrayBegin += GNA2_TLV_VERSION_RECORD_SIZE;
+    tlvArraySize -= GNA2_TLV_VERSION_RECORD_SIZE;
+    status = Gna2TlvFindInArray(tlvArrayBegin, tlvArraySize, Gna2TlvTypeTlvVersion, &length, &version);
+    if(status == Gna2TlvStatusNotFound)
+    {
+        return Gna2TlvStatusSuccess;
+    }
+    if(status == Gna2TlvStatusSuccess)
+    {
+        return Gna2TlvStatusSecondaryVersionFound;
+    }
+    return status;
+}
 #endif // __GNA2_TLV_ANNA_READER_H
 
 /**

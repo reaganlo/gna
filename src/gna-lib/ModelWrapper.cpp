@@ -176,6 +176,24 @@ uint32_t ModelWrapper::GetOperationInfo(OperationType operationType, OperationIn
                 { OperandIndexOutput, OutputOperandIndex },
             }
         },
+        { Gna2OperationTypeThreshold,
+            {
+                { NumberOfOperandsMax, 5 },
+                { NumberOfOperandsRequired, 4 },
+                { NumberOfParametersMax, 3 },
+                { NumberOfParametersRequired, 3 },
+                { OperandIndexInput, InputOperandIndex },
+                { OperandIndexOutput, OutputOperandIndex },
+                { OperandIndexWeight, WeightOperandIndex },
+                { OperandIndexBias, BiasOperandIndex },
+                { OperandIndexActivation, PwlOperandIndex},
+                { OperandIndexWeightScaleFactors, WeightScaleFactorOperandIndex },
+                { ParameterIndexThresholdCondition, 0 },
+                { ParameterIndexThresholdMode, 1 },
+                { ParameterIndexThresholdMask, 2 },
+                { OperandIndexScratchPad, ScratchpadOperandIndex },
+            }
+        },
     };
     try
     {

@@ -74,6 +74,10 @@ constexpr uint32_t ZeroPaddingParamIndex = 5;
 constexpr uint32_t BiasModeAffineParamIndex = 0;
 constexpr uint32_t BiasVectorParamIndex = 1;
 
+constexpr uint32_t ThresholdConditionParamIndex = 0;
+constexpr uint32_t ThresholdModeParamIndex = 1;
+constexpr uint32_t ThresholdMaskParamIndex = 2;
+
 }
 
 #endif // __GNA2_MODEL_IMPL_H

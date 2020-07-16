@@ -137,12 +137,15 @@ void HardwareModelNoMMU::prepareAllocationsAndModel()
 
 const HardwareCapabilities& HardwareModelNoMMU::GetHwCaps(Gna2DeviceVersion targetDevice)
 {
-    if (targetDevice == Gna2DeviceVersionEmbedded3_0)
+    switch (targetDevice)
     {
+    case Gna2DeviceVersionEmbedded3_0:
         return noMMUCapabilities30;
+    case Gna2DeviceVersionEmbedded3_1:
+        return noMMUCapabilities31Anna;
+    default:
+        throw GnaException(Gna2StatusDeviceNotAvailable);
     }
-    Expect::True(targetDevice == Gna2DeviceVersionEmbedded3_1, Gna2StatusDeviceNotAvailable);
-    return noMMUCapabilities31Anna;
 }
 
 uint32_t HardwareModelNoMMU::SetBarIndex(uint32_t offsetFromBar, uint32_t barIndex)
@@ -152,6 +155,8 @@ uint32_t HardwareModelNoMMU::SetBarIndex(uint32_t offsetFromBar, uint32_t barInd
 
 LdaOffset HardwareModelNoMMU::GetBufferOffset(const BaseAddress& address) const
 {
+    // TODO: 3: provide derived classes for 3.0 embedded and anna and using virtual methods to simplify the code,
+    // TODO: 3: all first level IFs should be extracted IMO to dervied classes then
     if (InputAllocations.Contains(address))
     {
         Expect::True(this->hwCapabilities.GetDeviceVersion() == Gna2DeviceVersionEmbedded3_0, Gna2StatusMemoryBufferInvalid);
@@ -212,13 +217,14 @@ void HardwareModelNoMMU::ExportLd(void *& exportData, uint32_t & exportDataSize)
 
 void HardwareModelNoMMU::ExportComponent(void *& exportData, uint32_t & exportDataSize, Gna2ModelExportComponent component)
 {
+    // TODO: 3: extract into 2 methods (e.g., GetComponent + ExportData)
     if (component == Gna2ModelExportComponentLayerDescriptors)
     {
         ExportLd(exportData, exportDataSize);
         Expect::NotNull(exportData);
         return;
     }
-    const std::map<Gna2DeviceVersion, std::map<Gna2ModelExportComponent, MemoryContainer*> > devComponentToMem =
+    static const std::map<Gna2DeviceVersion, std::map<Gna2ModelExportComponent, MemoryContainer*> > devComponentToMem =
     {
         { Gna2DeviceVersionEmbedded3_1,
             {

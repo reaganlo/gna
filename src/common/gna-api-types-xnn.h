@@ -151,6 +151,7 @@ typedef enum _layer_operation
     GNA_LAYER_CNN_2D_ADDITION,// TODO:3: add layer support + capabilities
     GNA_LAYER_CNN_2D_CONVERSION,// TODO:3: add layer support + capabilities
     GNA_LAYER_CNN_2D_POOLING,   // TODO:3: add layer support + capabilities
+    INTEL_AFFINE_THRESHOLD,
     LAYER_OPERATION_TYPE_COUT,      // Number of Layer operation types.
 } gna_layer_operation;
 

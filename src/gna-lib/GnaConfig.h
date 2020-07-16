@@ -119,6 +119,7 @@ typedef enum _NN_OP_TYPE : uint8_t
     NN_AFFINE = 0x00,
     NN_AFF_AL = 0x01,
     NN_DIAG = 0x02,
+    NN_AFFINE_TH = 0x03,
     NN_RNN = 0x04,
     NN_CNN = 0x08,
     NN_AFF_MB = 0x09,

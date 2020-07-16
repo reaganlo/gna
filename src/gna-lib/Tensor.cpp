@@ -153,6 +153,7 @@ std::pair<uint32_t, uint32_t> Tensor::getGroupingAndElements(
     {
     case Gna2OperationTypeFullyConnectedAffine:
     case Gna2OperationTypeElementWiseAffine:
+    case Gna2OperationTypeThreshold:
         return {Dimensions.at('W'), Dimensions.at('H')};
     case Gna2OperationTypeRecurrent:
     case Gna2OperationTypeCopy:

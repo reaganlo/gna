@@ -77,4 +77,15 @@ public:
     virtual void UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const override;
 };
 
+class AffineThresholdLayer : public AffineLayer
+{
+public:
+    AffineThresholdLayer(const Gna2Operation& operation, const BaseValidator& validatorIn);
+    virtual ~AffineThresholdLayer() = default;
+
+    Gna2ThresholdCondition thresholdCondition;
+    Gna2ThresholdMode thresholdMode;
+    Gna2ThresholdMask thresholdMask;
+};
+
 }

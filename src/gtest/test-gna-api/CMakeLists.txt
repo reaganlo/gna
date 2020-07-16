@@ -45,7 +45,13 @@ add_executable(test-gna-api
   test-microphone-selection-model.cpp
   test-model-export-legacy-sue.cpp
   test-model-export-legacy-sue.h
-  test-model-export-tlv.cpp)
+  test-model-export-tlv.cpp
+  test-tlv-reader-in-c-lang.c)
+
+set_property(TARGET test-gna-api PROPERTY C_STANDARD 11)
+set_source_files_properties(test-tlv-reader-in-c-lang.c
+  PROPERTIES
+  LANGUAGE C)
 
 target_include_directories(test-gna-api
   PRIVATE ${SRC_DIR} ${COMMON_DIR} ${API_DIR} ${API_IMPL_DIR} ${KERNEL_DIR} ${GNA_HW_LIB_INCLUDE_PATH} ${COMMON_TOOLS_DIR})

@@ -82,6 +82,7 @@ const std::map<const nn_operation, const NN_OP_TYPE> HardwareLayer::OperationsMa
 {
     { INTEL_AFFINE, NN_AFFINE },
     { INTEL_AFFINE_DIAGONAL, NN_DIAG },
+    { INTEL_AFFINE_THRESHOLD, NN_AFFINE_TH },
     { INTEL_AFFINE_MULTIBIAS, NN_AFF_MB },
     { INTEL_CONVOLUTIONAL, NN_CNN },
     { GNA_LAYER_CNN_2D_ADDITION, NN_CNN2D_ADDITION },
@@ -111,6 +112,8 @@ std::unique_ptr<HardwareLayer> HardwareLayer::Create(const DescriptorParameters&
         return std::make_unique<HardwareLayerAffineMBias>(parameters);
     case NN_CNN2D_FUSED:
         return std::make_unique<HardwareLayerCnn2D>(parameters);
+    case NN_AFFINE_TH:
+        return std::make_unique<HardwareLayerAffineThreshold>(parameters);
     default:
         return std::make_unique<HardwareLayerAffDiagTrans>(parameters);
     }
@@ -428,6 +431,30 @@ HardwareLayerAffDiagTrans::HardwareLayerAffDiagTrans(const DescriptorParameters&
     }
     save();
     saveActivation(act);
+}
+
+HardwareLayerAffineThreshold::HardwareLayerAffineThreshold(const DescriptorParameters& parameters) :
+    HardwareLayerExt(parameters)
+{
+    const auto* thLayer = dynamic_cast<const AffineThresholdLayer*>(&SoftwareLayer);
+    Expect::NotNull(thLayer, Gna2StatusXnnErrorLyrOperation);
+
+    affine = thLayer->Transforms.Get<AffineFunction>(AffineTransform);
+    const ActivationFunction* act = thLayer->Transforms.Get<ActivationFunction>(ActivationTransform);
+
+    save();
+    saveActivation(act);
+    saveThreshold(thLayer->thresholdCondition, thLayer->thresholdMode, thLayer->thresholdMask);
+}
+
+void HardwareLayerAffineThreshold::saveThreshold(
+    const Gna2ThresholdCondition& condition,
+    const Gna2ThresholdMode& operationMode,
+    const Gna2ThresholdMask& interruptMask)
+{
+    XnnDescriptor[th_cond] = static_cast<uint8_t>(condition);
+    XnnDescriptor[th_op_mode] = static_cast<uint8_t>(operationMode);
+    XnnDescriptor[th_int_mask] = static_cast<uint8_t>(interruptMask);
 }
 
 HardwareLayerCopy::HardwareLayerCopy(const DescriptorParameters& parameters) :

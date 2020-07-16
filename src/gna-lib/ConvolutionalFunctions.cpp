@@ -70,27 +70,31 @@ FiltersTensor::FiltersTensor(const Shape& dimensions, const DataMode & dataMode,
 std::unique_ptr<const FiltersTensor> FiltersTensor::Create(const Gna2Tensor& filtersTensor, const LayerValidator& validatorIn)
 {
     std::unique_ptr<const FiltersTensor> filters;
-    const std::function<void()> command = [&]()
+    const std::function<void(const LayerValidator&)> buildWithValidator = [&](const auto& cnnValidator)
     {
+        filters = std::make_unique<const FiltersTensor>(
+            Shape::Create(filtersTensor.Shape, GNA_TENSOR_NHWD),
+            GetDataMode(filtersTensor),
+            filtersTensor.Data,
+            cnnValidator);
+    };
+    const std::function<void()> buildCommand = [&]()
+    {
+        if (validatorIn.HwCapabilities.GetDeviceGeneration() == GNA_3_5)
+        {
+            return buildWithValidator(validatorIn);
+        }
         try // 1D CNN in new arch
         {
             auto const validator1D = LayerValidator{ validatorIn, INTEL_CONVOLUTIONAL_1D };
-            filters = std::make_unique<const FiltersTensor>(
-                Shape::Create(filtersTensor.Shape, GNA_TENSOR_NHWD),
-                GetDataMode(filtersTensor),
-                filtersTensor.Data,
-                validator1D);
+            buildWithValidator(validator1D);
         }
         catch (const GnaException&) // try 2D CNN in new arch
         {
-            filters = std::make_unique<const FiltersTensor>(
-                Shape::Create(filtersTensor.Shape, GNA_TENSOR_NHWD),
-                GetDataMode(filtersTensor),
-                filtersTensor.Data,
-                validatorIn);
+            buildWithValidator(validatorIn);
         }
     };
-    ModelErrorHelper::ExecuteForModelItem(command, FilterOperandIndex);
+    ModelErrorHelper::ExecuteForModelItem(buildCommand, FilterOperandIndex);
     return filters;
 }
 

@@ -70,6 +70,9 @@ enum OperationInfoKey
     ParameterIndexBiasVectorIndex,
     ParameterIndexMaximumScore,
     ParameterIndexDelay,
+    ParameterIndexThresholdCondition,
+    ParameterIndexThresholdMode,
+    ParameterIndexThresholdMask,
 };
 
 class ModelWrapper

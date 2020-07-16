@@ -81,11 +81,11 @@ protected:
         return free(ptr);
     }
 
-    static void * PageAllocator(uint32_t size)
+    static void * AlignedAllocator(uint32_t size)
     {
         return _mm_malloc(size, PAGE_SIZE);
     }
-    static void PageFree(void * ptr)
+    static void AlignedFree(void * ptr)
     {
         return _mm_free(ptr);
     }

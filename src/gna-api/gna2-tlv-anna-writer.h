@@ -38,34 +38,18 @@
 
 #include "gna2-tlv-anna.h"
 
-#include "gna2-capability-api.h"
-
+#include <cstddef>
 #include <cstdint>
-#include <string>
 
-inline void Gna2TlvImplWriteType(char*&buffer, Gna2TlvType type)
-{
-    *((Gna2TlvType*)buffer) = type;
-    buffer += 4;
-}
-
-inline void Gna2TlvImplWriteLength(char*&buffer, uint32_t length)
-{
-    *reinterpret_cast<uint32_t*>(buffer) = length;
-    buffer += 4;
-}
-
-inline Gna2TlvStatus Gna2TlvImplComputePadSize(
+GNA2_TLV_LINKAGE Gna2TlvStatus Gna2TlvImplComputePadSize(
     uint32_t currentOffset,
     uint32_t alignment,
     uint32_t minPadSize,
     uint32_t * outPadSize)
 {
+    GNA2_TLV_EXPECT_NOT_NULL(outPadSize);
+
     const uint32_t const4k = 4096;
-    if (outPadSize == NULL)
-    {
-        return Gna2TlvStatusNullNotAllowed;
-    }
     if (alignment == 0 || alignment > const4k || minPadSize > const4k)
     {
         return Gna2TlvStatusNotSupported;
@@ -79,14 +63,14 @@ inline Gna2TlvStatus Gna2TlvImplComputePadSize(
     return Gna2TlvStatusSuccess;
 }
 
-inline Gna2TlvStatus Gna2TlvImplPad(char* buf, uint32_t paddingTlvLength)
+GNA2_TLV_LINKAGE Gna2TlvStatus Gna2TlvImplPad(char* buf, uint32_t paddingTlvLength)
 {
-    if (buf == NULL)
-    {
-        return Gna2TlvStatusNullNotAllowed;
-    }
-    Gna2TlvImplWriteType(buf, TlvTypePadding);
-    Gna2TlvImplWriteLength(buf, paddingTlvLength);
+    GNA2_TLV_EXPECT_NOT_NULL(buf);
+
+    const auto elem = reinterpret_cast<Gna2TlvRecord*>(buf);
+    elem->type = Gna2TlvTypePadding;
+    elem->length = paddingTlvLength;
+    buf += GNA2_TLV_EMPTY_RECORD_SIZE;
 
     for (uint32_t i = 0; i < paddingTlvLength; i++)
     {
@@ -96,7 +80,7 @@ inline Gna2TlvStatus Gna2TlvImplPad(char* buf, uint32_t paddingTlvLength)
     return Gna2TlvStatusSuccess;
 }
 
-inline void Gna2TlvImplCopy(char*& outBuf, const char * src, uint32_t srcLength)
+GNA2_TLV_LINKAGE void Gna2TlvImplCopy(char*& outBuf, const char * src, uint32_t srcLength)
 {
     while(srcLength--)
     {
@@ -104,99 +88,109 @@ inline void Gna2TlvImplCopy(char*& outBuf, const char * src, uint32_t srcLength)
     }
 }
 
-void Gna2TlvImplWrite4BSize(char*&buffer, Gna2TlvType type, uint32_t sizeAsValue)
+GNA2_TLV_LINKAGE void Gna2TlvImplWriteTypeLength(char*&buffer, Gna2TlvType type, Gna2TlvLength length)
 {
-    Gna2TlvImplWriteType(buffer, type);
-    Gna2TlvImplWriteLength(buffer, 4);
-    Gna2TlvImplWriteLength(buffer, sizeAsValue);
+    const auto element = reinterpret_cast<Gna2TlvRecord*>(buffer);
+    element->type = type;
+    element->length = length;
+    buffer += GNA2_TLV_EMPTY_RECORD_SIZE;
 }
 
-#define GNA_TLV_EXPECT_NOT_NULL(ptr) {if((ptr) == NULL) return Gna2TlvStatusNullNotAllowed;}
+GNA2_TLV_LINKAGE void Gna2TlvImplWrite4BSize(char*&buffer, Gna2TlvType type, uint32_t sizeAsValue)
+{
+    Gna2TlvImplWriteTypeLength(buffer, type, sizeof(uint32_t));
+    *reinterpret_cast<uint32_t*>(buffer) = sizeAsValue;
+    buffer += sizeof(uint32_t);
+}
 
-inline Gna2TlvStatus Gna2ExportAnnaTlv(
+GNA2_TLV_LINKAGE Gna2TlvStatus Gna2ExportAnnaTlv(
     Gna2TlvAllocator userAllocatorIn,   // [in] allocator from user (if called outTlv and outTlvSize are also written)
     char ** outTlv,                     // [out] address of serialized TLV
     uint32_t * outTlvSize,              // [out] size of serialized TLV
-    const char* lda,                    // [in] [required not null] layer descriptor array
-    uint32_t ldaSize,                   // [in] layer descriptor array size
+    const char* lda,                    // [in] [required not null] layer descriptor component, as exported with Gna2ModelExport() and Gna2ModelExportComponentLayerDescriptors
+    uint32_t ldaSize,                   // [in] layer descriptor size in bytes, as exported with Gna2ModelExport() and Gna2ModelExportComponentLayerDescriptors
     const char* ro,                     // [opt] read only model fragment
-    uint32_t roSize,                    // read only model part size
+    uint32_t roSize,                    // read only model part size, must be 0 if ro is NULL
     const char* state,                  // [opt] state model fragment
-    uint32_t stateSize,                 // state model fragment size
+    uint32_t stateSize,                 // state model fragment size, must be 0 if state is NULL
     uint32_t scratchSize,               // scratch model fragment size
     uint32_t externalInputSize,         // external input buffer size of model
     uint32_t externalOutputSize,        // external output buffer size of model
-    const char* userSignature,          // [opt] optional user content
-    uint32_t userSignatureSize          // user content size
+    const char* gnaLibraryVersion,      // [opt] GNA library's version c-string obtained with Gna2GetLibraryVersion(), if the model is exported using GNA library, can be NULL otherwise
+    const char* userData,               // [opt] optional user data
+    uint32_t userDataSize               // user data size, must be 0 if userData is NULL
 )
 {
-    char versionBuffer[32] = {};
-    const uint32_t const256MB = 1 << 28;
-    GNA_TLV_EXPECT_NOT_NULL(lda);
-    GNA_TLV_EXPECT_NOT_NULL(userAllocatorIn);
-    GNA_TLV_EXPECT_NOT_NULL(outTlv);
-    GNA_TLV_EXPECT_NOT_NULL(outTlvSize);
+    uint32_t gnaLibraryVersionLength = 0;
+    const uint32_t maxGnaLibraryVersionLength = 1024;
 
-    if (stateSize > 0)
+    if (gnaLibraryVersion != NULL)
     {
-        GNA_TLV_EXPECT_NOT_NULL(state);
-    }
-    if (roSize > 0)
-    {
-        GNA_TLV_EXPECT_NOT_NULL(ro);
-    }
-    if (userSignatureSize > 0)
-    {
-        GNA_TLV_EXPECT_NOT_NULL(userSignature);
+        while(gnaLibraryVersion[gnaLibraryVersionLength] != '\0' && gnaLibraryVersionLength < maxGnaLibraryVersionLength)
+        {
+            gnaLibraryVersionLength++;
+        }
+        gnaLibraryVersionLength++;  // count the terminating null-character
+        if(gnaLibraryVersionLength > maxGnaLibraryVersionLength)
+        {
+            return Gna2TlvStatusLengthTooBig;
+        }
     }
 
-    if (ldaSize > const256MB ||
-        roSize > const256MB||
-        stateSize > const256MB||
-        scratchSize > const256MB ||
-        externalInputSize > const256MB ||
-        userSignatureSize > const256MB)
-    {
-        return Gna2TlvStatusLengthTooBig;
-    }
+    GNA2_TLV_EXPECT_NOT_NULL(lda);
+    GNA2_TLV_EXPECT_NOT_NULL(userAllocatorIn);
+    GNA2_TLV_EXPECT_NOT_NULL(outTlv);
+    GNA2_TLV_EXPECT_NOT_NULL(outTlvSize);
 
-    const uint32_t numberOfRecordsBeforeLda = 4;
+    GNA2_TLV_EXPECT_NOT_NULL_IF_SIZE_NZ(stateSize, state);
+    GNA2_TLV_EXPECT_NOT_NULL_IF_SIZE_NZ(roSize, ro);
+    GNA2_TLV_EXPECT_NOT_NULL_IF_SIZE_NZ(userDataSize, userData);
+
+    GNA2_TLV_EXPECT_LENGTH_UP_TO_256MB(ldaSize);
+    GNA2_TLV_EXPECT_LENGTH_UP_TO_256MB(roSize);
+    GNA2_TLV_EXPECT_LENGTH_UP_TO_256MB(stateSize);
+    GNA2_TLV_EXPECT_LENGTH_UP_TO_256MB(scratchSize);
+    GNA2_TLV_EXPECT_LENGTH_UP_TO_256MB(externalInputSize);
+    GNA2_TLV_EXPECT_LENGTH_UP_TO_256MB(userDataSize);
+
+    const uint32_t numberOfRecordsBeforeLda = 5;
     uint32_t outPadSizeLda = 0;
-    const uint32_t sizeOfRecordsBeforeLda = numberOfRecordsBeforeLda * (TLV_EMPTY_RECORD_SIZE + sizeof(uint32_t));
-    Gna2TlvStatus status = Gna2TlvImplComputePadSize(sizeOfRecordsBeforeLda, TLV_ANNA_REQUIRED_ALIGNEMENT, TLV_EMPTY_RECORD_SIZE, &outPadSizeLda);
+    const uint32_t sizeOfRecordsBeforeLda = numberOfRecordsBeforeLda * (GNA2_TLV_EMPTY_RECORD_SIZE + sizeof(uint32_t));
+    Gna2TlvStatus status = Gna2TlvImplComputePadSize(sizeOfRecordsBeforeLda, GNA2_TLV_ANNA_REQUIRED_ALIGNEMENT, GNA2_TLV_EMPTY_RECORD_SIZE, &outPadSizeLda);
     if (status != Gna2TlvStatusSuccess)
     {
         return Gna2TlvStatusOutOfBuffer;
     }
-    const uint32_t sizeOfLdaRecord = ldaSize + roSize + TLV_EMPTY_RECORD_SIZE;
+    const uint32_t sizeOfLdaRecord = ldaSize + roSize + GNA2_TLV_EMPTY_RECORD_SIZE;
     const uint32_t sizeOfRecordsBeforeState = sizeOfLdaRecord + outPadSizeLda + sizeOfRecordsBeforeLda;
     uint32_t outPadSizeState = 0;
-    status = Gna2TlvImplComputePadSize(sizeOfRecordsBeforeState, TLV_ANNA_REQUIRED_ALIGNEMENT, TLV_EMPTY_RECORD_SIZE, &outPadSizeState);
+    status = Gna2TlvImplComputePadSize(sizeOfRecordsBeforeState, GNA2_TLV_ANNA_REQUIRED_ALIGNEMENT, GNA2_TLV_EMPTY_RECORD_SIZE, &outPadSizeState);
     if (status != Gna2TlvStatusSuccess)
     {
         return Gna2TlvStatusOutOfBuffer;
     }
 
-    const uint32_t totalSizeRequired = sizeOfRecordsBeforeState + outPadSizeState + stateSize + userSignatureSize +
-        3 * (TLV_EMPTY_RECORD_SIZE) + sizeof(versionBuffer);
+    const uint32_t totalSizeRequired = sizeOfRecordsBeforeState + outPadSizeState + stateSize + userDataSize +
+        3 * (GNA2_TLV_EMPTY_RECORD_SIZE) + gnaLibraryVersionLength;
 
     *outTlv = (char*)userAllocatorIn(totalSizeRequired);
     *outTlvSize = totalSizeRequired;
 
     if(*outTlv == NULL)
     {
-        return Gna2TlvUserAllocatorError;
+        return Gna2TlvStatusUserAllocatorError;
     }
     char* curOutBuffer = *outTlv;
 
-    Gna2TlvImplWrite4BSize(curOutBuffer, TlvTypeScratchSize, scratchSize);
-    Gna2TlvImplWrite4BSize(curOutBuffer, TlvTypeLayerDescriptorArraySize, ldaSize);
-    Gna2TlvImplWrite4BSize(curOutBuffer, TlvTypeExternalInputBufferSize, externalInputSize);
-    Gna2TlvImplWrite4BSize(curOutBuffer, TlvTypeExternalOutputBufferSize, externalOutputSize);
+    Gna2TlvImplWrite4BSize(curOutBuffer, Gna2TlvTypeTlvVersion, GNA2_TLV_VERSION);
+    Gna2TlvImplWrite4BSize(curOutBuffer, Gna2TlvTypeLayerDescriptorArraySize, ldaSize);
+    Gna2TlvImplWrite4BSize(curOutBuffer, Gna2TlvTypeScratchSize, scratchSize);
+    Gna2TlvImplWrite4BSize(curOutBuffer, Gna2TlvTypeExternalInputBufferSize, externalInputSize);
+    Gna2TlvImplWrite4BSize(curOutBuffer, Gna2TlvTypeExternalOutputBufferSize, externalOutputSize);
 
     if(outPadSizeLda != 0)
     {
-        Gna2TlvStatus status = Gna2TlvImplPad(curOutBuffer, outPadSizeLda - TLV_EMPTY_RECORD_SIZE);
+        const Gna2TlvStatus status = Gna2TlvImplPad(curOutBuffer, outPadSizeLda - GNA2_TLV_EMPTY_RECORD_SIZE);
         if(status != Gna2TlvStatusSuccess)
         {
             return Gna2TlvStatusOutOfBuffer;
@@ -204,14 +198,13 @@ inline Gna2TlvStatus Gna2ExportAnnaTlv(
         curOutBuffer += outPadSizeLda;
     }
 
-    Gna2TlvImplWriteType(curOutBuffer, TlvTypeLayerDescriptorAndRoArrayData);
-    Gna2TlvImplWriteLength(curOutBuffer, ldaSize + roSize);
+    Gna2TlvImplWriteTypeLength(curOutBuffer, Gna2TlvTypeLayerDescriptorAndRoArrayData, ldaSize + roSize);
     Gna2TlvImplCopy(curOutBuffer, lda, ldaSize);
     Gna2TlvImplCopy(curOutBuffer, ro, roSize);
 
     if (outPadSizeState != 0)
     {
-        Gna2TlvStatus status = Gna2TlvImplPad(curOutBuffer, outPadSizeState - TLV_EMPTY_RECORD_SIZE);
+        Gna2TlvStatus status = Gna2TlvImplPad(curOutBuffer, outPadSizeState - GNA2_TLV_EMPTY_RECORD_SIZE);
         if (status != Gna2TlvStatusSuccess)
         {
             return Gna2TlvStatusOutOfBuffer;
@@ -219,21 +212,16 @@ inline Gna2TlvStatus Gna2ExportAnnaTlv(
         curOutBuffer += outPadSizeState;
     }
 
-    Gna2TlvImplWriteType(curOutBuffer, TlvTypeStateData);
-    Gna2TlvImplWriteLength(curOutBuffer, stateSize);
+    Gna2TlvImplWriteTypeLength(curOutBuffer, Gna2TlvTypeStateData, stateSize);
     Gna2TlvImplCopy(curOutBuffer, state, stateSize);
 
-    Gna2TlvImplWriteType(curOutBuffer, TlvTypeUserSignatureData);
-    Gna2TlvImplWriteLength(curOutBuffer, userSignatureSize);
-    Gna2TlvImplCopy(curOutBuffer, userSignature, userSignatureSize);
+    Gna2TlvImplWriteTypeLength(curOutBuffer, Gna2TlvTypeGnaLibraryVersionString, gnaLibraryVersionLength);
+    Gna2TlvImplCopy(curOutBuffer, gnaLibraryVersion, gnaLibraryVersionLength);
 
-    Gna2GetLibraryVersion(versionBuffer, sizeof(versionBuffer));
+    Gna2TlvImplWriteTypeLength(curOutBuffer, Gna2TlvTypeUserData, userDataSize);
+    Gna2TlvImplCopy(curOutBuffer, userData, userDataSize);
 
-    Gna2TlvImplWriteType(curOutBuffer, TlvTypeUserSignatureData);
-    Gna2TlvImplWriteLength(curOutBuffer, sizeof(versionBuffer));
-    Gna2TlvImplCopy(curOutBuffer, versionBuffer, sizeof(versionBuffer));
-
-    if(curOutBuffer - *outTlv != totalSizeRequired)
+    if(curOutBuffer != *outTlv + totalSizeRequired)
     {
         return Gna2TlvStatusUnknownError;
     }

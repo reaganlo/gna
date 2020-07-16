@@ -51,7 +51,7 @@ typedef enum Gna2DeviceVersion DeviceVersion;
  Usually it will be the latest existing GNA device (excluding embedded)
  on the time of publishing the library, value may change with new release.
  */
-#define GNA2_DEFAULT_DEVICE_VERSION Gna2DeviceVersion3_0
+#define GNA2_DEFAULT_DEVICE_VERSION Gna2DeviceVersion3_5
 
 DeviceVersion const DefaultDeviceVersion = GNA2_DEFAULT_DEVICE_VERSION;
 

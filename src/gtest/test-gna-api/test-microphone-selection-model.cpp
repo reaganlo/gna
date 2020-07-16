@@ -29,6 +29,7 @@
 
 #include "HardwareModelNoMMU.h"
 
+#include "gna2-capability-api.h"
 #include "gna2-model-export-api.h"
 
 #include "gna2-tlv-anna-writer.h"
@@ -51,7 +52,6 @@ public:
 
     Gna2Operation operation = {};
 
-    Gna2Operation operationArray[5] = {};
     Gna2BiasMode biasMode = Gna2BiasModeGrouping;
     uint32_t selectedMicrophone = 1;
 
@@ -70,51 +70,89 @@ public:
 
     const uint32_t expectedLdaSize = sizeof(expectedLda);
 
-    static void GnaAllocAndTag(void* & gnaMemoryOut, const uint32_t memorySize, const uint32_t memoryTag)
+    void GnaAllocAndTag(void* & gnaMemoryOut, const uint32_t memorySize, const uint32_t memoryTag)
     {
         uint32_t granted = 0;
         ASSERT_EQ(Gna2StatusSuccess, Gna2MemoryAlloc(memorySize, &granted, &gnaMemoryOut));
         ASSERT_EQ(granted, memorySize);
         ASSERT_NE(gnaMemoryOut, nullptr);
         ASSERT_EQ(Gna2StatusSuccess, Gna2MemorySetTag(gnaMemoryOut, memoryTag));
+        gnaMems.push_back(gnaMemoryOut);
     }
 
+    void GnaFreeAll()
+    {
+        for(auto m: gnaMems)
+        {
+            ASSERT_EQ(Gna2StatusSuccess, Gna2MemoryFree(m));
+        }
+        gnaMems.clear();
+    }
     void exportForAnna(bool outAsExternal = false, bool inputAlsoFromExternal = false, uint32_t inputExternalOffset = 0);
-
+private:
+    std::vector<void* > gnaMems;
 };
 
 
 void TestTlvReader(const char* tlvBlob, uint32_t tlvSize, bool outAsExternal, std::string userSignature)
 {
+    EXPECT_EQ(Gna2TlvStatusSuccess, Gna2TlvVerifyVersionAndCohesion(tlvBlob, tlvSize));
+    EXPECT_EQ(Gna2TlvStatusVersionNotFound, Gna2TlvVerifyVersionAndCohesion(tlvBlob+12, tlvSize-12));
+    EXPECT_EQ(Gna2TlvStatusTlvReadError, Gna2TlvVerifyVersionAndCohesion(tlvBlob, tlvSize-1));
+    EXPECT_EQ(Gna2TlvStatusTlvReadError, Gna2TlvVerifyVersionAndCohesion(tlvBlob, tlvSize+1));
+    EXPECT_EQ(Gna2TlvStatusTlvReadError, Gna2TlvVerifyVersionAndCohesion(tlvBlob+1, tlvSize-1));
+
+    void * value = nullptr;
+    uint32_t valueLength = 0;
+    EXPECT_EQ(Gna2TlvStatusNotFound, Gna2TlvFindInArray(tlvBlob, tlvSize, 0x01010101, &valueLength, &value));
+
     std::vector<Gna2TlvType> TlvTypes =
     {
-        TlvTypeLayerDescriptorArraySize,
-        TlvTypeLayerDescriptorAndRoArrayData,
-        TlvTypeStateData,
-        TlvTypeScratchSize,
-        TlvTypeExternalInputBufferSize,
-        TlvTypeExternalOutputBufferSize,
-        TlvTypeUserSignatureData,
-   };
+        Gna2TlvTypeLayerDescriptorArraySize,
+        Gna2TlvTypeLayerDescriptorAndRoArrayData,
+        Gna2TlvTypeStateData,
+        Gna2TlvTypeScratchSize,
+        Gna2TlvTypeExternalInputBufferSize,
+        Gna2TlvTypeExternalOutputBufferSize,
+        Gna2TlvTypeUserData,
+        Gna2TlvTypeTlvVersion,
+        Gna2TlvTypeGnaLibraryVersionString,
+    };
 
     for(auto type: TlvTypes)
     {
-        void * value = nullptr;
-        uint32_t valueSize = 0;;
-        const auto tlvStatus = Gna2TlvFindInArray(tlvBlob, tlvSize, type, &valueSize, &value);
+        value = nullptr;
+        valueLength = 0;
+        const auto tlvStatus = Gna2TlvFindInArray(tlvBlob, tlvSize, type, &valueLength, &value);
         EXPECT_EQ(tlvStatus, Gna2TlvStatusSuccess);
-        if(type == TlvTypeLayerDescriptorAndRoArrayData ||
-            type == TlvTypeStateData)
+        if(type == Gna2TlvTypeLayerDescriptorAndRoArrayData ||
+            type == Gna2TlvTypeStateData)
         {
-            EXPECT_TRUE((((char*)value) - tlvBlob) % TLV_ANNA_REQUIRED_ALIGNEMENT == 0);
+            EXPECT_TRUE((((char*)value) - tlvBlob) % GNA2_TLV_ANNA_REQUIRED_ALIGNEMENT == 0);
         }
-        if(type == TlvTypeUserSignatureData)
+        if(type == Gna2TlvTypeUserData)
         {
             EXPECT_TRUE(userSignature == ((char*)value));
         }
-        if (!outAsExternal)
+        if (!outAsExternal || type != Gna2TlvTypeStateData)
         {
-            EXPECT_NE(valueSize, 0);
+            EXPECT_NE(valueLength, 0);
+        }
+        if (outAsExternal && type == Gna2TlvTypeStateData)
+        {
+            EXPECT_EQ(valueLength, 0);
+        }
+        if(type == Gna2TlvTypeGnaLibraryVersionString)
+        {
+            char buffer[1024] = {};
+            EXPECT_EQ(Gna2TlvStatusSuccess, Gna2GetLibraryVersion(buffer, sizeof(buffer)));
+            EXPECT_EQ(std::string(buffer).size() + 1, (size_t)valueLength);
+            EXPECT_EQ(std::string(buffer), std::string(((char*)value)));
+        }
+        if(type == Gna2TlvTypeTlvVersion)
+        {
+            EXPECT_EQ(GNA2_TLV_VERSION, 1);
+            EXPECT_EQ(*(uint32_t*)value, GNA2_TLV_VERSION);
         }
         EXPECT_NE(value, (void*)NULL);
     }
@@ -170,13 +208,13 @@ void TestMicrophoneSelectionModel::exportForAnna(bool outAsExternal, bool inputA
     biasOperand.Mode = Gna2TensorModeExternalBuffer;
     auto pwlOperand = Gna2TensorInit1D(conversionPwl.size(), Gna2DataTypePwlSegment, gnaMemoryPwl);
 
-    ASSERT_EQ(Gna2StatusSuccess, Gna2OperationInitFullyConnectedBiasGrouping(&operation, PageAllocator,
+    ASSERT_EQ(Gna2StatusSuccess, Gna2OperationInitFullyConnectedBiasGrouping(&operation, AlignedAllocator,
         &inputOperand, &outputOperand, &weightOperand, &biasOperand, &pwlOperand, nullptr,
         &biasMode, &selectedMicrophone));
     uint32_t modelId = 0;
     ASSERT_EQ(Gna2StatusSuccess, Gna2ModelCreate(DeviceIndex, &model, &modelId));
     uint32_t exportConfigId = 0;
-    ASSERT_EQ(Gna2StatusSuccess, Gna2ModelExportConfigCreate(PageAllocator, &exportConfigId));
+    ASSERT_EQ(Gna2StatusSuccess, Gna2ModelExportConfigCreate(AlignedAllocator, &exportConfigId));
     ASSERT_EQ(Gna2StatusSuccess, Gna2ModelExportConfigSetSource(exportConfigId, DeviceIndex, modelId));
     ASSERT_EQ(Gna2StatusSuccess, Gna2ModelExportConfigSetTarget(exportConfigId, Gna2DeviceVersionEmbedded3_1));
     void * exportBufferLda;
@@ -229,7 +267,8 @@ void TestMicrophoneSelectionModel::exportForAnna(bool outAsExternal, bool inputA
         Gna2ModelExportComponentOutputDump,
         &exportBufferOut, &exportBufferOutSize));
 
-
+    char gnaLibraryVersionCString[32] = "UNKNOWN";
+    ASSERT_EQ(Gna2StatusSuccess, Gna2GetLibraryVersion(gnaLibraryVersionCString, sizeof(gnaLibraryVersionCString)));
     char *outTlvVector = nullptr;
     uint32_t outTlvSize = 0;
     const char userSignature[] = "ANNA Microphone Selection Model";
@@ -243,6 +282,7 @@ void TestMicrophoneSelectionModel::exportForAnna(bool outAsExternal, bool inputA
         exportBufferSizeScratch,
         exportBufferExInSize,
         exportBufferExOutSize,
+        gnaLibraryVersionCString,
         userSignature, sizeof(userSignature)
     );
     EXPECT_EQ(Gna2TlvStatusSuccess, tlvStatus);
@@ -250,12 +290,12 @@ void TestMicrophoneSelectionModel::exportForAnna(bool outAsExternal, bool inputA
     TestTlvReader(outTlvVector, outTlvSize, outAsExternal, userSignature);
 
     Free(outTlvVector);
-    PageFree(exportBufferExOut);
-    PageFree(exportBufferExIn);
-    PageFree(exportBufferScratch);
-    PageFree(exportBufferState);
-    PageFree(exportBufferRO);
-    PageFree(exportBufferLda);
+    AlignedFree(exportBufferExOut);
+    AlignedFree(exportBufferExIn);
+    AlignedFree(exportBufferScratch);
+    AlignedFree(exportBufferState);
+    AlignedFree(exportBufferRO);
+    AlignedFree(exportBufferLda);
 }
 
 TEST_F(TestMicrophoneSelectionModel, exportForAnnaDefault)
@@ -284,6 +324,8 @@ TEST_F(TestMicrophoneSelectionModel, exportForAnnaOutInAsExternal)
 }
 class TestCopyExportModel : public TestMicrophoneSelectionModel
 {
+    Gna2Operation operationArray[5] = {};
+
     uint8_t expectedLda[128 * 5] = {
     0x12, 0xc8, 0x00, 0x04, 0x00, 0x02, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
     0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -328,7 +370,10 @@ class TestCopyExportModel : public TestMicrophoneSelectionModel
     };
 
 public:
-    void run()
+    void run(
+        Gna2ThresholdCondition *thresholdCondition = nullptr,
+        Gna2ThresholdMode *thresholdMode = nullptr,
+        Gna2ThresholdMask *thresholdMask = nullptr)
     {
         void * gnaMemoryOutput = nullptr;
         void * gnaMemoryExtra = nullptr;
@@ -345,13 +390,13 @@ public:
         inputOperand.Mode = Gna2TensorModeExternalBuffer;
         outputOperand.Mode = Gna2TensorModeExternalBuffer;
         copyShape = Gna2ShapeInit2D(inputGroups, numberOfElementsFromMic / 4);
-        ASSERT_EQ(Gna2StatusSuccess, Gna2OperationInitCopy(operationArray, PageAllocator,
+        ASSERT_EQ(Gna2StatusSuccess, Gna2OperationInitCopy(operationArray, AlignedAllocator,
             &inputOperand, &outputOperand, &copyShape));
-        ASSERT_EQ(Gna2StatusSuccess, Gna2OperationInitCopy(operationArray+1, PageAllocator,
+        ASSERT_EQ(Gna2StatusSuccess, Gna2OperationInitCopy(operationArray+1, AlignedAllocator,
             &inputNormal, &outputOperand, &copyShape));
-        ASSERT_EQ(Gna2StatusSuccess, Gna2OperationInitCopy(operationArray+2, PageAllocator,
+        ASSERT_EQ(Gna2StatusSuccess, Gna2OperationInitCopy(operationArray+2, AlignedAllocator,
             &inputOperand, &outputNormal, &copyShape));
-        ASSERT_EQ(Gna2StatusSuccess, Gna2OperationInitCopy(operationArray+3, PageAllocator,
+        ASSERT_EQ(Gna2StatusSuccess, Gna2OperationInitCopy(operationArray+3, AlignedAllocator,
             &inputNormal, &outputNormal, &copyShape));
         uint8_t* ptr = (uint8_t*)gnaMemoryExtraRO + 128;
         auto inputAffineOperand = Gna2TensorInit2D(8, 6, Gna2DataTypeInt16, (uint8_t*)gnaMemoryExtra+256);
@@ -359,18 +404,29 @@ public:
         auto weightAffineOperand = Gna2TensorInit2D(3, 8, Gna2DataTypeInt16, ptr+256*2);
         auto biasAffineOperand = Gna2TensorInit1D(3, Gna2DataTypeInt32, ptr+256*3);
         auto pwlAffineOperand = Gna2TensorInit1D(11, Gna2DataTypePwlSegment, ptr+256*4);
-        ASSERT_EQ(Gna2StatusSuccess, Gna2OperationInitFullyConnectedAffine(operationArray + 4, PageAllocator,
+        ASSERT_EQ(Gna2StatusSuccess, Gna2OperationInitFullyConnectedAffine(operationArray + 4, AlignedAllocator,
             &inputAffineOperand,
             &outputAffineOperand,
             &weightAffineOperand,
             &biasAffineOperand,
             &pwlAffineOperand));
+        if (thresholdCondition || thresholdMode || thresholdMask)
+        {
+            AlignedFree(operationArray[4].Parameters);
+            operationArray[4].Parameters = static_cast<void **>(AlignedAllocator(sizeof(void*[3])));
+            operationArray[4].Parameters[0] = thresholdCondition;
+            operationArray[4].Parameters[1] = thresholdMode;
+            operationArray[4].Parameters[2] = thresholdMask;
+            operationArray[4].NumberOfParameters = 3;
+            operationArray[4].NumberOfOperands = 5;
+            operationArray[4].Type = Gna2OperationTypeThreshold;
+        }
         uint32_t modelId = 0;
         model.Operations = operationArray;
         model.NumberOfOperations = 5;
         ASSERT_EQ(Gna2StatusSuccess, Gna2ModelCreate(DeviceIndex, &model, &modelId));
         uint32_t exportConfigId = 0;
-        ASSERT_EQ(Gna2StatusSuccess, Gna2ModelExportConfigCreate(PageAllocator, &exportConfigId));
+        ASSERT_EQ(Gna2StatusSuccess, Gna2ModelExportConfigCreate(AlignedAllocator, &exportConfigId));
         ASSERT_EQ(Gna2StatusSuccess, Gna2ModelExportConfigSetSource(exportConfigId, DeviceIndex, modelId));
         ASSERT_EQ(Gna2StatusSuccess, Gna2ModelExportConfigSetTarget(exportConfigId, Gna2DeviceVersionEmbedded3_1));
         void * exportBufferLda;
@@ -380,6 +436,34 @@ public:
             &exportBufferLda, &exportBufferSizeLda));
 
         ExpectMemEqual(static_cast<uint8_t*>(exportBufferLda), exportBufferSizeLda, expectedLda, sizeof(expectedLda));
+        GnaFreeAll();
+        for(auto& layer: operationArray)
+        {
+            if(layer.Operands!=nullptr)
+            {
+                AlignedFree(layer.Operands);
+            }
+            if(layer.Parameters!=nullptr)
+            {
+                AlignedFree(layer.Parameters);
+            }
+            layer = {};
+        }
+    }
+
+    void PatchRunRestore(Gna2ThresholdCondition condition, Gna2ThresholdMode operationMode, Gna2ThresholdMask interruptMask)
+    {
+        const uint8_t AFFINE_TH_NNOP = 0x03;
+        const int NNOP_OFFSET = 128 * 4;
+        const int NNFLAGSEXT_OFFSET = NNOP_OFFSET + 0xB;
+        const uint8_t LDA_0xB_Mask = ((condition << 3) + (operationMode << 1) + interruptMask) << 4;
+        const auto temp_nnop = expectedLda[NNOP_OFFSET];
+        expectedLda[NNOP_OFFSET] = AFFINE_TH_NNOP;
+        const auto temp_nnflagsext = expectedLda[NNFLAGSEXT_OFFSET];
+        expectedLda[NNFLAGSEXT_OFFSET] |= LDA_0xB_Mask;
+        run(&condition, &operationMode, &interruptMask);
+        expectedLda[NNOP_OFFSET] = temp_nnop;
+        expectedLda[NNFLAGSEXT_OFFSET] = temp_nnflagsext;
     }
 
     Gna2Shape copyShape = {};
@@ -388,4 +472,60 @@ public:
 TEST_F(TestCopyExportModel, simpleCopy)
 {
     run();
+}
+
+TEST_F(TestCopyExportModel, simpleThreshold)
+{
+    for (auto condition : std::set<Gna2ThresholdCondition>{
+        Gna2ThresholdConditionScoreNegative,
+        Gna2ThresholdConditionScoreNotNegative })
+    {
+        for (auto mode : std::set<Gna2ThresholdMode>{
+            Gna2ThresholdModeContinueNever,
+            Gna2ThresholdModeContinueOnThresholdMet,
+            Gna2ThresholdModeContinueOnThresholdNotMet,
+            Gna2ThresholdModeContinueAlways })
+        {
+            for (auto mask : std::set<Gna2ThresholdMask>{
+                Gna2ThresholdMaskInterruptSend,
+                Gna2ThresholdMaskInterruptNotSend })
+            {
+                PatchRunRestore(condition, mode, mask);
+            }
+        }
+    }
+}
+
+TEST_F(TestGnaApi, Gna2TlvVerifyVersionAndCohesion_Success)
+{
+    EXPECT_EQ(Gna2TlvStatusSuccess, Gna2TlvVerifyVersionAndCohesion("TLVV\4\0\0\0\1\0\0\0", 12));
+}
+
+TEST_F(TestGnaApi, Gna2TlvVerifyVersionAndCohesion_VersionNotSupported)
+{
+    EXPECT_EQ(Gna2TlvStatusVersionNotSupported, Gna2TlvVerifyVersionAndCohesion("TLVV\3\0\0\0\1\0\0\0", 11));
+    EXPECT_EQ(Gna2TlvStatusVersionNotSupported, Gna2TlvVerifyVersionAndCohesion("TLVV\4\0\0\0\2\0\0\0", 12));
+    EXPECT_EQ(Gna2TlvStatusVersionNotSupported, Gna2TlvVerifyVersionAndCohesion("TLVV\10\0\0\0\2\0\0\0\0\0\0\0", 16));
+}
+extern "C" int tlv_test_c_failed(const char*, unsigned);
+TEST_F(TestGnaApi, Gna2Tlv_tlv_test_c_failed)
+{
+    EXPECT_EQ(0, tlv_test_c_failed("TLVV\4\0\0\0\1\0\0\0", 12));
+}
+
+TEST_F(TestGnaApi, Gna2Tlv_tlv_test_c_1)
+{
+    EXPECT_EQ(1, tlv_test_c_failed("TLVV\4\0\0\0\1\0\0\0", 11));
+    EXPECT_EQ(1, tlv_test_c_failed("TLVv\4\0\0\0\1\0\0\0", 12));
+    EXPECT_EQ(1, tlv_test_c_failed("TLVV\5\0\0\0\1\0\0\0", 12));
+}
+
+TEST_F(TestGnaApi, Gna2Tlv_tlv_test_c_2)
+{
+    EXPECT_EQ(2, tlv_test_c_failed("TLVV\10\0\0\0\1\0\0\0\0\0\0\0", 16));
+}
+
+TEST_F(TestGnaApi, Gna2Tlv_tlv_test_c_3)
+{
+    EXPECT_EQ(3, tlv_test_c_failed("TLVV\4\0\0\0\2\0\0\0", 12));
 }

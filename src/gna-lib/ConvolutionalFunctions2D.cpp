@@ -120,28 +120,30 @@ std::unique_ptr<const BiasTensor> ConvolutionFunction2D::CreateBiasTensor(
 {
     Shape biasDims = CalculateBiasShape(biasMode, filtersCount, outputShape);
     // TODO:3: assert calculated bias shape matches one in apiTensor if provided by user (API2)
-    try
+    const std::function<std::unique_ptr<const BiasTensor>(const LayerValidator&)> buildWithValidator = [&](const auto& cnnValidator)
     {
-         // try 2D CNN in new arch
-        auto const validator1D = LayerValidator{ validatorIn, INTEL_CONVOLUTIONAL_1D };
         return std::make_unique<const BiasTensor>(
             biasDims,
             0,
             DataMode{ apiTensor.Type, apiTensor.Mode },
             apiTensor.Data,
-            validator1D,
+            cnnValidator,
             biasMode);
+    };
+    //TODO: 3: refactor
+    if(validatorIn.HwCapabilities.GetDeviceGeneration() == GNA_3_5)
+    {
+        return buildWithValidator(validatorIn);
+    }
+    try
+    {
+         // try new CNN using 1D variant
+        auto const validator1D = LayerValidator{ validatorIn, INTEL_CONVOLUTIONAL_1D };
+        return buildWithValidator(validator1D);
     }
     catch (const GnaException&)
     {
-        // 2D CNN in new arch
-        return std::make_unique<const BiasTensor>(
-            biasDims,
-            0,
-            DataMode{ apiTensor.Type, apiTensor.Mode },
-            apiTensor.Data,
-            validatorIn,
-            biasMode);
+        return buildWithValidator(validatorIn);
     }
 }
 

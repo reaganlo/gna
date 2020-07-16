@@ -541,6 +541,29 @@ enum Gna2OperationType
 
     /**
     Control-flow operation with threshold parameter.
+
+    Can be used only for embedded model export for devices where Autonomous Extension (AE) is present,
+    e.g., when using device version: Gna2DeviceVersionEmbedded3_1.
+
+    Operands:
+        + 0: inputs [required]:
+           @see ::Gna2OperationTypeFullyConnectedAffine inputs operand.
+        + 1: outputs [required]:
+           @see ::Gna2OperationTypeFullyConnectedAffine outputs operand.
+        + 2: weights [required]:
+           @see ::Gna2OperationTypeFullyConnectedAffine weights operand.
+        + 3: biases [required]:
+            @see ::Gna2OperationTypeFullyConnectedAffine biases for ::Gna2BiasModeDefault
+        + 4: activationFunction [optional]:
+            - @see ::Gna2OperationTypeConvolution activationFunction operand
+
+    Parameters:
+        + 0: Gna2ThresholdCondition thresholdCondition [required]:
+            Describes the conditions for reaching the threshold.
+        + 1: Gna2ThresholdMode thresholdMode [required]:
+            Describes the AE behavior depending on the threshold reached.
+        + 2: Gna2ThresholdMask thresholdInterruptMask [required]:
+            Describes how AE handles interrupts.
     */
     Gna2OperationTypeThreshold = 8,
 };
@@ -1006,6 +1029,33 @@ struct Gna2PwlSegment
 };
 
 static_assert(8 == sizeof(Gna2PwlSegment), "Invalid size of Gna2PwlSegment");
+
+enum Gna2ThresholdCondition
+{
+    Gna2ThresholdConditionScoreNegative = 0,
+    Gna2ThresholdConditionScoreNotNegative = 1,
+};
+
+static_assert(4 == sizeof(Gna2ThresholdCondition), "Invalid size of Gna2ThresholdCondition");
+
+enum Gna2ThresholdMode
+{
+    Gna2ThresholdModeContinueNever = 0,
+    Gna2ThresholdModeContinueOnThresholdMet = 1,
+    Gna2ThresholdModeContinueOnThresholdNotMet = 2,
+    Gna2ThresholdModeContinueAlways = 3,
+};
+
+static_assert(4 == sizeof(Gna2ThresholdMode), "Invalid size of Gna2ThresholdMode");
+
+enum Gna2ThresholdMask
+{
+    Gna2ThresholdMaskDefault = 0,
+    Gna2ThresholdMaskInterruptSend = 0,
+    Gna2ThresholdMaskInterruptNotSend = 1,
+};
+
+static_assert(4 == sizeof(Gna2ThresholdMask), "Invalid size of Gna2ThresholdMask");
 
 /**************************************************************************//**
  @}

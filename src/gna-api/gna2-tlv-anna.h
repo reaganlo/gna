@@ -36,40 +36,68 @@
 #ifndef __GNA2_TLV_ANNA_H
 #define __GNA2_TLV_ANNA_H
 
+#include <assert.h>
 #include <stdbool.h>
+#include <stdint.h>
 
+// TODO: 3: consider removing typedefs
 typedef uint32_t Gna2TlvType;
-typedef const Gna2TlvType Gna2TlvTypeC;
 typedef uint32_t Gna2TlvLength;
 
-#define TLV_IMPL_CHAR_TO_TYPE(NAME) (*((Gna2TlvTypeC*)NAME))
+typedef struct
+{
+    Gna2TlvType type;
+    Gna2TlvLength length;
+    char value[];
+} Gna2TlvRecord;
 
-static Gna2TlvTypeC TlvTypeLayerDescriptorArraySize = TLV_IMPL_CHAR_TO_TYPE("LDAS");
-static Gna2TlvTypeC TlvTypeLayerDescriptorAndRoArrayData = TLV_IMPL_CHAR_TO_TYPE("L&RD");
-static Gna2TlvTypeC TlvTypeStateData = TLV_IMPL_CHAR_TO_TYPE("STTD");
-static Gna2TlvTypeC TlvTypeScratchSize = TLV_IMPL_CHAR_TO_TYPE("SCRS");
-static Gna2TlvTypeC TlvTypePadding = TLV_IMPL_CHAR_TO_TYPE("PAD\0");
-static Gna2TlvTypeC TlvTypeExternalInputBufferSize = TLV_IMPL_CHAR_TO_TYPE("ExIS");
-static Gna2TlvTypeC TlvTypeExternalOutputBufferSize = TLV_IMPL_CHAR_TO_TYPE("ExOS");
+#define GNA2_TLV_LINKAGE static
 
-static Gna2TlvTypeC TlvTypeUserSignatureData = TLV_IMPL_CHAR_TO_TYPE("USRD");
+static_assert(sizeof(Gna2TlvRecord) == 8, "Wrong size of Gna2TlvRecord");
 
-#define TLV_ANNA_REQUIRED_ALIGNEMENT 64
-#define TLV_EMPTY_RECORD_SIZE (sizeof(Gna2TlvLength) + sizeof(Gna2TlvType))
+#define GNA2_TLV_IMPL_CHAR_TO_TYPE(CSTR) (*((const Gna2TlvType*)CSTR))
 
+#define Gna2TlvTypeLayerDescriptorArraySize GNA2_TLV_IMPL_CHAR_TO_TYPE("LDAS")
+#define Gna2TlvTypeLayerDescriptorAndRoArrayData GNA2_TLV_IMPL_CHAR_TO_TYPE("L&RD")
+#define Gna2TlvTypeStateData GNA2_TLV_IMPL_CHAR_TO_TYPE("STTD")
+#define Gna2TlvTypeScratchSize GNA2_TLV_IMPL_CHAR_TO_TYPE("SCRS")
+#define Gna2TlvTypePadding GNA2_TLV_IMPL_CHAR_TO_TYPE("PAD\0")
+#define Gna2TlvTypeExternalInputBufferSize GNA2_TLV_IMPL_CHAR_TO_TYPE("ExIS")
+#define Gna2TlvTypeExternalOutputBufferSize GNA2_TLV_IMPL_CHAR_TO_TYPE("ExOS")
 
+#define Gna2TlvTypeUserData GNA2_TLV_IMPL_CHAR_TO_TYPE("USRD")
+#define Gna2TlvTypeGnaLibraryVersionString GNA2_TLV_IMPL_CHAR_TO_TYPE("GNAV")
+#define Gna2TlvTypeTlvVersion GNA2_TLV_IMPL_CHAR_TO_TYPE("TLVV")
+
+#define GNA2_TLV_ANNA_REQUIRED_ALIGNEMENT 64
+#define GNA2_TLV_LENGTH_SIZE sizeof(Gna2TlvLength)
+#define GNA2_TLV_EMPTY_RECORD_SIZE (GNA2_TLV_LENGTH_SIZE + sizeof(Gna2TlvType))
+#define GNA2_TLV_VERSION 1
+#define GNA2_TLV_VERSION_VALUE_LENGTH sizeof(uint32_t)
+#define GNA2_TLV_VERSION_RECORD_SIZE (GNA2_TLV_EMPTY_RECORD_SIZE + GNA2_TLV_VERSION_VALUE_LENGTH)
+
+// TODO: 3: consider removing typedefs
 typedef int32_t Gna2TlvStatus;
 
-static const int32_t Gna2TlvStatusSuccess = 0;
-static const int32_t Gna2TlvStatusUnknownError = 0x1;
-static const int32_t Gna2TlvStatusNotFound = 0x10;
-static const int32_t Gna2TlvStatusNullNotAllowed = 0x20;
-static const int32_t Gna2TlvStatusOutOfBuffer = 0x40;
-static const int32_t Gna2TlvStatusNotSupported = 0x80;
-static const int32_t Gna2TlvStatusLengthTooBig = 0x100;
-static const int32_t Gna2TlvUserAllocatorError = 0x200;
+#define Gna2TlvStatusSuccess 0
+#define Gna2TlvStatusUnknownError 0x1
+#define Gna2TlvStatusNotFound 0x10
+#define Gna2TlvStatusNullNotAllowed 0x20
+#define Gna2TlvStatusOutOfBuffer 0x40
+#define Gna2TlvStatusNotSupported 0x80
+#define Gna2TlvStatusLengthTooBig 0x100
+#define Gna2TlvStatusLengthOver256MB 0x101
+#define Gna2TlvStatusUserAllocatorError 0x200
+#define Gna2TlvStatusTlvReadError 0x300
+#define Gna2TlvStatusSecondaryVersionFound 0x301
+#define Gna2TlvStatusVersionNotFound 0x302
+#define Gna2TlvStatusVersionNotSupported 0x303
 
 typedef void* Gna2TlvAllocator(uint32_t);
+
+#define GNA2_TLV_EXPECT_NOT_NULL(ADDRESS) {if((ADDRESS) == NULL) return Gna2TlvStatusNullNotAllowed;}
+#define GNA2_TLV_EXPECT_NOT_NULL_IF_SIZE_NZ(DATASIZE, ADDRESS) {if((DATASIZE) != 0) GNA2_TLV_EXPECT_NOT_NULL(ADDRESS)}
+#define GNA2_TLV_EXPECT_LENGTH_UP_TO_256MB(LENGTH) {if((LENGTH) > (1 << 28)) return Gna2TlvStatusLengthOver256MB;}
 
 #endif // __GNA2_TLV_ANNA_H
 

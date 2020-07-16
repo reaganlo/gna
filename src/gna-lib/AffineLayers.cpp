@@ -107,6 +107,16 @@ AffineLayer::AffineLayer(const Gna2Operation& operation, const BaseValidator& va
     }
 }
 
+AffineThresholdLayer::AffineThresholdLayer(const Gna2Operation& operation, const BaseValidator& validatorIn) :
+    AffineLayer(operation, validatorIn),
+    thresholdCondition{ModelWrapper::GetParameter<Gna2ThresholdCondition>(operation, ThresholdConditionParamIndex)},
+    thresholdMode{ModelWrapper::GetParameter<Gna2ThresholdMode>(operation, ThresholdModeParamIndex)},
+    thresholdMask{ModelWrapper::GetParameter<Gna2ThresholdMask>(operation, ThresholdMaskParamIndex)}
+{
+    // TODO: 3: remove when the final value for Operation is assigned by AbstractOperation::toLegacy()
+    const_cast<nn_operation&>(Operation) = INTEL_AFFINE_THRESHOLD;
+}
+
 Tensor const & AffineBaseLayer::GetOperand(uint32_t operandIndex) const
 {
     // TODO:3:replace with generic solution when all layers are transforms

@@ -107,6 +107,7 @@ kernel_op OperationConfig::GetKernelOperation() const
     case Gna2OperationTypeElementWiseAffine:
         return KERNEL_AFFINE_DIAGONAL;
     case Gna2OperationTypeFullyConnectedAffine:
+    case Gna2OperationTypeThreshold:        // TODO: 3: Introduce separate type
         return KERNEL_AFFINE;
     case Gna2OperationTypeGmm:
         return KERNEL_GMM;
@@ -134,6 +135,8 @@ TransformOperation OperationConfig::GetTransformOperation() const
         {
             return AffineMultibiasTransform;
         }
+        return AffineTransform;
+    case Gna2OperationTypeThreshold:    // TODO: 3: Introduce separate type
         return AffineTransform;
     case Gna2OperationTypeGmm:
         return GmmTransform;
@@ -493,6 +496,7 @@ bool OperationConfig::isAffine(const Gna2Operation & operation)
 {
     return operation.Type == Gna2OperationTypeFullyConnectedAffine
         || operation.Type == Gna2OperationTypeElementWiseAffine
+        || operation.Type == Gna2OperationTypeThreshold
         || operation.Type == Gna2OperationTypeRecurrent;
 }
 

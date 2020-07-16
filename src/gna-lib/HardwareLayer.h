@@ -147,6 +147,15 @@ public:
     virtual NN_OP_TYPE GetNnopType(bool hasActiveList) const override;
 };
 
+class HardwareLayerAffineThreshold : public HardwareLayerExt
+{
+public:
+    HardwareLayerAffineThreshold(const DescriptorParameters& parameters);
+    virtual ~HardwareLayerAffineThreshold() = default;
+private:
+    void saveThreshold(const Gna2ThresholdCondition&, const Gna2ThresholdMode&, const Gna2ThresholdMask&);
+};
+
 class HardwareLayerAffineMBias : public HardwareLayerExt
 {
 public:
