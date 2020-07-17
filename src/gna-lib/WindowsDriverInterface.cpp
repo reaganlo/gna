@@ -48,7 +48,7 @@
 
 using namespace GNA;
 
-const int WindowsDriverInterface::WAIT_FOR_MAP_ITERATIONS = 200;
+const int WindowsDriverInterface::WAIT_FOR_MAP_ITERATIONS = 2000;
 const int WindowsDriverInterface::WAIT_FOR_MAP_MILLISECONDS = 15;
 const uint64_t WindowsDriverInterface::FORBIDDEN_MEMORY_ID = 0;
 
