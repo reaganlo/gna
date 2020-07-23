@@ -17,30 +17,36 @@
 */
 
 /**************************************************************************//**
- @file gna2-tlv-anna-reader.h
- @brief Gaussian and Neural Accelerator (GNA) 3.1 TLV Anna reader.
+ @file gna2-tlv-reader.h
+@brief Intel (R) GNA TLV model export reader header.
+
+To be included when reading from TLV.
+
+Supported languages: C/C++.
+
  @nosubgrouping
 
  ******************************************************************************
 
- @addtogroup GNA3_API Gaussian and Neural Accelerator (GNA) 3.1 API.
- @{
+ @addtogroup GNA2_TLV_READER
 
- ******************************************************************************
-
- @addtogroup GNA2_MODEL_EXPORT_API Embedded Model Export for Anna.
+ This module can be used to read GNA model is TLV format.
 
  @{
  *****************************************************************************/
 
-#ifndef __GNA2_TLV_ANNA_READER_H
-#define __GNA2_TLV_ANNA_READER_H
+#ifndef __GNA2_TLV_READER_H
+#define __GNA2_TLV_READER_H
 
-#include "gna2-tlv-anna.h"
+#include "gna2-tlv.h"
 
 #include <stddef.h>
 #include <stdint.h>
 
+/**
+ @private
+ Internal function. Should not be used directely.
+ */
 GNA2_TLV_LINKAGE Gna2TlvStatus Gna2TlvCheckValid(const Gna2TlvRecord * tlvRecord, const char* tlvBlobEnd)
 {
     GNA2_TLV_EXPECT_NOT_NULL(tlvRecord);
@@ -56,12 +62,29 @@ GNA2_TLV_LINKAGE Gna2TlvStatus Gna2TlvCheckValid(const Gna2TlvRecord * tlvRecord
     return Gna2TlvStatusSuccess;
 }
 
+/**
+ Looks for the first occurrence of the TLV record of the selected tlvTypeToFind.
+
+ Can be used for reading from TLV blob in memory.
+ Can be used in loop to eventually find every occurrences of the record with the specified type
+ if there is more than one within the blob (tlvArrayBegin and tlvArraySize have to be modified accordingly).
+
+ @param [in] tlvArrayBegin Address of the TLV record to start the seach. TLV formatted GNA model address.
+ @param [in] tlvArraySize Byte size of all the TLV records list in the memory which should be searched.
+ @param [in] tlvTypeToFind TLV type of the record to find.
+ @param [out] outValueLength TLV length of the record found.
+ @param [out] outValue TLV value address of the record found.
+ @return Status of the operation.
+ @retval Gna2TlvStatusSuccess
+ @retval Gna2TlvStatusNotFound
+ @retval Gna2TlvStatusTlvReadError
+ */
 GNA2_TLV_LINKAGE Gna2TlvStatus Gna2TlvFindInArray(
-    const char* tlvArrayBegin,          // Address of the first TLV record e.g. TLV formatted GNA model address
-    uint32_t tlvArraySize,              // Byte size of TLV records in memory e.g., size of the TLV formatted GNA model
-    const Gna2TlvType tlvTypeToFind,    // TLV type of the record to find
-    uint32_t *outValueLength,           // TLV length of the record found
-    void **outValue                     // TLV value address of the record found
+    const char* tlvArrayBegin,
+    uint32_t tlvArraySize,
+    const Gna2TlvType tlvTypeToFind,
+    uint32_t *outValueLength,
+    void **outValue
 )
 {
     GNA2_TLV_EXPECT_NOT_NULL(tlvArrayBegin);
@@ -89,9 +112,28 @@ GNA2_TLV_LINKAGE Gna2TlvStatus Gna2TlvFindInArray(
     return Gna2TlvStatusNotFound;
 }
 
+/**
+ Checks the correctness of the overall TLV structure of the binary blob.
+
+ This function verifies
+  - the TLV version against the TLV reader compatibility.
+  - the provided memory region - [tlvArrayBegin, tlvArrayBegin+tlvArraySize) consists of a list of complete TLV records.
+    In particular, no record is truncated with the end of the region.
+
+ Can be called before reading from TLV blob in memory.
+
+ @param [in] tlvArrayBegin Address of the TLV record to start the verification. e.g., TLV formatted GNA model address.
+ @param [in] tlvArraySize Byte size of all the TLV records list in the memory which should be verified.
+ @return Status of the operation.
+ @retval Gna2TlvStatusSuccess Successful verification of version and completness.
+ @retval Gna2TlvStatusVersionNotFound  The TLV version was not found.
+ @retval Gna2TlvStatusVersionNotSupported The TLV version is not supported.
+ @retval Gna2TlvStatusSecondaryVersionFound The blob contains more than one record with TLV version.
+ @retval Gna2TlvStatusTlvReadError Record is truncated with the end of the region.
+ */
 GNA2_TLV_LINKAGE Gna2TlvStatus Gna2TlvVerifyVersionAndCohesion(
-    const char* tlvArrayBegin,          // Address of the first TLV record e.g. TLV formatted GNA model address
-    uint32_t tlvArraySize               // Byte size of TLV records in memory e.g., size of the TLV formatted GNA model
+    const char* tlvArrayBegin,
+    uint32_t tlvArraySize
 )
 {
     void * version = NULL;
@@ -118,7 +160,7 @@ GNA2_TLV_LINKAGE Gna2TlvStatus Gna2TlvVerifyVersionAndCohesion(
     }
     return status;
 }
-#endif // __GNA2_TLV_ANNA_READER_H
+#endif // __GNA2_TLV_READER_H
 
 /**
  @}

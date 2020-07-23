@@ -32,8 +32,8 @@
 #include "gna2-capability-api.h"
 #include "gna2-model-export-api.h"
 
-#include "gna2-tlv-anna-writer.h"
-#include "gna2-tlv-anna-reader.h"
+#include "gna2-tlv-reader.h"
+#include "gna2-tlv-writer.h"
 
 #include <cstdint>
 
@@ -108,6 +108,7 @@ void TestTlvReader(const char* tlvBlob, uint32_t tlvSize, bool outAsExternal, st
 
     std::vector<Gna2TlvType> TlvTypes =
     {
+        Gna2TlvTypeLayerNumber,
         Gna2TlvTypeLayerDescriptorArraySize,
         Gna2TlvTypeLayerDescriptorAndRoArrayData,
         Gna2TlvTypeStateData,
@@ -128,7 +129,7 @@ void TestTlvReader(const char* tlvBlob, uint32_t tlvSize, bool outAsExternal, st
         if(type == Gna2TlvTypeLayerDescriptorAndRoArrayData ||
             type == Gna2TlvTypeStateData)
         {
-            EXPECT_TRUE((((char*)value) - tlvBlob) % GNA2_TLV_ANNA_REQUIRED_ALIGNEMENT == 0);
+            EXPECT_TRUE((((char*)value) - tlvBlob) % GNA2_TLV_GNAA35_REQUIRED_ALIGNEMENT == 0);
         }
         if(type == Gna2TlvTypeUserData)
         {
@@ -153,6 +154,11 @@ void TestTlvReader(const char* tlvBlob, uint32_t tlvSize, bool outAsExternal, st
         {
             EXPECT_EQ(GNA2_TLV_VERSION, 1);
             EXPECT_EQ(*(uint32_t*)value, GNA2_TLV_VERSION);
+        }
+        if(type == Gna2TlvTypeLayerNumber)
+        {
+            EXPECT_EQ(valueLength, 4);
+            EXPECT_EQ(*(uint32_t*)value, 1);
         }
         EXPECT_NE(value, (void*)NULL);
     }
@@ -272,7 +278,7 @@ void TestMicrophoneSelectionModel::exportForAnna(bool outAsExternal, bool inputA
     char *outTlvVector = nullptr;
     uint32_t outTlvSize = 0;
     const char userSignature[] = "ANNA Microphone Selection Model";
-    const auto tlvStatus = Gna2ExportAnnaTlv(
+    const auto tlvStatus = Gna2ExportTlvGNAA35(
         Allocator,
         &outTlvVector,
         &outTlvSize,

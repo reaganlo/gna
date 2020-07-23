@@ -23,7 +23,7 @@
  in any way.
 */
 
-#include "gna2-tlv-anna-reader.h"
+#include "gna2-tlv-reader.h"
 
 #include "stdint.h"
 

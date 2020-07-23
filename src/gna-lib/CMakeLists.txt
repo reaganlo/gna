@@ -300,10 +300,10 @@ set(gna_api_headers_extra_2
   ${API_DIR}/gna2-model-suecreek-header.h
   ${API_DIR}/gna2-capability-api.h)
 
-set(gna_api_headers_tlv_anna
-  ${API_DIR}/gna2-tlv-anna.h
-  ${API_DIR}/gna2-tlv-anna-reader.h
-  ${API_DIR}/gna2-tlv-anna-writer.h)
+set(gna_api_headers_tlv_model_export
+  ${API_DIR}/gna2-tlv.h
+  ${API_DIR}/gna2-tlv-reader.h
+  ${API_DIR}/gna2-tlv-writer.h)
 
 set(common_sources
   ${COMMON_DIR}/Address.h
@@ -320,7 +320,7 @@ if(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
   list(APPEND common_sources ${windows_ddi})
 endif()
 
-set(api_headers ${gna_api_headers_2} ${gna_api_headers_extra_2} ${gna_api_headers_tlv_anna})
+set(api_headers ${gna_api_headers_2} ${gna_api_headers_extra_2} ${gna_api_headers_tlv_model_export})
 source_group(Api2 FILES ${api_headers})
 
 source_group("Api2 Source Files" FILES ${gna_api_impl_src_2})
