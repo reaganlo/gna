@@ -105,6 +105,8 @@ private:
         return o;
     }
 
+    const std::map<Gna2DeviceVersion, std::map<Gna2ModelExportComponent, MemoryContainer*> > devComponentToMem;
+
     std::unique_ptr<Memory> guessedInput;
     std::unique_ptr<Memory> guessedOutput;
 

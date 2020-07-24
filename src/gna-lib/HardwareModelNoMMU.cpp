@@ -46,7 +46,27 @@ public:
 HardwareModelNoMMU::HardwareModelNoMMU(CompiledModel const & softwareModel, Gna2UserAllocator customAllocIn,
     Gna2DeviceVersion targetDevice) :
     HardwareModel(softwareModel, GetHwCaps(targetDevice)),
-    customUserAlloc{ customAllocIn }
+    customUserAlloc{ customAllocIn },
+    devComponentToMem
+    {
+        { Gna2DeviceVersionEmbedded3_1,
+            {
+                { Gna2ModelExportComponentReadOnlyDump, &FollowingLdaAllocations },
+                { Gna2ModelExportComponentStateDump, &StateAllocations },
+                { Gna2ModelExportComponentScratchDump, &ScratchAllocations },
+                { Gna2ModelExportComponentExternalBufferInputDump, &ExternalBufferInputAllocations },
+                { Gna2ModelExportComponentExternalBufferOutputDump, &ExternalBufferOutputAllocations },
+            }
+        },
+        { Gna2DeviceVersionEmbedded3_0,
+            {
+                { Gna2ModelExportComponentReadOnlyDump, &FollowingLdaAllocations },
+                { Gna2ModelExportComponentInputDump, &InputAllocations},
+                { Gna2ModelExportComponentOutputDump, &OutputAllocations},
+                { Gna2ModelExportComponentScratchDump, &ScratchAllocations },
+            }
+        }
+    }
 {
     for(const auto& memElement : softwareModel.GetAllocations())
     {
@@ -224,26 +244,6 @@ void HardwareModelNoMMU::ExportComponent(void *& exportData, uint32_t & exportDa
         Expect::NotNull(exportData);
         return;
     }
-    static const std::map<Gna2DeviceVersion, std::map<Gna2ModelExportComponent, MemoryContainer*> > devComponentToMem =
-    {
-        { Gna2DeviceVersionEmbedded3_1,
-            {
-                { Gna2ModelExportComponentReadOnlyDump, &FollowingLdaAllocations },
-                { Gna2ModelExportComponentStateDump, &StateAllocations },
-                { Gna2ModelExportComponentScratchDump, &ScratchAllocations },
-                { Gna2ModelExportComponentExternalBufferInputDump, &ExternalBufferInputAllocations },
-                { Gna2ModelExportComponentExternalBufferOutputDump, &ExternalBufferOutputAllocations },
-            }
-        },
-        { Gna2DeviceVersionEmbedded3_0,
-            {
-                { Gna2ModelExportComponentReadOnlyDump, &FollowingLdaAllocations },
-                { Gna2ModelExportComponentInputDump, &InputAllocations},
-                { Gna2ModelExportComponentOutputDump, &OutputAllocations},
-                { Gna2ModelExportComponentScratchDump, &ScratchAllocations },
-            }
-        }
-    };
 
     const auto devFound = devComponentToMem.find(hwCapabilities.GetDeviceVersion());
     Expect::True(devFound != devComponentToMem.end(), Gna2StatusNotImplemented);
