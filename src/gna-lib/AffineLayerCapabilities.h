@@ -35,6 +35,13 @@ namespace GNA
         static const FullCapabilitiesMap& GetOperands(uint32_t operandIndex);
         static const std::shared_ptr<ComponentLimits>& GetInputComponentLimits(const gna_device_generation generation);
         static const std::shared_ptr<ComponentLimits>& GetOutputComponentLimits(const gna_device_generation generation);
+
+    private:
+        /**
+         MultiBias Affine Output Limits for GNA 2.0 HW bug workaround
+         */
+        static const std::shared_ptr<ComponentLimits>& GetMBOutputComponentLimits(const gna_device_generation generation);
+
     };
 
 }

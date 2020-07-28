@@ -215,6 +215,17 @@ const std::shared_ptr<ComponentLimits>& AffineLayerCapabilities::GetOutputCompon
     return operands.at(generation);
 }
 
+const std::shared_ptr<ComponentLimits>& AffineLayerCapabilities::GetMBOutputComponentLimits(const gna_device_generation generation)
+{
+    auto multiBiasLimits = GetOutputComponentLimits(GNA_2_0);
+    multiBiasLimits->Dimensions.at(GNA_DIM_H).Multipliers.at(Gna2DataTypeNone) = 8;
+    static const OperationCapabilityMap operands =
+    {
+        {GNA_2_0, multiBiasLimits},
+    };
+    return operands.at(generation);
+}
+
 const FullCapabilitiesMap& AffineLayerCapabilities::GetOperands(uint32_t operandIndex)
 {
     static const ComponentFullCapabilityMap operands =
@@ -255,7 +266,7 @@ const FullCapabilitiesMap& AffineLayerCapabilities::GetOperands(uint32_t operand
                 {GNA_3_0, GetOutputComponentLimits(GNA_3_0)},
             }},
             {INTEL_AFFINE_MULTIBIAS, {
-                {GNA_2_0, GetOutputComponentLimits(GNA_2_0)},
+                {GNA_2_0, GetMBOutputComponentLimits(GNA_2_0)},
                 {GNA_3_0, GetOutputComponentLimits(GNA_3_0)},
             }},
             {INTEL_RECURRENT, {

@@ -74,7 +74,7 @@ struct SetLimits : public std::vector<T>
 
 using MultiplierMap = std::map<Gna2DataType, uint32_t>;
 
-struct MultiplierLimits : protected  MultiplierMap
+struct MultiplierLimits : protected MultiplierMap
 {
     MultiplierLimits() = delete;
 
@@ -126,6 +126,8 @@ struct MultiplierLimits : protected  MultiplierMap
     {
         return at(Gna2DataTypeNone);
     }
+
+    using MultiplierMap::at;
 
     ModelErrorSource Error;
 };
