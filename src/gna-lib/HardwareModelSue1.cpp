@@ -76,9 +76,10 @@ void HardwareModelSue1::prepareAllocationsAndModel()
         auto const scratchPad = layer->TryGetOperand(ScratchpadOperandIndex);
         if (scratchPad)
         {
-            scratchPadSize += scratchPad->Size;
+            scratchPadSize = (std::max)(scratchPadSize, scratchPad->Size);
         }
     }
+    scratchPadSize = RoundUp(scratchPadSize, Memory::GNA_BUFFER_ALIGNMENT);
 
     auto const rw = model.GetAllocations()[0];
     totalModelSize = ldMemorySize + rw.GetSize() + scratchPadSize;
