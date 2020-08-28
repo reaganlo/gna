@@ -125,6 +125,19 @@ GNA2_API enum Gna2Status Gna2DeviceSetNumberOfThreads(
     uint32_t deviceIndex,
     uint32_t numberOfThreads);
 
+/**
+ For internal testing purposes only.
+ TODO: 3: remove before public release
+ Function should be called after opening the device.
+
+ @param deviceIndex Index of the affected device.
+ @param deviceVersion For overriding GNA device version to a desired one.
+*/
+
+GNA2_API enum Gna2Status Gna2DeviceOverrideVersion(
+    uint32_t deviceIndex,
+    Gna2DeviceVersion deviceVersion);
+
 #endif // __GNA2_DEVICE_API_H
 
 /**

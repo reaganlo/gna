@@ -96,3 +96,14 @@ enum Gna2Status Gna2DeviceClose(
     return ApiWrapper::ExecuteSafely(command);
 }
 
+enum Gna2Status Gna2DeviceOverrideVersion(
+    uint32_t deviceIndex,
+    Gna2DeviceVersion deviceVersion)
+{
+    const std::function<ApiStatus()> command = [&]()
+    {
+        DeviceManager::Get().GetDevice(deviceIndex).OverrideDefaultSettings(deviceVersion);
+        return Gna2StatusSuccess;
+    };
+    return ApiWrapper::ExecuteSafely(command);
+}

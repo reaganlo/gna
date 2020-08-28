@@ -128,6 +128,8 @@ public:
 
     void UnMapMemory(Memory & memoryObject);
 
+    void OverrideDefaultSettings(Gna2DeviceVersion deviceOverride);
+
 protected:
     static const std::map<const gna_device_generation, const DeviceVersion> deviceDictionary;
 

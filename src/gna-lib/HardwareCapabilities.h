@@ -78,6 +78,13 @@ public:
 
     void DiscoverHardware(const DriverCapabilities& discoveredDriver);
 
+    void OverrideDeviceVersion(Gna2DeviceVersion deviceOverride);
+
+    bool IsDeviceVersionOverriden() const
+    {
+        return overridenDeviceVersion;
+    }
+
     static uint32_t const * GetHardwareConsistencySettings(DeviceVersion deviceVersion);
     static uint32_t const * GetHardwareConsistencySettingsForAdl(DeviceVersion deviceVersion);
 
@@ -149,7 +156,7 @@ private:
 
     uint32_t bufferSize;
 
-    uint32_t driverRecoveryTimeout = 0;
+    bool overridenDeviceVersion = false;
 };
 
 }

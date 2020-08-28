@@ -377,9 +377,15 @@ void HardwareCapabilities::DiscoverHardware(const DriverCapabilities& discovered
 
     deviceVersion = discoveredDriver.deviceVersion;
     bufferSize = hwInBuffSize;
-    driverRecoveryTimeout = discoveredDriver.recoveryTimeout;
 
     hardwareSupported = true;
+}
+
+void HardwareCapabilities::OverrideDeviceVersion(Gna2DeviceVersion deviceOverride)
+{
+    overridenDeviceVersion = true;
+    deviceVersion = deviceOverride;
+    bufferSize = GetBufferSizeInKB();
 }
 
 uint32_t const * HardwareCapabilities::GetHardwareConsistencySettings(

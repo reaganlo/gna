@@ -158,6 +158,11 @@ void Device::UnMapMemory(Memory & memoryObject)
     }
 }
 
+void Device::OverrideDefaultSettings(Gna2DeviceVersion deviceOverride)
+{
+    hardwareCapabilities.OverrideDeviceVersion(deviceOverride);
+}
+
 void Device::ReleaseModel(uint32_t const modelId)
 {
     models.erase(modelId);

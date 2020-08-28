@@ -115,7 +115,8 @@ CompiledModel::AccelerationType CompiledModel::getEffectiveAccelerationMode(Requ
 
     const auto isSoftwareEffective = config.Acceleration.IsSoftwareEnforced() ||
         !hwCapabilities.IsHardwareSupported() ||
-        (config.GetConsistentDevice() != hwCapabilities.GetDeviceVersion());
+        (config.GetConsistentDevice() != hwCapabilities.GetDeviceVersion()) ||
+        hwCapabilities.IsDeviceVersionOverriden();
     if (isSoftwareEffective)
     {
         return EnforcedSoftware;
