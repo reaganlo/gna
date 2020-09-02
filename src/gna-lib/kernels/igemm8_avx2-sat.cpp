@@ -1148,11 +1148,13 @@ void AffineMultiBiasKernelImpl1B(ExecutionKernelConfig<AffineConfig> const * con
                 // 6144 / 16 = 384
                 // 6144 / 256 = 24
                 // so, max number of loops is 1
+                // TODO: 3: Review this kind of assumptions wrt GNA 3.X,
+                // as for GNA 3.X number of loops can be greater here (e.g., 2)
 
                 acc_iters = niters / (VEC_16CAP * 256);
                 rem_iters = niters % (VEC_16CAP * 256);
 
-                if (acc_iters == 1)
+                for (uint32_t acc_iter = 0; acc_iter < acc_iters; acc_iter++)
                 {
                     acc[0] = _mm256_setzero_si256();
                     acc[1] = _mm256_setzero_si256();
