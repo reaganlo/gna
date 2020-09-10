@@ -68,24 +68,6 @@ const FullCapabilitiesMap CopyLayer::limits
     }},
 };
 
-CopyLayer::CopyLayer(const nn_layer& layer, const BaseValidator& validatorIn) :
-    Layer(layer, validatorIn, {}, BaseAddress()),
-    ColumnCount{ static_cast<const nn_layer_copy*>(layer.pLayerStruct)->nCopyCols },
-    RowCount{ static_cast<const nn_layer_copy*>(layer.pLayerStruct)->nCopyRows },
-    copyKernels{ AccelerationDetector::GetKernelMap<CopyKernel>(KERNEL_COPY, KernelMode {Input.Mode}) },
-    copyHiddenConfig{ RowCount, ColumnCount, Input.Dimensions.at('W'), Output.Dimensions.at('W'), Input.Buffer, Output.Buffer }
-{
-    auto copyParams = std::make_unique<const Component>(Shape{GNA_TENSOR_HW, RowCount, ColumnCount},
-        Validator{ *validator, limits });
-    Expect::True(RowCount <= Input.Dimensions.at('H'), Gna2StatusXnnErrorLyrCfg);
-
-    ComputeHidden = [this](AccelerationMode accel, ExecutionConfig const & executionConfig)
-                    {this->computeHidden(accel, executionConfig); };
-
-    Compute = [this](LayerConfiguration &layerConfiguration, AccelerationMode accel, ExecutionConfig const & executionConfig)
-                    {this->compute(layerConfiguration, accel, executionConfig); };
-}
-
 CopyLayer::CopyLayer(const Gna2Operation& operation, const BaseValidator& validatorIn) :
     Layer(operation, validatorIn, {}, BaseAddress()),
     ColumnCount{ GetCopyShape(operation).at('W') },

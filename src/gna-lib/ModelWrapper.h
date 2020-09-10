@@ -165,7 +165,7 @@ public:
 
     static bool HasParameter(const Gna2Operation& operation, uint32_t parameterIndex);
     static void ExpectParameterAvailable(const Gna2Operation & operation, uint32_t index);
-
+    static void ExpectParameterNotAvailable(const Gna2Operation & operation, uint32_t index);
     template<class T>
     static T GetParameter(const Gna2Operation & operation, OperationInfoKey parameter)
     {

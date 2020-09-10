@@ -115,6 +115,19 @@ Tensor const & ConvolutionalLayer2D::GetOperand(uint32_t operandIndex) const
     }
 }
 
+std::unique_ptr<const Component> ConvolutionalLayer2D::CreateComponentFromParameter(const Shape& shape,
+    const LayerValidator& validator, const uint32_t parameterIndex)
+{
+    std::unique_ptr<const Component> parameter;
+    const std::function<void()> command = [&]()
+    {
+        parameter = OperationConfig::CreateCnnComponent(shape,
+            validator, ConvolutionalLayer2DCapabilities::GetParameters(parameterIndex));
+    };
+    ModelErrorHelper::ExecuteForModelItem(command, GNA2_DISABLED, static_cast<int32_t>(parameterIndex));
+    return parameter;
+}
+
 DataConfig ConvolutionalLayer2D::GetDataMode() const
 {
     auto& convolutionTransform = *Transforms.Get<ConvolutionFunction2D>(ConvolutionalTransform2D);

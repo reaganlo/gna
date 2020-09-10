@@ -47,6 +47,9 @@ public:
 
     virtual Tensor const & GetOperand(uint32_t operandIndex) const override;
 
+    static std::unique_ptr<const Component> CreateComponentFromParameter(const Shape& shape,
+        const LayerValidator& validator, const uint32_t parameterIndex);
+
 protected:
     virtual DataConfig GetDataMode() const override;
     void Init();

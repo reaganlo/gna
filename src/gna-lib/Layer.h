@@ -80,7 +80,6 @@ private:
 class Layer : public AbstractOperation
 {
 public:
-    static std::unique_ptr<Layer> Create(const nn_layer& layer, const BaseValidator& validator);
     static std::unique_ptr<Layer> Create(const Gna2Operation& operation, const BaseValidator& validator);
 
     template<typename X = const Layer> X* Get() const
@@ -130,8 +129,7 @@ public:
     const LayerOutput Output;
 
 protected:
-    template <class T>
-    Layer(const T& layer, const BaseValidator& validatorIn,
+    Layer(const Gna2Operation& layer, const BaseValidator& validatorIn,
         const std::vector<TransformOperation>& transforms,
         const BaseAddress& intermediateBuffer) :
         AbstractOperation{ layer, validatorIn },

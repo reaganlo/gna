@@ -294,6 +294,15 @@ void ModelWrapper::ExpectParameterAvailable(const Gna2Operation & operation, uin
     ModelErrorHelper::ExpectNotNull(operation.Parameters[parameterIndex], Gna2ItemTypeOperationParameters, static_cast<int32_t>(parameterIndex), true);
 }
 
+void ModelWrapper::ExpectParameterNotAvailable(const Gna2Operation & operation, uint32_t parameterIndex)
+{
+    if (operation.Parameters == nullptr || operation.NumberOfParameters <= parameterIndex)
+    {
+        return;
+    }
+    ModelErrorHelper::ExpectNull(operation.Parameters[parameterIndex], Gna2ItemTypeOperationParameters, static_cast<int32_t>(parameterIndex), true);
+}
+
 void ModelWrapper::SetLayout(Gna2Tensor& tensor, const char* layout)
 {
     snprintf(tensor.Layout, sizeof(tensor.Layout), "%s", layout);

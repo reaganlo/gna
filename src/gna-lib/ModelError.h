@@ -54,6 +54,10 @@ public:
         Gna2ItemType ptrType = Gna2ItemTypeOperandData,
         int32_t ptrIndex = GNA2_DISABLED,
         bool indexForParameter = false);
+    static void ExpectNull(const void * const ptr,
+        Gna2ItemType ptrType = Gna2ItemTypeOperandData,
+        int32_t ptrIndex = GNA2_DISABLED,
+        bool indexForParameter = false);
     static void ExpectBufferAligned(const void * const buffer, const uint32_t alignment);
 
     static void ExpectEqual(const ModelValue& val, const ModelValue& ref);
@@ -122,6 +126,11 @@ public:
     static uint32_t GetErrorStringMaxLength();
 private:
     static void AppendNotDisabled(std::string& toAppend, int32_t index, const std::string& arrayName);
+
+    static Gna2ModelError GetPartiallySetError(const Gna2ItemType ptrType,
+        const int32_t ptrIndex,
+        const bool indexForParameter);
+
     static Gna2ModelError lastError;
 };
 

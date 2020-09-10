@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2018 Intel Corporation.
+ Copyright 2018-2020 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -194,8 +194,12 @@ public:
     // set output when transform is final layer transform and uses user provided layer output buffer
     virtual void SetOutput(const BaseAddress& outputBuffer) override
     {
-        Output->UpdateBuffer(outputBuffer);
-        hiddenConfig->SetBuffer(OutputOperandIndex, outputBuffer);
+        const std::function<void()> command = [&]()
+        {
+            Output->UpdateBuffer(outputBuffer);
+            hiddenConfig->SetBuffer(OutputOperandIndex, outputBuffer);
+        };
+        ModelErrorHelper::ExecuteForModelItem(command, OutputOperandIndex);
     }
 
 protected:

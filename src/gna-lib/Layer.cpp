@@ -45,30 +45,6 @@
 
 using namespace GNA;
 
-std::unique_ptr<Layer> Layer::Create(const nn_layer& layer, const BaseValidator& validatorIn)
-{
-    switch (layer.operation)
-    {
-    case INTEL_AFFINE:
-    case INTEL_AFFINE_DIAGONAL:
-    case INTEL_AFFINE_MULTIBIAS:
-        return std::make_unique<AffineLayer>(layer, validatorIn);
-    case INTEL_CONVOLUTIONAL:
-        return std::make_unique<CnnLayer>(layer, validatorIn);
-    case INTEL_CONVOLUTIONAL_2D:
-        return std::make_unique<ConvolutionalLayer2D>(layer, validatorIn);
-    case INTEL_COPY:
-        return std::make_unique<CopyLayer>(layer, validatorIn);
-    case INTEL_INTERLEAVE:/* FALLTHRU */
-    case INTEL_DEINTERLEAVE:
-        return std::make_unique<TransposeLayer>(layer, validatorIn);
-    case INTEL_RECURRENT:
-        return std::make_unique<RecurrentLayer>(layer, validatorIn);
-    default:
-        throw GnaException(Gna2StatusXnnErrorLyrCfg);
-    }
-}
-
 std::unique_ptr<GNA::Layer> Layer::Create(const Gna2Operation & operation, const BaseValidator & validatorIn)
 {
     ModelWrapper::ExpectOperationValid(operation);

@@ -96,13 +96,14 @@ LayerInput::LayerInput(const nn_layer &layer, const LayerValidator& validatorIn)
 {
 }
 
-ApiShape GetShape(const Gna2Operation & operation)
+ApiShape LayerInput::GetShape(const Gna2Operation & operation)
 {
     ApiShape shape{ operation.Operands[InputOperandIndex]->Shape };
     if (Gna2OperationTypeConvolution == operation.Type &&
         shape.NumberOfDimensions < 4 &&
         !CnnLayer::IsForced(operation))
     {
+        ModelErrorHelper::ExpectEqual(shape.NumberOfDimensions, 2, Gna2ItemTypeShapeNumberOfDimensions);
         shape.Dimensions[2] = shape.Dimensions[1];
         shape.Dimensions[1] = 1;
         shape.Dimensions[3] = 1;

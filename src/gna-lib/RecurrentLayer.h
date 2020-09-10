@@ -44,7 +44,6 @@ struct LayerConfiguration;
 class RecurrentLayer : public AffineBaseLayer
 {
 public:
-    RecurrentLayer(const nn_layer& layer, const BaseValidator& validatorIn);
     RecurrentLayer(const Gna2Operation& operation, const BaseValidator& validatorIn);
     virtual ~RecurrentLayer() = default;
 

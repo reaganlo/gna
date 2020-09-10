@@ -49,10 +49,6 @@ public:
 
 protected:
     AffineBaseLayer(
-            const nn_layer& layer, std::vector<TransformOperation> transforms,
-            const BaseValidator& validatorIn);
-
-    AffineBaseLayer(
             const Gna2Operation& operation, std::vector<TransformOperation> transforms,
             const BaseValidator& validatorIn);
 
@@ -70,7 +66,6 @@ protected:
 class AffineLayer : public AffineBaseLayer
 {
 public:
-    AffineLayer(const nn_layer& layer, const BaseValidator& validatorIn);
     AffineLayer(const Gna2Operation& operation, const BaseValidator& validatorIn);
     virtual ~AffineLayer() = default;
 

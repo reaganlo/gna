@@ -166,6 +166,7 @@ ApiShape LayerOutput::GetShape(const Gna2Operation & operation)
     }
     if (!CnnLayer::IsForced(operation))
     {
+        ModelErrorHelper::ExpectEqual(s.NumberOfDimensions, 3, Gna2ItemTypeShapeNumberOfDimensions);
         s.NumberOfDimensions = 4;
         s.Dimensions[3] = s.Dimensions[2];
         s.Dimensions[2] = s.Dimensions[1];

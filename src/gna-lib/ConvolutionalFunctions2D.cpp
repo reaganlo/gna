@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2019 Intel Corporation.
+ Copyright 2019-2020 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -28,6 +28,7 @@
 #include "AccelerationDetector.h"
 #include "Address.h"
 #include "Capabilities.h"
+#include "ConvolutionalLayer2D.h"
 #include "ConvolutionalLayer2DCapabilities.h"
 #include "DataMode.h"
 #include "Expect.h"
@@ -70,11 +71,11 @@ std::unique_ptr<ConvolutionFunction2D> ConvolutionFunction2D::create(
     auto filters = FiltersTensor::Create(operation.FiltersTensor,
             config.validator);
 
-    auto stride = OperationConfig::CreateCnnComponent(operation.ConvolutionStride,
-        config.validator, ConvolutionalLayer2DCapabilities::GetParameters(ConvolutionStrideParamIndex));
+    auto stride = ConvolutionalLayer2D::CreateComponentFromParameter(operation.ConvolutionStride,
+        config.validator, ConvolutionStrideParamIndex);
 
-    auto padding = OperationConfig::CreateCnnComponent(operation.ZeroPadding,
-        config.validator, ConvolutionalLayer2DCapabilities::GetParameters(ZeroPaddingParamIndex));
+    auto padding = ConvolutionalLayer2D::CreateComponentFromParameter(operation.ZeroPadding,
+        config.validator, ZeroPaddingParamIndex);
 
     const Shape outputDims = GetOutputShape(config.input->Dimensions,
         filters->Dimensions, stride->Dimensions, padding->Dimensions);

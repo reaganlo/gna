@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2019 Intel Corporation.
+ Copyright 2019-2020 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -28,6 +28,7 @@
 #include "OperationConfig.h"
 #include "AccelerationDetector.h"
 #include "Capabilities.h"
+#include "ConvolutionalLayer2D.h"
 #include "ConvolutionalLayer2DCapabilities.h"
 #include "DataMode.h"
 #include "Expect.h"
@@ -67,10 +68,10 @@ std::unique_ptr<PoolingFunction2D> PoolingFunction2D::create(
 
     if (Gna2PoolingModeDisabled != poolingMode)
     {
-        auto stride = OperationConfig::CreateCnnComponent(operation.PoolingStride,
-            config.validator, ConvolutionalLayer2DCapabilities::GetParameters(PoolingStrideParamIndex));
-        auto window = OperationConfig::CreateCnnComponent(operation.PoolingWindow,
-            config.validator, ConvolutionalLayer2DCapabilities::GetParameters(PoolingWindowParamIndex));
+        auto stride = ConvolutionalLayer2D::CreateComponentFromParameter(operation.PoolingStride,
+            config.validator, PoolingStrideParamIndex);
+        auto window = ConvolutionalLayer2D::CreateComponentFromParameter(operation.PoolingWindow,
+            config.validator, PoolingWindowParamIndex);
 
         return std::make_unique<PoolingFunction2D>(
             BaseTransformConfig<PoolingKernel2D>{config,

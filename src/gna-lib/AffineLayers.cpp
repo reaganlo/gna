@@ -60,13 +60,6 @@ void *AffineBaseLayer::GetGlobal2MBScratchpad()
 }
 
 AffineBaseLayer::AffineBaseLayer(
-    const nn_layer& layer, std::vector<TransformOperation> transforms,
-    const BaseValidator& validatorIn) :
-        Layer(layer, validatorIn, transforms, layer.pOutputsIntermediate)
-{
-}
-
-AffineBaseLayer::AffineBaseLayer(
         const Gna2Operation& operation,
         const std::vector<TransformOperation> transforms,
         const BaseValidator& validatorIn) :
@@ -92,10 +85,6 @@ void AffineLayer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration) co
                                             outputCount * Output.Dimensions.at('W'));
     }
 }
-
-AffineLayer::AffineLayer(const nn_layer& layer, const BaseValidator& validatorIn) :
-    AffineBaseLayer(layer, { AffineTransform, ActivationTransform }, validatorIn)
-{}
 
 AffineLayer::AffineLayer(const Gna2Operation& operation, const BaseValidator& validatorIn) :
     AffineBaseLayer(operation, { AffineTransform, ActivationTransform }, validatorIn)

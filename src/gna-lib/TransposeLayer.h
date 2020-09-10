@@ -46,7 +46,6 @@ struct LayerConfiguration;
 class TransposeLayer : public Layer
 {
 public:
-    TransposeLayer(const nn_layer& layer, const BaseValidator& validatorIn);
     TransposeLayer(const Gna2Operation& apiOperation, const BaseValidator& validatorIn);
     virtual ~TransposeLayer() = default;
 

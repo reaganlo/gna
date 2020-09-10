@@ -50,7 +50,7 @@ struct LayerInput : public Tensor
 
 protected:
     static const FullCapabilitiesMap capabilities;
-
+    static ApiShape GetShape(const Gna2Operation & operation);
     static Shape GetDimensions(const nn_layer& layer, gna_tensor_order order);
 
     virtual std::pair<uint32_t, uint32_t> getGroupingAndElements(

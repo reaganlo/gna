@@ -53,11 +53,6 @@ class BaseValidator;
 
 using namespace GNA;
 
-RecurrentLayer::RecurrentLayer(const nn_layer& layer, const BaseValidator& validatorIn) :
-    AffineBaseLayer(layer, { RecurrentTransform }, validatorIn)
-{
-}
-
 RecurrentLayer::RecurrentLayer(const Gna2Operation& operation, const BaseValidator& validatorIn) :
     AffineBaseLayer(operation, { RecurrentTransform }, validatorIn)
 {

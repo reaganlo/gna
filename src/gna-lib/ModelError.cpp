@@ -114,8 +114,7 @@ void ModelErrorHelper::ExpectMultiplicityOf(int64_t val, int64_t factor, Gna2Ite
     ExpectTrue(val == 0 || (factor != 0 && (val % factor) == 0), e);
 }
 
-void ModelErrorHelper::ExpectNotNull(const void * const ptr,
-    const Gna2ItemType ptrType,
+Gna2ModelError ModelErrorHelper::GetPartiallySetError(const Gna2ItemType ptrType,
     const int32_t ptrIndex,
     const bool indexForParameter)
 {
@@ -129,9 +128,27 @@ void ModelErrorHelper::ExpectNotNull(const void * const ptr,
     {
         e.Source.OperandIndex = ptrIndex;
     }
-    e.Value = 0;
+    return e;
+}
+
+void ModelErrorHelper::ExpectNotNull(const void * const ptr,
+    const Gna2ItemType ptrType,
+    const int32_t ptrIndex,
+    const bool indexForParameter)
+{
+    auto e = GetPartiallySetError(ptrType, ptrIndex, indexForParameter);
     e.Reason = Gna2ErrorTypeNullNotAllowed;
     ExpectTrue(ptr != nullptr, e);
+}
+
+void ModelErrorHelper::ExpectNull(const void * const ptr,
+    const Gna2ItemType ptrType,
+    const int32_t ptrIndex,
+    const bool indexForParameter)
+{
+    auto e = GetPartiallySetError(ptrType, ptrIndex, indexForParameter);
+    e.Reason = Gna2ErrorTypeNullRequired;
+    ExpectTrue(ptr == nullptr, e);
 }
 
 void ModelErrorHelper::ExpectBufferAligned(const void * const buffer, const uint32_t alignment)

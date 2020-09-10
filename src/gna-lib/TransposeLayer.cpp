@@ -32,26 +32,6 @@
 
 using namespace GNA;
 
-TransposeLayer::TransposeLayer(const nn_layer& layer, const BaseValidator& validatorIn) :
-    Layer(layer, validatorIn, {}, BaseAddress()),
-    transposeKernels{ AccelerationDetector::GetKernelMap<TransposeKernel>(
-                                            KERNEL_TRANSPOSE,  KernelMode{Input.Mode}) },
-    transposeHiddenConfig(std::make_unique<TransposeConfig>(
-                Input.Dimensions.at('H'), Input.Dimensions.at('W'), Input.Buffer, Output.Buffer))
-{
-    Expect::Equal(Input.Dimensions.at('W'), Output.Dimensions.at('H'), Gna2StatusXnnErrorLyrCfg);
-    Expect::Equal(Input.Dimensions.at('H'), Output.Dimensions.at('W'), Gna2StatusXnnErrorLyrCfg);
-    Expect::Null(layer.pLayerStruct); // transpose layers do not have layer details
-
-    Expect::Null(Output.ScratchPad); // in transpose layer no 4B output array is allowed
-
-    ComputeHidden = [this](AccelerationMode accel, ExecutionConfig const & executionConfig)
-                    {this->computeHidden(accel, executionConfig); };
-
-    Compute = [this](LayerConfiguration &layerConfiguration, AccelerationMode accel, ExecutionConfig const & executionConfig)
-                    {this->compute(layerConfiguration, accel, executionConfig); };
-}
-
 TransposeLayer::TransposeLayer(
         const Gna2Operation& apiOperation,
         const BaseValidator& validatorIn) :

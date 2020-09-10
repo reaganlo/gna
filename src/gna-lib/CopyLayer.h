@@ -35,8 +35,6 @@ namespace GNA
 class CopyLayer : public Layer
 {
 public:
-    CopyLayer(const nn_layer& layer, const BaseValidator& validatorIn);
-
     CopyLayer(const Gna2Operation& operation, const BaseValidator& validatorIn);
 
     virtual ~CopyLayer() = default;
