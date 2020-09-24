@@ -63,7 +63,7 @@ public:
         uint32_t layerIndex,
         uint32_t layerCount,
         const RequestConfiguration& requestConfiguration,
-        RequestProfiler *profiler,
+        RequestProfiler &profiler,
         KernelBuffers *buffers) override;
 
     uint32_t GetBufferOffsetForConfiguration(

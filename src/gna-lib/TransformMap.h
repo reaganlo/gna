@@ -52,7 +52,7 @@ public:
         const OperationConfig& operationConfig);
 
     template<typename TransformFunction = BaseTransform>
-    TransformFunction * Get(TransformOperation operation) const
+    TransformFunction * GetOptional(TransformOperation operation) const
     {
         try
         {
@@ -65,6 +65,14 @@ public:
         }
         // finally:
         return nullptr;
+    }
+
+    template<typename TransformFunction = BaseTransform>
+    TransformFunction & Get(TransformOperation operation) const
+    {
+        auto * transform = GetOptional<TransformFunction>(operation);
+        Expect::NotNull(transform, Gna2StatusXnnErrorLyrCfg);
+        return *(static_cast<TransformFunction *>(transform));
     }
 
 private:

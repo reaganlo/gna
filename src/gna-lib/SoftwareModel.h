@@ -76,7 +76,7 @@ public:
         uint32_t layerIndex,
         uint32_t layerCountIn,
         RequestConfiguration const &requestConfiguration,
-        RequestProfiler *profiler,
+        RequestProfiler &profiler,
         KernelBuffers *fvBuffers) override;
 
     void validateConfiguration(const RequestConfiguration& configuration) const;

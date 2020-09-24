@@ -417,10 +417,11 @@ HardwareLayerAffDiagTrans::HardwareLayerAffDiagTrans(const DescriptorParameters&
     case INTEL_AFFINE:
     case INTEL_AFFINE_DIAGONAL:
     {
-        auto affineLayer = SoftwareLayer.Get<const AffineLayer>();
-        affine = affineLayer->Transforms.Get<AffineFunction>(
+        auto const affineLayer = SoftwareLayer.Get<const AffineLayer>();
+        affine = affineLayer->Transforms.GetOptional<AffineFunction>(
             operationMapping.at(SoftwareLayer.Operation));
-        act = affineLayer->Transforms.Get<ActivationFunction>(ActivationTransform);
+        Expect::NotNull(affine);
+        act = affineLayer->Transforms.GetOptional<ActivationFunction>(ActivationTransform);
         break;
     }
     case INTEL_INTERLEAVE:
@@ -439,8 +440,9 @@ HardwareLayerAffineThreshold::HardwareLayerAffineThreshold(const DescriptorParam
     const auto* thLayer = dynamic_cast<const AffineThresholdLayer*>(&SoftwareLayer);
     Expect::NotNull(thLayer, Gna2StatusXnnErrorLyrOperation);
 
-    affine = thLayer->Transforms.Get<AffineFunction>(AffineTransform);
-    const ActivationFunction* act = thLayer->Transforms.Get<ActivationFunction>(ActivationTransform);
+    affine = thLayer->Transforms.GetOptional<AffineFunction>(AffineTransform);
+    Expect::NotNull(affine);
+    const ActivationFunction* act = thLayer->Transforms.GetOptional<ActivationFunction>(ActivationTransform);
 
     save();
     saveActivation(act);
@@ -481,17 +483,16 @@ HardwareLayerRnn::HardwareLayerRnn(const DescriptorParameters& parameters) :
     const auto rnn = SoftwareLayer.Get<const RecurrentLayer>();
     convert();
     save();
-    const auto recurrent = rnn->Transforms.Get<RecurrentFunction>(RecurrentTransform);
-    Expect::NotNull(recurrent, Gna2StatusUnknownError);
-    XnnDescriptor[weight_size] = recurrent->Weights->Mode;
-    XnnDescriptor[weight_buffer] = *recurrent->Weights;
-    XnnDescriptor[bias_buffer] = recurrent->Biases->Buffer;
+    const auto & recurrent = rnn->Transforms.Get<RecurrentFunction>(RecurrentTransform);
+    XnnDescriptor[weight_size] = recurrent.Weights->Mode;
+    XnnDescriptor[weight_buffer] = *recurrent.Weights;
+    XnnDescriptor[bias_buffer] = recurrent.Biases->Buffer;
     if (XnnDescriptor.HasParameter(bias_precision))
     {
-        XnnDescriptor[bias_precision] = recurrent->Biases->Mode;
+        XnnDescriptor[bias_precision] = recurrent.Biases->Mode;
     }
-    saveThresholdExternal(*recurrent->Biases, th_bias_src);
-    saveActivation(&recurrent->GetActivationFunction());
+    saveThresholdExternal(*recurrent.Biases, th_bias_src);
+    saveActivation(&recurrent.GetActivationFunction());
 }
 
 void HardwareLayerRnn::convert()
@@ -538,7 +539,7 @@ void HardwareLayerRnn::save()
     // can be negative for non-output layers (if user provides nullptr as output buffer)
     const auto& rnn = SoftwareLayer.Get<const RecurrentLayer>();
     const auto& rnnTransform = rnn->Transforms.Get<RecurrentFunction>(RecurrentTransform);
-    XnnDescriptor[rnn_out_fb_buffer] = rnnTransform->CalculateFeedbackBuffer(SoftwareLayer.Output);
+    XnnDescriptor[rnn_out_fb_buffer] = rnnTransform.CalculateFeedbackBuffer(SoftwareLayer.Output);
 }
 
 uint32_t HardwareLayerRnn::GetLdFeedbackOffset() const
@@ -627,8 +628,8 @@ void HardwareLayerCnn::save()
 
 HwUarchParams HardwareLayerCnn2D::CalculateUArchConfig() const
 {
-    auto const config = HwModule.GetCnnParams(cnn, pooling,
-        SoftwareLayer.GetOutputTransform()->Output->Mode, is1D);
+    auto const config = HwModule.GetCnnParams(&cnn, pooling,
+        SoftwareLayer.GetOutputTransform().Output->Mode, is1D);
     if (!config.Valid)
     {
         throw GnaModelErrorException(Gna2ItemTypeOperationHardwareDescriptor, Gna2ErrorTypeArgumentInvalid, 0);
@@ -668,8 +669,8 @@ uint32_t HardwareLayerCnn2D::GetPoolingMemorySize(DeviceVersion deviceVersion,
 HardwareLayerCnn2D::HardwareLayerCnn2D(const DescriptorParameters& parameters) :
     HardwareLayer(parameters),
     cnn{ SoftwareLayer.Get()->Transforms.Get<ConvolutionFunction2D>(ConvolutionalTransform2D) },
-    pooling{ SoftwareLayer.Get()->Transforms.Get<PoolingFunction2D>(PoolingTransform2D) },
-    is1D{ cnn->Is1D() && (pooling == nullptr || pooling->Is1D()) },
+    pooling{ SoftwareLayer.Get()->Transforms.GetOptional<PoolingFunction2D>(PoolingTransform2D) },
+    is1D{ cnn.Is1D() && (pooling == nullptr || pooling->Is1D()) },
     uArchConfig{ CalculateUArchConfig() }
 {
     if (is1D)
@@ -682,9 +683,9 @@ HardwareLayerCnn2D::HardwareLayerCnn2D(const DescriptorParameters& parameters) :
         save();
         Log->Message("Using new uArch CNN 2D.\n");
     }
-    saveThresholdExternal(*cnn->Biases, th_bias_src);
+    saveThresholdExternal(*cnn.Biases, th_bias_src);
     saveActivation(
-        SoftwareLayer.Get()->Transforms.Get<ActivationFunction>(ActivationTransform));
+        SoftwareLayer.Get()->Transforms.GetOptional<ActivationFunction>(ActivationTransform));
 }
 
 void HardwareLayerCnn2D::save()
@@ -694,30 +695,30 @@ void HardwareLayerCnn2D::save()
     XnnDescriptor[n_groups] = SoftwareLayer.Input.Dimensions.at('N');
     XnnDescriptor[n_in_elems] = SoftwareLayer.Input.Dimensions.at('W');
     XnnDescriptor[n_out_elems] = SoftwareLayer.Output.Dimensions.at('W');
-    XnnDescriptor[weight_size] = cnn->Filters->Mode;
-    XnnDescriptor[weight_buffer] = *cnn->Filters;
-    XnnDescriptor[cnn_n_flts] = cnn->Filters->Count;
-    XnnDescriptor[bias_buffer] = cnn->Biases->Buffer;
-    XnnDescriptor[bias_precision] = cnn->Biases->Mode;
-    XnnDescriptor[cnn2d_bias_mode] = cnn->Biases->BiasMode;
-    XnnDescriptor[cnn2d_in_dim_d] = cnn->Input->Dimensions.at('D');
-    XnnDescriptor[cnn2d_in_dim_w] = cnn->Input->Dimensions.at('W');
-    XnnDescriptor[cnn2d_in_dim_h] = cnn->Input->Dimensions.at('H');
-    XnnDescriptor[cnn2d_padding_w] = cnn->Padding->Dimensions.at('W');
-    XnnDescriptor[cnn2d_padding_h] = cnn->Padding->Dimensions.at('H');
-    XnnDescriptor[cnn2d_conv_stride_w] = cnn->Stride->Dimensions.at('W');
-    XnnDescriptor[cnn2d_conv_stride_h] = cnn->Stride->Dimensions.at('H');
-    XnnDescriptor[cnn2d_conv_out_w] = cnn->Output->Dimensions.at('W');
-    XnnDescriptor[cnn2d_conv_out_h] = cnn->Output->Dimensions.at('H');
-    XnnDescriptor[cnn2d_conv_kernel_w] = cnn->Filters->Dimensions.at('W');
-    XnnDescriptor[cnn2d_conv_kernel_h] = cnn->Filters->Dimensions.at('H');
+    XnnDescriptor[weight_size] = cnn.Filters->Mode;
+    XnnDescriptor[weight_buffer] = *cnn.Filters;
+    XnnDescriptor[cnn_n_flts] = cnn.Filters->Count;
+    XnnDescriptor[bias_buffer] = cnn.Biases->Buffer;
+    XnnDescriptor[bias_precision] = cnn.Biases->Mode;
+    XnnDescriptor[cnn2d_bias_mode] = cnn.Biases->BiasMode;
+    XnnDescriptor[cnn2d_in_dim_d] = cnn.Input->Dimensions.at('D');
+    XnnDescriptor[cnn2d_in_dim_w] = cnn.Input->Dimensions.at('W');
+    XnnDescriptor[cnn2d_in_dim_h] = cnn.Input->Dimensions.at('H');
+    XnnDescriptor[cnn2d_padding_w] = cnn.Padding->Dimensions.at('W');
+    XnnDescriptor[cnn2d_padding_h] = cnn.Padding->Dimensions.at('H');
+    XnnDescriptor[cnn2d_conv_stride_w] = cnn.Stride->Dimensions.at('W');
+    XnnDescriptor[cnn2d_conv_stride_h] = cnn.Stride->Dimensions.at('H');
+    XnnDescriptor[cnn2d_conv_out_w] = cnn.Output->Dimensions.at('W');
+    XnnDescriptor[cnn2d_conv_out_h] = cnn.Output->Dimensions.at('H');
+    XnnDescriptor[cnn2d_conv_kernel_w] = cnn.Filters->Dimensions.at('W');
+    XnnDescriptor[cnn2d_conv_kernel_h] = cnn.Filters->Dimensions.at('H');
     XnnDescriptor[cnn2d_kernel_iter] = static_cast<uint32_t>(uArchConfig.KWGIter);
     XnnDescriptor[cnn2d_kernel_wg] = static_cast<uint32_t>(uArchConfig.KWG);
 
     if (XnnDescriptor.HasParameter(cnn2d_zp_stride_h) && XnnDescriptor.HasParameter(cnn2d_zp_substride_h))
     {
-        XnnDescriptor[cnn2d_zp_stride_h] = cnn->Padding->Dimensions.at(GNA_DIM_H) / cnn->Stride->Dimensions.at(GNA_DIM_H);
-        XnnDescriptor[cnn2d_zp_substride_h] = cnn->Padding->Dimensions.at(GNA_DIM_H) % cnn->Stride->Dimensions.at(GNA_DIM_H);
+        XnnDescriptor[cnn2d_zp_stride_h] = cnn.Padding->Dimensions.at(GNA_DIM_H) / cnn.Stride->Dimensions.at(GNA_DIM_H);
+        XnnDescriptor[cnn2d_zp_substride_h] = cnn.Padding->Dimensions.at(GNA_DIM_H) % cnn.Stride->Dimensions.at(GNA_DIM_H);
     }
 
     XnnDescriptor[cnn2d_uthread_num] = uArchConfig.uT; //from u-arch
@@ -741,26 +742,26 @@ void HardwareLayerCnn2D::save1D()
 {
     saveCommonPart();
     XnnDescriptor[op] = static_cast<uint8_t>(NN_CNN);
-    XnnDescriptor[weight_size] = cnn->Filters->Mode;
+    XnnDescriptor[weight_size] = cnn.Filters->Mode;
     XnnDescriptor[n_in_elems] = SoftwareLayer.Input.Dimensions.at('W');
     XnnDescriptor[n_out_elems] = SoftwareLayer.Output.Dimensions.at('W');
     XnnDescriptor[n_groups] = ui32_0;
     // 07:pooling
-    XnnDescriptor[cnn_n_flt_stride] = cnn->Stride->Dimensions.at('W');
+    XnnDescriptor[cnn_n_flt_stride] = cnn.Stride->Dimensions.at('W');
     // 0a:pool size
-    XnnDescriptor[cnn2d_bias_mode] = cnn->Biases->BiasMode;
-    XnnDescriptor[bias_precision] = cnn->Biases->Mode;
-    XnnDescriptor[cnn_n_flts] = cnn->Filters->Count;
+    XnnDescriptor[cnn2d_bias_mode] = cnn.Biases->BiasMode;
+    XnnDescriptor[bias_precision] = cnn.Biases->Mode;
+    XnnDescriptor[cnn_n_flts] = cnn.Filters->Count;
     XnnDescriptor[cnn2d_kernel_iter] = static_cast<uint32_t>(uArchConfig.KWGIter);
-    XnnDescriptor[cnn_flt_size] = cnn->Filters->Dimensions.at('W');
+    XnnDescriptor[cnn_flt_size] = cnn.Filters->Dimensions.at('W');
     XnnDescriptor[cnn2d_kernel_wg] = static_cast<uint32_t>(uArchConfig.KWG);
-    XnnDescriptor[cnn2d_conv_out_w] = cnn->Output->Dimensions.at('W');
+    XnnDescriptor[cnn2d_conv_out_w] = cnn.Output->Dimensions.at('W');
     XnnDescriptor[cnn2d_uthread_num] = uArchConfig.uT; //from u-arch
     XnnDescriptor[cnn2d_kmem_base] = uArchConfig.KMemBase;
     XnnDescriptor[cnn2d_pmem_base] = uArchConfig.PMemBase;
     XnnDescriptor[cnn2d_cmem_base] = uArchConfig.CMemBase;
-    XnnDescriptor[weight_buffer] = *cnn->Filters;
-    XnnDescriptor[bias_buffer] = cnn->Biases->Buffer;
+    XnnDescriptor[weight_buffer] = *cnn.Filters;
+    XnnDescriptor[bias_buffer] = cnn.Biases->Buffer;
 
     if (pooling != nullptr)
     {
@@ -773,30 +774,30 @@ void HardwareLayerCnn2D::save1D()
 HardwareLayerAffineMBias::HardwareLayerAffineMBias(const DescriptorParameters& parameters) :
     HardwareLayerExt(parameters)
 {
-    auto mbiasLayer = SoftwareLayer.Get<const AffineLayer>();
-    auto affineMulti = mbiasLayer->Transforms.Get<AffineFunctionMulti>(AffineMultibiasTransform);
+    auto const mbiasLayer = SoftwareLayer.Get<const AffineLayer>();
+    auto const & affineMulti = mbiasLayer->Transforms.Get<AffineFunctionMulti>(AffineMultibiasTransform);
 
     save();
-    saveActivation(mbiasLayer->Transforms.Get<ActivationFunction>(ActivationTransform));
+    saveActivation(mbiasLayer->Transforms.GetOptional<ActivationFunction>(ActivationTransform));
 
-    XnnDescriptor[weight_buffer] = *affineMulti->Weights;
-    XnnDescriptor[weight_size] = affineMulti->Weights->Mode;
+    XnnDescriptor[weight_buffer] = *affineMulti.Weights;
+    XnnDescriptor[weight_size] = affineMulti.Weights->Mode;
 
     if (XnnDescriptor.HasParameter(bias_precision))
     {
-        XnnDescriptor[bias_precision] = affineMulti->Biases->Mode;
+        XnnDescriptor[bias_precision] = affineMulti.Biases->Mode;
     }
 
-    XnnDescriptor[bias_grp_cnt] = affineMulti->Biases->VectorCount;
-    XnnDescriptor[bias_grp_buffer] = affineMulti->Biases->Buffer;
-    XnnDescriptor[bias_grp_value] = affineMulti->Biases->VectorIndex;
+    XnnDescriptor[bias_grp_cnt] = affineMulti.Biases->VectorCount;
+    XnnDescriptor[bias_grp_buffer] = affineMulti.Biases->Buffer;
+    XnnDescriptor[bias_grp_value] = affineMulti.Biases->VectorIndex;
 
-    if (affineMulti->Weights->Mode == GNA_INT8 && mbiasLayer->Input.Mode == GNA_INT16)
+    if (affineMulti.Weights->Mode == GNA_INT8 && mbiasLayer->Input.Mode == GNA_INT16)
     {
-        XnnDescriptor[bias_buffer] = *affineMulti->WeightScaleFactors;
+        XnnDescriptor[bias_buffer] = *affineMulti.WeightScaleFactors;
     }
 
-    saveThresholdExternal(*affineMulti->Biases, th_bias_src);
+    saveThresholdExternal(*affineMulti.Biases, th_bias_src);
 }
 
 const std::map<const gna_gmm_mode, const GMM_MODE_CTRL> HardwareLayerGmm::GmmModes =
@@ -818,34 +819,34 @@ void HardwareLayerGmm::save()
     XnnDescriptor[gmm_descriptor] = XnnDescriptor.GmmDescriptor;
 
     auto const gmmLayer = SoftwareLayer.Get<const GmmOperation>();
-    auto const gmm = gmmLayer->Transforms.Get<GmmFunction>(GmmTransform);
+    auto const & gmm = gmmLayer->Transforms.Get<GmmFunction>(GmmTransform);
     // can be updated per request
-    XnnDescriptor[fvaddr] = gmm->Input->Buffer;
-    XnnDescriptor[gmmscradd] = gmm->Output->Buffer;
+    XnnDescriptor[fvaddr] = gmm.Input->Buffer;
+    XnnDescriptor[gmmscradd] = gmm.Output->Buffer;
 
     // GMM Model configuration, will be constant over time for model
     // will be updated when ActiveList is used
     XnnDescriptor[gmmscrlen] = GMM_SCORE_SIZE *
-        gmm->Input->at(GNA_DIM_H) * gmm->StateCount;
-    XnnDescriptor[fvoffset] = ALIGN64(gmm->Input->at(GNA_DIM_W) * GMM_FV_ELEMENT_SIZE);
+        gmm.Input->at(GNA_DIM_H) * gmm.StateCount;
+    XnnDescriptor[fvoffset] = ALIGN64(gmm.Input->at(GNA_DIM_W) * GMM_FV_ELEMENT_SIZE);
 
-    XnnDescriptor[numfv] = gmm->Input->at(GNA_DIM_H);
-    XnnDescriptor[vlength] = gmm->Input->at(GNA_DIM_W);
+    XnnDescriptor[numfv] = gmm.Input->at(GNA_DIM_H);
+    XnnDescriptor[vlength] = gmm.Input->at(GNA_DIM_W);
 
     XnnDescriptor[mode] = GmmModes.at(GNA_MAXMIX8)._value;
 
-    XnnDescriptor[gcaddr] = gmm->GaussianConstantBuffer;
-    XnnDescriptor[mvaddr] = gmm->MeanBuffer;
-    XnnDescriptor[vvaddr] = gmm->InverseCovarianceBuffer;
+    XnnDescriptor[gcaddr] = gmm.GaussianConstantBuffer;
+    XnnDescriptor[mvaddr] = gmm.MeanBuffer;
+    XnnDescriptor[vvaddr] = gmm.InverseCovarianceBuffer;
 
-    XnnDescriptor[gcsoffset] = gmm->GaussConstSetOffsetSize;
-    XnnDescriptor[mvsoffset] = gmm->MeanSetOffsetSize;
-    XnnDescriptor[vvsoffset] = gmm->VarSetOffsetSize;
-    XnnDescriptor[vvwidth] = gmm->InverseCovarianceSize;
-    XnnDescriptor[gmmtelst] = gmm->Means->at(GNA_DIM_W) * gmm->Input->at(GNA_DIM_W);
-    XnnDescriptor[maxlsscore] = gmm->MaximumScore;
-    XnnDescriptor[numgmms] = gmm->StateCount;
-    XnnDescriptor[nummcpg] = gmm->Means->at(GNA_DIM_W);
+    XnnDescriptor[gcsoffset] = gmm.GaussConstSetOffsetSize;
+    XnnDescriptor[mvsoffset] = gmm.MeanSetOffsetSize;
+    XnnDescriptor[vvsoffset] = gmm.VarSetOffsetSize;
+    XnnDescriptor[vvwidth] = gmm.InverseCovarianceSize;
+    XnnDescriptor[gmmtelst] = gmm.Means->at(GNA_DIM_W) * gmm.Input->at(GNA_DIM_W);
+    XnnDescriptor[maxlsscore] = gmm.MaximumScore;
+    XnnDescriptor[numgmms] = gmm.StateCount;
+    XnnDescriptor[nummcpg] = gmm.Means->at(GNA_DIM_W);
 
     XnnDescriptor[fvwidth] = GMM_FV_ELEMENT_SIZE;
     XnnDescriptor[gcwidth] = GMM_CONSTANTS_SIZE;

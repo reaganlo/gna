@@ -246,7 +246,7 @@ protected:
 
     HwUarchParams CalculateUArchConfig() const;
 
-    ConvolutionFunction2D const * const cnn;
+    ConvolutionFunction2D const & cnn;
     PoolingFunction2D const * const pooling;
     bool const is1D = false;
 

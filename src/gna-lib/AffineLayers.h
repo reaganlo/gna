@@ -55,10 +55,10 @@ protected:
     virtual DataConfig GetDataMode() const override;
 
     template<typename TransformFunction>
-    DataConfig getDataMode(TransformFunction transform) const
+    DataConfig getDataMode(TransformFunction const & transform) const
     {
-        auto weightMode = transform->Weights->Mode.Value;
-        auto biasMode = transform->Biases->Mode.Value;
+        auto weightMode = transform.Weights->Mode.Value;
+        auto biasMode = transform.Biases->Mode.Value;
         return DataConfig(Input.Mode, weightMode, biasMode, Output.Mode);
     }
 };

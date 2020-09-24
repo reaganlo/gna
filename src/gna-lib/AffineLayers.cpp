@@ -69,14 +69,14 @@ AffineBaseLayer::AffineBaseLayer(
 
 DataConfig AffineBaseLayer::GetDataMode() const
 {
-    auto affineTransform = static_cast<AffineFunction const *>(GetInputTransform());
+    auto const & affineTransform = GetInputTransform<AffineFunction>();
     return AffineBaseLayer::getDataMode(affineTransform);
 }
 
 void AffineLayer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const
 {
     AffineBaseLayer::UpdateKernelConfigs(layerConfiguration);
-    auto activation = Transforms.Get<ActivationFunction>(ActivationTransform);
+    auto const activation = Transforms.GetOptional<ActivationFunction>(ActivationTransform);
     if (activation)
     {
         auto const outputCount = layerConfiguration.ActList ?
@@ -112,7 +112,7 @@ Tensor const & AffineBaseLayer::GetOperand(uint32_t operandIndex) const
     switch (operandIndex)
     {
     case ScratchpadOperandIndex:
-        if (Transforms.Get(ActivationTransform))
+        if (Transforms.GetOptional(ActivationTransform))
         {
             return Output.ScratchPad;
         }
@@ -120,7 +120,7 @@ Tensor const & AffineBaseLayer::GetOperand(uint32_t operandIndex) const
     case WeightOperandIndex: //[[fallthrough]]
     case BiasOperandIndex: //[[fallthrough]]
     case WeightScaleFactorOperandIndex:
-        return GetInputTransform()->GetOperand(operandIndex);
+        return GetInputTransform().GetOperand(operandIndex);
     case PwlOperandIndex:
         return getTransformOperand(ActivationTransform, 2);// TODO:3:Intentional literal, replace with generic solution when all layers are transforms
     default:

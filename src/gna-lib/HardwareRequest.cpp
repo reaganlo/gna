@@ -148,11 +148,11 @@ void HardwareRequest::generateBufferPatches(const LayerConfiguration& layerConfi
             ldOffset = hwLayer.GetLdOutputOffset();
             if (INTEL_RECURRENT == layer.Operation)
             {
-                auto recurrentFunction = layer.Transforms.Get<RecurrentFunction>(RecurrentTransform);
-                auto newFbAddress = recurrentFunction->CalculateFeedbackBuffer(address);
-                auto feedbackBufferOffset = hwModel.GetBufferOffsetForConfiguration(
+                auto const & recurrentFunction = layer.Transforms.Get<RecurrentFunction>(RecurrentTransform);
+                auto const newFbAddress = recurrentFunction.CalculateFeedbackBuffer(address);
+                auto const feedbackBufferOffset = hwModel.GetBufferOffsetForConfiguration(
                     newFbAddress, requestConfiguration);
-                auto ldFeedbackOffset = hwLayer.GetLdFeedbackOffset();
+                auto const ldFeedbackOffset = hwLayer.GetLdFeedbackOffset();
                 ldPatches.push_back({ ldFeedbackOffset, feedbackBufferOffset, sizeof(uint32_t) });
             }
             break;

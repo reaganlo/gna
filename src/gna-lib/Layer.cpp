@@ -141,7 +141,7 @@ void Layer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const
 
         if (layerConfiguration.ActList)
         {
-            outputTransform->ValidateActiveList(*layerConfiguration.ActList);
+            GetOutputTransform().ValidateActiveList(*layerConfiguration.ActList);
         }
     }
 }
@@ -210,15 +210,8 @@ void Layer::VerifyHas1BInputAnd2BWeight()
 
 Tensor const & Layer::getTransformOperand(TransformOperation operation, uint32_t operandIndex) const
 {
-    auto const transform = Transforms.Get(operation);
-    if (transform)
-    {
-        return transform->GetOperand(operandIndex);
-    }
-    else
-    {
-        throw GnaException(Gna2StatusXnnErrorLyrCfg);
-    }
+    auto const & transform = Transforms.Get(operation);
+    return transform.GetOperand(operandIndex);
 }
 
 void Layer::initTransforms(const std::vector<TransformOperation>& transforms,
@@ -229,8 +222,11 @@ void Layer::initTransforms(const std::vector<TransformOperation>& transforms,
         outputTransform = Transforms.Emplace(transform, commonConfig, operationConfig);
         commonConfig.input = outputTransform->Output.get();
     }
+    Expect::NotNull(outputTransform);
 
     inputTransform = Transforms.begin()->get();
+    Expect::NotNull(inputTransform);
+
     if (Output.Buffer)
     {
         outputTransform->SetOutput(Output.Buffer);

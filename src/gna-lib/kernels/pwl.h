@@ -160,7 +160,6 @@ public:
     PwlCachedConfig pwl;
     mutable PwlApplySingle  ActivateSingle;              // algorithm used for PWL for single in-out
     mutable PwlApplyAll     ActivateAll;                 // algorithm used for PWL for all in-outs
-    uint32_t bytesPerOutput;
 
 private:
     void allocateLookupCaches();

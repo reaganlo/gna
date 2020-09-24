@@ -39,11 +39,12 @@ Request::Request(RequestConfiguration& config, std::unique_ptr<RequestProfiler> 
     Configuration(config),
     Profiler{std::move(profiler)}
 {
-    auto callback = [&](KernelBuffers *buffers, RequestProfiler *profilerPtr)
+    Expect::NotNull(Profiler.get());
+    auto callback = [&](KernelBuffers *buffers, RequestProfiler & profilerPtr)
     {
         return Configuration.Model.Score(Configuration, profilerPtr, buffers);
     };
-    scoreTask = std::packaged_task<Gna2Status(KernelBuffers *buffers, RequestProfiler *profiler)>(callback);
+    scoreTask = std::packaged_task<Gna2Status(KernelBuffers *buffers, RequestProfiler &profilerIn)>(callback);
     future = scoreTask.get_future();
 }
 

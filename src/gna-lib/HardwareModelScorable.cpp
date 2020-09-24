@@ -79,7 +79,7 @@ uint32_t HardwareModelScorable::Score(
     uint32_t layerIndex,
     uint32_t layerCount,
     const RequestConfiguration& requestConfiguration,
-    RequestProfiler *profiler,
+    RequestProfiler &profiler,
     KernelBuffers *buffers)
 {
     UNREFERENCED_PARAMETER(buffers);
@@ -130,20 +130,17 @@ uint32_t HardwareModelScorable::Score(
     }
     hwRequest->Update(layerIndex, layerCount, operationMode);
 
-    profiler->Measure(Gna2InstrumentationPointLibExecution);
+    profiler.Measure(Gna2InstrumentationPointLibExecution);
 
     auto const result = driverInterface.Submit(*hwRequest, profiler);
 
-    if (profiler != nullptr)
-    {
-        profiler->AddResults(Gna2InstrumentationPointDrvPreprocessing, result.driverPerf.Preprocessing);
-        profiler->AddResults(Gna2InstrumentationPointDrvProcessing, result.driverPerf.Processing);
-        profiler->AddResults(Gna2InstrumentationPointDrvDeviceRequestCompleted, result.driverPerf.DeviceRequestCompleted);
-        profiler->AddResults(Gna2InstrumentationPointDrvCompletion, result.driverPerf.Completion);
+    profiler.AddResults(Gna2InstrumentationPointDrvPreprocessing, result.driverPerf.Preprocessing);
+    profiler.AddResults(Gna2InstrumentationPointDrvProcessing, result.driverPerf.Processing);
+    profiler.AddResults(Gna2InstrumentationPointDrvDeviceRequestCompleted, result.driverPerf.DeviceRequestCompleted);
+    profiler.AddResults(Gna2InstrumentationPointDrvCompletion, result.driverPerf.Completion);
 
-        profiler->AddResults(Gna2InstrumentationPointHwTotalCycles, result.hardwarePerf.total);
-        profiler->AddResults(Gna2InstrumentationPointHwStallCycles, result.hardwarePerf.stall);
-    }
+    profiler.AddResults(Gna2InstrumentationPointHwTotalCycles, result.hardwarePerf.total);
+    profiler.AddResults(Gna2InstrumentationPointHwStallCycles, result.hardwarePerf.stall);
 
     if (result.status != Gna2StatusSuccess && result.status != Gna2StatusWarningArithmeticSaturation)
     {

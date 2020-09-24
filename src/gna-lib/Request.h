@@ -117,7 +117,7 @@ public:
 
     void operator()(KernelBuffers *buffers)
     {
-        scoreTask(buffers, Profiler.get());
+        scoreTask(buffers, *Profiler);
     }
 
     // External id (0-GNA_REQUEST_WAIT_ANY)
@@ -127,7 +127,7 @@ public:
     std::unique_ptr<RequestProfiler> Profiler;
 
 private:
-    std::packaged_task<Gna2Status(KernelBuffers *buffers, RequestProfiler *profiler)> scoreTask;
+    std::packaged_task<Gna2Status(KernelBuffers *buffers, RequestProfiler &profiler)> scoreTask;
 
     std::future<Gna2Status> future;
 };

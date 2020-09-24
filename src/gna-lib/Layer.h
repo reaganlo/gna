@@ -98,14 +98,19 @@ public:
 
     TransformList Transforms;
 
-    BaseTransform const * GetInputTransform() const
+    template<typename TransformType = BaseTransform>
+    TransformType const & GetInputTransform() const
     {
-        return inputTransform;
-    };
-    BaseTransform const * GetOutputTransform() const
+        Expect::NotNull(inputTransform);
+        return *(reinterpret_cast<TransformType const *>(inputTransform));
+    }
+
+    template<typename TransformType = BaseTransform>
+    TransformType const & GetOutputTransform() const
     {
-        return outputTransform;
-    };
+        Expect::NotNull(outputTransform);
+        return *(reinterpret_cast<TransformType *>(outputTransform));
+    }
 
     virtual Tensor const & GetOperand(uint32_t operandIndex) const;
     Tensor const * TryGetOperand(uint32_t operandIndex) const;

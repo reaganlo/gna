@@ -117,7 +117,7 @@ void LinuxDriverInterface::MemoryUnmap(uint64_t memoryId)
 }
 
 RequestResult LinuxDriverInterface::Submit(HardwareRequest& hardwareRequest,
-                                        RequestProfiler * const profiler) const
+                                        RequestProfiler & profiler) const
 {
     RequestResult result = { };
     int ret;
@@ -146,7 +146,7 @@ RequestResult LinuxDriverInterface::Submit(HardwareRequest& hardwareRequest,
         throw GnaException { Gna2StatusXnnErrorLyrCfg };
     }
 
-    profiler->Measure(Gna2InstrumentationPointLibDeviceRequestReady);
+    profiler.Measure(Gna2InstrumentationPointLibDeviceRequestReady);
 
     ret = ioctl(gnaFileDescriptor, GNA_COMPUTE, &computeArgs);
     if (ret == -1)
@@ -158,9 +158,9 @@ RequestResult LinuxDriverInterface::Submit(HardwareRequest& hardwareRequest,
     wait_data.in.request_id = computeArgs.out.request_id;
     wait_data.in.timeout = (driverCapabilities.recoveryTimeout + 1) * 1000;
 
-    profiler->Measure(Gna2InstrumentationPointLibDeviceRequestSent);
+    profiler.Measure(Gna2InstrumentationPointLibDeviceRequestSent);
     ret = ioctl(gnaFileDescriptor, GNA_WAIT, &wait_data);
-    profiler->Measure(Gna2InstrumentationPointLibDeviceRequestCompleted);
+    profiler.Measure(Gna2InstrumentationPointLibDeviceRequestCompleted);
     if(ret == 0)
     {
         result.status = ((wait_data.out.hw_status & GNA_STS_SATURATE) != 0)

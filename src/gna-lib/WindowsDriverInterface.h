@@ -115,7 +115,7 @@ public:
     virtual void MemoryUnmap(uint64_t memoryId) override;
 
     virtual RequestResult Submit(
-        HardwareRequest& hardwareRequest, RequestProfiler * const profiler) const override;
+        HardwareRequest& hardwareRequest, RequestProfiler& profiler) const override;
 
 protected:
     void createRequestDescriptor(HardwareRequest& hardwareRequest) const;

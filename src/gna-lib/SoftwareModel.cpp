@@ -108,7 +108,7 @@ uint32_t SoftwareModel::Score(
     uint32_t layerIndex,
     uint32_t layerCountIn,
     RequestConfiguration const &requestConfiguration,
-    RequestProfiler *profiler,
+    RequestProfiler &profiler,
     KernelBuffers *fvBuffers)
 {
     validateConfiguration(requestConfiguration);
@@ -122,7 +122,7 @@ uint32_t SoftwareModel::Score(
     auto layerIter = layers.cbegin() + layerIndex;
     auto const layerEnd = layerIter + layerCountIn;
 
-    profiler->Measure(Gna2InstrumentationPointLibExecution);
+    profiler.Measure(Gna2InstrumentationPointLibExecution);
 
     for (; layerIter < layerEnd; ++layerIter)
     {

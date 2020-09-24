@@ -126,13 +126,13 @@ CompiledModel::AccelerationType CompiledModel::getEffectiveAccelerationMode(Requ
 
 Gna2Status CompiledModel::Score(
     RequestConfiguration& config,
-    RequestProfiler *profiler,
+    RequestProfiler &profiler,
     KernelBuffers *buffers)
 {
     auto saturationCount = uint32_t{ 0 };
     try
     {
-        profiler->Measure(Gna2InstrumentationPointLibProcessing);
+        profiler.Measure(Gna2InstrumentationPointLibProcessing);
         auto const effectiveAcceleration = getEffectiveAccelerationMode(config);
         switch (effectiveAcceleration)
         {
@@ -146,7 +146,7 @@ Gna2Status CompiledModel::Score(
             return Gna2StatusAccelerationModeNotSupported;
             break;
         }
-        profiler->Measure(Gna2InstrumentationPointLibCompletion);
+        profiler.Measure(Gna2InstrumentationPointLibCompletion);
     }
     catch (const GnaException& e)
     {
@@ -231,7 +231,7 @@ BaseValidator CompiledModel::makeValidator()
 }
 
 uint32_t CompiledModel::scoreAllSubModels(RequestConfiguration& config,
-    RequestProfiler *profiler, KernelBuffers *buffers)
+    RequestProfiler &profiler, KernelBuffers *buffers)
 {
     const auto& deviceSubmodels = getSubmodels(hwCapabilities);
     auto saturationCount = uint32_t{ 0 };

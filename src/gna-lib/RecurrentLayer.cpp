@@ -60,6 +60,6 @@ RecurrentLayer::RecurrentLayer(const Gna2Operation& operation, const BaseValidat
 
 DataConfig RecurrentLayer::GetDataMode() const
 {
-    auto affineTransform = Transforms.Get<AffineFunction>(RecurrentTransform);
+    auto const & affineTransform = Transforms.Get<AffineFunction>(RecurrentTransform);
     return AffineBaseLayer::getDataMode(affineTransform);
 }

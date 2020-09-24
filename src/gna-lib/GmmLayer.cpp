@@ -65,7 +65,7 @@ Tensor const & GmmOperation::GetOperand(uint32_t operandIndex) const
 
 DataConfig GmmOperation::GetDataMode() const
 {
-    return reinterpret_cast<GmmFunction const *>(inputTransform)->GetDataMode();
+    return GetInputTransform<GmmFunction>().GetDataMode();
 }
 
 std::unique_ptr<GmmFunction> GmmFunction::Create(const TransformFactoryConfig& config,

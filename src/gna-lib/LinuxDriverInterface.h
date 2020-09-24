@@ -52,7 +52,7 @@ public:
     virtual void MemoryUnmap(uint64_t memoryId) override;
 
     virtual RequestResult Submit(HardwareRequest& hardwareRequest,
-                                RequestProfiler * const profiler) const override;
+                                RequestProfiler & profiler) const override;
 
     LinuxDriverInterface(const LinuxDriverInterface &) = delete;
     LinuxDriverInterface& operator=(const LinuxDriverInterface&) = delete;

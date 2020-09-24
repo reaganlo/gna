@@ -110,7 +110,7 @@ public:
 
     Gna2Status Score(
         RequestConfiguration& config,
-        RequestProfiler *profiler,
+        RequestProfiler &profiler,
         KernelBuffers *buffers);
 
     void ValidateBuffer(MemoryContainer const & requestAllocations, Memory const & memory) const;
@@ -149,7 +149,7 @@ private:
     AccelerationType getEffectiveAccelerationMode(RequestConfiguration& config);
 
     uint32_t scoreAllSubModels(RequestConfiguration& config,
-        RequestProfiler *profiler, KernelBuffers *buffers);
+        RequestProfiler &profiler, KernelBuffers *buffers);
 
     BaseValidator makeValidator();
     static uint32_t GetNumberOfOperations(const Gna2Model& model)

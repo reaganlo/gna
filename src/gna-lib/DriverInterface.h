@@ -116,7 +116,7 @@ public:
     virtual void MemoryUnmap(uint64_t memoryId) = 0;
 
     virtual RequestResult Submit(
-        HardwareRequest& hardwareRequest, RequestProfiler * const profiler) const = 0;
+        HardwareRequest& hardwareRequest, RequestProfiler & profiler) const = 0;
 
 protected:
     DriverInterface() = default;

@@ -53,8 +53,9 @@ void ConvolutionalLayer2D::Init()
 {
     if (GNA_3_5 != validator.get()->HwCapabilities.GetDeviceGeneration())
     {
-        if (inputTransform->Is1D() &&
-            (Transforms.Get<PoolingFunction2D>(PoolingTransform2D) == nullptr || outputTransform->Is1D()))
+        if (GetInputTransform().Is1D() &&
+            (Transforms.GetOptional<PoolingFunction2D>(PoolingTransform2D) == nullptr
+                || GetOutputTransform().Is1D()))
         {
             auto const& capsMapIn = ConvolutionalLayer2DCapabilities::GetOperands(InputOperandIndex);
             Input.Validate(capsMapIn, INTEL_CONVOLUTIONAL_1D);
@@ -80,7 +81,7 @@ void ConvolutionalLayer2D::Init()
 
     Expect::One(Input.at(GNA_DIM_N), Gna2StatusXnnErrorGrouping);
     Expect::One(Output.at(GNA_DIM_N), Gna2StatusXnnErrorGrouping);
-    Expect::Equal(Output.Size, GetOutputTransform()->Output->Size, Gna2StatusXnnErrorOutputVolume);
+    Expect::Equal(Output.Size, GetOutputTransform().Output->Size, Gna2StatusXnnErrorOutputVolume);
 }
 
 Tensor const & ConvolutionalLayer2D::GetOperand(uint32_t operandIndex) const
@@ -88,7 +89,7 @@ Tensor const & ConvolutionalLayer2D::GetOperand(uint32_t operandIndex) const
     switch (operandIndex)
     {
     case ScratchpadOperandIndex:
-        if (Transforms.Get(ActivationTransform))
+        if (Transforms.GetOptional(ActivationTransform))
         {
             return Output.ScratchPad;
         }
@@ -106,7 +107,7 @@ Tensor const & ConvolutionalLayer2D::GetOperand(uint32_t operandIndex) const
     {
         if (Transforms.size() > 1)
         {
-            return inputTransform->GetOperand(OutputOperandIndex);
+            return GetInputTransform().GetOperand(OutputOperandIndex);
         }
         throw GnaException(Gna2StatusXnnErrorLyrCfg);
     }
@@ -130,7 +131,7 @@ std::unique_ptr<const Component> ConvolutionalLayer2D::CreateComponentFromParame
 
 DataConfig ConvolutionalLayer2D::GetDataMode() const
 {
-    auto& convolutionTransform = *Transforms.Get<ConvolutionFunction2D>(ConvolutionalTransform2D);
+    auto const & convolutionTransform = Transforms.Get<ConvolutionFunction2D>(ConvolutionalTransform2D);
     const auto filterMode = convolutionTransform.Filters->Mode.Value;
     const auto biasMode = convolutionTransform.Biases->Mode.Value;
     return DataConfig(Input.Mode.Value, filterMode, biasMode, Output.Mode.Value);

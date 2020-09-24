@@ -198,7 +198,7 @@ void WindowsDriverInterface::MemoryUnmap(uint64_t memoryId)
  @param profiler Request profiling information to be filled.
  */
 RequestResult WindowsDriverInterface::Submit(HardwareRequest& hardwareRequest,
-    RequestProfiler * const profiler) const
+    RequestProfiler & profiler) const
 {
     auto bytesRead = DWORD{ 0 };
     RequestResult result = { 0 };
@@ -227,18 +227,18 @@ RequestResult WindowsDriverInterface::Submit(HardwareRequest& hardwareRequest,
         throw GnaException{ Gna2StatusXnnErrorLyrCfg };
     }
 
-    profiler->Measure(Gna2InstrumentationPointLibDeviceRequestReady);
+    profiler.Measure(Gna2InstrumentationPointLibDeviceRequestReady);
 
     auto ioResult = WriteFile(static_cast<HANDLE>(deviceHandle),
         input, static_cast<DWORD>(hardwareRequest.CalculationSize),
         nullptr, ioHandle);
     checkStatus(ioResult);
 
-    profiler->Measure(Gna2InstrumentationPointLibDeviceRequestSent);
+    profiler.Measure(Gna2InstrumentationPointLibDeviceRequestSent);
 
     GetOverlappedResultEx(deviceHandle, ioHandle, &bytesRead, recoveryTimeout , false);
 
-    profiler->Measure(Gna2InstrumentationPointLibDeviceRequestCompleted);
+    profiler.Measure(Gna2InstrumentationPointLibDeviceRequestCompleted);
 
     auto const output = reinterpret_cast<PGNA_INFERENCE_CONFIG_OUT>(input);
     auto const status = output->status;
