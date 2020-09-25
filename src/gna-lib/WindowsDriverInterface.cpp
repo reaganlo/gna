@@ -155,6 +155,7 @@ uint64_t WindowsDriverInterface::MemoryMap(void *memory, uint32_t memorySize)
         int totalWaitForMapMilliseconds = 0;
         for (int i = 0; outMemoryId == FORBIDDEN_MEMORY_ID && i < WAIT_FOR_MAP_ITERATIONS; i++)
         {
+            verify(*memoryMapOverlapped);
             Sleep(WAIT_FOR_MAP_MILLISECONDS);
             totalWaitForMapMilliseconds += WAIT_FOR_MAP_MILLISECONDS;
         }
@@ -436,38 +437,36 @@ std::string WindowsDriverInterface::discoverDevice(uint32_t deviceIndex)
     return std::string(device.begin(), device.end());
 }
 
-void WindowsDriverInterface::wait(LPOVERLAPPED const ioctl) const
+void WindowsDriverInterface::wait(LPOVERLAPPED ioctl) const
 {
-    static std::string errorDescription;
-    auto bytesRead = DWORD{ 0 };
-
-    auto ioResult = GetOverlappedResultEx(deviceHandle, ioctl, &bytesRead, recoveryTimeout, false);
-    if (ioResult == 0) // io not completed
-    {
-        const auto error = GetLastError();
-        errorDescription = lastErrorToString(error);
-
-        Log->Error("GetOverlappedResult failed, error: \n");
-#if DEBUG == 1
-        Log->Error("%s\n", errorDescription.c_str());
-#endif
-        throw GnaException(Gna2StatusDeviceIngoingCommunicationError);
-    }
-    // io completed successfully
+    getOverlappedResult(
+        [](BOOL ioResult, DWORD error)
+            {return (ioResult == 0); },
+        ioctl,
+        recoveryTimeout,
+        Gna2StatusDeviceIngoingCommunicationError,
+        "GetOverlappedResult failed.\n");
 }
 
-void WindowsDriverInterface::checkStatus(BOOL ioResult)
+void WindowsDriverInterface::verify(LPOVERLAPPED ioctl) const
 {
-    const auto lastError = GetLastError();
+    getOverlappedResult(
+        [](BOOL ioResult, DWORD error)
+            {return (ioResult == 0 && STATUS_SUCCESS != error && ERROR_IO_PENDING != error); },
+        ioctl,
+        0,
+        Gna2StatusDriverCommunicationMemoryMapError,
+        "MemoryMap failed.\n");
+}
 
-    if (ioResult == 0 && ERROR_IO_PENDING != lastError)
-    {
-#if DEBUG == 1
-        const auto desc = lastErrorToString(lastError);
-        Log->Error("%s\n", desc.c_str());
-#endif
-        throw GnaException(Gna2StatusDeviceOutgoingCommunicationError);
-    }
+void WindowsDriverInterface::checkStatus(BOOL ioResult) const
+{
+    throwOnFailedPredicate(
+        [](BOOL ioResult, DWORD error)
+            {return (ioResult == 0 && ERROR_IO_PENDING != error); },
+        0,
+        Gna2StatusDeviceOutgoingCommunicationError,
+        nullptr);
 }
 
 std::string WindowsDriverInterface::lastErrorToString(DWORD lastError)

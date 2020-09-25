@@ -70,7 +70,8 @@ public:
         deviceHandle = handle;
     }
 
-    operator HANDLE() const {
+    operator HANDLE() const
+    {
         return deviceHandle;
     }
 
@@ -128,9 +129,52 @@ private:
 
     inline static std::string lastErrorToString(DWORD error);
 
-    void wait(LPOVERLAPPED const ioctl) const;
+    void wait(LPOVERLAPPED ioctl) const;
 
-    static void checkStatus(BOOL ioResult);
+    void verify(LPOVERLAPPED ioctl) const;
+
+    void checkStatus(BOOL ioResult) const;
+
+    template <typename Predicate>
+    void getOverlappedResult(Predicate predicate,
+        LPOVERLAPPED ioctl,
+        DWORD timeout,
+        Gna2Status status,
+        char const * message) const
+    {
+        auto bytesRead = DWORD{ 0 };
+        auto const ioResult = GetOverlappedResultEx(deviceHandle,
+            ioctl,
+            &bytesRead,
+            timeout,
+            false);
+        throwOnFailedPredicate(predicate,
+            ioResult,
+            status,
+            message);
+    }
+
+    template <typename Predicate>
+    void throwOnFailedPredicate(Predicate predicate,
+        BOOL ioResult,
+        Gna2Status status,
+        char const * message) const
+    {
+        auto const error = GetLastError();
+        if (predicate(ioResult, error))
+        {
+            if (message)
+            {
+                Log->Error(message);
+#if DEBUG == 1
+                auto const errorDescription = lastErrorToString(error);
+                Log->Error("%s\n", errorDescription.c_str());
+#endif
+            }
+            throw GnaException(status);
+        }
+        // io completed successfully
+    }
 
     void getDeviceCapabilities();
 
