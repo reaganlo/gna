@@ -6,3 +6,4 @@ set GNA_CMAKE_CONFIG=WIN_DEBUG
 
 
 call .\build-lib.bat || exit /b 666
+
