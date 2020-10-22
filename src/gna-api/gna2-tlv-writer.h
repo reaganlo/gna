@@ -201,11 +201,11 @@ struct Gna2TlvInternalRecordOf4Length
  */
 GNA2_TLV_LINKAGE uint32_t Gna2TlvGetCStringByteSizeSat(const char* s)
 {
-    if (s == NULL)
+    if (s == nullptr)
     {
         return 0;
     }
-    const auto sLength = strlen(s);
+    const auto sLength = static_cast<uint32_t>(strlen(s));
     return sLength >= UINT32_MAX ? UINT32_MAX : sLength + 1;
 }
 

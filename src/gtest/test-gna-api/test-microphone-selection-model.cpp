@@ -168,7 +168,8 @@ void TestTlvReader(const char* tlvBlob, uint32_t tlvSize, bool outAsExternal, st
 void TestMicrophoneSelectionModel::exportForAnna(bool outAsExternal, bool inputAlsoFromExternal, uint32_t inputExternalOffset)
 {
     const auto& conversionPwl = TestActivationHelper::GetConversionPwl();
-    const uint32_t memoryPwlSize = conversionPwl.size() * sizeof(Gna2PwlSegment);
+    const auto memoryPwlSize = static_cast<uint32_t>(
+        conversionPwl.size() * sizeof(Gna2PwlSegment));
 
     void * gnaMemoryRO;
     const uint32_t memoryROSize = ALIGN64(memoryZeroedSize) + ALIGN64(memoryPwlSize);
@@ -212,7 +213,8 @@ void TestMicrophoneSelectionModel::exportForAnna(bool outAsExternal, bool inputA
     auto weightOperand = Gna2TensorInit2D(numberOfElementsFromMic, minimalMBInputVectorSize, Gna2DataTypeInt16, gnaMemoryZeroed);
     auto biasOperand = Gna2TensorInit2D(numberOfElementsFromMic, numberOfMics, Gna2DataTypeInt32, mockedExternalBuffer);
     biasOperand.Mode = Gna2TensorModeExternalBuffer;
-    auto pwlOperand = Gna2TensorInit1D(conversionPwl.size(), Gna2DataTypePwlSegment, gnaMemoryPwl);
+    auto pwlOperand = Gna2TensorInit1D(static_cast<uint32_t>(conversionPwl.size()),
+        Gna2DataTypePwlSegment, gnaMemoryPwl);
 
     ASSERT_EQ(Gna2StatusSuccess, Gna2OperationInitFullyConnectedBiasGrouping(&operation, AlignedAllocator,
         &inputOperand, &outputOperand, &weightOperand, &biasOperand, &pwlOperand, nullptr,

@@ -2,13 +2,14 @@
 	path = build/googletest
 	url = https://github.com/google/googletest.git
 	branch = v1.10.x
-#forwarded to f5a9c5eb5b7885547f143e67659e03acfd828082
+	#commit f5a9c5eb5b7885547f143e67659e03acfd828082
 [submodule "build/hw_module_3_0"]
 	path = build/hw_module_3_0
 	url = ssh://git@gitlab.devtools.intel.com:29418/gna/sdk/hw/gna-3.0-arch-cpkg.git
-	branch = master
-#forwarded to ff8648c5506f89d51423ecf5e92732f3ae95a886
+	branch = ArchCPkg.ADL-S-B0.V1.official
+	#commit 5e53caeb503d5be7ce8d35d195722e24f758d715
 [submodule "build/hw_module_3_5"]
 	path = build/hw_module_3_5
 	url = ssh://git@gitlab.devtools.intel.com:29418/gna/sdk/hw/gna-3.0-arch-cpkg.git
-	branch = ArchCPkg.Gen3p5.MTL-SoC-M.RTL-0p5.release
+	branch = master
+	#commit e9b70e0249ddea3319d254beb3921b98766f4bb8

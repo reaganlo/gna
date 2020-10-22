@@ -52,7 +52,7 @@ public:
         return trimL(parts.at(index), '0');
     }
 
-    int Size() const
+    auto Size() const
     {
         return parts.size();
     }
