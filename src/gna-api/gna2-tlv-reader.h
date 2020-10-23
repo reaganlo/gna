@@ -45,7 +45,7 @@ Supported languages: C/C++.
 
 /**
  @private
- Internal function. Should not be used directely.
+ Internal function. Should not be used directly.
  */
 GNA2_TLV_LINKAGE Gna2TlvStatus Gna2TlvCheckValid(const Gna2TlvRecord * tlvRecord, const char* tlvBlobEnd)
 {
@@ -69,7 +69,7 @@ GNA2_TLV_LINKAGE Gna2TlvStatus Gna2TlvCheckValid(const Gna2TlvRecord * tlvRecord
  Can be used in loop to eventually find every occurrences of the record with the specified type
  if there is more than one within the blob (tlvArrayBegin and tlvArraySize have to be modified accordingly).
 
- @param [in] tlvArrayBegin Address of the TLV record to start the seach. TLV formatted GNA model address.
+ @param [in] tlvArrayBegin Address of the TLV record to start the search. TLV formatted GNA model address.
  @param [in] tlvArraySize Byte size of all the TLV records list in the memory which should be searched.
  @param [in] tlvTypeToFind TLV type of the record to find.
  @param [out] outValueLength TLV length of the record found.
@@ -125,7 +125,7 @@ GNA2_TLV_LINKAGE Gna2TlvStatus Gna2TlvFindInArray(
  @param [in] tlvArrayBegin Address of the TLV record to start the verification. e.g., TLV formatted GNA model address.
  @param [in] tlvArraySize Byte size of all the TLV records list in the memory which should be verified.
  @return Status of the operation.
- @retval Gna2TlvStatusSuccess Successful verification of version and completness.
+ @retval Gna2TlvStatusSuccess Successful verification of version and completeness.
  @retval Gna2TlvStatusVersionNotFound  The TLV version was not found.
  @retval Gna2TlvStatusVersionNotSupported The TLV version is not supported.
  @retval Gna2TlvStatusSecondaryVersionFound The blob contains more than one record with TLV version.

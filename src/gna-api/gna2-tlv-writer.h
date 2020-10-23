@@ -94,7 +94,16 @@
 
 /**
  @private
- Internal function. Should not be used directely.
+ Internal function. Should not be used directly.
+ */
+GNA2_TLV_LINKAGE Gna2TlvStatus Gna2TlvImplRoundUpTo4(uint32_t length)
+{
+    return ((length + 3) >> 2) << 2;
+}
+
+/**
+ @private
+ Internal function. Should not be used directly.
  */
 GNA2_TLV_LINKAGE Gna2TlvStatus Gna2TlvImplComputePadSize(
     uint32_t currentOffset,
@@ -120,7 +129,7 @@ GNA2_TLV_LINKAGE Gna2TlvStatus Gna2TlvImplComputePadSize(
 
 /**
  @private
- Internal function. Should not be used directely.
+ Internal function. Should not be used directly.
  */
 GNA2_TLV_LINKAGE Gna2TlvStatus Gna2TlvImplPad(char* buf, uint32_t paddingTlvLength)
 {
@@ -141,7 +150,7 @@ GNA2_TLV_LINKAGE Gna2TlvStatus Gna2TlvImplPad(char* buf, uint32_t paddingTlvLeng
 
 /**
  @private
- Internal function. Should not be used directely.
+ Internal function. Should not be used directly.
  */
 GNA2_TLV_LINKAGE void Gna2TlvImplCopy(char*& outBuf, const char * src, uint32_t srcLength)
 {
@@ -153,7 +162,21 @@ GNA2_TLV_LINKAGE void Gna2TlvImplCopy(char*& outBuf, const char * src, uint32_t 
 
 /**
  @private
- Internal function. Should not be used directely.
+ Internal function. Should not be used directly.
+ */
+GNA2_TLV_LINKAGE void Gna2TlvImplCopyPad4B(char*& outBuf, const char * src, uint32_t srcLength)
+{
+    Gna2TlvImplCopy(outBuf, src, srcLength);
+    auto pad4B = Gna2TlvImplRoundUpTo4(srcLength) - srcLength;
+    while (pad4B--)
+    {
+        *outBuf++ = 0;
+    }
+}
+
+/**
+ @private
+ Internal function. Should not be used directly.
  */
 GNA2_TLV_LINKAGE void Gna2TlvImplWriteTypeLength(char*&buffer, Gna2TlvType type, Gna2TlvLength length)
 {
@@ -165,7 +188,7 @@ GNA2_TLV_LINKAGE void Gna2TlvImplWriteTypeLength(char*&buffer, Gna2TlvType type,
 
 /**
  @private
- Internal function. Should not be used directely.
+ Internal function. Should not be used directly.
  */
 GNA2_TLV_LINKAGE void Gna2TlvImplWrite4BSize(char*&buffer, Gna2TlvType type, uint32_t sizeAsValue)
 {
@@ -176,7 +199,7 @@ GNA2_TLV_LINKAGE void Gna2TlvImplWrite4BSize(char*&buffer, Gna2TlvType type, uin
 
 /**
  @private
- Internal type. Should not be used directely.
+ Internal type. Should not be used directly.
  */
 struct Gna2TlvInternalRecord
 {
@@ -187,7 +210,7 @@ struct Gna2TlvInternalRecord
 
 /**
  @private
- Internal type. Should not be used directely.
+ Internal type. Should not be used directly.
  */
 struct Gna2TlvInternalRecordOf4Length
 {
@@ -197,7 +220,7 @@ struct Gna2TlvInternalRecordOf4Length
 
 /**
  @private
- Internal function. Should not be used directely.
+ Internal function. Should not be used directly.
  */
 GNA2_TLV_LINKAGE uint32_t Gna2TlvGetCStringByteSizeSat(const char* s)
 {
@@ -210,7 +233,7 @@ GNA2_TLV_LINKAGE uint32_t Gna2TlvGetCStringByteSizeSat(const char* s)
 }
 
 /**
- Exports TLV formated GNA model into newly allocated memory region.
+ Exports TLV formatted GNA model into newly allocated memory region.
 
  This function is for GNA 3.5 devices with autonomous extension present.
 
@@ -221,15 +244,15 @@ GNA2_TLV_LINKAGE uint32_t Gna2TlvGetCStringByteSizeSat(const char* s)
  @param [in] lda [required not null] layer descriptor component, as exported with Gna2ModelExport() and Gna2ModelExportComponentLayerDescriptors.
  @param [in] ldaSize layer descriptor size in bytes, as exported with Gna2ModelExport() and Gna2ModelExportComponentLayerDescriptors.
  @param [in] ro read only model fragment.
- @param [in] roSize read only model part size, must be 0 if ro is NULL.
+ @param [in] roSize read only model part size, must be 0 if ro is NULL. Has to be 4B aligned.
  @param [in] state state model fragment. Can be NULL.
- @param [in] stateSize state model fragment size, must be 0 if state is NULL.
+ @param [in] stateSize state model fragment size, must be 0 if state is NULL. Has to be 4B aligned.
  @param [in] scratchSize scratch model fragment size.
  @param [in] externalInputSize external input buffer size of model.
  @param [in] externalOutputSize external output buffer size of model.
- @param [in] gnaLibraryVersion GNA library's version c-string obtained with Gna2GetLibraryVersion(), if the model is exported using GNA library, can be NULL otherwise.
+ @param [in] gnaLibraryVersion GNA library's version c-string obtained with Gna2GetLibraryVersion(), if the model is exported using GNA library, can be NULL otherwise.  Will be padded with 0 to align to 4B.
  @param [in] userData User data. Can be NULL.
- @param [in] userDataSize User data size, must be 0 if userData is NULL.
+ @param [in] userDataSize User data size, must be 0 if userData is NULL. Will be padded with 0 to align to 4B.
  @return Status of the operation.
  */
 GNA2_TLV_LINKAGE Gna2TlvStatus Gna2ExportTlvGNAA35(
@@ -255,6 +278,9 @@ GNA2_TLV_LINKAGE Gna2TlvStatus Gna2ExportTlvGNAA35(
     {
         return Gna2TlvStatusLengthTooBig;
     }
+
+    GNA2_TLV_EXPECT_MULTIPLY_4B(roSize);
+    GNA2_TLV_EXPECT_MULTIPLY_4B(stateSize);
 
     GNA2_TLV_EXPECT_NOT_NULL(lda);
     GNA2_TLV_EXPECT_NOT_NULL(userAllocatorIn);
@@ -314,7 +340,7 @@ GNA2_TLV_LINKAGE Gna2TlvStatus Gna2ExportTlvGNAA35(
     uint32_t sizeFromStates = 0;
     for(const auto& record: recordsFromState)
     {
-        sizeFromStates += GNA2_TLV_EMPTY_RECORD_SIZE + record.tlvLength;
+        sizeFromStates += GNA2_TLV_EMPTY_RECORD_SIZE + Gna2TlvImplRoundUpTo4(record.tlvLength);
     }
 
     const uint32_t totalSizeRequired = sizeOfRecordsBeforeState + outPadSizeState + sizeFromStates;
@@ -335,7 +361,7 @@ GNA2_TLV_LINKAGE Gna2TlvStatus Gna2ExportTlvGNAA35(
 
     if (outPadSizeLda != 0)
     {
-        const Gna2TlvStatus status = Gna2TlvImplPad(curOutBuffer, outPadSizeLda - GNA2_TLV_EMPTY_RECORD_SIZE);
+        status = Gna2TlvImplPad(curOutBuffer, outPadSizeLda - GNA2_TLV_EMPTY_RECORD_SIZE);
         if (status != Gna2TlvStatusSuccess)
         {
             return Gna2TlvStatusOutOfBuffer;
@@ -349,7 +375,7 @@ GNA2_TLV_LINKAGE Gna2TlvStatus Gna2ExportTlvGNAA35(
 
     if (outPadSizeState != 0)
     {
-        Gna2TlvStatus status = Gna2TlvImplPad(curOutBuffer, outPadSizeState - GNA2_TLV_EMPTY_RECORD_SIZE);
+        status = Gna2TlvImplPad(curOutBuffer, outPadSizeState - GNA2_TLV_EMPTY_RECORD_SIZE);
         if (status != Gna2TlvStatusSuccess)
         {
             return Gna2TlvStatusOutOfBuffer;
@@ -359,8 +385,8 @@ GNA2_TLV_LINKAGE Gna2TlvStatus Gna2ExportTlvGNAA35(
 
     for (const auto& record : recordsFromState)
     {
-        Gna2TlvImplWriteTypeLength(curOutBuffer, record.tlvType, record.tlvLength);
-        Gna2TlvImplCopy(curOutBuffer, record.tlvValue, record.tlvLength);
+        Gna2TlvImplWriteTypeLength(curOutBuffer, record.tlvType, Gna2TlvImplRoundUpTo4(record.tlvLength));
+        Gna2TlvImplCopyPad4B(curOutBuffer, record.tlvValue, record.tlvLength);
     }
 
     if (curOutBuffer != *outTlv + totalSizeRequired)

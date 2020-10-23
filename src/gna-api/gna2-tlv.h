@@ -26,7 +26,7 @@
  @file gna2-tlv.h
  @brief Intel (R) GNA TLV model export common header.
 
- Common header defineing TLV format basics, TLV types and function statuses.
+ Common header defining TLV format basics, TLV types and function statuses.
 
  Supported languages: C/C++
 
@@ -52,7 +52,7 @@
 /**
  The TLV type is represented by 4 bytes long field.
 
- Currentely only ASCII bytes (0-127) are used to represent types.
+ Currently only ASCII bytes (0-127) are used to represent types.
 
  Examples of generic TLV types:
     TLV Type name                               | ASCII representation
@@ -147,7 +147,7 @@ typedef uint32_t Gna2TlvType;
 typedef uint32_t Gna2TlvLength;
 
 /**
- Helper structure describing single TLV record and usefull for accessing particular TLV recods parts.
+ Helper structure describing single TLV record and useful for accessing particular TLV records parts.
 
  The typical TLV blob contains a list of such records.
 
@@ -185,6 +185,7 @@ static_assert(sizeof(Gna2TlvRecord) == 8, "Wrong size of Gna2TlvRecord");
     Gna2TlvStatusNotSupported                   | 0x80
     Gna2TlvStatusLengthTooBig                   | 0x100
     Gna2TlvStatusLengthOver256MB                | 0x101
+    Gna2TlvStatusLengthNot4BMultiply            | 0x102
     Gna2TlvStatusUserAllocatorError             | 0x200
     Gna2TlvStatusTlvReadError                   | 0x300
     Gna2TlvStatusSecondaryVersionFound          | 0x301
@@ -203,6 +204,7 @@ typedef int32_t Gna2TlvStatus;
 #define Gna2TlvStatusNotSupported 0x80
 #define Gna2TlvStatusLengthTooBig 0x100
 #define Gna2TlvStatusLengthOver256MB 0x101
+#define Gna2TlvStatusLengthNot4BMultiply 0x102
 #define Gna2TlvStatusUserAllocatorError 0x200
 #define Gna2TlvStatusTlvReadError 0x300
 #define Gna2TlvStatusSecondaryVersionFound 0x301
@@ -230,7 +232,7 @@ typedef void* Gna2TlvAllocator(uint32_t);
 #define GNA2_TLV_EXPECT_NOT_NULL(ADDRESS) {if((ADDRESS) == NULL) return Gna2TlvStatusNullNotAllowed;}
 #define GNA2_TLV_EXPECT_NOT_NULL_IF_SIZE_NZ(DATASIZE, ADDRESS) {if((DATASIZE) != 0) GNA2_TLV_EXPECT_NOT_NULL(ADDRESS)}
 #define GNA2_TLV_EXPECT_LENGTH_UP_TO_256MB(LENGTH) {if((LENGTH) > (1 << 28)) return Gna2TlvStatusLengthOver256MB;}
-
+#define GNA2_TLV_EXPECT_MULTIPLY_4B(LENGTH) {if((LENGTH) % 4) return Gna2TlvStatusLengthNot4BMultiply;}
 #endif // __GNA2_TLV_H
 
 /**

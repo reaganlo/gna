@@ -125,6 +125,7 @@ void TestTlvReader(const char* tlvBlob, uint32_t tlvSize, bool outAsExternal, st
         value = nullptr;
         valueLength = 0;
         const auto tlvStatus = Gna2TlvFindInArray(tlvBlob, tlvSize, type, &valueLength, &value);
+        EXPECT_EQ(valueLength % 4, 0) << type;
         EXPECT_EQ(tlvStatus, Gna2TlvStatusSuccess);
         if(type == Gna2TlvTypeLayerDescriptorAndRoArrayData ||
             type == Gna2TlvTypeStateData)
@@ -147,7 +148,7 @@ void TestTlvReader(const char* tlvBlob, uint32_t tlvSize, bool outAsExternal, st
         {
             char buffer[1024] = {};
             EXPECT_EQ(Gna2TlvStatusSuccess, Gna2GetLibraryVersion(buffer, sizeof(buffer)));
-            EXPECT_EQ(std::string(buffer).size() + 1, (size_t)valueLength);
+            EXPECT_EQ(RoundUp(std::string(buffer).size() + 1, 4), (size_t)valueLength);
             EXPECT_EQ(std::string(buffer), std::string(((char*)value)));
         }
         if(type == Gna2TlvTypeTlvVersion)
