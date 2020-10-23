@@ -38,7 +38,10 @@ public:
     {
         logger.Verbose("Detecting device...\n");
         initHardwareInfo();
-        initDriverInfo();
+        if (hardwareAvailable)
+        {
+            initDriverInfo();
+        }
     }
     bool IsOK() const {
         return (hardwareAvailable && driverAvailable);

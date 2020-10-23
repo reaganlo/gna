@@ -72,6 +72,8 @@ int WindowsGnaSelfTestHardwareStatus::checkHWId()
 
     if (fullHwId.empty()) {
         logger.Error("FAILED (no hardware device detected)\n");
+        devInfo = INVALID_HANDLE_VALUE;
+        devInfoData = {};
         return -1;
     }
     return 0;

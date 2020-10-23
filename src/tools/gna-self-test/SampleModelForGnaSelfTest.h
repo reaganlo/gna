@@ -63,6 +63,7 @@ public:
     int32_t GetRefScore(uint32_t idx) const { return refScores[idx]; }
     Gna2Model GetGnaModel(void * gnaInputPtr, void * gnaOutputPtr, void * gnaWeightPtr, void * gnaBiasPtr);
     int CountErrors() const;
+    void ResetOutput(int32_t newData);
 private:
     void SetupDefault();
     void SetupSimple();

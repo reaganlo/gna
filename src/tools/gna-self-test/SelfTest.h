@@ -28,6 +28,7 @@
 
 #include <cstdio>
 #include <exception>
+#include <map>
 #include <string>
 #include <vector>
 
@@ -51,7 +52,9 @@ public:
     template <typename... Args>
     static void Error(const char* fmt, Args... args)
     {
-        logToFile(stderr, fmt, args...);
+        const auto errorOut = stdout;
+        fputs("[ERROR] ", errorOut);
+        logToFile(errorOut, fmt, args...);
     }
     //Enables or disables verbose mode
     void SetVerbose(bool verbose) { verboseLogging = verbose; }
@@ -77,11 +80,13 @@ public:
     bool VerboseMode() const { return verboseMode; }
     bool PauseMode() const { return pauseAfterError; }
     bool ContinueMode() const { return continueAfterError; }
+    bool GetIgnoreQosMode() const { return ignoreQosError; }
     int GetRepeatCount() const { return repeatCount; }
     uint32_t GetRequestWaitMs() const { return  requestWaitMs; }
     int GetRequestRepeatCount();
 private:
     GnaSelfTestConfig(int argc, const char * const argv[]);
+    bool ignoreQosError = false;
     bool verboseMode = false;
     bool continueAfterError = false;
     bool pauseAfterError = false;
@@ -103,6 +108,8 @@ private:
     static std::string GetBuildTimeLibraryVersionString();
     static void PrintLibraryVersion();
     void DoIteration();
+    void CompareResults(const SampleModelForGnaSelfTest &model, const Gna2Status waitStatus);
+    std::map<std::string, int> scoresCounter;
 };
 
 #define DEFAULT_SELFTEST_TIMEOUT_MS 1000
@@ -119,9 +126,8 @@ public:
     void BuildSampleRequest();
     void ConfigRequestBuffer();
 
-    void RequestAndWait(uint32_t requestWaitMs);
+    Gna2Status RequestAndWait(uint32_t requestWaitMs);
 
-    void CompareResults(const SampleModelForGnaSelfTest &model);
     ~SelfTestDevice();
 private:
     uint32_t deviceId = 0;

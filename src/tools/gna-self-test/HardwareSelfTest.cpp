@@ -35,6 +35,8 @@ const std::map<std::pair<uint16_t, uint16_t>, std::string>& GetKnownGNADevsIds()
     {{0x8086,0x8A11}, "GNA 1.0 ICL"},
     {{0x8086,0x9A11}, "GNA 2.0 TGL"},
     {{0x8086,0x4E11}, "GNA 2.0 JSL"},
+    {{0x8086,0x4C11}, "GNA 2.0 RKL"},
+
     //  uncomment for testing purposes then gns-self-test will discover these devices as GNAs
     //  {{0x10ec,0x8168}, "r8169 pseudo GNA device - for testing"}, // Realtek's 8169 Ethernet Controller
     //  {{0x8086,0x2668}, "Android emulator's pseudo GNA device - for testing"}, // Some random Android emulator's device

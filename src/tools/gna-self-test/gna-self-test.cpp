@@ -69,10 +69,18 @@ void GnaSelfTest::StartTest()
         GnaSelfTestLogger::Log("GNA device and driver are OK\n");
         GnaSelfTestLogger::Log("============================\n");
     }
-
-    for (int iteration = 0; iteration < config.GetRepeatCount(); iteration++)
+    const auto totalIterations = config.GetRepeatCount();
+    GnaSelfTestLogger::Log("Start of GNA API test\n");
+    for (int iteration = 0; iteration < totalIterations; iteration++)
     {
+        logger.Verbose("GNA API open/alloc/create/infer/close iteration (%d/%d)\n", iteration + 1, totalIterations);
         DoIteration();
+    }
+    GnaSelfTestLogger::Log("GNA API test has been finished\n");
+
+    for(const auto& res : scoresCounter)
+    {
+        GnaSelfTestLogger::Log("Compared Scores %s: %i\n", res.first.c_str(), res.second);
     }
 }
 
@@ -83,8 +91,6 @@ void GnaSelfTest::DoIteration()
     //open the default GNA device
     SelfTestDevice gnaDevice(*this);
 
-    GnaSelfTestLogger::Log("Performing basic functionality test...\n");
-
     logger.Verbose("Sample model creation...\n");
     gnaDevice.SampleModelCreate(sampleNetwork);
 
@@ -94,19 +100,17 @@ void GnaSelfTest::DoIteration()
     logger.Verbose("Request configuration...\n");
     gnaDevice.ConfigRequestBuffer();
 
-
-    for (int i = 0; i < config.GetRequestRepeatCount();i++)
+    const auto totalRequests = config.GetRequestRepeatCount();
+    for (int i = 0; i < totalRequests; i++)
     {
         // calculate on GNA HW (blocking call)
         // wait for HW calculations (blocks until the results are ready)
         // after this call, outputs can be inspected under nnet.pLayers->pOutputs
-        logger.Verbose("Sending request...\n");
-        gnaDevice.RequestAndWait(config.GetRequestWaitMs());
-
-        logger.Verbose("Comparing results...\n");
-        gnaDevice.CompareResults(sampleNetwork);
+        logger.Verbose("Request (%d/%d) processing\n", i + 1, totalRequests);
+        const auto waitStatus = gnaDevice.RequestAndWait(config.GetRequestWaitMs());
+        CompareResults(sampleNetwork, waitStatus);
+        sampleNetwork.ResetOutput(0x3badbeef);
     }
-    GnaSelfTestLogger::Log("GNA device self-test has been finished\n");
 }
 
 std::string GnaSelfTest::GetBuildTimeLibraryVersionString()
@@ -143,7 +147,11 @@ GnaSelfTestConfig::GnaSelfTestConfig(int argc, const char *const argv[])
 {
     for (int i = 1; i < argc; i++)
     {
-        if (strncmp("-v", argv[i], 2) == 0)
+        if (strncmp("-iqos", argv[i], 5) == 0)
+        {
+            ignoreQosError = true;
+        }
+        else if (strncmp("-v", argv[i], 2) == 0)
         {
             verboseMode = true;
         }
@@ -194,7 +202,7 @@ GnaSelfTestConfig::GnaSelfTestConfig(int argc, const char *const argv[])
         }
         else
         {
-            GnaSelfTestLogger::Log("gna-self-test [-v] [-c] [-p] [-e K] [-r N ] [-m L I G O] [-w M] [-h]\n");
+            GnaSelfTestLogger::Log("gna-self-test [-v] [-c] [-p] [-e K] [-r N ] [-m L I G O] [-w M] [-iqos] [-h]\n");
             GnaSelfTestLogger::Log("   -v          verbose mode\n");
             GnaSelfTestLogger::Log("   -c          ignore errors and continue execution\n");
             GnaSelfTestLogger::Log("   -p          after the error, ask the user whether to continue\n");
@@ -202,6 +210,7 @@ GnaSelfTestConfig::GnaSelfTestConfig(int argc, const char *const argv[])
             GnaSelfTestLogger::Log("   -r N        repeat the flow N times\n");
             GnaSelfTestLogger::Log("   -m L I G O  use model of L FC layers with I inputs G groups and O outputs\n");
             GnaSelfTestLogger::Log("   -w M        set M milliseconds as wait timeout\n");
+            GnaSelfTestLogger::Log("   -iqos       ignore QoS error\n");
             GnaSelfTestLogger::Log("   -h          display help\n");
             throw GnaSelfTestIssue{ GSTIT_PRINT_HELP_ONLY };
         }

@@ -31,19 +31,36 @@
 #include <string>
 #include <cinttypes>
 
-void LogGnaStatus(const Gna2Status &status, const char *what)
+std::vector<char> StatusToChar(const Gna2Status &status)
 {
     const auto maxLen = Gna2StatusGetMaxMessageLength();
     std::vector<char> message(maxLen);
     Gna2StatusGetMessage(status, message.data(), maxLen);
+    return message;
+}
+
+void LogGnaStatus(const Gna2Status &status, const char *what)
+{
+    const auto message = StatusToChar(status);
     logger.Verbose("%s: %s\n", what, message.data());
+}
+
+void LogGnaStatusAsError(const Gna2Status &status, const char *what)
+{
+    const auto message = StatusToChar(status);
+    GnaSelfTestLogger::Error("%s: %s\n", what, message.data());
 }
 
 void GnaSelfTest::HandleGnaStatus(const Gna2Status &status, const char *what) const
 {
     LogGnaStatus(status, what);
-    if (status != Gna2StatusSuccess)
+    if(config.GetIgnoreQosMode() && status == Gna2StatusDriverQoSTimeoutExceeded && std::string("Gna2RequestWait") == what)
     {
+        logger.Verbose("Ignoring Gna2RequestWait returned Gna2StatusDriverQoSTimeoutExceeded\n");
+    }
+    else if (status != Gna2StatusSuccess)
+    {
+        LogGnaStatusAsError(status, what);
         Handle(GSTIT_GENERAL_GNA_NO_SUCCESS);
     }
 }
@@ -145,10 +162,9 @@ void SelfTestDevice::ConfigRequestBuffer()
     gnaSelfTest.HandleGnaStatus(status, "Adding output buffer to request");
 }
 
-void SelfTestDevice::RequestAndWait(const uint32_t requestWaitMs)
+Gna2Status SelfTestDevice::RequestAndWait(const uint32_t requestWaitMs)
 {
     constexpr int MAX_WAIT_ITERATIONS = 10;
-    logger.Verbose("Enqueing GNA request for processing\n");
     auto status = Gna2RequestEnqueue(configId, &requestId);
     gnaSelfTest.HandleGnaStatus(status, "Gna2RequestEnqueue");
     // Offload effect: other calculations can be done on CPU here, while nnet decoding runs on GNA HW
@@ -159,19 +175,30 @@ void SelfTestDevice::RequestAndWait(const uint32_t requestWaitMs)
         status = Gna2RequestWait(requestId, requestWaitMs);
         gnaSelfTest.HandleGnaStatus(status, "Gna2RequestWait");
     }
+    return status;
 }
 
-void SelfTestDevice::CompareResults(const SampleModelForGnaSelfTest& model)
+void GnaSelfTest::CompareResults(const SampleModelForGnaSelfTest& model, const Gna2Status waitStatus)
 {
-    int errorCount = model.CountErrors();
-    if (errorCount != 0)
+    const auto errorCount = model.CountErrors();
+    if (waitStatus == Gna2StatusDriverQoSTimeoutExceeded && config.GetIgnoreQosMode())
     {
+        if (errorCount)
+            scoresCounter["errorQoS"]++;
+        else
+            scoresCounter["errorQoSButSocresOK"]++;
+        logger.Verbose("Comparing results after QoS timeout (%d errors in scores)\n", errorCount);
+    }
+    else if (errorCount != 0)
+    {
+        scoresCounter["scoresFAILED"]++;
         GnaSelfTestLogger::Error("Comparing results...FAILED (%d errors in scores)\n", errorCount);
-        gnaSelfTest.Handle(GSTIT_ERRORS_IN_SCORES);
+        Handle(GSTIT_ERRORS_IN_SCORES);
     }
     else
     {
-        GnaSelfTestLogger::Log("Comparing results...SUCCESSFUL\n");
+        scoresCounter["scoresOK"]++;
+        logger.Verbose("Comparing results...SUCCESSFUL\n");
     }
 }
 

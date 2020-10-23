@@ -75,6 +75,18 @@ int SampleModelForGnaSelfTest::CountErrors() const
     return errorCount;
 }
 
+void SampleModelForGnaSelfTest::ResetOutput(int32_t newData)
+{
+    for (uint32_t j = 0; j < modelCustomFCOutputSize; j++)
+    {
+        for (uint32_t i = 0; i < modelCustomFCGrouping; i++)
+        {
+            uint32_t idx = j * modelCustomFCGrouping + i;
+            static_cast<int32_t*>(gnaOutput.Data)[idx] = newData;
+        }
+    }
+}
+
 // in this sample the numbers are random and meaningless
 void SampleModelForGnaSelfTest::SetupDefault() {
 
