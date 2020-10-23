@@ -36,7 +36,7 @@ namespace GNA
 class WindowsHwModuleInterface : public HwModuleInterface
 {
 public:
-    explicit WindowsHwModuleInterface(char const* moduleName);
+    explicit WindowsHwModuleInterface(char const* moduleName, DeviceVersion deviceVersion);
     ~WindowsHwModuleInterface() override;
     WindowsHwModuleInterface(const WindowsHwModuleInterface&) = delete;
     WindowsHwModuleInterface& operator=(const WindowsHwModuleInterface&) = delete;

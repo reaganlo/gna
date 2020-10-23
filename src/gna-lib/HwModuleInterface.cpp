@@ -67,13 +67,13 @@ HwUarchParams::HwUarchParams(struct GNA3_AdaptHW const& source)
 }
 #endif
 
-std::unique_ptr<HwModuleInterface const> HwModuleInterface::Create(char const* moduleName)
+std::unique_ptr<HwModuleInterface const> HwModuleInterface::Create(char const* moduleName, DeviceVersion deviceVersion)
 {
     Expect::NotNull(moduleName);
     Expect::False(std::string(moduleName).empty(), Gna2StatusAccelerationModeNotSupported);
     try
     {
-        return std::make_unique<GNA_HW_MODULE_CLASS const>(moduleName);
+        return std::make_unique<GNA_HW_MODULE_CLASS const>(moduleName, deviceVersion);
     }
     catch (GnaException & e)
     {
@@ -103,6 +103,34 @@ int32_t HwModuleInterface::GetPoolingMode(PoolingFunction2D const* poolingIn)
         return static_cast<int32_t>(KernelPoolingModeNone);
     }
     return static_cast<int32_t>(poolingIn->Mode);
+}
+
+GNA3_Cfg_t HwModuleInterface::GetGnaConfigurationVersion(DeviceVersion deviceVersion)
+{
+    switch (deviceVersion)
+    {
+    case Gna2DeviceVersionGMM:
+    case Gna2DeviceVersion0_9:
+    case Gna2DeviceVersion1_0:
+        return GNA3_Cfg_t::GNA_CFG_DEFLT;
+    case Gna2DeviceVersion2_0:
+        return GNA3_Cfg_t::GNA_CFG_2d0C1;
+    case Gna2DeviceVersion3_0:
+        return GNA3_Cfg_t::GNA_CFG_3d0C1;
+    case Gna2DeviceVersion3_5:
+        return GNA3_Cfg_t::GNA_CFG_3d5C1;
+    case Gna2DeviceVersionEmbedded1_0:
+    case Gna2DeviceVersionEmbedded2_1:
+        return GNA3_Cfg_t::GNA_CFG_DEFLT;
+    case Gna2DeviceVersionEmbedded3_0:
+        return GNA3_Cfg_t::GNA_CFG_3d1C1;
+    case Gna2DeviceVersionEmbedded3_1:
+        return GNA3_Cfg_t::GNA_CFG_3d5C2;
+    case Gna2DeviceVersionSoftwareEmulation:
+        return GNA3_Cfg_t::GNA_CFG_3d5C1;
+    default:
+        return GNA3_Cfg_t::GNA_CFG_DEFLT;
+    }
 }
 
 HwUarchParams HwModuleInterface::Get1DParams(ConvolutionFunction2D const* cnnIn, PoolingFunction2D const* poolingIn,

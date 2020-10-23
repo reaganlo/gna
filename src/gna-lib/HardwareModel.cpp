@@ -60,7 +60,7 @@ HardwareModel::HardwareModel(CompiledModel const & softwareModel, const Hardware
     hwCapabilities{ hwCaps },
     gmmDescriptorsSize{ getGmmDescriptorsSize(model.GmmCount) },
     xnnDescriptorsSize{ getLayerDescriptorsSize(model.LayerCount, hwCapabilities.GetDeviceVersion()) },
-    HwModule{ HwModuleInterface::Create(hwCapabilities.GetHwModuleName()) }
+    HwModule{ HwModuleInterface::Create(hwCapabilities.GetHwModuleName(), hwCapabilities.GetDeviceVersion()) }
 {
 }
 

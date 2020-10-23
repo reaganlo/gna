@@ -35,7 +35,7 @@ namespace GNA
 class LinuxHwModuleInterface : public GNA::HwModuleInterface
 {
 public:
-    LinuxHwModuleInterface(char const * moduleName);
+    LinuxHwModuleInterface(char const * moduleName, DeviceVersion deviceVersion);
     virtual ~LinuxHwModuleInterface() override;
 
 private:

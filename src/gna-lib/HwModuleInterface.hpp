@@ -29,6 +29,10 @@
 #include <memory>
 #include <string>
 
+#include "gna2-common-impl.h"
+
+#include "GNA_ArchCPkg.configs.h"
+
 struct GNA3_AdaptHW;
 struct GNA3_LyrDesc;
 
@@ -57,10 +61,10 @@ class HwModuleInterface
 public:
     /**
      * Create HW Module for underlying OS.
-     * 
+     *
      * @param moduleName Name of library without path and extension.
      */
-    static std::unique_ptr<HwModuleInterface const> Create(char const* moduleName);
+    static std::unique_ptr<HwModuleInterface const> Create(char const* moduleName, DeviceVersion deviceVersion = Gna2DeviceVersionSoftwareEmulation);
 
     HwModuleInterface(const HwModuleInterface&) = delete;
     HwModuleInterface& operator=(const HwModuleInterface&) = delete;
@@ -78,14 +82,17 @@ protected:
     HwUarchParams Get2DParams(ConvolutionFunction2D const* cnnIn, PoolingFunction2D const* poolingIn,
         const DataMode& outputMode) const;
     static int32_t GetPoolingMode(PoolingFunction2D const* poolingIn);
+    static GNA3_Cfg_t GetGnaConfigurationVersion(DeviceVersion deviceVersion);
 
     typedef struct GNA3_LyrDesc* (*CreateLDFunction)();
     typedef void(*FreeLDFunction)(struct GNA3_LyrDesc* LD);
     typedef bool(*FillLDFunction)(struct GNA3_LyrDesc* LD);
+    typedef bool(*SetConfigFunction)(GNA3_Cfg_t LD);
 
     CreateLDFunction CreateLD = nullptr;
     FreeLDFunction FreeLD = nullptr;
     FillLDFunction FillLD = nullptr;
+    SetConfigFunction SetConfig = nullptr;
 
     std::string fullName;
 

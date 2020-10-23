@@ -32,7 +32,7 @@
 
 using namespace GNA;
 
-WindowsHwModuleInterface::WindowsHwModuleInterface(char const* moduleName)
+WindowsHwModuleInterface::WindowsHwModuleInterface(char const* moduleName, DeviceVersion deviceVersion)
 {
     fullName = moduleName;
     fullName.append(".dll");
@@ -40,6 +40,7 @@ WindowsHwModuleInterface::WindowsHwModuleInterface(char const* moduleName)
     if (nullptr != hwModule)
     {
         ImportAllSymbols();
+        SetConfig(GetGnaConfigurationVersion(deviceVersion));
     }
     else
     {

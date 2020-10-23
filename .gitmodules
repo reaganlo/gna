@@ -6,10 +6,10 @@
 [submodule "build/hw_module_3_0"]
 	path = build/hw_module_3_0
 	url = ssh://git@gitlab.devtools.intel.com:29418/gna/sdk/hw/gna-3.0-arch-cpkg.git
-	branch = ArchCPkg.ADL-S-B0.V1.official
-	#commit 5e53caeb503d5be7ce8d35d195722e24f758d715
+	branch = mpiatkow-cpkg-update-official-B0
+	#commit 48cf63ca242021b0021ea74e4a23e04897bfe39d
 [submodule "build/hw_module_3_5"]
 	path = build/hw_module_3_5
 	url = ssh://git@gitlab.devtools.intel.com:29418/gna/sdk/hw/gna-3.0-arch-cpkg.git
 	branch = master
-	#commit e9b70e0249ddea3319d254beb3921b98766f4bb8
+	#commit 35e214f554a0e3b80a8bad52634e9fe0ee000908

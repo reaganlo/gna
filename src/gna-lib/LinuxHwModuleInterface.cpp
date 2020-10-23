@@ -34,7 +34,7 @@
 
 using namespace GNA;
 
-LinuxHwModuleInterface::LinuxHwModuleInterface(char const * moduleName)
+LinuxHwModuleInterface::LinuxHwModuleInterface(char const * moduleName, DeviceVersion deviceVersion)
 {
     const auto prefixName = std::string("./") + moduleName;
     fullName = prefixName + ".so";
@@ -48,6 +48,7 @@ LinuxHwModuleInterface::LinuxHwModuleInterface(char const * moduleName)
     if (nullptr != hwModule)
     {
         ImportAllSymbols();
+        SetConfig(GetGnaConfigurationVersion(deviceVersion));
     }
     else
     {
