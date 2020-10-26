@@ -12,4 +12,4 @@
 	path = build/hw_module_3_5
 	url = ssh://git@gitlab.devtools.intel.com:29418/gna/sdk/hw/gna-3.0-arch-cpkg.git
 	branch = master
-	#commit 35e214f554a0e3b80a8bad52634e9fe0ee000908
+	#commit b33347db5cc7dace82689df3f5edcd8b2656c169
