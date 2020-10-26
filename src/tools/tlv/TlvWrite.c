@@ -204,7 +204,7 @@ enum TlvStatus TlvRecordAdd(uint32_t parentRecordId, uint32_t childRecordId)
     void* tmpAddList = realloc(linkList, linkListSize * sizeof(LinkStruct));
     if (tmpAddList == NULL)
     {
-        status = TLV_ERROR_MEMORY_ALLOC;
+        return TLV_ERROR_MEMORY_ALLOC;
     }
     linkList = tmpAddList;
     LinkStruct* currentLinkStruct = linkList + linkListSize - 1;
@@ -228,7 +228,7 @@ int TlvAssign()
         child->parentNode = parent;
         parent->length += child->length + TLV_TYPE_AND_LENGTH_FIELDS_SIZE;
 
-        if ((size_t)(child - parent) >
+        if ((size_t)child - (size_t)parent >
             (parent->numberOfChildrenNodes * sizeof(struct TlvFrame)))
         {
             size_t memoryBlockSize = sizeof(child - parent)
@@ -236,7 +236,7 @@ int TlvAssign()
             void* tmpMemory = malloc(memoryBlockSize);
             if (tmpMemory == NULL)
             {
-                status = TLV_ERROR_MEMORY_ALLOC;
+                return TLV_ERROR_MEMORY_ALLOC;
             }
             memcpy_s(tmpMemory, memoryBlockSize,
                 parent + parent->numberOfChildrenNodes, memoryBlockSize);
