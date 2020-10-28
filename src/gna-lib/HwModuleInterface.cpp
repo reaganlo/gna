@@ -257,6 +257,7 @@ void HwModuleInterface::ImportAllSymbols()
     CreateLD = reinterpret_cast<CreateLDFunction>(GetSymbolAddress("GNA3_NewLD"));
     FillLD = reinterpret_cast<FillLDFunction>(GetSymbolAddress("GNA3_PopLD"));
     FreeLD = reinterpret_cast<FreeLDFunction>(GetSymbolAddress("GNA3_FreeLD"));
+    SetConfig = reinterpret_cast<SetConfigFunction>(GetSymbolAddress("GNA3_SetConfig"));
 }
 
 void* HwModuleInterface::GetSymbolAddress(const std::string& symbolName)
