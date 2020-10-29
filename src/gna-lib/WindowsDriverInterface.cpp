@@ -452,7 +452,7 @@ void WindowsDriverInterface::verify(LPOVERLAPPED ioctl) const
 {
     getOverlappedResult(
         [](BOOL ioResult, DWORD error)
-            {return (ioResult == 0 && STATUS_SUCCESS != error && ERROR_IO_PENDING != error); },
+            {return (ioResult == 0 && STATUS_SUCCESS != error && ERROR_IO_PENDING != error && ERROR_IO_INCOMPLETE != error); },
         ioctl,
         0,
         Gna2StatusDriverCommunicationMemoryMapError,
