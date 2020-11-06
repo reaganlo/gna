@@ -24,9 +24,6 @@
 */
 #pragma once
 
-#include "common.h"
-
-#include <memory>
 #include <stdexcept>
 
 #if defined(__GNUC__)
@@ -43,7 +40,7 @@ class Memory
 public:
     Memory(uint32_t userSize)
     {
-        buffer = _mm_malloc(userSize, PAGE_SIZE);
+        buffer = _mm_malloc(userSize, 0x1000);
         buffer != nullptr ? memset(buffer, 0, userSize) : throw std::runtime_error("buffer is null");
         size = userSize;
     }

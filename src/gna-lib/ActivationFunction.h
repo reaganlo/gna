@@ -30,9 +30,6 @@
 #include "Tensor.h"
 #include "Transform.h"
 #include "XnnKernel.h"
-
-#include "common.h"
-#include "gna-api-types-xnn.h"
 #include "pwl.h"
 
 #include <cstdint>
@@ -63,9 +60,18 @@ public:
     std::unique_ptr<Tensor> Segments;
     PwlCached const Pwl;
 
+    /** Number of pwl segments constraint - max  */
+    static constexpr auto XNN_N_PWL_SEGS_MAX = uint32_t{ 128 };
+
+    /** Number of pwl segments constraint - min  */
+    static constexpr auto XNN_N_PWL_SEGS_MIN = uint32_t{ 2 };
+
+    /** Total number of output elements constraint - must be multiple of */
+    static constexpr auto RNN_N_OUT_ELEMS_MPLY = uint32_t{ 32 };
+
 protected:
     static PwlCached createPwlCached(const gna_data_mode mode,
-        nn_pwl_seg const * const segmentsIn, uint32_t segmentCountIn);
+        PwlSegment const * const segmentsIn, uint32_t segmentCountIn);
 
     virtual void updateExecutionKernelConfig(ExecutionKernelConfig<ActivationConfig> & config)
         const override

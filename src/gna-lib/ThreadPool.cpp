@@ -25,20 +25,18 @@
 
 #include "ThreadPool.h"
 
+#include "ConvolutionalLayer2DCapabilities.h"
 #include "Expect.h"
 #include "GnaException.h"
+#include "Memory.h"
 #include "Request.h"
-
 #include "KernelArguments.h"
-
-#include "common.h"
-#include "gna-api-status.h"
-#include "gna-api-types-xnn.h"
 
 #include <cstring>
 #include <cstdint>
 
 using namespace GNA;
+using CnnCaps = GNA::ConvolutionalLayer2DCapabilities;
 
 // will set memory only in DEBUG configuration
 template<typename M, typename S>
@@ -70,7 +68,7 @@ KernelBuffers::KernelBuffers()
     d6 = d5 + UINT16_MAX + 1;
     d7 = d6 + UINT16_MAX + 1;
 
-    auto const poolSize = CNN_POOL_SIZE_MAX * CNN_N_FLT_MAX * sizeof(int64_t);
+    auto const poolSize = CnnCaps::PoolingWindowSizeMax * CnnCaps::Filter1DCountMax * sizeof(int64_t);
     pool = static_cast<int64_t *>(_kernel_malloc(poolSize));
     if (nullptr == pool)
     {

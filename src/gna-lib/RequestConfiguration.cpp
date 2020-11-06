@@ -34,8 +34,6 @@
 #include "Layer.h"
 #include "LayerConfiguration.h"
 
-#include "gna-api-status.h"
-
 #include <memory>
 #include <utility>
 

@@ -33,7 +33,6 @@
 #include "RequestBuilder.h"
 #include "RequestHandler.h"
 
-#include "gna-api.h"
 #include "gna2-instrumentation-api.h"
 #include "gna2-model-export-api.h"
 
@@ -131,7 +130,7 @@ public:
     void OverrideDefaultSettings(Gna2DeviceVersion deviceOverride);
 
 protected:
-    static const std::map<const gna_device_generation, const DeviceVersion> deviceDictionary;
+    static const std::map<const Gna2DeviceGeneration, const DeviceVersion> deviceDictionary;
 
     uint32_t id;
 

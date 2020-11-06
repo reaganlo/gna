@@ -29,7 +29,6 @@
 #include "ModelError.h"
 
 #include "gna2-common-api.h"
-#include "gna-api-types-xnn.h"
 
 #include <array>
 #include <cstddef>
@@ -41,10 +40,6 @@ Shape::Shape(ShapeMap && mapIn, gna_tensor_order order) :
     ShapeMap{ std::move(mapIn) },
     LayoutOrder{ order },
     Order{ order }
-{}
-
-Shape::Shape(const gna_3d_dimensions shape) :
-    Shape{ GNA_TENSOR_WHD, shape.width, shape.height, shape.depth }
 {}
 
 Shape & Shape::operator=(const Shape & right)
@@ -68,9 +63,6 @@ uint32_t Shape::at(char dimension) const
 Shape Shape::Reshape(gna_tensor_order order) const
 {
     const Layout newLayout{ order };
-    //TODO:3:P1:Check correctness after commenting out the following 2 lines
-    //auto layout = LayoutOrder;
-    //layout.Reshape(newLayout, size());
     ShapeMap dims;
     if (GNA_TENSOR_ORDER_ANY == LayoutOrder)
     {
@@ -92,7 +84,6 @@ Shape Shape::Reshape(gna_tensor_order order) const
 
 Shape Shape::Create(const ApiShape & apiShape, const gna_tensor_order order)
 {
-    // TODO:3:verify if initializer_list can always be constructed using 2 pointers
     return Shape(Create(std::vector<uint32_t>(apiShape.Dimensions,
         &apiShape.Dimensions[apiShape.NumberOfDimensions]), order), order);
 }
@@ -110,20 +101,6 @@ ShapeMap Shape::Create(const std::vector<uint32_t> && dimensions, const gna_tens
         shape[Layout::GetIndex(index)] = dim;
     }
     return shape;
-}
-
-Shape::operator gna_3d_dimensions const() const
-{
-    if (this->count(GNA_DIM_W) > 0 && this->count(GNA_DIM_H) > 0)
-    {
-        if (this->count(GNA_DIM_D) > 0)
-        {
-            return gna_3d_dimensions{at(GNA_DIM_W), at(GNA_DIM_H), at(GNA_DIM_D)};
-        }
-        return gna_3d_dimensions{at(GNA_DIM_W), at(GNA_DIM_H), 0};
-    }
-
-    throw GnaException(Gna2StatusXnnErrorLyrInvalidTensorOrder);
 }
 
 Shape::operator ApiShape() const

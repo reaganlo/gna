@@ -76,7 +76,7 @@ TestDiagonalLayer::TestDiagonalLayer()
         throw;
     }
 
-    alignedPwlSegments = (intel_pwl_segment_t *)
+    alignedPwlSegments = (PwlSegment *)
         _kernel_malloc(sizeof(*alignedPwlSegments) * numberOfSegments);
     if (alignedPwlSegments == nullptr)
     {

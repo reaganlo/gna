@@ -28,6 +28,7 @@
 #include "AffineLayers.h"
 #include "CompiledModel.h"
 #include "GnaException.h"
+#include "gna2-memory-impl.h"
 #include "HardwareLayer.h"
 #include "LayerDescriptor.h"
 #include "Layer.h"
@@ -65,10 +66,10 @@ uint32_t HardwareModelSue1::GetInputOffset(uint32_t layerIndex) const
 
 void HardwareModelSue1::prepareAllocationsAndModel()
 {
-    Expect::InRange(model.LayerCount, ui32_1, hwCapabilities.GetMaximumLayerCount(),
+    Expect::InRange(model.LayerCount, 1u, hwCapabilities.GetMaximumLayerCount(),
         Gna2StatusXnnErrorNetLyrNo);
 
-    auto const ldMemorySize = RoundUp(calculateDescriptorSize(false), PAGE_SIZE);
+    auto const ldMemorySize = RoundUp(calculateDescriptorSize(false), MemoryBufferAlignment);
 
     uint32_t scratchPadSize = 0;
     for (auto const & layer : model.GetLayers())

@@ -28,8 +28,6 @@
 #include "KernelArguments.h"
 #include "KernelMacros.h"
 
-#include "common.h"
-
 #include <immintrin.h>
 
 void AffineActiveListKernelImpl2B(ExecutionKernelConfig<AffineConfig> const * const config, AffineConfigAl al)

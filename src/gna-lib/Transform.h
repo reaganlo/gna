@@ -34,9 +34,6 @@
 #include "ModelWrapper.h"
 #include "Tensor.h"
 #include "XnnKernel.h"
-#include "common.h"
-
-#include "gna-api.h"
 
 #include <memory>
 #include <stdexcept>
@@ -53,9 +50,8 @@ struct TransformFactoryConfig
     const BaseAddress outputBuffer;
     const LayerValidator& validator;
 
-    template<class T>
     TransformFactoryConfig(const Tensor *inputIn, const Tensor *outputIn, DataMode outputModeIn,
-        BaseAddress outputBufferIn, const T& operation, const LayerValidator& validatorIn) :
+        BaseAddress outputBufferIn, const Gna2Operation& operation, const LayerValidator& validatorIn) :
         input{ inputIn }, output{ outputIn }, outputMode{ outputModeIn }, outputBuffer{ outputBufferIn },
         validator{ validatorIn }
     {
@@ -67,15 +63,11 @@ struct TransformFactoryConfig
     bool HasMandatoryActivation() const;
     bool IsActivationNotSupported() const;
     Gna2Tensor GetActivation() const;
-    static Gna2Tensor GetActivation(const void * layerDetails, nn_operation operationType);
 
 protected:
-    void InitActivation(const nn_layer& layer);
     void InitActivation(const Gna2Operation& operation);
-private:
 
-    bool HasMandatoryActivation(const void * layerDetails) const;
-
+    private:
     static bool HasMandatoryActivation(const Gna2Operation& operation);
 
     //TODO:3:P1:Move to operation/model wrapper

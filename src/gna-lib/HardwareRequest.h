@@ -31,7 +31,6 @@
 #include "MemoryContainer.h"
 #include "RequestConfiguration.h"
 
-#include "gna-api.h"
 #include "gna2-instrumentation-api.h"
 
 #include <cstdint>

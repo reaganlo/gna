@@ -31,7 +31,6 @@
 #include "Logger.h"
 #include "ModelError.h"
 
-#include "gna-api.h"
 
 #include <cstdint>
 #include <memory>

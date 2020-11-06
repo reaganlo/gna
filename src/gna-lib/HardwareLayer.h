@@ -26,14 +26,12 @@
 #pragma once
 
 #include "Address.h"
-#include "common.h"
 #include "DataMode.h"
 #include "GnaConfig.h"
 #include "GnaTypes.h"
 #include "HwModuleInterface.hpp"
 #include "LayerDescriptor.h"
 
-#include "gna-api-types-gmm.h"
 #include "gna2-common-impl.h"
 
 #include <cstdint>
@@ -210,7 +208,7 @@ protected:
     void save();
 
 private:
-    static const uint32_t CNN_N_FLT_ITER_MAX = 16; // CNN maximum number of filters per iteration
+    static constexpr uint32_t CNN_N_FLT_ITER_MAX = 16; // CNN maximum number of filters per iteration
 
     uint32_t filtersIterationCount;                // Number of iterations  to process all filters.
     uint32_t filtersCountInLastIteration;          // Number of filters in last iteration.
@@ -251,8 +249,6 @@ protected:
     bool const is1D = false;
 
 private:
-    static const uint32_t CNN_N_FLT_ITER_MAX = 16; // CNN maximum number of filters per iteration
-
     HwUarchParams uArchConfig;
 };
 
@@ -275,8 +271,6 @@ public:
     virtual uint32_t GetScrlen(uint32_t indicesCount) const override;
 
 protected:
-    static const std::map<const gna_gmm_mode, const GMM_MODE_CTRL> GmmModes;
-
     void save();
 };
 }

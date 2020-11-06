@@ -35,8 +35,6 @@
 #include "LayerOutput.h"
 #include "Memory.h"
 
-#include "gna-api-status.h"
-#include "gna-api.h"
 
 #include <algorithm>
 #include <cstdint>

@@ -27,8 +27,9 @@
 //TODO extract common part from library and util into separate file to omit redundancy.
 #pragma once
 #include "GnaUtilConfig.h"
-#include "gna-api.h"
 #include "Memory.h"
+
+#include "gna2-capability-api.h"
 
 #include <stdint.h>
 #include <vector>
@@ -45,7 +46,7 @@ struct DriverCapabilities
 {
     uint32_t hwInBuffSize;
     uint32_t recoveryTimeout;
-    gna_device_version deviceVersion;
+    Gna2DeviceVersion deviceVersion;
 };
 
 typedef struct
@@ -60,6 +61,21 @@ typedef struct
     uint64_t            scoreHW;    // time between HW scoring start and scoring complete interrupt
     uint64_t            intProc;    // time of processing scoring complete interrupt
 } DriverPerfResults;
+
+typedef enum _gna_status_t
+{
+    GNA_SUCCESS = 0,             // Success: Operation successful, no errors or warnings
+    GNA_DEVICEBUSY = 1,          // Warning: Device busy - accelerator is still running, can not enqueue more requests
+    GNA_SSATURATE = 2,
+    GNA_PARAMETEROUTOFRANGE = 17, // Error: Device: GMM Parameter out of Range error occurred
+    GNA_VAOUTOFRANGE = 18,        // Error: Device: Virtual Address out of range on DMA ch.
+    GNA_UNEXPCOMPL = 19,          // Error: Device: Unexpected completion during PCIe operation
+    GNA_DMAREQERR = 20,           // Error: Device: DMA error during PCIe operation
+    GNA_MMUREQERR = 21,           // Error: Device: MMU error during PCIe operation
+    GNA_IOCTLSENDERR = 27,
+    GNA_IOCTLRESERR = 28,         // Error: Device: IOCTL result retrieval failed
+    GNA_ERR_DEV_FAILURE = 37,     // Error: Critical device error occurred, device has been reset
+} gna_status_t;
 
 struct RequestResult
 {

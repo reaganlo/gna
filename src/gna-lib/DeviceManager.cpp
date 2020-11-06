@@ -38,7 +38,6 @@
 #include "LinuxDriverInterface.h"
 #endif
 
-#include "common.h"
 #include "gna2-common-api.h"
 
 #include <memory>

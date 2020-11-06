@@ -28,9 +28,6 @@
 
 #include "KernelArguments.h"
 
-#include "common.h"
-#include "gna-api-types-xnn.h"
-
 void AffineKernelImpl2B(ExecutionKernelConfig<AffineConfig> const * const config)
 {
     uint32_t nKpartial;

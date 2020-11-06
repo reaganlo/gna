@@ -31,13 +31,9 @@
 #include "Capabilities.h"
 #include "DataMode.h"
 #include "Expect.h"
-#include "LayerConfiguration.h"
-#include "LayerInput.h"
-#include "LayerOutput.h"
+#include "GmmLayerCapabilities.h"
+#include "gna2-memory-impl.h"
 #include "Validator.h"
-
-#include "gna-api-types-xnn.h"
-#include "gna-api.h"
 
 #include <algorithm>
 #include <memory>
@@ -161,7 +157,7 @@ Tensor const& GmmFunction::GetOperand(uint32_t operandIndex) const
 void GmmFunction::ValidateActiveList(ActiveList const & activeList) const
 {
     Expect::InRange(activeList.IndicesCount,
-        ui32_1, Means->at(GNA_DIM_H), Gna2StatusActiveListIndicesInvalid);
+        1u, Means->at(GNA_DIM_H), Gna2StatusActiveListIndicesInvalid);
 }
 
 GmmFunction::GmmFunction(const BaseTransformConfig<GmmMaxMix>& config,
@@ -187,7 +183,7 @@ GmmFunction::GmmFunction(const BaseTransformConfig<GmmMaxMix>& config,
 
     MeanSetOffsetSize = mixCount * inElementCount * GMM_MEAN_VALUE_SIZE;
     VarSetOffsetSize = mixCount * inElementCount * InverseCovarianceSize;
-    GaussConstSetOffsetSize = RoundUp(mixCount, 2) * GMM_CONSTANTS_SIZE;
+    GaussConstSetOffsetSize = RoundUp(mixCount, 2u) * GMM_CONSTANTS_SIZE;
 
     Expect::InRange(MeanSetOffsetSize, GMM_FV_ELEMENT_COUNT_MULTIPLE_OF,
         GMM_MIXTURE_COMP_COUNT_MAX * GMM_FV_ELEMENT_COUNT_MAX * GMM_MEAN_VALUE_SIZE, Gna2StatusGmmBadMeanSetoff);
@@ -227,9 +223,9 @@ const FullCapabilitiesMap& GmmFunction::getOutputCapabilities()
     static const FullCapabilitiesMap capabilities =
     {
      {INTEL_GMM, {
-        {GMM_DEVICE, std::make_shared<TensorLimits>(TensorLimits{
+        {Gna2DeviceGenerationGmm, std::make_shared<TensorLimits>(TensorLimits{
             {GNA_TENSOR_HW}, // H - GMM States, W - grouping
-            {{GNA_DIM_W, {1, XNN_N_GROUP_MAX, 1, Gna2StatusXnnErrorOutputVolume}},
+            {{GNA_DIM_W, {1, BatchSizeMax, 1, Gna2StatusXnnErrorOutputVolume}},
              {GNA_DIM_H, {1, GMM_STATES_COUNT_MAX, 1, Gna2StatusXnnErrorOutputVolume}}},
             { { GNA_UINT32, GNA_DATA_ACTIVATION_DISABLED }, Gna2StatusXnnErrorOutputBytes }})}
     }},

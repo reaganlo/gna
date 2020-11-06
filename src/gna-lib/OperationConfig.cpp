@@ -30,7 +30,6 @@
 #include "ModelWrapper.h"
 
 #include "gna2-model-api.h"
-#include "common.h"
 
 using namespace GNA;
 

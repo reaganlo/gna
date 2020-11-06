@@ -28,9 +28,8 @@
 #include "Expect.h"
 
 #include "gna2-common-api.h"
+#include "gna2-capability-api.h"
 
-#include "gna-api-types-xnn.h"
-#include "gna-api.h"
 
 #include <map>
 #include <utility>
@@ -38,8 +37,7 @@
 namespace GNA
 {
 
-typedef std::map<gna_api_version, bool> ApiSupport;
-typedef std::map<gna_device_generation, bool> HwSupport;
+using HwSupport = std::map<Gna2DeviceGeneration, bool>;
 
 class Support
 {
@@ -49,11 +47,6 @@ public:
     {
         // FIXME: change to InSet
         //Expect::InRange<size_t>(api.size(), GNA_API_NOT_SUPPORTED, GNA_API_VERSION_COUNT, Gna2StatusXnnErrorLyrCfg);
-        //Expect::InRange<size_t>(hw.size(), GNA_DEVICE_NOT_SUPPORTED, GNA_DEVICE_COUNT, Gna2StatusXnnErrorLyrCfg);
-        for (auto const apiSupport : Api)
-        {
-            Expect::True(apiSupport.second, Gna2StatusNullArgumentRequired);
-        }
         for (auto const hwSupport : Hw)
         {
             Expect::True(hwSupport.second, Gna2StatusNullArgumentRequired);
@@ -62,7 +55,6 @@ public:
 
     ~Support() = default;
 
-    const ApiSupport Api = { {GNA_API_3_0, true} };
     const HwSupport Hw;
 };
 
@@ -117,8 +109,8 @@ struct DataConfig
     };
 
     const gna_data_mode Output;
-
-    static const std::map<const DataConfig, std::map<const gna_layer_operation, const Support>> Capabilities;
+    //TODO:4:refactor to return iterator or isSupprted
+    static const std::map<const DataConfig, std::map<const nn_operation, const Support>>& Capabilities();
 };
 
 }

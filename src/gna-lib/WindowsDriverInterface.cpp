@@ -28,6 +28,7 @@
 #include "WindowsDriverInterface.h"
 
 #include "GnaException.h"
+#include "gna2-memory-impl.h"
 #include "HardwareRequest.h"
 #include "Logger.h"
 #include "Macros.h"

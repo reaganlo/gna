@@ -23,10 +23,13 @@
  in any way.
 */
 
+#define NOMINMAX 1
+
 #include "Bias.h"
 
 #include "AffineLayerCapabilities.h"
 #include "Capabilities.h"
+#include "ConvolutionKernelArguments.h"
 #include "ConvolutionalLayer2DCapabilities.h"
 #include "Expect.h"
 #include "GmmLayerCapabilities.h"
@@ -36,14 +39,10 @@
 #include "Shape.h"
 #include "Validator.h"
 
-#include "ConvolutionKernelArguments.h"
-
 #include "gna2-common-api.h"
-#include "common.h"
-#include "gna-api-types-gmm.h"
-#include "gna-api.h"
 
 #include <cstdint>
+#include <limits>
 #include <map>
 #include <memory>
 #include <utility>
@@ -118,7 +117,7 @@ void BiasTensor::validate() const
 {
     const std::function<void()> command = [&]()
     {
-        ModelErrorHelper::ExpectAboveEq(VectorIndex, ui32_0);
+        ModelErrorHelper::ExpectAboveEq(VectorIndex, 0u);
         ModelErrorHelper::ExpectBelowEq(VectorIndex, VectorCount - 1);
     };
     ModelErrorHelper::ExecuteForModelItem(command, GNA2_DISABLED, BiasVectorParamIndex);

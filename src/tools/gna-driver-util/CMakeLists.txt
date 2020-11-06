@@ -50,8 +50,6 @@ set(gna_driver_util_headers
 
 set(gna_driver_util_common_headers
   ${COMMON_DIR}/GnaDrvApi.h
-  ${COMMON_DIR}/gna-api.h
-  ${COMMON_DIR}/gna-api-status.h
   ${COMMON_DIR}/gna.h
   ${COMMON_DIR}/gna-h-wrapper.h)
 

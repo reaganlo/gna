@@ -28,8 +28,8 @@
 #include "gna2-device-api.h"
 #include "gna2-memory-api.h"
 
-#include "common.h"
 #include "Macros.h"
+#include "Memory.h"
 
 #include <array>
 #include <chrono>
@@ -83,7 +83,7 @@ protected:
 
     static void * AlignedAllocator(uint32_t size)
     {
-        return _mm_malloc(size, PAGE_SIZE);
+        return _mm_malloc(size, GNA::MemoryBufferAlignment);
     }
     static void AlignedFree(void * ptr)
     {

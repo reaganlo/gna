@@ -28,8 +28,6 @@
 #include "KernelArguments.h"
 #include "KernelMacros.h"
 
-#include "common.h"
-
 #include <immintrin.h>
 #include <cstdint>
 
@@ -42,8 +40,8 @@ void RecurrentKernelImpl1B(ExecutionKernelConfig<RecurrentConfig> const * const 
     int16_t const * const inputEnd = input + config->RequestConfig->Transform.inputElementCount - config->RequestConfig->Transform.inputElementCount % 16;
     int16_t const * const feedbackEnd = feedback + config->RequestConfig->Transform.outputElementCount - config->RequestConfig->Transform.outputElementCount % 16;
 
-    nn_bias_c const * bias = config->RequestConfig->Transform.biasesCompound;
-    nn_bias_c const * const biasEnd = bias + config->RequestConfig->Transform.outputElementCount;
+    BiasCompound const * bias = config->RequestConfig->Transform.biasesCompound;
+    BiasCompound const * const biasEnd = bias + config->RequestConfig->Transform.outputElementCount;
     int32_t * output = reinterpret_cast<int32_t *>(config->RequestConfig->Transform.output);
     int8_t const * weight = config->RequestConfig->Transform.weights1B;
     int8_t const * weight2 = weight + config->RequestConfig->Transform.inputElementCount;
@@ -101,7 +99,7 @@ void RecurrentKernelImpl1B(ExecutionKernelConfig<RecurrentConfig> const * const 
             *output += *feedback++ * *weight2++;
         }
 
-        *output = *output * bias->multiplier + bias->bias;
+        *output = *output * bias->Multiplier + bias->Bias;
         output++;
 
         weight += LDA - config->RequestConfig->Transform.inputElementCount;

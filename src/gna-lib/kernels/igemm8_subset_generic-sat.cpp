@@ -29,9 +29,6 @@
 
 #include "KernelArguments.h"
 
-#include "common.h"
-#include "gna-api-types-xnn.h"
-
 #include <cstdint>
 
 void AffineActiveListKernelImpl1B(ExecutionKernelConfig<AffineConfig> const * const config, AffineConfigAl al)
@@ -66,7 +63,7 @@ void AffineActiveListKernelImpl1B(ExecutionKernelConfig<AffineConfig> const * co
     for (l = 0; l < al.count; l++) {
         i = al.indices[l];
         for (j = 0; j < inputVectorCount; j++) {
-            sum = config->RequestConfig->Transform.biasesCompound[i].bias;
+            sum = config->RequestConfig->Transform.biasesCompound[i].Bias;
             for (kk = 0; kk < nKpartial + 1; kk++) {
                 niters = kpartial < inputElementCount - kk * kpartial ? kpartial : inputElementCount - kk * kpartial;
 
@@ -81,7 +78,7 @@ void AffineActiveListKernelImpl1B(ExecutionKernelConfig<AffineConfig> const * co
                     {
                         acc += weight[m] * input[m];
                     }
-                    sum += acc * config->RequestConfig->Transform.biasesCompound[i].multiplier;
+                    sum += acc * config->RequestConfig->Transform.biasesCompound[i].Multiplier;
                     acc = 0;
                 }
 
@@ -91,7 +88,7 @@ void AffineActiveListKernelImpl1B(ExecutionKernelConfig<AffineConfig> const * co
                 {
                     acc += weight[k] * input[k];
                 }
-                sum += acc * config->RequestConfig->Transform.biasesCompound[i].multiplier;
+                sum += acc * config->RequestConfig->Transform.biasesCompound[i].Multiplier;
 
                 saturate_store_out(&sum, &output[l*inputVectorCount + j], config->SaturationCount);
                 sum = (int64_t)output[l*inputVectorCount + j];
@@ -132,7 +129,7 @@ void AffineActiveListKernelImpl1B2B(ExecutionKernelConfig<AffineConfig> const * 
     for (l = 0; l < al.count; l++) {
         i = al.indices[l];
         for (j = 0; j < inputVectorCount; j++) {
-            sum = config->RequestConfig->Transform.biasesCompound[i].bias;
+            sum = config->RequestConfig->Transform.biasesCompound[i].Bias;
             for (kk = 0; kk < nKpartial + 1; kk++) {
                 niters = kpartial < inputElementCount - kk * kpartial ? kpartial : inputElementCount - kk * kpartial;
 
@@ -147,7 +144,7 @@ void AffineActiveListKernelImpl1B2B(ExecutionKernelConfig<AffineConfig> const * 
                     {
                         acc += weight[m] * input[m];
                     }
-                    sum += acc * config->RequestConfig->Transform.biasesCompound[i].multiplier;
+                    sum += acc * config->RequestConfig->Transform.biasesCompound[i].Multiplier;
                     acc = 0;
                 }
 
@@ -157,7 +154,7 @@ void AffineActiveListKernelImpl1B2B(ExecutionKernelConfig<AffineConfig> const * 
                 {
                     acc += weight[k] * input[k];
                 }
-                sum += acc * config->RequestConfig->Transform.biasesCompound[i].multiplier;
+                sum += acc * config->RequestConfig->Transform.biasesCompound[i].Multiplier;
 
                 saturate_store_out(&sum, &output[l*inputVectorCount + j], config->SaturationCount);
                 sum = (int64_t)output[l*inputVectorCount + j];

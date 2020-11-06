@@ -28,9 +28,6 @@
 #include "GnaException.h"
 #include "OperationConfig.h"
 
-#include "common.h"
-#include "gna-api-status.h"
-
 #include <algorithm>
 #include <memory>
 #include <stdexcept>

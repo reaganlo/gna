@@ -33,7 +33,6 @@
 #include "MemoryContainer.h"
 #include "SubModel.h"
 
-#include "gna-api.h"
 
 #include <cstdint>
 #include <map>

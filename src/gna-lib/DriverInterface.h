@@ -28,8 +28,6 @@
 #include "Request.h"
 #include "Expect.h"
 
-#include "common.h"
-
 #include "gna2-common-impl.h"
 
 #include <map>

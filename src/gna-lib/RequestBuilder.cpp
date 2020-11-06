@@ -29,9 +29,6 @@
 #include "GnaException.h"
 #include "Request.h"
 
-#include "gna-api-status.h"
-#include "profiler.h"
-
 #include <algorithm>
 #include <stdexcept>
 

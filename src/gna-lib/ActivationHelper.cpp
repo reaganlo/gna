@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2019 Intel Corporation.
+ Copyright 2019-2020 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -25,11 +25,7 @@
 
 #include "ActivationHelper.h"
 
-#include "Expect.h"
 #include "ModelWrapper.h"
-#include "Transform.h"
-
-#include "common.h"
 
 using namespace GNA;
 
@@ -44,35 +40,4 @@ void ActivationHelper::ExpectProper(const Gna2Tensor & activation)
     ModelErrorHelper::ExpectInSet(activation.Mode, { Gna2TensorModeDefault });
     ModelErrorHelper::ExpectNotNull(activation.Data, Gna2ItemTypeOperandData, PwlOperandIndex);
     ModelErrorHelper::ExpectEqual(activation.Shape.NumberOfDimensions, 1, Gna2ItemTypeShapeNumberOfDimensions);
-}
-
-bool ActivationHelper::IsEnabled(const nn_layer_conv & cnnDetails)
-{
-    return IsEnabled(cnnDetails.pwl);
-}
-
-bool ActivationHelper::IsEnabled(const intel_pwl_func_t & pwl)
-{
-    return nullptr != pwl.pSegments && pwl.nSegments > 0;
-}
-
-const nn_func_pwl& ActivationHelper::GetPwl(void const *layerDetails, nn_operation operation)
-{
-    Expect::NotNull(layerDetails, Gna2StatusXnnErrorLyrOperation);
-    switch (operation)
-    {
-    case INTEL_AFFINE: /* FALLTHRU */
-    case INTEL_AFFINE_DIAGONAL:
-        return static_cast<nn_layer_affine const*>(layerDetails)->pwl;
-    case INTEL_AFFINE_MULTIBIAS:
-        return static_cast<nn_layer_affine_multi const*>(layerDetails)->pwl;
-    case INTEL_CONVOLUTIONAL:
-        return static_cast<nn_layer_conv const*>(layerDetails)->pwl;
-    case INTEL_CONVOLUTIONAL_2D:
-        return static_cast<nn_layer_cnn2d const*>(layerDetails)->activation;
-    case INTEL_RECURRENT:
-        return static_cast<nn_layer_recurrent const*>(layerDetails)->pwl;
-    default:
-        throw GnaException{ Gna2StatusXnnErrorLyrOperation };
-    }
 }

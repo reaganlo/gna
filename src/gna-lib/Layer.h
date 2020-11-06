@@ -27,20 +27,14 @@
 
 #include "gna2-inference-impl.h"
 
-#include <memory>
-
 #include "DeviceLayerSupport.h"
 #include "LayerInput.h"
 #include "LayerOutput.h"
 #include "Transform.h"
 #include "TransformMap.h"
-
 #include "Address.h"
 #include "KernelArguments.h"
 #include "Validator.h"
-
-#include "common.h"
-#include "gna-api.h"
 
 #include <cstdint>
 #include <memory>
@@ -66,12 +60,6 @@ protected:
         //TODO:3:P1 Add operation validation
     }
 
-    AbstractOperation(const nn_layer& layer, const BaseValidator& validator) :
-        Operation{ layer.operation },
-        OperationNew{ fromLegacy(layer.operation) }
-    {
-        UNREFERENCED_PARAMETER(validator);
-    }
 private:
     static nn_operation toLegacy(const Gna2Operation& operation, const BaseValidator& validator);
     static Gna2OperationType fromLegacy(const nn_operation& layerType);

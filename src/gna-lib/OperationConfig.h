@@ -32,7 +32,6 @@
 #include "ModelWrapper.h"
 
 #include "gna2-model-api.h"
-#include "common.h"
 
 namespace GNA
 {
@@ -156,7 +155,6 @@ private:
     static Shape TryGetParamShape(const Gna2Operation & operation, OperationInfoKey parameter);
     static Shape TryGetParamShape(const Gna2Operation & operation, uint32_t parameterIndex);
 
-    static const nn_layer_cnn2d* CastToCnn2DDetails(const nn_layer& layer);
 
     static Gna2Tensor GetWeights(const Gna2Operation& operation);
     static Gna2Tensor GetFilters(const Gna2Operation& operation);

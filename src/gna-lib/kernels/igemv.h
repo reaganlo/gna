@@ -25,7 +25,6 @@
 
 #pragma once
 
-#include "common.h"
 #include "KernelMacros.h"
 
 #include <cstdint>

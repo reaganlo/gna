@@ -27,9 +27,6 @@
 #ifndef WIN32
 #include "LinuxDriverInterface.h"
 
-#include "gna-api.h"
-#include "gna-api-status.h"
-
 #include <errno.h>
 #include <fcntl.h>
 #include <unistd.h>
@@ -63,7 +60,7 @@ bool LinuxDriverInterface::OpenDevice(uint32_t deviceIndex)
 
     try
     {
-        driverCapabilities.deviceVersion = static_cast<gna_device_version>(params[0].out.value);
+        driverCapabilities.deviceVersion = static_cast<Gna2DeviceVersion>(params[0].out.value);
         driverCapabilities.recoveryTimeout = static_cast<uint32_t>(params[2].out.value);
         driverCapabilities.hwInBuffSize = static_cast<uint32_t>(params[1].out.value);
         std::cout << "hwInBuffSize: " << driverCapabilities.hwInBuffSize << std::endl;

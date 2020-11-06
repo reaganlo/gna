@@ -28,7 +28,6 @@
 #include "Capabilities.h"
 #include "Component.h"
 #include "OperationConfig.h"
-#include "PoolingMode.h"
 #include "Transform.h"
 #include "XnnKernel.h"
 
@@ -47,7 +46,7 @@ public:
         const OperationConfig& operation);
 
     PoolingFunction2D(const BaseTransformConfig<PoolingKernel2D>& config,
-        PoolingMode mode, std::unique_ptr<const Component> window,
+        KernelPoolingMode mode, std::unique_ptr<const Component> window,
         std::unique_ptr<const Component> stride);
 
     ~PoolingFunction2D() = default;

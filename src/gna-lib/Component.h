@@ -28,7 +28,6 @@
 #include "Shape.h"
 #include "Validator.h"
 
-#include "gna-api-types-xnn.h"
 
 #include <memory>
 

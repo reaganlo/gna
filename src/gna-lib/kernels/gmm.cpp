@@ -29,14 +29,23 @@
 #include "KernelArguments.h"
 #include "KernelMacros.h"
 
-#include "gna-api-types-gmm.h"
-
 #define gmmMaxMix8KernelImpl KERNEL(gmmMaxMix8KernelImpl)
 #define gmmMaxMix16KernelImpl KERNEL(gmmMaxMix16KernelImpl)
 #define gmmMaxMix8ActiveListKernelImpl KERNEL(gmmMaxMix8ActiveListKernelImpl)
 #define gmmMaxMix16ActiveListKernelImpl KERNEL(gmmMaxMix16ActiveListKernelImpl)
 #define checkScoresSaturation KERNEL(checkScoresSaturation)
 #define calculateOffsets KERNEL(calculateOffsets)
+
+#if OPT_LEVEL > 1
+/** Size of memory alignment for feature vectors */
+constexpr uint32_t GMM_FV_MEM_ALIGN = 64;
+
+/** Maximum number of feature vectors */
+constexpr uint32_t GMM_FV_COUNT_MAX = 8;
+#endif
+
+/** Gaussian Constants width in bytes */
+constexpr uint32_t GMM_CONSTANTS_SIZE = 4;
 
 inline void checkScoresSaturation(const uint32_t& nGMMs, const uint32_t& nVectors, const uint32_t * pS,
     const uint32_t& maximumScore, uint32_t& nSaturated)

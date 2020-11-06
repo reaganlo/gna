@@ -26,7 +26,7 @@ cmake_minimum_required(VERSION 3.10)
 
 # global variables
 set(PROJECT_NAME kernels)
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 set(CXX_STANDARD_REQUIRED ON)
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
@@ -211,7 +211,6 @@ set(gmm_kernel_sources
 
 set(gmm_kernel_headers
   ${COMMON_DIR}/Macros.h
-  ${COMMON_DIR}/common.h
   ${COMMON_DIR}/GnaException.h
   KernelMacros.h
   kernel-gmm.h)

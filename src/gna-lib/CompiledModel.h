@@ -36,10 +36,6 @@
 #include "gna2-common-impl.h"
 #include "gna2-model-api.h"
 
-#include "common.h"
-#include "gna-api.h"
-#include "gna-api-types-xnn.h"
-
 #include <cstddef>
 #include <cstdint>
 #include <memory>
@@ -159,10 +155,6 @@ private:
     static Gna2Operation* GetFirstOperation(const Gna2Model& model)
     {
         return model.Operations;
-    }
-    static bool isGmmOperation(const nn_layer& layer)
-    {
-        return layer.operation == INTEL_GMM;
     }
     static bool isGmmOperation(const Gna2Operation& operation)
     {

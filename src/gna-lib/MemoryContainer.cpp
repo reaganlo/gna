@@ -27,6 +27,7 @@ in any way.
 
 #include "Expect.h"
 #include "GnaException.h"
+#include "gna2-memory-impl.h"
 #include "Memory.h"
 
 #include <algorithm>
@@ -85,7 +86,7 @@ void MemoryContainer::Emplace(Memory const & value)
     if (!Contains(value, value.GetSize()))
     {
         emplace_back(value, totalMemorySize, totalMemorySizeAlignedToPage);
-        totalMemorySizeAlignedToPage += RoundUp(value.GetSize(), PAGE_SIZE);
+        totalMemorySizeAlignedToPage += RoundUp(value.GetSize(), MemoryBufferAlignment);
         totalMemorySize += value.GetSize();
     }
 }
@@ -122,7 +123,7 @@ uint32_t MemoryContainer::GetBufferOffset(const BaseAddress& address, uint32_t a
         {
             return initialOffset + foundIt->GetNotAligned() + internalOffset;
         }
-        if (PAGE_SIZE == alignment)
+        if (MemoryBufferAlignment == alignment)
         {
             return initialOffset + foundIt->GetPageAligned() + internalOffset;
         }
@@ -170,6 +171,6 @@ void MemoryContainer::invalidateOffsets()
 
         auto const memorySize = memoryIter.GetSize();
         offset += memorySize;
-        offsetPageAligned += RoundUp(memorySize, PAGE_SIZE);
+        offsetPageAligned += RoundUp(memorySize, MemoryBufferAlignment);
     }
 }

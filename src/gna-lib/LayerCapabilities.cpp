@@ -37,17 +37,17 @@ const MultiplierMap& LayerCapabilities::InputElementCountMultipliers()
     return multipliers;
 }
 
-const DataModeLimits& LayerCapabilities::GetModes(uint32_t operandIndex, gna_device_generation generation)
+const DataModeLimits& LayerCapabilities::GetModes(uint32_t operandIndex, Gna2DeviceGeneration generation)
 {
-    static const std::map<uint32_t, std::map<gna_device_generation, DataModeLimits>> modes =
+    static const std::map<uint32_t, std::map<Gna2DeviceGeneration, DataModeLimits>> modes =
     {
         {InputOperandIndex,
-            {{GNA_0_9, {{GNA_INT16}, Gna2StatusXnnErrorInputBytes}},
-            {GNA_3_0, {{GNA_INT8, GNA_INT16}, Gna2StatusXnnErrorInputBytes}},}
+            {{Gna2DeviceGeneration0_9, {{GNA_INT16}, Gna2StatusXnnErrorInputBytes}},
+            {Gna2DeviceGeneration3_0, {{GNA_INT8, GNA_INT16}, Gna2StatusXnnErrorInputBytes}},}
         },
         {OutputOperandIndex,
-            {{GNA_0_9, {{GNA_INT16, GNA_INT32, GNA_DATA_ACTIVATION_DISABLED}, Gna2StatusXnnErrorOutputBytes}},
-            {GNA_3_0, {{GNA_INT8, GNA_INT16, GNA_INT32, GNA_DATA_ACTIVATION_DISABLED}, Gna2StatusXnnErrorOutputBytes}},}
+            {{Gna2DeviceGeneration0_9, {{GNA_INT16, GNA_INT32, GNA_DATA_ACTIVATION_DISABLED}, Gna2StatusXnnErrorOutputBytes}},
+            {Gna2DeviceGeneration3_0, {{GNA_INT8, GNA_INT16, GNA_INT32, GNA_DATA_ACTIVATION_DISABLED}, Gna2StatusXnnErrorOutputBytes}},}
         },
     };
     return modes.at(operandIndex).at(generation);
@@ -102,7 +102,7 @@ const RangeLimits<>& LayerCapabilities::limitsForInputGroupsMax()
     static const RangeLimits<> _limitsForInputGroupsMax =
     {
         1,
-        InputGroupsCountMax,
+        BatchSizeMax,
         1,
         Gna2StatusXnnErrorInputVolume
     };
@@ -114,7 +114,7 @@ const RangeLimits<>& LayerCapabilities::limitsForOutputGroupsMax()
     static const RangeLimits<> _limitsForInputGroupsMax =
     {
         1,
-        InputGroupsCountMax,
+        BatchSizeMax,
         1,
         Gna2StatusXnnErrorOutputVolume
     };

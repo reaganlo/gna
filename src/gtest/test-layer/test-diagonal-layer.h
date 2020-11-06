@@ -58,6 +58,6 @@ public:
     int32_t *alignedBias = nullptr;
     int16_t *alignedOutput = nullptr;
     int32_t *alignedIntermediateOutput = nullptr;
-    intel_pwl_segment_t *alignedPwlSegments = nullptr;
+    PwlSegment *alignedPwlSegments = nullptr;
 };
 

@@ -27,8 +27,6 @@
 
 #include "Tensor.h"
 
-#include "common.h"
-
 namespace GNA
 {
 class FullCapabilitiesMap;
@@ -36,7 +34,6 @@ class LayerValidator;
 
 struct LayerOutput : public Tensor
 {
-    LayerOutput(const nn_layer &layer, const LayerValidator& validatorIn);
     LayerOutput(const Gna2Operation &operation, const LayerValidator& validatorIn);
     virtual ~LayerOutput() = default;
 
@@ -51,11 +48,9 @@ protected:
 
     virtual std::pair<uint32_t, uint32_t> getGroupingAndElements(
         const Gna2Operation& operation, const LayerValidator& validatorIn) const override;
-    virtual std::pair<uint32_t, uint32_t> getGroupingAndElements(const nn_layer& layer) const override;
 
 private:
     static const FullCapabilitiesMap& GetCapabilitiesLegacy();
-    static Shape ConvertInCaseOfNewApiOrder(gna_tensor_order getOrder, const uint32_t nOutputColumns, const uint32_t nOutputRows);
     static ApiShape GetShape(const Gna2Operation & operation);
 };
 

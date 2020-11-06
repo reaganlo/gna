@@ -162,7 +162,7 @@ TEST_F(TestRecurrentLayer, RecurrentTest2B)
     strncpy_s(biasTensor.Layout, GNA2_SHAPE_MAXIMUM_NUMBER_OF_DIMENSIONS, "H", 2);
     memcpy_s(alignedBias, sizeof(int32_t) * outputVolume, bias, sizeof(bias));
 
-    samplePwl(static_cast<intel_pwl_segment_t *>(alignedPwlSegments), numberOfSegments);
+    samplePwl(static_cast<PwlSegment *>(alignedPwlSegments), numberOfSegments);
     auto pwlTensor = Gna2TensorInitActivation(numberOfSegments,
                         static_cast<Gna2PwlSegment *>(alignedPwlSegments));
     strncpy_s(pwlTensor.Layout, GNA2_SHAPE_MAXIMUM_NUMBER_OF_DIMENSIONS, "H", 2);

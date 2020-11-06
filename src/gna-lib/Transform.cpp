@@ -52,42 +52,10 @@ Gna2Tensor TransformFactoryConfig::GetActivation() const
     return activation;
 }
 
-Gna2Tensor TransformFactoryConfig::GetActivation(const void * layerDetails, nn_operation operationType)
-{
-    const auto& pwl = ActivationHelper::GetPwl(layerDetails, operationType);
-    Gna2Tensor a{};
-    a.Type = Gna2DataTypePwlSegment;
-    a.Shape = { 1, pwl.nSegments };
-    a.Data = pwl.pSegments;
-    if(!ActivationHelper::IsEnabled(pwl))
-    {
-        a.Mode = Gna2TensorModeDisabled;
-    }
-    return a;
-}
-
-//TODO:3:P1:Move to operation/model wrapper
-void TransformFactoryConfig::InitActivation(const nn_layer & layer)
-{
-    mandatoryActivation = HasMandatoryActivation(layer.pLayerStruct);
-    activation = GetActivation(layer.pLayerStruct, validator.Operation);
-}
-
 void TransformFactoryConfig::InitActivation(const Gna2Operation & operation)
 {
     mandatoryActivation = HasMandatoryActivation(operation);
     activation = GetActivation(operation);
-}
-
-inline bool TransformFactoryConfig::HasMandatoryActivation(const void * layerDetails) const
-{
-    if (validator.Operation == INTEL_CONVOLUTIONAL)
-    {
-        auto cnn = static_cast<nn_layer_conv const*>(layerDetails);
-        if (INTEL_NO_POOLING != cnn->poolType)
-            return true;
-    }
-    return validator.Operation == INTEL_RECURRENT;
 }
 
 inline bool TransformFactoryConfig::HasMandatoryActivation(const Gna2Operation & operation)

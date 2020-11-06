@@ -31,6 +31,7 @@
 
 #include "gna2-capability-api.h"
 #include "gna2-model-export-api.h"
+#include "gna2-memory-impl.h"
 
 #include "gna2-tlv-reader.h"
 #include "gna2-tlv-writer.h"
@@ -130,11 +131,11 @@ void TestTlvReader(const char* tlvBlob, uint32_t tlvSize, bool outAsExternal, st
         if(type == Gna2TlvTypeLayerDescriptorAndRoArrayData ||
             type == Gna2TlvTypeStateData)
         {
-            EXPECT_TRUE((((char*)value) - tlvBlob) % GNA2_TLV_GNAA35_REQUIRED_ALIGNEMENT == 0);
+            EXPECT_TRUE(((reinterpret_cast<char*>(value)) - tlvBlob) % GNA2_TLV_GNAA35_REQUIRED_ALIGNEMENT == 0);
         }
         if(type == Gna2TlvTypeUserData)
         {
-            EXPECT_TRUE(userSignature == ((char*)value));
+            EXPECT_TRUE(userSignature == (reinterpret_cast<char*>(value)));
         }
         if (!outAsExternal || type != Gna2TlvTypeStateData)
         {
@@ -148,20 +149,20 @@ void TestTlvReader(const char* tlvBlob, uint32_t tlvSize, bool outAsExternal, st
         {
             char buffer[1024] = {};
             EXPECT_EQ(Gna2TlvStatusSuccess, Gna2GetLibraryVersion(buffer, sizeof(buffer)));
-            EXPECT_EQ(RoundUp(std::string(buffer).size() + 1, 4), (size_t)valueLength);
-            EXPECT_EQ(std::string(buffer), std::string(((char*)value)));
+            EXPECT_EQ(RoundUp(std::string(buffer).size() + 1, static_cast<size_t>(4)), static_cast<size_t>(valueLength));
+            EXPECT_EQ(std::string(buffer), std::string((reinterpret_cast<char*>(value))));
         }
         if(type == Gna2TlvTypeTlvVersion)
         {
             EXPECT_EQ(GNA2_TLV_VERSION, 1);
-            EXPECT_EQ(*(uint32_t*)value, GNA2_TLV_VERSION);
+            EXPECT_EQ(*reinterpret_cast<uint32_t*>(value), GNA2_TLV_VERSION);
         }
         if(type == Gna2TlvTypeLayerNumber)
         {
             EXPECT_EQ(valueLength, 4);
-            EXPECT_EQ(*(uint32_t*)value, 1);
+            EXPECT_EQ(*reinterpret_cast<uint32_t*>(value), 1);
         }
-        EXPECT_NE(value, (void*)NULL);
+        EXPECT_NE(value, nullptr);
     }
 
 }
@@ -173,7 +174,7 @@ void TestMicrophoneSelectionModel::exportForAnna(bool outAsExternal, bool inputA
         conversionPwl.size() * sizeof(Gna2PwlSegment));
 
     void * gnaMemoryRO;
-    const uint32_t memoryROSize = ALIGN64(memoryZeroedSize) + ALIGN64(memoryPwlSize);
+    const uint32_t memoryROSize = Gna2RoundUpTo64(memoryZeroedSize) + Gna2RoundUpTo64(memoryPwlSize);
 
     void * gnaMemoryOutput;
     const uint32_t memoryOutputSize = numberOfElementsFromMic * inputGroups * sizeof(int16_t);
@@ -194,7 +195,7 @@ void TestMicrophoneSelectionModel::exportForAnna(bool outAsExternal, bool inputA
 
 
     void * gnaMemoryZeroed = gnaMemoryRO;
-    void * gnaMemoryPwl = static_cast<uint8_t*>(gnaMemoryRO) + ALIGN64(memoryZeroedSize);
+    void * gnaMemoryPwl = static_cast<uint8_t*>(gnaMemoryRO) + Gna2RoundUpTo64(memoryZeroedSize);
     std::copy_n(conversionPwl.begin(), conversionPwl.size(), static_cast<Gna2PwlSegment*>(gnaMemoryPwl));
     std::fill_n(static_cast<uint8_t*>(gnaMemoryZeroed), memoryZeroedSize, 0);
 

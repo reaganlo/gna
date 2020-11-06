@@ -25,11 +25,11 @@ in any way.
 
 #include "Memory.h"
 
-#include "common.h"
 #include "DeviceManager.h"
 #include "DriverInterface.h"
 #include "Expect.h"
 #include "GnaException.h"
+#include "gna2-memory-impl.h"
 #include "KernelArguments.h"
 
 using namespace GNA;

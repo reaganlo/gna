@@ -29,9 +29,6 @@
 #include "ParameterLimits.h"
 #include "Validator.h"
 
-#include "common.h"
-#include "gna-api.h"
-
 #include <cstddef>
 
 using namespace GNA;

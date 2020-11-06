@@ -27,7 +27,6 @@
 #define __GNA2_INFERENCE_IMPL_H
 
 #include "gna2-common-impl.h"
-#include "gna-api.h"
 #include "../gna-api/gna2-inference-api.h"
 
 #include <string>

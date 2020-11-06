@@ -156,7 +156,7 @@ GNA2_API uint32_t Gna2DataTypeGetSize(enum Gna2DataType type)
     {
         return ModelWrapper::DataTypeGetSize(type);
     };
-    return ApiWrapper::ExecuteSafely(command, Gna2NotSupportedU32);
+    return ApiWrapper::ExecuteSafely(command, GNA2_NOT_SUPPORTED);
 }
 
 GNA2_API uint32_t Gna2ShapeGetNumberOfElements(struct Gna2Shape const * shape)
@@ -165,7 +165,7 @@ GNA2_API uint32_t Gna2ShapeGetNumberOfElements(struct Gna2Shape const * shape)
     {
         return ModelWrapper::ShapeGetNumberOfElements(shape);
     };
-    return ApiWrapper::ExecuteSafely(command, Gna2NotSupportedU32);
+    return ApiWrapper::ExecuteSafely(command, GNA2_NOT_SUPPORTED);
 }
 
 GNA2_API uint32_t Gna2TensorGetSize(struct Gna2Tensor const * tensor)
@@ -176,7 +176,7 @@ GNA2_API uint32_t Gna2TensorGetSize(struct Gna2Tensor const * tensor)
         auto const apiTensor = std::make_unique<Tensor>(*tensor);
         return apiTensor->Size;
     };
-    return ApiWrapper::ExecuteSafely(command, Gna2NotSupportedU32);
+    return ApiWrapper::ExecuteSafely(command, GNA2_NOT_SUPPORTED);
 }
 
 GNA2_API struct Gna2Shape Gna2ShapeInitScalar()

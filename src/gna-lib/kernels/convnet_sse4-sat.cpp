@@ -32,9 +32,6 @@
 #include "KernelArguments.h"
 #include "KernelMacros.h"
 
-#include "common.h"
-#include "gna-api-types-xnn.h"
-
 #include <cstdint>
 
 void SumPartialPoolingFunction(const uint32_t PS, const uint32_t PNE, const uint32_t PSI, const int64_t *P, int64_t* V)
@@ -259,7 +256,7 @@ void ConvolutionPoolingKernelImpl(ConvolutionConfig const * const filterConfig,
     const uint32_t FC = filterConfig->filterCoefficientCount;
     const int16_t* const I = filterConfig->inputs;
     const int16_t* const F = filterConfig->filters;
-    const nn_bias_s * const B = filterConfig->biases;
+    const BiasRegular * const B = filterConfig->biases;
     int16_t * const O = filterConfig->pooledOutputs;
     uint32_t * const saturationCount = filterConfig->execution->SaturationCount;
 

@@ -30,8 +30,6 @@
 #include "HardwareCapabilities.h"
 #include "Validator.h"
 
-#include "common.h"
-
 #include "gtest/gtest.h"
 
 #include <cstdint>

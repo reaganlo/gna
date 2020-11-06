@@ -32,7 +32,6 @@
 #include "ModelError.h"
 #include "Validator.h"
 
-#include "gna-api-types-xnn.h"
 
 using namespace GNA;
 

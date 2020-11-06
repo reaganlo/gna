@@ -31,8 +31,6 @@
 
 #include "ConvolutionKernelArguments.h"
 
-#include "gna-api-types-xnn.h"
-
 #include <cstdint>
 
 namespace GNA

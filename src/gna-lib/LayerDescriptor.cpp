@@ -29,8 +29,6 @@
 #include "PoolingKernelArguments.h"
 #include "ThresholdParameters.h"
 
-#include "gna-api-types-gmm.h"
-
 using namespace GNA;
 
 uint32_t LayerDescriptor::getSize(const DeviceVersion deviceVersion)

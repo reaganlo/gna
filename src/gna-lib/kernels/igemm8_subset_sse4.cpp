@@ -28,8 +28,6 @@
 #include "KernelArguments.h"
 #include "KernelMacros.h"
 
-#include "common.h"
-
 #include <immintrin.h>
 
 void AffineActiveListKernelImpl1B(ExecutionKernelConfig<AffineConfig> const * const config, AffineConfigAl al)
@@ -44,7 +42,7 @@ void AffineActiveListKernelImpl1B(ExecutionKernelConfig<AffineConfig> const * co
     int8_t const * weight;
     auto *inputs = reinterpret_cast<int16_t const *>(config->RequestConfig->Inputs);
     int32_t * output = reinterpret_cast<int32_t *>(config->RequestConfig->Outputs);
-    nn_bias_c const * bias;
+    BiasCompound const * bias;
     int16_t const *input_0 = nullptr;
     int16_t const *input_1 = nullptr;
     int16_t const *input_2 = nullptr;
@@ -116,11 +114,11 @@ void AffineActiveListKernelImpl1B(ExecutionKernelConfig<AffineConfig> const * co
                 acc0 = _mm_add_epi32(acc0, in0);
             }
 
-            *output = bias->bias + vec_sum(acc0) * bias->multiplier;
+            *output = bias->Bias + vec_sum(acc0) * bias->Multiplier;
 
             for (j = 0; j < KT; j++, weight++)
             {
-                *output += input_0[j] * *weight * bias->multiplier;
+                *output += input_0[j] * *weight * bias->Multiplier;
             }
             output++;
         }
@@ -224,13 +222,13 @@ void AffineActiveListKernelImpl1B(ExecutionKernelConfig<AffineConfig> const * co
                 acc1 = _mm_add_epi32(acc1, in1);
             }
 
-            output[0] = bias->bias + vec_sum(acc0) * bias->multiplier;
-            output[1] = bias->bias + vec_sum(acc1) * bias->multiplier;
+            output[0] = bias->Bias + vec_sum(acc0) * bias->Multiplier;
+            output[1] = bias->Bias + vec_sum(acc1) * bias->Multiplier;
 
             for (j = 0; j < KT; j++, weight++)
             {
-                output[0] += input_0[j] * *weight * bias->multiplier;
-                output[1] += input_1[j] * *weight * bias->multiplier;
+                output[0] += input_0[j] * *weight * bias->Multiplier;
+                output[1] += input_1[j] * *weight * bias->Multiplier;
             }
             output += config->RequestConfig->Transform.inputVectorCount;
         }
@@ -268,15 +266,15 @@ void AffineActiveListKernelImpl1B(ExecutionKernelConfig<AffineConfig> const * co
                 acc2 = _mm_add_epi32(acc2, in2);
             }
 
-            output[0] = bias->bias + vec_sum(acc0) * bias->multiplier;
-            output[1] = bias->bias + vec_sum(acc1) * bias->multiplier;
-            output[2] = bias->bias + vec_sum(acc2) * bias->multiplier;
+            output[0] = bias->Bias + vec_sum(acc0) * bias->Multiplier;
+            output[1] = bias->Bias + vec_sum(acc1) * bias->Multiplier;
+            output[2] = bias->Bias + vec_sum(acc2) * bias->Multiplier;
 
             for (j = 0; j < KT; j++, weight++)
             {
-                output[0] += input_0[j] * *weight * bias->multiplier;
-                output[1] += input_1[j] * *weight * bias->multiplier;
-                output[2] += input_2[j] * *weight * bias->multiplier;
+                output[0] += input_0[j] * *weight * bias->Multiplier;
+                output[1] += input_1[j] * *weight * bias->Multiplier;
+                output[2] += input_2[j] * *weight * bias->Multiplier;
             }
             output += config->RequestConfig->Transform.inputVectorCount;
         }
@@ -318,17 +316,17 @@ void AffineActiveListKernelImpl1B(ExecutionKernelConfig<AffineConfig> const * co
                 acc3 = _mm_add_epi32(acc3, in3);
             }
 
-            output[0] = bias->bias + vec_sum(acc0) * bias->multiplier;
-            output[1] = bias->bias + vec_sum(acc1) * bias->multiplier;
-            output[2] = bias->bias + vec_sum(acc2) * bias->multiplier;
-            output[3] = bias->bias + vec_sum(acc3) * bias->multiplier;
+            output[0] = bias->Bias + vec_sum(acc0) * bias->Multiplier;
+            output[1] = bias->Bias + vec_sum(acc1) * bias->Multiplier;
+            output[2] = bias->Bias + vec_sum(acc2) * bias->Multiplier;
+            output[3] = bias->Bias + vec_sum(acc3) * bias->Multiplier;
 
             for (j = 0; j < KT; j++, weight++)
             {
-                output[0] += input_0[j] * *weight * bias->multiplier;
-                output[1] += input_1[j] * *weight * bias->multiplier;
-                output[2] += input_2[j] * *weight * bias->multiplier;
-                output[3] += input_3[j] * *weight * bias->multiplier;
+                output[0] += input_0[j] * *weight * bias->Multiplier;
+                output[1] += input_1[j] * *weight * bias->Multiplier;
+                output[2] += input_2[j] * *weight * bias->Multiplier;
+                output[3] += input_3[j] * *weight * bias->Multiplier;
             }
             output += config->RequestConfig->Transform.inputVectorCount;
         }
@@ -374,19 +372,19 @@ void AffineActiveListKernelImpl1B(ExecutionKernelConfig<AffineConfig> const * co
                 acc4 = _mm_add_epi32(acc4, in4);
             }
 
-            output[0] = bias->bias + vec_sum(acc0) * bias->multiplier;
-            output[1] = bias->bias + vec_sum(acc1) * bias->multiplier;
-            output[2] = bias->bias + vec_sum(acc2) * bias->multiplier;
-            output[3] = bias->bias + vec_sum(acc3) * bias->multiplier;
-            output[4] = bias->bias + vec_sum(acc4) * bias->multiplier;
+            output[0] = bias->Bias + vec_sum(acc0) * bias->Multiplier;
+            output[1] = bias->Bias + vec_sum(acc1) * bias->Multiplier;
+            output[2] = bias->Bias + vec_sum(acc2) * bias->Multiplier;
+            output[3] = bias->Bias + vec_sum(acc3) * bias->Multiplier;
+            output[4] = bias->Bias + vec_sum(acc4) * bias->Multiplier;
 
             for (j = 0; j < KT; j++, weight++)
             {
-                output[0] += input_0[j] * *weight * bias->multiplier;
-                output[1] += input_1[j] * *weight * bias->multiplier;
-                output[2] += input_2[j] * *weight * bias->multiplier;
-                output[3] += input_3[j] * *weight * bias->multiplier;
-                output[4] += input_4[j] * *weight * bias->multiplier;
+                output[0] += input_0[j] * *weight * bias->Multiplier;
+                output[1] += input_1[j] * *weight * bias->Multiplier;
+                output[2] += input_2[j] * *weight * bias->Multiplier;
+                output[3] += input_3[j] * *weight * bias->Multiplier;
+                output[4] += input_4[j] * *weight * bias->Multiplier;
             }
             output += config->RequestConfig->Transform.inputVectorCount;
         }
@@ -436,21 +434,21 @@ void AffineActiveListKernelImpl1B(ExecutionKernelConfig<AffineConfig> const * co
                 acc5 = _mm_add_epi32(acc5, in5);
             }
 
-            output[0] = bias->bias + vec_sum(acc0) * bias->multiplier;
-            output[1] = bias->bias + vec_sum(acc1) * bias->multiplier;
-            output[2] = bias->bias + vec_sum(acc2) * bias->multiplier;
-            output[3] = bias->bias + vec_sum(acc3) * bias->multiplier;
-            output[4] = bias->bias + vec_sum(acc4) * bias->multiplier;
-            output[5] = bias->bias + vec_sum(acc5) * bias->multiplier;
+            output[0] = bias->Bias + vec_sum(acc0) * bias->Multiplier;
+            output[1] = bias->Bias + vec_sum(acc1) * bias->Multiplier;
+            output[2] = bias->Bias + vec_sum(acc2) * bias->Multiplier;
+            output[3] = bias->Bias + vec_sum(acc3) * bias->Multiplier;
+            output[4] = bias->Bias + vec_sum(acc4) * bias->Multiplier;
+            output[5] = bias->Bias + vec_sum(acc5) * bias->Multiplier;
 
             for (j = 0; j < KT; j++, weight++)
             {
-                output[0] += input_0[j] * *weight * bias->multiplier;
-                output[1] += input_1[j] * *weight * bias->multiplier;
-                output[2] += input_2[j] * *weight * bias->multiplier;
-                output[3] += input_3[j] * *weight * bias->multiplier;
-                output[4] += input_4[j] * *weight * bias->multiplier;
-                output[5] += input_5[j] * *weight * bias->multiplier;
+                output[0] += input_0[j] * *weight * bias->Multiplier;
+                output[1] += input_1[j] * *weight * bias->Multiplier;
+                output[2] += input_2[j] * *weight * bias->Multiplier;
+                output[3] += input_3[j] * *weight * bias->Multiplier;
+                output[4] += input_4[j] * *weight * bias->Multiplier;
+                output[5] += input_5[j] * *weight * bias->Multiplier;
             }
             output += config->RequestConfig->Transform.inputVectorCount;
         }
@@ -504,23 +502,23 @@ void AffineActiveListKernelImpl1B(ExecutionKernelConfig<AffineConfig> const * co
                 acc6 = _mm_add_epi32(acc6, in6);
             }
 
-            output[0] = bias->bias + vec_sum(acc0) * bias->multiplier;
-            output[1] = bias->bias + vec_sum(acc1) * bias->multiplier;
-            output[2] = bias->bias + vec_sum(acc2) * bias->multiplier;
-            output[3] = bias->bias + vec_sum(acc3) * bias->multiplier;
-            output[4] = bias->bias + vec_sum(acc4) * bias->multiplier;
-            output[5] = bias->bias + vec_sum(acc5) * bias->multiplier;
-            output[6] = bias->bias + vec_sum(acc6) * bias->multiplier;
+            output[0] = bias->Bias + vec_sum(acc0) * bias->Multiplier;
+            output[1] = bias->Bias + vec_sum(acc1) * bias->Multiplier;
+            output[2] = bias->Bias + vec_sum(acc2) * bias->Multiplier;
+            output[3] = bias->Bias + vec_sum(acc3) * bias->Multiplier;
+            output[4] = bias->Bias + vec_sum(acc4) * bias->Multiplier;
+            output[5] = bias->Bias + vec_sum(acc5) * bias->Multiplier;
+            output[6] = bias->Bias + vec_sum(acc6) * bias->Multiplier;
 
             for (j = 0; j < KT; j++, weight++)
             {
-                output[0] += input_0[j] * *weight * bias->multiplier;
-                output[1] += input_1[j] * *weight * bias->multiplier;
-                output[2] += input_2[j] * *weight * bias->multiplier;
-                output[3] += input_3[j] * *weight * bias->multiplier;
-                output[4] += input_4[j] * *weight * bias->multiplier;
-                output[5] += input_5[j] * *weight * bias->multiplier;
-                output[6] += input_6[j] * *weight * bias->multiplier;
+                output[0] += input_0[j] * *weight * bias->Multiplier;
+                output[1] += input_1[j] * *weight * bias->Multiplier;
+                output[2] += input_2[j] * *weight * bias->Multiplier;
+                output[3] += input_3[j] * *weight * bias->Multiplier;
+                output[4] += input_4[j] * *weight * bias->Multiplier;
+                output[5] += input_5[j] * *weight * bias->Multiplier;
+                output[6] += input_6[j] * *weight * bias->Multiplier;
             }
             output += config->RequestConfig->Transform.inputVectorCount;
         }
@@ -578,8 +576,8 @@ void AffineActiveListKernelImpl1B(ExecutionKernelConfig<AffineConfig> const * co
                 acc7 = _mm_add_epi32(acc7, in7);
             }
 
-            v0 = _mm_set1_epi32(bias->multiplier);
-            v1 = _mm_set1_epi32(bias->bias);
+            v0 = _mm_set1_epi32(bias->Multiplier);
+            v1 = _mm_set1_epi32(bias->Bias);
 
             v2 = _mm_hadd_epi32(acc0, acc1);
             v3 = _mm_hadd_epi32(acc2, acc3);
@@ -597,14 +595,14 @@ void AffineActiveListKernelImpl1B(ExecutionKernelConfig<AffineConfig> const * co
 
             for (j = 0; j < KT; j++, weight++)
             {
-                output[0] += input_0[j] * *weight * bias->multiplier;
-                output[1] += input_1[j] * *weight * bias->multiplier;
-                output[2] += input_2[j] * *weight * bias->multiplier;
-                output[3] += input_3[j] * *weight * bias->multiplier;
-                output[4] += input_4[j] * *weight * bias->multiplier;
-                output[5] += input_5[j] * *weight * bias->multiplier;
-                output[6] += input_6[j] * *weight * bias->multiplier;
-                output[7] += input_7[j] * *weight * bias->multiplier;
+                output[0] += input_0[j] * *weight * bias->Multiplier;
+                output[1] += input_1[j] * *weight * bias->Multiplier;
+                output[2] += input_2[j] * *weight * bias->Multiplier;
+                output[3] += input_3[j] * *weight * bias->Multiplier;
+                output[4] += input_4[j] * *weight * bias->Multiplier;
+                output[5] += input_5[j] * *weight * bias->Multiplier;
+                output[6] += input_6[j] * *weight * bias->Multiplier;
+                output[7] += input_7[j] * *weight * bias->Multiplier;
             }
             output += config->RequestConfig->Transform.inputVectorCount;
         }

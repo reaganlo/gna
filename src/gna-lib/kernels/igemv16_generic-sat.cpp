@@ -28,7 +28,6 @@
 
 #include "KernelArguments.h"
 
-#include "gna-api-types-xnn.h"
 
 #include <cstdint>
 

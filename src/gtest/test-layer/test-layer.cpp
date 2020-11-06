@@ -37,7 +37,7 @@ void *GnaMalloc(uint32_t size)
     return malloc(size);
 }
 
-void TestLayer::samplePwl(intel_pwl_segment_t *segments, uint32_t numberOfSegments)
+void TestLayer::samplePwl(PwlSegment *segments, uint32_t numberOfSegments)
 {
     auto xBase = -200;
     auto xBaseInc = 2*abs(xBase) / numberOfSegments;
@@ -47,7 +47,7 @@ void TestLayer::samplePwl(intel_pwl_segment_t *segments, uint32_t numberOfSegmen
     {
         segments[i].xBase = xBase;
         segments[i].yBase = static_cast<int16_t>(yBase);
-        segments[i].slope = 1;
+        segments[i].Slope = 1;
     }
 }
 

@@ -64,6 +64,10 @@ struct ConvolutionalLayer2DCapabilities : LayerCapabilities
 
     /** CNN maximum size of pooling window */
     static constexpr uint32_t PoolingWindowSizeMax = 6;
+
+    /** CNN 1D maximum number of kernel elements in one dimension For int8_t */
+    static constexpr uint32_t Kernel1DElementsPerDimensionMax = 2048;
+
 };
 
 }

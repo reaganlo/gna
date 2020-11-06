@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2019 Intel Corporation.
+ Copyright 2019-2020 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -26,15 +26,25 @@
 #ifndef __GNA2_MEMORY_IMPL_H
 #define __GNA2_MEMORY_IMPL_H
 
-#include "gna2-memory-api.h"
+#include <cstdint>
 
-#include "gna2-common-impl.h"
-
-#include <stdint.h>
-
-namespace GNA
+template<typename T>
+constexpr T GnaCeilDiv(T number, T divider)
 {
+    return (number + divider - 1) / divider;
+}
 
+template<typename T>
+constexpr T RoundUp(T number, T significance)
+{
+    if (0 == significance)
+    {
+        return number;
+    }
+    else
+    {
+        return GnaCeilDiv(number, significance) * significance;
+    }
 }
 
 #endif // __GNA2_MEMORY_IMPL_H

@@ -26,9 +26,7 @@
 
 #pragma once
 
-#include "gna-api-types-xnn.h"
-
-#include "common.h"
+#include "KernelArguments.h"
 
 #include <stdint.h>
 
@@ -106,7 +104,7 @@ struct PwlCachedConfig
         } Lookup;
         struct
         {
-            nn_pwl_seg* source;         // unpacked segments
+            PwlSegment* source;         // unpacked segments
             pwl_y_t*  ySeg;             // extracted PWL segments value data
             pwl_x_t xBase0;             // first segment xBase value (binary search algorithm)
             int16_t yBase0;             // first segment yBase value (binary search algorithm)
@@ -140,7 +138,7 @@ public:
     void InitializeActivationFunctions_avx2_sat() const;
 
     // Prepares PWL parameters and auxiliary buffers
-    PwlCached(const gna_data_mode mode, nn_pwl_seg const * const segmentsIn, uint32_t segmentCountIn);
+    PwlCached(const gna_data_mode mode, PwlSegment const * const segmentsIn, uint32_t segmentCountIn);
     PwlCached(PwlCached&& pwlCached);
     PwlCached(const PwlCached& pwlCached) = delete;
     ~PwlCached();

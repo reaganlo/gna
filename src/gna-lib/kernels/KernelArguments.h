@@ -27,9 +27,7 @@
 
 #include "Address.h"
 #include "Macros.h"
-#include "common.h"
 
-#include "gna-api-types-gmm.h"
 #include "gna2-model-impl.h"
 
 #include <array>
@@ -37,6 +35,14 @@
 #include <cstring>
 
 using GNA::BaseAddress;
+
+using GNA::BiasCompound;
+using GNA::BiasRegular;
+using GNA::WeightScaleFactor;
+
+
+/** Number of input groups constraint - max */
+const uint32_t XNN_N_GROUP_MAX = 8;
 
 /**
  * Structure will hold aligned deinterleaved feature vectors
@@ -189,9 +195,9 @@ struct AffineConfig
     };
     union
     {
-        nn_scaling const * const weightScaleFactors; // [M] Scaling factors for 1B weights or NULL for 2B weights.
-        nn_bias_c const * const biasesCompound;     // B - [M]
-        nn_bias_s const * const biasesSimple;       // B - [M]
+        WeightScaleFactor const * const weightScaleFactors; // [M] Scaling factors for 1B weights or NULL for 2B weights.
+        BiasCompound const * const biasesCompound;     // B - [M]
+        BiasRegular const * const biasesSimple;       // B - [M]
     };
     void const * const multiBias;
     uint32_t const multiBiasVectorCount;
@@ -236,8 +242,8 @@ struct RecurrentConfig
     };
     union
     {
-        nn_bias_c const * const biasesCompound; // B - [M]
-        nn_bias_s const * const biasesSimple;   // B - [M]
+        BiasCompound const * const biasesCompound; // B - [M]
+        BiasRegular const * const biasesSimple;   // B - [M]
     };
     KernelConfig<ActivationConfig> activation;
 };
@@ -276,10 +282,10 @@ struct ConvolutionConfig
     ConvolutionConfig(ConvolutionConfig const * const source, ExecutionConfig const & executionConfigIn);
     ConvolutionConfig(uint32_t const inputBandStrideIn, uint32_t const FilterOutputCountIn, uint32_t const FilterCountIn,
         uint32_t const FilterCoefficientCountIn, int16_t const * const inputsIn, int16_t const * const filtersIn,
-        nn_bias_s const * const biasesIn, int32_t * const outputsIn);
+        BiasRegular const * const biasesIn, int32_t * const outputsIn);
     ConvolutionConfig(uint32_t const inputBandStrideIn, uint32_t const FilterOutputCountIn, uint32_t const FilterCountIn,
         uint32_t const FilterCoefficientCountIn, int16_t const * const inputsIn, int16_t const * const filtersIn,
-        nn_bias_s const * const biasesIn, int32_t * const outputsIn, uint32_t bytesPerBiasIn, uint32_t bytesPerFilterIn);
+        BiasRegular const * const biasesIn, int32_t * const outputsIn, uint32_t bytesPerBiasIn, uint32_t bytesPerFilterIn);
 
     uint32_t const inputBandStride;
     uint32_t const filterOutputCount;
@@ -290,7 +296,7 @@ struct ConvolutionConfig
 
     int16_t const * inputs;
     int16_t const * const filters;
-    nn_bias_s const * const biases;
+    BiasRegular const * const biases;
 
     union
     {

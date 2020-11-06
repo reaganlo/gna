@@ -41,9 +41,6 @@
 
 #include "gna2-common-api.h"
 
-#include "common.h"
-#include "gna-api.h"
-#include "gna-api-types-xnn.h"
 
 #include <algorithm>
 #include <cstdint>
@@ -195,7 +192,7 @@ AffineFunctionSingle::AffineFunctionSingle(
 void AffineFunctionSingle::ValidateActiveList(ActiveList const& activeList) const
 {
     Expect::InRange(activeList.IndicesCount,
-        ui32_1, Output->at(GNA_DIM_H), Gna2StatusActiveListIndicesInvalid);
+        1u, Output->at(GNA_DIM_H), Gna2StatusActiveListIndicesInvalid);
     // Only Int32 is supported with active list
     Expect::InSet(Biases->Mode.Type,
         { Gna2DataTypeInt32, Gna2DataTypeCompoundBias },

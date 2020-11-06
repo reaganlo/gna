@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2019 Intel Corporation.
+ Copyright 2019-2020 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -26,22 +26,14 @@
 #pragma once
 
 #include "gna2-model-api.h"
-#include "gna-api-types-xnn.h"
 
 namespace GNA
 {
 
-class ActivationHelper
+struct ActivationHelper
 {
-    ActivationHelper() = delete;
-public:
     static bool IsEnabled(const Gna2Operation& apiOperation);
     static void ExpectProper(const Gna2Tensor& activation);
-
-    static bool IsEnabled(const intel_convolutional_layer_t& cnnDetails);
-    static bool IsEnabled(const intel_pwl_func_t& pwl);
-
-    static intel_pwl_func_t const& GetPwl(void const *layerDetails, gna_layer_operation operation);
 };
 
 }

@@ -31,8 +31,6 @@
 #include "Layer.h"
 #include "PoolingFunctions.h"
 
-#include "common.h"
-
 #include <memory>
 
 struct ExecutionConfig;
@@ -73,8 +71,7 @@ public:
 protected:
     void Init();
 
-    template<class T>
-    std::unique_ptr<const ConvolutionFunction> GetConvolution(const T& apiOperation) const
+    std::unique_ptr<const ConvolutionFunction> GetConvolution(const Gna2Operation& apiOperation) const
     {
         const Tensor* convolutionOutput = &Output;
         // TODO:3: use Input,Output tensor everywhere
@@ -89,7 +86,6 @@ protected:
     void ExpectValid() const;
 
     std::unique_ptr<const PoolingFunction> GetPooling(const Gna2Operation & apiOperation) const;
-    std::unique_ptr<const PoolingFunction> GetPooling(const nn_layer & layer) const;
 
     virtual DataConfig GetDataMode() const override;
 
@@ -101,7 +97,6 @@ private:
     void compute(const LayerConfiguration& layerConfiguration, AccelerationMode accel, ExecutionConfig const & execution) const;
     void computePwl(const LayerConfiguration& layerConfiguration, AccelerationMode accel, ExecutionConfig const & execution) const;
 
-    static const nn_layer_conv& getDetails(const nn_layer& cnn1DLayer);
     static const Gna2Operation& getDetails(const Gna2Operation& operation);
 };
 

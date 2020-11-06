@@ -53,6 +53,9 @@
 
 using GNA::PwlCached;
 
+/** CNN maximum size of pooling window */
+const uint32_t CNN_POOL_SIZE_MAX = 6;
+
 #ifdef __cplusplus
 extern "C" {
 #endif

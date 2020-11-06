@@ -28,7 +28,6 @@
 #include "GnaException.h"
 #include "ThreadPool.h"
 
-#include "gna-api.h"
 
 #include <cstdint>
 #include <memory>
@@ -43,7 +42,6 @@ class Request;
 class RequestHandler
 {
 public:
-
     explicit RequestHandler(uint32_t threadCount);
 
     ~RequestHandler();
@@ -75,6 +73,9 @@ private:
     std::unordered_map<uint32_t, std::unique_ptr<Request>> requests;
     std::mutex lock;
     ThreadPool threadPool;
+
+    /** Maximum number of requests that can be enqueued before retrieval */
+    static constexpr auto QueueLengthMax = 64u;
 };
 
 }

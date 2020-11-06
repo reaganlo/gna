@@ -38,8 +38,6 @@
 #include "RecurrentFunction.h"
 #include "RequestConfiguration.h"
 
-#include "gna-api-status.h"
-#include "gna-api-types-xnn.h"
 
 #include <utility>
 

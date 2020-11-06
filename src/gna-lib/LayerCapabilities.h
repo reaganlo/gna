@@ -28,7 +28,7 @@
 #include "Capabilities.h"
 #include "DataMode.h"
 
-#include <vector>
+#include <map>
 
 namespace GNA
 {
@@ -37,20 +37,12 @@ using ComponentFullCapabilityMap = std::map<const uint32_t, FullCapabilitiesMap>
 
 struct LayerCapabilities
 {
-    /** Number of input groups constraint - max */
-    static constexpr uint32_t BatchSizeMax = 8;
-
-    /** Number of input groups constraint - max */
-    static constexpr uint32_t InputGroupsCountMax = 8;
-
-    /** Total number of input elements constraint - must be multiple of */
-    static constexpr uint32_t InputElementsMultipllier = 8;
-
-    /** Number of input groups constraint for Copy layer 3.0- max */
-    static constexpr uint32_t CopyRowsMax = 255;
-
     /** Total number of input elements constraint - must be multiple of */
     static constexpr uint32_t InputElementCountMultiplier = 8;
+
+    // TODO:4: ensure single point of definition
+    /** Number of input groups constraint for Copy layer 3.0- max */
+    static constexpr uint32_t CopyRowsMax = 255;
 
     /** Total number of output elements constraint - must be multiple of */
     static constexpr uint32_t RecurrentOutputElementCountMultiplier = 32;
@@ -69,7 +61,7 @@ struct LayerCapabilities
 
     static const MultiplierMap & InputElementCountMultipliers();
 
-    static const DataModeLimits & GetModes(uint32_t operandIndex, gna_device_generation generation);
+    static const DataModeLimits & GetModes(uint32_t operandIndex, Gna2DeviceGeneration generation);
 
     static const RangeLimits<>& limitsForInput();
 

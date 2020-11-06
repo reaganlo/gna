@@ -39,8 +39,7 @@
 #include "Tensor.h"
 #include "Validator.h"
 
-#include "gna-api-types-xnn.h"
-#include "gna-api.h"
+#include "gna2-memory-impl.h"
 
 #include <map>
 #include <memory>
@@ -64,9 +63,9 @@ std::unique_ptr<PoolingFunction2D> PoolingFunction2D::create(
     const TransformFactoryConfig& config,
     const OperationConfig& operation)
 {
-    auto poolingMode = operation.Mode;
+    auto poolingMode = ToKernelPoolingMode(operation.Mode);
 
-    if (Gna2PoolingModeDisabled != poolingMode)
+    if (KernelPoolingModeNone != poolingMode)
     {
         auto stride = ConvolutionalLayer2D::CreateComponentFromParameter(operation.PoolingStride,
             config.validator, PoolingStrideParamIndex);
@@ -86,7 +85,7 @@ std::unique_ptr<PoolingFunction2D> PoolingFunction2D::create(
 #pragma warning(disable : 702)
 #endif
 PoolingFunction2D::PoolingFunction2D(const BaseTransformConfig<PoolingKernel2D>& config,
-    const PoolingMode mode, std::unique_ptr<const Component> window,
+    const KernelPoolingMode mode, std::unique_ptr<const Component> window,
     std::unique_ptr<const Component> stride) :
     Transform{ PoolingTransform2D, &config.kernels, config.input },
     Mode{ mode },
@@ -98,7 +97,7 @@ PoolingFunction2D::PoolingFunction2D(const BaseTransformConfig<PoolingKernel2D>&
     Expect::InRange(Window->at(GNA_DIM_W), Input->at(GNA_DIM_W),
         Gna2StatusCnnErrorPoolSize);
 
-    if (GNA_3_5 != config.validator.HwCapabilities.GetDeviceGeneration() &&
+    if (Gna2DeviceGeneration3_5 != config.validator.HwCapabilities.GetDeviceGeneration() &&
         INTEL_CONVOLUTIONAL_1D == Window->GetEffectiveOperationType() &&
         INTEL_CONVOLUTIONAL_1D == Stride->GetEffectiveOperationType())
     {
@@ -126,13 +125,15 @@ PoolingFunction2D::PoolingFunction2D(const BaseTransformConfig<PoolingKernel2D>&
     const auto output = Output->Dimensions;
     output.ExpectFits(Input->Dimensions);
 
-    const gna_3d_dimensions input = Input->Dimensions;
-    const gna_3d_dimensions poolingStride = Stride->Dimensions;
-    const gna_3d_dimensions poolingWindow = Window->Dimensions;
-
-    PoolingConfig2D kernelPoolingConfiguration{ input.width, input.height, input.depth,
-        Mode, poolingStride.width, poolingStride.height,
-        poolingWindow.width, poolingWindow.height };
+    PoolingConfig2D kernelPoolingConfiguration{
+        Input->at(GNA_DIM_W),
+        Input->at(GNA_DIM_H),
+        Input->at(GNA_DIM_D),
+        Mode,
+        Stride->at(GNA_DIM_W),
+        Stride->at(GNA_DIM_H),
+        Window->at(GNA_DIM_W),
+        Window->at(GNA_DIM_H)};
 
     hiddenConfig = std::make_unique<KernelConfig<PoolingConfig2D>>(kernelPoolingConfiguration,
         BaseConfig{ Input->Buffer, Output->Buffer });

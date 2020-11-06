@@ -28,7 +28,6 @@
 #include "GnaException.h"
 #include "ParameterLimits.h"
 
-#include "gna-api-types-xnn.h"
 
 #include <gna2-common-api.h>
 #include <gna2-model-impl.h>

@@ -25,11 +25,8 @@
 
 #pragma once
 
-#include "profiler.h"
-
 #include "gna2-common-api.h"
-
-#include "gna-api.h"
+#include "gna2-instrumentation-api.h"
 
 #include <future>
 #include <memory>

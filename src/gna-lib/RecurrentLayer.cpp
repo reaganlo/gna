@@ -39,9 +39,6 @@
 #include "Tensor.h"
 #include "Weight.h"
 
-#include "gna-api.h"
-#include "gna-api-status.h"
-#include "gna-api-types-xnn.h"
 
 #include <algorithm>
 #include <memory>

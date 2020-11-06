@@ -33,7 +33,6 @@
 
 #include "KernelArguments.h"
 
-#include "gna-api.h"
 
 #include <cstdint>
 #include <memory>

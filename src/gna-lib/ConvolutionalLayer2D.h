@@ -27,8 +27,6 @@
 
 #include "Layer.h"
 
-#include "common.h"
-
 namespace GNA
 {
 class BaseValidator;

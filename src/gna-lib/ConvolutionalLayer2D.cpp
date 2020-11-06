@@ -41,7 +41,6 @@
 #include "TransformMap.h"
 #include "Validator.h"
 
-#include "gna-api-types-xnn.h"
 
 #include <algorithm>
 #include <memory>
@@ -51,7 +50,7 @@ using namespace GNA;
 
 void ConvolutionalLayer2D::Init()
 {
-    if (GNA_3_5 != validator.get()->HwCapabilities.GetDeviceGeneration())
+    if (Gna2DeviceGeneration3_5 != validator.get()->HwCapabilities.GetDeviceGeneration())
     {
         if (GetInputTransform().Is1D() &&
             (Transforms.GetOptional<PoolingFunction2D>(PoolingTransform2D) == nullptr

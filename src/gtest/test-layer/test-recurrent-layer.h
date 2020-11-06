@@ -31,7 +31,6 @@
 
 #include "gna2-model-api.h"
 
-#include "gna-api-types-xnn.h"
 
 #include <cstdint>
 

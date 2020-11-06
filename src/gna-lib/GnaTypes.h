@@ -86,6 +86,7 @@ typedef uint32_t FVWIDTH;
 #endif
 typedef union _GMM_MODE_CTRL
 {
+    uint32_t     _value;            // value of whole register
     struct _GMM_MODE_BITS
     {
         uint32_t read_elimination : 1;  // 00:00 Const and Var Read Elimination
@@ -98,7 +99,6 @@ typedef union _GMM_MODE_CTRL
                                         //      2 = Linf Manhattan Distance
         uint32_t __res_03 : 29;         // 03:31 Reserved
     };
-    uint32_t     _value;            // value of whole register
 } GMM_MODE_CTRL;
 
 /**

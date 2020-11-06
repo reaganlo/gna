@@ -25,8 +25,6 @@
 
 #pragma once
 
-#include "gna-api.h"
-
 #include "KernelMacros.h"
 
 #include <cstdint>

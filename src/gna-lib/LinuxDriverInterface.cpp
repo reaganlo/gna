@@ -34,11 +34,8 @@
 
 #include "gna-h-wrapper.h"
 
-#include "gna-api.h"
-#include "gna-api-status.h"
-#include "profiler.h"
-
 #include "gna2-common-impl.h"
+#include "gna2-memory-impl.h"
 
 #include <errno.h>
 #include <fcntl.h>

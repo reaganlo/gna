@@ -26,14 +26,13 @@
 
 #include "test-gna-api.h"
 
-#include "common.h"
-#include "gna-api.h"
 #include "gna2-model-api.h"
 #include "gna2-model-export-api.h"
 #include "gna2-model-suecreek-header.h"
 
 #include <cstdint>
 #include <gtest/gtest.h>
+#include <limits>
 
 static void GNA_OK_helper(const char* what, Gna2Status status)
 {
@@ -120,11 +119,11 @@ protected:
 
     void ExpectEqualToRefAdlNoMmuLd(const uint8_t* dump, uint32_t dumpSize) const;
 
-    const int buf_size_weights = ALIGN64(sizeof(weights));
-    const int buf_size_inputs = ALIGN64(sizeof(inputs));
-    const int buf_size_biases = ALIGN64(sizeof(biases));
-    const int buf_size_outputs = ALIGN64(8 * 4 * 4);
-    const int buf_size_identity_pwl = ALIGN64(sizeof(identityPwl));
+    const int buf_size_weights = Gna2RoundUpTo64(sizeof(weights));
+    const int buf_size_inputs = Gna2RoundUpTo64(sizeof(inputs));
+    const int buf_size_biases = Gna2RoundUpTo64(sizeof(biases));
+    const int buf_size_outputs = Gna2RoundUpTo64(8 * 4 * 4);
+    const int buf_size_identity_pwl = Gna2RoundUpTo64(sizeof(identityPwl));
 
     void* AllocatorAligned64(uint32_t size) {
         return _mm_malloc(size, 64);

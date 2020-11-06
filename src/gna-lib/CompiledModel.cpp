@@ -31,17 +31,10 @@
 #include "HardwareCapabilities.h"
 #include "Layer.h"
 #include "Logger.h"
-#include "Macros.h"
 #include "Memory.h"
 #include "Request.h"
 #include "RequestConfiguration.h"
 #include "SubModel.h"
-
-#include "gna-api-types-xnn.h"
-#include "profiler.h"
-
-#include <algorithm>
-#include <cstring>
 
 using namespace GNA;
 
@@ -270,8 +263,8 @@ SubmodelType CompiledModel::getSubmodelType(
     auto const & layer = softwareModel.GetLayer(layerIndex);
     auto deviceGeneration = hwCaps.GetDeviceGeneration();
     auto dataConfig = layer.GetDataMode();
-    auto supportMapIterator = DataConfig::Capabilities.find(dataConfig);
-    if (supportMapIterator == DataConfig::Capabilities.end())
+    auto supportMapIterator = DataConfig::Capabilities().find(dataConfig);
+    if (supportMapIterator == DataConfig::Capabilities().end())
     {
         return SubmodelType::Software;
     }

@@ -109,21 +109,14 @@ private:
 
     static std::unique_ptr<const FiltersTensor> createFilters(const Gna2Operation & apiOperation,
         const LayerValidator & validatorIn);
-    static std::unique_ptr<const FiltersTensor> createFilters(const nn_layer_conv & cnn,
-        const LayerValidator & validatorIn);
 
     static std::unique_ptr<const Component> createStride(const Gna2Operation & cnn,
-        const LayerValidator & validatorIn);
-    static std::unique_ptr<const Component> createStride(const nn_layer_conv & cnn,
         const LayerValidator & validatorIn);
 
     static std::unique_ptr<const BiasTensor> createBiases(const Gna2Operation & apiOperation,
         const LayerValidator & validatorIn);
-    static std::unique_ptr<const BiasTensor> createBiases(const nn_layer_conv& cnn,
-        const LayerValidator& validatorIn);
 
     static void expectValid(const Gna2Operation & apiOperation);
-    static void expectValid(const nn_layer_conv & cnn);
 };
 
 }

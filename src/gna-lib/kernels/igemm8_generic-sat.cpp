@@ -29,8 +29,6 @@
 
 #include "KernelArguments.h"
 
-#include "common.h"
-#include "gna-api-types-xnn.h"
 
 #include <cstdint>
 
@@ -67,7 +65,7 @@ void AffineKernelImpl1B(ExecutionKernelConfig<AffineConfig> const * const config
     {
         for (j = 0; j < inputVectorCount; j++)
         {
-            sum = config->RequestConfig->Transform.biasesCompound[i].bias;
+            sum = config->RequestConfig->Transform.biasesCompound[i].Bias;
             for (kk = 0; kk < nKpartial + 1; kk++) {
                 niters = kpartial < inputElementCount - kk * kpartial
                     ? kpartial : inputElementCount - kk * kpartial;
@@ -83,7 +81,7 @@ void AffineKernelImpl1B(ExecutionKernelConfig<AffineConfig> const * const config
                     {
                         acc += weight[l] * input[l];
                     }
-                    sum += acc * config->RequestConfig->Transform.biasesCompound[i].multiplier;
+                    sum += acc * config->RequestConfig->Transform.biasesCompound[i].Multiplier;
                     acc = 0;
                 }
 
@@ -94,7 +92,7 @@ void AffineKernelImpl1B(ExecutionKernelConfig<AffineConfig> const * const config
                     acc += weight[k] * input[k];
                 }
                 // conversion to signed int needed - multiplier is unsigned, and temporary result would biasEnd also unsigned
-                sum += acc * config->RequestConfig->Transform.biasesCompound[i].multiplier;
+                sum += acc * config->RequestConfig->Transform.biasesCompound[i].Multiplier;
                 saturate_store_out(&sum, &output[i*inputVectorCount + j], config->SaturationCount);
                 sum = (int64_t)output[i*inputVectorCount + j];
             }
@@ -130,7 +128,7 @@ void AffineKernelImpl1B2B(ExecutionKernelConfig<AffineConfig> const * const conf
     {
         for (j = 0; j < inputVectorCount; j++)
         {
-            sum = config->RequestConfig->Transform.biasesCompound[i].bias;
+            sum = config->RequestConfig->Transform.biasesCompound[i].Bias;
             for (kk = 0; kk < nKpartial + 1; kk++) {
                 niters = kpartial < inputElementCount - kk * kpartial ? kpartial : inputElementCount - kk * kpartial;
 
@@ -145,7 +143,7 @@ void AffineKernelImpl1B2B(ExecutionKernelConfig<AffineConfig> const * const conf
                     {
                         acc += weight[l] * input[l];
                     }
-                    sum += acc * config->RequestConfig->Transform.biasesCompound[i].multiplier;
+                    sum += acc * config->RequestConfig->Transform.biasesCompound[i].Multiplier;
                     acc = 0;
                 }
 
@@ -156,7 +154,7 @@ void AffineKernelImpl1B2B(ExecutionKernelConfig<AffineConfig> const * const conf
                     acc += weight[k] * input[k];
                 }
                 // conversion to signed int needed - multiplier is unsigned, and temporary result would biasEnd also unsigned
-                sum += acc * config->RequestConfig->Transform.biasesCompound[i].multiplier;
+                sum += acc * config->RequestConfig->Transform.biasesCompound[i].Multiplier;
                 saturate_store_out(&sum, &output[i*inputVectorCount + j], config->SaturationCount);
                 sum = (int64_t)output[i*inputVectorCount + j];
             }
@@ -252,7 +250,7 @@ void AffineMultiBiasKernelImpl1B(ExecutionKernelConfig<AffineConfig> const * con
                     {
                         acc += weight[l] * input[l];
                     }
-                    sum += acc * config->RequestConfig->Transform.weightScaleFactors[i].multiplier;
+                    sum += acc * config->RequestConfig->Transform.weightScaleFactors[i].Multiplier;
                     acc = 0;
                 }
 
@@ -263,7 +261,7 @@ void AffineMultiBiasKernelImpl1B(ExecutionKernelConfig<AffineConfig> const * con
                     acc += weight[k] * input[k];
                 }
                 // conversion to signed int needed - multiplier is unsigned, and temporary result would biasEnd also unsigned
-                sum += acc * config->RequestConfig->Transform.weightScaleFactors[i].multiplier;
+                sum += acc * config->RequestConfig->Transform.weightScaleFactors[i].Multiplier;
                 saturate_store_out(&sum, &output[i*inputVectorCount + j], config->SaturationCount);
                 sum = output[i*inputVectorCount + j];
             }
@@ -312,7 +310,7 @@ void AffineMultiBiasKernelImpl1B2B(ExecutionKernelConfig<AffineConfig> const * c
                     {
                         acc += weight[l] * input[l];
                     }
-                    sum += acc * config->RequestConfig->Transform.weightScaleFactors[i].multiplier;
+                    sum += acc * config->RequestConfig->Transform.weightScaleFactors[i].Multiplier;
                     acc = 0;
                 }
 
@@ -323,7 +321,7 @@ void AffineMultiBiasKernelImpl1B2B(ExecutionKernelConfig<AffineConfig> const * c
                     acc += weight[k] * input[k];
                 }
                 // conversion to signed int needed - multiplier is unsigned, and temporary result would biasEnd also unsigned
-                sum += acc * config->RequestConfig->Transform.weightScaleFactors[i].multiplier;
+                sum += acc * config->RequestConfig->Transform.weightScaleFactors[i].Multiplier;
                 saturate_store_out(&sum, &output[i*inputVectorCount + j], config->SaturationCount);
                 sum = output[i*inputVectorCount + j];
             }

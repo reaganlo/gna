@@ -38,10 +38,6 @@
 #include "ParameterLimits.h"
 #include "Validator.h"
 
-#include "gna-api-status.h"
-#include "gna-api-types-gmm.h"
-#include "gna-api.h"
-
 #include <algorithm>
 #include <cstdint>
 #include <memory.h>
@@ -86,15 +82,6 @@ const FullCapabilitiesMap LayerInput::capabilities =
         AffineLayerCapabilities::GetOperands(InputOperandIndex).at(INTEL_RECURRENT)
     }}
 };
-
-LayerInput::LayerInput(const nn_layer &layer, const LayerValidator& validatorIn) :
-    Tensor{ GetDimensions(layer, capabilities.GetOrder(validatorIn)),
-        layer.nBytesPerInput, layer.pInputs,
-        Validator{ validatorIn, capabilities } },
-    Grouping{ getGrouping(layer) },
-    ElementCount{ getElementCount(layer) }
-{
-}
 
 ApiShape LayerInput::GetShape(const Gna2Operation & operation)
 {
@@ -143,35 +130,6 @@ bool LayerInput::IsInputInterleave(const Gna2Tensor &apiTensor,
     }
 }
 
-Shape LayerInput::GetDimensions(const nn_layer& layer, gna_tensor_order order)
-{
-    switch (layer.operation)
-    {
-    case INTEL_AFFINE:
-    case INTEL_AFFINE_MULTIBIAS:
-    case INTEL_AFFINE_DIAGONAL:
-    case INTEL_COPY:
-    case INTEL_DEINTERLEAVE:
-    case INTEL_INTERLEAVE:
-    case INTEL_RECURRENT:
-    case INTEL_CONVOLUTIONAL:
-        return { order, layer.nInputRows, layer.nInputColumns };
-    case INTEL_GMM:
-        return { order, layer.nInputColumns, layer.nInputRows };
-    case INTEL_CONVOLUTIONAL_2D:
-    {
-        auto const config = static_cast<nn_layer_cnn2d*>(layer.pLayerStruct);
-        return { order,
-            layer.nInputRows,
-            config->inputDimensions.height,
-            config->inputDimensions.width,
-            config->inputDimensions.depth }; // GNA_TENSOR_NHWD
-    }
-    default:
-        return {};
-    }
-}
-
 std::pair<uint32_t, uint32_t> LayerInput::getGroupingAndElements(
     const Gna2Operation& operation, const LayerValidator& validatorIn) const
 {
@@ -194,23 +152,3 @@ std::pair<uint32_t, uint32_t> LayerInput::getGroupingAndElements(
     }
 }
 
-std::pair<uint32_t, uint32_t> LayerInput::getGroupingAndElements(const nn_layer& layer) const
-{
-    switch (layer.operation)
-    {
-    case INTEL_AFFINE:
-    case INTEL_AFFINE_DIAGONAL:
-    case INTEL_AFFINE_MULTIBIAS:
-    case INTEL_DEINTERLEAVE:
-        return { layer.nInputColumns, layer.nInputRows };
-    case INTEL_GMM:
-    case INTEL_COPY:
-    case INTEL_RECURRENT:
-    case INTEL_INTERLEAVE:
-    case INTEL_CONVOLUTIONAL:
-    case INTEL_CONVOLUTIONAL_2D:
-        return { layer.nInputRows, layer.nInputColumns };
-    default:
-        throw GnaException(Gna2StatusNotImplemented);
-    }
-}

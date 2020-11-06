@@ -24,11 +24,11 @@
 */
 
 #include "CompiledModel.h"
+#include "profiler.h"
 #include "Request.h"
 #include "RequestConfiguration.h"
 
 #include <algorithm>
-#include <cstring>
 #include <memory>
 
 struct KernelBuffers;

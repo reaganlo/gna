@@ -27,7 +27,7 @@ cmake_minimum_required(VERSION 3.10)
 # global variables
 unset(PREFIX)
 set(PROJECT_NAME TEST-LAYER)
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 set(CXX_STANDARD_REQUIRED ON)
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
@@ -115,7 +115,6 @@ add_executable(test-layer
   ${SRC_DIR}/ModelWrapper.cpp
   ${SRC_DIR}/OperationConfig.cpp
   ${SRC_DIR}/ParameterLimits.cpp
-  ${SRC_DIR}/PoolingMode.cpp
   ${SRC_DIR}/PoolingFunctions.cpp
   ${SRC_DIR}/PoolingFunctions2D.cpp
   ${SRC_DIR}/ProfilerConfiguration.cpp

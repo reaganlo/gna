@@ -29,9 +29,6 @@
 #include "KernelArguments.h"
 #include "KernelMacros.h"
 
-#include "common.h"
-#include "gna-api-types-xnn.h"
-
 #include <cstdint>
 #include <immintrin.h>
 
@@ -56,8 +53,8 @@ void RecurrentKernelImpl1B(ExecutionKernelConfig<RecurrentConfig> const * const 
     int16_t * feedback;
     int16_t *feedbackEnd = config->RequestConfig->Transform.feedbackBuffer+config->RequestConfig->Transform.outputElementCount;
 
-    nn_bias_c const * bias = config->RequestConfig->Transform.biasesCompound;
-    nn_bias_c const * const biasEnd = bias + config->RequestConfig->Transform.outputElementCount;
+    BiasCompound const * bias = config->RequestConfig->Transform.biasesCompound;
+    BiasCompound const * const biasEnd = bias + config->RequestConfig->Transform.outputElementCount;
     int32_t * output = reinterpret_cast<int32_t *>(config->RequestConfig->Transform.output);
     int8_t const * weight = config->RequestConfig->Transform.weights1B;
 
@@ -88,7 +85,7 @@ void RecurrentKernelImpl1B(ExecutionKernelConfig<RecurrentConfig> const * const 
     {
         input = reinterpret_cast<int16_t const *>(config->RequestConfig->Inputs);
         feedback = config->RequestConfig->Transform.feedbackBuffer;
-        sum = bias->bias;
+        sum = bias->Bias;
 
         // compute parts using AVX
         // if config->RequestConfig->Transform.inputElementCount has modulo 16 remainder, leave it
@@ -134,7 +131,7 @@ void RecurrentKernelImpl1B(ExecutionKernelConfig<RecurrentConfig> const * const 
             // saturate if part size achieved
             if (k == part_sz)
             {
-                sum += vec_sum(acc) * bias->multiplier;
+                sum += vec_sum(acc) * bias->Multiplier;
                 acc = _mm_setzero_si128();
                 saturate_store_out(&sum, output, config->SaturationCount);
                 sum = (int64_t)*output;
@@ -144,7 +141,7 @@ void RecurrentKernelImpl1B(ExecutionKernelConfig<RecurrentConfig> const * const 
         // compute remainder
         for (k = KK; k < config->RequestConfig->Transform.inputElementCount; k++)
         {
-            sum += *input++ * *weight++ * bias->multiplier;
+            sum += *input++ * *weight++ * bias->Multiplier;
         }
 
         in = _mm256_lddqu_si256((__m256i*)feedback);
@@ -189,10 +186,10 @@ void RecurrentKernelImpl1B(ExecutionKernelConfig<RecurrentConfig> const * const 
         // if part size wasn't reached, but there is still config->RequestConfig->Transform.outputElementCount remainder
         for (; k < mpart_sz; k++)
         {
-            sum += *feedback++ * *weight++ * bias->multiplier;
+            sum += *feedback++ * *weight++ * bias->Multiplier;
         }
 
-        sum += vec_sum(acc) * bias->multiplier;
+        sum += vec_sum(acc) * bias->Multiplier;
         acc = _mm_setzero_si128();
         saturate_store_out(&sum, output, config->SaturationCount);
         sum = (int64_t)*output;
@@ -230,7 +227,7 @@ void RecurrentKernelImpl1B(ExecutionKernelConfig<RecurrentConfig> const * const 
 
             if (kk == part_sz)
             {
-                sum += vec_sum(acc) * bias->multiplier;
+                sum += vec_sum(acc) * bias->Multiplier;
                 acc = _mm_setzero_si128();
                 saturate_store_out(&sum, output, config->SaturationCount);
                 sum = (int64_t)*output;
@@ -243,7 +240,7 @@ void RecurrentKernelImpl1B(ExecutionKernelConfig<RecurrentConfig> const * const 
             sum += *feedback++ * *weight++;
         }
 
-        sum += vec_sum(acc) * bias->multiplier;
+        sum += vec_sum(acc) * bias->Multiplier;
         acc = _mm_setzero_si128();
         saturate_store_out(&sum, output, config->SaturationCount);
         sum = (int64_t)*output;

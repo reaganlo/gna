@@ -34,6 +34,7 @@
 #include <chrono>
 #include <gtest/gtest.h>
 #include <initializer_list>
+#include <limits>
 #include <vector>
 
 void TestGnaApi::ExpectMemEqual(const uint8_t* dump, uint32_t dumpSize, const uint8_t* ref, uint32_t refSize)

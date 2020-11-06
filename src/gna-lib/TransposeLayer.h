@@ -30,8 +30,6 @@
 #include "KernelArguments.h"
 #include "XnnKernel.h"
 
-#include "common.h"
-
 #include <cstdint>
 #include <map>
 

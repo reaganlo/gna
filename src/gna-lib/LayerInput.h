@@ -28,9 +28,6 @@
 #include "Shape.h"
 #include "Tensor.h"
 
-#include "common.h"
-#include "gna-api-types-xnn.h"
-
 namespace GNA
 {
 class FullCapabilitiesMap;
@@ -38,7 +35,6 @@ class LayerValidator;
 
 struct LayerInput : public Tensor
 {
-    LayerInput(const nn_layer &layer, const LayerValidator& validatorIn);
     LayerInput(const Gna2Operation &operation, const LayerValidator& validatorIn);
     virtual ~LayerInput() = default;
 
@@ -51,11 +47,9 @@ struct LayerInput : public Tensor
 protected:
     static const FullCapabilitiesMap capabilities;
     static ApiShape GetShape(const Gna2Operation & operation);
-    static Shape GetDimensions(const nn_layer& layer, gna_tensor_order order);
 
     virtual std::pair<uint32_t, uint32_t> getGroupingAndElements(
         const Gna2Operation& operation, const LayerValidator& validatorIn) const override;
-    virtual std::pair<uint32_t, uint32_t> getGroupingAndElements(const nn_layer& layer) const override;
 };
 
 }

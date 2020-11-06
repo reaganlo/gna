@@ -88,8 +88,8 @@ TestAffineLayer::TestAffineLayer()
         throw;
     }
 
-    alignedPwlSegments = (intel_pwl_segment_t *)
-        _kernel_malloc(sizeof(intel_pwl_segment_t) * numberOfSegments);
+    alignedPwlSegments = (PwlSegment *)
+        _kernel_malloc(sizeof(PwlSegment) * numberOfSegments);
     if (alignedPwlSegments == nullptr)
     {
         this->~TestAffineLayer();

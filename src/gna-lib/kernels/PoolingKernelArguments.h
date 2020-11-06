@@ -28,7 +28,6 @@
 
 enum KernelPoolingMode
 {
-    // TODO:3: Refactor, for now assuming values as in API1 intel_pool_type_t
     KernelPoolingModeNone = 0,
     KernelPoolingModeMax = 1,
     KernelPoolingModeSum = 2,

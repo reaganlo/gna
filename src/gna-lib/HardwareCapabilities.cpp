@@ -31,8 +31,6 @@
 #include "Logger.h"
 #include "Macros.h"
 
-#include "gna-api-status.h"
-
 #include <algorithm>
 #include <cstddef>
 #include <memory>
@@ -49,7 +47,7 @@ std::map<DeviceVersion, const GenerationCapabilities>& HardwareCapabilities::get
 {
     static std::map<DeviceVersion, const GenerationCapabilities> capsMap = {
         { Gna2DeviceVersionGMM,
-            {GMM_DEVICE,
+            {Gna2DeviceGenerationGmm,
             1,
             {
                 { BaseFunctionality, false},
@@ -73,7 +71,7 @@ std::map<DeviceVersion, const GenerationCapabilities>& HardwareCapabilities::get
             {}},
         },
         { Gna2DeviceVersion0_9,
-            {GNA_0_9,
+            {Gna2DeviceGeneration0_9,
             1023,
             {
                 { BaseFunctionality, true},
@@ -97,7 +95,7 @@ std::map<DeviceVersion, const GenerationCapabilities>& HardwareCapabilities::get
             {}},
         },
         { Gna2DeviceVersion1_0,
-            {GNA_1_0,
+            {Gna2DeviceGeneration1_0,
             1023,
             {
                 { BaseFunctionality, true},
@@ -121,7 +119,7 @@ std::map<DeviceVersion, const GenerationCapabilities>& HardwareCapabilities::get
             {}},
         },
         { Gna2DeviceVersionEmbedded1_0,
-            {GNA_1_0,
+            {Gna2DeviceGeneration1_0,
             1023,
             {
                 { BaseFunctionality, true},
@@ -145,7 +143,7 @@ std::map<DeviceVersion, const GenerationCapabilities>& HardwareCapabilities::get
             {}},
         },
         { Gna2DeviceVersion2_0,
-            {GNA_2_0,
+            {Gna2DeviceGeneration2_0,
             4096,
             {
                 { BaseFunctionality, true},
@@ -169,7 +167,7 @@ std::map<DeviceVersion, const GenerationCapabilities>& HardwareCapabilities::get
             {}},
         },
         { Gna2DeviceVersionEmbedded2_1,
-            {GNA_2_0,
+            {Gna2DeviceGeneration2_0,
             4096,
             {
                 { BaseFunctionality, true},
@@ -193,7 +191,7 @@ std::map<DeviceVersion, const GenerationCapabilities>& HardwareCapabilities::get
             {}},
         },
         { Gna2DeviceVersion3_0,
-            {GNA_3_0,
+            {Gna2DeviceGeneration3_0,
             8192,
             {
                 { BaseFunctionality, true},
@@ -216,7 +214,7 @@ std::map<DeviceVersion, const GenerationCapabilities>& HardwareCapabilities::get
             {}},
         },
         { Gna2DeviceVersion3_5,
-            {GNA_3_5,
+            {Gna2DeviceGeneration3_5,
             8192,
             {
                 { BaseFunctionality, true},
@@ -239,7 +237,7 @@ std::map<DeviceVersion, const GenerationCapabilities>& HardwareCapabilities::get
             {}},
         },
         { Gna2DeviceVersionEmbedded3_0,
-            {GNA_3_0,
+            {Gna2DeviceGeneration3_0,
             8192,
             {
                 { BaseFunctionality, true},
@@ -262,7 +260,7 @@ std::map<DeviceVersion, const GenerationCapabilities>& HardwareCapabilities::get
             {}},
         },
         { Gna2DeviceVersionEmbedded3_1,
-            {GNA_3_5,
+            {Gna2DeviceGeneration3_5,
             8192,
             {
                 { BaseFunctionality, true},
@@ -315,9 +313,9 @@ HardwareCapabilities::getGenerationCapabilities(DeviceVersion deviceVersionIn)
     }
 }
 
-bool HardwareCapabilities::IsAdlGeneration(gna_device_generation generation)
+bool HardwareCapabilities::IsAdlGeneration(Gna2DeviceGeneration generation)
 {
-    return GNA_3_0 == generation || GNA_3_5 == generation;
+    return Gna2DeviceGeneration3_0 == generation || Gna2DeviceGeneration3_5 == generation;
 }
 
 bool HardwareCapabilities::IsAdlDevice(DeviceVersion deviceVersionIn)
@@ -326,7 +324,7 @@ bool HardwareCapabilities::IsAdlDevice(DeviceVersion deviceVersionIn)
     return IsAdlGeneration(caps.Generation);
 }
 
-DeviceVersion HardwareCapabilities::GetDeviceVersion(gna_device_generation generation)
+DeviceVersion HardwareCapabilities::GetDeviceVersion(Gna2DeviceGeneration generation)
 {
     auto type = std::find_if(getCapsMap().cbegin(), getCapsMap().cend(),
         [generation](const std::pair<const DeviceVersion, const GenerationCapabilities>& genCaps)
@@ -421,7 +419,7 @@ const char* HardwareCapabilities::GetHwModuleName() const
     }
 }
 
-gna_device_generation HardwareCapabilities::GetDeviceGeneration() const
+Gna2DeviceGeneration HardwareCapabilities::GetDeviceGeneration() const
 {
     return getGenerationCapabilities(deviceVersion).Generation;
 }

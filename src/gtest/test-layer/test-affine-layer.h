@@ -78,7 +78,7 @@ public:
     void *alignedMultibias = nullptr;
     void *alignedOutput = nullptr;
     void *alignedIntermediateOutput = nullptr;
-    intel_pwl_segment_t *alignedPwlSegments = nullptr;
+    PwlSegment *alignedPwlSegments = nullptr;
 
 protected:
     template<typename InputType, typename WeightType, typename BiasType>

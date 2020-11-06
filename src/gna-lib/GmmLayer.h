@@ -29,10 +29,8 @@
 #include "KernelArguments.h"
 #include "Layer.h"
 #include "Weight.h"
-
-#include "common.h"
 #include "gmm.h"
-#include "gna-api-types-gmm.h"
+#include "GmmLayerCapabilities.h"
 
 #include <cstdint>
 #include <map>

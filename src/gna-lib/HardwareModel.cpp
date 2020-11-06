@@ -26,7 +26,6 @@
 #include "HardwareModel.h"
 
 #include "ActivationFunction.h"
-#include "common.h"
 #include "CompiledModel.h"
 #include "Expect.h"
 #include "GnaConfig.h"
@@ -37,9 +36,6 @@
 #include "Memory.h"
 #include "SubModel.h"
 #include "TransformMap.h"
-
-#include "gna-api-status.h"
-#include "gna-api-types-xnn.h"
 
 #include <algorithm>
 #include <sstream>
@@ -174,7 +170,7 @@ HardwareLayer const * HardwareModel::TryGetLayer(uint32_t layerIndex) const
 // TODO:3: throw exception if not found, but NULL in nnet should be handled
 LdaOffset HardwareModel::GetBufferOffset(const BaseAddress& address) const
 {
-    return allocations.GetBufferOffset(address, PAGE_SIZE);
+    return allocations.GetBufferOffset(address, MemoryBufferAlignment);
 }
 
 uint32_t HardwareModel::getLayerDescriptorsSize(
@@ -192,7 +188,7 @@ uint32_t HardwareModel::getGmmDescriptorsSize(const uint32_t gmmLayersCount)
 
 void HardwareModel::prepareAllocationsAndModel()
 {
-    Expect::InRange(model.LayerCount, ui32_1, HardwareCapabilities::GetMaximumLayerCount(DefaultDeviceVersion),
+    Expect::InRange(model.LayerCount, 1u, HardwareCapabilities::GetMaximumLayerCount(DefaultDeviceVersion),
         Gna2StatusXnnErrorNetLyrNo);
     auto ldMemorySize = calculateDescriptorSize(true);
     auto ldSize = LayerDescriptor::GetSize(1, hwCapabilities.GetDeviceVersion());

@@ -26,7 +26,7 @@ cmake_minimum_required(VERSION 3.10)
 
 # global variables
 set(PROJECT_NAME gna-api)
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 set(CXX_STANDARD_REQUIRED ON)
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
@@ -135,7 +135,6 @@ set(gna_lib_sources ${gna_lib_sources}
   ${SRC_DIR}/ModelWrapper.cpp
   ${SRC_DIR}/OperationConfig.cpp
   ${SRC_DIR}/ParameterLimits.cpp
-  ${SRC_DIR}/PoolingMode.cpp
   ${SRC_DIR}/PoolingFunctions.cpp
   ${SRC_DIR}/PoolingFunctions2D.cpp
   ${SRC_DIR}/ProfilerConfiguration.cpp
@@ -174,12 +173,6 @@ set(gna_api_impl_src_2
 
 set(gna_lib_sources
   ${gna_lib_sources} ${gna_api_impl_src_2} ${gna_driver_interface_src})
-
-set(gna_api_headers
-  ${COMMON_DIR}/gna-api.h
-  ${COMMON_DIR}/gna-api-types-xnn.h
-  ${COMMON_DIR}/gna-api-types-gmm.h
-  ${COMMON_DIR}/gna-api-status.h)
 
 set(gna_lib_headers
   ${SRC_DIR}/AccelerationDetector.h
@@ -284,7 +277,7 @@ set(gna_api_impl_headers_2
   ${API_IMPL_DIR}/gna2-validation-impl.h)
 
 set(gna_lib_headers
-  ${gna_api_headers} ${gna_lib_headers} ${gna_api_impl_headers_2} ${gna_driver_interface_headers})
+  ${gna_lib_headers} ${gna_api_impl_headers_2} ${gna_driver_interface_headers})
 
 set(gna_api_headers_2
   ${API_DIR}/gna2-api.h
@@ -307,7 +300,6 @@ set(gna_api_headers_tlv_model_export
 
 set(common_sources
   ${COMMON_DIR}/Address.h
-  ${COMMON_DIR}/common.h
   ${COMMON_DIR}/GnaException.h
   ${COMMON_DIR}/Macros.h
   ${COMMON_DIR}/profiler.cpp

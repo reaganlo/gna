@@ -31,7 +31,6 @@
 #include "ProfilerConfiguration.h"
 #include "Tensor.h"
 
-#include "gna-api.h"
 #include "gna2-common-impl.h"
 #include "gna2-inference-api.h"
 #include "gna2-inference-impl.h"

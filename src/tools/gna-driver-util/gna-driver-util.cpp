@@ -49,10 +49,10 @@
 
 int16_t* calculateOutputOffset(Memory& dataMemory, const GnaUtilConfig& config)
 {
-    auto buf_size_weights = ALIGN64(config.dataSize.weights); // note that buffer alignment to 64-bytes is required by GNA HW
-    auto buf_size_inputs = ALIGN64(config.dataSize.input);
-    auto buf_size_biases = ALIGN64(config.dataSize.biases);
-    auto buf_size_outputs = ALIGN64(config.dataSize.output);
+    auto buf_size_weights = Gna2RoundUpTo64(config.dataSize.weights); // note that buffer alignment to 64-bytes is required by GNA HW
+    auto buf_size_inputs = Gna2RoundUpTo64(config.dataSize.input);
+    auto buf_size_biases = Gna2RoundUpTo64(config.dataSize.biases);
+    auto buf_size_outputs = Gna2RoundUpTo64(config.dataSize.output);
 
     auto pinned_mem_ptr = (uint8_t*)dataMemory.GetBuffer();
     auto pinned_weights = (int16_t*)pinned_mem_ptr;

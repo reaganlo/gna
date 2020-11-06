@@ -29,12 +29,13 @@
 #include "KernelArguments.h"
 #include "KernelMacros.h"
 
-#include "common.h"
-#include "gna-api-types-xnn.h"
-
 #include <cstdint>
 #include <cstring>
 #include <immintrin.h>
+
+using GNA::BiasCompound;
+using GNA::BiasRegular;
+using GNA::WeightScaleFactor;
 
 static void initializeVectors(ExecutionKernelConfig<AffineConfig> const *config,
         int16_t const * input[XNN_N_GROUP_MAX], __m128i *in_ptr[XNN_N_GROUP_MAX], uint32_t simdVectorLength);
@@ -320,9 +321,9 @@ void affineKernelImpl1B_N1(
     __m128i w;
 
     int8_t const * weight;
-    nn_bias_c const * bias = config->RequestConfig->Transform.biasesCompound;
+    BiasCompound const * bias = config->RequestConfig->Transform.biasesCompound;
     int32_t * output;
-    nn_bias_c const * const biasEnd = bias + config->RequestConfig->Transform.outputElementCount;// outer loop pointer
+    BiasCompound const * const biasEnd = bias + config->RequestConfig->Transform.outputElementCount;// outer loop pointer
 
     weight = config->RequestConfig->Transform.weights1B;
     output = reinterpret_cast<int32_t *>(config->RequestConfig->Outputs);
@@ -346,12 +347,12 @@ void affineKernelImpl1B_N1(
         ix = 0;
         acc0 = _mm_setzero_si128();
         acc1 = _mm_setzero_si128();
-        sum0 = bias->bias;
+        sum0 = bias->Bias;
 
         for (kk = 0; kk < numberOfIterationsPerGroup + 1; kk++)
         {
             acc0 = _mm_add_epi32(acc0, acc1);
-            sum0 += vec_sum32(acc0) * bias->multiplier;
+            sum0 += vec_sum32(acc0) * bias->Multiplier;
 
             saturate(&sum0, config->SaturationCount);
 
@@ -385,7 +386,7 @@ void affineKernelImpl1B_N1(
                 }
 
                 acc0 = _mm_add_epi32(acc0, acc1);
-                sum0 += vec_sum32(acc0) * bias->multiplier;
+                sum0 += vec_sum32(acc0) * bias->Multiplier;
             }
 
             acc0 = _mm_setzero_si128();
@@ -404,13 +405,13 @@ void affineKernelImpl1B_N1(
                 acc0 = _mm_add_epi32(acc0, in0);
             }
 
-            sum0 += vec_sum32(acc0) * bias->multiplier;
+            sum0 += vec_sum32(acc0) * bias->Multiplier;
             acc0 = _mm_setzero_si128();
         }
 
         for (j = 0; j < vectorTailLength; j++)
         {
-            sum0 += (*input)[j] * *weight++ * bias->multiplier;
+            sum0 += (*input)[j] * *weight++ * bias->Multiplier;
         }
 
         saturate_store_out(&sum0, output, config->SaturationCount);
@@ -433,10 +434,10 @@ void affineKernelImpl1B_N2(
     uint32_t j;
 
     int8_t const * weight;
-    nn_bias_c const * bias = config->RequestConfig->Transform.biasesCompound;
+    BiasCompound const * bias = config->RequestConfig->Transform.biasesCompound;
 
     int32_t * output;
-    nn_bias_c const * const biasEnd = bias + config->RequestConfig->Transform.outputElementCount;// outer loop pointer
+    BiasCompound const * const biasEnd = bias + config->RequestConfig->Transform.outputElementCount;// outer loop pointer
 
     weight = config->RequestConfig->Transform.weights1B;
     output = reinterpret_cast<int32_t *>(config->RequestConfig->Outputs);
@@ -460,8 +461,8 @@ void affineKernelImpl1B_N2(
     {
         ix = 0;
 
-        sum0 = bias->bias;
-        sum1 = bias->bias;
+        sum0 = bias->Bias;
+        sum1 = bias->Bias;
 
         for (kk = 0; kk < numberOfIterationsPerGroup + 1; kk++)
         {
@@ -495,8 +496,8 @@ void affineKernelImpl1B_N2(
                     acc1 = _mm_add_epi32(acc1, in1);
                 }
 
-                sum0 += vec_sum32(acc0) * bias->multiplier;
-                sum1 += vec_sum32(acc1) * bias->multiplier;
+                sum0 += vec_sum32(acc0) * bias->Multiplier;
+                sum1 += vec_sum32(acc1) * bias->Multiplier;
             }
 
             acc0 = _mm_setzero_si128();
@@ -518,14 +519,14 @@ void affineKernelImpl1B_N2(
                 acc1 = _mm_add_epi32(acc1, in1);
             }
 
-            sum0 += vec_sum32(acc0) * bias->multiplier;
-            sum1 += vec_sum32(acc1) * bias->multiplier;
+            sum0 += vec_sum32(acc0) * bias->Multiplier;
+            sum1 += vec_sum32(acc1) * bias->Multiplier;
         }
 
         for (j = 0; j < vectorTailLength; j++, weight++)
         {
-            sum0 += input[0][j] * *weight * bias->multiplier;
-            sum1 += input[1][j] * *weight * bias->multiplier;
+            sum0 += input[0][j] * *weight * bias->Multiplier;
+            sum1 += input[1][j] * *weight * bias->Multiplier;
         }
 
         saturate_store_out(&sum0, &output[0], config->SaturationCount);
@@ -550,9 +551,9 @@ void affineKernelImpl1B_N3(
     uint32_t j;
 
     int8_t const * weight;
-    nn_bias_c const * bias = config->RequestConfig->Transform.biasesCompound;
+    BiasCompound const * bias = config->RequestConfig->Transform.biasesCompound;
     int32_t * output;
-    nn_bias_c const * const biasEnd = bias + config->RequestConfig->Transform.outputElementCount;// outer loop pointer
+    BiasCompound const * const biasEnd = bias + config->RequestConfig->Transform.outputElementCount;// outer loop pointer
 
     weight = config->RequestConfig->Transform.weights1B;
     output = reinterpret_cast<int32_t *>(config->RequestConfig->Outputs);
@@ -579,9 +580,9 @@ void affineKernelImpl1B_N3(
     {
         ix = 0;
 
-        sum0 = bias->bias;
-        sum1 = bias->bias;
-        sum2 = bias->bias;
+        sum0 = bias->Bias;
+        sum1 = bias->Bias;
+        sum2 = bias->Bias;
 
         for (kk = 0; kk < numberOfIterationsPerGroup + 1; kk++)
         {
@@ -620,9 +621,9 @@ void affineKernelImpl1B_N3(
                     acc2 = _mm_add_epi32(acc2, in2);
                 }
 
-                sum0 += vec_sum32(acc0) * bias->multiplier;
-                sum1 += vec_sum32(acc1) * bias->multiplier;
-                sum2 += vec_sum32(acc2) * bias->multiplier;
+                sum0 += vec_sum32(acc0) * bias->Multiplier;
+                sum1 += vec_sum32(acc1) * bias->Multiplier;
+                sum2 += vec_sum32(acc2) * bias->Multiplier;
             }
 
             acc0 = _mm_setzero_si128();
@@ -648,16 +649,16 @@ void affineKernelImpl1B_N3(
                 acc2 = _mm_add_epi32(acc2, in2);
             }
 
-            sum0 += vec_sum32(acc0) * bias->multiplier;
-            sum1 += vec_sum32(acc1) * bias->multiplier;
-            sum2 += vec_sum32(acc2) * bias->multiplier;
+            sum0 += vec_sum32(acc0) * bias->Multiplier;
+            sum1 += vec_sum32(acc1) * bias->Multiplier;
+            sum2 += vec_sum32(acc2) * bias->Multiplier;
         }
 
         for (j = 0; j < vectorTailLength; j++, weight++)
         {
-            sum0 += input[0][j] * *weight * bias->multiplier;
-            sum1 += input[1][j] * *weight * bias->multiplier;
-            sum2 += input[2][j] * *weight * bias->multiplier;
+            sum0 += input[0][j] * *weight * bias->Multiplier;
+            sum1 += input[1][j] * *weight * bias->Multiplier;
+            sum2 += input[2][j] * *weight * bias->Multiplier;
         }
 
         saturate_store_out(&sum0, &output[0], config->SaturationCount);
@@ -683,9 +684,9 @@ void affineKernelImpl1B_N4(
     uint32_t j;
 
     int8_t const * weight;
-    nn_bias_c const * bias = config->RequestConfig->Transform.biasesCompound;
+    BiasCompound const * bias = config->RequestConfig->Transform.biasesCompound;
     int32_t * output;
-    nn_bias_c const * const biasEnd = bias + config->RequestConfig->Transform.outputElementCount;// outer loop pointer
+    BiasCompound const * const biasEnd = bias + config->RequestConfig->Transform.outputElementCount;// outer loop pointer
 
     weight = config->RequestConfig->Transform.weights1B;
     output = reinterpret_cast<int32_t *>(config->RequestConfig->Outputs);
@@ -715,10 +716,10 @@ void affineKernelImpl1B_N4(
     {
         ix = 0;
 
-        sum0 = bias->bias;
-        sum1 = bias->bias;
-        sum2 = bias->bias;
-        sum3 = bias->bias;
+        sum0 = bias->Bias;
+        sum1 = bias->Bias;
+        sum2 = bias->Bias;
+        sum3 = bias->Bias;
 
         for (kk = 0; kk < numberOfIterationsPerGroup + 1; kk++)
         {
@@ -762,10 +763,10 @@ void affineKernelImpl1B_N4(
                     acc3 = _mm_add_epi32(acc3, in3);
                 }
 
-                sum0 += vec_sum32(acc0) * bias->multiplier;
-                sum1 += vec_sum32(acc1) * bias->multiplier;
-                sum2 += vec_sum32(acc2) * bias->multiplier;
-                sum3 += vec_sum32(acc3) * bias->multiplier;
+                sum0 += vec_sum32(acc0) * bias->Multiplier;
+                sum1 += vec_sum32(acc1) * bias->Multiplier;
+                sum2 += vec_sum32(acc2) * bias->Multiplier;
+                sum3 += vec_sum32(acc3) * bias->Multiplier;
             }
 
             acc0 = _mm_setzero_si128();
@@ -795,18 +796,18 @@ void affineKernelImpl1B_N4(
                 acc3 = _mm_add_epi32(acc3, in3);
             }
 
-            sum0 += vec_sum32(acc0) * bias->multiplier;
-            sum1 += vec_sum32(acc1) * bias->multiplier;
-            sum2 += vec_sum32(acc2) * bias->multiplier;
-            sum3 += vec_sum32(acc3) * bias->multiplier;
+            sum0 += vec_sum32(acc0) * bias->Multiplier;
+            sum1 += vec_sum32(acc1) * bias->Multiplier;
+            sum2 += vec_sum32(acc2) * bias->Multiplier;
+            sum3 += vec_sum32(acc3) * bias->Multiplier;
         }
 
         for (j = 0; j < vectorTailLength; j++, weight++)
         {
-            sum0 += input[0][j] * *weight * bias->multiplier;
-            sum1 += input[1][j] * *weight * bias->multiplier;
-            sum2 += input[2][j] * *weight * bias->multiplier;
-            sum3 += input[3][j] * *weight * bias->multiplier;
+            sum0 += input[0][j] * *weight * bias->Multiplier;
+            sum1 += input[1][j] * *weight * bias->Multiplier;
+            sum2 += input[2][j] * *weight * bias->Multiplier;
+            sum3 += input[3][j] * *weight * bias->Multiplier;
         }
 
         saturate_store_out(&sum0, &output[0], config->SaturationCount);
@@ -833,9 +834,9 @@ void affineKernelImpl1B_N5(
     uint32_t j;
 
     int8_t const * weight;
-    nn_bias_c const * bias = config->RequestConfig->Transform.biasesCompound;
+    BiasCompound const * bias = config->RequestConfig->Transform.biasesCompound;
     int32_t * output;
-    nn_bias_c const * const biasEnd = bias + config->RequestConfig->Transform.outputElementCount;// outer loop pointer
+    BiasCompound const * const biasEnd = bias + config->RequestConfig->Transform.outputElementCount;// outer loop pointer
 
     weight = config->RequestConfig->Transform.weights1B;
     output = reinterpret_cast<int32_t *>(config->RequestConfig->Outputs);
@@ -868,11 +869,11 @@ void affineKernelImpl1B_N5(
     {
         ix = 0;
 
-        sum0 = bias->bias;
-        sum1 = bias->bias;
-        sum2 = bias->bias;
-        sum3 = bias->bias;
-        sum4 = bias->bias;
+        sum0 = bias->Bias;
+        sum1 = bias->Bias;
+        sum2 = bias->Bias;
+        sum3 = bias->Bias;
+        sum4 = bias->Bias;
 
         for (kk = 0; kk < numberOfIterationsPerGroup + 1; kk++)
         {
@@ -921,11 +922,11 @@ void affineKernelImpl1B_N5(
                     acc4 = _mm_add_epi32(acc4, in4);
                 }
 
-                sum0 += vec_sum32(acc0) * bias->multiplier;
-                sum1 += vec_sum32(acc1) * bias->multiplier;
-                sum2 += vec_sum32(acc2) * bias->multiplier;
-                sum3 += vec_sum32(acc3) * bias->multiplier;
-                sum4 += vec_sum32(acc4) * bias->multiplier;
+                sum0 += vec_sum32(acc0) * bias->Multiplier;
+                sum1 += vec_sum32(acc1) * bias->Multiplier;
+                sum2 += vec_sum32(acc2) * bias->Multiplier;
+                sum3 += vec_sum32(acc3) * bias->Multiplier;
+                sum4 += vec_sum32(acc4) * bias->Multiplier;
             }
 
             acc0 = _mm_setzero_si128();
@@ -959,20 +960,20 @@ void affineKernelImpl1B_N5(
                 acc4 = _mm_add_epi32(acc4, in4);
             }
 
-            sum0 += vec_sum32(acc0) * bias->multiplier;
-            sum1 += vec_sum32(acc1) * bias->multiplier;
-            sum2 += vec_sum32(acc2) * bias->multiplier;
-            sum3 += vec_sum32(acc3) * bias->multiplier;
-            sum4 += vec_sum32(acc4) * bias->multiplier;
+            sum0 += vec_sum32(acc0) * bias->Multiplier;
+            sum1 += vec_sum32(acc1) * bias->Multiplier;
+            sum2 += vec_sum32(acc2) * bias->Multiplier;
+            sum3 += vec_sum32(acc3) * bias->Multiplier;
+            sum4 += vec_sum32(acc4) * bias->Multiplier;
         }
 
         for (j = 0; j < vectorTailLength; j++, weight++)
         {
-            sum0 += input[0][j] * *weight * bias->multiplier;
-            sum1 += input[1][j] * *weight * bias->multiplier;
-            sum2 += input[2][j] * *weight * bias->multiplier;
-            sum3 += input[3][j] * *weight * bias->multiplier;
-            sum4 += input[4][j] * *weight * bias->multiplier;
+            sum0 += input[0][j] * *weight * bias->Multiplier;
+            sum1 += input[1][j] * *weight * bias->Multiplier;
+            sum2 += input[2][j] * *weight * bias->Multiplier;
+            sum3 += input[3][j] * *weight * bias->Multiplier;
+            sum4 += input[4][j] * *weight * bias->Multiplier;
         }
 
         saturate_store_out(&sum0, &output[0], config->SaturationCount);
@@ -997,9 +998,9 @@ void affineKernelImpl1B_N6(
     uint32_t j;
 
     int8_t const * weight;
-    nn_bias_c const * bias = config->RequestConfig->Transform.biasesCompound;
+    BiasCompound const * bias = config->RequestConfig->Transform.biasesCompound;
     int32_t * output;
-    nn_bias_c const * const biasEnd = bias + config->RequestConfig->Transform.outputElementCount;// outer loop pointer
+    BiasCompound const * const biasEnd = bias + config->RequestConfig->Transform.outputElementCount;// outer loop pointer
 
     weight = config->RequestConfig->Transform.weights1B;
     output = reinterpret_cast<int32_t *>(config->RequestConfig->Outputs);
@@ -1035,12 +1036,12 @@ void affineKernelImpl1B_N6(
     {
         ix = 0;
 
-        sum0 = bias->bias;
-        sum1 = bias->bias;
-        sum2 = bias->bias;
-        sum3 = bias->bias;
-        sum4 = bias->bias;
-        sum5 = bias->bias;
+        sum0 = bias->Bias;
+        sum1 = bias->Bias;
+        sum2 = bias->Bias;
+        sum3 = bias->Bias;
+        sum4 = bias->Bias;
+        sum5 = bias->Bias;
 
         acc0 = _mm_setzero_si128();
         acc1 = _mm_setzero_si128();
@@ -1090,12 +1091,12 @@ void affineKernelImpl1B_N6(
                 acc5 = _mm_add_epi32(acc5, in5);
             }
 
-            sum0 += vec_sum32(acc0) * bias->multiplier;
-            sum1 += vec_sum32(acc1) * bias->multiplier;
-            sum2 += vec_sum32(acc2) * bias->multiplier;
-            sum3 += vec_sum32(acc3) * bias->multiplier;
-            sum4 += vec_sum32(acc4) * bias->multiplier;
-            sum5 += vec_sum32(acc5) * bias->multiplier;
+            sum0 += vec_sum32(acc0) * bias->Multiplier;
+            sum1 += vec_sum32(acc1) * bias->Multiplier;
+            sum2 += vec_sum32(acc2) * bias->Multiplier;
+            sum3 += vec_sum32(acc3) * bias->Multiplier;
+            sum4 += vec_sum32(acc4) * bias->Multiplier;
+            sum5 += vec_sum32(acc5) * bias->Multiplier;
 
             acc0 = _mm_setzero_si128();
             acc1 = _mm_setzero_si128();
@@ -1107,12 +1108,12 @@ void affineKernelImpl1B_N6(
 
         for (j = 0; j < vectorTailLength; j++, weight++)
         {
-            sum0 += input[0][j] * *weight * bias->multiplier;
-            sum1 += input[1][j] * *weight * bias->multiplier;
-            sum2 += input[2][j] * *weight * bias->multiplier;
-            sum3 += input[3][j] * *weight * bias->multiplier;
-            sum4 += input[4][j] * *weight * bias->multiplier;
-            sum5 += input[5][j] * *weight * bias->multiplier;
+            sum0 += input[0][j] * *weight * bias->Multiplier;
+            sum1 += input[1][j] * *weight * bias->Multiplier;
+            sum2 += input[2][j] * *weight * bias->Multiplier;
+            sum3 += input[3][j] * *weight * bias->Multiplier;
+            sum4 += input[4][j] * *weight * bias->Multiplier;
+            sum5 += input[5][j] * *weight * bias->Multiplier;
         }
 
         saturate_store_out(&sum0, &output[0], config->SaturationCount);
@@ -1138,9 +1139,9 @@ void affineKernelImpl1B_N7(
     uint32_t j;
 
     int8_t const * weight;
-    nn_bias_c const * bias = config->RequestConfig->Transform.biasesCompound;
+    BiasCompound const * bias = config->RequestConfig->Transform.biasesCompound;
     int32_t * output;
-    nn_bias_c const * const biasEnd = bias + config->RequestConfig->Transform.outputElementCount;// outer loop pointer
+    BiasCompound const * const biasEnd = bias + config->RequestConfig->Transform.outputElementCount;// outer loop pointer
 
     weight = config->RequestConfig->Transform.weights1B;
     output = reinterpret_cast<int32_t *>(config->RequestConfig->Outputs);
@@ -1179,13 +1180,13 @@ void affineKernelImpl1B_N7(
     {
         ix = 0;
 
-        sum0 = bias->bias;
-        sum1 = bias->bias;
-        sum2 = bias->bias;
-        sum3 = bias->bias;
-        sum4 = bias->bias;
-        sum5 = bias->bias;
-        sum6 = bias->bias;
+        sum0 = bias->Bias;
+        sum1 = bias->Bias;
+        sum2 = bias->Bias;
+        sum3 = bias->Bias;
+        sum4 = bias->Bias;
+        sum5 = bias->Bias;
+        sum6 = bias->Bias;
 
         acc0 = _mm_setzero_si128();
         acc1 = _mm_setzero_si128();
@@ -1241,13 +1242,13 @@ void affineKernelImpl1B_N7(
                 acc6 = _mm_add_epi32(acc6, in6);
             }
 
-            sum0 += vec_sum32(acc0) * bias->multiplier;
-            sum1 += vec_sum32(acc1) * bias->multiplier;
-            sum2 += vec_sum32(acc2) * bias->multiplier;
-            sum3 += vec_sum32(acc3) * bias->multiplier;
-            sum4 += vec_sum32(acc4) * bias->multiplier;
-            sum5 += vec_sum32(acc5) * bias->multiplier;
-            sum6 += vec_sum32(acc6) * bias->multiplier;
+            sum0 += vec_sum32(acc0) * bias->Multiplier;
+            sum1 += vec_sum32(acc1) * bias->Multiplier;
+            sum2 += vec_sum32(acc2) * bias->Multiplier;
+            sum3 += vec_sum32(acc3) * bias->Multiplier;
+            sum4 += vec_sum32(acc4) * bias->Multiplier;
+            sum5 += vec_sum32(acc5) * bias->Multiplier;
+            sum6 += vec_sum32(acc6) * bias->Multiplier;
 
             acc0 = _mm_setzero_si128();
             acc1 = _mm_setzero_si128();
@@ -1260,13 +1261,13 @@ void affineKernelImpl1B_N7(
 
         for (j = 0; j < vectorTailLength; j++, weight++)
         {
-            sum0 += input[0][j] * *weight * bias->multiplier;
-            sum1 += input[1][j] * *weight * bias->multiplier;
-            sum2 += input[2][j] * *weight * bias->multiplier;
-            sum3 += input[3][j] * *weight * bias->multiplier;
-            sum4 += input[4][j] * *weight * bias->multiplier;
-            sum5 += input[5][j] * *weight * bias->multiplier;
-            sum6 += input[6][j] * *weight * bias->multiplier;
+            sum0 += input[0][j] * *weight * bias->Multiplier;
+            sum1 += input[1][j] * *weight * bias->Multiplier;
+            sum2 += input[2][j] * *weight * bias->Multiplier;
+            sum3 += input[3][j] * *weight * bias->Multiplier;
+            sum4 += input[4][j] * *weight * bias->Multiplier;
+            sum5 += input[5][j] * *weight * bias->Multiplier;
+            sum6 += input[6][j] * *weight * bias->Multiplier;
         }
 
         saturate_store_out(&sum0, &output[0], config->SaturationCount);
@@ -1293,9 +1294,9 @@ void affineKernelImpl1B_N8(
     uint32_t j;
 
     int8_t const * weight;
-    nn_bias_c const * bias = config->RequestConfig->Transform.biasesCompound;
+    BiasCompound const * bias = config->RequestConfig->Transform.biasesCompound;
     int32_t * output;
-    nn_bias_c const * const biasEnd = bias + config->RequestConfig->Transform.outputElementCount;// outer loop pointer
+    BiasCompound const * const biasEnd = bias + config->RequestConfig->Transform.outputElementCount;// outer loop pointer
 
     weight = config->RequestConfig->Transform.weights1B;
     output = reinterpret_cast<int32_t *>(config->RequestConfig->Outputs);
@@ -1336,14 +1337,14 @@ void affineKernelImpl1B_N8(
     {
         ix = 0;
 
-        sum0 = bias->bias;
-        sum1 = bias->bias;
-        sum2 = bias->bias;
-        sum3 = bias->bias;
-        sum4 = bias->bias;
-        sum5 = bias->bias;
-        sum6 = bias->bias;
-        sum7 = bias->bias;
+        sum0 = bias->Bias;
+        sum1 = bias->Bias;
+        sum2 = bias->Bias;
+        sum3 = bias->Bias;
+        sum4 = bias->Bias;
+        sum5 = bias->Bias;
+        sum6 = bias->Bias;
+        sum7 = bias->Bias;
 
         acc0 = _mm_setzero_si128();
         acc1 = _mm_setzero_si128();
@@ -1404,14 +1405,14 @@ void affineKernelImpl1B_N8(
                 acc7 = _mm_add_epi32(acc7, in7);
             }
 
-            sum0 += vec_sum32(acc0) * bias->multiplier;
-            sum1 += vec_sum32(acc1) * bias->multiplier;
-            sum2 += vec_sum32(acc2) * bias->multiplier;
-            sum3 += vec_sum32(acc3) * bias->multiplier;
-            sum4 += vec_sum32(acc4) * bias->multiplier;
-            sum5 += vec_sum32(acc5) * bias->multiplier;
-            sum6 += vec_sum32(acc6) * bias->multiplier;
-            sum7 += vec_sum32(acc7) * bias->multiplier;
+            sum0 += vec_sum32(acc0) * bias->Multiplier;
+            sum1 += vec_sum32(acc1) * bias->Multiplier;
+            sum2 += vec_sum32(acc2) * bias->Multiplier;
+            sum3 += vec_sum32(acc3) * bias->Multiplier;
+            sum4 += vec_sum32(acc4) * bias->Multiplier;
+            sum5 += vec_sum32(acc5) * bias->Multiplier;
+            sum6 += vec_sum32(acc6) * bias->Multiplier;
+            sum7 += vec_sum32(acc7) * bias->Multiplier;
 
             acc0 = _mm_setzero_si128();
             acc1 = _mm_setzero_si128();
@@ -1425,14 +1426,14 @@ void affineKernelImpl1B_N8(
 
         for (j = 0; j < vectorTailLength; j++, weight++)
         {
-            sum0 += input[0][j] * *weight * bias->multiplier;
-            sum1 += input[1][j] * *weight * bias->multiplier;
-            sum2 += input[2][j] * *weight * bias->multiplier;
-            sum3 += input[3][j] * *weight * bias->multiplier;
-            sum4 += input[4][j] * *weight * bias->multiplier;
-            sum5 += input[5][j] * *weight * bias->multiplier;
-            sum6 += input[6][j] * *weight * bias->multiplier;
-            sum7 += input[7][j] * *weight * bias->multiplier;
+            sum0 += input[0][j] * *weight * bias->Multiplier;
+            sum1 += input[1][j] * *weight * bias->Multiplier;
+            sum2 += input[2][j] * *weight * bias->Multiplier;
+            sum3 += input[3][j] * *weight * bias->Multiplier;
+            sum4 += input[4][j] * *weight * bias->Multiplier;
+            sum5 += input[5][j] * *weight * bias->Multiplier;
+            sum6 += input[6][j] * *weight * bias->Multiplier;
+            sum7 += input[7][j] * *weight * bias->Multiplier;
         }
 
         saturate_store_out(&sum0, &output[0], config->SaturationCount);
@@ -1467,7 +1468,7 @@ void affineMultiBiasKernelImpl1B_N1(
     auto const * const biasEnd = static_cast<int8_t const *>(config->RequestConfig->Transform.multiBias) +
             (config->RequestConfig->Transform.bytesPerBias * config->RequestConfig->Transform.outputElementCount * config->RequestConfig->Transform.multiBiasVectorCount);
     auto biasStride = config->RequestConfig->Transform.bytesPerBias * config->RequestConfig->Transform.multiBiasVectorCount;
-    nn_scaling const * weightScaleFactor = config->RequestConfig->Transform.weightScaleFactors;
+    WeightScaleFactor const * weightScaleFactor = config->RequestConfig->Transform.weightScaleFactors;
 
     weight = config->RequestConfig->Transform.weights1B;
     output = reinterpret_cast<int32_t *>(config->RequestConfig->Outputs);
@@ -1501,7 +1502,7 @@ void affineMultiBiasKernelImpl1B_N1(
         for (kk = 0; kk < numberOfIterationsPerGroup + 1; kk++)
         {
             acc0 = _mm_add_epi32(acc0, acc1);
-            sum0 += vec_sum32(acc0) * weightScaleFactor->multiplier;
+            sum0 += vec_sum32(acc0) * weightScaleFactor->Multiplier;
             saturate(&sum0, config->SaturationCount);
 
             numberOfIterations = numberOfElementsPerGroup < simdVectorLength - kk * numberOfElementsPerGroup ? numberOfElementsPerGroup : simdVectorLength - kk * numberOfElementsPerGroup;
@@ -1534,7 +1535,7 @@ void affineMultiBiasKernelImpl1B_N1(
                 }
 
                 acc0 = _mm_add_epi32(acc0, acc1);
-                sum0 += vec_sum32(acc0) * weightScaleFactor->multiplier;
+                sum0 += vec_sum32(acc0) * weightScaleFactor->Multiplier;
             }
 
             acc0 = _mm_setzero_si128();
@@ -1553,13 +1554,13 @@ void affineMultiBiasKernelImpl1B_N1(
                 acc0 = _mm_add_epi32(acc0, in0);
             }
 
-            sum0 += vec_sum32(acc0) * weightScaleFactor->multiplier;
+            sum0 += vec_sum32(acc0) * weightScaleFactor->Multiplier;
             acc0 = _mm_setzero_si128();
         }
 
         for (j = 0; j < vectorTailLength; j++)
         {
-            sum0 += (*input)[j] * *weight++ * weightScaleFactor->multiplier;
+            sum0 += (*input)[j] * *weight++ * weightScaleFactor->Multiplier;
         }
 
         saturate_store_out(&sum0, output, config->SaturationCount);
@@ -1588,7 +1589,7 @@ void affineMultiBiasKernelImpl1B_N2(
     auto const * const biasEnd = static_cast<int8_t const *>(config->RequestConfig->Transform.multiBias) +
         (config->RequestConfig->Transform.bytesPerBias * config->RequestConfig->Transform.outputElementCount * config->RequestConfig->Transform.multiBiasVectorCount);
     auto biasStride = config->RequestConfig->Transform.bytesPerBias * config->RequestConfig->Transform.multiBiasVectorCount;
-    nn_scaling const * weightScaleFactor = config->RequestConfig->Transform.weightScaleFactors;
+    WeightScaleFactor const * weightScaleFactor = config->RequestConfig->Transform.weightScaleFactors;
 
     weight = config->RequestConfig->Transform.weights1B;
     output = reinterpret_cast<int32_t *>(config->RequestConfig->Outputs);
@@ -1647,8 +1648,8 @@ void affineMultiBiasKernelImpl1B_N2(
                     acc1 = _mm_add_epi32(acc1, in1);
                 }
 
-                sum0 += vec_sum32(acc0) * weightScaleFactor->multiplier;
-                sum1 += vec_sum32(acc1) * weightScaleFactor->multiplier;
+                sum0 += vec_sum32(acc0) * weightScaleFactor->Multiplier;
+                sum1 += vec_sum32(acc1) * weightScaleFactor->Multiplier;
             }
 
             acc0 = _mm_setzero_si128();
@@ -1670,14 +1671,14 @@ void affineMultiBiasKernelImpl1B_N2(
                 acc1 = _mm_add_epi32(acc1, in1);
             }
 
-            sum0 += vec_sum32(acc0) * weightScaleFactor->multiplier;
-            sum1 += vec_sum32(acc1) * weightScaleFactor->multiplier;
+            sum0 += vec_sum32(acc0) * weightScaleFactor->Multiplier;
+            sum1 += vec_sum32(acc1) * weightScaleFactor->Multiplier;
         }
 
         for (j = 0; j < vectorTailLength; j++, weight++)
         {
-            sum0 += input[0][j] * *weight * weightScaleFactor->multiplier;
-            sum1 += input[1][j] * *weight * weightScaleFactor->multiplier;
+            sum0 += input[0][j] * *weight * weightScaleFactor->Multiplier;
+            sum1 += input[1][j] * *weight * weightScaleFactor->Multiplier;
         }
 
         saturate_store_out(&sum0, &output[0], config->SaturationCount);
@@ -1708,7 +1709,7 @@ void affineMultiBiasKernelImpl1B_N3(
     auto const * const biasEnd = static_cast<int8_t const *>(config->RequestConfig->Transform.multiBias) +
         (config->RequestConfig->Transform.bytesPerBias * config->RequestConfig->Transform.outputElementCount * config->RequestConfig->Transform.multiBiasVectorCount);
     auto biasStride = config->RequestConfig->Transform.bytesPerBias * config->RequestConfig->Transform.multiBiasVectorCount;
-    nn_scaling const * weightScaleFactor = config->RequestConfig->Transform.weightScaleFactors;
+    WeightScaleFactor const * weightScaleFactor = config->RequestConfig->Transform.weightScaleFactors;
 
     weight = config->RequestConfig->Transform.weights1B;
     output = reinterpret_cast<int32_t *>(config->RequestConfig->Outputs);
@@ -1776,9 +1777,9 @@ void affineMultiBiasKernelImpl1B_N3(
                     acc2 = _mm_add_epi32(acc2, in2);
                 }
 
-                sum0 += vec_sum32(acc0) * weightScaleFactor->multiplier;
-                sum1 += vec_sum32(acc1) * weightScaleFactor->multiplier;
-                sum2 += vec_sum32(acc2) * weightScaleFactor->multiplier;
+                sum0 += vec_sum32(acc0) * weightScaleFactor->Multiplier;
+                sum1 += vec_sum32(acc1) * weightScaleFactor->Multiplier;
+                sum2 += vec_sum32(acc2) * weightScaleFactor->Multiplier;
             }
 
             acc0 = _mm_setzero_si128();
@@ -1804,16 +1805,16 @@ void affineMultiBiasKernelImpl1B_N3(
                 acc2 = _mm_add_epi32(acc2, in2);
             }
 
-            sum0 += vec_sum32(acc0) * weightScaleFactor->multiplier;
-            sum1 += vec_sum32(acc1) * weightScaleFactor->multiplier;
-            sum2 += vec_sum32(acc2) * weightScaleFactor->multiplier;
+            sum0 += vec_sum32(acc0) * weightScaleFactor->Multiplier;
+            sum1 += vec_sum32(acc1) * weightScaleFactor->Multiplier;
+            sum2 += vec_sum32(acc2) * weightScaleFactor->Multiplier;
         }
 
         for (j = 0; j < vectorTailLength; j++, weight++)
         {
-            sum0 += input[0][j] * *weight * weightScaleFactor->multiplier;
-            sum1 += input[1][j] * *weight * weightScaleFactor->multiplier;
-            sum2 += input[2][j] * *weight * weightScaleFactor->multiplier;
+            sum0 += input[0][j] * *weight * weightScaleFactor->Multiplier;
+            sum1 += input[1][j] * *weight * weightScaleFactor->Multiplier;
+            sum2 += input[2][j] * *weight * weightScaleFactor->Multiplier;
         }
 
         saturate_store_out(&sum0, &output[0], config->SaturationCount);
@@ -1845,7 +1846,7 @@ void affineMultiBiasKernelImpl1B_N4(
     auto const * const biasEnd = static_cast<int8_t const *>(config->RequestConfig->Transform.multiBias) +
         (config->RequestConfig->Transform.bytesPerBias * config->RequestConfig->Transform.outputElementCount * config->RequestConfig->Transform.multiBiasVectorCount);
     auto biasStride = config->RequestConfig->Transform.bytesPerBias * config->RequestConfig->Transform.multiBiasVectorCount;
-    nn_scaling const * weightScaleFactor = config->RequestConfig->Transform.weightScaleFactors;
+    WeightScaleFactor const * weightScaleFactor = config->RequestConfig->Transform.weightScaleFactors;
 
     weight = config->RequestConfig->Transform.weights1B;
     output = reinterpret_cast<int32_t *>(config->RequestConfig->Outputs);
@@ -1922,10 +1923,10 @@ void affineMultiBiasKernelImpl1B_N4(
                     acc3 = _mm_add_epi32(acc3, in3);
                 }
 
-                sum0 += vec_sum32(acc0) * weightScaleFactor->multiplier;
-                sum1 += vec_sum32(acc1) * weightScaleFactor->multiplier;
-                sum2 += vec_sum32(acc2) * weightScaleFactor->multiplier;
-                sum3 += vec_sum32(acc3) * weightScaleFactor->multiplier;
+                sum0 += vec_sum32(acc0) * weightScaleFactor->Multiplier;
+                sum1 += vec_sum32(acc1) * weightScaleFactor->Multiplier;
+                sum2 += vec_sum32(acc2) * weightScaleFactor->Multiplier;
+                sum3 += vec_sum32(acc3) * weightScaleFactor->Multiplier;
             }
 
             acc0 = _mm_setzero_si128();
@@ -1955,18 +1956,18 @@ void affineMultiBiasKernelImpl1B_N4(
                 acc3 = _mm_add_epi32(acc3, in3);
             }
 
-            sum0 += vec_sum32(acc0) * weightScaleFactor->multiplier;
-            sum1 += vec_sum32(acc1) * weightScaleFactor->multiplier;
-            sum2 += vec_sum32(acc2) * weightScaleFactor->multiplier;
-            sum3 += vec_sum32(acc3) * weightScaleFactor->multiplier;
+            sum0 += vec_sum32(acc0) * weightScaleFactor->Multiplier;
+            sum1 += vec_sum32(acc1) * weightScaleFactor->Multiplier;
+            sum2 += vec_sum32(acc2) * weightScaleFactor->Multiplier;
+            sum3 += vec_sum32(acc3) * weightScaleFactor->Multiplier;
         }
 
         for (j = 0; j < vectorTailLength; j++, weight++)
         {
-            sum0 += input[0][j] * *weight * weightScaleFactor->multiplier;
-            sum1 += input[1][j] * *weight * weightScaleFactor->multiplier;
-            sum2 += input[2][j] * *weight * weightScaleFactor->multiplier;
-            sum3 += input[3][j] * *weight * weightScaleFactor->multiplier;
+            sum0 += input[0][j] * *weight * weightScaleFactor->Multiplier;
+            sum1 += input[1][j] * *weight * weightScaleFactor->Multiplier;
+            sum2 += input[2][j] * *weight * weightScaleFactor->Multiplier;
+            sum3 += input[3][j] * *weight * weightScaleFactor->Multiplier;
         }
 
         saturate_store_out(&sum0, &output[0], config->SaturationCount);
@@ -1999,7 +2000,7 @@ void affineMultiBiasKernelImpl1B_N5(
     auto const * const biasEnd = static_cast<int8_t const *>(config->RequestConfig->Transform.multiBias) +
         (config->RequestConfig->Transform.bytesPerBias * config->RequestConfig->Transform.outputElementCount * config->RequestConfig->Transform.multiBiasVectorCount);
     auto biasStride = config->RequestConfig->Transform.bytesPerBias * config->RequestConfig->Transform.multiBiasVectorCount;
-    nn_scaling const * weightScaleFactor = config->RequestConfig->Transform.weightScaleFactors;
+    WeightScaleFactor const * weightScaleFactor = config->RequestConfig->Transform.weightScaleFactors;
 
     weight = config->RequestConfig->Transform.weights1B;
     output = reinterpret_cast<int32_t *>(config->RequestConfig->Outputs);
@@ -2085,11 +2086,11 @@ void affineMultiBiasKernelImpl1B_N5(
                     acc4 = _mm_add_epi32(acc4, in4);
                 }
 
-                sum0 += vec_sum32(acc0) * weightScaleFactor->multiplier;
-                sum1 += vec_sum32(acc1) * weightScaleFactor->multiplier;
-                sum2 += vec_sum32(acc2) * weightScaleFactor->multiplier;
-                sum3 += vec_sum32(acc3) * weightScaleFactor->multiplier;
-                sum4 += vec_sum32(acc4) * weightScaleFactor->multiplier;
+                sum0 += vec_sum32(acc0) * weightScaleFactor->Multiplier;
+                sum1 += vec_sum32(acc1) * weightScaleFactor->Multiplier;
+                sum2 += vec_sum32(acc2) * weightScaleFactor->Multiplier;
+                sum3 += vec_sum32(acc3) * weightScaleFactor->Multiplier;
+                sum4 += vec_sum32(acc4) * weightScaleFactor->Multiplier;
             }
 
             acc0 = _mm_setzero_si128();
@@ -2123,20 +2124,20 @@ void affineMultiBiasKernelImpl1B_N5(
                 acc4 = _mm_add_epi32(acc4, in4);
             }
 
-            sum0 += vec_sum32(acc0) * weightScaleFactor->multiplier;
-            sum1 += vec_sum32(acc1) * weightScaleFactor->multiplier;
-            sum2 += vec_sum32(acc2) * weightScaleFactor->multiplier;
-            sum3 += vec_sum32(acc3) * weightScaleFactor->multiplier;
-            sum4 += vec_sum32(acc4) * weightScaleFactor->multiplier;
+            sum0 += vec_sum32(acc0) * weightScaleFactor->Multiplier;
+            sum1 += vec_sum32(acc1) * weightScaleFactor->Multiplier;
+            sum2 += vec_sum32(acc2) * weightScaleFactor->Multiplier;
+            sum3 += vec_sum32(acc3) * weightScaleFactor->Multiplier;
+            sum4 += vec_sum32(acc4) * weightScaleFactor->Multiplier;
         }
 
         for (j = 0; j < vectorTailLength; j++, weight++)
         {
-            sum0 += input[0][j] * *weight * weightScaleFactor->multiplier;
-            sum1 += input[1][j] * *weight * weightScaleFactor->multiplier;
-            sum2 += input[2][j] * *weight * weightScaleFactor->multiplier;
-            sum3 += input[3][j] * *weight * weightScaleFactor->multiplier;
-            sum4 += input[4][j] * *weight * weightScaleFactor->multiplier;
+            sum0 += input[0][j] * *weight * weightScaleFactor->Multiplier;
+            sum1 += input[1][j] * *weight * weightScaleFactor->Multiplier;
+            sum2 += input[2][j] * *weight * weightScaleFactor->Multiplier;
+            sum3 += input[3][j] * *weight * weightScaleFactor->Multiplier;
+            sum4 += input[4][j] * *weight * weightScaleFactor->Multiplier;
         }
 
         saturate_store_out(&sum0, &output[0], config->SaturationCount);
@@ -2167,7 +2168,7 @@ void affineMultiBiasKernelImpl1B_N6(
     auto const * const biasEnd = static_cast<int8_t const *>(config->RequestConfig->Transform.multiBias) +
         (config->RequestConfig->Transform.bytesPerBias * config->RequestConfig->Transform.outputElementCount * config->RequestConfig->Transform.multiBiasVectorCount);
     auto biasStride = config->RequestConfig->Transform.bytesPerBias * config->RequestConfig->Transform.multiBiasVectorCount;
-    nn_scaling const * weightScaleFactor = config->RequestConfig->Transform.weightScaleFactors;
+    WeightScaleFactor const * weightScaleFactor = config->RequestConfig->Transform.weightScaleFactors;
 
     weight = config->RequestConfig->Transform.weights1B;
     output = reinterpret_cast<int32_t *>(config->RequestConfig->Outputs);
@@ -2258,12 +2259,12 @@ void affineMultiBiasKernelImpl1B_N6(
                 acc5 = _mm_add_epi32(acc5, in5);
             }
 
-            sum0 += vec_sum32(acc0) * weightScaleFactor->multiplier;
-            sum1 += vec_sum32(acc1) * weightScaleFactor->multiplier;
-            sum2 += vec_sum32(acc2) * weightScaleFactor->multiplier;
-            sum3 += vec_sum32(acc3) * weightScaleFactor->multiplier;
-            sum4 += vec_sum32(acc4) * weightScaleFactor->multiplier;
-            sum5 += vec_sum32(acc5) * weightScaleFactor->multiplier;
+            sum0 += vec_sum32(acc0) * weightScaleFactor->Multiplier;
+            sum1 += vec_sum32(acc1) * weightScaleFactor->Multiplier;
+            sum2 += vec_sum32(acc2) * weightScaleFactor->Multiplier;
+            sum3 += vec_sum32(acc3) * weightScaleFactor->Multiplier;
+            sum4 += vec_sum32(acc4) * weightScaleFactor->Multiplier;
+            sum5 += vec_sum32(acc5) * weightScaleFactor->Multiplier;
 
             acc0 = _mm_setzero_si128();
             acc1 = _mm_setzero_si128();
@@ -2275,12 +2276,12 @@ void affineMultiBiasKernelImpl1B_N6(
 
         for (j = 0; j < vectorTailLength; j++, weight++)
         {
-            sum0 += input[0][j] * *weight * weightScaleFactor->multiplier;
-            sum1 += input[1][j] * *weight * weightScaleFactor->multiplier;
-            sum2 += input[2][j] * *weight * weightScaleFactor->multiplier;
-            sum3 += input[3][j] * *weight * weightScaleFactor->multiplier;
-            sum4 += input[4][j] * *weight * weightScaleFactor->multiplier;
-            sum5 += input[5][j] * *weight * weightScaleFactor->multiplier;
+            sum0 += input[0][j] * *weight * weightScaleFactor->Multiplier;
+            sum1 += input[1][j] * *weight * weightScaleFactor->Multiplier;
+            sum2 += input[2][j] * *weight * weightScaleFactor->Multiplier;
+            sum3 += input[3][j] * *weight * weightScaleFactor->Multiplier;
+            sum4 += input[4][j] * *weight * weightScaleFactor->Multiplier;
+            sum5 += input[5][j] * *weight * weightScaleFactor->Multiplier;
         }
 
         saturate_store_out(&sum0, &output[0], config->SaturationCount);
@@ -2312,7 +2313,7 @@ void affineMultiBiasKernelImpl1B_N7(
     auto const * const biasEnd = static_cast<int8_t const *>(config->RequestConfig->Transform.multiBias) +
         (config->RequestConfig->Transform.bytesPerBias * config->RequestConfig->Transform.outputElementCount * config->RequestConfig->Transform.multiBiasVectorCount);
     auto biasStride = config->RequestConfig->Transform.bytesPerBias * config->RequestConfig->Transform.multiBiasVectorCount;
-    nn_scaling const * weightScaleFactor = config->RequestConfig->Transform.weightScaleFactors;
+    WeightScaleFactor const * weightScaleFactor = config->RequestConfig->Transform.weightScaleFactors;
 
     weight = config->RequestConfig->Transform.weights1B;
     output = reinterpret_cast<int32_t *>(config->RequestConfig->Outputs);
@@ -2413,13 +2414,13 @@ void affineMultiBiasKernelImpl1B_N7(
                 acc6 = _mm_add_epi32(acc6, in6);
             }
 
-            sum0 += vec_sum32(acc0) * weightScaleFactor->multiplier;
-            sum1 += vec_sum32(acc1) * weightScaleFactor->multiplier;
-            sum2 += vec_sum32(acc2) * weightScaleFactor->multiplier;
-            sum3 += vec_sum32(acc3) * weightScaleFactor->multiplier;
-            sum4 += vec_sum32(acc4) * weightScaleFactor->multiplier;
-            sum5 += vec_sum32(acc5) * weightScaleFactor->multiplier;
-            sum6 += vec_sum32(acc6) * weightScaleFactor->multiplier;
+            sum0 += vec_sum32(acc0) * weightScaleFactor->Multiplier;
+            sum1 += vec_sum32(acc1) * weightScaleFactor->Multiplier;
+            sum2 += vec_sum32(acc2) * weightScaleFactor->Multiplier;
+            sum3 += vec_sum32(acc3) * weightScaleFactor->Multiplier;
+            sum4 += vec_sum32(acc4) * weightScaleFactor->Multiplier;
+            sum5 += vec_sum32(acc5) * weightScaleFactor->Multiplier;
+            sum6 += vec_sum32(acc6) * weightScaleFactor->Multiplier;
 
             acc0 = _mm_setzero_si128();
             acc1 = _mm_setzero_si128();
@@ -2432,13 +2433,13 @@ void affineMultiBiasKernelImpl1B_N7(
 
         for (j = 0; j < vectorTailLength; j++, weight++)
         {
-            sum0 += input[0][j] * *weight * weightScaleFactor->multiplier;
-            sum1 += input[1][j] * *weight * weightScaleFactor->multiplier;
-            sum2 += input[2][j] * *weight * weightScaleFactor->multiplier;
-            sum3 += input[3][j] * *weight * weightScaleFactor->multiplier;
-            sum4 += input[4][j] * *weight * weightScaleFactor->multiplier;
-            sum5 += input[5][j] * *weight * weightScaleFactor->multiplier;
-            sum6 += input[6][j] * *weight * weightScaleFactor->multiplier;
+            sum0 += input[0][j] * *weight * weightScaleFactor->Multiplier;
+            sum1 += input[1][j] * *weight * weightScaleFactor->Multiplier;
+            sum2 += input[2][j] * *weight * weightScaleFactor->Multiplier;
+            sum3 += input[3][j] * *weight * weightScaleFactor->Multiplier;
+            sum4 += input[4][j] * *weight * weightScaleFactor->Multiplier;
+            sum5 += input[5][j] * *weight * weightScaleFactor->Multiplier;
+            sum6 += input[6][j] * *weight * weightScaleFactor->Multiplier;
         }
 
         saturate_store_out(&sum0, &output[0], config->SaturationCount);
@@ -2470,7 +2471,7 @@ void affineMultiBiasKernelImpl1B_N8(
     auto const * const biasEnd = static_cast<int8_t const *>(config->RequestConfig->Transform.multiBias) +
         (config->RequestConfig->Transform.bytesPerBias * config->RequestConfig->Transform.outputElementCount * config->RequestConfig->Transform.multiBiasVectorCount);
     auto biasStride = config->RequestConfig->Transform.bytesPerBias * config->RequestConfig->Transform.multiBiasVectorCount;
-    nn_scaling const * weightScaleFactor = config->RequestConfig->Transform.weightScaleFactors;
+    WeightScaleFactor const * weightScaleFactor = config->RequestConfig->Transform.weightScaleFactors;
 
     weight = config->RequestConfig->Transform.weights1B;
     output = reinterpret_cast<int32_t *>(config->RequestConfig->Outputs);
@@ -2580,14 +2581,14 @@ void affineMultiBiasKernelImpl1B_N8(
                 acc7 = _mm_add_epi32(acc7, in7);
             }
 
-            sum0 += vec_sum32(acc0) * weightScaleFactor->multiplier;
-            sum1 += vec_sum32(acc1) * weightScaleFactor->multiplier;
-            sum2 += vec_sum32(acc2) * weightScaleFactor->multiplier;
-            sum3 += vec_sum32(acc3) * weightScaleFactor->multiplier;
-            sum4 += vec_sum32(acc4) * weightScaleFactor->multiplier;
-            sum5 += vec_sum32(acc5) * weightScaleFactor->multiplier;
-            sum6 += vec_sum32(acc6) * weightScaleFactor->multiplier;
-            sum7 += vec_sum32(acc7) * weightScaleFactor->multiplier;
+            sum0 += vec_sum32(acc0) * weightScaleFactor->Multiplier;
+            sum1 += vec_sum32(acc1) * weightScaleFactor->Multiplier;
+            sum2 += vec_sum32(acc2) * weightScaleFactor->Multiplier;
+            sum3 += vec_sum32(acc3) * weightScaleFactor->Multiplier;
+            sum4 += vec_sum32(acc4) * weightScaleFactor->Multiplier;
+            sum5 += vec_sum32(acc5) * weightScaleFactor->Multiplier;
+            sum6 += vec_sum32(acc6) * weightScaleFactor->Multiplier;
+            sum7 += vec_sum32(acc7) * weightScaleFactor->Multiplier;
 
             acc0 = _mm_setzero_si128();
             acc1 = _mm_setzero_si128();
@@ -2601,14 +2602,14 @@ void affineMultiBiasKernelImpl1B_N8(
 
         for (j = 0; j < vectorTailLength; j++, weight++)
         {
-            sum0 += input[0][j] * *weight * weightScaleFactor->multiplier;
-            sum1 += input[1][j] * *weight * weightScaleFactor->multiplier;
-            sum2 += input[2][j] * *weight * weightScaleFactor->multiplier;
-            sum3 += input[3][j] * *weight * weightScaleFactor->multiplier;
-            sum4 += input[4][j] * *weight * weightScaleFactor->multiplier;
-            sum5 += input[5][j] * *weight * weightScaleFactor->multiplier;
-            sum6 += input[6][j] * *weight * weightScaleFactor->multiplier;
-            sum7 += input[7][j] * *weight * weightScaleFactor->multiplier;
+            sum0 += input[0][j] * *weight * weightScaleFactor->Multiplier;
+            sum1 += input[1][j] * *weight * weightScaleFactor->Multiplier;
+            sum2 += input[2][j] * *weight * weightScaleFactor->Multiplier;
+            sum3 += input[3][j] * *weight * weightScaleFactor->Multiplier;
+            sum4 += input[4][j] * *weight * weightScaleFactor->Multiplier;
+            sum5 += input[5][j] * *weight * weightScaleFactor->Multiplier;
+            sum6 += input[6][j] * *weight * weightScaleFactor->Multiplier;
+            sum7 += input[7][j] * *weight * weightScaleFactor->Multiplier;
         }
 
         saturate_store_out(&sum0, &output[0], config->SaturationCount);

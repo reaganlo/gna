@@ -37,7 +37,6 @@
 
 #include "gna2-common-api.h"
 
-#include "gna-api.h"
 
 #include <algorithm>
 #include <memory>
@@ -47,7 +46,7 @@ using namespace GNA;
 static const TensorLimits _ActivationLimitsGen0_9 =
 {
     {{GNA_TENSOR_H},    // W - #inputs, H - #outputs
-    {{GNA_DIM_H, {XNN_N_PWL_SEGS_MIN, XNN_N_PWL_SEGS_MAX, 1, Gna2StatusXnnErrorPwlSegments}}}},
+    {{GNA_DIM_H, {ActivationFunction::XNN_N_PWL_SEGS_MIN, ActivationFunction::XNN_N_PWL_SEGS_MAX, 1, Gna2StatusXnnErrorPwlSegments}}}},
     {{ GNA_DATA_RICH_FORMAT },
     Gna2StatusXnnErrorOutputBytes}
 };
@@ -57,36 +56,36 @@ static const auto pwlLimit = std::make_shared<TensorLimits>(_ActivationLimitsGen
 const FullCapabilitiesMap ActivationFunction::capabilities =
 {
     {INTEL_AFFINE,{
-        {GNA_0_9, pwlLimit},
+        {Gna2DeviceGeneration0_9, pwlLimit},
     }},
     {INTEL_AFFINE_DIAGONAL,{
-        {GNA_0_9, pwlLimit},
+        {Gna2DeviceGeneration0_9, pwlLimit},
     }},
     {INTEL_AFFINE_MULTIBIAS,{
-        {GNA_2_0, pwlLimit},
+        {Gna2DeviceGeneration2_0, pwlLimit},
     }},
     {INTEL_CONVOLUTIONAL,{
-        {GNA_1_0, pwlLimit},
+        {Gna2DeviceGeneration1_0, pwlLimit},
     }},
     {INTEL_CONVOLUTIONAL_2D,{
-        {GNA_3_0, pwlLimit}
+        {Gna2DeviceGeneration3_0, pwlLimit}
     }},
     {INTEL_RECURRENT,{
-        {GNA_0_9, pwlLimit},
+        {Gna2DeviceGeneration0_9, pwlLimit},
     }}
 };
 
 // TODO:3: Copy of LayerOuputCapabilities due to unsolved discrepancy in layer architecture
 static const ShapeLimits _FlatLimits =
 {
-    {GNA_DIM_H, {1, XNN_N_GROUP_MAX, 1, Gna2StatusXnnErrorOutputVolume}},
-    {GNA_DIM_W, {1, XNN_N_IN_ELEMS_MAX, 1, Gna2StatusXnnErrorOutputVolume}}
+    {GNA_DIM_H, {1, BatchSizeMax, 1, Gna2StatusXnnErrorOutputVolume}},
+    {GNA_DIM_W, {1, LayerCapabilities::InputElementCountMax, 1, Gna2StatusXnnErrorOutputVolume}}
 };
 
 static const ShapeLimits _InterleaveLimits =
 {
-    {GNA_DIM_H, {1, XNN_N_IN_ELEMS_MAX, 1, Gna2StatusXnnErrorOutputVolume}},
-    {GNA_DIM_W, {1, XNN_N_GROUP_MAX, 1, Gna2StatusXnnErrorOutputVolume}}
+    {GNA_DIM_H, {1, LayerCapabilities::InputElementCountMax, 1, Gna2StatusXnnErrorOutputVolume}},
+    {GNA_DIM_W, {1, BatchSizeMax, 1, Gna2StatusXnnErrorOutputVolume}}
 };
 
 static const DataModeLimits _ModesGen0_9 =
@@ -132,16 +131,16 @@ static const TensorLimits _FlatTensorLimitsGen3 =
 const FullCapabilitiesMap ActivationFunction::outputCapabilities =
 {
     {INTEL_AFFINE, {
-        {GNA_0_9, std::make_shared<TensorLimits>(_InterleaveTensorLimitsGen0_9)},
-        {GNA_3_0, std::make_shared<TensorLimits>(_InterleaveTensorLimitsGen3)}
+        {Gna2DeviceGeneration0_9, std::make_shared<TensorLimits>(_InterleaveTensorLimitsGen0_9)},
+        {Gna2DeviceGeneration3_0, std::make_shared<TensorLimits>(_InterleaveTensorLimitsGen3)}
     }},
     {INTEL_AFFINE_DIAGONAL, {
-        {GNA_0_9, std::make_shared<TensorLimits>(_InterleaveTensorLimitsGen0_9)},
-        {GNA_3_0, std::make_shared<TensorLimits>(_InterleaveTensorLimitsGen3)}
+        {Gna2DeviceGeneration0_9, std::make_shared<TensorLimits>(_InterleaveTensorLimitsGen0_9)},
+        {Gna2DeviceGeneration3_0, std::make_shared<TensorLimits>(_InterleaveTensorLimitsGen3)}
     }},
     {INTEL_AFFINE_MULTIBIAS, {
-        {GNA_0_9, std::make_shared<TensorLimits>(_InterleaveTensorLimitsGen0_9)},
-        {GNA_3_0, std::make_shared<TensorLimits>(_InterleaveTensorLimitsGen3)}
+        {Gna2DeviceGeneration0_9, std::make_shared<TensorLimits>(_InterleaveTensorLimitsGen0_9)},
+        {Gna2DeviceGeneration3_0, std::make_shared<TensorLimits>(_InterleaveTensorLimitsGen3)}
     }},
     {INTEL_CONVOLUTIONAL, {
         ConvolutionalLayer2DCapabilities::GetOperands(OutputOperandIndex).at(INTEL_CONVOLUTIONAL)
@@ -153,27 +152,27 @@ const FullCapabilitiesMap ActivationFunction::outputCapabilities =
         ConvolutionalLayer2DCapabilities::GetOperands(OutputOperandIndex).at(INTEL_CONVOLUTIONAL_1D)
     }},
     {INTEL_COPY, {
-        {GNA_0_9, std::make_shared<TensorLimits>(_FlatTensorLimitsGen0_9)},
-        {GNA_3_0, std::make_shared<TensorLimits>(_FlatTensorLimitsGen3)}
+        {Gna2DeviceGeneration0_9, std::make_shared<TensorLimits>(_FlatTensorLimitsGen0_9)},
+        {Gna2DeviceGeneration3_0, std::make_shared<TensorLimits>(_FlatTensorLimitsGen3)}
     }},
     {INTEL_DEINTERLEAVE, {
-        {GNA_0_9, std::make_shared<TensorLimits>(_FlatTensorLimitsGen0_9)},
-        {GNA_3_0, std::make_shared<TensorLimits>(_FlatTensorLimitsGen3)}
+        {Gna2DeviceGeneration0_9, std::make_shared<TensorLimits>(_FlatTensorLimitsGen0_9)},
+        {Gna2DeviceGeneration3_0, std::make_shared<TensorLimits>(_FlatTensorLimitsGen3)}
     }},
     {INTEL_INTERLEAVE, {
-        { GNA_0_9, std::make_shared<TensorLimits>(_InterleaveTensorLimitsGen0_9) },
-        { GNA_3_0, std::make_shared<TensorLimits>(_InterleaveTensorLimitsGen3) }
+        { Gna2DeviceGeneration0_9, std::make_shared<TensorLimits>(_InterleaveTensorLimitsGen0_9) },
+        { Gna2DeviceGeneration3_0, std::make_shared<TensorLimits>(_InterleaveTensorLimitsGen3) }
     }},
     {INTEL_RECURRENT, {
-        {GNA_0_9, std::make_shared<TensorLimits>(TensorLimits{
+        {Gna2DeviceGeneration0_9, std::make_shared<TensorLimits>(TensorLimits{
             {GNA_TENSOR_HW},
-            {{GNA_DIM_H, {1, XNN_N_GROUP_MAX, 1, Gna2StatusXnnErrorOutputVolume}},
-             {GNA_DIM_W, {RNN_N_OUT_ELEMS_MPLY, XNN_N_IN_ELEMS_MAX, RNN_N_OUT_ELEMS_MPLY, Gna2StatusXnnErrorOutputVolume}}}, // must be multiple 32 to keep 64B output buffer alignment
+            {{GNA_DIM_H, {1, BatchSizeMax, 1, Gna2StatusXnnErrorOutputVolume}},
+             {GNA_DIM_W, {RNN_N_OUT_ELEMS_MPLY, LayerCapabilities::InputElementCountMax, RNN_N_OUT_ELEMS_MPLY, Gna2StatusXnnErrorOutputVolume}}}, // must be multiple 32 to keep 64B output buffer alignment
             _ModesGen0_9})},
-        {GNA_3_0, std::make_shared<TensorLimits>(TensorLimits{
+        {Gna2DeviceGeneration3_0, std::make_shared<TensorLimits>(TensorLimits{
             {GNA_TENSOR_HW},
-            {{GNA_DIM_H, {1, XNN_N_GROUP_MAX, 1, Gna2StatusXnnErrorOutputVolume}},
-             {GNA_DIM_W, {RNN_N_OUT_ELEMS_MPLY, XNN_N_IN_ELEMS_MAX, RNN_N_OUT_ELEMS_MPLY, Gna2StatusXnnErrorOutputVolume}}}, // must be multiple 32 to keep 64B output buffer alignment
+            {{GNA_DIM_H, {1, BatchSizeMax, 1, Gna2StatusXnnErrorOutputVolume}},
+             {GNA_DIM_W, {RNN_N_OUT_ELEMS_MPLY, LayerCapabilities::InputElementCountMax, RNN_N_OUT_ELEMS_MPLY, Gna2StatusXnnErrorOutputVolume}}}, // must be multiple 32 to keep 64B output buffer alignment
             _ModesGen3})}
     }}
 };
@@ -222,7 +221,7 @@ void ActivationFunction::UpdateActiveOutputCount(
 
 
 PwlCached ActivationFunction::createPwlCached(const gna_data_mode mode,
-    nn_pwl_seg const * const segmentsIn, uint32_t segmentCountIn)
+    PwlSegment const * const segmentsIn, uint32_t segmentCountIn)
 {
     try
     {
@@ -264,5 +263,5 @@ Tensor const & ActivationFunction::GetOperand(uint32_t operandIndex) const
 void ActivationFunction::ValidateActiveList(ActiveList const& activeList) const
 {
     Expect::InRange(activeList.IndicesCount,
-        ui32_1, Output->at(GNA_DIM_H), Gna2StatusActiveListIndicesInvalid);
+        1u, Output->at(GNA_DIM_H), Gna2StatusActiveListIndicesInvalid);
 }

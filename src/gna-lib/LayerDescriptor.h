@@ -33,8 +33,6 @@
 #include "PoolingKernelArguments.h"
 #include "ThresholdParameters.h"
 
-#include "gna-api.h"
-#include "gna-api-types-xnn.h"
 #include "gna2-common-impl.h"
 
 #include <map>
@@ -46,6 +44,19 @@ class HardwareCapabilities;
 
 using AddrGmmCfg = Address<GMM_CONFIG *>;
 using AddrGmmCfgC = Address<GMM_CONFIG * const>;
+
+typedef enum _gmm_read_elimination
+{
+    GMM_NORMAL_OPERATION,
+    GMM_READ_ELIMINATION_ENABLED
+} gmm_read_elimination;
+
+typedef enum _gmm_calculation_mode
+{
+    GMM_L2_DISTANCE,
+    GMM_L1_DISTANCE,
+    GMM_LINF_DISTANCE
+} gmm_calculation_mode;
 
 // Available Xnn Layer Descriptor parameters for all hw versions
 typedef enum _GmmParameterType

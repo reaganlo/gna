@@ -27,7 +27,6 @@
 
 #include "KernelArguments.h"
 
-#include "common.h"
 
 #include <cstdint>
 

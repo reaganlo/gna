@@ -28,8 +28,6 @@
 #include "HardwareCapabilities.h"
 #include "ParameterLimits.h"
 
-#include "common.h"
-#include "gna-api-types-xnn.h"
 
 #include <cstddef>
 #include <functional>

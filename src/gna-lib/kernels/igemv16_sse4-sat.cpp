@@ -29,9 +29,6 @@
 #include "KernelArguments.h"
 #include "KernelMacros.h"
 
-#include "common.h"
-#include "gna-api-types-xnn.h"
-
 #include <immintrin.h>
 
 void RecurrentKernelImpl2B(ExecutionKernelConfig<RecurrentConfig> const * const config)

@@ -27,12 +27,8 @@
 
 #include "KernelArguments.h"
 #include "ParameterLimits.h"
-#include "PoolingMode.h"
 #include "Shape.h"
 #include "XnnKernel.h"
-
-#include "common.h"
-#include "gna-api-types-xnn.h"
 
 #include <cstdint>
 #include <map>
@@ -45,14 +41,11 @@ struct PwlCached;
 
 struct PoolingFunction
 {
-    static std::unique_ptr<const PoolingFunction> Create(void const * layerDetails,
-        const Shape& inputDimensions, const LayerValidator& validatorIn, gna_data_mode inputMode);
-
     static std::unique_ptr<const PoolingFunction> Create(Gna2Operation const & apiOperation,
         const Shape & inputDimensions, const LayerValidator & validatorIn, gna_data_mode inputMode);
 
     PoolingFunction(nn_operation const operation, const Shape& inputDimensions,
-        const Shape& window, const Shape& stride, PoolingMode mode,
+        const Shape& window, const Shape& stride, KernelPoolingMode mode,
         const KernelMap<ConvolutionPoolingKernel>& kernelsIn);
     ~PoolingFunction() = default;
 

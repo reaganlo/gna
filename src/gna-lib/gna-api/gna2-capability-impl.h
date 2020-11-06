@@ -28,14 +28,8 @@
 
 #include "gna2-capability-api.h"
 
-#include "gna2-common-impl.h"
-
-#include <stdint.h>
-
 namespace GNA
 {
-
-typedef enum Gna2DeviceGeneration DeviceGeneration;
 
 /**
  Generation of device that is used by default by GNA Library in software mode,
@@ -50,7 +44,7 @@ typedef enum Gna2DeviceGeneration DeviceGeneration;
  */
 #define GNA2_DEFAULT_DEVICE_GENERATION Gna2DeviceGeneration3_0
 
-DeviceGeneration const DefaultDeviceGeneration = GNA2_DEFAULT_DEVICE_GENERATION;
+Gna2DeviceGeneration const DefaultDeviceGeneration = GNA2_DEFAULT_DEVICE_GENERATION;
 
 }
 

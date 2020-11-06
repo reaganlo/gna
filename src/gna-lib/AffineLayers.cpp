@@ -37,10 +37,6 @@
 #include "gna2-common-api.h"
 #include "gna2-memory-api.h"
 
-#include "common.h"
-#include "gna-api-types-xnn.h"
-
-
 using namespace GNA;
 
 //TODO:3:provide better mechanism for scratchpad

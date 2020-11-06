@@ -23,6 +23,8 @@
  in any way.
 */
 
+#define NOMINMAX 1
+
 #include "HardwareLayer.h"
 
 #include "ActivationFunction.h"
@@ -33,9 +35,11 @@
 #include "ConvolutionalFunctions.h"
 #include "ConvolutionalFunctions2D.h"
 #include "ConvolutionalLayer.h"
+#include "ConvolutionalLayer2DCapabilities.h"
 #include "Expect.h"
 #include "GmmLayer.h"
 #include "GnaException.h"
+#include "gna2-memory-impl.h"
 #include "HardwareCapabilities.h"
 #include "HwModuleInterface.hpp"
 #include "Layer.h"
@@ -54,15 +58,12 @@
 #include "Transform.h"
 #include "TransformMap.h"
 
-#include "gna-api-types-xnn.h"
-
 #include <algorithm>
 #include <cmath>
-#include <cstddef>
-#include <stdexcept>
-
+#include <limits>
 
 using namespace GNA;
+using CnnCaps = GNA::ConvolutionalLayer2DCapabilities;
 
 //Used in CNN and RNN to overload input grouping for HW iteration calculation
 static const uint32_t IterationGroupingOne = 1;
@@ -85,8 +86,6 @@ const std::map<const nn_operation, const NN_OP_TYPE> HardwareLayer::OperationsMa
     { INTEL_AFFINE_THRESHOLD, NN_AFFINE_TH },
     { INTEL_AFFINE_MULTIBIAS, NN_AFF_MB },
     { INTEL_CONVOLUTIONAL, NN_CNN },
-    { GNA_LAYER_CNN_2D_ADDITION, NN_CNN2D_ADDITION },
-    { GNA_LAYER_CNN_2D_CONVERSION, NN_CNN2D_CONVERTION },
     { GNA_LAYER_CNN_2D_POOLING, NN_CNN2D_POOLING },
     { INTEL_CONVOLUTIONAL_2D, NN_CNN2D_FUSED },
     { INTEL_COPY, NN_COPY },
@@ -355,17 +354,20 @@ HardwareLayerExt::HardwareLayerExt(const DescriptorParameters& parameters, const
     bufferElementCount{ parameters.XnnDescriptor.HwCapabilities.GetBufferElementCount(
                         iterationGrouping, calculateEffectiveInputSizeForAdl(parameters)) }
 {
-    Expect::InRange(iterationGrouping, ui32_1, XNN_N_GROUP_MAX, Gna2StatusXnnErrorGrouping);
+    Expect::InRange(iterationGrouping, 1u, BatchSizeMax, Gna2StatusXnnErrorGrouping);
     // Calculates number of iterations and elements in last iteration
      //#groups for calculation(can be different than network grouping)
     const auto numberOfElements = SoftwareLayer.Input.ElementCount;
     const auto elementsTimesGrouping = numberOfElements * iterationGrouping;
     iterationCount = ((elementsTimesGrouping - 1) / bufferElementCount) + 1;
-    Expect::InRange(iterationCount, ui32_1, ui32_UINT8_MAX, Gna2StatusXnnErrorLyrCfg);
+    Expect::InRange(iterationCount,
+        1u,
+        static_cast<uint32_t>(std::numeric_limits<uint8_t>::max()),
+        Gna2StatusXnnErrorLyrCfg);
 
     lastIterationElementCount = ((elementsTimesGrouping)-((iterationCount - 1) * bufferElementCount)) / iterationGrouping;
-    Expect::InRange(lastIterationElementCount, ui32_1, bufferElementCount, Gna2StatusXnnErrorLyrCfg);
-    Expect::MultiplicityOf(lastIterationElementCount, XNN_N_IN_ELEMS_MPLY);
+    Expect::InRange(lastIterationElementCount, 1u, bufferElementCount, Gna2StatusXnnErrorLyrCfg);
+    Expect::MultiplicityOf(lastIterationElementCount, LayerCapabilities::InputElementCountMultiplier);
 }
 
 HardwareLayerExt::HardwareLayerExt(const DescriptorParameters& parameters) :
@@ -406,7 +408,7 @@ void HardwareLayer::saveThresholdExternal(const Tensor& tensor, const XnnParamet
 HardwareLayerAffDiagTrans::HardwareLayerAffDiagTrans(const DescriptorParameters& parameters) :
     HardwareLayerExt(parameters)
 {
-    static const std::map<gna_layer_operation, TransformOperation> operationMapping =
+    static const std::map<nn_operation, TransformOperation> operationMapping =
     {
         { INTEL_AFFINE, AffineTransform },
         { INTEL_AFFINE_DIAGONAL, AffineDiagonalTransform }
@@ -511,7 +513,9 @@ void HardwareLayerRnn::convert()
     {
         feedbackIterationsCount++;
     }
-    Expect::InRange(feedbackIterationsCount, ui32_1, ui32_UINT8_MAX, Gna2StatusXnnErrorLyrCfg);
+    Expect::InRange(feedbackIterationsCount,
+        1u, static_cast<uint32_t>(std::numeric_limits<uint8_t>::max()),
+        Gna2StatusXnnErrorLyrCfg);
 
     if (feedbackFirstIterElementCount > 0 && 1 == feedbackIterationsCount)
     {
@@ -527,7 +531,7 @@ void HardwareLayerRnn::convert()
         feedbackLastIterElementCount =
             elementCount - feedbackFirstIterElementCount - (feedbackIterationsCount - 2) * bufferElementCount;
     }
-    Expect::InRange(feedbackLastIterElementCount, ui32_1, bufferElementCount, Gna2StatusXnnErrorLyrCfg);
+    Expect::InRange(feedbackLastIterElementCount, 1u, bufferElementCount, Gna2StatusXnnErrorLyrCfg);
 }
 
 void HardwareLayerRnn::save()
@@ -558,27 +562,27 @@ HardwareLayerCnn::HardwareLayerCnn(const DescriptorParameters& parameters) :
         (std::min)(
             filterCount,
             (filterSize <= bufferElementCount / 6 / 3) ?
-            uint32_t{ 16 } :
+            uint32_t{ CNN_N_FLT_ITER_MAX } :
             (filterSize <= bufferElementCount / 6 / 2) ?
             uint32_t{ 12 } :
             (filterSize <= bufferElementCount / 6) ?
             uint32_t{ 4 } : uint32_t{ 0 });
 
-    Expect::InRange(filtersCountInFullIteration, CNN_N_FLT_COEFF_MPLY, CNN_N_FLT_ITER_MAX, Gna2StatusXnnErrorLyrCfg);
-    Expect::MultiplicityOf(filtersCountInFullIteration, CNN_N_FLT_COEFF_MPLY);
+    Expect::InRange(filtersCountInFullIteration, CnnCaps::Filter1DElementsMultiplier, CNN_N_FLT_ITER_MAX, Gna2StatusXnnErrorLyrCfg);
+    Expect::MultiplicityOf(filtersCountInFullIteration, CnnCaps::Filter1DElementsMultiplier);
 
     filtersIterationCount = (filterCount - 1) / filtersCountInFullIteration + 1;
 
     filtersCountInLastIteration = filterCount - ((filtersIterationCount - 1) * filtersCountInFullIteration);
-    Expect::InRange(filtersCountInLastIteration, CNN_N_FLT_COEFF_MPLY, CNN_N_FLT_ITER_MAX, Gna2StatusXnnErrorLyrCfg);
-    Expect::MultiplicityOf(filtersCountInLastIteration, CNN_N_FLT_COEFF_MPLY);
+    Expect::InRange(filtersCountInLastIteration, CnnCaps::Filter1DElementsMultiplier, CNN_N_FLT_ITER_MAX, Gna2StatusXnnErrorLyrCfg);
+    Expect::MultiplicityOf(filtersCountInLastIteration, CnnCaps::Filter1DElementsMultiplier);
 
 
     filtersElementCountInFullIteration = filtersCountInFullIteration * filterSize;
-    Expect::InRange(filtersElementCountInFullIteration, ui32_1, bufferElementCount, Gna2StatusXnnErrorLyrCfg);
+    Expect::InRange(filtersElementCountInFullIteration, 1u, bufferElementCount, Gna2StatusXnnErrorLyrCfg);
 
     filtersElementCountInLastIteration = filtersCountInLastIteration * filterSize;
-    Expect::InRange(filtersElementCountInLastIteration, ui32_1, bufferElementCount, Gna2StatusXnnErrorLyrCfg);
+    Expect::InRange(filtersElementCountInLastIteration, 1u, bufferElementCount, Gna2StatusXnnErrorLyrCfg);
 
     // No pooling
     outputElementCount = cnn->Convolution->OutputsPerFilterCount;
@@ -641,7 +645,7 @@ uint32_t HardwareLayerCnn2D::GetKernelMemorySize(DeviceVersion deviceVersion,
     FiltersTensor const * filter)
 {
     UNREFERENCED_PARAMETER(deviceVersion);
-    return RoundUp(filter->Size / filter->Count, 16);
+    return RoundUp(filter->Size / filter->Count, 16u);
 }
 
 uint32_t HardwareLayerCnn2D::GetConvolutionMemorySize(DeviceVersion deviceVersion,
@@ -745,7 +749,7 @@ void HardwareLayerCnn2D::save1D()
     XnnDescriptor[weight_size] = cnn.Filters->Mode;
     XnnDescriptor[n_in_elems] = SoftwareLayer.Input.Dimensions.at('W');
     XnnDescriptor[n_out_elems] = SoftwareLayer.Output.Dimensions.at('W');
-    XnnDescriptor[n_groups] = ui32_0;
+    XnnDescriptor[n_groups] = 0u;
     // 07:pooling
     XnnDescriptor[cnn_n_flt_stride] = cnn.Stride->Dimensions.at('W');
     // 0a:pool size
@@ -800,13 +804,6 @@ HardwareLayerAffineMBias::HardwareLayerAffineMBias(const DescriptorParameters& p
     saveThresholdExternal(*affineMulti.Biases, th_bias_src);
 }
 
-const std::map<const gna_gmm_mode, const GMM_MODE_CTRL> HardwareLayerGmm::GmmModes =
-{
-    //{ gna_gmm_mode, { read_elimination, calculation_mode, __res_03} },
-    { GNA_MAXMIX8,  { 0 } },
-    { GNA_MAXMIX16, { 0 } },
-};
-
 HardwareLayerGmm::HardwareLayerGmm(const DescriptorParameters& parameters) :
     HardwareLayer(parameters)
 {
@@ -828,12 +825,12 @@ void HardwareLayerGmm::save()
     // will be updated when ActiveList is used
     XnnDescriptor[gmmscrlen] = GMM_SCORE_SIZE *
         gmm.Input->at(GNA_DIM_H) * gmm.StateCount;
-    XnnDescriptor[fvoffset] = ALIGN64(gmm.Input->at(GNA_DIM_W) * GMM_FV_ELEMENT_SIZE);
+    XnnDescriptor[fvoffset] = Gna2RoundUpTo64(gmm.Input->at(GNA_DIM_W) * GMM_FV_ELEMENT_SIZE);
 
     XnnDescriptor[numfv] = gmm.Input->at(GNA_DIM_H);
     XnnDescriptor[vlength] = gmm.Input->at(GNA_DIM_W);
 
-    XnnDescriptor[mode] = GmmModes.at(GNA_MAXMIX8)._value;
+    XnnDescriptor[mode] = GMM_MODE_CTRL{0}._value;
 
     XnnDescriptor[gcaddr] = gmm.GaussianConstantBuffer;
     XnnDescriptor[mvaddr] = gmm.MeanBuffer;

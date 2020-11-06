@@ -29,16 +29,13 @@
 #include "DriverInterface.h"
 #include "Expect.h"
 #include "GnaException.h"
+#include "gna2-memory-impl.h"
 #include "HardwareCapabilities.h"
 #include "Macros.h"
 #include "Memory.h"
 #include "MemoryContainer.h"
 #include "RequestConfiguration.h"
 #include "SoftwareModel.h"
-
-#include "common.h"
-#include "gna-api-status.h"
-#include "profiler.h"
 
 #include <utility>
 
@@ -62,7 +59,7 @@ uint32_t HardwareModelScorable::GetBufferOffsetForConfiguration(
     }
 
     auto const modelSize = allocations.GetMemorySizeAlignedToPage();
-    offset = requestConfiguration.GetAllocations().GetBufferOffset(address, PAGE_SIZE, modelSize);
+    offset = requestConfiguration.GetAllocations().GetBufferOffset(address, MemoryBufferAlignment, modelSize);
     Expect::GtZero(offset, Gna2StatusMemoryBufferInvalid);
     return offset;
 }
@@ -100,12 +97,12 @@ uint32_t HardwareModelScorable::Score(
         && !hwCapabilities.IsLayerSupported(layer.Operation)
         && hwCapabilities.HasFeature(LegacyGMM))
     {
-        Expect::InRange(layerCount, ui32_1, Gna2StatusXnnErrorNetLyrNo);
+        Expect::InRange(layerCount, 1u, Gna2StatusXnnErrorNetLyrNo);
         operationMode = GMM;
     }
 
     Expect::InRange(layerCount,
-        ui32_1, hwCapabilities.GetMaximumLayerCount(),
+        1u, hwCapabilities.GetMaximumLayerCount(),
         Gna2StatusXnnErrorNetLyrNo);
 
     SoftwareModel::LogAcceleration(AccelerationMode{ Gna2AccelerationModeHardware,true });
@@ -155,7 +152,7 @@ void HardwareModelScorable::ValidateConfigBuffer(MemoryContainer const & request
 {
     auto configModelSize = allocations.GetMemorySizeAlignedToPage();
     configModelSize += requestAllocations.GetMemorySizeAlignedToPage();
-    configModelSize += RoundUp(bufferMemory.GetSize(), PAGE_SIZE);
+    configModelSize += RoundUp(bufferMemory.GetSize(), MemoryBufferAlignment);
 
     Expect::InRange(configModelSize, HardwareCapabilities::MaximumModelSize,
         Gna2StatusMemoryTotalSizeExceeded);

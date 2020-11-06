@@ -26,7 +26,6 @@
 #pragma once
 #include "DriverInterface.h"
 #include "gna-h-wrapper.h"
-#include "common.h"
 #include "GnaUtilConfig.h"
 #include "Memory.h"
 

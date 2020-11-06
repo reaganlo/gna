@@ -34,7 +34,6 @@
 #include "RequestConfiguration.h"
 #include "Validator.h"
 
-#include "gna-api-types-xnn.h"
 
 #include <cstdint>
 #include <functional>
@@ -62,11 +61,11 @@ void SoftwareModel::buildSingleLayer(std::unique_ptr<Layer> & layer)
 
 void SoftwareModel::CheckModel(uint32_t declaredBatchSize, void * operationPointer) const
 {
-    Expect::InRange(declaredBatchSize, ui32_1, XNN_N_GROUP_MAX,
+    Expect::InRange(declaredBatchSize, 1u, BatchSizeMax,
         Gna2StatusXnnErrorLyrCfg);
 
     ModelErrorHelper::ExpectGtZero(layerCount, Gna2ItemTypeModelNumberOfOperations);
-    Expect::InRange(layerCount, ui32_1,
+    Expect::InRange(layerCount, 1u,
         HardwareCapabilities::GetMaximumLayerCount(DefaultDeviceVersion),
         Gna2StatusXnnErrorNetLyrNo);
     Expect::NotNull(operationPointer);

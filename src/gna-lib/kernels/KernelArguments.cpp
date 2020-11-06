@@ -26,8 +26,6 @@
 #include "Address.h"
 #include "KernelArguments.h"
 
-#include "gna-api.h"
-
 #include <map>
 #include <utility>
 
@@ -68,7 +66,7 @@ AffineConfig::AffineConfig(uint32_t const outputElementCountIn, uint32_t const i
     output{outputIn},
     execution{nullptr},
     weights1B{static_cast<int8_t const *>(weightsIn)},
-    biasesCompound{static_cast<nn_bias_c const *>(biases)},
+    biasesCompound{static_cast<BiasCompound const *>(biases)},
     multiBias{multiBiasIn},
     multiBiasVectorCount{multiBiasVectorCountIn}
 {}
@@ -85,7 +83,7 @@ AffineConfig::AffineConfig(uint32_t const outputElementCountIn, uint32_t const i
     output{outputIn},
     execution{nullptr},
     weights1B{static_cast<int8_t const *>(weightsIn)},
-    biasesCompound{static_cast<nn_bias_c const *>(biases)},
+    biasesCompound{static_cast<BiasCompound const *>(biases)},
     multiBias{multiBiasIn},
     multiBiasVectorCount{multiBiasVectorCountIn},
     bytesPerBias{bytesPerBiasIn}
@@ -107,7 +105,7 @@ RecurrentConfig::RecurrentConfig(uint32_t const outputElementCountIn,
     feedbackBuffer{feedbackBufferIn},
     output{outputIn},
     weights1B{static_cast<int8_t const *>(weightsIn)},
-    biasesCompound{static_cast<nn_bias_c const *>(biases)},
+    biasesCompound{static_cast<BiasCompound const *>(biases)},
     activation{pwl, BaseConfig(outputIn, outputActivatedIn)}
 {
 }
@@ -126,7 +124,7 @@ RecurrentConfig::RecurrentConfig(uint32_t const outputElementCountIn,
     bytesPerBias{bytesPerBiasIn},
     bytesPerOutput{bytesPerOutputIn},
     weights1B{static_cast<int8_t const *>(weightsIn)},
-    biasesCompound{static_cast<nn_bias_c const *>(biases)},
+    biasesCompound{static_cast<BiasCompound const *>(biases)},
     activation{pwl, BaseConfig(outputIn, outputActivatedIn)}
 {}
 
@@ -176,7 +174,7 @@ ConvolutionConfig::ConvolutionConfig(ConvolutionConfig const * const source,
 ConvolutionConfig::ConvolutionConfig(uint32_t const inputBandStrideIn,
     uint32_t const FilterOutputCountIn, uint32_t const FilterCountIn,
     uint32_t const FilterCoefficientCountIn, int16_t const * const inputsIn,
-    int16_t const * const filtersIn, nn_bias_s const * const biasesIn, int32_t * const outputsIn) :
+    int16_t const * const filtersIn, BiasRegular const * const biasesIn, int32_t * const outputsIn) :
     inputBandStride{inputBandStrideIn},
     filterOutputCount{FilterOutputCountIn},
     filterCount{FilterCountIn},
@@ -191,7 +189,7 @@ ConvolutionConfig::ConvolutionConfig(uint32_t const inputBandStrideIn,
 ConvolutionConfig::ConvolutionConfig(uint32_t const inputBandStrideIn,
     uint32_t const FilterOutputCountIn, uint32_t const FilterCountIn,
     uint32_t const FilterCoefficientCountIn, int16_t const * const inputsIn,
-    int16_t const * const filtersIn, nn_bias_s const * const biasesIn,
+    int16_t const * const filtersIn, BiasRegular const * const biasesIn,
     int32_t * const outputsIn, uint32_t bytesPerBiasIn, uint32_t bytesPerFilterIn) :
     inputBandStride{inputBandStrideIn},
     filterOutputCount{FilterOutputCountIn},
@@ -213,7 +211,7 @@ GmmConfig::GmmConfig(uint32_t const inputVectorCountIn, uint32_t const inputElem
     uint8_t const * means, uint8_t const * vars, uint32_t const * gconst) :
     InputVectorCount{ inputVectorCountIn },
     InputElementCount{ inputElementCountIn },
-    InputElementOffset(ALIGN64(InputElementCount)),
+    InputElementOffset(Gna2RoundUpTo64(InputElementCount)),
     MixtureCount{ mixCountIn },
     MeanSetOffsetSize{ meanSetOffsetSizeIn },
     VarSetOffsetSize{ varSetOffsetSizeIn },

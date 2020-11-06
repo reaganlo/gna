@@ -53,7 +53,7 @@ namespace GNA
 
         uint32_t GetInputOffset(uint32_t layerIndex) const;
 
-        // this override does not add PAGE_SIZE alignment to calculations
+        // this override does not add MemoryBufferAlignment alignment to calculations
         // since memory buffers are copied to one allocated memory buffer
         virtual LdaOffset GetBufferOffset(const BaseAddress& address) const override;
 

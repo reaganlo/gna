@@ -34,9 +34,6 @@
 #include "KernelMacros.h"
 #include "PoolingKernelArguments.h"
 
-#include "common.h"
-#include "gna-api-types-xnn.h"
-
 #include <cmath>
 #include <cstdint>
 
@@ -938,7 +935,7 @@ void Convolution2DKernelImpl1B1B(ExecutionKernelConfig<ConvolutionConfig2D> cons
     uint32_t filterHeight = config->RequestConfig->Transform.FilterHeight;
     uint32_t filterWidth = config->RequestConfig->Transform.FilterWidth;
     uint32_t memForFilter = (filterHeight * filterWidth * inputDepth);
-    uint32_t filterPadding = (ALIGN(memForFilter, 16) - memForFilter);
+    uint32_t filterPadding = (Gna2RoundUp(memForFilter, 16) - memForFilter);
 
     uint32_t padHeight = config->RequestConfig->Transform.ZeroPaddingHeight;
     uint32_t padWidth = config->RequestConfig->Transform.ZeroPaddingWidth;
@@ -1018,7 +1015,7 @@ void Convolution2DKernelImpl1B2B(ExecutionKernelConfig<ConvolutionConfig2D> cons
     uint32_t filterHeight = config->RequestConfig->Transform.FilterHeight;
     uint32_t filterWidth = config->RequestConfig->Transform.FilterWidth;
     uint32_t memForFilter = (filterHeight * filterWidth * inputDepth);
-    uint32_t filterPadding = (ALIGN(memForFilter, 16) - memForFilter);
+    uint32_t filterPadding = (Gna2RoundUp(memForFilter, 16) - memForFilter);
 
     uint32_t padHeight = config->RequestConfig->Transform.ZeroPaddingHeight;
     uint32_t padWidth = config->RequestConfig->Transform.ZeroPaddingWidth;
@@ -1098,7 +1095,7 @@ void Convolution2DKernelImpl2B1B(ExecutionKernelConfig<ConvolutionConfig2D> cons
     uint32_t filterHeight = config->RequestConfig->Transform.FilterHeight;
     uint32_t filterWidth = config->RequestConfig->Transform.FilterWidth;
     uint32_t memForFilter = (filterHeight * filterWidth * inputDepth * 2);
-    uint32_t filterPadding = (ALIGN(memForFilter, 16) - memForFilter) / 2;
+    uint32_t filterPadding = (Gna2RoundUp(memForFilter, 16) - memForFilter) / 2;
 
     uint32_t padHeight = config->RequestConfig->Transform.ZeroPaddingHeight;
     uint32_t padWidth = config->RequestConfig->Transform.ZeroPaddingWidth;
@@ -1179,7 +1176,7 @@ void Convolution2DKernelImpl2B2B(ExecutionKernelConfig<ConvolutionConfig2D> cons
     uint32_t filterWidth = config->RequestConfig->Transform.FilterWidth;
 
     uint32_t memForFilter = (filterHeight * filterWidth * inputDepth * 2);
-    uint32_t filterPadding = (ALIGN(memForFilter, 16) - memForFilter) /2;
+    uint32_t filterPadding = (Gna2RoundUp(memForFilter, 16) - memForFilter) /2;
 
     uint32_t padHeight = config->RequestConfig->Transform.ZeroPaddingHeight;
     uint32_t padWidth = config->RequestConfig->Transform.ZeroPaddingWidth;

@@ -27,7 +27,6 @@
 
 #include "Macros.h"
 
-#include "gna-api.h"
 #include "../../gna-api/gna2-device-api.h"
 
 #include <array>

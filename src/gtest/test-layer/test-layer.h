@@ -25,11 +25,10 @@
 
 #pragma once
 
+#include "Memory.h"
+#include "KernelArguments.h"
 #include "Validator.h"
 
-#include "KernelArguments.h"
-
-#include "gna-api-types-xnn.h"
 
 #include <gtest/gtest.h>
 
@@ -48,7 +47,7 @@ public:
 
     static KernelBuffers kernelBuffers;
 
-    static void samplePwl(intel_pwl_segment_t *segments, uint32_t numberOfSegments);
+    static void samplePwl(PwlSegment *segments, uint32_t numberOfSegments);
 
     template<typename T>
     static void VerifyOutputs(const T *output, const T *refOutput, uint32_t elementCount)

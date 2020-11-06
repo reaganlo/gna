@@ -27,8 +27,6 @@
 
 #include "DriverInterface.h"
 
-#include "common.h"
-
 #include <cstdint>
 
 union gna_parameter;

@@ -28,8 +28,6 @@
 
 #include "KernelArguments.h"
 
-#include "common.h"
-
 #include <cstdint>
 
 void AffineActiveListKernelImpl1B(ExecutionKernelConfig<AffineConfig> const * const config, AffineConfigAl al)
@@ -60,8 +58,8 @@ void AffineActiveListKernelImpl1B(ExecutionKernelConfig<AffineConfig> const * co
             {
                 output[l*inputVectorCount + j] += weight[k] * *input++;
             }
-            output[l*inputVectorCount + j] *= config->RequestConfig->Transform.biasesCompound[i].multiplier;
-            output[l*inputVectorCount + j] += config->RequestConfig->Transform.biasesCompound[i].bias;
+            output[l*inputVectorCount + j] *= config->RequestConfig->Transform.biasesCompound[i].Multiplier;
+            output[l*inputVectorCount + j] += config->RequestConfig->Transform.biasesCompound[i].Bias;
         }
     }
 }
@@ -91,8 +89,8 @@ void AffineActiveListKernelImpl1B2B(ExecutionKernelConfig<AffineConfig> const * 
             {
                 output[l*inputVectorCount + j] += weight[k] * *input++;
             }
-            output[l*inputVectorCount + j] *= config->RequestConfig->Transform.biasesCompound[i].multiplier;
-            output[l*inputVectorCount + j] += config->RequestConfig->Transform.biasesCompound[i].bias;
+            output[l*inputVectorCount + j] *= config->RequestConfig->Transform.biasesCompound[i].Multiplier;
+            output[l*inputVectorCount + j] += config->RequestConfig->Transform.biasesCompound[i].Bias;
         }
     }
 }

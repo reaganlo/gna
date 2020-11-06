@@ -25,15 +25,14 @@
 
 #pragma once
 
-#include "common.h"
-#include "gna-api.h"
-#include "gna-api-types-xnn.h"
+#include "Capabilities.h"
 
 #include <array>
 #include <cstdint>
 #include <map>
 
 #include "gna2-common-impl.h"
+#include "gna2-capability-api.h"
 
 namespace GNA
 {
@@ -54,12 +53,12 @@ enum GnaFeature
 };
 
 // buffer array size for single precision
-static constexpr uint32_t BufferArraySizeSingle = XNN_N_GROUP_MAX;
+static constexpr uint32_t BufferArraySizeSingle = BatchSizeMax;
 static constexpr uint32_t BufferArraySize = 2 * BufferArraySizeSingle;
 
 struct GenerationCapabilities
 {
-    gna_device_generation Generation;
+    Gna2DeviceGeneration Generation;
     uint32_t MaximumLayerCount;
     std::map<GnaFeature, bool> Features;
     uint32_t ComputeEngineCount;
@@ -92,10 +91,10 @@ public:
     // in the future it's possible to integrate it as GenerationCapabilities field
     static const uint32_t MaximumModelSize;
 
-    static bool IsAdlGeneration(gna_device_generation generation);
+    static bool IsAdlGeneration(Gna2DeviceGeneration generation);
     static bool IsAdlDevice(DeviceVersion deviceVersion);
 
-    static DeviceVersion GetDeviceVersion(gna_device_generation generation);
+    static DeviceVersion GetDeviceVersion(Gna2DeviceGeneration generation);
 
     static uint32_t GetMaximumLayerCount(DeviceVersion deviceVersion);
 
@@ -121,7 +120,7 @@ public:
             : Gna2DeviceVersionSoftwareEmulation;
     }
 
-    gna_device_generation GetDeviceGeneration() const;
+    Gna2DeviceGeneration GetDeviceGeneration() const;
 
     bool IsAdlGeneration() const;
 

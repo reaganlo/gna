@@ -63,19 +63,16 @@
 
 #if     defined(OPTGEN)
 
-#pragma message("Building Generic kernel, level 0")
 #define OPT_LEVEL       0
 #define KERNEL_SUFFIX   _generic
 
 #elif   defined(OPTGEN_SAT)
 
-#pragma message("Building Generic kernel with saturation, level 1")
 #define OPT_LEVEL       1
 #define KERNEL_SUFFIX   _generic_sat
 
 #elif   defined(OPTSSE4)
 
-#pragma message("Building SSE4 kernel, level 2")
 #define OPT_LEVEL       2
 #define KERNEL_SUFFIX   _sse4
 __forceinline __m128i vec_accumulate(__m128i acc, __m128i x)
@@ -89,7 +86,6 @@ __forceinline int32_t vec_sum(__m128i x)
 
 #elif   defined(OPTSSE4_SAT)
 
-#pragma message("Building SSE4 kernel with saturation, level 3")
 #define OPT_LEVEL       3
 #define KERNEL_SUFFIX   _sse4_sat
 __forceinline __m128i vec_accumulate(__m128i acc, __m128i x)
@@ -109,7 +105,6 @@ __forceinline int64_t vec_sum32(__m128i x)
 
 #elif   defined(OPTAVX1)
 
-#pragma message("Building AVX1 kernel, level 4")
 #define OPT_LEVEL       4
 #define KERNEL_SUFFIX   _avx1
 __forceinline __m128i vec_accumulate(__m128i acc, __m128i x)
@@ -129,7 +124,6 @@ __forceinline __m128i vec_madd16(__m256i x, __m256i y)
 
 #elif   defined(OPTAVX1_SAT)
 
-#pragma message("Building AVX1 kernel with saturation, level 5")
 #define OPT_LEVEL       5
 #define KERNEL_SUFFIX   _avx1_sat
 __forceinline __m128i vec_accumulate(__m128i acc, __m128i x)
@@ -155,7 +149,6 @@ __forceinline int64_t vec_sum32(__m128i x)
 
 #elif   defined(OPTAVX2)
 
-#pragma message("Building AVX2 kernel, level 6")
 #define OPT_LEVEL       6
 #define KERNEL_SUFFIX   _avx2
 __forceinline __m256i vec_accumulate(__m256i acc, __m256i x)
@@ -170,7 +163,6 @@ __forceinline int32_t vec_sum(__m256i x)
 
 #elif   defined(OPTAVX2_SAT)
 
-#pragma message("Building AVX2 kernel with saturation, level 7")
 #define OPT_LEVEL       7
 #define KERNEL_SUFFIX   _avx2_sat
 __forceinline __m256i vec_accumulate(__m256i acc, __m256i x)
@@ -266,3 +258,18 @@ typedef int64_t gna_sum_t;
 #endif
 
 #define SSE_16CAP 8
+
+inline int32_t getBias(const void* ptr, uint32_t bytesPerElement, uint32_t idx = 0)
+{
+    switch (bytesPerElement)
+    {
+    case 1:
+        return ((int8_t*)ptr)[idx];
+    case 2:
+        return ((int16_t*)ptr)[idx];
+    case 4:
+        return ((int32_t*)ptr)[idx];
+    default:
+        return 0;
+    }
+}

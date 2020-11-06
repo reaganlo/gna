@@ -28,10 +28,23 @@
 #include "Address.h"
 #include "Macros.h"
 
+#if defined(__GNUC__) && !defined(__INTEL_COMPILER)
+#include <mm_malloc.h>
+#endif
 #include <cstdint>
 
 namespace GNA
 {
+
+/** GNA main memory required alignment size */
+constexpr auto MemoryBufferAlignment = uint32_t{ 0x1000 };
+
+/** Allocator with alignment for HW data buffers */
+#define _gna_malloc(a)    _mm_malloc(a, MemoryBufferAlignment)
+/** Allocator with alignment for intrinsics */
+#define _kernel_malloc(a) _mm_malloc(a, 0x40)
+#define _gna_free(a)      _mm_free(a)
+
 class DriverInterface;
 
 class Memory : public BaseAddress

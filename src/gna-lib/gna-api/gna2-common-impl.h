@@ -26,7 +26,6 @@
 #ifndef __GNA2_COMMON_IMPL_H
 #define __GNA2_COMMON_IMPL_H
 
-#include "gna-api.h"
 #include "gna2-common-api.h"
 
 #include <map>
@@ -53,33 +52,24 @@ typedef enum Gna2DeviceVersion DeviceVersion;
  */
 #define GNA2_DEFAULT_DEVICE_VERSION Gna2DeviceVersion3_5
 
-DeviceVersion const DefaultDeviceVersion = GNA2_DEFAULT_DEVICE_VERSION;
+constexpr auto DefaultDeviceVersion = DeviceVersion{ GNA2_DEFAULT_DEVICE_VERSION };
 
 typedef enum Gna2Status ApiStatus;
 
-constexpr uint32_t const Gna2DisabledU32 = (uint32_t)GNA2_DISABLED;
+constexpr auto Gna2DisabledU32 = uint32_t(GNA2_DISABLED);
 
-constexpr int32_t const Gna2DisabledI32 = (int32_t)GNA2_DISABLED;
-
-constexpr uint32_t const Gna2DefaultU32 = (uint32_t)GNA2_DEFAULT;
-
-constexpr int32_t const Gna2DefaultI32 = (int32_t)GNA2_DEFAULT;
-
-constexpr uint32_t const Gna2NotSupportedU32 = (uint32_t)GNA2_NOT_SUPPORTED;
-
-constexpr int32_t const Gna2NotSupportedI32 = (int32_t)GNA2_NOT_SUPPORTED;
+/** Size of memory alignment for data tensors */
+constexpr auto GNA_MEM_ALIGN = uint32_t{ 64 };
 
 /* Workaround for old compilers that do not handle enums as map keys */
 struct EnumHash
 {
     template<typename T>
-    std::size_t operator()(T t) const
+    constexpr std::size_t operator()(T t) const
     {
         return static_cast<std::size_t>(t);
     }
 };
-
-Gna2DeviceVersion Gna2GetVersionForLegacy(gna_device_version legacyVersion);
 
 template<typename T>
 inline Gna2DeviceVersion Gna2DeviceVersionFromInt(T value)

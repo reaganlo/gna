@@ -166,12 +166,6 @@ std::pair<uint32_t, uint32_t> Tensor::getGroupingAndElements(
     }
 }
 
-std::pair<uint32_t, uint32_t> Tensor::getGroupingAndElements(const nn_layer& layer) const
-{
-    UNREFERENCED_PARAMETER(layer);
-    throw GnaException(Gna2StatusNotImplemented);
-}
-
 const AlignLimits* TensorLimits::overridenAlign = nullptr;
 
 void TensorLimits::OverrideAlign(const uint32_t newAlign)

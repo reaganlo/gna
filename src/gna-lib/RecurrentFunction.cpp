@@ -41,10 +41,6 @@
 
 #include "gna2-common-api.h"
 
-#include "common.h"
-#include "gna-api.h"
-#include "gna-api-types-xnn.h"
-
 #include <algorithm>
 #include <cstdint>
 #include <memory>
@@ -63,7 +59,7 @@ void RecurrentFunction::ValidateActivation(const Gna2Tensor& activationTensor)
     const std::function<void()> command = [&]()
     {
         auto pwlShape = Shape::Create(activationTensor.Shape, GNA_TENSOR_N);
-        pwlShape.ExpectFits({ GNA_TENSOR_N, XNN_N_PWL_SEGS_MAX });
+        pwlShape.ExpectFits({ GNA_TENSOR_N, ActivationFunction::XNN_N_PWL_SEGS_MAX });
         ModelErrorHelper::ExpectNotNull(activationTensor.Data);
     };
     ModelErrorHelper::ExecuteForModelItem(command, PwlOperandIndex);
@@ -80,7 +76,7 @@ std::unique_ptr<RecurrentFunction> RecurrentFunction::Create(
     // TODO: 3: remove when ActivationFunction created before PwlCached
     ValidateActivation(activationTensor);
 
-    auto pwlCached = std::make_unique<const PwlCached>(config.outputMode, reinterpret_cast<nn_pwl_seg *>(activationTensor.Data),
+    auto pwlCached = std::make_unique<const PwlCached>(config.outputMode, reinterpret_cast<PwlSegment *>(activationTensor.Data),
         activationTensor.Shape.Dimensions[0]);
     auto kernelOperation = operationConfig.GetKernelOperation();
     auto weightTensor = operationConfig.WeightsTensor;
@@ -119,7 +115,7 @@ void RecurrentFunction::ValidateFeedbackDelay() const
 {
     const std::function<void()> command = [&]()
     {
-        ModelErrorHelper::ExpectAboveEq(FeedbackDelay, ui32_1);
+        ModelErrorHelper::ExpectAboveEq(FeedbackDelay, 1u);
         ModelErrorHelper::ExpectBelowEq(FeedbackDelay, Input->Dimensions.at('H'));
     };
     ModelErrorHelper::ExecuteForModelItem(command, GNA2_DISABLED, 0);

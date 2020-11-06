@@ -19,7 +19,7 @@
 cmake_minimum_required(VERSION 3.10)
 
 set(PROJECT_NAME gna-samples)
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_C_STANDARD 11)
 set(CXX_STANDARD_REQUIRED ON)
 

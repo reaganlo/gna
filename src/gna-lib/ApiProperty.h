@@ -28,7 +28,6 @@
 //#include <memory>
 //
 //
-//#include "common.h"
 //#include "GnaException.h"
 //
 //namespace GNA

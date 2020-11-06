@@ -141,7 +141,7 @@ uint32_t HardwareModelNoMMU::GetInputOffset(uint32_t layerIndex) const
 
 void HardwareModelNoMMU::prepareAllocationsAndModel()
 {
-    Expect::InRange(model.LayerCount, ui32_1, hwCapabilities.GetMaximumLayerCount(),
+    Expect::InRange(model.LayerCount, 1u, hwCapabilities.GetMaximumLayerCount(),
         Gna2StatusXnnErrorNetLyrNo);
     auto const ldMemorySize = HardwareModel::calculateDescriptorSize(false);
 

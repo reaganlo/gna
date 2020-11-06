@@ -31,7 +31,6 @@
 
 #include "gna2-model-impl.h"
 
-#include "gna-api-types-xnn.h"
 
 #include <cstdint>
 #include <map>
@@ -57,8 +56,6 @@ struct Shape : public ShapeMap
         Shape{ Create(std::vector<uint32_t>({ std::forward<T>(static_cast<uint32_t>(dimensions))... }), order), order }
     { }
 
-    explicit Shape(gna_3d_dimensions shape);
-
     Shape & operator=(const Shape & right);
 
     ModelValue AsModelValue(char dimension) const;
@@ -67,8 +64,6 @@ struct Shape : public ShapeMap
     using ShapeMap::operator[];
     uint32_t& operator[](char dimension);
     uint32_t at(char dimension) const;
-
-    operator gna_3d_dimensions const() const;
 
     operator ApiShape() const;
 

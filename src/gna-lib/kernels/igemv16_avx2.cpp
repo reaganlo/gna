@@ -28,8 +28,6 @@
 #include "KernelArguments.h"
 #include "KernelMacros.h"
 
-#include "common.h"
-
 #include <immintrin.h>
 #include <cstdint>
 

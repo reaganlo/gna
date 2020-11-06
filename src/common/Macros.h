@@ -52,3 +52,5 @@
     UNREFERENCED_PARAMETER(_DestinationSize);\
 } while(0);
 #endif
+
+#include <cstring>

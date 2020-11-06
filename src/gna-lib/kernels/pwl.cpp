@@ -29,11 +29,10 @@
 
 #include "pwl.h"
 
-#include "common.h"
 #include "KernelArguments.h"
 #include "KernelMacros.h"
 #include "Macros.h"
-
+#include "../gna-lib/Memory.h"
 
 #if defined(__GNUC__)
 #include <limits.h>
@@ -190,7 +189,7 @@ void pwlKernelImplSingleBinary(PwlCachedConfig const * const pwl, int32_t I, int
     uint32_t * const saturationCount)
 {
     int64_t     sum;
-    nn_pwl_seg* segment;
+    PwlSegment* segment;
     uint32_t    k;
     uint32_t    k_upper;
     uint32_t    k_lower;
@@ -217,7 +216,7 @@ void pwlKernelImplSingleBinary(PwlCachedConfig const * const pwl, int32_t I, int
             k >>= 1;
             sum = (int64_t)I - (segment[k].xBase & XBASEMASK);
         } while (k_upper > k_lower + 1);
-        sum *= segment[k].slope; // prod = diff * slope
+        sum *= segment[k].Slope; // prod = diff * slope
         sum >>= (((segment[k].xBase & ~XBASEMASK) + 1) << BIT_SHIFT_SIZE); // prod_shift = prod >> slope_shift
         sum += segment[k].yBase;                   // sum = prod_shift + ybase;
         pwlSaturateStoreOut(sum, (int8_t*)O, saturationCount, pwl->bytesPerOutput);
@@ -235,7 +234,7 @@ void pwlKernelImplAllBinary(ExecutionKernelConfig<ActivationConfig> const * cons
     int32_t*    input;
     int32_t*    inputEnd;
     int8_t*    output;
-    nn_pwl_seg* segment;
+    PwlSegment* segment;
     uint32_t    k;
     uint32_t    k_upper;
     uint32_t    k_lower;
@@ -269,7 +268,7 @@ void pwlKernelImplAllBinary(ExecutionKernelConfig<ActivationConfig> const * cons
                 k >>= 1;
                 sum = (int64_t)*input - (segment[k].xBase & XBASEMASK);
             } while (k_upper > k_lower + 1);
-            sum *= segment[k].slope; // prod = diff * slope
+            sum *= segment[k].Slope; // prod = diff * slope
             sum >>= (((segment[k].xBase & ~XBASEMASK) + 1) << BIT_SHIFT_SIZE); // prod_shift = prod >> slope_shift
             sum += segment[k].yBase;                   // sum = prod_shift + ybase;
             pwlSaturateStoreOut(sum, output, config->SaturationCount, pwl->bytesPerOutput);
@@ -293,8 +292,8 @@ void pwlKernelImplAllLinear(ExecutionKernelConfig<ActivationConfig> const * cons
     int8_t * output = config->RequestConfig->Outputs;
 
     int64_t sum;
-    nn_pwl_seg * end = pwl->Params.Binary.source - 1;
-    nn_pwl_seg * segment;
+    PwlSegment * end = pwl->Params.Binary.source - 1;
+    PwlSegment * segment;
 
     do
     {
@@ -311,7 +310,7 @@ void pwlKernelImplAllLinear(ExecutionKernelConfig<ActivationConfig> const * cons
             {
                 sum = (int64_t)*input - (int64_t)(segment->xBase & XBASEMASK);
             }
-            sum *= segment->slope; // prod = diff * slope
+            sum *= segment->Slope; // prod = diff * slope
             sum >>= (((segment->xBase & ~XBASEMASK) + 1) << BIT_SHIFT_SIZE); // prod_shift = prod >> slope_shift
             sum += segment->yBase;                   // sum = prod_shift + ybase;
             pwlSaturateStoreOut(sum, output, config->SaturationCount, pwl->bytesPerOutput);
@@ -327,8 +326,8 @@ void pwlKernelImplSingleLinear(PwlCachedConfig const * const pwl, int32_t I, int
     uint32_t * const saturationCount)
 {
     int64_t     sum;
-    nn_pwl_seg const * segment;
-    nn_pwl_seg* end = pwl->Params.Binary.source - 1;
+    PwlSegment const * segment;
+    PwlSegment* end = pwl->Params.Binary.source - 1;
 
     sum = (int64_t)I - pwl->Params.Binary.xBase0;
     if (sum <= 0)
@@ -344,7 +343,7 @@ void pwlKernelImplSingleLinear(PwlCachedConfig const * const pwl, int32_t I, int
             sum = (int64_t)I - (int64_t)(segment->xBase & XBASEMASK);
         }
 
-        sum *= segment->slope; // prod = diff * slope
+        sum *= segment->Slope; // prod = diff * slope
         sum >>= (((segment->xBase & ~XBASEMASK) + 1) << BIT_SHIFT_SIZE); // prod_shift = prod >> slope_shift
         sum += segment->yBase;                   // sum = prod_shift + ybase;
         pwlSaturateStoreOut(sum, (int8_t*)O, saturationCount, pwl->bytesPerOutput);
@@ -612,7 +611,7 @@ PwlCached::PwlCached(PwlCached && pwlCached)
     pwlCached.pwl.data = nullptr;
 }
 
-PwlCached::PwlCached(const gna_data_mode mode, nn_pwl_seg const * const segmentsIn, uint32_t segmentCountIn)
+PwlCached::PwlCached(const gna_data_mode mode, PwlSegment const * const segmentsIn, uint32_t segmentCountIn)
 {
     // TODO:3: enable different modes
     uint32_t s = 0;                    // PWL segment iterator
@@ -700,7 +699,7 @@ PwlCached::PwlCached(const gna_data_mode mode, nn_pwl_seg const * const segments
         pwl.Params.Lookup.xBase0Neg = -1 * pwl.Params.Lookup.xBase0;
         pwl.Params.Lookup.shift0 = static_cast<int16_t>(
                                     ((segmentsIn[0].xBase & ~XBASEMASK) + 1) << BIT_SHIFT_SIZE);
-        pwl.Params.Lookup.slope0 = segmentsIn[0].slope;
+        pwl.Params.Lookup.slope0 = segmentsIn[0].Slope;
         pwl.Params.Lookup.yBase0 = segmentsIn[0].yBase;
         pwl.Params.Lookup.xBase1diff = pwl.Params.Lookup.xBase0 - (segmentsIn[1].xBase & XBASEMASK);
         pwl.Params.Lookup.width = static_cast<uint8_t>(s);
@@ -715,7 +714,7 @@ PwlCached::PwlCached(const gna_data_mode mode, nn_pwl_seg const * const segments
             usegTmp.xBase = pwl.Params.Lookup.xBase0 - pwl.Params.Lookup.xBase1diff - (pwl_x_t)(segmentsIn[s - 1].xBase & XBASEMASK);
             usegTmp.shift = static_cast<int16_t>(
                     ((segmentsIn[s - 1].xBase & ~XBASEMASK) + 1) << BIT_SHIFT_SIZE);
-            usegTmp.slope = segmentsIn[s - 1].slope;
+            usegTmp.slope = segmentsIn[s - 1].Slope;
             usegTmp.resvd = 0;
             usegTmp.yBase = segmentsIn[s - 1].yBase;
 
@@ -752,7 +751,7 @@ PwlCached::PwlCached(const gna_data_mode mode, nn_pwl_seg const * const segments
         usegTmp.xBase = pwl.Params.Lookup.xBase0 - pwl.Params.Lookup.xBase1diff - (pwl_x_t)(segmentsIn[s - 1].xBase & XBASEMASK);
         usegTmp.shift = static_cast<int16_t>(
                 ((segmentsIn[s - 1].xBase & ~XBASEMASK) + 1) << BIT_SHIFT_SIZE);
-        usegTmp.slope = segmentsIn[s - 1].slope;
+        usegTmp.slope = segmentsIn[s - 1].Slope;
         usegTmp.resvd = 0;
         usegTmp.yBase = segmentsIn[s - 1].yBase;
         pwl_u_t* LookupSegment;
@@ -782,7 +781,7 @@ PwlCached::PwlCached(const gna_data_mode mode, nn_pwl_seg const * const segments
     }
     else
     {
-        pwl.Params.Binary.source = (nn_pwl_seg*)segmentsIn;
+        pwl.Params.Binary.source = (PwlSegment*)segmentsIn;
         pwl.Params.Binary.xBase0 = segmentsIn[0].xBase & XBASEMASK;
         pwl.Params.Binary.yBase0 = segmentsIn[0].yBase;
 
@@ -795,7 +794,7 @@ PwlCached::PwlCached(const gna_data_mode mode, nn_pwl_seg const * const segments
                 ((pwl_x_t*)pwl.data)[i] = -1 * (pwl_x_t)(segmentsIn[i].xBase & XBASEMASK);
                 pwl.Params.Binary.ySeg[i].shift = static_cast<int16_t>(
                         ((segmentsIn[i].xBase & ~XBASEMASK) + 1) << BIT_SHIFT_SIZE);
-                pwl.Params.Binary.ySeg[i].slope = segmentsIn[i].slope;
+                pwl.Params.Binary.ySeg[i].slope = segmentsIn[i].Slope;
                 pwl.Params.Binary.ySeg[i].resvd = 0;
                 pwl.Params.Binary.ySeg[i].yBase = segmentsIn[i].yBase;
             }

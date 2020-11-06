@@ -64,7 +64,7 @@ void RequestHandler::Enqueue(
     {
         std::lock_guard<std::mutex> lockGuard(lock);
 
-        if (requests.size() >= GNA_REQUEST_QUEUE_LENGTH)
+        if (requests.size() >= QueueLengthMax)
         {
             throw GnaException(Gna2StatusDeviceQueueError);
         }

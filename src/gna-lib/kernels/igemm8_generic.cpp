@@ -28,9 +28,11 @@
 
 #include "KernelArguments.h"
 
-#include "common.h"
-
 #include <cstdint>
+
+using GNA::BiasCompound;
+using GNA::BiasRegular;
+using GNA::WeightScaleFactor;
 
 void AffineKernelImpl1B(ExecutionKernelConfig<AffineConfig> const * const config)
 {
@@ -39,8 +41,8 @@ void AffineKernelImpl1B(ExecutionKernelConfig<AffineConfig> const * const config
     int8_t const * weight = config->RequestConfig->Transform.weights1B;
     int16_t const * input;
     int32_t * output = reinterpret_cast<int32_t *>(config->RequestConfig->Outputs);
-    nn_bias_c const * bias = config->RequestConfig->Transform.biasesCompound;
-    nn_bias_c const * const biasEnd = bias + config->RequestConfig->Transform.outputElementCount;
+    BiasCompound const * bias = config->RequestConfig->Transform.biasesCompound;
+    BiasCompound const * const biasEnd = bias + config->RequestConfig->Transform.outputElementCount;
 
     auto transposeConfig = TransposeConfig::MakeFrom(config);
     TransposeKernelImpl(&transposeConfig);
@@ -55,8 +57,8 @@ void AffineKernelImpl1B(ExecutionKernelConfig<AffineConfig> const * const config
             {
                 *output += weight[k] * *input++;
             }
-            *output *= bias->multiplier;
-            *output++ += bias->bias;
+            *output *= bias->Multiplier;
+            *output++ += bias->Bias;
         }
         weight += config->RequestConfig->Transform.inputElementCount;
         bias++;
@@ -101,8 +103,8 @@ void AffineKernelImpl1B2B(ExecutionKernelConfig<AffineConfig> const * const conf
     int8_t const * weight = config->RequestConfig->Transform.weights1B;
     int16_t const * input;
     int32_t * output = reinterpret_cast<int32_t *>(config->RequestConfig->Outputs);
-    nn_bias_c const * bias = config->RequestConfig->Transform.biasesCompound;
-    nn_bias_c const * const biasEnd = bias + config->RequestConfig->Transform.outputElementCount;
+    BiasCompound const * bias = config->RequestConfig->Transform.biasesCompound;
+    BiasCompound const * const biasEnd = bias + config->RequestConfig->Transform.outputElementCount;
 
     auto transposeConfig = TransposeConfig::MakeFrom(config);
     TransposeKernelImpl2B(&transposeConfig);
@@ -117,8 +119,8 @@ void AffineKernelImpl1B2B(ExecutionKernelConfig<AffineConfig> const * const conf
             {
                 *output += weight[k] * *input++;
             }
-            *output *= bias->multiplier;
-            *output++ += bias->bias;
+            *output *= bias->Multiplier;
+            *output++ += bias->Bias;
         }
         weight += config->RequestConfig->Transform.inputElementCount;
         bias++;
@@ -131,9 +133,9 @@ void AffineMultiBiasKernelImpl1B(ExecutionKernelConfig<AffineConfig> const * con
     uint32_t k;
     int16_t const * input;
     int32_t * output = reinterpret_cast<int32_t *>(config->RequestConfig->Outputs);
-    nn_scaling const * const biasEnd = config->RequestConfig->Transform.weightScaleFactors + config->RequestConfig->Transform.outputElementCount;
+    WeightScaleFactor const * const biasEnd = config->RequestConfig->Transform.weightScaleFactors + config->RequestConfig->Transform.outputElementCount;
     int8_t const * weight = config->RequestConfig->Transform.weights1B;
-    nn_scaling const * weightScaleFactors = config->RequestConfig->Transform.weightScaleFactors;
+    WeightScaleFactor const * weightScaleFactors = config->RequestConfig->Transform.weightScaleFactors;
     int8_t const * multiBias = (int8_t*)config->RequestConfig->Transform.multiBias;
 
     auto transposeConfig = TransposeConfig::MakeFrom(config);
@@ -149,7 +151,7 @@ void AffineMultiBiasKernelImpl1B(ExecutionKernelConfig<AffineConfig> const * con
             {
                 *output += weight[k] * *input++;
             }
-            *output *= weightScaleFactors->multiplier;
+            *output *= weightScaleFactors->Multiplier;
 
             *output++ += getBias(multiBias, config->RequestConfig->Transform.bytesPerBias);
         }
@@ -164,9 +166,9 @@ void AffineMultiBiasKernelImpl1B2B(ExecutionKernelConfig<AffineConfig> const * c
     uint32_t j, k;
     int16_t const * input;
     int32_t * output = reinterpret_cast<int32_t *>(config->RequestConfig->Outputs);
-    nn_scaling const * const biasEnd = config->RequestConfig->Transform.weightScaleFactors + config->RequestConfig->Transform.outputElementCount;
+    WeightScaleFactor const * const biasEnd = config->RequestConfig->Transform.weightScaleFactors + config->RequestConfig->Transform.outputElementCount;
     int8_t const * weight = config->RequestConfig->Transform.weights1B;
-    nn_scaling const * weightScaleFactors = config->RequestConfig->Transform.weightScaleFactors;
+    WeightScaleFactor const * weightScaleFactors = config->RequestConfig->Transform.weightScaleFactors;
     int8_t const * multiBias = (int8_t*)config->RequestConfig->Transform.multiBias;
 
     auto transposeConfig = TransposeConfig::MakeFrom(config);
@@ -182,7 +184,7 @@ void AffineMultiBiasKernelImpl1B2B(ExecutionKernelConfig<AffineConfig> const * c
             {
                 *output += weight[k] * *input++;
             }
-            *output *= weightScaleFactors->multiplier;
+            *output *= weightScaleFactors->Multiplier;
 
             *output++ += getBias(multiBias, config->RequestConfig->Transform.bytesPerBias);
         }

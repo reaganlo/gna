@@ -26,13 +26,14 @@
 #include "PoolingFunctions.h"
 
 #include "AccelerationDetector.h"
+#include "ConvolutionalLayer2DCapabilities.h"
 #include "Expect.h"
 #include "GnaException.h"
 #include "ModelWrapper.h"
-#include "PoolingMode.h"
 #include "Validator.h"
 
 #include <utility>
+#include "PoolingMode.h"
 
 namespace GNA
 {
@@ -40,57 +41,21 @@ struct PwlCached;
 }
 
 using namespace GNA;
+using CnnCaps = GNA::ConvolutionalLayer2DCapabilities;
 
 const std::map<const nn_operation, const ShapeLimits> PoolingFunction::windowLimits =
 {
     {INTEL_CONVOLUTIONAL,
-        {{GNA_DIM_W, {CNN_POOL_SIZE_MIN, CNN_POOL_SIZE_MAX, 1, Gna2StatusCnnErrorPoolSize}}}
+        {{GNA_DIM_W, {CnnCaps::PoolingWindowSizeMin, CnnCaps::PoolingWindowSizeMax, 1, Gna2StatusCnnErrorPoolSize}}}
     },
 };
 
 const std::map<const nn_operation, const ShapeLimits> PoolingFunction::strideLimits =
 {
     {INTEL_CONVOLUTIONAL,
-        {{GNA_DIM_W, {CNN_POOL_SIZE_MIN, CNN_POOL_SIZE_MAX, 1, Gna2StatusCnnErrorPoolStride}}}
+        {{GNA_DIM_W, {CnnCaps::PoolingWindowSizeMin, CnnCaps::PoolingWindowSizeMax, 1, Gna2StatusCnnErrorPoolStride}}}
     },
 };
-
-std::unique_ptr<const PoolingFunction> PoolingFunction::Create(void const * layerDetails,
-    const Shape & inputDimensions, const LayerValidator& validatorIn, gna_data_mode inputMode)
-{
-    Shape window;
-    Shape stride;
-    nn_pool_type type = INTEL_NO_POOLING;
-
-    switch (validatorIn.Operation)
-    {
-    case INTEL_CONVOLUTIONAL:
-    {
-        auto cnn = static_cast<const nn_layer_conv*>(layerDetails);
-        type = cnn->poolType;
-        stride[GNA_DIM_W] = cnn->nPoolStride;
-        window[GNA_DIM_W] = cnn->nPoolSize;
-
-        break;
-    }
-    default:
-        throw GnaException(Gna2StatusXnnErrorLyrOperation);
-    }
-
-    if (INTEL_NO_POOLING != type)
-    {
-        switch (validatorIn.Operation)
-        {
-        case INTEL_CONVOLUTIONAL:
-            return std::make_unique<const PoolingFunction>(validatorIn.Operation, inputDimensions, window,
-                stride, type,
-                AccelerationDetector::GetKernelMap<ConvolutionPoolingKernel>(KERNEL_POOLING, inputMode));
-        default:
-            throw GnaException(Gna2StatusXnnErrorLyrOperation);
-        }
-    }
-    return std::unique_ptr<const PoolingFunction>(nullptr);
-}
 
 void PoolingFunction::ExpectValid(Gna2Operation const & apiOperation)
 {
@@ -111,10 +76,11 @@ std::unique_ptr<const PoolingFunction> PoolingFunction::Create(Gna2Operation con
     Expect::Equal(INTEL_CONVOLUTIONAL, validatorIn.Operation, Gna2StatusXnnErrorLyrOperation);
     ExpectValid(apiOperation);
 
-    const auto poolingMode = ModelWrapper::GetOptionalParameter<Gna2PoolingMode>(apiOperation, PoolingModeParamIndex,
+    const auto poolingModeApi = ModelWrapper::GetOptionalParameter<Gna2PoolingMode>(apiOperation, PoolingModeParamIndex,
         Gna2PoolingModeDisabled);
+    const auto poolingMode = ToKernelPoolingMode(poolingModeApi);
 
-    if (Gna2PoolingModeMax == poolingMode || Gna2PoolingModeSum == poolingMode)
+    if (KernelPoolingModeMax == poolingMode || KernelPoolingModeSum == poolingMode)
     {
         const auto apiStride = ModelWrapper::GetParameter<Gna2Shape>(
             apiOperation, PoolingStrideParamIndex);
@@ -130,7 +96,7 @@ std::unique_ptr<const PoolingFunction> PoolingFunction::Create(Gna2Operation con
     }
     const std::function<void()> command = [&]()
     {
-        ModelErrorHelper::ExpectInSet(poolingMode, { Gna2PoolingModeDisabled }, Gna2ItemTypeParameter);
+        ModelErrorHelper::ExpectInSet(poolingMode, { KernelPoolingModeNone }, Gna2ItemTypeParameter);
     };
     ModelErrorHelper::ExecuteForModelItem(command, GNA2_DISABLED, PoolingModeParamIndex);
     return std::unique_ptr<const PoolingFunction>(nullptr);
@@ -141,7 +107,7 @@ std::unique_ptr<const PoolingFunction> PoolingFunction::Create(Gna2Operation con
 // TODO:3: create base Function class
 PoolingFunction::PoolingFunction(nn_operation const operation, const Shape& inputDimensions,
     const Shape& window, const Shape& stride,
-    const PoolingMode mode, const KernelMap<ConvolutionPoolingKernel>& kernelsIn) :
+    const KernelPoolingMode mode, const KernelMap<ConvolutionPoolingKernel>& kernelsIn) :
     Mode{ mode },
     Window{ window },
     Stride{ stride },
@@ -170,7 +136,7 @@ PoolingFunction::PoolingFunction(nn_operation const operation, const Shape& inpu
             // TODO:3: verify if -1 or -Window.dim
             OutputDimensions[dim.first] =  ((inputDimensions.at(dim.first) - 1) / dim.second + 1);
             OutputsPerFilterCount *= OutputDimensions[dim.first];
-            Expect::InRange(OutputDimensions[dim.first], ui32_1, inputDimensions.at(dim.first), Gna2StatusCnnErrorPoolSize);
+            Expect::InRange(OutputDimensions[dim.first], 1u, inputDimensions.at(dim.first), Gna2StatusCnnErrorPoolSize);
         }
     }
 }

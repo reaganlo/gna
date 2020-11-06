@@ -40,7 +40,6 @@
 #include "Validator.h"
 #include "Transform.h"
 
-#include "gna-api.h"
 
 #include <map>
 #include <memory>
@@ -132,7 +131,7 @@ std::unique_ptr<const BiasTensor> ConvolutionFunction2D::CreateBiasTensor(
             biasMode);
     };
     //TODO: 3: refactor
-    if(validatorIn.HwCapabilities.GetDeviceGeneration() == GNA_3_5)
+    if(validatorIn.HwCapabilities.GetDeviceGeneration() == Gna2DeviceGeneration3_5)
     {
         return buildWithValidator(validatorIn);
     }
@@ -197,7 +196,7 @@ ConvolutionFunction2D::ConvolutionFunction2D(const BaseTransformConfig<Convoluti
     }
 
     auto effectiveOperation = INTEL_CONVOLUTIONAL_2D;
-    if (GNA_3_5 != config.validator.HwCapabilities.GetDeviceGeneration() &&
+    if (Gna2DeviceGeneration3_5 != config.validator.HwCapabilities.GetDeviceGeneration() &&
         INTEL_CONVOLUTIONAL_1D == Filters->GetEffectiveOperationType() &&
         INTEL_CONVOLUTIONAL_1D == Stride->GetEffectiveOperationType() &&
         IsInput1D(config.input->Dimensions))
@@ -221,18 +220,21 @@ ConvolutionFunction2D::ConvolutionFunction2D(const BaseTransformConfig<Convoluti
     out.erase(GNA_DIM_D);
     //Expect::Fits(out, Input->Dimensions); //TODO: Check if this check is valid/needed
 
-    gna_3d_dimensions input = Input->Dimensions;
-    gna_3d_dimensions filter = Filters->Dimensions;
-    gna_3d_dimensions convolutionStride = Stride->Dimensions;
-    gna_3d_dimensions zeroPadding = Padding->Dimensions;
-
     auto kernelBiasMode = Biases->BiasMode;
 
-    ConvolutionConfig2D kernelConvolutionConfig2D{ input.width, input.height, input.depth,Filters->at(GNA_DIM_N),
-        filter.width, filter.height, filter.depth,
+    ConvolutionConfig2D kernelConvolutionConfig2D{
+        Input->at(GNA_DIM_W),
+        Input->at(GNA_DIM_H),
+        Input->at(GNA_DIM_D),
+        Filters->at(GNA_DIM_N),
+        Filters->at(GNA_DIM_W),
+        Filters->at(GNA_DIM_H),
+        Filters->at(GNA_DIM_D),
         KernelDataMode{Filters->Mode.Size}, Filters->Buffer,
-        convolutionStride.width, convolutionStride.height,
-        zeroPadding.width, zeroPadding.height,
+        Stride->at(GNA_DIM_W),
+        Stride->at(GNA_DIM_H),
+        Padding->at(GNA_DIM_W),
+        Padding->at(GNA_DIM_H),
         kernelBiasMode,
         KernelDataMode{Biases->Mode.Size},
         Biases->Buffer };

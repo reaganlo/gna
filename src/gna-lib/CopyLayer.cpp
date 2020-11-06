@@ -29,6 +29,7 @@
 #include "Address.h"
 #include "Capabilities.h"
 #include "Expect.h"
+#include "LayerCapabilities.h"
 #include "LayerConfiguration.h"
 #include "LayerInput.h"
 #include "LayerOutput.h"
@@ -38,8 +39,6 @@
 #include "gna2-common-api.h"
 #include "gna2-model-api.h"
 
-#include "gna-api-types-xnn.h"
-#include "gna-api.h"
 
 #include <algorithm>
 #include <memory>
@@ -52,18 +51,18 @@ class BaseValidator;
 using namespace GNA;
 
 static const std::pair<gna_tensor_dim, RangeLimits<uint32_t>> copyShapeWlimit =
-{GNA_DIM_W, {XNN_N_IN_ELEMS_MPLY, XNN_N_IN_ELEMS_MAX, XNN_N_IN_ELEMS_MPLY, Gna2StatusXnnErrorLyrCfg}};
+{GNA_DIM_W, {LayerCapabilities::InputElementCountMultiplier, LayerCapabilities::InputElementCountMax, LayerCapabilities::InputElementCountMultiplier, Gna2StatusXnnErrorLyrCfg}};
 
 const FullCapabilitiesMap CopyLayer::limits
 {
     { INTEL_COPY, {
-        { GNA_0_9, std::make_shared<ComponentLimits>(ComponentLimits(
+        { Gna2DeviceGeneration0_9, std::make_shared<ComponentLimits>(ComponentLimits(
             {GNA_TENSOR_HW},
-            {{GNA_DIM_H, {1, XNN_N_GROUP_MAX, 1, Gna2StatusXnnErrorLyrCfg}},
+            {{GNA_DIM_H, {1, BatchSizeMax, 1, Gna2StatusXnnErrorLyrCfg}},
             copyShapeWlimit}))},
-        { GNA_3_0, std::make_shared<ComponentLimits>(ComponentLimits(
+        { Gna2DeviceGeneration3_0, std::make_shared<ComponentLimits>(ComponentLimits(
             {GNA_TENSOR_HW},
-            {{GNA_DIM_H, {1, COPY_N_GROUP_MAX, 1, Gna2StatusXnnErrorLyrCfg}},
+            {{GNA_DIM_H, {1, BatchSizeMax, 1, Gna2StatusXnnErrorLyrCfg}},
             copyShapeWlimit}))},
     }},
 };

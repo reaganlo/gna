@@ -28,9 +28,6 @@
 
 #include "KernelArguments.h"
 
-#include "common.h"
-#include "gna-api-types-xnn.h"
-
 #include <cstdint>
 
 void RecurrentKernelImpl1B(ExecutionKernelConfig<RecurrentConfig> const * const config)
@@ -38,8 +35,8 @@ void RecurrentKernelImpl1B(ExecutionKernelConfig<RecurrentConfig> const * const 
     uint32_t i;
     uint32_t j;
     int64_t sum = 0;
-    nn_bias_c const * bias = config->RequestConfig->Transform.biasesCompound;
-    nn_bias_c const * const biasEnd = bias + (config->RequestConfig->Transform.outputElementCount);
+    BiasCompound const * bias = config->RequestConfig->Transform.biasesCompound;
+    BiasCompound const * const biasEnd = bias + (config->RequestConfig->Transform.outputElementCount);
     int16_t const * input;
     int16_t * feedback;
     int8_t const * weight = config->RequestConfig->Transform.weights1B;
@@ -54,7 +51,7 @@ void RecurrentKernelImpl1B(ExecutionKernelConfig<RecurrentConfig> const * const 
 
     for (; bias < biasEnd; bias++)
     {
-        sum = bias->bias;
+        sum = bias->Bias;
         input = reinterpret_cast<int16_t const *>(config->RequestConfig->Inputs);
         feedback = config->RequestConfig->Transform.feedbackBuffer;
 
@@ -62,7 +59,7 @@ void RecurrentKernelImpl1B(ExecutionKernelConfig<RecurrentConfig> const * const 
         {
             for (j = 0; j < config->BufferElementCount[0 + XNN_N_GROUP_MAX]; j++)
             {
-                sum += *input++ * *weight++ * bias->multiplier;
+                sum += *input++ * *weight++ * bias->Multiplier;
             }
             saturate_store_out(&sum, output, config->SaturationCount);
             sum = *output;
@@ -70,12 +67,12 @@ void RecurrentKernelImpl1B(ExecutionKernelConfig<RecurrentConfig> const * const 
 
         for (i = 0; i < kpart_rem; i++)
         {
-            sum += *input++ * *weight++ * bias->multiplier;
+            sum += *input++ * *weight++ * bias->Multiplier;
         }
 
         for (i = 0; i < middle_part; i++)
         {
-            sum += *feedback++ * *weight++ * bias->multiplier;
+            sum += *feedback++ * *weight++ * bias->Multiplier;
         }
 
         saturate_store_out(&sum, output, config->SaturationCount);
@@ -85,7 +82,7 @@ void RecurrentKernelImpl1B(ExecutionKernelConfig<RecurrentConfig> const * const 
         {
             for (j = 0; j < config->BufferElementCount[0 + XNN_N_GROUP_MAX]; j++)
             {
-                sum += *feedback++ * *weight++ * bias->multiplier;
+                sum += *feedback++ * *weight++ * bias->Multiplier;
             }
 
             saturate_store_out(&sum, output, config->SaturationCount);
@@ -94,7 +91,7 @@ void RecurrentKernelImpl1B(ExecutionKernelConfig<RecurrentConfig> const * const 
 
         for (i = 0; i < mpart_rem; i++)
         {
-            sum += *feedback++ * *weight++ * bias->multiplier;
+            sum += *feedback++ * *weight++ * bias->Multiplier;
         }
 
         saturate_store_out(&sum, output, config->SaturationCount);
@@ -107,8 +104,8 @@ void RecurrentKernelImpl1B2B(ExecutionKernelConfig<RecurrentConfig> const * cons
     uint32_t i;
     uint32_t j;
     int64_t sum = 0;
-    nn_bias_c const * bias = config->RequestConfig->Transform.biasesCompound;
-    nn_bias_c const * const biasEnd= bias + (config->RequestConfig->Transform.outputElementCount);
+    BiasCompound const * bias = config->RequestConfig->Transform.biasesCompound;
+    BiasCompound const * const biasEnd= bias + (config->RequestConfig->Transform.outputElementCount);
     int16_t const * input;
     int8_t * feedback;
     int8_t const * weight = config->RequestConfig->Transform.weights1B;
@@ -123,7 +120,7 @@ void RecurrentKernelImpl1B2B(ExecutionKernelConfig<RecurrentConfig> const * cons
 
     for (; bias < biasEnd; bias++)
     {
-        sum = bias->bias;
+        sum = bias->Bias;
         input = reinterpret_cast<int16_t const *>(config->RequestConfig->Inputs);
         feedback = (int8_t *)config->RequestConfig->Transform.feedbackBuffer;
 
@@ -131,7 +128,7 @@ void RecurrentKernelImpl1B2B(ExecutionKernelConfig<RecurrentConfig> const * cons
         {
             for (j = 0; j < config->BufferElementCount[0 + XNN_N_GROUP_MAX]; j++)
             {
-                sum += *input++ * *weight++ * bias->multiplier;
+                sum += *input++ * *weight++ * bias->Multiplier;
             }
             saturate_store_out(&sum, output, config->SaturationCount);
             sum = *output;
@@ -139,18 +136,18 @@ void RecurrentKernelImpl1B2B(ExecutionKernelConfig<RecurrentConfig> const * cons
 
         for(i = 0; i < kpart_rem; i++)
         {
-            sum += *input++ * *weight++ * bias->multiplier;
+            sum += *input++ * *weight++ * bias->Multiplier;
         }
 
         for (i = 0; i < middle_part; i++)
         {
             if (config->RequestConfig->Transform.bytesPerOutput == 1)
             {
-                sum += *feedback++ * *weight++ * bias->multiplier;
+                sum += *feedback++ * *weight++ * bias->Multiplier;
             }
             else if (config->RequestConfig->Transform.bytesPerOutput == 2)
             {
-                sum += *(int16_t*)feedback * *weight++ * bias->multiplier;
+                sum += *(int16_t*)feedback * *weight++ * bias->Multiplier;
                 feedback += 2;
             }
         }
@@ -164,11 +161,11 @@ void RecurrentKernelImpl1B2B(ExecutionKernelConfig<RecurrentConfig> const * cons
             {
                 if (config->RequestConfig->Transform.bytesPerOutput == 1)
                 {
-                    sum += *feedback++ * *weight++ * bias->multiplier;
+                    sum += *feedback++ * *weight++ * bias->Multiplier;
                 }
                 else if (config->RequestConfig->Transform.bytesPerOutput == 2)
                 {
-                    sum += *(int16_t*)feedback * *weight++ * bias->multiplier;
+                    sum += *(int16_t*)feedback * *weight++ * bias->Multiplier;
                     feedback += 2;
                 }
             }
@@ -181,11 +178,11 @@ void RecurrentKernelImpl1B2B(ExecutionKernelConfig<RecurrentConfig> const * cons
         {
             if (config->RequestConfig->Transform.bytesPerOutput == 1)
             {
-                sum += *feedback++ * *weight++ * bias->multiplier;
+                sum += *feedback++ * *weight++ * bias->Multiplier;
             }
             else if (config->RequestConfig->Transform.bytesPerOutput == 2)
             {
-                sum += *(int16_t*)feedback * *weight++ * bias->multiplier;
+                sum += *(int16_t*)feedback * *weight++ * bias->Multiplier;
                 feedback += 2;
             }
         }

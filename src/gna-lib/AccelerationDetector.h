@@ -40,9 +40,6 @@
 #include "gna2-inference-api.h"
 #include "gna2-inference-impl.h"
 
-#include "gna-api-types-gmm.h"
-#include "gna-api-types-xnn.h"
-
 #include <map>
 #include <vector>
 
@@ -51,9 +48,9 @@ namespace GNA
 
 typedef enum _nn_bias_mode
 {
-    GNA_BIAS_MODE_NOT_SUPPORTED = GNA_NOT_SUPPORTED,
+    GNA_BIAS_MODE_NOT_SUPPORTED = GNA2_NOT_SUPPORTED,
     GNA_BIAS_MODE_1_2_4B = GNA_INT8,                         // 1, 2 or 4B per bias, used for kernel selection
-    GNA_BIAS_MODE_RICH_FORMAT = GNA_DATA_RICH_FORMAT,           // 8B Rich bias intel_compound_bias_t data is used, only with GNA_INT8 weight mode.
+    GNA_BIAS_MODE_RICH_FORMAT = GNA_DATA_RICH_FORMAT,           // 8B Rich bias BiasCompound data is used, only with GNA_INT8 weight mode.
     GNA_BIAS_MODE_CONSTANT_SCALAR = GNA_DATA_CONSTANT_SCALAR,   // Single 4B (GNA_INT32) signed integer scalar is used instead of tensor.
     GNA_BIAS_MODE_DISABLED = GNA_DATA_DISABLED,                 // No data is read
 } nn_bias_mode;
@@ -76,10 +73,6 @@ struct KernelMode
         Input{ input },
         Weight{ GNA_INT8 },
         Bias{ GNA_BIAS_MODE_1_2_4B }
-    {}
-
-    KernelMode(gna_gmm_mode gmmMode) :
-        KernelMode{GNA_UINT8, _data_mode(gmmMode + 1), GNA_UINT32}
     {}
 
     ~KernelMode() = default;
@@ -127,8 +120,6 @@ typedef enum _kernel_op
     KERNEL_GMM = INTEL_GMM,
     KERNEL_RECURRENT = INTEL_RECURRENT,
     KERNEL_CONVOLUTIONAL_2D = INTEL_CONVOLUTIONAL_2D,
-    KERNEL_CNN_2D_ADDITION = GNA_LAYER_CNN_2D_ADDITION,
-    KERNEL_CNN_2D_CONVERSION = GNA_LAYER_CNN_2D_CONVERSION,
     KERNEL_POOLING_2D = GNA_LAYER_CNN_2D_POOLING,
     KERNEL_POOLING,
     KERNEL_PWL,
