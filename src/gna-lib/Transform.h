@@ -50,7 +50,7 @@ struct TransformFactoryConfig
     const BaseAddress outputBuffer;
     const LayerValidator& validator;
 
-    TransformFactoryConfig(const Tensor *inputIn, const Tensor *outputIn, DataMode outputModeIn,
+    TransformFactoryConfig(const Tensor *inputIn, const Tensor *outputIn, const DataMode & outputModeIn,
         BaseAddress outputBufferIn, const Gna2Operation& operation, const LayerValidator& validatorIn) :
         input{ inputIn }, output{ outputIn }, outputMode{ outputModeIn }, outputBuffer{ outputBufferIn },
         validator{ validatorIn }

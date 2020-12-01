@@ -91,6 +91,7 @@ CopyLayer::CopyLayer(const Gna2Operation& operation, const BaseValidator& valida
 
     Compute = [this](LayerConfiguration &layerConfiguration, AccelerationMode accel, ExecutionConfig const & executionConfig)
     {this->compute(layerConfiguration, accel, executionConfig); };
+    dataConfig = { Input.Mode, DataMode{}, DataMode{}, Output.Mode };
 }
 
 void CopyLayer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const
@@ -117,11 +118,6 @@ void CopyLayer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration) cons
 
     configs.Copy->input = inputBuffer;
     configs.Copy->output = outputBuffer;
-}
-
-DataConfig CopyLayer::GetDataMode() const
-{
-    return DataConfig(Input.Mode, GNA_DATA_DISABLED, GNA_DATA_DISABLED, Output.Mode);
 }
 
 void CopyLayer::computeHidden(AccelerationMode accel, ExecutionConfig const & executionConfig) const

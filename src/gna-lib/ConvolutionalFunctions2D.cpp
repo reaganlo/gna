@@ -87,7 +87,7 @@ std::unique_ptr<ConvolutionFunction2D> ConvolutionFunction2D::create(
 
     return std::make_unique<ConvolutionFunction2D>(BaseTransformConfig<ConvolutionKernel2D>{config,
         AccelerationDetector::GetKernelMap<ConvolutionKernel2D>(
-            KERNEL_CONVOLUTIONAL_2D, { config.input->Mode, filters->Mode, (biases ? static_cast<gna_data_mode>(biases->Mode) : GNA_DATA_DISABLED) })},
+            KERNEL_CONVOLUTIONAL_2D, { config.input->Mode, filters->Mode, (biases ? biases->Mode : DataMode{}) })},
         move(filters), move(biases), move(stride), move(padding));
 }
 
@@ -213,7 +213,7 @@ ConvolutionFunction2D::ConvolutionFunction2D(const BaseTransformConfig<Convoluti
         Stride->Dimensions, Padding->Dimensions);
 
     auto const validatorOut = LayerValidator{ config.validator, effectiveOperation};
-    Output = std::make_unique<Tensor>(outputDims, DataMode{ GNA_INT32 }, config.outputBuffer,
+    Output = std::make_unique<Tensor>(outputDims, DataMode{ Gna2DataTypeInt32 }, config.outputBuffer,
         Validator{ validatorOut, ConvolutionalLayer2DCapabilities::GetOperands(OutputOperandIndex) });
 
     auto out = Output->Dimensions;

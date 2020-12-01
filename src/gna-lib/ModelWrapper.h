@@ -103,7 +103,7 @@ public:
         void const * buffer, T ... dimensions)
     {
         auto const shape = Shape(GNA_TENSOR_ORDER_ANY, static_cast<uint32_t>(dimensions)...);
-        auto const tensor = std::make_unique<Tensor>(shape, dataType, tensorMode, buffer);
+        auto const tensor = std::make_unique<Tensor>(shape, DataMode{dataType, tensorMode}, buffer);
         return static_cast<ApiTensor>(*tensor);
     }
 

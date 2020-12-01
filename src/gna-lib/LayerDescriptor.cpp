@@ -96,14 +96,14 @@ static const std::map<const XnnParameterType, const XnnParameter> XnnDescriptorG
     {flags, { 0x01, 1 }},
     {act_fn_precision, { 0x01, 1, 2, 1,
         {
-            {GNA_DATA_ACTIVATION_DISABLED, static_cast<uint8_t>(0)},
-            {GNA_INT32, static_cast<uint8_t>(0)},
-            {GNA_INT16, static_cast<uint8_t>(1)},
+            {Gna2DataTypeNone, static_cast<uint8_t>(0)},
+            {Gna2DataTypeInt32, static_cast<uint8_t>(0)},
+            {Gna2DataTypeInt16, static_cast<uint8_t>(1)},
         }}},
     {weight_size, { 0x01, 1, 0, 2,
         {
-            {GNA_INT8, static_cast<uint8_t>(1)},
-            {GNA_INT16, static_cast<uint8_t>(0)},
+            {Gna2DataTypeInt8, static_cast<uint8_t>(1)},
+            {Gna2DataTypeInt16, static_cast<uint8_t>(0)},
         }}},
     {pool_param, { 0x01, 1, 3, 2,
          {
@@ -156,22 +156,22 @@ static const std::map<const XnnParameterType, const XnnParameter> XnnDescriptorG
     {flags, { 0x01, 1 }},
     {act_fn_precision, { 0x01, 1, 4, 2,
         {
-            {GNA_DATA_ACTIVATION_DISABLED, static_cast<uint8_t>(0)},
-            {GNA_INT8, static_cast<uint8_t>(1)},
-            {GNA_INT16, static_cast<uint8_t>(2)},
-            {GNA_INT32, static_cast<uint8_t>(3)}
+            {Gna2DataTypeNone, static_cast<uint8_t>(0)},
+            {Gna2DataTypeInt8, static_cast<uint8_t>(1)},
+            {Gna2DataTypeInt16, static_cast<uint8_t>(2)},
+            {Gna2DataTypeInt32, static_cast<uint8_t>(3)}
         }}},
     {input_element_precision, { 0x01, 1, 2, 2,
         {
-            {GNA_DATA_DISABLED, static_cast<uint8_t>(0)},
-            {GNA_INT8, static_cast<uint8_t>(1)},
-            {GNA_INT16, static_cast<uint8_t>(2)},
+            {Gna2DataTypeNone, static_cast<uint8_t>(0)},
+            {Gna2DataTypeInt8, static_cast<uint8_t>(1)},
+            {Gna2DataTypeInt16, static_cast<uint8_t>(2)},
         }}},
     {weight_size, { 0x01, 1, 0, 2,
         {
-            {GNA_DATA_CONSTANT_SCALAR, static_cast<uint8_t>(0)},
-            {GNA_INT8, static_cast<uint8_t>(1)},
-            {GNA_INT16, static_cast<uint8_t>(2)}
+            {Gna2DataTypeNone, static_cast<uint8_t>(0)},
+            {Gna2DataTypeInt8, static_cast<uint8_t>(1)},
+            {Gna2DataTypeInt16, static_cast<uint8_t>(2)}
         }}},
     {n_in_elems, { 0x02, 2 }},
     {n_out_elems, { 0x04, 2 }},
@@ -186,12 +186,11 @@ static const std::map<const XnnParameterType, const XnnParameter> XnnDescriptorG
     {cnn_pool_size, { 0x0a, 1 }},
     {bias_precision, { 0x0b, 1, 0, 3,
                          {
-                             {GNA_DATA_DISABLED, static_cast<uint8_t>(0) },
-                             {GNA_DATA_CONSTANT_SCALAR, static_cast<uint8_t>(0) },
-                             {GNA_INT8, static_cast<uint8_t>(1) },
-                             {GNA_INT16, static_cast<uint8_t>(2) },
-                             {GNA_INT32, static_cast<uint8_t>(3) },
-                             {GNA_DATA_RICH_FORMAT, static_cast<uint8_t>(7) },
+                             {Gna2DataTypeNone, static_cast<uint8_t>(0) },
+                             {Gna2DataTypeInt8, static_cast<uint8_t>(1) },
+                             {Gna2DataTypeInt16, static_cast<uint8_t>(2) },
+                             {Gna2DataTypeInt32, static_cast<uint8_t>(3) },
+                             {Gna2DataTypeCompoundBias, static_cast<uint8_t>(7) },
         }}}, //When using 'Rich-Format', Constants values are bounded to INT-32 precision.
         //Therefore, NNFlagsExt::BPRC should have no impact on GNA-HW. However this is not true in newest FPGA image.
         // TODO:3:P2 consider providing version for 'newest FPGA image'
@@ -296,22 +295,22 @@ static const std::map<const XnnParameterType, const XnnParameter> XnnDescriptorG
     {flags, { 0x01, 1 }},
     {act_fn_precision, { 0x01, 1, 4, 2,
         {
-            {GNA_DATA_ACTIVATION_DISABLED, static_cast<uint8_t>(0)},
-            {GNA_INT8, static_cast<uint8_t>(1)},
-            {GNA_INT16, static_cast<uint8_t>(2)},
-            {GNA_INT32, static_cast<uint8_t>(3)}
+            {Gna2DataTypeNone, static_cast<uint8_t>(0)},
+            {Gna2DataTypeInt8, static_cast<uint8_t>(1)},
+            {Gna2DataTypeInt16, static_cast<uint8_t>(2)},
+            {Gna2DataTypeInt32, static_cast<uint8_t>(3)}
         }}},
     {input_element_precision, { 0x01, 1, 2, 2,
         {
-            {GNA_DATA_DISABLED, static_cast<uint8_t>(0)},
-            {GNA_INT8, static_cast<uint8_t>(1)},
-            {GNA_INT16, static_cast<uint8_t>(2)},
+            {Gna2DataTypeNone, static_cast<uint8_t>(0)},
+            {Gna2DataTypeInt8, static_cast<uint8_t>(1)},
+            {Gna2DataTypeInt16, static_cast<uint8_t>(2)},
         }}},
     {weight_size, { 0x01, 1, 0, 2,
         {
-            {GNA_DATA_CONSTANT_SCALAR, static_cast<uint8_t>(0)},
-            {GNA_INT8, static_cast<uint8_t>(1)},
-            {GNA_INT16, static_cast<uint8_t>(2)}
+            {Gna2DataTypeNone, static_cast<uint8_t>(0)},
+            {Gna2DataTypeInt8, static_cast<uint8_t>(1)},
+            {Gna2DataTypeInt16, static_cast<uint8_t>(2)}
         }}},
     {n_in_elems, { 0x02, 2 }},
     {n_out_elems, { 0x04, 2 }},
@@ -326,12 +325,11 @@ static const std::map<const XnnParameterType, const XnnParameter> XnnDescriptorG
     {cnn_pool_size, { 0x0a, 1 }},
     {bias_precision, { 0x0b, 1, 0, 3,
                          {
-                             {GNA_DATA_DISABLED, static_cast<uint8_t>(0) },
-                             {GNA_DATA_CONSTANT_SCALAR, static_cast<uint8_t>(0) },
-                             {GNA_INT8, static_cast<uint8_t>(1) },
-                             {GNA_INT16, static_cast<uint8_t>(2) },
-                             {GNA_INT32, static_cast<uint8_t>(3) },
-                             {GNA_DATA_RICH_FORMAT, static_cast<uint8_t>(7) },
+                             {Gna2DataTypeNone, static_cast<uint8_t>(0) },
+                             {Gna2DataTypeInt8, static_cast<uint8_t>(1) },
+                             {Gna2DataTypeInt16, static_cast<uint8_t>(2) },
+                             {Gna2DataTypeInt32, static_cast<uint8_t>(3) },
+                             {Gna2DataTypeCompoundBias, static_cast<uint8_t>(7) },
         }}}, //When using 'Rich-Format', Constants values are bounded to INT-32 precision.
         //Therefore, NNFlagsExt::BPRC should have no impact on GNA-HW. However this is not true in newest FPGA image.
         // TODO:3:P2 consider providing version for 'newest FPGA image'

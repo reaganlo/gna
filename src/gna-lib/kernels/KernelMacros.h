@@ -25,6 +25,8 @@
 
 #pragma once
 
+#include "gna2-inference-api.h"
+
 #include <stdint.h>
 
 #if !defined(_MSC_VER)
@@ -65,16 +67,23 @@
 
 #define OPT_LEVEL       0
 #define KERNEL_SUFFIX   _generic
+constexpr auto KernelAcceleration = Gna2AccelerationModeGeneric;
+constexpr auto HwConsistencyMode = false;
 
 #elif   defined(OPTGEN_SAT)
 
 #define OPT_LEVEL       1
 #define KERNEL_SUFFIX   _generic_sat
+constexpr auto KernelAcceleration = Gna2AccelerationModeGeneric;
+constexpr auto HwConsistencyMode = true;
 
 #elif   defined(OPTSSE4)
 
 #define OPT_LEVEL       2
 #define KERNEL_SUFFIX   _sse4
+constexpr auto KernelAcceleration = Gna2AccelerationModeSse4x2;
+constexpr auto HwConsistencyMode = false;
+
 __forceinline __m128i vec_accumulate(__m128i acc, __m128i x)
 {
     return _mm_add_epi32(acc, x);
@@ -88,6 +97,9 @@ __forceinline int32_t vec_sum(__m128i x)
 
 #define OPT_LEVEL       3
 #define KERNEL_SUFFIX   _sse4_sat
+constexpr auto KernelAcceleration = Gna2AccelerationModeSse4x2;
+constexpr auto HwConsistencyMode = true;
+
 __forceinline __m128i vec_accumulate(__m128i acc, __m128i x)
 {
     return _mm_add_epi64(acc, _mm_add_epi64(
@@ -107,6 +119,9 @@ __forceinline int64_t vec_sum32(__m128i x)
 
 #define OPT_LEVEL       4
 #define KERNEL_SUFFIX   _avx1
+constexpr auto KernelAcceleration = Gna2AccelerationModeAvx1;
+constexpr auto HwConsistencyMode = false;
+
 __forceinline __m128i vec_accumulate(__m128i acc, __m128i x)
 {
     return _mm_add_epi32(acc, x);
@@ -126,6 +141,9 @@ __forceinline __m128i vec_madd16(__m256i x, __m256i y)
 
 #define OPT_LEVEL       5
 #define KERNEL_SUFFIX   _avx1_sat
+constexpr auto KernelAcceleration = Gna2AccelerationModeAvx1;
+constexpr auto HwConsistencyMode = true;
+
 __forceinline __m128i vec_accumulate(__m128i acc, __m128i x)
 {
     return _mm_add_epi64(acc, x);
@@ -151,6 +169,9 @@ __forceinline int64_t vec_sum32(__m128i x)
 
 #define OPT_LEVEL       6
 #define KERNEL_SUFFIX   _avx2
+constexpr auto KernelAcceleration = Gna2AccelerationModeAvx2;
+constexpr auto HwConsistencyMode = false;
+
 __forceinline __m256i vec_accumulate(__m256i acc, __m256i x)
 {
     return _mm256_add_epi32(acc, x);
@@ -165,6 +186,9 @@ __forceinline int32_t vec_sum(__m256i x)
 
 #define OPT_LEVEL       7
 #define KERNEL_SUFFIX   _avx2_sat
+constexpr auto KernelAcceleration = Gna2AccelerationModeAvx2;
+constexpr auto HwConsistencyMode = true;
+
 __forceinline __m256i vec_accumulate(__m256i acc, __m256i x)
 {
     return _mm256_add_epi64(acc, _mm256_add_epi64(

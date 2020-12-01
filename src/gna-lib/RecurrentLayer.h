@@ -25,14 +25,7 @@
 
 #pragma once
 
-#include "Address.h"
 #include "AffineLayers.h"
-
-#include "KernelArguments.h"
-#include "XnnKernel.h"
-
-#include <map>
-#include <cstdint>
 
 namespace GNA
 {
@@ -44,8 +37,6 @@ class RecurrentLayer : public AffineBaseLayer
 public:
     RecurrentLayer(const Gna2Operation& operation, const BaseValidator& validatorIn);
     virtual ~RecurrentLayer() = default;
-
-    virtual DataConfig GetDataMode() const override;
 };
 
 }

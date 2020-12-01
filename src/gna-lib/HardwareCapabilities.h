@@ -102,9 +102,9 @@ public:
 
     // Gets the number of data elements that may be stored in hw buffer
     static uint32_t GetBufferElementCount(DeviceVersion deviceVersion,
-        uint32_t grouping, uint32_t inputPrecision = GNA_INT16);
+        uint32_t grouping, uint32_t inputPrecision = Gna2DataTypeInt16);
 
-    uint32_t GetBufferElementCount(uint32_t grouping, uint32_t inputPrecision = GNA_INT16) const
+    uint32_t GetBufferElementCount(uint32_t grouping, uint32_t inputPrecision = Gna2DataTypeInt16) const
     {
         return GetBufferElementCount(deviceVersion, grouping, inputPrecision);
     }
@@ -143,7 +143,7 @@ private:
     static void initHardwareConsistencySettingsAdl(GenerationCapabilities& caps, bool isWorkaround = false);
 
     static uint32_t getBufferElementCountAdl(uint32_t ceCount, uint32_t bufferSizeInKB,
-        uint32_t grouping, uint32_t inputPrecision = GNA_INT16);
+        uint32_t grouping, uint32_t inputPrecision = Gna2DataTypeInt16);
 
     uint32_t GetBufferSizeInKB() const;
 

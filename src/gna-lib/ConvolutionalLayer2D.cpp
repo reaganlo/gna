@@ -81,6 +81,11 @@ void ConvolutionalLayer2D::Init()
     Expect::One(Input.at(GNA_DIM_N), Gna2StatusXnnErrorGrouping);
     Expect::One(Output.at(GNA_DIM_N), Gna2StatusXnnErrorGrouping);
     Expect::Equal(Output.Size, GetOutputTransform().Output->Size, Gna2StatusXnnErrorOutputVolume);
+    auto const & convolutionTransform = Transforms.Get<ConvolutionFunction2D>(ConvolutionalTransform2D);
+    const auto filterMode = convolutionTransform.Filters->Mode;
+    const auto biasMode = convolutionTransform.Biases->Mode;
+    auto const activation = Transforms.GetOptional<ActivationFunction>(ActivationTransform);
+    dataConfig = { Input.Mode, filterMode, biasMode, Output.Mode, activation == nullptr };
 }
 
 Tensor const & ConvolutionalLayer2D::GetOperand(uint32_t operandIndex) const
@@ -126,12 +131,4 @@ std::unique_ptr<const Component> ConvolutionalLayer2D::CreateComponentFromParame
     };
     ModelErrorHelper::ExecuteForModelItem(command, GNA2_DISABLED, static_cast<int32_t>(parameterIndex));
     return parameter;
-}
-
-DataConfig ConvolutionalLayer2D::GetDataMode() const
-{
-    auto const & convolutionTransform = Transforms.Get<ConvolutionFunction2D>(ConvolutionalTransform2D);
-    const auto filterMode = convolutionTransform.Filters->Mode.Value;
-    const auto biasMode = convolutionTransform.Biases->Mode.Value;
-    return DataConfig(Input.Mode.Value, filterMode, biasMode, Output.Mode.Value);
 }

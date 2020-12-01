@@ -33,15 +33,47 @@ namespace GNA
     struct AffineLayerCapabilities : LayerCapabilities
     {
         static const FullCapabilitiesMap& GetOperands(uint32_t operandIndex);
-        static const std::shared_ptr<ComponentLimits>& GetInputComponentLimits(const Gna2DeviceGeneration generation);
-        static const std::shared_ptr<ComponentLimits>& GetOutputComponentLimits(const Gna2DeviceGeneration generation);
 
     private:
         /**
          MultiBias Affine Output Limits for GNA 2.0 HW bug workaround
          */
         static const std::shared_ptr<ComponentLimits>& GetMBOutputComponentLimits(const Gna2DeviceGeneration generation);
-
     };
 
+    template <>
+    struct OperationCaps<INTEL_AFFINE>
+    {
+        static const FullCapabilitiesMap& GetOperands(uint32_t operandIndex)
+        {
+            return AffineLayerCapabilities::GetOperands(operandIndex);
+        }
+    };
+
+    template <>
+    struct OperationCaps<INTEL_AFFINE_DIAGONAL>
+    {
+        static const FullCapabilitiesMap& GetOperands(uint32_t operandIndex)
+        {
+            return AffineLayerCapabilities::GetOperands(operandIndex);
+        }
+    };
+
+    template <>
+    struct OperationCaps<INTEL_AFFINE_MULTIBIAS>
+    {
+        static const FullCapabilitiesMap& GetOperands(uint32_t operandIndex)
+        {
+            return AffineLayerCapabilities::GetOperands(operandIndex);
+        }
+    };
+
+    template <>
+    struct OperationCaps<INTEL_RECURRENT>
+    {
+        static const FullCapabilitiesMap& GetOperands(uint32_t operandIndex)
+        {
+            return AffineLayerCapabilities::GetOperands(operandIndex);
+        }
+    };
 }

@@ -46,10 +46,9 @@ struct Tensor : public Component
 
     Tensor(const ApiTensor& apiTensor, const Validator& validatorIn);
 
-    Tensor(const Shape& dimensions, const DataType dataType,
-        const TensorMode tensorMode, void const * buffer);
+    Tensor(const Shape& dimensions, const DataMode & dataMode, void const * buffer);
 
-    Tensor(const Shape& dimensions, const DataMode& dataMode,
+    Tensor(const Shape& dimensions, const DataMode & dataMode,
         void const * buffer, const Validator& validatorIn);
 
     virtual ~Tensor() = default;

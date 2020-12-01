@@ -31,9 +31,6 @@
 
 using namespace GNA;
 
-HardwareCapabilities HardwareModelNoMMU::noMMUCapabilities30 = HardwareCapabilities{ Gna2DeviceVersionEmbedded3_0 };
-HardwareCapabilities HardwareModelNoMMU::noMMUCapabilities31Anna = HardwareCapabilities{ Gna2DeviceVersionEmbedded3_1 };
-
 class MemoryOfUndefinedSize : public Memory
 {
 public:
@@ -157,15 +154,17 @@ void HardwareModelNoMMU::prepareAllocationsAndModel()
 
 const HardwareCapabilities& HardwareModelNoMMU::GetHwCaps(Gna2DeviceVersion targetDevice)
 {
-    switch (targetDevice)
+    static const std::map<Gna2DeviceVersion, HardwareCapabilities> hwCaps =
     {
-    case Gna2DeviceVersionEmbedded3_0:
-        return noMMUCapabilities30;
-    case Gna2DeviceVersionEmbedded3_1:
-        return noMMUCapabilities31Anna;
-    default:
+        {Gna2DeviceVersionEmbedded3_0, HardwareCapabilities{ Gna2DeviceVersionEmbedded3_0 }},
+        {Gna2DeviceVersionEmbedded3_1, HardwareCapabilities{ Gna2DeviceVersionEmbedded3_1 }},
+    };
+    auto const found = hwCaps.find(targetDevice);
+    if (hwCaps.cend() == found)
+    {
         throw GnaException(Gna2StatusDeviceNotAvailable);
     }
+    return found->second;
 }
 
 uint32_t HardwareModelNoMMU::SetBarIndex(uint32_t offsetFromBar, uint32_t barIndex)

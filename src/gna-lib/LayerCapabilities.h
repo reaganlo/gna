@@ -27,6 +27,7 @@
 
 #include "Capabilities.h"
 #include "DataMode.h"
+#include "Tensor.h"
 
 #include <map>
 
@@ -34,6 +35,16 @@ namespace GNA
 {
 
 using ComponentFullCapabilityMap = std::map<const uint32_t, FullCapabilitiesMap>;
+
+template <nn_operation Operation>
+struct OperationCaps
+{};
+
+template<nn_operation Operation>
+FullCapabilitiesMap::value_type GetOperationCaps(uint32_t operandIndex)
+{
+    return { Operation, OperationCaps<Operation>::GetOperands(operandIndex).at(Operation) };
+}
 
 struct LayerCapabilities
 {
@@ -50,30 +61,146 @@ struct LayerCapabilities
     /** Total number of input elements constraint - max elements */
     static constexpr uint32_t InputElementCountMax = UINT16_MAX;
 
-    /** Number of pwl segments constraint - max  */
-    static constexpr uint32_t ActivationFunctionSegmentCountMax = 128;
-
-    /** Number of pwl segments constraint - min  */
-    static constexpr uint32_t ActivationFunctionSegmentCountMin = 2;
-
     /** Weight elements size constraint - max size B */
     static constexpr uint32_t WeightElementSizeMax = 2;
 
-    static const MultiplierMap & InputElementCountMultipliers();
-
     static const DataModeLimits & GetModes(uint32_t operandIndex, Gna2DeviceGeneration generation);
 
-    static const RangeLimits<>& limitsForInput();
+    static std::vector<DataMode> MakeDataModesCartesian(std::vector<Gna2DataType> types,
+        std::vector<Gna2TensorMode> modes = { Gna2TensorModeDefault, Gna2TensorModeExternalBuffer })
+    {
+        auto cartesian = std::vector<DataMode>(types.size() * modes.size());
+        for (auto && type : types)
+        {
+            for (auto && mode : modes)
+            {
+                cartesian.emplace_back(DataMode{ type, mode });
+            }
+        }
+        return cartesian;
+    }
 
-    static const RangeLimits<>& limitsForOutput();
+    template<uint32_t min, uint32_t max, uint32_t mulitpliers, Gna2Status status>
+    static const RangeLimits<>& MakeLimits()
+    {
+        static const RangeLimits<> limits =
+        {
+            min, max, mulitpliers, status
+        };
+        return limits;
+    }
 
-    static const RangeLimits<>& limitsForInputShapeLegacy();
+    template<Gna2Status status>
+    static const RangeLimits<>& GetLimitsBasedOnInput()
+    {
+        return MakeLimits<1u, InputElementCountMax, 1u, status>();
+    }
 
-    static const RangeLimits<>& limitsForOutputShapeLegacy();
+    template<Gna2Status status>
+    static const RangeLimits<>&  GetLimitsBasedOnInputLegacy()
+    {
+        static const RangeLimits<> limits =
+        {
+            InputElementCountMultiplier, InputElementCountMax,
+            MultiplierMap{
+                {Gna2DataTypeInt8, 2 * InputElementCountMultiplier},
+                {Gna2DataTypeInt16, 1 * InputElementCountMultiplier},
+                {Gna2DataTypeInt32, InputElementCountMultiplier / 2},},
+            status
+        };
+        return limits;
+    }
 
-    static const RangeLimits<>& limitsForInputGroupsMax();
+    template<Gna2Status status>
+    static const RangeLimits<>& GetLimitsBasedOnInputGroupsMax()
+    {
+        return MakeLimits<1u, BatchSizeMax, 1u, status>();
+    }
+};
 
-    static const RangeLimits<>& limitsForOutputGroupsMax();
+template<uint32_t operandIndex>
+struct ComponentCaps : protected LayerCapabilities
+{};
+
+struct LayerCaps : protected LayerCapabilities
+{
+    template<uint32_t operandIndex>
+    static const std::shared_ptr<ComponentLimits>& GetComponentLimits(
+        Gna2DeviceGeneration generation)
+    {
+        static const OperationCapabilityMap caps =
+        {
+            {ComponentCaps<operandIndex>::template Make<Gna2DeviceGeneration0_9>()},
+            {ComponentCaps<operandIndex>::template Make<Gna2DeviceGeneration2_0, Gna2DeviceGeneration0_9>()},
+            {ComponentCaps<operandIndex>::template Make<Gna2DeviceGeneration3_0>()},
+            {ComponentCaps<operandIndex>::template Make<Gna2DeviceGeneration3_5>()},
+        };
+        return caps.at(generation);
+    }
+
+    template<Gna2DeviceGeneration generation, uint32_t operandIndex>
+    static std::pair<const Gna2DeviceGeneration, const std::shared_ptr<ComponentLimits>>
+    Make()
+    {
+        return { generation, GetComponentLimits<operandIndex>(generation) };
+    }
+
+    template<Gna2DeviceGeneration generation>
+    static std::pair<const Gna2DeviceGeneration, const std::shared_ptr<ComponentLimits>>
+    Make(const OrderLimits order, const ShapeLimits& dimensions, const DataModeLimits& modes)
+    {
+        return {
+            generation,
+            std::make_shared<TensorLimits>(order, dimensions, modes)
+        };
+    }
+
+    template<Gna2DeviceGeneration generation, uint32_t operandIndex, Gna2DeviceGeneration modeGeneration = generation>
+    static std::pair<const Gna2DeviceGeneration, const std::shared_ptr<ComponentLimits>>
+    Make(const OrderLimits order, const ShapeLimits& dimensions)
+    {
+        return Make<generation>(order, dimensions, ComponentCaps<operandIndex>::GetModes(modeGeneration));
+    }
+};
+
+template<>
+struct ComponentCaps<InputOperandIndex> : protected LayerCapabilities
+{
+    template<Gna2DeviceGeneration generation, Gna2DeviceGeneration modeGeneration = generation>
+    static std::pair<const Gna2DeviceGeneration, std::shared_ptr<ComponentLimits>>
+    Make()
+    {
+        return { generation, std::make_shared<TensorLimits>(TensorLimits{
+               {GNA_TENSOR_HW},
+               {{GNA_DIM_H, GetLimitsBasedOnInputLegacy<Gna2StatusXnnErrorInputVolume>()},
+               {GNA_DIM_W, GetLimitsBasedOnInputGroupsMax<Gna2StatusXnnErrorInputVolume>()}},
+               LayerCapabilities::GetModes(InputOperandIndex, modeGeneration)}) };
+    }
+
+    static const DataModeLimits& GetModes(Gna2DeviceGeneration generation)
+    {
+        return LayerCapabilities::GetModes(InputOperandIndex, generation);
+    }
+};
+
+template<>
+struct ComponentCaps<OutputOperandIndex> : protected LayerCapabilities
+{
+    template<Gna2DeviceGeneration generation, Gna2DeviceGeneration modeGeneration = generation>
+    static std::pair<const Gna2DeviceGeneration, std::shared_ptr<ComponentLimits>>
+    Make()
+    {
+        return { generation, std::make_shared<TensorLimits>(TensorLimits{
+           {GNA_TENSOR_HW},
+           {{GNA_DIM_H, GetLimitsBasedOnInput<Gna2StatusXnnErrorOutputVolume>()},
+           {GNA_DIM_W, GetLimitsBasedOnInputGroupsMax<Gna2StatusXnnErrorOutputVolume>()}},
+           GetModes(modeGeneration)}) };
+    }
+
+    static const DataModeLimits& GetModes(Gna2DeviceGeneration generation)
+    {
+        return LayerCapabilities::GetModes(OutputOperandIndex, generation);
+    }
 };
 
 }

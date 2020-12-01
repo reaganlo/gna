@@ -44,8 +44,6 @@ public:
     const uint32_t RowCount;
 
 protected:
-    virtual DataConfig GetDataMode() const override;
-
     static Shape GetCopyShape(const Gna2Operation& operation);
 
 private:

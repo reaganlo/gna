@@ -49,7 +49,7 @@ public:
         uint32_t outputCount) const;
 
     ActivationFunction(const BaseTransformConfig<ActivationKernel>& config,
-        DataMode mode, std::unique_ptr<Tensor> pwl);
+        const DataMode& mode, std::unique_ptr<Tensor> pwl);
     ActivationFunction() = delete;
     virtual ~ActivationFunction() = default;
 
@@ -61,16 +61,13 @@ public:
     PwlCached const Pwl;
 
     /** Number of pwl segments constraint - max  */
-    static constexpr auto XNN_N_PWL_SEGS_MAX = uint32_t{ 128 };
+    static constexpr auto ActivationFunctionSegmentCountMax = uint32_t{ 128 };
 
     /** Number of pwl segments constraint - min  */
-    static constexpr auto XNN_N_PWL_SEGS_MIN = uint32_t{ 2 };
-
-    /** Total number of output elements constraint - must be multiple of */
-    static constexpr auto RNN_N_OUT_ELEMS_MPLY = uint32_t{ 32 };
+    static constexpr auto ActivationFunctionSegmentCountMin = uint32_t{ 2 };
 
 protected:
-    static PwlCached createPwlCached(const gna_data_mode mode,
+    static PwlCached createPwlCached(uint32_t elementSize,
         PwlSegment const * const segmentsIn, uint32_t segmentCountIn);
 
     virtual void updateExecutionKernelConfig(ExecutionKernelConfig<ActivationConfig> & config)

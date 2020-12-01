@@ -34,6 +34,7 @@
 
 #include "XnnKernel.h"
 
+#include "DataMode.h"
 #include "Expect.h"
 #include "ModelError.h"
 
@@ -45,68 +46,47 @@
 
 namespace GNA
 {
-
-typedef enum _nn_bias_mode
-{
-    GNA_BIAS_MODE_NOT_SUPPORTED = GNA2_NOT_SUPPORTED,
-    GNA_BIAS_MODE_1_2_4B = GNA_INT8,                         // 1, 2 or 4B per bias, used for kernel selection
-    GNA_BIAS_MODE_RICH_FORMAT = GNA_DATA_RICH_FORMAT,           // 8B Rich bias BiasCompound data is used, only with GNA_INT8 weight mode.
-    GNA_BIAS_MODE_CONSTANT_SCALAR = GNA_DATA_CONSTANT_SCALAR,   // Single 4B (GNA_INT32) signed integer scalar is used instead of tensor.
-    GNA_BIAS_MODE_DISABLED = GNA_DATA_DISABLED,                 // No data is read
-} nn_bias_mode;
-
 struct KernelMode
 {
-    KernelMode(gna_data_mode input, gna_data_mode weight, nn_bias_mode bias) :
-        Input{ input },
-        Weight{ weight },
-        Bias{ bias }
+    constexpr KernelMode(const DataMode & input, const DataMode & weight, const DataMode & bias) :
+        KernelMode{ input.Type, weight.Type, bias.Type }
     {}
 
-    KernelMode(gna_data_mode input, gna_data_mode weight, gna_data_mode bias) :
-        Input{ input },
-        Weight{ weight },
-        Bias{ translateBias(bias) }
+    constexpr KernelMode(const DataMode & input) :
+        KernelMode{ input.Type }
     {}
 
-    KernelMode(gna_data_mode input) :
-        Input{ input },
-        Weight{ GNA_INT8 },
-        Bias{ GNA_BIAS_MODE_1_2_4B }
+    constexpr KernelMode(DataType input, DataType weight, DataType bias) :
+        Value{ static_cast<DataType>((input << 16) | (weight << 8) | translateBias(bias)) }
+    {}
+
+    constexpr KernelMode(DataType input) :
+        KernelMode(input, Gna2DataTypeNone, Gna2DataTypeNone)
     {}
 
     ~KernelMode() = default;
-    nn_bias_mode translateBias(gna_data_mode bias)
+
+    constexpr bool operator<(const KernelMode &mode) const
+    {
+        return mode.Value < Value;
+    }
+
+protected:
+
+    /** kernels use single mode for bias type 8/16/32b */
+    static constexpr DataType translateBias(DataType bias)
     {
         switch (bias)
         {
-        case GNA_DATA_DISABLED:
-        case GNA_INT8:
-        case GNA_INT16:
-        case GNA_INT32:
-            return GNA_BIAS_MODE_1_2_4B;
+        case Gna2DataTypeInt16:
+        case Gna2DataTypeInt32:
+            return Gna2DataTypeInt8;
         default:
-            return static_cast<nn_bias_mode>(bias);
+            return bias;
         }
     }
-    bool operator==(const KernelMode &mode) const
-    {
-        return mode.Input == Input && mode.Weight == Weight &&
-            mode.Bias == Bias;
-    }
 
-    bool operator<(const KernelMode &mode) const
-    {
-        if (mode.Input != Input)
-            return mode.Input < Input;
-        if (mode.Weight != Weight)
-            return mode.Weight < Weight;
-        return mode.Bias < Bias;
-    }
-
-    const gna_data_mode Input;
-    const gna_data_mode Weight;
-    const nn_bias_mode Bias;
+    DataType Value = Gna2DataTypeNone;
 };
 
 typedef enum _kernel_op
@@ -145,25 +125,23 @@ public:
 
     template<typename KernelType>
     static const KernelMap<KernelType>&
-    GetKernelMap(kernel_op operation, KernelMode dataMode = {GNA_INT16})
+    GetKernelMap(kernel_op operation, KernelMode dataMode = {Gna2DataTypeInt16})
     {
         try
         {
-            return reinterpret_cast<KernelMap<KernelType>&>(
-                Kernels.at(operation).at(dataMode));
+            return reinterpret_cast<const KernelMap<KernelType>&>(
+                GetKernels(operation, dataMode));
         }
-        catch(std::out_of_range)
+        catch (std::out_of_range)
         {
-            throw GnaModelErrorException{ Gna2ItemTypeOperandType, Gna2ErrorTypeNotInSet, 0};
+            throw GnaModelErrorException{ Gna2ItemTypeOperandType, Gna2ErrorTypeNotInSet, 0 };
         }
     }
 
     void SetHardwareAcceleration(bool isHardwareSupported)
     {
-        accelerationModes[AccelerationMode{Gna2AccelerationModeHardware}] = isHardwareSupported;
+        accelerationModes[AccelerationMode{ Gna2AccelerationModeHardware }] = isHardwareSupported;
     }
-
-    static std::map<kernel_op, std::map<KernelMode, KernelMap<VoidKernel>>> Kernels;
 
     void PrintAllAccelerationModes() const;
 protected:
@@ -173,6 +151,8 @@ private:
     void DetectSoftwareAccelerationModes();
     //sorted from slowest to fastest
     std::vector<Gna2AccelerationMode> supportedCpuAccelerations;
+
+    static const KernelMap<VoidKernel>& GetKernels(kernel_op operation, KernelMode dataMode);
 };
 
 }

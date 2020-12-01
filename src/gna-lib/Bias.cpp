@@ -51,30 +51,15 @@ using namespace GNA;
 
 const FullCapabilitiesMap BiasTensor::capabilities =
 {
-    {INTEL_AFFINE, {
-        AffineLayerCapabilities::GetOperands(BiasOperandIndex).at(INTEL_AFFINE)
-    }},
-    {INTEL_AFFINE_DIAGONAL, {
-        AffineLayerCapabilities::GetOperands(BiasOperandIndex).at(INTEL_AFFINE_DIAGONAL)
-    }},
-    {INTEL_AFFINE_MULTIBIAS, {
-        AffineLayerCapabilities::GetOperands(BiasOperandIndex).at(INTEL_AFFINE_MULTIBIAS)
-    }},
-    {INTEL_CONVOLUTIONAL, {
-        ConvolutionalLayer2DCapabilities::GetOperands(BiasOperandIndex).at(INTEL_CONVOLUTIONAL)
-    }},
-    {INTEL_CONVOLUTIONAL_2D, {
-        ConvolutionalLayer2DCapabilities::GetOperands(BiasOperandIndex).at(INTEL_CONVOLUTIONAL_2D)
-    }},
-    {INTEL_CONVOLUTIONAL_1D, {
-        ConvolutionalLayer2DCapabilities::GetOperands(BiasOperandIndex).at(INTEL_CONVOLUTIONAL_1D)
-    }},
-    {INTEL_GMM, {
-        GmmLayerCapabilities::GetOperands(BiasOperandIndex).at(INTEL_GMM)
-    }},
-    {INTEL_RECURRENT, {
-        AffineLayerCapabilities::GetOperands(BiasOperandIndex).at(INTEL_RECURRENT)
-    }}
+    GetOperationCaps<INTEL_AFFINE>(BiasOperandIndex),
+    GetOperationCaps<INTEL_AFFINE_DIAGONAL>(BiasOperandIndex),
+    GetOperationCaps<INTEL_AFFINE_MULTIBIAS>(BiasOperandIndex),
+    GetOperationCaps<INTEL_RECURRENT>(BiasOperandIndex),
+    GetOperationCaps<INTEL_CONVOLUTIONAL>(BiasOperandIndex),
+    GetOperationCaps<INTEL_CONVOLUTIONAL_2D>(BiasOperandIndex),
+    GetOperationCaps<INTEL_CONVOLUTIONAL_1D>(BiasOperandIndex),
+    GetOperationCaps<INTEL_CONVOLUTIONAL_1D>(BiasOperandIndex),
+    GetOperationCaps<INTEL_GMM>(BiasOperandIndex),
 };
 
 const SetLimits<KernelBiasMode> BiasTensor::modeLimits

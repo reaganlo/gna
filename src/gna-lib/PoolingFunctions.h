@@ -36,13 +36,14 @@
 
 namespace GNA
 {
-class LayerValidator;
-struct PwlCached;
+    struct DataMode;
+    class LayerValidator;
+    struct PwlCached;
 
 struct PoolingFunction
 {
     static std::unique_ptr<const PoolingFunction> Create(Gna2Operation const & apiOperation,
-        const Shape & inputDimensions, const LayerValidator & validatorIn, gna_data_mode inputMode);
+        const Shape & inputDimensions, const LayerValidator & validatorIn, const DataMode & inputMode);
 
     PoolingFunction(nn_operation const operation, const Shape& inputDimensions,
         const Shape& window, const Shape& stride, KernelPoolingMode mode,

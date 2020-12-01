@@ -43,6 +43,19 @@
 
 using namespace GNA;
 
+CnnLayer::CnnLayer(const ApiOperation& apiLayer, const BaseValidator& validatorIn) :
+    Layer(apiLayer, validatorIn, {}, BaseAddress())
+{
+    ExpectValid();
+    Convolution = GetConvolution(getDetails(apiLayer));
+    Activation = ActivationFunction::Create({ &Output.ScratchPad, &Output, Output.Mode, Output.Buffer,
+        apiLayer, *validator });
+    Pooling = GetPooling(apiLayer);
+    Init();
+    dataConfig = DataConfig{ Input.Mode, Convolution->Filters->Mode,
+        Convolution->Biases->Mode, Output.Mode, Activation == nullptr };
+}
+
 void CnnLayer::ExpectValid() const
 {
     Expect::Equal(validator->Operation, INTEL_CONVOLUTIONAL, Gna2StatusXnnErrorLyrOperation);
@@ -225,12 +238,6 @@ void CnnLayer::computePool(const LayerConfiguration& layerConfiguration, Acceler
 {
     auto convConfig = ConvolutionConfig{ layerConfiguration.Configs.Convolution.get(), execution };
     Pooling->Compute(&convConfig, accel, execution.Intermediate->pool, &Activation->Pwl);
-}
-
-DataConfig CnnLayer::GetDataMode() const
-{
-    return DataConfig(Input.Mode.Value, Convolution->Filters->Mode.Value,
-        Convolution->Biases->Mode.Value, Output.Mode.Value);
 }
 
 const Gna2Operation & CnnLayer::getDetails(const Gna2Operation & operation)

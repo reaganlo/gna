@@ -49,9 +49,7 @@ using namespace GNA;
 
 const FullCapabilitiesMap RecurrentFunction::outputCapabilities =
 {
-    {INTEL_RECURRENT, {
-        AffineLayerCapabilities::GetOperands(OutputOperandIndex).at(INTEL_RECURRENT)
-    }}
+    GetOperationCaps<INTEL_RECURRENT>(OutputOperandIndex),
 };
 
 void RecurrentFunction::ValidateActivation(const Gna2Tensor& activationTensor)
@@ -59,7 +57,7 @@ void RecurrentFunction::ValidateActivation(const Gna2Tensor& activationTensor)
     const std::function<void()> command = [&]()
     {
         auto pwlShape = Shape::Create(activationTensor.Shape, GNA_TENSOR_N);
-        pwlShape.ExpectFits({ GNA_TENSOR_N, ActivationFunction::XNN_N_PWL_SEGS_MAX });
+        pwlShape.ExpectFits({ GNA_TENSOR_N, ActivationFunction::ActivationFunctionSegmentCountMax });
         ModelErrorHelper::ExpectNotNull(activationTensor.Data);
     };
     ModelErrorHelper::ExecuteForModelItem(command, PwlOperandIndex);
@@ -76,7 +74,7 @@ std::unique_ptr<RecurrentFunction> RecurrentFunction::Create(
     // TODO: 3: remove when ActivationFunction created before PwlCached
     ValidateActivation(activationTensor);
 
-    auto pwlCached = std::make_unique<const PwlCached>(config.outputMode, reinterpret_cast<PwlSegment *>(activationTensor.Data),
+    auto pwlCached = std::make_unique<const PwlCached>(config.outputMode.Size, reinterpret_cast<PwlSegment *>(activationTensor.Data),
         activationTensor.Shape.Dimensions[0]);
     auto kernelOperation = operationConfig.GetKernelOperation();
     auto weightTensor = operationConfig.WeightsTensor;
@@ -93,7 +91,7 @@ std::unique_ptr<RecurrentFunction> RecurrentFunction::Create(
     auto weights = std::make_unique<const WeightTensor>(weightTensor, config.validator);
     auto biases = std::make_unique<const BiasTensor>(
         biasTensor, 0, Gna2BiasModeDefault, config.validator);
-    auto kernelMode = KernelMode{ config.input->Mode, weights->Mode, biases->Mode };
+    auto const kernelMode = KernelMode{ config.input->Mode, weights->Mode, biases->Mode };
     const auto& affineKernel = AccelerationDetector::GetKernelMap<RecurrentKernel>(
         static_cast<kernel_op>(kernelOperation), kernelMode);
 

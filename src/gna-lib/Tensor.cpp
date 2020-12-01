@@ -38,7 +38,7 @@ using namespace GNA;
 
 Tensor::Tensor(const ApiTensor & tensor) :
     Tensor{ Shape::Create(tensor.Shape, Layout{ tensor.Layout }),
-        GetDataMode(tensor).Type, GetDataMode(tensor).Mode, tensor.Data }
+        GetDataMode(tensor), tensor.Data }
 {
 }
 
@@ -63,9 +63,9 @@ Tensor::Tensor(const ApiTensor & tensor, gna_tensor_order order, const Validator
 {
 }
 
-Tensor::Tensor(const Shape & dimensions, const DataType dataType, const TensorMode tensorMode, void const * buffer) :
+Tensor::Tensor(const Shape & dimensions, const DataMode & dataMode, void const * buffer) :
     Component{ dimensions },
-    Mode{ dataType, tensorMode },
+    Mode{ dataMode },
     Size{ getEffectiveSize(Mode, Count) },
     Buffer{ buffer }
 {}
@@ -117,7 +117,7 @@ void Tensor::validate() const
                 Mode.Type);
         }
         // TODO:3: what about data disabled? what size and dimensions? leave dimensions as should be and mode=size=0?
-        if (GNA_DATA_DISABLED != Mode)
+        if (Gna2TensorModeDisabled != Mode.Mode)
         {
             validateDimensions();
             validator->ValidateBufferIfSet(Buffer, Size, caps->GetAddressAlign());
@@ -142,7 +142,7 @@ void Tensor::validateDimensions() const
 
 uint32_t Tensor::getEffectiveSize(const DataMode& mode, uint32_t count)
 {
-    return Gna2TensorModeConstantScalar == mode.Mode ? mode.Size : count * mode.Size;
+    return (Gna2TensorModeConstantScalar == mode.Mode) ? mode.Size : count * mode.Size;
 }
 
 std::pair<uint32_t, uint32_t> Tensor::getGroupingAndElements(

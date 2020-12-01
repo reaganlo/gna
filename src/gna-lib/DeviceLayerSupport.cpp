@@ -157,171 +157,171 @@ const std::map<const DataConfig, std::map<const nn_operation, const Support>>& D
     static const std::map<const DataConfig, std::map<const nn_operation, const Support>> caps =
     {
         // input, weight/filter/mean, bias/covariance, output
-        {{GNA_UINT8, GNA_UINT8, GNA_UINT32, GNA_UINT32},
+        {{Gna2DataTypeUint8, Gna2DataTypeUint8, Gna2DataTypeUint32, Gna2DataTypeUint32},
             FROM_1_0_GMM
         },
-        {{GNA_UINT8, GNA_UINT16, GNA_UINT32, GNA_UINT32},
+        {{Gna2DataTypeUint8, Gna2DataTypeUint16, Gna2DataTypeUint32, Gna2DataTypeUint32},
             FROM_1_0_GMM
         },
-        {{GNA_INT8, GNA_DATA_DISABLED, GNA_DATA_DISABLED, GNA_INT8},
+        {{Gna2DataTypeInt8, DataMode{}, DataMode{}, Gna2DataTypeInt8},
             FROM_3_0_COPY_TRANSPOSE
         },
-        {{GNA_INT8, GNA_INT8, GNA_INT8, GNA_INT8},
+        {{Gna2DataTypeInt8, Gna2DataTypeInt8, Gna2DataTypeInt8, Gna2DataTypeInt8},
             FROM_3_0_AFF_RNN_CNN
         },
-        {{GNA_INT8, GNA_INT8, GNA_INT8, GNA_INT16},
+        {{Gna2DataTypeInt8, Gna2DataTypeInt8, Gna2DataTypeInt8, Gna2DataTypeInt16},
            FROM_3_0_AFF_CNN
         },
-        {{GNA_INT8, GNA_INT8, GNA_INT8, GNA_INT32},
+        {{Gna2DataTypeInt8, Gna2DataTypeInt8, Gna2DataTypeInt8, Gna2DataTypeInt32},
             FROM_3_0_AFF_CNN
         },
-        {{GNA_INT8, GNA_INT8, GNA_INT8, GNA_DATA_ACTIVATION_DISABLED},
+        {{Gna2DataTypeInt8, Gna2DataTypeInt8, Gna2DataTypeInt8, Gna2DataTypeInt32, true},
             FROM_3_0_AFF_CNN
         },
-        {{GNA_INT8, GNA_INT8, GNA_INT16, GNA_INT8},
+        {{Gna2DataTypeInt8, Gna2DataTypeInt8, Gna2DataTypeInt16, Gna2DataTypeInt8},
             FROM_3_0_AFF_RNN_CNN
         },
-        {{GNA_INT8, GNA_INT8, GNA_INT16, GNA_INT16},
+        {{Gna2DataTypeInt8, Gna2DataTypeInt8, Gna2DataTypeInt16, Gna2DataTypeInt16},
             FROM_3_0_AFF_CNN
         },
-        {{GNA_INT8, GNA_INT8, GNA_INT16, GNA_INT32},
+        {{Gna2DataTypeInt8, Gna2DataTypeInt8, Gna2DataTypeInt16, Gna2DataTypeInt32},
            FROM_3_0_AFF_CNN
         },
-        {{GNA_INT8, GNA_INT8, GNA_INT16, GNA_DATA_ACTIVATION_DISABLED},
+        {{Gna2DataTypeInt8, Gna2DataTypeInt8, Gna2DataTypeInt16, Gna2DataTypeInt32, true},
             FROM_3_0_AFF_CNN
         },
-        {{GNA_INT8, GNA_INT8, GNA_INT32, GNA_INT8},
+        {{Gna2DataTypeInt8, Gna2DataTypeInt8, Gna2DataTypeInt32, Gna2DataTypeInt8},
             FROM_3_0_AFF_RNN_CNN
         },
-        {{GNA_INT8, GNA_INT8, GNA_INT32, GNA_INT16},
+        {{Gna2DataTypeInt8, Gna2DataTypeInt8, Gna2DataTypeInt32, Gna2DataTypeInt16},
             FROM_3_0_AFF_CNN
         },
-        {{GNA_INT8, GNA_INT8, GNA_INT32, GNA_INT32},
+        {{Gna2DataTypeInt8, Gna2DataTypeInt8, Gna2DataTypeInt32, Gna2DataTypeInt32},
             FROM_3_0_AFF_CNN
         },
-        {{GNA_INT8, GNA_INT8, GNA_INT32, GNA_DATA_ACTIVATION_DISABLED},
+        {{Gna2DataTypeInt8, Gna2DataTypeInt8, Gna2DataTypeInt32, Gna2DataTypeInt32, true},
             FROM_3_0_AFF_CNN
         },
-        {{GNA_INT8, GNA_INT8, GNA_DATA_DISABLED, GNA_INT8},
+        {{Gna2DataTypeInt8, Gna2DataTypeInt8, DataMode{}, Gna2DataTypeInt8},
             FROM_3_0_AFF_RNN_CNN_MB_FALSE
         },
-        {{GNA_INT8, GNA_INT8, GNA_DATA_DISABLED, GNA_INT16},
+        {{Gna2DataTypeInt8, Gna2DataTypeInt8, DataMode{}, Gna2DataTypeInt16},
             FROM_3_0_AFF_CNN_MB_FALSE
         },
-        {{GNA_INT8, GNA_INT8, GNA_DATA_DISABLED, GNA_INT32},
+        {{Gna2DataTypeInt8, Gna2DataTypeInt8, DataMode{}, Gna2DataTypeInt32},
            FROM_3_0_AFF_CNN_MB_FALSE
         },
-        {{GNA_INT8, GNA_INT8, GNA_DATA_DISABLED, GNA_DATA_ACTIVATION_DISABLED},
+        {{Gna2DataTypeInt8, Gna2DataTypeInt8, DataMode{}, Gna2DataTypeInt32, true},
             FROM_3_0_AFF_CNN_MB_FALSE
         },
-        {{GNA_INT8, GNA_INT16, GNA_INT8, GNA_INT8},
+        {{Gna2DataTypeInt8, Gna2DataTypeInt16, Gna2DataTypeInt8, Gna2DataTypeInt8},
             FROM_3_0_AFF_RNN_CNN
         },
-        {{GNA_INT8, GNA_INT16, GNA_INT8, GNA_INT16},
+        {{Gna2DataTypeInt8, Gna2DataTypeInt16, Gna2DataTypeInt8, Gna2DataTypeInt16},
            FROM_3_0_AFF_CNN
         },
-        {{GNA_INT8, GNA_INT16, GNA_INT8, GNA_INT32},
+        {{Gna2DataTypeInt8, Gna2DataTypeInt16, Gna2DataTypeInt8, Gna2DataTypeInt32},
             FROM_3_0_AFF_CNN
         },
-        {{GNA_INT8, GNA_INT16, GNA_INT8, GNA_DATA_ACTIVATION_DISABLED},
+        {{Gna2DataTypeInt8, Gna2DataTypeInt16, Gna2DataTypeInt8, Gna2DataTypeInt32, true},
             FROM_3_0_AFF_CNN
         },
-        {{GNA_INT8, GNA_INT16, GNA_INT16, GNA_INT8},
+        {{Gna2DataTypeInt8, Gna2DataTypeInt16, Gna2DataTypeInt16, Gna2DataTypeInt8},
             FROM_3_0_AFF_RNN_CNN
         },
-        {{GNA_INT8, GNA_INT16, GNA_INT16, GNA_INT16},
+        {{Gna2DataTypeInt8, Gna2DataTypeInt16, Gna2DataTypeInt16, Gna2DataTypeInt16},
             FROM_3_0_AFF_CNN
         },
-        {{GNA_INT8, GNA_INT16, GNA_INT16, GNA_INT32},
+        {{Gna2DataTypeInt8, Gna2DataTypeInt16, Gna2DataTypeInt16, Gna2DataTypeInt32},
            FROM_3_0_AFF_CNN
         },
-        {{GNA_INT8, GNA_INT16, GNA_INT16, GNA_DATA_ACTIVATION_DISABLED},
+        {{Gna2DataTypeInt8, Gna2DataTypeInt16, Gna2DataTypeInt16, Gna2DataTypeInt32, true},
             FROM_3_0_AFF_CNN
         },
-        {{GNA_INT8, GNA_INT16, GNA_INT32, GNA_INT8},
+        {{Gna2DataTypeInt8, Gna2DataTypeInt16, Gna2DataTypeInt32, Gna2DataTypeInt8},
             FROM_3_0_AFF_RNN_CNN
         },
-        {{GNA_INT8, GNA_INT16, GNA_INT32, GNA_INT16},
+        {{Gna2DataTypeInt8, Gna2DataTypeInt16, Gna2DataTypeInt32, Gna2DataTypeInt16},
             FROM_3_0_AFF_CNN
         },
-        {{GNA_INT8, GNA_INT16, GNA_INT32, GNA_INT32},
+        {{Gna2DataTypeInt8, Gna2DataTypeInt16, Gna2DataTypeInt32, Gna2DataTypeInt32},
             FROM_3_0_AFF_CNN
         },
-        {{GNA_INT8, GNA_INT16, GNA_INT32, GNA_DATA_ACTIVATION_DISABLED},
+        {{Gna2DataTypeInt8, Gna2DataTypeInt16, Gna2DataTypeInt32, Gna2DataTypeInt32, true},
             FROM_3_0_AFF_CNN
         },
-        {{GNA_INT8, GNA_INT16, GNA_DATA_DISABLED, GNA_INT8},
+        {{Gna2DataTypeInt8, Gna2DataTypeInt16, DataMode{}, Gna2DataTypeInt8},
             FROM_3_0_AFF_RNN_CNN_MB_FALSE
         },
-        {{GNA_INT8, GNA_INT16, GNA_DATA_DISABLED, GNA_INT16},
+        {{Gna2DataTypeInt8, Gna2DataTypeInt16, DataMode{}, Gna2DataTypeInt16},
             FROM_3_0_AFF_CNN_MB_FALSE
         },
-        {{GNA_INT8, GNA_INT16, GNA_DATA_DISABLED, GNA_INT32},
+        {{Gna2DataTypeInt8, Gna2DataTypeInt16, DataMode{}, Gna2DataTypeInt32},
            FROM_3_0_AFF_CNN_MB_FALSE
         },
-        {{GNA_INT8, GNA_INT16, GNA_DATA_DISABLED, GNA_DATA_ACTIVATION_DISABLED},
+        {{Gna2DataTypeInt8, Gna2DataTypeInt16, DataMode{}, Gna2DataTypeInt32, true},
             FROM_3_0_AFF_CNN_MB_FALSE
         },
 
         // 2B Input
-        {{GNA_INT16, GNA_DATA_DISABLED, GNA_DATA_DISABLED, GNA_INT16},
+        {{Gna2DataTypeInt16, DataMode{}, DataMode{}, Gna2DataTypeInt16},
             FROM_0_9_COPY_TRANSPOSE
         },
-        {{GNA_INT16, GNA_INT8, GNA_INT8, GNA_INT8},
+        {{Gna2DataTypeInt16, Gna2DataTypeInt8, Gna2DataTypeInt8, Gna2DataTypeInt8},
             FROM_3_0_CNN_MB
         },
-        {{GNA_INT16, GNA_INT8, GNA_INT8, GNA_INT16},
+        {{Gna2DataTypeInt16, Gna2DataTypeInt8, Gna2DataTypeInt8, Gna2DataTypeInt16},
            FROM_3_0_CNN_MB
         },
-        {{GNA_INT16, GNA_INT8, GNA_INT8, GNA_INT32},
+        {{Gna2DataTypeInt16, Gna2DataTypeInt8, Gna2DataTypeInt8, Gna2DataTypeInt32},
             FROM_3_0_CNN_MB
         },
-        {{GNA_INT16, GNA_INT8, GNA_INT8, GNA_DATA_ACTIVATION_DISABLED},
+        {{Gna2DataTypeInt16, Gna2DataTypeInt8, Gna2DataTypeInt8, Gna2DataTypeInt32, true},
             FROM_3_0_CNN_MB
         },
-        {{GNA_INT16, GNA_INT8, GNA_INT16, GNA_INT8},
+        {{Gna2DataTypeInt16, Gna2DataTypeInt8, Gna2DataTypeInt16, Gna2DataTypeInt8},
             FROM_3_0_CNN_MB
         },
-        {{GNA_INT16, GNA_INT8, GNA_INT16, GNA_INT16},
+        {{Gna2DataTypeInt16, Gna2DataTypeInt8, Gna2DataTypeInt16, Gna2DataTypeInt16},
             FROM_3_0_CNN_MB
         },
-        {{GNA_INT16, GNA_INT8, GNA_INT16, GNA_INT32},
+        {{Gna2DataTypeInt16, Gna2DataTypeInt8, Gna2DataTypeInt16, Gna2DataTypeInt32},
            FROM_3_0_CNN_MB
         },
-        {{GNA_INT16, GNA_INT8, GNA_INT16, GNA_DATA_ACTIVATION_DISABLED},
+        {{Gna2DataTypeInt16, Gna2DataTypeInt8, Gna2DataTypeInt16, Gna2DataTypeInt32, true},
             FROM_3_0_CNN_MB
         },
-        {{GNA_INT16, GNA_INT8, GNA_INT32, GNA_INT8},
+        {{Gna2DataTypeInt16, Gna2DataTypeInt8, Gna2DataTypeInt32, Gna2DataTypeInt8},
             FROM_3_0_CNN_MB
         },
-        {{GNA_INT16, GNA_INT8, GNA_INT32, GNA_INT16},
+        {{Gna2DataTypeInt16, Gna2DataTypeInt8, Gna2DataTypeInt32, Gna2DataTypeInt16},
             FROM_2_0_MB_3_0_CNN
         },
-        {{GNA_INT16, GNA_INT8, GNA_INT32, GNA_INT32},
+        {{Gna2DataTypeInt16, Gna2DataTypeInt8, Gna2DataTypeInt32, Gna2DataTypeInt32},
             FROM_3_0_CNN_MB
         },
-        {{GNA_INT16, GNA_INT8, GNA_INT32, GNA_DATA_ACTIVATION_DISABLED},
+        {{Gna2DataTypeInt16, Gna2DataTypeInt8, Gna2DataTypeInt32, Gna2DataTypeInt32, true},
             FROM_2_0_MB_3_0_CNN
         },
-        {{GNA_INT16, GNA_INT8, GNA_DATA_DISABLED, GNA_INT8},
+        {{Gna2DataTypeInt16, Gna2DataTypeInt8, DataMode{}, Gna2DataTypeInt8},
             FROM_3_0_CNN
         },
-        {{GNA_INT16, GNA_INT8, GNA_DATA_DISABLED, GNA_INT16},
+        {{Gna2DataTypeInt16, Gna2DataTypeInt8, DataMode{}, Gna2DataTypeInt16},
             FROM_3_0_CNN
         },
-        {{GNA_INT16, GNA_INT8, GNA_DATA_DISABLED, GNA_INT32},
+        {{Gna2DataTypeInt16, Gna2DataTypeInt8, DataMode{}, Gna2DataTypeInt32},
            FROM_3_0_CNN
         },
-        {{GNA_INT16, GNA_INT8, GNA_DATA_DISABLED, GNA_DATA_ACTIVATION_DISABLED},
+        {{Gna2DataTypeInt16, Gna2DataTypeInt8, DataMode{}, Gna2DataTypeInt32, true},
             FROM_3_0_CNN
         },
-        {{GNA_INT16, GNA_INT8, GNA_DATA_RICH_FORMAT, GNA_INT8},
+        {{Gna2DataTypeInt16, Gna2DataTypeInt8, Gna2DataTypeCompoundBias, Gna2DataTypeInt8},
             {
                 {INTEL_AFFINE,              FROM_3_0},
                 {INTEL_AFFINE_DIAGONAL,     FROM_3_0},
             }
         },
-        {{GNA_INT16, GNA_INT8, GNA_DATA_RICH_FORMAT, GNA_INT16},
+        {{Gna2DataTypeInt16, Gna2DataTypeInt8, Gna2DataTypeCompoundBias, Gna2DataTypeInt16},
             {
                 {INTEL_AFFINE,              FROM_0_9},
                 {INTEL_AFFINE_DIAGONAL,     FROM_0_9},
@@ -329,47 +329,47 @@ const std::map<const DataConfig, std::map<const nn_operation, const Support>>& D
                 {INTEL_RECURRENT,           FROM_0_9},
             }
         },
-        {{GNA_INT16, GNA_INT8, GNA_DATA_RICH_FORMAT, GNA_INT32},
+        {{Gna2DataTypeInt16, Gna2DataTypeInt8, Gna2DataTypeCompoundBias, Gna2DataTypeInt32},
             {
                 {INTEL_AFFINE,              FROM_3_0},
                 {INTEL_AFFINE_DIAGONAL,     FROM_3_0},
             }
         },
-        {{GNA_INT16, GNA_INT8, GNA_DATA_RICH_FORMAT, GNA_DATA_ACTIVATION_DISABLED},
+        {{Gna2DataTypeInt16, Gna2DataTypeInt8, Gna2DataTypeCompoundBias, Gna2DataTypeInt32, true},
              {
                 {INTEL_AFFINE,              FROM_0_9},
                 {INTEL_AFFINE_DIAGONAL,     FROM_0_9},
                 {INTEL_AFFINE_MULTIBIAS,    FROM_2_0},
             }
         },
-        {{GNA_INT16, GNA_INT16, GNA_INT8, GNA_INT8},
+        {{Gna2DataTypeInt16, Gna2DataTypeInt16, Gna2DataTypeInt8, Gna2DataTypeInt8},
             FROM_3_0_AFF_CNN
         },
-        {{GNA_INT16, GNA_INT16, GNA_INT8, GNA_INT16},
+        {{Gna2DataTypeInt16, Gna2DataTypeInt16, Gna2DataTypeInt8, Gna2DataTypeInt16},
            FROM_3_0_AFF_RNN_CNN_AUX
         },
-        {{GNA_INT16, GNA_INT16, GNA_INT8, GNA_INT32},
+        {{Gna2DataTypeInt16, Gna2DataTypeInt16, Gna2DataTypeInt8, Gna2DataTypeInt32},
             FROM_3_0_AFF_CNN
         },
-        {{GNA_INT16, GNA_INT16, GNA_INT8, GNA_DATA_ACTIVATION_DISABLED},
+        {{Gna2DataTypeInt16, Gna2DataTypeInt16, Gna2DataTypeInt8, Gna2DataTypeInt32, true},
             FROM_3_0_AFF_CNN
         },
-        {{GNA_INT16, GNA_INT16, GNA_INT16, GNA_INT8},
+        {{Gna2DataTypeInt16, Gna2DataTypeInt16, Gna2DataTypeInt16, Gna2DataTypeInt8},
             FROM_3_0_AFF_CNN
         },
-        {{GNA_INT16, GNA_INT16, GNA_INT16, GNA_INT16},
+        {{Gna2DataTypeInt16, Gna2DataTypeInt16, Gna2DataTypeInt16, Gna2DataTypeInt16},
             FROM_3_0_AFF_RNN_CNN_AUX
         },
-        {{GNA_INT16, GNA_INT16, GNA_INT16, GNA_INT32},
+        {{Gna2DataTypeInt16, Gna2DataTypeInt16, Gna2DataTypeInt16, Gna2DataTypeInt32},
            FROM_3_0_AFF_CNN
         },
-        {{GNA_INT16, GNA_INT16, GNA_INT16, GNA_DATA_ACTIVATION_DISABLED},
+        {{Gna2DataTypeInt16, Gna2DataTypeInt16, Gna2DataTypeInt16, Gna2DataTypeInt32, true},
             FROM_3_0_AFF_CNN
         },
-        {{GNA_INT16, GNA_INT16, GNA_INT32, GNA_INT8},
+        {{Gna2DataTypeInt16, Gna2DataTypeInt16, Gna2DataTypeInt32, Gna2DataTypeInt8},
             FROM_3_0_AFF_CNN
         },
-        {{GNA_INT16, GNA_INT16, GNA_INT32, GNA_INT16},
+        {{Gna2DataTypeInt16, Gna2DataTypeInt16, Gna2DataTypeInt32, Gna2DataTypeInt16},
             {
                 {INTEL_AFFINE,              FROM_0_9},
                 {INTEL_AFFINE_DIAGONAL,     FROM_0_9},
@@ -382,10 +382,10 @@ const std::map<const DataConfig, std::map<const nn_operation, const Support>>& D
                 {INTEL_INTERLEAVE,          FROM_0_9_AUX},
             }
         },
-        {{GNA_INT16, GNA_INT16, GNA_INT32, GNA_INT32},
+        {{Gna2DataTypeInt16, Gna2DataTypeInt16, Gna2DataTypeInt32, Gna2DataTypeInt32},
             FROM_3_0_AFF_CNN
         },
-        {{GNA_INT16, GNA_INT16, GNA_INT32, GNA_DATA_ACTIVATION_DISABLED},
+        {{Gna2DataTypeInt16, Gna2DataTypeInt16, Gna2DataTypeInt32, Gna2DataTypeInt32, true},
             {
                 {INTEL_AFFINE,              FROM_0_9},
                 {INTEL_AFFINE_DIAGONAL,     FROM_0_9},
@@ -394,10 +394,10 @@ const std::map<const DataConfig, std::map<const nn_operation, const Support>>& D
                 {INTEL_CONVOLUTIONAL_2D,    FROM_3_0}
             }
         },
-        {{GNA_INT16, GNA_INT16, GNA_DATA_DISABLED, GNA_INT8},
+        {{Gna2DataTypeInt16, Gna2DataTypeInt16, DataMode{}, Gna2DataTypeInt8},
              FROM_3_0_AFF_CNN_MB_FALSE
         },
-        {{GNA_INT16, GNA_INT16, GNA_DATA_DISABLED, GNA_INT16},
+        {{Gna2DataTypeInt16, Gna2DataTypeInt16, DataMode{}, Gna2DataTypeInt16},
             {
                 {INTEL_AFFINE,              FROM_3_0},
                 {INTEL_AFFINE_DIAGONAL,     FROM_3_0},
@@ -408,10 +408,10 @@ const std::map<const DataConfig, std::map<const nn_operation, const Support>>& D
                 {INTEL_INTERLEAVE,          FROM_0_9_AUX},
             }
         },
-        {{GNA_INT16, GNA_INT16, GNA_DATA_DISABLED, GNA_INT32},
+        {{Gna2DataTypeInt16, Gna2DataTypeInt16, DataMode{}, Gna2DataTypeInt32},
            FROM_3_0_AFF_CNN_MB_FALSE
         },
-        {{GNA_INT16, GNA_INT16, GNA_DATA_DISABLED, GNA_DATA_ACTIVATION_DISABLED},
+        {{Gna2DataTypeInt16, Gna2DataTypeInt16, DataMode{}, Gna2DataTypeInt32, true},
             FROM_3_0_AFF_CNN_MB_FALSE
         },
     };

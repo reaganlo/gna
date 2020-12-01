@@ -104,29 +104,6 @@ typedef enum _TransformOperation
  *****************************************************************************/
 
 /**
- * Mode and precision (elements) of used data.
- * Used as (OR'ed) binary flags for reporting capabilities, e.g. (GNA_INT32 | GNA_DATA_DISABLED).
- * NOTE: Not all modes are supported by all data types.
- */
-typedef enum _data_mode
-{
-    GNA_DATA_NOT_SUPPORTED = (int)GNA2_NOT_SUPPORTED,
-    GNA_INT8 = 1, // TODO:3: refactor as below to GNA_INT8, as if we start supporting unsigned ints this will be ambiguous
-    GNA_INT16 = 2,
-    GNA_INT32 = 4,
-    GNA_INT64 = 8,
-    GNA_UINT8 = 1024 + 1,
-    GNA_UINT16 = 1024 + 2,
-    GNA_UINT32 = 1024 + 4,
-    GNA_UINT64 = 1024 + 8,
-    GNA_DATA_RICH_FORMAT = 8,                   // 8B Rich bias BiasCompound data is used, only with GNA_INT8 weight mode.
-    GNA_DATA_CONSTANT_SCALAR = 32,              // Single 4B (GNA_INT32) signed integer scalar is used instead of tensor.
-    GNA_DATA_ACTIVATION_DISABLED = 64,          // Output data only - activation function is disabled, 4B non-activated output is used.
-    GNA_DATA_EXTERNAL_IO_BUFFER = 128,          // External Input/output buffer (only for ANNA)
-    GNA_DATA_DISABLED = (int)(-1),              // No data is read
-} gna_data_mode;
-
-/**
  * Order of data tensor used by inputs, outputs, biases, weights etc.
  * Used as (OR'ed) binary flags for reporting capabilities, e.g. (GNA_TENSOR_NHWD | GNA_TENSOR_NDHW);
  */

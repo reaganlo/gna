@@ -74,7 +74,7 @@ std::unique_ptr<PoolingFunction2D> PoolingFunction2D::create(
 
         return std::make_unique<PoolingFunction2D>(
             BaseTransformConfig<PoolingKernel2D>{config,
-            AccelerationDetector::GetKernelMap<PoolingKernel2D>(KERNEL_POOLING_2D, { config.input->Mode.Value })},
+            AccelerationDetector::GetKernelMap<PoolingKernel2D>(KERNEL_POOLING_2D, KernelMode{ config.input->Mode })},
             poolingMode, std::move(window), std::move(stride));
     }
     return std::unique_ptr<PoolingFunction2D>(nullptr);

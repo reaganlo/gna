@@ -35,7 +35,6 @@
 #include "Macros.h"
 
 #include <cstdint>
-#include <cstring>
 #include <stdexcept>
 
 namespace GNA
@@ -380,106 +379,117 @@ static void CodeCaveMitigationFakeKernel()
 }
 #endif
 
-XnnKernel KERNEL(xnnKernel) =
+template<typename KernelFunctionType>
+VoidKernel ToUnifiedKernel(KernelFunctionType kernel)
 {
-    AffineKernelImpl1B,
-    AffineKernelImpl2B,
+    return reinterpret_cast<VoidKernel>(kernel);
+}
 
-    AffineActiveListKernelImpl1B,
-    AffineActiveListKernelImpl2B,
+template<>
+VoidKernel GetXnnKernel<KernelAcceleration, HwConsistencyMode>(KernelType type)
+{
+    static const VoidKernel Kernels[]=
+    {
+        ToUnifiedKernel(AffineKernelImpl1B),
+        ToUnifiedKernel(AffineKernelImpl2B),
 
-    AffineMultiBiasKernelImpl1B,
-    AffineMultiBiasKernelImpl2B,
+        ToUnifiedKernel(AffineActiveListKernelImpl1B),
+        ToUnifiedKernel(AffineActiveListKernelImpl2B),
 
-    DiagonalKernelImpl1B,
-    DiagonalKernelImpl2B,
+        ToUnifiedKernel(AffineMultiBiasKernelImpl1B),
+        ToUnifiedKernel(AffineMultiBiasKernelImpl2B),
 
-    recurrentKernelImpl1B,
-    recurrentKernelImpl2B,
+        ToUnifiedKernel(DiagonalKernelImpl1B),
+        ToUnifiedKernel(DiagonalKernelImpl2B),
 
-    ConvolutionKernelImpl,
-    ConvolutionPoolingKernelImpl,
+        ToUnifiedKernel(recurrentKernelImpl1B),
+        ToUnifiedKernel(recurrentKernelImpl2B),
 
-    activationKernelImpl,
-    TransposeKernelImpl,
-    copyKernelImpl,
+        ToUnifiedKernel(ConvolutionKernelImpl),
+        ToUnifiedKernel(ConvolutionPoolingKernelImpl),
 
-#if OPT_LEVEL < 2
+        ToUnifiedKernel(activationKernelImpl),
+        ToUnifiedKernel(TransposeKernelImpl),
+        ToUnifiedKernel(copyKernelImpl),
 
-    AffineKernelImpl1B1B,
-    AffineKernelImpl2B1B,
-    AffineKernelImpl1B2B,
-    AffineKernelImpl2B2B,
-    AffineActiveListKernelImpl1B1B,
-    AffineActiveListKernelImpl2B1B,
-    AffineActiveListKernelImpl1B2B,
-    AffineActiveListKernelImpl2B2B,
-    AffineMultiBiasKernelImpl1B1B,
-    AffineMultiBiasKernelImpl2B1B,
-    AffineMultiBiasKernelImpl1B2B,
-    AffineMultiBiasKernelImpl2B2B,
-    DiagonalKernelImpl1B1B,
-    DiagonalKernelImpl2B1B,
-    DiagonalKernelImpl1B2B,
-    DiagonalKernelImpl2B2B,
-    recurrentKernelImpl1B1B,
-    recurrentKernelImpl2B1B,
-    recurrentKernelImpl1B2B,
-    recurrentKernelImpl2B2B,
-    ConvolutionKernelImpl1B,
-    ConvolutionPoolingKernelImpl1B,
-    ConvolutionKernelImpl2B,
-    ConvolutionPoolingKernelImpl2B,
-    TransposeKernelImpl1B,
-    TransposeKernelImpl2B,
-    copyKernelImpl1B,
-    copyKernelImpl2B,
+    #if OPT_LEVEL < 2
 
-    Convolution2DKernelImpl1B1B,
-    Convolution2DKernelImpl1B2B,
-    Convolution2DKernelImpl2B1B,
-    Convolution2DKernelImpl2B2B,
+        ToUnifiedKernel(AffineKernelImpl1B1B),
+        ToUnifiedKernel(AffineKernelImpl2B1B),
+        ToUnifiedKernel(AffineKernelImpl1B2B),
+        ToUnifiedKernel(AffineKernelImpl2B2B),
+        ToUnifiedKernel(AffineActiveListKernelImpl1B1B),
+        ToUnifiedKernel(AffineActiveListKernelImpl2B1B),
+        ToUnifiedKernel(AffineActiveListKernelImpl1B2B),
+        ToUnifiedKernel(AffineActiveListKernelImpl2B2B),
+        ToUnifiedKernel(AffineMultiBiasKernelImpl1B1B),
+        ToUnifiedKernel(AffineMultiBiasKernelImpl2B1B),
+        ToUnifiedKernel(AffineMultiBiasKernelImpl1B2B),
+        ToUnifiedKernel(AffineMultiBiasKernelImpl2B2B),
+        ToUnifiedKernel(DiagonalKernelImpl1B1B),
+        ToUnifiedKernel(DiagonalKernelImpl2B1B),
+        ToUnifiedKernel(DiagonalKernelImpl1B2B),
+        ToUnifiedKernel(DiagonalKernelImpl2B2B),
+        ToUnifiedKernel(recurrentKernelImpl1B1B),
+        ToUnifiedKernel(recurrentKernelImpl2B1B),
+        ToUnifiedKernel(recurrentKernelImpl1B2B),
+        ToUnifiedKernel(recurrentKernelImpl2B2B),
+        ToUnifiedKernel(ConvolutionKernelImpl1B),
+        ToUnifiedKernel(ConvolutionPoolingKernelImpl1B),
+        ToUnifiedKernel(ConvolutionKernelImpl2B),
+        ToUnifiedKernel(ConvolutionPoolingKernelImpl2B),
+        ToUnifiedKernel(TransposeKernelImpl1B),
+        ToUnifiedKernel(TransposeKernelImpl2B),
+        ToUnifiedKernel(copyKernelImpl1B),
+        ToUnifiedKernel(copyKernelImpl2B),
 
-    Pooling2DKernelImpl1B,
-    Pooling2DKernelImpl2B,
-    Pooling2DKernelImpl4B
-#else
-    (AffineKernel)CodeCaveMitigationFakeKernel,
-    (AffineKernel)CodeCaveMitigationFakeKernel,
-    (AffineKernel)CodeCaveMitigationFakeKernel,
-    (AffineKernel)CodeCaveMitigationFakeKernel,
-    (AffineActiveListKernel)CodeCaveMitigationFakeKernel,
-    (AffineActiveListKernel)CodeCaveMitigationFakeKernel,
-    (AffineActiveListKernel)CodeCaveMitigationFakeKernel,
-    (AffineActiveListKernel)CodeCaveMitigationFakeKernel,
-    (AffineKernel)CodeCaveMitigationFakeKernel,
-    (AffineKernel)CodeCaveMitigationFakeKernel,
-    (AffineKernel)CodeCaveMitigationFakeKernel,
-    (AffineKernel)CodeCaveMitigationFakeKernel,
-    (AffineKernel)CodeCaveMitigationFakeKernel,
-    (AffineKernel)CodeCaveMitigationFakeKernel,
-    (AffineKernel)CodeCaveMitigationFakeKernel,
-    (AffineKernel)CodeCaveMitigationFakeKernel,
-    (RecurrentKernel)CodeCaveMitigationFakeKernel,
-    (RecurrentKernel)CodeCaveMitigationFakeKernel,
-    (RecurrentKernel)CodeCaveMitigationFakeKernel,
-    (RecurrentKernel)CodeCaveMitigationFakeKernel,
-    (ConvolutionKernel)CodeCaveMitigationFakeKernel,
-    (ConvolutionPoolingKernel)CodeCaveMitigationFakeKernel,
-    (ConvolutionKernel)CodeCaveMitigationFakeKernel,
-    (ConvolutionPoolingKernel)CodeCaveMitigationFakeKernel,
-    (TransposeKernel)CodeCaveMitigationFakeKernel,
-    (TransposeKernel)CodeCaveMitigationFakeKernel,
-    (CopyKernel)CodeCaveMitigationFakeKernel,
-    (CopyKernel)CodeCaveMitigationFakeKernel,
-    (ConvolutionKernel2D)CodeCaveMitigationFakeKernel,
-    (ConvolutionKernel2D)CodeCaveMitigationFakeKernel,
-    (ConvolutionKernel2D)CodeCaveMitigationFakeKernel,
-    (ConvolutionKernel2D)CodeCaveMitigationFakeKernel,
-    (PoolingKernel2D)CodeCaveMitigationFakeKernel,
-    (PoolingKernel2D)CodeCaveMitigationFakeKernel,
-    (PoolingKernel2D)CodeCaveMitigationFakeKernel
-#endif
-};
+        ToUnifiedKernel(Convolution2DKernelImpl1B1B),
+        ToUnifiedKernel(Convolution2DKernelImpl1B2B),
+        ToUnifiedKernel(Convolution2DKernelImpl2B1B),
+        ToUnifiedKernel(Convolution2DKernelImpl2B2B),
+
+        ToUnifiedKernel(Pooling2DKernelImpl1B),
+        ToUnifiedKernel(Pooling2DKernelImpl2B),
+        ToUnifiedKernel(Pooling2DKernelImpl4B),
+    #else
+        ToUnifiedKernel(CodeCaveMitigationFakeKernel),
+        ToUnifiedKernel(CodeCaveMitigationFakeKernel),
+        ToUnifiedKernel(CodeCaveMitigationFakeKernel),
+        ToUnifiedKernel(CodeCaveMitigationFakeKernel),
+        ToUnifiedKernel(CodeCaveMitigationFakeKernel),
+        ToUnifiedKernel(CodeCaveMitigationFakeKernel),
+        ToUnifiedKernel(CodeCaveMitigationFakeKernel),
+        ToUnifiedKernel(CodeCaveMitigationFakeKernel),
+        ToUnifiedKernel(CodeCaveMitigationFakeKernel),
+        ToUnifiedKernel(CodeCaveMitigationFakeKernel),
+        ToUnifiedKernel(CodeCaveMitigationFakeKernel),
+        ToUnifiedKernel(CodeCaveMitigationFakeKernel),
+        ToUnifiedKernel(CodeCaveMitigationFakeKernel),
+        ToUnifiedKernel(CodeCaveMitigationFakeKernel),
+        ToUnifiedKernel(CodeCaveMitigationFakeKernel),
+        ToUnifiedKernel(CodeCaveMitigationFakeKernel),
+        ToUnifiedKernel(CodeCaveMitigationFakeKernel),
+        ToUnifiedKernel(CodeCaveMitigationFakeKernel),
+        ToUnifiedKernel(CodeCaveMitigationFakeKernel),
+        ToUnifiedKernel(CodeCaveMitigationFakeKernel),
+        ToUnifiedKernel(CodeCaveMitigationFakeKernel),
+        ToUnifiedKernel(CodeCaveMitigationFakeKernel),
+        ToUnifiedKernel(CodeCaveMitigationFakeKernel),
+        ToUnifiedKernel(CodeCaveMitigationFakeKernel),
+        ToUnifiedKernel(CodeCaveMitigationFakeKernel),
+        ToUnifiedKernel(CodeCaveMitigationFakeKernel),
+        ToUnifiedKernel(CodeCaveMitigationFakeKernel),
+        ToUnifiedKernel(CodeCaveMitigationFakeKernel),
+        ToUnifiedKernel(CodeCaveMitigationFakeKernel),
+        ToUnifiedKernel(CodeCaveMitigationFakeKernel),
+        ToUnifiedKernel(CodeCaveMitigationFakeKernel),
+        ToUnifiedKernel(CodeCaveMitigationFakeKernel),
+        ToUnifiedKernel(CodeCaveMitigationFakeKernel),
+        ToUnifiedKernel(CodeCaveMitigationFakeKernel),
+        ToUnifiedKernel(CodeCaveMitigationFakeKernel),
+    #endif
+    };
+    return Kernels[type];
+}
 
 }

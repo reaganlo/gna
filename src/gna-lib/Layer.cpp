@@ -146,10 +146,9 @@ void Layer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const
     }
 }
 
-// TODO:3 add methods to all layers
-DataConfig Layer::GetDataMode() const
+const DataConfig Layer::GetDataMode() const
 {
-    return DataConfig(Input.Mode, GNA_INT16, GNA_INT32, Output.Mode);
+    return dataConfig;
 }
 
 Tensor const & Layer::GetOperand(uint32_t operandIndex) const
@@ -201,8 +200,8 @@ void Layer::VerifyHas1BInputAnd2BWeight()
     auto const weight = TryGetOperand(WeightOperandIndex);
     if (input &&
         weight &&
-        Gna2DataTypeInt8 == input->Mode &&
-        Gna2DataTypeInt16 == weight->Mode)
+        Gna2DataTypeInt8 == input->Mode.Type &&
+        Gna2DataTypeInt16 == weight->Mode.Type)
     {
         has1BInputAnd2BWeight = true;
     }

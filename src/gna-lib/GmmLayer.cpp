@@ -40,6 +40,12 @@
 
 using namespace GNA;
 
+GmmOperation::GmmOperation(const ApiOperation& layer, const BaseValidator& validatorIn) :
+    Layer(layer, validatorIn, { GmmTransform }, BaseAddress())
+{
+    dataConfig = GetInputTransform<GmmFunction>().GetDataMode();
+}
+
 void GmmOperation::VerifyHas1BInputAnd2BWeight()
 {}
 
@@ -59,16 +65,11 @@ Tensor const & GmmOperation::GetOperand(uint32_t operandIndex) const
     }
 }
 
-DataConfig GmmOperation::GetDataMode() const
-{
-    return GetInputTransform<GmmFunction>().GetDataMode();
-}
-
 std::unique_ptr<GmmFunction> GmmFunction::Create(const TransformFactoryConfig& config,
     const OperationConfig& operation)
 {
     auto const isFlat = operation.Operation->NumberOfOperands != 3;
-    auto varMode = GNA_UINT8;
+    auto varMode = Gna2DataTypeUint8;
     std::unique_ptr<const WeightTensor> means;
     std::unique_ptr<const WeightTensor> inverseCovariances;
     std::unique_ptr<const BiasTensor> gaussianConstants;
@@ -107,14 +108,14 @@ std::unique_ptr<GmmFunction> GmmFunction::Create(const TransformFactoryConfig& c
         };
         ModelErrorHelper::ExecuteForModelItem(command, GmmGaussianConstantOperandIndex);
 
-        varMode = inverseCovariances->Mode.Value;
+        varMode = inverseCovariances->Mode.Type;
     }
     else
     {
-        varMode = means->Mode.Value;
+        varMode = means->Mode.Type;
     }
 
-    auto const kernelMode = KernelMode{ GNA_UINT8, varMode, GNA_UINT32 };
+    auto const kernelMode = KernelMode{ Gna2DataTypeUint8, varMode, Gna2DataTypeUint32 };
     const auto& gmmKernels = AccelerationDetector::GetKernelMap<GmmMaxMix>(KERNEL_GMM, kernelMode);
     const auto& gmmKernelsAl = AccelerationDetector::GetKernelMap<GmmMaxMixActiveList>(KERNEL_GMM_AL, kernelMode);
     auto const maximumScore = operation.GetParameterAs<uint32_t>(0);
@@ -227,7 +228,7 @@ const FullCapabilitiesMap& GmmFunction::getOutputCapabilities()
             {GNA_TENSOR_HW}, // H - GMM States, W - grouping
             {{GNA_DIM_W, {1, BatchSizeMax, 1, Gna2StatusXnnErrorOutputVolume}},
              {GNA_DIM_H, {1, GMM_STATES_COUNT_MAX, 1, Gna2StatusXnnErrorOutputVolume}}},
-            { { GNA_UINT32, GNA_DATA_ACTIVATION_DISABLED }, Gna2StatusXnnErrorOutputBytes }})}
+            { { Gna2DataTypeUint32, DataMode{} }, Gna2StatusXnnErrorOutputBytes }})}
     }},
     };
     return capabilities;
@@ -258,7 +259,7 @@ GmmFunctionFlat::GmmFunctionFlat(
 
 DataConfig GmmFunctionFlat::GetDataMode() const
 {
-    return DataConfig(Input->Mode, InverseCovariances->Mode, GNA_UINT32, Output->Mode);
+    return DataConfig{ Input->Mode, InverseCovariances->Mode, Gna2DataTypeUint32, Output->Mode };
 }
 
 GmmFunctionInterleaved::GmmFunctionInterleaved(
@@ -283,5 +284,5 @@ GmmFunctionInterleaved::GmmFunctionInterleaved(
 
 DataConfig GmmFunctionInterleaved::GetDataMode() const
 {
-    return DataConfig(Input->Mode, Means->Mode, GNA_UINT32, Output->Mode);
+    return DataConfig{ Input->Mode, Means->Mode, Gna2DataTypeUint32, Output->Mode };
 }

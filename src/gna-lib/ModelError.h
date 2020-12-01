@@ -29,6 +29,7 @@ in any way.
 
 #include "gna2-common-api.h"
 #include "gna2-model-api.h"
+#include "gna2-model-impl.h"
 
 #include <functional>
 #include <map>
@@ -80,7 +81,7 @@ public:
         ExpectTrue(ref.find(val) != ref.end(), e);
     }
 
-    static void ExpectInSet(const Gna2DataType val, const std::set<Gna2DataType>& ref)
+    static void ExpectInSet(const DataType val, const std::set<DataType>& ref)
     {
         ExpectInSet(val, ref, Gna2ItemTypeOperandType);
     }

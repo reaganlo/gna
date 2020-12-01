@@ -50,14 +50,12 @@ protected:
             const Gna2Operation& operation, std::vector<TransformOperation> transforms,
             const BaseValidator& validatorIn);
 
-    virtual DataConfig GetDataMode() const override;
-
     template<typename TransformFunction>
-    DataConfig getDataMode(TransformFunction const & transform) const
+    void setDataMode(TransformFunction const & transform, bool isActivationDisabled)
     {
-        auto weightMode = transform.Weights->Mode.Value;
-        auto biasMode = transform.Biases->Mode.Value;
-        return DataConfig(Input.Mode, weightMode, biasMode, Output.Mode);
+        auto weightMode = transform.Weights->Mode;
+        auto biasMode = transform.Biases->Mode;
+        dataConfig = DataConfig{ Input.Mode, weightMode, biasMode, Output.Mode, isActivationDisabled };
     }
 };
 

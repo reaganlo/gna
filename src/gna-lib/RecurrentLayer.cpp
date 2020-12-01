@@ -25,23 +25,9 @@
 
 #include "RecurrentLayer.h"
 
-#include "AccelerationDetector.h"
-#include "ActivationFunction.h"
-#include "AffineFunctions.h"
-#include "Bias.h"
 #include "DataMode.h"
-#include "Expect.h"
-#include "GnaException.h"
 #include "Layer.h"
-#include "LayerConfiguration.h"
-#include "LayerInput.h"
-#include "LayerOutput.h"
-#include "Tensor.h"
-#include "Weight.h"
-
-
-#include <algorithm>
-#include <memory>
+#include "RecurrentFunction.h"
 
 namespace GNA
 {
@@ -53,10 +39,6 @@ using namespace GNA;
 RecurrentLayer::RecurrentLayer(const Gna2Operation& operation, const BaseValidator& validatorIn) :
     AffineBaseLayer(operation, { RecurrentTransform }, validatorIn)
 {
-}
-
-DataConfig RecurrentLayer::GetDataMode() const
-{
-    auto const & affineTransform = Transforms.Get<AffineFunction>(RecurrentTransform);
-    return AffineBaseLayer::getDataMode(affineTransform);
+    auto const & affineTransform = Transforms.Get<RecurrentFunction>(RecurrentTransform);
+    setDataMode(affineTransform, false);
 }

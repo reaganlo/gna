@@ -611,7 +611,7 @@ PwlCached::PwlCached(PwlCached && pwlCached)
     pwlCached.pwl.data = nullptr;
 }
 
-PwlCached::PwlCached(const gna_data_mode mode, PwlSegment const * const segmentsIn, uint32_t segmentCountIn)
+PwlCached::PwlCached(uint32_t elementSize, PwlSegment const * const segmentsIn, uint32_t segmentCountIn)
 {
     // TODO:3: enable different modes
     uint32_t s = 0;                    // PWL segment iterator
@@ -626,42 +626,7 @@ PwlCached::PwlCached(const gna_data_mode mode, PwlSegment const * const segments
     ActivateSingle = NULL;
     pwl.segmentCount = segmentCountIn;
 
-    switch(mode)
-    {
-        case GNA_INT8:
-            pwl.bytesPerOutput = 1;
-            break;
-        case GNA_INT16:
-            pwl.bytesPerOutput = 2;
-            break;
-        case GNA_INT32:
-            pwl.bytesPerOutput = 4;
-            break;
-        case GNA_UINT8:
-            pwl.bytesPerOutput = 1;
-            break;
-        case GNA_UINT16:
-            pwl.bytesPerOutput = 2;
-            break;
-        case GNA_UINT32:
-            pwl.bytesPerOutput = 4;
-            break;
-        case GNA_UINT64:
-            pwl.bytesPerOutput = 8;
-            break;
-        case GNA_DATA_RICH_FORMAT:
-            pwl.bytesPerOutput = 8;
-            break;
-        case GNA_DATA_CONSTANT_SCALAR:
-            pwl.bytesPerOutput = 4;
-            break;
-        case GNA_DATA_ACTIVATION_DISABLED:
-            pwl.bytesPerOutput = 4;
-            break;
-        default:
-            pwl.bytesPerOutput = 0;
-            break;
-    }
+    pwl.bytesPerOutput = elementSize;
 
     if (pwl.segmentCount > PWL_SIZE_ALGORITHM_TRESHOLD)
     {

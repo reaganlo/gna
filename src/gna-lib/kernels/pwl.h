@@ -138,7 +138,7 @@ public:
     void InitializeActivationFunctions_avx2_sat() const;
 
     // Prepares PWL parameters and auxiliary buffers
-    PwlCached(const gna_data_mode mode, PwlSegment const * const segmentsIn, uint32_t segmentCountIn);
+    PwlCached(uint32_t elementSize, PwlSegment const * const segmentsIn, uint32_t segmentCountIn);
     PwlCached(PwlCached&& pwlCached);
     PwlCached(const PwlCached& pwlCached) = delete;
     ~PwlCached();

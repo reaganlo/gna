@@ -27,96 +27,24 @@
 
 using namespace GNA;
 
-const MultiplierMap& LayerCapabilities::InputElementCountMultipliers()
-{
-    static auto const multipliers = MultiplierMap{
-        {Gna2DataTypeInt8, 2 * InputElementCountMultiplier},
-        {Gna2DataTypeInt16, 1 * InputElementCountMultiplier},
-        {Gna2DataTypeInt32, InputElementCountMultiplier / 2},
-    };
-    return multipliers;
-}
-
 const DataModeLimits& LayerCapabilities::GetModes(uint32_t operandIndex, Gna2DeviceGeneration generation)
 {
     static const std::map<uint32_t, std::map<Gna2DeviceGeneration, DataModeLimits>> modes =
     {
         {InputOperandIndex,
-            {{Gna2DeviceGeneration0_9, {{GNA_INT16}, Gna2StatusXnnErrorInputBytes}},
-            {Gna2DeviceGeneration3_0, {{GNA_INT8, GNA_INT16}, Gna2StatusXnnErrorInputBytes}},}
+            {{Gna2DeviceGeneration0_9, {{Gna2DataTypeInt16}, Gna2StatusXnnErrorInputBytes}},
+            {Gna2DeviceGeneration3_0, {{Gna2DataTypeInt8, Gna2DataTypeInt16}, Gna2StatusXnnErrorInputBytes}},
+            {Gna2DeviceGeneration3_5, {
+                MakeDataModesCartesian({Gna2DataTypeInt8, Gna2DataTypeInt16}),
+                Gna2StatusXnnErrorInputBytes}},}
         },
         {OutputOperandIndex,
-            {{Gna2DeviceGeneration0_9, {{GNA_INT16, GNA_INT32, GNA_DATA_ACTIVATION_DISABLED}, Gna2StatusXnnErrorOutputBytes}},
-            {Gna2DeviceGeneration3_0, {{GNA_INT8, GNA_INT16, GNA_INT32, GNA_DATA_ACTIVATION_DISABLED}, Gna2StatusXnnErrorOutputBytes}},}
+            {{Gna2DeviceGeneration0_9, {{Gna2DataTypeInt16, Gna2DataTypeInt32}, Gna2StatusXnnErrorOutputBytes}},
+            {Gna2DeviceGeneration3_0, {{Gna2DataTypeInt8, Gna2DataTypeInt16, Gna2DataTypeInt32}, Gna2StatusXnnErrorOutputBytes}},
+            {Gna2DeviceGeneration3_5, {
+                MakeDataModesCartesian({Gna2DataTypeInt8, Gna2DataTypeInt16, Gna2DataTypeInt32}),
+                Gna2StatusXnnErrorInputBytes}},}
         },
     };
     return modes.at(operandIndex).at(generation);
-}
-
-const RangeLimits<>& LayerCapabilities::limitsForInput()
-{
-    static const RangeLimits<> _limitsForInput =
-    {
-        1,
-        InputElementCountMax,
-        1,
-        Gna2StatusXnnErrorInputVolume
-    };
-    return _limitsForInput;
-}
-
-const RangeLimits<>& LayerCapabilities::limitsForOutput()
-{
-    static const RangeLimits<> _limitsForOutput =
-    {
-        limitsForInput(),
-        Gna2StatusXnnErrorOutputVolume
-    };
-    return _limitsForOutput;
-}
-
-const RangeLimits<>& LayerCapabilities::limitsForInputShapeLegacy()
-{
-    static const RangeLimits<> _limitsForInputShapeLegacy =
-    {
-        InputElementCountMultiplier,
-        InputElementCountMax,
-        InputElementCountMultipliers(),
-        Gna2StatusXnnErrorInputVolume
-    };
-    return _limitsForInputShapeLegacy;
-}
-
-const RangeLimits<>& LayerCapabilities::limitsForOutputShapeLegacy()
-{
-    static const RangeLimits<> _limitsForOutputShapeLegacy =
-    {
-        limitsForInputShapeLegacy(),
-        Gna2StatusXnnErrorOutputVolume
-    };
-    return _limitsForOutputShapeLegacy;
-}
-
-const RangeLimits<>& LayerCapabilities::limitsForInputGroupsMax()
-{
-    static const RangeLimits<> _limitsForInputGroupsMax =
-    {
-        1,
-        BatchSizeMax,
-        1,
-        Gna2StatusXnnErrorInputVolume
-    };
-    return _limitsForInputGroupsMax;
-}
-
-const RangeLimits<>& LayerCapabilities::limitsForOutputGroupsMax()
-{
-    static const RangeLimits<> _limitsForInputGroupsMax =
-    {
-        1,
-        BatchSizeMax,
-        1,
-        Gna2StatusXnnErrorOutputVolume
-    };
-    return _limitsForInputGroupsMax;
 }

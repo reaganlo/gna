@@ -92,9 +92,6 @@ private:
     void ExportLd(void *& exportData, uint32_t & exportDataSize);
     static const HardwareCapabilities& GetHwCaps(Gna2DeviceVersion targetDevice);
 
-    static HardwareCapabilities noMMUCapabilities30;
-    static HardwareCapabilities noMMUCapabilities31Anna;
-
     Gna2UserAllocator customUserAlloc = nullptr;
 
     void* customAllocSafe(uint32_t size)

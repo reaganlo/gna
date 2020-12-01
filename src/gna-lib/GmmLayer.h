@@ -45,18 +45,13 @@ struct LayerConfiguration;
 class GmmOperation : public Layer
 {
 public:
-    template<class T>
-    GmmOperation(const T& layer, const BaseValidator& validatorIn) :
-        Layer(layer, validatorIn, { GmmTransform }, BaseAddress())
-    {}
+    GmmOperation(const ApiOperation& layer, const BaseValidator& validatorIn);
 
     virtual ~GmmOperation() = default;
 
     virtual Tensor const & GetOperand(uint32_t operandIndex) const override;
 
     virtual void VerifyHas1BInputAnd2BWeight() override;
-
-    virtual DataConfig GetDataMode() const override;
 };
 
 class GmmFunction : public TransformAl<GmmConfig, GmmMaxMix, GmmMaxMixActiveList>

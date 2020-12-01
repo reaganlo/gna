@@ -71,7 +71,7 @@ void PoolingFunction::ExpectValid(Gna2Operation const & apiOperation)
 }
 
 std::unique_ptr<const PoolingFunction> PoolingFunction::Create(Gna2Operation const & apiOperation,
-    const Shape & inputDimensions, const LayerValidator& validatorIn, gna_data_mode inputMode)
+    const Shape & inputDimensions, const LayerValidator& validatorIn, const DataMode & inputMode)
 {
     Expect::Equal(INTEL_CONVOLUTIONAL, validatorIn.Operation, Gna2StatusXnnErrorLyrOperation);
     ExpectValid(apiOperation);

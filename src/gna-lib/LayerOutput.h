@@ -50,7 +50,6 @@ protected:
         const Gna2Operation& operation, const LayerValidator& validatorIn) const override;
 
 private:
-    static const FullCapabilitiesMap& GetCapabilitiesLegacy();
     static ApiShape GetShape(const Gna2Operation & operation);
 };
 

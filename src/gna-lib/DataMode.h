@@ -25,71 +25,60 @@
 
 #pragma once
 
-#include "GnaException.h"
 #include "ParameterLimits.h"
 
-
-#include <gna2-common-api.h>
 #include <gna2-model-impl.h>
 
 #include <cstdint>
-#include <map>
 
 namespace GNA
 {
 
 struct DataMode
 {
-    template<typename T, typename DT>  // TODO:3:API remove
-    static T ToSize(const DT mode)
-    {
-        try
-        {
-            return static_cast<T>(GetSizes<DT>().at(mode));
-        }
-        catch (const std::exception&)
-        {
-            throw GnaException(Gna2StatusDataModeInvalid);
-        }
-    }
-
-    DataMode() = delete;
-    DataMode(const DataMode&) = default;
-    DataMode(const gna_data_mode dataMode); // TODO:3:API remove
-    DataMode(const uint32_t dataMode); // TODO:3:API remove
-    DataMode(const DataType dataType, const TensorMode tensorMode = Gna2TensorModeDefault);
+    constexpr DataMode() :
+        Type{ Gna2DataTypeNone },
+        Mode{ Gna2TensorModeDisabled },
+        Size{ 0 }
+    {}
+    constexpr DataMode(const DataMode &) = default;
+    constexpr DataMode(DataMode &&) = default;
+    DataMode(DataType type);
+    DataMode(DataType type, TensorMode tensorMode);
     ~DataMode() = default;
 
-    operator gna_data_mode() const // TODO:3:API remove
+    constexpr bool operator<(const DataMode & mode) const
     {
-        return Value;
+        if (Type != mode.Type)
+        {
+            return Type < mode.Type;
+        }
+        return Mode <= mode.Mode;
     }
 
-    const gna_data_mode Value; // TODO:3:API remove
+    constexpr bool operator!=(const DataMode & mode) const
+    {
+        return Type != mode.Type || Mode != mode.Mode;
+    }
 
-    const DataType Type;
+    constexpr bool operator==(const DataMode & mode) const
+    {
+        return !(operator!=(mode));
+    }
 
-    const TensorMode Mode;
+    DataMode &operator =(const DataMode & mode) = default;
 
+    DataType Type;
+    TensorMode Mode;
     // Size on data element in bytes
-    const uint32_t Size;
+    uint32_t Size;
 
 protected:
-    template<typename T> // TODO:3:API remove
-    static const std::map<const T, const uint32_t>& GetSizes();
+    static uint32_t GetSize(DataType type);
 
-    static DataType TypeFromDataMode(const gna_data_mode dataMode); // TODO:3:API remove
-    static TensorMode ModeFromDataMode(const gna_data_mode dataMode); // TODO:3:API remove
-    static gna_data_mode ModeFromDataMode(const DataType dataType); // TODO:3:API remove
+    static TensorMode ModeFromType(DataType type);
+    static DataType TypeFromMode(DataType type, TensorMode mode);
 };
-
-bool operator ==(const gna_data_mode &left, const DataMode &right); // TODO:3:API remove
-
-bool operator !=(const gna_data_mode &left, const DataMode &right); // TODO:3:API remove
-
-bool operator ==(Gna2DataType left, const DataMode &right);
-
-bool operator !=(Gna2DataType left, const DataMode &right);
 
 using DataModeLimits = SetLimits<DataMode>;
 

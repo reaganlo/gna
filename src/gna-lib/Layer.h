@@ -82,7 +82,7 @@ public:
     std::function<void(LayerConfiguration &layerConfiguration, AccelerationMode accel, ExecutionConfig const & executionConfig)> Compute;
 
     virtual void UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const;
-    virtual DataConfig GetDataMode() const;
+    const DataConfig GetDataMode() const;
 
     TransformList Transforms;
 
@@ -134,7 +134,7 @@ protected:
 
         //TODO:3: uncomment when all layers are Transform-based, remove if below
         //Expect::False(transforms.empty(), Gna2StatusNullArgumentNotAllowed);
-        if (false == transforms.empty())
+        if (!transforms.empty())
         {
             auto&& commonConfig = TransformFactoryConfig(&Input, &Output, Output.Mode, intermediateBuffer,
                 layer, *validator);
@@ -157,6 +157,7 @@ protected:
 
     BaseTransform const * inputTransform = nullptr;
     BaseTransform * outputTransform = nullptr;
+    DataConfig dataConfig;
 
 private:
     void addBufferAs(const BufferMap& source, uint32_t sourceType,

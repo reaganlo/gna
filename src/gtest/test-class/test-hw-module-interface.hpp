@@ -29,7 +29,6 @@
 
 #include "GnaException.h"
 #include "gna2-model-api.h"
-#include "DataMode.h"
 
 #include "gtest/gtest.h"
 
@@ -39,18 +38,7 @@ protected:
     void SetUp() override
     {}
 
-    void ExpectGnaException(void* arg1, void* arg2, bool is1D)
-    {
-        hwModule = GNA::HwModuleInterface::Create("gna_hw");
-        ASSERT_FALSE(!hwModule);
-        auto const cnnIn =
-            reinterpret_cast<GNA::ConvolutionFunction2D const*>(arg1);
-        auto const poolingIn =
-            reinterpret_cast<GNA::PoolingFunction2D const*>(arg2);
-        EXPECT_THROW(
-            hwModule->GetCnnParams(cnnIn, poolingIn, GNA::DataMode{ Gna2DataTypeInt8 }, is1D),
-            GNA::GnaException);
-    }
+    void ExpectGnaException(void* arg1, void* arg2, bool is1D);
 
     std::unique_ptr<GNA::HwModuleInterface const> hwModule;
 };

@@ -37,31 +37,14 @@ using namespace GNA;
 
 const FullCapabilitiesMap WeightTensor::capabilities =
 {
-    // TODO:3: add caps for previous device versions
-    {INTEL_AFFINE, {
-        AffineLayerCapabilities::GetOperands(FilterOperandIndex).at(INTEL_AFFINE)
-    }},
-    {INTEL_AFFINE_DIAGONAL, {
-        AffineLayerCapabilities::GetOperands(FilterOperandIndex).at(INTEL_AFFINE_DIAGONAL)
-    }},
-    {INTEL_AFFINE_MULTIBIAS, {
-        AffineLayerCapabilities::GetOperands(FilterOperandIndex).at(INTEL_AFFINE_MULTIBIAS)
-    }},
-    {INTEL_CONVOLUTIONAL, {
-        ConvolutionalLayer2DCapabilities::GetOperands(FilterOperandIndex).at(INTEL_CONVOLUTIONAL)
-    }},
-    {INTEL_CONVOLUTIONAL_2D, {
-        ConvolutionalLayer2DCapabilities::GetOperands(FilterOperandIndex).at(INTEL_CONVOLUTIONAL_2D)
-    }},
-    {INTEL_CONVOLUTIONAL_1D, {
-        ConvolutionalLayer2DCapabilities::GetOperands(FilterOperandIndex).at(INTEL_CONVOLUTIONAL_1D)
-    }},
-    {INTEL_GMM, {
-        GmmLayerCapabilities::GetOperands(WeightOperandIndex).at(INTEL_GMM)
-    }},
-    {INTEL_RECURRENT, {
-        AffineLayerCapabilities::GetOperands(WeightOperandIndex).at(INTEL_RECURRENT)
-    }},
+    GetOperationCaps<INTEL_AFFINE>(WeightOperandIndex),
+    GetOperationCaps<INTEL_AFFINE_DIAGONAL>(WeightOperandIndex),
+    GetOperationCaps<INTEL_AFFINE_MULTIBIAS>(WeightOperandIndex),
+    GetOperationCaps<INTEL_RECURRENT>(WeightOperandIndex),
+    GetOperationCaps<INTEL_CONVOLUTIONAL>(FilterOperandIndex),
+    GetOperationCaps<INTEL_CONVOLUTIONAL_2D>(FilterOperandIndex),
+    GetOperationCaps<INTEL_CONVOLUTIONAL_1D>(FilterOperandIndex),
+    GetOperationCaps<INTEL_GMM>(WeightOperandIndex),
 };
 
 WeightTensor::WeightTensor(const Shape& dimensions, const DataMode& dataMode,

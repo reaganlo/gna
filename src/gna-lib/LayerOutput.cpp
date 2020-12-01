@@ -47,68 +47,30 @@ using CnnCaps = GNA::ConvolutionalLayer2DCapabilities;
 
 static const DataModeLimits _ModesGen0_9 =
 {
-    {GNA_INT16, GNA_INT32, GNA_DATA_ACTIVATION_DISABLED},
+    {Gna2DataTypeInt16, Gna2DataTypeInt32},
     Gna2StatusXnnErrorOutputBytes
 };
 
 static const DataModeLimits _ModesGen3 =
 {
-    {GNA_INT8, GNA_INT16, GNA_INT32, GNA_DATA_ACTIVATION_DISABLED},
+    {Gna2DataTypeInt8, Gna2DataTypeInt16, Gna2DataTypeInt32},
     _ModesGen0_9.Error
 };
 
 const FullCapabilitiesMap LayerOutput::capabilities =
 {
-    {INTEL_AFFINE, {
-        AffineLayerCapabilities::GetOperands(OutputOperandIndex).at(INTEL_AFFINE)
-    }},
-    {INTEL_AFFINE_DIAGONAL, {
-        AffineLayerCapabilities::GetOperands(OutputOperandIndex).at(INTEL_AFFINE_DIAGONAL)
-    }},
-    {INTEL_AFFINE_MULTIBIAS, {
-        AffineLayerCapabilities::GetOperands(OutputOperandIndex).at(INTEL_AFFINE_MULTIBIAS)
-    }},
-    {INTEL_CONVOLUTIONAL, {
-        ConvolutionalLayer2DCapabilities::GetOperands(OutputOperandIndex).at(INTEL_CONVOLUTIONAL)
-    }},
-    {INTEL_CONVOLUTIONAL_2D, {
-        ConvolutionalLayer2DCapabilities::GetOperands(OutputOperandIndex).at(INTEL_CONVOLUTIONAL_2D)
-    }},
-    {INTEL_CONVOLUTIONAL_1D, {
-        ConvolutionalLayer2DCapabilities::GetOperands(OutputOperandIndex).at(INTEL_CONVOLUTIONAL_1D)
-    }},
-    {INTEL_COPY, {
-        AuxiliaryCapabilities::GetOperands(OutputOperandIndex).at(INTEL_COPY)
-    }},
-    {INTEL_DEINTERLEAVE, {
-        AuxiliaryCapabilities::GetOperands(OutputOperandIndex).at(INTEL_DEINTERLEAVE)
-    }},
-    {INTEL_GMM, {
-        GmmLayerCapabilities::GetOperands(OutputOperandIndex).at(INTEL_GMM)
-    }},
-    {INTEL_INTERLEAVE, {
-        AuxiliaryCapabilities::GetOperands(OutputOperandIndex).at(INTEL_INTERLEAVE)
-    }},
-    {INTEL_RECURRENT, {
-        AffineLayerCapabilities::GetOperands(OutputOperandIndex).at(INTEL_RECURRENT)
-    }}
+    GetOperationCaps<INTEL_AFFINE>(OutputOperandIndex),
+    GetOperationCaps<INTEL_AFFINE_DIAGONAL>(OutputOperandIndex),
+    GetOperationCaps<INTEL_AFFINE_MULTIBIAS>(OutputOperandIndex),
+    GetOperationCaps<INTEL_RECURRENT>(OutputOperandIndex),
+    GetOperationCaps<INTEL_CONVOLUTIONAL>(OutputOperandIndex),
+    GetOperationCaps<INTEL_CONVOLUTIONAL_2D>(OutputOperandIndex),
+    GetOperationCaps<INTEL_CONVOLUTIONAL_1D>(OutputOperandIndex),
+    GetOperationCaps<INTEL_COPY>(OutputOperandIndex),
+    GetOperationCaps<INTEL_DEINTERLEAVE>(OutputOperandIndex),
+    GetOperationCaps<INTEL_GMM>(OutputOperandIndex),
+    GetOperationCaps<INTEL_INTERLEAVE>(OutputOperandIndex),
 };
-
-//TODO:3:Remove with API1
-const FullCapabilitiesMap & LayerOutput::GetCapabilitiesLegacy()
-{
-    static FullCapabilitiesMap capabilitiesLegacy{capabilities};
-    auto& cnnCaps = capabilitiesLegacy[INTEL_CONVOLUTIONAL_2D][Gna2DeviceGeneration3_0];
-    const auto cnn2dLegacy = std::make_shared<TensorLimits>(TensorLimits{
-            cnnCaps->Order,
-            {{GNA_DIM_N, cnnCaps->Dimensions.at(GNA_DIM_N)},
-             {GNA_DIM_H, {1, LayerCapabilities::InputElementCountMax * LayerCapabilities::InputElementCountMax, 1, Gna2StatusXnnErrorOutputVolume}},
-             {GNA_DIM_W, {1, LayerCapabilities::InputElementCountMax * LayerCapabilities::InputElementCountMax, 1, Gna2StatusXnnErrorOutputVolume}},
-             {GNA_DIM_D, {1, LayerCapabilities::InputElementCountMax * LayerCapabilities::InputElementCountMax, 1, Gna2StatusXnnErrorOutputVolume}}},
-            _ModesGen3});
-    cnnCaps = cnn2dLegacy;
-    return capabilitiesLegacy;
-}
 
 void * getScratchpadForOperation(const Gna2Operation &operation)
 {
@@ -147,7 +109,7 @@ try :
     Tensor{ Shape::Create(GetShape(operation), capabilities.GetOrder(validatorIn)),
         GetDataMode(*operation.Operands[OutputOperandIndex]), operation.Operands[OutputOperandIndex]->Data,
         Validator{ validatorIn, capabilities } },
-    ScratchPad{Dimensions, Gna2DataTypeInt32, Gna2TensorModeDefault, getScratchpadForOperation(operation)}, //TODO:3:P1:Decide what to do with scratch pad in API2, disabled validation, as parameters are provided by library
+    ScratchPad{ Dimensions, {Gna2DataTypeInt32, Gna2TensorModeDefault}, getScratchpadForOperation(operation) }, //TODO:3:P1:Decide what to do with scratch pad in API2, disabled validation, as parameters are provided by library
     Grouping{ getGrouping(operation, validatorIn) },
     ElementCount{ getElementCount(operation, validatorIn) }
 {

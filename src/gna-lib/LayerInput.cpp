@@ -48,39 +48,17 @@ using namespace GNA;
 
 const FullCapabilitiesMap LayerInput::capabilities =
 {
-    {INTEL_AFFINE, {
-        AffineLayerCapabilities::GetOperands(InputOperandIndex).at(INTEL_AFFINE)
-    }},
-    {INTEL_AFFINE_DIAGONAL, {
-        AffineLayerCapabilities::GetOperands(InputOperandIndex).at(INTEL_AFFINE_DIAGONAL)
-    }},
-    {INTEL_AFFINE_MULTIBIAS, {
-        AffineLayerCapabilities::GetOperands(InputOperandIndex).at(INTEL_AFFINE_MULTIBIAS)
-    }},
-    {INTEL_CONVOLUTIONAL, {
-        ConvolutionalLayer2DCapabilities::GetOperands(InputOperandIndex).at(INTEL_CONVOLUTIONAL)
-    }},
-    {INTEL_CONVOLUTIONAL_2D, {
-        ConvolutionalLayer2DCapabilities::GetOperands(InputOperandIndex).at(INTEL_CONVOLUTIONAL_2D)
-    }},
-    {INTEL_CONVOLUTIONAL_1D, {
-        ConvolutionalLayer2DCapabilities::GetOperands(InputOperandIndex).at(INTEL_CONVOLUTIONAL_1D)
-    }},
-    {INTEL_COPY, {
-        AuxiliaryCapabilities::GetOperands(InputOperandIndex).at(INTEL_COPY)
-    }},
-    {INTEL_INTERLEAVE, {
-        AuxiliaryCapabilities::GetOperands(InputOperandIndex).at(INTEL_INTERLEAVE)
-    }},
-    {INTEL_DEINTERLEAVE, {
-        AuxiliaryCapabilities::GetOperands(InputOperandIndex).at(INTEL_DEINTERLEAVE)
-    }},
-    {INTEL_GMM, {
-        GmmLayerCapabilities::GetOperands(InputOperandIndex).at(INTEL_GMM)
-    }},
-    {INTEL_RECURRENT, {
-        AffineLayerCapabilities::GetOperands(InputOperandIndex).at(INTEL_RECURRENT)
-    }}
+    GetOperationCaps<INTEL_AFFINE>(InputOperandIndex),
+    GetOperationCaps<INTEL_AFFINE_DIAGONAL>(InputOperandIndex),
+    GetOperationCaps<INTEL_AFFINE_MULTIBIAS>(InputOperandIndex),
+    GetOperationCaps<INTEL_RECURRENT>(InputOperandIndex),
+    GetOperationCaps<INTEL_CONVOLUTIONAL>(InputOperandIndex),
+    GetOperationCaps<INTEL_CONVOLUTIONAL_2D>(InputOperandIndex),
+    GetOperationCaps<INTEL_CONVOLUTIONAL_1D>(InputOperandIndex),
+    GetOperationCaps<INTEL_GMM>(InputOperandIndex),
+    GetOperationCaps<INTEL_COPY>(InputOperandIndex),
+    GetOperationCaps<INTEL_INTERLEAVE>(InputOperandIndex),
+    GetOperationCaps<INTEL_DEINTERLEAVE>(InputOperandIndex),
 };
 
 ApiShape LayerInput::GetShape(const Gna2Operation & operation)

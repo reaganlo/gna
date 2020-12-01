@@ -70,4 +70,30 @@ struct ConvolutionalLayer2DCapabilities : LayerCapabilities
 
 };
 
+template <>
+struct OperationCaps<INTEL_CONVOLUTIONAL>
+{
+    static const FullCapabilitiesMap& GetOperands(uint32_t operandIndex)
+    {
+        return ConvolutionalLayer2DCapabilities::GetOperands(operandIndex);
+    }
+};
+
+template <>
+struct OperationCaps<INTEL_CONVOLUTIONAL_2D>
+{
+    static const FullCapabilitiesMap& GetOperands(uint32_t operandIndex)
+    {
+        return ConvolutionalLayer2DCapabilities::GetOperands(operandIndex);
+    }
+};
+
+template <>
+struct OperationCaps<INTEL_CONVOLUTIONAL_1D>
+{
+    static const FullCapabilitiesMap& GetOperands(uint32_t operandIndex)
+    {
+        return ConvolutionalLayer2DCapabilities::GetOperands(operandIndex);
+    }
+};
 }

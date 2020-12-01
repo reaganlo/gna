@@ -25,6 +25,7 @@
 
 #pragma once
 
+#include "DataMode.h"
 #include "Expect.h"
 
 #include "gna2-common-api.h"
@@ -60,16 +61,14 @@ public:
 
 struct DataConfig
 {
-    DataConfig(gna_data_mode input, gna_data_mode weight, gna_data_mode bias, gna_data_mode output) :
-        Input{input},
-        Weight{weight},
-        Bias{bias},
-        Output{output}
-    {
-    }
-    ~DataConfig() = default;
+    DataMode Input;
+    DataMode Weight;
+    DataMode Bias;
 
-    bool operator<(const DataConfig &mode) const
+    DataMode Output;
+    bool IsActivationDisabled = false;
+
+     constexpr bool operator<(const DataConfig &mode) const
     {
         if (mode.Input != Input)
         {
@@ -91,24 +90,14 @@ struct DataConfig
             return mode.Output < Output;
         }
 
+        if (mode.IsActivationDisabled != IsActivationDisabled)
+        {
+            return mode.IsActivationDisabled < IsActivationDisabled;
+        }
+
         return false;
     }
 
-    const gna_data_mode Input;
-
-    union
-    {
-        const gna_data_mode Covariance;
-        const gna_data_mode Weight;
-    };
-
-    union
-    {
-        const gna_data_mode Const;
-        const gna_data_mode Bias;
-    };
-
-    const gna_data_mode Output;
     //TODO:4:refactor to return iterator or isSupprted
     static const std::map<const DataConfig, std::map<const nn_operation, const Support>>& Capabilities();
 };

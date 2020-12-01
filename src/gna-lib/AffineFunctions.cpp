@@ -50,29 +50,19 @@ using namespace GNA;
 
 const FullCapabilitiesMap AffineFunctionSingle::outputCapabilities =
 {
-    {INTEL_AFFINE, {
-        AffineLayerCapabilities::GetOperands(OutputOperandIndex).at(INTEL_AFFINE)
-    }},
-    {INTEL_AFFINE_DIAGONAL, {
-        AffineLayerCapabilities::GetOperands(OutputOperandIndex).at(INTEL_AFFINE_DIAGONAL)
-    }},
-    {INTEL_RECURRENT, {
-        AffineLayerCapabilities::GetOperands(OutputOperandIndex).at(INTEL_RECURRENT)
-    }}
+    GetOperationCaps<INTEL_AFFINE>(OutputOperandIndex),
+    GetOperationCaps<INTEL_AFFINE_DIAGONAL>(OutputOperandIndex),
+    GetOperationCaps<INTEL_RECURRENT>(OutputOperandIndex),
 };
 
 const FullCapabilitiesMap AffineFunctionMulti::outputCapabilities =
 {
-    {INTEL_AFFINE_MULTIBIAS, {
-        AffineLayerCapabilities::GetOperands(OutputOperandIndex).at(INTEL_AFFINE_MULTIBIAS)
-    }},
+    GetOperationCaps<INTEL_AFFINE_MULTIBIAS>(OutputOperandIndex),
 };
 
 const FullCapabilitiesMap AffineFunctionMulti::Capabilities =
 {
-    {INTEL_AFFINE_MULTIBIAS, {
-        AffineLayerCapabilities::GetOperands(WeightScaleFactorOperandIndex).at(INTEL_AFFINE_MULTIBIAS)
-    }},
+    GetOperationCaps<INTEL_AFFINE_MULTIBIAS>(WeightScaleFactorOperandIndex),
 };
 
 // Could not split into separate methods for each component as multibias weight scaling is using bias' and weights; tensors...
@@ -91,15 +81,15 @@ std::unique_ptr<AffineFunction> AffineFunction::Create(
 std::unique_ptr<AffineFunction> AffineFunction::createAffineSingleFunction(
     const TransformFactoryConfig& config, const OperationConfig& operationConfig)
 {
-    auto kernelOperation = operationConfig.GetKernelOperation();
+    auto const kernelOperation = operationConfig.GetKernelOperation();
     auto weightTensor = operationConfig.WeightsTensor;
     auto biasTensor = operationConfig.BiasesTensor;
     auto weights = std::make_unique<const WeightTensor>(weightTensor, config.validator);
     auto biases = std::make_unique<const BiasTensor>(
             biasTensor, 0, Gna2BiasModeDefault, config.validator);
-    auto kernelMode = KernelMode { config.input->Mode, weights->Mode, biases->Mode };
+    auto const kernelMode = KernelMode { config.input->Mode, weights->Mode, biases->Mode };
     const auto& affineKernel = AccelerationDetector::GetKernelMap<AffineKernel>(
-            static_cast<kernel_op>(kernelOperation), kernelMode);
+            kernelOperation, kernelMode);
     return std::make_unique<AffineFunctionSingle>(
             BaseTransformConfig<AffineKernel>{config, affineKernel},
             operationConfig.GetTransformOperation(),
@@ -128,10 +118,10 @@ std::unique_ptr<AffineFunction> AffineFunction::createAffineMultiFunction(
         ModelErrorHelper::ExecuteForModelItem(command, WeightScaleFactorOperandIndex);
     }
 
-    auto kernelOperation = KERNEL_AFFINE_MULTIBIAS;
-    auto kernelMode = KernelMode { config.input->Mode, weights->Mode, biases->Mode };
+    auto const kernelOperation = KERNEL_AFFINE_MULTIBIAS;
+    auto const kernelMode = KernelMode { config.input->Mode, weights->Mode, biases->Mode };
     auto& affineKernel = AccelerationDetector::GetKernelMap<AffineKernel>(
-            static_cast<kernel_op>(kernelOperation), kernelMode);
+            kernelOperation, kernelMode);
     return std::make_unique<AffineFunctionMulti>(BaseTransformConfig<AffineKernel>{config, affineKernel},
             operationConfig.GetTransformOperation(),
             std::move(weights), std::move(biases),
@@ -172,9 +162,6 @@ AffineFunctionSingle::AffineFunctionSingle(
     kernelsAl(AccelerationDetector::GetKernelMap<AffineActiveListKernel>(
         KERNEL_AFFINE_AL, KernelMode { config.input->Mode, Weights->Mode, Biases->Mode }))
 {
-    //// TODO:3: move to layer/hw capabilities as this differ for hws
-    //Expect::True(GNA_INT32 == Biases->Mode, Gna2StatusXnnErrorBiasBytes);
-    //Expect::True(GNA_DATA_RICH_FORMAT == Biases->Mode, Gna2StatusXnnErrorBiasBytes);
     AffineConfig kernelAffineConfig = { config.output->Dimensions.at('H'),
         config.output->Dimensions.at('W'), config.input->Dimensions.at('H'),
         config.input->Buffer, config.output->Buffer, *Weights,

@@ -61,16 +61,6 @@ constexpr auto Gna2DisabledU32 = uint32_t(GNA2_DISABLED);
 /** Size of memory alignment for data tensors */
 constexpr auto GNA_MEM_ALIGN = uint32_t{ 64 };
 
-/* Workaround for old compilers that do not handle enums as map keys */
-struct EnumHash
-{
-    template<typename T>
-    constexpr std::size_t operator()(T t) const
-    {
-        return static_cast<std::size_t>(t);
-    }
-};
-
 template<typename T>
 inline Gna2DeviceVersion Gna2DeviceVersionFromInt(T value)
 {

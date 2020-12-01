@@ -63,12 +63,6 @@ AffineBaseLayer::AffineBaseLayer(
 {
 }
 
-DataConfig AffineBaseLayer::GetDataMode() const
-{
-    auto const & affineTransform = GetInputTransform<AffineFunction>();
-    return AffineBaseLayer::getDataMode(affineTransform);
-}
-
 void AffineLayer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const
 {
     AffineBaseLayer::UpdateKernelConfigs(layerConfiguration);
@@ -90,6 +84,9 @@ AffineLayer::AffineLayer(const Gna2Operation& operation, const BaseValidator& va
         ModelErrorHelper::ExpectEqual(Output.AsModelValue('H'), Input.AsModelValue('H'));
         ModelErrorHelper::ExpectEqual(Output.AsModelValue('W'), Input.AsModelValue('W'));
     }
+    auto const & affineTransform = GetInputTransform<AffineFunction>();
+    auto const activation = Transforms.GetOptional<ActivationFunction>(ActivationTransform);
+    setDataMode(affineTransform, activation == nullptr);
 }
 
 AffineThresholdLayer::AffineThresholdLayer(const Gna2Operation& operation, const BaseValidator& validatorIn) :

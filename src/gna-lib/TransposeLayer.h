@@ -49,9 +49,6 @@ public:
 
     virtual void UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const override;
 
-protected:
-    virtual DataConfig GetDataMode() const override;
-
 private:
     void computeHidden(AccelerationMode accel, ExecutionConfig const & executionConfig) const;
     void compute(const LayerConfiguration& layerConfiguration, AccelerationMode accel, ExecutionConfig const & executionConfig) const;

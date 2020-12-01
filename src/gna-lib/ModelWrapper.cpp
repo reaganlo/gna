@@ -59,7 +59,7 @@ void ModelWrapper::OperationInit(ApiOperation& operation, const OperationType ty
 
 uint32_t ModelWrapper::DataTypeGetSize(DataType type)
 {
-    const auto dataSize = DataMode::ToSize<uint32_t>(type);
+    const auto dataSize = DataMode{ type }.Size;
     return dataSize;
 }
 

@@ -49,7 +49,7 @@ FiltersTensor::FiltersTensor(const Shape& dimensions, const DataMode & dataMode,
     CoefficientCount{ Dimensions.at(GNA_DIM_W) }
 {
     // validate buffer size with padding
-    if (GNA_DATA_DISABLED != Mode)
+    if (Gna2TensorModeDisabled != Mode.Mode)
     {
         const auto kernelMemorySize = HardwareLayerCnn2D::GetKernelMemorySize(
             validator->HwCapabilities.GetDeviceVersion(), this);
@@ -137,7 +137,7 @@ ConvolutionFunction::ConvolutionFunction(const KernelMap<ConvolutionKernel>& ker
 
     hiddenConfig = std::make_unique<ConvolutionConfig>(Stride->at(GNA_DIM_W), OutputsPerFilterCount,
         Filters->at(GNA_DIM_N), Filters->at(GNA_DIM_W),
-        input->Buffer, Filters->Buffer, Biases->Buffer, output->Buffer, Biases->Mode, Filters->Mode);
+        input->Buffer, Filters->Buffer, Biases->Buffer, output->Buffer, Biases->Mode.Size, Filters->Mode.Size);
 }
 
 std::unique_ptr<const ConvolutionConfig> ConvolutionFunction::GetRequestConfig(const BaseAddress& inputs, const BaseAddress& outputs) const
@@ -165,7 +165,7 @@ std::unique_ptr<const ConvolutionFunction> ConvolutionFunction::finalizeCreation
 {
     return std::make_unique<const ConvolutionFunction>(
         AccelerationDetector::GetKernelMap<ConvolutionKernel>(
-            static_cast<kernel_op>(INTEL_CONVOLUTIONAL), KernelMode{ input->Mode.Value }),
+            static_cast<kernel_op>(INTEL_CONVOLUTIONAL), KernelMode{ input->Mode }),
         input, output, std::move(filters), std::move(biases), std::move(stride));
 }
 

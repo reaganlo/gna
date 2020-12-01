@@ -261,9 +261,9 @@ SubmodelType CompiledModel::getSubmodelType(
     const HardwareCapabilities &hwCaps, uint32_t layerIndex) const
 {
     auto const & layer = softwareModel.GetLayer(layerIndex);
-    auto deviceGeneration = hwCaps.GetDeviceGeneration();
-    auto dataConfig = layer.GetDataMode();
-    auto supportMapIterator = DataConfig::Capabilities().find(dataConfig);
+    auto const deviceGeneration = hwCaps.GetDeviceGeneration();
+    auto const dataConfig = layer.GetDataMode();
+    auto const supportMapIterator = DataConfig::Capabilities().find(dataConfig);
     if (supportMapIterator == DataConfig::Capabilities().end())
     {
         return SubmodelType::Software;

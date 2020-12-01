@@ -43,18 +43,7 @@ struct LayerConfiguration;
 class CnnLayer : public Layer
 {
 public:
-    template<class T>
-    CnnLayer(const T& apiLayer, const BaseValidator& validatorIn) :
-        Layer(apiLayer, validatorIn, {}, BaseAddress())
-    {
-        ExpectValid();
-        Convolution = GetConvolution(getDetails(apiLayer));
-        Activation = ActivationFunction::Create({ &Output.ScratchPad, &Output, Output.Mode, Output.Buffer,
-            apiLayer, *validator });
-        Pooling = GetPooling(apiLayer);
-        Init();
-    }
-
+    CnnLayer(const ApiOperation& apiLayer, const BaseValidator& validatorIn);
     virtual ~CnnLayer() = default;
     virtual void UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const override;
 
@@ -86,8 +75,6 @@ protected:
     void ExpectValid() const;
 
     std::unique_ptr<const PoolingFunction> GetPooling(const Gna2Operation & apiOperation) const;
-
-    virtual DataConfig GetDataMode() const override;
 
 private:
     void computePool(const LayerConfiguration& layerConfiguration, AccelerationMode accel, ExecutionConfig const & execution) const;

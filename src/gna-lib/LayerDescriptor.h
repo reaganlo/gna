@@ -266,7 +266,7 @@ public:
         set(value);
     }
 
-    void operator=(const gna_data_mode mode)
+    void operator=(const DataType mode)
     {
         set(mode);
     }

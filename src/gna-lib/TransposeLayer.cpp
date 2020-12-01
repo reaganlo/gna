@@ -60,6 +60,8 @@ TransposeLayer::TransposeLayer(
 
     Compute = [this](LayerConfiguration &layerConfiguration, AccelerationMode accel, ExecutionConfig const & executionConfig)
                     {this->compute(layerConfiguration, accel, executionConfig); };
+
+    dataConfig = { Input.Mode, DataMode{}, DataMode{}, Output.Mode };
 }
 
 void TransposeLayer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const
@@ -86,11 +88,6 @@ void TransposeLayer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration)
 
     configs.Transpose->input = inputBuffer;
     configs.Transpose->output = outputBuffer;
-}
-
-DataConfig TransposeLayer::GetDataMode() const
-{
-    return DataConfig(Input.Mode, GNA_DATA_DISABLED, GNA_DATA_DISABLED, Output.Mode);
 }
 
 void TransposeLayer::computeHidden(AccelerationMode accel, ExecutionConfig const & executionConfig) const

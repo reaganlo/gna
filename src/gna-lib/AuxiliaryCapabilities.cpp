@@ -32,25 +32,36 @@
 
 using namespace GNA;
 
-static const DataModeLimits& _ModesOutputCopyGen0_9()
+template<uint32_t operandIndex, Gna2Status status>
+struct AuxComponentCaps : protected LayerCapabilities
 {
-    static const DataModeLimits __ModesOutputCopyGen0_9 =
+    template<Gna2DeviceGeneration generation, Gna2DeviceGeneration modeGeneration = generation>
+    static std::pair<const Gna2DeviceGeneration, std::shared_ptr<ComponentLimits>>
+    Make()
     {
-        {GNA_INT16},
-        Gna2StatusXnnErrorOutputBytes
-    };
-    return __ModesOutputCopyGen0_9;
-}
+        return { generation,
+            std::make_shared<TensorLimits>(TensorLimits{
+                {GNA_TENSOR_HW},
+                {{GNA_DIM_H, GetLimitsBasedOnInputGroupsMax<status>()},
+                    {GNA_DIM_W, GetLimitsBasedOnInputLegacy<status>()}},
+                GetModes(operandIndex, modeGeneration)}) };
+    }
 
-static const DataModeLimits& _ModesOutputCopyGen3()
-{
-    static const DataModeLimits __ModesOutputCopyGen3 =
+    template<Gna2DeviceGeneration generation, Gna2DeviceGeneration modeGeneration = generation>
+    static std::pair<const Gna2DeviceGeneration, std::shared_ptr<ComponentLimits>>
+    MakeInterleaved()
     {
-        {GNA_INT8, GNA_INT16},
-        Gna2StatusXnnErrorOutputBytes
-    };
-    return __ModesOutputCopyGen3;
-}
+        return { generation,
+            std::make_shared<TensorLimits>(TensorLimits{
+                {GNA_TENSOR_HW},
+                {{GNA_DIM_H, GetLimitsBasedOnInputLegacy<status>()},
+                    {GNA_DIM_W, GetLimitsBasedOnInputGroupsMax<status>()}},
+                GetModes(operandIndex, modeGeneration)}) };
+    }
+};
+
+using InputAuxCaps = AuxComponentCaps<InputOperandIndex, Gna2StatusXnnErrorInputVolume>;
+using OutputAuxCaps = AuxComponentCaps<OutputOperandIndex, Gna2StatusXnnErrorOutputVolume>;
 
 const FullCapabilitiesMap& AuxiliaryCapabilities::GetOperands(uint32_t operandIndex)
 {
@@ -58,79 +69,36 @@ const FullCapabilitiesMap& AuxiliaryCapabilities::GetOperands(uint32_t operandIn
     {
         {InputOperandIndex,{
             {INTEL_COPY, {
-                {Gna2DeviceGeneration0_9, std::make_shared<TensorLimits>(TensorLimits{
-                    {GNA_TENSOR_HW},
-                    {{GNA_DIM_H, limitsForInputGroupsMax()},
-                    {GNA_DIM_W, limitsForInputShapeLegacy()}},
-                    GetModes(InputOperandIndex, Gna2DeviceGeneration0_9)})},
-                {Gna2DeviceGeneration3_0, std::make_shared<TensorLimits>(TensorLimits{
-                    {GNA_TENSOR_HW},
-                    {{GNA_DIM_H, limitsForInputGroupsMax()},
-                    {GNA_DIM_W, limitsForInputShapeLegacy()}},
-                    GetModes(InputOperandIndex, Gna2DeviceGeneration3_0)})},
+                InputAuxCaps::Make<Gna2DeviceGeneration0_9>(),
+                InputAuxCaps::Make<Gna2DeviceGeneration3_0>(),
+                InputAuxCaps::Make<Gna2DeviceGeneration3_5>(),
             }},
             {INTEL_INTERLEAVE, {
-                {Gna2DeviceGeneration0_9, std::make_shared<TensorLimits>(TensorLimits{
-                    {GNA_TENSOR_HW},
-                    {{GNA_DIM_H, limitsForInputGroupsMax()},
-                    {GNA_DIM_W, limitsForInputShapeLegacy()}},
-                    GetModes(InputOperandIndex, Gna2DeviceGeneration0_9)})},
-                {Gna2DeviceGeneration3_0, std::make_shared<TensorLimits>(TensorLimits{
-                    {GNA_TENSOR_HW},
-                    {{GNA_DIM_H, limitsForInputGroupsMax()},
-                    {GNA_DIM_W, limitsForInputShapeLegacy()}},
-                    GetModes(InputOperandIndex, Gna2DeviceGeneration3_0)})}
+                InputAuxCaps::Make<Gna2DeviceGeneration0_9>(),
+                InputAuxCaps::Make<Gna2DeviceGeneration3_0>(),
+                InputAuxCaps::Make<Gna2DeviceGeneration3_5>(),
             }},
             {INTEL_DEINTERLEAVE, {
-                {Gna2DeviceGeneration0_9, std::make_shared<TensorLimits>(TensorLimits{
-                    {GNA_TENSOR_HW},
-                    {{GNA_DIM_H, limitsForInputShapeLegacy()},
-                    {GNA_DIM_W, limitsForInputGroupsMax()}},
-                    GetModes(InputOperandIndex, Gna2DeviceGeneration0_9)})},
-                {Gna2DeviceGeneration3_0, std::make_shared<TensorLimits>(TensorLimits{
-                    {GNA_TENSOR_HW},
-                    {{GNA_DIM_H, limitsForInputShapeLegacy()},
-                    {GNA_DIM_W, limitsForInputGroupsMax()}},
-                    _ModesOutputCopyGen3()})}
+                InputAuxCaps::MakeInterleaved<Gna2DeviceGeneration0_9>(),
+                InputAuxCaps::MakeInterleaved<Gna2DeviceGeneration3_0>(),
+                InputAuxCaps::MakeInterleaved<Gna2DeviceGeneration3_5>(),
             }},
         }},
         {OutputOperandIndex,{
             {INTEL_COPY, {
-                {Gna2DeviceGeneration0_9, std::make_shared<TensorLimits>(TensorLimits{
-                    {GNA_TENSOR_HW},
-                    {{GNA_DIM_H, limitsForOutputGroupsMax()},
-                    {GNA_DIM_W, limitsForOutputShapeLegacy()}},
-                    _ModesOutputCopyGen0_9()})},
-                {Gna2DeviceGeneration3_0, std::make_shared<TensorLimits>(TensorLimits{
-                    {GNA_TENSOR_HW},
-                    {{GNA_DIM_H, limitsForOutputGroupsMax()},
-                    {GNA_DIM_W, limitsForOutputShapeLegacy()}},
-                    _ModesOutputCopyGen3()})}
+                OutputAuxCaps::Make<Gna2DeviceGeneration0_9>(),
+                OutputAuxCaps::Make<Gna2DeviceGeneration3_0>(),
+                OutputAuxCaps::Make<Gna2DeviceGeneration3_5>(),
             }},
             {INTEL_DEINTERLEAVE, {
-                {Gna2DeviceGeneration0_9, std::make_shared<TensorLimits>(TensorLimits{
-                    {GNA_TENSOR_HW},
-                    {{GNA_DIM_H, limitsForOutputGroupsMax()},
-                    {GNA_DIM_W, limitsForOutputShapeLegacy()}},
-                    GetModes(OutputOperandIndex, Gna2DeviceGeneration0_9)})},
-                {Gna2DeviceGeneration3_0, std::make_shared<TensorLimits>(TensorLimits{
-                    {GNA_TENSOR_HW},
-                    {{GNA_DIM_H,limitsForOutputGroupsMax()},
-                    {GNA_DIM_W, limitsForOutputShapeLegacy()}},
-                    GetModes(OutputOperandIndex, Gna2DeviceGeneration3_0)})},
+                OutputAuxCaps::Make<Gna2DeviceGeneration0_9>(),
+                OutputAuxCaps::Make<Gna2DeviceGeneration3_0>(),
+                OutputAuxCaps::Make<Gna2DeviceGeneration3_5>(),
             }},
             {INTEL_INTERLEAVE, {
-                {Gna2DeviceGeneration0_9, std::make_shared<TensorLimits>(TensorLimits{
-                    {GNA_TENSOR_HW},
-                    {{GNA_DIM_H, limitsForOutputShapeLegacy()},
-                    {GNA_DIM_W, limitsForOutputGroupsMax()}},
-                    GetModes(OutputOperandIndex, Gna2DeviceGeneration0_9)})},
-                {Gna2DeviceGeneration3_0, std::make_shared<TensorLimits>(
-                    TensorLimits{
-                    {GNA_TENSOR_HW},
-                    {{GNA_DIM_H, limitsForOutputShapeLegacy()},
-                    {GNA_DIM_W, limitsForOutputGroupsMax()}},
-                    GetModes(OutputOperandIndex, Gna2DeviceGeneration3_0)})},
+                OutputAuxCaps::MakeInterleaved<Gna2DeviceGeneration0_9>(),
+                OutputAuxCaps::MakeInterleaved<Gna2DeviceGeneration3_0>(),
+                OutputAuxCaps::MakeInterleaved<Gna2DeviceGeneration3_5>(),
             }},
         }},
     };
