@@ -28,6 +28,7 @@
 #include "ModelUtilities.h"
 
 #include <cstring>
+#include <stdexcept>
 
 #define UNREFERENCED_PARAMETER(P) ((void)(P))
 

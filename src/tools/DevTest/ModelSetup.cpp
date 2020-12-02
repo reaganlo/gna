@@ -26,6 +26,7 @@
 #include "ModelSetup.h"
 
 #include <cstdint>
+#include <stdexcept>
 
 #define UNREFERENCED_PARAMETER(P) ((void)(P))
 

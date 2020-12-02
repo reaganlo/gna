@@ -27,6 +27,7 @@
 
 #include <cstring>
 #include <cstdlib>
+#include <stdexcept>
 
 #define UNREFERENCED_PARAMETER(P) ((void)(P))
 
