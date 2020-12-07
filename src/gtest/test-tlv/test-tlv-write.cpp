@@ -35,6 +35,10 @@
 #include <stdio.h>
 #include <string>
 
+static bool isEq(TlvTypeId t, char readType[TLV_TYPE_ID_SIZE]) {
+    return std::equal(t.stringValue, t.stringValue + TLV_TYPE_ID_SIZE, readType);
+}
+
 TEST_F(RecordInitTest, invalidIdPtr)
 {
     TlvLibraryInit();
@@ -54,7 +58,7 @@ TEST_F(RecordInitTest, validCheck)
         char readType[TLV_TYPE_ID_SIZE];
         memcpy_s(readType, sizeof(readType), &frame->type, TLV_TYPE_ID_SIZE);
 
-        EXPECT_EQ(memcmp(TYPE.stringValue, readType, TLV_TYPE_ID_SIZE), 0);
+        EXPECT_TRUE(isEq(TYPE, readType));
 
         uint32_t size;
         EXPECT_EQ(TlvRecordGetSize(id, &size), 0);
@@ -92,7 +96,7 @@ TEST_F(RecordInitRawTest, valid)
 
         memcpy_s(readType, sizeof(readType), &frame->type, TLV_TYPE_ID_SIZE);
 
-        EXPECT_EQ(memcmp(TYPE.stringValue, readType, TLV_TYPE_ID_SIZE), 0);
+        EXPECT_TRUE(isEq(TYPE, readType));
 
         auto expectedSize = TLV_TYPE_AND_LENGTH_FIELDS_SIZE + length;
         uint32_t size;
@@ -316,7 +320,7 @@ TEST_F(RecordRelease, allocTwiceAtTheBegging)
 
     memcpy_s(readType, sizeof(readType), &frame->type, TLV_TYPE_ID_SIZE);
 
-    EXPECT_EQ(memcmp(SCRA.stringValue, readType, TLV_TYPE_ID_SIZE), 0);
+    EXPECT_TRUE(isEq(SCRA, readType));
 
     auto expectedSize = TLV_TYPE_AND_LENGTH_FIELDS_SIZE;
     TlvRecordsRelease(id1);
@@ -336,7 +340,7 @@ TEST_F(RecordRelease, allocTwiceInTheMiddle)
 
     memcpy_s(readType, sizeof(readType), &frame->type, TLV_TYPE_ID_SIZE);
 
-    EXPECT_EQ(memcmp(SCRA.stringValue, readType, TLV_TYPE_ID_SIZE), 0);
+    EXPECT_TRUE(isEq(SCRA, readType));
 
     auto expectedSize = TLV_TYPE_AND_LENGTH_FIELDS_SIZE;
     TlvRecordsRelease(id1);
@@ -357,7 +361,7 @@ TEST_F(RecordRelease, allocTwiceAtTheEnd)
 
     memcpy_s(readType, sizeof(readType), &frame->type, TLV_TYPE_ID_SIZE);
 
-    EXPECT_EQ(memcmp(SCRA.stringValue, readType, TLV_TYPE_ID_SIZE), 0);
+    EXPECT_TRUE(isEq(SCRA, readType));
 
     auto expectedSize = TLV_TYPE_AND_LENGTH_FIELDS_SIZE;
     TlvRecordsRelease(id1);
