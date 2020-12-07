@@ -40,7 +40,7 @@ WindowsHwModuleInterface::WindowsHwModuleInterface(char const* moduleName, Devic
     if (nullptr != hwModule)
     {
         ImportAllSymbols();
-        SetConfig(GetGnaConfigurationVersion(deviceVersion));
+        SetConfig(deviceVersion);
     }
     else
     {

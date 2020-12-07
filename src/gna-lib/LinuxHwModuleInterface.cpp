@@ -48,7 +48,7 @@ LinuxHwModuleInterface::LinuxHwModuleInterface(char const * moduleName, DeviceVe
     if (nullptr != hwModule)
     {
         ImportAllSymbols();
-        SetConfig(GetGnaConfigurationVersion(deviceVersion));
+        SetConfig(deviceVersion);
     }
     else
     {

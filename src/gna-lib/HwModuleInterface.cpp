@@ -35,6 +35,9 @@
 
 #if 1 == GNA_HW_LIB_ENABLED
 #include "GNA_ArchCPkg.h"
+#include "GNA_ArchCPkg.configs.h"
+#else
+	typedef enum { GNA_CFG_DEFLT } GNA3_Cfg_t;
 #endif
 
 #include <cstdint>
@@ -105,10 +108,11 @@ int32_t HwModuleInterface::GetPoolingMode(PoolingFunction2D const* poolingIn)
     return static_cast<int32_t>(poolingIn->Mode);
 }
 
-GNA3_Cfg_t HwModuleInterface::GetGnaConfigurationVersion(DeviceVersion deviceVersion)
+static GNA3_Cfg_t GetGnaConfigurationVersion(DeviceVersion deviceVersion)
 {
     switch (deviceVersion)
     {
+#if GNA_HW_LIB_ENABLED
     case Gna2DeviceVersionGMM:
     case Gna2DeviceVersion0_9:
     case Gna2DeviceVersion1_0:
@@ -128,9 +132,18 @@ GNA3_Cfg_t HwModuleInterface::GetGnaConfigurationVersion(DeviceVersion deviceVer
         return GNA3_Cfg_t::GNA_CFG_3d5C2;
     case Gna2DeviceVersionSoftwareEmulation:
         return GNA3_Cfg_t::GNA_CFG_3d5C1;
+#endif
     default:
         return GNA3_Cfg_t::GNA_CFG_DEFLT;
     }
+}
+
+bool HwModuleInterface::SetConfig(DeviceVersion deviceVersion) {
+    auto setcfg = reinterpret_cast<bool(*)(GNA3_Cfg_t)>(GetSymbolAddress("GNA3_SetConfig"));
+    if (!setcfg) {
+        return false;
+    }
+    return setcfg(GetGnaConfigurationVersion(deviceVersion));
 }
 
 HwUarchParams HwModuleInterface::Get1DParams(ConvolutionFunction2D const* cnnIn, PoolingFunction2D const* poolingIn,
@@ -257,7 +270,6 @@ void HwModuleInterface::ImportAllSymbols()
     CreateLD = reinterpret_cast<CreateLDFunction>(GetSymbolAddress("GNA3_NewLD"));
     FillLD = reinterpret_cast<FillLDFunction>(GetSymbolAddress("GNA3_PopLD"));
     FreeLD = reinterpret_cast<FreeLDFunction>(GetSymbolAddress("GNA3_FreeLD"));
-    SetConfig = reinterpret_cast<SetConfigFunction>(GetSymbolAddress("GNA3_SetConfig"));
 }
 
 void* HwModuleInterface::GetSymbolAddress(const std::string& symbolName)

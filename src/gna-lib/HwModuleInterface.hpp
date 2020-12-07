@@ -31,8 +31,6 @@
 
 #include "gna2-common-impl.h"
 
-#include "GNA_ArchCPkg.configs.h"
-
 struct GNA3_AdaptHW;
 struct GNA3_LyrDesc;
 
@@ -82,17 +80,15 @@ protected:
     HwUarchParams Get2DParams(ConvolutionFunction2D const* cnnIn, PoolingFunction2D const* poolingIn,
         const DataMode& outputMode) const;
     static int32_t GetPoolingMode(PoolingFunction2D const* poolingIn);
-    static GNA3_Cfg_t GetGnaConfigurationVersion(DeviceVersion deviceVersion);
 
     typedef struct GNA3_LyrDesc* (*CreateLDFunction)();
     typedef void(*FreeLDFunction)(struct GNA3_LyrDesc* LD);
     typedef bool(*FillLDFunction)(struct GNA3_LyrDesc* LD);
-    typedef bool(*SetConfigFunction)(GNA3_Cfg_t LD);
 
     CreateLDFunction CreateLD = nullptr;
     FreeLDFunction FreeLD = nullptr;
     FillLDFunction FillLD = nullptr;
-    SetConfigFunction SetConfig = nullptr;
+    bool SetConfig(DeviceVersion deviceVersion);
 
     std::string fullName;
 
