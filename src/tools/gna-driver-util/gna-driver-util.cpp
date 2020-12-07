@@ -163,7 +163,7 @@ int main(int argc, char** argv)
             std::cout << "Computing model" << std::endl;
             computeResult = computeModelOnHardware(di, file);
         }
-        catch (std::exception e)
+        catch (std::exception &e)
         {
             std::cerr << e.what() << std::endl;
         }

@@ -42,14 +42,6 @@ Shape::Shape(ShapeMap && mapIn, gna_tensor_order order) :
     Order{ order }
 {}
 
-Shape & Shape::operator=(const Shape & right)
-{
-    ShapeMap::operator=(static_cast<ShapeMap>(right));
-    this->Order = right.Order;
-    this->LayoutOrder = right.LayoutOrder;
-    return (*this);
-}
-
 uint32_t & Shape::operator[](char dimension)
 {
     return ShapeMap::operator[](Layout::GetIndex(dimension));
@@ -148,9 +140,9 @@ void Shape::ExpectFits(const Shape& envelope) const
     });
 }
 
-void Shape::ExpectEqual(const Shape& reference) const
+void Shape::ExpectEqual(const Shape& ref) const
 {
-    ProcessEachDimension(reference, [](auto l, auto r)
+    ProcessEachDimension(ref, [](auto l, auto r)
     {
         ModelErrorHelper::ExpectEqual(l, r, Gna2ItemTypeShapeDimensions);
     });

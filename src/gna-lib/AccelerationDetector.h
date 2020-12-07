@@ -132,7 +132,7 @@ public:
             return reinterpret_cast<const KernelMap<KernelType>&>(
                 GetKernels(operation, dataMode));
         }
-        catch (std::out_of_range)
+        catch (std::out_of_range &)
         {
             throw GnaModelErrorException{ Gna2ItemTypeOperandType, Gna2ErrorTypeNotInSet, 0 };
         }

@@ -47,9 +47,6 @@ public:
     Address(const T * value) :
         buffer(const_cast<T*>(value))
     {}
-    Address(const Address& address) :
-        buffer(address.buffer)
-    {}
     template<class C> Address(const Address<C*>& address) :
         buffer(const_cast<C*>(address.Get()))
     {}
@@ -181,11 +178,6 @@ public:
     const Address& operator+=(const uint32_t& right)
     {
         this->buffer = this->Get() + right;
-        return *this;
-    }
-    const Address& operator =(const Address& right)
-    {
-        this->buffer = right.buffer;
         return *this;
     }
     const Address& operator =(const T& right)
