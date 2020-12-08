@@ -74,7 +74,7 @@ GNA2_API enum Gna2Status Gna2MemoryFree(
  - In case of some doubts, probably should not use this function.
 
  @param memory Starting address of the memory buffer to tag.
- @param tag Special purpose tag. Use zero to reset to default.
+ @param tag Special purpose tag. Use zero to reset to default. @see ::Gna2MemoryTag
  @return Status of the operation.
     @retval Gna2StatusSuccess On success.
     @retval Gna2StatusMemoryBufferInvalid If memory address is invalid.

@@ -26,7 +26,7 @@
 #pragma once
 
 #include "Address.h"
-#include "Macros.h"
+#include "gna2-model-export-api.h"
 
 #if defined(__GNUC__) && !defined(__INTEL_COMPILER)
 #include <mm_malloc.h>
@@ -76,7 +76,8 @@ public:
     }
 
     void SetTag(uint32_t newTag);
-    uint32_t GetTag() const;
+
+    Gna2MemoryTag GetMemoryTag() const;
 
     static const uint32_t GNA_BUFFER_ALIGNMENT = 64;
     static constexpr uint32_t GNA_MAX_MEMORY_FOR_SINGLE_ALLOC = 1 << 28;

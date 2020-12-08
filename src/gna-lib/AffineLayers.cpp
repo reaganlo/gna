@@ -36,6 +36,7 @@
 
 #include "gna2-common-api.h"
 #include "gna2-memory-api.h"
+#include "gna2-model-export-api.h"
 
 using namespace GNA;
 
@@ -46,10 +47,15 @@ void *AffineBaseLayer::GetGlobal2MBScratchpad()
     uint32_t sizeGranted;
     if (ptr == nullptr)
     {
-        const auto status = Gna2MemoryAlloc(1 << 21, &sizeGranted, &ptr);
+        auto status = Gna2MemoryAlloc(1 << 21, &sizeGranted, &ptr);
         if (status != Gna2StatusSuccess || ptr == nullptr)
         {
             Log->Error("Unsuccessful Scratchpad allocation\n");
+        }
+        status = Gna2MemorySetTag(ptr, Gna2MemoryTagScratch);
+        if (status != Gna2StatusSuccess)
+        {
+            Log->Error("Unsuccessful Scratchpad tagging\n");
         }
     }
     return ptr;

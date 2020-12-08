@@ -71,25 +71,15 @@ void HardwareModelSue1::prepareAllocationsAndModel()
 
     auto const ldMemorySize = RoundUp(calculateDescriptorSize(false), MemoryBufferAlignment);
 
-    uint32_t scratchPadSize = 0;
-    for (auto const & layer : model.GetLayers())
-    {
-        auto const scratchPad = layer->TryGetOperand(ScratchpadOperandIndex);
-        if (scratchPad)
-        {
-            scratchPadSize = (std::max)(scratchPadSize, scratchPad->Size);
-        }
-    }
-    scratchPadSize = RoundUp(scratchPadSize, Memory::GNA_BUFFER_ALIGNMENT);
-
+    auto const scratchPadSize = model.GetScratchpadSize();
     auto const rw = model.GetAllocations()[0];
-    totalModelSize = ldMemorySize + rw.GetSize() + scratchPadSize;
+    totalModelSize = ldMemorySize + rw->GetSize() + scratchPadSize;
 
     MemoryContainerElement const * ro = nullptr;
     if (model.GetAllocations().size() >= 3)
     {
         ro = &model.GetAllocations()[1];
-        totalModelSize += ro->GetSize();
+        totalModelSize += (*ro)->GetSize();
     }
 
     exportMemory = customAlloc(totalModelSize);
@@ -110,12 +100,9 @@ void HardwareModelSue1::prepareAllocationsAndModel()
 
     if (scratchPadSize > 0)
     {
-        scratchPadMemory = std::make_unique<Memory>(
-            static_cast<uint8_t*>(exportMemory) + allocations.GetMemorySize(), scratchPadSize);
-        if (!scratchPadMemory)
-        {
-            throw GnaException{ Gna2StatusResourceAllocationError };
-        }
+        createScratchPadMemory(
+            static_cast<uint8_t*>(exportMemory) + allocations.GetMemorySize(),
+            scratchPadSize);
         allocations.Emplace(*scratchPadMemory);
     }
 
@@ -146,12 +133,12 @@ void * HardwareModelSue1::Export()
     auto const & rw = allocations[1];
     auto const & ro = allocations.back();
     void * destination = static_cast<uint8_t*>(exportMemory) + ldMemory->GetSize();
-    memcpy_s(destination, totalModelSize, rw.GetBuffer(), rw.GetSize());
+    memcpy_s(destination, totalModelSize, rw->GetBuffer(), rw->GetSize());
     if (allocations.size() >= 3)
     {
-        auto const roSize = ro.GetSize();
+        auto const roSize = ro->GetSize();
         destination = static_cast<uint8_t*>(exportMemory) + totalModelSize - roSize;
-        memcpy_s(destination, totalModelSize, ro.GetBuffer(), roSize);
+        memcpy_s(destination, totalModelSize, ro->GetBuffer(), roSize);
     }
 
     return exportMemory;

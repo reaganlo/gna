@@ -105,7 +105,7 @@ void Memory::SetTag(uint32_t newTag)
     tag = newTag;
 }
 
-uint32_t Memory::GetTag() const
+Gna2MemoryTag Memory::GetMemoryTag() const
 {
-    return tag;
+    return static_cast<Gna2MemoryTag>(tag);
 }

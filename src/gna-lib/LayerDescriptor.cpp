@@ -44,7 +44,7 @@ uint32_t LayerDescriptor::getSize(const DeviceVersion deviceVersion)
         {Gna2DeviceVersionEmbedded1_0, 128},
         {Gna2DeviceVersionEmbedded2_1, 128},
         {Gna2DeviceVersionEmbedded3_0, 128}, // TODO:3: verify the actual size
-        {Gna2DeviceVersionEmbedded3_1, 128},
+        {Gna2DeviceVersionEmbedded3_5, 128},
     };
     return sizeMap.at(deviceVersion);
 }
@@ -438,7 +438,7 @@ const std::map<const XnnParameterType, const XnnParameter>& LayerDescriptor::get
         {Gna2DeviceVersionEmbedded1_0, XnnDescriptorGNA_1},
         {Gna2DeviceVersionEmbedded2_1, XnnDescriptorGNA_1},
         {Gna2DeviceVersionEmbedded3_0, XnnDescriptorGNA_3},
-        {Gna2DeviceVersionEmbedded3_1, XnnDescriptorGNA_3_5},
+        {Gna2DeviceVersionEmbedded3_5, XnnDescriptorGNA_3_5},
     };
     return parameterMap.at(deviceVersion);
 }

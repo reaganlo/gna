@@ -27,6 +27,7 @@
 
 #include "DeviceManager.h"
 #include "Expect.h"
+#include "gna2-memory-impl.h"
 #include "GnaException.h"
 #include "HardwareCapabilities.h"
 #include "Layer.h"
@@ -63,6 +64,21 @@ void CompiledModel::BuildHardwareModel(DriverInterface &ddi)
     {
         hardwareModel->Build(deviceSubmodels);
     }
+}
+
+uint32_t CompiledModel::GetScratchpadSize() const
+{
+    auto scratchPadSize = 0u;
+    for (auto const & layer : GetLayers())
+    {
+        auto const scratchPad = layer->TryGetOperand(ScratchpadOperandIndex);
+        if (scratchPad)
+        {
+            scratchPadSize = (std::max)(scratchPadSize, scratchPad->Size);
+        }
+    }
+    scratchPadSize = RoundUp(scratchPadSize, Memory::GNA_BUFFER_ALIGNMENT);
+    return scratchPadSize;
 }
 
 uint32_t CompiledModel::GetMaximumOperandSize(uint32_t operandIndex)

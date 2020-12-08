@@ -38,17 +38,11 @@
 
  If needed make sure to call Gna2ModelOverrideAlignment(newAlignment) function before Gna2ModelCreate(...).
 
- Allocate any number of logically separable memory regions with Gna2MemoryAlloc(...) and tag them with Gna2MemorySetTag(address, tagValue).
+ Allocate any number of logically separable memory regions with Gna2MemoryAlloc() and tag
+ them with Gna2MemorySetTag().
+ @see ::Gna2MemoryTag
 
-    Tag name                        | Tag value
-    -------------------------------:|:----------
-    MemoryTagReadOnly               | 3
-    MemoryTagExternalBufferInput    | 4
-    MemoryTagExternalBufferOutput   | 5
-    MemoryTagScratch                | 6
-    MemoryTagState                  | 7
-
- When using "External Buffer" feature, the following rules applie:
+ When using "External Buffer" feature, the following rules applies:
   - Separately allocate memory regions for external input and/or external output buffers.
   - Tag them appropriately with Gna2MemorySetTag().
   - Set selected (input/bias/output) Gna2Tensor tensors' Mode fields of the selected GNA layers with Gna2TensorModeExternalBuffer
@@ -64,18 +58,18 @@
 
   Target device type             | Description      | Designation
   -------------------------------|------------------|------------
-  Gna2DeviceVersionEmbedded3_1   | Autonomous GNA   | GNAA35
+  Gna2DeviceVersionEmbedded3_5   | GNA 3.5 embedded |  GNA35
 
  Export selected components of model into memory with Gna2ModelExport()
 
    Component name                                   | Description  | Applicability
    -------------------------------------------------|--------------|---------------------
-   Gna2ModelExportComponentLayerDescriptors         | LDT          | GNAA35
-   Gna2ModelExportComponentReadOnlyDump             | RO           | GNAA35
-   Gna2ModelExportComponentScratchDump              | SCRA         | GNAA35
-   Gna2ModelExportComponentStateDump                | STATE        | GNAA35
-   Gna2ModelExportComponentExternalBufferInputDump  | EXIN         | GNAA35
-   Gna2ModelExportComponentExternalBufferOutputDump | EXOUT        | GNAA35
+   Gna2ModelExportComponentLayerDescriptors         | LDT          | GNA35
+   Gna2ModelExportComponentReadOnlyDump             | RO           | GNA35
+   Gna2ModelExportComponentScratchDump              | SCRA         | GNA35
+   Gna2ModelExportComponentStateDump                | STATE        | GNA35
+   Gna2ModelExportComponentExternalBufferInputDump  | EXIN         | GNA35
+   Gna2ModelExportComponentExternalBufferOutputDump | EXOUT        | GNA35
 
  In order to create TLV blob pass components to ::Gna2ExportTlvGNAA35(...) helper function.
 

@@ -52,7 +52,7 @@ uint32_t HardwareModelScorable::GetBufferOffsetForConfiguration(
     const BaseAddress& address,
     const RequestConfiguration& requestConfiguration) const
 {
-    auto offset = HardwareModel::GetBufferOffset(address);
+    auto offset = HardwareModel::GetBufferOffset(address).Offset;
     if (offset != 0)
     {
         return offset;

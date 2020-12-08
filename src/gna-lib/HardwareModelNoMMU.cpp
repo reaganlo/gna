@@ -23,6 +23,8 @@
  in any way.
 */
 
+#define NOMINMAX 1
+
 #include "HardwareModelNoMMU.h"
 
 #include "CompiledModel.h"
@@ -35,87 +37,118 @@ class MemoryOfUndefinedSize : public Memory
 {
 public:
     MemoryOfUndefinedSize(void* address) :
-    Memory(address ,1, 1)
-    {
-    }
+        Memory(address, 1, 1)
+    {}
 };
+
+inline std::map<uint32_t, uint32_t> const & HardwareModelNoMMU::GetBarMap(Gna2DeviceVersion target)
+{
+    static const auto barMap = std::map<Gna2DeviceVersion, std::map<uint32_t, uint32_t>>{
+        {Gna2DeviceVersionEmbedded3_0, {
+            { Gna2MemoryTagReadWrite, 1 },
+            { Gna2MemoryTagInput, 2 },
+            { Gna2MemoryTagOutput, 3 },
+            { Gna2MemoryTagReadOnly, 1 },
+            { Gna2MemoryTagScratch, 0 },
+            { Gna2MemoryTagState, 3 },
+        },},
+        {Gna2DeviceVersionEmbedded3_5, {
+            { Gna2MemoryTagReadWrite, 1 },
+            { Gna2MemoryTagInput, 2 },
+            { Gna2MemoryTagOutput, 3 },
+            { Gna2MemoryTagReadOnly, 1 },
+            { Gna2MemoryTagScratch, 0 },
+            { Gna2MemoryTagState, 3 },
+            { Gna2MemoryTagExternalBufferInput, std::numeric_limits<uint32_t>::max() },
+            { Gna2MemoryTagExternalBufferOutput, std::numeric_limits<uint32_t>::max() },
+        },},
+    };
+
+    try
+    {
+        return barMap.at(target);
+    }
+    catch (std::out_of_range&)
+    {
+        throw GnaException(Gna2StatusDeviceVersionInvalid);
+    }
+}
+
+inline uint32_t HardwareModelNoMMU::GetBarIndex(Gna2DeviceVersion target, uint32_t tag)
+{
+    try
+    {
+        return GetBarMap(target).at(tag);
+    }
+    catch (std::out_of_range&)
+    {
+        throw GnaException(Gna2StatusMemoryBufferInvalid);
+    }
+}
 
 HardwareModelNoMMU::HardwareModelNoMMU(CompiledModel const & softwareModel, Gna2UserAllocator customAllocIn,
     Gna2DeviceVersion targetDevice) :
     HardwareModel(softwareModel, GetHwCaps(targetDevice)),
     customUserAlloc{ customAllocIn },
-    devComponentToMem
-    {
-        { Gna2DeviceVersionEmbedded3_1,
-            {
-                { Gna2ModelExportComponentReadOnlyDump, &FollowingLdaAllocations },
-                { Gna2ModelExportComponentStateDump, &StateAllocations },
-                { Gna2ModelExportComponentScratchDump, &ScratchAllocations },
-                { Gna2ModelExportComponentExternalBufferInputDump, &ExternalBufferInputAllocations },
-                { Gna2ModelExportComponentExternalBufferOutputDump, &ExternalBufferOutputAllocations },
-            }
-        },
-        { Gna2DeviceVersionEmbedded3_0,
-            {
-                { Gna2ModelExportComponentReadOnlyDump, &FollowingLdaAllocations },
-                { Gna2ModelExportComponentInputDump, &InputAllocations},
-                { Gna2ModelExportComponentOutputDump, &OutputAllocations},
-                { Gna2ModelExportComponentScratchDump, &ScratchAllocations },
-            }
-        }
-    }
+    exportAllocations{
+    {Gna2MemoryTagReadWrite, {} },
+    {Gna2MemoryTagInput, {} },
+    {Gna2MemoryTagOutput, {} },
+    {Gna2MemoryTagReadOnly, {} },
+    {Gna2MemoryTagExternalBufferInput, {} },
+    {Gna2MemoryTagExternalBufferOutput, {} },
+    {Gna2MemoryTagScratch, {} },
+    {Gna2MemoryTagState, {} },
+}
 {
-    for(const auto& memElement : softwareModel.GetAllocations())
+    createScratchPadMemory(AffineBaseLayer::GetGlobal2MBScratchpad(), model.GetScratchpadSize());
+
+    PrepareExportAllocations();
+
+    // If there are regions tagged as External do not try guess
+    if (exportAllocations.at(Gna2MemoryTagExternalBufferInput).empty() &&
+        exportAllocations.at(Gna2MemoryTagExternalBufferOutput).empty() &&
+        targetDevice == Gna2DeviceVersionEmbedded3_0)
     {
-        const Memory& buffer = memElement;
-        switch (buffer.GetTag())
+        GuessIOAllocations();
+    }
+}
+
+void HardwareModelNoMMU::PrepareExportAllocations()
+{
+    auto const target = hwCapabilities.GetDeviceVersion();
+    for (auto && buffer : model.GetAllocations())
+    {
+        auto tag = buffer->GetMemoryTag();
+        auto const isTagDefined = GetBarMap(target).count(tag);
+        auto const * memory = &(buffer.operator const Memory&());
+        if (isTagDefined)
         {
-        case MemoryTagInput:
-            InputAllocations.Emplace(buffer);
-            break;
-        case MemoryTagOutput:
-            OutputAllocations.Emplace(buffer);
-            break;
-        case MemoryTagExternalBufferInput:
-            ExternalBufferInputAllocations.Emplace(buffer);
-            break;
-        case MemoryTagExternalBufferOutput:
-            ExternalBufferOutputAllocations.Emplace(buffer);
-            break;
-        case MemoryTagScratch:
-            ScratchAllocations.Emplace(buffer);
-            break;
-        case MemoryTagState:
-            StateAllocations.Emplace(buffer);
-            break;
-        case MemoryTagReadOnly:
-        case MemoryTagReadWrite:
-        default:
-            if(memElement.GetBuffer() == AffineBaseLayer::GetGlobal2MBScratchpad())
+            tag = (Gna2MemoryTagReadWrite == tag) ? Gna2MemoryTagReadOnly : tag;
+            if (scratchPadMemory && buffer->GetBuffer() == scratchPadMemory->GetBuffer())
             {
-                ScratchAllocations.Emplace(buffer);
-            }
-            else
-            {
-                FollowingLdaAllocations.Emplace(buffer);
+                memory = scratchPadMemory.get();
             }
         }
+        else // current implementation will treat all untagged buffers as RO
+        {
+            tag = Gna2MemoryTagReadOnly;
+        }
+        exportAllocations.at(tag).Emplace(*memory);
     }
-    // If there are regions tagged as External do not try guess
-    if(!ExternalBufferInputAllocations.empty() ||
-       !ExternalBufferOutputAllocations.empty())
+}
+
+void HardwareModelNoMMU::GuessIOAllocations()
+{
+    if (exportAllocations.at(Gna2MemoryTagInput).empty())
     {
-        return;
+        guessedInput = std::make_unique<MemoryOfUndefinedSize>(model.GetLayers().front()->Input.Buffer.Get());
+        exportAllocations.at(Gna2MemoryTagInput).Emplace(*guessedInput);
     }
-    if(InputAllocations.empty() && targetDevice == Gna2DeviceVersionEmbedded3_0)
+    if (exportAllocations.at(Gna2MemoryTagOutput).empty())
     {
-        guessedInput = std::make_unique<MemoryOfUndefinedSize>(softwareModel.GetLayers().front()->Input.Buffer.Get());
-        InputAllocations.Emplace(*guessedInput);
-    }
-    if (OutputAllocations.empty() && targetDevice == Gna2DeviceVersionEmbedded3_0)
-    {
-        guessedOutput = std::make_unique<MemoryOfUndefinedSize>(softwareModel.GetLayers().back()->Output.Buffer.Get());
-        OutputAllocations.Emplace(*guessedOutput);
+        guessedOutput = std::make_unique<MemoryOfUndefinedSize>(model.GetLayers().back()->Output.Buffer.Get());
+        exportAllocations.at(Gna2MemoryTagOutput).Emplace(*guessedOutput);
     }
 }
 
@@ -140,7 +173,7 @@ void HardwareModelNoMMU::prepareAllocationsAndModel()
 {
     Expect::InRange(model.LayerCount, 1u, hwCapabilities.GetMaximumLayerCount(),
         Gna2StatusXnnErrorNetLyrNo);
-    auto const ldMemorySize = HardwareModel::calculateDescriptorSize(false);
+    auto const ldMemorySize = calculateDescriptorSize(false);
 
     // TODO: don't use custom alloc here, as ptr alignment is required
     ldMemory = std::make_unique<Memory>(customAllocSafe(ldMemorySize), ldMemorySize);
@@ -157,7 +190,7 @@ const HardwareCapabilities& HardwareModelNoMMU::GetHwCaps(Gna2DeviceVersion targ
     static const std::map<Gna2DeviceVersion, HardwareCapabilities> hwCaps =
     {
         {Gna2DeviceVersionEmbedded3_0, HardwareCapabilities{ Gna2DeviceVersionEmbedded3_0 }},
-        {Gna2DeviceVersionEmbedded3_1, HardwareCapabilities{ Gna2DeviceVersionEmbedded3_1 }},
+        {Gna2DeviceVersionEmbedded3_5, HardwareCapabilities{ Gna2DeviceVersionEmbedded3_5 }},
     };
     auto const found = hwCaps.find(targetDevice);
     if (hwCaps.cend() == found)
@@ -174,64 +207,48 @@ uint32_t HardwareModelNoMMU::SetBarIndex(uint32_t offsetFromBar, uint32_t barInd
 
 LdaOffset HardwareModelNoMMU::GetBufferOffset(const BaseAddress& address) const
 {
+    if (!address)
+        return 0;
+
     // TODO: 3: provide derived classes for 3.0 embedded and anna and using virtual methods to simplify the code,
     // TODO: 3: all first level IFs should be extracted IMO to dervied classes then
-    if (InputAllocations.Contains(address))
+    auto const && found = std::find_if(exportAllocations.begin(), exportAllocations.end(),
+        [&address](const auto & memories) { return memories.second.Contains(address); });
+    if (exportAllocations.end() == found)
     {
-        Expect::True(this->hwCapabilities.GetDeviceVersion() == Gna2DeviceVersionEmbedded3_0, Gna2StatusMemoryBufferInvalid);
-        return SetBarIndex(InputAllocations.GetBufferOffset(address), BarIndexInput);
+        throw GnaException(Gna2StatusMemoryBufferInvalid);
     }
-    if (OutputAllocations.Contains(address))
-    {
-        Expect::True(this->hwCapabilities.GetDeviceVersion() == Gna2DeviceVersionEmbedded3_0, Gna2StatusMemoryBufferInvalid);
-        return SetBarIndex(OutputAllocations.GetBufferOffset(address), BarIndexOutput);
-    }
-    if (StateAllocations.Contains(address))
-    {
-        Expect::True(this->hwCapabilities.GetDeviceVersion() == Gna2DeviceVersionEmbedded3_1, Gna2StatusMemoryBufferInvalid);
-        return SetBarIndex(StateAllocations.GetBufferOffset(address), StateBarIndex);
-    }
-    if (ScratchAllocations.Contains(address))
-    {
-        if (this->hwCapabilities.GetDeviceVersion() == Gna2DeviceVersionEmbedded3_0)
-        {
-            // Global scratchpad region starts after GnaDescriptor (32bytes) at BAR0
-            return SetBarIndex(GnaDescritorSize + ScratchAllocations.GetBufferOffset(address), BarIndexGnaDescriptor);
-        }
-        Expect::True(this->hwCapabilities.GetDeviceVersion() == Gna2DeviceVersionEmbedded3_1, Gna2StatusMemoryBufferInvalid);
-        return SetBarIndex(ScratchAllocations.GetBufferOffset(address), ScratchBarIndex);
-    }
-    if (FollowingLdaAllocations.Contains(address))
-    {
-        return SetBarIndex(ldMemory->GetSize() + FollowingLdaAllocations.GetBufferOffset(address), BarIndexLda);
-    }
-    if (ExternalBufferInputAllocations.Contains(address))
-    {
-        Expect::True(this->hwCapabilities.GetDeviceVersion() == Gna2DeviceVersionEmbedded3_1, Gna2StatusMemoryBufferInvalid);
-        LdaOffset out{ ExternalBufferInputAllocations.GetBufferOffset(address) };
-        out.SetExternalInput();
-        return out;
-    }
-    if (ExternalBufferOutputAllocations.Contains(address))
-    {
-        Expect::True(this->hwCapabilities.GetDeviceVersion() == Gna2DeviceVersionEmbedded3_1, Gna2StatusMemoryBufferInvalid);
-        LdaOffset out{ ExternalBufferOutputAllocations.GetBufferOffset(address) };
-        out.SetExternalOutput();
-        return out;
-    }
-    if (!address)
-    {
-        return 0;
-    }
-    throw GnaException(Gna2StatusMemoryBufferInvalid);
-}
 
-void HardwareModelNoMMU::ExportLd(void *& exportData, uint32_t & exportDataSize)
-{
-    Build({});
+    auto const tag = found->first;
+    auto const & memoryContainer = found->second;
+    uint32_t offset;
+    switch (tag)
+    {
+    case Gna2MemoryTagScratch:
+        // Global scratchpad region starts after GnaDescriptor (32bytes) at BAR0
+        offset = Gna2RoundUpTo64(GnaDescriptorSize) + memoryContainer.GetBufferOffset(address);
+        break;
+    case Gna2MemoryTagReadOnly:
+        offset = ldMemory->GetSize() + memoryContainer.GetBufferOffset(address);
+        break;
+    case Gna2MemoryTagInput:
+    case Gna2MemoryTagOutput:
+    case Gna2MemoryTagState:
+        offset = memoryContainer.GetBufferOffset(address);
+        break;
+    case Gna2MemoryTagExternalBufferInput:
+    case Gna2MemoryTagExternalBufferOutput:
+    {
+        LdaOffset ldaOffset{ memoryContainer.GetBufferOffset(address) };
+        ldaOffset.IsExternal = true;
+        return ldaOffset;
+    }
+    default:
+        throw GnaException(Gna2StatusMemoryBufferInvalid);
+    }
 
-    exportData = ldMemory->GetBuffer();
-    exportDataSize = ldMemory->GetSize();
+    auto const target = this->hwCapabilities.GetDeviceVersion();
+    return LdaOffset{ SetBarIndex(offset, GetBarIndex(target, tag)) };
 }
 
 void HardwareModelNoMMU::ExportComponent(void *& exportData, uint32_t & exportDataSize, Gna2ModelExportComponent component)
@@ -244,16 +261,8 @@ void HardwareModelNoMMU::ExportComponent(void *& exportData, uint32_t & exportDa
         return;
     }
 
-    const auto devFound = devComponentToMem.find(hwCapabilities.GetDeviceVersion());
-    Expect::True(devFound != devComponentToMem.end(), Gna2StatusNotImplemented);
-
-    const auto found = devFound->second.find(component);
-
-    Expect::True(found != devFound->second.end(), Gna2StatusMemoryBufferInvalid);
-
-    auto& chosenComponent = *found->second;
-
-    const auto size = chosenComponent.GetMemorySize();
+    auto const & memoryContainer = GetComponent(component);
+    const auto size = memoryContainer.GetMemorySize();
     exportDataSize = size;
     if (size == 0)
     {
@@ -262,5 +271,61 @@ void HardwareModelNoMMU::ExportComponent(void *& exportData, uint32_t & exportDa
     }
     exportData = customAllocSafe(size);
 
-    chosenComponent.CopyData(exportData, exportDataSize);
+    memoryContainer.CopyData(exportData, exportDataSize);
+}
+
+void HardwareModelNoMMU::ExportLd(void *& exportData, uint32_t & exportDataSize)
+{
+    Build({});
+
+    exportData = ldMemory->GetBuffer();
+    exportDataSize = ldMemory->GetSize();
+}
+
+MemoryContainer const& HardwareModelNoMMU::GetComponent(Gna2ModelExportComponent component) const
+{
+    auto const tag = GetComponentTag(hwCapabilities.GetDeviceVersion(), component);
+    return exportAllocations.at(tag);
+}
+
+Gna2MemoryTag HardwareModelNoMMU::GetComponentTag(Gna2DeviceVersion target, Gna2ModelExportComponent component)
+{
+    static const auto mapping = std::map<Gna2DeviceVersion, std::map<Gna2ModelExportComponent, Gna2MemoryTag> >
+    {
+        { Gna2DeviceVersionEmbedded3_0,
+            {
+                { Gna2ModelExportComponentReadOnlyDump, Gna2MemoryTagReadOnly },
+                { Gna2ModelExportComponentInputDump, Gna2MemoryTagInput },
+                { Gna2ModelExportComponentOutputDump, Gna2MemoryTagOutput },
+                { Gna2ModelExportComponentScratchDump, Gna2MemoryTagScratch },
+            }
+        },
+        { Gna2DeviceVersionEmbedded3_5,
+            {
+                { Gna2ModelExportComponentReadOnlyDump, Gna2MemoryTagReadOnly },
+                { Gna2ModelExportComponentInputDump, Gna2MemoryTagInput },
+                { Gna2ModelExportComponentOutputDump, Gna2MemoryTagOutput },
+                { Gna2ModelExportComponentScratchDump, Gna2MemoryTagScratch },
+                { Gna2ModelExportComponentStateDump, Gna2MemoryTagState },
+                { Gna2ModelExportComponentExternalBufferInputDump, Gna2MemoryTagExternalBufferInput },
+                { Gna2ModelExportComponentExternalBufferOutputDump, Gna2MemoryTagExternalBufferOutput },
+            }
+        },
+    };
+    try
+    {
+        auto const & devMap = mapping.at(target);
+        try
+        {
+            return devMap.at(component);
+        }
+        catch (std::out_of_range&)
+        {
+            throw GnaException(Gna2StatusMemoryBufferInvalid);
+        }
+    }
+    catch (std::out_of_range&)
+    {
+        throw GnaException(Gna2StatusDeviceVersionInvalid);
+    }
 }

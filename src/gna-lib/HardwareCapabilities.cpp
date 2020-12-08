@@ -259,7 +259,7 @@ std::map<DeviceVersion, const GenerationCapabilities>& HardwareCapabilities::get
             {},
             {}},
         },
-        { Gna2DeviceVersionEmbedded3_1,
+        { Gna2DeviceVersionEmbedded3_5,
             {Gna2DeviceGeneration3_5,
             8192,
             {
@@ -274,7 +274,7 @@ std::map<DeviceVersion, const GenerationCapabilities>& HardwareCapabilities::get
                 { NewPerformanceCounters, true },
                 { CNN2D, true }
             },
-            2,
+            8,
             {{1, 16}, {2, 8}},
             4,
             2,
@@ -293,8 +293,8 @@ std::map<DeviceVersion, const GenerationCapabilities>& HardwareCapabilities::get
         initHardwareConsistencySettingsAdl(const_cast<GenerationCapabilities&>(capsMap.at(Gna2DeviceVersion3_5)), true);
         initHardwareConsistencySettingsAdl(const_cast<GenerationCapabilities&>(capsMap.at(Gna2DeviceVersionEmbedded3_0)));
         initHardwareConsistencySettingsAdl(const_cast<GenerationCapabilities&>(capsMap.at(Gna2DeviceVersionEmbedded3_0)), true);
-        initHardwareConsistencySettingsAdl(const_cast<GenerationCapabilities&>(capsMap.at(Gna2DeviceVersionEmbedded3_1)));
-        initHardwareConsistencySettingsAdl(const_cast<GenerationCapabilities&>(capsMap.at(Gna2DeviceVersionEmbedded3_1)), true);
+        initHardwareConsistencySettingsAdl(const_cast<GenerationCapabilities&>(capsMap.at(Gna2DeviceVersionEmbedded3_5)));
+        initHardwareConsistencySettingsAdl(const_cast<GenerationCapabilities&>(capsMap.at(Gna2DeviceVersionEmbedded3_5)), true);
     }
 
     return capsMap;

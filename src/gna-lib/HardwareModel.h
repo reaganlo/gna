@@ -83,6 +83,8 @@ protected:
 
     void prepareBaseDescriptor();
 
+    void createScratchPadMemory(void * buffer, uint32_t size);
+
     bool IsSoftwareLayer(const std::vector<std::unique_ptr<SubModel>>& submodels, uint32_t layerIndex);
 
     std::unique_ptr<LayerDescriptor> baseDescriptor;
@@ -98,6 +100,8 @@ protected:
     std::vector<std::unique_ptr<HardwareLayer>> hardwareLayers;
 
     std::unique_ptr<Memory> ldMemory;
+
+    std::unique_ptr<Memory> scratchPadMemory;
 
     // hardware model (ldMemory) + software model allocations
     MemoryContainer allocations;

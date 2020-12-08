@@ -84,6 +84,8 @@ public:
         return softwareModel.GetLayers();
     }
 
+    uint32_t GetScratchpadSize() const;
+
     Layer const & GetLayer(uint32_t layerIndex) const
     {
         return softwareModel.GetLayer(layerIndex);

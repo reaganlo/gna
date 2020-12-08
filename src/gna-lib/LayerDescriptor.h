@@ -45,6 +45,21 @@ class HardwareCapabilities;
 using AddrGmmCfg = Address<GMM_CONFIG *>;
 using AddrGmmCfgC = Address<GMM_CONFIG * const>;
 
+
+struct LdaOffset
+{
+    LdaOffset(uint32_t offsetIn):
+        Offset{offsetIn}
+    {
+    }
+
+    uint32_t Offset = 0;
+    bool IsExternal = false;
+};
+
+// Functor for getting buffer offset for HW
+using GetHwOffset = std::function<const LdaOffset(const BaseAddress&)>;
+
 typedef enum _gmm_read_elimination
 {
     GMM_NORMAL_OPERATION,
@@ -248,8 +263,8 @@ public:
         Expect::NotNull(translator.get());
     }
 
-    XnnParameter(BaseAddress descriptorAddress, uint32_t descriptorOffset,
-                const XnnParameter& param, const GetHwOffset getHwOffset) :
+    XnnParameter(BaseAddress const & descriptorAddress, uint32_t descriptorOffset,
+                const XnnParameter& param, const GetHwOffset & getHwOffset) :
         Size { param.Size },
         offset { param.offset },
         address { descriptorAddress + offset },
@@ -307,7 +322,7 @@ public:
     {
         Expect::True(4 == Size && 0 == bitCount, Gna2StatusUnknownError);
         const auto ldaOffset = getBufferOffset(buffer);
-        *address.Get<uint32_t>() = ldaOffset;
+        *address.Get<uint32_t>() = ldaOffset.Offset;
     }
 
     uint8_t* operator&() const
@@ -398,7 +413,7 @@ public:
 
     ~LayerDescriptor() = default;
 
-    void Forward(AddrGmmCfg gmmDescriptor)
+    void Forward(AddrGmmCfg const & gmmDescriptor)
     {
         address = address + Size;
         offset = offset + Size;
@@ -413,7 +428,7 @@ public:
     // return XnnParameter copy for GMM data manipulation
     XnnParameter operator[](const GmmParameterType paramType) const
     {
-        auto gmmOffset = GmmDescriptor.GetOffset(memoryBase);
+        const auto gmmOffset = GmmDescriptor.GetOffset(memoryBase);
         return XnnParameter(GmmDescriptor, gmmOffset, gmmReferenceParams->at(paramType), getHwOffset);
     }
 
@@ -435,7 +450,8 @@ public:
 
     bool IsExternalBuffer(void * addressIn) const
     {
-        return getHwOffset(addressIn).IsExternalInput() || getHwOffset(addressIn).IsExternalOutput();
+        auto const buffer = getHwOffset(addressIn);
+        return buffer.IsExternal;
     }
 
     uint32_t Size;

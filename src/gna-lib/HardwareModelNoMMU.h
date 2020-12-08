@@ -60,33 +60,22 @@ public:
 
     void ExportComponent(void *& exportData, uint32_t & exportDataSize, Gna2ModelExportComponent component);
 
-    static constexpr uint32_t MemoryTagReadWrite = 0;
-    static constexpr uint32_t MemoryTagInput = 1;
-    static constexpr uint32_t MemoryTagOutput = 2;
-    static constexpr uint32_t MemoryTagReadOnly = 3;
-    static constexpr uint32_t MemoryTagExternalBufferInput = 4;
-    static constexpr uint32_t MemoryTagExternalBufferOutput = 5;
-    static constexpr uint32_t MemoryTagScratch = 6;
-    static constexpr uint32_t MemoryTagState = 7;
-
-    static constexpr uint32_t GNADSCBARIndex = 0;
-    static constexpr uint32_t BAR0Index = 1;
-    static constexpr uint32_t BAR1Index = 2;
-    static constexpr uint32_t BAR2Index = 3;
-
-    static constexpr uint32_t StateBarIndex = BAR2Index;
-    static constexpr uint32_t ScratchBarIndex = BAR1Index;
-
-    static constexpr uint32_t BarIndexLda = BAR0Index;
-    static constexpr uint32_t BarIndexGnaDescriptor = GNADSCBARIndex;
-
-
-    static constexpr uint32_t GnaDescritorSize = 32;
-    static constexpr uint32_t BarIndexInput = 2;
-    static constexpr uint32_t BarIndexOutput = 3;
+    static constexpr uint32_t GnaDescriptorSize = 32;
 
 protected:
     virtual void prepareAllocationsAndModel() override;
+
+    static uint32_t GetBarIndex(Gna2DeviceVersion target, uint32_t tag);
+
+    static std::map<uint32_t, uint32_t> const & GetBarMap(Gna2DeviceVersion target);
+
+    MemoryContainer const & GetComponent(Gna2ModelExportComponent component) const;
+
+    static Gna2MemoryTag GetComponentTag(Gna2DeviceVersion target,
+        Gna2ModelExportComponent component);
+
+    void PrepareExportAllocations();
+    void GuessIOAllocations();
 
 private:
     void ExportLd(void *& exportData, uint32_t & exportDataSize);
@@ -102,18 +91,10 @@ private:
         return o;
     }
 
-    const std::map<Gna2DeviceVersion, std::map<Gna2ModelExportComponent, MemoryContainer*> > devComponentToMem;
+    std::map<Gna2MemoryTag, MemoryContainer> exportAllocations;
 
     std::unique_ptr<Memory> guessedInput;
     std::unique_ptr<Memory> guessedOutput;
-
-    MemoryContainer FollowingLdaAllocations;
-    MemoryContainer InputAllocations;
-    MemoryContainer OutputAllocations;
-    MemoryContainer ExternalBufferInputAllocations;
-    MemoryContainer ExternalBufferOutputAllocations;
-    MemoryContainer ScratchAllocations;
-    MemoryContainer StateAllocations;
 };
 
 }

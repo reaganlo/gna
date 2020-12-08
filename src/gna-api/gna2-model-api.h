@@ -176,7 +176,7 @@ enum Gna2OperationType
                     - C is a depth of each filter
         + 3: biases [optional]:
             Supported values:
-                - Mode: {::Gna2TensorModeDefault}
+                - Mode: {::Gna2TensorModeDefault, ::Gna2TensorModeDisabled}
                 - Type: {::Gna2DataTypeInt8, ::Gna2DataTypeInt16, ::Gna2DataTypeInt32},
                 - Shape: (@see biasMode parameter), can be set 0, as is calculated by GNA,
                     - For biasMode ::Gna2BiasModeDefault: [N] 1D Vector, where
@@ -543,7 +543,7 @@ enum Gna2OperationType
     Control-flow operation with threshold parameter.
 
     Can be used only for embedded model export for devices where Autonomous Extension (AE) is present,
-    e.g., when using device version: Gna2DeviceVersionEmbedded3_1.
+    e.g., when using device version: Gna2DeviceVersionEmbedded3_5.
 
     Operands:
         + 0: inputs [required]:
@@ -678,7 +678,6 @@ enum Gna2TensorMode
 
     /**
      To disable optional tensors.
-     @warning Reserved for future purposes.
      */
     Gna2TensorModeDisabled = GNA2_DISABLED,
 

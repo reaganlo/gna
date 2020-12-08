@@ -161,9 +161,9 @@ void TestSimpleModel::SetupGnaModel()
         ASSERT_EQ(Gna2StatusSuccess, status);
         status = Gna2MemoryAlloc(buf_size_outputs, &gnamem_pinned_outputs_size, reinterpret_cast<void**>(&gnamem_pinned_outputs));
         ASSERT_EQ(Gna2StatusSuccess, status);
-        status = Gna2MemorySetTag(gnamem_pinned_inputs, GNA::HardwareModelNoMMU::MemoryTagInput);
+        status = Gna2MemorySetTag(gnamem_pinned_inputs, Gna2MemoryTagInput);
         ASSERT_EQ(Gna2StatusSuccess, status);
-        status = Gna2MemorySetTag(gnamem_pinned_outputs, GNA::HardwareModelNoMMU::MemoryTagOutput);
+        status = Gna2MemorySetTag(gnamem_pinned_outputs, Gna2MemoryTagOutput);
         ASSERT_EQ(Gna2StatusSuccess, status);
     }
     uint32_t bytes_requested = rw_buffer_size + buf_size_weights + buf_size_biases;

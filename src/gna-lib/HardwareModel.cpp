@@ -37,6 +37,8 @@
 #include "SubModel.h"
 #include "TransformMap.h"
 
+#include "gna2-model-export-api.h"
+
 #include <algorithm>
 #include <sstream>
 #include <inttypes.h>
@@ -222,4 +224,16 @@ void HardwareModel::prepareBaseDescriptor()
 
     // make ensure it's first on a list
     allocations.Emplace(*ldMemory);
+}
+
+void HardwareModel::createScratchPadMemory(void * buffer, uint32_t size)
+{
+    if (size == 0)
+        return;
+    scratchPadMemory = std::make_unique<Memory>(buffer, size);
+    if (!scratchPadMemory)
+    {
+        throw GnaException{ Gna2StatusResourceAllocationError };
+    }
+    scratchPadMemory->SetTag(Gna2MemoryTagScratch);
 }

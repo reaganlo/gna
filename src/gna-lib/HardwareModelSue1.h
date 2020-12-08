@@ -39,7 +39,7 @@ namespace GNA
 {
     class LayerDescriptor;
 
-    class HardwareModelSue1 : public HardwareModel
+    class HardwareModelSue1 : protected HardwareModel
     {
     public:
 
@@ -72,9 +72,6 @@ namespace GNA
         void * exportMemory = nullptr;
 
         uint32_t totalModelSize = 0;
-
-        std::unique_ptr<Memory> scratchPadMemory;
-
     };
 
 }

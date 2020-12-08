@@ -156,10 +156,10 @@ enum Gna2DeviceVersion
     Gna2DeviceVersionEmbedded3_0 = 0x30E,
 
     /**
-     GNA ANNA autonomous embedded device on ACE.
-     A ::Gna2DeviceGeneration3_0 generation device.
+     GNA 3.5 embedded device on ACE.
+     A ::Gna2DeviceGeneration3_5 generation device.
      */
-    Gna2DeviceVersionEmbedded3_1 = 0x31A,
+    Gna2DeviceVersionEmbedded3_5 = 0x35E,
 
     /**
      Value indicating no supported hardware device available.

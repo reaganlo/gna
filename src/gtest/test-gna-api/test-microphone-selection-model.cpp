@@ -61,7 +61,7 @@ public:
     uint8_t expectedLda[128] = {
         0x09, 0x2a, 0x08, 0x00, 0x00, 0x04, 0x01, 0x01, 0x08, 0x00, 0x00, 0x0b, 0x00, 0x00, 0x00, 0x00,
         0x02, 0x00, 0x04, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-        0x81, 0x00, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x81, 0x00, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00, 0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
         0x81, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x81, 0x40, 0x00, 0x00,
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -179,18 +179,18 @@ void TestMicrophoneSelectionModel::exportForAnna(bool outAsExternal, bool inputA
     void * gnaMemoryOutput;
     const uint32_t memoryOutputSize = numberOfElementsFromMic * inputGroups * sizeof(int16_t);
 
-    GnaAllocAndTag(gnaMemoryRO, memoryROSize, GNA::HardwareModelNoMMU::MemoryTagReadOnly);
+    GnaAllocAndTag(gnaMemoryRO, memoryROSize, Gna2MemoryTagReadOnly);
 
     if (outAsExternal)
     {
-        GnaAllocAndTag(gnaMemoryOutput, memoryOutputSize, GNA::HardwareModelNoMMU::MemoryTagExternalBufferOutput);
+        GnaAllocAndTag(gnaMemoryOutput, memoryOutputSize, Gna2MemoryTagExternalBufferOutput);
     }
     else
     {
-        GnaAllocAndTag(gnaMemoryOutput, memoryOutputSize, GNA::HardwareModelNoMMU::MemoryTagState);
+        GnaAllocAndTag(gnaMemoryOutput, memoryOutputSize, Gna2MemoryTagState);
     }
 
-    GnaAllocAndTag(mockedExternalBuffer, externalBufferSize, GNA::HardwareModelNoMMU::MemoryTagExternalBufferInput);
+    GnaAllocAndTag(mockedExternalBuffer, externalBufferSize, Gna2MemoryTagExternalBufferInput);
 
 
 
@@ -226,7 +226,7 @@ void TestMicrophoneSelectionModel::exportForAnna(bool outAsExternal, bool inputA
     uint32_t exportConfigId = 0;
     ASSERT_EQ(Gna2StatusSuccess, Gna2ModelExportConfigCreate(AlignedAllocator, &exportConfigId));
     ASSERT_EQ(Gna2StatusSuccess, Gna2ModelExportConfigSetSource(exportConfigId, DeviceIndex, modelId));
-    ASSERT_EQ(Gna2StatusSuccess, Gna2ModelExportConfigSetTarget(exportConfigId, Gna2DeviceVersionEmbedded3_1));
+    ASSERT_EQ(Gna2StatusSuccess, Gna2ModelExportConfigSetTarget(exportConfigId, Gna2DeviceVersionEmbedded3_5));
     void * exportBufferLda;
     uint32_t exportBufferSizeLda = 0;
     ASSERT_EQ(Gna2StatusSuccess, Gna2ModelExport(exportConfigId,
@@ -265,15 +265,17 @@ void TestMicrophoneSelectionModel::exportForAnna(bool outAsExternal, bool inputA
         Gna2ModelExportComponentExternalBufferOutputDump,
         &exportBufferExOut, &exportBufferExOutSize));
 
+    //TODO:3.5: Review after 3.5 caps update (Gna2StatusSuccess was buffer invalid)
     void * exportBufferIn;
     uint32_t exportBufferExSize = 0;
-    ASSERT_EQ(Gna2StatusMemoryBufferInvalid, Gna2ModelExport(exportConfigId,
+    ASSERT_EQ(Gna2StatusSuccess, Gna2ModelExport(exportConfigId,
         Gna2ModelExportComponentInputDump,
         &exportBufferIn, &exportBufferExSize));
 
+    //TODO:3.5: Review after 3.5 caps update (Gna2StatusSuccess was buffer invalid)
     void * exportBufferOut;
     uint32_t exportBufferOutSize = 0;
-    ASSERT_EQ(Gna2StatusMemoryBufferInvalid, Gna2ModelExport(exportConfigId,
+    ASSERT_EQ(Gna2StatusSuccess, Gna2ModelExport(exportConfigId,
         Gna2ModelExportComponentOutputDump,
         &exportBufferOut, &exportBufferOutSize));
 
@@ -371,7 +373,7 @@ class TestCopyExportModel : public TestMicrophoneSelectionModel
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
     0x00, 0x2a, 0x08, 0x00, 0x03, 0x00, 0x06, 0x01, 0x08, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00, 0x00,
     0x0b, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x03, 0x01, 0x00, 0x00, 0x03, 0x02, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x03, 0x01, 0x00, 0x00, 0x03, 0x02, 0x00, 0x00, 0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
     0x01, 0x05, 0x00, 0x00, 0x01, 0x06, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x07, 0x00, 0x00,
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -388,11 +390,11 @@ public:
         void * gnaMemoryOutput = nullptr;
         void * gnaMemoryExtra = nullptr;
         void * gnaMemoryExtraRO = nullptr;
-        GnaAllocAndTag(mockedExternalBuffer, externalBufferSize, GNA::HardwareModelNoMMU::MemoryTagExternalBufferInput);
-        GnaAllocAndTag(gnaMemoryOutput, 1 << 12, GNA::HardwareModelNoMMU::MemoryTagExternalBufferOutput);
-        GnaAllocAndTag(gnaMemoryOutput, 1 << 12, GNA::HardwareModelNoMMU::MemoryTagExternalBufferOutput);
-        GnaAllocAndTag(gnaMemoryExtra, 1 << 12, GNA::HardwareModelNoMMU::MemoryTagState);
-        GnaAllocAndTag(gnaMemoryExtraRO, 1 << 12, GNA::HardwareModelNoMMU::MemoryTagReadOnly);
+        GnaAllocAndTag(mockedExternalBuffer, externalBufferSize, Gna2MemoryTagExternalBufferInput);
+        GnaAllocAndTag(gnaMemoryOutput, 1 << 12, Gna2MemoryTagExternalBufferOutput);
+        GnaAllocAndTag(gnaMemoryOutput, 1 << 12, Gna2MemoryTagExternalBufferOutput);
+        GnaAllocAndTag(gnaMemoryExtra, 1 << 12, Gna2MemoryTagState);
+        GnaAllocAndTag(gnaMemoryExtraRO, 1 << 12, Gna2MemoryTagReadOnly);
         auto inputOperand = Gna2TensorInit2D(inputGroups, numberOfElementsFromMic, Gna2DataTypeInt16, mockedExternalBuffer);
         auto outputOperand = Gna2TensorInit2D(inputGroups, numberOfElementsFromMic / 2, Gna2DataTypeInt16, gnaMemoryOutput);
         auto inputNormal = Gna2TensorInit2D(inputGroups, numberOfElementsFromMic, Gna2DataTypeInt16, gnaMemoryExtra);
@@ -438,7 +440,7 @@ public:
         uint32_t exportConfigId = 0;
         ASSERT_EQ(Gna2StatusSuccess, Gna2ModelExportConfigCreate(AlignedAllocator, &exportConfigId));
         ASSERT_EQ(Gna2StatusSuccess, Gna2ModelExportConfigSetSource(exportConfigId, DeviceIndex, modelId));
-        ASSERT_EQ(Gna2StatusSuccess, Gna2ModelExportConfigSetTarget(exportConfigId, Gna2DeviceVersionEmbedded3_1));
+        ASSERT_EQ(Gna2StatusSuccess, Gna2ModelExportConfigSetTarget(exportConfigId, Gna2DeviceVersionEmbedded3_5));
         void * exportBufferLda;
         uint32_t exportBufferSizeLda = 0;
         ASSERT_EQ(Gna2StatusSuccess, Gna2ModelExport(exportConfigId,

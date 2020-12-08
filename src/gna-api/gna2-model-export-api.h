@@ -153,6 +153,24 @@ enum Gna2ModelExportComponent
 };
 
 /**
+ Type of exported memory buffer tag.
+
+ Used to tag memory buffer and assign special properties or BAR for exported memory buffer.
+ @see Gna2MemorySetTag()
+ */
+enum Gna2MemoryTag
+{
+    Gna2MemoryTagReadWrite = 0x0100,
+    Gna2MemoryTagInput = 0x0200,
+    Gna2MemoryTagOutput = 0x0400,
+    Gna2MemoryTagReadOnly = 0x0800,
+    Gna2MemoryTagExternalBufferInput = 0x1000,
+    Gna2MemoryTagExternalBufferOutput = 0x2000,
+    Gna2MemoryTagScratch = 0x4000,
+    Gna2MemoryTagState = 0x8000,
+};
+
+/**
  Exports the model(s) component.
 
  All exported model components are saved into memory allocated on user side by userAllocator.
