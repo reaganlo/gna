@@ -228,8 +228,6 @@ void HardwareModel::prepareBaseDescriptor()
 
 void HardwareModel::createScratchPadMemory(void * buffer, uint32_t size)
 {
-    if (size == 0)
-        return;
     scratchPadMemory = std::make_unique<Memory>(buffer, size);
     if (!scratchPadMemory)
     {
