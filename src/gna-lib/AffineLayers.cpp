@@ -111,7 +111,7 @@ Tensor const & AffineBaseLayer::GetOperand(uint32_t operandIndex) const
     switch (operandIndex)
     {
     case ScratchpadOperandIndex:
-        if (Transforms.GetOptional(ActivationTransform))
+        if (!dataConfig.IsActivationDisabled)
         {
             return Output.ScratchPad;
         }
