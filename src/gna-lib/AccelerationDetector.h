@@ -78,6 +78,7 @@ protected:
     {
         switch (bias)
         {
+        case Gna2DataTypeNone:
         case Gna2DataTypeInt16:
         case Gna2DataTypeInt32:
             return Gna2DataTypeInt8;
