@@ -118,20 +118,20 @@ static GNA3_Cfg_t GetGnaConfigurationVersion(DeviceVersion deviceVersion)
     case Gna2DeviceVersion1_0:
         return GNA3_Cfg_t::GNA_CFG_DEFLT;
     case Gna2DeviceVersion2_0:
-        return GNA3_Cfg_t::GNA_CFG_2d0C1;
+        return GNA3_Cfg_t::GNA_CFG_2d0D1;
     case Gna2DeviceVersion3_0:
-        return GNA3_Cfg_t::GNA_CFG_3d0C1;
+        return GNA3_Cfg_t::GNA_CFG_3d0D1;
     case Gna2DeviceVersion3_5:
-        return GNA3_Cfg_t::GNA_CFG_3d5C1;
+        return GNA3_Cfg_t::GNA_CFG_3d5D1;
     case Gna2DeviceVersionEmbedded1_0:
     case Gna2DeviceVersionEmbedded2_1:
         return GNA3_Cfg_t::GNA_CFG_DEFLT;
     case Gna2DeviceVersionEmbedded3_0:
-        return GNA3_Cfg_t::GNA_CFG_3d1C1;
+        return GNA3_Cfg_t::GNA_CFG_3d1E1;
     case Gna2DeviceVersionEmbedded3_5:
-        return GNA3_Cfg_t::GNA_CFG_3d5C2;
+        return GNA3_Cfg_t::GNA_CFG_3d5E1;
     case Gna2DeviceVersionSoftwareEmulation:
-        return GNA3_Cfg_t::GNA_CFG_3d5C1;
+        return GNA3_Cfg_t::GNA_CFG_3d5D1;
 #endif
     default:
         return GNA3_Cfg_t::GNA_CFG_DEFLT;

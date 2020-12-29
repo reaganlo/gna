@@ -6,10 +6,8 @@
 [submodule "build/hw_module_3_0"]
 	path = build/hw_module_3_0
 	url = ssh://git@gitlab.devtools.intel.com:29418/gna/sdk/hw/gna-3.0-arch-cpkg.git
-	branch = mpiatkow-cpkg-update-official-B0
-	#commit 48cf63ca242021b0021ea74e4a23e04897bfe39d
+	branch = task-kdamaszk-2020-12-28-update-3.0-cpkg
 [submodule "build/hw_module_3_5"]
 	path = build/hw_module_3_5
 	url = ssh://git@gitlab.devtools.intel.com:29418/gna/sdk/hw/gna-3.0-arch-cpkg.git
 	branch = master
-	#commit b33347db5cc7dace82689df3f5edcd8b2656c169
