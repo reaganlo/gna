@@ -7,7 +7,7 @@
 	path = build/hw_module_3_0
 	url = ssh://git@gitlab.devtools.intel.com:29418/gna/sdk/hw/gna-3.0-arch-cpkg.git
 	branch = task-mp-cpkg-update-for-cnn2D_ADL
-	#commit 1d3315be89c19066e90a6e3e07be6066577a057a
+	#commit b9acc009fe889361f6ac1e838680c6a1c7a83284
 [submodule "build/hw_module_3_5"]
 	path = build/hw_module_3_5
 	url = ssh://git@gitlab.devtools.intel.com:29418/gna/sdk/hw/gna-3.0-arch-cpkg.git
