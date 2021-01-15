@@ -372,14 +372,65 @@ void copyKernelImpl2B(CopyConfig const * const config)
             bytesToCopy);
     }
 }
-#if OPT_LEVEL >=2
-#define NotImplementedKernel(kernel) ToUnifiedKernel(CodeCaveMitigationFakeKernel)
+
+/* All possible options are defined below.
+ * Enabled options are defined as `1', disabled are defined as nothing
+ * Only one could be enabled simultaneously.
+ */
+#if defined(OPTGEN)
+    #define OPT_GEN 1
+#else
+    #define OPT_GEN
+#endif
+#if defined(OPTGEN_SAT)
+	#define OPT_GEN_SAT 1
+#else
+	#define OPT_GEN_SAT
+#endif
+#if defined(OPTSSE4)
+	#define OPT_SSE4 1
+#else
+	#define OPT_SSE4
+#endif
+#if defined(OPTSSE4_SAT)
+	#define OPT_SSE4_SAT 1
+#else
+	#define OPT_SSE4_SAT
+#endif
+#if defined(OPTAVX1)
+	#define OPT_AVX1 1
+#else
+	#define OPT_AVX1
+#endif
+#if defined(OPTAVX1_SAT)
+	#define OPT_AVX1_SAT 1
+#else
+	#define OPT_AVX1_SAT
+#endif
+#if defined(OPTAVX2)
+	#define OPT_AVX2 1
+#else
+	#define OPT_AVX2
+#endif
+#if defined(OPTAVX2_SAT)
+	#define OPT_AVX2_SAT 1
+#else
+	#define OPT_AVX2_SAT
+#endif
+#define OPT_ANY 1
+#define OPT_GEN_OR_SAT OPT_GEN OPT_GEN_SAT
+
+#define VERBATIM(...) __VA_ARGS__
+#define GetKernel(name, opts)    VERBATIM(IF(opts, 0))(ToUnifiedKernel(name), ToUnifiedKernel(CodeCaveMitigationFakeKernel<>))
+#define IF(cond, ...)            IFHELPER ## cond
+#define IFHELPER1(code, notused) code
+#define IFHELPER(notused, code)  code
+
+template<int possiblyUnused = 1>
 static void CodeCaveMitigationFakeKernel()
 {
     throw std::logic_error("Call to not defined GNA kernel found!");
 }
-#endif
-
 template<typename KernelFunctionType>
 VoidKernel ToUnifiedKernel(KernelFunctionType kernel)
 {
@@ -391,104 +442,65 @@ VoidKernel GetXnnKernel<KernelAcceleration, HwConsistencyMode>(KernelType type)
 {
     static const VoidKernel Kernels[]=
     {
-        ToUnifiedKernel(AffineKernelImpl1B),
-        ToUnifiedKernel(AffineKernelImpl2B),
+        GetKernel(AffineKernelImpl1B, OPT_ANY),
+        GetKernel(AffineKernelImpl2B, OPT_ANY),
 
-        ToUnifiedKernel(AffineActiveListKernelImpl1B),
-        ToUnifiedKernel(AffineActiveListKernelImpl2B),
+        GetKernel(AffineActiveListKernelImpl1B, OPT_ANY),
+        GetKernel(AffineActiveListKernelImpl2B, OPT_ANY),
 
-        ToUnifiedKernel(AffineMultiBiasKernelImpl1B),
-        ToUnifiedKernel(AffineMultiBiasKernelImpl2B),
+        GetKernel(AffineMultiBiasKernelImpl1B, OPT_ANY),
+        GetKernel(AffineMultiBiasKernelImpl2B, OPT_ANY),
 
-        ToUnifiedKernel(DiagonalKernelImpl1B),
-        ToUnifiedKernel(DiagonalKernelImpl2B),
+        GetKernel(DiagonalKernelImpl1B, OPT_ANY),
+        GetKernel(DiagonalKernelImpl2B, OPT_ANY),
 
-        ToUnifiedKernel(recurrentKernelImpl1B),
-        ToUnifiedKernel(recurrentKernelImpl2B),
+        GetKernel(recurrentKernelImpl1B, OPT_ANY),
+        GetKernel(recurrentKernelImpl2B, OPT_ANY),
 
-        ToUnifiedKernel(ConvolutionKernelImpl),
-        ToUnifiedKernel(ConvolutionPoolingKernelImpl),
+        GetKernel(ConvolutionKernelImpl, OPT_ANY),
+        GetKernel(ConvolutionPoolingKernelImpl, OPT_ANY),
 
-        ToUnifiedKernel(activationKernelImpl),
-        ToUnifiedKernel(TransposeKernelImpl),
-        ToUnifiedKernel(copyKernelImpl),
+        GetKernel(activationKernelImpl, OPT_ANY),
+        GetKernel(TransposeKernelImpl, OPT_ANY),
+        GetKernel(copyKernelImpl, OPT_ANY),
 
-    #if OPT_LEVEL < 2
+        GetKernel(AffineKernelImpl1B1B, OPT_GEN_OR_SAT),
+        GetKernel(AffineKernelImpl2B1B, OPT_GEN_OR_SAT),
+        GetKernel(AffineKernelImpl1B2B, OPT_GEN_OR_SAT),
+        GetKernel(AffineKernelImpl2B2B, OPT_GEN_OR_SAT),
+        GetKernel(AffineActiveListKernelImpl1B1B, OPT_GEN_OR_SAT),
+        GetKernel(AffineActiveListKernelImpl2B1B, OPT_GEN_OR_SAT),
+        GetKernel(AffineActiveListKernelImpl1B2B, OPT_GEN_OR_SAT),
+        GetKernel(AffineActiveListKernelImpl2B2B, OPT_GEN_OR_SAT),
+        GetKernel(AffineMultiBiasKernelImpl1B1B, OPT_GEN_OR_SAT),
+        GetKernel(AffineMultiBiasKernelImpl2B1B, OPT_GEN_OR_SAT),
+        GetKernel(AffineMultiBiasKernelImpl1B2B, OPT_GEN_OR_SAT),
+        GetKernel(AffineMultiBiasKernelImpl2B2B, OPT_GEN_OR_SAT),
+        GetKernel(DiagonalKernelImpl1B1B, OPT_GEN_OR_SAT),
+        GetKernel(DiagonalKernelImpl2B1B, OPT_GEN_OR_SAT),
+        GetKernel(DiagonalKernelImpl1B2B, OPT_GEN_OR_SAT),
+        GetKernel(DiagonalKernelImpl2B2B, OPT_GEN_OR_SAT),
+        GetKernel(recurrentKernelImpl1B1B, OPT_GEN_OR_SAT),
+        GetKernel(recurrentKernelImpl2B1B, OPT_GEN_OR_SAT),
+        GetKernel(recurrentKernelImpl1B2B, OPT_GEN_OR_SAT),
+        GetKernel(recurrentKernelImpl2B2B, OPT_GEN_OR_SAT),
+        GetKernel(ConvolutionKernelImpl1B, OPT_GEN_OR_SAT),
+        GetKernel(ConvolutionPoolingKernelImpl1B, OPT_GEN_OR_SAT),
+        GetKernel(ConvolutionKernelImpl2B, OPT_GEN_OR_SAT),
+        GetKernel(ConvolutionPoolingKernelImpl2B, OPT_GEN_OR_SAT),
+        GetKernel(TransposeKernelImpl1B, OPT_GEN_OR_SAT),
+        GetKernel(TransposeKernelImpl2B, OPT_GEN_OR_SAT),
+        GetKernel(copyKernelImpl1B, OPT_GEN_OR_SAT),
+        GetKernel(copyKernelImpl2B, OPT_GEN_OR_SAT),
 
-        ToUnifiedKernel(AffineKernelImpl1B1B),
-        ToUnifiedKernel(AffineKernelImpl2B1B),
-        ToUnifiedKernel(AffineKernelImpl1B2B),
-        ToUnifiedKernel(AffineKernelImpl2B2B),
-        ToUnifiedKernel(AffineActiveListKernelImpl1B1B),
-        ToUnifiedKernel(AffineActiveListKernelImpl2B1B),
-        ToUnifiedKernel(AffineActiveListKernelImpl1B2B),
-        ToUnifiedKernel(AffineActiveListKernelImpl2B2B),
-        ToUnifiedKernel(AffineMultiBiasKernelImpl1B1B),
-        ToUnifiedKernel(AffineMultiBiasKernelImpl2B1B),
-        ToUnifiedKernel(AffineMultiBiasKernelImpl1B2B),
-        ToUnifiedKernel(AffineMultiBiasKernelImpl2B2B),
-        ToUnifiedKernel(DiagonalKernelImpl1B1B),
-        ToUnifiedKernel(DiagonalKernelImpl2B1B),
-        ToUnifiedKernel(DiagonalKernelImpl1B2B),
-        ToUnifiedKernel(DiagonalKernelImpl2B2B),
-        ToUnifiedKernel(recurrentKernelImpl1B1B),
-        ToUnifiedKernel(recurrentKernelImpl2B1B),
-        ToUnifiedKernel(recurrentKernelImpl1B2B),
-        ToUnifiedKernel(recurrentKernelImpl2B2B),
-        ToUnifiedKernel(ConvolutionKernelImpl1B),
-        ToUnifiedKernel(ConvolutionPoolingKernelImpl1B),
-        ToUnifiedKernel(ConvolutionKernelImpl2B),
-        ToUnifiedKernel(ConvolutionPoolingKernelImpl2B),
-        ToUnifiedKernel(TransposeKernelImpl1B),
-        ToUnifiedKernel(TransposeKernelImpl2B),
-        ToUnifiedKernel(copyKernelImpl1B),
-        ToUnifiedKernel(copyKernelImpl2B),
+        GetKernel(Convolution2DKernelImpl1B1B, OPT_GEN_OR_SAT),
+        GetKernel(Convolution2DKernelImpl1B2B, OPT_GEN_OR_SAT),
+        GetKernel(Convolution2DKernelImpl2B1B, OPT_GEN_OR_SAT),
+        GetKernel(Convolution2DKernelImpl2B2B, OPT_GEN_OR_SAT),
 
-        ToUnifiedKernel(Convolution2DKernelImpl1B1B),
-        ToUnifiedKernel(Convolution2DKernelImpl1B2B),
-        ToUnifiedKernel(Convolution2DKernelImpl2B1B),
-        ToUnifiedKernel(Convolution2DKernelImpl2B2B),
-
-        ToUnifiedKernel(Pooling2DKernelImpl1B),
-        ToUnifiedKernel(Pooling2DKernelImpl2B),
-        ToUnifiedKernel(Pooling2DKernelImpl4B),
-    #else
-        NotImplementedKernel(AffineKernelImpl1B1B),
-        NotImplementedKernel(AffineKernelImpl2B1B),
-        NotImplementedKernel(AffineKernelImpl1B2B),
-        NotImplementedKernel(AffineKernelImpl2B2B),
-        NotImplementedKernel(AffineActiveListKernelImpl1B1B),
-        NotImplementedKernel(AffineActiveListKernelImpl2B1B),
-        NotImplementedKernel(AffineActiveListKernelImpl1B2B),
-        NotImplementedKernel(AffineActiveListKernelImpl2B2B),
-        NotImplementedKernel(AffineMultiBiasKernelImpl1B1B),
-        NotImplementedKernel(AffineMultiBiasKernelImpl2B1B),
-        NotImplementedKernel(AffineMultiBiasKernelImpl1B2B),
-        NotImplementedKernel(AffineMultiBiasKernelImpl2B2B),
-        NotImplementedKernel(DiagonalKernelImpl1B1B),
-        NotImplementedKernel(DiagonalKernelImpl2B1B),
-        NotImplementedKernel(DiagonalKernelImpl1B2B),
-        NotImplementedKernel(DiagonalKernelImpl2B2B),
-        NotImplementedKernel(recurrentKernelImpl1B1B),
-        NotImplementedKernel(recurrentKernelImpl2B1B),
-        NotImplementedKernel(recurrentKernelImpl1B2B),
-        NotImplementedKernel(recurrentKernelImpl2B2B),
-        NotImplementedKernel(ConvolutionKernelImpl1B),
-        NotImplementedKernel(ConvolutionPoolingKernelImpl1B),
-        NotImplementedKernel(ConvolutionKernelImpl2B),
-        NotImplementedKernel(ConvolutionPoolingKernelImpl2B),
-        NotImplementedKernel(TransposeKernelImpl1B),
-        NotImplementedKernel(TransposeKernelImpl2B),
-        NotImplementedKernel(copyKernelImpl1B),
-        NotImplementedKernel(copyKernelImpl2B),
-        NotImplementedKernel(Convolution2DKernelImpl1B1B),
-        NotImplementedKernel(Convolution2DKernelImpl1B2B),
-        NotImplementedKernel(Convolution2DKernelImpl2B1B),
-        NotImplementedKernel(Convolution2DKernelImpl2B2B),
-        NotImplementedKernel(Pooling2DKernelImpl1B),
-        NotImplementedKernel(Pooling2DKernelImpl2B),
-        NotImplementedKernel(Pooling2DKernelImpl4B),
-    #endif
+        GetKernel(Pooling2DKernelImpl1B, OPT_GEN_OR_SAT),
+        GetKernel(Pooling2DKernelImpl2B, OPT_GEN_OR_SAT),
+        GetKernel(Pooling2DKernelImpl4B, OPT_GEN_OR_SAT),
     };
     return Kernels[type];
 }
