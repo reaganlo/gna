@@ -41,7 +41,7 @@ void AffineKernelImpl2B(ExecutionKernelConfig<AffineConfig> const * const config
                                            config->RequestConfig->Transform.bytesPerBias);
 
     auto transposeConfig = TransposeConfig::MakeFrom(config);
-    TransposeKernelImpl(&transposeConfig);
+    TransposeKernelImpl2B(&transposeConfig);
 
     for (; bias < biasEnd;)
     {
@@ -142,7 +142,7 @@ void AffineMultiBiasKernelImpl2B(ExecutionKernelConfig<AffineConfig> const * con
         (config->RequestConfig->Transform.outputElementCount * config->RequestConfig->Transform.bytesPerBias * config->RequestConfig->Transform.multiBiasVectorCount);
 
     auto transposeConfig = TransposeConfig::MakeFrom(config);
-    TransposeKernelImpl(&transposeConfig);
+    TransposeKernelImpl2B(&transposeConfig);
 
     for (; multiBias < biasEnd;)
     {

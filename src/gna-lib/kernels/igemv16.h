@@ -33,7 +33,6 @@
 #define AffineMultiBiasKernelImpl2B KERNEL(AffineMultiBiasKernelImpl2B)
 #define RecurrentKernelImpl2B KERNEL(RecurrentKernelImpl2B)
 #define DiagonalKernelImpl2B KERNEL(DiagonalKernelImpl2B)
-#define TransposeKernelImpl KERNEL(TransposeKernelImpl)
 
 #define AffineActiveListKernelImpl2B1B KERNEL(AffineActiveListKernelImpl2B1B1B)
 #define RecurrentKernelImpl2B1B KERNEL(RecurrentKernelImpl2B1B)
@@ -73,11 +72,10 @@ void RecurrentKernelImpl2B(ExecutionKernelConfig<RecurrentConfig> const * const 
 
 void DiagonalKernelImpl2B(ExecutionKernelConfig<AffineConfig> const * const config);
 
-void TransposeKernelImpl(TransposeConfig const * const transposeConfig);
+void TransposeKernelImpl2B(TransposeConfig const * const transposeConfig);
 
 #if OPT_LEVEL < 2
 void TransposeKernelImpl1B(TransposeConfig const * const transposeConfig);
-void TransposeKernelImpl2B(TransposeConfig const * const transposeConfig);
 void AffineKernelImpl2B1B(ExecutionKernelConfig<AffineConfig> const * const config);
 void AffineKernelImpl2B2B(ExecutionKernelConfig<AffineConfig> const * const config);
 void AffineActiveListKernelImpl2B1B(ExecutionKernelConfig<AffineConfig> const * const config, AffineConfigAl al);

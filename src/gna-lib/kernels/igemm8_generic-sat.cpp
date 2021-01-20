@@ -224,7 +224,7 @@ void AffineMultiBiasKernelImpl1B(ExecutionKernelConfig<AffineConfig> const * con
     int32_t acc;
 
     auto transposeConfig = TransposeConfig::MakeFrom(config);
-    TransposeKernelImpl(&transposeConfig);
+    TransposeKernelImpl2B(&transposeConfig);
 
     int16_t const * input;
     int8_t const * weight;

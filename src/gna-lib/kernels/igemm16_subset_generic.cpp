@@ -41,7 +41,7 @@ void AffineActiveListKernelImpl2B(ExecutionKernelConfig<AffineConfig> const * co
     auto inputElementCount = config->RequestConfig->Transform.inputElementCount;
 
     auto transposeConfig = TransposeConfig::MakeFrom(config);
-    TransposeKernelImpl(&transposeConfig);
+    TransposeKernelImpl2B(&transposeConfig);
 
     for (l = 0; l < al.count; l++)
     {

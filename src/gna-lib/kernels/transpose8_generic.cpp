@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2017 Intel Corporation.
+ Copyright 2017-2021 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -23,19 +23,19 @@
  in any way.
 */
 
-#include "igemv16.h"
+#include "igemv8.h"
 #include "KernelArguments.h"
 
 #include <cstdint>
 
-void TransposeKernelImpl2B(TransposeConfig const * const transposeConfig)
+void TransposeKernelImpl1B(TransposeConfig const * const transposeConfig)
 {
     uint32_t i, j;
     for (i = 0; i < transposeConfig->rowCount; i++)
     {
         for (j = 0; j < transposeConfig->columnCount; j++)
         {
-            transposeConfig->output[j * transposeConfig->rowCount + i] = transposeConfig->input[i * transposeConfig->columnCount + j];
+            ((int8_t*)transposeConfig->output)[j * transposeConfig->rowCount + i] = ((int8_t*)transposeConfig->input)[i * transposeConfig->columnCount + j];
         }
     }
 }

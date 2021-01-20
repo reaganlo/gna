@@ -48,7 +48,7 @@ void AffineActiveListKernelImpl2B(ExecutionKernelConfig<AffineConfig> const * co
     nKpartial = inputElementCount / kpartial;
 
     auto transposeConfig = TransposeConfig::MakeFrom(config);
-    TransposeKernelImpl(&transposeConfig);
+    TransposeKernelImpl2B(&transposeConfig);
 
     int16_t const * input;
     int16_t const * weight;

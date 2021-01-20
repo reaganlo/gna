@@ -51,7 +51,7 @@ void AffineKernelImpl2B(ExecutionKernelConfig<AffineConfig> const * const config
     nKpartial = inputElementCount / kpartial;
 
     auto transposeConfig = TransposeConfig::MakeFrom(config);
-    TransposeKernelImpl(&transposeConfig);
+    TransposeKernelImpl2B(&transposeConfig);
 
     int64_t sum = 0;
     for (i = 0; i < outputElementCount; i++)
@@ -183,7 +183,7 @@ void AffineMultiBiasKernelImpl2B(ExecutionKernelConfig<AffineConfig> const * con
     const uint32_t nKpartial = inputElementCount / kpartial;
 
     auto transposeConfig = TransposeConfig::MakeFrom(config);
-    TransposeKernelImpl(&transposeConfig);
+    TransposeKernelImpl2B(&transposeConfig);
 
     int16_t const * weight;
     int64_t sum = 0;

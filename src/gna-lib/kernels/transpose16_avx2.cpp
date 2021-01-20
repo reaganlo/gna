@@ -52,7 +52,7 @@ static void transposeN8(int16_t *input, int16_t *output, uint32_t M);
 
 static void transposeLarge(int16_t *input, int16_t *output, uint32_t M, uint32_t N);
 
-void TransposeKernelImpl(TransposeConfig const * const transposeConfig)
+void TransposeKernelImpl2B(TransposeConfig const * const transposeConfig)
 {
     uint32_t M = transposeConfig->rowCount;
     uint32_t N = transposeConfig->columnCount;

@@ -87,7 +87,8 @@ set(xnn_generic_sources
   igemm8_subset_generic.cpp
   igemv16_generic.cpp
   igemv8_generic.cpp
-  transpose16_generic.cpp)
+  transpose16_generic.cpp
+  transpose8_generic.cpp)
 
 set(xnn_generic_sat_sources
   convnet_generic-sat.cpp
@@ -97,7 +98,8 @@ set(xnn_generic_sat_sources
   igemm8_subset_generic-sat.cpp
   igemv16_generic-sat.cpp
   igemv8_generic-sat.cpp
-  transpose16_generic.cpp)
+  transpose16_generic.cpp
+  transpose8_generic.cpp)
 
 set(xnn_sse4_sources
   convnet_sse4.cpp

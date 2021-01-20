@@ -457,11 +457,13 @@ VoidKernel GetXnnKernel<KernelAcceleration, HwConsistencyMode>(KernelType type)
         GetKernel(recurrentKernelImpl1B, OPT_ANY),
         GetKernel(recurrentKernelImpl2B, OPT_ANY),
 
+        GetKernel(TransposeKernelImpl1B, OPT_GEN_OR_SAT),
+        GetKernel(TransposeKernelImpl2B, OPT_ANY),
+
         GetKernel(ConvolutionKernelImpl, OPT_ANY),
         GetKernel(ConvolutionPoolingKernelImpl, OPT_ANY),
 
         GetKernel(activationKernelImpl, OPT_ANY),
-        GetKernel(TransposeKernelImpl, OPT_ANY),
         GetKernel(copyKernelImpl, OPT_ANY),
 
         GetKernel(AffineKernelImpl1B1B, OPT_GEN_OR_SAT),
@@ -488,8 +490,6 @@ VoidKernel GetXnnKernel<KernelAcceleration, HwConsistencyMode>(KernelType type)
         GetKernel(ConvolutionPoolingKernelImpl1B, OPT_GEN_OR_SAT),
         GetKernel(ConvolutionKernelImpl2B, OPT_GEN_OR_SAT),
         GetKernel(ConvolutionPoolingKernelImpl2B, OPT_GEN_OR_SAT),
-        GetKernel(TransposeKernelImpl1B, OPT_GEN_OR_SAT),
-        GetKernel(TransposeKernelImpl2B, OPT_GEN_OR_SAT),
         GetKernel(copyKernelImpl1B, OPT_GEN_OR_SAT),
         GetKernel(copyKernelImpl2B, OPT_GEN_OR_SAT),
 
