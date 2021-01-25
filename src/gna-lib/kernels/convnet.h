@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2017 Intel Corporation.
+ Copyright 2017-2021 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -80,6 +80,10 @@ extern "C" {
     void Pooling2DKernelImpl2B(ExecutionKernelConfig<PoolingConfig2D> const * const config);
     void Pooling2DKernelImpl4B(ExecutionKernelConfig<PoolingConfig2D> const * const config);
 #endif
+#if OPT_LEVEL == 7
+    void Convolution2DKernelImpl1B1B(ExecutionKernelConfig<ConvolutionConfig2D> const * const config);
+#endif
+
 /* Calculates MaxPartialPoolingFunction
 * @PS   number of pool size
 * @PNE  number of pool entries

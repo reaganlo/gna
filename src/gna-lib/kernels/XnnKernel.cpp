@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2017 Intel Corporation.
+ Copyright 2017-2021 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -493,7 +493,7 @@ VoidKernel GetXnnKernel<KernelAcceleration, HwConsistencyMode>(KernelType type)
         GetKernel(copyKernelImpl1B, OPT_GEN_OR_SAT),
         GetKernel(copyKernelImpl2B, OPT_GEN_OR_SAT),
 
-        GetKernel(Convolution2DKernelImpl1B1B, OPT_GEN_OR_SAT),
+        GetKernel(Convolution2DKernelImpl1B1B, OPT_GEN_OR_SAT OPT_AVX2_SAT),
         GetKernel(Convolution2DKernelImpl1B2B, OPT_GEN_OR_SAT),
         GetKernel(Convolution2DKernelImpl2B1B, OPT_GEN_OR_SAT),
         GetKernel(Convolution2DKernelImpl2B2B, OPT_GEN_OR_SAT),

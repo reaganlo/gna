@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2018-2020 Intel Corporation.
+ Copyright 2018-2021 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -113,6 +113,12 @@ KernelMap<VoidKernel> MakeSseAccelerated()
 {
     return MakeAll<genericKernel, acceleratedKernel, genericKernel, genericKernel,
         true, false, false>();
+}
+
+template<KernelType kernelType>
+static KernelMap<VoidKernel> MakeAVX2Accelerated()
+{
+    return MakeAll<kernelType, kernelType, kernelType, kernelType, false, false, true>();
 }
 
 template<KernelType genericKernel>
@@ -229,7 +235,7 @@ const KernelMap<VoidKernel>& AccelerationDetector::GetKernels(kernel_op operatio
             {{ Gna2DataTypeInt16, Gna2DataTypeInt16, Gna2DataTypeInt8 },
                 MakeAllGeneric<convolution2D2B2B>()},
             {{ Gna2DataTypeInt8, Gna2DataTypeInt8, Gna2DataTypeInt8 },
-                MakeAllGeneric<convolution2D1B1B>()},
+                MakeAVX2Accelerated<convolution2D1B1B>()},
             {{ Gna2DataTypeInt8, Gna2DataTypeInt16, Gna2DataTypeInt8 },
                 MakeAllGeneric<convolution2D2B1B>()},
         }},
