@@ -971,7 +971,6 @@ void Convolution2DKernelImpl1B1B(ExecutionKernelConfig<ConvolutionConfig2D> cons
 
     uint32_t inputHeightWPad = inputHeight + 2 * padHeight;
     uint32_t inputWidthWPad = inputWidth + 2 * padWidth;
-    uint32_t inWidthMax = inputWidth + padWidth - 1;
     uint32_t inHeightMax = inputHeight + padHeight - 1;
 
     const int8_t* const I = (int8_t*)config->RequestConfig->Inputs;
@@ -985,8 +984,6 @@ void Convolution2DKernelImpl1B1B(ExecutionKernelConfig<ConvolutionConfig2D> cons
     uint32_t outHeight = 1 + ((inputHeightWPad - filterHeight) / strideHeight);
 
     const int8_t mask[64] = { -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1 };
-    const __m256i masked = _mm256_loadu_si256((const __m256i *)(mask + 32 - inputDepth%32));
-
     for (uint32_t OD = 0; OD < numFilters; OD++)
     { //Output depth or #filters
 
@@ -1013,61 +1010,59 @@ void Convolution2DKernelImpl1B1B(ExecutionKernelConfig<ConvolutionConfig2D> cons
 
                 __m256i acc_0 = _mm256_setzero_si256();
                 __m256i acc_1 = _mm256_setzero_si256();
-
-                for (uint32_t w = 0; w < filterWidth; w++)
-                { //input height
-
-                    uint32_t wIdx = OW * strideWidth + w;
-                    uint32_t fIdxW = inputDepth * w;
-                    uint32_t inIdxW = (((OW*strideWidth) + w - padWidth) * (inputDepth));
-
-                    for (uint32_t h = 0; h < filterHeight; h++)
-                    { //input width
-
-                        uint32_t inIdxH = (((OH*strideHeight) + h - padHeight) * (inputDepth*inputWidth));
-                        uint32_t fIdxH = inputDepth * filterWidth * h;
-                        uint32_t hIdx = OH * strideHeight + h;
-
-                        if (wIdx < padWidth || wIdx > inWidthMax || hIdx < padHeight || hIdx > inHeightMax)
-                        { //padding
-                            continue;
+                for (uint32_t h = 0; h < filterHeight; h++) {
+                    uint32_t inIdxH = (((OH*strideHeight) + h - padHeight) * (inputDepth*inputWidth));
+                    uint32_t fIdxH = inputDepth * filterWidth * h;
+                    uint32_t hIdx = OH * strideHeight + h;
+                    if (hIdx < padHeight || hIdx > inHeightMax) {
+                        continue;
+                    }
+                    uint32_t fIdxW = 0, inIdxW = 0;
+                    if (OW * strideWidth < padWidth) {
+                        fIdxW = padWidth - OW * strideWidth;
+                    } else {
+                        inIdxW = OW * strideWidth - padWidth;
+                    }
+                    uint32_t span = (std::min)(inputWidth - inIdxW, filterWidth - fIdxW);
+                    inIdxW *= inputDepth;
+                    fIdxW *= inputDepth;
+                    span *= inputDepth;
+                    uint32_t bound = fIdxW + span;
+                    const __m256i masked = _mm256_loadu_si256((const __m256i *)(mask + 32 - (bound-fIdxW)%32));
+                    for (; fIdxW < bound; fIdxW += 32, inIdxW += 32) {
+                        /* Thanks to the fact that data is packed, we could iterate over W and Z dimensions in one loop.
+                         * This observation improves performance a lot for case when W*Z is big, but one of dims is small.
+                         * steps:
+                         * read both input and filter by 32 1byte elements
+                         * possibly zero elements that are past data bound
+                         * extend both input and filter from epi8 to epi16 for multiplication
+                         * multiply them (result is guaranteed to fit into 16bits, but it does not matter in current impl)
+                         * (elements zeroed previously in input now yield zeros, so would not bother later accumulation)
+                         * (use _mm256_madd_epi16() instead of _mm256_mullo_epi16(), so we get one level of horizontal sum for free,
+                         *  it also expands data to 32bit, as would be needed in accumulation anyway)
+                         * accumulate to two registers to decrease dependency chain between loop steps
+                         * horizontally add after loop
+                         */
+                        __m256i   input_epi8 = _mm256_loadu_si256((const __m256i *)(I + inIdxH + inIdxW));
+                        __m256i  filter_epi8 = _mm256_loadu_si256((const __m256i *)(F + fIdxN + fIdxH + fIdxW));
+                        if (fIdxW+32 > bound) {
+                            input_epi8 = _mm256_and_si256(input_epi8, masked);
                         }
-
-                        for (uint32_t z = 0; z < inputDepth; z+=32) {
-                            /* steps:
-                             * read both input and filter by 32 1byte elements
-                             * possibly zero elements that are past inputDepth
-                             * extend both input and filter from epi8 to epi16 for multiplication
-                             * multiply them (result is guaranteed to fit into 16bits, but it does not matter in current impl)
-                             * (elements zeroed previously in input now yield zeros, so would not bother later accumulation)
-                             * (use _mm256_madd_epi16() instead of _mm256_mullo_epi16(), so we get one level of horizontal sum for free,
-                             *  it also expands data to 32bit, as would be needed in accumulation anyway)
-                             * accumulate to two registers to decrease dependency chain between loop steps
-                             * horizontally add after loop
-                             */
-                            __m256i   input_epi8 = _mm256_loadu_si256((const __m256i *)(I + inIdxH + inIdxW + z));
-                            __m256i  filter_epi8 = _mm256_loadu_si256((const __m256i *)(F + fIdxN + fIdxH + fIdxW + z));
-                            if (z+32 > inputDepth) {
-                                input_epi8 = _mm256_and_si256(input_epi8, masked);
-                            }
-                            __m256i filter_epi16_0 = _mm256_cvtepi8_epi16(_mm256_castsi256_si128(filter_epi8));
-                            __m256i  input_epi16_0 = _mm256_cvtepi8_epi16(_mm256_castsi256_si128( input_epi8));
-                            __m256i filter_epi16_1 = _mm256_cvtepi8_epi16(_mm256_extracti128_si256(filter_epi8, 1));
-                            __m256i  input_epi16_1 = _mm256_cvtepi8_epi16(_mm256_extracti128_si256( input_epi8, 1));
-                            __m256i m_0 = _mm256_madd_epi16(input_epi16_0, filter_epi16_0);
-                            __m256i m_1 = _mm256_madd_epi16(input_epi16_1, filter_epi16_1);
-                            acc_0 = _mm256_add_epi32(acc_0, m_0);
-                            acc_1 = _mm256_add_epi32(acc_1, m_1);
-                        }
+                        __m256i filter_epi16_0 = _mm256_cvtepi8_epi16(_mm256_castsi256_si128(filter_epi8));
+                        __m256i  input_epi16_0 = _mm256_cvtepi8_epi16(_mm256_castsi256_si128( input_epi8));
+                        __m256i filter_epi16_1 = _mm256_cvtepi8_epi16(_mm256_extracti128_si256(filter_epi8, 1));
+                        __m256i  input_epi16_1 = _mm256_cvtepi8_epi16(_mm256_extracti128_si256( input_epi8, 1));
+                        __m256i m_0 = _mm256_madd_epi16(input_epi16_0, filter_epi16_0);
+                        __m256i m_1 = _mm256_madd_epi16(input_epi16_1, filter_epi16_1);
+                        acc_0 = _mm256_add_epi32(acc_0, m_0);
+                        acc_1 = _mm256_add_epi32(acc_1, m_1);
                     }
                 }
-
                 acc_0 = _mm256_add_epi32(acc_0, acc_1);
                 __m128i sum1 = _mm_add_epi32(_mm256_extracti128_si256(acc_0, 1), _mm256_castsi256_si128(acc_0));
                 __m128i sum2 = _mm_add_epi32(sum1, _mm_unpackhi_epi64(sum1, sum1));
                 __m128i sum3 = _mm_add_epi32(sum2, _mm_shuffle_epi32(sum2, 1));
                 outVal += _mm_cvtsi128_si32(sum3);
-
                 gna_saturate_cast(outVal, *config->SaturationCount);
                 O[OH * outWidth * numFilters + OW * numFilters + OD] = (int32_t)outVal;
             }
