@@ -149,7 +149,8 @@ set(xnn_avx2_sources
   igemm8_subset_avx2.cpp
   igemv16_avx2.cpp
   igemv8_avx2.cpp
-  transpose16_avx2.cpp)
+  transpose16_avx2.cpp
+  transpose8_avx2.cpp)
 
 set(xnn_avx2_sat_sources
   convnet_avx2-sat.cpp
@@ -159,7 +160,8 @@ set(xnn_avx2_sat_sources
   igemm8_subset_avx2-sat.cpp
   igemv16_avx2-sat.cpp
   igemv8_avx2-sat.cpp
-  transpose16_avx2.cpp)
+  transpose16_avx2.cpp
+  transpose8_avx2.cpp)
 
 macro(gna_add_xnn_kernel_library KERNEL_SUFIX EXTRA_DEFS EXTRA_OPTIONS)
   add_library(xnn_kernel_${KERNEL_SUFIX} STATIC ${xnn_kernel_sources})

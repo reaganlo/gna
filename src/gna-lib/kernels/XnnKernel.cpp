@@ -419,6 +419,7 @@ void copyKernelImpl2B(CopyConfig const * const config)
 #endif
 #define OPT_ANY 1
 #define OPT_GEN_OR_SAT OPT_GEN OPT_GEN_SAT
+#define OPT_AVX2_OR_AVX2_SAT OPT_AVX2 OPT_AVX2_SAT
 
 #define VERBATIM(...) __VA_ARGS__
 #define GetKernel(name, opts)    VERBATIM(IF(opts, 0))(ToUnifiedKernel(name), ToUnifiedKernel(CodeCaveMitigationFakeKernel<>))
@@ -457,7 +458,7 @@ VoidKernel GetXnnKernel<KernelAcceleration, HwConsistencyMode>(KernelType type)
         GetKernel(recurrentKernelImpl1B, OPT_ANY),
         GetKernel(recurrentKernelImpl2B, OPT_ANY),
 
-        GetKernel(TransposeKernelImpl1B, OPT_GEN_OR_SAT),
+        GetKernel(TransposeKernelImpl1B, OPT_GEN_OR_SAT OPT_AVX2_OR_AVX2_SAT),
         GetKernel(TransposeKernelImpl2B, OPT_ANY),
 
         GetKernel(ConvolutionKernelImpl, OPT_ANY),

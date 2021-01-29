@@ -213,7 +213,7 @@ const KernelMap<VoidKernel>& AccelerationDetector::GetKernels(kernel_op operatio
         }},
         { KERNEL_TRANSPOSE, {
             {{ Gna2DataTypeInt8},
-                MakeAllGeneric<transpose1B>()},
+                MakeAVX2Accelerated<transpose1B>()},
             {{ Gna2DataTypeInt16},
                 MakeAllAccelerated<transpose2B, transpose2B>()},
         }},
