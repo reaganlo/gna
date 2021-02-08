@@ -1069,3 +1069,112 @@ void Convolution2DKernelImpl1B1B(ExecutionKernelConfig<ConvolutionConfig2D> cons
         }
     }
 }
+
+void Convolution2DKernelImpl1B2B(ExecutionKernelConfig<ConvolutionConfig2D> const *const config)
+{
+    uint32_t inputDepth = config->RequestConfig->Transform.InputDepth;
+    uint32_t inputHeight = config->RequestConfig->Transform.InputHeight;
+    uint32_t inputWidth = config->RequestConfig->Transform.InputWidth;
+
+    uint32_t numFilters = config->RequestConfig->Transform.NumberOfFilters;
+    uint32_t filterHeight = config->RequestConfig->Transform.FilterHeight;
+    uint32_t filterWidth = config->RequestConfig->Transform.FilterWidth;
+    uint32_t memForFilter = (filterHeight * filterWidth * inputDepth);
+    uint32_t filterPadding = (Gna2RoundUp(memForFilter, 16) - memForFilter);
+
+    uint32_t padHeight = config->RequestConfig->Transform.ZeroPaddingHeight;
+    uint32_t padWidth = config->RequestConfig->Transform.ZeroPaddingWidth;
+
+    uint32_t strideHeight = config->RequestConfig->Transform.StrideHeight;
+    uint32_t strideWidth = config->RequestConfig->Transform.StrideWidth;
+
+    auto biasMode = config->RequestConfig->Transform.BiasMode;
+
+    uint32_t inputHeightWPad = inputHeight + 2 * padHeight;
+    uint32_t inputWidthWPad = inputWidth + 2 * padWidth;
+
+    const int16_t *const I = (int16_t *)config->RequestConfig->Inputs;
+    int32_t *O = (int32_t *)config->RequestConfig->Outputs;
+    int8_t *F = (int8_t *)config->RequestConfig->Transform.FilterData;
+
+    auto biasPrecission = config->RequestConfig->Transform.BiasDataMode;
+    const void *biasData = config->RequestConfig->Transform.BiasData;
+
+    uint32_t outWidth = 1 + ((inputWidthWPad - filterWidth) / strideWidth);
+    uint32_t outHeight = 1 + ((inputHeightWPad - filterHeight) / strideHeight);
+
+    const int8_t mask[64] = { -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+                              -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1 };
+    for (uint32_t OD = 0; OD < numFilters; OD++) {
+        uint32_t fIdxN = OD * (inputDepth * filterWidth * filterHeight + filterPadding);
+
+        for (uint32_t OH = 0; OH < outHeight; OH++) {
+            for (uint32_t OW = 0; OW < outWidth; OW++) {
+
+                int64_t outVal;
+                if (biasMode == KernelBiasModePerFilter) {
+                    outVal = getBias(biasData, biasPrecission, OD);
+                }
+                else if (biasMode == KernelBiasModeDisabled) {
+                    outVal = 0;
+                }
+                else {
+                    outVal = getBias(biasData, biasPrecission, numFilters * outWidth * OH + numFilters * OW + OD);
+                }
+
+                uint32_t fIdxH = 0, inIdxH = 0;
+                if (OH * strideHeight < padHeight) {
+                    fIdxH = padHeight - OH * strideHeight;
+                }
+                else {
+                    inIdxH = OH * strideHeight - padHeight;
+                }
+                uint32_t boundH = (std::min)(filterHeight, inputHeight + padHeight - OH * strideHeight);
+                uint32_t steps = boundH - fIdxH;
+                inIdxH *= inputDepth * inputWidth;
+                fIdxH *= inputDepth * filterWidth;
+                uint32_t fIdxW = 0, inIdxW = 0;
+                if (OW * strideWidth < padWidth) {
+                    fIdxW = padWidth - OW * strideWidth;
+                }
+                else {
+                    inIdxW = OW * strideWidth - padWidth;
+                }
+                const uint32_t span = (std::min)(inputWidth - inIdxW, filterWidth - fIdxW);
+                const uint32_t stepsPerWxZ = span * inputDepth;
+                inIdxW *= inputDepth;
+                fIdxW *= inputDepth;
+                uint32_t idxI = inIdxH + inIdxW, idxF = fIdxN + fIdxH + fIdxW;
+                const uint32_t stepsRounded = Gna2RoundUp(stepsPerWxZ, 32);
+                uint32_t stepIH = inputDepth * inputWidth - stepsRounded;
+                uint32_t stepFH = inputDepth * filterWidth - stepsRounded;
+                __m256i acc_0 = _mm256_setzero_si256();
+                __m256i acc_1 = _mm256_setzero_si256();
+                const __m256i masked = _mm256_loadu_si256((const __m256i *)(mask + 32 - stepsPerWxZ % 32));
+                for (; steps--; idxF += stepFH, idxI += stepIH) {
+                    for (uint32_t i = 0; i < stepsPerWxZ; i += 32, idxF += 32, idxI += 32) {
+                        __m256i input_epi16_0 = _mm256_loadu_si256((const __m256i *)(I + idxI));
+                        __m256i input_epi16_1 = _mm256_loadu_si256((const __m256i *)(I + idxI + 16));
+                        __m256i filter_epi8 = _mm256_loadu_si256((const __m256i *)(F + idxF));
+                        if (i + 32 > stepsPerWxZ) {
+                            filter_epi8 = _mm256_and_si256(filter_epi8, masked);
+                        }
+                        __m256i filter_epi16_0 = _mm256_cvtepi8_epi16(_mm256_castsi256_si128(filter_epi8));
+                        __m256i filter_epi16_1 = _mm256_cvtepi8_epi16(_mm256_extracti128_si256(filter_epi8, 1));
+                        __m256i m_0 = _mm256_madd_epi16(input_epi16_0, filter_epi16_0);
+                        __m256i m_1 = _mm256_madd_epi16(input_epi16_1, filter_epi16_1);
+                        acc_0 = _mm256_add_epi32(acc_0, m_0);
+                        acc_1 = _mm256_add_epi32(acc_1, m_1);
+                    }
+                }
+                acc_0 = _mm256_add_epi32(acc_0, acc_1);
+                __m128i sum1 = _mm_add_epi32(_mm256_extracti128_si256(acc_0, 1), _mm256_castsi256_si128(acc_0));
+                __m128i sum2 = _mm_add_epi32(sum1, _mm_unpackhi_epi64(sum1, sum1));
+                __m128i sum3 = _mm_add_epi32(sum2, _mm_shuffle_epi32(sum2, 1));
+                outVal += _mm_cvtsi128_si32(sum3);
+                gna_saturate_cast(outVal, *config->SaturationCount);
+                O[numFilters * outWidth * OH + numFilters * OW + OD] = (int32_t)outVal;
+            }
+        }
+    }
+}

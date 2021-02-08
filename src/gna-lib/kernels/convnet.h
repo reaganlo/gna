@@ -82,6 +82,7 @@ extern "C" {
 #endif
 #if OPT_LEVEL == 7
     void Convolution2DKernelImpl1B1B(ExecutionKernelConfig<ConvolutionConfig2D> const * const config);
+    void Convolution2DKernelImpl1B2B(ExecutionKernelConfig<ConvolutionConfig2D> const * const config);
 #endif
 
 /* Calculates MaxPartialPoolingFunction

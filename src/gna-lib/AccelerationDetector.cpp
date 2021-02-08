@@ -255,11 +255,11 @@ const KernelMap<VoidKernel>& AccelerationDetector::GetKernels(kernel_op operatio
         }},
         { KERNEL_CONVOLUTIONAL_2D, {
             {{ Gna2DataTypeInt16, Gna2DataTypeInt8, Gna2DataTypeInt8 },
-                MakeAllGeneric<convolution2D1B2B>()},
+                MakeAVX2SatAccelerated<convolution2D1B2B>()},
             {{ Gna2DataTypeInt16, Gna2DataTypeInt16, Gna2DataTypeInt8 },
                 MakeAllGeneric<convolution2D2B2B>()},
             {{ Gna2DataTypeInt8, Gna2DataTypeInt8, Gna2DataTypeInt8 },
-                MakeAVX2Accelerated<convolution2D1B1B>()},
+                MakeAVX2SatAccelerated<convolution2D1B1B>()},
             {{ Gna2DataTypeInt8, Gna2DataTypeInt16, Gna2DataTypeInt8 },
                 MakeAllGeneric<convolution2D2B1B>()},
         }},
