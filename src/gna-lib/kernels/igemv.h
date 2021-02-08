@@ -66,3 +66,22 @@ __forceinline void saturate_store_out(int64_t const * const sum, int32_t * const
     }
 }
 
+__forceinline void saturate_add(int32_t *a, const int32_t b, uint32_t *satCount)
+{
+    int64_t c = *a + b;
+
+    if (c > INT32_MAX)
+    {
+        ++(*satCount);
+        *a = INT32_MAX;
+    }
+    else if (c < INT32_MIN)
+    {
+        ++(*satCount);
+        *a = INT32_MIN;
+    }
+    else
+    {
+        *a = (int32_t)c;
+    }
+}

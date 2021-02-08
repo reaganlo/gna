@@ -91,6 +91,7 @@ void DiagonalKernelImpl1B2B(ExecutionKernelConfig<AffineConfig> const * const co
 
 #if OPT_LEVEL == 6 || OPT_LEVEL == 7
 void TransposeKernelImpl1B(TransposeConfig const * const transposeConfig);
+void AffineKernelImpl1B1B(ExecutionKernelConfig<AffineConfig> const * const config);
 #endif
 
 #ifdef __cplusplus

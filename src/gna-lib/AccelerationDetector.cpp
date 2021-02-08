@@ -101,6 +101,23 @@ KernelMap<VoidKernel> MakeAll()
     };
 }
 
+template<KernelType generic, KernelType see4x2, KernelType avx1, KernelType avx2,
+    bool isSseAccelerated, bool isAvx1Accelerated, bool isAvx2Accelerated>
+KernelMap<VoidKernel> MakeAllSat()
+{
+    return
+    {
+        MakeSingleEntry<Gna2AccelerationModeGeneric, SAT, false>(generic),
+        MakeSingleEntry<Gna2AccelerationModeGeneric, FAST, false>(generic),
+        MakeSingleEntry<Gna2AccelerationModeSse4x2, SAT, isSseAccelerated>(see4x2),
+        MakeSingleEntry<Gna2AccelerationModeSse4x2, FAST, false>(see4x2),
+        MakeSingleEntry<Gna2AccelerationModeAvx1, SAT, isAvx1Accelerated>(avx1),
+        MakeSingleEntry<Gna2AccelerationModeAvx1, FAST, false>(avx1),
+        MakeSingleEntry<Gna2AccelerationModeAvx2, SAT, isAvx2Accelerated>(avx2),
+        MakeSingleEntry<Gna2AccelerationModeAvx2, FAST, false>(avx2),
+    };
+}
+
 template<KernelType genericKernel, KernelType acceleratedKernel>
 KernelMap<VoidKernel> MakeAllAccelerated()
 {
@@ -120,6 +137,13 @@ static KernelMap<VoidKernel> MakeAVX2Accelerated()
 {
     return MakeAll<kernelType, kernelType, kernelType, kernelType, false, false, true>();
 }
+
+template<KernelType kernelType>
+static KernelMap<VoidKernel> MakeAVX2SatAccelerated()
+{
+    return MakeAllSat<kernelType, kernelType, kernelType, kernelType, false, false, true>();
+}
+
 
 template<KernelType genericKernel>
 KernelMap<VoidKernel> MakeAllGeneric()
@@ -166,7 +190,7 @@ const KernelMap<VoidKernel>& AccelerationDetector::GetKernels(kernel_op operatio
                 MakeAllAccelerated<affineSingle2B2Bfull, affineSingle2Bfull>()
             },
             {{ Gna2DataTypeInt8, Gna2DataTypeInt8, Gna2DataTypeInt8 },
-                MakeAllGeneric<affineSingle1B1Bfull>()
+                MakeAVX2SatAccelerated<affineSingle1B1Bfull>()
             },
             {{ Gna2DataTypeInt8, Gna2DataTypeInt16, Gna2DataTypeInt8 },
                 MakeAllGeneric<affineSingle2B1Bfull>()}
