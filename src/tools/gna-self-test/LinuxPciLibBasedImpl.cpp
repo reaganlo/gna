@@ -43,7 +43,7 @@ std::vector<PciDeviceInfo> LinuxGnaSelfTestHardwareStatus::getDevicesList()
         di.deviceId = dev->device_id;
         di.devClass = dev->device_class;
         di.irq = dev->irq;
-        di.domain = dev->domain;
+        di.domain = (uint16_t)dev->domain;
         di.bus = dev->bus;
         di.dev = dev->dev;
         di.func = dev->func;

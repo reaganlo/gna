@@ -180,6 +180,8 @@ public:
         this->buffer = this->Get() + right;
         return *this;
     }
+    ~Address() = default;
+    Address(const Address&) = default;
     const Address& operator =(const T& right)
     {
         *this->buffer = right;

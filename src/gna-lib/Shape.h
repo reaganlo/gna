@@ -56,6 +56,8 @@ struct Shape : public ShapeMap
         Shape{ Create(std::vector<uint32_t>({ std::forward<T>(static_cast<uint32_t>(dimensions))... }), order), order }
     { }
 
+    Shape(const Shape&) = default;
+    ~Shape() = default;
     ModelValue AsModelValue(char dimension) const;
 
     using ShapeMap::at;
