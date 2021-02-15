@@ -74,12 +74,6 @@ public:
 
     static void ActiveListAdd(uint32_t configId, uint32_t layerIndex, uint32_t indicesCount, uint32_t* indices);
 
-#if HW_VERBOSE == 1
-    void AfterscoreDebug(uint32_t modelId, uint32_t nActions, dbg_action *actions);
-
-    void PrescoreDebug(uint32_t modelId, uint32_t nActions, dbg_action *actions);
-#endif
-
 private:
     uint32_t gnaHandle;
 

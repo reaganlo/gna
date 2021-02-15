@@ -34,15 +34,7 @@
 #include "Macros.h"
 #include "Memory.h"
 
-#if defined(_WIN32)
-#if HW_VERBOSE == 1
-#include "GnaDrvApiWinDebug.h"
-#else
 #include "GnaDrvApi.h"
-#endif
-#else
-#error Verbose version of library available only on Windows OS
-#endif
 
 #include <Cfgmgr32.h>
 #include <ntstatus.h>
@@ -58,10 +50,6 @@ const std::map<GnaIoctlCommand, DWORD> WindowsDriverInterface::ioctlCommandsMap 
     { GNA_COMMAND_GET_PARAM, GNA_IOCTL_GET_PARAM },
     { GNA_COMMAND_MAP, GNA_IOCTL_MEM_MAP2 },
     { GNA_COMMAND_UNMAP, GNA_IOCTL_MEM_UNMAP2 },
-#if HW_VERBOSE == 1
-    { GNA_COMMAND_READ_REG, GNA_IOCTL_READ_REG },
-    { GNA_COMMAND_WRITE_REG, GNA_IOCTL_WRITE_REG }
-#endif
 };
 
 WindowsDriverInterface::WindowsDriverInterface() :
@@ -102,38 +90,6 @@ bool WindowsDriverInterface::OpenDevice(uint32_t deviceIndex)
     getDeviceCapabilities();
 
     return true;
-}
-
-void WindowsDriverInterface::IoctlSend(const GnaIoctlCommand command, void * const inbuf, const uint32_t inlen,
-    void * const outbuf, const uint32_t outlen)
-{
-    UNREFERENCED_PARAMETER(command);
-    UNREFERENCED_PARAMETER(inbuf);
-    UNREFERENCED_PARAMETER(inlen);
-    UNREFERENCED_PARAMETER(outbuf);
-    UNREFERENCED_PARAMETER(outlen);
-
-#if HW_VERBOSE == 1
-    auto bytesRead = DWORD{ 0 };
-    auto ioResult = BOOL{};
-
-    overlapped.hEvent = deviceEvent;
-
-    uint32_t code;
-    switch (command)
-    {
-    case GNA_COMMAND_READ_REG:
-        /* FALLTHRU */
-    case GNA_COMMAND_WRITE_REG:
-        code = ioctlCommandsMap.at(command);
-        ioResult = DeviceIoControl(deviceHandle, code, inbuf, inlen, outbuf, outlen, &bytesRead, &overlapped);
-        checkStatus(ioResult);
-        wait(&overlapped, recoveryTimeout);
-        break;
-    default:
-        throw GnaException{ Gna2StatusDeviceOutgoingCommunicationError };
-    }
-#endif
 }
 
 uint64_t WindowsDriverInterface::MemoryMap(void *memory, uint32_t memorySize)

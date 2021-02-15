@@ -24,9 +24,6 @@
 */
 
 #include "Device.h"
-#if HW_VERBOSE == 1
-#include "DeviceVerbose.h"
-#endif
 
 #include "ActiveList.h"
 #include "Expect.h"

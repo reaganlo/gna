@@ -150,21 +150,6 @@ void DeviceController::RequestWait(uint32_t requestId)
     ThrowOnStatusUnsuccessful(status, "Request wait failed");
 }
 
-
-#if HW_VERBOSE == 1
-void DeviceController::AfterscoreDebug(uint32_t modelId, uint32_t nActions, dbg_action *actions)
-{
-    auto const status = GnaModelSetAfterscoreScenario(modelId, nActions, actions);
-    ThrowOnStatusUnsuccessful(status, "Setting after score scenario failed");
-}
-
-void DeviceController::PrescoreDebug(uint32_t modelId, uint32_t nActions, dbg_action *actions)
-{
-    auto const status = GnaModelSetPrescoreScenario(modelId, nActions, actions);
-    ThrowOnStatusUnsuccessful(status, "Setting pre score scenario failed");
-}
-#endif
-
 void DeviceController::ThrowOnStatusUnsuccessful(Gna2Status const status, char const* message)
 {
     if (!Gna2StatusIsSuccessful(status))

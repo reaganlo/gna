@@ -25,10 +25,6 @@
 
 #include "DeviceManager.h"
 
-#if HW_VERBOSE == 1
-#include "DeviceVerbose.h"
-#endif
-
 #include "Expect.h"
 #include "GnaException.h"
 #include "Logger.h"
@@ -84,12 +80,7 @@ void DeviceManager::CreateDevice(uint32_t deviceIndex)
     if (!IsOpened(deviceIndex))
     {
         auto const emplaced = devices.emplace(deviceIndex, DeviceContext{
-#if HW_VERBOSE == 0
-           std::make_unique<Device>(deviceIndex, DeviceManager::DefaultThreadCount),
-#else
-            std::make_unique<DeviceVerbose>(deviceIndex, DeviceManager::DefaultThreadCount),
-#endif
-        0});
+           std::make_unique<Device>(deviceIndex, DeviceManager::DefaultThreadCount), 0});
         MapAllToDevice(*emplaced.first->second);
     }
 }

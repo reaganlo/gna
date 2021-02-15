@@ -146,10 +146,10 @@ add_executable(test-layer
   ${API_IMPL_DIR}/gna2-model-impl.cpp
   ${API_IMPL_DIR}/gna2-model-export-impl.cpp
   ${API_IMPL_DIR}/gna2-capability-impl.cpp
-  ${gna_hw_module_interface_sources})  
+  ${gna_hw_module_interface_sources})
 
 target_compile_definitions(test-layer
-  PRIVATE ${EXTRA_DEFS} PROFILE PROFILE_DETAILED HW_VERBOSE=0)
+  PRIVATE ${EXTRA_DEFS} PROFILE PROFILE_DETAILED)
 
 target_link_libraries(test-layer
   gtest

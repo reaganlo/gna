@@ -276,14 +276,7 @@ template<typename ... X> void DebugLogger::print(FILE * const streamIn, const Gn
     }
 }
 
-void VerboseLogger::HorizontalSpacer() const
-{
-    fprintf(defaultStream, " - ----------------------------------------------------------------\n");
-}
-
-#if HW_VERBOSE == 1
-std::unique_ptr<Logger> GNA::Log = std::make_unique<VerboseLogger>();
-#elif defined(DUMP_ENABLED) || DEBUG >= 1
+#if defined(DUMP_ENABLED) || DEBUG >= 1
 std::unique_ptr<Logger> GNA::Log = std::make_unique<DebugLogger>();
 #else // RELEASE
 std::unique_ptr<Logger> GNA::Log = std::make_unique<Logger>();

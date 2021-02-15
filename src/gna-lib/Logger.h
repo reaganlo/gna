@@ -101,18 +101,6 @@ protected:
 
 };
 
-// Verbose logger for validation purposes
-struct VerboseLogger : public DebugLogger
-{
-    VerboseLogger() :
-        DebugLogger()
-    {}
-    virtual ~VerboseLogger() = default;
-
-    virtual void HorizontalSpacer() const override;
-
-};
-
 extern std::unique_ptr<Logger> Log;
 
 }

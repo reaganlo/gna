@@ -79,11 +79,6 @@ enum GnaIoctlCommand
     GNA_COMMAND_UNMAP,
     GNA_COMMAND_SCORE,
     GNA_COMMAND_GET_PARAM,
-#if HW_VERBOSE == 1
-    GNA_COMMAND_READ_PGDIR,
-    GNA_COMMAND_READ_REG,
-    GNA_COMMAND_WRITE_REG
-#endif
 };
 
 struct DriverCapabilities
