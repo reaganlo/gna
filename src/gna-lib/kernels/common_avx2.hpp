@@ -34,3 +34,12 @@ static inline int32_t _mm256_hsum_epi32(__m256i acc0)
 
     return _mm_cvtsi128_si32(sum32);
 }
+
+/** @brief Add 64b signed integers inside 256b register */
+static inline int64_t _mm256_hsum_epi64(__m256i acc0)
+{
+    __m128i sum128 = _mm_add_epi64(_mm256_extracti128_si256(acc0, 1), _mm256_castsi256_si128(acc0));
+    __m128i sum64 = _mm_add_epi64(sum128, _mm_unpackhi_epi64(sum128, sum128));
+
+    return _mm_cvtsi128_si64(sum64);
+}

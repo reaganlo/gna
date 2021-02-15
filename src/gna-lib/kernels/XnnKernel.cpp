@@ -468,7 +468,7 @@ VoidKernel GetXnnKernel<KernelAcceleration, HwConsistencyMode>(KernelType type)
         GetKernel(copyKernelImpl, OPT_ANY),
 
         GetKernel(AffineKernelImpl1B1B, OPT_GEN_OR_SAT OPT_AVX2_SAT),
-        GetKernel(AffineKernelImpl2B1B, OPT_GEN_OR_SAT),
+        GetKernel(AffineKernelImpl2B1B, OPT_GEN_OR_SAT OPT_AVX2_SAT),
         GetKernel(AffineKernelImpl1B2B, OPT_GEN_OR_SAT),
         GetKernel(AffineKernelImpl2B2B, OPT_GEN_OR_SAT),
         GetKernel(AffineActiveListKernelImpl1B1B, OPT_GEN_OR_SAT),

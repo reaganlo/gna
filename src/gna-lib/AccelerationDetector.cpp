@@ -193,7 +193,7 @@ const KernelMap<VoidKernel>& AccelerationDetector::GetKernels(kernel_op operatio
                 MakeAVX2SatAccelerated<affineSingle1B1Bfull>()
             },
             {{ Gna2DataTypeInt8, Gna2DataTypeInt16, Gna2DataTypeInt8 },
-                MakeAllGeneric<affineSingle2B1Bfull>()}
+                MakeAVX2SatAccelerated<affineSingle2B1Bfull>()}
         }},
         { KERNEL_AFFINE_AL, {
             {{ Gna2DataTypeInt16, Gna2DataTypeInt8, Gna2DataTypeCompoundBias },
