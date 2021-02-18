@@ -144,16 +144,10 @@ enum Gna2DeviceVersion
     Gna2DeviceVersionEmbedded1_0 = 0x10E,
 
     /**
-     GNA 2.1 embedded device.
-     A ::Gna2DeviceGeneration2_0 generation device.
+     GNA 3.1 embedded device on PCH/ACE.
+     A ::Gna2DeviceGeneration3_1 generation device.
      */
-    Gna2DeviceVersionEmbedded2_1 = 0x20E,
-
-    /**
-     GNA 3.0 embedded device on PCH/ACE.
-     A ::Gna2DeviceGeneration3_0 generation device.
-     */
-    Gna2DeviceVersionEmbedded3_0 = 0x30E,
+    Gna2DeviceVersionEmbedded3_1 = 0x310E,
 
     /**
      GNA 3.5 embedded device on ACE.

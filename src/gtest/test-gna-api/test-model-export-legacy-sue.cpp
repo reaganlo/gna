@@ -292,7 +292,7 @@ TEST_F(TestSimpleModel, exportNoMmuApi2)
 {
     SetupGnaModel();
 
-    PrepareExportConfig(Gna2DeviceVersionEmbedded3_0);
+    PrepareExportConfig(Gna2DeviceVersionEmbedded3_1);
 
     void * bufferLd;
     uint32_t bufferLdSize;

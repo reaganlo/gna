@@ -127,7 +127,7 @@ std::vector<char> TestSimpleModelTlv::Gna3DumpNoMmuTlv()
     const uint32_t additionalScratchBufferSize = 0x2000;
 
     std::vector<char> ldaData;
-    ExportComponent(ldaData, Gna2DeviceVersionEmbedded3_0, Gna2ModelExportComponentLayerDescriptors);
+    ExportComponent(ldaData, Gna2DeviceVersionEmbedded3_1, Gna2ModelExportComponentLayerDescriptors);
 
     const uint32_t tlvHeaderSize = sizeof(char[4]) + lInTlvSize;
     const uint32_t tlvTwoHeadersSize = tlvHeaderSize * 2;

@@ -72,7 +72,7 @@ void ModelExportConfig::Export(Gna2ModelExportComponent componentType, void ** e
         return;
     }
 
-    if (targetDeviceVersion == Gna2DeviceVersionEmbedded3_0 ||
+    if (targetDeviceVersion == Gna2DeviceVersionEmbedded3_1 ||
         targetDeviceVersion == Gna2DeviceVersionEmbedded3_5)
     {
         device.DumpComponentNoMMu(sourceModelId, userAllocator, *exportBuffer, *exportBufferSize, componentType, targetDeviceVersion);
@@ -103,7 +103,7 @@ void ModelExportConfig::ValidateState() const
     uint32_t const legacySueCreekVersionNumber = 0xFFFF0001;
     auto const is1x0Embedded = Gna2DeviceVersionEmbedded1_0 == targetDeviceVersion
     || legacySueCreekVersionNumber == static_cast<uint32_t>(targetDeviceVersion);
-    auto const is3x0Embedded = targetDeviceVersion == Gna2DeviceVersionEmbedded3_0;
+    auto const is3x0Embedded = targetDeviceVersion == Gna2DeviceVersionEmbedded3_1;
     auto const is3x1EmbeddedAnna = targetDeviceVersion == Gna2DeviceVersionEmbedded3_5;
     //TODO:3:Remove when other devices supported
     Expect::True(is1x0Embedded || is3x0Embedded || is3x1EmbeddedAnna, Gna2StatusAccelerationModeNotSupported);

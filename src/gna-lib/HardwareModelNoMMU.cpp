@@ -44,7 +44,7 @@ public:
 inline std::map<uint32_t, uint32_t> const & HardwareModelNoMMU::GetBarMap(Gna2DeviceVersion target)
 {
     static const auto barMap = std::map<Gna2DeviceVersion, std::map<uint32_t, uint32_t>>{
-        {Gna2DeviceVersionEmbedded3_0, {
+        {Gna2DeviceVersionEmbedded3_1, {
             { Gna2MemoryTagReadWrite, 1 },
             { Gna2MemoryTagInput, 2 },
             { Gna2MemoryTagOutput, 3 },
@@ -108,7 +108,7 @@ HardwareModelNoMMU::HardwareModelNoMMU(CompiledModel const & softwareModel, Gna2
     // If there are regions tagged as External do not try guess
     if (exportAllocations.at(Gna2MemoryTagExternalBufferInput).empty() &&
         exportAllocations.at(Gna2MemoryTagExternalBufferOutput).empty() &&
-        targetDevice == Gna2DeviceVersionEmbedded3_0)
+        targetDevice == Gna2DeviceVersionEmbedded3_1)
     {
         GuessIOAllocations();
     }
@@ -189,7 +189,7 @@ const HardwareCapabilities& HardwareModelNoMMU::GetHwCaps(Gna2DeviceVersion targ
 {
     static const std::map<Gna2DeviceVersion, HardwareCapabilities> hwCaps =
     {
-        {Gna2DeviceVersionEmbedded3_0, HardwareCapabilities{ Gna2DeviceVersionEmbedded3_0 }},
+        {Gna2DeviceVersionEmbedded3_1, HardwareCapabilities{ Gna2DeviceVersionEmbedded3_1 }},
         {Gna2DeviceVersionEmbedded3_5, HardwareCapabilities{ Gna2DeviceVersionEmbedded3_5 }},
     };
     auto const found = hwCaps.find(targetDevice);
@@ -292,7 +292,7 @@ Gna2MemoryTag HardwareModelNoMMU::GetComponentTag(Gna2DeviceVersion target, Gna2
 {
     static const auto mapping = std::map<Gna2DeviceVersion, std::map<Gna2ModelExportComponent, Gna2MemoryTag> >
     {
-        { Gna2DeviceVersionEmbedded3_0,
+        { Gna2DeviceVersionEmbedded3_1,
             {
                 { Gna2ModelExportComponentReadOnlyDump, Gna2MemoryTagReadOnly },
                 { Gna2ModelExportComponentInputDump, Gna2MemoryTagInput },

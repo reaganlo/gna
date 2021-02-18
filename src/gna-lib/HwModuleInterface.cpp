@@ -124,9 +124,8 @@ static GNA3_Cfg_t GetGnaConfigurationVersion(DeviceVersion deviceVersion)
     case Gna2DeviceVersion3_5:
         return GNA3_Cfg_t::GNA_CFG_3d5D1;
     case Gna2DeviceVersionEmbedded1_0:
-    case Gna2DeviceVersionEmbedded2_1:
         return GNA3_Cfg_t::GNA_CFG_DEFLT;
-    case Gna2DeviceVersionEmbedded3_0:
+    case Gna2DeviceVersionEmbedded3_1:
         return GNA3_Cfg_t::GNA_CFG_3d1E1;
     case Gna2DeviceVersionEmbedded3_5:
         return GNA3_Cfg_t::GNA_CFG_3d5E1;

@@ -45,9 +45,6 @@ enum GnaFeature
     LegacyGMM,
     GMMLayer,
     MultiBias,
-    L1Distance,
-    L2Distance,
-    ComputerVision,
     NewPerformanceCounters,
     CNN2D,
 };
@@ -68,7 +65,10 @@ struct GenerationCapabilities
     uint32_t ActivationEngineCount;
     std::array<uint32_t, BufferArraySize> BufferElementCount;
     std::array<uint32_t, BufferArraySize> BufferElementCountAdlWorkaround;
+    std::string HwModuleName = "";
 };
+
+using DevVerGenMap = std::map<DeviceVersion, const GenerationCapabilities>;
 
 class HardwareCapabilities
 {
@@ -136,7 +136,7 @@ public:
     bool HasFeature(GnaFeature feature) const;
 
 private:
-    static std::map<DeviceVersion, const GenerationCapabilities>& getCapsMap();
+    static DevVerGenMap& getCapsMap();
 
     static const GenerationCapabilities& getGenerationCapabilities(DeviceVersion deviceVersionIn);
 
