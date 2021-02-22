@@ -34,64 +34,43 @@
 #include <cstring>
 #include <immintrin.h>
 
-template <int N>
-void AffineKernelImpl2B1B(ExecutionKernelConfig<AffineConfig> const *const config);
+/** Transpose input and select template for calculation */
+static void TransposeAndRun(ExecutionKernelConfig<AffineConfig> const *const config, void *biases, uint32_t bias_vector = 1);
 
-/** @brief Specialisation for N = 1 which compilers tend to generate much less efficient than others */
-template <>
-void AffineKernelImpl2B1B<1>(ExecutionKernelConfig<AffineConfig> const *const config);
-
-/** @brief Affine kernel implementation for 1B input 2B weight
+/** Affine kernel implementation for 1B input 2B weight
  *
  * ASSUMPTIONS:
- *   Input is in KxN where K [16, 2^16 - 16] mod 16, N [1,8]
+ *   Input is KxN where K [16, 2^16 - 16], K % 16 == 0, N [1,8]
  *   Output is MxN where M [1, 2^16]
  *   Biases can be 1b, 2b or 4b
- * 
+ *
  * NOTE:
  *   HW compatibility saturation is used which requires that buffer size is divisible by (N*8)
- *
  */
 void AffineKernelImpl2B1B(ExecutionKernelConfig<AffineConfig> const *const config)
 {
-    auto transposeConfig = TransposeConfig::MakeFrom(config);
-    TransposeKernelImpl1B(&transposeConfig);
+    TransposeAndRun(config, (void *)config->RequestConfig->Transform.biasesSimple);
+}
 
-    switch (config->RequestConfig->Transform.inputVectorCount)
-    {
-    case 1:
-        AffineKernelImpl2B1B<1>(config);
-        break;
-    case 2:
-        AffineKernelImpl2B1B<2>(config);
-        break;
-    case 3:
-        AffineKernelImpl2B1B<3>(config);
-        break;
-    case 4:
-        AffineKernelImpl2B1B<4>(config);
-        break;
-    case 5:
-        AffineKernelImpl2B1B<5>(config);
-        break;
-    case 6:
-        AffineKernelImpl2B1B<6>(config);
-        break;
-    case 7:
-        AffineKernelImpl2B1B<7>(config);
-        break;
-    case 8:
-        AffineKernelImpl2B1B<8>(config);
-        break;
-    default:
-        break;
-    }
+/** Affine kernel implementation for 1B input 2B weight, multibias
+ *
+ * ASSUMPTIONS:
+ *   Input is KxN where K [16, 2^16 - 16], K % 16 == 0, N [1,8]
+ *   Output is MxN where M [1, 2^16]
+ *   Biases can be 1b, 2b or 4b
+ *
+ * NOTE:
+ *   HW compatibility saturation is used which requires that buffer size is divisible by (N*8)
+ */
+void AffineMultiBiasKernelImpl2B1B(ExecutionKernelConfig<AffineConfig> const *const config)
+{
+    TransposeAndRun(config, (void *)config->RequestConfig->Transform.multiBias, config->RequestConfig->Transform.multiBiasVectorCount);
 }
 
 /** @brief Add 8x32b partial sum to 4x64 total sum
- *  
+ *
  *  Partial sum is set to zero
- * 
+ *
  *  @param[in,out] sum 4x64 sum
  *  @param[in,out] partial 8x32 partial sum
  */
@@ -109,8 +88,16 @@ inline void PartialSum(__m256i &sum, __m256i &partial)
     partial = _mm256_setzero_si256();
 }
 
-template <int N>
-void AffineKernelImpl2B1B(ExecutionKernelConfig<AffineConfig> const *const config)
+/** Generic implementation for simple bias and multibias
+ *
+ * This implementation expects input to be already transposed
+ *
+ * @param config Execution config
+ * @param biases Pointer to either simple bias or multibias
+ * @param bias_vector Index of vector used in multibias. For simple bias it must be set to 1
+ */
+template <size_t N>
+static void Affine2B1B(ExecutionKernelConfig<AffineConfig> const *const config, void *biases, const uint32_t bias_vector)
 {
     // NOTE: For 1B data and 2B weight, the 513rd sum can overflow
     static const uint32_t PARTIAL_SUM_LIMIT = 512;
@@ -118,16 +105,16 @@ void AffineKernelImpl2B1B(ExecutionKernelConfig<AffineConfig> const *const confi
     static const uint32_t IT_STEP = 8;
 
     // NOTE: For compatibility with HW we limit the amount of unsaturated sums based on the buffer size
-    const uint32_t unsaturated_sum_limit = (config->BufferElementCount[N - 1]) / N / IT_STEP;
+    const uint32_t unsaturated_sum_limit = (uint32_t)((config->BufferElementCount[N - 1]) / N / IT_STEP);
 
-    uint32_t K = config->RequestConfig->Transform.inputElementCount;
-    uint32_t M = config->RequestConfig->Transform.outputElementCount;
-    uint32_t KK = K / IT_STEP;
+    const uint32_t K = config->RequestConfig->Transform.inputElementCount;
+    const uint32_t M = config->RequestConfig->Transform.outputElementCount;
+    const uint32_t KK = K / IT_STEP;
 
-    int8_t const *weights = config->RequestConfig->Transform.weights1B;
+    int8_t const *const weights = config->RequestConfig->Transform.weights1B;
 
-    int8_t const *inputs[8] = {(int8_t *)config->Intermediate->d0};
-    int32_t *outputs[8] = {reinterpret_cast<int32_t *>(config->RequestConfig->Outputs)};
+    int8_t const *inputs[N] = {(const int8_t *)config->Intermediate->d0};
+    int32_t *outputs[N] = {reinterpret_cast<int32_t *>(config->RequestConfig->Outputs)};
 
     size_t inputOffset = 0;
     size_t weightOffset = 0;
@@ -135,13 +122,13 @@ void AffineKernelImpl2B1B(ExecutionKernelConfig<AffineConfig> const *const confi
     __m128i weight;
     __m256i weight32;
 
-    __m128i input[8];
-    __m256i input_32[8];
-    __m256i sum[8];
-    __m256i sum_partial[8];
-    __m256i mul[8];
+    __m128i input[N];
+    __m256i input_32[N];
+    __m256i sum[N];
+    __m256i sum_partial[N];
+    __m256i mul[N];
 
-    int64_t final_sum[8];
+    int64_t final_sum[N];
 
     uint32_t partial_sum_counter = 0;
     uint32_t unsaturated_sum_counter = 0;
@@ -154,8 +141,7 @@ void AffineKernelImpl2B1B(ExecutionKernelConfig<AffineConfig> const *const confi
 
     for (uint32_t i = 0; i < M; ++i)
     {
-        int32_t bias = getBias(config->RequestConfig->Transform.biasesSimple,
-                               config->RequestConfig->Transform.bytesPerBias, i);
+        const int32_t bias = getBias(biases, config->RequestConfig->Transform.bytesPerBias, i * bias_vector);
 
         for (uint32_t n = 0; n < N; ++n)
         {
@@ -221,117 +207,51 @@ void AffineKernelImpl2B1B(ExecutionKernelConfig<AffineConfig> const *const confi
             for (uint32_t n = 0; n < N; ++n)
             {
                 PartialSum(sum[n], sum_partial[n]);
-                final_sum[n] += _mm256_hsum_epi64(sum[n]);
             }
             partial_sum_counter = 0;
         }
 
         for (uint32_t n = 0; n < N; ++n)
         {
+            final_sum[n] += _mm256_hsum_epi64(sum[n]);
             saturate_store_out(&final_sum[n], outputs[n], config->SaturationCount);
             outputs[n] += N;
         }
     }
 }
 
-template <>
-void AffineKernelImpl2B1B<1>(ExecutionKernelConfig<AffineConfig> const *const config)
+void TransposeAndRun(ExecutionKernelConfig<AffineConfig> const *const config, void *biases, uint32_t bias_vector)
 {
-    // NOTE: For 1B data and 2B weight, the 513rd sum can overflow
-    static const uint32_t PARTIAL_SUM_LIMIT = 512;
+    auto transposeConfig = TransposeConfig::MakeFrom(config);
+    TransposeKernelImpl1B(&transposeConfig);
 
-    static const uint32_t IT_STEP = 8;
-    static const int N = 1;
-
-    // NOTE: For compatibility with HW we limit the amount of unsaturated sums based on the buffer size
-    const uint32_t unsaturated_sum_limit = (config->BufferElementCount[N - 1]) / N / IT_STEP;
-
-    const uint32_t K = config->RequestConfig->Transform.inputElementCount;
-    const uint32_t M = config->RequestConfig->Transform.outputElementCount;
-    const uint32_t KK = K / IT_STEP;
-
-    int8_t const *inputs0 = (int8_t *)config->Intermediate->d0;
-    int8_t const *weights = config->RequestConfig->Transform.weights1B;
-
-    int32_t *outputs = reinterpret_cast<int32_t *>(config->RequestConfig->Outputs);
-    int32_t *outputs0 = outputs;
-
-    size_t inputOffset = 0;
-    size_t weightOffset = 0;
-
-    __m128i weight;
-    __m256i weight32;
-    __m128i input0;
-    __m256i input0_32;
-    __m256i sum0;
-    __m256i sum0_partial;
-    __m256i mul0;
-
-    uint32_t partial_sum_counter = 0;
-    uint32_t unsaturated_sum_counter = 0;
-
-    for (uint32_t i = 0; i < M; ++i)
+    switch (config->RequestConfig->Transform.inputVectorCount)
     {
-        int32_t bias = getBias(config->RequestConfig->Transform.biasesSimple,
-                               config->RequestConfig->Transform.bytesPerBias, i);
-
-        int64_t final_sum0 = bias;
-
-        sum0 = _mm256_setzero_si256();
-        sum0_partial = _mm256_setzero_si256();
-
-        unsaturated_sum_counter = 0;
-
-        for (uint32_t k = 0; k < KK; ++k)
-        {
-            inputOffset = k * IT_STEP;
-            weightOffset = (inputOffset + i * K) * sizeof(int16_t);
-
-            input0 = _mm_loadl_epi64((__m128i *)(inputs0 + inputOffset));
-            weight = _mm_load_si128((__m128i *)(weights + weightOffset));
-            weight32 = _mm256_cvtepi16_epi32(weight);
-            input0_32 = _mm256_cvtepi8_epi32(input0);
-            mul0 = _mm256_mullo_epi32(input0_32, weight32);
-            sum0_partial = _mm256_add_epi32(sum0_partial, mul0);
-
-            if (++partial_sum_counter >= PARTIAL_SUM_LIMIT)
-            {
-                PartialSum(sum0, sum0_partial);
-                partial_sum_counter = 0;
-            }
-
-            // NOTE: This part is only for HW compatibility
-            if (++unsaturated_sum_counter >= unsaturated_sum_limit)
-            {
-                if (partial_sum_counter > 0)
-                {
-                    PartialSum(sum0, sum0_partial);
-                    partial_sum_counter = 0;
-                }
-
-                final_sum0 += _mm256_hsum_epi64(sum0);
-
-                saturate(&final_sum0, config->SaturationCount);
-
-                sum0 = _mm256_setzero_si256();
-
-                unsaturated_sum_counter = 0;
-            }
-        }
-
-        if (unsaturated_sum_counter > 0)
-        {
-            if (partial_sum_counter > 0)
-            {
-                PartialSum(sum0, sum0_partial);
-                partial_sum_counter = 0;
-            }
-
-            final_sum0 += _mm256_hsum_epi64(sum0);
-        }
-
-        saturate_store_out(&final_sum0, outputs0, config->SaturationCount);
-
-        outputs0 += N;
+    case 1:
+        Affine2B1B<1>(config, biases, bias_vector);
+        break;
+    case 2:
+        Affine2B1B<2>(config, biases, bias_vector);
+        break;
+    case 3:
+        Affine2B1B<3>(config, biases, bias_vector);
+        break;
+    case 4:
+        Affine2B1B<4>(config, biases, bias_vector);
+        break;
+    case 5:
+        Affine2B1B<5>(config, biases, bias_vector);
+        break;
+    case 6:
+        Affine2B1B<6>(config, biases, bias_vector);
+        break;
+    case 7:
+        Affine2B1B<7>(config, biases, bias_vector);
+        break;
+    case 8:
+        Affine2B1B<8>(config, biases, bias_vector);
+        break;
+    default:
+        break;
     }
 }
