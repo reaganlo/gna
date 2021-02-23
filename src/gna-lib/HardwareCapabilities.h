@@ -65,7 +65,7 @@ struct GenerationCapabilities
     uint32_t ActivationEngineCount;
     std::array<uint32_t, BufferArraySize> BufferElementCount;
     std::array<uint32_t, BufferArraySize> BufferElementCountAdlWorkaround;
-    std::string HwModuleName = "";
+    std::string HwModuleName;
 };
 
 using DevVerGenMap = std::map<DeviceVersion, const GenerationCapabilities>;

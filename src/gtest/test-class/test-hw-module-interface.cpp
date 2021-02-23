@@ -54,7 +54,7 @@ TEST_F(HwModuleInterfaceTest, CreateNullName)
 TEST_F(HwModuleInterfaceTest, CreateEmptyName)
 {
     EXPECT_THROW(
-        hwModule = HwModuleInterface::Create(""),
+        hwModule = HwModuleInterface::Create(nullptr),
         GnaException);
     ASSERT_TRUE(!hwModule);
 }

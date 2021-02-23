@@ -88,7 +88,6 @@ static const std::map<const GmmParameterType, const XnnParameter> GmmDescriptorG
     { gmmscrlen, {0x7c, 4}},
 };
 
-
 static const std::map<const XnnParameterType, const XnnParameter> XnnDescriptorGNA_1 =
 {
     { op,{ 0x00, 1 }},
@@ -147,7 +146,6 @@ static const std::map<const XnnParameterType, const XnnParameter> XnnDescriptorG
     {bias_grp_buffer, { 0x38, 4 }},
     {pwl_seg_def_buffer, { 0x3c, 4 }},
 };
-
 
 static const std::map<const XnnParameterType, const XnnParameter> XnnDescriptorGNA_3 =
 {

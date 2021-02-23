@@ -43,6 +43,8 @@ using namespace GNA;
 // - user data
 const uint32_t HardwareCapabilities::MaximumModelSize = 256 * 1024 * 1024;
 
+#define EVALUATOR(x)  #x
+
 template<Gna2DeviceVersion version>
 static GenerationCapabilities GetVerCaps();
 
@@ -52,6 +54,32 @@ static GenerationCapabilities DeriveVerCaps()
     static GenerationCapabilities caps = GetVerCaps<baseVersion>();
     caps.Generation = targetGeneration;
     return caps;
+}
+
+template<>
+GenerationCapabilities GetVerCaps<Gna2DeviceVersionGMM>()
+{
+    return { Gna2DeviceGenerationGmm,
+            1,
+            {
+                { BaseFunctionality, false},
+                { CNN, false },
+                { LegacyGMM, true },
+                { GMMLayer, false },
+                { MultiBias, false },
+                { NewPerformanceCounters, false },
+                { CNN2D, false }
+            },
+            6,
+            {{1, 8}},
+            4,
+            0,
+            0,
+            {0, 0, 0, 0, 0, 0, 0, 0,
+                12288, 12288, 12096, 12288, 12000, 12096, 12096, 12288},
+            {},
+            {}
+    };
 }
 
 template<>
@@ -76,6 +104,7 @@ GenerationCapabilities GetVerCaps<Gna2DeviceVersion0_9>()
     1,
     {0, 0, 0, 0, 0, 0, 0, 0,
     12288, 12288, 12096, 12288, 12000, 12096, 12096, 12288},
+    {},
     {}
     };
 }
@@ -120,7 +149,8 @@ GenerationCapabilities GetVerCaps<Gna2DeviceVersion2_0>()
            1,
            {0, 0, 0, 0, 0, 0, 0, 0,
                12288, 12288, 12096, 12288, 12000, 12096, 12096, 12288},
-           {} };
+           {},
+            {} };
 }
 
 template<>
@@ -143,13 +173,8 @@ GenerationCapabilities GetVerCaps<Gna2DeviceVersion3_0>()
                 2,
                 16,
                 {},
-                {} };
-}
-
-template<>
-GenerationCapabilities GetVerCaps<Gna2DeviceVersion3_5>()
-{
-    return DeriveVerCaps<Gna2DeviceVersion3_0, Gna2DeviceGeneration3_5>();
+                {},
+                EVALUATOR(GNA_HW_MODULE_30)};
 }
 
 template<>
@@ -159,9 +184,17 @@ GenerationCapabilities GetVerCaps<Gna2DeviceVersionEmbedded3_1>()
 }
 
 template<>
+GenerationCapabilities GetVerCaps<Gna2DeviceVersion3_5>()
+{
+    static auto caps = DeriveVerCaps<Gna2DeviceVersion3_0, Gna2DeviceGeneration3_5>();
+    caps.HwModuleName = EVALUATOR(GNA_HW_MODULE_35);
+    return caps;
+}
+
+template<>
 GenerationCapabilities GetVerCaps<Gna2DeviceVersionEmbedded3_5>()
 {
-    return DeriveVerCaps<Gna2DeviceVersion3_0, Gna2DeviceGeneration3_5>();
+    return DeriveVerCaps<Gna2DeviceVersion3_5, Gna2DeviceGeneration3_5>();
 }
 
 template<Gna2DeviceVersion version>
@@ -173,27 +206,7 @@ static DevVerGenMap::allocator_type::value_type GetCaps()
 DevVerGenMap& HardwareCapabilities::getCapsMap()
 {
     static DevVerGenMap capsMap = {
-         { Gna2DeviceVersionGMM,
-             {Gna2DeviceGenerationGmm,
-             1,
-             {
-                 { BaseFunctionality, false},
-                 { CNN, false },
-                 { LegacyGMM, true },
-                 { GMMLayer, false },
-                 { MultiBias, false },
-                 { NewPerformanceCounters, false },
-                 { CNN2D, false }
-             },
-             6,
-             {{1, 8}},
-             4,
-             0,
-             0,
-             {0, 0, 0, 0, 0, 0, 0, 0,
-                 12288, 12288, 12096, 12288, 12000, 12096, 12096, 12288},
-             {}},
-        },
+         GetCaps<Gna2DeviceVersionGMM>(),
          GetCaps<Gna2DeviceVersion0_9>(),
          GetCaps<Gna2DeviceVersion1_0>(),
          GetCaps<Gna2DeviceVersionEmbedded1_0>(),
@@ -328,15 +341,7 @@ DeviceVersion HardwareCapabilities::GetDeviceVersion() const
 
 const char* HardwareCapabilities::GetHwModuleName() const
 {
-    switch (deviceVersion)
-    {
-    case Gna2DeviceVersion3_0:
-        return "gna_hw";
-    case Gna2DeviceVersion3_5:
-        return "gna-hw-3-5";
-    default:
-        return "gna-hw-3-5";
-    }
+    return getGenerationCapabilities(deviceVersion).HwModuleName.c_str();
 }
 
 Gna2DeviceGeneration HardwareCapabilities::GetDeviceGeneration() const

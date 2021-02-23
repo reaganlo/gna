@@ -84,5 +84,16 @@ public:
     static std::string ToString(Gna2Status statusIn);
 };
 
+template<typename Key, typename Value>
+static Value GetMappedOrDefault(Key key, Value defaultValue, const std::map<Key, Value>& map)
+{
+    const auto found = map.find(key);
+    if (found != map.end())
+    {
+        return found->second;
+    }
+    return defaultValue;
+}
+
 }
 #endif //ifndef __GNA2_COMMON_IMPL_H

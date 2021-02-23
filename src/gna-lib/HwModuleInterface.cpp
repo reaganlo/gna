@@ -73,7 +73,6 @@ HwUarchParams::HwUarchParams(struct GNA3_AdaptHW const& source)
 std::unique_ptr<HwModuleInterface const> HwModuleInterface::Create(char const* moduleName, DeviceVersion deviceVersion)
 {
     Expect::NotNull(moduleName);
-    Expect::False(std::string(moduleName).empty(), Gna2StatusAccelerationModeNotSupported);
     try
     {
         return std::make_unique<GNA_HW_MODULE_CLASS const>(moduleName, deviceVersion);
@@ -110,31 +109,17 @@ int32_t HwModuleInterface::GetPoolingMode(PoolingFunction2D const* poolingIn)
 
 static GNA3_Cfg_t GetGnaConfigurationVersion(DeviceVersion deviceVersion)
 {
-    switch (deviceVersion)
-    {
+    static const auto map = std::map<Gna2DeviceVersion, GNA3_Cfg_t>{
 #if GNA_HW_LIB_ENABLED
-    case Gna2DeviceVersionGMM:
-    case Gna2DeviceVersion0_9:
-    case Gna2DeviceVersion1_0:
-        return GNA3_Cfg_t::GNA_CFG_DEFLT;
-    case Gna2DeviceVersion2_0:
-        return GNA3_Cfg_t::GNA_CFG_2d0D1;
-    case Gna2DeviceVersion3_0:
-        return GNA3_Cfg_t::GNA_CFG_3d0D1;
-    case Gna2DeviceVersion3_5:
-        return GNA3_Cfg_t::GNA_CFG_3d5D1;
-    case Gna2DeviceVersionEmbedded1_0:
-        return GNA3_Cfg_t::GNA_CFG_DEFLT;
-    case Gna2DeviceVersionEmbedded3_1:
-        return GNA3_Cfg_t::GNA_CFG_3d1E1;
-    case Gna2DeviceVersionEmbedded3_5:
-        return GNA3_Cfg_t::GNA_CFG_3d5E1;
-    case Gna2DeviceVersionSoftwareEmulation:
-        return GNA3_Cfg_t::GNA_CFG_3d5D1;
+       { Gna2DeviceVersion2_0, GNA3_Cfg_t::GNA_CFG_2d0D1 },
+       { Gna2DeviceVersion3_0, GNA3_Cfg_t::GNA_CFG_3d0D1 },
+       { Gna2DeviceVersion3_5, GNA3_Cfg_t::GNA_CFG_3d5D1 },
+       { Gna2DeviceVersionEmbedded3_1, GNA3_Cfg_t::GNA_CFG_3d1E1 },
+       { Gna2DeviceVersionEmbedded3_5, GNA3_Cfg_t::GNA_CFG_3d5E1 },
+       { Gna2DeviceVersionSoftwareEmulation, GNA3_Cfg_t::GNA_CFG_3d5D1 }// TODO:3:use selected device version for SW mode once available
 #endif
-    default:
-        return GNA3_Cfg_t::GNA_CFG_DEFLT;
-    }
+    };
+    return GetMappedOrDefault(deviceVersion, GNA3_Cfg_t::GNA_CFG_DEFLT, map);
 }
 
 bool HwModuleInterface::SetConfig(DeviceVersion deviceVersion) {
