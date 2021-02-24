@@ -66,4 +66,6 @@ set_target_properties(test-gna-api
   OUTPUT_NAME test-gna-api)
 set_property(TARGET test-gna-api PROPERTY FOLDER tests/gna-lib)
 
+copy_gna_api(test-gna-api NOT_USED)
+
 add_target_to_postbuild_test_run(test-gna-api)

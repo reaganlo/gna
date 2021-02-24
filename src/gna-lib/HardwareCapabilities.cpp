@@ -43,7 +43,8 @@ using namespace GNA;
 // - user data
 const uint32_t HardwareCapabilities::MaximumModelSize = 256 * 1024 * 1024;
 
-#define EVALUATOR(x)  #x
+#define EVALUATOR(x) #x
+#define GNA_HW_MODULE_NAME(name) EVALUATOR(name)
 
 template<Gna2DeviceVersion version>
 static GenerationCapabilities GetVerCaps();
@@ -174,7 +175,7 @@ GenerationCapabilities GetVerCaps<Gna2DeviceVersion3_0>()
                 16,
                 {},
                 {},
-                EVALUATOR(GNA_HW_MODULE_30)};
+                GNA_HW_MODULE_NAME(GNA_HW_MODULE_30)};
 }
 
 template<>
@@ -187,7 +188,7 @@ template<>
 GenerationCapabilities GetVerCaps<Gna2DeviceVersion3_5>()
 {
     static auto caps = DeriveVerCaps<Gna2DeviceVersion3_0, Gna2DeviceGeneration3_5>();
-    caps.HwModuleName = EVALUATOR(GNA_HW_MODULE_35);
+    caps.HwModuleName = GNA_HW_MODULE_NAME(GNA_HW_MODULE_35);
     return caps;
 }
 
