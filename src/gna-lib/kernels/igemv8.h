@@ -96,6 +96,7 @@ void TransposeKernelImpl1B(TransposeConfig const * const transposeConfig);
 #if OPT_LEVEL == 7
 void AffineKernelImpl1B1B(ExecutionKernelConfig<AffineConfig> const * const config);
 void AffineMultiBiasKernelImpl1B1B(ExecutionKernelConfig<AffineConfig> const * const config);
+void AffineActiveListKernelImpl1B1B(ExecutionKernelConfig<AffineConfig> const * const config, AffineConfigAl al);
 #endif
 
 #ifdef __cplusplus

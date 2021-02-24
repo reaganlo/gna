@@ -91,6 +91,7 @@ void DiagonalKernelImpl2B2B(ExecutionKernelConfig<AffineConfig> const * const co
 #if OPT_LEVEL == 7
 void AffineKernelImpl2B1B(ExecutionKernelConfig<AffineConfig> const * const config);
 void AffineMultiBiasKernelImpl2B1B(ExecutionKernelConfig<AffineConfig> const * const config);
+void AffineActiveListKernelImpl2B1B(ExecutionKernelConfig<AffineConfig> const * const config, AffineConfigAl al);
 #endif
 
 #ifdef __cplusplus

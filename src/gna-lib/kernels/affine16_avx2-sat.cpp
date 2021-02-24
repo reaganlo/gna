@@ -25,6 +25,7 @@
 #include "igemv.h"
 #include "igemv8.h"
 #include "igemv16.h"
+#include "common.hpp"
 #include "common_avx2.hpp"
 
 #include "KernelArguments.h"
@@ -35,7 +36,8 @@
 #include <immintrin.h>
 
 /** Transpose input and select template for calculation */
-static void TransposeAndRun(ExecutionKernelConfig<AffineConfig> const *const config, void *biases, uint32_t bias_vector = 1);
+template <typename T>
+static void TransposeAndRun(ExecutionKernelConfig<AffineConfig> const *const config, T &idx, void *biases, uint32_t bias_vector = 1);
 
 /** Affine kernel implementation for 1B input 2B weight
  *
@@ -43,13 +45,13 @@ static void TransposeAndRun(ExecutionKernelConfig<AffineConfig> const *const con
  *   Input is KxN where K [16, 2^16 - 16], K % 16 == 0, N [1,8]
  *   Output is MxN where M [1, 2^16]
  *   Biases can be 1b, 2b or 4b
- *
- * NOTE:
- *   HW compatibility saturation is used which requires that buffer size is divisible by (N*8)
  */
 void AffineKernelImpl2B1B(ExecutionKernelConfig<AffineConfig> const *const config)
 {
-    TransposeAndRun(config, (void *)config->RequestConfig->Transform.biasesSimple);
+    SequenceIndexSource idx(config->RequestConfig->Transform.outputElementCount);
+    void *simple_bias = (void *)config->RequestConfig->Transform.biasesSimple;
+
+    TransposeAndRun(config, idx, simple_bias);
 }
 
 /** Affine kernel implementation for 1B input 2B weight, multibias
@@ -58,13 +60,29 @@ void AffineKernelImpl2B1B(ExecutionKernelConfig<AffineConfig> const *const confi
  *   Input is KxN where K [16, 2^16 - 16], K % 16 == 0, N [1,8]
  *   Output is MxN where M [1, 2^16]
  *   Biases can be 1b, 2b or 4b
- *
- * NOTE:
- *   HW compatibility saturation is used which requires that buffer size is divisible by (N*8)
  */
 void AffineMultiBiasKernelImpl2B1B(ExecutionKernelConfig<AffineConfig> const *const config)
 {
-    TransposeAndRun(config, (void *)config->RequestConfig->Transform.multiBias, config->RequestConfig->Transform.multiBiasVectorCount);
+    SequenceIndexSource idx(config->RequestConfig->Transform.outputElementCount);
+    void *multi_bias = (void *)config->RequestConfig->Transform.multiBias;
+    uint32_t bias_vector = config->RequestConfig->Transform.multiBiasVectorCount;
+
+    TransposeAndRun(config, idx, multi_bias, bias_vector);
+}
+
+/** Affine kernel implementation for 1B input 2B weight, active list
+ *
+ * ASSUMPTIONS:
+ *   Input is KxN where K [16, 2^16 - 16], K % 16 == 0, N [1,8]
+ *   Output is MxN where M [1, 2^16]
+ *   Biases can be 1b, 2b or 4b
+ */
+void AffineActiveListKernelImpl2B1B(ExecutionKernelConfig<AffineConfig> const *const config, AffineConfigAl al)
+{
+    void *simple_bias = (void *)config->RequestConfig->Transform.biasesSimple;
+    ActiveListIndexSource idx(al);
+
+    TransposeAndRun(config, idx, simple_bias);
 }
 
 /** @brief Add 8x32b partial sum to 4x64 total sum
@@ -88,17 +106,20 @@ inline void PartialSum(__m256i &sum, __m256i &partial)
     partial = _mm256_setzero_si256();
 }
 
-/** Generic implementation for simple bias and multibias
+/** Generic implementation for simple bias, multibias and active list
  *
- * This implementation expects input to be already transposed
+ * This implementation expects input to be already transposed.
  *
  * @param config Execution config
+ * @param idx Index iterator. Must derive from @ref IndexSource. Use @ref SequenceIndexSource for simple bias and multibias and @ref ActiveListIndexSource for Active List
  * @param biases Pointer to either simple bias or multibias
  * @param bias_vector Index of vector used in multibias. For simple bias it must be set to 1
  */
-template <size_t N>
-static void Affine2B1B(ExecutionKernelConfig<AffineConfig> const *const config, void *biases, const uint32_t bias_vector)
+template <size_t N, class T>
+static void Affine2B1B(ExecutionKernelConfig<AffineConfig> const *const config, T &idx, void *biases, const uint32_t bias_vector)
 {
+    static_assert(std::is_base_of<IndexSource, T>::value, "Index iterator must derive from IndexSource");
+
     // NOTE: For 1B data and 2B weight, the 513rd sum can overflow
     static const uint32_t PARTIAL_SUM_LIMIT = 512;
 
@@ -108,7 +129,6 @@ static void Affine2B1B(ExecutionKernelConfig<AffineConfig> const *const config, 
     const uint32_t unsaturated_sum_limit = (uint32_t)((config->BufferElementCount[N - 1]) / N / IT_STEP);
 
     const uint32_t K = config->RequestConfig->Transform.inputElementCount;
-    const uint32_t M = config->RequestConfig->Transform.outputElementCount;
     const uint32_t KK = K / IT_STEP;
 
     int8_t const *const weights = config->RequestConfig->Transform.weights1B;
@@ -139,8 +159,10 @@ static void Affine2B1B(ExecutionKernelConfig<AffineConfig> const *const config, 
         outputs[n] = outputs[n - 1] + 1;
     }
 
-    for (uint32_t i = 0; i < M; ++i)
+    while (idx.HasNext())
     {
+        uint32_t i = idx.Next();
+
         const int32_t bias = getBias(biases, config->RequestConfig->Transform.bytesPerBias, i * bias_vector);
 
         for (uint32_t n = 0; n < N; ++n)
@@ -220,7 +242,8 @@ static void Affine2B1B(ExecutionKernelConfig<AffineConfig> const *const config, 
     }
 }
 
-void TransposeAndRun(ExecutionKernelConfig<AffineConfig> const *const config, void *biases, uint32_t bias_vector)
+template <typename T>
+void TransposeAndRun(ExecutionKernelConfig<AffineConfig> const *const config, T &idx, void *biases, uint32_t bias_vector)
 {
     auto transposeConfig = TransposeConfig::MakeFrom(config);
     TransposeKernelImpl1B(&transposeConfig);
@@ -228,28 +251,28 @@ void TransposeAndRun(ExecutionKernelConfig<AffineConfig> const *const config, vo
     switch (config->RequestConfig->Transform.inputVectorCount)
     {
     case 1:
-        Affine2B1B<1>(config, biases, bias_vector);
+        Affine2B1B<1>(config, idx, biases, bias_vector);
         break;
     case 2:
-        Affine2B1B<2>(config, biases, bias_vector);
+        Affine2B1B<2>(config, idx, biases, bias_vector);
         break;
     case 3:
-        Affine2B1B<3>(config, biases, bias_vector);
+        Affine2B1B<3>(config, idx, biases, bias_vector);
         break;
     case 4:
-        Affine2B1B<4>(config, biases, bias_vector);
+        Affine2B1B<4>(config, idx, biases, bias_vector);
         break;
     case 5:
-        Affine2B1B<5>(config, biases, bias_vector);
+        Affine2B1B<5>(config, idx, biases, bias_vector);
         break;
     case 6:
-        Affine2B1B<6>(config, biases, bias_vector);
+        Affine2B1B<6>(config, idx, biases, bias_vector);
         break;
     case 7:
-        Affine2B1B<7>(config, biases, bias_vector);
+        Affine2B1B<7>(config, idx, biases, bias_vector);
         break;
     case 8:
-        Affine2B1B<8>(config, biases, bias_vector);
+        Affine2B1B<8>(config, idx, biases, bias_vector);
         break;
     default:
         break;
