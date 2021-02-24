@@ -208,6 +208,12 @@ ConvolutionFunction2D::ConvolutionFunction2D(const BaseTransformConfig<Convoluti
         Expect::InRange(Stride->at(GNA_DIM_W), Filters->at(GNA_DIM_W),
             Gna2StatusCnnErrorConvFltVolume);
     }
+    if (INTEL_CONVOLUTIONAL_2D == effectiveOperation)
+    {
+        Expect::True(Padding->at(GNA_DIM_W) < Filters->at(GNA_DIM_W) &&
+            Padding->at(GNA_DIM_H) < Filters->at(GNA_DIM_H),
+            Gna2StatusCnnErrorConvFltPadding);
+    }
 
     Shape outputDims = GetOutputShape(Input->Dimensions, Filters->Dimensions,
         Stride->Dimensions, Padding->Dimensions);
