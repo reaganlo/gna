@@ -271,11 +271,11 @@ const KernelMap<VoidKernel>& AccelerationDetector::GetKernels(kernel_op operatio
         }},
         { KERNEL_POOLING_2D, {
             {{ Gna2DataTypeInt8 },
-                MakeAllGeneric<convolutionPooling2D1B>()},
+                MakeAVX2SatAccelerated<convolutionPooling2D1B>()},
             {{ Gna2DataTypeInt16 },
-                MakeAllGeneric<convolutionPooling2D2B>()},
+                MakeAVX2SatAccelerated<convolutionPooling2D2B>()},
             {{ Gna2DataTypeInt32 },
-                MakeAllGeneric<convolutionPooling2D4B>()},
+                MakeAVX2SatAccelerated<convolutionPooling2D4B>()},
         }},
         { KERNEL_PWL, {
             {{ Gna2DataTypeInt16 },

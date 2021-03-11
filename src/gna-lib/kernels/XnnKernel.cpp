@@ -499,9 +499,9 @@ VoidKernel GetXnnKernel<KernelAcceleration, HwConsistencyMode>(KernelType type)
         GetKernel(Convolution2DKernelImpl2B1B, OPT_GEN_OR_SAT OPT_AVX2_SAT),
         GetKernel(Convolution2DKernelImpl2B2B, OPT_GEN_OR_SAT OPT_AVX2_SAT),
 
-        GetKernel(Pooling2DKernelImpl1B, OPT_GEN_OR_SAT),
-        GetKernel(Pooling2DKernelImpl2B, OPT_GEN_OR_SAT),
-        GetKernel(Pooling2DKernelImpl4B, OPT_GEN_OR_SAT),
+        GetKernel(Pooling2DKernelImpl1B, OPT_GEN_OR_SAT OPT_AVX2_SAT),
+        GetKernel(Pooling2DKernelImpl2B, OPT_GEN_OR_SAT OPT_AVX2_SAT),
+        GetKernel(Pooling2DKernelImpl4B, OPT_GEN_OR_SAT OPT_AVX2_SAT),
     };
     return Kernels[type];
 }

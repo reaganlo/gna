@@ -38,7 +38,6 @@
 #define ConvolutionPoolingKernelImpl1B KERNEL(ConvolutionPoolingKernelImpl1B)
 #define ConvolutionKernelImpl2B KERNEL(ConvolutionKernelImpl2B)
 #define ConvolutionPoolingKernelImpl2B KERNEL(ConvolutionPoolingKernelImpl2B)
-#define Pooling2DKernelImpl2B KERNEL(Pooling2DKernelImpl2B)
 #define MaxPartialPoolingFunction KERNEL(MaxPartialPoolingFunction)
 #define SumPartialPoolingFunction KERNEL(SumPartialPoolingFunction)
 
@@ -81,6 +80,9 @@ extern "C" {
     void Pooling2DKernelImpl4B(ExecutionKernelConfig<PoolingConfig2D> const * const config);
 #endif
 #if OPT_LEVEL == 7
+    void Pooling2DKernelImpl1B(ExecutionKernelConfig<PoolingConfig2D> const * const config);
+    void Pooling2DKernelImpl2B(ExecutionKernelConfig<PoolingConfig2D> const * const config);
+    void Pooling2DKernelImpl4B(ExecutionKernelConfig<PoolingConfig2D> const * const config);
     void Convolution2DKernelImpl1B1B(ExecutionKernelConfig<ConvolutionConfig2D> const * const config);
     void Convolution2DKernelImpl1B2B(ExecutionKernelConfig<ConvolutionConfig2D> const * const config);
     void Convolution2DKernelImpl2B1B(ExecutionKernelConfig<ConvolutionConfig2D> const * const config);

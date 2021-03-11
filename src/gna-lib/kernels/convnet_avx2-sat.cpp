@@ -35,6 +35,7 @@
 
 #include <immintrin.h>
 #include <cstdint>
+#include <cmath>
 
 void SumPartialPoolingFunction(const uint32_t PS, const uint32_t PNE, const uint32_t PSI, const int64_t *P, int64_t *V)
 {
@@ -1132,4 +1133,375 @@ void Convolution2DKernelImpl2B1B(ExecutionKernelConfig<ConvolutionConfig2D> cons
 void Convolution2DKernelImpl2B2B(ExecutionKernelConfig<ConvolutionConfig2D> const *const config)
 {
     return cnn2d<int16_t, int16_t>(config);
+}
+
+template <typename data_t>
+static void poolMax2d(ExecutionKernelConfig<PoolingConfig2D> const *const config)
+{
+    const auto conf = config->RequestConfig;
+    data_t *I = (data_t *)conf->Inputs;
+    data_t *O = (data_t *)conf->Outputs;
+
+    uint32_t inputW = conf->Transform.InputWidth;
+    uint32_t inputH = conf->Transform.InputHeight;
+    uint32_t numFilters = conf->Transform.InputDepth;
+
+    uint32_t poolStrideH = conf->Transform.StrideHeight;
+    uint32_t poolStrideW = conf->Transform.StrideWidth;
+    uint32_t windowHeight = conf->Transform.WindowHeight;
+    uint32_t windowWidth = conf->Transform.WindowWidth;
+
+    uint32_t wDimPartial = (inputW < windowWidth) ? 0 : inputW - windowWidth;
+    uint32_t hDimPartial = (inputH < windowHeight) ? 0 : inputH - windowHeight;
+    uint32_t poolOutW = 1 + (uint32_t)std::ceil((float)(wDimPartial) / (float)poolStrideW);
+    uint32_t poolOutH = 1 + (uint32_t)std::ceil((float)(hDimPartial) / (float)poolStrideH);
+
+    constexpr const bool is1B = (sizeof(data_t) == 1);
+    constexpr const bool is2B = (sizeof(data_t) == 2);
+    constexpr const bool is4B = (sizeof(data_t) == 4);
+    constexpr const uint32_t elems = 32 / sizeof(data_t);
+    data_t maskData[elems * 2];
+    data_t minLimit = (std::numeric_limits<data_t>::min)();
+    data_t maxLimit = (std::numeric_limits<data_t>::max)();
+    if (is1B) {
+        memset(maskData, maxLimit, elems);
+        memset(maskData + elems, minLimit, elems);
+        memset(O, minLimit, poolOutH * poolOutW * numFilters);
+    }
+    else {
+        std::fill(maskData, maskData + elems, maxLimit);
+        std::fill(maskData + elems, maskData + elems * 2, minLimit);
+        std::fill(O, O + poolOutH * poolOutW * numFilters, minLimit);
+    }
+
+    const __m256i mask = _mm256_loadu_si256((const __m256i *)(maskData + elems - numFilters % elems));
+
+    for (uint32_t POH = 0; POH < poolOutH; POH++) {
+        uint32_t inIdxH = numFilters * inputW * POH * poolStrideH;
+
+        for (uint32_t POW = 0; POW < poolOutW; POW++) {
+            uint32_t inIdxW = numFilters * POW * poolStrideW;
+
+            uint32_t limH = windowHeight;
+            if (POH * poolStrideH > inputH) {
+                limH = 0;
+            }
+            else if (inputH - POH * poolStrideH < limH) {
+                limH = inputH - POH * poolStrideH;
+            }
+            for (uint32_t OH = 0; OH < limH; OH++) {
+                uint32_t winIdxH = numFilters * inputW * OH;
+
+                uint32_t limW = windowWidth;
+                if (POW * poolStrideW > inputW) {
+                    limW = 0;
+                }
+                else if (inputW - POW * poolStrideW < limW) {
+                    limW = inputW - POW * poolStrideW;
+                }
+                for (uint32_t OW = 0; OW < limW; OW++) {
+                    uint32_t winIdxW = numFilters * OW;
+
+                    uint32_t outBaseIdx = POH * poolOutW * numFilters + POW * numFilters;
+                    uint32_t inBaseIdx = inIdxW + inIdxH + winIdxW + winIdxH;
+                    uint32_t offset = 0;
+                    // apply O[i] = max(O[i], I[i])
+                    constexpr const uint32_t step = elems;
+                    for (; offset < numFilters; offset += step) {
+                        __m256i in = _mm256_loadu_si256((const __m256i *)(I + inBaseIdx + offset));
+                        __m256i cur = _mm256_loadu_si256((const __m256i *)(O + outBaseIdx + offset));
+                        __m256i mx;
+                        if (is1B) {
+                            if (offset + step > numFilters) {
+                                in = _mm256_min_epi8(in, mask);
+                            }
+                            mx = _mm256_max_epi8(cur, in);
+                        }
+                        if (is2B) {
+                            if (offset + step > numFilters) {
+                                in = _mm256_min_epi16(in, mask);
+                            }
+                            mx = _mm256_max_epi16(cur, in);
+                        }
+                        if (is4B) {
+                            if (offset + step > numFilters) {
+                                in = _mm256_min_epi32(in, mask);
+                            }
+                            mx = _mm256_max_epi32(cur, in);
+                        }
+                        _mm256_storeu_si256((__m256i *)(O + outBaseIdx + offset), mx);
+                    }
+                }
+            }
+        }
+    }
+}
+
+template <typename data_t>
+static void poolSum2d(ExecutionKernelConfig<PoolingConfig2D> const *const config)
+{
+    const auto conf = config->RequestConfig;
+    data_t *I = (data_t *)conf->Inputs;
+    data_t *O = (data_t *)conf->Outputs;
+
+    uint32_t inputW = conf->Transform.InputWidth;
+    uint32_t inputH = conf->Transform.InputHeight;
+    uint32_t numFilters = conf->Transform.InputDepth;
+
+    uint32_t poolStrideH = conf->Transform.StrideHeight;
+    uint32_t poolStrideW = conf->Transform.StrideWidth;
+    uint32_t windowHeight = conf->Transform.WindowHeight;
+    uint32_t windowWidth = conf->Transform.WindowWidth;
+
+    uint32_t wDimPartial = (inputW < windowWidth) ? 0 : inputW - windowWidth;
+    uint32_t hDimPartial = (inputH < windowHeight) ? 0 : inputH - windowHeight;
+    uint32_t poolOutW = 1 + (uint32_t)std::ceil((float)(wDimPartial) / (float)poolStrideW);
+    uint32_t poolOutH = 1 + (uint32_t)std::ceil((float)(hDimPartial) / (float)poolStrideH);
+
+    constexpr const bool is1B = (sizeof(data_t) == 1);
+    constexpr const bool is2B = (sizeof(data_t) == 2);
+    constexpr const bool is4B = (sizeof(data_t) == 4);
+    constexpr const uint32_t elems = 32 / sizeof(data_t);  // num of data_t's per 256b load
+    constexpr const uint32_t step = elems * 1;  // how many elems are processed per loop step
+    data_t maskData[step * 2];
+    std::fill(maskData, maskData + step, -1);
+    std::fill(maskData + step, maskData + step * 2, 0);
+    const __m256i mask0 = _mm256_loadu_si256((const __m256i *)(maskData + step - numFilters % step));
+    __m256i satCntHighBit0 = _mm256_setzero_si256();
+    __m256i satCntHighBit1 = _mm256_setzero_si256();
+    __m256i satCntAllBits0 = _mm256_setzero_si256();
+    __m256i satCntAllBits1 = _mm256_setzero_si256();
+
+    /* Following variable is used in 1B variant, to avoid bumping of SaturationCount when it is not necessary.
+     * Calculations are still performed saturation-aware, it is only the counter that is not touched.
+     * This approach yields about 14% improvement over naive version (if-less, with all instructions of "if" path).
+     *
+     * Similar trick makes no sense in 2B variant, where satCnt is calculated with single vectorized "or".
+     */
+    uint32_t needsSatCnt = 1;
+
+    for (uint32_t POH = 0; POH < poolOutH; POH++) {
+        uint32_t inIdxH = numFilters * inputW * POH * poolStrideH;
+
+        for (uint32_t POW = 0; POW < poolOutW; POW++) {
+            uint32_t inIdxW = numFilters * POW * poolStrideW;
+            uint32_t outBaseIdx = POH * poolOutW * numFilters + POW * numFilters;
+
+            uint32_t limW = windowWidth;
+            if (POW * poolStrideW > inputW) {
+                limW = 0;
+            }
+            else if (inputW - POW * poolStrideW < limW) {
+                limW = inputW - POW * poolStrideW;
+            }
+            uint32_t limH = windowHeight;
+            if (POH * poolStrideH > inputH) {
+                limH = 0;
+            }
+            else if (inputH - POH * poolStrideH < limH) {
+                limH = inputH - POH * poolStrideH;
+            }
+
+            uint32_t couldOV = 0;
+            for (uint32_t offset = 0; offset < numFilters; offset += step) {
+                __m256i cur0 = _mm256_setzero_si256();
+                __m256i cur1 = _mm256_setzero_si256();
+                for (uint32_t OW = 0; OW < limW; OW++) {
+                    uint32_t winIdxW = numFilters * OW;
+                    for (uint32_t OH = 0; OH < limH; OH++) {
+                        uint32_t winIdxH = numFilters * inputW * OH;
+
+                        uint32_t inBaseIdx = inIdxW + inIdxH + winIdxW + winIdxH;
+                        __m256i in0 = _mm256_loadu_si256((const __m256i *)(I + inBaseIdx + offset));
+                        if (offset + step > numFilters) {
+                            in0 = _mm256_and_si256(in0, mask0);
+                        }
+                        if (is1B) {
+                            __m256i in01 = _mm256_cvtepi8_epi16(_mm256_extracti128_si256(in0, 1));
+                            __m256i in00 = _mm256_cvtepi8_epi16(_mm256_castsi256_si128(in0));
+                            if ((couldOV += needsSatCnt) > 0x100) {
+                                __m256i noSat0 = _mm256_add_epi16(cur0, in00);
+                                __m256i noSat1 = _mm256_add_epi16(cur1, in01);
+                                cur0 = _mm256_adds_epi16(cur0, in00);
+                                cur1 = _mm256_adds_epi16(cur1, in01);
+                                __m256i x0 = _mm256_xor_si256(noSat0, cur0);
+                                __m256i x1 = _mm256_xor_si256(noSat1, cur1);
+                                satCntAllBits0 = _mm256_or_si256(satCntAllBits0, x0);
+                                satCntAllBits1 = _mm256_or_si256(satCntAllBits1, x1);
+                            }
+                            else {
+                                cur0 = _mm256_adds_epi16(cur0, in00);
+                                cur1 = _mm256_adds_epi16(cur1, in01);
+                            }
+                        }
+                        if (is2B) {
+                            __m256i in01 = _mm256_cvtepi16_epi32(_mm256_extracti128_si256(in0, 1));
+                            __m256i in00 = _mm256_cvtepi16_epi32(_mm256_castsi256_si128(in0));
+                            if (++couldOV > 0x10000) {
+                                cur0 = _mm256_adds_epi32(cur0, in00, &satCntHighBit0);
+                                cur1 = _mm256_adds_epi32(cur1, in01, &satCntHighBit1);
+                            }
+                            else {
+                                cur0 = _mm256_add_epi32(cur0, in00);
+                                cur1 = _mm256_add_epi32(cur1, in01);
+                            }
+                        }
+                        if (is4B) {
+                            cur0 = _mm256_adds_epi32(cur0, in0, &satCntHighBit0);
+                        }
+                    }
+                }
+                if (is4B) {
+                    _mm256_storeu_si256((__m256i *)(O + outBaseIdx + offset), cur0);
+                }
+                else {
+                    __m256i ret0, ret00, ret01;
+                    if (is1B) {
+                        ret0 = _mm256_packs_epi16(cur0, cur1);
+                        ret0 = _mm256_permute4x64_epi64(ret0, 0xd8);
+                        if (needsSatCnt) {
+                            ret01 = _mm256_cvtepi8_epi16(_mm256_extracti128_si256(ret0, 1));
+                            ret00 = _mm256_cvtepi8_epi16(_mm256_castsi256_si128(ret0));
+                        }
+                    }
+                    if (is2B) {
+                        ret0 = _mm256_packs_epi32(cur0, cur1);
+                        ret0 = _mm256_permute4x64_epi64(ret0, 0xd8);
+                        ret01 = _mm256_cvtepi16_epi32(_mm256_extracti128_si256(ret0, 1));
+                        ret00 = _mm256_cvtepi16_epi32(_mm256_castsi256_si128(ret0));
+                    }
+                    if (needsSatCnt) {
+                        __m256i x1 = _mm256_xor_si256(ret01, cur1);
+                        __m256i x0 = _mm256_xor_si256(ret00, cur0);
+                        satCntAllBits0 = _mm256_or_si256(satCntAllBits0, x0);
+                        satCntAllBits1 = _mm256_or_si256(satCntAllBits1, x1);
+                        if (is1B) {
+                            if (_mm256_test_any(satCntAllBits0) || _mm256_test_any(satCntAllBits1)) {
+                                needsSatCnt = 0;
+                            }
+                        }
+                    }
+                    _mm256_storeu_si256((__m256i *)(O + outBaseIdx + offset), ret0);
+                }
+            }
+        }
+    }
+    if (!is1B) {
+        *config->SaturationCount += _mm256_test_anyMSB_epi32(satCntHighBit0);
+    }
+    if (is2B) {
+        *config->SaturationCount += _mm256_test_anyMSB_epi32(satCntHighBit1);
+    }
+    if (!is4B) {
+        *config->SaturationCount += _mm256_test_any(satCntAllBits0);
+        *config->SaturationCount += _mm256_test_any(satCntAllBits1);
+    }
+}
+
+/* This is a specialized version of pooling Sum.
+ * It is 1.8x times faster than generic version because it uses different algorithm.
+ *
+ * Main difference is loop order,
+ * what means that we compute each output value via many LOAD/ADDS/STORE cycles.
+ * Thanks to the fact above we could traverse input in more favorable way memory-wise. */
+template <>
+void poolSum2d<int32_t>(ExecutionKernelConfig<PoolingConfig2D> const *const config)
+{
+    const auto conf = config->RequestConfig;
+    using data_t = int32_t;
+    data_t *I = (data_t *)conf->Inputs;
+    data_t *O = (data_t *)conf->Outputs;
+
+    uint32_t inputW = conf->Transform.InputWidth;
+    uint32_t inputH = conf->Transform.InputHeight;
+    uint32_t numFilters = conf->Transform.InputDepth;
+
+    uint32_t poolStrideH = conf->Transform.StrideHeight;
+    uint32_t poolStrideW = conf->Transform.StrideWidth;
+    uint32_t windowHeight = conf->Transform.WindowHeight;
+    uint32_t windowWidth = conf->Transform.WindowWidth;
+
+    uint32_t wDimPartial = (inputW < windowWidth) ? 0 : inputW - windowWidth;
+    uint32_t hDimPartial = (inputH < windowHeight) ? 0 : inputH - windowHeight;
+    uint32_t poolOutW = 1 + (uint32_t)std::ceil((float)(wDimPartial) / (float)poolStrideW);
+    uint32_t poolOutH = 1 + (uint32_t)std::ceil((float)(hDimPartial) / (float)poolStrideH);
+
+    constexpr const uint32_t elems = 32 / sizeof(data_t);  // num of data_t's per 256b load
+    constexpr const uint32_t step = elems * 1;  // how many elems are processed per loop step
+    memset(O, 0, poolOutH * poolOutW * numFilters * sizeof(data_t));  // we are calculating out via many parial sums
+    data_t maskData[step * 2];
+    std::fill(maskData, maskData + step, -1);  // fill() because g++ emits silly warn when filling only half of an array with memset
+    std::fill(maskData + step, maskData + step * 2, 0);
+    const __m256i mask = _mm256_loadu_si256((const __m256i *)(maskData + step - numFilters % step));
+    __m256i satCnt = _mm256_setzero_si256();
+
+    for (uint32_t POH = 0; POH < poolOutH; POH++) {
+        uint32_t inIdxH = numFilters * inputW * POH * poolStrideH;
+
+        for (uint32_t POW = 0; POW < poolOutW; POW++) {
+            uint32_t inIdxW = numFilters * POW * poolStrideW;
+            uint32_t outBaseIdx = POH * poolOutW * numFilters + POW * numFilters;
+
+            uint32_t limW = windowWidth;
+            if (POW * poolStrideW > inputW) {
+                limW = 0;
+            }
+            else if (inputW - POW * poolStrideW < limW) {
+                limW = inputW - POW * poolStrideW;
+            }
+            uint32_t limH = windowHeight;
+            if (POH * poolStrideH > inputH) {
+                limH = 0;
+            }
+            else if (inputH - POH * poolStrideH < limH) {
+                limH = inputH - POH * poolStrideH;
+            }
+
+            for (uint32_t OW = 0; OW < limW; OW++) {
+                uint32_t winIdxW = numFilters * OW;
+                for (uint32_t OH = 0; OH < limH; OH++) {
+                    uint32_t winIdxH = numFilters * inputW * OH;
+
+                    uint32_t inBaseIdx = inIdxW + inIdxH + winIdxW + winIdxH;
+                    for (uint32_t offset = 0; offset < numFilters; offset += step) {
+                        __m256i in = _mm256_loadu_si256((const __m256i *)(I + inBaseIdx + offset));
+                        __m256i cur = _mm256_loadu_si256((const __m256i *)(O + outBaseIdx + offset));
+                        if (offset + step > numFilters) {
+                            in = _mm256_and_si256(in, mask);
+                        }
+                        __m256i ret = _mm256_adds_epi32(cur, in, &satCnt);
+                        _mm256_storeu_si256((__m256i *)(O + outBaseIdx + offset), ret);
+                    }
+                }
+            }
+        }
+    }
+    *config->SaturationCount += _mm256_test_anyMSB_epi32(satCnt);
+}
+
+template <typename data_t>
+static inline void pool2d(ExecutionKernelConfig<PoolingConfig2D> const *const config)
+{
+    auto mode = config->RequestConfig->Transform.Mode;
+    if (mode == KernelPoolingModeMax) {
+        poolMax2d<data_t>(config);
+    }
+    else if (mode == KernelPoolingModeSum) {
+        poolSum2d<data_t>(config);
+    }
+}
+
+void Pooling2DKernelImpl1B(ExecutionKernelConfig<PoolingConfig2D> const *const config)
+{
+    pool2d<int8_t>(config);
+}
+
+void Pooling2DKernelImpl2B(ExecutionKernelConfig<PoolingConfig2D> const *const config)
+{
+    pool2d<int16_t>(config);
+}
+
+void Pooling2DKernelImpl4B(ExecutionKernelConfig<PoolingConfig2D> const *const config)
+{
+    pool2d<int32_t>(config);
 }
