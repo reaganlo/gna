@@ -92,6 +92,7 @@ void DiagonalKernelImpl2B2B(ExecutionKernelConfig<AffineConfig> const * const co
 void AffineKernelImpl2B1B(ExecutionKernelConfig<AffineConfig> const * const config);
 void AffineMultiBiasKernelImpl2B1B(ExecutionKernelConfig<AffineConfig> const * const config);
 void AffineActiveListKernelImpl2B1B(ExecutionKernelConfig<AffineConfig> const * const config, AffineConfigAl al);
+void RecurrentKernelImpl2B1B(ExecutionKernelConfig<RecurrentConfig> const * const config);
 #endif
 
 #ifdef __cplusplus

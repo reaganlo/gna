@@ -163,7 +163,8 @@ set(xnn_avx2_sat_sources
   transpose16_avx2.cpp
   transpose8_avx2.cpp
   affine8_avx2-sat.cpp
-  affine16_avx2-sat.cpp)
+  affine16_avx2-sat.cpp
+  rnn_avx2-sat.cpp)
 
 macro(gna_add_xnn_kernel_library KERNEL_SUFIX EXTRA_DEFS EXTRA_OPTIONS)
   add_library(xnn_kernel_${KERNEL_SUFIX} STATIC ${xnn_kernel_sources})

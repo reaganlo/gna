@@ -97,6 +97,7 @@ void TransposeKernelImpl1B(TransposeConfig const * const transposeConfig);
 void AffineKernelImpl1B1B(ExecutionKernelConfig<AffineConfig> const * const config);
 void AffineMultiBiasKernelImpl1B1B(ExecutionKernelConfig<AffineConfig> const * const config);
 void AffineActiveListKernelImpl1B1B(ExecutionKernelConfig<AffineConfig> const * const config, AffineConfigAl al);
+void RecurrentKernelImpl1B1B(ExecutionKernelConfig<RecurrentConfig> const * const config);
 #endif
 
 #ifdef __cplusplus

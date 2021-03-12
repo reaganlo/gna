@@ -221,9 +221,9 @@ const KernelMap<VoidKernel>& AccelerationDetector::GetKernels(kernel_op operatio
             {{ Gna2DataTypeInt16, Gna2DataTypeInt16, Gna2DataTypeInt8 },
                 MakeSseAccelerated<recurrent2B2B, recurrent2B>()},
             {{ Gna2DataTypeInt8, Gna2DataTypeInt8, Gna2DataTypeInt8 },
-                MakeAllGeneric<recurrent1B1B>()},
+                MakeAVX2SatAccelerated<recurrent1B1B>()},
             {{ Gna2DataTypeInt8, Gna2DataTypeInt16, Gna2DataTypeInt8 },
-                MakeAllGeneric<recurrent2B1B>()},
+                MakeAVX2SatAccelerated<recurrent2B1B>()},
         }},
         { KERNEL_AFFINE_DIAGONAL, {
             {{ Gna2DataTypeInt16, Gna2DataTypeInt8, Gna2DataTypeCompoundBias },

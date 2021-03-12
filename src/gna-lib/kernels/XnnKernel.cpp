@@ -139,7 +139,7 @@ void recurrentKernelImpl2B(ExecutionKernelConfig<RecurrentConfig> const * const 
     config->RequestConfig->Inputs = inputs;
 }
 
-#if OPT_LEVEL < 2
+#if OPT_LEVEL < 2 || OPT_LEVEL == 7
 void recurrentKernelImpl1B1B(ExecutionKernelConfig<RecurrentConfig> const * const config)
 {
     auto& runConfig = config->RequestConfig->Transform;
@@ -163,52 +163,6 @@ void recurrentKernelImpl1B1B(ExecutionKernelConfig<RecurrentConfig> const * cons
     {
         RecurrentKernelImpl1B1B(config);
         config->RequestConfig->Inputs += inputElementCount;
-        if (config->RequestConfig->Transform.bytesPerOutput == 1)
-        {
-            runConfig.feedbackBuffer = (int16_t*)((uint64_t)runConfig.feedbackBuffer
-                                        + outputElementCount);
-        }
-        else
-        {
-            runConfig.feedbackBuffer += outputElementCount;
-        }
-        runConfig.output += outputElementCount;
-
-        activation.Kernel->InitializeActivationFunctions();
-        activation.Kernel->ActivateAll(&activationCfg);
-        io->Inputs = io->Inputs + activation.ElementCount * 4;
-        io->Outputs = io->Outputs +
-            activation.ElementCount * config->RequestConfig->Transform.bytesPerOutput;
-    }
-
-    // restore pointers in config
-    runConfig.feedbackBuffer = feedback;
-    runConfig.output = outputs;
-    config->RequestConfig->Inputs = inputs;
-}
-void recurrentKernelImpl1B2B(ExecutionKernelConfig<RecurrentConfig> const * const config)
-{
-    auto& runConfig = config->RequestConfig->Transform;
-    auto activationCfg = ExecutionKernelConfig<ActivationConfig>{
-        &runConfig.activation, *config};
-    auto& activation = activationCfg.RequestConfig->Transform;
-    auto io = activationCfg.RequestConfig;
-    io->Inputs = reinterpret_cast<int8_t const *>(runConfig.output);
-    io->Outputs = config->RequestConfig->Outputs;
-
-    auto feedback = runConfig.feedbackBuffer;
-    auto outputs = runConfig.output;
-    auto inputs = config->RequestConfig->Inputs;
-
-    auto inputVectorCount = runConfig.inputVectorCount;
-    auto inputElementCount = runConfig.inputElementCount;
-    auto outputElementCount = runConfig.outputElementCount;
-
-    // for each input vector
-    for (uint32_t i = 0; i < inputVectorCount; i++)
-    {
-        RecurrentKernelImpl1B2B(config);
-        config->RequestConfig->Inputs += 2 * inputElementCount;
         if (config->RequestConfig->Transform.bytesPerOutput == 1)
         {
             runConfig.feedbackBuffer = (int16_t*)((uint64_t)runConfig.feedbackBuffer
@@ -256,6 +210,55 @@ void recurrentKernelImpl2B1B(ExecutionKernelConfig<RecurrentConfig> const * cons
     {
         RecurrentKernelImpl2B1B(config);
         config->RequestConfig->Inputs += inputElementCount;
+        if (config->RequestConfig->Transform.bytesPerOutput == 1)
+        {
+            runConfig.feedbackBuffer = (int16_t*)((uint64_t)runConfig.feedbackBuffer
+                                        + outputElementCount);
+        }
+        else
+        {
+            runConfig.feedbackBuffer += outputElementCount;
+        }
+        runConfig.output += outputElementCount;
+
+        activation.Kernel->InitializeActivationFunctions();
+        activation.Kernel->ActivateAll(&activationCfg);
+        io->Inputs = io->Inputs + activation.ElementCount * 4;
+        io->Outputs = io->Outputs +
+            activation.ElementCount * config->RequestConfig->Transform.bytesPerOutput;
+    }
+
+    // restore pointers in config
+    runConfig.feedbackBuffer = feedback;
+    runConfig.output = outputs;
+    config->RequestConfig->Inputs = inputs;
+}
+#endif
+
+#if OPT_LEVEL < 2
+void recurrentKernelImpl1B2B(ExecutionKernelConfig<RecurrentConfig> const * const config)
+{
+    auto& runConfig = config->RequestConfig->Transform;
+    auto activationCfg = ExecutionKernelConfig<ActivationConfig>{
+        &runConfig.activation, *config};
+    auto& activation = activationCfg.RequestConfig->Transform;
+    auto io = activationCfg.RequestConfig;
+    io->Inputs = reinterpret_cast<int8_t const *>(runConfig.output);
+    io->Outputs = config->RequestConfig->Outputs;
+
+    auto feedback = runConfig.feedbackBuffer;
+    auto outputs = runConfig.output;
+    auto inputs = config->RequestConfig->Inputs;
+
+    auto inputVectorCount = runConfig.inputVectorCount;
+    auto inputElementCount = runConfig.inputElementCount;
+    auto outputElementCount = runConfig.outputElementCount;
+
+    // for each input vector
+    for (uint32_t i = 0; i < inputVectorCount; i++)
+    {
+        RecurrentKernelImpl1B2B(config);
+        config->RequestConfig->Inputs += 2 * inputElementCount;
         if (config->RequestConfig->Transform.bytesPerOutput == 1)
         {
             runConfig.feedbackBuffer = (int16_t*)((uint64_t)runConfig.feedbackBuffer
@@ -483,8 +486,8 @@ VoidKernel GetXnnKernel<KernelAcceleration, HwConsistencyMode>(KernelType type)
         GetKernel(DiagonalKernelImpl2B1B, OPT_GEN_OR_SAT),
         GetKernel(DiagonalKernelImpl1B2B, OPT_GEN_OR_SAT),
         GetKernel(DiagonalKernelImpl2B2B, OPT_GEN_OR_SAT),
-        GetKernel(recurrentKernelImpl1B1B, OPT_GEN_OR_SAT),
-        GetKernel(recurrentKernelImpl2B1B, OPT_GEN_OR_SAT),
+        GetKernel(recurrentKernelImpl1B1B, OPT_GEN_OR_SAT OPT_AVX2_SAT),
+        GetKernel(recurrentKernelImpl2B1B, OPT_GEN_OR_SAT OPT_AVX2_SAT),
         GetKernel(recurrentKernelImpl1B2B, OPT_GEN_OR_SAT),
         GetKernel(recurrentKernelImpl2B2B, OPT_GEN_OR_SAT),
         GetKernel(ConvolutionKernelImpl1B, OPT_GEN_OR_SAT),
