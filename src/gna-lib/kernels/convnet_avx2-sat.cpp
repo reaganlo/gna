@@ -1302,6 +1302,8 @@ static void poolSum2d(ExecutionKernelConfig<PoolingConfig2D> const *const config
                 limH = inputH - POH * poolStrideH;
             }
 
+            // usage of following variable speeds 2B case by ~25% on perftest's data
+            const bool couldEverOV = (limW * limH * numFilters > 0x10000);
             uint32_t couldOV = 0;
             for (uint32_t offset = 0; offset < numFilters; offset += step) {
                 __m256i cur0 = _mm256_setzero_si256();
@@ -1337,7 +1339,7 @@ static void poolSum2d(ExecutionKernelConfig<PoolingConfig2D> const *const config
                         if (is2B) {
                             __m256i in01 = _mm256_cvtepi16_epi32(_mm256_extracti128_si256(in0, 1));
                             __m256i in00 = _mm256_cvtepi16_epi32(_mm256_castsi256_si128(in0));
-                            if (++couldOV > 0x10000) {
+                            if (couldEverOV && ++couldOV > 0x10000) {
                                 cur0 = _mm256_adds_epi32(cur0, in00, &satCntHighBit0);
                                 cur1 = _mm256_adds_epi32(cur1, in01, &satCntHighBit1);
                             }
