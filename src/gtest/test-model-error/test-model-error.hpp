@@ -211,7 +211,7 @@ protected:
         }
         else if(what == Gna2ItemTypeOperationType)
         {
-            gnaOperations[e.Source.OperationIndex].Type = reinterpret_cast<const Gna2OperationType&>(e.Value);
+            gnaModel.Operations[e.Source.OperationIndex].Type = reinterpret_cast<const Gna2OperationType&>(e.Value);
         }
         else if(what == Gna2ItemTypeOperandMode)
         {
