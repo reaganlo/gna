@@ -27,7 +27,7 @@
 
 #include "common_avx2.hpp"
 #include "convnet.h"
-#include "igemv.h"
+#include "saturate.h"
 #include "pwl.h"
 
 #include "KernelArguments.h"

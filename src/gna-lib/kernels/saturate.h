@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2017 Intel Corporation.
+ Copyright 2017-2021 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -25,10 +25,7 @@
 
 #pragma once
 
-#include "KernelMacros.h"
-
 #include <cstdint>
-#include <immintrin.h>
 
 #if defined(__GNUC__) && !defined(__INTEL_COMPILER)
 #define __forceinline inline

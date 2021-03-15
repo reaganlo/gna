@@ -1,5 +1,5 @@
 #INTEL CONFIDENTIAL
-#Copyright 2018 Intel Corporation.
+#Copyright 2018-2021 Intel Corporation.
 
 #The source code contained or described herein and all documents related
 #to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -67,7 +67,7 @@ set(xnn_kernel_headers
   ${COMMON_DIR}/GnaException.h
   ${COMMON_DIR}/Macros.h
   convnet.h
-  igemv.h
+  saturate.h
   igemv8.h
   igemv16.h
   KernelMacros.h

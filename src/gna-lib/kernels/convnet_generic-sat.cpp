@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2019 Intel Corporation.
+ Copyright 2019-2021 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -26,7 +26,7 @@
 // TODO: make naming convention consistent with other kernel implementations
 
 #include "convnet.h"
-#include "igemv.h"
+#include "saturate.h"
 #include "pwl.h"
 #include "ConvolutionKernelArguments.h"
 #include "KernelArguments.h"

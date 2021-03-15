@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2017 Intel Corporation.
+ Copyright 2017-2021 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -23,7 +23,7 @@
  in any way.
 */
 
-#include "igemv.h"
+#include "saturate.h"
 #include "igemv8.h"
 #include "igemv16.h"
 
