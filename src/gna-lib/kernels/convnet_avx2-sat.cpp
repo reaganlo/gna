@@ -1263,10 +1263,6 @@ static void poolSum2d(ExecutionKernelConfig<PoolingConfig2D> const *const config
     constexpr const bool is4B = (sizeof(data_t) == 4);
     constexpr const uint32_t elems = 32 / sizeof(data_t);  // num of data_t's per 256b load
     constexpr const uint32_t step = elems * 1;  // how many elems are processed per loop step
-    data_t maskData[step * 2];
-    std::fill(maskData, maskData + step, -1);
-    std::fill(maskData + step, maskData + step * 2, 0);
-    const __m256i mask0 = _mm256_loadu_si256((const __m256i *)(maskData + step - numFilters % step));
     __m256i satCntHighBit0 = _mm256_setzero_si256();
     __m256i satCntHighBit1 = _mm256_setzero_si256();
     __m256i satCntAllBits0 = _mm256_setzero_si256();
@@ -1315,9 +1311,6 @@ static void poolSum2d(ExecutionKernelConfig<PoolingConfig2D> const *const config
 
                         uint32_t inBaseIdx = inIdxW + inIdxH + winIdxW + winIdxH;
                         __m256i in0 = _mm256_loadu_si256((const __m256i *)(I + inBaseIdx + offset));
-                        if (offset + step > numFilters) {
-                            in0 = _mm256_and_si256(in0, mask0);
-                        }
                         if (is1B) {
                             __m256i in01 = _mm256_cvtepi8_epi16(_mm256_extracti128_si256(in0, 1));
                             __m256i in00 = _mm256_cvtepi8_epi16(_mm256_castsi256_si128(in0));
@@ -1354,7 +1347,13 @@ static void poolSum2d(ExecutionKernelConfig<PoolingConfig2D> const *const config
                     }
                 }
                 if (is4B) {
-                    _mm256_storeu_si256((__m256i *)(O + outBaseIdx + offset), cur0);
+                    if (offset + step > numFilters) {
+                        data_t out[elems];
+                        _mm256_storeu_si256((__m256i *)out, cur0);
+                        memcpy(O + outBaseIdx + offset, out, sizeof(data_t) * (numFilters % step));
+                    } else {
+                        _mm256_storeu_si256((__m256i *)(O + outBaseIdx + offset), cur0);
+                    }
                 }
                 else {
                     __m256i ret0, ret00, ret01;
@@ -1383,7 +1382,13 @@ static void poolSum2d(ExecutionKernelConfig<PoolingConfig2D> const *const config
                             }
                         }
                     }
-                    _mm256_storeu_si256((__m256i *)(O + outBaseIdx + offset), ret0);
+                    if (offset + step > numFilters) {
+                        data_t out[elems];
+                        _mm256_storeu_si256((__m256i *)out, ret0);
+                        memcpy(O + outBaseIdx + offset, out, sizeof(data_t) * (numFilters % step));
+                    } else {
+                        _mm256_storeu_si256((__m256i *)(O + outBaseIdx + offset), ret0);
+                    }
                 }
             }
         }
