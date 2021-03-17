@@ -642,10 +642,8 @@ HwUarchParams HardwareLayerCnn2D::CalculateUArchConfig() const
     return config;
 }
 
-uint32_t HardwareLayerCnn2D::GetKernelMemorySize(DeviceVersion deviceVersion,
-    FiltersTensor const * filter)
+uint32_t HardwareLayerCnn2D::GetKernelMemorySize(FiltersTensor const * filter)
 {
-    UNREFERENCED_PARAMETER(deviceVersion);
     return RoundUp(filter->Size / filter->Count, 16u);
 }
 

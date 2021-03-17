@@ -35,15 +35,6 @@ struct GmmLayerCapabilities : LayerCapabilities
     static const FullCapabilitiesMap& GetOperands(uint32_t operandIndex);
 };
 
-template <>
-struct OperationCaps<INTEL_GMM>
-{
-    static const FullCapabilitiesMap& GetOperands(uint32_t operandIndex)
-    {
-        return GmmLayerCapabilities::GetOperands(operandIndex);
-    }
-};
-
 /** Maximum number of mixture components per GMM State */
 constexpr uint32_t GMM_MIXTURE_COMP_COUNT_MAX = 4096;
 

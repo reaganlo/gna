@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2019 Intel Corporation.
+ Copyright 2019-2021 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -25,85 +25,84 @@
 
 #include "ConvolutionalLayer2DCapabilities.h"
 
-
 #include "Capabilities.h"
 #include "DataMode.h"
 #include "ParameterLimits.h"
 #include "Tensor.h"
 #include "Validator.h"
 
-#include <algorithm>
 #include <cstdint>
 #include <memory.h>
 #include <vector>
 
 using namespace GNA;
 
-template<Gna2Status status = Gna2StatusXnnErrorInputVolume>
-static const RangeLimits<> & limitsForInputEqual1()
+namespace GNA
 {
-    return LayerCapabilities::MakeLimits<1u, 1u, 1, status>();
-}
 
-static const RangeLimits<> & limitsForOutputEqual1()
+template<nn_operation operation>
+struct ComponentCaps<FilterOperandIndex, operation> : protected LayerCapabilities
 {
-    return limitsForInputEqual1<Gna2StatusXnnErrorOutputVolume>();
-}
-
-static const RangeLimits<>& limitsForBiasEqual1()
-{
-    return limitsForInputEqual1<Gna2StatusXnnErrorBiasVolume>();
-}
-
-static const RangeLimits<> & limitsForInputUInt16Max1D()
-{
-    return LayerCapabilities::MakeLimits<1u, LayerCapabilities::InputElementCountMax,
-        8, Gna2StatusXnnErrorBiasVolume>();
-}
-
-static const MultiplierLimits & shapeLimitMultipliersForCnnLegacy()
-{
-    static const MultiplierLimits _shapeLimitMultipliersForCnnLegacy =
+    static const DataModeLimits& GetModes()
     {
-        {{Gna2DataTypeInt16, LayerCapabilities::InputElementCountMultiplier }},
-            Gna2StatusCnnErrorConvFltVolume
-    };
-    return _shapeLimitMultipliersForCnnLegacy;
-}
+        static const std::map<nn_operation, DataModeLimits> modes =
+        {
+                {INTEL_CONVOLUTIONAL,
+                    {{Gna2DataTypeInt16}, GetError<FilterOperandIndex>().second }},
+                {INTEL_CONVOLUTIONAL_2D,
+                    {{Gna2DataTypeInt8, Gna2DataTypeInt16}, GetError<FilterOperandIndex>().second }},
+                {INTEL_CONVOLUTIONAL_1D,
+                    {{Gna2DataTypeInt16}, GetError<FilterOperandIndex>().second }},
+        };
+        return modes.at(operation);
+    }
+};
 
-static const DataModeLimits & _ModesGen0_9()
+template<nn_operation operation>
+struct ComponentCaps<BiasOperandIndex, operation> : protected LayerCapabilities
 {
-    static const DataModeLimits __ModesGen0_9 =
+    static const DataModeLimits& GetModes()
     {
-        { Gna2DataTypeInt32 },
-        Gna2StatusXnnErrorBiasBytes
-    };
-    return __ModesGen0_9;
+        static const std::map<nn_operation, DataModeLimits> modes =
+        {
+                {INTEL_CONVOLUTIONAL,
+                    {{Gna2DataTypeInt32}, GetError<FilterOperandIndex>().second }},
+                {INTEL_CONVOLUTIONAL_2D,
+                    { { Gna2DataTypeInt8, Gna2DataTypeInt16, Gna2DataTypeInt32, DataMode{} }, GetError<FilterOperandIndex>().second }},
+                {INTEL_CONVOLUTIONAL_1D,
+                    {{Gna2DataTypeInt32}, GetError<FilterOperandIndex>().second }},
+        };
+        return modes.at(operation);
+    }
+};
+
+
+template<Gna2DeviceGeneration generation, nn_operation operation, typename ... T>
+static std::pair<const Gna2DeviceGeneration, const std::shared_ptr<ComponentLimits>>
+MakeNHWDInput(T ... dimensions)
+{
+    return LayerCaps::Make<generation, InputOperandIndex, generation, GNA_TENSOR_NHWD, operation>(std::forward<T>(dimensions)...);
 }
 
-static const DataModeLimits & _ModesGen3Cnn2D()
+template<Gna2DeviceGeneration generation, nn_operation operation, typename ... T>
+static std::pair<const Gna2DeviceGeneration, const std::shared_ptr<ComponentLimits>>
+MakeNHWDOutput(T ... dimensions)
 {
-    static const DataModeLimits __ModesGen3Cnn2D =
-    {
-        { Gna2DataTypeInt8, Gna2DataTypeInt16, Gna2DataTypeInt32, DataMode{} },
-        Gna2StatusXnnErrorBiasBytes
-    };
-    return __ModesGen3Cnn2D;
+    return LayerCaps::Make<generation, OutputOperandIndex, generation, GNA_TENSOR_NHWD, operation>(std::forward<T>(dimensions)...);
 }
 
-template<Gna2Status status = Gna2StatusCnnErrorConvFltCount>
-static const RangeLimits<> & limitsForFilterNumber()
+template<Gna2DeviceGeneration generation, gna_tensor_order order, nn_operation operation>
+static auto MakeFilterCaps(const std::vector<uint32_t>& limits)
 {
-    return LayerCapabilities::MakeLimits<
-        ConvolutionalLayer2DCapabilities::Filter1DElementsMultiplier,
-        ConvolutionalLayer2DCapabilities::Filter1DCountMax,
-         ConvolutionalLayer2DCapabilities::Filter1DElementsMultiplier,
-        status>();
+    return LayerCaps::MakeCaps<generation, order, FilterOperandIndex>(limits,
+        ComponentCaps<FilterOperandIndex, operation>::GetModes());
 }
 
-static const RangeLimits<> & limitsForOutputDepth()
+template<Gna2DeviceGeneration generation, gna_tensor_order order, nn_operation operation>
+static auto MakeBiasCaps(const std::vector<uint32_t>& limits)
 {
-    return limitsForFilterNumber<Gna2StatusXnnErrorOutputVolume>();
+    return LayerCaps::MakeCaps<generation, order, BiasOperandIndex>(limits,
+        ComponentCaps<BiasOperandIndex, operation>::GetModes());
 }
 
 const FullCapabilitiesMap & ConvolutionalLayer2DCapabilities::GetOperands(uint32_t operandIndex)
@@ -112,114 +111,97 @@ const FullCapabilitiesMap & ConvolutionalLayer2DCapabilities::GetOperands(uint32
     {
         {InputOperandIndex,{
             {INTEL_CONVOLUTIONAL,{
-                LayerCaps::Make<Gna2DeviceGeneration1_0, InputOperandIndex, Gna2DeviceGeneration0_9>(
+                LayerCaps::Make<Gna2DeviceGeneration1_0, InputOperandIndex, Gna2DeviceGeneration0_9, INTEL_CONVOLUTIONAL>(
                     {GNA_TENSOR_HW},    // N = 1
-                    {{GNA_DIM_H, limitsForInputEqual1()},
-                    {GNA_DIM_W, GetLimitsBasedOnInputLegacy<Gna2StatusXnnErrorInputVolume>()}}),
+                    {{GNA_DIM_H, MakeLimits<InputEqual1, InputOperandIndex>()},
+                    {GNA_DIM_W, MakeLimitsMulti<LegacyInputs, InputOperandIndex>()}}),
             }},
             {INTEL_CONVOLUTIONAL_2D,{
-                LayerCaps::Make<Gna2DeviceGeneration3_0, InputOperandIndex>(
-                    {GNA_TENSOR_NHWD},    // N = 1
-                    {{GNA_DIM_N, limitsForInputEqual1()},
-                    {GNA_DIM_H, GetLimitsBasedOnInput<Gna2StatusXnnErrorInputVolume>()},
-                    {GNA_DIM_W, GetLimitsBasedOnInput<Gna2StatusXnnErrorInputVolume>()},
-                    {GNA_DIM_D, GetLimitsBasedOnInput<Gna2StatusXnnErrorInputVolume>()}})
+                MakeNHWDInput<Gna2DeviceGeneration3_0, INTEL_CONVOLUTIONAL>(
+                    InputEqual1,
+                    StaticCaps{16, 384, 1},
+                    StaticCaps{16, 240, 1},
+                    StaticCaps{16, 384, 8}),
+                 MakeNHWDInput<Gna2DeviceGeneration3_1, INTEL_CONVOLUTIONAL>(
+                    InputEqual1, Input, Input,
+                    StaticCaps{1, Filter2DDepthMax, 1 }),
             }},
             {INTEL_CONVOLUTIONAL_1D,{
-                LayerCaps::Make<Gna2DeviceGeneration3_0, InputOperandIndex>(
-                    {GNA_TENSOR_NHWD},    // N = 1
-                    {{GNA_DIM_N, limitsForInputEqual1()},
-                    {GNA_DIM_H, limitsForInputEqual1()},
-                    {GNA_DIM_W, limitsForInputUInt16Max1D()},
-                    {GNA_DIM_D, limitsForInputEqual1()}})
+                MakeNHWDInput<Gna2DeviceGeneration3_0, INTEL_CONVOLUTIONAL>(
+                    InputEqual1, InputEqual1, Input1D, InputEqual1),
             }},
         }},
         {OutputOperandIndex,{
             {INTEL_CONVOLUTIONAL,{
-                LayerCaps::Make<Gna2DeviceGeneration1_0, OutputOperandIndex, Gna2DeviceGeneration0_9>(
-                { GNA_TENSOR_NWD },
-                {{GNA_DIM_N, limitsForOutputEqual1()},
-                {GNA_DIM_W, GetLimitsBasedOnInput<Gna2StatusXnnErrorOutputVolume>()},
-                {GNA_DIM_D, limitsForOutputDepth()}}),
+                LayerCaps::Make<Gna2DeviceGeneration1_0, OutputOperandIndex, Gna2DeviceGeneration0_9, GNA_TENSOR_NWD, INTEL_CONVOLUTIONAL>(
+                    InputEqual1, Input,
+                    StaticCaps{ Filter1DElementsMultiplier, Filter1DCountMax, Filter1DElementsMultiplier}),
             }},
             {INTEL_CONVOLUTIONAL_2D,{
-                LayerCaps::Make<Gna2DeviceGeneration3_0, OutputOperandIndex>(
-                    {GNA_TENSOR_NHWD},
-                    {{GNA_DIM_N, GetLimitsBasedOnInput<Gna2StatusXnnErrorOutputVolume>()},
-                    {GNA_DIM_H, GetLimitsBasedOnInput<Gna2StatusXnnErrorOutputVolume>()},
-                    {GNA_DIM_W, GetLimitsBasedOnInput<Gna2StatusXnnErrorOutputVolume>()},
-                    {GNA_DIM_D, {1,
-                        Filter2DCountMax /* bigger limit to workaround lack of 1D/2D differentiation */,
-                        1, Gna2StatusXnnErrorOutputVolume}}})
+                MakeNHWDOutput<Gna2DeviceGeneration3_0, INTEL_CONVOLUTIONAL_2D>(
+                    Input, Input, Input,
+                    StaticCaps{ 1u, Filter2DCountMax /* bigger limit to workaround lack of 1D/2D differentiation */, 1u }),
+                 MakeNHWDOutput<Gna2DeviceGeneration3_1, INTEL_CONVOLUTIONAL_2D>(
+                    Input, Input, Input,
+                    StaticCaps{ 1u, Filter2DCountMax /* bigger limit to workaround lack of 1D/2D differentiation */, 1u }),
             }},
             {INTEL_CONVOLUTIONAL_1D,{
-                LayerCaps::Make<Gna2DeviceGeneration3_0, OutputOperandIndex, Gna2DeviceGeneration0_9>(
-                    {GNA_TENSOR_NHWD},
-                    {{GNA_DIM_N, limitsForOutputEqual1()},
-                    {GNA_DIM_H, limitsForOutputEqual1()},
-                    {GNA_DIM_W, GetLimitsBasedOnInput<Gna2StatusXnnErrorOutputVolume>()},
-                    {GNA_DIM_D, {1, Filter2DCountMax, 1, Gna2StatusXnnErrorOutputVolume}}}),
+                MakeNHWDOutput<Gna2DeviceGeneration3_0, INTEL_CONVOLUTIONAL_1D>(
+                    InputEqual1, InputEqual1, Input,
+                    StaticCaps{ 1u, Filter2DCountMax, 1u }),
             }},
         }},
         {FilterOperandIndex,{
             {INTEL_CONVOLUTIONAL,{
-                LayerCaps::Make<Gna2DeviceGeneration1_0>(
-                    {GNA_TENSOR_NW},    // N - # filters, W - # filter coefficients
-                    {{GNA_DIM_N, limitsForFilterNumber()},
-                    {GNA_DIM_W, {Filter1DElementsMin, Filter1DElementsMax, shapeLimitMultipliersForCnnLegacy(), Gna2StatusCnnErrorConvFltVolume}}},
-                    {{ Gna2DataTypeInt16 }, Gna2StatusXnnErrorConvFltBytes })
+                MakeFilterCaps<Gna2DeviceGeneration1_0, GNA_TENSOR_NW, INTEL_CONVOLUTIONAL>(
+                    // N - # filters, W - # filter coefficients
+                    { Filter1DElementsMultiplier, Filter1DCountMax, Filter1DElementsMultiplier,
+                     Filter1DElementsMin, Filter1DElementsMax, InputElementCountMultiplier })
             }},
             {INTEL_CONVOLUTIONAL_2D, {
-                LayerCaps::Make<Gna2DeviceGeneration3_0>(
-                    { GNA_TENSOR_NHWD },    // N - # filters, HWD each filter dimensions
-                    {{GNA_DIM_N, {1, Filter2DCountMax, 1, Gna2StatusCnnErrorConvFltCount}},
-                        {GNA_DIM_H, {Filter2DElementsMin, Filter2DElementsMax, 1, Gna2StatusCnnErrorConvFltVolume}},
-                        {GNA_DIM_W, {Filter2DElementsMin, Filter2DElementsMax, 1, Gna2StatusCnnErrorConvFltVolume}},
-                        {GNA_DIM_D, {Filter2DElementsMin, 2048, 1, Gna2StatusCnnErrorConvFltVolume}}},
-                        // Padding to 16B is required for each Kernel
-                    {{ Gna2DataTypeInt8, Gna2DataTypeInt16 }, Gna2StatusXnnErrorConvFltBytes }),
-                LayerCaps::Make<Gna2DeviceGeneration3_5>(
-                    { GNA_TENSOR_NHWD },    // N - # filters, HWD each filter dimensions
-                    {{GNA_DIM_N, {1, Filter2DCountMax, 1, Gna2StatusCnnErrorConvFltCount}},
-                        {GNA_DIM_H, {Filter2DElementsMin, Filter2DElementsMax, 1, Gna2StatusCnnErrorConvFltVolume}},
-                        {GNA_DIM_W, {Filter2DElementsMin, 4096, 1, Gna2StatusCnnErrorConvFltVolume}},
-                        {GNA_DIM_D, {Filter2DElementsMin, 2048, 1, Gna2StatusCnnErrorConvFltVolume}}},
-                        // Padding to 16B is required for each Kernel
-                    {{ Gna2DataTypeInt8, Gna2DataTypeInt16 }, Gna2StatusXnnErrorConvFltBytes })
+                MakeFilterCaps<Gna2DeviceGeneration3_0, GNA_TENSOR_NHWD, INTEL_CONVOLUTIONAL_2D>(
+                    {8, 256, 8,
+                    Filter2DElementsMin, 7, 1,
+                    Filter2DElementsMin, 3, 1,
+                    Filter2DElementsMin, Filter2DDepthMax, 1}), // Padding to 16B is required for each Kernel
+                MakeFilterCaps<Gna2DeviceGeneration3_1, GNA_TENSOR_NHWD, INTEL_CONVOLUTIONAL_2D>(
+                    {1, 1024, 1,
+                    Filter2DElementsMin, Filter2DElementsMax, 1,
+                    Filter2DElementsMin, Filter2DElementsMax, 1,
+                    Filter2DElementsMin, Filter2DDepthMax, 1}),// Padding to 16B is required for each Kernel
+                MakeFilterCaps<Gna2DeviceGeneration3_5, GNA_TENSOR_NHWD, INTEL_CONVOLUTIONAL_2D>(
+                    {1, Filter2DCountMax, 1,
+                    Filter2DElementsMin, Filter2DElementsMax, 1,
+                    Filter2DElementsMin, Filter2DElementsMax, 1,
+                    Filter2DElementsMin, Filter2DDepthMax, 1 }), // Padding to 16B is required for each Kernel
             }},
             {INTEL_CONVOLUTIONAL_1D, {
-                LayerCaps::Make<Gna2DeviceGeneration3_0>(
-                    { GNA_TENSOR_NHWD },    // N - # filters, HWD each filter dimensions
-                    {{GNA_DIM_N, {Filter1DElementsMultiplier, Filter2DCountMax, Filter1DElementsMultiplier, Gna2StatusCnnErrorConvFltCount}},
-                        {GNA_DIM_H, {Filter2DElementsMin, Filter2DElementsMin, 1, Gna2StatusCnnErrorConvFltVolume}},
-                        {GNA_DIM_W, {Filter1DElementsMin, Filter1DElementsMax, Filter1DElementsMin, Gna2StatusCnnErrorConvFltVolume}},
-                        {GNA_DIM_D, {Filter2DElementsMin, Filter2DElementsMin, 1, Gna2StatusCnnErrorConvFltVolume}}},
-                        // Padding to 16B is required for each Kernel
-                    {{ Gna2DataTypeInt16 }, Gna2StatusXnnErrorConvFltBytes })
+                MakeFilterCaps<Gna2DeviceGeneration3_0, GNA_TENSOR_NHWD, INTEL_CONVOLUTIONAL_1D>(
+                    { Filter1DElementsMultiplier, Filter2DCountMax, Filter1DElementsMultiplier,
+                    Filter2DElementsMin, Filter2DElementsMin, 1,
+                    Filter1DElementsMin, Filter1DElementsMax, Filter1DElementsMin,
+                    Filter2DElementsMin, Filter2DElementsMin, 1 }), // Padding to 16B is required for each Kernel
             }},
         }},
         {BiasOperandIndex,{
             {INTEL_CONVOLUTIONAL, {
-                LayerCaps::Make<Gna2DeviceGeneration1_0>(
-                    {GNA_TENSOR_N},          // H - #kernel (GNA_BIAS_PER_KERNEL)
-                    {{GNA_DIM_N, {Filter1DElementsMultiplier, Filter1DCountMax, Filter1DElementsMultiplier, Gna2StatusXnnErrorBiasVolume}}},
-                    _ModesGen0_9()),
+                MakeBiasCaps<Gna2DeviceGeneration1_0, GNA_TENSOR_N, INTEL_CONVOLUTIONAL>(
+                    // H - #kernel (GNA_BIAS_PER_KERNEL)
+                    {Filter1DElementsMultiplier, Filter1DCountMax, Filter1DElementsMultiplier }),
             }},
             {INTEL_CONVOLUTIONAL_2D, {
-                LayerCaps::Make<Gna2DeviceGeneration3_0>(
-                    {GNA_TENSOR_NHW},    // N = #kernels + GNA_BIAS_PER_KERNEL (HW=1) or GNA_BIAS_PER_STRIDE (HW conv. out dimensions),
-                        {{GNA_DIM_N, {1, Filter1DCountMax, 1, Gna2StatusXnnErrorBiasVolume}},
-                        {GNA_DIM_H, {1, InputElementCountMax, 1, Gna2StatusXnnErrorBiasVolume}},
-                        {GNA_DIM_W, {1, InputElementCountMax, 1, Gna2StatusXnnErrorBiasVolume}}},
-                    _ModesGen3Cnn2D())
+                MakeBiasCaps<Gna2DeviceGeneration3_0, GNA_TENSOR_NHW, INTEL_CONVOLUTIONAL_2D>(
+                    // N = #kernels + GNA_BIAS_PER_KERNEL (HW=1) or GNA_BIAS_PER_STRIDE (HW conv. out dimensions),
+                    {1, Filter1DCountMax, 1,
+                    1, InputElementCountMax, 1,
+                    1, InputElementCountMax, 1 })
             }},
             {INTEL_CONVOLUTIONAL_1D, {
-                LayerCaps::Make<Gna2DeviceGeneration3_0>(
-                    {GNA_TENSOR_NHW},    // N = #kernels + GNA_BIAS_PER_KERNEL (HW=1) or GNA_BIAS_PER_STRIDE (HW conv. out dimensions),
-                        {{GNA_DIM_N, {1, Filter1DCountMax, 1, Gna2StatusXnnErrorBiasVolume}},
-                        {GNA_DIM_H, limitsForBiasEqual1()},
-                        {GNA_DIM_W, limitsForBiasEqual1()}},
-                    _ModesGen0_9())
+                MakeBiasCaps<Gna2DeviceGeneration3_0, GNA_TENSOR_NHW, INTEL_CONVOLUTIONAL_1D>(
+                    // N = #kernels + GNA_BIAS_PER_KERNEL (HW=1) or GNA_BIAS_PER_STRIDE (HW conv. out dimensions),
+                    {1, Filter1DCountMax, 1,
+                    1, 1, 1,
+                    1, 1, 1})
             }},
         }},
     };
@@ -307,4 +289,6 @@ const OperationCapabilityMap& ConvolutionalLayer2DCapabilities::GetParameters(ui
     nn_operation operation)
 {
     return GetParameters(parameterIndex).at(operation);
+}
+
 }

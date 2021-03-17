@@ -32,36 +32,41 @@
 
 using namespace GNA;
 
-template<uint32_t operandIndex, Gna2Status status>
+namespace GNA
+{
+
+template<uint32_t operandIndex>
 struct AuxComponentCaps : protected LayerCapabilities
 {
     template<Gna2DeviceGeneration generation, Gna2DeviceGeneration modeGeneration = generation>
     static std::pair<const Gna2DeviceGeneration, std::shared_ptr<ComponentLimits>>
-    Make()
+        Make()
     {
+        //TODO:3:use variadic template Make
         return { generation,
             std::make_shared<TensorLimits>(TensorLimits{
                 {GNA_TENSOR_HW},
-                {{GNA_DIM_H, GetLimitsBasedOnInputGroupsMax<status>()},
-                    {GNA_DIM_W, GetLimitsBasedOnInputLegacy<status>()}},
-                GetModes(operandIndex, modeGeneration)}) };
+                {{GNA_DIM_H, MakeLimits<InputGroupMax, operandIndex>()},
+                    {GNA_DIM_W, MakeLimitsMulti<LegacyInputs, operandIndex>()}},
+                GetCommonModes(operandIndex, modeGeneration)}) };
     }
 
     template<Gna2DeviceGeneration generation, Gna2DeviceGeneration modeGeneration = generation>
     static std::pair<const Gna2DeviceGeneration, std::shared_ptr<ComponentLimits>>
-    MakeInterleaved()
+        MakeInterleaved()
     {
+        //TODO:3:use variadic template Make
         return { generation,
             std::make_shared<TensorLimits>(TensorLimits{
                 {GNA_TENSOR_HW},
-                {{GNA_DIM_H, GetLimitsBasedOnInputLegacy<status>()},
-                    {GNA_DIM_W, GetLimitsBasedOnInputGroupsMax<status>()}},
-                GetModes(operandIndex, modeGeneration)}) };
+                {{GNA_DIM_H, MakeLimitsMulti<LegacyInputs, operandIndex>()},
+                    {GNA_DIM_W, MakeLimits<InputGroupMax, operandIndex>()}},
+                GetCommonModes(operandIndex, modeGeneration)}) };
     }
 };
 
-using InputAuxCaps = AuxComponentCaps<InputOperandIndex, Gna2StatusXnnErrorInputVolume>;
-using OutputAuxCaps = AuxComponentCaps<OutputOperandIndex, Gna2StatusXnnErrorOutputVolume>;
+using InputAuxCaps = AuxComponentCaps<InputOperandIndex>;
+using OutputAuxCaps = AuxComponentCaps<OutputOperandIndex>;
 
 const FullCapabilitiesMap& AuxiliaryCapabilities::GetOperands(uint32_t operandIndex)
 {
@@ -104,4 +109,6 @@ const FullCapabilitiesMap& AuxiliaryCapabilities::GetOperands(uint32_t operandIn
     };
 
     return operands.at(operandIndex);
+}
+
 }

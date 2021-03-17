@@ -30,35 +30,10 @@
 namespace GNA
 {
 
-    struct AuxiliaryCapabilities : LayerCapabilities
-    {
-        static const FullCapabilitiesMap& GetOperands(uint32_t operandIndex);
-    };
+struct AuxiliaryCapabilities : LayerCapabilities
+{
+    static const FullCapabilitiesMap& GetOperands(uint32_t operandIndex);
 
-    template <>
-    struct OperationCaps<INTEL_COPY>
-    {
-        static const FullCapabilitiesMap& GetOperands(uint32_t operandIndex)
-        {
-            return AuxiliaryCapabilities::GetOperands(operandIndex);
-        }
-    };
+};
 
-    template <>
-    struct OperationCaps<INTEL_INTERLEAVE>
-    {
-        static const FullCapabilitiesMap& GetOperands(uint32_t operandIndex)
-        {
-            return AuxiliaryCapabilities::GetOperands(operandIndex);
-        }
-    };
-
-    template <>
-    struct OperationCaps<INTEL_DEINTERLEAVE>
-    {
-        static const FullCapabilitiesMap& GetOperands(uint32_t operandIndex)
-        {
-            return AuxiliaryCapabilities::GetOperands(operandIndex);
-        }
-    };
 }

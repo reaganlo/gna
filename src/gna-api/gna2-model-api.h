@@ -733,7 +733,7 @@ enum Gna2DataType
      4 bit Unsigned Integer.
      Currently not supported.
      */
-    Gna2DataTypeUint4 =7,
+    Gna2DataTypeUint4 = 7,
 
     /**
      1 Byte Unsigned Integer, use uint8_t data.

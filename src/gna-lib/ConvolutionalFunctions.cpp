@@ -51,8 +51,7 @@ FiltersTensor::FiltersTensor(const Shape& dimensions, const DataMode & dataMode,
     // validate buffer size with padding
     if (Gna2TensorModeDisabled != Mode.Mode)
     {
-        const auto kernelMemorySize = HardwareLayerCnn2D::GetKernelMemorySize(
-            validator->HwCapabilities.GetDeviceVersion(), this);
+        const auto kernelMemorySize = HardwareLayerCnn2D::GetKernelMemorySize(this);
         const auto caps = static_cast<const TensorLimits *>(validator->Capabilities);
         validator->ValidateBufferIfSet(Buffer, kernelMemorySize * Count, caps->GetAddressAlign());
     }

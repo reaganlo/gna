@@ -228,8 +228,7 @@ public:
     HardwareLayerCnn2D(const DescriptorParameters& parameters);
     virtual ~HardwareLayerCnn2D() = default;
 
-    static uint32_t GetKernelMemorySize(DeviceVersion deviceVersion,
-        FiltersTensor const * filter);
+    static uint32_t GetKernelMemorySize(FiltersTensor const * filter);
 
     static uint32_t GetConvolutionMemorySize(DeviceVersion deviceVersion,
         ConvolutionFunction2D const * cnnIn);

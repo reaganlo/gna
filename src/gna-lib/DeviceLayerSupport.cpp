@@ -62,6 +62,7 @@ static const HwSupport HW_2_0 =
 static const HwSupport HW_3_0 =
 {
     {Gna2DeviceGeneration3_0, true},
+    {Gna2DeviceGeneration3_1, true},
     {Gna2DeviceGeneration3_5, true},
 };
 

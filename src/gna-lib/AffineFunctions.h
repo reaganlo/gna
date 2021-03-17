@@ -69,16 +69,6 @@ protected:
         std::unique_ptr<const WeightTensor> weights,
         std::unique_ptr<const BiasTensor> biases);
 
-    static const ShapeLimits outputDimensionsLimits;
-
-    static const DataModeLimits outputModeLimits_0_9;
-
-    static const TensorLimits outputLimits_0_9;
-
-    static const DataModeLimits outputModeLimits_3;
-
-    static const TensorLimits outputLimits_3;
-
 private:
     static const std::map<Gna2OperationType, kernel_op> kernelOperationMap;
     static std::unique_ptr<AffineFunction> createAffineSingleFunction(

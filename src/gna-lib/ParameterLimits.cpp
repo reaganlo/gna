@@ -1,6 +1,6 @@
 /*
  INTEL CONFIDENTIAL
- Copyright 2020 Intel Corporation.
+ Copyright 2020-2021 Intel Corporation.
 
  The source code contained or described herein and all documents related
  to the source code ("Material") are owned by Intel Corporation or its suppliers
@@ -25,6 +25,7 @@
 
 #include "ParameterLimits.h"
 
+#include "Expect.h"
 #include "ModelError.h"
 #include "Shape.h"
 
@@ -56,4 +57,41 @@ void GNA::ExpectShapeIsValid(const Shape& dimensions, const ShapeLimits& limits)
             throw;
         }
     }
+}
+
+MultiplierLimits::MultiplierLimits(const MultiplierLimits& multipliers, ModelErrorSource error) :
+    MultiplierMap{ multipliers },
+    Error{ error }
+{
+}
+
+MultiplierLimits::MultiplierLimits(uint32_t multiplier, ModelErrorSource error) :
+    MultiplierMap{ { multiplier } },
+    Error( error )
+{}
+
+uint32_t& MultiplierLimits::at(Gna2DataType type)
+{
+    Expect::InRange<Gna2DataType>(type, Gna2DataTypeWeightScaleFactor, Gna2StatusNullArgumentNotAllowed);
+    return MultiplierMap::at(static_cast<size_t>(type));
+}
+
+uint32_t MultiplierLimits::at(Gna2DataType type) const
+{
+    Expect::InRange(type, Gna2DataTypeWeightScaleFactor, Gna2StatusNullArgumentNotAllowed);
+    return MultiplierMap::at(static_cast<size_t>(type));
+}
+
+void MultiplierLimits::SetEffective(DataType type)
+{
+    if (Gna2DataTypeNone != type &&
+        (*this)[type] != 0)
+    {
+        (*this)[Gna2DataTypeNone] = at(type);
+    }
+}
+
+uint32_t MultiplierLimits::GetEffective() const
+{
+    return at(Gna2DataTypeNone);
 }

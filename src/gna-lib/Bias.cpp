@@ -58,7 +58,6 @@ const FullCapabilitiesMap BiasTensor::capabilities =
     GetOperationCaps<INTEL_CONVOLUTIONAL>(BiasOperandIndex),
     GetOperationCaps<INTEL_CONVOLUTIONAL_2D>(BiasOperandIndex),
     GetOperationCaps<INTEL_CONVOLUTIONAL_1D>(BiasOperandIndex),
-    GetOperationCaps<INTEL_CONVOLUTIONAL_1D>(BiasOperandIndex),
     GetOperationCaps<INTEL_GMM>(BiasOperandIndex),
 };
 

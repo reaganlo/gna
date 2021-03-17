@@ -75,17 +75,6 @@ public:
     std::unique_ptr<const WeightTensor> Weights;
     std::unique_ptr<const BiasTensor> Biases;
 
-protected:
-    static const ShapeLimits outputDimensionsLimits;
-
-    static const DataModeLimits outputModeLimits_0_9;
-
-    static const TensorLimits outputLimits_0_9;
-
-    static const DataModeLimits outputModeLimits_3;
-
-    static const TensorLimits outputLimits_3;
-
 private:
     static const FullCapabilitiesMap outputCapabilities;
     static const std::map<Gna2OperationType, kernel_op> kernelOperationMap;

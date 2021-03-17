@@ -26,7 +26,7 @@
 #pragma once
 
 #include "gna2-model-api.h"
-#include "ParameterLimits.h"
+#include "gna2-model-impl.h"
 
 #include <map>
 #include <string>
