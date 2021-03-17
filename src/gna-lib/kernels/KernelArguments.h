@@ -135,7 +135,6 @@ struct KernelConfig : public BaseConfig
 
 struct ExecutionConfig
 {
-    ExecutionConfig() = default;
     ExecutionConfig(KernelBuffers * intermediate, uint32_t * saturationCount, uint32_t const * bufferElementCount) :
         Intermediate{ intermediate },
         SaturationCount{ saturationCount },
@@ -161,8 +160,6 @@ struct ExecutionKernelConfig : public ExecutionConfig
 
 struct ActivationConfig
 {
-    ActivationConfig() = default; // TODO:3:remove when all layers are using Transform as base class
-    ActivationConfig(ActivationConfig const & source) = default;
     ActivationConfig(uint32_t elementCount, GNA::PwlCached const * kernel);
 
     uint32_t ElementCount;
