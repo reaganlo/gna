@@ -952,9 +952,9 @@ void ConvolutionPoolingKernelImpl(ConvolutionConfig const * const filterConfig,
 }
 
 using m256i_x2 = decltype(std::make_pair(_mm256_setzero_si256(), _mm256_setzero_si256()));
-/* Multiply and add 32 elements, supports 8 and 16bit types
+/* Multiply and add sizeof(__m256i) elements, supports 8 and 16bit types
  * possibly zero elements that are past data bound (if apply_mask is set),
- * mask should have one of two elements (the latter only in case of "2b2b").
+ * mask should have one or two elements (the latter only in case of "2b2b").
  *
  * Steps:
  * extend both input and filter from epi8 to epi16 for multiplication (when used with 8bit types)
@@ -977,10 +977,10 @@ static inline m256i_x2 madd_32_elems(filter_t *F, input_t *I, __m256i *mask, boo
     __m256i input_0 = _mm256_loadu_si256((const __m256i *)I);
     __m256i filter_1, input_1;
     if (sizeof(filter_t) == 2) {
-        filter_1 = _mm256_loadu_si256((const __m256i *)(F + 16));
+        filter_1 = _mm256_loadu_si256((const __m256i *)F + 1);
     }
     if (sizeof(input_t) == 2) {
-        input_1 = _mm256_loadu_si256((const __m256i *)(I + 16));
+        input_1 = _mm256_loadu_si256((const __m256i *)I + 1);
     }
     if (apply_mask) {
         if (sizeof(filter_t) <= sizeof(input_t)) {
@@ -1041,10 +1041,15 @@ static void cnn2d(ExecutionKernelConfig<ConvolutionConfig2D> const *const config
     auto biasPrecission = conf->Transform.BiasDataMode;
     const void *biasData = conf->Transform.BiasData;
 
+    // algo moves by the same number of elements per one step, irrelevant of input/filter width
+    // (so it moves by twice as many bytes in 2B case vs 1B case)
+    constexpr const uint32_t elems = sizeof(__m256i) / sizeof(int16_t);
+    constexpr const uint32_t step = elems * 2; // how many elems are processed per loop step
     constexpr const bool is_2b2b = sizeof(filter_t) == 2 && sizeof(input_t) == 2;
     using mask_t = typename std::conditional<is_2b2b, int16_t, int8_t>::type;
-    const mask_t mask[64] = { -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-                              -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1 };
+    mask_t mask[step*2];
+    memset(mask, -1, sizeof(mask)/2);
+    memset(mask+step, 0, sizeof(mask)/2);
 
     for (uint32_t OD = 0; OD < numFilters; OD++) {
         uint32_t fIdxN = (OD * (inputDepth * filterWidth * filterHeight + filterPadding));
@@ -1089,19 +1094,19 @@ static void cnn2d(ExecutionKernelConfig<ConvolutionConfig2D> const *const config
                 inIdxW *= inputDepth;
                 fIdxW *= inputDepth;
                 uint32_t idxI = inIdxH + inIdxW, idxF = fIdxN + fIdxH + fIdxW;
-                const uint32_t stepsRounded = Gna2RoundUp(stepsPerWxZ, 32);
+                const uint32_t stepsRounded = Gna2RoundUp(stepsPerWxZ, step);
                 uint32_t stepIH = inputDepth * inputWidth - stepsRounded;
                 uint32_t stepFH = inputDepth * filterWidth - stepsRounded;
                 __m256i acc_0 = _mm256_setzero_si256();
                 __m256i acc_1 = _mm256_setzero_si256();
                 __m256i masked[2];
-                masked[0] = _mm256_loadu_si256((const __m256i *)(mask + 32 - stepsPerWxZ % 32));
+                masked[0] = _mm256_loadu_si256((const __m256i *)(mask + step - stepsPerWxZ % step));
                 if (is_2b2b) {
-                    masked[1] = _mm256_loadu_si256((const __m256i *)(mask + 32 + 16 - stepsPerWxZ % 32));
+                    masked[1] = _mm256_loadu_si256((const __m256i *)(mask + step + elems - stepsPerWxZ % step));
                 }
                 for (; steps--; idxF += stepFH, idxI += stepIH) {
-                    for (uint32_t i = 0; i < stepsPerWxZ; i += 32, idxF += 32, idxI += 32) {
-                        auto m = madd_32_elems(F + idxF, I + idxI, masked, (i + 32 > stepsPerWxZ));
+                    for (uint32_t i = 0; i < stepsPerWxZ; i += step, idxF += step, idxI += step) {
+                        auto m = madd_32_elems(F + idxF, I + idxI, masked, (i + step > stepsPerWxZ));
                         acc_0 = _mm256_add_epi32(acc_0, m.first);
                         acc_1 = _mm256_add_epi32(acc_1, m.second);
                     }
@@ -1159,7 +1164,7 @@ static void poolMax2d(ExecutionKernelConfig<PoolingConfig2D> const *const config
     constexpr const bool is1B = (sizeof(data_t) == 1);
     constexpr const bool is2B = (sizeof(data_t) == 2);
     constexpr const bool is4B = (sizeof(data_t) == 4);
-    constexpr const uint32_t elems = 32 / sizeof(data_t);
+    constexpr const uint32_t elems = sizeof(__m256i) / sizeof(data_t);
     data_t maskData[elems * 2];
     data_t minLimit = (std::numeric_limits<data_t>::min)();
     data_t maxLimit = (std::numeric_limits<data_t>::max)();
@@ -1261,7 +1266,7 @@ static void poolSum2d(ExecutionKernelConfig<PoolingConfig2D> const *const config
     constexpr const bool is1B = (sizeof(data_t) == 1);
     constexpr const bool is2B = (sizeof(data_t) == 2);
     constexpr const bool is4B = (sizeof(data_t) == 4);
-    constexpr const uint32_t elems = 32 / sizeof(data_t);  // num of data_t's per 256b load
+    constexpr const uint32_t elems = sizeof(__m256i) / sizeof(data_t);
     constexpr const uint32_t step = elems * 1;  // how many elems are processed per loop step
     __m256i satCntHighBit0 = _mm256_setzero_si256();
     __m256i satCntHighBit1 = _mm256_setzero_si256();
@@ -1298,7 +1303,7 @@ static void poolSum2d(ExecutionKernelConfig<PoolingConfig2D> const *const config
                 limH = inputH - POH * poolStrideH;
             }
 
-            // usage of following variable speeds 2B case by ~25% on perftest's data
+            // usage of following variable speeds up 2B case by ~25% on perftest's data
             const bool couldEverOV = (limW * limH * numFilters > 0x10000);
             uint32_t couldOV = 0;
             for (uint32_t offset = 0; offset < numFilters; offset += step) {
@@ -1433,7 +1438,7 @@ void poolSum2d<int32_t>(ExecutionKernelConfig<PoolingConfig2D> const *const conf
     uint32_t poolOutW = 1 + (uint32_t)std::ceil((float)(wDimPartial) / (float)poolStrideW);
     uint32_t poolOutH = 1 + (uint32_t)std::ceil((float)(hDimPartial) / (float)poolStrideH);
 
-    constexpr const uint32_t elems = 32 / sizeof(data_t);  // num of data_t's per 256b load
+    constexpr const uint32_t elems = sizeof(__m256i) / sizeof(data_t);
     constexpr const uint32_t step = elems * 1;  // how many elems are processed per loop step
     memset(O, 0, poolOutH * poolOutW * numFilters * sizeof(data_t));  // we are calculating out via many parial sums
     data_t maskData[step * 2];
