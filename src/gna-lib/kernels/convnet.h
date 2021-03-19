@@ -79,7 +79,7 @@ extern "C" {
     void Pooling2DKernelImpl2B(ExecutionKernelConfig<PoolingConfig2D> const * const config);
     void Pooling2DKernelImpl4B(ExecutionKernelConfig<PoolingConfig2D> const * const config);
 #endif
-#if OPT_LEVEL == 7
+#if OPT_LEVEL == 3 || OPT_LEVEL == 7
     void Pooling2DKernelImpl1B(ExecutionKernelConfig<PoolingConfig2D> const * const config);
     void Pooling2DKernelImpl2B(ExecutionKernelConfig<PoolingConfig2D> const * const config);
     void Pooling2DKernelImpl4B(ExecutionKernelConfig<PoolingConfig2D> const * const config);

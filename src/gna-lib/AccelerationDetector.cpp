@@ -144,6 +144,11 @@ static KernelMap<VoidKernel> MakeAVX2SatAccelerated()
     return MakeAllSat<kernelType, kernelType, kernelType, kernelType, false, false, true>();
 }
 
+template<KernelType kernelType>
+static KernelMap<VoidKernel> MakeAVX2AndSSE4SatAccelerated()
+{
+    return MakeAllSat<kernelType, kernelType, kernelType, kernelType, true, false, true>();
+}
 
 template<KernelType genericKernel>
 KernelMap<VoidKernel> MakeAllGeneric()
@@ -255,13 +260,13 @@ const KernelMap<VoidKernel>& AccelerationDetector::GetKernels(kernel_op operatio
         }},
         { KERNEL_CONVOLUTIONAL_2D, {
             {{ Gna2DataTypeInt16, Gna2DataTypeInt8, Gna2DataTypeInt8 },
-                MakeAVX2SatAccelerated<convolution2D1B2B>()},
+                MakeAVX2AndSSE4SatAccelerated<convolution2D1B2B>()},
             {{ Gna2DataTypeInt16, Gna2DataTypeInt16, Gna2DataTypeInt8 },
-                MakeAVX2SatAccelerated<convolution2D2B2B>()},
+                MakeAVX2AndSSE4SatAccelerated<convolution2D2B2B>()},
             {{ Gna2DataTypeInt8, Gna2DataTypeInt8, Gna2DataTypeInt8 },
-                MakeAVX2SatAccelerated<convolution2D1B1B>()},
+                MakeAVX2AndSSE4SatAccelerated<convolution2D1B1B>()},
             {{ Gna2DataTypeInt8, Gna2DataTypeInt16, Gna2DataTypeInt8 },
-                MakeAVX2SatAccelerated<convolution2D2B1B>()},
+                MakeAVX2AndSSE4SatAccelerated<convolution2D2B1B>()},
         }},
         { KERNEL_POOLING, {
             {{ Gna2DataTypeInt16, },
@@ -271,11 +276,11 @@ const KernelMap<VoidKernel>& AccelerationDetector::GetKernels(kernel_op operatio
         }},
         { KERNEL_POOLING_2D, {
             {{ Gna2DataTypeInt8 },
-                MakeAVX2SatAccelerated<convolutionPooling2D1B>()},
+                MakeAVX2AndSSE4SatAccelerated<convolutionPooling2D1B>()},
             {{ Gna2DataTypeInt16 },
-                MakeAVX2SatAccelerated<convolutionPooling2D2B>()},
+                MakeAVX2AndSSE4SatAccelerated<convolutionPooling2D2B>()},
             {{ Gna2DataTypeInt32 },
-                MakeAVX2SatAccelerated<convolutionPooling2D4B>()},
+                MakeAVX2AndSSE4SatAccelerated<convolutionPooling2D4B>()},
         }},
         { KERNEL_PWL, {
             {{ Gna2DataTypeInt16 },
