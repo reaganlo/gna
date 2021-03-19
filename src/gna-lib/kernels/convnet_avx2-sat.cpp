@@ -1006,6 +1006,19 @@ static inline m256i_x2 madd_32_elems(filter_t *F, input_t *I, __m256i *mask, boo
     return { m0, m1 };
 }
 
+template<typename T, size_t N>
+static constexpr std::array<T, N> initByHalves(T firstHalfVal, T secondHalfVal) {
+	std::array<T, N> a = {};
+	size_t i = 0;
+	for (; i < N/2; ++i) {
+		a[i] = firstHalfVal;
+	}
+	for (; i < N; ++i) {
+		a[i] = secondHalfVal;
+	}
+	return a;
+}
+
 template <typename filter_t, typename input_t>
 static void cnn2d(ExecutionKernelConfig<ConvolutionConfig2D> const *const config)
 {
@@ -1047,9 +1060,7 @@ static void cnn2d(ExecutionKernelConfig<ConvolutionConfig2D> const *const config
     constexpr const uint32_t step = elems * 2; // how many elems are processed per loop step
     constexpr const bool is_2b2b = sizeof(filter_t) == 2 && sizeof(input_t) == 2;
     using mask_t = typename std::conditional<is_2b2b, int16_t, int8_t>::type;
-    mask_t mask[step*2];
-    memset(mask, -1, sizeof(mask)/2);
-    memset(mask+step, 0, sizeof(mask)/2);
+    const auto mask = initByHalves<mask_t, step*2>(-1, 0).data();
 
     for (uint32_t OD = 0; OD < numFilters; OD++) {
         uint32_t fIdxN = (OD * (inputDepth * filterWidth * filterHeight + filterPadding));
@@ -1165,17 +1176,13 @@ static void poolMax2d(ExecutionKernelConfig<PoolingConfig2D> const *const config
     constexpr const bool is2B = (sizeof(data_t) == 2);
     constexpr const bool is4B = (sizeof(data_t) == 4);
     constexpr const uint32_t elems = sizeof(__m256i) / sizeof(data_t);
-    data_t maskData[elems * 2];
-    data_t minLimit = (std::numeric_limits<data_t>::min)();
-    data_t maxLimit = (std::numeric_limits<data_t>::max)();
+    constexpr data_t minLimit = (std::numeric_limits<data_t>::min)();
+    constexpr data_t maxLimit = (std::numeric_limits<data_t>::max)();
+    const auto maskData = initByHalves<data_t, elems*2>(maxLimit, minLimit).data();
     if (is1B) {
-        memset(maskData, maxLimit, elems);
-        memset(maskData + elems, minLimit, elems);
         memset(O, minLimit, poolOutH * poolOutW * numFilters);
     }
     else {
-        std::fill(maskData, maskData + elems, maxLimit);
-        std::fill(maskData + elems, maskData + elems * 2, minLimit);
         std::fill(O, O + poolOutH * poolOutW * numFilters, minLimit);
     }
 
@@ -1441,9 +1448,7 @@ void poolSum2d<int32_t>(ExecutionKernelConfig<PoolingConfig2D> const *const conf
     constexpr const uint32_t elems = sizeof(__m256i) / sizeof(data_t);
     constexpr const uint32_t step = elems * 1;  // how many elems are processed per loop step
     memset(O, 0, poolOutH * poolOutW * numFilters * sizeof(data_t));  // we are calculating out via many parial sums
-    data_t maskData[step * 2];
-    std::fill(maskData, maskData + step, -1);  // fill() because g++ emits silly warn when filling only half of an array with memset
-    std::fill(maskData + step, maskData + step * 2, 0);
+    const auto maskData = initByHalves<data_t, step*2>(-1, 0).data();
     const __m256i mask = _mm256_loadu_si256((const __m256i *)(maskData + step - numFilters % step));
     __m256i satCnt = _mm256_setzero_si256();
 
