@@ -28,6 +28,7 @@
 #include "Capabilities.h"
 #include "DataMode.h"
 #include "Tensor.h"
+#include "Macros.h"
 
 #include <map>
 
@@ -135,6 +136,7 @@ struct LayerCapabilities
     typename ... T>
     static auto MakeModes(T ... modes)
     {
+        UNREFERENCED_PARAMETER(sizeof...(modes));
         return std::pair<Gna2DeviceGeneration, DataModeLimits>{ generation,
             {{ modes... }, GetError<operandIndex>().second } };
     }
