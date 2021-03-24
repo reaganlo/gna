@@ -120,8 +120,8 @@ static void Affine2B1B(ExecutionKernelConfig<AffineConfig> const *const config, 
 {
     static_assert(std::is_base_of<IndexSource, T>::value, "Index iterator must derive from IndexSource");
 
-    // NOTE: For 1B data and 2B weight, the 513rd sum can overflow
-    static const uint32_t PARTIAL_SUM_LIMIT = 512;
+    // NOTE: For 1B data and 2B weight, the 512nd sum can overflow
+    static const uint32_t PARTIAL_SUM_LIMIT = 511;
 
     static const uint32_t IT_STEP = 8;
 

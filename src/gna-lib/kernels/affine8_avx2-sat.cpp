@@ -100,12 +100,15 @@ static void Affine1B1B(ExecutionKernelConfig<AffineConfig> const *const config, 
 
     static const uint32_t IT_STEP = 16;
 
+    // NOTE: For compatibility with HW we limit the amount of unsaturated sums based on the buffer size
+    const uint32_t unsaturated_sum_limit = (uint32_t)((config->BufferElementCount[N - 1]) / N / IT_STEP);
+
     const uint32_t K = config->RequestConfig->Transform.inputElementCount;
     const uint32_t KK = K / IT_STEP;
 
-    int8_t const *inputs[N] = {(int8_t *)config->Intermediate->d0};
     int8_t const *weights = config->RequestConfig->Transform.weights1B;
 
+    int8_t const *inputs[N] = {(int8_t *)config->Intermediate->d0};
     int32_t *outputs[N] = {reinterpret_cast<int32_t *>(config->RequestConfig->Outputs)};
 
     uint32_t inputOffset = 0;
@@ -117,9 +120,12 @@ static void Affine1B1B(ExecutionKernelConfig<AffineConfig> const *const config, 
     __m128i input[N];
     __m256i input_16[N];
     __m256i sum[N];
+    int64_t final_sum[N];
     __m256i mul[N];
     __m256i sum_lo32[N];
     __m256i sum_hi32[N];
+
+    uint32_t unsaturated_sum_counter = 0;
 
     for (uint32_t n = 1; n < N; ++n)
     {
@@ -131,10 +137,15 @@ static void Affine1B1B(ExecutionKernelConfig<AffineConfig> const *const config, 
     {
         uint32_t i = idx.Next();
 
+        const int32_t bias = getBias(biases, config->RequestConfig->Transform.bytesPerBias, i * bias_vector);
+
         for (uint32_t n = 0; n < N; ++n)
         {
             sum[n] = _mm256_setzero_si256();
+            final_sum[n] = bias;
         }
+
+        unsaturated_sum_counter = 0;
 
         for (uint32_t k = 0; k < KK; ++k)
         {
@@ -156,17 +167,25 @@ static void Affine1B1B(ExecutionKernelConfig<AffineConfig> const *const config, 
                 sum[n] = _mm256_add_epi32(sum[n], sum_lo32[n]);
                 sum[n] = _mm256_add_epi32(sum[n], sum_hi32[n]);
             }
-        }
 
-        const int32_t bias = getBias(biases, config->RequestConfig->Transform.bytesPerBias, i * bias_vector);
+            // NOTE: This part is only for HW compatibility
+            if (++unsaturated_sum_counter >= unsaturated_sum_limit)
+            {
+                for (uint32_t n = 0; n < N; ++n)
+                {
+                    final_sum[n] += _mm256_hsum_epi32(sum[n]);
+                    saturate(&final_sum[n], config->SaturationCount);
+                    sum[n] = _mm256_setzero_si256();
+                }
+
+                unsaturated_sum_counter = 0;
+            }
+        }
 
         for (uint32_t n = 0; n < N; ++n)
         {
-            *outputs[n] = _mm256_hsum_epi32(sum[n]);
-
-            // NOTE: This can saturate only because bias can be 4b
-            saturate_add(outputs[n], bias, config->SaturationCount);
-
+            final_sum[n] += _mm256_hsum_epi32(sum[n]);
+            saturate_store_out(&final_sum[n], outputs[n], config->SaturationCount);
             outputs[n] += N;
         }
     }

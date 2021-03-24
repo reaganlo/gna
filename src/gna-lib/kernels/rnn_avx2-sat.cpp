@@ -49,9 +49,6 @@
 template <int BPW>
 void RNN1B(ExecutionKernelConfig<RecurrentConfig> const *const config);
 
-/** RNN kernel - specialization of RNN1B for 32b intermediate sums */
-void RNN1B_32b(ExecutionKernelConfig<RecurrentConfig> const *const config);
-
 /** RNN kernel implementation for 1B input 1B weight
  *
  * ASSUMPTIONS:
@@ -66,7 +63,7 @@ void RNN1B_32b(ExecutionKernelConfig<RecurrentConfig> const *const config);
  */
 void RecurrentKernelImpl1B1B(ExecutionKernelConfig<RecurrentConfig> const *const config)
 {
-    RNN1B_32b(config);
+    RNN1B<1>(config);
 }
 
 /** RNN kernel implementation for 1B input 2B weight
@@ -416,7 +413,7 @@ void RNN1B(ExecutionKernelConfig<RecurrentConfig> const *const config)
 
     uint32_t In1Size = (K >= BUF) ? BUF : 0;
     uint32_t In2Size = K % BUF;
-    uint32_t Fb1Size = (M < BUF - K) ? M : BUF - K;
+    uint32_t Fb1Size = (M < BUF - In2Size) ? M : BUF - In2Size;
     uint32_t Fb2Size = (M - Fb1Size) % BUF;
 
     const int8_t *weightsIn1 = weights;
@@ -433,12 +430,25 @@ void RNN1B(ExecutionKernelConfig<RecurrentConfig> const *const config)
     {
         GetBias(biases, BPB, out.out32_1, out.out32_2);
 
-        out.ExtendTo64();
-
         if (madd16In1.limit > 0)
         {
-            Madd16_64b<BPW, 1>(madd16In1, out);
-            out.Saturate64();
+            // First sum can be optimized for 1B * 1B multiplication
+            // Majority of use cases has In1Count = 0 or 1.
+            if (BPW == 1)
+            {
+                Madd16_32b(madd16In1, out);
+                out.ExtendTo64();
+            }
+            else
+            {
+                out.ExtendTo64();
+                Madd16_64b<2, 1>(madd16In1, out);
+                out.Saturate64();
+            }
+        }
+        else
+        {
+            out.ExtendTo64();
         }
 
         Madd16_64b<BPW, 1>(madd16In2, out);
@@ -446,11 +456,22 @@ void RNN1B(ExecutionKernelConfig<RecurrentConfig> const *const config)
 
         if (madd16Fb2.limit > 0)
         {
-            out.Saturate64();
-            Madd16_64b<BPW, 1>(madd16Fb2, out);
+            if (BPW == 1)
+            {
+                out.SaturatePack32();
+                Madd16_32b(madd16Fb2, out);
+            }
+            else
+            {
+                out.Saturate64();
+                Madd16_64b<2, 1>(madd16Fb2, out);
+                out.SaturatePack32();
+            }
         }
-
-        out.SaturatePack32();
+        else
+        {
+            out.SaturatePack32();
+        }
 
         _mm256_storeu_si256((__m256i *)outputs_lo, out.out32_1);
         _mm256_storeu_si256((__m256i *)outputs_hi, out.out32_2);
@@ -464,46 +485,5 @@ void RNN1B(ExecutionKernelConfig<RecurrentConfig> const *const config)
         madd16In2.Advance(IT_STEP * (K + M) * BPW);
         madd16Fb1.Advance(IT_STEP * (K + M) * BPW);
         madd16Fb2.Advance(IT_STEP * (K + M) * BPW);
-    }
-}
-
-void RNN1B_32b(ExecutionKernelConfig<RecurrentConfig> const *const config)
-{
-    const uint32_t K = config->RequestConfig->Transform.inputElementCount;
-    const uint32_t M = config->RequestConfig->Transform.outputElementCount;
-    const uint32_t BPB = config->RequestConfig->Transform.bytesPerBias;
-
-    const int8_t *inputs = (int8_t *)config->RequestConfig->Inputs;
-    const int8_t *weights = config->RequestConfig->Transform.weights1B;
-
-    int8_t *biases = (int8_t *)config->RequestConfig->Transform.biasesSimple;
-    int8_t *feedbacks = (int8_t *)config->RequestConfig->Transform.feedbackBuffer;
-    int32_t *outputs_lo = config->RequestConfig->Transform.output;
-    int32_t *outputs_hi = outputs_lo + sizeof(__m256i) / sizeof(int32_t);
-
-    RnnOutput out(config->SaturationCount);
-
-    const int8_t *weightsIn1 = weights;
-    const int8_t *weightsFb1 = weightsIn1 + K;
-
-    Madd16Input madd16In1(weightsIn1, inputs, K, K + M);
-    Madd16Input madd16Fb1(weightsFb1, feedbacks, M, K + M);
-
-    for (uint32_t i = 0; i < M / IT_STEP; ++i)
-    {
-        GetBias(biases, BPB, out.out32_1, out.out32_2);
-
-        Madd16_32b(madd16In1, out);
-        Madd16_32b(madd16Fb1, out);
-
-        _mm256_storeu_si256((__m256i *)outputs_lo, out.out32_1);
-        _mm256_storeu_si256((__m256i *)outputs_hi, out.out32_2);
-
-        outputs_lo += IT_STEP;
-        outputs_hi += IT_STEP;
-
-        biases += IT_STEP * BPB;
-        madd16In1.Advance(IT_STEP * (K + M));
-        madd16Fb1.Advance(IT_STEP * (K + M));
     }
 }
