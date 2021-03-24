@@ -818,7 +818,8 @@ static void cnn2d(ExecutionKernelConfig<ConvolutionConfig2D> const *const config
     constexpr const uint32_t step = elems * 2; // how many elems are processed per loop step
     constexpr const bool is_2b2b = sizeof(filter_t) == 2 && sizeof(input_t) == 2;
     using mask_t = typename std::conditional<is_2b2b, int16_t, int8_t>::type;
-    const auto mask = initByHalves<mask_t, step*2>(-1, 0).data();
+    const auto maskArray = initByHalves<mask_t, step*2>(-1, 0);
+    const auto mask = maskArray.data();
 
     for (uint32_t OD = 0; OD < numFilters; OD++) {
         uint32_t fIdxN = (OD * (inputDepth * filterWidth * filterHeight + filterPadding));
@@ -936,7 +937,7 @@ static void poolMax2d(ExecutionKernelConfig<PoolingConfig2D> const *const config
     constexpr const uint32_t elems = sizeof(__m128i) / sizeof(data_t);
     constexpr data_t minLimit = (std::numeric_limits<data_t>::min)();
     constexpr data_t maxLimit = (std::numeric_limits<data_t>::max)();
-    const auto maskData = initByHalves<data_t, elems*2>(maxLimit, minLimit).data();
+    const auto maskArray = initByHalves<data_t, elems*2>(maxLimit, minLimit);
     if (is1B) {
         memset(O, minLimit, poolOutH * poolOutW * numFilters);
     }
@@ -944,7 +945,7 @@ static void poolMax2d(ExecutionKernelConfig<PoolingConfig2D> const *const config
         std::fill(O, O + poolOutH * poolOutW * numFilters, minLimit);
     }
 
-    const __m128i mask = _mm_loadu_si128((const __m128i *)(maskData + elems - numFilters % elems));
+    const __m128i mask = _mm_loadu_si128((const __m128i *)(maskArray.data() + elems - numFilters % elems));
 
     for (uint32_t POH = 0; POH < poolOutH; POH++) {
         uint32_t inIdxH = numFilters * inputW * POH * poolStrideH;
@@ -1204,8 +1205,8 @@ void poolSum2d<int32_t>(ExecutionKernelConfig<PoolingConfig2D> const *const conf
     constexpr const uint32_t elems = sizeof(__m128i) / sizeof(data_t);
     constexpr const uint32_t step = elems * 1;  // how many elems are processed per loop step
     memset(O, 0, poolOutH * poolOutW * numFilters * sizeof(data_t));  // we are calculating out via many parial sums
-    const auto maskData = initByHalves<data_t, step*2>(-1, 0).data();
-    const __m128i mask = _mm_loadu_si128((const __m128i *)(maskData + step - numFilters % step));
+    const auto maskArray = initByHalves<data_t, step*2>(-1, 0);
+    const __m128i mask = _mm_loadu_si128((const __m128i *)(maskArray.data() + step - numFilters % step));
     __m128i satCnt = _mm_setzero_si128();
 
     for (uint32_t POH = 0; POH < poolOutH; POH++) {
