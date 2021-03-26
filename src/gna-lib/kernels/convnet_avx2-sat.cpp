@@ -1273,7 +1273,7 @@ static void poolSum2d(ExecutionKernelConfig<PoolingConfig2D> const *const config
 
     constexpr const bool is1B = (sizeof(data_t) == 1);
     constexpr const bool is2B = (sizeof(data_t) == 2);
-    constexpr const bool is4B = (sizeof(data_t) == 4);
+    /* note: 4B variant has specialized version, so it's handling was removed here */
     constexpr const uint32_t elems = sizeof(__m256i) / sizeof(data_t);
     constexpr const uint32_t step = elems * 1;  // how many elems are processed per loop step
     __m256i satCntHighBit0 = _mm256_setzero_si256();
@@ -1354,54 +1354,40 @@ static void poolSum2d(ExecutionKernelConfig<PoolingConfig2D> const *const config
                                 cur1 = _mm256_add_epi32(cur1, in01);
                             }
                         }
-                        if (is4B) {
-                            cur0 = _mm256_adds_epi32(cur0, in0, &satCntHighBit0);
-                        }
                     }
                 }
-                if (is4B) {
-                    if (offset + step > numFilters) {
-                        data_t out[elems];
-                        _mm256_storeu_si256((__m256i *)out, cur0);
-                        memcpy(O + outBaseIdx + offset, out, sizeof(data_t) * (numFilters % step));
-                    } else {
-                        _mm256_storeu_si256((__m256i *)(O + outBaseIdx + offset), cur0);
-                    }
-                }
-                else {
-                    __m256i ret0, ret00, ret01;
-                    if (is1B) {
-                        ret0 = _mm256_packs_epi16(cur0, cur1);
-                        ret0 = _mm256_permute4x64_epi64(ret0, 0xd8);
-                        if (needsSatCnt) {
-                            ret01 = _mm256_cvtepi8_epi16(_mm256_extracti128_si256(ret0, 1));
-                            ret00 = _mm256_cvtepi8_epi16(_mm256_castsi256_si128(ret0));
-                        }
-                    }
-                    if (is2B) {
-                        ret0 = _mm256_packs_epi32(cur0, cur1);
-                        ret0 = _mm256_permute4x64_epi64(ret0, 0xd8);
-                        ret01 = _mm256_cvtepi16_epi32(_mm256_extracti128_si256(ret0, 1));
-                        ret00 = _mm256_cvtepi16_epi32(_mm256_castsi256_si128(ret0));
-                    }
+                __m256i ret0, ret00, ret01;
+                if (is1B) {
+                    ret0 = _mm256_packs_epi16(cur0, cur1);
+                    ret0 = _mm256_permute4x64_epi64(ret0, 0xd8);
                     if (needsSatCnt) {
-                        __m256i x1 = _mm256_xor_si256(ret01, cur1);
-                        __m256i x0 = _mm256_xor_si256(ret00, cur0);
-                        satCntAllBits0 = _mm256_or_si256(satCntAllBits0, x0);
-                        satCntAllBits1 = _mm256_or_si256(satCntAllBits1, x1);
-                        if (is1B) {
-                            if (_mm256_test_any(satCntAllBits0) || _mm256_test_any(satCntAllBits1)) {
-                                needsSatCnt = 0;
-                            }
+                        ret01 = _mm256_cvtepi8_epi16(_mm256_extracti128_si256(ret0, 1));
+                        ret00 = _mm256_cvtepi8_epi16(_mm256_castsi256_si128(ret0));
+                    }
+                }
+                if (is2B) {
+                    ret0 = _mm256_packs_epi32(cur0, cur1);
+                    ret0 = _mm256_permute4x64_epi64(ret0, 0xd8);
+                    ret01 = _mm256_cvtepi16_epi32(_mm256_extracti128_si256(ret0, 1));
+                    ret00 = _mm256_cvtepi16_epi32(_mm256_castsi256_si128(ret0));
+                }
+                if (needsSatCnt) {
+                    __m256i x1 = _mm256_xor_si256(ret01, cur1);
+                    __m256i x0 = _mm256_xor_si256(ret00, cur0);
+                    satCntAllBits0 = _mm256_or_si256(satCntAllBits0, x0);
+                    satCntAllBits1 = _mm256_or_si256(satCntAllBits1, x1);
+                    if (is1B) {
+                        if (_mm256_test_any(satCntAllBits0) || _mm256_test_any(satCntAllBits1)) {
+                            needsSatCnt = 0;
                         }
                     }
-                    if (offset + step > numFilters) {
-                        data_t out[elems];
-                        _mm256_storeu_si256((__m256i *)out, ret0);
-                        memcpy(O + outBaseIdx + offset, out, sizeof(data_t) * (numFilters % step));
-                    } else {
-                        _mm256_storeu_si256((__m256i *)(O + outBaseIdx + offset), ret0);
-                    }
+                }
+                if (offset + step > numFilters) {
+                    data_t out[elems];
+                    _mm256_storeu_si256((__m256i *)out, ret0);
+                    memcpy(O + outBaseIdx + offset, out, sizeof(data_t) * (numFilters % step));
+                } else {
+                    _mm256_storeu_si256((__m256i *)(O + outBaseIdx + offset), ret0);
                 }
             }
         }
@@ -1412,10 +1398,8 @@ static void poolSum2d(ExecutionKernelConfig<PoolingConfig2D> const *const config
     if (is2B) {
         *config->SaturationCount += _mm256_test_anyMSB_epi32(satCntHighBit1);
     }
-    if (!is4B) {
-        *config->SaturationCount += _mm256_test_any(satCntAllBits0);
-        *config->SaturationCount += _mm256_test_any(satCntAllBits1);
-    }
+    *config->SaturationCount += _mm256_test_any(satCntAllBits0);
+    *config->SaturationCount += _mm256_test_any(satCntAllBits1);
 }
 
 /* This is a specialized version of pooling Sum.
