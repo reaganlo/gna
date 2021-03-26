@@ -710,7 +710,8 @@ void ConvolutionPoolingKernelImpl(ConvolutionConfig const * const filterConfig,
 }
 
 using m128i_x2 = decltype(std::make_pair(_mm_setzero_si128(), _mm_setzero_si128()));
-/* Multiply and add sizeof(__m128i) elements, supports 8 and 16bit types
+using m128i_x4 = decltype(std::make_pair(m128i_x2{}, m128i_x2{}));
+/* Multiply and add 2*sizeof(__m128i) elements, supports 8 and 16bit types
  * possibly zero elements that are past data bound (if apply_mask is set),
  * mask should have one or two elements (the latter only in case of "2b2b").
  *
@@ -721,7 +722,7 @@ using m128i_x2 = decltype(std::make_pair(_mm_setzero_si128(), _mm_setzero_si128(
  * (use _mm_madd_epi16() instead of _mm_mullo_epi16(), so we get one level of horizontal sum
  * for free, it also expands data to 32bit, as would be needed in accumulation anyway).
  *
- * Returns as two registers to decrease dependency chain between (outer) loop steps/
+ * Returns as four registers to decrease dependency chain between (outer) loop steps
  *
  * Compilation note:
  * versions of GCC prior to 7 and ICC prior to 19 do not support constexpr if.
@@ -729,26 +730,42 @@ using m128i_x2 = decltype(std::make_pair(_mm_setzero_si128(), _mm_setzero_si128(
  * at least when comparing between ICC 18 and ICC 19 on Linux.
  */
 template <typename filter_t, typename input_t>
-static inline m128i_x2 madd_16_elems(filter_t *F, input_t *I, __m128i *mask, bool apply_mask)
+static inline m128i_x4 madd_32_elems(filter_t *filter, input_t *input, __m128i *mask, bool apply_mask)
 {
-    __m128i filter_0 = _mm_loadu_si128((const __m128i *)F);
-    __m128i input_0 = _mm_loadu_si128((const __m128i *)I);
+    const __m128i *F = (const __m128i *) filter;
+    const __m128i *I = (const __m128i *) input;
+    __m128i filter_0 = _mm_loadu_si128(F++);
+    __m128i input_0 = _mm_loadu_si128(I++);
     __m128i filter_1, input_1;
     if (sizeof(filter_t) == 2) {
-        filter_1 = _mm_loadu_si128((const __m128i *)F + 1);
+        filter_1 = _mm_loadu_si128(F++);
     }
     if (sizeof(input_t) == 2) {
-        input_1 = _mm_loadu_si128((const __m128i *)I + 1);
+        input_1 = _mm_loadu_si128(I++);
+    }
+    __m128i filter_2 = _mm_loadu_si128(F++);
+    __m128i input_2 = _mm_loadu_si128(I++);
+    __m128i filter_3, input_3;
+    if (sizeof(filter_t) == 2) {
+        filter_3 = _mm_loadu_si128(F++);
+    }
+    if (sizeof(input_t) == 2) {
+        input_3 = _mm_loadu_si128(I++);
     }
     if (apply_mask) {
         if (sizeof(filter_t) <= sizeof(input_t)) {
             filter_0 = _mm_and_si128(filter_0, mask[0]);
             if (sizeof(filter_t) == 2) {
                 filter_1 = _mm_and_si128(filter_1, mask[1]);
+                filter_2 = _mm_and_si128(filter_2, mask[2]);
+                filter_3 = _mm_and_si128(filter_3, mask[3]);
+            } else {
+                filter_2 = _mm_and_si128(filter_2, mask[1]);
             }
         }
         else {
             input_0 = _mm_and_si128(input_0, mask[0]);
+            input_2 = _mm_and_si128(input_2, mask[1]);
         }
     }
     if (sizeof(filter_t) == 1) {
@@ -759,9 +776,19 @@ static inline m128i_x2 madd_16_elems(filter_t *F, input_t *I, __m128i *mask, boo
         input_1 = _mm_cvtepi8_epi16(_mm_bsrli_si128(input_0, 8));
         input_0 = _mm_cvtepi8_epi16(input_0);
     }
+    if (sizeof(filter_t) == 1) {
+        filter_3 = _mm_cvtepi8_epi16(_mm_bsrli_si128(filter_2, 8));
+        filter_2 = _mm_cvtepi8_epi16(filter_2);
+    }
+    if (sizeof(input_t) == 1) {
+        input_3 = _mm_cvtepi8_epi16(_mm_bsrli_si128(input_2, 8));
+        input_2 = _mm_cvtepi8_epi16(input_2);
+    }
     __m128i m0 = _mm_madd_epi16(input_0, filter_0);
     __m128i m1 = _mm_madd_epi16(input_1, filter_1);
-    return { m0, m1 };
+    __m128i m2 = _mm_madd_epi16(input_2, filter_2);
+    __m128i m3 = _mm_madd_epi16(input_3, filter_3);
+    return { {m0, m1}, {m2, m3} };
 }
 
 template<typename T, size_t N>
@@ -815,7 +842,7 @@ static void cnn2d(ExecutionKernelConfig<ConvolutionConfig2D> const *const config
     // algo moves by the same number of elements per one step, irrelevant of input/filter width
     // (so it moves by twice as many bytes in 2B case vs 1B case)
     constexpr const uint32_t elems = sizeof(__m128i) / sizeof(int16_t);
-    constexpr const uint32_t step = elems * 2; // how many elems are processed per loop step
+    constexpr const uint32_t step = elems * 2 * 2; // how many elems are processed per loop step
     constexpr const bool is_2b2b = sizeof(filter_t) == 2 && sizeof(input_t) == 2;
     using mask_t = typename std::conditional<is_2b2b, int16_t, int8_t>::type;
     const auto maskArray = initByHalves<mask_t, step*2>(-1, 0);
@@ -869,19 +896,27 @@ static void cnn2d(ExecutionKernelConfig<ConvolutionConfig2D> const *const config
                 uint32_t stepFH = inputDepth * filterWidth - stepsRounded;
                 __m128i acc_0 = _mm_setzero_si128();
                 __m128i acc_1 = _mm_setzero_si128();
-                __m128i masked[2];
-                masked[0] = _mm_loadu_si128((const __m128i *)(mask + step - stepsPerWxZ % step));
+                __m128i acc_2 = _mm_setzero_si128();
+                __m128i acc_3 = _mm_setzero_si128();
+                __m128i masked[4];
+                masked[0] = _mm_loadu_si128(0+(const __m128i *)(mask + step - stepsPerWxZ % step));
+                masked[1] = _mm_loadu_si128(1+(const __m128i *)(mask + step - stepsPerWxZ % step));
                 if (is_2b2b) {
-                    masked[1] = _mm_loadu_si128((const __m128i *)(mask + step + elems - stepsPerWxZ % step));
+                    masked[2] = _mm_loadu_si128(2+(const __m128i *)(mask + step - stepsPerWxZ % step));
+                    masked[3] = _mm_loadu_si128(3+(const __m128i *)(mask + step - stepsPerWxZ % step));
                 }
                 for (; steps--; idxF += stepFH, idxI += stepIH) {
                     for (uint32_t i = 0; i < stepsPerWxZ; i += step, idxF += step, idxI += step) {
-                        auto m = madd_16_elems(F + idxF, I + idxI, masked, (i + step > stepsPerWxZ));
-                        acc_0 = _mm_add_epi32(acc_0, m.first);
-                        acc_1 = _mm_add_epi32(acc_1, m.second);
+                        auto m = madd_32_elems(F + idxF, I + idxI, masked, (i + step > stepsPerWxZ));
+                        acc_0 = _mm_add_epi32(acc_0, m.first.first);
+                        acc_1 = _mm_add_epi32(acc_1, m.first.second);
+                        acc_2 = _mm_add_epi32(acc_2, m.second.first);
+                        acc_3 = _mm_add_epi32(acc_3, m.second.second);
                     }
                 }
                 acc_0 = _mm_add_epi32(acc_0, acc_1);
+                acc_2 = _mm_add_epi32(acc_2, acc_3);
+                acc_0 = _mm_add_epi32(acc_0, acc_2);
                 outVal += _mm_hsum_epi32(acc_0);
                 gna_saturate_cast(outVal, *config->SaturationCount);
                 O[numFilters * outWidth * OH + numFilters * OW + OD] = (int32_t)outVal;
@@ -935,9 +970,10 @@ static void poolMax2d(ExecutionKernelConfig<PoolingConfig2D> const *const config
     constexpr const bool is2B = (sizeof(data_t) == 2);
     constexpr const bool is4B = (sizeof(data_t) == 4);
     constexpr const uint32_t elems = sizeof(__m128i) / sizeof(data_t);
+    constexpr const uint32_t step = 2*elems;
     constexpr data_t minLimit = (std::numeric_limits<data_t>::min)();
     constexpr data_t maxLimit = (std::numeric_limits<data_t>::max)();
-    const auto maskArray = initByHalves<data_t, elems*2>(maxLimit, minLimit);
+    const auto maskArray = initByHalves<data_t, step*2>(maxLimit, minLimit);
     if (is1B) {
         memset(O, minLimit, poolOutH * poolOutW * numFilters);
     }
@@ -945,7 +981,8 @@ static void poolMax2d(ExecutionKernelConfig<PoolingConfig2D> const *const config
         std::fill(O, O + poolOutH * poolOutW * numFilters, minLimit);
     }
 
-    const __m128i mask = _mm_loadu_si128((const __m128i *)(maskArray.data() + elems - numFilters % elems));
+    const __m128i mask0 = _mm_loadu_si128((const __m128i *)(maskArray.data() + step - numFilters % step));
+    const __m128i mask1 = _mm_loadu_si128((const __m128i *)(maskArray.data() + step + elems - numFilters % step));
 
     for (uint32_t POH = 0; POH < poolOutH; POH++) {
         uint32_t inIdxH = numFilters * inputW * POH * poolStrideH;
@@ -977,30 +1014,38 @@ static void poolMax2d(ExecutionKernelConfig<PoolingConfig2D> const *const config
                     uint32_t inBaseIdx = inIdxW + inIdxH + winIdxW + winIdxH;
                     uint32_t offset = 0;
                     // apply O[i] = max(O[i], I[i])
-                    constexpr const uint32_t step = elems;
                     for (; offset < numFilters; offset += step) {
-                        __m128i in = _mm_loadu_si128((const __m128i *)(I + inBaseIdx + offset));
-                        __m128i cur = _mm_loadu_si128((const __m128i *)(O + outBaseIdx + offset));
-                        __m128i mx;
+                        __m128i in0  = _mm_loadu_si128(0+(const __m128i *)(I + inBaseIdx + offset));
+                        __m128i in1  = _mm_loadu_si128(1+(const __m128i *)(I + inBaseIdx + offset));
+                        __m128i cur0 = _mm_loadu_si128(0+(const __m128i *)(O + outBaseIdx + offset));
+                        __m128i cur1 = _mm_loadu_si128(1+(const __m128i *)(O + outBaseIdx + offset));
+                        __m128i mx0, mx1;
                         if (is1B) {
                             if (offset + step > numFilters) {
-                                in = _mm_min_epi8(in, mask);
+                                in0 = _mm_min_epi8(in0, mask0);
+                                in1 = _mm_min_epi8(in1, mask1);
                             }
-                            mx = _mm_max_epi8(cur, in);
+                            mx0 = _mm_max_epi8(cur0, in0);
+                            mx1 = _mm_max_epi8(cur1, in1);
                         }
                         if (is2B) {
                             if (offset + step > numFilters) {
-                                in = _mm_min_epi16(in, mask);
+                                in0 = _mm_min_epi16(in0, mask0);
+                                in1 = _mm_min_epi16(in1, mask1);
                             }
-                            mx = _mm_max_epi16(cur, in);
+                            mx0 = _mm_max_epi16(cur0, in0);
+                            mx1 = _mm_max_epi16(cur1, in1);
                         }
                         if (is4B) {
                             if (offset + step > numFilters) {
-                                in = _mm_min_epi32(in, mask);
+                                in0 = _mm_min_epi32(in0, mask0);
+                                in1 = _mm_min_epi32(in1, mask1);
                             }
-                            mx = _mm_max_epi32(cur, in);
+                            mx0 = _mm_max_epi32(cur0, in0);
+                            mx1 = _mm_max_epi32(cur1, in1);
                         }
-                        _mm_storeu_si128((__m128i *)(O + outBaseIdx + offset), mx);
+                        _mm_storeu_si128(0+(__m128i *)(O + outBaseIdx + offset), mx0);
+                        _mm_storeu_si128(1+(__m128i *)(O + outBaseIdx + offset), mx1);
                     }
                 }
             }
@@ -1033,15 +1078,19 @@ static void poolSum2d(ExecutionKernelConfig<PoolingConfig2D> const *const config
     constexpr const bool is2B = (sizeof(data_t) == 2);
     constexpr const bool is4B = (sizeof(data_t) == 4);
     constexpr const uint32_t elems = sizeof(__m128i) / sizeof(data_t);
-    constexpr const uint32_t step = elems * 1;  // how many elems are processed per loop step
-    __m128i satCntHighBit0 = _mm_setzero_si128();
-    __m128i satCntHighBit1 = _mm_setzero_si128();
-    __m128i satCntAllBits0 = _mm_setzero_si128();
-    __m128i satCntAllBits1 = _mm_setzero_si128();
+    constexpr const uint32_t step = elems * 1 * 2;  // how many elems are processed per loop step
+    __m128i satCntHighBit00 = _mm_setzero_si128();
+    __m128i satCntHighBit01 = _mm_setzero_si128();
+    __m128i satCntAllBits00 = _mm_setzero_si128();
+    __m128i satCntAllBits01 = _mm_setzero_si128();
+    __m128i satCntHighBit10 = _mm_setzero_si128();
+    __m128i satCntHighBit11 = _mm_setzero_si128();
+    __m128i satCntAllBits10 = _mm_setzero_si128();
+    __m128i satCntAllBits11 = _mm_setzero_si128();
 
     /* Following variable is used in 1B variant, to avoid bumping of SaturationCount when it is not necessary.
      * Calculations are still performed saturation-aware, it is only the counter that is not touched.
-     * This approach yields about 14% improvement (TODO: verify this claim for 128b registers) over naive version (if-less, with all instructions of "if" path).
+     * This approach yields about 14% improvement over naive version (if-less, with all instructions of "if" path).
      *
      * Similar trick makes no sense in 2B variant, where satCnt is calculated with single vectorized "or".
      */
@@ -1069,12 +1118,16 @@ static void poolSum2d(ExecutionKernelConfig<PoolingConfig2D> const *const config
                 limH = inputH - POH * poolStrideH;
             }
 
-            // usage of following variable speeds up (TODO: verify this claim for 128b registers) 2B case by ~25% on perftest's data
+            // usage of following variable SLOWS up 2B case by ~8.5%
+            // TODO: check with 2x unroll and variable off
+            //       (because 2x unroll with this variable present is current best case)
             const bool couldEverOV = (limW * limH * numFilters > 0x10000);
             uint32_t couldOV = 0;
             for (uint32_t offset = 0; offset < numFilters; offset += step) {
-                __m128i cur0 = _mm_setzero_si128();
-                __m128i cur1 = _mm_setzero_si128();
+                __m128i cur00 = _mm_setzero_si128();
+                __m128i cur01 = _mm_setzero_si128();
+                __m128i cur10 = _mm_setzero_si128();
+                __m128i cur11 = _mm_setzero_si128();
                 for (uint32_t OW = 0; OW < limW; OW++) {
                     uint32_t winIdxW = numFilters * OW;
                     for (uint32_t OH = 0; OH < limH; OH++) {
@@ -1082,100 +1135,153 @@ static void poolSum2d(ExecutionKernelConfig<PoolingConfig2D> const *const config
 
                         uint32_t inBaseIdx = inIdxW + inIdxH + winIdxW + winIdxH;
                         __m128i in0 = _mm_loadu_si128((const __m128i *)(I + inBaseIdx + offset));
+                        __m128i in1 = _mm_loadu_si128((const __m128i *)(I + inBaseIdx + offset + elems));
                         if (is1B) {
                             __m128i in01 = _mm_cvtepi8_epi16(_mm_bsrli_si128(in0, 8));
                             __m128i in00 = _mm_cvtepi8_epi16(in0);
+                            __m128i in11 = _mm_cvtepi8_epi16(_mm_bsrli_si128(in1, 8));
+                            __m128i in10 = _mm_cvtepi8_epi16(in1);
                             if ((couldOV += needsSatCnt) > 0x100) {
-                                __m128i noSat0 = _mm_add_epi16(cur0, in00);
-                                __m128i noSat1 = _mm_add_epi16(cur1, in01);
-                                cur0 = _mm_adds_epi16(cur0, in00);
-                                cur1 = _mm_adds_epi16(cur1, in01);
-                                __m128i x0 = _mm_xor_si128(noSat0, cur0);
-                                __m128i x1 = _mm_xor_si128(noSat1, cur1);
-                                satCntAllBits0 = _mm_or_si128(satCntAllBits0, x0);
-                                satCntAllBits1 = _mm_or_si128(satCntAllBits1, x1);
+                                __m128i noSat00 = _mm_add_epi16(cur00, in00);
+                                __m128i noSat01 = _mm_add_epi16(cur01, in01);
+                                __m128i noSat10 = _mm_add_epi16(cur10, in10);
+                                __m128i noSat11 = _mm_add_epi16(cur11, in11);
+                                cur00 = _mm_adds_epi16(cur00, in00);
+                                cur01 = _mm_adds_epi16(cur01, in01);
+                                cur10 = _mm_adds_epi16(cur10, in10);
+                                cur11 = _mm_adds_epi16(cur11, in11);
+                                __m128i x00 = _mm_xor_si128(noSat00, cur00);
+                                __m128i x01 = _mm_xor_si128(noSat01, cur01);
+                                __m128i x10 = _mm_xor_si128(noSat10, cur10);
+                                __m128i x11 = _mm_xor_si128(noSat11, cur11);
+                                satCntAllBits00 = _mm_or_si128(satCntAllBits00, x00);
+                                satCntAllBits01 = _mm_or_si128(satCntAllBits01, x01);
+                                satCntAllBits10 = _mm_or_si128(satCntAllBits10, x10);
+                                satCntAllBits11 = _mm_or_si128(satCntAllBits11, x11);
                             }
                             else {
-                                cur0 = _mm_adds_epi16(cur0, in00);
-                                cur1 = _mm_adds_epi16(cur1, in01);
+                                cur00 = _mm_adds_epi16(cur00, in00);
+                                cur01 = _mm_adds_epi16(cur01, in01);
+                                cur10 = _mm_adds_epi16(cur10, in10);
+                                cur11 = _mm_adds_epi16(cur11, in11);
                             }
                         }
                         if (is2B) {
                             __m128i in01 = _mm_cvtepi16_epi32(_mm_bsrli_si128(in0, 8));
                             __m128i in00 = _mm_cvtepi16_epi32(in0);
+                            __m128i in11 = _mm_cvtepi16_epi32(_mm_bsrli_si128(in1, 8));
+                            __m128i in10 = _mm_cvtepi16_epi32(in1);
                             if (couldEverOV && ++couldOV > 0x10000) {
-                                cur0 = _mm_adds_epi32(cur0, in00, &satCntHighBit0);
-                                cur1 = _mm_adds_epi32(cur1, in01, &satCntHighBit1);
+                                cur00 = _mm_adds_epi32(cur00, in00, &satCntHighBit00);
+                                cur01 = _mm_adds_epi32(cur01, in01, &satCntHighBit01);
+                                cur10 = _mm_adds_epi32(cur10, in10, &satCntHighBit10);
+                                cur11 = _mm_adds_epi32(cur11, in11, &satCntHighBit11);
                             }
                             else {
-                                cur0 = _mm_add_epi32(cur0, in00);
-                                cur1 = _mm_add_epi32(cur1, in01);
+                                cur00 = _mm_add_epi32(cur00, in00);
+                                cur01 = _mm_add_epi32(cur01, in01);
+                                cur10 = _mm_add_epi32(cur10, in10);
+                                cur11 = _mm_add_epi32(cur11, in11);
                             }
                         }
                         if (is4B) {
-                            cur0 = _mm_adds_epi32(cur0, in0, &satCntHighBit0);
+                            cur00 = _mm_adds_epi32(cur00, in0, &satCntHighBit00);
+                            cur10 = _mm_adds_epi32(cur10, in1, &satCntHighBit10);
                         }
                     }
                 }
                 if (is4B) {
-                    if (offset + step > numFilters) {
+                    if (offset + elems > numFilters) {
                         data_t out[elems];
-                        _mm_storeu_si128((__m128i *)out, cur0);
-                        memcpy(O + outBaseIdx + offset, out, sizeof(data_t) * (numFilters % step));
+                        _mm_storeu_si128((__m128i *)out, cur00);
+                        memcpy(O + outBaseIdx + offset, out, sizeof(data_t) * (numFilters % elems));
+                    }
+                    else if (offset + step > numFilters) {
+                        data_t out[elems];
+                        _mm_storeu_si128((__m128i *)out, cur10);
+                        _mm_storeu_si128((__m128i *)(O + outBaseIdx + offset), cur00);
+                        memcpy(O + outBaseIdx + offset + elems, out, sizeof(data_t) * (numFilters % elems));
                     } else {
-                        _mm_storeu_si128((__m128i *)(O + outBaseIdx + offset), cur0);
+                        _mm_storeu_si128((__m128i *)(O + outBaseIdx + offset), cur00);
+                        _mm_storeu_si128((__m128i *)(O + outBaseIdx + offset + elems), cur10);
                     }
                 }
                 else {
                     __m128i ret0, ret00, ret01;
+                    __m128i ret1, ret10, ret11;
                     if (is1B) {
-                        ret0 = _mm_packs_epi16(cur0, cur1);
+                        ret0 = _mm_packs_epi16(cur00, cur01);
+                        ret1 = _mm_packs_epi16(cur10, cur11);
                         if (needsSatCnt) {
                             ret01 = _mm_cvtepi8_epi16(_mm_bsrli_si128(ret0, 8));
                             ret00 = _mm_cvtepi8_epi16(ret0);
+                            ret11 = _mm_cvtepi8_epi16(_mm_bsrli_si128(ret1, 8));
+                            ret10 = _mm_cvtepi8_epi16(ret1);
                         }
                     }
                     if (is2B) {
-                        ret0 = _mm_packs_epi32(cur0, cur1);
+                        ret0 = _mm_packs_epi32(cur00, cur01);
+                        ret1 = _mm_packs_epi32(cur10, cur11);
                         ret01 = _mm_cvtepi16_epi32(_mm_bsrli_si128(ret0, 8));
                         ret00 = _mm_cvtepi16_epi32(ret0);
+                        ret11 = _mm_cvtepi16_epi32(_mm_bsrli_si128(ret1, 8));
+                        ret10 = _mm_cvtepi16_epi32(ret1);
                     }
                     if (needsSatCnt) {
-                        __m128i x1 = _mm_xor_si128(ret01, cur1);
-                        __m128i x0 = _mm_xor_si128(ret00, cur0);
-                        satCntAllBits0 = _mm_or_si128(satCntAllBits0, x0);
-                        satCntAllBits1 = _mm_or_si128(satCntAllBits1, x1);
+                        __m128i x01 = _mm_xor_si128(ret01, cur01);
+                        __m128i x00 = _mm_xor_si128(ret00, cur00);
+                        __m128i x11 = _mm_xor_si128(ret11, cur11);
+                        __m128i x10 = _mm_xor_si128(ret10, cur10);
+                        satCntAllBits00 = _mm_or_si128(satCntAllBits00, x00);
+                        satCntAllBits01 = _mm_or_si128(satCntAllBits01, x01);
+                        satCntAllBits10 = _mm_or_si128(satCntAllBits10, x10);
+                        satCntAllBits11 = _mm_or_si128(satCntAllBits11, x11);
                         if (is1B) {
-                            if (_mm_test_any(satCntAllBits0) || _mm_test_any(satCntAllBits1)) {
+                            if (        _mm_test_any(satCntAllBits00) || _mm_test_any(satCntAllBits01)
+                                     || _mm_test_any(satCntAllBits10) || _mm_test_any(satCntAllBits11)
+                            ) {
                                 needsSatCnt = 0;
                             }
                         }
                     }
-                    if (offset + step > numFilters) {
+                    if (offset + elems > numFilters) {
                         data_t out[elems];
                         _mm_storeu_si128((__m128i *)out, ret0);
-                        memcpy(O + outBaseIdx + offset, out, sizeof(data_t) * (numFilters % step));
-                    } else {
+                        memcpy(O + outBaseIdx + offset, out, sizeof(data_t) * (numFilters % elems));
+                    }
+                    else if (offset + step > numFilters) {
+                        data_t out[elems];
+                        _mm_storeu_si128((__m128i *)out, ret1);
                         _mm_storeu_si128((__m128i *)(O + outBaseIdx + offset), ret0);
+                        memcpy(O + outBaseIdx + offset + elems, out, sizeof(data_t) * (numFilters % elems));
+                    }
+                    else {
+                        _mm_storeu_si128((__m128i *)(O + outBaseIdx + offset), ret0);
+                        _mm_storeu_si128((__m128i *)(O + outBaseIdx + offset + elems), ret1);
                     }
                 }
             }
         }
     }
     if (!is1B) {
-        *config->SaturationCount += _mm_test_anyMSB_epi32(satCntHighBit0);
+        *config->SaturationCount += _mm_test_anyMSB_epi32(satCntHighBit00);
+        *config->SaturationCount += _mm_test_anyMSB_epi32(satCntHighBit01);
     }
     if (is2B) {
-        *config->SaturationCount += _mm_test_anyMSB_epi32(satCntHighBit1);
+        *config->SaturationCount += _mm_test_anyMSB_epi32(satCntHighBit10);
+        *config->SaturationCount += _mm_test_anyMSB_epi32(satCntHighBit11);
     }
     if (!is4B) {
-        *config->SaturationCount += _mm_test_any(satCntAllBits0);
-        *config->SaturationCount += _mm_test_any(satCntAllBits1);
+        *config->SaturationCount += _mm_test_any(satCntAllBits00);
+        *config->SaturationCount += _mm_test_any(satCntAllBits01);
+        *config->SaturationCount += _mm_test_any(satCntAllBits10);
+        *config->SaturationCount += _mm_test_any(satCntAllBits11);
     }
 }
 
 /* This is a specialized version of pooling Sum.
- * It is 1.8x times faster (TODO: verify this claim for 128b registers) than generic version because it uses different algorithm.
+ * Before 2x unrolling (step=elems*2) it is 1.25x times faster than non-specialized version because it uses different algorithm.
+ * 2x unroll yields another 1.2x improvement (TODO: check non-specialized version with 2x unroll).
  *
  * Main difference is loop order,
  * what means that we compute each output value via many LOAD/ADDS/STORE cycles.
@@ -1203,11 +1309,13 @@ void poolSum2d<int32_t>(ExecutionKernelConfig<PoolingConfig2D> const *const conf
     uint32_t poolOutH = 1 + (uint32_t)std::ceil((float)(hDimPartial) / (float)poolStrideH);
 
     constexpr const uint32_t elems = sizeof(__m128i) / sizeof(data_t);
-    constexpr const uint32_t step = elems * 1;  // how many elems are processed per loop step
+    constexpr const uint32_t step = elems * 1 * 2;  // how many elems are processed per loop step
     memset(O, 0, poolOutH * poolOutW * numFilters * sizeof(data_t));  // we are calculating out via many parial sums
     const auto maskArray = initByHalves<data_t, step*2>(-1, 0);
-    const __m128i mask = _mm_loadu_si128((const __m128i *)(maskArray.data() + step - numFilters % step));
-    __m128i satCnt = _mm_setzero_si128();
+    const __m128i mask0 = _mm_loadu_si128((const __m128i *)(maskArray.data() + step - numFilters % step));
+    const __m128i mask1 = _mm_loadu_si128((const __m128i *)(maskArray.data() + step + elems - numFilters % step));
+    __m128i satCnt0 = _mm_setzero_si128();
+    __m128i satCnt1 = _mm_setzero_si128();
 
     for (uint32_t POH = 0; POH < poolOutH; POH++) {
         uint32_t inIdxH = numFilters * inputW * POH * poolStrideH;
@@ -1238,19 +1346,25 @@ void poolSum2d<int32_t>(ExecutionKernelConfig<PoolingConfig2D> const *const conf
 
                     uint32_t inBaseIdx = inIdxW + inIdxH + winIdxW + winIdxH;
                     for (uint32_t offset = 0; offset < numFilters; offset += step) {
-                        __m128i in = _mm_loadu_si128((const __m128i *)(I + inBaseIdx + offset));
-                        __m128i cur = _mm_loadu_si128((const __m128i *)(O + outBaseIdx + offset));
+                        __m128i in0  = _mm_loadu_si128(0+(const __m128i *)(I + inBaseIdx + offset));
+                        __m128i in1  = _mm_loadu_si128(1+(const __m128i *)(I + inBaseIdx + offset));
+                        __m128i cur0 = _mm_loadu_si128(0+(const __m128i *)(O + outBaseIdx + offset));
+                        __m128i cur1 = _mm_loadu_si128(1+(const __m128i *)(O + outBaseIdx + offset));
                         if (offset + step > numFilters) {
-                            in = _mm_and_si128(in, mask);
+                            in0 = _mm_and_si128(in0, mask0);
+                            in1 = _mm_and_si128(in1, mask1);
                         }
-                        __m128i ret = _mm_adds_epi32(cur, in, &satCnt);
-                        _mm_storeu_si128((__m128i *)(O + outBaseIdx + offset), ret);
+                        __m128i ret0 = _mm_adds_epi32(cur0, in0, &satCnt0);
+                        __m128i ret1 = _mm_adds_epi32(cur1, in1, &satCnt1);
+                        _mm_storeu_si128(0+(__m128i *)(O + outBaseIdx + offset), ret0);
+                        _mm_storeu_si128(1+(__m128i *)(O + outBaseIdx + offset), ret1);
                     }
                 }
             }
         }
     }
-    *config->SaturationCount += _mm_test_anyMSB_epi32(satCnt);
+    *config->SaturationCount += _mm_test_anyMSB_epi32(satCnt0);
+    *config->SaturationCount += _mm_test_anyMSB_epi32(satCnt1);
 }
 
 template <typename data_t>
