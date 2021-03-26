@@ -162,8 +162,7 @@ set(xnn_avx2_sat_sources
   igemv8_avx2-sat.cpp
   transpose16_avx2.cpp
   transpose8_avx2.cpp
-  affine8_avx2-sat.cpp
-  affine16_avx2-sat.cpp
+  affine_avx2-sat.cpp
   rnn_avx2-sat.cpp)
 
 macro(gna_add_xnn_kernel_library KERNEL_SUFIX EXTRA_DEFS EXTRA_OPTIONS)
