@@ -1118,10 +1118,10 @@ static void poolSum2d(ExecutionKernelConfig<PoolingConfig2D> const *const config
                 limH = inputH - POH * poolStrideH;
             }
 
-            // usage of following variable SLOWS up 2B case by ~8.5%
-            // TODO: check with 2x unroll and variable off
-            //       (because 2x unroll with this variable present is current best case)
-            const bool couldEverOV = (limW * limH * numFilters > 0x10000);
+            /* Usage of "couldOV" variable speeds up 2B case over 5x.
+             *
+             * Note: AVX2 version uses "couldEverOV" variable to achieve even better performance
+             * but for SSE4 similar approach yields a few percent slow down. */
             uint32_t couldOV = 0;
             for (uint32_t offset = 0; offset < numFilters; offset += step) {
                 __m128i cur00 = _mm_setzero_si128();
@@ -1171,7 +1171,7 @@ static void poolSum2d(ExecutionKernelConfig<PoolingConfig2D> const *const config
                             __m128i in00 = _mm_cvtepi16_epi32(in0);
                             __m128i in11 = _mm_cvtepi16_epi32(_mm_bsrli_si128(in1, 8));
                             __m128i in10 = _mm_cvtepi16_epi32(in1);
-                            if (couldEverOV && ++couldOV > 0x10000) {
+                            if (++couldOV > 0x10000) {
                                 cur00 = _mm_adds_epi32(cur00, in00, &satCntHighBit00);
                                 cur01 = _mm_adds_epi32(cur01, in01, &satCntHighBit01);
                                 cur10 = _mm_adds_epi32(cur10, in10, &satCntHighBit10);
@@ -1256,8 +1256,8 @@ static void poolSum2d(ExecutionKernelConfig<PoolingConfig2D> const *const config
 }
 
 /* This is a specialized version of pooling Sum.
- * Before 2x unrolling (step=elems*2) it is 1.25x times faster than non-specialized version because it uses different algorithm.
- * 2x unroll yields another 1.2x improvement (TODO: check non-specialized version with 2x unroll).
+ * It is almost 10% faster than non-specialized version
+ * (both are substantially benefiting from unrolling).
  *
  * Main difference is loop order,
  * what means that we compute each output value via many LOAD/ADDS/STORE cycles.
