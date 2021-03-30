@@ -79,10 +79,6 @@ std::unique_ptr<const FiltersTensor> FiltersTensor::Create(const Gna2Tensor& fil
     };
     const std::function<void()> buildCommand = [&]()
     {
-        if (validatorIn.HwCapabilities.GetDeviceGeneration() == Gna2DeviceGeneration3_5)
-        {
-            return buildWithValidator(validatorIn);
-        }
         try // 1D CNN in new arch
         {
             auto const validator1D = LayerValidator{ validatorIn, INTEL_CONVOLUTIONAL_1D };

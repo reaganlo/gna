@@ -130,11 +130,6 @@ std::unique_ptr<const BiasTensor> ConvolutionFunction2D::CreateBiasTensor(
             cnnValidator,
             biasMode);
     };
-    //TODO: 3: refactor
-    if(validatorIn.HwCapabilities.GetDeviceGeneration() == Gna2DeviceGeneration3_5)
-    {
-        return buildWithValidator(validatorIn);
-    }
     try
     {
          // try new CNN using 1D variant
@@ -195,25 +190,28 @@ ConvolutionFunction2D::ConvolutionFunction2D(const BaseTransformConfig<Convoluti
         Expect::Equal<uint32_t>(Biases->at(GNA_DIM_W), 1, Gna2StatusXnnErrorBiasMode);
     }
 
+    Expect::InRange(Filters->at(GNA_DIM_W), Input->at(GNA_DIM_W),
+        Gna2StatusCnnErrorConvFltVolume);
+    Expect::InRange(Filters->at(GNA_DIM_H), Input->at(GNA_DIM_H),
+        Gna2StatusCnnErrorConvFltVolume);
+    Expect::InRange(Stride->at(GNA_DIM_W), Filters->at(GNA_DIM_W),
+        Gna2StatusCnnErrorConvFltVolume);
+    Expect::InRange(Stride->at(GNA_DIM_H), Filters->at(GNA_DIM_H),
+        Gna2StatusCnnErrorConvFltVolume);
+
     auto effectiveOperation = INTEL_CONVOLUTIONAL_2D;
-    if (Gna2DeviceGeneration3_5 != config.validator.HwCapabilities.GetDeviceGeneration() &&
+    if (Gna2DeviceGeneration3_5 < config.validator.HwCapabilities.GetDeviceGeneration() &&
         INTEL_CONVOLUTIONAL_1D == Filters->GetEffectiveOperationType() &&
         INTEL_CONVOLUTIONAL_1D == Stride->GetEffectiveOperationType() &&
         IsInput1D(config.input->Dimensions))
     {
         is1D = true;
         effectiveOperation = INTEL_CONVOLUTIONAL_1D;
-        Expect::InRange(Filters->at(GNA_DIM_W), Input->at(GNA_DIM_W),
-            Gna2StatusCnnErrorConvFltVolume);
-        Expect::InRange(Stride->at(GNA_DIM_W), Filters->at(GNA_DIM_W),
-            Gna2StatusCnnErrorConvFltVolume);
     }
-    if (INTEL_CONVOLUTIONAL_2D == effectiveOperation)
-    {
-        Expect::True(Padding->at(GNA_DIM_W) < Filters->at(GNA_DIM_W) &&
-            Padding->at(GNA_DIM_H) < Filters->at(GNA_DIM_H),
-            Gna2StatusCnnErrorConvFltPadding);
-    }
+    Expect::InRange(Padding->at(GNA_DIM_W), Filters->at(GNA_DIM_W) - 1,
+        Gna2StatusCnnErrorConvFltPadding);
+    Expect::InRange(Padding->at(GNA_DIM_H), Filters->at(GNA_DIM_H) - 1,
+        Gna2StatusCnnErrorConvFltPadding);
 
     Shape outputDims = GetOutputShape(Input->Dimensions, Filters->Dimensions,
         Stride->Dimensions, Padding->Dimensions);

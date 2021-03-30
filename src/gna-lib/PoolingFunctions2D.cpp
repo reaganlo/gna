@@ -96,14 +96,18 @@ PoolingFunction2D::PoolingFunction2D(const BaseTransformConfig<PoolingKernel2D>&
     Expect::InSet(Mode, modeLimits);
     Expect::InRange(Window->at(GNA_DIM_W), Input->at(GNA_DIM_W),
         Gna2StatusCnnErrorPoolSize);
+    Expect::InRange(Window->at(GNA_DIM_H), Input->at(GNA_DIM_H),
+        Gna2StatusCnnErrorPoolSize);
+    Expect::InRange(Stride->at(GNA_DIM_W), Window->at(GNA_DIM_W),
+            Gna2StatusCnnErrorPoolStride);
+    Expect::InRange(Stride->at(GNA_DIM_H), Window->at(GNA_DIM_H),
+            Gna2StatusCnnErrorPoolStride);
 
-    if (Gna2DeviceGeneration3_5 != config.validator.HwCapabilities.GetDeviceGeneration() &&
+    if (Gna2DeviceGeneration3_5 < config.validator.HwCapabilities.GetDeviceGeneration() &&
         INTEL_CONVOLUTIONAL_1D == Window->GetEffectiveOperationType() &&
         INTEL_CONVOLUTIONAL_1D == Stride->GetEffectiveOperationType())
     {
         is1D = true;
-        /*Expect::InRange(Stride->at(GNA_DIM_W), Window->at(GNA_DIM_W),
-            Gna2StatusCnnErrorPoolStride);*/
     }
 
     Shape outputDims;

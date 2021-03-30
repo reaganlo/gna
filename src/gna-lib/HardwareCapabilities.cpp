@@ -249,7 +249,7 @@ HardwareCapabilities::getGenerationCapabilities(DeviceVersion deviceVersionIn)
 
 bool HardwareCapabilities::IsAdlGeneration(Gna2DeviceGeneration generation)
 {
-    return Gna2DeviceGeneration3_0 == generation || Gna2DeviceGeneration3_5 == generation;
+    return Gna2DeviceGeneration3_0 == generation || Gna2DeviceGeneration3_1 == generation || Gna2DeviceGeneration3_5 == generation;
 }
 
 bool HardwareCapabilities::IsAdlDevice(DeviceVersion deviceVersionIn)

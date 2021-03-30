@@ -50,35 +50,31 @@ using namespace GNA;
 
 void ConvolutionalLayer2D::Init()
 {
-    if (Gna2DeviceGeneration3_5 != validator.get()->HwCapabilities.GetDeviceGeneration())
+    if (GetInputTransform().Is1D() &&
+        (Transforms.GetOptional<PoolingFunction2D>(PoolingTransform2D) == nullptr
+            || GetOutputTransform().Is1D()))
     {
-        if (GetInputTransform().Is1D() &&
-            (Transforms.GetOptional<PoolingFunction2D>(PoolingTransform2D) == nullptr
-                || GetOutputTransform().Is1D()))
-        {
-            auto const& capsMapIn = ConvolutionalLayer2DCapabilities::GetOperands(InputOperandIndex);
-            Input.Validate(capsMapIn, INTEL_CONVOLUTIONAL_1D);
+        auto const& capsMapIn = ConvolutionalLayer2DCapabilities::GetOperands(InputOperandIndex);
+        Input.Validate(capsMapIn, INTEL_CONVOLUTIONAL_1D);
 
-            auto const& capsMapOut = ConvolutionalLayer2DCapabilities::GetOperands(OutputOperandIndex);
-            Output.Validate(capsMapOut, INTEL_CONVOLUTIONAL_1D);
-        }
-        else
+        auto const& capsMapOut = ConvolutionalLayer2DCapabilities::GetOperands(OutputOperandIndex);
+        Output.Validate(capsMapOut, INTEL_CONVOLUTIONAL_1D);
+    }
+    else if(Gna2DeviceGeneration3_5 < validator->HwCapabilities.GetDeviceGeneration())
+    {
+        auto const precision = Output.Mode.Size;
+        if (precision < 4)
         {
-            auto const precision = Output.Mode.Size;
-            if (precision < 4)
+            auto const& filters = getTransformOperand(ConvolutionalTransform2D, FilterOperandIndex);
+            auto const filterCount = filters.at(GNA_DIM_N);
+            if (filterCount > 2)
             {
-                auto const& filters = getTransformOperand(ConvolutionalTransform2D, FilterOperandIndex);
-                auto const filterCount = filters.at(GNA_DIM_N);
-                if (filterCount > 2)
-                {
-                    Expect::MultiplicityOf(filterCount, 4 / precision,
-                        Gna2StatusCnnErrorConvFltCount);
-                }
+                Expect::MultiplicityOf(filterCount, 4 / precision,
+                    Gna2StatusCnnErrorConvFltCount);
             }
         }
     }
 
-    Expect::One(Input.at(GNA_DIM_N), Gna2StatusXnnErrorGrouping);
     Expect::One(Output.at(GNA_DIM_N), Gna2StatusXnnErrorGrouping);
     Expect::Equal(Output.Size, GetOutputTransform().Output->Size, Gna2StatusXnnErrorOutputVolume);
     auto const & convolutionTransform = Transforms.Get<ConvolutionFunction2D>(ConvolutionalTransform2D);
