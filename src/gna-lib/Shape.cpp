@@ -25,13 +25,13 @@
 
 #include "Shape.h"
 
+#include "Expect.h"
 #include "GnaException.h"
 #include "ModelError.h"
 
 #include "gna2-common-api.h"
 
-#include <array>
-#include <cstddef>
+#include<algorithm>
 #include <vector>
 
 using namespace GNA;
@@ -152,6 +152,28 @@ void Shape::ExpectEqualInverted(const ApiShape & source) const
 {
     const auto sourceShape = Create(source, this->Order);
     sourceShape.ExpectEqual(*this);
+}
+
+void Shape::ExpectSquare() const
+{
+    if (size() <= 1) return;
+    auto dim1 = this->begin()->second; // removed const as gcc w/a
+    std::for_each(begin(), end(),
+        [dim1](auto const & l)
+            {ModelErrorHelper::ExpectEqual(l.second, dim1, Gna2ItemTypeShapeDimensions); });
+}
+
+bool Shape::IsSquare() const
+{
+    try
+    {
+        ExpectSquare();
+        return true;
+    }
+    catch (GnaModelErrorException&)
+    {
+        return false;
+    }
 }
 
 void Shape::ProcessEachDimension(const Shape& right, const std::function<void(uint32_t, uint32_t)>& process) const

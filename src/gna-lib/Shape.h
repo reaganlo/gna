@@ -81,6 +81,10 @@ struct Shape : public ShapeMap
 
     void ExpectEqualInverted(const ApiShape & source) const;
 
+    void ExpectSquare() const;
+
+    bool IsSquare() const;
+
 protected:
     static ShapeMap Create(const std::vector<uint32_t> && dimensions,
         gna_tensor_order order = GNA_TENSOR_ORDER_ANY);

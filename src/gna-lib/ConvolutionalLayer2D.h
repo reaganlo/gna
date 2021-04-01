@@ -49,6 +49,7 @@ public:
 
 protected:
     void Init();
+    void Validate3_0ExtraLimits(bool is1D) const;
 };
 
 }

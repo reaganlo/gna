@@ -50,9 +50,10 @@ using namespace GNA;
 
 void ConvolutionalLayer2D::Init()
 {
-    if (GetInputTransform().Is1D() &&
-        (Transforms.GetOptional<PoolingFunction2D>(PoolingTransform2D) == nullptr
-            || GetOutputTransform().Is1D()))
+    auto const is1D = GetInputTransform().Is1D() &&
+        (Transforms.GetOptional<PoolingFunction2D>(PoolingTransform2D) == nullptr ||
+         GetOutputTransform().Is1D());
+    if (is1D)
     {
         auto const& capsMapIn = ConvolutionalLayer2DCapabilities::GetOperands(InputOperandIndex);
         Input.Validate(capsMapIn, INTEL_CONVOLUTIONAL_1D);
@@ -74,6 +75,7 @@ void ConvolutionalLayer2D::Init()
             }
         }
     }
+    Validate3_0ExtraLimits(is1D);
 
     Expect::One(Output.at(GNA_DIM_N), Gna2StatusXnnErrorGrouping);
     Expect::Equal(Output.Size, GetOutputTransform().Output->Size, Gna2StatusXnnErrorOutputVolume);
@@ -82,6 +84,48 @@ void ConvolutionalLayer2D::Init()
     const auto biasMode = convolutionTransform.Biases->Mode;
     auto const activation = Transforms.GetOptional<ActivationFunction>(ActivationTransform);
     dataConfig = { Input.Mode, filterMode, biasMode, Output.Mode, activation == nullptr };
+}
+
+void ConvolutionalLayer2D::Validate3_0ExtraLimits(bool is1D) const
+{
+    if (!is1D && Gna2DeviceGeneration3_0 == validator->HwCapabilities.GetDeviceGeneration())
+    {
+        auto const activation = Transforms.GetOptional(ActivationTransform);
+        auto const pooling = Transforms.GetOptional<PoolingFunction2D>(PoolingTransform2D);
+        auto const & filter = GetInputTransform().GetOperand(FilterOperandIndex);
+        Expect::Equal(Input.Mode, filter.Mode, Gna2StatusXnnErrorConvFltBytes);
+        Expect::True(nullptr == activation || Output.Mode.Type == Input.Mode.Type, Gna2StatusXnnErrorOutputBytes);
+        if(pooling)
+        {
+            if (activation && Output.Mode.Type == Gna2DataTypeInt8)
+            {
+                Expect::True(pooling->Mode != KernelPoolingModeMax, Gna2StatusXnnErrorLyrCfg);
+            }
+            pooling->Window->Dimensions.ExpectSquare();
+        }
+        if (2 == filter.Mode.Size)
+        {
+            if (filter.at(GNA_DIM_W) > 1)
+            {
+                Expect::InRange(Input.at(GNA_DIM_D), 120u, Gna2StatusXnnErrorInputVolume);
+                if (!filter.Dimensions.IsSquare())
+                {
+                    Expect::One(filter.at(GNA_DIM_H), Gna2StatusXnnErrorWeightVolume);
+                }
+            }
+        }
+        else
+        {
+            if (filter.at(GNA_DIM_W) > 2)
+            {
+                Expect::InRange(Input.at(GNA_DIM_D), 240u, Gna2StatusXnnErrorInputVolume);
+            }
+            if (!filter.Dimensions.IsSquare())
+            {
+                Expect::True(filter.at(GNA_DIM_W) == 1 || filter.at(GNA_DIM_H) == 1, Gna2StatusXnnErrorWeightVolume);
+            }
+        }
+    }
 }
 
 Tensor const & ConvolutionalLayer2D::GetOperand(uint32_t operandIndex) const
