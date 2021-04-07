@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: GPL-2.0 WITH Linux-syscall-note */
-/* Copyright(c) 2017-2020 Intel Corporation */
+/* Copyright(c) 2017-2021 Intel Corporation */
 
 #ifndef _UAPI_GNA_H_
 #define _UAPI_GNA_H_
@@ -8,14 +8,12 @@
 extern "C" {
 #endif
 
-#include <linux/ioctl.h>
 #include <linux/types.h>
+#include <linux/ioctl.h>
 
 #ifndef __user
 #define __user
 #endif
-
-/* Request processing flags */
 
 /* Operation modes */
 #define GNA_MODE_GMM	0
@@ -31,28 +29,28 @@ extern "C" {
 #define GNA_PARAM_HAS_MMU		8
 #define GNA_PARAM_HW_VER		9
 
-#define GNA_STS_SCORE_COMPLETED		(1 <<  0)
-#define GNA_STS_STATISTICS_VALID	(1 <<  3)
-#define GNA_STS_PCI_MMU_ERR		(1 <<  4)
-#define GNA_STS_PCI_DMA_ERR		(1 <<  5)
-#define GNA_STS_PCI_UNEXCOMPL_ERR	(1 <<  6)
-#define GNA_STS_PARAM_OOR		(1 <<  7)
-#define GNA_STS_VA_OOR			(1 <<  8)
+#define GNA_STS_SCORE_COMPLETED		(1 << 0)
+#define GNA_STS_STATISTICS_VALID	(1 << 3)
+#define GNA_STS_PCI_MMU_ERR		(1 << 4)
+#define GNA_STS_PCI_DMA_ERR		(1 << 5)
+#define GNA_STS_PCI_UNEXCOMPL_ERR	(1 << 6)
+#define GNA_STS_VA_OOR			(1 << 7)
+#define GNA_STS_PARAM_OOR		(1 << 8)
 #define GNA_STS_OUTBUF_FULL		(1 << 16)
 #define GNA_STS_SATURATE		(1 << 17)
 
 #define GNA_ERROR (GNA_STS_PCI_DMA_ERR | \
-		   GNA_STS_PCI_MMU_ERR | \
-		   GNA_STS_PCI_UNEXCOMPL_ERR | \
-		   GNA_STS_PARAM_OOR | \
-		   GNA_STS_VA_OOR)
+			GNA_STS_PCI_MMU_ERR | \
+			GNA_STS_PCI_UNEXCOMPL_ERR | \
+			GNA_STS_PARAM_OOR | \
+			GNA_STS_VA_OOR)
 
 #define GNA_DEV_TYPE_0_9	0x09
 #define GNA_DEV_TYPE_1_0	0x10
 #define GNA_DEV_TYPE_2_0	0x20
 #define GNA_DEV_TYPE_3_0	0x30
 
-/**
+/*
  * Structure describes part of memory to be overwritten before starting GNA
  */
 struct gna_memory_patch {
@@ -60,10 +58,7 @@ struct gna_memory_patch {
 	__u64 offset;
 
 	__u64 size;
-	union {
-		__u64 value;
-		void __user *user_ptr;
-	};
+	__u64 value;
 };
 
 struct gna_buffer {
@@ -81,10 +76,10 @@ struct gna_buffer {
  * Values regard system boot time, but do not count during suspend.
  */
 struct gna_drv_perf {
-	__u64 pre_processing;	// driver starts pre-processing
-	__u64 processing;	// hw starts processing
-	__u64 hw_completed;	// hw finishes processing
-	__u64 completion;	// driver finishes post-processing
+	__u64 pre_processing;	/* driver starts pre-processing */
+	__u64 processing;	/* hw starts processing */
+	__u64 hw_completed;	/* hw finishes processing */
+	__u64 completion;	/* driver finishes post-processing */
 };
 
 struct gna_hw_perf {
@@ -103,6 +98,7 @@ struct gna_compute_cfg {
 	__u8 active_list_on;
 	__u8 gna_mode;
 	__u8 hw_perf_encoding;
+	__u8 pad[5];
 };
 
 union gna_parameter {
@@ -119,6 +115,7 @@ union gna_memory_map {
 	struct {
 		__u64 address;
 		__u32 size;
+		__u32 pad;
 	} in;
 
 	struct {
@@ -140,10 +137,12 @@ union gna_wait {
 	struct {
 		__u64 request_id;
 		__u32 timeout;
+		__u32 pad;
 	} in;
 
 	struct {
 		__u32 hw_status;
+		__u32 pad;
 		struct gna_drv_perf drv_perf;
 		struct gna_hw_perf hw_perf;
 	} out;
