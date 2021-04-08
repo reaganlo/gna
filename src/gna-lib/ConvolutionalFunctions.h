@@ -56,9 +56,8 @@ struct FiltersTensor : public WeightTensor
 struct ConvolutionFunction
 {
     //TODO:3:P2 Consider passing filters, stride and biases directly
-    template<class T>
     static std::unique_ptr<const ConvolutionFunction> Create(const Tensor * input, const Tensor * output,
-        const T& operationDetails, const LayerValidator & validatorIn)
+        const Gna2Operation& operationDetails, const LayerValidator & validatorIn)
     {
         expectValid(operationDetails);
         auto filters = createFilters(operationDetails, validatorIn);

@@ -55,15 +55,6 @@ FiltersTensor::FiltersTensor(const Shape& dimensions, const DataMode & dataMode,
         const auto caps = static_cast<const TensorLimits *>(validator->Capabilities);
         validator->ValidateBufferIfSet(Buffer, kernelMemorySize * Count, caps->GetAddressAlign());
     }
-
-    if (INTEL_CONVOLUTIONAL_1D == validator->Operation &&
-        Gna2DataTypeInt16 == Mode.Type)
-    {
-        Expect::InRange(at(GNA_DIM_W),
-            CnnCaps::Filter2DElementsMin,
-            CnnCaps::Kernel1DElementsPerDimensionMax / 2,
-            Gna2StatusCnnErrorConvFltVolume);
-    }
 }
 
 std::unique_ptr<const FiltersTensor> FiltersTensor::Create(const Gna2Tensor& filtersTensor, const LayerValidator& validatorIn)
