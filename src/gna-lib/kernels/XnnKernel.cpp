@@ -48,10 +48,12 @@ namespace GNA
 #define copyKernelImpl2B KERNEL(copyKernelImpl2B)
 #define InitializeActivationFunctions KERNEL(InitializeActivationFunctions)
 
-#if OPT_LEVEL < 2
+#if OPT_LEVEL < 2 || OPT_LEVEL == 3 || OPT_LEVEL == 7
 #define recurrentKernelImpl1B1B KERNEL(recurrentKernelImpl1B1B)
-#define recurrentKernelImpl1B2B KERNEL(recurrentKernelImpl1B2B)
 #define recurrentKernelImpl2B1B KERNEL(recurrentKernelImpl2B1B)
+#endif
+#if OPT_LEVEL < 2
+#define recurrentKernelImpl1B2B KERNEL(recurrentKernelImpl1B2B)
 #define recurrentKernelImpl2B2B KERNEL(recurrentKernelImpl2B2B)
 #endif
 
@@ -139,7 +141,7 @@ void recurrentKernelImpl2B(ExecutionKernelConfig<RecurrentConfig> const * const 
     config->RequestConfig->Inputs = inputs;
 }
 
-#if OPT_LEVEL < 2 || OPT_LEVEL == 7
+#if OPT_LEVEL < 2 || OPT_LEVEL == 3 || OPT_LEVEL == 7
 void recurrentKernelImpl1B1B(ExecutionKernelConfig<RecurrentConfig> const * const config)
 {
     auto& runConfig = config->RequestConfig->Transform;
@@ -423,6 +425,7 @@ void copyKernelImpl2B(CopyConfig const * const config)
 #define OPT_ANY 1
 #define OPT_GEN_OR_SAT OPT_GEN OPT_GEN_SAT
 #define OPT_AVX2_OR_AVX2_SAT OPT_AVX2 OPT_AVX2_SAT
+#define OPT_SSE4_OR_SSE4_SAT OPT_SSE4 OPT_SSE4_SAT
 
 #define VERBATIM(...) __VA_ARGS__
 #define GetKernel(name, opts)    VERBATIM(IF(opts, 0))(ToUnifiedKernel(name), ToUnifiedKernel(CodeCaveMitigationFakeKernel<>))
@@ -461,7 +464,7 @@ VoidKernel GetXnnKernel<KernelAcceleration, HwConsistencyMode>(KernelType type)
         GetKernel(recurrentKernelImpl1B, OPT_ANY),
         GetKernel(recurrentKernelImpl2B, OPT_ANY),
 
-        GetKernel(TransposeKernelImpl1B, OPT_GEN_OR_SAT OPT_AVX2_OR_AVX2_SAT),
+        GetKernel(TransposeKernelImpl1B, OPT_GEN_OR_SAT OPT_AVX2_OR_AVX2_SAT OPT_SSE4_OR_SSE4_SAT),
         GetKernel(TransposeKernelImpl2B, OPT_ANY),
 
         GetKernel(ConvolutionKernelImpl, OPT_ANY),
@@ -470,24 +473,24 @@ VoidKernel GetXnnKernel<KernelAcceleration, HwConsistencyMode>(KernelType type)
         GetKernel(activationKernelImpl, OPT_ANY),
         GetKernel(copyKernelImpl, OPT_ANY),
 
-        GetKernel(AffineKernelImpl1B1B, OPT_GEN_OR_SAT OPT_AVX2_SAT),
-        GetKernel(AffineKernelImpl2B1B, OPT_GEN_OR_SAT OPT_AVX2_SAT),
+        GetKernel(AffineKernelImpl1B1B, OPT_GEN_OR_SAT OPT_AVX2_SAT OPT_SSE4_SAT),
+        GetKernel(AffineKernelImpl2B1B, OPT_GEN_OR_SAT OPT_AVX2_SAT OPT_SSE4_SAT),
         GetKernel(AffineKernelImpl1B2B, OPT_GEN_OR_SAT),
         GetKernel(AffineKernelImpl2B2B, OPT_GEN_OR_SAT),
-        GetKernel(AffineActiveListKernelImpl1B1B, OPT_GEN_OR_SAT OPT_AVX2_SAT),
-        GetKernel(AffineActiveListKernelImpl2B1B, OPT_GEN_OR_SAT OPT_AVX2_SAT),
+        GetKernel(AffineActiveListKernelImpl1B1B, OPT_GEN_OR_SAT OPT_AVX2_SAT OPT_SSE4_SAT),
+        GetKernel(AffineActiveListKernelImpl2B1B, OPT_GEN_OR_SAT OPT_AVX2_SAT OPT_SSE4_SAT),
         GetKernel(AffineActiveListKernelImpl1B2B, OPT_GEN_OR_SAT),
         GetKernel(AffineActiveListKernelImpl2B2B, OPT_GEN_OR_SAT),
-        GetKernel(AffineMultiBiasKernelImpl1B1B, OPT_GEN_OR_SAT OPT_AVX2_SAT),
-        GetKernel(AffineMultiBiasKernelImpl2B1B, OPT_GEN_OR_SAT OPT_AVX2_SAT),
+        GetKernel(AffineMultiBiasKernelImpl1B1B, OPT_GEN_OR_SAT OPT_AVX2_SAT OPT_SSE4_SAT),
+        GetKernel(AffineMultiBiasKernelImpl2B1B, OPT_GEN_OR_SAT OPT_AVX2_SAT OPT_SSE4_SAT),
         GetKernel(AffineMultiBiasKernelImpl1B2B, OPT_GEN_OR_SAT),
         GetKernel(AffineMultiBiasKernelImpl2B2B, OPT_GEN_OR_SAT),
         GetKernel(DiagonalKernelImpl1B1B, OPT_GEN_OR_SAT),
         GetKernel(DiagonalKernelImpl2B1B, OPT_GEN_OR_SAT),
         GetKernel(DiagonalKernelImpl1B2B, OPT_GEN_OR_SAT),
         GetKernel(DiagonalKernelImpl2B2B, OPT_GEN_OR_SAT),
-        GetKernel(recurrentKernelImpl1B1B, OPT_GEN_OR_SAT OPT_AVX2_SAT),
-        GetKernel(recurrentKernelImpl2B1B, OPT_GEN_OR_SAT OPT_AVX2_SAT),
+        GetKernel(recurrentKernelImpl1B1B, OPT_GEN_OR_SAT OPT_AVX2_SAT OPT_SSE4_SAT),
+        GetKernel(recurrentKernelImpl2B1B, OPT_GEN_OR_SAT OPT_AVX2_SAT OPT_SSE4_SAT),
         GetKernel(recurrentKernelImpl1B2B, OPT_GEN_OR_SAT),
         GetKernel(recurrentKernelImpl2B2B, OPT_GEN_OR_SAT),
         GetKernel(ConvolutionKernelImpl1B, OPT_GEN_OR_SAT),

@@ -109,6 +109,7 @@ set(xnn_sse4_sources
   igemm8_subset_sse4.cpp
   igemv16_sse4.cpp
   igemv8_sse4.cpp
+  transpose8_sse4.cpp
   transpose16_sse4.cpp)
 
 set(xnn_sse4_sat_sources
@@ -119,7 +120,10 @@ set(xnn_sse4_sat_sources
   igemm8_subset_sse4-sat.cpp
   igemv16_sse4-sat.cpp
   igemv8_sse4-sat.cpp
-  transpose16_sse4.cpp)
+  transpose8_sse4.cpp
+  transpose16_sse4.cpp
+  affine_sse4-sat.cpp
+  rnn_sse4-sat.cpp)
 
 set(xnn_avx1_sources
   convnet_avx1.cpp
@@ -149,8 +153,8 @@ set(xnn_avx2_sources
   igemm8_subset_avx2.cpp
   igemv16_avx2.cpp
   igemv8_avx2.cpp
-  transpose16_avx2.cpp
-  transpose8_avx2.cpp)
+  transpose8_avx2.cpp
+  transpose16_avx2.cpp)
 
 set(xnn_avx2_sat_sources
   convnet_avx2-sat.cpp
@@ -160,8 +164,8 @@ set(xnn_avx2_sat_sources
   igemm8_subset_avx2-sat.cpp
   igemv16_avx2-sat.cpp
   igemv8_avx2-sat.cpp
-  transpose16_avx2.cpp
   transpose8_avx2.cpp
+  transpose16_avx2.cpp
   affine_avx2-sat.cpp
   rnn_avx2-sat.cpp)
 

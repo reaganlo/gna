@@ -26,14 +26,14 @@
 #include "igemv8.h"
 #include "igemv16.h"
 #include "common.hpp"
-#include "common_avx2.hpp"
+#include "common_sse4.hpp"
 
 #include "KernelArguments.h"
 #include "KernelMacros.h"
 
 #include <cstdint>
 #include <cstring>
-#include <immintrin.h>
+#include <nmmintrin.h>
 
 /** Transpose input and select template for calculation
  *  @param BPW Bytes per weight
@@ -138,25 +138,22 @@ void AffineActiveListKernelImpl2B1B(ExecutionKernelConfig<AffineConfig> const *c
     TransposeAndRun<2>(config, idx, simple_bias);
 }
 
-/** @brief Add 8x32b partial sum to 4x64 total sum
+/** @brief Add 4x32b partial sum to 2x64 total sum
  *
  *  Partial sum is set to zero
  *
- *  @param[in,out] sum 4x64 sum
- *  @param[in,out] partial 8x32 partial sum
+ *  @param[in,out] sum 2x64 sum
+ *  @param[in,out] partial 4x32 partial sum
  */
-inline void PartialSum(__m256i &sum, __m256i &partial)
+inline void PartialSum(__m128i &sum, __m128i &partial)
 {
-    __m128i partial_lo32 = _mm256_castsi256_si128(partial);
-    __m128i partial_hi32 = _mm256_extracti128_si256(partial, 1);
+    __m128i partial_lo = _mm_cvtepi32_epi64(partial);
+    __m128i partial_hi = _mm_cvtepi32_epi64(_mm_bsrli_si128(partial, 8));
 
-    __m256i partial_lo = _mm256_cvtepi32_epi64(partial_lo32);
-    __m256i partial_hi = _mm256_cvtepi32_epi64(partial_hi32);
+    sum = _mm_add_epi64(sum, partial_lo);
+    sum = _mm_add_epi64(sum, partial_hi);
 
-    sum = _mm256_add_epi64(sum, partial_lo);
-    sum = _mm256_add_epi64(sum, partial_hi);
-
-    partial = _mm256_setzero_si256();
+    partial = _mm_setzero_si128();
 }
 
 /** Generic implementation for simple bias, multibias and active list
@@ -174,7 +171,7 @@ inline void PartialSum(__m256i &sum, __m256i &partial)
 template <size_t BPW, size_t N, class IndexSourceType>
 static void Affine(ExecutionKernelConfig<AffineConfig> const *const config, IndexSourceType &idx, void *biases, const uint32_t bias_vector)
 {
-    static_assert(std::is_base_of<IndexSource, IndexSourceType>::value, "Index source type must derive from IndexSource");
+    static_assert(std::is_base_of<IndexSource, IndexSourceType>::value, "Index source type must derive from class IndexSource");
 
     static const uint32_t IT_STEP = 16;
 
@@ -197,13 +194,20 @@ static void Affine(ExecutionKernelConfig<AffineConfig> const *const config, Inde
     size_t weightOffset = 0;
 
     __m128i weight8;
-    __m256i weight16;
+    __m128i weight16_1;
+    __m128i weight16_2;
 
     __m128i input8[N];
-    __m256i input16[N];
-    __m256i sum[N];
-    __m256i sum_partial[N];
-    __m256i mul[N];
+    __m128i input16_1[N];
+    __m128i input16_2[N];
+
+    __m128i mul_1[N];
+    __m128i mul_2[N];
+
+    __m128i sum_1[N];
+    __m128i sum_2[N];
+    __m128i sum_partial_1[N];
+    __m128i sum_partial_2[N];
 
     int64_t final_sum[N];
 
@@ -224,8 +228,10 @@ static void Affine(ExecutionKernelConfig<AffineConfig> const *const config, Inde
 
         for (uint32_t n = 0; n < N; ++n)
         {
-            sum[n] = _mm256_setzero_si256();
-            sum_partial[n] = _mm256_setzero_si256();
+            sum_1[n] = _mm_setzero_si128();
+            sum_2[n] = _mm_setzero_si128();
+            sum_partial_1[n] = _mm_setzero_si128();
+            sum_partial_2[n] = _mm_setzero_si128();
             final_sum[n] = bias;
         }
 
@@ -238,28 +244,34 @@ static void Affine(ExecutionKernelConfig<AffineConfig> const *const config, Inde
 
             if (BPW == 1)
             {
-                weight8 = _mm_load_si128((__m128i *)(weights + weightOffset));
-                weight16 = _mm256_cvtepi8_epi16(weight8);
+                weight8 = _mm_loadu_si128((__m128i *)(weights + weightOffset));
+                weight16_1 = _mm_cvtepi8_epi16(weight8);
+                weight16_2 = _mm_cvtepi8_epi16(_mm_bsrli_si128(weight8, 8));
             }
             else
             {
-                weight16 = _mm256_loadu_si256((__m256i *)(weights + weightOffset));
+                weight16_1 = _mm_loadu_si128((__m128i *)(weights + weightOffset));
+                weight16_2 = _mm_loadu_si128((__m128i *)(weights + weightOffset + sizeof(__m128i)));
             }
 
             for (uint32_t n = 0; n < N; ++n)
             {
+                input8[n] = _mm_loadu_si128((__m128i *)(inputs[n] + inputOffset));
+                input16_1[n] = _mm_cvtepi8_epi16(input8[n]);
+                input16_2[n] = _mm_cvtepi8_epi16(_mm_bsrli_si128(input8[n], 8));
 
-                input8[n] = _mm_load_si128((__m128i *)(inputs[n] + inputOffset));
-                input16[n] = _mm256_cvtepi8_epi16(input8[n]);
-                mul[n] = _mm256_madd_epi16(input16[n], weight16);
+                mul_1[n] = _mm_madd_epi16(input16_1[n], weight16_1);
+                mul_2[n] = _mm_madd_epi16(input16_2[n], weight16_2);
 
                 if (BPW == 1)
                 {
-                    sum[n] = _mm256_add_epi32(sum[n], mul[n]);
+                    sum_1[n] = _mm_add_epi32(sum_1[n], mul_1[n]);
+                    sum_2[n] = _mm_add_epi32(sum_2[n], mul_2[n]);
                 }
                 else
                 {
-                    sum_partial[n] = _mm256_add_epi32(sum_partial[n], mul[n]);
+                    sum_partial_1[n] = _mm_add_epi32(sum_partial_1[n], mul_1[n]);
+                    sum_partial_2[n] = _mm_add_epi32(sum_partial_2[n], mul_2[n]);
                 }
             }
 
@@ -268,7 +280,8 @@ static void Affine(ExecutionKernelConfig<AffineConfig> const *const config, Inde
             {
                 for (uint32_t n = 0; n < N; ++n)
                 {
-                    PartialSum(sum[n], sum_partial[n]);
+                    PartialSum(sum_1[n], sum_partial_1[n]);
+                    PartialSum(sum_2[n], sum_partial_2[n]);
                 }
 
                 partial_sum_counter = 0;
@@ -282,7 +295,8 @@ static void Affine(ExecutionKernelConfig<AffineConfig> const *const config, Inde
                 {
                     for (uint32_t n = 0; n < N; ++n)
                     {
-                        PartialSum(sum[n], sum_partial[n]);
+                        PartialSum(sum_1[n], sum_partial_1[n]);
+                        PartialSum(sum_2[n], sum_partial_2[n]);
                     }
 
                     partial_sum_counter = 0;
@@ -290,10 +304,12 @@ static void Affine(ExecutionKernelConfig<AffineConfig> const *const config, Inde
 
                 for (uint32_t n = 0; n < N; ++n)
                 {
-                    final_sum[n] += (BPW == 1) ? _mm256_hsum_epi32(sum[n]) : _mm256_hsum_epi64(sum[n]);
+                    final_sum[n] += (BPW == 1) ? _mm_hsum_epi32(sum_1[n]) : _mm_hsum_epi64(sum_1[n]);
+                    final_sum[n] += (BPW == 1) ? _mm_hsum_epi32(sum_2[n]) : _mm_hsum_epi64(sum_2[n]);
 
                     saturate(&final_sum[n], config->SaturationCount);
-                    sum[n] = _mm256_setzero_si256();
+                    sum_1[n] = _mm_setzero_si128();
+                    sum_2[n] = _mm_setzero_si128();
                 }
 
                 unsaturated_sum_counter = 0;
@@ -305,14 +321,16 @@ static void Affine(ExecutionKernelConfig<AffineConfig> const *const config, Inde
         {
             for (uint32_t n = 0; n < N; ++n)
             {
-                PartialSum(sum[n], sum_partial[n]);
+                PartialSum(sum_1[n], sum_partial_1[n]);
+                PartialSum(sum_2[n], sum_partial_2[n]);
             }
             partial_sum_counter = 0;
         }
 
         for (uint32_t n = 0; n < N; ++n)
         {
-            final_sum[n] += (BPW == 1) ? _mm256_hsum_epi32(sum[n]) : _mm256_hsum_epi64(sum[n]);
+            final_sum[n] += (BPW == 1) ? _mm_hsum_epi32(sum_1[n]) : _mm_hsum_epi64(sum_1[n]);
+            final_sum[n] += (BPW == 1) ? _mm_hsum_epi32(sum_2[n]) : _mm_hsum_epi64(sum_2[n]);
 
             saturate_store_out(&final_sum[n], outputs[n], config->SaturationCount);
             outputs[n] += N;

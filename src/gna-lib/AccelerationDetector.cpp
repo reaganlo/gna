@@ -145,6 +145,12 @@ static KernelMap<VoidKernel> MakeAVX2SatAccelerated()
 }
 
 template<KernelType kernelType>
+static KernelMap<VoidKernel> MakeAVX2AndSSE4Accelerated()
+{
+    return MakeAll<kernelType, kernelType, kernelType, kernelType, true, false, true>();
+}
+
+template<KernelType kernelType>
 static KernelMap<VoidKernel> MakeAVX2AndSSE4SatAccelerated()
 {
     return MakeAllSat<kernelType, kernelType, kernelType, kernelType, true, false, true>();
@@ -195,10 +201,10 @@ const KernelMap<VoidKernel>& AccelerationDetector::GetKernels(kernel_op operatio
                 MakeAllAccelerated<affineSingle2B2Bfull, affineSingle2Bfull>()
             },
             {{ Gna2DataTypeInt8, Gna2DataTypeInt8, Gna2DataTypeInt8 },
-                MakeAVX2SatAccelerated<affineSingle1B1Bfull>()
+                MakeAVX2AndSSE4SatAccelerated<affineSingle1B1Bfull>()
             },
             {{ Gna2DataTypeInt8, Gna2DataTypeInt16, Gna2DataTypeInt8 },
-                MakeAVX2SatAccelerated<affineSingle2B1Bfull>()}
+                MakeAVX2AndSSE4SatAccelerated<affineSingle2B1Bfull>()}
         }},
         { KERNEL_AFFINE_AL, {
             {{ Gna2DataTypeInt16, Gna2DataTypeInt8, Gna2DataTypeCompoundBias },
@@ -206,9 +212,9 @@ const KernelMap<VoidKernel>& AccelerationDetector::GetKernels(kernel_op operatio
             {{ Gna2DataTypeInt16, Gna2DataTypeInt16, Gna2DataTypeInt8 },
                 MakeAllAccelerated<affineSingle2B2Bal, affineSingle2Bal>()},
             {{ Gna2DataTypeInt8, Gna2DataTypeInt8, Gna2DataTypeInt8 },
-                MakeAVX2SatAccelerated<affineSingle1B1Bal>()},
+                MakeAVX2AndSSE4SatAccelerated<affineSingle1B1Bal>()},
             {{ Gna2DataTypeInt8, Gna2DataTypeInt16, Gna2DataTypeInt8 },
-                MakeAVX2SatAccelerated<affineSingle2B1Bal>()},
+                MakeAVX2AndSSE4SatAccelerated<affineSingle2B1Bal>()},
         }},
         { KERNEL_AFFINE_MULTIBIAS,{
             {{ Gna2DataTypeInt16, Gna2DataTypeInt8, Gna2DataTypeInt8 },
@@ -216,9 +222,9 @@ const KernelMap<VoidKernel>& AccelerationDetector::GetKernels(kernel_op operatio
             {{ Gna2DataTypeInt16, Gna2DataTypeInt16, Gna2DataTypeInt8 },
                 MakeAllAccelerated<affineMulti2B2B, affineMulti2B>()},
             {{ Gna2DataTypeInt8, Gna2DataTypeInt8, Gna2DataTypeInt8 },
-                MakeAVX2SatAccelerated<affineMulti1B1B>()},
+                MakeAVX2AndSSE4SatAccelerated<affineMulti1B1B>()},
             {{ Gna2DataTypeInt8, Gna2DataTypeInt16, Gna2DataTypeInt8 },
-                MakeAVX2SatAccelerated<affineMulti2B1B>()},
+                MakeAVX2AndSSE4SatAccelerated<affineMulti2B1B>()},
         }},
         { KERNEL_RECURRENT,{
             {{ Gna2DataTypeInt16, Gna2DataTypeInt8, Gna2DataTypeCompoundBias },
@@ -226,9 +232,9 @@ const KernelMap<VoidKernel>& AccelerationDetector::GetKernels(kernel_op operatio
             {{ Gna2DataTypeInt16, Gna2DataTypeInt16, Gna2DataTypeInt8 },
                 MakeSseAccelerated<recurrent2B2B, recurrent2B>()},
             {{ Gna2DataTypeInt8, Gna2DataTypeInt8, Gna2DataTypeInt8 },
-                MakeAVX2SatAccelerated<recurrent1B1B>()},
+                MakeAVX2AndSSE4SatAccelerated<recurrent1B1B>()},
             {{ Gna2DataTypeInt8, Gna2DataTypeInt16, Gna2DataTypeInt8 },
-                MakeAVX2SatAccelerated<recurrent2B1B>()},
+                MakeAVX2AndSSE4SatAccelerated<recurrent2B1B>()},
         }},
         { KERNEL_AFFINE_DIAGONAL, {
             {{ Gna2DataTypeInt16, Gna2DataTypeInt8, Gna2DataTypeCompoundBias },
@@ -242,7 +248,7 @@ const KernelMap<VoidKernel>& AccelerationDetector::GetKernels(kernel_op operatio
         }},
         { KERNEL_TRANSPOSE, {
             {{ Gna2DataTypeInt8},
-                MakeAVX2Accelerated<transpose1B>()},
+                MakeAVX2AndSSE4Accelerated<transpose1B>()},
             {{ Gna2DataTypeInt16},
                 MakeAllAccelerated<transpose2B, transpose2B>()},
         }},
