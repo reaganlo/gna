@@ -4,8 +4,6 @@
 #include "BufferMap.h"
 #include "KernelArguments.h"
 
-#include "common.h"
-
 #include <memory>
 
 namespace GNA

@@ -1,7 +1,20 @@
-/**
- @copyright (C) 2020-2021 Intel Corporation
- SPDX-License-Identifier: LGPL-2.1-or-later
- */
+/*
+ @copyright (C) 2020 Intel Corporation
+
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+ http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing,
+ software distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions
+ and limitations under the License.
+
+ SPDX-License-Identifier: Apache-2.0
+*/
 
 /**************************************************************************//**
  @file gna2-model-export-api.h
@@ -126,6 +139,35 @@ enum Gna2ModelExportComponent
      for RW and RO memory (in order) are required.
     */
     Gna2ModelExportComponentLegacySueCreekHeader = 3,
+
+    Gna2ModelExportComponentReadOnlyDump = 4,
+
+    Gna2ModelExportComponentScratchDump = 6,
+    Gna2ModelExportComponentStateDump = 7,
+
+    Gna2ModelExportComponentInputDump = 11,
+    Gna2ModelExportComponentOutputDump = 12,
+
+    Gna2ModelExportComponentExternalBufferInputDump = 21,
+    Gna2ModelExportComponentExternalBufferOutputDump = 22,
+};
+
+/**
+ Type of exported memory buffer tag.
+
+ Used to tag memory buffer and assign special properties or BAR for exported memory buffer.
+ @see Gna2MemorySetTag()
+ */
+enum Gna2MemoryTag
+{
+    Gna2MemoryTagReadWrite = 0x0100,
+    Gna2MemoryTagInput = 0x0200,
+    Gna2MemoryTagOutput = 0x0400,
+    Gna2MemoryTagReadOnly = 0x0800,
+    Gna2MemoryTagExternalBufferInput = 0x1000,
+    Gna2MemoryTagExternalBufferOutput = 0x2000,
+    Gna2MemoryTagScratch = 0x4000,
+    Gna2MemoryTagState = 0x8000,
 };
 
 /**
@@ -147,6 +189,14 @@ GNA2_API enum Gna2Status Gna2ModelExport(
     enum Gna2ModelExportComponent componentType,
     void ** exportBuffer,
     uint32_t * exportBufferSize);
+
+/**
+ Can be called before Gna2ModelCreate to change memory alignment requirements.
+ For ANNA newAlignment can be set to 16.
+ */
+GNA2_API enum Gna2Status Gna2ModelOverrideAlignment(
+    uint32_t newAlignment);
+
 
 #endif // __GNA2_MODEL_EXPORT_API_H
 

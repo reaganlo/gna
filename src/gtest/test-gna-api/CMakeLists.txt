@@ -1,0 +1,71 @@
+#INTEL CONFIDENTIAL
+#Copyright 2019-2020 Intel Corporation.
+
+#The source code contained or described herein and all documents related
+#to the source code ("Material") are owned by Intel Corporation or its suppliers
+#or licensors. Title to the Material remains with Intel Corporation or its suppliers
+#and licensors. The Material may contain trade secrets and proprietary
+#and confidential information of Intel Corporation and its suppliers and licensors,
+#and is protected by worldwide copyright and trade secret laws and treaty provisions.
+#No part of the Material may be used, copied, reproduced, modified, published,
+#uploaded, posted, transmitted, distributed, or disclosed in any way without Intel's
+#prior express written permission.
+
+#No license under any patent, copyright, trade secret or other intellectual
+#property right is granted to or conferred upon you by disclosure or delivery
+#of the Materials, either expressly, by implication, inducement, estoppel
+#or otherwise. Any license under such intellectual property rights must
+#be express and approved by Intel in writing.
+
+#Unless otherwise agreed by Intel in writing, you may not remove or alter this notice
+#or any other notice embedded in Materials by Intel or Intel's suppliers or licensors
+#in any way.
+
+# minimum version of CMake
+cmake_minimum_required(VERSION 3.10)
+
+# global variables
+unset(PREFIX)
+set(PROJECT_NAME TEST-API-VERBOSE)
+set(CMAKE_CXX_STANDARD 17)
+set(CXX_STANDARD_REQUIRED ON)
+set_property(GLOBAL PROPERTY USE_FOLDERS ON)
+
+project(${PROJECT_NAME})
+
+add_executable(test-gna-api
+  test-activation-helper.cpp
+  test-activation-helper.h
+  test-gna-api.cpp
+  test-gna-api.h
+  test-gna-device-api.cpp
+  test-gna-device-api.h
+  test-gna-multithread.cpp
+  test-gna-multithread.h
+  test-microphone-selection-model.cpp
+  test-model-export-legacy-sue.cpp
+  test-model-export-legacy-sue.h
+  test-model-export-tlv.cpp
+  test-tlv-reader-in-c-lang.c)
+
+set_property(TARGET test-gna-api PROPERTY C_STANDARD 11)
+set_source_files_properties(test-tlv-reader-in-c-lang.c
+  PROPERTIES
+  LANGUAGE C)
+
+target_include_directories(test-gna-api
+  PRIVATE ${SRC_DIR} ${COMMON_DIR} ${API_DIR} ${API_IMPL_DIR} ${KERNEL_DIR} ${GNA_HW_LIB_INCLUDE_PATH} ${COMMON_TOOLS_DIR})
+
+target_compile_definitions(test-gna-api PRIVATE -DOPTGEN)
+
+target_link_libraries(test-gna-api gtest gna-api)
+
+set_target_properties(test-gna-api
+  PROPERTIES
+  EXCLUDE_FROM_DEFAULT_BUILD_KLOCWORK TRUE
+  OUTPUT_NAME test-gna-api)
+set_property(TARGET test-gna-api PROPERTY FOLDER tests/gna-lib)
+
+copy_gna_api(test-gna-api NOT_USED)
+
+add_target_to_postbuild_test_run(test-gna-api)

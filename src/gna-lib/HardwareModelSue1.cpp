@@ -1,13 +1,34 @@
-/**
- @copyright (C) 2018-2021 Intel Corporation
- SPDX-License-Identifier: LGPL-2.1-or-later
- */
+/*
+ INTEL CONFIDENTIAL
+ Copyright 2018-2020 Intel Corporation.
+
+ The source code contained or described herein and all documents related
+ to the source code ("Material") are owned by Intel Corporation or its suppliers
+ or licensors. Title to the Material remains with Intel Corporation or its suppliers
+ and licensors. The Material may contain trade secrets and proprietary
+ and confidential information of Intel Corporation and its suppliers and licensors,
+ and is protected by worldwide copyright and trade secret laws and treaty provisions.
+ No part of the Material may be used, copied, reproduced, modified, published,
+ uploaded, posted, transmitted, distributed, or disclosed in any way without Intel's
+ prior express written permission.
+
+ No license under any patent, copyright, trade secret or other intellectual
+ property right is granted to or conferred upon you by disclosure or delivery
+ of the Materials, either expressly, by implication, inducement, estoppel
+ or otherwise. Any license under such intellectual property rights must
+ be express and approved by Intel in writing.
+
+ Unless otherwise agreed by Intel in writing, you may not remove or alter this notice
+ or any other notice embedded in Materials by Intel or Intel's suppliers or licensors
+ in any way.
+*/
 
 #include "HardwareModelSue1.h"
 
 #include "AffineLayers.h"
 #include "CompiledModel.h"
 #include "GnaException.h"
+#include "gna2-memory-impl.h"
 #include "HardwareLayer.h"
 #include "LayerDescriptor.h"
 #include "Layer.h"
@@ -18,7 +39,7 @@
 using namespace GNA;
 
 
-HardwareCapabilities HardwareModelSue1::sueCapabilities = HardwareCapabilities{ Gna2DeviceVersionFromInt(0x10E) };
+HardwareCapabilities HardwareModelSue1::sueCapabilities = HardwareCapabilities{ Gna2DeviceVersionEmbedded1_0 };
 
 HardwareModelSue1::HardwareModelSue1(CompiledModel const & softwareModel, Gna2UserAllocator customAllocIn) :
     HardwareModel(softwareModel, sueCapabilities),
@@ -45,30 +66,20 @@ uint32_t HardwareModelSue1::GetInputOffset(uint32_t layerIndex) const
 
 void HardwareModelSue1::prepareAllocationsAndModel()
 {
-    Expect::InRange(model.LayerCount, ui32_1, hwCapabilities.GetMaximumLayerCount(),
+    Expect::InRange(model.LayerCount, 1u, hwCapabilities.GetMaximumLayerCount(),
         Gna2StatusXnnErrorNetLyrNo);
 
-    auto const ldMemorySize = RoundUp(calculateDescriptorSize(false), PAGE_SIZE);
+    auto const ldMemorySize = RoundUp(calculateDescriptorSize(false), MemoryBufferAlignment);
 
-    uint32_t scratchPadSize = 0;
-    for (auto const & layer : model.GetLayers())
-    {
-        auto const scratchPad = layer->TryGetOperand(ScratchpadOperandIndex);
-        if (scratchPad)
-        {
-            scratchPadSize = (std::max)(scratchPadSize, scratchPad->Size);
-        }
-    }
-    scratchPadSize = RoundUp(scratchPadSize, Memory::GNA_BUFFER_ALIGNMENT);
-
+    auto const scratchPadSize = model.GetScratchpadSize();
     auto const rw = model.GetAllocations()[0];
-    totalModelSize = ldMemorySize + rw.GetSize() + scratchPadSize;
+    totalModelSize = ldMemorySize + rw->GetSize() + scratchPadSize;
 
     MemoryContainerElement const * ro = nullptr;
     if (model.GetAllocations().size() >= 3)
     {
         ro = &model.GetAllocations()[1];
-        totalModelSize += ro->GetSize();
+        totalModelSize += (*ro)->GetSize();
     }
 
     exportMemory = customAlloc(totalModelSize);
@@ -89,12 +100,9 @@ void HardwareModelSue1::prepareAllocationsAndModel()
 
     if (scratchPadSize > 0)
     {
-        scratchPadMemory = std::make_unique<Memory>(
-            static_cast<uint8_t*>(exportMemory) + allocations.GetMemorySize(), scratchPadSize);
-        if (!scratchPadMemory)
-        {
-            throw GnaException{ Gna2StatusResourceAllocationError };
-        }
+        createScratchPadMemory(
+            static_cast<uint8_t*>(exportMemory) + allocations.GetMemorySize(),
+            scratchPadSize);
         allocations.Emplace(*scratchPadMemory);
     }
 
@@ -108,7 +116,7 @@ void HardwareModelSue1::prepareAllocationsAndModel()
     getHwOffsetFunction = [this](const BaseAddress& buffer) { return GetBufferOffset(buffer); };
 }
 
-uint32_t HardwareModelSue1::GetBufferOffset(const BaseAddress& address) const
+LdaOffset HardwareModelSue1::GetBufferOffset(const BaseAddress& address) const
 {
     if (address == AffineBaseLayer::GetGlobal2MBScratchpad())
     {
@@ -125,12 +133,12 @@ void * HardwareModelSue1::Export()
     auto const & rw = allocations[1];
     auto const & ro = allocations.back();
     void * destination = static_cast<uint8_t*>(exportMemory) + ldMemory->GetSize();
-    memcpy_s(destination, totalModelSize, rw.GetBuffer(), rw.GetSize());
+    memcpy_s(destination, totalModelSize, rw->GetBuffer(), rw->GetSize());
     if (allocations.size() >= 3)
     {
-        auto const roSize = ro.GetSize();
+        auto const roSize = ro->GetSize();
         destination = static_cast<uint8_t*>(exportMemory) + totalModelSize - roSize;
-        memcpy_s(destination, totalModelSize, ro.GetBuffer(), roSize);
+        memcpy_s(destination, totalModelSize, ro->GetBuffer(), roSize);
     }
 
     return exportMemory;
@@ -138,6 +146,7 @@ void * HardwareModelSue1::Export()
 
 void HardwareModelSue1::PopulateHeader(Gna2ModelSueCreekHeader & modelHeader) const
 {
+    // TODO:3: review
     auto const &input = model.GetLayer(0).Input;
     auto const &output = model.GetLayer(model.LayerCount - 1).Output;
     uint32_t outputsOffset = GetOutputOffset(model.LayerCount - 1);

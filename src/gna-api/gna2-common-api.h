@@ -1,7 +1,20 @@
-/**
- @copyright (C) 2020-2021 Intel Corporation
- SPDX-License-Identifier: LGPL-2.1-or-later
- */
+/*
+ @copyright (C) 2020 Intel Corporation
+
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+ http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing,
+ software distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions
+ and limitations under the License.
+
+ SPDX-License-Identifier: Apache-2.0
+*/
 
 /**************************************************************************//**
  @file gna2-common-api.h
@@ -77,7 +90,7 @@
  properties e.g. frequency, bandwidth.
 
  @note
- ::Gna2DeviceVersion2_0 is used by default by GNA Library (current version) in software mode,
+ ::Gna2DeviceVersion3_0 is used by default by GNA Library (current version) in software mode,
  when no hardware device is available.
 
  @see
@@ -113,10 +126,34 @@ enum Gna2DeviceVersion
     Gna2DeviceVersion2_0 = 0x20,
 
     /**
+     GNA 3.0 device.
+     A ::Gna2DeviceGeneration3_0 generation device.
+     */
+    Gna2DeviceVersion3_0 = 0x30,
+
+    /**
+     GNA 3.5 device.
+     A ::Gna2DeviceGeneration3_5 generation device.
+     */
+    Gna2DeviceVersion3_5 = 0x35,
+
+    /**
      GNA 1.0 embedded device.
      A ::Gna2DeviceGeneration1_0 generation device.
      */
     Gna2DeviceVersionEmbedded1_0 = 0x10E,
+
+    /**
+     GNA 3.1 embedded device on PCH/ACE.
+     A ::Gna2DeviceGeneration3_1 generation device.
+     */
+    Gna2DeviceVersionEmbedded3_1 = 0x310E,
+
+    /**
+     GNA 3.5 embedded device on ACE.
+     A ::Gna2DeviceGeneration3_5 generation device.
+     */
+    Gna2DeviceVersionEmbedded3_5 = 0x35E,
 
     /**
      Value indicating no supported hardware device available.
@@ -291,6 +328,7 @@ enum Gna2Status
     */
     Gna2StatusNotMultipleOf = -30,
 
+    /* FIXME: this is just for gna_status_t compatibility, use model errors in the future */
     Gna2StatusBadFeatLength = -31,
     Gna2StatusDataModeInvalid = -32,
     Gna2StatusXnnErrorNetLyrNo = -33,

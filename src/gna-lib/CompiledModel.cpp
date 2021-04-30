@@ -1,27 +1,41 @@
-/**
- @copyright (C) 2019-2021 Intel Corporation
- SPDX-License-Identifier: LGPL-2.1-or-later
- */
+/*
+ INTEL CONFIDENTIAL
+ Copyright 2019 Intel Corporation.
+
+ The source code contained or described herein and all documents related
+ to the source code ("Material") are owned by Intel Corporation or its suppliers
+ or licensors. Title to the Material remains with Intel Corporation or its suppliers
+ and licensors. The Material may contain trade secrets and proprietary
+ and confidential information of Intel Corporation and its suppliers and licensors,
+ and is protected by worldwide copyright and trade secret laws and treaty provisions.
+ No part of the Material may be used, copied, reproduced, modified, published,
+ uploaded, posted, transmitted, distributed, or disclosed in any way without Intel's
+ prior express written permission.
+
+ No license under any patent, copyright, trade secret or other intellectual
+ property right is granted to or conferred upon you by disclosure or delivery
+ of the Materials, either expressly, by implication, inducement, estoppel
+ or otherwise. Any license under such intellectual property rights must
+ be express and approved by Intel in writing.
+
+ Unless otherwise agreed by Intel in writing, you may not remove or alter this notice
+ or any other notice embedded in Materials by Intel or Intel's suppliers or licensors
+ in any way.
+*/
 
 #include "CompiledModel.h"
 
 #include "DeviceManager.h"
 #include "Expect.h"
+#include "gna2-memory-impl.h"
 #include "GnaException.h"
 #include "HardwareCapabilities.h"
 #include "Layer.h"
 #include "Logger.h"
-#include "Macros.h"
 #include "Memory.h"
 #include "Request.h"
 #include "RequestConfiguration.h"
 #include "SubModel.h"
-
-#include "gna-api-types-xnn.h"
-#include "profiler.h"
-
-#include <algorithm>
-#include <cstring>
 
 using namespace GNA;
 
@@ -50,6 +64,21 @@ void CompiledModel::BuildHardwareModel(DriverInterface &ddi)
     {
         hardwareModel->Build(deviceSubmodels);
     }
+}
+
+uint32_t CompiledModel::GetScratchpadSize() const
+{
+    auto scratchPadSize = 0u;
+    for (auto const & layer : GetLayers())
+    {
+        auto const scratchPad = layer->TryGetOperand(ScratchpadOperandIndex);
+        if (scratchPad)
+        {
+            scratchPadSize = (std::max)(scratchPadSize, scratchPad->Size);
+        }
+    }
+    scratchPadSize = RoundUp(scratchPadSize, Memory::GNA_BUFFER_ALIGNMENT);
+    return scratchPadSize;
 }
 
 uint32_t CompiledModel::GetMaximumOperandSize(uint32_t operandIndex)
@@ -90,9 +119,13 @@ bool CompiledModel::IsFullyHardwareCompatible(const HardwareCapabilities& target
 
 CompiledModel::AccelerationType CompiledModel::getEffectiveAccelerationMode(RequestConfiguration& config)
 {
+    // TODO: 3: we need to store information about consistency between devices
+    // https://idc-tfs-01.devtools.intel.com:8088/tfs/DefaultCollection/Omega/_workitems?_a=edit&id=17703
+
     const auto isSoftwareEffective = config.Acceleration.IsSoftwareEnforced() ||
         !hwCapabilities.IsHardwareSupported() ||
-        (config.GetConsistentDevice() != hwCapabilities.GetDeviceVersion());
+        (config.GetConsistentDevice() != hwCapabilities.GetDeviceVersion()) ||
+        hwCapabilities.IsDeviceVersionOverriden();
     if (isSoftwareEffective)
     {
         return EnforcedSoftware;
@@ -102,13 +135,13 @@ CompiledModel::AccelerationType CompiledModel::getEffectiveAccelerationMode(Requ
 
 Gna2Status CompiledModel::Score(
     RequestConfiguration& config,
-    RequestProfiler *profiler,
+    RequestProfiler &profiler,
     KernelBuffers *buffers)
 {
     auto saturationCount = uint32_t{ 0 };
     try
     {
-        profiler->Measure(Gna2InstrumentationPointLibProcessing);
+        profiler.Measure(Gna2InstrumentationPointLibProcessing);
         auto const effectiveAcceleration = getEffectiveAccelerationMode(config);
         switch (effectiveAcceleration)
         {
@@ -122,7 +155,7 @@ Gna2Status CompiledModel::Score(
             return Gna2StatusAccelerationModeNotSupported;
             break;
         }
-        profiler->Measure(Gna2InstrumentationPointLibCompletion);
+        profiler.Measure(Gna2InstrumentationPointLibCompletion);
     }
     catch (const GnaException& e)
     {
@@ -143,6 +176,8 @@ void CompiledModel::ValidateBuffer(MemoryContainer const & requestAllocations, M
         hardwareModel->ValidateConfigBuffer(requestAllocations, memory);
     }
 }
+
+// TODO:3: count buffer use in model to minimize redundant mapping
 Memory const & CompiledModel::getMemoryFromDeviceAllocations(const void *buffer, size_t bufferSize) const
 {
     const auto& allAllocations = DeviceManager::Get().GetAllAllocated();
@@ -186,7 +221,7 @@ BaseValidator CompiledModel::makeValidator()
 {
     return BaseValidator
     {
-        HardwareCapabilities(),
+        HardwareCapabilities(hwCapabilities.GetDeviceVersion()),
         ValidBoundariesFunctor {
             [this](const void *buffer, size_t bufferSize)
             {
@@ -205,7 +240,7 @@ BaseValidator CompiledModel::makeValidator()
 }
 
 uint32_t CompiledModel::scoreAllSubModels(RequestConfiguration& config,
-    RequestProfiler *profiler, KernelBuffers *buffers)
+    RequestProfiler &profiler, KernelBuffers *buffers)
 {
     const auto& deviceSubmodels = getSubmodels(hwCapabilities);
     auto saturationCount = uint32_t{ 0 };
@@ -242,10 +277,10 @@ SubmodelType CompiledModel::getSubmodelType(
     const HardwareCapabilities &hwCaps, uint32_t layerIndex) const
 {
     auto const & layer = softwareModel.GetLayer(layerIndex);
-    auto deviceGeneration = hwCaps.GetDeviceGeneration();
-    auto dataConfig = layer.GetDataMode();
-    auto supportMapIterator = DataConfig::Capabilities.find(dataConfig);
-    if (supportMapIterator == DataConfig::Capabilities.end())
+    auto const deviceGeneration = hwCaps.GetDeviceGeneration();
+    auto const dataConfig = layer.GetDataMode();
+    auto const supportMapIterator = DataConfig::Capabilities().find(dataConfig);
+    if (supportMapIterator == DataConfig::Capabilities().end())
     {
         return SubmodelType::Software;
     }

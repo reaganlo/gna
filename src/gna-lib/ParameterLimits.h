@@ -1,23 +1,50 @@
-/**
- @copyright (C) 2018-2021 Intel Corporation
- SPDX-License-Identifier: LGPL-2.1-or-later
- */
+/*
+ INTEL CONFIDENTIAL
+ Copyright 2018-2021 Intel Corporation.
+
+ The source code contained or described herein and all documents related
+ to the source code ("Material") are owned by Intel Corporation or its suppliers
+ or licensors. Title to the Material remains with Intel Corporation or its suppliers
+ and licensors. The Material may contain trade secrets and proprietary
+ and confidential information of Intel Corporation and its suppliers and licensors,
+ and is protected by worldwide copyright and trade secret laws and treaty provisions.
+ No part of the Material may be used, copied, reproduced, modified, published,
+ uploaded, posted, transmitted, distributed, or disclosed in any way without Intel's
+ prior express written permission.
+
+ No license under any patent, copyright, trade secret or other intellectual
+ property right is granted to or conferred upon you by disclosure or delivery
+ of the Materials, either expressly, by implication, inducement, estoppel
+ or otherwise. Any license under such intellectual property rights must
+ be express and approved by Intel in writing.
+
+ Unless otherwise agreed by Intel in writing, you may not remove or alter this notice
+ or any other notice embedded in Materials by Intel or Intel's suppliers or licensors
+ in any way.
+*/
 
 #pragma once
 
 #include "GnaException.h"
 
-#include "gna2-model-api.h"
+#include "gna2-model-impl.h"
+#include "Layout.h"
 
 #include <map>
 #include <vector>
+#include <array>
 
 namespace GNA
 {
 
+using StaticCaps = std::array<uint32_t, 3>;
+
 struct ModelErrorSource
 {
-    ModelErrorSource(Gna2Status status) : legacyStatus(status){}
+    constexpr ModelErrorSource(Gna2Status status) :
+        legacyStatus(status)
+    {}
+
     Gna2Status legacyStatus;
     operator Gna2Status () const
     {
@@ -28,8 +55,8 @@ struct ModelErrorSource
 template<typename T>
 struct ValueLimits
 {
-    T Value;
-    ModelErrorSource Error;
+    T Value = {};
+    ModelErrorSource Error = Gna2StatusNotImplemented;
 };
 
 using AlignLimits = ValueLimits<uint32_t>;
@@ -49,65 +76,41 @@ struct SetLimits : public std::vector<T>
         Error{error}
     {}
 
+    template<typename ... X>
+    SetLimits(ModelErrorSource error, X ... limits) :
+        std::vector<T>{limits...},
+        Error{error}
+    {}
+
     ModelErrorSource Error;
 };
 
-using MultiplierMap = std::map<Gna2DataType, uint32_t>;
+using MultiplierMap = std::array<uint32_t, Gna2DataTypeWeightScaleFactor + 1>;
 
 struct MultiplierLimits : protected MultiplierMap
 {
-    MultiplierLimits() = delete;
+    constexpr MultiplierLimits() :
+        MultiplierMap{},
+        Error{Gna2StatusNotImplemented}
+    {}
 
-    MultiplierLimits(const MultiplierMap& multipliers, ModelErrorSource error) :
-        MultiplierMap{multipliers},
-        Error{error}
-    {
-        if (size() <= 0)
-        {
-            throw GnaException(Gna2StatusNullArgumentNotAllowed);
-        }
-    }
-
-
-    MultiplierLimits(const MultiplierLimits& multipliers, ModelErrorSource error) :
+    constexpr MultiplierLimits(const MultiplierMap& multipliers, ModelErrorSource error) :
         MultiplierMap{multipliers},
         Error{error}
     {
     }
 
-    MultiplierLimits(uint32_t multiplier, ModelErrorSource error) :
-        MultiplierMap{{{Gna2DataTypeNone, multiplier}}},
-        Error{error}
-    {}
+    MultiplierLimits(const MultiplierLimits& multipliers, ModelErrorSource error);
 
-    MultiplierLimits(uint32_t multiplierForInt8, uint32_t multiplierForInt16,
-        uint32_t multiplierForInt32, ModelErrorSource error) :
-        MultiplierMap{{
-            {Gna2DataTypeInt8, multiplierForInt8},
-            {Gna2DataTypeInt16, multiplierForInt16},
-            {Gna2DataTypeInt32, multiplierForInt32},
-            {Gna2DataTypeUint8, multiplierForInt8},
-            {Gna2DataTypeUint16, multiplierForInt16},
-            {Gna2DataTypeUint32, multiplierForInt32},
-        }},
-        Error{error}
-    {}
+    MultiplierLimits(uint32_t multiplier, ModelErrorSource error);
 
-    void SetEffective(Gna2DataType type)
-    {
-        if (Gna2DataTypeNone != type &&
-            end() != find(type))
-        {
-            (*this)[Gna2DataTypeNone] = at(type);
-        }
-    }
+    uint32_t& at(Gna2DataType type);
 
-    uint32_t GetEffective() const
-    {
-        return at(Gna2DataTypeNone);
-    }
+    uint32_t at(Gna2DataType type) const;
 
-    using MultiplierMap::at;
+    void SetEffective(DataType type);
+
+    uint32_t GetEffective() const;
 
     ModelErrorSource Error;
 };
@@ -115,7 +118,9 @@ struct MultiplierLimits : protected MultiplierMap
 template<typename T = uint32_t>
 struct RangeLimits
 {
-    RangeLimits(T min, ModelErrorSource minError, T max, ModelErrorSource maxError, const MultiplierLimits& multipliers) :
+    constexpr RangeLimits() = default;
+
+    constexpr RangeLimits(T min, ModelErrorSource minError, T max, ModelErrorSource maxError, const MultiplierLimits& multipliers) :
         Min{min, minError},
         Max{max, maxError},
         Multipliers{multipliers}
@@ -124,7 +129,7 @@ struct RangeLimits
 
     RangeLimits(T min, ModelErrorSource minError, T max, ModelErrorSource maxError, T multiplier, ModelErrorSource multiplierError) :
         RangeLimits{min, minError, max, maxError,
-            MultiplierLimits{multiplier, multiplierError}}
+            MultiplierLimits(multiplier, multiplierError)}
     {}
 
     RangeLimits(T min, T max, T multiplier, ModelErrorSource error) :
@@ -135,8 +140,12 @@ struct RangeLimits
         RangeLimits{min, rangeError, max, rangeError, multiplier, multiplierError}
     {}
 
-    RangeLimits(T min, T max, const MultiplierMap& multipliers, ModelErrorSource error) :
-        RangeLimits{min, error, max, error, MultiplierLimits{multipliers, error}}
+    constexpr RangeLimits(T min, T max, const MultiplierMap& multipliers, ModelErrorSource error) :
+        RangeLimits{min, error, max, error, MultiplierLimits(multipliers, error)}
+    {}
+
+    constexpr RangeLimits(const StaticCaps& limits, ModelErrorSource error) :
+        RangeLimits{limits[0], limits[1], limits[2], error}
     {}
 
     RangeLimits(T min, T max, const MultiplierLimits& multipliers, ModelErrorSource error) :
@@ -147,6 +156,10 @@ struct RangeLimits
         RangeLimits{base.Min.Value, error, base.Max.Value, error, MultiplierLimits(base.Multipliers, error)}
     {}
 
+    RangeLimits(const std::vector<uint32_t>::const_iterator& limits, ModelErrorSource error) :
+        RangeLimits{limits[0], limits[1], limits[2], error}
+    {}
+
     ValueLimits<T> Min;
     ValueLimits<T> Max;
     // multipliers for different data sizes
@@ -155,6 +168,22 @@ struct RangeLimits
 };
 
 using ShapeLimits = std::map<const gna_tensor_dim, RangeLimits<uint32_t>>;
+
+template<Gna2Status error>
+auto MakeShapeLimits(const std::vector<uint32_t>& dimensions, gna_tensor_order order)
+{
+    const auto & layout = Layout(order);
+    layout.ValidateNumberOfDimensions(dimensions.size() / 3);
+
+    auto limits = ShapeLimits{};
+    auto i = dimensions.begin();
+    for (const auto & dim : layout)
+    {
+        limits[Layout::GetIndex(dim)] = RangeLimits<uint32_t>{ i, error };
+        i += 3;
+    }
+    return limits;
+}
 
 struct Shape;
 // If any dimension in map is invalid prints error status code and throws exception.

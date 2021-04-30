@@ -1,7 +1,27 @@
-/**
- @copyright (C) 2018-2021 Intel Corporation
- SPDX-License-Identifier: LGPL-2.1-or-later
- */
+/*
+ INTEL CONFIDENTIAL
+ Copyright 2018 Intel Corporation.
+
+ The source code contained or described herein and all documents related
+ to the source code ("Material") are owned by Intel Corporation or its suppliers
+ or licensors. Title to the Material remains with Intel Corporation or its suppliers
+ and licensors. The Material may contain trade secrets and proprietary
+ and confidential information of Intel Corporation and its suppliers and licensors,
+ and is protected by worldwide copyright and trade secret laws and treaty provisions.
+ No part of the Material may be used, copied, reproduced, modified, published,
+ uploaded, posted, transmitted, distributed, or disclosed in any way without Intel's
+ prior express written permission.
+
+ No license under any patent, copyright, trade secret or other intellectual
+ property right is granted to or conferred upon you by disclosure or delivery
+ of the Materials, either expressly, by implication, inducement, estoppel
+ or otherwise. Any license under such intellectual property rights must
+ be express and approved by Intel in writing.
+
+ Unless otherwise agreed by Intel in writing, you may not remove or alter this notice
+ or any other notice embedded in Materials by Intel or Intel's suppliers or licensors
+ in any way.
+*/
 
 #include "Layer.h"
 
@@ -24,30 +44,6 @@
 #include <utility>
 
 using namespace GNA;
-
-std::unique_ptr<Layer> Layer::Create(const nn_layer& layer, const BaseValidator& validatorIn)
-{
-    switch (layer.operation)
-    {
-    case INTEL_AFFINE:
-    case INTEL_AFFINE_DIAGONAL:
-    case INTEL_AFFINE_MULTIBIAS:
-        return std::make_unique<AffineLayer>(layer, validatorIn);
-    case INTEL_CONVOLUTIONAL:
-        return std::make_unique<CnnLayer>(layer, validatorIn);
-    case INTEL_CONVOLUTIONAL_2D:
-        return std::make_unique<ConvolutionalLayer2D>(layer, validatorIn);
-    case INTEL_COPY:
-        return std::make_unique<CopyLayer>(layer, validatorIn);
-    case INTEL_INTERLEAVE:/* FALLTHRU */
-    case INTEL_DEINTERLEAVE:
-        return std::make_unique<TransposeLayer>(layer, validatorIn);
-    case INTEL_RECURRENT:
-        return std::make_unique<RecurrentLayer>(layer, validatorIn);
-    default:
-        throw GnaException(Gna2StatusXnnErrorLyrCfg);
-    }
-}
 
 std::unique_ptr<GNA::Layer> Layer::Create(const Gna2Operation & operation, const BaseValidator & validatorIn)
 {
@@ -81,6 +77,8 @@ std::unique_ptr<GNA::Layer> Layer::Create(const Gna2Operation & operation, const
         return std::make_unique<GmmOperation>(operation, validatorIn);
     case Gna2OperationTypeTransposition:
         return std::make_unique<TransposeLayer>(operation, validatorIn);
+    case Gna2OperationTypeThreshold:
+        return std::make_unique<AffineThresholdLayer>(operation, validatorIn);
     default:
         throw GnaModelErrorException(
             Gna2ItemTypeOperationType,
@@ -106,6 +104,7 @@ void Layer::addBufferAs(const BufferMap& source, uint32_t sourceType,
 
 void Layer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const
 {
+    //TODO:3: remove condition when all layers use Transforms
     if (!Transforms.empty())
     {
         auto nonIoBuffers = layerConfiguration.Buffers;
@@ -142,14 +141,14 @@ void Layer::UpdateKernelConfigs(LayerConfiguration& layerConfiguration) const
 
         if (layerConfiguration.ActList)
         {
-            outputTransform->ValidateActiveList(*layerConfiguration.ActList);
+            GetOutputTransform().ValidateActiveList(*layerConfiguration.ActList);
         }
     }
 }
 
-DataConfig Layer::GetDataMode() const
+const DataConfig Layer::GetDataMode() const
 {
-    return DataConfig(Input.Mode, GNA_INT16, GNA_INT32, Output.Mode);
+    return dataConfig;
 }
 
 Tensor const & Layer::GetOperand(uint32_t operandIndex) const
@@ -201,8 +200,8 @@ void Layer::VerifyHas1BInputAnd2BWeight()
     auto const weight = TryGetOperand(WeightOperandIndex);
     if (input &&
         weight &&
-        Gna2DataTypeInt8 == input->Mode &&
-        Gna2DataTypeInt16 == weight->Mode)
+        Gna2DataTypeInt8 == input->Mode.Type &&
+        Gna2DataTypeInt16 == weight->Mode.Type)
     {
         has1BInputAnd2BWeight = true;
     }
@@ -210,15 +209,8 @@ void Layer::VerifyHas1BInputAnd2BWeight()
 
 Tensor const & Layer::getTransformOperand(TransformOperation operation, uint32_t operandIndex) const
 {
-    auto const transform = Transforms.Get(operation);
-    if (transform)
-    {
-        return transform->GetOperand(operandIndex);
-    }
-    else
-    {
-        throw GnaException(Gna2StatusXnnErrorLyrCfg);
-    }
+    auto const & transform = Transforms.Get(operation);
+    return transform.GetOperand(operandIndex);
 }
 
 void Layer::initTransforms(const std::vector<TransformOperation>& transforms,
@@ -229,8 +221,11 @@ void Layer::initTransforms(const std::vector<TransformOperation>& transforms,
         outputTransform = Transforms.Emplace(transform, commonConfig, operationConfig);
         commonConfig.input = outputTransform->Output.get();
     }
+    Expect::NotNull(outputTransform);
 
     inputTransform = Transforms.begin()->get();
+    Expect::NotNull(inputTransform);
+
     if (Output.Buffer)
     {
         outputTransform->SetOutput(Output.Buffer);
@@ -274,6 +269,7 @@ void Layer::compute(const LayerConfiguration* layerConfiguration, AccelerationMo
 nn_operation AbstractOperation::toLegacy(
     const Gna2Operation& operation, const BaseValidator& validator)
 {
+    //TODO:3:P1: Add remaining cases
     switch (operation.Type)
     {
     case Gna2OperationTypeElementWiseAffine:
@@ -283,6 +279,9 @@ nn_operation AbstractOperation::toLegacy(
         {
             return INTEL_AFFINE_MULTIBIAS;
         }
+        return INTEL_AFFINE;
+    case Gna2OperationTypeThreshold:
+        // TODO: 3: return INTEL_AFFINE_THRESHOLD when separate  caps added
         return INTEL_AFFINE;
     case Gna2OperationTypeCopy:
         return INTEL_COPY;

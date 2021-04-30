@@ -1,24 +1,42 @@
-/**
- @copyright (C) 2019-2021 Intel Corporation
- SPDX-License-Identifier: LGPL-2.1-or-later
- */
+/*
+ INTEL CONFIDENTIAL
+ Copyright 2019 Intel Corporation.
+
+ The source code contained or described herein and all documents related
+ to the source code ("Material") are owned by Intel Corporation or its suppliers
+ or licensors. Title to the Material remains with Intel Corporation or its suppliers
+ and licensors. The Material may contain trade secrets and proprietary
+ and confidential information of Intel Corporation and its suppliers and licensors,
+ and is protected by worldwide copyright and trade secret laws and treaty provisions.
+ No part of the Material may be used, copied, reproduced, modified, published,
+ uploaded, posted, transmitted, distributed, or disclosed in any way without Intel's
+ prior express written permission.
+
+ No license under any patent, copyright, trade secret or other intellectual
+ property right is granted to or conferred upon you by disclosure or delivery
+ of the Materials, either expressly, by implication, inducement, estoppel
+ or otherwise. Any license under such intellectual property rights must
+ be express and approved by Intel in writing.
+
+ Unless otherwise agreed by Intel in writing, you may not remove or alter this notice
+ or any other notice embedded in Materials by Intel or Intel's suppliers or licensors
+ in any way.
+*/
 
 #include "ThreadPool.h"
 
+#include "ConvolutionalLayer2DCapabilities.h"
 #include "Expect.h"
 #include "GnaException.h"
+#include "Memory.h"
 #include "Request.h"
-
 #include "KernelArguments.h"
-
-#include "common.h"
-#include "gna-api-status.h"
-#include "gna-api-types-xnn.h"
 
 #include <cstring>
 #include <cstdint>
 
 using namespace GNA;
+using CnnCaps = GNA::ConvolutionalLayer2DCapabilities;
 
 // will set memory only in DEBUG configuration
 template<typename M, typename S>
@@ -34,6 +52,7 @@ static void clearMemoryInDebug(M* memory, S size)
 
 KernelBuffers::KernelBuffers()
 {
+    // TODO: use one allocation for inputs and pool buffer
     auto const size = 8 * (UINT16_MAX + 1) * sizeof(int16_t);
     d0 = static_cast<int16_t*>(_gna_malloc(size));
     if (nullptr == d0)
@@ -49,7 +68,7 @@ KernelBuffers::KernelBuffers()
     d6 = d5 + UINT16_MAX + 1;
     d7 = d6 + UINT16_MAX + 1;
 
-    auto const poolSize = CNN_POOL_SIZE_MAX * CNN_N_FLT_MAX * sizeof(int64_t);
+    auto const poolSize = CnnCaps::PoolingWindowSizeMax * CnnCaps::Filter1DCountMax * sizeof(int64_t);
     pool = static_cast<int64_t *>(_kernel_malloc(poolSize));
     if (nullptr == pool)
     {

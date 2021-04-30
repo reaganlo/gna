@@ -1,15 +1,33 @@
-/**
- @copyright (C) 2017-2021 Intel Corporation
- SPDX-License-Identifier: LGPL-2.1-or-later
- */
+/*
+ INTEL CONFIDENTIAL
+ Copyright 2017 Intel Corporation.
+
+ The source code contained or described herein and all documents related
+ to the source code ("Material") are owned by Intel Corporation or its suppliers
+ or licensors. Title to the Material remains with Intel Corporation or its suppliers
+ and licensors. The Material may contain trade secrets and proprietary
+ and confidential information of Intel Corporation and its suppliers and licensors,
+ and is protected by worldwide copyright and trade secret laws and treaty provisions.
+ No part of the Material may be used, copied, reproduced, modified, published,
+ uploaded, posted, transmitted, distributed, or disclosed in any way without Intel's
+ prior express written permission.
+
+ No license under any patent, copyright, trade secret or other intellectual
+ property right is granted to or conferred upon you by disclosure or delivery
+ of the Materials, either expressly, by implication, inducement, estoppel
+ or otherwise. Any license under such intellectual property rights must
+ be express and approved by Intel in writing.
+
+ Unless otherwise agreed by Intel in writing, you may not remove or alter this notice
+ or any other notice embedded in Materials by Intel or Intel's suppliers or licensors
+ in any way.
+*/
 
 #include "LayerDescriptor.h"
 
 #include "HardwareCapabilities.h"
 #include "PoolingKernelArguments.h"
 #include "ThresholdParameters.h"
-
-#include "gna-api-types-gmm.h"
 
 using namespace GNA;
 
@@ -21,11 +39,11 @@ uint32_t LayerDescriptor::getSize(const DeviceVersion deviceVersion)
         {Gna2DeviceVersion0_9, 128},
         {Gna2DeviceVersion1_0, 128},
         {Gna2DeviceVersion2_0, 128},
-        {Gna2DeviceVersionFromInt(0x30), 128},
+        {Gna2DeviceVersion3_0, 128},
+        {Gna2DeviceVersion3_5, 128},
         {Gna2DeviceVersionEmbedded1_0, 128},
-        {Gna2DeviceVersionFromInt(0x20E), 128},
-        {Gna2DeviceVersionFromInt(0x30E), 128},
-        {Gna2DeviceVersionFromInt(0x31E), 128},
+        {Gna2DeviceVersionEmbedded3_1, 128}, // TODO:3: verify the actual size
+        {Gna2DeviceVersionEmbedded3_5, 128},
     };
     return sizeMap.at(deviceVersion);
 }
@@ -70,21 +88,20 @@ static const std::map<const GmmParameterType, const XnnParameter> GmmDescriptorG
     { gmmscrlen, {0x7c, 4}},
 };
 
-
 static const std::map<const XnnParameterType, const XnnParameter> XnnDescriptorGNA_1 =
 {
     { op,{ 0x00, 1 }},
     {flags, { 0x01, 1 }},
     {act_fn_precision, { 0x01, 1, 2, 1,
         {
-            {GNA_DATA_ACTIVATION_DISABLED, static_cast<uint8_t>(0)},
-            {GNA_INT32, static_cast<uint8_t>(0)},
-            {GNA_INT16, static_cast<uint8_t>(1)},
+            {Gna2DataTypeNone, static_cast<uint8_t>(0)},
+            {Gna2DataTypeInt32, static_cast<uint8_t>(0)},
+            {Gna2DataTypeInt16, static_cast<uint8_t>(1)},
         }}},
     {weight_size, { 0x01, 1, 0, 2,
         {
-            {GNA_INT8, static_cast<uint8_t>(1)},
-            {GNA_INT16, static_cast<uint8_t>(0)},
+            {Gna2DataTypeInt8, static_cast<uint8_t>(1)},
+            {Gna2DataTypeInt16, static_cast<uint8_t>(0)},
         }}},
     {pool_param, { 0x01, 1, 3, 2,
          {
@@ -130,29 +147,28 @@ static const std::map<const XnnParameterType, const XnnParameter> XnnDescriptorG
     {pwl_seg_def_buffer, { 0x3c, 4 }},
 };
 
-
 static const std::map<const XnnParameterType, const XnnParameter> XnnDescriptorGNA_3 =
 {
     {op, { 0x00, 1 }},
     {flags, { 0x01, 1 }},
     {act_fn_precision, { 0x01, 1, 4, 2,
         {
-            {GNA_DATA_ACTIVATION_DISABLED, static_cast<uint8_t>(0)},
-            {GNA_INT8, static_cast<uint8_t>(1)},
-            {GNA_INT16, static_cast<uint8_t>(2)},
-            {GNA_INT32, static_cast<uint8_t>(3)}
+            {Gna2DataTypeNone, static_cast<uint8_t>(0)},
+            {Gna2DataTypeInt8, static_cast<uint8_t>(1)},
+            {Gna2DataTypeInt16, static_cast<uint8_t>(2)},
+            {Gna2DataTypeInt32, static_cast<uint8_t>(3)}
         }}},
     {input_element_precision, { 0x01, 1, 2, 2,
         {
-            {GNA_DATA_DISABLED, static_cast<uint8_t>(0)},
-            {GNA_INT8, static_cast<uint8_t>(1)},
-            {GNA_INT16, static_cast<uint8_t>(2)},
+            {Gna2DataTypeNone, static_cast<uint8_t>(0)},
+            {Gna2DataTypeInt8, static_cast<uint8_t>(1)},
+            {Gna2DataTypeInt16, static_cast<uint8_t>(2)},
         }}},
     {weight_size, { 0x01, 1, 0, 2,
         {
-            {GNA_DATA_CONSTANT_SCALAR, static_cast<uint8_t>(0)},
-            {GNA_INT8, static_cast<uint8_t>(1)},
-            {GNA_INT16, static_cast<uint8_t>(2)}
+            {Gna2DataTypeNone, static_cast<uint8_t>(0)},
+            {Gna2DataTypeInt8, static_cast<uint8_t>(1)},
+            {Gna2DataTypeInt16, static_cast<uint8_t>(2)}
         }}},
     {n_in_elems, { 0x02, 2 }},
     {n_out_elems, { 0x04, 2 }},
@@ -167,17 +183,28 @@ static const std::map<const XnnParameterType, const XnnParameter> XnnDescriptorG
     {cnn_pool_size, { 0x0a, 1 }},
     {bias_precision, { 0x0b, 1, 0, 3,
                          {
-                             {GNA_DATA_DISABLED, static_cast<uint8_t>(0) },
-                             {GNA_DATA_CONSTANT_SCALAR, static_cast<uint8_t>(0) },
-                             {GNA_INT8, static_cast<uint8_t>(1) },
-                             {GNA_INT16, static_cast<uint8_t>(2) },
-                             {GNA_INT32, static_cast<uint8_t>(3) },
-                             {GNA_DATA_RICH_FORMAT, static_cast<uint8_t>(7) },
-        }}},
+                             {Gna2DataTypeNone, static_cast<uint8_t>(0) },
+                             {Gna2DataTypeInt8, static_cast<uint8_t>(1) },
+                             {Gna2DataTypeInt16, static_cast<uint8_t>(2) },
+                             {Gna2DataTypeInt32, static_cast<uint8_t>(3) },
+                             {Gna2DataTypeCompoundBias, static_cast<uint8_t>(7) },
+        }}}, //When using 'Rich-Format', Constants values are bounded to INT-32 precision.
+        //Therefore, NNFlagsExt::BPRC should have no impact on GNA-HW. However this is not true in newest FPGA image.
+        // TODO:3:P2 consider providing version for 'newest FPGA image'
     { th_bias_src, {0x0b, 1, 3, 1,
         {
-                          { ThresholdBiasSourceDefault, static_cast<uint8_t>(0) },
-                          { ThresholdBiasSourceExternal, static_cast<uint8_t>(1) },
+                          { ThresholdSourceDefault, static_cast<uint8_t>(0) },
+                          { ThresholdSourceExternal, static_cast<uint8_t>(1) },
+        }}},
+    { th_input_src, {0x01, 1, 6, 1,
+    {
+                      { ThresholdSourceDefault, static_cast<uint8_t>(0) },
+                      { ThresholdSourceExternal, static_cast<uint8_t>(1) },
+        }}},
+    { th_output_src, {0x01, 1, 7, 1,
+    {
+                      { ThresholdSourceDefault, static_cast<uint8_t>(0) },
+                      { ThresholdSourceExternal, static_cast<uint8_t>(1) },
         }}},
     { th_int_mask, {0x0b, 1, 4, 1,
         {
@@ -189,7 +216,7 @@ static const std::map<const XnnParameterType, const XnnParameter> XnnDescriptorG
                           { ThresholdOperationStop, static_cast<uint8_t>(0) },
                           { ThresholdOperationContinueIfMet, static_cast<uint8_t>(1) },
                           { ThresholdOperationContinueIfNotMet, static_cast<uint8_t>(2) },
-                          { ThresholdOperationContinueAllways, static_cast<uint8_t>(3) },
+                          { ThresholdOperationContinueAlways, static_cast<uint8_t>(3) },
         }}},
     { th_cond, {0x0b, 1, 7, 1,
         {
@@ -206,12 +233,12 @@ static const std::map<const XnnParameterType, const XnnParameter> XnnDescriptorG
     {cnn_n_flts, { 0x0c, 2 }},
     {rnn_n_elems_last, { 0x0e, 2 }},
     {cnn_n_flt_iters, { 0x0e, 2 }},
-    {pwl_n_segs, { 0x10, 2 }},
+    {pwl_n_segs, { 0x10, 2 }},      //TODO:3: Add entries for ReLUHint and ZeroIndex
     {act_list_n_elems, { 0x12, 2 }},
     {cpy_n_elems, { 0x12, 2 }},
     {cnn_flt_size, { 0x12, 2 }},
     {bias_grp_cnt, { 0x12, 2 }},
-    {cnn_n_flts_iter, { 0x14, 2 }},
+    {cnn_n_flts_iter, { 0x14, 2 }}, //TODO:3: Consider removing
     {bias_grp_value, { 0x14, 2 }},
     {cnn_n_flt_outs, { 0x16, 2 }},
     {in_buffer, { 0x20, 4 }},
@@ -246,11 +273,148 @@ static const std::map<const XnnParameterType, const XnnParameter> XnnDescriptorG
     {cnn2d_kmem_base, {0x2C,1} },
     {cnn2d_cmem_base, {0x2D,1} },
     {cnn2d_pmem_base, {0x2E,1} },
-    {cnn2d_kernel_scalar, { 0x30, 4 } },
+    {cnn2d_kernel_scalar, { 0x30, 4 } }, //not supported?
     {cnn2d_padding_w, { 0x38, 1 } },
     {cnn2d_padding_h, { 0x39, 1 }},
     {cnn2d_conv_stride_w, { 0x3A, 1 }},
     {cnn2d_conv_stride_h, { 0x3B, 1 }},
+    {cnn2d_bias_mode, { 0x0B, 1, 3, 1,
+        {
+            { KernelBiasModePerStride, static_cast<uint8_t>(0) },
+            { KernelBiasModePerFilter, static_cast<uint8_t>(1) },
+            { KernelBiasModeDisabled, static_cast<uint8_t>(1) },
+       }}},
+};
+
+static const std::map<const XnnParameterType, const XnnParameter> XnnDescriptorGNA_3_5 =
+{
+    {op, { 0x00, 1 }},
+    {flags, { 0x01, 1 }},
+    {act_fn_precision, { 0x01, 1, 4, 2,
+        {
+            {Gna2DataTypeNone, static_cast<uint8_t>(0)},
+            {Gna2DataTypeInt8, static_cast<uint8_t>(1)},
+            {Gna2DataTypeInt16, static_cast<uint8_t>(2)},
+            {Gna2DataTypeInt32, static_cast<uint8_t>(3)}
+        }}},
+    {input_element_precision, { 0x01, 1, 2, 2,
+        {
+            {Gna2DataTypeNone, static_cast<uint8_t>(0)},
+            {Gna2DataTypeInt8, static_cast<uint8_t>(1)},
+            {Gna2DataTypeInt16, static_cast<uint8_t>(2)},
+        }}},
+    {weight_size, { 0x01, 1, 0, 2,
+        {
+            {Gna2DataTypeNone, static_cast<uint8_t>(0)},
+            {Gna2DataTypeInt8, static_cast<uint8_t>(1)},
+            {Gna2DataTypeInt16, static_cast<uint8_t>(2)}
+        }}},
+    {n_in_elems, { 0x02, 2 }},
+    {n_out_elems, { 0x04, 2 }},
+    {cnn_n_out_p_flt, { 0x04, 2 }},
+    {n_groups, { 0x06, 1 }},
+    {cpy_n_rows, { 0x06, 1 }},
+    {n_iters, { 0x07, 1 }},
+    {cnn_pool_stride, { 0x07, 1 }},
+    {n_elems_last, { 0x08, 2 }},
+    {cnn_n_flt_stride, { 0x08, 2 }},
+    {rnn_n_fb_iters, { 0x0a, 1 }},
+    {cnn_pool_size, { 0x0a, 1 }},
+    {bias_precision, { 0x0b, 1, 0, 3,
+                         {
+                             {Gna2DataTypeNone, static_cast<uint8_t>(0) },
+                             {Gna2DataTypeInt8, static_cast<uint8_t>(1) },
+                             {Gna2DataTypeInt16, static_cast<uint8_t>(2) },
+                             {Gna2DataTypeInt32, static_cast<uint8_t>(3) },
+                             {Gna2DataTypeCompoundBias, static_cast<uint8_t>(7) },
+        }}}, //When using 'Rich-Format', Constants values are bounded to INT-32 precision.
+        //Therefore, NNFlagsExt::BPRC should have no impact on GNA-HW. However this is not true in newest FPGA image.
+        // TODO:3:P2 consider providing version for 'newest FPGA image'
+     { th_bias_src, {0x0b, 1, 3, 1,
+        {
+                          { ThresholdSourceDefault, static_cast<uint8_t>(0) },
+                          { ThresholdSourceExternal, static_cast<uint8_t>(1) },
+        }}},
+    { th_input_src, {0x01, 1, 6, 1,
+    {
+                      { ThresholdSourceDefault, static_cast<uint8_t>(0) },
+                      { ThresholdSourceExternal, static_cast<uint8_t>(1) },
+        }}},
+    { th_output_src, {0x01, 1, 7, 1,
+    {
+                      { ThresholdSourceDefault, static_cast<uint8_t>(0) },
+                      { ThresholdSourceExternal, static_cast<uint8_t>(1) },
+        }}},
+    { th_int_mask, {0x0b, 1, 4, 1,
+        {
+                          { ThresholdInterruptDefault, static_cast<uint8_t>(0) },
+                          { ThresholdInterruptNotSent, static_cast<uint8_t>(1) },
+        }}},
+    { th_op_mode, {0x0b, 1, 5, 2,
+        {
+                          { ThresholdOperationStop, static_cast<uint8_t>(0) },
+                          { ThresholdOperationContinueIfMet, static_cast<uint8_t>(1) },
+                          { ThresholdOperationContinueIfNotMet, static_cast<uint8_t>(2) },
+                          { ThresholdOperationContinueAlways, static_cast<uint8_t>(3) },
+        }}},
+    { th_cond, {0x0b, 1, 7, 1,
+        {
+                          { ThresholdConditionScoreNegative, static_cast<uint8_t>(0) },
+                          { ThresholdConditionScoreNotNegative, static_cast<uint8_t>(1) },
+        }}},
+    { pool_param, { 0x0b, 1, 6, 2,
+                      {
+                          { KernelPoolingModeNone, static_cast<uint8_t>(0) },
+                          { KernelPoolingModeMax, static_cast<uint8_t>(1) },
+                          { KernelPoolingModeSum, static_cast<uint8_t>(2) },
+                      } } },
+    {rnn_n_elems_first, { 0x0c, 2 }},
+    {cnn_n_flts, { 0x0c, 2 }},
+    {rnn_n_elems_last, { 0x0e, 2 }},
+    {cnn_n_flt_iters, { 0x0e, 2 }},
+    {pwl_n_segs, { 0x10, 2 }},      //TODO:3: Add entries for ReLUHint and ZeroIndex
+    {act_list_n_elems, { 0x12, 2 }},
+    {cpy_n_elems, { 0x12, 2 }},
+    {cnn_flt_size, { 0x12, 2 }},
+    {bias_grp_cnt, { 0x12, 2 }},
+    {cnn_n_flts_iter, { 0x14, 2 }}, //TODO:3: Consider removing
+    {bias_grp_value, { 0x14, 2 }},
+    {cnn_n_flt_outs, { 0x16, 2 }},
+    {in_buffer, { 0x20, 4 }},
+    {gmm_descriptor, { 0x20, 4 }},
+    {out_buffer, { 0x24, 4 }},
+    {out_sum_buffer, { 0x28, 4 }},
+    {rnn_out_fb_buffer, { 0x2C, 4 }},
+    {weight_buffer, { 0x30, 4 }},
+    {bias_buffer, { 0x34, 4 }},
+    {act_list_buffer, { 0x38, 4 }},
+    {bias_grp_buffer, { 0x38, 4 }},
+    {pwl_seg_def_buffer, { 0x3c, 4 }},
+
+    {cnn2d_in_dim_w, { 0x02, 2 }},
+    {cnn2d_in_dim_d, { 0x04, 2 }},
+    {cnn2d_in_dim_h, { 0x06, 2 }},
+    {cnn2d_pool_stride_w, { 0x08, 1 }},
+    {cnn2d_pool_stride_h, { 0x09, 1 }},
+    {cnn2d_kernel_iter, { 0x0E, 2 }},
+    {cnn2d_padding_w, { 0x12, 1} },
+    {cnn2d_padding_h, { 0x13, 1} },
+    {cnn2d_kernel_wg, { 0x14, 2 } },
+    {cnn2d_conv_out_w, { 0x16, 2 } },
+    {cnn2d_conv_out_h, { 0x18, 2 } },
+    {cnn2d_pool_out_w, { 0x1A, 2 } },
+    {cnn2d_pool_out_h, { 0x1C, 2 } },
+    {cnn2d_pool_window_w, { 0x1E, 1 } },
+    {cnn2d_pool_window_h, { 0x1F, 1 } },
+    {cnn2d_conv_kernel_w, { 0x28, 2 } },
+    {cnn2d_conv_kernel_h, { 0x2A, 1 } },
+    {cnn2d_kmem_base, {0x2C,1} },
+    {cnn2d_cmem_base, {0x2D,1} },
+    {cnn2d_pmem_base, {0x2E,1} },
+    {cnn2d_uthread_num, { 0x2F, 1 } },
+    {cnn2d_kernel_scalar, { 0x30, 4 } }, //not supported?
+    {cnn2d_conv_stride_w, { 0x38, 2 }},
+    {cnn2d_conv_stride_h, { 0x3A, 1 }},
     {cnn2d_bias_mode, { 0x0B, 1, 3, 1,
         {
             { KernelBiasModePerStride, static_cast<uint8_t>(0) },
@@ -266,11 +430,11 @@ const std::map<const XnnParameterType, const XnnParameter>& LayerDescriptor::get
         {Gna2DeviceVersion0_9, XnnDescriptorGNA_1},
         {Gna2DeviceVersion1_0, XnnDescriptorGNA_1},
         {Gna2DeviceVersion2_0, XnnDescriptorGNA_1},
-        {Gna2DeviceVersionFromInt(0x30), XnnDescriptorGNA_3},
+        {Gna2DeviceVersion3_0, XnnDescriptorGNA_3},
+        {Gna2DeviceVersion3_5, XnnDescriptorGNA_3_5},
         {Gna2DeviceVersionEmbedded1_0, XnnDescriptorGNA_1},
-        {Gna2DeviceVersionFromInt(0x20E), XnnDescriptorGNA_1},
-        {Gna2DeviceVersionFromInt(0x30E), XnnDescriptorGNA_3},
-        {Gna2DeviceVersionFromInt(0x31E), XnnDescriptorGNA_3},
+        {Gna2DeviceVersionEmbedded3_1, XnnDescriptorGNA_3},
+        {Gna2DeviceVersionEmbedded3_5, XnnDescriptorGNA_3_5},
     };
     return parameterMap.at(deviceVersion);
 }
