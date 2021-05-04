@@ -58,7 +58,6 @@ struct Shape : public ShapeMap
 
     Shape(const Shape&) = default;
     ~Shape() = default;
-
     ModelValue AsModelValue(char dimension) const;
 
     using ShapeMap::at;
