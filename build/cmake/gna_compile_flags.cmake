@@ -1,5 +1,25 @@
-#@copyright (C) 2020-2021 Intel Corporation
-#SPDX-License-Identifier: LGPL-2.1-or-later
+# INTEL CONFIDENTIAL
+# Copyright 2020 Intel Corporation.
+
+# The source code contained or described herein and all documents related
+# to the source code ("Material") are owned by Intel Corporation or its suppliers
+# or licensors. Title to the Material remains with Intel Corporation or its suppliers
+# and licensors. The Material may contain trade secrets and proprietary
+# and confidential information of Intel Corporation and its suppliers and licensors,
+# and is protected by worldwide copyright and trade secret laws and treaty provisions.
+# No part of the Material may be used, copied, reproduced, modified, published,
+# uploaded, posted, transmitted, distributed, or disclosed in any way without Intel's
+# prior express written permission.
+
+# No license under any patent, copyright, trade secret or other intellectual
+# property right is granted to or conferred upon you by disclosure or delivery
+# of the Materials, either expressly, by implication, inducement, estoppel
+# or otherwise. Any license under such intellectual property rights must
+# be express and approved by Intel in writing.
+
+# Unless otherwise agreed by Intel in writing, you may not remove or alter this notice
+# or any other notice embedded in Materials by Intel or Intel's suppliers or licensors
+# in any way.
 
 set(GNA_COMPILE_FLAGS)
 set(GNA_COMPILE_ERROR_FLAGS)
@@ -34,7 +54,8 @@ if(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
   # Debug/Release Multithreaded libraries
   add_compile_options(
     $<$<CONFIG:WIN_DEBUG>:${GNA_WINDOWS_RUNTIME_LINKAGE}d>
-    $<$<CONFIG:WIN_RELEASE>:${GNA_WINDOWS_RUNTIME_LINKAGE}>)
+    $<$<CONFIG:WIN_RELEASE>:${GNA_WINDOWS_RUNTIME_LINKAGE}>
+    $<$<CONFIG:KLOCWORK>:${GNA_WINDOWS_RUNTIME_LINKAGE}>)
 
   # Optimization level
   if(${CMAKE_CXX_COMPILER_ID} STREQUAL "Intel")
@@ -54,11 +75,14 @@ if(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
   set(GNA_LINKER_FLAGS_DEBUG "/INCREMENTAL ${GNA_ICL_DEBUG_WORKAROUND}")
   set(GNA_LINKER_FLAGS_RELEASE "/INCREMENTAL:NO /NOLOGO /OPT:REF /OPT:ICF /guard:cf
                                /PDBSTRIPPED:$(TargetDir)$(TargetName)Public.pdb")
+  # Integrity check due to security review
   option(GNA_LINKER_FLAGS_ALWAYS_RELEASE_INTEGRITYCHECK "Enables /INTEGRITYCHECK linker flag in release builds" OFF)
   option(GNA_LINKER_FLAGS_ICC_RELEASE_INTEGRITYCHECK "Enables /INTEGRITYCHECK linker flag in release builds using Intel C++ Compiler" ON)
   if(GNA_LINKER_FLAGS_ALWAYS_RELEASE_INTEGRITYCHECK
     OR (GNA_LINKER_FLAGS_ICC_RELEASE_INTEGRITYCHECK
     AND ${CMAKE_CXX_COMPILER_ID} STREQUAL "Intel"))
+    # have to be set as can not run tests before binary image signed
+    set(GNA_DISABLE_TEST_RUN $<NOT:$<CONFIG:WIN_DEBUG>>)
     set(GNA_LINKER_FLAGS_RELEASE "${GNA_LINKER_FLAGS_RELEASE} /INTEGRITYCHECK")
   endif()
     # remove Debug Information from image (coffgrpinfo section)
@@ -140,17 +164,27 @@ include(CheckIPOSupported)
 check_ipo_supported(RESULT result OUTPUT output)
 if(result)
   set_property(GLOBAL PROPERTY
-    INTERPROCEDURAL_OPTIMIZATION_${OS_PREFIX}_RELEASE TRUE)
+    INTERPROCEDURAL_OPTIMIZATION_${OS_PREFIX}_RELEASE TRUE
+    INTERPROCEDURAL_OPTIMIZATION_KLOCWORK TRUE)
 else()
   message(WARNING "IPO is not supported: ${output}. Setting flags manually")
 
   if(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
-    if(${CMAKE_CXX_COMPILER_ID} STREQUAL "MSVC")
+    if(${CMAKE_CXX_COMPILER_ID} STREQUAL "Intel")
+      message(WARNING "IPO disabled as causes compiler failure with guard:cf.")
+      #       error : ** The compiler has encountered an unexpected problem.
+      #       ** Segmentation violation signal raised. **
+      #       Access violation or stack overflow. Please contact Intel Support for assistance.
+      #       xilink: : error #10014: problem during multi-file optimization compilation (code 4)
+      # set(GNA_COMPILE_FLAGS_RELEASE ${GNA_COMPILE_FLAGS_RELEASE} /Qipo)
+    elseif(${CMAKE_CXX_COMPILER_ID} STREQUAL "MSVC")
       set(GNA_COMPILE_FLAGS_RELEASE ${GNA_COMPILE_FLAGS_RELEASE} /GL)
     endif()
   elseif(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
     if(${CMAKE_CXX_COMPILER_ID} STREQUAL "Intel")
       set(GNA_COMPILE_FLAGS_RELEASE ${GNA_COMPILE_FLAGS_RELEASE} -ipo)
+    elseif(${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
+      set(GNA_COMPILE_FLAGS_RELEASE ${GNA_COMPILE_FLAGS_RELEASE} -flto=thin)
     else()
       if(${TARGET_OS} STREQUAL "ChromeOS")
 	set(GNA_COMPILE_FLAGS_RELEASE ${GNA_COMPILE_FLAGS_RELEASE})
@@ -175,13 +209,17 @@ endif()
 set(CMAKE_SHARED_LINKER_FLAGS                      "${CMAKE_SHARED_LINKER_FLAGS} ${GNA_LINKER_FLAGS} ${GNA_COMMON_SHARED_LINKER_FLAGS}")
 set(CMAKE_SHARED_LINKER_FLAGS_${OS_PREFIX}_DEBUG   "${CMAKE_SHARED_LINKER_FLAGS_DEBUG} ${GNA_LINKER_FLAGS_DEBUG}  ${GNA_COMMON_SHARED_LINKER_FLAGS}")
 set(CMAKE_SHARED_LINKER_FLAGS_${OS_PREFIX}_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} ${GNA_LINKER_FLAGS_RELEASE} ${GNA_COMMON_SHARED_LINKER_FLAGS}")
+set(CMAKE_SHARED_LINKER_FLAGS_KLOCWORK             "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} ${GNA_LINKER_FLAGS_RELEASE} ${GNA_COMMON_SHARED_LINKER_FLAGS}")
 
 set(CMAKE_EXE_LINKER_FLAGS                         "${CMAKE_EXE_LINKER_FLAGS} ${GNA_LINKER_FLAGS}")
 set(CMAKE_EXE_LINKER_FLAGS_${OS_PREFIX}_DEBUG      "${CMAKE_EXE_LINKER_DEBUG} ${GNA_LINKER_FLAGS_DEBUG}")
 set(CMAKE_EXE_LINKER_FLAGS_${OS_PREFIX}_RELEASE    "${CMAKE_EXE_LINKER_RELEASE} ${GNA_LINKER_FLAGS_RELEASE}")
+set(CMAKE_EXE_LINKER_FLAGS_KLOCWORK                "${CMAKE_EXE_LINKER_RELEASE} ${GNA_LINKER_FLAGS_RELEASE}")
 
 set(CMAKE_CXX_FLAGS_${OS_PREFIX}_DEBUG ${CMAKE_CXX_FLAGS_DEBUG})
 set(CMAKE_CXX_FLAGS_${OS_PREFIX}_RELEASE ${CMAKE_CXX_FLAGS_RELEASE})
+set(CMAKE_CXX_FLAGS_KLOCWORK ${CMAKE_CXX_FLAGS_RELEASE})
 
 set(CMAKE_C_FLAGS_${OS_PREFIX}_DEBUG ${CMAKE_C_FLAGS_DEBUG})
 set(CMAKE_C_FLAGS_${OS_PREFIX}_RELEASE ${CMAKE_C_FLAGS_RELEASE})
+set(CMAKE_C_FLAGS_KLOCWORK ${CMAKE_C_FLAGS_RELEASE})

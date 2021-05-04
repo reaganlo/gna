@@ -1,15 +1,33 @@
-/**
- @copyright (C) 2019-2021 Intel Corporation
- SPDX-License-Identifier: LGPL-2.1-or-later
- */
+/*
+ INTEL CONFIDENTIAL
+ Copyright 2019 Intel Corporation.
+
+ The source code contained or described herein and all documents related
+ to the source code ("Material") are owned by Intel Corporation or its suppliers
+ or licensors. Title to the Material remains with Intel Corporation or its suppliers
+ and licensors. The Material may contain trade secrets and proprietary
+ and confidential information of Intel Corporation and its suppliers and licensors,
+ and is protected by worldwide copyright and trade secret laws and treaty provisions.
+ No part of the Material may be used, copied, reproduced, modified, published,
+ uploaded, posted, transmitted, distributed, or disclosed in any way without Intel's
+ prior express written permission.
+
+ No license under any patent, copyright, trade secret or other intellectual
+ property right is granted to or conferred upon you by disclosure or delivery
+ of the Materials, either expressly, by implication, inducement, estoppel
+ or otherwise. Any license under such intellectual property rights must
+ be express and approved by Intel in writing.
+
+ Unless otherwise agreed by Intel in writing, you may not remove or alter this notice
+ or any other notice embedded in Materials by Intel or Intel's suppliers or licensors
+ in any way.
+*/
 
 #pragma once
 
 #include "Address.h"
 #include "Macros.h"
-#include "common.h"
 
-#include "gna-api-types-gmm.h"
 #include "gna2-model-impl.h"
 
 #include <array>
@@ -17,6 +35,14 @@
 #include <cstring>
 
 using GNA::BaseAddress;
+
+using GNA::BiasCompound;
+using GNA::BiasRegular;
+using GNA::WeightScaleFactor;
+
+
+/** Number of input groups constraint - max */
+const uint32_t XNN_N_GROUP_MAX = 8;
 
 /**
  * Structure will hold aligned deinterleaved feature vectors
@@ -66,7 +92,7 @@ namespace GNA
 struct PwlCached;
 }
 
-struct BaseConfig
+struct BaseConfig // TODO:3:revert to use ~BufferMap.Update
 {
     BaseConfig() = default;
     BaseConfig(const BaseAddress& inputBuffer, const BaseAddress& outputBuffer);
@@ -109,14 +135,6 @@ struct KernelConfig : public BaseConfig
 
 struct ExecutionConfig
 {
-    const ExecutionConfig& operator =(const ExecutionConfig& right)
-    {
-	*this->SaturationCount = *right.SaturationCount;
-	return *this;
-    }
-    ~ExecutionConfig() = default;
-    ExecutionConfig(const ExecutionConfig&) = default;
-
     ExecutionConfig(KernelBuffers * intermediate, uint32_t * saturationCount, uint32_t const * bufferElementCount) :
         Intermediate{ intermediate },
         SaturationCount{ saturationCount },
@@ -142,19 +160,13 @@ struct ExecutionKernelConfig : public ExecutionConfig
 
 struct ActivationConfig
 {
-    ActivationConfig(ActivationConfig const & source) = default;
-    ~ActivationConfig() = default;
-    const ActivationConfig& operator =(const ActivationConfig& right)
-    {
-	this->ElementCount = right.ElementCount;
-	return *this;
-    }
     ActivationConfig(uint32_t elementCount, GNA::PwlCached const * kernel);
 
     uint32_t ElementCount;
     GNA::PwlCached const * const Kernel;
 };
 
+// TODO: refactor: consider splitting into run config and basic constant config
 struct AffineConfig
 {
     AffineConfig(int16_t const * inputIn, int32_t * const outputIn, AffineConfig const * const source);
@@ -180,15 +192,16 @@ struct AffineConfig
     };
     union
     {
-        nn_scaling const * const weightScaleFactors; // [M] Scaling factors for 1B weights or NULL for 2B weights.
-        nn_bias_c const * const biasesCompound;     // B - [M]
-        nn_bias_s const * const biasesSimple;       // B - [M]
+        WeightScaleFactor const * const weightScaleFactors; // [M] Scaling factors for 1B weights or NULL for 2B weights.
+        BiasCompound const * const biasesCompound;     // B - [M]
+        BiasRegular const * const biasesSimple;       // B - [M]
     };
     void const * const multiBias;
     uint32_t const multiBiasVectorCount;
     uint32_t const bytesPerBias = 0;
 };
 
+//TODO:3:KJ:rename to ActiveListConfig
 struct AffineConfigAl
 {
     AffineConfigAl(uint32_t const * indicesIn, uint32_t const countIn);
@@ -226,8 +239,8 @@ struct RecurrentConfig
     };
     union
     {
-        nn_bias_c const * const biasesCompound; // B - [M]
-        nn_bias_s const * const biasesSimple;   // B - [M]
+        BiasCompound const * const biasesCompound; // B - [M]
+        BiasRegular const * const biasesSimple;   // B - [M]
     };
     KernelConfig<ActivationConfig> activation;
 };
@@ -266,10 +279,10 @@ struct ConvolutionConfig
     ConvolutionConfig(ConvolutionConfig const * const source, ExecutionConfig const & executionConfigIn);
     ConvolutionConfig(uint32_t const inputBandStrideIn, uint32_t const FilterOutputCountIn, uint32_t const FilterCountIn,
         uint32_t const FilterCoefficientCountIn, int16_t const * const inputsIn, int16_t const * const filtersIn,
-        nn_bias_s const * const biasesIn, int32_t * const outputsIn);
+        BiasRegular const * const biasesIn, int32_t * const outputsIn);
     ConvolutionConfig(uint32_t const inputBandStrideIn, uint32_t const FilterOutputCountIn, uint32_t const FilterCountIn,
         uint32_t const FilterCoefficientCountIn, int16_t const * const inputsIn, int16_t const * const filtersIn,
-        nn_bias_s const * const biasesIn, int32_t * const outputsIn, uint32_t bytesPerBiasIn, uint32_t bytesPerFilterIn);
+        BiasRegular const * const biasesIn, int32_t * const outputsIn, uint32_t bytesPerBiasIn, uint32_t bytesPerFilterIn);
 
     uint32_t const inputBandStride;
     uint32_t const filterOutputCount;
@@ -280,7 +293,7 @@ struct ConvolutionConfig
 
     int16_t const * inputs;
     int16_t const * const filters;
-    nn_bias_s const * const biases;
+    BiasRegular const * const biases;
 
     union
     {

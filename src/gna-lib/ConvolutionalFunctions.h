@@ -1,7 +1,27 @@
-/**
- @copyright (C) 2018-2021 Intel Corporation
- SPDX-License-Identifier: LGPL-2.1-or-later
- */
+/*
+ INTEL CONFIDENTIAL
+ Copyright 2018 Intel Corporation.
+
+ The source code contained or described herein and all documents related
+ to the source code ("Material") are owned by Intel Corporation or its suppliers
+ or licensors. Title to the Material remains with Intel Corporation or its suppliers
+ and licensors. The Material may contain trade secrets and proprietary
+ and confidential information of Intel Corporation and its suppliers and licensors,
+ and is protected by worldwide copyright and trade secret laws and treaty provisions.
+ No part of the Material may be used, copied, reproduced, modified, published,
+ uploaded, posted, transmitted, distributed, or disclosed in any way without Intel's
+ prior express written permission.
+
+ No license under any patent, copyright, trade secret or other intellectual
+ property right is granted to or conferred upon you by disclosure or delivery
+ of the Materials, either expressly, by implication, inducement, estoppel
+ or otherwise. Any license under such intellectual property rights must
+ be express and approved by Intel in writing.
+
+ Unless otherwise agreed by Intel in writing, you may not remove or alter this notice
+ or any other notice embedded in Materials by Intel or Intel's suppliers or licensors
+ in any way.
+*/
 
 #pragma once
 
@@ -35,9 +55,9 @@ struct FiltersTensor : public WeightTensor
 
 struct ConvolutionFunction
 {
-    template<class T>
+    //TODO:3:P2 Consider passing filters, stride and biases directly
     static std::unique_ptr<const ConvolutionFunction> Create(const Tensor * input, const Tensor * output,
-        const T& operationDetails, const LayerValidator & validatorIn)
+        const Gna2Operation& operationDetails, const LayerValidator & validatorIn)
     {
         expectValid(operationDetails);
         auto filters = createFilters(operationDetails, validatorIn);
@@ -88,21 +108,14 @@ private:
 
     static std::unique_ptr<const FiltersTensor> createFilters(const Gna2Operation & apiOperation,
         const LayerValidator & validatorIn);
-    static std::unique_ptr<const FiltersTensor> createFilters(const nn_layer_conv & cnn,
-        const LayerValidator & validatorIn);
 
     static std::unique_ptr<const Component> createStride(const Gna2Operation & cnn,
-        const LayerValidator & validatorIn);
-    static std::unique_ptr<const Component> createStride(const nn_layer_conv & cnn,
         const LayerValidator & validatorIn);
 
     static std::unique_ptr<const BiasTensor> createBiases(const Gna2Operation & apiOperation,
         const LayerValidator & validatorIn);
-    static std::unique_ptr<const BiasTensor> createBiases(const nn_layer_conv& cnn,
-        const LayerValidator& validatorIn);
 
     static void expectValid(const Gna2Operation & apiOperation);
-    static void expectValid(const nn_layer_conv & cnn);
 };
 
 }

@@ -1,7 +1,27 @@
-/**
- @copyright (C) 2019-2021 Intel Corporation
- SPDX-License-Identifier: LGPL-2.1-or-later
- */
+/*
+ INTEL CONFIDENTIAL
+ Copyright 2019 Intel Corporation.
+
+ The source code contained or described herein and all documents related
+ to the source code ("Material") are owned by Intel Corporation or its suppliers
+ or licensors. Title to the Material remains with Intel Corporation or its suppliers
+ and licensors. The Material may contain trade secrets and proprietary
+ and confidential information of Intel Corporation and its suppliers and licensors,
+ and is protected by worldwide copyright and trade secret laws and treaty provisions.
+ No part of the Material may be used, copied, reproduced, modified, published,
+ uploaded, posted, transmitted, distributed, or disclosed in any way without Intel's
+ prior express written permission.
+
+ No license under any patent, copyright, trade secret or other intellectual
+ property right is granted to or conferred upon you by disclosure or delivery
+ of the Materials, either expressly, by implication, inducement, estoppel
+ or otherwise. Any license under such intellectual property rights must
+ be express and approved by Intel in writing.
+
+ Unless otherwise agreed by Intel in writing, you may not remove or alter this notice
+ or any other notice embedded in Materials by Intel or Intel's suppliers or licensors
+ in any way.
+*/
 
 #pragma once
 
@@ -15,6 +35,7 @@
 
 /**
  Interface Guid
+ {8113B324-9F9B-4B9F-BF55-1342A58593DC}
  */
 DEFINE_GUID(GUID_DEVINTERFACE_GNA_DRV,
     0x8113b324, 0x9f9b, 0x4b9f, 0xbf, 0x55, 0x13, 0x42, 0xa5, 0x85, 0x93, 0xdc);
@@ -97,6 +118,12 @@ DEFINE_GUID(GUID_DEVINTERFACE_GNA_DRV,
 // GNA 2.0 Device, full featured GNA 2.0
 #define GNA_HW_2_0 0x20
 
+// GNA 3.0 Device, full featured GNA 3.0
+#define GNA_HW_3_0 0x30
+
+// GNA 3.5 Device, full featured GNA 3.5
+#define GNA_HW_3_5 0x35
+
 /**
  Calculate Control flags
  */
@@ -136,9 +163,46 @@ typedef struct
 static_assert(16 == sizeof(GNA_PERF_HW), "Invalid size of GNA_PERF_HW");
 
 /**
+ Accelerator (driver level) scoring request performance results
+ */
+typedef struct
+{
+    // time of setting up and issuing HW scoring
+    UINT64 startHW;
+
+    // time between HW scoring start and scoring complete interrupt
+    UINT64 scoreHW;
+
+    // time of processing scoring complete interrupt
+    UINT64 intProc;
+
+} GNA_PERF_DRV;
+
+static_assert(24 == sizeof(GNA_PERF_DRV), "Invalid size of GNA_PERF_DRV");
+
+/**
  Size of GNA (GMM/xNN) configuration data in bytes
  */
 #define CFG_SIZE 256
+
+/**
+ Legacy CALCULATE request data with output information.
+ Size:    312 B
+ NOTE: always include performance results
+ this allow to use PROFILED library with NON-PROFILED driver and vice versa
+ */
+typedef struct _GNA_CALC_IN
+{
+    CTRL_FLAGS          ctrlFlags;  // scoring mode
+    UINT8               config[CFG_SIZE];// configuration data for GMM or xNN
+    GNA_PERF_DRV        drvPerf;    // driver level performance profiling results
+    GNA_PERF_HW         hwPerf;     // hardware level performance results
+    UINT32              status;     // status of scoring
+    UINT32              __res;      // 4 B padding to multiple 8 B size
+
+} GNA_CALC_IN, *PGNA_CALC_IN;       // CALCULATE IOCTL - Input data
+
+static_assert(312 == sizeof(GNA_CALC_IN), "Invalid size of GNA_CALC_IN");
 
 /**
  Driver instrumentation results

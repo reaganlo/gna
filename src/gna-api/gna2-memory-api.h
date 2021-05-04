@@ -1,7 +1,20 @@
-/**
- @copyright (C) 2020-2021 Intel Corporation
- SPDX-License-Identifier: LGPL-2.1-or-later
- */
+/*
+ @copyright (C) 2020 Intel Corporation
+
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+ http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing,
+ software distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions
+ and limitations under the License.
+
+ SPDX-License-Identifier: Apache-2.0
+*/
 
 /**************************************************************************//**
  @file gna2-memory-api.h
@@ -52,6 +65,24 @@ GNA2_API enum Gna2Status Gna2MemoryAlloc(
  */
 GNA2_API enum Gna2Status Gna2MemoryFree(
     void * memory);
+
+/**
+ Adds special designation for the memory buffer.
+ The buffer can be one of the previously obtained with Gna2MemoryAlloc.
+ @note
+ - This is for embedded model export only.
+ - In case of some doubts, probably should not use this function.
+
+ @param memory Starting address of the memory buffer to tag.
+ @param tag Special purpose tag. Use zero to reset to default. @see ::Gna2MemoryTag
+ @return Status of the operation.
+    @retval Gna2StatusSuccess On success.
+    @retval Gna2StatusMemoryBufferInvalid If memory address is invalid.
+ */
+GNA2_API enum Gna2Status Gna2MemorySetTag(
+    void * memory,
+    uint32_t tag);
+
 
 #endif // __GNA2_MEMORY_API_H
 

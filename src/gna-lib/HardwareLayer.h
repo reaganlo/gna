@@ -1,19 +1,37 @@
-/**
- @copyright (C) 2020-2021 Intel Corporation
- SPDX-License-Identifier: LGPL-2.1-or-later
- */
+/*
+ INTEL CONFIDENTIAL
+ Copyright 2020 Intel Corporation.
+
+ The source code contained or described herein and all documents related
+ to the source code ("Material") are owned by Intel Corporation or its suppliers
+ or licensors. Title to the Material remains with Intel Corporation or its suppliers
+ and licensors. The Material may contain trade secrets and proprietary
+ and confidential information of Intel Corporation and its suppliers and licensors,
+ and is protected by worldwide copyright and trade secret laws and treaty provisions.
+ No part of the Material may be used, copied, reproduced, modified, published,
+ uploaded, posted, transmitted, distributed, or disclosed in any way without Intel's
+ prior express written permission.
+
+ No license under any patent, copyright, trade secret or other intellectual
+ property right is granted to or conferred upon you by disclosure or delivery
+ of the Materials, either expressly, by implication, inducement, estoppel
+ or otherwise. Any license under such intellectual property rights must
+ be express and approved by Intel in writing.
+
+ Unless otherwise agreed by Intel in writing, you may not remove or alter this notice
+ or any other notice embedded in Materials by Intel or Intel's suppliers or licensors
+ in any way.
+*/
 
 #pragma once
 
 #include "Address.h"
-#include "common.h"
 #include "DataMode.h"
 #include "GnaConfig.h"
 #include "GnaTypes.h"
 #include "HwModuleInterface.hpp"
 #include "LayerDescriptor.h"
 
-#include "gna-api-types-gmm.h"
 #include "gna2-common-impl.h"
 
 #include <cstdint>
@@ -29,6 +47,7 @@ class PoolingFunction2D;
 struct AffineFunction;
 struct ConvolutionFunction2D;
 struct FiltersTensor;
+struct Tensor;
 
 struct DescriptorParameters
 {
@@ -88,6 +107,8 @@ protected:
 
     void saveCommonPart();
     void save();
+
+    void saveThresholdExternal(const Tensor& tensor, const XnnParameterType& externalParameter);
     void saveActivation(const ActivationFunction* activationIn);
 };
 
@@ -103,7 +124,7 @@ protected:
     HardwareLayerExt(const DescriptorParameters& parameters, uint32_t iterationGrouping);
     HardwareLayerExt(const DescriptorParameters& parameters);
 
-    static uint32_t calculateEffectiveInputSizeFor3_0(const DescriptorParameters& parameters);
+    static uint32_t calculateEffectiveInputSizeForAdl(const DescriptorParameters& parameters);
     void save();
 
     const uint32_t bufferElementCount;
@@ -122,6 +143,15 @@ public:
     virtual ~HardwareLayerAffDiagTrans() = default;
 
     virtual NN_OP_TYPE GetNnopType(bool hasActiveList) const override;
+};
+
+class HardwareLayerAffineThreshold : public HardwareLayerExt
+{
+public:
+    HardwareLayerAffineThreshold(const DescriptorParameters& parameters);
+    virtual ~HardwareLayerAffineThreshold() = default;
+private:
+    void saveThreshold(const Gna2ThresholdCondition&, const Gna2ThresholdMode&, const Gna2ThresholdMask&);
 };
 
 class HardwareLayerAffineMBias : public HardwareLayerExt
@@ -178,7 +208,7 @@ protected:
     void save();
 
 private:
-    static const uint32_t CNN_N_FLT_ITER_MAX = 16; // CNN maximum number of filters per iteration
+    static constexpr uint32_t CNN_N_FLT_ITER_MAX = 16; // CNN maximum number of filters per iteration
 
     uint32_t filtersIterationCount;                // Number of iterations  to process all filters.
     uint32_t filtersCountInLastIteration;          // Number of filters in last iteration.
@@ -198,8 +228,7 @@ public:
     HardwareLayerCnn2D(const DescriptorParameters& parameters);
     virtual ~HardwareLayerCnn2D() = default;
 
-    static uint32_t GetKernelMemorySize(DeviceVersion deviceVersion,
-        FiltersTensor const * filter);
+    static uint32_t GetKernelMemorySize(FiltersTensor const * filter);
 
     static uint32_t GetConvolutionMemorySize(DeviceVersion deviceVersion,
         ConvolutionFunction2D const * cnnIn);
@@ -214,13 +243,11 @@ protected:
 
     HwUarchParams CalculateUArchConfig() const;
 
-    ConvolutionFunction2D const * const cnn;
+    ConvolutionFunction2D const & cnn;
     PoolingFunction2D const * const pooling;
     bool const is1D = false;
 
 private:
-    static const uint32_t CNN_N_FLT_ITER_MAX = 16; // CNN maximum number of filters per iteration
-
     HwUarchParams uArchConfig;
 };
 
@@ -243,8 +270,6 @@ public:
     virtual uint32_t GetScrlen(uint32_t indicesCount) const override;
 
 protected:
-    static const std::map<const gna_gmm_mode, const GMM_MODE_CTRL> GmmModes;
-
     void save();
 };
 }

@@ -1,12 +1,31 @@
-/**
- @copyright (C) 2019-2021 Intel Corporation
- SPDX-License-Identifier: LGPL-2.1-or-later
- */
+/*
+ INTEL CONFIDENTIAL
+ Copyright 2019 Intel Corporation.
+
+ The source code contained or described herein and all documents related
+ to the source code ("Material") are owned by Intel Corporation or its suppliers
+ or licensors. Title to the Material remains with Intel Corporation or its suppliers
+ and licensors. The Material may contain trade secrets and proprietary
+ and confidential information of Intel Corporation and its suppliers and licensors,
+ and is protected by worldwide copyright and trade secret laws and treaty provisions.
+ No part of the Material may be used, copied, reproduced, modified, published,
+ uploaded, posted, transmitted, distributed, or disclosed in any way without Intel's
+ prior express written permission.
+
+ No license under any patent, copyright, trade secret or other intellectual
+ property right is granted to or conferred upon you by disclosure or delivery
+ of the Materials, either expressly, by implication, inducement, estoppel
+ or otherwise. Any license under such intellectual property rights must
+ be express and approved by Intel in writing.
+
+ Unless otherwise agreed by Intel in writing, you may not remove or alter this notice
+ or any other notice embedded in Materials by Intel or Intel's suppliers or licensors
+ in any way.
+*/
 
 #ifndef __GNA2_COMMON_IMPL_H
 #define __GNA2_COMMON_IMPL_H
 
-#include "gna-api.h"
 #include "gna2-common-api.h"
 
 #include <map>
@@ -31,35 +50,16 @@ typedef enum Gna2DeviceVersion DeviceVersion;
  Usually it will be the latest existing GNA device (excluding embedded)
  on the time of publishing the library, value may change with new release.
  */
-#define GNA2_DEFAULT_DEVICE_VERSION Gna2DeviceVersion2_0
+#define GNA2_DEFAULT_DEVICE_VERSION Gna2DeviceVersion3_5
 
-DeviceVersion const DefaultDeviceVersion = GNA2_DEFAULT_DEVICE_VERSION;
+constexpr auto DefaultDeviceVersion = DeviceVersion{ GNA2_DEFAULT_DEVICE_VERSION };
 
 typedef enum Gna2Status ApiStatus;
 
-constexpr uint32_t const Gna2DisabledU32 = (uint32_t)GNA2_DISABLED;
+constexpr auto Gna2DisabledU32 = uint32_t(GNA2_DISABLED);
 
-constexpr int32_t const Gna2DisabledI32 = (int32_t)GNA2_DISABLED;
-
-constexpr uint32_t const Gna2DefaultU32 = (uint32_t)GNA2_DEFAULT;
-
-constexpr int32_t const Gna2DefaultI32 = (int32_t)GNA2_DEFAULT;
-
-constexpr uint32_t const Gna2NotSupportedU32 = (uint32_t)GNA2_NOT_SUPPORTED;
-
-constexpr int32_t const Gna2NotSupportedI32 = (int32_t)GNA2_NOT_SUPPORTED;
-
-/* Workaround for old compilers that do not handle enums as map keys */
-struct EnumHash
-{
-    template<typename T>
-    std::size_t operator()(T t) const
-    {
-        return static_cast<std::size_t>(t);
-    }
-};
-
-Gna2DeviceVersion Gna2GetVersionForLegacy(gna_device_version legacyVersion);
+/** Size of memory alignment for data tensors */
+constexpr auto GNA_MEM_ALIGN = uint32_t{ 64 };
 
 template<typename T>
 inline Gna2DeviceVersion Gna2DeviceVersionFromInt(T value)
@@ -83,6 +83,17 @@ public:
 
     static std::string ToString(Gna2Status statusIn);
 };
+
+template<typename Key, typename Value>
+static Value GetMappedOrDefault(Key key, Value defaultValue, const std::map<Key, Value>& map)
+{
+    const auto found = map.find(key);
+    if (found != map.end())
+    {
+        return found->second;
+    }
+    return defaultValue;
+}
 
 }
 #endif //ifndef __GNA2_COMMON_IMPL_H

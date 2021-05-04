@@ -1,9 +1,26 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <!--
-/**
- @copyright (C) 2017-2021 Intel Corporation
- SPDX-License-Identifier: LGPL-2.1-or-later
- */
+//*****************************************************************************
+//
+// INTEL CONFIDENTIAL
+// Copyright 2012-2020 Intel Corporation
+//
+// The source code contained or described herein and all documents related
+// to the source code ("Material") are owned by Intel Corporation or its suppliers
+// or licensors. Title to the Material remains with Intel Corporation or its suppliers
+// and licensors. The Material contains trade secrets and proprietary
+// and confidential information of Intel or its suppliers and licensors.
+// The Material is protected by worldwide copyright and trade secret laws and treaty
+// provisions. No part of the Material may be used, copied, reproduced, modified,
+// published, uploaded, posted, transmitted, distributed, or disclosed in any way
+// without Intel's prior express written permission.
+//
+// No license under any patent, copyright, trade secret or other intellectual
+// property right is granted to or conferred upon you by disclosure or delivery
+// of the Materials, either expressly, by implication, inducement, estoppel
+// or otherwise. Any license under such intellectual property rights must
+// be express and approved by Intel in writing.
+//*****************************************************************************
 -->
 <Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
     <PropertyGroup>
@@ -19,11 +36,11 @@
         <VERSION_QB_ID Condition="$(IS_VER_SET) != true">3,0,0,0</VERSION_QB_ID>
     </PropertyGroup>
     <PropertyGroup>
-        <TARGET_ICC_17_ID>17</TARGET_ICC_17_ID>
-        <TARGET_ICC_18_ID>18</TARGET_ICC_18_ID>
-        <TARGET_ICC_19_ID>19</TARGET_ICC_19_ID>
-        <TARGET_VS140_ID>140</TARGET_VS140_ID>
-        <TARGET_VS141_ID>141</TARGET_VS141_ID>
+        <TARGET_ICC_17_ID>17</TARGET_ICC_17_ID><!-- Intel ICC studio 17 toolset numeric version id -->
+        <TARGET_ICC_18_ID>18</TARGET_ICC_18_ID><!-- Intel ICC studio 18 toolset numeric version id -->
+        <TARGET_ICC_19_ID>19</TARGET_ICC_19_ID><!-- Intel ICC studio 19 toolset numeric version id -->
+        <TARGET_VS140_ID>140</TARGET_VS140_ID><!-- Visual Studio 2015 toolset numeric version id -->
+        <TARGET_VS141_ID>141</TARGET_VS141_ID><!-- Visual Studio 2017 toolset numeric version id -->
         <TARGET_TOOLSET_ID>0</TARGET_TOOLSET_ID>
         <TARGET_TOOLSET_ID Condition="('$(PlatformToolset)'== 'Intel C++ Compiler 17.0')">$(TARGET_ICC_17_ID)</TARGET_TOOLSET_ID>
         <TARGET_TOOLSET_ID Condition="('$(PlatformToolset)'== 'Intel C++ Compiler 18.0')">$(TARGET_ICC_18_ID)</TARGET_TOOLSET_ID>

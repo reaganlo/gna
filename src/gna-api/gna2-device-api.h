@@ -1,7 +1,20 @@
-/**
- @copyright (C) 2020-2021 Intel Corporation
- SPDX-License-Identifier: LGPL-2.1-or-later
- */
+/*
+ @copyright (C) 2020 Intel Corporation
+
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+ http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing,
+ software distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions
+ and limitations under the License.
+
+ SPDX-License-Identifier: Apache-2.0
+*/
 
 /**************************************************************************//**
  @file gna2-device-api.h
@@ -111,6 +124,19 @@ GNA2_API enum Gna2Status Gna2DeviceClose(
 GNA2_API enum Gna2Status Gna2DeviceSetNumberOfThreads(
     uint32_t deviceIndex,
     uint32_t numberOfThreads);
+
+/**
+ For internal testing purposes only.
+ TODO: 3: remove before public release
+ Function should be called after opening the device.
+
+ @param deviceIndex Index of the affected device.
+ @param deviceVersion For overriding GNA device version to a desired one.
+*/
+
+GNA2_API enum Gna2Status Gna2DeviceOverrideVersion(
+    uint32_t deviceIndex,
+    Gna2DeviceVersion deviceVersion);
 
 #endif // __GNA2_DEVICE_API_H
 

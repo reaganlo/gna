@@ -1,7 +1,27 @@
-/**
- @copyright (C) 2019-2021 Intel Corporation
- SPDX-License-Identifier: LGPL-2.1-or-later
- */
+/*
+ INTEL CONFIDENTIAL
+ Copyright 2019 Intel Corporation.
+
+ The source code contained or described herein and all documents related
+ to the source code ("Material") are owned by Intel Corporation or its suppliers
+ or licensors. Title to the Material remains with Intel Corporation or its suppliers
+ and licensors. The Material may contain trade secrets and proprietary
+ and confidential information of Intel Corporation and its suppliers and licensors,
+ and is protected by worldwide copyright and trade secret laws and treaty provisions.
+ No part of the Material may be used, copied, reproduced, modified, published,
+ uploaded, posted, transmitted, distributed, or disclosed in any way without Intel's
+ prior express written permission.
+
+ No license under any patent, copyright, trade secret or other intellectual
+ property right is granted to or conferred upon you by disclosure or delivery
+ of the Materials, either expressly, by implication, inducement, estoppel
+ or otherwise. Any license under such intellectual property rights must
+ be express and approved by Intel in writing.
+
+ Unless otherwise agreed by Intel in writing, you may not remove or alter this notice
+ or any other notice embedded in Materials by Intel or Intel's suppliers or licensors
+ in any way.
+*/
 
 #include "RecurrentFunction.h"
 
@@ -21,10 +41,6 @@
 
 #include "gna2-common-api.h"
 
-#include "common.h"
-#include "gna-api.h"
-#include "gna-api-types-xnn.h"
-
 #include <algorithm>
 #include <cstdint>
 #include <memory>
@@ -33,9 +49,7 @@ using namespace GNA;
 
 const FullCapabilitiesMap RecurrentFunction::outputCapabilities =
 {
-    {INTEL_RECURRENT, {
-        AffineLayerCapabilities::GetOperands(OutputOperandIndex).at(INTEL_RECURRENT)
-    }}
+    GetOperationCaps<INTEL_RECURRENT>(OutputOperandIndex),
 };
 
 void RecurrentFunction::ValidateActivation(const Gna2Tensor& activationTensor)
@@ -43,7 +57,7 @@ void RecurrentFunction::ValidateActivation(const Gna2Tensor& activationTensor)
     const std::function<void()> command = [&]()
     {
         auto pwlShape = Shape::Create(activationTensor.Shape, GNA_TENSOR_N);
-        pwlShape.ExpectFits({ GNA_TENSOR_N, XNN_N_PWL_SEGS_MAX });
+        pwlShape.ExpectFits({ GNA_TENSOR_N, ActivationFunction::ActivationFunctionSegmentCountMax });
         ModelErrorHelper::ExpectNotNull(activationTensor.Data);
     };
     ModelErrorHelper::ExecuteForModelItem(command, PwlOperandIndex);
@@ -56,9 +70,11 @@ std::unique_ptr<RecurrentFunction> RecurrentFunction::Create(
 {
     auto delay = operationConfig.FeedbackDelay;
     auto activationTensor = config.GetActivation();
+
+    // TODO: 3: remove when ActivationFunction created before PwlCached
     ValidateActivation(activationTensor);
 
-    auto pwlCached = std::make_unique<const PwlCached>(config.outputMode, reinterpret_cast<nn_pwl_seg *>(activationTensor.Data),
+    auto pwlCached = std::make_unique<const PwlCached>(config.outputMode.Size, reinterpret_cast<PwlSegment *>(activationTensor.Data),
         activationTensor.Shape.Dimensions[0]);
     auto kernelOperation = operationConfig.GetKernelOperation();
     auto weightTensor = operationConfig.WeightsTensor;
@@ -75,7 +91,7 @@ std::unique_ptr<RecurrentFunction> RecurrentFunction::Create(
     auto weights = std::make_unique<const WeightTensor>(weightTensor, config.validator);
     auto biases = std::make_unique<const BiasTensor>(
         biasTensor, 0, Gna2BiasModeDefault, config.validator);
-    auto kernelMode = KernelMode{ config.input->Mode, weights->Mode, biases->Mode };
+    auto const kernelMode = KernelMode{ config.input->Mode, weights->Mode, biases->Mode };
     const auto& affineKernel = AccelerationDetector::GetKernelMap<RecurrentKernel>(
         static_cast<kernel_op>(kernelOperation), kernelMode);
 
@@ -83,6 +99,8 @@ std::unique_ptr<RecurrentFunction> RecurrentFunction::Create(
         BaseTransformConfig<RecurrentKernel>{config, affineKernel},
         std::move(pwlCached), operationConfig.GetTransformOperation(),
         delay, std::move(weights), std::move(biases));
+
+    //TODO:3:Simplify to make copying not needed
     auto configCopy = config;
     configCopy.input = recurrentFunction->Output.get();
     auto activation = ActivationFunction::Create(configCopy);
@@ -95,7 +113,7 @@ void RecurrentFunction::ValidateFeedbackDelay() const
 {
     const std::function<void()> command = [&]()
     {
-        ModelErrorHelper::ExpectAboveEq(FeedbackDelay, ui32_1);
+        ModelErrorHelper::ExpectAboveEq(FeedbackDelay, 1u);
         ModelErrorHelper::ExpectBelowEq(FeedbackDelay, Input->Dimensions.at('H'));
     };
     ModelErrorHelper::ExecuteForModelItem(command, GNA2_DISABLED, 0);

@@ -1,7 +1,27 @@
-/**
- @copyright (C) 2017-2021 Intel Corporation
- SPDX-License-Identifier: LGPL-2.1-or-later
- */
+/*
+ INTEL CONFIDENTIAL
+ Copyright 2017-2021 Intel Corporation.
+
+ The source code contained or described herein and all documents related
+ to the source code ("Material") are owned by Intel Corporation or its suppliers
+ or licensors. Title to the Material remains with Intel Corporation or its suppliers
+ and licensors. The Material may contain trade secrets and proprietary
+ and confidential information of Intel Corporation and its suppliers and licensors,
+ and is protected by worldwide copyright and trade secret laws and treaty provisions.
+ No part of the Material may be used, copied, reproduced, modified, published,
+ uploaded, posted, transmitted, distributed, or disclosed in any way without Intel's
+ prior express written permission.
+
+ No license under any patent, copyright, trade secret or other intellectual
+ property right is granted to or conferred upon you by disclosure or delivery
+ of the Materials, either expressly, by implication, inducement, estoppel
+ or otherwise. Any license under such intellectual property rights must
+ be express and approved by Intel in writing.
+
+ Unless otherwise agreed by Intel in writing, you may not remove or alter this notice
+ or any other notice embedded in Materials by Intel or Intel's suppliers or licensors
+ in any way.
+*/
 
 #include "XnnKernel.h"
 
@@ -15,7 +35,6 @@
 #include "Macros.h"
 
 #include <cstdint>
-#include <cstring>
 #include <stdexcept>
 
 namespace GNA
@@ -29,10 +48,12 @@ namespace GNA
 #define copyKernelImpl2B KERNEL(copyKernelImpl2B)
 #define InitializeActivationFunctions KERNEL(InitializeActivationFunctions)
 
-#if OPT_LEVEL < 2
+#if OPT_LEVEL < 2 || OPT_LEVEL == 3 || OPT_LEVEL == 7
 #define recurrentKernelImpl1B1B KERNEL(recurrentKernelImpl1B1B)
-#define recurrentKernelImpl1B2B KERNEL(recurrentKernelImpl1B2B)
 #define recurrentKernelImpl2B1B KERNEL(recurrentKernelImpl2B1B)
+#endif
+#if OPT_LEVEL < 2
+#define recurrentKernelImpl1B2B KERNEL(recurrentKernelImpl1B2B)
 #define recurrentKernelImpl2B2B KERNEL(recurrentKernelImpl2B2B)
 #endif
 
@@ -120,7 +141,7 @@ void recurrentKernelImpl2B(ExecutionKernelConfig<RecurrentConfig> const * const 
     config->RequestConfig->Inputs = inputs;
 }
 
-#if OPT_LEVEL < 2
+#if OPT_LEVEL < 2 || OPT_LEVEL == 3 || OPT_LEVEL == 7
 void recurrentKernelImpl1B1B(ExecutionKernelConfig<RecurrentConfig> const * const config)
 {
     auto& runConfig = config->RequestConfig->Transform;
@@ -144,52 +165,6 @@ void recurrentKernelImpl1B1B(ExecutionKernelConfig<RecurrentConfig> const * cons
     {
         RecurrentKernelImpl1B1B(config);
         config->RequestConfig->Inputs += inputElementCount;
-        if (config->RequestConfig->Transform.bytesPerOutput == 1)
-        {
-            runConfig.feedbackBuffer = (int16_t*)((uint64_t)runConfig.feedbackBuffer
-                                        + outputElementCount);
-        }
-        else
-        {
-            runConfig.feedbackBuffer += outputElementCount;
-        }
-        runConfig.output += outputElementCount;
-
-        activation.Kernel->InitializeActivationFunctions();
-        activation.Kernel->ActivateAll(&activationCfg);
-        io->Inputs = io->Inputs + activation.ElementCount * 4;
-        io->Outputs = io->Outputs +
-            activation.ElementCount * config->RequestConfig->Transform.bytesPerOutput;
-    }
-
-    // restore pointers in config
-    runConfig.feedbackBuffer = feedback;
-    runConfig.output = outputs;
-    config->RequestConfig->Inputs = inputs;
-}
-void recurrentKernelImpl1B2B(ExecutionKernelConfig<RecurrentConfig> const * const config)
-{
-    auto& runConfig = config->RequestConfig->Transform;
-    auto activationCfg = ExecutionKernelConfig<ActivationConfig>{
-        &runConfig.activation, *config};
-    auto& activation = activationCfg.RequestConfig->Transform;
-    auto io = activationCfg.RequestConfig;
-    io->Inputs = reinterpret_cast<int8_t const *>(runConfig.output);
-    io->Outputs = config->RequestConfig->Outputs;
-
-    auto feedback = runConfig.feedbackBuffer;
-    auto outputs = runConfig.output;
-    auto inputs = config->RequestConfig->Inputs;
-
-    auto inputVectorCount = runConfig.inputVectorCount;
-    auto inputElementCount = runConfig.inputElementCount;
-    auto outputElementCount = runConfig.outputElementCount;
-
-    // for each input vector
-    for (uint32_t i = 0; i < inputVectorCount; i++)
-    {
-        RecurrentKernelImpl1B2B(config);
-        config->RequestConfig->Inputs += 2 * inputElementCount;
         if (config->RequestConfig->Transform.bytesPerOutput == 1)
         {
             runConfig.feedbackBuffer = (int16_t*)((uint64_t)runConfig.feedbackBuffer
@@ -237,6 +212,55 @@ void recurrentKernelImpl2B1B(ExecutionKernelConfig<RecurrentConfig> const * cons
     {
         RecurrentKernelImpl2B1B(config);
         config->RequestConfig->Inputs += inputElementCount;
+        if (config->RequestConfig->Transform.bytesPerOutput == 1)
+        {
+            runConfig.feedbackBuffer = (int16_t*)((uint64_t)runConfig.feedbackBuffer
+                                        + outputElementCount);
+        }
+        else
+        {
+            runConfig.feedbackBuffer += outputElementCount;
+        }
+        runConfig.output += outputElementCount;
+
+        activation.Kernel->InitializeActivationFunctions();
+        activation.Kernel->ActivateAll(&activationCfg);
+        io->Inputs = io->Inputs + activation.ElementCount * 4;
+        io->Outputs = io->Outputs +
+            activation.ElementCount * config->RequestConfig->Transform.bytesPerOutput;
+    }
+
+    // restore pointers in config
+    runConfig.feedbackBuffer = feedback;
+    runConfig.output = outputs;
+    config->RequestConfig->Inputs = inputs;
+}
+#endif
+
+#if OPT_LEVEL < 2
+void recurrentKernelImpl1B2B(ExecutionKernelConfig<RecurrentConfig> const * const config)
+{
+    auto& runConfig = config->RequestConfig->Transform;
+    auto activationCfg = ExecutionKernelConfig<ActivationConfig>{
+        &runConfig.activation, *config};
+    auto& activation = activationCfg.RequestConfig->Transform;
+    auto io = activationCfg.RequestConfig;
+    io->Inputs = reinterpret_cast<int8_t const *>(runConfig.output);
+    io->Outputs = config->RequestConfig->Outputs;
+
+    auto feedback = runConfig.feedbackBuffer;
+    auto outputs = runConfig.output;
+    auto inputs = config->RequestConfig->Inputs;
+
+    auto inputVectorCount = runConfig.inputVectorCount;
+    auto inputElementCount = runConfig.inputElementCount;
+    auto outputElementCount = runConfig.outputElementCount;
+
+    // for each input vector
+    for (uint32_t i = 0; i < inputVectorCount; i++)
+    {
+        RecurrentKernelImpl1B2B(config);
+        config->RequestConfig->Inputs += 2 * inputElementCount;
         if (config->RequestConfig->Transform.bytesPerOutput == 1)
         {
             runConfig.feedbackBuffer = (int16_t*)((uint64_t)runConfig.feedbackBuffer
@@ -353,113 +377,139 @@ void copyKernelImpl2B(CopyConfig const * const config)
             bytesToCopy);
     }
 }
-#if OPT_LEVEL >=2
+
+/* All possible options are defined below.
+ * Enabled options are defined as `1', disabled are defined as nothing
+ * Only one could be enabled simultaneously.
+ */
+#if defined(OPTGEN)
+    #define OPT_GEN 1
+#else
+    #define OPT_GEN
+#endif
+#if defined(OPTGEN_SAT)
+	#define OPT_GEN_SAT 1
+#else
+	#define OPT_GEN_SAT
+#endif
+#if defined(OPTSSE4)
+	#define OPT_SSE4 1
+#else
+	#define OPT_SSE4
+#endif
+#if defined(OPTSSE4_SAT)
+	#define OPT_SSE4_SAT 1
+#else
+	#define OPT_SSE4_SAT
+#endif
+#if defined(OPTAVX1)
+	#define OPT_AVX1 1
+#else
+	#define OPT_AVX1
+#endif
+#if defined(OPTAVX1_SAT)
+	#define OPT_AVX1_SAT 1
+#else
+	#define OPT_AVX1_SAT
+#endif
+#if defined(OPTAVX2)
+	#define OPT_AVX2 1
+#else
+	#define OPT_AVX2
+#endif
+#if defined(OPTAVX2_SAT)
+	#define OPT_AVX2_SAT 1
+#else
+	#define OPT_AVX2_SAT
+#endif
+#define OPT_ANY 1
+#define OPT_GEN_OR_SAT OPT_GEN OPT_GEN_SAT
+#define OPT_AVX2_OR_AVX2_SAT OPT_AVX2 OPT_AVX2_SAT
+#define OPT_SSE4_OR_SSE4_SAT OPT_SSE4 OPT_SSE4_SAT
+
+#define VERBATIM(...) __VA_ARGS__
+#define GetKernel(name, opts)    VERBATIM(IF(opts, 0))(ToUnifiedKernel(name), ToUnifiedKernel(CodeCaveMitigationFakeKernel<>))
+#define IF(cond, ...)            IFHELPER ## cond
+#define IFHELPER1(code, notused) code
+#define IFHELPER(notused, code)  code
+
+template<int possiblyUnused = 1>
 static void CodeCaveMitigationFakeKernel()
 {
     throw std::logic_error("Call to not defined GNA kernel found!");
 }
-#endif
-
-XnnKernel KERNEL(xnnKernel) =
+template<typename KernelFunctionType>
+VoidKernel ToUnifiedKernel(KernelFunctionType kernel)
 {
-    AffineKernelImpl1B,
-    AffineKernelImpl2B,
+    return reinterpret_cast<VoidKernel>(kernel);
+}
 
-    AffineActiveListKernelImpl1B,
-    AffineActiveListKernelImpl2B,
+template<>
+VoidKernel GetXnnKernel<KernelAcceleration, HwConsistencyMode>(KernelType type)
+{
+    static const VoidKernel Kernels[]=
+    {
+        GetKernel(AffineKernelImpl1B, OPT_ANY),
+        GetKernel(AffineKernelImpl2B, OPT_ANY),
 
-    AffineMultiBiasKernelImpl1B,
-    AffineMultiBiasKernelImpl2B,
+        GetKernel(AffineActiveListKernelImpl1B, OPT_ANY),
+        GetKernel(AffineActiveListKernelImpl2B, OPT_ANY),
 
-    DiagonalKernelImpl1B,
-    DiagonalKernelImpl2B,
+        GetKernel(AffineMultiBiasKernelImpl1B, OPT_ANY),
+        GetKernel(AffineMultiBiasKernelImpl2B, OPT_ANY),
 
-    recurrentKernelImpl1B,
-    recurrentKernelImpl2B,
+        GetKernel(DiagonalKernelImpl1B, OPT_ANY),
+        GetKernel(DiagonalKernelImpl2B, OPT_ANY),
 
-    ConvolutionKernelImpl,
-    ConvolutionPoolingKernelImpl,
+        GetKernel(recurrentKernelImpl1B, OPT_ANY),
+        GetKernel(recurrentKernelImpl2B, OPT_ANY),
 
-    activationKernelImpl,
-    TransposeKernelImpl,
-    copyKernelImpl,
+        GetKernel(TransposeKernelImpl1B, OPT_GEN_OR_SAT OPT_AVX2_OR_AVX2_SAT OPT_SSE4_OR_SSE4_SAT),
+        GetKernel(TransposeKernelImpl2B, OPT_ANY),
 
-#if OPT_LEVEL < 2
+        GetKernel(ConvolutionKernelImpl, OPT_ANY),
+        GetKernel(ConvolutionPoolingKernelImpl, OPT_ANY),
 
-    AffineKernelImpl1B1B,
-    AffineKernelImpl2B1B,
-    AffineKernelImpl1B2B,
-    AffineKernelImpl2B2B,
-    AffineActiveListKernelImpl1B1B,
-    AffineActiveListKernelImpl2B1B,
-    AffineActiveListKernelImpl1B2B,
-    AffineActiveListKernelImpl2B2B,
-    AffineMultiBiasKernelImpl1B1B,
-    AffineMultiBiasKernelImpl2B1B,
-    AffineMultiBiasKernelImpl1B2B,
-    AffineMultiBiasKernelImpl2B2B,
-    DiagonalKernelImpl1B1B,
-    DiagonalKernelImpl2B1B,
-    DiagonalKernelImpl1B2B,
-    DiagonalKernelImpl2B2B,
-    recurrentKernelImpl1B1B,
-    recurrentKernelImpl2B1B,
-    recurrentKernelImpl1B2B,
-    recurrentKernelImpl2B2B,
-    ConvolutionKernelImpl1B,
-    ConvolutionPoolingKernelImpl1B,
-    ConvolutionKernelImpl2B,
-    ConvolutionPoolingKernelImpl2B,
-    TransposeKernelImpl1B,
-    TransposeKernelImpl2B,
-    copyKernelImpl1B,
-    copyKernelImpl2B,
+        GetKernel(activationKernelImpl, OPT_ANY),
+        GetKernel(copyKernelImpl, OPT_ANY),
 
-    Convolution2DKernelImpl1B1B,
-    Convolution2DKernelImpl1B2B,
-    Convolution2DKernelImpl2B1B,
-    Convolution2DKernelImpl2B2B,
+        GetKernel(AffineKernelImpl1B1B, OPT_GEN_OR_SAT OPT_AVX2_SAT OPT_SSE4_SAT),
+        GetKernel(AffineKernelImpl2B1B, OPT_GEN_OR_SAT OPT_AVX2_SAT OPT_SSE4_SAT),
+        GetKernel(AffineKernelImpl1B2B, OPT_GEN_OR_SAT),
+        GetKernel(AffineKernelImpl2B2B, OPT_GEN_OR_SAT),
+        GetKernel(AffineActiveListKernelImpl1B1B, OPT_GEN_OR_SAT OPT_AVX2_SAT OPT_SSE4_SAT),
+        GetKernel(AffineActiveListKernelImpl2B1B, OPT_GEN_OR_SAT OPT_AVX2_SAT OPT_SSE4_SAT),
+        GetKernel(AffineActiveListKernelImpl1B2B, OPT_GEN_OR_SAT),
+        GetKernel(AffineActiveListKernelImpl2B2B, OPT_GEN_OR_SAT),
+        GetKernel(AffineMultiBiasKernelImpl1B1B, OPT_GEN_OR_SAT OPT_AVX2_SAT OPT_SSE4_SAT),
+        GetKernel(AffineMultiBiasKernelImpl2B1B, OPT_GEN_OR_SAT OPT_AVX2_SAT OPT_SSE4_SAT),
+        GetKernel(AffineMultiBiasKernelImpl1B2B, OPT_GEN_OR_SAT),
+        GetKernel(AffineMultiBiasKernelImpl2B2B, OPT_GEN_OR_SAT),
+        GetKernel(DiagonalKernelImpl1B1B, OPT_GEN_OR_SAT),
+        GetKernel(DiagonalKernelImpl2B1B, OPT_GEN_OR_SAT),
+        GetKernel(DiagonalKernelImpl1B2B, OPT_GEN_OR_SAT),
+        GetKernel(DiagonalKernelImpl2B2B, OPT_GEN_OR_SAT),
+        GetKernel(recurrentKernelImpl1B1B, OPT_GEN_OR_SAT OPT_AVX2_SAT OPT_SSE4_SAT),
+        GetKernel(recurrentKernelImpl2B1B, OPT_GEN_OR_SAT OPT_AVX2_SAT OPT_SSE4_SAT),
+        GetKernel(recurrentKernelImpl1B2B, OPT_GEN_OR_SAT),
+        GetKernel(recurrentKernelImpl2B2B, OPT_GEN_OR_SAT),
+        GetKernel(ConvolutionKernelImpl1B, OPT_GEN_OR_SAT),
+        GetKernel(ConvolutionPoolingKernelImpl1B, OPT_GEN_OR_SAT),
+        GetKernel(ConvolutionKernelImpl2B, OPT_GEN_OR_SAT),
+        GetKernel(ConvolutionPoolingKernelImpl2B, OPT_GEN_OR_SAT),
+        GetKernel(copyKernelImpl1B, OPT_GEN_OR_SAT),
+        GetKernel(copyKernelImpl2B, OPT_GEN_OR_SAT),
 
-    Pooling2DKernelImpl1B,
-    Pooling2DKernelImpl2B,
-    Pooling2DKernelImpl4B
-#else
-    (AffineKernel)CodeCaveMitigationFakeKernel,
-    (AffineKernel)CodeCaveMitigationFakeKernel,
-    (AffineKernel)CodeCaveMitigationFakeKernel,
-    (AffineKernel)CodeCaveMitigationFakeKernel,
-    (AffineActiveListKernel)CodeCaveMitigationFakeKernel,
-    (AffineActiveListKernel)CodeCaveMitigationFakeKernel,
-    (AffineActiveListKernel)CodeCaveMitigationFakeKernel,
-    (AffineActiveListKernel)CodeCaveMitigationFakeKernel,
-    (AffineKernel)CodeCaveMitigationFakeKernel,
-    (AffineKernel)CodeCaveMitigationFakeKernel,
-    (AffineKernel)CodeCaveMitigationFakeKernel,
-    (AffineKernel)CodeCaveMitigationFakeKernel,
-    (AffineKernel)CodeCaveMitigationFakeKernel,
-    (AffineKernel)CodeCaveMitigationFakeKernel,
-    (AffineKernel)CodeCaveMitigationFakeKernel,
-    (AffineKernel)CodeCaveMitigationFakeKernel,
-    (RecurrentKernel)CodeCaveMitigationFakeKernel,
-    (RecurrentKernel)CodeCaveMitigationFakeKernel,
-    (RecurrentKernel)CodeCaveMitigationFakeKernel,
-    (RecurrentKernel)CodeCaveMitigationFakeKernel,
-    (ConvolutionKernel)CodeCaveMitigationFakeKernel,
-    (ConvolutionPoolingKernel)CodeCaveMitigationFakeKernel,
-    (ConvolutionKernel)CodeCaveMitigationFakeKernel,
-    (ConvolutionPoolingKernel)CodeCaveMitigationFakeKernel,
-    (TransposeKernel)CodeCaveMitigationFakeKernel,
-    (TransposeKernel)CodeCaveMitigationFakeKernel,
-    (CopyKernel)CodeCaveMitigationFakeKernel,
-    (CopyKernel)CodeCaveMitigationFakeKernel,
-    (ConvolutionKernel2D)CodeCaveMitigationFakeKernel,
-    (ConvolutionKernel2D)CodeCaveMitigationFakeKernel,
-    (ConvolutionKernel2D)CodeCaveMitigationFakeKernel,
-    (ConvolutionKernel2D)CodeCaveMitigationFakeKernel,
-    (PoolingKernel2D)CodeCaveMitigationFakeKernel,
-    (PoolingKernel2D)CodeCaveMitigationFakeKernel,
-    (PoolingKernel2D)CodeCaveMitigationFakeKernel
-#endif
-};
+        GetKernel(Convolution2DKernelImpl1B1B, OPT_GEN_OR_SAT OPT_SSE4_SAT OPT_AVX2_SAT),
+        GetKernel(Convolution2DKernelImpl1B2B, OPT_GEN_OR_SAT OPT_SSE4_SAT OPT_AVX2_SAT),
+        GetKernel(Convolution2DKernelImpl2B1B, OPT_GEN_OR_SAT OPT_SSE4_SAT OPT_AVX2_SAT),
+        GetKernel(Convolution2DKernelImpl2B2B, OPT_GEN_OR_SAT OPT_SSE4_SAT OPT_AVX2_SAT),
+
+        GetKernel(Pooling2DKernelImpl1B, OPT_GEN_OR_SAT OPT_SSE4_SAT OPT_AVX2_SAT),
+        GetKernel(Pooling2DKernelImpl2B, OPT_GEN_OR_SAT OPT_SSE4_SAT OPT_AVX2_SAT),
+        GetKernel(Pooling2DKernelImpl4B, OPT_GEN_OR_SAT OPT_SSE4_SAT OPT_AVX2_SAT),
+    };
+    return Kernels[type];
+}
 
 }
