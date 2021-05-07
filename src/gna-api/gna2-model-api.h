@@ -1,7 +1,20 @@
-/**
- @copyright (C) 2020-2021 Intel Corporation
- SPDX-License-Identifier: LGPL-2.1-or-later
- */
+/*
+ @copyright (C) 2020 Intel Corporation
+
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+ http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing,
+ software distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ see the License for the specific language governing permissions
+ and limitations under the License.
+
+ SPDX-License-Identifier: Apache-2.0
+*/
 
 /**************************************************************************//**
  @file gna2-model-api.h
@@ -131,20 +144,24 @@ enum Gna2OperationType
             Specifies input tensor.
             Supported values:
                 - Mode: {::Gna2TensorModeDefault}
-                - Type: {::Gna2DataTypeInt16},
-                - Shape: [N x W] for 1D Convolution, where:
+                - Type: {::Gna2DataTypeInt8, ::Gna2DataTypeInt16},
+                - Shape: [N x W] for 1D Convolution and [N x H x W x C] for 2D Convolution, where:
                     - N is a batch size (number of vectors), currently only N=1 is supported
+                    - H is a height of input tensor
                     - W is a width of input tensor
+                    - C is a depth of input tensor
         + 1: outputs [required]:
             Specifies output tensor, as the final output of all composed functions.
             Supported values:
                 - Mode: {::Gna2TensorModeDefault}
-                - Type: {::Gna2DataTypeInt16, ::Gna2DataTypeInt32},
+                - Type: {::Gna2DataTypeInt8, ::Gna2DataTypeInt16, ::Gna2DataTypeInt32},
                     @note When activationFunction is disabled Type is always ::Gna2DataTypeInt32.
-                - Shape: [N x W x C] for 1D Convolution, where:
+                - Shape: [N x W x C] for 1D Convolution and [N x H x W x C] for 2D Convolution, where:
                     - N is a batch size (number of vectors), currently only N=1 is supported
+                    - H is a height of result tensor
                     - W is a width of result tensor
                     - C is a depth of result tensor, same as the number of filters (filter N dimension)
+                - Layout: When set to "GNA1" the GNA 1.0 1D convolution (aka legacy CNN1D) will be enforced.
         + 2: filters [required]:
             Specifies filters (kernels) tensor. Filters are stored one after the other.
             @note: For 2D ::Gna2OperationTypeConvolution operation each filter must start
@@ -152,16 +169,22 @@ enum Gna2OperationType
             Supported values:
                 - Mode: {::Gna2TensorModeDefault, ::Gna2TensorModeConstantScalar}
                 - Type: {::Gna2DataTypeInt8, ::Gna2DataTypeInt16},
-                - Shape: [N x W] for 1D Convolution, where:
+                - Shape: [N x W] for 1D Convolution and [N x H x W x C] for 2D Convolution, where:
                     - N is a number of filters
+                    - H is a height of each filter
                     - W is a width of each filter
+                    - C is a depth of each filter
         + 3: biases [optional]:
             Supported values:
-                - Mode: {::Gna2TensorModeDefault}
+                - Mode: {::Gna2TensorModeDefault, ::Gna2TensorModeDisabled}
                 - Type: {::Gna2DataTypeInt8, ::Gna2DataTypeInt16, ::Gna2DataTypeInt32},
                 - Shape: (@see biasMode parameter), can be set 0, as is calculated by GNA,
                     - For biasMode ::Gna2BiasModeDefault: [N] 1D Vector, where
                         - N is a number of filters,
+                    - For biasMode ::Gna2BiasModePerStride: [N x H x W] 1D Vector, where
+                        - N is a number of filters,
+                        - H is a number of the convolution output rows,
+                        - W is a number of the convolution output columns,
         + 4: activationFunction [optional]:
             Specifies PWL activation function segment tensor.
             - Segments have to be contiguous.
@@ -176,12 +199,16 @@ enum Gna2OperationType
              Specifies filter stride shape.
              Supported values:
                 For 1D convolution operation:
-                    [W] 1D where:
+                    [W] 1D where: //TODO:3:API Redesign: provide shape info
+                     - W is a number of elements to move in W dimension
+                For 2D convolution operation:
+                    [H x W] 2D where: //TODO:3:API Redesign: provide shape info
+                     - H is a number of elements to move in H dimension
                      - W is a number of elements to move in W dimension
         + 1: Gna2BiasMode biasMode [optional]:
             Mode of bias operation.
             Assumed ::Gna2BiasModeDefault if not provided.
-            Supported values: {::Gna2BiasModeDefault}
+            Supported values: {::Gna2BiasModeDefault, ::Gna2BiasModePerStride}
         + 2: Gna2PoolingMode poolingMode [optional]:
             Required for fused operation.
             If enabled poolingWindow and poolingStride should be also provided.
@@ -189,14 +216,30 @@ enum Gna2OperationType
             Required for fused operation (i.e., poolingMode is enabled).
             Specifies pooling window shape.
             Supported values:
-            - For 1D convolution operation: [ W ] 1D where:
+            - For 1D convolution operation: [ W ] 1D where: //TODO:3:API Redesign: provide shape info
                 - W is a width of window
+            - For 2D convolution operation:
+                - [ H x W ] 2D where:
+                    - H is a height of window
+                    - W is a width of window
         + 4: Gna2Shape poolingStride [optional]:
             Required for fused operation (i.e., poolingMode is enabled).
             Specifies pooling window stride dimensions.
             Supported values:
-                - For 1D convolution operation: [W] 1D where:
+                - For 1D convolution operation: [W] 1D where: //TODO:3:API Redesign: provide shape info
                     - W is a number of elements to move in W dimension
+                - For 2D convolution operation: [H x W] 2D where:
+                    - H is a number of elements to move in H dimension
+                    - W is a number of elements to move in W dimension
+        + 5: Gna2Shape zeroPadding [optional]:
+            Supported only for 2D convolution.
+            Specifies automatic input zero-padding dimensions.
+            Used to maintain same input-output volume shape
+            or when input dimensions have no common natural divider with filter and stride.
+            Supported values:
+                [H x W] 2D where: //TODO:3:API Redesign: provide shape info
+                    - H is a number of 0s added at the top and bottom of input
+                    - W is a number of 0s added from the left and the right of input
     */
     Gna2OperationTypeConvolution = 1,
 
@@ -205,13 +248,14 @@ enum Gna2OperationType
 
     Operation:
         output = copy(input, shape)
+        // TODO:3:provide detailed formula
 
     Operands:
         + 0: inputs [required]:
             Specifies input tensor.
             Supported values:
                 - Mode: {::Gna2TensorModeDefault}
-                - Type: {::Gna2DataTypeInt16},
+                - Type: {::Gna2DataTypeInt8, ::Gna2DataTypeInt16},
                 - Layout: Default: [H x W] Row-major, (aka flat),
                 - Shape: [H x W] 2D matrix, where:
                     - H is a number of vectors (aka batch size),
@@ -227,7 +271,7 @@ enum Gna2OperationType
         + 0: Gna2Shape shape [required]:
              Specifies dimensions of copied sub-tensor.
              Supported values:
-                [H x W] 2D where:
+                [H x W] 2D where: //TODO:3:API Redesign: provide shape info
                  - H is a number of vectors to copy
                      (must be not greater than number of vectors of input and output)
                  - W is a number of elements to copy in each vector
@@ -251,7 +295,7 @@ enum Gna2OperationType
             Specifies input tensor.
             Supported values:
                 - Mode: {::Gna2TensorModeDefault}
-                - Type: {::Gna2DataTypeInt16},
+                - Type: {::Gna2DataTypeInt8, ::Gna2DataTypeInt16},
                 - Layout:
                     @note [W x N] Row-major (aka interleaved), vectors are columns.
                 - Shape: [W x N] 2D matrix, where:
@@ -261,14 +305,14 @@ enum Gna2OperationType
             Specifies output tensor.
             Supported values:
                 - Mode: {::Gna2TensorModeDefault}
-                - Type: {::Gna2DataTypeInt16, ::Gna2DataTypeInt32},
+                - Type: {::Gna2DataTypeInt8, ::Gna2DataTypeInt16, ::Gna2DataTypeInt32},
                     @note When activationFunction is disabled Type is always ::Gna2DataTypeInt32.
                 - Layout: same as inputs
                 - Shape:  same as inputs
         + 2: weights [required]:
             Specifies weight tensor.
             Supported values:
-                - Mode: {::Gna2TensorModeDefault}
+                - Mode: {::Gna2TensorModeDefault, ::Gna2TensorModeConstantScalar}
                 - Type: {::Gna2DataTypeInt8, ::Gna2DataTypeInt16},
                 - Shape: [H x W] 2D Matrix, where:
                     - H is a number of output vector elements
@@ -292,6 +336,7 @@ enum Gna2OperationType
         + 5: weightScaleFactors [optional]:
             Specifies separate scale factors for weights.
             Required only for weights type of ::Gna2DataTypeInt8 and ::Gna2BiasModeGrouping.
+            //TODO:3:API Redesign: provide formula used
             Supported values:
                 - Shape: [H] 1D Vector, where:
                     - H is a number of the output nodes (rows),
@@ -302,7 +347,7 @@ enum Gna2OperationType
         + 0: Gna2BiasMode Mode of bias operation [optional]:
             Supported values:
                 -::Gna2BiasModeDefault: normal operation
-                -::Gna2BiasModeGrouping: Special optimized case
+                -::Gna2BiasModeGrouping: Special optimized case // TODO:3:API: elaborate
                     Requires weightScaleFactors, Bias vector index
         + 1: uint32_t biasVectorIndex [optional]:
             Used only with ::Gna2BiasModeGrouping.
@@ -449,6 +494,7 @@ enum Gna2OperationType
                      User provided ::Gna2Tensor::Data indicates where the operation stores the results.
                      However, data will also be read from implicitly defined feedback buffer (FB).
                      FB address precedes ::Gna2Tensor::Data by (delay x sizeof(output vector)) bytes.
+            // TODO:3:API: provide I/O data layout requirements
         + 2: weights [required]:
             Specifies weight tensor.
             Supported values:
@@ -495,6 +541,29 @@ enum Gna2OperationType
 
     /**
     Control-flow operation with threshold parameter.
+
+    Can be used only for embedded model export for devices where Autonomous Extension (AE) is present,
+    e.g., when using device version: Gna2DeviceVersionEmbedded3_5.
+
+    Operands:
+        + 0: inputs [required]:
+           @see ::Gna2OperationTypeFullyConnectedAffine inputs operand.
+        + 1: outputs [required]:
+           @see ::Gna2OperationTypeFullyConnectedAffine outputs operand.
+        + 2: weights [required]:
+           @see ::Gna2OperationTypeFullyConnectedAffine weights operand.
+        + 3: biases [required]:
+            @see ::Gna2OperationTypeFullyConnectedAffine biases for ::Gna2BiasModeDefault
+        + 4: activationFunction [optional]:
+            - @see ::Gna2OperationTypeConvolution activationFunction operand
+
+    Parameters:
+        + 0: Gna2ThresholdCondition thresholdCondition [required]:
+            Describes the conditions for reaching the threshold.
+        + 1: Gna2ThresholdMode thresholdMode [required]:
+            Describes the AE behavior depending on the threshold reached.
+        + 2: Gna2ThresholdMask thresholdInterruptMask [required]:
+            Describes how AE handles interrupts.
     */
     Gna2OperationTypeThreshold = 8,
 };
@@ -604,9 +673,11 @@ enum Gna2TensorMode
      */
     Gna2TensorModeConstantScalar = 0x010000,
 
+
+    Gna2TensorModeExternalBuffer = 0x001000,
+
     /**
      To disable optional tensors.
-     @warning Reserved for future purposes.
      */
     Gna2TensorModeDisabled = GNA2_DISABLED,
 
@@ -662,7 +733,7 @@ enum Gna2DataType
      4 bit Unsigned Integer.
      Currently not supported.
      */
-    Gna2DataTypeUint4 =7,
+    Gna2DataTypeUint4 = 7,
 
     /**
      1 Byte Unsigned Integer, use uint8_t data.
@@ -788,6 +859,7 @@ struct Gna2Tensor
      Data buffer.
      Must be specified before queueing request, during model or request config creation.
      */
+    // TODO:3:API redesign elaborate more.
     void * Data;
 };
 
@@ -957,6 +1029,33 @@ struct Gna2PwlSegment
 
 static_assert(8 == sizeof(Gna2PwlSegment), "Invalid size of Gna2PwlSegment");
 
+enum Gna2ThresholdCondition
+{
+    Gna2ThresholdConditionScoreNegative = 0,
+    Gna2ThresholdConditionScoreNotNegative = 1,
+};
+
+static_assert(4 == sizeof(Gna2ThresholdCondition), "Invalid size of Gna2ThresholdCondition");
+
+enum Gna2ThresholdMode
+{
+    Gna2ThresholdModeContinueNever = 0,
+    Gna2ThresholdModeContinueOnThresholdMet = 1,
+    Gna2ThresholdModeContinueOnThresholdNotMet = 2,
+    Gna2ThresholdModeContinueAlways = 3,
+};
+
+static_assert(4 == sizeof(Gna2ThresholdMode), "Invalid size of Gna2ThresholdMode");
+
+enum Gna2ThresholdMask
+{
+    Gna2ThresholdMaskDefault = 0,
+    Gna2ThresholdMaskInterruptSend = 0,
+    Gna2ThresholdMaskInterruptNotSend = 1,
+};
+
+static_assert(4 == sizeof(Gna2ThresholdMask), "Invalid size of Gna2ThresholdMask");
+
 /**************************************************************************//**
  @}
 
@@ -1004,6 +1103,9 @@ GNA2_API enum Gna2Status Gna2ModelErrorGetMessage(
     struct Gna2ModelError const * error,
     char * messageBuffer,
     uint32_t messageBufferSize);
+
+
+//TODO:3:API:make documentation consistent: nouns vs verbs.
 
 /**
  Gets maximal length of buffer needed by Gna2ModelErrorGetMessage().
@@ -1824,3 +1926,6 @@ GNA2_API uint32_t Gna2ItemTypeGetMaxMessageLength();
  @}
  @}
  */
+
+    //TODO:3:API Redesign: add debug interface
+    //void* pOutputsIntermediate;     // 4B Signed integer Auxiliary output buffer.

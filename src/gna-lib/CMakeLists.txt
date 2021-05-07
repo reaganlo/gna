@@ -1,12 +1,32 @@
-# @copyright (C) 2020-2021 Intel Corporation
-# SPDX-License-Identifier: LGPL-2.1-or-later
+#INTEL CONFIDENTIAL
+#Copyright 2018 Intel Corporation.
+
+#The source code contained or described herein and all documents related
+#to the source code ("Material") are owned by Intel Corporation or its suppliers
+#or licensors. Title to the Material remains with Intel Corporation or its suppliers
+#and licensors. The Material may contain trade secrets and proprietary
+#and confidential information of Intel Corporation and its suppliers and licensors,
+#and is protected by worldwide copyright and trade secret laws and treaty provisions.
+#No part of the Material may be used, copied, reproduced, modified, published,
+#uploaded, posted, transmitted, distributed, or disclosed in any way without Intel's
+#prior express written permission.
+
+#No license under any patent, copyright, trade secret or other intellectual
+#property right is granted to or conferred upon you by disclosure or delivery
+#of the Materials, either expressly, by implication, inducement, estoppel
+#or otherwise. Any license under such intellectual property rights must
+#be express and approved by Intel in writing.
+
+#Unless otherwise agreed by Intel in writing, you may not remove or alter this notice
+#or any other notice embedded in Materials by Intel or Intel's suppliers or licensors
+#in any way.
 
 # minimum version of CMake
 cmake_minimum_required(VERSION 3.10)
 
 # global variables
 set(PROJECT_NAME gna-api)
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 set(CXX_STANDARD_REQUIRED ON)
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
@@ -19,7 +39,7 @@ endif()
 if(DEFINED ENV{GMM_VER_RELEASE})
   set(GNA_VERSION_MINOR $ENV{GMM_VER_RELEASE})
 elseif(NOT DEFINED GNA_VERSION_MINOR)
-  set(GNA_VERSION_MINOR 0)
+  set(GNA_VERSION_MINOR 1)
 endif()
 
 if(DEFINED ENV{GMM_VER_FIX})
@@ -48,14 +68,20 @@ elseif(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
   set(API_EXTRA_DEFS "-DINTEL_GNA_DLLEXPORT=1")
 endif()
 
-set(API_EXTRA_DEFS ${API_EXTRA_DEFS})
+set(API_EXTRA_DEFS ${API_EXTRA_DEFS} ${GNA_HW_LIB_ENABLED})
 
 set(GNA_API_INCL_DIR ${GNA_BINARY_DIR}/gna-lib/include)
 set(GNA_LIB_OUT_DIR ${GNA_BINARY_DIR}/gna-lib)
 set(GNA_LIB_DEBUG_OUT_DIR ${GNA_LIB_OUT_DIR}/${OS_PREFIX}-DEBUG/${CMAKE_ARCHITECTURE})
 set(GNA_LIB_RELEASE_OUT_DIR ${GNA_LIB_OUT_DIR}/${OS_PREFIX}-RELEASE/${CMAKE_ARCHITECTURE})
 
+set(GNA_API_VERBOSE_INCL_DIR ${GNA_BINARY_DIR}/gna-lib-verbose/include)
+set(GNA_LIB_VERBOSE_OUT_DIR ${GNA_BINARY_DIR}/gna-lib-verbose)
+set(GNA_LIB_VERBOSE_DEBUG_OUT_DIR ${GNA_LIB_VERBOSE_OUT_DIR}/${OS_PREFIX}-DEBUG/${CMAKE_ARCHITECTURE})
+set(GNA_LIB_VERBOSE_RELEASE_OUT_DIR ${GNA_LIB_VERBOSE_OUT_DIR}/${OS_PREFIX}-RELEASE/${CMAKE_ARCHITECTURE})
+
 set(GNA_API_PDB_STRIPPED ${GNA_LIB_RELEASE_OUT_DIR}/gnaPublic.pdb)
+set(GNA_API_VERBOSE_PDB_STRIPPED ${GNA_LIB_VERBOSE_RELEASE_OUT_DIR}/gna-verbosePublic.pdb)
 
 set(gna_lib_sources ${gna_lib_sources}
   ${SRC_DIR}/AccelerationDetector.cpp
@@ -65,6 +91,7 @@ set(gna_lib_sources ${gna_lib_sources}
   ${SRC_DIR}/AffineFunctions.cpp
   ${SRC_DIR}/AffineLayerCapabilities.cpp
   ${SRC_DIR}/AffineLayers.cpp
+  ${SRC_DIR}/ApiProperty.cpp
   ${SRC_DIR}/AuxiliaryCapabilities.cpp
   ${SRC_DIR}/Bias.cpp
   ${SRC_DIR}/BufferMap.cpp
@@ -82,6 +109,7 @@ set(gna_lib_sources ${gna_lib_sources}
   ${SRC_DIR}/DeviceLayerSupport.cpp
   ${SRC_DIR}/DeviceManager.cpp
   ${SRC_DIR}/DriverInterface.cpp
+  ${SRC_DIR}/ExternalBuffer.cpp
   ${SRC_DIR}/GmmLayer.cpp
   ${SRC_DIR}/GmmLayerCapabilities.cpp
   ${SRC_DIR}/HardwareCapabilities.cpp
@@ -107,7 +135,6 @@ set(gna_lib_sources ${gna_lib_sources}
   ${SRC_DIR}/ModelWrapper.cpp
   ${SRC_DIR}/OperationConfig.cpp
   ${SRC_DIR}/ParameterLimits.cpp
-  ${SRC_DIR}/PoolingMode.cpp
   ${SRC_DIR}/PoolingFunctions.cpp
   ${SRC_DIR}/PoolingFunctions2D.cpp
   ${SRC_DIR}/ProfilerConfiguration.cpp
@@ -147,19 +174,14 @@ set(gna_api_impl_src_2
 set(gna_lib_sources
   ${gna_lib_sources} ${gna_api_impl_src_2} ${gna_driver_interface_src})
 
-set(gna_api_headers
-  ${COMMON_DIR}/gna-api.h
-  ${COMMON_DIR}/gna-api-types-xnn.h
-  ${COMMON_DIR}/gna-api-types-gmm.h
-  ${COMMON_DIR}/gna-api-status.h)
-
 set(gna_lib_headers
   ${SRC_DIR}/AccelerationDetector.h
   ${SRC_DIR}/ActivationFunction.h
   ${SRC_DIR}/ActivationHelper.h
   ${SRC_DIR}/ActiveList.h
   ${SRC_DIR}/AffineFunctions.h
-  ${SRC_DIR}/AffineLayerCapabilities.h
+   ${SRC_DIR}/AffineLayerCapabilities.h
+  ${SRC_DIR}/ApiProperty.h
   ${SRC_DIR}/ApiWrapper.h
   ${SRC_DIR}/AuxiliaryCapabilities.h
   ${SRC_DIR}/BufferMap.h
@@ -178,6 +200,7 @@ set(gna_lib_headers
   ${SRC_DIR}/DeviceManager.h
   ${SRC_DIR}/DriverInterface.h
   ${SRC_DIR}/Expect.h
+  ${SRC_DIR}/ExternalBuffer.h
   ${SRC_DIR}/GmmLayer.h
   ${SRC_DIR}/GmmLayerCapabilities.h
   ${SRC_DIR}/GnaTypes.h
@@ -250,10 +273,11 @@ set(gna_api_impl_headers_2
   ${API_IMPL_DIR}/gna2-instrumentation-impl.h
   ${API_IMPL_DIR}/gna2-memory-impl.h
   ${API_IMPL_DIR}/gna2-model-impl.h
-  ${API_IMPL_DIR}/gna2-model-export-impl.h)
+  ${API_IMPL_DIR}/gna2-model-export-impl.h
+  ${API_IMPL_DIR}/gna2-validation-impl.h)
 
 set(gna_lib_headers
-  ${gna_api_headers} ${gna_lib_headers} ${gna_api_impl_headers_2} ${gna_driver_interface_headers})
+  ${gna_lib_headers} ${gna_api_impl_headers_2} ${gna_driver_interface_headers})
 
 set(gna_api_headers_2
   ${API_DIR}/gna2-api.h
@@ -269,9 +293,13 @@ set(gna_api_headers_extra_2
   ${API_DIR}/gna2-model-suecreek-header.h
   ${API_DIR}/gna2-capability-api.h)
 
+set(gna_api_headers_tlv_model_export
+  ${API_DIR}/gna2-tlv.h
+  ${API_DIR}/gna2-tlv-reader.h
+  ${API_DIR}/gna2-tlv-writer.h)
+
 set(common_sources
   ${COMMON_DIR}/Address.h
-  ${COMMON_DIR}/common.h
   ${COMMON_DIR}/GnaException.h
   ${COMMON_DIR}/Macros.h
   ${COMMON_DIR}/profiler.cpp
@@ -279,11 +307,12 @@ set(common_sources
 
 if(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
   set(windows_ddi
-    ${COMMON_DIR}/GnaDrvApi.h)
+    ${COMMON_DIR}/GnaDrvApi.h
+    ${COMMON_DIR}/GnaDrvApiWinDebug.h)
   list(APPEND common_sources ${windows_ddi})
 endif()
 
-set(api_headers ${gna_api_headers_2} ${gna_api_headers_extra_2})
+set(api_headers ${gna_api_headers_2} ${gna_api_headers_extra_2} ${gna_api_headers_tlv_model_export})
 source_group(Api2 FILES ${api_headers})
 
 source_group("Api2 Source Files" FILES ${gna_api_impl_src_2})
@@ -295,7 +324,7 @@ if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux" OR ${CMAKE_SYSTEM_NAME} STREQUAL "Andro
 endif()
 
 target_include_directories(gna-api PRIVATE
-  ${SRC_DIR} ${API_DIR} ${API_IMPL_DIR} ${KERNEL_DIR}
+  ${SRC_DIR} ${API_DIR} ${API_IMPL_DIR} ${KERNEL_DIR} ${GNA_HW_LIB_INCLUDE_PATH}
   $<BUILD_INTERFACE:${COMMON_DIR}>)
 
 target_include_directories(gna-api PUBLIC
@@ -327,15 +356,17 @@ target_compile_definitions(gna-api
   ${GNA_COMPILE_DEFS}
   $<$<CONFIG:${OS_PREFIX}_DEBUG>:${GNA_COMPILE_DEFS_DEBUG}>
   $<$<CONFIG:${OS_PREFIX}_RELEASE>:${GNA_COMPILE_DEFS_RELEASE}>
+  $<$<CONFIG:KLOCWORK>:${GNA_COMPILE_DEFS_RELEASE}>
   ${API_EXTRA_DEFS}
   ${GNA_LIBRARY_VER}
-  -DPROFILE -DPROFILE_DETAILED)
+  -DPROFILE -DPROFILE_DETAILED -DHW_VERBOSE=0)
 
 target_compile_options(gna-api
   PRIVATE
   ${GNA_COMPILE_FLAGS}
   $<$<CONFIG:${OS_PREFIX}_DEBUG>:${GNA_COMPILE_FLAGS_DEBUG}>
-  $<$<CONFIG:${OS_PREFIX}_RELEASE>:${GNA_COMPILE_FLAGS_RELEASE}>)
+  $<$<CONFIG:${OS_PREFIX}_RELEASE>:${GNA_COMPILE_FLAGS_RELEASE}>
+  $<$<CONFIG:KLOCWORK>:${GNA_COMPILE_FLAGS_RELEASE}>)
 
 target_link_libraries(gna-api
   PRIVATE ${CMAKE_THREAD_LIBS_INIT} ${API_EXTRA_LIBS} ${kernel_libraries})
@@ -373,12 +404,22 @@ if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
   endif()
 endif()
 
+if (NOT DEFINED CMAKE_INSTALL_BINDIR)
+    set (CMAKE_INSTALL_BINDIR bin)
+endif()
+if (NOT DEFINED CMAKE_INSTALL_LIBDIR)
+    set (CMAKE_INSTALL_LIBDIR lib)
+endif()
+if (NOT DEFINED CMAKE_INSTALL_INCLUDEDIR)
+    set (CMAKE_INSTALL_INCLUDEDIR include)
+endif()
+
 install(TARGETS gna-api EXPORT GnaTargets
   CONFIGURATIONS ${OS_PREFIX}_DEBUG ${OS_PREFIX}_RELEASE
-  RUNTIME DESTINATION bin
-  ARCHIVE DESTINATION lib
-  LIBRARY DESTINATION lib
-  INCLUDES DESTINATION include)
+  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
 install(FILES ${api_headers}
   DESTINATION include/gna${GNA_VERSION_MAJOR})

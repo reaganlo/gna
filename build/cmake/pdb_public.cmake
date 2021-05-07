@@ -1,6 +1,3 @@
-# @copyright (C) 2020-2021 Intel Corporation
-# SPDX-License-Identifier: LGPL-2.1-or-later
-
 if(EXISTS ${PDB_PUBLIC})
   set(PRIVATE_SYMBOLS_DIR ${PDB_PATH}/Private)
   if(NOT EXISTS ${PRIVATE_SYMBOLS_DIR})

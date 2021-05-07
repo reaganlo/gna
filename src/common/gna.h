@@ -23,6 +23,11 @@ extern "C" {
 #define GNA_PARAM_RECOVERY_TIMEOUT	2
 #define GNA_PARAM_DEVICE_TYPE		3
 #define GNA_PARAM_INPUT_BUFFER_S	4
+#define GNA_PARAM_CE_NUM		5
+#define GNA_PARAM_PLE_NUM		6
+#define GNA_PARAM_AFE_NUM		7
+#define GNA_PARAM_HAS_MMU		8
+#define GNA_PARAM_HW_VER		9
 
 #define GNA_STS_SCORE_COMPLETED		(1 << 0)
 #define GNA_STS_STATISTICS_VALID	(1 << 3)
@@ -43,6 +48,7 @@ extern "C" {
 #define GNA_DEV_TYPE_0_9	0x09
 #define GNA_DEV_TYPE_1_0	0x10
 #define GNA_DEV_TYPE_2_0	0x20
+#define GNA_DEV_TYPE_3_0	0x30
 
 /*
  * Structure describes part of memory to be overwritten before starting GNA

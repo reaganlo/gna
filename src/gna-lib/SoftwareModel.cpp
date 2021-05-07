@@ -1,7 +1,27 @@
-/**
- @copyright (C) 2019-2021 Intel Corporation
- SPDX-License-Identifier: LGPL-2.1-or-later
- */
+/*
+ INTEL CONFIDENTIAL
+ Copyright 2019 Intel Corporation.
+
+ The source code contained or described herein and all documents related
+ to the source code ("Material") are owned by Intel Corporation or its suppliers
+ or licensors. Title to the Material remains with Intel Corporation or its suppliers
+ and licensors. The Material may contain trade secrets and proprietary
+ and confidential information of Intel Corporation and its suppliers and licensors,
+ and is protected by worldwide copyright and trade secret laws and treaty provisions.
+ No part of the Material may be used, copied, reproduced, modified, published,
+ uploaded, posted, transmitted, distributed, or disclosed in any way without Intel's
+ prior express written permission.
+
+ No license under any patent, copyright, trade secret or other intellectual
+ property right is granted to or conferred upon you by disclosure or delivery
+ of the Materials, either expressly, by implication, inducement, estoppel
+ or otherwise. Any license under such intellectual property rights must
+ be express and approved by Intel in writing.
+
+ Unless otherwise agreed by Intel in writing, you may not remove or alter this notice
+ or any other notice embedded in Materials by Intel or Intel's suppliers or licensors
+ in any way.
+*/
 
 #include "SoftwareModel.h"
 
@@ -14,7 +34,6 @@
 #include "RequestConfiguration.h"
 #include "Validator.h"
 
-#include "gna-api-types-xnn.h"
 
 #include <cstdint>
 #include <functional>
@@ -42,11 +61,11 @@ void SoftwareModel::buildSingleLayer(std::unique_ptr<Layer> & layer)
 
 void SoftwareModel::CheckModel(uint32_t declaredBatchSize, void * operationPointer) const
 {
-    Expect::InRange(declaredBatchSize, ui32_1, XNN_N_GROUP_MAX,
+    Expect::InRange(declaredBatchSize, 1u, BatchSizeMax,
         Gna2StatusXnnErrorLyrCfg);
 
     ModelErrorHelper::ExpectGtZero(layerCount, Gna2ItemTypeModelNumberOfOperations);
-    Expect::InRange(layerCount, ui32_1,
+    Expect::InRange(layerCount, 1u,
         HardwareCapabilities::GetMaximumLayerCount(DefaultDeviceVersion),
         Gna2StatusXnnErrorNetLyrNo);
     Expect::NotNull(operationPointer);
@@ -88,7 +107,7 @@ uint32_t SoftwareModel::Score(
     uint32_t layerIndex,
     uint32_t layerCountIn,
     RequestConfiguration const &requestConfiguration,
-    RequestProfiler *profiler,
+    RequestProfiler &profiler,
     KernelBuffers *fvBuffers)
 {
     validateConfiguration(requestConfiguration);
@@ -102,7 +121,7 @@ uint32_t SoftwareModel::Score(
     auto layerIter = layers.cbegin() + layerIndex;
     auto const layerEnd = layerIter + layerCountIn;
 
-    profiler->Measure(Gna2InstrumentationPointLibExecution);
+    profiler.Measure(Gna2InstrumentationPointLibExecution);
 
     for (; layerIter < layerEnd; ++layerIter)
     {
@@ -110,6 +129,7 @@ uint32_t SoftwareModel::Score(
         auto const found = requestConfiguration.LayerConfigurations.find(layerIndex);
         if (found == requestConfiguration.LayerConfigurations.end())
         {
+            // TODO:3:simplify to single Compute as in Cnn2D
             layer->ComputeHidden(accel, config.GetEffective(*layer));
         }
         else
@@ -127,6 +147,9 @@ uint32_t SoftwareModel::Score(
 void SoftwareModel::validateConfiguration(const RequestConfiguration& configuration) const
 {
     UNREFERENCED_PARAMETER(configuration);
+    //TODO:3:review and remove
+    //Expect::True(inputLayerCount == configuration.InputBuffersCount, Gna2StatusXnnErrorNetworkInputs);
+    //Expect::True(outputLayerCount == configuration.OutputBuffersCount, Gna2StatusXnnErrorNetworkOutputs);*/
 }
 
 uint32_t SoftwareModel::GetMaximumOperandSize(uint32_t operandIndex)
@@ -161,13 +184,13 @@ InferenceConfig::InferenceConfig(KernelBuffers* fvBuffers,
 {
     executionConfig = std::make_unique<ExecutionConfig>(fvBuffers,
         &SaturationCount, requestConfiguration.BufferElementCount);
-    auto const is3_0 = HardwareCapabilities::Is3_0Device(requestConfiguration.GetConsistentDevice());
-    has3_0Consistency = is3_0 && requestConfiguration.Acceleration.GetHwConsistency();
-    if (has3_0Consistency)
+    auto const isAdl = HardwareCapabilities::IsAdlDevice(requestConfiguration.GetConsistentDevice());
+    hasAdlConsistency = isAdl && requestConfiguration.Acceleration.GetHwConsistency();
+    if (hasAdlConsistency)
     {
-        executionConfig3_0 = std::make_unique<ExecutionConfig>(fvBuffers,
-            &SaturationCount, requestConfiguration.BufferElementCountFor3_0);
-        getEffective = &InferenceConfig::getFor3_0Fix;
+        executionConfigAdl = std::make_unique<ExecutionConfig>(fvBuffers,
+            &SaturationCount, requestConfiguration.BufferElementCountForAdl);
+        getEffective = &InferenceConfig::getForAdlFix;
     }
     else
     {
@@ -175,11 +198,11 @@ InferenceConfig::InferenceConfig(KernelBuffers* fvBuffers,
     }
 }
 
-ExecutionConfig& InferenceConfig::getFor3_0Fix(Layer const & layer) const
+ExecutionConfig& InferenceConfig::getForAdlFix(Layer const & layer) const
 {
     if (layer.Is1BInputAnd2BWeight())
     {
-        return *executionConfig3_0;
+        return *executionConfigAdl;
     }
     return *executionConfig;
 }

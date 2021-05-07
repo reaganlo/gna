@@ -1,7 +1,20 @@
-/**
- @copyright (C) 2020-2021 Intel Corporation
- SPDX-License-Identifier: LGPL-2.1-or-later
- */
+/*
+ @copyright (C) 2020 Intel Corporation
+
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+ http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing,
+ software distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions
+ and limitations under the License.
+
+ SPDX-License-Identifier: Apache-2.0
+*/
 
 /**************************************************************************//**
  @file gna2-api.h
@@ -12,7 +25,8 @@
 
  @mainpage GNA 2.0 Introduction
 
-    GNA-2.0 introduces acceleration for both Gaussian-Mixture-Model (GMM)
+ // TODO:3:API: provide description
+    GNA-3.0 introduces acceleration for both Gaussian-Mixture-Model (GMM)
     and Neural-Networks (xNN) groups of algorithms used by different speech
     recognition operations as well as sensing. The GNA supports both GMM
     and xNN operations. GNA can be activated to perform a sequence of basic
@@ -20,11 +34,11 @@
     helper functions. These operations are organized in layers which define
     the operation and its properties.
 
-    The GNA-2.0 IP module scalable and configurable, providing and option
+    The GNA-3.0 IP module scalable and configurable, providing and option
     to tuned GNA HW for various algorithms and use-cases. GNA can be tuned
     to optimize Large-Vocabulary Speech-Recognition algorithms which require
     relative large compute power, or be tuned for low-power always-on sensing
-    algorithms. GNA-2.0 extends its support for use-cases beyond speech
+    algorithms. GNA-3.0 extends its support for use-cases beyond speech
     such as low-power always-on sensing, therefore it is not limited to these,
     and may be used by other algorithms.
 

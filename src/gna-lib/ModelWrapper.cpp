@@ -1,15 +1,38 @@
-/**
- @copyright (C) 2019-2021 Intel Corporation
- SPDX-License-Identifier: LGPL-2.1-or-later
- */
+/*
+ INTEL CONFIDENTIAL
+ Copyright 2019 Intel Corporation.
+
+ The source code contained or described herein and all documents related
+ to the source code ("Material") are owned by Intel Corporation or its suppliers
+ or licensors. Title to the Material remains with Intel Corporation or its suppliers
+ and licensors. The Material may contain trade secrets and proprietary
+ and confidential information of Intel Corporation and its suppliers and licensors,
+ and is protected by worldwide copyright and trade secret laws and treaty provisions.
+ No part of the Material may be used, copied, reproduced, modified, published,
+ uploaded, posted, transmitted, distributed, or disclosed in any way without Intel's
+ prior express written permission.
+
+ No license under any patent, copyright, trade secret or other intellectual
+ property right is granted to or conferred upon you by disclosure or delivery
+ of the Materials, either expressly, by implication, inducement, estoppel
+ or otherwise. Any license under such intellectual property rights must
+ be express and approved by Intel in writing.
+
+ Unless otherwise agreed by Intel in writing, you may not remove or alter this notice
+ or any other notice embedded in Materials by Intel or Intel's suppliers or licensors
+ in any way.
+*/
 
 #include "ModelWrapper.h"
 
 #include "DataMode.h"
+#include "ExternalBuffer.h"
 #include "Logger.h"
 #include "ModelError.h"
 
 #include "gna2-model-impl.h"
+
+#include <set>
 
 using namespace GNA;
 
@@ -36,7 +59,7 @@ void ModelWrapper::OperationInit(ApiOperation& operation, const OperationType ty
 
 uint32_t ModelWrapper::DataTypeGetSize(DataType type)
 {
-    const auto dataSize = DataMode::ToSize<uint32_t>(type);
+    const auto dataSize = DataMode{ type }.Size;
     return dataSize;
 }
 
@@ -153,6 +176,24 @@ uint32_t ModelWrapper::GetOperationInfo(OperationType operationType, OperationIn
                 { OperandIndexOutput, OutputOperandIndex },
             }
         },
+        { Gna2OperationTypeThreshold,
+            {
+                { NumberOfOperandsMax, 5 },
+                { NumberOfOperandsRequired, 4 },
+                { NumberOfParametersMax, 3 },
+                { NumberOfParametersRequired, 3 },
+                { OperandIndexInput, InputOperandIndex },
+                { OperandIndexOutput, OutputOperandIndex },
+                { OperandIndexWeight, WeightOperandIndex },
+                { OperandIndexBias, BiasOperandIndex },
+                { OperandIndexActivation, PwlOperandIndex},
+                { OperandIndexWeightScaleFactors, WeightScaleFactorOperandIndex },
+                { ParameterIndexThresholdCondition, 0 },
+                { ParameterIndexThresholdMode, 1 },
+                { ParameterIndexThresholdMask, 2 },
+                { OperandIndexScratchPad, ScratchpadOperandIndex },
+            }
+        },
     };
     try
     {
@@ -218,6 +259,7 @@ void ExpectOperandModeAndDataValid(const Gna2Tensor & operand, const std::set<Gn
         ModelErrorHelper::ExpectInSet(operand.Mode, validModes);
         if (operand.Mode != Gna2TensorModeDisabled)
         {
+            // TODO: 3: Remove when full (e.g., inputs, weights) buffer addition and late sanity checking implemented
             ModelErrorHelper::ExpectNotNull(operand.Data);
         }
     };
@@ -252,6 +294,15 @@ void ModelWrapper::ExpectParameterAvailable(const Gna2Operation & operation, uin
     ModelErrorHelper::ExpectNotNull(operation.Parameters[parameterIndex], Gna2ItemTypeOperationParameters, static_cast<int32_t>(parameterIndex), true);
 }
 
+void ModelWrapper::ExpectParameterNotAvailable(const Gna2Operation & operation, uint32_t parameterIndex)
+{
+    if (operation.Parameters == nullptr || operation.NumberOfParameters <= parameterIndex)
+    {
+        return;
+    }
+    ModelErrorHelper::ExpectNull(operation.Parameters[parameterIndex], Gna2ItemTypeOperationParameters, static_cast<int32_t>(parameterIndex), true);
+}
+
 void ModelWrapper::SetLayout(Gna2Tensor& tensor, const char* layout)
 {
     snprintf(tensor.Layout, sizeof(tensor.Layout), "%s", layout);
@@ -281,8 +332,12 @@ void ExpectPointerArrayValid(T ** ptr, uint32_t arraySize,
 std::set<Gna2TensorMode> ModelWrapper::GetValidTensorModes(const Gna2Operation & operation, uint32_t operandIndex)
 {
     std::set<Gna2TensorMode> validSet = { Gna2TensorModeDefault };
+    if (ExternalBuffer::IsSupported(operation, operandIndex))
+    {
+        validSet.insert(Gna2TensorModeExternalBuffer);
+    }
     const auto opRequired = GetOperationInfo(operation.Type, NumberOfOperandsRequired);
-    if (operandIndex >= opRequired)
+    if(operandIndex >= opRequired)
     {
         validSet.insert(Gna2TensorModeDisabled);
     }
