@@ -1,12 +1,32 @@
-# @copyright (C) 2018-2021 Intel Corporation
-# SPDX-License-Identifier: LGPL-2.1-or-later
+#INTEL CONFIDENTIAL
+#Copyright 2018-2021 Intel Corporation.
+
+#The source code contained or described herein and all documents related
+#to the source code ("Material") are owned by Intel Corporation or its suppliers
+#or licensors. Title to the Material remains with Intel Corporation or its suppliers
+#and licensors. The Material may contain trade secrets and proprietary
+#and confidential information of Intel Corporation and its suppliers and licensors,
+#and is protected by worldwide copyright and trade secret laws and treaty provisions.
+#No part of the Material may be used, copied, reproduced, modified, published,
+#uploaded, posted, transmitted, distributed, or disclosed in any way without Intel's
+#prior express written permission.
+
+#No license under any patent, copyright, trade secret or other intellectual
+#property right is granted to or conferred upon you by disclosure or delivery
+#of the Materials, either expressly, by implication, inducement, estoppel
+#or otherwise. Any license under such intellectual property rights must
+#be express and approved by Intel in writing.
+
+#Unless otherwise agreed by Intel in writing, you may not remove or alter this notice
+#or any other notice embedded in Materials by Intel or Intel's suppliers or licensors
+#in any way.
 
 # minimum version of CMake
 cmake_minimum_required(VERSION 3.10)
 
 # global variables
 set(PROJECT_NAME kernels)
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 set(CXX_STANDARD_REQUIRED ON)
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
@@ -47,7 +67,7 @@ set(xnn_kernel_headers
   ${COMMON_DIR}/GnaException.h
   ${COMMON_DIR}/Macros.h
   convnet.h
-  igemv.h
+  saturate.h
   igemv8.h
   igemv16.h
   KernelMacros.h
@@ -67,7 +87,8 @@ set(xnn_generic_sources
   igemm8_subset_generic.cpp
   igemv16_generic.cpp
   igemv8_generic.cpp
-  transpose16_generic.cpp)
+  transpose16_generic.cpp
+  transpose8_generic.cpp)
 
 set(xnn_generic_sat_sources
   convnet_generic-sat.cpp
@@ -77,7 +98,8 @@ set(xnn_generic_sat_sources
   igemm8_subset_generic-sat.cpp
   igemv16_generic-sat.cpp
   igemv8_generic-sat.cpp
-  transpose16_generic.cpp)
+  transpose16_generic.cpp
+  transpose8_generic.cpp)
 
 set(xnn_sse4_sources
   convnet_sse4.cpp
@@ -87,6 +109,7 @@ set(xnn_sse4_sources
   igemm8_subset_sse4.cpp
   igemv16_sse4.cpp
   igemv8_sse4.cpp
+  transpose8_sse4.cpp
   transpose16_sse4.cpp)
 
 set(xnn_sse4_sat_sources
@@ -97,7 +120,10 @@ set(xnn_sse4_sat_sources
   igemm8_subset_sse4-sat.cpp
   igemv16_sse4-sat.cpp
   igemv8_sse4-sat.cpp
-  transpose16_sse4.cpp)
+  transpose8_sse4.cpp
+  transpose16_sse4.cpp
+  affine_sse4-sat.cpp
+  rnn_sse4-sat.cpp)
 
 set(xnn_avx1_sources
   convnet_avx1.cpp
@@ -127,6 +153,7 @@ set(xnn_avx2_sources
   igemm8_subset_avx2.cpp
   igemv16_avx2.cpp
   igemv8_avx2.cpp
+  transpose8_avx2.cpp
   transpose16_avx2.cpp)
 
 set(xnn_avx2_sat_sources
@@ -137,7 +164,10 @@ set(xnn_avx2_sat_sources
   igemm8_subset_avx2-sat.cpp
   igemv16_avx2-sat.cpp
   igemv8_avx2-sat.cpp
-  transpose16_avx2.cpp)
+  transpose8_avx2.cpp
+  transpose16_avx2.cpp
+  affine_avx2-sat.cpp
+  rnn_avx2-sat.cpp)
 
 macro(gna_add_xnn_kernel_library KERNEL_SUFIX EXTRA_DEFS EXTRA_OPTIONS)
   add_library(xnn_kernel_${KERNEL_SUFIX} STATIC ${xnn_kernel_sources})
@@ -151,12 +181,14 @@ macro(gna_add_xnn_kernel_library KERNEL_SUFIX EXTRA_DEFS EXTRA_OPTIONS)
     ${GNA_COMPILE_DEFS}
     $<$<CONFIG:${OS_PREFIX}_DEBUG>:${GNA_COMPILE_DEFS_DEBUG}>
     $<$<CONFIG:${OS_PREFIX}_RELEASE>:${GNA_COMPILE_DEFS_RELEASE}>
+    $<$<CONFIG:KLOCWORK>:${GNA_COMPILE_DEFS_RELEASE}>
     ${EXTRA_DEFS})
   target_compile_options(xnn_kernel_${KERNEL_SUFIX}
     PRIVATE
     ${GNA_COMPILE_FLAGS}
     $<$<CONFIG:${OS_PREFIX}_DEBUG>:${GNA_COMPILE_FLAGS_DEBUG}>
     $<$<CONFIG:${OS_PREFIX}_RELEASE>:${GNA_COMPILE_FLAGS_RELEASE}>
+    $<$<CONFIG:KLOCWORK>:${GNA_COMPILE_FLAGS_RELEASE}>
     ${EXTRA_OPTIONS})
 endmacro()
 
@@ -189,7 +221,6 @@ set(gmm_kernel_sources
 
 set(gmm_kernel_headers
   ${COMMON_DIR}/Macros.h
-  ${COMMON_DIR}/common.h
   ${COMMON_DIR}/GnaException.h
   KernelMacros.h
   kernel-gmm.h)
@@ -210,12 +241,14 @@ macro(gna_add_gmm_kernel_library KERNEL_SUFIX EXTRA_DEFS EXTRA_OPTIONS)
     ${GNA_COMPILE_DEFS}
     $<$<CONFIG:${OS_PREFIX}_DEBUG>:${GNA_COMPILE_DEFS_DEBUG}>
     $<$<CONFIG:${OS_PREFIX}_RELEASE>:${GNA_COMPILE_DEFS_RELEASE}>
+    $<$<CONFIG:KLOCWORK>:${GNA_COMPILE_DEFS_RELEASE}>
     ${EXTRA_DEFS})
   target_compile_options(gmm_kernel_${KERNEL_SUFIX}
     PRIVATE
     ${GNA_COMPILE_FLAGS}
     $<$<CONFIG:${OS_PREFIX}_DEBUG>:${GNA_COMPILE_FLAGS_DEBUG}>
     $<$<CONFIG:${OS_PREFIX}_RELEASE>:${GNA_COMPILE_FLAGS_RELEASE}>
+    $<$<CONFIG:KLOCWORK>:${GNA_COMPILE_FLAGS_RELEASE}>
     ${EXTRA_OPTIONS})
 endmacro()
 

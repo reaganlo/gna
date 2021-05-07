@@ -1,7 +1,27 @@
-/**
- @copyright (C) 2019-2021 Intel Corporation
- SPDX-License-Identifier: LGPL-2.1-or-later
- */
+/*
+ INTEL CONFIDENTIAL
+ Copyright 2019-2020 Intel Corporation.
+
+ The source code contained or described herein and all documents related
+ to the source code ("Material") are owned by Intel Corporation or its suppliers
+ or licensors. Title to the Material remains with Intel Corporation or its suppliers
+ and licensors. The Material may contain trade secrets and proprietary
+ and confidential information of Intel Corporation and its suppliers and licensors,
+ and is protected by worldwide copyright and trade secret laws and treaty provisions.
+ No part of the Material may be used, copied, reproduced, modified, published,
+ uploaded, posted, transmitted, distributed, or disclosed in any way without Intel's
+ prior express written permission.
+
+ No license under any patent, copyright, trade secret or other intellectual
+ property right is granted to or conferred upon you by disclosure or delivery
+ of the Materials, either expressly, by implication, inducement, estoppel
+ or otherwise. Any license under such intellectual property rights must
+ be express and approved by Intel in writing.
+
+ Unless otherwise agreed by Intel in writing, you may not remove or alter this notice
+ or any other notice embedded in Materials by Intel or Intel's suppliers or licensors
+ in any way.
+*/
 
 #include "HardwareModelScorable.h"
 
@@ -9,16 +29,13 @@
 #include "DriverInterface.h"
 #include "Expect.h"
 #include "GnaException.h"
+#include "gna2-memory-impl.h"
 #include "HardwareCapabilities.h"
 #include "Macros.h"
 #include "Memory.h"
 #include "MemoryContainer.h"
 #include "RequestConfiguration.h"
 #include "SoftwareModel.h"
-
-#include "common.h"
-#include "gna-api-status.h"
-#include "profiler.h"
 
 #include <utility>
 
@@ -35,14 +52,14 @@ uint32_t HardwareModelScorable::GetBufferOffsetForConfiguration(
     const BaseAddress& address,
     const RequestConfiguration& requestConfiguration) const
 {
-    auto offset = HardwareModel::GetBufferOffset(address);
+    auto offset = HardwareModel::GetBufferOffset(address).Offset;
     if (offset != 0)
     {
         return offset;
     }
 
     auto const modelSize = allocations.GetMemorySizeAlignedToPage();
-    offset = requestConfiguration.GetAllocations().GetBufferOffset(address, PAGE_SIZE, modelSize);
+    offset = requestConfiguration.GetAllocations().GetBufferOffset(address, MemoryBufferAlignment, modelSize);
     Expect::GtZero(offset, Gna2StatusMemoryBufferInvalid);
     return offset;
 }
@@ -59,7 +76,7 @@ uint32_t HardwareModelScorable::Score(
     uint32_t layerIndex,
     uint32_t layerCount,
     const RequestConfiguration& requestConfiguration,
-    RequestProfiler *profiler,
+    RequestProfiler &profiler,
     KernelBuffers *buffers)
 {
     UNREFERENCED_PARAMETER(buffers);
@@ -80,12 +97,12 @@ uint32_t HardwareModelScorable::Score(
         && !hwCapabilities.IsLayerSupported(layer.Operation)
         && hwCapabilities.HasFeature(LegacyGMM))
     {
-        Expect::InRange(layerCount, ui32_1, Gna2StatusXnnErrorNetLyrNo);
+        Expect::InRange(layerCount, 1u, Gna2StatusXnnErrorNetLyrNo);
         operationMode = GMM;
     }
 
     Expect::InRange(layerCount,
-        ui32_1, hwCapabilities.GetMaximumLayerCount(),
+        1u, hwCapabilities.GetMaximumLayerCount(),
         Gna2StatusXnnErrorNetLyrNo);
 
     SoftwareModel::LogAcceleration(AccelerationMode{ Gna2AccelerationModeHardware,true });
@@ -110,20 +127,17 @@ uint32_t HardwareModelScorable::Score(
     }
     hwRequest->Update(layerIndex, layerCount, operationMode);
 
-    profiler->Measure(Gna2InstrumentationPointLibExecution);
+    profiler.Measure(Gna2InstrumentationPointLibExecution);
 
     auto const result = driverInterface.Submit(*hwRequest, profiler);
 
-    if (profiler != nullptr)
-    {
-        profiler->AddResults(Gna2InstrumentationPointDrvPreprocessing, result.driverPerf.Preprocessing);
-        profiler->AddResults(Gna2InstrumentationPointDrvProcessing, result.driverPerf.Processing);
-        profiler->AddResults(Gna2InstrumentationPointDrvDeviceRequestCompleted, result.driverPerf.DeviceRequestCompleted);
-        profiler->AddResults(Gna2InstrumentationPointDrvCompletion, result.driverPerf.Completion);
+    profiler.AddResults(Gna2InstrumentationPointDrvPreprocessing, result.driverPerf.Preprocessing);
+    profiler.AddResults(Gna2InstrumentationPointDrvProcessing, result.driverPerf.Processing);
+    profiler.AddResults(Gna2InstrumentationPointDrvDeviceRequestCompleted, result.driverPerf.DeviceRequestCompleted);
+    profiler.AddResults(Gna2InstrumentationPointDrvCompletion, result.driverPerf.Completion);
 
-        profiler->AddResults(Gna2InstrumentationPointHwTotalCycles, result.hardwarePerf.total);
-        profiler->AddResults(Gna2InstrumentationPointHwStallCycles, result.hardwarePerf.stall);
-    }
+    profiler.AddResults(Gna2InstrumentationPointHwTotalCycles, result.hardwarePerf.total);
+    profiler.AddResults(Gna2InstrumentationPointHwStallCycles, result.hardwarePerf.stall);
 
     if (result.status != Gna2StatusSuccess && result.status != Gna2StatusWarningArithmeticSaturation)
     {
@@ -138,7 +152,7 @@ void HardwareModelScorable::ValidateConfigBuffer(MemoryContainer const & request
 {
     auto configModelSize = allocations.GetMemorySizeAlignedToPage();
     configModelSize += requestAllocations.GetMemorySizeAlignedToPage();
-    configModelSize += RoundUp(bufferMemory.GetSize(), PAGE_SIZE);
+    configModelSize += RoundUp(bufferMemory.GetSize(), MemoryBufferAlignment);
 
     Expect::InRange(configModelSize, HardwareCapabilities::MaximumModelSize,
         Gna2StatusMemoryTotalSizeExceeded);

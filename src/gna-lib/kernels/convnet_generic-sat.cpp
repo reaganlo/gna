@@ -1,18 +1,36 @@
-/**
- @copyright (C) 2019-2021 Intel Corporation
- SPDX-License-Identifier: LGPL-2.1-or-later
- */
+/*
+ INTEL CONFIDENTIAL
+ Copyright 2019-2021 Intel Corporation.
 
-#include "common.h"
+ The source code contained or described herein and all documents related
+ to the source code ("Material") are owned by Intel Corporation or its suppliers
+ or licensors. Title to the Material remains with Intel Corporation or its suppliers
+ and licensors. The Material may contain trade secrets and proprietary
+ and confidential information of Intel Corporation and its suppliers and licensors,
+ and is protected by worldwide copyright and trade secret laws and treaty provisions.
+ No part of the Material may be used, copied, reproduced, modified, published,
+ uploaded, posted, transmitted, distributed, or disclosed in any way without Intel's
+ prior express written permission.
+
+ No license under any patent, copyright, trade secret or other intellectual
+ property right is granted to or conferred upon you by disclosure or delivery
+ of the Materials, either expressly, by implication, inducement, estoppel
+ or otherwise. Any license under such intellectual property rights must
+ be express and approved by Intel in writing.
+
+ Unless otherwise agreed by Intel in writing, you may not remove or alter this notice
+ or any other notice embedded in Materials by Intel or Intel's suppliers or licensors
+ in any way.
+*/
+
+// TODO: make naming convention consistent with other kernel implementations
+
 #include "convnet.h"
-#include "igemv.h"
+#include "saturate.h"
 #include "pwl.h"
 #include "ConvolutionKernelArguments.h"
-
 #include "KernelArguments.h"
 #include "KernelMacros.h"
-
-#include "gna-api-types-xnn.h"
 
 #include <cmath>
 #include <cstdint>
@@ -52,7 +70,7 @@ void ConvolutionKernelImpl(ConvolutionConfig const * const filterConfig)
     const uint32_t FC = filterConfig->filterCoefficientCount;
     const int16_t* const I = filterConfig->inputs;
     const int8_t* const F = (int8_t*)filterConfig->filters;
-    const nn_bias_s * const B = filterConfig->biases;
+    const BiasRegular * const B = filterConfig->biases;
     int32_t * const O = filterConfig->convolutedOutputs;
     uint32_t * const saturationCount = filterConfig->execution->SaturationCount;
 
@@ -109,7 +127,7 @@ void ConvolutionKernelImpl1B(ConvolutionConfig const * const filterConfig)
     const uint32_t FC = filterConfig->filterCoefficientCount;
     const int8_t* const I = (int8_t*)filterConfig->inputs;
     const int8_t* const F = (int8_t*)filterConfig->filters;
-    const nn_bias_s * const B = filterConfig->biases;
+    const BiasRegular * const B = filterConfig->biases;
     int32_t * const O = filterConfig->convolutedOutputs;
     uint32_t * const saturationCount = filterConfig->execution->SaturationCount;
 
@@ -166,7 +184,7 @@ void ConvolutionKernelImpl2B(ConvolutionConfig const * const filterConfig)
     const uint32_t FC = filterConfig->filterCoefficientCount;
     const int16_t* const I = filterConfig->inputs;
     const int8_t* const F = (int8_t*)filterConfig->filters;
-    const nn_bias_s * const B = filterConfig->biases;
+    const BiasRegular * const B = filterConfig->biases;
     int32_t * const O = filterConfig->convolutedOutputs;
     uint32_t * const saturationCount = filterConfig->execution->SaturationCount;
 
@@ -224,7 +242,7 @@ void ConvolutionPoolingKernelImpl(ConvolutionConfig const * const filterConfig,
     const uint32_t FC = filterConfig->filterCoefficientCount;
     const int16_t* const I = filterConfig->inputs;
     const int8_t* const F = (int8_t*)filterConfig->filters;
-    const nn_bias_s * const B = filterConfig->biases;
+    const BiasRegular * const B = filterConfig->biases;
     int16_t * const O = filterConfig->pooledOutputs;
     uint32_t * const saturationCount = filterConfig->execution->SaturationCount;
 
@@ -370,7 +388,7 @@ void ConvolutionPoolingKernelImpl1B(ConvolutionConfig const * const filterConfig
     const uint32_t FC = filterConfig->filterCoefficientCount;
     const int8_t* const I = (int8_t*)filterConfig->inputs;
     const int8_t* const F = (int8_t*)filterConfig->filters;
-    const nn_bias_s * const B = filterConfig->biases;
+    const BiasRegular * const B = filterConfig->biases;
     int8_t * const O = (int8_t*)filterConfig->pooledOutputs;
     uint32_t * const saturationCount = filterConfig->execution->SaturationCount;
 
@@ -516,7 +534,7 @@ void ConvolutionPoolingKernelImpl2B(ConvolutionConfig const * const filterConfig
     const uint32_t FC = filterConfig->filterCoefficientCount;
     const int16_t* const I = filterConfig->inputs;
     const int8_t* const F = (int8_t*)filterConfig->filters;
-    const nn_bias_s * const B = filterConfig->biases;
+    const BiasRegular * const B = filterConfig->biases;
     int8_t * const O = (int8_t*)filterConfig->pooledOutputs;
     uint32_t * const saturationCount = filterConfig->execution->SaturationCount;
 
@@ -898,7 +916,7 @@ void Convolution2DKernelImpl1B1B(ExecutionKernelConfig<ConvolutionConfig2D> cons
     uint32_t filterHeight = config->RequestConfig->Transform.FilterHeight;
     uint32_t filterWidth = config->RequestConfig->Transform.FilterWidth;
     uint32_t memForFilter = (filterHeight * filterWidth * inputDepth);
-    uint32_t filterPadding = (ALIGN(memForFilter, 16) - memForFilter);
+    uint32_t filterPadding = (Gna2RoundUp(memForFilter, 16) - memForFilter);
 
     uint32_t padHeight = config->RequestConfig->Transform.ZeroPaddingHeight;
     uint32_t padWidth = config->RequestConfig->Transform.ZeroPaddingWidth;
@@ -988,7 +1006,7 @@ void Convolution2DKernelImpl1B2B(ExecutionKernelConfig<ConvolutionConfig2D> cons
     uint32_t filterHeight = config->RequestConfig->Transform.FilterHeight;
     uint32_t filterWidth = config->RequestConfig->Transform.FilterWidth;
     uint32_t memForFilter = (filterHeight * filterWidth * inputDepth);
-    uint32_t filterPadding = (ALIGN(memForFilter, 16) - memForFilter);
+    uint32_t filterPadding = (Gna2RoundUp(memForFilter, 16) - memForFilter);
 
     uint32_t padHeight = config->RequestConfig->Transform.ZeroPaddingHeight;
     uint32_t padWidth = config->RequestConfig->Transform.ZeroPaddingWidth;
@@ -1079,7 +1097,7 @@ void Convolution2DKernelImpl2B1B(ExecutionKernelConfig<ConvolutionConfig2D> cons
     uint32_t filterHeight = config->RequestConfig->Transform.FilterHeight;
     uint32_t filterWidth = config->RequestConfig->Transform.FilterWidth;
     uint32_t memForFilter = (filterHeight * filterWidth * inputDepth * 2);
-    uint32_t filterPadding = (ALIGN(memForFilter, 16) - memForFilter) / 2;
+    uint32_t filterPadding = (Gna2RoundUp(memForFilter, 16) - memForFilter) / 2;
 
     uint32_t padHeight = config->RequestConfig->Transform.ZeroPaddingHeight;
     uint32_t padWidth = config->RequestConfig->Transform.ZeroPaddingWidth;
@@ -1170,7 +1188,7 @@ void Convolution2DKernelImpl2B2B(ExecutionKernelConfig<ConvolutionConfig2D> cons
     uint32_t filterHeight = config->RequestConfig->Transform.FilterHeight;
     uint32_t filterWidth = config->RequestConfig->Transform.FilterWidth;
     uint32_t memForFilter = (filterHeight * filterWidth * inputDepth * 2);
-    uint32_t filterPadding = (ALIGN(memForFilter, 16) - memForFilter) / 2;
+    uint32_t filterPadding = (Gna2RoundUp(memForFilter, 16) - memForFilter) / 2;
 
     uint32_t padHeight = config->RequestConfig->Transform.ZeroPaddingHeight;
     uint32_t padWidth = config->RequestConfig->Transform.ZeroPaddingWidth;

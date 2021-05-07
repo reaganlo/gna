@@ -1,7 +1,27 @@
-/**
- @copyright (C) 2019-2021 Intel Corporation
- SPDX-License-Identifier: LGPL-2.1-or-later
- */
+/*
+ INTEL CONFIDENTIAL
+ Copyright 2019 Intel Corporation.
+
+ The source code contained or described herein and all documents related
+ to the source code ("Material") are owned by Intel Corporation or its suppliers
+ or licensors. Title to the Material remains with Intel Corporation or its suppliers
+ and licensors. The Material may contain trade secrets and proprietary
+ and confidential information of Intel Corporation and its suppliers and licensors,
+ and is protected by worldwide copyright and trade secret laws and treaty provisions.
+ No part of the Material may be used, copied, reproduced, modified, published,
+ uploaded, posted, transmitted, distributed, or disclosed in any way without Intel's
+ prior express written permission.
+
+ No license under any patent, copyright, trade secret or other intellectual
+ property right is granted to or conferred upon you by disclosure or delivery
+ of the Materials, either expressly, by implication, inducement, estoppel
+ or otherwise. Any license under such intellectual property rights must
+ be express and approved by Intel in writing.
+
+ Unless otherwise agreed by Intel in writing, you may not remove or alter this notice
+ or any other notice embedded in Materials by Intel or Intel's suppliers or licensors
+ in any way.
+*/
 
 #include "gna2-model-impl.h"
 #include "gna2-common-impl.h"
@@ -47,6 +67,7 @@ GNA2_API enum Gna2Status Gna2ModelRelease(uint32_t modelId)
 
 GNA2_API enum Gna2Status Gna2ModelGetLastError(struct Gna2ModelError * error)
 {
+    // TODO:3:API: implement feature fully P2
     const std::function<ApiStatus()> command = [&]()
     {
         Expect::NotNull(error);
@@ -135,7 +156,7 @@ GNA2_API uint32_t Gna2DataTypeGetSize(enum Gna2DataType type)
     {
         return ModelWrapper::DataTypeGetSize(type);
     };
-    return ApiWrapper::ExecuteSafely(command, Gna2NotSupportedU32);
+    return ApiWrapper::ExecuteSafely(command, GNA2_NOT_SUPPORTED);
 }
 
 GNA2_API uint32_t Gna2ShapeGetNumberOfElements(struct Gna2Shape const * shape)
@@ -144,7 +165,7 @@ GNA2_API uint32_t Gna2ShapeGetNumberOfElements(struct Gna2Shape const * shape)
     {
         return ModelWrapper::ShapeGetNumberOfElements(shape);
     };
-    return ApiWrapper::ExecuteSafely(command, Gna2NotSupportedU32);
+    return ApiWrapper::ExecuteSafely(command, GNA2_NOT_SUPPORTED);
 }
 
 GNA2_API uint32_t Gna2TensorGetSize(struct Gna2Tensor const * tensor)
@@ -155,7 +176,7 @@ GNA2_API uint32_t Gna2TensorGetSize(struct Gna2Tensor const * tensor)
         auto const apiTensor = std::make_unique<Tensor>(*tensor);
         return apiTensor->Size;
     };
-    return ApiWrapper::ExecuteSafely(command, Gna2NotSupportedU32);
+    return ApiWrapper::ExecuteSafely(command, GNA2_NOT_SUPPORTED);
 }
 
 GNA2_API struct Gna2Shape Gna2ShapeInitScalar()
@@ -361,7 +382,7 @@ GNA2_API enum Gna2Status Gna2OperationInitRecurrent(
     };
     return ApiWrapper::ExecuteSafely(command);
 }
-
+// TODO: 4: make tensors const
 GNA2_API enum Gna2Status Gna2OperationInitConvolution(
     struct Gna2Operation * operation, Gna2UserAllocator userAllocator,
     struct Gna2Tensor * inputs, struct Gna2Tensor * outputs,

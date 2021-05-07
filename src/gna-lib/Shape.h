@@ -1,7 +1,27 @@
-/**
- @copyright (C) 2018-2021 Intel Corporation
- SPDX-License-Identifier: LGPL-2.1-or-later
- */
+/*
+ INTEL CONFIDENTIAL
+ Copyright 2018 Intel Corporation.
+
+ The source code contained or described herein and all documents related
+ to the source code ("Material") are owned by Intel Corporation or its suppliers
+ or licensors. Title to the Material remains with Intel Corporation or its suppliers
+ and licensors. The Material may contain trade secrets and proprietary
+ and confidential information of Intel Corporation and its suppliers and licensors,
+ and is protected by worldwide copyright and trade secret laws and treaty provisions.
+ No part of the Material may be used, copied, reproduced, modified, published,
+ uploaded, posted, transmitted, distributed, or disclosed in any way without Intel's
+ prior express written permission.
+
+ No license under any patent, copyright, trade secret or other intellectual
+ property right is granted to or conferred upon you by disclosure or delivery
+ of the Materials, either expressly, by implication, inducement, estoppel
+ or otherwise. Any license under such intellectual property rights must
+ be express and approved by Intel in writing.
+
+ Unless otherwise agreed by Intel in writing, you may not remove or alter this notice
+ or any other notice embedded in Materials by Intel or Intel's suppliers or licensors
+ in any way.
+*/
 
 #pragma once
 
@@ -11,7 +31,6 @@
 
 #include "gna2-model-impl.h"
 
-#include "gna-api-types-xnn.h"
 
 #include <cstdint>
 #include <map>
@@ -37,20 +56,14 @@ struct Shape : public ShapeMap
         Shape{ Create(std::vector<uint32_t>({ std::forward<T>(static_cast<uint32_t>(dimensions))... }), order), order }
     { }
 
-    explicit Shape(gna_3d_dimensions shape);
-
-    Shape & operator=(const Shape & right);
     Shape(const Shape&) = default;
     ~Shape() = default;
-
     ModelValue AsModelValue(char dimension) const;
 
     using ShapeMap::at;
     using ShapeMap::operator[];
     uint32_t& operator[](char dimension);
     uint32_t at(char dimension) const;
-
-    operator gna_3d_dimensions const() const;
 
     operator ApiShape() const;
 
@@ -67,6 +80,10 @@ struct Shape : public ShapeMap
     void ExpectEqual(const Shape& reference) const;
 
     void ExpectEqualInverted(const ApiShape & source) const;
+
+    void ExpectSquare() const;
+
+    bool IsSquare() const;
 
 protected:
     static ShapeMap Create(const std::vector<uint32_t> && dimensions,

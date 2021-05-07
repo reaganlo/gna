@@ -1,7 +1,27 @@
-/**
- @copyright (C) 2018-2021 Intel Corporation
- SPDX-License-Identifier: LGPL-2.1-or-later
- */
+/*
+ INTEL CONFIDENTIAL
+ Copyright 2018 Intel Corporation.
+
+ The source code contained or described herein and all documents related
+ to the source code ("Material") are owned by Intel Corporation or its suppliers
+ or licensors. Title to the Material remains with Intel Corporation or its suppliers
+ and licensors. The Material may contain trade secrets and proprietary
+ and confidential information of Intel Corporation and its suppliers and licensors,
+ and is protected by worldwide copyright and trade secret laws and treaty provisions.
+ No part of the Material may be used, copied, reproduced, modified, published,
+ uploaded, posted, transmitted, distributed, or disclosed in any way without Intel's
+ prior express written permission.
+
+ No license under any patent, copyright, trade secret or other intellectual
+ property right is granted to or conferred upon you by disclosure or delivery
+ of the Materials, either expressly, by implication, inducement, estoppel
+ or otherwise. Any license under such intellectual property rights must
+ be express and approved by Intel in writing.
+
+ Unless otherwise agreed by Intel in writing, you may not remove or alter this notice
+ or any other notice embedded in Materials by Intel or Intel's suppliers or licensors
+ in any way.
+*/
 
 #include "LayerInput.h"
 
@@ -18,10 +38,6 @@
 #include "ParameterLimits.h"
 #include "Validator.h"
 
-#include "gna-api-status.h"
-#include "gna-api-types-gmm.h"
-#include "gna-api.h"
-
 #include <algorithm>
 #include <cstdint>
 #include <memory.h>
@@ -32,57 +48,27 @@ using namespace GNA;
 
 const FullCapabilitiesMap LayerInput::capabilities =
 {
-    {INTEL_AFFINE, {
-        AffineLayerCapabilities::GetOperands(InputOperandIndex).at(INTEL_AFFINE)
-    }},
-    {INTEL_AFFINE_DIAGONAL, {
-        AffineLayerCapabilities::GetOperands(InputOperandIndex).at(INTEL_AFFINE_DIAGONAL)
-    }},
-    {INTEL_AFFINE_MULTIBIAS, {
-        AffineLayerCapabilities::GetOperands(InputOperandIndex).at(INTEL_AFFINE_MULTIBIAS)
-    }},
-    {INTEL_CONVOLUTIONAL, {
-        ConvolutionalLayer2DCapabilities::GetOperands(InputOperandIndex).at(INTEL_CONVOLUTIONAL)
-    }},
-    {INTEL_CONVOLUTIONAL_2D, {
-        ConvolutionalLayer2DCapabilities::GetOperands(InputOperandIndex).at(INTEL_CONVOLUTIONAL_2D)
-    }},
-    {INTEL_CONVOLUTIONAL_1D, {
-        ConvolutionalLayer2DCapabilities::GetOperands(InputOperandIndex).at(INTEL_CONVOLUTIONAL_1D)
-    }},
-    {INTEL_COPY, {
-        AuxiliaryCapabilities::GetOperands(InputOperandIndex).at(INTEL_COPY)
-    }},
-    {INTEL_INTERLEAVE, {
-        AuxiliaryCapabilities::GetOperands(InputOperandIndex).at(INTEL_INTERLEAVE)
-    }},
-    {INTEL_DEINTERLEAVE, {
-        AuxiliaryCapabilities::GetOperands(InputOperandIndex).at(INTEL_DEINTERLEAVE)
-    }},
-    {INTEL_GMM, {
-        GmmLayerCapabilities::GetOperands(InputOperandIndex).at(INTEL_GMM)
-    }},
-    {INTEL_RECURRENT, {
-        AffineLayerCapabilities::GetOperands(InputOperandIndex).at(INTEL_RECURRENT)
-    }}
+    GetOperationCaps<INTEL_AFFINE>(InputOperandIndex),
+    GetOperationCaps<INTEL_AFFINE_DIAGONAL>(InputOperandIndex),
+    GetOperationCaps<INTEL_AFFINE_MULTIBIAS>(InputOperandIndex),
+    GetOperationCaps<INTEL_RECURRENT>(InputOperandIndex),
+    GetOperationCaps<INTEL_CONVOLUTIONAL>(InputOperandIndex),
+    GetOperationCaps<INTEL_CONVOLUTIONAL_2D>(InputOperandIndex),
+    GetOperationCaps<INTEL_CONVOLUTIONAL_1D>(InputOperandIndex),
+    GetOperationCaps<INTEL_GMM>(InputOperandIndex),
+    GetOperationCaps<INTEL_COPY>(InputOperandIndex),
+    GetOperationCaps<INTEL_INTERLEAVE>(InputOperandIndex),
+    GetOperationCaps<INTEL_DEINTERLEAVE>(InputOperandIndex),
 };
 
-LayerInput::LayerInput(const nn_layer &layer, const LayerValidator& validatorIn) :
-    Tensor{ GetDimensions(layer, capabilities.GetOrder(validatorIn)),
-        layer.nBytesPerInput, layer.pInputs,
-        Validator{ validatorIn, capabilities } },
-    Grouping{ getGrouping(layer) },
-    ElementCount{ getElementCount(layer) }
-{
-}
-
-ApiShape GetShape(const Gna2Operation & operation)
+ApiShape LayerInput::GetShape(const Gna2Operation & operation)
 {
     ApiShape shape{ operation.Operands[InputOperandIndex]->Shape };
     if (Gna2OperationTypeConvolution == operation.Type &&
         shape.NumberOfDimensions < 4 &&
         !CnnLayer::IsForced(operation))
     {
+        ModelErrorHelper::ExpectEqual(shape.NumberOfDimensions, 2, Gna2ItemTypeShapeNumberOfDimensions);
         shape.Dimensions[2] = shape.Dimensions[1];
         shape.Dimensions[1] = 1;
         shape.Dimensions[3] = 1;
@@ -122,35 +108,6 @@ bool LayerInput::IsInputInterleave(const Gna2Tensor &apiTensor,
     }
 }
 
-Shape LayerInput::GetDimensions(const nn_layer& layer, gna_tensor_order order)
-{
-    switch (layer.operation)
-    {
-    case INTEL_AFFINE:
-    case INTEL_AFFINE_MULTIBIAS:
-    case INTEL_AFFINE_DIAGONAL:
-    case INTEL_COPY:
-    case INTEL_DEINTERLEAVE:
-    case INTEL_INTERLEAVE:
-    case INTEL_RECURRENT:
-    case INTEL_CONVOLUTIONAL:
-        return { order, layer.nInputRows, layer.nInputColumns };
-    case INTEL_GMM:
-        return { order, layer.nInputColumns, layer.nInputRows };
-    case INTEL_CONVOLUTIONAL_2D:
-    {
-        auto const config = static_cast<nn_layer_cnn2d*>(layer.pLayerStruct);
-        return { order,
-            layer.nInputRows,
-            config->inputDimensions.height,
-            config->inputDimensions.width,
-            config->inputDimensions.depth }; // GNA_TENSOR_NHWD
-    }
-    default:
-        return {};
-    }
-}
-
 std::pair<uint32_t, uint32_t> LayerInput::getGroupingAndElements(
     const Gna2Operation& operation, const LayerValidator& validatorIn) const
 {
@@ -173,23 +130,3 @@ std::pair<uint32_t, uint32_t> LayerInput::getGroupingAndElements(
     }
 }
 
-std::pair<uint32_t, uint32_t> LayerInput::getGroupingAndElements(const nn_layer& layer) const
-{
-    switch (layer.operation)
-    {
-    case INTEL_AFFINE:
-    case INTEL_AFFINE_DIAGONAL:
-    case INTEL_AFFINE_MULTIBIAS:
-    case INTEL_DEINTERLEAVE:
-        return { layer.nInputColumns, layer.nInputRows };
-    case INTEL_GMM:
-    case INTEL_COPY:
-    case INTEL_RECURRENT:
-    case INTEL_INTERLEAVE:
-    case INTEL_CONVOLUTIONAL:
-    case INTEL_CONVOLUTIONAL_2D:
-        return { layer.nInputRows, layer.nInputColumns };
-    default:
-        throw GnaException(Gna2StatusNotImplemented);
-    }
-}

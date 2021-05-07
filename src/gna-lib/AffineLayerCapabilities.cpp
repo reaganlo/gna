@@ -1,7 +1,27 @@
-/**
- @copyright (C) 2020-2021 Intel Corporation
- SPDX-License-Identifier: LGPL-2.1-or-later
- */
+/*
+ INTEL CONFIDENTIAL
+ Copyright 2020 Intel Corporation.
+
+ The source code contained or described herein and all documents related
+ to the source code ("Material") are owned by Intel Corporation or its suppliers
+ or licensors. Title to the Material remains with Intel Corporation or its suppliers
+ and licensors. The Material may contain trade secrets and proprietary
+ and confidential information of Intel Corporation and its suppliers and licensors,
+ and is protected by worldwide copyright and trade secret laws and treaty provisions.
+ No part of the Material may be used, copied, reproduced, modified, published,
+ uploaded, posted, transmitted, distributed, or disclosed in any way without Intel's
+ prior express written permission.
+
+ No license under any patent, copyright, trade secret or other intellectual
+ property right is granted to or conferred upon you by disclosure or delivery
+ of the Materials, either expressly, by implication, inducement, estoppel
+ or otherwise. Any license under such intellectual property rights must
+ be express and approved by Intel in writing.
+
+ Unless otherwise agreed by Intel in writing, you may not remove or alter this notice
+ or any other notice embedded in Materials by Intel or Intel's suppliers or licensors
+ in any way.
+*/
 
 #include "AffineLayerCapabilities.h"
 
@@ -13,337 +33,180 @@
 
 using namespace GNA;
 
-static const DataModeLimits& _ModesWeightGen0_9()
+namespace GNA
 {
-    static const DataModeLimits __ModesWeightGen0_9 =
-    {
-        {GNA_INT8, GNA_INT16},
-        Gna2StatusXnnErrorWeightBytes
-    };
-    return __ModesWeightGen0_9;
-}
 
-static const DataModeLimits& _ModesBiasGen0_9()
+template<>
+struct ComponentCaps<BiasOperandIndex, INTEL_AFFINE> : protected LayerCapabilities
 {
-    static const DataModeLimits __ModesBiasGen0_9 =
+    template<Gna2DeviceGeneration generation, Gna2DeviceGeneration modeGeneration = generation>
+    static auto Make()
     {
-        {GNA_INT32, GNA_DATA_RICH_FORMAT},
-        Gna2StatusXnnErrorBiasBytes
-    };
-    return __ModesBiasGen0_9;
-}
+        return LayerCaps::Make<generation, BiasOperandIndex, GNA_TENSOR_H, INTEL_AFFINE>(
+            Input);
+    }
 
-static const DataModeLimits& _ModesBiasGen3()
-{
-    static const DataModeLimits __ModesBiasGen3 =
+    static const DataModeLimits& GetModes(Gna2DeviceGeneration generation)
     {
-        {GNA_INT8, GNA_INT16, GNA_INT32, GNA_DATA_RICH_FORMAT},
-        Gna2StatusXnnErrorBiasBytes
-    };
-    return __ModesBiasGen3;
-}
+        return GetCommonModes(BiasOperandIndex, generation);
+    }
+};
 
-static const DataModeLimits& _ModesBiasGen0_9Multibias()
+template<>
+struct ComponentCaps<BiasOperandIndex, INTEL_AFFINE_DIAGONAL> : protected LayerCapabilities
 {
-    static const DataModeLimits __ModesBiasGen0_9Multibias =
+    template<Gna2DeviceGeneration generation, Gna2DeviceGeneration modeGeneration = generation>
+    static auto Make()
     {
-        {GNA_INT32 },
-        Gna2StatusXnnErrorBiasBytes
-    };
-    return __ModesBiasGen0_9Multibias;
-}
+        return ComponentCaps<BiasOperandIndex, INTEL_AFFINE>::Make<generation>();
+    }
+};
 
-static const DataModeLimits& _ModesBiasGen3Multibias()
+template<nn_operation operation>
+struct ComponentCaps<WeightOperandIndex, operation> : protected LayerCapabilities
 {
-    static const DataModeLimits __ModesBiasGen3Multibias =
+    static const DataModeLimits& GetModes(Gna2DeviceGeneration generation)
     {
-        {GNA_INT8, GNA_INT16, GNA_INT32},
-        Gna2StatusXnnErrorBiasBytes
-    };
-    return __ModesBiasGen3Multibias;
-}
+        static const std::map<Gna2DeviceGeneration, DataModeLimits> modes =
+        {
+            MakeModes<Gna2DeviceGeneration0_9, WeightOperandIndex>
+                (Gna2DataTypeInt8, Gna2DataTypeInt16),
+            MakeModes<Gna2DeviceGeneration2_0, WeightOperandIndex>
+                (Gna2DataTypeInt8, Gna2DataTypeInt16),
+        };
+        return modes.at(generation);
+    }
+};
 
-const RangeLimits<>& limitsForWeightMultiplierElemMaxMultiplier()
+template<>
+struct ComponentCaps<WeightScaleFactorOperandIndex, INTEL_AFFINE_MULTIBIAS> : protected LayerCapabilities
 {
-    static const RangeLimits<> _limitsForWeightMultiplyElemMaxMultiply =
+    static const DataModeLimits& GetModes(Gna2DeviceGeneration generation)
     {
-        LayerCapabilities::InputElementsMultipllier,
-        LayerCapabilities::InputElementCountMax,
-        LayerCapabilities::InputElementsMultipllier,
-        Gna2StatusXnnErrorWeightVolume
-    };
-    return _limitsForWeightMultiplyElemMaxMultiply;
-}
+        static const std::map<Gna2DeviceGeneration, DataModeLimits> modes =
+        {
+            MakeModes<Gna2DeviceGeneration2_0, WeightScaleFactorOperandIndex>
+                (Gna2DataTypeWeightScaleFactor),
+        };
+        return modes.at(generation);
+    }
+};
 
-const RangeLimits<>& limitsForWeight()
+template<>
+struct ComponentCaps<InputOperandIndex, INTEL_RECURRENT> : protected LayerCapabilities
 {
-    static const RangeLimits<> _limitsForWeight =
+    template<Gna2DeviceGeneration generation, Gna2DeviceGeneration modeGeneration = generation>
+    static std::pair<const Gna2DeviceGeneration, std::shared_ptr<ComponentLimits>>
+    Make()
     {
-        LayerCapabilities::limitsForInput(),
-        Gna2StatusXnnErrorWeightVolume
-    };
-    return _limitsForWeight;
-}
+        return { generation,
+            std::make_shared<TensorLimits>(TensorLimits{
+                {GNA_TENSOR_HW},
+                {{GNA_DIM_H, MakeLimits<InputGroupMax, InputOperandIndex>()},
+                    {GNA_DIM_W, MakeLimitsMulti<LegacyInputs, InputOperandIndex>()}},
+                GetCommonModes(OutputOperandIndex, modeGeneration)}) };
+    }
+};
 
-const RangeLimits<>& limitsForBias()
+template<>
+struct ComponentCaps<OutputOperandIndex, INTEL_RECURRENT> : protected LayerCapabilities
 {
-    static const RangeLimits<> _limitsForBias =
+    template<Gna2DeviceGeneration generation, Gna2DeviceGeneration modeGeneration = generation>
+    static std::pair<const Gna2DeviceGeneration, std::shared_ptr<ComponentLimits>>
+    Make()
     {
-        LayerCapabilities::limitsForInput(),
-        Gna2StatusXnnErrorBiasVolume
-    };
-    return _limitsForBias;
-}
-
-static const RangeLimits<>& limitsForBiasGroupsMax()
-{
-    static const RangeLimits<> _limitsForBiasGroupsMax =
-    {
-        LayerCapabilities::limitsForInputGroupsMax(),
-        Gna2StatusXnnErrorBiasVolume
-    };
-    return _limitsForBiasGroupsMax;
-}
-
-static const RangeLimits<>& limitsForOutputRnn()
-{
-    static const RangeLimits<> _limitsForOutputRnn =
-    {
-        LayerCapabilities::RecurrentOutputElementCountMultiplier,
-        LayerCapabilities::InputElementCountMax,
-        LayerCapabilities::RecurrentOutputElementCountMultiplier,
-        Gna2StatusXnnErrorOutputVolume
-    };
-    return _limitsForOutputRnn;
-}
-
-static const RangeLimits<>& limitsForWeightRnnHeight()
-{
-    static const RangeLimits<> _limitsForWeightRnnHeight =
-    {
-        limitsForOutputRnn(),
-        Gna2StatusXnnErrorWeightVolume
-    };
-    return _limitsForWeightRnnHeight;
-}
-
-static const RangeLimits<>& limitsForWeightRnnWidth()
-{
-    static const RangeLimits<> _limitsForWeightRnnBasedOnInput =
-    {
-        LayerCapabilities::InputElementsMultipllier + LayerCapabilities::RecurrentOutputElementCountMultiplier,
-        LayerCapabilities::InputElementCountMax + LayerCapabilities::InputElementCountMax,
-        LayerCapabilities::InputElementsMultipllier,
-        Gna2StatusXnnErrorWeightVolume
-    };
-    return _limitsForWeightRnnBasedOnInput;
-}
-
-static const RangeLimits<>& limitsForBiasRnn()
-{
-    static const RangeLimits<> _limitsForBiasRnn =
-    {
-        limitsForOutputRnn(),
-        Gna2StatusXnnErrorBiasVolume
-    };
-    return _limitsForBiasRnn;
-}
-
-const std::shared_ptr<ComponentLimits>& AffineLayerCapabilities::GetInputComponentLimits(const gna_device_generation generation)
-{
-    static const OperationCapabilityMap operands =
-    {
-        {GNA_0_9, std::make_shared<TensorLimits>(TensorLimits{
-            {GNA_TENSOR_HW},
-            {{GNA_DIM_H, limitsForInputShapeLegacy()},
-            {GNA_DIM_W, limitsForInputGroupsMax()}},
-            GetModes(InputOperandIndex, GNA_0_9)})},
-        {GNA_2_0, std::make_shared<TensorLimits>(TensorLimits{
-            {GNA_TENSOR_HW},
-            {{GNA_DIM_H, limitsForInputShapeLegacy()},
-            {GNA_DIM_W, limitsForInputGroupsMax()}},
-            GetModes(InputOperandIndex, GNA_0_9)})},
-        {GNA_3_0, std::make_shared<TensorLimits>(TensorLimits{
-            {GNA_TENSOR_HW},
-            {{GNA_DIM_H, limitsForInputShapeLegacy()},
-            {GNA_DIM_W, limitsForInputGroupsMax()}},
-            GetModes(InputOperandIndex, GNA_3_0)})},
-    };
-    return operands.at(generation);
-}
-
-const std::shared_ptr<ComponentLimits>& AffineLayerCapabilities::GetOutputComponentLimits(const gna_device_generation generation)
-{
-    static const OperationCapabilityMap operands =
-    {
-        {GNA_0_9, std::make_shared<TensorLimits>(TensorLimits{
-            {GNA_TENSOR_HW},
-            {{GNA_DIM_H, limitsForOutput()},
-            {GNA_DIM_W, limitsForOutputGroupsMax()}},
-            GetModes(OutputOperandIndex, GNA_0_9)})},
-        {GNA_2_0, std::make_shared<TensorLimits>(TensorLimits{
-            {GNA_TENSOR_HW},
-            {{GNA_DIM_H, limitsForOutput()},
-            {GNA_DIM_W, limitsForOutputGroupsMax()}},
-            GetModes(OutputOperandIndex, GNA_0_9)})},
-        {GNA_3_0, std::make_shared<TensorLimits>(TensorLimits{
-            {GNA_TENSOR_HW},
-            {{GNA_DIM_H, limitsForOutput()},
-            {GNA_DIM_W, limitsForOutputGroupsMax()}},
-            GetModes(OutputOperandIndex, GNA_3_0)})},
-    };
-    return operands.at(generation);
-}
-
-const std::shared_ptr<ComponentLimits>& AffineLayerCapabilities::GetMBOutputComponentLimits(const gna_device_generation generation)
-{
-    auto multiBiasLimits = GetOutputComponentLimits(GNA_2_0);
-    multiBiasLimits->Dimensions.at(GNA_DIM_H).Multipliers.at(Gna2DataTypeNone) = 8;
-    static const OperationCapabilityMap operands =
-    {
-        {GNA_2_0, multiBiasLimits},
-    };
-    return operands.at(generation);
-}
+        return { generation,
+            std::make_shared<TensorLimits>(TensorLimits{
+                {GNA_TENSOR_HW},
+                {{GNA_DIM_H, MakeLimits<InputGroupMax, OutputOperandIndex>()},
+                    {GNA_DIM_W, MakeLimits<OutputRnn, OutputOperandIndex>()}},
+                // must be multiple 32 to keep 64B output buffer alignment
+                GetCommonModes(OutputOperandIndex, modeGeneration)}) };
+    }
+};
 
 const FullCapabilitiesMap& AffineLayerCapabilities::GetOperands(uint32_t operandIndex)
 {
     static const ComponentFullCapabilityMap operands =
     {
         {InputOperandIndex,{
-            {INTEL_AFFINE, {
-                {GNA_0_9, GetInputComponentLimits(GNA_0_9)},
-                {GNA_3_0, GetInputComponentLimits(GNA_3_0)},
-            }},
-            {INTEL_AFFINE_DIAGONAL, {
-                {GNA_0_9, GetInputComponentLimits(GNA_0_9)},
-                {GNA_3_0, GetInputComponentLimits(GNA_3_0)},
-            }},
-            {INTEL_AFFINE_MULTIBIAS, {
-                {GNA_2_0, GetInputComponentLimits(GNA_2_0)},
-                {GNA_3_0, GetInputComponentLimits(GNA_3_0)},
-            }},
-            {INTEL_RECURRENT, {
-                {GNA_0_9, std::make_shared<TensorLimits>(TensorLimits{
-                    {GNA_TENSOR_HW},
-                    {{GNA_DIM_H, limitsForInputGroupsMax()},
-                    {GNA_DIM_W, limitsForInputShapeLegacy()}},
-                     GetModes(InputOperandIndex, GNA_0_9)})},
-                {GNA_3_0, std::make_shared<TensorLimits>(TensorLimits{
-                    {GNA_TENSOR_HW},
-                    {{GNA_DIM_H, limitsForInputGroupsMax()},
-                    {GNA_DIM_W, limitsForInputShapeLegacy()}},
-                    GetModes(InputOperandIndex, GNA_3_0)})},
-            }},
+            LayerCaps::MakeAllGensSame<InputOperandIndex, INTEL_AFFINE>(),
+            LayerCaps::MakeAllGensSame<InputOperandIndex, INTEL_AFFINE_DIAGONAL>(),
+            LayerCaps::MakeAllGensSame<InputOperandIndex, INTEL_AFFINE_MULTIBIAS>(),
+            LayerCaps::MakeAllGensSame<InputOperandIndex, INTEL_RECURRENT>(),
         }},
         {OutputOperandIndex,{
-            {INTEL_AFFINE, {
-                {GNA_0_9, GetOutputComponentLimits(GNA_0_9)},
-                {GNA_3_0, GetOutputComponentLimits(GNA_3_0)},
-            }},
-            {INTEL_AFFINE_DIAGONAL, {
-                {GNA_0_9, GetOutputComponentLimits(GNA_0_9)},
-                {GNA_3_0, GetOutputComponentLimits(GNA_3_0)},
-            }},
+            LayerCaps::MakeAllGensSame<OutputOperandIndex, INTEL_AFFINE>(),
+            LayerCaps::MakeAllGensSame<OutputOperandIndex, INTEL_AFFINE_DIAGONAL>(),
             {INTEL_AFFINE_MULTIBIAS, {
-                {GNA_2_0, GetMBOutputComponentLimits(GNA_2_0)},
-                {GNA_3_0, GetOutputComponentLimits(GNA_3_0)},
+                  /** MultiBias Affine Output Limits for GNA 2.0 HW bug workaround */
+                LayerCaps::Make<Gna2DeviceGeneration2_0, OutputOperandIndex, GNA_TENSOR_HW, INTEL_AFFINE_MULTIBIAS>(
+            StaticCaps{ Input[0], Input[1], 8 }, InputGroupMax),
+                LayerCaps::Make<Gna2DeviceGeneration3_0, OutputOperandIndex, INTEL_AFFINE_MULTIBIAS>(),
+                LayerCaps::Make<Gna2DeviceGeneration3_5, OutputOperandIndex, INTEL_AFFINE_MULTIBIAS>(),
             }},
-            {INTEL_RECURRENT, {
-                {GNA_0_9, std::make_shared<TensorLimits>(TensorLimits{
-                    {GNA_TENSOR_HW},
-                    {{GNA_DIM_H, limitsForOutputGroupsMax()},
-                    {GNA_DIM_W, limitsForOutputRnn()}}, // must be multiple 32 to keep 64B output buffer alignment
-                    GetModes(OutputOperandIndex, GNA_0_9)})},
-                {GNA_3_0, std::make_shared<TensorLimits>(TensorLimits{
-                    {GNA_TENSOR_HW},
-                    {{GNA_DIM_H, limitsForOutputGroupsMax()},
-                    {GNA_DIM_W, limitsForOutputRnn()}}, // must be multiple 32 to keep 64B output buffer alignment
-                    GetModes(OutputOperandIndex, GNA_3_0)})},
-            }},
+
+            LayerCaps::MakeAllGensSame<OutputOperandIndex, INTEL_RECURRENT>(),
         }},
         {WeightOperandIndex,{
             {INTEL_AFFINE, {
-                {GNA_0_9, std::make_shared<TensorLimits>(TensorLimits{
-                    {GNA_TENSOR_HW},    // W - #inputs, H - #outputs
-                    {{GNA_DIM_W, limitsForWeightMultiplierElemMaxMultiplier()},
-                    {GNA_DIM_H, limitsForWeight()}},
-                    _ModesWeightGen0_9()})}
+                LayerCaps::Make<Gna2DeviceGeneration0_9, WeightOperandIndex, GNA_TENSOR_HW, INTEL_AFFINE>(
+                    Input, WeightMultiplier),
             }},
             {INTEL_AFFINE_DIAGONAL, {
-                {GNA_0_9, std::make_shared<TensorLimits>(TensorLimits{
-                    {GNA_TENSOR_H},    // W=H = #outputs
-                    {{GNA_DIM_H, limitsForWeightMultiplierElemMaxMultiplier()}},
-                    _ModesWeightGen0_9()})}
+                LayerCaps::Make<Gna2DeviceGeneration0_9, WeightOperandIndex, GNA_TENSOR_H, INTEL_AFFINE_DIAGONAL>(
+                    WeightMultiplier)
             }},
             {INTEL_AFFINE_MULTIBIAS, {
-                {GNA_2_0, std::make_shared<TensorLimits>(TensorLimits{
-                    {GNA_TENSOR_HW},   // W - #inputs, H - #outputs
-                    {{GNA_DIM_W, limitsForWeightMultiplierElemMaxMultiplier()},
-                    {GNA_DIM_H, limitsForWeight()}},
-                    _ModesWeightGen0_9()})}
+                LayerCaps::Make<Gna2DeviceGeneration2_0, WeightOperandIndex, GNA_TENSOR_HW, INTEL_AFFINE_MULTIBIAS>(
+                    // W - #inputs, H - #outputs
+                    Input, WeightMultiplier)
             }},
             {INTEL_RECURRENT, {
-                {GNA_0_9, std::make_shared<TensorLimits>(TensorLimits{
-                    { GNA_TENSOR_HW },
-                    {{GNA_DIM_H, limitsForWeightRnnHeight()},
-                    {GNA_DIM_W, limitsForWeightRnnWidth()}},
-                    _ModesWeightGen0_9()})}
+                LayerCaps::Make<Gna2DeviceGeneration0_9, WeightOperandIndex, GNA_TENSOR_HW, INTEL_RECURRENT>(
+                    OutputRnn, StaticCaps{InputElementCountMultiplier + RecurrentOutputElementCountMultiplier,
+                                InputElementCountMax + InputElementCountMax,
+                                InputElementCountMultiplier})
             }},
         }},
         {BiasOperandIndex,{
-            {INTEL_AFFINE, {
-                {GNA_0_9,std::make_shared<TensorLimits>(TensorLimits{
-                    {GNA_TENSOR_H},
-                    {{GNA_DIM_H, limitsForBias()}},
-                    _ModesBiasGen0_9()})},
-                {GNA_3_0, std::make_shared<TensorLimits>(TensorLimits{
-                    {GNA_TENSOR_H},
-                    {{GNA_DIM_H, limitsForBias()}},
-                    _ModesBiasGen3()})},
-            }},
-            {INTEL_AFFINE_DIAGONAL, {
-                {GNA_0_9, std::make_shared<TensorLimits>(TensorLimits{
-                    {GNA_TENSOR_H},
-                    {{GNA_DIM_H, limitsForBias()}},
-                    _ModesBiasGen0_9()})},
-                {GNA_3_0, std::make_shared<TensorLimits>(TensorLimits{
-                    {GNA_TENSOR_H},
-                    {{GNA_DIM_H, limitsForBias()}},
-                    _ModesBiasGen3()})},
-            }},
+            LayerCaps::MakeAllGensSame<BiasOperandIndex, INTEL_AFFINE>(),
+            LayerCaps::MakeAllGensSame<BiasOperandIndex, INTEL_AFFINE_DIAGONAL>(),
             {INTEL_AFFINE_MULTIBIAS, {
-                {GNA_2_0, std::make_shared<TensorLimits>(TensorLimits{
+                LayerCaps::Make<Gna2DeviceGeneration2_0>(
                     {GNA_TENSOR_HW},
-                    {{GNA_DIM_H, limitsForBias()},
-                    {GNA_DIM_W, limitsForBiasGroupsMax()}},
-                    _ModesBiasGen0_9Multibias()})},
-                {GNA_3_0, std::make_shared<TensorLimits>(TensorLimits{
+                    {{GNA_DIM_H, MakeLimits<Input, BiasOperandIndex>()},
+                    {GNA_DIM_W, MakeLimits<InputGroupMax, BiasOperandIndex>()}},
+                    {{Gna2DataTypeInt32 }, Gna2StatusXnnErrorBiasBytes }),
+                LayerCaps::Make<Gna2DeviceGeneration3_0>(
                     {GNA_TENSOR_HW},
-                    {{GNA_DIM_H, limitsForBias()},
-                    {GNA_DIM_W, limitsForBiasGroupsMax()}},
-                    _ModesBiasGen3Multibias()})}
+                    {{GNA_DIM_H, MakeLimits<Input, BiasOperandIndex>()},
+                    {GNA_DIM_W, MakeLimits<InputGroupMax, BiasOperandIndex>()}},
+                    {{Gna2DataTypeInt8, Gna2DataTypeInt16, Gna2DataTypeInt32},
+                            Gna2StatusXnnErrorBiasBytes}),
+                LayerCaps::Make<Gna2DeviceGeneration3_5>(
+                    {GNA_TENSOR_HW},
+                    {{GNA_DIM_H, MakeLimits<Input, BiasOperandIndex>()},
+                    {GNA_DIM_W, MakeLimits<InputGroupMax, BiasOperandIndex>()}},
+                    {MakeDataModesCartesian(
+                        {Gna2DataTypeInt8, Gna2DataTypeInt16, Gna2DataTypeInt32}),Gna2StatusXnnErrorBiasBytes})
             }},
             {INTEL_RECURRENT, {
-                {GNA_0_9, std::make_shared<TensorLimits>(TensorLimits{
-                    {GNA_TENSOR_H},
-                    {{GNA_DIM_H, limitsForOutputRnn()}},
-                    _ModesBiasGen0_9()})},
-                {GNA_3_0, std::make_shared<TensorLimits>(TensorLimits{
-                    {GNA_TENSOR_H},
-                    {{GNA_DIM_H, limitsForBiasRnn()}},
-                    _ModesBiasGen3()})},
+                LayerCaps::Make<Gna2DeviceGeneration0_9, BiasOperandIndex, GNA_TENSOR_H, INTEL_RECURRENT>(
+                    OutputRnn),
+                LayerCaps::Make<Gna2DeviceGeneration3_0, BiasOperandIndex, GNA_TENSOR_H, INTEL_RECURRENT>(
+                    OutputRnn),
             }},
         }},
         { WeightScaleFactorOperandIndex,{
             {INTEL_AFFINE_MULTIBIAS, {
-                {GNA_2_0, std::make_shared<TensorLimits>(TensorLimits{
-            {GNA_TENSOR_H},
-            {{GNA_DIM_H, {1, XNN_N_IN_ELEMS_MAX, 1, Gna2StatusXnnErrorBiasVolume}}},
-            {{ GNA_DATA_RICH_FORMAT }, Gna2StatusXnnErrorBiasBytes }})}
+                LayerCaps::Make<Gna2DeviceGeneration2_0, WeightScaleFactorOperandIndex, GNA_TENSOR_H, INTEL_AFFINE_MULTIBIAS>(
+                    Input),
         }},
     }}
     };
 
     return operands.at(operandIndex);
+}
+
 }

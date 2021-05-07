@@ -1,16 +1,33 @@
-/**
- @copyright (C) 2017-2021 Intel Corporation
- SPDX-License-Identifier: LGPL-2.1-or-later
- */
+/*
+ INTEL CONFIDENTIAL
+ Copyright 2017-2021 Intel Corporation.
 
-#include "igemv.h"
+ The source code contained or described herein and all documents related
+ to the source code ("Material") are owned by Intel Corporation or its suppliers
+ or licensors. Title to the Material remains with Intel Corporation or its suppliers
+ and licensors. The Material may contain trade secrets and proprietary
+ and confidential information of Intel Corporation and its suppliers and licensors,
+ and is protected by worldwide copyright and trade secret laws and treaty provisions.
+ No part of the Material may be used, copied, reproduced, modified, published,
+ uploaded, posted, transmitted, distributed, or disclosed in any way without Intel's
+ prior express written permission.
+
+ No license under any patent, copyright, trade secret or other intellectual
+ property right is granted to or conferred upon you by disclosure or delivery
+ of the Materials, either expressly, by implication, inducement, estoppel
+ or otherwise. Any license under such intellectual property rights must
+ be express and approved by Intel in writing.
+
+ Unless otherwise agreed by Intel in writing, you may not remove or alter this notice
+ or any other notice embedded in Materials by Intel or Intel's suppliers or licensors
+ in any way.
+*/
+
+#include "saturate.h"
 #include "igemv8.h"
 
 #include "KernelArguments.h"
 #include "KernelMacros.h"
-
-#include "common.h"
-#include "gna-api-types-xnn.h"
 
 #include <cstdint>
 #include <cstring>
@@ -94,7 +111,7 @@ void AffineActiveListKernelImpl1B(ExecutionKernelConfig<AffineConfig> const * co
     int16_t const *inputs = reinterpret_cast<int16_t const *>(config->RequestConfig->Inputs);
     int16_t const * input0;
     int8_t const * weight;
-    nn_bias_c const * bias;
+    BiasCompound const * bias;
     int32_t * output;
 
     output = reinterpret_cast<int32_t *>(config->RequestConfig->Outputs);
@@ -112,12 +129,12 @@ void AffineActiveListKernelImpl1B(ExecutionKernelConfig<AffineConfig> const * co
             ix = 0;
             acc0 = _mm256_setzero_si256();
             acc1 = _mm256_setzero_si256();
-            sum0 = bias->bias;
+            sum0 = bias->Bias;
 
             for (kk = 0; kk < nKpartial + 1; kk++)
             {
                 acc0 = _mm256_add_epi32(acc0, acc1);
-                sum0 += vec_sum32(acc0) * bias->multiplier;
+                sum0 += vec_sum32(acc0) * bias->Multiplier;
 
                 saturate_store_out(&sum0, output, config->SaturationCount);
                 niters = kpartial < KK - kk * kpartial ? kpartial : KK - kk * kpartial;
@@ -156,7 +173,7 @@ void AffineActiveListKernelImpl1B(ExecutionKernelConfig<AffineConfig> const * co
                     }
 
                     acc0 = _mm256_add_epi32(acc0, acc1);
-                    sum0 += vec_sum32(acc0) * bias->multiplier;
+                    sum0 += vec_sum32(acc0) * bias->Multiplier;
                 }
 
                 acc0 = _mm256_setzero_si256();
@@ -176,13 +193,13 @@ void AffineActiveListKernelImpl1B(ExecutionKernelConfig<AffineConfig> const * co
                     acc0 = _mm256_add_epi32(acc0, in0);
                 }
 
-                sum0 += vec_sum32(acc0) * bias->multiplier;
+                sum0 += vec_sum32(acc0) * bias->Multiplier;
                 acc0 = _mm256_setzero_si256();
             }
 
             for (j = 0; j < KT; j++, weight++)
             {
-                sum0 += input0[j] * *weight * bias->multiplier;
+                sum0 += input0[j] * *weight * bias->Multiplier;
             }
 
             saturate_store_out(&sum0, output, config->SaturationCount);
@@ -274,14 +291,14 @@ void AffineActiveListKernelImpl1B(ExecutionKernelConfig<AffineConfig> const * co
             for (i = 0; i < config->RequestConfig->Transform.inputVectorCount; i++)
             {
                 acc[i] = _mm256_setzero_si256();
-                sum[i] = bias->bias;
+                sum[i] = bias->Bias;
             }
 
             for (kk = 0; kk < nKpartial + 1; kk++)
             {
                 for (i = 0; i < config->RequestConfig->Transform.inputVectorCount; i++)
                 {
-                    sum[i] += vec_sum32(acc[i]) * bias->multiplier;
+                    sum[i] += vec_sum32(acc[i]) * bias->Multiplier;
                     acc[i] = _mm256_setzero_si256();
                     saturate_store_out(&sum[i], &output[i], config->SaturationCount);
                     sum[i] = output[i];
@@ -318,8 +335,8 @@ void AffineActiveListKernelImpl1B(ExecutionKernelConfig<AffineConfig> const * co
                         acc[1] = _mm256_add_epi32(acc[1], in[1]);
                     }
 
-                    sum[0] += vec_sum32(acc[0]) * bias->multiplier;
-                    sum[1] += vec_sum32(acc[1]) * bias->multiplier;
+                    sum[0] += vec_sum32(acc[0]) * bias->Multiplier;
+                    sum[1] += vec_sum32(acc[1]) * bias->Multiplier;
                 }
 
                 acc[0] = _mm256_setzero_si256();
@@ -343,8 +360,8 @@ void AffineActiveListKernelImpl1B(ExecutionKernelConfig<AffineConfig> const * co
                     acc[1] = _mm256_add_epi32(acc[1], in[1]);
                 }
 
-                sum[0] += vec_sum32(acc[0]) * bias->multiplier;
-                sum[1] += vec_sum32(acc[1]) * bias->multiplier;
+                sum[0] += vec_sum32(acc[0]) * bias->Multiplier;
+                sum[1] += vec_sum32(acc[1]) * bias->Multiplier;
 
                 acc[0] = _mm256_setzero_si256();
                 acc[1] = _mm256_setzero_si256();
@@ -352,8 +369,8 @@ void AffineActiveListKernelImpl1B(ExecutionKernelConfig<AffineConfig> const * co
 
             for (j = 0; j < KT; j++, weight++)
             {
-                sum[0] += input[0][j] * *weight * bias->multiplier;
-                sum[1] += input[1][j] * *weight * bias->multiplier;
+                sum[0] += input[0][j] * *weight * bias->Multiplier;
+                sum[1] += input[1][j] * *weight * bias->Multiplier;
             }
 
             for (i = 0; i < config->RequestConfig->Transform.inputVectorCount; i++)
@@ -377,14 +394,14 @@ void AffineActiveListKernelImpl1B(ExecutionKernelConfig<AffineConfig> const * co
             for (i = 0; i < config->RequestConfig->Transform.inputVectorCount; i++)
             {
                 acc[i] = _mm256_setzero_si256();
-                sum[i] = bias->bias;
+                sum[i] = bias->Bias;
             }
 
             for (kk = 0; kk < nKpartial + 1; kk++)
             {
                 for (i = 0; i < config->RequestConfig->Transform.inputVectorCount; i++)
                 {
-                    sum[i] += vec_sum32(acc[i]) * bias->multiplier;
+                    sum[i] += vec_sum32(acc[i]) * bias->Multiplier;
                     acc[i] = _mm256_setzero_si256();
                     saturate_store_out(&sum[i], &output[i], config->SaturationCount);
                     sum[i] = output[i];
@@ -417,7 +434,7 @@ void AffineActiveListKernelImpl1B(ExecutionKernelConfig<AffineConfig> const * co
 
                 for (i = 0; i < config->RequestConfig->Transform.inputVectorCount; i++)
                 {
-                    sum[i] += vec_sum32(acc[i]) * bias->multiplier;
+                    sum[i] += vec_sum32(acc[i]) * bias->Multiplier;
                     acc[i] = _mm256_setzero_si256();
                 }
             }
@@ -426,7 +443,7 @@ void AffineActiveListKernelImpl1B(ExecutionKernelConfig<AffineConfig> const * co
             {
                 for (i = 0; i < config->RequestConfig->Transform.inputVectorCount; i++)
                 {
-                    sum[i] += input[i][j] * *weight * bias->multiplier;
+                    sum[i] += input[i][j] * *weight * bias->Multiplier;
                 }
             }
 
@@ -451,14 +468,14 @@ void AffineActiveListKernelImpl1B(ExecutionKernelConfig<AffineConfig> const * co
             for (i = 0; i < config->RequestConfig->Transform.inputVectorCount; i++)
             {
                 acc[i] = _mm256_setzero_si256();
-                sum[i] = bias->bias;
+                sum[i] = bias->Bias;
             }
 
             for (kk = 0; kk < nKpartial + 1; kk++)
             {
                 for (i = 0; i < config->RequestConfig->Transform.inputVectorCount; i++)
                 {
-                    sum[i] += vec_sum32(acc[i]) * bias->multiplier;
+                    sum[i] += vec_sum32(acc[i]) * bias->Multiplier;
                     acc[i] = _mm256_setzero_si256();
                     saturate_store_out(&sum[i], &output[i], config->SaturationCount);
                     sum[i] = output[i];
@@ -495,7 +512,7 @@ void AffineActiveListKernelImpl1B(ExecutionKernelConfig<AffineConfig> const * co
 
                 for (i = 0; i < config->RequestConfig->Transform.inputVectorCount; i++)
                 {
-                    sum[i] += vec_sum32(acc[i]) * bias->multiplier;
+                    sum[i] += vec_sum32(acc[i]) * bias->Multiplier;
                     acc[i] = _mm256_setzero_si256();
                 }
             }
@@ -504,7 +521,7 @@ void AffineActiveListKernelImpl1B(ExecutionKernelConfig<AffineConfig> const * co
             {
                 for (i = 0; i < config->RequestConfig->Transform.inputVectorCount; i++)
                 {
-                    sum[i] += input[i][j] * *weight * bias->multiplier;
+                    sum[i] += input[i][j] * *weight * bias->Multiplier;
                 }
             }
 
@@ -529,14 +546,14 @@ void AffineActiveListKernelImpl1B(ExecutionKernelConfig<AffineConfig> const * co
             for (i = 0; i < config->RequestConfig->Transform.inputVectorCount; i++)
             {
                 acc[i] = _mm256_setzero_si256();
-                sum[i] = bias->bias;
+                sum[i] = bias->Bias;
             }
 
             for (kk = 0; kk < nKpartial + 1; kk++)
             {
                 for (i = 0; i < config->RequestConfig->Transform.inputVectorCount; i++)
                 {
-                    sum[i] += vec_sum32(acc[i]) * bias->multiplier;
+                    sum[i] += vec_sum32(acc[i]) * bias->Multiplier;
                     acc[i] = _mm256_setzero_si256();
                     saturate_store_out(&sum[i], &output[i], config->SaturationCount);
                     sum[i] = output[i];
@@ -574,7 +591,7 @@ void AffineActiveListKernelImpl1B(ExecutionKernelConfig<AffineConfig> const * co
 
                 for (i = 0; i < config->RequestConfig->Transform.inputVectorCount; i++)
                 {
-                    sum[i] += vec_sum32(acc[i]) * bias->multiplier;
+                    sum[i] += vec_sum32(acc[i]) * bias->Multiplier;
                     acc[i] = _mm256_setzero_si256();
                 }
             }
@@ -583,7 +600,7 @@ void AffineActiveListKernelImpl1B(ExecutionKernelConfig<AffineConfig> const * co
             {
                 for (i = 0; i < config->RequestConfig->Transform.inputVectorCount; i++)
                 {
-                    sum[i] += input[i][j] * *weight * bias->multiplier;
+                    sum[i] += input[i][j] * *weight * bias->Multiplier;
                 }
             }
 
@@ -608,14 +625,14 @@ void AffineActiveListKernelImpl1B(ExecutionKernelConfig<AffineConfig> const * co
             for (i = 0; i < config->RequestConfig->Transform.inputVectorCount; i++)
             {
                 acc[i] = _mm256_setzero_si256();
-                sum[i] = bias->bias;
+                sum[i] = bias->Bias;
             }
 
             for (kk = 0; kk < nKpartial + 1; kk++)
             {
                 for (i = 0; i < config->RequestConfig->Transform.inputVectorCount; i++)
                 {
-                    sum[i] += vec_sum32(acc[i]) * bias->multiplier;
+                    sum[i] += vec_sum32(acc[i]) * bias->Multiplier;
                     acc[i] = _mm256_setzero_si256();
                     saturate_store_out(&sum[i], &output[i], config->SaturationCount);
                     sum[i] = output[i];
@@ -655,7 +672,7 @@ void AffineActiveListKernelImpl1B(ExecutionKernelConfig<AffineConfig> const * co
 
                 for (i = 0; i < config->RequestConfig->Transform.inputVectorCount; i++)
                 {
-                    sum[i] += vec_sum32(acc[i]) * bias->multiplier;
+                    sum[i] += vec_sum32(acc[i]) * bias->Multiplier;
                     acc[i] = _mm256_setzero_si256();
                 }
             }
@@ -664,7 +681,7 @@ void AffineActiveListKernelImpl1B(ExecutionKernelConfig<AffineConfig> const * co
             {
                 for (i = 0; i < config->RequestConfig->Transform.inputVectorCount; i++)
                 {
-                    sum[i] += input[i][j] * *weight * bias->multiplier;
+                    sum[i] += input[i][j] * *weight * bias->Multiplier;
                 }
             }
 
@@ -689,14 +706,14 @@ void AffineActiveListKernelImpl1B(ExecutionKernelConfig<AffineConfig> const * co
             for (i = 0; i < config->RequestConfig->Transform.inputVectorCount; i++)
             {
                 acc[i] = _mm256_setzero_si256();
-                sum[i] = bias->bias;
+                sum[i] = bias->Bias;
             }
 
             for (kk = 0; kk < nKpartial + 1; kk++)
             {
                 for (i = 0; i < config->RequestConfig->Transform.inputVectorCount; i++)
                 {
-                    sum[i] += vec_sum32(acc[i]) * bias->multiplier;
+                    sum[i] += vec_sum32(acc[i]) * bias->Multiplier;
                     acc[i] = _mm256_setzero_si256();
                     saturate_store_out(&sum[i], &output[i], config->SaturationCount);
                     sum[i] = output[i];
@@ -740,7 +757,7 @@ void AffineActiveListKernelImpl1B(ExecutionKernelConfig<AffineConfig> const * co
 
                 for (i = 0; i < config->RequestConfig->Transform.inputVectorCount; i++)
                 {
-                    sum[i] += vec_sum32(acc[i]) * bias->multiplier;
+                    sum[i] += vec_sum32(acc[i]) * bias->Multiplier;
                     acc[i] = _mm256_setzero_si256();
                 }
             }
@@ -749,7 +766,7 @@ void AffineActiveListKernelImpl1B(ExecutionKernelConfig<AffineConfig> const * co
             {
                 for (i = 0; i < config->RequestConfig->Transform.inputVectorCount; i++)
                 {
-                    sum[i] += input[i][j] * *weight * bias->multiplier;
+                    sum[i] += input[i][j] * *weight * bias->Multiplier;
                 }
             }
 
@@ -771,14 +788,14 @@ void AffineActiveListKernelImpl1B(ExecutionKernelConfig<AffineConfig> const * co
             bias = config->RequestConfig->Transform.biasesCompound+i;
             ix = 0;
 
-            sum0 = bias->bias;
-            sum1 = bias->bias;
-            sum2 = bias->bias;
-            sum3 = bias->bias;
-            sum4 = bias->bias;
-            sum5 = bias->bias;
-            sum6 = bias->bias;
-            sum7 = bias->bias;
+            sum0 = bias->Bias;
+            sum1 = bias->Bias;
+            sum2 = bias->Bias;
+            sum3 = bias->Bias;
+            sum4 = bias->Bias;
+            sum5 = bias->Bias;
+            sum6 = bias->Bias;
+            sum7 = bias->Bias;
 
             acc0 = _mm256_setzero_si256();
             acc1 = _mm256_setzero_si256();
@@ -839,14 +856,14 @@ void AffineActiveListKernelImpl1B(ExecutionKernelConfig<AffineConfig> const * co
                     acc7 = _mm256_add_epi32(acc7, in7);
                 }
 
-                sum0 += vec_sum32(acc0) * bias->multiplier;
-                sum1 += vec_sum32(acc1) * bias->multiplier;
-                sum2 += vec_sum32(acc2) * bias->multiplier;
-                sum3 += vec_sum32(acc3) * bias->multiplier;
-                sum4 += vec_sum32(acc4) * bias->multiplier;
-                sum5 += vec_sum32(acc5) * bias->multiplier;
-                sum6 += vec_sum32(acc6) * bias->multiplier;
-                sum7 += vec_sum32(acc7) * bias->multiplier;
+                sum0 += vec_sum32(acc0) * bias->Multiplier;
+                sum1 += vec_sum32(acc1) * bias->Multiplier;
+                sum2 += vec_sum32(acc2) * bias->Multiplier;
+                sum3 += vec_sum32(acc3) * bias->Multiplier;
+                sum4 += vec_sum32(acc4) * bias->Multiplier;
+                sum5 += vec_sum32(acc5) * bias->Multiplier;
+                sum6 += vec_sum32(acc6) * bias->Multiplier;
+                sum7 += vec_sum32(acc7) * bias->Multiplier;
 
                 acc0 = _mm256_setzero_si256();
                 acc1 = _mm256_setzero_si256();
@@ -860,14 +877,14 @@ void AffineActiveListKernelImpl1B(ExecutionKernelConfig<AffineConfig> const * co
 
             for (j = 0; j < KT; j++, weight++)
             {
-                sum0 += input[0][j] * *weight * bias->multiplier;
-                sum1 += input[1][j] * *weight * bias->multiplier;
-                sum2 += input[2][j] * *weight * bias->multiplier;
-                sum3 += input[3][j] * *weight * bias->multiplier;
-                sum4 += input[4][j] * *weight * bias->multiplier;
-                sum5 += input[5][j] * *weight * bias->multiplier;
-                sum6 += input[6][j] * *weight * bias->multiplier;
-                sum7 += input[7][j] * *weight * bias->multiplier;
+                sum0 += input[0][j] * *weight * bias->Multiplier;
+                sum1 += input[1][j] * *weight * bias->Multiplier;
+                sum2 += input[2][j] * *weight * bias->Multiplier;
+                sum3 += input[3][j] * *weight * bias->Multiplier;
+                sum4 += input[4][j] * *weight * bias->Multiplier;
+                sum5 += input[5][j] * *weight * bias->Multiplier;
+                sum6 += input[6][j] * *weight * bias->Multiplier;
+                sum7 += input[7][j] * *weight * bias->Multiplier;
             }
 
             saturate_store_out(&sum0, &output[0], config->SaturationCount);

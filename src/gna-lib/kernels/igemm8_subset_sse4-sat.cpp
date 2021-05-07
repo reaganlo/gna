@@ -1,16 +1,33 @@
-/**
- @copyright (C) 2017-2021 Intel Corporation
- SPDX-License-Identifier: LGPL-2.1-or-later
- */
+/*
+ INTEL CONFIDENTIAL
+ Copyright 2017-2021 Intel Corporation.
 
-#include "igemv.h"
+ The source code contained or described herein and all documents related
+ to the source code ("Material") are owned by Intel Corporation or its suppliers
+ or licensors. Title to the Material remains with Intel Corporation or its suppliers
+ and licensors. The Material may contain trade secrets and proprietary
+ and confidential information of Intel Corporation and its suppliers and licensors,
+ and is protected by worldwide copyright and trade secret laws and treaty provisions.
+ No part of the Material may be used, copied, reproduced, modified, published,
+ uploaded, posted, transmitted, distributed, or disclosed in any way without Intel's
+ prior express written permission.
+
+ No license under any patent, copyright, trade secret or other intellectual
+ property right is granted to or conferred upon you by disclosure or delivery
+ of the Materials, either expressly, by implication, inducement, estoppel
+ or otherwise. Any license under such intellectual property rights must
+ be express and approved by Intel in writing.
+
+ Unless otherwise agreed by Intel in writing, you may not remove or alter this notice
+ or any other notice embedded in Materials by Intel or Intel's suppliers or licensors
+ in any way.
+*/
+
+#include "saturate.h"
 #include "igemv8.h"
 
 #include "KernelArguments.h"
 #include "KernelMacros.h"
-
-#include "common.h"
-#include "gna-api-types-xnn.h"
 
 #include <cstdint>
 #include <cstring>
@@ -205,7 +222,7 @@ static void affineActiveListKernelImpl1B_N1(
 
     int16_t const *inputs = reinterpret_cast<int16_t const *>(config->RequestConfig->Inputs);
     int8_t const * weight;
-    nn_bias_c const * bias;
+    BiasCompound const * bias;
     int32_t * output;
 
     output = reinterpret_cast<int32_t *>(config->RequestConfig->Outputs);
@@ -237,12 +254,12 @@ static void affineActiveListKernelImpl1B_N1(
         ix = 0;
         acc0 = _mm_setzero_si128();
         acc1 = _mm_setzero_si128();
-        sum0 = bias->bias;
+        sum0 = bias->Bias;
 
         for (kk = 0; kk < numberOfIterationsPerGroup + 1; kk++)
         {
             acc0 = _mm_add_epi32(acc0, acc1);
-            sum0 += vec_sum32(acc0) * bias->multiplier;
+            sum0 += vec_sum32(acc0) * bias->Multiplier;
             saturate_store_out(&sum0, output, config->SaturationCount);
             sum0 = *output;
 
@@ -276,7 +293,7 @@ static void affineActiveListKernelImpl1B_N1(
                 }
 
                 acc0 = _mm_add_epi32(acc0, acc1);
-                sum0 += vec_sum32(acc0) * bias->multiplier;
+                sum0 += vec_sum32(acc0) * bias->Multiplier;
             }
 
             acc0 = _mm_setzero_si128();
@@ -295,13 +312,13 @@ static void affineActiveListKernelImpl1B_N1(
                 acc0 = _mm_add_epi32(acc0, in0);
             }
 
-            sum0 += vec_sum32(acc0) * bias->multiplier;
+            sum0 += vec_sum32(acc0) * bias->Multiplier;
             acc0 = _mm_setzero_si128();
         }
 
         for (j = 0; j < vectorTailLength; j++, weight++)
         {
-            sum0 += (*input)[j] * *weight++ * bias->multiplier;
+            sum0 += (*input)[j] * *weight++ * bias->Multiplier;
         }
 
         saturate_store_out(&sum0, output, config->SaturationCount);
@@ -325,7 +342,7 @@ static void affineActiveListKernelImpl1B_N2(
     uint32_t l;
 
     int8_t const * weight;
-    nn_bias_c const * bias;
+    BiasCompound const * bias;
     int32_t * output;
 
     output = reinterpret_cast<int32_t *>(config->RequestConfig->Outputs);
@@ -352,8 +369,8 @@ static void affineActiveListKernelImpl1B_N2(
         bias = config->RequestConfig->Transform.biasesCompound+i;
         ix = 0;
 
-        sum0 = bias->bias;
-        sum1 = bias->bias;
+        sum0 = bias->Bias;
+        sum1 = bias->Bias;
 
         for (kk = 0; kk < numberOfIterationsPerGroup + 1; kk++)
         {
@@ -387,8 +404,8 @@ static void affineActiveListKernelImpl1B_N2(
                     acc1 = _mm_add_epi32(acc1, in1);
                 }
 
-                sum0 += vec_sum32(acc0) * bias->multiplier;
-                sum1 += vec_sum32(acc1) * bias->multiplier;
+                sum0 += vec_sum32(acc0) * bias->Multiplier;
+                sum1 += vec_sum32(acc1) * bias->Multiplier;
             }
 
             acc0 = _mm_setzero_si128();
@@ -410,14 +427,14 @@ static void affineActiveListKernelImpl1B_N2(
                 acc1 = _mm_add_epi32(acc1, in1);
             }
 
-            sum0 += vec_sum32(acc0) * bias->multiplier;
-            sum1 += vec_sum32(acc1) * bias->multiplier;
+            sum0 += vec_sum32(acc0) * bias->Multiplier;
+            sum1 += vec_sum32(acc1) * bias->Multiplier;
         }
 
         for (j = 0; j < vectorTailLength; j++, weight++)
         {
-            sum0 += input[0][j] * *weight * bias->multiplier;
-            sum1 += input[1][j] * *weight * bias->multiplier;
+            sum0 += input[0][j] * *weight * bias->Multiplier;
+            sum1 += input[1][j] * *weight * bias->Multiplier;
         }
 
         saturate_store_out(&sum0, &output[0], config->SaturationCount);
@@ -443,7 +460,7 @@ static void affineActiveListKernelImpl1B_N3(
     uint32_t l;
 
     int8_t const * weight;
-    nn_bias_c const * bias;
+    BiasCompound const * bias;
     int32_t * output;
 
     output = reinterpret_cast<int32_t *>(config->RequestConfig->Outputs);
@@ -473,9 +490,9 @@ static void affineActiveListKernelImpl1B_N3(
         bias = config->RequestConfig->Transform.biasesCompound+i;
         ix = 0;
 
-        sum0 = bias->bias;
-        sum1 = bias->bias;
-        sum2 = bias->bias;
+        sum0 = bias->Bias;
+        sum1 = bias->Bias;
+        sum2 = bias->Bias;
 
         for (kk = 0; kk < numberOfIterationsPerGroup + 1; kk++)
         {
@@ -514,9 +531,9 @@ static void affineActiveListKernelImpl1B_N3(
                     acc2 = _mm_add_epi32(acc2, in2);
                 }
 
-                sum0 += vec_sum32(acc0) * bias->multiplier;
-                sum1 += vec_sum32(acc1) * bias->multiplier;
-                sum2 += vec_sum32(acc2) * bias->multiplier;
+                sum0 += vec_sum32(acc0) * bias->Multiplier;
+                sum1 += vec_sum32(acc1) * bias->Multiplier;
+                sum2 += vec_sum32(acc2) * bias->Multiplier;
             }
 
             acc0 = _mm_setzero_si128();
@@ -542,16 +559,16 @@ static void affineActiveListKernelImpl1B_N3(
                 acc2 = _mm_add_epi32(acc2, in2);
             }
 
-            sum0 += vec_sum32(acc0) * bias->multiplier;
-            sum1 += vec_sum32(acc1) * bias->multiplier;
-            sum2 += vec_sum32(acc2) * bias->multiplier;
+            sum0 += vec_sum32(acc0) * bias->Multiplier;
+            sum1 += vec_sum32(acc1) * bias->Multiplier;
+            sum2 += vec_sum32(acc2) * bias->Multiplier;
         }
 
         for (j = 0; j < vectorTailLength; j++, weight++)
         {
-            sum0 += input[0][j] * *weight * bias->multiplier;
-            sum1 += input[1][j] * *weight * bias->multiplier;
-            sum2 += input[2][j] * *weight * bias->multiplier;
+            sum0 += input[0][j] * *weight * bias->Multiplier;
+            sum1 += input[1][j] * *weight * bias->Multiplier;
+            sum2 += input[2][j] * *weight * bias->Multiplier;
         }
 
         saturate_store_out(&sum0, &output[0], config->SaturationCount);
@@ -578,7 +595,7 @@ static void affineActiveListKernelImpl1B_N4(
     uint32_t l;
 
     int8_t const * weight;
-    nn_bias_c const * bias;
+    BiasCompound const * bias;
     int32_t * output;
 
     output = reinterpret_cast<int32_t *>(config->RequestConfig->Outputs);
@@ -611,10 +628,10 @@ static void affineActiveListKernelImpl1B_N4(
         bias = config->RequestConfig->Transform.biasesCompound+i;
         ix = 0;
 
-        sum0 = bias->bias;
-        sum1 = bias->bias;
-        sum2 = bias->bias;
-        sum3 = bias->bias;
+        sum0 = bias->Bias;
+        sum1 = bias->Bias;
+        sum2 = bias->Bias;
+        sum3 = bias->Bias;
 
         for (kk = 0; kk < numberOfIterationsPerGroup + 1; kk++)
         {
@@ -658,10 +675,10 @@ static void affineActiveListKernelImpl1B_N4(
                     acc3 = _mm_add_epi32(acc3, in3);
                 }
 
-                sum0 += vec_sum32(acc0) * bias->multiplier;
-                sum1 += vec_sum32(acc1) * bias->multiplier;
-                sum2 += vec_sum32(acc2) * bias->multiplier;
-                sum3 += vec_sum32(acc3) * bias->multiplier;
+                sum0 += vec_sum32(acc0) * bias->Multiplier;
+                sum1 += vec_sum32(acc1) * bias->Multiplier;
+                sum2 += vec_sum32(acc2) * bias->Multiplier;
+                sum3 += vec_sum32(acc3) * bias->Multiplier;
             }
 
             acc0 = _mm_setzero_si128();
@@ -691,18 +708,18 @@ static void affineActiveListKernelImpl1B_N4(
                 acc3 = _mm_add_epi32(acc3, in3);
             }
 
-            sum0 += vec_sum32(acc0) * bias->multiplier;
-            sum1 += vec_sum32(acc1) * bias->multiplier;
-            sum2 += vec_sum32(acc2) * bias->multiplier;
-            sum3 += vec_sum32(acc3) * bias->multiplier;
+            sum0 += vec_sum32(acc0) * bias->Multiplier;
+            sum1 += vec_sum32(acc1) * bias->Multiplier;
+            sum2 += vec_sum32(acc2) * bias->Multiplier;
+            sum3 += vec_sum32(acc3) * bias->Multiplier;
         }
 
         for (j = 0; j < vectorTailLength; j++, weight++)
         {
-            sum0 += input[0][j] * *weight * bias->multiplier;
-            sum1 += input[1][j] * *weight * bias->multiplier;
-            sum2 += input[2][j] * *weight * bias->multiplier;
-            sum3 += input[3][j] * *weight * bias->multiplier;
+            sum0 += input[0][j] * *weight * bias->Multiplier;
+            sum1 += input[1][j] * *weight * bias->Multiplier;
+            sum2 += input[2][j] * *weight * bias->Multiplier;
+            sum3 += input[3][j] * *weight * bias->Multiplier;
         }
 
         saturate_store_out(&sum0, &output[0], config->SaturationCount);
@@ -730,7 +747,7 @@ static void affineActiveListKernelImpl1B_N5(
     uint32_t l;
 
     int8_t const * weight;
-    nn_bias_c const * bias;
+    BiasCompound const * bias;
     int32_t * output;
 
     output = reinterpret_cast<int32_t *>(config->RequestConfig->Outputs);
@@ -766,11 +783,11 @@ static void affineActiveListKernelImpl1B_N5(
         bias = config->RequestConfig->Transform.biasesCompound+i;
         ix = 0;
 
-        sum0 = bias->bias;
-        sum1 = bias->bias;
-        sum2 = bias->bias;
-        sum3 = bias->bias;
-        sum4 = bias->bias;
+        sum0 = bias->Bias;
+        sum1 = bias->Bias;
+        sum2 = bias->Bias;
+        sum3 = bias->Bias;
+        sum4 = bias->Bias;
 
         for (kk = 0; kk < numberOfIterationsPerGroup + 1; kk++)
         {
@@ -819,11 +836,11 @@ static void affineActiveListKernelImpl1B_N5(
                     acc4 = _mm_add_epi32(acc4, in4);
                 }
 
-                sum0 += vec_sum32(acc0) * bias->multiplier;
-                sum1 += vec_sum32(acc1) * bias->multiplier;
-                sum2 += vec_sum32(acc2) * bias->multiplier;
-                sum3 += vec_sum32(acc3) * bias->multiplier;
-                sum4 += vec_sum32(acc4) * bias->multiplier;
+                sum0 += vec_sum32(acc0) * bias->Multiplier;
+                sum1 += vec_sum32(acc1) * bias->Multiplier;
+                sum2 += vec_sum32(acc2) * bias->Multiplier;
+                sum3 += vec_sum32(acc3) * bias->Multiplier;
+                sum4 += vec_sum32(acc4) * bias->Multiplier;
             }
 
             acc0 = _mm_setzero_si128();
@@ -857,20 +874,20 @@ static void affineActiveListKernelImpl1B_N5(
                 acc4 = _mm_add_epi32(acc4, in4);
             }
 
-            sum0 += vec_sum32(acc0) * bias->multiplier;
-            sum1 += vec_sum32(acc1) * bias->multiplier;
-            sum2 += vec_sum32(acc2) * bias->multiplier;
-            sum3 += vec_sum32(acc3) * bias->multiplier;
-            sum4 += vec_sum32(acc4) * bias->multiplier;
+            sum0 += vec_sum32(acc0) * bias->Multiplier;
+            sum1 += vec_sum32(acc1) * bias->Multiplier;
+            sum2 += vec_sum32(acc2) * bias->Multiplier;
+            sum3 += vec_sum32(acc3) * bias->Multiplier;
+            sum4 += vec_sum32(acc4) * bias->Multiplier;
         }
 
         for (j = 0; j < vectorTailLength; j++, weight++)
         {
-            sum0 += input[0][j] * *weight * bias->multiplier;
-            sum1 += input[1][j] * *weight * bias->multiplier;
-            sum2 += input[2][j] * *weight * bias->multiplier;
-            sum3 += input[3][j] * *weight * bias->multiplier;
-            sum4 += input[4][j] * *weight * bias->multiplier;
+            sum0 += input[0][j] * *weight * bias->Multiplier;
+            sum1 += input[1][j] * *weight * bias->Multiplier;
+            sum2 += input[2][j] * *weight * bias->Multiplier;
+            sum3 += input[3][j] * *weight * bias->Multiplier;
+            sum4 += input[4][j] * *weight * bias->Multiplier;
         }
 
         saturate_store_out(&sum0, &output[0], config->SaturationCount);
@@ -897,7 +914,7 @@ static void affineActiveListKernelImpl1B_N6(
     uint32_t l;
 
     int8_t const * weight;
-    nn_bias_c const * bias;
+    BiasCompound const * bias;
     int32_t * output;
 
     output = reinterpret_cast<int32_t *>(config->RequestConfig->Outputs);
@@ -936,12 +953,12 @@ static void affineActiveListKernelImpl1B_N6(
         bias = config->RequestConfig->Transform.biasesCompound+i;
         ix = 0;
 
-        sum0 = bias->bias;
-        sum1 = bias->bias;
-        sum2 = bias->bias;
-        sum3 = bias->bias;
-        sum4 = bias->bias;
-        sum5 = bias->bias;
+        sum0 = bias->Bias;
+        sum1 = bias->Bias;
+        sum2 = bias->Bias;
+        sum3 = bias->Bias;
+        sum4 = bias->Bias;
+        sum5 = bias->Bias;
 
         acc0 = _mm_setzero_si128();
         acc1 = _mm_setzero_si128();
@@ -991,12 +1008,12 @@ static void affineActiveListKernelImpl1B_N6(
                 acc5 = _mm_add_epi32(acc5, in5);
             }
 
-            sum0 += vec_sum32(acc0) * bias->multiplier;
-            sum1 += vec_sum32(acc1) * bias->multiplier;
-            sum2 += vec_sum32(acc2) * bias->multiplier;
-            sum3 += vec_sum32(acc3) * bias->multiplier;
-            sum4 += vec_sum32(acc4) * bias->multiplier;
-            sum5 += vec_sum32(acc5) * bias->multiplier;
+            sum0 += vec_sum32(acc0) * bias->Multiplier;
+            sum1 += vec_sum32(acc1) * bias->Multiplier;
+            sum2 += vec_sum32(acc2) * bias->Multiplier;
+            sum3 += vec_sum32(acc3) * bias->Multiplier;
+            sum4 += vec_sum32(acc4) * bias->Multiplier;
+            sum5 += vec_sum32(acc5) * bias->Multiplier;
 
             acc0 = _mm_setzero_si128();
             acc1 = _mm_setzero_si128();
@@ -1008,12 +1025,12 @@ static void affineActiveListKernelImpl1B_N6(
 
         for (j = 0; j < vectorTailLength; j++, weight++)
         {
-            sum0 += input[0][j] * *weight * bias->multiplier;
-            sum1 += input[1][j] * *weight * bias->multiplier;
-            sum2 += input[2][j] * *weight * bias->multiplier;
-            sum3 += input[3][j] * *weight * bias->multiplier;
-            sum4 += input[4][j] * *weight * bias->multiplier;
-            sum5 += input[5][j] * *weight * bias->multiplier;
+            sum0 += input[0][j] * *weight * bias->Multiplier;
+            sum1 += input[1][j] * *weight * bias->Multiplier;
+            sum2 += input[2][j] * *weight * bias->Multiplier;
+            sum3 += input[3][j] * *weight * bias->Multiplier;
+            sum4 += input[4][j] * *weight * bias->Multiplier;
+            sum5 += input[5][j] * *weight * bias->Multiplier;
         }
 
         saturate_store_out(&sum0, &output[0], config->SaturationCount);
@@ -1041,7 +1058,7 @@ static void affineActiveListKernelImpl1B_N7(
     uint32_t l;
 
     int8_t const * weight;
-    nn_bias_c const * bias;
+    BiasCompound const * bias;
     int32_t * output;
 
     output = reinterpret_cast<int32_t *>(config->RequestConfig->Outputs);
@@ -1083,13 +1100,13 @@ static void affineActiveListKernelImpl1B_N7(
         bias = config->RequestConfig->Transform.biasesCompound+i;
         ix = 0;
 
-        sum0 = bias->bias;
-        sum1 = bias->bias;
-        sum2 = bias->bias;
-        sum3 = bias->bias;
-        sum4 = bias->bias;
-        sum5 = bias->bias;
-        sum6 = bias->bias;
+        sum0 = bias->Bias;
+        sum1 = bias->Bias;
+        sum2 = bias->Bias;
+        sum3 = bias->Bias;
+        sum4 = bias->Bias;
+        sum5 = bias->Bias;
+        sum6 = bias->Bias;
 
         acc0 = _mm_setzero_si128();
         acc1 = _mm_setzero_si128();
@@ -1145,13 +1162,13 @@ static void affineActiveListKernelImpl1B_N7(
                 acc6 = _mm_add_epi32(acc6, in6);
             }
 
-            sum0 += vec_sum32(acc0) * bias->multiplier;
-            sum1 += vec_sum32(acc1) * bias->multiplier;
-            sum2 += vec_sum32(acc2) * bias->multiplier;
-            sum3 += vec_sum32(acc3) * bias->multiplier;
-            sum4 += vec_sum32(acc4) * bias->multiplier;
-            sum5 += vec_sum32(acc5) * bias->multiplier;
-            sum6 += vec_sum32(acc6) * bias->multiplier;
+            sum0 += vec_sum32(acc0) * bias->Multiplier;
+            sum1 += vec_sum32(acc1) * bias->Multiplier;
+            sum2 += vec_sum32(acc2) * bias->Multiplier;
+            sum3 += vec_sum32(acc3) * bias->Multiplier;
+            sum4 += vec_sum32(acc4) * bias->Multiplier;
+            sum5 += vec_sum32(acc5) * bias->Multiplier;
+            sum6 += vec_sum32(acc6) * bias->Multiplier;
 
             acc0 = _mm_setzero_si128();
             acc1 = _mm_setzero_si128();
@@ -1164,13 +1181,13 @@ static void affineActiveListKernelImpl1B_N7(
 
         for (j = 0; j < vectorTailLength; j++, weight++)
         {
-            sum0 += input[0][j] * *weight * bias->multiplier;
-            sum1 += input[1][j] * *weight * bias->multiplier;
-            sum2 += input[2][j] * *weight * bias->multiplier;
-            sum3 += input[3][j] * *weight * bias->multiplier;
-            sum4 += input[4][j] * *weight * bias->multiplier;
-            sum5 += input[5][j] * *weight * bias->multiplier;
-            sum6 += input[6][j] * *weight * bias->multiplier;
+            sum0 += input[0][j] * *weight * bias->Multiplier;
+            sum1 += input[1][j] * *weight * bias->Multiplier;
+            sum2 += input[2][j] * *weight * bias->Multiplier;
+            sum3 += input[3][j] * *weight * bias->Multiplier;
+            sum4 += input[4][j] * *weight * bias->Multiplier;
+            sum5 += input[5][j] * *weight * bias->Multiplier;
+            sum6 += input[6][j] * *weight * bias->Multiplier;
         }
 
         saturate_store_out(&sum0, &output[0], config->SaturationCount);
@@ -1199,7 +1216,7 @@ static void affineActiveListKernelImpl1B_N8(
     uint32_t l;
 
     int8_t const * weight;
-    nn_bias_c const * bias;
+    BiasCompound const * bias;
     int32_t * output;
 
     output = reinterpret_cast<int32_t *>(config->RequestConfig->Outputs);
@@ -1244,14 +1261,14 @@ static void affineActiveListKernelImpl1B_N8(
         bias = config->RequestConfig->Transform.biasesCompound+i;
         ix = 0;
 
-        sum0 = bias->bias;
-        sum1 = bias->bias;
-        sum2 = bias->bias;
-        sum3 = bias->bias;
-        sum4 = bias->bias;
-        sum5 = bias->bias;
-        sum6 = bias->bias;
-        sum7 = bias->bias;
+        sum0 = bias->Bias;
+        sum1 = bias->Bias;
+        sum2 = bias->Bias;
+        sum3 = bias->Bias;
+        sum4 = bias->Bias;
+        sum5 = bias->Bias;
+        sum6 = bias->Bias;
+        sum7 = bias->Bias;
 
         acc0 = _mm_setzero_si128();
         acc1 = _mm_setzero_si128();
@@ -1312,14 +1329,14 @@ static void affineActiveListKernelImpl1B_N8(
                 acc7 = _mm_add_epi32(acc7, in7);
             }
 
-            sum0 += vec_sum32(acc0) * bias->multiplier;
-            sum1 += vec_sum32(acc1) * bias->multiplier;
-            sum2 += vec_sum32(acc2) * bias->multiplier;
-            sum3 += vec_sum32(acc3) * bias->multiplier;
-            sum4 += vec_sum32(acc4) * bias->multiplier;
-            sum5 += vec_sum32(acc5) * bias->multiplier;
-            sum6 += vec_sum32(acc6) * bias->multiplier;
-            sum7 += vec_sum32(acc7) * bias->multiplier;
+            sum0 += vec_sum32(acc0) * bias->Multiplier;
+            sum1 += vec_sum32(acc1) * bias->Multiplier;
+            sum2 += vec_sum32(acc2) * bias->Multiplier;
+            sum3 += vec_sum32(acc3) * bias->Multiplier;
+            sum4 += vec_sum32(acc4) * bias->Multiplier;
+            sum5 += vec_sum32(acc5) * bias->Multiplier;
+            sum6 += vec_sum32(acc6) * bias->Multiplier;
+            sum7 += vec_sum32(acc7) * bias->Multiplier;
 
             acc0 = _mm_setzero_si128();
             acc1 = _mm_setzero_si128();
@@ -1333,14 +1350,14 @@ static void affineActiveListKernelImpl1B_N8(
 
         for (j = 0; j < vectorTailLength; j++, weight++)
         {
-            sum0 += input[0][j] * *weight * bias->multiplier;
-            sum1 += input[1][j] * *weight * bias->multiplier;
-            sum2 += input[2][j] * *weight * bias->multiplier;
-            sum3 += input[3][j] * *weight * bias->multiplier;
-            sum4 += input[4][j] * *weight * bias->multiplier;
-            sum5 += input[5][j] * *weight * bias->multiplier;
-            sum6 += input[6][j] * *weight * bias->multiplier;
-            sum7 += input[7][j] * *weight * bias->multiplier;
+            sum0 += input[0][j] * *weight * bias->Multiplier;
+            sum1 += input[1][j] * *weight * bias->Multiplier;
+            sum2 += input[2][j] * *weight * bias->Multiplier;
+            sum3 += input[3][j] * *weight * bias->Multiplier;
+            sum4 += input[4][j] * *weight * bias->Multiplier;
+            sum5 += input[5][j] * *weight * bias->Multiplier;
+            sum6 += input[6][j] * *weight * bias->Multiplier;
+            sum7 += input[7][j] * *weight * bias->Multiplier;
         }
 
         saturate_store_out(&sum0, &output[0], config->SaturationCount);
