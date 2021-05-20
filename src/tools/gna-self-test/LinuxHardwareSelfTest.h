@@ -25,7 +25,7 @@
 #include "PciDeviceInfo.h"
 
 #define GNA_ST_LSMOD "lsmod | grep ^gna"
-#define GNA_ST_MODPROBE "modprobe -v --dry-run gna"
+#define GNA_ST_MODPROBE "modprobe -v --dry-run intel_gna"
 
 class LinuxGnaSelfTestHardwareStatus : public GnaSelfTestHardwareStatus
 {

@@ -93,7 +93,7 @@ std::string LinuxGnaSelfTestHardwareStatus::devfsGnaNode(uint8_t range)
 
     for(uint8_t i = 0; i < range; i++)
     {
-        auto name = "/dev/gna" + std::to_string(i);
+        auto name = "/dev/intel_gna" + std::to_string(i);
         fd = open(name.c_str(), O_RDWR);
         if(fd == -1)
         {
