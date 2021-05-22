@@ -33,7 +33,7 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 # project name
 project(${PROJECT_NAME})
 
-include(CTest)
+#include(CTest)
 # main binary path
 set(GNA_BINARY_DIR ${CMAKE_SOURCE_DIR}/bin)
 
